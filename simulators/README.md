@@ -1,7 +1,83 @@
 # simulators
 
-Run-time tracking for the PyAutoLens simulators (imaging, interferometer, point-source, cluster, group, multi).
+Run-time profiling for the PyAutoLens simulators — the scripts that produce mock lensed datasets (imaging, interferometer, point-source, cluster-scale, group-scale, multi-wavelength) used as inputs to fitting pipelines. These scripts profile **simulation cost**, not likelihood cost (which lives under [`likelihood/`](../likelihood/README.md)). They time grid construction, ray-tracing, PSF convolution, point-solver work, FITS / JSON output, and whatever else dominates each science case.
 
-Populated by **Phase 2** of the `autolens_profiling` roadmap. Will mirror `autolens_workspace_developer/jax_profiling/simulators/`. JIT support is partial across the simulator suite — placeholder scripts will land for cases where upstream JIT is not yet implemented, linking to the relevant tracking issues.
+## Why profile the simulators?
 
-See the top-level [README](../README.md) for the full phase plan.
+Slow simulators block iteration. The user reported the cluster-scale simulator as the original headliner: JIT-wrapped `solver.solve` was supposed to make it fast, but didn't, so the per-phase breakdown surfaced exactly which step was the bottleneck. Each script here applies the same per-phase timer pattern.
+
+## Scripts
+
+| Script | What it profiles | Distinguishing notes |
+|--------|------------------|----------------------|
+| [`imaging.py`](./imaging.py) | Single-band imaging simulator (HST / Euclid / JWST / AO presets). Grid + over-sampling setup, tracer + galaxies, `tracer.image_2d_from` (eager + JIT), `simulator.via_tracer_from` (NumPy convolution path), output. | Cheapest — galaxy-scale, single band. Useful baseline. |
+| [`interferometer.py`](./interferometer.py) | Visibility-space simulator with synthetic uv-wavelengths (100 baselines inline, no disk file). DFT transformer setup, then `tracer.image_2d_from` eager + JIT. | No PSF-convolution-on-image path; the FFT is in the transformer. |
+| [`point_source.py`](./point_source.py) | Point-source simulator: lens + source tracer, eager `solver.solve`, JIT-compiled `solver.solve` (`xp=jnp`, `remove_infinities=False`), `tracer.time_delays_from`. Internal **eager vs JIT solver assertion** — surfaces the same upstream `PointSolver` drift tracked in [PyAutoLens#514](https://github.com/PyAutoLabs/PyAutoLens/issues/514). | Smallest grid (200×200 @ 0.05″/px). |
+| [`cluster.py`](./cluster.py) | Cluster-scale simulator — the original headliner. 800×800 grid @ 0.1″/px, multiple source galaxies, per-source JIT-compiled `solver.solve` with compile cost reported per source. | Heaviest — multiple JIT compiles, large grid. |
+| [`group.py`](./group.py) | Group-scale imaging simulator. 250×250 grid with adaptive over-sampling at 3 galaxy centres, 1 main lens + 2 extra galaxies + source. | Mid-weight; tests adaptive over-sampling cost. |
+| [`multi.py`](./multi.py) | Multi-wavelength (two-band: g + r) imaging simulator. Per-band grid setup with adaptive over-sampling, two tracers, per-band convolution. | Tests parallel-band orchestration cost. |
+
+## What each script reports
+
+Per-phase wall-time table printed to stdout, plus a structured JSON written to `results/simulators/<script>_summary_v<al.__version__>.json` carrying:
+
+- Phase timings (one entry per `timer.section("...")` block).
+- Key derived timings (e.g. `solver_solve_eager_s`, `via_tracer_from_s`).
+- Configuration metadata (grid shape, pixel scale, model summary).
+- `al.__version__` tag for cross-release comparison.
+
+A matching `.png` bar chart of the per-phase costs lands at the same path. Phase 4's dashboard reads these JSONs to refresh the run-times table in this README.
+
+## Versioned artifacts
+
+Filename convention:
+
+```
+results/simulators/<script>_summary_v<al.__version__>.{json,png}
+```
+
+Old versions are retained alongside new ones so cross-release trends stay visible.
+
+## Headline run-times (populated by Phase 4)
+
+| Script | Dataset preset | CPU | Laptop GPU | A100 |
+|--------|----------------|-----|-----------|------|
+| `imaging.py` | simple (HST-resolution defaults) | _populated_ | _populated_ | _populated_ |
+| `interferometer.py` | simple (synthetic uv) | _populated_ | _populated_ | _populated_ |
+| `point_source.py` | simple | _populated_ | _populated_ | _populated_ |
+| `cluster.py` | simple | _populated_ | _populated_ | _populated_ |
+| `group.py` | simple | _populated_ | _populated_ | _populated_ |
+| `multi.py` | simple (g+r) | _populated_ | _populated_ | _populated_ |
+
+Numbers are the **total wall time** for the simulator run-to-completion (not per-likelihood, since simulators run once-and-done). Phase 4's `scripts/build_readme.py` auto-fills this from the latest `*_summary_v<version>.json` artifacts.
+
+## Running a script
+
+From the repo root:
+
+```bash
+cd autolens_profiling
+python simulators/imaging.py
+```
+
+Each script defaults to `dataset_name = "simple"` and writes the produced dataset to `dataset/<type>/<name>/`.
+
+**Note**: `dataset/point_source/simple/point_dataset_positions_only.json` and `dataset/point_source/simple/tracer.json` are tracked in this repo as Phase 1 likelihood inputs; running `simulators/point_source.py` without changing the default `dataset_name` will overwrite them. Use a non-conflicting `dataset_name` (e.g. `"smoke"`) when smoking these scripts, or commit the regenerated bytes if the regeneration is intentional.
+
+Other `dataset/<type>/{cluster,group,multi}/` and `*/simple/` variants are gitignored, so writing to them does not pollute the repo.
+
+**Codex / sandboxed runs:**
+
+```bash
+NUMBA_CACHE_DIR=/tmp/numba_cache MPLCONFIGDIR=/tmp/matplotlib python simulators/imaging.py
+```
+
+## JIT readiness
+
+The prompt for Phase 2 flagged that "JAX jitting for these are not fully implemented everywhere so we may have placeholders". Status today:
+
+- `point_source.py` — JIT path for `solver.solve` exercised and asserted against eager. (The upstream drift in this assertion is tracked under [PyAutoLens#514](https://github.com/PyAutoLabs/PyAutoLens/issues/514).)
+- `imaging.py`, `interferometer.py`, `group.py`, `multi.py` — `tracer.image_2d_from` JIT path exercised; `simulator.via_tracer_from` (PSF convolution) is the NumPy path and is the expected bottleneck.
+- `cluster.py` — per-source JIT-compiled `solver.solve` exercised; per-source compile cost reported.
+
+Where the JIT path isn't yet implemented for a given simulator step, the script measures the NumPy path only; future upstream JIT support will be reported in this section as it lands.
