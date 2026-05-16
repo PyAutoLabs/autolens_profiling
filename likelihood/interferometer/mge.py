@@ -56,6 +56,16 @@ from autofit.jax import register_model as _register_model_pytrees
 # Instrument configuration
 # ---------------------------------------------------------------------------
 
+
+# AUTOLENS_PROFILING_SMOKE=1 short-circuit (Phase 5 / CI lint smoke).
+# Verifies the import graph + module-level setup succeeded without running
+# the full profiling pipeline. Skipped entirely when the env var is unset.
+import os as _smoke_os
+import sys as _smoke_sys
+if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
+    print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
+    _smoke_sys.exit(0)
+
 INSTRUMENTS = {
     "sma": {"pixel_scale": 0.1, "real_space_shape": (256, 256)},
     "alma": {"pixel_scale": 0.05, "real_space_shape": (256, 256)},
