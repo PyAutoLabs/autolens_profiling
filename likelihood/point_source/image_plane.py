@@ -175,13 +175,22 @@ print("\n--- Model construction ---")
 with timer.section("model_build"):
     # GaussianPrior(mean=truth, sigma=small) centres prior-median at the
     # simulator truth while keeping params free so gradient diagnostics
-    # have dimensionality.
+    # have dimensionality. Prior means MUST match the simulator's truth
+    # values exactly, otherwise the PointSolver finds fewer image-plane
+    # positions than the dataset contains and chi² explodes.
+    #
+    # Simulator truth (see autolens_workspace_developer/jax_profiling/
+    # dataset_setup/point_source.py):
+    #   Isothermal at centre=(0, 0), einstein_radius=1.6,
+    #   ell_comps = al.convert.ell_comps_from(axis_ratio=0.9, angle=45°)
+    #            ≈ (0.0526316, 0.0)
+    #   source point_0.centre = (0.07, 0.07)
     mass = af.Model(al.mp.Isothermal)
-    mass.centre.centre_0 = af.GaussianPrior(mean=0.01, sigma=0.005)
-    mass.centre.centre_1 = af.GaussianPrior(mean=0.01, sigma=0.005)
+    mass.centre.centre_0 = af.GaussianPrior(mean=0.0, sigma=0.005)
+    mass.centre.centre_1 = af.GaussianPrior(mean=0.0, sigma=0.005)
     mass.einstein_radius = af.GaussianPrior(mean=1.6, sigma=0.05)
-    mass.ell_comps.ell_comps_0 = af.GaussianPrior(mean=0.01, sigma=0.01)
-    mass.ell_comps.ell_comps_1 = af.GaussianPrior(mean=0.01, sigma=0.01)
+    mass.ell_comps.ell_comps_0 = af.GaussianPrior(mean=0.05263158, sigma=0.01)
+    mass.ell_comps.ell_comps_1 = af.GaussianPrior(mean=0.0, sigma=0.01)
     lens = af.Model(al.Galaxy, redshift=0.5, mass=mass)
 
     point_0 = af.Model(al.ps.PointFlux)
@@ -443,7 +452,13 @@ print(f"  Bar chart saved to:    {chart_path}")
 # Simulator truth parameters + seeded noise (noise_seed=1 in
 # simulators/point_source.py) make the image-plane log-likelihood
 # deterministic. Eager, JIT, and vmap all agree to float64.
-EXPECTED_LOG_LIKELIHOOD_IMAGE_PLANE = 0.07475703623045682
+# Constant refreshed 2026-05-16 alongside the prior-truth-alignment fix
+# above. The previous value (0.07475703623045682) was set on 2026-04-24
+# against an earlier dataset+priors combination that has since been
+# regenerated; the new value reflects the current truth-aligned
+# evaluation against the dataset committed in
+# autolens_workspace_developer@f8a5cef.
+EXPECTED_LOG_LIKELIHOOD_IMAGE_PLANE = 7.196577317761017
 
 np.testing.assert_allclose(
     log_likelihood_ref,
