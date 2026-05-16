@@ -169,11 +169,19 @@ def _likelihood_headline_seconds(art: Artifact) -> Optional[float]:
     Robust to the slight key-shape variation across the imaging /
     interferometer / point_source / datacube JSON layouts.
     """
+    import math
+
     data = art.data
-    # Imaging mge/pixelization/delaunay JSON shape: top-level key per-step
-    # plus aggregates at end; the full-pipeline number is under "summary"
-    # in some scripts and at top-level in others. Try several keys.
+    # Top-level keys observed in shipped artifacts:
+    #   imaging/{mge,pixelization,delaunay}    -> "full_pipeline_single_jit"
+    #   interferometer/{mge,pix,delaunay}      -> "full_pipeline_single_jit"
+    #   point_source/{image_plane,source_pl}   -> "full_pipeline_single_jit"
+    #   datacube/delaunay                      -> "full_pipeline_cube_single_jit"
+    # Older internal-_developer artifacts also used a "_s" suffix or
+    # nested under "summary" / "aggregate" — kept here for forward-compat.
     for path in (
+        ("full_pipeline_single_jit",),
+        ("full_pipeline_cube_single_jit",),
         ("summary", "full_pipeline_single_jit_s"),
         ("summary", "full_pipeline_s"),
         ("aggregate", "full_pipeline_single_jit_s"),
@@ -189,7 +197,12 @@ def _likelihood_headline_seconds(art: Artifact) -> Optional[float]:
                 ok = False
                 break
         if ok and isinstance(node, (int, float)):
-            return float(node)
+            value = float(node)
+            # NaN signals "the JIT didn't converge / not measurable" — render
+            # as `—` rather than `nan s` in the dashboard.
+            if math.isnan(value):
+                return None
+            return value
     return None
 
 
