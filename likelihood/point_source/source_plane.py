@@ -112,7 +112,9 @@ print(f"\n--- Dataset loading [{dataset_name}] ---")
 
 _script_dir = Path(__file__).resolve().parent
 _workspace_root = _script_dir.parents[1]
-dataset_path = Path("dataset") / "point_source" / dataset_name
+dataset_path = (
+    Path("dataset") / "point_source" / dataset_name
+)
 
 if al.util.dataset.should_simulate(str(dataset_path)):
     raise FileNotFoundError(
@@ -379,9 +381,7 @@ print(f"  Position noise sigma:       {positions_noise_sigma}")
 print(f"  Free parameters:            {model.total_free_parameters}")
 print(f"  fit_positions_cls:          FitPositionsSource (source-plane chi-squared)")
 print("-" * 70)
-print(
-    f"  Eager full likelihood:      {eager_per_call:.6f} s/call  ({log_likelihood_ref:.6f})"
-)
+print(f"  Eager full likelihood:      {eager_per_call:.6f} s/call  ({log_likelihood_ref:.6f})")
 if full_pipeline_jits:
     print(f"  Full pipeline (JIT):        {full_pipeline_per_call:.6f} s/call")
 else:
@@ -460,7 +460,9 @@ fig.suptitle(
     fontsize=12,
     fontweight="bold",
 )
-title_extra = " | full pipeline JIT BLOCKED" if not full_pipeline_jits else ""
+title_extra = (
+    " | full pipeline JIT BLOCKED" if not full_pipeline_jits else ""
+)
 ax.set_title(
     f"AutoLens v{al_version}  |  {n_observed_positions} positions  |  "
     f"{model.total_free_parameters} free params{title_extra}",

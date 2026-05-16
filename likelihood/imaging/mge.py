@@ -81,7 +81,6 @@ instrument = "hst"  # <-- change this to profile a different instrument
 # Profiling helpers
 # ---------------------------------------------------------------------------
 
-
 class Timer:
     """Accumulates named timing measurements and prints a summary."""
 
@@ -232,7 +231,9 @@ with timer.section("model_build"):
     shear.gamma_1 = 0.05
     shear.gamma_2 = 0.05
 
-    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
+    lens = af.Model(
+        al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear
+    )
 
     source_bulge = al.model_util.mge_model_from(
         mask_radius=mask_radius, total_gaussians=20, centre_prior_is_uniform=False
@@ -337,13 +338,11 @@ with timer.section("ray_trace_eager"):
 
 print(f"  Number of planes traced: {len(traced_grids)}")
 
-
 def ray_trace_raw(grid_raw):
     """Wraps ray-tracing so inputs/outputs are raw arrays."""
     grid = aa.Grid2DIrregular(values=grid_raw, xp=jnp)
     traced = tracer.traced_grid_2d_list_from(grid=grid, xp=jnp)
     return jnp.stack([tg.array for tg in traced])
-
 
 _, traced_grids_raw = jit_profile(ray_trace_raw, "ray_trace_jit", grid_lp_raw)
 likelihood_steps.append(("Ray-trace grids", timer.records[-1][1] / 10))
@@ -376,14 +375,9 @@ with timer.section("linear_obj_setup"):
 # mapping_matrix and operated_mapping_matrix_override already return raw arrays.
 with timer.section("mapping_matrix"):
     mapping_matrices = [func.mapping_matrix for func in lp_linear_funcs]
-    mapping_matrix = (
-        np.hstack(mapping_matrices)
-        if len(mapping_matrices) > 1
-        else mapping_matrices[0]
-    )
+    mapping_matrix = np.hstack(mapping_matrices) if len(mapping_matrices) > 1 else mapping_matrices[0]
 
 print(f"  mapping_matrix shape: {mapping_matrix.shape}")
-
 
 def mapping_matrix_from_params(params_tree):
     """Compute mapping matrix from a pytree-shaped ``ModelInstance``.
@@ -408,7 +402,6 @@ def mapping_matrix_from_params(params_tree):
     matrices = [f.mapping_matrix for f in funcs]
     return jnp.hstack(matrices) if len(matrices) > 1 else matrices[0]
 
-
 _, mm_jit = jit_profile(mapping_matrix_from_params, "mapping_matrix_jit", params_tree)
 likelihood_steps.append(("Mapping matrix", timer.records[-1][1] / 10))
 
@@ -421,17 +414,10 @@ print(f"  mapping_matrix (JIT) shape: {mm_jit.shape}")
 print("\n--- Step 3: Blurred mapping matrix ---")
 
 with timer.section("blurred_mapping_matrix"):
-    blurred_matrices = [
-        func.operated_mapping_matrix_override for func in lp_linear_funcs
-    ]
-    blurred_mapping_matrix = (
-        np.hstack(blurred_matrices)
-        if len(blurred_matrices) > 1
-        else blurred_matrices[0]
-    )
+    blurred_matrices = [func.operated_mapping_matrix_override for func in lp_linear_funcs]
+    blurred_mapping_matrix = np.hstack(blurred_matrices) if len(blurred_matrices) > 1 else blurred_matrices[0]
 
 print(f"  blurred_mapping_matrix shape: {blurred_mapping_matrix.shape}")
-
 
 def blurred_mm_from_params(params_tree):
     """Compute blurred mapping matrix from a pytree-shaped ``ModelInstance``."""
@@ -452,7 +438,6 @@ def blurred_mm_from_params(params_tree):
     matrices = [f.operated_mapping_matrix_override for f in funcs]
     return jnp.hstack(matrices) if len(matrices) > 1 else matrices[0]
 
-
 _, bmm_jit = jit_profile(blurred_mm_from_params, "blurred_mm_jit", params_tree)
 likelihood_steps.append(("Blurred mapping matrix", timer.records[-1][1] / 10))
 
@@ -464,14 +449,12 @@ print(f"  blurred_mapping_matrix (JIT) shape: {bmm_jit.shape}")
 
 print("\n--- Step 4: Data vector ---")
 
-
 def compute_data_vector(blurred_mapping_matrix, image, noise_map):
     return al.util.inversion_imaging.data_vector_via_blurred_mapping_matrix_from(
         blurred_mapping_matrix=blurred_mapping_matrix,
         image=image,
         noise_map=noise_map,
     )
-
 
 bmm_jnp = jnp.array(blurred_mapping_matrix)
 noise_jnp = jnp.array(dataset.noise_map.array)
@@ -495,7 +478,6 @@ print("\n--- Step 5: Curvature matrix ---")
 
 n_linear = bmm_jnp.shape[1]
 
-
 def compute_curvature_matrix(blurred_mapping_matrix, noise_map):
     return al.util.inversion.curvature_matrix_via_mapping_matrix_from(
         mapping_matrix=blurred_mapping_matrix,
@@ -504,7 +486,6 @@ def compute_curvature_matrix(blurred_mapping_matrix, noise_map):
         no_regularization_index_list=list(range(n_linear)),
         xp=jnp,
     )
-
 
 with timer.section("curvature_matrix_eager"):
     curvature_matrix = compute_curvature_matrix(bmm_jnp, noise_jnp)
@@ -523,14 +504,12 @@ print(f"  curvature_matrix shape: {curvature_matrix.shape}")
 
 print("\n--- Step 6: Reconstruction (NNLS) ---")
 
-
 def compute_reconstruction(data_vector, curvature_matrix):
     return al.util.inversion.reconstruction_positive_only_from(
         data_vector=data_vector,
         curvature_reg_matrix=curvature_matrix,
         xp=jnp,
     )
-
 
 with timer.section("reconstruction_eager"):
     reconstruction = compute_reconstruction(
@@ -539,10 +518,8 @@ with timer.section("reconstruction_eager"):
     block(reconstruction)
 
 _, reconstruction = jit_profile(
-    compute_reconstruction,
-    "reconstruction_jit",
-    jnp.array(data_vector),
-    jnp.array(curvature_matrix),
+    compute_reconstruction, "reconstruction_jit",
+    jnp.array(data_vector), jnp.array(curvature_matrix)
 )
 likelihood_steps.append(("Reconstruction (NNLS)", timer.records[-1][1] / 10))
 
@@ -554,14 +531,12 @@ print(f"  reconstruction shape: {reconstruction.shape}")
 
 print("\n--- Step 7: Mapped reconstructed image ---")
 
-
 def compute_mapped_recon(blurred_mapping_matrix, reconstruction):
     return al.util.inversion.mapped_reconstructed_data_via_mapping_matrix_from(
         mapping_matrix=blurred_mapping_matrix,
         reconstruction=reconstruction,
         xp=jnp,
     )
-
 
 with timer.section("mapped_recon_eager"):
     mapped_recon = compute_mapped_recon(bmm_jnp, jnp.array(reconstruction))
@@ -580,26 +555,23 @@ print(f"  mapped_reconstructed_image shape: {mapped_recon.shape}")
 
 print("\n--- Step 8: Chi-squared & log likelihood ---")
 
-
 def compute_log_likelihood(data, noise_map, mapped_recon):
     residual = data - mapped_recon
     chi_squared = jnp.sum((residual / noise_map) ** 2)
-    noise_norm = jnp.sum(jnp.log(2 * jnp.pi * noise_map**2))
+    noise_norm = jnp.sum(jnp.log(2 * jnp.pi * noise_map ** 2))
     return -0.5 * (chi_squared + noise_norm)
-
 
 mapped_recon_jnp = jnp.array(mapped_recon)
 
 with timer.section("log_likelihood_eager"):
-    log_like = compute_log_likelihood(data_array, noise_jnp, mapped_recon_jnp)
+    log_like = compute_log_likelihood(
+        data_array, noise_jnp, mapped_recon_jnp
+    )
     block(log_like)
 
 _, log_like = jit_profile(
-    compute_log_likelihood,
-    "log_likelihood_jit",
-    data_array,
-    noise_jnp,
-    mapped_recon_jnp,
+    compute_log_likelihood, "log_likelihood_jit",
+    data_array, noise_jnp, mapped_recon_jnp
 )
 likelihood_steps.append(("Chi-squared & log likelihood", timer.records[-1][1] / 10))
 
@@ -630,7 +602,6 @@ print("=" * 70)
 # instead of going through ``model.instance_from_vector(parameters, xp=jnp)``.
 analysis = al.AnalysisImaging(dataset=dataset, use_jax=True)
 
-
 def full_pipeline_from_params(params_tree):
     """Full likelihood from a pytree-shaped ``ModelInstance``.
 
@@ -639,7 +610,6 @@ def full_pipeline_from_params(params_tree):
     ``aux_data`` partition set up by ``autofit.jax.register_model``.
     """
     return analysis.log_likelihood_function(instance=params_tree)
-
 
 _, full_result = jit_profile(full_pipeline_from_params, "full_pipeline", params_tree)
 full_pipeline_per_call = timer.records[-1][1] / 10
@@ -716,7 +686,6 @@ print(
 
 import json
 import matplotlib
-
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
@@ -741,12 +710,8 @@ for i, (label, per_call) in enumerate(likelihood_steps, 1):
 
 print("-" * 70)
 print(f"      {'TOTAL (step-by-step)':<{max_label}}  {step_total:>12.6f} s")
-print(
-    f"      {'Full pipeline (single JIT)':<{max_label}}  {full_pipeline_per_call:>12.6f} s"
-)
-print(
-    f"      {f'vmap batch={batch_size} (per call)':<{max_label}}  {vmap_per_call:>12.6f} s"
-)
+print(f"      {'Full pipeline (single JIT)':<{max_label}}  {full_pipeline_per_call:>12.6f} s")
+print(f"      {f'vmap batch={batch_size} (per call)':<{max_label}}  {vmap_per_call:>12.6f} s")
 print(f"      {f'vmap speedup vs single JIT':<{max_label}}  {vmap_speedup:>11.1f}x")
 print("=" * 70)
 
@@ -823,7 +788,7 @@ fig.suptitle(
     fontweight="bold",
 )
 ax.set_title(
-    f'AutoLens v{al_version}  |  {pixel_scale}"/px  |  {n_image_pixels} pixels  |  '
+    f"AutoLens v{al_version}  |  {pixel_scale}\"/px  |  {n_image_pixels} pixels  |  "
     f"{n_over_sampled_pixels} over-sampled  |  {n_linear_gaussians} Gaussians  |  "
     f"total: {step_total:.6f} s",
     fontsize=9,
@@ -873,6 +838,4 @@ np.testing.assert_allclose(
     rtol=1e-4,
     err_msg=f"imaging/mge[{instrument}]: regression — vmap log_likelihood drifted",
 )
-print(
-    f"  Regression assertion PASSED: log_likelihood matches {EXPECTED_LOG_LIKELIHOOD_HST:.6f}"
-)
+print(f"  Regression assertion PASSED: log_likelihood matches {EXPECTED_LOG_LIKELIHOOD_HST:.6f}")
