@@ -1,0 +1,45 @@
+# likelihood/interferometer
+
+JAX JIT profiling for the PyAutoLens **interferometer** likelihood function — strong-lens reconstruction from radio / sub-millimetre visibility data (e.g. SMA, ALMA, VLA).
+
+The interferometer likelihood path is profiled at **full-pipeline JIT** only, not per-step. The reason is deliberate: the interferometer pipeline runs a Fourier-transformed mapping matrix, a visibilities-space data vector and curvature matrix, and an NNLS solve whose `xp=jnp` threading hasn't been fully characterised yet. Decomposing into per-step JITs would risk missing the cross-step XLA fusion that matters in practice, and would risk hitting library-level JAX blockers that we'd want to raise as separate issues rather than work around in the profiling scripts. Once the full-pipeline JIT is stable across all three model compositions, the per-step breakdown can land as a follow-up.
+
+## What each script measures
+
+1. **Eager baseline** — `FitInterferometer` with `xp=np`, reporting `figure_of_merit` / `log_likelihood`.
+2. **Full-pipeline JIT** — `jax.jit(analysis.log_likelihood_function)` on a pytree-registered `ModelInstance`. Reports lower / compile / first-call / steady-state per-call timings.
+3. **Batched evaluation** — `jax.jit(jax.vmap(full_pipeline))` for the population-of-evaluations regime a sampler actually runs in. Reports per-likelihood cost and speedup vs the single-JIT path.
+4. **Correctness check** — eager ≡ JIT log-likelihood agreement at `rtol=1e-4`.
+5. **Static memory analysis** of the batched program.
+6. **Versioned JSON + PNG write** using the same schema as the imaging scripts so results compare side-by-side.
+
+## Scripts
+
+| Script | Source representation | What it profiles |
+|--------|-----------------------|------------------|
+| [`mge.py`](./mge.py) | MGE (linear light profiles only) | Baseline interferometer path. Exercises the `TuplePrior` pytree support landed in PyAutoFit#1222. |
+| [`pixelization.py`](./pixelization.py) | Rectangular pixelization | Adds source mesh + regularization to the visibility-space inversion. |
+| [`delaunay.py`](./delaunay.py) | Delaunay pixelization | Production-style irregular-source reconstruction in visibility space. |
+
+## Default dataset
+
+`dataset/interferometer/sma/` — an SMA-like mock (pixel scale 0.1″, real-space shape 256×256) committed to this repo. Includes `data.fits`, `noise_map.fits`, `uv_wavelengths.fits`, `positions.json`, and the seeded `tracer.json`. Other instruments (e.g. ALMA, VLA) can be regenerated via the source-of-truth scripts at `autolens_workspace_developer/jax_profiling/dataset_setup/interferometer.py` and copied into `dataset/interferometer/<instrument>/`.
+
+## Headline run-times (populated by Phase 4)
+
+| Script | Instrument | CPU | Laptop GPU | A100 |
+|--------|------------|-----|------------|------|
+| `mge.py` | SMA | _populated_ | _populated_ | _populated_ |
+| `pixelization.py` | SMA | _populated_ | _populated_ | _populated_ |
+| `delaunay.py` | SMA | _populated_ | _populated_ | _populated_ |
+
+Numbers are the **steady-state per-call cost** (single-JIT, post-warmup), in milliseconds. Phase 4's dashboard auto-fills this from the latest `*_summary_v<version>.json` artifacts under `results/likelihood/interferometer/`.
+
+## Output
+
+Each script writes:
+
+```
+results/likelihood/interferometer/<script>_likelihood_summary_<instrument>_v<al.__version__>.json
+results/likelihood/interferometer/<script>_likelihood_summary_<instrument>_v<al.__version__>.png
+```

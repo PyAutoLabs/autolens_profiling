@@ -1,0 +1,55 @@
+# likelihood/point_source
+
+JAX JIT profiling for the PyAutoLens **point-source** likelihood function — fitting the multiple images of a lensed point source (quasar, supernova, or compact emitter) given an observed set of image-plane positions and a parametric lens model.
+
+The point-source likelihood has two distinct chi-squared variants depending on where the comparison between model and data happens. Both are JIT-traceable end-to-end through the underlying `PointSolver` (a triangle-refinement loop that threads `xp=jnp` through every step).
+
+## Two chi-squared variants
+
+| Variant | Computed in | Comparison |
+|---------|-------------|------------|
+| **Image-plane** | image plane coordinates | Solve for the model image positions via `PointSolver`, pair each model image with the closest observed image, compute χ² in image-plane coordinates. |
+| **Source-plane** | source plane coordinates | Ray-trace observed image positions back to the source plane, compute χ² of the inferred source-plane scatter (i.e. how tightly the back-traced images cluster around a single source). |
+
+Image-plane fitting is closer to what an observer would naively expect ("how well do the model images line up with the data images?"), but is more expensive because of the forward solver. Source-plane fitting is cheaper (no forward solve) but is a proxy: zero scatter in the source plane does not exactly correspond to zero image-plane chi-squared.
+
+## What each script measures
+
+For both variants:
+
+1. **Eager baseline** — `xp=np` log-likelihood for sanity.
+2. **Single-JIT** — lower / compile / first-call / steady-state per-call timings.
+3. **vmap** — batched per-likelihood cost and speedup vs single-JIT.
+4. **Three-tier numerical correctness**:
+    - eager ≡ JIT
+    - JIT ≡ vmap (every entry of the batched output)
+    - a hardcoded `EXPECTED_LOG_LIKELIHOOD_*` regression constant guarding against silent drift in the solver / chi-squared stack. This depends on the seeded simulator (`noise_seed=1` in the upstream `dataset_setup/point_source.py`) staying bit-stable.
+
+## Scripts
+
+| Script | Variant | Notes |
+|--------|---------|-------|
+| [`image_plane.py`](./image_plane.py) | Image-plane χ² | Full pipeline JIT-traceable end-to-end because `PointSolver` threads `xp=jnp` through every step. |
+| [`source_plane.py`](./source_plane.py) | Source-plane χ² | Cheaper than image-plane; no forward solver. |
+
+## Default dataset
+
+`dataset/point_source/simple/` — a minimal seeded dataset with `point_dataset_positions_only.json` (4 observed image positions) and the truth `tracer.json`. Both files are committed to this repo.
+
+## Headline run-times (populated by Phase 4)
+
+| Script | Dataset | CPU | Laptop GPU | A100 |
+|--------|---------|-----|------------|------|
+| `image_plane.py` | simple | _populated_ | _populated_ | _populated_ |
+| `source_plane.py` | simple | _populated_ | _populated_ | _populated_ |
+
+Numbers are the **steady-state per-call cost** (single-JIT, post-warmup), in milliseconds. Phase 4's dashboard auto-fills this from the latest `*_summary_v<version>.json` artifacts under `results/likelihood/point_source/`.
+
+## Output
+
+Each script writes:
+
+```
+results/likelihood/point_source/<script>_likelihood_summary_<dataset_name>_v<al.__version__>.json
+results/likelihood/point_source/<script>_likelihood_summary_<dataset_name>_v<al.__version__>.png
+```
