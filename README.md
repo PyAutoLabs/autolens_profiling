@@ -22,6 +22,16 @@ This repository is the single home for PyAutoLens performance measurement. It ex
 
 Results are framed by **astronomy instrument** (HST, Euclid, JWST, …) rather than by raw pixel counts. Pixel counts are recorded too, but the headline numbers a reader sees first are the ones that map onto a real observing programme.
 
+## Latest run-times
+
+The table below is auto-generated from the latest versioned artifacts under `results/`. Each row is the latest steady-state per-call cost for a likelihood path at a given instrument; numbers refresh whenever the producing scripts are rerun and committed. Hardware tier is **CPU only** today — laptop GPU and HPC GPU columns will land once `results/**` artifacts are tagged with a hardware label.
+
+<!-- BEGIN auto-table:headline -->
+_No data yet — run likelihood scripts to populate. See `likelihood/README.md`._
+<!-- END auto-table:headline -->
+
+(Generator: `scripts/build_readme.py`. Run `python scripts/build_readme.py` after producing new artifacts to refresh; `--check` exits non-zero in CI if it would change anything.)
+
 ## JAX gradients — currently out of scope
 
 Gradient profiling (`jax.grad` of the likelihood, autodiff-based optimisers) is **not yet** part of this repo. It is tracked in [`PyAutoLabs/autolens_workspace_developer/jax_profiling/gradient/`](https://github.com/PyAutoLabs/autolens_workspace_developer/tree/main/jax_profiling/gradient) and will fold into this repo in a future phase once the gradient story stabilises.
@@ -54,18 +64,27 @@ Examples that already exist in the source-of-truth repo:
 
 ## Roadmap
 
-This repo is being built in phases:
+This repo is being built in phases. Phase numbers correspond to internal sub-prompts under `PyAutoLabs/PyAutoPrompt/z_features/autolens_profiling.md`.
 
 | Phase | Title | Status |
 |-------|-------|--------|
-| 0 | Repo bootstrap (this commit) | ✓ shipped |
-| 1 | Mirror JIT likelihood profiling scripts + per-section READMEs | not yet started |
-| 2 | Mirror simulator profiling scripts + run-time tracking | not yet started |
-| 3 | Nautilus profiling, design for sampler expansion | not yet started |
-| 4 | Top-level + per-section README dashboard with instrument framing | not yet started |
-| 5 | GitHub Actions for lint + profile re-runs + README refresh | not yet started |
+| 0 | Repo bootstrap | ✓ shipped |
+| 1 | Mirror JIT likelihood profiling scripts + per-section READMEs | ✓ shipped |
+| 2 | Mirror simulator profiling scripts + run-time tracking | ✓ shipped |
+| 3 | Nautilus profiling, design for sampler expansion | ✓ shipped |
+| 4 | Top-level + per-section README dashboard with instrument framing | ✓ shipped |
+| 5 | GitHub Actions for lint + profile re-runs + README refresh | queued |
 
-The full multi-phase plan lives in the internal `PyAutoLabs/PyAutoPrompt/z_features/autolens_profiling.md` tracker (not publicly readable). The high-level shape is captured above.
+### Future enhancements (Phase 4 follow-ups)
+
+Dashboards can grow in many directions. The list below captures candidate improvements that fit the "profiling and run-times" theme; none of them block the current dashboard from being useful.
+
+- **Regression-watch indicator** — colour or arrow per cell showing whether the latest cost regressed (>5%) or improved versus the previous PyAutoLens release. Needs the second-latest version per axis kept alongside the latest. Trivial to add to `scripts/build_readme.py`.
+- **Per-axis version-history PNGs** — small inline plot of run-time vs PyAutoLens release version, generated from the JSON artifacts (reusing the `_developer/jax_profiling/results/jit/.../*_v<version>.png` generator). Embeds nicely above each section table.
+- **Plotly-rendered interactive timeline** — hostable on GitHub Pages once the static dashboard stabilises; lets readers hover/filter across instrument × model × release.
+- **Flamegraph captures** — alongside the headline timing numbers, store a flamegraph per instrument × model for the most recent release.
+- **Hardware-tier columns** — extend `scripts/build_readme.py` table renderers to show CPU / laptop GPU / HPC GPU as separate columns once result artifacts encode the hardware label (filename suffix or JSON `"hardware"` field).
+- **Archive old versions** — once a script has >6 minor releases of artifacts, move the older ones to `results/archive/` so the latest views stay uncluttered.
 
 ## Related repos
 
