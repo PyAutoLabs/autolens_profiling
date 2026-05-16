@@ -1,0 +1,47 @@
+# searches/nautilus
+
+[Nautilus](https://github.com/johannesulf/nautilus) is a production nested-importance sampler that combines neural-network-based importance sampling with traditional nested sampling. It's gradient-free, so it sidesteps the JAX-gradient pathologies that affect HMC-family samplers on this likelihood, and is a strong baseline for end-to-end "what does a real sampler do on this lens model" timing.
+
+These scripts drive Nautilus directly against the HST MGE imaging likelihood, bypassing `af.NonLinearSearch`. They are wiring tests + run-time profiling, **not** converged science fits — `n_live=200` is below what you'd use in production, but enough to see per-evaluation cost and reach the default `n_eff=10000` / `f_live=0.01` termination on this MGE setup.
+
+## Scripts
+
+| Script | Likelihood backend | What it profiles |
+|--------|--------------------|------------------|
+| [`simple.py`](./simple.py) | NumPy (`use_jax=False`) | Baseline: pure-NumPy log-likelihood passed straight to Nautilus. Highest per-evaluation cost; useful as the reference point against which JAX speedup is measured. |
+| [`jax.py`](./jax.py) | JAX JIT (`use_jax=True`, `jax.jit`-compiled likelihood) | Reports JIT compile time separately. Per-evaluation cost is JAX kernel + a single Python ↔ JAX boundary crossing per call (Nautilus itself is NumPy-only). Compare versus a pure-JAX nested sampler like NSS-JIT (not yet mirrored) for the no-boundary-crossing variant. |
+
+Both share the same Nautilus configuration so timings are directly comparable: `n_live=200`, default `n_eff=10000`, default `f_live=0.01`. Both use the shared `_setup` / `_metrics` from one folder up.
+
+## What each script reports
+
+- **Best fit**: max-likelihood lens mass / shear parameters (one-line summary).
+- **Max log L** and **log evidence**.
+- **Wall time** for the sampling phase (excluding JIT compile for `jax.py`).
+- **JIT compile time** (one-shot warmup; `jax.py` only).
+- **Likelihood evaluations** and **time per eval** (ms).
+- **ESS** (effective sample size) and **posterior samples**.
+- **Convergence** indicator (Nautilus's `n_eff` / `f_live` defaults are reached).
+- **Evals to ML** and **time to ML** via the shared `MLTracker`.
+
+The headline JSON+PNG pair is written to `results/searches/nautilus/` per the [section README](../README.md#versioned-artifacts) convention.
+
+## Headline run-times (populated by Phase 4)
+
+| Script | Backend | Wall time | Time / eval | Evals → ML | Time → ML |
+|--------|---------|-----------|-------------|-----------|-----------|
+| `simple.py` | NumPy | _populated_ | _populated_ | _populated_ | _populated_ |
+| `jax.py` | JAX JIT | _populated_ | _populated_ | _populated_ | _populated_ |
+
+Numbers are filled in by Phase 4's `scripts/build_readme.py` from the latest `*_summary_v<version>.json` under `results/searches/nautilus/`.
+
+## Expected behaviour
+
+For reference: prior sweep runs on this exact MGE setup (recorded in `autolens_workspace_developer/searches_minimal/sweep_findings.md`) put converged log-evidence at around **logZ ≈ -169k**. A non-converged early-stop reading of `logZ ≈ -191k` is roughly what you'll see after a few minutes of sampling. The likelihood landscape anneals slowly — fully converged runs at `n_live=100` take ~30–60 minutes on GPU.
+
+The JAX variant's wall time is dominated by the NumPy/JAX boundary crossings, not the JAX kernel. A future NSS-JIT mirror will surface the no-boundary-crossing alternative.
+
+## Caveats
+
+- **`use_jax=True` and JIT compile**: `_setup.build_analysis(dataset, use_jax=True)` returns an analysis object that the Nautilus wrapper feeds via `jax.jit`. If the underlying JAX-jitted likelihood path has an upstream regression (see [PyAutoLens#514](https://github.com/PyAutoLabs/PyAutoLens/issues/514)), the `jax.py` script may produce different log evidence than `simple.py` — that's an upstream issue, not a Nautilus issue.
+- **GPU memory**: on a 6 GB consumer GPU (e.g. RTX 2060), `jax.py` with `n_live=200` fits comfortably for Nautilus (gradient-free, no curvature storage). The same `n_live` causes OOM in NSS-JIT (which stores curvature for HMC-style moves) per the upstream sweep findings.
