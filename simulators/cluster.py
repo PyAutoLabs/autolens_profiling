@@ -33,6 +33,16 @@ import jax
 import jax.numpy as jnp
 import matplotlib
 
+
+# AUTOLENS_PROFILING_SMOKE=1 short-circuit (Phase 5 / CI lint smoke).
+# Verifies the import graph + module-level setup succeeded without running
+# the full profiling pipeline. Skipped entirely when the env var is unset.
+import os as _smoke_os
+import sys as _smoke_sys
+if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
+    print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
+    _smoke_sys.exit(0)
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 

@@ -1,0 +1,114 @@
+# lint.yml — PR / push-to-main gate.
+#
+# Cheap, fast (<5 min), CPU-only. Runs on every PR and on push to main.
+# Does NOT produce real result artifacts — the smoke step short-circuits
+# every profile script via AUTOLENS_PROFILING_SMOKE=1 (lands as part of
+# Phase 5; see scripts under likelihood/, simulators/, searches/nautilus/).
+#
+# Profile re-runs that actually produce results live in `profile.yml`.
+
+name: lint
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout autolens_profiling
+        uses: actions/checkout@v4
+        with:
+          path: autolens_profiling
+
+      - name: Checkout PyAutoConf
+        uses: actions/checkout@v4
+        with:
+          repository: PyAutoLabs/PyAutoConf
+          path: PyAutoConf
+      - name: Checkout PyAutoFit
+        uses: actions/checkout@v4
+        with:
+          repository: PyAutoLabs/PyAutoFit
+          path: PyAutoFit
+      - name: Checkout PyAutoArray
+        uses: actions/checkout@v4
+        with:
+          repository: PyAutoLabs/PyAutoArray
+          path: PyAutoArray
+      - name: Checkout PyAutoGalaxy
+        uses: actions/checkout@v4
+        with:
+          repository: PyAutoLabs/PyAutoGalaxy
+          path: PyAutoGalaxy
+      - name: Checkout PyAutoLens
+        uses: actions/checkout@v4
+        with:
+          repository: PyAutoLabs/PyAutoLens
+          path: PyAutoLens
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install runtime dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install numpy scipy matplotlib jax jaxlib
+          pip install nautilus-sampler==1.0.5
+          pip install numba
+          # autoconf / autofit / autoarray / autogalaxy / autolens are imported
+          # from the sibling checkouts via PYTHONPATH below — no install needed.
+
+      - name: Install lint tools
+        run: |
+          pip install ruff
+          # lychee is a Rust binary; fetch the prebuilt release.
+          curl -sSfL https://github.com/lycheeverse/lychee/releases/latest/download/lychee-x86_64-unknown-linux-gnu.tar.gz \
+            | tar -xz -C /usr/local/bin lychee
+
+      - name: ruff check
+        working-directory: autolens_profiling
+        run: ruff check .
+
+      - name: ruff format --check
+        working-directory: autolens_profiling
+        run: ruff format --check .
+
+      - name: build_readme.py --check (dashboard idempotence)
+        working-directory: autolens_profiling
+        run: python scripts/build_readme.py --check
+
+      - name: lychee — markdown link-rot
+        working-directory: autolens_profiling
+        run: |
+          # Conservative scope: only README.md files in this repo, exclude
+          # GitHub UI links that lychee tends to false-positive on.
+          lychee \
+            --exclude '^https://github\.com/.*/(issues|pull|commit|releases)/' \
+            --no-progress \
+            --accept '200..=299,429' \
+            --max-redirects 5 \
+            $(find . -name 'README.md' -not -path './results/*' -not -path './dataset/*')
+
+      - name: Smoke — one script per section
+        working-directory: autolens_profiling
+        env:
+          AUTOLENS_PROFILING_SMOKE: "1"
+          NUMBA_CACHE_DIR: /tmp/numba_cache
+          MPLCONFIGDIR: /tmp/matplotlib
+          PYTHONPATH: ${{ github.workspace }}/PyAutoConf:${{ github.workspace }}/PyAutoFit:${{ github.workspace }}/PyAutoArray:${{ github.workspace }}/PyAutoGalaxy:${{ github.workspace }}/PyAutoLens
+        run: |
+          # Each script reads AUTOLENS_PROFILING_SMOKE at module top and
+          # exits 0 immediately after the import + setup section. Catches
+          # import-graph breakage without running the full profile.
+          python likelihood/imaging/mge.py
+          python simulators/imaging.py
+          python searches/nautilus/simple.py
