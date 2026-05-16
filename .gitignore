@@ -1,0 +1,25 @@
+__pycache__/
+*.pyc
+output/
+root.log
+*.log
+.codex/
+
+# Generated artifacts — never check in
+image.fits
+path/
+output_path/
+
+# Profiler artifacts
+*.prof
+*.pstats
+
+# JAX / numba / matplotlib caches (when not redirected via env vars)
+.jax_cache/
+__jax_cache__/
+.numba_cache/
+.mplconfig/
+
+# Local virtualenvs
+.venv/
+venv/
