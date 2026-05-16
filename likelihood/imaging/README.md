@@ -1,0 +1,57 @@
+# likelihood/imaging
+
+JAX JIT profiling for the PyAutoLens **imaging** likelihood function — strong-lens reconstruction from a single 2D image with a known PSF.
+
+The imaging likelihood path is the most fully JIT-decomposed of the four data types. Each script here profiles the **whole likelihood** as one JIT'd program (the cost a sampler actually pays) **and** every internal step under its own JIT (the per-step breakdown that tells you where the time goes). Three model compositions are covered, all with the same step structure but different source representations:
+
+- **MGE** — multi-Gaussian expansion source. Linear light profiles only, so no profile-subtracted image stage. Simplest source path.
+- **Pixelization** — rectangular pixelized source. Adds mesh-to-image mapping and a regularization matrix.
+- **Delaunay** — Delaunay-triangulated source pixelization with adaptive resolution. Heaviest source path; closest to production reconstructions for irregular-morphology sources.
+
+## Step-by-step structure each script profiles
+
+Per the docstrings in each script, the imaging likelihood decomposes into:
+
+1. Instance from parameter vector
+2. Build `Tracer`
+3. Ray-trace grids through the lens
+4. Compute mapping matrix (per-profile images before PSF)
+5. Compute blurred mapping matrix (PSF convolution)
+6. Compute data vector D
+7. Compute curvature matrix F
+8. Reconstruction via positive-only NNLS
+9. Map reconstruction back to image plane
+10. Chi-squared and log-likelihood
+
+XLA may fuse these differently when compiled as one program vs separate pieces, so per-step timings are approximate. They are still the right tool for identifying which step dominates.
+
+## Scripts
+
+| Script | Source representation | What it profiles |
+|--------|-----------------------|------------------|
+| [`mge.py`](./mge.py) | MGE (linear light profiles only) | Lightest imaging path. Useful as the baseline against which pixelization / Delaunay are compared. |
+| [`pixelization.py`](./pixelization.py) | Rectangular pixelization | Adds source mesh + regularization. |
+| [`delaunay.py`](./delaunay.py) | Delaunay pixelization | Production-style irregular-source reconstruction. |
+
+## Default dataset
+
+`dataset/imaging/hst/` — an HST-resolution mock (pixel scale 0.05″, 21×21 PSF) committed to this repo. Other instruments (`euclid`, `jwst`, `ao`) can be regenerated via the source-of-truth scripts at `autolens_workspace_developer/jax_profiling/dataset_setup/imaging.py` and copied into `dataset/imaging/<instrument>/`.
+
+## Headline run-times (populated by Phase 4)
+
+| Script | Instrument | CPU | Laptop GPU | A100 |
+|--------|------------|-----|------------|------|
+| `mge.py` | HST | _populated_ | _populated_ | _populated_ |
+| `pixelization.py` | HST | _populated_ | _populated_ | _populated_ |
+| `delaunay.py` | HST | _populated_ | _populated_ | _populated_ |
+
+Numbers are the **steady-state per-call cost** (single-JIT, post-warmup), in milliseconds. Phase 4's dashboard auto-fills this from the latest `*_summary_v<version>.json` artifacts under `results/likelihood/imaging/`.
+
+## Output
+
+Each script writes:
+
+```
+results/likelihood/imaging/<script>_likelihood_summary_<instrument>_v<al.__version__>.json
+results/likelihood/imaging/<script>_likelihood_summary_<instrument>_v<al.__version__>.png
+```
