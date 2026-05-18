@@ -227,6 +227,16 @@ with timer.section("output_fits"):
         overwrite=True,
     )
 
+# Lensed source image (real-space, pre-NUFFT) — used as the ``adapt_image``
+# by downstream interferometer + datacube likelihood scripts that profile
+# ``RectangularAdaptImage`` and ``image_mesh.Hilbert``. No PSF convolution
+# here; the visibility transform lives downstream in the likelihood path.
+with timer.section("output_lensed_source"):
+    lensed_source = tracer.image_2d_list_from(grid=grid)[-1]
+    lensed_source.output_to_fits(
+        file_path=dataset_path / "lensed_source.fits", overwrite=True
+    )
+
 with timer.section("output_json"):
     al.output_to_json(obj=tracer, file_path=dataset_path / "tracer.json")
 

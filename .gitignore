@@ -40,6 +40,12 @@ dataset/point_source/simple/point_dataset_positions_only.csv
 # Datacube simulator outputs — regenerated each run
 dataset/datacube/sim_*/
 
+# Lensed-source adapt images — produced by simulators and cached on-demand
+# by likelihood/adapt_image_util.py. Regeneratable from tracer.json on first
+# script run; kept out of git so different machines don't fight over a file
+# that's purely an auto-cache.
+dataset/**/lensed_source.fits
+
 # Profiling result artifacts — written by scripts under likelihood/, simulators/, searches/.
 # Each run produces fresh versioned JSON+PNG; Phase 4's dashboard will explicitly select
 # which artifacts to commit. Until then, results stay local.

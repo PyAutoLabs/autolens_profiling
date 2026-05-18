@@ -30,14 +30,14 @@ The table below is auto-generated from the latest versioned artifacts under `res
 | Section | Script | Instrument | Latest single-JIT per-call | PyAutoLens version |
 |---------|--------|------------|----------------------------|--------------------|
 | likelihood/datacube | `delaunay.py` | hannah | — | v2026.5.14.2 |
-| likelihood/imaging | `delaunay.py` | hst | 5.28 s | v2026.5.14.2 |
-| likelihood/imaging | `mge.py` | hst | 97.8 ms | v2026.5.14.2 |
-| likelihood/imaging | `pixelization.py` | hst | 4.35 s | v2026.5.14.2 |
-| likelihood/interferometer | `delaunay.py` | sma | 349.4 ms | v2026.5.14.2 |
-| likelihood/interferometer | `mge.py` | sma | 47.1 ms | v2026.5.14.2 |
-| likelihood/interferometer | `pixelization.py` | sma | 441.5 ms | v2026.5.14.2 |
-| likelihood/point_source | `image_plane.py` | — | 43.2 ms | v2026.5.14.2 |
-| likelihood/point_source | `source_plane.py` | — | 424 μs | v2026.5.14.2 |
+| likelihood/imaging | `delaunay.py` | hst | 833.4 ms | v2026.5.14.2 |
+| likelihood/imaging | `mge.py` | hst | 41.6 ms | v2026.5.14.2 |
+| likelihood/imaging | `pixelization.py` | hst | 782.3 ms | v2026.5.14.2 |
+| likelihood/interferometer | `delaunay.py` | sma | 154.5 ms | v2026.5.14.2 |
+| likelihood/interferometer | `mge.py` | sma | 33.6 ms | v2026.5.14.2 |
+| likelihood/interferometer | `pixelization.py` | sma | 113.6 ms | v2026.5.14.2 |
+| likelihood/point_source | `image_plane.py` | — | 22.5 ms | v2026.5.14.2 |
+| likelihood/point_source | `source_plane.py` | — | 691 μs | v2026.5.14.2 |
 <!-- END auto-table:headline -->
 
 (Generator: `scripts/build_readme.py`. Run `python scripts/build_readme.py` after producing new artifacts to refresh; `--check` exits non-zero in CI if it would change anything.)
