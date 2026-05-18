@@ -649,6 +649,13 @@ likelihood_steps.append(("Regularization matrix (H)", timer.records[-1][1] / 10)
 
 print(f"  regularization_matrix shape: {regularization_matrix.shape}")
 
+# Full block-diagonal regularization matrix from the inversion: (1285, 1285)
+# with a zero (60, 60) linear-bulge block at indices [0..59]. Step 12 (F+H
+# solve) and Step 13 (log evidence) both run on this full-size matrix; the
+# log_det terms inside compute_log_evidence index it down to the mapper rows
+# via ``inversion.mapper_indices`` to avoid the singular zero diagonal.
+regularization_matrix_full = jnp.array(inversion.regularization_matrix)
+
 # ---------------------------------------------------------------------------
 # Step 12: Regularized reconstruction: s = (F + H)^{-1} D
 # ---------------------------------------------------------------------------
@@ -667,7 +674,7 @@ with timer.section("reconstruction_eager"):
     reconstruction = compute_reconstruction(
         jnp.array(data_vector),
         jnp.array(curvature_matrix),
-        jnp.array(regularization_matrix),
+        regularization_matrix_full,
     )
     block(reconstruction)
 
@@ -675,7 +682,7 @@ _, reconstruction = jit_profile(
     compute_reconstruction, "reconstruction_jit",
     jnp.array(data_vector),
     jnp.array(curvature_matrix),
-    jnp.array(regularization_matrix),
+    regularization_matrix_full,
 )
 likelihood_steps.append(("Regularized reconstruction", timer.records[-1][1] / 10))
 
@@ -689,11 +696,19 @@ print("\n--- Step 13: Mapped reconstruction + log evidence ---")
 
 def compute_log_evidence(
     data, noise_map, blurred_image, blurred_mapping_matrix, reconstruction,
-    curvature_matrix, regularization_matrix,
+    curvature_matrix, regularization_matrix, mapper_indices,
 ):
     """Compute the full log evidence including all five terms:
 
     -2 ln e = chi^2 + s^T H s + ln[det(F+H)] - ln[det(H)] + noise_norm
+
+    Matches the production formula in
+    ``autoarray/inversion/inversion/abstract.py:log_det_*`` — reduces both the
+    curvature_reg_matrix and the regularization_matrix to the rows/cols indexed
+    by ``mapper_indices`` before the log_det. This drops the no-regularization
+    rows (e.g. MGE Basis linear components) which otherwise make
+    ``det(H) = 0`` and the slogdet return -inf, then uses Cholesky for a
+    numerically stable log_det.
     """
     # Map reconstruction to image
     mapped_recon = al.util.inversion.mapped_reconstructed_data_via_mapping_matrix_from(
@@ -717,9 +732,18 @@ def compute_log_evidence(
     # Curvature + regularization matrix
     curvature_reg_matrix = curvature_matrix + regularization_matrix
 
-    # Log determinant terms
-    sign_cr, log_det_curvature_reg = jnp.linalg.slogdet(curvature_reg_matrix)
-    sign_r, log_det_regularization = jnp.linalg.slogdet(regularization_matrix)
+    # Reduce to pixelization rows/cols only (matches production
+    # ``*_matrix_reduced``): required for models with non-regularised
+    # linear components (e.g. MGE lens light).
+    creg_reduced = curvature_reg_matrix[mapper_indices][:, mapper_indices]
+    reg_reduced = regularization_matrix[mapper_indices][:, mapper_indices]
+
+    log_det_curvature_reg = 2.0 * jnp.sum(
+        jnp.log(jnp.diag(jnp.linalg.cholesky(creg_reduced)))
+    )
+    log_det_regularization = 2.0 * jnp.sum(
+        jnp.log(jnp.diag(jnp.linalg.cholesky(reg_reduced)))
+    )
 
     # Noise normalization
     noise_normalization = jnp.sum(jnp.log(2 * jnp.pi * noise_map ** 2))
@@ -740,19 +764,20 @@ def compute_log_evidence(
 blurred_img_jnp = jnp.array(blurred_image.array)
 recon_jnp = jnp.array(reconstruction)
 curv_jnp = jnp.array(curvature_matrix)
-reg_jnp = jnp.array(regularization_matrix)
+reg_jnp = regularization_matrix_full
+mapper_indices_jnp = jnp.array(np.asarray(inversion.mapper_indices))
 
 with timer.section("log_evidence_eager"):
     log_evidence = compute_log_evidence(
         data_array, noise_jnp, blurred_img_jnp, bmm_jnp,
-        recon_jnp, curv_jnp, reg_jnp,
+        recon_jnp, curv_jnp, reg_jnp, mapper_indices_jnp,
     )
     block(log_evidence)
 
 _, log_evidence = jit_profile(
     compute_log_evidence, "log_evidence_jit",
     data_array, noise_jnp, blurred_img_jnp, bmm_jnp,
-    recon_jnp, curv_jnp, reg_jnp,
+    recon_jnp, curv_jnp, reg_jnp, mapper_indices_jnp,
 )
 likelihood_steps.append(("Mapped recon + log evidence", timer.records[-1][1] / 10))
 
@@ -765,7 +790,7 @@ inv_curv_jnp = jnp.array(inversion.curvature_matrix)
 
 log_evidence_check = compute_log_evidence(
     data_array, noise_jnp, blurred_img_jnp, bmm_jnp,
-    inv_recon_jnp, inv_curv_jnp, reg_jnp,
+    inv_recon_jnp, inv_curv_jnp, reg_jnp, mapper_indices_jnp,
 )
 print(f"  log_evidence (inv matrices) = {log_evidence_check}")
 print(f"  log_evidence (reference)    = {log_evidence_ref}")
