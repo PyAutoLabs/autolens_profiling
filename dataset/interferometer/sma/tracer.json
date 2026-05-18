@@ -20,23 +20,14 @@
                             "type": "instance",
                             "class_path": "autogalaxy.profiles.mass.total.isothermal.Isothermal",
                             "arguments": {
-<<<<<<< Updated upstream
-                                "einstein_radius": 1.6,
-                                "centre": {
-=======
                                 "ell_comps": {
->>>>>>> Stashed changes
                                     "type": "tuple",
                                     "values": [
                                         0.05263157894736841,
                                         3.2227547345982974e-18
                                     ]
                                 },
-<<<<<<< Updated upstream
-                                "ell_comps": {
-=======
                                 "centre": {
->>>>>>> Stashed changes
                                     "type": "tuple",
                                     "values": [
                                         0.0,
@@ -67,39 +58,24 @@
                             "class_path": "autogalaxy.profiles.light.standard.sersic_core.SersicCore",
                             "arguments": {
                                 "alpha": 3.0,
-<<<<<<< Updated upstream
-                                "gamma": 0.25,
-                                "effective_radius": 1.0,
-                                "centre": {
-=======
                                 "intensity": 0.3,
                                 "gamma": 0.25,
                                 "radius_break": 0.025,
                                 "ell_comps": {
->>>>>>> Stashed changes
                                     "type": "tuple",
                                     "values": [
                                         0.1,
                                         0.1
                                     ]
                                 },
-<<<<<<< Updated upstream
-                                "intensity": 0.3,
-                                "radius_break": 0.025,
-                                "ell_comps": {
-=======
                                 "centre": {
->>>>>>> Stashed changes
                                     "type": "tuple",
                                     "values": [
                                         0.0962250448649376,
                                         -0.05555555555555551
                                     ]
                                 },
-<<<<<<< Updated upstream
-=======
                                 "effective_radius": 1.0,
->>>>>>> Stashed changes
                                 "sersic_index": 2.5
                             }
                         }

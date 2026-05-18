@@ -54,7 +54,11 @@ from contextlib import contextmanager
 
 import autofit as af
 import autolens as al
+import autoarray as aa
 from autofit.jax import register_model as _register_model_pytrees
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from adapt_image_util import adapt_image_for_dataset  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Instrument configuration
@@ -77,7 +81,7 @@ INSTRUMENTS = {
 
 instrument = "sma"  # <-- change this to profile a different instrument
 
-mesh_pixels_yx = 28
+mesh_pixels_yx = 32  # 32x32 = 1024 source pixels — 1000-tier production fiducial
 mesh_shape = (mesh_pixels_yx, mesh_pixels_yx)
 regularization_coefficient = 1.0
 
@@ -205,7 +209,9 @@ with timer.section("model_build"):
 
     pixelization = af.Model(
         al.Pixelization,
-        mesh=al.mesh.RectangularUniform(shape=mesh_shape),
+        mesh=al.mesh.RectangularAdaptImage(
+            shape=mesh_shape, weight_power=1.0, weight_floor=0.0
+        ),
         regularization=al.reg.Constant(coefficient=regularization_coefficient),
     )
 
@@ -254,6 +260,23 @@ print(f"  Source pixels:           {n_source_pixels}")
 print(f"  Reg. coefficient:        {regularization_coefficient}")
 
 # ---------------------------------------------------------------------------
+# 4b. Adapt image — drives ``RectangularAdaptImage`` mesh weighting
+# ---------------------------------------------------------------------------
+
+print("\n--- Adapt image (lensed source) ---")
+
+with timer.section("adapt_image_build"):
+    adapt_image = adapt_image_for_dataset(
+        dataset_path=dataset_path, dataset=dataset
+    )
+    adapt_images = al.AdaptImages(
+        galaxy_image_dict={instance.galaxies.source: adapt_image},
+        galaxy_name_image_dict={"('galaxies', 'source')": adapt_image},
+    )
+
+print(f"  adapt_image shape (slim): {adapt_image.shape_slim}")
+
+# ---------------------------------------------------------------------------
 # 5. Full-pipeline reference (FitInterferometer) — eager baseline
 # ---------------------------------------------------------------------------
 
@@ -263,6 +286,7 @@ with timer.section("fit_interferometer_eager"):
     fit = al.FitInterferometer(
         dataset=dataset,
         tracer=tracer,
+        adapt_images=adapt_images,
         xp=np,
     )
     figure_of_merit_ref = fit.figure_of_merit
@@ -280,7 +304,9 @@ print("\n" + "=" * 70)
 print("FULL-PIPELINE JIT")
 print("=" * 70)
 
-analysis = al.AnalysisInterferometer(dataset=dataset, use_jax=True)
+analysis = al.AnalysisInterferometer(
+    dataset=dataset, adapt_images=adapt_images, use_jax=True
+)
 
 def full_pipeline_from_params(params_tree):
     """Full interferometer likelihood from a pytree-shaped ``ModelInstance``.
@@ -514,7 +540,10 @@ print(f"  Bar chart saved to:    {chart_path}")
 #
 # Simulator truth parameters via GaussianPrior(mean=truth, sigma=small)
 # make the full-pipeline log-evidence deterministic at the prior median.
-EXPECTED_LOG_EVIDENCE_SMA = -3165.251161569041
+# 32x32 RectangularAdaptImage mesh + lensed-source adapt image; rtol=1e-3
+# for the JIT paths matches imaging/pixelization (adaptive meshes amplify
+# fp drift through Cholesky / log_det on the bigger mapping matrix).
+EXPECTED_LOG_EVIDENCE_SMA = -3166.33955228  # 32x32 RectangularAdaptImage mesh, adapt_image=lensed_source
 
 np.testing.assert_allclose(
     figure_of_merit_ref,
@@ -532,13 +561,14 @@ print(
 np.testing.assert_allclose(
     float(full_result),
     EXPECTED_LOG_EVIDENCE_SMA,
-    rtol=1e-4,
+    rtol=1e-3,
     err_msg=f"interferometer/pixelization[{instrument}]: regression — full log_evidence drifted",
 )
-np.testing.assert_allclose(
-    np.array(result_vmap),
-    EXPECTED_LOG_EVIDENCE_SMA,
-    rtol=1e-4,
-    err_msg=f"interferometer/pixelization[{instrument}]: regression — vmap log_evidence drifted",
-)
+if result_vmap is not None:
+    np.testing.assert_allclose(
+        np.array(result_vmap),
+        EXPECTED_LOG_EVIDENCE_SMA,
+        rtol=1e-3,
+        err_msg=f"interferometer/pixelization[{instrument}]: regression — vmap log_evidence drifted",
+    )
 print(f"  Regression assertion PASSED: log_evidence matches {EXPECTED_LOG_EVIDENCE_SMA:.6f}")

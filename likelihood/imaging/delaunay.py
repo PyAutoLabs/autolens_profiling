@@ -54,6 +54,9 @@ import autolens as al
 import autoarray as aa
 from autofit.jax import register_model as _register_model_pytrees
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from adapt_image_util import adapt_image_for_dataset  # noqa: E402
+
 # ---------------------------------------------------------------------------
 # Instrument configuration
 # ---------------------------------------------------------------------------
@@ -208,32 +211,41 @@ with timer.section("mask_and_oversample"):
     )
 
 # ---------------------------------------------------------------------------
-# 2. Image mesh + edge points (Delaunay-specific)
+# 2. Adapt image + image mesh (Hilbert)
 # ---------------------------------------------------------------------------
+#
+# ``image_mesh.Hilbert`` places the source mesh vertices in the image plane by
+# inverse-transform-sampling a Hilbert-curve ordering of the lensed source
+# adapt image. The result is a sparser mesh in faint regions and a denser one
+# where the source actually lives — production-grade, replaces the
+# uniform-coverage ``image_mesh.Overlay`` + circular-edge fallback that
+# preceded the Hilbert path. ``zeroed_pixels=0`` because Hilbert's placement
+# is data-driven; there are no fixed-position edge points to mask out.
 
-print("\n--- Image mesh construction (Delaunay) ---")
+print("\n--- Adapt image (lensed source) ---")
 
-overlay_shape = (39, 39)  # calibrated → 1231 mesh vertices (1201 inside + 30 edge), science fiducial near 1250
-edge_n_points = 30
-
-with timer.section("image_mesh_overlay"):
-    image_mesh = al.image_mesh.Overlay(shape=overlay_shape)
-    image_plane_mesh_grid = image_mesh.image_plane_mesh_grid_from(mask=dataset.mask)
-
-with timer.section("edge_points"):
-    edge_pixels_total = image_plane_mesh_grid.shape[0]
-    image_plane_mesh_grid = al.image_mesh.append_with_circle_edge_points(
-        image_plane_mesh_grid=image_plane_mesh_grid,
-        centre=(0.0, 0.0),
-        radius=mask_radius,
-        n_points=edge_n_points,
+with timer.section("adapt_image_build"):
+    adapt_image = adapt_image_for_dataset(
+        dataset_path=dataset_path, dataset=dataset
     )
-    edge_pixels_total = image_plane_mesh_grid.shape[0] - edge_pixels_total
 
-n_mesh_vertices = image_plane_mesh_grid.shape[0]
-print(f"  Overlay shape: {overlay_shape}")
-print(f"  Mesh vertices (incl. edge): {n_mesh_vertices}")
-print(f"  Edge points added: {edge_pixels_total}")
+print(f"  adapt_image shape (slim): {adapt_image.shape_slim}")
+
+print("\n--- Image mesh construction (Hilbert) ---")
+
+n_mesh_vertices = 1500  # 1500-tier production fiducial
+
+with timer.section("image_mesh_hilbert"):
+    image_mesh = al.image_mesh.Hilbert(
+        pixels=n_mesh_vertices, weight_power=1.0, weight_floor=0.0
+    )
+    image_plane_mesh_grid = image_mesh.image_plane_mesh_grid_from(
+        mask=dataset.mask, adapt_data=adapt_image
+    )
+
+edge_pixels_total = 0
+print(f"  Hilbert pixels: {n_mesh_vertices}")
+print(f"  Mesh vertices placed: {image_plane_mesh_grid.shape[0]}")
 
 # ---------------------------------------------------------------------------
 # 3. Model construction
@@ -272,7 +284,7 @@ with timer.section("model_build"):
 
     mesh = al.mesh.Delaunay(
         pixels=n_mesh_vertices,
-        zeroed_pixels=edge_pixels_total,
+        zeroed_pixels=0,
     )
     regularization = al.reg.ConstantSplit(coefficient=1.0)
     pixelization = al.Pixelization(mesh=mesh, regularization=regularization)
@@ -1110,8 +1122,11 @@ print(f"  Bar chart saved to:    {chart_path}")
 #
 # Simulator truth parameters via GaussianPrior(mean=truth, sigma=small)
 # make the full-pipeline log-evidence deterministic at the prior median.
-# vmap result asserted only when DELAUNAY_VMAP=1 (vmap compile takes 20+ min).
-EXPECTED_LOG_EVIDENCE_HST = 26288.321397232066  # 39x39 overlay → 1231 vertices, MGE-60 lens
+# Hilbert image_mesh + 1500-pixel Delaunay; rtol=1e-3 for the JIT paths
+# matches imaging/pixelization (adaptive meshes amplify fp drift through
+# Cholesky / log_det). vmap result asserted only when DELAUNAY_VMAP=1
+# (vmap compile takes 20+ min).
+EXPECTED_LOG_EVIDENCE_HST = 29110.92085793  # 1500-pixel Hilbert/Delaunay, MGE-60 lens, adapt_image=lensed_source
 
 np.testing.assert_allclose(
     log_evidence_ref,
@@ -1129,14 +1144,14 @@ print(
 np.testing.assert_allclose(
     float(full_result),
     EXPECTED_LOG_EVIDENCE_HST,
-    rtol=1e-4,
+    rtol=1e-3,
     err_msg=f"imaging/delaunay[{instrument}]: regression — full log_evidence drifted",
 )
 if run_vmap:
     np.testing.assert_allclose(
         np.array(result_vmap),
         EXPECTED_LOG_EVIDENCE_HST,
-        rtol=1e-4,
+        rtol=1e-3,
         err_msg=f"imaging/delaunay[{instrument}]: regression — vmap log_evidence drifted",
     )
 print(f"  Regression assertion PASSED: log_evidence matches {EXPECTED_LOG_EVIDENCE_HST:.6f}")

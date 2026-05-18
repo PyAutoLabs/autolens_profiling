@@ -233,6 +233,19 @@ with timer.section("output_fits"):
         overwrite=True,
     )
 
+# Lensed source image (PSF-convolved) — used as the ``adapt_image`` by
+# downstream likelihood scripts that profile ``RectangularAdaptImage`` and
+# ``image_mesh.Hilbert``. Without this artifact the likelihood scripts fall
+# back to lazy-computing it from ``tracer.json`` on first run.
+with timer.section("output_lensed_source"):
+    lensed_source_unblurred = tracer.image_2d_list_from(grid=grid)[-1]
+    lensed_source = psf.convolved_image_from(
+        image=lensed_source_unblurred, blurring_image=None
+    )
+    lensed_source.output_to_fits(
+        file_path=dataset_path / "lensed_source.fits", overwrite=True
+    )
+
 with timer.section("output_json"):
     al.output_to_json(obj=tracer, file_path=dataset_path / "tracer.json")
     al.output_to_json(obj=positions, file_path=dataset_path / "positions.json")

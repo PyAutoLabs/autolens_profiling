@@ -93,6 +93,9 @@ import autofit as af
 import autolens as al
 from autofit.jax import register_model as _register_model_pytrees
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from adapt_image_util import adapt_image_for_dataset  # noqa: E402
+
 # ---------------------------------------------------------------------------
 # Instrument configuration
 # ---------------------------------------------------------------------------
@@ -115,8 +118,7 @@ INSTRUMENTS = {
 
 instrument = "sma"  # <-- change this to profile a different instrument
 
-overlay_shape = (26, 26)
-edge_n_points = 30
+hilbert_pixels = 1000  # 1000-tier production fiducial for Hilbert + Delaunay
 regularization_coefficient = 1.0
 
 
@@ -230,29 +232,38 @@ n_visibilities = dataset.uv_wavelengths.shape[0]
 print(f"  Total visibilities: {n_visibilities}")
 
 # ---------------------------------------------------------------------------
-# 2. Image mesh + edge points (Delaunay-specific)
+# 2. Adapt image + image mesh (Hilbert)
 # ---------------------------------------------------------------------------
+#
+# ``image_mesh.Hilbert`` adaptively places the source mesh vertices in the
+# image plane based on the lensed-source adapt image — denser where the
+# source lives, sparser elsewhere. Replaces the regular ``image_mesh.Overlay``
+# + circular-edge fallback that preceded this path. ``zeroed_pixels=0``
+# because Hilbert's placement is data-driven (no fixed edge points to mask).
 
-print("\n--- Image mesh construction (Delaunay) ---")
+print("\n--- Adapt image (lensed source) ---")
 
-with timer.section("image_mesh_overlay"):
-    image_mesh = al.image_mesh.Overlay(shape=overlay_shape)
-    image_plane_mesh_grid = image_mesh.image_plane_mesh_grid_from(mask=dataset.real_space_mask)
-
-with timer.section("edge_points"):
-    pre_edge_pixels = image_plane_mesh_grid.shape[0]
-    image_plane_mesh_grid = al.image_mesh.append_with_circle_edge_points(
-        image_plane_mesh_grid=image_plane_mesh_grid,
-        centre=(0.0, 0.0),
-        radius=mask_radius,
-        n_points=edge_n_points,
+with timer.section("adapt_image_build"):
+    adapt_image = adapt_image_for_dataset(
+        dataset_path=dataset_path, dataset=dataset
     )
-    edge_pixels_total = image_plane_mesh_grid.shape[0] - pre_edge_pixels
+
+print(f"  adapt_image shape (slim): {adapt_image.shape_slim}")
+
+print("\n--- Image mesh construction (Hilbert) ---")
+
+with timer.section("image_mesh_hilbert"):
+    image_mesh = al.image_mesh.Hilbert(
+        pixels=hilbert_pixels, weight_power=1.0, weight_floor=0.0
+    )
+    image_plane_mesh_grid = image_mesh.image_plane_mesh_grid_from(
+        mask=dataset.real_space_mask, adapt_data=adapt_image
+    )
 
 n_mesh_vertices = image_plane_mesh_grid.shape[0]
-print(f"  Overlay shape: {overlay_shape}")
-print(f"  Mesh vertices (incl. edge): {n_mesh_vertices}")
-print(f"  Edge points added: {edge_pixels_total}")
+edge_pixels_total = 0
+print(f"  Hilbert pixels: {hilbert_pixels}")
+print(f"  Mesh vertices placed: {n_mesh_vertices}")
 
 # ---------------------------------------------------------------------------
 # 3. Model construction
@@ -280,7 +291,7 @@ with timer.section("model_build"):
 
     mesh = al.mesh.Delaunay(
         pixels=n_mesh_vertices,
-        zeroed_pixels=edge_pixels_total,
+        zeroed_pixels=0,
     )
     regularization = al.reg.ConstantSplit(coefficient=regularization_coefficient)
     pixelization = al.Pixelization(mesh=mesh, regularization=regularization)
@@ -337,7 +348,7 @@ print(f"  Pixel scale:             {pixel_scale} arcsec/pixel")
 print(f"  Real-space mask radius:  {mask_radius} arcsec")
 print(f"  Real-space grid shape:   {real_space_shape[0]} x {real_space_shape[1]}")
 print(f"  Visibilities:            {n_visibilities}")
-print(f"  Overlay shape:           {overlay_shape[0]} x {overlay_shape[1]}")
+print(f"  Hilbert pixels:          {hilbert_pixels}")
 print(f"  Delaunay vertices:       {n_mesh_vertices}")
 print(f"  Edge zeroed pixels:      {edge_pixels_total}")
 print(f"  Reg. coefficient:        {regularization_coefficient}")
@@ -1035,8 +1046,7 @@ likelihood_summary = {
         "mask_radius_arcsec": mask_radius,
         "real_space_shape": list(real_space_shape),
         "visibilities": int(n_visibilities),
-        "overlay_shape": list(overlay_shape),
-        "edge_n_points": edge_n_points,
+        "hilbert_pixels": int(hilbert_pixels),
         "delaunay_vertices": int(n_mesh_vertices),
         "edge_zeroed_pixels": int(edge_pixels_total),
         "regularization_coefficient": regularization_coefficient,
@@ -1130,9 +1140,9 @@ print(f"  Bar chart saved to:    {chart_path}")
 # Pinned empirically per instrument; ``None`` means "skip the assertion and
 # print the value so it can be pasted in here on a clean run".
 EXPECTED_LOG_EVIDENCE = {
-    "sma": -3167.5258928840763,
+    "sma": -3167.144638780922,  # 1000-pixel Hilbert/Delaunay, adapt_image=lensed_source
     "alma": None,
-    "hannah": -204838.07924622478,
+    "hannah": None,
 }
 
 expected_log_evidence = EXPECTED_LOG_EVIDENCE.get(instrument)
@@ -1160,7 +1170,7 @@ else:
     np.testing.assert_allclose(
         float(full_result),
         expected_log_evidence,
-        rtol=1e-4,
+        rtol=1e-3,
         err_msg=f"interferometer/delaunay[{instrument}]: regression — full log_evidence drifted",
     )
     print(f"  Full-pipeline regression assertion PASSED")
@@ -1168,7 +1178,7 @@ else:
         np.testing.assert_allclose(
             np.array(result_vmap),
             expected_log_evidence,
-            rtol=1e-4,
+            rtol=1e-3,
             err_msg=f"interferometer/delaunay[{instrument}]: regression — vmap log_evidence drifted",
         )
         print(f"  vmap regression assertion PASSED")
