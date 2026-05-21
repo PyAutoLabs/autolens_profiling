@@ -85,13 +85,13 @@ CONFIGS: list[SweepConfig] = [
     ),
     SweepConfig(
         name="local_gpu_fp64",
-        env_overrides={"JAX_PLATFORM_NAME": "cuda", "JAX_PLATFORMS": "cuda"},
+        env_overrides={"JAX_PLATFORM_NAME": "cuda", "JAX_PLATFORMS": "cuda,cpu"},
         extra_args=(),
         is_gpu=True,
     ),
     SweepConfig(
         name="local_gpu_mp",
-        env_overrides={"JAX_PLATFORM_NAME": "cuda", "JAX_PLATFORMS": "cuda"},
+        env_overrides={"JAX_PLATFORM_NAME": "cuda", "JAX_PLATFORMS": "cuda,cpu"},
         extra_args=("--use-mixed-precision",),
         is_gpu=True,
     ),

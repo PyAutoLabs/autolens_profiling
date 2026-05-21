@@ -19,31 +19,61 @@ follow-up (see the bottom of this doc).
 | Sweep dimension                  | Status |
 |----------------------------------|--------|
 | Local CPU (fp64 + mp)            | ✅ run, numbers below |
-| Local GPU (RTX 2060) fp64 + mp   | ⏸ pending user-launched run (see command below) |
+| Local GPU (RTX 2060) fp64 + mp   | ✅ run, numbers below |
 | HPC A100 fp64 + mp               | ⏸ separate follow-up PR |
 | Imaging cells fresh CPU/GPU      | ⚠ blocked by upstream `Grid2DIrregular.mask` bug — table rows show the pre-existing v2026.5.8.2 / v2026.5.14.2 data |
 
-### Running the local GPU sweep yourself
+## Headline numbers (full pipeline, single JIT per call)
 
-When you're away from the laptop (GPU runs will pin the GPU and slow it
-down for desktop use):
+| Cell                           | CPU fp64 | CPU mp  | GPU fp64 | GPU mp  | GPU vs CPU |
+|--------------------------------|----------|---------|----------|---------|------------|
+| interferometer/mge (NUFFT)     | 261 ms   | 202 ms  | 1.97 s   | 1.43 s  | **8× SLOWER** |
+| interferometer/pixelization    | 753 ms   | 697 ms  | 111 ms   | 106 ms  | **6.8× faster** |
+| interferometer/delaunay        | 881 ms   | 788 ms  | 131 ms   | 138 ms  | **6.7× faster** |
+| datacube/delaunay (34-ch cube) | 197 s    | 165 s   | 18.1 s   | 18.0 s  | **11× faster** |
+
+The headline story splits cleanly:
+
+- **The sparse-DFT cells (pix / del / datacube) all win 6.7–11× on GPU.** Use the
+  GPU for production sampling on these.
+- **NUFFT-on-mge is 8× slower on GPU than on CPU at SMA's 190 visibilities.**
+  nufftax's RTX 2060 lowering doesn't amortize the interpolation+oversampling
+  overhead at small N. **Use `--use-dft` for SMA-class mge sampling on either
+  CPU or GPU**; reserve NUFFT for ALMA-class visibility counts (not yet profiled).
+- **mp gives a meaningful CPU win on every cell** (7–23 %). On GPU the mp win
+  is more variable — meaningful on NUFFT mge (27 %), negligible-to-zero
+  elsewhere. **Default to mp on CPU; flip per cell on GPU.**
+
+## Pending follow-ups
+
+1. **HPC A100 (fp64 + mp)** — separate PR. Local data already says GPU
+   sparse-DFT collapses to O(100 ms) on the consumer GPU; A100 should
+   reach ~10–30 ms per call.
+2. **ALMA dataset for interferometer/mge** — without it the NUFFT-vs-DFT
+   crossover can't be measured. Existing `INSTRUMENTS` preset is wired
+   but the dataset isn't checked in.
+3. **Imaging per-step JIT** — blocked by `PyAutoGalaxy/autogalaxy/profiles/basis.py:151`
+   (`Grid2DIrregular does not have attribute mask`). Upstream fix.
+
+### Re-running the local GPU sweep
 
 ```bash
 source /home/jammy/Code/PyAutoLabs-wt/likelihood-multiconfig-sweep/activate.sh
 cd /home/jammy/Code/PyAutoLabs-wt/likelihood-multiconfig-sweep/autolens_profiling
 
-# 1. GPU-only sweep across all 6 in-scope cells (datacube is the heaviest;
-#    estimate ~30 min total at RTX 2060 fp64+mp throughput).
-JAX_PLATFORM_NAME=cuda JAX_PLATFORMS=cuda /home/jammy/venv/PyAutoGPU/bin/python \
-    scripts/sweep_likelihood.py --skip-cpu
+# GPU-only sweep across the 4 in-scope non-imaging cells.
+JAX_PLATFORM_NAME=cuda JAX_PLATFORMS=cuda,cpu /home/jammy/venv/PyAutoGPU/bin/python \
+    scripts/sweep_likelihood.py --skip-cpu \
+    --only interferometer/mge interferometer/pixelization interferometer/delaunay datacube/delaunay
 
-# 2. Re-aggregate so comparison.{json,png} include the GPU rows.
+# Re-aggregate so comparison.{json,png} include the new rows.
 /home/jammy/venv/PyAutoGPU/bin/python scripts/aggregate_sweep.py
 ```
 
-After both finish, the GPU rows will appear in the tables below the
-next time someone re-renders the doc (the tables are hand-maintained;
-the live source of truth is the `comparison.json` per cell).
+Note: `JAX_PLATFORMS=cuda,cpu` (not just `cuda`) is required because the
+Delaunay and datacube paths use `jax.pure_callback` for Hilbert-curve mesh
+generation, which needs a CPU device available even when the primary
+platform is GPU.
 
 
 ## Reading the cell sections
@@ -160,8 +190,8 @@ correctness gap.
 |-------------------|-------------|---------------|----------------|
 | local_cpu_fp64    | NUFFT       | 261 ms        | 229 ms (1.1×)  |
 | local_cpu_mp      | NUFFT       | 202 ms        | 200 ms (1.0×)  |
-| local_gpu_fp64    | NUFFT       | _GPU sweep_   | _GPU sweep_    |
-| local_gpu_mp      | NUFFT       | _GPU sweep_   | _GPU sweep_    |
+| local_gpu_fp64    | NUFFT       | **1.97 s**    | 616 ms (3.2×)  |
+| local_gpu_mp      | NUFFT       | 1.43 s        | 647 ms (2.2×)  |
 | local_gpu_fp64    | DFT (--use-dft) | _follow-up_   | _follow-up_ |
 | hpc_a100_fp64     | NUFFT       | —             | —              |
 | hpc_a100_mp       | NUFFT       | —             | —              |
@@ -169,18 +199,22 @@ correctness gap.
 For reference, the historical SMA baseline with `TransformerDFT` (pre-PR)
 was **34 ms** full pipeline on CPU with vmap speedup 2.1×.
 
-**Key findings so far**
+**Key findings**
 
-- At SMA's 190 visibilities, NUFFT on CPU is **~8× slower than the
-  historical DFT baseline** (261 ms vs 34 ms). NUFFT's interpolation
-  kernels + oversampling add fixed cost that doesn't amortize at small
-  visibility counts. **The NUFFT swap pays off only at large visibility
-  counts (ALMA-class)** — keep the SMA default on `--use-dft` for any
-  production sampling on SMA-shaped data.
-- **mp gives a real ~23 % CPU win** (261 → 202 ms). The FFT side benefits
-  visibly from fp32 here. Use mp on CPU NUFFT runs.
-- **vmap is neutral** on CPU NUFFT (1.0–1.1×). The historical DFT path
-  showed 2× — the loss is intrinsic to nufftax's CPU lowering.
+- **NUFFT on GPU is dramatically worse than NUFFT on CPU** at SMA's 190
+  visibilities (1.97 s vs 261 ms — 8× slower). The CPU↔GPU crossover
+  goes the *wrong way* on nufftax at this regime: it does NOT amortize
+  the interpolation + oversampling overhead at small visibility counts
+  on RTX 2060.
+- **CPU NUFFT is ~8× slower than the historical CPU DFT baseline**
+  (261 ms vs 34 ms). The NUFFT swap pays off only at large visibility
+  counts (ALMA-class). **Use `--use-dft` for SMA-class mge sampling.**
+- **mp helps everywhere** here: 23 % win on CPU, 27 % win on GPU.
+- **vmap is the bright spot on GPU NUFFT** — 3.2× speedup fp64, 2.2× mp.
+  Unlike the sparse-DFT pixelized cells, vmap *does* batch cleanly on
+  the linear MGE path. With vmap batch=3 the GPU per-likelihood cost
+  drops to 616 ms — still slower than CPU steady-state but the gap
+  closes.
 - **Memory regression** — NUFFT eats 480 MB of XLA temp vs DFT's 17 MB
   on the same dataset (28× more memory). RTX 2060 (6 GB) is approaching
   saturation with vmap batch=3; A100 (80 GB) won't notice but it's a
@@ -190,19 +224,19 @@ was **34 ms** full pipeline on CPU with vmap speedup 2.1×.
 
 1. **Profile against the ALMA `INSTRUMENTS` preset** in the script
    (already wired but never run). That's where NUFFT vs DFT becomes
-   meaningful. On SMA the swap is a regression.
+   meaningful. On SMA the swap is a regression on every measured config.
 2. **Add ALMA dataset under autolens_profiling/dataset/interferometer/alma/**
    so the existing `instrument = "sma"` line in the script can be flipped
    to `"alma"` without manual regeneration.
-3. **GPU NUFFT investigation** — the validation single-run earlier showed
-   1.4 s on GPU. Combined with the 8× CPU regression, this suggests
-   nufftax's GPU lowering on consumer hardware (RTX 2060) is currently
-   unoptimised. May be a knob (interpolation `eps`, oversampling factor)
-   worth exploring.
+3. **GPU NUFFT investigation** — the 8× GPU↔CPU regression suggests
+   nufftax's GPU lowering on consumer hardware is unoptimised at small N.
+   Worth exploring nufftax knobs (`eps`, oversampling factor) before
+   declaring this a permanent state of affairs.
+4. **The 3.2× vmap speedup on GPU** is the strongest signal in this cell —
+   if the sampler hot path is vmap-able, NUFFT-on-GPU is recoverable.
 
-**mp verdict** — **use it** on CPU runs. 23 % CPU win, no measurable
-correctness drift (log-likelihood agrees with fp64 baseline at fp64
-precision on this regime). GPU and A100 to be measured.
+**mp verdict** — **use it** everywhere. 23 % CPU win, 27 % GPU win on
+this cell. No measurable correctness drift.
 
 ---
 
@@ -227,27 +261,33 @@ follow-up note at the bottom for what's needed to lift this constraint.
 |-------------------|---------------|-----------------|--------------|
 | local_cpu_fp64    | 753 ms        | 1.04 s (0.7×)   | −3166.34     |
 | local_cpu_mp      | 697 ms        | 928 ms (0.8×)   | −3166.34     |
-| local_gpu_fp64    | _GPU sweep_   | _GPU sweep_     | _GPU sweep_  |
-| local_gpu_mp      | _GPU sweep_   | _GPU sweep_     | _GPU sweep_  |
+| local_gpu_fp64    | **111 ms**    | 113 ms (1.0×)   | −3166.34     |
+| local_gpu_mp      | 106 ms        | 112 ms (0.9×)   | −3166.34     |
 | hpc_a100_fp64     | —             | —               | —            |
 | hpc_a100_mp       | —             | —               | —            |
 
+**Key finding** — **GPU is 6.8× faster than CPU on this cell** (753 → 111 ms).
+The sparse precision-operator path GPU-lowers extremely well; the dense
+fixed-size linear algebra in the per-fit curvature assembly is exactly the
+workload GPU dominates. This is the clearest GPU win in the sweep so far.
+
 **Where to focus next**
 
-1. **vmap is actively a regression** on this cell (0.7× CPU). The sparse
-   precision-operator solve's matrix dimensions don't batch cleanly along
-   the parameter axis. Do not use vmap here; rely on data-parallel
-   throughput instead.
-2. **The XLA temp footprint is 193 MB** on CPU. On GPU expect that to
-   dominate the 6 GB RTX 2060 budget with any meaningful batching;
-   monitor `nvidia_smi` field in the GPU JSONs.
-3. **Sparse precompute cost is amortised across all per-fit calls** — the
-   753 ms per-call number is the steady-state production cost a sampler
-   pays. The one-time precompute (~few seconds at SMA scale) is excluded
-   from the per-call measurement.
+1. **vmap remains a non-win on GPU** too (1.0× / 0.9×). The sparse
+   precision-matrix solve doesn't batch cleanly along the parameter
+   axis. Use data-parallel throughput (multiple processes / DataParallel)
+   rather than vmap for this cell.
+2. **A100 should reach O(10 ms) per call** based on the 6.8× CPU→consumer-GPU
+   collapse. Likely the cheapest A100 win in the sweep.
+3. **The XLA temp footprint is 193 MB** on CPU. GPU temp wasn't measured
+   in the JSON yet but RTX 2060 has 6 GB headroom; A100 isn't a concern.
+4. **Sparse precompute cost is amortised across all per-fit calls** —
+   the 111 ms per-call number is the steady-state production cost a
+   sampler pays. The one-time precompute (~few seconds at SMA scale) is
+   excluded from the per-call measurement.
 
-**mp verdict** — modest CPU win (~7 %). Worth using; cheap to opt in.
-GPU mp to be measured.
+**mp verdict** — modest win on both CPU (~7 %) and GPU (~5 %). Worth
+using; cheap to opt in.
 
 ---
 
@@ -256,18 +296,36 @@ GPU mp to be measured.
 sampling). SMA dataset. The `apply_sparse_operator` path is the
 production case.*
 
-| Config            | full pipeline | vmap (batch=3)   | log_evidence |
-|-------------------|---------------|------------------|--------------|
-| local_cpu_fp64    | 881 ms        | _vmap intentionally skipped_ | —    |
-| local_cpu_mp      | 788 ms        | _vmap intentionally skipped_ | —    |
-| local_gpu_fp64    | _GPU sweep_   | _GPU sweep_      | _GPU sweep_  |
-| local_gpu_mp      | _GPU sweep_   | _GPU sweep_      | _GPU sweep_  |
-| hpc_a100_fp64     | —             | —                | —            |
-| hpc_a100_mp       | —             | —                | —            |
+| Config            | full pipeline | vmap (batch=3)               | log_evidence |
+|-------------------|---------------|------------------------------|--------------|
+| local_cpu_fp64    | 881 ms        | _vmap intentionally skipped_ | —            |
+| local_cpu_mp      | 788 ms        | _vmap intentionally skipped_ | —            |
+| local_gpu_fp64    | **131 ms**    | _vmap intentionally skipped_ | —            |
+| local_gpu_mp      | 138 ms        | _vmap intentionally skipped_ | —            |
+| hpc_a100_fp64     | —             | —                            | —            |
+| hpc_a100_mp       | —             | —                            | —            |
 
 vmap is intentionally skipped on this cell — opt in with `DELAUNAY_VMAP=1`
 per the script's design. Delaunay mesh construction doesn't batch
 cleanly along the parameter axis.
+
+**Key findings**
+
+- **GPU is 6.7× faster than CPU** (881 → 131 ms). Same magnitude as
+  interferometer/pixelization — the sparse precision-matrix solve dominates
+  both cells and lowers similarly well to GPU.
+- **mp is a wash on GPU** (138 ms vs 131 ms — mp is actually 5 % SLOWER
+  for some reason; possibly the fp32 path triggers an extra cast at the
+  Delaunay/sparse-operator boundary that hurts more than the fp32 speedup
+  helps). Sticking with fp64 is fine here.
+
+**Important caveat: this cell uses `jax.pure_callback`** (for the Hilbert
+mesh generation in the Delaunay path). GPU runs require
+`JAX_PLATFORMS=cuda,cpu` (not just `cuda`) — without the CPU device
+available the callback raises
+`jax.pure_callback failed to find a local CPU device`. The sweep harness
+sets this automatically; document the requirement if anyone hand-runs the
+script with `JAX_PLATFORM_NAME=cuda`.
 
 **Where to focus next**
 
@@ -275,16 +333,13 @@ cleanly along the parameter axis.
    interferometer/delaunay script per-step-JITs the `Inversion setup`
    step as one combined block "steps 5-8 incl. NUFFT"). Re-running with
    the per-step decomposition is a follow-up — the combined block
-   currently swallows ~300 ms of the ~881 ms per call.
-2. **mp gives a real ~11 % CPU win** (881 → 788 ms). Same pattern as the
-   other sparse cells; use mp.
-3. **GPU/A100 numbers** are critical here — the sparse precision-matrix
-   solve is the kind of dense-linear-algebra workload A100 demolishes,
-   so we expect this cell to be near A100-optimal once the HPC sweep
-   lands. The local RTX 2060 numbers will tell us how much of that
-   benefit is reachable on consumer hardware.
+   currently swallows the dominant fraction of the ~131 ms GPU per call.
+2. **mp gives a real ~11 % CPU win** (881 → 788 ms) but is a regression
+   on GPU. Default to CPU mp, GPU fp64 on this cell.
+3. **A100 should land at O(20-30 ms)** based on the 6.7× consumer-GPU win.
 
-**mp verdict** — **use it**. 11 % CPU win, identical log-evidence to fp64.
+**mp verdict** — **use on CPU only** (11 % win); skip on GPU (5 %
+regression). Identical log-evidence to fp64 on both.
 
 ---
 
@@ -302,10 +357,14 @@ per-channel curvature assembly actually goes through.
 |-------------------|---------------------------|------------|
 | local_cpu_fp64    | 197 s                     | —          |
 | local_cpu_mp      | 165 s                     | **−16 %**  |
-| local_gpu_fp64    | _GPU sweep_               | _GPU sweep_ |
-| local_gpu_mp      | _GPU sweep_               | _GPU sweep_ |
-| hpc_a100_fp64     | —                          | —           |
-| hpc_a100_mp       | —                          | —           |
+| local_gpu_fp64    | **18.1 s** (10.9× vs CPU) | —          |
+| local_gpu_mp      | 18.0 s                    | < 1 %      |
+| hpc_a100_fp64     | —                          | —          |
+| hpc_a100_mp       | —                          | —          |
+
+**Headline GPU finding** — **the 34-channel cube drops from 197 s to 18 s on
+GPU** (10.9× faster), making per-cube fits genuinely interactive on RTX 2060.
+A100 should reach sub-10 s territory once the HPC sweep lands.
 
 The cube full-pipeline single-JIT is intentionally skipped on this cell
 (opt in with `CUBE_FULL_JIT=1`) — the per-step cube cost is the
@@ -336,6 +395,22 @@ Curvature F is the canonical mp-friendly step (dense matrix construction
 in fp32 instead of fp64) and shows the cleanest 31 % win; the inversion
 setup's fp32-friendly sub-blocks contribute another 13 %.
 
+**GPU fp64 per-channel cost breakdown (× 34 channels)** — for comparison
+
+| Step                                | per-cube | share | CPU→GPU collapse |
+|-------------------------------------|----------|-------|------------------|
+| Inversion setup, incl. NUFFT        | 12.6 s   | 70 %  | 12×              |
+| Curvature matrix F                  | 3.1 s    | 17 %  | 11×              |
+| Reconstruction NNLS                 | 1.4 s    | 8 %   | 1.2×             |
+| Mapped recon + log evidence         | 0.9 s    | 5 %   | < 1×             |
+| Data vector D                       | 0.06 s   | < 1 % | 122×             |
+
+The inversion-setup step's share rises from 78 % on CPU to 70 % on GPU — it's
+slightly less dominant on GPU but still the bottleneck. NNLS reconstruction
+is the only step that does NOT collapse on GPU (1.2× speedup) — it's the
+serial NNLS solve, which doesn't vectorize. As N_channels grows, NNLS will
+start to dominate the GPU profile (currently 8 % of cube cost).
+
 **Where to focus next**
 
 1. **Per-channel inversion setup** is overwhelmingly dominant (78 % of
@@ -353,10 +428,12 @@ setup's fp32-friendly sub-blocks contribute another 13 %.
 4. **vmap is intentionally skipped** on the cube cell. The natural
    batching axis is "datasets" not "parameters"; the harness honors this.
 
-**mp verdict** — **use it**. 16 % cube-level CPU win, driven primarily
-by the 31 % fp32 win on curvature-matrix construction. GPU mp to be
-measured but expectation is similar or larger (GPU fp32 throughput is
-typically 2× fp64).
+**mp verdict** — **use on CPU only**. 16 % cube-level CPU win, driven
+primarily by the 31 % fp32 win on curvature-matrix construction. On GPU
+the mp delta is < 1 % (18.0 vs 18.1 s) — the cube cost is bottlenecked
+by the per-channel inversion-setup chain which doesn't gain meaningfully
+from fp32 once it's already running on GPU tensor cores. Stick with fp64
+on GPU for this cell.
 
 ---
 
