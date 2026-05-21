@@ -77,12 +77,18 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
     _smoke_sys.exit(0)
 
-INSTRUMENTS = {
-    "euclid": {"pixel_scale": 0.1},
-    "hst": {"pixel_scale": 0.05},
-    "jwst": {"pixel_scale": 0.03},
-    "ao": {"pixel_scale": 0.01},
-}
+# Sweep-driver CLI args (--config-name / --output-dir / --use-mixed-precision).
+# Tolerates extra/unknown args via parse_known_args inside the helper.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from _profile_cli import (  # noqa: E402
+    parse_profile_cli,
+    device_info_dict,
+    resolve_output_paths,
+    auto_simulate_if_missing,
+)
+from simulators.imaging import INSTRUMENTS  # noqa: E402
+_cli = parse_profile_cli()
 
 instrument = "hst"  # <-- change this to profile a different instrument
 
@@ -172,14 +178,12 @@ _workspace_root = _script_dir.parents[1]
 pixel_scale = INSTRUMENTS[instrument]["pixel_scale"]
 dataset_path = Path("dataset") / "imaging" / instrument
 
-if al.util.dataset.should_simulate(str(dataset_path)):
-    raise FileNotFoundError(
-        f"Input dataset missing at '{dataset_path}'. The autolens_profiling "
-        f"repo mirrors only the curated datasets needed for default smoke "
-        f"runs. To regenerate or extend datasets, use the source-of-truth "
-        f"scripts under autolens_workspace_developer/jax_profiling/dataset_setup/, "
-        f"then copy the result into autolens_profiling/dataset/."
-    )
+auto_simulate_if_missing(
+    dataset_path,
+    dataset_type="imaging",
+    instrument=instrument,
+    workspace_root=_workspace_root,
+)
 
 with timer.section("dataset_load"):
     dataset = al.Imaging.from_fits(

@@ -122,23 +122,20 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 # Sweep-driver CLI args (--config-name / --output-dir / --use-mixed-precision).
 # Tolerates extra/unknown args via parse_known_args inside the helper.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from _profile_cli import (  # noqa: E402
     parse_profile_cli,
     device_info_dict,
     resolve_output_paths,
+    auto_simulate_if_missing,
 )
+from simulators.interferometer import INSTRUMENTS  # noqa: E402
 _cli = parse_profile_cli()
 
-INSTRUMENTS = {
-    "sma": {"pixel_scale": 0.1, "real_space_shape": (256, 256), "mask_radius": 3.0},
-    "alma": {"pixel_scale": 0.05, "real_space_shape": (256, 256), "mask_radius": 3.0},
-    "hannah": {"pixel_scale": 0.125, "real_space_shape": (40, 40), "mask_radius": 2.3},
-}
+instrument = "sma"  # <-- change to profile a different instrument; cube is N copies of the per-instrument dataset
 
-instrument = "hannah"  # <-- realistic ALMA settings for Hannah's science case
-
-# n_channels = 34 matches Hannah's real ALMA cube. For quick iteration on the
-# smaller SMA dataset, drop this to 4 (also flip ``instrument`` back to "sma").
+# n_channels = 34 matches the prior Hannah ALMA cube fiducial. For quick
+# iteration on the smaller sma dataset, drop this to 4.
 n_channels = 34
 hilbert_pixels = 500  # 500-tier production fiducial per channel (× n_channels)
 regularization_coefficient = 1.0
@@ -212,14 +209,12 @@ pixel_scale = INSTRUMENTS[instrument]["pixel_scale"]
 real_space_shape = INSTRUMENTS[instrument]["real_space_shape"]
 dataset_path = Path("dataset") / "interferometer" / instrument
 
-if al.util.dataset.should_simulate(str(dataset_path)):
-    raise FileNotFoundError(
-        f"Input dataset missing at '{dataset_path}'. The autolens_profiling "
-        f"repo mirrors only the curated datasets needed for default smoke "
-        f"runs. To regenerate or extend datasets, use the source-of-truth "
-        f"scripts under autolens_workspace_developer/jax_profiling/dataset_setup/, "
-        f"then copy the result into autolens_profiling/dataset/."
-    )
+auto_simulate_if_missing(
+    dataset_path,
+    dataset_type="interferometer",
+    instrument=instrument,
+    workspace_root=_workspace_root,
+)
 
 mask_radius = INSTRUMENTS[instrument]["mask_radius"]
 
@@ -1039,7 +1034,7 @@ print(f"  Bar chart saved to:    {chart_path}")
 EXPECTED_LOG_EVIDENCE_PER_CHANNEL = {
     "sma": None,
     "alma": None,
-    "hannah": -204775.92791614376,  # 500-pixel Hilbert/Delaunay, adapt_image=lensed_source
+    "alma_high": None,
 }
 
 _per_channel = EXPECTED_LOG_EVIDENCE_PER_CHANNEL.get(instrument)

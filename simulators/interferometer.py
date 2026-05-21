@@ -1,304 +1,403 @@
 """
-Simulator Profiling: Interferometer
-=====================================
+Simulator + Profiler: Instrument-Based Interferometer Datasets
+==============================================================
 
-Profiles `autolens_workspace/scripts/interferometer/simulator.py` to pinpoint
-where time goes during simulation. Times the following phases:
+Single dual-purpose module:
 
-- Grid setup (256×256 @ 0.1"/px; no over-sampling for interferometry)
-- Synthetic uv_wavelengths construction (100 baselines inline — no disk file)
-- SimulatorInterferometer + TransformerDFT setup
-- Galaxy and tracer construction
-- `tracer.image_2d_from` (eager + JIT)
-- `simulator.via_tracer_from` (DFT to visibilities — expected bottleneck)
-- `solver.solve` (eager)
-- FITS + JSON output
+1. **Simulates** an interferometer dataset for one of the ``INSTRUMENTS``
+   presets (``sma`` / ``alma`` / ``alma_high``). Writes ``data.fits``,
+   ``noise_map.fits``, ``uv_wavelengths.fits``, ``lensed_source.fits``,
+   ``positions.json`` and ``tracer.json`` into
+   ``dataset/interferometer/<instrument>/``.
 
-Run from any path:
-    python simulators/interferometer.py
+2. **Profiles** each phase of the simulator pipeline (grid setup, uv
+   generation, simulator construction, eager + JIT ``image_2d_from``,
+   ``via_tracer_from``, ``PointSolver.solve``, fits output) using a
+   per-section timer and writes
+   ``results/simulators/interferometer_<instrument>_summary_v<ver>.{json,png}``.
+
+``INSTRUMENTS`` is the single source of truth for all interferometer
+likelihood scripts — they import it directly::
+
+    from simulators.interferometer import INSTRUMENTS
+
+The auto-simulate hook in those scripts (via
+``_profile_cli.auto_simulate_if_missing``) shells out to this script's
+``--instrument`` CLI when the dataset is missing.
+
+Usage
+-----
+
+    python simulators/interferometer.py                          # sma (default)
+    python simulators/interferometer.py --instrument alma        # 1M vis ALMA
+    python simulators/interferometer.py --instrument alma_high   # 10M vis
 """
 
-from autoconf import jax_wrapper  # noqa: F401 — must be first
-
-import json
-import time
-from contextlib import contextmanager
 from pathlib import Path
 
-import numpy as np
-import jax
-import jax.numpy as jnp
-import matplotlib
-
-
-# AUTOLENS_PROFILING_SMOKE=1 short-circuit (Phase 5 / CI lint smoke).
-# Verifies the import graph + module-level setup succeeded without running
-# the full profiling pipeline. Skipped entirely when the env var is unset.
-import os as _smoke_os
-import sys as _smoke_sys
-if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
-    print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
-    _smoke_sys.exit(0)
-
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-
-import autolens as al
-import autolens.plot as aplt
-
 
 # ---------------------------------------------------------------------------
-# Helpers
+# Instrument definitions — single source of truth
 # ---------------------------------------------------------------------------
+#
+# Each preset bundles BOTH simulation-time and likelihood-fit-time fields,
+# so the likelihood scripts that import this dict get pixel_scale /
+# real_space_shape / mask_radius while the simulator code in this module
+# also gets n_visibilities / uv_scale / noise_sigma / seed.
 
-
-class Timer:
-    def __init__(self):
-        self.records: list[tuple[str, float]] = []
-
-    @contextmanager
-    def section(self, label: str):
-        start = time.perf_counter()
-        yield
-        elapsed = time.perf_counter() - start
-        self.records.append((label, elapsed))
-        print(f"  [{label}] {elapsed:.4f} s")
-
-    def summary(self):
-        print("\n" + "=" * 70)
-        print("PROFILING SUMMARY")
-        print("=" * 70)
-        max_label = max(len(r[0]) for r in self.records)
-        total = 0.0
-        for label, elapsed in self.records:
-            print(f"  {label:<{max_label}}  {elapsed:>10.4f} s")
-            total += elapsed
-        print("-" * 70)
-        print(f"  {'TOTAL':<{max_label}}  {total:>10.4f} s")
-        print("=" * 70)
-
-
-def block(x):
-    if hasattr(x, "block_until_ready"):
-        x.block_until_ready()
-    return x
-
-
-def jit_profile(func, label, *args, n_repeats=10):
-    jitted = jax.jit(func)
-
-    with timer.section(f"{label}_lower"):
-        lowered = jitted.lower(*args)
-
-    with timer.section(f"{label}_compile"):
-        compiled = lowered.compile()
-
-    with timer.section(f"{label}_first_call"):
-        result = compiled(*args)
-        block(result)
-
-    with timer.section(f"{label}_steady_x{n_repeats}"):
-        for _ in range(n_repeats):
-            result = compiled(*args)
-            block(result)
-
-    per_call = timer.records[-1][1] / n_repeats
-    print(f"    -> per-call avg: {per_call:.6f} s")
-    return compiled, result
-
-
-timer = Timer()
-
-_script_dir = Path(__file__).resolve().parent
-_workspace_root = _script_dir.parents[0]
-
-dataset_name = "simple"
-dataset_path = (
-    _workspace_root / "dataset" / "interferometer" / dataset_name
-)
-dataset_path.mkdir(parents=True, exist_ok=True)
-
-
-# === PART 1 — Setup ===
-
-print("\n--- PART 1: Setup ---")
-
-with timer.section("setup_grids"):
-    # Interferometer does not use over-sampling
-    grid = al.Grid2D.uniform(shape_native=(256, 256), pixel_scales=0.1)
-
-with timer.section("setup_uv_wavelengths"):
-    # Inline synthetic baselines — 100 visibilities covering ~10–500 klambda
-    np.random.seed(42)
-    n_vis = 100
-    uv_wavelengths = np.random.uniform(low=10_000, high=500_000, size=(n_vis, 2))
-
-with timer.section("setup_simulator"):
-    simulator = al.SimulatorInterferometer(
-        uv_wavelengths=uv_wavelengths,
-        exposure_time=300.0,
-        noise_sigma=1000.0,
-        transformer_class=al.TransformerDFT,
-    )
-
-with timer.section("setup_galaxies"):
-    lens_galaxy = al.Galaxy(
-        redshift=0.5,
-        mass=al.mp.Isothermal(
-            centre=(0.0, 0.0),
-            einstein_radius=1.6,
-            ell_comps=al.convert.ell_comps_from(axis_ratio=0.9, angle=45.0),
-        ),
-        shear=al.mp.ExternalShear(gamma_1=0.05, gamma_2=0.05),
-    )
-    source_galaxy = al.Galaxy(
-        redshift=1.0,
-        bulge=al.lp.SersicCore(
-            centre=(0.0, 0.0),
-            ell_comps=al.convert.ell_comps_from(axis_ratio=0.8, angle=60.0),
-            intensity=0.3,
-            effective_radius=1.0,
-            sersic_index=2.5,
-        ),
-    )
-
-with timer.section("setup_tracer"):
-    tracer = al.Tracer(galaxies=[lens_galaxy, source_galaxy])
-
-
-# === PART 2 — image_2d_from: eager + JIT ===
-
-print("\n--- PART 2: tracer.image_2d_from (eager + JIT) ---")
-
-with timer.section("image_2d_eager"):
-    image_eager = tracer.image_2d_from(grid=grid)
-
-
-def _image_fn(grid_array):
-    return tracer.image_2d_from(grid=grid, xp=jnp).array
-
-
-jnp_grid = jnp.asarray(grid.array)
-_, image_jit = jit_profile(_image_fn, "image_2d_jit", jnp_grid)
-
-np.testing.assert_allclose(
-    np.asarray(image_eager.array),
-    np.asarray(image_jit),
-    rtol=1e-4,
-    err_msg="interferometer: eager vs JIT image_2d_from mismatch",
-)
-print("  eager ≡ JIT assertion PASSED")
-
-
-# === PART 3 — via_tracer_from (DFT bottleneck) ===
-
-print("\n--- PART 3: simulator.via_tracer_from (DFT) ---")
-
-np.random.seed(1)
-with timer.section("via_tracer_from"):
-    dataset = simulator.via_tracer_from(tracer=tracer, grid=grid)
-
-
-# === PART 4 — solver.solve ===
-
-print("\n--- PART 4: solver.solve ---")
-
-with timer.section("solver_build"):
-    solver = al.PointSolver.for_grid(
-        grid=grid, pixel_scale_precision=0.001, magnification_threshold=0.1
-    )
-
-with timer.section("solver_solve_eager"):
-    positions = solver.solve(
-        tracer=tracer, source_plane_coordinate=source_galaxy.bulge.centre
-    )
-
-
-# === PART 5 — outputs ===
-
-print("\n--- PART 5: outputs ---")
-
-with timer.section("output_fits"):
-    aplt.fits_interferometer(
-        dataset=dataset,
-        data_path=dataset_path / "data.fits",
-        noise_map_path=dataset_path / "noise_map.fits",
-        uv_wavelengths_path=dataset_path / "uv_wavelengths.fits",
-        overwrite=True,
-    )
-
-# Lensed source image (real-space, pre-NUFFT) — used as the ``adapt_image``
-# by downstream interferometer + datacube likelihood scripts that profile
-# ``RectangularAdaptImage`` and ``image_mesh.Hilbert``. No PSF convolution
-# here; the visibility transform lives downstream in the likelihood path.
-with timer.section("output_lensed_source"):
-    lensed_source = tracer.image_2d_list_from(grid=grid)[-1]
-    lensed_source.output_to_fits(
-        file_path=dataset_path / "lensed_source.fits", overwrite=True
-    )
-
-with timer.section("output_json"):
-    al.output_to_json(obj=tracer, file_path=dataset_path / "tracer.json")
-
-
-# === Summary ===
-
-al_version = al.__version__
-results_dir = _workspace_root / "results" / "simulators"
-results_dir.mkdir(parents=True, exist_ok=True)
-
-phases = dict(timer.records)
-
-results_summary = {
-    "autolens_version": al_version,
-    "type": "interferometer",
-    "configuration": {
-        "grid_shape": [256, 256],
-        "pixel_scales": 0.1,
-        "n_visibilities": n_vis,
-        "transformer": "TransformerDFT",
+INSTRUMENTS = {
+    "sma": {
+        "pixel_scale": 0.1,
+        "real_space_shape": (256, 256),
+        "mask_radius": 3.5,
+        "n_visibilities": 190,
+        "uv_scale": 3.0e5,
+        "noise_sigma": 1000.0,
+        "seed": 1,
     },
-    "phases": phases,
-    "key_timings": {
-        "image_2d_eager_s": phases.get("image_2d_eager"),
-        "via_tracer_from_s": phases.get("via_tracer_from"),
-        "solver_solve_eager_s": phases.get("solver_solve_eager"),
+    "alma": {
+        "pixel_scale": 0.05,
+        "real_space_shape": (800, 800),
+        "mask_radius": 3.5,
+        "n_visibilities": 1_000_000,
+        "uv_scale": 2.0e6,
+        "noise_sigma": 100.0,
+        "seed": 1,
+    },
+    "alma_high": {
+        "pixel_scale": 0.125,
+        "real_space_shape": (800, 800),
+        "mask_radius": 3.5,
+        "n_visibilities": 10_000_000,
+        "uv_scale": 2.0e6,
+        "noise_sigma": 100.0,
+        "seed": 1,
     },
 }
 
-json_path = results_dir / f"interferometer_summary_v{al_version}.json"
-json_path.write_text(json.dumps(results_summary, indent=2))
-print(f"\n  Results saved to: {json_path}")
 
-labels = [r[0] for r in timer.records]
-times = [r[1] for r in timer.records]
-colors = plt.cm.tab20.colors[: len(labels)]
+_REPO_ROOT = Path(__file__).resolve().parents[1]  # autolens_profiling/
 
-fig, ax = plt.subplots(figsize=(12, max(4.0, len(labels) * 0.45)))
-y_pos = range(len(labels))
-bars = ax.barh(y_pos, times, color=colors, edgecolor="white", height=0.6)
-for bar, t in zip(bars, times):
-    ax.text(
-        bar.get_width() + max(times) * 0.01,
-        bar.get_y() + bar.get_height() / 2,
-        f"{t:.4f} s",
-        va="center",
-        fontsize=8,
+
+def simulate(instrument: str = "sma", output_root: Path | None = None) -> Path:
+    """Simulate + profile the named instrument. Returns the dataset directory."""
+    # Lazy imports — only run when the function is invoked, so module import
+    # by a likelihood script just to pick up INSTRUMENTS is side-effect-free.
+    import json
+    import time
+    from contextlib import contextmanager
+
+    import numpy as np
+    import jax
+    import jax.numpy as jnp
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    import autolens as al
+    import autolens.plot as aplt
+
+    if instrument not in INSTRUMENTS:
+        raise ValueError(
+            f"Unknown instrument '{instrument}'. "
+            f"Choose from: {list(INSTRUMENTS.keys())}"
+        )
+
+    config = INSTRUMENTS[instrument]
+    pixel_scale = config["pixel_scale"]
+    real_space_shape = config["real_space_shape"]
+    n_visibilities = config["n_visibilities"]
+    uv_scale = config["uv_scale"]
+    noise_sigma = config["noise_sigma"]
+    seed = config["seed"]
+
+    root = output_root if output_root is not None else _REPO_ROOT
+    dataset_path = root / "dataset" / "interferometer" / instrument
+    dataset_path.mkdir(parents=True, exist_ok=True)
+
+    class Timer:
+        def __init__(self):
+            self.records: list[tuple[str, float]] = []
+
+        @contextmanager
+        def section(self, label: str):
+            start = time.perf_counter()
+            yield
+            elapsed = time.perf_counter() - start
+            self.records.append((label, elapsed))
+            print(f"  [{label}] {elapsed:.4f} s")
+
+        def summary(self):
+            print("\n" + "=" * 70)
+            print("PROFILING SUMMARY")
+            print("=" * 70)
+            max_label = max(len(r[0]) for r in self.records)
+            total = 0.0
+            for label, elapsed in self.records:
+                print(f"  {label:<{max_label}}  {elapsed:>10.4f} s")
+                total += elapsed
+            print("-" * 70)
+            print(f"  {'TOTAL':<{max_label}}  {total:>10.4f} s")
+            print("=" * 70)
+
+    def block(x):
+        if hasattr(x, "block_until_ready"):
+            x.block_until_ready()
+        return x
+
+    def jit_profile(func, label, *args, n_repeats=10):
+        jitted = jax.jit(func)
+        with timer.section(f"{label}_lower"):
+            lowered = jitted.lower(*args)
+        with timer.section(f"{label}_compile"):
+            compiled = lowered.compile()
+        with timer.section(f"{label}_first_call"):
+            result = compiled(*args)
+            block(result)
+        with timer.section(f"{label}_steady_x{n_repeats}"):
+            for _ in range(n_repeats):
+                result = compiled(*args)
+                block(result)
+        per_call = timer.records[-1][1] / n_repeats
+        print(f"    -> per-call avg: {per_call:.6f} s")
+        return compiled, result
+
+    timer = Timer()
+
+    print(f"\n--- Interferometer simulator + profiler [{instrument}] ---")
+    print(f"  pixel_scale:     {pixel_scale} arcsec/px")
+    print(f"  real_space_shape: {real_space_shape[0]} x {real_space_shape[1]}")
+    print(f"  n_visibilities:  {n_visibilities:,}")
+    print(f"  output:          {dataset_path}")
+
+    # === PART 1 — Setup ===
+
+    print("\n--- PART 1: Setup ---")
+
+    with timer.section("setup_grids"):
+        # Interferometer does not use over-sampling
+        grid = al.Grid2D.uniform(shape_native=real_space_shape, pixel_scales=pixel_scale)
+
+    with timer.section("setup_uv_wavelengths"):
+        # Synthetic baselines drawn from a 2D isotropic Gaussian whose 3-sigma
+        # envelope matches ``uv_scale``. Crude vs real instrument coverage but
+        # sufficient for profiling. Seeded for reproducibility.
+        rng = np.random.default_rng(seed)
+        uv_wavelengths = rng.normal(
+            loc=0.0, scale=uv_scale / 3.0, size=(n_visibilities, 2)
+        ).astype(np.float64)
+
+    with timer.section("setup_simulator"):
+        simulator = al.SimulatorInterferometer(
+            uv_wavelengths=uv_wavelengths,
+            exposure_time=300.0,
+            noise_sigma=noise_sigma,
+            transformer_class=al.TransformerDFT,
+            noise_seed=seed,
+        )
+
+    with timer.section("setup_galaxies"):
+        lens_galaxy = al.Galaxy(
+            redshift=0.5,
+            mass=al.mp.Isothermal(
+                centre=(0.0, 0.0),
+                einstein_radius=1.6,
+                ell_comps=al.convert.ell_comps_from(axis_ratio=0.9, angle=45.0),
+            ),
+            shear=al.mp.ExternalShear(gamma_1=0.05, gamma_2=0.05),
+        )
+        source_galaxy = al.Galaxy(
+            redshift=1.0,
+            bulge=al.lp.SersicCore(
+                centre=(0.1, 0.1),
+                ell_comps=al.convert.ell_comps_from(axis_ratio=0.8, angle=60.0),
+                intensity=0.3,
+                effective_radius=1.0,
+                sersic_index=2.5,
+            ),
+        )
+
+    with timer.section("setup_tracer"):
+        tracer = al.Tracer(galaxies=[lens_galaxy, source_galaxy])
+
+    # === PART 2 — image_2d_from: eager + JIT ===
+
+    print("\n--- PART 2: tracer.image_2d_from (eager + JIT) ---")
+
+    with timer.section("image_2d_eager"):
+        image_eager = tracer.image_2d_from(grid=grid)
+
+    def _image_fn(grid_array):
+        return tracer.image_2d_from(grid=grid, xp=jnp).array
+
+    jnp_grid = jnp.asarray(grid.array)
+    _, image_jit = jit_profile(_image_fn, "image_2d_jit", jnp_grid)
+
+    np.testing.assert_allclose(
+        np.asarray(image_eager.array),
+        np.asarray(image_jit),
+        rtol=1e-4,
+        err_msg="interferometer: eager vs JIT image_2d_from mismatch",
     )
-ax.set_yticks(y_pos)
-ax.set_yticklabels(labels, fontsize=9)
-ax.invert_yaxis()
-ax.set_xlabel("Time (s)", fontsize=11)
-fig.suptitle("Simulator Profiling: Interferometer", fontsize=12, fontweight="bold")
-ax.set_title(
-    f'AutoLens v{al_version}  |  256×256 @ 0.1"/px  |  {n_vis} visibilities (DFT)',
-    fontsize=9,
-)
-ax.margins(x=0.22)
-fig.tight_layout()
-chart_path = results_dir / f"interferometer_summary_v{al_version}.png"
-fig.savefig(chart_path, dpi=150)
-plt.close(fig)
-print(f"  Bar chart saved to: {chart_path}")
+    print("  eager ≡ JIT assertion PASSED")
 
-timer.summary()
+    # === PART 3 — via_tracer_from (DFT bottleneck) ===
+
+    print("\n--- PART 3: simulator.via_tracer_from (DFT) ---")
+
+    with timer.section("via_tracer_from"):
+        dataset = simulator.via_tracer_from(tracer=tracer, grid=grid)
+
+    # === PART 4 — solver.solve ===
+
+    print("\n--- PART 4: solver.solve ---")
+
+    with timer.section("solver_build"):
+        solver = al.PointSolver.for_grid(
+            grid=grid, pixel_scale_precision=0.001, magnification_threshold=0.1
+        )
+
+    with timer.section("solver_solve_eager"):
+        positions = solver.solve(
+            tracer=tracer, source_plane_coordinate=source_galaxy.bulge.centre
+        )
+
+    # === PART 5 — outputs ===
+
+    print("\n--- PART 5: outputs ---")
+
+    with timer.section("output_fits"):
+        aplt.fits_interferometer(
+            dataset=dataset,
+            data_path=dataset_path / "data.fits",
+            noise_map_path=dataset_path / "noise_map.fits",
+            uv_wavelengths_path=dataset_path / "uv_wavelengths.fits",
+            overwrite=True,
+        )
+
+    # Lensed source image (real-space, pre-NUFFT) — used as the ``adapt_image``
+    # by downstream interferometer + datacube likelihood scripts that profile
+    # ``RectangularAdaptImage`` and ``image_mesh.Hilbert``. No PSF convolution
+    # here; the visibility transform lives downstream in the likelihood path.
+    with timer.section("output_lensed_source"):
+        lensed_source = tracer.image_2d_list_from(grid=grid)[-1]
+        lensed_source.output_to_fits(
+            file_path=dataset_path / "lensed_source.fits", overwrite=True
+        )
+
+    with timer.section("output_positions"):
+        al.output_to_json(obj=positions, file_path=dataset_path / "positions.json")
+
+    with timer.section("output_tracer"):
+        al.output_to_json(obj=tracer, file_path=dataset_path / "tracer.json")
+
+    # === Summary ===
+
+    al_version = al.__version__
+    results_dir = root / "results" / "simulators"
+    results_dir.mkdir(parents=True, exist_ok=True)
+
+    phases = dict(timer.records)
+
+    results_summary = {
+        "autolens_version": al_version,
+        "type": "interferometer",
+        "instrument": instrument,
+        "configuration": {
+            "grid_shape": list(real_space_shape),
+            "pixel_scales": pixel_scale,
+            "n_visibilities": n_visibilities,
+            "uv_scale": uv_scale,
+            "noise_sigma": noise_sigma,
+            "transformer": "TransformerDFT",
+        },
+        "phases": phases,
+        "key_timings": {
+            "image_2d_eager_s": phases.get("image_2d_eager"),
+            "via_tracer_from_s": phases.get("via_tracer_from"),
+            "solver_solve_eager_s": phases.get("solver_solve_eager"),
+        },
+    }
+
+    json_path = results_dir / f"interferometer_{instrument}_summary_v{al_version}.json"
+    json_path.write_text(json.dumps(results_summary, indent=2))
+    print(f"\n  Results saved to: {json_path}")
+
+    labels = [r[0] for r in timer.records]
+    times = [r[1] for r in timer.records]
+    colors = plt.cm.tab20.colors[: len(labels)]
+
+    fig, ax = plt.subplots(figsize=(12, max(4.0, len(labels) * 0.45)))
+    y_pos = range(len(labels))
+    bars = ax.barh(y_pos, times, color=colors, edgecolor="white", height=0.6)
+    for bar, t in zip(bars, times):
+        ax.text(
+            bar.get_width() + max(times) * 0.01,
+            bar.get_y() + bar.get_height() / 2,
+            f"{t:.4f} s",
+            va="center",
+            fontsize=8,
+        )
+    ax.set_yticks(y_pos)
+    ax.set_yticklabels(labels, fontsize=9)
+    ax.invert_yaxis()
+    ax.set_xlabel("Time (s)", fontsize=11)
+    fig.suptitle(
+        f"Simulator Profiling: Interferometer ({instrument})",
+        fontsize=12,
+        fontweight="bold",
+    )
+    ax.set_title(
+        f"AutoLens v{al_version}  |  "
+        f"{real_space_shape[0]}×{real_space_shape[1]} @ {pixel_scale}\"/px  |  "
+        f"{n_visibilities:,} visibilities (DFT)",
+        fontsize=9,
+    )
+    ax.margins(x=0.22)
+    fig.tight_layout()
+    chart_path = results_dir / f"interferometer_{instrument}_summary_v{al_version}.png"
+    fig.savefig(chart_path, dpi=150)
+    plt.close(fig)
+    print(f"  Bar chart saved to: {chart_path}")
+
+    timer.summary()
+
+    return dataset_path
+
+
+if __name__ == "__main__":
+    # autoconf.jax_wrapper must be imported first (sets up env before jax
+    # actually loads). Doing it here rather than at module level keeps the
+    # module import side-effect-free for likelihood scripts that pull
+    # ``INSTRUMENTS`` without wanting to trigger the autoconf shim.
+    from autoconf import jax_wrapper  # noqa: F401
+
+    import argparse
+    import os
+    import sys
+
+    # Smoke gate — only meaningful when running as a script, not on import.
+    if os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
+        print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
+        sys.exit(0)
+
+    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    parser.add_argument(
+        "--instrument",
+        type=str,
+        default="sma",
+        choices=list(INSTRUMENTS.keys()),
+        help="Instrument preset to simulate + profile (default: sma).",
+    )
+    parser.add_argument(
+        "--output-root",
+        type=Path,
+        default=None,
+        help=(
+            "Override the autolens_profiling root that holds dataset/. "
+            "Defaults to the repo root inferred from this file's location."
+        ),
+    )
+    args = parser.parse_args()
+    simulate(instrument=args.instrument, output_root=args.output_root)
