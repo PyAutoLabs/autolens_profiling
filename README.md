@@ -24,23 +24,9 @@ Results are framed by **astronomy instrument** (HST, Euclid, JWST, …) rather t
 
 ## Latest run-times
 
-The table below is auto-generated from the latest versioned artifacts under `results/`. Each row is the latest steady-state per-call cost for a likelihood path at a given instrument; numbers refresh whenever the producing scripts are rerun and committed. Hardware tier is **CPU only** today — laptop GPU and HPC GPU columns will land once `results/**` artifacts are tagged with a hardware label.
+Cell-level full-pipeline numbers live in [`likelihood_runtime/OPTIMIZATION_NOTES.md`](./likelihood_runtime/OPTIMIZATION_NOTES.md), which carries the latest CPU + local-GPU per-call costs together with per-cell "where to optimize next" recommendations and the mp-vs-fp64 verdicts. The detailed multi-config `comparison.json` artifacts are committed under [`autolens_workspace_developer/jax_profiling/results/jit/<class>/<model>/`](https://github.com/PyAutoLabs/autolens_workspace_developer/tree/main/jax_profiling/results/jit) and are re-aggregated by `likelihood_runtime/aggregate.py` whenever a new sweep finishes.
 
-<!-- BEGIN auto-table:headline -->
-| Section | Script | Instrument | Latest single-JIT per-call | PyAutoLens version |
-|---------|--------|------------|----------------------------|--------------------|
-| likelihood/datacube | `delaunay.py` | hannah | — | v2026.5.14.2 |
-| likelihood/imaging | `delaunay.py` | hst | 833.4 ms | v2026.5.14.2 |
-| likelihood/imaging | `mge.py` | hst | 41.6 ms | v2026.5.14.2 |
-| likelihood/imaging | `pixelization.py` | hst | 782.3 ms | v2026.5.14.2 |
-| likelihood/interferometer | `delaunay.py` | sma | 154.5 ms | v2026.5.14.2 |
-| likelihood/interferometer | `mge.py` | sma | 33.6 ms | v2026.5.14.2 |
-| likelihood/interferometer | `pixelization.py` | sma | 113.6 ms | v2026.5.14.2 |
-| likelihood/point_source | `image_plane.py` | — | 22.5 ms | v2026.5.14.2 |
-| likelihood/point_source | `source_plane.py` | — | 691 μs | v2026.5.14.2 |
-<!-- END auto-table:headline -->
-
-(Generator: `scripts/build_readme.py`. Run `python scripts/build_readme.py` after producing new artifacts to refresh; `--check` exits non-zero in CI if it would change anything.)
+(The previous auto-generated table in this README was retired when the likelihood profiling was split into `likelihood_breakdown/` + `likelihood_runtime/`; `scripts/build_readme.py` is queued for a path-update follow-up.)
 
 ## JAX gradients — currently out of scope
 
@@ -67,7 +53,8 @@ Examples that already exist in the source-of-truth repo:
 
 | Folder | Contents |
 |--------|----------|
-| [`likelihood/`](./likelihood/README.md) | Likelihood JIT profiling — imaging, interferometer, point-source, datacube. |
+| [`likelihood_breakdown/`](./likelihood_breakdown/README.md) | Per-step JIT decomposition. Single config. *Where does time go inside the likelihood?* |
+| [`likelihood_runtime/`](./likelihood_runtime/README.md) | Full-pipeline JIT only, driven by `sweep.py` across CPU/GPU/A100 × fp64/mp. *How long will this likelihood take on this hardware?* |
 | [`simulators/`](./simulators/README.md) | Run-time tracking for the PyAutoLens simulators. |
 | [`searches/`](./searches/README.md) | Sampler / search profiling, Nautilus first. |
 | [`results/`](./results/README.md) | Versioned JSON + PNG artifacts written by the above scripts. |

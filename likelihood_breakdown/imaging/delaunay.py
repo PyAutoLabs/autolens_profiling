@@ -1,20 +1,20 @@
 """
-JAX Profiling: Delaunay Imaging Likelihood (Step-by-Step)
-=========================================================
+JAX Profiling: Delaunay Imaging Likelihood — Per-Step Breakdown
+================================================================
 
-Profiles each step of the JAX likelihood function for an imaging dataset where
-the source galaxy is reconstructed using a Delaunay triangulation mesh with
-ConstantSplit regularization.
+Decomposes the JAX likelihood function for an imaging dataset (Hilbert/Delaunay
+source model) into its individual pipeline steps and JIT-profiles each one
+separately. This script is the **breakdown** counterpart to
+``likelihood_runtime/imaging/delaunay.py``, which measures only the
+full-pipeline single-JIT cost.
 
-Key differences from the rectangular pixelization profiling script:
+Key differences from the rectangular pixelization breakdown script:
 
-- Mesh vertices are computed in the **image-plane** via an Overlay grid, then
-  ray-traced to the source-plane (rectangular computes directly in source-plane).
+- Mesh vertices are computed in the **image-plane** via a Hilbert image mesh,
+  then ray-traced to the source-plane.
 - Edge points are appended around the mask border and zeroed during inversion.
-- Uses **InterpolatorDelaunay** (barycentric interpolation within triangles)
-  instead of bilinear interpolation on a rectangular grid.
-- Uses **ConstantSplit** regularization (cross-derivative scheme) instead of
-  the simpler Constant neighbour-difference scheme.
+- Uses **InterpolatorDelaunay** (barycentric interpolation within triangles).
+- Uses **ConstantSplit** regularization (cross-derivative scheme).
 - Delaunay triangulation itself uses scipy on CPU and cannot be JIT-compiled.
 
 Pipeline steps:
@@ -26,18 +26,22 @@ Pipeline steps:
 5. Border relocation (data grid + mesh grid)
 6. Delaunay triangulation + interpolation + mapper
 7. Mapping matrix
-8. Blurred mapping matrix (PSF convolution)
+8. Blurred mapping matrix / Inversion setup (steps 5-8 combined)
 9. Data vector (D)
 10. Curvature matrix (F)
 11. Regularization matrix (H) — ConstantSplit scheme
 12. Regularized reconstruction: s = (F + H)^{-1} D
 13. Map reconstruction to image + log evidence
 
-Caveat: XLA may fuse operations differently when compiled as one program vs
-separate pieces, so per-step timings are approximate. They are still useful
-for identifying which step dominates.
+Per-step timing is approximate: XLA may fuse operations differently when
+compiled as one program vs separate pieces. All JAX timings use
+``block_until_ready()`` to force synchronous measurement.
 
-All JAX timings use `block_until_ready()` to force synchronous measurement.
+Output
+------
+
+Results JSON and PNG are written to ``results/breakdown/imaging/`` using
+the basename ``delaunay_breakdown_{instrument}_v{al_version}``.
 """
 
 import numpy as np
@@ -54,8 +58,8 @@ import autolens as al
 import autoarray as aa
 from autofit.jax import register_model as _register_model_pytrees
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from adapt_image_util import adapt_image_for_dataset  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from _adapt_image_util import adapt_image_for_dataset  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Instrument configuration
@@ -73,8 +77,6 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 
 # Sweep-driver CLI args (--config-name / --output-dir / --use-mixed-precision).
 # Tolerates extra/unknown args via parse_known_args inside the helper.
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from _profile_cli import (  # noqa: E402
     parse_profile_cli,
     device_info_dict,
@@ -217,14 +219,6 @@ with timer.section("mask_and_oversample"):
 # ---------------------------------------------------------------------------
 # 2. Adapt image + image mesh (Hilbert)
 # ---------------------------------------------------------------------------
-#
-# ``image_mesh.Hilbert`` places the source mesh vertices in the image plane by
-# inverse-transform-sampling a Hilbert-curve ordering of the lensed source
-# adapt image. The result is a sparser mesh in faint regions and a denser one
-# where the source actually lives — production-grade, replaces the
-# uniform-coverage ``image_mesh.Overlay`` + circular-edge fallback that
-# preceded the Hilbert path. ``zeroed_pixels=0`` because Hilbert's placement
-# is data-driven; there are no fixed-position edge points to mask out.
 
 print("\n--- Adapt image (lensed source) ---")
 
@@ -897,105 +891,7 @@ np.testing.assert_allclose(
 print("  Assertion PASSED: inversion-matrix log_evidence matches FitImaging.log_evidence")
 
 # ===================================================================
-# PART C — Full-pipeline JIT for comparison
-# ===================================================================
-
-print("\n" + "=" * 70)
-print("FULL-PIPELINE JIT (for comparison)")
-print("=" * 70)
-
-analysis = al.AnalysisImaging(dataset=dataset, adapt_images=adapt_images, use_jax=True)
-
-def full_pipeline_from_params(params_tree):
-    return analysis.log_likelihood_function(instance=params_tree)
-
-_, full_result = jit_profile(full_pipeline_from_params, "full_pipeline", params_tree)
-full_pipeline_per_call = timer.records[-1][1] / 10
-
-print(f"  full log_likelihood = {full_result}")
-
-# ===================================================================
-# PART D — vmap + correctness
-# ===================================================================
-
-print("\n--- vmap batched evaluation ---")
-
-# WARNING: The vmap compilation for the Delaunay pipeline takes 20+ minutes on CPU.
-# The XLA graph for a batched Delaunay inversion (including scipy triangulation,
-# border relocation, interpolation, mapping matrix construction, and PSF convolution)
-# is extremely large. The single-call JIT above compiles in ~2s and runs in ~1.8s,
-# but vmap recompiles the entire graph for batch_size independent evaluations.
-#
-# This is likely a candidate for optimisation — either via custom_vjp to avoid
-# retracing the full pipeline, or by restructuring the Delaunay steps to reduce
-# the XLA graph size. For now, skip vmap by default and run it only when explicitly
-# requested via DELAUNAY_VMAP=1 environment variable.
-
-import os
-run_vmap = os.environ.get("DELAUNAY_VMAP", "0") == "1"
-
-if not run_vmap:
-    print("  SKIPPED: vmap compilation takes 20+ minutes for Delaunay pipeline.")
-    print("  Set DELAUNAY_VMAP=1 to run this section.")
-    vmap_batch_time = None
-    vmap_per_call = None
-    vmap_speedup = None
-else:
-
-    batch_size = 3
-    parameters = jax.tree_util.tree_map(
-        lambda leaf: jnp.broadcast_to(leaf, (batch_size, *leaf.shape)),
-        params_tree,
-    )
-
-    vmapped_full = jax.jit(jax.vmap(full_pipeline_from_params))
-
-    with timer.section("vmap_first_call"):
-        result_vmap = vmapped_full(parameters)
-        block(result_vmap)
-
-    n_vmap_repeats = 10
-    with timer.section(f"vmap_steady_x{n_vmap_repeats}"):
-        for _ in range(n_vmap_repeats):
-            result_vmap = vmapped_full(parameters)
-            block(result_vmap)
-
-    vmap_batch_time = timer.records[-1][1] / n_vmap_repeats
-    vmap_per_call = vmap_batch_time / batch_size
-    vmap_speedup = full_pipeline_per_call / vmap_per_call
-
-    print(f"  batch results = {result_vmap}")
-    print(f"  vmap batch of {batch_size}:   {vmap_batch_time:.6f} s")
-    print(f"  vmap per call:         {vmap_per_call:.6f} s")
-    print(f"  single JIT per call:   {full_pipeline_per_call:.6f} s")
-    print(f"  vmap speedup:          {vmap_speedup:.1f}x faster per likelihood")
-
-    np.testing.assert_allclose(
-        np.array(result_vmap),
-        float(full_result),
-        rtol=1e-4,
-        err_msg="delaunay: JAX vmap likelihood mismatch",
-    )
-    print("  Correctness check PASSED")
-
-    # --- Static memory analysis ---
-
-    print("\n--- Static memory analysis ---")
-
-    lowered_batched = vmapped_full.lower(parameters)
-    compiled_batched = lowered_batched.compile()
-
-    memory_analysis = compiled_batched.memory_analysis()
-    print(f"  Output size:  {memory_analysis.output_size_in_bytes / 1024**2:.3f} MB")
-    print(f"  Temp size:    {memory_analysis.temp_size_in_bytes / 1024**2:.3f} MB")
-    print(
-        f"  Total:        "
-        f"{(memory_analysis.output_size_in_bytes + memory_analysis.temp_size_in_bytes) / 1024**2:.3f} MB"
-    )
-
-
-# ===================================================================
-# JAX Likelihood Function Summary
+# Per-step breakdown summary + JSON + PNG
 # ===================================================================
 
 import json
@@ -1006,7 +902,7 @@ import matplotlib.pyplot as plt
 al_version = al.__version__
 
 print("\n" + "=" * 70)
-print(f"JAX LIKELIHOOD FUNCTION SUMMARY — {instrument.upper()} — v{al_version}")
+print(f"PER-STEP BREAKDOWN SUMMARY — {instrument.upper()} — v{al_version}")
 print("=" * 70)
 print(f"  Instrument:            {instrument}")
 print(f"  Pixel scale:           {pixel_scale} arcsec/pixel")
@@ -1025,17 +921,11 @@ for i, (label, per_call) in enumerate(likelihood_steps, 1):
 
 print("-" * 70)
 print(f"      {'TOTAL (step-by-step)':<{max_label}}  {step_total:>12.6f} s")
-print(f"      {'Full pipeline (single JIT)':<{max_label}}  {full_pipeline_per_call:>12.6f} s")
-if vmap_per_call is not None:
-    print(f"      {f'vmap batch (per call)':<{max_label}}  {vmap_per_call:>12.6f} s")
-    print(f"      {f'vmap speedup vs single JIT':<{max_label}}  {vmap_speedup:>11.1f}x")
-else:
-    print(f"      {'vmap':<{max_label}}  {'SKIPPED':>12}")
 print("=" * 70)
 
 # --- Save results dictionary ---
 
-likelihood_summary = {
+breakdown_summary = {
     "autolens_version": al_version,
     "device": device_info_dict(),
     "instrument": instrument,
@@ -1049,24 +939,14 @@ likelihood_summary = {
     },
     "steps": {label: per_call for label, per_call in likelihood_steps},
     "total_step_by_step": step_total,
-    "full_pipeline_single_jit": full_pipeline_per_call,
-    "vmap": "SKIPPED — compilation takes 20+ minutes (set DELAUNAY_VMAP=1)",
 }
-
-if vmap_per_call is not None:
-    likelihood_summary["vmap"] = {
-        "batch_size": batch_size,
-        "batch_time": vmap_batch_time,
-        "per_call": vmap_per_call,
-        "speedup_vs_single_jit": round(vmap_speedup, 1),
-    }
 
 dict_path, chart_path = resolve_output_paths(
     _cli,
-    default_dir=_workspace_root / "results" / "likelihood" / "imaging",
-    default_basename=f"delaunay_likelihood_summary_{instrument}_v{al_version}",
+    default_dir=_workspace_root / "results" / "breakdown" / "imaging",
+    default_basename=f"delaunay_breakdown_{instrument}_v{al_version}",
 )
-dict_path.write_text(json.dumps(likelihood_summary, indent=2))
+dict_path.write_text(json.dumps(breakdown_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")
 
 # --- Save bar chart ---
@@ -1087,28 +967,12 @@ for bar, t in zip(bars, times):
         fontsize=9,
     )
 
-ax.axvline(
-    full_pipeline_per_call,
-    color="#C44E52",
-    linestyle="--",
-    linewidth=1.5,
-    label=f"Full pipeline (single JIT): {full_pipeline_per_call:.6f} s",
-)
-if vmap_per_call is not None:
-    ax.axvline(
-        vmap_per_call,
-        color="#55A868",
-        linestyle="--",
-        linewidth=1.5,
-        label=f"vmap batch per call: {vmap_per_call:.6f} s ({vmap_speedup:.1f}x faster)",
-    )
-
 ax.set_yticks(y_pos)
 ax.set_yticklabels(labels, fontsize=10)
 ax.invert_yaxis()
 ax.set_xlabel("Time per call (s)", fontsize=11)
 fig.suptitle(
-    f"Delaunay Imaging Likelihood — {instrument.upper()}",
+    f"Delaunay Imaging Likelihood — Per-Step Breakdown — {instrument.upper()}",
     fontsize=12,
     fontweight="bold",
 )
@@ -1118,7 +982,6 @@ ax.set_title(
     f"total: {step_total:.6f} s",
     fontsize=9,
 )
-ax.legend(loc="lower right", fontsize=9)
 ax.margins(x=0.15)
 fig.tight_layout()
 
@@ -1128,15 +991,9 @@ print(f"  Bar chart saved to:    {chart_path}")
 
 
 # ===================================================================
-# Regression assertion — realistic-scale deterministic log-evidence
+# Regression assertion — eager log_evidence only
 # ===================================================================
-#
-# Simulator truth parameters via GaussianPrior(mean=truth, sigma=small)
-# make the full-pipeline log-evidence deterministic at the prior median.
-# Hilbert image_mesh + 1500-pixel Delaunay; rtol=1e-3 for the JIT paths
-# matches imaging/pixelization (adaptive meshes amplify fp drift through
-# Cholesky / log_det). vmap result asserted only when DELAUNAY_VMAP=1
-# (vmap compile takes 20+ min).
+
 EXPECTED_LOG_EVIDENCE_HST = 29110.92085793  # 1500-pixel Hilbert/Delaunay, MGE-60 lens, adapt_image=lensed_source
 
 np.testing.assert_allclose(
@@ -1152,17 +1009,3 @@ print(
     f"  Eager regression assertion PASSED: log_evidence matches "
     f"{EXPECTED_LOG_EVIDENCE_HST:.6f}"
 )
-np.testing.assert_allclose(
-    float(full_result),
-    EXPECTED_LOG_EVIDENCE_HST,
-    rtol=1e-3,
-    err_msg=f"imaging/delaunay[{instrument}]: regression — full log_evidence drifted",
-)
-if run_vmap:
-    np.testing.assert_allclose(
-        np.array(result_vmap),
-        EXPECTED_LOG_EVIDENCE_HST,
-        rtol=1e-3,
-        err_msg=f"imaging/delaunay[{instrument}]: regression — vmap log_evidence drifted",
-    )
-print(f"  Regression assertion PASSED: log_evidence matches {EXPECTED_LOG_EVIDENCE_HST:.6f}")

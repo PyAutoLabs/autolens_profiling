@@ -1,24 +1,24 @@
 """Aggregate per-config JSONs for a swept likelihood cell into comparison.{json,png}.
 
 Reads every ``<config_name>.json`` under a cell's output dir (see
-``sweep_likelihood.py``) and produces a single ``comparison.json`` whose
-schema mirrors the existing
+``sweep.py``) and produces a single ``comparison.json`` whose schema
+mirrors the existing
 ``autolens_workspace_developer/jax_profiling/results/jit/imaging/{mge,
-pixelization,delaunay}/comparison.json`` artifacts so the existing readers
-(and the OPTIMIZATION_NOTES doc) continue to work.
+pixelization,delaunay}/comparison.json`` artifacts so the existing
+readers (and the OPTIMIZATION_NOTES doc) continue to work.
 
 The ``comparison.png`` is a log-scale grouped bar chart: one bar per
-(step, config), sorted by step cost on the slowest config. The full-pipeline
-single-JIT row and the vmap per-call row are appended at the bottom so the
-production-cost numbers stand out.
+(step, config), sorted by step cost on the slowest config. The
+full-pipeline single-JIT row and the vmap per-call row are appended at
+the bottom so the production-cost numbers stand out.
 
 Usage::
 
     # All cells under the default sweep output root
-    python scripts/aggregate_sweep.py
+    python likelihood_runtime/aggregate.py
 
     # One cell only
-    python scripts/aggregate_sweep.py --cell interferometer/mge
+    python likelihood_runtime/aggregate.py --cell interferometer/mge
 """
 
 from __future__ import annotations

@@ -1,87 +1,43 @@
 """
-JAX Profiling: Delaunay Interferometer Likelihood
-=================================================
+JAX Profiling: Delaunay Interferometer Likelihood — Per-Step Breakdown
+=======================================================================
 
-Profiles the JAX likelihood function for an interferometer dataset where the
-source galaxy is reconstructed using a Delaunay pixelization with cross-
-derivative (``ConstantSplit``) regularization, and the lens galaxy is an
-Isothermal + ExternalShear.
+Decomposes the JAX likelihood function for an interferometer dataset
+(Hilbert/Delaunay source model) into its individual pipeline steps and
+JIT-profiles each one separately. This script is the **breakdown** counterpart
+to ``likelihood_runtime/interferometer/delaunay.py``, which measures the
+full-pipeline single-JIT cost and vmap speedup.
 
-Mirrors ``likelihood/interferometer/pixelization.py`` (Phase 2) with the
-``RectangularUniform`` source replaced by a ``Delaunay`` mesh — matching
-``likelihood/imaging/delaunay.py`` so imaging vs interferometer Delaunay
-results can be compared side-by-side.
-
-Matches the step-by-step pedagogy of ``likelihood/imaging/delaunay.py``
+Matches the step-by-step pedagogy of ``likelihood_runtime/imaging/delaunay.py``
 applied to the visibility-space pipeline. The 11 per-step JIT-profiled stages
 map 1:1 onto sections in
-``autolens_workspace/scripts/interferometer/features/datacube/likelihood_function.py``
-and its single-channel parent
-``interferometer/features/pixelization/likelihood_function.py``.
+``autolens_workspace/scripts/interferometer/features/datacube/likelihood_function.py``.
 
 Pipeline steps (matching the imaging-delaunay numbering for cross-reference;
 the two lens-light steps from the imaging sibling are dropped since the
 interferometer pixelization model has no parametric lens light):
 
  1. Ray-trace data grid to source plane.
- 2. Ray-trace mesh grid (image-plane Overlay vertices) to source plane.
+ 2. Ray-trace mesh grid (image-plane Hilbert vertices) to source plane.
  5. Border relocation (data grid + mesh grid).
  6. Delaunay triangulation + interpolation + mapper.
  7. Mapping matrix.
- 8. Transformed mapping matrix (NUFFT) — interferometer-specific. Replaces
-    imaging's PSF-convolved blurred mapping matrix; the difference is the
-    Fourier transform to visibility space rather than image-space convolution.
+ 8. Transformed mapping matrix (NUFFT) — interferometer-specific.
  9. Data vector D — visibility-space (real and imaginary components).
  10. Curvature matrix F — real and imaginary curvatures summed.
  11. Regularization matrix H — ConstantSplit (same as imaging).
- 12. Reconstruction s = NNLS(F + H, D) (same NNLS path as imaging).
- 13. Mapped reconstructed visibilities + log evidence (visibility-space χ²).
+ 12. Reconstruction s = NNLS(F + H, D).
+ 13. Mapped reconstructed visibilities + log evidence (visibility-space chi²).
 
-Measures:
+Per-step timing is approximate: XLA may fuse operations differently when
+compiled as one program vs separate pieces. All JAX timings use
+``block_until_ready()`` to force synchronous measurement.
 
-1. Eager baseline: ``FitInterferometer`` with ``xp=np``, print
-   ``figure_of_merit`` / ``log_likelihood``.
-2. Per-step JIT profiling: each pipeline stage above gets its own
-   ``jit_profile()`` call (lower / compile / first-call / steady-state ×10).
-3. Full-pipeline JIT: ``jax.jit(analysis.log_likelihood_function)`` on a
-   pytree-registered ``ModelInstance``. Measure lower / compile / first-call /
-   steady-state per-call.
-4. Batched evaluation (opt-in via ``DELAUNAY_VMAP=1``): ``jax.jit(jax.vmap(...))``.
-   Skipped by default because Delaunay vmap compilation can take 20+ minutes
-   on CPU due to triangulation + interpolation graph size.
-5. Correctness: eager vs JIT log-evidence agreement at ``rtol=1e-4`` for both
-   the per-step recomputation and the full pipeline.
-6. Static memory analysis of the batched program (only when vmap runs).
-7. Results JSON + PNG written to ``results/`` with per-step entries that
-   slot into the same bar-chart shape as ``likelihood/imaging/delaunay.py``.
+Output
+------
 
-JIT-blocker notes
------------------
-
-Per-step decomposition risks missing cross-step XLA fusion and hitting
-library-level JAX blockers. Caveats from the previous opt-out version that
-still apply:
-
-- ``dataset.transformer.transform_mapping_matrix`` is JIT-friendly for
-  ``TransformerDFT`` (a single matrix multiply) and the default SMA preset
-  uses it. The JAX-native ``al.TransformerNUFFT`` (nufftax-backed) IS
-  JIT-friendly today, but it is currently incompatible with
-  ``apply_sparse_operator`` (see
-  ``PyAutoArray/autoarray/dataset/interferometer/dataset.py:261``) — the
-  Delaunay path here relies on the sparse precision operator, so the
-  transformer stays on DFT. The legacy ``TransformerNUFFTPyNUFFT`` is
-  pynufft-based and is not JIT-friendly.
-- The visibility-space χ² in step 13 separates the complex visibilities and
-  noise into real/imag components inside the JIT body (matching the
-  ``pixelization/likelihood_function.py`` reference). Complex-valued JIT
-  with autoarray ``Visibilities`` wrappers is avoided.
-
-Pytree-native parameter inputs
-------------------------------
-
-Uses ``af.ModelInstance`` as the JIT input via PyAutoFit's opt-in pytree
-registration (``autofit.jax.register_model``). Exercises the ``TuplePrior``
-pytree support landed in PyAutoFit#1222.
+Results JSON and PNG are written to ``results/breakdown/interferometer/`` using
+the basename ``delaunay_breakdown_{instrument}_v{al_version}``.
 """
 
 import os
@@ -98,8 +54,8 @@ import autofit as af
 import autolens as al
 from autofit.jax import register_model as _register_model_pytrees
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from adapt_image_util import adapt_image_for_dataset  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from _adapt_image_util import adapt_image_for_dataset  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Instrument configuration
@@ -117,8 +73,6 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 
 # Sweep-driver CLI args (--config-name / --output-dir / --use-mixed-precision).
 # Tolerates extra/unknown args via parse_known_args inside the helper.
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from _profile_cli import (  # noqa: E402
     parse_profile_cli,
     device_info_dict,
@@ -244,12 +198,6 @@ print(f"  Total visibilities: {n_visibilities}")
 # ---------------------------------------------------------------------------
 # 2. Adapt image + image mesh (Hilbert)
 # ---------------------------------------------------------------------------
-#
-# ``image_mesh.Hilbert`` adaptively places the source mesh vertices in the
-# image plane based on the lensed-source adapt image — denser where the
-# source lives, sparser elsewhere. Replaces the regular ``image_mesh.Overlay``
-# + circular-edge fallback that preceded this path. ``zeroed_pixels=0``
-# because Hilbert's placement is data-driven (no fixed edge points to mask).
 
 print("\n--- Adapt image (lensed source) ---")
 
@@ -406,8 +354,6 @@ noise_imag_jnp = jnp.array(dataset.noise_map.imag)
 # ---------------------------------------------------------------------------
 # Step 1: Ray-trace data grid to source plane
 # ---------------------------------------------------------------------------
-# Same operation as ``pixelization/likelihood_function.py:__Ray Tracing__``
-# applied to the data grid (one of the two grids the inversion uses).
 
 print("\n--- Step 1: Ray-trace data grid ---")
 
@@ -471,9 +417,6 @@ print(f"  traced_mesh_grids shape: {traced_mesh_grids_raw.shape}")
 # Steps 3-4 from the imaging sibling (lens-light pre-PSF image and PSF-blurred
 # image) don't exist for the interferometer pixelization model — there's no
 # parametric lens light. We jump straight to step 5.
-#
-# Same as ``pixelization/likelihood_function.py:__Border Relocation__``;
-# scipy-based so eager-only.
 
 print("\n--- Step 5: Border relocation ---")
 
@@ -504,7 +447,6 @@ print(f"  relocated_mesh_grid shape: {relocated_mesh_grid.array.shape}")
 # ---------------------------------------------------------------------------
 # Step 6: Delaunay triangulation + interpolation + mapper
 # ---------------------------------------------------------------------------
-# scipy-based; same as imaging-delaunay step 6.
 
 print("\n--- Step 6: Delaunay triangulation + Interpolation + Mapper ---")
 
@@ -528,10 +470,6 @@ print(f"  pix_indexes shape: {mapper.pix_indexes_for_sub_slim_index.shape}")
 # ---------------------------------------------------------------------------
 # Steps 7-13: Extract matrices from FitInterferometer.inversion for consistency
 # ---------------------------------------------------------------------------
-# The FitInterferometer pipeline handles edge-pixel zeroing, curvature-diagonal
-# adjustments, and settings that are difficult to replicate manually. We extract
-# the production matrices upfront and then JIT-profile the linear-algebra ops
-# on the reference inputs, matching the imaging-sibling pattern.
 
 print("\n--- Extracting inversion matrices from FitInterferometer ---")
 
@@ -556,7 +494,6 @@ print(f"  mapping_matrix shape: {mapping_matrix_ref.shape}")
 # ---------------------------------------------------------------------------
 # Step 7: Mapping matrix
 # ---------------------------------------------------------------------------
-# Same as ``pixelization/likelihood_function.py:__Mapping Matrix__``.
 
 print("\n--- Step 7: Mapping matrix ---")
 
@@ -568,13 +505,6 @@ print(f"  mapping_matrix shape: {mapping_matrix.shape}")
 # ---------------------------------------------------------------------------
 # Step 8: Transformed mapping matrix (NUFFT) — interferometer-specific
 # ---------------------------------------------------------------------------
-# Replaces the imaging sibling's "Blurred mapping matrix (PSF convolution)".
-#
-# For ``TransformerDFT`` this is a single complex matrix multiply
-# ``D @ M`` where D is the discrete Fourier matrix (n_vis × n_image) and
-# M is the real mapping matrix (n_image × source_pixels). JIT-friendly.
-# For ``TransformerNUFFT`` (pynufft-based, ALMA-scale) this step would fall
-# back to eager — flag if you swap the transformer.
 
 print("\n--- Step 8: Transformed mapping matrix (NUFFT) ---")
 
@@ -630,7 +560,6 @@ transformed_mm_imag_jnp = jnp.imag(transformed_mm_ref)
 # ---------------------------------------------------------------------------
 # Step 9: Data vector (D) — visibility-space
 # ---------------------------------------------------------------------------
-# Same as ``pixelization/likelihood_function.py:__Data Vector (D)__``.
 
 print("\n--- Step 9: Data vector (D) ---")
 
@@ -666,8 +595,6 @@ print(f"  data_vector shape: {data_vector.shape}")
 # ---------------------------------------------------------------------------
 # Step 10: Curvature matrix (F)
 # ---------------------------------------------------------------------------
-# Same as ``pixelization/likelihood_function.py:__Curvature Matrix (F)__``:
-# F = sum_j f_ij f_kj / sigma_j^2, computed separately for real / imag and summed.
 
 print("\n--- Step 10: Curvature matrix (F) ---")
 
@@ -713,8 +640,6 @@ print(f"  curvature_matrix shape: {curvature_matrix.shape}")
 # ---------------------------------------------------------------------------
 # Step 11: Regularization matrix (H) — ConstantSplit scheme
 # ---------------------------------------------------------------------------
-# Same as ``pixelization/likelihood_function.py:__Regularization Matrix (H)__``;
-# extracted from the inversion for consistency with the production setup.
 
 print("\n--- Step 11: Regularization matrix (ConstantSplit) ---")
 
@@ -765,9 +690,6 @@ print(f"  reconstruction shape: {reconstruction.shape}")
 # ---------------------------------------------------------------------------
 # Step 13: Mapped reconstructed visibilities + log evidence
 # ---------------------------------------------------------------------------
-# Same five-term log-evidence as the imaging sibling but with visibility-space
-# χ² (real + imag). Matches the formula in
-# ``pixelization/likelihood_function.py:__Likelihood Function — Five Terms__``.
 
 print("\n--- Step 13: Mapped reconstructed visibilities + log evidence ---")
 
@@ -786,7 +708,7 @@ def compute_log_evidence(
     mapped_real = jnp.matmul(transformed_mm_real, reconstruction)
     mapped_imag = jnp.matmul(transformed_mm_imag, reconstruction)
 
-    # χ² in visibility space (real + imag)
+    # chi² in visibility space (real + imag)
     chi_real = jnp.sum(((data_real - mapped_real) / noise_real) ** 2)
     chi_imag = jnp.sum(((data_imag - mapped_imag) / noise_imag) ** 2)
     chi_squared = chi_real + chi_imag
@@ -870,131 +792,7 @@ print(
 
 
 # ===================================================================
-# PART C — Full-pipeline JIT (for comparison)
-# ===================================================================
-
-print("\n" + "=" * 70)
-print("FULL-PIPELINE JIT")
-print("=" * 70)
-
-analysis = al.AnalysisInterferometer(
-    dataset=dataset,
-    adapt_images=adapt_images,
-    settings=al.Settings(use_mixed_precision=_cli.use_mixed_precision),
-    use_jax=True,
-)
-
-def full_pipeline_from_params(params_tree):
-    """Full interferometer likelihood from a pytree-shaped ``ModelInstance``.
-
-    No flat-vector unpacking inside the trace — the instance crosses the JIT
-    boundary directly, with constants (redshifts, etc.) kept static via the
-    ``aux_data`` partition set up by ``autofit.jax.register_model``.
-    """
-    return analysis.log_likelihood_function(instance=params_tree)
-
-_, full_result = jit_profile(full_pipeline_from_params, "full_pipeline", params_tree)
-full_pipeline_per_call = timer.records[-1][1] / 10
-
-print(f"  full log_evidence = {full_result}")
-
-# Correctness: for inversion models (pixelization + regularization), the
-# analysis "log_likelihood_function" actually returns the log-evidence
-# (= figure_of_merit), which includes the regularization/determinant terms.
-# Match against figure_of_merit_ref, not log_likelihood_ref.
-np.testing.assert_allclose(
-    float(full_result),
-    float(figure_of_merit_ref),
-    rtol=1e-4,
-    err_msg="interferometer/delaunay: JIT log-evidence does not match eager figure_of_merit",
-)
-print("  Eager-vs-JIT correctness PASSED")
-
-# ===================================================================
-# PART D — vmap (opt-in) + correctness
-# ===================================================================
-#
-# Delaunay vmap compilation can take 20+ minutes on CPU due to the size of
-# the triangulation + interpolation XLA graph. Skipped by default — set
-# DELAUNAY_VMAP=1 to opt in.
-
-print("\n--- vmap batched evaluation ---")
-
-run_vmap = os.environ.get("DELAUNAY_VMAP", "0") == "1"
-
-batch_size = 3
-vmap_batch_time = None
-vmap_per_call = None
-vmap_speedup = None
-result_vmap = None
-vmapped_full = None
-parameters = None
-
-_n_leaves = len(jax.tree_util.tree_leaves(params_tree))
-if not run_vmap:
-    print("  SKIPPED: opt-in via DELAUNAY_VMAP=1 (compilation can take 20+ minutes).")
-elif _n_leaves == 0:
-    print(f"  SKIPPED: model has 0 free parameters (all fixed to truth); "
-          f"vmap requires at least one array leaf.")
-else:
-    parameters = jax.tree_util.tree_map(
-        lambda leaf: jnp.broadcast_to(leaf, (batch_size, *leaf.shape)),
-        params_tree,
-    )
-
-    vmapped_full = jax.jit(jax.vmap(full_pipeline_from_params))
-
-    with timer.section("vmap_first_call"):
-        result_vmap = vmapped_full(parameters)
-        block(result_vmap)
-
-    n_vmap_repeats = 10
-    with timer.section(f"vmap_steady_x{n_vmap_repeats}"):
-        for _ in range(n_vmap_repeats):
-            result_vmap = vmapped_full(parameters)
-            block(result_vmap)
-
-    vmap_batch_time = timer.records[-1][1] / n_vmap_repeats
-    vmap_per_call = vmap_batch_time / batch_size
-    vmap_speedup = full_pipeline_per_call / vmap_per_call
-
-    print(f"  batch results = {result_vmap}")
-    print(f"  vmap batch of {batch_size}:   {vmap_batch_time:.6f} s")
-    print(f"  vmap per call:         {vmap_per_call:.6f} s")
-    print(f"  single JIT per call:   {full_pipeline_per_call:.6f} s")
-    print(f"  vmap speedup:          {vmap_speedup:.1f}x faster per likelihood")
-
-    np.testing.assert_allclose(
-        np.array(result_vmap),
-        float(full_result),
-        rtol=1e-4,
-        err_msg="interferometer/delaunay: JAX vmap likelihood mismatch",
-    )
-    print("  vmap-vs-single-JIT correctness PASSED")
-
-# ===================================================================
-# PART E — Static memory analysis (only if vmap ran)
-# ===================================================================
-
-print("\n--- Static memory analysis ---")
-
-if vmapped_full is None:
-    print("  SKIPPED: vmap path was not exercised this run.")
-    memory_analysis = None
-else:
-    lowered_batched = vmapped_full.lower(parameters)
-    compiled_batched = lowered_batched.compile()
-
-    memory_analysis = compiled_batched.memory_analysis()
-    print(f"  Output size:  {memory_analysis.output_size_in_bytes / 1024**2:.3f} MB")
-    print(f"  Temp size:    {memory_analysis.temp_size_in_bytes / 1024**2:.3f} MB")
-    print(
-        f"  Total:        "
-        f"{(memory_analysis.output_size_in_bytes + memory_analysis.temp_size_in_bytes) / 1024**2:.3f} MB"
-    )
-
-# ===================================================================
-# JAX Likelihood Function Summary + artefacts
+# Per-step breakdown summary + JSON + PNG
 # ===================================================================
 
 import json
@@ -1005,7 +803,7 @@ import matplotlib.pyplot as plt
 al_version = al.__version__
 
 print("\n" + "=" * 70)
-print(f"JAX LIKELIHOOD FUNCTION SUMMARY — {instrument.upper()} — v{al_version}")
+print(f"PER-STEP BREAKDOWN SUMMARY — {instrument.upper()} — v{al_version}")
 print("=" * 70)
 print(f"  Instrument:              {instrument}")
 print(f"  Pixel scale:             {pixel_scale} arcsec/pixel")
@@ -1014,10 +812,6 @@ print(f"  Real-space grid shape:   {real_space_shape[0]} x {real_space_shape[1]}
 print(f"  Visibilities:            {n_visibilities}")
 print(f"  Delaunay vertices:       {n_mesh_vertices}")
 print(f"  Edge zeroed pixels:      {edge_pixels_total}")
-print("-" * 70)
-print(f"  Eager log_likelihood:    {log_likelihood_ref}")
-print(f"  Eager figure_of_merit:   {figure_of_merit_ref}  (log-evidence)")
-print(f"  JIT  log-evidence:       {float(full_result)}")
 print("-" * 70)
 
 max_label = max(len(label) for label, _ in likelihood_steps)
@@ -1028,30 +822,11 @@ for i, (label, per_call) in enumerate(likelihood_steps, 1):
 
 print("-" * 70)
 print(f"      {'TOTAL (step-by-step)':<{max_label}}  {step_total:>12.6f} s")
-print(f"      {'Full pipeline (single JIT)':<{max_label}}  {full_pipeline_per_call:>12.6f} s")
-if vmap_per_call is not None:
-    print(f"      {'vmap batch (per call)':<{max_label}}  {vmap_per_call:>12.6f} s")
-    print(f"      {'vmap speedup vs single JIT':<{max_label}}  {vmap_speedup:>11.1f}x")
-else:
-    print(f"      {'vmap':<{max_label}}  {'SKIPPED':>12}")
 print("=" * 70)
 
 # --- Save results dictionary ---
 
-if vmap_per_call is None:
-    if not run_vmap:
-        vmap_payload = "SKIPPED — opt-in via DELAUNAY_VMAP=1"
-    else:
-        vmap_payload = "SKIPPED — model has 0 free parameters (all fixed to truth)"
-else:
-    vmap_payload = {
-        "batch_size": batch_size,
-        "batch_time": vmap_batch_time,
-        "per_call": vmap_per_call,
-        "speedup_vs_single_jit": round(vmap_speedup, 1),
-    }
-
-likelihood_summary = {
+breakdown_summary = {
     "autolens_version": al_version,
     "device": device_info_dict(),
     "instrument": instrument,
@@ -1068,23 +843,16 @@ likelihood_summary = {
     },
     "log_likelihood_eager": float(log_likelihood_ref),
     "figure_of_merit_eager": float(figure_of_merit_ref),
-    "log_evidence_jit": float(full_result),
     "steps": {label: per_call for label, per_call in likelihood_steps},
     "total_step_by_step": step_total,
-    "full_pipeline_single_jit": full_pipeline_per_call,
-    "vmap": vmap_payload,
-    "memory_mb": None if memory_analysis is None else {
-        "output": memory_analysis.output_size_in_bytes / 1024**2,
-        "temp": memory_analysis.temp_size_in_bytes / 1024**2,
-    },
 }
 
 dict_path, chart_path = resolve_output_paths(
     _cli,
-    default_dir=_workspace_root / "results" / "likelihood" / "interferometer",
-    default_basename=f"delaunay_likelihood_summary_{instrument}_v{al_version}",
+    default_dir=_workspace_root / "results" / "breakdown" / "interferometer",
+    default_basename=f"delaunay_breakdown_{instrument}_v{al_version}",
 )
-dict_path.write_text(json.dumps(likelihood_summary, indent=2))
+dict_path.write_text(json.dumps(breakdown_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")
 
 # --- Save bar chart ---
@@ -1105,28 +873,12 @@ for bar, t in zip(bars, times):
         fontsize=9,
     )
 
-ax.axvline(
-    full_pipeline_per_call,
-    color="#C44E52",
-    linestyle="--",
-    linewidth=1.5,
-    label=f"Full pipeline (single JIT): {full_pipeline_per_call:.6f} s",
-)
-if vmap_per_call is not None:
-    ax.axvline(
-        vmap_per_call,
-        color="#55A868",
-        linestyle="--",
-        linewidth=1.5,
-        label=f"vmap batch per call: {vmap_per_call:.6f} s ({vmap_speedup:.1f}x faster)",
-    )
-
 ax.set_yticks(y_pos)
 ax.set_yticklabels(labels, fontsize=10)
 ax.invert_yaxis()
 ax.set_xlabel("Time per call (s)", fontsize=11)
 fig.suptitle(
-    f"Delaunay Interferometer Likelihood — {instrument.upper()}",
+    f"Delaunay Interferometer Likelihood — Per-Step Breakdown — {instrument.upper()}",
     fontsize=12,
     fontweight="bold",
 )
@@ -1137,7 +889,6 @@ ax.set_title(
     f"total: {step_total:.6f} s",
     fontsize=9,
 )
-ax.legend(loc="lower right", fontsize=9)
 ax.margins(x=0.15)
 fig.tight_layout()
 
@@ -1147,15 +898,9 @@ print(f"  Bar chart saved to:    {chart_path}")
 
 
 # ===================================================================
-# Regression assertion — realistic-scale deterministic log-evidence
+# Regression assertion — eager log_evidence only
 # ===================================================================
-#
-# Simulator truth parameters via GaussianPrior(mean=truth, sigma=small)
-# make the full-pipeline log-evidence deterministic at the prior median.
-# Pinned empirically per instrument; ``None`` means "skip the assertion and
-# print the value so it can be pasted in here on a clean run". sma was
-# bumped to mask_radius=3.5 in 2026-05-21's INSTRUMENTS refactor — the
-# old mask_radius=3.0 value no longer applies and needs re-measuring.
+
 EXPECTED_LOG_EVIDENCE = {
     "sma": None,
     "alma": None,
@@ -1184,18 +929,3 @@ else:
         f"  Eager regression assertion PASSED: log_evidence matches "
         f"{expected_log_evidence:.6f}"
     )
-    np.testing.assert_allclose(
-        float(full_result),
-        expected_log_evidence,
-        rtol=1e-3,
-        err_msg=f"interferometer/delaunay[{instrument}]: regression — full log_evidence drifted",
-    )
-    print(f"  Full-pipeline regression assertion PASSED")
-    if result_vmap is not None:
-        np.testing.assert_allclose(
-            np.array(result_vmap),
-            expected_log_evidence,
-            rtol=1e-3,
-            err_msg=f"interferometer/delaunay[{instrument}]: regression — vmap log_evidence drifted",
-        )
-        print(f"  vmap regression assertion PASSED")

@@ -5,9 +5,9 @@ cell locally; HPC A100 configs are dispatched separately via
 `z_projects/profiling/hpc/sync`).
 
 Each subprocess invokes the existing per-cell likelihood script under
-``autolens_profiling/likelihood/<class>/<model>.py`` with the new CLI args
-the scripts gained in Phase 1 (``--config-name``, ``--output-dir``,
-``--use-mixed-precision``). Per-config JSONs land at::
+``autolens_profiling/likelihood_runtime/<class>/<model>.py`` with the
+CLI args ``--config-name``, ``--output-dir``, ``--use-mixed-precision``.
+Per-config JSONs land at::
 
     <output_root>/<class>/<model>/<config_name>.json
     <output_root>/<class>/<model>/<config_name>.png
@@ -15,19 +15,19 @@ the scripts gained in Phase 1 (``--config-name``, ``--output-dir``,
 
 Default ``--output-root`` is
 ``autolens_workspace_developer/jax_profiling/results/jit`` — matches the
-existing imaging precedent and is read by ``aggregate_sweep.py`` to produce
+existing imaging precedent and is read by ``aggregate.py`` to produce
 ``comparison.json`` / ``comparison.png``.
 
 Usage::
 
     # All in-scope cells, both backends
-    python scripts/sweep_likelihood.py
+    python likelihood_runtime/sweep.py
 
     # Skip the heaviest cell during iteration
-    python scripts/sweep_likelihood.py --skip datacube/delaunay
+    python likelihood_runtime/sweep.py --skip datacube/delaunay
 
     # Single cell, single backend
-    python scripts/sweep_likelihood.py --only interferometer/mge --skip-cpu
+    python likelihood_runtime/sweep.py --only interferometer/mge --skip-cpu
 """
 
 from __future__ import annotations
@@ -251,7 +251,7 @@ def main() -> int:
     overall_t0 = time.time()
 
     for (cls, model) in cells:
-        script_path = _REPO_ROOT / "likelihood" / cls / f"{model}.py"
+        script_path = _REPO_ROOT / "likelihood_runtime" / cls / f"{model}.py"
         if not script_path.exists():
             print(f"\n!!! missing script: {script_path}")
             for cfg in configs:

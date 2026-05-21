@@ -1,0 +1,113 @@
+# likelihood_breakdown
+
+Per-step JIT decomposition of the PyAutoLens likelihood function. The headline question is:
+
+> *"Where, inside this likelihood, is the time actually going?"*
+
+Run one of these scripts when you want to find the **next source-code-level optimization target** for a given dataset class / model. Each script JIT-compiles every step of the pipeline as an isolated JAX program and reports its lower / compile / first-call / steady-state time, then writes a per-step JSON + horizontal bar chart so the dominant step is immediately visible.
+
+For *how long the likelihood actually takes* on production hardware — i.e. a single end-to-end number per (hardware, precision) config — use the sibling package [`likelihood_runtime/`](../likelihood_runtime/) instead. The two packages are deliberately disjoint so neither has to pay the other's cost.
+
+## Methodology
+
+For each pipeline step (e.g. *ray-trace grids* → *blurred mapping matrix* → *curvature matrix F* → *NNLS reconstruction* → *log-evidence*), the script:
+
+1. Wraps the step in a small Python function whose only argument is the upstream JAX array(s) it consumes.
+2. Calls a per-step `jit_profile(func, label, *args, n_repeats=10)` helper that records:
+   - **lower** — `jax.jit(func).lower(...)` (JAX → MLIR tracing time)
+   - **compile** — XLA → device-binary compile time
+   - **first call** — initial execution including any deferred kernel setup
+   - **steady_state × 10** — average over ten subsequent calls; this is the number that goes into the per-step bar.
+3. Asserts the JIT output matches the eager FitImaging / FitInterferometer reference at `rtol=1e-4`, so the per-step decomposition is provably equivalent to the production path.
+4. Emits a JSON with `{steps: {name: per_call_s}, total_step_by_step: ...}` and a single horizontal bar chart sorted by step cost.
+
+## Single-config rationale
+
+The per-step JIT compile is expensive — for a 1000-vertex Delaunay cell it's tens of minutes of compile time. Running the same 10-step decomposition six times (CPU/GPU/A100 × fp64/mp) burns roughly an hour of compile per cell, for marginal new signal: cross-hardware comparisons live in the runtime package. Default is **CPU fp64**.
+
+Opt in to GPU with `--gpu` when you suspect a step's bottleneck shape changes on different backends (XLA fusion behaviour, sparse-precision-matrix layout, etc.). This is the only multi-config knob the breakdown scripts expose.
+
+## XLA fusion caveat
+
+XLA can — and frequently does — fuse adjacent steps into a single kernel at full-pipeline JIT time, so the **sum of per-step bars is an *upper bound* on the production cost**, not the production cost itself. If
+
+    sum(steps) ≫ full_pipeline_single_jit  (from likelihood_runtime/)
+
+then fusion is doing most of the optimization for you and the per-step decomposition is a misleading guide; focus optimisation on whichever step is large *and* doesn't fuse cleanly (typically the ones that involve a Python-level callback, a serial NNLS solve, or a non-uniform memory pattern).
+
+If, on the other hand, the two numbers agree closely, the per-step bars are a faithful map of the per-call cost and the biggest bar is your target.
+
+## Scripts
+
+| Script | Dataset class | Source model | Notes |
+|--------|--------------|--------------|-------|
+| `imaging/mge.py` | Imaging | MGE linear bulge | Linear MGE source; 8-step pipeline. |
+| `imaging/pixelization.py` | Imaging | RectangularAdaptImage | 13-step pipeline incl. mesh + regularisation. |
+| `imaging/delaunay.py` | Imaging | DelaunayBrightnessImage | 13-step pipeline; Hilbert-curve mesh. |
+| `interferometer/delaunay.py` | Interferometer | DelaunayBrightnessImage + sparse-DFT | 11-step pipeline. The transform-mapping-matrix step is the interferometer-specific replacement for imaging's PSF convolution. |
+| `datacube/delaunay.py` | Datacube | DelaunayBrightnessImage × N channels | 8-step pipeline. Channel-invariant steps profiled once; channel-variant steps profiled on channel 0 and multiplied by `N_channels` for the cube cost. |
+
+Four cells are intentionally absent from this package:
+- `interferometer/mge` — full-pipeline-by-design, no per-step decomposition (see runtime).
+- `interferometer/pixelization` — same reason; the sparse precision-operator path doesn't decompose meaningfully.
+- `point_source/{image_plane,source_plane}` — single short JIT shots.
+
+These four live only in `likelihood_runtime/`.
+
+## How to read the output
+
+For each cell, the script writes two files into `results/breakdown/<class>/`:
+
+- `<model>_breakdown_<instrument>_v<al_version>.json` — schema:
+  ```jsonc
+  {
+    "autolens_version": "2026.5.14.2",
+    "device": {"backend": "cpu", "device": "TFRT_CPU_0"},
+    "instrument": "hst",
+    "configuration": { ... mask + mesh + pixel-scale snapshot ... },
+    "steps": {
+      "Ray-trace grids":           0.0020,
+      "Blurred image (PSF)":       0.0016,
+      "Mapping matrix":            0.0586,
+      "Blurred mapping matrix":    0.1493,
+      "Curvature matrix (F)":      0.0039,
+      "NNLS reconstruction":       0.0007,
+      "Mapped reconstructed image":0.0004,
+      "Chi-squared / log_evidence":0.0008
+    },
+    "total_step_by_step": 0.2173,
+    "log_likelihood_eager": ...
+  }
+  ```
+- `<model>_breakdown_<instrument>_v<al_version>.png` — horizontal bar chart, one bar per step, sorted by cost.
+
+### Reading the bar chart
+
+The top bar is the next thing to optimise. Compare against the runtime package's `full_pipeline_single_jit` for the same cell — if `total_step_by_step` is within a factor of ~2 of the full-pipeline number, the per-step decomposition is faithful. If it's much larger, XLA fusion is hiding the real cost; treat per-step as a coarse guide.
+
+## Running
+
+From the autolens_profiling root:
+
+```bash
+# Default (CPU fp64, sma/hst as appropriate to the cell)
+python likelihood_breakdown/imaging/mge.py
+
+# GPU backend
+python likelihood_breakdown/imaging/mge.py --gpu
+
+# Mixed precision (rare in breakdown — only when investigating fp32-induced step changes)
+python likelihood_breakdown/imaging/mge.py --use-mixed-precision
+```
+
+The dataset is auto-simulated via `simulators/<dataset_type>.py --instrument <name>` if `dataset/<class>/<instrument>/` is missing. Subsequent runs reuse the cached dataset.
+
+## When to choose breakdown vs runtime
+
+| Question | Package |
+|----------|---------|
+| "Where should I focus PyAutoLens optimisation work for this cell?" | **breakdown** |
+| "How long will my A100 sampler run take per likelihood call?" | runtime |
+| "Does mixed precision actually save time on this cell?" | runtime |
+| "Which step fuses cleanly under XLA and which doesn't?" | breakdown (compare total_step_by_step vs runtime's full_pipeline_single_jit) |
+| "How does the bottleneck shape change between consumer GPU and A100?" | runtime (and re-run breakdown on the new hardware if the shape changed) |
