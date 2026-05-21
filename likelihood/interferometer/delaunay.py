@@ -64,8 +64,13 @@ still apply:
 
 - ``dataset.transformer.transform_mapping_matrix`` is JIT-friendly for
   ``TransformerDFT`` (a single matrix multiply) and the default SMA preset
-  uses it. ``TransformerNUFFT`` (pynufft-based) is not JIT-friendly; if you
-  swap the transformer the step-8 timing will fall back to eager-only.
+  uses it. The JAX-native ``al.TransformerNUFFT`` (nufftax-backed) IS
+  JIT-friendly today, but it is currently incompatible with
+  ``apply_sparse_operator`` (see
+  ``PyAutoArray/autoarray/dataset/interferometer/dataset.py:261``) — the
+  Delaunay path here relies on the sparse precision operator, so the
+  transformer stays on DFT. The legacy ``TransformerNUFFTPyNUFFT`` is
+  pynufft-based and is not JIT-friendly.
 - The visibility-space χ² in step 13 separates the complex visibilities and
   noise into real/imag components inside the JIT body (matching the
   ``pixelization/likelihood_function.py`` reference). Complex-valued JIT
@@ -109,6 +114,16 @@ import sys as _smoke_sys
 if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
     _smoke_sys.exit(0)
+
+# Sweep-driver CLI args (--config-name / --output-dir / --use-mixed-precision).
+# Tolerates extra/unknown args via parse_known_args inside the helper.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from _profile_cli import (  # noqa: E402
+    parse_profile_cli,
+    device_info_dict,
+    resolve_output_paths,
+)
+_cli = parse_profile_cli()
 
 INSTRUMENTS = {
     "sma": {"pixel_scale": 0.1, "real_space_shape": (256, 256), "mask_radius": 3.0},
@@ -364,6 +379,7 @@ with timer.section("fit_interferometer_eager"):
         dataset=dataset,
         tracer=tracer,
         adapt_images=adapt_images,
+        settings=al.Settings(use_mixed_precision=_cli.use_mixed_precision),
         xp=np,
     )
     figure_of_merit_ref = fit.figure_of_merit
@@ -867,7 +883,10 @@ print("FULL-PIPELINE JIT")
 print("=" * 70)
 
 analysis = al.AnalysisInterferometer(
-    dataset=dataset, adapt_images=adapt_images, use_jax=True
+    dataset=dataset,
+    adapt_images=adapt_images,
+    settings=al.Settings(use_mixed_precision=_cli.use_mixed_precision),
+    use_jax=True,
 )
 
 def full_pipeline_from_params(params_tree):
@@ -1039,6 +1058,7 @@ else:
 
 likelihood_summary = {
     "autolens_version": al_version,
+    "device": device_info_dict(),
     "instrument": instrument,
     "model": "delaunay",
     "configuration": {
@@ -1064,10 +1084,11 @@ likelihood_summary = {
     },
 }
 
-results_dir = _workspace_root / "results" / "likelihood" / "interferometer"
-results_dir.mkdir(parents=True, exist_ok=True)
-
-dict_path = results_dir / f"delaunay_likelihood_summary_{instrument}_v{al_version}.json"
+dict_path, chart_path = resolve_output_paths(
+    _cli,
+    default_dir=_workspace_root / "results" / "likelihood" / "interferometer",
+    default_basename=f"delaunay_likelihood_summary_{instrument}_v{al_version}",
+)
 dict_path.write_text(json.dumps(likelihood_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")
 
@@ -1125,7 +1146,6 @@ ax.legend(loc="lower right", fontsize=9)
 ax.margins(x=0.15)
 fig.tight_layout()
 
-chart_path = results_dir / f"delaunay_likelihood_summary_{instrument}_v{al_version}.png"
 fig.savefig(chart_path, dpi=150)
 plt.close(fig)
 print(f"  Bar chart saved to:    {chart_path}")
