@@ -1,14 +1,14 @@
 """
-JAX Profiling: Pixelization Imaging Likelihood (Step-by-Step)
-=============================================================
+JAX Profiling: Pixelization Imaging Likelihood — Per-Step Breakdown
+====================================================================
 
-Profiles each step of the JAX likelihood function for an imaging dataset where
-the source galaxy is reconstructed using a rectangular pixelization with
-constant regularization.
+Decomposes the JAX likelihood function for an imaging dataset (rectangular
+pixelization source model) into its individual pipeline steps and
+JIT-profiles each one separately. This script is the **breakdown** counterpart
+to ``likelihood_runtime/imaging/pixelization.py``, which measures only the
+full-pipeline single-JIT cost.
 
-Rather than timing the whole likelihood as a single JIT-compiled block (which
-hides internal bottlenecks), this script JIT-compiles and times each step of
-the pipeline individually:
+Steps profiled:
 
 1. Ray-trace grids through the lens
 2. Blurred image of lens light (non-linear profiles)
@@ -17,18 +17,24 @@ the pipeline individually:
 5. Overlay grid (source pixel centres)
 6. Interpolation weights and mapper construction
 7. Mapping matrix
-8. Blurred mapping matrix (PSF convolution)
+8. Blurred mapping matrix / Inversion setup (steps 4-8 combined)
 9. Data vector (D)
 10. Curvature matrix (F)
 11. Regularization matrix (H)
 12. Regularized reconstruction: s = (F + H)^{-1} D
 13. Map reconstruction to image + log evidence
 
-Caveat: XLA may fuse operations differently when compiled as one program vs
-separate pieces, so per-step timings are approximate. They are still useful
-for identifying which step dominates.
+Per-step timing is approximate: XLA may fuse operations differently when
+compiled as one program vs separate pieces, but the breakdown is still useful
+for identifying which step dominates the runtime budget.
 
-All JAX timings use `block_until_ready()` to force synchronous measurement.
+All JAX timings use ``block_until_ready()`` to force synchronous measurement.
+
+Output
+------
+
+Results JSON and PNG are written to ``results/breakdown/imaging/`` using
+the basename ``pixelization_breakdown_{instrument}_v{al_version}``.
 """
 
 import numpy as np
@@ -47,8 +53,8 @@ from autofit.jax import register_model as _register_model_pytrees
 
 # Shared adapt-image loader: load or compute+cache `lensed_source.fits`
 # next to the dataset, then return the masked ``aa.Array2D``.
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from adapt_image_util import adapt_image_for_dataset  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from _adapt_image_util import adapt_image_for_dataset  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Instrument configuration
@@ -66,8 +72,6 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 
 # Sweep-driver CLI args (--config-name / --output-dir / --use-mixed-precision).
 # Tolerates extra/unknown args via parse_known_args inside the helper.
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from _profile_cli import (  # noqa: E402
     parse_profile_cli,
     device_info_dict,
@@ -301,10 +305,7 @@ print(f"  Source pixels:           {n_source_pixels}")
 
 # ---------------------------------------------------------------------------
 # 4. Adapt image — PSF-convolved lensed-source image used by
-#    ``RectangularAdaptImage`` to weight mesh pixels. Loads ``lensed_source.fits``
-#    from the dataset directory if present, otherwise computes it from the
-#    truth tracer and caches the file for sibling scripts on the same
-#    instrument.
+#    ``RectangularAdaptImage`` to weight mesh pixels.
 # ---------------------------------------------------------------------------
 
 print("\n--- Adapt image (lensed source) ---")
@@ -313,10 +314,6 @@ with timer.section("adapt_image_build"):
     adapt_image = adapt_image_for_dataset(
         dataset_path=dataset_path, dataset=dataset
     )
-    # ``galaxy_image_dict`` (Galaxy-object-keyed) feeds the eager-path
-    # ``image_for_galaxy`` lookup; ``galaxy_name_image_dict`` (path-tuple
-    # str-keyed) is rebuilt inside JIT closures where the Galaxy objects
-    # are reconstructed on every call. Both must be supplied here.
     adapt_images = al.AdaptImages(
         galaxy_image_dict={instance.galaxies.source: adapt_image},
         galaxy_name_image_dict={"('galaxies', 'source')": adapt_image},
@@ -863,129 +860,7 @@ np.testing.assert_allclose(
 print("  Assertion PASSED: inversion-matrix log_evidence matches FitImaging.log_evidence")
 
 # ===================================================================
-# PART C — Full-pipeline JIT for comparison
-# ===================================================================
-
-print("\n" + "=" * 70)
-print("FULL-PIPELINE JIT (for comparison)")
-print("=" * 70)
-
-analysis = al.AnalysisImaging(
-    dataset=dataset,
-    adapt_images=adapt_images,
-    settings=al.Settings(
-        use_border_relocator=True,
-        use_mixed_precision=_cli.use_mixed_precision,
-    ),
-    use_jax=True,
-)
-
-def full_pipeline_from_params(params_tree):
-    return analysis.log_likelihood_function(instance=params_tree)
-
-_, full_result = jit_profile(full_pipeline_from_params, "full_pipeline", params_tree)
-full_pipeline_per_call = timer.records[-1][1] / 10
-
-print(f"  full log_likelihood = {full_result}")
-
-# ===================================================================
-# PART D — vmap + correctness
-# ===================================================================
-#
-# NOTE: vmap requires at least one JAX array leaf in the params_tree.
-# When model.total_free_parameters == 0 (all params fixed to truth), the
-# pytree has no array leaves and vmap cannot batch over it. Skip in that case.
-
-print("\n--- vmap batched evaluation ---")
-
-batch_size = 3
-vmap_batch_time = None
-vmap_per_call = None
-vmap_speedup = None
-result_vmap = None
-
-_n_leaves = len(jax.tree_util.tree_leaves(params_tree))
-_vmap_skipped_reason = None
-if _n_leaves == 0:
-    _vmap_skipped_reason = (
-        "model has 0 free parameters (all fixed to truth); vmap "
-        "requires at least one array leaf."
-    )
-else:
-    parameters = jax.tree_util.tree_map(
-        lambda leaf: jnp.broadcast_to(leaf, (batch_size, *leaf.shape)),
-        params_tree,
-    )
-
-    vmapped_full = jax.jit(jax.vmap(full_pipeline_from_params))
-
-    # 1521-source-pixel adapt-mesh pipelines push the per-batch working
-    # set past 2.5 GB; on smaller GPUs the vmap compile / first call can
-    # OOM. Catch and skip cleanly rather than killing the script.
-    try:
-        with timer.section("vmap_first_call"):
-            result_vmap = vmapped_full(parameters)
-            block(result_vmap)
-    except Exception as exc:
-        if "RESOURCE_EXHAUSTED" in str(exc) or "Out of memory" in str(exc):
-            _vmap_skipped_reason = (
-                f"OOM during vmap first call (batch_size={batch_size}); skip vmap. "
-                f"Re-run on a bigger device or lower `batch_size`."
-            )
-        else:
-            raise
-
-if _vmap_skipped_reason is None and _n_leaves > 0:
-    n_vmap_repeats = 10
-    with timer.section(f"vmap_steady_x{n_vmap_repeats}"):
-        for _ in range(n_vmap_repeats):
-            result_vmap = vmapped_full(parameters)
-            block(result_vmap)
-
-    vmap_batch_time = timer.records[-1][1] / n_vmap_repeats
-    vmap_per_call = vmap_batch_time / batch_size
-    vmap_speedup = full_pipeline_per_call / vmap_per_call
-
-    print(f"  batch results = {result_vmap}")
-    print(f"  vmap batch of {batch_size}:   {vmap_batch_time:.6f} s")
-    print(f"  vmap per call:         {vmap_per_call:.6f} s")
-    print(f"  single JIT per call:   {full_pipeline_per_call:.6f} s")
-    print(f"  vmap speedup:          {vmap_speedup:.1f}x faster per likelihood")
-
-    np.testing.assert_allclose(
-        np.array(result_vmap),
-        float(full_result),
-        rtol=1e-4,
-        err_msg="pixelization: JAX vmap likelihood mismatch",
-    )
-    print("  Correctness check PASSED")
-else:
-    print(f"  SKIPPED: {_vmap_skipped_reason}")
-
-# ===================================================================
-# PART E — Static memory analysis
-# ===================================================================
-
-print("\n--- Static memory analysis ---")
-
-if _vmap_skipped_reason is not None:
-    print(f"  SKIPPED: {_vmap_skipped_reason}")
-    memory_analysis = None
-else:
-    lowered_batched = vmapped_full.lower(parameters)
-    compiled_batched = lowered_batched.compile()
-
-    memory_analysis = compiled_batched.memory_analysis()
-    print(f"  Output size:  {memory_analysis.output_size_in_bytes / 1024**2:.3f} MB")
-    print(f"  Temp size:    {memory_analysis.temp_size_in_bytes / 1024**2:.3f} MB")
-    print(
-        f"  Total:        "
-        f"{(memory_analysis.output_size_in_bytes + memory_analysis.temp_size_in_bytes) / 1024**2:.3f} MB"
-    )
-
-
-# ===================================================================
-# JAX Likelihood Function Summary
+# Per-step breakdown summary + JSON + PNG
 # ===================================================================
 
 import json
@@ -996,7 +871,7 @@ import matplotlib.pyplot as plt
 al_version = al.__version__
 
 print("\n" + "=" * 70)
-print(f"JAX LIKELIHOOD FUNCTION SUMMARY — {instrument.upper()} — v{al_version}")
+print(f"PER-STEP BREAKDOWN SUMMARY — {instrument.upper()} — v{al_version}")
 print("=" * 70)
 print(f"  Instrument:            {instrument}")
 print(f"  Pixel scale:           {pixel_scale} arcsec/pixel")
@@ -1015,17 +890,11 @@ for i, (label, per_call) in enumerate(likelihood_steps, 1):
 
 print("-" * 70)
 print(f"      {'TOTAL (step-by-step)':<{max_label}}  {step_total:>12.6f} s")
-print(f"      {'Full pipeline (single JIT)':<{max_label}}  {full_pipeline_per_call:>12.6f} s")
-if vmap_per_call is not None:
-    print(f"      {f'vmap batch={batch_size} (per call)':<{max_label}}  {vmap_per_call:>12.6f} s")
-    print(f"      {f'vmap speedup vs single JIT':<{max_label}}  {vmap_speedup:>11.1f}x")
-else:
-    print(f"      {'vmap':<{max_label}}  {'SKIPPED (0 free params)':>12}")
 print("=" * 70)
 
 # --- Save results dictionary ---
 
-likelihood_summary = {
+breakdown_summary = {
     "autolens_version": al_version,
     "device": device_info_dict(),
     "instrument": instrument,
@@ -1039,21 +908,14 @@ likelihood_summary = {
     },
     "steps": {label: per_call for label, per_call in likelihood_steps},
     "total_step_by_step": step_total,
-    "full_pipeline_single_jit": full_pipeline_per_call,
-    "vmap": "SKIPPED — model has 0 free parameters (all fixed to truth)" if vmap_per_call is None else {
-        "batch_size": batch_size,
-        "batch_time": vmap_batch_time,
-        "per_call": vmap_per_call,
-        "speedup_vs_single_jit": round(vmap_speedup, 1),
-    },
 }
 
 dict_path, chart_path = resolve_output_paths(
     _cli,
-    default_dir=_workspace_root / "results" / "likelihood" / "imaging",
-    default_basename=f"pixelization_likelihood_summary_{instrument}_v{al_version}",
+    default_dir=_workspace_root / "results" / "breakdown" / "imaging",
+    default_basename=f"pixelization_breakdown_{instrument}_v{al_version}",
 )
-dict_path.write_text(json.dumps(likelihood_summary, indent=2))
+dict_path.write_text(json.dumps(breakdown_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")
 
 # --- Save bar chart ---
@@ -1074,28 +936,12 @@ for bar, t in zip(bars, times):
         fontsize=9,
     )
 
-ax.axvline(
-    full_pipeline_per_call,
-    color="#C44E52",
-    linestyle="--",
-    linewidth=1.5,
-    label=f"Full pipeline (single JIT): {full_pipeline_per_call:.6f} s",
-)
-if vmap_per_call is not None:
-    ax.axvline(
-        vmap_per_call,
-        color="#55A868",
-        linestyle="--",
-        linewidth=1.5,
-        label=f"vmap batch={batch_size} per call: {vmap_per_call:.6f} s ({vmap_speedup:.1f}x faster)",
-    )
-
 ax.set_yticks(y_pos)
 ax.set_yticklabels(labels, fontsize=10)
 ax.invert_yaxis()
 ax.set_xlabel("Time per call (s)", fontsize=11)
 fig.suptitle(
-    f"Pixelization Imaging Likelihood — {instrument.upper()}",
+    f"Pixelization Imaging Likelihood — Per-Step Breakdown — {instrument.upper()}",
     fontsize=12,
     fontweight="bold",
 )
@@ -1105,7 +951,6 @@ ax.set_title(
     f"total: {step_total:.6f} s",
     fontsize=9,
 )
-ax.legend(loc="lower right", fontsize=9)
 ax.margins(x=0.15)
 fig.tight_layout()
 
@@ -1115,16 +960,9 @@ print(f"  Bar chart saved to:    {chart_path}")
 
 
 # ===================================================================
-# Regression assertion — realistic-scale deterministic log-evidence
+# Regression assertion — eager log_evidence only
 # ===================================================================
-#
-# RectangularAdaptImage at prior medians anchors the regression on the
-# *eager* FitImaging value (deterministic to fp64 noise). The full-pipeline
-# single-JIT / vmap paths agree with eager to ~1e-3 only: adaptive mesh
-# weighting amplifies fp accumulation in Cholesky / log_det on the bigger
-# 1581x1581 mapping matrix relative to the non-adaptive baseline (which
-# previously matched at 1e-4). The 1e-3 envelope is still tight enough to
-# catch real numerical regressions while accommodating the adaptive path.
+
 EXPECTED_LOG_EVIDENCE_HST = 28370.27770182  # 39x39 = 1521 source pixels, MGE-60 lens light, adapt_image=lensed_source
 
 np.testing.assert_allclose(
@@ -1140,17 +978,3 @@ print(
     f"  Eager regression assertion PASSED: log_evidence matches "
     f"{EXPECTED_LOG_EVIDENCE_HST:.6f}"
 )
-np.testing.assert_allclose(
-    float(full_result),
-    EXPECTED_LOG_EVIDENCE_HST,
-    rtol=1e-3,
-    err_msg=f"imaging/pixelization[{instrument}]: regression — full log_evidence drifted",
-)
-if result_vmap is not None:
-    np.testing.assert_allclose(
-        np.array(result_vmap),
-        EXPECTED_LOG_EVIDENCE_HST,
-        rtol=1e-3,
-        err_msg=f"imaging/pixelization[{instrument}]: regression — vmap log_evidence drifted",
-    )
-print(f"  Regression assertion PASSED: log_evidence matches {EXPECTED_LOG_EVIDENCE_HST:.6f}")

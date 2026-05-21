@@ -1,27 +1,22 @@
 """
-JAX Profiling: Delaunay Datacube Likelihood (Step-by-Step)
-==========================================================
+JAX Profiling: Delaunay Datacube Likelihood — Per-Step Breakdown
+================================================================
 
-Profiles each step of the JAX likelihood function for an ALMA-style datacube —
-a list of N ``Interferometer`` channels sharing a single lens model — where
-each channel reconstructs its own source with a Delaunay pixelization +
-ConstantSplit regularization.
+Decomposes each step of the JAX likelihood function for an ALMA-style
+datacube (a list of N ``Interferometer`` channels sharing a single lens
+model) into individual JIT-profiled stages.  Channel-invariant steps are
+timed once; channel-variant steps are JIT-compiled on channel 0 and the
+reported cube cost is ``N × per-channel steady-state per-call``.
 
-Mirrors the step-by-step structure of
-``likelihood/interferometer/delaunay.py`` (Phase 2 of the datacube
-roadmap, just merged). The key new ingredient is the **channel-invariant vs
-channel-variant** split: most steps are computed once for the whole cube
-(shared lens, shared mesh, shared mask), only the NUFFT-based inversion-setup
-chain, the data vector, the curvature matrix, the reconstruction, and the
-log-evidence depend on per-channel data.
+This is the **breakdown** companion to ``likelihood_runtime/datacube/delaunay.py``.
+The runtime variant benchmarks the full-pipeline single-JIT and vmap
+performance; this script isolates the cost of every individual pipeline
+stage so the shared-``Lᵀ W̃ L`` optimisation target is clearly visible
+in the bar chart.
 
 The cube total is::
 
     cube_cost = sum(channel_invariant_costs) + N_channels * sum(channel_variant_costs)
-
-That number quantifies how much the deferred shared-``Lᵀ W̃ L`` optimisation
-will save: moving the curvature matrix from per-channel to shared would
-subtract ``(N - 1) * curvature_matrix_cost`` from the cube total.
 
 Channel-invariant vs channel-variant taxonomy
 ---------------------------------------------
@@ -49,15 +44,7 @@ Dataset
 This profiler reuses the SMA interferometer dataset
 (``dataset/interferometer/sma/``) loaded N times as a 4-channel
 "cube". Each channel has identical visibilities, noise map and uv_wavelengths
-— the point here is timing, not science. The N-channel cube log-evidence is
-``N × single-channel log-evidence`` exactly, which makes the regression
-assertion trivial.
-
-If you want a realistic per-channel-distinct cube, point the loader at the
-workspace simulator output at
-``../autolens_workspace/dataset/interferometer/datacube/sim_simple/``; the
-JIT-cost taxonomy doesn't change because it's a function of which arrays are
-loop-variables in ``FitInterferometer``, not the data values themselves.
+— the point here is timing, not science.
 
 Measures
 --------
@@ -68,23 +55,8 @@ Measures
    call (lower / compile / first-call / steady-state × 10). Channel-invariant
    stages are timed once; channel-variant stages are timed on channel 0 and
    the cube cost is reported as ``N × per-call``.
-3. Full-pipeline cube JIT: ``jax.jit`` over the explicit
-   ``sum(analysis.log_likelihood_function(instance) for analysis in
-   analysis_list)`` — the same shape as the user-facing
-   ``datacube/likelihood_function.py`` and the cube modeling scripts'
-   internal ``FactorGraphModel`` sum.
-4. Correctness: per-step recomputed cube log-evidence and full-pipeline JIT
-   log-evidence both match the summed eager ``FitInterferometer.log_evidence``
-   at ``rtol=1e-4``.
-5. Results JSON + bar chart written to ``results/jit/datacube/`` using the
-   same schema as the interferometer sibling. Bar chart shows the cube-total
-   form of every step (channel-variant entries pre-multiplied by N).
-
-vmap is **skipped** for the cube profiler. The natural batching dimension is
-"datasets" (one entry per channel) not "parameters" (which the
-interferometer-sibling vmap exercises). A vmap-over-channels variant would
-require a different graph shape and isn't the bottleneck we care about for
-the shared-``Lᵀ W̃ L`` optimisation.
+3. Results JSON + bar chart written to ``results/breakdown/datacube/`` using the
+   same schema as the interferometer sibling.
 """
 
 import numpy as np
@@ -102,8 +74,8 @@ import autolens as al
 import autoarray as aa
 from autofit.jax import register_model as _register_model_pytrees
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from adapt_image_util import adapt_image_for_dataset  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from _adapt_image_util import adapt_image_for_dataset  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Instrument configuration
@@ -121,8 +93,6 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 
 # Sweep-driver CLI args (--config-name / --output-dir / --use-mixed-precision).
 # Tolerates extra/unknown args via parse_known_args inside the helper.
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from _profile_cli import (  # noqa: E402
     parse_profile_cli,
     device_info_dict,
@@ -787,88 +757,6 @@ print(
 
 
 # ===================================================================
-# PART C — Full-pipeline cube JIT (sum of per-channel log_likelihoods)
-# ===================================================================
-
-print("\n" + "=" * 70)
-print("FULL-PIPELINE CUBE JIT (for comparison)")
-print("=" * 70)
-
-# Part C is expensive at large n_channels: lower + compile build a graph
-# proportional to n_channels (e.g. ~70s for n_channels=34 on a laptop CPU),
-# and the steady-state first-call follows. Default to skipping; opt in with
-# CUBE_FULL_JIT=1 when the full-pipeline timing matters (e.g. comparing
-# step-by-step total against single-JIT).
-_run_full_cube_jit = os.environ.get("CUBE_FULL_JIT") == "1"
-
-if _run_full_cube_jit:
-    analysis_list = [
-        al.AnalysisInterferometer(
-            dataset=d,
-            adapt_images=adapt_images,
-            settings=al.Settings(use_mixed_precision=_cli.use_mixed_precision),
-            use_jax=True,
-        )
-        for d in dataset_list
-    ]
-
-    def full_cube_pipeline_from_params(params_tree):
-        """Cube log-evidence via the explicit per-channel sum.
-
-        Same shape as the user-facing ``datacube/likelihood_function.py``:
-        feeds the shared instance to every per-channel
-        ``AnalysisInterferometer.log_likelihood_function`` and sums.
-        """
-        total = jnp.zeros(())
-        for analysis in analysis_list:
-            total = total + analysis.log_likelihood_function(instance=params_tree)
-        return total
-
-    _full_cube_n_repeats = 3
-    _, full_cube_result = jit_profile(
-        full_cube_pipeline_from_params,
-        "full_cube_pipeline",
-        params_tree,
-        n_repeats=_full_cube_n_repeats,
-    )
-    full_pipeline_per_call = timer.records[-1][1] / _full_cube_n_repeats
-
-    print(f"  full cube log_evidence (JIT) = {full_cube_result}")
-
-    np.testing.assert_allclose(
-        float(full_cube_result),
-        cube_log_evidence_ref,
-        rtol=1e-4,
-        err_msg="Full-pipeline cube JIT log_evidence does not match summed eager FitInterferometer.log_evidence",
-    )
-    print("  Eager-vs-JIT cube correctness PASSED")
-else:
-    full_cube_result = None
-    full_pipeline_per_call = float("nan")
-    print(
-        "  Full-pipeline cube JIT SKIPPED — opt-in via CUBE_FULL_JIT=1. "
-        f"At n_channels={n_channels} the lower + compile alone is on the order of "
-        f"{n_channels * 2}-{n_channels * 3}s, so it's gated to keep the default "
-        "runtime usable; the per-step Part B JIT data above is what feeds the "
-        "shared-Lᵀ W̃ L analysis."
-    )
-
-# ===================================================================
-# PART D — vmap (skipped for cube)
-# ===================================================================
-#
-# The natural batching axis for a cube fit is "datasets" (one entry per
-# channel), not "parameters" (which the interferometer-sibling vmap exercises).
-# vmap-over-channels would require a different graph shape and isn't where the
-# shared-Lᵀ W̃ L optimisation lives. Skipped.
-
-print("\n--- vmap (skipped) ---")
-print(
-    "  Cube batching dimension is 'datasets', not 'parameters'. The "
-    "interferometer-sibling vmap pattern doesn't map cleanly here. Skipped."
-)
-
-# ===================================================================
 # Summary + JSON + bar chart
 # ===================================================================
 
@@ -880,7 +768,7 @@ import matplotlib.pyplot as plt
 al_version = al.__version__
 
 print("\n" + "=" * 70)
-print(f"JAX LIKELIHOOD FUNCTION SUMMARY — CUBE {instrument.upper()} × {n_channels} — v{al_version}")
+print(f"JAX LIKELIHOOD BREAKDOWN SUMMARY — CUBE {instrument.upper()} × {n_channels} — v{al_version}")
 print("=" * 70)
 print(f"  Instrument:              {instrument}")
 print(f"  Channels:                {n_channels}")
@@ -892,10 +780,6 @@ print(f"  Delaunay vertices:       {n_mesh_vertices}")
 print(f"  Edge zeroed pixels:      {edge_pixels_total}")
 print("-" * 70)
 print(f"  Cube reference log_evidence:  {cube_log_evidence_ref}")
-if full_cube_result is not None:
-    print(f"  Cube JIT log_evidence:        {float(full_cube_result)}")
-else:
-    print(f"  Cube JIT log_evidence:        SKIPPED (CUBE_FULL_JIT=1 to enable)")
 print("-" * 70)
 
 max_label = max(len(label) for label, _ in likelihood_steps)
@@ -911,10 +795,6 @@ shared_lwl_savings = (n_channels - 1) * curvature_matrix_per_channel
 
 print("-" * 70)
 print(f"      {'TOTAL (step-by-step cube cost)':<{max_label}}  {step_total:>12.6f} s")
-if np.isfinite(full_pipeline_per_call):
-    print(f"      {'Full pipeline cube (single JIT)':<{max_label}}  {full_pipeline_per_call:>12.6f} s")
-else:
-    print(f"      {'Full pipeline cube (single JIT)':<{max_label}}  SKIPPED")
 print(f"      {f'Shared-Lᵀ W̃ L savings (curvature only, est.)':<{max_label}}  {shared_lwl_savings:>12.6f} s")
 print("=" * 70)
 
@@ -937,9 +817,6 @@ likelihood_summary = {
         "regularization_coefficient": regularization_coefficient,
     },
     "cube_log_evidence_eager": cube_log_evidence_ref,
-    "cube_log_evidence_jit": (
-        float(full_cube_result) if full_cube_result is not None else None
-    ),
     "log_evidence_per_channel_eager": [float(le) for le in log_evidence_per_channel],
     "steps_cube_cost": {label: per_call for label, per_call in likelihood_steps},
     "per_channel_costs": {
@@ -950,15 +827,13 @@ likelihood_summary = {
         "log_evidence": log_evidence_per_channel_cost,
     },
     "total_step_by_step_cube": step_total,
-    "full_pipeline_cube_single_jit": full_pipeline_per_call,
     "shared_lwl_savings_estimate": shared_lwl_savings,
-    "vmap": "SKIPPED — cube batching axis is 'datasets', not 'parameters'",
 }
 
 dict_path, chart_path = resolve_output_paths(
     _cli,
-    default_dir=_workspace_root / "results" / "likelihood" / "datacube",
-    default_basename=f"delaunay_likelihood_summary_{instrument}_v{al_version}",
+    default_dir=_workspace_root / "results" / "breakdown" / "datacube",
+    default_basename=f"delaunay_breakdown_{instrument}_v{al_version}",
 )
 dict_path.write_text(json.dumps(likelihood_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")
@@ -983,14 +858,6 @@ for bar, t in zip(bars, times):
         fontsize=9,
     )
 
-if np.isfinite(full_pipeline_per_call):
-    ax.axvline(
-        full_pipeline_per_call,
-        color="#C44E52",
-        linestyle="--",
-        linewidth=1.5,
-        label=f"Full pipeline cube (single JIT): {full_pipeline_per_call:.6f} s",
-    )
 ax.axvline(
     shared_lwl_savings,
     color="#8172B2",
@@ -1004,7 +871,7 @@ ax.set_yticklabels(labels, fontsize=10)
 ax.invert_yaxis()
 ax.set_xlabel("Cube cost per call (s)", fontsize=11)
 fig.suptitle(
-    f"Delaunay Datacube Likelihood — {instrument.upper()} × {n_channels} channels",
+    f"Delaunay Datacube Likelihood Breakdown — {instrument.upper()} × {n_channels} channels",
     fontsize=12,
     fontweight="bold",
 )
@@ -1029,8 +896,8 @@ print(f"  Bar chart saved to:    {chart_path}")
 # ===================================================================
 #
 # Identical channels = exact N × single-channel log-evidence (for "sma").
-# For "hannah" the per-channel literal isn't pinned yet, so the assertion is
-# skipped until the value below is filled in from a clean run.
+# For "alma" / "alma_high" the per-channel literal isn't pinned yet, so the
+# assertion is skipped until the value below is filled in from a clean run.
 EXPECTED_LOG_EVIDENCE_PER_CHANNEL = {
     "sma": None,
     "alma": None,
@@ -1064,11 +931,3 @@ else:
         f"\n  Eager cube regression assertion PASSED: log_evidence matches "
         f"{expected_cube_log_evidence:.6f}"
     )
-    if full_cube_result is not None:
-        np.testing.assert_allclose(
-            float(full_cube_result),
-            expected_cube_log_evidence,
-            rtol=1e-3,
-            err_msg=f"datacube/delaunay[{instrument}]: regression — full cube log_evidence drifted",
-        )
-        print(f"  Full-pipeline cube regression assertion PASSED")

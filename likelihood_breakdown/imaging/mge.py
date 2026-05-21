@@ -1,52 +1,45 @@
 """
-JAX Profiling: MGE Imaging Likelihood (Step-by-Step)
-=====================================================
+JAX Profiling: MGE Imaging Likelihood — Per-Step Breakdown
+===========================================================
 
-Profiles each step of the JAX likelihood function for an imaging dataset where
-the lens galaxy's light is modelled with a multi-Gaussian expansion (MGE).
+Decomposes the JAX likelihood function for an imaging dataset (MGE lens model)
+into its individual pipeline steps and JIT-profiles each one separately. This
+script is the **breakdown** counterpart to ``likelihood_runtime/imaging/mge.py``,
+which measures only the full-pipeline single-JIT cost.
 
-Rather than timing the whole likelihood as a single JIT-compiled block (which
-hides internal bottlenecks), this script JIT-compiles and times each step of
-the pipeline individually:
+Per-step timing is approximate: XLA may fuse operations differently when
+compiled as one program vs separate pieces, but the breakdown is still useful
+for identifying which step dominates the runtime budget.
 
-1. Instance from parameter vector
-2. Build Tracer
-3. Ray-trace grids through the lens
-4. Compute mapping matrix (per-profile images before PSF)
-5. Compute blurred mapping matrix (PSF convolution)
-6. Compute data vector  (D)
-7. Compute curvature matrix  (F)
-8. Reconstruction via positive-only NNLS
-9. Map reconstruction back to image plane
-10. Chi-squared and log likelihood
+Steps profiled:
+
+1. Ray-trace grids
+2. Mapping matrix (linear profile images before PSF)
+3. Blurred mapping matrix (PSF convolution of each profile)
+4. Data vector (D)
+5. Curvature matrix (F)
+6. Reconstruction via positive-only NNLS
+7. Map reconstruction back to image plane
+8. Chi-squared and log likelihood
 
 Note: because the MGE model uses only linear light profiles (lp_linear),
 there is no non-linear blurred image or profile-subtracted image step.
 
-Caveat: XLA may fuse operations differently when compiled as one program vs
-separate pieces, so per-step timings are approximate. They are still useful
-for identifying which step dominates.
+All JAX timings use ``block_until_ready()`` to force synchronous measurement.
 
-All JAX timings use `block_until_ready()` to force synchronous measurement.
-
-Pytree-native parameter inputs (recommended pattern)
-----------------------------------------------------
+Pytree-native parameter inputs
+------------------------------------
 
 This script uses ``af.ModelInstance`` as the JIT input via PyAutoFit's
-opt-in pytree registration (``autofit.jax.register_model(model)``). The
-JIT'd closures consume the instance directly, so:
+opt-in pytree registration (``autofit.jax.register_model(model)``). See
+``likelihood_runtime/imaging/mge.py`` for a full description of the pytree
+pattern. This breakdown script shares the same setup.
 
-* ``model.instance_from_vector`` is no longer called inside the JIT trace —
-  parameter unpacking happens once at registration time and JAX walks the
-  pytree on every call.
-* Parameter identity is preserved through ``jax.jit`` and ``jax.vmap``;
-  XLA cache keys reflect the structured pytree, not a flat vector shape.
-* ``vmap`` batching is ``jax.tree_util.tree_map`` over the instance leaves
-  — callers no longer have to stack a ``(batch, N)`` array.
+Output
+------
 
-New profiling scripts should follow this pattern. The flat-vector path in
-``Fitness.call`` / ``model.instance_from_vector(..., xp=jnp)`` remains the
-production likelihood entry point and is intentionally untouched here.
+Results JSON and PNG are written to ``results/breakdown/imaging/`` using
+the basename ``mge_breakdown_{instrument}_v{al_version}``.
 """
 
 import numpy as np
@@ -79,7 +72,6 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 
 # Sweep-driver CLI args (--config-name / --output-dir / --use-mixed-precision).
 # Tolerates extra/unknown args via parse_known_args inside the helper.
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from _profile_cli import (  # noqa: E402
     parse_profile_cli,
@@ -602,100 +594,7 @@ np.testing.assert_allclose(
 print("  Assertion PASSED: step-by-step matches FitImaging.log_likelihood")
 
 # ===================================================================
-# PART C — Full-pipeline JIT for comparison
-# ===================================================================
-
-print("\n" + "=" * 70)
-print("FULL-PIPELINE JIT (for comparison)")
-print("=" * 70)
-
-# Build the analysis with ``use_jax=True`` so its ``log_likelihood_function``
-# threads ``xp=jnp`` through every internal call (border relocation, profile
-# evaluation, inversion, etc.). This is the same wiring that ``Fitness.call``
-# uses in production — we just feed it our pytree-native instance directly
-# instead of going through ``model.instance_from_vector(parameters, xp=jnp)``.
-analysis = al.AnalysisImaging(dataset=dataset, use_jax=True)
-
-def full_pipeline_from_params(params_tree):
-    """Full likelihood from a pytree-shaped ``ModelInstance``.
-
-    No flat-vector unpacking inside the trace — the instance crosses the JIT
-    boundary directly, with constants (redshifts, etc.) kept static via the
-    ``aux_data`` partition set up by ``autofit.jax.register_model``.
-    """
-    return analysis.log_likelihood_function(instance=params_tree)
-
-_, full_result = jit_profile(full_pipeline_from_params, "full_pipeline", params_tree)
-full_pipeline_per_call = timer.records[-1][1] / 10
-
-print(f"  full log_likelihood = {full_result}")
-
-# ===================================================================
-# PART D — vmap + correctness
-# ===================================================================
-
-print("\n--- vmap batched evaluation ---")
-
-batch_size = 3
-
-# Build the batched pytree: every leaf gets a fresh leading batch axis. No
-# flat-vector reshaping required — JAX walks the pytree via the registration
-# we added in PART A.
-parameters = jax.tree_util.tree_map(
-    lambda leaf: jnp.broadcast_to(leaf, (batch_size, *leaf.shape)),
-    params_tree,
-)
-
-vmapped_full = jax.jit(jax.vmap(full_pipeline_from_params))
-
-with timer.section("vmap_first_call"):
-    result_vmap = vmapped_full(parameters)
-    block(result_vmap)
-
-n_vmap_repeats = 10
-with timer.section(f"vmap_steady_x{n_vmap_repeats}"):
-    for _ in range(n_vmap_repeats):
-        result_vmap = vmapped_full(parameters)
-        block(result_vmap)
-
-vmap_batch_time = timer.records[-1][1] / n_vmap_repeats
-vmap_per_call = vmap_batch_time / batch_size
-vmap_speedup = full_pipeline_per_call / vmap_per_call
-
-print(f"  batch results = {result_vmap}")
-print(f"  vmap batch of {batch_size}:   {vmap_batch_time:.6f} s")
-print(f"  vmap per call:         {vmap_per_call:.6f} s")
-print(f"  single JIT per call:   {full_pipeline_per_call:.6f} s")
-print(f"  vmap speedup:          {vmap_speedup:.1f}x faster per likelihood")
-
-np.testing.assert_allclose(
-    np.array(result_vmap),
-    float(full_result),
-    rtol=1e-4,
-    err_msg="mge: JAX vmap likelihood mismatch",
-)
-print("  Correctness check PASSED")
-
-# ===================================================================
-# PART E — Static memory analysis
-# ===================================================================
-
-print("\n--- Static memory analysis ---")
-
-lowered_batched = vmapped_full.lower(parameters)
-compiled_batched = lowered_batched.compile()
-
-memory_analysis = compiled_batched.memory_analysis()
-print(f"  Output size:  {memory_analysis.output_size_in_bytes / 1024**2:.3f} MB")
-print(f"  Temp size:    {memory_analysis.temp_size_in_bytes / 1024**2:.3f} MB")
-print(
-    f"  Total:        "
-    f"{(memory_analysis.output_size_in_bytes + memory_analysis.temp_size_in_bytes) / 1024**2:.3f} MB"
-)
-
-
-# ===================================================================
-# JAX Likelihood Function Summary
+# Per-step breakdown summary + JSON + PNG
 # ===================================================================
 
 import json
@@ -706,7 +605,7 @@ import matplotlib.pyplot as plt
 al_version = al.__version__
 
 print("\n" + "=" * 70)
-print(f"JAX LIKELIHOOD FUNCTION SUMMARY — {instrument.upper()} — v{al_version}")
+print(f"PER-STEP BREAKDOWN SUMMARY — {instrument.upper()} — v{al_version}")
 print("=" * 70)
 print(f"  Instrument:            {instrument}")
 print(f"  Pixel scale:           {pixel_scale} arcsec/pixel")
@@ -724,15 +623,13 @@ for i, (label, per_call) in enumerate(likelihood_steps, 1):
 
 print("-" * 70)
 print(f"      {'TOTAL (step-by-step)':<{max_label}}  {step_total:>12.6f} s")
-print(f"      {'Full pipeline (single JIT)':<{max_label}}  {full_pipeline_per_call:>12.6f} s")
-print(f"      {f'vmap batch={batch_size} (per call)':<{max_label}}  {vmap_per_call:>12.6f} s")
-print(f"      {f'vmap speedup vs single JIT':<{max_label}}  {vmap_speedup:>11.1f}x")
 print("=" * 70)
 
 # --- Save results dictionary ---
 
-likelihood_summary = {
+breakdown_summary = {
     "autolens_version": al_version,
+    "device": device_info_dict(),
     "instrument": instrument,
     "configuration": {
         "pixel_scale_arcsec": pixel_scale,
@@ -743,20 +640,14 @@ likelihood_summary = {
     },
     "steps": {label: per_call for label, per_call in likelihood_steps},
     "total_step_by_step": step_total,
-    "full_pipeline_single_jit": full_pipeline_per_call,
-    "vmap": {
-        "batch_size": batch_size,
-        "batch_time": vmap_batch_time,
-        "per_call": vmap_per_call,
-        "speedup_vs_single_jit": round(vmap_speedup, 1),
-    },
 }
 
-results_dir = _workspace_root / "results" / "likelihood" / "imaging"
-results_dir.mkdir(parents=True, exist_ok=True)
-
-dict_path = results_dir / f"mge_likelihood_summary_{instrument}_v{al_version}.json"
-dict_path.write_text(json.dumps(likelihood_summary, indent=2))
+dict_path, chart_path = resolve_output_paths(
+    _cli,
+    default_dir=_workspace_root / "results" / "breakdown" / "imaging",
+    default_basename=f"mge_breakdown_{instrument}_v{al_version}",
+)
+dict_path.write_text(json.dumps(breakdown_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")
 
 # --- Save bar chart ---
@@ -777,27 +668,12 @@ for bar, t in zip(bars, times):
         fontsize=9,
     )
 
-ax.axvline(
-    full_pipeline_per_call,
-    color="#C44E52",
-    linestyle="--",
-    linewidth=1.5,
-    label=f"Full pipeline (single JIT): {full_pipeline_per_call:.6f} s",
-)
-ax.axvline(
-    vmap_per_call,
-    color="#55A868",
-    linestyle="--",
-    linewidth=1.5,
-    label=f"vmap batch={batch_size} per call: {vmap_per_call:.6f} s ({vmap_speedup:.1f}x faster)",
-)
-
 ax.set_yticks(y_pos)
 ax.set_yticklabels(labels, fontsize=10)
 ax.invert_yaxis()
 ax.set_xlabel("Time per call (s)", fontsize=11)
 fig.suptitle(
-    f"MGE Imaging Likelihood — {instrument.upper()}",
+    f"MGE Imaging Likelihood — Per-Step Breakdown — {instrument.upper()}",
     fontsize=12,
     fontweight="bold",
 )
@@ -807,24 +683,18 @@ ax.set_title(
     f"total: {step_total:.6f} s",
     fontsize=9,
 )
-ax.legend(loc="lower right", fontsize=9)
 ax.margins(x=0.15)
 fig.tight_layout()
 
-chart_path = results_dir / f"mge_likelihood_summary_{instrument}_v{al_version}.png"
 fig.savefig(chart_path, dpi=150)
 plt.close(fig)
 print(f"  Bar chart saved to:    {chart_path}")
 
 
 # ===================================================================
-# Regression assertion — realistic-scale deterministic likelihood
+# Regression assertion — eager log_likelihood only
 # ===================================================================
-#
-# Simulator truth parameters (mass + shear fixed; MGE bulges free around
-# default centre/ell_comps priors) put the evaluation point at the
-# physically-meaningful truth operating point. Eager, JIT, and vmap all
-# agree to ~1e-11 precision.
+
 EXPECTED_LOG_LIKELIHOOD_HST = 27379.38890685539
 
 np.testing.assert_allclose(
@@ -840,16 +710,3 @@ print(
     f"  Eager regression assertion PASSED: log_likelihood matches "
     f"{EXPECTED_LOG_LIKELIHOOD_HST:.6f}"
 )
-np.testing.assert_allclose(
-    float(full_result),
-    EXPECTED_LOG_LIKELIHOOD_HST,
-    rtol=1e-4,
-    err_msg=f"imaging/mge[{instrument}]: regression — full log_likelihood drifted",
-)
-np.testing.assert_allclose(
-    np.array(result_vmap),
-    EXPECTED_LOG_LIKELIHOOD_HST,
-    rtol=1e-4,
-    err_msg=f"imaging/mge[{instrument}]: regression — vmap log_likelihood drifted",
-)
-print(f"  Regression assertion PASSED: log_likelihood matches {EXPECTED_LOG_LIKELIHOOD_HST:.6f}")
