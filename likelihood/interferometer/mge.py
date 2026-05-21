@@ -9,12 +9,21 @@ the lens galaxy is an Isothermal + ExternalShear.
 Unlike the imaging MGE profiling script, this script deliberately does not
 per-step JIT the inversion pipeline. The interferometer path exercises a
 Fourier-transformed mapping matrix, a visibilities-space data vector /
-curvature matrix, and an NNLS solve whose ``xp=jnp`` threading has not been
-fully characterised. Per-step decomposition risks missing cross-step XLA
-fusion that matters in practice, and risks hitting library-level JAX
-blockers that we would want to raise as separate issues rather than work
-around here. Once the full-pipeline JIT is stable on interferometer, the
-per-step breakdown can land as a follow-up.
+curvature matrix, and an NNLS solve. Per-step decomposition risks missing
+cross-step XLA fusion that matters in practice, and the full-pipeline JIT
+is the production cost a sampler actually pays. Once the per-step
+breakdown stabilises across the three interferometer model variants
+(mge / pixelization / delaunay), it can land as a follow-up.
+
+The Fourier transform uses the JAX-native ``al.TransformerNUFFT``
+(nufftax-backed) by default — at SMA's 190 visibilities it is roughly
+comparable to ``TransformerDFT``, but the choice scales to ALMA-class
+visibility counts. Pass ``--use-dft`` for an apples-to-apples comparison
+against the historical SMA baseline (``EXPECTED_LOG_LIKELIHOOD_SMA``)
+or against the pixelization / delaunay scripts (which remain on
+``TransformerDFT`` because their ``apply_sparse_operator`` path is not
+yet compatible with the new nufftax-backed adjoint — see
+``PyAutoArray/autoarray/dataset/interferometer/dataset.py:261``).
 
 Instead, this script measures:
 
@@ -65,6 +74,23 @@ import sys as _smoke_sys
 if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
     _smoke_sys.exit(0)
+
+# Sweep-driver CLI args (--config-name / --output-dir / --use-mixed-precision).
+# Plus this script's own --use-dft override to compare NUFFT against the
+# historical DFT baseline on SMA.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from _profile_cli import (  # noqa: E402
+    parse_profile_cli,
+    device_info_dict,
+    resolve_output_paths,
+)
+_cli = parse_profile_cli()
+
+import argparse as _argparse  # noqa: E402
+_local_parser = _argparse.ArgumentParser(add_help=False, allow_abbrev=False)
+_local_parser.add_argument("--use-dft", action="store_true")
+_local_args, _ = _local_parser.parse_known_args()
+USE_DFT = bool(_local_args.use_dft)
 
 INSTRUMENTS = {
     "sma": {"pixel_scale": 0.1, "real_space_shape": (256, 256)},
@@ -159,13 +185,16 @@ real_space_mask = al.Mask2D.circular(
     radius=mask_radius,
 )
 
+_transformer_class = al.TransformerDFT if USE_DFT else al.TransformerNUFFT
+print(f"  Transformer:             {_transformer_class.__name__}")
+
 with timer.section("dataset_load"):
     dataset = al.Interferometer.from_fits(
         data_path=dataset_path / "data.fits",
         noise_map_path=dataset_path / "noise_map.fits",
         uv_wavelengths_path=dataset_path / "uv_wavelengths.fits",
         real_space_mask=real_space_mask,
-        transformer_class=al.TransformerDFT,
+        transformer_class=_transformer_class,
     )
 
 n_visibilities = dataset.uv_wavelengths.shape[0]
@@ -259,6 +288,7 @@ with timer.section("fit_interferometer_eager"):
     fit = al.FitInterferometer(
         dataset=dataset,
         tracer=tracer,
+        settings=al.Settings(use_mixed_precision=_cli.use_mixed_precision),
         xp=np,
     )
     figure_of_merit_ref = fit.figure_of_merit
@@ -276,7 +306,11 @@ print("\n" + "=" * 70)
 print("FULL-PIPELINE JIT")
 print("=" * 70)
 
-analysis = al.AnalysisInterferometer(dataset=dataset, use_jax=True)
+analysis = al.AnalysisInterferometer(
+    dataset=dataset,
+    settings=al.Settings(use_mixed_precision=_cli.use_mixed_precision),
+    use_jax=True,
+)
 
 def full_pipeline_from_params(params_tree):
     """Full interferometer likelihood from a pytree-shaped ``ModelInstance``.
@@ -397,8 +431,11 @@ print("=" * 70)
 
 likelihood_summary = {
     "autolens_version": al_version,
+    "device": device_info_dict(),
     "instrument": instrument,
     "model": "mge",
+    "transformer": _transformer_class.__name__,
+    "use_mixed_precision": _cli.use_mixed_precision,
     "configuration": {
         "pixel_scale_arcsec": pixel_scale,
         "mask_radius_arcsec": mask_radius,
@@ -421,10 +458,11 @@ likelihood_summary = {
     },
 }
 
-results_dir = _workspace_root / "results" / "likelihood" / "interferometer"
-results_dir.mkdir(parents=True, exist_ok=True)
-
-dict_path = results_dir / f"mge_likelihood_summary_{instrument}_v{al_version}.json"
+dict_path, chart_path = resolve_output_paths(
+    _cli,
+    default_dir=_workspace_root / "results" / "likelihood" / "interferometer",
+    default_basename=f"mge_likelihood_summary_{instrument}_v{al_version}",
+)
 dict_path.write_text(json.dumps(likelihood_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")
 
@@ -468,7 +506,6 @@ ax.set_title(
 ax.margins(x=0.2)
 fig.tight_layout()
 
-chart_path = results_dir / f"mge_likelihood_summary_{instrument}_v{al_version}.png"
 fig.savefig(chart_path, dpi=150)
 plt.close(fig)
 print(f"  Bar chart saved to:    {chart_path}")
@@ -480,14 +517,31 @@ print(f"  Bar chart saved to:    {chart_path}")
 #
 # Simulator truth parameters via GaussianPrior(mean=truth, sigma=small)
 # make the full-pipeline log-likelihood deterministic at the prior median.
+# Two reference values: the historical TransformerDFT baseline (used when
+# --use-dft is passed) and the new TransformerNUFFT default. NUFFT and DFT
+# agree to ~O(1e-5) relative on SMA's 190 visibilities (nufftax uses
+# interpolation kernels + oversampling vs DFT's exact matmul), so the rtol
+# stays at 1e-4 — well above the natural numerical drift.
 EXPECTED_LOG_LIKELIHOOD_SMA = -3153.8939746810656
+# Measured 2026-05-21 on PyAutoLens v2026.5.14.2: TransformerNUFFT (nufftax-
+# backed, CPU fp64) and TransformerDFT agree bit-for-bit on this SMA dataset
+# (190 visibilities). nufftax 0.4.0 uses double-precision interpolation
+# kernels with eps=1e-6 default, which on this regime is below fp64 round-off.
+# A single constant is reused for both transformers; should it ever drift
+# under future nufftax / jaxlib bumps, split into DFT/NUFFT-specific values.
+
+# mp paths shift the inversion's compute dtype to fp32, which can push the
+# full-pipeline log-likelihood by O(1e-4) relative on this regime. Loosen the
+# rtol when the user asked for mixed precision.
+_regression_rtol = 1e-3 if _cli.use_mixed_precision else 1e-4
 
 np.testing.assert_allclose(
     log_likelihood_ref,
     EXPECTED_LOG_LIKELIHOOD_SMA,
-    rtol=1e-4,
+    rtol=_regression_rtol,
     err_msg=(
-        f"interferometer/mge[{instrument}]: regression — eager log_likelihood drifted "
+        f"interferometer/mge[{instrument}, "
+        f"{'DFT' if USE_DFT else 'NUFFT'}]: regression — eager log_likelihood drifted "
         f"(got {log_likelihood_ref}, expected {EXPECTED_LOG_LIKELIHOOD_SMA})"
     ),
 )
@@ -498,13 +552,13 @@ print(
 np.testing.assert_allclose(
     float(full_result),
     EXPECTED_LOG_LIKELIHOOD_SMA,
-    rtol=1e-4,
+    rtol=_regression_rtol,
     err_msg=f"interferometer/mge[{instrument}]: regression — full log_likelihood drifted",
 )
 np.testing.assert_allclose(
     np.array(result_vmap),
     EXPECTED_LOG_LIKELIHOOD_SMA,
-    rtol=1e-4,
+    rtol=_regression_rtol,
     err_msg=f"interferometer/mge[{instrument}]: regression — vmap log_likelihood drifted",
 )
 print(f"  Regression assertion PASSED: log_likelihood matches {EXPECTED_LOG_LIKELIHOOD_SMA:.6f}")

@@ -119,6 +119,16 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
     _smoke_sys.exit(0)
 
+# Sweep-driver CLI args (--config-name / --output-dir / --use-mixed-precision).
+# Tolerates extra/unknown args via parse_known_args inside the helper.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from _profile_cli import (  # noqa: E402
+    parse_profile_cli,
+    device_info_dict,
+    resolve_output_paths,
+)
+_cli = parse_profile_cli()
+
 INSTRUMENTS = {
     "sma": {"pixel_scale": 0.1, "real_space_shape": (256, 256), "mask_radius": 3.0},
     "alma": {"pixel_scale": 0.05, "real_space_shape": (256, 256), "mask_radius": 3.0},
@@ -220,11 +230,11 @@ real_space_mask = al.Mask2D.circular(
 )
 
 with timer.section("dataset_list_load"):
-    # apply_sparse_operator: precompute the NUFFT precision-matrix preload per
-    # channel so per-fit curvature assembly uses the FFT-based sparse path
-    # instead of dense DFT for every source pixel. Unblocked by PyAutoArray#316
-    # (the Pmax > 1 extent-indexing fix); on Delaunay this was previously
-    # guarded with NotImplementedError.
+    # apply_sparse_operator: precompute the visibility-space sparse precision
+    # operator so per-fit curvature assembly uses the FFT-based sparse path
+    # instead of a dense DFT for every source pixel. Unblocked by
+    # PyAutoArray#316 (the Pmax > 1 extent-indexing fix); on Delaunay this was
+    # previously guarded with NotImplementedError.
     dataset_list = [
         al.Interferometer.from_fits(
             data_path=dataset_path / "data.fits",
@@ -232,9 +242,10 @@ with timer.section("dataset_list_load"):
             uv_wavelengths_path=dataset_path / "uv_wavelengths.fits",
             real_space_mask=real_space_mask,
             transformer_class=al.TransformerDFT,
-            # DFT is intentional even at ALMA-scale visibility counts — profiling
-            # the JAX-traceable path is the goal, NUFFT (pynufft) is not yet
-            # JIT-friendly.
+            # DFT is mandatory here: apply_sparse_operator is not yet
+            # compatible with the new nufftax-backed al.TransformerNUFFT (see
+            # PyAutoArray/autoarray/dataset/interferometer/dataset.py:261).
+            # Swapping the transformer would raise NotImplementedError.
             raise_error_dft_visibilities_limit=False,
         ).apply_sparse_operator(use_jax=True, show_progress=False)
         for _ in range(n_channels)
@@ -372,6 +383,7 @@ with timer.section(f"eager_fit_per_channel_x{n_channels}"):
             dataset=dataset,
             tracer=tracer,
             adapt_images=adapt_images,
+            settings=al.Settings(use_mixed_precision=_cli.use_mixed_precision),
             xp=np,
         )
         fit_list.append(f)
@@ -796,7 +808,12 @@ _run_full_cube_jit = os.environ.get("CUBE_FULL_JIT") == "1"
 
 if _run_full_cube_jit:
     analysis_list = [
-        al.AnalysisInterferometer(dataset=d, adapt_images=adapt_images, use_jax=True)
+        al.AnalysisInterferometer(
+            dataset=d,
+            adapt_images=adapt_images,
+            settings=al.Settings(use_mixed_precision=_cli.use_mixed_precision),
+            use_jax=True,
+        )
         for d in dataset_list
     ]
 
@@ -910,6 +927,7 @@ print("=" * 70)
 
 likelihood_summary = {
     "autolens_version": al_version,
+    "device": device_info_dict(),
     "instrument": instrument,
     "model": "delaunay",
     "n_channels": n_channels,
@@ -942,10 +960,11 @@ likelihood_summary = {
     "vmap": "SKIPPED — cube batching axis is 'datasets', not 'parameters'",
 }
 
-results_dir = _workspace_root / "results" / "likelihood" / "datacube"
-results_dir.mkdir(parents=True, exist_ok=True)
-
-dict_path = results_dir / f"delaunay_likelihood_summary_{instrument}_v{al_version}.json"
+dict_path, chart_path = resolve_output_paths(
+    _cli,
+    default_dir=_workspace_root / "results" / "likelihood" / "datacube",
+    default_basename=f"delaunay_likelihood_summary_{instrument}_v{al_version}",
+)
 dict_path.write_text(json.dumps(likelihood_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")
 
@@ -1005,7 +1024,6 @@ ax.legend(loc="lower right", fontsize=9)
 ax.margins(x=0.18)
 fig.tight_layout()
 
-chart_path = results_dir / f"delaunay_likelihood_summary_{instrument}_v{al_version}.png"
 fig.savefig(chart_path, dpi=150)
 plt.close(fig)
 print(f"  Bar chart saved to:    {chart_path}")

@@ -71,6 +71,16 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
     _smoke_sys.exit(0)
 
+# Sweep-driver CLI args (--config-name / --output-dir / --use-mixed-precision).
+# Tolerates extra/unknown args via parse_known_args inside the helper.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from _profile_cli import (  # noqa: E402
+    parse_profile_cli,
+    device_info_dict,
+    resolve_output_paths,
+)
+_cli = parse_profile_cli()
+
 INSTRUMENTS = {
     "euclid": {"pixel_scale": 0.1},
     "hst": {"pixel_scale": 0.05},
@@ -357,7 +367,10 @@ with timer.section("fit_imaging_eager"):
         dataset=dataset,
         tracer=tracer,
         adapt_images=adapt_images,
-        settings=al.Settings(use_border_relocator=True),
+        settings=al.Settings(
+            use_border_relocator=True,
+            use_mixed_precision=_cli.use_mixed_precision,
+        ),
         xp=np,
     )
     log_evidence_ref = fit.figure_of_merit
@@ -633,7 +646,10 @@ def blurred_mm_from_params(params_tree):
     )
     fit_jax = al.FitImaging(
         dataset=dataset, tracer=t, adapt_images=adapt_images_jax,
-        settings=al.Settings(use_border_relocator=True), xp=jnp,
+        settings=al.Settings(
+            use_border_relocator=True,
+            use_mixed_precision=_cli.use_mixed_precision,
+        ), xp=jnp,
     )
     return jnp.array(fit_jax.inversion.operated_mapping_matrix)
 
@@ -1027,6 +1043,7 @@ print("=" * 70)
 
 likelihood_summary = {
     "autolens_version": al_version,
+    "device": device_info_dict(),
     "instrument": instrument,
     "configuration": {
         "pixel_scale_arcsec": pixel_scale,
@@ -1050,10 +1067,11 @@ if vmap_per_call is not None:
         "speedup_vs_single_jit": round(vmap_speedup, 1),
     }
 
-results_dir = _workspace_root / "results" / "likelihood" / "imaging"
-results_dir.mkdir(parents=True, exist_ok=True)
-
-dict_path = results_dir / f"delaunay_likelihood_summary_{instrument}_v{al_version}.json"
+dict_path, chart_path = resolve_output_paths(
+    _cli,
+    default_dir=_workspace_root / "results" / "likelihood" / "imaging",
+    default_basename=f"delaunay_likelihood_summary_{instrument}_v{al_version}",
+)
 dict_path.write_text(json.dumps(likelihood_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")
 
@@ -1110,7 +1128,6 @@ ax.legend(loc="lower right", fontsize=9)
 ax.margins(x=0.15)
 fig.tight_layout()
 
-chart_path = results_dir / f"delaunay_likelihood_summary_{instrument}_v{al_version}.png"
 fig.savefig(chart_path, dpi=150)
 plt.close(fig)
 print(f"  Bar chart saved to:    {chart_path}")
