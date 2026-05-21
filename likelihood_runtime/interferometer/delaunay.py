@@ -126,7 +126,7 @@ from _profile_cli import (  # noqa: E402
 from simulators.interferometer import INSTRUMENTS  # noqa: E402
 _cli = parse_profile_cli()
 
-instrument = "sma"  # <-- change this to profile a different instrument
+instrument = _cli.instrument or "sma"  # default; override via --instrument
 
 hilbert_pixels = 1000  # 1000-tier production fiducial for Hilbert + Delaunay
 regularization_coefficient = 1.0

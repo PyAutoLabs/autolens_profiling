@@ -20,7 +20,9 @@ follow-up (see the bottom of this doc).
 |----------------------------------|--------|
 | Local CPU (fp64 + mp)            | ✅ run, numbers below |
 | Local GPU (RTX 2060) fp64 + mp   | ✅ run, numbers below |
-| HPC A100 fp64 + mp               | ⏸ separate follow-up PR |
+| HPC A100 sma (4 cells)           | ✅ run 2026-05-21 — interferometer/delaunay + datacube/delaunay × sma × fp64 + mp |
+| HPC A100 alma                    | ⏸ blocked — see [alma_apply_sparse_operator_oom](https://github.com/PyAutoLabs/PyAutoPrompt/blob/main/autoarray/alma_apply_sparse_operator_oom.md) |
+| HPC A100 alma_high               | ⏸ blocked — see [nufft_simulator_chunking](https://github.com/PyAutoLabs/PyAutoPrompt/blob/main/autoarray/nufft_simulator_chunking.md) |
 | Imaging cells fresh CPU/GPU      | ⚠ blocked by upstream `Grid2DIrregular.mask` bug — table rows show the pre-existing v2026.5.8.2 / v2026.5.14.2 data |
 
 ## Headline numbers (full pipeline, single JIT per call)
@@ -296,25 +298,65 @@ using; cheap to opt in.
 sampling). SMA dataset. The `apply_sparse_operator` path is the
 production case.*
 
+### sma (190 visibilities)
+
 | Config            | full pipeline | vmap (batch=3)               | log_evidence |
 |-------------------|---------------|------------------------------|--------------|
 | local_cpu_fp64    | 881 ms        | _vmap intentionally skipped_ | —            |
 | local_cpu_mp      | 788 ms        | _vmap intentionally skipped_ | —            |
-| local_gpu_fp64    | **131 ms**    | _vmap intentionally skipped_ | —            |
+| local_gpu_fp64    | 131 ms        | _vmap intentionally skipped_ | —            |
 | local_gpu_mp      | 138 ms        | _vmap intentionally skipped_ | —            |
-| hpc_a100_fp64     | —             | —                            | —            |
-| hpc_a100_mp       | —             | —                            | —            |
+| hpc_a100_fp64     | **33 ms**     | _vmap intentionally skipped_ | −3151.54     |
+| hpc_a100_mp       | 33 ms         | _vmap intentionally skipped_ | −3151.54     |
+
+### alma (1M visibilities) — A100 blocked
+
+| Config            | full pipeline | Notes |
+|-------------------|---------------|-------|
+| hpc_a100_fp64     | —             | OOM at 384 GB cgroup, see follow-up |
+| hpc_a100_mp       | —             | same |
+
+`apply_sparse_operator` + W-Tilde precompute chain exhausts >384 GB host
+RAM at 1M visibilities. Root cause is unclear — the W-Tilde matrix is
+only ~20 MB and inputs are ~50 MB total, so something in the JIT
+intermediates or block accumulators inside
+`PyAutoArray/autoarray/inversion/inversion/interferometer/inversion_interferometer_util.py`
+is accumulating without chunking. Tracked in
+[`PyAutoPrompt/autoarray/alma_apply_sparse_operator_oom.md`](https://github.com/PyAutoLabs/PyAutoPrompt/blob/main/autoarray/alma_apply_sparse_operator_oom.md);
+the 4 SLURM submits under
+`z_projects/profiling/hpc/batch_gpu/submit_interferometer_delaunay_a100_alma_{fp64,mp}`
++ `submit_datacube_delaunay_a100_alma_{fp64,mp}` re-run cleanly once
+that lands.
+
+### alma_high (5M / 10M visibilities) — simulator blocked
+
+| Config            | full pipeline | Notes |
+|-------------------|---------------|-------|
+| hpc_a100_fp64     | —             | dataset can't be simulated; see follow-up |
+| hpc_a100_mp       | —             | same |
+
+Simulator can't generate the dataset: `nufftax.spread.interp_2d_impl`
+allocates `2 × N_vis × nspread² × dtype = ~15.7 GB` in a single gather
+buffer even at 5M visibilities, exceeding A100 headroom. Tracked in
+[`PyAutoPrompt/autoarray/nufft_simulator_chunking.md`](https://github.com/PyAutoLabs/PyAutoPrompt/blob/main/autoarray/nufft_simulator_chunking.md).
+Re-running the alma_high SLURM submits unblocks once that chunking
+lands.
 
 vmap is intentionally skipped on this cell — opt in with `DELAUNAY_VMAP=1`
 per the script's design. Delaunay mesh construction doesn't batch
 cleanly along the parameter axis.
 
-**Key findings**
+**Key findings (sma)**
 
-- **GPU is 6.7× faster than CPU** (881 → 131 ms). Same magnitude as
+- **A100 is 4× faster than RTX 2060** (33 ms vs 131 ms) and **27× faster
+  than CPU** (881 ms). Sparse precision-matrix solve scales cleanly
+  through A100 — exactly what the LIKELIHOOD path was designed to do.
+- **mp is a wash on A100** (33.0 vs 32.8 ms — essentially identical).
+  Same pattern as RTX 2060. fp64 is the right default on this cell.
+- **GPU is 6.7× faster than CPU** (881 → 131 ms RTX 2060). Same magnitude as
   interferometer/pixelization — the sparse precision-matrix solve dominates
   both cells and lowers similarly well to GPU.
-- **mp is a wash on GPU** (138 ms vs 131 ms — mp is actually 5 % SLOWER
+- **mp is a wash on RTX 2060** (138 ms vs 131 ms — mp is actually 5 % SLOWER
   for some reason; possibly the fp32 path triggers an extra cast at the
   Delaunay/sparse-operator boundary that hurts more than the fp32 speedup
   helps). Sticking with fp64 is fine here.
@@ -353,18 +395,44 @@ dataset is built with `TransformerDFT`, `apply_sparse_operator(use_jax=True)`
 precomputes a NUFFT precision matrix internally, which is what the
 per-channel curvature assembly actually goes through.
 
-| Config            | step-by-step total (cube) | mp vs fp64 |
-|-------------------|---------------------------|------------|
-| local_cpu_fp64    | 197 s                     | —          |
-| local_cpu_mp      | 165 s                     | **−16 %**  |
-| local_gpu_fp64    | **18.1 s** (10.9× vs CPU) | —          |
-| local_gpu_mp      | 18.0 s                    | < 1 %      |
-| hpc_a100_fp64     | —                          | —          |
-| hpc_a100_mp       | —                          | —          |
+### sma (190 visibilities × 34 channels)
 
-**Headline GPU finding** — **the 34-channel cube drops from 197 s to 18 s on
+| Config            | full pipeline (cube)       | log_evidence | Notes |
+|-------------------|----------------------------|--------------|-------|
+| local_cpu_fp64    | 197 s (step-by-step total) | −107830.7    | from breakdown package |
+| local_cpu_mp      | 165 s                      | −107830.7    | mp −16 % |
+| local_gpu_fp64    | 18.1 s                     | −107830.7    | 10.9× CPU |
+| local_gpu_mp      | 18.0 s                     | −107830.7    | mp wash |
+| hpc_a100_fp64     | **eager baseline only**    | −107830.7    | runtime variant; cube-JIT skipped (opt in via `CUBE_FULL_JIT=1`) |
+| hpc_a100_mp       | eager baseline only        | −107830.7    | same |
+
+The A100 SMA jobs verified the eager-baseline log_evidence
+(−107830.66 — matches the local CPU+GPU runs at fp64 precision) but
+the runtime variant's `CUBE_FULL_JIT=1` path was off, so no
+per-call wall-clock number landed. Two follow-ups:
+
+1. Re-run the SLURM submits with `CUBE_FULL_JIT=1` to get the
+   single-JIT cube cost on A100 — expected sub-10 s based on the
+   RTX 2060 → A100 ratio.
+2. The per-channel step-by-step breakdown (the `197 s on CPU` row
+   above) is a **`likelihood_breakdown/datacube/delaunay.py`** artifact;
+   re-run that on A100 for the per-step decomposition.
+
+### alma + alma_high — A100 blocked
+
+| Config            | alma         | alma_high    |
+|-------------------|--------------|--------------|
+| hpc_a100_fp64     | timeout/OOM  | sim blocked  |
+| hpc_a100_mp       | timeout/OOM  | sim blocked  |
+
+- **alma**: per-channel precompute completes (~12 min A100), but 34 channels in series exceed the 2-hour SLURM walltime AND the precompute chain OOMs host RAM at 384 GB on the precompute it shares with `interferometer/delaunay/alma`. Same root cause as the interferometer cell — see
+  [`alma_apply_sparse_operator_oom.md`](https://github.com/PyAutoLabs/PyAutoPrompt/blob/main/autoarray/alma_apply_sparse_operator_oom.md).
+- **alma_high**: simulator can't generate the dataset (nufftax gather buffer too big). See [`nufft_simulator_chunking.md`](https://github.com/PyAutoLabs/PyAutoPrompt/blob/main/autoarray/nufft_simulator_chunking.md).
+
+**Headline finding (local data)** — **the 34-channel cube drops from 197 s to 18 s on
 GPU** (10.9× faster), making per-cube fits genuinely interactive on RTX 2060.
-A100 should reach sub-10 s territory once the HPC sweep lands.
+A100 should reach sub-10 s territory once `CUBE_FULL_JIT=1` is enabled in
+a follow-up SLURM run.
 
 The cube full-pipeline single-JIT is intentionally skipped on this cell
 (opt in with `CUBE_FULL_JIT=1`) — the per-step cube cost is the

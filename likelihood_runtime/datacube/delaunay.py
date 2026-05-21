@@ -130,7 +130,7 @@ from _profile_cli import (  # noqa: E402
 from simulators.interferometer import INSTRUMENTS  # noqa: E402
 _cli = parse_profile_cli()
 
-instrument = "sma"  # <-- change to profile a different instrument; cube is N copies of the per-instrument dataset
+instrument = _cli.instrument or "sma"  # default; override via --instrument (cube is N copies of the per-instrument dataset)
 
 # n_channels = 34 matches the prior Hannah ALMA cube fiducial. For quick
 # iteration on the smaller sma dataset, drop this to 4.
@@ -500,17 +500,18 @@ else:
     print(f"  Cube JIT log_evidence:        SKIPPED (CUBE_FULL_JIT=1 to enable)")
 print("-" * 70)
 
-# Shared-Lᵀ W̃ L optimisation savings estimate:
-# Moving the curvature matrix from per-channel to shared would save
-# (n_channels - 1) × per-channel curvature matrix cost.
-shared_lwl_savings = (n_channels - 1) * curvature_matrix_per_channel
+# Shared-Lᵀ W̃ L savings estimate was a per-step-breakdown deliverable —
+# requires `curvature_matrix_per_channel` from the stripped per-step section.
+# The runtime-only variant deliberately skips it; recover it via the sibling
+# `likelihood_breakdown/datacube/delaunay.py` script when needed.
+shared_lwl_savings = None
 
 print("-" * 70)
 if np.isfinite(full_pipeline_per_call):
     print(f"      {'Full pipeline cube (single JIT)':<50}  {full_pipeline_per_call:>12.6f} s")
 else:
     print(f"      {'Full pipeline cube (single JIT)':<50}  SKIPPED")
-print(f"      {'Shared-Lᵀ W̃ L savings (curvature only, est.)':<50}  {shared_lwl_savings:>12.6f} s")
+print(f"      {'Shared-Lᵀ W̃ L savings (curvature only)':<50}  see likelihood_breakdown/")
 print("=" * 70)
 
 # --- Save results dictionary ---
