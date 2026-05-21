@@ -118,18 +118,15 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 # Sweep-driver CLI args (--config-name / --output-dir / --use-mixed-precision).
 # Tolerates extra/unknown args via parse_known_args inside the helper.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from _profile_cli import (  # noqa: E402
     parse_profile_cli,
     device_info_dict,
     resolve_output_paths,
+    auto_simulate_if_missing,
 )
+from simulators.interferometer import INSTRUMENTS  # noqa: E402
 _cli = parse_profile_cli()
-
-INSTRUMENTS = {
-    "sma": {"pixel_scale": 0.1, "real_space_shape": (256, 256), "mask_radius": 3.0},
-    "alma": {"pixel_scale": 0.05, "real_space_shape": (256, 256), "mask_radius": 3.0},
-    "hannah": {"pixel_scale": 0.125, "real_space_shape": (40, 40), "mask_radius": 2.3},
-}
 
 instrument = "sma"  # <-- change this to profile a different instrument
 
@@ -206,14 +203,12 @@ pixel_scale = INSTRUMENTS[instrument]["pixel_scale"]
 real_space_shape = INSTRUMENTS[instrument]["real_space_shape"]
 dataset_path = Path("dataset") / "interferometer" / instrument
 
-if al.util.dataset.should_simulate(str(dataset_path)):
-    raise FileNotFoundError(
-        f"Input dataset missing at '{dataset_path}'. The autolens_profiling "
-        f"repo mirrors only the curated datasets needed for default smoke "
-        f"runs. To regenerate or extend datasets, use the source-of-truth "
-        f"scripts under autolens_workspace_developer/jax_profiling/dataset_setup/, "
-        f"then copy the result into autolens_profiling/dataset/."
-    )
+auto_simulate_if_missing(
+    dataset_path,
+    dataset_type="interferometer",
+    instrument=instrument,
+    workspace_root=_workspace_root,
+)
 
 mask_radius = INSTRUMENTS[instrument]["mask_radius"]
 
@@ -1158,11 +1153,13 @@ print(f"  Bar chart saved to:    {chart_path}")
 # Simulator truth parameters via GaussianPrior(mean=truth, sigma=small)
 # make the full-pipeline log-evidence deterministic at the prior median.
 # Pinned empirically per instrument; ``None`` means "skip the assertion and
-# print the value so it can be pasted in here on a clean run".
+# print the value so it can be pasted in here on a clean run". sma was
+# bumped to mask_radius=3.5 in 2026-05-21's INSTRUMENTS refactor — the
+# old mask_radius=3.0 value no longer applies and needs re-measuring.
 EXPECTED_LOG_EVIDENCE = {
-    "sma": -3167.144638780922,  # 1000-pixel Hilbert/Delaunay, adapt_image=lensed_source
+    "sma": None,
     "alma": None,
-    "hannah": None,
+    "alma_high": None,
 }
 
 expected_log_evidence = EXPECTED_LOG_EVIDENCE.get(instrument)

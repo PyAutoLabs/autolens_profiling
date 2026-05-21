@@ -41,6 +41,19 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
     _smoke_sys.exit(0)
 
+# Sweep-driver CLI args (--config-name / --output-dir / --use-mixed-precision).
+# Tolerates extra/unknown args via parse_known_args inside the helper.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from _profile_cli import (  # noqa: E402
+    parse_profile_cli,
+    device_info_dict,
+    resolve_output_paths,
+    auto_simulate_if_missing,
+)
+from simulators.point_source import INSTRUMENTS  # noqa: E402
+_cli = parse_profile_cli()
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
@@ -111,29 +124,27 @@ def jit_profile(func, label, *args, n_repeats=10):
 
 
 timer = Timer()
-dataset_name = "simple"
+instrument = "simple"
 
 
 # ===================================================================
 # PART A — Setup
 # ===================================================================
 
-print(f"\n--- Dataset loading [{dataset_name}] ---")
+print(f"\n--- Dataset loading [{instrument}] ---")
 
 _script_dir = Path(__file__).resolve().parent
 _workspace_root = _script_dir.parents[1]
 dataset_path = (
-    Path("dataset") / "point_source" / dataset_name
+    Path("dataset") / "point_source" / instrument
 )
 
-if al.util.dataset.should_simulate(str(dataset_path)):
-    raise FileNotFoundError(
-        f"Input dataset missing at '{dataset_path}'. The autolens_profiling "
-        f"repo mirrors only the curated datasets needed for default smoke "
-        f"runs. To regenerate or extend datasets, use the source-of-truth "
-        f"scripts under autolens_workspace_developer/jax_profiling/dataset_setup/, "
-        f"then copy the result into autolens_profiling/dataset/."
-    )
+auto_simulate_if_missing(
+    dataset_path,
+    dataset_type="point_source",
+    instrument=instrument,
+    workspace_root=_workspace_root,
+)
 
 with timer.section("dataset_load"):
     dataset = al.from_json(
@@ -395,7 +406,7 @@ al_version = al.__version__
 print("\n" + "=" * 70)
 print(f"JAX LIKELIHOOD SUMMARY — POINT SOURCE SOURCE-PLANE — v{al_version}")
 print("=" * 70)
-print(f"  Dataset:                    {dataset_name}")
+print(f"  Dataset:                    {instrument}")
 print(f"  Observed image positions:   {n_observed_positions}")
 print(f"  Position noise sigma:       {positions_noise_sigma}")
 print(f"  Free parameters:            {model.total_free_parameters}")
@@ -413,7 +424,7 @@ print("=" * 70)
 
 likelihood_summary = {
     "autolens_version": al_version,
-    "dataset": dataset_name,
+    "dataset": instrument,
     "fit_positions_cls": "FitPositionsSource",
     "configuration": {
         "observed_image_positions": int(n_observed_positions),

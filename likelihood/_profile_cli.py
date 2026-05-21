@@ -1,16 +1,10 @@
-"""Shared CLI/JSON helpers for the multi-config likelihood profiling sweep.
+"""Shared CLI / JSON / auto-simulate helpers for the likelihood scripts.
 
-The single-config likelihood scripts under ``likelihood/<class>/<model>.py``
-each emit one JSON+PNG per run. To drive the CPU/GPU/A100 x fp64/mp matrix
-the sweep harness invokes each script multiple times with different env
-(``JAX_PLATFORM_NAME``) and flags, and needs the JSONs to land at a
-matrix-friendly path (``local_cpu_fp64.json`` etc.) rather than the
-single-config ``<model>_likelihood_summary_<instrument>_v<version>.json``
-pattern.
-
-This module centralises the parse / resolve / device-info logic so each
-script only needs three lines of glue (parse args, override Settings flag,
-override results path).
+Used by every script under ``likelihood/{imaging,interferometer,
+datacube,point_source}/`` so the per-script boilerplate stays minimal
+and the sweep-driver flags (``--config-name``, ``--output-dir``,
+``--use-mixed-precision``) and dataset auto-simulate hook are defined
+in one place.
 
 Designed to be imported with relative path manipulation since the scripts
 live under multiple sibling directories::
@@ -18,7 +12,10 @@ live under multiple sibling directories::
     import sys
     from pathlib import Path
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-    from _profile_cli import parse_profile_cli, device_info_dict
+    from _profile_cli import (
+        parse_profile_cli, device_info_dict, resolve_output_paths,
+        auto_simulate_if_missing,
+    )
 """
 
 from __future__ import annotations
@@ -133,3 +130,53 @@ def resolve_output_paths(
     results_dir.mkdir(parents=True, exist_ok=True)
     basename = cli.config_name or default_basename
     return results_dir / f"{basename}.json", results_dir / f"{basename}.png"
+
+
+def auto_simulate_if_missing(
+    dataset_path: Path,
+    *,
+    dataset_type: str,
+    instrument: str,
+    workspace_root: Path,
+) -> None:
+    """If the dataset is missing, invoke the matching simulator script.
+
+    ``dataset_type`` maps to ``simulators/<dataset_type>.py`` (one of
+    ``imaging``, ``interferometer``, ``point_source``). The simulator is
+    invoked via subprocess with ``--instrument <instrument>``, so both the
+    likelihood-fit dataset and a versioned simulator-profiling JSON+PNG
+    land at the right path in one shot.
+
+    The dataset gate uses ``al.util.dataset.should_simulate`` (which also
+    handles the ``PYAUTO_SMALL_DATASETS=1`` cleanup case). ``autolens`` is
+    imported lazily so this helper can sit in any module without forcing
+    the heavy import chain on every caller.
+    """
+    import sys
+
+    import autolens as al  # noqa: F401 — imported lazily to defer side effects
+
+    if not al.util.dataset.should_simulate(str(dataset_path)):
+        return
+
+    simulator_script = workspace_root / "simulators" / f"{dataset_type}.py"
+    if not simulator_script.exists():
+        raise FileNotFoundError(
+            f"Auto-simulate could not find simulator script at {simulator_script}. "
+            f"Expected one of imaging.py / interferometer.py / point_source.py "
+            f"under simulators/."
+        )
+
+    print(
+        f"  [auto-simulate] {dataset_path} missing; invoking "
+        f"simulators/{dataset_type}.py --instrument {instrument}"
+    )
+    subprocess.run(
+        [
+            sys.executable,
+            str(simulator_script),
+            "--instrument", instrument,
+            "--output-root", str(workspace_root),
+        ],
+        check=True,
+    )
