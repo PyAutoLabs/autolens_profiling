@@ -233,12 +233,7 @@ with timer.section("dataset_list_load"):
             noise_map_path=dataset_path / "noise_map.fits",
             uv_wavelengths_path=dataset_path / "uv_wavelengths.fits",
             real_space_mask=real_space_mask,
-            transformer_class=al.TransformerDFT,
-            # DFT is mandatory here: apply_sparse_operator is not yet
-            # compatible with the new nufftax-backed al.TransformerNUFFT (see
-            # PyAutoArray/autoarray/dataset/interferometer/dataset.py:261).
-            # Swapping the transformer would raise NotImplementedError.
-            raise_error_dft_visibilities_limit=False,
+            transformer_class=al.TransformerNUFFT,
         ).apply_sparse_operator(use_jax=True, show_progress=False)
         for _ in range(n_channels)
     ]

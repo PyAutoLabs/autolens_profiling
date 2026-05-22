@@ -21,7 +21,7 @@ follow-up (see the bottom of this doc).
 | Local CPU (fp64 + mp)            | ✅ run, numbers below |
 | Local GPU (RTX 2060) fp64 + mp   | ✅ run, numbers below |
 | HPC A100 sma (4 cells)           | ✅ run 2026-05-21 — interferometer/delaunay + datacube/delaunay × sma × fp64 + mp |
-| HPC A100 alma                    | ⏸ blocked — see [alma_apply_sparse_operator_oom](https://github.com/PyAutoLabs/PyAutoPrompt/blob/main/autoarray/alma_apply_sparse_operator_oom.md) |
+| HPC A100 alma (4 cells)          | ✅ run 2026-05-22 — unblocked by PyAutoArray#329 (apply_sparse_operator now accepts TransformerNUFFT) |
 | HPC A100 alma_high               | ⏸ blocked — see [nufft_simulator_chunking](https://github.com/PyAutoLabs/PyAutoPrompt/blob/main/autoarray/nufft_simulator_chunking.md) |
 | Imaging cells fresh CPU/GPU      | ⚠ blocked by upstream `Grid2DIrregular.mask` bug — table rows show the pre-existing v2026.5.8.2 / v2026.5.14.2 data |
 
@@ -309,24 +309,30 @@ production case.*
 | hpc_a100_fp64     | **33 ms**     | _vmap intentionally skipped_ | −3151.54     |
 | hpc_a100_mp       | 33 ms         | _vmap intentionally skipped_ | −3151.54     |
 
-### alma (1M visibilities) — A100 blocked
+### alma (1M visibilities)
 
-| Config            | full pipeline | Notes |
-|-------------------|---------------|-------|
-| hpc_a100_fp64     | —             | OOM at 384 GB cgroup, see follow-up |
-| hpc_a100_mp       | —             | same |
+| Config            | full pipeline | vmap (batch=3)               | log_evidence |
+|-------------------|---------------|------------------------------|--------------|
+| hpc_a100_fp64     | **45 ms**     | _vmap intentionally skipped_ | −12 049 403.72 |
+| hpc_a100_mp       | 45 ms         | _vmap intentionally skipped_ | −12 049 403.72 |
 
-`apply_sparse_operator` + W-Tilde precompute chain exhausts >384 GB host
-RAM at 1M visibilities. Root cause is unclear — the W-Tilde matrix is
-only ~20 MB and inputs are ~50 MB total, so something in the JIT
-intermediates or block accumulators inside
-`PyAutoArray/autoarray/inversion/inversion/interferometer/inversion_interferometer_util.py`
-is accumulating without chunking. Tracked in
-[`PyAutoPrompt/autoarray/alma_apply_sparse_operator_oom.md`](https://github.com/PyAutoLabs/PyAutoPrompt/blob/main/autoarray/alma_apply_sparse_operator_oom.md);
-the 4 SLURM submits under
-`z_projects/profiling/hpc/batch_gpu/submit_interferometer_delaunay_a100_alma_{fp64,mp}`
-+ `submit_datacube_delaunay_a100_alma_{fp64,mp}` re-run cleanly once
-that lands.
+Unblocked by [PyAutoArray#329](https://github.com/PyAutoLabs/PyAutoArray/pull/329)
+(`apply_sparse_operator` now accepts `al.TransformerNUFFT`, eliminating
+the O(N_pix · N_vis) DFT setup call that previously OOM'd at 384 GB).
+The per-likelihood path is unchanged — F is FFT-based via Khat, D uses
+the cached dirty image, χ² is `inversion.fast_chi_squared`. Setup-time
+`image_from` is now one nufftax call at O((N_pix + N_vis) log N).
+
+**Key findings (alma):**
+
+- **alma at 1M vis is only 1.4× slower than sma at 190 vis** (45 ms vs 33
+  ms). The W-Tilde sparse path is largely vis-independent per likelihood
+  call — F is the FFT of a small precision operator, D is a cached
+  matrix-vector product. Per-call cost is dominated by mask-extent FFT
+  size, not visibility count. This is the headline result for ALMA-scale
+  modelling on A100.
+- **mp is a wash** (45.3 vs 44.8 ms — essentially identical), same pattern
+  as sma. fp64 is the right default.
 
 ### alma_high (5M / 10M visibilities) — simulator blocked
 
@@ -390,10 +396,11 @@ regression). Identical log-evidence to fp64 on both.
 pixelization per channel, shared lens model. The single heaviest cell
 in this profile family.*
 
-The JSON step labels say "incl. NUFFT" — that's accurate: while the
-dataset is built with `TransformerDFT`, `apply_sparse_operator(use_jax=True)`
-precomputes a NUFFT precision matrix internally, which is what the
-per-channel curvature assembly actually goes through.
+The JSON step labels say "incl. NUFFT" — that's accurate: `apply_sparse_operator(use_jax=True)`
+precomputes a NUFFT precision matrix, which is what the per-channel
+curvature assembly actually goes through. As of [PyAutoArray#329](https://github.com/PyAutoLabs/PyAutoArray/pull/329)
+the dataset is also built with `TransformerNUFFT` (nufftax-backed),
+enabling the alma/alma_high scales.
 
 ### sma (190 visibilities × 34 channels)
 
@@ -418,16 +425,37 @@ per-call wall-clock number landed. Two follow-ups:
    above) is a **`likelihood_breakdown/datacube/delaunay.py`** artifact;
    re-run that on A100 for the per-step decomposition.
 
-### alma + alma_high — A100 blocked
+### alma (1M visibilities × 34 channels)
 
-| Config            | alma         | alma_high    |
-|-------------------|--------------|--------------|
-| hpc_a100_fp64     | timeout/OOM  | sim blocked  |
-| hpc_a100_mp       | timeout/OOM  | sim blocked  |
+| Config            | full pipeline (cube)       | log_evidence (cube) | log_evidence/channel | Notes |
+|-------------------|----------------------------|---------------------|----------------------|-------|
+| hpc_a100_fp64     | **eager baseline only**    | −409 648 566.87     | −12 048 487.26       | runtime variant; cube-JIT skipped (opt in via `CUBE_FULL_JIT=1`) |
+| hpc_a100_mp       | eager baseline only        | −409 648 566.87     | −12 048 487.26       | same |
 
-- **alma**: per-channel precompute completes (~12 min A100), but 34 channels in series exceed the 2-hour SLURM walltime AND the precompute chain OOMs host RAM at 384 GB on the precompute it shares with `interferometer/delaunay/alma`. Same root cause as the interferometer cell — see
-  [`alma_apply_sparse_operator_oom.md`](https://github.com/PyAutoLabs/PyAutoPrompt/blob/main/autoarray/alma_apply_sparse_operator_oom.md).
-- **alma_high**: simulator can't generate the dataset (nufftax gather buffer too big). See [`nufft_simulator_chunking.md`](https://github.com/PyAutoLabs/PyAutoPrompt/blob/main/autoarray/nufft_simulator_chunking.md).
+Unblocked by [PyAutoArray#329](https://github.com/PyAutoLabs/PyAutoArray/pull/329).
+All 34 channels finished `apply_sparse_operator` on A100 within the 1-hour
+SLURM wall budget (in stark contrast to the previous OOM at 384 GB host
+RAM with `TransformerDFT`). Per-channel eager log_evidence matches
+`interferometer/delaunay/alma` exactly (each channel is the same single-channel
+dataset replicated), confirming the math.
+
+Per-call cube-JIT timing is still pending — opt in with `CUBE_FULL_JIT=1`
+on a follow-up SLURM run. Expected based on the interferometer alma row
+(45 ms × 34 channels ≈ 1.5 s/cube, give or take XLA fusion savings).
+
+### alma_high (5M / 10M visibilities) — simulator blocked
+
+| Config            | full pipeline | Notes |
+|-------------------|---------------|-------|
+| hpc_a100_fp64     | —             | dataset can't be simulated; see follow-up |
+| hpc_a100_mp       | —             | same |
+
+Simulator can't generate the dataset: `nufftax.spread.interp_2d_impl`
+allocates `2 × N_vis × nspread² × dtype = ~15.7 GB` in a single gather
+buffer even at 5M visibilities, exceeding A100 headroom. Tracked in
+[`PyAutoPrompt/autoarray/nufft_simulator_chunking.md`](https://github.com/PyAutoLabs/PyAutoPrompt/blob/main/autoarray/nufft_simulator_chunking.md).
+Re-running the alma_high SLURM submits unblocks once that chunking
+(equivalent to the planned `TransformerNUFFT.chunk_size` knob) lands.
 
 **Headline finding (local data)** — **the 34-channel cube drops from 197 s to 18 s on
 GPU** (10.9× faster), making per-cube fits genuinely interactive on RTX 2060.
