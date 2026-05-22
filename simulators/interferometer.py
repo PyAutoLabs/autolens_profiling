@@ -54,6 +54,7 @@ INSTRUMENTS = {
         "uv_scale": 3.0e5,
         "noise_sigma": 1000.0,
         "seed": 1,
+        "transformer": "dft",  # 190 vis × 256² grid; DFT is cheap and exact
     },
     "alma": {
         "pixel_scale": 0.05,
@@ -63,16 +64,24 @@ INSTRUMENTS = {
         "uv_scale": 2.0e6,
         "noise_sigma": 100.0,
         "seed": 1,
+        "transformer": "nufft",  # 1M vis × 800² grid → DFT memory blowup; use nufftax
     },
     "alma_high": {
         "pixel_scale": 0.125,
         "real_space_shape": (800, 800),
         "mask_radius": 3.5,
-        "n_visibilities": 10_000_000,
+        "n_visibilities": 5_000_000,
         "uv_scale": 2.0e6,
         "noise_sigma": 100.0,
         "seed": 1,
+        "transformer": "nufft",  # 5M vis × 800² grid; nufftax index buffer ~7.8 GB at eps=1e-6 (10M would need 15.7 GB, exceeds practical A100 headroom)
     },
+}
+
+
+_TRANSFORMER_CLASS = {
+    "dft": "TransformerDFT",
+    "nufft": "TransformerNUFFT",
 }
 
 
@@ -111,6 +120,11 @@ def simulate(instrument: str = "sma", output_root: Path | None = None) -> Path:
     uv_scale = config["uv_scale"]
     noise_sigma = config["noise_sigma"]
     seed = config["seed"]
+    transformer_choice = config.get("transformer", "dft").lower()
+    transformer_class = {
+        "dft": al.TransformerDFT,
+        "nufft": al.TransformerNUFFT,
+    }[transformer_choice]
 
     root = output_root if output_root is not None else _REPO_ROOT
     dataset_path = root / "dataset" / "interferometer" / instrument
@@ -193,7 +207,7 @@ def simulate(instrument: str = "sma", output_root: Path | None = None) -> Path:
             uv_wavelengths=uv_wavelengths,
             exposure_time=300.0,
             noise_sigma=noise_sigma,
-            transformer_class=al.TransformerDFT,
+            transformer_class=transformer_class,
             noise_seed=seed,
         )
 
@@ -282,8 +296,15 @@ def simulate(instrument: str = "sma", output_root: Path | None = None) -> Path:
     # here; the visibility transform lives downstream in the likelihood path.
     with timer.section("output_lensed_source"):
         lensed_source = tracer.image_2d_list_from(grid=grid)[-1]
-        lensed_source.output_to_fits(
-            file_path=dataset_path / "lensed_source.fits", overwrite=True
+        # Save native 2D shape — al.output_to_fits writes whatever values it
+        # is handed; passing .array gives the masked/slim 1D form which the
+        # downstream `aa.Array2D.from_fits` loader can't reshape without
+        # shape_native context. ``.native_for_fits`` returns the (N_y, N_x)
+        # form expected by from_fits.
+        al.output_to_fits(
+            values=lensed_source.native_for_fits,
+            file_path=dataset_path / "lensed_source.fits",
+            overwrite=True,
         )
 
     with timer.section("output_positions"):
@@ -310,7 +331,7 @@ def simulate(instrument: str = "sma", output_root: Path | None = None) -> Path:
             "n_visibilities": n_visibilities,
             "uv_scale": uv_scale,
             "noise_sigma": noise_sigma,
-            "transformer": "TransformerDFT",
+            "transformer": transformer_class.__name__,
         },
         "phases": phases,
         "key_timings": {

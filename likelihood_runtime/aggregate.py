@@ -70,23 +70,39 @@ def _parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
-def _discover_cells(output_root: Path) -> list[tuple[str, str]]:
-    """Find every <class>/<model>/ subdir under output_root that contains at least one *.json."""
-    cells: list[tuple[str, str]] = []
+def _discover_cells(output_root: Path) -> list[tuple[str, ...]]:
+    """Find every <class>/<model>/[<instrument>/] subdir under output_root.
+
+    Supports two layouts:
+    - 2-level (legacy): ``<class>/<model>/<config_name>.json`` — yields ``(class, model)``.
+    - 3-level (new):    ``<class>/<model>/<instrument>/<config_name>.json`` — yields ``(class, model, instrument)``.
+
+    The deeper layout lets cells with multiple instruments (interferometer +
+    datacube delaunay) maintain a per-instrument comparison view.
+    """
+    cells: list[tuple[str, ...]] = []
     if not output_root.exists():
         return cells
+
+    def _has_config_json(d: Path) -> bool:
+        return any(
+            p.stem in _CONFIG_ORDER or p.stem.endswith("_pre_fix")
+            for p in d.glob("*.json")
+        )
+
     for cls_dir in sorted(output_root.iterdir()):
         if not cls_dir.is_dir():
             continue
         for model_dir in sorted(cls_dir.iterdir()):
             if not model_dir.is_dir():
                 continue
-            has_config_json = any(
-                p.stem in _CONFIG_ORDER or p.stem.endswith("_pre_fix")
-                for p in model_dir.glob("*.json")
-            )
-            if has_config_json:
+            if _has_config_json(model_dir):
                 cells.append((cls_dir.name, model_dir.name))
+            else:
+                # Look one level deeper for per-instrument subdirs.
+                for inst_dir in sorted(model_dir.iterdir()):
+                    if inst_dir.is_dir() and _has_config_json(inst_dir):
+                        cells.append((cls_dir.name, model_dir.name, inst_dir.name))
     return cells
 
 
@@ -278,10 +294,12 @@ def main() -> int:
         cells: list[tuple[str, str]] = []
         for spec in args.cell:
             parts = spec.split("/")
-            if len(parts) != 2:
-                sys.stderr.write(f"bad --cell argument: {spec!r}\n")
+            if len(parts) not in (2, 3):
+                sys.stderr.write(
+                    f"bad --cell argument: {spec!r} (expected class/model or class/model/instrument)\n"
+                )
                 return 2
-            cells.append((parts[0], parts[1]))
+            cells.append(tuple(parts))
     else:
         cells = _discover_cells(args.output_root)
 
@@ -289,23 +307,24 @@ def main() -> int:
         sys.stderr.write(f"no cells found under {args.output_root}\n")
         return 1
 
-    for (cls, model) in cells:
-        cell_dir = args.output_root / cls / model
+    for cell_tuple in cells:
+        cell_id = "/".join(cell_tuple)
+        cell_dir = args.output_root.joinpath(*cell_tuple)
         if not cell_dir.exists():
-            sys.stderr.write(f"  skipping {cls}/{model}: dir missing\n")
+            sys.stderr.write(f"  skipping {cell_id}: dir missing\n")
             continue
 
         comparison = _aggregate_cell(cell_dir)
         if not comparison["configs"]:
-            sys.stderr.write(f"  skipping {cls}/{model}: no per-config JSONs found\n")
+            sys.stderr.write(f"  skipping {cell_id}: no per-config JSONs found\n")
             continue
 
         comparison_path = cell_dir / "comparison.json"
         png_path = cell_dir / "comparison.png"
         comparison_path.write_text(json.dumps(comparison, indent=2, default=str))
-        _render_png(comparison, f"{cls}/{model}", png_path)
+        _render_png(comparison, cell_id, png_path)
 
-        print(_render_table(comparison, f"{cls}/{model}"))
+        print(_render_table(comparison, cell_id))
         print(f"  -> {comparison_path}")
         print(f"  -> {png_path}\n")
 

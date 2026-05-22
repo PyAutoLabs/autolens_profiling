@@ -33,16 +33,21 @@ class ProfileCLI:
     config_name: Optional[str]
     output_dir: Optional[Path]
     use_mixed_precision: bool
+    instrument: Optional[str]
 
 
 def parse_profile_cli(default_config_name: Optional[str] = None) -> ProfileCLI:
-    """Parse the three sweep CLI flags accepted by every per-cell profile script.
+    """Parse the sweep CLI flags accepted by every per-cell profile script.
 
-    Returns ``ProfileCLI(config_name, output_dir, use_mixed_precision)``.
+    Returns ``ProfileCLI(config_name, output_dir, use_mixed_precision,
+    instrument)``.
 
     When ``--config-name`` is omitted, falls back to ``default_config_name``
     (typically inferred from ``JAX_PLATFORM_NAME`` env var or left as ``None``
     to preserve the existing single-config filename pattern).
+
+    ``--instrument`` is optional; when omitted (None) per-cell scripts keep
+    their module-level hardcoded default (typically ``"sma"`` or ``"hst"``).
     """
     parser = argparse.ArgumentParser(
         description="Multi-config likelihood profiling driver flags.",
@@ -74,6 +79,15 @@ def parse_profile_cli(default_config_name: Optional[str] = None) -> ProfileCLI:
             "targeted fp32 paths in the JAX inversion."
         ),
     )
+    parser.add_argument(
+        "--instrument",
+        default=None,
+        help=(
+            "Instrument preset to profile. When omitted, the per-cell "
+            "script's module-level default applies (typically 'sma' for "
+            "interferometer/datacube cells, 'hst' for imaging)."
+        ),
+    )
 
     args, _unknown = parser.parse_known_args()
     config_name = args.config_name or default_config_name
@@ -82,6 +96,7 @@ def parse_profile_cli(default_config_name: Optional[str] = None) -> ProfileCLI:
         config_name=config_name,
         output_dir=output_dir,
         use_mixed_precision=bool(args.use_mixed_precision),
+        instrument=args.instrument,
     )
 
 
