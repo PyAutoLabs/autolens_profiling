@@ -62,15 +62,14 @@ Per-step decomposition risks missing cross-step XLA fusion and hitting
 library-level JAX blockers. Caveats from the previous opt-out version that
 still apply:
 
-- ``dataset.transformer.transform_mapping_matrix`` is JIT-friendly for
-  ``TransformerDFT`` (a single matrix multiply) and the default SMA preset
-  uses it. The JAX-native ``al.TransformerNUFFT`` (nufftax-backed) IS
-  JIT-friendly today, but it is currently incompatible with
-  ``apply_sparse_operator`` (see
-  ``PyAutoArray/autoarray/dataset/interferometer/dataset.py:261``) — the
-  Delaunay path here relies on the sparse precision operator, so the
-  transformer stays on DFT. The legacy ``TransformerNUFFTPyNUFFT`` is
-  pynufft-based and is not JIT-friendly.
+- ``dataset.transformer`` is ``al.TransformerNUFFT`` (nufftax-backed) so
+  the setup-time ``apply_sparse_operator → image_from`` call scales to
+  ALMA-realistic visibility counts (O((N_pix + N_vis) log N) instead of
+  ``TransformerDFT``'s O(N_pix · N_vis), which OOMs at 1M+ visibilities).
+  The per-likelihood path itself never touches the transformer once
+  ``sparse_operator`` is attached — F is FFT-based, D uses the cached
+  dirty image, χ² is ``inversion.fast_chi_squared``. The legacy
+  ``TransformerNUFFTPyNUFFT`` is pynufft-based and is not JIT-friendly.
 - The visibility-space χ² in step 13 separates the complex visibilities and
   noise into real/imag components inside the JIT body (matching the
   ``pixelization/likelihood_function.py`` reference). Complex-valued JIT
@@ -221,11 +220,7 @@ with timer.section("dataset_load"):
         noise_map_path=dataset_path / "noise_map.fits",
         uv_wavelengths_path=dataset_path / "uv_wavelengths.fits",
         real_space_mask=real_space_mask,
-        transformer_class=al.TransformerDFT,
-        # DFT is intentional even at ALMA-scale visibility counts — profiling
-        # the JAX-traceable path is the goal, NUFFT (pynufft) is not yet
-        # JIT-friendly.
-        raise_error_dft_visibilities_limit=False,
+        transformer_class=al.TransformerNUFFT,
     )
 
 with timer.section("apply_sparse_operator"):
