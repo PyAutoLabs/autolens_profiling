@@ -1,0 +1,14 @@
+# Workspace overrides for the library lensing latent toggles. Enables
+# all 5 default latents so per-latent profile scripts in latent/imaging/
+# can isolate each one via runtime `conf.instance.push(...)` overrides
+# (each script writes a single-key temp config before constructing the
+# Analysis).
+#
+# This file's presence on the search path also means a one-off manual
+# run of any latent-enabled fit from this repo produces the full
+# catalogue without further config.
+total_lens_flux_mujy: true
+total_lensed_source_flux_mujy: true
+total_source_flux_mujy: true
+magnification: true
+effective_einstein_radius: true
