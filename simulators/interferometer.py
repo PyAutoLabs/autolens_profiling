@@ -79,6 +79,17 @@ INSTRUMENTS = {
         "transformer": "nufft",  # 5M vis × 800² grid; needs chunking via PyAutoArray#330
         "transformer_chunk_size": 1_000_000,  # caps gather buffer ~3 GB / chunk
     },
+    "jvla": {
+        "pixel_scale": 0.01,
+        "real_space_shape": (800, 800),
+        "mask_radius": 3.5,
+        "n_visibilities": 25_000_000,
+        "uv_scale": 2.0e6,
+        "noise_sigma": 100.0,
+        "seed": 1,
+        "transformer": "nufft",  # 25M vis stretch test; mask_radius=3.5/0.01 = 350-px radius (700-px mask diameter)
+        "transformer_chunk_size": 1_000_000,  # 25 chunks × ~3 GB gather buffer each
+    },
 }
 
 
