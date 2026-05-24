@@ -24,6 +24,7 @@ follow-up (see the bottom of this doc).
 | HPC A100 alma (4 cells)          | ✅ run 2026-05-22 — unblocked by PyAutoArray#329 (apply_sparse_operator now accepts TransformerNUFFT) |
 | HPC A100 alma_high (4 cells)     | ✅ run 2026-05-22 — unblocked by PyAutoArray#330 (TransformerNUFFT chunk_size knob caps the nufftax gather buffer) |
 | HPC A100 jvla (2 cells, stretch) | ✅ run 2026-05-24 — interferometer/delaunay only (25M vis, 700-px mask, pixel_scale=0.01). No fix needed; chunked NUFFT + W-Tilde sparse path held. |
+| HPC A100 imaging suite (24 cells) | ✅ run 2026-05-24 — {delaunay, mge, pixelization} × {hst, jwst, ao, euclid} × {fp64, mp}. Per-instrument runtime tables in each cell's section below. |
 | Imaging cells fresh CPU/GPU      | ⚠ blocked by upstream `Grid2DIrregular.mask` bug — table rows show the pre-existing v2026.5.8.2 / v2026.5.14.2 data |
 
 ## Headline numbers (full pipeline, single JIT per call)
@@ -138,6 +139,31 @@ PyAutoLens v2026.5.14.2. The pre-existing v2026.5.8.2 sweep data in
 **mp verdict** — modest on CPU (~14 % win), neutral elsewhere.
 **Useful only at CPU scale**; skip on GPU.
 
+### Per-instrument A100 runtime sweep (2026-05-24)
+
+Full-pipeline single-JIT cost per likelihood call across the 4 imaging
+instrument presets. Same model, same rectangular mesh, same regularization
+— only the dataset's pixel_scale (and hence mask shape) changes.
+
+| Instrument | pixel_scale | mask shape (px) | fp64 | mp |
+|------------|-------------|------------------|------|-----|
+| hst        | 0.05        | 140 × 140        | 53 ms | 51 ms |
+| jwst       | 0.03        | 234 × 234        | 53 ms | 51 ms |
+| ao         | 0.01        | 700 × 700        | 53 ms | 51 ms |
+| euclid     | 0.1         | 70 × 70          | 54 ms | 51 ms |
+
+**Imaging/pixelization is essentially instrument-INDEPENDENT.** The
+35×35 rectangular source mesh (1225 nodes) dominates the per-call FFT
+budget; the data-side mask shape barely matters. Going euclid → ao
+the data grid scales 100× in pixel count, but per-call time changes
+<2%. This is exactly the inverse of the interferometer/pixelization
+result, where mask-FFT extent drove a 6× per-call spread.
+
+**mp is uniformly a small win** (~4-5%) across all 4 imaging
+instruments on this cell, with no scaling story — fixed-size FFTs
+amortize the mixed-precision overhead the same way regardless of
+instrument.
+
 ---
 
 ## imaging/delaunay
@@ -175,6 +201,45 @@ CPU rows have no fresh measurement available.
 
 **mp verdict** — barely measurable (~5 % on GPU). Skip; it's not worth the
 correctness-budget pressure.
+
+### Per-instrument A100 runtime sweep (2026-05-24)
+
+| Instrument | pixel_scale | mask shape (px) | fp64 | mp |
+|------------|-------------|------------------|------|-----|
+| hst        | 0.05        | 140 × 140        | 86 ms | 90 ms |
+| jwst       | 0.03        | 234 × 234        | 80 ms | 78 ms |
+| ao         | 0.01        | 700 × 700        | 85 ms | 80 ms |
+| euclid     | 0.1         | 70 × 70          | 77 ms | 78 ms |
+
+**Delaunay also instrument-quasi-independent on A100** (77-86 ms
+spread, ~12% variation). Hilbert-mesh + triangulation cost dominates;
+the source-plane mesh has ~1000 nodes regardless of instrument.
+**mp is a wash** on this cell across all 4 instruments.
+
+---
+
+## imaging/mge
+
+*MGE-decomposed source (Gaussian basis, ~25 Gaussians). Isothermal +
+ExternalShear lens. Lowest per-call cost in the imaging suite.*
+
+### Per-instrument A100 runtime sweep (2026-05-24)
+
+| Instrument | pixel_scale | mask shape (px) | fp64 | mp |
+|------------|-------------|------------------|------|-----|
+| hst        | 0.05        | 140 × 140        | 5.8 ms | 6.4 ms |
+| jwst       | 0.03        | 234 × 234        | 6.0 ms | 6.0 ms |
+| ao         | 0.01        | 700 × 700        | 6.0 ms | 5.8 ms |
+| euclid     | 0.1         | 70 × 70          | 5.9 ms | 5.8 ms |
+
+**Fastest cell in the entire imaging-side sweep at ~6 ms / call.**
+Analytical light + parametric mass + Gaussian basis convolution — no
+mesh construction, no sparse-operator setup, no large FFT. Per-call
+cost is essentially constant across all 4 instruments (the data grid
+shape barely registers).
+
+**mp is a wash** at this scale — the kernel is too small for
+mixed-precision matmul gains to surface.
 
 ---
 
