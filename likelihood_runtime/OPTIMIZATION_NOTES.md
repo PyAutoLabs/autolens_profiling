@@ -23,6 +23,7 @@ follow-up (see the bottom of this doc).
 | HPC A100 sma (4 cells)           | ✅ run 2026-05-21 — interferometer/delaunay + datacube/delaunay × sma × fp64 + mp |
 | HPC A100 alma (4 cells)          | ✅ run 2026-05-22 — unblocked by PyAutoArray#329 (apply_sparse_operator now accepts TransformerNUFFT) |
 | HPC A100 alma_high (4 cells)     | ✅ run 2026-05-22 — unblocked by PyAutoArray#330 (TransformerNUFFT chunk_size knob caps the nufftax gather buffer) |
+| HPC A100 jvla (2 cells, stretch) | ✅ run 2026-05-24 — interferometer/delaunay only (25M vis, 700-px mask, pixel_scale=0.01). No fix needed; chunked NUFFT + W-Tilde sparse path held. |
 | Imaging cells fresh CPU/GPU      | ⚠ blocked by upstream `Grid2DIrregular.mask` bug — table rows show the pre-existing v2026.5.8.2 / v2026.5.14.2 data |
 
 ## Headline numbers (full pipeline, single JIT per call)
@@ -347,24 +348,50 @@ Unblocked by [PyAutoArray#330](https://github.com/PyAutoLabs/PyAutoArray/pull/33
 alma_high is `chunk_size=1_000_000`). Simulator runs cleanly on A100 in
 ~80 s for the full 5M-vis dataset.
 
-**Per-call scaling validated.** Across the three instrument presets
+### jvla (25M visibilities, stretch `pixel_scale=0.01`)
+
+| Config            | full pipeline | vmap (batch=3)               | log_evidence |
+|-------------------|---------------|------------------------------|--------------|
+| hpc_a100_fp64     | **636 ms**    | _vmap intentionally skipped_ | −301 296 857.98 |
+| hpc_a100_mp       | 604 ms ⚡      | _vmap intentionally skipped_ | −301 296 857.96 |
+
+Stretch-test preset added 2026-05-24 to probe the upper end of the
+W-Tilde sparse-path scaling: 25M visibilities (5× alma_high, 25× alma),
+`pixel_scale=0.01` (700-px mask diameter, 5× alma_high's 140-px). Pure
+unblock — same `chunk_size=1_000_000` setting from alma_high works
+identically here (now 25 chunks instead of 5). Simulator ran in 77 s,
+profile cells in ~10 min each. **No library fix was needed.**
+
+The jvla result is the first non-trivial mp win on A100 across this
+sweep: mp is **5% faster than fp64** (604 vs 636 ms). At 700-px mask
+diameter the FFT kernel finally becomes large enough that the
+mixed-precision matmul speedup overtakes per-call constant overhead.
+
+**Per-call scaling validated.** Across the four instrument presets
 (same model, same Hilbert pixel budget, sparse-operator path):
 
-| Instrument | n_vis | pixel_scale | mask radius (px) | per-call (fp64) |
-|------------|-------|-------------|------------------|-----------------|
-| sma        | 190   | 0.1         |  35              | 33 ms           |
-| alma       | 1 M   | 0.05        |  70              | 45 ms           |
-| alma_high  | 5 M   | 0.025       | 140              | 98 ms           |
+| Instrument | n_vis | pixel_scale | mask radius (px) | per-call (fp64) | per-call (mp) |
+|------------|-------|-------------|------------------|-----------------|---------------|
+| sma        | 190   | 0.1         |  35              | 33 ms           | 33 ms         |
+| alma       | 1 M   | 0.05        |  70              | 45 ms           | 45 ms         |
+| alma_high  | 5 M   | 0.025       | 140              | 98 ms           | 101 ms        |
+| jvla       | 25 M  | 0.01        | 350              | **636 ms**      | **604 ms** ⚡  |
 
 Per-call cost scales **with mask radius (in pixels)**, not with
 visibility count. Going alma → alma_high doubles the mask diameter
 (4× more mask pixels → 4× more FFT work), and the per-call time
-~doubles (45 → 98 ms). Going sma → alma → alma_high, visibility count
-scales 5263× (190 → 1M → 5M) but per-call time only scales 3× (33 → 98
-ms). This is the clearest empirical confirmation yet of the W-Tilde
+~doubles (45 → 98 ms). Going sma → jvla, visibility count scales
+**132 000×** (190 → 25M) but per-call time only scales 19× (33 → 636 ms).
+This is the clearest empirical confirmation yet of the W-Tilde
 sparse-formalism prediction: per-likelihood cost is dominated by the
 mask-extent FFT (`O(N_mask · log N_mask)`), and visibility count enters
 only the one-shot, setup-time NUFFT precision-matrix precompute.
+
+**Surprise at jvla scale: mp is meaningfully faster than fp64** (604 vs
+636 ms, ~5% mp win — first non-wash on this sweep). At a 700-px mask
+diameter the FFT kernel is large enough for mixed-precision matmul
+gains to surface above the constant per-call overhead. mp continues to
+be a wash at smaller mask scales (sma / alma / alma_high).
 
 **Key findings (sma)**
 
