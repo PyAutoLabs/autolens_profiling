@@ -207,6 +207,7 @@ auto_simulate_if_missing(
 )
 
 mask_radius = INSTRUMENTS[instrument]["mask_radius"]
+transformer_chunk_size = INSTRUMENTS[instrument].get("transformer_chunk_size", None)
 
 real_space_mask = al.Mask2D.circular(
     shape_native=real_space_shape,
@@ -214,13 +215,25 @@ real_space_mask = al.Mask2D.circular(
     radius=mask_radius,
 )
 
+
+def _build_transformer(uv_wavelengths, real_space_mask):
+    """Inject per-instrument chunk_size into TransformerNUFFT without needing a
+    transformer_kwargs API on Interferometer.from_fits. Required for alma_high
+    (5M visibilities) to cap the nufftax gather buffer (PyAutoArray#330)."""
+    return al.TransformerNUFFT(
+        uv_wavelengths=uv_wavelengths,
+        real_space_mask=real_space_mask,
+        chunk_size=transformer_chunk_size,
+    )
+
+
 with timer.section("dataset_load"):
     dataset = al.Interferometer.from_fits(
         data_path=dataset_path / "data.fits",
         noise_map_path=dataset_path / "noise_map.fits",
         uv_wavelengths_path=dataset_path / "uv_wavelengths.fits",
         real_space_mask=real_space_mask,
-        transformer_class=al.TransformerNUFFT,
+        transformer_class=_build_transformer,
     )
 
 with timer.section("apply_sparse_operator"):

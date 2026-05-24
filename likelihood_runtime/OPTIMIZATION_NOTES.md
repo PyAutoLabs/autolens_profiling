@@ -22,7 +22,7 @@ follow-up (see the bottom of this doc).
 | Local GPU (RTX 2060) fp64 + mp   | ✅ run, numbers below |
 | HPC A100 sma (4 cells)           | ✅ run 2026-05-21 — interferometer/delaunay + datacube/delaunay × sma × fp64 + mp |
 | HPC A100 alma (4 cells)          | ✅ run 2026-05-22 — unblocked by PyAutoArray#329 (apply_sparse_operator now accepts TransformerNUFFT) |
-| HPC A100 alma_high               | ⏸ blocked — see [nufft_simulator_chunking](https://github.com/PyAutoLabs/PyAutoPrompt/blob/main/autoarray/nufft_simulator_chunking.md) |
+| HPC A100 alma_high (4 cells)     | ✅ run 2026-05-22 — unblocked by PyAutoArray#330 (TransformerNUFFT chunk_size knob caps the nufftax gather buffer) |
 | Imaging cells fresh CPU/GPU      | ⚠ blocked by upstream `Grid2DIrregular.mask` bug — table rows show the pre-existing v2026.5.8.2 / v2026.5.14.2 data |
 
 ## Headline numbers (full pipeline, single JIT per call)
@@ -334,23 +334,37 @@ the cached dirty image, χ² is `inversion.fast_chi_squared`. Setup-time
 - **mp is a wash** (45.3 vs 44.8 ms — essentially identical), same pattern
   as sma. fp64 is the right default.
 
-### alma_high (5M / 10M visibilities) — simulator blocked
+### alma_high (5M visibilities, high-res `pixel_scale=0.025`)
 
-| Config            | full pipeline | Notes |
-|-------------------|---------------|-------|
-| hpc_a100_fp64     | —             | dataset can't be simulated; see follow-up |
-| hpc_a100_mp       | —             | same |
+| Config            | full pipeline | vmap (batch=3)               | log_evidence |
+|-------------------|---------------|------------------------------|--------------|
+| hpc_a100_fp64     | **98 ms**     | _vmap intentionally skipped_ | −60 243 535.86 |
+| hpc_a100_mp       | 101 ms        | _vmap intentionally skipped_ | −60 243 535.86 |
 
-Simulator can't generate the dataset: `nufftax.spread.interp_2d_impl`
-allocates `2 × N_vis × nspread² × dtype = ~15.7 GB` in a single gather
-buffer even at 5M visibilities, exceeding A100 headroom. Tracked in
-[`PyAutoPrompt/autoarray/nufft_simulator_chunking.md`](https://github.com/PyAutoLabs/PyAutoPrompt/blob/main/autoarray/nufft_simulator_chunking.md).
-Re-running the alma_high SLURM submits unblocks once that chunking
-lands.
+Unblocked by [PyAutoArray#330](https://github.com/PyAutoLabs/PyAutoArray/pull/330)
+(TransformerNUFFT `chunk_size` knob caps the nufftax gather buffer at
+`2 × chunk_size × nspread² × dtype_size`; per-instrument default for
+alma_high is `chunk_size=1_000_000`). Simulator runs cleanly on A100 in
+~80 s for the full 5M-vis dataset.
 
-vmap is intentionally skipped on this cell — opt in with `DELAUNAY_VMAP=1`
-per the script's design. Delaunay mesh construction doesn't batch
-cleanly along the parameter axis.
+**Per-call scaling validated.** Across the three instrument presets
+(same model, same Hilbert pixel budget, sparse-operator path):
+
+| Instrument | n_vis | pixel_scale | mask radius (px) | per-call (fp64) |
+|------------|-------|-------------|------------------|-----------------|
+| sma        | 190   | 0.1         |  35              | 33 ms           |
+| alma       | 1 M   | 0.05        |  70              | 45 ms           |
+| alma_high  | 5 M   | 0.025       | 140              | 98 ms           |
+
+Per-call cost scales **with mask radius (in pixels)**, not with
+visibility count. Going alma → alma_high doubles the mask diameter
+(4× more mask pixels → 4× more FFT work), and the per-call time
+~doubles (45 → 98 ms). Going sma → alma → alma_high, visibility count
+scales 5263× (190 → 1M → 5M) but per-call time only scales 3× (33 → 98
+ms). This is the clearest empirical confirmation yet of the W-Tilde
+sparse-formalism prediction: per-likelihood cost is dominated by the
+mask-extent FFT (`O(N_mask · log N_mask)`), and visibility count enters
+only the one-shot, setup-time NUFFT precision-matrix precompute.
 
 **Key findings (sma)**
 
@@ -443,19 +457,21 @@ Per-call cube-JIT timing is still pending — opt in with `CUBE_FULL_JIT=1`
 on a follow-up SLURM run. Expected based on the interferometer alma row
 (45 ms × 34 channels ≈ 1.5 s/cube, give or take XLA fusion savings).
 
-### alma_high (5M / 10M visibilities) — simulator blocked
+### alma_high (5M visibilities × 34 channels, `pixel_scale=0.025`)
 
-| Config            | full pipeline | Notes |
-|-------------------|---------------|-------|
-| hpc_a100_fp64     | —             | dataset can't be simulated; see follow-up |
-| hpc_a100_mp       | —             | same |
+| Config            | full pipeline (cube)       | log_evidence (cube) | log_evidence/channel | Notes |
+|-------------------|----------------------------|---------------------|----------------------|-------|
+| hpc_a100_fp64     | **eager baseline only**    | −2 048 222 823.68   | −60 241 847.76       | runtime variant; cube-JIT skipped (opt in via `CUBE_FULL_JIT=1`) |
+| hpc_a100_mp       | eager baseline only        | −2 048 222 823.67   | −60 241 847.75       | same |
 
-Simulator can't generate the dataset: `nufftax.spread.interp_2d_impl`
-allocates `2 × N_vis × nspread² × dtype = ~15.7 GB` in a single gather
-buffer even at 5M visibilities, exceeding A100 headroom. Tracked in
-[`PyAutoPrompt/autoarray/nufft_simulator_chunking.md`](https://github.com/PyAutoLabs/PyAutoPrompt/blob/main/autoarray/nufft_simulator_chunking.md).
-Re-running the alma_high SLURM submits unblocks once that chunking
-(equivalent to the planned `TransformerNUFFT.chunk_size` knob) lands.
+Unblocked by [PyAutoArray#330](https://github.com/PyAutoLabs/PyAutoArray/pull/330).
+All 34 channels finished `apply_sparse_operator` on A100 within the
+~31-minute SLURM wall budget at the chunked `chunk_size=1_000_000`
+setting (longer than alma's 21-min run due to the 4× larger mask FFT
+per channel at `pixel_scale=0.025`). Per-channel eager log_evidence
+matches `interferometer/delaunay/alma_high` within ~0.005% (small drift
+down to fixed-seed-driven model parameter differences between the two
+scripts; well within the math-equivalence threshold).
 
 **Headline finding (local data)** — **the 34-channel cube drops from 197 s to 18 s on
 GPU** (10.9× faster), making per-cube fits genuinely interactive on RTX 2060.

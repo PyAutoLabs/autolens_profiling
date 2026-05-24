@@ -55,6 +55,7 @@ INSTRUMENTS = {
         "noise_sigma": 1000.0,
         "seed": 1,
         "transformer": "dft",  # 190 vis × 256² grid; DFT is cheap and exact
+        "transformer_chunk_size": None,  # one-shot; sma is tiny
     },
     "alma": {
         "pixel_scale": 0.05,
@@ -65,16 +66,18 @@ INSTRUMENTS = {
         "noise_sigma": 100.0,
         "seed": 1,
         "transformer": "nufft",  # 1M vis × 800² grid → DFT memory blowup; use nufftax
+        "transformer_chunk_size": None,  # 1M vis × nspread²=196 ≈ 3 GB gather buffer; fits A100 one-shot
     },
     "alma_high": {
-        "pixel_scale": 0.125,
+        "pixel_scale": 0.025,
         "real_space_shape": (800, 800),
         "mask_radius": 3.5,
         "n_visibilities": 5_000_000,
         "uv_scale": 2.0e6,
         "noise_sigma": 100.0,
         "seed": 1,
-        "transformer": "nufft",  # 5M vis × 800² grid; nufftax index buffer ~7.8 GB at eps=1e-6 (10M would need 15.7 GB, exceeds practical A100 headroom)
+        "transformer": "nufft",  # 5M vis × 800² grid; needs chunking via PyAutoArray#330
+        "transformer_chunk_size": 1_000_000,  # caps gather buffer ~3 GB / chunk
     },
 }
 
@@ -121,10 +124,20 @@ def simulate(instrument: str = "sma", output_root: Path | None = None) -> Path:
     noise_sigma = config["noise_sigma"]
     seed = config["seed"]
     transformer_choice = config.get("transformer", "dft").lower()
-    transformer_class = {
-        "dft": al.TransformerDFT,
-        "nufft": al.TransformerNUFFT,
-    }[transformer_choice]
+    transformer_chunk_size = config.get("transformer_chunk_size", None)
+    if transformer_choice == "nufft":
+        # Lambda inject so chunk_size flows into TransformerNUFFT.__init__
+        # without needing a transformer_kwargs API in Interferometer.from_fits.
+        def transformer_class(uv_wavelengths, real_space_mask):
+            return al.TransformerNUFFT(
+                uv_wavelengths=uv_wavelengths,
+                real_space_mask=real_space_mask,
+                chunk_size=transformer_chunk_size,
+            )
+    elif transformer_choice == "dft":
+        transformer_class = al.TransformerDFT
+    else:
+        raise ValueError(f"Unknown transformer '{transformer_choice}'")
 
     root = output_root if output_root is not None else _REPO_ROOT
     dataset_path = root / "dataset" / "interferometer" / instrument
@@ -331,7 +344,8 @@ def simulate(instrument: str = "sma", output_root: Path | None = None) -> Path:
             "n_visibilities": n_visibilities,
             "uv_scale": uv_scale,
             "noise_sigma": noise_sigma,
-            "transformer": transformer_class.__name__,
+            "transformer": _TRANSFORMER_CLASS[transformer_choice],
+            "transformer_chunk_size": transformer_chunk_size,
         },
         "phases": phases,
         "key_timings": {
