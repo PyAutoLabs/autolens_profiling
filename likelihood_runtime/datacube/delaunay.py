@@ -128,6 +128,7 @@ from _profile_cli import (  # noqa: E402
     auto_simulate_if_missing,
 )
 from simulators.interferometer import INSTRUMENTS  # noqa: E402
+from vram import vmap_batch_for, write_probe_json, ProbeResult  # noqa: E402
 _cli = parse_profile_cli()
 
 instrument = _cli.instrument or "sma"  # default; override via --instrument (cube is N copies of the per-instrument dataset)
@@ -394,6 +395,30 @@ for c, le in enumerate(log_evidence_per_channel):
 cube_log_evidence_ref = float(sum(log_evidence_per_channel))
 print(f"  cube reference log_evidence (sum) = {cube_log_evidence_ref:.6f}")
 
+# ===================================================================
+# PART B.5 — vmap-probe mode (early exit, intentionally skipped)
+# ===================================================================
+#
+# The datacube cell does not vmap over parameters — the natural batching axis
+# is "channels" (datasets), not "parameters". If --vmap-probe is set, write a
+# vmap_probe.json noting the intentional skip and exit early.
+
+if _cli.vmap_probe:
+    probe_path = (
+        (_cli.output_dir or (_workspace_root / "results" / "likelihood" / "datacube"))
+        / "vmap_probe.json"
+    )
+    probe_path.parent.mkdir(parents=True, exist_ok=True)
+    import json
+    probe_path.write_text(json.dumps({
+        "dataset": "datacube",
+        "model": "delaunay",
+        "instrument": instrument,
+        "recommended_batch_size": None,
+        "note": "datacube vmap intentionally skipped — natural batching axis is channels, not parameters",
+    }, indent=2))
+    print(f"  vmap_probe: cell intentionally skipped — wrote {probe_path}")
+    sys.exit(0)
 
 # ===================================================================
 # PART C — Full-pipeline cube JIT (sum of per-channel log_likelihoods)

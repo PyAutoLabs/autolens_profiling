@@ -27,39 +27,13 @@ Usage
     python simulators/imaging.py --instrument euclid
 """
 
+import sys
 from pathlib import Path
 
-
-INSTRUMENTS = {
-    "euclid": {
-        "pixel_scale": 0.1,
-        "mask_radius": 3.5,
-        "psf_shape": (21, 21),
-        "psf_sigma": 0.1,
-        "seed": 1,
-    },
-    "hst": {
-        "pixel_scale": 0.05,
-        "mask_radius": 3.5,
-        "psf_shape": (21, 21),
-        "psf_sigma": 0.05,
-        "seed": 1,
-    },
-    "jwst": {
-        "pixel_scale": 0.03,
-        "mask_radius": 3.5,
-        "psf_shape": (21, 21),
-        "psf_sigma": 0.03,
-        "seed": 1,
-    },
-    "ao": {
-        "pixel_scale": 0.01,
-        "mask_radius": 3.5,
-        "psf_shape": (21, 21),
-        "psf_sigma": 0.01,
-        "seed": 1,
-    },
-}
+# Soft-transition re-export — INSTRUMENTS now lives in `instruments/imaging.py`.
+# Existing `from simulators.imaging import INSTRUMENTS` consumers keep working.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from instruments.imaging import INSTRUMENTS  # noqa: E402, F401
 
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]  # autolens_profiling/
@@ -284,8 +258,10 @@ def simulate(instrument: str = "hst", output_root: Path | None = None) -> Path:
         lensed_source = psf.convolved_image_from(
             image=lensed_source_unblurred, blurring_image=None
         )
-        lensed_source.output_to_fits(
-            file_path=dataset_path / "lensed_source.fits", overwrite=True
+        al.output_to_fits(
+            values=lensed_source.native_for_fits,
+            file_path=dataset_path / "lensed_source.fits",
+            overwrite=True,
         )
 
     with timer.section("output_json"):

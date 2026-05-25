@@ -83,9 +83,15 @@ from _profile_cli import (  # noqa: E402
     auto_simulate_if_missing,
 )
 from simulators.interferometer import INSTRUMENTS  # noqa: E402
+from vram import (  # noqa: E402
+    probe_vmap_memory,
+    recommend_batch_size,
+    vmap_batch_for,
+    write_probe_json,
+)
 _cli = parse_profile_cli()
 
-instrument = "sma"  # <-- change this to profile a different instrument
+instrument = _cli.instrument or "sma"  # default; override via --instrument
 
 mesh_pixels_yx = 32  # 32x32 = 1024 source pixels — 1000-tier production fiducial
 mesh_shape = (mesh_pixels_yx, mesh_pixels_yx)
@@ -338,6 +344,36 @@ full_pipeline_per_call = timer.records[-1][1] / 10
 print(f"  full log_likelihood = {full_result}")
 
 # ===================================================================
+# PART B.5 — vmap-probe mode (early exit)
+# ===================================================================
+#
+# When ``--vmap-probe`` is set the script JIT-vmaps the pipeline at the
+# configured batch sizes, reads ``compiled.memory_analysis()``, writes a
+# ``vmap_probe.json`` with the recommended A100 batch_size, and exits
+# before the full vmap timing loop. See ``vram/README.md`` for methodology.
+
+if _cli.vmap_probe:
+    probe = probe_vmap_memory(
+        full_pipeline_from_params,
+        params_tree,
+        batch_sizes=(1, 4, 16),
+        dataset="interferometer",
+        model="pixelization",
+        instrument=instrument,
+    )
+    recommended = recommend_batch_size(probe)
+    probe_path = (
+        (_cli.output_dir or (_workspace_root / "results" / "likelihood" / "interferometer"))
+        / "vmap_probe.json"
+    )
+    write_probe_json(probe, recommended, probe_path)
+    print(f"\n  vmap_probe samples: {probe.samples}")
+    print(f"  per_replica:        {probe.per_replica_mb:.1f} MB / replica")
+    print(f"  recommended batch:  {recommended}")
+    print(f"  written to:         {probe_path}")
+    sys.exit(0)
+
+# ===================================================================
 # PART C — vmap + correctness
 # ===================================================================
 #
@@ -347,7 +383,7 @@ print(f"  full log_likelihood = {full_result}")
 
 print("\n--- vmap batched evaluation ---")
 
-batch_size = 3
+batch_size = vmap_batch_for("interferometer", "pixelization", instrument) or 3
 vmap_batch_time = None
 vmap_per_call = None
 vmap_speedup = None

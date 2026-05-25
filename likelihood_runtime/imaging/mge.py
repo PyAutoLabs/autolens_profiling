@@ -87,9 +87,15 @@ from _profile_cli import (  # noqa: E402
     auto_simulate_if_missing,
 )
 from simulators.imaging import INSTRUMENTS  # noqa: E402
+from vram import (  # noqa: E402
+    probe_vmap_memory,
+    recommend_batch_size,
+    vmap_batch_for,
+    write_probe_json,
+)
 _cli = parse_profile_cli()
 
-instrument = "hst"  # <-- change this to profile a different instrument
+instrument = _cli.instrument or "hst"  # default; override via --instrument
 
 
 # ---------------------------------------------------------------------------
@@ -348,12 +354,44 @@ full_pipeline_per_call = timer.records[-1][1] / 10
 print(f"  full log_likelihood = {full_result}")
 
 # ===================================================================
+# PART C.5 — vmap-probe mode (early exit)
+# ===================================================================
+#
+# When ``--vmap-probe`` is set the script JIT-vmaps the pipeline at two
+# batch sizes, reads ``compiled.memory_analysis()`` for each, and writes a
+# ``vmap_probe.json`` with the recommended A100 batch_size — then exits
+# before the full vmap timing loop. See ``vram/README.md`` for methodology.
+
+if _cli.vmap_probe:
+    # mge has cheap XLA compile (~10s); use multi-point fit to catch
+    # any rematerialisation non-linearity at the (1, 4, 16) regime.
+    probe = probe_vmap_memory(
+        full_pipeline_from_params,
+        params_tree,
+        batch_sizes=(1, 4, 16),
+        dataset="imaging",
+        model="mge",
+        instrument=instrument,
+    )
+    recommended = recommend_batch_size(probe)
+    probe_path = (
+        (_cli.output_dir or (_workspace_root / "results" / "likelihood" / "imaging"))
+        / "vmap_probe.json"
+    )
+    write_probe_json(probe, recommended, probe_path)
+    print(f"\n  vmap_probe samples: {probe.samples}")
+    print(f"  per_replica:        {probe.per_replica_mb:.1f} MB / replica")
+    print(f"  recommended batch:  {recommended}")
+    print(f"  written to:         {probe_path}")
+    sys.exit(0)
+
+# ===================================================================
 # PART D — vmap + correctness
 # ===================================================================
 
 print("\n--- vmap batched evaluation ---")
 
-batch_size = 3
+batch_size = vmap_batch_for("imaging", "mge", instrument) or 3
 
 # Build the batched pytree: every leaf gets a fresh leading batch axis. No
 # flat-vector reshaping required — JAX walks the pytree via the registration
@@ -456,6 +494,10 @@ likelihood_summary = {
         "batch_time": vmap_batch_time,
         "per_call": vmap_per_call,
         "speedup_vs_single_jit": round(vmap_speedup, 1),
+    },
+    "memory_mb": {
+        "output": memory_analysis.output_size_in_bytes / 1024**2,
+        "temp": memory_analysis.temp_size_in_bytes / 1024**2,
     },
 }
 

@@ -33,70 +33,17 @@ Usage
     python simulators/interferometer.py --instrument alma_high   # 10M vis
 """
 
+import sys
 from pathlib import Path
 
-
-# ---------------------------------------------------------------------------
-# Instrument definitions — single source of truth
-# ---------------------------------------------------------------------------
-#
-# Each preset bundles BOTH simulation-time and likelihood-fit-time fields,
-# so the likelihood scripts that import this dict get pixel_scale /
-# real_space_shape / mask_radius while the simulator code in this module
-# also gets n_visibilities / uv_scale / noise_sigma / seed.
-
-INSTRUMENTS = {
-    "sma": {
-        "pixel_scale": 0.1,
-        "real_space_shape": (256, 256),
-        "mask_radius": 3.5,
-        "n_visibilities": 190,
-        "uv_scale": 3.0e5,
-        "noise_sigma": 1000.0,
-        "seed": 1,
-        "transformer": "dft",  # 190 vis × 256² grid; DFT is cheap and exact
-        "transformer_chunk_size": None,  # one-shot; sma is tiny
-    },
-    "alma": {
-        "pixel_scale": 0.05,
-        "real_space_shape": (800, 800),
-        "mask_radius": 3.5,
-        "n_visibilities": 1_000_000,
-        "uv_scale": 2.0e6,
-        "noise_sigma": 100.0,
-        "seed": 1,
-        "transformer": "nufft",  # 1M vis × 800² grid → DFT memory blowup; use nufftax
-        "transformer_chunk_size": None,  # 1M vis × nspread²=196 ≈ 3 GB gather buffer; fits A100 one-shot
-    },
-    "alma_high": {
-        "pixel_scale": 0.025,
-        "real_space_shape": (800, 800),
-        "mask_radius": 3.5,
-        "n_visibilities": 5_000_000,
-        "uv_scale": 2.0e6,
-        "noise_sigma": 100.0,
-        "seed": 1,
-        "transformer": "nufft",  # 5M vis × 800² grid; needs chunking via PyAutoArray#330
-        "transformer_chunk_size": 1_000_000,  # caps gather buffer ~3 GB / chunk
-    },
-    "jvla": {
-        "pixel_scale": 0.01,
-        "real_space_shape": (800, 800),
-        "mask_radius": 3.5,
-        "n_visibilities": 25_000_000,
-        "uv_scale": 2.0e6,
-        "noise_sigma": 100.0,
-        "seed": 1,
-        "transformer": "nufft",  # 25M vis stretch test; mask_radius=3.5/0.01 = 350-px radius (700-px mask diameter)
-        "transformer_chunk_size": 1_000_000,  # 25 chunks × ~3 GB gather buffer each
-    },
-}
-
-
-_TRANSFORMER_CLASS = {
-    "dft": "TransformerDFT",
-    "nufft": "TransformerNUFFT",
-}
+# Soft-transition re-export — INSTRUMENTS now lives in
+# `instruments/interferometer.py`. Existing
+# `from simulators.interferometer import INSTRUMENTS` consumers keep working.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from instruments.interferometer import (  # noqa: E402, F401
+    INSTRUMENTS,
+    TRANSFORMER_CLASS_NAME as _TRANSFORMER_CLASS,
+)
 
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]  # autolens_profiling/

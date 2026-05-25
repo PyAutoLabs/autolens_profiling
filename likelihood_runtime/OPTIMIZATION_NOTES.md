@@ -139,30 +139,22 @@ PyAutoLens v2026.5.14.2. The pre-existing v2026.5.8.2 sweep data in
 **mp verdict** — modest on CPU (~14 % win), neutral elsewhere.
 **Useful only at CPU scale**; skip on GPU.
 
-### Per-instrument A100 runtime sweep (2026-05-24)
+### Per-instrument A100 runtime sweep (2026-05-25, corrected)
 
-Full-pipeline single-JIT cost per likelihood call across the 4 imaging
-instrument presets. Same model, same rectangular mesh, same regularization
-— only the dataset's pixel_scale (and hence mask shape) changes.
+*Previous "instrument-independent" finding was an artefact of a bug
+that always ran HST regardless of --instrument. Fixed in this PR.*
 
-| Instrument | pixel_scale | mask shape (px) | fp64 | mp |
-|------------|-------------|------------------|------|-----|
-| hst        | 0.05        | 140 × 140        | 53 ms | 51 ms |
-| jwst       | 0.03        | 234 × 234        | 53 ms | 51 ms |
-| ao         | 0.01        | 700 × 700        | 53 ms | 51 ms |
-| euclid     | 0.1         | 70 × 70          | 54 ms | 51 ms |
+| Instrument | mask (px) | single_jit fp64 | vmap fp64 (batch) | speedup |
+|------------|-----------|-----------------|-------------------|---------|
+| euclid     | 70        | 44 ms           | **14 ms** (b=64)  | **3.1×** |
+| hst        | 140       | 53 ms           | 33 ms (b=16)      | 1.6×   |
+| jwst       | 234       | 74 ms           | 69 ms (b=8)       | 1.1×   |
+| ao         | 700       | 326 ms          | 330 ms (b=1)      | 1.0×   |
 
-**Imaging/pixelization is essentially instrument-INDEPENDENT.** The
-35×35 rectangular source mesh (1225 nodes) dominates the per-call FFT
-budget; the data-side mask shape barely matters. Going euclid → ao
-the data grid scales 100× in pixel count, but per-call time changes
-<2%. This is exactly the inverse of the interferometer/pixelization
-result, where mask-FFT extent drove a 6× per-call spread.
-
-**mp is uniformly a small win** (~4-5%) across all 4 imaging
-instruments on this cell, with no scaling story — fixed-size FFTs
-amortize the mixed-precision overhead the same way regardless of
-instrument.
+**Imaging/pixelization IS instrument-dependent** — AO at 700-px mask is
+7.4× slower per single-JIT call than euclid at 70-px. vmap helps at
+euclid/hst (batch 64/16 → 1.6-3× speedup) but is a wash at jwst/ao
+(batch 8/1 → VRAM-limited).
 
 ---
 
@@ -202,19 +194,20 @@ CPU rows have no fresh measurement available.
 **mp verdict** — barely measurable (~5 % on GPU). Skip; it's not worth the
 correctness-budget pressure.
 
-### Per-instrument A100 runtime sweep (2026-05-24)
+### Per-instrument A100 runtime sweep (2026-05-25, corrected)
 
-| Instrument | pixel_scale | mask shape (px) | fp64 | mp |
-|------------|-------------|------------------|------|-----|
-| hst        | 0.05        | 140 × 140        | 86 ms | 90 ms |
-| jwst       | 0.03        | 234 × 234        | 80 ms | 78 ms |
-| ao         | 0.01        | 700 × 700        | 85 ms | 80 ms |
-| euclid     | 0.1         | 70 × 70          | 77 ms | 78 ms |
+| Instrument | mask (px) | single_jit fp64 | vmap fp64 (batch) | speedup |
+|------------|-----------|-----------------|-------------------|---------|
+| euclid     | 70        | 65 ms           | **46 ms** (b=64)  | **1.4×** |
+| hst        | 140       | 83 ms           | 107 ms (b=16)     | 0.8×   |
+| jwst       | 234       | 133 ms          | 199 ms (b=8)      | 0.7×   |
+| ao         | 700       | 558 ms          | 1308 ms (b=1)     | 0.4×   |
 
-**Delaunay also instrument-quasi-independent on A100** (77-86 ms
-spread, ~12% variation). Hilbert-mesh + triangulation cost dominates;
-the source-plane mesh has ~1000 nodes regardless of instrument.
-**mp is a wash** on this cell across all 4 instruments.
+**Delaunay IS instrument-dependent** — AO is 8.6× slower per single-JIT
+call than euclid. vmap helps for euclid (1.4× at batch=64) but actively
+HURTS for hst+ instruments (the per-replica VRAM cost forces small batches
+where vmap overhead dominates). At batch=1 (AO), vmap is 2.3× SLOWER
+than single-JIT — skip it entirely for AO-class datasets.
 
 ---
 
@@ -223,23 +216,22 @@ the source-plane mesh has ~1000 nodes regardless of instrument.
 *MGE-decomposed source (Gaussian basis, ~25 Gaussians). Isothermal +
 ExternalShear lens. Lowest per-call cost in the imaging suite.*
 
-### Per-instrument A100 runtime sweep (2026-05-24)
+### Per-instrument A100 runtime sweep (2026-05-25, corrected)
 
-| Instrument | pixel_scale | mask shape (px) | fp64 | mp |
-|------------|-------------|------------------|------|-----|
-| hst        | 0.05        | 140 × 140        | 5.8 ms | 6.4 ms |
-| jwst       | 0.03        | 234 × 234        | 6.0 ms | 6.0 ms |
-| ao         | 0.01        | 700 × 700        | 6.0 ms | 5.8 ms |
-| euclid     | 0.1         | 70 × 70          | 5.9 ms | 5.8 ms |
+| Instrument | mask (px) | single_jit fp64 | vmap fp64 (batch) | speedup |
+|------------|-----------|-----------------|-------------------|---------|
+| euclid     | 70        | 5.7 ms          | **0.2 ms** (b=64) | **29×** |
+| hst        | 140       | 6.1 ms          | **0.4 ms** (b=64) | **16×** |
+| jwst       | 234       | 6.7 ms          | **1.0 ms** (b=64) | **7×**  |
+| ao         | 700       | — (blocked)     | — (correctness bug) | —     |
 
-**Fastest cell in the entire imaging-side sweep at ~6 ms / call.**
-Analytical light + parametric mass + Gaussian basis convolution — no
-mesh construction, no sparse-operator setup, no large FFT. Per-call
-cost is essentially constant across all 4 instruments (the data grid
-shape barely registers).
+**Fastest cell in the sweep AND massive vmap wins.** MGE's tiny per-replica
+memory (~6-42 MB) fits batch=64 for all instruments → vmap amortises
+the fixed per-call overhead down to sub-millisecond. Production samplers
+should ALWAYS use vmap for MGE.
 
-**mp is a wash** at this scale — the kernel is too small for
-mixed-precision matmul gains to surface.
+**AO is blocked** — vmap at batch=64 produces wildly inconsistent
+log_evidence across replicas (correctness bug, separate investigation).
 
 ---
 
