@@ -80,9 +80,15 @@ from _profile_cli import (  # noqa: E402
     auto_simulate_if_missing,
 )
 from simulators.imaging import INSTRUMENTS  # noqa: E402
+from vram import (  # noqa: E402
+    probe_vmap_memory,
+    recommend_batch_size,
+    vmap_batch_for,
+    write_probe_json,
+)
 _cli = parse_profile_cli()
 
-instrument = "hst"  # <-- change this to profile a different instrument
+instrument = _cli.instrument or "hst"  # default; override via --instrument
 
 
 # ---------------------------------------------------------------------------
@@ -390,34 +396,55 @@ full_pipeline_per_call = timer.records[-1][1] / 10
 print(f"  full log_likelihood = {full_result}")
 
 # ===================================================================
+# PART C.5 — vmap-probe mode (early exit)
+# ===================================================================
+#
+# When ``--vmap-probe`` is set the script JIT-vmaps the pipeline at the
+# configured batch sizes, reads ``compiled.memory_analysis()``, writes a
+# ``vmap_probe.json`` with the recommended A100 batch_size, and exits
+# before the full vmap timing loop. See ``vram/README.md`` for methodology.
+
+if _cli.vmap_probe:
+    probe = probe_vmap_memory(
+        full_pipeline_from_params,
+        params_tree,
+        batch_sizes=(1,),
+        dataset="imaging",
+        model="delaunay",
+        instrument=instrument,
+    )
+    recommended = recommend_batch_size(probe)
+    probe_path = (
+        (_cli.output_dir or (_workspace_root / "results" / "likelihood" / "imaging"))
+        / "vmap_probe.json"
+    )
+    write_probe_json(probe, recommended, probe_path)
+    print(f"\n  vmap_probe samples: {probe.samples}")
+    print(f"  per_replica:        {probe.per_replica_mb:.1f} MB / replica")
+    print(f"  recommended batch:  {recommended}")
+    print(f"  written to:         {probe_path}")
+    sys.exit(0)
+
+# ===================================================================
 # PART D — vmap + correctness
 # ===================================================================
 
 print("\n--- vmap batched evaluation ---")
 
-# WARNING: The vmap compilation for the Delaunay pipeline takes 20+ minutes on CPU.
-# The XLA graph for a batched Delaunay inversion (including scipy triangulation,
-# border relocation, interpolation, mapping matrix construction, and PSF convolution)
-# is extremely large. The single-call JIT above compiles in ~2s and runs in ~1.8s,
-# but vmap recompiles the entire graph for batch_size independent evaluations.
-#
-# This is likely a candidate for optimisation — either via custom_vjp to avoid
-# retracing the full pipeline, or by restructuring the Delaunay steps to reduce
-# the XLA graph size. For now, skip vmap by default and run it only when explicitly
-# requested via DELAUNAY_VMAP=1 environment variable.
+batch_size = vmap_batch_for("imaging", "delaunay", instrument) or 3
 
-import os
-run_vmap = os.environ.get("DELAUNAY_VMAP", "0") == "1"
+# Skip vmap if vmap_batch_for explicitly returns None for this cell.
+_vmap_skipped = vmap_batch_for("imaging", "delaunay", instrument) is None
 
-if not run_vmap:
-    print("  SKIPPED: vmap compilation takes 20+ minutes for Delaunay pipeline.")
-    print("  Set DELAUNAY_VMAP=1 to run this section.")
-    vmap_batch_time = None
+if _vmap_skipped:
+    print("  SKIPPED: vmap_batch_for() returned None for this (cell, instrument).")
     vmap_per_call = None
     vmap_speedup = None
+    vmap_batch_time = None
+    result_vmap = None
+    vmapped_full = None
+    parameters = None
 else:
-
-    batch_size = 3
     parameters = jax.tree_util.tree_map(
         lambda leaf: jnp.broadcast_to(leaf, (batch_size, *leaf.shape)),
         params_tree,
@@ -516,16 +543,13 @@ likelihood_summary = {
         "edge_zeroed_pixels": int(edge_pixels_total),
     },
     "full_pipeline_single_jit": full_pipeline_per_call,
-    "vmap": "SKIPPED — compilation takes 20+ minutes (set DELAUNAY_VMAP=1)",
-}
-
-if vmap_per_call is not None:
-    likelihood_summary["vmap"] = {
+    "vmap": "SKIPPED — vmap_batch_for() returned None for this (cell, instrument)" if _vmap_skipped else {
         "batch_size": batch_size,
         "batch_time": vmap_batch_time,
         "per_call": vmap_per_call,
-        "speedup_vs_single_jit": round(vmap_speedup, 1),
-    }
+        "speedup_vs_single_jit": round(vmap_speedup, 1) if vmap_speedup is not None else None,
+    },
+}
 
 dict_path, chart_path = resolve_output_paths(
     _cli,
@@ -568,7 +592,7 @@ np.testing.assert_allclose(
     rtol=1e-3,
     err_msg=f"imaging/delaunay[{instrument}]: regression — full log_evidence drifted",
 )
-if run_vmap:
+if not _vmap_skipped:
     np.testing.assert_allclose(
         np.array(result_vmap),
         EXPECTED_LOG_EVIDENCE_HST,

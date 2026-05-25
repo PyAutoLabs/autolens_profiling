@@ -69,6 +69,12 @@ from _profile_cli import (  # noqa: E402
     auto_simulate_if_missing,
 )
 from simulators.point_source import INSTRUMENTS  # noqa: E402
+from vram import (  # noqa: E402
+    probe_vmap_memory,
+    recommend_batch_size,
+    vmap_batch_for,
+    write_probe_json,
+)
 _cli = parse_profile_cli()
 
 matplotlib.use("Agg")
@@ -277,6 +283,35 @@ _, full_result = jit_profile(full_pipeline_from_params, "full_pipeline", params_
 full_pipeline_per_call = timer.records[-1][1] / 10
 print(f"  full log_likelihood = {full_result}")
 
+# ===================================================================
+# PART B.5 — vmap-probe mode (early exit)
+# ===================================================================
+#
+# When ``--vmap-probe`` is set the script JIT-vmaps the pipeline at the
+# configured batch sizes, reads ``compiled.memory_analysis()``, writes a
+# ``vmap_probe.json`` with the recommended A100 batch_size, and exits
+# before the full vmap timing loop. See ``vram/README.md`` for methodology.
+
+if _cli.vmap_probe:
+    probe = probe_vmap_memory(
+        full_pipeline_from_params,
+        params_tree,
+        batch_sizes=(1, 4, 16),
+        dataset="point_source",
+        model="image_plane",
+        instrument=instrument,
+    )
+    recommended = recommend_batch_size(probe)
+    probe_path = (
+        (_cli.output_dir or (_workspace_root / "results" / "likelihood" / "point_source"))
+        / "vmap_probe.json"
+    )
+    write_probe_json(probe, recommended, probe_path)
+    print(f"\n  vmap_probe samples: {probe.samples}")
+    print(f"  per_replica:        {probe.per_replica_mb:.1f} MB / replica")
+    print(f"  recommended batch:  {recommended}")
+    print(f"  written to:         {probe_path}")
+    sys.exit(0)
 
 # ===================================================================
 # PART C — vmap over the full pipeline
@@ -284,7 +319,7 @@ print(f"  full log_likelihood = {full_result}")
 
 print("\n--- vmap batched evaluation ---")
 
-batch_size = 3
+batch_size = vmap_batch_for("point_source", "image_plane", instrument) or 3
 
 batched_params = jax.tree_util.tree_map(
     lambda leaf: jnp.broadcast_to(leaf, (batch_size, *leaf.shape)),

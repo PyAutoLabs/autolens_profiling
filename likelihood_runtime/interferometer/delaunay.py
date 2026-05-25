@@ -83,7 +83,6 @@ registration (``autofit.jax.register_model``). Exercises the ``TuplePrior``
 pytree support landed in PyAutoFit#1222.
 """
 
-import os
 import numpy as np
 import jax
 import jax.numpy as jnp
@@ -123,6 +122,12 @@ from _profile_cli import (  # noqa: E402
     auto_simulate_if_missing,
 )
 from simulators.interferometer import INSTRUMENTS  # noqa: E402
+from vram import (  # noqa: E402
+    probe_vmap_memory,
+    recommend_batch_size,
+    vmap_batch_for,
+    write_probe_json,
+)
 _cli = parse_profile_cli()
 
 instrument = _cli.instrument or "sma"  # default; override via --instrument
@@ -431,18 +436,46 @@ np.testing.assert_allclose(
 print("  Eager-vs-JIT correctness PASSED")
 
 # ===================================================================
-# PART D — vmap (opt-in) + correctness
+# PART C.5 — vmap-probe mode (early exit)
 # ===================================================================
 #
-# Delaunay vmap compilation can take 20+ minutes on CPU due to the size of
-# the triangulation + interpolation XLA graph. Skipped by default — set
-# DELAUNAY_VMAP=1 to opt in.
+# When ``--vmap-probe`` is set the script JIT-vmaps the pipeline at the
+# configured batch sizes, reads ``compiled.memory_analysis()``, writes a
+# ``vmap_probe.json`` with the recommended A100 batch_size, and exits
+# before the full vmap timing loop. See ``vram/README.md`` for methodology.
+
+if _cli.vmap_probe:
+    probe = probe_vmap_memory(
+        full_pipeline_from_params,
+        params_tree,
+        batch_sizes=(1,),
+        dataset="interferometer",
+        model="delaunay",
+        instrument=instrument,
+    )
+    recommended = recommend_batch_size(probe)
+    probe_path = (
+        (_cli.output_dir or (_workspace_root / "results" / "likelihood" / "interferometer"))
+        / "vmap_probe.json"
+    )
+    write_probe_json(probe, recommended, probe_path)
+    print(f"\n  vmap_probe samples: {probe.samples}")
+    print(f"  per_replica:        {probe.per_replica_mb:.1f} MB / replica")
+    print(f"  recommended batch:  {recommended}")
+    print(f"  written to:         {probe_path}")
+    sys.exit(0)
+
+# ===================================================================
+# PART D — vmap + correctness
+# ===================================================================
 
 print("\n--- vmap batched evaluation ---")
 
-run_vmap = os.environ.get("DELAUNAY_VMAP", "0") == "1"
+batch_size = vmap_batch_for("interferometer", "delaunay", instrument) or 3
 
-batch_size = 3
+# Skip vmap if vmap_batch_for explicitly returns None for this cell.
+_vmap_skipped = vmap_batch_for("interferometer", "delaunay", instrument) is None
+
 vmap_batch_time = None
 vmap_per_call = None
 vmap_speedup = None
@@ -451,8 +484,8 @@ vmapped_full = None
 parameters = None
 
 _n_leaves = len(jax.tree_util.tree_leaves(params_tree))
-if not run_vmap:
-    print("  SKIPPED: opt-in via DELAUNAY_VMAP=1 (compilation can take 20+ minutes).")
+if _vmap_skipped:
+    print("  SKIPPED: vmap_batch_for() returned None for this (cell, instrument).")
 elif _n_leaves == 0:
     print(f"  SKIPPED: model has 0 free parameters (all fixed to truth); "
           f"vmap requires at least one array leaf.")
@@ -552,8 +585,8 @@ print("=" * 70)
 # --- Save results dictionary ---
 
 if vmap_per_call is None:
-    if not run_vmap:
-        vmap_payload = "SKIPPED — opt-in via DELAUNAY_VMAP=1"
+    if _vmap_skipped:
+        vmap_payload = "SKIPPED — vmap_batch_for() returned None for this (cell, instrument)"
     else:
         vmap_payload = "SKIPPED — model has 0 free parameters (all fixed to truth)"
 else:

@@ -34,6 +34,7 @@ class ProfileCLI:
     output_dir: Optional[Path]
     use_mixed_precision: bool
     instrument: Optional[str]
+    vmap_probe: bool
 
 
 def parse_profile_cli(default_config_name: Optional[str] = None) -> ProfileCLI:
@@ -88,6 +89,16 @@ def parse_profile_cli(default_config_name: Optional[str] = None) -> ProfileCLI:
             "interferometer/datacube cells, 'hst' for imaging)."
         ),
     )
+    parser.add_argument(
+        "--vmap-probe",
+        action="store_true",
+        help=(
+            "Probe mode: JIT-vmap the full pipeline at batch=2 and batch=4, "
+            "read compiled.memory_analysis(), write a vmap_probe.json with "
+            "the recommended A100 batch_size, and exit before the steady-"
+            "state timing loop. See vram/README.md for methodology."
+        ),
+    )
 
     args, _unknown = parser.parse_known_args()
     config_name = args.config_name or default_config_name
@@ -97,6 +108,7 @@ def parse_profile_cli(default_config_name: Optional[str] = None) -> ProfileCLI:
         output_dir=output_dir,
         use_mixed_precision=bool(args.use_mixed_precision),
         instrument=args.instrument,
+        vmap_probe=bool(args.vmap_probe),
     )
 
 
