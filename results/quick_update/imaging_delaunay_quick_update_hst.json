@@ -1,0 +1,66 @@
+{
+  "model": "MGE 20g lens + Delaunay 1500px source",
+  "instrument": "hst",
+  "masked_pixels": 15361,
+  "native_shape": [
+    141,
+    141
+  ],
+  "mask_radius": 3.5,
+  "mesh_pixels": 1500,
+  "n_repeats": 3,
+  "device": {
+    "backend": "cpu",
+    "device": "TFRT_CPU_0"
+  },
+  "phases": {
+    "fit_for_viz": 0.018,
+    "model_data": 17.1936,
+    "residual_map": 3.0645,
+    "chi_squared_map": 5.5127,
+    "critical_curves": 0.4144,
+    "subplot_fit_quick_render": 10.6396,
+    "end_to_end": 44.9675,
+    "warmup": 40.248
+  },
+  "all_timings": {
+    "warmup": [
+      40.248
+    ],
+    "fit_for_viz": [
+      0.0151,
+      0.018,
+      0.0301
+    ],
+    "model_data": [
+      17.1936,
+      17.4661,
+      16.4271
+    ],
+    "residual_map": [
+      3.1038,
+      3.0505,
+      3.0645
+    ],
+    "chi_squared_map": [
+      5.5985,
+      5.5127,
+      5.4898
+    ],
+    "critical_curves": [
+      2.036,
+      0.4144,
+      0.3991
+    ],
+    "subplot_fit_quick_render": [
+      15.8711,
+      7.8131,
+      10.6396
+    ],
+    "end_to_end": [
+      43.3505,
+      44.9675,
+      46.4731
+    ]
+  }
+}

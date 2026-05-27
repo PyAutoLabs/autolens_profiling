@@ -1,0 +1,71 @@
+{
+  "instrument": "hst",
+  "masked_pixels": 15361,
+  "n_repeats": 3,
+  "device": {
+    "backend": "cpu",
+    "device": "TFRT_CPU_0"
+  },
+  "phases": {
+    "fit_for_viz": 0.0001,
+    "model_data": 0.2312,
+    "residual_map": 0.2111,
+    "chi_squared_map": 0.222,
+    "critical_curves": 0.3584,
+    "subplot_fit_render": 8.1049,
+    "subplot_fit_quick_render": 3.6218,
+    "end_to_end": 5.0041,
+    "first_call_cold_numba": 9.5223
+  },
+  "all_timings": {
+    "warmup_fit_for_viz": [
+      1.952
+    ],
+    "warmup_model_data": [
+      7.0
+    ],
+    "warmup_residual": [
+      0.5703
+    ],
+    "fit_for_viz": [
+      0.0001,
+      0.0001,
+      0.0001
+    ],
+    "model_data": [
+      0.1947,
+      0.3935,
+      0.2312
+    ],
+    "residual_map": [
+      0.1729,
+      0.3072,
+      0.2111
+    ],
+    "chi_squared_map": [
+      0.2455,
+      0.222,
+      0.1965
+    ],
+    "critical_curves": [
+      0.6361,
+      0.3584,
+      0.3311
+    ],
+    "subplot_fit_render": [
+      9.8174,
+      7.7002,
+      8.1049
+    ],
+    "subplot_fit_quick_render": [
+      3.5768,
+      3.6218,
+      3.7134
+    ],
+    "end_to_end": [
+      6.2743,
+      5.0041,
+      4.8511
+    ]
+  }
+}
