@@ -1,0 +1,35 @@
+{
+  "model": "Isothermal + shear + Point source",
+  "n_positions": 4,
+  "n_repeats": 3,
+  "device": {
+    "backend": "cpu",
+    "device": "TFRT_CPU_0"
+  },
+  "phases": {
+    "fit_for_viz": 0.0,
+    "subplot_fit_quick_render": 1.972,
+    "end_to_end": 4.8918,
+    "warmup": 0.0001
+  },
+  "all_timings": {
+    "warmup": [
+      0.0001
+    ],
+    "fit_for_viz": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "subplot_fit_quick_render": [
+      1.7065,
+      1.972,
+      1.9778
+    ],
+    "end_to_end": [
+      4.8918,
+      6.3114,
+      1.905
+    ]
+  }
+}
