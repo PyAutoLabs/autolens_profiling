@@ -1,0 +1,58 @@
+{
+  "model": "MGE 20g source (no lens light)",
+  "instrument": "sma",
+  "n_visibilities": 190,
+  "real_space_shape": [
+    256,
+    256
+  ],
+  "n_repeats": 3,
+  "device": {
+    "backend": "cpu",
+    "device": "TFRT_CPU_0"
+  },
+  "phases": {
+    "fit_for_viz": 0.0002,
+    "model_data": 1.3402,
+    "dirty_images": 1.4228,
+    "critical_curves": 8.4253,
+    "subplot_fit_quick_render": 1.6089,
+    "end_to_end": 3.9909,
+    "warmup": 15.1202
+  },
+  "all_timings": {
+    "warmup": [
+      15.1202
+    ],
+    "fit_for_viz": [
+      0.0002,
+      0.0002,
+      0.0002
+    ],
+    "model_data": [
+      1.3402,
+      1.3793,
+      1.2825
+    ],
+    "dirty_images": [
+      1.4327,
+      1.2203,
+      1.4228
+    ],
+    "critical_curves": [
+      8.4253,
+      12.2654,
+      6.8276
+    ],
+    "subplot_fit_quick_render": [
+      1.5892,
+      1.6089,
+      1.9358
+    ],
+    "end_to_end": [
+      4.7876,
+      3.5784,
+      3.9909
+    ]
+  }
+}
