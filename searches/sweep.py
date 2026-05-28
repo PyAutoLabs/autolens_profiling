@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -40,6 +41,12 @@ from pathlib import Path
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]                 # autolens_profiling/
 _DEFAULT_OUTPUT_ROOT = _REPO_ROOT / "results" / "searches"
+# PyAutoFit's autoconf ``output_path`` defaults to ``<cwd>/output``. The
+# searches package writes search state under ``<output_path>/searches/...``
+# via the ``path_prefix`` set in ``_samplers.build_nautilus``. Wiping this
+# subtree before a (cell, config) run is what gives honest timing — see the
+# ``--keep-completed`` flag.
+_DEFAULT_SEARCH_OUTPUT_ROOT = _REPO_ROOT / "output" / "searches"
 _DEFAULT_PYTHON = sys.executable
 
 
@@ -160,6 +167,29 @@ def _parse_args() -> argparse.Namespace:
         ),
     )
     p.add_argument(
+        "--keep-completed",
+        action="store_true",
+        help=(
+            "Do NOT wipe the search-output dir (output/searches/...) before "
+            "running each cell. By default sweep.py removes any "
+            "``.completed`` sentinel + cached ``samples.csv`` + Nautilus "
+            "checkpoint left by a prior run so the new run is a fresh "
+            "fit. Use this flag to deliberately resume cached samples "
+            "(e.g. for debugging the post-fit visualization path)."
+        ),
+    )
+    p.add_argument(
+        "--search-output-root",
+        type=Path,
+        default=_DEFAULT_SEARCH_OUTPUT_ROOT,
+        help=(
+            f"Where PyAutoFit writes its own per-search output (samples.csv, "
+            f"search.summary, visualization). Default: "
+            f"{_DEFAULT_SEARCH_OUTPUT_ROOT}. Must match the autoconf "
+            f"``output_path`` + ``searches/`` prefix used by the leaf scripts."
+        ),
+    )
+    p.add_argument(
         "--output-root",
         type=Path,
         default=_DEFAULT_OUTPUT_ROOT,
@@ -221,13 +251,55 @@ def _script_path(sampler: str, ds_class: str, model: str) -> Path:
     return _REPO_ROOT / "searches" / sampler / ds_class / f"{model}.py"
 
 
+def _wipe_search_state(
+    *,
+    search_output_root: Path,
+    sampler: str,
+    ds_class: str,
+    model: str,
+    instrument: str,
+    config_name: str,
+    dry_run: bool,
+) -> None:
+    """Remove PyAutoFit's per-search output dir for one (cell, config).
+
+    PyAutoFit gates fresh-vs-resume on the ``.completed`` sentinel inside the
+    search's ``path_prefix/name`` directory. Without wiping, a re-run after a
+    prior successful sampling will load the cached ``samples.csv`` + Nautilus
+    pickle and report bogus 2-3x speedups (no real sampling fires). See PR #30
+    follow-up for the diagnosis.
+    """
+    cell_root = (
+        search_output_root / sampler / ds_class / model / instrument / config_name
+    )
+    if not cell_root.exists():
+        return
+    if dry_run:
+        print(f"    [clear-completed] (dry-run) would remove {cell_root}")
+        return
+    shutil.rmtree(cell_root)
+    try:
+        display = cell_root.relative_to(_REPO_ROOT)
+    except ValueError:
+        display = cell_root
+    print(
+        f"    [clear-completed] removed {display} "
+        "(set --keep-completed to suppress)"
+    )
+
+
 def _run_one(
     *,
     python: str,
     script_path: Path,
     config: SweepConfig,
+    sampler: str,
+    ds_class: str,
+    model: str,
     instrument: str,
     out_dir: Path,
+    search_output_root: Path,
+    keep_completed: bool,
     dry_run: bool,
     force: bool,
 ) -> tuple[bool, float, str]:
@@ -244,6 +316,17 @@ def _run_one(
     if json_path.exists() and not force:
         print(f"    SKIP: {json_path.name} exists (use --force to re-run)")
         return True, 0.0, ""
+
+    if not keep_completed:
+        _wipe_search_state(
+            search_output_root=search_output_root,
+            sampler=sampler,
+            ds_class=ds_class,
+            model=model,
+            instrument=instrument,
+            config_name=config.name,
+            dry_run=dry_run,
+        )
 
     cmd = [
         python,
@@ -303,6 +386,10 @@ def main() -> int:
     print(f"  output:   {args.output_root}")
     print(f"  python:   {args.python}")
     print(f"  resume:   {'OFF (--force)' if args.force else 'ON (default)'}")
+    print(
+        f"  .completed wipe: "
+        f"{'OFF (--keep-completed)' if args.keep_completed else 'ON (default)'}"
+    )
     if args.dry_run:
         print("  (dry-run)")
 
@@ -326,8 +413,13 @@ def main() -> int:
                     python=args.python,
                     script_path=script_path,
                     config=cfg,
+                    sampler=sampler,
+                    ds_class=ds_class,
+                    model=model,
                     instrument=instrument,
                     out_dir=out_dir,
+                    search_output_root=args.search_output_root,
+                    keep_completed=args.keep_completed,
                     dry_run=args.dry_run,
                     force=args.force,
                 )
