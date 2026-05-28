@@ -70,9 +70,12 @@ def build_nautilus(
       multiprocessing pool and corrupt JAX state otherwise.
     - ``use_jax_vmap=use_jax`` so JAX rows get the batched-evaluation
       win and NumPy rows get the standard per-sample path.
-    - ``force_pickle_overwrite=True`` so re-running the same cell does
-      not short-circuit via a stale ``.completed`` file from a prior
-      sweep iteration.
+    - ``force_pickle_overwrite=True`` so output pickle files in the
+      ``files/`` directory get re-written when an existing search is
+      re-touched (useful when code that produces them has changed).
+      NOTE: this does **not** bypass the ``.completed`` resume gate —
+      that's handled at the sweep level (see ``sweep.py``'s
+      ``--keep-completed`` flag; the default wipes search state).
     - ``iterations_per_update`` set explicitly so the visualization
       cadence does not silently change across PyAutoFit versions.
     """

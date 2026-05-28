@@ -65,11 +65,21 @@ JSON reports `total_wall_s`, `viz_wall_s` and the derived
 `sampler_wall_s = total_wall_s - viz_wall_s` so you can ask both "how
 long did the full first-class fit take?" and "how much was viz?".
 
-**`force_pickle_overwrite=True` on every search.** Defeats the
-`.completed`-file resume that would otherwise return cached results
-the second time you run the same `path_prefix`. Combined with
-unique-per-(sampler, ds, model, instrument, config) `path_prefix`, this
-keeps repeated sweep runs honest.
+**`sweep.py` wipes search state by default.** PyAutoFit's resume gate is
+the `.completed` sentinel file under `<output_path>/searches/...` — once
+a `search.fit()` finishes sampling, that file is written and the next
+attempt at the same `path_prefix` short-circuits to a cached-result load.
+For *production* (SLaM-style chained phases) this is correct behaviour.
+For *profiling* it produces 2-3× phantom speedups when a re-run after
+a post-fit crash hits the cached `samples.csv`. `sweep.py` therefore
+removes `<output_path>/searches/<sampler>/<ds>/<model>/<instrument>/<config>/`
+before each cell run by default. Pass `--keep-completed` to opt out
+(e.g. when iterating on the post-fit visualization path).
+
+`force_pickle_overwrite=True` is also set on every search, but it only
+controls whether output pickles in the `files/` directory get re-written
+when an existing search is *resumed* — it does **not** bypass the
+`.completed` gate. The sweep-level wipe is what makes re-runs honest.
 
 ## Datacube multi-channel fitting
 
