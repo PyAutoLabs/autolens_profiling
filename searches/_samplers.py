@@ -39,6 +39,22 @@ _N_LIVE: dict[tuple[str, str], int] = {
 }
 
 
+# NSS-specific defaults. ``af.NSS`` exposes three knobs above ``n_live``:
+# - ``num_mcmc_steps``: inner slice-MCMC steps per dead-point batch.
+# - ``num_delete``: particles killed per outer iteration. Larger reduces
+#   JIT overhead per iteration at the cost of slightly worse posterior
+#   coverage.
+# - ``termination``: stop when ``logZ_live - logZ < termination``. Default
+#   ``-3.0`` corresponds to delta-logZ < 1e-3 — matched to PyAutoFit's
+#   own production-tested default.
+_NSS_DEFAULTS: dict[str, int | float] = {
+    "num_mcmc_steps": 5,
+    "num_delete": 50,
+    "termination": -3.0,
+    "seed": 42,
+}
+
+
 def n_live_for(dataset_class: str, model_type: str) -> int:
     """Look up the canonical n_live for a (dataset_class, model_type) cell."""
     try:
@@ -93,7 +109,51 @@ def build_nautilus(
     )
 
 
+def build_nss(
+    *,
+    sampler: str,
+    dataset_class: str,
+    model_type: str,
+    instrument: str,
+    config_name: str,
+    use_jax: bool,
+) -> "af.NSS":
+    """Construct a first-class ``af.NSS`` (JAX nested slice sampler) for one cell.
+
+    ``af.NSS`` is JAX-native: the likelihood + prior closures both run inside
+    ``jax.jit`` and execute on whatever device JAX is configured for. There
+    is no NumPy / multiprocessing fallback, so:
+
+    - ``use_jax`` must be True (the analysis must be JAX-traceable).
+    - ``number_of_cores`` is accepted by ``af.NSS`` for API parity but
+      ignored. We leave it at the default ``1``.
+    - There is no ``force_x1_cpu`` / ``use_jax_vmap`` toggle; NSS always
+      batches across live particles natively.
+
+    ``n_live`` matches the per-(ds, model) SLaM choice used for Nautilus
+    so timing comparisons line up. ``num_delete=50``, ``num_mcmc_steps=5``,
+    ``termination=-3.0`` are PyAutoFit's production-tested defaults.
+    """
+    if not use_jax:
+        raise ValueError(
+            "af.NSS is JAX-native; running with use_jax=False is not "
+            "supported. Unset PYAUTO_DISABLE_JAX or use sampler='nautilus' "
+            "for the NumPy-front profile."
+        )
+    n_live = n_live_for(dataset_class, model_type)
+    return af.NSS(
+        name=config_name,
+        path_prefix=f"searches/{sampler}/{dataset_class}/{model_type}/{instrument}",
+        n_live=n_live,
+        num_mcmc_steps=int(_NSS_DEFAULTS["num_mcmc_steps"]),
+        num_delete=int(_NSS_DEFAULTS["num_delete"]),
+        termination=float(_NSS_DEFAULTS["termination"]),
+        seed=int(_NSS_DEFAULTS["seed"]),
+    )
+
+
 SamplerBuilder = Callable[..., af.NonLinearSearch]
 SAMPLER_BUILDERS: dict[str, SamplerBuilder] = {
     "nautilus": build_nautilus,
+    "nss": build_nss,
 }

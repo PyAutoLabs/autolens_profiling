@@ -72,6 +72,15 @@ CELLS: list[tuple[str, str, str]] = [
     ("nautilus", "interferometer", "pixelization"),
     ("nautilus", "interferometer", "delaunay"),
     ("nautilus", "datacube",       "delaunay"),
+    ("nss",      "point_source",   "image_plane"),
+    ("nss",      "point_source",   "source_plane"),
+    ("nss",      "imaging",        "mge"),
+    ("nss",      "imaging",        "pixelization"),
+    ("nss",      "imaging",        "delaunay"),
+    ("nss",      "interferometer", "mge"),
+    ("nss",      "interferometer", "pixelization"),
+    ("nss",      "interferometer", "delaunay"),
+    ("nss",      "datacube",       "delaunay"),
 ]
 
 
