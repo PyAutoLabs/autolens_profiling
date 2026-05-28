@@ -1,0 +1,47 @@
+#!/bin/bash -l
+#
+# A100 first-class search profiling: searches/nautilus/imaging/delaunay × hst × fp64.
+#
+# Drives af.Nautilus end-to-end on an MGE-lens + Hilbert-image-mesh +
+# Delaunay-source pixelization model with ConstantSplit regularization.
+# Adapt image is the truth-derived `lensed_source.fits` cached next to
+# the dataset (see searches/README.md "Datacube" / "adapt image" notes).
+
+#SBATCH -J search_nautilus_imaging_delaunay_hst_fp64
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=3:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_profiling
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+nvidia-smi
+
+echo "=========================================="
+date
+echo "Cell:       searches/nautilus/imaging/delaunay"
+echo "Instrument: hst"
+echo "Precision:  fp64"
+
+cd $AP_ROOT
+python3 searches/nautilus/imaging/delaunay.py \
+    --instrument hst \
+    --config-name hpc_a100_fp64 \
+    --output-dir $AP_ROOT/results/searches/nautilus/imaging/delaunay/hst
+
+echo "Finished."
+date
