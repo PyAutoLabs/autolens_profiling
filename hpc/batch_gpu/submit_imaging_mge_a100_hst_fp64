@@ -30,6 +30,10 @@ export XLA_PYTHON_CLIENT_PREALLOCATE=false
 export JAX_ENABLE_X64=True
 export NUMBA_CACHE_DIR=/tmp/numba_cache
 export MPLCONFIGDIR=/tmp/matplotlib
+# Skip latent-variable computation: autolens_profiling/config/latent.yaml
+# enables total_lens_flux_mujy which needs `magzero=` on the Analysis.
+# Latents aren't part of the search profile, so we bypass entirely.
+export PYAUTO_SKIP_LATENTS=1
 
 nvidia-smi
 
