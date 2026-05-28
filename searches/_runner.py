@@ -42,6 +42,7 @@ from searches._samplers import (  # noqa: E402
     SAMPLER_BUILDERS,
     _NSS_DEFAULTS,
     n_live_for,
+    vmap_batch_for_cell,
 )
 from searches._setup import build_for_cell, format_best_fit  # noqa: E402
 
@@ -172,17 +173,25 @@ def run_search(
     print(f"  Bar chart saved to:    {png_path}")
 
 
-def _sampler_config_dict(sampler: str, n_live: int, use_jax: bool) -> dict:
+def _sampler_config_dict(
+    sampler: str,
+    dataset_class: str,
+    model_type: str,
+    instrument: str,
+    n_live: int,
+    use_jax: bool,
+) -> dict:
     """Return the JSON-friendly sampler config block for the metric write.
 
     Per-sampler shape matches the kwargs the factory in ``_samplers.py``
     actually constructs the search with — so the JSON faithfully
-    records what was run.
+    records what was run, including the per-cell vmap batch cap.
     """
+    batch = vmap_batch_for_cell(dataset_class, model_type, instrument)
     if sampler == "nautilus":
         return {
             "n_live": n_live,
-            "n_batch": 100,
+            "n_batch": batch,
             "number_of_cores": 1,
             "use_jax_vmap": use_jax,
             "force_x1_cpu": use_jax,
@@ -192,7 +201,7 @@ def _sampler_config_dict(sampler: str, n_live: int, use_jax: bool) -> dict:
         return {
             "n_live": n_live,
             "num_mcmc_steps": int(_NSS_DEFAULTS["num_mcmc_steps"]),
-            "num_delete": int(_NSS_DEFAULTS["num_delete"]),
+            "num_delete": min(int(_NSS_DEFAULTS["num_delete"]), batch),
             "termination": float(_NSS_DEFAULTS["termination"]),
             "seed": int(_NSS_DEFAULTS["seed"]),
             "jax_native": True,
@@ -235,7 +244,9 @@ def _build_summary(
         "version": al.__version__,
         "device": device_info_dict(),
         "use_mixed_precision": bool(cli.use_mixed_precision),
-        "sampler_config": _sampler_config_dict(sampler, n_live, use_jax),
+        "sampler_config": _sampler_config_dict(
+            sampler, dataset_class, model_type, instrument, n_live, use_jax
+        ),
         "model_summary": {
             "free_parameters": n_free_params,
             "best_fit": best_fit,

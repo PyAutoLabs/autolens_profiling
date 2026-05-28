@@ -19,9 +19,20 @@ Delaunay matches imaging Delaunay at 150.
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
 from typing import Callable
 
 import autofit as af
+
+# ``vram/config.py`` lives at the workspace root and stores per-(dataset, model,
+# instrument) A100-probed vmap batch sizes. The samplers read it so we don't
+# hardcode batch sizes that would OOM on heavier cells (e.g. imaging/delaunay
+# at HST scale uses batch=16, not the Nautilus-default 100).
+_WORKSPACE_ROOT = Path(__file__).resolve().parents[1]
+if str(_WORKSPACE_ROOT) not in sys.path:
+    sys.path.insert(0, str(_WORKSPACE_ROOT))
+from vram import vmap_batch_for  # noqa: E402
 
 
 # (dataset_class, model_type) -> n_live. Matches the SLaM defaults so a
@@ -66,6 +77,24 @@ def n_live_for(dataset_class: str, model_type: str) -> int:
         ) from exc
 
 
+# Cells the vram probe hasn't covered fall back to the Nautilus default of 100.
+# Probed cells (everything under (imaging, *, *) and (interferometer, *, *)) use
+# the A100-validated value so we don't OOM on inversion-heavy cells like
+# imaging/delaunay × hst (922 MB / replica → batch=16 max).
+_FALLBACK_BATCH = 100
+
+
+def vmap_batch_for_cell(dataset_class: str, model_type: str, instrument: str) -> int:
+    """Resolve the per-cell vmap batch size from the vram registry.
+
+    Returns ``vram.vmap_batch_for(...)`` when probed; ``_FALLBACK_BATCH`` for
+    point_source / datacube / un-probed cells (these have small inversions
+    or no vmap surface and the Nautilus default is fine).
+    """
+    val = vmap_batch_for(dataset_class, model_type, instrument)
+    return val if val is not None else _FALLBACK_BATCH
+
+
 def build_nautilus(
     *,
     sampler: str,
@@ -96,11 +125,12 @@ def build_nautilus(
       cadence does not silently change across PyAutoFit versions.
     """
     n_live = n_live_for(dataset_class, model_type)
+    n_batch = vmap_batch_for_cell(dataset_class, model_type, instrument)
     return af.Nautilus(
         name=config_name,
         path_prefix=f"searches/{sampler}/{dataset_class}/{model_type}/{instrument}",
         n_live=n_live,
-        n_batch=100,
+        n_batch=n_batch,
         number_of_cores=1,
         force_x1_cpu=use_jax,
         use_jax_vmap=use_jax,
@@ -141,12 +171,21 @@ def build_nss(
             "for the NumPy-front profile."
         )
     n_live = n_live_for(dataset_class, model_type)
+    # NSS's ``num_delete`` plays the same role as Nautilus ``n_batch``: it
+    # controls how many likelihoods fire in parallel per outer iteration.
+    # Cap it at the per-cell vmap budget so heavy cells (delaunay, inversion-
+    # based) don't OOM the A100. Floor at the default so small cells still
+    # benefit from sane batching.
+    num_delete = min(
+        int(_NSS_DEFAULTS["num_delete"]),
+        vmap_batch_for_cell(dataset_class, model_type, instrument),
+    )
     return af.NSS(
         name=config_name,
         path_prefix=f"searches/{sampler}/{dataset_class}/{model_type}/{instrument}",
         n_live=n_live,
         num_mcmc_steps=int(_NSS_DEFAULTS["num_mcmc_steps"]),
-        num_delete=int(_NSS_DEFAULTS["num_delete"]),
+        num_delete=num_delete,
         termination=float(_NSS_DEFAULTS["termination"]),
         seed=int(_NSS_DEFAULTS["seed"]),
     )
