@@ -1,0 +1,24 @@
+"""First-class af.Nautilus search profiling — imaging Delaunay.
+
+Drives a full ``af.Nautilus`` fit on an MGE lens + Hilbert image-mesh Delaunay
+source imaging model. Uses a truth-derived adapt image cached next to the
+dataset. See ``searches/README.md`` for caveats.
+"""
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
+from searches._runner import run_search  # noqa: E402
+
+run_search(
+    sampler="nautilus",
+    dataset_class="imaging",
+    model_type="delaunay",
+    default_instrument="hst",
+)
