@@ -127,7 +127,7 @@ def run_search(
     )
 
     try:
-        best_instance = primary_result.samples.max_log_likelihood_sample.instance
+        best_instance = primary_result.max_log_likelihood_instance
         best_fit = format_best_fit(best_instance)
     except Exception as exc:
         best_fit = f"(unavailable: {exc!r})"
