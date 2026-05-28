@@ -132,7 +132,7 @@ _cli = parse_profile_cli()
 
 instrument = _cli.instrument or "sma"  # default; override via --instrument
 
-hilbert_pixels = 1000  # 1000-tier production fiducial for Hilbert + Delaunay
+hilbert_pixels = 1500  # 1500-tier production fiducial (matches imaging/datacube)
 regularization_coefficient = 1.0
 
 
