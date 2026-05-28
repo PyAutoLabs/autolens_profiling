@@ -22,7 +22,7 @@
 #SBATCH --mail-user=james.w.nightingale@durham.ac.uk
 
 export AP_ROOT=/mnt/ral/jnightin/autolens_profiling
-source /mnt/ral/jnightin/PyAutoNSS/PyAutoNSS/bin/activate
+source $AP_ROOT/activate.sh
 
 export JAX_PLATFORM_NAME=cuda
 export JAX_PLATFORMS=cuda,cpu
