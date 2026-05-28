@@ -84,7 +84,7 @@ _cli = parse_profile_cli()
 
 instrument = "sma"  # <-- change this to profile a different instrument
 
-hilbert_pixels = 1000  # 1000-tier production fiducial for Hilbert + Delaunay
+hilbert_pixels = 1500  # 1500-tier production fiducial (matches imaging/datacube)
 regularization_coefficient = 1.0
 
 
@@ -172,24 +172,34 @@ real_space_mask = al.Mask2D.circular(
     radius=mask_radius,
 )
 
+transformer_chunk_size = INSTRUMENTS[instrument].get("transformer_chunk_size", None)
+
+
+def _build_transformer(uv_wavelengths, real_space_mask):
+    """Inject per-instrument chunk_size into TransformerNUFFT without needing a
+    transformer_kwargs API on Interferometer.from_fits.  Required for alma_high
+    (5M visibilities) to cap the nufftax gather buffer (PyAutoArray#330)."""
+    return al.TransformerNUFFT(
+        uv_wavelengths=uv_wavelengths,
+        real_space_mask=real_space_mask,
+        chunk_size=transformer_chunk_size,
+    )
+
+
 with timer.section("dataset_load"):
     dataset = al.Interferometer.from_fits(
         data_path=dataset_path / "data.fits",
         noise_map_path=dataset_path / "noise_map.fits",
         uv_wavelengths_path=dataset_path / "uv_wavelengths.fits",
         real_space_mask=real_space_mask,
-        transformer_class=al.TransformerDFT,
-        # DFT is intentional even at ALMA-scale visibility counts — profiling
-        # the JAX-traceable path is the goal, NUFFT (pynufft) is not yet
-        # JIT-friendly.
-        raise_error_dft_visibilities_limit=False,
+        transformer_class=_build_transformer,
     )
 
 with timer.section("apply_sparse_operator"):
-    # Precompute the NUFFT precision-matrix preload so per-fit curvature
-    # assembly uses the FFT-based sparse path instead of dense DFT for every
-    # source pixel. Unblocked by PyAutoArray#316 (the Pmax > 1 extent-indexing
-    # fix); on Delaunay this was previously guarded with NotImplementedError.
+    # Precompute the W~ precision-matrix preload + dirty image so per-fit
+    # curvature assembly uses the FFT-based sparse path instead of the dense
+    # transformed_mapping_matrix.  The NUFFT keeps the one-time dirty-image
+    # setup tractable at ALMA-scale visibility counts (PyAutoArray#329).
     dataset = dataset.apply_sparse_operator(use_jax=True, show_progress=True)
 
 n_visibilities = dataset.uv_wavelengths.shape[0]

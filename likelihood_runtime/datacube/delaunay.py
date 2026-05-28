@@ -136,7 +136,7 @@ instrument = _cli.instrument or "sma"  # default; override via --instrument (cub
 # n_channels = 34 matches the prior Hannah ALMA cube fiducial. For quick
 # iteration on the smaller sma dataset, drop this to 4.
 n_channels = 34
-hilbert_pixels = 500  # 500-tier production fiducial per channel (× n_channels)
+hilbert_pixels = 1500  # 1500-tier production fiducial (matches imaging/interferometer)
 regularization_coefficient = 1.0
 
 
