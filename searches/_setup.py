@@ -485,6 +485,12 @@ def _build_analysis(
     use_mixed_precision: bool,
     adapt_images: Optional[al.AdaptImages],
 ) -> Any:
+    # Pixelization / Delaunay analyses normally require ``positions_likelihood_list``
+    # to guard against the demagnified-source systematic. For pure profiling we
+    # don't care about solution quality — we're measuring sampler + likelihood
+    # cost — so disable the check rather than wire up truth-position plumbing.
+    raise_positions_exc = model_type not in ("pixelization", "delaunay")
+
     if dataset_class == "imaging":
         return al.AnalysisImaging(
             dataset=dataset,
@@ -493,6 +499,7 @@ def _build_analysis(
                 use_border_relocator=model_type in ("pixelization", "delaunay"),
                 use_mixed_precision=use_mixed_precision,
             ),
+            raise_inversion_positions_likelihood_exception=raise_positions_exc,
             use_jax=use_jax,
         )
     if dataset_class in ("interferometer", "datacube"):
@@ -503,6 +510,7 @@ def _build_analysis(
                 use_border_relocator=model_type in ("pixelization", "delaunay"),
                 use_mixed_precision=use_mixed_precision,
             ),
+            raise_inversion_positions_likelihood_exception=raise_positions_exc,
             use_jax=use_jax,
         )
     if dataset_class == "point_source":
