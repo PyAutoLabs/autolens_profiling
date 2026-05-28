@@ -419,16 +419,15 @@ def _delaunay_model(*, mask_radius: float) -> af.Collection:
     lens = af.Model(
         al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear
     )
+    # al.Pixelization only accepts mesh + regularization (no image_mesh kwarg).
+    # The Hilbert image_mesh is applied OUTSIDE the model: the precomputed
+    # image_plane_mesh_grid is passed to AnalysisImaging via AdaptImages's
+    # galaxy_name_image_plane_mesh_grid_dict — see _adapt_images_for. The
+    # mesh.Delaunay instance pins all parameters so PyAutoFit treats it as
+    # a fixed value (the bare class form auto-promotes to af.Model and then
+    # looks up priors for areas_factor, which has no entry in default config).
     pixelization = af.Model(
         al.Pixelization,
-        image_mesh=al.image_mesh.Hilbert(
-            pixels=_HILBERT_PIXELS, weight_power=1.0, weight_floor=0.0
-        ),
-        # Fully-instantiated mesh: PyAutoFit treats it as a fixed value and
-        # does not look up priors for its constructor args. Otherwise the
-        # framework auto-promotes the bare class ``al.mesh.Delaunay`` to a
-        # Model and tries to find a prior for ``areas_factor`` (the recent
-        # PyAutoArray Delaunay arg), which fails on a default-config workspace.
         mesh=al.mesh.Delaunay(
             pixels=_HILBERT_PIXELS, areas_factor=0.5, zeroed_pixels=0
         ),
@@ -463,11 +462,35 @@ def _adapt_images_for(
     if dataset_class not in ("imaging", "interferometer", "datacube"):
         return None
     adapt_image = adapt_image_for_dataset(dataset_path=dataset_path, dataset=dataset)
-    # The galaxy-name-keyed dict is what survives an in-search instance
-    # reconstruction; the Galaxy-object-keyed dict is for eager comparison
-    # paths and isn't strictly needed for a fresh search.
+    galaxy_key = "('galaxies', 'source')"
+
+    extra: dict = {}
+    if model_type == "delaunay":
+        # Delaunay's mapper.interpolator_from chain expects to find a
+        # precomputed image_plane_mesh_grid via
+        # AdaptImages.galaxy_name_image_plane_mesh_grid_dict — al.Pixelization
+        # has no image_mesh field of its own. Mirror the workspace pattern
+        # (autolens_workspace/scripts/imaging/features/pixelization/delaunay.py):
+        # compute it once from the Hilbert image-mesh + truth-derived adapt
+        # image, then ship via AdaptImages.
+        mask = (
+            dataset.mask
+            if dataset_class == "imaging"
+            else dataset.real_space_mask
+        )
+        image_mesh = al.image_mesh.Hilbert(
+            pixels=_HILBERT_PIXELS, weight_power=1.0, weight_floor=0.0
+        )
+        image_plane_mesh_grid = image_mesh.image_plane_mesh_grid_from(
+            mask=mask, adapt_data=adapt_image
+        )
+        extra["galaxy_name_image_plane_mesh_grid_dict"] = {
+            galaxy_key: image_plane_mesh_grid
+        }
+
     return al.AdaptImages(
-        galaxy_name_image_dict={"('galaxies', 'source')": adapt_image},
+        galaxy_name_image_dict={galaxy_key: adapt_image},
+        **extra,
     )
 
 
