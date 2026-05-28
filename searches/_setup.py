@@ -424,7 +424,14 @@ def _delaunay_model(*, mask_radius: float) -> af.Collection:
         image_mesh=al.image_mesh.Hilbert(
             pixels=_HILBERT_PIXELS, weight_power=1.0, weight_floor=0.0
         ),
-        mesh=al.mesh.Delaunay,
+        # Fully-instantiated mesh: PyAutoFit treats it as a fixed value and
+        # does not look up priors for its constructor args. Otherwise the
+        # framework auto-promotes the bare class ``al.mesh.Delaunay`` to a
+        # Model and tries to find a prior for ``areas_factor`` (the recent
+        # PyAutoArray Delaunay arg), which fails on a default-config workspace.
+        mesh=al.mesh.Delaunay(
+            pixels=_HILBERT_PIXELS, areas_factor=0.5, zeroed_pixels=0
+        ),
         regularization=al.reg.ConstantSplit,
     )
     source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
