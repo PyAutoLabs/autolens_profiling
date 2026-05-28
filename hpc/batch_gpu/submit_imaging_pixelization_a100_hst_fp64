@@ -1,0 +1,53 @@
+#!/bin/bash -l
+#
+# A100 first-class search profiling: searches/nautilus/imaging/pixelization × hst × fp64.
+#
+# RectangularAdaptImage variant — same inversion-matrix scatter as the
+# Delaunay cell (931 MB / replica vs Delaunay's 922 MB per the vram probe)
+# but NO jax.pure_callback in the mesh path (PyAutoArray's
+# rectangular interpolator is pure JAX, vs delaunay.py:80 which calls
+# scipy.spatial.Delaunay via pure_callback).
+#
+# Pair with submit_nss_imaging_pixelization_a100_hst_fp64 to isolate whether
+# NSS's Delaunay OOM is the pure_callback-vmap pytree blow-up (PyAutoPrompt
+# autofit/nss_chunked_vmap_for_inversion_heavy_likelihoods.md) or a generic
+# inversion-matrix issue.
+
+#SBATCH -J search_nautilus_imaging_pixelization_hst_fp64
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=3:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_profiling
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+nvidia-smi
+
+echo "=========================================="
+date
+echo "Cell:       searches/nautilus/imaging/pixelization"
+echo "Instrument: hst"
+echo "Precision:  fp64"
+
+cd $AP_ROOT
+python3 searches/nautilus/imaging/pixelization.py \
+    --instrument hst \
+    --config-name hpc_a100_fp64 \
+    --output-dir $AP_ROOT/results/searches/nautilus/imaging/pixelization/hst
+
+echo "Finished."
+date
