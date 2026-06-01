@@ -171,17 +171,33 @@ def resolve_output_paths(
 ) -> tuple[Path, Path]:
     """Resolve (json_path, png_path) for the per-cell write.
 
-    - When ``cli.config_name`` is set: use ``<output_dir>/<config_name>.{json,png}``.
-    - Otherwise: use ``<output_dir>/<default_basename>.{json,png}`` to preserve
-      the existing single-config filename pattern.
+    - When ``cli.config_name`` is unset: use
+      ``<output_dir>/<default_basename>.{json,png}`` (the single-config
+      filename pattern).
+    - When ``cli.config_name`` is set: use ``<output_dir>/<cell>_<config_name>.{json,png}``,
+      where ``<cell>`` is the first ``_``-separated token of ``default_basename``
+      (the leaf scripts use ``<cell>_likelihood_summary_...`` /
+      ``<cell>_breakdown_...`` so the cell name is always the leading token).
+      This keeps per-cell JSONs disjoint even when the same config name is
+      shared across cells in a sweep — without it, every cell writes to the
+      same ``<config_name>.json`` and the sweep loses 5 of 6 results to
+      clobbering (the bug surfaced by the first A100 sparse-vs-dense sweep,
+      autolens_profiling#44).
     - ``cli.output_dir`` overrides ``default_dir`` when set.
     - When ``cli.use_sparse_operator`` is set, ``_sparse`` is appended to the
       resolved basename so dense and sparse JSONs from the same config don't
-      clobber each other. Pre-existing dense JSONs keep their names.
+      clobber each other.
     """
     results_dir = cli.output_dir if cli.output_dir is not None else default_dir
     results_dir.mkdir(parents=True, exist_ok=True)
-    basename = cli.config_name or default_basename
+    if cli.config_name is None:
+        basename = default_basename
+    else:
+        # First underscore-separated token of default_basename is the cell.
+        # All callers (likelihood_runtime, likelihood_breakdown) follow the
+        # ``<cell>_<purpose>_<inst>_v<version>`` convention.
+        cell = default_basename.split("_", 1)[0]
+        basename = f"{cell}_{cli.config_name}"
     if cli.use_sparse_operator:
         basename = f"{basename}_sparse"
     return results_dir / f"{basename}.json", results_dir / f"{basename}.png"

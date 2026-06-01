@@ -252,6 +252,17 @@ def _build_imaging(instrument: str) -> tuple[al.Imaging, Path]:
         over_sample_size_lp=over_sample_size,
         over_sample_size_pixelization=1,
     )
+    # The w-tilde sparse operator is what the inversion factory consults when
+    # selecting InversionImagingSparse for models with a pixelization Mapper.
+    # A100 fp64 vmap-probe (autolens_profiling#44):
+    #   - dense path:  931 MB / replica -> n_live=150 needs 140 GB (OOM @ 80 GB)
+    #   - sparse path:  95 MB / replica -> n_live=150 needs  14 GB (comfortable)
+    # Pure-MGE-source cells short-circuit to dense in the factory regardless,
+    # so attaching here only adds the w-tilde kernel-construction one-shot
+    # cost (~tens of MB, sub-second) without changing per-eval cost.
+    # Eliminates the need for PyAutoFit#1303/#1305's chunked-vmap workaround
+    # on pixelization / Delaunay search runs.
+    dataset = dataset.apply_sparse_operator()
     return dataset, dataset_path
 
 
