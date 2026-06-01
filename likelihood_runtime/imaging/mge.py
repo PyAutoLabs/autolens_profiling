@@ -218,6 +218,22 @@ with timer.section("mask_and_oversample"):
 
     dataset = dataset.apply_over_sampling(over_sample_size_lp=over_sample_size)
 
+    if _cli.use_sparse_operator:
+        # The pure-MGE-source cell uses LinearObjFuncList for every linear
+        # obj, so the inversion factory's all-LinearObjFuncList short-circuit
+        # fires and ``InversionImagingMapping`` is still chosen even after
+        # ``apply_sparse_operator`` attaches a sparse_operator to the dataset.
+        # We still call ``apply_sparse_operator`` for parity with the pix /
+        # Delaunay cells so the harness-level cost (kernel construction,
+        # serialisation) is included in the timing — but the per-eval cost
+        # remains dense. The JSON's ``inversion_path`` records what the flag
+        # asked for; downstream synthesis cross-references with the
+        # ``InversionImagingSparse``-vs-``InversionImagingMapping`` factory
+        # decision when interpreting the MGE row.
+        dataset = dataset.apply_sparse_operator(
+            use_jax=True, show_progress=False
+        )
+
 # ---------------------------------------------------------------------------
 # 2. Model construction
 # ---------------------------------------------------------------------------
@@ -487,6 +503,7 @@ likelihood_summary = {
         "image_pixels_masked": int(n_image_pixels),
         "over_sampled_pixels": int(n_over_sampled_pixels),
         "linear_gaussians": int(n_linear_gaussians),
+        "inversion_path": "sparse" if _cli.use_sparse_operator else "dense",
     },
     "full_pipeline_single_jit": full_pipeline_per_call,
     "vmap": {

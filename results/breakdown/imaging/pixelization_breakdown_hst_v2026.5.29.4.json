@@ -1,0 +1,34 @@
+{
+  "autolens_version": "2026.5.29.4",
+  "device": {
+    "backend": "cpu",
+    "device": "TFRT_CPU_0"
+  },
+  "instrument": "hst",
+  "configuration": {
+    "pixel_scale_arcsec": 0.05,
+    "mask_radius_arcsec": 3.5,
+    "image_pixels_masked": 15361,
+    "over_sampled_pixels": 17980,
+    "mesh_shape": [
+      39,
+      39
+    ],
+    "source_pixels": 1521,
+    "inversion_path": "dense"
+  },
+  "steps": {
+    "Ray-trace grids": 0.0028533600000002933,
+    "Lens light images (pre-PSF)": 3.29800000031355e-05,
+    "Blurred image (PSF convolution)": 0.001386400000001231,
+    "Profile-subtracted image": 0.00013394999999718493,
+    "Overlay grid (source pixel centres)": 0.0003335800000002109,
+    "Inversion setup (steps 4-8 combined)": 1.9609551599999975,
+    "Data vector (D)": 0.01315614000000096,
+    "Curvature matrix (F)": 3.679563589999998,
+    "Regularization matrix (H)": 0.002354919999999083,
+    "Regularized reconstruction": 1.9147829400000034,
+    "Mapped recon + log evidence": 0.2188830199999984
+  },
+  "total_step_by_step": 7.794436039999999
+}

@@ -217,6 +217,16 @@ with timer.section("mask_and_oversample"):
         over_sample_size_pixelization=1,
     )
 
+    if _cli.use_sparse_operator:
+        # Engage the w-tilde sparse-operator path. The inversion factory
+        # picks ``InversionImagingSparse`` whenever a Mapper is present in
+        # the linear-obj list — true here (Delaunay source mesh). The MGE
+        # lens-light columns ride through the same sparse inversion alongside
+        # the Mapper columns.
+        dataset = dataset.apply_sparse_operator(
+            use_jax=True, show_progress=False
+        )
+
 # ---------------------------------------------------------------------------
 # 2. Adapt image + image mesh (Hilbert)
 # ---------------------------------------------------------------------------
@@ -541,6 +551,7 @@ likelihood_summary = {
         "over_sampled_pixels": int(n_over_sampled_pixels),
         "delaunay_vertices": int(n_source_pixels),
         "edge_zeroed_pixels": int(edge_pixels_total),
+        "inversion_path": "sparse" if _cli.use_sparse_operator else "dense",
     },
     "full_pipeline_single_jit": full_pipeline_per_call,
     "vmap": "SKIPPED — vmap_batch_for() returned None for this (cell, instrument)" if _vmap_skipped else {

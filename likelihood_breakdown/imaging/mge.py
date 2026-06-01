@@ -206,6 +206,17 @@ with timer.section("mask_and_oversample"):
 
     dataset = dataset.apply_over_sampling(over_sample_size_lp=over_sample_size)
 
+    if _cli.use_sparse_operator:
+        # Pure-MGE-source cell — the inversion factory short-circuits to
+        # dense even with sparse_operator attached (all linear objs are
+        # AbstractLinearObjFuncList). The flag still gets attached for
+        # harness-overhead parity; the JSON's ``inversion_path`` records
+        # what the flag asked for, and downstream synthesis cross-references
+        # with the factory's actual class choice when interpreting the row.
+        dataset = dataset.apply_sparse_operator(
+            use_jax=True, show_progress=False
+        )
+
 # ---------------------------------------------------------------------------
 # 2. Model construction
 # ---------------------------------------------------------------------------
@@ -637,6 +648,7 @@ breakdown_summary = {
         "image_pixels_masked": int(n_image_pixels),
         "over_sampled_pixels": int(n_over_sampled_pixels),
         "linear_gaussians": int(n_linear_gaussians),
+        "inversion_path": "sparse" if _cli.use_sparse_operator else "dense",
     },
     "steps": {label: per_call for label, per_call in likelihood_steps},
     "total_step_by_step": step_total,
