@@ -40,6 +40,7 @@ for identifying which step dominates.
 All JAX timings use `block_until_ready()` to force synchronous measurement.
 """
 
+import json
 import numpy as np
 import jax
 import jax.numpy as jnp
@@ -403,14 +404,38 @@ full_pipeline_per_call = timer.records[-1][1] / 10
 
 print(f"  full log_likelihood = {full_result}")
 
+
+# ===================================================================
+# Early JSON write — single-JIT only (survives vmap OOM)
+# ===================================================================
+_early_summary = {
+    "autolens_version": al.__version__,
+    "device": device_info_dict(),
+    "instrument": instrument,
+    "configuration": {
+        "pixel_scale_arcsec": pixel_scale,
+        "mask_radius_arcsec": mask_radius,
+        "image_pixels_masked": int(n_image_pixels),
+        "over_sampled_pixels": int(n_over_sampled_pixels),
+        "delaunay_vertices": int(n_source_pixels),
+        "edge_zeroed_pixels": int(edge_pixels_total),
+        "inversion_path": "sparse" if _cli.use_sparse_operator else "dense",
+    },
+    "full_pipeline_single_jit": full_pipeline_per_call,
+    "vmap": "PENDING — vmap phase has not run yet (or was killed)",
+}
+_early_dict_path, _ = resolve_output_paths(
+    _cli,
+    default_dir=_workspace_root / "results" / "likelihood" / "imaging",
+    default_basename=f"delaunay_likelihood_summary_{instrument}_v{al.__version__}",
+)
+_early_dict_path.write_text(json.dumps(_early_summary, indent=2))
+print(f"\n  Early JSON saved to: {_early_dict_path}")
+
+
 # ===================================================================
 # PART C.5 — vmap-probe mode (early exit)
 # ===================================================================
-#
-# When ``--vmap-probe`` is set the script JIT-vmaps the pipeline at the
-# configured batch sizes, reads ``compiled.memory_analysis()``, writes a
-# ``vmap_probe.json`` with the recommended A100 batch_size, and exits
-# before the full vmap timing loop. See ``vram/README.md`` for methodology.
 
 if _cli.vmap_probe:
     probe = probe_vmap_memory(
@@ -422,14 +447,26 @@ if _cli.vmap_probe:
         instrument=instrument,
     )
     recommended = recommend_batch_size(probe)
+    _inversion_path = "sparse" if _cli.use_sparse_operator else "dense"
+    _probe_basename = (
+        "vmap_probe_delaunay_sparse"
+        if _cli.use_sparse_operator
+        else "vmap_probe_delaunay"
+    )
     probe_path = (
         (_cli.output_dir or (_workspace_root / "results" / "likelihood" / "imaging"))
-        / "vmap_probe.json"
+        / f"{_probe_basename}.json"
     )
-    write_probe_json(probe, recommended, probe_path)
+    write_probe_json(
+        probe,
+        recommended,
+        probe_path,
+        extra={"inversion_path": _inversion_path},
+    )
     print(f"\n  vmap_probe samples: {probe.samples}")
     print(f"  per_replica:        {probe.per_replica_mb:.1f} MB / replica")
     print(f"  recommended batch:  {recommended}")
+    print(f"  inversion_path:     {_inversion_path}")
     print(f"  written to:         {probe_path}")
     sys.exit(0)
 

@@ -1,0 +1,58 @@
+#!/bin/bash -l
+#
+# A100 likelihood-runtime profile: imaging/delaunay × hst × fp64.
+# SPARSE inversion path (InversionImagingSparse / w-tilde).
+#
+# Dataset gets apply_sparse_operator() called after over-sampling so the
+# inversion factory selects InversionImagingSparse. See
+# autolens_profiling#44 for the methodology and CPU-baseline numbers.
+
+#SBATCH -J runtime_imaging_delaunay_hst_fp64_sparse
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=3:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_profiling
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+nvidia-smi
+
+echo "=========================================="
+date
+echo "Cell:           likelihood_runtime/imaging/delaunay"
+echo "Instrument:     hst"
+echo "Precision:      fp64"
+echo "Inversion path: sparse (w-tilde)"
+
+cd $AP_ROOT
+
+# Phase A — vmap-probe (early exit with memory_analysis + batch recommendation)
+echo "--- vmap-probe (sparse) ---"
+python3 likelihood_runtime/imaging/delaunay.py \
+    --instrument hst \
+    --sparse \
+    --vmap-probe
+
+# Phase B — full single-JIT + vmap timing
+echo "--- full timing (sparse) ---"
+python3 likelihood_runtime/imaging/delaunay.py \
+    --instrument hst \
+    --sparse \
+    --config-name hpc_a100_fp64
+
+echo "Finished."
+date

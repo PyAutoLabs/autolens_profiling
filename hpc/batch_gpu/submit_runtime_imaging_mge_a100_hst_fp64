@@ -1,0 +1,59 @@
+#!/bin/bash -l
+#
+# A100 likelihood-runtime profile: imaging/mge × hst × fp64.
+# DENSE inversion path (InversionImagingMapping).
+#
+# Pair with submit_runtime_imaging_mge_a100_hst_fp64_sparse. MGE is a
+# pure-LinearObjFuncList model; the factory's all-LinearObjFuncList
+# short-circuit normally selects dense even with sparse_operator
+# attached, so this pair tests whether the harness-level cost
+# difference matters at A100 scale. See autolens_profiling#44 for CPU
+# baselines.
+
+#SBATCH -J runtime_imaging_mge_hst_fp64_dense
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=1:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_profiling
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+nvidia-smi
+
+echo "=========================================="
+date
+echo "Cell:           likelihood_runtime/imaging/mge"
+echo "Instrument:     hst"
+echo "Precision:      fp64"
+echo "Inversion path: dense"
+
+cd $AP_ROOT
+
+# Phase A — vmap-probe (early exit with memory_analysis + batch recommendation)
+echo "--- vmap-probe ---"
+python3 likelihood_runtime/imaging/mge.py \
+    --instrument hst \
+    --vmap-probe
+
+# Phase B — full single-JIT + vmap timing
+echo "--- full timing ---"
+python3 likelihood_runtime/imaging/mge.py \
+    --instrument hst \
+    --config-name hpc_a100_fp64
+
+echo "Finished."
+date
