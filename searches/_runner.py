@@ -202,7 +202,7 @@ def _sampler_config_dict(
             "n_live": n_live,
             "num_mcmc_steps": int(_NSS_DEFAULTS["num_mcmc_steps"]),
             "num_delete": int(_NSS_DEFAULTS["num_delete"]),
-            "chunk_size": batch,
+            "chunk_size": None,
             "termination": float(_NSS_DEFAULTS["termination"]),
             "seed": int(_NSS_DEFAULTS["seed"]),
             "jax_native": True,
