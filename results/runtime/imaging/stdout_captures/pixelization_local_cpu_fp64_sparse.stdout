@@ -1,0 +1,104 @@
+2026-06-01 11:49:01,448 - jax_plugins.xla_cuda12 - WARNING - cuda_plugin_extension is not found.
+/home/jammy/Code/PyAutoLabs/PyAutoConf/autoconf/workspace.py:173: UserWarning: Cannot verify the workspace at /home/jammy/Code/PyAutoLabs-wt/sparse-vs-dense-profile/autolens_profiling matches the installed library version (2026.5.29.4): no `version.workspace_version` key in config/general.yaml and no version.txt at the workspace root.
+
+If you cloned the workspace from `main` rather than a release tag, set `version.workspace_version_check: False` in config/general.yaml to silence this warning. The `main` branch updates more frequently than library releases, so version mismatches are expected and not actionable for `main`-branch users.
+
+You can also set the environment variable PYAUTO_SKIP_WORKSPACE_VERSION_CHECK=1 to disable temporarily.
+  warnings.warn(_missing_version_warning(root, library_version))
+/home/jammy/Code/PyAutoLabs/PyAutoConf/autoconf/workspace.py:173: UserWarning: Cannot verify the workspace at /home/jammy/Code/PyAutoLabs-wt/sparse-vs-dense-profile/autolens_profiling matches the installed library version (2026.5.29.4): no `version.workspace_version` key in config/general.yaml and no version.txt at the workspace root.
+
+If you cloned the workspace from `main` rather than a release tag, set `version.workspace_version_check: False` in config/general.yaml to silence this warning. The `main` branch updates more frequently than library releases, so version mismatches are expected and not actionable for `main`-branch users.
+
+You can also set the environment variable PYAUTO_SKIP_WORKSPACE_VERSION_CHECK=1 to disable temporarily.
+  warnings.warn(_missing_version_warning(root, library_version))
+
+--- Dataset loading & masking [hst] ---
+  [dataset_load] 0.0849 s
+2026-06-01 11:49:03,074 - autoarray.dataset.imaging.dataset - INFO - IMAGING - Data masked, contains a total of 15361 image-pixels
+2026-06-01 11:49:03,077 - autoarray.dataset.imaging.dataset - INFO - IMAGING - Setting Up Sparse Operator For low Memory Pixelizations.
+/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/mask/mask_2d_util.py:564: UserWarning: Mask padded from (141, 141) to (np.int64(159), np.int64(159)) (parity preserved) to support kernel footprint (21, 21).
+  warnings.warn(
+/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/operators/convolver.py:951: UserWarning: No blurring_image provided. Only the direct image will be convolved. This may change the correctness of the PSF convolution.
+  warnings.warn(
+/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/operators/convolver.py:560: UserWarning: No blurring_image provided. Only the direct image will be convolved. This may change the correctness of the PSF convolution.
+  warnings.warn(
+  [mask_and_oversample] 0.2281 s
+
+--- Model construction ---
+  [model_build] 2.2456 s
+  Total free parameters: 11
+  Mesh shape: (39, 39)
+  Source pixels: 1521
+
+--- Instantiate concrete model ---
+  [instance_from_vector] 0.0428 s
+  [register_pytrees] 0.0011 s
+  Tracer planes: 2
+
+--- Configuration (determines run time) ---
+  Instrument:              hst
+  Pixel scale:             0.05 arcsec/pixel
+  Mask radius:             3.5 arcsec
+  Image pixels (masked):   15361
+  Over-sampled pixels:     17980
+  Mesh shape:              (39, 39)
+  Source pixels:           1521
+
+--- Adapt image (lensed source) ---
+  [adapt_image_build] 0.0032 s
+  adapt_image shape (slim): 15361
+
+--- Full FitImaging (eager baseline) ---
+  [fit_imaging_eager] 17.7862 s
+  figure_of_merit (log_evidence) = 28370.277701822328
+  log_likelihood                 = 29660.96436687644
+
+======================================================================
+FULL-PIPELINE JIT (for comparison)
+======================================================================
+  [full_pipeline_lower] 11.1477 s
+  [full_pipeline_compile] 23.9571 s
+  [full_pipeline_first_call] 6.9876 s
+  [full_pipeline_steady_x10] 67.3216 s
+    -> per-call avg: 6.732160 s
+  full log_likelihood = 28398.444158983853
+
+--- vmap batched evaluation ---
+  [vmap_first_call] 143.8277 s
+  [vmap_steady_x10] 1113.0530 s
+  batch results = [28398.44415898 28398.44415898 28398.44415898 28398.44415898
+ 28398.44415898 28398.44415898 28398.44415898 28398.44415898
+ 28398.44415898 28398.44415898 28398.44415898 28398.44415898
+ 28398.44415898 28398.44415898 28398.44415898 28398.44415898]
+  vmap batch of 16:   111.305305 s
+  vmap per call:         6.956582 s
+  single JIT per call:   6.732160 s
+  vmap speedup:          1.0x faster per likelihood
+  Correctness check PASSED
+
+--- Static memory analysis ---
+  Output size:  0.000 MB
+  Temp size:    1880.539 MB
+  Total:        1880.539 MB
+
+======================================================================
+JAX LIKELIHOOD FUNCTION SUMMARY — HST — v2026.5.29.4
+======================================================================
+  Instrument:            hst
+  Pixel scale:           0.05 arcsec/pixel
+  Mask radius:           3.5 arcsec
+  Image pixels (masked): 15361
+  Over-sampled pixels:   17980
+  Mesh shape:            (39, 39)
+  Source pixels:         1521
+----------------------------------------------------------------------
+----------------------------------------------------------------------
+      Full pipeline (single JIT)          6.732160 s
+      vmap batch (per call)               6.956582 s
+      vmap speedup vs single JIT              1.0x
+======================================================================
+
+  Results dict saved to: /home/jammy/Code/PyAutoLabs-wt/sparse-vs-dense-profile/autolens_profiling/results/likelihood/imaging/local_cpu_fp64_sparse.json
+  Bar chart path:        /home/jammy/Code/PyAutoLabs-wt/sparse-vs-dense-profile/autolens_profiling/results/likelihood/imaging/local_cpu_fp64_sparse.png (no per-step chart in runtime variant)
+  Eager regression assertion PASSED: log_evidence matches 28370.277702
+  Regression assertion PASSED: log_evidence matches 28370.277702
