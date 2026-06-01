@@ -35,6 +35,7 @@ class ProfileCLI:
     use_mixed_precision: bool
     instrument: Optional[str]
     vmap_probe: bool
+    use_sparse_operator: bool
 
 
 def parse_profile_cli(default_config_name: Optional[str] = None) -> ProfileCLI:
@@ -99,6 +100,27 @@ def parse_profile_cli(default_config_name: Optional[str] = None) -> ProfileCLI:
             "state timing loop. See vram/README.md for methodology."
         ),
     )
+    parser.add_argument(
+        "--sparse",
+        action="store_true",
+        help=(
+            "Call ``dataset.apply_sparse_operator(use_jax=True)`` after "
+            "dataset construction so the inversion factory selects the "
+            "w-tilde sparse path (``InversionImagingSparse``) instead of "
+            "the dense ``InversionImagingMapping``. The sparse path "
+            "supports mixed linear-obj lists — the production "
+            "pixelization / Delaunay cells include an MGE lens-light "
+            "basis alongside the Mapper source, and the sparse "
+            "InversionImagingSparse handles the MGE Basis columns via "
+            "``linear_func_operated_mapping_matrix_dict`` while the "
+            "Mapper columns go through the w-tilde sparse-operator "
+            "assembly. The only short-circuit-to-dense case is when "
+            "*every* linear object is an ``AbstractLinearObjFuncList`` "
+            "(e.g. the pure-MGE-source reference cell). Per-cell scripts "
+            "that read this flag embed the chosen path into the result "
+            "JSON as ``inversion_path``."
+        ),
+    )
 
     args, _unknown = parser.parse_known_args()
     config_name = args.config_name or default_config_name
@@ -109,6 +131,7 @@ def parse_profile_cli(default_config_name: Optional[str] = None) -> ProfileCLI:
         use_mixed_precision=bool(args.use_mixed_precision),
         instrument=args.instrument,
         vmap_probe=bool(args.vmap_probe),
+        use_sparse_operator=bool(args.sparse),
     )
 
 
@@ -152,10 +175,15 @@ def resolve_output_paths(
     - Otherwise: use ``<output_dir>/<default_basename>.{json,png}`` to preserve
       the existing single-config filename pattern.
     - ``cli.output_dir`` overrides ``default_dir`` when set.
+    - When ``cli.use_sparse_operator`` is set, ``_sparse`` is appended to the
+      resolved basename so dense and sparse JSONs from the same config don't
+      clobber each other. Pre-existing dense JSONs keep their names.
     """
     results_dir = cli.output_dir if cli.output_dir is not None else default_dir
     results_dir.mkdir(parents=True, exist_ok=True)
     basename = cli.config_name or default_basename
+    if cli.use_sparse_operator:
+        basename = f"{basename}_sparse"
     return results_dir / f"{basename}.json", results_dir / f"{basename}.png"
 
 

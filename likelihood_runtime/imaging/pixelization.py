@@ -210,6 +210,16 @@ with timer.section("mask_and_oversample"):
         over_sample_size_pixelization=1,
     )
 
+    if _cli.use_sparse_operator:
+        # Engage the w-tilde sparse-operator path. The inversion factory will
+        # pick ``InversionImagingSparse`` so long as at least one linear obj
+        # in the model is a Mapper — which is true here (the source is a
+        # Rectangular pixelization). The MGE lens-light columns ride through
+        # the same sparse inversion alongside the Mapper columns.
+        dataset = dataset.apply_sparse_operator(
+            use_jax=True, show_progress=False
+        )
+
 # ---------------------------------------------------------------------------
 # 2. Model construction
 # ---------------------------------------------------------------------------
@@ -548,6 +558,7 @@ likelihood_summary = {
         "over_sampled_pixels": int(n_over_sampled_pixels),
         "mesh_shape": list(mesh_shape),
         "source_pixels": int(n_source_pixels),
+        "inversion_path": "sparse" if _cli.use_sparse_operator else "dense",
     },
     "full_pipeline_single_jit": full_pipeline_per_call,
     "vmap": "SKIPPED — model has 0 free parameters (all fixed to truth)" if vmap_per_call is None else {
