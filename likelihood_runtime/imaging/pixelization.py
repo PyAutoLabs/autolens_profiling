@@ -216,9 +216,7 @@ with timer.section("mask_and_oversample"):
         # in the model is a Mapper — which is true here (the source is a
         # Rectangular pixelization). The MGE lens-light columns ride through
         # the same sparse inversion alongside the Mapper columns.
-        dataset = dataset.apply_sparse_operator(
-            use_jax=True, show_progress=False
-        )
+        dataset = dataset.apply_sparse_operator()
 
 # ---------------------------------------------------------------------------
 # 2. Model construction

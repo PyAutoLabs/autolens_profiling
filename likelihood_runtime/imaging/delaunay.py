@@ -223,9 +223,7 @@ with timer.section("mask_and_oversample"):
         # the linear-obj list — true here (Delaunay source mesh). The MGE
         # lens-light columns ride through the same sparse inversion alongside
         # the Mapper columns.
-        dataset = dataset.apply_sparse_operator(
-            use_jax=True, show_progress=False
-        )
+        dataset = dataset.apply_sparse_operator()
 
 # ---------------------------------------------------------------------------
 # 2. Adapt image + image mesh (Hilbert)

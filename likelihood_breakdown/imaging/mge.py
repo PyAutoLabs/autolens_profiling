@@ -213,9 +213,7 @@ with timer.section("mask_and_oversample"):
         # harness-overhead parity; the JSON's ``inversion_path`` records
         # what the flag asked for, and downstream synthesis cross-references
         # with the factory's actual class choice when interpreting the row.
-        dataset = dataset.apply_sparse_operator(
-            use_jax=True, show_progress=False
-        )
+        dataset = dataset.apply_sparse_operator()
 
 # ---------------------------------------------------------------------------
 # 2. Model construction

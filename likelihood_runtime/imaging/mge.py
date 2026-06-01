@@ -230,9 +230,7 @@ with timer.section("mask_and_oversample"):
         # asked for; downstream synthesis cross-references with the
         # ``InversionImagingSparse``-vs-``InversionImagingMapping`` factory
         # decision when interpreting the MGE row.
-        dataset = dataset.apply_sparse_operator(
-            use_jax=True, show_progress=False
-        )
+        dataset = dataset.apply_sparse_operator()
 
 # ---------------------------------------------------------------------------
 # 2. Model construction

@@ -214,9 +214,7 @@ with timer.section("mask_and_oversample"):
     if _cli.use_sparse_operator:
         # Engage the w-tilde sparse-operator path. See the runtime sibling
         # script for the rationale (autolens_profiling#44).
-        dataset = dataset.apply_sparse_operator(
-            use_jax=True, show_progress=False
-        )
+        dataset = dataset.apply_sparse_operator()
 
 # ---------------------------------------------------------------------------
 # 2. Model construction
