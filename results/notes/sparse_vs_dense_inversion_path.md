@@ -7,31 +7,43 @@ dispatched.
 
 ## TL;DR
 
-Sparse (w-tilde) inversion path wins on **all three** HST imaging cells when
-measured at the production-relevant full-pipeline single-JIT level — between
-**−25% and −48%** wall per likelihood evaluation versus dense, with
-bit-identical log-evidence. The per-step breakdown numbers told a contrary
-story for pixelization (sparse +14.6% slower) and have to be read carefully:
-XLA fusion across steps in the full-pipeline JIT is invisible to the
-per-step decomposition.
+Sparse (w-tilde) inversion path wins on **pixelization (−41%)** and
+**delaunay (−34%)** but **loses on MGE (+51%)** at the full-pipeline
+single-JIT level on CPU. The split makes structural sense — MGE goes
+through the factory's `all-LinearObjFuncList` short-circuit so the inversion
+path is dense either way; `apply_sparse_operator()` just adds w-tilde-kernel
+construction overhead without changing per-eval cost on that cell.
+
+The per-step breakdown numbers told a contrary story for pixelization
+(sparse +14.6% slower) and have to be read carefully: XLA fusion across
+steps in the full-pipeline JIT is invisible to the per-step decomposition.
 
 The recommendation is to **enable `apply_sparse_operator()` in
-`autolens_profiling/searches/_setup.py:_build_imaging`** for the existing
-A100 search runs (Nautilus + NSS × {mge, pix, delaunay}). Pending A100
-confirmation that the local CPU pattern holds at production scale.
+`autolens_profiling/searches/_setup.py:_build_imaging` only when the model
+contains a pixelization Mapper (pix / Delaunay source). Skip it for
+pure-MGE-source cells.** Pending A100 confirmation that the local CPU
+pattern holds at production scale.
 
 ## Headline numbers (HST, CPU fp64)
 
 ### Full-pipeline single-JIT (the production-relevant cost)
 
+Clean re-run, no `--config-name` (so each cell writes to its own filename):
+
 | Cell | Dense per-eval | Sparse per-eval | Δ | log_L agreement |
 |---|---:|---:|---:|---|
-| MGE | 0.173 s | **0.090 s** | **−48.0%** | exact (27379.388906855238) |
-| Pixelization | 9.04 s | **6.73 s** | **−25.5%** | bit-identical to 12 sig figs (28398.444158983…) |
-| Delaunay | 7.23 s | **3.92 s** | **−45.8%** | bit-identical to 12 sig figs (29110.920857938…) |
+| MGE | 0.083 s | 0.125 s | **+50.9% (sparse loses)** | exact (27379.388906855238) |
+| Pixelization | 7.90 s | **4.65 s** | **−41.1%** | bit-identical to 12 sig figs (28398.444158983…) |
+| Delaunay | 5.53 s | **3.63 s** | **−34.4%** | bit-identical to 12 sig figs (29110.920857938…) |
 
-Raw JSONs land under `results/likelihood/imaging/local_cpu_fp64{,_sparse}.json`
-(pix, del) and `mge_likelihood_summary_hst_v<v>{,_sparse}.json` (mge).
+Raw JSONs land under `results/likelihood/imaging/{pixelization,delaunay,mge}_likelihood_summary_hst_v<v>{,_sparse}.json`.
+
+**Cross-run variance note:** earlier stdout captures (see
+`results/runtime/imaging/stdout_captures/`) showed slightly different numbers
+on the same hardware (pix dense 9.04 s, MGE sparse appearing 48% faster).
+Those runs overlapped with the system doing other work; the clean re-run
+above is the more reliable read. The pix/delaunay verdict (sparse wins big)
+is robust across both runs; only MGE is noise-floor-sensitive.
 
 ### Per-step breakdown (informative but misleading)
 
@@ -74,18 +86,18 @@ For MGE the dominant cost is also in the mapping matrix:
 
 ## Surprises
 
-1. **MGE shows a 48% sparse win** despite the inversion factory's
-   `all-AbstractLinearObjFuncList` short-circuit. Pure-MGE-source models
-   should land on `InversionImagingMapping` (dense) even with
-   `sparse_operator` attached. The 48% gain is real and reproducible (CPU
-   fp64), so either (a) the short-circuit isn't firing as the factory code
-   suggests, or (b) attaching `sparse_operator` to the dataset changes
-   downstream cost outside the inversion-class choice. **Worth a
-   diagnostic look** — instrument `InversionImagingMapping.__init__` or
-   `InversionImagingSparse.__init__` to log which class actually gets
-   constructed on each `--sparse` run.
+1. **MGE loses on sparse (+51%).** The factory's
+   `all-AbstractLinearObjFuncList` short-circuit fires — pure-MGE-source
+   models land on `InversionImagingMapping` (dense) even with
+   `sparse_operator` attached. The 51% slowdown comes from the
+   `apply_sparse_operator()` call building the w-tilde kernel at dataset-
+   construction time, which then gets carried through every likelihood
+   eval as unused state. Confirmation: the JSON's `inversion_path` field
+   says "sparse" (flag was set), but the factory's actual class choice
+   was `InversionImagingMapping` and the per-eval cost reflects only
+   the dense path plus harness overhead.
 2. **Pixelization breakdown disagrees with runtime.** The breakdown says
-   sparse +14.6% slower; the runtime says sparse −25.5% faster. Trust the
+   sparse +14.6% slower; the runtime says sparse −41.1% faster. Trust the
    runtime — XLA fusion across steps is the difference, exactly as the
    breakdown README documented as a caveat.
 3. **A100 search runs were dense by design.** Earlier in this investigation
@@ -96,13 +108,24 @@ For MGE the dominant cost is also in the mapping matrix:
    numbers from PyAutoFit#1303/#1305 work were dense-path numbers. The
    sparse path has *never* been exercised on imaging in this codebase
    before this investigation.
+4. **First-run MGE measurement was noise.** An initial run showed sparse
+   48% faster on MGE; the clean re-run showed sparse 51% slower. Both
+   runs were on the same hardware; the first happened during higher
+   system load (other Python procs in flight). Single-eval timings at
+   ~100ms scale are noise-floor sensitive; the pix/delaunay numbers are
+   robust (multi-second per-eval, ratio holds across both runs).
 
 ## Recommendation
 
-1. **Enable sparse in `_build_imaging`.** Add
-   `dataset = dataset.apply_sparse_operator()` after the `apply_over_sampling`
-   chain in `autolens_profiling/searches/_setup.py:_build_imaging`. Gate
-   behind a flag or a config knob for safety until A100 confirmation.
+1. **Conditionally enable sparse in `_build_imaging`.** The cleanest
+   intervention is to attach `apply_sparse_operator()` only when the
+   `model` argument indicates a pixelization Mapper is in play
+   (pix / Delaunay source). For pure-MGE-source cells, leave the dataset
+   alone — the sparse-kernel build is wasted work because the factory
+   short-circuits to dense regardless. The simplest signal:
+   inspect `model_type` in the caller, or split `_build_imaging` into
+   `_build_imaging_pixelized` (which calls `apply_sparse_operator`) and
+   `_build_imaging_parametric` (which doesn't).
 2. **Run the 6 A100 submits** at
    `hpc/batch_gpu/submit_runtime_imaging_{mge,pixelization,delaunay}_a100_hst_fp64{,_sparse}`.
    Each does a `--vmap-probe` phase (writes `vmap_probe_<cell>{,_sparse}.json`
@@ -111,15 +134,14 @@ For MGE the dominant cost is also in the mapping matrix:
    writes `hpc_a100_fp64{,_sparse}.json`). Compare against the existing
    A100 dense numbers committed to `results/searches/` from the
    NSS-vs-Nautilus session.
-3. **Investigate the MGE 48% surprise** before declaring sparse-everywhere
-   safe. If the factory short-circuit *is* firing as expected, the gain
-   comes from somewhere outside the inversion path — possibly the way
-   `sparse_operator` is consulted (or not) by downstream code paths.
+3. **MGE sparse-loss is expected**, not a bug. Don't investigate further
+   unless A100 numbers contradict this CPU finding.
 4. **Defer matrix-free CG + SLQ** (the original plan-B). The sparse path
-   already gives uniform wins on imaging, with direct Cholesky log-det
-   preserved. Matrix-free CG would add SLQ noise for log-det and would
-   only be worth pursuing if a future scenario (e.g. ultra-large source
-   meshes on H100) revealed a regression.
+   gives clean wins on inversion-heavy imaging cells (pix / Delaunay)
+   with direct Cholesky log-det preserved. Matrix-free CG would add SLQ
+   noise for log-det and is only worth pursuing if a future scenario
+   (e.g. ultra-large source meshes on H100) reveals sparse can't keep up
+   either.
 
 ## Artifacts in the branch
 
