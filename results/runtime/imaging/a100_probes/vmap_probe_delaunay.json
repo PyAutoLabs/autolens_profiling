@@ -1,0 +1,20 @@
+{
+  "dataset": "imaging",
+  "model": "delaunay",
+  "instrument": "hst",
+  "samples": [
+    {
+      "batch_size": 1,
+      "peak_bytes": 0,
+      "output_bytes": 8,
+      "temp_bytes": 966696288
+    }
+  ],
+  "per_replica_mb": 921.913,
+  "constant_overhead_mb": 0.0,
+  "vram_budget_gb": 65.0,
+  "safety_factor": 1.15,
+  "max_batch_cap": 64,
+  "recommended_batch_size": 62,
+  "inversion_path": "dense"
+}

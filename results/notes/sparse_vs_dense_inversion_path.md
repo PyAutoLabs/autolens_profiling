@@ -7,22 +7,77 @@ dispatched.
 
 ## TL;DR
 
-Sparse (w-tilde) inversion path wins on **pixelization (−41%)** and
-**delaunay (−34%)** but **loses on MGE (+51%)** at the full-pipeline
-single-JIT level on CPU. The split makes structural sense — MGE goes
-through the factory's `all-LinearObjFuncList` short-circuit so the inversion
-path is dense either way; `apply_sparse_operator()` just adds w-tilde-kernel
-construction overhead without changing per-eval cost on that cell.
+**Updated with A100 data — the CPU and A100 verdicts disagree.**
 
-The per-step breakdown numbers told a contrary story for pixelization
-(sparse +14.6% slower) and have to be read carefully: XLA fusion across
-steps in the full-pipeline JIT is invisible to the per-step decomposition.
+- **CPU**: sparse wins big on pix (−41%) and delaunay (−34%), loses on MGE (+51%).
+- **A100**: sparse is **slightly slower** on pix (+10%) and delaunay (+7%) per-eval but uses **7–10× less VRAM per replica**. MGE is tied per-eval (both paths land on dense via factory short-circuit) but vmap batch=64 shows sparse 2× faster.
 
-The recommendation is to **enable `apply_sparse_operator()` in
-`autolens_profiling/searches/_setup.py:_build_imaging` only when the model
-contains a pixelization Mapper (pix / Delaunay source). Skip it for
-pure-MGE-source cells.** Pending A100 confirmation that the local CPU
-pattern holds at production scale.
+The A100 result reframes the recommendation: **enable sparse for memory, not speed**.
+On HST × fp64, every dense-path inversion replica eats ~920 MB of VRAM, which is
+exactly why the A100 NSS init OOM'd at `n_live=150 × 184 MB ≈ 28 GB` earlier in
+this session (PyAutoFit#1303 / #1305). Sparse replicas eat ~95–130 MB — fits
+the same vmap batches in ~10× less memory, no chunked-vmap workaround needed.
+
+For inversion-heavy cells (`pix`, `delaunay`) the per-eval slowdown is small
+(<10%) and the VRAM savings unlock larger batches / larger source meshes /
+multi-cell vmap. For MGE the factory short-circuits so it doesn't matter
+unless you're paying the harness-overhead cost (visible on CPU; invisible on
+A100). Recommendation: **enable `apply_sparse_operator()` in
+`autolens_profiling/searches/_setup.py:_build_imaging` when the model
+contains a pixelization Mapper. Skip for pure-MGE-source.**
+
+## Headline numbers — A100 fp64 (HST)
+
+Six A100 runtime jobs (323017–323022, mge/pix/del × dense/sparse), each
+running `--vmap-probe` (writes `results/runtime/imaging/a100_probes/`)
+then full timing (logs in `results/runtime/imaging/a100_logs/`). The
+likelihood-summary JSONs collided due to a `--config-name hpc_a100_fp64`
+filename bug; only pix_d's JSON was salvaged. Timing extracted from logs
+into the table below.
+
+| Cell | Phase | Dense | Sparse | Δ |
+|---|---|---:|---:|---|
+| **MGE** | single-JIT per-call | 5.91 ms | 5.90 ms | tied |
+| MGE | vmap batch=64 per-call | 0.77 ms | **0.39 ms** | **sparse 2.0× faster** |
+| MGE | per-replica VRAM | 16.4 MB | 16.4 MB | tied (factory short-circuits) |
+| **Pixelization** | single-JIT per-call | 52.7 ms | 58.3 ms | sparse +10.5% slower |
+| Pix | vmap batch=16 per-call | 32.9 ms | 35.9 ms | sparse +9.1% slower |
+| Pix | per-replica VRAM | **931.0 MB** | **94.9 MB** | **sparse 9.81× LESS** |
+| Pix | rec. batch (A100 80GB) | 62 | 64 | sparse fits +3% more batch |
+| **Delaunay** | single-JIT per-call | 80.0 ms | 85.6 ms | sparse +7.0% slower |
+| Delaunay | vmap batch=16 per-call | 106.8 ms | 104.4 ms | tied |
+| Delaunay | per-replica VRAM | **921.9 MB** | **131.5 MB** | **sparse 7.01× LESS** |
+| Delaunay | rec. batch (A100 80GB) | 62 | 64 | sparse fits +3% more batch |
+
+log_L agreement to 6+ sig figs across dense/sparse on all three cells.
+
+### Why A100 differs from CPU
+
+On CPU the sparse w-tilde path's cache-friendly pixel-pair access pattern
+out-paces the dense scatter+matmul by 30-40%. On A100 the dense scatter+matmul
+gets to use all 6,912 CUDA cores at once, so the absolute per-eval cost falls
+1000× from CPU's 7.9 s to A100's 53 ms — and within that compute-rich regime,
+the dense path is marginally faster because each step has good GPU parallelism.
+What A100 *can't* hide is the VRAM cost: dense materialises the full
+(15,361 × 1500) × 8 byte = 184 MB mapping matrix per replica, which scales
+linearly with `n_live` and would OOM the 80 GB device at `n_live ≈ 432`
+without batched chunking. Sparse keeps the per-replica VRAM at ~95–131 MB,
+fits much larger vmaps, and would have made the chunked-vmap workaround
+in PyAutoFit#1303/#1305 unnecessary.
+
+### Filename collision note
+
+The submit scripts passed `--config-name hpc_a100_fp64` which makes every
+cell's `likelihood_summary` JSON write to the same `hpc_a100_fp64.json`
+filename (mod the `_sparse` suffix). The `vmap_probe_<cell>{,_sparse}.json`
+files DID disambiguate by cell, so those all survived. Only pix_d's
+final JSON was salvaged (by renaming on the HPC before del_d overwrote);
+the rest of the dense JSONs were lost, and the final `_sparse.json` is
+whatever the last sparse cell to finish wrote (mge_s). Future submits
+should use `--config-name hpc_a100_fp64_<cell>` to avoid the collision
+**OR** patch `_profile_cli.resolve_output_paths` to always include the
+cell name in the basename. Doesn't affect the comparison numbers because
+the logs preserved the full timing.
 
 ## Headline numbers (HST, CPU fp64)
 
