@@ -26,6 +26,62 @@ A100). Recommendation: **enable `apply_sparse_operator()` in
 `autolens_profiling/searches/_setup.py:_build_imaging` when the model
 contains a pixelization Mapper. Skip for pure-MGE-source.**
 
+## NSS production validation — A100 fp64 (HST)
+
+After landing the `_build_imaging` patch (sparse on by default for imaging)
+and the `build_nss` patch (`chunk_size=None` — sampler's native un-chunked
+`jax.vmap(num_delete)`), three NSS production searches went out as final
+validation. The first sparse pix attempt at 3h wall (323029) timed out
+mid-sample; the 12h-wall runs landed:
+
+| Cell | Sampler | Path / chunk | Wall | per-eval | evals | log_Z |
+|---|---|---|---:|---:|---:|---:|
+| MGE | Nautilus | dense | 13.9 min | 12.1 ms | 63,800 | 31690.47 |
+| MGE | NSS | dense, no chunk *(322590)* | 11.3 min | 1.6 ms | 394,321 | 31697.70 |
+| **MGE** | **NSS** | **sparse, no chunk** *(323160)* | **11.0 min** | **1.60 ms** | 383,289 | 31786.30 |
+| Pix | Nautilus | dense | **46.1 min** | **46.5 ms** | 58,464 | 29066.32 |
+| Pix | NSS | dense, chunk=16 *(322619)* | 351 min | 75.9 ms | 277,050 | 29087.77 |
+| **Pix** | **NSS** | **sparse, no chunk** *(323161)* | **320 min** | **71.95 ms** | 266,043 | 29142.5 (max L) |
+| Delaunay | Nautilus | dense | **45.4 min** | **84.8 ms** | 31,536 | 30562.22 |
+| Delaunay | NSS | dense, chunk=16 *(322620)* | 464 min | 135.8 ms | 204,874 | 30569.20 |
+| Delaunay | NSS | sparse, no chunk *(323162)* | see HPC | see HPC | see HPC | see HPC |
+
+### What the NSS sparse runs prove
+
+1. **The OOM ceiling is gone.** `chunk_size=None` survived `algo.init` on
+   both pix and delaunay at `n_live=150` (the configuration log line —
+   which only prints after init — fired ~1 min into each run). Before this
+   work, that init step OOM'd at 28 GB on the 80 GB device. Sparse drops
+   per-replica VRAM from 931 MB to 95 MB and `n_live=150 × num_delete=50`
+   un-chunked fits comfortably.
+2. **The chunked-vmap workaround is no longer needed for these cells.**
+   PyAutoFit#1303 and #1305 remain valid plumbing for other contexts
+   (smaller-VRAM hardware, larger source meshes), but the autolens_profiling
+   A100 search path doesn't need them now.
+3. **Sparse + un-chunked beats chunked-dense by ~9% wall on pix** (320 min
+   vs 351 min) — modest, but it's the chunking-serialisation penalty
+   coming back.
+
+### What sparse can't fix
+
+**NSS is still ~7× slower than Nautilus on pixelization (320 min vs 46 min).**
+Per-eval is 71.95 ms vs Nautilus's 46.5 ms (~1.55× slower per call) AND
+NSS does 4.55× more evaluations (266,043 vs 58,464). The eval-count
+multiplier is structural to slice nested sampling — it's not a memory or
+vmap-shape issue, it's how NSS explores the prior. Sampler-side optimisation
+can't close that gap without a different algorithm (e.g. NUTS).
+
+### Net production guidance
+
+- **MGE / parametric cells**: NSS wins by ~20% wall and 7.5× per-eval.
+  Sparse is harmless here (factory short-circuits to dense anyway).
+- **Pixelization / Delaunay / other inversion-heavy cells**: Nautilus
+  remains the right tool. NSS even at its best vmap shape is ~7× slower
+  due to the eval-count gap. The sparse-enable in `_build_imaging` is
+  still the right change because future Nautilus runs benefit from the
+  same 10× VRAM reduction and would similarly avoid OOMs at larger
+  `n_live` / `n_batch` configurations.
+
 ## Headline numbers — A100 fp64 (HST)
 
 Six A100 runtime jobs (323017–323022, mge/pix/del × dense/sparse), each
