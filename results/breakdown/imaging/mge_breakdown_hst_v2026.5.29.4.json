@@ -1,0 +1,26 @@
+{
+  "autolens_version": "2026.5.29.4",
+  "device": {
+    "backend": "cpu",
+    "device": "TFRT_CPU_0"
+  },
+  "instrument": "hst",
+  "configuration": {
+    "pixel_scale_arcsec": 0.05,
+    "mask_radius_arcsec": 3.5,
+    "image_pixels_masked": 15361,
+    "over_sampled_pixels": 17980,
+    "linear_gaussians": 0
+  },
+  "steps": {
+    "Ray-trace grids": 0.002364939999984017,
+    "Mapping matrix": 0.06397471999998743,
+    "Blurred mapping matrix": 0.10629810000000361,
+    "Data vector (D)": 0.0003971000000092317,
+    "Curvature matrix (F)": 0.003915489999985766,
+    "Reconstruction (NNLS)": 0.000645499999995991,
+    "Mapped reconstructed image": 0.00028029000000060476,
+    "Chi-squared & log likelihood": 0.000320030000011684
+  },
+  "total_step_by_step": 0.1781961699999783
+}
