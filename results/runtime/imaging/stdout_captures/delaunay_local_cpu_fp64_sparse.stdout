@@ -1,0 +1,55 @@
+2026-06-01 14:12:28,390 - jax_plugins.xla_cuda12 - WARNING - cuda_plugin_extension is not found.
+
+--- Dataset loading & masking [hst] ---
+  [dataset_load] 0.0800 s
+2026-06-01 14:12:31,345 - autoarray.dataset.imaging.dataset - INFO - IMAGING - Data masked, contains a total of 15361 image-pixels
+2026-06-01 14:12:31,347 - autoarray.dataset.imaging.dataset - INFO - IMAGING - Setting Up Sparse Operator For low Memory Pixelizations.
+  [mask_and_oversample] 0.2225 s
+
+--- Adapt image (lensed source) ---
+  [adapt_image_build] 0.0046 s
+  adapt_image shape (slim): 15361
+
+--- Image mesh construction (Hilbert) ---
+  [image_mesh_hilbert] 0.3988 s
+  Hilbert pixels: 1500
+  Mesh vertices placed: 1500
+
+--- Model construction ---
+  [model_build] 1.6220 s
+  Total free parameters: 11
+  Delaunay pixels: 1500
+  Zeroed edge pixels: 0
+
+--- Instantiate concrete model ---
+  [instance_from_vector] 0.0274 s
+  [register_pytrees] 0.0008 s
+  Pytree JAX leaves: 247
+  Tracer planes: 2
+
+--- Configuration (determines run time) ---
+  Instrument:              hst
+  Pixel scale:             0.05 arcsec/pixel
+  Mask radius:             3.5 arcsec
+  Image pixels (masked):   15361
+  Over-sampled pixels:     17980
+  Delaunay vertices:       1500
+  Edge zeroed pixels:      0
+
+--- Full FitImaging (eager baseline) ---
+  [fit_imaging_eager] 12.1898 s
+  figure_of_merit (log_evidence) = 29110.92085793368
+  log_likelihood                 = 30176.434110702496
+
+======================================================================
+FULL-PIPELINE JIT (for comparison)
+======================================================================
+  [full_pipeline_lower] 5.6586 s
+  [full_pipeline_compile] 11.1786 s
+  [full_pipeline_first_call] 3.8472 s
+  [full_pipeline_steady_x10] 39.1986 s
+    -> per-call avg: 3.919856 s
+  full log_likelihood = 29110.92085793894
+
+--- vmap batched evaluation ---
+  [vmap_first_call] 88.3635 s

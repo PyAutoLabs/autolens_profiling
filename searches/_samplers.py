@@ -174,22 +174,24 @@ def build_nss(
     # Memory-budget plumbing:
     # - ``num_delete`` stays at the sampler's preferred default (50 particles
     #   per outer iteration) so convergence isn't compromised.
-    # - ``chunk_size = vmap_batch_for_cell(...)`` caps the inner-vmap fan-out
-    #   per the A100-probed budget. PyAutoFit#1303 swaps blackjax's internal
-    #   ``jax.vmap(num_delete)`` for ``jax.lax.map(batch_size=chunk_size)``
-    #   when ``chunk_size < num_delete``, so peak GPU memory becomes
-    #   ``chunk_size × per_particle_state`` instead of ``num_delete × ...``.
-    # - ``chunk_size = None`` would also work on cells where the probe value
-    #   is >= num_delete (e.g. point_source fallback), but passing the probe
-    #   value explicitly keeps the JSON record honest about what was capped.
-    chunk_size = vmap_batch_for_cell(dataset_class, model_type, instrument)
+    # - ``chunk_size = None`` lets blackjax use its native ``jax.vmap`` over
+    #   ``num_delete`` particles (no chunking, no inner-step serialisation).
+    #   This is the best-case sampler shape and is only viable because
+    #   ``searches/_setup.py:_build_imaging`` now calls
+    #   ``dataset.apply_sparse_operator()``, which makes the inversion factory
+    #   pick ``InversionImagingSparse``. A100 fp64 vmap-probe results
+    #   (autolens_profiling#44):
+    #     dense  per-replica VRAM:  931 MB  ->  n_live=150 needs 140 GB (OOM)
+    #     sparse per-replica VRAM:   95 MB  ->  n_live=150 needs  14 GB
+    #   With sparse the full ``num_delete=50`` vmap fits comfortably and the
+    #   chunk_size workaround from PyAutoFit#1303/#1305 is no longer needed.
     return af.NSS(
         name=config_name,
         path_prefix=f"searches/{sampler}/{dataset_class}/{model_type}/{instrument}",
         n_live=n_live,
         num_mcmc_steps=int(_NSS_DEFAULTS["num_mcmc_steps"]),
         num_delete=int(_NSS_DEFAULTS["num_delete"]),
-        chunk_size=chunk_size,
+        chunk_size=None,
         termination=float(_NSS_DEFAULTS["termination"]),
         seed=int(_NSS_DEFAULTS["seed"]),
     )

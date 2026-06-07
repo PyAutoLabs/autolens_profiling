@@ -1,0 +1,89 @@
+2026-06-01 14:25:46,275 - jax_plugins.xla_cuda12 - WARNING - cuda_plugin_extension is not found.
+
+--- Dataset loading & masking [hst] ---
+  [dataset_load] 0.0758 s
+2026-06-01 14:25:47,463 - autoarray.dataset.imaging.dataset - INFO - IMAGING - Data masked, contains a total of 15361 image-pixels
+2026-06-01 14:25:47,465 - autoarray.dataset.imaging.dataset - INFO - IMAGING - Setting Up Sparse Operator For low Memory Pixelizations.
+  [mask_and_oversample] 0.1983 s
+
+--- Model construction ---
+  [model_build] 1.1325 s
+  Total free parameters: 8
+
+--- Instantiate concrete model ---
+  [instance_from_vector] 0.0154 s
+  [register_pytrees] 0.0005 s
+  Tracer planes: 2
+
+--- Configuration (determines run time) ---
+  Instrument:              hst
+  Pixel scale:             0.05 arcsec/pixel
+  Mask radius:             3.5 arcsec
+  Image pixels (masked):   15361
+  Over-sampled pixels:     17980
+  Linear Gaussians:        0
+
+--- Full FitImaging (eager baseline) ---
+  [fit_imaging_eager] 4.5047 s
+  figure_of_merit (log_evidence) = 27379.38890685539
+  log_likelihood                 = 27379.38890685539
+
+======================================================================
+FULL-PIPELINE JIT (for comparison)
+======================================================================
+  [full_pipeline_lower] 3.5574 s
+  [full_pipeline_compile] 4.7702 s
+  [full_pipeline_first_call] 0.1019 s
+  [full_pipeline_steady_x10] 0.8992 s
+    -> per-call avg: 0.089916 s
+  full log_likelihood = 27379.388906855238
+
+--- vmap batched evaluation ---
+  [vmap_first_call] 20.5074 s
+  [vmap_steady_x10] 89.5295 s
+  batch results = [27379.38890686 27379.38890686 27379.38890686 27379.38890686
+ 27379.38890686 27379.38890686 27379.38890686 27379.38890686
+ 27379.38890686 27379.38890686 27379.38890686 27379.38890686
+ 27379.38890686 27379.38890686 27379.38890686 27379.38890686
+ 27379.38890686 27379.38890686 27379.38890686 27379.38890686
+ 27379.38890686 27379.38890686 27379.38890686 27379.38890686
+ 27379.38890686 27379.38890686 27379.38890686 27379.38890686
+ 27379.38890686 27379.38890686 27379.38890686 27379.38890686
+ 27379.38890686 27379.38890686 27379.38890686 27379.38890686
+ 27379.38890686 27379.38890686 27379.38890686 27379.38890686
+ 27379.38890686 27379.38890686 27379.38890686 27379.38890686
+ 27379.38890686 27379.38890686 27379.38890686 27379.38890686
+ 27379.38890686 27379.38890686 27379.38890686 27379.38890686
+ 27379.38890686 27379.38890686 27379.38890686 27379.38890686
+ 27379.38890686 27379.38890686 27379.38890686 27379.38890686
+ 27379.38890686 27379.38890686 27379.38890686 27379.38890686]
+  vmap batch of 64:   8.952954 s
+  vmap per call:         0.139890 s
+  single JIT per call:   0.089916 s
+  vmap speedup:          0.6x faster per likelihood
+  Correctness check PASSED
+
+--- Static memory analysis ---
+  Output size:  0.000 MB
+  Temp size:    1419.965 MB
+  Total:        1419.966 MB
+
+======================================================================
+JAX LIKELIHOOD FUNCTION SUMMARY — HST — v2026.5.29.4
+======================================================================
+  Instrument:            hst
+  Pixel scale:           0.05 arcsec/pixel
+  Mask radius:           3.5 arcsec
+  Image pixels (masked): 15361
+  Over-sampled pixels:   17980
+  Linear Gaussians:      0
+----------------------------------------------------------------------
+      Full pipeline (single JIT)          0.089916 s
+      vmap batch=64 (per call)            0.139890 s
+      vmap speedup vs single JIT              0.6x
+======================================================================
+
+  Results dict saved to: /home/jammy/Code/PyAutoLabs-wt/sparse-vs-dense-profile/autolens_profiling/results/likelihood/imaging/mge_likelihood_summary_hst_v2026.5.29.4_sparse.json
+  Bar chart path:        /home/jammy/Code/PyAutoLabs-wt/sparse-vs-dense-profile/autolens_profiling/results/likelihood/imaging/mge_likelihood_summary_hst_v2026.5.29.4_sparse.png (no per-step chart in runtime variant)
+  Eager regression assertion PASSED: log_likelihood matches 27379.388907
+  Regression assertion PASSED: log_likelihood matches 27379.388907

@@ -1,0 +1,166 @@
+Mon Jun  1 15:29:58 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 575.57.08              Driver Version: 575.57.08      CUDA Version: 12.9     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA A100 80GB PCIe          Off |   00000000:06:00.0 Off |                    0 |
+| N/A   42C    P0             46W /  300W |       0MiB /  81920MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+                                                                                         
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+==========================================
+Mon  1 Jun 15:29:58 BST 2026
+Cell:           likelihood_runtime/imaging/mge
+Instrument:     hst
+Precision:      fp64
+Inversion path: sparse-attached (factory may short-circuit to dense)
+--- vmap-probe (sparse) ---
+
+--- Dataset loading & masking [hst] ---
+  [dataset_load] 0.0730 s
+2026-06-01 15:30:02,696 - autoarray.dataset.imaging.dataset - INFO - IMAGING - Data masked, contains a total of 15361 image-pixels
+2026-06-01 15:30:02,697 - autoarray.dataset.imaging.dataset - INFO - IMAGING - Setting Up Sparse Operator For low Memory Pixelizations.
+  [mask_and_oversample] 0.9606 s
+
+--- Model construction ---
+  [model_build] 1.1063 s
+  Total free parameters: 8
+
+--- Instantiate concrete model ---
+  [instance_from_vector] 0.0177 s
+  [register_pytrees] 0.0005 s
+  Tracer planes: 2
+
+--- Configuration (determines run time) ---
+  Instrument:              hst
+  Pixel scale:             0.05 arcsec/pixel
+  Mask radius:             3.5 arcsec
+  Image pixels (masked):   15361
+  Over-sampled pixels:     17980
+  Linear Gaussians:        0
+
+--- Full FitImaging (eager baseline) ---
+  [fit_imaging_eager] 7.2269 s
+  figure_of_merit (log_evidence) = 27379.388906855387
+  log_likelihood                 = 27379.388906855387
+
+======================================================================
+FULL-PIPELINE JIT (for comparison)
+======================================================================
+  [full_pipeline_lower] 3.7442 s
+  [full_pipeline_compile] 10.3379 s
+  [full_pipeline_first_call] 0.0892 s
+  [full_pipeline_steady_x10] 0.0596 s
+    -> per-call avg: 0.005963 s
+  full log_likelihood = 27379.38890685539
+
+  Early JSON saved to: /mnt/ral/jnightin/autolens_profiling/results/likelihood/imaging/mge_likelihood_summary_hst_v2026.5.21.1_sparse.json
+
+  vmap_probe samples: [ProbeSample(batch_size=1, peak_bytes=0, output_bytes=8, temp_bytes=20618032), ProbeSample(batch_size=4, peak_bytes=0, output_bytes=32, temp_bytes=69996792), ProbeSample(batch_size=16, peak_bytes=0, output_bytes=128, temp_bytes=278746968)]
+  per_replica:        16.4 MB / replica
+  recommended batch:  64
+  inversion_path:     sparse
+  written to:         /mnt/ral/jnightin/autolens_profiling/results/likelihood/imaging/vmap_probe_mge_sparse.json
+--- full timing (sparse) ---
+
+--- Dataset loading & masking [hst] ---
+  [dataset_load] 0.0717 s
+2026-06-01 15:31:18,482 - autoarray.dataset.imaging.dataset - INFO - IMAGING - Data masked, contains a total of 15361 image-pixels
+2026-06-01 15:31:18,484 - autoarray.dataset.imaging.dataset - INFO - IMAGING - Setting Up Sparse Operator For low Memory Pixelizations.
+  [mask_and_oversample] 0.5452 s
+
+--- Model construction ---
+  [model_build] 1.1059 s
+  Total free parameters: 8
+
+--- Instantiate concrete model ---
+  [instance_from_vector] 0.0178 s
+  [register_pytrees] 0.0005 s
+  Tracer planes: 2
+
+--- Configuration (determines run time) ---
+  Instrument:              hst
+  Pixel scale:             0.05 arcsec/pixel
+  Mask radius:             3.5 arcsec
+  Image pixels (masked):   15361
+  Over-sampled pixels:     17980
+  Linear Gaussians:        0
+
+--- Full FitImaging (eager baseline) ---
+  [fit_imaging_eager] 4.3223 s
+  figure_of_merit (log_evidence) = 27379.388906855387
+  log_likelihood                 = 27379.388906855387
+
+======================================================================
+FULL-PIPELINE JIT (for comparison)
+======================================================================
+  [full_pipeline_lower] 3.6128 s
+  [full_pipeline_compile] 10.3501 s
+  [full_pipeline_first_call] 0.0920 s
+  [full_pipeline_steady_x10] 0.0590 s
+    -> per-call avg: 0.005899 s
+  full log_likelihood = 27379.38890685539
+
+  Early JSON saved to: /mnt/ral/jnightin/autolens_profiling/results/likelihood/imaging/hpc_a100_fp64_sparse.json
+
+--- vmap batched evaluation ---
+  [vmap_first_call] 15.3085 s
+  [vmap_steady_x10] 0.2466 s
+  batch results = [27379.38890686 27379.38890686 27379.38890686 27379.38890686
+ 27379.38890686 27379.38890686 27379.38890686 27379.38890686
+ 27379.38890686 27379.38890686 27379.38890686 27379.38890686
+ 27379.38890686 27379.38890686 27379.38890686 27379.38890686
+ 27379.38890686 27379.38890686 27379.38890686 27379.38890686
+ 27379.38890686 27379.38890686 27379.38890686 27379.38890686
+ 27379.38890686 27379.38890686 27379.38890686 27379.38890686
+ 27379.38890686 27379.38890686 27379.38890686 27379.38890686
+ 27379.38890686 27379.38890686 27379.38890686 27379.38890686
+ 27379.38890686 27379.38890686 27379.38890686 27379.38890686
+ 27379.38890686 27379.38890686 27379.38890686 27379.38890686
+ 27379.38890686 27379.38890686 27379.38890686 27379.38890686
+ 27379.38890686 27379.38890686 27379.38890686 27379.38890686
+ 27379.38890686 27379.38890686 27379.38890686 27379.38890686
+ 27379.38890686 27379.38890686 27379.38890686 27379.38890686
+ 27379.38890686 27379.38890686 27379.38890686 27379.38890686]
+  vmap batch of 64:   0.024663 s
+  vmap per call:         0.000385 s
+  single JIT per call:   0.005899 s
+  vmap speedup:          15.3x faster per likelihood
+  Correctness check PASSED
+
+--- Static memory analysis ---
+  Output size:  0.000 MB
+  Temp size:    1062.578 MB
+  Total:        1062.578 MB
+
+======================================================================
+JAX LIKELIHOOD FUNCTION SUMMARY — HST — v2026.5.21.1
+======================================================================
+  Instrument:            hst
+  Pixel scale:           0.05 arcsec/pixel
+  Mask radius:           3.5 arcsec
+  Image pixels (masked): 15361
+  Over-sampled pixels:   17980
+  Linear Gaussians:      0
+----------------------------------------------------------------------
+      Full pipeline (single JIT)          0.005899 s
+      vmap batch=64 (per call)            0.000385 s
+      vmap speedup vs single JIT             15.3x
+======================================================================
+
+  Results dict saved to: /mnt/ral/jnightin/autolens_profiling/results/likelihood/imaging/hpc_a100_fp64_sparse.json
+  Bar chart path:        /mnt/ral/jnightin/autolens_profiling/results/likelihood/imaging/hpc_a100_fp64_sparse.png (no per-step chart in runtime variant)
+  Eager regression assertion PASSED: log_likelihood matches 27379.388907
+  Regression assertion PASSED: log_likelihood matches 27379.388907
+Finished.
+Mon  1 Jun 15:32:07 BST 2026

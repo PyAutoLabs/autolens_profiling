@@ -1,0 +1,32 @@
+{
+  "dataset": "imaging",
+  "model": "pixelization",
+  "instrument": "hst",
+  "samples": [
+    {
+      "batch_size": 1,
+      "peak_bytes": 0,
+      "output_bytes": 8,
+      "temp_bytes": 976760160
+    },
+    {
+      "batch_size": 4,
+      "peak_bytes": 0,
+      "output_bytes": 32,
+      "temp_bytes": 3903102432
+    },
+    {
+      "batch_size": 16,
+      "peak_bytes": 0,
+      "output_bytes": 128,
+      "temp_bytes": 15620187744
+    }
+  ],
+  "per_replica_mb": 931.004,
+  "constant_overhead_mb": 0.507,
+  "vram_budget_gb": 65.0,
+  "safety_factor": 1.15,
+  "max_batch_cap": 64,
+  "recommended_batch_size": 62,
+  "inversion_path": "dense"
+}

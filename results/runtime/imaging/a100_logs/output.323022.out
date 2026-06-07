@@ -1,0 +1,182 @@
+Mon Jun  1 15:29:58 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 575.57.08              Driver Version: 575.57.08      CUDA Version: 12.9     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA A100 80GB PCIe          Off |   00000000:06:00.0 Off |                    0 |
+| N/A   41C    P0             49W /  300W |       0MiB /  81920MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+                                                                                         
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+==========================================
+Mon  1 Jun 15:29:58 BST 2026
+Cell:           likelihood_runtime/imaging/delaunay
+Instrument:     hst
+Precision:      fp64
+Inversion path: sparse (w-tilde)
+--- vmap-probe (sparse) ---
+
+--- Dataset loading & masking [hst] ---
+  [dataset_load] 0.0995 s
+2026-06-01 15:30:14,606 - autoarray.dataset.imaging.dataset - INFO - IMAGING - Data masked, contains a total of 15361 image-pixels
+2026-06-01 15:30:14,608 - autoarray.dataset.imaging.dataset - INFO - IMAGING - Setting Up Sparse Operator For low Memory Pixelizations.
+  [mask_and_oversample] 2.0405 s
+
+--- Adapt image (lensed source) ---
+  [adapt_image_build] 0.0032 s
+  adapt_image shape (slim): 15361
+
+--- Image mesh construction (Hilbert) ---
+  [image_mesh_hilbert] 0.3499 s
+  Hilbert pixels: 1500
+  Mesh vertices placed: 1500
+
+--- Model construction ---
+  [model_build] 1.4023 s
+  Total free parameters: 11
+  Delaunay pixels: 1500
+  Zeroed edge pixels: 0
+
+--- Instantiate concrete model ---
+  [instance_from_vector] 0.0256 s
+  [register_pytrees] 0.0007 s
+  Pytree JAX leaves: 247
+  Tracer planes: 2
+
+--- Configuration (determines run time) ---
+  Instrument:              hst
+  Pixel scale:             0.05 arcsec/pixel
+  Mask radius:             3.5 arcsec
+  Image pixels (masked):   15361
+  Over-sampled pixels:     17980
+  Delaunay vertices:       1500
+  Edge zeroed pixels:      0
+
+--- Full FitImaging (eager baseline) ---
+  [fit_imaging_eager] 11.6618 s
+  figure_of_merit (log_evidence) = 29110.920857933826
+  log_likelihood                 = 30176.434110702514
+
+======================================================================
+FULL-PIPELINE JIT (for comparison)
+======================================================================
+  [full_pipeline_lower] 5.3246 s
+  [full_pipeline_compile] 19.4383 s
+  [full_pipeline_first_call] 0.9032 s
+  [full_pipeline_steady_x10] 0.8333 s
+    -> per-call avg: 0.083331 s
+  full log_likelihood = 29110.920857947844
+
+  Early JSON saved to: /mnt/ral/jnightin/autolens_profiling/results/likelihood/imaging/delaunay_likelihood_summary_hst_v2026.5.21.1_sparse.json
+
+  vmap_probe samples: [ProbeSample(batch_size=1, peak_bytes=0, output_bytes=8, temp_bytes=137892968)]
+  per_replica:        131.5 MB / replica
+  recommended batch:  64
+  inversion_path:     sparse
+  written to:         /mnt/ral/jnightin/autolens_profiling/results/likelihood/imaging/vmap_probe_delaunay_sparse.json
+--- full timing (sparse) ---
+
+--- Dataset loading & masking [hst] ---
+  [dataset_load] 0.0716 s
+2026-06-01 15:31:31,668 - autoarray.dataset.imaging.dataset - INFO - IMAGING - Data masked, contains a total of 15361 image-pixels
+2026-06-01 15:31:31,670 - autoarray.dataset.imaging.dataset - INFO - IMAGING - Setting Up Sparse Operator For low Memory Pixelizations.
+  [mask_and_oversample] 0.5517 s
+
+--- Adapt image (lensed source) ---
+  [adapt_image_build] 0.0031 s
+  adapt_image shape (slim): 15361
+
+--- Image mesh construction (Hilbert) ---
+  [image_mesh_hilbert] 0.3453 s
+  Hilbert pixels: 1500
+  Mesh vertices placed: 1500
+
+--- Model construction ---
+  [model_build] 1.3913 s
+  Total free parameters: 11
+  Delaunay pixels: 1500
+  Zeroed edge pixels: 0
+
+--- Instantiate concrete model ---
+  [instance_from_vector] 0.0250 s
+  [register_pytrees] 0.0007 s
+  Pytree JAX leaves: 247
+  Tracer planes: 2
+
+--- Configuration (determines run time) ---
+  Instrument:              hst
+  Pixel scale:             0.05 arcsec/pixel
+  Mask radius:             3.5 arcsec
+  Image pixels (masked):   15361
+  Over-sampled pixels:     17980
+  Delaunay vertices:       1500
+  Edge zeroed pixels:      0
+
+--- Full FitImaging (eager baseline) ---
+  [fit_imaging_eager] 8.3804 s
+  figure_of_merit (log_evidence) = 29110.920857933834
+  log_likelihood                 = 30176.43411070252
+
+======================================================================
+FULL-PIPELINE JIT (for comparison)
+======================================================================
+  [full_pipeline_lower] 4.9779 s
+  [full_pipeline_compile] 19.4116 s
+  [full_pipeline_first_call] 0.1877 s
+  [full_pipeline_steady_x10] 0.8560 s
+    -> per-call avg: 0.085601 s
+  full log_likelihood = 29110.92085794769
+
+  Early JSON saved to: /mnt/ral/jnightin/autolens_profiling/results/likelihood/imaging/hpc_a100_fp64_sparse.json
+
+--- vmap batched evaluation ---
+  [vmap_first_call] 30.2691 s
+  [vmap_steady_x10] 16.7034 s
+  batch results = [29110.92085794 29110.92085794 29110.92085794 29110.92085794
+ 29110.92085794 29110.92085794 29110.92085794 29110.92085794
+ 29110.92085794 29110.92085794 29110.92085794 29110.92085794
+ 29110.92085794 29110.92085794 29110.92085794 29110.92085794]
+  vmap batch of 16:   1.670342 s
+  vmap per call:         0.104396 s
+  single JIT per call:   0.085601 s
+  vmap speedup:          0.8x faster per likelihood
+  Correctness check PASSED
+
+--- Static memory analysis ---
+  Output size:  0.000 MB
+  Temp size:    1942.956 MB
+  Total:        1942.956 MB
+
+======================================================================
+JAX LIKELIHOOD FUNCTION SUMMARY — HST — v2026.5.21.1
+======================================================================
+  Instrument:            hst
+  Pixel scale:           0.05 arcsec/pixel
+  Mask radius:           3.5 arcsec
+  Image pixels (masked): 15361
+  Over-sampled pixels:   17980
+  Delaunay vertices:     1500
+  Edge zeroed pixels:    0
+----------------------------------------------------------------------
+----------------------------------------------------------------------
+      Full pipeline (single JIT)          0.085601 s
+      vmap batch (per call)               0.104396 s
+      vmap speedup vs single JIT              0.8x
+======================================================================
+
+  Results dict saved to: /mnt/ral/jnightin/autolens_profiling/results/likelihood/imaging/hpc_a100_fp64_sparse.json
+  Bar chart path:        /mnt/ral/jnightin/autolens_profiling/results/likelihood/imaging/hpc_a100_fp64_sparse.png (no per-step chart in runtime variant)
+  Eager regression assertion PASSED: log_evidence matches 29110.920858
+  Regression assertion PASSED: log_evidence matches 29110.920858
+Finished.
+Mon  1 Jun 15:33:20 BST 2026

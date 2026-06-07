@@ -35,6 +35,7 @@ class ProfileCLI:
     use_mixed_precision: bool
     instrument: Optional[str]
     vmap_probe: bool
+    use_sparse_operator: bool
 
 
 def parse_profile_cli(default_config_name: Optional[str] = None) -> ProfileCLI:
@@ -99,6 +100,27 @@ def parse_profile_cli(default_config_name: Optional[str] = None) -> ProfileCLI:
             "state timing loop. See vram/README.md for methodology."
         ),
     )
+    parser.add_argument(
+        "--sparse",
+        action="store_true",
+        help=(
+            "Call ``dataset.apply_sparse_operator(use_jax=True)`` after "
+            "dataset construction so the inversion factory selects the "
+            "w-tilde sparse path (``InversionImagingSparse``) instead of "
+            "the dense ``InversionImagingMapping``. The sparse path "
+            "supports mixed linear-obj lists — the production "
+            "pixelization / Delaunay cells include an MGE lens-light "
+            "basis alongside the Mapper source, and the sparse "
+            "InversionImagingSparse handles the MGE Basis columns via "
+            "``linear_func_operated_mapping_matrix_dict`` while the "
+            "Mapper columns go through the w-tilde sparse-operator "
+            "assembly. The only short-circuit-to-dense case is when "
+            "*every* linear object is an ``AbstractLinearObjFuncList`` "
+            "(e.g. the pure-MGE-source reference cell). Per-cell scripts "
+            "that read this flag embed the chosen path into the result "
+            "JSON as ``inversion_path``."
+        ),
+    )
 
     args, _unknown = parser.parse_known_args()
     config_name = args.config_name or default_config_name
@@ -109,6 +131,7 @@ def parse_profile_cli(default_config_name: Optional[str] = None) -> ProfileCLI:
         use_mixed_precision=bool(args.use_mixed_precision),
         instrument=args.instrument,
         vmap_probe=bool(args.vmap_probe),
+        use_sparse_operator=bool(args.sparse),
     )
 
 
@@ -148,14 +171,35 @@ def resolve_output_paths(
 ) -> tuple[Path, Path]:
     """Resolve (json_path, png_path) for the per-cell write.
 
-    - When ``cli.config_name`` is set: use ``<output_dir>/<config_name>.{json,png}``.
-    - Otherwise: use ``<output_dir>/<default_basename>.{json,png}`` to preserve
-      the existing single-config filename pattern.
+    - When ``cli.config_name`` is unset: use
+      ``<output_dir>/<default_basename>.{json,png}`` (the single-config
+      filename pattern).
+    - When ``cli.config_name`` is set: use ``<output_dir>/<cell>_<config_name>.{json,png}``,
+      where ``<cell>`` is the first ``_``-separated token of ``default_basename``
+      (the leaf scripts use ``<cell>_likelihood_summary_...`` /
+      ``<cell>_breakdown_...`` so the cell name is always the leading token).
+      This keeps per-cell JSONs disjoint even when the same config name is
+      shared across cells in a sweep — without it, every cell writes to the
+      same ``<config_name>.json`` and the sweep loses 5 of 6 results to
+      clobbering (the bug surfaced by the first A100 sparse-vs-dense sweep,
+      autolens_profiling#44).
     - ``cli.output_dir`` overrides ``default_dir`` when set.
+    - When ``cli.use_sparse_operator`` is set, ``_sparse`` is appended to the
+      resolved basename so dense and sparse JSONs from the same config don't
+      clobber each other.
     """
     results_dir = cli.output_dir if cli.output_dir is not None else default_dir
     results_dir.mkdir(parents=True, exist_ok=True)
-    basename = cli.config_name or default_basename
+    if cli.config_name is None:
+        basename = default_basename
+    else:
+        # First underscore-separated token of default_basename is the cell.
+        # All callers (likelihood_runtime, likelihood_breakdown) follow the
+        # ``<cell>_<purpose>_<inst>_v<version>`` convention.
+        cell = default_basename.split("_", 1)[0]
+        basename = f"{cell}_{cli.config_name}"
+    if cli.use_sparse_operator:
+        basename = f"{basename}_sparse"
     return results_dir / f"{basename}.json", results_dir / f"{basename}.png"
 
 
