@@ -879,6 +879,56 @@ else:
     print(f"  per-channel: {inversion_setup_per_channel:.6f} s")
 
     # ---------------------------------------------------------------
+    # Step 3b: Decompose inversion-setup into channel-invariant vs variant
+    # ---------------------------------------------------------------
+    # The inversion-setup step above is the dominant cube cost. To scope the
+    # cross-`Analysis` shared-state optimisation (PyAutoFit feature; see
+    # PyAutoPrompt/autofit/analysis_shared_state_cross_factor.md and the
+    # standalone `inversion_setup_decompose.py`) we split it into the part that
+    # is a pure function of the shared lens model + source mesh (ray-trace +
+    # mapper + mapping matrix L — shareable ONCE across all channels) and the
+    # part that folds in this channel's `dirty_image` (the Lᵀ·dirty_image matmul
+    # — irreducibly per-channel).
+    #
+    # CAUTION — the two cutpoints are NOT a linear superset chain. XLA dead-code-
+    # eliminates per returned leaf: `data_vector` does not depend on the mapper's
+    # downstream curvature, but it DOES depend on the mapper+L, so the mapper
+    # cutpoint is a genuine sub-block of the data_vector cutpoint. The valid split
+    # is: invariant = mapper+L cutpoint; variant = inversion_setup − mapper+L.
+
+    def _mapper_L_from_params(params_tree):
+        # Mirror inversion_setup_from_params but stop at the mapping matrix.
+        t = al.Tracer(galaxies=list(params_tree.galaxies))
+        adapt_images_jax = al.AdaptImages(
+            galaxy_image_plane_mesh_grid_dict={
+                params_tree.galaxies.source: image_plane_mesh_grid,
+            },
+            galaxy_name_image_plane_mesh_grid_dict={
+                "('galaxies', 'source')": image_plane_mesh_grid,
+            },
+        )
+        fit_jax = al.FitInterferometer(
+            dataset=dataset,
+            tracer=t,
+            adapt_images=adapt_images_jax,
+            settings=al.Settings(use_mixed_precision=_cli.use_mixed_precision),
+            xp=jnp,
+        )
+        return jnp.asarray(fit_jax.inversion.mapping_matrix).sum()
+
+    print("\n--- Step 3b: inversion-setup sub-decomposition (mapper+L vs data-vector) ---")
+    _, _ = jit_profile(_mapper_L_from_params, "inversion_mapper_L_jit", params_tree)
+    mapper_L_per_channel = timer.records[-1][1] / 10
+    # invariant = ray-trace + mapper + L (captured by the mapper+L cutpoint, since
+    # ray-trace is its sub-block); variant = inversion_setup − mapper+L.
+    inversion_setup_invariant_per_channel = mapper_L_per_channel
+    inversion_setup_variant_per_channel = max(
+        inversion_setup_per_channel - mapper_L_per_channel, 0.0
+    )
+    print(f"  mapper+L (channel-invariant):   {inversion_setup_invariant_per_channel:.6f} s")
+    print(f"  data-vector matmul (per-channel): {inversion_setup_variant_per_channel:.6f} s")
+
+    # ---------------------------------------------------------------
     # Step 4: Sparse data vector D = mapping_matrix^T @ dirty_image
     # ---------------------------------------------------------------
 
@@ -1128,12 +1178,26 @@ if curvature_matrix_per_channel is not None:
 else:
     shared_lwl_savings = None
 
+# Fuller cross-`Analysis` shared-state savings: collapse the ENTIRE channel-
+# invariant block (inversion-setup mapper+L + curvature F) from N× to 1×, keeping
+# only the per-channel data-vector matmul. This is the ceiling the PyAutoFit
+# shared-state feature targets (see inversion_setup_decompose.py). Defined only on
+# the sparse path where the sub-decomposition ran.
+shared_invariant_savings = None
+if "inversion_setup_invariant_per_channel" in dir() and curvature_matrix_per_channel is not None:
+    per_channel_invariant = (
+        inversion_setup_invariant_per_channel + curvature_matrix_per_channel
+    )
+    shared_invariant_savings = (n_channels - 1) * per_channel_invariant
+
 print("-" * 70)
 print(f"      {'TOTAL (step-by-step cube cost)':<{max_label}}  {step_total:>12.6f} s")
 if shared_lwl_savings is not None:
     print(f"      {f'Shared-Lᵀ W̃ L savings (curvature only, est.)':<{max_label}}  {shared_lwl_savings:>12.6f} s")
 else:
     print(f"      Shared-Lᵀ W̃ L savings: N/A (run at SMA scale for per-step granularity)")
+if shared_invariant_savings is not None:
+    print(f"      {f'Shared-state savings (mapper+L+F, est.)':<{max_label}}  {shared_invariant_savings:>12.6f} s")
 print("=" * 70)
 
 # --- Save results dictionary ---
@@ -1166,8 +1230,17 @@ likelihood_summary = {
         "reconstruction": reconstruction_per_channel,
         "log_evidence": log_evidence_per_channel_cost,
     },
+    "inversion_setup_decomposition": (
+        {
+            "mapper_plus_L_invariant": inversion_setup_invariant_per_channel,
+            "data_vector_matmul_variant": inversion_setup_variant_per_channel,
+        }
+        if "inversion_setup_invariant_per_channel" in dir()
+        else None
+    ),
     "total_step_by_step_cube": step_total,
     "shared_lwl_savings_estimate": shared_lwl_savings,
+    "shared_invariant_savings_estimate": shared_invariant_savings,
 }
 
 dict_path, chart_path = resolve_output_paths(

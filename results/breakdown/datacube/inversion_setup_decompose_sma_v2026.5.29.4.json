@@ -1,0 +1,32 @@
+{
+  "autolens_version": "2026.5.29.4",
+  "device": {
+    "backend": "cpu",
+    "device": "TFRT_CPU_0"
+  },
+  "instrument": "sma",
+  "model": "delaunay",
+  "purpose": "decompose the datacube inversion-setup step into channel-invariant vs channel-variant sub-steps (sparse w-tilde route)",
+  "configuration": {
+    "visibilities": 190,
+    "delaunay_vertices": 1500,
+    "use_mixed_precision": false
+  },
+  "note": "cutpoints are a dependency TREE not a linear chain \u2014 XLA DCE prunes per leaf, so C(curvature) and D(data_vector) are parallel children of B(mapper+L); deltas subtract the common parent B, never C from D",
+  "raw_cutpoints_per_call_s": {
+    "A_trace": 0.001007070000002841,
+    "B_mapper": 0.18793452000001026,
+    "C_curvature": 1.7531739300000027,
+    "D_data_vector": 0.24673959000000423
+  },
+  "sub_steps_per_call_s": {
+    "ray_trace": 0.001007070000002841,
+    "mapper_plus_mapping_matrix_L": 0.18692745000000743,
+    "curvature_F_LtWtL": 1.5652394099999924,
+    "data_vector_D": 0.058805069999993964
+  },
+  "per_channel_inversion_total_per_call_s": 1.8119789999999967,
+  "channel_invariant_per_call_s": 1.7531739300000027,
+  "channel_variant_per_call_s": 0.058805069999993964,
+  "shareable_fraction_of_inversion_total": 0.9675464947441477
+}
