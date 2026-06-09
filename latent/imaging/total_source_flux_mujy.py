@@ -73,12 +73,12 @@ def main(config_name: str, output_dir: Path, use_mixed_precision: bool) -> None:
 
     # === Eager numpy baseline ===
     t0 = time.perf_counter()
-    eager_values = analysis_np.compute_latent_variables(np.asarray(params), model)
+    eager_values = al.LatentLens.variables(analysis_np, np.asarray(params), model)
     eager_t = time.perf_counter() - t0
     eager_value = float(eager_values[0])
 
     # === JIT compile + first call + steady-state ===
-    fn = jax.jit(lambda p: analysis_jax.compute_latent_variables(p, model))
+    fn = jax.jit(lambda p: al.LatentLens.variables(analysis_jax, p, model))
     lower_t = compile_t = first_t = steady_t = float("nan")
     jit_value = float("nan")
     jit_error = None
@@ -120,7 +120,7 @@ def main(config_name: str, output_dir: Path, use_mixed_precision: bool) -> None:
     batch_size = 3
     batched = jnp.tile(params[None, :], (batch_size, 1))
     try:
-        vfn = jax.jit(jax.vmap(lambda p: analysis_jax.compute_latent_variables(p, model)))
+        vfn = jax.jit(jax.vmap(lambda p: al.LatentLens.variables(analysis_jax, p, model)))
         warm = vfn(batched)
         try:
             jax.block_until_ready(warm[0])

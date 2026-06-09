@@ -13,8 +13,8 @@ For the latent **values** (correctness, not timing) see `autolens_workspace_test
 Each script measures **one** latent in isolation:
 
 1. **Conf override.** Before constructing the Analysis, the script writes a temporary `config/latent.yaml` and calls `conf.instance.push(...)` to mark only the target latent as enabled. PyAutoFit's `compute_latent_samples` therefore dispatches just this one function, no contamination from the other four.
-2. **Eager numpy baseline.** `AnalysisImaging(..., use_jax=False)` + a single call to `compute_latent_variables(parameters, model)`. This is the correctness reference and the worst-case (un-JIT'd) cost.
-3. **Single-call JIT.** `jax.jit(lambda p: analysis_jax.compute_latent_variables(p, model))` — records `lower`, `compile`, `first-call`, and `steady-state × 10` (steady-state averaged). The steady-state number is what production code in N-draws mode actually pays per draw.
+2. **Eager numpy baseline.** `AnalysisImaging(..., use_jax=False)` + a single call to `al.LatentLens.variables(analysis, parameters, model)`. This is the correctness reference and the worst-case (un-JIT'd) cost.
+3. **Single-call JIT.** `jax.jit(lambda p: al.LatentLens.variables(analysis_jax, p, model))` — records `lower`, `compile`, `first-call`, and `steady-state × 10` (steady-state averaged). The steady-state number is what production code in N-draws mode actually pays per draw.
 4. **Vmap batched.** `jax.jit(jax.vmap(...))` with batch=3 — records the per-call cost as `batch_time / batch_size`. Vmap is the honest measurement: per-sample JIT on a concrete `ModelInstance` can constant-fold parts of the computation and read 20-30× faster than reality (see memory `feedback_jax_pure_callback_const_fold`).
 5. **Closure cache delta** (effective_einstein_radius only). The LensCalc `_zero_contour_cache` at `autogalaxy/operate/lens_calc.py:1580-1586` memoises the `(eigen_fn, ZeroSolver)` pair. We time first-call and second-call on the same fresh `LensCalc` to surface the cache hit. Expected: second call is ~20-50% faster on numpy, much more on JIT (one full recompile avoided).
 
@@ -112,7 +112,7 @@ Each per-config JSON looks like:
 
 Read in this order:
 
-1. **`jit_steady_state_s`** — the per-call cost in production. This is the headline for N-draws-from-PDF mode (`compute_latent_variables` runs `latent_draw_via_pdf_size=100` times per fit). If it's larger than `eager_time_s`, JIT isn't helping for this latent (typical for the trivial flux latents, where eager numpy is already a few µs and JIT compile dominates).
+1. **`jit_steady_state_s`** — the per-call cost in production. This is the headline for N-draws-from-PDF mode (`LatentLens.variables` runs `latent_draw_via_pdf_size=100` times per fit). If it's larger than `eager_time_s`, JIT isn't helping for this latent (typical for the trivial flux latents, where eager numpy is already a few µs and JIT compile dominates).
 2. **`vmap_per_call_s` vs `jit_steady_state_s`** — should be similar. If vmap is dramatically faster, the JIT path is hitting a constant-fold and the single-call number is overstated.
 3. **`closure_cache_first_call_s` vs `_second_call_s`** (Einstein radius only) — the cache delta on numpy. A small delta (<10%) means the cache is being used but the per-call work dominates (i.e. cache hit doesn't save much). A large delta (>30%) means the cache is the right optimisation. Zero delta means the cache isn't being hit at all — investigate.
 4. **`jit_error` / `vmap_error`** — non-null means the optional JAX extras (`jax_zero_contour` for Einstein radius, others as appropriate) aren't installed. Numpy fallback timings remain valid; install the extras to fill in the JIT/vmap columns.
@@ -124,6 +124,6 @@ The aggregator surfaces the production-cost column (steady-state JIT, or eager i
 The `_zero_contour_cache` at `lens_calc.py:1580-1586` memoises by `(kind, pixel_scales, tol, max_newton)`. Two scenarios:
 
 - **Cache helps**: every sample in a posterior draw uses the same solver settings (the default), so every call after the first reuses the same `(eigen_fn, ZeroSolver)` pair. First-call pays the `_make_eigen_fn` cost (which is the dominant cost on the JIT path); every subsequent call is pure compute. Expect 30-60% cache-hit speedup on JIT; 15-25% on numpy.
-- **Cache hurts** (rare): if downstream code constructs a fresh `LensCalc` per call (instead of reusing one), the cache never hits. The `total_source_flux_mujy` and `effective_einstein_radius` latents both do `LensCalc.from_mass_obj(fit.tracer)` per call — but within a single `compute_latent_variables` invocation, the LensCalc is constructed once and the cache lives on it. Across calls (different posterior draws), JAX's JIT compile cache picks up the slack.
+- **Cache hurts** (rare): if downstream code constructs a fresh `LensCalc` per call (instead of reusing one), the cache never hits. The `total_source_flux_mujy` and `effective_einstein_radius` latents both do `LensCalc.from_mass_obj(fit.tracer)` per call — but within a single `LatentLens.variables` invocation, the LensCalc is constructed once and the cache lives on it. Across calls (different posterior draws), JAX's JIT compile cache picks up the slack.
 
 If you see the cache delta drop to zero across runs, suspect that the calling code is rebuilding LensCalcs between samples instead of reusing one. The current PyAutoLens dispatcher does it the right way — this is more relevant for hand-rolled custom Analysis subclasses (see memory `feedback_jax_closure_cache_busts` for the pattern).
