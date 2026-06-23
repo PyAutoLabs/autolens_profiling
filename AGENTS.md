@@ -52,12 +52,18 @@ boundary **as inputs**. See the PyAutoArray deep dive
 
 ## Testing
 
-The PR gate is `lint.yml` — **ruff**, not black — on Python 3.12, running on every PR and push:
+The PR gate is `lint.yml` on Python 3.12 (every PR + push to `main`). Its headline lint is **ruff**,
+not black:
 
 ```bash
 ruff check .
 ruff format --check .
 ```
+
+The same job also runs `scripts/build_readme.py --check` (dashboard idempotence), a `lychee`
+markdown link-rot check over the `README.md` files, and a per-section **smoke** that imports one
+script from each area under `AUTOLENS_PROFILING_SMOKE=1` (catches import-graph breakage without
+running a full profile). None of these produce result artifacts.
 
 `profile.yml` runs the actual profile sweeps + dashboard refresh, but it is **manual / on-release
 only** (`workflow_dispatch` + release tag) — it is **not** a per-PR gate (profiling burns CI minutes
