@@ -14,7 +14,13 @@ Two responsibilities live here:
 See ``vram/README.md`` for methodology and how to extend.
 """
 
-from vram.config import VMAP_BATCH, vmap_batch_for
+from vram.config import (
+    PROVENANCE,
+    VMAP_BATCH,
+    VMAP_BATCH_SPARSE,
+    resolve_vmap_batch,
+    vmap_batch_for,
+)
 from vram.probe import (
     ProbeResult,
     probe_vmap_memory,
@@ -23,7 +29,10 @@ from vram.probe import (
 )
 
 __all__ = [
+    "PROVENANCE",
     "VMAP_BATCH",
+    "VMAP_BATCH_SPARSE",
+    "resolve_vmap_batch",
     "vmap_batch_for",
     "ProbeResult",
     "probe_vmap_memory",

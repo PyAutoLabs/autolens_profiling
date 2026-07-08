@@ -123,8 +123,33 @@ VMAP_BATCH: dict[tuple[str, str, str], int | None] = {
 }
 
 
-def vmap_batch_for(dataset: str, model: str, instrument: str) -> int | None:
+# Sparse-operator (w-tilde) rows. The sparse inversion path has a different
+# per-replica memory profile than dense mapping, so it gets its own table
+# rather than a fourth key element (keeps VMAP_BATCH's shape stable for the
+# many existing readers). Unprobed sparse cells fall back to the dense row —
+# conservative, since the sparse path's per-replica footprint is smaller for
+# every cell measured so far. Populated by the probe-only SLURM submits
+# (``hpc/batch_gpu/submit_probe_*``) as campaign probes come in.
+VMAP_BATCH_SPARSE: dict[tuple[str, str, str], int | None] = {}
+
+
+# Where each table's numbers came from — checked before a campaign trusts
+# them. Update whenever probe results are ingested.
+PROVENANCE: dict[str, str] = {
+    "VMAP_BATCH": (
+        "probed 2026-05-24 on RAL A100 80GB PCIe (PyAutoLens ~2026.5.x); "
+        "manual halvings for cuFFT scratch failures noted per row"
+    ),
+    "VMAP_BATCH_SPARSE": "unprobed — falls back to dense rows",
+}
+
+
+def vmap_batch_for(dataset: str, model: str, instrument: str, path: str = "dense") -> int | None:
     """Return the per-(dataset, model, instrument) vmap batch_size for A100.
+
+    ``path`` selects the inversion path: ``"dense"`` (mapping-matrix, the
+    default) or ``"sparse"`` (w-tilde sparse operator). Sparse cells without
+    a probed row fall back to the dense value.
 
     Returns ``None`` when vmap is intentionally skipped (cube cells),
     blocked (interferometer mge/pix at ALMA+), or when the cell hasn't
@@ -133,4 +158,60 @@ def vmap_batch_for(dataset: str, model: str, instrument: str) -> int | None:
     entirely when ``None`` is returned for a known-blocked or known-skipped
     cell.
     """
-    return VMAP_BATCH.get((dataset, model, instrument))
+    key = (dataset, model, instrument)
+    if path == "sparse" and key in VMAP_BATCH_SPARSE:
+        return VMAP_BATCH_SPARSE[key]
+    return VMAP_BATCH.get(key)
+
+
+def resolve_vmap_batch(
+    dataset: str,
+    model: str,
+    instrument: str,
+    output_dir=None,
+    path: str = "dense",
+) -> tuple[int | None, str]:
+    """Resolve the vmap batch_size, preferring a fresh probe over the table.
+
+    Resolution order (returns ``(batch_size, source)`` where ``source``
+    says which step won, for the run log):
+
+    1. ``<output_dir>/vmap_probe_<model>[_sparse].json`` — written by a
+       ``--vmap-probe`` run (Phase A of the A100 submit scripts). Used only
+       if its ``dataset``/``model``/``instrument`` fields match this cell,
+       so a stale table can never OOM a job whose submit re-probed.
+    2. The curated table (``vmap_batch_for``, including the sparse
+       fallback-to-dense rule).
+
+    A probe JSON that cannot be read or does not match is ignored (with the
+    mismatch reported in ``source``), never fatal — the table is the
+    fallback, not the probe.
+    """
+    import json
+    from pathlib import Path
+
+    if output_dir is not None:
+        suffix = "_sparse" if path == "sparse" else ""
+        probe_path = Path(output_dir) / f"vmap_probe_{model}{suffix}.json"
+        if probe_path.exists():
+            try:
+                data = json.loads(probe_path.read_text())
+            except (OSError, ValueError) as exc:
+                return (
+                    vmap_batch_for(dataset, model, instrument, path=path),
+                    f"table (probe JSON unreadable: {exc})",
+                )
+            matches = (
+                data.get("dataset") == dataset
+                and data.get("model") == model
+                and data.get("instrument") == instrument
+            )
+            recommended = data.get("recommended_batch_size")
+            if matches and isinstance(recommended, int) and recommended >= 1:
+                return recommended, f"probe ({probe_path.name})"
+            return (
+                vmap_batch_for(dataset, model, instrument, path=path),
+                f"table (probe JSON ignored: "
+                f"{'cell mismatch' if not matches else 'no valid recommendation'})",
+            )
+    return vmap_batch_for(dataset, model, instrument, path=path), "table"

@@ -85,7 +85,7 @@ from simulators.interferometer import INSTRUMENTS  # noqa: E402
 from vram import (  # noqa: E402
     probe_vmap_memory,
     recommend_batch_size,
-    vmap_batch_for,
+    resolve_vmap_batch,
     write_probe_json,
 )
 
@@ -378,7 +378,11 @@ if _cli.vmap_probe:
     probe_path = (
         _cli.output_dir
         or (_workspace_root / "results" / "runtime" / "interferometer" / "pixelization")
-    ) / "vmap_probe.json"
+    ) / (
+        "vmap_probe_pixelization_sparse.json"
+        if _cli.use_sparse_operator
+        else "vmap_probe_pixelization.json"
+    )
     write_probe_json(probe, recommended, probe_path)
     print(f"\n  vmap_probe samples: {probe.samples}")
     print(f"  per_replica:        {probe.per_replica_mb:.1f} MB / replica")
@@ -396,7 +400,16 @@ if _cli.vmap_probe:
 
 print("\n--- vmap batched evaluation ---")
 
-batch_size = vmap_batch_for("interferometer", "pixelization", instrument) or 3
+_batch_resolved, _batch_source = resolve_vmap_batch(
+    "interferometer",
+    "pixelization",
+    instrument,
+    output_dir=_cli.output_dir
+    or (_workspace_root / "results" / "runtime" / "interferometer" / "pixelization"),
+    path="sparse" if _cli.use_sparse_operator else "dense",
+)
+print(f"  vmap batch_size: {_batch_resolved} (source: {_batch_source})")
+batch_size = _batch_resolved or 3
 vmap_batch_time = None
 vmap_per_call = None
 vmap_speedup = None

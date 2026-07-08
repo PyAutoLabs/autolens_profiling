@@ -127,7 +127,7 @@ from _profile_cli import (  # noqa: E402
     resolve_output_paths,
 )
 from simulators.interferometer import INSTRUMENTS  # noqa: E402
-from vram import ProbeResult, vmap_batch_for, write_probe_json  # noqa: E402
+from vram import ProbeResult, write_probe_json  # noqa: E402
 
 _cli = parse_profile_cli()
 
@@ -405,7 +405,7 @@ print(f"  cube reference log_evidence (sum) = {cube_log_evidence_ref:.6f}")
 if _cli.vmap_probe:
     probe_path = (
         _cli.output_dir or (_workspace_root / "results" / "runtime" / "datacube" / "delaunay")
-    ) / "vmap_probe.json"
+    ) / "vmap_probe_delaunay.json"
     probe_path.parent.mkdir(parents=True, exist_ok=True)
     import json
 

@@ -83,7 +83,7 @@ from simulators.imaging import INSTRUMENTS  # noqa: E402
 from vram import (  # noqa: E402
     probe_vmap_memory,
     recommend_batch_size,
-    vmap_batch_for,
+    resolve_vmap_batch,
     write_probe_json,
 )
 
@@ -470,13 +470,24 @@ if _cli.vmap_probe:
 
 print("\n--- vmap batched evaluation ---")
 
-batch_size = vmap_batch_for("imaging", "delaunay", instrument) or 3
+_batch_resolved, _batch_source = resolve_vmap_batch(
+    "imaging",
+    "delaunay",
+    instrument,
+    output_dir=_cli.output_dir
+    or (_workspace_root / "results" / "runtime" / "imaging" / "delaunay"),
+    path="sparse" if _cli.use_sparse_operator else "dense",
+)
+print(f"  vmap batch_size: {_batch_resolved} (source: {_batch_source})")
+batch_size = _batch_resolved or 3
 
-# Skip vmap if vmap_batch_for explicitly returns None for this cell.
-_vmap_skipped = vmap_batch_for("imaging", "delaunay", instrument) is None
+# Skip vmap if batch resolution (probe JSON / table) returned None for this cell.
+_vmap_skipped = _batch_resolved is None
 
 if _vmap_skipped:
-    print("  SKIPPED: vmap_batch_for() returned None for this (cell, instrument).")
+    print(
+        f"  SKIPPED: batch resolution returned None for this (cell, instrument) — source: {_batch_source}."
+    )
     vmap_per_call = None
     vmap_speedup = None
     vmap_batch_time = None
@@ -585,7 +596,7 @@ likelihood_summary = {
         "inversion_path": "sparse" if _cli.use_sparse_operator else "dense",
     },
     "full_pipeline_single_jit": full_pipeline_per_call,
-    "vmap": "SKIPPED — vmap_batch_for() returned None for this (cell, instrument)"
+    "vmap": "SKIPPED — batch resolution returned None for this (cell, instrument)"
     if _vmap_skipped
     else {
         "batch_size": batch_size,
