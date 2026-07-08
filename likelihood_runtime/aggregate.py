@@ -1,11 +1,11 @@
 """Aggregate per-config JSONs for a swept likelihood cell into comparison.{json,png}.
 
-Reads every ``<config_name>.json`` under a cell's output dir (see
-``sweep.py``) and produces a single ``comparison.json`` whose schema
-mirrors the existing
-``autolens_workspace_developer/jax_profiling/results/jit/imaging/{mge,
-pixelization,delaunay}/comparison.json`` artifacts so the existing
-readers (and the OPTIMIZATION_NOTES doc) continue to work.
+Reads every ``<config_name>[_sparse].json`` under a cell's output dir (see
+``sweep.py``; default root is ``results/runtime/`` in this repo) and
+produces a single ``comparison.json`` whose schema mirrors the historical
+``autolens_workspace_developer/jax_profiling/results/jit`` artifacts so the
+existing readers (and the OPTIMIZATION_NOTES doc) continue to work.
+``_sparse`` rows order after the canonical configs.
 
 The ``comparison.png`` is a log-scale grouped bar chart: one bar per
 (step, config), sorted by step cost on the slowest config. The
@@ -36,8 +36,7 @@ import numpy as np
 
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
-_WT_ROOT = _REPO_ROOT.parent
-_DEFAULT_OUTPUT_ROOT = _WT_ROOT / "autolens_workspace_developer" / "jax_profiling" / "results" / "jit"
+_DEFAULT_OUTPUT_ROOT = _REPO_ROOT / "results" / "runtime"
 
 
 # Stable ordering — keep the same row order as sweep_likelihood + the prior
@@ -86,7 +85,9 @@ def _discover_cells(output_root: Path) -> list[tuple[str, ...]]:
 
     def _has_config_json(d: Path) -> bool:
         return any(
-            p.stem in _CONFIG_ORDER or p.stem.endswith("_pre_fix")
+            p.stem in _CONFIG_ORDER
+            or p.stem.removesuffix("_sparse") in _CONFIG_ORDER
+            or p.stem.endswith("_pre_fix")
             for p in d.glob("*.json")
         )
 

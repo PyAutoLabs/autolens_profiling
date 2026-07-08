@@ -1,7 +1,7 @@
 """Shared CLI / JSON / auto-simulate helpers for the likelihood scripts.
 
-Used by every script under ``likelihood/{imaging,interferometer,
-datacube,point_source}/`` so the per-script boilerplate stays minimal
+Used by every per-cell script under ``likelihood_runtime/`` and
+``likelihood_breakdown/`` so the per-script boilerplate stays minimal
 and the sweep-driver flags (``--config-name``, ``--output-dir``,
 ``--use-mixed-precision``) and dataset auto-simulate hook are defined
 in one place.
@@ -69,8 +69,8 @@ def parse_profile_cli(default_config_name: Optional[str] = None) -> ProfileCLI:
         "--output-dir",
         default=None,
         help=(
-            "Override results dir. Defaults to "
-            "<autolens_profiling>/results/likelihood/<class>/."
+            "Override results dir. Each per-cell script defaults to its "
+            "package's section under <autolens_profiling>/results/."
         ),
     )
     parser.add_argument(
