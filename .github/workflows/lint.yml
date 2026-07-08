@@ -2,8 +2,8 @@
 #
 # Cheap, fast (<5 min), CPU-only. Runs on every PR and on push to main.
 # Does NOT produce real result artifacts — the smoke step short-circuits
-# every profile script via AUTOLENS_PROFILING_SMOKE=1 (lands as part of
-# Phase 5; see scripts under likelihood/, simulators/, searches/nautilus/).
+# every profile script via AUTOLENS_PROFILING_SMOKE=1 (see scripts under
+# likelihood_runtime/, likelihood_breakdown/, simulators/, searches/nautilus/).
 #
 # Profile re-runs that actually produce results live in `profile.yml`.
 
@@ -113,6 +113,7 @@ jobs:
           # Each script reads AUTOLENS_PROFILING_SMOKE at module top and
           # exits 0 immediately after the import + setup section. Catches
           # import-graph breakage without running the full profile.
-          python likelihood/imaging/mge.py
+          python likelihood_runtime/imaging/mge.py
+          python likelihood_breakdown/imaging/mge.py
           python simulators/imaging.py
           python searches/nautilus/simple.py
