@@ -49,16 +49,22 @@ _DEFAULT_OUTPUT_ROOT = _REPO_ROOT / "results" / "runtime"
 _DEFAULT_PYTHON = sys.executable
 
 
-# (dataset_class, model). Order is roughly cheapest -> heaviest so failures
-# surface quickly during iteration.
-CELLS: list[tuple[str, str]] = [
-    ("imaging", "mge"),
-    ("imaging", "pixelization"),
-    ("imaging", "delaunay"),
-    ("interferometer", "mge"),
-    ("interferometer", "pixelization"),
-    ("interferometer", "delaunay"),
-    ("datacube", "delaunay"),
+# (dataset_class, model, instruments). Order is roughly cheapest -> heaviest
+# so failures surface quickly during iteration. An empty instrument tuple
+# means "the per-cell script's module default" (pre-campaign behaviour);
+# named instruments run once each, with per-instrument output subdirs
+# (results/runtime/<class>/<model>/<instrument>/ — the 3-level layout
+# aggregate.py already understands). The PreOptimizationTimes campaign
+# matrix (autolens_profiling#56): imaging at ao/jwst/hst, interferometer
+# and datacube across their instrument presets.
+CELLS: list[tuple[str, str, tuple[str, ...]]] = [
+    ("imaging", "mge", ("hst", "jwst", "ao")),
+    ("imaging", "pixelization", ("hst", "jwst", "ao")),
+    ("imaging", "delaunay", ("hst", "jwst", "ao")),
+    ("interferometer", "mge", ("sma", "alma", "alma_high", "jvla")),
+    ("interferometer", "pixelization", ("sma", "alma", "alma_high", "jvla")),
+    ("interferometer", "delaunay", ("sma", "alma", "alma_high", "jvla")),
+    ("datacube", "delaunay", ("sma", "alma", "alma_high")),
 ]
 
 
@@ -153,16 +159,36 @@ def _parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
-def _resolve_cells(args: argparse.Namespace) -> list[tuple[str, str]]:
-    selected = CELLS
+def _expand_cells() -> list[tuple[str, str, str | None]]:
+    """Flatten CELLS into (class, model, instrument-or-None) rows."""
+    rows: list[tuple[str, str, str | None]] = []
+    for cls, model, instruments in CELLS:
+        if instruments:
+            rows.extend((cls, model, inst) for inst in instruments)
+        else:
+            rows.append((cls, model, None))
+    return rows
+
+
+def _cell_id(cls: str, model: str, inst: str | None) -> str:
+    return f"{cls}/{model}/{inst}" if inst else f"{cls}/{model}"
+
+
+def _resolve_cells(args: argparse.Namespace) -> list[tuple[str, str, str | None]]:
+    """--only/--skip match class/model (all instruments) or class/model/instrument."""
+    selected = _expand_cells()
+
+    def _matches(spec: str, row: tuple[str, str, str | None]) -> bool:
+        cls, model, inst = row
+        return spec in (f"{cls}/{model}", _cell_id(cls, model, inst))
+
     if args.only:
-        wanted = {c for c in args.only}
-        selected = [(c, m) for (c, m) in selected if f"{c}/{m}" in wanted]
-        missing = wanted - {f"{c}/{m}" for (c, m) in selected}
+        selected = [r for r in selected if any(_matches(s, r) for s in args.only)]
+        matched = {s for s in args.only if any(_matches(s, r) for r in selected)}
+        missing = set(args.only) - matched
         if missing:
             sys.stderr.write(f"warning: --only includes unknown cells: {sorted(missing)}\n")
-    skip = set(args.skip)
-    selected = [(c, m) for (c, m) in selected if f"{c}/{m}" not in skip]
+    selected = [r for r in selected if not any(_matches(s, r) for s in args.skip)]
     return selected
 
 
@@ -184,6 +210,7 @@ def _run_one(
     out_dir: Path,
     dry_run: bool,
     sparse: bool = False,
+    instrument: str | None = None,
 ) -> tuple[bool, float, str]:
     """Run one (cell, config) pair as a subprocess. Returns (ok, elapsed, log_path)."""
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -197,6 +224,7 @@ def _run_one(
         config.name,
         "--output-dir",
         str(out_dir),
+        *(("--instrument", instrument) if instrument else ()),
         *config.extra_args,
         *(("--sparse",) if sparse else ()),
     ]
@@ -263,7 +291,7 @@ def main() -> int:
         f"sweep_likelihood: {len(cells)} cells x {len(configs)} configs "
         f"= {len(cells) * len(configs)} runs"
     )
-    print(f"  cells:    {[f'{c}/{m}' for (c, m) in cells]}")
+    print(f"  cells:    {[_cell_id(c, m, i) for (c, m, i) in cells]}")
     print(f"  configs:  {[c.name for c in configs]}")
     print(f"  output:   {args.output_root}")
     print(f"  python:   {args.python}")
@@ -273,15 +301,18 @@ def main() -> int:
     summary: list[tuple[str, str, bool, float]] = []
     overall_t0 = time.time()
 
-    for cls, model in cells:
+    for cls, model, inst in cells:
         script_path = _REPO_ROOT / "likelihood_runtime" / cls / f"{model}.py"
+        cell_id = _cell_id(cls, model, inst)
         if not script_path.exists():
             print(f"\n!!! missing script: {script_path}")
             for cfg in configs:
-                summary.append((f"{cls}/{model}", cfg.name, False, 0.0))
+                summary.append((cell_id, cfg.name, False, 0.0))
             continue
 
         out_dir = args.output_root / cls / model
+        if inst:
+            out_dir = out_dir / inst
 
         for cfg in configs:
             try:
@@ -292,11 +323,12 @@ def main() -> int:
                     out_dir,
                     args.dry_run,
                     sparse=args.sparse,
+                    instrument=inst,
                 )
             except KeyboardInterrupt:
                 print("\n\nsweep interrupted by user")
                 return 130
-            summary.append((f"{cls}/{model}", cfg.name, ok, elapsed))
+            summary.append((cell_id, cfg.name, ok, elapsed))
 
     total = time.time() - overall_t0
     print("\n" + "=" * 70)
