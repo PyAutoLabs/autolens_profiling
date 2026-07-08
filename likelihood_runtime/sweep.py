@@ -131,6 +131,16 @@ def _parse_args() -> argparse.Namespace:
         help="Skip the use_mixed_precision rows (just fp64).",
     )
     p.add_argument(
+        "--skip-existing",
+        action="store_true",
+        help=(
+            "Skip any (cell, config) whose result JSON already exists in the "
+            "output dir — resume an interrupted campaign without redoing "
+            "completed runs (the in-flight run at interruption left no JSON, "
+            "so it re-runs)."
+        ),
+    )
+    p.add_argument(
         "--sparse",
         action="store_true",
         help=(
@@ -315,6 +325,13 @@ def main() -> int:
             out_dir = out_dir / inst
 
         for cfg in configs:
+            if args.skip_existing:
+                suffix = "_sparse" if args.sparse else ""
+                existing = out_dir / f"{model}_{cfg.name}{suffix}.json"
+                if existing.exists():
+                    print(f"--- [{cfg.name}] {cell_id}: SKIP (result exists)")
+                    summary.append((cell_id, cfg.name, True, 0.0))
+                    continue
             try:
                 ok, elapsed, _log = _run_one(
                     args.python,
