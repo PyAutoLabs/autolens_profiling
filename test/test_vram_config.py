@@ -134,3 +134,58 @@ def test_resolve_missing_probe_uses_table(tmp_path):
     batch, source = resolve_vmap_batch("imaging", "pixelization", "hst", output_dir=tmp_path)
     assert batch == VMAP_BATCH[("imaging", "pixelization", "hst")]
     assert source == "table"
+
+
+# ---------------------------------------------------------------------------
+# backend awareness (non-GPU clamp + probe backend matching)
+# ---------------------------------------------------------------------------
+
+
+def test_non_gpu_backend_clamps_table_value():
+    batch, source = resolve_vmap_batch("imaging", "pixelization", "euclid", backend="cpu")
+    assert batch == 3
+    assert "clamped" in source
+
+
+def test_gpu_backend_not_clamped():
+    batch, source = resolve_vmap_batch("imaging", "pixelization", "euclid", backend="gpu")
+    assert batch == VMAP_BATCH[("imaging", "pixelization", "euclid")]
+    assert "clamped" not in source
+
+
+def test_intentional_none_not_clamped_to_int():
+    batch, _ = resolve_vmap_batch("datacube", "delaunay", "sma", backend="cpu")
+    assert batch is None
+
+
+def test_probe_from_other_backend_ignored(tmp_path):
+    p = _write_probe(tmp_path, recommended=64)
+    data = json.loads(p.read_text())
+    data["backend"] = "cpu"
+    p.write_text(json.dumps(data))
+    batch, source = resolve_vmap_batch(
+        "imaging", "pixelization", "hst", output_dir=tmp_path, backend="gpu"
+    )
+    assert batch == VMAP_BATCH[("imaging", "pixelization", "hst")]
+    assert "mismatch" in source
+
+
+def test_probe_same_backend_accepted_and_clamped_on_cpu(tmp_path):
+    p = _write_probe(tmp_path, recommended=64)
+    data = json.loads(p.read_text())
+    data["backend"] = "cpu"
+    p.write_text(json.dumps(data))
+    batch, source = resolve_vmap_batch(
+        "imaging", "pixelization", "hst", output_dir=tmp_path, backend="cpu"
+    )
+    assert batch == 3  # probe wins, then the non-GPU cap applies
+    assert source.startswith("probe") and "clamped" in source
+
+
+def test_legacy_probe_without_backend_accepted(tmp_path):
+    _write_probe(tmp_path, recommended=24)  # no backend field
+    batch, source = resolve_vmap_batch(
+        "imaging", "pixelization", "hst", output_dir=tmp_path, backend="gpu"
+    )
+    assert batch == 24
+    assert source.startswith("probe")

@@ -164,12 +164,20 @@ def vmap_batch_for(dataset: str, model: str, instrument: str, path: str = "dense
     return VMAP_BATCH.get(key)
 
 
+# On non-GPU backends the vmap row is a correctness/timing sample, not a
+# production configuration — the table and the probe budget are both
+# A100-oriented, and batch 64 on a laptop CPU exhausts host RAM (found by
+# the phase-2 local validation sweep, autolens_profiling#54).
+_NON_GPU_BATCH_CAP = 3
+
+
 def resolve_vmap_batch(
     dataset: str,
     model: str,
     instrument: str,
     output_dir=None,
     path: str = "dense",
+    backend: str | None = None,
 ) -> tuple[int | None, str]:
     """Resolve the vmap batch_size, preferring a fresh probe over the table.
 
@@ -183,12 +191,27 @@ def resolve_vmap_batch(
     2. The curated table (``vmap_batch_for``, including the sparse
        fallback-to-dense rule).
 
+    ``backend`` is the running JAX backend (``jax.default_backend()``).
+    The table and the probe budget are A100-oriented, so on any non-``gpu``
+    backend the resolved batch is clamped to ``_NON_GPU_BATCH_CAP`` (an
+    intentional ``None`` stays ``None``).
+
     A probe JSON that cannot be read or does not match is ignored (with the
     mismatch reported in ``source``), never fatal — the table is the
     fallback, not the probe.
     """
     import json
     from pathlib import Path
+
+    def _clamped(batch: int | None, source: str) -> tuple[int | None, str]:
+        if (
+            backend is not None
+            and backend != "gpu"
+            and isinstance(batch, int)
+            and batch > _NON_GPU_BATCH_CAP
+        ):
+            return _NON_GPU_BATCH_CAP, f"{source}, clamped to {_NON_GPU_BATCH_CAP} on {backend}"
+        return batch, source
 
     if output_dir is not None:
         suffix = "_sparse" if path == "sparse" else ""
@@ -197,21 +220,26 @@ def resolve_vmap_batch(
             try:
                 data = json.loads(probe_path.read_text())
             except (OSError, ValueError) as exc:
-                return (
+                return _clamped(
                     vmap_batch_for(dataset, model, instrument, path=path),
                     f"table (probe JSON unreadable: {exc})",
                 )
+            probe_backend = data.get("backend")
             matches = (
                 data.get("dataset") == dataset
                 and data.get("model") == model
                 and data.get("instrument") == instrument
+                # A probe measured on another backend is not evidence for
+                # this one (CPU memory analysis says nothing about A100 and
+                # vice versa). Probes predating the backend field pass.
+                and (probe_backend is None or backend is None or probe_backend == backend)
             )
             recommended = data.get("recommended_batch_size")
             if matches and isinstance(recommended, int) and recommended >= 1:
-                return recommended, f"probe ({probe_path.name})"
-            return (
+                return _clamped(recommended, f"probe ({probe_path.name})")
+            return _clamped(
                 vmap_batch_for(dataset, model, instrument, path=path),
                 f"table (probe JSON ignored: "
                 f"{'cell mismatch' if not matches else 'no valid recommendation'})",
             )
-    return vmap_batch_for(dataset, model, instrument, path=path), "table"
+    return _clamped(vmap_batch_for(dataset, model, instrument, path=path), "table")

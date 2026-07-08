@@ -77,10 +77,12 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 # Plus this script's own --use-dft override to compare NUFFT against the
 # historical DFT baseline on SMA.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from _profile_cli import (  # noqa: E402
+from _profile_cli import (
     auto_simulate_if_missing,
+    check_pinned,
     device_info_dict,
     parse_profile_cli,
+    record_pinned_check,  # noqa: E402
     resolve_output_paths,
 )
 from simulators.interferometer import INSTRUMENTS  # noqa: E402
@@ -373,6 +375,7 @@ _batch_resolved, _batch_source = resolve_vmap_batch(
     output_dir=_cli.output_dir
     or (_workspace_root / "results" / "runtime" / "interferometer" / "mge"),
     path="sparse" if _cli.use_sparse_operator else "dense",
+    backend=jax.default_backend(),
 )
 print(f"  vmap batch_size: {_batch_resolved} (source: {_batch_source})")
 batch_size = _batch_resolved or 3
@@ -566,6 +569,9 @@ print(f"  Bar chart saved to:    {chart_path}")
 # print the value so it can be pasted in here on a clean run". sma was
 # bumped to mask_radius=3.5 in 2026-05-21's INSTRUMENTS refactor — the
 # old mask_radius=3.0 value no longer applies and needs re-measuring.
+_pinned_drift: list = []
+_pinned_expected = None
+
 EXPECTED_LOG_LIKELIHOOD = {
     "sma": None,
     "alma": None,
@@ -573,6 +579,7 @@ EXPECTED_LOG_LIKELIHOOD = {
 }
 
 expected_log_likelihood = EXPECTED_LOG_LIKELIHOOD.get(instrument)
+_pinned_expected = expected_log_likelihood
 
 if expected_log_likelihood is None:
     print(
@@ -585,26 +592,23 @@ else:
     # the rtol when the user asked for mixed precision.
     _regression_rtol = 1e-3 if _cli.use_mixed_precision else 1e-4
     transformer_label = "DFT" if USE_DFT else "NUFFT"
-    np.testing.assert_allclose(
-        log_likelihood_ref,
-        expected_log_likelihood,
-        rtol=_regression_rtol,
-        err_msg=(
-            f"interferometer/mge[{instrument}, {transformer_label}]: "
-            f"regression — eager log_likelihood drifted "
-            f"(got {log_likelihood_ref}, expected {expected_log_likelihood})"
-        ),
+    _rec = check_pinned(log_likelihood_ref, _pinned_expected, label="eager", rtol=_regression_rtol)
+    if _rec is not None:
+        _pinned_drift.append(_rec)
+    _rec = check_pinned(float(full_result), _pinned_expected, label="full", rtol=_regression_rtol)
+    if _rec is not None:
+        _pinned_drift.append(_rec)
+    _rec = check_pinned(
+        np.array(result_vmap), _pinned_expected, label="vmap", rtol=_regression_rtol
     )
-    np.testing.assert_allclose(
-        float(full_result),
-        expected_log_likelihood,
-        rtol=_regression_rtol,
-        err_msg=f"interferometer/mge[{instrument}]: regression — full log_likelihood drifted",
-    )
-    np.testing.assert_allclose(
-        np.array(result_vmap),
-        expected_log_likelihood,
-        rtol=_regression_rtol,
-        err_msg=f"interferometer/mge[{instrument}]: regression — vmap log_likelihood drifted",
-    )
-    print(f"  Regression assertion PASSED: log_likelihood matches {expected_log_likelihood:.6f}")
+    if _rec is not None:
+        _pinned_drift.append(_rec)
+
+
+# Pinned-value outcome -> result JSON: profiling records and flags drift,
+# never adjudicates library correctness (autolens_workspace_test's remit;
+# boundary rule in results/notes/design_lock_in.md). PyAutoHeart's vitals
+# scan reads the pinned_drift field.
+record_pinned_check(dict_path, _pinned_expected, _pinned_drift)
+if _pinned_expected is not None and not _pinned_drift:
+    print("  Pinned-value check PASSED (recorded in result JSON).")

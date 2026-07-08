@@ -120,10 +120,12 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 
 # Sweep-driver CLI args (--config-name / --output-dir / --use-mixed-precision).
 # Tolerates extra/unknown args via parse_known_args inside the helper.
-from _profile_cli import (  # noqa: E402
+from _profile_cli import (
     auto_simulate_if_missing,
+    check_pinned,
     device_info_dict,
     parse_profile_cli,
+    record_pinned_check,  # noqa: E402
     resolve_output_paths,
 )
 from simulators.interferometer import INSTRUMENTS  # noqa: E402
@@ -595,6 +597,9 @@ print(f"  Bar chart path:        {chart_path} (no per-step chart in runtime vari
 # Identical channels = exact N × single-channel log-evidence (for "sma").
 # For "hannah" the per-channel literal isn't pinned yet, so the assertion is
 # skipped until the value below is filled in from a clean run.
+_pinned_drift: list = []
+_pinned_expected = None
+
 EXPECTED_LOG_EVIDENCE_PER_CHANNEL = {
     "sma": None,
     "alma": None,
@@ -603,6 +608,7 @@ EXPECTED_LOG_EVIDENCE_PER_CHANNEL = {
 
 _per_channel = EXPECTED_LOG_EVIDENCE_PER_CHANNEL.get(instrument)
 expected_cube_log_evidence = n_channels * _per_channel if _per_channel is not None else None
+_pinned_expected = expected_cube_log_evidence
 
 if expected_cube_log_evidence is None:
     print(
@@ -613,24 +619,19 @@ if expected_cube_log_evidence is None:
         f"EXPECTED_LOG_EVIDENCE_PER_CHANNEL[{instrument!r}]."
     )
 else:
-    np.testing.assert_allclose(
-        cube_log_evidence_ref,
-        expected_cube_log_evidence,
-        rtol=1e-4,
-        err_msg=(
-            f"datacube/delaunay[{instrument}]: regression — eager cube log_evidence "
-            f"drifted (got {cube_log_evidence_ref}, expected {expected_cube_log_evidence})"
-        ),
-    )
-    print(
-        f"\n  Eager cube regression assertion PASSED: log_evidence matches "
-        f"{expected_cube_log_evidence:.6f}"
-    )
+    _rec = check_pinned(cube_log_evidence_ref, _pinned_expected, label="eager", rtol=1e-4)
+    if _rec is not None:
+        _pinned_drift.append(_rec)
     if full_cube_result is not None:
-        np.testing.assert_allclose(
-            float(full_cube_result),
-            expected_cube_log_evidence,
-            rtol=1e-3,
-            err_msg=f"datacube/delaunay[{instrument}]: regression — full cube log_evidence drifted",
-        )
-        print("  Full-pipeline cube regression assertion PASSED")
+        _rec = check_pinned(float(full_cube_result), _pinned_expected, label="full", rtol=1e-3)
+        if _rec is not None:
+            _pinned_drift.append(_rec)
+
+
+# Pinned-value outcome -> result JSON: profiling records and flags drift,
+# never adjudicates library correctness (autolens_workspace_test's remit;
+# boundary rule in results/notes/design_lock_in.md). PyAutoHeart's vitals
+# scan reads the pinned_drift field.
+record_pinned_check(dict_path, _pinned_expected, _pinned_drift)
+if _pinned_expected is not None and not _pinned_drift:
+    print("  Pinned-value check PASSED (recorded in result JSON).")

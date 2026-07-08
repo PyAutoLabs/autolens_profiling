@@ -192,8 +192,11 @@ def write_probe_json(
     extra: dict | None = None,
 ) -> None:
     """Serialise probe samples + recommendation to JSON."""
+    import jax
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
+        "backend": jax.default_backend(),
         "dataset": probe.dataset,
         "model": probe.model,
         "instrument": probe.instrument,
