@@ -1,6 +1,6 @@
 # simulators
 
-Run-time profiling for the PyAutoLens simulators — the scripts that produce mock lensed datasets (imaging, interferometer, point-source, cluster-scale, group-scale, multi-wavelength) used as inputs to fitting pipelines. These scripts profile **simulation cost**, not likelihood cost (which lives under [`likelihood/`](../likelihood/README.md)). They time grid construction, ray-tracing, PSF convolution, point-solver work, FITS / JSON output, and whatever else dominates each science case.
+Run-time profiling for the PyAutoLens simulators — the scripts that produce mock lensed datasets (imaging, interferometer, point-source, cluster-scale, group-scale, multi-wavelength) used as inputs to fitting pipelines. These scripts profile **simulation cost**, not likelihood cost (which lives under [`likelihood_runtime/`](../likelihood_runtime/README.md) / [`likelihood_breakdown/`](../likelihood_breakdown/README.md)). They time grid construction, ray-tracing, PSF convolution, point-solver work, FITS / JSON output, and whatever else dominates each science case.
 
 ## Why profile the simulators?
 
