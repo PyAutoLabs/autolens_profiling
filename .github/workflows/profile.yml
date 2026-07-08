@@ -92,7 +92,7 @@ jobs:
           pip install nautilus-sampler==1.0.5
           pip install numba
 
-      - name: Run likelihood/ scripts
+      - name: Run likelihood_runtime/ scripts
         if: ${{ inputs.sections == '' || contains(inputs.sections, 'likelihood') }}
         working-directory: autolens_profiling
         continue-on-error: true
@@ -102,8 +102,8 @@ jobs:
           PYTHONPATH: ${{ github.workspace }}/PyAutoConf:${{ github.workspace }}/PyAutoFit:${{ github.workspace }}/PyAutoArray:${{ github.workspace }}/PyAutoGalaxy:${{ github.workspace }}/PyAutoLens
         run: |
           set +e  # don't abort the whole step on one script's failure
-          for script in likelihood/imaging/*.py likelihood/interferometer/*.py \
-                        likelihood/point_source/*.py likelihood/datacube/delaunay.py; do
+          for script in likelihood_runtime/imaging/*.py likelihood_runtime/interferometer/*.py \
+                        likelihood_runtime/point_source/*.py likelihood_runtime/datacube/delaunay.py; do
             echo "::group::$script"
             python "$script" || echo "::warning::$script failed — see log; dashboard cell will show ERR"
             echo "::endgroup::"
@@ -163,7 +163,7 @@ jobs:
           # gitignored; future hardware-tier work may flip a subset to
           # tracked, in which case this `add -f` becomes redundant but
           # harmless.
-          git add -f results/ likelihood/README.md likelihood/*/README.md \
+          git add -f results/ likelihood_runtime/README.md likelihood_breakdown/README.md \
                      simulators/README.md searches/README.md \
                      searches/nautilus/README.md README.md
           git commit -m "chore: refresh profile artifacts + dashboard tables [skip ci]

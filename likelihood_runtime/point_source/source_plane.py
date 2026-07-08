@@ -44,17 +44,19 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 # Sweep-driver CLI args (--config-name / --output-dir / --use-mixed-precision).
 # Tolerates extra/unknown args via parse_known_args inside the helper.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from _profile_cli import (  # noqa: E402
+from _profile_cli import (
     auto_simulate_if_missing,
+    check_pinned,
     device_info_dict,
     parse_profile_cli,
+    record_pinned_check,  # noqa: E402
     resolve_output_paths,
 )
 from simulators.point_source import INSTRUMENTS  # noqa: E402
 from vram import (  # noqa: E402
     probe_vmap_memory,
     recommend_batch_size,
-    vmap_batch_for,
+    resolve_vmap_batch,
     write_probe_json,
 )
 
@@ -304,7 +306,11 @@ if _cli.vmap_probe:
     probe_path = (
         _cli.output_dir
         or (_workspace_root / "results" / "runtime" / "point_source" / "source_plane")
-    ) / "vmap_probe.json"
+    ) / (
+        "vmap_probe_source_plane_sparse.json"
+        if _cli.use_sparse_operator
+        else "vmap_probe_source_plane.json"
+    )
     write_probe_json(probe, recommended, probe_path)
     print(f"\n  vmap_probe samples: {probe.samples}")
     print(f"  per_replica:        {probe.per_replica_mb:.1f} MB / replica")
@@ -356,7 +362,17 @@ print(f"  source-plane positions value: {np.array(source_plane_positions)}")
 
 print("\n--- vmap over ray-trace prefix ---")
 
-batch_size = vmap_batch_for("point_source", "source_plane", instrument) or 3
+_batch_resolved, _batch_source = resolve_vmap_batch(
+    "point_source",
+    "source_plane",
+    instrument,
+    output_dir=_cli.output_dir
+    or (_workspace_root / "results" / "runtime" / "point_source" / "source_plane"),
+    path="sparse" if _cli.use_sparse_operator else "dense",
+    backend=jax.default_backend(),
+)
+print(f"  vmap batch_size: {_batch_resolved} (source: {_batch_source})")
+batch_size = _batch_resolved or 3
 
 batched_params = jax.tree_util.tree_map(
     lambda leaf: jnp.broadcast_to(leaf, (batch_size, *leaf.shape)),
@@ -550,35 +566,28 @@ print(f"  Bar chart saved to:    {chart_path}")
 # log-likelihood. The refreshed value reflects the current truth-aligned
 # evaluation against the dataset committed in
 # autolens_workspace_developer@f8a5cef.
-EXPECTED_LOG_LIKELIHOOD_SOURCE_PLANE = -33788.35731127962
+_pinned_drift: list = []
+_pinned_expected = None
 
-np.testing.assert_allclose(
-    log_likelihood_ref,
-    EXPECTED_LOG_LIKELIHOOD_SOURCE_PLANE,
-    rtol=1e-4,
-    err_msg=(
-        f"point_source/source_plane: regression — eager log_likelihood drifted "
-        f"(got {log_likelihood_ref}, expected {EXPECTED_LOG_LIKELIHOOD_SOURCE_PLANE})"
-    ),
-)
-print(
-    f"  Eager regression assertion PASSED: log_likelihood matches "
-    f"{EXPECTED_LOG_LIKELIHOOD_SOURCE_PLANE:.6f}"
-)
+EXPECTED_LOG_LIKELIHOOD_SOURCE_PLANE = -33788.35731127962
+_pinned_expected = EXPECTED_LOG_LIKELIHOOD_SOURCE_PLANE
+
+_rec = check_pinned(log_likelihood_ref, _pinned_expected, label="eager", rtol=1e-4)
+if _rec is not None:
+    _pinned_drift.append(_rec)
 
 if full_pipeline_jits:
-    np.testing.assert_allclose(
-        float(full_result),
-        EXPECTED_LOG_LIKELIHOOD_SOURCE_PLANE,
-        rtol=1e-4,
-        err_msg=(
-            f"point_source/source_plane: regression — JIT log_likelihood drifted "
-            f"(got {float(full_result)}, expected {EXPECTED_LOG_LIKELIHOOD_SOURCE_PLANE})"
-        ),
-    )
-    print(
-        f"  JIT regression assertion PASSED: log_likelihood matches "
-        f"{EXPECTED_LOG_LIKELIHOOD_SOURCE_PLANE:.6f}"
-    )
+    _rec = check_pinned(float(full_result), _pinned_expected, label="JIT", rtol=1e-4)
+    if _rec is not None:
+        _pinned_drift.append(_rec)
 
 timer.summary()
+
+
+# Pinned-value outcome -> result JSON: profiling records and flags drift,
+# never adjudicates library correctness (autolens_workspace_test's remit;
+# boundary rule in results/notes/design_lock_in.md). PyAutoHeart's vitals
+# scan reads the pinned_drift field.
+record_pinned_check(dict_path, _pinned_expected, _pinned_drift)
+if _pinned_expected is not None and not _pinned_drift:
+    print("  Pinned-value check PASSED (recorded in result JSON).")

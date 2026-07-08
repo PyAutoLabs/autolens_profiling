@@ -93,6 +93,26 @@ Rule of thumb: **cross-release trend** questions read versioned summaries;
 - Baselines are **append-only**: never edited after the campaign closes; a
   post-optimization campaign snapshots a new name next to it.
 
+## Pinned values: record-and-flag, never adjudicate (added phase 2)
+
+The runtime cells carry pinned log-likelihood/evidence values. Their job here
+is **benchmark comparability** — a timing is only comparable to a baseline if
+it measures the same computation — *not* library regression testing (that is
+`autolens_workspace_test`'s remit). Accordingly:
+
+- Drift against a pin **never crashes a profiling run**: `check_pinned`
+  (in `_profile_cli.py`) prints a loud warning and records
+  `pinned_expected` + `pinned_drift` into the result JSON
+  (`record_pinned_check`). The numbers still land; the flag marks them
+  non-comparable to the pinned baseline.
+- The **eager ≡ JIT ≡ vmap cross-consistency assertions stay hard** — a
+  mismatch there invalidates the measurement itself.
+- On a drift flag the follow-up is "file a bug / check workspace_test",
+  never "debug the library inside this repo".
+- **PyAutoHeart pairing**: the `pinned_drift` JSON field is the machine
+  surface Heart's vitals scan reads (tracked as its own Mind task,
+  `feature/pyautoheart/profiling_drift_check.md`).
+
 ## Deliberately out of scope here
 
 Profiling runs (phases 2–4); searches profiling; `point_source` cells (in the

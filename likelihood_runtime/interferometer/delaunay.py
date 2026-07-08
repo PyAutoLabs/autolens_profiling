@@ -114,17 +114,19 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 
 # Sweep-driver CLI args (--config-name / --output-dir / --use-mixed-precision).
 # Tolerates extra/unknown args via parse_known_args inside the helper.
-from _profile_cli import (  # noqa: E402
+from _profile_cli import (
     auto_simulate_if_missing,
+    check_pinned,
     device_info_dict,
     parse_profile_cli,
+    record_pinned_check,  # noqa: E402
     resolve_output_paths,
 )
 from simulators.interferometer import INSTRUMENTS  # noqa: E402
 from vram import (  # noqa: E402
     probe_vmap_memory,
     recommend_batch_size,
-    vmap_batch_for,
+    resolve_vmap_batch,
     write_probe_json,
 )
 
@@ -455,7 +457,11 @@ if _cli.vmap_probe:
     recommended = recommend_batch_size(probe)
     probe_path = (
         _cli.output_dir or (_workspace_root / "results" / "runtime" / "interferometer" / "delaunay")
-    ) / "vmap_probe.json"
+    ) / (
+        "vmap_probe_delaunay_sparse.json"
+        if _cli.use_sparse_operator
+        else "vmap_probe_delaunay.json"
+    )
     write_probe_json(probe, recommended, probe_path)
     print(f"\n  vmap_probe samples: {probe.samples}")
     print(f"  per_replica:        {probe.per_replica_mb:.1f} MB / replica")
@@ -469,10 +475,20 @@ if _cli.vmap_probe:
 
 print("\n--- vmap batched evaluation ---")
 
-batch_size = vmap_batch_for("interferometer", "delaunay", instrument) or 3
+_batch_resolved, _batch_source = resolve_vmap_batch(
+    "interferometer",
+    "delaunay",
+    instrument,
+    output_dir=_cli.output_dir
+    or (_workspace_root / "results" / "runtime" / "interferometer" / "delaunay"),
+    path="sparse" if _cli.use_sparse_operator else "dense",
+    backend=jax.default_backend(),
+)
+print(f"  vmap batch_size: {_batch_resolved} (source: {_batch_source})")
+batch_size = _batch_resolved or 3
 
-# Skip vmap if vmap_batch_for explicitly returns None for this cell.
-_vmap_skipped = vmap_batch_for("interferometer", "delaunay", instrument) is None
+# Skip vmap if batch resolution (probe JSON / table) returned None for this cell.
+_vmap_skipped = _batch_resolved is None
 
 vmap_batch_time = None
 vmap_per_call = None
@@ -483,7 +499,9 @@ parameters = None
 
 _n_leaves = len(jax.tree_util.tree_leaves(params_tree))
 if _vmap_skipped:
-    print("  SKIPPED: vmap_batch_for() returned None for this (cell, instrument).")
+    print(
+        f"  SKIPPED: batch resolution returned None for this (cell, instrument) — source: {_batch_source}."
+    )
 elif _n_leaves == 0:
     print(
         "  SKIPPED: model has 0 free parameters (all fixed to truth); "
@@ -588,7 +606,7 @@ print("=" * 70)
 
 if vmap_per_call is None:
     if _vmap_skipped:
-        vmap_payload = "SKIPPED — vmap_batch_for() returned None for this (cell, instrument)"
+        vmap_payload = "SKIPPED — batch resolution returned None for this (cell, instrument)"
     else:
         vmap_payload = "SKIPPED — model has 0 free parameters (all fixed to truth)"
 else:
@@ -647,6 +665,9 @@ print(f"  Bar chart path:        {chart_path} (no per-step chart in runtime vari
 # print the value so it can be pasted in here on a clean run". sma was
 # bumped to mask_radius=3.5 in 2026-05-21's INSTRUMENTS refactor — the
 # old mask_radius=3.0 value no longer applies and needs re-measuring.
+_pinned_drift: list = []
+_pinned_expected = None
+
 EXPECTED_LOG_EVIDENCE = {
     "sma": None,
     "alma": None,
@@ -654,6 +675,7 @@ EXPECTED_LOG_EVIDENCE = {
 }
 
 expected_log_evidence = EXPECTED_LOG_EVIDENCE.get(instrument)
+_pinned_expected = expected_log_evidence
 
 if expected_log_evidence is None:
     print(
@@ -662,28 +684,22 @@ if expected_log_evidence is None:
         f"and paste it into EXPECTED_LOG_EVIDENCE[{instrument!r}]."
     )
 else:
-    np.testing.assert_allclose(
-        figure_of_merit_ref,
-        expected_log_evidence,
-        rtol=1e-4,
-        err_msg=(
-            f"interferometer/delaunay[{instrument}]: regression — eager log_evidence "
-            f"drifted (got {figure_of_merit_ref}, expected {expected_log_evidence})"
-        ),
-    )
-    print(f"  Eager regression assertion PASSED: log_evidence matches {expected_log_evidence:.6f}")
-    np.testing.assert_allclose(
-        float(full_result),
-        expected_log_evidence,
-        rtol=1e-3,
-        err_msg=f"interferometer/delaunay[{instrument}]: regression — full log_evidence drifted",
-    )
-    print("  Full-pipeline regression assertion PASSED")
+    _rec = check_pinned(figure_of_merit_ref, _pinned_expected, label="eager", rtol=1e-4)
+    if _rec is not None:
+        _pinned_drift.append(_rec)
+    _rec = check_pinned(float(full_result), _pinned_expected, label="full", rtol=1e-3)
+    if _rec is not None:
+        _pinned_drift.append(_rec)
     if result_vmap is not None:
-        np.testing.assert_allclose(
-            np.array(result_vmap),
-            expected_log_evidence,
-            rtol=1e-3,
-            err_msg=f"interferometer/delaunay[{instrument}]: regression — vmap log_evidence drifted",
-        )
-        print("  vmap regression assertion PASSED")
+        _rec = check_pinned(np.array(result_vmap), _pinned_expected, label="vmap", rtol=1e-3)
+        if _rec is not None:
+            _pinned_drift.append(_rec)
+
+
+# Pinned-value outcome -> result JSON: profiling records and flags drift,
+# never adjudicates library correctness (autolens_workspace_test's remit;
+# boundary rule in results/notes/design_lock_in.md). PyAutoHeart's vitals
+# scan reads the pinned_drift field.
+record_pinned_check(dict_path, _pinned_expected, _pinned_drift)
+if _pinned_expected is not None and not _pinned_drift:
+    print("  Pinned-value check PASSED (recorded in result JSON).")

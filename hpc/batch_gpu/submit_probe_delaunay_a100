@@ -1,0 +1,55 @@
+#!/bin/bash -l
+#
+# Probe-only sweep — DELAUNAY cells (10-30 min per XLA compile; scipy
+# Delaunay via pure_callback bloats the graph, so probes are single-point
+# per the vram/README.md methodology).
+#
+# Re-validates the vram/config.py batch-size table for the
+# PreOptimizationTimes campaign (autolens_profiling#54). Each probe writes
+#   results/runtime/<class>/delaunay/vmap_probe_delaunay[_sparse].json
+# and exits before any timing loop. See submit_probe_fast_a100 for the
+# fast cells and vram/README.md "Probe-only submits" for the ingest step.
+
+#SBATCH -J probe_delaunay_a100
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=8:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_profiling
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+nvidia-smi
+cd $AP_ROOT
+
+run_probe () {
+    echo "=== probe: $1 --instrument $2 $3 ==="
+    date
+    python3 "$1" --instrument "$2" --vmap-probe $3 || echo "!!! probe FAILED: $1 $2 $3"
+}
+
+# Imaging delaunay — campaign instruments, dense + sparse.
+for inst in ao jwst hst; do
+    run_probe likelihood_runtime/imaging/delaunay.py "$inst" ""
+    run_probe likelihood_runtime/imaging/delaunay.py "$inst" "--sparse"
+done
+
+# Interferometer delaunay — campaign anchor (alma_high) + the cheap sanity cell.
+run_probe likelihood_runtime/interferometer/delaunay.py sma ""
+run_probe likelihood_runtime/interferometer/delaunay.py alma_high ""
+
+echo "Finished."
+date

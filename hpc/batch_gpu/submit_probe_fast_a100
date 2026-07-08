@@ -1,0 +1,61 @@
+#!/bin/bash -l
+#
+# Probe-only sweep — FAST cells (mge / pixelization; ~10 s per XLA compile).
+#
+# Re-validates the vram/config.py batch-size table for the
+# PreOptimizationTimes campaign (autolens_profiling#54): every campaign
+# vmap cell is re-probed against current source, dense + sparse imaging
+# variants. Each probe writes
+#   results/runtime/<class>/<model>/vmap_probe_<model>[_sparse].json
+# and exits before any timing loop (--vmap-probe). Runtime cells then
+# prefer these fresh JSONs over the static table automatically
+# (vram.resolve_vmap_batch), and the table rows get updated from them at
+# ingest — see vram/README.md "Probe-only submits".
+#
+# Pair with submit_probe_delaunay_a100 (slow cells, separate job).
+
+#SBATCH -J probe_fast_a100
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=1:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_profiling
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+nvidia-smi
+cd $AP_ROOT
+
+run_probe () {
+    echo "=== probe: $1 --instrument $2 $3 ==="
+    date
+    python3 "$1" --instrument "$2" --vmap-probe $3 || echo "!!! probe FAILED: $1 $2 $3"
+}
+
+# Imaging mge / pixelization — campaign instruments, dense + sparse.
+for inst in ao jwst hst; do
+    run_probe likelihood_runtime/imaging/mge.py          "$inst" ""
+    run_probe likelihood_runtime/imaging/mge.py          "$inst" "--sparse"
+    run_probe likelihood_runtime/imaging/pixelization.py "$inst" ""
+    run_probe likelihood_runtime/imaging/pixelization.py "$inst" "--sparse"
+done
+
+# Interferometer mge / pixelization — sma only (alma+ intentionally blocked).
+run_probe likelihood_runtime/interferometer/mge.py          sma ""
+run_probe likelihood_runtime/interferometer/pixelization.py sma ""
+
+echo "Finished."
+date

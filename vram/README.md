@@ -30,7 +30,8 @@ From `vram`:
 
 | Name | Purpose |
 |------|---------|
-| `vmap_batch_for(dataset, model, instrument)` | Return per-cell batch_size (or `None` if vmap is intentionally skipped or the cell hasn't been probed). |
+| `vmap_batch_for(dataset, model, instrument, path="dense")` | Return per-cell batch_size (or `None` if vmap is intentionally skipped or the cell hasn't been probed). `path="sparse"` consults `VMAP_BATCH_SPARSE`, falling back to the dense row while unprobed. |
+| `resolve_vmap_batch(dataset, model, instrument, output_dir=None, path="dense")` | The runtime cells' entry point: prefer a fresh, cell-matching `vmap_probe_<model>[_sparse].json` in `output_dir` over the table. Returns `(batch_size, source)`. |
 | `probe_vmap_memory(func, args, batch_sizes=(2, 4))` | JIT-vmap `func` at each batch, read `compiled.memory_analysis()`, return a `ProbeResult`. |
 | `recommend_batch_size(probe, vram_budget_gb=70.0, max_batch=64)` | Linear extrapolation → max batch fitting in budget. |
 | `write_probe_json(probe, recommended, path)` | Serialise probe + recommendation to JSON. |
@@ -80,16 +81,45 @@ XLA recompiles for each new batch_size (no cache reuse). Compile cost varies:
   `batch_sizes=(1,)` and accept linear extrapolation. If the chosen batch
   OOMs at run time, manually re-probe at a smaller batch.
 
+## Batch-size resolution order (what a runtime cell actually uses)
+
+1. **Fresh probe JSON** — `results/runtime/<class>/<model>/vmap_probe_<model>[_sparse].json`,
+   written by a `--vmap-probe` run (Phase A of the A100 submits). Used only if
+   its `dataset`/`model`/`instrument` fields match the cell, so a stale table
+   can never OOM a job whose submit re-probed.
+2. **The curated table** — `VMAP_BATCH` (dense) / `VMAP_BATCH_SPARSE`
+   (w-tilde sparse-operator rows; unprobed sparse cells fall back to the dense
+   value, which is conservative — the sparse path's per-replica footprint has
+   been smaller on every cell measured).
+3. `None` → the cell script skips vmap with a logged reason.
+
+Each script logs which source won. Table provenance lives in
+`vram.config.PROVENANCE` — check it before a campaign trusts the numbers.
+
+## Probe-only submits + ingest
+
+`hpc/batch_gpu/submit_probe_fast_a100` (mge/pixelization, ~minutes) and
+`hpc/batch_gpu/submit_probe_delaunay_a100` (delaunay, hours) re-probe every
+PreOptimizationTimes campaign vmap cell — dense + sparse imaging variants —
+against current source. Ingest after the jobs finish:
+
+1. Commit the probe JSONs from the HPC checkout (they land under
+   `results/runtime/<class>/<model>/`).
+2. Copy each `recommended_batch_size` into `VMAP_BATCH` /
+   `VMAP_BATCH_SPARSE` in `vram/config.py` (keep the per-row MB/replica
+   comments) and update `PROVENANCE`.
+3. Re-run the regular profile to confirm the chosen batch holds at steady
+   state — the cuFFT-scratch halvings noted in the table comments came from
+   exactly this step, static analysis alone missed them.
+
 ## Adding a new instrument
 
 1. Add an entry to the appropriate `INSTRUMENTS` dict in
    `simulators/{imaging,interferometer}.py`.
-2. Create a probe SLURM script at
-   `z_projects/profiling/hpc/batch_gpu/probe_vmap_<cell>_<instrument>`
-   (clone any existing one).
-3. Run the probe; pull the resulting JSON to
-   `output/runtime/<cell>/<instrument>/vmap_probe.json`.
-4. Read `recommended_batch_size` and add the row to `VMAP_BATCH` in
-   `vram/config.py`.
+2. Add the cell to a probe-only submit in `hpc/batch_gpu/` (clone a
+   `run_probe` line).
+3. Run the probe; the JSON lands at
+   `results/runtime/<class>/<model>/vmap_probe_<model>[_sparse].json`.
+4. Ingest per "Probe-only submits + ingest" above.
 5. Re-run the regular profile to confirm the chosen batch holds at
    steady state (vmap completes, doesn't OOM).

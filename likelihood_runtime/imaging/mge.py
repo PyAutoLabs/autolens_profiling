@@ -80,17 +80,19 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 # Sweep-driver CLI args (--config-name / --output-dir / --use-mixed-precision).
 # Tolerates extra/unknown args via parse_known_args inside the helper.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from _profile_cli import (  # noqa: E402
+from _profile_cli import (
     auto_simulate_if_missing,
+    check_pinned,
     device_info_dict,
     parse_profile_cli,
+    record_pinned_check,  # noqa: E402
     resolve_output_paths,
 )
 from simulators.imaging import INSTRUMENTS  # noqa: E402
 from vram import (  # noqa: E402
     probe_vmap_memory,
     recommend_batch_size,
-    vmap_batch_for,
+    resolve_vmap_batch,
     write_probe_json,
 )
 
@@ -437,7 +439,16 @@ if _cli.vmap_probe:
 
 print("\n--- vmap batched evaluation ---")
 
-batch_size = vmap_batch_for("imaging", "mge", instrument) or 3
+_batch_resolved, _batch_source = resolve_vmap_batch(
+    "imaging",
+    "mge",
+    instrument,
+    output_dir=_cli.output_dir or (_workspace_root / "results" / "runtime" / "imaging" / "mge"),
+    path="sparse" if _cli.use_sparse_operator else "dense",
+    backend=jax.default_backend(),
+)
+print(f"  vmap batch_size: {_batch_resolved} (source: {_batch_source})")
+batch_size = _batch_resolved or 3
 
 # Build the batched pytree: every leaf gets a fresh leading batch axis. No
 # flat-vector reshaping required — JAX walks the pytree via the registration
@@ -568,30 +579,44 @@ print(f"  Bar chart path:        {chart_path} (no per-step chart in runtime vari
 # default centre/ell_comps priors) put the evaluation point at the
 # physically-meaningful truth operating point. Eager, JIT, and vmap all
 # agree to ~1e-11 precision.
-EXPECTED_LOG_LIKELIHOOD_HST = 27379.38890685539
+# Pinned empirically per instrument (mirrors interferometer/mge.py);
+# ``None``/missing means "skip the assertion and print the value so it can
+# be pasted in here on a clean run". Only hst has a pinned value — the old
+# module-level EXPECTED_LOG_LIKELIHOOD_HST constant was asserted for every
+# --instrument, which failed any non-hst run by construction (found by the
+# phase-2 local validation sweep, autolens_profiling#54). The eager ≡ JIT ≡
+# vmap cross-consistency assertions above still guard every instrument.
+_pinned_drift: list = []
+_pinned_expected = None
 
-np.testing.assert_allclose(
-    log_likelihood_ref,
-    EXPECTED_LOG_LIKELIHOOD_HST,
-    rtol=1e-4,
-    err_msg=(
-        f"imaging/mge[{instrument}]: regression — eager log_likelihood drifted "
-        f"(got {log_likelihood_ref}, expected {EXPECTED_LOG_LIKELIHOOD_HST})"
-    ),
-)
-print(
-    f"  Eager regression assertion PASSED: log_likelihood matches {EXPECTED_LOG_LIKELIHOOD_HST:.6f}"
-)
-np.testing.assert_allclose(
-    float(full_result),
-    EXPECTED_LOG_LIKELIHOOD_HST,
-    rtol=1e-4,
-    err_msg=f"imaging/mge[{instrument}]: regression — full log_likelihood drifted",
-)
-np.testing.assert_allclose(
-    np.array(result_vmap),
-    EXPECTED_LOG_LIKELIHOOD_HST,
-    rtol=1e-4,
-    err_msg=f"imaging/mge[{instrument}]: regression — vmap log_likelihood drifted",
-)
-print(f"  Regression assertion PASSED: log_likelihood matches {EXPECTED_LOG_LIKELIHOOD_HST:.6f}")
+EXPECTED_LOG_LIKELIHOOD = {
+    "hst": 27379.38890685539,
+}
+
+expected_log_likelihood = EXPECTED_LOG_LIKELIHOOD.get(instrument)
+_pinned_expected = expected_log_likelihood
+
+if expected_log_likelihood is None:
+    print(
+        f"  Regression assertion SKIPPED for {instrument} "
+        f"(no pinned value). Eager log_likelihood = {log_likelihood_ref}"
+    )
+else:
+    _rec = check_pinned(log_likelihood_ref, _pinned_expected, label="eager", rtol=1e-4)
+    if _rec is not None:
+        _pinned_drift.append(_rec)
+    _rec = check_pinned(float(full_result), _pinned_expected, label="full", rtol=1e-4)
+    if _rec is not None:
+        _pinned_drift.append(_rec)
+    _rec = check_pinned(np.array(result_vmap), _pinned_expected, label="vmap", rtol=1e-4)
+    if _rec is not None:
+        _pinned_drift.append(_rec)
+
+
+# Pinned-value outcome -> result JSON: profiling records and flags drift,
+# never adjudicates library correctness (autolens_workspace_test's remit;
+# boundary rule in results/notes/design_lock_in.md). PyAutoHeart's vitals
+# scan reads the pinned_drift field.
+record_pinned_check(dict_path, _pinned_expected, _pinned_drift)
+if _pinned_expected is not None and not _pinned_drift:
+    print("  Pinned-value check PASSED (recorded in result JSON).")

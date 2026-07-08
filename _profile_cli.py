@@ -257,3 +257,50 @@ def auto_simulate_if_missing(
         ],
         check=True,
     )
+
+
+def check_pinned(got, expected, *, label: str, rtol: float = 1e-4):
+    """Compare a computed likelihood/evidence against its pinned baseline.
+
+    Profiling runs **record and flag** drift; they never adjudicate library
+    correctness (that is autolens_workspace_test's remit — see
+    ``results/notes/design_lock_in.md``). Returns ``None`` when ``got`` is
+    within ``rtol`` of ``expected``; otherwise prints a loud warning and
+    returns a drift record for the result JSON, which PyAutoHeart's vitals
+    scan picks up. Never raises — a changed computation must not kill a
+    profiling job (the timing numbers are still data; the flag marks them
+    non-comparable to the pinned baseline).
+    """
+    got_f = float(got)
+    rel = abs(got_f - expected) / max(abs(expected), 1e-300)
+    if rel <= rtol:
+        return None
+    print(
+        f"  WARNING: PINNED-VALUE DRIFT [{label}] — got {got_f!r}, "
+        f"pinned {expected!r} (rel diff {rel:.3e} > rtol {rtol:g}). "
+        f"Timings from this run are NOT comparable to the pinned baseline; "
+        f"file a bug / check autolens_workspace_test before trusting trends."
+    )
+    return {
+        "label": label,
+        "expected": expected,
+        "got": got_f,
+        "rel_diff": rel,
+        "rtol": rtol,
+    }
+
+
+def record_pinned_check(json_path, expected, drift_records) -> None:
+    """Merge the pinned-value check outcome into an already-written result JSON.
+
+    Adds ``pinned_expected`` (the baseline value, or ``None`` when the
+    instrument has no pin) and ``pinned_drift`` (list of drift records —
+    empty means every compared value matched). The guard blocks run after
+    the summary JSON is written, so this rewrites the file in place.
+    """
+    import json
+
+    data = json.loads(json_path.read_text())
+    data["pinned_expected"] = expected
+    data["pinned_drift"] = drift_records
+    json_path.write_text(json.dumps(data, indent=2))
