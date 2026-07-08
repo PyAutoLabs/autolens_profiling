@@ -67,7 +67,7 @@ jobs:
           # package list. PYTHONPATH below still resolves the PyAuto* imports
           # from source, so the checkouts stay authoritative.
           for r in PyAutoConf PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
-            pip install "../$r[optional]"
+            pip install "./$r[optional]"
           done
 
       - name: Install lint tools
