@@ -119,4 +119,4 @@ jobs:
           python likelihood_runtime/imaging/mge.py
           python likelihood_breakdown/imaging/mge.py
           python simulators/imaging.py
-          python searches/nautilus/simple.py
+          python searches/nautilus/imaging/mge.py
