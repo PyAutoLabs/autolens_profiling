@@ -13,7 +13,7 @@ Per-config JSONs land at::
     <output_root>/<class>/<latent>/<config_name>.log    (captured stdout/stderr)
 
 Default ``--output-root`` is
-``autolens_workspace_developer/jax_profiling/results/latent`` — mirrors the
+``results/latent/`` in this repo — mirrors the
 ``jit/`` convention used by ``likelihood_runtime/sweep.py`` and is read by
 ``aggregate.py`` to produce ``comparison.json`` / ``comparison.png``.
 
@@ -40,10 +40,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]  # autolens_profiling/
-_WT_ROOT = _REPO_ROOT.parent  # PyAutoLabs-wt/<task>/ (or PyAutoLabs/)
-_DEFAULT_OUTPUT_ROOT = (
-    _WT_ROOT / "autolens_workspace_developer" / "jax_profiling" / "results" / "latent"
-)
+_DEFAULT_OUTPUT_ROOT = _REPO_ROOT / "results" / "latent"
 _DEFAULT_PYTHON = "/home/jammy/venv/PyAutoGPU/bin/python"
 
 

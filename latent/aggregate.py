@@ -33,10 +33,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
-_WT_ROOT = _REPO_ROOT.parent
-_DEFAULT_OUTPUT_ROOT = (
-    _WT_ROOT / "autolens_workspace_developer" / "jax_profiling" / "results" / "latent"
-)
+_DEFAULT_OUTPUT_ROOT = _REPO_ROOT / "results" / "latent"
 
 # Canonical ordering of cells — drives auto-discovery sort order.
 _CELLS: list[tuple[str, str]] = [

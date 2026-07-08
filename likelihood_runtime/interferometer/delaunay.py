@@ -454,7 +454,7 @@ if _cli.vmap_probe:
     )
     recommended = recommend_batch_size(probe)
     probe_path = (
-        _cli.output_dir or (_workspace_root / "results" / "likelihood" / "interferometer")
+        _cli.output_dir or (_workspace_root / "results" / "runtime" / "interferometer" / "delaunay")
     ) / "vmap_probe.json"
     write_probe_json(probe, recommended, probe_path)
     print(f"\n  vmap_probe samples: {probe.samples}")
@@ -629,7 +629,7 @@ likelihood_summary = {
 
 dict_path, chart_path = resolve_output_paths(
     _cli,
-    default_dir=_workspace_root / "results" / "likelihood" / "interferometer",
+    default_dir=_workspace_root / "results" / "runtime" / "interferometer" / "delaunay",
     default_basename=f"delaunay_likelihood_summary_{instrument}_v{al_version}",
 )
 dict_path.write_text(json.dumps(likelihood_summary, indent=2))

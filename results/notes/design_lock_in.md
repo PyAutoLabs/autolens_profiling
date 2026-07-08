@@ -39,6 +39,14 @@ parent intent: PyAutoMind `maintenance/autolens_profiling/polish.md`.
    leftover. The default is now **`results/runtime/`** in-repo. The
    workspace_developer tree remains readable history; nothing new is written
    there. (`--output-root` still overrides for scratch runs.)
+   The same fix propagated to every default that still pointed at a legacy
+   home: the per-cell `likelihood_runtime` scripts (standalone/HPC runs
+   defaulted to the retired `results/likelihood/<class>/`; now
+   `results/runtime/<class>/<model>/`, so SLURM jobs land exactly where a
+   local sweep writes) and `latent/sweep.py` / `latent/aggregate.py`
+   (workspace_developer → `results/latent/`). Because a cell dir can now hold
+   both sweep configs and versioned standalone summaries, `aggregate.py`
+   filters to config-shaped stems when building `comparison.json`.
 2. **No machine-specific defaults.** `sweep.py`'s hard-coded
    `/home/jammy/venv/PyAutoGPU/bin/python` default became `sys.executable`
    (violated the repo's own "no machine-specific absolute paths" rule).

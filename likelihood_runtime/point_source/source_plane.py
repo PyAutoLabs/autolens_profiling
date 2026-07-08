@@ -302,7 +302,8 @@ if _cli.vmap_probe:
     )
     recommended = recommend_batch_size(probe)
     probe_path = (
-        _cli.output_dir or (_workspace_root / "results" / "likelihood" / "point_source")
+        _cli.output_dir
+        or (_workspace_root / "results" / "runtime" / "point_source" / "source_plane")
     ) / "vmap_probe.json"
     write_probe_json(probe, recommended, probe_path)
     print(f"\n  vmap_probe samples: {probe.samples}")
@@ -473,7 +474,7 @@ likelihood_summary = {
     },
 }
 
-results_dir = _workspace_root / "results" / "likelihood" / "point_source"
+results_dir = _workspace_root / "results" / "runtime" / "point_source" / "source_plane"
 results_dir.mkdir(parents=True, exist_ok=True)
 
 dict_path = results_dir / f"source_plane_summary_v{al_version}.json"

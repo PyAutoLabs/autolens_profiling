@@ -404,7 +404,7 @@ print(f"  cube reference log_evidence (sum) = {cube_log_evidence_ref:.6f}")
 
 if _cli.vmap_probe:
     probe_path = (
-        _cli.output_dir or (_workspace_root / "results" / "likelihood" / "datacube")
+        _cli.output_dir or (_workspace_root / "results" / "runtime" / "datacube" / "delaunay")
     ) / "vmap_probe.json"
     probe_path.parent.mkdir(parents=True, exist_ok=True)
     import json
@@ -580,7 +580,7 @@ likelihood_summary = {
 
 dict_path, chart_path = resolve_output_paths(
     _cli,
-    default_dir=_workspace_root / "results" / "likelihood" / "datacube",
+    default_dir=_workspace_root / "results" / "runtime" / "datacube" / "delaunay",
     default_basename=f"delaunay_likelihood_summary_{instrument}_v{al_version}",
 )
 dict_path.write_text(json.dumps(likelihood_summary, indent=2))

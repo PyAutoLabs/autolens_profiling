@@ -423,7 +423,7 @@ _early_summary = {
 }
 _early_dict_path, _ = resolve_output_paths(
     _cli,
-    default_dir=_workspace_root / "results" / "likelihood" / "imaging",
+    default_dir=_workspace_root / "results" / "runtime" / "imaging" / "delaunay",
     default_basename=f"delaunay_likelihood_summary_{instrument}_v{al.__version__}",
 )
 _early_dict_path.write_text(json.dumps(_early_summary, indent=2))
@@ -449,7 +449,7 @@ if _cli.vmap_probe:
         "vmap_probe_delaunay_sparse" if _cli.use_sparse_operator else "vmap_probe_delaunay"
     )
     probe_path = (
-        _cli.output_dir or (_workspace_root / "results" / "likelihood" / "imaging")
+        _cli.output_dir or (_workspace_root / "results" / "runtime" / "imaging" / "delaunay")
     ) / f"{_probe_basename}.json"
     write_probe_json(
         probe,
@@ -597,7 +597,7 @@ likelihood_summary = {
 
 dict_path, chart_path = resolve_output_paths(
     _cli,
-    default_dir=_workspace_root / "results" / "likelihood" / "imaging",
+    default_dir=_workspace_root / "results" / "runtime" / "imaging" / "delaunay",
     default_basename=f"delaunay_likelihood_summary_{instrument}_v{al_version}",
 )
 dict_path.write_text(json.dumps(likelihood_summary, indent=2))
