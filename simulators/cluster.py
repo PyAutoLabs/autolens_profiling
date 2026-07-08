@@ -21,39 +21,35 @@ Run from any path:
     python simulators/cluster.py
 """
 
-from autoconf import jax_wrapper  # noqa: F401 — must be first
-
 import json
-import time
-from contextlib import contextmanager
-from pathlib import Path
-
-import numpy as np
-import jax
-import jax.numpy as jnp
-import matplotlib
-
 
 # AUTOLENS_PROFILING_SMOKE=1 short-circuit (Phase 5 / CI lint smoke).
 # Verifies the import graph + module-level setup succeeded without running
 # the full profiling pipeline. Skipped entirely when the env var is unset.
 import os as _smoke_os
 import sys as _smoke_sys
+import time
+from contextlib import contextmanager
+from pathlib import Path
+
+import jax
+import jax.numpy as jnp
+import matplotlib
+import numpy as np
+from autoconf import jax_wrapper  # noqa: F401 — must be first
+
 if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
     _smoke_sys.exit(0)
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-
 import autofit as af
 import autolens as al
 import autolens.plot as aplt
-
-from autofit.jax import register_model as _register_model_pytrees
+import matplotlib.pyplot as plt
 from autoarray.abstract_ndarray import register_instance_pytree
+from autofit.jax import register_model as _register_model_pytrees
 from autolens.lens.tracer import Tracer
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -150,9 +146,7 @@ with timer.section("setup_imaging_grid"):
         radial_list=[0.3, 0.6],
         centre_list=main_lens_centres,
     )
-    imaging_grid = imaging_grid.apply_over_sampling(
-        over_sample_size=imaging_over_sample
-    )
+    imaging_grid = imaging_grid.apply_over_sampling(over_sample_size=imaging_over_sample)
 
 with timer.section("setup_galaxies"):
     main_lens_dpie_params = [
@@ -174,9 +168,7 @@ with timer.section("setup_galaxies"):
             sersic_index=sersic_index,
         )
         mass = al.mp.dPIEMassSph(centre=centre, ra=ra, rs=rs, b0=b0)
-        main_lens_galaxies.append(
-            al.Galaxy(redshift=redshift_lens, bulge=bulge, mass=mass)
-        )
+        main_lens_galaxies.append(al.Galaxy(redshift=redshift_lens, bulge=bulge, mass=mass))
 
     host_halo = al.mp.NFWMCRLudlowSph(
         centre=host_halo_centre,
@@ -196,14 +188,10 @@ with timer.section("setup_galaxies"):
             sersic_index=1.0,
         )
         point = al.ps.Point(centre=centre)
-        source_galaxies.append(
-            al.Galaxy(redshift=src_z, bulge=bulge, **{f"point_{i}": point})
-        )
+        source_galaxies.append(al.Galaxy(redshift=src_z, bulge=bulge, **{f"point_{i}": point}))
 
 with timer.section("setup_tracer"):
-    tracer = al.Tracer(
-        galaxies=main_lens_galaxies + [host_halo_galaxy] + source_galaxies
-    )
+    tracer = al.Tracer(galaxies=main_lens_galaxies + [host_halo_galaxy] + source_galaxies)
 
 
 # === PART 2 — Pytree registration ===
@@ -250,9 +238,7 @@ with timer.section("register_pytrees"):
             bulge=af.Model(
                 al.lp.SersicCore,
                 centre=src_centre,
-                ell_comps=al.convert.ell_comps_from(
-                    axis_ratio=0.8, angle=60.0 + 30.0 * i
-                ),
+                ell_comps=al.convert.ell_comps_from(axis_ratio=0.8, angle=60.0 + 30.0 * i),
                 intensity=2.0,
                 effective_radius=0.3,
                 sersic_index=1.0,
@@ -395,13 +381,9 @@ results_dir.mkdir(parents=True, exist_ok=True)
 phases = dict(timer.records)
 
 # Aggregate compile totals across both sources
-solver_compile_total = sum(
-    v for k, v in phases.items() if "compile" in k and "solve" in k
-)
+solver_compile_total = sum(v for k, v in phases.items() if "compile" in k and "solve" in k)
 solver_lower_total = sum(v for k, v in phases.items() if "lower" in k and "solve" in k)
-solver_steady_total = sum(
-    v for k, v in phases.items() if "steady" in k and "solve" in k
-)
+solver_steady_total = sum(v for k, v in phases.items() if "steady" in k and "solve" in k)
 
 via_tracer_time = phases.get("via_tracer_from", 0.0)
 
@@ -413,9 +395,7 @@ print(f"  solver_compile_total (both sources): {solver_compile_total:.4f} s")
 print(f"  solver_steady_total  (both sources): {solver_steady_total:.4f} s")
 print(f"  via_tracer_from:                     {via_tracer_time:.4f} s")
 if via_tracer_time > 0:
-    ratio = (
-        solver_compile_total / via_tracer_time if via_tracer_time > 0 else float("inf")
-    )
+    ratio = solver_compile_total / via_tracer_time if via_tracer_time > 0 else float("inf")
     print(f"  compile / via_tracer ratio:          {ratio:.2f}x")
 print("=" * 70)
 
@@ -439,9 +419,7 @@ results_summary = {
         "solver_steady_total_s": solver_steady_total,
         "via_tracer_from_s": via_tracer_time,
         "compile_vs_via_tracer_ratio": (
-            round(solver_compile_total / via_tracer_time, 2)
-            if via_tracer_time > 0
-            else None
+            round(solver_compile_total / via_tracer_time, 2) if via_tracer_time > 0 else None
         ),
     },
     "positions_found": {f"src{i}": len(p) for i, p in enumerate(positions_list)},

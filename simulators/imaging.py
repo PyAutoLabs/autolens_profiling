@@ -35,7 +35,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from instruments.imaging import INSTRUMENTS  # noqa: E402, F401
 
-
 _REPO_ROOT = Path(__file__).resolve().parents[1]  # autolens_profiling/
 
 
@@ -45,21 +44,19 @@ def simulate(instrument: str = "hst", output_root: Path | None = None) -> Path:
     import time
     from contextlib import contextmanager
 
-    import numpy as np
     import jax
     import jax.numpy as jnp
     import matplotlib
+    import numpy as np
 
     matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-
     import autolens as al
     import autolens.plot as aplt
+    import matplotlib.pyplot as plt
 
     if instrument not in INSTRUMENTS:
         raise ValueError(
-            f"Unknown instrument '{instrument}'. "
-            f"Choose from: {list(INSTRUMENTS.keys())}"
+            f"Unknown instrument '{instrument}'. Choose from: {list(INSTRUMENTS.keys())}"
         )
 
     config = INSTRUMENTS[instrument]
@@ -233,9 +230,7 @@ def simulate(instrument: str = "hst", output_root: Path | None = None) -> Path:
         )
 
     with timer.section("solver_solve_eager"):
-        positions = solver.solve(
-            tracer=tracer, source_plane_coordinate=source_galaxy.bulge.centre
-        )
+        positions = solver.solve(tracer=tracer, source_plane_coordinate=source_galaxy.bulge.centre)
 
     # === PART 5 — outputs ===
 
@@ -255,9 +250,7 @@ def simulate(instrument: str = "hst", output_root: Path | None = None) -> Path:
     # ``image_mesh.Hilbert``.
     with timer.section("output_lensed_source"):
         lensed_source_unblurred = tracer.image_2d_list_from(grid=grid)[-1]
-        lensed_source = psf.convolved_image_from(
-            image=lensed_source_unblurred, blurring_image=None
-        )
+        lensed_source = psf.convolved_image_from(image=lensed_source_unblurred, blurring_image=None)
         al.output_to_fits(
             values=lensed_source.native_for_fits,
             file_path=dataset_path / "lensed_source.fits",
@@ -326,7 +319,7 @@ def simulate(instrument: str = "hst", output_root: Path | None = None) -> Path:
     )
     ax.set_title(
         f"AutoLens v{al_version}  |  "
-        f"{shape_pixels}×{shape_pixels} @ {pixel_scale}\"/px  |  "
+        f'{shape_pixels}×{shape_pixels} @ {pixel_scale}"/px  |  '
         f"PSF {psf_shape[0]}×{psf_shape[1]}",
         fontsize=9,
     )
@@ -343,11 +336,11 @@ def simulate(instrument: str = "hst", output_root: Path | None = None) -> Path:
 
 
 if __name__ == "__main__":
-    from autoconf import jax_wrapper  # noqa: F401
-
     import argparse
     import os
     import sys
+
+    from autoconf import jax_wrapper  # noqa: F401
 
     if os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
         print(f"[smoke] {__file__}: imports + module setup OK; exiting.")

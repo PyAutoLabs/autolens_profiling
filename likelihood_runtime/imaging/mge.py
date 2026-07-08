@@ -50,30 +50,29 @@ production likelihood entry point and is intentionally untouched here.
 """
 
 import json
-import numpy as np
-import jax
-import jax.numpy as jnp
-import time
-import subprocess
-import sys
-from pathlib import Path
-from contextlib import contextmanager
-
-import autofit as af
-import autolens as al
-import autoarray as aa
-from autofit.jax import register_model as _register_model_pytrees
 
 # ---------------------------------------------------------------------------
 # Instrument configuration
 # ---------------------------------------------------------------------------
-
-
 # AUTOLENS_PROFILING_SMOKE=1 short-circuit (Phase 5 / CI lint smoke).
 # Verifies the import graph + module-level setup succeeded without running
 # the full profiling pipeline. Skipped entirely when the env var is unset.
 import os as _smoke_os
+import subprocess
+import sys
 import sys as _smoke_sys
+import time
+from contextlib import contextmanager
+from pathlib import Path
+
+import autoarray as aa
+import autofit as af
+import autolens as al
+import jax
+import jax.numpy as jnp
+import numpy as np
+from autofit.jax import register_model as _register_model_pytrees
+
 if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
     _smoke_sys.exit(0)
@@ -82,10 +81,10 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 # Tolerates extra/unknown args via parse_known_args inside the helper.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from _profile_cli import (  # noqa: E402
-    parse_profile_cli,
-    device_info_dict,
-    resolve_output_paths,
     auto_simulate_if_missing,
+    device_info_dict,
+    parse_profile_cli,
+    resolve_output_paths,
 )
 from simulators.imaging import INSTRUMENTS  # noqa: E402
 from vram import (  # noqa: E402
@@ -94,6 +93,7 @@ from vram import (  # noqa: E402
     vmap_batch_for,
     write_probe_json,
 )
+
 _cli = parse_profile_cli()
 
 instrument = _cli.instrument or "hst"  # default; override via --instrument
@@ -102,6 +102,7 @@ instrument = _cli.instrument or "hst"  # default; override via --instrument
 # ---------------------------------------------------------------------------
 # Profiling helpers
 # ---------------------------------------------------------------------------
+
 
 class Timer:
     """Accumulates named timing measurements and prints a summary."""
@@ -264,9 +265,7 @@ with timer.section("model_build"):
     shear.gamma_1 = 0.05
     shear.gamma_2 = 0.05
 
-    lens = af.Model(
-        al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear
-    )
+    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
 
     source_bulge = al.model_util.mge_model_from(
         mask_radius=mask_radius, total_gaussians=20, centre_prior_is_uniform=False
@@ -354,6 +353,7 @@ print("=" * 70)
 # instead of going through ``model.instance_from_vector(parameters, xp=jnp)``.
 analysis = al.AnalysisImaging(dataset=dataset, use_jax=True)
 
+
 def full_pipeline_from_params(params_tree):
     """Full likelihood from a pytree-shaped ``ModelInstance``.
 
@@ -362,6 +362,7 @@ def full_pipeline_from_params(params_tree):
     ``aux_data`` partition set up by ``autofit.jax.register_model``.
     """
     return analysis.log_likelihood_function(instance=params_tree)
+
 
 _, full_result = jit_profile(full_pipeline_from_params, "full_pipeline", params_tree)
 full_pipeline_per_call = timer.records[-1][1] / 10
@@ -389,7 +390,7 @@ _early_summary = {
 }
 _early_dict_path, _ = resolve_output_paths(
     _cli,
-    default_dir=_workspace_root / "results" / "likelihood" / "imaging",
+    default_dir=_workspace_root / "results" / "runtime" / "imaging" / "mge",
     default_basename=f"mge_likelihood_summary_{instrument}_v{al.__version__}",
 )
 _early_dict_path.write_text(json.dumps(_early_summary, indent=2))
@@ -413,13 +414,10 @@ if _cli.vmap_probe:
     )
     recommended = recommend_batch_size(probe)
     _inversion_path = "sparse" if _cli.use_sparse_operator else "dense"
-    _probe_basename = (
-        "vmap_probe_mge_sparse" if _cli.use_sparse_operator else "vmap_probe_mge"
-    )
+    _probe_basename = "vmap_probe_mge_sparse" if _cli.use_sparse_operator else "vmap_probe_mge"
     probe_path = (
-        (_cli.output_dir or (_workspace_root / "results" / "likelihood" / "imaging"))
-        / f"{_probe_basename}.json"
-    )
+        _cli.output_dir or (_workspace_root / "results" / "runtime" / "imaging" / "mge")
+    ) / f"{_probe_basename}.json"
     write_probe_json(
         probe,
         recommended,
@@ -502,7 +500,9 @@ print(
 # ===================================================================
 
 import json
+
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
@@ -520,7 +520,7 @@ print(f"  Linear Gaussians:      {n_linear_gaussians}")
 print("-" * 70)
 print(f"      {'Full pipeline (single JIT)':<30}  {full_pipeline_per_call:>12.6f} s")
 print(f"      {f'vmap batch={batch_size} (per call)':<30}  {vmap_per_call:>12.6f} s")
-print(f"      {f'vmap speedup vs single JIT':<30}  {vmap_speedup:>11.1f}x")
+print(f"      {'vmap speedup vs single JIT':<30}  {vmap_speedup:>11.1f}x")
 print("=" * 70)
 
 # --- Save results dictionary ---
@@ -552,7 +552,7 @@ likelihood_summary = {
 
 dict_path, chart_path = resolve_output_paths(
     _cli,
-    default_dir=_workspace_root / "results" / "likelihood" / "imaging",
+    default_dir=_workspace_root / "results" / "runtime" / "imaging" / "mge",
     default_basename=f"mge_likelihood_summary_{instrument}_v{al_version}",
 )
 dict_path.write_text(json.dumps(likelihood_summary, indent=2))
@@ -580,8 +580,7 @@ np.testing.assert_allclose(
     ),
 )
 print(
-    f"  Eager regression assertion PASSED: log_likelihood matches "
-    f"{EXPECTED_LOG_LIKELIHOOD_HST:.6f}"
+    f"  Eager regression assertion PASSED: log_likelihood matches {EXPECTED_LOG_LIKELIHOOD_HST:.6f}"
 )
 np.testing.assert_allclose(
     float(full_result),

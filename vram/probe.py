@@ -25,9 +25,9 @@ times tractable.
 from __future__ import annotations
 
 import json
+from collections.abc import Sequence
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Sequence
 
 
 @dataclass(frozen=True)
@@ -87,9 +87,7 @@ class ProbeResult:
             s = self.samples[0]
             return s.effective_mb / s.batch_size
         s_lo, s_hi = self.samples[0], self.samples[-1]
-        return (s_hi.effective_mb - s_lo.effective_mb) / (
-            s_hi.batch_size - s_lo.batch_size
-        )
+        return (s_hi.effective_mb - s_lo.effective_mb) / (s_hi.batch_size - s_lo.batch_size)
 
     @property
     def constant_overhead_mb(self) -> float:
@@ -132,7 +130,7 @@ def probe_vmap_memory(
     samples: list[ProbeSample] = []
     for B in batch_sizes:
         parameters = jax.tree_util.tree_map(
-            lambda leaf: jnp.broadcast_to(leaf, (B, *leaf.shape)),
+            lambda leaf, B=B: jnp.broadcast_to(leaf, (B, *leaf.shape)),
             args_pytree,
         )
         vmapped = jax.jit(jax.vmap(func))
@@ -148,9 +146,7 @@ def probe_vmap_memory(
                 temp_bytes=int(mem.temp_size_in_bytes),
             )
         )
-    return ProbeResult(
-        dataset=dataset, model=model, instrument=instrument, samples=samples
-    )
+    return ProbeResult(dataset=dataset, model=model, instrument=instrument, samples=samples)
 
 
 def recommend_batch_size(

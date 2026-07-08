@@ -133,7 +133,5 @@ def test_safety_factor_tightens_recommendation():
         samples=[_peak_sample(1, 1_000.0), _peak_sample(4, 4_000.0)],
     )
     no_safety = recommend_batch_size(probe, vram_budget_gb=65.0, safety_factor=1.0)
-    with_safety = recommend_batch_size(
-        probe, vram_budget_gb=65.0, safety_factor=1.5
-    )
+    with_safety = recommend_batch_size(probe, vram_budget_gb=65.0, safety_factor=1.5)
     assert with_safety < no_safety

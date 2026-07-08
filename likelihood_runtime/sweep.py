@@ -1,8 +1,8 @@
 """Multi-config likelihood profiling driver.
 
 Runs each in-scope cell across the CPU/GPU x fp64/mp matrix (4 configs per
-cell locally; HPC A100 configs are dispatched separately via
-`z_projects/profiling/hpc/sync`).
+cell locally; HPC A100 configs are dispatched separately via the SLURM
+submit scripts under ``hpc/``).
 
 Each subprocess invokes the existing per-cell likelihood script under
 ``autolens_profiling/likelihood_runtime/<class>/<model>.py`` with the
@@ -13,10 +13,11 @@ Per-config JSONs land at::
     <output_root>/<class>/<model>/<config_name>.png
     <output_root>/<class>/<model>/<config_name>.log    (captured stdout/stderr)
 
-Default ``--output-root`` is
-``autolens_workspace_developer/jax_profiling/results/jit`` — matches the
-existing imaging precedent and is read by ``aggregate.py`` to produce
-``comparison.json`` / ``comparison.png``.
+Default ``--output-root`` is ``results/runtime/`` in this repo, read by
+``aggregate.py`` to produce ``comparison.json`` / ``comparison.png``.
+(Earlier sweeps wrote to ``autolens_workspace_developer/jax_profiling/
+results/jit`` — that tree remains readable history but is no longer the
+default; see ``results/notes/design_lock_in.md``.)
 
 Usage::
 
@@ -28,6 +29,9 @@ Usage::
 
     # Single cell, single backend
     python likelihood_runtime/sweep.py --only interferometer/mge --skip-cpu
+
+    # Imaging sparse-operator (w-tilde) rows — filenames gain a _sparse suffix
+    python likelihood_runtime/sweep.py --only imaging/pixelization imaging/delaunay --sparse
 """
 
 from __future__ import annotations
@@ -40,22 +44,21 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-
-_REPO_ROOT = Path(__file__).resolve().parents[1]                 # autolens_profiling/
-_WT_ROOT = _REPO_ROOT.parent                                     # PyAutoLabs-wt/<task>/ (or PyAutoLabs/)
-_DEFAULT_OUTPUT_ROOT = _WT_ROOT / "autolens_workspace_developer" / "jax_profiling" / "results" / "jit"
-_DEFAULT_PYTHON = "/home/jammy/venv/PyAutoGPU/bin/python"
+_REPO_ROOT = Path(__file__).resolve().parents[1]  # autolens_profiling/
+_DEFAULT_OUTPUT_ROOT = _REPO_ROOT / "results" / "runtime"
+_DEFAULT_PYTHON = sys.executable
 
 
 # (dataset_class, model). Order is roughly cheapest -> heaviest so failures
 # surface quickly during iteration.
 CELLS: list[tuple[str, str]] = [
-    ("imaging",         "pixelization"),
-    ("imaging",         "delaunay"),
-    ("interferometer",  "mge"),
-    ("interferometer",  "pixelization"),
-    ("interferometer",  "delaunay"),
-    ("datacube",        "delaunay"),
+    ("imaging", "mge"),
+    ("imaging", "pixelization"),
+    ("imaging", "delaunay"),
+    ("interferometer", "mge"),
+    ("interferometer", "pixelization"),
+    ("interferometer", "delaunay"),
+    ("datacube", "delaunay"),
 ]
 
 
@@ -122,6 +125,16 @@ def _parse_args() -> argparse.Namespace:
         help="Skip the use_mixed_precision rows (just fp64).",
     )
     p.add_argument(
+        "--sparse",
+        action="store_true",
+        help=(
+            "Pass --sparse to every selected cell (w-tilde sparse-operator "
+            "inversion path; imaging cells only — combine with --only). "
+            "Result filenames gain a _sparse suffix so dense and sparse "
+            "rows coexist."
+        ),
+    )
+    p.add_argument(
         "--output-root",
         type=Path,
         default=_DEFAULT_OUTPUT_ROOT,
@@ -170,17 +183,22 @@ def _run_one(
     config: SweepConfig,
     out_dir: Path,
     dry_run: bool,
+    sparse: bool = False,
 ) -> tuple[bool, float, str]:
     """Run one (cell, config) pair as a subprocess. Returns (ok, elapsed, log_path)."""
     out_dir.mkdir(parents=True, exist_ok=True)
-    log_path = out_dir / f"{config.name}.log"
+    log_suffix = "_sparse" if sparse else ""
+    log_path = out_dir / f"{config.name}{log_suffix}.log"
 
     cmd = [
         python,
         str(script_path),
-        "--config-name", config.name,
-        "--output-dir", str(out_dir),
+        "--config-name",
+        config.name,
+        "--output-dir",
+        str(out_dir),
         *config.extra_args,
+        *(("--sparse",) if sparse else ()),
     ]
 
     env = dict(os.environ)
@@ -208,12 +226,15 @@ def _run_one(
             )
         elapsed = time.time() - t0
         ok = proc.returncode == 0
-        print(f"    {'OK ' if ok else 'FAIL'} ({elapsed:.1f}s, exit={proc.returncode}) -> {log_path.name}")
+        print(
+            f"    {'OK ' if ok else 'FAIL'} ({elapsed:.1f}s, exit={proc.returncode}) -> {log_path.name}"
+        )
 
         # Verify the device.backend in the JSON matches expectations.
         if ok:
             import json
-            json_path = out_dir / f"{config.name}.json"
+
+            json_path = out_dir / f"{config.name}{log_suffix}.json"
             if json_path.exists():
                 try:
                     data = json.loads(json_path.read_text())
@@ -238,8 +259,10 @@ def main() -> int:
     cells = _resolve_cells(args)
     configs = _resolve_configs(args)
 
-    print(f"sweep_likelihood: {len(cells)} cells x {len(configs)} configs "
-          f"= {len(cells) * len(configs)} runs")
+    print(
+        f"sweep_likelihood: {len(cells)} cells x {len(configs)} configs "
+        f"= {len(cells) * len(configs)} runs"
+    )
     print(f"  cells:    {[f'{c}/{m}' for (c, m) in cells]}")
     print(f"  configs:  {[c.name for c in configs]}")
     print(f"  output:   {args.output_root}")
@@ -250,7 +273,7 @@ def main() -> int:
     summary: list[tuple[str, str, bool, float]] = []
     overall_t0 = time.time()
 
-    for (cls, model) in cells:
+    for cls, model in cells:
         script_path = _REPO_ROOT / "likelihood_runtime" / cls / f"{model}.py"
         if not script_path.exists():
             print(f"\n!!! missing script: {script_path}")
@@ -263,7 +286,12 @@ def main() -> int:
         for cfg in configs:
             try:
                 ok, elapsed, _log = _run_one(
-                    args.python, script_path, cfg, out_dir, args.dry_run
+                    args.python,
+                    script_path,
+                    cfg,
+                    out_dir,
+                    args.dry_run,
+                    sparse=args.sparse,
                 )
             except KeyboardInterrupt:
                 print("\n\nsweep interrupted by user")
@@ -275,7 +303,7 @@ def main() -> int:
     print(f"sweep_likelihood summary  ({total:.1f}s total)")
     print("=" * 70)
     print(f"  {'cell':<32}{'config':<22}{'ok':<6}{'elapsed':>10}")
-    print(f"  {'-'*32}{'-'*22}{'-'*6}{'-'*10}")
+    print(f"  {'-' * 32}{'-' * 22}{'-' * 6}{'-' * 10}")
     failures = 0
     for cell, cfg, ok, t in summary:
         flag = "OK" if ok else "FAIL"

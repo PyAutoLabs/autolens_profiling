@@ -38,8 +38,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-
-_REPO_ROOT = Path(__file__).resolve().parents[1]                 # autolens_profiling/
+_REPO_ROOT = Path(__file__).resolve().parents[1]  # autolens_profiling/
 _DEFAULT_OUTPUT_ROOT = _REPO_ROOT / "results" / "searches"
 # PyAutoFit's autoconf ``output_path`` defaults to ``<cwd>/output``. The
 # searches package writes search state under ``<output_path>/searches/...``
@@ -63,24 +62,24 @@ _INSTRUMENT_SETS: dict[str, tuple[str, ...]] = {
 # (sampler, dataset_class, model). Order is roughly cheapest -> heaviest so
 # failures surface quickly during iteration.
 CELLS: list[tuple[str, str, str]] = [
-    ("nautilus", "point_source",   "image_plane"),
-    ("nautilus", "point_source",   "source_plane"),
-    ("nautilus", "imaging",        "mge"),
-    ("nautilus", "imaging",        "pixelization"),
-    ("nautilus", "imaging",        "delaunay"),
+    ("nautilus", "point_source", "image_plane"),
+    ("nautilus", "point_source", "source_plane"),
+    ("nautilus", "imaging", "mge"),
+    ("nautilus", "imaging", "pixelization"),
+    ("nautilus", "imaging", "delaunay"),
     ("nautilus", "interferometer", "mge"),
     ("nautilus", "interferometer", "pixelization"),
     ("nautilus", "interferometer", "delaunay"),
-    ("nautilus", "datacube",       "delaunay"),
-    ("nss",      "point_source",   "image_plane"),
-    ("nss",      "point_source",   "source_plane"),
-    ("nss",      "imaging",        "mge"),
-    ("nss",      "imaging",        "pixelization"),
-    ("nss",      "imaging",        "delaunay"),
-    ("nss",      "interferometer", "mge"),
-    ("nss",      "interferometer", "pixelization"),
-    ("nss",      "interferometer", "delaunay"),
-    ("nss",      "datacube",       "delaunay"),
+    ("nautilus", "datacube", "delaunay"),
+    ("nss", "point_source", "image_plane"),
+    ("nss", "point_source", "source_plane"),
+    ("nss", "imaging", "mge"),
+    ("nss", "imaging", "pixelization"),
+    ("nss", "imaging", "delaunay"),
+    ("nss", "interferometer", "mge"),
+    ("nss", "interferometer", "pixelization"),
+    ("nss", "interferometer", "delaunay"),
+    ("nss", "datacube", "delaunay"),
 ]
 
 
@@ -278,9 +277,7 @@ def _wipe_search_state(
     pickle and report bogus 2-3x speedups (no real sampling fires). See PR #30
     follow-up for the diagnosis.
     """
-    cell_root = (
-        search_output_root / sampler / ds_class / model / instrument / config_name
-    )
+    cell_root = search_output_root / sampler / ds_class / model / instrument / config_name
     if not cell_root.exists():
         return
     if dry_run:
@@ -291,10 +288,7 @@ def _wipe_search_state(
         display = cell_root.relative_to(_REPO_ROOT)
     except ValueError:
         display = cell_root
-    print(
-        f"    [clear-completed] removed {display} "
-        "(set --keep-completed to suppress)"
-    )
+    print(f"    [clear-completed] removed {display} (set --keep-completed to suppress)")
 
 
 def _run_one(
@@ -340,9 +334,12 @@ def _run_one(
     cmd = [
         python,
         str(script_path),
-        "--config-name", config.name,
-        "--output-dir", str(out_dir),
-        "--instrument", instrument,
+        "--config-name",
+        config.name,
+        "--output-dir",
+        str(out_dir),
+        "--instrument",
+        instrument,
         *config.extra_args,
     ]
 
@@ -396,8 +393,7 @@ def main() -> int:
     print(f"  python:   {args.python}")
     print(f"  resume:   {'OFF (--force)' if args.force else 'ON (default)'}")
     print(
-        f"  .completed wipe: "
-        f"{'OFF (--keep-completed)' if args.keep_completed else 'ON (default)'}"
+        f"  .completed wipe: {'OFF (--keep-completed)' if args.keep_completed else 'ON (default)'}"
     )
     if args.dry_run:
         print("  (dry-run)")
@@ -405,7 +401,7 @@ def main() -> int:
     summary: list[tuple[str, str, bool, float]] = []
     overall_t0 = time.time()
 
-    for (sampler, ds_class, model, instrument) in cells:
+    for sampler, ds_class, model, instrument in cells:
         script_path = _script_path(sampler, ds_class, model)
         cell_id = f"{sampler}/{ds_class}/{model}/{instrument}"
         if not script_path.exists():
@@ -442,7 +438,7 @@ def main() -> int:
     print(f"sweep_searches summary  ({total:.1f}s total)")
     print("=" * 80)
     print(f"  {'cell':<46}{'config':<22}{'ok':<6}{'elapsed':>10}")
-    print(f"  {'-'*46}{'-'*22}{'-'*6}{'-'*10}")
+    print(f"  {'-' * 46}{'-' * 22}{'-' * 6}{'-' * 10}")
     failures = 0
     for cell, cfg, ok, t in summary:
         flag = "OK" if ok else "FAIL"

@@ -26,11 +26,10 @@ from pathlib import Path
 
 os.environ.setdefault("MPLBACKEND", "Agg")
 
-from autoconf import jax_wrapper  # noqa: E402
-
 import autofit as af  # noqa: E402
 import autolens as al  # noqa: E402
 import numpy as np  # noqa: E402
+from autoconf import jax_wrapper  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -39,6 +38,7 @@ from instruments.imaging import INSTRUMENTS  # noqa: E402
 try:
     from _profile_cli import device_info_dict
 except ImportError:
+
     def device_info_dict():
         return {"backend": "unknown"}
 
@@ -48,6 +48,7 @@ except ImportError:
 # ---------------------------------------------------------------------------
 
 import argparse  # noqa: E402
+
 
 def _parse_args():
     p = argparse.ArgumentParser(prog="quick_update/imaging.py")
@@ -62,6 +63,7 @@ def _parse_args():
 # ---------------------------------------------------------------------------
 # Timer
 # ---------------------------------------------------------------------------
+
 
 class Timer:
     def __init__(self):
@@ -151,7 +153,11 @@ mass = af.Model(al.mp.Isothermal)
 shear = af.Model(al.mp.ExternalShear)
 
 lens = af.Model(
-    al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear,
+    al.Galaxy,
+    redshift=0.5,
+    bulge=lens_bulge,
+    mass=mass,
+    shear=shear,
 )
 
 source_bulge = al.model_util.mge_model_from(
@@ -219,9 +225,7 @@ from autolens.imaging.plot.fit_imaging_plots import (  # noqa: E402
 
 for i in range(n_repeats):
     with timer.section("critical_curves"):
-        ip_lines, ip_colors, sp_lines, sp_colors = (
-            _compute_critical_curves_from_fit(fit)
-        )
+        ip_lines, ip_colors, sp_lines, sp_colors = _compute_critical_curves_from_fit(fit)
 
 # ---------------------------------------------------------------------------
 # Phase 3: Render comparison (12-panel vs 6-panel)
@@ -311,15 +315,11 @@ result = {
     "n_repeats": n_repeats,
     "device": device_info_dict(),
     "phases": summary,
-    "all_timings": {
-        k: [round(v, 4) for v in vals]
-        for k, vals in timer.records.items()
-    },
+    "all_timings": {k: [round(v, 4) for v in vals] for k, vals in timer.records.items()},
 }
 
 output_dir = (
-    Path(args.output_dir) if args.output_dir
-    else workspace_root / "results" / "quick_update"
+    Path(args.output_dir) if args.output_dir else workspace_root / "results" / "quick_update"
 )
 output_dir.mkdir(parents=True, exist_ok=True)
 output_path = output_dir / f"imaging_mge_quick_update_{instrument}.json"

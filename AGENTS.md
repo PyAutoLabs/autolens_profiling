@@ -10,18 +10,19 @@ overview (vision, latest run-times, roadmap); this file is the operational guide
 ## Repository Structure
 
 ```
-likelihood/             Per-instrument likelihood profile scripts (imaging, interferometer,
-                        datacube, point_source) — import the shared _profile_cli helper
 likelihood_runtime/     Full-pipeline JIT runtime, driven by sweep.py across CPU/GPU/A100 × fp64/mp
+                        (per-cell scripts under <class>/<model>.py import the shared _profile_cli helper)
 likelihood_breakdown/   Per-step JIT decomposition of a single likelihood config
-vram/                   GPU memory-usage profiling
+vram/                   GPU memory-usage profiling + the per-cell A100 vmap batch-size table
 instruments/            Instrument definitions (pixel scale, shape) used to frame results
 searches/               Sampler / search profiling (Nautilus first)
 simulators/             Run-time tracking for the PyAutoLens simulators
 latent/                 Latent-variable profiling
-quick_update/           Fast incremental re-profiling helpers
-hpc/                    SLURM submit scripts for the RAL HPC
-results/                Versioned JSON + PNG artifacts (`*_v<YYYY>.<M>.<D>.<PATCH>.{json,png}`)
+quick_update/           Fast incremental re-profiling helpers (unversioned scratch tier)
+hpc/                    SLURM submit scripts for the RAL HPC (A100 rows of the sweep matrix)
+scripts/                Repo tooling (build_readme.py dashboard generator)
+results/                JSON + PNG artifacts: versioned summaries, sweep comparisons, named
+                        baselines (results/README.md defines the shapes; sweeps default here)
 config/ dataset/ output/   Config, input data, runtime output
 ```
 

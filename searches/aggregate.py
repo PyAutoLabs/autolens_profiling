@@ -30,7 +30,6 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
-
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _DEFAULT_OUTPUT_ROOT = _REPO_ROOT / "results" / "searches"
 
@@ -66,10 +65,7 @@ def _parse_args() -> argparse.Namespace:
         nargs="+",
         default=None,
         metavar="SAMPLER/CLASS/MODEL/INSTRUMENT",
-        help=(
-            "Only aggregate these cells; default = auto-discover under "
-            "--output-root."
-        ),
+        help=("Only aggregate these cells; default = auto-discover under --output-root."),
     )
     return p.parse_args()
 
@@ -94,9 +90,7 @@ def _discover_cells(output_root: Path) -> list[tuple[str, str, str, str]]:
                     continue
                 for inst_dir in sorted(model_dir.iterdir()):
                     if inst_dir.is_dir() and _has_config_json(inst_dir):
-                        cells.append(
-                            (sampler_dir.name, ds_dir.name, model_dir.name, inst_dir.name)
-                        )
+                        cells.append((sampler_dir.name, ds_dir.name, model_dir.name, inst_dir.name))
     return cells
 
 
@@ -216,8 +210,7 @@ def main() -> int:
             parts = spec.split("/")
             if len(parts) != 4:
                 sys.stderr.write(
-                    f"bad --cell argument: {spec!r} "
-                    f"(expected sampler/class/model/instrument)\n"
+                    f"bad --cell argument: {spec!r} (expected sampler/class/model/instrument)\n"
                 )
                 return 2
             cells.append(tuple(parts))

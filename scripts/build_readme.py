@@ -1,6 +1,6 @@
 """
 build_readme.py — refresh auto-generated tables in every README from the
-latest versioned artifacts under `results/`.
+latest artifacts under `results/`.
 
 Run from the repo root:
 
@@ -10,50 +10,51 @@ Run from the repo root:
 
 Each table region in a README is delimited by sentinel comments, e.g.
 
-    <!-- BEGIN auto-table:likelihood-imaging -->
+    <!-- BEGIN auto-table:runtime -->
     | ... |
-    <!-- END auto-table:likelihood-imaging -->
+    <!-- END auto-table:runtime -->
 
 This script:
 
-  1. Scans `results/**/*_summary_v<version>.json`.
-  2. Parses filenames into (section, sub-folder, script, instrument, version).
-  3. Picks the latest version per group via PEP 440-ish dotted-version sort.
-  4. Generates a markdown table per known region type and replaces the
-     content inside the matching sentinel block.
+  1. Scans `results/{breakdown,simulators,searches}/**` for **versioned
+     artifacts** (`<script>_<purpose>_<extras>_v<version>[_sparse].json`)
+     and picks the latest version per group.
+  2. Scans `results/runtime/<class>/<model>[/<instrument>]/comparison.json`
+     for **sweep comparison artifacts** (written by
+     `likelihood_runtime/aggregate.py`).
+  3. When `results/baselines/<name>/` exists, reads the same comparison
+     layout beneath it so dashboard tables can carry a named-baseline
+     column (e.g. `PreOptimizationTimes`).
+  4. Renders a markdown table per known region and replaces the content
+     inside the matching sentinel block.
 
-Sections covered today:
+Regions covered today:
 
-  - top-level README.md
-      <!-- BEGIN auto-table:headline --> ... <!-- END auto-table:headline -->
-  - likelihood/README.md (section overview)
-  - likelihood/imaging/README.md      | likelihood-imaging
-  - likelihood/interferometer/README.md | likelihood-interferometer
-  - likelihood/point_source/README.md | likelihood-point_source
-  - likelihood/datacube/README.md     | likelihood-datacube
-  - simulators/README.md              | simulators
-  - searches/nautilus/README.md       | searches-nautilus
+  - README.md                       | headline (runtime cells + breakdown)
+  - likelihood_runtime/README.md    | runtime
+  - likelihood_breakdown/README.md  | breakdown
+  - simulators/README.md            | simulators
+  - searches/README.md              | searches-nautilus
 
-Hardware-tier columns (CPU / laptop GPU / HPC GPU) are deferred — every
-artifact today is implicitly CPU and the table shows a single "Latest"
-column. Once future artifacts encode hardware in the filename or JSON
-(`*_summary_v<version>_<hardware>.json` or `{"hardware": "a100"}`), the
-column logic in `_render_*_table` will be extended without touching the
-sentinel layout.
+Artifact-shape reference: `results/notes/design_lock_in.md`.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import math
 import re
 import sys
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Optional
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 RESULTS_ROOT = REPO_ROOT / "results"
+RUNTIME_ROOT = RESULTS_ROOT / "runtime"
+BASELINES_ROOT = RESULTS_ROOT / "baselines"
 
 # Sentinel block: keeps surrounding hand-written prose intact, only the
 # content between BEGIN and END is rewritten.
@@ -64,36 +65,65 @@ SENTINEL_RE = re.compile(
     re.DOTALL,
 )
 
-# Artifact filename: <script>_summary_<extras>_v<version>.json
-# `<extras>` is optional and captures the instrument / dataset_name suffix
-# used by likelihood/imaging, likelihood/interferometer, likelihood/datacube,
-# likelihood/point_source variants. Examples:
-#   mge_likelihood_summary_hst_v2026.5.14.2.json
-#   image_plane_summary_v2026.5.14.2.json
-#   delaunay_likelihood_summary_sma_v2026.5.14.2.json
+# Versioned artifact filename:
+#   <script>_<purpose>_<extras>_v<version>[_sparse].json
+# `<purpose>` is `summary` (runtime-style standalone artifacts, simulators,
+# searches) or `breakdown` (likelihood_breakdown). `<extras>` is optional
+# and captures the instrument / dataset_name suffix. Examples:
+#   mge_breakdown_hst_v2026.5.29.4.json
+#   pixelization_breakdown_hst_v2026.5.29.4_sparse.json
 #   imaging_summary_v2026.5.14.2.json
 #   simple_summary_v2026.5.14.2.json
 ARTIFACT_RE = re.compile(
-    r"^(?P<script>[a-z0-9_]+?)_summary"
+    r"^(?P<script>[a-z0-9_]+?)_(?P<purpose>summary|breakdown)"
     r"(?:_(?P<extra>[a-z0-9_]+?))?"
     r"_v(?P<version>[0-9]+(?:\.[0-9]+)+)"
+    r"(?P<sparse>_sparse)?"
     r"\.json$"
+)
+
+# Canonical sweep-config column order (matches likelihood_runtime/aggregate.py).
+CONFIG_ORDER = (
+    "local_cpu_fp64",
+    "local_cpu_mp",
+    "local_gpu_fp64",
+    "local_gpu_mp",
+    "hpc_a100_fp64",
+    "hpc_a100_mp",
 )
 
 
 @dataclass(frozen=True)
 class Artifact:
     path: Path
-    section: str  # "likelihood", "simulators", "searches"
-    subfolder: str  # "imaging", "interferometer", "nautilus", or "" for flat
-    script: str  # e.g. "mge", "image_plane", "simple"
-    instrument: Optional[str]  # e.g. "hst", "sma", or None for simulators
+    section: str  # "breakdown", "simulators", "searches"
+    subfolder: str  # "imaging", "nautilus", or "" for flat
+    script: str  # e.g. "mge", "pixelization", "simple"
+    purpose: str  # "summary" | "breakdown"
+    instrument: str | None  # e.g. "hst", "sma", or None
+    sparse: bool
     version: tuple[int, ...]
     raw_version: str
 
     @property
     def data(self) -> dict:
         return json.loads(self.path.read_text())
+
+
+@dataclass(frozen=True)
+class RuntimeCell:
+    """One swept cell's comparison.json (class/model[/instrument])."""
+
+    cell: tuple[str, ...]
+    path: Path
+
+    @property
+    def cell_id(self) -> str:
+        return "/".join(self.cell)
+
+    @property
+    def configs(self) -> dict:
+        return json.loads(self.path.read_text()).get("configs", {})
 
 
 def _parse_version(s: str) -> tuple[int, ...]:
@@ -104,27 +134,24 @@ def _scan_artifacts() -> list[Artifact]:
     if not RESULTS_ROOT.exists():
         return []
     out: list[Artifact] = []
-    for p in RESULTS_ROOT.rglob("*_summary*_v*.json"):
+    for p in RESULTS_ROOT.rglob("*_v*.json"):
         rel = p.relative_to(RESULTS_ROOT).parts
-        if len(rel) < 2:
+        if len(rel) < 2 or rel[0] in ("runtime", "baselines"):
             continue
-        section = rel[0]  # "likelihood" | "simulators" | "searches"
+        section = rel[0]  # "breakdown" | "simulators" | "searches"
         subfolder = rel[1] if len(rel) > 2 else ""
         m = ARTIFACT_RE.match(p.name)
         if not m:
             continue
-        # The "extra" group is the instrument label for likelihood scripts
-        # that profile a single instrument (mge / pixelization / delaunay /
-        # image_plane on hst, sma, etc.). For simulators and searches, the
-        # filename has no extras and `extra` is None.
-        script_name = m["script"].replace("_likelihood", "")
         out.append(
             Artifact(
                 path=p,
                 section=section,
                 subfolder=subfolder,
-                script=script_name,
+                script=m["script"],
+                purpose=m["purpose"],
                 instrument=m["extra"],
+                sparse=bool(m["sparse"]),
                 version=_parse_version(m["version"]),
                 raw_version=m["version"],
             )
@@ -132,9 +159,25 @@ def _scan_artifacts() -> list[Artifact]:
     return out
 
 
-def _latest_per_group(
-    artifacts: Iterable[Artifact], key
-) -> dict[tuple, Artifact]:
+def _scan_runtime_cells(root: Path) -> list[RuntimeCell]:
+    """Find every comparison.json under a runtime-layout root."""
+    if not root.exists():
+        return []
+    cells = []
+    for p in sorted(root.rglob("comparison.json")):
+        cell = p.parent.relative_to(root).parts
+        if 2 <= len(cell) <= 3:
+            cells.append(RuntimeCell(cell=cell, path=p))
+    return cells
+
+
+def _baseline_names() -> list[str]:
+    if not BASELINES_ROOT.exists():
+        return []
+    return sorted(d.name for d in BASELINES_ROOT.iterdir() if d.is_dir())
+
+
+def _latest_per_group(artifacts: Iterable[Artifact], key) -> dict[tuple, Artifact]:
     """For each group key, keep the artifact with the highest version."""
     latest: dict[tuple, Artifact] = {}
     for a in artifacts:
@@ -153,8 +196,8 @@ def _no_data_block(message: str) -> str:
     return f"\n_No data yet — {message}_\n"
 
 
-def _format_time(seconds: Optional[float]) -> str:
-    if seconds is None:
+def _format_time(seconds: float | None) -> str:
+    if seconds is None or not isinstance(seconds, (int, float)) or math.isnan(seconds):
         return "—"
     if seconds < 0.001:
         return f"{seconds * 1e6:.0f} μs"
@@ -163,96 +206,112 @@ def _format_time(seconds: Optional[float]) -> str:
     return f"{seconds:.2f} s"
 
 
-def _likelihood_headline_seconds(art: Artifact) -> Optional[float]:
-    """Steady-state per-call cost for the full-pipeline single JIT.
-
-    Robust to the slight key-shape variation across the imaging /
-    interferometer / point_source / datacube JSON layouts.
-    """
-    import math
-
-    data = art.data
-    # Top-level keys observed in shipped artifacts:
-    #   imaging/{mge,pixelization,delaunay}    -> "full_pipeline_single_jit"
-    #   interferometer/{mge,pix,delaunay}      -> "full_pipeline_single_jit"
-    #   point_source/{image_plane,source_pl}   -> "full_pipeline_single_jit"
-    #   datacube/delaunay                      -> "full_pipeline_cube_single_jit"
-    # Older internal-_developer artifacts also used a "_s" suffix or
-    # nested under "summary" / "aggregate" — kept here for forward-compat.
-    for path in (
-        ("full_pipeline_single_jit",),
-        ("full_pipeline_cube_single_jit",),
-        ("summary", "full_pipeline_single_jit_s"),
-        ("summary", "full_pipeline_s"),
-        ("aggregate", "full_pipeline_single_jit_s"),
-        ("full_pipeline_single_jit_s",),
-        ("full_pipeline_s",),
+def _config_headline_seconds(cfg: dict) -> float | None:
+    """Per-call full-pipeline cost from one comparison.json config entry."""
+    for key in (
+        "full_pipeline_per_call",
+        "full_pipeline_single_jit",
+        "full_pipeline_cube_single_jit",
+        "total_step_by_step_cube",
     ):
-        node = data
-        ok = True
-        for key in path:
-            if isinstance(node, dict) and key in node:
-                node = node[key]
-            else:
-                ok = False
-                break
-        if ok and isinstance(node, (int, float)):
-            value = float(node)
-            # NaN signals "the JIT didn't converge / not measurable" — render
-            # as `—` rather than `nan s` in the dashboard.
-            if math.isnan(value):
-                return None
-            return value
+        v = cfg.get(key)
+        if isinstance(v, (int, float)) and math.isfinite(v):
+            return float(v)
     return None
 
 
-def _simulator_total_seconds(art: Artifact) -> Optional[float]:
-    data = art.data
-    phases = data.get("phases")
+def _config_vmap_seconds(cfg: dict) -> float | None:
+    vmap = cfg.get("vmap")
+    if isinstance(vmap, dict):
+        v = vmap.get("per_call")
+        if isinstance(v, (int, float)) and math.isfinite(v):
+            return float(v)
+    return None
+
+
+def _ordered_config_names(cells: list[RuntimeCell]) -> list[str]:
+    """Canonical configs first, then any extras (e.g. *_sparse) seen in the data."""
+    seen: list[str] = []
+    for cell in cells:
+        for name in cell.configs:
+            if name not in seen:
+                seen.append(name)
+    ordered = [c for c in CONFIG_ORDER if c in seen]
+    ordered += sorted(n for n in seen if n not in CONFIG_ORDER)
+    return ordered
+
+
+def _render_runtime_table(cells: list[RuntimeCell], baselines: dict[str, list[RuntimeCell]]) -> str:
+    """Cells × configs matrix of full-pipeline per-call cost.
+
+    When named baselines exist under ``results/baselines/``, one extra
+    column per baseline shows that baseline's headline (first available
+    config, preferring the A100 row) so regressions/improvements against
+    e.g. ``PreOptimizationTimes`` are visible at a glance.
+    """
+    if not cells:
+        return _no_data_block("run `likelihood_runtime/sweep.py` then `aggregate.py` to populate.")
+    config_names = _ordered_config_names(cells)
+    baseline_names = sorted(baselines)
+
+    header = ["Cell"] + config_names + baseline_names
+    rows = ["| " + " | ".join(header) + " |"]
+    rows.append("|" + "|".join(["---"] * len(header)) + "|")
+
+    baseline_by_cell = {
+        name: {c.cell: c for c in cell_list} for name, cell_list in baselines.items()
+    }
+
+    def _headline_any_config(cell: RuntimeCell) -> float | None:
+        cfgs = cell.configs
+        for cname in reversed(_ordered_config_names([cell])):  # prefer A100/extras
+            v = _config_headline_seconds(cfgs.get(cname, {}))
+            if v is not None:
+                return v
+        return None
+
+    for cell in cells:
+        cfgs = cell.configs
+        line = [f"`{cell.cell_id}`"]
+        for cname in config_names:
+            line.append(_format_time(_config_headline_seconds(cfgs.get(cname, {}))))
+        for bname in baseline_names:
+            bcell = baseline_by_cell[bname].get(cell.cell)
+            line.append(_format_time(_headline_any_config(bcell)) if bcell else "—")
+        rows.append("| " + " | ".join(line) + " |")
+    return "\n" + "\n".join(rows) + "\n"
+
+
+def _render_breakdown_table(artifacts: list[Artifact]) -> str:
+    """One row per (class, script, instrument, path) with the step-sum total."""
+    relevant = [a for a in artifacts if a.section == "breakdown" and a.purpose == "breakdown"]
+    if not relevant:
+        return _no_data_block("run a script under `likelihood_breakdown/` to populate.")
+    latest = _latest_per_group(
+        relevant, key=lambda a: (a.subfolder, a.script, a.instrument, a.sparse)
+    )
+    rows = ["| Cell | Instrument | Inversion path | Step-sum total | PyAutoLens version |"]
+    rows.append("|------|------------|----------------|----------------|--------------------|")
+    for (subfolder, script, instrument, sparse), art in sorted(latest.items()):
+        total = art.data.get("total_step_by_step")
+        rows.append(
+            f"| `{subfolder}/{script}` | "
+            f"{instrument or '—'} | "
+            f"{'sparse (w-tilde)' if sparse else 'dense (mapping)'} | "
+            f"{_format_time(total if isinstance(total, (int, float)) else None)} | "
+            f"v{art.raw_version} |"
+        )
+    return "\n" + "\n".join(rows) + "\n"
+
+
+def _simulator_total_seconds(art: Artifact) -> float | None:
+    phases = art.data.get("phases")
     if isinstance(phases, dict):
         try:
             return float(sum(float(v) for v in phases.values()))
         except (TypeError, ValueError):
             return None
     return None
-
-
-def _nautilus_headline(art: Artifact) -> dict:
-    data = art.data
-    perf = data.get("performance", {})
-    conv = data.get("convergence", {})
-    return {
-        "wall_time_s": perf.get("wall_time_s"),
-        "time_per_eval_ms": perf.get("time_per_eval_ms"),
-        "evals_to_ml": conv.get("evals_to_ml"),
-        "time_to_ml_s": conv.get("time_to_ml_s"),
-        "backend": data.get("backend"),
-    }
-
-
-def _render_likelihood_section_table(
-    artifacts: list[Artifact], subfolder: str
-) -> str:
-    """One row per (script, instrument) pair for a single likelihood subfolder."""
-    relevant = [
-        a for a in artifacts if a.section == "likelihood" and a.subfolder == subfolder
-    ]
-    if not relevant:
-        return _no_data_block(
-            "run a script under this folder to populate. See section README."
-        )
-    latest = _latest_per_group(relevant, key=lambda a: (a.script, a.instrument))
-    rows = ["| Script | Instrument | Latest single-JIT per-call | PyAutoLens version |"]
-    rows.append("|--------|------------|----------------------------|--------------------|")
-    for (script, instrument), art in sorted(latest.items()):
-        seconds = _likelihood_headline_seconds(art)
-        rows.append(
-            f"| `{script}.py` | "
-            f"{instrument or '—'} | "
-            f"{_format_time(seconds)} | "
-            f"v{art.raw_version} |"
-        )
-    return "\n" + "\n".join(rows) + "\n"
 
 
 def _render_simulator_table(artifacts: list[Artifact]) -> str:
@@ -266,16 +325,12 @@ def _render_simulator_table(artifacts: list[Artifact]) -> str:
     rows.append("|--------|-----------------|--------------------|")
     for script, art in sorted(latest.items()):
         total = _simulator_total_seconds(art)
-        rows.append(
-            f"| `{script}.py` | {_format_time(total)} | v{art.raw_version} |"
-        )
+        rows.append(f"| `{script}.py` | {_format_time(total)} | v{art.raw_version} |")
     return "\n" + "\n".join(rows) + "\n"
 
 
 def _render_nautilus_table(artifacts: list[Artifact]) -> str:
-    relevant = [
-        a for a in artifacts if a.section == "searches" and a.subfolder == "nautilus"
-    ]
+    relevant = [a for a in artifacts if a.section == "searches" and a.subfolder == "nautilus"]
     if not relevant:
         return _no_data_block(
             "run `searches/nautilus/{simple,jax}.py` to populate. See section README."
@@ -288,95 +343,68 @@ def _render_nautilus_table(artifacts: list[Artifact]) -> str:
         "|--------|---------|-----------|-------------|-----------|-----------|--------------------|"
     )
     for script, art in sorted(latest.items()):
-        h = _nautilus_headline(art)
-        wall = _format_time(h["wall_time_s"])
+        data = art.data
+        perf = data.get("performance", {})
+        conv = data.get("convergence", {})
+        wall = _format_time(perf.get("wall_time_s"))
         per_eval = (
-            f"{h['time_per_eval_ms']:.1f} ms"
-            if h["time_per_eval_ms"] is not None
+            f"{perf['time_per_eval_ms']:.1f} ms"
+            if perf.get("time_per_eval_ms") is not None
             else "—"
         )
-        evals_to_ml = (
-            f"{h['evals_to_ml']:,}" if h["evals_to_ml"] is not None else "—"
-        )
-        time_to_ml = _format_time(h["time_to_ml_s"])
+        evals_to_ml = f"{conv['evals_to_ml']:,}" if conv.get("evals_to_ml") is not None else "—"
+        time_to_ml = _format_time(conv.get("time_to_ml_s"))
         rows.append(
-            f"| `{script}.py` | {h['backend'] or '—'} | "
+            f"| `{script}.py` | {data.get('backend') or '—'} | "
             f"{wall} | {per_eval} | {evals_to_ml} | {time_to_ml} | "
             f"v{art.raw_version} |"
         )
     return "\n" + "\n".join(rows) + "\n"
 
 
-def _render_headline_table(artifacts: list[Artifact]) -> str:
-    """Top-level cross-section instrument × model headline.
-
-    Rows are (section, subfolder, instrument); columns are scripts. Today
-    likelihood/ has the richest cross-product; simulators are single-row
-    per script. Build a compact 'latest result per axis' table.
-    """
-    likelihood = [a for a in artifacts if a.section == "likelihood"]
-    if not likelihood:
-        return _no_data_block(
-            "run likelihood scripts to populate. See `likelihood/README.md`."
-        )
-    latest = _latest_per_group(
-        likelihood, key=lambda a: (a.subfolder, a.script, a.instrument)
-    )
-    rows = [
-        "| Section | Script | Instrument | Latest single-JIT per-call | PyAutoLens version |"
-    ]
-    rows.append(
-        "|---------|--------|------------|----------------------------|--------------------|"
-    )
-    for (subfolder, script, instrument), art in sorted(latest.items()):
-        seconds = _likelihood_headline_seconds(art)
-        rows.append(
-            f"| likelihood/{subfolder} | `{script}.py` | "
-            f"{instrument or '—'} | "
-            f"{_format_time(seconds)} | "
-            f"v{art.raw_version} |"
-        )
-    return "\n" + "\n".join(rows) + "\n"
+def _render_headline(
+    artifacts: list[Artifact],
+    cells: list[RuntimeCell],
+    baselines: dict[str, list[RuntimeCell]],
+) -> str:
+    """Top-level dashboard: runtime matrix + latest breakdown totals."""
+    parts = ["\n**Likelihood runtime** — full-pipeline per-call cost per cell × config:\n"]
+    parts.append(_render_runtime_table(cells, baselines).strip("\n"))
+    parts.append("\n**Likelihood breakdown** — latest per-step decompositions:\n")
+    parts.append(_render_breakdown_table(artifacts).strip("\n"))
+    return "\n" + "\n".join(parts) + "\n"
 
 
-# Registry mapping sentinel name → renderer
-RENDERERS = {
-    "headline": _render_headline_table,
-    "likelihood-imaging": lambda arts: _render_likelihood_section_table(arts, "imaging"),
-    "likelihood-interferometer": lambda arts: _render_likelihood_section_table(
-        arts, "interferometer"
-    ),
-    "likelihood-point_source": lambda arts: _render_likelihood_section_table(
-        arts, "point_source"
-    ),
-    "likelihood-datacube": lambda arts: _render_likelihood_section_table(
-        arts, "datacube"
-    ),
-    "simulators": _render_simulator_table,
-    "searches-nautilus": _render_nautilus_table,
-}
+# ---------------------------------------------------------------------------
+# Region registry + rewrite driver
+# ---------------------------------------------------------------------------
+
+
+def _build_renderers():
+    artifacts = _scan_artifacts()
+    cells = _scan_runtime_cells(RUNTIME_ROOT)
+    baselines = {name: _scan_runtime_cells(BASELINES_ROOT / name) for name in _baseline_names()}
+    return artifacts, {
+        "headline": lambda: _render_headline(artifacts, cells, baselines),
+        "runtime": lambda: _render_runtime_table(cells, baselines),
+        "breakdown": lambda: _render_breakdown_table(artifacts),
+        "simulators": lambda: _render_simulator_table(artifacts),
+        "searches-nautilus": lambda: _render_nautilus_table(artifacts),
+    }
 
 
 # Files that may contain auto-table regions. Listing them explicitly (rather
-# than walking the repo) keeps the script's surface obvious and prevents
-# accidental rewrites of e.g. workspace_developer mirror docs that may end
-# up here later.
+# than walking the repo) keeps the script's surface obvious.
 TARGET_READMES = [
     REPO_ROOT / "README.md",
-    REPO_ROOT / "likelihood" / "README.md",
-    REPO_ROOT / "likelihood" / "imaging" / "README.md",
-    REPO_ROOT / "likelihood" / "interferometer" / "README.md",
-    REPO_ROOT / "likelihood" / "point_source" / "README.md",
-    REPO_ROOT / "likelihood" / "datacube" / "README.md",
+    REPO_ROOT / "likelihood_runtime" / "README.md",
+    REPO_ROOT / "likelihood_breakdown" / "README.md",
     REPO_ROOT / "simulators" / "README.md",
     REPO_ROOT / "searches" / "README.md",
-    REPO_ROOT / "searches" / "nautilus" / "README.md",
 ]
 
 
-def _rewrite_file(
-    path: Path, artifacts: list[Artifact]
-) -> tuple[str, str, list[str]]:
+def _rewrite_file(path: Path, renderers: dict) -> tuple[str, str, list[str]]:
     """Return (original_text, rewritten_text, unknown_sentinels)."""
     original = path.read_text()
     unknown: list[str] = []
@@ -385,12 +413,11 @@ def _rewrite_file(
         name = match.group("name")
         begin = match.group(1)
         end = match.group(3)
-        renderer = RENDERERS.get(name)
+        renderer = renderers.get(name)
         if renderer is None:
             unknown.append(name)
             return match.group(0)  # leave intact
-        body = renderer(artifacts)
-        return f"{begin}{body}{end}"
+        return f"{begin}{renderer()}{end}"
 
     rewritten = SENTINEL_RE.sub(replace, original)
     return original, rewritten, unknown
@@ -405,8 +432,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    artifacts = _scan_artifacts()
-    print(f"Scanned {len(artifacts)} artifact(s) under {RESULTS_ROOT}")
+    artifacts, renderers = _build_renderers()
+    print(f"Scanned {len(artifacts)} versioned artifact(s) under {RESULTS_ROOT}")
 
     any_changed = False
     all_unknown: list[tuple[Path, str]] = []
@@ -414,7 +441,7 @@ def main(argv: list[str] | None = None) -> int:
         if not target.exists():
             print(f"  skip      {target.relative_to(REPO_ROOT)} — not present", flush=True)
             continue
-        original, rewritten, unknown = _rewrite_file(target, artifacts)
+        original, rewritten, unknown = _rewrite_file(target, renderers)
         for u in unknown:
             all_unknown.append((target, u))
         if rewritten == original:

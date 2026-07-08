@@ -31,7 +31,6 @@ from __future__ import annotations
 
 from typing import Optional
 
-
 INSTRUMENTS: dict[str, dict] = {
     "sma": {
         "pixel_scale": 0.1,
@@ -92,6 +91,6 @@ def mask_radius_pixels(instrument: str) -> int:
     return int(round(cfg["mask_radius"] / cfg["pixel_scale"]))
 
 
-def transformer_chunk_size_for(instrument: str) -> Optional[int]:
+def transformer_chunk_size_for(instrument: str) -> int | None:
     """Per-instrument NUFFT chunk_size (None for one-shot)."""
     return INSTRUMENTS[instrument].get("transformer_chunk_size")

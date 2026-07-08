@@ -1,11 +1,11 @@
 """Aggregate per-config JSONs for a swept likelihood cell into comparison.{json,png}.
 
-Reads every ``<config_name>.json`` under a cell's output dir (see
-``sweep.py``) and produces a single ``comparison.json`` whose schema
-mirrors the existing
-``autolens_workspace_developer/jax_profiling/results/jit/imaging/{mge,
-pixelization,delaunay}/comparison.json`` artifacts so the existing
-readers (and the OPTIMIZATION_NOTES doc) continue to work.
+Reads every ``<config_name>[_sparse].json`` under a cell's output dir (see
+``sweep.py``; default root is ``results/runtime/`` in this repo) and
+produces a single ``comparison.json`` whose schema mirrors the historical
+``autolens_workspace_developer/jax_profiling/results/jit`` artifacts so the
+existing readers (and the OPTIMIZATION_NOTES doc) continue to work.
+``_sparse`` rows order after the canonical configs.
 
 The ``comparison.png`` is a log-scale grouped bar chart: one bar per
 (step, config), sorted by step cost on the slowest config. The
@@ -34,10 +34,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-
 _REPO_ROOT = Path(__file__).resolve().parents[1]
-_WT_ROOT = _REPO_ROOT.parent
-_DEFAULT_OUTPUT_ROOT = _WT_ROOT / "autolens_workspace_developer" / "jax_profiling" / "results" / "jit"
+_DEFAULT_OUTPUT_ROOT = _REPO_ROOT / "results" / "runtime"
 
 
 # Stable ordering — keep the same row order as sweep_likelihood + the prior
@@ -85,10 +83,7 @@ def _discover_cells(output_root: Path) -> list[tuple[str, ...]]:
         return cells
 
     def _has_config_json(d: Path) -> bool:
-        return any(
-            p.stem in _CONFIG_ORDER or p.stem.endswith("_pre_fix")
-            for p in d.glob("*.json")
-        )
+        return any(_is_config_stem(p.stem) for p in d.glob("*.json"))
 
     for cls_dir in sorted(output_root.iterdir()):
         if not cls_dir.is_dir():
@@ -104,6 +99,20 @@ def _discover_cells(output_root: Path) -> list[tuple[str, ...]]:
                     if inst_dir.is_dir() and _has_config_json(inst_dir):
                         cells.append((cls_dir.name, model_dir.name, inst_dir.name))
     return cells
+
+
+def _is_config_stem(stem: str) -> bool:
+    """True for sweep-config JSONs (``local_gpu_mp``, ``hpc_a100_fp64_sparse``, …).
+
+    Cell dirs may also hold versioned standalone summaries
+    (``mge_likelihood_summary_hst_v….json``) — those are not sweep rows and
+    must not enter ``comparison.json``.
+    """
+    return (
+        stem in _CONFIG_ORDER
+        or stem.removesuffix("_sparse") in _CONFIG_ORDER
+        or stem.endswith("_pre_fix")
+    )
 
 
 def _read_config(json_path: Path) -> dict:
@@ -130,7 +139,7 @@ def _read_config(json_path: Path) -> dict:
 def _aggregate_cell(cell_dir: Path) -> dict:
     configs: dict[str, dict] = {}
     for json_path in sorted(cell_dir.glob("*.json")):
-        if json_path.name == "comparison.json":
+        if not _is_config_stem(json_path.stem):
             continue
         try:
             configs[json_path.stem] = _read_config(json_path)
@@ -204,7 +213,8 @@ def _render_png(comparison: dict, cell_id: str, png_path: Path) -> None:
     n_steps, n_cfgs = len(step_union), len(config_names)
     # Drop configs that have no positive step data — log scale can't render NaN/0.
     config_names = [
-        c for c in config_names
+        c
+        for c in config_names
         if any(
             isinstance(v, (int, float)) and np.isfinite(v) and v > 0
             for v in configs[c].get("steps", {}).values()

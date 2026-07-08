@@ -32,35 +32,34 @@ All JAX timings use `block_until_ready()` to force synchronous measurement.
 """
 
 import json
-import numpy as np
-import jax
-import jax.numpy as jnp
-import time
 import subprocess
 import sys
-from pathlib import Path
+import time
 from contextlib import contextmanager
+from pathlib import Path
 
+import autoarray as aa
 import autofit as af
 import autolens as al
-import autoarray as aa
+import jax
+import jax.numpy as jnp
+import numpy as np
 from autofit.jax import register_model as _register_model_pytrees
 
 # Shared adapt-image loader: load or compute+cache `lensed_source.fits`
 # next to the dataset, then return the masked ``aa.Array2D``.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from _adapt_image_util import adapt_image_for_dataset  # noqa: E402
-
 # ---------------------------------------------------------------------------
 # Instrument configuration
 # ---------------------------------------------------------------------------
-
-
 # AUTOLENS_PROFILING_SMOKE=1 short-circuit (Phase 5 / CI lint smoke).
 # Verifies the import graph + module-level setup succeeded without running
 # the full profiling pipeline. Skipped entirely when the env var is unset.
 import os as _smoke_os
 import sys as _smoke_sys
+
+from _adapt_image_util import adapt_image_for_dataset  # noqa: E402
+
 if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
     _smoke_sys.exit(0)
@@ -68,10 +67,10 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 # Sweep-driver CLI args (--config-name / --output-dir / --use-mixed-precision).
 # Tolerates extra/unknown args via parse_known_args inside the helper.
 from _profile_cli import (  # noqa: E402
-    parse_profile_cli,
-    device_info_dict,
-    resolve_output_paths,
     auto_simulate_if_missing,
+    device_info_dict,
+    parse_profile_cli,
+    resolve_output_paths,
 )
 from simulators.imaging import INSTRUMENTS  # noqa: E402
 from vram import (  # noqa: E402
@@ -80,6 +79,7 @@ from vram import (  # noqa: E402
     vmap_batch_for,
     write_probe_json,
 )
+
 _cli = parse_profile_cli()
 
 instrument = _cli.instrument or "hst"  # default; override via --instrument
@@ -88,6 +88,7 @@ instrument = _cli.instrument or "hst"  # default; override via --instrument
 # ---------------------------------------------------------------------------
 # Profiling helpers
 # ---------------------------------------------------------------------------
+
 
 class Timer:
     """Accumulates named timing measurements and prints a summary."""
@@ -253,18 +254,14 @@ with timer.section("model_build"):
     shear.gamma_1 = af.GaussianPrior(mean=0.05, sigma=0.005)
     shear.gamma_2 = af.GaussianPrior(mean=0.05, sigma=0.005)
 
-    lens = af.Model(
-        al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear
-    )
+    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
 
     # ``RectangularAdaptImage`` weights mesh pixels by the lensed-source
     # adapt image — the production-grade alternative to the coordinate-
     # density-only ``RectangularAdaptDensity``. Adapt image is loaded /
     # cached below; the same shape and regularization are kept.
     pixelization = al.Pixelization(
-        mesh=al.mesh.RectangularAdaptImage(
-            shape=mesh_shape, weight_power=1.0, weight_floor=0.0
-        ),
+        mesh=al.mesh.RectangularAdaptImage(shape=mesh_shape, weight_power=1.0, weight_floor=0.0),
         regularization=al.reg.Constant(coefficient=1.0),
     )
 
@@ -322,9 +319,7 @@ print(f"  Source pixels:           {n_source_pixels}")
 print("\n--- Adapt image (lensed source) ---")
 
 with timer.section("adapt_image_build"):
-    adapt_image = adapt_image_for_dataset(
-        dataset_path=dataset_path, dataset=dataset
-    )
+    adapt_image = adapt_image_for_dataset(dataset_path=dataset_path, dataset=dataset)
     # ``galaxy_image_dict`` (Galaxy-object-keyed) feeds the eager-path
     # ``image_for_galaxy`` lookup; ``galaxy_name_image_dict`` (path-tuple
     # str-keyed) is rebuilt inside JIT closures where the Galaxy objects
@@ -378,8 +373,10 @@ analysis = al.AnalysisImaging(
     use_jax=True,
 )
 
+
 def full_pipeline_from_params(params_tree):
     return analysis.log_likelihood_function(instance=params_tree)
+
 
 _, full_result = jit_profile(full_pipeline_from_params, "full_pipeline", params_tree)
 full_pipeline_per_call = timer.records[-1][1] / 10
@@ -413,7 +410,7 @@ _early_summary = {
 }
 _early_dict_path, _ = resolve_output_paths(
     _cli,
-    default_dir=_workspace_root / "results" / "likelihood" / "imaging",
+    default_dir=_workspace_root / "results" / "runtime" / "imaging" / "pixelization",
     default_basename=f"pixelization_likelihood_summary_{instrument}_v{al.__version__}",
 )
 _early_dict_path.write_text(json.dumps(_early_summary, indent=2))
@@ -441,14 +438,11 @@ if _cli.vmap_probe:
     recommended = recommend_batch_size(probe)
     _inversion_path = "sparse" if _cli.use_sparse_operator else "dense"
     _probe_basename = (
-        "vmap_probe_pixelization_sparse"
-        if _cli.use_sparse_operator
-        else "vmap_probe_pixelization"
+        "vmap_probe_pixelization_sparse" if _cli.use_sparse_operator else "vmap_probe_pixelization"
     )
     probe_path = (
-        (_cli.output_dir or (_workspace_root / "results" / "likelihood" / "imaging"))
-        / f"{_probe_basename}.json"
-    )
+        _cli.output_dir or (_workspace_root / "results" / "runtime" / "imaging" / "pixelization")
+    ) / f"{_probe_basename}.json"
     write_probe_json(
         probe,
         recommended,
@@ -482,8 +476,7 @@ _n_leaves = len(jax.tree_util.tree_leaves(params_tree))
 _vmap_skipped_reason = None
 if _n_leaves == 0:
     _vmap_skipped_reason = (
-        "model has 0 free parameters (all fixed to truth); vmap "
-        "requires at least one array leaf."
+        "model has 0 free parameters (all fixed to truth); vmap requires at least one array leaf."
     )
 else:
     parameters = jax.tree_util.tree_map(
@@ -563,7 +556,9 @@ else:
 # ===================================================================
 
 import json
+
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
@@ -606,7 +601,9 @@ likelihood_summary = {
         "inversion_path": "sparse" if _cli.use_sparse_operator else "dense",
     },
     "full_pipeline_single_jit": full_pipeline_per_call,
-    "vmap": "SKIPPED — model has 0 free parameters (all fixed to truth)" if vmap_per_call is None else {
+    "vmap": "SKIPPED — model has 0 free parameters (all fixed to truth)"
+    if vmap_per_call is None
+    else {
         "batch_size": batch_size,
         "batch_time": vmap_batch_time,
         "per_call": vmap_per_call,
@@ -616,7 +613,7 @@ likelihood_summary = {
 
 dict_path, chart_path = resolve_output_paths(
     _cli,
-    default_dir=_workspace_root / "results" / "likelihood" / "imaging",
+    default_dir=_workspace_root / "results" / "runtime" / "imaging" / "pixelization",
     default_basename=f"pixelization_likelihood_summary_{instrument}_v{al_version}",
 )
 dict_path.write_text(json.dumps(likelihood_summary, indent=2))
@@ -635,7 +632,9 @@ print(f"  Bar chart path:        {chart_path} (no per-step chart in runtime vari
 # 1581x1581 mapping matrix relative to the non-adaptive baseline (which
 # previously matched at 1e-4). The 1e-3 envelope is still tight enough to
 # catch real numerical regressions while accommodating the adaptive path.
-EXPECTED_LOG_EVIDENCE_HST = 28370.27770182  # 39x39 = 1521 source pixels, MGE-60 lens light, adapt_image=lensed_source
+EXPECTED_LOG_EVIDENCE_HST = (
+    28370.27770182  # 39x39 = 1521 source pixels, MGE-60 lens light, adapt_image=lensed_source
+)
 
 np.testing.assert_allclose(
     log_evidence_ref,
@@ -646,10 +645,7 @@ np.testing.assert_allclose(
         f"(got {log_evidence_ref}, expected {EXPECTED_LOG_EVIDENCE_HST})"
     ),
 )
-print(
-    f"  Eager regression assertion PASSED: log_evidence matches "
-    f"{EXPECTED_LOG_EVIDENCE_HST:.6f}"
-)
+print(f"  Eager regression assertion PASSED: log_evidence matches {EXPECTED_LOG_EVIDENCE_HST:.6f}")
 np.testing.assert_allclose(
     float(full_result),
     EXPECTED_LOG_EVIDENCE_HST,

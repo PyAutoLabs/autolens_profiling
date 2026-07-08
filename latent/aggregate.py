@@ -32,10 +32,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-
 _REPO_ROOT = Path(__file__).resolve().parents[1]
-_WT_ROOT = _REPO_ROOT.parent
-_DEFAULT_OUTPUT_ROOT = _WT_ROOT / "autolens_workspace_developer" / "jax_profiling" / "results" / "latent"
+_DEFAULT_OUTPUT_ROOT = _REPO_ROOT / "results" / "latent"
 
 # Canonical ordering of cells — drives auto-discovery sort order.
 _CELLS: list[tuple[str, str]] = [
@@ -134,8 +132,15 @@ def _render_table(comparison: dict, cell_id: str) -> str:
     lines = [f"=== {cell_id} ==="]
     is_einstein = "effective_einstein_radius" in cell_id
     if is_einstein:
-        header = ("config", "eager_time", "jit_first", "jit_steady", "vmap_per_call",
-                  "cache_first", "cache_second")
+        header = (
+            "config",
+            "eager_time",
+            "jit_first",
+            "jit_steady",
+            "vmap_per_call",
+            "cache_first",
+            "cache_second",
+        )
     else:
         header = ("config", "eager_time", "jit_first", "jit_steady", "vmap_per_call")
     rows = [header]
@@ -147,23 +152,27 @@ def _render_table(comparison: dict, cell_id: str) -> str:
         if is_einstein:
             cc_first = cfg.get("closure_cache_first_call_s")
             cc_second = cfg.get("closure_cache_second_call_s")
-            rows.append((
-                name,
-                _format_seconds(eager_t),
-                _format_seconds(jit_first),
-                _format_seconds(jit_steady),
-                _format_seconds(vmap),
-                _format_seconds(cc_first),
-                _format_seconds(cc_second),
-            ))
+            rows.append(
+                (
+                    name,
+                    _format_seconds(eager_t),
+                    _format_seconds(jit_first),
+                    _format_seconds(jit_steady),
+                    _format_seconds(vmap),
+                    _format_seconds(cc_first),
+                    _format_seconds(cc_second),
+                )
+            )
         else:
-            rows.append((
-                name,
-                _format_seconds(eager_t),
-                _format_seconds(jit_first),
-                _format_seconds(jit_steady),
-                _format_seconds(vmap),
-            ))
+            rows.append(
+                (
+                    name,
+                    _format_seconds(eager_t),
+                    _format_seconds(jit_first),
+                    _format_seconds(jit_steady),
+                    _format_seconds(vmap),
+                )
+            )
     col_w = [max(len(r[i]) for r in rows) for i in range(len(rows[0]))]
     for r in rows:
         lines.append("  " + "  ".join(s.ljust(w) for s, w in zip(r, col_w)))
@@ -199,18 +208,11 @@ def _render_png(comparison: dict, cell_id: str, png_path: Path) -> None:
         series["jit_steady_state"].append(cfg.get("jit_steady_state_s", np.nan))
         series["vmap_per_call"].append(cfg.get("vmap_per_call_s", np.nan))
         if is_einstein:
-            series["closure_cache_first"].append(
-                cfg.get("closure_cache_first_call_s", np.nan)
-            )
-            series["closure_cache_second"].append(
-                cfg.get("closure_cache_second_call_s", np.nan)
-            )
+            series["closure_cache_first"].append(cfg.get("closure_cache_first_call_s", np.nan))
+            series["closure_cache_second"].append(cfg.get("closure_cache_second_call_s", np.nan))
 
     # Drop series that are entirely nan/zero — nothing to plot.
-    series = {
-        k: v for k, v in series.items()
-        if any(np.isfinite(x) and x > 0 for x in v)
-    }
+    series = {k: v for k, v in series.items() if any(np.isfinite(x) and x > 0 for x in v)}
     if not series:
         return
 
@@ -262,9 +264,7 @@ def main() -> int:
         for spec in args.cell:
             parts = spec.split("/")
             if len(parts) != 2:
-                sys.stderr.write(
-                    f"bad --cell argument: {spec!r} (expected class/latent)\n"
-                )
+                sys.stderr.write(f"bad --cell argument: {spec!r} (expected class/latent)\n")
                 return 2
             cells.append((parts[0], parts[1]))
     else:
@@ -274,7 +274,7 @@ def main() -> int:
         sys.stderr.write(f"no cells found under {args.output_root}\n")
         return 1
 
-    for (cls, latent) in cells:
+    for cls, latent in cells:
         cell_id = f"{cls}/{latent}"
         cell_dir = args.output_root / cls / latent
         if not cell_dir.exists():

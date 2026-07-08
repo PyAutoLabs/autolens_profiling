@@ -41,33 +41,32 @@ All JAX timings use `block_until_ready()` to force synchronous measurement.
 """
 
 import json
-import numpy as np
-import jax
-import jax.numpy as jnp
-import time
 import subprocess
 import sys
-from pathlib import Path
+import time
 from contextlib import contextmanager
+from pathlib import Path
 
+import autoarray as aa
 import autofit as af
 import autolens as al
-import autoarray as aa
+import jax
+import jax.numpy as jnp
+import numpy as np
 from autofit.jax import register_model as _register_model_pytrees
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from _adapt_image_util import adapt_image_for_dataset  # noqa: E402
-
 # ---------------------------------------------------------------------------
 # Instrument configuration
 # ---------------------------------------------------------------------------
-
-
 # AUTOLENS_PROFILING_SMOKE=1 short-circuit (Phase 5 / CI lint smoke).
 # Verifies the import graph + module-level setup succeeded without running
 # the full profiling pipeline. Skipped entirely when the env var is unset.
 import os as _smoke_os
 import sys as _smoke_sys
+
+from _adapt_image_util import adapt_image_for_dataset  # noqa: E402
+
 if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
     _smoke_sys.exit(0)
@@ -75,10 +74,10 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 # Sweep-driver CLI args (--config-name / --output-dir / --use-mixed-precision).
 # Tolerates extra/unknown args via parse_known_args inside the helper.
 from _profile_cli import (  # noqa: E402
-    parse_profile_cli,
-    device_info_dict,
-    resolve_output_paths,
     auto_simulate_if_missing,
+    device_info_dict,
+    parse_profile_cli,
+    resolve_output_paths,
 )
 from simulators.imaging import INSTRUMENTS  # noqa: E402
 from vram import (  # noqa: E402
@@ -87,6 +86,7 @@ from vram import (  # noqa: E402
     vmap_batch_for,
     write_probe_json,
 )
+
 _cli = parse_profile_cli()
 
 instrument = _cli.instrument or "hst"  # default; override via --instrument
@@ -95,6 +95,7 @@ instrument = _cli.instrument or "hst"  # default; override via --instrument
 # ---------------------------------------------------------------------------
 # Profiling helpers
 # ---------------------------------------------------------------------------
+
 
 class Timer:
     """Accumulates named timing measurements and prints a summary."""
@@ -241,9 +242,7 @@ with timer.section("mask_and_oversample"):
 print("\n--- Adapt image (lensed source) ---")
 
 with timer.section("adapt_image_build"):
-    adapt_image = adapt_image_for_dataset(
-        dataset_path=dataset_path, dataset=dataset
-    )
+    adapt_image = adapt_image_for_dataset(dataset_path=dataset_path, dataset=dataset)
 
 print(f"  adapt_image shape (slim): {adapt_image.shape_slim}")
 
@@ -252,9 +251,7 @@ print("\n--- Image mesh construction (Hilbert) ---")
 n_mesh_vertices = 1500  # 1500-tier production fiducial
 
 with timer.section("image_mesh_hilbert"):
-    image_mesh = al.image_mesh.Hilbert(
-        pixels=n_mesh_vertices, weight_power=1.0, weight_floor=0.0
-    )
+    image_mesh = al.image_mesh.Hilbert(pixels=n_mesh_vertices, weight_power=1.0, weight_floor=0.0)
     image_plane_mesh_grid = image_mesh.image_plane_mesh_grid_from(
         mask=dataset.mask, adapt_data=adapt_image
     )
@@ -294,9 +291,7 @@ with timer.section("model_build"):
     shear.gamma_1 = af.GaussianPrior(mean=0.05, sigma=0.005)
     shear.gamma_2 = af.GaussianPrior(mean=0.05, sigma=0.005)
 
-    lens = af.Model(
-        al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear
-    )
+    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
 
     mesh = al.mesh.Delaunay(
         pixels=n_mesh_vertices,
@@ -396,8 +391,10 @@ print("=" * 70)
 
 analysis = al.AnalysisImaging(dataset=dataset, adapt_images=adapt_images, use_jax=True)
 
+
 def full_pipeline_from_params(params_tree):
     return analysis.log_likelihood_function(instance=params_tree)
+
 
 _, full_result = jit_profile(full_pipeline_from_params, "full_pipeline", params_tree)
 full_pipeline_per_call = timer.records[-1][1] / 10
@@ -426,7 +423,7 @@ _early_summary = {
 }
 _early_dict_path, _ = resolve_output_paths(
     _cli,
-    default_dir=_workspace_root / "results" / "likelihood" / "imaging",
+    default_dir=_workspace_root / "results" / "runtime" / "imaging" / "delaunay",
     default_basename=f"delaunay_likelihood_summary_{instrument}_v{al.__version__}",
 )
 _early_dict_path.write_text(json.dumps(_early_summary, indent=2))
@@ -449,14 +446,11 @@ if _cli.vmap_probe:
     recommended = recommend_batch_size(probe)
     _inversion_path = "sparse" if _cli.use_sparse_operator else "dense"
     _probe_basename = (
-        "vmap_probe_delaunay_sparse"
-        if _cli.use_sparse_operator
-        else "vmap_probe_delaunay"
+        "vmap_probe_delaunay_sparse" if _cli.use_sparse_operator else "vmap_probe_delaunay"
     )
     probe_path = (
-        (_cli.output_dir or (_workspace_root / "results" / "likelihood" / "imaging"))
-        / f"{_probe_basename}.json"
-    )
+        _cli.output_dir or (_workspace_root / "results" / "runtime" / "imaging" / "delaunay")
+    ) / f"{_probe_basename}.json"
     write_probe_json(
         probe,
         recommended,
@@ -546,7 +540,9 @@ else:
 # ===================================================================
 
 import json
+
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
@@ -589,7 +585,9 @@ likelihood_summary = {
         "inversion_path": "sparse" if _cli.use_sparse_operator else "dense",
     },
     "full_pipeline_single_jit": full_pipeline_per_call,
-    "vmap": "SKIPPED — vmap_batch_for() returned None for this (cell, instrument)" if _vmap_skipped else {
+    "vmap": "SKIPPED — vmap_batch_for() returned None for this (cell, instrument)"
+    if _vmap_skipped
+    else {
         "batch_size": batch_size,
         "batch_time": vmap_batch_time,
         "per_call": vmap_per_call,
@@ -599,7 +597,7 @@ likelihood_summary = {
 
 dict_path, chart_path = resolve_output_paths(
     _cli,
-    default_dir=_workspace_root / "results" / "likelihood" / "imaging",
+    default_dir=_workspace_root / "results" / "runtime" / "imaging" / "delaunay",
     default_basename=f"delaunay_likelihood_summary_{instrument}_v{al_version}",
 )
 dict_path.write_text(json.dumps(likelihood_summary, indent=2))
@@ -617,7 +615,9 @@ print(f"  Bar chart path:        {chart_path} (no per-step chart in runtime vari
 # matches imaging/pixelization (adaptive meshes amplify fp drift through
 # Cholesky / log_det). vmap result asserted only when DELAUNAY_VMAP=1
 # (vmap compile takes 20+ min).
-EXPECTED_LOG_EVIDENCE_HST = 29110.92085793  # 1500-pixel Hilbert/Delaunay, MGE-60 lens, adapt_image=lensed_source
+EXPECTED_LOG_EVIDENCE_HST = (
+    29110.92085793  # 1500-pixel Hilbert/Delaunay, MGE-60 lens, adapt_image=lensed_source
+)
 
 np.testing.assert_allclose(
     log_evidence_ref,
@@ -628,10 +628,7 @@ np.testing.assert_allclose(
         f"(got {log_evidence_ref}, expected {EXPECTED_LOG_EVIDENCE_HST})"
     ),
 )
-print(
-    f"  Eager regression assertion PASSED: log_evidence matches "
-    f"{EXPECTED_LOG_EVIDENCE_HST:.6f}"
-)
+print(f"  Eager regression assertion PASSED: log_evidence matches {EXPECTED_LOG_EVIDENCE_HST:.6f}")
 np.testing.assert_allclose(
     float(full_result),
     EXPECTED_LOG_EVIDENCE_HST,

@@ -13,7 +13,7 @@ Per-config JSONs land at::
     <output_root>/<class>/<latent>/<config_name>.log    (captured stdout/stderr)
 
 Default ``--output-root`` is
-``autolens_workspace_developer/jax_profiling/results/latent`` — mirrors the
+``results/latent/`` in this repo — mirrors the
 ``jit/`` convention used by ``likelihood_runtime/sweep.py`` and is read by
 ``aggregate.py`` to produce ``comparison.json`` / ``comparison.png``.
 
@@ -39,10 +39,8 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-
-_REPO_ROOT = Path(__file__).resolve().parents[1]                 # autolens_profiling/
-_WT_ROOT = _REPO_ROOT.parent                                     # PyAutoLabs-wt/<task>/ (or PyAutoLabs/)
-_DEFAULT_OUTPUT_ROOT = _WT_ROOT / "autolens_workspace_developer" / "jax_profiling" / "results" / "latent"
+_REPO_ROOT = Path(__file__).resolve().parents[1]  # autolens_profiling/
+_DEFAULT_OUTPUT_ROOT = _REPO_ROOT / "results" / "latent"
 _DEFAULT_PYTHON = "/home/jammy/venv/PyAutoGPU/bin/python"
 
 
@@ -176,8 +174,10 @@ def _run_one(
     cmd = [
         python,
         str(script_path),
-        "--config-name", config.name,
-        "--output-dir", str(out_dir),
+        "--config-name",
+        config.name,
+        "--output-dir",
+        str(out_dir),
         *config.extra_args,
     ]
 
@@ -206,7 +206,9 @@ def _run_one(
             )
         elapsed = time.time() - t0
         ok = proc.returncode == 0
-        print(f"    {'OK ' if ok else 'FAIL'} ({elapsed:.1f}s, exit={proc.returncode}) -> {log_path.name}")
+        print(
+            f"    {'OK ' if ok else 'FAIL'} ({elapsed:.1f}s, exit={proc.returncode}) -> {log_path.name}"
+        )
         return ok, elapsed, str(log_path)
     except KeyboardInterrupt:
         elapsed = time.time() - t0
@@ -219,8 +221,10 @@ def main() -> int:
     cells = _resolve_cells(args)
     configs = _resolve_configs(args)
 
-    print(f"sweep_latent: {len(cells)} cells x {len(configs)} configs "
-          f"= {len(cells) * len(configs)} runs")
+    print(
+        f"sweep_latent: {len(cells)} cells x {len(configs)} configs "
+        f"= {len(cells) * len(configs)} runs"
+    )
     print(f"  cells:    {[f'{c}/{m}' for (c, m) in cells]}")
     print(f"  configs:  {[c.name for c in configs]}")
     print(f"  output:   {args.output_root}")
@@ -231,7 +235,7 @@ def main() -> int:
     summary: list[tuple[str, str, bool, float]] = []
     overall_t0 = time.time()
 
-    for (cls, latent) in cells:
+    for cls, latent in cells:
         script_path = _REPO_ROOT / "latent" / cls / f"{latent}.py"
         if not script_path.exists():
             print(f"\n!!! missing script: {script_path}")
@@ -243,9 +247,7 @@ def main() -> int:
 
         for cfg in configs:
             try:
-                ok, elapsed, _log = _run_one(
-                    args.python, script_path, cfg, out_dir, args.dry_run
-                )
+                ok, elapsed, _log = _run_one(args.python, script_path, cfg, out_dir, args.dry_run)
             except KeyboardInterrupt:
                 print("\n\nsweep interrupted by user")
                 return 130
@@ -256,7 +258,7 @@ def main() -> int:
     print(f"sweep_latent summary  ({total:.1f}s total)")
     print("=" * 70)
     print(f"  {'cell':<40}{'config':<22}{'ok':<6}{'elapsed':>10}")
-    print(f"  {'-'*40}{'-'*22}{'-'*6}{'-'*10}")
+    print(f"  {'-' * 40}{'-' * 22}{'-' * 6}{'-' * 10}")
     failures = 0
     for cell, cfg, ok, t in summary:
         flag = "OK" if ok else "FAIL"

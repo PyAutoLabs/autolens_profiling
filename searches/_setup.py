@@ -54,11 +54,14 @@ from instruments.interferometer import (  # noqa: E402
 )
 from simulators.point_source import INSTRUMENTS as _POINT_SOURCE_INSTRUMENTS  # noqa: E402
 
-
 _PIXELIZATION_MESH_SHAPE: tuple[int, int] = (39, 39)  # 1521 source pixels — production fiducial
 _HILBERT_PIXELS: int = 1500
-_MGE_TOTAL_GAUSSIANS: int = 20  # ``source_lp[1]`` SLaM fiducial; lighter than likelihood_runtime's 60
-_DATACUBE_N_CHANNELS: int = 4  # matches the "quick iteration" value in likelihood_runtime/datacube/delaunay.py
+_MGE_TOTAL_GAUSSIANS: int = (
+    20  # ``source_lp[1]`` SLaM fiducial; lighter than likelihood_runtime's 60
+)
+_DATACUBE_N_CHANNELS: int = (
+    4  # matches the "quick iteration" value in likelihood_runtime/datacube/delaunay.py
+)
 
 
 # -----------------------------------------------------------------------------
@@ -157,8 +160,7 @@ def _build_for_datacube(
     # PyAutoFit's factor graph treats them as independent likelihood factors
     # sharing the same global parameters.
     analysis_factor_list = [
-        af.AnalysisFactor(prior_model=model.copy(), analysis=analysis)
-        for analysis in analysis_list
+        af.AnalysisFactor(prior_model=model.copy(), analysis=analysis) for analysis in analysis_list
     ]
     factor_graph = af.FactorGraphModel(*analysis_factor_list, use_jax=use_jax)
     return dataset_list, factor_graph.global_prior_model, factor_graph
@@ -373,9 +375,7 @@ def _mge_model(*, mask_radius: float) -> af.Collection:
         centre_prior_is_uniform=True,
     )
     mass, shear = _lens_mass_and_shear()
-    lens = af.Model(
-        al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear
-    )
+    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
     source_bulge = al.model_util.mge_model_from(
         mask_radius=mask_radius,
         total_gaussians=_MGE_TOTAL_GAUSSIANS,
@@ -398,9 +398,7 @@ def _pixelization_model(*, mask_radius: float) -> af.Collection:
         centre_prior_is_uniform=True,
     )
     mass, shear = _lens_mass_and_shear()
-    lens = af.Model(
-        al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear
-    )
+    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
     pixelization = af.Model(
         al.Pixelization,
         mesh=al.mesh.RectangularAdaptImage(
@@ -427,9 +425,7 @@ def _delaunay_model(*, mask_radius: float) -> af.Collection:
         centre_prior_is_uniform=True,
     )
     mass, shear = _lens_mass_and_shear()
-    lens = af.Model(
-        al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear
-    )
+    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
     # al.Pixelization only accepts mesh + regularization (no image_mesh kwarg).
     # The Hilbert image_mesh is applied OUTSIDE the model: the precomputed
     # image_plane_mesh_grid is passed to AnalysisImaging via AdaptImages's
@@ -439,9 +435,7 @@ def _delaunay_model(*, mask_radius: float) -> af.Collection:
     # looks up priors for areas_factor, which has no entry in default config).
     pixelization = af.Model(
         al.Pixelization,
-        mesh=al.mesh.Delaunay(
-            pixels=_HILBERT_PIXELS, areas_factor=0.5, zeroed_pixels=0
-        ),
+        mesh=al.mesh.Delaunay(pixels=_HILBERT_PIXELS, areas_factor=0.5, zeroed_pixels=0),
         regularization=al.reg.ConstantSplit,
     )
     source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
@@ -467,7 +461,7 @@ def _adapt_images_for(
     *,
     dataset_path: Path,
     dataset: Any,
-) -> Optional[al.AdaptImages]:
+) -> al.AdaptImages | None:
     if model_type not in ("pixelization", "delaunay"):
         return None
     if dataset_class not in ("imaging", "interferometer", "datacube"):
@@ -484,20 +478,14 @@ def _adapt_images_for(
         # (autolens_workspace/scripts/imaging/features/pixelization/delaunay.py):
         # compute it once from the Hilbert image-mesh + truth-derived adapt
         # image, then ship via AdaptImages.
-        mask = (
-            dataset.mask
-            if dataset_class == "imaging"
-            else dataset.real_space_mask
-        )
+        mask = dataset.mask if dataset_class == "imaging" else dataset.real_space_mask
         image_mesh = al.image_mesh.Hilbert(
             pixels=_HILBERT_PIXELS, weight_power=1.0, weight_floor=0.0
         )
         image_plane_mesh_grid = image_mesh.image_plane_mesh_grid_from(
             mask=mask, adapt_data=adapt_image
         )
-        extra["galaxy_name_image_plane_mesh_grid_dict"] = {
-            galaxy_key: image_plane_mesh_grid
-        }
+        extra["galaxy_name_image_plane_mesh_grid_dict"] = {galaxy_key: image_plane_mesh_grid}
 
     return al.AdaptImages(
         galaxy_name_image_dict={galaxy_key: adapt_image},
@@ -517,7 +505,7 @@ def _build_analysis(
     dataset: Any,
     use_jax: bool,
     use_mixed_precision: bool,
-    adapt_images: Optional[al.AdaptImages],
+    adapt_images: al.AdaptImages | None,
 ) -> Any:
     # Pixelization / Delaunay analyses normally require ``positions_likelihood_list``
     # to guard against the demagnified-source systematic. For pure profiling we
@@ -564,9 +552,7 @@ def _build_analysis(
             magnification_threshold=solver_kwargs["magnification_threshold"],
         )
         fit_positions_cls = (
-            al.FitPositionsImagePairAll
-            if model_type == "image_plane"
-            else al.FitPositionsSource
+            al.FitPositionsImagePairAll if model_type == "image_plane" else al.FitPositionsSource
         )
         return al.AnalysisPoint(
             dataset=dataset,

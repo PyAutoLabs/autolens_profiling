@@ -48,29 +48,27 @@ registration (``autofit.jax.register_model``). This matches the pattern in
 support landed in PyAutoFit#1222.
 """
 
-import numpy as np
-import jax
-import jax.numpy as jnp
-import time
-import subprocess
-import sys
-from pathlib import Path
-from contextlib import contextmanager
-
-import autofit as af
-import autolens as al
-from autofit.jax import register_model as _register_model_pytrees
-
 # ---------------------------------------------------------------------------
 # Instrument configuration
 # ---------------------------------------------------------------------------
-
-
 # AUTOLENS_PROFILING_SMOKE=1 short-circuit (Phase 5 / CI lint smoke).
 # Verifies the import graph + module-level setup succeeded without running
 # the full profiling pipeline. Skipped entirely when the env var is unset.
 import os as _smoke_os
+import subprocess
+import sys
 import sys as _smoke_sys
+import time
+from contextlib import contextmanager
+from pathlib import Path
+
+import autofit as af
+import autolens as al
+import jax
+import jax.numpy as jnp
+import numpy as np
+from autofit.jax import register_model as _register_model_pytrees
+
 if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
     _smoke_sys.exit(0)
@@ -80,10 +78,10 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 # historical DFT baseline on SMA.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from _profile_cli import (  # noqa: E402
-    parse_profile_cli,
-    device_info_dict,
-    resolve_output_paths,
     auto_simulate_if_missing,
+    device_info_dict,
+    parse_profile_cli,
+    resolve_output_paths,
 )
 from simulators.interferometer import INSTRUMENTS  # noqa: E402
 from vram import (  # noqa: E402
@@ -92,9 +90,11 @@ from vram import (  # noqa: E402
     vmap_batch_for,
     write_probe_json,
 )
+
 _cli = parse_profile_cli()
 
 import argparse as _argparse  # noqa: E402
+
 _local_parser = _argparse.ArgumentParser(add_help=False, allow_abbrev=False)
 _local_parser.add_argument("--use-dft", action="store_true")
 _local_args, _ = _local_parser.parse_known_args()
@@ -106,6 +106,7 @@ instrument = _cli.instrument or "sma"  # default; override via --instrument
 # ---------------------------------------------------------------------------
 # Profiling helpers (copied verbatim from imaging/mge.py)
 # ---------------------------------------------------------------------------
+
 
 class Timer:
     """Accumulates named timing measurements and prints a summary."""
@@ -268,6 +269,7 @@ print(f"  Tracer planes: {tracer.total_planes}")
 # ---------------------------------------------------------------------------
 
 from autogalaxy.profiles.basis import Basis as _Basis
+
 _basis_list = [b for g in instance.galaxies for b in g.cls_list_from(cls=_Basis)]
 n_linear_gaussians = sum(len(b.profile_list) for b in _basis_list)
 
@@ -313,6 +315,7 @@ analysis = al.AnalysisInterferometer(
     use_jax=True,
 )
 
+
 def full_pipeline_from_params(params_tree):
     """Full interferometer likelihood from a pytree-shaped ``ModelInstance``.
 
@@ -321,6 +324,7 @@ def full_pipeline_from_params(params_tree):
     ``aux_data`` partition set up by ``autofit.jax.register_model``.
     """
     return analysis.log_likelihood_function(instance=params_tree)
+
 
 _, full_result = jit_profile(full_pipeline_from_params, "full_pipeline", params_tree)
 full_pipeline_per_call = timer.records[-1][1] / 10
@@ -347,9 +351,8 @@ if _cli.vmap_probe:
     )
     recommended = recommend_batch_size(probe)
     probe_path = (
-        (_cli.output_dir or (_workspace_root / "results" / "likelihood" / "interferometer"))
-        / "vmap_probe.json"
-    )
+        _cli.output_dir or (_workspace_root / "results" / "runtime" / "interferometer" / "mge")
+    ) / "vmap_probe.json"
     write_probe_json(probe, recommended, probe_path)
     print(f"\n  vmap_probe samples: {probe.samples}")
     print(f"  per_replica:        {probe.per_replica_mb:.1f} MB / replica")
@@ -434,7 +437,9 @@ print(
 # ===================================================================
 
 import json
+
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
@@ -491,7 +496,7 @@ likelihood_summary = {
 
 dict_path, chart_path = resolve_output_paths(
     _cli,
-    default_dir=_workspace_root / "results" / "likelihood" / "interferometer",
+    default_dir=_workspace_root / "results" / "runtime" / "interferometer" / "mge",
     default_basename=f"mge_likelihood_summary_{instrument}_v{al_version}",
 )
 dict_path.write_text(json.dumps(likelihood_summary, indent=2))
@@ -500,7 +505,7 @@ print(f"\n  Results dict saved to: {dict_path}")
 # --- Save bar chart ---
 
 labels = [
-    f"Full pipeline (single JIT)",
+    "Full pipeline (single JIT)",
     f"vmap batch={batch_size} (per call)",
 ]
 times = [full_pipeline_per_call, vmap_per_call]
@@ -528,7 +533,7 @@ fig.suptitle(
     fontweight="bold",
 )
 ax.set_title(
-    f"AutoLens v{al_version}  |  {pixel_scale}\"/px  |  "
+    f'AutoLens v{al_version}  |  {pixel_scale}"/px  |  '
     f"{real_space_shape[0]}x{real_space_shape[1]} real-space  |  "
     f"{n_visibilities} visibilities  |  {n_linear_gaussians} Gaussians  |  "
     f"vmap speedup: {vmap_speedup:.1f}x",
@@ -593,7 +598,4 @@ else:
         rtol=_regression_rtol,
         err_msg=f"interferometer/mge[{instrument}]: regression — vmap log_likelihood drifted",
     )
-    print(
-        f"  Regression assertion PASSED: log_likelihood matches "
-        f"{expected_log_likelihood:.6f}"
-    )
+    print(f"  Regression assertion PASSED: log_likelihood matches {expected_log_likelihood:.6f}")

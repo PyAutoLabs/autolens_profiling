@@ -24,9 +24,8 @@ from typing import Any
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
-
 import autolens as al  # noqa: E402
+import matplotlib.pyplot as plt  # noqa: E402
 
 _WORKSPACE_ROOT = Path(__file__).resolve().parents[1]
 if str(_WORKSPACE_ROOT) not in sys.path:
@@ -39,13 +38,12 @@ from _profile_cli import (  # noqa: E402
 )
 from searches._metrics import attach_viz_timer, collect_metrics  # noqa: E402
 from searches._samplers import (  # noqa: E402
-    SAMPLER_BUILDERS,
     _NSS_DEFAULTS,
+    SAMPLER_BUILDERS,
     n_live_for,
     vmap_batch_for_cell,
 )
 from searches._setup import build_for_cell, format_best_fit  # noqa: E402
-
 
 _DEFAULT_INSTRUMENTS: dict[str, str] = {
     "imaging": "hst",
@@ -77,9 +75,7 @@ def run_search(
         return
 
     cli = parse_profile_cli()
-    instrument = (
-        cli.instrument or default_instrument or _DEFAULT_INSTRUMENTS[dataset_class]
-    )
+    instrument = cli.instrument or default_instrument or _DEFAULT_INSTRUMENTS[dataset_class]
     config_name = cli.config_name or "default"
     use_jax = _decide_use_jax()
 
@@ -155,13 +151,7 @@ def run_search(
     _print_summary(summary, metrics)
 
     default_dir = (
-        _WORKSPACE_ROOT
-        / "results"
-        / "searches"
-        / sampler
-        / dataset_class
-        / model_type
-        / instrument
+        _WORKSPACE_ROOT / "results" / "searches" / sampler / dataset_class / model_type / instrument
     )
     json_path, png_path = resolve_output_paths(
         cli, default_dir=default_dir, default_basename=config_name

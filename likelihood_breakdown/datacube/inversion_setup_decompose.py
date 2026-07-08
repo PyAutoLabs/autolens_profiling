@@ -64,36 +64,38 @@ pyauto-api-gate: skip
   Python imports it fine.)
 """
 
-import numpy as np
-import jax
-import jax.numpy as jnp
 import os
-import time
 import sys
-from pathlib import Path
+import time
 from contextlib import contextmanager
+from pathlib import Path
 
+import autoarray as aa
 import autofit as af
 import autolens as al
-import autoarray as aa
+import jax
+import jax.numpy as jnp
+import numpy as np
 from autofit.jax import register_model as _register_model_pytrees
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from _adapt_image_util import adapt_image_for_dataset  # noqa: E402
-
 import os as _smoke_os
 import sys as _smoke_sys
+
+from _adapt_image_util import adapt_image_for_dataset  # noqa: E402
+
 if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
     _smoke_sys.exit(0)
 
 from _profile_cli import (  # noqa: E402
-    parse_profile_cli,
-    device_info_dict,
-    resolve_output_paths,
     auto_simulate_if_missing,
+    device_info_dict,
+    parse_profile_cli,
+    resolve_output_paths,
 )
 from simulators.interferometer import INSTRUMENTS  # noqa: E402
+
 _cli = parse_profile_cli()
 
 instrument = _cli.instrument or "sma"
@@ -350,10 +352,14 @@ print("-" * 64)
 print(f"  {'channel-INVARIANT (shareable 1x)':<34}{channel_invariant:>12.6f} s")
 print(f"  {'channel-VARIANT (stays Nx)':<34}{channel_variant:>12.6f} s")
 if per_channel_total > 0:
-    print(f"  shareable fraction of inversion total: {100*channel_invariant/per_channel_total:.1f}%")
+    print(
+        f"  shareable fraction of inversion total: {100 * channel_invariant / per_channel_total:.1f}%"
+    )
 print("-" * 64)
 print("  raw cutpoint leaves (NOT a linear chain — C,D are parallel children of B):")
-print(f"    A trace={cost_A:.6f}  B mapper+L={cost_B:.6f}  C +curv={cost_C:.6f}  D +datavec={cost_D:.6f}")
+print(
+    f"    A trace={cost_A:.6f}  B mapper+L={cost_B:.6f}  C +curv={cost_C:.6f}  D +datavec={cost_D:.6f}"
+)
 print("=" * 64)
 
 # ---------------------------------------------------------------------------

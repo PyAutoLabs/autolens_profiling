@@ -1,22 +1,50 @@
 # results
 
-Versioned profiling artifacts written by scripts under [`likelihood/`](../likelihood/README.md), [`simulators/`](../simulators/README.md), and [`searches/`](../searches/README.md). Layout mirrors the source folders.
+Profiling artifacts written by the packages above. Layout mirrors the source
+packages; the dashboard tables in every README are rendered from this tree by
+`scripts/build_readme.py`.
 
-## Filename convention
+## Sections
+
+| Folder | Written by | Contents |
+|--------|-----------|----------|
+| `runtime/` | [`likelihood_runtime/`](../likelihood_runtime/README.md) sweeps | Per-config sweep outputs + `comparison.{json,png}` per cell; A100 logs/probes |
+| `breakdown/` | [`likelihood_breakdown/`](../likelihood_breakdown/README.md) | Versioned per-step decompositions |
+| `simulators/` | [`simulators/`](../simulators/README.md) | Versioned simulator run-time summaries |
+| `searches/` | [`searches/`](../searches/README.md) | Versioned sampler profiling summaries |
+| `quick_update/` | [`quick_update/`](../quick_update/README.md) | Unversioned fast re-profiling snapshots (scratch tier) |
+| `notes/` | humans + agents | Narrative findings and design notes (e.g. [`design_lock_in.md`](./notes/design_lock_in.md)) |
+| `baselines/` | campaign snapshots | Named, frozen baselines (e.g. `PreOptimizationTimes/`) — see below |
+
+## The two artifact shapes
+
+**Versioned summaries** — written by per-cell scripts run standalone; history
+is retained side-by-side so cross-release trends stay inspectable:
 
 ```
-<profile_name>_summary_v<YYYY>.<M>.<D>.<PATCH>.json
-<profile_name>_summary_v<YYYY>.<M>.<D>.<PATCH>.png
+<cell>_<purpose>_<instrument>_v<YYYY>.<M>.<D>.<PATCH>[_sparse].json   # purpose = summary | breakdown
+<cell>_<purpose>_<instrument>_v<YYYY>.<M>.<D>.<PATCH>[_sparse].png
 ```
 
-The version string is the PyAutoLens release that produced the numbers (e.g. `v2026.5.1.4`). Older versions are kept alongside newer ones so cross-release trends stay inspectable.
+The version string is the PyAutoLens release that produced the numbers
+(e.g. `v2026.5.29.4`).
 
-Example:
+**Per-config sweeps** — written by `likelihood_runtime/sweep.py` and
+aggregated by `aggregate.py`; each cell dir holds the *latest* sweep:
 
 ```
-results/likelihood/imaging/imaging_summary_v2026.5.1.4.json
-results/likelihood/imaging/imaging_summary_v2026.5.1.4.png
-results/likelihood/imaging/mge/delaunay_sparse_cpu_likelihood_summary_hst_v2026.5.1.4.json
+runtime/<class>/<model>[/<instrument>]/<config_name>[_sparse].{json,png,log}
+runtime/<class>/<model>[/<instrument>]/comparison.{json,png}
 ```
 
-Populated as Phases 1–3 land. See the top-level [README](../README.md) for the full phase plan.
+Config names: `local_cpu_fp64 | local_cpu_mp | local_gpu_fp64 | local_gpu_mp |
+hpc_a100_fp64 | hpc_a100_mp`, with `_sparse` as a filename suffix.
+
+## Named baselines
+
+A **baseline** is a frozen snapshot of a full campaign under
+`baselines/<BaselineName>/`, mirroring the `runtime/` layout plus a rendered
+`<BaselineName>.md` with every headline number on one page. Baselines are
+append-only — never edited after the campaign closes. The first baseline is
+**`PreOptimizationTimes`** (the pre-optimization reference). Full convention:
+[`notes/design_lock_in.md`](./notes/design_lock_in.md).

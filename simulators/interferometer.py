@@ -42,9 +42,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from instruments.interferometer import (  # noqa: E402, F401
     INSTRUMENTS,
+)
+from instruments.interferometer import (
     TRANSFORMER_CLASS_NAME as _TRANSFORMER_CLASS,
 )
-
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]  # autolens_profiling/
 
@@ -57,21 +58,19 @@ def simulate(instrument: str = "sma", output_root: Path | None = None) -> Path:
     import time
     from contextlib import contextmanager
 
-    import numpy as np
     import jax
     import jax.numpy as jnp
     import matplotlib
+    import numpy as np
 
     matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-
     import autolens as al
     import autolens.plot as aplt
+    import matplotlib.pyplot as plt
 
     if instrument not in INSTRUMENTS:
         raise ValueError(
-            f"Unknown instrument '{instrument}'. "
-            f"Choose from: {list(INSTRUMENTS.keys())}"
+            f"Unknown instrument '{instrument}'. Choose from: {list(INSTRUMENTS.keys())}"
         )
 
     config = INSTRUMENTS[instrument]
@@ -169,9 +168,9 @@ def simulate(instrument: str = "sma", output_root: Path | None = None) -> Path:
         # envelope matches ``uv_scale``. Crude vs real instrument coverage but
         # sufficient for profiling. Seeded for reproducibility.
         rng = np.random.default_rng(seed)
-        uv_wavelengths = rng.normal(
-            loc=0.0, scale=uv_scale / 3.0, size=(n_visibilities, 2)
-        ).astype(np.float64)
+        uv_wavelengths = rng.normal(loc=0.0, scale=uv_scale / 3.0, size=(n_visibilities, 2)).astype(
+            np.float64
+        )
 
     with timer.section("setup_simulator"):
         simulator = al.SimulatorInterferometer(
@@ -244,9 +243,7 @@ def simulate(instrument: str = "sma", output_root: Path | None = None) -> Path:
         )
 
     with timer.section("solver_solve_eager"):
-        positions = solver.solve(
-            tracer=tracer, source_plane_coordinate=source_galaxy.bulge.centre
-        )
+        positions = solver.solve(tracer=tracer, source_plane_coordinate=source_galaxy.bulge.centre)
 
     # === PART 5 — outputs ===
 
@@ -343,7 +340,7 @@ def simulate(instrument: str = "sma", output_root: Path | None = None) -> Path:
     )
     ax.set_title(
         f"AutoLens v{al_version}  |  "
-        f"{real_space_shape[0]}×{real_space_shape[1]} @ {pixel_scale}\"/px  |  "
+        f'{real_space_shape[0]}×{real_space_shape[1]} @ {pixel_scale}"/px  |  '
         f"{n_visibilities:,} visibilities (DFT)",
         fontsize=9,
     )
@@ -364,11 +361,11 @@ if __name__ == "__main__":
     # actually loads). Doing it here rather than at module level keeps the
     # module import side-effect-free for likelihood scripts that pull
     # ``INSTRUMENTS`` without wanting to trigger the autoconf shim.
-    from autoconf import jax_wrapper  # noqa: F401
-
     import argparse
     import os
     import sys
+
+    from autoconf import jax_wrapper  # noqa: F401
 
     # Smoke gate — only meaningful when running as a script, not on import.
     if os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":

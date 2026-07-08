@@ -26,7 +26,6 @@ vmap batch size via ``vram/`` and add the matching rows in
 
 from __future__ import annotations
 
-
 INSTRUMENTS: dict[str, dict] = {
     "euclid": {
         "pixel_scale": 0.1,
