@@ -60,12 +60,15 @@ jobs:
 
       - name: Install runtime dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install numpy scipy matplotlib jax jaxlib
-          pip install nautilus-sampler==1.0.5
-          pip install numba
-          # autoconf / autofit / autoarray / autogalaxy / autolens are imported
-          # from the sibling checkouts via PYTHONPATH below — no install needed.
+          python -m pip install --upgrade pip setuptools wheel
+          # Install each sibling checkout in dependency order (the PyAutoHeart
+          # lib-tests.yml pattern): satisfies the full third-party dep chain
+          # (pyyaml, astropy, jax, numba, ...) without hand-maintaining a
+          # package list. PYTHONPATH below still resolves the PyAuto* imports
+          # from source, so the checkouts stay authoritative.
+          for r in PyAutoConf PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+            pip install "../$r[optional]"
+          done
 
       - name: Install lint tools
         run: |
