@@ -46,9 +46,10 @@ import json
 import math
 import re
 import sys
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Optional
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 RESULTS_ROOT = REPO_ROOT / "results"
@@ -99,7 +100,7 @@ class Artifact:
     subfolder: str  # "imaging", "nautilus", or "" for flat
     script: str  # e.g. "mge", "pixelization", "simple"
     purpose: str  # "summary" | "breakdown"
-    instrument: Optional[str]  # e.g. "hst", "sma", or None
+    instrument: str | None  # e.g. "hst", "sma", or None
     sparse: bool
     version: tuple[int, ...]
     raw_version: str
@@ -176,9 +177,7 @@ def _baseline_names() -> list[str]:
     return sorted(d.name for d in BASELINES_ROOT.iterdir() if d.is_dir())
 
 
-def _latest_per_group(
-    artifacts: Iterable[Artifact], key
-) -> dict[tuple, Artifact]:
+def _latest_per_group(artifacts: Iterable[Artifact], key) -> dict[tuple, Artifact]:
     """For each group key, keep the artifact with the highest version."""
     latest: dict[tuple, Artifact] = {}
     for a in artifacts:
@@ -197,7 +196,7 @@ def _no_data_block(message: str) -> str:
     return f"\n_No data yet — {message}_\n"
 
 
-def _format_time(seconds: Optional[float]) -> str:
+def _format_time(seconds: float | None) -> str:
     if seconds is None or not isinstance(seconds, (int, float)) or math.isnan(seconds):
         return "—"
     if seconds < 0.001:
@@ -207,7 +206,7 @@ def _format_time(seconds: Optional[float]) -> str:
     return f"{seconds:.2f} s"
 
 
-def _config_headline_seconds(cfg: dict) -> Optional[float]:
+def _config_headline_seconds(cfg: dict) -> float | None:
     """Per-call full-pipeline cost from one comparison.json config entry."""
     for key in (
         "full_pipeline_per_call",
@@ -221,7 +220,7 @@ def _config_headline_seconds(cfg: dict) -> Optional[float]:
     return None
 
 
-def _config_vmap_seconds(cfg: dict) -> Optional[float]:
+def _config_vmap_seconds(cfg: dict) -> float | None:
     vmap = cfg.get("vmap")
     if isinstance(vmap, dict):
         v = vmap.get("per_call")
@@ -242,9 +241,7 @@ def _ordered_config_names(cells: list[RuntimeCell]) -> list[str]:
     return ordered
 
 
-def _render_runtime_table(
-    cells: list[RuntimeCell], baselines: dict[str, list[RuntimeCell]]
-) -> str:
+def _render_runtime_table(cells: list[RuntimeCell], baselines: dict[str, list[RuntimeCell]]) -> str:
     """Cells × configs matrix of full-pipeline per-call cost.
 
     When named baselines exist under ``results/baselines/``, one extra
@@ -253,9 +250,7 @@ def _render_runtime_table(
     e.g. ``PreOptimizationTimes`` are visible at a glance.
     """
     if not cells:
-        return _no_data_block(
-            "run `likelihood_runtime/sweep.py` then `aggregate.py` to populate."
-        )
+        return _no_data_block("run `likelihood_runtime/sweep.py` then `aggregate.py` to populate.")
     config_names = _ordered_config_names(cells)
     baseline_names = sorted(baselines)
 
@@ -264,11 +259,10 @@ def _render_runtime_table(
     rows.append("|" + "|".join(["---"] * len(header)) + "|")
 
     baseline_by_cell = {
-        name: {c.cell: c for c in cell_list}
-        for name, cell_list in baselines.items()
+        name: {c.cell: c for c in cell_list} for name, cell_list in baselines.items()
     }
 
-    def _headline_any_config(cell: RuntimeCell) -> Optional[float]:
+    def _headline_any_config(cell: RuntimeCell) -> float | None:
         cfgs = cell.configs
         for cname in reversed(_ordered_config_names([cell])):  # prefer A100/extras
             v = _config_headline_seconds(cfgs.get(cname, {}))
@@ -292,9 +286,7 @@ def _render_breakdown_table(artifacts: list[Artifact]) -> str:
     """One row per (class, script, instrument, path) with the step-sum total."""
     relevant = [a for a in artifacts if a.section == "breakdown" and a.purpose == "breakdown"]
     if not relevant:
-        return _no_data_block(
-            "run a script under `likelihood_breakdown/` to populate."
-        )
+        return _no_data_block("run a script under `likelihood_breakdown/` to populate.")
     latest = _latest_per_group(
         relevant, key=lambda a: (a.subfolder, a.script, a.instrument, a.sparse)
     )
@@ -312,7 +304,7 @@ def _render_breakdown_table(artifacts: list[Artifact]) -> str:
     return "\n" + "\n".join(rows) + "\n"
 
 
-def _simulator_total_seconds(art: Artifact) -> Optional[float]:
+def _simulator_total_seconds(art: Artifact) -> float | None:
     phases = art.data.get("phases")
     if isinstance(phases, dict):
         try:
@@ -333,16 +325,12 @@ def _render_simulator_table(artifacts: list[Artifact]) -> str:
     rows.append("|--------|-----------------|--------------------|")
     for script, art in sorted(latest.items()):
         total = _simulator_total_seconds(art)
-        rows.append(
-            f"| `{script}.py` | {_format_time(total)} | v{art.raw_version} |"
-        )
+        rows.append(f"| `{script}.py` | {_format_time(total)} | v{art.raw_version} |")
     return "\n" + "\n".join(rows) + "\n"
 
 
 def _render_nautilus_table(artifacts: list[Artifact]) -> str:
-    relevant = [
-        a for a in artifacts if a.section == "searches" and a.subfolder == "nautilus"
-    ]
+    relevant = [a for a in artifacts if a.section == "searches" and a.subfolder == "nautilus"]
     if not relevant:
         return _no_data_block(
             "run `searches/nautilus/{simple,jax}.py` to populate. See section README."
@@ -364,9 +352,7 @@ def _render_nautilus_table(artifacts: list[Artifact]) -> str:
             if perf.get("time_per_eval_ms") is not None
             else "—"
         )
-        evals_to_ml = (
-            f"{conv['evals_to_ml']:,}" if conv.get("evals_to_ml") is not None else "—"
-        )
+        evals_to_ml = f"{conv['evals_to_ml']:,}" if conv.get("evals_to_ml") is not None else "—"
         time_to_ml = _format_time(conv.get("time_to_ml_s"))
         rows.append(
             f"| `{script}.py` | {data.get('backend') or '—'} | "
@@ -397,10 +383,7 @@ def _render_headline(
 def _build_renderers():
     artifacts = _scan_artifacts()
     cells = _scan_runtime_cells(RUNTIME_ROOT)
-    baselines = {
-        name: _scan_runtime_cells(BASELINES_ROOT / name)
-        for name in _baseline_names()
-    }
+    baselines = {name: _scan_runtime_cells(BASELINES_ROOT / name) for name in _baseline_names()}
     return artifacts, {
         "headline": lambda: _render_headline(artifacts, cells, baselines),
         "runtime": lambda: _render_runtime_table(cells, baselines),

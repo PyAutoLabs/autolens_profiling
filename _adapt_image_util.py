@@ -25,9 +25,9 @@ import autolens as al
 
 def adapt_image_for_dataset(
     *,
-    dataset_path: Union[str, Path],
+    dataset_path: str | Path,
     dataset,
-    tracer: Optional[al.Tracer] = None,
+    tracer: al.Tracer | None = None,
 ) -> aa.Array2D:
     """Return the lensed-source image masked to ``dataset.mask``.
 

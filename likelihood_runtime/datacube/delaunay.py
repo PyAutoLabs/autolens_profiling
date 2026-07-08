@@ -87,34 +87,33 @@ require a different graph shape and isn't the bottleneck we care about for
 the shared-``Lᵀ W̃ L`` optimisation.
 """
 
-import numpy as np
-import jax
-import jax.numpy as jnp
 import os
-import time
 import subprocess
 import sys
-from pathlib import Path
+import time
 from contextlib import contextmanager
+from pathlib import Path
 
+import autoarray as aa
 import autofit as af
 import autolens as al
-import autoarray as aa
+import jax
+import jax.numpy as jnp
+import numpy as np
 from autofit.jax import register_model as _register_model_pytrees
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from _adapt_image_util import adapt_image_for_dataset  # noqa: E402
-
 # ---------------------------------------------------------------------------
 # Instrument configuration
 # ---------------------------------------------------------------------------
-
-
 # AUTOLENS_PROFILING_SMOKE=1 short-circuit (Phase 5 / CI lint smoke).
 # Verifies the import graph + module-level setup succeeded without running
 # the full profiling pipeline. Skipped entirely when the env var is unset.
 import os as _smoke_os
 import sys as _smoke_sys
+
+from _adapt_image_util import adapt_image_for_dataset  # noqa: E402
+
 if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
     _smoke_sys.exit(0)
@@ -122,16 +121,19 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 # Sweep-driver CLI args (--config-name / --output-dir / --use-mixed-precision).
 # Tolerates extra/unknown args via parse_known_args inside the helper.
 from _profile_cli import (  # noqa: E402
-    parse_profile_cli,
-    device_info_dict,
-    resolve_output_paths,
     auto_simulate_if_missing,
+    device_info_dict,
+    parse_profile_cli,
+    resolve_output_paths,
 )
 from simulators.interferometer import INSTRUMENTS  # noqa: E402
-from vram import vmap_batch_for, write_probe_json, ProbeResult  # noqa: E402
+from vram import ProbeResult, vmap_batch_for, write_probe_json  # noqa: E402
+
 _cli = parse_profile_cli()
 
-instrument = _cli.instrument or "sma"  # default; override via --instrument (cube is N copies of the per-instrument dataset)
+instrument = (
+    _cli.instrument or "sma"
+)  # default; override via --instrument (cube is N copies of the per-instrument dataset)
 
 # n_channels = 34 matches the prior Hannah ALMA cube fiducial. For quick
 # iteration on the smaller sma dataset, drop this to 4.
@@ -143,6 +145,7 @@ regularization_coefficient = 1.0
 # ---------------------------------------------------------------------------
 # Profiling helpers
 # ---------------------------------------------------------------------------
+
 
 class Timer:
     """Accumulates named timing measurements and prints a summary."""
@@ -267,18 +270,14 @@ print(f"  Visibilities/chan:  {n_visibilities}")
 print("\n--- Adapt image (lensed source) ---")
 
 with timer.section("adapt_image_build"):
-    adapt_image = adapt_image_for_dataset(
-        dataset_path=dataset_path, dataset=dataset_list[0]
-    )
+    adapt_image = adapt_image_for_dataset(dataset_path=dataset_path, dataset=dataset_list[0])
 
 print(f"  adapt_image shape (slim): {adapt_image.shape_slim}")
 
 print("\n--- Image mesh construction (Hilbert) ---")
 
 with timer.section("image_mesh_hilbert"):
-    image_mesh = al.image_mesh.Hilbert(
-        pixels=hilbert_pixels, weight_power=1.0, weight_floor=0.0
-    )
+    image_mesh = al.image_mesh.Hilbert(pixels=hilbert_pixels, weight_power=1.0, weight_floor=0.0)
     image_plane_mesh_grid = image_mesh.image_plane_mesh_grid_from(
         mask=dataset_list[0].real_space_mask, adapt_data=adapt_image
     )
@@ -405,18 +404,23 @@ print(f"  cube reference log_evidence (sum) = {cube_log_evidence_ref:.6f}")
 
 if _cli.vmap_probe:
     probe_path = (
-        (_cli.output_dir or (_workspace_root / "results" / "likelihood" / "datacube"))
-        / "vmap_probe.json"
-    )
+        _cli.output_dir or (_workspace_root / "results" / "likelihood" / "datacube")
+    ) / "vmap_probe.json"
     probe_path.parent.mkdir(parents=True, exist_ok=True)
     import json
-    probe_path.write_text(json.dumps({
-        "dataset": "datacube",
-        "model": "delaunay",
-        "instrument": instrument,
-        "recommended_batch_size": None,
-        "note": "datacube vmap intentionally skipped — natural batching axis is channels, not parameters",
-    }, indent=2))
+
+    probe_path.write_text(
+        json.dumps(
+            {
+                "dataset": "datacube",
+                "model": "delaunay",
+                "instrument": instrument,
+                "recommended_batch_size": None,
+                "note": "datacube vmap intentionally skipped — natural batching axis is channels, not parameters",
+            },
+            indent=2,
+        )
+    )
     print(f"  vmap_probe: cell intentionally skipped — wrote {probe_path}")
     sys.exit(0)
 
@@ -507,7 +511,9 @@ print(
 # ===================================================================
 
 import json
+
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
@@ -529,7 +535,7 @@ print(f"  Cube reference log_evidence:  {cube_log_evidence_ref}")
 if full_cube_result is not None:
     print(f"  Cube JIT log_evidence:        {float(full_cube_result)}")
 else:
-    print(f"  Cube JIT log_evidence:        SKIPPED (CUBE_FULL_JIT=1 to enable)")
+    print("  Cube JIT log_evidence:        SKIPPED (CUBE_FULL_JIT=1 to enable)")
 print("-" * 70)
 
 # Shared-Lᵀ W̃ L savings estimate was a per-step-breakdown deliverable —
@@ -565,9 +571,7 @@ likelihood_summary = {
         "regularization_coefficient": regularization_coefficient,
     },
     "cube_log_evidence_eager": cube_log_evidence_ref,
-    "cube_log_evidence_jit": (
-        float(full_cube_result) if full_cube_result is not None else None
-    ),
+    "cube_log_evidence_jit": (float(full_cube_result) if full_cube_result is not None else None),
     "log_evidence_per_channel_eager": [float(le) for le in log_evidence_per_channel],
     "full_pipeline_cube_single_jit": full_pipeline_per_call,
     "shared_lwl_savings_estimate": shared_lwl_savings,
@@ -598,9 +602,7 @@ EXPECTED_LOG_EVIDENCE_PER_CHANNEL = {
 }
 
 _per_channel = EXPECTED_LOG_EVIDENCE_PER_CHANNEL.get(instrument)
-expected_cube_log_evidence = (
-    n_channels * _per_channel if _per_channel is not None else None
-)
+expected_cube_log_evidence = n_channels * _per_channel if _per_channel is not None else None
 
 if expected_cube_log_evidence is None:
     print(
@@ -631,4 +633,4 @@ else:
             rtol=1e-3,
             err_msg=f"datacube/delaunay[{instrument}]: regression — full cube log_evidence drifted",
         )
-        print(f"  Full-pipeline cube regression assertion PASSED")
+        print("  Full-pipeline cube regression assertion PASSED")

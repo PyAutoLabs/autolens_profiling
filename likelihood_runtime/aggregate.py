@@ -34,7 +34,6 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _DEFAULT_OUTPUT_ROOT = _REPO_ROOT / "results" / "runtime"
 
@@ -205,7 +204,8 @@ def _render_png(comparison: dict, cell_id: str, png_path: Path) -> None:
     n_steps, n_cfgs = len(step_union), len(config_names)
     # Drop configs that have no positive step data — log scale can't render NaN/0.
     config_names = [
-        c for c in config_names
+        c
+        for c in config_names
         if any(
             isinstance(v, (int, float)) and np.isfinite(v) and v > 0
             for v in configs[c].get("steps", {}).values()

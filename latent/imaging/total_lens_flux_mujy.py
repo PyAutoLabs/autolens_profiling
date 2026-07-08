@@ -16,23 +16,23 @@ compiles to a single fused kernel.
 import argparse
 import json
 import os
+import os as _os
+
+# AUTOLENS_PROFILING_SMOKE=1 short-circuit.
+import sys as _sys
+import tempfile
 import time
 from pathlib import Path
 
+import autofit as af
+import autolens as al
 import jax
 import jax.numpy as jnp
 import numpy as np
-
-import tempfile
-
-import autofit as af
-import autolens as al
-from autolens import fixtures
 from autoconf import conf
+from autolens import fixtures
 from autolens.analysis.latent import LATENT_FUNCTIONS
 
-# AUTOLENS_PROFILING_SMOKE=1 short-circuit.
-import sys as _sys, os as _os
 if _os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports OK; exiting.")
     _sys.exit(0)
@@ -43,10 +43,7 @@ LATENT_KEY = "total_lens_flux_mujy"
 def _push_single_latent_config(latent_key: str) -> Path:
     """Write a temp config dir with only latent_key enabled and push it."""
     tmpdir = Path(tempfile.mkdtemp(prefix="latent_cfg_"))
-    yaml_lines = [
-        f"{k}: {'true' if k == latent_key else 'false'}"
-        for k in LATENT_FUNCTIONS
-    ]
+    yaml_lines = [f"{k}: {'true' if k == latent_key else 'false'}" for k in LATENT_FUNCTIONS]
     (tmpdir / "latent.yaml").write_text("\n".join(yaml_lines) + "\n")
     conf.instance.push(str(tmpdir))
     return tmpdir

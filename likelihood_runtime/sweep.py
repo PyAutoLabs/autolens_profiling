@@ -44,8 +44,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-
-_REPO_ROOT = Path(__file__).resolve().parents[1]                 # autolens_profiling/
+_REPO_ROOT = Path(__file__).resolve().parents[1]  # autolens_profiling/
 _DEFAULT_OUTPUT_ROOT = _REPO_ROOT / "results" / "runtime"
 _DEFAULT_PYTHON = sys.executable
 
@@ -53,13 +52,13 @@ _DEFAULT_PYTHON = sys.executable
 # (dataset_class, model). Order is roughly cheapest -> heaviest so failures
 # surface quickly during iteration.
 CELLS: list[tuple[str, str]] = [
-    ("imaging",         "mge"),
-    ("imaging",         "pixelization"),
-    ("imaging",         "delaunay"),
-    ("interferometer",  "mge"),
-    ("interferometer",  "pixelization"),
-    ("interferometer",  "delaunay"),
-    ("datacube",        "delaunay"),
+    ("imaging", "mge"),
+    ("imaging", "pixelization"),
+    ("imaging", "delaunay"),
+    ("interferometer", "mge"),
+    ("interferometer", "pixelization"),
+    ("interferometer", "delaunay"),
+    ("datacube", "delaunay"),
 ]
 
 
@@ -194,8 +193,10 @@ def _run_one(
     cmd = [
         python,
         str(script_path),
-        "--config-name", config.name,
-        "--output-dir", str(out_dir),
+        "--config-name",
+        config.name,
+        "--output-dir",
+        str(out_dir),
         *config.extra_args,
         *(("--sparse",) if sparse else ()),
     ]
@@ -225,11 +226,14 @@ def _run_one(
             )
         elapsed = time.time() - t0
         ok = proc.returncode == 0
-        print(f"    {'OK ' if ok else 'FAIL'} ({elapsed:.1f}s, exit={proc.returncode}) -> {log_path.name}")
+        print(
+            f"    {'OK ' if ok else 'FAIL'} ({elapsed:.1f}s, exit={proc.returncode}) -> {log_path.name}"
+        )
 
         # Verify the device.backend in the JSON matches expectations.
         if ok:
             import json
+
             json_path = out_dir / f"{config.name}{log_suffix}.json"
             if json_path.exists():
                 try:
@@ -255,8 +259,10 @@ def main() -> int:
     cells = _resolve_cells(args)
     configs = _resolve_configs(args)
 
-    print(f"sweep_likelihood: {len(cells)} cells x {len(configs)} configs "
-          f"= {len(cells) * len(configs)} runs")
+    print(
+        f"sweep_likelihood: {len(cells)} cells x {len(configs)} configs "
+        f"= {len(cells) * len(configs)} runs"
+    )
     print(f"  cells:    {[f'{c}/{m}' for (c, m) in cells]}")
     print(f"  configs:  {[c.name for c in configs]}")
     print(f"  output:   {args.output_root}")
@@ -267,7 +273,7 @@ def main() -> int:
     summary: list[tuple[str, str, bool, float]] = []
     overall_t0 = time.time()
 
-    for (cls, model) in cells:
+    for cls, model in cells:
         script_path = _REPO_ROOT / "likelihood_runtime" / cls / f"{model}.py"
         if not script_path.exists():
             print(f"\n!!! missing script: {script_path}")
@@ -280,7 +286,11 @@ def main() -> int:
         for cfg in configs:
             try:
                 ok, elapsed, _log = _run_one(
-                    args.python, script_path, cfg, out_dir, args.dry_run,
+                    args.python,
+                    script_path,
+                    cfg,
+                    out_dir,
+                    args.dry_run,
                     sparse=args.sparse,
                 )
             except KeyboardInterrupt:
@@ -293,7 +303,7 @@ def main() -> int:
     print(f"sweep_likelihood summary  ({total:.1f}s total)")
     print("=" * 70)
     print(f"  {'cell':<32}{'config':<22}{'ok':<6}{'elapsed':>10}")
-    print(f"  {'-'*32}{'-'*22}{'-'*6}{'-'*10}")
+    print(f"  {'-' * 32}{'-' * 22}{'-' * 6}{'-' * 10}")
     failures = 0
     for cell, cfg, ok, t in summary:
         flag = "OK" if ok else "FAIL"

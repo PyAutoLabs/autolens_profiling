@@ -38,23 +38,23 @@ Three-tier numerical assertions
 """
 
 import json
-import time
-import subprocess
-import sys
-from contextlib import contextmanager
-from pathlib import Path
-
-import numpy as np
-import jax
-import jax.numpy as jnp
-import matplotlib
-
 
 # AUTOLENS_PROFILING_SMOKE=1 short-circuit (Phase 5 / CI lint smoke).
 # Verifies the import graph + module-level setup succeeded without running
 # the full profiling pipeline. Skipped entirely when the env var is unset.
 import os as _smoke_os
+import subprocess
+import sys
 import sys as _smoke_sys
+import time
+from contextlib import contextmanager
+from pathlib import Path
+
+import jax
+import jax.numpy as jnp
+import matplotlib
+import numpy as np
+
 if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
     _smoke_sys.exit(0)
@@ -63,10 +63,10 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 # Tolerates extra/unknown args via parse_known_args inside the helper.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from _profile_cli import (  # noqa: E402
-    parse_profile_cli,
-    device_info_dict,
-    resolve_output_paths,
     auto_simulate_if_missing,
+    device_info_dict,
+    parse_profile_cli,
+    resolve_output_paths,
 )
 from simulators.point_source import INSTRUMENTS  # noqa: E402
 from vram import (  # noqa: E402
@@ -75,15 +75,14 @@ from vram import (  # noqa: E402
     vmap_batch_for,
     write_probe_json,
 )
+
 _cli = parse_profile_cli()
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-
 import autofit as af
 import autolens as al
+import matplotlib.pyplot as plt
 from autofit.jax import register_model as _register_model_pytrees
-
 
 # ---------------------------------------------------------------------------
 # Profiling helpers (mirrors imaging/mge.py and source_plane.py)
@@ -157,9 +156,7 @@ print(f"\n--- Dataset loading [{instrument}] ---")
 
 _script_dir = Path(__file__).resolve().parent
 _workspace_root = _script_dir.parents[1]
-dataset_path = (
-    Path("dataset") / "point_source" / instrument
-)
+dataset_path = Path("dataset") / "point_source" / instrument
 
 auto_simulate_if_missing(
     dataset_path,
@@ -303,9 +300,8 @@ if _cli.vmap_probe:
     )
     recommended = recommend_batch_size(probe)
     probe_path = (
-        (_cli.output_dir or (_workspace_root / "results" / "likelihood" / "point_source"))
-        / "vmap_probe.json"
-    )
+        _cli.output_dir or (_workspace_root / "results" / "likelihood" / "point_source")
+    ) / "vmap_probe.json"
     write_probe_json(probe, recommended, probe_path)
     print(f"\n  vmap_probe samples: {probe.samples}")
     print(f"  per_replica:        {probe.per_replica_mb:.1f} MB / replica")
@@ -388,10 +384,7 @@ compiled_batched = lowered_batched.compile()
 mem = compiled_batched.memory_analysis()
 print(f"  Output size:  {mem.output_size_in_bytes / 1024**2:.3f} MB")
 print(f"  Temp size:    {mem.temp_size_in_bytes / 1024**2:.3f} MB")
-print(
-    f"  Total:        "
-    f"{(mem.output_size_in_bytes + mem.temp_size_in_bytes) / 1024**2:.3f} MB"
-)
+print(f"  Total:        {(mem.output_size_in_bytes + mem.temp_size_in_bytes) / 1024**2:.3f} MB")
 
 
 # ===================================================================
@@ -407,7 +400,7 @@ print(f"  Dataset:                    {instrument}")
 print(f"  Observed image positions:   {n_observed_positions}")
 print(f"  Position noise sigma:       {positions_noise_sigma}")
 print(f"  Free parameters:            {model.total_free_parameters}")
-print(f"  fit_positions_cls:          FitPositionsImagePairAll (image-plane chi-squared)")
+print("  fit_positions_cls:          FitPositionsImagePairAll (image-plane chi-squared)")
 print("-" * 70)
 print(f"  Eager full likelihood:      {eager_per_call:.6f} s/call  ({log_likelihood_ref:.6f})")
 print(f"  Full pipeline (JIT):        {full_pipeline_per_call:.6f} s/call")

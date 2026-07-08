@@ -34,11 +34,10 @@ import sys
 import time
 from pathlib import Path
 
-import numpy as np
-import jax.numpy as jnp
-
 import autofit as af
 import autolens as al
+import jax.numpy as jnp
+import numpy as np
 from autofit.non_linear.fitness import Fitness
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))

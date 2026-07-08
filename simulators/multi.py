@@ -16,34 +16,31 @@ Run from any path:
     python simulators/multi.py
 """
 
-from autoconf import jax_wrapper  # noqa: F401 — must be first
-
 import json
-import time
-from contextlib import contextmanager
-from pathlib import Path
-
-import numpy as np
-import jax
-import jax.numpy as jnp
-import matplotlib
-
 
 # AUTOLENS_PROFILING_SMOKE=1 short-circuit (Phase 5 / CI lint smoke).
 # Verifies the import graph + module-level setup succeeded without running
 # the full profiling pipeline. Skipped entirely when the env var is unset.
 import os as _smoke_os
 import sys as _smoke_sys
+import time
+from contextlib import contextmanager
+from pathlib import Path
+
+import jax
+import jax.numpy as jnp
+import matplotlib
+import numpy as np
+from autoconf import jax_wrapper  # noqa: F401 — must be first
+
 if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
     _smoke_sys.exit(0)
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-
 import autolens as al
 import autolens.plot as aplt
-
+import matplotlib.pyplot as plt
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -111,9 +108,7 @@ _script_dir = Path(__file__).resolve().parent
 _workspace_root = _script_dir.parents[0]
 
 dataset_name = "simple"
-dataset_path = (
-    _workspace_root / "dataset" / "multi" / "imaging" / "lens_sersic"
-)
+dataset_path = _workspace_root / "dataset" / "multi" / "imaging" / "lens_sersic"
 dataset_path.mkdir(parents=True, exist_ok=True)
 
 waveband_list = ["g", "r"]
@@ -233,9 +228,7 @@ print("\n--- PART 3: simulator.via_tracer_from per band ---")
 
 np.random.seed(1)
 dataset_list = []
-for band, simulator, tracer, grid in zip(
-    waveband_list, simulator_list, tracer_list, grid_list
-):
+for band, simulator, tracer, grid in zip(waveband_list, simulator_list, tracer_list, grid_list):
     with timer.section(f"via_tracer_from_{band}"):
         dataset_list.append(simulator.via_tracer_from(tracer=tracer, grid=grid))
 
@@ -306,9 +299,7 @@ ax.set_yticks(y_pos)
 ax.set_yticklabels(labels, fontsize=9)
 ax.invert_yaxis()
 ax.set_xlabel("Time (s)", fontsize=11)
-fig.suptitle(
-    "Simulator Profiling: Multi-Wavelength Imaging", fontsize=12, fontweight="bold"
-)
+fig.suptitle("Simulator Profiling: Multi-Wavelength Imaging", fontsize=12, fontweight="bold")
 ax.set_title(f"AutoLens v{al_version}  |  150×150  |  g+r bands", fontsize=9)
 ax.margins(x=0.22)
 fig.tight_layout()

@@ -43,7 +43,7 @@ class VizTimer:
     n_calls: int = 0
     _stack: list[float] = field(default_factory=list)
 
-    def __enter__(self) -> "VizTimer":
+    def __enter__(self) -> VizTimer:
         self._stack.append(time.perf_counter())
         return self
 

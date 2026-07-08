@@ -23,23 +23,23 @@ instances (each starting with an empty cache) and timing them independently.
 import argparse
 import json
 import os
+import os as _os
+
+# AUTOLENS_PROFILING_SMOKE=1 short-circuit.
+import sys as _sys
+import tempfile
 import time
 from pathlib import Path
 
+import autofit as af
+import autolens as al
 import jax
 import jax.numpy as jnp
 import numpy as np
-
-import tempfile
-
-import autofit as af
-import autolens as al
-from autolens import fixtures
 from autoconf import conf
+from autolens import fixtures
 from autolens.analysis.latent import LATENT_FUNCTIONS
 
-# AUTOLENS_PROFILING_SMOKE=1 short-circuit.
-import sys as _sys, os as _os
 if _os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports OK; exiting.")
     _sys.exit(0)
@@ -50,10 +50,7 @@ LATENT_KEY = "effective_einstein_radius"
 def _push_single_latent_config(latent_key: str) -> Path:
     """Write a temp config dir with only latent_key enabled and push it."""
     tmpdir = Path(tempfile.mkdtemp(prefix="latent_cfg_"))
-    yaml_lines = [
-        f"{k}: {'true' if k == latent_key else 'false'}"
-        for k in LATENT_FUNCTIONS
-    ]
+    yaml_lines = [f"{k}: {'true' if k == latent_key else 'false'}" for k in LATENT_FUNCTIONS]
     (tmpdir / "latent.yaml").write_text("\n".join(yaml_lines) + "\n")
     conf.instance.push(str(tmpdir))
     return tmpdir
@@ -75,8 +72,6 @@ def _time_closure_cache(tracer, dataset, xp=np):
     try:
         # Config already pushed by main(); the pushed config has this latent enabled.
 
-        analysis = al.AnalysisImaging(dataset=dataset, use_jax=(xp is not np), magzero=25.0)
-
         lens = af.Model(al.Galaxy, redshift=0.5, mass=al.mp.Isothermal, bulge=al.lp.Sersic)
         source = af.Model(al.Galaxy, redshift=1.0, bulge=al.lp.Sersic)
         model = af.Collection(galaxies=af.Collection(lens=lens, source=source))
@@ -97,6 +92,7 @@ def _time_closure_cache(tracer, dataset, xp=np):
         # Second call — LensCalc on `fit.tracer` still has its cache populated
         # from above. Construct a new LensCalc explicitly to test warm-cache path.
         from autogalaxy.operate.lens_calc import LensCalc
+
         lc2 = LensCalc.from_mass_obj(fit.tracer)
         init_guess = jnp.array([[1.0, 0.0], [0.0, 1.0], [-1.0, 0.0], [0.0, -1.0]])
         # Warm the ZeroSolver cache on lc2 first (mirrors the cold first call).

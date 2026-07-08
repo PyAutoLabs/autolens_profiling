@@ -23,18 +23,18 @@ from pathlib import Path
 
 os.environ.setdefault("MPLBACKEND", "Agg")
 
-from autoconf import jax_wrapper  # noqa: E402
-from autoconf.dictable import from_dict  # noqa: E402
-
 import autofit as af  # noqa: E402
 import autolens as al  # noqa: E402
 import numpy as np  # noqa: E402
+from autoconf import jax_wrapper  # noqa: E402
+from autoconf.dictable import from_dict  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 try:
     from _profile_cli import device_info_dict
 except ImportError:
+
     def device_info_dict():
         return {"backend": "unknown"}
 
@@ -162,10 +162,7 @@ result = {
     "n_repeats": n_repeats,
     "device": device_info_dict(),
     "phases": summary,
-    "all_timings": {
-        k: [round(v, 4) for v in vals]
-        for k, vals in timer.records.items()
-    },
+    "all_timings": {k: [round(v, 4) for v in vals] for k, vals in timer.records.items()},
 }
 
 output_dir = workspace_root / "results" / "quick_update"

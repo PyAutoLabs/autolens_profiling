@@ -42,30 +42,28 @@ Results JSON and PNG are written to ``results/breakdown/imaging/`` using
 the basename ``mge_breakdown_{instrument}_v{al_version}``.
 """
 
-import numpy as np
-import jax
-import jax.numpy as jnp
-import time
-import subprocess
-import sys
-from pathlib import Path
-from contextlib import contextmanager
-
-import autofit as af
-import autolens as al
-import autoarray as aa
-from autofit.jax import register_model as _register_model_pytrees
-
 # ---------------------------------------------------------------------------
 # Instrument configuration
 # ---------------------------------------------------------------------------
-
-
 # AUTOLENS_PROFILING_SMOKE=1 short-circuit (Phase 5 / CI lint smoke).
 # Verifies the import graph + module-level setup succeeded without running
 # the full profiling pipeline. Skipped entirely when the env var is unset.
 import os as _smoke_os
+import subprocess
+import sys
 import sys as _smoke_sys
+import time
+from contextlib import contextmanager
+from pathlib import Path
+
+import autoarray as aa
+import autofit as af
+import autolens as al
+import jax
+import jax.numpy as jnp
+import numpy as np
+from autofit.jax import register_model as _register_model_pytrees
+
 if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
     _smoke_sys.exit(0)
@@ -74,12 +72,13 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 # Tolerates extra/unknown args via parse_known_args inside the helper.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from _profile_cli import (  # noqa: E402
-    parse_profile_cli,
-    device_info_dict,
-    resolve_output_paths,
     auto_simulate_if_missing,
+    device_info_dict,
+    parse_profile_cli,
+    resolve_output_paths,
 )
 from simulators.imaging import INSTRUMENTS  # noqa: E402
+
 _cli = parse_profile_cli()
 
 instrument = "hst"  # <-- change this to profile a different instrument
@@ -88,6 +87,7 @@ instrument = "hst"  # <-- change this to profile a different instrument
 # ---------------------------------------------------------------------------
 # Profiling helpers
 # ---------------------------------------------------------------------------
+
 
 class Timer:
     """Accumulates named timing measurements and prints a summary."""
@@ -246,9 +246,7 @@ with timer.section("model_build"):
     shear.gamma_1 = 0.05
     shear.gamma_2 = 0.05
 
-    lens = af.Model(
-        al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear
-    )
+    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
 
     source_bulge = al.model_util.mge_model_from(
         mask_radius=mask_radius, total_gaussians=20, centre_prior_is_uniform=False
@@ -353,11 +351,13 @@ with timer.section("ray_trace_eager"):
 
 print(f"  Number of planes traced: {len(traced_grids)}")
 
+
 def ray_trace_raw(grid_raw):
     """Wraps ray-tracing so inputs/outputs are raw arrays."""
     grid = aa.Grid2DIrregular(values=grid_raw, xp=jnp)
     traced = tracer.traced_grid_2d_list_from(grid=grid, xp=jnp)
     return jnp.stack([tg.array for tg in traced])
+
 
 _, traced_grids_raw = jit_profile(ray_trace_raw, "ray_trace_jit", grid_lp_raw)
 likelihood_steps.append(("Ray-trace grids", timer.records[-1][1] / 10))
@@ -390,9 +390,12 @@ with timer.section("linear_obj_setup"):
 # mapping_matrix and operated_mapping_matrix_override already return raw arrays.
 with timer.section("mapping_matrix"):
     mapping_matrices = [func.mapping_matrix for func in lp_linear_funcs]
-    mapping_matrix = np.hstack(mapping_matrices) if len(mapping_matrices) > 1 else mapping_matrices[0]
+    mapping_matrix = (
+        np.hstack(mapping_matrices) if len(mapping_matrices) > 1 else mapping_matrices[0]
+    )
 
 print(f"  mapping_matrix shape: {mapping_matrix.shape}")
+
 
 def mapping_matrix_from_params(params_tree):
     """Compute mapping matrix from a pytree-shaped ``ModelInstance``.
@@ -417,6 +420,7 @@ def mapping_matrix_from_params(params_tree):
     matrices = [f.mapping_matrix for f in funcs]
     return jnp.hstack(matrices) if len(matrices) > 1 else matrices[0]
 
+
 _, mm_jit = jit_profile(mapping_matrix_from_params, "mapping_matrix_jit", params_tree)
 likelihood_steps.append(("Mapping matrix", timer.records[-1][1] / 10))
 
@@ -430,9 +434,12 @@ print("\n--- Step 3: Blurred mapping matrix ---")
 
 with timer.section("blurred_mapping_matrix"):
     blurred_matrices = [func.operated_mapping_matrix_override for func in lp_linear_funcs]
-    blurred_mapping_matrix = np.hstack(blurred_matrices) if len(blurred_matrices) > 1 else blurred_matrices[0]
+    blurred_mapping_matrix = (
+        np.hstack(blurred_matrices) if len(blurred_matrices) > 1 else blurred_matrices[0]
+    )
 
 print(f"  blurred_mapping_matrix shape: {blurred_mapping_matrix.shape}")
+
 
 def blurred_mm_from_params(params_tree):
     """Compute blurred mapping matrix from a pytree-shaped ``ModelInstance``."""
@@ -453,6 +460,7 @@ def blurred_mm_from_params(params_tree):
     matrices = [f.operated_mapping_matrix_override for f in funcs]
     return jnp.hstack(matrices) if len(matrices) > 1 else matrices[0]
 
+
 _, bmm_jit = jit_profile(blurred_mm_from_params, "blurred_mm_jit", params_tree)
 likelihood_steps.append(("Blurred mapping matrix", timer.records[-1][1] / 10))
 
@@ -464,12 +472,14 @@ print(f"  blurred_mapping_matrix (JIT) shape: {bmm_jit.shape}")
 
 print("\n--- Step 4: Data vector ---")
 
+
 def compute_data_vector(blurred_mapping_matrix, image, noise_map):
     return al.util.inversion_imaging.data_vector_via_blurred_mapping_matrix_from(
         blurred_mapping_matrix=blurred_mapping_matrix,
         image=image,
         noise_map=noise_map,
     )
+
 
 bmm_jnp = jnp.array(blurred_mapping_matrix)
 noise_jnp = jnp.array(dataset.noise_map.array)
@@ -478,9 +488,7 @@ with timer.section("data_vector_eager"):
     data_vector = compute_data_vector(bmm_jnp, data_array, noise_jnp)
     block(data_vector)
 
-_, data_vector = jit_profile(
-    compute_data_vector, "data_vector_jit", bmm_jnp, data_array, noise_jnp
-)
+_, data_vector = jit_profile(compute_data_vector, "data_vector_jit", bmm_jnp, data_array, noise_jnp)
 likelihood_steps.append(("Data vector (D)", timer.records[-1][1] / 10))
 
 print(f"  data_vector shape: {data_vector.shape}")
@@ -493,6 +501,7 @@ print("\n--- Step 5: Curvature matrix ---")
 
 n_linear = bmm_jnp.shape[1]
 
+
 def compute_curvature_matrix(blurred_mapping_matrix, noise_map):
     return al.util.inversion.curvature_matrix_via_mapping_matrix_from(
         mapping_matrix=blurred_mapping_matrix,
@@ -501,6 +510,7 @@ def compute_curvature_matrix(blurred_mapping_matrix, noise_map):
         no_regularization_index_list=list(range(n_linear)),
         xp=jnp,
     )
+
 
 with timer.section("curvature_matrix_eager"):
     curvature_matrix = compute_curvature_matrix(bmm_jnp, noise_jnp)
@@ -519,6 +529,7 @@ print(f"  curvature_matrix shape: {curvature_matrix.shape}")
 
 print("\n--- Step 6: Reconstruction (NNLS) ---")
 
+
 def compute_reconstruction(data_vector, curvature_matrix):
     return al.util.inversion.reconstruction_positive_only_from(
         data_vector=data_vector,
@@ -526,15 +537,16 @@ def compute_reconstruction(data_vector, curvature_matrix):
         xp=jnp,
     )
 
+
 with timer.section("reconstruction_eager"):
-    reconstruction = compute_reconstruction(
-        jnp.array(data_vector), jnp.array(curvature_matrix)
-    )
+    reconstruction = compute_reconstruction(jnp.array(data_vector), jnp.array(curvature_matrix))
     block(reconstruction)
 
 _, reconstruction = jit_profile(
-    compute_reconstruction, "reconstruction_jit",
-    jnp.array(data_vector), jnp.array(curvature_matrix)
+    compute_reconstruction,
+    "reconstruction_jit",
+    jnp.array(data_vector),
+    jnp.array(curvature_matrix),
 )
 likelihood_steps.append(("Reconstruction (NNLS)", timer.records[-1][1] / 10))
 
@@ -546,12 +558,14 @@ print(f"  reconstruction shape: {reconstruction.shape}")
 
 print("\n--- Step 7: Mapped reconstructed image ---")
 
+
 def compute_mapped_recon(blurred_mapping_matrix, reconstruction):
     return al.util.inversion.mapped_reconstructed_data_via_mapping_matrix_from(
         mapping_matrix=blurred_mapping_matrix,
         reconstruction=reconstruction,
         xp=jnp,
     )
+
 
 with timer.section("mapped_recon_eager"):
     mapped_recon = compute_mapped_recon(bmm_jnp, jnp.array(reconstruction))
@@ -570,23 +584,22 @@ print(f"  mapped_reconstructed_image shape: {mapped_recon.shape}")
 
 print("\n--- Step 8: Chi-squared & log likelihood ---")
 
+
 def compute_log_likelihood(data, noise_map, mapped_recon):
     residual = data - mapped_recon
     chi_squared = jnp.sum((residual / noise_map) ** 2)
-    noise_norm = jnp.sum(jnp.log(2 * jnp.pi * noise_map ** 2))
+    noise_norm = jnp.sum(jnp.log(2 * jnp.pi * noise_map**2))
     return -0.5 * (chi_squared + noise_norm)
+
 
 mapped_recon_jnp = jnp.array(mapped_recon)
 
 with timer.section("log_likelihood_eager"):
-    log_like = compute_log_likelihood(
-        data_array, noise_jnp, mapped_recon_jnp
-    )
+    log_like = compute_log_likelihood(data_array, noise_jnp, mapped_recon_jnp)
     block(log_like)
 
 _, log_like = jit_profile(
-    compute_log_likelihood, "log_likelihood_jit",
-    data_array, noise_jnp, mapped_recon_jnp
+    compute_log_likelihood, "log_likelihood_jit", data_array, noise_jnp, mapped_recon_jnp
 )
 likelihood_steps.append(("Chi-squared & log likelihood", timer.records[-1][1] / 10))
 
@@ -607,7 +620,9 @@ print("  Assertion PASSED: step-by-step matches FitImaging.log_likelihood")
 # ===================================================================
 
 import json
+
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
@@ -688,7 +703,7 @@ fig.suptitle(
     fontweight="bold",
 )
 ax.set_title(
-    f"AutoLens v{al_version}  |  {pixel_scale}\"/px  |  {n_image_pixels} pixels  |  "
+    f'AutoLens v{al_version}  |  {pixel_scale}"/px  |  {n_image_pixels} pixels  |  '
     f"{n_over_sampled_pixels} over-sampled  |  {n_linear_gaussians} Gaussians  |  "
     f"total: {step_total:.6f} s",
     fontsize=9,
@@ -717,6 +732,5 @@ np.testing.assert_allclose(
     ),
 )
 print(
-    f"  Eager regression assertion PASSED: log_likelihood matches "
-    f"{EXPECTED_LOG_LIKELIHOOD_HST:.6f}"
+    f"  Eager regression assertion PASSED: log_likelihood matches {EXPECTED_LOG_LIKELIHOOD_HST:.6f}"
 )

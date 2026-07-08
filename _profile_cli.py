@@ -30,15 +30,15 @@ from typing import Optional
 
 @dataclass(frozen=True)
 class ProfileCLI:
-    config_name: Optional[str]
-    output_dir: Optional[Path]
+    config_name: str | None
+    output_dir: Path | None
     use_mixed_precision: bool
-    instrument: Optional[str]
+    instrument: str | None
     vmap_probe: bool
     use_sparse_operator: bool
 
 
-def parse_profile_cli(default_config_name: Optional[str] = None) -> ProfileCLI:
+def parse_profile_cli(default_config_name: str | None = None) -> ProfileCLI:
     """Parse the sweep CLI flags accepted by every per-cell profile script.
 
     Returns ``ProfileCLI(config_name, output_dir, use_mixed_precision,
@@ -149,15 +149,19 @@ def device_info_dict() -> dict:
     }
     if info["backend"] == "gpu":
         try:
-            out = subprocess.check_output(
-                [
-                    "nvidia-smi",
-                    "--query-gpu=name,memory.used,memory.total",
-                    "--format=csv,noheader",
-                ],
-                stderr=subprocess.DEVNULL,
-                timeout=3,
-            ).decode().strip()
+            out = (
+                subprocess.check_output(
+                    [
+                        "nvidia-smi",
+                        "--query-gpu=name,memory.used,memory.total",
+                        "--format=csv,noheader",
+                    ],
+                    stderr=subprocess.DEVNULL,
+                    timeout=3,
+                )
+                .decode()
+                .strip()
+            )
             info["nvidia_smi"] = out.replace("\n", "; ")
         except Exception:
             pass
@@ -246,8 +250,10 @@ def auto_simulate_if_missing(
         [
             sys.executable,
             str(simulator_script),
-            "--instrument", instrument,
-            "--output-root", str(workspace_root),
+            "--instrument",
+            instrument,
+            "--output-root",
+            str(workspace_root),
         ],
         check=True,
     )

@@ -83,32 +83,31 @@ registration (``autofit.jax.register_model``). Exercises the ``TuplePrior``
 pytree support landed in PyAutoFit#1222.
 """
 
-import numpy as np
-import jax
-import jax.numpy as jnp
-import time
 import subprocess
 import sys
-from pathlib import Path
+import time
 from contextlib import contextmanager
+from pathlib import Path
 
 import autofit as af
 import autolens as al
+import jax
+import jax.numpy as jnp
+import numpy as np
 from autofit.jax import register_model as _register_model_pytrees
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from _adapt_image_util import adapt_image_for_dataset  # noqa: E402
-
 # ---------------------------------------------------------------------------
 # Instrument configuration
 # ---------------------------------------------------------------------------
-
-
 # AUTOLENS_PROFILING_SMOKE=1 short-circuit (Phase 5 / CI lint smoke).
 # Verifies the import graph + module-level setup succeeded without running
 # the full profiling pipeline. Skipped entirely when the env var is unset.
 import os as _smoke_os
 import sys as _smoke_sys
+
+from _adapt_image_util import adapt_image_for_dataset  # noqa: E402
+
 if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
     _smoke_sys.exit(0)
@@ -116,10 +115,10 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 # Sweep-driver CLI args (--config-name / --output-dir / --use-mixed-precision).
 # Tolerates extra/unknown args via parse_known_args inside the helper.
 from _profile_cli import (  # noqa: E402
-    parse_profile_cli,
-    device_info_dict,
-    resolve_output_paths,
     auto_simulate_if_missing,
+    device_info_dict,
+    parse_profile_cli,
+    resolve_output_paths,
 )
 from simulators.interferometer import INSTRUMENTS  # noqa: E402
 from vram import (  # noqa: E402
@@ -128,6 +127,7 @@ from vram import (  # noqa: E402
     vmap_batch_for,
     write_probe_json,
 )
+
 _cli = parse_profile_cli()
 
 instrument = _cli.instrument or "sma"  # default; override via --instrument
@@ -139,6 +139,7 @@ regularization_coefficient = 1.0
 # ---------------------------------------------------------------------------
 # Profiling helpers
 # ---------------------------------------------------------------------------
+
 
 class Timer:
     """Accumulates named timing measurements and prints a summary."""
@@ -264,18 +265,14 @@ print(f"  Total visibilities: {n_visibilities}")
 print("\n--- Adapt image (lensed source) ---")
 
 with timer.section("adapt_image_build"):
-    adapt_image = adapt_image_for_dataset(
-        dataset_path=dataset_path, dataset=dataset
-    )
+    adapt_image = adapt_image_for_dataset(dataset_path=dataset_path, dataset=dataset)
 
 print(f"  adapt_image shape (slim): {adapt_image.shape_slim}")
 
 print("\n--- Image mesh construction (Hilbert) ---")
 
 with timer.section("image_mesh_hilbert"):
-    image_mesh = al.image_mesh.Hilbert(
-        pixels=hilbert_pixels, weight_power=1.0, weight_floor=0.0
-    )
+    image_mesh = al.image_mesh.Hilbert(pixels=hilbert_pixels, weight_power=1.0, weight_floor=0.0)
     image_plane_mesh_grid = image_mesh.image_plane_mesh_grid_from(
         mask=dataset.real_space_mask, adapt_data=adapt_image
     )
@@ -409,6 +406,7 @@ analysis = al.AnalysisInterferometer(
     use_jax=True,
 )
 
+
 def full_pipeline_from_params(params_tree):
     """Full interferometer likelihood from a pytree-shaped ``ModelInstance``.
 
@@ -417,6 +415,7 @@ def full_pipeline_from_params(params_tree):
     ``aux_data`` partition set up by ``autofit.jax.register_model``.
     """
     return analysis.log_likelihood_function(instance=params_tree)
+
 
 _, full_result = jit_profile(full_pipeline_from_params, "full_pipeline", params_tree)
 full_pipeline_per_call = timer.records[-1][1] / 10
@@ -455,9 +454,8 @@ if _cli.vmap_probe:
     )
     recommended = recommend_batch_size(probe)
     probe_path = (
-        (_cli.output_dir or (_workspace_root / "results" / "likelihood" / "interferometer"))
-        / "vmap_probe.json"
-    )
+        _cli.output_dir or (_workspace_root / "results" / "likelihood" / "interferometer")
+    ) / "vmap_probe.json"
     write_probe_json(probe, recommended, probe_path)
     print(f"\n  vmap_probe samples: {probe.samples}")
     print(f"  per_replica:        {probe.per_replica_mb:.1f} MB / replica")
@@ -487,8 +485,10 @@ _n_leaves = len(jax.tree_util.tree_leaves(params_tree))
 if _vmap_skipped:
     print("  SKIPPED: vmap_batch_for() returned None for this (cell, instrument).")
 elif _n_leaves == 0:
-    print(f"  SKIPPED: model has 0 free parameters (all fixed to truth); "
-          f"vmap requires at least one array leaf.")
+    print(
+        "  SKIPPED: model has 0 free parameters (all fixed to truth); "
+        "vmap requires at least one array leaf."
+    )
 else:
     parameters = jax.tree_util.tree_map(
         lambda leaf: jnp.broadcast_to(leaf, (batch_size, *leaf.shape)),
@@ -551,7 +551,9 @@ else:
 # ===================================================================
 
 import json
+
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
@@ -617,7 +619,9 @@ likelihood_summary = {
     "log_evidence_jit": float(full_result),
     "full_pipeline_single_jit": full_pipeline_per_call,
     "vmap": vmap_payload,
-    "memory_mb": None if memory_analysis is None else {
+    "memory_mb": None
+    if memory_analysis is None
+    else {
         "output": memory_analysis.output_size_in_bytes / 1024**2,
         "temp": memory_analysis.temp_size_in_bytes / 1024**2,
     },
@@ -667,17 +671,14 @@ else:
             f"drifted (got {figure_of_merit_ref}, expected {expected_log_evidence})"
         ),
     )
-    print(
-        f"  Eager regression assertion PASSED: log_evidence matches "
-        f"{expected_log_evidence:.6f}"
-    )
+    print(f"  Eager regression assertion PASSED: log_evidence matches {expected_log_evidence:.6f}")
     np.testing.assert_allclose(
         float(full_result),
         expected_log_evidence,
         rtol=1e-3,
         err_msg=f"interferometer/delaunay[{instrument}]: regression — full log_evidence drifted",
     )
-    print(f"  Full-pipeline regression assertion PASSED")
+    print("  Full-pipeline regression assertion PASSED")
     if result_vmap is not None:
         np.testing.assert_allclose(
             np.array(result_vmap),
@@ -685,4 +686,4 @@ else:
             rtol=1e-3,
             err_msg=f"interferometer/delaunay[{instrument}]: regression — vmap log_evidence drifted",
         )
-        print(f"  vmap regression assertion PASSED")
+        print("  vmap regression assertion PASSED")

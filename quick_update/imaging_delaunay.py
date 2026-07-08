@@ -30,21 +30,21 @@ from pathlib import Path
 
 os.environ.setdefault("MPLBACKEND", "Agg")
 
-from autoconf import jax_wrapper  # noqa: E402
-
+import autoarray as aa  # noqa: E402
 import autofit as af  # noqa: E402
 import autolens as al  # noqa: E402
-import autoarray as aa  # noqa: E402
 import numpy as np  # noqa: E402
+from autoconf import jax_wrapper  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from instruments.imaging import INSTRUMENTS  # noqa: E402
 from _adapt_image_util import adapt_image_for_dataset  # noqa: E402
+from instruments.imaging import INSTRUMENTS  # noqa: E402
 
 try:
     from _profile_cli import device_info_dict
 except ImportError:
+
     def device_info_dict():
         return {"backend": "unknown"}
 
@@ -54,6 +54,7 @@ except ImportError:
 # ---------------------------------------------------------------------------
 
 import argparse  # noqa: E402
+
 
 def _parse_args():
     p = argparse.ArgumentParser(prog="quick_update/imaging_delaunay.py")
@@ -69,6 +70,7 @@ def _parse_args():
 # ---------------------------------------------------------------------------
 # Timer
 # ---------------------------------------------------------------------------
+
 
 class Timer:
     def __init__(self):
@@ -153,7 +155,8 @@ print(f"  native shape:  {dataset.shape_native}")
 
 print("\n  Loading adapt image...")
 adapt_image = adapt_image_for_dataset(
-    dataset_path=dataset_path, dataset=dataset,
+    dataset_path=dataset_path,
+    dataset=dataset,
 )
 print(f"  adapt_image shape (slim): {adapt_image.shape_slim}")
 
@@ -161,7 +164,7 @@ print(f"  adapt_image shape (slim): {adapt_image.shape_slim}")
 # Model: MGE lens light + Isothermal mass + Delaunay source
 # ---------------------------------------------------------------------------
 
-print(f"\n  Building Delaunay model...")
+print("\n  Building Delaunay model...")
 
 lens_bulge = al.model_util.mge_model_from(
     mask_radius=mask_radius,
@@ -173,7 +176,11 @@ mass = af.Model(al.mp.Isothermal)
 shear = af.Model(al.mp.ExternalShear)
 
 lens = af.Model(
-    al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear,
+    al.Galaxy,
+    redshift=0.5,
+    bulge=lens_bulge,
+    mass=mass,
+    shear=shear,
 )
 
 mesh = al.mesh.Delaunay(pixels=mesh_pixels, zeroed_pixels=0)
@@ -190,10 +197,13 @@ instance = model.instance_from_prior_medians()
 
 print("\n  Building Hilbert image-plane mesh grid...")
 image_mesh = al.image_mesh.Hilbert(
-    pixels=mesh_pixels, weight_power=1.0, weight_floor=0.0,
+    pixels=mesh_pixels,
+    weight_power=1.0,
+    weight_floor=0.0,
 )
 image_plane_mesh_grid = image_mesh.image_plane_mesh_grid_from(
-    mask=dataset.mask, adapt_data=adapt_image,
+    mask=dataset.mask,
+    adapt_data=adapt_image,
 )
 print(f"  mesh vertices: {image_plane_mesh_grid.shape[0]}")
 
@@ -257,9 +267,7 @@ from autolens.imaging.plot.fit_imaging_plots import (  # noqa: E402
 
 for i in range(n_repeats):
     with timer.section("critical_curves"):
-        ip_lines, ip_colors, sp_lines, sp_colors = (
-            _compute_critical_curves_from_fit(fit)
-        )
+        ip_lines, ip_colors, sp_lines, sp_colors = _compute_critical_curves_from_fit(fit)
 
 # ---------------------------------------------------------------------------
 # Phase 3: Render comparison
@@ -351,15 +359,11 @@ result = {
     "n_repeats": n_repeats,
     "device": device_info_dict(),
     "phases": summary,
-    "all_timings": {
-        k: [round(v, 4) for v in vals]
-        for k, vals in timer.records.items()
-    },
+    "all_timings": {k: [round(v, 4) for v in vals] for k, vals in timer.records.items()},
 }
 
 output_dir = (
-    Path(args.output_dir) if args.output_dir
-    else workspace_root / "results" / "quick_update"
+    Path(args.output_dir) if args.output_dir else workspace_root / "results" / "quick_update"
 )
 output_dir.mkdir(parents=True, exist_ok=True)
 output_path = output_dir / f"imaging_delaunay_quick_update_{instrument}.json"

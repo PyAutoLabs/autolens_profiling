@@ -44,33 +44,32 @@ Results JSON and PNG are written to ``results/breakdown/imaging/`` using
 the basename ``delaunay_breakdown_{instrument}_v{al_version}``.
 """
 
-import numpy as np
-import jax
-import jax.numpy as jnp
-import time
 import subprocess
 import sys
-from pathlib import Path
+import time
 from contextlib import contextmanager
+from pathlib import Path
 
+import autoarray as aa
 import autofit as af
 import autolens as al
-import autoarray as aa
+import jax
+import jax.numpy as jnp
+import numpy as np
 from autofit.jax import register_model as _register_model_pytrees
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from _adapt_image_util import adapt_image_for_dataset  # noqa: E402
-
 # ---------------------------------------------------------------------------
 # Instrument configuration
 # ---------------------------------------------------------------------------
-
-
 # AUTOLENS_PROFILING_SMOKE=1 short-circuit (Phase 5 / CI lint smoke).
 # Verifies the import graph + module-level setup succeeded without running
 # the full profiling pipeline. Skipped entirely when the env var is unset.
 import os as _smoke_os
 import sys as _smoke_sys
+
+from _adapt_image_util import adapt_image_for_dataset  # noqa: E402
+
 if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
     _smoke_sys.exit(0)
@@ -78,12 +77,13 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 # Sweep-driver CLI args (--config-name / --output-dir / --use-mixed-precision).
 # Tolerates extra/unknown args via parse_known_args inside the helper.
 from _profile_cli import (  # noqa: E402
-    parse_profile_cli,
-    device_info_dict,
-    resolve_output_paths,
     auto_simulate_if_missing,
+    device_info_dict,
+    parse_profile_cli,
+    resolve_output_paths,
 )
 from simulators.imaging import INSTRUMENTS  # noqa: E402
+
 _cli = parse_profile_cli()
 
 instrument = "hst"  # <-- change this to profile a different instrument
@@ -92,6 +92,7 @@ instrument = "hst"  # <-- change this to profile a different instrument
 # ---------------------------------------------------------------------------
 # Profiling helpers
 # ---------------------------------------------------------------------------
+
 
 class Timer:
     """Accumulates named timing measurements and prints a summary."""
@@ -228,9 +229,7 @@ with timer.section("mask_and_oversample"):
 print("\n--- Adapt image (lensed source) ---")
 
 with timer.section("adapt_image_build"):
-    adapt_image = adapt_image_for_dataset(
-        dataset_path=dataset_path, dataset=dataset
-    )
+    adapt_image = adapt_image_for_dataset(dataset_path=dataset_path, dataset=dataset)
 
 print(f"  adapt_image shape (slim): {adapt_image.shape_slim}")
 
@@ -239,9 +238,7 @@ print("\n--- Image mesh construction (Hilbert) ---")
 n_mesh_vertices = 1500  # 1500-tier production fiducial
 
 with timer.section("image_mesh_hilbert"):
-    image_mesh = al.image_mesh.Hilbert(
-        pixels=n_mesh_vertices, weight_power=1.0, weight_floor=0.0
-    )
+    image_mesh = al.image_mesh.Hilbert(pixels=n_mesh_vertices, weight_power=1.0, weight_floor=0.0)
     image_plane_mesh_grid = image_mesh.image_plane_mesh_grid_from(
         mask=dataset.mask, adapt_data=adapt_image
     )
@@ -281,9 +278,7 @@ with timer.section("model_build"):
     shear.gamma_1 = af.GaussianPrior(mean=0.05, sigma=0.005)
     shear.gamma_2 = af.GaussianPrior(mean=0.05, sigma=0.005)
 
-    lens = af.Model(
-        al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear
-    )
+    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
 
     mesh = al.mesh.Delaunay(
         pixels=n_mesh_vertices,
@@ -402,13 +397,12 @@ grid_blurring = dataset.grids.blurring
 print("\n--- Step 1: Ray-trace data grid ---")
 
 with timer.section("ray_trace_data_eager"):
-    traced_grids = tracer.traced_grid_2d_list_from(
-        grid=dataset.grids.pixelization, xp=jnp
-    )
+    traced_grids = tracer.traced_grid_2d_list_from(grid=dataset.grids.pixelization, xp=jnp)
     for tg in traced_grids:
         block(tg)
 
 print(f"  Number of planes traced: {len(traced_grids)}")
+
 
 def ray_trace_data_raw(grid_raw):
     """Wraps ray-tracing so inputs/outputs are raw arrays."""
@@ -416,9 +410,8 @@ def ray_trace_data_raw(grid_raw):
     traced = tracer.traced_grid_2d_list_from(grid=grid, xp=jnp)
     return jnp.stack([tg.array for tg in traced])
 
-_, traced_data_grids_raw = jit_profile(
-    ray_trace_data_raw, "ray_trace_data_jit", grid_pix_raw
-)
+
+_, traced_data_grids_raw = jit_profile(ray_trace_data_raw, "ray_trace_data_jit", grid_pix_raw)
 likelihood_steps.append(("Ray-trace data grid", timer.records[-1][1] / 10))
 
 print(f"  traced_data_grids shape: {traced_data_grids_raw.shape}")
@@ -436,15 +429,15 @@ with timer.section("ray_trace_mesh_eager"):
     for tg in traced_mesh:
         block(tg)
 
+
 def ray_trace_mesh_raw(mesh_raw):
     """Ray-trace image-plane mesh vertices to source plane."""
     grid = aa.Grid2DIrregular(values=mesh_raw, xp=jnp)
     traced = tracer.traced_grid_2d_list_from(grid=grid, xp=jnp)
     return jnp.stack([tg.array for tg in traced])
 
-_, traced_mesh_grids_raw = jit_profile(
-    ray_trace_mesh_raw, "ray_trace_mesh_jit", mesh_grid_raw
-)
+
+_, traced_mesh_grids_raw = jit_profile(ray_trace_mesh_raw, "ray_trace_mesh_jit", mesh_grid_raw)
 likelihood_steps.append(("Ray-trace mesh grid", timer.records[-1][1] / 10))
 
 print(f"  traced_mesh_grids shape: {traced_mesh_grids_raw.shape}")
@@ -470,12 +463,11 @@ _grid_blurring_mask = dataset.grids.blurring.mask
 def lens_image_raw(grid_raw, blurring_grid_raw):
     """Compute lens light images on masked + blurring grids (no PSF)."""
     grid = aa.Grid2D(values=grid_raw, mask=_grid_lp_mask, xp=jnp)
-    blurring_grid = aa.Grid2D(
-        values=blurring_grid_raw, mask=_grid_blurring_mask, xp=jnp
-    )
+    blurring_grid = aa.Grid2D(values=blurring_grid_raw, mask=_grid_blurring_mask, xp=jnp)
     image = tracer.image_2d_from(grid=grid, xp=jnp)
     blurring_image = tracer.image_2d_from(grid=blurring_grid, xp=jnp)
     return image.array, blurring_image.array
+
 
 with timer.section("lens_image_eager"):
     img_eager, blur_img_eager = lens_image_raw(grid_lp_raw, grid_blurring_raw)
@@ -499,17 +491,20 @@ with timer.section("blurred_image_eager"):
 
 print(f"  blurred_image shape: {blurred_image.array.shape}")
 
+
 def blurred_image_from_params(params_tree):
     """Compute blurred image directly from a pytree ModelInstance — fully JIT-traceable."""
     t = al.Tracer(galaxies=list(params_tree.galaxies))
     result = t.blurred_image_2d_from(
-        grid=grid_lp, psf=dataset.psf, blurring_grid=grid_blurring, xp=jnp,
+        grid=grid_lp,
+        psf=dataset.psf,
+        blurring_grid=grid_blurring,
+        xp=jnp,
     )
     return result.array
 
-_, blurred_img_jit = jit_profile(
-    blurred_image_from_params, "blurred_image_jit", params_tree
-)
+
+_, blurred_img_jit = jit_profile(blurred_image_from_params, "blurred_image_jit", params_tree)
 likelihood_steps.append(("Blurred image (PSF convolution)", timer.records[-1][1] / 10))
 
 # ---------------------------------------------------------------------------
@@ -518,8 +513,10 @@ likelihood_steps.append(("Blurred image (PSF convolution)", timer.records[-1][1]
 
 print("\n--- Step 4: Profile-subtracted image ---")
 
+
 def profile_subtract(data, blurred_image):
     return data - blurred_image
+
 
 with timer.section("profile_subtract_eager"):
     blurred_img_jnp = jnp.array(blurred_image.array)
@@ -544,9 +541,7 @@ from autoarray.inversion.mesh.border_relocator import BorderRelocator
 with timer.section("border_relocator_setup"):
     border_relocator = BorderRelocator(mask=dataset.mask, sub_size=1)
 
-traced_source_grid = tracer.traced_grid_2d_list_from(
-    grid=dataset.grids.pixelization, xp=jnp
-)[-1]
+traced_source_grid = tracer.traced_grid_2d_list_from(grid=dataset.grids.pixelization, xp=jnp)[-1]
 traced_mesh_source = tracer.traced_grid_2d_list_from(
     grid=al.Grid2DIrregular(image_plane_mesh_grid), xp=jnp
 )[-1]
@@ -554,7 +549,8 @@ traced_mesh_source = tracer.traced_grid_2d_list_from(
 with timer.section("border_relocation_eager"):
     relocated_grid = border_relocator.relocated_grid_from(grid=traced_source_grid)
     relocated_mesh_grid = border_relocator.relocated_mesh_grid_from(
-        grid=traced_source_grid, mesh_grid=traced_mesh_source,
+        grid=traced_source_grid,
+        mesh_grid=traced_mesh_source,
     )
     block(relocated_grid)
     block(relocated_mesh_grid)
@@ -638,6 +634,7 @@ with timer.section("blurred_mapping_matrix"):
 # border relocation → Delaunay triangulation → interpolation → mapper → mapping matrix → PSF convolution.
 # These steps are tightly sequential; the full pipeline JIT-compiles them all together.
 
+
 def blurred_mm_from_params(params_tree):
     """Compute blurred mapping matrix via full inversion setup from a pytree ModelInstance."""
     t = al.Tracer(galaxies=list(params_tree.galaxies))
@@ -651,13 +648,17 @@ def blurred_mm_from_params(params_tree):
         },
     )
     fit_jax = al.FitImaging(
-        dataset=dataset, tracer=t, adapt_images=adapt_images_jax,
+        dataset=dataset,
+        tracer=t,
+        adapt_images=adapt_images_jax,
         settings=al.Settings(
             use_border_relocator=True,
             use_mixed_precision=_cli.use_mixed_precision,
-        ), xp=jnp,
+        ),
+        xp=jnp,
     )
     return jnp.array(fit_jax.inversion.operated_mapping_matrix)
+
 
 _, bmm_jit = jit_profile(blurred_mm_from_params, "inversion_setup_jit", params_tree)
 likelihood_steps.append(("Inversion setup (steps 5-8 combined)", timer.records[-1][1] / 10))
@@ -673,12 +674,14 @@ print(f"  blurred_mapping_matrix shape: {blurred_mapping_matrix.shape}")
 
 print("\n--- Step 9: Data vector ---")
 
+
 def compute_data_vector(blurred_mapping_matrix, image, noise_map):
     return al.util.inversion_imaging.data_vector_via_blurred_mapping_matrix_from(
         blurred_mapping_matrix=blurred_mapping_matrix,
         image=image,
         noise_map=noise_map,
     )
+
 
 profile_sub_jnp = jnp.array(fit.profile_subtracted_image.array)
 noise_jnp = jnp.array(dataset.noise_map.array)
@@ -702,6 +705,7 @@ print("\n--- Step 10: Curvature matrix ---")
 
 no_reg_list = list(inversion.no_regularization_index_list)
 
+
 def compute_curvature_matrix(blurred_mapping_matrix, noise_map):
     return al.util.inversion.curvature_matrix_via_mapping_matrix_from(
         mapping_matrix=blurred_mapping_matrix,
@@ -711,6 +715,7 @@ def compute_curvature_matrix(blurred_mapping_matrix, noise_map):
         no_regularization_index_list=no_reg_list,
         xp=jnp,
     )
+
 
 with timer.section("curvature_matrix_eager"):
     curvature_matrix = compute_curvature_matrix(bmm_jnp, noise_jnp)
@@ -756,6 +761,7 @@ print(f"  regularization_matrix shape: {regularization_matrix.shape}")
 
 print("\n--- Step 12: Regularized reconstruction ---")
 
+
 def compute_reconstruction(data_vector, curvature_matrix, regularization_matrix):
     curvature_reg_matrix = curvature_matrix + regularization_matrix
     return al.util.inversion.reconstruction_positive_only_from(
@@ -763,6 +769,7 @@ def compute_reconstruction(data_vector, curvature_matrix, regularization_matrix)
         curvature_reg_matrix=curvature_reg_matrix,
         xp=jnp,
     )
+
 
 with timer.section("reconstruction_eager"):
     reconstruction = compute_reconstruction(
@@ -773,7 +780,8 @@ with timer.section("reconstruction_eager"):
     block(reconstruction)
 
 _, reconstruction = jit_profile(
-    compute_reconstruction, "reconstruction_jit",
+    compute_reconstruction,
+    "reconstruction_jit",
     jnp.array(data_vector),
     jnp.array(curvature_matrix),
     jnp.array(regularization_matrix),
@@ -788,9 +796,16 @@ print(f"  reconstruction shape: {reconstruction.shape}")
 
 print("\n--- Step 13: Mapped reconstruction + log evidence ---")
 
+
 def compute_log_evidence(
-    data, noise_map, blurred_image, blurred_mapping_matrix, reconstruction,
-    reduced_indices, reg_reduced, curv_reg_reduced,
+    data,
+    noise_map,
+    blurred_image,
+    blurred_mapping_matrix,
+    reconstruction,
+    reduced_indices,
+    reg_reduced,
+    curv_reg_reduced,
 ):
     """Compute the full log evidence including all five terms:
 
@@ -845,7 +860,7 @@ def compute_log_evidence(
     log_det_regularization = 2.0 * jnp.sum(jnp.log(jnp.diag(L_r)))
 
     # Noise normalization (over full masked image)
-    noise_normalization = jnp.sum(jnp.log(2 * jnp.pi * noise_map ** 2))
+    noise_normalization = jnp.sum(jnp.log(2 * jnp.pi * noise_map**2))
 
     return -0.5 * (
         chi_squared
@@ -854,6 +869,7 @@ def compute_log_evidence(
         - log_det_regularization
         + noise_normalization
     )
+
 
 # For the JIT profiling we use the step-by-step reconstruction for timing.
 # For the correctness assertion we use the inversion's own reconstruction,
@@ -874,15 +890,28 @@ curv_reg_reduced_jnp = jnp.array(inversion.curvature_reg_matrix_reduced)
 
 with timer.section("log_evidence_eager"):
     log_evidence = compute_log_evidence(
-        data_array, noise_jnp, blurred_img_jnp, bmm_jnp,
-        recon_jnp, reduced_indices_jnp, reg_reduced_jnp, curv_reg_reduced_jnp,
+        data_array,
+        noise_jnp,
+        blurred_img_jnp,
+        bmm_jnp,
+        recon_jnp,
+        reduced_indices_jnp,
+        reg_reduced_jnp,
+        curv_reg_reduced_jnp,
     )
     block(log_evidence)
 
 _, log_evidence = jit_profile(
-    compute_log_evidence, "log_evidence_jit",
-    data_array, noise_jnp, blurred_img_jnp, bmm_jnp,
-    recon_jnp, reduced_indices_jnp, reg_reduced_jnp, curv_reg_reduced_jnp,
+    compute_log_evidence,
+    "log_evidence_jit",
+    data_array,
+    noise_jnp,
+    blurred_img_jnp,
+    bmm_jnp,
+    recon_jnp,
+    reduced_indices_jnp,
+    reg_reduced_jnp,
+    curv_reg_reduced_jnp,
 )
 likelihood_steps.append(("Mapped recon + log evidence", timer.records[-1][1] / 10))
 
@@ -894,8 +923,14 @@ print(f"  log_evidence (step-by-step) = {log_evidence}")
 inv_recon_jnp = jnp.array(inversion.reconstruction)
 
 log_evidence_check = compute_log_evidence(
-    data_array, noise_jnp, blurred_img_jnp, bmm_jnp,
-    inv_recon_jnp, reduced_indices_jnp, reg_reduced_jnp, curv_reg_reduced_jnp,
+    data_array,
+    noise_jnp,
+    blurred_img_jnp,
+    bmm_jnp,
+    inv_recon_jnp,
+    reduced_indices_jnp,
+    reg_reduced_jnp,
+    curv_reg_reduced_jnp,
 )
 print(f"  log_evidence (inv matrices) = {log_evidence_check}")
 print(f"  log_evidence (reference)    = {log_evidence_ref}")
@@ -913,7 +948,9 @@ print("  Assertion PASSED: inversion-matrix log_evidence matches FitImaging.log_
 # ===================================================================
 
 import json
+
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
@@ -996,7 +1033,7 @@ fig.suptitle(
     fontweight="bold",
 )
 ax.set_title(
-    f"AutoLens v{al_version}  |  {pixel_scale}\"/px  |  {n_image_pixels} pixels  |  "
+    f'AutoLens v{al_version}  |  {pixel_scale}"/px  |  {n_image_pixels} pixels  |  '
     f"{n_over_sampled_pixels} over-sampled  |  {n_source_pixels} Delaunay vertices  |  "
     f"total: {step_total:.6f} s",
     fontsize=9,
@@ -1013,7 +1050,9 @@ print(f"  Bar chart saved to:    {chart_path}")
 # Regression assertion — eager log_evidence only
 # ===================================================================
 
-EXPECTED_LOG_EVIDENCE_HST = 29110.92085793  # 1500-pixel Hilbert/Delaunay, MGE-60 lens, adapt_image=lensed_source
+EXPECTED_LOG_EVIDENCE_HST = (
+    29110.92085793  # 1500-pixel Hilbert/Delaunay, MGE-60 lens, adapt_image=lensed_source
+)
 
 np.testing.assert_allclose(
     log_evidence_ref,
@@ -1024,7 +1063,4 @@ np.testing.assert_allclose(
         f"(got {log_evidence_ref}, expected {EXPECTED_LOG_EVIDENCE_HST})"
     ),
 )
-print(
-    f"  Eager regression assertion PASSED: log_evidence matches "
-    f"{EXPECTED_LOG_EVIDENCE_HST:.6f}"
-)
+print(f"  Eager regression assertion PASSED: log_evidence matches {EXPECTED_LOG_EVIDENCE_HST:.6f}")

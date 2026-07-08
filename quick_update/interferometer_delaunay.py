@@ -22,26 +22,27 @@ from pathlib import Path
 
 os.environ.setdefault("MPLBACKEND", "Agg")
 
-from autoconf import jax_wrapper  # noqa: E402
-
+import autoarray as aa  # noqa: E402
 import autofit as af  # noqa: E402
 import autolens as al  # noqa: E402
-import autoarray as aa  # noqa: E402
 import numpy as np  # noqa: E402
+from autoconf import jax_wrapper  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from instruments.interferometer import INSTRUMENTS  # noqa: E402
 from _adapt_image_util import adapt_image_for_dataset  # noqa: E402
+from instruments.interferometer import INSTRUMENTS  # noqa: E402
 
 try:
     from _profile_cli import device_info_dict
 except ImportError:
+
     def device_info_dict():
         return {"backend": "unknown"}
 
 
 import argparse  # noqa: E402
+
 
 def _parse_args():
     p = argparse.ArgumentParser(prog="quick_update/interferometer_delaunay.py")
@@ -112,14 +113,16 @@ print(f"  real-space shape: {cfg['real_space_shape']}")
 # Adapt image
 print("\n  Loading adapt image...")
 adapt_image = adapt_image_for_dataset(
-    dataset_path=dataset_path, dataset=dataset,
+    dataset_path=dataset_path,
+    dataset=dataset,
 )
 print(f"  adapt_image shape: {adapt_image.shape_slim}")
 
 print("  Building Hilbert mesh grid...")
 image_mesh = al.image_mesh.Hilbert(pixels=mesh_pixels, weight_power=1.0, weight_floor=0.0)
 image_plane_mesh_grid = image_mesh.image_plane_mesh_grid_from(
-    mask=real_space_mask, adapt_data=adapt_image,
+    mask=real_space_mask,
+    adapt_data=adapt_image,
 )
 print(f"  mesh vertices: {image_plane_mesh_grid.shape[0]}")
 
@@ -227,15 +230,11 @@ result = {
     "n_repeats": n_repeats,
     "device": device_info_dict(),
     "phases": summary,
-    "all_timings": {
-        k: [round(v, 4) for v in vals]
-        for k, vals in timer.records.items()
-    },
+    "all_timings": {k: [round(v, 4) for v in vals] for k, vals in timer.records.items()},
 }
 
 output_dir = (
-    Path(args.output_dir) if args.output_dir
-    else workspace_root / "results" / "quick_update"
+    Path(args.output_dir) if args.output_dir else workspace_root / "results" / "quick_update"
 )
 output_dir.mkdir(parents=True, exist_ok=True)
 output_path = output_dir / f"interferometer_delaunay_quick_update_{instrument}.json"

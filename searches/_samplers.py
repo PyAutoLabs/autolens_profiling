@@ -20,8 +20,8 @@ Delaunay matches imaging Delaunay at 150.
 from __future__ import annotations
 
 import sys
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 import autofit as af
 
@@ -33,7 +33,6 @@ _WORKSPACE_ROOT = Path(__file__).resolve().parents[1]
 if str(_WORKSPACE_ROOT) not in sys.path:
     sys.path.insert(0, str(_WORKSPACE_ROOT))
 from vram import vmap_batch_for  # noqa: E402
-
 
 # (dataset_class, model_type) -> n_live. Matches the SLaM defaults so a
 # profiling row is comparable to a real source phase.
@@ -147,7 +146,7 @@ def build_nss(
     instrument: str,
     config_name: str,
     use_jax: bool,
-) -> "af.NSS":
+) -> af.NSS:
     """Construct a first-class ``af.NSS`` (JAX nested slice sampler) for one cell.
 
     ``af.NSS`` is JAX-native: the likelihood + prior closures both run inside

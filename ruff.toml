@@ -41,6 +41,10 @@ ignore = [
     "F401",  # unused imports — some scripts deliberately import-for-side-effect
              # (e.g. `from autoconf import jax_wrapper  # noqa: F401`)
     "B008",  # function call in default argument — common autofit pattern
+    "B905",  # zip() without strict= — scripts zip equal-length lists they built
+             # themselves; threading strict= through adds noise, not safety
+    "B007",  # unused loop-control variable — warm-up/repeat loops (`for _i in
+             # range(n)`) are the dominant pattern in timing code
 ]
 
 [lint.per-file-ignores]

@@ -29,7 +29,6 @@ Usage
 
 from pathlib import Path
 
-
 INSTRUMENTS = {
     "simple": {
         "lens_centre": (0.0, 0.0),
@@ -62,21 +61,19 @@ def simulate(instrument: str = "simple", output_root: Path | None = None) -> Pat
     import time
     from contextlib import contextmanager
 
-    import numpy as np
     import jax
     import jax.numpy as jnp
     import matplotlib
+    import numpy as np
 
     matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-
     import autolens as al
     import autolens.plot as aplt
+    import matplotlib.pyplot as plt
 
     if instrument not in INSTRUMENTS:
         raise ValueError(
-            f"Unknown instrument '{instrument}'. "
-            f"Choose from: {list(INSTRUMENTS.keys())}"
+            f"Unknown instrument '{instrument}'. Choose from: {list(INSTRUMENTS.keys())}"
         )
 
     config = INSTRUMENTS[instrument]
@@ -340,9 +337,9 @@ def simulate(instrument: str = "simple", output_root: Path | None = None) -> Pat
         fontweight="bold",
     )
     ax.set_title(
-        f'AutoLens v{al_version}  |  '
+        f"AutoLens v{al_version}  |  "
         f'{grid_shape[0]}×{grid_shape[1]} @ {pixel_scale}"/px  |  '
-        f'{len(positions)} images found',
+        f"{len(positions)} images found",
         fontsize=9,
     )
     ax.margins(x=0.22)
@@ -358,11 +355,11 @@ def simulate(instrument: str = "simple", output_root: Path | None = None) -> Pat
 
 
 if __name__ == "__main__":
-    from autoconf import jax_wrapper  # noqa: F401
-
     import argparse
     import os
     import sys
+
+    from autoconf import jax_wrapper  # noqa: F401
 
     if os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
         print(f"[smoke] {__file__}: imports + module setup OK; exiting.")

@@ -23,11 +23,10 @@ from pathlib import Path
 
 os.environ.setdefault("MPLBACKEND", "Agg")
 
-from autoconf import jax_wrapper  # noqa: E402
-
 import autofit as af  # noqa: E402
 import autolens as al  # noqa: E402
 import numpy as np  # noqa: E402
+from autoconf import jax_wrapper  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -36,11 +35,13 @@ from instruments.interferometer import INSTRUMENTS  # noqa: E402
 try:
     from _profile_cli import device_info_dict
 except ImportError:
+
     def device_info_dict():
         return {"backend": "unknown"}
 
 
 import argparse  # noqa: E402
+
 
 def _parse_args():
     p = argparse.ArgumentParser(prog="quick_update/interferometer.py")
@@ -149,7 +150,9 @@ for i in range(n_repeats):
 
 # Phase 2: Critical curves
 print("\n=== Phase 2: Critical curves ===")
-from autolens.interferometer.plot.fit_interferometer_plots import _compute_critical_curve_lines  # noqa: E402
+from autolens.interferometer.plot.fit_interferometer_plots import (
+    _compute_critical_curve_lines,  # noqa: E402
+)
 
 for i in range(n_repeats):
     tracer = fit.tracer_linear_light_profiles_to_light_profiles
@@ -213,15 +216,11 @@ result = {
     "n_repeats": n_repeats,
     "device": device_info_dict(),
     "phases": summary,
-    "all_timings": {
-        k: [round(v, 4) for v in vals]
-        for k, vals in timer.records.items()
-    },
+    "all_timings": {k: [round(v, 4) for v in vals] for k, vals in timer.records.items()},
 }
 
 output_dir = (
-    Path(args.output_dir) if args.output_dir
-    else workspace_root / "results" / "quick_update"
+    Path(args.output_dir) if args.output_dir else workspace_root / "results" / "quick_update"
 )
 output_dir.mkdir(parents=True, exist_ok=True)
 output_path = output_dir / f"interferometer_mge_quick_update_{instrument}.json"

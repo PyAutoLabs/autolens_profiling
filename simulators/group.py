@@ -17,34 +17,31 @@ Run from any path:
     python simulators/group.py
 """
 
-from autoconf import jax_wrapper  # noqa: F401 — must be first
-
 import json
-import time
-from contextlib import contextmanager
-from pathlib import Path
-
-import numpy as np
-import jax
-import jax.numpy as jnp
-import matplotlib
-
 
 # AUTOLENS_PROFILING_SMOKE=1 short-circuit (Phase 5 / CI lint smoke).
 # Verifies the import graph + module-level setup succeeded without running
 # the full profiling pipeline. Skipped entirely when the env var is unset.
 import os as _smoke_os
 import sys as _smoke_sys
+import time
+from contextlib import contextmanager
+from pathlib import Path
+
+import jax
+import jax.numpy as jnp
+import matplotlib
+import numpy as np
+from autoconf import jax_wrapper  # noqa: F401 — must be first
+
 if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
     _smoke_sys.exit(0)
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-
 import autolens as al
 import autolens.plot as aplt
-
+import matplotlib.pyplot as plt
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -225,9 +222,7 @@ with timer.section("solver_build"):
     )
 
 with timer.section("solver_solve_eager"):
-    positions = solver.solve(
-        tracer=tracer, source_plane_coordinate=source_galaxy.bulge.centre
-    )
+    positions = solver.solve(tracer=tracer, source_plane_coordinate=source_galaxy.bulge.centre)
 
 print(f"  Found {len(positions)} image positions (eager)")
 
@@ -340,8 +335,7 @@ ax.invert_yaxis()
 ax.set_xlabel("Time (s)", fontsize=11)
 fig.suptitle("Simulator Profiling: Group Scale", fontsize=12, fontweight="bold")
 ax.set_title(
-    f"AutoLens v{al_version}  |  250×250 imaging / 500×500 solver  |  "
-    f"3 over-sample centres",
+    f"AutoLens v{al_version}  |  250×250 imaging / 500×500 solver  |  3 over-sample centres",
     fontsize=9,
 )
 ax.margins(x=0.22)
