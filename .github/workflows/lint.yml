@@ -92,9 +92,11 @@ jobs:
         working-directory: autolens_profiling
         run: |
           # Conservative scope: only README.md files in this repo, exclude
-          # GitHub UI links that lychee tends to false-positive on.
+          # GitHub UI links that lychee tends to false-positive on, and the
+          # Slack invite (302 -> 403 to any non-browser client).
           lychee \
             --exclude '^https://github\.com/.*/(issues|pull|commit|releases)/' \
+            --exclude '^https://join\.slack\.com/' \
             --no-progress \
             --accept '200..=299,429' \
             --max-redirects 5 \
