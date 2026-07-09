@@ -138,6 +138,27 @@ source_centres = [
     (-0.8, 1.2),
 ]
 
+# Scaling-tier members: mirrors the autolens_workspace cluster simulator truth (the
+# reference-anchored Lenstool convention made default in autolens_workspace#238):
+# b0_i = b0_ref * (L_i/L_ref)^0.5, rs_i = rs_ref * (L_i/L_ref)^0.5, brightest member anchors.
+scaling_galaxies_centres = [
+    (5.5, -6.5),
+    (-7.5, 3.0),
+    (12.0, -5.0),
+    (-4.0, -9.0),
+    (3.0, 13.0),
+    (-14.0, 4.0),
+    (15.0, 9.0),
+    (-9.0, -12.0),
+    (8.5, 5.5),
+    (-6.5, 11.0),
+]
+scaling_galaxies_luminosities = [0.40, 0.32, 0.25, 0.20, 0.16, 0.13, 0.10, 0.08, 0.06, 0.05]
+SCALING_B0_REF = 0.12
+SCALING_RS_REF = 10.0
+SCALING_RA = 0.1
+SCALING_EXPONENT = 0.5
+
 with timer.section("setup_imaging_grid"):
     imaging_grid = al.Grid2D.uniform(shape_native=(1000, 1000), pixel_scales=0.1)
     imaging_over_sample = al.util.over_sample.over_sample_size_via_radial_bins_from(
@@ -190,8 +211,29 @@ with timer.section("setup_galaxies"):
         point = al.ps.Point(centre=centre)
         source_galaxies.append(al.Galaxy(redshift=src_z, bulge=bulge, **{f"point_{i}": point}))
 
+    scaling_galaxies = []
+    _lum_ref = max(scaling_galaxies_luminosities)
+    for centre, luminosity in zip(scaling_galaxies_centres, scaling_galaxies_luminosities):
+        ratio = luminosity / _lum_ref
+        scaling_galaxies.append(
+            al.Galaxy(
+                redshift=redshift_lens,
+                bulge=al.lp.SersicSph(
+                    centre=centre, intensity=luminosity, effective_radius=0.8, sersic_index=3.0
+                ),
+                mass=al.mp.dPIEMassSph(
+                    centre=centre,
+                    ra=SCALING_RA,
+                    rs=SCALING_RS_REF * ratio**SCALING_EXPONENT,
+                    b0=SCALING_B0_REF * ratio**SCALING_EXPONENT,
+                ),
+            )
+        )
+
 with timer.section("setup_tracer"):
-    tracer = al.Tracer(galaxies=main_lens_galaxies + [host_halo_galaxy] + source_galaxies)
+    tracer = al.Tracer(
+        galaxies=main_lens_galaxies + scaling_galaxies + [host_halo_galaxy] + source_galaxies
+    )
 
 
 # === PART 2 — Pytree registration ===
@@ -336,6 +378,13 @@ with timer.section("output_fits"):
         psf_path=dataset_path / "psf.fits",
         noise_map_path=dataset_path / "noise_map.fits",
         overwrite=True,
+    )
+
+with timer.section("output_scaling_galaxies_csv"):
+    al.galaxy_table_to_csv(
+        centres=scaling_galaxies_centres,
+        luminosities=scaling_galaxies_luminosities,
+        file_path=dataset_path / "scaling_galaxies.csv",
     )
 
 with timer.section("output_point_datasets"):

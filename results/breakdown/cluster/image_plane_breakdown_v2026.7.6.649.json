@@ -1,0 +1,25 @@
+{
+  "autolens_version": "2026.7.6.649",
+  "device": {
+    "backend": "cpu",
+    "device": "TFRT_CPU_0"
+  },
+  "configuration": {
+    "n_systems": 2,
+    "n_images_total": 6,
+    "n_planes": 3,
+    "n_mass_profiles": 13,
+    "likelihood": "image_plane (FitPositionsImagePairRepeat)",
+    "solver_grid": "200x200 @ 0.7 arcsec",
+    "solver_pixel_scale_precision": 0.01
+  },
+  "steps": {
+    "1 source centres (back-trace)": 0.008795200000349723,
+    "2.point_0 PointSolver solve (z=1.0)": 0.41861359999984415,
+    "2.point_1 PointSolver solve (z=2.0)": 0.3188671666666778,
+    "3.point_0 FitPositionsImagePairRepeat (fit total)": 2.271588399999928,
+    "3.point_1 FitPositionsImagePairRepeat (fit total)": 1.9715207999997801
+  },
+  "total_step_by_step": 4.98938516666658,
+  "log_likelihood": -31265964.625419706
+}
