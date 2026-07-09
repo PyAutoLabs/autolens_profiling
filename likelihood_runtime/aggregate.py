@@ -101,18 +101,27 @@ def _discover_cells(output_root: Path) -> list[tuple[str, ...]]:
     return cells
 
 
-def _is_config_stem(stem: str) -> bool:
-    """True for sweep-config JSONs (``local_gpu_mp``, ``hpc_a100_fp64_sparse``, …).
+def _config_name_from_stem(stem: str) -> str | None:
+    """Config name for a sweep JSON stem, else None.
 
-    Cell dirs may also hold versioned standalone summaries
-    (``mge_likelihood_summary_hst_v….json``) — those are not sweep rows and
-    must not enter ``comparison.json``.
+    Since autolens_profiling#44 the per-cell scripts prefix the cell:
+    ``<model>_<config>[_sparse].json`` (e.g. ``mge_local_cpu_fp64_sparse``);
+    bare ``<config>.json`` is the pre-#44 shape, still accepted. Cell dirs
+    may also hold versioned standalone summaries — those are not sweep rows
+    and must not enter ``comparison.json``.
     """
-    return (
-        stem in _CONFIG_ORDER
-        or stem.removesuffix("_sparse") in _CONFIG_ORDER
-        or stem.endswith("_pre_fix")
-    )
+    base = stem.removesuffix("_sparse")
+    suffix = "_sparse" if stem.endswith("_sparse") else ""
+    for cfg in _CONFIG_ORDER:
+        if base == cfg or base.endswith("_" + cfg):
+            return cfg + suffix
+    if stem.endswith("_pre_fix"):
+        return stem
+    return None
+
+
+def _is_config_stem(stem: str) -> bool:
+    return _config_name_from_stem(stem) is not None
 
 
 def _read_config(json_path: Path) -> dict:
@@ -131,8 +140,8 @@ def _read_config(json_path: Path) -> dict:
     # Datacube uses steps_cube_cost rather than the per-call ``steps`` dict.
     if "steps" not in data and "steps_cube_cost" in data:
         data["steps"] = data["steps_cube_cost"]
-    # Add config_name from filename if absent.
-    data.setdefault("config_name", json_path.stem)
+    # Add config_name from filename if absent (normalised, cell prefix stripped).
+    data.setdefault("config_name", _config_name_from_stem(json_path.stem) or json_path.stem)
     return data
 
 
@@ -152,7 +161,8 @@ def _aggregate_cell(cell_dir: Path) -> dict:
         if json_path.name.endswith(".unusable.json") or not _is_config_stem(json_path.stem):
             continue
         try:
-            configs[json_path.stem] = _read_config(json_path)
+            cname = _config_name_from_stem(json_path.stem) or json_path.stem
+            configs[cname] = _read_config(json_path)
         except Exception as exc:
             sys.stderr.write(f"  warn: failed to read {json_path}: {exc}\n")
 

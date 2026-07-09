@@ -271,8 +271,11 @@ def check_pinned(got, expected, *, label: str, rtol: float = 1e-4):
     profiling job (the timing numbers are still data; the flag marks them
     non-comparable to the pinned baseline).
     """
-    got_f = float(got)
-    rel = abs(got_f - expected) / max(abs(expected), 1e-300)
+    import numpy as _np
+
+    arr = _np.asarray(got, dtype=float).ravel()
+    rel = float(_np.max(_np.abs(arr - expected)) / max(abs(expected), 1e-300))
+    got_f = float(arr[0]) if arr.size == 1 else float(arr[int(_np.argmax(_np.abs(arr - expected)))])
     if rel <= rtol:
         return None
     print(
