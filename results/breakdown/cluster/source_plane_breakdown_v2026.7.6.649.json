@@ -1,0 +1,25 @@
+{
+  "autolens_version": "2026.7.6.649",
+  "device": {
+    "backend": "cpu",
+    "device": "TFRT_CPU_0"
+  },
+  "configuration": {
+    "n_systems": 2,
+    "n_images_total": 6,
+    "n_planes": 3,
+    "n_mass_profiles": 13,
+    "likelihood": "source_plane (FitPositionsSource)"
+  },
+  "steps": {
+    "1.0 ray-trace point_0 (3 img)": 0.0008368400000108523,
+    "1.1 ray-trace point_1 (3 img)": 0.0007585400000607479,
+    "2.0 magnification (hessian) point_0": 0.0007032299999991665,
+    "2.1 magnification (hessian) point_1": 0.0007097899999280344,
+    "3.0 weighted chi2 point_0": 2.73399999969115e-05,
+    "3.1 weighted chi2 point_1": 3.465999998297775e-05,
+    "4 log-likelihood assembly": 2.303000001120381e-05
+  },
+  "total_step_by_step": 0.0030934299999898942,
+  "reference_log_likelihood": -40135921.91112596
+}
