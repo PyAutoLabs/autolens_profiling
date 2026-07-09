@@ -61,7 +61,11 @@ CELLS: list[tuple[str, str, tuple[str, ...]]] = [
     ("imaging", "mge", ("hst", "jwst", "ao")),
     ("imaging", "pixelization", ("hst", "jwst", "ao")),
     ("imaging", "delaunay", ("hst", "jwst", "ao")),
-    ("interferometer", "mge", ("sma", "alma", "alma_high", "jvla")),
+    # mge interferometer runs sma ONLY: the dense MGE mapping matrix needs a
+    # ~62 GB gather buffer at 1M+ vis (vram/config.py marks alma+ INHERENTLY
+    # blocked) — confirmed empirically by the first campaign pass (#56):
+    # alma OOMed at exactly 62,720,000,000 bytes on any backend.
+    ("interferometer", "mge", ("sma",)),
     ("interferometer", "pixelization", ("sma", "alma", "alma_high", "jvla")),
     ("interferometer", "delaunay", ("sma", "alma", "alma_high", "jvla")),
     ("datacube", "delaunay", ("sma", "alma", "alma_high")),
