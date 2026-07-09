@@ -135,6 +135,20 @@ def _parse_args() -> argparse.Namespace:
         help="Skip the use_mixed_precision rows (just fp64).",
     )
     p.add_argument(
+        "--per-run-timeout",
+        type=float,
+        default=None,
+        metavar="SECONDS",
+        help=(
+            "Kill any single run exceeding this wall-clock and record an "
+            "`.unusable.json` marker instead of a result — campaign policy: "
+            "a likelihood whose profiling run cannot finish inside the cap "
+            "is not a CPU-viable configuration, it is GPU-only. The marker "
+            "is honoured by --skip-existing and rendered as 'GPU-only' by "
+            "the dashboard."
+        ),
+    )
+    p.add_argument(
         "--skip-existing",
         action="store_true",
         help=(
@@ -225,6 +239,7 @@ def _run_one(
     dry_run: bool,
     sparse: bool = False,
     instrument: str | None = None,
+    per_run_timeout: float | None = None,
 ) -> tuple[bool, float, str]:
     """Run one (cell, config) pair as a subprocess. Returns (ok, elapsed, log_path)."""
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -258,14 +273,37 @@ def _run_one(
 
     t0 = time.time()
     try:
-        with open(log_path, "w") as log:
-            proc = subprocess.run(
-                cmd,
-                env=env,
-                stdout=log,
-                stderr=subprocess.STDOUT,
-                check=False,
+        try:
+            with open(log_path, "w") as log:
+                proc = subprocess.run(
+                    cmd,
+                    env=env,
+                    stdout=log,
+                    stderr=subprocess.STDOUT,
+                    check=False,
+                    timeout=per_run_timeout,
+                )
+        except subprocess.TimeoutExpired:
+            elapsed = time.time() - t0
+            marker = out_dir / f"{script_path.stem}_{config.name}{log_suffix}.unusable.json"
+            import json
+
+            marker.write_text(
+                json.dumps(
+                    {
+                        "cpu_unusable": True,
+                        "reason": f"wall-clock timeout after {per_run_timeout:.0f}s — GPU-only",
+                        "config_name": f"{config.name}{log_suffix}",
+                        "timeout_seconds": per_run_timeout,
+                    },
+                    indent=2,
+                )
             )
+            print(
+                f"    TIMEOUT ({elapsed:.1f}s > {per_run_timeout:.0f}s) — marked CPU-unusable "
+                f"-> {marker.name}"
+            )
+            return True, elapsed, str(log_path)
         elapsed = time.time() - t0
         ok = proc.returncode == 0
         print(
@@ -332,8 +370,10 @@ def main() -> int:
             if args.skip_existing:
                 suffix = "_sparse" if args.sparse else ""
                 existing = out_dir / f"{model}_{cfg.name}{suffix}.json"
-                if existing.exists():
-                    print(f"--- [{cfg.name}] {cell_id}: SKIP (result exists)")
+                marker = out_dir / f"{model}_{cfg.name}{suffix}.unusable.json"
+                if existing.exists() or marker.exists():
+                    label = "result exists" if existing.exists() else "marked CPU-unusable"
+                    print(f"--- [{cfg.name}] {cell_id}: SKIP ({label})")
                     summary.append((cell_id, cfg.name, True, 0.0))
                     continue
             try:
@@ -345,6 +385,7 @@ def main() -> int:
                     args.dry_run,
                     sparse=args.sparse,
                     instrument=inst,
+                    per_run_timeout=args.per_run_timeout,
                 )
             except KeyboardInterrupt:
                 print("\n\nsweep interrupted by user")

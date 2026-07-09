@@ -1,0 +1,38 @@
+{
+  "autolens_version": "2026.7.6.649",
+  "device": {
+    "backend": "cpu",
+    "device": "TFRT_CPU_0"
+  },
+  "instrument": "sma",
+  "model": "delaunay",
+  "configuration": {
+    "pixel_scale_arcsec": 0.1,
+    "mask_radius_arcsec": 3.5,
+    "real_space_shape": [
+      256,
+      256
+    ],
+    "visibilities": 190,
+    "hilbert_pixels": 1500,
+    "delaunay_vertices": 1500,
+    "edge_zeroed_pixels": 0,
+    "regularization_coefficient": 1.0
+  },
+  "log_likelihood_eager": -3151.1884830535732,
+  "figure_of_merit_eager": -3169.4180034955634,
+  "log_evidence_jit": -3169.418003494271,
+  "full_pipeline_single_jit": 3.342003539999996,
+  "vmap": {
+    "batch_size": 3,
+    "batch_time": 7.811871840000004,
+    "per_call": 2.6039572800000013,
+    "speedup_vs_single_jit": 1.3
+  },
+  "memory_mb": {
+    "output": 2.288818359375e-05,
+    "temp": 415.7746124267578
+  },
+  "pinned_expected": null,
+  "pinned_drift": []
+}

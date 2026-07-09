@@ -1,0 +1,18 @@
+{
+  "autolens_version": "2026.7.6.649",
+  "device": {
+    "backend": "cpu",
+    "device": "TFRT_CPU_0"
+  },
+  "instrument": "hst",
+  "configuration": {
+    "pixel_scale_arcsec": 0.05,
+    "mask_radius_arcsec": 3.5,
+    "image_pixels_masked": 15361,
+    "over_sampled_pixels": 17980,
+    "linear_gaussians": 0,
+    "inversion_path": "sparse"
+  },
+  "full_pipeline_single_jit": 0.14046013000006496,
+  "vmap": "PENDING \u2014 vmap phase has not run yet (or was killed)"
+}

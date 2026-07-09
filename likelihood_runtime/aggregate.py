@@ -138,8 +138,18 @@ def _read_config(json_path: Path) -> dict:
 
 def _aggregate_cell(cell_dir: Path) -> dict:
     configs: dict[str, dict] = {}
+    # CPU-unusable markers (written by sweep.py --per-run-timeout, or by hand
+    # for OOM-killed cells) become comparison rows: {"cpu_unusable": true}.
+    for marker_path in sorted(cell_dir.glob("*.unusable.json")):
+        try:
+            marker = json.loads(marker_path.read_text())
+        except (OSError, ValueError):
+            continue
+        cname = marker.get("config_name")
+        if cname:
+            configs[cname] = {"cpu_unusable": True, "reason": marker.get("reason")}
     for json_path in sorted(cell_dir.glob("*.json")):
-        if not _is_config_stem(json_path.stem):
+        if json_path.name.endswith(".unusable.json") or not _is_config_stem(json_path.stem):
             continue
         try:
             configs[json_path.stem] = _read_config(json_path)
