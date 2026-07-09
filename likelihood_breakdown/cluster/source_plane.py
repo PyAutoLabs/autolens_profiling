@@ -285,9 +285,7 @@ magnifications_per_system = []
 for i, (dataset, positions, plane_index) in enumerate(
     zip(dataset_list, positions_list, plane_indices)
 ):
-    lens_calc = ag.LensCalc.from_tracer(
-        tracer=tracer, use_multi_plane=True, plane_j=plane_index
-    )
+    lens_calc = ag.LensCalc.from_tracer(tracer=tracer, use_multi_plane=True, plane_j=plane_index)
 
     def magnifications_at(positions_arr, _lens_calc=lens_calc):
         # The raw traced array goes straight into the hessian path: wrapping it in
@@ -313,7 +311,9 @@ for i, (dataset, positions, plane_index) in enumerate(
 # ---------------------------------------------------------------------------
 chi_squared_per_system = []
 for i, (dataset, traced, mags, noise, centre) in enumerate(
-    zip(dataset_list, traced_per_system, magnifications_per_system, noise_list, TRUTH_SOURCE_CENTRES)
+    zip(
+        dataset_list, traced_per_system, magnifications_per_system, noise_list, TRUTH_SOURCE_CENTRES
+    )
 ):
 
     def weighted_chi_squared(traced_arr, mags_arr, noise_arr, centre_arr):

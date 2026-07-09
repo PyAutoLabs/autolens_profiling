@@ -276,13 +276,13 @@ for dataset, centre in zip(dataset_list, source_centres):
             plane_redshift=_z,
         )
 
-    _, predicted = jit_profile(
-        solve, f"step2_solve_{dataset.name}", jnp.array(centre), n_repeats=3
-    )
+    _, predicted = jit_profile(solve, f"step2_solve_{dataset.name}", jnp.array(centre), n_repeats=3)
     predicted_per_system.append(predicted)
     likelihood_steps.append(
-        (f"2.{dataset.name} PointSolver solve (z={float(dataset.redshift):.1f})",
-         timer.records[-1][1] / 3)
+        (
+            f"2.{dataset.name} PointSolver solve (z={float(dataset.redshift):.1f})",
+            timer.records[-1][1] / 3,
+        )
     )
 
 # ---------------------------------------------------------------------------
