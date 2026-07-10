@@ -665,6 +665,88 @@ likelihood_steps.append(("Inversion setup (steps 5-8 combined)", timer.records[-
 
 print(f"  blurred_mapping_matrix (JIT) shape: {bmm_jit.shape}")
 
+# ---------------------------------------------------------------------------
+# Optional: four-way split of the inversion-setup block (--split-setup)
+# ---------------------------------------------------------------------------
+# Nested prefix-JITs of the same staged computation: params -> step-5 output,
+# -> step-6, -> step-7, -> step-8. Successive differences attribute the
+# combined block's cost to border relocation / triangulation+interpolation /
+# mapping matrix / PSF convolution. The differences inherit the fusion caveat
+# (XLA may move work across prefix boundaries, so small negatives are noise),
+# and every prefix pays the ray-trace preamble (~0.3 ms, measured separately
+# in steps 1-2) which lands in the first difference.
+
+_setup_split: dict | None = None
+
+if "--split-setup" in sys.argv:
+    print("\n--- Inversion setup four-way split (--split-setup) ---")
+
+    def _setup_prefix_fn(upto):
+        def fn(pt):
+            t = al.Tracer(galaxies=list(pt.galaxies))
+            traced_source = t.traced_grid_2d_list_from(
+                grid=dataset.grids.pixelization, xp=jnp
+            )[-1]
+            traced_mesh = t.traced_grid_2d_list_from(
+                grid=al.Grid2DIrregular(image_plane_mesh_grid), xp=jnp
+            )[-1]
+            relocated = border_relocator.relocated_grid_from(grid=traced_source, xp=jnp)
+            relocated_mesh = border_relocator.relocated_mesh_grid_from(
+                grid=traced_source, mesh_grid=traced_mesh, xp=jnp
+            )
+            if upto == 5:
+                return relocated.array, relocated_mesh.array
+            interp = al.InterpolatorDelaunay(
+                mesh=pixelization_obj.mesh,
+                mesh_grid=relocated_mesh,
+                data_grid=relocated,
+                xp=jnp,
+            )
+            m = al.Mapper(
+                interpolator=interp,
+                image_plane_mesh_grid=image_plane_mesh_grid,
+                xp=jnp,
+            )
+            if upto == 6:
+                return (
+                    m.pix_indexes_for_sub_slim_index,
+                    m.pix_weights_for_sub_slim_index,
+                )
+            mm = m.mapping_matrix
+            if upto == 7:
+                return mm
+            return dataset.psf.convolved_mapping_matrix_from(
+                mapping_matrix=mm, mask=dataset.mask, xp=jnp
+            )
+
+        return fn
+
+    _prefix_labels = {
+        5: "Border relocation",
+        6: "Triangulation + interpolation",
+        7: "Mapping matrix",
+        8: "Blurred mapping matrix (PSF)",
+    }
+    _prefix_per_call = {}
+    for _upto in (5, 6, 7, 8):
+        jit_profile(_setup_prefix_fn(_upto), f"setup_prefix_{_upto}", params_tree)
+        _prefix_per_call[_upto] = timer.records[-1][1] / 10
+
+    _setup_split = {}
+    _prev = 0.0
+    for _upto in (5, 6, 7, 8):
+        _setup_split[_prefix_labels[_upto]] = _prefix_per_call[_upto] - _prev
+        _prev = _prefix_per_call[_upto]
+
+    print(
+        "  prefix per-call: "
+        + ", ".join(f"5..{u}={_prefix_per_call[u] * 1000:.2f} ms" for u in (5, 6, 7, 8))
+    )
+    for _label, _dt in _setup_split.items():
+        print(f"    {_label}: {_dt * 1000:8.2f} ms")
+    _combined = dict(likelihood_steps)["Inversion setup (steps 5-8 combined)"]
+    print(f"  (combined single-JIT reference: {_combined * 1000:.2f} ms)")
+
 bmm_jnp = bmm_ref  # Use the reference matrices for linear algebra steps
 print(f"  blurred_mapping_matrix shape: {blurred_mapping_matrix.shape}")
 
@@ -996,6 +1078,9 @@ breakdown_summary = {
     "steps": {label: per_call for label, per_call in likelihood_steps},
     "total_step_by_step": step_total,
 }
+
+if _setup_split is not None:
+    breakdown_summary["setup_split"] = {k: float(v) for k, v in _setup_split.items()}
 
 dict_path, chart_path = resolve_output_paths(
     _cli,
