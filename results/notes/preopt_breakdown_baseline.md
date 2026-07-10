@@ -14,6 +14,24 @@ after a nufftax venv install on RAL. Task: autolens_profiling#59.
 | `imaging/delaunay` | dense | 97.6 ms | 96.8 ms | 10.07 s | 103× | Inversion setup 5–8 (43%) |
 | `imaging/delaunay` | sparse | 98.0 ms | 95.5 ms | 8.81 s | 90× | Inversion setup 5–8 (42%) |
 
+### Four-way split of the delaunay inversion-setup block (A100, job 330079)
+
+Measured via the opt-in `--split-setup` prefix-JIT decomposition (prefix-sum
+39.96 ms vs 41.14 ms combined — faithful, no fusion redistribution):
+
+| Piece | A100 | share of full likelihood |
+|---|---:|---:|
+| Border relocation | 0.90 ms | ~1% |
+| **Triangulation + interpolation** | **26.62 ms** | **~27% — top target** |
+| Mapping matrix build | 6.34 ms | ~7% |
+| Blurred mapping matrix (PSF) | 6.10 ms | ~6% |
+
+The qhull host callback is a few ms of the 26.6 ms at most (1500 points +
+transfer round-trip); the work item is the JAX-side visibility-walk point
+location + barycentric interpolation. On laptop CPU the same split is
+convolution-dominated (PSF-convolved mapping matrix 3.37 s of 3.88 s) —
+another instance of CPU decompositions pointing at the wrong GPU target.
+
 **The headline validates the GPU-first platform policy: the bottleneck moves.**
 On CPU every mesh cell is dominated by the Curvature matrix (F) at 42–48%;
 on the A100, F collapses into the noise and pixelization is dominated by the
