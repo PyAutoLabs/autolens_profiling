@@ -25,6 +25,7 @@ export JAX_PLATFORM_NAME=cuda
 export JAX_PLATFORMS=cuda,cpu
 export XLA_PYTHON_CLIENT_PREALLOCATE=false
 export JAX_ENABLE_X64=True
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding"
 export NUMBA_CACHE_DIR=/tmp/numba_cache
 export MPLCONFIGDIR=/tmp/matplotlib
 
