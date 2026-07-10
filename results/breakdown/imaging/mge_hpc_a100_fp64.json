@@ -1,0 +1,31 @@
+{
+  "autolens_version": "2026.7.6.649",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding",
+    "omp_num_threads": null,
+    "cpu_count": 124,
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 555 MiB, 81920 MiB"
+  },
+  "instrument": "hst",
+  "configuration": {
+    "pixel_scale_arcsec": 0.05,
+    "mask_radius_arcsec": 3.5,
+    "image_pixels_masked": 15361,
+    "over_sampled_pixels": 17980,
+    "linear_gaussians": 0,
+    "inversion_path": "dense"
+  },
+  "steps": {
+    "Ray-trace grids": 0.00013788409996777772,
+    "Mapping matrix": 0.0011563078000108363,
+    "Blurred mapping matrix": 0.003171063999980106,
+    "Data vector (D)": 8.137940003507537e-05,
+    "Curvature matrix (F)": 0.00010563240002738893,
+    "Reconstruction (NNLS)": 0.0028374931000143986,
+    "Mapped reconstructed image": 0.0001686049000454659,
+    "Chi-squared & log likelihood": 0.00010258929996780353
+  },
+  "total_step_by_step": 0.007760955000048853
+}

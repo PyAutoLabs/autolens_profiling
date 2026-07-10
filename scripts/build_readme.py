@@ -82,6 +82,18 @@ ARTIFACT_RE = re.compile(
     r"\.json$"
 )
 
+# Config-tagged artifact filename (sweep-style `--config-name` outputs, e.g.
+# the A100 tier): <script>_<config>[_sparse].json. Instrument and version are
+# not in the name — they are read from the JSON payload instead.
+#   delaunay_hpc_a100_fp64.json
+#   pixelization_hpc_a100_mp_sparse.json
+CONFIG_TAGGED_RE = re.compile(
+    r"^(?P<script>[a-z0-9_]+?)_(?P<config>local_cpu_fp64|local_cpu_mp|"
+    r"local_gpu_fp64|local_gpu_mp|hpc_a100_fp64|hpc_a100_mp)"
+    r"(?P<sparse>_sparse)?"
+    r"\.json$"
+)
+
 # Canonical sweep-config column order (matches likelihood_runtime/aggregate.py).
 CONFIG_ORDER = (
     "local_cpu_fp64",
@@ -104,6 +116,9 @@ class Artifact:
     sparse: bool
     version: tuple[int, ...]
     raw_version: str
+    # Sweep config for config-tagged artifacts; untagged (single-config
+    # filename pattern) runs are local CPU fp64 by package convention.
+    config: str = "local_cpu_fp64"
 
     @property
     def data(self) -> dict:
@@ -134,14 +149,42 @@ def _scan_artifacts() -> list[Artifact]:
     if not RESULTS_ROOT.exists():
         return []
     out: list[Artifact] = []
-    for p in RESULTS_ROOT.rglob("*_v*.json"):
+    for p in RESULTS_ROOT.rglob("*.json"):
         rel = p.relative_to(RESULTS_ROOT).parts
         if len(rel) < 2 or rel[0] in ("runtime", "baselines"):
             continue
         section = rel[0]  # "breakdown" | "simulators" | "searches"
         subfolder = rel[1] if len(rel) > 2 else ""
         m = ARTIFACT_RE.match(p.name)
+        if m:
+            out.append(
+                Artifact(
+                    path=p,
+                    section=section,
+                    subfolder=subfolder,
+                    script=m["script"],
+                    purpose=m["purpose"],
+                    instrument=m["extra"],
+                    sparse=bool(m["sparse"]),
+                    version=_parse_version(m["version"]),
+                    raw_version=m["version"],
+                )
+            )
+            continue
+        if section != "breakdown":
+            continue
+        m = CONFIG_TAGGED_RE.match(p.name)
         if not m:
+            continue
+        # Config-tagged output: instrument and version live in the payload.
+        try:
+            payload = json.loads(p.read_text())
+        except (OSError, json.JSONDecodeError):
+            continue
+        raw_version = str(payload.get("autolens_version", ""))
+        try:
+            version = _parse_version(raw_version)
+        except ValueError:
             continue
         out.append(
             Artifact(
@@ -149,11 +192,12 @@ def _scan_artifacts() -> list[Artifact]:
                 section=section,
                 subfolder=subfolder,
                 script=m["script"],
-                purpose=m["purpose"],
-                instrument=m["extra"],
+                purpose="breakdown",
+                instrument=payload.get("instrument"),
                 sparse=bool(m["sparse"]),
-                version=_parse_version(m["version"]),
-                raw_version=m["version"],
+                version=version,
+                raw_version=raw_version,
+                config=m["config"],
             )
         )
     return out
@@ -288,15 +332,20 @@ def _render_breakdown_table(artifacts: list[Artifact]) -> str:
     if not relevant:
         return _no_data_block("run a script under `likelihood_breakdown/` to populate.")
     latest = _latest_per_group(
-        relevant, key=lambda a: (a.subfolder, a.script, a.instrument, a.sparse)
+        relevant, key=lambda a: (a.subfolder, a.script, a.instrument, a.sparse, a.config)
     )
-    rows = ["| Cell | Instrument | Inversion path | Step-sum total | PyAutoLens version |"]
-    rows.append("|------|------------|----------------|----------------|--------------------|")
-    for (subfolder, script, instrument, sparse), art in sorted(latest.items()):
+    config_rank = {name: i for i, name in enumerate(CONFIG_ORDER)}
+    rows = ["| Cell | Instrument | Platform | Inversion path | Step-sum total | PyAutoLens version |"]
+    rows.append("|------|------------|----------|----------------|----------------|--------------------|")
+    for (subfolder, script, instrument, sparse, config), art in sorted(
+        latest.items(),
+        key=lambda kv: (kv[0][0], kv[0][1], kv[0][2] or "", config_rank.get(kv[0][4], 99), kv[0][3]),
+    ):
         total = art.data.get("total_step_by_step")
         rows.append(
             f"| `{subfolder}/{script}` | "
             f"{instrument or '—'} | "
+            f"{config} | "
             f"{'sparse (w-tilde)' if sparse else 'dense (mapping)'} | "
             f"{_format_time(total if isinstance(total, (int, float)) else None)} | "
             f"v{art.raw_version} |"

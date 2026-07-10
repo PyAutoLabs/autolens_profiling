@@ -1,8 +1,27 @@
 # PreOptimizationTimes — likelihood_breakdown baseline (polish phase 4)
 
-Status: laptop-CPU fallback tier COMPLETE (2026-07-10); A100 canonical tier
-PENDING (RAL GPU nodes down; 15 dispatch-ready submits in
-`hpc/batch_gpu/submit_breakdown_*`). Task: autolens_profiling#59.
+Status: laptop-CPU fallback tier COMPLETE + A100 imaging tier COMPLETE
+(2026-07-10); A100 alma_high cells (interferometer + datacube) in flight
+after a nufftax venv install on RAL. Task: autolens_profiling#59.
+
+## A100 canonical tier — imaging (jobs 330062–330070)
+
+| Cell (hst) | Path | A100 fp64 | A100 mp | CPU fp64 | GPU speedup | Top step (A100) |
+|------------|------|----------:|--------:|---------:|------------:|-----------------|
+| `imaging/mge` | dense | 7.8 ms | — | 179.5 ms | 23× | Blurred mapping matrix (41%) |
+| `imaging/pixelization` | dense | 57.6 ms | 56.4 ms | 8.65 s | 150× | Regularized reconstruction (65%) |
+| `imaging/pixelization` | sparse | 57.9 ms | 55.5 ms | 10.17 s | 176× | Regularized reconstruction (64%) |
+| `imaging/delaunay` | dense | 97.6 ms | 96.8 ms | 10.07 s | 103× | Inversion setup 5–8 (43%) |
+| `imaging/delaunay` | sparse | 98.0 ms | 95.5 ms | 8.81 s | 90× | Inversion setup 5–8 (42%) |
+
+**The headline validates the GPU-first platform policy: the bottleneck moves.**
+On CPU every mesh cell is dominated by the Curvature matrix (F) at 42–48%;
+on the A100, F collapses into the noise and pixelization is dominated by the
+**Regularized reconstruction (NNLS solve, ~65%)** while delaunay is dominated
+by **inversion setup**. Optimization driven from the CPU decomposition would
+have targeted the wrong step. Mixed precision is flat at this problem scale
+(≤2% vs fp64 on every cell) — the mp win reported by the runtime package at
+larger visibility counts does not appear in hst-scale imaging breakdowns.
 
 ## The baseline (laptop CPU fp64, policy env, quiet machine)
 
