@@ -1,0 +1,8 @@
+You can also set the environment variable PYAUTO_SKIP_WORKSPACE_VERSION_CHECK=1 to disable temporarily.
+multi shared_preloads runtime  (instrument=hst, N_EXPOSURES=4, Hilbert+Delaunay mesh)
+  per-likelihood (unshared): 53279.5 ms
+  per-likelihood (shared):   46747.4 ms
+  speed-up:                  1.14x
+  (the mesh is the only shared quantity for imaging — per-exposure blurred mapping
+  matrix / curvature / regularization dominate, so expect a modest ratio; the
+  primary win is mesh consistency across exposures — see PyAutoLens#599 D1)
