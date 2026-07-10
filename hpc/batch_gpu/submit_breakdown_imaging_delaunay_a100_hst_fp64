@@ -1,0 +1,46 @@
+#!/bin/bash -l
+#
+# A100 likelihood-breakdown profile: imaging/delaunay x hst x fp64.
+# DENSE inversion path (mapping matrices).
+# Per-step JIT decomposition (PreOptimizationTimes campaign, autolens_profiling#59).
+# Compile-heavy: every pipeline step is JIT-compiled in isolation, so wall
+# time is dominated by XLA compiles, not the steady-state timing loop.
+
+#SBATCH -J breakdown_imaging_delaunay_hst_fp64
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=4:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_profiling
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+nvidia-smi
+
+echo "=========================================="
+date
+echo "Cell:           likelihood_breakdown/imaging/delaunay"
+echo "Instrument:     hst"
+echo "Precision:      fp64"
+echo "Inversion path: dense (mapping)"
+
+cd $AP_ROOT
+
+python3 likelihood_breakdown/imaging/delaunay.py \
+    --config-name hpc_a100_fp64
+
+echo "Finished."
+date

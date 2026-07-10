@@ -35,11 +35,27 @@ For each pipeline step (e.g. *ray-trace grids* → *blurred mapping matrix* → 
 3. Asserts the JIT output matches the eager FitImaging / FitInterferometer reference at `rtol=1e-4`, so the per-step decomposition is provably equivalent to the production path.
 4. Emits a JSON with `{steps: {name: per_call_s}, total_step_by_step: ...}` and a single horizontal bar chart sorted by step cost.
 
-## Single-config rationale
+## Platform policy: aim for GPU, fall back to CPU
 
-The per-step JIT compile is expensive — for a 1000-vertex Delaunay cell it's tens of minutes of compile time. Running the same 10-step decomposition six times (CPU/GPU/A100 × fp64/mp) burns roughly an hour of compile per cell, for marginal new signal: cross-hardware comparisons live in the runtime package. Default is **CPU fp64**.
+**A breakdown should always aim to be a full GPU breakdown.** Production
+likelihoods run on GPU, and a step's bottleneck shape genuinely changes across
+backends (XLA fusion behaviour, sparse-precision-matrix layout, callback
+boundaries), so a CPU-only decomposition can point optimization at the wrong
+step. The canonical decomposition for a cell is therefore **A100 fp64** (plus
+mixed precision where the source supports it), dispatched via the
+`hpc/batch_gpu/submit_breakdown_*` scripts.
 
-Opt in to GPU with `--gpu` when you suspect a step's bottleneck shape changes on different backends (XLA fusion behaviour, sparse-precision-matrix layout, etc.). This is the only multi-config knob the breakdown scripts expose.
+CPU fp64 remains the fallback when no GPU is available (laptop-only sessions,
+HPC downtime) — it is cheap to run locally and still catches the
+step-dominance picture for compile-bound and callback-bound steps, but treat it
+as provisional until the GPU decomposition confirms it.
+
+The per-step JIT compile is expensive — for a 1000-vertex Delaunay cell it's
+tens of minutes of compile time per config — so the grid stays deliberately
+small: one representative instrument per dataset class, GPU (+mp) as the
+target, CPU as the fallback. Cross-hardware *runtime* comparisons stay in the
+runtime package; this package answers where the time goes, on the hardware
+that matters.
 
 ## XLA fusion caveat
 
