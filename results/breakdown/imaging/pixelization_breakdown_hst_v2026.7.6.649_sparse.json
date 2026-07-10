@@ -2,7 +2,10 @@
   "autolens_version": "2026.7.6.649",
   "device": {
     "backend": "cpu",
-    "device": "TFRT_CPU_0"
+    "device": "TFRT_CPU_0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding",
+    "omp_num_threads": "1",
+    "cpu_count": 8
   },
   "instrument": "hst",
   "configuration": {
@@ -18,17 +21,17 @@
     "inversion_path": "sparse"
   },
   "steps": {
-    "Ray-trace grids": 0.005685869999979332,
-    "Lens light images (pre-PSF)": 6.969999994907994e-05,
-    "Blurred image (PSF convolution)": 0.006377109999993991,
-    "Profile-subtracted image": 0.00018756999998004176,
-    "Overlay grid (source pixel centres)": 0.0007498900000427966,
-    "Inversion setup (steps 4-8 combined)": 6.307761570000002,
-    "Data vector (D)": 0.042486810000082184,
-    "Curvature matrix (F)": 11.774641900000097,
-    "Regularization matrix (H)": 0.006689579999874695,
-    "Regularized reconstruction": 7.0605987399998416,
-    "Mapped recon + log evidence": 0.8067873600000894
+    "Ray-trace grids": 0.002189679999719374,
+    "Lens light images (pre-PSF)": 2.727999999478925e-05,
+    "Blurred image (PSF convolution)": 0.0013315799998963485,
+    "Profile-subtracted image": 0.00018315000015718398,
+    "Overlay grid (source pixel centres)": 0.00028071000015188473,
+    "Inversion setup (steps 4-8 combined)": 2.6214837200001058,
+    "Data vector (D)": 0.02361151000004611,
+    "Curvature matrix (F)": 4.646836339999936,
+    "Regularization matrix (H)": 0.006793530000140891,
+    "Regularized reconstruction": 2.6747720700001083,
+    "Mapped recon + log evidence": 0.19714425000020128
   },
-  "total_step_by_step": 26.012036099999936
+  "total_step_by_step": 10.174653820000458
 }
