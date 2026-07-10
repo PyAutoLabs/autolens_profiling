@@ -660,6 +660,34 @@ with raised `N_CHANNELS` on a quiet A100 (needs the RAL login node). SMA
 seconds are provisional; the ratio is the robust deliverable, and it
 should grow with per-channel inversion cost at ALMA visibility counts.
 
+### multi (imaging) shared_preloads — measured (2026-07-10)
+
+The imaging generalisation (PyAutoArray#380 / PyAutoLens#600, design
+PyAutoLens#599 D1–D6): exposures of one lens share the **source-plane
+mesh geometry only** — per-exposure PSFs/offsets keep the mapping
+matrix, blurred mapping matrix, curvature matrix and regularization
+matrix per-exposure, so the design predicted a modest speed-up with
+**consistency** (identical source-pixel grid across exposures) as the
+primary win. Measured by `likelihood_runtime/multi/shared_preloads.py`
+(vmap-honest, 4 identical exposures, Hilbert-1500 + Delaunay):
+
+| Config                                     | unshared       | shared        | speed-up  |
+|--------------------------------------------|----------------|---------------|-----------|
+| hst × 4 exp, local_cpu_fp64 (v2026.7.6.649) | 53279.5 ms/eval | 46747.4 ms/eval | **1.14×** |
+
+As predicted: the ~12% saved is the per-exposure image-mesh ray-trace +
+Delaunay `pure_callback` triangulation; the dominant per-exposure
+inversion work is untouched by design. Raw log:
+`results/runtime/multi/shared_preloads_hst_local_cpu_fp64.stdout`.
+Correctness (identical-exposure shared-vs-unshared bit-parity + g+r
+shared-mesh jit) is asserted in
+`autolens_workspace_test/scripts/jax_likelihood_functions/multi/shared_preloads.py`.
+
+Trap for re-runs: a crashed JAX run can poison the gitignored
+`dataset/imaging/<inst>/lensed_source.fits` adapt cache with in-mask
+NaNs (qhull then fails with "Points cannot contain NaN") — delete the
+cache and let `_adapt_image_util` regenerate it.
+
 ---
 
 ## Cross-cell: known follow-ups
