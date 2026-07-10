@@ -42,7 +42,7 @@ _No data yet — run `likelihood_runtime/sweep.py` then `aggregate.py` to popula
 | `datacube/inversion` | alma_high | hpc_a100_mp | dense (mapping) | — | v2026.7.6.649 |
 | `imaging/delaunay` | hst | local_cpu_fp64 | dense (mapping) | 10.07 s | v2026.7.6.649 |
 | `imaging/delaunay` | hst | local_cpu_fp64 | sparse (w-tilde) | 8.81 s | v2026.7.6.649 |
-| `imaging/delaunay` | hst | hpc_a100_fp64 | dense (mapping) | 97.6 ms | v2026.7.6.649 |
+| `imaging/delaunay` | hst | hpc_a100_fp64 | dense (mapping) | 96.6 ms | v2026.7.6.649 |
 | `imaging/delaunay` | hst | hpc_a100_fp64 | sparse (w-tilde) | 98.0 ms | v2026.7.6.649 |
 | `imaging/delaunay` | hst | hpc_a100_mp | dense (mapping) | 96.8 ms | v2026.7.6.649 |
 | `imaging/delaunay` | hst | hpc_a100_mp | sparse (w-tilde) | 95.5 ms | v2026.7.6.649 |

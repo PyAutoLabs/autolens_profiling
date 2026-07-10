@@ -19,17 +19,23 @@
     "inversion_path": "dense"
   },
   "steps": {
-    "Ray-trace data grid": 0.00015380099994217745,
-    "Ray-trace mesh grid": 0.00015836089996810188,
-    "Lens light images (pre-PSF)": 7.339750000028289e-05,
-    "Blurred image (PSF convolution)": 0.000694181499966362,
-    "Profile-subtracted image": 0.0001302241999837861,
-    "Inversion setup (steps 5-8 combined)": 0.04188273119998485,
-    "Data vector (D)": 0.00032034599998951305,
-    "Curvature matrix (F)": 0.004863064400069561,
-    "Regularization matrix (H)": 0.01414346999990812,
-    "Regularized reconstruction": 0.03282069330007289,
-    "Mapped recon + log evidence": 0.002344851199995901
+    "Ray-trace data grid": 0.00017328279991488671,
+    "Ray-trace mesh grid": 0.00010508720006328077,
+    "Lens light images (pre-PSF)": 5.106359985802555e-05,
+    "Blurred image (PSF convolution)": 0.00072238800003106,
+    "Profile-subtracted image": 0.00012498710002546433,
+    "Inversion setup (steps 5-8 combined)": 0.04113771680003993,
+    "Data vector (D)": 0.0003055739000046742,
+    "Curvature matrix (F)": 0.004818168800011335,
+    "Regularization matrix (H)": 0.01439599100012856,
+    "Regularized reconstruction": 0.03254721299999801,
+    "Mapped recon + log evidence": 0.002242607500011218
   },
-  "total_step_by_step": 0.09758512119988154
+  "total_step_by_step": 0.09662407970008643,
+  "setup_split": {
+    "Border relocation": 0.0008993409001050168,
+    "Triangulation + interpolation": 0.02662460360006662,
+    "Mapping matrix": 0.0063388323997060035,
+    "Blurred mapping matrix (PSF)": 0.006100841000079529
+  }
 }
