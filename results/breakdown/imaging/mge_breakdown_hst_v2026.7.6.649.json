@@ -1,0 +1,30 @@
+{
+  "autolens_version": "2026.7.6.649",
+  "device": {
+    "backend": "cpu",
+    "device": "TFRT_CPU_0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding",
+    "omp_num_threads": "1",
+    "cpu_count": 8
+  },
+  "instrument": "hst",
+  "configuration": {
+    "pixel_scale_arcsec": 0.05,
+    "mask_radius_arcsec": 3.5,
+    "image_pixels_masked": 15361,
+    "over_sampled_pixels": 17980,
+    "linear_gaussians": 0,
+    "inversion_path": "dense"
+  },
+  "steps": {
+    "Ray-trace grids": 0.002696519999881275,
+    "Mapping matrix": 0.06340354000021761,
+    "Blurred mapping matrix": 0.10661125000005996,
+    "Data vector (D)": 0.0003620499999669846,
+    "Curvature matrix (F)": 0.0047935300000972346,
+    "Reconstruction (NNLS)": 0.0006198899998707929,
+    "Mapped reconstructed image": 0.0006326000002445653,
+    "Chi-squared & log likelihood": 0.00035997999984829223
+  },
+  "total_step_by_step": 0.1794793600001867
+}

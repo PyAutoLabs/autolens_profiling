@@ -146,6 +146,13 @@ def device_info_dict() -> dict:
     info = {
         "backend": jax.default_backend(),
         "device": str(jax.devices()[0]),
+        # Environment provenance: a stray XLA_FLAGS (e.g. disabling
+        # constant_folding) or thread pinning silently rescales every timing
+        # in a result by integer factors — record them so drift between runs
+        # is attributable (found the hard way: autolens_profiling#59).
+        "xla_flags": os.environ.get("XLA_FLAGS") or None,
+        "omp_num_threads": os.environ.get("OMP_NUM_THREADS") or None,
+        "cpu_count": os.cpu_count(),
     }
     if info["backend"] == "gpu":
         try:

@@ -1,0 +1,41 @@
+{
+  "autolens_version": "2026.7.6.649",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding",
+    "omp_num_threads": null,
+    "cpu_count": 124,
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 4645 MiB, 81920 MiB"
+  },
+  "instrument": "hst",
+  "configuration": {
+    "pixel_scale_arcsec": 0.05,
+    "mask_radius_arcsec": 3.5,
+    "image_pixels_masked": 15361,
+    "over_sampled_pixels": 17980,
+    "delaunay_vertices": 1500,
+    "edge_zeroed_pixels": 0,
+    "inversion_path": "dense"
+  },
+  "steps": {
+    "Ray-trace data grid": 0.00017328279991488671,
+    "Ray-trace mesh grid": 0.00010508720006328077,
+    "Lens light images (pre-PSF)": 5.106359985802555e-05,
+    "Blurred image (PSF convolution)": 0.00072238800003106,
+    "Profile-subtracted image": 0.00012498710002546433,
+    "Inversion setup (steps 5-8 combined)": 0.04113771680003993,
+    "Data vector (D)": 0.0003055739000046742,
+    "Curvature matrix (F)": 0.004818168800011335,
+    "Regularization matrix (H)": 0.01439599100012856,
+    "Regularized reconstruction": 0.03254721299999801,
+    "Mapped recon + log evidence": 0.002242607500011218
+  },
+  "total_step_by_step": 0.09662407970008643,
+  "setup_split": {
+    "Border relocation": 0.0008993409001050168,
+    "Triangulation + interpolation": 0.02662460360006662,
+    "Mapping matrix": 0.0063388323997060035,
+    "Blurred mapping matrix (PSF)": 0.006100841000079529
+  }
+}

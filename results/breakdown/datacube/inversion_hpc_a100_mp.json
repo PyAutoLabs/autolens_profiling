@@ -1,0 +1,36 @@
+{
+  "autolens_version": "2026.7.6.649",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding",
+    "omp_num_threads": null,
+    "cpu_count": 124,
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 33325 MiB, 81920 MiB"
+  },
+  "instrument": "alma_high",
+  "model": "delaunay",
+  "purpose": "decompose the datacube inversion-setup step into channel-invariant vs channel-variant sub-steps (sparse w-tilde route)",
+  "configuration": {
+    "visibilities": 5000000,
+    "delaunay_vertices": 1500,
+    "use_mixed_precision": true
+  },
+  "note": "cutpoints are a dependency TREE not a linear chain \u2014 XLA DCE prunes per leaf, so C(curvature) and D(data_vector) are parallel children of B(mapper+L); deltas subtract the common parent B, never C from D",
+  "raw_cutpoints_per_call_s": {
+    "A_trace": 0.00021824800005560975,
+    "B_mapper": 0.09195884380005737,
+    "C_curvature": 0.1846953169999324,
+    "D_data_vector": 0.09318047489996388
+  },
+  "sub_steps_per_call_s": {
+    "ray_trace": 0.00021824800005560975,
+    "mapper_plus_mapping_matrix_L": 0.09174059580000175,
+    "curvature_F_LtWtL": 0.09273647319987505,
+    "data_vector_D": 0.0012216310999065144
+  },
+  "per_channel_inversion_total_per_call_s": 0.18591694809983894,
+  "channel_invariant_per_call_s": 0.1846953169999324,
+  "channel_variant_per_call_s": 0.0012216310999065144,
+  "shareable_fraction_of_inversion_total": 0.9934291568768088
+}
