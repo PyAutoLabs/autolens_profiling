@@ -40,7 +40,7 @@ both.
 
 ### Plan + worktree
 
-Run `$plan-branches` (`/plan_branches` in Claude). Affected:
+Run `$start-dev` (`/start_dev` in Claude). Affected:
 `z_projects/profiling` (no remote, local-only — commit to local main) and
 `autolens_workspace_developer` (artifacts, has remote — feature branch + PR).
 Branch `feature/<likelihood_type>-profiling-a100`.

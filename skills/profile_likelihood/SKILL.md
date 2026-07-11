@@ -56,7 +56,7 @@ GPU/HPC availability, the PyAutoGPU venv ordering, and the canonical reference).
    only) — [`reference.md`](reference.md) → "Scaffold".
 3. **SLURM submit scripts** (first time only) — [`reference.md`](reference.md) →
    "SLURM submit scripts".
-4. **Plan + worktree** — run `$plan-branches` (`/plan_branches` in Claude); worktree
+4. **Plan + worktree** — run `$start-dev` (`/start_dev` in Claude); worktree
    `autolens_workspace_developer` on `feature/<likelihood_type>-profiling-a100`.
 5. **Local sweep** — 4 configs (GPU/CPU × fp64/mp); spot-check `device.backend`.
 6. **HPC sweep** — A100 fp64 + mp via `hpc/sync`, then consolidate.
