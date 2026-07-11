@@ -684,9 +684,7 @@ if "--split-setup" in sys.argv:
     def _setup_prefix_fn(upto):
         def fn(pt):
             t = al.Tracer(galaxies=list(pt.galaxies))
-            traced_source = t.traced_grid_2d_list_from(
-                grid=dataset.grids.pixelization, xp=jnp
-            )[-1]
+            traced_source = t.traced_grid_2d_list_from(grid=dataset.grids.pixelization, xp=jnp)[-1]
             traced_mesh = t.traced_grid_2d_list_from(
                 grid=al.Grid2DIrregular(image_plane_mesh_grid), xp=jnp
             )[-1]

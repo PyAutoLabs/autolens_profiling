@@ -348,11 +348,21 @@ def _render_breakdown_table(artifacts: list[Artifact]) -> str:
         relevant, key=lambda a: (a.subfolder, a.script, a.instrument, a.sparse, a.config)
     )
     config_rank = {name: i for i, name in enumerate(CONFIG_ORDER)}
-    rows = ["| Cell | Instrument | Platform | Inversion path | Step-sum total | PyAutoLens version |"]
-    rows.append("|------|------------|----------|----------------|----------------|--------------------|")
+    rows = [
+        "| Cell | Instrument | Platform | Inversion path | Step-sum total | PyAutoLens version |"
+    ]
+    rows.append(
+        "|------|------------|----------|----------------|----------------|--------------------|"
+    )
     for (subfolder, script, instrument, sparse, config), art in sorted(
         latest.items(),
-        key=lambda kv: (kv[0][0], kv[0][1], kv[0][2] or "", config_rank.get(kv[0][4], 99), kv[0][3]),
+        key=lambda kv: (
+            kv[0][0],
+            kv[0][1],
+            kv[0][2] or "",
+            config_rank.get(kv[0][4], 99),
+            kv[0][3],
+        ),
     ):
         total = art.data.get("total_step_by_step")
         rows.append(
