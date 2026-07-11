@@ -40,9 +40,10 @@ both.
 
 ### Plan + worktree
 
-Run `/plan_branches`. Affected: `z_projects/profiling` (no remote, local-only —
-commit to local main) and `autolens_workspace_developer` (artifacts, has remote
-— feature branch + PR). Branch `feature/<likelihood_type>-profiling-a100`.
+Run `$plan-branches` (`/plan_branches` in Claude). Affected:
+`z_projects/profiling` (no remote, local-only — commit to local main) and
+`autolens_workspace_developer` (artifacts, has remote — feature branch + PR).
+Branch `feature/<likelihood_type>-profiling-a100`.
 
 ```bash
 source admin_jammy/software/worktree.sh

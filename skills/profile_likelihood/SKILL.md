@@ -1,7 +1,6 @@
 ---
-name: profile_likelihood
+name: profile-likelihood
 description: Run a multi-config JAX likelihood profiling sweep (CPU/GPU × fp64/mp, optional A100 on RAL HPC) for a given likelihood function. Produces structured JSON+PNG outputs with comparison tables under autolens_workspace_developer/jax_profiling/results/jit/.
-user-invocable: true
 ---
 
 # Profile Likelihood
@@ -18,14 +17,17 @@ workflow. Verbose command blocks, gotchas and run precedent are in
 ## Usage
 
 ```
-/profile_likelihood <dataset_type> <likelihood_type>
+$profile-likelihood <dataset_type> <likelihood_type>
 ```
+
+In Claude, invoke the same skill as `/profile_likelihood`.
 
 `<dataset_type>` ∈ `imaging` / `interferometer` / `point_source`.
 `<likelihood_type>` is a canonical reference script present at
 `autolens_workspace_developer/jax_profiling/jit/<dataset_type>/<likelihood_type>.py`
 (mge, delaunay, rectangular, delaunay_mge, rectangular_mge, …). Examples:
-`/profile_likelihood imaging mge`, `/profile_likelihood interferometer rectangular_mge`.
+`$profile-likelihood imaging mge`,
+`$profile-likelihood interferometer rectangular_mge`.
 
 ## What this produces
 
@@ -54,7 +56,7 @@ GPU/HPC availability, the PyAutoGPU venv ordering, and the canonical reference).
    only) — [`reference.md`](reference.md) → "Scaffold".
 3. **SLURM submit scripts** (first time only) — [`reference.md`](reference.md) →
    "SLURM submit scripts".
-4. **Plan + worktree** — run `/plan_branches`; worktree
+4. **Plan + worktree** — run `$plan-branches` (`/plan_branches` in Claude); worktree
    `autolens_workspace_developer` on `feature/<likelihood_type>-profiling-a100`.
 5. **Local sweep** — 4 configs (GPU/CPU × fp64/mp); spot-check `device.backend`.
 6. **HPC sweep** — A100 fp64 + mp via `hpc/sync`, then consolidate.
