@@ -13,8 +13,7 @@ batch_gpu/
 ```
 
 Submit names follow the same `<class>/<model>` cell grid as the rest of the
-repo; `runtime_` prefixed submits drive `likelihood_runtime/` cells, `nss_`
-prefixed ones drive `searches/` cells.
+repo; `runtime_` prefixed submits drive `likelihood_runtime/` cells.
 
 ## Running
 
