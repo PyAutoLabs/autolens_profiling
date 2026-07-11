@@ -38,7 +38,6 @@ from _profile_cli import (  # noqa: E402
 )
 from searches._metrics import attach_viz_timer, collect_metrics  # noqa: E402
 from searches._samplers import (  # noqa: E402
-    _NSS_DEFAULTS,
     SAMPLER_BUILDERS,
     n_live_for,
     vmap_batch_for_cell,
@@ -186,16 +185,6 @@ def _sampler_config_dict(
             "use_jax_vmap": use_jax,
             "force_x1_cpu": use_jax,
             "iterations_per_update": 3 * n_live,
-        }
-    if sampler == "nss":
-        return {
-            "n_live": n_live,
-            "num_mcmc_steps": int(_NSS_DEFAULTS["num_mcmc_steps"]),
-            "num_delete": int(_NSS_DEFAULTS["num_delete"]),
-            "chunk_size": None,
-            "termination": float(_NSS_DEFAULTS["termination"]),
-            "seed": int(_NSS_DEFAULTS["seed"]),
-            "jax_native": True,
         }
     return {"n_live": n_live, "_note": f"unknown sampler {sampler!r}"}
 

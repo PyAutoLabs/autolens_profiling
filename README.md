@@ -10,7 +10,7 @@ This repository is the single home for PyAutoLens performance measurement. It ex
 
 - **Likelihood functions** — imaging, interferometer, point-source, and datacube paths, across the MGE, pixelization, and Delaunay model compositions used in real science cases.
 - **Simulators** — run-time tracking for the imaging, interferometer, point-source, cluster, group, and multi-plane simulators.
-- **Searches / samplers** — sampler-level profiling, starting with Nautilus. Other samplers (Dynesty, Emcee, BlackJAX, NumPyro, NSS, LBFGS, PocoMC) follow in later sweeps.
+- **Searches / samplers** — sampler-level profiling, starting with Nautilus. Other samplers (Dynesty, Emcee, BlackJAX, NumPyro, LBFGS, PocoMC) follow in later sweeps.
 
 **Hardware tiers covered:**
 
