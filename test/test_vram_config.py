@@ -189,3 +189,22 @@ def test_legacy_probe_without_backend_accepted(tmp_path):
     )
     assert batch == 24
     assert source.startswith("probe")
+
+
+# ---------------------------------------------------------------------------
+# aggregate config-stem matching (cell-prefixed filenames, #56 regression)
+# ---------------------------------------------------------------------------
+
+
+def test_aggregate_matches_cell_prefixed_stems():
+    import sys as _sys
+    from pathlib import Path as _Path
+
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1] / "likelihood_runtime"))
+    from aggregate import _config_name_from_stem
+
+    assert _config_name_from_stem("mge_local_cpu_fp64") == "local_cpu_fp64"
+    assert _config_name_from_stem("pixelization_local_cpu_fp64_sparse") == "local_cpu_fp64_sparse"
+    assert _config_name_from_stem("local_gpu_mp") == "local_gpu_mp"  # pre-#44 shape
+    assert _config_name_from_stem("mge_likelihood_summary_hst_v2026.5.29.4") is None
+    assert _config_name_from_stem("comparison") is None

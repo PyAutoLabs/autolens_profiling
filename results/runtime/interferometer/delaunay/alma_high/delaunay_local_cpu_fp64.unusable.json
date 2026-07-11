@@ -1,0 +1,5 @@
+{
+  "cpu_unusable": true,
+  "reason": "killed at ~1h wall-clock under campaign policy \u2014 GPU-only",
+  "config_name": "local_cpu_fp64"
+}

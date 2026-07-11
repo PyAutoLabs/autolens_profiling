@@ -1,0 +1,108 @@
+{
+  "configs": {
+    "local_cpu_fp64": {
+      "autolens_version": "2026.7.6.649",
+      "device": {
+        "backend": "cpu",
+        "device": "TFRT_CPU_0"
+      },
+      "instrument": "hst",
+      "configuration": {
+        "pixel_scale_arcsec": 0.05,
+        "mask_radius_arcsec": 3.5,
+        "image_pixels_masked": 15361,
+        "over_sampled_pixels": 17980,
+        "delaunay_vertices": 1500,
+        "edge_zeroed_pixels": 0,
+        "inversion_path": "dense"
+      },
+      "full_pipeline_single_jit": 16.729484930000034,
+      "vmap": {
+        "batch_size": 3,
+        "batch_time": 37.98233206000005,
+        "per_call": 12.66077735333335,
+        "speedup_vs_single_jit": 1.3
+      },
+      "full_pipeline_per_call": 16.729484930000034,
+      "config_name": "local_cpu_fp64"
+    },
+    "local_cpu_mp": {
+      "autolens_version": "2026.7.6.649",
+      "device": {
+        "backend": "cpu",
+        "device": "TFRT_CPU_0"
+      },
+      "instrument": "hst",
+      "configuration": {
+        "pixel_scale_arcsec": 0.05,
+        "mask_radius_arcsec": 3.5,
+        "image_pixels_masked": 15361,
+        "over_sampled_pixels": 17980,
+        "delaunay_vertices": 1500,
+        "edge_zeroed_pixels": 0,
+        "inversion_path": "dense"
+      },
+      "full_pipeline_single_jit": 17.836323139999877,
+      "vmap": {
+        "batch_size": 3,
+        "batch_time": 48.08783619000023,
+        "per_call": 16.029278730000076,
+        "speedup_vs_single_jit": 1.1
+      },
+      "full_pipeline_per_call": 17.836323139999877,
+      "config_name": "local_cpu_mp"
+    },
+    "local_cpu_fp64_sparse": {
+      "autolens_version": "2026.7.6.649",
+      "device": {
+        "backend": "cpu",
+        "device": "TFRT_CPU_0"
+      },
+      "instrument": "hst",
+      "configuration": {
+        "pixel_scale_arcsec": 0.05,
+        "mask_radius_arcsec": 3.5,
+        "image_pixels_masked": 15361,
+        "over_sampled_pixels": 17980,
+        "delaunay_vertices": 1500,
+        "edge_zeroed_pixels": 0,
+        "inversion_path": "sparse"
+      },
+      "full_pipeline_single_jit": 4.144032109999898,
+      "vmap": {
+        "batch_size": 3,
+        "batch_time": 15.646753510000053,
+        "per_call": 5.215584503333351,
+        "speedup_vs_single_jit": 0.8
+      },
+      "full_pipeline_per_call": 4.144032109999898,
+      "config_name": "local_cpu_fp64_sparse"
+    },
+    "local_cpu_mp_sparse": {
+      "autolens_version": "2026.7.6.649",
+      "device": {
+        "backend": "cpu",
+        "device": "TFRT_CPU_0"
+      },
+      "instrument": "hst",
+      "configuration": {
+        "pixel_scale_arcsec": 0.05,
+        "mask_radius_arcsec": 3.5,
+        "image_pixels_masked": 15361,
+        "over_sampled_pixels": 17980,
+        "delaunay_vertices": 1500,
+        "edge_zeroed_pixels": 0,
+        "inversion_path": "sparse"
+      },
+      "full_pipeline_single_jit": 4.485923779999939,
+      "vmap": {
+        "batch_size": 3,
+        "batch_time": 14.852275139999984,
+        "per_call": 4.950758379999995,
+        "speedup_vs_single_jit": 0.9
+      },
+      "full_pipeline_per_call": 4.485923779999939,
+      "config_name": "local_cpu_mp_sparse"
+    }
+  }
+}

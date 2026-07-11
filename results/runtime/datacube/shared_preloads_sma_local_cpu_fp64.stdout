@@ -1,0 +1,37 @@
+/home/jammy/Code/PyAutoLabs/PyAutoConf/autoconf/workspace.py:206: UserWarning: Cannot verify the workspace at /home/jammy/Code/PyAutoLabs/autolens_profiling is compatible with the installed library version (2026.7.6.649): no `version.minimum_library_version` or `version.workspace_version` key in config/general.yaml and no version.txt at the workspace root.
+
+If you cloned the workspace from `main` rather than a release tag, set `version.workspace_version_check: False` in config/general.yaml to silence this warning. The `main` branch updates more frequently than library releases, so version mismatches are expected and not actionable for `main`-branch users.
+
+You can also set the environment variable PYAUTO_SKIP_WORKSPACE_VERSION_CHECK=1 to disable temporarily.
+  warnings.warn(_missing_version_warning(root, library_version))
+/home/jammy/Code/PyAutoLabs/PyAutoConf/autoconf/workspace.py:206: UserWarning: Cannot verify the workspace at /home/jammy/Code/PyAutoLabs/autolens_profiling is compatible with the installed library version (2026.7.6.649): no `version.minimum_library_version` or `version.workspace_version` key in config/general.yaml and no version.txt at the workspace root.
+
+If you cloned the workspace from `main` rather than a release tag, set `version.workspace_version_check: False` in config/general.yaml to silence this warning. The `main` branch updates more frequently than library releases, so version mismatches are expected and not actionable for `main`-branch users.
+
+You can also set the environment variable PYAUTO_SKIP_WORKSPACE_VERSION_CHECK=1 to disable temporarily.
+  warnings.warn(_missing_version_warning(root, library_version))
+datacube shared_preloads runtime  (instrument=sma, N_CHANNELS=4, sparse route)
+2026-07-10 13:59:54,008 - autoarray.dataset.interferometer.dataset - INFO - INTERFEROMETER - Computing NUFFT Precision Operator; runtime scales with visibility count and mask resolution, CPU run times may exceed hours.
+2026-07-10 13:59:58,594 - autoarray.inversion.inversion.interferometer.inversion_interferometer_util - INFO - INTERFEROMETER - Finished W-Tilde (JAX) in 2.994 seconds
+2026-07-10 13:59:59,078 - autoarray.dataset.interferometer.dataset - INFO - INTERFEROMETER - Computing NUFFT Precision Operator; runtime scales with visibility count and mask resolution, CPU run times may exceed hours.
+2026-07-10 14:00:02,017 - autoarray.inversion.inversion.interferometer.inversion_interferometer_util - INFO - INTERFEROMETER - Finished W-Tilde (JAX) in 2.899 seconds
+2026-07-10 14:00:02,255 - autoarray.dataset.interferometer.dataset - INFO - INTERFEROMETER - Computing NUFFT Precision Operator; runtime scales with visibility count and mask resolution, CPU run times may exceed hours.
+2026-07-10 14:00:05,138 - autoarray.inversion.inversion.interferometer.inversion_interferometer_util - INFO - INTERFEROMETER - Finished W-Tilde (JAX) in 2.823 seconds
+2026-07-10 14:00:05,406 - autoarray.dataset.interferometer.dataset - INFO - INTERFEROMETER - Computing NUFFT Precision Operator; runtime scales with visibility count and mask resolution, CPU run times may exceed hours.
+2026-07-10 14:00:08,403 - autoarray.inversion.inversion.interferometer.inversion_interferometer_util - INFO - INTERFEROMETER - Finished W-Tilde (JAX) in 2.956 seconds
+2026-07-10 14:00:11,410 - autofit.non_linear.fitness - INFO - JAX: Applying vmap and jit to likelihood function -- may take a few seconds.
+2026-07-10 14:00:11,411 - autofit.non_linear.fitness - INFO - JAX: vmap and jit applied in 0.0007114410400390625 seconds.
+2026-07-10 14:01:01,004 - autoarray.dataset.interferometer.dataset - INFO - INTERFEROMETER - Computing NUFFT Precision Operator; runtime scales with visibility count and mask resolution, CPU run times may exceed hours.
+2026-07-10 14:01:03,236 - autoarray.inversion.inversion.interferometer.inversion_interferometer_util - INFO - INTERFEROMETER - Finished W-Tilde (JAX) in 2.185 seconds
+2026-07-10 14:01:03,399 - autoarray.dataset.interferometer.dataset - INFO - INTERFEROMETER - Computing NUFFT Precision Operator; runtime scales with visibility count and mask resolution, CPU run times may exceed hours.
+2026-07-10 14:01:05,619 - autoarray.inversion.inversion.interferometer.inversion_interferometer_util - INFO - INTERFEROMETER - Finished W-Tilde (JAX) in 2.175 seconds
+2026-07-10 14:01:05,784 - autoarray.dataset.interferometer.dataset - INFO - INTERFEROMETER - Computing NUFFT Precision Operator; runtime scales with visibility count and mask resolution, CPU run times may exceed hours.
+2026-07-10 14:01:07,801 - autoarray.inversion.inversion.interferometer.inversion_interferometer_util - INFO - INTERFEROMETER - Finished W-Tilde (JAX) in 1.996 seconds
+2026-07-10 14:01:07,949 - autoarray.dataset.interferometer.dataset - INFO - INTERFEROMETER - Computing NUFFT Precision Operator; runtime scales with visibility count and mask resolution, CPU run times may exceed hours.
+2026-07-10 14:01:09,864 - autoarray.inversion.inversion.interferometer.inversion_interferometer_util - INFO - INTERFEROMETER - Finished W-Tilde (JAX) in 1.890 seconds
+2026-07-10 14:01:10,216 - autofit.non_linear.fitness - INFO - JAX: Applying vmap and jit to likelihood function -- may take a few seconds.
+2026-07-10 14:01:10,218 - autofit.non_linear.fitness - INFO - JAX: vmap and jit applied in 0.0019555091857910156 seconds.
+  per-likelihood (unshared): 1282.7 ms
+  per-likelihood (shared):   316.1 ms
+  speed-up:                  4.06x
+  (provisional SMA numbers — re-run --instrument alma_high on a quiet A100 for the authoritative figure; the ratio is the robust deliverable)

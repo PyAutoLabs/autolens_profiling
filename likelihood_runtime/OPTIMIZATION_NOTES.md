@@ -612,7 +612,8 @@ start to dominate the GPU profile (currently 8 % of cube cost).
 1. **Per-channel inversion setup** is overwhelmingly dominant (78 % of
    cube cost). The `shared_lwl_savings_estimate = 32 s` is the largest
    discrete refactor available — moving the curvature matrix from
-   per-channel to shared.
+   per-channel to shared. **SHIPPED + measured — see the
+   `shared_preloads` section below: 4.06× at sma × 4 ch.**
 2. **Decompose the inversion-setup step** (currently one combined block
    "steps 5-8 incl. NUFFT") to figure out whether the border-relocation,
    mapper, mapping-matrix, or NUFFT sub-block dominates. The shared
@@ -630,6 +631,62 @@ the mp delta is < 1 % (18.0 vs 18.1 s) — the cube cost is bottlenecked
 by the per-channel inversion-setup chain which doesn't gain meaningfully
 from fp32 once it's already running on GPU tensor cores. Stick with fp64
 on GPU for this cell.
+
+### shared_preloads — measured (2026-07-10)
+
+Aris's shared-`LᵀW̃L` optimisation (follow-up 1 above) shipped as the
+FactorGraph shared-state path:
+[PyAutoArray#344](https://github.com/PyAutoLabs/PyAutoArray/pull/344)
+(`PreloadsInterferometer` carrying the channel-invariant curvature matrix
+`F = LᵀW̃L` + `mapper_galaxy_dict`) and
+[PyAutoLens#566](https://github.com/PyAutoLabs/PyAutoLens/pull/566)
+(`AnalysisInterferometer(shared_preloads=True)` + `shared_state_from`).
+Measured by `likelihood_runtime/datacube/shared_preloads.py` (vmap-honest
+timing, 4 identical channels, sparse route):
+
+| Config                                  | unshared        | shared         | speed-up  |
+|-----------------------------------------|-----------------|----------------|-----------|
+| sma × 4 ch, local_cpu_fp64 (v2026.7.6.649) | 1282.7 ms/eval | 316.1 ms/eval | **4.06×** |
+
+At N = 4 identical channels, 4.06× is effectively the ideal ceiling — the
+per-channel inversion rebuild collapses entirely and the residual
+per-channel cost (data vector + NNLS + log-evidence) is small at SMA
+scale. Correctness (shared-vs-unshared parity incl. `jit`) is asserted in
+`autolens_workspace_test/scripts/jax_likelihood_functions/datacube/shared_preloads.py`.
+Raw log: `results/runtime/datacube/shared_preloads_sma_local_cpu_fp64.stdout`.
+
+**Authoritative figure still pending:** re-run `--instrument alma_high`
+with raised `N_CHANNELS` on a quiet A100 (needs the RAL login node). SMA
+seconds are provisional; the ratio is the robust deliverable, and it
+should grow with per-channel inversion cost at ALMA visibility counts.
+
+### multi (imaging) shared_preloads — measured (2026-07-10)
+
+The imaging generalisation (PyAutoArray#380 / PyAutoLens#600, design
+PyAutoLens#599 D1–D6): exposures of one lens share the **source-plane
+mesh geometry only** — per-exposure PSFs/offsets keep the mapping
+matrix, blurred mapping matrix, curvature matrix and regularization
+matrix per-exposure, so the design predicted a modest speed-up with
+**consistency** (identical source-pixel grid across exposures) as the
+primary win. Measured by `likelihood_runtime/multi/shared_preloads.py`
+(vmap-honest, 4 identical exposures, Hilbert-1500 + Delaunay):
+
+| Config                                     | unshared       | shared        | speed-up  |
+|--------------------------------------------|----------------|---------------|-----------|
+| hst × 4 exp, local_cpu_fp64 (v2026.7.6.649) | 53279.5 ms/eval | 46747.4 ms/eval | **1.14×** |
+
+As predicted: the ~12% saved is the per-exposure image-mesh ray-trace +
+Delaunay `pure_callback` triangulation; the dominant per-exposure
+inversion work is untouched by design. Raw log:
+`results/runtime/multi/shared_preloads_hst_local_cpu_fp64.stdout`.
+Correctness (identical-exposure shared-vs-unshared bit-parity + g+r
+shared-mesh jit) is asserted in
+`autolens_workspace_test/scripts/jax_likelihood_functions/multi/shared_preloads.py`.
+
+Trap for re-runs: a crashed JAX run can poison the gitignored
+`dataset/imaging/<inst>/lensed_source.fits` adapt cache with in-mask
+NaNs (qhull then fails with "Points cannot contain NaN") — delete the
+cache and let `_adapt_image_util` regenerate it.
 
 ---
 

@@ -1,0 +1,5 @@
+{
+  "cpu_unusable": true,
+  "reason": "OOM-killed at 2858s (fp64 peak exceeds 15GB laptop RAM; mp variant fits) \u2014 GPU-only",
+  "config_name": "local_cpu_fp64"
+}

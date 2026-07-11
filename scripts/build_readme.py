@@ -318,7 +318,20 @@ def _render_runtime_table(cells: list[RuntimeCell], baselines: dict[str, list[Ru
         cfgs = cell.configs
         line = [f"`{cell.cell_id}`"]
         for cname in config_names:
-            line.append(_format_time(_config_headline_seconds(cfgs.get(cname, {}))))
+            cfg = cfgs.get(cname, {})
+            if cfg.get("cpu_unusable"):
+                # Campaign policy (#56): a run that cannot finish inside the
+                # wall-clock cap has no CPU-viable configuration — the
+                # classification IS the result.
+                line.append("**GPU-only**")
+                continue
+            seconds = _config_headline_seconds(cfg)
+            cell_text = _format_time(seconds)
+            if seconds is not None and seconds > 60 and not cname.startswith("hpc"):
+                # Per-call > 1 min on a local backend: samplers need 1e4-1e6
+                # evaluations, so the config is unusable in practice.
+                cell_text += " (unusable)"
+            line.append(cell_text)
         for bname in baseline_names:
             bcell = baseline_by_cell[bname].get(cell.cell)
             line.append(_format_time(_headline_any_config(bcell)) if bcell else "—")

@@ -1,0 +1,6 @@
+{
+  "cpu_unusable": true,
+  "reason": "wall-clock timeout after 3600s \u2014 GPU-only",
+  "config_name": "local_cpu_fp64",
+  "timeout_seconds": 3600.0
+}

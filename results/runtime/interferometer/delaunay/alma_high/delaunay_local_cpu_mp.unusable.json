@@ -1,0 +1,5 @@
+{
+  "cpu_unusable": true,
+  "reason": "killed under campaign policy (fp64 sibling already >1h) \u2014 GPU-only",
+  "config_name": "local_cpu_mp"
+}
