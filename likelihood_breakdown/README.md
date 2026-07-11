@@ -13,6 +13,8 @@ For *how long the likelihood actually takes* on production hardware — i.e. a s
 <!-- BEGIN auto-table:breakdown -->
 | Cell | Instrument | Inversion path | Step-sum total | PyAutoLens version |
 |------|------------|----------------|----------------|--------------------|
+| `cluster/image_plane` | — | dense (mapping) | 4.99 s | v2026.7.6.649 |
+| `cluster/source_plane` | — | dense (mapping) | 3.1 ms | v2026.7.6.649 |
 | `imaging/delaunay` | hst | dense (mapping) | 11.29 s | v2026.5.29.4 |
 | `imaging/delaunay` | hst | sparse (w-tilde) | 7.96 s | v2026.5.29.4 |
 | `imaging/mge` | hst | dense (mapping) | 178.2 ms | v2026.5.29.4 |
