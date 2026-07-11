@@ -1,0 +1,24 @@
+{
+  "autolens_version": "2026.7.6.649",
+  "device": {
+    "backend": "cpu",
+    "device": "TFRT_CPU_0"
+  },
+  "instrument": "hst",
+  "configuration": {
+    "pixel_scale_arcsec": 0.05,
+    "mask_radius_arcsec": 3.5,
+    "image_pixels_masked": 15361,
+    "over_sampled_pixels": 17980,
+    "delaunay_vertices": 1500,
+    "edge_zeroed_pixels": 0,
+    "inversion_path": "dense"
+  },
+  "full_pipeline_single_jit": 17.836323139999877,
+  "vmap": {
+    "batch_size": 3,
+    "batch_time": 48.08783619000023,
+    "per_call": 16.029278730000076,
+    "speedup_vs_single_jit": 1.1
+  }
+}

@@ -1,0 +1,128 @@
+{
+  "configs": {
+    "local_cpu_fp64": {
+      "autolens_version": "2026.7.6.649",
+      "device": {
+        "backend": "cpu",
+        "device": "TFRT_CPU_0"
+      },
+      "instrument": "jwst",
+      "configuration": {
+        "pixel_scale_arcsec": 0.03,
+        "mask_radius_arcsec": 3.5,
+        "image_pixels_masked": 42737,
+        "over_sampled_pixels": 50312,
+        "mesh_shape": [
+          39,
+          39
+        ],
+        "source_pixels": 1521,
+        "inversion_path": "dense"
+      },
+      "full_pipeline_single_jit": 21.778462779999973,
+      "vmap": {
+        "batch_size": 3,
+        "batch_time": 84.96139948999989,
+        "per_call": 28.32046649666663,
+        "speedup_vs_single_jit": 0.8
+      },
+      "pinned_expected": null,
+      "pinned_drift": [],
+      "full_pipeline_per_call": 21.778462779999973,
+      "config_name": "local_cpu_fp64"
+    },
+    "local_cpu_mp": {
+      "autolens_version": "2026.7.6.649",
+      "device": {
+        "backend": "cpu",
+        "device": "TFRT_CPU_0"
+      },
+      "instrument": "jwst",
+      "configuration": {
+        "pixel_scale_arcsec": 0.03,
+        "mask_radius_arcsec": 3.5,
+        "image_pixels_masked": 42737,
+        "over_sampled_pixels": 50312,
+        "mesh_shape": [
+          39,
+          39
+        ],
+        "source_pixels": 1521,
+        "inversion_path": "dense"
+      },
+      "full_pipeline_single_jit": 43.58491838000045,
+      "vmap": {
+        "batch_size": 3,
+        "batch_time": 88.16873673000009,
+        "per_call": 29.38957891000003,
+        "speedup_vs_single_jit": 1.5
+      },
+      "pinned_expected": null,
+      "pinned_drift": [],
+      "full_pipeline_per_call": 43.58491838000045,
+      "config_name": "local_cpu_mp"
+    },
+    "local_cpu_fp64_sparse": {
+      "autolens_version": "2026.7.6.649",
+      "device": {
+        "backend": "cpu",
+        "device": "TFRT_CPU_0"
+      },
+      "instrument": "jwst",
+      "configuration": {
+        "pixel_scale_arcsec": 0.03,
+        "mask_radius_arcsec": 3.5,
+        "image_pixels_masked": 42737,
+        "over_sampled_pixels": 50312,
+        "mesh_shape": [
+          39,
+          39
+        ],
+        "source_pixels": 1521,
+        "inversion_path": "sparse"
+      },
+      "full_pipeline_single_jit": 9.566611529999864,
+      "vmap": {
+        "batch_size": 3,
+        "batch_time": 29.07211525999992,
+        "per_call": 9.69070508666664,
+        "speedup_vs_single_jit": 1.0
+      },
+      "pinned_expected": null,
+      "pinned_drift": [],
+      "full_pipeline_per_call": 9.566611529999864,
+      "config_name": "local_cpu_fp64_sparse"
+    },
+    "local_cpu_mp_sparse": {
+      "autolens_version": "2026.7.6.649",
+      "device": {
+        "backend": "cpu",
+        "device": "TFRT_CPU_0"
+      },
+      "instrument": "jwst",
+      "configuration": {
+        "pixel_scale_arcsec": 0.03,
+        "mask_radius_arcsec": 3.5,
+        "image_pixels_masked": 42737,
+        "over_sampled_pixels": 50312,
+        "mesh_shape": [
+          39,
+          39
+        ],
+        "source_pixels": 1521,
+        "inversion_path": "sparse"
+      },
+      "full_pipeline_single_jit": 9.420377540000118,
+      "vmap": {
+        "batch_size": 3,
+        "batch_time": 28.422692229999665,
+        "per_call": 9.474230743333221,
+        "speedup_vs_single_jit": 1.0
+      },
+      "pinned_expected": null,
+      "pinned_drift": [],
+      "full_pipeline_per_call": 9.420377540000118,
+      "config_name": "local_cpu_mp_sparse"
+    }
+  }
+}

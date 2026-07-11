@@ -49,16 +49,26 @@ _DEFAULT_OUTPUT_ROOT = _REPO_ROOT / "results" / "runtime"
 _DEFAULT_PYTHON = sys.executable
 
 
-# (dataset_class, model). Order is roughly cheapest -> heaviest so failures
-# surface quickly during iteration.
-CELLS: list[tuple[str, str]] = [
-    ("imaging", "mge"),
-    ("imaging", "pixelization"),
-    ("imaging", "delaunay"),
-    ("interferometer", "mge"),
-    ("interferometer", "pixelization"),
-    ("interferometer", "delaunay"),
-    ("datacube", "delaunay"),
+# (dataset_class, model, instruments). Order is roughly cheapest -> heaviest
+# so failures surface quickly during iteration. An empty instrument tuple
+# means "the per-cell script's module default" (pre-campaign behaviour);
+# named instruments run once each, with per-instrument output subdirs
+# (results/runtime/<class>/<model>/<instrument>/ — the 3-level layout
+# aggregate.py already understands). The PreOptimizationTimes campaign
+# matrix (autolens_profiling#56): imaging at ao/jwst/hst, interferometer
+# and datacube across their instrument presets.
+CELLS: list[tuple[str, str, tuple[str, ...]]] = [
+    ("imaging", "mge", ("hst", "jwst", "ao")),
+    ("imaging", "pixelization", ("hst", "jwst", "ao")),
+    ("imaging", "delaunay", ("hst", "jwst", "ao")),
+    # mge interferometer runs sma ONLY: the dense MGE mapping matrix needs a
+    # ~62 GB gather buffer at 1M+ vis (vram/config.py marks alma+ INHERENTLY
+    # blocked) — confirmed empirically by the first campaign pass (#56):
+    # alma OOMed at exactly 62,720,000,000 bytes on any backend.
+    ("interferometer", "mge", ("sma",)),
+    ("interferometer", "pixelization", ("sma", "alma", "alma_high", "jvla")),
+    ("interferometer", "delaunay", ("sma", "alma", "alma_high", "jvla")),
+    ("datacube", "delaunay", ("sma", "alma", "alma_high")),
 ]
 
 
@@ -125,6 +135,30 @@ def _parse_args() -> argparse.Namespace:
         help="Skip the use_mixed_precision rows (just fp64).",
     )
     p.add_argument(
+        "--per-run-timeout",
+        type=float,
+        default=None,
+        metavar="SECONDS",
+        help=(
+            "Kill any single run exceeding this wall-clock and record an "
+            "`.unusable.json` marker instead of a result — campaign policy: "
+            "a likelihood whose profiling run cannot finish inside the cap "
+            "is not a CPU-viable configuration, it is GPU-only. The marker "
+            "is honoured by --skip-existing and rendered as 'GPU-only' by "
+            "the dashboard."
+        ),
+    )
+    p.add_argument(
+        "--skip-existing",
+        action="store_true",
+        help=(
+            "Skip any (cell, config) whose result JSON already exists in the "
+            "output dir — resume an interrupted campaign without redoing "
+            "completed runs (the in-flight run at interruption left no JSON, "
+            "so it re-runs)."
+        ),
+    )
+    p.add_argument(
         "--sparse",
         action="store_true",
         help=(
@@ -153,16 +187,36 @@ def _parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
-def _resolve_cells(args: argparse.Namespace) -> list[tuple[str, str]]:
-    selected = CELLS
+def _expand_cells() -> list[tuple[str, str, str | None]]:
+    """Flatten CELLS into (class, model, instrument-or-None) rows."""
+    rows: list[tuple[str, str, str | None]] = []
+    for cls, model, instruments in CELLS:
+        if instruments:
+            rows.extend((cls, model, inst) for inst in instruments)
+        else:
+            rows.append((cls, model, None))
+    return rows
+
+
+def _cell_id(cls: str, model: str, inst: str | None) -> str:
+    return f"{cls}/{model}/{inst}" if inst else f"{cls}/{model}"
+
+
+def _resolve_cells(args: argparse.Namespace) -> list[tuple[str, str, str | None]]:
+    """--only/--skip match class/model (all instruments) or class/model/instrument."""
+    selected = _expand_cells()
+
+    def _matches(spec: str, row: tuple[str, str, str | None]) -> bool:
+        cls, model, inst = row
+        return spec in (f"{cls}/{model}", _cell_id(cls, model, inst))
+
     if args.only:
-        wanted = {c for c in args.only}
-        selected = [(c, m) for (c, m) in selected if f"{c}/{m}" in wanted]
-        missing = wanted - {f"{c}/{m}" for (c, m) in selected}
+        selected = [r for r in selected if any(_matches(s, r) for s in args.only)]
+        matched = {s for s in args.only if any(_matches(s, r) for r in selected)}
+        missing = set(args.only) - matched
         if missing:
             sys.stderr.write(f"warning: --only includes unknown cells: {sorted(missing)}\n")
-    skip = set(args.skip)
-    selected = [(c, m) for (c, m) in selected if f"{c}/{m}" not in skip]
+    selected = [r for r in selected if not any(_matches(s, r) for s in args.skip)]
     return selected
 
 
@@ -184,6 +238,8 @@ def _run_one(
     out_dir: Path,
     dry_run: bool,
     sparse: bool = False,
+    instrument: str | None = None,
+    per_run_timeout: float | None = None,
 ) -> tuple[bool, float, str]:
     """Run one (cell, config) pair as a subprocess. Returns (ok, elapsed, log_path)."""
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -197,6 +253,7 @@ def _run_one(
         config.name,
         "--output-dir",
         str(out_dir),
+        *(("--instrument", instrument) if instrument else ()),
         *config.extra_args,
         *(("--sparse",) if sparse else ()),
     ]
@@ -216,14 +273,37 @@ def _run_one(
 
     t0 = time.time()
     try:
-        with open(log_path, "w") as log:
-            proc = subprocess.run(
-                cmd,
-                env=env,
-                stdout=log,
-                stderr=subprocess.STDOUT,
-                check=False,
+        try:
+            with open(log_path, "w") as log:
+                proc = subprocess.run(
+                    cmd,
+                    env=env,
+                    stdout=log,
+                    stderr=subprocess.STDOUT,
+                    check=False,
+                    timeout=per_run_timeout,
+                )
+        except subprocess.TimeoutExpired:
+            elapsed = time.time() - t0
+            marker = out_dir / f"{script_path.stem}_{config.name}{log_suffix}.unusable.json"
+            import json
+
+            marker.write_text(
+                json.dumps(
+                    {
+                        "cpu_unusable": True,
+                        "reason": f"wall-clock timeout after {per_run_timeout:.0f}s — GPU-only",
+                        "config_name": f"{config.name}{log_suffix}",
+                        "timeout_seconds": per_run_timeout,
+                    },
+                    indent=2,
+                )
             )
+            print(
+                f"    TIMEOUT ({elapsed:.1f}s > {per_run_timeout:.0f}s) — marked CPU-unusable "
+                f"-> {marker.name}"
+            )
+            return True, elapsed, str(log_path)
         elapsed = time.time() - t0
         ok = proc.returncode == 0
         print(
@@ -263,7 +343,7 @@ def main() -> int:
         f"sweep_likelihood: {len(cells)} cells x {len(configs)} configs "
         f"= {len(cells) * len(configs)} runs"
     )
-    print(f"  cells:    {[f'{c}/{m}' for (c, m) in cells]}")
+    print(f"  cells:    {[_cell_id(c, m, i) for (c, m, i) in cells]}")
     print(f"  configs:  {[c.name for c in configs]}")
     print(f"  output:   {args.output_root}")
     print(f"  python:   {args.python}")
@@ -273,17 +353,29 @@ def main() -> int:
     summary: list[tuple[str, str, bool, float]] = []
     overall_t0 = time.time()
 
-    for cls, model in cells:
+    for cls, model, inst in cells:
         script_path = _REPO_ROOT / "likelihood_runtime" / cls / f"{model}.py"
+        cell_id = _cell_id(cls, model, inst)
         if not script_path.exists():
             print(f"\n!!! missing script: {script_path}")
             for cfg in configs:
-                summary.append((f"{cls}/{model}", cfg.name, False, 0.0))
+                summary.append((cell_id, cfg.name, False, 0.0))
             continue
 
         out_dir = args.output_root / cls / model
+        if inst:
+            out_dir = out_dir / inst
 
         for cfg in configs:
+            if args.skip_existing:
+                suffix = "_sparse" if args.sparse else ""
+                existing = out_dir / f"{model}_{cfg.name}{suffix}.json"
+                marker = out_dir / f"{model}_{cfg.name}{suffix}.unusable.json"
+                if existing.exists() or marker.exists():
+                    label = "result exists" if existing.exists() else "marked CPU-unusable"
+                    print(f"--- [{cfg.name}] {cell_id}: SKIP ({label})")
+                    summary.append((cell_id, cfg.name, True, 0.0))
+                    continue
             try:
                 ok, elapsed, _log = _run_one(
                     args.python,
@@ -292,11 +384,13 @@ def main() -> int:
                     out_dir,
                     args.dry_run,
                     sparse=args.sparse,
+                    instrument=inst,
+                    per_run_timeout=args.per_run_timeout,
                 )
             except KeyboardInterrupt:
                 print("\n\nsweep interrupted by user")
                 return 130
-            summary.append((f"{cls}/{model}", cfg.name, ok, elapsed))
+            summary.append((cell_id, cfg.name, ok, elapsed))
 
     total = time.time() - overall_t0
     print("\n" + "=" * 70)

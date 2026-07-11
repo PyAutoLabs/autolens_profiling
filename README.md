@@ -28,12 +28,27 @@ Results are framed by **astronomy instrument** (HST, Euclid, JWST, …) rather t
 
 **Likelihood runtime** — full-pipeline per-call cost per cell × config:
 
-_No data yet — run `likelihood_runtime/sweep.py` then `aggregate.py` to populate._
+| Cell | local_cpu_fp64 | local_cpu_mp | local_cpu_fp64_sparse | local_cpu_mp_sparse | PreOptimizationTimes |
+|---|---|---|---|---|---|
+| `datacube/delaunay/sma` | — | — | — | — | — |
+| `imaging/delaunay/hst` | 16.73 s | 17.84 s | 4.14 s | 4.49 s | 4.49 s |
+| `imaging/delaunay/jwst` | 48.81 s | 22.43 s | 10.42 s | 14.05 s | 14.05 s |
+| `imaging/mge/ao` | 3.11 s | 5.71 s | — | — | 5.71 s |
+| `imaging/mge/hst` | 117.7 ms | 164.3 ms | 256.1 ms | 140.5 ms | 140.5 ms |
+| `imaging/mge/jwst` | 716.2 ms | 678.5 ms | 387.3 ms | 488.7 ms | 488.7 ms |
+| `imaging/pixelization/hst` | 13.72 s | 14.78 s | 5.79 s | 5.25 s | 5.25 s |
+| `imaging/pixelization/jwst` | 21.78 s | 43.58 s | 9.57 s | 9.42 s | 9.42 s |
+| `interferometer/delaunay/alma` | **GPU-only** | 6.51 s | — | — | 6.51 s |
+| `interferometer/delaunay/sma` | 2.58 s | 3.34 s | — | — | 3.34 s |
+| `interferometer/mge/sma` | 230.7 ms | 231.5 ms | — | — | 231.5 ms |
+| `interferometer/pixelization/sma` | 2.04 s | 2.39 s | — | — | 2.39 s |
 
 **Likelihood breakdown** — latest per-step decompositions:
 
 | Cell | Instrument | Inversion path | Step-sum total | PyAutoLens version |
 |------|------------|----------------|----------------|--------------------|
+| `cluster/image_plane` | — | dense (mapping) | 4.99 s | v2026.7.6.649 |
+| `cluster/source_plane` | — | dense (mapping) | 3.1 ms | v2026.7.6.649 |
 | `imaging/delaunay` | hst | dense (mapping) | 11.29 s | v2026.5.29.4 |
 | `imaging/delaunay` | hst | sparse (w-tilde) | 7.96 s | v2026.5.29.4 |
 | `imaging/mge` | hst | dense (mapping) | 178.2 ms | v2026.5.29.4 |

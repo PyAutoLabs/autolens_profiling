@@ -1,0 +1,41 @@
+{
+  "autolens_version": "2026.7.6.649",
+  "type": "interferometer",
+  "instrument": "alma_high",
+  "configuration": {
+    "grid_shape": [
+      800,
+      800
+    ],
+    "pixel_scales": 0.025,
+    "n_visibilities": 5000000,
+    "uv_scale": 2000000.0,
+    "noise_sigma": 100.0,
+    "transformer": "TransformerNUFFT",
+    "transformer_chunk_size": 1000000
+  },
+  "phases": {
+    "setup_grids": 0.12891279999894323,
+    "setup_uv_wavelengths": 0.4883449000044493,
+    "setup_simulator": 1.9299994164612144e-05,
+    "setup_galaxies": 0.00044329999946057796,
+    "setup_tracer": 3.2000003557186574e-05,
+    "image_2d_eager": 88.66936540000461,
+    "image_2d_jit_lower": 1.1893571999971755,
+    "image_2d_jit_compile": 32.57830570000078,
+    "image_2d_jit_first_call": 6.4868530000021565,
+    "image_2d_jit_steady_x10": 47.021346500005166,
+    "via_tracer_from": 169.93597579999914,
+    "solver_build": 0.27381559999776073,
+    "solver_solve_eager": 29.55701460000273,
+    "output_fits": 1.0853420000057667,
+    "output_lensed_source": 20.000675000002957,
+    "output_positions": 0.0035103999980492517,
+    "output_tracer": 0.03584409999893978
+  },
+  "key_timings": {
+    "image_2d_eager_s": 88.66936540000461,
+    "via_tracer_from_s": 169.93597579999914,
+    "solver_solve_eager_s": 29.55701460000273
+  }
+}

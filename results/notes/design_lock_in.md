@@ -113,6 +113,20 @@ it measures the same computation — *not* library regression testing (that is
   surface Heart's vitals scan reads (tracked as its own Mind task,
   `feature/pyautoheart/profiling_drift_check.md`).
 
+## CPU-usability policy (added phase 3, user-directed)
+
+A configuration is **CPU-unusable** when either (a) its profiling run cannot
+finish inside the per-run wall-clock cap (`sweep.py --per-run-timeout`,
+campaign default 3600 s), or (b) its measured per-call cost exceeds ~1 min —
+samplers need 10⁴–10⁶ evaluations, so the precise number carries no decision
+content. In both cases the **classification is the result**: the sweep writes
+an `.unusable.json` marker (honoured by `--skip-existing`, folded into
+`comparison.json` as `{"cpu_unusable": true}`), and the dashboard renders
+**GPU-only** / "(unusable)" instead of a number. Full timings for these cells
+belong to the A100 rows. The CPU-usability map is a first-class campaign
+deliverable — it defines which cells the optimization push only ever needs to
+consider on GPU.
+
 ## Deliberately out of scope here
 
 Profiling runs (phases 2–4); searches profiling; `point_source` cells (in the

@@ -1,0 +1,80 @@
+{
+  "configs": {
+    "local_cpu_fp64": {
+      "autolens_version": "2026.7.6.649",
+      "device": {
+        "backend": "cpu",
+        "device": "TFRT_CPU_0"
+      },
+      "instrument": "sma",
+      "model": "mge",
+      "transformer": "TransformerNUFFT",
+      "use_mixed_precision": false,
+      "configuration": {
+        "pixel_scale_arcsec": 0.1,
+        "mask_radius_arcsec": 3.5,
+        "real_space_shape": [
+          256,
+          256
+        ],
+        "visibilities": 190,
+        "linear_gaussians": 20
+      },
+      "log_likelihood_eager": -3153.942384509246,
+      "log_likelihood_jit": -3153.9482303797345,
+      "full_pipeline_single_jit": 0.23072274000005563,
+      "vmap": {
+        "batch_size": 3,
+        "batch_time": 0.7112842499998806,
+        "per_call": 0.2370947499999602,
+        "speedup_vs_single_jit": 1.0
+      },
+      "memory_mb": {
+        "output": 2.288818359375e-05,
+        "temp": 480.0889358520508
+      },
+      "pinned_expected": null,
+      "pinned_drift": [],
+      "full_pipeline_per_call": 0.23072274000005563,
+      "config_name": "local_cpu_fp64"
+    },
+    "local_cpu_mp": {
+      "autolens_version": "2026.7.6.649",
+      "device": {
+        "backend": "cpu",
+        "device": "TFRT_CPU_0"
+      },
+      "instrument": "sma",
+      "model": "mge",
+      "transformer": "TransformerNUFFT",
+      "use_mixed_precision": true,
+      "configuration": {
+        "pixel_scale_arcsec": 0.1,
+        "mask_radius_arcsec": 3.5,
+        "real_space_shape": [
+          256,
+          256
+        ],
+        "visibilities": 190,
+        "linear_gaussians": 20
+      },
+      "log_likelihood_eager": -3153.942384509246,
+      "log_likelihood_jit": -3153.948230485718,
+      "full_pipeline_single_jit": 0.23150078000035137,
+      "vmap": {
+        "batch_size": 3,
+        "batch_time": 0.7638046000000032,
+        "per_call": 0.2546015333333344,
+        "speedup_vs_single_jit": 0.9
+      },
+      "memory_mb": {
+        "output": 2.288818359375e-05,
+        "temp": 480.0889358520508
+      },
+      "pinned_expected": null,
+      "pinned_drift": [],
+      "full_pipeline_per_call": 0.23150078000035137,
+      "config_name": "local_cpu_mp"
+    }
+  }
+}
