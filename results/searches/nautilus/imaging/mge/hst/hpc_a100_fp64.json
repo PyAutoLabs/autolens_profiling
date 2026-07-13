@@ -1,0 +1,39 @@
+{
+  "sampler": "nautilus",
+  "dataset_class": "imaging",
+  "model": "mge",
+  "instrument": "hst",
+  "config_name": "hpc_a100_fp64",
+  "version": "2026.5.21.1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 2611 MiB, 81920 MiB"
+  },
+  "use_mixed_precision": false,
+  "sampler_config": {
+    "n_live": 200,
+    "n_batch": 100,
+    "number_of_cores": 1,
+    "use_jax_vmap": true,
+    "force_x1_cpu": true,
+    "iterations_per_update": 600
+  },
+  "model_summary": {
+    "free_parameters": 15,
+    "best_fit": "(unavailable: AttributeError(\"'Sample' object has no attribute 'instance'\"))"
+  },
+  "results": {
+    "log_evidence": 31690.47079355404,
+    "max_log_likelihood": 31786.782462488976,
+    "posterior_samples": 63800
+  },
+  "performance": {
+    "total_wall_s": 831.283527135849,
+    "viz_wall_s": 58.56682566134259,
+    "viz_n_calls": 8,
+    "sampler_wall_s": 772.7167014745064,
+    "likelihood_evals": 63800,
+    "time_per_eval_ms": 12.11154704505496
+  }
+}

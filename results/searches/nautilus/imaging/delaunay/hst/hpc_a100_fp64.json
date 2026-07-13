@@ -1,0 +1,39 @@
+{
+  "sampler": "nautilus",
+  "dataset_class": "imaging",
+  "model": "delaunay",
+  "instrument": "hst",
+  "config_name": "hpc_a100_fp64",
+  "version": "2026.5.21.1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 37413 MiB, 81920 MiB"
+  },
+  "use_mixed_precision": false,
+  "sampler_config": {
+    "n_live": 150,
+    "n_batch": 16,
+    "number_of_cores": 1,
+    "use_jax_vmap": true,
+    "force_x1_cpu": true,
+    "iterations_per_update": 450
+  },
+  "model_summary": {
+    "free_parameters": 12,
+    "best_fit": "lens.mass.einstein_radius=1.0296  lens.mass.centre=(0.011, 0.052)  shear=(-0.1330, 0.0319)"
+  },
+  "results": {
+    "log_evidence": 30562.221118154994,
+    "max_log_likelihood": 30623.45190102044,
+    "posterior_samples": 31536
+  },
+  "performance": {
+    "total_wall_s": 2722.5120809078217,
+    "viz_wall_s": 49.61667169071734,
+    "viz_n_calls": 8,
+    "sampler_wall_s": 2672.8954092171043,
+    "likelihood_evals": 31536,
+    "time_per_eval_ms": 84.7569574206337
+  }
+}

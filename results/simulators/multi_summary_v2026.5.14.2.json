@@ -1,0 +1,46 @@
+{
+  "autolens_version": "2026.5.14.2",
+  "type": "multi",
+  "configuration": {
+    "bands": [
+      "g",
+      "r"
+    ],
+    "grid_shape": [
+      150,
+      150
+    ],
+    "pixel_scales": [
+      0.08,
+      0.12
+    ],
+    "psf_sigmas": [
+      0.1,
+      0.2
+    ]
+  },
+  "phases": {
+    "setup_grids": 0.0935685000004014,
+    "setup_psf_simulators": 0.0008364000022993423,
+    "setup_galaxies": 0.0001154000055976212,
+    "setup_tracers": 3.069999365834519e-05,
+    "image_2d_eager_g": 1.7439687000005506,
+    "image_2d_jit_g_lower": 0.3754709999993793,
+    "image_2d_jit_g_compile": 0.7276574999996228,
+    "image_2d_jit_g_first_call": 0.05156909999641357,
+    "image_2d_jit_g_steady_x10": 0.4812947999962489,
+    "image_2d_eager_r": 1.5914311000015005,
+    "image_2d_jit_r_lower": 0.2998927000007825,
+    "image_2d_jit_r_compile": 0.46278850000089733,
+    "image_2d_jit_r_first_call": 0.03319290000217734,
+    "image_2d_jit_r_steady_x10": 0.32932810000056634,
+    "via_tracer_from_g": 1.8815961000000243,
+    "via_tracer_from_r": 2.2308803999985685,
+    "output_fits": 0.01971219999541063,
+    "output_json": 0.00438370000483701
+  },
+  "key_timings": {
+    "via_tracer_from_g_s": 1.8815961000000243,
+    "via_tracer_from_r_s": 2.2308803999985685
+  }
+}
