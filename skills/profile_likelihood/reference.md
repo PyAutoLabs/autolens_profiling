@@ -46,7 +46,7 @@ Run `$start-dev` (`/start_dev` in Claude). Affected:
 Branch `feature/<likelihood_type>-profiling-a100`.
 
 ```bash
-source admin_jammy/software/worktree.sh
+source PyAutoBrain/bin/worktree.sh
 worktree_create <likelihood_type>-profiling-a100 autolens_workspace_developer
 ```
 
