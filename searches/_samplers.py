@@ -122,7 +122,62 @@ def build_nautilus(
     )
 
 
+# MultiStartAdam profiling settings. Single-sourced here so the builder and the
+# JSON config block (``_runner._sampler_config_dict``) record identical values.
+# These are illustrative profiling values, not the A100 scaling run (the
+# GIGA-Lens recipe uses hundreds of starts); ``n_starts=64`` is a representative
+# multi-start batch for a local/A100 profile.
+_MULTI_START_N_STARTS = 64
+_MULTI_START_N_STEPS = 300
+_MULTI_START_LEARNING_RATE = 0.01
+
+
+def multi_start_settings() -> dict:
+    """The knobs ``build_multi_start_adam`` constructs the search with.
+
+    Exposed so ``_sampler_config_dict`` records exactly what was run.
+    """
+    return {
+        "n_starts": _MULTI_START_N_STARTS,
+        "n_steps": _MULTI_START_N_STEPS,
+        "learning_rate": _MULTI_START_LEARNING_RATE,
+    }
+
+
+def build_multi_start_adam(
+    *,
+    sampler: str,
+    dataset_class: str,
+    model_type: str,
+    instrument: str,
+    config_name: str,
+    use_jax: bool,
+) -> af.MultiStartAdam:
+    """Construct a first-class ``af.MultiStartAdam`` search for one profiling cell.
+
+    ``MultiStartAdam`` is a JAX / ``optax`` multi-start first-order gradient MAP
+    optimizer: it runs ``n_starts`` broad starts in parallel (its own ``jax.vmap``)
+    and returns the best-basin point. Unlike ``af.Nautilus`` it:
+
+    - is JAX-native and **requires** a JAX-traceable analysis (``use_jax=True``);
+      a pure-NumPy config will raise. The sweep runs JAX-on by default.
+    - has no ``n_live`` (it uses ``n_starts`` / ``n_steps``), and
+    - does not use the ``use_jax_vmap`` / ``force_x1_cpu`` ``Fitness`` path — it
+      builds its own batched ``value_and_grad``.
+
+    ``number_of_cores=1`` is kept for consistency with the profile convention
+    (it is metadata here; the search runs a single-process vmap loop).
+    """
+    return af.MultiStartAdam(
+        name=config_name,
+        path_prefix=f"searches/{sampler}/{dataset_class}/{model_type}/{instrument}",
+        number_of_cores=1,
+        **multi_start_settings(),
+    )
+
+
 SamplerBuilder = Callable[..., af.NonLinearSearch]
 SAMPLER_BUILDERS: dict[str, SamplerBuilder] = {
     "nautilus": build_nautilus,
+    "multi_start_adam": build_multi_start_adam,
 }

@@ -71,6 +71,9 @@ CELLS: list[tuple[str, str, str]] = [
     ("nautilus", "interferometer", "pixelization"),
     ("nautilus", "interferometer", "delaunay"),
     ("nautilus", "datacube", "delaunay"),
+    # MAP optimizer — only the MGE cell, where a multi-start gradient optimizer
+    # is meaningful and benchmark-proven (JAX-only).
+    ("multi_start_adam", "imaging", "mge"),
 ]
 
 

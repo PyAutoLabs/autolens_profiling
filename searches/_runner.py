@@ -39,9 +39,14 @@ from _profile_cli import (  # noqa: E402
 from searches._metrics import attach_viz_timer, collect_metrics  # noqa: E402
 from searches._samplers import (  # noqa: E402
     SAMPLER_BUILDERS,
+    multi_start_settings,
     n_live_for,
     vmap_batch_for_cell,
 )
+
+# Samplers that have an ``n_live`` (nested sampling). MAP optimizers such as
+# ``multi_start_adam`` do not, and record ``null`` rather than a misleading value.
+_SAMPLERS_WITH_N_LIVE = frozenset({"nautilus"})
 from searches._setup import build_for_cell, format_best_fit  # noqa: E402
 
 _DEFAULT_INSTRUMENTS: dict[str, str] = {
@@ -78,12 +83,15 @@ def run_search(
     config_name = cli.config_name or "default"
     use_jax = _decide_use_jax()
 
+    uses_n_live = sampler in _SAMPLERS_WITH_N_LIVE
+    n_live = n_live_for(dataset_class, model_type) if uses_n_live else None
+
     print(
         f"\n--- searches/{sampler}/{dataset_class}/{model_type}"
         f" [{instrument}, {config_name}, use_jax={use_jax},"
         f" mp={cli.use_mixed_precision}] ---"
     )
-    print(f"  n_live: {n_live_for(dataset_class, model_type)}")
+    print(f"  n_live: {n_live if n_live is not None else 'n/a (MAP optimizer)'}")
 
     print("  Building dataset / model / analysis...")
     dataset, model, analysis = build_for_cell(
@@ -141,7 +149,7 @@ def run_search(
         cli=cli,
         use_jax=use_jax,
         n_free_params=int(model.total_free_parameters),
-        n_live=n_live_for(dataset_class, model_type),
+        n_live=n_live,
         metrics=metrics,
         viz_n_calls=viz_timer.n_calls,
         best_fit=best_fit,
@@ -167,7 +175,7 @@ def _sampler_config_dict(
     dataset_class: str,
     model_type: str,
     instrument: str,
-    n_live: int,
+    n_live: int | None,
     use_jax: bool,
 ) -> dict:
     """Return the JSON-friendly sampler config block for the metric write.
@@ -176,8 +184,8 @@ def _sampler_config_dict(
     actually constructs the search with — so the JSON faithfully
     records what was run, including the per-cell vmap batch cap.
     """
-    batch = vmap_batch_for_cell(dataset_class, model_type, instrument)
     if sampler == "nautilus":
+        batch = vmap_batch_for_cell(dataset_class, model_type, instrument)
         return {
             "n_live": n_live,
             "n_batch": batch,
@@ -186,6 +194,9 @@ def _sampler_config_dict(
             "force_x1_cpu": use_jax,
             "iterations_per_update": 3 * n_live,
         }
+    if sampler == "multi_start_adam":
+        # MAP optimizer: no n_live; records its own multi-start knobs.
+        return {**multi_start_settings(), "number_of_cores": 1}
     return {"n_live": n_live, "_note": f"unknown sampler {sampler!r}"}
 
 
@@ -210,7 +221,7 @@ def _build_summary(
     cli: Any,
     use_jax: bool,
     n_free_params: int,
-    n_live: int,
+    n_live: int | None,
     metrics: Any,
     viz_n_calls: int,
     best_fit: str,
