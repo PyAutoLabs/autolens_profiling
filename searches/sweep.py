@@ -62,6 +62,10 @@ _INSTRUMENT_SETS: dict[str, tuple[str, ...]] = {
 # (sampler, dataset_class, model). Order is roughly cheapest -> heaviest so
 # failures surface quickly during iteration.
 CELLS: list[tuple[str, str, str]] = [
+    # Sersic = the lowest-complexity parametric cell; paired multi_start_adam +
+    # nautilus baseline for the optimizer-tuning campaign (#69).
+    ("nautilus", "imaging", "sersic"),
+    ("multi_start_adam", "imaging", "sersic"),
     ("nautilus", "point_source", "image_plane"),
     ("nautilus", "point_source", "source_plane"),
     ("nautilus", "imaging", "mge"),

@@ -19,6 +19,7 @@ Delaunay matches imaging Delaunay at 150.
 
 from __future__ import annotations
 
+import os
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -37,6 +38,8 @@ from vram import vmap_batch_for  # noqa: E402
 # (dataset_class, model_type) -> n_live. Matches the SLaM defaults so a
 # profiling row is comparable to a real source phase.
 _N_LIVE: dict[tuple[str, str], int] = {
+    # Sersic is parametric like MGE, so it takes the ``source_lp[1]`` value.
+    ("imaging", "sersic"): 200,
     ("imaging", "mge"): 200,
     ("imaging", "pixelization"): 150,
     ("imaging", "delaunay"): 150,
@@ -122,26 +125,60 @@ def build_nautilus(
     )
 
 
-# MultiStartAdam profiling settings. Single-sourced here so the builder and the
-# JSON config block (``_runner._sampler_config_dict``) record identical values.
-# These are illustrative profiling values, not the A100 scaling run (the
-# GIGA-Lens recipe uses hundreds of starts); ``n_starts=64`` is a representative
-# multi-start batch for a local/A100 profile.
-_MULTI_START_N_STARTS = 64
-_MULTI_START_N_STEPS = 300
-_MULTI_START_LEARNING_RATE = 0.01
+# Multi-start fiducial settings. Single-sourced here so the builder and the JSON
+# config block (``_runner._sampler_config_dict``) record identical values.
+# ``n_starts=64`` is a representative multi-start batch for a local/A100 profile
+# (the GIGA-Lens recipe uses hundreds).
+_MULTI_START_DEFAULTS: dict = {
+    "n_starts": 64,
+    "n_steps": 300,
+    "learning_rate": 0.01,
+}
+
+# These three — and only these — control convergence, so they are the tuning
+# axis (#69). ``batch_size`` is deliberately NOT here: it is numerically inert
+# (verified on an A100 across {None,1,4,14,100}), bounds VRAM only, and is
+# resolved per-cell from the vram table.
+_TUNABLE = {
+    "n_starts": int,
+    "n_steps": int,
+    "learning_rate": float,
+}
 
 
 def multi_start_settings() -> dict:
     """The knobs ``build_multi_start_adam`` constructs the search with.
 
     Exposed so ``_sampler_config_dict`` records exactly what was run.
+
+    The optimizer-tuning campaign (#69) overrides them per run via the
+    ``MULTI_START_SETTINGS`` env var, e.g.::
+
+        MULTI_START_SETTINGS="n_starts=32,n_steps=1000,learning_rate=0.001"
+
+    Each grid point is then its own job writing its own
+    ``<sampler>/<dataset>/<model>/<instrument>/<config_name>.json`` artifact, so
+    the existing sweep/aggregate machinery carries the grid without needing a
+    new sweep dimension. Unset = the fiducial defaults (no behaviour change).
     """
-    return {
-        "n_starts": _MULTI_START_N_STARTS,
-        "n_steps": _MULTI_START_N_STEPS,
-        "learning_rate": _MULTI_START_LEARNING_RATE,
-    }
+    settings = dict(_MULTI_START_DEFAULTS)
+
+    raw = os.environ.get("MULTI_START_SETTINGS", "").strip()
+    if not raw:
+        return settings
+
+    for item in raw.split(","):
+        key, sep, value = item.partition("=")
+        key = key.strip()
+        if not sep or key not in _TUNABLE:
+            raise ValueError(
+                f"MULTI_START_SETTINGS: unknown or malformed entry {item!r}. "
+                f"Tunable keys: {sorted(_TUNABLE)} (batch_size is not tunable — "
+                "it is numerically inert and comes from the vram table)."
+            )
+        settings[key] = _TUNABLE[key](value)
+
+    return settings
 
 
 def build_multi_start_adam(
@@ -165,6 +202,13 @@ def build_multi_start_adam(
     - does not use the ``use_jax_vmap`` / ``force_x1_cpu`` ``Fitness`` path — it
       builds its own batched ``value_and_grad``.
 
+    ``batch_size`` comes from the same per-cell vram table Nautilus's ``n_batch``
+    does (PyAutoFit#1374 added the knob): it tiles the vmapped ``value_and_grad``
+    via ``jax.lax.map`` so a memory-heavy cell does not OOM. It is numerically
+    inert — it bounds VRAM and nothing else — so it is set here rather than
+    tuned. Without it, a pixelized cell's jvp fusion reaches 58 GiB in float64
+    and exhausts an 80 GB A100.
+
     ``number_of_cores=1`` is kept for consistency with the profile convention
     (it is metadata here; the search runs a single-process vmap loop).
     """
@@ -172,6 +216,7 @@ def build_multi_start_adam(
         name=config_name,
         path_prefix=f"searches/{sampler}/{dataset_class}/{model_type}/{instrument}",
         number_of_cores=1,
+        batch_size=vmap_batch_for_cell(dataset_class, model_type, instrument),
         **multi_start_settings(),
     )
 
