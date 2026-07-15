@@ -348,6 +348,8 @@ def _build_point_source(instrument: str) -> tuple[Any, Path]:
 
 
 def _build_model(dataset_class: str, model_type: str, *, mask_radius: float) -> af.Collection:
+    if model_type == "sersic":
+        return _sersic_model(mask_radius=mask_radius)
     if model_type == "mge":
         return _mge_model(mask_radius=mask_radius)
     if model_type == "pixelization":
@@ -382,6 +384,28 @@ def _mge_model(*, mask_radius: float) -> af.Collection:
         centre_prior_is_uniform=False,
     )
     source = af.Model(al.Galaxy, redshift=1.0, bulge=source_bulge)
+    return af.Collection(galaxies=af.Collection(lens=lens, source=source))
+
+
+def _sersic_model(*, mask_radius: float) -> af.Collection:
+    """Sersic lens + Sersic source — the lowest-complexity parametric cell.
+
+    Mirrors the simulator truth (``simulators/imaging.py``): a Sersic lens bulge
+    and a cored-Sersic source, lensed by an Isothermal + ExternalShear. Uses
+    ``lp_linear`` so the amplitudes are solved by the inversion exactly as the
+    MGE cell's are — that keeps an mge-vs-sersic comparison about *model
+    complexity* rather than linear-vs-non-linear light.
+
+    Added for the optimizer-tuning campaign (#69): the gradient MAP searches are
+    aimed at users with parametric (Sersic / MGE) sources.
+    """
+    lens_bulge = af.Model(al.lp_linear.Sersic)
+    mass, shear = _lens_mass_and_shear()
+    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
+
+    source_bulge = af.Model(al.lp_linear.SersicCore)
+    source = af.Model(al.Galaxy, redshift=1.0, bulge=source_bulge)
+
     return af.Collection(galaxies=af.Collection(lens=lens, source=source))
 
 
@@ -566,6 +590,43 @@ def _build_analysis(
 # -----------------------------------------------------------------------------
 # Misc helpers
 # -----------------------------------------------------------------------------
+
+
+# -----------------------------------------------------------------------------
+# Truth + correctness scoring (optimizer-tuning campaign, #69)
+#
+# The rest of this harness profiles *cost* and never asks whether a search found
+# the right answer. Tuning the multi-start optimizers needs exactly that, so the
+# simulator truth is pinned here. Keep in sync with ``simulators/imaging.py``.
+# -----------------------------------------------------------------------------
+
+TRUTH_EINSTEIN_RADIUS = 1.6
+TRUTH_SHEAR = (0.05, 0.05)
+# Same basin criterion as the MGE gradient benchmark, so numbers are comparable.
+BASIN_TOL = 0.3
+
+
+def einstein_radius_of(instance: Any) -> float | None:
+    """The lens Einstein radius of an instance, or None if the model has no mass."""
+    try:
+        return float(instance.galaxies.lens.mass.einstein_radius)
+    except Exception:
+        return None
+
+
+def in_truth_basin(instance: Any, tol: float = BASIN_TOL) -> bool | None:
+    """Whether an instance's Einstein radius is within ``tol`` of the truth.
+
+    Deliberately a coarse basin test, not an accuracy metric: the question these
+    optimizers must answer is "did the search land in the right basin at all?"
+    (a single cold start does not — that is the whole point of multi-start).
+    Report the radius alongside it; a slack tolerance can otherwise flatter a
+    result that is nowhere near truth.
+    """
+    r_e = einstein_radius_of(instance)
+    if r_e is None:
+        return None
+    return abs(r_e - TRUTH_EINSTEIN_RADIUS) < tol
 
 
 def format_best_fit(instance: Any) -> str:
