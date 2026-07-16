@@ -1,0 +1,42 @@
+[
+  {
+    "transform": "jit",
+    "trace_s": 5.579,
+    "compile_s": 4.994,
+    "first_s": 4.002,
+    "steady_s": 3.8011,
+    "dataset_class": "imaging",
+    "model_type": "pixelization",
+    "instrument": "hst",
+    "ndim": 12,
+    "n_batch": 16,
+    "batch_size": 4,
+    "hardware": "local_cpu",
+    "jax_version": "0.10.2",
+    "cache_dir": "",
+    "mixed_precision": false,
+    "tag": "pix-first",
+    "hostname": "DESKTOP-H143S82",
+    "timestamp": "2026-07-16T21:47:32"
+  },
+  {
+    "transform": "vag",
+    "trace_s": 7.323,
+    "compile_s": 30.729,
+    "first_s": 9.395,
+    "steady_s": 10.3919,
+    "dataset_class": "imaging",
+    "model_type": "pixelization",
+    "instrument": "hst",
+    "ndim": 12,
+    "n_batch": 16,
+    "batch_size": 4,
+    "hardware": "local_cpu",
+    "jax_version": "0.10.2",
+    "cache_dir": "",
+    "mixed_precision": false,
+    "tag": "pix-first",
+    "hostname": "DESKTOP-H143S82",
+    "timestamp": "2026-07-16T21:48:51"
+  }
+]
