@@ -25,6 +25,10 @@ Transforms mirror how samplers actually consume the likelihood:
     vmap        jax.jit(jax.vmap(f))                -- batched samplers, n_batch starts
     vmap_vag    jax.jit(jax.vmap(value_and_grad))   -- MultiStartAdam, no batch_size
     laxmap_vag  jax.jit(lax.map(value_and_grad, batch_size=)) -- MultiStartAdam batched
+    pyloop_vag  jax.jit(jax.vmap(value_and_grad)) over one batch_size chunk,
+                called n_batch/batch_size times from Python -- the batching
+                boundary hoisted OUT of XLA (candidate laxmap_vag replacement;
+                steady_s reports one full n_batch sweep for comparability)
 
 Usage (from the ``autolens_profiling/`` root)::
 
@@ -54,7 +58,7 @@ N_BATCH_DEFAULT = 16
 BATCH_SIZE_DEFAULT = 4
 STEADY_CALLS = 3
 
-TRANSFORMS = ("jit", "grad", "vag", "vmap", "vmap_vag", "laxmap_vag")
+TRANSFORMS = ("jit", "grad", "vag", "vmap", "vmap_vag", "laxmap_vag", "pyloop_vag")
 
 
 def parse_args():
@@ -135,6 +139,8 @@ def transformed_fn_and_arg(name, f, x0, n_batch, batch_size):
     if name == "laxmap_vag":
         vag = jax.value_and_grad(f)
         return (lambda X: jax.lax.map(vag, X, batch_size=batch_size)), xb
+    if name == "pyloop_vag":
+        return jax.vmap(jax.value_and_grad(f)), jnp.tile(x0, (batch_size, 1))
     raise ValueError(f"unknown transform {name!r}")
 
 
@@ -157,10 +163,16 @@ def measure(name, f, x0, n_batch, batch_size):
     jax.block_until_ready(compiled(arg))
     first_s = time.perf_counter() - t0
 
+    # pyloop_vag compiles one batch_size chunk; a full n_batch sweep is
+    # n_batch/batch_size sequential calls, so steady_s stays comparable to the
+    # all-n_batch transforms (vmap_vag / laxmap_vag).
+    calls_per_eval = n_batch // batch_size if name == "pyloop_vag" else 1
+
     t0 = time.perf_counter()
     for _ in range(STEADY_CALLS):
-        out = compiled(arg)
-    jax.block_until_ready(out)
+        for _ in range(calls_per_eval):
+            out = compiled(arg)
+        jax.block_until_ready(out)
     steady_s = (time.perf_counter() - t0) / STEADY_CALLS
 
     return {
