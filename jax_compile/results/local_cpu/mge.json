@@ -1,0 +1,42 @@
+[
+  {
+    "transform": "jit",
+    "trace_s": 28.976,
+    "compile_s": 17.975,
+    "first_s": 0.153,
+    "steady_s": 0.1192,
+    "dataset_class": "imaging",
+    "model_type": "mge",
+    "instrument": "hst",
+    "ndim": 15,
+    "n_batch": 16,
+    "batch_size": 4,
+    "hardware": "local_cpu",
+    "jax_version": "0.10.2",
+    "cache_dir": "",
+    "mixed_precision": false,
+    "tag": "smoke",
+    "hostname": "DESKTOP-H143S82",
+    "timestamp": "2026-07-16T15:22:20"
+  },
+  {
+    "transform": "vag",
+    "trace_s": 29.959,
+    "compile_s": 269.81,
+    "first_s": 1.424,
+    "steady_s": 0.511,
+    "dataset_class": "imaging",
+    "model_type": "mge",
+    "instrument": "hst",
+    "ndim": 15,
+    "n_batch": 16,
+    "batch_size": 4,
+    "hardware": "local_cpu",
+    "jax_version": "0.10.2",
+    "cache_dir": "",
+    "mixed_precision": false,
+    "tag": "smoke",
+    "hostname": "DESKTOP-H143S82",
+    "timestamp": "2026-07-16T15:27:24"
+  }
+]
