@@ -102,7 +102,10 @@ _N_BATCH = {
     "light_lp": 20,
     "mass_total": 20,
 }
-_N_BATCH_FAST = {name: 10 for name in STAGE_NAMES}
+# 4 not 10: n_batch is NOT a Nautilus identifier field, so this can be tuned
+# to the machine without invalidating completed stages; the profiling laptop
+# shares 16GB across sessions and the stage-2 inversion OOMs at batch 10.
+_N_BATCH_FAST = {name: 4 for name in STAGE_NAMES}
 
 _MESH_PIXELS_YX = 28  # slam_start_here.py fiducial
 _MESH_PIXELS_YX_FAST = 20
@@ -611,7 +614,20 @@ def main():
         print(f"  --reset: removing {pipeline_output_dir}")
         shutil.rmtree(pipeline_output_dir)
 
-    mode = "resume" if pipeline_output_dir.exists() else "cold"
+    # A stage is complete when its search output carries a `.completed` marker.
+    # 0 complete = cold; all complete = resume; anything else is a partial run
+    # (real sampling in some stages), excluded from cold/resume comparisons.
+    n_complete = sum(
+        1
+        for stage_glob in ("source_lp[1]", "source_pix[1]", "source_pix[2]", "light[1]", "mass_total[1]")
+        for _ in (pipeline_output_dir / stage_glob).glob("*/.completed")
+    )
+    if n_complete == 0:
+        mode = "cold"
+    elif n_complete >= len(STAGE_NAMES):
+        mode = "resume"
+    else:
+        mode = "partial"
     print(f"\n--- SLaM resume profiler [{unique_tag}] — {mode} run ---")
 
     _install_resume_timers()
