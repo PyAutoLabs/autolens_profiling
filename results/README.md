@@ -12,6 +12,7 @@ packages; the dashboard tables in every README are rendered from this tree by
 | `breakdown/` | [`likelihood_breakdown/`](../likelihood_breakdown/README.md) | Versioned per-step decompositions |
 | `simulators/` | [`simulators/`](../simulators/README.md) | Versioned simulator run-time summaries |
 | `searches/` | [`searches/`](../searches/README.md) | Versioned sampler profiling summaries |
+| `pipeline_resume/` | [`pipeline_resume/`](../pipeline_resume/README.md) | Versioned SLaM resume-overhead summaries (cold + resume run records) |
 | `quick_update/` | [`quick_update/`](../quick_update/README.md) | Unversioned fast re-profiling snapshots (scratch tier) |
 | `notes/` | humans + agents | Narrative findings and design notes (e.g. [`design_lock_in.md`](./notes/design_lock_in.md)) |
 | `baselines/` | campaign snapshots | Named, frozen baselines (e.g. `PreOptimizationTimes/`) — see below |

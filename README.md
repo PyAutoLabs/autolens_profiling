@@ -104,6 +104,7 @@ The version string matches the PyAutoLens release that produced the numbers (e.g
 | [`instruments/`](./instruments/README.md) | Instrument presets (pixel scale, shape) that frame every result. |
 | [`simulators/`](./simulators/README.md) | Run-time tracking for the PyAutoLens simulators. |
 | [`searches/`](./searches/README.md) | Sampler / search profiling, Nautilus first. |
+| [`pipeline_resume/`](./pipeline_resume/README.md) | SLaM pipeline resume overhead — the wall time a re-run pays per completed stage. *Is resuming slow, and where does the time go?* |
 | [`quick_update/`](./quick_update/README.md) | Fast incremental re-profiling helpers. |
 | [`hpc/`](./hpc/README.md) | SLURM submit scripts for the RAL HPC (A100 rows of the sweep matrix). |
 | [`results/`](./results/README.md) | JSON + PNG artifacts written by the above scripts; named baselines. |
