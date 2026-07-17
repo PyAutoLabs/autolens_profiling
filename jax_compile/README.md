@@ -208,3 +208,55 @@ artifact from job 330596 exists if ever needed).
 
 Not indicated: source restructuring, jit boundaries inside likelihoods,
 replacing `lax.map` in MultiStartAdam, autotune flags.
+
+## Final census — the defaults-live user experience (issue #77, 2026-07-17)
+
+Measured through the merged wrapper defaults (#128 cache + #132 autotune-off),
+no manual flags; cold = fresh cache dir, warm = same dir, fresh process.
+
+**A100 (dedicated node)** — trace + XLA compile, seconds:
+
+| cell | cold | warm | steady eval |
+|---|---|---|---|
+| mge / jit | 4.7 + 5.7 | 4.8 + 0.3 | 0.0042 s |
+| mge / vag | 6.8 + 27.9 | 6.8 + 2.4 | 0.0098 s |
+| pix / jit | 4.0 + 5.7 | 4.2 + 0.4 | 0.0574 s |
+| pix / vag | 4.7 + 20.5 | 4.7 + 1.8 | 0.0911 s |
+
+Worst cold cell ≈ **35 s** (was ~70 min in the worst pre-#128/#132 case);
+warm ≈ **5–9 s**, almost entirely tracing.
+
+**Local CPU (idle laptop; cross-day compile variance up to 2× — treat the A100
+table as the reference):**
+
+| cell | cold | warm | 
+|---|---|---|
+| mge / jit | 21.0 + 16.9 | 10.9 + 0.5 |
+| mge / vag | 22.1 + 229.4 | 16.3 + 2.9 |
+| mge / lax.map∘vag | 31.4 + 369.9 | 29.2 + 6.2 |
+| pix / jit | 6.7 + 7.7 | 7.6 + 0.3 |
+| pix / vag | 7.3 + 34.6 | 8.2 + 1.6 |
+
+## Where any remaining speedup would come (final)
+
+1. **`jax.export` — RULED OUT** (jax 0.10.2): deserialize is 4 ms (vs 16–22 s
+   tracing) but the exported module recompiles **~156 s in every process** —
+   its compile bypasses the persistent compilation cache (`export_probe.py`,
+   two independent load processes). The standard warm path (trace + cached
+   compile) wins by an order of magnitude. Re-evaluate only if a future jax
+   caches exported-call compiles.
+2. **XLA compile-parallelism flags — inconclusive, low ceiling.** CPU
+   same-day: 137.7 s vs 229.4 s cold vag compile with
+   `--xla_cpu_parallel_codegen_split_count=32`, but cross-day variance on the
+   same cell (117 ↔ 229 s) swamps the signal. On the A100 the residual
+   no-autotune compile is 20–28 s, so even a 2× flag win saves ~10 s once per
+   machine — not worth productizing.
+3. **The tracing floor (warm cost) is jax-internal** (finding 8: 58 % jax /
+   34 % stdlib / 7 % autoarray). 4–7 s per transform on the A100 host, 11–29 s
+   on the laptop, every process. Movable only by upstream jax tracing speed or
+   by emitting fewer ops.
+
+**Close-out:** with cache + autotune-off shipped, compile cost is seconds at
+every point in the lifecycle. Any further reduction would come from upstream
+JAX (tracing speed, compile speed), not from this stack — no further
+engineering is warranted here. The compile-time arc (#71 → #74 → #77) is done.
