@@ -1,0 +1,20 @@
+[
+  {
+    "model_type": "mge",
+    "transform": "vag",
+    "ndim": 15,
+    "trace_s": 39.822,
+    "rollup_tottime_s": {
+      "jax": 23.046,
+      "other": 13.66,
+      "autoarray": 2.803,
+      "autogalaxy": 0.123,
+      "autofit": 0.049,
+      "autolens": 0.01,
+      "autoconf": 0.006
+    },
+    "jax_version": "0.10.2",
+    "tag": "first",
+    "timestamp": "2026-07-17T08:26:15"
+  }
+]
