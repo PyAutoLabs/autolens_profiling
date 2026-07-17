@@ -33,8 +33,10 @@ original tags for provenance.
 
 ## Established before this task (do not re-derive)
 
-- **Autotuning ruled out** (2026-07-15): `--xla_gpu_autotune_level=0` vs on —
-  2090 s vs 2100 s, identical results to the decimal.
+- ~~Autotuning ruled out (2026-07-15)~~ **downgraded to unproven 2026-07-17**:
+  the flag never took effect — `autoconf/jax_wrapper.py` overwrote `XLA_FLAGS`
+  (see Verdict item 3); "identical to the decimal" is exactly what clobbering
+  produces. Re-test after PyAutoConf#127 if autotune ever matters again.
 - Fresh-closure-per-call JIT cache-busting is a known stack trap (cache the
   jitted closure on the instance).
 - `analysis.print_vram_use()` triggers a full vmapped compile (not a cheap
@@ -128,12 +130,16 @@ one-time-per-machine cost the cache already removes. **Do not restructure.**
    fits; ~2–4 min CPU MGE gradient fits) is honest and unavoidable without
    upstream XLA changes; surface it (log line "compiling — first run on this
    machine takes N min") rather than engineering around it.
-3. **Upstream**: the 7m30 single-fusion compile is XLA-report material, but
-   `--xla_dump_to` is inert under jax 0.10.2 in this stack — zero files from an
-   unfiltered A100 run (job 330587, flags confirmed in the log) and from a local
-   CPU repro. Producing the HLO artifact needs its own investigation (e.g.
-   `jax.stages.Lowered.as_text()` on the lowered module instead of XLA dump
-   flags); parked as an open item, not blocking the verdict.
+3. **Upstream**: the 7m30 single-fusion compile is XLA-report material.
+   CORRECTED 2026-07-17: `--xla_dump_to` is not inert — `autoconf/jax_wrapper.py`
+   was *overwriting* `XLA_FLAGS` at import, silently discarding user/job flags
+   (fixed in PyAutoConf#127). Two consequences: (a) the HLO dump just needs a
+   re-run once that fix lands (or `XLA_FLAGS` including the constant_folding
+   disable so the wrapper leaves it alone); (b) the historical 2026-07-15
+   "autotuning ruled out" A/B never actually flipped autotune — both runs were
+   clobbered to identical flags — so that claim is **unproven** (the controlled
+   A/B in finding 3 is unaffected: both sides equally clobbered). Cold-compile
+   follow-up: `PyAutoMind draft/research/workspaces/investigate_ways_to_reduce_the_cold_jax.md`.
 4. The companion feature prompt (cell-grid compile-time dashboard,
    `draft/feature/autolens_profiling/jax_compile_time_profiling.md`) can now
    reuse `probe.py` and should track *warm* compile times per cell so cache
