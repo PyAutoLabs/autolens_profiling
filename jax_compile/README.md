@@ -122,7 +122,7 @@ one-time-per-machine cost the cache already removes. **Do not restructure.**
    (`jax_compilation_cache_dir` under the workspace `output/` or
    `~/.cache/pyauto_jax`, `jax_persistent_cache_min_compile_time_secs` ~1 s) —
    filed as the follow-up prompt
-   `PyAutoMind draft/feature/autofit/jax_compilation_cache_default.md`.
+   `PyAutoMind draft/feature/autofit/enable_the_jax_persistent_compilation_cache_by.md`.
    This turns the worst measured case (70 min) into a once-per-machine cost.
 2. **First-fit UX**: the remaining cold cost (~7m30 on GPU pixelized-gradient
    fits; ~2–4 min CPU MGE gradient fits) is honest and unavoidable without
