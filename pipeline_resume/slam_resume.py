@@ -167,6 +167,19 @@ def _install_resume_timers():
     _wrap(DirectoryPaths, "load_samples_summary", "samples_summary_load")
     _wrap(DirectoryPaths, "load_samples", "samples_load")
 
+    # PyAutoFit's _fit_bypass_test_mode returns without paths.completed(),
+    # so a bypassed stage is never seen as complete and a rerun re-bypasses
+    # the whole chain instead of resuming (library fix filed via intake).
+    # Mark completion here; harmless once the library writes the marker.
+    orig_bypass = abstract_search.NonLinearSearch._fit_bypass_test_mode
+
+    def bypass_with_marker(self, *args, **kwargs):
+        result = orig_bypass(self, *args, **kwargs)
+        self.paths.completed()
+        return result
+
+    abstract_search.NonLinearSearch._fit_bypass_test_mode = bypass_with_marker
+
 
 # -----------------------------------------------------------------------------
 # The 5 SLaM stages (mirrored from slam_start_here.py, instrumented)

@@ -1,0 +1,5 @@
+test:
+  check_likelihood_function: true   # resume recomputes one likelihood per stage to verify consistency — a real resume cost this repo measures, so keep the production default.
+  disable_positions_lh_inversion_check: true   # workspace parity: slam source_pix[2]/light/mass compose pixelizations without positions_likelihood_list, as in autolens_workspace.
+version:
+  workspace_version_check: false    # this repo tracks main, not a release tag; the mismatch warning is expected noise in profiling logs.
