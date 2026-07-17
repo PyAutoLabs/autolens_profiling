@@ -1,0 +1,108 @@
+{
+  "tier": "pipeline_resume",
+  "instrument": "hst",
+  "fast": false,
+  "al_version": "2026.7.9.1",
+  "af_version": "2026.7.9.1",
+  "stages": [
+    "source_lp",
+    "source_pix_1",
+    "source_pix_2",
+    "light_lp",
+    "mass_total"
+  ],
+  "runs": [
+    {
+      "mode": "cold",
+      "timestamp": "2026-07-17T07:24:42+00:00",
+      "total_s": 205.503,
+      "import_s": 2.628,
+      "dataset_setup_s": 0.15,
+      "pipeline_s": 202.715,
+      "n_live": {
+        "source_lp": 200,
+        "source_pix_1": 150,
+        "source_pix_2": 75,
+        "light_lp": 150,
+        "mass_total": 150
+      },
+      "test_mode": 2,
+      "spans": {
+        "dataset_setup": 0.15,
+        "light_lp/adapt_images": 0.001,
+        "light_lp/model_compose": 1.089,
+        "light_lp/search_fit": 23.436,
+        "mass_total/adapt_images": 0.001,
+        "mass_total/model_compose": 0.057,
+        "mass_total/positions": 36.109,
+        "mass_total/search_fit": 27.364,
+        "source_lp/model_compose": 2.349,
+        "source_lp/search_fit": 28.012,
+        "source_pix_1/adapt_images": 3.332,
+        "source_pix_1/model_compose": 0.044,
+        "source_pix_1/positions": 28.641,
+        "source_pix_1/search_fit": 25.963,
+        "source_pix_2/adapt_images": 10.95,
+        "source_pix_2/model_compose": 0.021,
+        "source_pix_2/search_fit": 15.342
+      }
+    },
+    {
+      "mode": "resume",
+      "timestamp": "2026-07-17T07:27:28+00:00",
+      "total_s": 147.763,
+      "import_s": 5.773,
+      "dataset_setup_s": 0.261,
+      "pipeline_s": 141.725,
+      "n_live": {
+        "source_lp": 200,
+        "source_pix_1": 150,
+        "source_pix_2": 75,
+        "light_lp": 150,
+        "mass_total": 150
+      },
+      "test_mode": 2,
+      "spans": {
+        "dataset_setup": 0.261,
+        "light_lp/adapt_images": 0.001,
+        "light_lp/completed_fit_total": 0.151,
+        "light_lp/model_compose": 1.041,
+        "light_lp/samples_load": 0.148,
+        "light_lp/samples_summary_load": 0.001,
+        "light_lp/search_fit": 0.787,
+        "mass_total/adapt_images": 0.001,
+        "mass_total/completed_fit_total": 0.192,
+        "mass_total/model_compose": 0.053,
+        "mass_total/positions": 29.353,
+        "mass_total/samples_load": 0.19,
+        "mass_total/samples_summary_load": 0.001,
+        "mass_total/search_fit": 0.843,
+        "source_lp/completed_fit_total": 0.494,
+        "source_lp/model_compose": 3.646,
+        "source_lp/samples_load": 0.488,
+        "source_lp/samples_summary_load": 0.001,
+        "source_lp/search_fit": 9.276,
+        "source_pix_1/adapt_images": 25.702,
+        "source_pix_1/completed_fit_total": 0.129,
+        "source_pix_1/model_compose": 0.05,
+        "source_pix_1/positions": 40.596,
+        "source_pix_1/samples_load": 0.127,
+        "source_pix_1/samples_summary_load": 0.0,
+        "source_pix_1/search_fit": 0.606,
+        "source_pix_2/adapt_images": 29.022,
+        "source_pix_2/completed_fit_total": 0.165,
+        "source_pix_2/model_compose": 0.026,
+        "source_pix_2/samples_load": 0.163,
+        "source_pix_2/samples_summary_load": 0.001,
+        "source_pix_2/search_fit": 0.72
+      }
+    }
+  ],
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding",
+    "omp_num_threads": "1",
+    "cpu_count": 8
+  }
+}

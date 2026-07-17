@@ -401,6 +401,49 @@ def _render_simulator_table(artifacts: list[Artifact]) -> str:
     return "\n" + "\n".join(rows) + "\n"
 
 
+def _render_pipeline_resume_table(artifacts: list[Artifact]) -> str:
+    relevant = [a for a in artifacts if a.section == "pipeline_resume"]
+    if not relevant:
+        return _no_data_block(
+            "run `pipeline_resume/slam_resume.py` twice (cold, then resume) to "
+            "populate. See section README."
+        )
+    latest = _latest_per_group(relevant, key=lambda a: (a.script, a.instrument))
+    rows = [
+        "| Script | Instrument | Cold total | Resume total | Imports | "
+        "Σ stage resume | Σ inter-stage | PyAutoLens version |"
+    ]
+    rows.append("|--------|------------|------------|--------------|---------|" "----------------|---------------|--------------------|")
+
+    def _sum_spans(run: dict, component: str) -> float:
+        return sum(
+            v for k, v in run.get("spans", {}).items() if k.endswith(f"/{component}")
+        )
+
+    for (script, instrument), art in sorted(latest.items()):
+        runs = art.data.get("runs", [])
+        cold = next((r for r in runs if r.get("mode") == "cold"), None)
+        resume = next((r for r in reversed(runs) if r.get("mode") == "resume"), None)
+        cold_total = _format_time(cold.get("total_s")) if cold else "—"
+        if resume:
+            resume_total = _format_time(resume.get("total_s"))
+            imports = _format_time(resume.get("import_s"))
+            stage = _format_time(_sum_spans(resume, "search_fit"))
+            inter = _format_time(
+                sum(
+                    _sum_spans(resume, c)
+                    for c in ("adapt_images", "positions", "model_compose")
+                )
+            )
+        else:
+            resume_total = imports = stage = inter = "—"
+        rows.append(
+            f"| `{script}.py` | {instrument or '—'} | {cold_total} | "
+            f"{resume_total} | {imports} | {stage} | {inter} | v{art.raw_version} |"
+        )
+    return "\n" + "\n".join(rows) + "\n"
+
+
 def _render_nautilus_table(artifacts: list[Artifact]) -> str:
     relevant = [a for a in artifacts if a.section == "searches" and a.subfolder == "nautilus"]
     if not relevant:
@@ -462,6 +505,7 @@ def _build_renderers():
         "breakdown": lambda: _render_breakdown_table(artifacts),
         "simulators": lambda: _render_simulator_table(artifacts),
         "searches-nautilus": lambda: _render_nautilus_table(artifacts),
+        "pipeline-resume": lambda: _render_pipeline_resume_table(artifacts),
     }
 
 
@@ -473,6 +517,7 @@ TARGET_READMES = [
     REPO_ROOT / "likelihood_breakdown" / "README.md",
     REPO_ROOT / "simulators" / "README.md",
     REPO_ROOT / "searches" / "README.md",
+    REPO_ROOT / "pipeline_resume" / "README.md",
 ]
 
 
