@@ -1,0 +1,24 @@
+[
+  {
+    "transform": "jit",
+    "trace_s": 4.885,
+    "compile_s": 9.204,
+    "first_s": 1.329,
+    "steady_s": 0.0042,
+    "dataset_class": "imaging",
+    "model_type": "mge",
+    "instrument": "hst",
+    "ndim": 15,
+    "n_batch": 16,
+    "batch_size": 4,
+    "hardware": "local_gpu_NVIDIA_A100_80GB_PCIe",
+    "jax_version": "0.10.2",
+    "cache_dir": "",
+    "mixed_precision": false,
+    "tag": "a100-at0",
+    "hostname": "euclid-ral-gpu-2",
+    "timestamp": "2026-07-17T08:55:59"
+  }
+]
+
+]

@@ -145,5 +145,66 @@ one-time-per-machine cost the cache already removes. **Do not restructure.**
    reuse `probe.py` and should track *warm* compile times per cell so cache
    regressions are caught.
 
+## Cold-compile findings (issue #74, 2026-07-17)
+
+The persistent cache (above) solves repeat fits; these findings address the
+**cold** cost it cannot remove.
+
+### 6. The pathological cold compile IS GPU autotuning — one flag removes it
+
+The first run in this stack's history where `--xla_gpu_autotune_level=0`
+actually reached XLA (the pre-#128 wrapper clobbered every earlier attempt —
+including the 2026-07-15 "ruled out" A/B and finding 3's controlled A/B, which
+compared autotune-ON to autotune-ON):
+
+| A100, fresh cache | autotune ON | autotune OFF |
+|---|---|---|
+| FD probe total (kernel-CDF pixelized vag) | 498 s | **29 s** (17×) |
+| full 300×16 adam fit wall | 2081 s | **1253 s** (−40 %) |
+| fixed-input logL | 25536.848940 | 25536.848940 (bit-identical) |
+
+The `input_reduce_fusion` slow-compile alarm was autotune compiling candidate
+kernel configs of that fusion as standalone modules (why it never appeared as
+a dumpable module name). Autotune results cache like everything else, so with
+the cache enabled this is first-fit UX; without the flag a new machine's first
+pathological fit pays ~7m30.
+
+### 7. Steady-state eval does not need autotune (measured cells)
+
+A100 probe matrix, fresh caches per job (jobs 330601/330602):
+
+| cell | steady ON | steady OFF | compile ON | compile OFF |
+|---|---|---|---|---|
+| mge / jit | 0.0042 s | 0.0042 s | 10.1 s | 9.2 s |
+| mge / vag | 0.0096 s | 0.0098 s | 29.4 s | 29.3 s |
+| pix / jit | 0.0571 s | 0.0574 s | 8.5 s | 5.9 s |
+| pix / vag | 0.0871 s | 0.0910 s | 27.3 s | 19.7 s |
+
+Worst case ~4 % on one cell — and the 4800-eval full fit ran *faster* end to
+end with autotune off, so no real eval penalty is observed. (These standard
+cells compile in seconds either way; the 7m30 autotune cost is specific to the
+pathological kernel-CDF no-sparse-operator shape.)
+
+### 8. The tracing floor is jax-internal — no PyAuto lever
+
+cProfile attribution of a 40 s MGE `vag` trace (`trace_profile.py`): 58 % jax
+internals, 34 % stdlib/numpy, 7 % autoarray, ~0 % autofit/autogalaxy/autolens.
+Reducing it means emitting fewer ops (a jax-side concern), not optimizing
+PyAuto Python. Documented and closed as a direction.
+
+## Verdict 2 (cold compile)
+
+**One more setting: default `--xla_gpu_autotune_level=0`.** Evidence: 17×
+pathological cold-probe reduction, −40 % cold full fit, bit-identical fixed-
+input likelihoods, steady-state eval parity across the measured matrix. With
+the cache (#128) plus autotune-off, worst-case first-fit UX drops from ~70 min
+to ~30 s. Recommended as an env-respecting wrapper default (same pattern as
+the cache), so clusters can re-enable autotune where a tuned kernel matters.
+
+Remaining leads deprioritized by these numbers: cache-entry proliferation and
+pre-warming (cold is now ~seconds-to-a-minute); upstream XLA report (the "slow
+fusion" is explained — autotune candidates on a 58 GiB fusion; the HLO dump
+artifact from job 330596 exists if ever needed).
+
 Not indicated: source restructuring, jit boundaries inside likelihoods,
 replacing `lax.map` in MultiStartAdam, autotune flags.
