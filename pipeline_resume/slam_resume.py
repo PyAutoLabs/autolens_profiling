@@ -62,6 +62,7 @@ if str(_WORKSPACE_ROOT) not in sys.path:
 # jax_wrapper must import before autofit/autolens (it sets the JAX env).
 # isort: off
 from autoconf import jax_wrapper  # noqa: F401, E402
+from autoconf.test_mode import test_mode_level, with_test_mode_segment  # noqa: E402
 
 import autofit as af  # noqa: E402
 import autolens as al  # noqa: E402
@@ -606,9 +607,20 @@ def main():
     mesh_pixels_yx = _MESH_PIXELS_YX_FAST if fast else _MESH_PIXELS_YX
     mesh_shape = (mesh_pixels_yx, mesh_pixels_yx)
 
-    suffix = "_fast" if fast else ""
+    # Test-mode runs get their own artifact (and the versioned-artifact regex
+    # in scripts/build_readme.py ignores suffixed files), so instant
+    # PYAUTO_TEST_MODE chains never mix with real measurement records.
+    suffix = ("_fast" if fast else "") + (
+        "_testmode" if test_mode_level() > 0 else ""
+    )
     unique_tag = f"{instrument}{suffix}"
-    pipeline_output_dir = Path("output") / "pipeline_resume" / unique_tag
+    # Under PYAUTO_TEST_MODE the search outputs are namespaced into
+    # output/test_mode/ (PyAutoFit's _test_mode_segment); the reset/mode
+    # detection must look at the same tree. The resume invocation must then
+    # ALSO run with PYAUTO_TEST_MODE set, or it will see a cold output dir.
+    pipeline_output_dir = (
+        with_test_mode_segment(Path("output")) / "pipeline_resume" / unique_tag
+    )
 
     if extra.reset and pipeline_output_dir.exists():
         print(f"  --reset: removing {pipeline_output_dir}")
@@ -694,6 +706,7 @@ def main():
         "dataset_setup_s": round(SPANS.seconds.get("dataset_setup", 0.0), 3),
         "pipeline_s": round(pipeline_s, 3),
         "n_live": n_live,
+        "test_mode": test_mode_level(),
         "spans": {k: round(v, 3) for k, v in sorted(SPANS.seconds.items())},
     }
 
