@@ -64,7 +64,15 @@ Rules and known deltas:
   prior-median model (right size, wrong values) — timing-honest, not
   science-honest.
 
-### Reference numbers (2026-07-17, CPU, v2026.7.9.1, N=10000; moderate background load)
+### Post fast-path reference (2026-07-17 evening, after PyAutoGalaxy#504 + PyAutoLens#619 + PyAutoFit#1388/#1390)
+
+Cold 159s → **any resume ~11–13s**: the cold run now writes the per-stage caches itself
+(adapt images + solved positions memoized into each result's `files/` and preserved in
+the search zips), so every later resume pays only imports (~3s), the stage-1
+`check_likelihood_function` consistency recompute (~6s, config-gated) and ~0.1s/stage
+of loading. The pre-fix decomposition below is retained as the historical baseline.
+
+### Pre fast-path baseline (2026-07-17 morning, CPU, v2026.7.9.1, N=10000; moderate background load)
 
 Cold chain 205s → resume 148s of pure overhead, decomposed:
 

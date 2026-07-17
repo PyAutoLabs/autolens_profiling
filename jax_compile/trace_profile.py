@@ -31,7 +31,7 @@ _WORKSPACE_ROOT = Path(__file__).resolve().parents[1]
 if str(_WORKSPACE_ROOT) not in sys.path:
     sys.path.insert(0, str(_WORKSPACE_ROOT))
 
-from jax_compile.probe import build_objective, transformed_fn_and_arg, hardware_label
+from jax_compile.probe import build_objective, transformed_fn_and_arg, hardware_label  # noqa: E402  # isort: skip
 
 LIBRARY_KEYS = (
     "autofit",
@@ -89,7 +89,7 @@ def main():
         per_library[library_of(filename)] += tottime
 
     print(f"[trace_profile] {args.model_type} / {args.transform}: trace {trace_s:.2f}s")
-    print(f"[trace_profile] exclusive-time rollup (sums to ~trace time):")
+    print("[trace_profile] exclusive-time rollup (sums to ~trace time):")
     rollup = dict(sorted(per_library.items(), key=lambda kv: -kv[1]))
     for lib, seconds in rollup.items():
         print(f"[trace_profile]   {lib:<10} {seconds:7.2f}s  ({100 * seconds / trace_s:4.1f}%)")
