@@ -128,8 +128,12 @@ one-time-per-machine cost the cache already removes. **Do not restructure.**
    fits; ~2–4 min CPU MGE gradient fits) is honest and unavoidable without
    upstream XLA changes; surface it (log line "compiling — first run on this
    machine takes N min") rather than engineering around it.
-3. **Upstream**: the 7m30 single-fusion compile is XLA-report material; the HLO
-   dump artifact is produced by `compile_hlo.sbatch` (RAL job 330587).
+3. **Upstream**: the 7m30 single-fusion compile is XLA-report material, but
+   `--xla_dump_to` is inert under jax 0.10.2 in this stack — zero files from an
+   unfiltered A100 run (job 330587, flags confirmed in the log) and from a local
+   CPU repro. Producing the HLO artifact needs its own investigation (e.g.
+   `jax.stages.Lowered.as_text()` on the lowered module instead of XLA dump
+   flags); parked as an open item, not blocking the verdict.
 4. The companion feature prompt (cell-grid compile-time dashboard,
    `draft/feature/autolens_profiling/jax_compile_time_profiling.md`) can now
    reuse `probe.py` and should track *warm* compile times per cell so cache
