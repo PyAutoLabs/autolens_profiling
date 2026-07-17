@@ -1,0 +1,36 @@
+[
+  {
+    "mode": "save",
+    "model_type": "mge",
+    "transform": "vag",
+    "trace_export_s": 22.311,
+    "serialize_s": 0.006,
+    "blob_mb": 1.936,
+    "ndim": 15,
+    "jax_version": "0.10.2",
+    "tag": "census",
+    "timestamp": "2026-07-17T09:59:45"
+  },
+  {
+    "mode": "load",
+    "model_type": "mge",
+    "transform": "vag",
+    "deserialize_s": 0.004,
+    "first_s": 159.5,
+    "steady_s": 0.2963,
+    "jax_version": "0.10.2",
+    "tag": "census",
+    "timestamp": "2026-07-17T10:02:27"
+  },
+  {
+    "mode": "load",
+    "model_type": "mge",
+    "transform": "vag",
+    "deserialize_s": 0.004,
+    "first_s": 155.995,
+    "steady_s": 0.3651,
+    "jax_version": "0.10.2",
+    "tag": "census-warm",
+    "timestamp": "2026-07-17T10:08:18"
+  }
+]
