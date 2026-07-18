@@ -413,12 +413,13 @@ def _render_pipeline_resume_table(artifacts: list[Artifact]) -> str:
         "| Script | Instrument | Cold total | Resume total | Imports | "
         "Σ stage resume | Σ inter-stage | PyAutoLens version |"
     ]
-    rows.append("|--------|------------|------------|--------------|---------|" "----------------|---------------|--------------------|")
+    rows.append(
+        "|--------|------------|------------|--------------|---------|"
+        "----------------|---------------|--------------------|"
+    )
 
     def _sum_spans(run: dict, component: str) -> float:
-        return sum(
-            v for k, v in run.get("spans", {}).items() if k.endswith(f"/{component}")
-        )
+        return sum(v for k, v in run.get("spans", {}).items() if k.endswith(f"/{component}"))
 
     for (script, instrument), art in sorted(latest.items()):
         runs = art.data.get("runs", [])
@@ -430,10 +431,7 @@ def _render_pipeline_resume_table(artifacts: list[Artifact]) -> str:
             imports = _format_time(resume.get("import_s"))
             stage = _format_time(_sum_spans(resume, "search_fit"))
             inter = _format_time(
-                sum(
-                    _sum_spans(resume, c)
-                    for c in ("adapt_images", "positions", "model_compose")
-                )
+                sum(_sum_spans(resume, c) for c in ("adapt_images", "positions", "model_compose"))
             )
         else:
             resume_total = imports = stage = inter = "—"
