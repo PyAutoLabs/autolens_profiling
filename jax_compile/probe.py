@@ -112,9 +112,7 @@ def build_objective(args):
     def f(params):
         instance = model.instance_from_vector(vector=params, xp=jnp)
         log_l = analysis.log_likelihood_function(instance=instance)
-        log_p = jnp.sum(
-            jnp.asarray(model.log_prior_list_from_vector(vector=params, xp=jnp))
-        )
+        log_p = jnp.sum(jnp.asarray(model.log_prior_list_from_vector(vector=params, xp=jnp)))
         return -(log_l + log_p)
 
     x0 = jnp.asarray(model.vector_from_unit_vector([0.5] * model.prior_count))

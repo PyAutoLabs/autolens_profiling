@@ -58,9 +58,7 @@ def main():
         vag = jax.value_and_grad(f)
 
         t0 = time.perf_counter()
-        exported = jax_export.export(jax.jit(vag))(
-            jax.ShapeDtypeStruct(x0.shape, x0.dtype)
-        )
+        exported = jax_export.export(jax.jit(vag))(jax.ShapeDtypeStruct(x0.shape, x0.dtype))
         record["trace_export_s"] = round(time.perf_counter() - t0, 3)
 
         t0 = time.perf_counter()

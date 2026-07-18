@@ -168,7 +168,6 @@ def _install_resume_timers():
     _wrap(DirectoryPaths, "load_samples", "samples_load")
 
 
-
 # -----------------------------------------------------------------------------
 # The 5 SLaM stages (mirrored from slam_start_here.py, instrumented)
 # -----------------------------------------------------------------------------
@@ -216,9 +215,7 @@ def source_pix_1(settings_search, dataset, source_lp_result, mesh_shape, n_live,
     _CURRENT_STAGE[0] = "source_pix_1"
 
     with SPANS.span("source_pix_1/adapt_images"):
-        galaxy_image_name_dict = al.galaxy_name_image_dict_via_result_from(
-            result=source_lp_result
-        )
+        galaxy_image_name_dict = al.galaxy_name_image_dict_via_result_from(result=source_lp_result)
         adapt_images = al.AdaptImages(galaxy_name_image_dict=galaxy_image_name_dict)
 
     with SPANS.span("source_pix_1/positions"):
@@ -531,8 +528,7 @@ def render_png(png_path: Path, data: dict):
     ax0.set_xlabel("search_fit wall time [s]")
     ax0.set_xscale("log")
     ax0.set_title(
-        f"SLaM stage wall time — cold vs resume\n"
-        f"[{data['instrument']}, v{data['al_version']}]"
+        f"SLaM stage wall time — cold vs resume\n[{data['instrument']}, v{data['al_version']}]"
     )
     ax0.legend()
 
@@ -611,17 +607,13 @@ def main():
     # Test-mode runs get their own artifact (and the versioned-artifact regex
     # in scripts/build_readme.py ignores suffixed files), so instant
     # PYAUTO_TEST_MODE chains never mix with real measurement records.
-    suffix = ("_fast" if fast else "") + (
-        "_testmode" if test_mode_level() > 0 else ""
-    )
+    suffix = ("_fast" if fast else "") + ("_testmode" if test_mode_level() > 0 else "")
     unique_tag = f"{instrument}{suffix}"
     # Under PYAUTO_TEST_MODE the search outputs are namespaced into
     # output/test_mode/ (PyAutoFit's _test_mode_segment); the reset/mode
     # detection must look at the same tree. The resume invocation must then
     # ALSO run with PYAUTO_TEST_MODE set, or it will see a cold output dir.
-    pipeline_output_dir = (
-        with_test_mode_segment(Path("output")) / "pipeline_resume" / unique_tag
-    )
+    pipeline_output_dir = with_test_mode_segment(Path("output")) / "pipeline_resume" / unique_tag
 
     if extra.reset and pipeline_output_dir.exists():
         print(f"  --reset: removing {pipeline_output_dir}")
@@ -632,7 +624,13 @@ def main():
     # (real sampling in some stages), excluded from cold/resume comparisons.
     n_complete = sum(
         1
-        for stage_glob in ("source_lp[1]", "source_pix[1]", "source_pix[2]", "light[1]", "mass_total[1]")
+        for stage_glob in (
+            "source_lp[1]",
+            "source_pix[1]",
+            "source_pix[2]",
+            "light[1]",
+            "mass_total[1]",
+        )
         for _ in (pipeline_output_dir / stage_glob).glob("*/.completed")
     )
     if n_complete == 0:

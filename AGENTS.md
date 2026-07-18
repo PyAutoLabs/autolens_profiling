@@ -89,7 +89,7 @@ write from a header skim silently deletes every section below the header.
 - `../PyAutoLens` — the library being profiled (plus `../PyAutoGalaxy`, `../PyAutoArray`,
   `../PyAutoFit`, `../PyAutoConf` on `PYTHONPATH`).
 - `../autolens_workspace` — user-facing science scripts and tutorials.
-- `../PyAutoBuild` — build/CI tooling.
+- `../PyAutoHands` — build/CI tooling.
 
 ## Task Workflows
 
