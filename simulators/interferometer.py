@@ -357,15 +357,15 @@ def simulate(instrument: str = "sma", output_root: Path | None = None) -> Path:
 
 
 if __name__ == "__main__":
-    # autoconf.jax_wrapper must be imported first (sets up env before jax
+    # autonerves.jax_wrapper must be imported first (sets up env before jax
     # actually loads). Doing it here rather than at module level keeps the
     # module import side-effect-free for likelihood scripts that pull
-    # ``INSTRUMENTS`` without wanting to trigger the autoconf shim.
+    # ``INSTRUMENTS`` without wanting to trigger the autonerves shim.
     import argparse
     import os
     import sys
 
-    from autoconf import jax_wrapper  # noqa: F401
+    from autonerves import jax_wrapper  # noqa: F401
 
     # Smoke gate — only meaningful when running as a script, not on import.
     if os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":

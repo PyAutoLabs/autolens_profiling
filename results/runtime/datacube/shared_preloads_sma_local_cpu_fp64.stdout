@@ -1,10 +1,10 @@
-/home/jammy/Code/PyAutoLabs/PyAutoConf/autoconf/workspace.py:206: UserWarning: Cannot verify the workspace at /home/jammy/Code/PyAutoLabs/autolens_profiling is compatible with the installed library version (2026.7.6.649): no `version.minimum_library_version` or `version.workspace_version` key in config/general.yaml and no version.txt at the workspace root.
+/home/jammy/Code/PyAutoLabs/PyAutoNerves/autoconf/workspace.py:206: UserWarning: Cannot verify the workspace at /home/jammy/Code/PyAutoLabs/autolens_profiling is compatible with the installed library version (2026.7.6.649): no `version.minimum_library_version` or `version.workspace_version` key in config/general.yaml and no version.txt at the workspace root.
 
 If you cloned the workspace from `main` rather than a release tag, set `version.workspace_version_check: False` in config/general.yaml to silence this warning. The `main` branch updates more frequently than library releases, so version mismatches are expected and not actionable for `main`-branch users.
 
 You can also set the environment variable PYAUTO_SKIP_WORKSPACE_VERSION_CHECK=1 to disable temporarily.
   warnings.warn(_missing_version_warning(root, library_version))
-/home/jammy/Code/PyAutoLabs/PyAutoConf/autoconf/workspace.py:206: UserWarning: Cannot verify the workspace at /home/jammy/Code/PyAutoLabs/autolens_profiling is compatible with the installed library version (2026.7.6.649): no `version.minimum_library_version` or `version.workspace_version` key in config/general.yaml and no version.txt at the workspace root.
+/home/jammy/Code/PyAutoLabs/PyAutoNerves/autoconf/workspace.py:206: UserWarning: Cannot verify the workspace at /home/jammy/Code/PyAutoLabs/autolens_profiling is compatible with the installed library version (2026.7.6.649): no `version.minimum_library_version` or `version.workspace_version` key in config/general.yaml and no version.txt at the workspace root.
 
 If you cloned the workspace from `main` rather than a release tag, set `version.workspace_version_check: False` in config/general.yaml to silence this warning. The `main` branch updates more frequently than library releases, so version mismatches are expected and not actionable for `main`-branch users.
 

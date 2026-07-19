@@ -36,7 +36,7 @@ original tags for provenance.
 - ~~Autotuning ruled out (2026-07-15)~~ **downgraded to unproven 2026-07-17**:
   the flag never took effect — `autoconf/jax_wrapper.py` overwrote `XLA_FLAGS`
   (see Verdict item 3); "identical to the decimal" is exactly what clobbering
-  produces. Re-test after PyAutoConf#127 if autotune ever matters again.
+  produces. Re-test after PyAutoNerves#127 if autotune ever matters again.
 - Fresh-closure-per-call JIT cache-busting is a known stack trap (cache the
   jitted closure on the instance).
 - `analysis.print_vram_use()` triggers a full vmapped compile (not a cheap
@@ -133,7 +133,7 @@ one-time-per-machine cost the cache already removes. **Do not restructure.**
 3. **Upstream**: the 7m30 single-fusion compile is XLA-report material.
    CORRECTED 2026-07-17: `--xla_dump_to` is not inert — `autoconf/jax_wrapper.py`
    was *overwriting* `XLA_FLAGS` at import, silently discarding user/job flags
-   (fixed in PyAutoConf#127). Two consequences: (a) the HLO dump just needs a
+   (fixed in PyAutoNerves#127). Two consequences: (a) the HLO dump just needs a
    re-run once that fix lands (or `XLA_FLAGS` including the constant_folding
    disable so the wrapper leaves it alone); (b) the historical 2026-07-15
    "autotuning ruled out" A/B never actually flipped autotune — both runs were

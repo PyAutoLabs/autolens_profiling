@@ -43,7 +43,7 @@ auto-simulate-if-missing hook, so per-script boilerplate stays minimal.
 
 The PyAuto* libraries are **not pip-installed** here — they are resolved from sibling source
 checkouts via `PYTHONPATH`. On the HPC, `source activate.sh` activates the shared venv (third-party
-deps only) and points `PYTHONPATH` at the canonical `PyAutoConf`/`PyAutoFit`/`PyAutoArray`/
+deps only) and points `PYTHONPATH` at the canonical `PyAutoNerves`/`PyAutoFit`/`PyAutoArray`/
 `PyAutoGalaxy`/`PyAutoLens` checkouts; `HPCPullPyAuto` is then the whole library-update story.
 
 JAX convention (mirrors `autolens_workspace_developer`): pass `xp=jnp` through PyAuto* functions to
@@ -87,7 +87,7 @@ write from a header skim silently deletes every section below the header.
 ## Related Repos
 
 - `../PyAutoLens` — the library being profiled (plus `../PyAutoGalaxy`, `../PyAutoArray`,
-  `../PyAutoFit`, `../PyAutoConf` on `PYTHONPATH`).
+  `../PyAutoFit`, `../PyAutoNerves` on `PYTHONPATH`).
 - `../autolens_workspace` — user-facing science scripts and tutorials.
 - `../PyAutoHands` — build/CI tooling.
 
