@@ -30,7 +30,7 @@ import autolens as al
 import jax
 import jax.numpy as jnp
 import numpy as np
-from autoconf import conf
+from autonerves import conf
 from autolens import fixtures
 from autolens.analysis.latent import LATENT_FUNCTIONS
 

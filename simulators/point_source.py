@@ -359,7 +359,7 @@ if __name__ == "__main__":
     import os
     import sys
 
-    from autoconf import jax_wrapper  # noqa: F401
+    from autonerves import jax_wrapper  # noqa: F401
 
     if os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
         print(f"[smoke] {__file__}: imports + module setup OK; exiting.")

@@ -35,7 +35,7 @@ from jax_compile.probe import build_objective, transformed_fn_and_arg, hardware_
 
 LIBRARY_KEYS = (
     "autofit",
-    "autoconf",
+    "autonerves",
     "autoarray",
     "autogalaxy",
     "autolens",

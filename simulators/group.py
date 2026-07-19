@@ -32,7 +32,7 @@ import jax
 import jax.numpy as jnp
 import matplotlib
 import numpy as np
-from autoconf import jax_wrapper  # noqa: F401 — must be first
+from autonerves import jax_wrapper  # noqa: F401 — must be first
 
 if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")

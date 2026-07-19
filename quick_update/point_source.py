@@ -26,8 +26,8 @@ os.environ.setdefault("MPLBACKEND", "Agg")
 import autofit as af  # noqa: E402
 import autolens as al  # noqa: E402
 import numpy as np  # noqa: E402
-from autoconf import jax_wrapper  # noqa: E402
-from autoconf.dictable import from_dict  # noqa: E402
+from autonerves import jax_wrapper  # noqa: E402
+from autonerves.dictable import from_dict  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 

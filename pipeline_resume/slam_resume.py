@@ -61,8 +61,8 @@ if str(_WORKSPACE_ROOT) not in sys.path:
 
 # jax_wrapper must import before autofit/autolens (it sets the JAX env).
 # isort: off
-from autoconf import jax_wrapper  # noqa: F401, E402
-from autoconf.test_mode import test_mode_level, with_test_mode_segment  # noqa: E402
+from autonerves import jax_wrapper  # noqa: F401, E402
+from autonerves.test_mode import test_mode_level, with_test_mode_segment  # noqa: E402
 
 import autofit as af  # noqa: E402
 import autolens as al  # noqa: E402

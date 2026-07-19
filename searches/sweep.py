@@ -40,7 +40,7 @@ from pathlib import Path
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]  # autolens_profiling/
 _DEFAULT_OUTPUT_ROOT = _REPO_ROOT / "results" / "searches"
-# PyAutoFit's autoconf ``output_path`` defaults to ``<cwd>/output``. The
+# PyAutoFit's autonerves ``output_path`` defaults to ``<cwd>/output``. The
 # searches package writes search state under ``<output_path>/searches/...``
 # via the ``path_prefix`` set in ``_samplers.build_nautilus``. Wiping this
 # subtree before a (cell, config) run is what gives honest timing — see the
@@ -187,7 +187,7 @@ def _parse_args() -> argparse.Namespace:
         help=(
             f"Where PyAutoFit writes its own per-search output (samples.csv, "
             f"search.summary, visualization). Default: "
-            f"{_DEFAULT_SEARCH_OUTPUT_ROOT}. Must match the autoconf "
+            f"{_DEFAULT_SEARCH_OUTPUT_ROOT}. Must match the autonerves "
             f"``output_path`` + ``searches/`` prefix used by the leaf scripts."
         ),
     )
