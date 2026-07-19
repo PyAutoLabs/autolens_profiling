@@ -36,9 +36,9 @@ import autolens as al
 import jax
 import jax.numpy as jnp
 import numpy as np
-from autonerves import conf
 from autolens import fixtures
 from autolens.analysis.latent import LATENT_FUNCTIONS
+from autonerves import conf
 
 if _os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports OK; exiting.")
