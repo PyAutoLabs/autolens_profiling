@@ -27,11 +27,11 @@ jobs:
         with:
           path: autolens_profiling
 
-      - name: Checkout PyAutoConf
+      - name: Checkout PyAutoNerves
         uses: actions/checkout@v4
         with:
-          repository: PyAutoLabs/PyAutoConf
-          path: PyAutoConf
+          repository: PyAutoLabs/PyAutoNerves
+          path: PyAutoNerves
       - name: Checkout PyAutoFit
         uses: actions/checkout@v4
         with:
@@ -66,7 +66,7 @@ jobs:
           # (pyyaml, astropy, jax, numba, ...) without hand-maintaining a
           # package list. PYTHONPATH below still resolves the PyAuto* imports
           # from source, so the checkouts stay authoritative.
-          for r in PyAutoConf PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+          for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
             pip install "./$r[optional]"
           done
 
@@ -111,7 +111,7 @@ jobs:
           AUTOLENS_PROFILING_SMOKE: "1"
           NUMBA_CACHE_DIR: /tmp/numba_cache
           MPLCONFIGDIR: /tmp/matplotlib
-          PYTHONPATH: ${{ github.workspace }}/PyAutoConf:${{ github.workspace }}/PyAutoFit:${{ github.workspace }}/PyAutoArray:${{ github.workspace }}/PyAutoGalaxy:${{ github.workspace }}/PyAutoLens
+          PYTHONPATH: ${{ github.workspace }}/PyAutoNerves:${{ github.workspace }}/PyAutoFit:${{ github.workspace }}/PyAutoArray:${{ github.workspace }}/PyAutoGalaxy:${{ github.workspace }}/PyAutoLens
         run: |
           # Each script reads AUTOLENS_PROFILING_SMOKE at module top and
           # exits 0 immediately after the import + setup section. Catches
