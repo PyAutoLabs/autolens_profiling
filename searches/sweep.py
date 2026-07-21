@@ -56,6 +56,8 @@ _INSTRUMENT_SETS: dict[str, tuple[str, ...]] = {
     "interferometer": ("sma", "alma", "alma_high", "jvla"),
     "point_source": ("simple",),
     "datacube": ("sma",),
+    # group4 MGE simulator only ships an hst geometry today.
+    "group": ("hst",),
 }
 
 
@@ -74,6 +76,16 @@ CELLS: list[tuple[str, str, str]] = [
     # MAP optimizer — only the MGE cell, where a multi-start gradient optimizer
     # is meaningful and benchmark-proven (JAX-only).
     ("multi_start_adam", "imaging", "mge"),
+    # Group-scale benchmark (autolens_profiling#82): 4 lenses + 4 sources
+    # (~54 free params). Nautilus is the reference anchor; the MultiStart JAX
+    # gradient family — fixed-step + Prodigy auto-convergence — is the scaling
+    # test. Every cell scores truth recovery against dataset .../truth.json.
+    ("nautilus", "group", "mge"),
+    ("multi_start_adam", "group", "mge"),
+    ("multi_start_prodigy", "group", "mge"),
+    ("multi_start_prodigy_autoconv", "group", "mge"),
+    ("multi_start_lion", "group", "mge"),
+    ("multi_start_adabelief", "group", "mge"),
 ]
 
 

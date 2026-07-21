@@ -38,6 +38,8 @@ from _profile_cli import (  # noqa: E402
 )
 from searches._metrics import attach_viz_timer, collect_metrics  # noqa: E402
 from searches._samplers import (  # noqa: E402
+    _MULTI_START_AUTOCONV,
+    _MULTI_START_CLASSES,
     SAMPLER_BUILDERS,
     multi_start_settings,
     n_live_for,
@@ -47,7 +49,27 @@ from searches._samplers import (  # noqa: E402
 # Samplers that have an ``n_live`` (nested sampling). MAP optimizers such as
 # ``multi_start_adam`` do not, and record ``null`` rather than a misleading value.
 _SAMPLERS_WITH_N_LIVE = frozenset({"nautilus"})
+from searches._recovery import load_truth, recovery_report  # noqa: E402
 from searches._setup import build_for_cell, format_best_fit  # noqa: E402
+
+
+def _recovery_for_cell(dataset_class: str, instrument: str, best_instance) -> dict | None:
+    """Truth-recovery report for cells that ship a ``truth.json`` (group only).
+
+    Returns ``None`` for cells without a truth file (every non-group cell) or
+    when the best instance is unavailable, so the summary simply omits the block.
+    """
+    if dataset_class != "group" or best_instance is None:
+        return None
+    dataset_path = _WORKSPACE_ROOT / "dataset" / "imaging" / "group4_mge" / instrument
+    truth = load_truth(dataset_path)
+    if truth is None:
+        return None
+    try:
+        return recovery_report(best_instance, truth)
+    except Exception as exc:  # never let scoring kill a completed profile
+        return {"error": repr(exc)}
+
 
 _DEFAULT_INSTRUMENTS: dict[str, str] = {
     "imaging": "hst",
@@ -134,11 +156,20 @@ def run_search(
         viz_wall_s=viz_timer.total_s,
     )
 
+    best_instance = None
     try:
         best_instance = primary_result.max_log_likelihood_instance
         best_fit = format_best_fit(best_instance)
     except Exception as exc:
         best_fit = f"(unavailable: {exc!r})"
+
+    recovery = _recovery_for_cell(dataset_class, instrument, best_instance)
+    if recovery is not None:
+        print(
+            f"  Truth recovery:     overall_pass={recovery['overall_pass']} "
+            f"(max ER frac err {recovery['max_einstein_radius_frac_error']:.3f}, "
+            f'max centre err {recovery["max_centre_error_arcsec"]:.3f}")'
+        )
 
     summary = _build_summary(
         sampler=sampler,
@@ -153,6 +184,7 @@ def run_search(
         metrics=metrics,
         viz_n_calls=viz_timer.n_calls,
         best_fit=best_fit,
+        recovery=recovery,
     )
 
     _print_summary(summary, metrics)
@@ -194,9 +226,19 @@ def _sampler_config_dict(
             "force_x1_cpu": use_jax,
             "iterations_per_update": 3 * n_live,
         }
-    if sampler == "multi_start_adam":
-        # MAP optimizer: no n_live; records its own multi-start knobs.
-        return {**multi_start_settings(), "number_of_cores": 1}
+    if sampler in _MULTI_START_CLASSES:
+        # MAP optimizer: no n_live; records its own multi-start knobs, plus the
+        # auto-convergence early-stop criterion for the ``*_autoconv`` variants.
+        cfg = {**multi_start_settings(sampler), "number_of_cores": 1}
+        if sampler in _MULTI_START_AUTOCONV:
+            cfg["convergence"] = {
+                "check_for_convergence": True,
+                "window": 50,
+                "rtol": 1e-4,
+                "atol": 1e-3,
+                "min_steps": 100,
+            }
+        return cfg
     return {"n_live": n_live, "_note": f"unknown sampler {sampler!r}"}
 
 
@@ -225,8 +267,9 @@ def _build_summary(
     metrics: Any,
     viz_n_calls: int,
     best_fit: str,
+    recovery: dict | None = None,
 ) -> dict:
-    return {
+    summary = {
         "sampler": sampler,
         "dataset_class": dataset_class,
         "model": model_type,
@@ -256,6 +299,9 @@ def _build_summary(
             "time_per_eval_ms": metrics.time_per_eval_ms,
         },
     }
+    if recovery is not None:
+        summary["recovery"] = recovery
+    return summary
 
 
 def _print_summary(summary: dict, metrics: Any) -> None:

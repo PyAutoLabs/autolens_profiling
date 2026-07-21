@@ -38,6 +38,7 @@ from vram import vmap_batch_for  # noqa: E402
 # profiling row is comparable to a real source phase.
 _N_LIVE: dict[tuple[str, str], int] = {
     ("imaging", "mge"): 200,
+    ("group", "mge"): 200,
     ("imaging", "pixelization"): 150,
     ("imaging", "delaunay"): 150,
     ("interferometer", "mge"): 200,
@@ -122,7 +123,7 @@ def build_nautilus(
     )
 
 
-# MultiStartAdam profiling settings. Single-sourced here so the builder and the
+# MultiStart profiling settings. Single-sourced here so the builder and the
 # JSON config block (``_runner._sampler_config_dict``) record identical values.
 # These are illustrative profiling values, not the A100 scaling run (the
 # GIGA-Lens recipe uses hundreds of starts); ``n_starts=64`` is a representative
@@ -131,20 +132,51 @@ _MULTI_START_N_STARTS = 64
 _MULTI_START_N_STEPS = 300
 _MULTI_START_LEARNING_RATE = 0.01
 
+# The JAX / optax multi-start gradient MAP optimizers, keyed by profiling
+# sampler name -> the ``af`` search class. Every one runs ``n_starts`` broad
+# starts in parallel (its own ``jax.vmap``) and returns the best-basin point;
+# all are JAX-native and require ``use_jax=True`` (a pure-NumPy config raises).
+_MULTI_START_CLASSES: dict[str, type] = {
+    "multi_start_adam": af.MultiStartAdam,
+    "multi_start_prodigy": af.MultiStartProdigy,
+    "multi_start_prodigy_autoconv": af.MultiStartProdigy,
+    "multi_start_lion": af.MultiStartLion,
+    "multi_start_adabelief": af.MultiStartADABelief,
+}
 
-def multi_start_settings() -> dict:
-    """The knobs ``build_multi_start_adam`` constructs the search with.
+# Samplers that wrap their optimizer in ``af.MultiStartGradientConvergence`` so
+# each start early-stops when its figure-of-merit plateaus (vs the fixed
+# ``n_steps`` baseline). Prodigy is the recently-shipped auto-convergence cell.
+_MULTI_START_AUTOCONV: frozenset[str] = frozenset({"multi_start_prodigy_autoconv"})
 
-    Exposed so ``_sampler_config_dict`` records exactly what was run.
+# Prodigy self-tunes its learning rate, so it takes ``learning_rate=None``; the
+# fixed-rate optimizers (Adam / Lion / ADABelief) take an explicit rate.
+_PRODIGY_SAMPLERS: frozenset[str] = frozenset(
+    {"multi_start_prodigy", "multi_start_prodigy_autoconv"}
+)
+
+
+def _convergence() -> af.MultiStartGradientConvergence:
+    """The auto-convergence early-stop criterion for the ``*_autoconv`` cells."""
+    return af.MultiStartGradientConvergence(
+        check_for_convergence=True, window=50, rtol=1e-4, atol=1e-3, min_steps=100
+    )
+
+
+def multi_start_settings(sampler: str = "multi_start_adam") -> dict:
+    """The ``n_starts`` / ``n_steps`` / ``learning_rate`` knobs a MultiStart
+    builder constructs the search with.
+
+    Exposed so ``_sampler_config_dict`` records exactly what was run. Prodigy
+    variants omit ``learning_rate`` (they self-tune it).
     """
-    return {
-        "n_starts": _MULTI_START_N_STARTS,
-        "n_steps": _MULTI_START_N_STEPS,
-        "learning_rate": _MULTI_START_LEARNING_RATE,
-    }
+    settings = {"n_starts": _MULTI_START_N_STARTS, "n_steps": _MULTI_START_N_STEPS}
+    if sampler not in _PRODIGY_SAMPLERS:
+        settings["learning_rate"] = _MULTI_START_LEARNING_RATE
+    return settings
 
 
-def build_multi_start_adam(
+def build_multi_start(
     *,
     sampler: str,
     dataset_class: str,
@@ -152,32 +184,32 @@ def build_multi_start_adam(
     instrument: str,
     config_name: str,
     use_jax: bool,
-) -> af.MultiStartAdam:
-    """Construct a first-class ``af.MultiStartAdam`` search for one profiling cell.
+) -> af.NonLinearSearch:
+    """Construct a first-class MultiStart gradient MAP search for one cell.
 
-    ``MultiStartAdam`` is a JAX / ``optax`` multi-start first-order gradient MAP
-    optimizer: it runs ``n_starts`` broad starts in parallel (its own ``jax.vmap``)
-    and returns the best-basin point. Unlike ``af.Nautilus`` it:
+    Dispatches on ``sampler`` to the right ``af.MultiStart*`` class, attaching an
+    ``af.MultiStartGradientConvergence`` for the ``*_autoconv`` variants (early
+    stop) and leaving ``convergence=None`` (run the full ``n_steps``) otherwise.
 
-    - is JAX-native and **requires** a JAX-traceable analysis (``use_jax=True``);
-      a pure-NumPy config will raise. The sweep runs JAX-on by default.
-    - has no ``n_live`` (it uses ``n_starts`` / ``n_steps``), and
-    - does not use the ``use_jax_vmap`` / ``force_x1_cpu`` ``Fitness`` path — it
-      builds its own batched ``value_and_grad``.
-
-    ``number_of_cores=1`` is kept for consistency with the profile convention
-    (it is metadata here; the search runs a single-process vmap loop).
+    Unlike ``af.Nautilus`` these have no ``n_live`` and do not use the
+    ``use_jax_vmap`` / ``force_x1_cpu`` ``Fitness`` path — they build their own
+    batched ``value_and_grad``. ``number_of_cores=1`` is profile-convention
+    metadata (the search runs a single-process vmap loop).
     """
-    return af.MultiStartAdam(
+    cls = _MULTI_START_CLASSES[sampler]
+    kwargs: dict = dict(
         name=config_name,
         path_prefix=f"searches/{sampler}/{dataset_class}/{model_type}/{instrument}",
         number_of_cores=1,
-        **multi_start_settings(),
+        **multi_start_settings(sampler),
     )
+    if sampler in _MULTI_START_AUTOCONV:
+        kwargs["convergence"] = _convergence()
+    return cls(**kwargs)
 
 
 SamplerBuilder = Callable[..., af.NonLinearSearch]
 SAMPLER_BUILDERS: dict[str, SamplerBuilder] = {
     "nautilus": build_nautilus,
-    "multi_start_adam": build_multi_start_adam,
+    **{name: build_multi_start for name in _MULTI_START_CLASSES},
 }
