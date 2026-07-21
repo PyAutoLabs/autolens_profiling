@@ -296,27 +296,54 @@ Findings:
    fusion — XLA cannot share fused sub-graphs across differently-shaped factors,
    and welds them into one large `jit_call`. Trace and steady-state eval are
    unchanged (~62 s / 0.60 s), so this is a pure XLA fusion-*compilation* effect.
-   Extrapolating the superlinearity to a real 4-distinct-shape N-band graph
-   reproduces the observed **>1 h cold compile**.
+   **This alone is not the observed >1 h** — heterogeneity by itself tops out at
+   ~12 min here; see finding 4 for what closes the gap.
 3. **The persistent cache rescues both arms** (previously certified single-band
    only): warm compile is 2.4 s / 7.0 s — 50× and 101× — so the heterogeneous
    cliff is a **one-time, first-compile (cache-miss) cost per graph structure**;
    identical restarts warm from disk.
+4. **The dominant driver of the real >1 h is the multi-start transform + core
+   count, not heterogeneity.** Real fits use `MultiStartProdigy`, i.e.
+   `lax.map(value_and_grad, batch_size)` over the starts — a `vmap` of the whole
+   factor-graph fusion, `batch_size`-wide. On this **single-core** host
+   (`nproc=1`; XLA compiles on host CPUs, so one core is near worst-case) compile
+   scales steeply with start-width, on the *homogeneous* 4-band graph:
+
+   | transform | start-width | cold compile |
+   |---|---|---|
+   | `vag` | 1 | 120 s |
+   | `vmap_vag` | 2 | 209 s |
+   | `laxmap_vag` (MultiStartProdigy default: `batch_size` 4 / `n_batch` 16) | 4 × scan | **did not finish in 55 min** |
+
+   So the full production transform is intractable to compile cold on one core
+   even *before* heterogeneity is added; heterogeneity's 5.9× then stacks on top.
+   This reproduces the real >1 h and locates it in the transform × single-core
+   compile, with heterogeneity as an additional multiplier. On a multi-core /
+   A100 host the absolute numbers drop sharply (XLA parallelises compile across
+   cores) — the CPU figures here are worst-case, not representative of HPC runs.
 
 **Verdict / levers for N-band gradient fits:**
 
+- **The cache already amortizes the whole cold cost** — transform, heterogeneity
+  and all — for repeated fits of the same graph. Ensure `JAX_COMPILATION_CACHE_DIR`
+  is set (shipped default) and the graph structure is stable across runs; this is
+  the single biggest lever and it already ships.
+- **Compile on a multi-core / GPU host.** The 1-core figures above are worst-case;
+  XLA parallelises compilation across cores, so an HPC/A100 first-compile is far
+  cheaper. The most certain speed-up for a user hitting the >1 h wall is to run
+  the first (cache-populating) fit somewhere with more cores.
 - **Immediate user workaround — pad short-wavelength bands to a common grid** so
-  all factors share one shape. That collapses heterogeneous → homogeneous
-  (704 s → 120 s cold here) and lets XLA share the fusion. This is the
-  productizable lever with the largest, most certain payoff.
-- **The cache already amortizes the cold cost** for repeated fits of the same
-  band geometry — ensure `JAX_COMPILATION_CACHE_DIR` is set (shipped default) and
-  the graph structure is stable across runs.
+  all factors share one shape. That removes the heterogeneity multiplier
+  (704 s → 120 s cold here) but *not* the transform cost, so it helps most when
+  combined with the cache.
 - **Open (sub-investigation B):** whether a **per-factor jit boundary** inside
   `FactorGraphModel.log_likelihood_function` bounds the cold cost to
-  N×single-band + a linear combine, so heterogeneous N-band fits stop paying the
-  superlinear penalty even without padding. Not yet measured.
+  N×single-band + a linear combine — addressing both the heterogeneity multiplier
+  and, if the multi-start `vmap` can wrap the per-factor compiled units instead of
+  the whole graph, the transform blow-up. Not yet measured.
 
-Rows recorded in `results/local_cpu/mge.json` (tags `mb_{homo,hetero}_{cold,warm}`).
-A100 rows are the natural follow-up (the single-band A100 `vag` cold was ~28 s vs
-229 s CPU, so the absolute multi-band A100 cliff should be far lower).
+Rows recorded in `results/local_cpu/mge.json` (tags `mb_{homo,hetero}_{cold,warm}`,
+`mb_homo_vmap2_cold`). A100 / multi-core rows are the natural follow-up — the
+single-band A100 `vag` cold was ~28 s vs 229 s CPU, and the transform-width and
+heterogeneity blow-ups above should both shrink dramatically with more compile
+cores.

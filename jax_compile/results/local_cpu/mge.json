@@ -538,5 +538,25 @@
     "tag": "mb_hetero_warm",
     "hostname": "DESKTOP-H143S82",
     "timestamp": "2026-07-21T19:44:20"
+  },
+  {
+    "transform": "vmap_vag",
+    "trace_s": 139.371,
+    "compile_s": 209.261,
+    "first_s": 2.866,
+    "steady_s": 1.2609,
+    "dataset_class": "datacube_img",
+    "model_type": "mge",
+    "instrument": "hst",
+    "ndim": 15,
+    "n_batch": 2,
+    "batch_size": 4,
+    "hardware": "local_cpu",
+    "jax_version": "0.10.2",
+    "cache_dir": "/tmp/vm_homo2",
+    "mixed_precision": false,
+    "tag": "mb_homo_vmap2_cold",
+    "hostname": "DESKTOP-H143S82",
+    "timestamp": "2026-07-21T21:07:32"
   }
 ]
