@@ -558,5 +558,25 @@
     "tag": "mb_homo_vmap2_cold",
     "hostname": "DESKTOP-H143S82",
     "timestamp": "2026-07-21T21:07:32"
+  },
+  {
+    "transform": "pyloop_vag",
+    "trace_s": 111.58,
+    "compile_s": 166.006,
+    "first_s": 1.144,
+    "steady_s": 2.1902,
+    "dataset_class": "datacube_img",
+    "model_type": "mge",
+    "instrument": "hst",
+    "ndim": 15,
+    "n_batch": 4,
+    "batch_size": 1,
+    "hardware": "local_cpu",
+    "jax_version": "0.10.2",
+    "cache_dir": "/tmp/pyloop1",
+    "mixed_precision": false,
+    "tag": "mb_homo_pyloop_bs1_cold",
+    "hostname": "DESKTOP-H143S82",
+    "timestamp": "2026-07-21T21:52:11"
   }
 ]

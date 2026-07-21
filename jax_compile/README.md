@@ -321,6 +321,27 @@ Findings:
    compile, with heterogeneity as an additional multiplier. On a multi-core /
    A100 host the absolute numbers drop sharply (XLA parallelises compile across
    cores) — the CPU figures here are worst-case, not representative of HPC runs.
+5. **The `lax.map` *scan*, not the multi-start batching, is the compile killer —
+   and hoisting the loop out of XLA fixes it.** Holding vmap width fixed at 1 and
+   varying only *how* the starts are iterated:
+
+   | transform | multi-start loop | vmap width | cold compile |
+   |---|---|---|---|
+   | `pyloop_vag` | Python loop (batching hoisted out of XLA) | 1 | **166 s** |
+   | `laxmap_vag` | in-XLA `lax.map` (scan) | 1 | **did not finish in >30 min** |
+
+   Same graph, same vmap width — 166 s vs intractable. Compiling a `lax.map`
+   scan whose body is a `value_and_grad` of the multi-band fusion is what
+   explodes; iterating the starts in Python over small `vmap` chunks (the
+   `pyloop` pattern) keeps cold compile at single-fit cost. **Clean re-confirm
+   (fresh cache, 10 GB free): the `laxmap bs=1` compile was OOM-killed** (dmesg
+   `Out of memory: Killed … anon-rss 6.0 GB`) — so the `lax.map` scan path is
+   *memory-explosive to compile* here, not merely slow, whereas `pyloop`
+   compiled at modest memory. This is the concrete `MultiStartProdigy` source
+   lever — the "candidate `laxmap_vag` replacement" `probe.py` was built to test.
+   (The scan's compile-memory blow-up may be host/jax-version specific; a
+   multi-core / larger-RAM host might compile it slowly rather than OOM — but the
+   `pyloop` path sidesteps it regardless.)
 
 **Verdict / levers for N-band gradient fits:**
 
@@ -332,18 +353,23 @@ Findings:
   XLA parallelises compilation across cores, so an HPC/A100 first-compile is far
   cheaper. The most certain speed-up for a user hitting the >1 h wall is to run
   the first (cache-populating) fit somewhere with more cores.
+- **Python-loop multi-start batching in `MultiStartProdigy` (the leading source
+  lever).** Finding 5: replacing the in-XLA `lax.map` scan with a Python loop over
+  small `vmap` chunks keeps cold compile at single-fit cost (166 s vs intractable).
+  `batch_size` becomes a compile/throughput tunable — small on CPU, wider on GPU —
+  with the outer loop in Python so no scan is compiled. Concrete, validated (pending
+  the clean re-confirm), and the biggest attack on the dominant driver.
 - **Immediate user workaround — pad short-wavelength bands to a common grid** so
   all factors share one shape. That removes the heterogeneity multiplier
   (704 s → 120 s cold here) but *not* the transform cost, so it helps most when
   combined with the cache.
-- **Open (sub-investigation B):** whether a **per-factor jit boundary** inside
-  `FactorGraphModel.log_likelihood_function` bounds the cold cost to
-  N×single-band + a linear combine — addressing both the heterogeneity multiplier
-  and, if the multi-start `vmap` can wrap the per-factor compiled units instead of
-  the whole graph, the transform blow-up. Not yet measured.
+- **Open (sub-investigation B, secondary):** whether a **per-factor jit boundary**
+  inside `FactorGraphModel.log_likelihood_function` additionally bounds the cold
+  cost to N×single-band + a linear combine (attacking the heterogeneity multiplier
+  at its source). Not yet measured.
 
 Rows recorded in `results/local_cpu/mge.json` (tags `mb_{homo,hetero}_{cold,warm}`,
-`mb_homo_vmap2_cold`). A100 / multi-core rows are the natural follow-up — the
+`mb_homo_vmap2_cold`, `mb_homo_pyloop_bs1_cold`). A100 / multi-core rows are the natural follow-up — the
 single-band A100 `vag` cold was ~28 s vs 229 s CPU, and the transform-width and
 heterogeneity blow-ups above should both shrink dramatically with more compile
 cores.
