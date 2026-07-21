@@ -63,6 +63,15 @@ _DATACUBE_N_CHANNELS: int = (
     4  # matches the "quick iteration" value in likelihood_runtime/datacube/delaunay.py
 )
 
+# Multi-band imaging datacube channel presets (compile-time A/B, issue: multi-band
+# FactorGraphModel value_and_grad cold compile). Both arms use 4 channels so the
+# only variable is per-band shape:
+#   homogeneous  -> all jwst (0.03 arcsec/px) -> identical masked-pixel counts
+#   heterogeneous-> 2x jwst (0.03) + 2x jwst_lw (0.06) -> two distinct shapes,
+#                   mirroring JWST F115W/F150W vs F277W/F444W.
+_DATACUBE_IMG_HOMO: list[str] = ["jwst", "jwst", "jwst", "jwst"]
+_DATACUBE_IMG_HETERO: list[str] = ["jwst", "jwst", "jwst_lw", "jwst_lw"]
+
 
 # -----------------------------------------------------------------------------
 # Top-level dispatcher
@@ -92,6 +101,19 @@ def build_for_cell(
         return _build_for_datacube(
             model_type=model_type,
             instrument=instrument,
+            use_jax=use_jax,
+            use_mixed_precision=use_mixed_precision,
+        )
+
+    if dataset_class in ("datacube_img", "datacube_img_hetero"):
+        # ``instrument`` is ignored here — the channels come from the fixed
+        # multi-band presets; the dataset_class selects homogeneous vs mixed.
+        instruments = (
+            _DATACUBE_IMG_HETERO if dataset_class == "datacube_img_hetero" else _DATACUBE_IMG_HOMO
+        )
+        return _build_for_datacube_imaging(
+            model_type=model_type,
+            instruments=instruments,
             use_jax=use_jax,
             use_mixed_precision=use_mixed_precision,
         )
@@ -159,6 +181,58 @@ def _build_for_datacube(
     # One AnalysisFactor per channel, each with its own copy of the model so
     # PyAutoFit's factor graph treats them as independent likelihood factors
     # sharing the same global parameters.
+    analysis_factor_list = [
+        af.AnalysisFactor(prior_model=model.copy(), analysis=analysis) for analysis in analysis_list
+    ]
+    factor_graph = af.FactorGraphModel(*analysis_factor_list, use_jax=use_jax)
+    return dataset_list, factor_graph.global_prior_model, factor_graph
+
+
+def _build_for_datacube_imaging(
+    *,
+    model_type: str,
+    instruments: list[str],
+    use_jax: bool,
+    use_mixed_precision: bool,
+) -> tuple[list, Any, Any]:
+    """Multi-band imaging datacube fit via ``af.FactorGraphModel``.
+
+    Unlike ``_build_for_datacube`` (identical interferometer channels), each
+    channel is an ``al.Imaging`` dataset built from a possibly *different*
+    instrument preset, so the per-band masked-pixel count varies whenever the
+    ``instruments`` list mixes pixel scales (jwst 0.03 + jwst_lw 0.06). This is
+    the multi-wavelength JWST reproducer (F115W/F150W vs F277W/F444W): it lets
+    the compile-time probe measure whether heterogeneous per-factor shapes stop
+    XLA sharing fused sub-graphs across the factors.
+
+    A homogeneous ``instruments`` list (all one preset) is the control arm; a
+    mixed list is the heterogeneous arm. The model is defined in arcsec units
+    (``mask_radius`` is instrument-independent at 3.5), so a single shared model
+    is copied into each ``AnalysisFactor`` and the factors share global
+    parameters — the only cross-factor difference is data shape.
+    """
+    mask_radius = _mask_radius_for("imaging", instruments[0])
+    model = _build_model("imaging", model_type, mask_radius=mask_radius)
+
+    dataset_list: list = []
+    analysis_list: list = []
+    for instrument in instruments:
+        dataset, dataset_path = _build_imaging(instrument)
+        adapt_images = _adapt_images_for(
+            "imaging", model_type, dataset_path=dataset_path, dataset=dataset
+        )
+        analysis_list.append(
+            _build_analysis(
+                dataset_class="imaging",
+                model_type=model_type,
+                dataset=dataset,
+                use_jax=use_jax,
+                use_mixed_precision=use_mixed_precision,
+                adapt_images=adapt_images,
+            )
+        )
+        dataset_list.append(dataset)
+
     analysis_factor_list = [
         af.AnalysisFactor(prior_model=model.copy(), analysis=analysis) for analysis in analysis_list
     ]

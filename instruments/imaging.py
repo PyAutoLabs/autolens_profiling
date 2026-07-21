@@ -48,6 +48,18 @@ INSTRUMENTS: dict[str, dict] = {
         "psf_sigma": 0.03,
         "seed": 1,
     },
+    # JWST long-wavelength channel (F277W/F444W): 0.06 arcsec/px, half the
+    # short-wavelength (F115W/F150W) sampling. Paired with ``jwst`` (0.03) it
+    # gives the two distinct masked-pixel counts the multi-band datacube A/B
+    # needs to test whether heterogeneous per-band shapes block XLA fusion
+    # sharing across FactorGraphModel factors (see searches/_setup.py).
+    "jwst_lw": {
+        "pixel_scale": 0.06,
+        "mask_radius": 3.5,
+        "psf_shape": (21, 21),
+        "psf_sigma": 0.06,
+        "seed": 1,
+    },
     "ao": {
         "pixel_scale": 0.01,
         "mask_radius": 3.5,

@@ -260,3 +260,63 @@ table as the reference):**
 every point in the lifecycle. Any further reduction would come from upstream
 JAX (tracing speed, compile speed), not from this stack — no further
 engineering is warranted here. The compile-time arc (#71 → #74 → #77) is done.
+
+## Multi-band `FactorGraphModel` `value_and_grad` — the heterogeneous-shape cliff
+
+The #71 → #77 census measured **single-band** cells only. Real multi-wavelength
+fits build an `af.FactorGraphModel` with one `AnalysisFactor` per band, and the
+bands have **different pixel scales** (e.g. JWST F115W/F150W at 0.03 arcsec/px vs
+F277W/F444W at 0.06 arcsec/px) — so the factors carry **different masked-pixel
+counts**. This section bounds the cold `vag` compile of that graph.
+
+Reproduce via the imaging-datacube cells added to `searches/_setup.py`
+(`datacube_img` = 4 identical `jwst` 0.03″ channels; `datacube_img_hetero` =
+2×`jwst` 0.03″ + 2×`jwst_lw` 0.06″, two distinct shapes):
+
+```bash
+python jax_compile/probe.py --dataset-class datacube_img        --model-type mge --transforms vag --cache-dir /tmp/c_homo
+python jax_compile/probe.py --dataset-class datacube_img_hetero --model-type mge --transforms vag --cache-dir /tmp/c_het
+```
+
+**Local CPU, MGE `vag`, 4-band factor graph (ndim 15):**
+
+| arm | distinct shapes | cold compile | warm compile | trace | steady eval |
+|---|---|---|---|---|---|
+| `datacube_img` (homogeneous) | 1 | **120.0 s** | 2.4 s | ~70 s | 0.46 s |
+| `datacube_img_hetero` (heterogeneous) | 2 | **704.4 s** | 7.0 s | ~62 s | 0.60 s |
+
+Findings:
+
+1. **Same-shape N-band compile ≈ single-band compile.** Four identical-shape
+   factors cost 120 s — the single-band `mge / vag` figure (117 s). XLA fuses the
+   identical factors into **one shared kernel**; the factor graph adds no compile
+   cost when band shapes match.
+2. **Heterogeneous shapes are a 5.9× cold-compile cliff, and superlinear in the
+   number of distinct shapes.** Two distinct shapes cost ~6× (not 2×) a single
+   fusion — XLA cannot share fused sub-graphs across differently-shaped factors,
+   and welds them into one large `jit_call`. Trace and steady-state eval are
+   unchanged (~62 s / 0.60 s), so this is a pure XLA fusion-*compilation* effect.
+   Extrapolating the superlinearity to a real 4-distinct-shape N-band graph
+   reproduces the observed **>1 h cold compile**.
+3. **The persistent cache rescues both arms** (previously certified single-band
+   only): warm compile is 2.4 s / 7.0 s — 50× and 101× — so the heterogeneous
+   cliff is a **one-time, first-compile (cache-miss) cost per graph structure**;
+   identical restarts warm from disk.
+
+**Verdict / levers for N-band gradient fits:**
+
+- **Immediate user workaround — pad short-wavelength bands to a common grid** so
+  all factors share one shape. That collapses heterogeneous → homogeneous
+  (704 s → 120 s cold here) and lets XLA share the fusion. This is the
+  productizable lever with the largest, most certain payoff.
+- **The cache already amortizes the cold cost** for repeated fits of the same
+  band geometry — ensure `JAX_COMPILATION_CACHE_DIR` is set (shipped default) and
+  the graph structure is stable across runs.
+- **Open (sub-investigation B):** whether a **per-factor jit boundary** inside
+  `FactorGraphModel.log_likelihood_function` bounds the cold cost to
+  N×single-band + a linear combine, so heterogeneous N-band fits stop paying the
+  superlinear penalty even without padding. Not yet measured.
+
+Rows recorded in `results/local_cpu/mge.json` (tags `mb_{homo,hetero}_{cold,warm}`).
+A100 rows are the natural follow-up (the single-band A100 `vag` cold was ~28 s vs
+229 s CPU, so the absolute multi-band A100 cliff should be far lower).
