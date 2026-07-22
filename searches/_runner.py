@@ -236,6 +236,8 @@ def _sampler_config_dict(
         # MAP optimizer: no n_live; records its own multi-start knobs, plus the
         # auto-convergence early-stop criterion for the ``*_autoconv`` variants.
         cfg = {**multi_start_settings(sampler, dataset_class), "number_of_cores": 1}
+        # Recorded for BOTH arms: the fixed-step cells explicitly disable
+        # checking (leaving it unset would silently enable it, see _samplers).
         if sampler in _MULTI_START_AUTOCONV:
             cfg["convergence"] = {
                 "check_for_convergence": True,
@@ -244,6 +246,8 @@ def _sampler_config_dict(
                 "atol": 1e-3,
                 "min_steps": 100,
             }
+        else:
+            cfg["convergence"] = {"check_for_convergence": False}
         return cfg
     return {"n_live": n_live, "_note": f"unknown sampler {sampler!r}"}
 
