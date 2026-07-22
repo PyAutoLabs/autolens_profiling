@@ -19,6 +19,7 @@ Delaunay matches imaging Delaunay at 150.
 
 from __future__ import annotations
 
+import os
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -132,6 +133,25 @@ _MULTI_START_N_STARTS = 64
 _MULTI_START_N_STEPS = 300
 _MULTI_START_LEARNING_RATE = 0.01
 
+# Per-dataset-class ``n_starts`` overrides, driven by VRAM. Each start is a
+# vmap replica of the whole likelihood, so the group cell (4 lenses + 4 sources
+# = 54 params, 8 MGE bases through one inversion) has a much larger replica than
+# the single-lens cell. Measured: 64 starts requests a single 4.71 GiB
+# allocation and OOMs a 6 GB laptop GPU (RTX 2060, capped at 50%). An A100
+# (80 GB) runs the full 64 comfortably — so this is a *local* accommodation,
+# not a statement about the method. ``SEARCHES_N_STARTS`` overrides either way
+# (set it back to 64 for the A100 rows).
+_MULTI_START_N_STARTS_BY_CELL: dict[str, int] = {"group": 16}
+
+
+def multi_start_n_starts(dataset_class: str | None = None) -> int:
+    """Resolve ``n_starts`` for a cell, honouring ``SEARCHES_N_STARTS``."""
+    override = os.environ.get("SEARCHES_N_STARTS")
+    if override:
+        return int(override)
+    return _MULTI_START_N_STARTS_BY_CELL.get(dataset_class, _MULTI_START_N_STARTS)
+
+
 # The JAX / optax multi-start gradient MAP optimizers, keyed by profiling
 # sampler name -> the ``af`` search class. Every one runs ``n_starts`` broad
 # starts in parallel (its own ``jax.vmap``) and returns the best-basin point;
@@ -163,14 +183,20 @@ def _convergence() -> af.MultiStartGradientConvergence:
     )
 
 
-def multi_start_settings(sampler: str = "multi_start_adam") -> dict:
+def multi_start_settings(
+    sampler: str = "multi_start_adam", dataset_class: str | None = None
+) -> dict:
     """The ``n_starts`` / ``n_steps`` / ``learning_rate`` knobs a MultiStart
     builder constructs the search with.
 
     Exposed so ``_sampler_config_dict`` records exactly what was run. Prodigy
-    variants omit ``learning_rate`` (they self-tune it).
+    variants omit ``learning_rate`` (they self-tune it). ``n_starts`` is
+    per-cell (see ``multi_start_n_starts``).
     """
-    settings = {"n_starts": _MULTI_START_N_STARTS, "n_steps": _MULTI_START_N_STEPS}
+    settings = {
+        "n_starts": multi_start_n_starts(dataset_class),
+        "n_steps": _MULTI_START_N_STEPS,
+    }
     if sampler not in _PRODIGY_SAMPLERS:
         settings["learning_rate"] = _MULTI_START_LEARNING_RATE
     return settings
@@ -201,7 +227,7 @@ def build_multi_start(
         name=config_name,
         path_prefix=f"searches/{sampler}/{dataset_class}/{model_type}/{instrument}",
         number_of_cores=1,
-        **multi_start_settings(sampler),
+        **multi_start_settings(sampler, dataset_class),
     )
     if sampler in _MULTI_START_AUTOCONV:
         kwargs["convergence"] = _convergence()

@@ -136,8 +136,13 @@ def run_search(
     )
 
     # Capture visualization wall-time across the full fit (pre-fit + every
-    # update + search-side plot_results).
-    viz_timer = attach_viz_timer(analysis, search)
+    # update + search-side plot_results). SEARCHES_DISABLE_VIZ=1 replaces the
+    # hooks with no-ops instead — see attach_viz_timer's docstring (the group
+    # cell's 8-galaxy pre-fit visualization costs ~1h before step 0).
+    disable_viz = os.environ.get("SEARCHES_DISABLE_VIZ") == "1"
+    if disable_viz:
+        print("  Visualization DISABLED (SEARCHES_DISABLE_VIZ=1) — viz_wall_s not measured.")
+    viz_timer = attach_viz_timer(analysis, search, disable=disable_viz)
 
     print("  Running search.fit() ...")
     t0 = time.time()
@@ -185,6 +190,7 @@ def run_search(
         viz_n_calls=viz_timer.n_calls,
         best_fit=best_fit,
         recovery=recovery,
+        viz_disabled=disable_viz,
     )
 
     _print_summary(summary, metrics)
@@ -229,7 +235,7 @@ def _sampler_config_dict(
     if sampler in _MULTI_START_CLASSES:
         # MAP optimizer: no n_live; records its own multi-start knobs, plus the
         # auto-convergence early-stop criterion for the ``*_autoconv`` variants.
-        cfg = {**multi_start_settings(sampler), "number_of_cores": 1}
+        cfg = {**multi_start_settings(sampler, dataset_class), "number_of_cores": 1}
         if sampler in _MULTI_START_AUTOCONV:
             cfg["convergence"] = {
                 "check_for_convergence": True,
@@ -268,6 +274,7 @@ def _build_summary(
     viz_n_calls: int,
     best_fit: str,
     recovery: dict | None = None,
+    viz_disabled: bool = False,
 ) -> dict:
     summary = {
         "sampler": sampler,
@@ -294,6 +301,7 @@ def _build_summary(
             "total_wall_s": metrics.total_wall_s,
             "viz_wall_s": metrics.viz_wall_s,
             "viz_n_calls": viz_n_calls,
+            "viz_disabled": viz_disabled,
             "sampler_wall_s": metrics.sampler_wall_s,
             "likelihood_evals": metrics.likelihood_evals,
             "time_per_eval_ms": metrics.time_per_eval_ms,
