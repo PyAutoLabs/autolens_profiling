@@ -49,11 +49,14 @@ sys.path.insert(0, str(_profiling_root()))
 from instruments.interferometer import INSTRUMENTS  # noqa: E402
 
 try:
-    from _profile_cli import device_info_dict
+    from _profile_cli import auto_simulate_if_missing, device_info_dict
 except ImportError:
 
     def device_info_dict():
         return {"backend": "unknown"}
+
+    def auto_simulate_if_missing(*args, **kwargs):
+        return None
 
 
 import argparse  # noqa: E402
@@ -107,6 +110,13 @@ print(f"  dataset: {dataset_path}")
 print(f"  repeats: {n_repeats}")
 print(f"  MGE source gaussians: {total_gaussians}")
 print()
+
+auto_simulate_if_missing(
+    dataset_path,
+    dataset_type="interferometer",
+    instrument=instrument,
+    workspace_root=workspace_root,
+)
 
 dataset = al.Interferometer.from_fits(
     data_path=dataset_path / "data.fits",

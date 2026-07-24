@@ -48,11 +48,14 @@ from autonerves.dictable import from_dict  # noqa: E402
 sys.path.insert(0, str(_profiling_root()))
 
 try:
-    from _profile_cli import device_info_dict
+    from _profile_cli import auto_simulate_if_missing, device_info_dict
 except ImportError:
 
     def device_info_dict():
         return {"backend": "unknown"}
+
+    def auto_simulate_if_missing(*args, **kwargs):
+        return None
 
 
 class Timer:
@@ -88,6 +91,13 @@ print("Quick-update profiling: point source")
 print(f"  dataset: {dataset_path}")
 print(f"  repeats: {n_repeats}")
 print()
+
+auto_simulate_if_missing(
+    dataset_path,
+    dataset_type="point_source",
+    instrument="simple",
+    workspace_root=workspace_root,
+)
 
 # Load dataset
 point_dataset = from_dict(
