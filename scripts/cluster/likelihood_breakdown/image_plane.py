@@ -173,7 +173,7 @@ main_lens_params = [
 main_lens_galaxies = [
     al.Galaxy(
         redshift=redshift_lens,
-        mass=al.mp.dPIEMassSph(centre=centre, ra=ra, rs=rs, b0=b0),
+        mass=al.mp.dPIEMassB0Sph(centre=centre, ra=ra, rs=rs, b0=b0),
     )
     for centre, ra, rs, b0 in main_lens_params
 ]
@@ -184,7 +184,7 @@ _lum_ref = max(scaling_table.luminosities)
 scaling_galaxies = [
     al.Galaxy(
         redshift=redshift_lens,
-        mass=al.mp.dPIEMassSph(
+        mass=al.mp.dPIEMassB0Sph(
             centre=tuple(centre),
             ra=SCALING_RA,
             rs=SCALING_RS_REF * (lum / _lum_ref) ** SCALING_EXPONENT,
@@ -250,7 +250,7 @@ _registration_model = af.Collection(
         af.Model(
             al.Galaxy,
             redshift=redshift_lens,
-            mass=af.Model(al.mp.dPIEMassSph, centre=(0.0, 0.0), ra=1.0, rs=10.0, b0=1.0),
+            mass=af.Model(al.mp.dPIEMassB0Sph, centre=(0.0, 0.0), ra=1.0, rs=10.0, b0=1.0),
         ),
         af.Model(
             al.Galaxy,

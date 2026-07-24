@@ -204,7 +204,7 @@ with timer.section("setup_galaxies"):
             effective_radius=effective_radius,
             sersic_index=sersic_index,
         )
-        mass = al.mp.dPIEMassSph(centre=centre, ra=ra, rs=rs, b0=b0)
+        mass = al.mp.dPIEMassB0Sph(centre=centre, ra=ra, rs=rs, b0=b0)
         main_lens_galaxies.append(al.Galaxy(redshift=redshift_lens, bulge=bulge, mass=mass))
 
     host_halo = al.mp.NFWMCRLudlowSph(
@@ -237,7 +237,7 @@ with timer.section("setup_galaxies"):
                 bulge=al.lp.SersicSph(
                     centre=centre, intensity=luminosity, effective_radius=0.8, sersic_index=3.0
                 ),
-                mass=al.mp.dPIEMassSph(
+                mass=al.mp.dPIEMassB0Sph(
                     centre=centre,
                     ra=SCALING_RA,
                     rs=SCALING_RS_REF * ratio**SCALING_EXPONENT,
@@ -269,7 +269,7 @@ with timer.section("register_pytrees"):
                 sersic_index=g.bulge.sersic_index,
             ),
             mass=af.Model(
-                al.mp.dPIEMassSph,
+                al.mp.dPIEMassB0Sph,
                 centre=g.mass.centre,
                 ra=g.mass.ra,
                 rs=g.mass.rs,
