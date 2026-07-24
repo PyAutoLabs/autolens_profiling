@@ -8,9 +8,9 @@
 #   1. probe_pdip.py on the REAL extracted rect/Delaunay HST systems
 #      (rsynced .npz) — PDIP iteration counts, tolerance ladder, per-
 #      iteration Cholesky cost and the vmap max-lane effect, on-GPU.
-#   2. likelihood_breakdown/imaging/pixelization.py — A100 per-step shares
+#   2. scripts/imaging/likelihood_breakdown/pixelization.py — A100 per-step shares
 #      of the rect pixelization+MGE eval (the NNLS share headline number).
-#   3. likelihood_breakdown/imaging/delaunay.py — same for Delaunay; also
+#   3. scripts/imaging/likelihood_breakdown/delaunay.py — same for Delaunay; also
 #      clears the outstanding "A100 re-profile post-#368" item from the
 #      Delaunay callback review (PyAutoArray#367).
 
@@ -50,10 +50,10 @@ run_step python3 scratch/nnls_speedup/probe_pdip.py --mesh rectangular \
 run_step python3 scratch/nnls_speedup/probe_pdip.py --mesh delaunay \
     2>&1 | tee scratch/nnls_speedup/probe_delaunay_a100.log
 
-run_step python3 likelihood_breakdown/imaging/pixelization.py \
+run_step python3 scripts/imaging/likelihood_breakdown/pixelization.py \
     --output-dir scratch/nnls_speedup/a100 \
     2>&1 | tee scratch/nnls_speedup/rect_breakdown_a100.log
-run_step python3 likelihood_breakdown/imaging/delaunay.py \
+run_step python3 scripts/imaging/likelihood_breakdown/delaunay.py \
     --output-dir scratch/nnls_speedup/a100 \
     2>&1 | tee scratch/nnls_speedup/delaunay_breakdown_a100.log
 

@@ -12,7 +12,7 @@
 # Usage (inside a SLURM submit or interactive shell):
 #
 #     source /mnt/ral/jnightin/autolens_profiling/activate.sh
-#     python3 searches/nautilus/imaging/mge.py ...
+#     python3 scripts/imaging/searches/nautilus/mge.py ...
 
 BASE=/mnt/ral/jnightin/PyAuto
 

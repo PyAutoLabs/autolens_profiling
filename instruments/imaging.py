@@ -5,9 +5,9 @@ configuration across `autolens_profiling`. Consumed by:
 
 - ``simulators/imaging.py`` (re-exports ``INSTRUMENTS`` and uses every field
   to drive the simulator).
-- ``likelihood_runtime/imaging/{delaunay,mge,pixelization}.py`` (read
+- ``scripts/imaging/likelihood_runtime/{delaunay,mge,pixelization}.py`` (read
   ``pixel_scale`` and ``mask_radius`` to set up the dataset for profiling).
-- ``likelihood_breakdown/imaging/*.py`` (same as above).
+- ``scripts/imaging/likelihood_breakdown/*.py`` (same as above).
 - ``vram/config.py`` (uses instrument keys to index the vmap batch_size
   table — only the keys are referenced there, not the field values).
 

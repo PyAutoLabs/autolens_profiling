@@ -5,10 +5,10 @@ configuration. Consumed by:
 
 - ``simulators/interferometer.py`` (re-exports ``INSTRUMENTS`` and uses every
   field to drive the simulator + the lensed-source NUFFT transformer).
-- ``likelihood_runtime/interferometer/{delaunay,mge,pixelization}.py`` (read
+- ``scripts/interferometer/likelihood_runtime/{delaunay,mge,pixelization}.py`` (read
   ``pixel_scale``, ``real_space_shape``, ``mask_radius``, ``transformer_chunk_size``).
-- ``likelihood_runtime/datacube/delaunay.py`` (same as above; per-channel).
-- ``likelihood_breakdown/interferometer/*.py`` (same).
+- ``scripts/interferometer/likelihood_runtime/datacube/delaunay.py`` (same as above; per-channel).
+- ``scripts/interferometer/likelihood_breakdown/*.py`` (same).
 - ``vram/config.py`` (uses instrument keys to index the vmap batch_size table).
 
 Each preset's fields:

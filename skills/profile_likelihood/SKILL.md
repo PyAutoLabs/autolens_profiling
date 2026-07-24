@@ -59,7 +59,7 @@ GPU/HPC availability, the PyAutoGPU venv ordering, and the canonical reference).
 4. **Plan + worktree** — run `$start-dev` (`/start_dev` in Claude); worktree
    `autolens_workspace_developer` on `feature/<likelihood_type>-profiling-a100`.
 5. **Local sweep** — 4 configs (GPU/CPU × fp64/mp); spot-check `device.backend`.
-6. **HPC sweep** — A100 fp64 + mp via `hpc/sync`, then consolidate.
+6. **HPC sweep** — A100 fp64 + mp via `sbatch hpc/batch_gpu/submit_*`, then consolidate.
 7. **Aggregate** — write `comparison.{json,png}`; sanity-check the magnitudes.
 8. **Commit + PR** — stage only the new profiling scripts and the new results
    subdir; open the PR with the timings table + key findings.

@@ -9,22 +9,39 @@ overview (vision, latest run-times, roadmap); this file is the operational guide
 
 ## Repository Structure
 
+Scripts are laid out **dataset-first, task-second** (`scripts/<dataset>/<task>/<model>.py`),
+mirroring the `autolens_workspace*` taxonomy:
+
 ```
-likelihood_runtime/     Full-pipeline JIT runtime, driven by sweep.py across CPU/GPU/A100 × fp64/mp
-                        (per-cell scripts under <class>/<model>.py import the shared _profile_cli helper)
-likelihood_breakdown/   Per-step JIT decomposition of a single likelihood config
-vram/                   GPU memory-usage profiling + the per-cell A100 vmap batch-size table
+scripts/
+  <dataset>/            imaging/ interferometer/ point_source/ multi/ cluster/ — one folder per
+                        PyAutoLens dataset family. Group-scale cells live under cluster/; the
+                        interferometer datacube cells nest under interferometer/<task>/datacube/.
+    likelihood_runtime/   Full-pipeline JIT runtime per cell (<model>.py; driven by the sweep driver)
+    likelihood_breakdown/ Per-step JIT decomposition of a single likelihood config
+    searches/<sampler>/   Sampler / search profiling (Nautilus first)
+    latent/               Latent-variable profiling
+    quick_update/         Fast incremental re-profiling helpers (unversioned scratch tier)
+  misc/                 Dataset-agnostic material + each task's shared drivers / framework / README:
+                        misc/likelihood_runtime/ (sweep.py + aggregate.py + README dashboard),
+                        misc/searches/ (framework _*.py + sweep/aggregate), misc/vram/ (A100 vmap
+                        batch-size table), misc/simulators/, misc/latent/, misc/jax_compile/,
+                        misc/pipeline_resume/, misc/test/, misc/tooling/ (build_readme.py +
+                        build_baseline.py)
+_profile_cli.py         Shared CLI/JSON/auto-simulate helper imported by every per-cell script
+_adapt_image_util.py    Shared adapt-image helper
 instruments/            Instrument definitions (pixel scale, shape) used to frame results
-searches/               Sampler / search profiling (Nautilus first)
-simulators/             Run-time tracking for the PyAutoLens simulators
-latent/                 Latent-variable profiling
-quick_update/           Fast incremental re-profiling helpers (unversioned scratch tier)
 hpc/                    SLURM submit scripts for the RAL HPC (A100 rows of the sweep matrix)
-scripts/                Repo tooling (build_readme.py dashboard generator)
 results/                JSON + PNG artifacts: versioned summaries, sweep comparisons, named
                         baselines (results/README.md defines the shapes; sweeps default here)
 config/ dataset/ output/   Config, input data, runtime output
 ```
+
+**Import model.** Leaves sit several levels below the repo root, so each finds the root by walking
+up to the directory containing `ruff.toml` (a depth-proof sentinel) and puts both the **repo root**
+and **`scripts/misc/`** on `sys.path`. That keeps the shared libraries importable by their
+top-level names with no per-file path math: `_profile_cli` / `_adapt_image_util` / `instruments`
+(repo root) and `vram` / `simulators` / `searches` (under `scripts/misc/`).
 
 ## Running Profiles
 
@@ -33,7 +50,7 @@ under `results/` whose version string matches the PyAutoLens release that produc
 trends stay inspectable across releases. A script auto-simulates its dataset if missing.
 
 ```bash
-python3 likelihood/imaging/mge.py --config-name hst --use-mixed-precision
+python3 scripts/imaging/likelihood_runtime/mge.py --config-name hst --use-mixed-precision
 ```
 
 `_profile_cli.py` is the **shared helper module** imported by the likelihood scripts (not a runnable
@@ -61,7 +78,7 @@ ruff check .
 ruff format --check .
 ```
 
-The same job also runs `scripts/build_readme.py --check` (dashboard idempotence), a `lychee`
+The same job also runs `scripts/misc/tooling/build_readme.py --check` (dashboard idempotence), a `lychee`
 markdown link-rot check over the `README.md` files, and a per-section **smoke** that imports one
 script from each area under `AUTOLENS_PROFILING_SMOKE=1` (catches import-graph breakage without
 running a full profile). None of these produce result artifacts.
@@ -75,7 +92,7 @@ and is noisy; releases are the natural cadence).
 If `numba` or `matplotlib` cannot write to the default cache locations, point them at writable dirs:
 
 ```bash
-NUMBA_CACHE_DIR=/tmp/numba_cache MPLCONFIGDIR=/tmp/matplotlib python3 likelihood/imaging/mge.py
+NUMBA_CACHE_DIR=/tmp/numba_cache MPLCONFIGDIR=/tmp/matplotlib python3 scripts/imaging/likelihood_runtime/mge.py
 ```
 
 ## Bulk-edit safety

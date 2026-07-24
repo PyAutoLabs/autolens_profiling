@@ -223,8 +223,8 @@ def auto_simulate_if_missing(
 ) -> None:
     """If the dataset is missing, invoke the matching simulator script.
 
-    ``dataset_type`` maps to ``simulators/<dataset_type>.py`` (one of
-    ``imaging``, ``interferometer``, ``point_source``). The simulator is
+    ``dataset_type`` maps to ``scripts/misc/simulators/<dataset_type>.py``
+    (imaging / interferometer / point_source / cluster / …). The simulator is
     invoked via subprocess with ``--instrument <instrument>``, so both the
     likelihood-fit dataset and a versioned simulator-profiling JSON+PNG
     land at the right path in one shot.
@@ -241,17 +241,17 @@ def auto_simulate_if_missing(
     if not al.util.dataset.should_simulate(str(dataset_path)):
         return
 
-    simulator_script = workspace_root / "simulators" / f"{dataset_type}.py"
+    simulator_script = workspace_root / "scripts" / "misc" / "simulators" / f"{dataset_type}.py"
     if not simulator_script.exists():
         raise FileNotFoundError(
             f"Auto-simulate could not find simulator script at {simulator_script}. "
-            f"Expected one of imaging.py / interferometer.py / point_source.py "
-            f"under simulators/."
+            f"Expected <dataset_type>.py (imaging / interferometer / point_source / cluster / …) "
+            f"under scripts/misc/simulators/."
         )
 
     print(
         f"  [auto-simulate] {dataset_path} missing; invoking "
-        f"simulators/{dataset_type}.py --instrument {instrument}"
+        f"scripts/misc/simulators/{dataset_type}.py --instrument {instrument}"
     )
     subprocess.run(
         [

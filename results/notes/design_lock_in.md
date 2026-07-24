@@ -7,6 +7,25 @@ extensions (more datasets, instruments, packages) build on a settled core.
 Tracked by [autolens_profiling#52](https://github.com/PyAutoLabs/autolens_profiling/issues/52);
 parent intent: PyAutoMind `maintenance/autolens_profiling/polish.md`.
 
+> **Superseded (2026-07-24, [autolens_profiling#84](https://github.com/PyAutoLabs/autolens_profiling/issues/84)):**
+> the **task-first packaging rule** below — top-level `likelihood_runtime/`,
+> `likelihood_breakdown/`, `vram/`, `searches/`, … packages addressed as
+> `<task>/<dataset_class>/<model>` — has been **inverted** to a dataset-first
+> taxonomy mirroring the `autolens_workspace*` repos:
+> `scripts/<dataset>/<task>/<model>.py` (imaging / interferometer / point_source
+> / multi / cluster / misc). Group-scale cells live under `scripts/cluster/`;
+> datacube nests under `scripts/interferometer/<task>/datacube/`; each task's
+> shared drivers/framework/README and all dataset-agnostic material live under
+> `scripts/misc/<task>/`. The **cell grid itself is unchanged** — cells are still
+> `<dataset_class>/<model>` and `results/` section names are identical; only the
+> *script file layout* moved. Where this note says "package", read
+> "`scripts/<dataset>/<task>/`"; where it names a driver path (e.g.
+> `likelihood_runtime/sweep.py`, `scripts/build_readme.py`), the live path is now
+> under `scripts/misc/` (`scripts/misc/likelihood_runtime/sweep.py`,
+> `scripts/misc/tooling/build_readme.py`). Everything else in this lock-in — the
+> one-question-per-task split, the CLI surface, instrument framing, config axes,
+> correctness gates, artifact shapes, baseline convention — still holds.
+
 ## What is locked in (unchanged — the design is right)
 
 - **The package split.** `likelihood_runtime/` (how long per call?) vs

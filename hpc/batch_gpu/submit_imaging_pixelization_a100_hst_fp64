@@ -44,7 +44,7 @@ echo "Instrument: hst"
 echo "Precision:  fp64"
 
 cd $AP_ROOT
-python3 searches/nautilus/imaging/pixelization.py \
+python3 scripts/imaging/searches/nautilus/pixelization.py \
     --instrument hst \
     --config-name hpc_a100_fp64 \
     --output-dir $AP_ROOT/results/searches/nautilus/imaging/pixelization/hst

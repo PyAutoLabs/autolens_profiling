@@ -2,7 +2,7 @@
 #
 # Runs the real profile scripts (NumPy + JAX paths on CPU runners),
 # regenerates the JSON+PNG artifacts under results/, runs
-# `scripts/build_readme.py` to refresh the dashboard tables in every
+# `scripts/misc/tooling/build_readme.py` to refresh the dashboard tables in every
 # README, and commits the diff back to main as `github-actions[bot]`
 # with `[skip ci]` in the subject to avoid loops.
 #
@@ -102,8 +102,9 @@ jobs:
           PYTHONPATH: ${{ github.workspace }}/PyAutoNerves:${{ github.workspace }}/PyAutoFit:${{ github.workspace }}/PyAutoArray:${{ github.workspace }}/PyAutoGalaxy:${{ github.workspace }}/PyAutoLens
         run: |
           set +e  # don't abort the whole step on one script's failure
-          for script in likelihood_runtime/imaging/*.py likelihood_runtime/interferometer/*.py \
-                        likelihood_runtime/point_source/*.py likelihood_runtime/datacube/delaunay.py; do
+          for script in scripts/imaging/likelihood_runtime/*.py scripts/interferometer/likelihood_runtime/*.py \
+                        scripts/point_source/likelihood_runtime/*.py \
+                        scripts/interferometer/likelihood_runtime/datacube/delaunay.py; do
             echo "::group::$script"
             python "$script" || echo "::warning::$script failed — see log; dashboard cell will show ERR"
             echo "::endgroup::"
@@ -119,10 +120,11 @@ jobs:
           PYTHONPATH: ${{ github.workspace }}/PyAutoNerves:${{ github.workspace }}/PyAutoFit:${{ github.workspace }}/PyAutoArray:${{ github.workspace }}/PyAutoGalaxy:${{ github.workspace }}/PyAutoLens
         run: |
           set +e
-          for script in simulators/imaging.py simulators/interferometer.py \
-                        simulators/cluster.py simulators/group.py simulators/multi.py; do
+          for script in scripts/misc/simulators/imaging.py scripts/misc/simulators/interferometer.py \
+                        scripts/misc/simulators/cluster.py scripts/misc/simulators/group.py \
+                        scripts/misc/simulators/multi.py; do
             # point_source.py default dataset_name="simple" overwrites tracked
-            # likelihood inputs; skip in CI (see simulators/README.md). Manual
+            # likelihood inputs; skip in CI (see scripts/misc/simulators/README.md). Manual
             # runs with a non-default dataset_name remain supported.
             echo "::group::$script"
             python "$script" || echo "::warning::$script failed — see log; dashboard cell will show ERR"
@@ -142,12 +144,11 @@ jobs:
           # Nautilus at n_live=200 on CPU takes O(minutes) to O(hours) per
           # script. The full pair runs sequentially; expect 30-60 min total
           # on the GitHub-hosted runner.
-          python searches/nautilus/simple.py || echo "::warning::nautilus/simple failed"
-          python searches/nautilus/jax.py    || echo "::warning::nautilus/jax failed"
+          python scripts/imaging/searches/nautilus/mge.py || echo "::warning::nautilus/imaging/mge failed"
 
       - name: Refresh dashboard tables
         working-directory: autolens_profiling
-        run: python scripts/build_readme.py
+        run: python scripts/misc/tooling/build_readme.py
 
       - name: Commit and push refreshed artifacts + READMEs
         working-directory: autolens_profiling
@@ -163,9 +164,10 @@ jobs:
           # gitignored; future hardware-tier work may flip a subset to
           # tracked, in which case this `add -f` becomes redundant but
           # harmless.
-          git add -f results/ likelihood_runtime/README.md likelihood_breakdown/README.md \
-                     simulators/README.md searches/README.md \
-                     searches/nautilus/README.md README.md
+          git add -f results/ scripts/misc/likelihood_runtime/README.md \
+                     scripts/misc/likelihood_breakdown/README.md \
+                     scripts/misc/simulators/README.md scripts/misc/searches/README.md \
+                     README.md
           git commit -m "chore: refresh profile artifacts + dashboard tables [skip ci]
 
           Triggered by ${{ github.event_name }} (${{ github.event.release.tag_name || github.run_id }})."

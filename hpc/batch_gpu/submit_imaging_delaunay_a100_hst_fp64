@@ -38,7 +38,7 @@ echo "Instrument: hst"
 echo "Precision:  fp64"
 
 cd $AP_ROOT
-python3 searches/nautilus/imaging/delaunay.py \
+python3 scripts/imaging/searches/nautilus/delaunay.py \
     --instrument hst \
     --config-name hpc_a100_fp64 \
     --output-dir $AP_ROOT/results/searches/nautilus/imaging/delaunay/hst

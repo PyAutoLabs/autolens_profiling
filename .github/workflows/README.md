@@ -12,7 +12,7 @@ What it checks:
 |------|---------|
 | `ruff check .` | Pyflakes + pycodestyle + isort + pyupgrade + flake8-bugbear (see `ruff.toml`) |
 | `ruff format --check .` | Formatting parity with sister PyAutoLabs repos (black-compatible defaults) |
-| `python scripts/build_readme.py --check` | Dashboard idempotence — the auto-generated tables in every section README must match what `build_readme.py` would generate from the current `results/` artifacts. Catches the "forgot to rerun the dashboard generator after dropping a new result" class of bug |
+| `python scripts/misc/tooling/build_readme.py --check` | Dashboard idempotence — the auto-generated tables in every section README must match what `build_readme.py` would generate from the current `results/` artifacts. Catches the "forgot to rerun the dashboard generator after dropping a new result" class of bug |
 | `lychee` | Markdown link-rot across every `README.md` |
 | Smoke — one script per section | Runs `likelihood/imaging/mge.py`, `simulators/imaging.py`, and `searches/nautilus/simple.py` with `AUTOLENS_PROFILING_SMOKE=1`. Every profile script reads that env var at module top and exits 0 after the import + setup section. Catches import-graph breakage (broken `sys.path` injection, missing dependency, renamed module) without running the full profile |
 
@@ -29,7 +29,7 @@ What it does:
 
 1. Runs every script under `likelihood/`, `simulators/`, and `searches/nautilus/`, producing JSON+PNG artifacts under `results/`. `continue-on-error: true` per section so a single regression doesn't block the dashboard refresh for the remaining 16+ scripts; failures emit a `::warning::` annotation and the matching dashboard cell will show `ERR`.
 2. Skips `simulators/point_source.py` in the simulator loop because its default `dataset_name="simple"` overwrites the Phase 1 likelihood input JSONs (see `simulators/README.md`). Run that one manually with a non-conflicting `dataset_name` when needed.
-3. Runs `python scripts/build_readme.py` to refresh every auto-generated table from the latest artifacts.
+3. Runs `python scripts/misc/tooling/build_readme.py` to refresh every auto-generated table from the latest artifacts.
 4. Commits the diff back to `main` as `github-actions[bot]` with `[skip ci]` in the subject (prevents the lint workflow from re-triggering on the auto-generated commit).
 
 Hardware: GitHub-hosted `ubuntu-latest` (CPU). Expect Nautilus's `n_live=200` runs to take 30–60 minutes each on CPU; total job time can approach the 4-hour `timeout-minutes` budget on a full run. Self-hosted GPU runners can be added later as a separate job that appends `*_gpu*.json` artifacts to `results/` without restructuring this workflow — the dashboard's hardware-tier column extension (top-level README "Future enhancements") is the matching reader-side change.

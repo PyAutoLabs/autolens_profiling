@@ -89,7 +89,7 @@ jobs:
 
       - name: build_readme.py --check (dashboard idempotence)
         working-directory: autolens_profiling
-        run: python scripts/build_readme.py --check
+        run: python scripts/misc/tooling/build_readme.py --check
 
       - name: lychee — markdown link-rot
         working-directory: autolens_profiling
@@ -116,7 +116,7 @@ jobs:
           # Each script reads AUTOLENS_PROFILING_SMOKE at module top and
           # exits 0 immediately after the import + setup section. Catches
           # import-graph breakage without running the full profile.
-          python likelihood_runtime/imaging/mge.py
-          python likelihood_breakdown/imaging/mge.py
-          python simulators/imaging.py
-          python searches/nautilus/imaging/mge.py
+          python scripts/imaging/likelihood_runtime/mge.py
+          python scripts/imaging/likelihood_breakdown/mge.py
+          python scripts/misc/simulators/imaging.py
+          python scripts/imaging/searches/nautilus/mge.py
