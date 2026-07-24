@@ -76,7 +76,24 @@ def _wrap_method(target: Any, attr: str, timer: VizTimer) -> None:
     setattr(target, attr, types.MethodType(wrapped, target))
 
 
-def attach_viz_timer(analysis: Any, search: Any) -> VizTimer:
+def _disable_method(target: Any, attr: str, timer: VizTimer) -> None:
+    """Replace ``target.attr`` with a no-op that counts the skipped call.
+
+    Used by the ``disable_viz`` path: the hook is never executed, so
+    ``timer.total_s`` stays ~0 while ``n_calls`` still records how many
+    visualizations *would* have run.
+    """
+    if getattr(target, attr, None) is None:
+        return
+
+    def skipped(self, *args, **kwargs):
+        timer.n_calls += 1
+        return None
+
+    setattr(target, attr, types.MethodType(skipped, target))
+
+
+def attach_viz_timer(analysis: Any, search: Any, disable: bool = False) -> VizTimer:
     """Wrap every visualize-family hook on ``analysis`` and ``search``.
 
     Hooks captured:
@@ -90,17 +107,27 @@ def attach_viz_timer(analysis: Any, search: Any) -> VizTimer:
     - ``search.plot_results`` — search-specific plots (e.g. Nautilus
       corner plots via anesthetic), called from the SearchUpdater.
 
+    With ``disable=True`` every hook is replaced by a no-op instead of a
+    timing wrapper. This is for *convergence* benchmarks (e.g. the group
+    cell), where pre-fit visualization of an 8-galaxy model costs ~1 hour
+    of pure wall-clock before the optimizer takes a single step and tells
+    us nothing about the question being asked. The resulting JSON reports
+    ``viz_wall_s ~ 0`` with ``viz_n_calls`` still counting the skips, and
+    the summary records ``viz_disabled: true`` so such a row is never
+    mistaken for a real end-to-end viz measurement.
+
     Returns the timer; read ``timer.total_s`` after the fit completes.
     """
     timer = VizTimer()
+    bind = _disable_method if disable else _wrap_method
     for attr in (
         "visualize_before_fit",
         "visualize_before_fit_combined",
         "visualize",
         "visualize_combined",
     ):
-        _wrap_method(analysis, attr, timer)
-    _wrap_method(search, "plot_results", timer)
+        bind(analysis, attr, timer)
+    bind(search, "plot_results", timer)
     return timer
 
 

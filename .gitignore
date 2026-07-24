@@ -29,6 +29,8 @@ venv/
 # remain tracked and are NOT covered by these rules.
 dataset/cluster/
 dataset/group/
+dataset/group4_mge/
+dataset/imaging/group4_mge/
 dataset/multi/
 dataset/imaging/simple/
 dataset/interferometer/simple/

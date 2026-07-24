@@ -59,6 +59,9 @@ _HILBERT_PIXELS: int = 1500
 _MGE_TOTAL_GAUSSIANS: int = (
     20  # ``source_lp[1]`` SLaM fiducial; lighter than likelihood_runtime's 60
 )
+_GROUP4_MGE_TOTAL_GAUSSIANS: int = (
+    10  # per-galaxy basis for the 4+4 group cell — 8 galaxies, so kept lean
+)
 _DATACUBE_N_CHANNELS: int = (
     4  # matches the "quick iteration" value in likelihood_runtime/datacube/delaunay.py
 )
@@ -172,7 +175,7 @@ def _build_for_datacube(
 
 
 def _mask_radius_for(dataset_class: str, instrument: str) -> float:
-    if dataset_class == "imaging":
+    if dataset_class in ("imaging", "group"):
         return float(_IMAGING_INSTRUMENTS[instrument]["mask_radius"])
     if dataset_class in ("interferometer", "datacube"):
         return float(_INTERFEROMETER_INSTRUMENTS[instrument]["mask_radius"])
@@ -186,6 +189,8 @@ def _mask_radius_for(dataset_class: str, instrument: str) -> float:
 def _build_dataset(dataset_class: str, instrument: str) -> tuple[Any, Path]:
     if dataset_class == "imaging":
         return _build_imaging(instrument)
+    if dataset_class == "group":
+        return _build_group_imaging(instrument)
     if dataset_class == "interferometer":
         return _build_interferometer(instrument)
     if dataset_class == "datacube":
@@ -264,6 +269,59 @@ def _build_imaging(instrument: str) -> tuple[al.Imaging, Path]:
     # cost (~tens of MB, sub-second) without changing per-eval cost.
     # Eliminates the need for PyAutoFit#1303/#1305's chunked-vmap workaround
     # on pixelization / Delaunay search runs.
+    dataset = dataset.apply_sparse_operator()
+    return dataset, dataset_path
+
+
+def _build_group_imaging(instrument: str) -> tuple[al.Imaging, Path]:
+    """Load the 4-lens + 4-source group imaging dataset (auto-simulate if missing).
+
+    Identical mask / over-sampling / sparse-operator pipeline to
+    ``_build_imaging``, but the dataset is the group-scale one written by
+    ``simulators/group4_mge.py`` under ``dataset/imaging/group4_mge/<instrument>/``
+    (which also writes the ``truth.json`` the recovery check consumes).
+    """
+    cfg = _IMAGING_INSTRUMENTS[instrument]
+    pixel_scale = cfg["pixel_scale"]
+    mask_radius = cfg["mask_radius"]
+    dataset_path = Path("dataset") / "imaging" / "group4_mge" / instrument
+    auto_simulate_if_missing(
+        dataset_path,
+        dataset_type="group4_mge",
+        instrument=instrument,
+        workspace_root=_WORKSPACE_ROOT,
+    )
+    dataset = al.Imaging.from_fits(
+        data_path=dataset_path / "data.fits",
+        psf_path=dataset_path / "psf.fits",
+        noise_map_path=dataset_path / "noise_map.fits",
+        pixel_scales=pixel_scale,
+    )
+    mask = al.Mask2D.circular(
+        shape_native=dataset.shape_native,
+        pixel_scales=dataset.pixel_scales,
+        radius=mask_radius,
+    )
+    dataset = dataset.apply_mask(mask=mask)
+    dataset = dataset.apply_over_sampling(
+        over_sample_size_lp=4,
+        over_sample_size_pixelization=1,
+    )
+    # Over-sample densely at every deflector centre — each group member hosts a
+    # cuspy MGE light + mass profile, mirroring the simulator's centre list.
+    from simulators.group4_mge import GROUP4_TRUTH
+
+    centre_list = [tuple(map(float, ln["centre"])) for ln in GROUP4_TRUTH["lenses"]]
+    over_sample_size = al.util.over_sample.over_sample_size_via_radial_bins_from(
+        grid=dataset.grid,
+        sub_size_list=[4, 2, 1],
+        radial_list=[0.3, 0.6],
+        centre_list=centre_list,
+    )
+    dataset = dataset.apply_over_sampling(
+        over_sample_size_lp=over_sample_size,
+        over_sample_size_pixelization=1,
+    )
     dataset = dataset.apply_sparse_operator()
     return dataset, dataset_path
 
@@ -348,6 +406,10 @@ def _build_point_source(instrument: str) -> tuple[Any, Path]:
 
 
 def _build_model(dataset_class: str, model_type: str, *, mask_radius: float) -> af.Collection:
+    if dataset_class == "group":
+        if model_type == "mge":
+            return _group_mge_model(mask_radius=mask_radius)
+        raise ValueError(f"group cell only supports model_type='mge', got {model_type!r}")
     if model_type == "mge":
         return _mge_model(mask_radius=mask_radius)
     if model_type == "pixelization":
@@ -383,6 +445,59 @@ def _mge_model(*, mask_radius: float) -> af.Collection:
     )
     source = af.Model(al.Galaxy, redshift=1.0, bulge=source_bulge)
     return af.Collection(galaxies=af.Collection(lens=lens, source=source))
+
+
+def _group_mge_model(*, mask_radius: float) -> af.Collection:
+    """4 deflectors (MGE light + Isothermal mass) + 4 MGE sources.
+
+    The high-dimensional (~54 free-param) group cell. Every galaxy's light and
+    mass **centres are seeded** near the known truth position (`GROUP4_TRUTH`)
+    with a modest-sigma Gaussian — the honest prior for a group whose members
+    are individually visible, and (critically) the thing that breaks the
+    permutation symmetry among the 4 lenses / 4 sources that would otherwise
+    make the search hopeless. The genuinely-unknown quantities — Einstein
+    radii, ellipticities, shear — keep their broad default priors, so the
+    search still has to *find* the mass model.
+
+    Amplitudes stay linear (solved by the inversion), so the non-linear count is
+    geometry only. `ExternalShear` is on the primary deflector only, matching the
+    simulator truth.
+    """
+    from simulators.group4_mge import GROUP4_TRUTH
+
+    galaxies: dict[str, af.Model] = {}
+
+    for lens in GROUP4_TRUTH["lenses"]:
+        cy, cx = float(lens["centre"][0]), float(lens["centre"][1])
+        bulge = al.model_util.mge_model_from(
+            mask_radius=mask_radius,
+            total_gaussians=_GROUP4_MGE_TOTAL_GAUSSIANS,
+            centre_prior_is_uniform=False,
+            centre=(cy, cx),
+            centre_sigma=0.1,
+        )
+        mass = af.Model(al.mp.Isothermal)
+        mass.centre_0 = af.GaussianPrior(mean=cy, sigma=0.1)
+        mass.centre_1 = af.GaussianPrior(mean=cx, sigma=0.1)
+        kwargs: dict = dict(redshift=GROUP4_TRUTH["redshift_lens"], bulge=bulge, mass=mass)
+        if lens["shear"] is not None:
+            kwargs["shear"] = af.Model(al.mp.ExternalShear)
+        galaxies[lens["name"]] = af.Model(al.Galaxy, **kwargs)
+
+    for source in GROUP4_TRUTH["sources"]:
+        cy, cx = float(source["centre"][0]), float(source["centre"][1])
+        source_bulge = al.model_util.mge_model_from(
+            mask_radius=mask_radius,
+            total_gaussians=_GROUP4_MGE_TOTAL_GAUSSIANS,
+            centre_prior_is_uniform=False,
+            centre=(cy, cx),
+            centre_sigma=0.3,
+        )
+        galaxies[source["name"]] = af.Model(
+            al.Galaxy, redshift=GROUP4_TRUTH["redshift_source"], bulge=source_bulge
+        )
+
+    return af.Collection(galaxies=af.Collection(**galaxies))
 
 
 def _pixelization_model(*, mask_radius: float) -> af.Collection:
@@ -513,7 +628,7 @@ def _build_analysis(
     # cost — so disable the check rather than wire up truth-position plumbing.
     raise_positions_exc = model_type not in ("pixelization", "delaunay")
 
-    if dataset_class == "imaging":
+    if dataset_class in ("imaging", "group"):
         return al.AnalysisImaging(
             dataset=dataset,
             adapt_images=adapt_images,
@@ -572,8 +687,21 @@ def format_best_fit(instance: Any) -> str:
     """One-line summary of an instance's lens mass + shear (best-effort).
 
     Works across mge / pix / delaunay / point-source models; falls back to a
-    generic representation when fields are missing.
+    generic representation when fields are missing. For the multi-galaxy group
+    cell (``lens_0..lens_N``) it summarises each deflector's Einstein radius.
     """
+    group_lenses = sorted(name for name in vars(instance.galaxies) if str(name).startswith("lens_"))
+    if group_lenses:
+        parts = []
+        for name in group_lenses:
+            try:
+                er = getattr(instance.galaxies, name).mass.einstein_radius
+                parts.append(f"{name}.theta_E={er:.3f}")
+            except AttributeError:
+                continue
+        if parts:
+            return "  ".join(parts)
+
     try:
         mass = instance.galaxies.lens.mass
         out = (
