@@ -50,11 +50,14 @@ from _adapt_image_util import adapt_image_for_dataset  # noqa: E402
 from instruments.interferometer import INSTRUMENTS  # noqa: E402
 
 try:
-    from _profile_cli import device_info_dict
+    from _profile_cli import auto_simulate_if_missing, device_info_dict
 except ImportError:
 
     def device_info_dict():
         return {"backend": "unknown"}
+
+    def auto_simulate_if_missing(*args, **kwargs):
+        return None
 
 
 import argparse  # noqa: E402
@@ -108,6 +111,13 @@ print(f"  dataset: {dataset_path}")
 print(f"  repeats: {n_repeats}")
 print(f"  Delaunay mesh pixels: {mesh_pixels}")
 print()
+
+auto_simulate_if_missing(
+    dataset_path,
+    dataset_type="interferometer",
+    instrument=instrument,
+    workspace_root=workspace_root,
+)
 
 real_space_mask = al.Mask2D.circular(
     shape_native=cfg["real_space_shape"],
