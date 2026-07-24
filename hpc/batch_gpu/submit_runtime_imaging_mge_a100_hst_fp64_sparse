@@ -43,14 +43,14 @@ cd $AP_ROOT
 
 # Phase A — vmap-probe (early exit with memory_analysis + batch recommendation)
 echo "--- vmap-probe (sparse) ---"
-python3 likelihood_runtime/imaging/mge.py \
+python3 scripts/imaging/likelihood_runtime/mge.py \
     --instrument hst \
     --sparse \
     --vmap-probe
 
 # Phase B — full single-JIT + vmap timing
 echo "--- full timing (sparse) ---"
-python3 likelihood_runtime/imaging/mge.py \
+python3 scripts/imaging/likelihood_runtime/mge.py \
     --instrument hst \
     --sparse \
     --config-name hpc_a100_fp64

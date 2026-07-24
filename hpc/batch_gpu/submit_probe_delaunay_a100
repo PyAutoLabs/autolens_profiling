@@ -43,13 +43,13 @@ run_probe () {
 
 # Imaging delaunay — campaign instruments, dense + sparse.
 for inst in ao jwst hst; do
-    run_probe likelihood_runtime/imaging/delaunay.py "$inst" ""
-    run_probe likelihood_runtime/imaging/delaunay.py "$inst" "--sparse"
+    run_probe scripts/imaging/likelihood_runtime/delaunay.py "$inst" ""
+    run_probe scripts/imaging/likelihood_runtime/delaunay.py "$inst" "--sparse"
 done
 
 # Interferometer delaunay — campaign anchor (alma_high) + the cheap sanity cell.
-run_probe likelihood_runtime/interferometer/delaunay.py sma ""
-run_probe likelihood_runtime/interferometer/delaunay.py alma_high ""
+run_probe scripts/interferometer/likelihood_runtime/delaunay.py sma ""
+run_probe scripts/interferometer/likelihood_runtime/delaunay.py alma_high ""
 
 echo "Finished."
 date

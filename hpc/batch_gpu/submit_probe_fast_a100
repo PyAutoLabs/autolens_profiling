@@ -47,15 +47,15 @@ run_probe () {
 
 # Imaging mge / pixelization — campaign instruments, dense + sparse.
 for inst in ao jwst hst; do
-    run_probe likelihood_runtime/imaging/mge.py          "$inst" ""
-    run_probe likelihood_runtime/imaging/mge.py          "$inst" "--sparse"
-    run_probe likelihood_runtime/imaging/pixelization.py "$inst" ""
-    run_probe likelihood_runtime/imaging/pixelization.py "$inst" "--sparse"
+    run_probe scripts/imaging/likelihood_runtime/mge.py          "$inst" ""
+    run_probe scripts/imaging/likelihood_runtime/mge.py          "$inst" "--sparse"
+    run_probe scripts/imaging/likelihood_runtime/pixelization.py "$inst" ""
+    run_probe scripts/imaging/likelihood_runtime/pixelization.py "$inst" "--sparse"
 done
 
 # Interferometer mge / pixelization — sma only (alma+ intentionally blocked).
-run_probe likelihood_runtime/interferometer/mge.py          sma ""
-run_probe likelihood_runtime/interferometer/pixelization.py sma ""
+run_probe scripts/interferometer/likelihood_runtime/mge.py          sma ""
+run_probe scripts/interferometer/likelihood_runtime/pixelization.py sma ""
 
 echo "Finished."
 date

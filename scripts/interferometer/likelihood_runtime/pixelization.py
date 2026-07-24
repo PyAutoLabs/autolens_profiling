@@ -1,0 +1,689 @@
+"""
+JAX Profiling: Pixelization Interferometer Likelihood
+=====================================================
+
+Profiles the JAX likelihood function for an interferometer dataset where the
+source galaxy is reconstructed using a rectangular pixelization with constant
+regularization, and the lens galaxy is an Isothermal + ExternalShear.
+
+Mirrors ``likelihood/interferometer/mge.py`` (Phase 1) with the MGE source
+replaced by a ``RectangularUniform`` pixelization + ``Constant`` regularization
+— matching ``likelihood/imaging/pixelization.py`` so imaging vs
+interferometer results can be compared side-by-side.
+
+Like the MGE interferometer script, this script deliberately does not per-step
+JIT the inversion pipeline. The interferometer path exercises a
+Fourier-transformed mapping matrix, a visibilities-space data vector /
+curvature matrix, and an NNLS solve whose ``xp=jnp`` threading has not been
+fully characterised. Per-step decomposition risks missing cross-step XLA
+fusion that matters in practice, and risks hitting library-level JAX blockers
+that we would want to raise as separate issues rather than work around here.
+Once the full-pipeline JIT is stable on interferometer, the per-step
+breakdown can land as a follow-up.
+
+Measures:
+
+1. Eager baseline: ``FitInterferometer`` with ``xp=np``, print
+   ``figure_of_merit`` / ``log_likelihood``.
+2. Full-pipeline JIT: ``jax.jit(analysis.log_likelihood_function)`` on a
+   pytree-registered ``ModelInstance``. Measure lower / compile / first-call /
+   steady-state per-call.
+3. Batched evaluation: ``jax.jit(jax.vmap(full_pipeline))``. Measure
+   per-likelihood cost and speedup vs the single-JIT path.
+4. Correctness: eager vs JIT log-likelihood agreement at ``rtol=1e-4``.
+5. Static memory analysis of the batched program.
+6. Results JSON + PNG written to ``results/`` using the same schema as the
+   imaging profiling scripts so they can be compared side-by-side.
+
+Pytree-native parameter inputs
+------------------------------
+
+Uses ``af.ModelInstance`` as the JIT input via PyAutoFit's opt-in pytree
+registration (``autofit.jax.register_model``). Exercises the ``TuplePrior``
+pytree support landed in PyAutoFit#1222.
+"""
+
+import sys as _sys
+from pathlib import Path as _Path
+
+
+def _profiling_root() -> _Path:
+    for _p in _Path(__file__).resolve().parents:
+        if (_p / "ruff.toml").exists():
+            return _p
+    raise RuntimeError("autolens_profiling root (ruff.toml) not found")
+
+
+_misc_dir = str(_profiling_root() / "scripts" / "misc")
+if _misc_dir not in _sys.path:
+    _sys.path.insert(0, _misc_dir)
+
+
+import subprocess
+import sys
+import time
+from contextlib import contextmanager
+from pathlib import Path
+
+import autoarray as aa
+import autofit as af
+import autolens as al
+import jax
+import jax.numpy as jnp
+import numpy as np
+from autofit.jax import register_model as _register_model_pytrees
+
+sys.path.insert(0, str(_profiling_root()))
+# ---------------------------------------------------------------------------
+# Instrument configuration
+# ---------------------------------------------------------------------------
+# AUTOLENS_PROFILING_SMOKE=1 short-circuit (Phase 5 / CI lint smoke).
+# Verifies the import graph + module-level setup succeeded without running
+# the full profiling pipeline. Skipped entirely when the env var is unset.
+import os as _smoke_os
+import sys as _smoke_sys
+
+from _adapt_image_util import adapt_image_for_dataset  # noqa: E402
+
+if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
+    print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
+    _smoke_sys.exit(0)
+
+# Sweep-driver CLI args (--config-name / --output-dir / --use-mixed-precision).
+# Tolerates extra/unknown args via parse_known_args inside the helper.
+from simulators.interferometer import INSTRUMENTS  # noqa: E402
+from vram import (  # noqa: E402
+    probe_vmap_memory,
+    recommend_batch_size,
+    resolve_vmap_batch,
+    write_probe_json,
+)
+
+from _profile_cli import (
+    auto_simulate_if_missing,
+    check_pinned,
+    device_info_dict,
+    parse_profile_cli,
+    record_pinned_check,  # noqa: E402
+    resolve_output_paths,
+)
+
+_cli = parse_profile_cli()
+
+instrument = _cli.instrument or "sma"  # default; override via --instrument
+
+mesh_pixels_yx = 32  # 32x32 = 1024 source pixels — 1000-tier production fiducial
+mesh_shape = (mesh_pixels_yx, mesh_pixels_yx)
+regularization_coefficient = 1.0
+
+
+# ---------------------------------------------------------------------------
+# Profiling helpers
+# ---------------------------------------------------------------------------
+
+
+class Timer:
+    """Accumulates named timing measurements and prints a summary."""
+
+    def __init__(self):
+        self.records: list[tuple[str, float]] = []
+
+    @contextmanager
+    def section(self, label: str):
+        start = time.perf_counter()
+        yield
+        elapsed = time.perf_counter() - start
+        self.records.append((label, elapsed))
+        print(f"  [{label}] {elapsed:.4f} s")
+
+
+def block(x):
+    """Call block_until_ready if available (JAX arrays)."""
+    if hasattr(x, "block_until_ready"):
+        x.block_until_ready()
+    return x
+
+
+def jit_profile(func, label, *args, n_repeats=10):
+    """JIT-compile *func*, time lower / compile / first call / steady state."""
+    jitted = jax.jit(func)
+
+    with timer.section(f"{label}_lower"):
+        lowered = jitted.lower(*args)
+
+    with timer.section(f"{label}_compile"):
+        compiled = lowered.compile()
+
+    with timer.section(f"{label}_first_call"):
+        result = compiled(*args)
+        block(result)
+
+    with timer.section(f"{label}_steady_x{n_repeats}"):
+        for _ in range(n_repeats):
+            result = compiled(*args)
+            block(result)
+
+    per_call = timer.records[-1][1] / n_repeats
+    print(f"    -> per-call avg: {per_call:.6f} s")
+    return compiled, result
+
+
+timer = Timer()
+
+# ===================================================================
+# PART A — Setup (not JIT-compiled)
+# ===================================================================
+
+# ---------------------------------------------------------------------------
+# 1. Dataset
+# ---------------------------------------------------------------------------
+
+print(f"\n--- Dataset loading [{instrument}] ---")
+
+_script_dir = Path(__file__).resolve().parent
+_workspace_root = _profiling_root()
+pixel_scale = INSTRUMENTS[instrument]["pixel_scale"]
+real_space_shape = INSTRUMENTS[instrument]["real_space_shape"]
+dataset_path = Path("dataset") / "interferometer" / instrument
+
+auto_simulate_if_missing(
+    dataset_path,
+    dataset_type="interferometer",
+    instrument=instrument,
+    workspace_root=_workspace_root,
+)
+
+mask_radius = INSTRUMENTS[instrument]["mask_radius"]
+
+real_space_mask = al.Mask2D.circular(
+    shape_native=real_space_shape,
+    pixel_scales=pixel_scale,
+    radius=mask_radius,
+)
+
+transformer_chunk_size = INSTRUMENTS[instrument].get("transformer_chunk_size", None)
+
+
+def _build_transformer(uv_wavelengths, real_space_mask):
+    """Inject per-instrument chunk_size into TransformerNUFFT without needing a
+    transformer_kwargs API on Interferometer.from_fits.  Required for alma_high
+    (5M visibilities) to cap the nufftax gather buffer (PyAutoArray#330)."""
+    return al.TransformerNUFFT(
+        uv_wavelengths=uv_wavelengths,
+        real_space_mask=real_space_mask,
+        chunk_size=transformer_chunk_size,
+    )
+
+
+with timer.section("dataset_load"):
+    dataset = al.Interferometer.from_fits(
+        data_path=dataset_path / "data.fits",
+        noise_map_path=dataset_path / "noise_map.fits",
+        uv_wavelengths_path=dataset_path / "uv_wavelengths.fits",
+        real_space_mask=real_space_mask,
+        transformer_class=_build_transformer,
+    )
+
+with timer.section("apply_sparse_operator"):
+    # Precompute the W~ precision-matrix preload + dirty image so per-fit
+    # curvature assembly uses the FFT-based sparse path instead of the dense
+    # transformed_mapping_matrix.  The NUFFT keeps the one-time dirty-image
+    # setup tractable at ALMA-scale visibility counts (PyAutoArray#329).
+    dataset = dataset.apply_sparse_operator(use_jax=True, show_progress=True)
+
+n_visibilities = dataset.uv_wavelengths.shape[0]
+print(f"  Total visibilities: {n_visibilities}")
+
+# ---------------------------------------------------------------------------
+# 2. Model construction
+# ---------------------------------------------------------------------------
+
+print("\n--- Model construction ---")
+
+with timer.section("model_build"):
+    # GaussianPrior(mean=truth, sigma=small) centres prior-median at the
+    # simulator truth while keeping params free so gradient diagnostics
+    # have dimensionality.
+    mass = af.Model(al.mp.Isothermal)
+    mass.centre.centre_0 = af.GaussianPrior(mean=0.0, sigma=0.005)
+    mass.centre.centre_1 = af.GaussianPrior(mean=0.0, sigma=0.005)
+    mass.einstein_radius = af.GaussianPrior(mean=1.6, sigma=0.05)
+    _lens_mass_ell = al.convert.ell_comps_from(axis_ratio=0.9, angle=45.0)
+    mass.ell_comps.ell_comps_0 = af.GaussianPrior(mean=_lens_mass_ell[0], sigma=0.01)
+    mass.ell_comps.ell_comps_1 = af.GaussianPrior(mean=_lens_mass_ell[1], sigma=0.01)
+
+    shear = af.Model(al.mp.ExternalShear)
+    shear.gamma_1 = af.GaussianPrior(mean=0.05, sigma=0.005)
+    shear.gamma_2 = af.GaussianPrior(mean=0.05, sigma=0.005)
+
+    lens = af.Model(al.Galaxy, redshift=0.5, mass=mass, shear=shear)
+
+    pixelization = af.Model(
+        al.Pixelization,
+        mesh=al.mesh.RectangularAdaptImage(shape=mesh_shape, weight_power=1.0, weight_floor=0.0),
+        regularization=al.reg.Constant(coefficient=regularization_coefficient),
+    )
+
+    source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
+
+    model = af.Collection(galaxies=af.Collection(lens=lens, source=source))
+
+print(f"  Total free parameters: {model.total_free_parameters}")
+
+# ---------------------------------------------------------------------------
+# 3. Instantiate concrete objects from prior medians
+# ---------------------------------------------------------------------------
+
+print("\n--- Instantiate concrete model ---")
+
+with timer.section("instance_from_vector"):
+    param_vector = model.physical_values_from_prior_medians
+    instance = model.instance_from_vector(vector=param_vector)
+
+with timer.section("register_pytrees"):
+    _register_model_pytrees(model)
+
+# JIT input: the instance itself, with all parameter leaves promoted to JAX
+# arrays. The eager NumPy instance is retained for the eager FitInterferometer
+# baseline below.
+params_tree = jax.tree_util.tree_map(jnp.asarray, instance)
+
+tracer = al.Tracer(galaxies=list(instance.galaxies))
+
+print(f"  Tracer planes: {tracer.total_planes}")
+
+# ---------------------------------------------------------------------------
+# 4. Configuration summary
+# ---------------------------------------------------------------------------
+
+n_source_pixels = mesh_shape[0] * mesh_shape[1]
+
+print("\n--- Configuration (determines run time) ---")
+print(f"  Instrument:              {instrument}")
+print(f"  Pixel scale:             {pixel_scale} arcsec/pixel")
+print(f"  Real-space mask radius:  {mask_radius} arcsec")
+print(f"  Real-space grid shape:   {real_space_shape[0]} x {real_space_shape[1]}")
+print(f"  Visibilities:            {n_visibilities}")
+print(f"  Mesh shape:              {mesh_shape[0]} x {mesh_shape[1]}")
+print(f"  Source pixels:           {n_source_pixels}")
+print(f"  Reg. coefficient:        {regularization_coefficient}")
+
+# ---------------------------------------------------------------------------
+# 4b. Adapt image — drives ``RectangularAdaptImage`` mesh weighting
+# ---------------------------------------------------------------------------
+
+print("\n--- Adapt image (lensed source) ---")
+
+with timer.section("adapt_image_build"):
+    adapt_image = adapt_image_for_dataset(dataset_path=dataset_path, dataset=dataset)
+    adapt_images = al.AdaptImages(
+        galaxy_image_dict={instance.galaxies.source: adapt_image},
+        galaxy_name_image_dict={"('galaxies', 'source')": adapt_image},
+    )
+
+print(f"  adapt_image shape (slim): {adapt_image.shape_slim}")
+
+# ---------------------------------------------------------------------------
+# 5. Full-pipeline reference (FitInterferometer) — eager baseline
+# ---------------------------------------------------------------------------
+
+print("\n--- Full FitInterferometer (eager baseline) ---")
+
+with timer.section("fit_interferometer_eager"):
+    fit = al.FitInterferometer(
+        dataset=dataset,
+        tracer=tracer,
+        adapt_images=adapt_images,
+        settings=al.Settings(use_mixed_precision=_cli.use_mixed_precision),
+        xp=np,
+    )
+    figure_of_merit_ref = fit.figure_of_merit
+    log_likelihood_ref = fit.log_likelihood
+
+print(f"  figure_of_merit = {figure_of_merit_ref}")
+print(f"  log_likelihood  = {log_likelihood_ref}")
+
+
+# ===================================================================
+# PART B — Full-pipeline JIT
+# ===================================================================
+
+print("\n" + "=" * 70)
+print("FULL-PIPELINE JIT")
+print("=" * 70)
+
+analysis = al.AnalysisInterferometer(
+    dataset=dataset,
+    adapt_images=adapt_images,
+    settings=al.Settings(use_mixed_precision=_cli.use_mixed_precision),
+    use_jax=True,
+)
+
+
+def full_pipeline_from_params(params_tree):
+    """Full interferometer likelihood from a pytree-shaped ``ModelInstance``.
+
+    No flat-vector unpacking inside the trace — the instance crosses the JIT
+    boundary directly, with constants (redshifts, etc.) kept static via the
+    ``aux_data`` partition set up by ``autofit.jax.register_model``.
+    """
+    return analysis.log_likelihood_function(instance=params_tree)
+
+
+_, full_result = jit_profile(full_pipeline_from_params, "full_pipeline", params_tree)
+full_pipeline_per_call = timer.records[-1][1] / 10
+
+print(f"  full log_likelihood = {full_result}")
+
+# ===================================================================
+# PART B.5 — vmap-probe mode (early exit)
+# ===================================================================
+#
+# When ``--vmap-probe`` is set the script JIT-vmaps the pipeline at the
+# configured batch sizes, reads ``compiled.memory_analysis()``, writes a
+# ``vmap_probe.json`` with the recommended A100 batch_size, and exits
+# before the full vmap timing loop. See ``vram/README.md`` for methodology.
+
+if _cli.vmap_probe:
+    probe = probe_vmap_memory(
+        full_pipeline_from_params,
+        params_tree,
+        batch_sizes=(1, 4, 16),
+        dataset="interferometer",
+        model="pixelization",
+        instrument=instrument,
+    )
+    recommended = recommend_batch_size(probe)
+    probe_path = (
+        _cli.output_dir
+        or (_workspace_root / "results" / "runtime" / "interferometer" / "pixelization")
+    ) / (
+        "vmap_probe_pixelization_sparse.json"
+        if _cli.use_sparse_operator
+        else "vmap_probe_pixelization.json"
+    )
+    write_probe_json(probe, recommended, probe_path)
+    print(f"\n  vmap_probe samples: {probe.samples}")
+    print(f"  per_replica:        {probe.per_replica_mb:.1f} MB / replica")
+    print(f"  recommended batch:  {recommended}")
+    print(f"  written to:         {probe_path}")
+    sys.exit(0)
+
+# ===================================================================
+# PART C — vmap + correctness
+# ===================================================================
+#
+# NOTE: vmap requires at least one JAX array leaf in the params_tree.
+# When model.total_free_parameters == 0 (all params fixed to truth), the
+# pytree has no array leaves and vmap cannot batch over it. Skip in that case.
+
+print("\n--- vmap batched evaluation ---")
+
+_batch_resolved, _batch_source = resolve_vmap_batch(
+    "interferometer",
+    "pixelization",
+    instrument,
+    output_dir=_cli.output_dir
+    or (_workspace_root / "results" / "runtime" / "interferometer" / "pixelization"),
+    path="sparse" if _cli.use_sparse_operator else "dense",
+    backend=jax.default_backend(),
+)
+print(f"  vmap batch_size: {_batch_resolved} (source: {_batch_source})")
+batch_size = _batch_resolved or 3
+vmap_batch_time = None
+vmap_per_call = None
+vmap_speedup = None
+result_vmap = None
+
+_n_leaves = len(jax.tree_util.tree_leaves(params_tree))
+if _n_leaves == 0:
+    print(
+        "  SKIPPED: model has 0 free parameters (all fixed to truth); "
+        "vmap requires at least one array leaf."
+    )
+else:
+    parameters = jax.tree_util.tree_map(
+        lambda leaf: jnp.broadcast_to(leaf, (batch_size, *leaf.shape)),
+        params_tree,
+    )
+
+    vmapped_full = jax.jit(jax.vmap(full_pipeline_from_params))
+
+    with timer.section("vmap_first_call"):
+        result_vmap = vmapped_full(parameters)
+        block(result_vmap)
+
+    n_vmap_repeats = 10
+    with timer.section(f"vmap_steady_x{n_vmap_repeats}"):
+        for _ in range(n_vmap_repeats):
+            result_vmap = vmapped_full(parameters)
+            block(result_vmap)
+
+    vmap_batch_time = timer.records[-1][1] / n_vmap_repeats
+    vmap_per_call = vmap_batch_time / batch_size
+    vmap_speedup = full_pipeline_per_call / vmap_per_call
+
+    print(f"  batch results = {result_vmap}")
+    print(f"  vmap batch of {batch_size}:   {vmap_batch_time:.6f} s")
+    print(f"  vmap per call:         {vmap_per_call:.6f} s")
+    print(f"  single JIT per call:   {full_pipeline_per_call:.6f} s")
+    print(f"  vmap speedup:          {vmap_speedup:.1f}x faster per likelihood")
+
+    # Correctness: for inversion models (pixelization + regularization), the
+    # analysis "log_likelihood_function" actually returns the log-evidence
+    # (= figure_of_merit), which includes the regularization/determinant terms.
+    # Match against figure_of_merit_ref, not log_likelihood_ref. For the MGE case
+    # in Phase 1 the two were numerically equal because there was no regularized
+    # inversion; here they differ by the regularization + log-determinant terms.
+    np.testing.assert_allclose(
+        float(full_result),
+        float(figure_of_merit_ref),
+        rtol=1e-4,
+        err_msg="interferometer/pixelization: JIT log-evidence does not match eager figure_of_merit",
+    )
+    print("  Eager-vs-JIT correctness PASSED")
+
+    np.testing.assert_allclose(
+        np.array(result_vmap),
+        float(full_result),
+        rtol=1e-4,
+        err_msg="interferometer/pixelization: JAX vmap likelihood mismatch",
+    )
+    print("  vmap-vs-single-JIT correctness PASSED")
+
+# ===================================================================
+# PART D — Static memory analysis
+# ===================================================================
+
+print("\n--- Static memory analysis ---")
+
+if _n_leaves == 0:
+    print("  SKIPPED: no array leaves in params_tree (all params fixed to truth).")
+    memory_analysis = None
+else:
+    lowered_batched = vmapped_full.lower(parameters)
+    compiled_batched = lowered_batched.compile()
+
+    memory_analysis = compiled_batched.memory_analysis()
+    print(f"  Output size:  {memory_analysis.output_size_in_bytes / 1024**2:.3f} MB")
+    print(f"  Temp size:    {memory_analysis.temp_size_in_bytes / 1024**2:.3f} MB")
+    print(
+        f"  Total:        "
+        f"{(memory_analysis.output_size_in_bytes + memory_analysis.temp_size_in_bytes) / 1024**2:.3f} MB"
+    )
+
+# ===================================================================
+# JAX Likelihood Function Summary + artefacts
+# ===================================================================
+
+import json
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
+al_version = al.__version__
+
+print("\n" + "=" * 70)
+print(f"JAX LIKELIHOOD FUNCTION SUMMARY — {instrument.upper()} — v{al_version}")
+print("=" * 70)
+print(f"  Instrument:              {instrument}")
+print(f"  Pixel scale:             {pixel_scale} arcsec/pixel")
+print(f"  Real-space mask radius:  {mask_radius} arcsec")
+print(f"  Real-space grid shape:   {real_space_shape[0]} x {real_space_shape[1]}")
+print(f"  Visibilities:            {n_visibilities}")
+print(f"  Mesh shape:              {mesh_shape[0]} x {mesh_shape[1]}")
+print(f"  Source pixels:           {n_source_pixels}")
+print("-" * 70)
+print(f"  Eager log_likelihood:    {log_likelihood_ref}")
+print(f"  Eager figure_of_merit:   {figure_of_merit_ref}  (log-evidence)")
+print(f"  JIT  log-evidence:       {float(full_result)}")
+print("-" * 70)
+print(f"  Full pipeline per call:  {full_pipeline_per_call:.6f} s")
+if vmap_per_call is not None:
+    print(f"  vmap batch={batch_size} per call:   {vmap_per_call:.6f} s")
+    print(f"  vmap speedup:            {vmap_speedup:.1f}x")
+else:
+    print("  vmap:                    SKIPPED (0 free params)")
+print("=" * 70)
+
+# --- Save results dictionary ---
+
+likelihood_summary = {
+    "autolens_version": al_version,
+    "device": device_info_dict(),
+    "instrument": instrument,
+    "model": "pixelization",
+    "configuration": {
+        "pixel_scale_arcsec": pixel_scale,
+        "mask_radius_arcsec": mask_radius,
+        "real_space_shape": list(real_space_shape),
+        "visibilities": int(n_visibilities),
+        "mesh_shape": list(mesh_shape),
+        "source_pixels": int(n_source_pixels),
+        "regularization_coefficient": regularization_coefficient,
+    },
+    "log_likelihood_eager": float(log_likelihood_ref),
+    "figure_of_merit_eager": float(figure_of_merit_ref),
+    "log_evidence_jit": float(full_result),
+    "full_pipeline_single_jit": full_pipeline_per_call,
+    "vmap": "SKIPPED — model has 0 free parameters (all fixed to truth)"
+    if vmap_per_call is None
+    else {
+        "batch_size": batch_size,
+        "batch_time": vmap_batch_time,
+        "per_call": vmap_per_call,
+        "speedup_vs_single_jit": round(vmap_speedup, 1),
+    },
+    "memory_mb": None
+    if memory_analysis is None
+    else {
+        "output": memory_analysis.output_size_in_bytes / 1024**2,
+        "temp": memory_analysis.temp_size_in_bytes / 1024**2,
+    },
+}
+
+dict_path, chart_path = resolve_output_paths(
+    _cli,
+    default_dir=_workspace_root / "results" / "runtime" / "interferometer" / "pixelization",
+    default_basename=f"pixelization_likelihood_summary_{instrument}_v{al_version}",
+)
+dict_path.write_text(json.dumps(likelihood_summary, indent=2))
+print(f"\n  Results dict saved to: {dict_path}")
+
+# --- Save bar chart ---
+
+labels = ["Full pipeline (single JIT)"]
+times = [full_pipeline_per_call]
+bar_colors = ["#4C72B0"]
+if vmap_per_call is not None:
+    labels.append(f"vmap batch={batch_size} (per call)")
+    times.append(vmap_per_call)
+    bar_colors.append("#55A868")
+
+fig, ax = plt.subplots(figsize=(10, 3.5))
+y_pos = range(len(labels))
+bars = ax.barh(y_pos, times, color=bar_colors, edgecolor="white", height=0.55)
+
+for bar, t in zip(bars, times):
+    ax.text(
+        bar.get_width() + max(times) * 0.01,
+        bar.get_y() + bar.get_height() / 2,
+        f"{t:.6f} s",
+        va="center",
+        fontsize=9,
+    )
+
+ax.set_yticks(y_pos)
+ax.set_yticklabels(labels, fontsize=10)
+ax.invert_yaxis()
+ax.set_xlabel("Time per call (s)", fontsize=11)
+fig.suptitle(
+    f"Pixelization Interferometer Likelihood — {instrument.upper()}",
+    fontsize=12,
+    fontweight="bold",
+)
+_vmap_title = f"vmap speedup: {vmap_speedup:.1f}x" if vmap_speedup is not None else "vmap: SKIPPED"
+ax.set_title(
+    f'AutoLens v{al_version}  |  {pixel_scale}"/px  |  '
+    f"{real_space_shape[0]}x{real_space_shape[1]} real-space  |  "
+    f"{n_visibilities} visibilities  |  {mesh_shape[0]}x{mesh_shape[1]} mesh  |  "
+    f"{_vmap_title}",
+    fontsize=9,
+)
+ax.margins(x=0.2)
+fig.tight_layout()
+
+fig.savefig(chart_path, dpi=150)
+plt.close(fig)
+print(f"  Bar chart saved to:    {chart_path}")
+
+
+# ===================================================================
+# Regression assertion — realistic-scale deterministic log-evidence
+# ===================================================================
+#
+# Simulator truth parameters via GaussianPrior(mean=truth, sigma=small) make
+# the full-pipeline log-evidence deterministic at the prior median.
+# Pinned empirically per instrument; ``None`` means "skip the assertion and
+# print the value so it can be pasted in here on a clean run". sma was
+# bumped to mask_radius=3.5 in 2026-05-21's INSTRUMENTS refactor — the
+# old mask_radius=3.0 value no longer applies and needs re-measuring.
+_pinned_drift: list = []
+_pinned_expected = None
+
+EXPECTED_LOG_EVIDENCE = {
+    "sma": None,
+    "alma": None,
+    "alma_high": None,
+}
+
+expected_log_evidence = EXPECTED_LOG_EVIDENCE.get(instrument)
+_pinned_expected = expected_log_evidence
+
+if expected_log_evidence is None:
+    print(
+        f"  Regression assertion SKIPPED for {instrument} "
+        f"(no pinned value). Eager log_evidence = {figure_of_merit_ref}"
+    )
+else:
+    _rec = check_pinned(figure_of_merit_ref, _pinned_expected, label="eager", rtol=1e-4)
+    if _rec is not None:
+        _pinned_drift.append(_rec)
+    _rec = check_pinned(float(full_result), _pinned_expected, label="full", rtol=1e-3)
+    if _rec is not None:
+        _pinned_drift.append(_rec)
+    if result_vmap is not None:
+        _rec = check_pinned(np.array(result_vmap), _pinned_expected, label="vmap", rtol=1e-3)
+        if _rec is not None:
+            _pinned_drift.append(_rec)
+
+
+# Pinned-value outcome -> result JSON: profiling records and flags drift,
+# never adjudicates library correctness (autolens_workspace_test's remit;
+# boundary rule in results/notes/design_lock_in.md). PyAutoHeart's vitals
+# scan reads the pinned_drift field.
+record_pinned_check(dict_path, _pinned_expected, _pinned_drift)
+if _pinned_expected is not None and not _pinned_drift:
+    print("  Pinned-value check PASSED (recorded in result JSON).")

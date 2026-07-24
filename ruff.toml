@@ -49,7 +49,7 @@ ignore = [
 
 [lint.per-file-ignores]
 # build_readme.py uses dynamic re.sub callbacks that confuse some checkers.
-"scripts/build_readme.py" = ["B023"]  # function-uses-loop-variable
+"scripts/misc/tooling/build_readme.py" = ["B023"]  # function-uses-loop-variable
 
 [format]
 # Defaults: black-compatible. Nothing to override.

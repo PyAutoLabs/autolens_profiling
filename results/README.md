@@ -2,18 +2,18 @@
 
 Profiling artifacts written by the packages above. Layout mirrors the source
 packages; the dashboard tables in every README are rendered from this tree by
-`scripts/build_readme.py`.
+`scripts/misc/tooling/build_readme.py`.
 
 ## Sections
 
 | Folder | Written by | Contents |
 |--------|-----------|----------|
-| `runtime/` | [`likelihood_runtime/`](../likelihood_runtime/README.md) sweeps | Per-config sweep outputs + `comparison.{json,png}` per cell; A100 logs/probes |
-| `breakdown/` | [`likelihood_breakdown/`](../likelihood_breakdown/README.md) | Versioned per-step decompositions |
-| `simulators/` | [`simulators/`](../simulators/README.md) | Versioned simulator run-time summaries |
-| `searches/` | [`searches/`](../searches/README.md) | Versioned sampler profiling summaries |
-| `pipeline_resume/` | [`pipeline_resume/`](../pipeline_resume/README.md) | Versioned SLaM resume-overhead summaries (cold + resume run records) |
-| `quick_update/` | [`quick_update/`](../quick_update/README.md) | Unversioned fast re-profiling snapshots (scratch tier) |
+| `runtime/` | [`likelihood_runtime/`](../scripts/misc/likelihood_runtime/README.md) sweeps | Per-config sweep outputs + `comparison.{json,png}` per cell; A100 logs/probes |
+| `breakdown/` | [`likelihood_breakdown/`](../scripts/misc/likelihood_breakdown/README.md) | Versioned per-step decompositions |
+| `simulators/` | [`simulators/`](../scripts/misc/simulators/README.md) | Versioned simulator run-time summaries |
+| `searches/` | [`searches/`](../scripts/misc/searches/README.md) | Versioned sampler profiling summaries |
+| `pipeline_resume/` | [`pipeline_resume/`](../scripts/misc/pipeline_resume/README.md) | Versioned SLaM resume-overhead summaries (cold + resume run records) |
+| `quick_update/` | [`quick_update/`](../scripts/misc/quick_update/README.md) | Unversioned fast re-profiling snapshots (scratch tier) |
 | `notes/` | humans + agents | Narrative findings and design notes (e.g. [`design_lock_in.md`](./notes/design_lock_in.md)) |
 | `baselines/` | campaign snapshots | Named, frozen baselines (e.g. `PreOptimizationTimes/`) — see below |
 
@@ -30,7 +30,7 @@ is retained side-by-side so cross-release trends stay inspectable:
 The version string is the PyAutoLens release that produced the numbers
 (e.g. `v2026.5.29.4`).
 
-**Per-config sweeps** — written by `likelihood_runtime/sweep.py` and
+**Per-config sweeps** — written by `scripts/misc/likelihood_runtime/sweep.py` and
 aggregated by `aggregate.py`; each cell dir holds the *latest* sweep:
 
 ```

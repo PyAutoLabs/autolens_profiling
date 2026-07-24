@@ -40,7 +40,7 @@ echo "Inversion path: sparse (w-tilde)"
 
 cd $AP_ROOT
 
-python3 likelihood_breakdown/imaging/pixelization.py \
+python3 scripts/imaging/likelihood_breakdown/pixelization.py \
     --config-name hpc_a100_mp \
     --sparse \
     --use-mixed-precision

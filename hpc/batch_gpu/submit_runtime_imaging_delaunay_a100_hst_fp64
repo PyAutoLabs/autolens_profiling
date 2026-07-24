@@ -41,13 +41,13 @@ cd $AP_ROOT
 
 # Phase A — vmap-probe (early exit with memory_analysis + batch recommendation)
 echo "--- vmap-probe ---"
-python3 likelihood_runtime/imaging/delaunay.py \
+python3 scripts/imaging/likelihood_runtime/delaunay.py \
     --instrument hst \
     --vmap-probe
 
 # Phase B — full single-JIT + vmap timing
 echo "--- full timing ---"
-python3 likelihood_runtime/imaging/delaunay.py \
+python3 scripts/imaging/likelihood_runtime/delaunay.py \
     --instrument hst \
     --config-name hpc_a100_fp64
 
