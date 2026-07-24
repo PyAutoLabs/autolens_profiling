@@ -1,0 +1,175 @@
+{
+  "sampler": "multi_start_adam",
+  "dataset_class": "group",
+  "model": "mge",
+  "instrument": "hst",
+  "config_name": "local_gpu_fp64",
+  "version": "2026.7.9.1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "omp_num_threads": "1",
+    "cpu_count": 8,
+    "nvidia_smi": "NVIDIA GeForce RTX 2060 with Max-Q Design, 5149 MiB, 6144 MiB"
+  },
+  "use_mixed_precision": false,
+  "sampler_config": {
+    "n_starts": 32,
+    "n_steps": 300,
+    "learning_rate": 0.01,
+    "number_of_cores": 1
+  },
+  "model_summary": {
+    "free_parameters": 54,
+    "best_fit": "lens_0.theta_E=2.267  lens_1.theta_E=6.164  lens_2.theta_E=2.957  lens_3.theta_E=6.804"
+  },
+  "results": {
+    "log_evidence": NaN,
+    "max_log_likelihood": -231891.0059681594,
+    "posterior_samples": 33
+  },
+  "performance": {
+    "total_wall_s": 2368.2571609020233,
+    "viz_wall_s": 0.0,
+    "viz_n_calls": 8,
+    "viz_disabled": true,
+    "sampler_wall_s": 2368.2571609020233,
+    "likelihood_evals": 33,
+    "time_per_eval_ms": 71765.36851218253
+  },
+  "recovery": {
+    "lenses": [
+      {
+        "name": "lens_0",
+        "einstein_radius_truth": 1.2,
+        "einstein_radius_fit": 2.2671022131850327,
+        "einstein_radius_frac_error": 0.8892518443208607,
+        "centre_truth": [
+          0.0,
+          0.0
+        ],
+        "centre_fit": [
+          -0.29121598706364854,
+          -0.12023705808335834
+        ],
+        "centre_error_arcsec": 0.3150614245793921,
+        "shear_truth": [
+          0.03,
+          0.04
+        ],
+        "shear_fit": [
+          0.22410263935699895,
+          0.024335463665595268
+        ],
+        "shear_abs_error": [
+          0.19410263935699895,
+          0.015664536334404733
+        ]
+      },
+      {
+        "name": "lens_1",
+        "einstein_radius_truth": 0.5,
+        "einstein_radius_fit": 6.163610011453177,
+        "einstein_radius_frac_error": 11.327220022906355,
+        "centre_truth": [
+          1.6,
+          1.1
+        ],
+        "centre_fit": [
+          1.8266335813784407,
+          1.2263679821515336
+        ],
+        "centre_error_arcsec": 0.2594834235967079
+      },
+      {
+        "name": "lens_2",
+        "einstein_radius_truth": 0.45,
+        "einstein_radius_fit": 2.9571703927542057,
+        "einstein_radius_frac_error": 5.571489761676012,
+        "centre_truth": [
+          -1.4,
+          1.3
+        ],
+        "centre_fit": [
+          -1.284917157397657,
+          1.213717943910677
+        ],
+        "centre_error_arcsec": 0.14383550974789466
+      },
+      {
+        "name": "lens_3",
+        "einstein_radius_truth": 0.5,
+        "einstein_radius_fit": 6.804051980675641,
+        "einstein_radius_frac_error": 12.608103961351283,
+        "centre_truth": [
+          0.6,
+          -1.7
+        ],
+        "centre_fit": [
+          0.8399470103531698,
+          -2.6017622536106506
+        ],
+        "centre_error_arcsec": 0.9331397161274316
+      }
+    ],
+    "sources": [
+      {
+        "name": "source_0",
+        "centre_truth": [
+          0.05,
+          0.0
+        ],
+        "centre_fit": [
+          0.7621216238904818,
+          -0.6275930055949414
+        ],
+        "centre_error_arcsec": 0.9492050294241539
+      },
+      {
+        "name": "source_1",
+        "centre_truth": [
+          0.4,
+          0.3
+        ],
+        "centre_fit": [
+          -1.3044450885856984,
+          1.2015053623915959
+        ],
+        "centre_error_arcsec": 1.9281714079471026
+      },
+      {
+        "name": "source_2",
+        "centre_truth": [
+          -0.3,
+          0.25
+        ],
+        "centre_fit": [
+          1.4667148170915767,
+          -0.11195776825617511
+        ],
+        "centre_error_arcsec": 1.8034119526419676
+      },
+      {
+        "name": "source_3",
+        "centre_truth": [
+          0.25,
+          -0.35
+        ],
+        "centre_fit": [
+          0.4016847632983243,
+          -1.4774719617719536
+        ],
+        "centre_error_arcsec": 1.1376296813984619
+      }
+    ],
+    "overall_pass": false,
+    "max_einstein_radius_frac_error": 12.608103961351283,
+    "max_centre_error_arcsec": 1.9281714079471026,
+    "tolerances": {
+      "einstein_radius_rtol": 0.1,
+      "centre_atol_arcsec": 0.1,
+      "shear_atol": 0.03
+    }
+  }
+}
