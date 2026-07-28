@@ -260,3 +260,116 @@ table as the reference):**
 every point in the lifecycle. Any further reduction would come from upstream
 JAX (tracing speed, compile speed), not from this stack — no further
 engineering is warranted here. The compile-time arc (#71 → #74 → #77) is done.
+
+## Multi-band `FactorGraphModel` `value_and_grad` — the heterogeneous-shape cliff
+
+The #71 → #77 census measured **single-band** cells only. Real multi-wavelength
+fits build an `af.FactorGraphModel` with one `AnalysisFactor` per band, and the
+bands have **different pixel scales** (e.g. JWST F115W/F150W at 0.03 arcsec/px vs
+F277W/F444W at 0.06 arcsec/px) — so the factors carry **different masked-pixel
+counts**. This section bounds the cold `vag` compile of that graph.
+
+Reproduce via the imaging-datacube cells added to `scripts/misc/searches/_setup.py`
+(`datacube_img` = 4 identical `jwst` 0.03″ channels; `datacube_img_hetero` =
+2×`jwst` 0.03″ + 2×`jwst_lw` 0.06″, two distinct shapes):
+
+```bash
+python scripts/misc/jax_compile/probe.py --dataset-class datacube_img        --model-type mge --transforms vag --cache-dir /tmp/c_homo
+python scripts/misc/jax_compile/probe.py --dataset-class datacube_img_hetero --model-type mge --transforms vag --cache-dir /tmp/c_het
+```
+
+**Local CPU, MGE `vag`, 4-band factor graph (ndim 15):**
+
+| arm | distinct shapes | cold compile | warm compile | trace | steady eval |
+|---|---|---|---|---|---|
+| `datacube_img` (homogeneous) | 1 | **120.0 s** | 2.4 s | ~70 s | 0.46 s |
+| `datacube_img_hetero` (heterogeneous) | 2 | **704.4 s** | 7.0 s | ~62 s | 0.60 s |
+
+Findings:
+
+1. **Same-shape N-band compile ≈ single-band compile.** Four identical-shape
+   factors cost 120 s — the single-band `mge / vag` figure (117 s). XLA fuses the
+   identical factors into **one shared kernel**; the factor graph adds no compile
+   cost when band shapes match.
+2. **Heterogeneous shapes are a 5.9× cold-compile cliff, and superlinear in the
+   number of distinct shapes.** Two distinct shapes cost ~6× (not 2×) a single
+   fusion — XLA cannot share fused sub-graphs across differently-shaped factors,
+   and welds them into one large `jit_call`. Trace and steady-state eval are
+   unchanged (~62 s / 0.60 s), so this is a pure XLA fusion-*compilation* effect.
+   **This alone is not the observed >1 h** — heterogeneity by itself tops out at
+   ~12 min here; see finding 4 for what closes the gap.
+3. **The persistent cache rescues both arms** (previously certified single-band
+   only): warm compile is 2.4 s / 7.0 s — 50× and 101× — so the heterogeneous
+   cliff is a **one-time, first-compile (cache-miss) cost per graph structure**;
+   identical restarts warm from disk.
+4. **The dominant driver of the real >1 h is the multi-start transform + core
+   count, not heterogeneity.** Real fits use `MultiStartProdigy`, i.e.
+   `lax.map(value_and_grad, batch_size)` over the starts — a `vmap` of the whole
+   factor-graph fusion, `batch_size`-wide. On this **single-core** host
+   (`nproc=1`; XLA compiles on host CPUs, so one core is near worst-case) compile
+   scales steeply with start-width, on the *homogeneous* 4-band graph:
+
+   | transform | start-width | cold compile |
+   |---|---|---|
+   | `vag` | 1 | 120 s |
+   | `vmap_vag` | 2 | 209 s |
+   | `laxmap_vag` (MultiStartProdigy default: `batch_size` 4 / `n_batch` 16) | 4 × scan | **did not finish in 55 min** |
+
+   So the full production transform is intractable to compile cold on one core
+   even *before* heterogeneity is added; heterogeneity's 5.9× then stacks on top.
+   This reproduces the real >1 h and locates it in the transform × single-core
+   compile, with heterogeneity as an additional multiplier. On a multi-core /
+   A100 host the absolute numbers drop sharply (XLA parallelises compile across
+   cores) — the CPU figures here are worst-case, not representative of HPC runs.
+5. **The `lax.map` *scan*, not the multi-start batching, is the compile killer —
+   and hoisting the loop out of XLA fixes it.** Holding vmap width fixed at 1 and
+   varying only *how* the starts are iterated:
+
+   | transform | multi-start loop | vmap width | cold compile |
+   |---|---|---|---|
+   | `pyloop_vag` | Python loop (batching hoisted out of XLA) | 1 | **166 s** |
+   | `laxmap_vag` | in-XLA `lax.map` (scan) | 1 | **did not finish in >30 min** |
+
+   Same graph, same vmap width — 166 s vs intractable. Compiling a `lax.map`
+   scan whose body is a `value_and_grad` of the multi-band fusion is what
+   explodes; iterating the starts in Python over small `vmap` chunks (the
+   `pyloop` pattern) keeps cold compile at single-fit cost. **Clean re-confirm
+   (fresh cache, 10 GB free): the `laxmap bs=1` compile was OOM-killed** (dmesg
+   `Out of memory: Killed … anon-rss 6.0 GB`) — so the `lax.map` scan path is
+   *memory-explosive to compile* here, not merely slow, whereas `pyloop`
+   compiled at modest memory. This is the concrete `MultiStartProdigy` source
+   lever — the "candidate `laxmap_vag` replacement" `probe.py` was built to test.
+   (The scan's compile-memory blow-up may be host/jax-version specific; a
+   multi-core / larger-RAM host might compile it slowly rather than OOM — but the
+   `pyloop` path sidesteps it regardless.)
+
+**Verdict / levers for N-band gradient fits:**
+
+- **The cache already amortizes the whole cold cost** — transform, heterogeneity
+  and all — for repeated fits of the same graph. Ensure `JAX_COMPILATION_CACHE_DIR`
+  is set (shipped default) and the graph structure is stable across runs; this is
+  the single biggest lever and it already ships.
+- **Compile on a multi-core / GPU host.** The 1-core figures above are worst-case;
+  XLA parallelises compilation across cores, so an HPC/A100 first-compile is far
+  cheaper. The most certain speed-up for a user hitting the >1 h wall is to run
+  the first (cache-populating) fit somewhere with more cores.
+- **Python-loop multi-start batching in `MultiStartProdigy` (the leading source
+  lever).** Finding 5: replacing the in-XLA `lax.map` scan with a Python loop over
+  small `vmap` chunks keeps cold compile at single-fit cost (166 s vs intractable).
+  `batch_size` becomes a compile/throughput tunable — small on CPU, wider on GPU —
+  with the outer loop in Python so no scan is compiled. Concrete, validated (pending
+  the clean re-confirm), and the biggest attack on the dominant driver.
+- **Immediate user workaround — pad short-wavelength bands to a common grid** so
+  all factors share one shape. That removes the heterogeneity multiplier
+  (704 s → 120 s cold here) but *not* the transform cost, so it helps most when
+  combined with the cache.
+- **Open (sub-investigation B, secondary):** whether a **per-factor jit boundary**
+  inside `FactorGraphModel.log_likelihood_function` additionally bounds the cold
+  cost to N×single-band + a linear combine (attacking the heterogeneity multiplier
+  at its source). Not yet measured.
+
+Rows recorded in `results/local_cpu/mge.json` (tags `mb_{homo,hetero}_{cold,warm}`,
+`mb_homo_vmap2_cold`, `mb_homo_pyloop_bs1_cold`). A100 / multi-core rows are the natural follow-up — the
+single-band A100 `vag` cold was ~28 s vs 229 s CPU, and the transform-width and
+heterogeneity blow-ups above should both shrink dramatically with more compile
+cores.
