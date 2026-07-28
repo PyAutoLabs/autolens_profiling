@@ -196,9 +196,7 @@ def _cell_lookup(table: dict[str, int], dataset_class: str | None, model_type: s
     return table.get(dataset_class)
 
 
-def multi_start_n_starts(
-    dataset_class: str | None = None, model_type: str | None = None
-) -> int:
+def multi_start_n_starts(dataset_class: str | None = None, model_type: str | None = None) -> int:
     """Resolve ``n_starts`` for a cell, honouring ``SEARCHES_N_STARTS``."""
     override = os.environ.get("SEARCHES_N_STARTS")
     if override:
@@ -226,9 +224,7 @@ _MULTI_START_N_STEPS_BY_CELL: dict[str, int] = {
 }
 
 
-def multi_start_n_steps(
-    dataset_class: str | None = None, model_type: str | None = None
-) -> int:
+def multi_start_n_steps(dataset_class: str | None = None, model_type: str | None = None) -> int:
     """Resolve ``n_steps`` for a cell, honouring ``SEARCHES_N_STEPS``."""
     override = os.environ.get("SEARCHES_N_STEPS")
     if override:
