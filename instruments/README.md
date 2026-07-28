@@ -67,7 +67,7 @@ Splitting the dicts into a dedicated home means:
 The legacy import paths still work:
 
 ```python
-from simulators.imaging import INSTRUMENTS         # still valid
+from simulators.imaging import INSTRUMENTS  # still valid
 from simulators.interferometer import INSTRUMENTS  # still valid
 ```
 
