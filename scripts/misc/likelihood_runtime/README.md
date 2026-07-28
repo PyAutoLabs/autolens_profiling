@@ -51,7 +51,7 @@ The sweep harness drives every in-scope cell through this matrix:
 | `local_cpu_mp` | CPU | mixed (fp32 inversion) | same + `--use-mixed-precision` |
 | `local_gpu_fp64` | RTX 2060 (consumer) | fp64 | `JAX_PLATFORM_NAME=cuda JAX_PLATFORMS=cuda,cpu` |
 | `local_gpu_mp` | RTX 2060 | mixed | same + `--use-mixed-precision` |
-| `hpc_a100_fp64` | A100 (80 GB) | fp64 | SLURM-dispatched via the submit scripts under [`hpc/`](../hpc/README.md) |
+| `hpc_a100_fp64` | A100 (80 GB) | fp64 | SLURM-dispatched via the submit scripts under [`hpc/`](../../../hpc/README.md) |
 | `hpc_a100_mp` | A100 | mixed | same + `--use-mixed-precision` |
 
 The `cuda,cpu` listing on GPU configs is load-bearing: the Delaunay + datacube paths use `jax.pure_callback` for Hilbert-curve mesh generation, which needs a CPU device available even when the primary platform is CUDA. Without the trailing `cpu` the callback raises `pure_callback failed to find a local CPU device`.
