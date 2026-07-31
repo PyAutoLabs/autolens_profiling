@@ -51,6 +51,7 @@ INSTRUMENTS = {
         "lens_einstein_radius": 1.6,
         "lens_ell_comps_axis_angle": (0.9, 45.0),
         "source_centre": (0.07, 0.07),
+        "source_flux": 0.1,  # PointFlux truth anchor only — no flux data is simulated
         "source_intensity": 0.1,
         "source_effective_radius": 0.02,
         "source_radius_break": 0.025,
@@ -67,8 +68,60 @@ INSTRUMENTS = {
     },
 }
 
+# #678 phase B evidence-campaign variants — all derived from "simple" (same lens,
+# grid, noise, seed); ``simulate()`` interprets the extra keys AFTER solving
+# positions (see the "output_point_datasets" section below).
+INSTRUMENTS["simple_missing"] = {
+    **INSTRUMENTS["simple"],
+    # Drops solved-position index 0 — the lowest-|mu| (~6.8, the faintest of the
+    # 4 "simple" images) counter-image — before writing. truth.json is identical
+    # to "simple" (only the observed positions are perturbed).
+    "variant": {"drop_image_index": 0},
+}
+INSTRUMENTS["simple_extra"] = {
+    **INSTRUMENTS["simple"],
+    # Appends a spurious (non-lensed) position with the same noise sigma before
+    # writing. truth.json is identical to "simple".
+    "variant": {"extra_position": [1.0, -1.2]},
+}
+INSTRUMENTS["near_caustic"] = {
+    k: v for k, v in INSTRUMENTS["simple"].items() if k != "source_centre"
+}
+# No "source_centre" — simulate() resolves it from the lens's tangential caustic
+# (see _source_centre_near_caustic) and writes the resolved value into both the
+# tracer and truth.json.
+INSTRUMENTS["near_caustic"]["source_centre_caustic_fraction"] = 0.95
+
 
 _REPO_ROOT = _profiling_root()  # autolens_profiling/
+
+
+def _source_centre_near_caustic(al, lens_galaxy, grid, fraction: float) -> tuple[float, float]:
+    """Resolve a ``near_caustic`` source_centre: ``fraction`` of the way to the
+    lens's tangential caustic along the +y=+x diagonal (#678 phase B).
+
+    Uses ``al.LensCalc.from_tracer`` on a lens-only tracer (no source profile
+    needed to trace the critical curve/caustic) to compute the tangential
+    caustic on a fine evaluation grid, then picks the caustic point whose polar
+    angle is closest to the +y=+x diagonal (45 degrees) — matching "simple"'s
+    existing (0.07, 0.07) placement direction. Scaling by ``fraction`` (< 1)
+    keeps the source inside the caustic (still a quad).
+    """
+    import numpy as np
+
+    lens_only_tracer = al.Tracer(galaxies=[lens_galaxy])
+    calc = al.LensCalc.from_tracer(tracer=lens_only_tracer, use_multi_plane=False)
+    caustic_list = calc.tangential_caustic_list_from(grid=grid, pixel_scale=0.01)
+    if not caustic_list:
+        raise RuntimeError(
+            "near_caustic: al.LensCalc.tangential_caustic_list_from found no "
+            "tangential caustic curve for this lens model."
+        )
+    caustic = np.asarray(caustic_list[0])
+    angle = np.arctan2(caustic[:, 0], caustic[:, 1])
+    diagonal_idx = int(np.argmin(np.abs(angle - np.pi / 4)))
+    caustic_point = caustic[diagonal_idx]
+    return (float(fraction * caustic_point[0]), float(fraction * caustic_point[1]))
 
 
 def simulate(instrument: str = "simple", output_root: Path | None = None) -> Path:
@@ -92,7 +145,9 @@ def simulate(instrument: str = "simple", output_root: Path | None = None) -> Pat
             f"Unknown instrument '{instrument}'. Choose from: {list(INSTRUMENTS.keys())}"
         )
 
-    config = INSTRUMENTS[instrument]
+    # Copy so a resolved "near_caustic" source_centre never mutates the module-
+    # level INSTRUMENTS preset across repeated in-process calls.
+    config = dict(INSTRUMENTS[instrument])
     grid_shape = config["grid_shape"]
     pixel_scale = config["pixel_scale"]
 
@@ -171,6 +226,11 @@ def simulate(instrument: str = "simple", output_root: Path | None = None) -> Pat
                 ell_comps=al.convert.ell_comps_from(axis_ratio=axis, angle=angle),
             ),
         )
+        if "source_centre_caustic_fraction" in config:
+            config["source_centre"] = _source_centre_near_caustic(
+                al, lens_galaxy, grid, config["source_centre_caustic_fraction"]
+            )
+            print(f"  Resolved near_caustic source_centre: {config['source_centre']}")
         source_galaxy = al.Galaxy(
             redshift=1.0,
             light=al.lp.ExponentialCore(
@@ -202,6 +262,13 @@ def simulate(instrument: str = "simple", output_root: Path | None = None) -> Pat
         )
 
     print(f"  Found {len(positions)} image positions")
+
+    if "source_centre_caustic_fraction" in config:
+        # Fallback per the phase-B spec: no dedicated "is this a quad" helper
+        # exists, so assert directly on the solved image count instead.
+        assert len(positions) >= 4, (
+            f"near_caustic: expected >=4 images inside the caustic, got {len(positions)}"
+        )
 
     # === PART 3 — solver.solve (JIT) ===
 
@@ -270,6 +337,21 @@ def simulate(instrument: str = "simple", output_root: Path | None = None) -> Pat
         positions_with_noise = positions + rng.normal(
             loc=0.0, scale=position_noise, size=positions.shape
         )
+        positions_with_noise = np.asarray(positions_with_noise)
+
+        # #678 phase B variants — applied to the dataset positions + noise
+        # AFTER solving, before writing. No-op for "simple" (no "variant" key).
+        variant = config.get("variant")
+        if variant is not None and "drop_image_index" in variant:
+            positions_with_noise = np.delete(
+                positions_with_noise, variant["drop_image_index"], axis=0
+            )
+        if variant is not None and "extra_position" in variant:
+            extra_position = np.asarray([variant["extra_position"]], dtype=float)
+            positions_with_noise = np.concatenate(
+                [positions_with_noise, extra_position], axis=0
+            )
+
         positions_with_noise = al.Grid2DIrregular(values=positions_with_noise)
         dataset = al.PointDataset(
             name="point_0",
@@ -295,6 +377,23 @@ def simulate(instrument: str = "simple", output_root: Path | None = None) -> Pat
 
     with timer.section("output_json"):
         al.output_to_json(obj=tracer, file_path=dataset_path / "tracer.json")
+        # truth.json — mirrors simulators/group4_mge.py's truth.json convention
+        # (a single JSON-friendly record next to the dataset for recovery /
+        # truth-anchoring). "simple_missing" / "simple_extra" write the SAME
+        # truth as "simple" (only the observed positions are perturbed);
+        # "near_caustic" writes the RESOLVED source_centre.
+        truth_record = {
+            "lens_centre": [float(c) for c in config["lens_centre"]],
+            "lens_ell_comps": [
+                float(c) for c in al.convert.ell_comps_from(axis_ratio=axis, angle=angle)
+            ],
+            "lens_einstein_radius": float(config["lens_einstein_radius"]),
+            "source_centre": [float(c) for c in config["source_centre"]],
+            "source_flux": float(config["source_flux"]),
+            "position_noise_sigma": float(position_noise),
+            "seed": int(config["seed"]),
+        }
+        (dataset_path / "truth.json").write_text(json.dumps(truth_record, indent=2))
 
     # === Summary ===
 

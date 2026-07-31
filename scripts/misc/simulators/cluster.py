@@ -331,20 +331,30 @@ with timer.section("solver_build"):
 print("\n--- PART 4: jitted_solve per source ---")
 
 
-@jax.jit
-def jitted_solve(tracer, source_plane_coordinate):
-    return solver.solve(
-        tracer=tracer,
-        source_plane_coordinate=source_plane_coordinate,
-        xp=jnp,
-        remove_infinities=False,
-    ).array
+# `plane_redshift` is per-source and MUST be passed: `solve` defaults to the tracer's
+# final plane, which silently produced positions of a hypothetical final-plane source
+# for every non-final source (PyAutoLens#678 phase B discovery — the z=1.0 source's
+# committed positions back-traced to the truth centre only on the z=2.0 plane). It is
+# closed over per source below (a python float, so it must be static under jit).
+def jitted_solve_for(plane_redshift):
+    @jax.jit
+    def jitted_solve(tracer, source_plane_coordinate):
+        return solver.solve(
+            tracer=tracer,
+            source_plane_coordinate=source_plane_coordinate,
+            xp=jnp,
+            plane_redshift=plane_redshift,
+            remove_infinities=False,
+        ).array
+
+    return jitted_solve
 
 
 positions_list = []
 
-for i, src_centre in enumerate(source_centres):
+for i, (src_centre, src_z) in enumerate(zip(source_centres, source_redshifts)):
     coord = jnp.asarray(src_centre)
+    jitted_solve = jitted_solve_for(float(src_z))
 
     # Use jit_profile so lower / compile / first / steady are all recorded
     # independently for each source — this is what makes per-source compile

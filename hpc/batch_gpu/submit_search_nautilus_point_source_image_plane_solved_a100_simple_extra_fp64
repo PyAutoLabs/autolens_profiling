@@ -1,0 +1,48 @@
+#!/bin/bash -l
+#
+# PyAutoLens#678 phase B — point-source defaults evidence campaign: A100
+# search profiling for searches/nautilus/point_source/image_plane_solved x simple_extra x
+# fp64.
+#
+# Feeds exp3 (pairing discriminator): solved-centre fit on the simple_extra
+# dataset (one spurious position injected (extra_position: [1.0, -1.2])) — tests whether the pairing discriminator flags
+# the anomaly relative to the simple-dataset baseline cell above.
+
+#SBATCH -J search_nautilus_point_source_image_plane_solved_simple_extra_fp64
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=2:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_profiling
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+nvidia-smi
+
+echo "=========================================="
+date
+echo "Cell:       searches/nautilus/point_source/image_plane_solved"
+echo "Instrument: simple_extra"
+echo "Precision:  fp64"
+
+cd $AP_ROOT
+python3 scripts/point_source/searches/nautilus/image_plane_solved.py \
+    --instrument simple_extra \
+    --config-name hpc_a100_fp64 \
+    --output-dir $AP_ROOT/results/searches/nautilus/point_source/image_plane_solved/simple_extra
+
+echo "Finished."
+date

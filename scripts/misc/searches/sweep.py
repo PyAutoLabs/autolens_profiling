@@ -74,6 +74,8 @@ _INSTRUMENT_SETS: dict[str, tuple[str, ...]] = {
     "datacube": ("sma",),
     # group4 MGE simulator only ships an hst geometry today.
     "group": ("hst",),
+    # cluster simulator hardcodes its own output path — no per-instrument dict.
+    "cluster": ("simple",),
 }
 
 
@@ -89,6 +91,21 @@ CELLS: list[tuple[str, str, str]] = [
     ("multi_start_prodigy", "point_source", "image_plane"),
     ("multi_start_prodigy", "point_source", "source_plane"),
     ("multi_start_prodigy", "point_source", "image_plane_solved"),
+    # #678 phase B evidence campaign rows
+    ("nautilus", "point_source", "source_plane_solved"),
+    ("nautilus", "point_source", "image_plane_solved"),
+    ("nautilus", "point_source", "source_plane_tensor"),
+    ("nautilus", "point_source", "image_plane_repeat_solved"),
+    ("multi_start_prodigy", "point_source", "source_plane_solved"),
+    ("multi_start_prodigy", "point_source", "source_plane_tensor"),
+    # #678 phase B evidence campaign rows
+    ("nautilus", "cluster", "source_plane_solved"),
+    ("nautilus", "cluster", "source_plane_tensor"),
+    ("nautilus", "cluster", "source_plane"),
+    ("nautilus", "cluster", "image_plane_solved"),
+    ("multi_start_prodigy", "cluster", "source_plane_solved"),
+    ("multi_start_prodigy", "cluster", "source_plane_tensor"),
+    ("multi_start_prodigy", "cluster", "image_plane_solved"),
     ("nautilus", "imaging", "mge"),
     ("nautilus", "imaging", "pixelization"),
     ("nautilus", "imaging", "delaunay"),

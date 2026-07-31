@@ -63,7 +63,21 @@ _N_LIVE: dict[tuple[str, str], int] = {
     ("interferometer", "delaunay"): 150,
     ("point_source", "image_plane"): 200,
     ("point_source", "source_plane"): 200,
+    # #678 phase B evidence campaign — same parametric-phase n_live as the
+    # image_plane / source_plane anchors above (same lens-mass free params).
+    ("point_source", "image_plane_solved"): 200,
+    ("point_source", "source_plane_solved"): 200,
+    ("point_source", "source_plane_tensor"): 200,
+    ("point_source", "image_plane_repeat_solved"): 200,
     ("datacube", "delaunay"): 150,
+    # #678 phase B evidence campaign — cluster cells. n_live=100 matches
+    # autolens_workspace/scripts/cluster/modeling.py's own Nautilus default
+    # for this ~6-free-parameter model (2 main lenses + scaling tier + host
+    # halo), rather than the 200 used for the point_source parametric phases.
+    ("cluster", "source_plane"): 100,
+    ("cluster", "source_plane_solved"): 100,
+    ("cluster", "source_plane_tensor"): 100,
+    ("cluster", "image_plane_solved"): 100,
 }
 
 

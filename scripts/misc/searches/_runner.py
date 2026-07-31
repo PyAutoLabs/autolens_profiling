@@ -38,6 +38,7 @@ from pathlib import Path
 from typing import Any
 
 import matplotlib
+import numpy as np
 
 matplotlib.use("Agg")
 import autolens as al  # noqa: E402
@@ -67,7 +68,25 @@ from _profile_cli import (  # noqa: E402
 # ``multi_start_adam`` do not, and record ``null`` rather than a misleading value.
 _SAMPLERS_WITH_N_LIVE = frozenset({"nautilus"})
 from searches._recovery import load_truth, recovery_report  # noqa: E402
-from searches._setup import build_for_cell, format_best_fit  # noqa: E402
+from searches._setup import (  # noqa: E402
+    build_for_cell,
+    cluster_point_fit_cls_for,
+    format_best_fit,
+    point_source_fit_cls_for,
+)
+
+# point_source model_types whose truth source profile is al.ps.PointSolved
+# (parameter-free — the *Solved fit classes solve the source centre
+# analytically); everything else uses al.ps.PointFlux at the truth centre.
+_POINT_SOURCE_SOLVED_MODEL_TYPES = frozenset(
+    {"image_plane_solved", "source_plane_solved", "image_plane_repeat_solved"}
+)
+
+# cluster model_types whose truth source profiles are al.ps.PointSolved
+# (#678 phase B chunk 2); everything else (source_plane / source_plane_tensor)
+# keeps al.ps.Point at the truth centre, mirroring
+# likelihood_breakdown/{image_plane,source_plane}.py's tracer_solved swap.
+_CLUSTER_SOLVED_MODEL_TYPES = frozenset({"source_plane_solved", "image_plane_solved"})
 
 
 def _recovery_for_cell(dataset_class: str, instrument: str, best_instance) -> dict | None:
@@ -88,11 +107,214 @@ def _recovery_for_cell(dataset_class: str, instrument: str, best_instance) -> di
         return {"error": repr(exc)}
 
 
+def _truth_anchor_for_cell(
+    dataset_class: str,
+    instrument: str,
+    model_type: str,
+    dataset: Any,
+    max_log_likelihood: float,
+) -> dict | None:
+    """Truth-anchored log likelihood for point_source cells (#678 phase B).
+
+    Builds the truth tracer directly from ``dataset/point_source/<instrument>/
+    truth.json`` — never via ``model.instance_from_prior_medians()`` (that's
+    the wrong tool: it reads prior means, not the simulator's actual input, and
+    is fragile for solved/free-mix models) — then evaluates it through
+    ``al.FitPointDataset`` using the SAME ``fit_positions_cls`` the cell itself
+    searches with (``_setup.point_source_fit_cls_for``), so
+    ``delta_max_ll_vs_truth`` is directly comparable to the search's own
+    ``max_log_likelihood``.
+
+    Returns ``None`` for non point_source / cluster cells. Never raises: on
+    any exception the failure is printed loudly and the exception string is
+    stored in place of the numeric fields instead of crashing the run.
+
+    Extended for cluster cells (#678 phase B chunk 2) — see
+    ``_cluster_truth_anchor`` below; dispatched here so both dataset_classes
+    share one entry point from ``run_search``.
+    """
+    if dataset_class == "cluster":
+        return _cluster_truth_anchor(instrument, model_type, dataset, max_log_likelihood)
+    if dataset_class != "point_source":
+        return None
+    try:
+        dataset_path = _WORKSPACE_ROOT / "dataset" / "point_source" / instrument
+        truth = json.loads((dataset_path / "truth.json").read_text())
+
+        lens = al.Galaxy(
+            redshift=0.5,
+            mass=al.mp.Isothermal(
+                centre=truth["lens_centre"],
+                ell_comps=truth["lens_ell_comps"],
+                einstein_radius=truth["lens_einstein_radius"],
+            ),
+        )
+        if model_type in _POINT_SOURCE_SOLVED_MODEL_TYPES:
+            point_0 = al.ps.PointSolved()
+        else:
+            # Includes "source_plane_tensor": free-centre tensor weighting,
+            # truth profile is still PointFlux at the truth centre.
+            point_0 = al.ps.PointFlux(centre=truth["source_centre"], flux=truth["source_flux"])
+        source = al.Galaxy(redshift=1.0, point_0=point_0)
+        truth_tracer = al.Tracer(galaxies=[lens, source])
+
+        solver_kwargs = dataset._profiling_solver_kwargs
+        grid = al.Grid2D.uniform(
+            shape_native=solver_kwargs["grid_shape"],
+            pixel_scales=solver_kwargs["pixel_scale"],
+        )
+        solver = al.PointSolver.for_grid(
+            grid=grid,
+            pixel_scale_precision=solver_kwargs["pixel_scale_precision"],
+            magnification_threshold=solver_kwargs["magnification_threshold"],
+        )
+        fit_positions_cls = point_source_fit_cls_for(model_type)
+        fit = al.FitPointDataset(
+            dataset=dataset,
+            tracer=truth_tracer,
+            solver=solver,
+            fit_positions_cls=fit_positions_cls,
+        )
+        truth_log_likelihood = float(fit.log_likelihood)
+        return {
+            "truth_log_likelihood": truth_log_likelihood,
+            "delta_max_ll_vs_truth": float(max_log_likelihood) - truth_log_likelihood,
+        }
+    except Exception as exc:  # never let the anchor step kill a completed search
+        print(f"  WARNING: truth-anchor step failed [{dataset_class}/{model_type}]: {exc!r}")
+        return {"truth_log_likelihood": repr(exc), "delta_max_ll_vs_truth": repr(exc)}
+
+
+def _cluster_truth_anchor(
+    instrument: str,
+    model_type: str,
+    dataset_list: Any,
+    max_log_likelihood: float,
+) -> dict | None:
+    """Truth-anchored log likelihood for cluster cells (#678 phase B chunk 2).
+
+    Loads the true ``Tracer`` from ``dataset/cluster/<instrument>/
+    tracer.json`` (written by ``scripts/misc/simulators/cluster.py`` via
+    ``al.output_to_json``) for its lens-plane galaxies (2 main dPIE lenses +
+    10 scaling members + 1 host halo, all at the lens redshift) — unlike the
+    point_source anchor above, which rebuilds the truth tracer field-by-field
+    from a small ``truth.json``, because the cluster tracer carries too many
+    mass components to hand-derive.
+
+    **Deviation (verified library gap)**: ``Tracer`` JSON round-tripping
+    silently DROPS a ``Galaxy``'s point-source profile (``al.ps.Point`` /
+    ``PointSolved``) — confirmed by a minimal ``output_to_json`` +
+    ``from_json`` reproduction; only ``bulge``/mass attributes survive. So
+    the spec's literal "swap Point for PointSolved inside the loaded tracer"
+    cannot work: there is no ``Point`` there to swap. Instead, the source
+    galaxies are rebuilt fresh from ``source_centres.json`` (written by the
+    same simulator, index-aligned with ``dataset_list``'s ``point_0``,
+    ``point_1``, ... order — both derive from the same simulator loop over
+    ``source_centres``) — parameter-free ``al.ps.PointSolved`` for
+    ``*_solved`` model types, or ``al.ps.Point(centre=<truth centre>)``
+    otherwise — dropping the tracer.json copies of those galaxies (only
+    their now-useless ``bulge`` survived anyway) and keeping every other
+    (lens-plane) galaxy unchanged.
+
+    ``truth_log_likelihood`` sums, over every system in ``dataset_list``,
+    ``al.FitPointDataset(dataset=<system>, tracer=<truth>, solver=<the cell's
+    solver>, fit_positions_cls=<the cell's fit class>).log_likelihood`` — the
+    same per-system fit-total pattern those breakdown scripts use (their
+    steps 3/4 for image-plane, 5/6 for source-plane). Never raises: on any
+    exception the failure is printed loudly and the exception string is
+    stored in place of the numeric fields instead of crashing the run.
+    """
+    try:
+        dataset_path = _WORKSPACE_ROOT / "dataset" / "cluster" / instrument
+        truth_tracer = al.from_json(file_path=str(dataset_path / "tracer.json"))
+        source_centres = al.from_json(file_path=str(dataset_path / "source_centres.json"))
+
+        source_redshifts = {float(d.redshift) for d in dataset_list}
+        lens_plane_galaxies = [
+            galaxy for galaxy in truth_tracer.galaxies if float(galaxy.redshift) not in source_redshifts
+        ]
+        source_galaxies = []
+        for i, dataset in enumerate(dataset_list):
+            if model_type in _CLUSTER_SOLVED_MODEL_TYPES:
+                point = al.ps.PointSolved()
+            else:
+                point = al.ps.Point(centre=tuple(float(v) for v in source_centres[i]))
+            source_galaxies.append(
+                al.Galaxy(redshift=float(dataset.redshift), **{dataset.name: point})
+            )
+        truth_tracer = al.Tracer(galaxies=lens_plane_galaxies + source_galaxies)
+
+        solver_kwargs = dataset_list._profiling_solver_kwargs
+        grid = al.Grid2D.uniform(
+            shape_native=solver_kwargs["grid_shape"],
+            pixel_scales=solver_kwargs["pixel_scale"],
+        )
+        solver = al.PointSolver.for_grid(
+            grid=grid,
+            pixel_scale_precision=solver_kwargs["pixel_scale_precision"],
+            magnification_threshold=solver_kwargs["magnification_threshold"],
+        )
+        fit_positions_cls = cluster_point_fit_cls_for(model_type)
+        truth_log_likelihood = 0.0
+        for dataset in dataset_list:
+            fit = al.FitPointDataset(
+                dataset=dataset,
+                tracer=truth_tracer,
+                solver=solver,
+                fit_positions_cls=fit_positions_cls,
+            )
+            truth_log_likelihood += float(fit.log_likelihood)
+        return {
+            "truth_log_likelihood": truth_log_likelihood,
+            "delta_max_ll_vs_truth": float(max_log_likelihood) - truth_log_likelihood,
+        }
+    except Exception as exc:  # never let the anchor step kill a completed search
+        print(f"  WARNING: truth-anchor step failed [cluster/{model_type}]: {exc!r}")
+        return {"truth_log_likelihood": repr(exc), "delta_max_ll_vs_truth": repr(exc)}
+
+
+def _posterior_stats(result: Any, uses_n_live: bool) -> dict[str, dict[str, float]] | None:
+    """Per-free-parameter ``{name: {"mean": .., "std": ..}}`` from the search
+    posterior (#678 phase B).
+
+    Only meaningful for samplers with an actual posterior (``nautilus`` /
+    nested sampling, gated by ``uses_n_live``); MAP optimizers (MultiStart*)
+    return a single best point, so this is ``None`` for them, matching the
+    existing ``n_live: null`` convention for MAP rows.
+
+    Reads the same ``samples.parameter_lists`` / ``samples.weight_list`` the
+    framework's own ``SamplesPDF.summary()`` derives its statistics from,
+    keyed by ``result.model.parameter_names`` (the flat free-parameter names,
+    in the same order as ``parameter_lists`` columns — the free-parameter
+    analogue of the named attributes ``format_best_fit`` reads off the best-fit
+    instance). Key order follows ``parameter_names`` and is therefore stable
+    across runs of the same cell.
+    """
+    if not uses_n_live:
+        return None
+    try:
+        samples = result.samples
+        names = result.model.parameter_names
+        parameters = np.asarray(samples.parameter_lists)
+        weights = np.asarray(samples.weight_list)
+        stats: dict[str, dict[str, float]] = {}
+        for i, name in enumerate(names):
+            values = parameters[:, i]
+            mean = float(np.average(values, weights=weights))
+            variance = float(np.average((values - mean) ** 2.0, weights=weights))
+            stats[name] = {"mean": mean, "std": float(variance**0.5)}
+        return stats
+    except Exception as exc:  # never let the stats step kill a completed search
+        print(f"  WARNING: posterior_stats step failed: {exc!r}")
+        return {"_error": repr(exc)}
+
+
 _DEFAULT_INSTRUMENTS: dict[str, str] = {
     "imaging": "hst",
     "interferometer": "sma",
     "point_source": "simple",
     "datacube": "sma",
+    "cluster": "simple",
 }
 
 
@@ -193,6 +415,17 @@ def run_search(
             f'max centre err {recovery["max_centre_error_arcsec"]:.3f}")'
         )
 
+    truth_anchor = _truth_anchor_for_cell(
+        dataset_class, instrument, model_type, dataset, metrics.max_log_likelihood
+    )
+    if truth_anchor is not None:
+        print(
+            f"  Truth log L:        {truth_anchor['truth_log_likelihood']!r} "
+            f"(delta vs max: {truth_anchor['delta_max_ll_vs_truth']!r})"
+        )
+
+    posterior_stats = _posterior_stats(primary_result, uses_n_live)
+
     summary = _build_summary(
         sampler=sampler,
         dataset_class=dataset_class,
@@ -208,6 +441,8 @@ def run_search(
         best_fit=best_fit,
         recovery=recovery,
         viz_disabled=disable_viz,
+        truth_anchor=truth_anchor,
+        posterior_stats=posterior_stats,
     )
 
     _print_summary(summary, metrics)
@@ -299,7 +534,20 @@ def _build_summary(
     best_fit: str,
     recovery: dict | None = None,
     viz_disabled: bool = False,
+    truth_anchor: dict | None = None,
+    posterior_stats: dict | None = None,
 ) -> dict:
+    results_block: dict = {
+        "log_evidence": metrics.log_evidence,
+        "max_log_likelihood": metrics.max_log_likelihood,
+        "posterior_samples": metrics.posterior_samples,
+    }
+    if truth_anchor is not None:
+        results_block.update(truth_anchor)
+    # Always present (null for MAP optimizers without a posterior) so the key
+    # order + shape is stable across every cell, not just point_source ones.
+    results_block["posterior_stats"] = posterior_stats
+
     summary = {
         "sampler": sampler,
         "dataset_class": dataset_class,
@@ -316,11 +564,7 @@ def _build_summary(
             "free_parameters": n_free_params,
             "best_fit": best_fit,
         },
-        "results": {
-            "log_evidence": metrics.log_evidence,
-            "max_log_likelihood": metrics.max_log_likelihood,
-            "posterior_samples": metrics.posterior_samples,
-        },
+        "results": results_block,
         "performance": {
             "total_wall_s": metrics.total_wall_s,
             "viz_wall_s": metrics.viz_wall_s,

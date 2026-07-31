@@ -49,6 +49,21 @@ dataset/point_source/simple/noise_map.fits
 dataset/point_source/simple/psf.fits
 dataset/point_source/simple/point_dataset_positions_only.csv
 
+# #678 phase B variant instruments — same convention as point_source/simple
+# above (position/truth/tracer JSON tracked; imaging fits + csv regenerated).
+dataset/point_source/simple_missing/data.fits
+dataset/point_source/simple_missing/noise_map.fits
+dataset/point_source/simple_missing/psf.fits
+dataset/point_source/simple_missing/point_dataset_positions_only.csv
+dataset/point_source/simple_extra/data.fits
+dataset/point_source/simple_extra/noise_map.fits
+dataset/point_source/simple_extra/psf.fits
+dataset/point_source/simple_extra/point_dataset_positions_only.csv
+dataset/point_source/near_caustic/data.fits
+dataset/point_source/near_caustic/noise_map.fits
+dataset/point_source/near_caustic/psf.fits
+dataset/point_source/near_caustic/point_dataset_positions_only.csv
+
 # Datacube simulator outputs — regenerated each run
 dataset/datacube/sim_*/
 

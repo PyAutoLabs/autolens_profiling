@@ -1,0 +1,47 @@
+#!/bin/bash -l
+#
+# PyAutoLens#678 phase B — point-source defaults evidence campaign: A100
+# search profiling for searches/nautilus/point_source/image_plane x simple x fp64.
+#
+# Feeds exp2 (image-plane solved-vs-free): free-centre PointFlux fit via
+# FitPositionsImagePairAll, Nautilus posterior anchor for the
+# image_plane_solved comparison.
+
+#SBATCH -J search_nautilus_point_source_image_plane_simple_fp64
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=2:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_profiling
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+nvidia-smi
+
+echo "=========================================="
+date
+echo "Cell:       searches/nautilus/point_source/image_plane"
+echo "Instrument: simple"
+echo "Precision:  fp64"
+
+cd $AP_ROOT
+python3 scripts/point_source/searches/nautilus/image_plane.py \
+    --instrument simple \
+    --config-name hpc_a100_fp64 \
+    --output-dir $AP_ROOT/results/searches/nautilus/point_source/image_plane/simple
+
+echo "Finished."
+date

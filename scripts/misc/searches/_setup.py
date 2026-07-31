@@ -56,6 +56,7 @@ from typing import Any, Optional
 
 import autofit as af
 import autolens as al
+import numpy as np
 
 _WORKSPACE_ROOT = _profiling_root()  # autolens_profiling/
 
@@ -103,6 +104,24 @@ _DATACUBE_IMG_HOMO: list[str] = ["jwst", "jwst", "jwst", "jwst"]
 _DATACUBE_IMG_HETERO: list[str] = ["jwst", "jwst", "jwst_lw", "jwst_lw"]
 
 
+class FitPositionsSourceTensor(al.FitPositionsSource):
+    """Free-centre tensor-weighted source-plane fit (PyAutoLens#679)."""
+
+    weighting = "jacobian"
+
+
+class _ClusterDatasetList(list):
+    """Plain ``list`` subclass — a builtin ``list`` cannot carry attributes
+    (``x = []; x.foo = 1`` raises), but the cluster cell's ``dataset`` is a
+    ``List[PointDataset]`` (one per lensed system) rather than the single
+    ``PointDataset`` the point_source cell stashes ``_profiling_solver_kwargs``
+    on. This subclass lets the cluster dataset carry the same stash (#678
+    phase B chunk 2), so ``_build_analysis`` and the runner's truth-anchor
+    step read it identically to the point_source convention in
+    ``_build_point_source``.
+    """
+
+
 # -----------------------------------------------------------------------------
 # Top-level dispatcher
 # -----------------------------------------------------------------------------
@@ -144,6 +163,14 @@ def build_for_cell(
         return _build_for_datacube_imaging(
             model_type=model_type,
             instruments=instruments,
+            use_jax=use_jax,
+            use_mixed_precision=use_mixed_precision,
+        )
+
+    if dataset_class == "cluster":
+        return _build_for_cluster(
+            model_type=model_type,
+            instrument=instrument,
             use_jax=use_jax,
             use_mixed_precision=use_mixed_precision,
         )
@@ -270,6 +297,46 @@ def _build_for_datacube_imaging(
     return dataset_list, factor_graph.global_prior_model, factor_graph
 
 
+def _build_for_cluster(
+    *,
+    model_type: str,
+    instrument: str,
+    use_jax: bool,
+    use_mixed_precision: bool,
+) -> tuple[list, Any, Any]:
+    """Cluster point-source fit via ``af.FactorGraphModel`` (#678 phase B chunk 2).
+
+    Mirrors ``autolens_workspace/scripts/cluster/modeling.py``: one
+    ``al.AnalysisPoint`` per lensed system (an entry of the cluster's
+    ``dataset_list``), each wrapped in an ``af.AnalysisFactor`` against a
+    *copy* of the shared cluster model, combined into one
+    ``af.FactorGraphModel``. Returns ``(dataset_list,
+    factor_graph.global_prior_model, factor_graph)`` — same
+    dataset_list/model/analysis convention ``_build_for_datacube`` uses above,
+    so the runner's generic ``search.fit(model=model, analysis=analysis)``
+    path needs no cluster-specific branching.
+    """
+    dataset_list, dataset_path = _build_dataset("cluster", instrument)
+    mask_radius = _mask_radius_for("cluster", instrument)  # 0.0, unused by point models
+    model = _build_model(
+        "cluster",
+        model_type,
+        mask_radius=mask_radius,
+        dataset_list=dataset_list,
+        dataset_path=dataset_path,
+    )
+    analysis = _build_analysis(
+        dataset_class="cluster",
+        model_type=model_type,
+        dataset=dataset_list,
+        use_jax=use_jax,
+        use_mixed_precision=use_mixed_precision,
+        adapt_images=None,
+        model=model,
+    )
+    return dataset_list, analysis.global_prior_model, analysis
+
+
 # -----------------------------------------------------------------------------
 # Dataset construction
 # -----------------------------------------------------------------------------
@@ -284,6 +351,11 @@ def _mask_radius_for(dataset_class: str, instrument: str) -> float:
         # Point-source mask radius isn't applied to a 2D image; reuse the
         # imaging value so MGE/source-bulge priors share a sensible scale.
         return 3.5
+    if dataset_class == "cluster":
+        # Cluster point models have no 2D image mask either (and no MGE
+        # source whose prior scale would need it) — unused, kept only so
+        # this function's signature stays uniform across dataset_class.
+        return 0.0
     raise ValueError(f"Unknown dataset_class: {dataset_class!r}")
 
 
@@ -302,6 +374,8 @@ def _build_dataset(dataset_class: str, instrument: str) -> tuple[Any, Path]:
         return dataset_list[0], dataset_path
     if dataset_class == "point_source":
         return _build_point_source(instrument)
+    if dataset_class == "cluster":
+        return _build_cluster(instrument)
     raise ValueError(f"Unknown dataset_class: {dataset_class!r}")
 
 
@@ -501,16 +575,65 @@ def _build_point_source(instrument: str) -> tuple[Any, Path]:
     return dataset, dataset_path
 
 
+def _build_cluster(instrument: str) -> tuple[_ClusterDatasetList, Path]:
+    """Load the cluster's per-system point datasets (#678 phase B chunk 2).
+
+    ``instrument`` is always ``"simple"`` today (``simulators/cluster.py``
+    hardcodes its output path; there is no per-instrument ``INSTRUMENTS``
+    dict to key off, unlike ``_build_point_source``).
+    """
+    dataset_path = Path("dataset") / "cluster" / instrument
+    auto_simulate_if_missing(
+        dataset_path,
+        dataset_type="cluster",
+        instrument=instrument,
+        workspace_root=_WORKSPACE_ROOT,
+    )
+    dataset_list = _ClusterDatasetList(al.list_from_csv(file_path=dataset_path / "point_datasets.csv"))
+    # Solver kwargs stashed on the LIST (a plain list can't take attributes —
+    # see _ClusterDatasetList) so _build_analysis and the runner's truth-anchor
+    # step construct the identical PointSolver without re-deriving these
+    # values. Taken verbatim from
+    # scripts/cluster/likelihood_breakdown/image_plane.py's solver (the
+    # "tutorial-scale configuration of the workspace cluster scripts") so
+    # breakdown and search cells agree exactly.
+    dataset_list._profiling_solver_kwargs = {  # type: ignore[attr-defined]
+        "grid_shape": (200, 200),
+        "pixel_scale": 0.7,
+        "pixel_scale_precision": 0.01,
+        "magnification_threshold": 0.1,
+    }
+    return dataset_list, dataset_path
+
+
 # -----------------------------------------------------------------------------
 # Model construction
 # -----------------------------------------------------------------------------
 
 
-def _build_model(dataset_class: str, model_type: str, *, mask_radius: float) -> af.Collection:
+def _build_model(
+    dataset_class: str,
+    model_type: str,
+    *,
+    mask_radius: float,
+    dataset_list: list | None = None,
+    dataset_path: Path | None = None,
+) -> af.Collection:
     if dataset_class == "group":
         if model_type == "mge":
             return _group_mge_model(mask_radius=mask_radius)
         raise ValueError(f"group cell only supports model_type='mge', got {model_type!r}")
+    if dataset_class == "cluster":
+        if dataset_list is None or dataset_path is None:
+            raise RuntimeError(
+                "cluster model construction requires dataset_list + dataset_path "
+                "(build via _build_cluster first)."
+            )
+        return _cluster_point_model(
+            dataset_list,
+            dataset_path,
+            solved=model_type in ("source_plane_solved", "image_plane_solved"),
+        )
     if model_type == "mge":
         return _mge_model(mask_radius=mask_radius)
     if model_type == "pixelization":
@@ -521,9 +644,9 @@ def _build_model(dataset_class: str, model_type: str, *, mask_radius: float) -> 
         return _knn_model(mask_radius=mask_radius)
     if model_type == "delaunay_matern":
         return _delaunay_matern_model(mask_radius=mask_radius)
-    if model_type in ("image_plane", "source_plane"):
+    if model_type in ("image_plane", "source_plane", "source_plane_tensor"):
         return _point_source_model()
-    if model_type in ("image_plane_solved", "source_plane_solved"):
+    if model_type in ("image_plane_solved", "source_plane_solved", "image_plane_repeat_solved"):
         return _point_source_model(solved=True)
     raise ValueError(f"Unknown model_type: {model_type!r}")
 
@@ -756,6 +879,200 @@ def _point_source_model(solved: bool = False) -> af.Collection:
     return af.Collection(galaxies=af.Collection(lens=lens, source=source))
 
 
+# Point-source fit class per model_type — the single source of truth shared by
+# _build_analysis (below) and searches/_runner.py's truth-anchor step (#678
+# phase B), so the anchor evaluates the truth tracer through the EXACT fit
+# class the cell itself searches with.
+_POINT_SOURCE_FIT_CLS: dict[str, type] = {
+    "image_plane": al.FitPositionsImagePairAll,
+    "source_plane": al.FitPositionsSource,
+    "image_plane_solved": al.FitPositionsImagePairAllSolved,
+    "source_plane_solved": al.FitPositionsSourceSolved,
+    "source_plane_tensor": FitPositionsSourceTensor,
+    "image_plane_repeat_solved": al.FitPositionsImagePairRepeatSolved,
+}
+
+
+def point_source_fit_cls_for(model_type: str) -> type:
+    """Resolve the ``fit_positions_cls`` a point_source ``model_type`` fits with."""
+    try:
+        return _POINT_SOURCE_FIT_CLS[model_type]
+    except KeyError as exc:
+        raise ValueError(
+            f"Unknown point_source model_type: {model_type!r}. "
+            f"Add a row to _POINT_SOURCE_FIT_CLS in searches/_setup.py."
+        ) from exc
+
+
+# Cluster fit class per model_type (#678 phase B chunk 2) — deliberately a
+# SEPARATE table from _POINT_SOURCE_FIT_CLS even though several model_type
+# strings are shared: cluster's "image_plane_solved" fits with
+# FitPositionsImagePairRepeatSolved (multi-image per-system pairing — the
+# "model-fit default" per likelihood_breakdown/image_plane.py's docstring),
+# not FitPositionsImagePairAllSolved (the galaxy-tier 2-image convention). No
+# "image_plane" (free) or "image_plane_repeat_solved" row: forward-solving a
+# free source centre is wall-time-prohibitive at cluster scale (~0.3 s/call —
+# see the leaf cells' docstrings), and cluster has no pair-repeat variant.
+_CLUSTER_FIT_CLS: dict[str, type] = {
+    "source_plane": al.FitPositionsSource,
+    "source_plane_solved": al.FitPositionsSourceSolved,
+    "source_plane_tensor": FitPositionsSourceTensor,
+    "image_plane_solved": al.FitPositionsImagePairRepeatSolved,
+}
+
+
+def cluster_point_fit_cls_for(model_type: str) -> type:
+    """Resolve the ``fit_positions_cls`` a cluster ``model_type`` fits with.
+
+    Shared by ``_build_analysis``'s cluster branch and the runner's cluster
+    truth-anchor step (#678 phase B chunk 2), mirroring
+    ``point_source_fit_cls_for`` above.
+    """
+    try:
+        return _CLUSTER_FIT_CLS[model_type]
+    except KeyError as exc:
+        raise ValueError(
+            f"Unknown cluster model_type: {model_type!r}. "
+            f"Add a row to _CLUSTER_FIT_CLS in searches/_setup.py."
+        ) from exc
+
+
+# Reference-anchored scaling-tier constants (#678 phase B chunk 2) — verbatim
+# from scripts/misc/simulators/cluster.py / likelihood_breakdown/*.py, so the
+# search model's fixed values match the simulator truth exactly. Both `b0`
+# and `rs` scale with the SAME luminosity exponent here (this repo's own
+# simulator convention) — unlike autolens_workspace/scripts/cluster/
+# modeling.py's differing sigma/r_cut exponents (its dPIEMassSph
+# parametrization ties them via the Bergamini mass-to-light tilt). See
+# _cluster_point_model's docstring for the full port-vs-source deviation.
+_CLUSTER_SCALING_RA: float = 0.1
+_CLUSTER_SCALING_RS_REF: float = 10.0
+_CLUSTER_SCALING_EXPONENT: float = 0.5
+
+# Main-lens truth (centre, core radius `ra`) — centre + core stay fixed;
+# `rs` / `b0` are the 2 free parameters per lens, matching the workspace
+# modeling.py convention of "centre fixed; 2 free mass params per lens".
+_CLUSTER_MAIN_LENS_TRUTH: tuple[tuple[tuple[float, float], float], ...] = (
+    ((0.0, 0.0), 8.0),
+    ((10.0, 8.0), 5.0),
+)
+_CLUSTER_HOST_HALO_CENTRE: tuple[float, float] = (0.0, 0.0)
+_CLUSTER_REDSHIFT_LENS: float = 0.5
+
+
+def _cluster_point_model(dataset_list: list, dataset_path: Path, *, solved: bool = False) -> af.Collection:
+    """Cluster lens model (#678 phase B chunk 2) — ported from
+    ``autolens_workspace/scripts/cluster/modeling.py`` onto this repo's own
+    ``dataset/cluster/<instrument>`` truth.
+
+    **Deviation from the workspace script**: the workspace's ``modeling.py``
+    loads ``mass.csv`` / ``point.csv`` family CSVs via
+    ``al.galaxy_models_from_csv`` / ``al.galaxy_af_models_from_csv_tables``,
+    and its main lenses + host halo use the Lenstool-native ``dPIEMassSph``
+    (``sigma``/``r_core``/``r_cut``, cosmology-pinned via ``H0``/``Om0``).
+    This profiling repo's own cluster simulator
+    (``scripts/misc/simulators/cluster.py``, mirrored by
+    ``scripts/cluster/likelihood_breakdown/{image_plane,source_plane}.py``)
+    writes only ``point_datasets.csv`` + ``scaling_galaxies.csv`` — no
+    ``mass.csv``/``point.csv`` — and parametrizes every dPIE with
+    ``dPIEMassB0Sph`` (``ra``/``rs``/``b0``, no ``H0``/``Om0`` attributes at
+    all). Truth-anchoring loads ``tracer.json`` (whatever profile types the
+    simulator wrote), so the model here MUST use the same parametrization for
+    the ports to be physically comparable — hence ``dPIEMassB0Sph`` in place
+    of ``dPIEMassSph``, with the sigma/r_cut free pair reinterpreted as the
+    analogous b0/rs free pair (core radius ``ra`` fixed, like the workspace's
+    fixed ``r_core=0`` — except this repo's truth core is non-zero, so ``ra``
+    is fixed at its own truth value instead of 0).
+
+    Components (mirrors the workspace's 4 categories):
+
+    - 2 main lens galaxies (``dPIEMassB0Sph``): centre + core radius ``ra``
+      fixed at truth; ``rs`` (truncation) + ``b0`` (lens strength) free — 2
+      free parameters each [4 total].
+    - The scaling tier (``dPIEMassB0Sph`` per member, loaded from
+      ``scaling_galaxies.csv`` via ``al.galaxy_table_from_csv``): centre
+      fixed per member; core ``ra`` fixed; ``b0`` and ``rs`` both derive from
+      the SAME free ``scaling_b0_ref`` × ``(L_i / L_ref) ** exponent``
+      relation (the profiling repo's simulator's own single-exponent
+      convention) — 1 free parameter for the whole tier regardless of
+      member count [1 total].
+    - 1 standalone host halo (``NFWMCRLudlowSph``): centre fixed; free
+      ``mass_at_200``. ``redshift_object`` / ``redshift_source`` are fixed at
+      the truth values (0.5 / the furthest source redshift) — **never
+      sampled**: these drive the cosmology-dependent Ludlow concentration-
+      mass relation, and the PointSolver's implicit-diff ``custom_jvp``
+      treats them as static aux, not a traced argument (#678, the
+      "cosmology pinned" constraint) [1 total].
+    - ``len(dataset_list)`` source galaxies, one per system, name-paired to
+      ``dataset.name`` (``point_0``, ``point_1``, ...): ``solved=True`` gives
+      each a parameter-free ``al.ps.PointSolved`` [0 total]; ``solved=False``
+      gives each a free-centre ``al.ps.Point`` with a uniform prior ±1.0"
+      around that system's OWN observed-positions centroid (a data-driven,
+      per-source initialisation — 2 free parameters per source).
+
+    Free-parameter total: 6 for every ``*_solved`` model_type (matching the
+    workspace's own "N=6" cluster fiducial); 6 + 2*``len(dataset_list)`` for
+    the free-centre variants (``source_plane`` / ``source_plane_tensor``).
+    """
+    source_redshifts = [float(d.redshift) for d in dataset_list]
+
+    main_lens_models: list[af.Model] = []
+    for centre, ra in _CLUSTER_MAIN_LENS_TRUTH:
+        mass = af.Model(al.mp.dPIEMassB0Sph)
+        mass.centre = centre
+        mass.ra = ra
+        mass.rs = af.UniformPrior(lower_limit=1.0, upper_limit=40.0)
+        mass.b0 = af.UniformPrior(lower_limit=0.1, upper_limit=10.0)
+        main_lens_models.append(af.Model(al.Galaxy, redshift=_CLUSTER_REDSHIFT_LENS, mass=mass))
+
+    host_halo_mass = af.Model(al.mp.NFWMCRLudlowSph)
+    host_halo_mass.centre = _CLUSTER_HOST_HALO_CENTRE
+    host_halo_mass.redshift_object = _CLUSTER_REDSHIFT_LENS
+    host_halo_mass.redshift_source = max(source_redshifts)
+    host_halo_mass.mass_at_200 = af.LogUniformPrior(lower_limit=10**14.5, upper_limit=10**16.0)
+    host_halo_model = af.Model(al.Galaxy, redshift=_CLUSTER_REDSHIFT_LENS, dark=host_halo_mass)
+
+    galaxies: dict[str, af.Model] = {
+        "lens_0": main_lens_models[0],
+        "lens_1": main_lens_models[1],
+        "host_halo": host_halo_model,
+    }
+
+    for i, dataset in enumerate(dataset_list):
+        if solved:
+            point = af.Model(al.ps.PointSolved)
+        else:
+            centroid = np.asarray(dataset.positions).mean(axis=0)
+            point = af.Model(al.ps.Point)
+            point.centre_0 = af.UniformPrior(
+                lower_limit=float(centroid[0]) - 1.0, upper_limit=float(centroid[0]) + 1.0
+            )
+            point.centre_1 = af.UniformPrior(
+                lower_limit=float(centroid[1]) - 1.0, upper_limit=float(centroid[1]) + 1.0
+            )
+        galaxies[f"source_{i}"] = af.Model(
+            al.Galaxy, redshift=source_redshifts[i], **{dataset.name: point}
+        )
+
+    scaling_table = al.galaxy_table_from_csv(file_path=dataset_path / "scaling_galaxies.csv")
+    scaling_b0_ref = af.UniformPrior(lower_limit=0.0, upper_limit=1.0)
+    reference_luminosity = max(scaling_table.luminosities)
+    scaling_galaxies_list: list[af.Model] = []
+    for centre, luminosity in zip(scaling_table.centres, scaling_table.luminosities):
+        luminosity_ratio = luminosity / reference_luminosity
+        mass = af.Model(al.mp.dPIEMassB0Sph)
+        mass.centre = tuple(centre)
+        mass.ra = _CLUSTER_SCALING_RA
+        mass.rs = _CLUSTER_SCALING_RS_REF * luminosity_ratio**_CLUSTER_SCALING_EXPONENT
+        mass.b0 = scaling_b0_ref * luminosity_ratio**_CLUSTER_SCALING_EXPONENT
+        scaling_galaxies_list.append(
+            af.Model(al.Galaxy, redshift=_CLUSTER_REDSHIFT_LENS, mass=mass)
+        )
+    scaling_galaxies = af.Collection(scaling_galaxies_list)
+
+    return af.Collection(galaxies=af.Collection(**galaxies), scaling_galaxies=scaling_galaxies)
+
+
 # -----------------------------------------------------------------------------
 # Adapt image (pix/delaunay only)
 # -----------------------------------------------------------------------------
@@ -812,6 +1129,7 @@ def _build_analysis(
     use_jax: bool,
     use_mixed_precision: bool,
     adapt_images: al.AdaptImages | None,
+    model: Any | None = None,
 ) -> Any:
     # Pixelization / Delaunay analyses normally require ``positions_likelihood_list``
     # to guard against the demagnified-source systematic. For pure profiling we
@@ -857,18 +1175,56 @@ def _build_analysis(
             pixel_scale_precision=solver_kwargs["pixel_scale_precision"],
             magnification_threshold=solver_kwargs["magnification_threshold"],
         )
-        fit_positions_cls = {
-            "image_plane": al.FitPositionsImagePairAll,
-            "source_plane": al.FitPositionsSource,
-            "image_plane_solved": al.FitPositionsImagePairAllSolved,
-            "source_plane_solved": al.FitPositionsSourceSolved,
-        }[model_type]
+        fit_positions_cls = point_source_fit_cls_for(model_type)
         return al.AnalysisPoint(
             dataset=dataset,
             solver=solver,
             fit_positions_cls=fit_positions_cls,
             use_jax=use_jax,
         )
+    if dataset_class == "cluster":
+        # ``dataset`` is the cluster's List[PointDataset] (see
+        # _build_cluster); ``model`` is the shared cluster prior model built
+        # by _cluster_point_model — required here (unlike every other
+        # dataset_class) because the factor-graph pattern needs a fresh
+        # COPY of it per per-system AnalysisFactor (#678 phase B chunk 2,
+        # mirrors autolens_workspace/scripts/cluster/modeling.py's
+        # analysis_factor_list).
+        if model is None:
+            raise RuntimeError(
+                "cluster analysis construction requires the shared cluster "
+                "model (build via _cluster_point_model first)."
+            )
+        solver_kwargs = getattr(dataset, "_profiling_solver_kwargs", None)
+        if solver_kwargs is None:
+            raise RuntimeError(
+                "cluster dataset_list is missing the solver kwargs stash; "
+                "construct it via _build_cluster first."
+            )
+        grid = al.Grid2D.uniform(
+            shape_native=solver_kwargs["grid_shape"],
+            pixel_scales=solver_kwargs["pixel_scale"],
+        )
+        solver = al.PointSolver.for_grid(
+            grid=grid,
+            pixel_scale_precision=solver_kwargs["pixel_scale_precision"],
+            magnification_threshold=solver_kwargs["magnification_threshold"],
+        )
+        fit_positions_cls = cluster_point_fit_cls_for(model_type)
+        analysis_list = [
+            al.AnalysisPoint(
+                dataset=ds,
+                solver=solver,
+                fit_positions_cls=fit_positions_cls,
+                use_jax=use_jax,
+            )
+            for ds in dataset
+        ]
+        analysis_factor_list = [
+            af.AnalysisFactor(prior_model=model.copy(), analysis=analysis)
+            for analysis in analysis_list
+        ]
+        return af.FactorGraphModel(*analysis_factor_list, use_jax=use_jax)
     raise ValueError(f"Unknown dataset_class: {dataset_class!r}")
 
 
