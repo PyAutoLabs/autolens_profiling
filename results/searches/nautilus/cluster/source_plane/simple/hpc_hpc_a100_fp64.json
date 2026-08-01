@@ -1,0 +1,71 @@
+{
+  "sampler": "nautilus",
+  "dataset_class": "cluster",
+  "model": "source_plane",
+  "instrument": "simple",
+  "config_name": "hpc_a100_fp64",
+  "version": "2026.7.23.1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "omp_num_threads": null,
+    "cpu_count": 124,
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 443 MiB, 81920 MiB"
+  },
+  "use_mixed_precision": false,
+  "sampler_config": {
+    "n_live": 100,
+    "n_batch": 100,
+    "number_of_cores": 1,
+    "use_jax_vmap": true,
+    "force_x1_cpu": true,
+    "iterations_per_update": 300
+  },
+  "model_summary": {
+    "free_parameters": 10,
+    "best_fit": "(unavailable: AttributeError(\"'ModelInstance' object has no attribute 'galaxies'\"))"
+  },
+  "results": {
+    "log_evidence": -36.496518463407185,
+    "max_log_likelihood": 42.30460334760228,
+    "posterior_samples": 34540,
+    "truth_log_likelihood": 40.097739668415926,
+    "delta_max_ll_vs_truth": 2.2068636791863554,
+    "posterior_stats": {
+      "rs": {
+        "mean": 13.523744514441468,
+        "std": 0.30349721990517503
+      },
+      "b0": {
+        "mean": 1.167667575486926,
+        "std": 0.003111814574707263
+      },
+      "mass_at_200": {
+        "mean": 1904669125679842.0,
+        "std": 7951910841100.673
+      },
+      "centre_0": {
+        "mean": -0.7986247879431502,
+        "std": 0.0026995497271302994
+      },
+      "centre_1": {
+        "mean": 1.2149052980689854,
+        "std": 0.0012141147174651718
+      },
+      "scaling_b0_ref": {
+        "mean": 0.11102940894623164,
+        "std": 0.003643188269147092
+      }
+    }
+  },
+  "performance": {
+    "total_wall_s": 551.2824680805206,
+    "viz_wall_s": 256.31386808503885,
+    "viz_n_calls": 8,
+    "viz_disabled": false,
+    "sampler_wall_s": 294.9685999954818,
+    "likelihood_evals": 34600,
+    "time_per_eval_ms": 8.52510404611219
+  }
+}

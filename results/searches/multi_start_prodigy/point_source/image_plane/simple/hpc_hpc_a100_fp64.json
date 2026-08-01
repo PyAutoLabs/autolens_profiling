@@ -1,0 +1,46 @@
+{
+  "sampler": "multi_start_prodigy",
+  "dataset_class": "point_source",
+  "model": "image_plane",
+  "instrument": "simple",
+  "config_name": "hpc_a100_fp64",
+  "version": "2026.7.23.1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "omp_num_threads": null,
+    "cpu_count": 124,
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 2093 MiB, 81920 MiB"
+  },
+  "use_mixed_precision": false,
+  "sampler_config": {
+    "n_starts": 64,
+    "n_steps": 300,
+    "number_of_cores": 1,
+    "convergence": {
+      "check_for_convergence": false
+    }
+  },
+  "model_summary": {
+    "free_parameters": 8,
+    "best_fit": "lens.mass.einstein_radius=1.8565  lens.mass.centre=(-0.509, -0.089)"
+  },
+  "results": {
+    "log_evidence": NaN,
+    "max_log_likelihood": -68.49726026713657,
+    "posterior_samples": 65,
+    "truth_log_likelihood": 7.196577317761017,
+    "delta_max_ll_vs_truth": -75.69383758489758,
+    "posterior_stats": null
+  },
+  "performance": {
+    "total_wall_s": 90.31272435188293,
+    "viz_wall_s": 30.263654720969498,
+    "viz_n_calls": 5,
+    "viz_disabled": false,
+    "sampler_wall_s": 60.049069630913436,
+    "likelihood_evals": 65,
+    "time_per_eval_ms": 923.8318404755913
+  }
+}

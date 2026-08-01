@@ -1,0 +1,67 @@
+{
+  "sampler": "nautilus",
+  "dataset_class": "point_source",
+  "model": "image_plane_solved",
+  "instrument": "near_caustic",
+  "config_name": "hpc_a100_fp64",
+  "version": "2026.7.23.1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "omp_num_threads": null,
+    "cpu_count": 124,
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 2505 MiB, 81920 MiB"
+  },
+  "use_mixed_precision": false,
+  "sampler_config": {
+    "n_live": 200,
+    "n_batch": 100,
+    "number_of_cores": 1,
+    "use_jax_vmap": true,
+    "force_x1_cpu": true,
+    "iterations_per_update": 600
+  },
+  "model_summary": {
+    "free_parameters": 5,
+    "best_fit": "lens.mass.einstein_radius=1.5964  lens.mass.centre=(0.007, 0.005)"
+  },
+  "results": {
+    "log_evidence": 4.9681649355913695,
+    "max_log_likelihood": 29.072519202125584,
+    "posterior_samples": 10500,
+    "truth_log_likelihood": 28.368428111476558,
+    "delta_max_ll_vs_truth": 0.7040910906490261,
+    "posterior_stats": {
+      "centre_0": {
+        "mean": -0.03246984380474283,
+        "std": 0.042094555591142925
+      },
+      "centre_1": {
+        "mean": -0.03355538917269623,
+        "std": 0.04201630310183173
+      },
+      "ell_comps_0": {
+        "mean": 0.07383705254526797,
+        "std": 0.02545158677499394
+      },
+      "ell_comps_1": {
+        "mean": 2.260479378872224e-05,
+        "std": 0.00026668756806990247
+      },
+      "einstein_radius": {
+        "mean": 1.6137741268154473,
+        "std": 0.018341644465329814
+      }
+    }
+  },
+  "performance": {
+    "total_wall_s": 176.35181713104248,
+    "viz_wall_s": 53.11449109506793,
+    "viz_n_calls": 8,
+    "viz_disabled": false,
+    "sampler_wall_s": 123.23732603597455,
+    "likelihood_evals": 10500,
+    "time_per_eval_ms": 11.736888193902338
+  }
+}
