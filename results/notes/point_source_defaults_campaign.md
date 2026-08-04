@@ -51,10 +51,15 @@ galaxy free-scalar cell the deliberate exception at delta **+33474.5**, which
 per the reading key above is the *likelihood* mis-ranking and not a search
 failure: Nautilus found its objective's best basin fine, that basin is simply
 nowhere near truth. That cell is the bias showcase, not a Nautilus result. The
-2026-07-31 isolation result stands: solved+scalar still prefers wrong models;
-**the tensor weighting is the ranking fix, the solved centre is the
-orthogonal dimensionality win** (−2 params/source, compounding at cluster
-scale).
+Read within each objective, the catastrophic scalar mis-ranking is a
+**free-centre** effect: solving the centre already tames it (solved+scalar
+delta **+5.8**, ordinary basin recovery by the key above — NOT the "prefers
+wrong models" this note previously claimed, which contradicted the key), and
+the tensor is the further refinement that gives truth the highest likelihood
+of the three (+12.75 vs +0.60 vs −33788). So **the tensor weighting is the
+ranking refinement and the solved centre is both a dimensionality win (−2
+params/source, compounding at cluster scale) and, on its own, most of the
+mis-ranking fix.**
 
 **Caveat (docs prose):** MultiStartProdigy fails the cluster source-plane
 basins (tensor delta −11062, solved −14.8) while completing in ~4 min. The
@@ -88,19 +93,40 @@ On `simple_missing` (one true image removed from the dataset):
 | `PairAllSolved` (`image_plane_solved`) | +20.8 | **+1.3** — truth recovered |
 | `PairRepeatSolved` (`image_plane_repeat_solved`) | **−183389** | +183402 — catastrophic mis-ranking |
 
-Repeat pairing has no way to leave a model-predicted image unmatched, so a
-missing observed image forces a huge spurious residual at truth; the
-all-to-all Occam mixture absorbs it. On clean `simple` data the two are
+The mechanism is the unmatched-*model*-image policy, not the pairing itself
+(`unmatched_model_mask` in `pair_repeat.py` does identify unmatched model
+images): with an observed image missing, the model image that would have
+paired to it is the nearest neighbour of no observed position, so the default
+`"magnification_filter"` policy sees a *bright* extra image — the exemption is
+for demagnified images and this one is genuinely magnified — and charges its
+full distance to the nearest other observed position as a residual. Truth is
+punished for correctly predicting an image the data happens not to contain.
+The all-to-all Occam mixture absorbs it as the mild `1/n_permutations` factor
+instead. On clean `simple` data the two are
 statistically equivalent (deltas +2.85 vs +2.88, walls 147 s vs 163 s) — the
 robustness case, not performance, decides the default.
 
 The `simple_extra` arms (one spurious observed position) **did not finish, and
 that is the result.** Resubmitted at 8h walls, both timed out again — 331885
-(`PairAllSolved`) at 08:00:25 and 331886 (`PairRepeatSolved`) at 08:00:01. The
-331885 detail: ~10 h of sampling including the resume, `f_live` = 0.92,
-N_eff = 12, logZ = −14238. A spurious position imposes an honest ~−1.4×10⁴
-likelihood floor on *every* model, so Nautilus never compresses the live set
-and cannot converge. Neither was resubmitted again.
+(`PairAllSolved`) at 08:00:25 and 331886 (`PairRepeatSolved`) at 08:00:01.
+Neither was resubmitted again.
+
+**Evidence status — read before citing this arm.** What is *reproducible* is
+the non-completion: `sacct -j 331885,331886` still reports both TIMEOUT at
+their 8h walls (re-confirmed 2026-08-04), and the clean siblings' committed
+JSONs give the comparison walls (147.2 s and 162.7 s). What is *not* committed
+is the convergence diagnostic. The figures recorded during the run —
+~10 h sampling including the resume, `f_live` = 0.92, N_eff = 12,
+logZ = −14238, hence the inferred ~−1.4×10⁴ likelihood floor — were read from
+the jobs' live stdout, and that stdout was not retained: the surviving output
+trees hold only `metadata`, `model.info`, `.identifier` and a 12-line
+`search.log` (setup messages, no sampler statistics), with no Nautilus
+checkpoint. Treat the floor mechanism as the *recorded interpretation* of a
+run whose diagnostic output is gone, not as an artifact in this PR. A timeout
+on its own establishes non-completion within the cap; it does not by itself
+prove convergence was destroyed rather than merely slow. Re-running either arm
+with stdout captured would settle it — worth doing before anyone leans on the
+mechanism rather than the outcome.
 
 The DNF is **symmetric** — both pairings fail — so exp-3's extra-image arm
 does *not* discriminate between the two candidate defaults, and the default
@@ -150,8 +176,13 @@ gradients. Root causes and fixes (both merged 2026-08-01):
   sanitized on non-finite rows only.
 
 After both fixes: 8/8 random cluster draws give finite value and gradient
-with FOMs byte-identical to the broken build (forward path untouched). The
-Nautilus twin (`nautilus/cluster/image_plane_solved`, delta +16.9, 12.6 min)
+with FOMs byte-identical to the broken build (forward path untouched). That
+probe was run during the bug-fix work and its artifact lives in those PRs, not
+in this repo — the reproducible form is the regression test in
+`autofit_workspace_test#81`; no per-draw gradient record is committed here, so
+cite the PRs rather than this note for it. The
+Nautilus twin (`nautilus/cluster/image_plane_solved`, delta +16.9, 12.4 min
+total wall / 6.2 min sampler)
 was unaffected throughout — the defects were invisible to every
 non-gradient path, which is why they survived until the first cluster
 MCR-halo gradient search.
