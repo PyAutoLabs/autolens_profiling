@@ -231,7 +231,9 @@ def _cluster_truth_anchor(
 
         source_redshifts = {float(d.redshift) for d in dataset_list}
         lens_plane_galaxies = [
-            galaxy for galaxy in truth_tracer.galaxies if float(galaxy.redshift) not in source_redshifts
+            galaxy
+            for galaxy in truth_tracer.galaxies
+            if float(galaxy.redshift) not in source_redshifts
         ]
         source_galaxies = []
         for i, dataset in enumerate(dataset_list):

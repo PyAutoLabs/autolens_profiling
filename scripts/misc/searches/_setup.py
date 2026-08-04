@@ -589,7 +589,9 @@ def _build_cluster(instrument: str) -> tuple[_ClusterDatasetList, Path]:
         instrument=instrument,
         workspace_root=_WORKSPACE_ROOT,
     )
-    dataset_list = _ClusterDatasetList(al.list_from_csv(file_path=dataset_path / "point_datasets.csv"))
+    dataset_list = _ClusterDatasetList(
+        al.list_from_csv(file_path=dataset_path / "point_datasets.csv")
+    )
     # Solver kwargs stashed on the LIST (a plain list can't take attributes —
     # see _ClusterDatasetList) so _build_analysis and the runner's truth-anchor
     # step construct the identical PointSolver without re-deriving these
@@ -960,7 +962,9 @@ _CLUSTER_HOST_HALO_CENTRE: tuple[float, float] = (0.0, 0.0)
 _CLUSTER_REDSHIFT_LENS: float = 0.5
 
 
-def _cluster_point_model(dataset_list: list, dataset_path: Path, *, solved: bool = False) -> af.Collection:
+def _cluster_point_model(
+    dataset_list: list, dataset_path: Path, *, solved: bool = False
+) -> af.Collection:
     """Cluster lens model (#678 phase B chunk 2) — ported from
     ``autolens_workspace/scripts/cluster/modeling.py`` onto this repo's own
     ``dataset/cluster/<instrument>`` truth.

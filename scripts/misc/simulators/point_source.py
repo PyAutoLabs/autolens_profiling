@@ -348,9 +348,7 @@ def simulate(instrument: str = "simple", output_root: Path | None = None) -> Pat
             )
         if variant is not None and "extra_position" in variant:
             extra_position = np.asarray([variant["extra_position"]], dtype=float)
-            positions_with_noise = np.concatenate(
-                [positions_with_noise, extra_position], axis=0
-            )
+            positions_with_noise = np.concatenate([positions_with_noise, extra_position], axis=0)
 
         positions_with_noise = al.Grid2DIrregular(values=positions_with_noise)
         dataset = al.PointDataset(
