@@ -360,7 +360,7 @@ for i, (src_centre, src_z) in enumerate(zip(source_centres, source_redshifts)):
     # independently for each source — this is what makes per-source compile
     # cost visible.
     _, raw = jit_profile(
-        lambda c, _tracer=tracer: jitted_solve(_tracer, c),
+        lambda c, _tracer=tracer, _solve=jitted_solve: _solve(_tracer, c),
         f"jitted_solve_src{i}",
         coord,
         n_repeats=3,
