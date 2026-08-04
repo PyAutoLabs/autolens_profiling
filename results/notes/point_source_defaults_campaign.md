@@ -46,7 +46,11 @@ failed to reach the truth basin (an optimizer defect, not a likelihood one).
 | galaxy `simple` truth_ll | **−33788.4** | +0.60 | +12.75 | scalar mis-maps the μ=367 image's radial noise — the bias showcase |
 | cluster `simple` truth_ll | +40.1 | +36.2 | **+61.3** | tensor gives truth its highest likelihood |
 
-Nautilus recovers each objective's basin (deltas +2.2 to +8.5). The
+Nautilus recovers each objective's basin (deltas +2.2 to +8.5) — with the
+galaxy free-scalar cell the deliberate exception at delta **+33474.5**, which
+per the reading key above is the *likelihood* mis-ranking and not a search
+failure: Nautilus found its objective's best basin fine, that basin is simply
+nowhere near truth. That cell is the bias showcase, not a Nautilus result. The
 2026-07-31 isolation result stands: solved+scalar still prefers wrong models;
 **the tensor weighting is the ranking fix, the solved centre is the
 orthogonal dimensionality win** (−2 params/source, compounding at cluster
