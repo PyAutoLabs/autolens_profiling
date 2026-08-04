@@ -11,7 +11,7 @@
     "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
     "omp_num_threads": null,
     "cpu_count": 124,
-    "nvidia_smi": "NVIDIA A100 80GB PCIe, 433 MiB, 81920 MiB"
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 441 MiB, 81920 MiB"
   },
   "use_mixed_precision": false,
   "sampler_config": {
@@ -24,48 +24,48 @@
   },
   "model_summary": {
     "free_parameters": 8,
-    "best_fit": "lens.mass.einstein_radius=3.6309  lens.mass.centre=(-0.339, -0.438)"
+    "best_fit": "lens.mass.einstein_radius=2.9224  lens.mass.centre=(-0.413, -0.350)"
   },
   "results": {
-    "log_evidence": -342.26918315811116,
-    "max_log_likelihood": -311.8240173012047,
-    "posterior_samples": 9172,
+    "log_evidence": -344.670967276525,
+    "max_log_likelihood": -313.85067946941945,
+    "posterior_samples": 14400,
     "truth_log_likelihood": -33788.367645542494,
-    "delta_max_ll_vs_truth": 33476.54362824129,
+    "delta_max_ll_vs_truth": 33474.516966073075,
     "posterior_stats": {
       "centre_0": {
-        "mean": 0.019449210531616065,
-        "std": 0.019266485929324742
+        "mean": 0.02148420903397395,
+        "std": 0.019270927547253926
       },
       "centre_1": {
-        "mean": 0.016636541866157123,
-        "std": 0.01970933519536868
+        "mean": 0.018867374546834573,
+        "std": 0.018572555238154705
       },
       "ell_comps_0": {
-        "mean": -0.8614579839270823,
-        "std": 0.017624979505348446
+        "mean": -0.819335871053452,
+        "std": 0.01812576317484022
       },
       "ell_comps_1": {
-        "mean": -0.042407874444188885,
-        "std": 0.022971833624459287
+        "mean": -0.0401568155818849,
+        "std": 0.021866616444391408
       },
       "einstein_radius": {
-        "mean": 3.3668192987711185,
-        "std": 0.25801408031594175
+        "mean": 2.8069928358942726,
+        "std": 0.16028720495062665
       },
       "flux": {
-        "mean": 28029.453141586637,
-        "std": 110414.7962911985
+        "mean": 31484.0663262068,
+        "std": 120522.46867567812
       }
     }
   },
   "performance": {
-    "total_wall_s": 0.8897621631622314,
-    "viz_wall_s": 0.0,
-    "viz_n_calls": 0,
+    "total_wall_s": 217.83441948890686,
+    "viz_wall_s": 56.21872508851811,
+    "viz_n_calls": 8,
     "viz_disabled": false,
-    "sampler_wall_s": 0.8897621631622314,
-    "likelihood_evals": 15872,
-    "time_per_eval_ms": 0.056058604029878494
+    "sampler_wall_s": 161.61569440038875,
+    "likelihood_evals": 14400,
+    "time_per_eval_ms": 11.223312111138108
   }
 }

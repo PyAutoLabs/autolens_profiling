@@ -11,7 +11,7 @@
     "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
     "omp_num_threads": null,
     "cpu_count": 124,
-    "nvidia_smi": "NVIDIA A100 80GB PCIe, 433 MiB, 81920 MiB"
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 1481 MiB, 81920 MiB"
   },
   "use_mixed_precision": false,
   "sampler_config": {
@@ -24,48 +24,48 @@
   },
   "model_summary": {
     "free_parameters": 8,
-    "best_fit": "lens.mass.einstein_radius=1.6216  lens.mass.centre=(-0.015, -0.018)"
+    "best_fit": "lens.mass.einstein_radius=1.6119  lens.mass.centre=(0.023, 0.007)"
   },
   "results": {
-    "log_evidence": -16.965341745123872,
-    "max_log_likelihood": 9.470424318455699,
-    "posterior_samples": 5319,
+    "log_evidence": -16.817668268288408,
+    "max_log_likelihood": 9.571847480329687,
+    "posterior_samples": 14464,
     "truth_log_likelihood": 7.196577317761017,
-    "delta_max_ll_vs_truth": 2.2738470006946816,
+    "delta_max_ll_vs_truth": 2.37527016256867,
     "posterior_stats": {
       "centre_0": {
-        "mean": 0.07566535425880667,
-        "std": 0.02379076926023131
+        "mean": 0.07489716313321275,
+        "std": 0.02286104616598873
       },
       "centre_1": {
-        "mean": 0.07556204496357169,
-        "std": 0.023425546957686016
+        "mean": 0.07644133072751068,
+        "std": 0.023403200732952743
       },
       "ell_comps_0": {
-        "mean": 0.08463579702990986,
-        "std": 0.022842524668860897
+        "mean": 0.08782814052082208,
+        "std": 0.02272282506684381
       },
       "ell_comps_1": {
-        "mean": 0.0032996299388738833,
-        "std": 0.002984642975237347
+        "mean": 0.0034858261979324227,
+        "std": 0.003153791409770877
       },
       "einstein_radius": {
-        "mean": 1.6312941434255852,
-        "std": 0.027285063822196243
+        "mean": 1.6347798124497457,
+        "std": 0.029268576365445154
       },
       "flux": {
-        "mean": 39157.77431434938,
-        "std": 136118.55850987538
+        "mean": 37629.279556730326,
+        "std": 135224.54643621884
       }
     }
   },
   "performance": {
-    "total_wall_s": 0.7623517513275146,
-    "viz_wall_s": 0.0,
-    "viz_n_calls": 0,
+    "total_wall_s": 217.10613703727722,
+    "viz_wall_s": 75.93167397938669,
+    "viz_n_calls": 8,
     "viz_disabled": false,
-    "sampler_wall_s": 0.7623517513275146,
-    "likelihood_evals": 14144,
-    "time_per_eval_ms": 0.053899303685486046
+    "sampler_wall_s": 141.17446305789053,
+    "likelihood_evals": 14464,
+    "time_per_eval_ms": 9.760402589732475
   }
 }
