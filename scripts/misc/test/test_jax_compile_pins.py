@@ -138,3 +138,34 @@ def test_committed_pins_are_current():
     """`update_pins.py --check` is the gate; this catches a corpus edit that
     lands without re-deriving."""
     assert update_pins.derive(update_pins.corpus()) == pins_mod.load()
+
+
+def test_existing_pins_are_sticky():
+    """The failure mode that defeats the whole purpose: if the pin followed the
+    newest measurement, re-deriving after a cache regression would bake the
+    regression in and every later check would report all-clear."""
+    committed = update_pins.derive([_rec(compile_s=2.3, timestamp="2026-07-01T00:00:00")])
+
+    regressed = [
+        _rec(compile_s=2.3, timestamp="2026-07-01T00:00:00"),
+        _rec(compile_s=117.0, timestamp="2026-08-01T00:00:00", tag="after-regression"),
+    ]
+    after = update_pins.derive(regressed, existing=committed)
+    assert after[0]["compile_s"] == 2.3, "the pin must not absorb the regression"
+
+
+def test_repin_is_the_deliberate_way_to_move_a_pin():
+    committed = update_pins.derive([_rec(compile_s=2.3, timestamp="2026-07-01T00:00:00")])
+    records = [
+        _rec(compile_s=2.3, timestamp="2026-07-01T00:00:00"),
+        _rec(compile_s=1.1, timestamp="2026-08-01T00:00:00", tag="genuinely-faster"),
+    ]
+    moved = update_pins.derive(records, existing=committed, repin=True)
+    assert moved[0]["compile_s"] == 1.1
+    assert moved[0]["source_tag"] == "genuinely-faster"
+
+
+def test_stickiness_does_not_block_pinning_a_new_key():
+    committed = update_pins.derive([_rec(transform="vag")])
+    both = update_pins.derive([_rec(transform="vag"), _rec(transform="jit")], existing=committed)
+    assert {p["transform"] for p in both} == {"vag", "jit"}
