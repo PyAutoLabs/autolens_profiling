@@ -31,6 +31,38 @@ first measurements taken on a loaded machine were wrong by up to **7×** (851 s
 vs 117 s for the same compile) and are retained in `results/` only with their
 original tags for provenance.
 
+## Record schema — `cache_state` and `host_state`
+
+Each record carries `cache_state`, **derived from what the compile did** rather
+than from its `tag`:
+
+| value | meaning |
+|---|---|
+| `cold` | the compile wrote a new cache entry — a MISS |
+| `warm` | the compile wrote nothing into a populated cache — a HIT |
+| `none` | no `--cache-dir`, so the persistent cache was not in play |
+| `unknown` | cache configured, empty, and nothing written |
+
+It is derived **per transform**, not per run: each transform compiles its own
+module, so one invocation can legitimately miss on one and hit on another —
+something the old per-run tag could not express.
+
+Why not parse the tag? It carries ~40 ad-hoc spellings across this corpus
+(`census-warm`, `census-warm2`, `prodigy-census-warm-retry`, `mb_homo_cold`, …),
+and the obvious shortcut is a trap: **`cache_dir` is non-empty on cold rows
+too**, because the cold run is the one that populates the cache.
+
+`host_state` records `cpu_count` and the 1-minute load average. XLA compiles on
+the HOST cores, so this is load-bearing rather than bookkeeping — see the 7x
+measurement-discipline warning above.
+
+Records written before these fields were backfilled by
+`backfill_cache_state.py`: exact where `cache_dir` was empty (`none`), inferred
+only from an END-ANCHORED cold/warm tag, and left `unknown` otherwise — 33 cold,
+34 warm, 19 none, 3 unknown. The three left `unknown` include
+`mb_homo_cold_laxmap_gpu`, which *contains* "cold" mid-tag and is exactly the
+false match an unanchored parse would have made.
+
 ## Established before this task (do not re-derive)
 
 - ~~Autotuning ruled out (2026-07-15)~~ **downgraded to unproven 2026-07-17**:

@@ -157,7 +157,58 @@ def transformed_fn_and_arg(name, f, x0, n_batch, batch_size):
     raise ValueError(f"unknown transform {name!r}")
 
 
-def measure(name, f, x0, n_batch, batch_size):
+def cache_entry_count(cache_dir) -> int:
+    """How many entries the persistent compilation cache currently holds.
+
+    Counting files is enough to separate a cache MISS from a HIT: XLA writes one
+    entry per compiled module, so a compile that wrote nothing reused what was
+    already there.
+    """
+    if not cache_dir:
+        return 0
+    root = Path(cache_dir)
+    if not root.is_dir():
+        return 0
+    return sum(1 for p in root.rglob("*") if p.is_file())
+
+
+def cache_state_from(before: int, after: int, cache_dir) -> str:
+    """cold | warm | none | unknown — derived from what the compile DID.
+
+    Warmness used to be recoverable only from the free-text ``tag``, which
+    carries ~40 ad-hoc spellings across the corpus and cannot be parsed. Worse,
+    ``cache_dir`` is non-empty on cold runs too — the cold run is the one that
+    POPULATES the cache — so the obvious substring check is a trap.
+
+    Derived per transform, not per run: each transform compiles its own module,
+    so one invocation can legitimately miss on one and hit on another. A
+    per-run tag could not express that at all.
+    """
+    if not cache_dir:
+        return "none"
+    if after > before:
+        return "cold"  # wrote a new entry => this compile was a miss
+    if before > 0:
+        return "warm"  # wrote nothing into a populated cache => hit
+    return "unknown"  # cache configured, empty, and still nothing written
+
+
+def host_state() -> dict:
+    """Load provenance. XLA compiles on the HOST cores, so this is load-bearing.
+
+    jax_compile/README.md records the first measurements being wrong by up to
+    7x (851 s vs 117 s for the same compile) purely from host load, and the
+    corpus already mixes a 32-core RAL allocation with laptop rows. Without
+    this, "is a compile slower?" is unanswerable after the fact.
+    """
+    try:
+        load1, _, _ = os.getloadavg()
+    except (OSError, AttributeError):  # not available on every platform
+        load1 = None
+    return {"cpu_count": os.cpu_count(), "load_avg_1m": round(load1, 2) if load1 else None}
+
+
+def measure(name, f, x0, n_batch, batch_size, cache_dir=None):
     """AOT-split timings for one transform. Returns a dict of seconds."""
     import jax
 
@@ -168,9 +219,11 @@ def measure(name, f, x0, n_batch, batch_size):
     lowered = jitted.lower(arg)
     trace_s = time.perf_counter() - t0
 
+    cache_before = cache_entry_count(cache_dir)
     t0 = time.perf_counter()
     compiled = lowered.compile()
     compile_s = time.perf_counter() - t0
+    cache_after = cache_entry_count(cache_dir)
 
     t0 = time.perf_counter()
     jax.block_until_ready(compiled(arg))
@@ -194,6 +247,7 @@ def measure(name, f, x0, n_batch, batch_size):
         "compile_s": round(compile_s, 3),
         "first_s": round(first_s, 3),
         "steady_s": round(steady_s, 4),
+        "cache_state": cache_state_from(cache_before, cache_after, cache_dir),
     }
 
 
@@ -217,8 +271,9 @@ def main():
     for name in args.transforms.split(","):
         name = name.strip()
         print(f"[probe] {args.model_type} / {name} ...", flush=True)
-        rec = measure(name, f, x0, args.n_batch, args.batch_size)
+        rec = measure(name, f, x0, args.n_batch, args.batch_size, cache_dir=args.cache_dir)
         rec.update(
+            record_kind="compile_probe",
             dataset_class=args.dataset_class,
             model_type=args.model_type,
             instrument=args.instrument,
@@ -229,6 +284,7 @@ def main():
             jax_version=jax.__version__,
             cache_dir=args.cache_dir or "",
             mixed_precision=args.mixed_precision,
+            host_state=host_state(),
             tag=args.tag,
             hostname=platform.node(),
             timestamp=time.strftime("%Y-%m-%dT%H:%M:%S"),
@@ -236,7 +292,8 @@ def main():
         records.append(rec)
         print(
             f"[probe]   trace {rec['trace_s']}s  compile {rec['compile_s']}s  "
-            f"first {rec['first_s']}s  steady {rec['steady_s']}s",
+            f"first {rec['first_s']}s  steady {rec['steady_s']}s  "
+            f"cache {rec['cache_state']}",
             flush=True,
         )
 

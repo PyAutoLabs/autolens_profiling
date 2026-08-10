@@ -17,7 +17,8 @@
     "mixed_precision": false,
     "tag": "pix-first",
     "hostname": "DESKTOP-H143S82",
-    "timestamp": "2026-07-16T21:47:32"
+    "timestamp": "2026-07-16T21:47:32",
+    "cache_state": "none"
   },
   {
     "transform": "vag",
@@ -37,7 +38,8 @@
     "mixed_precision": false,
     "tag": "pix-first",
     "hostname": "DESKTOP-H143S82",
-    "timestamp": "2026-07-16T21:48:51"
+    "timestamp": "2026-07-16T21:48:51",
+    "cache_state": "none"
   },
   {
     "transform": "jit",
@@ -57,7 +59,8 @@
     "mixed_precision": false,
     "tag": "census-cold",
     "hostname": "DESKTOP-H143S82",
-    "timestamp": "2026-07-17T09:54:04"
+    "timestamp": "2026-07-17T09:54:04",
+    "cache_state": "cold"
   },
   {
     "transform": "vag",
@@ -77,7 +80,8 @@
     "mixed_precision": false,
     "tag": "census-cold",
     "hostname": "DESKTOP-H143S82",
-    "timestamp": "2026-07-17T09:55:36"
+    "timestamp": "2026-07-17T09:55:36",
+    "cache_state": "cold"
   },
   {
     "transform": "jit",
@@ -97,7 +101,8 @@
     "mixed_precision": false,
     "tag": "census-warm",
     "hostname": "DESKTOP-H143S82",
-    "timestamp": "2026-07-17T09:56:08"
+    "timestamp": "2026-07-17T09:56:08",
+    "cache_state": "warm"
   },
   {
     "transform": "vag",
@@ -117,7 +122,8 @@
     "mixed_precision": false,
     "tag": "census-warm",
     "hostname": "DESKTOP-H143S82",
-    "timestamp": "2026-07-17T09:57:02"
+    "timestamp": "2026-07-17T09:57:02",
+    "cache_state": "warm"
   },
   {
     "transform": "jit",
@@ -137,7 +143,8 @@
     "mixed_precision": false,
     "tag": "prodigy-census-cold",
     "hostname": "DESKTOP-H143S82",
-    "timestamp": "2026-07-28T16:18:08"
+    "timestamp": "2026-07-28T16:18:08",
+    "cache_state": "cold"
   },
   {
     "transform": "jit",
@@ -157,7 +164,8 @@
     "mixed_precision": false,
     "tag": "prodigy-census-warm",
     "hostname": "DESKTOP-H143S82",
-    "timestamp": "2026-07-28T16:19:07"
+    "timestamp": "2026-07-28T16:19:07",
+    "cache_state": "warm"
   },
   {
     "transform": "vag",
@@ -177,7 +185,8 @@
     "mixed_precision": false,
     "tag": "prodigy-census-cold",
     "hostname": "DESKTOP-H143S82",
-    "timestamp": "2026-07-28T16:22:05"
+    "timestamp": "2026-07-28T16:22:05",
+    "cache_state": "cold"
   },
   {
     "transform": "vag",
@@ -197,7 +206,8 @@
     "mixed_precision": false,
     "tag": "prodigy-census-warm",
     "hostname": "DESKTOP-H143S82",
-    "timestamp": "2026-07-28T16:24:46"
+    "timestamp": "2026-07-28T16:24:46",
+    "cache_state": "warm"
   },
   {
     "transform": "pyloop_vag",
@@ -217,7 +227,8 @@
     "mixed_precision": false,
     "tag": "prodigy-census-ral32-cold",
     "hostname": "euclid-ral-compute-22",
-    "timestamp": "2026-07-28T19:03:41"
+    "timestamp": "2026-07-28T19:03:41",
+    "cache_state": "cold"
   },
   {
     "transform": "pyloop_vag",
@@ -237,7 +248,8 @@
     "mixed_precision": false,
     "tag": "prodigy-census-ral32-warm",
     "hostname": "euclid-ral-compute-22",
-    "timestamp": "2026-07-28T19:21:06"
+    "timestamp": "2026-07-28T19:21:06",
+    "cache_state": "warm"
   },
   {
     "transform": "laxmap_vag",
@@ -257,7 +269,8 @@
     "mixed_precision": false,
     "tag": "prodigy-census-ral32-cold",
     "hostname": "euclid-ral-compute-22",
-    "timestamp": "2026-07-28T19:42:17"
+    "timestamp": "2026-07-28T19:42:17",
+    "cache_state": "cold"
   },
   {
     "transform": "laxmap_vag",
@@ -277,6 +290,7 @@
     "mixed_precision": false,
     "tag": "prodigy-census-ral32-warm",
     "hostname": "euclid-ral-compute-22",
-    "timestamp": "2026-07-28T20:03:15"
+    "timestamp": "2026-07-28T20:03:15",
+    "cache_state": "warm"
   }
 ]

@@ -17,7 +17,8 @@
     "mixed_precision": false,
     "tag": "mb_homo_cold_pyloop_gpu",
     "hostname": "DESKTOP-H143S82",
-    "timestamp": "2026-07-30T15:50:00"
+    "timestamp": "2026-07-30T15:50:00",
+    "cache_state": "unknown"
   },
   {
     "transform": "laxmap_vag",
@@ -37,6 +38,7 @@
     "mixed_precision": false,
     "tag": "mb_homo_cold_laxmap_gpu",
     "hostname": "DESKTOP-H143S82",
-    "timestamp": "2026-07-30T15:54:40"
+    "timestamp": "2026-07-30T15:54:40",
+    "cache_state": "unknown"
   }
 ]

@@ -17,6 +17,7 @@
     "mixed_precision": false,
     "tag": "a100-at0",
     "hostname": "euclid-ral-gpu-2",
-    "timestamp": "2026-07-17T08:55:59"
+    "timestamp": "2026-07-17T08:55:59",
+    "cache_state": "none"
   }
 ]
