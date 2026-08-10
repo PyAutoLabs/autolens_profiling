@@ -493,6 +493,67 @@ def _render_headline(
 # ---------------------------------------------------------------------------
 
 
+def _render_jax_compile_warm_table() -> str:
+    """Pinned WARM compile per cell/transform, grouped by comparability key.
+
+    Grouped, never merged into one table: a warm compile is only comparable
+    within `(hardware, jax_version, mixed_precision, cache_state)`, so a single
+    ranked table across keys would invite exactly the cross-key comparison the
+    pins exist to prevent.
+    """
+    import json as _json
+
+    pins_path = _MISC / "jax_compile" / "pins.json"
+    if not pins_path.is_file():
+        return "\n_No compile pins yet — run `jax_compile/update_pins.py --write`._\n"
+    try:
+        pins = _json.loads(pins_path.read_text()).get("pins") or []
+    except (OSError, ValueError):
+        return "\n_Compile pins unreadable._\n"
+    if not pins:
+        return "\n_No warm compile records pinned yet._\n"
+
+    groups: dict[tuple, list[dict]] = {}
+    for pin in pins:
+        key = (
+            pin.get("hardware"),
+            pin.get("hostname"),
+            pin.get("jax_version"),
+            bool(pin.get("mixed_precision")),
+        )
+        groups.setdefault(key, []).append(pin)
+
+    out: list[str] = []
+    for (hardware, host, jax_version, mp), rows in sorted(
+        groups.items(), key=lambda kv: str(kv[0])
+    ):
+        out.append(
+            f"**`{hardware}` · `{host}` · jax {jax_version}{' · mixed-precision' if mp else ''}**"
+        )
+        out.append("")
+        out.append("| Cell | Transform | Warm compile | Source |")
+        out.append("|---|---|---|---|")
+        for pin in sorted(
+            rows,
+            key=lambda p: (
+                str(p.get("dataset_class")),
+                str(p.get("model_type")),
+                str(p.get("instrument")),
+                str(p.get("transform")),
+            ),
+        ):
+            cell = "/".join(
+                str(pin.get(f)) for f in ("dataset_class", "model_type", "instrument") if pin.get(f)
+            )
+            out.append(
+                f"| `{cell}` | `{pin.get('transform')}` | "
+                f"{_format_time(pin.get('compile_s'))} | "
+                f"`{pin.get('source_tag') or '—'}` {pin.get('source_timestamp') or ''} |"
+            )
+        out.append("")
+    return "\n" + "\n".join(out).rstrip() + "\n"
+
+
 def _build_renderers():
     artifacts = _scan_artifacts()
     cells = _scan_runtime_cells(RUNTIME_ROOT)
@@ -504,6 +565,7 @@ def _build_renderers():
         "simulators": lambda: _render_simulator_table(artifacts),
         "searches-nautilus": lambda: _render_nautilus_table(artifacts),
         "pipeline-resume": lambda: _render_pipeline_resume_table(artifacts),
+        "jax-compile-warm": _render_jax_compile_warm_table,
     }
 
 
@@ -519,6 +581,7 @@ TARGET_READMES = [
     _MISC / "simulators" / "README.md",
     _MISC / "searches" / "README.md",
     _MISC / "pipeline_resume" / "README.md",
+    _MISC / "jax_compile" / "README.md",
 ]
 
 

@@ -31,6 +31,61 @@ first measurements taken on a loaded machine were wrong by up to **7×** (851 s
 vs 117 s for the same compile) and are retained in `results/` only with their
 original tags for provenance.
 
+## Pinned warm compile (auto-generated)
+
+The regression surface: what a **warm** compile costs per cell/transform, so a
+cache or autotune setting that stops applying shows up as a number moving rather
+than as nobody noticing. Derived by `update_pins.py` from the corpus's warm rows
+(most recent wins — a pin states what warm costs *now*).
+
+Grouped by comparability key and never merged across it. A warm compile is only
+comparable within `(hardware, jax_version, mixed_precision, cache_state)`; a
+single ranked table would invite exactly the cross-key comparison the pins exist
+to prevent. A `jax_version` bump recompiles once **by design**, so it is a new
+key, not drift.
+
+<!-- BEGIN auto-table:jax-compile-warm -->
+**`local_cpu` · `DESKTOP-H143S82` · jax 0.10.2**
+
+| Cell | Transform | Warm compile | Source |
+|---|---|---|---|
+| `datacube_img/mge/hst` | `vag` | 2.40 s | `mb_homo_warm` 2026-07-21T19:43:03 |
+| `datacube_img_hetero/mge/hst` | `vag` | 6.96 s | `mb_hetero_warm` 2026-07-21T19:44:20 |
+| `imaging/delaunay_matern/hst` | `jit` | 12.96 s | `prodigy-census-warm` 2026-07-28T17:44:17 |
+| `imaging/delaunay_matern/hst` | `laxmap_vag` | 27.74 s | `prodigy-census-warm` 2026-07-28T18:38:08 |
+| `imaging/delaunay_matern/hst` | `pyloop_vag` | 26.30 s | `prodigy-census-warm` 2026-07-28T18:10:11 |
+| `imaging/delaunay_matern/hst` | `vag` | 27.79 s | `prodigy-census-warm` 2026-07-28T17:47:37 |
+| `imaging/knn/hst` | `jit` | 263.0 ms | `prodigy-census-warm` 2026-07-28T16:28:21 |
+| `imaging/knn/hst` | `laxmap_vag` | 1.79 s | `prodigy-census-warm-retry` 2026-07-28T18:58:25 |
+| `imaging/knn/hst` | `pyloop_vag` | 1.73 s | `prodigy-census-warm` 2026-07-28T17:11:53 |
+| `imaging/knn/hst` | `vag` | 1.32 s | `prodigy-census-warm` 2026-07-28T16:31:15 |
+| `imaging/mge/hst` | `jit` | 312.0 ms | `prodigy-census-warm` 2026-07-28T16:01:24 |
+| `imaging/mge/hst` | `laxmap_vag` | 2.32 s | `prodigy-census-warm` 2026-07-28T16:17:06 |
+| `imaging/mge/hst` | `pyloop_vag` | 2.81 s | `prodigy-census-warm` 2026-07-28T16:13:44 |
+| `imaging/mge/hst` | `vag` | 4.30 s | `prodigy-census-warm` 2026-07-28T16:04:53 |
+| `imaging/mge/hst` | `vmap_vag` | 2.95 s | `prodigy-census-warm` 2026-07-28T16:09:52 |
+| `imaging/pixelization/hst` | `jit` | 216.0 ms | `prodigy-census-warm` 2026-07-28T16:19:07 |
+| `imaging/pixelization/hst` | `vag` | 1.04 s | `prodigy-census-warm` 2026-07-28T16:24:46 |
+
+**`local_cpu` · `euclid-ral-compute-22` · jax 0.10.2**
+
+| Cell | Transform | Warm compile | Source |
+|---|---|---|---|
+| `imaging/delaunay_matern/hst` | `laxmap_vag` | 21.16 s | `prodigy-census-ral32-warm` 2026-07-28T20:13:59 |
+| `imaging/delaunay_matern/hst` | `vag` | 16.29 s | `prodigy-census-ral32-warm` 2026-07-28T20:04:53 |
+| `imaging/knn/hst` | `laxmap_vag` | 1.37 s | `prodigy-census-ral32-warm` 2026-07-28T20:29:12 |
+| `imaging/mge/hst` | `laxmap_vag` | 1.81 s | `prodigy-census-ral32-warm` 2026-07-28T20:30:57 |
+| `imaging/pixelization/hst` | `laxmap_vag` | 1.16 s | `prodigy-census-ral32-warm` 2026-07-28T20:03:15 |
+| `imaging/pixelization/hst` | `pyloop_vag` | 1.00 s | `prodigy-census-ral32-warm` 2026-07-28T19:21:06 |
+
+**`local_gpu_NVIDIA_A100_80GB_PCIe` · `euclid-ral-gpu-2` · jax 0.10.2**
+
+| Cell | Transform | Warm compile | Source |
+|---|---|---|---|
+| `imaging/pixelization/hst` | `jit` | 357.0 ms | `a100-census-warm` 2026-07-17T10:00:32 |
+| `imaging/pixelization/hst` | `vag` | 1.82 s | `a100-census-warm` 2026-07-17T10:00:39 |
+<!-- END auto-table:jax-compile-warm -->
+
 ## Record schema — `cache_state` and `host_state`
 
 Each record carries `cache_state`, **derived from what the compile did** rather
