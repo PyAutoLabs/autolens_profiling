@@ -72,7 +72,7 @@ jobs:
 
       - name: Install lint tools
         run: |
-          pip install ruff
+          pip install ruff pytest
           # lychee is a Rust binary; fetch the prebuilt release. The tarball
           # nests everything under lychee-x86_64-unknown-linux-gnu/, so strip
           # that leading directory and extract just the binary.
@@ -90,6 +90,19 @@ jobs:
       - name: build_readme.py --check (dashboard idempotence)
         working-directory: autolens_profiling
         run: python scripts/misc/tooling/build_readme.py --check
+
+      - name: pytest — scripts/misc/test/
+        working-directory: autolens_profiling
+        env:
+          MPLCONFIGDIR: /tmp/matplotlib
+          PYTHONPATH: ${{ github.workspace }}/PyAutoNerves:${{ github.workspace }}/PyAutoFit:${{ github.workspace }}/PyAutoArray:${{ github.workspace }}/PyAutoGalaxy:${{ github.workspace }}/PyAutoLens
+        run: |
+          # Until now these tests ran in NO workflow, so nothing checked the
+          # vram tables, the compile-probe cache_state derivation or the
+          # warm-compile pins on a PR. They are fast (~1s) and need only the
+          # dependency chain this job already installs -- aggregate.py imports
+          # matplotlib at module scope, so a bare checkout cannot run them.
+          pytest scripts/misc/test/ -q
 
       - name: lychee — markdown link-rot
         working-directory: autolens_profiling
