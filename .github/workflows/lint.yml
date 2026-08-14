@@ -104,12 +104,6 @@ jobs:
           # matplotlib at module scope, so a bare checkout cannot run them.
           pytest scripts/misc/test/ -q
 
-      - name: PowerLaw omega research report
-        working-directory: autolens_profiling
-        env:
-          PYTHONPATH: ${{ github.workspace }}/PyAutoNerves:${{ github.workspace }}/PyAutoFit:${{ github.workspace }}/PyAutoArray:${{ github.workspace }}/PyAutoGalaxy:${{ github.workspace }}/PyAutoLens
-        run: python scripts/misc/hazards/power_law_omega.py --ci-report
-
       - name: lychee — markdown link-rot
         working-directory: autolens_profiling
         run: |
