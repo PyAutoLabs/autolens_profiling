@@ -29,6 +29,9 @@ backend eigensolvers may choose different orientations.
 The stable backend-divergence finding is emitted only when a complete
 likelihood output exceeds a `1e-8` relative parity tolerance; the finding ID
 therefore returns unchanged if this resolved source behavior regresses.
+The curvature-floor documentation finding likewise remains stable but is
+emitted only when the helper and `Settings` docstrings do not both name the
+live packaged default.
 
 Run the cell directly to write its raw probe, or run the shared scanner to
 write semantic findings:

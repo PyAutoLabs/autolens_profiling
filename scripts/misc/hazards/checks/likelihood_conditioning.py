@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import inspect
+import math
+import re
+
 from hazards._anchor import maybe_anchor_from_pattern
 from hazards._likelihood import (
     conditioning_policy_metrics,
@@ -12,12 +16,58 @@ from hazards._measure import Measurement, reachability_measurement
 from hazards._record import Finding
 from hazards.checks._base import HazardCheck, ScanContext
 
+_FLOAT_PATTERN = r"(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?"
+_PACKAGED_DEFAULT_PATTERN = re.compile(
+    rf"packaged\s+configuration\s+defaults?\s+to\s+`{{0,2}}({_FLOAT_PATTERN})",
+    re.IGNORECASE,
+)
+_LEGACY_HELPER_DEFAULT_PATTERN = re.compile(
+    rf"small\s+numerical\s+value\s+of\s+`{{0,2}}({_FLOAT_PATTERN})",
+    re.IGNORECASE,
+)
+
+
+def curvature_floor_documentation_defaults(
+    helper_documentation: str | None,
+    settings_documentation: str | None,
+) -> dict[str, float | None]:
+    """Extract the packaged curvature-floor defaults claimed by both docs."""
+
+    helper_text = helper_documentation or ""
+    settings_text = settings_documentation or ""
+    helper_match = _PACKAGED_DEFAULT_PATTERN.search(helper_text)
+    if helper_match is None:
+        helper_match = _LEGACY_HELPER_DEFAULT_PATTERN.search(helper_text)
+    settings_match = _PACKAGED_DEFAULT_PATTERN.search(settings_text)
+    return {
+        "helper": float(helper_match.group(1)) if helper_match is not None else None,
+        "settings": float(settings_match.group(1)) if settings_match is not None else None,
+    }
+
+
+def curvature_floor_documentation_drift_persists(
+    documented_defaults: dict[str, float | None],
+    *,
+    configured_floor: float,
+) -> bool:
+    """Return whether either public doc is missing or disagrees with configuration."""
+
+    if not math.isfinite(configured_floor) or configured_floor <= 0.0:
+        return True
+    return any(
+        value is None
+        or not math.isfinite(value)
+        or not math.isclose(value, configured_floor, rel_tol=1.0e-12, abs_tol=0.0)
+        for value in documented_defaults.values()
+    )
+
 
 class LikelihoodConditioningCheck(HazardCheck):
     name = "likelihood_conditioning"
     subject = "likelihood"
 
     def run(self, context: ScanContext) -> list[Finding]:
+        from autoarray.inversion.inversion import inversion_util
         from autoarray.settings import Settings
 
         probe = imaging_pixelization_probe(context)
@@ -75,7 +125,7 @@ class LikelihoodConditioningCheck(HazardCheck):
         reachability = reachability_measurement(
             reachable_via=["FitImaging.linear-light-plus-RectangularUniform.Constant"]
         )
-        return [
+        findings = [
             Finding(
                 finding_id="likelihood.imaging-pixelization.absolute-conditioning-floors",
                 title="Absolute inversion floors move with dataset scale",
@@ -172,34 +222,59 @@ class LikelihoodConditioningCheck(HazardCheck):
                         "before opening a source-numerics task."
                     ),
                 },
-            ),
-            Finding(
-                finding_id="likelihood.imaging-pixelization.curvature-floor-doc-config-drift",
-                title="Curvature-floor documentation trails the live default",
-                summary=(
-                    f"The helper docstring names 1e-8 while live configuration supplies "
-                    f"{configured_floor:.1e}, a {configured_floor / 1.0e-8:.0e} ratio."
-                ),
-                hazard_class="documentation_drift",
-                tier=2,
-                subject="likelihood",
-                subject_name="imaging_pixelization",
-                backends=tuple(context.backends),
-                measurements=(
-                    Measurement(
-                        basis="error_curve",
-                        value=configured_floor / 1.0e-8,
-                        unit="configured_over_documented",
-                        details={"documented": 1.0e-8, "configured": configured_floor},
-                    ),
-                ),
-                anchors=tuple(
-                    anchor for anchor in (curvature_anchor, config_anchor) if anchor is not None
-                ),
-                code_exists=True,
-                reachable_via=("FitImaging.linear-light-inversion",),
-                blocked_by=(),
-                affects_science=None,
-                reproducer={"documented": 1.0e-8, "configured": configured_floor},
-            ),
+            )
         ]
+        documented_defaults = curvature_floor_documentation_defaults(
+            inspect.getdoc(inversion_util.curvature_matrix_with_added_to_diag_from),
+            inspect.getdoc(Settings.__init__),
+        )
+        if curvature_floor_documentation_drift_persists(
+            documented_defaults,
+            configured_floor=configured_floor,
+        ):
+            documented_reference = next(
+                (
+                    value
+                    for value in documented_defaults.values()
+                    if value is not None and math.isfinite(value) and value > 0.0
+                ),
+                configured_floor,
+            )
+            findings.append(
+                Finding(
+                    finding_id="likelihood.imaging-pixelization.curvature-floor-doc-config-drift",
+                    title="Curvature-floor documentation trails the live default",
+                    summary=(
+                        "The helper and Settings documentation do not both name the live "
+                        f"{configured_floor:.1e} packaged curvature-floor default."
+                    ),
+                    hazard_class="documentation_drift",
+                    tier=2,
+                    subject="likelihood",
+                    subject_name="imaging_pixelization",
+                    backends=tuple(context.backends),
+                    measurements=(
+                        Measurement(
+                            basis="error_curve",
+                            value=configured_floor / documented_reference,
+                            unit="configured_over_documented",
+                            details={
+                                "documented": documented_defaults,
+                                "configured": configured_floor,
+                            },
+                        ),
+                    ),
+                    anchors=tuple(
+                        anchor for anchor in (curvature_anchor, config_anchor) if anchor is not None
+                    ),
+                    code_exists=True,
+                    reachable_via=("FitImaging.linear-light-inversion",),
+                    blocked_by=(),
+                    affects_science=None,
+                    reproducer={
+                        "documented": documented_defaults,
+                        "configured": configured_floor,
+                    },
+                )
+            )
+        return findings

@@ -1237,44 +1237,6 @@
       "tier": 2,
       "title": "Absolute inversion floors move with dataset scale"
     },
-    "likelihood.imaging-pixelization.curvature-floor-doc-config-drift": {
-      "affects_science": null,
-      "anchors": [],
-      "backend_reachability": {},
-      "backends": [
-        "numpy",
-        "jax"
-      ],
-      "blocked_by": [],
-      "code_exists": true,
-      "finding_id": "likelihood.imaging-pixelization.curvature-floor-doc-config-drift",
-      "hazard_class": "documentation_drift",
-      "measurements": [
-        {
-          "basis": "error_curve",
-          "details": {
-            "configured": 0.001,
-            "documented": 1e-08
-          },
-          "unit": "configured_over_documented",
-          "value": 100000.0
-        }
-      ],
-      "reachable_via": [
-        "FitImaging.linear-light-inversion"
-      ],
-      "record": "likelihood/imaging_pixelization/documentation_drift.json",
-      "reproducer": {
-        "configured": 0.001,
-        "documented": 1e-08
-      },
-      "schema_version": 1,
-      "subject": "likelihood",
-      "subject_name": "imaging_pixelization",
-      "summary": "The helper docstring names 1e-8 while live configuration supplies 1.0e-03, a 1e+05 ratio.",
-      "tier": 2,
-      "title": "Curvature-floor documentation trails the live default"
-    },
     "likelihood.imaging-pixelization.nnls-active-set-kinks": {
       "affects_science": null,
       "anchors": [],

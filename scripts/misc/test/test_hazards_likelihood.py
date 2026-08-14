@@ -34,6 +34,10 @@ from hazards._likelihood import (  # noqa: E402
     stable_ellipse_parameters_from_border,
     support_transition_locations,
 )
+from hazards.checks.likelihood_conditioning import (  # noqa: E402
+    curvature_floor_documentation_defaults,
+    curvature_floor_documentation_drift_persists,
+)
 
 
 def _row(parameter, reconstruction, *, backend="numpy", figure_of_merit=-10.0, **metadata):
@@ -94,6 +98,42 @@ def test_backend_divergence_persistence_uses_relative_parity_tolerance():
 def test_backend_divergence_persistence_rejects_nonpositive_tolerance():
     with pytest.raises(ValueError, match="relative tolerance must be positive"):
         backend_divergence_persists({}, relative_tolerance=0.0)
+
+
+def test_curvature_floor_docs_agree_with_packaged_default():
+    documented = curvature_floor_documentation_defaults(
+        "The packaged configuration defaults to\n`1.0e-3`; workspaces may override it.",
+        "The packaged configuration defaults to `1.0e-3`; workspaces may override it.",
+    )
+    assert documented == {"helper": 1.0e-3, "settings": 1.0e-3}
+    assert (
+        curvature_floor_documentation_drift_persists(
+            documented,
+            configured_floor=1.0e-3,
+        )
+        is False
+    )
+
+
+def test_curvature_floor_docs_preserve_legacy_and_missing_drift():
+    documented = curvature_floor_documentation_defaults(
+        "Add a small numerical value of `1.0e-8` to the diagonal.",
+        "This value is added to the curvature matrix.",
+    )
+    assert documented == {"helper": 1.0e-8, "settings": None}
+    assert curvature_floor_documentation_drift_persists(
+        documented,
+        configured_floor=1.0e-3,
+    )
+
+
+@pytest.mark.parametrize("configured_floor", [0.0, float("nan"), float("inf")])
+def test_curvature_floor_docs_keep_invalid_configuration_visible(configured_floor):
+    documented = {"helper": 1.0e-3, "settings": 1.0e-3}
+    assert curvature_floor_documentation_drift_persists(
+        documented,
+        configured_floor=configured_floor,
+    )
 
 
 def test_nnls_metrics_grade_primal_dual_and_complementarity_conditions():
