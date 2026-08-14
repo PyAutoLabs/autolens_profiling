@@ -81,8 +81,7 @@ def relative_l2_error(candidate: np.ndarray, reference: np.ndarray) -> float:
     candidate = np.asarray(candidate)
     reference = np.asarray(reference)
     return float(
-        np.linalg.norm(candidate - reference)
-        / max(float(np.linalg.norm(reference)), 1.0e-30)
+        np.linalg.norm(candidate - reference) / max(float(np.linalg.norm(reference)), 1.0e-30)
     )
 
 
@@ -147,9 +146,7 @@ def minimum_terms(surface: list[dict]) -> list[dict]:
         factor_rows = [row for row in surface if row["factor"] == factor]
         for tolerance in ERROR_TOLERANCES:
             passing = [
-                row["n_terms"]
-                for row in factor_rows
-                if row["max_relative_error"] <= tolerance
+                row["n_terms"] for row in factor_rows if row["max_relative_error"] <= tolerance
             ]
             rows.append(
                 {
@@ -172,9 +169,7 @@ def default_prior_annulus_mass(lower: float, upper: float) -> float:
     if not 0.0 <= lower <= upper <= 1.0:
         raise ValueError("annulus bounds must satisfy 0 <= lower <= upper <= 1")
     sigma = DEFAULT_ELL_COMPS_SIGMA
-    numerator = math.exp(-(lower**2) / (2.0 * sigma**2)) - math.exp(
-        -(upper**2) / (2.0 * sigma**2)
-    )
+    numerator = math.exp(-(lower**2) / (2.0 * sigma**2)) - math.exp(-(upper**2) / (2.0 * sigma**2))
     return numerator / _truncated_square_normalization(sigma)
 
 
@@ -193,9 +188,7 @@ def prior_reachability() -> dict:
             slope_mass = float((slope_upper - slope_lower) / 1.5)
             z = np.exp(1j * angles)
             exact = omega_exact(z, public_slope - 1.0, factor)
-            error = relative_l2_error(
-                omega_series(z, public_slope - 1.0, factor, 20), exact
-            )
+            error = relative_l2_error(omega_series(z, public_slope - 1.0, factor, 20), exact)
             cell_mass = radial_mass * slope_mass
             for tolerance in masses:
                 if error > tolerance:
@@ -240,9 +233,7 @@ def factor_limits_at_twenty_terms(tolerance: float = 1.0e-4) -> list[dict]:
         for factor in factors:
             z = np.exp(1j * angles)
             exact = omega_exact(z, internal_slope, float(factor))
-            error = relative_l2_error(
-                omega_series(z, internal_slope, float(factor), 20), exact
-            )
+            error = relative_l2_error(omega_series(z, internal_slope, float(factor), 20), exact)
             if error <= tolerance:
                 passing.append(float(factor))
         rows.append(
@@ -327,18 +318,12 @@ def jax_cost_and_transforms() -> dict:
     fixed = {}
     for n_terms in (20, 160, 640, 2560, 10240):
         function = jax.jit(
-            lambda z, slope, fac, n_terms=n_terms: _jax_omega(
-                z, slope, fac, n_terms
-            )
+            lambda z, slope, fac, n_terms=n_terms: _jax_omega(z, slope, fac, n_terms)
         )
-        fixed[str(n_terms)] = _timed_jax_call(
-            function, eiphi, internal_slope, factor
-        )
+        fixed[str(n_terms)] = _timed_jax_call(function, eiphi, internal_slope, factor)
 
     policy_function = jax.jit(_jax_policy)
-    policy_timing = _timed_jax_call(
-        policy_function, eiphi, internal_slope, factor
-    )
+    policy_timing = _timed_jax_call(policy_function, eiphi, internal_slope, factor)
     fixed_twenty_warm = fixed["20"]["median_warm_seconds"]
     policy_timing["warm_ratio_to_20_terms"] = (
         policy_timing["median_warm_seconds"] / fixed_twenty_warm
@@ -362,9 +347,7 @@ def jax_cost_and_transforms() -> dict:
 
     factors = jnp.asarray((0.6, 0.8, 0.95, 0.999))
     try:
-        vmapped = jax.jit(
-            jax.vmap(lambda fac: _jax_policy(eiphi, internal_slope, fac))
-        )
+        vmapped = jax.jit(jax.vmap(lambda fac: _jax_policy(eiphi, internal_slope, fac)))
         transforms["vmap"] = {
             "supported": True,
             **_timed_jax_call(vmapped, factors),
@@ -397,9 +380,7 @@ def complete_likelihood_materiality() -> dict:
 
     jax.config.update("jax_enable_x64", True)
     data_native = np.zeros((7, 7))
-    data_native[2:5, 2:5] = np.asarray(
-        ((0.1, 1.0, 0.0), (0.2, 3.0, 0.3), (0.0, 0.5, 0.1))
-    )
+    data_native[2:5, 2:5] = np.asarray(((0.1, 1.0, 0.0), (0.2, 3.0, 0.3), (0.0, 0.5, 0.1)))
     data = aa.Array2D.no_mask(values=data_native, pixel_scales=(1.0, 1.0))
     noise_map = aa.Array2D.full(
         fill_value=2.0,
@@ -407,9 +388,7 @@ def complete_likelihood_materiality() -> dict:
         pixel_scales=(1.0, 1.0),
     )
     kernel = aa.Array2D.no_mask(
-        values=np.asarray(
-            ((0.0, 0.5, 0.0), (0.5, 1.0, 0.5), (0.0, 0.5, 0.0))
-        ),
+        values=np.asarray(((0.0, 0.5, 0.0), (0.5, 1.0, 0.5), (0.0, 0.5, 0.0))),
         pixel_scales=(1.0, 1.0),
     )
     mask = aa.Mask2D(
@@ -462,11 +441,7 @@ def complete_likelihood_materiality() -> dict:
         for factor in (0.6, 0.8, 0.9, 0.95, 0.99, 0.999):
             numpy_value = float(np.asarray(figure_of_merit(factor, public_slope, np)))
             jax_value = float(
-                np.asarray(
-                    figure_of_merit(
-                        jnp.asarray(factor), jnp.asarray(public_slope), jnp
-                    )
-                )
+                np.asarray(figure_of_merit(jnp.asarray(factor), jnp.asarray(public_slope), jnp))
             )
             rows.append(
                 {
