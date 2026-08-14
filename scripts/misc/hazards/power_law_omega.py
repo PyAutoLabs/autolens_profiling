@@ -483,7 +483,72 @@ def build_report(*, include_runtime: bool) -> dict:
     if include_runtime:
         report["jax_runtime"] = jax_cost_and_transforms()
         report["complete_likelihood"] = complete_likelihood_materiality()
+        policy_timing = report["jax_runtime"]["binned_policy"][
+            "timing_at_factor_0.999"
+        ]
+        likelihood_delta = report["complete_likelihood"][
+            "maximum_absolute_delta_log_likelihood"
+        ]
+        report["candidate_policy"]["status"] = "rejected_for_source_routing"
+        report["decision"] = {
+            "pyautogalaxy_source_issue_opened": False,
+            "reason": (
+                "The only sampled fixed-bin policy covering the live 0.999 clamp "
+                f"is {policy_timing['warm_ratio_to_20_terms']:.1f}x slower than the "
+                "20-term path at that clamp. Although reverse-mode and vmap remain "
+                "available, the bounded FitImaging fixture changes by at most "
+                f"{likelihood_delta:.3g} log-likelihood units, so this study does not "
+                "establish likelihood materiality sufficient to justify that cost."
+            ),
+            "finding_disposition": "persistent profiling evidence",
+        }
     return report
+
+
+def plot_accuracy(report: dict, output: Path) -> None:
+    """Plot the accuracy surface and minimum terms for the research artifact."""
+
+    import matplotlib.pyplot as plt
+
+    surface = report["accuracy"]["surface_maximized_over_public_slope_prior"]
+    minimum = report["accuracy"]["minimum_sampled_terms"]
+    figure, axes = plt.subplots(1, 2, figsize=(11.0, 4.2))
+    for n_terms in TERM_COUNTS:
+        rows = [row for row in surface if row["n_terms"] == n_terms]
+        axes[0].plot(
+            [row["factor"] for row in rows],
+            [max(row["max_relative_error"], 1.0e-16) for row in rows],
+            marker="o",
+            markersize=2.5,
+            linewidth=1.0,
+            label=str(n_terms),
+        )
+    axes[0].axhline(1.0e-4, color="black", linestyle="--", linewidth=1.0)
+    axes[0].set_yscale("log")
+    axes[0].set_xlabel("ellipticity factor")
+    axes[0].set_ylabel("maximum relative angular error")
+    axes[0].set_title("Accuracy over slope prior")
+    axes[0].legend(title="terms", ncol=2, fontsize=7)
+
+    for tolerance in ERROR_TOLERANCES:
+        rows = [row for row in minimum if row["tolerance"] == tolerance]
+        axes[1].plot(
+            [row["factor"] for row in rows],
+            [row["minimum_sampled_terms"] for row in rows],
+            marker="o",
+            linewidth=1.2,
+            label=f"{tolerance:g}",
+        )
+    axes[1].set_yscale("log", base=2)
+    axes[1].set_xlabel("ellipticity factor")
+    axes[1].set_ylabel("minimum sampled terms")
+    axes[1].set_title("Terms required at each tolerance")
+    axes[1].legend(title="relative tolerance")
+    figure.suptitle(FINDING_ID)
+    figure.tight_layout()
+    output.parent.mkdir(parents=True, exist_ok=True)
+    figure.savefig(output, dpi=160)
+    plt.close(figure)
 
 
 def parse_args() -> argparse.Namespace:
@@ -508,6 +573,7 @@ def main() -> int:
     if args.output is not None:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+        plot_accuracy(report, args.output.with_suffix(".png"))
         print(f"wrote {args.output}")
     if args.ci_report:
         print(f"POWER_LAW_OMEGA_REPORT={payload}")
