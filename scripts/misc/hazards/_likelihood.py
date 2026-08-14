@@ -9,6 +9,8 @@ from types import ModuleType
 
 import numpy as np
 
+DEFAULT_ELL_COMPS_SIGMA = 0.3
+
 
 @dataclass(frozen=True)
 class LikelihoodProbeRow:
@@ -80,6 +82,46 @@ class BorderRelocatorComparisonRow:
     raw_jax_source_grid: tuple[tuple[float, float], ...]
     relocated_numpy_source_grid: tuple[tuple[float, float], ...]
     relocated_jax_source_grid: tuple[tuple[float, float], ...]
+
+
+def ell_comps_radius_from_axis_ratio(axis_ratio: float) -> float:
+    """Return the Cartesian ellipticity radius corresponding to an axis ratio."""
+
+    if not 0.0 < axis_ratio <= 1.0:
+        raise ValueError("axis ratio must be in (0, 1]")
+    return (1.0 - axis_ratio) / (1.0 + axis_ratio)
+
+
+def isotropic_gaussian_disk_mass(radius: float, *, sigma: float) -> float:
+    """Return the mass inside a disk for two independent zero-mean Gaussians."""
+
+    if radius < 0.0:
+        raise ValueError("radius must be non-negative")
+    if sigma <= 0.0:
+        raise ValueError("sigma must be positive")
+    return float(-np.expm1(-(radius * radius) / (2.0 * sigma * sigma)))
+
+
+def orientation_degeneracy_persists(sampled_parameters: tuple[str, ...]) -> bool:
+    """Return whether axis ratio and angle are independent sampled coordinates."""
+
+    return {"axis_ratio", "angle"}.issubset(sampled_parameters)
+
+
+def nonfinite_gradient_site_persists(
+    origin_gradient: tuple[float, ...],
+    neighbourhood_gradients: tuple[tuple[float, ...], ...],
+) -> bool:
+    """Return whether only the exact site has a non-finite autodiff result."""
+
+    origin = np.asarray(origin_gradient, dtype=float)
+    neighbourhood = np.asarray(neighbourhood_gradients, dtype=float)
+    return bool(
+        origin.size
+        and neighbourhood.size
+        and np.any(~np.isfinite(origin))
+        and np.all(np.isfinite(neighbourhood))
+    )
 
 
 def support_mask(

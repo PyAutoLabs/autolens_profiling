@@ -1,0 +1,243 @@
+{
+  "findings": [
+    {
+      "affects_science": true,
+      "anchors": [],
+      "backend_reachability": {
+        "jax": {
+          "full_likelihood": "reachable",
+          "gradient": "nonfinite_at_exact_origin",
+          "value": "finite"
+        }
+      },
+      "backends": [
+        "jax"
+      ],
+      "blocked_by": [],
+      "code_exists": true,
+      "finding_id": "likelihood.imaging-sersic.ell-comps-origin-nonfinite-gradient",
+      "hazard_class": "nonfinite_gradient",
+      "measurements": [
+        {
+          "basis": "epsilon_neighbourhood",
+          "details": {
+            "centre": [
+              0.0,
+              0.0
+            ],
+            "domain": {
+              "dimensions": 2,
+              "note": "the exact point has zero continuous prior mass",
+              "parameter": "ell_comps",
+              "sigma": 0.3,
+              "type": "independent_gaussian"
+            },
+            "epsilon": 1e-08
+          },
+          "unit": "fraction",
+          "value": 5.555555555555554e-16
+        },
+        {
+          "basis": "error_curve",
+          "details": {
+            "gradient_norm": [
+              null,
+              1.2789197277271813,
+              1.2789197569458344,
+              1.2789197456882733,
+              1.2789197442914984,
+              1.2789182380820416,
+              1.278921247637837,
+              1.2789200719738751,
+              1.2789194136791786
+            ],
+            "origin_gradient": [
+              null,
+              null
+            ],
+            "points": [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                1e-08,
+                0.0
+              ],
+              [
+                -1e-08,
+                0.0
+              ],
+              [
+                0.0,
+                1e-08
+              ],
+              [
+                0.0,
+                -1e-08
+              ],
+              [
+                1e-06,
+                0.0
+              ],
+              [
+                -1e-06,
+                0.0
+              ],
+              [
+                0.0,
+                1e-06
+              ],
+              [
+                0.0,
+                -1e-06
+              ]
+            ]
+          },
+          "unit": "gradient_norm",
+          "value": null
+        }
+      ],
+      "reachable_via": [
+        "FitImaging.Sersic.ell-comps-prior-mean",
+        "jax_autodiff"
+      ],
+      "reproducer": {
+        "figure_of_merit": [
+          -15.477240141252718,
+          -15.477240129682773,
+          -15.477240152822665,
+          -15.477240146702483,
+          -15.477240135802955,
+          -15.477238984258708,
+          -15.47724129824785,
+          -15.477240686228278,
+          -15.477239596275489
+        ],
+        "gradient": [
+          [
+            null,
+            null
+          ],
+          [
+            1.1569945602308938,
+            -0.5449763825762439
+          ],
+          [
+            1.1569945826519072,
+            -0.544976403544714
+          ],
+          [
+            1.1569945824433,
+            -0.5449763775689838
+          ],
+          [
+            1.156994565150275,
+            -0.544976411004511
+          ],
+          [
+            1.1569934503904906,
+            -0.5449752429719912
+          ],
+          [
+            1.156995692491945,
+            -0.5449775456058777
+          ],
+          [
+            1.1569957226907015,
+            -0.5449747225083774
+          ],
+          [
+            1.1569934201186147,
+            -0.5449780660611254
+          ]
+        ],
+        "gradient_neighbourhood_prior_mass": 5.555555555555554e-16,
+        "gradient_norm": [
+          null,
+          1.2789197277271813,
+          1.2789197569458344,
+          1.2789197456882733,
+          1.2789197442914984,
+          1.2789182380820416,
+          1.278921247637837,
+          1.2789200719738751,
+          1.2789194136791786
+        ],
+        "parameter": "ell_comps_radius",
+        "points": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1e-08,
+            0.0
+          ],
+          [
+            -1e-08,
+            0.0
+          ],
+          [
+            0.0,
+            1e-08
+          ],
+          [
+            0.0,
+            -1e-08
+          ],
+          [
+            1e-06,
+            0.0
+          ],
+          [
+            -1e-06,
+            0.0
+          ],
+          [
+            0.0,
+            1e-06
+          ],
+          [
+            0.0,
+            -1e-06
+          ]
+        ],
+        "radius": [
+          0.0,
+          1e-08,
+          1e-08,
+          1e-08,
+          1e-08,
+          1e-06,
+          1e-06,
+          1e-06,
+          1e-06
+        ],
+        "recommendation": "Open a bounded PyAutoGalaxy task to make the Cartesian ell_comps-to-geometry path differentiable at the origin without assigning an arbitrary physical orientation.",
+        "resolved_structural_counterfactual": {
+          "axis_ratio_to_figure_of_merit_span": {
+            "0.7": 0.27117177639382817,
+            "0.9": 0.03236711406694326,
+            "0.99": 0.0017753090628076507,
+            "1.0": 0.0
+          },
+          "finding_id": "likelihood.imaging-sersic.circular-orientation-degeneracy",
+          "q_greater_equal_0.99_prior_mass": 0.00014027842438713064,
+          "reason": "angle is derived from Cartesian ell_comps, not an independent sampled direction",
+          "sampled_parameters": [
+            "ell_comps_0",
+            "ell_comps_1"
+          ]
+        }
+      },
+      "schema_version": 1,
+      "subject": "likelihood",
+      "subject_name": "imaging_sersic_ell_comps",
+      "summary": "The q-angle counterfactual is not sampler-reachable because Sersic fits ell_comps_0/1. In those actual coordinates the off-centre complete likelihood is finite at the origin, but its exact JAX gradient is non-finite while nearby gradients are finite.",
+      "tier": 2,
+      "title": "Circular ell_comps origin has a non-finite JAX gradient"
+    }
+  ],
+  "schema_version": 1
+}

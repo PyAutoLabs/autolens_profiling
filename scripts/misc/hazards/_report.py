@@ -41,10 +41,21 @@ def render_finding_plot(finding: Finding, path: Path) -> None:
             dtype=float,
         )
         ax.plot(radius, gradient, marker="o")
-        ax.scatter([0.0], [1.0], marker="x", s=80, color="red", label="gradient non-finite")
+        finite_gradient = gradient[np.isfinite(gradient)]
+        marker_height = float(np.max(finite_gradient)) if finite_gradient.size else 1.0
+        ax.scatter(
+            [0.0],
+            [marker_height],
+            marker="x",
+            s=80,
+            color="red",
+            label="gradient non-finite",
+        )
         ax.set_xscale("symlog", linthresh=1.0e-13)
         ax.set_xlabel("radius")
         ax.set_ylabel("gradient norm")
+        if data.get("parameter") == "ell_comps_radius":
+            ax.ticklabel_format(axis="y", style="plain", useOffset=False)
         ax.legend()
     elif finding.hazard_class == "backend_divergence":
         ax.plot(data["factor"], data["relative_error"], marker="o")

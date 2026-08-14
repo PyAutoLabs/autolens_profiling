@@ -26,9 +26,13 @@ from hazards._likelihood import (  # noqa: E402
     backend_error_curves,
     calibrated_scale_aware_floors,
     conditioning_policy_metrics,
+    ell_comps_radius_from_axis_ratio,
     epsilon_neighbourhood_mass,
     floor_fraction,
+    isotropic_gaussian_disk_mass,
     nnls_optimality_metrics,
+    nonfinite_gradient_site_persists,
+    orientation_degeneracy_persists,
     orientation_spans,
     relative_l2_error,
     stable_ellipse_parameters_from_border,
@@ -183,6 +187,33 @@ def test_conditioning_and_structural_helpers_use_physical_scales():
         LikelihoodProbeRow(1.0, "axis_ratio", "numpy", -3.0, metadata={"axis_ratio": 1.0}),
     ]
     assert orientation_spans(rows) == {0.7: 3.0, 1.0: 0.0}
+
+
+def test_circular_neighbourhood_uses_cartesian_gaussian_prior_mass():
+    radius = ell_comps_radius_from_axis_ratio(0.99)
+    assert radius == pytest.approx(0.005025125628140708)
+    assert isotropic_gaussian_disk_mass(radius, sigma=0.3) == pytest.approx(0.00014027842438713064)
+    with pytest.raises(ValueError, match="axis ratio"):
+        ell_comps_radius_from_axis_ratio(0.0)
+    with pytest.raises(ValueError, match="sigma"):
+        isotropic_gaussian_disk_mass(radius, sigma=0.0)
+
+
+def test_nonfinite_gradient_site_requires_finite_neighbourhood():
+    assert nonfinite_gradient_site_persists(
+        (float("nan"), float("nan")),
+        ((1.0, 2.0), (1.1, 2.1)),
+    )
+    assert not nonfinite_gradient_site_persists(
+        (float("nan"), float("nan")),
+        ((float("nan"), 2.0),),
+    )
+    assert not nonfinite_gradient_site_persists((1.0, 2.0), ((1.0, 2.0),))
+
+
+def test_orientation_degeneracy_requires_independent_sampled_angle():
+    assert orientation_degeneracy_persists(("axis_ratio", "angle"))
+    assert not orientation_degeneracy_persists(("ell_comps_0", "ell_comps_1"))
 
 
 def _conditioning_row(noise_scale, policy, floor, curvature, reconstruction, fom):

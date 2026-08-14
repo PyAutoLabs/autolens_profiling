@@ -32,6 +32,11 @@ therefore returns unchanged if this resolved source behavior regresses.
 The curvature-floor documentation finding likewise remains stable but is
 emitted only when the helper and `Settings` docstrings do not both name the
 live packaged default.
+The Sersic circularity probe is classified in the fitted Cartesian
+`ell_comps_0/1` coordinates, rather than treating derived axis ratio and angle
+as independent priors. This resolves the former structural-degeneracy finding
+and separately records the non-finite JAX gradient at the exact circular
+default-prior mean.
 
 Run the cell directly to write its raw probe, or run the shared scanner to
 write semantic findings:

@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 import os
 import sys
-from dataclasses import asdict
+from dataclasses import asdict, is_dataclass
 from functools import lru_cache
 from pathlib import Path
 
@@ -457,6 +457,58 @@ def _structural_row(*, backend: str, axis_ratio: float, angle: float) -> Likelih
     )
 
 
+def _ell_comps_gradient_probe() -> dict:
+    """Differentiate a complete off-centre Sersic likelihood at its circular point."""
+
+    import jax
+    import jax.numpy as jnp
+
+    jax.config.update("jax_enable_x64", True)
+
+    def figure_of_merit(ell_comps):
+        tracer = al.Tracer(
+            galaxies=(
+                al.Galaxy(
+                    redshift=0.5,
+                    bulge=al.lp.Sersic(
+                        centre=(0.13, -0.17),
+                        ell_comps=(ell_comps[0], ell_comps[1]),
+                        intensity=1.0,
+                        effective_radius=1.0,
+                        sersic_index=2.0,
+                    ),
+                ),
+            )
+        )
+        return al.FitImaging(dataset=_dataset(), tracer=tracer, xp=jnp).figure_of_merit
+
+    points = np.asarray(
+        (
+            (0.0, 0.0),
+            (1.0e-8, 0.0),
+            (-1.0e-8, 0.0),
+            (0.0, 1.0e-8),
+            (0.0, -1.0e-8),
+            (1.0e-6, 0.0),
+            (-1.0e-6, 0.0),
+            (0.0, 1.0e-6),
+            (0.0, -1.0e-6),
+        ),
+        dtype=float,
+    )
+    values = []
+    gradients = []
+    for point in points:
+        point_array = jnp.asarray(point, dtype=jnp.float64)
+        values.append(float(np.asarray(figure_of_merit(point_array))))
+        gradients.append(tuple(np.asarray(jax.grad(figure_of_merit)(point_array), dtype=float)))
+    return {
+        "points": [tuple(point) for point in points],
+        "figure_of_merit": values,
+        "gradients": gradients,
+    }
+
+
 def run_probe(backends: tuple[str, ...] = ("numpy", "jax")) -> dict[str, list]:
     """Evaluate the full likelihood over bounded diagnostic parameter grids."""
 
@@ -518,6 +570,7 @@ def run_probe(backends: tuple[str, ...] = ("numpy", "jax")) -> dict[str, list]:
             _border_relocator_comparison_rows() if {"numpy", "jax"}.issubset(set(backends)) else []
         ),
         "structural": structural,
+        "ell_comps_gradient": ([_ell_comps_gradient_probe()] if "jax" in backends else []),
     }
 
 
@@ -527,7 +580,10 @@ def main() -> int:
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(
         json.dumps(
-            {name: [asdict(row) for row in rows] for name, rows in probe.items()},
+            {
+                name: [asdict(row) if is_dataclass(row) else row for row in rows]
+                for name, rows in probe.items()
+            },
             indent=2,
             sort_keys=True,
             allow_nan=False,
