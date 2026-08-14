@@ -57,6 +57,17 @@ The tier-1 slice intentionally proves four shapes rather than scanning the full
 3. PowerLaw `hyp2f1` versus the fixed 20-term JAX series;
 4. the absolute curvature-diagonal floor on synthetic matrix scales.
 
+The PowerLaw finding has a bounded convergence study in
+`power_law_omega.py` and
+`results/hazards/component/power_law/omega_convergence.json`. The 20-term
+series exceeds `1e-4` angular error over 5.7% of the packaged default prior.
+A fixed-bin counterfactual retains reverse-mode differentiation and `vmap`, but
+covering the live `0.999` ellipticity clamp requires 10,240 terms and was 125x
+slower than the current path there on the recorded CPU run. The complete 7x7
+`FitImaging` fixture moved by at most 0.0056 log-likelihood units. That evidence
+does not support routing the high-cost counterfactual into PyAutoGalaxy; the
+stable finding remains profiling evidence.
+
 Tier 2 adds a full [`FitImaging` cell](../../imaging/hazards/README.md) around a
 rectangular source inversion. The generated
 `component/profile_registry_coverage.json` records public classes from `al.lp`,
