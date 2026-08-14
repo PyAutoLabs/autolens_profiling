@@ -34,9 +34,9 @@ emitted only when the helper and `Settings` docstrings do not both name the
 live packaged default.
 The Sersic circularity probe is classified in the fitted Cartesian
 `ell_comps_0/1` coordinates, rather than treating derived axis ratio and angle
-as independent priors. This resolves the former structural-degeneracy finding
-and separately records the non-finite JAX gradient at the exact circular
-default-prior mean.
+as independent priors. This resolves the former structural-degeneracy finding;
+the raw cell retains its circularity points for regression coverage without
+emitting a separate finding.
 
 Run the cell directly to write its raw probe, or run the shared scanner to
 write semantic findings:
