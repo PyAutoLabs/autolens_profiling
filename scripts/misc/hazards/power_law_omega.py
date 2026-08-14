@@ -483,12 +483,8 @@ def build_report(*, include_runtime: bool) -> dict:
     if include_runtime:
         report["jax_runtime"] = jax_cost_and_transforms()
         report["complete_likelihood"] = complete_likelihood_materiality()
-        policy_timing = report["jax_runtime"]["binned_policy"][
-            "timing_at_factor_0.999"
-        ]
-        likelihood_delta = report["complete_likelihood"][
-            "maximum_absolute_delta_log_likelihood"
-        ]
+        policy_timing = report["jax_runtime"]["binned_policy"]["timing_at_factor_0.999"]
+        likelihood_delta = report["complete_likelihood"]["maximum_absolute_delta_log_likelihood"]
         report["candidate_policy"]["status"] = "rejected_for_source_routing"
         report["decision"] = {
             "pyautogalaxy_source_issue_opened": False,
