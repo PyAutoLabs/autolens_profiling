@@ -5,7 +5,11 @@ from __future__ import annotations
 import numpy as np
 
 from hazards._anchor import maybe_anchor_from_pattern
-from hazards._likelihood import backend_error_curves, imaging_pixelization_probe
+from hazards._likelihood import (
+    backend_divergence_persists,
+    backend_error_curves,
+    imaging_pixelization_probe,
+)
 from hazards._measure import Measurement, reachability_measurement
 from hazards._record import Finding
 from hazards.checks._base import HazardCheck, ScanContext
@@ -29,6 +33,8 @@ class SolverDivergenceCheck(HazardCheck):
             for curve in curves.values()
             for quantity in ("figure_of_merit", "reconstruction")
         )
+        if not backend_divergence_persists(curves):
+            return []
         diagnostic = imaging_pixelization_probe(context)["solver_diagnostic"]
         policy_maxima = {
             policy: {

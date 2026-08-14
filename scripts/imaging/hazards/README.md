@@ -26,6 +26,9 @@ PCA ellipse parameters, relocated grids, mesh extents, mappings and likelihood
 systems. It includes an axis-stable counterfactual for a near-isotropic border
 covariance, where PCA eigenvectors are otherwise mathematically undefined and
 backend eigensolvers may choose different orientations.
+The stable backend-divergence finding is emitted only when a complete
+likelihood output exceeds a `1e-8` relative parity tolerance; the finding ID
+therefore returns unchanged if this resolved source behavior regresses.
 
 Run the cell directly to write its raw probe, or run the shared scanner to
 write semantic findings:

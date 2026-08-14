@@ -22,6 +22,7 @@ if str(_misc) not in sys.path:
 
 from hazards._likelihood import (  # noqa: E402
     LikelihoodProbeRow,
+    backend_divergence_persists,
     backend_error_curves,
     calibrated_scale_aware_floors,
     conditioning_policy_metrics,
@@ -73,6 +74,26 @@ def test_backend_curves_align_parameters_and_report_both_outputs():
     assert curve["parameter"] == [1.0]
     assert curve["figure_of_merit"] == pytest.approx([0.1])
     assert curve["reconstruction"][0] > 0.0
+
+
+def test_backend_divergence_persistence_uses_relative_parity_tolerance():
+    curves = {
+        "jax": {
+            "parameter": [1.0],
+            "figure_of_merit": [1.0e-12],
+            "reconstruction": [9.0e-9],
+        }
+    }
+    assert backend_divergence_persists(curves) is False
+    curves["jax"]["reconstruction"] = [1.1e-8]
+    assert backend_divergence_persists(curves) is True
+    curves["jax"]["reconstruction"] = [float("nan")]
+    assert backend_divergence_persists(curves) is True
+
+
+def test_backend_divergence_persistence_rejects_nonpositive_tolerance():
+    with pytest.raises(ValueError, match="relative tolerance must be positive"):
+        backend_divergence_persists({}, relative_tolerance=0.0)
 
 
 def test_nnls_metrics_grade_primal_dual_and_complementarity_conditions():

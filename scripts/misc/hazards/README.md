@@ -47,7 +47,6 @@ token fingerprint helps relocate the implementation.
 | `likelihood.imaging-pixelization.absolute-conditioning-floors` | `likelihood` | `conditioning_floor` | error_curve, reachability | numpy |
 | `likelihood.imaging-pixelization.curvature-floor-doc-config-drift` | `likelihood` | `documentation_drift` | error_curve | numpy, jax |
 | `likelihood.imaging-pixelization.nnls-active-set-kinks` | `likelihood` | `active_set` | epsilon_neighbourhood, error_curve | numpy |
-| `likelihood.imaging-pixelization.positive-solver-backend-divergence` | `likelihood` | `solver_divergence` | error_curve, reachability | numpy, jax |
 | `likelihood.imaging-sersic.circular-orientation-degeneracy` | `likelihood` | `structural_degeneracy` | epsilon_neighbourhood, error_curve | numpy |
 | `matrix.curvature.absolute-diagonal-floor` | `matrix` | `conditioning_floor` | error_curve, reachability | numpy, jax |
 <!-- END auto-table:hazards -->

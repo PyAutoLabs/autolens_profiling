@@ -21,8 +21,10 @@
           "details": {
             "centre": [
               1.025,
-              1.375,
-              1.5750000000000002
+              1.125,
+              1.1750000000000003,
+              1.3250000000000002,
+              1.5250000000000004
             ],
             "domain": {
               "lower": 0.1,
@@ -32,7 +34,7 @@
             "epsilon": 0.02499999999999991
           },
           "unit": "fraction",
-          "value": 0.09999999999999964
+          "value": 0.16666666666666607
         },
         {
           "basis": "error_curve",
@@ -40,9 +42,11 @@
             "grid_spacing": 0.04999999999999982,
             "interpretation": "support and derivative are nonsmooth; this finite grid does not show a discontinuous well-posed reconstruction",
             "relative_steps_at_support_changes": [
-              0.006661594517702756,
-              0.0012593527152558672,
-              0.01403478948025252
+              0.006661594517702714,
+              0.008604895875674458,
+              0.008925761508786252,
+              0.006392582594234943,
+              0.014002433096243603
             ],
             "support": [
               [
@@ -303,19 +307,7 @@
                 true,
                 false,
                 false,
-                false,
-                false,
-                false,
                 true,
-                false
-              ],
-              [
-                true,
-                false,
-                true,
-                false,
-                false,
-                false,
                 false,
                 false,
                 true,
@@ -416,11 +408,23 @@
                 true,
                 true,
                 true
+              ],
+              [
+                true,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                true,
+                true,
+                true
               ]
             ]
           },
           "unit": "adjacent_relative_reconstruction_step",
-          "value": 0.01403478948025252
+          "value": 0.014002433096243603
         }
       ],
       "reachable_via": [
@@ -463,14 +467,16 @@
         ],
         "transition_locations": [
           1.025,
-          1.375,
-          1.5750000000000002
+          1.125,
+          1.1750000000000003,
+          1.3250000000000002,
+          1.5250000000000004
         ]
       },
       "schema_version": 1,
       "subject": "likelihood",
       "subject_name": "imaging_pixelization",
-      "summary": "The NumPy full-likelihood scan changes active support at 3 bounded Einstein-radius location(s). The report measures explicit epsilon-neighbourhood mass, not exact-kink prior mass.",
+      "summary": "The NumPy full-likelihood scan changes active support at 5 bounded Einstein-radius location(s). The report measures explicit epsilon-neighbourhood mass, not exact-kink prior mass.",
       "tier": 2,
       "title": "NNLS support changes create likelihood kinks"
     }

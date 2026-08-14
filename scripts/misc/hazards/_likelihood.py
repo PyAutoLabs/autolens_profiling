@@ -368,6 +368,23 @@ def backend_error_curves(
     return curves
 
 
+def backend_divergence_persists(
+    curves: dict[str, dict[str, list[float]]],
+    *,
+    relative_tolerance: float = 1.0e-8,
+) -> bool:
+    """Return whether any full-likelihood backend error exceeds parity noise."""
+
+    if relative_tolerance <= 0.0:
+        raise ValueError("relative tolerance must be positive")
+    for curve in curves.values():
+        for quantity in ("figure_of_merit", "reconstruction"):
+            values = np.asarray(curve.get(quantity, ()), dtype=float)
+            if np.any(~np.isfinite(values)) or np.any(values > relative_tolerance):
+                return True
+    return False
+
+
 def orientation_spans(rows: list[LikelihoodProbeRow]) -> dict[float, float]:
     """Figure-of-merit span over orientation at every axis ratio."""
 
