@@ -25,7 +25,7 @@ expectation · **[CONTRADICTED]** existing evidence pushed back on the brief ·
 | Item | State | Record |
 |---|---|---|
 | Phase 0(a) PositionsLH defect fix | **complete** | CP-1: verified + fix shipped, PyAutoLens#699 / PR#700 (DECISIONS.md 2026-08-17) |
-| Phase 0(b) blackjax ≥1.6.2 upgrade | not started | — |
+| Phase 0(b) blackjax ≥1.6.2 upgrade | **validated (cloud CPU)** — local venv + RAL upgrades remain | PR for #142 (2026-08-18): 1.6.2 installs clean next to autofit (no cap), `blackjax.nss` 2D smoke PASS (logZ −4.609±0.069 vs −4.605), `af.BlackJAXNUTS` runs on 1.6.2 unmodified — `phase_00_unblocking/RESULTS.md` |
 | Phase 0(c) RAL artifact harvest | not started | — |
 | Phase 0(d) commit plan + ledger structure | **complete** | PR#136 + PR#137 (2026-08-18) |
 | Phase 0(e) searches README dashboard loop | **complete** | PR#139 (2026-08-18): nested-layout scanner, 34 rows render, truth-bar rows verified |
