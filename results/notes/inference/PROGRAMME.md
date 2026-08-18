@@ -763,7 +763,7 @@ the guides are a post-Gate distillation task.
 | Repo | Change | Trigger / gate | Class |
 |---|---|---|---|
 | PyAutoLens | PositionsLH accumulation fix (+ regression test) | Phase 0 — unconditional | Bug fix; target impact measured — **shipped, PyAutoLens#699/PR#700** |
-| PyAutoFit | blackjax floor ≥1.6.2; `af.NSS` re-mainlined on `blackjax.nss` | Gate A | Integration |
+| PyAutoFit | blackjax floor ≥1.6.2; `af.NSS` re-mainlined on `blackjax.nss` | ~~Gate A~~ **shipped early, human-directed 2026-08-18** (PyAutoFit#1492; DECISIONS.md) — Gate A still decides baseline adoption | Integration |
 | PyAutoFit | Per-lane *best* position/FOM preservation in MultiStartGradient | Phase 3 pre-req | Diagnostics |
 | PyAutoFit | Multi-chain BlackJAXNUTS + mass-matrix/start-point injection; warm-start abstraction (Result → start points + metric, priors untouched); ChEES/MAMS searches if Gate C selects them | Phase 6 / Gate C | Feature |
 | PyAutoFit | Per-parameter bijector slot for multi-start searches (log-coordinate stepping) | 8B evidence | Category 1 |
