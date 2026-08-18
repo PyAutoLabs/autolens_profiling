@@ -189,9 +189,9 @@ Prodigy lanes (its step adapts to gradient scale). Phase 4 therefore starts
 with a transect/eager-gradient characterization and a penalty-factor
 sensitivity arm, not with full campaigns. Note the workspace frames positions
 as an early-stage aid with thresholds loose enough to be inactive at the
-solution, yet SLaM keeps the penalty active (auto-threshold, factor 3) through
-the final MASS stage — the double-counting question is genuinely open and
-empirically decidable (Phase 4).
+solution, yet SLaM keeps the penalty active (auto-threshold, factor 3, min
+0.2) through the final MASS stage — the double-counting question is genuinely
+open and empirically decidable (Phase 4).
 
 ### 2.5 [VERIFIED] Half of Phase 7-8 groundwork already exists
 
@@ -658,6 +658,15 @@ JSON under `results/searches/`.
   1's N>30 programme (multi-band offsets, group-scale — deliberately
   undesigned now, per the brief).
 
+### Future follow-ups (deliberately undesigned)
+
+1. N>30 / N~100+ (multi-band offsets, group-scale through SLaM) — design from
+   Phase 13 evidence.
+2. `autogalaxy_profiling` — analogous infrastructure; no SLaM transplant;
+   staged morphology problems instead.
+3. Graphical / hierarchical / EP scaling — from
+   `autolens_workspace/scripts/guides/modeling/advanced/{graphical,hierarchical}.py`.
+
 ## 5 · Benchmark & result schema (v2)
 
 Extends the existing `results/searches/` JSON (which already carries
@@ -800,7 +809,8 @@ Maximum information before large A100 commitment — strictly ordered:
 
 1. **CP-1 · PositionsLH defect verify + fix** (hours, laptop). Unblocks the
    entire positions arc; every later positions result depends on it.
-   **✅ COMPLETE — PyAutoLens#699 / PR#700 (see DECISIONS.md).**
+   **✅ COMPLETE — PyAutoLens#699 / PR#700 (see DECISIONS.md; existing truth
+   bars unaffected — no searches-framework benchmark used positions).**
 2. **CP-2 · blackjax 1.6.2 upgrade + mainline NSS smoke on MGE** (~1 day,
    laptop GPU). Establishes whether Phase 2 is a tuning exercise or an
    integration project.
