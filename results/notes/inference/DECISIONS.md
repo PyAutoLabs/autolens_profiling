@@ -69,3 +69,34 @@ recorded likelihood is not comparable to post-fix rows (different
 so the existing truth bars are unaffected.
 
 ---
+
+## 2026-08-18 — Scope change: af.NSS re-mainlined ahead of Gate A (human-directed)
+
+**Decision:** The human directed early re-mainlining of `af.NSS` into
+PyAutoFit as a proper first-class search, ahead of Gate A. Rationale: the
+search's removal (PyAutoFit#1356/#1357) was driven solely by unshippable
+git-fork dependency pins, and nested sampling has since merged into
+**mainline blackjax 1.6** — the removal reason no longer exists. **Gate A is
+unchanged in meaning:** it still decides whether NSS becomes the principal
+GPU nested-sampling *baseline*; this decision only restores the search's
+availability.
+
+**Record:** PyAutoFit#1491 (issue) / **PR#1492** (implementation, pending
+human merge). Port pre-validated on CPU in the cloud session before any
+source change (see `phase_00_unblocking/RESULTS.md` for the environment
+half): the `autofit_workspace_developer/searches/nss/` stash restored with
+the mainline port — `blackjax.ns.utils` imports, `SliceInfo.num_steps` →
+`num_expansions`, chunked builder recomposed from mainline public helpers
+(no `update_strategy=` kwarg in mainline). 17/17 unit tests pass; 2D
+analytic toy through `search.fit` gives logZ −4.558 ± 0.078 vs analytic
+−4.605; the chunked GPU-memory path is bit-identical to unchunked at fixed
+seed. Optional-extra blackjax floor bumped ≥1.2.0 → ≥1.6.2 (the §7 floor
+item, also pulled forward).
+
+**Consequences:** Phase 2 no longer needs a profiling-local NSS runner
+wired by hand — it can drive `af.NSS` directly once PR#1492 merges (the
+plan's "profiling-local runner first" hedge is obsolete). Follow-ups:
+workspace tutorial restoration (stash checklist item 5) and the Phase 2
+re-benchmarking campaign itself (GPU, laptop/RAL).
+
+---
