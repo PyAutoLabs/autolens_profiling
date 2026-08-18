@@ -10,11 +10,46 @@ of PyAutoFit machinery is exercised and measured.
 
 ## Latest results
 
-<!-- BEGIN auto-table:searches-nautilus -->
-_No data yet — run `searches/nautilus/{simple,jax}.py` to populate. See section README._
-<!-- END auto-table:searches-nautilus -->
+<!-- BEGIN auto-table:searches -->
+| Sampler | Cell | Config | max logL | logZ | Wall | Evals | Time / eval | Version |
+|---------|------|--------|---------:|-----:|-----:|------:|------------:|---------|
+| `multi_start_adam` | `group/mge/hst` | `local_gpu_fp64` | -231,891.0 | — | 2368.26 s | 33 | 71765.4 ms | v2026.7.9.1 |
+| `multi_start_prodigy` | `cluster/image_plane_solved/simple` | `hpc_a100_fp64` | -1,708.9 | — | 832.23 s | 65 | 8727.0 ms | v2026.7.23.1 |
+| `multi_start_prodigy` | `cluster/source_plane_solved/simple` | `hpc_a100_fp64` | 21.4 | — | 250.86 s | 65 | 1853.8 ms | v2026.7.23.1 |
+| `multi_start_prodigy` | `cluster/source_plane_tensor/simple` | `hpc_a100_fp64` | -11,000.5 | — | 261.36 s | 65 | 1182.0 ms | v2026.7.23.1 |
+| `multi_start_prodigy` | `point_source/image_plane/simple` | `default` | -79.9 | — | 852.82 s | 65 | 13120.3 ms | v2026.7.23.1 |
+| `multi_start_prodigy` | `point_source/image_plane/simple` | `hpc_a100_fp64` | -68.5 | — | 90.31 s | 65 | 923.8 ms | v2026.7.23.1 |
+| `multi_start_prodigy` | `point_source/image_plane/simple` | `starts256` | -47.7 | — | 3515.50 s | 257 | 13679.0 ms | v2026.7.23.1 |
+| `multi_start_prodigy` | `point_source/image_plane_solved/simple` | `default` | 2.4 | — | 981.87 s | 65 | 15105.7 ms | v2026.7.23.1 |
+| `multi_start_prodigy` | `point_source/image_plane_solved/simple` | `hpc_a100_fp64` | 9.7 | — | 117.74 s | 65 | 1243.7 ms | v2026.7.23.1 |
+| `multi_start_prodigy` | `point_source/source_plane/simple` | `default` | -109.7 | — | 19.41 s | 65 | 298.6 ms | v2026.7.23.1 |
+| `multi_start_prodigy` | `point_source/source_plane/simple` | `hpc_a100_fp64` | -109.7 | — | 35.85 s | 65 | 401.4 ms | v2026.7.23.1 |
+| `multi_start_prodigy` | `point_source/source_plane_solved/simple` | `hpc_a100_fp64` | 4.5 | — | 44.77 s | 65 | 550.3 ms | v2026.7.23.1 |
+| `multi_start_prodigy` | `point_source/source_plane_tensor/simple` | `hpc_a100_fp64` | 13.4 | — | 31.68 s | 65 | 338.6 ms | v2026.7.23.1 |
+| `nautilus` | `cluster/image_plane_solved/simple` | `hpc_a100_fp64` | 31.5 | -1.8 | 742.08 s | 8,400 | 44.1 ms | v2026.7.23.1 |
+| `nautilus` | `cluster/source_plane/simple` | `hpc_a100_fp64` | 42.3 | -36.5 | 551.28 s | 34,600 | 8.5 ms | v2026.7.23.1 |
+| `nautilus` | `cluster/source_plane_solved/simple` | `hpc_a100_fp64` | 43.4 | 12.7 | 442.81 s | 7,200 | 14.4 ms | v2026.7.23.1 |
+| `nautilus` | `cluster/source_plane_tensor/simple` | `hpc_a100_fp64` | 69.8 | 8.5 | 482.73 s | 20,500 | 8.8 ms | v2026.7.23.1 |
+| `nautilus` | `imaging/delaunay/hst` | `hpc_a100_fp64` | 30,623.5 | 30,562.2 | 2722.51 s | 31,536 | 84.8 ms | v2026.5.21.1 |
+| `nautilus` | `imaging/mge/hst` | `hpc_a100_fp64` | 31,786.8 | 31,690.5 | 831.28 s | 63,800 | 12.1 ms | v2026.5.21.1 |
+| `nautilus` | `imaging/pixelization/hst` | `hpc_a100_fp64` | 29,143.3 | 29,066.3 | 2768.06 s | 58,464 | 46.5 ms | v2026.5.21.1 |
+| `nautilus` | `point_source/image_plane/simple` | `default` | 9.6 | -16.9 | 739.70 s | 13,760 | 53.8 ms | v2026.7.23.1 |
+| `nautilus` | `point_source/image_plane/simple` | `hpc_a100_fp64` | 9.6 | -16.8 | 217.11 s | 14,464 | 9.8 ms | v2026.7.23.1 |
+| `nautilus` | `point_source/image_plane_repeat_solved/simple` | `hpc_a100_fp64` | 7.9 | -8.0 | 162.72 s | 7,100 | 15.5 ms | v2026.7.23.1 |
+| `nautilus` | `point_source/image_plane_repeat_solved/simple_missing` | `hpc_a100_fp64` | 13.1 | -8.2 | 186.72 s | 9,800 | 13.5 ms | v2026.7.23.1 |
+| `nautilus` | `point_source/image_plane_solved/near_caustic` | `hpc_a100_fp64` | 29.1 | 5.0 | 176.35 s | 10,500 | 11.7 ms | v2026.7.23.1 |
+| `nautilus` | `point_source/image_plane_solved/simple` | `hpc_a100_fp64` | 10.6 | -5.3 | 147.21 s | 7,500 | 12.2 ms | v2026.7.23.1 |
+| `nautilus` | `point_source/image_plane_solved/simple_missing` | `hpc_a100_fp64` | 22.1 | 4.8 | 193.29 s | 11,700 | 12.0 ms | v2026.7.23.1 |
+| `nautilus` | `point_source/source_plane/simple` | `default` | -313.2 | -343.9 | 168.00 s | 15,552 | 10.8 ms | v2026.7.23.1 |
+| `nautilus` | `point_source/source_plane/simple` | `hpc_a100_fp64` | -313.9 | -344.7 | 217.83 s | 14,400 | 11.2 ms | v2026.7.23.1 |
+| `nautilus` | `point_source/source_plane_solved/near_caustic` | `hpc_a100_fp64` | 16.5 | -7.8 | 112.85 s | 10,200 | 9.1 ms | v2026.7.23.1 |
+| `nautilus` | `point_source/source_plane_solved/simple` | `hpc_a100_fp64` | 6.4 | -10.6 | 86.58 s | 7,700 | 8.3 ms | v2026.7.23.1 |
+| `nautilus` | `point_source/source_plane_tensor/near_caustic` | `hpc_a100_fp64` | 34.5 | -8.9 | 270.32 s | 23,400 | 9.3 ms | v2026.7.23.1 |
+| `nautilus` | `point_source/source_plane_tensor/simple` | `hpc_a100_fp64` | 15.3 | -11.8 | 184.36 s | 14,900 | 9.0 ms | v2026.7.23.1 |
+| `nss` | `imaging/mge/hst` | `hpc_a100_fp64` | 31,786.5 | 31,697.7 | 679.40 s | 394,321 | 1.6 ms | v2026.5.21.1 |
+<!-- END auto-table:searches -->
 
-Auto-generated by `scripts/build_readme.py` from the versioned artifacts under `results/searches/nautilus/`.
+Auto-generated by `scripts/misc/tooling/build_readme.py` from the search-run artifacts under `results/searches/<sampler>/<class>/<model>/<instrument>/` (latest version per sampler × cell × config).
 
 ## Design
 
