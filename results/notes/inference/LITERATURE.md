@@ -1,67 +1,93 @@
-# Inference programme — external literature ledger
+# Inference programme — literature & ecosystem ledger
 
-The external references gathered during the 2026-08-17 planning pass, one
-lesson line each — what each source actually earned in this programme's
-reasoning, not a bibliography. Extend as phases execute; every method card
-(`methods/<method>.md`) cites into this file.
+One entry per source: reference → the lesson it earned in this programme.
+Add entries as phases consume new sources; cite these from method cards
+(`methods/<method>.md`).
 
 ## Nested sampling
 
-- **blackjax nested sampling mainline merge** — blackjax PR #947 (merged
-  2026-06-29; released in blackjax 1.6, current 1.6.2). Lesson: the 2026-01
-  fork pins in the stashed `af.NSS` are obsolete — re-integration targets
-  `blackjax.nss` mainline (native-space `logprior_fn` API, `num_delete` as
-  the GPU axis, dlogz termination, ensemble logZ error bars), and local/RAL
-  environments must upgrade from 1.5 first (Phase 0(b)).
-- **Yallup et al., arXiv:2601.23252 (NSS paper)** — GPU-native nested slice
-  sampling. Lesson: upstream guidance sets inner steps ≥ max(5, 2·d); our
-  historical fork runs used 5 in 15–20D, which predicts the observed +7–13
-  nat logZ bias — the sharpest pre-registered test in Phase 2 (H2.1).
+- Yallup, Kroupa & Handley, *Nested Slice Sampling* (arXiv:2601.23252, TMLR
+  2026) — the blackjax NS algorithm. num_delete is the GPU axis (k/m ≈ 0.1
+  conservative, ≤ 0.5 ceiling); inner steps ≥ max(5, 2·d) or logZ biases
+  UPWARD (our fork rows used 5 in 15–20D and sat +7–13 nats high — Phase 2's
+  pre-registered hypothesis); dlogz default −3, use −10 for phase-transition
+  targets; near-flat runtime to 4000 live points on A100.
+- blackjax PR #947 (merged 2026-06-29) → mainline release 1.6 (current 1.6.2):
+  `blackjax.nss` / `blackjax.nsswig`, native-space `logprior_fn` (no unit-cube
+  transform), `utils.finalise` + simulated volume sequences = free logZ error
+  ensemble. The 2026-01 fork pins (handley-lab/blackjax@ef45acd2 +
+  yallup/nss@69159b0f) are obsolete.
+- Ashton et al. 2022 (arXiv:2205.15570); Buchner 2023 (arXiv:2101.09675) —
+  region samplers degrade beyond d ≈ 20; slice-based NS is the high-d workhorse
+  (PolyChord, arXiv:1506.00171).
+- Lange 2023, *nautilus* (arXiv:2306.16923) — importance NS with neural bounds;
+  our CPU reference engine.
+- Fowlie et al. (arXiv:2010.13884) — plateau/phase-transition premature
+  termination; why the dlogz −10 arm exists.
 
-## Gradient lens modelling (prior art)
+## MCMC / gradient samplers
 
-- **Gu et al., arXiv:2202.07663 (GIGA-Lens)** — Lesson: on similar smooth
-  parametric lens models, reliability comes from population scale — 300
-  starts at 1–5% per-start hit rates — supporting the Phase-3 reframe from
-  "seed lottery" to measured p_hit with reliability 1−(1−p)^n.
-- **Galan et al., arXiv:2207.05763 (Herculens)** — Lesson: differentiable
-  lens modelling with gradient-based inference is established prior art; the
-  open gap this programme fills is reliability accounting (basin selection,
-  seeds, termination) rather than feasibility.
+- Hoffman & Gelman (arXiv:1111.4246); Betancourt (arXiv:1701.02434) — NUTS +
+  divergences as geometry diagnostics.
+- Vehtari et al. (arXiv:1903.08008) — rank-normalized split-R̂ < 1.01,
+  ESS_bulk/ESS_tail > ~100/chain; the acceptance criteria for Phase 6
+  (implemented in blackjax ≥1.6.1 diagnostics).
+- blackjax many-chain docs + issue #251 — vmapped NUTS lockstep pays the
+  slowest chain's tree depth (reported 43× waste); fixed-work kernels
+  (ChEES/MEADS-adapted HMC, MCLMC) are the GPU-native choices and need ≥16
+  chains for cross-chain adaptation.
+- Robnik et al. — MCLMC (arXiv:2303.18221), adjusted/MAMS (arXiv:2503.01707):
+  exact variant claims NUTS-beating high-d efficiency; tuning heuristics young;
+  no multimodality story.
+- Zhang et al., *Pathfinder* (arXiv:2108.03782) — initializer/preconditioner,
+  Pareto-k̂ diagnostic; mode-local (pair with multi-start).
 
-## MCMC / posterior sampling
+## SMC
 
-- **Vehtari et al., arXiv:1903.08008 (rank-normalized R̂ / ESS)** — Lesson:
-  Phase-6 acceptance criteria use rank-normalized split-R̂ < 1.01 with
-  ESS_bulk/ESS_tail floors (blackjax 1.6 ships these diagnostics); plain R̂
-  on raw chains is not sufficient evidence of convergence.
-- **Robnik et al., arXiv:2503.01707 (MAMS / adjusted MCLMC)** — Lesson:
-  fixed-work-per-step GPU samplers (ChEES/MEADS-adapted HMC, MCLMC/MAMS)
-  avoid vmapped NUTS's lockstep tree-depth waste (documented 43×
-  pathologies) — hence Phase 6 carries ChEES/MAMS arms rather than assuming
-  many-chain NUTS parallelism.
-- **Zhang et al., arXiv:2108.03782 (Pathfinder)** — Lesson: quasi-Newton
-  variational paths are an *initializer*, not a posterior engine — admitted
-  in Phase 7 only as an initializer with the Pareto-k̂ diagnostic, and only
-  against a named failure from Phases 6/13.
+- Del Moral, Doucet & Jasra 2006 — the framework permits an arbitrary initial
+  distribution with importance corrections; the prior is a convention.
+- Jasra et al. 2011; Zhou et al. (arXiv:1303.3123) — adaptive tempering via
+  (C)ESS root-solving; target_ess ≈ 0.5.
+- Beskos et al. (arXiv:1103.3965) — particle count must grow with dimension
+  unless tempering steps shrink.
+- Duan & Fulop 2023 (WIREs, doi:10.1002/wics.1598); Cai et al.
+  (arXiv:2202.07070) — density-tempered / model-tempered SMC from an informed
+  start with evidence preserved (normalized reference) — the construction our
+  parked prototype already implements. A bridge cannot resurrect a mode the
+  start missed (Phase 7's explicit test).
+- Dau & Chopin (arXiv:2011.02328) — waste-free SMC; rejuvenation adequacy.
 
-## SMC / informed-start bridges
+## Lens-modelling inference strategies
 
-- **Del Moral et al. 2006 (SMC samplers) + Duan & Fulop 2023
-  (density-tempered / informed-start SMC)** — Lesson: the parked prototype's
-  normalized-Gaussian geometric bridge (`logprior := log g`,
-  `loglik := log π + log L − log g`; evidence preserved) matches the
-  literature's density-tempering construction — Phase 7 resumes it rather
-  than redesigning. Caveat carried into the plan: a bridge from an informed
-  start cannot resurrect a mode the start missed (explicit mode-dropped-start
-  test).
+- Gu et al., *GIGA-Lens* (arXiv:2202.07663) — 300 multi-start Adam inits ×
+  300 iters, 1–5% per-start global-basin hit rate; then full-rank Gaussian SVI
+  at the MAP; then HMC with the SVI covariance as metric. The
+  optimize-first/sample-second architecture our Phases 3→6 test; their
+  "local minima have vanishing posterior mass" footnote is for 22-param smooth
+  models and must NOT be assumed for pixelized likelihoods.
+- Galan et al., *Herculens* (arXiv:2207.05763; wavelets arXiv:2210.09169) —
+  gradient descent to a point estimate + Fisher/Hessian or HMC uncertainties,
+  up to thousands of parameters. Both flagship JAX lensing codes converged on
+  optimize-first.
+- JAXNS (arXiv:2012.15286; phantom sampling arXiv:2312.11330; GGNS
+  arXiv:2312.03911) — gradient-guided NS marked experimental upstream;
+  literature comparator only.
 
-## Non-smooth targets / proximal smoothing
+## Nonsmooth likelihoods
 
-- **Proximal-smoothing line, arXiv:1401.3988 and arXiv:2510.22252** —
-  Lesson: Moreau–Yosida-style smoothing of non-smooth targets (proximal /
-  ns-HMC) is the literature backing for Phase 9's finite-μ barrier-forward
-  candidate on the NNLS positivity kinks; no lensing-specific precedent
-  exists (verified gap), so Phase-9 findings are publishable-grade ledger
-  documentation. Any such smoothing is category 3 unless proven within
-  tolerance (Gate F).
+- Chaari et al. (arXiv:1401.3988) ns-HMC via Moreau–Yosida smoothing; Shukla
+  et al. (arXiv:2510.22252) proximal HMC with ergodicity guarantees; Pereyra
+  (arXiv:1306.0187) proximal MCMC; Nishimura et al. (arXiv:1705.08510)
+  discontinuous HMC — the principled foundations for Phase 9's finite-μ
+  interior-point idea. No lensing-specific NNLS-kink literature exists
+  (verified gap, 2026-08-17). Any adopted smoothing is category 3 unless
+  proven within tolerance (Gate F).
+
+## Optimizer termination
+
+- GIGA-Lens: fixed 300-iter budget justified empirically by best-trajectory
+  plateau. Pflug 1983 / Yaida (arXiv:1810.00004) stationarity tests; Pesme et
+  al. (PMLR v119) show Pflug unreliable even on quadratics; confidence-sequence
+  stopping (arXiv:2512.13123). All certify LOCAL stationarity only — no test
+  detects a wrong basin; start coverage is the only control (Phase 3's p_hit
+  framing).

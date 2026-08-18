@@ -23,14 +23,16 @@ ecosystem. No runs, no PRs, no source edits were performed during planning.
 
 **Human review notes recorded at approval:**
 
-1. **PositionsLH accumulation defect (§2.1)** — verified real; fix shipped as
-   **PyAutoLens#699 / PR#700**. See the CP-1 entry below.
-2. **BlackJAX NS (§2.2)** — "was fastest or comparable on MGE and may scale
-   better — worth rerunning." Phase 2 stands as planned (re-tune against
-   mainline blackjax ≥1.6.2; logZ-bias inner-steps scan is the sharpest
-   pre-registered test; Gate A judged per model family).
-3. through 6. — approved as planned (no changes requested to the remaining
-   corrections, rules, phases, gates, or the critical path).
+1. **PositionsLH accumulation defect (§2.1)** — "worrying ... so defo check"
+   → verified same day and fixed, **PyAutoLens#699 / PR#700**. See the CP-1
+   entry below.
+2. **BlackJAX NS (§2.2)** — "on mge blackjax NS was fastest or comparable so
+   worth a look, and it may scale better, so worth rerunning." Phase 2 stands
+   as planned (re-tune against mainline blackjax ≥1.6.2; logZ-bias
+   inner-steps scan is the sharpest pre-registered test; Gate A judged per
+   model family).
+3. through 6. — state-of-play corrections, phase structure, schema, and
+   critical path approved as written (no changes requested).
 
 **Gate states after this entry:** Gates A–F all open. Phase 0 items (b)–(c)
 and (e) outstanding; (a) complete (below); (d) complete (this commit).
@@ -39,19 +41,31 @@ and (e) outstanding; (a) complete (below); (d) complete (this commit).
 
 ## 2026-08-17 — CP-1 complete: PositionsLH accumulation fix shipped
 
-**Decision:** Critical-path item CP-1 (Phase 0(a)) is **complete**. The
-suspected accumulation defect in `AnalysisLens.log_likelihood_penalty_from`
-(`autolens/analysis/analysis/lens.py:165-181` — loop overwrote the
-accumulator and then added it to itself, returning 2× the last entry's
-penalty and discarding the rest) was verified as a real bug and fixed.
+**Decision:** Critical-path item CP-1 (Phase 0(a)) is **complete**.
+
+- **Defect:** `AnalysisLens.log_likelihood_penalty_from`
+  (`autolens/analysis/analysis/lens.py:165-181`) returned 2× the LAST
+  penalty and discarded earlier entries — the loop overwrote the accumulator
+  and then added it to itself. Verified by direct read and by the halved
+  test pins.
+- **Fix:** true sum over `positions_likelihood_list`; 3 test pins corrected
+  (imaging single −44097289521.73 → −22048644768.18 = exactly half; imaging
+  double-plane → −44140499627.75 = the true sum, distinct from the old
+  2×-last value; interferometer −44097289569.23 → −22048644815.85);
+  regression test added (analysis penalty == sum of per-object penalties).
+- **Suite:** 538 passed, 0 failed.
+- **Science impact:** inside-threshold behaviour unchanged;
+  outside-threshold fence slope halves to the documented 1e8/arcsec;
+  multi-plane penalty stacking corrected.
 
 **Record:** **PyAutoLens#699** (issue) / **PR#700** (fix + regression test).
 
 **Consequence:** The positions arc (Phases 4, 5, 12) is unblocked on the
-defect side. Per the plan, every positions-on target from here on bakes the
-fixed penalty in; the Phase-1 reference posteriors must be built against the
-fixed likelihood. Any pre-fix positions-on numbers encountered in old
-artifacts are against an undocumented target and must not be compared with
-post-fix rows (different `target_id`).
+defect side. Every positions-on target from here on bakes the fixed penalty
+in; the Phase-1 reference posteriors must be built against the fixed
+likelihood. Any historical run that had a positions penalty ACTIVE at its
+recorded likelihood is not comparable to post-fix rows (different
+`target_id`) — but none of the searches-framework benchmarks used positions,
+so the existing truth bars are unaffected.
 
 ---
