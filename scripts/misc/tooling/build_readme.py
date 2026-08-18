@@ -16,12 +16,16 @@ Each table region in a README is delimited by sentinel comments, e.g.
 
 This script:
 
-  1. Scans `results/{breakdown,simulators,searches}/**` for **versioned
+  1. Scans `results/{breakdown,simulators}/**` for **versioned
      artifacts** (`<script>_<purpose>_<extras>_v<version>[_sparse].json`)
      and picks the latest version per group.
   2. Scans `results/runtime/<class>/<model>[/<instrument>]/comparison.json`
      for **sweep comparison artifacts** (written by
      `likelihood_runtime/aggregate.py`).
+  2b. Scans `results/searches/<sampler>/<class>/<model>/<instrument>/*.json`
+     for **search-run artifacts** (written by `searches/_runner.py`; the
+     payload self-describes sampler/cell/config/version) and keeps the
+     latest version per (sampler, cell, config).
   3. When `results/baselines/<name>/` exists, reads the same comparison
      layout beneath it so dashboard tables can carry a named-baseline
      column (e.g. `PreOptimizationTimes`).
@@ -34,7 +38,7 @@ Regions covered today:
   - likelihood_runtime/README.md    | runtime
   - likelihood_breakdown/README.md  | breakdown
   - simulators/README.md            | simulators
-  - searches/README.md              | searches-nautilus
+  - searches/README.md              | searches
   - hazards/README.md               | hazards
 
 Artifact-shape reference: `results/notes/design_lock_in.md`.
@@ -142,6 +146,27 @@ class RuntimeCell:
         return json.loads(self.path.read_text()).get("configs", {})
 
 
+@dataclass(frozen=True)
+class SearchArtifact:
+    """One search-run artifact under ``results/searches/`` (nested cell layout).
+
+    The payload self-describes its identity (`sampler`, `dataset_class`,
+    `model`, `instrument`, `config_name`, `version`), so nothing is parsed
+    from the path or filename.
+    """
+
+    path: Path
+    sampler: str
+    cell: str  # "<dataset_class>/<model>/<instrument>"
+    config: str  # payload config_name, e.g. "hpc_a100_fp64", "default"
+    version: tuple[int, ...]
+    raw_version: str
+
+    @property
+    def data(self) -> dict:
+        return json.loads(self.path.read_text())
+
+
 def _parse_version(s: str) -> tuple[int, ...]:
     return tuple(int(x) for x in s.split("."))
 
@@ -199,6 +224,45 @@ def _scan_artifacts() -> list[Artifact]:
                 version=version,
                 raw_version=raw_version,
                 config=m["config"],
+            )
+        )
+    return out
+
+
+def _scan_search_artifacts() -> list[SearchArtifact]:
+    """Scan the searches framework's nested cell layout.
+
+    ``results/searches/<sampler>/<dataset_class>/<model>/<instrument>/<name>.json``
+    where ``<name>`` is a config tag (``hpc_a100_fp64``, ``default``, …).
+    Identity comes from the JSON payload; files without a ``sampler`` key
+    (e.g. the multi_start_nan_accounting overhead study) are not search runs
+    and are skipped.
+    """
+    root = RESULTS_ROOT / "searches"
+    if not root.exists():
+        return []
+    out: list[SearchArtifact] = []
+    for p in sorted(root.rglob("*.json")):
+        try:
+            payload = json.loads(p.read_text())
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(payload, dict) or "sampler" not in payload:
+            continue
+        raw_version = str(payload.get("version", ""))
+        try:
+            version = _parse_version(raw_version)
+        except ValueError:
+            continue
+        cell = "/".join(str(payload.get(k, "?")) for k in ("dataset_class", "model", "instrument"))
+        out.append(
+            SearchArtifact(
+                path=p,
+                sampler=str(payload["sampler"]),
+                cell=cell,
+                config=str(payload.get("config_name") or p.stem),
+                version=version,
+                raw_version=raw_version,
             )
         )
     return out
@@ -443,34 +507,34 @@ def _render_pipeline_resume_table(artifacts: list[Artifact]) -> str:
     return "\n" + "\n".join(rows) + "\n"
 
 
-def _render_nautilus_table(artifacts: list[Artifact]) -> str:
-    relevant = [a for a in artifacts if a.section == "searches" and a.subfolder == "nautilus"]
-    if not relevant:
+def _render_searches_table(search_artifacts: list[SearchArtifact]) -> str:
+    """Latest run per (sampler, cell, config) from the searches framework."""
+    if not search_artifacts:
         return _no_data_block(
-            "run `searches/nautilus/{simple,jax}.py` to populate. See section README."
+            "run `searches/sweep.py` (see section README) to populate `results/searches/`."
         )
-    latest = _latest_per_group(relevant, key=lambda a: a.script)
+    latest = _latest_per_group(search_artifacts, key=lambda a: (a.sampler, a.cell, a.config))
     rows = [
-        "| Script | Backend | Wall time | Time / eval | Evals → ML | Time → ML | PyAutoLens version |"
+        "| Sampler | Cell | Config | max logL | logZ | Wall | Evals | Time / eval | Version |",
+        "|---------|------|--------|---------:|-----:|-----:|------:|------------:|---------|",
     ]
-    rows.append(
-        "|--------|---------|-----------|-------------|-----------|-----------|--------------------|"
-    )
-    for script, art in sorted(latest.items()):
+
+    def _fmt_num(v) -> str:
+        return f"{v:,.1f}" if isinstance(v, (int, float)) and math.isfinite(v) else "—"
+
+    for (sampler, cell, config), art in sorted(latest.items()):
         data = art.data
-        perf = data.get("performance", {})
-        conv = data.get("convergence", {})
-        wall = _format_time(perf.get("wall_time_s"))
-        per_eval = (
-            f"{perf['time_per_eval_ms']:.1f} ms"
-            if perf.get("time_per_eval_ms") is not None
-            else "—"
-        )
-        evals_to_ml = f"{conv['evals_to_ml']:,}" if conv.get("evals_to_ml") is not None else "—"
-        time_to_ml = _format_time(conv.get("time_to_ml_s"))
+        results = data.get("results") or {}
+        perf = data.get("performance") or {}
+        evals = perf.get("likelihood_evals")
+        per_eval = perf.get("time_per_eval_ms")
         rows.append(
-            f"| `{script}.py` | {data.get('backend') or '—'} | "
-            f"{wall} | {per_eval} | {evals_to_ml} | {time_to_ml} | "
+            f"| `{sampler}` | `{cell}` | `{config}` | "
+            f"{_fmt_num(results.get('max_log_likelihood'))} | "
+            f"{_fmt_num(results.get('log_evidence'))} | "
+            f"{_format_time(perf.get('total_wall_s'))} | "
+            f"{f'{evals:,}' if isinstance(evals, int) else '—'} | "
+            f"{f'{per_eval:.1f} ms' if isinstance(per_eval, (int, float)) else '—'} | "
             f"v{art.raw_version} |"
         )
     return "\n" + "\n".join(rows) + "\n"
@@ -592,6 +656,7 @@ def _render_hazards_table() -> str:
 
 def _build_renderers():
     artifacts = _scan_artifacts()
+    search_artifacts = _scan_search_artifacts()
     cells = _scan_runtime_cells(RUNTIME_ROOT)
     baselines = {name: _scan_runtime_cells(BASELINES_ROOT / name) for name in _baseline_names()}
     return artifacts, {
@@ -599,7 +664,7 @@ def _build_renderers():
         "runtime": lambda: _render_runtime_table(cells, baselines),
         "breakdown": lambda: _render_breakdown_table(artifacts),
         "simulators": lambda: _render_simulator_table(artifacts),
-        "searches-nautilus": lambda: _render_nautilus_table(artifacts),
+        "searches": lambda: _render_searches_table(search_artifacts),
         "pipeline-resume": lambda: _render_pipeline_resume_table(artifacts),
         "jax-compile-warm": _render_jax_compile_warm_table,
         "hazards": _render_hazards_table,
