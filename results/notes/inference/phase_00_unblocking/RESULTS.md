@@ -70,3 +70,67 @@ injection) remain features, not fixes.
 
 `python scripts/misc/searches/nss_smoke.py` (exits non-zero on FAIL; guards
 on blackjax < 1.6). Run it in each environment after its blackjax upgrade.
+
+## 0(b) — local venv + RAL stack upgrades (2026-08-19)
+
+**Verdict: the remaining environment half of 0(b) executed — local venv
+upgraded 1.5 → 1.6.2 with the full smoke PASS (now including `af.NSS`
+end-to-end); RAL stack upgraded off the obsolete 2026-01 fork build.**
+
+### PyAutoFit PR#1492 merged
+
+The re-mainlined `af.NSS` merged 2026-08-18 (PyAutoFit#1491 / PR#1492), so
+this session extended `scripts/misc/searches/nss_smoke.py` with a third
+check: `af.NSS` end-to-end through `search.fit` on the same 2D analytic-
+evidence toy. Absence of `af.NSS` is a FAIL, not a skip — both profiling
+environments resolve PyAutoFit from source checkouts that carry the merge,
+and Phase 2 drives this exact surface.
+
+### Local venv (`~/venv/PyAuto`, WSL laptop)
+
+- `pip install -U "blackjax>=1.6.2"`: 1.5 → **1.6.2**, jax 0.10.2 untouched,
+  no new dependency conflicts (`pip check` deltas are pre-existing,
+  unrelated packages).
+- Smoke (all three checks) **PASS**: `blackjax.nss` logZ −4.609 ± 0.069 vs
+  analytic −4.605; `af.BlackJAXNUTS` 0 divergences, acc 0.92; `af.NSS`
+  logZ −4.650 ± 0.085, median (0.982, −0.996) vs truth (1, −1).
+- `af.NSS` unit suite against the local checkout + blackjax 1.6.2:
+  **17/17 pass**.
+
+### RAL stack (`/mnt/ral/jnightin/PyAuto/PyAuto` venv)
+
+- Pre-upgrade state: blackjax **0.1.0b1.dev86+g795058671** — the obsolete
+  2026-01-era fork build the programme flagged (§2.2), incompatible with the
+  mainline `nss` API. jax 0.10.2 + cuda12 plugin already in place; no SLURM
+  jobs running at upgrade time.
+- Pre-upgrade `pip freeze` snapshot saved beside the venv's existing ones:
+  `freeze_pre_blackjax162_20260819.txt`.
+- Library mains re-synced (`HPCPullPyAuto` path): PyAutoFit on RAL now
+  carries the `af.NSS` re-mainline.
+- Post-upgrade smoke (login node, `JAX_PLATFORMS=cpu` — no GPU there) —
+  **all three checks PASS**: `blackjax.nss` logZ −4.609 ± 0.069;
+  `af.BlackJAXNUTS` 0 divergences, acc 0.92; `af.NSS` logZ −4.650 ± 0.085.
+  Seeded numbers identical to the local run — deterministic across
+  environments at fixed seed.
+
+**Phase 0's gate condition — items (a) and (b) both landed — is now
+satisfied in full. Phases 1–2 are unblocked (see `DECISIONS.md`).**
+
+## 0(c) — stranded-artifact harvest, local slice (2026-08-19)
+
+Three fork-NSS A100 result pairs cited by `PROGRAMME.md` §1.2 were sitting
+**untracked** in the local working tree (pulled from RAL 2026-08-04, never
+committed) — the delaunay and pixelization rows existed nowhere in git:
+
+- `results/searches/nss/imaging/mge/hst/hpc_hpc_a100_fp64.{json,png}` — the
+  657 s / 383,289-eval / logZ 31700.4 half of the canonical "657–679 s"
+  row-pair.
+- `results/searches/nss/imaging/delaunay/hst/hpc_hpc_a100_fp64.{json,png}` —
+  the 29,770 s / 206,448-eval / logZ 30567.8 row (the 11×-slower evidence).
+- `results/searches/nss/imaging/pixelization/hst/hpc_hpc_a100_fp64.{json,png}`
+  — the 19,190 s / 266,043-eval / logZ 29078.9 row (the 7×-slower evidence).
+
+All three are committed with this note and now render in the searches README
+dashboard. The RAL-side harvest — SMC warm arms (job 331058), NaN-counter
+split arms (335003-5), any Nautilus pixgrad baseline logs — remains open;
+0(c) stays partial until a RAL session walks the NFS output trees.

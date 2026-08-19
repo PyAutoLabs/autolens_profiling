@@ -25,8 +25,8 @@ expectation · **[CONTRADICTED]** existing evidence pushed back on the brief ·
 | Item | State | Record |
 |---|---|---|
 | Phase 0(a) PositionsLH defect fix | **complete** | CP-1: verified + fix shipped, PyAutoLens#699 / PR#700 (DECISIONS.md 2026-08-17) |
-| Phase 0(b) blackjax ≥1.6.2 upgrade | **validated (cloud CPU)** — local venv + RAL upgrades remain | PR for #142 (2026-08-18): 1.6.2 installs clean next to autofit (no cap), `blackjax.nss` 2D smoke PASS (logZ −4.609±0.069 vs −4.605), `af.BlackJAXNUTS` runs on 1.6.2 unmodified — `phase_00_unblocking/RESULTS.md` |
-| Phase 0(c) RAL artifact harvest | not started | — |
+| Phase 0(b) blackjax ≥1.6.2 upgrade | **complete** — cloud CPU (PR#143), local venv + RAL stack (2026-08-19, #146) | Cloud: 1.6.2 installs clean next to autofit, `blackjax.nss` 2D smoke PASS, `af.BlackJAXNUTS` unmodified. Local + RAL: 1.5 / 2026-01 fork build → 1.6.2, full smoke PASS in both (now incl. `af.NSS` end-to-end — PR#1492 merged 2026-08-18); RAL library mains re-synced — `phase_00_unblocking/RESULTS.md` |
+| Phase 0(c) RAL artifact harvest | **partial** — stranded local fork-NSS A100 artifacts (mge 2nd run, delaunay, pixelization — the §1.2 canonical rows) committed 2026-08-19; RAL NFS harvest (job 331058 SMC arms, 335003-5 NaN-counter arms, Nautilus pixgrad logs) remains | `phase_00_unblocking/RESULTS.md` |
 | Phase 0(d) commit plan + ledger structure | **complete** | PR#136 + PR#137 (2026-08-18) |
 | Phase 0(e) searches README dashboard loop | **complete** | PR#139 (2026-08-18): nested-layout scanner, 34 rows render, truth-bar rows verified |
 | Phases 1–13 | not started | — |
@@ -814,6 +814,10 @@ Maximum information before large A100 commitment — strictly ordered:
 2. **CP-2 · blackjax 1.6.2 upgrade + mainline NSS smoke on MGE** (~1 day,
    laptop GPU). Establishes whether Phase 2 is a tuning exercise or an
    integration project.
+   **✅ Environment half COMPLETE — all three environments (cloud, local
+   venv, RAL) on 1.6.2 with the full smoke (incl. `af.NSS` end-to-end)
+   passing; `af.NSS` re-mainlined (PyAutoFit PR#1492, merged 2026-08-18).
+   Remaining: the laptop-GPU MGE smoke half — the first Phase 2 work item.**
 3. **CP-3 · Prodigy MGE reliability scan ± PositionsLH** (RAL CPU + laptop
    GPU; the single highest-information experiment). n_starts {16, 64, 256} ×
    5 seeds × positions {off, on} → measures p_hit, tests H3.1/H3.2/H4.1
