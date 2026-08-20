@@ -369,8 +369,11 @@ _pinned_drift: list = []
 
 # Pinned 2026-08-20 (v2026.8.17.1). Delaunay repeats are bistable at the
 # ~1e-8 relative level (summation-order nondeterminism) — rtol=1e-6 covers it.
+# The euclid pin also reproduced exactly on a second machine (4-core cloud
+# container, autoarray 2026.8.20.1), so the pins are hardware-independent.
 EXPECTED_LOG_LIKELIHOOD: dict[str, float] = {
     "euclid": 7193.174444838345,
+    "hst": 29110.92075682961,
 }
 
 _pinned_expected = EXPECTED_LOG_LIKELIHOOD.get(instrument)

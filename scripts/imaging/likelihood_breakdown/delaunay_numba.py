@@ -408,6 +408,7 @@ _pinned_drift: list = []
 # ~1e-8 relative level (summation-order nondeterminism) — rtol=1e-6 covers it.
 EXPECTED_LOG_LIKELIHOOD: dict[str, float] = {
     "euclid": 7193.174444838345,
+    "hst": 29110.92075682961,
 }
 
 _pinned_expected = EXPECTED_LOG_LIKELIHOOD.get(instrument)
