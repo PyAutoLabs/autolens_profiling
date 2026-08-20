@@ -29,7 +29,8 @@ expectation · **[CONTRADICTED]** existing evidence pushed back on the brief ·
 | Phase 0(c) RAL artifact harvest | **complete** — local fork-NSS A100 artifacts committed (PR#147); RAL NFS harvest pulled 2026-08-19 (#149): job 331058 all four SMC arms (bridge validated: warm logZ within ±0.8 nats of the Nautilus bar; cold arm −179k with "Converged: yes"), 335003-5 NaN-counter arms, wsdev Nautilus pixgrad baselines | `phase_00_unblocking/RESULTS.md` + `phase_00_unblocking/ral_harvest/` |
 | Phase 0(d) commit plan + ledger structure | **complete** | PR#136 + PR#137 (2026-08-18) |
 | Phase 0(e) searches README dashboard loop | **complete** | PR#139 (2026-08-18): nested-layout scanner, 34 rows render, truth-bar rows verified |
-| Phases 1–13 | not started | — |
+| Phase 2 NSS mainline re-tune | **entry in progress** — framework wiring + CP-2 GPU MGE smoke (#149, 2026-08-19/20); scan + Gate A pending | `phase_02_nss_mainline/RESULTS.md` |
+| Phases 1, 3–13 | not started | — |
 | Gates A–F | open | — |
 
 ---
