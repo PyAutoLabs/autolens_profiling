@@ -48,16 +48,18 @@ def test__non_finite_exactly_where_the_value_left_the_box(context):
     assert finding.reproducer["non_finite_log_prior"] == finding.reproducer["outside_box"]
 
 
-def test__numpy_path_does_not_evaluate_the_bound(context):
-    # `log_prior_from_value` short-circuits to a scalar 0.0 under NumPy and only
-    # returns -inf under JAX. The hazard therefore lives on the JAX path — which
-    # is the one the gradient searches use. If this ever flips, the finding's
-    # backend_reachability is stale and the reader would be misled about which
-    # backend can actually lose lanes.
+def test__numpy_path_enforces_the_bound_since_pyautofit_1489(context):
+    # PyAutoFit#1489 (2026-08-18) made the NumPy path evaluate the bound —
+    # 0.0 inside, -inf outside, same `xp.where` as JAX. Before that the NumPy
+    # path short-circuited to a scalar 0.0 and the hazard was JAX-only; this
+    # test's predecessor pinned that asymmetry and correctly broke when it
+    # flipped. If THIS test breaks, the NumPy path has regressed to the
+    # unevaluated-bound behaviour and backend_reachability must flip back.
     finding = PriorExitCheck().run(context)[0]
 
-    assert finding.reproducer["numpy_evaluates_bound"] is False
-    assert finding.backend_reachability["numpy"]["log_prior_outside_box"].startswith("zero")
+    assert finding.reproducer["numpy_evaluates_bound"] is True
+    assert finding.reproducer["numpy_non_finite_outside_box"] == finding.reproducer["outside_box"]
+    assert finding.backend_reachability["numpy"]["log_prior_outside_box"].startswith("non_finite")
     assert finding.backend_reachability["jax"]["log_prior_outside_box"] == "non_finite"
 
 
@@ -71,9 +73,13 @@ def test__records_the_clipper_as_what_blocks_it(context):
     assert any("ClipperPriorBox" in anchor.symbol for anchor in finding.blocked_by)
 
 
-def test__a_numpy_only_scan_does_not_claim_to_have_adjudicated_it():
-    # Same discipline as the autodiff hazards: without the backend that exhibits
-    # it, the scan must not report the hazard as resolved.
+def test__a_numpy_only_scan_adjudicates_since_the_paths_are_symmetric():
+    # Pre-PyAutoFit#1489 a NumPy-only scan could not adjudicate this hazard
+    # (the NumPy path never evaluated the bound). Both paths now share the
+    # same `xp.where`, so a NumPy-only scan measures the same support
+    # boundary — it adjudicates, and the hazard persists (the -inf outside
+    # the box IS the hazard). The jax entry must still be absent: reporting
+    # reachability for a backend the scan never ran stays forbidden.
     numpy_only = ScanContext(
         repo_root=Path("."),
         workspace_root=_misc_dir().parents[1].parent,
@@ -84,6 +90,7 @@ def test__a_numpy_only_scan_does_not_claim_to_have_adjudicated_it():
     )
     finding = PriorExitCheck().run(numpy_only)[0]
 
-    assert finding.reproducer["adjudicated"] is False
+    assert finding.reproducer["adjudicated"] is True
     assert finding.reproducer["hazard_persists"] is True
+    assert finding.reproducer["non_finite_iff_outside"] is True
     assert "jax" not in finding.backend_reachability

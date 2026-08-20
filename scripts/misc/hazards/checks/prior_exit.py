@@ -20,6 +20,15 @@ It is blocked, not fixed, by ``ClipperPriorBox`` (PyAutoFit#1477), which project
 each step back onto prior support. The ``blocked_by`` anchor records that
 mitigation, so the entry stays honest about the hazard still existing in the
 default path.
+
+Since PyAutoFit#1489 (2026-08-18) the NumPy path enforces the same bound as the
+JAX path — 0.0 inside the box, ``-inf`` outside, through the same ``xp.where``.
+Before that fix the NumPy path short-circuited to a scalar 0.0 without
+evaluating the bound at all, so the hazard was reachable only under JAX; the
+check measured that asymmetry, and this module's first CI failure was that
+measurement correctly detecting the flip. The hazard itself (a lane stepping
+out of support goes non-finite and dies) is unchanged — it is now simply
+reachable on both backends.
 """
 
 from __future__ import annotations
@@ -77,17 +86,17 @@ class PriorExitCheck(HazardCheck):
         values = rng.uniform(lower - margin, upper + margin, size=context.sample_count)
         outside = (values < lower) | (values > upper)
 
-        # The two backends do NOT agree here, and the difference is the whole
-        # hazard. `log_prior_from_value` short-circuits to a scalar `0.0` on the
-        # NumPy path — the bound is not evaluated at all — and only the JAX path
-        # returns `-inf` outside the box. The gradient searches are JAX-native,
-        # so the JAX path is the one that matters, and a NumPy-only scan cannot
-        # adjudicate this hazard any more than it could an autodiff one.
-        numpy_log_prior = float(np.asarray(prior.log_prior_from_value(value=values, xp=np)))
-        numpy_enforces_bounds = not np.isclose(numpy_log_prior, 0.0)
+        # Since PyAutoFit#1489 both backends enforce the bound through the same
+        # `xp.where` — 0.0 inside, -inf outside — so a NumPy scan measures the
+        # same support boundary the JAX-native gradient searches hit. The parity
+        # measurement is kept (rather than assumed) so the record stays honest
+        # if the pre-#1489 asymmetry — a NumPy path that short-circuited to a
+        # scalar 0.0 without evaluating the bound — ever returns; in that world
+        # only a JAX scan can adjudicate the hazard.
+        numpy_log_prior = np.asarray(prior.log_prior_from_value(value=values, xp=np), dtype=float)
+        numpy_finite = np.isfinite(numpy_log_prior)
+        numpy_enforces_bounds = bool(np.any(~numpy_finite))
 
-        finite = np.ones(context.sample_count, dtype=bool)
-        hazard_persists = True
         jax_available = "jax" in context.backends
         if jax_available:
             import jax.numpy as jnp
@@ -96,7 +105,14 @@ class PriorExitCheck(HazardCheck):
                 prior.log_prior_from_value(value=jnp.asarray(values), xp=jnp), dtype=float
             )
             finite = np.isfinite(log_prior)
-            hazard_persists = bool(np.any(~finite))
+        else:
+            finite = numpy_finite
+
+        # The JAX path (the one the gradient searches run) always adjudicates;
+        # a NumPy-only scan adjudicates exactly when the NumPy path evaluates
+        # the bound. An unadjudicated scan must not report the hazard resolved.
+        adjudicated = jax_available or numpy_enforces_bounds
+        hazard_persists = bool(np.any(~finite)) if adjudicated else True
 
         measurements = (
             prior_mass_measurement(
@@ -154,17 +170,17 @@ class PriorExitCheck(HazardCheck):
             blocked_by=tuple(a for a in (blocked_by,) if a is not None),
             affects_science=True,
             backend_reachability={
-                # Deliberately asymmetric: the NumPy path returns a scalar 0.0
-                # without evaluating the bound, so the -inf — and therefore the
-                # lane death — is reachable only under JAX. That is not a
-                # mitigation on the NumPy path so much as the bound going
-                # unenforced there; it is recorded as observed, not as safe.
+                # Symmetric since PyAutoFit#1489: both paths return -inf outside
+                # the box, so the lane death is reachable on either backend. The
+                # measured branch below keeps the record honest if the NumPy
+                # path ever regresses to the pre-#1489 unevaluated-bound
+                # behaviour — recorded as observed, not as safe.
                 "numpy": {
                     "log_prior_inside_box": "zero",
                     "log_prior_outside_box": (
-                        "zero (bound not evaluated on this path)"
-                        if not numpy_enforces_bounds
-                        else "non_finite"
+                        "non_finite (since PyAutoFit#1489)"
+                        if numpy_enforces_bounds
+                        else "zero (bound not evaluated on this path)"
                     ),
                     "likelihood_outside_box": "unaffected",
                 },
@@ -182,17 +198,17 @@ class PriorExitCheck(HazardCheck):
             },
             reproducer={
                 "hazard_persists": hazard_persists,
-                "adjudicated": jax_available,
+                "adjudicated": adjudicated,
                 "sampled": int(context.sample_count),
                 "outside_box": int(np.count_nonzero(outside)),
-                "non_finite_log_prior": (int(np.count_nonzero(~finite)) if jax_available else None),
+                "non_finite_log_prior": (int(np.count_nonzero(~finite)) if adjudicated else None),
                 # Every non-finite point is an out-of-box point and vice versa:
                 # the -inf tracks the box edge exactly, which is what makes this
                 # a support boundary rather than a numerical instability.
                 "non_finite_iff_outside": (
-                    bool(np.array_equal(~finite, outside)) if jax_available else None
+                    bool(np.array_equal(~finite, outside)) if adjudicated else None
                 ),
-                "numpy_log_prior_outside_box": numpy_log_prior,
+                "numpy_non_finite_outside_box": int(np.count_nonzero(~numpy_finite)),
                 "numpy_evaluates_bound": numpy_enforces_bounds,
                 "mitigation": "af.ClipperPriorBox() on the search",
                 "observed_on": (
