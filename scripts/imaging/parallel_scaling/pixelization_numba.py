@@ -51,9 +51,15 @@ Output
 ------
 ``results/parallel_scaling/imaging/pixelization_numba_scaling_<instrument>_v<version>.{json,png}``
 
+``--mesh`` selects the fiducial: ``rectangular`` (28x28 ``RectangularAdaptDensity``,
+the ``pixelization_numba`` siblings) or ``delaunay`` (Hilbert-1250 Delaunay +
+ConstantSplit, the ``delaunay_numba`` siblings — the production campaign
+fiducial; artifacts are written as ``delaunay_numba_scaling_<instrument>``).
+
 Usage::
 
     python scripts/imaging/parallel_scaling/pixelization_numba.py --instrument euclid
+    python scripts/imaging/parallel_scaling/pixelization_numba.py --mesh delaunay
     python scripts/imaging/parallel_scaling/pixelization_numba.py --cores 1,2,4,8,16,32  # HPC
 """
 
@@ -108,11 +114,13 @@ _parser = argparse.ArgumentParser(add_help=False)
 _parser.add_argument("--cores", type=str, default="1,2,4,8")
 _parser.add_argument("--n-points", type=int, default=100)
 _parser.add_argument("--map-repeats", type=int, default=3)
+_parser.add_argument("--mesh", choices=("rectangular", "delaunay"), default="rectangular")
 _extra, _ = _parser.parse_known_args()
 
 CORES_LIST = [int(c) for c in _extra.cores.split(",")]
 N_POINTS = _extra.n_points
 MAP_REPEATS = _extra.map_repeats
+MESH = _extra.mesh
 
 instrument = _cli.instrument or "euclid"  # default; override via --instrument
 
@@ -166,9 +174,6 @@ dataset = dataset.apply_sparse_operator_cpu()
 
 print("\n--- Model construction ---")
 
-mesh_pixels_yx = 28
-mesh_shape = (mesh_pixels_yx, mesh_pixels_yx)
-
 lens_bulge = al.model_util.mge_model_from(
     mask_radius=mask_radius,
     total_gaussians=60,
@@ -189,10 +194,42 @@ shear.gamma_2 = af.GaussianPrior(mean=0.05, sigma=0.005)
 
 lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
 
-pixelization = al.Pixelization(
-    mesh=al.mesh.RectangularAdaptDensity(shape=mesh_shape),
-    regularization=al.reg.Constant(coefficient=1.0),
-)
+# Two mesh fiducials, matching the runtime/breakdown siblings exactly:
+# rectangular = the pixelization_numba cells; delaunay = the delaunay_numba
+# cells (the production campaign fiducial — Hilbert image mesh from the adapt
+# image + ConstantSplit). The pool mechanics are mesh-independent; the serial
+# per-eval cost (and so the serial fraction each worker amortises) differs.
+adapt_images = None
+
+if MESH == "rectangular":
+    mesh_pixels_yx = 28
+    mesh_shape = (mesh_pixels_yx, mesh_pixels_yx)
+    n_source_pixels = mesh_pixels_yx * mesh_pixels_yx
+    mesh_label = f"rectangular_adapt_density_{mesh_pixels_yx}x{mesh_pixels_yx}"
+
+    pixelization = al.Pixelization(
+        mesh=al.mesh.RectangularAdaptDensity(shape=mesh_shape),
+        regularization=al.reg.Constant(coefficient=1.0),
+    )
+else:
+    from _adapt_image_util import adapt_image_for_dataset
+
+    n_mesh_vertices = 1250  # production campaign fiducial (matches delaunay_numba cells)
+    mesh_shape = None
+    n_source_pixels = n_mesh_vertices
+    mesh_label = f"delaunay_hilbert_{n_mesh_vertices}"
+
+    print(f"\n--- Adapt image + Hilbert image mesh ({n_mesh_vertices} vertices, one-off) ---")
+    adapt_image = adapt_image_for_dataset(dataset_path=dataset_path, dataset=dataset)
+    image_mesh = al.image_mesh.Hilbert(pixels=n_mesh_vertices, weight_power=1.0, weight_floor=0.0)
+    image_plane_mesh_grid = image_mesh.image_plane_mesh_grid_from(
+        mask=dataset.mask, adapt_data=adapt_image
+    )
+
+    pixelization = al.Pixelization(
+        mesh=al.mesh.Delaunay(pixels=n_mesh_vertices, zeroed_pixels=0),
+        regularization=al.reg.ConstantSplit(coefficient=1.0),
+    )
 
 source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
 
@@ -200,8 +237,20 @@ model = af.Collection(galaxies=af.Collection(lens=lens, source=source))
 
 param_vector = np.array(model.physical_values_from_prior_medians)
 
+if MESH == "delaunay":
+    _instance = model.instance_from_vector(vector=model.physical_values_from_prior_medians)
+    adapt_images = al.AdaptImages(
+        galaxy_image_plane_mesh_grid_dict={
+            _instance.galaxies.source: image_plane_mesh_grid,
+        },
+        galaxy_name_image_plane_mesh_grid_dict={
+            "('galaxies', 'source')": image_plane_mesh_grid,
+        },
+    )
+
 analysis = al.AnalysisImaging(
     dataset=dataset,
+    adapt_images=adapt_images,
     settings=al.Settings(use_border_relocator=True),
     use_jax=False,
 )
@@ -384,8 +433,9 @@ scaling_summary = {
         "pixel_scale_arcsec": pixel_scale,
         "mask_radius_arcsec": mask_radius,
         "image_pixels_masked": int(dataset.data.shape[0]),
-        "mesh_shape": list(mesh_shape),
-        "source_pixels": int(mesh_pixels_yx * mesh_pixels_yx),
+        "mesh": mesh_label,
+        "mesh_shape": list(mesh_shape) if mesh_shape is not None else None,
+        "source_pixels": int(n_source_pixels),
         "inversion_path": "sparse_numba",
         "use_jax": False,
         "lens_light": "mge_60_linear",
@@ -406,10 +456,11 @@ scaling_summary = {
     "pools": pool_rows,
 }
 
+_basename_stem = "pixelization_numba" if MESH == "rectangular" else "delaunay_numba"
 dict_path, chart_path = resolve_output_paths(
     _cli,
     default_dir=_workspace_root / "results" / "parallel_scaling" / "imaging",
-    default_basename=f"pixelization_numba_scaling_{instrument}_v{al_version}",
+    default_basename=f"{_basename_stem}_scaling_{instrument}_v{al_version}",
 )
 dict_path.write_text(json.dumps(scaling_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")
@@ -464,7 +515,7 @@ ax2.set_title("Efficiency")
 ax2.legend(fontsize=8)
 
 fig.suptitle(
-    f"Numba CPU Likelihood Multiprocessing Scaling — {instrument.upper()} — "
+    f"Numba CPU Likelihood Multiprocessing Scaling — {instrument.upper()} — {mesh_label} — "
     f"v{al_version}  ({N_POINTS} evals/map, serial {serial_per_eval:.3f} s/eval)",
     fontsize=11,
     fontweight="bold",

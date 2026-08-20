@@ -6,7 +6,7 @@ Profiles the per-evaluation runtime of the **numba CPU sparse-operator**
 likelihood for the production Delaunay fiducial — the mesh the large
 Euclid-resolution CPU campaigns use:
 
-- Hilbert image-mesh (1500 vertices) placed from the lensed-source adapt image
+- Hilbert image-mesh (1250 vertices) placed from the lensed-source adapt image
   (one-off per analysis; passed in via ``al.AdaptImages``).
 - ``al.mesh.Delaunay`` source pixelization + ``ConstantSplit`` regularization.
 - MGE-60 linear lens light, Isothermal + shear mass.
@@ -166,7 +166,7 @@ print(f"  sparse operator memory: {sparse_operator_nbytes / 1024**2:.1f} MB")
 
 print("\n--- Adapt image + Hilbert image mesh ---")
 
-n_mesh_vertices = 1500  # 1500-tier production fiducial (matches delaunay.py)
+n_mesh_vertices = 1250  # production campaign fiducial (user-set 2026-08-20)
 
 with timer.section("adapt_image_build"):
     adapt_image = adapt_image_for_dataset(dataset_path=dataset_path, dataset=dataset)
@@ -336,7 +336,7 @@ likelihood_summary = {
         "source_pixels": int(n_source_pixels),
         "inversion_path": "sparse_numba",
         "use_jax": False,
-        "mesh": "delaunay_hilbert_1500",
+        "mesh": "delaunay_hilbert_1250",
         "regularization": "constant_split",
         "lens_light": "mge_60_linear",
         "omp_num_threads": os.environ.get("OMP_NUM_THREADS", None),
@@ -367,13 +367,14 @@ print(f"  Bar chart path:        {chart_path} (no per-step chart in runtime vari
 
 _pinned_drift: list = []
 
-# Pinned 2026-08-20 (v2026.8.17.1). Delaunay repeats are bistable at the
+# Pinned 2026-08-20 (v2026.8.17.1, 1250-vertex fiducial). Delaunay repeats are bistable at the
 # ~1e-8 relative level (summation-order nondeterminism) — rtol=1e-6 covers it.
-# The euclid pin also reproduced exactly on a second machine (4-core cloud
-# container, autoarray 2026.8.20.1), so the pins are hardware-independent.
+# Captured on a 4-core cloud container (autoarray 2026.8.20.1) after that
+# machine reproduced the earlier 1500-vertex euclid pin exactly, so the pins
+# are expected hardware-independent.
 EXPECTED_LOG_LIKELIHOOD: dict[str, float] = {
-    "euclid": 7193.174444838345,
-    "hst": 29110.92075682961,
+    "euclid": 7215.3687893658935,
+    "hst": 29090.527192092646,
 }
 
 _pinned_expected = EXPECTED_LOG_LIKELIHOOD.get(instrument)

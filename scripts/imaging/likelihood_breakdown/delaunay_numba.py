@@ -3,7 +3,7 @@ Numba CPU Profiling: Delaunay Imaging Likelihood (Per-Step Breakdown)
 =====================================================================
 
 Decomposes the **numba CPU sparse-operator** likelihood for the production
-Delaunay fiducial (Hilbert image-mesh 1500 vertices from the adapt image,
+Delaunay fiducial (Hilbert image-mesh 1250 vertices from the adapt image,
 ``al.mesh.Delaunay`` + ``ConstantSplit`` regularization, MGE-60 linear lens
 light, ``use_jax=False``) into its per-evaluation steps.
 
@@ -124,7 +124,7 @@ dataset = dataset.apply_sparse_operator_cpu()
 
 print("\n--- Adapt image + Hilbert image mesh (one-off) ---")
 
-n_mesh_vertices = 1500
+n_mesh_vertices = 1250
 
 adapt_image = adapt_image_for_dataset(dataset_path=dataset_path, dataset=dataset)
 
@@ -338,7 +338,7 @@ breakdown_summary = {
         "source_pixels": int(n_source_pixels),
         "inversion_path": "sparse_numba",
         "use_jax": False,
-        "mesh": "delaunay_hilbert_1500",
+        "mesh": "delaunay_hilbert_1250",
         "regularization": "constant_split",
         "lens_light": "mge_60_linear",
         "omp_num_threads": os.environ.get("OMP_NUM_THREADS", None),
@@ -404,11 +404,11 @@ print(f"  Bar chart saved to:    {chart_path}")
 
 _pinned_drift: list = []
 
-# Pinned 2026-08-20 (v2026.8.17.1). Delaunay repeats are bistable at the
+# Pinned 2026-08-20 (v2026.8.17.1, 1250-vertex fiducial). Delaunay repeats are bistable at the
 # ~1e-8 relative level (summation-order nondeterminism) — rtol=1e-6 covers it.
 EXPECTED_LOG_LIKELIHOOD: dict[str, float] = {
-    "euclid": 7193.174444838345,
-    "hst": 29110.92075682961,
+    "euclid": 7215.3687893658935,
+    "hst": 29090.527192092646,
 }
 
 _pinned_expected = EXPECTED_LOG_LIKELIHOOD.get(instrument)
