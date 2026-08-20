@@ -404,6 +404,20 @@ def _render_runtime_table(cells: list[RuntimeCell], baselines: dict[str, list[Ru
     return "\n" + "\n".join(rows) + "\n"
 
 
+def _inversion_path_label(data: dict, sparse: bool) -> str:
+    """Inversion-path label from the payload's ``configuration.inversion_path``
+    when present (``sparse_numba`` = the numba CPU cells), else the filename
+    ``_sparse``-tag convention."""
+    payload_path = (data.get("configuration") or {}).get("inversion_path")
+    if payload_path == "sparse_numba":
+        return "sparse (numba)"
+    if payload_path == "sparse":
+        return "sparse (w-tilde)"
+    if payload_path == "dense":
+        return "dense (mapping)"
+    return "sparse (w-tilde)" if sparse else "dense (mapping)"
+
+
 def _render_breakdown_table(artifacts: list[Artifact]) -> str:
     """One row per (class, script, instrument, path) with the step-sum total."""
     relevant = [a for a in artifacts if a.section == "breakdown" and a.purpose == "breakdown"]
@@ -429,12 +443,13 @@ def _render_breakdown_table(artifacts: list[Artifact]) -> str:
             kv[0][3],
         ),
     ):
-        total = art.data.get("total_step_by_step")
+        data = art.data
+        total = data.get("total_step_by_step")
         rows.append(
             f"| `{subfolder}/{script}` | "
             f"{instrument or '—'} | "
             f"{config} | "
-            f"{'sparse (w-tilde)' if sparse else 'dense (mapping)'} | "
+            f"{_inversion_path_label(data, sparse)} | "
             f"{_format_time(total if isinstance(total, (int, float)) else None)} | "
             f"v{art.raw_version} |"
         )
