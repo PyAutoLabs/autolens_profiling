@@ -361,7 +361,18 @@ JSON under `results/searches/`.
   attractor), not bound handling — carried forward from #133, treated as the
   null. **[H3.2]** p_hit(Prodigy) is O(0.1–0.2) like Adam's, making 16 lanes
   a ~2–5% failure lottery and 64–128 lanes reliable. If p_hit is much lower,
-  Prodigy is done as a global searcher regardless of n.
+  Prodigy is done as a global searcher regardless of n. **[H3.3]** (absorbed
+  2026-08-20 from Mind `ell_comps_trapping_unmasked.md`, follow-up (2) of
+  #128): the `ell_comps` plateau above `ELL_COMPS_MAGNITUDE_CLAMP` (0.999)
+  traps a substantial lane fraction even under clipping — the radial
+  derivative there is exactly zero, so the flat figure of merit reads as
+  convergence and projection onto the prior box cannot help (the lane is not
+  outside anything it declares). Preliminary evidence from the clipper
+  phase-2 `prior_box` arms: 6/16 and 4/16 lanes end pinned (fp64, 2 seeds)
+  while seed 0 still beat the Nautilus bar — suggesting budget cost, not
+  correctness cost. That reading is **not decision-grade**: it is
+  positions-off, 2-seed, and dominated by the θ_E=0 basin. Null: trapping is
+  a budget problem only; re-measured here on every arm, not carried over.
 - **Pre-req (source):** PyAutoFit: preserve per-lane *best* (position, FOM,
   step index) alongside final — small change, ships behind Gate review;
   without it per-lane basin classification is unreliable.
@@ -375,7 +386,22 @@ JSON under `results/searches/`.
 - **Metrics:** Per-lane basin classification, p̂_hit with binomial CI,
   reliability curve, convergence-detector confusion matrix (stopped-correct /
   stopped-wrong-basin / ceiling), full lane counters + alive curves, wall +
-  evals at each n.
+  evals at each n. **Trapped-lane accounting (H3.3), on every arm:**
+  `n_constrained_lane_steps` + count of lanes *ending* trapped, graded on
+  the trapped-versus-step curve (the scalar is a survival integral — arms
+  at different budgets cannot be compared on it); counters read with
+  `.get()` (`0` ≠ `null`, and a `0` is only clean once lanes demonstrably
+  reached the regime the counter watches); best-fit logL with trapped lanes
+  included vs excluded (does the answer ever come from a trapped lane?);
+  and localisation of trapped lanes in `ell_comps` space — the **corner
+  region** (both components inside (−1, 1), magnitude above the clamp),
+  which per-parameter box projection provably cannot fence, versus the
+  `[0.999, 1.0)` clamp/guard annulus. Corner ⇒ a declared-constraint
+  projection (`ClipperEllComps`-style) becomes a gate-reviewed candidate;
+  annulus-only ⇒ the clamp/guard threshold drift is the whole story, a
+  PyAutoGalaxy threshold decision, not a search-side task. No fix work
+  (projection variants, targeted resurrection, reparameterisation) opens
+  before this localisation + cost evidence exists.
 - **Cheap/expensive:** All of this is RAL-CPU + laptop-GPU scale (MGE); one
   A100 row only to time the 256-start config honestly.
 - **Hardware / cost:** **M**.
@@ -410,7 +436,11 @@ JSON under `results/searches/`.
   × ≥5 seeds × {positions on, off}. Measure: basin-failure elimination, p_hit
   shift, NS wall/eval delta, posterior + evidence consistency on/off (the
   direct double-count measurement: compare truth-basin posteriors), fraction
-  of posterior samples with active penalty.
+  of posterior samples with active penalty, and the Phase 3 trapped-lane
+  accounting (H3.3) repeated per engine × positions arm — the penalty
+  reshapes the gradient landscape and which regions lanes visit, so
+  `ell_comps` trapping is re-assessed per setup, never extrapolated from
+  positions-off runs.
 - **Hardware / cost:** RAL CPU + laptop GPU; A100 only for the confirmation
   rows. **M**.
 - **Gate:** **GATE B (part 2).** PositionsLH + Prodigy reliable across seeds
@@ -832,6 +862,8 @@ Maximum information before large A100 commitment — strictly ordered:
    simultaneously, and effectively decides Gate B's shape before any A100
    time. If positions-on at 64 starts is not reliable on *MGE*, the mesh
    campaign (Phase 5) shrinks to nested-sampling + mesh-family ranking only.
+   Also carries the H3.3 `ell_comps` trapped-lane accounting on every arm
+   (absorbed Mind prompt — see Phase 3 metrics and DECISIONS 2026-08-20).
 4. **CP-4 · slogdet A/B on the AdaptSplit NaN wall** (hours). Expected pass;
    converts Phase 8A from plan to record and sets the gradient-work
    likelihood profile early.
