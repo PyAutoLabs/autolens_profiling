@@ -19,8 +19,10 @@ python scripts/imaging/parallel_scaling/pixelization_numba.py --cores 1,2,4,8,16
 ```
 
 Results land in `results/parallel_scaling/imaging/` as versioned
-`pixelization_numba_scaling_<instrument>_v<version>.{json,png}`. The RAL
-submit script is `hpc/batch_cpu/submit_parallel_scaling_pixelization_numba_euclid`.
+`{pixelization,delaunay}_numba_scaling_<instrument>_v<version>.{json,png}`. The RAL
+submit scripts are `hpc/batch_cpu/submit_parallel_scaling_pixelization_numba_euclid`
+(Rectangular) and `hpc/batch_cpu/submit_parallel_scaling_delaunay_numba_euclid`
+(campaign fiducial).
 
 ## How PyAutoFit's Nautilus parallelizes today (traced 2026-08-20)
 
@@ -38,11 +40,17 @@ submit script is `hpc/batch_cpu/submit_parallel_scaling_pixelization_numba_eucli
   end-to-end search scaling mixes in a non-likelihood parallel component this
   harness deliberately excludes.
 
-> **Fiducial note:** the scaling numbers below are for the Rectangular
+> **Fiducial note:** the Findings section below is for the Rectangular
 > (28×28 `RectangularAdaptDensity`) fiducial. The production campaign fiducial
-> is Delaunay + Hilbert image-mesh (see the `delaunay_numba` runtime/breakdown
-> cells); a `--mesh delaunay` scaling variant is a follow-up — the pool
-> mechanics are mesh-independent, only the serial per-eval cost differs.
+> is Delaunay + Hilbert-1250 image-mesh (the `delaunay_numba` runtime/breakdown
+> cells): run it with `--mesh delaunay` (artifacts land as
+> `delaunay_numba_scaling_<instrument>`). First Delaunay pass (euclid, 4-core
+> cloud container, 24 evals/map, 2026-08-20): serial 4.73 s/eval; speedup
+> 1.8x at P=2, 3.4x at P=4 (84-86% efficiency); object-pool vs
+> initializer-cached indistinguishable — the 4.7 s eval amortizes the 36.8 MB
+> per-chunk fitness pickle, unlike the ~2 s Rectangular eval below; zero
+> corrupted worker evals. The 1-32-core RAL sweep stays the authoritative
+> core-count guidance.
 
 ## Findings — first pass, 2026-08-20 (v2026.8.17.1, local 8-core WSL box)
 

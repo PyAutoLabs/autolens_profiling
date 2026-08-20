@@ -1,0 +1,133 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "omp_num_threads": "1",
+    "cpu_count": 4
+  },
+  "instrument": "euclid",
+  "configuration": {
+    "pixel_scale_arcsec": 0.1,
+    "mask_radius_arcsec": 3.5,
+    "image_pixels_masked": 3841,
+    "mesh": "delaunay_hilbert_1250",
+    "mesh_shape": null,
+    "source_pixels": 1250,
+    "inversion_path": "sparse_numba",
+    "use_jax": false,
+    "lens_light": "mge_60_linear",
+    "n_points": 24,
+    "map_repeats": 2,
+    "omp_num_threads": "1"
+  },
+  "payload": {
+    "fitness_pickle_mb": 36.817283630371094,
+    "fitness_pickle_s": 0.06848542600005203,
+    "sparse_operator_pickle_mb": 35.78899383544922,
+    "sparse_operator_pickle_s": 0.24573322799994912
+  },
+  "serial": {
+    "total_s": 113.476199232,
+    "per_eval_s": 4.728174968
+  },
+  "pools": [
+    {
+      "cores": 1,
+      "variant": "nautilus_object_pool",
+      "pool_create_s": 0.022142679000012322,
+      "first_map_s": 116.5837715460001,
+      "steady_map_s": 119.669755269,
+      "per_eval_s": 4.986239802875001,
+      "throughput_evals_per_s": 0.200551926809339,
+      "speedup_vs_serial": 0.9482446001240847,
+      "efficiency_vs_serial": 0.9482446001240847,
+      "corrupt_evals_first_map": 0,
+      "corrupt_evals_steady_maps": [
+        0,
+        0
+      ]
+    },
+    {
+      "cores": 1,
+      "variant": "initializer_cached",
+      "pool_create_s": 0.008389765999936571,
+      "first_map_s": 114.53625983300003,
+      "steady_map_s": 122.19770141499998,
+      "per_eval_s": 5.091570892291666,
+      "throughput_evals_per_s": 0.19640303968151365,
+      "speedup_vs_serial": 0.9286279358612436,
+      "efficiency_vs_serial": 0.9286279358612436,
+      "corrupt_evals_first_map": 0,
+      "corrupt_evals_steady_maps": [
+        0,
+        0
+      ]
+    },
+    {
+      "cores": 2,
+      "variant": "nautilus_object_pool",
+      "pool_create_s": 0.013377648999949088,
+      "first_map_s": 61.44555113699994,
+      "steady_map_s": 62.74304845000006,
+      "per_eval_s": 2.614293685416669,
+      "throughput_evals_per_s": 0.38251249489615735,
+      "speedup_vs_serial": 1.8085860033152388,
+      "efficiency_vs_serial": 0.9042930016576194,
+      "corrupt_evals_first_map": 0,
+      "corrupt_evals_steady_maps": [
+        0,
+        0
+      ]
+    },
+    {
+      "cores": 2,
+      "variant": "initializer_cached",
+      "pool_create_s": 0.015035447999935059,
+      "first_map_s": 66.09828111000002,
+      "steady_map_s": 61.46440120600005,
+      "per_eval_s": 2.5610167169166687,
+      "throughput_evals_per_s": 0.3904699228999755,
+      "speedup_vs_serial": 1.846210115212554,
+      "efficiency_vs_serial": 0.923105057606277,
+      "corrupt_evals_first_map": 0,
+      "corrupt_evals_steady_maps": [
+        0,
+        0
+      ]
+    },
+    {
+      "cores": 4,
+      "variant": "nautilus_object_pool",
+      "pool_create_s": 0.025463471000421123,
+      "first_map_s": 34.2309339010003,
+      "steady_map_s": 33.78900383400014,
+      "per_eval_s": 1.4078751597500059,
+      "throughput_evals_per_s": 0.7102902505770244,
+      "speedup_vs_serial": 3.3583765827927343,
+      "efficiency_vs_serial": 0.8395941456981836,
+      "corrupt_evals_first_map": 0,
+      "corrupt_evals_steady_maps": [
+        0,
+        0
+      ]
+    },
+    {
+      "cores": 4,
+      "variant": "initializer_cached",
+      "pool_create_s": 0.03331876799984457,
+      "first_map_s": 34.136978979000105,
+      "steady_map_s": 33.06512163499974,
+      "per_eval_s": 1.3777134014583226,
+      "throughput_evals_per_s": 0.7258403663211018,
+      "speedup_vs_serial": 3.4319002508033836,
+      "efficiency_vs_serial": 0.8579750627008459,
+      "corrupt_evals_first_map": 0,
+      "corrupt_evals_steady_maps": [
+        0,
+        0
+      ]
+    }
+  ]
+}
