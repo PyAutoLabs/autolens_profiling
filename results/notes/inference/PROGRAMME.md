@@ -26,7 +26,7 @@ expectation · **[CONTRADICTED]** existing evidence pushed back on the brief ·
 |---|---|---|
 | Phase 0(a) PositionsLH defect fix | **complete** | CP-1: verified + fix shipped, PyAutoLens#699 / PR#700 (DECISIONS.md 2026-08-17) |
 | Phase 0(b) blackjax ≥1.6.2 upgrade | **complete** — cloud CPU (PR#143), local venv + RAL stack (2026-08-19, #146) | Cloud: 1.6.2 installs clean next to autofit, `blackjax.nss` 2D smoke PASS, `af.BlackJAXNUTS` unmodified. Local + RAL: 1.5 / 2026-01 fork build → 1.6.2, full smoke PASS in both (now incl. `af.NSS` end-to-end — PR#1492 merged 2026-08-18); RAL library mains re-synced — `phase_00_unblocking/RESULTS.md` |
-| Phase 0(c) RAL artifact harvest | **partial** — stranded local fork-NSS A100 artifacts (mge 2nd run, delaunay, pixelization — the §1.2 canonical rows) committed 2026-08-19; RAL NFS harvest (job 331058 SMC arms, 335003-5 NaN-counter arms, Nautilus pixgrad logs) remains | `phase_00_unblocking/RESULTS.md` |
+| Phase 0(c) RAL artifact harvest | **complete** — local fork-NSS A100 artifacts committed (PR#147); RAL NFS harvest pulled 2026-08-19 (#149): job 331058 all four SMC arms (bridge validated: warm logZ within ±0.8 nats of the Nautilus bar; cold arm −179k with "Converged: yes"), 335003-5 NaN-counter arms, wsdev Nautilus pixgrad baselines | `phase_00_unblocking/RESULTS.md` + `phase_00_unblocking/ral_harvest/` |
 | Phase 0(d) commit plan + ledger structure | **complete** | PR#136 + PR#137 (2026-08-18) |
 | Phase 0(e) searches README dashboard loop | **complete** | PR#139 (2026-08-18): nested-layout scanner, 34 rows render, truth-bar rows verified |
 | Phases 1–13 | not started | — |
@@ -91,8 +91,10 @@ Other settled findings the plan builds on rather than re-derives:
   by the full Laplace Cholesky, (b) step-scaled to the posterior width, (c)
   evidence kept via a geometric bridge from a *normalized* Gaussian reference.
   Cold-starting posterior samplers on this likelihood is meaningless (~190,000
-  nats from the solution). Parked, resumable; RAL job 331058 (MALA-tuned/HMC
-  arms) is unharvested.
+  nats from the solution). Parked, resumable. *(Update 2026-08-19: job
+  331058 harvested — all four arms completed; warm HMC/MALA logZ within
+  ±0.8 nats of the Nautilus bar, cold arm −179k with "Converged: yes". See
+  `phase_00_unblocking/RESULTS.md` §0(c).)*
 - **[VERIFIED] MultiStartGradient auto-convergence already exists** (plateau
   of global-best FOM: window 50, rtol 1e-4, atol 1e-3, min 100 steps;
   `n_steps` is a ceiling; `stop_reason` persisted) — but it is *disabled when

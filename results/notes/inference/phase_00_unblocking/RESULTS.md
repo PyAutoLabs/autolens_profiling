@@ -134,3 +134,50 @@ All three are committed with this note and now render in the searches README
 dashboard. The RAL-side harvest — SMC warm arms (job 331058), NaN-counter
 split arms (335003-5), any Nautilus pixgrad baseline logs — remains open;
 0(c) stays partial until a RAL session walks the NFS output trees.
+
+## 0(c) — RAL NFS harvest (2026-08-19) — COMPLETE
+
+The RAL-side artifacts named by the plan are pulled off NFS into
+`ral_harvest/` beside this note. 0(c) is closed.
+
+### SMC warm arms — job 331058 (`smc_331058/`)
+
+All four arms of the parked warm-started gradient-SMC wave (wsdev#113)
+**completed** on RAL CPU (x64, blackjax 1.5-era prototype, node
+euclid-ral-compute-10-1). Cell: `imaging/mge/hst`. The headline: **the
+geometric evidence bridge is validated across kernels** — every warm arm's
+logZ brackets the Nautilus truth bar (31690.5) within ±0.8 nats, with the
+whitening Jacobian (log|J| = −108.03) correctly booked:
+
+| Arm | max logL | logZ | Wall (CPU) | Evals | Converged |
+|---|---:|---:|---:|---:|---|
+| HMC warm | 31785.49 | 31690.33 | 1585 s | 28,928 | yes (λ=1) |
+| MALA warm | 31785.79 | 31690.66 | 843 s | 7,040 | yes (λ=1) |
+| MALA tuned warm | 31782.10 | 31689.73 | 712 s | 7,040 | yes (λ=1) |
+| MALA tuned **cold** | **−179,466** | −179,475 | 693 s | 3,648 | "yes" (λ=1) |
+
+The cold arm is the standing lesson made concrete: it tempered to λ=1 and
+reported "Converged: yes" while sitting ~211,000 nats below the solution —
+exactly the "silent λ=1 garbage" failure the risk register says never to
+judge by. Truth bar for comparison: Nautilus max logL 31786.78 at 63,800
+evals — the warm SMC arms reach within ~1–1.3 nats of it at 4–9× fewer
+evals (CPU tier; not comparable to A100 rows). Phase 7 resumes from these
+artifacts, not from scratch.
+
+### NaN-counter split arms — jobs 335003-5 (`nan_check_335003_5/`)
+
+The verification runs behind the "NaN-counters CONFIRMED" record
+(PyAutoFit PR#1473 / autolens_profiling PR#127; RESUME.md in the harvest
+dir is the checkpoint note): per-mesh `cpu_cpu_nan_check.{json,png}` for
+delaunay / delaunay_matern / knn plus the delaunay_matern probe pair and
+the three job logs. Counters read zero value-NaN / zero gradient-NaN
+lane-steps on the CPU tier at 10-step scale — the instrumentation works;
+the MGE 62% value-NaN finding (#128) remains a GPU-scale phenomenon.
+
+### Nautilus pixgrad baselines (`pix_nautilus_*.txt`)
+
+Two one-line wsdev `searches_minimal` baselines: delaunay wall 8,331 s
+max logL 19,982.3 (r_E 0.962); knn wall 19,102 s max logL 5,704.2
+(r_E 1.011). **Different target than the profiling cells** (wsdev dataset/
+masking — not comparable to the §1.2 truth bars); harvested so the numbers
+stop living only on NFS, labelled for what they are.
