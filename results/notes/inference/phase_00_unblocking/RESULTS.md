@@ -164,6 +164,22 @@ evals — the warm SMC arms reach within ~1–1.3 nats of it at 4–9× fewer
 evals (CPU tier; not comparable to A100 rows). Phase 7 resumes from these
 artifacts, not from scratch.
 
+The parked wave's two pre-registered kernel questions are answered by the
+per-λ acceptance traces:
+
+- **Does `--tune` hold acceptance near ~0.57 as λ→1? NO — it collapses
+  it.** Fixed-auto-step MALA decays 0.838 → 0.151 (the known pattern);
+  MALA *with* tuning sits at 0.04–0.12 from step 2 onward and finishes
+  with the worst max logL of the warm arms (31782.10). The tuner is
+  mis-adapted for this tempering path — a Phase 7 fix-or-drop item.
+- **Does HMC beat MALA? On robustness yes, on efficiency no.** HMC is the
+  only kernel that holds acceptance as λ→1 (0.94–0.98 throughout), but it
+  spends 4× the evals per particle-step (24 vs 5) and 2× the wall for the
+  same answer — plain warm MALA matched its max logL and logZ at a quarter
+  of the evals. On this unimodal cell the fixed-step decay is cosmetic;
+  HMC's robustness is the thing to buy only where acceptance collapse
+  actually costs accuracy (Phase 7's multimodal/transition tests).
+
 ### NaN-counter split arms — jobs 335003-5 (`nan_check_335003_5/`)
 
 The verification runs behind the "NaN-counters CONFIRMED" record
