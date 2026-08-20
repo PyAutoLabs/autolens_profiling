@@ -1,7 +1,7 @@
 """
 nss_smoke.py — blackjax >=1.6 environment validation (Phase 0(b), issue #142).
 
-Two CPU-scale checks, each of which must PASS after any environment's
+Three CPU-scale checks, each of which must PASS after any environment's
 blackjax upgrade (local venv, RAL stack) before Phase 2 NSS work runs there:
 
 1. ``blackjax.nss`` on a 2D toy (Gaussian likelihood x uniform prior) with an
@@ -13,6 +13,10 @@ blackjax upgrade (local venv, RAL stack) before Phase 2 NSS work runs there:
 2. ``af.BlackJAXNUTS`` on a 2D toy posterior, confirming the PyAutoFit wrapper
    (window_adaptation + nuts + blackjax.diagnostics) against the installed
    blackjax.
+3. ``af.NSS`` (the search re-mainlined in PyAutoFit#1491 / PR#1492, merged
+   2026-08-18) end-to-end through ``search.fit`` on the same 2D toy, with the
+   same analytic evidence check — this is the surface Phase 2 actually
+   drives. FAILs if ``af.NSS`` is absent (autofit predating the re-mainline).
 
 Run: ``python scripts/misc/searches/nss_smoke.py``. Exits non-zero on FAIL.
 Wall times printed here are CPU toy scale and carry no profiling meaning
@@ -123,6 +127,55 @@ def smoke_blackjax_nuts() -> bool:
     return ok
 
 
+def smoke_af_nss() -> bool:
+    """af.NSS (re-mainlined, PyAutoFit PR#1492) end-to-end on the 2D toy."""
+    import autofit as af
+    import jax.numpy as jnp
+
+    if not hasattr(af, "NSS"):
+        print("af.NSS: FAIL (absent — autofit predates PyAutoFit PR#1492)")
+        return False
+
+    class Point:
+        def __init__(self, a=0.0, b=0.0):
+            self.a = a
+            self.b = b
+
+    class ToyAnalysis(af.Analysis):
+        def __init__(self):
+            super().__init__(use_jax=True)
+
+        def log_likelihood_function(self, instance):
+            sig = 0.5
+            return -((instance.a - 1.0) ** 2 + (instance.b + 1.0) ** 2) / (2 * sig**2) - jnp.log(
+                2 * jnp.pi * sig**2
+            )
+
+    # Normalized Gaussian likelihood x U(-5, 5)^2 prior -> logZ = -log(100),
+    # the same analytic target as smoke_nss.
+    analytic_logz = float(-jnp.log(100.0))
+
+    model = af.Model(Point)
+    model.a = af.UniformPrior(lower_limit=-5.0, upper_limit=5.0)
+    model.b = af.UniformPrior(lower_limit=-5.0, upper_limit=5.0)
+
+    search = af.NSS(n_live=500, num_mcmc_steps=5, num_delete=10, seed=1)
+    result = search.fit(model=model, analysis=ToyAnalysis())
+
+    info = result.samples.samples_info
+    logz = info.get("log_evidence")
+    logz_err = info.get("log_evidence_error")
+    mp = result.samples.median_pdf()
+    print(
+        f"af.NSS: logZ={logz:.3f}+/-{logz_err:.3f} analytic={analytic_logz:.3f} "
+        f"median=({mp.a:.3f}, {mp.b:.3f}) truth=(1, -1)"
+    )
+    ok = abs(logz - analytic_logz) < 3 * max(logz_err, 0.05)
+    ok = ok and abs(mp.a - 1.0) < 0.2 and abs(mp.b + 1.0) < 0.2
+    print(f"af.NSS: {'PASS' if ok else 'FAIL'}")
+    return ok
+
+
 def main() -> int:
     import blackjax
     import jax
@@ -135,6 +188,7 @@ def main() -> int:
         return 1
     ok = smoke_nss()
     ok = smoke_blackjax_nuts() and ok
+    ok = smoke_af_nss() and ok
     return 0 if ok else 1
 
 

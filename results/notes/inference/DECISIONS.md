@@ -100,3 +100,37 @@ workspace tutorial restoration (stash checklist item 5) and the Phase 2
 re-benchmarking campaign itself (GPU, laptop/RAL).
 
 ---
+
+## 2026-08-19 — Phase 0 gate satisfied: (a) + (b) both landed; Phases 1–2 unblocked
+
+**Decision:** Phase 0's gate condition — "nothing else proceeds until (a)
+and (b) land" — is **satisfied**. Phase 0(b) is complete in all three
+environments; the programme's downstream phases (Phase 1 targets registry,
+Phase 2 NSS re-tuning) are unblocked.
+
+**Evidence:**
+
+- PyAutoFit **PR#1492 merged 2026-08-18** — `af.NSS` is a first-class search
+  on main (blackjax optional-extra floor ≥1.6.2).
+- **Local venv**: blackjax 1.5 → 1.6.2; `nss_smoke.py` (extended with an
+  `af.NSS` end-to-end analytic-evidence check, the surface Phase 2 drives)
+  PASS on all three checks; `af.NSS` unit suite 17/17 against the local
+  checkout.
+- **RAL stack**: was still the obsolete 2026-01 fork build
+  (0.1.0b1.dev86+g795058671, §2.2's stale pin) — upgraded to 1.6.2 with a
+  pre-upgrade freeze snapshot; library mains re-synced; the same smoke PASS
+  on all three checks (login node, CPU). Seeded results identical to local.
+- Record: `phase_00_unblocking/RESULTS.md` (2026-08-19 sections), issue #146.
+
+**Still open in Phase 0:** (c) is **partial** — the stranded *local*
+fork-NSS A100 artifacts (the §1.2 delaunay / pixelization / mge-2nd-run
+rows) are now committed, but the RAL NFS harvest (SMC warm arms job 331058,
+NaN-counter split arms 335003-5, Nautilus pixgrad baseline logs) remains.
+(c) was never part of the gate condition and does not block Phases 1–2.
+
+**Next per the critical path (§9):** the laptop-GPU MGE half of CP-2 (first
+Phase 2 work item), then CP-3 (Prodigy MGE reliability scan ± PositionsLH —
+needs the PyAutoFit per-lane-best change first) and CP-4 (slogdet A/B, can
+start any time).
+
+---
