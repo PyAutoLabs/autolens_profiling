@@ -1,0 +1,53 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "omp_num_threads": "1",
+    "cpu_count": 8
+  },
+  "instrument": "euclid",
+  "configuration": {
+    "pixel_scale_arcsec": 0.1,
+    "mask_radius_arcsec": 3.5,
+    "image_pixels_masked": 3841,
+    "over_sampled_pixels": 4468,
+    "mesh_shape": [
+      1500
+    ],
+    "source_pixels": 1500,
+    "inversion_path": "sparse_numba",
+    "use_jax": false,
+    "mesh": "delaunay_hilbert_1500",
+    "regularization": "constant_split",
+    "lens_light": "mge_60_linear",
+    "omp_num_threads": "1"
+  },
+  "steps": {
+    "FitImaging construct": 8.502999990014359e-05,
+    "Blurred image (FFT convolve)": 0.01455543999945803,
+    "Profile subtracted image": 4.046999965794385e-05,
+    "Inversion build (trace+Delaunay+mapper)": 0.01994094000037876,
+    "PSF-weighted data [numba]": 0.0028255600002012214,
+    "MGE operated mapping matrix (60 funcs)": 0.5088782800001355,
+    "Mapper sparse triplets": 0.015488170000026003,
+    "Data vector D [numba]": 0.0012497600004280685,
+    "Curvature matrix F [numba sparse-op]": 0.2730151699997805,
+    "Regularization matrix H (ConstantSplit)": 0.09423426999928779,
+    "F + H": 0.004054669999823091,
+    "Reconstruction solve (BLAS)": 3.7295408000001773,
+    "Mapped reconstruction [numba+FFT]": 0.008571450000454206,
+    "Model data + chi^2": 0.008474549999664304,
+    "log det (F+H) [Cholesky]": 0.06000702000092133,
+    "log det H [Cholesky]": 0.055088230000183105,
+    "Regularization term s'Hs": 0.0014358500004163944,
+    "Log evidence (figure of merit)": 0.1053423000001203
+  },
+  "total_step_by_step": 4.902827960001014,
+  "direct_log_likelihood_function_per_call": 4.614268669999729,
+  "warmup_incl_numba_compile_s": 6.840275500002463,
+  "log_likelihood": 7193.174423642261,
+  "pinned_expected": null,
+  "pinned_drift": []
+}

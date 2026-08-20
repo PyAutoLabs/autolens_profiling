@@ -38,6 +38,12 @@ submit script is `hpc/batch_cpu/submit_parallel_scaling_pixelization_numba_eucli
   end-to-end search scaling mixes in a non-likelihood parallel component this
   harness deliberately excludes.
 
+> **Fiducial note:** the scaling numbers below are for the Rectangular
+> (28×28 `RectangularAdaptDensity`) fiducial. The production campaign fiducial
+> is Delaunay + Hilbert image-mesh (see the `delaunay_numba` runtime/breakdown
+> cells); a `--mesh delaunay` scaling variant is a follow-up — the pool
+> mechanics are mesh-independent, only the serial per-eval cost differs.
+
 ## Findings — first pass, 2026-08-20 (v2026.8.17.1, local 8-core WSL box)
 
 Fiducial: 28×28 `RectangularAdaptDensity` + `Constant` reg, MGE-60 linear lens
