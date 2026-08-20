@@ -30,15 +30,28 @@ A100 fp64 (1:2) even beyond the usual cross-tier rule. The laptop row
 answers "does mainline `af.NSS` run the production MGE cell end-to-end on
 GPU" — the Phase 2 performance scan belongs on the A100.
 
-**Run in flight as of 2026-08-20 ~02:10 UTC** (started 2026-08-20 02:05
-UTC): `scripts/imaging/searches/nss/mge.py --config-name local_gpu_fp64`
-with `SEARCHES_NSS_CHUNK_SIZE=10` via `~/venv/PyAutoGPU`
-(`JAX_PLATFORM_NAME=cuda JAX_PLATFORMS=cuda,cpu
-XLA_PYTHON_CLIENT_MEM_FRACTION=0.85`). Results JSON will land under
-`results/searches/nss/imaging/mge/hst/` and this note + the PROGRAMME
-CP-2 entry get finalized from it (verdict criteria: completes to dlogz −3;
-max logL / logZ consistent with the fork rows' 31786.3–31786.5 /
-31697.7–31700.4 band — same seed 42, same knobs, mainline code).
+**Laptop verdict (2026-08-20): mechanics validated, wall-time infeasible —
+run cut off by hand, anchor row moved to the A100.** The `chunk_size=10`
+run launched, jitted, and sampled the production MGE cell on the GPU
+without error for 80+ minutes — the integration question ("does mainline
+`af.NSS` drive the production cell end-to-end on GPU?") is answered on the
+mechanics side. But it completed <100 outer iterations in that time (no
+first checkpoint at `checkpoint_interval=100`) → ≥44 s/iteration vs the
+A100 fork run's ~1.7 s → a ≥4–5 h projected wall at 86 °C sustained. That
+is the fp64 1:32 GeForce ratio plus chunk serialization plus thermal
+throttle; nothing about the sampler. The run was terminated by hand
+(no checkpoint yet ⇒ nothing resumable was lost) and the identical-knob
+row submitted to the RAL A100 instead:
+`hpc/batch_gpu/submit_search_nss_imaging_mge_a100_hst_fp64` (unchunked, as
+the fork rows ran). This note + PROGRAMME's CP-2 entry get finalized from
+that artifact (verdict criteria: completes to dlogz −3; max logL / logZ
+against the fork band 31786.3–31786.5 / 31697.7–31700.4 — same seed 42,
+same knobs, mainline code; H2.1 predicts the logZ bias *persists* at
+inner=5 and the scan's ≥2d arms remove it).
+
+Laptop-tier rule going forward: the RTX 2060 is a smoke/mechanics tier for
+NSS (chunked, no performance meaning); MGE-scale NSS wall-times come from
+RAL CPU and A100 only.
 
 ## Next (per PROGRAMME §4 Phase 2)
 

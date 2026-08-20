@@ -817,10 +817,15 @@ Maximum information before large A100 commitment — strictly ordered:
 2. **CP-2 · blackjax 1.6.2 upgrade + mainline NSS smoke on MGE** (~1 day,
    laptop GPU). Establishes whether Phase 2 is a tuning exercise or an
    integration project.
-   **✅ Environment half COMPLETE — all three environments (cloud, local
-   venv, RAL) on 1.6.2 with the full smoke (incl. `af.NSS` end-to-end)
-   passing; `af.NSS` re-mainlined (PyAutoFit PR#1492, merged 2026-08-18).
-   Remaining: the laptop-GPU MGE smoke half — the first Phase 2 work item.**
+   **✅ Environment half COMPLETE — all four environments (cloud, local
+   venv, local GPU venv, RAL) on 1.6.2 with the full smoke (incl. `af.NSS`
+   end-to-end) passing; `af.NSS` re-mainlined (PyAutoFit PR#1492, merged
+   2026-08-18). GPU half: laptop mechanics VALIDATED 2026-08-20 (launches/
+   jits/samples the production MGE cell; 6 GB cards need `chunk_size`;
+   fp64 wall infeasible on GeForce 1:32) — the A100 anchor row at
+   identical fork-era knobs is the remaining artifact
+   (`hpc/batch_gpu/submit_search_nss_imaging_mge_a100_hst_fp64`). See
+   `phase_02_nss_mainline/RESULTS.md`.**
 3. **CP-3 · Prodigy MGE reliability scan ± PositionsLH** (RAL CPU + laptop
    GPU; the single highest-information experiment). n_starts {16, 64, 256} ×
    5 seeds × positions {off, on} → measures p_hit, tests H3.1/H3.2/H4.1
