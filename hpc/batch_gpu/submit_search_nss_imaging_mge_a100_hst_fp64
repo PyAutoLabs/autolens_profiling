@@ -1,0 +1,49 @@
+#!/bin/bash -l
+#
+# Inference programme Phase 2 (issue #149) — mainline af.NSS A100 anchor:
+# searches/nss/imaging/mge x hst x fp64.
+#
+# First mainline-blackjax (>=1.6.2) NSS row on the tier the fork-era rows
+# were recorded on; same knobs as those rows (n_live 200, inner steps 5,
+# num_delete 50, dlogz -3, seed 42, unchunked) so the diff vs the
+# v2026.5.21.1 fork band (max logL 31786.3-31786.5, logZ 31697.7-31700.4,
+# 657-679 s) is code-version only. H2.1's inner-steps scan comes after.
+
+#SBATCH -J search_nss_imaging_mge_hst_fp64
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=2:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_profiling
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+nvidia-smi
+
+echo "=========================================="
+date
+echo "Cell:       searches/nss/imaging/mge"
+echo "Instrument: hst"
+echo "Precision:  fp64"
+
+cd $AP_ROOT
+python3 scripts/imaging/searches/nss/mge.py \
+    --instrument hst \
+    --config-name hpc_a100_fp64 \
+    --output-dir $AP_ROOT/results/searches/nss/imaging/mge/hst
+
+echo "Finished."
+date

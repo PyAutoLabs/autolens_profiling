@@ -154,6 +154,74 @@ def build_nautilus(
     )
 
 
+# NSS (nested slice sampling, ``af.NSS`` on mainline ``blackjax.nss``) profiling
+# settings. Single-sourced here so the builder and the JSON config block record
+# identical values, mirroring the MultiStart pattern below.
+#
+# The defaults REPLICATE THE FORK-ERA HISTORY (num_mcmc_steps=5, num_delete=50,
+# termination=-3.0, seed=42) so the first mainline rows are directly comparable
+# to the recorded fork rows (results/searches/nss/, v2026.5.21.1). The Phase 2
+# campaign (PROGRAMME.md §4) scans away from these via the env overrides —
+# in particular H2.1 pre-registers num_mcmc_steps >= max(5, 2*dim) as the fix
+# for the +7-13 nat logZ bias, so scan arms set SEARCHES_NSS_NUM_MCMC_STEPS.
+_NSS_NUM_MCMC_STEPS = 5
+_NSS_NUM_DELETE = 50
+_NSS_TERMINATION = -3.0
+_NSS_SEED = 42
+
+
+def nss_settings() -> dict:
+    """The ``af.NSS`` knobs a profiling cell constructs the search with.
+
+    Exposed so ``_sampler_config_dict`` records exactly what was run. Every
+    knob honours a ``SEARCHES_NSS_*`` env override so Phase 2 scan arms
+    (n_live x num_delete x inner steps x dlogz) drive the same builder.
+    ``chunk_size`` stays ``None`` unless overridden — the GPU-memory chunking
+    path is bit-identical to unchunked at fixed seed (PyAutoFit PR#1492) but
+    is a separate lever from the science knobs.
+    """
+    chunk = os.environ.get("SEARCHES_NSS_CHUNK_SIZE")
+    return {
+        "num_mcmc_steps": int(os.environ.get("SEARCHES_NSS_NUM_MCMC_STEPS", _NSS_NUM_MCMC_STEPS)),
+        "num_delete": int(os.environ.get("SEARCHES_NSS_NUM_DELETE", _NSS_NUM_DELETE)),
+        "chunk_size": int(chunk) if chunk else None,
+        "termination": float(os.environ.get("SEARCHES_NSS_TERMINATION", _NSS_TERMINATION)),
+        "seed": int(os.environ.get("SEARCHES_NSS_SEED", _NSS_SEED)),
+    }
+
+
+def build_nss(
+    *,
+    sampler: str,
+    dataset_class: str,
+    model_type: str,
+    instrument: str,
+    config_name: str,
+    use_jax: bool,
+) -> af.NonLinearSearch:
+    """Construct a first-class ``af.NSS`` search for one profiling cell.
+
+    ``af.NSS`` is JAX-native (the whole sampler loop runs inside ``jax.jit``),
+    so a pure-NumPy config is a contradiction and raises rather than silently
+    profiling nothing. ``n_live`` comes from the same SLaM-mirror table as
+    Nautilus so the two nested samplers profile the same target at the same
+    live-point budget; ``SEARCHES_NSS_N_LIVE`` overrides for the Phase 2
+    n_live scan.
+    """
+    if not use_jax:
+        raise ValueError(
+            "af.NSS is JAX-native; a PYAUTO_DISABLE_JAX=1 profiling config cannot run it."
+        )
+    n_live = int(os.environ.get("SEARCHES_NSS_N_LIVE", n_live_for(dataset_class, model_type)))
+    return af.NSS(
+        name=config_name,
+        path_prefix=f"searches/{sampler}/{dataset_class}/{model_type}/{instrument}",
+        n_live=n_live,
+        number_of_cores=1,
+        **nss_settings(),
+    )
+
+
 # MultiStart profiling settings. Single-sourced here so the builder and the
 # JSON config block (``_runner._sampler_config_dict``) record identical values.
 # These are illustrative profiling values, not the A100 scaling run (the
@@ -446,5 +514,6 @@ def build_multi_start(
 SamplerBuilder = Callable[..., af.NonLinearSearch]
 SAMPLER_BUILDERS: dict[str, SamplerBuilder] = {
     "nautilus": build_nautilus,
+    "nss": build_nss,
     **{name: build_multi_start for name in _MULTI_START_CLASSES},
 }

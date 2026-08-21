@@ -26,11 +26,12 @@ expectation · **[CONTRADICTED]** existing evidence pushed back on the brief ·
 |---|---|---|
 | Phase 0(a) PositionsLH defect fix | **complete** | CP-1: verified + fix shipped, PyAutoLens#699 / PR#700 (DECISIONS.md 2026-08-17) |
 | Phase 0(b) blackjax ≥1.6.2 upgrade | **complete** — cloud CPU (PR#143), local venv + RAL stack (2026-08-19, #146) | Cloud: 1.6.2 installs clean next to autofit, `blackjax.nss` 2D smoke PASS, `af.BlackJAXNUTS` unmodified. Local + RAL: 1.5 / 2026-01 fork build → 1.6.2, full smoke PASS in both (now incl. `af.NSS` end-to-end — PR#1492 merged 2026-08-18); RAL library mains re-synced — `phase_00_unblocking/RESULTS.md` |
-| Phase 0(c) RAL artifact harvest | **partial** — stranded local fork-NSS A100 artifacts (mge 2nd run, delaunay, pixelization — the §1.2 canonical rows) committed 2026-08-19; RAL NFS harvest (job 331058 SMC arms, 335003-5 NaN-counter arms, Nautilus pixgrad logs) remains | `phase_00_unblocking/RESULTS.md` |
+| Phase 0(c) RAL artifact harvest | **complete** — local fork-NSS A100 artifacts committed (PR#147); RAL NFS harvest pulled 2026-08-19 (#149): job 331058 all four SMC arms (bridge validated: warm logZ within ±0.8 nats of the Nautilus bar; cold arm −179k with "Converged: yes"), 335003-5 NaN-counter arms, wsdev Nautilus pixgrad baselines | `phase_00_unblocking/RESULTS.md` + `phase_00_unblocking/ral_harvest/` |
 | Phase 0(d) commit plan + ledger structure | **complete** | PR#136 + PR#137 (2026-08-18) |
 | Phase 14 default CPU mesh decision | **added 2026-08-21, awaiting adjudication** | autolens_profiling#153 |
 | Phase 0(e) searches README dashboard loop | **complete** | PR#139 (2026-08-18): nested-layout scanner, 34 rows render, truth-bar rows verified |
-| Phases 1–13 | not started | — |
+| Phase 2 NSS mainline re-tune | **entry in progress** — framework wiring + CP-2 GPU MGE smoke (#149, 2026-08-19/20); scan + Gate A pending | `phase_02_nss_mainline/RESULTS.md` |
+| Phases 1, 3–13 | not started | — |
 | Gates A–F | open | — |
 
 ---
@@ -92,8 +93,10 @@ Other settled findings the plan builds on rather than re-derives:
   by the full Laplace Cholesky, (b) step-scaled to the posterior width, (c)
   evidence kept via a geometric bridge from a *normalized* Gaussian reference.
   Cold-starting posterior samplers on this likelihood is meaningless (~190,000
-  nats from the solution). Parked, resumable; RAL job 331058 (MALA-tuned/HMC
-  arms) is unharvested.
+  nats from the solution). Parked, resumable. *(Update 2026-08-19: job
+  331058 harvested — all four arms completed; warm HMC/MALA logZ within
+  ±0.8 nats of the Nautilus bar, cold arm −179k with "Converged: yes". See
+  `phase_00_unblocking/RESULTS.md` §0(c).)*
 - **[VERIFIED] MultiStartGradient auto-convergence already exists** (plateau
   of global-best FOM: window 50, rtol 1e-4, atol 1e-3, min 100 steps;
   `n_steps` is a ceiling; `stop_reason` persisted) — but it is *disabled when
@@ -359,7 +362,18 @@ JSON under `results/searches/`.
   attractor), not bound handling — carried forward from #133, treated as the
   null. **[H3.2]** p_hit(Prodigy) is O(0.1–0.2) like Adam's, making 16 lanes
   a ~2–5% failure lottery and 64–128 lanes reliable. If p_hit is much lower,
-  Prodigy is done as a global searcher regardless of n.
+  Prodigy is done as a global searcher regardless of n. **[H3.3]** (absorbed
+  2026-08-20 from Mind `ell_comps_trapping_unmasked.md`, follow-up (2) of
+  #128): the `ell_comps` plateau above `ELL_COMPS_MAGNITUDE_CLAMP` (0.999)
+  traps a substantial lane fraction even under clipping — the radial
+  derivative there is exactly zero, so the flat figure of merit reads as
+  convergence and projection onto the prior box cannot help (the lane is not
+  outside anything it declares). Preliminary evidence from the clipper
+  phase-2 `prior_box` arms: 6/16 and 4/16 lanes end pinned (fp64, 2 seeds)
+  while seed 0 still beat the Nautilus bar — suggesting budget cost, not
+  correctness cost. That reading is **not decision-grade**: it is
+  positions-off, 2-seed, and dominated by the θ_E=0 basin. Null: trapping is
+  a budget problem only; re-measured here on every arm, not carried over.
 - **Pre-req (source):** PyAutoFit: preserve per-lane *best* (position, FOM,
   step index) alongside final — small change, ships behind Gate review;
   without it per-lane basin classification is unreliable.
@@ -373,7 +387,22 @@ JSON under `results/searches/`.
 - **Metrics:** Per-lane basin classification, p̂_hit with binomial CI,
   reliability curve, convergence-detector confusion matrix (stopped-correct /
   stopped-wrong-basin / ceiling), full lane counters + alive curves, wall +
-  evals at each n.
+  evals at each n. **Trapped-lane accounting (H3.3), on every arm:**
+  `n_constrained_lane_steps` + count of lanes *ending* trapped, graded on
+  the trapped-versus-step curve (the scalar is a survival integral — arms
+  at different budgets cannot be compared on it); counters read with
+  `.get()` (`0` ≠ `null`, and a `0` is only clean once lanes demonstrably
+  reached the regime the counter watches); best-fit logL with trapped lanes
+  included vs excluded (does the answer ever come from a trapped lane?);
+  and localisation of trapped lanes in `ell_comps` space — the **corner
+  region** (both components inside (−1, 1), magnitude above the clamp),
+  which per-parameter box projection provably cannot fence, versus the
+  `[0.999, 1.0)` clamp/guard annulus. Corner ⇒ a declared-constraint
+  projection (`ClipperEllComps`-style) becomes a gate-reviewed candidate;
+  annulus-only ⇒ the clamp/guard threshold drift is the whole story, a
+  PyAutoGalaxy threshold decision, not a search-side task. No fix work
+  (projection variants, targeted resurrection, reparameterisation) opens
+  before this localisation + cost evidence exists.
 - **Cheap/expensive:** All of this is RAL-CPU + laptop-GPU scale (MGE); one
   A100 row only to time the 256-start config honestly.
 - **Hardware / cost:** **M**.
@@ -408,7 +437,11 @@ JSON under `results/searches/`.
   × ≥5 seeds × {positions on, off}. Measure: basin-failure elimination, p_hit
   shift, NS wall/eval delta, posterior + evidence consistency on/off (the
   direct double-count measurement: compare truth-basin posteriors), fraction
-  of posterior samples with active penalty.
+  of posterior samples with active penalty, and the Phase 3 trapped-lane
+  accounting (H3.3) repeated per engine × positions arm — the penalty
+  reshapes the gradient landscape and which regions lanes visit, so
+  `ell_comps` trapping is re-assessed per setup, never extrapolated from
+  positions-off runs.
 - **Hardware / cost:** RAL CPU + laptop GPU; A100 only for the confirmation
   rows. **M**.
 - **Gate:** **GATE B (part 2).** PositionsLH + Prodigy reliable across seeds
@@ -839,16 +872,23 @@ Maximum information before large A100 commitment — strictly ordered:
 2. **CP-2 · blackjax 1.6.2 upgrade + mainline NSS smoke on MGE** (~1 day,
    laptop GPU). Establishes whether Phase 2 is a tuning exercise or an
    integration project.
-   **✅ Environment half COMPLETE — all three environments (cloud, local
-   venv, RAL) on 1.6.2 with the full smoke (incl. `af.NSS` end-to-end)
-   passing; `af.NSS` re-mainlined (PyAutoFit PR#1492, merged 2026-08-18).
-   Remaining: the laptop-GPU MGE smoke half — the first Phase 2 work item.**
+   **✅ Environment half COMPLETE — all four environments (cloud, local
+   venv, local GPU venv, RAL) on 1.6.2 with the full smoke (incl. `af.NSS`
+   end-to-end) passing; `af.NSS` re-mainlined (PyAutoFit PR#1492, merged
+   2026-08-18). GPU half: laptop mechanics VALIDATED 2026-08-20 (launches/
+   jits/samples the production MGE cell; 6 GB cards need `chunk_size`;
+   fp64 wall infeasible on GeForce 1:32) — the A100 anchor row at
+   identical fork-era knobs is the remaining artifact
+   (`hpc/batch_gpu/submit_search_nss_imaging_mge_a100_hst_fp64`). See
+   `phase_02_nss_mainline/RESULTS.md`.**
 3. **CP-3 · Prodigy MGE reliability scan ± PositionsLH** (RAL CPU + laptop
    GPU; the single highest-information experiment). n_starts {16, 64, 256} ×
    5 seeds × positions {off, on} → measures p_hit, tests H3.1/H3.2/H4.1
    simultaneously, and effectively decides Gate B's shape before any A100
    time. If positions-on at 64 starts is not reliable on *MGE*, the mesh
    campaign (Phase 5) shrinks to nested-sampling + mesh-family ranking only.
+   Also carries the H3.3 `ell_comps` trapped-lane accounting on every arm
+   (absorbed Mind prompt — see Phase 3 metrics and DECISIONS 2026-08-20).
 4. **CP-4 · slogdet A/B on the AdaptSplit NaN wall** (hours). Expected pass;
    converts Phase 8A from plan to record and sets the gradient-work
    likelihood profile early.
