@@ -28,7 +28,7 @@ expectation · **[CONTRADICTED]** existing evidence pushed back on the brief ·
 | Phase 0(b) blackjax ≥1.6.2 upgrade | **complete** — cloud CPU (PR#143), local venv + RAL stack (2026-08-19, #146) | Cloud: 1.6.2 installs clean next to autofit, `blackjax.nss` 2D smoke PASS, `af.BlackJAXNUTS` unmodified. Local + RAL: 1.5 / 2026-01 fork build → 1.6.2, full smoke PASS in both (now incl. `af.NSS` end-to-end — PR#1492 merged 2026-08-18); RAL library mains re-synced — `phase_00_unblocking/RESULTS.md` |
 | Phase 0(c) RAL artifact harvest | **partial** — stranded local fork-NSS A100 artifacts (mge 2nd run, delaunay, pixelization — the §1.2 canonical rows) committed 2026-08-19; RAL NFS harvest (job 331058 SMC arms, 335003-5 NaN-counter arms, Nautilus pixgrad logs) remains | `phase_00_unblocking/RESULTS.md` |
 | Phase 0(d) commit plan + ledger structure | **complete** | PR#136 + PR#137 (2026-08-18) |
-| Phase 14 default CPU mesh decision | **added 2026-08-21, awaiting adjudication** | autolens_profiling#153 |
+| Phase 14 default CPU mesh decision | **adjudicated + shipped 2026-08-21** — Bilinear (rank-CDF) default, RTU (kernel-CDF) advanced; both meshes explicit in the cells via `--rect-mesh` (PR #155); versioned Bilinear-vs-RTU measurement outstanding | autolens_profiling#153, PyAutoArray#461/#462 |
 | Phase 0(e) searches README dashboard loop | **complete** | PR#139 (2026-08-18): nested-layout scanner, 34 rows render, truth-bar rows verified |
 | Phases 1–13 | not started | — |
 | Gates A–F | open | — |
@@ -668,29 +668,43 @@ JSON under `results/searches/`.
 3. Graphical / hierarchical / EP scaling — from
    `autolens_workspace/scripts/guides/modeling/advanced/{graphical,hierarchical}.py`.
 
-### Phase 14 — Default CPU mesh decision (new-user hazard) [ADDED 2026-08-21]
+### Phase 14 — Default CPU mesh decision (new-user hazard) [ADJUDICATED + SHIPPED 2026-08-21]
 
-- **Question:** The 2026-08-20/21 CPU speed campaign (#151, PyAutoArray#452-#455)
-  made the *expert* Delaunay+AdaptImage fiducial fast on CPU (euclid 4.92 ->
-  1.34 s/eval) — but the **default** mesh (RectangularAdaptDensity) remains
-  CPU-slow: its kernel-CDF transform is O(N^2) erf (55% of a euclid eval, 89%
-  at hst), irreducible for exact values beyond the ~3x windowed-numba kernel.
-  New users on CPU get the slow configuration by default. What should the
-  default be?
-- **Options:** (1) make Delaunay first-class (a no-adapt entry path, e.g.
-  Overlay image mesh, or chained-fit defaults that hide the adapt setup);
-  (2) a simpler/faster Rectangular default on CPU (plain uniform Rectangular,
-  and/or the measured interpolated-CDF forward: K=8192 -> dlnL <= +4e-3
-  absolute / <= 2e-3 differential, 18-55x on the step); (3) backend-dependent
-  defaults (adaptive Rectangular stays default on JAX/GPU where the transform
-  costs ~ms — full hst eval 57.6 ms on A100 — with a cheaper CPU default or
-  resolution guardrails on `use_jax=False`).
-- **Evidence:** autolens_profiling#153 (the intake, with all measurements);
-  PyAutoMind `draft/feature/autoarray/numba_cpu_likelihood_kernel_cdf_fast_path.md`.
-- **Hardware / cost:** **S** — a decision + small config/docs slices; the
-  engineering options are all measured and small once adjudicated.
-- **Depends:** none (schedulable at any gate); interacts with Phase 11's
-  frozen recommended configuration, so decide no later than Phase 11.
+- **Decision (2026-08-21, human-adjudicated):** option (2), in the
+  "resurrect the empirical rank-CDF transform" form. The rectangular
+  adaptive mesh family is split (PyAutoArray#461/#462, merged):
+  `RectangularBilinearAdaptDensity` / `RectangularBilinearAdaptImage`
+  (empirical rank-CDF — sort + cumsum, O(N log N), no hyperparameters)
+  are the workspace default **everywhere, including interferometer**
+  (autolens_workspace#495, autogalaxy_workspace#221, merged; no normal
+  workspace uses RTU); `RectangularRTUAdaptDensity` /
+  `RectangularRTUAdaptImage` (kernel-CDF, Enzi et al. arXiv:2606.30620)
+  are the documented advanced option — required for gradient-based (JAX)
+  samplers at os_pix=1 and on the interferometer sparse path, recommended
+  on GPU. The interpolated-kernel-CDF forward (K=8192 -> dlnL <= +4e-3,
+  18-55x on the step) was deliberately NOT used for the default (still a
+  bandwidth hyperparameter); it remains #153's lever for speeding up RTU
+  itself, if still wanted now that the CPU default is rank-CDF.
+- **Both meshes are explicit in this repo's cells** (PR #155, merged):
+  `--rect-mesh {bilinear,rtu}` on the rectangular likelihood_runtime /
+  likelihood_breakdown / parallel_scaling cells via
+  `_profile_cli.rect_mesh_classes`, with `rect_mesh` embedded in result
+  JSONs and `_rtu`-suffixed result files; `--rect-mesh rtu` reproduces the
+  pre-split kernel-CDF behaviour, so pre-split recorded numbers stay
+  comparable. The sampler benchmark surfaces (misc/searches `_setup.py`,
+  nautilus / multi_start_prodigy cells) stay pinned to RTU — gradient
+  searches need the kernel-CDF mesh and the recorded truth bars remain
+  valid.
+- **Outstanding:** the versioned Bilinear-vs-RTU CPU measurement in the
+  `pixelization_numba` cells (one run each of `--rect-mesh bilinear` /
+  `--rect-mesh rtu`), recording the erf-sum elimination (kernel-CDF was
+  55% of a euclid eval, 89% at hst, post-#458).
+- **Original question / options / evidence:** autolens_profiling#153 (the
+  intake, with all measurements and the 2026-08-21 adjudication comment);
+  options were (1) Delaunay first-class, (2) simpler/faster Rectangular
+  default, (3) backend-dependent defaults.
+- **Depends:** resolved before Phase 11's frozen recommended configuration,
+  as required.
 
 ## 5 · Benchmark & result schema (v2)
 
