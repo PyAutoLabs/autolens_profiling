@@ -82,8 +82,8 @@ from _profile_cli import (  # noqa: E402
     check_pinned,
     device_info_dict,
     parse_profile_cli,
-    rect_mesh_classes,
     record_pinned_check,
+    rect_mesh_classes,
     resolve_output_paths,
 )
 

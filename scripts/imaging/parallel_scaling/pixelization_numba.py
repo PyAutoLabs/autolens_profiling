@@ -207,9 +207,7 @@ if MESH == "rectangular":
     mesh_pixels_yx = 28
     mesh_shape = (mesh_pixels_yx, mesh_pixels_yx)
     n_source_pixels = mesh_pixels_yx * mesh_pixels_yx
-    mesh_label = (
-        f"rectangular_{_cli.rect_mesh}_adapt_density_{mesh_pixels_yx}x{mesh_pixels_yx}"
-    )
+    mesh_label = f"rectangular_{_cli.rect_mesh}_adapt_density_{mesh_pixels_yx}x{mesh_pixels_yx}"
 
     pixelization = al.Pixelization(
         mesh=rect_mesh_classes(_cli)[0](shape=mesh_shape),
