@@ -41,7 +41,7 @@ submit scripts are `hpc/batch_cpu/submit_parallel_scaling_pixelization_numba_euc
   harness deliberately excludes.
 
 > **Fiducial note:** the Findings section below is for the Rectangular
-> (28×28 `RectangularAdaptDensity`) fiducial. The production campaign fiducial
+> (28×28 `RectangularBilinearAdaptDensity`) fiducial. The production campaign fiducial
 > is Delaunay + Hilbert-1250 image-mesh (the `delaunay_numba` runtime/breakdown
 > cells): run it with `--mesh delaunay` (artifacts land as
 > `delaunay_numba_scaling_<instrument>`). First Delaunay pass (euclid, 4-core
@@ -54,7 +54,7 @@ submit scripts are `hpc/batch_cpu/submit_parallel_scaling_pixelization_numba_euc
 
 ## Findings — first pass, 2026-08-20 (v2026.8.17.1, local 8-core WSL box)
 
-Fiducial: 28×28 `RectangularAdaptDensity` + `Constant` reg, MGE-60 linear lens
+Fiducial: 28×28 `RectangularBilinearAdaptDensity` + `Constant` reg, MGE-60 linear lens
 light, mask 3.5". Full JSONs under `results/{runtime,breakdown,parallel_scaling}/imaging/`.
 
 **Per-evaluation cost** (`likelihood_runtime` cell):

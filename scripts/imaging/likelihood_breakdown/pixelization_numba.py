@@ -88,6 +88,7 @@ from _profile_cli import (  # noqa: E402
     device_info_dict,
     parse_profile_cli,
     record_pinned_check,
+    rect_mesh_classes,
     resolve_output_paths,
 )
 
@@ -169,7 +170,7 @@ shear.gamma_2 = af.GaussianPrior(mean=0.05, sigma=0.005)
 lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
 
 pixelization = al.Pixelization(
-    mesh=al.mesh.RectangularAdaptDensity(shape=mesh_shape),
+    mesh=rect_mesh_classes(_cli)[0](shape=mesh_shape),
     regularization=al.reg.Constant(coefficient=1.0),
 )
 
@@ -339,6 +340,7 @@ breakdown_summary = {
         "image_pixels_masked": int(n_image_pixels),
         "over_sampled_pixels": int(n_over_sampled_pixels),
         "mesh_shape": list(mesh_shape),
+        "rect_mesh": _cli.rect_mesh,
         "source_pixels": int(n_source_pixels),
         "inversion_path": "sparse_numba",
         "use_jax": False,

@@ -93,6 +93,7 @@ from _profile_cli import (  # noqa: E402
     auto_simulate_if_missing,
     device_info_dict,
     parse_profile_cli,
+    rect_mesh_classes,
     resolve_output_paths,
 )
 
@@ -270,12 +271,12 @@ with timer.section("model_build"):
 
     lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
 
-    # ``RectangularAdaptImage`` weights mesh pixels by the lensed-source
+    # ``RectangularBilinearAdaptImage`` weights mesh pixels by the lensed-source
     # adapt image — the production-grade alternative to the coordinate-
-    # density-only ``RectangularAdaptDensity``. Adapt image is loaded /
+    # density-only ``RectangularBilinearAdaptDensity``. Adapt image is loaded /
     # cached below; the same shape and regularization are kept.
     pixelization = al.Pixelization(
-        mesh=al.mesh.RectangularAdaptImage(shape=mesh_shape, weight_power=1.0, weight_floor=0.0),
+        mesh=rect_mesh_classes(_cli)[1](shape=mesh_shape, weight_power=1.0, weight_floor=0.0),
         regularization=al.reg.Constant(coefficient=1.0),
     )
 
@@ -324,7 +325,7 @@ print(f"  Source pixels:           {n_source_pixels}")
 
 # ---------------------------------------------------------------------------
 # 4. Adapt image — PSF-convolved lensed-source image used by
-#    ``RectangularAdaptImage`` to weight mesh pixels.
+#    ``RectangularBilinearAdaptImage`` to weight mesh pixels.
 # ---------------------------------------------------------------------------
 
 print("\n--- Adapt image (lensed source) ---")
@@ -557,7 +558,7 @@ print("\n--- Step 6: Interpolation + Mapper ---")
 pixelization_obj = instance.galaxies.source.pixelization
 
 with timer.section("interpolation_and_mapper"):
-    # ``RectangularAdaptImage.interpolator_from`` consumes ``adapt_data`` to
+    # ``RectangularBilinearAdaptImage.interpolator_from`` consumes ``adapt_data`` to
     # build the per-pixel weight map; pass the lensed-source image through.
     interpolator = pixelization_obj.mesh.interpolator_from(
         source_plane_data_grid=relocated_grid,
@@ -973,6 +974,7 @@ breakdown_summary = {
         "image_pixels_masked": int(n_image_pixels),
         "over_sampled_pixels": int(n_over_sampled_pixels),
         "mesh_shape": list(mesh_shape),
+        "rect_mesh": _cli.rect_mesh,
         "source_pixels": int(n_source_pixels),
         "inversion_path": "sparse" if _cli.use_sparse_operator else "dense",
     },

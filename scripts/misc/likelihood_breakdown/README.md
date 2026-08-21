@@ -91,7 +91,7 @@ If, on the other hand, the two numbers agree closely, the per-step bars are a fa
 | Script | Dataset class | Source model | Notes |
 |--------|--------------|--------------|-------|
 | `imaging/mge.py` | Imaging | MGE linear bulge | Linear MGE source; 8-step pipeline. |
-| `imaging/pixelization.py` | Imaging | RectangularAdaptImage | 13-step pipeline incl. mesh + regularisation. |
+| `imaging/pixelization.py` | Imaging | RectangularBilinearAdaptImage (`--rect-mesh rtu` for the RTU variant) | 13-step pipeline incl. mesh + regularisation. |
 | `imaging/delaunay.py` | Imaging | DelaunayBrightnessImage | 13-step pipeline; Hilbert-curve mesh. |
 | `interferometer/delaunay.py` | Interferometer | DelaunayBrightnessImage + sparse-DFT | 11-step pipeline. The transform-mapping-matrix step is the interferometer-specific replacement for imaging's PSF convolution. |
 | `datacube/delaunay.py` | Datacube | DelaunayBrightnessImage × N channels | 8-step pipeline. Channel-invariant steps profiled once; channel-variant steps profiled on channel 0 and multiplied by `N_channels` for the cube cost. |

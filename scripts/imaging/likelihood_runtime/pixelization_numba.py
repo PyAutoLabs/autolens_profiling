@@ -21,7 +21,8 @@ Timed quantities:
 
 The model mirrors the production CPU-fast fiducial: MGE-60 lens light (linear,
 held at prior medians), Isothermal + shear mass, and a rectangular
-``RectangularAdaptDensity`` source pixelization with constant regularization
+``RectangularBilinearAdaptDensity`` source pixelization with constant regularization
+(or ``RectangularRTUAdaptDensity`` via ``--rect-mesh rtu`` — PyAutoArray#462 split)
 (the workspace example's mesh; 28x28 = 784 source pixels).
 
 Notes:
@@ -82,6 +83,7 @@ from _profile_cli import (  # noqa: E402
     device_info_dict,
     parse_profile_cli,
     record_pinned_check,
+    rect_mesh_classes,
     resolve_output_paths,
 )
 
@@ -211,7 +213,7 @@ with timer.section("model_build"):
     lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
 
     pixelization = al.Pixelization(
-        mesh=al.mesh.RectangularAdaptDensity(shape=mesh_shape),
+        mesh=rect_mesh_classes(_cli)[0](shape=mesh_shape),
         regularization=al.reg.Constant(coefficient=1.0),
     )
 
@@ -324,6 +326,7 @@ likelihood_summary = {
         "image_pixels_masked": int(n_image_pixels),
         "over_sampled_pixels": int(n_over_sampled_pixels),
         "mesh_shape": list(mesh_shape),
+        "rect_mesh": _cli.rect_mesh,
         "source_pixels": int(n_source_pixels),
         "inversion_path": "sparse_numba",
         "use_jax": False,

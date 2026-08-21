@@ -77,10 +77,10 @@ Empirical effect: mp on CPU consistently helps 7 – 23 %. On GPU it's more vari
 | Script | Dataset class | Source model |
 |--------|--------------|--------------|
 | `imaging/mge.py` | Imaging | MGE linear bulge |
-| `imaging/pixelization.py` | Imaging | RectangularAdaptImage |
+| `imaging/pixelization.py` | Imaging | RectangularBilinearAdaptImage (`--rect-mesh rtu` for the kernel-CDF RTU variant) |
 | `imaging/delaunay.py` | Imaging | DelaunayBrightnessImage |
 | `interferometer/mge.py` | Interferometer | MGE linear bulge; `TransformerNUFFT` (nufftax) default, `--use-dft` opt-in |
-| `interferometer/pixelization.py` | Interferometer | RectangularAdaptImage + `apply_sparse_operator(use_jax=True)` |
+| `interferometer/pixelization.py` | Interferometer | RectangularBilinearAdaptImage (`--rect-mesh rtu` available) + `apply_sparse_operator(use_jax=True)` |
 | `interferometer/delaunay.py` | Interferometer | DelaunayBrightnessImage + `apply_sparse_operator(use_jax=True)` |
 | `datacube/delaunay.py` | Datacube (34-channel cube) | DelaunayBrightnessImage per channel, shared lens model |
 | `point_source/image_plane.py` | Point source | Image-plane χ² via `PointSolver` |

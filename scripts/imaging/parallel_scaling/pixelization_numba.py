@@ -51,7 +51,8 @@ Output
 ------
 ``results/parallel_scaling/imaging/pixelization_numba_scaling_<instrument>_v<version>.{json,png}``
 
-``--mesh`` selects the fiducial: ``rectangular`` (28x28 ``RectangularAdaptDensity``,
+``--mesh`` selects the fiducial: ``rectangular`` (28x28 adaptive rectangular —
+``RectangularBilinearAdaptDensity`` by default, ``--rect-mesh rtu`` for the kernel-CDF variant,
 the ``pixelization_numba`` siblings) or ``delaunay`` (Hilbert-1250 Delaunay +
 ConstantSplit, the ``delaunay_numba`` siblings — the production campaign
 fiducial; artifacts are written as ``delaunay_numba_scaling_<instrument>``).
@@ -105,6 +106,7 @@ from _profile_cli import (  # noqa: E402
     auto_simulate_if_missing,
     device_info_dict,
     parse_profile_cli,
+    rect_mesh_classes,
     resolve_output_paths,
 )
 
@@ -205,10 +207,10 @@ if MESH == "rectangular":
     mesh_pixels_yx = 28
     mesh_shape = (mesh_pixels_yx, mesh_pixels_yx)
     n_source_pixels = mesh_pixels_yx * mesh_pixels_yx
-    mesh_label = f"rectangular_adapt_density_{mesh_pixels_yx}x{mesh_pixels_yx}"
+    mesh_label = f"rectangular_{_cli.rect_mesh}_adapt_density_{mesh_pixels_yx}x{mesh_pixels_yx}"
 
     pixelization = al.Pixelization(
-        mesh=al.mesh.RectangularAdaptDensity(shape=mesh_shape),
+        mesh=rect_mesh_classes(_cli)[0](shape=mesh_shape),
         regularization=al.reg.Constant(coefficient=1.0),
     )
 else:
