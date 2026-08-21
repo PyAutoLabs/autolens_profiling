@@ -28,6 +28,7 @@ expectation · **[CONTRADICTED]** existing evidence pushed back on the brief ·
 | Phase 0(b) blackjax ≥1.6.2 upgrade | **complete** — cloud CPU (PR#143), local venv + RAL stack (2026-08-19, #146) | Cloud: 1.6.2 installs clean next to autofit, `blackjax.nss` 2D smoke PASS, `af.BlackJAXNUTS` unmodified. Local + RAL: 1.5 / 2026-01 fork build → 1.6.2, full smoke PASS in both (now incl. `af.NSS` end-to-end — PR#1492 merged 2026-08-18); RAL library mains re-synced — `phase_00_unblocking/RESULTS.md` |
 | Phase 0(c) RAL artifact harvest | **partial** — stranded local fork-NSS A100 artifacts (mge 2nd run, delaunay, pixelization — the §1.2 canonical rows) committed 2026-08-19; RAL NFS harvest (job 331058 SMC arms, 335003-5 NaN-counter arms, Nautilus pixgrad logs) remains | `phase_00_unblocking/RESULTS.md` |
 | Phase 0(d) commit plan + ledger structure | **complete** | PR#136 + PR#137 (2026-08-18) |
+| Phase 14 default CPU mesh decision | **added 2026-08-21, awaiting adjudication** | autolens_profiling#153 |
 | Phase 0(e) searches README dashboard loop | **complete** | PR#139 (2026-08-18): nested-layout scanner, 34 rows render, truth-bar rows verified |
 | Phases 1–13 | not started | — |
 | Gates A–F | open | — |
@@ -666,6 +667,30 @@ JSON under `results/searches/`.
    staged morphology problems instead.
 3. Graphical / hierarchical / EP scaling — from
    `autolens_workspace/scripts/guides/modeling/advanced/{graphical,hierarchical}.py`.
+
+### Phase 14 — Default CPU mesh decision (new-user hazard) [ADDED 2026-08-21]
+
+- **Question:** The 2026-08-20/21 CPU speed campaign (#151, PyAutoArray#452-#455)
+  made the *expert* Delaunay+AdaptImage fiducial fast on CPU (euclid 4.92 ->
+  1.34 s/eval) — but the **default** mesh (RectangularAdaptDensity) remains
+  CPU-slow: its kernel-CDF transform is O(N^2) erf (55% of a euclid eval, 89%
+  at hst), irreducible for exact values beyond the ~3x windowed-numba kernel.
+  New users on CPU get the slow configuration by default. What should the
+  default be?
+- **Options:** (1) make Delaunay first-class (a no-adapt entry path, e.g.
+  Overlay image mesh, or chained-fit defaults that hide the adapt setup);
+  (2) a simpler/faster Rectangular default on CPU (plain uniform Rectangular,
+  and/or the measured interpolated-CDF forward: K=8192 -> dlnL <= +4e-3
+  absolute / <= 2e-3 differential, 18-55x on the step); (3) backend-dependent
+  defaults (adaptive Rectangular stays default on JAX/GPU where the transform
+  costs ~ms — full hst eval 57.6 ms on A100 — with a cheaper CPU default or
+  resolution guardrails on `use_jax=False`).
+- **Evidence:** autolens_profiling#153 (the intake, with all measurements);
+  PyAutoMind `draft/feature/autoarray/numba_cpu_likelihood_kernel_cdf_fast_path.md`.
+- **Hardware / cost:** **S** — a decision + small config/docs slices; the
+  engineering options are all measured and small once adjudicated.
+- **Depends:** none (schedulable at any gate); interacts with Phase 11's
+  frozen recommended configuration, so decide no later than Phase 11.
 
 ## 5 · Benchmark & result schema (v2)
 
