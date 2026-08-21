@@ -262,7 +262,7 @@ def simulate(instrument: str = "hst", output_root: Path | None = None) -> Path:
         )
 
     # Lensed source image (PSF-convolved) — used as the ``adapt_image`` by
-    # downstream likelihood scripts that profile ``RectangularAdaptImage`` and
+    # downstream likelihood scripts that profile ``RectangularBilinearAdaptImage`` and
     # ``image_mesh.Hilbert``.
     with timer.section("output_lensed_source"):
         lensed_source_unblurred = tracer.image_2d_list_from(grid=grid)[-1]

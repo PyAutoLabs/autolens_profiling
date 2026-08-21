@@ -36,6 +36,7 @@ class ProfileCLI:
     instrument: str | None
     vmap_probe: bool
     use_sparse_operator: bool
+    rect_mesh: str
 
 
 def parse_profile_cli(default_config_name: str | None = None) -> ProfileCLI:
@@ -122,6 +123,25 @@ def parse_profile_cli(default_config_name: str | None = None) -> ProfileCLI:
         ),
     )
 
+    parser.add_argument(
+        "--rect-mesh",
+        choices=("bilinear", "rtu"),
+        default="bilinear",
+        help=(
+            "Which adaptive rectangular mesh family the cell profiles "
+            "(PyAutoArray#462 split): 'bilinear' — "
+            "RectangularBilinearAdaptDensity/AdaptImage, the empirical "
+            "rank-CDF workspace default and CPU-speed campaign target — or "
+            "'rtu' — RectangularRTUAdaptDensity/AdaptImage, the kernel-CDF "
+            "advanced/GPU/gradient meshes (the pre-split behaviour, so "
+            "'--rect-mesh rtu' reproduces pre-split recorded results). "
+            "Cells that read this flag resolve the classes via "
+            "``rect_mesh_classes`` and embed ``rect_mesh`` in the result "
+            "JSON; '_rtu' is appended to the output basename so the two "
+            "families' results never clobber each other."
+        ),
+    )
+
     args, _unknown = parser.parse_known_args()
     config_name = args.config_name or default_config_name
     output_dir = Path(args.output_dir).resolve() if args.output_dir else None
@@ -132,6 +152,26 @@ def parse_profile_cli(default_config_name: str | None = None) -> ProfileCLI:
         instrument=args.instrument,
         vmap_probe=bool(args.vmap_probe),
         use_sparse_operator=bool(args.sparse),
+        rect_mesh=args.rect_mesh,
+    )
+
+
+def rect_mesh_classes(cli: ProfileCLI):
+    """Resolve the explicit adaptive rectangular mesh classes for this run.
+
+    Returns ``(density_cls, image_cls)`` for ``cli.rect_mesh``:
+    ``RectangularBilinearAdaptDensity/AdaptImage`` (rank-CDF, the workspace
+    default) or ``RectangularRTUAdaptDensity/AdaptImage`` (kernel-CDF, the
+    pre-split behaviour). Imports autolens lazily so ``_profile_cli`` stays
+    importable without the modelling stack.
+    """
+    import autolens as al
+
+    if cli.rect_mesh == "rtu":
+        return al.mesh.RectangularRTUAdaptDensity, al.mesh.RectangularRTUAdaptImage
+    return (
+        al.mesh.RectangularBilinearAdaptDensity,
+        al.mesh.RectangularBilinearAdaptImage,
     )
 
 
@@ -211,6 +251,10 @@ def resolve_output_paths(
         basename = f"{cell}_{cli.config_name}"
     if cli.use_sparse_operator:
         basename = f"{basename}_sparse"
+    if cli.rect_mesh == "rtu":
+        # Keep the two rectangular-mesh families' results disjoint; the
+        # bilinear default keeps the unsuffixed (pre-split) filenames.
+        basename = f"{basename}_rtu"
     return results_dir / f"{basename}.json", results_dir / f"{basename}.png"
 
 

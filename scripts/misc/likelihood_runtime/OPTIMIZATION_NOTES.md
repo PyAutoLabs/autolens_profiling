@@ -100,7 +100,7 @@ A "—" entry means the row failed or wasn't run; see the cell's notes.
 ---
 
 ## imaging/pixelization
-*Rectangular `RectangularAdaptImage` mesh + Constant regularization. 35×35
+*Rectangular `RectangularRTUAdaptImage` (kernel-CDF; measured pre-split as `RectangularAdaptImage`) mesh + Constant regularization. 35×35
 source pixels = 1225 source mesh nodes. Default HST-resolution dataset
 (0.05″/px, mask radius 3.5″, 15 361 masked pixels, 17 980 over-sampled).*
 

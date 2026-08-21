@@ -104,6 +104,7 @@ from _profile_cli import (
     check_pinned,
     device_info_dict,
     parse_profile_cli,
+    rect_mesh_classes,
     record_pinned_check,  # noqa: E402
     resolve_output_paths,
 )
@@ -260,7 +261,7 @@ with timer.section("model_build"):
 
     pixelization = af.Model(
         al.Pixelization,
-        mesh=al.mesh.RectangularAdaptImage(shape=mesh_shape, weight_power=1.0, weight_floor=0.0),
+        mesh=rect_mesh_classes(_cli)[1](shape=mesh_shape, weight_power=1.0, weight_floor=0.0),
         regularization=al.reg.Constant(coefficient=regularization_coefficient),
     )
 
@@ -309,7 +310,7 @@ print(f"  Source pixels:           {n_source_pixels}")
 print(f"  Reg. coefficient:        {regularization_coefficient}")
 
 # ---------------------------------------------------------------------------
-# 4b. Adapt image — drives ``RectangularAdaptImage`` mesh weighting
+# 4b. Adapt image — drives ``RectangularBilinearAdaptImage`` mesh weighting
 # ---------------------------------------------------------------------------
 
 print("\n--- Adapt image (lensed source) ---")
@@ -561,6 +562,7 @@ likelihood_summary = {
         "real_space_shape": list(real_space_shape),
         "visibilities": int(n_visibilities),
         "mesh_shape": list(mesh_shape),
+        "rect_mesh": _cli.rect_mesh,
         "source_pixels": int(n_source_pixels),
         "regularization_coefficient": regularization_coefficient,
     },

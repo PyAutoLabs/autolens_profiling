@@ -95,6 +95,7 @@ from _profile_cli import (
     check_pinned,
     device_info_dict,
     parse_profile_cli,
+    rect_mesh_classes,
     record_pinned_check,  # noqa: E402
     resolve_output_paths,
 )
@@ -275,12 +276,12 @@ with timer.section("model_build"):
 
     lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
 
-    # ``RectangularAdaptImage`` weights mesh pixels by the lensed-source
+    # ``RectangularBilinearAdaptImage`` weights mesh pixels by the lensed-source
     # adapt image — the production-grade alternative to the coordinate-
-    # density-only ``RectangularAdaptDensity``. Adapt image is loaded /
+    # density-only ``RectangularBilinearAdaptDensity``. Adapt image is loaded /
     # cached below; the same shape and regularization are kept.
     pixelization = al.Pixelization(
-        mesh=al.mesh.RectangularAdaptImage(shape=mesh_shape, weight_power=1.0, weight_floor=0.0),
+        mesh=rect_mesh_classes(_cli)[1](shape=mesh_shape, weight_power=1.0, weight_floor=0.0),
         regularization=al.reg.Constant(coefficient=1.0),
     )
 
@@ -329,7 +330,7 @@ print(f"  Source pixels:           {n_source_pixels}")
 
 # ---------------------------------------------------------------------------
 # 4. Adapt image — PSF-convolved lensed-source image used by
-#    ``RectangularAdaptImage`` to weight mesh pixels. Loads ``lensed_source.fits``
+#    ``RectangularBilinearAdaptImage`` to weight mesh pixels. Loads ``lensed_source.fits``
 #    from the dataset directory if present, otherwise computes it from the
 #    truth tracer and caches the file for sibling scripts on the same
 #    instrument.
@@ -421,6 +422,7 @@ _early_summary = {
         "image_pixels_masked": int(n_image_pixels),
         "over_sampled_pixels": int(n_over_sampled_pixels),
         "mesh_shape": list(mesh_shape),
+        "rect_mesh": _cli.rect_mesh,
         "source_pixels": int(n_source_pixels),
         "inversion_path": "sparse" if _cli.use_sparse_operator else "dense",
     },
@@ -626,6 +628,7 @@ likelihood_summary = {
         "image_pixels_masked": int(n_image_pixels),
         "over_sampled_pixels": int(n_over_sampled_pixels),
         "mesh_shape": list(mesh_shape),
+        "rect_mesh": _cli.rect_mesh,
         "source_pixels": int(n_source_pixels),
         "inversion_path": "sparse" if _cli.use_sparse_operator else "dense",
     },
@@ -654,7 +657,7 @@ print(f"  Bar chart path:        {chart_path} (no per-step chart in runtime vari
 # Regression assertion — realistic-scale deterministic log-evidence
 # ===================================================================
 #
-# RectangularAdaptImage at prior medians anchors the regression on the
+# RectangularBilinearAdaptImage at prior medians anchors the regression on the
 # *eager* FitImaging value (deterministic to fp64 noise). The full-pipeline
 # single-JIT / vmap paths agree with eager to ~1e-3 only: adaptive mesh
 # weighting amplifies fp accumulation in Cholesky / log_det on the bigger
