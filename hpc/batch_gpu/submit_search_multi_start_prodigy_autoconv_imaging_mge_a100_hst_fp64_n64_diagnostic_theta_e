@@ -1,0 +1,121 @@
+#!/bin/bash -l
+#
+# ############################################################################
+# ##  DIAGNOSTIC ARM — TARGET-CHANGING.  RUN LAST.  NOT A CAMPAIGN ROW.     ##
+# ############################################################################
+#
+# Inference programme CP-3 / Phase 3 — MultiStartProdigy MGE reliability scan,
+# WAVE 1 (positions-OFF), DIAGNOSTIC arm: theta_E prior U(0.2, 8).
+#
+# WHAT MAKES THIS DIAGNOSTIC
+#   The lens mass's einstein_radius prior is moved from its config default
+#   Uniform(0.0, 8.0) to Uniform(0.2, 8.0). That is a **target_class 3**
+#   (target-changing) modification in the programme's smoothing taxonomy
+#   (PROGRAMME.md §3), so it has a different target_id by construction and its
+#   rows must NEVER be pooled with the n16/n64/n256 arms, quoted as a p_hit
+#   measurement, or presented as a numerical fix (Gate F). It answers exactly
+#   one mechanism question, pre-registered in Phase 3's Arms list:
+#
+#     does lifting the lower wall off theta_E = 0 — where the degenerate
+#     "no lens" basin sits pressed against the prior box — recover seed 1?
+#
+#   Seed 1 is the recorded failure: MultiStartProdigy 16x3000 fp64 landed at
+#   max logL -139,485.8, i.e. 171,272 nats from the truth bar, in that basin
+#   (PROGRAMME.md §1.2). Clipping and per-parameter step scaling were both
+#   tested against it and neither rescued it.
+#
+#   Run this AFTER the three campaign tiers have completed, so the campaign's
+#   own numbers exist before anyone looks at a target-changed run.
+#
+# ARM
+#   cell        searches/multi_start_prodigy_autoconv/imaging/mge x hst x fp64
+#   n_starts    64          (the campaign's middle tier, for comparability of
+#                            MECHANISM — not of measurement)
+#   n_steps     3000 (CEILING — auto-convergence ON; stop_reason recorded)
+#   seeds       0..4, one per SLURM array task
+#   clipper     prior_box   scaler none   momentum no reset
+#   positions   OFF (wave 1)
+#   prior       galaxies.lens.mass.einstein_radius = Uniform(0.2, 8.0)
+#
+# HYPOTHESES
+#   H3.1 (the null: the limitation is basin discovery, not bound handling) is
+#   what this arm probes most directly — if removing the wall's intersection
+#   with the degenerate basin restores seed 1, the failure is boundary-coupled;
+#   if it does not, the theta_E=0 attractor is intrinsic. H3.3's trapped-lane
+#   accounting is carried here as on every arm (raw counts, no verdicts).
+#
+# ESTIMATED WALL (A100 fp64, warm compile cache)
+#   Same shape as the n64 campaign tier: ~0.19 s/step at 64 lanes -> ~570 s at
+#   the 3000-step ceiling, + ~2.5 min compile => ~12 min per array task,
+#   ~1.0 h for the arm.
+#
+# DEPENDENCY — READ BEFORE SUBMITTING
+#   Requires **PyAutoFit >= PR#1515** (branch feature/multistart-per-lane-best)
+#   on the RAL PYTHONPATH checkout — the per-lane best records
+#   (lane_best_params / lane_best_foms / lane_best_steps) in search_internal.
+#   Run `HPCPullPyAuto` and confirm RAL's PyAutoFit main contains the merge
+#   first; an older PyAutoFit completes the fit but writes
+#   `diagnostics.valid: false` and the arm is unusable.
+#
+# RESULTS ISOLATION
+#   Writes into a separate `diagnostic_theta_e/` results directory so a
+#   target-changed row cannot be swept into the campaign's table by a glob.
+#   The results JSON additionally carries a `target_override` block recording
+#   the prior before and after, and target_class 3.
+
+#SBATCH -J cp3_prodigy_mge_n64_diag
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=2:00:00
+#SBATCH --array=0-4
+#SBATCH -o output/output.%A_%a.out
+#SBATCH -e error/error.%A_%a.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_profiling
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+SEEDS=(0 1 2 3 4)
+SEED=${SEEDS[$SLURM_ARRAY_TASK_ID]}
+N_STARTS=64
+
+export SEARCHES_N_STARTS=$N_STARTS
+export SEARCHES_N_STEPS=3000
+export SEARCHES_SEED=$SEED
+export SEARCHES_CLIPPER=prior_box
+export SEARCHES_SCALER=none
+export SEARCHES_DISABLE_VIZ=1
+
+# THE target change. The runner prints a banner and records a target_override
+# block whenever this is set; unset, the cell is an ordinary campaign arm.
+export SEARCHES_DIAGNOSTIC_THETA_E_PRIOR="0.2,8.0"
+
+nvidia-smi
+
+echo "=========================================="
+date
+echo "Cell:       searches/multi_start_prodigy_autoconv/imaging/mge"
+echo "Instrument: hst"
+echo "Precision:  fp64"
+echo "Arm:        DIAGNOSTIC (target_class 3) theta_E ~ U(0.2, 8.0)"
+echo "            n_starts=$N_STARTS  seed=$SEED  clipper=prior_box  positions=off"
+
+cd $AP_ROOT
+python3 scripts/imaging/searches/multi_start_prodigy_autoconv/mge.py \
+    --instrument hst \
+    --config-name hpc_a100_fp64_n${N_STARTS}_seed${SEED}_diag_theta_e \
+    --output-dir $AP_ROOT/results/searches/multi_start_prodigy_autoconv/imaging/mge/hst/diagnostic_theta_e
+
+echo "Finished."
+date
