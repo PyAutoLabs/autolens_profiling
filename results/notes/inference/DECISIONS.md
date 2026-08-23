@@ -206,3 +206,43 @@ measurement in the `pixelization_numba` cells (`--rect-mesh bilinear` /
 **Records:** PROGRAMME.md §Phase 14 + status table (this commit);
 adjudication comment on #153; Mind task rectangular-bilinear-rtu-mesh-split
 (PyAutoArray#461).
+
+---
+
+## 2026-08-23 — GATE B part 1 CALLED (human-ratified): MultiStartProdigy(n=256) is a reliable global MAP searcher on MGE, positions-off
+
+**Decision (human, 2026-08-23, on the post-adversarial-review narrowed
+reading; PR #157 merged same day):** Gate B part 1's failure condition
+("no n_starts ≤ 256 gives ≥99% reliability at cost below the
+nested-sampling budget") is **NOT met**. MultiStartProdigy — n_starts=256,
+clip=prior_box, no scaler, auto-convergence on, positions OFF — is
+ratified as a global MAP searcher for the MGE-class parametric cell.
+
+**Evidence (CP-3 wave 1 + adversarial review, both in
+`phase_03_prodigy_reliability/`):** p̂_hit = 0.048 CP95 [0.037, 0.061]
+(lower bound; budget/detector-conditional; n256 tier = ~1,280 distinct
+draws). Demonstrated reliability ≥99.0% at the joint-95% worst case over
+p-uncertainty and the largest within-run lane correlation the data cannot
+exclude (ρ ≤ 0.0057); ≥99.99% under independence. 5/5 seeds succeeded at
+n=256 in 172–225 s vs the recorded Nautilus A100 sampler wall of 772.7 s
+(3.4–4.5×; second recorded baseline 523 s unreconciled — re-baseline
+running). Zero parameter-recovery impostors across all 80 hit lanes
+(θ_E spread 0.014%).
+
+**Scope limits carried with the call (RESULTS.md caveats (a)–(h)):**
+demonstrated at n=256 ONLY (no smaller n reaches 99% at 95% confidence;
+n128 fresh-seed tier queued); single cell (imaging/mge/hst), single tier
+(A100 fp64), positions-off; MAP-only — nested sampling retains posterior
++ evidence duty; p̂ conditional on the stop rule; compile not split;
+`target_id`/Phase-1 tolerance infrastructure still missing;
+`likelihood_evals` field wrong for MultiStart artifacts.
+
+**Gate B part 2 (PositionsLH) remains open** — Phase 4 plumbing not
+built. The θ_E~U(0.2,8) diagnostic was uninformative for H3.1 (original
+tripling claim withdrawn on adversarial review — see
+`ADVERSARIAL_REVIEW.md`).
+
+**Records:** phase_03 RESULTS.md + ADVERSARIAL_REVIEW.md (PR #157);
+PROGRAMME.md phase/gate table (this commit); overnight strengthening
+jobs 339065-339073 (n128 fresh seeds, n256 extra seeds, Nautilus
+re-baselines) submitted before the call and noted here for the record.
