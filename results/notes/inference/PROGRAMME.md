@@ -29,7 +29,7 @@ expectation · **[CONTRADICTED]** existing evidence pushed back on the brief ·
 | Phase 0(c) RAL artifact harvest | **complete** — local fork-NSS A100 artifacts committed (PR#147); RAL NFS harvest pulled 2026-08-19 (#149): job 331058 all four SMC arms (bridge validated: warm logZ within ±0.8 nats of the Nautilus bar; cold arm −179k with "Converged: yes"), 335003-5 NaN-counter arms, wsdev Nautilus pixgrad baselines | `phase_00_unblocking/RESULTS.md` + `phase_00_unblocking/ral_harvest/` |
 | Phase 0(d) commit plan + ledger structure | **complete** | PR#136 + PR#137 (2026-08-18) |
 | Phase 0(e) searches README dashboard loop | **complete** | PR#139 (2026-08-18): nested-layout scanner, 34 rows render, truth-bar rows verified |
-| Phase 2 NSS mainline re-tune | **entry in progress** — framework wiring + CP-2 GPU MGE smoke (#149, 2026-08-19/20); scan + Gate A pending | `phase_02_nss_mainline/RESULTS.md` |
+| Phase 2 NSS mainline re-tune | **entry complete (CP-2 ✅ 2026-08-23)** — wiring + laptop smoke + A100 anchor row: mainline matches the fork answer at fork knobs (max logL 31786.62, logZ bias +8.4 persists at inner=5 per H2.1) but is ~1.35× slower sampler-wall; scan + Gate A pending | `phase_02_nss_mainline/RESULTS.md` |
 | Phases 1, 3–13 | not started | — |
 | Gates A–F | open | — |
 
@@ -847,15 +847,16 @@ Maximum information before large A100 commitment — strictly ordered:
 2. **CP-2 · blackjax 1.6.2 upgrade + mainline NSS smoke on MGE** (~1 day,
    laptop GPU). Establishes whether Phase 2 is a tuning exercise or an
    integration project.
-   **✅ Environment half COMPLETE — all four environments (cloud, local
-   venv, local GPU venv, RAL) on 1.6.2 with the full smoke (incl. `af.NSS`
-   end-to-end) passing; `af.NSS` re-mainlined (PyAutoFit PR#1492, merged
-   2026-08-18). GPU half: laptop mechanics VALIDATED 2026-08-20 (launches/
-   jits/samples the production MGE cell; 6 GB cards need `chunk_size`;
-   fp64 wall infeasible on GeForce 1:32) — the A100 anchor row at
-   identical fork-era knobs is the remaining artifact
-   (`hpc/batch_gpu/submit_search_nss_imaging_mge_a100_hst_fp64`). See
-   `phase_02_nss_mainline/RESULTS.md`.**
+   **✅ COMPLETE (2026-08-23). Environment: all four environments (cloud,
+   local venv, local GPU venv, RAL) on 1.6.2 with the full smoke (incl.
+   `af.NSS` end-to-end) passing; `af.NSS` re-mainlined (PyAutoFit PR#1492,
+   merged 2026-08-18). GPU: laptop mechanics validated 2026-08-20 (6 GB
+   cards need `chunk_size`; fp64 wall infeasible on GeForce 1:32); A100
+   anchor row at identical fork-era knobs landed 2026-08-23 (RAL job
+   338491) — mainline reproduces the fork answer (max logL 31786.62; logZ
+   bias +8.4 persists at inner=5, per H2.1) at ~1.35× the fork's sampler
+   wall. Verdict: Phase 2 is a tuning exercise, not an integration
+   project. See `phase_02_nss_mainline/RESULTS.md`.**
 3. **CP-3 · Prodigy MGE reliability scan ± PositionsLH** (RAL CPU + laptop
    GPU; the single highest-information experiment). n_starts {16, 64, 256} ×
    5 seeds × positions {off, on} → measures p_hit, tests H3.1/H3.2/H4.1
