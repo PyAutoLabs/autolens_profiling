@@ -1,0 +1,82 @@
+#!/bin/bash -l
+#
+# Inference programme Phase 2 (issue #149) — mainline af.NSS A100 scan,
+# wave 1 arm A: searches/nss/imaging/mge x hst x fp64, inner steps = 30.
+#
+# ARM: n_live 200, num_mcmc_steps 30, num_delete 50, dlogz -3, seed 42,
+#      unchunked (A100 80GB fits the unchunked inner step).
+#      Only num_mcmc_steps moves vs the 2026-08-23 anchor row
+#      (results/searches/nss/imaging/mge/hst/hpc_hpc_a100_fp64.json,
+#      inner=5, sampler wall 839.6 s, logZ 31698.85, max logL 31786.62).
+#
+# HYPOTHESIS [H2.1] (PROGRAMME.md §4 Phase 2): the +8.4-nat logZ bias vs the
+#      Nautilus reference (31690.5) that the anchor row confirmed at inner=5
+#      comes from slice-MCMC under-mixing. Inner steps >= 2d should remove it.
+#      The MGE cell has d = 15 free parameters, so this arm is exactly 2d = 30.
+#      Prediction: logZ falls toward ~31690.5 while max logL stays in the
+#      31786.3-31786.8 band (same best-fit solution, theta_E ~ 1.5998).
+#
+# WALL-TIME ESTIMATE: NSS inner cost is ~linear in num_mcmc_steps, so scale the
+#      anchor's 839.6 s sampler wall by 30/5 = 6x -> ~5038 s, plus ~45 s viz
+#      (5 calls) and ~120 s compile margin -> ~5203 s (~1 h 27 m).
+#      --time is set to ~1.5x that (~2 h 10 m), rounded up to 2:30:00.
+#
+# ARTIFACT ISOLATION: --config-name carries the arm label. It sets BOTH the
+#      results basename (resolve_output_paths in _profile_cli.py) and the
+#      af.NSS search ``name`` (build_nss in scripts/misc/searches/_samplers.py),
+#      so this arm writes hpc_hpc_a100_fp64_inner30.json and fits under its own
+#      output/ directory — it can neither clobber the anchor's JSON nor resume
+#      the anchor's completed fit. (num_mcmc_steps is also an NSS
+#      __identifier_fields__ entry, so the autofit identifier differs too.)
+
+#SBATCH -J search_nss_imaging_mge_hst_fp64_inner30
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=2:30:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_profiling
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+# Phase 2 scan knobs. Every value is stated explicitly (including the ones that
+# match the builder defaults in searches/_samplers.py) so the arm is readable
+# from this file alone and cannot drift if a default changes.
+export SEARCHES_NSS_N_LIVE=200
+export SEARCHES_NSS_NUM_MCMC_STEPS=30
+export SEARCHES_NSS_NUM_DELETE=50
+export SEARCHES_NSS_TERMINATION=-3.0
+export SEARCHES_NSS_SEED=42
+# chunk_size deliberately unset: the A100 80GB runs the unchunked inner step,
+# as the anchor row did. (It is also the one NSS knob absent from
+# __identifier_fields__, so it must never be used to distinguish arms.)
+
+nvidia-smi
+
+echo "=========================================="
+date
+echo "Cell:       searches/nss/imaging/mge"
+echo "Instrument: hst"
+echo "Precision:  fp64"
+echo "Arm:        inner30 (num_mcmc_steps=30 = 2d), H2.1"
+
+cd $AP_ROOT
+python3 scripts/imaging/searches/nss/mge.py \
+    --instrument hst \
+    --config-name hpc_a100_fp64_inner30 \
+    --output-dir $AP_ROOT/results/searches/nss/imaging/mge/hst
+
+echo "Finished."
+date
