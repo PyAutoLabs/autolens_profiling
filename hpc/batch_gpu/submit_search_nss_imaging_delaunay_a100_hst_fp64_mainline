@@ -1,0 +1,110 @@
+#!/bin/bash -l
+#
+# Inference programme Phase 2 (issue #149) — mainline af.NSS PIXELIZED probe:
+# searches/nss/imaging/delaunay x hst x fp64.
+#
+# WHAT THIS IS
+#   Every mainline-blackjax NSS row recorded so far is the MGE cell. This is
+#   the first pixelized (Delaunay-mesh, linear-inversion) NSS row on the
+#   current stack. The fork-era Delaunay row exists — sampler_config
+#   {n_live 150, num_mcmc_steps 5, num_delete 50, chunk_size null,
+#   termination -3.0, seed 42, jax_native true}, v2026.5.21.1, total wall
+#   29,770.4 s (sampler 29,720.5 s, 206,448 evals, 143.96 ms/eval,
+#   logZ 30567.76, max logL 30622.15, 43,557 MiB peak on the 80 GB A100) —
+#   and this script replicates those knobs EXACTLY so the only difference
+#   against that row is the code version. Same intent as the mainline MGE
+#   anchor: make the diff attributable to the stack, not to the config.
+#
+#   The knobs below are the fork row's values written out explicitly rather
+#   than left to the builder defaults, so a later change to
+#   ``n_live_for``/``_NSS_*`` in searches/_samplers.py cannot silently
+#   invalidate the comparison.
+#
+# ARTIFACT ISOLATION — DO NOT CHANGE --config-name TO hpc_a100_fp64
+#   The fork-era artifact for this cell is
+#   results/searches/nss/imaging/delaunay/hst/hpc_hpc_a100_fp64.json, i.e. it
+#   was written from --config-name hpc_a100_fp64. Re-using that config name
+#   here would OVERWRITE the fork-era row — the very baseline this run is
+#   supposed to be compared against — leaving only git history as evidence.
+#   Hence --config-name hpc_a100_fp64_mainline: it writes
+#   hpc_hpc_a100_fp64_mainline.json alongside the preserved fork row, and it
+#   also gives the af search its own ``name``/output directory.
+#
+# WARNING — COMPLETED-FIT RESUME TRAP, CHECK BEFORE SUBMITTING
+#   PyAutoFit resumes (or short-circuits) a search whose output directory
+#   already contains a completed fit with a matching identifier. A fork-era
+#   Delaunay NSS run of these knobs may still exist on RAL under
+#     $AP_ROOT/output/searches/nss/imaging/delaunay/hst/<name>/<identifier>/
+#   and because this arm deliberately replicates the fork knobs EXACTLY, the
+#   NSS identifier (n_live, num_mcmc_steps, num_delete, termination, seed)
+#   is by construction IDENTICAL to the fork run's. The distinct
+#   ``_mainline`` search name is what should keep them apart — but the
+#   submitter MUST confirm it, not assume it:
+#     ls $AP_ROOT/output/searches/nss/imaging/delaunay/hst/
+#   and check there is no hpc_a100_fp64_mainline/ directory carrying a
+#   ``.completed`` marker. If one exists, MOVE IT ASIDE before submitting.
+#   A silent resume would return the fork-era numbers wearing a mainline
+#   label — the single worst outcome this row could produce.
+#
+# ESTIMATED WALL: the fork row took 29,720 s of sampler wall (8 h 15 m) at
+#   143.96 ms/eval. The mainline MGE re-run of a fixed NSS config moved
+#   679 s -> 883 s (+30%) across the same version gap, so budget for the same
+#   drift here: ~29,720 x 1.3 ~= 38,600 s (10 h 44 m) + ~50 s viz + compile.
+#   --time 12:00:00 covers that with ~12% margin and is the longest item in
+#   the overnight queue. If the queue's per-job ceiling is below 12 h, this
+#   row needs splitting or a chunked restart strategy — it does NOT fit in
+#   the 4 h budget the other Phase 2 rows use.
+#
+# VRAM: the fork row peaked at 43,557 MiB of the A100's 81,920 MiB with
+#   chunk_size unset, so chunk_size stays unset here (it is also the one NSS
+#   knob absent from __identifier_fields__ and must never distinguish arms).
+#   Do not co-schedule anything else on the card.
+
+#SBATCH -J search_nss_imaging_delaunay_hst_fp64_mainline
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=12:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_profiling
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+# Fork-row knobs, replicated exactly (read from
+# results/searches/nss/imaging/delaunay/hst/hpc_hpc_a100_fp64.json's
+# sampler_config) so the diff vs its 29,770 s row is code-version only.
+export SEARCHES_NSS_N_LIVE=150
+export SEARCHES_NSS_NUM_MCMC_STEPS=5
+export SEARCHES_NSS_NUM_DELETE=50
+export SEARCHES_NSS_TERMINATION=-3.0
+export SEARCHES_NSS_SEED=42
+
+nvidia-smi
+
+echo "=========================================="
+date
+echo "Cell:       searches/nss/imaging/delaunay"
+echo "Instrument: hst"
+echo "Precision:  fp64"
+echo "Arm:        mainline (n_live=150, inner=5, num_delete=50, dlogz=-3, seed=42)"
+
+cd $AP_ROOT
+python3 scripts/imaging/searches/nss/delaunay.py \
+    --instrument hst \
+    --config-name hpc_a100_fp64_mainline \
+    --output-dir $AP_ROOT/results/searches/nss/imaging/delaunay/hst
+
+echo "Finished."
+date

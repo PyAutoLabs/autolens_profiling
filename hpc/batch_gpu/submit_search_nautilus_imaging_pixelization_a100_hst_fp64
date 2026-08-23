@@ -1,0 +1,96 @@
+#!/bin/bash -l
+#
+# Inference programme CP-3 follow-up — af.Nautilus RE-BASELINE on the current
+# stack: searches/nautilus/imaging/pixelization x hst x fp64.
+#
+# WHY THIS EXISTS — CP-3 ADVERSARIAL REVIEW CAVEATS (d) AND (e)
+#   The Nautilus truth bars the inference programme compares every sampler
+#   against are fork-era rows. This cell's is
+#   results/searches/nautilus/imaging/pixelization/hst/hpc_a100_fp64.json,
+#   v2026.5.21.1, total wall 2768.1 s (sampler 2720.8 s, viz 47.3 s over 8
+#   calls, 58,464 evals at 46.54 ms/eval, logZ 29066.32, max logL 29143.29,
+#   37,415 MiB peak).
+#   Caveat (d): the MGE baseline has two unreconciled walls (831/772.7 s vs
+#   the 523 s in PROGRAMME.md §1.2) and the fork rows carry a different
+#   version and no XLA flags — the same NSS config re-run across that gap
+#   moved 679 s -> 883 s (+30%). Caveat (e): no `target_id` on any artifact,
+#   so §3 comparability is unverified. Re-running the trio on the current
+#   stack refreshes all three truth bars at v2026.8.x with the current
+#   artifact schema, so later sampler comparisons are same-stack rather than
+#   cross-stack.
+#
+# ARM: builder defaults for this cell, stated for the record and NOT
+#   overridden — n_live 150, n_batch 16, number_of_cores 1, use_jax_vmap
+#   true, force_x1_cpu true, iterations_per_update 450 (= 3 x n_live). These
+#   are exactly the fork row's sampler_config; af.Nautilus has no SEARCHES_*
+#   env knobs, so the values come from ``n_live_for`` /
+#   ``vmap_batch_for_cell`` in scripts/misc/searches/_samplers.py and leaving
+#   them alone IS the replication. n_batch is 16 (inversion-heavy cell) — do
+#   not raise it. Visualization stays ENABLED so the row is like-for-like
+#   with the fork row's viz-inclusive wall (viz_wall_s is recorded
+#   separately anyway).
+#
+# ARTIFACT OVERWRITE — INTENDED, AND NARROWER THAN IT LOOKS
+#   Per repo convention a re-run overwrites its cell's artifact and git
+#   history preserves the old one; the ``version`` field distinguishes them.
+#   In practice this run does not even collide: the current
+#   resolve_output_paths prefixes the cell token, so --config-name
+#   hpc_a100_fp64 writes hpc_hpc_a100_fp64.json while the fork row sits at
+#   hpc_a100_fp64.json.
+#
+# WARNING — COMPLETED-FIT RESUME TRAP, CHECK BEFORE SUBMITTING
+#   The af search ``name`` IS the config name, so this run targets
+#     $AP_ROOT/output/searches/nautilus/imaging/pixelization/hst/hpc_a100_fp64/
+#   — the same directory and the same identifier as the fork-era run. If it
+#   survives on RAL with a completed fit, PyAutoFit resumes/short-circuits it
+#   and the job reports fork-era numbers under a current-stack version stamp.
+#   Before submitting:
+#     ls $AP_ROOT/output/searches/nautilus/imaging/pixelization/hst/
+#   and move any existing hpc_a100_fp64/ aside so the fit starts cold.
+#
+# ESTIMATED WALL: fork row 2768.1 s. Allowing the +30% cross-version drift
+#   measured on NSS gives ~3600 s (~60 min). --time 3:00:00 is ~3x the fork
+#   wall and ~2.4x the drifted estimate.
+#
+# VRAM: 37,415 MiB of 81,920 MiB on the fork row at n_batch=16. Comfortable,
+#   but do not co-schedule anything else on the card.
+
+#SBATCH -J search_nautilus_imaging_pixelization_hst_fp64
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=3:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_profiling
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+nvidia-smi
+
+echo "=========================================="
+date
+echo "Cell:       searches/nautilus/imaging/pixelization"
+echo "Instrument: hst"
+echo "Precision:  fp64"
+echo "Arm:        re-baseline, default knobs (n_live=150, n_batch=16, cores=1)"
+
+cd $AP_ROOT
+python3 scripts/imaging/searches/nautilus/pixelization.py \
+    --instrument hst \
+    --config-name hpc_a100_fp64 \
+    --output-dir $AP_ROOT/results/searches/nautilus/imaging/pixelization/hst
+
+echo "Finished."
+date
