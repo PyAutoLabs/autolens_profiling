@@ -1,0 +1,19 @@
+--- BlackJAX SMC (adaptive tempered + HMC, whitened sampling) Results ---
+Best fit:        lens.mass.einstein_radius=1.5996  lens.mass.centre=(-0.000, 0.001)  shear=(0.0490, 0.0492)
+Max log L:       31785.4905
+Log evidence:    31690.3302     (SMC increments + log|J|=-108.0301 for the whitening transform)
+
+--- Performance ---
+Wall time:           1585.03 s     (excludes JIT compile, run ahead of time)
+Sampling time:       1585.03 s     (no separate warmup phase)
+JIT compile time:    12.43 s     (one-shot value_and_grad warm-up)
+Likelihood evals:    28928     (upper bound; inner=24/particle/step)
+Time per eval:       54.792 ms
+ESS:                 n/a (SMC adaptive tempered targets ESS at each step)
+Posterior samples:   128     (final tempered particles)
+Sampler config:      kernel=HMC, start=warm(Gaussian ref, inflate=2.0), n_particles=128, num_mcmc_steps=3, target_ess=0.7, step_size=0.2541, n_smc_steps=9
+
+--- Convergence ---
+Converged:           yes (tempering reached lambda=1.0)
+Evals to ML:         8     (SMC step index within 1 nat of max)
+Time to ML:          1408.91 s

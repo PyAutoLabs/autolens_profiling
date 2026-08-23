@@ -135,6 +135,35 @@ start any time).
 
 ---
 
+## 2026-08-20 — Mind prompt absorbed: ell_comps trapping folds into Phase 3/CP-3
+
+**Decision (human-directed, start_dev routing):** the Mind research prompt
+`draft/research/autolens_profiling/ell_comps_trapping_unmasked.md` (filed
+2026-08-16 as follow-up (2) of the mge-lane-death task, #128) is absorbed
+into the programme rather than run as a standalone campaign. Its questions
+1–3 (size under clipping; does trapping cost the answer; corner-vs-annulus
+localisation) become Phase 3 metrics (**[H3.3]**) carried on every CP-3 arm
+and repeated across the Phase 4 positions on/off axis per engine; its
+question 4 (fix space) stays gated behind that evidence, preserving the
+prompt's own ordering.
+
+**Rationale:** CP-3 runs exactly the arms the prompt needs (clip=prior_box,
+n_starts scan, ≥5 seeds, per-lane-best pre-req) at better statistics than a
+standalone 2-seed rerun would buy. The clipper phase-2 campaign already
+gives a preliminary clipped-run reading — 6/16 and 4/16 lanes end pinned
+(fp64, 2 seeds) while seed 0 still beat the Nautilus bar — but that is
+positions-off, 2-seed, and dominated by the θ_E=0 basin, so it counts as
+evidence the trapping is live and large, not as the measurement. The human
+directive on absorption: prior results had no PositionsLH and known
+local-maxima issues, so trapping must be **re-measured under current
+setups** (positions on/off, per engine/config), never closed on
+pre-positions evidence.
+
+**Prompt disposition:** retired to Mind `complete/archive/shelved/` with an
+absorption pointer to this entry.
+
+---
+
 ## 2026-08-21 — Phase 14 adjudicated + shipped: Bilinear (rank-CDF) default, RTU (kernel-CDF) advanced; both explicit in the cells (human-directed)
 
 **Decision:** the Phase 14 default-CPU-mesh question is resolved as option (2)

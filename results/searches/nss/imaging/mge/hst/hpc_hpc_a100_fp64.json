@@ -4,11 +4,14 @@
   "model": "mge",
   "instrument": "hst",
   "config_name": "hpc_a100_fp64",
-  "version": "2026.5.21.1",
+  "version": "2026.8.17.1",
   "device": {
     "backend": "gpu",
     "device": "cuda:0",
-    "nvidia_smi": "NVIDIA A100 80GB PCIe, 8745 MiB, 81920 MiB"
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "omp_num_threads": null,
+    "cpu_count": 124,
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 8701 MiB, 81920 MiB"
   },
   "use_mixed_precision": false,
   "sampler_config": {
@@ -22,19 +25,50 @@
   },
   "model_summary": {
     "free_parameters": 15,
-    "best_fit": "lens.mass.einstein_radius=1.5997  lens.mass.centre=(0.000, 0.000)  shear=(0.0485, 0.0500)"
+    "best_fit": "lens.mass.einstein_radius=1.5998  lens.mass.centre=(-0.000, 0.000)  shear=(0.0485, 0.0496)"
   },
   "results": {
-    "log_evidence": 31700.39413835907,
-    "max_log_likelihood": 31786.29806110198,
-    "posterior_samples": 15500
+    "log_evidence": 31698.85287829427,
+    "max_log_likelihood": 31786.61581376745,
+    "posterior_samples": 15800,
+    "posterior_stats": {
+      "centre_0": {
+        "mean": 0.00042734772217650416,
+        "std": 0.0002330097772785157
+      },
+      "centre_1": {
+        "mean": 0.0003201069216549681,
+        "std": 0.00021929838402864906
+      },
+      "ell_comps_0": {
+        "mean": 0.09185903343178739,
+        "std": 0.0019413593241412736
+      },
+      "ell_comps_1": {
+        "mean": -0.05115498560169671,
+        "std": 0.0016703896090800024
+      },
+      "einstein_radius": {
+        "mean": 1.5997015327724067,
+        "std": 0.0002011197222622314
+      },
+      "gamma_1": {
+        "mean": 0.048520254948334826,
+        "std": 0.0003862352827103842
+      },
+      "gamma_2": {
+        "mean": 0.049600085456030854,
+        "std": 0.00035674213475798706
+      }
+    }
   },
   "performance": {
-    "total_wall_s": 657.0116415023804,
-    "viz_wall_s": 44.885570644866675,
+    "total_wall_s": 882.7830278873444,
+    "viz_wall_s": 43.154591066995636,
     "viz_n_calls": 5,
-    "sampler_wall_s": 612.1260708575137,
-    "likelihood_evals": 383289,
-    "time_per_eval_ms": 1.5970353202348977
+    "viz_disabled": false,
+    "sampler_wall_s": 839.6284368203487,
+    "likelihood_evals": 234498,
+    "time_per_eval_ms": 3.5805355986846314
   }
 }

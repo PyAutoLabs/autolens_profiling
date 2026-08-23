@@ -1,0 +1,106 @@
+==========================================
+Sat 15 Aug 02:11:16 BST 2026
+Cell:       searches/multi_start_prodigy/imaging/knn
+Config:     cpu_nan_check   n_steps=100
+jax x64: True | devices: [CpuDevice(id=0)]
+
+--- searches/multi_start_prodigy/imaging/knn [hst, cpu_nan_check, use_jax=True, mp=False] ---
+  n_live: n/a (MAP optimizer)
+  Building dataset / model / analysis...
+2026-08-15 02:11:19,853 - autoarray.dataset.imaging.dataset - INFO - IMAGING - Data masked, contains a total of 15361 image-pixels
+2026-08-15 02:11:19,855 - autoarray.dataset.imaging.dataset - INFO - IMAGING - Setting Up Sparse Operator For low Memory Pixelizations.
+  Model free parameters: 13
+  Visualization DISABLED (SEARCHES_DISABLE_VIZ=1) — viz_wall_s not measured.
+  Running search.fit() ...
+2026-08-15 02:11:20,845 - autofit.non_linear.search.abstract_search - INFO - Starting non-linear search with JAX (CPU: cpu).
+2026-08-15 02:11:20,845 - autofit.non_linear.search.abstract_search - INFO - On-the-fly updates of the maximum likelihood model are disabled. Set `updates: iterations_per_quick_update` in config/general.yaml to a finite number of iterations to enable them.
+2026-08-15 02:11:22,902 - cpu_nan_check - INFO - The output path of this fit is /mnt/ral/jnightin/autolens_profiling_delaunay/output/searches/multi_start_prodigy/imaging/knn/hst/cpu_nan_check/9a3974011f2bb8f47a06843e00473d9e
+2026-08-15 02:11:22,902 - cpu_nan_check - INFO - Outputting pre-fit files (e.g. model.info, visualization).
+2026-08-15 02:11:24,002 - cpu_nan_check - INFO - JAX: jit compiling the single-point objective used to draw 16 broad starts, could take seconds or minutes...
+2026-08-15 02:13:44,651 - cpu_nan_check - INFO - Starting new prodigy MultiStartGradient search (16 starts, no previous samples found).
+2026-08-15 02:13:44,660 - cpu_nan_check - INFO - JAX: jit compiling the vmapped objective over batches of 4 starts, could take seconds or minutes...
+2026-08-15 02:16:17,266 - cpu_nan_check - INFO - prodigy step 1/500 | best log_post -178652.3628 | alive 16/16 | d 1.00e-06 / 1.00e-06 / 1.00e-06
+2026-08-15 02:34:18,576 - cpu_nan_check - INFO - prodigy step 10/500 | best log_post -178639.6537 | gained 12.7091 | alive 16/16 | d 1.21e-05 / 1.73e-05 / 1.74e-05
+2026-08-15 02:54:21,499 - cpu_nan_check - INFO - prodigy step 20/500 | best log_post -178000.0389 | gained 639.6149 | alive 12/16 | d 1.75e-04 / 8.95e-04 / 9.02e-04
+2026-08-15 03:14:21,052 - cpu_nan_check - INFO - prodigy step 30/500 | best log_post -158780.8147 | gained 19219.2242 | alive 9/16 | d 1.98e-03 / 2.90e-02 / 4.65e-02
+2026-08-15 03:34:09,681 - cpu_nan_check - INFO - prodigy step 40/500 | best log_post -156500.6795 | gained 2280.1352 | alive 7/16 | d 2.15e-02 / 3.76e-02 / 1.28e-01
+2026-08-15 03:53:38,493 - cpu_nan_check - INFO - prodigy step 50/500 | best log_post -156500.6795 | gained 0.0000 | alive 6/16 | d 2.15e-02 / 3.76e-02 / 1.28e-01
+2026-08-15 04:13:09,073 - cpu_nan_check - INFO - prodigy step 60/500 | best log_post -156500.6795 | gained 0.0000 | alive 5/16 | d 2.15e-02 / 3.76e-02 / 1.28e-01
+2026-08-15 04:32:38,199 - cpu_nan_check - INFO - prodigy step 70/500 | best log_post -156500.6795 | gained 0.0000 | alive 5/16 | d 2.15e-02 / 3.76e-02 / 1.28e-01
+2026-08-15 04:52:06,405 - cpu_nan_check - INFO - prodigy step 80/500 | best log_post -156500.6795 | gained 0.0000 | alive 4/16 | d 2.15e-02 / 3.76e-02 / 1.28e-01
+2026-08-15 05:11:35,065 - cpu_nan_check - INFO - prodigy step 90/500 | best log_post -156500.6795 | gained 0.0000 | alive 2/16 | d 2.15e-02 / 3.76e-02 / 1.28e-01
+2026-08-15 05:30:59,115 - cpu_nan_check - INFO - prodigy step 100/500 | best log_post -156500.6795 | gained 0.0000 | alive 2/16 | d 2.15e-02 / 3.76e-02 / 1.28e-01
+2026-08-15 05:50:25,893 - cpu_nan_check - INFO - prodigy step 110/500 | best log_post -156500.6795 | gained 0.0000 | alive 2/16 | d 2.15e-02 / 3.76e-02 / 1.28e-01
+2026-08-15 06:09:52,914 - cpu_nan_check - INFO - prodigy step 120/500 | best log_post -156500.6795 | gained 0.0000 | alive 3/16 | d 2.15e-02 / 3.76e-02 / 1.28e-01
+2026-08-15 06:29:23,459 - cpu_nan_check - INFO - prodigy step 130/500 | best log_post -156500.6795 | gained 0.0000 | alive 3/16 | d 2.15e-02 / 3.76e-02 / 1.28e-01
+2026-08-15 06:48:54,081 - cpu_nan_check - INFO - prodigy step 140/500 | best log_post -156500.6795 | gained 0.0000 | alive 3/16 | d 2.15e-02 / 3.76e-02 / 1.28e-01
+2026-08-15 07:08:20,979 - cpu_nan_check - INFO - prodigy step 150/500 | best log_post -156500.6795 | gained 0.0000 | alive 3/16 | d 2.15e-02 / 3.96e-02 / 1.28e-01
+2026-08-15 07:27:39,232 - cpu_nan_check - INFO - prodigy step 160/500 | best log_post -156500.6795 | gained 0.0000 | alive 3/16 | d 2.15e-02 / 3.96e-02 / 1.28e-01
+2026-08-15 07:46:56,291 - cpu_nan_check - INFO - prodigy step 170/500 | best log_post -156500.6795 | gained 0.0000 | alive 3/16 | d 2.15e-02 / 3.96e-02 / 1.28e-01
+2026-08-15 08:06:14,715 - cpu_nan_check - INFO - prodigy step 180/500 | best log_post -156500.6795 | gained 0.0000 | alive 3/16 | d 2.15e-02 / 3.96e-02 / 1.28e-01
+2026-08-15 08:25:32,795 - cpu_nan_check - INFO - prodigy step 190/500 | best log_post -156500.6795 | gained 0.0000 | alive 3/16 | d 2.15e-02 / 3.96e-02 / 1.28e-01
+2026-08-15 08:44:51,998 - cpu_nan_check - INFO - prodigy step 200/500 | best log_post -156500.6795 | gained 0.0000 | alive 3/16 | d 2.15e-02 / 3.96e-02 / 1.28e-01
+2026-08-15 09:04:16,262 - cpu_nan_check - INFO - prodigy step 210/500 | best log_post -156500.6795 | gained 0.0000 | alive 3/16 | d 2.15e-02 / 3.96e-02 / 1.28e-01
+2026-08-15 09:23:38,795 - cpu_nan_check - INFO - prodigy step 220/500 | best log_post -156500.6795 | gained 0.0000 | alive 2/16 | d 2.15e-02 / 3.96e-02 / 1.28e-01
+2026-08-15 09:42:58,707 - cpu_nan_check - INFO - prodigy step 230/500 | best log_post -156500.6795 | gained 0.0000 | alive 2/16 | d 2.15e-02 / 3.96e-02 / 1.28e-01
+2026-08-15 10:01:54,252 - cpu_nan_check - INFO - prodigy step 240/500 | best log_post -156500.6795 | gained 0.0000 | alive 2/16 | d 2.15e-02 / 4.15e-02 / 3.14e-01
+2026-08-15 10:20:22,230 - cpu_nan_check - INFO - prodigy step 250/500 | best log_post -156500.6795 | gained 0.0000 | alive 2/16 | d 2.15e-02 / 4.15e-02 / 3.14e-01
+2026-08-15 10:38:25,327 - cpu_nan_check - INFO - prodigy step 260/500 | best log_post -156500.6795 | gained 0.0000 | alive 2/16 | d 2.15e-02 / 4.15e-02 / 3.14e-01
+2026-08-15 10:55:49,335 - cpu_nan_check - INFO - prodigy step 270/500 | best log_post -156500.6795 | gained 0.0000 | alive 2/16 | d 2.15e-02 / 4.15e-02 / 3.14e-01
+2026-08-15 11:13:09,396 - cpu_nan_check - INFO - prodigy step 280/500 | best log_post -156500.6795 | gained 0.0000 | alive 2/16 | d 2.15e-02 / 4.15e-02 / 3.14e-01
+2026-08-15 11:30:28,455 - cpu_nan_check - INFO - prodigy step 290/500 | best log_post -156500.6795 | gained 0.0000 | alive 2/16 | d 2.15e-02 / 4.15e-02 / 3.14e-01
+2026-08-15 11:47:48,586 - cpu_nan_check - INFO - prodigy step 300/500 | best log_post -156500.6795 | gained 0.0000 | alive 2/16 | d 2.15e-02 / 4.15e-02 / 3.14e-01
+2026-08-15 12:05:08,486 - cpu_nan_check - INFO - prodigy step 310/500 | best log_post -156500.6795 | gained 0.0000 | alive 2/16 | d 2.15e-02 / 4.15e-02 / 3.14e-01
+2026-08-15 12:22:27,906 - cpu_nan_check - INFO - prodigy step 320/500 | best log_post -156500.6795 | gained 0.0000 | alive 2/16 | d 2.15e-02 / 4.15e-02 / 3.14e-01
+2026-08-15 12:39:46,224 - cpu_nan_check - INFO - prodigy step 330/500 | best log_post -156500.6795 | gained 0.0000 | alive 2/16 | d 2.15e-02 / 4.15e-02 / 3.14e-01
+2026-08-15 12:57:05,870 - cpu_nan_check - INFO - prodigy step 340/500 | best log_post -156500.6795 | gained 0.0000 | alive 2/16 | d 2.15e-02 / 4.15e-02 / 3.14e-01
+2026-08-15 13:14:26,611 - cpu_nan_check - INFO - prodigy step 350/500 | best log_post -156500.6795 | gained 0.0000 | alive 2/16 | d 2.15e-02 / 4.15e-02 / 3.14e-01
+2026-08-15 13:31:48,247 - cpu_nan_check - INFO - prodigy step 360/500 | best log_post -156500.6795 | gained 0.0000 | alive 2/16 | d 2.15e-02 / 4.15e-02 / 3.14e-01
+2026-08-15 13:49:10,065 - cpu_nan_check - INFO - prodigy step 370/500 | best log_post -156500.6795 | gained 0.0000 | alive 2/16 | d 2.15e-02 / 4.15e-02 / 3.14e-01
+2026-08-15 14:06:30,539 - cpu_nan_check - INFO - prodigy step 380/500 | best log_post -156500.6795 | gained 0.0000 | alive 2/16 | d 2.15e-02 / 4.15e-02 / 3.14e-01
+2026-08-15 14:23:50,593 - cpu_nan_check - INFO - prodigy step 390/500 | best log_post -156500.6795 | gained 0.0000 | alive 2/16 | d 2.15e-02 / 4.15e-02 / 3.14e-01
+2026-08-15 14:41:14,375 - cpu_nan_check - INFO - prodigy step 400/500 | best log_post -156500.6795 | gained 0.0000 | alive 2/16 | d 2.15e-02 / 4.15e-02 / 3.14e-01
+2026-08-15 14:58:38,396 - cpu_nan_check - INFO - prodigy step 410/500 | best log_post -156500.6795 | gained 0.0000 | alive 2/16 | d 2.15e-02 / 4.15e-02 / 1.09e+00
+2026-08-15 15:16:02,891 - cpu_nan_check - INFO - prodigy step 420/500 | best log_post -156500.6795 | gained 0.0000 | alive 2/16 | d 2.15e-02 / 4.15e-02 / 2.50e+01
+2026-08-15 15:33:27,063 - cpu_nan_check - INFO - prodigy step 430/500 | best log_post -156500.6795 | gained 0.0000 | alive 2/16 | d 2.15e-02 / 4.15e-02 / 2.50e+01
+2026-08-15 15:50:51,739 - cpu_nan_check - INFO - prodigy step 440/500 | best log_post -156500.6795 | gained 0.0000 | alive 2/16 | d 2.15e-02 / 4.15e-02 / 2.50e+01
+2026-08-15 16:08:16,474 - cpu_nan_check - INFO - prodigy step 450/500 | best log_post -156500.6795 | gained 0.0000 | alive 2/16 | d 2.15e-02 / 4.15e-02 / 2.50e+01
+2026-08-15 16:25:38,077 - cpu_nan_check - INFO - prodigy step 460/500 | best log_post -156500.6795 | gained 0.0000 | alive 2/16 | d 2.15e-02 / 4.15e-02 / 2.50e+01
+2026-08-15 16:43:00,209 - cpu_nan_check - INFO - prodigy step 470/500 | best log_post -156500.6795 | gained 0.0000 | alive 2/16 | d 2.15e-02 / 4.15e-02 / 2.50e+01
+2026-08-15 17:00:20,405 - cpu_nan_check - INFO - prodigy step 480/500 | best log_post -156500.6795 | gained 0.0000 | alive 2/16 | d 2.15e-02 / 4.15e-02 / 2.50e+01
+2026-08-15 17:17:40,005 - cpu_nan_check - INFO - prodigy step 490/500 | best log_post -156500.6795 | gained 0.0000 | alive 2/16 | d 2.15e-02 / 4.15e-02 / 2.50e+01
+2026-08-15 17:34:59,182 - cpu_nan_check - INFO - prodigy step 500/500 | best log_post -156500.6795 | gained 0.0000 | alive 2/16 | d 2.15e-02 / 4.15e-02 / 2.50e+01
+2026-08-15 17:34:59,194 - cpu_nan_check - INFO - prodigy MultiStartGradient sampling complete.
+2026-08-15 17:34:59,428 - cpu_nan_check - INFO - Fit Running: Updating results (see output folder).
+2026-08-15 17:34:59,440 - autofit.non_linear.samples.samples - INFO - Samples with weight less than 1e-10 removed from samples.csv.
+2026-08-15 17:34:59,442 - autofit.non_linear.search.updater - INFO - Creating latent samples by drawing 100 from the PDF.
+2026-08-15 17:34:59,443 - autofit.non_linear.search.updater - INFO - Drawing via PDF not available for this search, using all samples above the samples weight threshold instead.
+2026-08-15 17:34:59,443 - autolens.analysis.latent - WARNING - latent.yaml lists 'total_galaxy_0_flux' but no such latent is registered; dropping. Known latents: ['effective_einstein_radius', 'magnification', 'total_lens_flux', 'total_lens_flux_mujy', 'total_lensed_source_flux', 'total_lensed_source_flux_mujy', 'total_source_flux', 'total_source_flux_mujy']
+2026-08-15 17:34:59,443 - autofit.non_linear.jax_compile - INFO - JAX jit compiling latent variable function (per-sample jit), could take seconds or minutes...
+2026-08-15 17:34:59,444 - autolens.analysis.latent - WARNING - latent.yaml lists 'total_galaxy_0_flux' but no such latent is registered; dropping. Known latents: ['effective_einstein_radius', 'magnification', 'total_lens_flux', 'total_lens_flux_mujy', 'total_lensed_source_flux', 'total_lensed_source_flux_mujy', 'total_source_flux', 'total_source_flux_mujy']
+2026-08-15 17:35:01,192 - autolens.analysis.latent - WARNING - magzero not set on Analysis; 'total_lens_flux_mujy' latent will be NaN. Pass magzero=<value> to AnalysisImaging to enable it, or disable in config/latent.yaml to silence this warning.
+2026-08-15 17:35:01,192 - autolens.analysis.latent - WARNING - magzero not set on Analysis; 'total_lensed_source_flux_mujy' latent will be NaN. Pass magzero=<value> to AnalysisImaging to enable it, or disable in config/latent.yaml to silence this warning.
+2026-08-15 17:35:01,192 - autolens.analysis.latent - WARNING - magzero not set on Analysis; 'total_source_flux_mujy' latent will be NaN. Pass magzero=<value> to AnalysisImaging to enable it, or disable in config/latent.yaml to silence this warning.
+2026-08-15 17:35:17,631 - autofit.non_linear.jax_compile - INFO - JAX jit compilation of latent variable function (per-sample jit) complete in 18.2 seconds.
+Time to compute latent variables: 18.2662615776062 seconds for 1 samples.
+2026-08-15 17:35:42,960 - cpu_nan_check - INFO - Removing search internal folder.
+2026-08-15 17:35:42,971 - cpu_nan_check - INFO - Removing all files except for .zip file
+2026-08-15 17:35:43,332 - cpu_nan_check - INFO - Search complete, returning result
+
+======================================================================
+SEARCH SUMMARY — multi_start_prodigy/imaging/knn [hst, cpu_nan_check]
+======================================================================
+  Best fit:           lens.mass.einstein_radius=3.4336  lens.mass.centre=(-0.059, 0.097)  shear=(-0.1240, -0.2913)
+  Log evidence:       nan
+  Max log L:          -156499.8879
+  Posterior samples:  17
+  Likelihood evals:   17
+  Total wall:         55462.49 s
+  Viz wall:           0.00 s
+  Sampler wall:       55462.49 s
+  Time per eval:      3262499.312 ms
+
+  Results JSON saved to: /mnt/ral/jnightin/nan_check/results/knn/cpu_cpu_nan_check.json
+  Bar chart saved to:    /mnt/ral/jnightin/nan_check/results/knn/cpu_cpu_nan_check.png
+Finished.
+Sat 15 Aug 17:35:44 BST 2026

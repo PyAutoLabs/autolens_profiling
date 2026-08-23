@@ -1,0 +1,175 @@
+===== NODE =====
+euclid-ral-compute-10-1
+16
+               total        used        free      shared  buff/cache   available
+Mem:             964           8         957           0           4         955
+backend cpu x64 True
+blackjax 1.5
+
+########## STEP 1: warm start (--refresh: RAL cache predates the full-covariance field)  10:39:14 ##########
+2026-07-23 10:39:35,898 - matplotlib.font_manager - INFO - generated new fontManager
+2026-07-23 10:39:36,675 - autoarray.dataset.imaging.dataset - INFO - IMAGING - Data masked, contains a total of 15361 image-pixels
+Model free parameters: 15
+JIT compile (value_and_grad): 62.4 s
+Collected 12 finite-gradient starts (from 12 draws)
+
+[prodigy] 12-start x 300 steps
+  step    0: best log_posterior = -211773.21
+  step   50: best log_posterior = -16680.12
+  step  100: best log_posterior = 31542.24
+  step  150: best log_posterior = 31785.29
+  step  200: best log_posterior = 31787.82
+  step  250: best log_posterior = 31787.84
+  optimise wall: 172.7 s
+  1/12 starts within 1 nat of the best optimum
+  Laplace covariance OK — condition number 568 (this is the anisotropy a diagonal whitening cannot remove)
+  reference scale from: laplace
+
+--- Warm start ---
+optimizer:     prodigy
+max log L:     31787.9289
+converged:     1/12
+ref scale via: laplace  (full covariance: True)
+mle:           [-1.0794e-04  6.1076e-05  5.2610e-02 -4.4460e-04  1.6423e-04  2.4885e-04  5.1397e-02 -4.5067e-03
+  1.5997e+00  4.8549e-02  4.9553e-02  4.0871e-04  3.1414e-04  9.2295e-02 -5.1202e-02]
+std:           [0.0002 0.0002 0.0007 0.0007 0.0003 0.0003 0.0007 0.001  0.0002 0.0004 0.0004 0.0002 0.0002 0.0022
+ 0.0019]
+written to:    /mnt/ral/jnightin/autolens_workspace_developer/searches_minimal/output/warm_start.json
+########## STEP 1 DONE  10:44:24 ##########
+
+########## STEP 2: SMC warm-start (auto step from reference width)  10:44:24 ##########
+2026-07-23 10:44:27,303 - autoarray.dataset.imaging.dataset - INFO - IMAGING - Data masked, contains a total of 15361 image-pixels
+Model free parameters: 15
+Warm start: optimizer=prodigy max log L=31787.93 (1/12 converged, scale via laplace, inflate=2.0)
+Whitening: full-covariance Cholesky
+JIT-compiling value_and_grad(log_likelihood_z) (one-shot)...
+  Compiled in 68.52 s     (log L=-159736.36)
+Auto step size from POSTERIOR width (sigma=0.5, ref sigma=1): 0.2871
+
+Running BlackJAX SMC (adaptive tempered + MALA) over 15 whitened dims (n_particles=128, num_mcmc_steps=5, target_ess=0.7, step_size=None)...
+  JIT compile of the SMC step kernel happens on the first iteration.
+
+  step   1: lambda=0.0824  max log L=31778.12  log Z (running)=2619.1648  acc rate=0.838
+  step   2: lambda=0.1469  max log L=31781.18  log Z (running)=4669.4771  acc rate=0.767
+  step   3: lambda=0.2339  max log L=31780.50  log Z (running)=7435.5064  acc rate=0.715
+  step   4: lambda=0.3113  max log L=31781.63  log Z (running)=9898.2572  acc rate=0.641
+  step   5: lambda=0.4320  max log L=31784.07  log Z (running)=13735.2664  acc rate=0.584
+  step   6: lambda=0.5496  max log L=31784.07  log Z (running)=17473.9502  acc rate=0.479
+  step   7: lambda=0.7102  max log L=31784.07  log Z (running)=22582.4039  acc rate=0.375
+  step   8: lambda=0.8697  max log L=31784.07  log Z (running)=27655.6994  acc rate=0.268
+  step   9: lambda=1.0000  max log L=31785.78  log Z (running)=31798.6874  acc rate=0.151
+
+--- BlackJAX SMC (adaptive tempered + MALA, whitened sampling) Results ---
+Best fit:        lens.mass.einstein_radius=1.5995  lens.mass.centre=(0.000, 0.000)  shear=(0.0489, 0.0493)
+Max log L:       31785.7850
+Log evidence:    31690.6574     (SMC increments + log|J|=-108.0301 for the whitening transform)
+
+--- Performance ---
+Wall time:           843.12 s     (excludes JIT compile, run ahead of time)
+Sampling time:       843.12 s     (no separate warmup phase)
+JIT compile time:    68.52 s     (one-shot value_and_grad warm-up)
+Likelihood evals:    7040     (upper bound; inner=5/particle/step)
+Time per eval:       119.762 ms
+ESS:                 n/a (SMC adaptive tempered targets ESS at each step)
+Posterior samples:   128     (final tempered particles)
+Sampler config:      kernel=MALA, start=warm(Gaussian ref, inflate=2.0), n_particles=128, num_mcmc_steps=5, target_ess=0.7, step_size=0.2871, n_smc_steps=9
+
+--- Convergence ---
+Converged:           yes (tempering reached lambda=1.0)
+Evals to ML:         9     (SMC step index within 1 nat of max)
+Time to ML:          843.12 s
+
+Summary written to: /mnt/ral/jnightin/autolens_workspace_developer/searches_minimal/output/blackjax_smc_grad_mala_warm_summary.txt
+########## STEP 2 DONE  10:59:46 ##########
+
+########## STEP 3: SMC warm-start + tuning  10:59:46 ##########
+2026-07-23 10:59:49,165 - autoarray.dataset.imaging.dataset - INFO - IMAGING - Data masked, contains a total of 15361 image-pixels
+Model free parameters: 15
+Warm start: optimizer=prodigy max log L=31787.93 (1/12 converged, scale via laplace, inflate=2.0)
+Whitening: full-covariance Cholesky
+JIT-compiling value_and_grad(log_likelihood_z) (one-shot)...
+  Compiled in 12.17 s     (log L=-159736.36)
+Auto step size from POSTERIOR width (sigma=0.5, ref sigma=1): 0.2871
+
+Running BlackJAX SMC (adaptive tempered + MALA + tuning) over 15 whitened dims (n_particles=128, num_mcmc_steps=5, target_ess=0.7, step_size=None)...
+  JIT compile of the SMC step kernel happens on the first iteration.
+
+  step   1: lambda=0.0824  max log L=31779.16  log Z (running)=2619.1028  acc rate=0.828
+  step   2: lambda=0.1460  max log L=31779.16  log Z (running)=4640.2443  acc rate=0.084
+  step   3: lambda=0.2241  max log L=31779.16  log Z (running)=7124.5250  acc rate=0.052
+  step   4: lambda=0.3167  max log L=31779.16  log Z (running)=10069.9667  acc rate=0.041
+  step   5: lambda=0.4147  max log L=31779.16  log Z (running)=13185.8672  acc rate=0.043
+  step   6: lambda=0.5482  max log L=31780.31  log Z (running)=17430.5348  acc rate=0.074
+  step   7: lambda=0.6753  max log L=31780.64  log Z (running)=21473.4096  acc rate=0.062
+  step   8: lambda=0.8773  max log L=31781.01  log Z (running)=27894.5760  acc rate=0.116
+  step   9: lambda=1.0000  max log L=31782.10  log Z (running)=31797.7584  acc rate=0.093
+
+--- BlackJAX SMC (adaptive tempered + MALA + tuning, whitened sampling) Results ---
+Best fit:        lens.mass.einstein_radius=1.5995  lens.mass.centre=(-0.000, 0.000)  shear=(0.0480, 0.0489)
+Max log L:       31782.1007
+Log evidence:    31689.7283     (SMC increments + log|J|=-108.0301 for the whitening transform)
+
+--- Performance ---
+Wall time:           712.00 s     (excludes JIT compile, run ahead of time)
+Sampling time:       712.00 s     (no separate warmup phase)
+JIT compile time:    12.17 s     (one-shot value_and_grad warm-up)
+Likelihood evals:    7040     (upper bound; inner=5/particle/step)
+Time per eval:       101.136 ms
+ESS:                 n/a (SMC adaptive tempered targets ESS at each step)
+Posterior samples:   128     (final tempered particles)
+Sampler config:      kernel=MALA + tuning, start=warm(Gaussian ref, inflate=2.0), n_particles=128, num_mcmc_steps=5, target_ess=0.7, step_size=0.2871, n_smc_steps=9
+
+--- Convergence ---
+Converged:           yes (tempering reached lambda=1.0)
+Evals to ML:         9     (SMC step index within 1 nat of max)
+Time to ML:          712.00 s
+
+Summary written to: /mnt/ral/jnightin/autolens_workspace_developer/searches_minimal/output/blackjax_smc_grad_mala_tuned_warm_summary.txt
+########## STEP 3 DONE  11:12:01 ##########
+
+########## STEP 4: SMC warm-start, HMC kernel  11:12:01 ##########
+2026-07-23 11:12:03,805 - autoarray.dataset.imaging.dataset - INFO - IMAGING - Data masked, contains a total of 15361 image-pixels
+Model free parameters: 15
+Warm start: optimizer=prodigy max log L=31787.93 (1/12 converged, scale via laplace, inflate=2.0)
+Whitening: full-covariance Cholesky
+JIT-compiling value_and_grad(log_likelihood_z) (one-shot)...
+  Compiled in 12.43 s     (log L=-159736.36)
+Auto step size from POSTERIOR width (sigma=0.5, ref sigma=1): 0.2541
+
+Running BlackJAX SMC (adaptive tempered + HMC) over 15 whitened dims (n_particles=128, num_mcmc_steps=3, target_ess=0.7, step_size=None)...
+  JIT compile of the SMC step kernel happens on the first iteration.
+
+  step   1: lambda=0.0824  max log L=31777.19  log Z (running)=2619.1242  acc rate=0.977
+  step   2: lambda=0.1418  max log L=31781.13  log Z (running)=4508.8328  acc rate=0.975
+  step   3: lambda=0.2252  max log L=31778.93  log Z (running)=7160.8261  acc rate=0.977
+  step   4: lambda=0.3116  max log L=31781.10  log Z (running)=9907.0747  acc rate=0.975
+  step   5: lambda=0.4024  max log L=31782.54  log Z (running)=12794.8453  acc rate=0.977
+  step   6: lambda=0.4984  max log L=31782.72  log Z (running)=15845.4033  acc rate=0.984
+  step   7: lambda=0.6445  max log L=31783.24  log Z (running)=20493.1139  acc rate=0.980
+  step   8: lambda=0.8067  max log L=31785.56  log Z (running)=25650.2187  acc rate=0.965
+  step   9: lambda=1.0000  max log L=31785.49  log Z (running)=31798.3603  acc rate=0.937
+
+--- BlackJAX SMC (adaptive tempered + HMC, whitened sampling) Results ---
+Best fit:        lens.mass.einstein_radius=1.5996  lens.mass.centre=(-0.000, 0.001)  shear=(0.0490, 0.0492)
+Max log L:       31785.4905
+Log evidence:    31690.3302     (SMC increments + log|J|=-108.0301 for the whitening transform)
+
+--- Performance ---
+Wall time:           1585.03 s     (excludes JIT compile, run ahead of time)
+Sampling time:       1585.03 s     (no separate warmup phase)
+JIT compile time:    12.43 s     (one-shot value_and_grad warm-up)
+Likelihood evals:    28928     (upper bound; inner=24/particle/step)
+Time per eval:       54.792 ms
+ESS:                 n/a (SMC adaptive tempered targets ESS at each step)
+Posterior samples:   128     (final tempered particles)
+Sampler config:      kernel=HMC, start=warm(Gaussian ref, inflate=2.0), n_particles=128, num_mcmc_steps=3, target_ess=0.7, step_size=0.2541, n_smc_steps=9
+
+--- Convergence ---
+Converged:           yes (tempering reached lambda=1.0)
+Evals to ML:         8     (SMC step index within 1 nat of max)
+Time to ML:          1408.91 s
+
+Summary written to: /mnt/ral/jnightin/autolens_workspace_developer/searches_minimal/output/blackjax_smc_grad_hmc_warm_summary.txt
+########## STEP 4 DONE  11:38:48 ##########
+
+===== SMC WARM-START RUN COMPLETE 11:38:48 =====

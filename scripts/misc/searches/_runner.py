@@ -55,6 +55,7 @@ from searches._samplers import (  # noqa: E402
     SAMPLER_BUILDERS,
     multi_start_settings,
     n_live_for,
+    nss_settings,
     vmap_batch_for_cell,
 )
 
@@ -66,7 +67,7 @@ from _profile_cli import (  # noqa: E402
 
 # Samplers that have an ``n_live`` (nested sampling). MAP optimizers such as
 # ``multi_start_adam`` do not, and record ``null`` rather than a misleading value.
-_SAMPLERS_WITH_N_LIVE = frozenset({"nautilus"})
+_SAMPLERS_WITH_N_LIVE = frozenset({"nautilus", "nss"})
 from searches._recovery import load_truth, recovery_report  # noqa: E402
 from searches._setup import (  # noqa: E402
     build_for_cell,
@@ -348,6 +349,10 @@ def run_search(
 
     uses_n_live = sampler in _SAMPLERS_WITH_N_LIVE
     n_live = n_live_for(dataset_class, model_type) if uses_n_live else None
+    if sampler == "nss":
+        # The NSS builder honours SEARCHES_NSS_N_LIVE (Phase 2 n_live scan);
+        # keep the recorded value in lockstep with what was actually built.
+        n_live = int(os.environ.get("SEARCHES_NSS_N_LIVE", n_live))
 
     print(
         f"\n--- searches/{sampler}/{dataset_class}/{model_type}"
@@ -485,6 +490,15 @@ def _sampler_config_dict(
             "use_jax_vmap": use_jax,
             "force_x1_cpu": use_jax,
             "iterations_per_update": 3 * n_live,
+        }
+    if sampler == "nss":
+        # Mirrors the fork-era JSON shape (n_live, num_mcmc_steps, num_delete,
+        # chunk_size, termination, seed, jax_native) so mainline rows diff
+        # cleanly against the recorded v2026.5.21.1 fork rows.
+        return {
+            "n_live": n_live,
+            **nss_settings(),
+            "jax_native": True,
         }
     if sampler in _MULTI_START_CLASSES:
         # MAP optimizer: no n_live; records its own multi-start knobs, plus the

@@ -1,0 +1,44 @@
+{
+  "sampler": "multi_start_prodigy",
+  "dataset_class": "imaging",
+  "model": "delaunay",
+  "instrument": "hst",
+  "config_name": "cpu_nan_check",
+  "version": "2026.7.23.1",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "omp_num_threads": null,
+    "cpu_count": 252
+  },
+  "use_mixed_precision": false,
+  "sampler_config": {
+    "n_starts": 16,
+    "n_steps": 500,
+    "batch_size": 4,
+    "number_of_cores": 1,
+    "convergence": {
+      "check_for_convergence": false
+    }
+  },
+  "model_summary": {
+    "free_parameters": 12,
+    "best_fit": "lens.mass.einstein_radius=0.9230  lens.mass.centre=(-0.017, 0.063)  shear=(-0.0436, 0.0581)"
+  },
+  "results": {
+    "log_evidence": NaN,
+    "max_log_likelihood": 24195.964661443068,
+    "posterior_samples": 17,
+    "posterior_stats": null
+  },
+  "performance": {
+    "total_wall_s": 27825.280467748642,
+    "viz_wall_s": 0.0,
+    "viz_n_calls": 5,
+    "viz_disabled": true,
+    "sampler_wall_s": 27825.280467748642,
+    "likelihood_evals": 17,
+    "time_per_eval_ms": 1636781.2039852142
+  }
+}
