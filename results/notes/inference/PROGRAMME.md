@@ -31,7 +31,8 @@ expectation · **[CONTRADICTED]** existing evidence pushed back on the brief ·
 | Phase 14 default CPU mesh decision | **adjudicated + shipped 2026-08-21** — Bilinear (rank-CDF) default, RTU (kernel-CDF) advanced; both meshes explicit in the cells via `--rect-mesh` (PR #155); versioned Bilinear-vs-RTU measurement outstanding | autolens_profiling#153, PyAutoArray#461/#462 |
 | Phase 0(e) searches README dashboard loop | **complete** | PR#139 (2026-08-18): nested-layout scanner, 34 rows render, truth-bar rows verified |
 | Phase 2 NSS mainline re-tune | **entry complete (CP-2 ✅ 2026-08-23)** — wiring + laptop smoke + A100 anchor row: mainline matches the fork answer at fork knobs (max logL 31786.62, logZ bias +8.4 persists at inner=5 per H2.1) but is ~1.35× slower sampler-wall; scan + Gate A pending | `phase_02_nss_mainline/RESULTS.md` |
-| Phases 1, 3–13 | not started | — |
+| Phase 3 Prodigy reliability | **wave 1 complete (CP-3 ✅ 2026-08-23, positions-off)** — p_hit ≈ 0.047 (n64/n256, 5 seeds each), 99% reliability at n≈96, n256 ~4× faster than Nautilus; θ_E diagnostic supports H3.1; ~half of lanes end pinned (H3.3, measured not closed). Gate B pt 1 reading provisional — adversarial review + human call pending | `phase_03_prodigy_reliability/RESULTS.md` |
+| Phases 1, 4–13 | not started | — |
 | Gates A–F | open | — |
 
 ---
@@ -904,6 +905,13 @@ Maximum information before large A100 commitment — strictly ordered:
    campaign (Phase 5) shrinks to nested-sampling + mesh-family ranking only.
    Also carries the H3.3 `ell_comps` trapped-lane accounting on every arm
    (absorbed Mind prompt — see Phase 3 metrics and DECISIONS 2026-08-20).
+   **✅ Positions-off half COMPLETE 2026-08-23 (A100, 20 runs, 0.9 GPU-h):
+   p_hit ≈ 0.047, 99% reliability at n≈96 starts, n256 wall ~4× under
+   Nautilus; the 1-in-5 seed lottery at n16 reproduced; θ_E~U(0.2,8)
+   diagnostic triples n16 run success (H3.1 supported); ~50% of lanes end
+   pinned (H3.3 measured). Gate B pt 1 reading is provisional pending the
+   adversarial pass + human call. Positions-on half awaits Phase-4
+   PositionsLH plumbing — `phase_03_prodigy_reliability/RESULTS.md`.**
 4. **CP-4 · slogdet A/B on the AdaptSplit NaN wall** (hours). Expected pass;
    converts Phase 8A from plan to record and sets the gradient-work
    likelihood profile early.
