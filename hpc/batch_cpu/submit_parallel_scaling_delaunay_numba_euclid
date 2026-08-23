@@ -1,0 +1,54 @@
+#!/bin/bash -l
+#
+# CPU-node multiprocessing-scaling profile: imaging parallel_scaling
+# --mesh delaunay × euclid. Numba sparse-operator likelihood (use_jax=False)
+# on the PRODUCTION CAMPAIGN FIDUCIAL — Delaunay + Hilbert-1250 image mesh +
+# ConstantSplit (the delaunay_numba runtime/breakdown cells) — vs the
+# Rectangular sibling submit script. Artifacts land as
+# results/parallel_scaling/imaging/delaunay_numba_scaling_euclid_*.
+#
+# NOTE: adjust --partition to the RAL CPU partition name (check `sinfo`); the
+# gpu scripts in ../batch_gpu use --partition=gpu.
+
+#SBATCH -J parallel_scaling_delaunay_numba_euclid
+#SBATCH --partition=cpu
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=32
+#SBATCH --mem=64gb
+#SBATCH --time=6:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_profiling
+source $AP_ROOT/activate.sh
+
+# 1 BLAS thread per worker: the numba kernels are single-threaded and only the
+# solve/Cholesky steps respond to BLAS threads — give cores to workers. (The
+# Delaunay solve is a larger share than Rectangular's ~13%, but it is a
+# sequential active-set loop of small operations, not one big threadable GEMM.)
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+echo "=========================================="
+date
+echo "Cell:       parallel_scaling/imaging/pixelization_numba --mesh delaunay"
+echo "Instrument: euclid"
+echo "Cores:      1,2,4,8,16,32"
+
+cd $AP_ROOT
+
+python3 scripts/imaging/parallel_scaling/pixelization_numba.py \
+    --instrument euclid \
+    --mesh delaunay \
+    --cores 1,2,4,8,16,32 \
+    --n-points 100 \
+    --map-repeats 2 \
+    --config-name hpc_cpu_node
+
+echo "Finished."
+date

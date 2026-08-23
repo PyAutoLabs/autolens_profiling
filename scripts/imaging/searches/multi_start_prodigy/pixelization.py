@@ -18,7 +18,7 @@ is the listed follow-up; this cell is the vehicle.
 Budget/batching lessons as per the ``knn`` cell: 16 starts, 3000-step budget
 (a long plateau is a reg mode, not convergence), ``batch_size=4`` mandatory
 (unbatched 16-start pixelized jvp ~58 GB). Model: MGE lens light + free broad
-Isothermal/shear + ``RectangularAdaptImage`` source + free ``Constant`` reg —
+Isothermal/shear + ``RectangularRTUAdaptImage`` source + free ``Constant`` reg —
 the SLaM ``source_pix[1]`` shape (see ``_setup._pixelization_model``).
 """
 

@@ -276,7 +276,7 @@ def simulate(instrument: str = "sma", output_root: Path | None = None) -> Path:
 
     # Lensed source image (real-space, pre-NUFFT) — used as the ``adapt_image``
     # by downstream interferometer + datacube likelihood scripts that profile
-    # ``RectangularAdaptImage`` and ``image_mesh.Hilbert``. No PSF convolution
+    # ``RectangularBilinearAdaptImage`` and ``image_mesh.Hilbert``. No PSF convolution
     # here; the visibility transform lives downstream in the likelihood path.
     with timer.section("output_lensed_source"):
         lensed_source = tracer.image_2d_list_from(grid=grid)[-1]

@@ -733,7 +733,7 @@ def _group_mge_model(*, mask_radius: float) -> af.Collection:
 
 
 def _pixelization_model(*, mask_radius: float) -> af.Collection:
-    """RectangularAdaptImage source, mirrors ``source_pix[1]`` init mesh.
+    """RectangularRTUAdaptImage source, mirrors ``source_pix[1]`` init mesh.
 
     The lens light is MGE so the lens-light + source-pixelization
     inversion runs the full Gaussians + mesh columns through the same
@@ -748,7 +748,7 @@ def _pixelization_model(*, mask_radius: float) -> af.Collection:
     lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
     pixelization = af.Model(
         al.Pixelization,
-        mesh=al.mesh.RectangularAdaptImage(
+        mesh=al.mesh.RectangularRTUAdaptImage(
             shape=_PIXELIZATION_MESH_SHAPE,
             weight_power=1.0,
             weight_floor=0.0,

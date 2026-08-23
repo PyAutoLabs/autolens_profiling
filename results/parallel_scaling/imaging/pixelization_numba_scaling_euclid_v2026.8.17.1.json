@@ -1,0 +1,167 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "omp_num_threads": "1",
+    "cpu_count": 8
+  },
+  "instrument": "euclid",
+  "configuration": {
+    "pixel_scale_arcsec": 0.1,
+    "mask_radius_arcsec": 3.5,
+    "image_pixels_masked": 3841,
+    "mesh_shape": [
+      28,
+      28
+    ],
+    "source_pixels": 784,
+    "inversion_path": "sparse_numba",
+    "use_jax": false,
+    "lens_light": "mge_60_linear",
+    "n_points": 50,
+    "map_repeats": 2,
+    "omp_num_threads": "1"
+  },
+  "payload": {
+    "fitness_pickle_mb": 36.79787731170654,
+    "fitness_pickle_s": 0.027944499999648542,
+    "sparse_operator_pickle_mb": 35.78899383544922,
+    "sparse_operator_pickle_s": 0.02278900000055728
+  },
+  "serial": {
+    "total_s": 105.90729160000046,
+    "per_eval_s": 2.118145832000009
+  },
+  "pools": [
+    {
+      "cores": 1,
+      "variant": "nautilus_object_pool",
+      "pool_create_s": 0.006390899998223176,
+      "first_map_s": 109.07713409999997,
+      "steady_map_s": 105.41422969999985,
+      "per_eval_s": 2.108284593999997,
+      "throughput_evals_per_s": 0.47431926545681596,
+      "speedup_vs_serial": 1.0046773751646607,
+      "efficiency_vs_serial": 1.0046773751646607,
+      "corrupt_evals_first_map": 0,
+      "corrupt_evals_steady_maps": [
+        0,
+        0
+      ]
+    },
+    {
+      "cores": 1,
+      "variant": "initializer_cached",
+      "pool_create_s": 0.0034778999997797655,
+      "first_map_s": 107.24369230000048,
+      "steady_map_s": 105.55991350000113,
+      "per_eval_s": 2.1111982700000227,
+      "throughput_evals_per_s": 0.4736646549070871,
+      "speedup_vs_serial": 1.0032908145571693,
+      "efficiency_vs_serial": 1.0032908145571693,
+      "corrupt_evals_first_map": 0,
+      "corrupt_evals_steady_maps": [
+        0,
+        0
+      ]
+    },
+    {
+      "cores": 2,
+      "variant": "nautilus_object_pool",
+      "pool_create_s": 0.006027600000379607,
+      "first_map_s": 72.10187000000042,
+      "steady_map_s": 69.0344769000003,
+      "per_eval_s": 1.380689538000006,
+      "throughput_evals_per_s": 0.7242757857414833,
+      "speedup_vs_serial": 1.5341217367868547,
+      "efficiency_vs_serial": 0.7670608683934274,
+      "corrupt_evals_first_map": 0,
+      "corrupt_evals_steady_maps": [
+        0,
+        0
+      ]
+    },
+    {
+      "cores": 2,
+      "variant": "initializer_cached",
+      "pool_create_s": 0.006117999999332824,
+      "first_map_s": 70.39718189999985,
+      "steady_map_s": 71.61631210000087,
+      "per_eval_s": 1.4323262420000173,
+      "throughput_evals_per_s": 0.6981649645709611,
+      "speedup_vs_serial": 1.4788152097544154,
+      "efficiency_vs_serial": 0.7394076048772077,
+      "corrupt_evals_first_map": 0,
+      "corrupt_evals_steady_maps": [
+        0,
+        0
+      ]
+    },
+    {
+      "cores": 4,
+      "variant": "nautilus_object_pool",
+      "pool_create_s": 0.012382400000205962,
+      "first_map_s": 48.42233579999993,
+      "steady_map_s": 46.14300739999999,
+      "per_eval_s": 0.9228601479999997,
+      "throughput_evals_per_s": 1.0835878027317312,
+      "speedup_vs_serial": 2.2951969879622647,
+      "efficiency_vs_serial": 0.5737992469905662,
+      "corrupt_evals_first_map": 0,
+      "corrupt_evals_steady_maps": [
+        0,
+        0
+      ]
+    },
+    {
+      "cores": 4,
+      "variant": "initializer_cached",
+      "pool_create_s": 0.010932499999398715,
+      "first_map_s": 46.76577919999909,
+      "steady_map_s": 47.90008230000058,
+      "per_eval_s": 0.9580016460000116,
+      "throughput_evals_per_s": 1.0438395426305853,
+      "speedup_vs_serial": 2.2110043764997704,
+      "efficiency_vs_serial": 0.5527510941249426,
+      "corrupt_evals_first_map": 0,
+      "corrupt_evals_steady_maps": [
+        0,
+        0
+      ]
+    },
+    {
+      "cores": 8,
+      "variant": "nautilus_object_pool",
+      "pool_create_s": 0.024062599999524537,
+      "first_map_s": 45.705414300000484,
+      "steady_map_s": 42.3633547999998,
+      "per_eval_s": 0.847267095999996,
+      "throughput_evals_per_s": 1.1802653551885423,
+      "speedup_vs_serial": 2.4999741427466216,
+      "efficiency_vs_serial": 0.3124967678433277,
+      "corrupt_evals_first_map": 0,
+      "corrupt_evals_steady_maps": [
+        0,
+        0
+      ]
+    },
+    {
+      "cores": 8,
+      "variant": "initializer_cached",
+      "pool_create_s": 0.03351039999870409,
+      "first_map_s": 43.20880190000025,
+      "steady_map_s": 39.16859650000151,
+      "per_eval_s": 0.7833719300000302,
+      "throughput_evals_per_s": 1.2765328469198038,
+      "speedup_vs_serial": 2.7038827291142886,
+      "efficiency_vs_serial": 0.3379853411392861,
+      "corrupt_evals_first_map": 0,
+      "corrupt_evals_steady_maps": [
+        0,
+        0
+      ]
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "omp_num_threads": "1",
+    "cpu_count": 8
+  },
+  "instrument": "hst",
+  "configuration": {
+    "pixel_scale_arcsec": 0.05,
+    "mask_radius_arcsec": 3.5,
+    "image_pixels_masked": 15361,
+    "over_sampled_pixels": 17980,
+    "mesh_shape": [
+      28,
+      28
+    ],
+    "source_pixels": 784,
+    "inversion_path": "sparse_numba",
+    "use_jax": false,
+    "lens_light": "mge_60_linear",
+    "omp_num_threads": "1"
+  },
+  "full_pipeline_single_jit": 21.587133480000013,
+  "first_call_incl_numba_compile_s": 24.399476500000674,
+  "first_call_finite": true,
+  "sparse_operator_setup_s": 5.9513955999991595,
+  "sparse_operator_nbytes": 177412056,
+  "log_likelihood": 22803.472837136276,
+  "pinned_expected": null,
+  "pinned_drift": []
+}

@@ -127,7 +127,7 @@ delete the feature branch; move the `active.md` entry to `complete.md` and
 
 - `mge-profiling-a100` (autolens_workspace_developer #56, merged 2026-05-09) —
   first run; 8-step MGE; A100 fp64 = 5.7 ms; vmap ~2×; F + Mapping matrix dominate.
-- `pixelization-profiling-a100` (#57) — RectangularAdaptDensity; 11-step;
+- `pixelization-profiling-a100` (#57) — RectangularBilinearAdaptDensity; 11-step;
   A100 fp64 = 9.7 ms; vmap does not help (serial NNLS); bottleneck shifts from F
   (consumer GPU) to NNLS (A100).
 - Canonical implementations: `z_projects/profiling/scripts/mge_profile.py` /

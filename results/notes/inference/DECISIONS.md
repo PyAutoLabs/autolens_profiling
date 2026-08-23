@@ -163,3 +163,46 @@ pre-positions evidence.
 absorption pointer to this entry.
 
 ---
+
+## 2026-08-21 — Phase 14 adjudicated + shipped: Bilinear (rank-CDF) default, RTU (kernel-CDF) advanced; both explicit in the cells (human-directed)
+
+**Decision:** the Phase 14 default-CPU-mesh question is resolved as option (2)
+in the "resurrect the empirical rank-CDF transform" form, and the whole slice
+shipped same-day (human-adjudicated and human-merged).
+
+- PyAutoArray#462 (merged): rectangular adaptive meshes split into
+  `RectangularBilinearAdaptDensity` / `RectangularBilinearAdaptImage`
+  (empirical rank-CDF — sort + cumsum, O(N log N), no hyperparameters;
+  recovered from the pre-#402 implementation at `22b28463^`) and
+  `RectangularRTUAdaptDensity` / `RectangularRTUAdaptImage` (pure renames of
+  the kernel-CDF classes — likelihood values unchanged).
+- Workspace defaults (autolens_workspace#495, autogalaxy_workspace#221,
+  merged): Bilinear everywhere, **including interferometer** — per the
+  follow-up human directive, no normal-workspace example uses RTU; RTU is
+  documentation-only (required for gradient-based JAX fitting at os_pix=1
+  and on the interferometer sparse path where Bilinear's likelihood is
+  exactly piecewise-constant; recommended on GPU; Enzi et al.
+  arXiv:2606.30620 cited).
+- Downstream configs/docs: PyAutoGalaxy#579, PyAutoLens#707 (merged).
+  Likelihood pins: autolens_workspace_test#259 (merged) — Bilinear pins
+  regenerated under JAX x64, RTU pin scripts kept as pure renames.
+- This repo (PR #155, merged): both meshes explicit via
+  `--rect-mesh {bilinear,rtu}` + `_profile_cli.rect_mesh_classes`;
+  `rect_mesh` recorded in result JSONs; `_rtu` filename suffix keeps the
+  families' results disjoint; sampler benchmark surfaces stay pinned to RTU
+  so the recorded truth bars remain valid.
+
+**Why:** the kernel-CDF transform is 55% (euclid) to 89% (hst) of the numba
+CPU likelihood even after the #458 windowed kernel — an O(M_sub x N_data)
+erf sum. The rank CDF eliminates it at the cost of gradient smoothness
+(certified July audit: piecewise-constant at os_pix=1; FD-validated at
+os_pix=4). The interpolated-kernel-CDF forward was rejected for the default
+(still a bandwidth hyperparameter) and remains #153's lever for RTU itself.
+
+**Still open (Phase 14 tail):** the versioned Bilinear-vs-RTU CPU
+measurement in the `pixelization_numba` cells (`--rect-mesh bilinear` /
+`--rect-mesh rtu`, one run each). Tracked on #153.
+
+**Records:** PROGRAMME.md §Phase 14 + status table (this commit);
+adjudication comment on #153; Mind task rectangular-bilinear-rtu-mesh-split
+(PyAutoArray#461).

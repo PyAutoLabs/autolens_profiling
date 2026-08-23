@@ -28,6 +28,7 @@ expectation · **[CONTRADICTED]** existing evidence pushed back on the brief ·
 | Phase 0(b) blackjax ≥1.6.2 upgrade | **complete** — cloud CPU (PR#143), local venv + RAL stack (2026-08-19, #146) | Cloud: 1.6.2 installs clean next to autofit, `blackjax.nss` 2D smoke PASS, `af.BlackJAXNUTS` unmodified. Local + RAL: 1.5 / 2026-01 fork build → 1.6.2, full smoke PASS in both (now incl. `af.NSS` end-to-end — PR#1492 merged 2026-08-18); RAL library mains re-synced — `phase_00_unblocking/RESULTS.md` |
 | Phase 0(c) RAL artifact harvest | **complete** — local fork-NSS A100 artifacts committed (PR#147); RAL NFS harvest pulled 2026-08-19 (#149): job 331058 all four SMC arms (bridge validated: warm logZ within ±0.8 nats of the Nautilus bar; cold arm −179k with "Converged: yes"), 335003-5 NaN-counter arms, wsdev Nautilus pixgrad baselines | `phase_00_unblocking/RESULTS.md` + `phase_00_unblocking/ral_harvest/` |
 | Phase 0(d) commit plan + ledger structure | **complete** | PR#136 + PR#137 (2026-08-18) |
+| Phase 14 default CPU mesh decision | **adjudicated + shipped 2026-08-21** — Bilinear (rank-CDF) default, RTU (kernel-CDF) advanced; both meshes explicit in the cells via `--rect-mesh` (PR #155); versioned Bilinear-vs-RTU measurement outstanding | autolens_profiling#153, PyAutoArray#461/#462 |
 | Phase 0(e) searches README dashboard loop | **complete** | PR#139 (2026-08-18): nested-layout scanner, 34 rows render, truth-bar rows verified |
 | Phase 2 NSS mainline re-tune | **entry complete (CP-2 ✅ 2026-08-23)** — wiring + laptop smoke + A100 anchor row: mainline matches the fork answer at fork knobs (max logL 31786.62, logZ bias +8.4 persists at inner=5 per H2.1) but is ~1.35× slower sampler-wall; scan + Gate A pending | `phase_02_nss_mainline/RESULTS.md` |
 | Phases 1, 3–13 | not started | — |
@@ -699,6 +700,44 @@ JSON under `results/searches/`.
    staged morphology problems instead.
 3. Graphical / hierarchical / EP scaling — from
    `autolens_workspace/scripts/guides/modeling/advanced/{graphical,hierarchical}.py`.
+
+### Phase 14 — Default CPU mesh decision (new-user hazard) [ADJUDICATED + SHIPPED 2026-08-21]
+
+- **Decision (2026-08-21, human-adjudicated):** option (2), in the
+  "resurrect the empirical rank-CDF transform" form. The rectangular
+  adaptive mesh family is split (PyAutoArray#461/#462, merged):
+  `RectangularBilinearAdaptDensity` / `RectangularBilinearAdaptImage`
+  (empirical rank-CDF — sort + cumsum, O(N log N), no hyperparameters)
+  are the workspace default **everywhere, including interferometer**
+  (autolens_workspace#495, autogalaxy_workspace#221, merged; no normal
+  workspace uses RTU); `RectangularRTUAdaptDensity` /
+  `RectangularRTUAdaptImage` (kernel-CDF, Enzi et al. arXiv:2606.30620)
+  are the documented advanced option — required for gradient-based (JAX)
+  samplers at os_pix=1 and on the interferometer sparse path, recommended
+  on GPU. The interpolated-kernel-CDF forward (K=8192 -> dlnL <= +4e-3,
+  18-55x on the step) was deliberately NOT used for the default (still a
+  bandwidth hyperparameter); it remains #153's lever for speeding up RTU
+  itself, if still wanted now that the CPU default is rank-CDF.
+- **Both meshes are explicit in this repo's cells** (PR #155, merged):
+  `--rect-mesh {bilinear,rtu}` on the rectangular likelihood_runtime /
+  likelihood_breakdown / parallel_scaling cells via
+  `_profile_cli.rect_mesh_classes`, with `rect_mesh` embedded in result
+  JSONs and `_rtu`-suffixed result files; `--rect-mesh rtu` reproduces the
+  pre-split kernel-CDF behaviour, so pre-split recorded numbers stay
+  comparable. The sampler benchmark surfaces (misc/searches `_setup.py`,
+  nautilus / multi_start_prodigy cells) stay pinned to RTU — gradient
+  searches need the kernel-CDF mesh and the recorded truth bars remain
+  valid.
+- **Outstanding:** the versioned Bilinear-vs-RTU CPU measurement in the
+  `pixelization_numba` cells (one run each of `--rect-mesh bilinear` /
+  `--rect-mesh rtu`), recording the erf-sum elimination (kernel-CDF was
+  55% of a euclid eval, 89% at hst, post-#458).
+- **Original question / options / evidence:** autolens_profiling#153 (the
+  intake, with all measurements and the 2026-08-21 adjudication comment);
+  options were (1) Delaunay first-class, (2) simpler/faster Rectangular
+  default, (3) backend-dependent defaults.
+- **Depends:** resolved before Phase 11's frozen recommended configuration,
+  as required.
 
 ## 5 · Benchmark & result schema (v2)
 

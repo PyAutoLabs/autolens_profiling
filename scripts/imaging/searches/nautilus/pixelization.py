@@ -1,6 +1,6 @@
 """First-class af.Nautilus search profiling — imaging pixelization.
 
-Drives a full ``af.Nautilus`` fit on an MGE lens + RectangularAdaptImage
+Drives a full ``af.Nautilus`` fit on an MGE lens + RectangularRTUAdaptImage
 pixelization source imaging model. Uses a truth-derived adapt image cached
 next to the dataset. See ``searches/README.md`` for caveats.
 """
