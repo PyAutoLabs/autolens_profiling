@@ -8,95 +8,144 @@ auto-convergence ON, n_steps ceiling 3000, seed via `SEARCHES_SEED` +
 per-arm `unique_tag` (the identifier fix — see the submit-script headers),
 positions OFF. Per-lane records via PyAutoFit PR#1515.
 
+**This write-up is the post-adversarial-review version** (same day; the
+original overclaimed in four places — the full attack record and what
+broke is `ADVERSARIAL_REVIEW.md`, kept as provenance for the gate call).
+
 ## Classification rule
 
 A lane HIT = `lane_best_log_posterior ≥ 31786.782 − 2` (the Nautilus truth
-bar minus the Phase-1 tolerance). The rule is insensitive to the threshold:
-every hit lane sits in a tight cluster at 31787.79–31787.83 (the known
-Prodigy MAP, ~1.0 above the bar — log-posterior vs logL offset noted), and
-the nearest wrong-basin best is 26076 — a >5,700-nat gap. Any threshold in
-[~26100, ~31785] classifies identically. Run SUCCESS = ≥1 hit lane.
+bar minus the Phase-1 tolerance; prior contribution measured at −0.092 in
+every successful run, so the effective logL threshold is 31784.87). The
+lane-level margin is NOT large: hit lanes span 31785.01–31787.83 and the
+nearest non-hit lane sits 0.251 nats below the cut, so the lane-level p̂
+swings 0.0406→0.0588 across thresholds bar→26100. The threshold-stable
+quantity is **run-level success — 11/15 campaign runs at every threshold
+in that range**. Run SUCCESS = ≥1 hit lane.
 
 ## p_hit and reliability (the CP-3 deliverable)
 
-| tier | runs OK | pooled p̂_hit | Wilson 95% | implied reliability n=16 | n=64 | n=256 |
-|---|---:|---:|---|---:|---:|---:|
-| n16 ×5 seeds | **1/5** | 1/80 = 0.0125 | [0.002, 0.068] | 0.18 | 0.55 | 0.96 |
-| n64 ×5 seeds | **5/5** | 15/320 = 0.0469 | [0.029, 0.076] | 0.54 | 0.95 | >0.9999 |
-| n256 ×5 seeds | **5/5** | 61/1280 = 0.0477 | [0.037, 0.061] | 0.54 | 0.96 | >0.9999 |
+Observed hits (5 seeds per tier): n16 = 1,0,0,0,0 of 16 · n64 = 4,3,2,5,1
+of 64 · n256 = 13,8,17,13,10 of 256. Runs successful: **n16 1/5 · n64 5/5
+· n256 5/5**.
 
-- **[H3.2] answered:** p_hit ≈ **0.047** (n64 and n256 agree tightly), i.e.
-  *below* the Adam-anchored O(0.1–0.2) guess but far from "much lower".
-  The n16 tier's own p̂ (0.0125) sits low but its CI includes 0.047; the
-  seed-lottery historical picture (1-in-5 runs succeed at 16 starts)
-  reproduced exactly.
-- **99% reliability needs n ≈ 96 starts** (ln 0.01 / ln(1−0.047)); n=128
-  gives ~99.8%, n=256 gives ≥99.99% (CI lower bound).
-- **Cost:** wall per run 106–284 s on the A100 (auto-convergence stopped
-  every run at 138–206 steps; the 3000 ceiling was never touched — the
-  whole 20-run wave cost ≈0.9 A100-hours against a 5.5 h worst-case
-  budget). At n=256 that is **~172–225 s vs Nautilus's 831 s** on the same
-  tier and NSS's 840–6,341 s — reliable Prodigy is ~4× faster than the
-  cheapest nested-sampling row, positions-off, from broad priors.
-- **Gate B (part 1) reading — provisional, pending adversarial review and
-  human ratification:** the gate's failure condition ("no n_starts ≤ 256
-  gives ≥99% reliability at cost below the nested-sampling budget") is
-  **not met** — n≥128 clears 99% at a quarter of Nautilus's wall. On this
-  evidence MultiStartProdigy(n≥128, prior-box clip, auto-converge)
-  qualifies as a *global MAP searcher* for the MGE-class parametric cell,
-  positions-off. Caveats before the gate is called: MAP only (no
-  posterior/evidence — nested sampling still owns those), single cell
-  (MGE/HST), and the §3 rule that a gate decision needs an independent
-  falsify-the-interpretation pass first.
+**The tiers are NOT independent samples** (adversarial finding 7): the
+broad-start draw uses `default_rng(seed)` row-by-row, so at the same seed,
+lane *i* has the same initial conditions in every tier — n16 and n64 are
+prefixes of n256's draw table (hit-index overlap 14.2× enriched,
+p = 1.2e-08; several lane records bit-identical across tiers). The wave
+therefore contains **~1,280 distinct initial conditions (the n256 tier),
+not 1,680**, and n-dependence of p_hit is *unmeasured* by this design.
+The n16 tier's low count is one unlucky 80-draw block, reproduced verbatim
+as lanes 0–15 inside the other tiers (1/80 there too).
+
+Corrected headline, from the n256 tier alone:
+
+- **p̂_hit = 61/1280 = 0.048**, Clopper–Pearson 95% [0.037, 0.061] —
+  a **lower bound**: hits are budget-censored by the stop rule (89.6% of
+  hit lanes peak within 10 steps of the stop; nine truth-basin lanes sit
+  0.03–12.2 nats short, still climbing; a longer budget gives ≈0.055).
+  p̂ is a property of (Prodigy, prior_box clip, this auto-convergence
+  rule), not of Prodigy alone.
+- Dispersion across runs is indistinguishable from binomial (Tarone
+  p > 0.6), but the stop rule couples lanes by construction; the 95%
+  upper bound on within-run correlation is ρ ≤ 0.0057.
+- **Reliability, joint-95% worst case over (p, ρ): n=96 → 0.92,
+  n=128 → 0.95, n=256 → 0.990.** Independence-model point estimates:
+  0.991 / 0.998 / 0.999996. The 99%-at-n≈96 arithmetic is a point
+  estimate only; the CI-lower crossing is n ≈ 124; **the tier that
+  demonstrably clears 99% under every model the data allows is n = 256 —
+  the one actually measured.** (No model-free route to 99% exists at
+  5 seeds: 10/10 successes bounds run reliability below only at 0.69.)
+
+## Cost
+
+n256 runs: 172–225 s total wall (viz disabled) vs the recorded Nautilus
+A100 row's **772.7 s sampler wall** (its 831 s total includes 58.6 s viz)
+→ **3.4–4.5×**. Caveats that must ride with that number: §1.2 also
+records Nautilus at 523 s on the same node (→ 2.3–3.0×; unreconciled);
+the Nautilus row is v2026.5.21.1 on a different XLA config (drift measured
+at +30% on an NSS control — favours Prodigy, i.e. conservative); neither
+side splits compile per §3 (OLS: ~144 s of each Prodigy wall is fixed
+overhead — marginal compute at n256 is ~52 s); and Prodigy is MAP-only
+(`log_evidence` NaN) — this is a *budget* comparison per Gate B's wording,
+not a like-for-like replacement of posterior+evidence. Whole wave: 20 runs,
+0.96 A100-h against a 5.5 h worst-case budget (auto-convergence stopped
+every run at 138–206 steps; ceiling never touched).
+
+Known artifact defect: `likelihood_evals` in MultiStart artifacts records
+`samples.total_samples` (= n_starts+1), not evaluations — the Phase-3
+budget-matched eval table is UNMET pending a `_metrics.py` fix (true
+gradient-eval count at n256 ≈ 178×256 ≈ 45.6k vs Nautilus's 63.8k logL
+evals).
+
+## Parameter recovery (adversarially verified — the strongest leg)
+
+All 80 hit lanes across seeds, tiers, and arms recover the same solution:
+θ_E ∈ [1.599476, 1.599881] (0.014% spread), shear γ ∈ [0.0482, 0.0498],
+centres ≤ 8.5e-4, worst parameter spread 3.8e-3. **Zero impostors; zero
+hit lanes pinned on any prior bound.** Gap: §3's "recovery within stated
+tolerances of simulator truth" cannot be formally evaluated — no truth
+vector or tolerance doc exists yet (Phase 1, which owns `_targets.py` and
+per-target tolerances, has not started although Phase 3 declares a
+dependency on it).
 
 ## [H3.3] trapped-lane accounting (ell_comps / prior-bound pinning)
 
-Pinned lanes (≥1 parameter exactly on a prior bound) at final / at best:
+Pinned lanes (≥1 parameter exactly on a bound) at final: n16 7–12/16,
+n64 25–32/64, n256 115–130/256 — **roughly half of all lanes end pinned**
+under clip=prior_box, and no pinned lane is ever a hit. Raw per-lane
+pinned-parameter names and ell_comps magnitudes are recorded in every
+artifact for the Phase-4 positions-on re-measurement (measured, not
+closed, per the 2026-08-20 absorption directive). Trap for aggregators:
+the diagnostic arm's prior override *reorders* `parameter_names` (θ_E at
+index 14 vs 8) — never assume a shared parameter order across arms.
 
-- n16: 7–12 of 16 per run (≈44–75%) · n64: 25–32 of 64 (≈39–50%) ·
-  n256: 115–130 of 256 (≈45–51%).
-- Roughly **half of all lanes end pinned** — the trapping is live and
-  large under the current clip=prior_box config, yet hit lanes coexist
-  with it (hits are never pinned lanes' — the per-lane records allow the
-  corner-vs-annulus and parameter-name breakdown; raw names + magnitudes
-  are in every artifact for the Phase 4 positions-on re-measurement).
-  Per the 2026-08-20 absorption directive this is measured, not closed,
-  here: the positions-on repeat decides the fix question.
+## Diagnostic arm — θ_E ~ U(0.2, 8) (target_class 3): NO SUPPORT for H3.1
 
-## Diagnostic arm — θ_E ~ U(0.2, 8) (target_class 3, mechanism probe)
-
-Same n16 tier, seeds 0–4, only the Einstein-radius prior changed
-(`Uniform(0,8) → Uniform(0.2,8)`, recorded in each artifact's
-`target_override` block; artifacts quarantined under `diagnostic_theta_e/`).
-
-| | campaign n16 | diagnostic n16 |
-|---|---:|---:|
-| runs OK | 1/5 | **3/5** |
-| pooled p̂_hit | 0.0125 | 0.0375 |
-
-Removing the prior wall's intersection with the θ_E→0 degenerate basin
-**triples the run success rate at 16 starts** — directional support for
-[H3.1] (the failure is basin discovery via the θ_E=0 attractor, not bound
-handling). Not conclusive at 5 seeds (CIs overlap); the two remaining
-failures land in *other* wrong basins (bests 26076 and −128,637), i.e.
-the θ_E wall is not the only attractor. This stays a mechanism note —
-the prior change is target-changing and is not a recommendation.
+Original claim withdrawn after review. At lane level the diagnostic p̂
+(3/80 = 0.0375) is *lower* than the campaign's 0.048 (Fisher p = 1.00) —
+removing the θ_E=0 wall intersection did **not** raise per-start hit
+probability. The apparent run-success improvement (3/5 vs 1/5) is
+baseline arithmetic: unchanged p_hit already predicts 2.7/5 at n=16; the
+campaign n16's 1/5 is the mild outlier (P(≤1)=0.14), not the diagnostic's
+3/5 (P(≥3)=0.58). The arms are also not draw-matched (model reorder ⇒
+fresh draws). H3.1 remains open; this probe was uninformative.
 
 ## Convergence detector
 
-All 20 runs stopped on `converged` (never `max_steps`), at 138–206 steps.
-No stopped-run has a best lane below its tier's cluster pattern, but the
-confusion-matrix question (stopped-correct vs stopped-wrong-basin) is only
-half-answerable positions-off: every wrong-basin run ALSO reported
-"converged" — the detector cannot distinguish a wrong-basin plateau from
-convergence, exactly as PROGRAMME §1.2 warned. Reliability must come from
-n_starts, not from the stop rule.
+All 20 runs stopped on `converged` (never `max_steps`) at 138–206 steps —
+including every wrong-basin run: the detector cannot distinguish a
+wrong-basin plateau from convergence (as §1.2 warned), so reliability must
+come from n_starts. The failures are genuine basin failures (zero
+global-best improvement over their final 50 steps), and the earliest hit
+anywhere lands at step 151 — n16_seed3's stop at 138 is the one run that
+halted before a hit was possible (a real small-n censoring mechanism).
+
+## Gate B part 1 — the reading put before the human
+
+**The failure condition ("no n_starts ≤ 256 gives ≥99% reliability at cost
+below the nested-sampling budget") is NOT met — demonstrated at n = 256:**
+5/5 seeds, ≥99.0% reliability at the joint-95% worst case (≥99.99% under
+independence), 172–225 s vs 772.7 s, every hit recovering the reference
+parameters. Provisional pending the human call, with mandatory caveats:
+(a) demonstrated at n=256 only — no smaller n reaches 99% at 95%
+confidence; (b) tiers share draws — effective sample ~1,280, n-dependence
+unmeasured; (c) p̂ is budget/detector-conditional and a lower bound;
+(d) compile not split, baseline version/flags differ, two unreconciled
+Nautilus walls (772.7/523 s); (e) no `target_id` — §3 comparability
+unverified; Phase 1 dependency unmet; (f) MAP-only; (g) single cell,
+positions-off, one tier; (h) `likelihood_evals` field wrong for
+MultiStart.
 
 ## Next
 
-- Adversarial review pass on the Gate B (part 1) reading, then the human
-  gate call (DECISIONS.md).
+- Human gate call on the narrowed reading above (DECISIONS.md entry).
+- **Required if the gate is to be called at n < 256:** a 5-seed n128 tier
+  with per-tier RNG stream offsets (so tiers stop sharing lane-index
+  draws — the flaw that made n16/n64 non-informative about n-dependence).
+- Fix `_metrics.py` `likelihood_evals` for MultiStart artifacts.
+- Reconcile the two recorded Nautilus walls (831/772.7 vs 523 s) or
+  re-run the baseline on the current stack with compile split.
 - Phase 4: the same trio ± PositionsLH (needs positions plumbing in
   `_setup.py` — not built), including the H3.3 re-measurement per engine.
-- Optional cheap sharpening: a 5-seed n128 tier to pin the 99% crossing
-  directly rather than by arithmetic.
