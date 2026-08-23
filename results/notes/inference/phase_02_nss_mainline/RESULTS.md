@@ -110,10 +110,42 @@ RAL and the rerun (338491) sampled for real. Any future same-knob
 cross-version rerun must clear or relocate the output dir first, and
 verify wall-time plausibility, never just the version stamp.
 
+## Scan wave 1 — the inner-steps axis: H2.1 CONFIRMED (2026-08-23)
+
+RAL jobs 338492/338493 (A100 fp64, unchunked; n_live 200, num_delete 50,
+dlogz −3, seed 42 — only `num_mcmc_steps` varies vs the anchor). Artifacts
+`hpc_hpc_a100_fp64_inner{30,45}.json`; arm encoded in `--config-name`, so
+autofit identifiers and files are disjoint from the anchor (see the wave-1
+submit scripts' headers). Both runs verified genuine (current version
+stamp, plausible walls, no "Fit Already Completed" marker).
+
+| inner steps | logZ | bias vs Nautilus 31690.5 | max logL | sampler wall | evals |
+|---:|---:|---:|---:|---:|---:|
+| 5 (anchor) | 31698.85 | +8.4 | 31786.62 | 839.6 s | 234,498 |
+| 30 (=2d) | 31691.20 | **+0.7** | 31785.83 | 4,218.6 s | 1,492,747 |
+| 45 (=3d) | 31690.04 | **−0.5** | 31786.35 | 6,341.3 s | 2,264,857 |
+
+**H2.1 is confirmed as pre-registered:** the +7–13-nat logZ bias recorded
+in every fork-era NSS row is under-mixing of the inner slice kernel, not a
+code or evidence-estimator defect. The bias falls monotonically with
+inner steps and *brackets* the Nautilus reference at 3d. Every max logL
+stays within the ≤2-nat correctness tolerance of the truth bar
+(31786.782); eval counts scale linearly in inner steps (6.4× / 9.7×), wall
+slightly better than linear (5.0× / 7.6×).
+
+**Cost consequence for Gate A:** evidence-correct NSS at these knobs
+(inner ≥ 2d) costs 4,219–6,341 s sampler wall on the A100 vs Nautilus's
+831 s total on the same tier — ~5–7.6×. NSS's Gate-A wall-time case now
+rests entirely on the remaining scan axes: `num_delete` (the GPU
+parallelism axis) and `n_live`, where larger deletion blocks amortize the
+inner-step cost per replacement. inner=30 (2d) is the working operating
+point for those axes (0.7 nats is within Phase-1 evidence tolerance;
+inner=45 doubles down for a final confirmation row only).
+
 ## Next (per PROGRAMME §4 Phase 2)
 
-- The scan: n_live {200, 500, 1000} × num_delete {0.1m, 0.25m, 0.5m} ×
-  inner steps {5, 2d, 3d} × dlogz {−3, −10} on laptop-GPU + RAL-CPU, then
-  one A100 confirmation + one pixelized probe. H2.1 (logZ bias from
-  under-mixing) is the sharpest pre-registered test.
+- Scan wave 2: num_delete {20, 50 (done), 100} × n_live {200 (done), 500,
+  1000} at inner=2d, dlogz −3 — the wall-time axes. Then ≥5-seed
+  reliability at the chosen operating point, one dlogz −10 termination
+  row, and the pixelized-cell probe.
 - Gate A judged per model family, not on MGE alone.

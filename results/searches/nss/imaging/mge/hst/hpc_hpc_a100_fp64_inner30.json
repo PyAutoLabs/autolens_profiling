@@ -1,0 +1,74 @@
+{
+  "sampler": "nss",
+  "dataset_class": "imaging",
+  "model": "mge",
+  "instrument": "hst",
+  "config_name": "hpc_a100_fp64_inner30",
+  "version": "2026.8.17.1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "omp_num_threads": null,
+    "cpu_count": 124,
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 8701 MiB, 81920 MiB"
+  },
+  "use_mixed_precision": false,
+  "sampler_config": {
+    "n_live": 200,
+    "num_mcmc_steps": 30,
+    "num_delete": 50,
+    "chunk_size": null,
+    "termination": -3.0,
+    "seed": 42,
+    "jax_native": true
+  },
+  "model_summary": {
+    "free_parameters": 15,
+    "best_fit": "lens.mass.einstein_radius=1.5997  lens.mass.centre=(0.000, 0.000)  shear=(0.0488, 0.0495)"
+  },
+  "results": {
+    "log_evidence": 31691.203076764657,
+    "max_log_likelihood": 31785.825653046246,
+    "posterior_samples": 17050,
+    "posterior_stats": {
+      "centre_0": {
+        "mean": 0.0003800824133871119,
+        "std": 0.0002705951401592326
+      },
+      "centre_1": {
+        "mean": 0.0003126448374884393,
+        "std": 0.00023215075935394938
+      },
+      "ell_comps_0": {
+        "mean": 0.09231890118274974,
+        "std": 0.002225043379995448
+      },
+      "ell_comps_1": {
+        "mean": -0.05117948172980935,
+        "std": 0.001909756087616229
+      },
+      "einstein_radius": {
+        "mean": 1.5996799917686133,
+        "std": 0.00021566167265612974
+      },
+      "gamma_1": {
+        "mean": 0.048563221604702514,
+        "std": 0.0004096452501862745
+      },
+      "gamma_2": {
+        "mean": 0.04956758505380188,
+        "std": 0.0003763879136461101
+      }
+    }
+  },
+  "performance": {
+    "total_wall_s": 4260.683791637421,
+    "viz_wall_s": 42.05073200794868,
+    "viz_n_calls": 5,
+    "viz_disabled": false,
+    "sampler_wall_s": 4218.633059629472,
+    "likelihood_evals": 1492747,
+    "time_per_eval_ms": 2.8260871129732448
+  }
+}

@@ -48,6 +48,8 @@ of PyAutoFit machinery is exercised and measured.
 | `nautilus` | `point_source/source_plane_tensor/simple` | `hpc_a100_fp64` | 15.3 | -11.8 | 184.36 s | 14,900 | 9.0 ms | v2026.7.23.1 |
 | `nss` | `imaging/delaunay/hst` | `hpc_a100_fp64` | 30,622.2 | 30,567.8 | 29770.41 s | 206,448 | 144.0 ms | v2026.5.21.1 |
 | `nss` | `imaging/mge/hst` | `hpc_a100_fp64` | 31,786.6 | 31,698.9 | 882.78 s | 234,498 | 3.6 ms | v2026.8.17.1 |
+| `nss` | `imaging/mge/hst` | `hpc_a100_fp64_inner30` | 31,785.8 | 31,691.2 | 4260.68 s | 1,492,747 | 2.8 ms | v2026.8.17.1 |
+| `nss` | `imaging/mge/hst` | `hpc_a100_fp64_inner45` | 31,786.3 | 31,690.0 | 6382.99 s | 2,264,857 | 2.8 ms | v2026.8.17.1 |
 | `nss` | `imaging/pixelization/hst` | `hpc_a100_fp64` | 29,142.5 | 29,078.9 | 19190.01 s | 266,043 | 72.0 ms | v2026.5.21.1 |
 <!-- END auto-table:searches -->
 
