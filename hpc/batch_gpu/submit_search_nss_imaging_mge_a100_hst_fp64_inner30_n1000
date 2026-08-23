@@ -1,0 +1,135 @@
+#!/bin/bash -l
+#
+# Inference programme Phase 2 (issue #149) — mainline af.NSS A100 scan,
+# wave 2 arm (b2): searches/nss/imaging/mge x hst x fp64,
+# inner steps = 30, n_live = 1000, num_delete = 250 (= 0.25m).
+#
+# ARM: n_live 1000, num_mcmc_steps 30, num_delete 250, dlogz -3, seed 42,
+#      unchunked. Wave 2 holds inner steps at 30 (= 2d, the operating point
+#      wave 1 established: H2.1 confirmed, logZ 31691.20 vs the Nautilus
+#      reference 31690.5) and moves the WALL-TIME axes instead.
+#      Baseline for every wave-2 estimate is the wave-1 inner30 row
+#      results/searches/nss/imaging/mge/hst/hpc_hpc_a100_fp64_inner30.json
+#      (n_live 200, num_delete 50: sampler wall 4218.6 s, 1,492,747 evals,
+#      2.826 ms/eval, viz 42.1 s over 5 calls).
+#
+# QUESTION: the top of the PROGRAMME §4 n_live grid, again at the SAME
+#      k/m = 0.25 so n_live is the only moving axis. Read with the n500 arm
+#      it turns the n_live axis into three points (200/500/1000) — enough to
+#      say whether logZ accuracy is still improving with live points or has
+#      saturated, and to price that improvement in wall-clock. This is the
+#      MOST EXPENSIVE arm in wave 2 by a factor of ~2 and the one to drop
+#      first if A100 time is short: the n500 arm alone already answers "does
+#      n_live matter at all beyond 200", and this arm only sharpens it.
+#
+# SCALING MODEL (stated so the estimate is auditable; identical in every
+#      wave-2 arm):
+#        sampler_wall ~ total_evals x ms_per_eval
+#        total_evals  = R x inner x c      (c = evals per inner slice step)
+#        R            = n_outer x num_delete          (total replacements)
+#        n_outer      = dlogX / -ln(1 - k/m)   (volume compression per outer)
+#      =>  R = dlogX x m x g(k/m),  where g(x) = x / -ln(1-x)
+#      Consequences: total replacements scale ~LINEARLY in n_live, and are
+#      only WEAKLY dependent on num_delete (g = 0.949 at k/m=0.1, 0.869 at
+#      0.25, 0.721 at 0.5). num_delete mostly trades outer-iteration COUNT
+#      against work PER outer iteration — evals per replacement is constant,
+#      replacements per outer step = num_delete.
+#      Wave-1 support for the "R is inner-invariant" leg: at fixed
+#      (m=200, k=50) evals ran 234,498 -> 1,492,747 -> 2,264,857 for inner
+#      5/30/45, i.e. 6.37x and 9.66x against the nominal 6x / 9x — linear in
+#      inner steps to within 6-7%. ms/eval was stable (2.826 / 2.800).
+#
+# WALL-TIME ESTIMATE: k/m is unchanged at 0.25, so g cancels exactly and the
+#      eval-model ratio is simply n_live: 1000/200 = 5.000 -> ~7.46M evals,
+#      ~21093 s at the baseline's 2.826 ms/eval. No utilisation credit taken
+#      even though the vmap is 5x wider (250 vs 50).
+#      ~21093 s sampler + ~45 s viz + ~120 s compile margin = ~21258 s
+#      (~5 h 54 m). 1.7x that is ~10 h 02 m, which crosses the 10 h line, so
+#      --time is set to 12:00:00 rather than the formula value — FLAGGED for
+#      review as the only wave-2 arm needing that treatment.
+#      CAVEAT: the ~linear-in-n_live law assumes dlogX (the total volume
+#      compression to reach dlogz -3) is n_live-independent. It is not
+#      exactly — the termination criterion compares logZ_live to logZ, and a
+#      larger live set carries more remaining evidence, so the run may
+#      compress slightly FURTHER before stopping. That biases this estimate
+#      LOW, not high, and this arm has the largest live set in wave 2, so it
+#      is where that bias bites hardest — a second reason for 12:00:00.
+#
+# VRAM: peak inner-step memory scales with num_delete, not n_live (af.NSS
+#      chunk_size docstring: "Peak GPU memory becomes chunk_size x
+#      per_particle_state instead of num_delete x per_particle_state"); the
+#      live array itself is only n_live x d x 8 B = 120 KB at 1000 x 15 fp64.
+#      From the recorded 937 MiB at num_delete=50 (the 6 GB laptop OOM, the
+#      only recorded NSS step-allocation datum) -> ~18.7 MiB/particle ->
+#      ~4.58 GiB at num_delete=250. That is ~6% of an 80 GB A100, so
+#      chunk_size stays UNSET on this arm too. The 18.7 MiB/particle figure
+#      is an OVER-estimate of the marginal cost — the recorded 937 MiB is a
+#      first-jitted-step allocation that also carries fixed compile buffers
+#      which do not scale with num_delete — so ~4.58 GiB is an upper bound.
+#      If the run nevertheless hits RESOURCE_EXHAUSTED, the fix is
+#      SEARCHES_NSS_CHUNK_SIZE=50 (bit-identical at fixed seed per PyAutoFit
+#      PR#1492), which reproduces the baseline's per-step footprint exactly.
+#
+# ARTIFACT ISOLATION: --config-name carries the full arm label (inner steps
+#      AND the moved axis) so the arm is readable from the filename alone.
+#      It sets both the results basename (_profile_cli.resolve_output_paths)
+#      and the af.NSS search ``name`` (searches/_samplers.build_nss) ->
+#      hpc_hpc_a100_fp64_inner30_n1000.json under its own output/ directory.
+#      n_live and num_delete are both NSS __identifier_fields__ entries, so
+#      the autofit identifier differs from every other arm too. NOTE: if the
+#      chunk_size fallback above is ever used, it does NOT change the
+#      identifier — rerun under the SAME config-name only if the unchunked
+#      attempt produced no completed fit.
+
+#SBATCH -J search_nss_imaging_mge_hst_fp64_inner30_n1000
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=12:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_profiling
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+# Phase 2 scan knobs. Every value is stated explicitly (including the ones that
+# match the builder defaults in searches/_samplers.py) so the arm is readable
+# from this file alone and cannot drift if a default changes.
+export SEARCHES_NSS_N_LIVE=1000
+export SEARCHES_NSS_NUM_MCMC_STEPS=30
+export SEARCHES_NSS_NUM_DELETE=250
+export SEARCHES_NSS_TERMINATION=-3.0
+export SEARCHES_NSS_SEED=42
+# chunk_size deliberately unset: ~4.58 GiB projected (upper bound) on an
+# 80 GB A100 — see the VRAM note above for the fallback if that is wrong. It
+# is also the one NSS knob absent from __identifier_fields__, so it must never
+# be used to distinguish arms.
+
+nvidia-smi
+
+echo "=========================================="
+date
+echo "Cell:       searches/nss/imaging/mge"
+echo "Instrument: hst"
+echo "Precision:  fp64"
+echo "Arm:        inner30_n1000 (n_live=1000, num_delete=250 = 0.25m), H2.2"
+
+cd $AP_ROOT
+python3 scripts/imaging/searches/nss/mge.py \
+    --instrument hst \
+    --config-name hpc_a100_fp64_inner30_n1000 \
+    --output-dir $AP_ROOT/results/searches/nss/imaging/mge/hst
+
+echo "Finished."
+date
