@@ -50,6 +50,7 @@ if _misc_dir not in _sys.path:
     _sys.path.insert(0, _misc_dir)
 
 
+import os
 import sys
 from pathlib import Path
 from typing import Any, Optional
@@ -677,6 +678,73 @@ def _mge_model(*, mask_radius: float) -> af.Collection:
     )
     source = af.Model(al.Galaxy, redshift=1.0, bulge=source_bulge)
     return af.Collection(galaxies=af.Collection(lens=lens, source=source))
+
+
+_DIAGNOSTIC_THETA_E_ENV = "SEARCHES_DIAGNOSTIC_THETA_E_PRIOR"
+
+
+def apply_diagnostic_prior_overrides(model: af.Collection) -> tuple[af.Collection, dict | None]:
+    """Apply the Phase-3 **diagnostic** Einstein-radius prior, if requested.
+
+    ``SEARCHES_DIAGNOSTIC_THETA_E_PRIOR="<lower>,<upper>"`` replaces the lens
+    mass's ``einstein_radius`` prior (config default ``Uniform(0.0, 8.0)``)
+    with ``Uniform(lower, upper)``.
+
+    This is a **target-changing** override — ``target_class 3`` in the
+    programme's smoothing taxonomy (``PROGRAMME.md`` §3), which is never
+    presented as a numerical fix (Gate F). It exists for exactly one
+    pre-registered mechanism probe: Phase 3's arm asking whether lifting the
+    lower wall off ``theta_E = 0`` — where the degenerate "no lens" basin sits
+    against the prior box — recovers the seed-1 failure. A run using it is NOT
+    comparable to the campaign's other arms; it has a different ``target_id``,
+    and that difference *is* the experiment.
+
+    Returns ``(model, record)``; ``record`` is ``None`` when the env var is
+    unset, so the ordinary path is untouched. Raises rather than warning if the
+    override is requested against a model with no ``galaxies.lens.mass
+    .einstein_radius`` — a silently-ignored target change is the one outcome
+    that must not be possible.
+    """
+    raw = os.environ.get(_DIAGNOSTIC_THETA_E_ENV)
+    if not raw:
+        return model, None
+
+    try:
+        lower_str, upper_str = raw.split(",")
+        lower, upper = float(lower_str), float(upper_str)
+    except ValueError as exc:
+        raise ValueError(
+            f"{_DIAGNOSTIC_THETA_E_ENV}={raw!r} is not a '<lower>,<upper>' pair"
+        ) from exc
+
+    try:
+        mass = model.galaxies.lens.mass
+        previous = mass.einstein_radius
+    except AttributeError as exc:
+        raise ValueError(
+            f"{_DIAGNOSTIC_THETA_E_ENV} was set but this model has no "
+            f"'galaxies.lens.mass.einstein_radius' to override"
+        ) from exc
+
+    mass.einstein_radius = af.UniformPrior(lower_limit=lower, upper_limit=upper)
+
+    record = {
+        "kind": "diagnostic_theta_e_prior",
+        "target_class": 3,
+        "parameter": "galaxies.lens.mass.einstein_radius",
+        # ``str``, not ``repr``: a Prior's repr is ``<UniformPrior id=323>``,
+        # which records nothing about the limits that were changed.
+        "prior_before": str(previous),
+        "prior_after": str(mass.einstein_radius),
+        "lower_limit": lower,
+        "upper_limit": upper,
+        "note": (
+            "TARGET-CHANGING mechanism probe (PROGRAMME.md Phase 3 diagnostic "
+            "arm). Not comparable to the campaign's other arms: different "
+            "target_id by construction."
+        ),
+    }
+    return model, record
 
 
 def _group_mge_model(*, mask_radius: float) -> af.Collection:

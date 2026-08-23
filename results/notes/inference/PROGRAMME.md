@@ -31,7 +31,8 @@ expectation · **[CONTRADICTED]** existing evidence pushed back on the brief ·
 | Phase 14 default CPU mesh decision | **adjudicated + shipped 2026-08-21** — Bilinear (rank-CDF) default, RTU (kernel-CDF) advanced; both meshes explicit in the cells via `--rect-mesh` (PR #155); versioned Bilinear-vs-RTU measurement outstanding | autolens_profiling#153, PyAutoArray#461/#462 |
 | Phase 0(e) searches README dashboard loop | **complete** | PR#139 (2026-08-18): nested-layout scanner, 34 rows render, truth-bar rows verified |
 | Phase 2 NSS mainline re-tune | **entry complete (CP-2 ✅ 2026-08-23)** — wiring + laptop smoke + A100 anchor row: mainline matches the fork answer at fork knobs (max logL 31786.62, logZ bias +8.4 persists at inner=5 per H2.1) but is ~1.35× slower sampler-wall; scan + Gate A pending | `phase_02_nss_mainline/RESULTS.md` |
-| Phases 1, 3–13 | not started | — |
+| Phase 3 Prodigy reliability | **wave 1 complete + adversarially reviewed (CP-3 ✅ 2026-08-23, positions-off)** — p̂_hit = 0.048 [0.037, 0.061] (lower bound; n256 tier, ~1,280 distinct draws — tiers share lane-index draws, n-dependence unmeasured); demonstrated ≥99% reliability at **n=256 only** (joint-95% worst case), 3.4–4.5× under the viz-stripped Nautilus wall; zero parameter-recovery impostors; ~half of lanes end pinned (H3.3, measured not closed); θ_E diagnostic uninformative for H3.1 (withdrawn). Gate B pt 1 narrowed reading awaits the human call | `phase_03_prodigy_reliability/RESULTS.md` + `ADVERSARIAL_REVIEW.md` |
+| Phases 1, 4–13 | not started | — |
 | Gates A–F | open | — |
 
 ---
@@ -904,6 +905,22 @@ Maximum information before large A100 commitment — strictly ordered:
    campaign (Phase 5) shrinks to nested-sampling + mesh-family ranking only.
    Also carries the H3.3 `ell_comps` trapped-lane accounting on every arm
    (absorbed Mind prompt — see Phase 3 metrics and DECISIONS 2026-08-20).
+   **✅ Positions-off half COMPLETE + adversarially reviewed 2026-08-23
+   (A100, 20 runs, 0.96 GPU-h): p̂_hit = 0.048 [0.037, 0.061] (lower
+   bound; budget/detector-conditional; n256 tier — the wave's tiers share
+   lane-index draws, so n-dependence is unmeasured and n16/n64 add no
+   independent information). Demonstrated ≥99% reliability at n=256 only
+   (joint-95% worst case over p and lane correlation); 172–225 s vs
+   Nautilus's 772.7 s sampler wall (3.4–4.5×; second recorded baseline
+   523 s unreconciled). Zero recovery impostors across all 80 hit lanes.
+   1-in-5 n16 seed lottery = one unlucky draw block, reproduced inside
+   every tier. θ_E~U(0.2,8) diagnostic UNINFORMATIVE for H3.1 (lane-level
+   p̂ unchanged; original tripling claim withdrawn on review). ~50% of
+   lanes end pinned (H3.3 measured). Gate B pt 1 narrowed reading awaits
+   the human call; n128-with-offset-streams required if the gate is to be
+   called below n=256 — `phase_03_prodigy_reliability/RESULTS.md` +
+   `ADVERSARIAL_REVIEW.md`. Positions-on half awaits Phase-4 PositionsLH
+   plumbing.**
 4. **CP-4 · slogdet A/B on the AdaptSplit NaN wall** (hours). Expected pass;
    converts Phase 8A from plan to record and sets the gradient-work
    likelihood profile early.

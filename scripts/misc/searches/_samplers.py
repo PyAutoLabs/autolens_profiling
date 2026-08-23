@@ -379,6 +379,54 @@ def _scaler_object(label: str):
     return af.ScalerPriorWidth()
 
 
+def multi_start_seed() -> int | None:
+    """Resolve the search's own RNG seed, honouring ``SEARCHES_SEED``.
+
+    ``None`` (the default) keeps the library's historical fixed draw, so every
+    pre-existing cell reproduces its recorded numbers. The seed reaches the
+    broad-start draw and the resurrection redraw — the two places a multi-seed
+    reliability study actually differs — so a repeated-seed campaign
+    (``PROGRAMME.md`` §3: "reliability is P(correct | fixed budget), measured
+    over >= 5 seeds") MUST set it. Before the search had a ``seed`` the start
+    band was a hardcoded ``default_rng(0)`` and a multi-seed study was silently
+    single-seed.
+    """
+    raw = os.environ.get("SEARCHES_SEED")
+    return int(raw) if raw not in (None, "") else None
+
+
+def multi_start_unique_tag(
+    dataset_class: str | None = None, model_type: str | None = None
+) -> str | None:
+    """A per-arm ``unique_tag`` for seeded multi-start runs, else ``None``.
+
+    **This is a correctness guard, not cosmetics.**
+    ``AbstractMultiStartGradient.__identifier_fields__`` is ``("clipper",)``,
+    and when a class declares identifier fields the ``Identifier`` hash uses
+    ONLY those. So ``n_starts``, ``n_steps``, ``seed``, ``scaler`` and the
+    convergence criterion do **not** enter the search identifier: two arms of a
+    reliability scan differing only in seed resolve to the same output
+    directory, and the ``.completed`` short-circuit then makes ``fit()`` return
+    the first arm's cached result without ever entering ``_fit``. The scan
+    would report one run's numbers five times.
+
+    ``unique_tag`` is appended to ``identifier_list`` in
+    ``AbstractPaths._identifier`` *and* sits in ``output_path`` above ``name``,
+    so tagging fixes both the hash and the directory.
+
+    Returned only when a seed is set, so unseeded cells keep byte-identical
+    output paths to their recorded runs.
+    """
+    seed = multi_start_seed()
+    if seed is None:
+        return None
+    return (
+        f"n{multi_start_n_starts(dataset_class, model_type)}"
+        f"_s{multi_start_n_steps(dataset_class, model_type)}"
+        f"_seed{seed}"
+    )
+
+
 def multi_start_batch_size(
     dataset_class: str | None = None, model_type: str | None = None
 ) -> int | None:
@@ -469,6 +517,9 @@ def multi_start_settings(
     # never be ambiguous about which arm produced it.
     settings["clipper"] = multi_start_clipper()
     settings["scaler"] = multi_start_scaler()
+    # Always recorded, including the ``None`` default: a seeded and an unseeded
+    # run must be distinguishable in the artifact, not both read as "no key".
+    settings["seed"] = multi_start_seed()
     return settings
 
 
@@ -504,6 +555,11 @@ def build_multi_start(
     kwargs: dict = dict(
         name=config_name,
         path_prefix=f"searches/{sampler}/{dataset_class}/{model_type}/{instrument}",
+        # Only ``clipper`` enters this search's identifier, so a seeded arm has
+        # to carry its own tag or a sibling arm's completed fit short-circuits
+        # it — see ``multi_start_unique_tag``. ``None`` for unseeded cells,
+        # which keeps their output paths exactly as recorded.
+        unique_tag=multi_start_unique_tag(dataset_class, model_type),
         number_of_cores=1,
         convergence=_convergence(autoconv=sampler in _MULTI_START_AUTOCONV),
         **settings,
