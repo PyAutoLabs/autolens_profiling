@@ -29,8 +29,14 @@
 #
 # ARM
 #   cell        searches/multi_start_prodigy_autoconv/imaging/mge x hst x fp64
-#   n_starts    64          (the campaign's middle tier, for comparability of
-#                            MECHANISM — not of measurement)
+#   n_starts    16          (deliberately the SAME tier as the recorded seed-1
+#                            failure. The question is literal — "does removing
+#                            the wall's intersection with the degenerate basin
+#                            recover seed 1?" — and seed 1 failed at 16 starts,
+#                            so running the probe at any other n would change
+#                            two things at once and answer nothing. Still a
+#                            MECHANISM comparison against the n16 campaign
+#                            tier, never a measurement pooled with it.)
 #   n_steps     3000 (CEILING — auto-convergence ON; stop_reason recorded)
 #   seeds       0..4, one per SLURM array task
 #   clipper     prior_box   scaler none   momentum no reset
@@ -45,9 +51,9 @@
 #   accounting is carried here as on every arm (raw counts, no verdicts).
 #
 # ESTIMATED WALL (A100 fp64, warm compile cache)
-#   Same shape as the n64 campaign tier: ~0.19 s/step at 64 lanes -> ~570 s at
-#   the 3000-step ceiling, + ~2.5 min compile => ~12 min per array task,
-#   ~1.0 h for the arm.
+#   Same shape as the n16 campaign tier: ~0.05 s/step at 16 lanes -> ~150 s at
+#   the 3000-step ceiling, + ~2 min compile => ~5 min per array task,
+#   ~25 min for the arm.
 #
 # DEPENDENCY — READ BEFORE SUBMITTING
 #   Requires **PyAutoFit >= PR#1515** (branch feature/multistart-per-lane-best)
@@ -63,13 +69,13 @@
 #   The results JSON additionally carries a `target_override` block recording
 #   the prior before and after, and target_class 3.
 
-#SBATCH -J cp3_prodigy_mge_n64_diag
+#SBATCH -J cp3_prodigy_mge_n16_diag
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=64gb
-#SBATCH --time=2:00:00
+#SBATCH --time=1:00:00
 #SBATCH --array=0-4
 #SBATCH -o output/output.%A_%a.out
 #SBATCH -e error/error.%A_%a.err
@@ -88,7 +94,7 @@ export MPLCONFIGDIR=/tmp/matplotlib
 
 SEEDS=(0 1 2 3 4)
 SEED=${SEEDS[$SLURM_ARRAY_TASK_ID]}
-N_STARTS=64
+N_STARTS=16
 
 export SEARCHES_N_STARTS=$N_STARTS
 export SEARCHES_N_STEPS=3000
