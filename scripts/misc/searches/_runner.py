@@ -34,6 +34,7 @@ import json
 import os
 import sys
 import time
+from contextlib import nullcontext
 from pathlib import Path
 from typing import Any
 
@@ -49,6 +50,7 @@ if str(_WORKSPACE_ROOT) not in sys.path:
     sys.path.insert(0, str(_WORKSPACE_ROOT))
 
 from searches._metrics import attach_viz_timer, collect_metrics  # noqa: E402
+from searches._per_lane import capture_search_internal, per_lane_block  # noqa: E402
 from searches._samplers import (  # noqa: E402
     _MULTI_START_AUTOCONV,
     _MULTI_START_CLASSES,
@@ -70,6 +72,7 @@ from _profile_cli import (  # noqa: E402
 _SAMPLERS_WITH_N_LIVE = frozenset({"nautilus", "nss"})
 from searches._recovery import load_truth, recovery_report  # noqa: E402
 from searches._setup import (  # noqa: E402
+    apply_diagnostic_prior_overrides,
     build_for_cell,
     cluster_point_fit_cls_for,
     format_best_fit,
@@ -371,6 +374,18 @@ def run_search(
     )
     print(f"  Model free parameters: {model.total_free_parameters}")
 
+    # Opt-in, target-CHANGING prior override for the Phase-3 diagnostic arm.
+    # Off unless SEARCHES_DIAGNOSTIC_THETA_E_PRIOR is set, and loud when on:
+    # the one failure mode that must not exist is a target change nobody
+    # noticed in the artifact.
+    model, target_override = apply_diagnostic_prior_overrides(model)
+    if target_override is not None:
+        print("  " + "!" * 66)
+        print(f"  !! DIAGNOSTIC ARM (target_class 3): {target_override['parameter']}")
+        print(f"  !!   {target_override['prior_before']} -> {target_override['prior_after']}")
+        print("  !! NOT comparable to the campaign's other arms.")
+        print("  " + "!" * 66)
+
     builder = SAMPLER_BUILDERS[sampler]
     search = builder(
         sampler=sampler,
@@ -390,10 +405,20 @@ def run_search(
         print("  Visualization DISABLED (SEARCHES_DISABLE_VIZ=1) — viz_wall_s not measured.")
     viz_timer = attach_viz_timer(analysis, search, disable=disable_viz)
 
+    # Per-lane preservation (PROGRAMME.md §3): the MultiStart* searches write
+    # every lane's final position and — since PyAutoFit PR#1515 — every lane's
+    # own best into ``search_internal``, which is DELETED on successful
+    # completion. It has to be captured as it is written, so the fit runs inside
+    # the capture for those samplers and untouched (``nullcontext``) for the
+    # rest, keeping the nested-sampler paths bit-identical.
+    is_multi_start = sampler in _MULTI_START_CLASSES
+    capture = capture_search_internal() if is_multi_start else nullcontext({})
+
     print("  Running search.fit() ...")
-    t0 = time.time()
-    result = search.fit(model=model, analysis=analysis)
-    total_wall_s = time.time() - t0
+    with capture as captured:
+        t0 = time.time()
+        result = search.fit(model=model, analysis=analysis)
+        total_wall_s = time.time() - t0
 
     # FactorGraphModel fits (datacube) return a list of per-factor Result
     # objects, all backed by the same global posterior — take the first
@@ -433,6 +458,22 @@ def run_search(
 
     posterior_stats = _posterior_stats(primary_result, uses_n_live)
 
+    diagnostics = None
+    if is_multi_start:
+        diagnostics = per_lane_block(captured=captured, model=model, n_starts=int(search.n_starts))
+        print(
+            f"  Per-lane:           {diagnostics['n_lanes_recorded']} lanes recorded, "
+            f"stop_reason={diagnostics['counters']['stop_reason']!r}, "
+            f"total_steps={diagnostics['counters']['total_steps']!r}"
+        )
+        if not diagnostics["valid"]:
+            # Recorded on the artifact AND shouted, but never raised: a
+            # completed multi-hour GPU fit is not thrown away because its
+            # diagnostics block is suspect.
+            print("  !! PER-LANE BLOCK INVALID — this run cannot be interpreted:")
+            for reason in diagnostics["invalid_reasons"]:
+                print(f"     - {reason}")
+
     summary = _build_summary(
         sampler=sampler,
         dataset_class=dataset_class,
@@ -450,6 +491,8 @@ def run_search(
         viz_disabled=disable_viz,
         truth_anchor=truth_anchor,
         posterior_stats=posterior_stats,
+        diagnostics=diagnostics,
+        target_override=target_override,
     )
 
     _print_summary(summary, metrics)
@@ -552,6 +595,8 @@ def _build_summary(
     viz_disabled: bool = False,
     truth_anchor: dict | None = None,
     posterior_stats: dict | None = None,
+    diagnostics: dict | None = None,
+    target_override: dict | None = None,
 ) -> dict:
     results_block: dict = {
         "log_evidence": metrics.log_evidence,
@@ -593,6 +638,12 @@ def _build_summary(
     }
     if recovery is not None:
         summary["recovery"] = recovery
+    # Both keys are added ONLY when populated, so every non-MultiStart cell's
+    # JSON keeps the exact shape its recorded rows have.
+    if target_override is not None:
+        summary["target_override"] = target_override
+    if diagnostics is not None:
+        summary["diagnostics"] = diagnostics
     return summary
 
 

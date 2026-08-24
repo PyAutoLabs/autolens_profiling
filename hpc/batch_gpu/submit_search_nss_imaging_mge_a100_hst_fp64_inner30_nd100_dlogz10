@@ -1,0 +1,95 @@
+#!/bin/bash -l
+#
+# Inference programme Phase 2 (issue #149) — mainline af.NSS A100 scan,
+# TERMINATION arm: searches/nss/imaging/mge x hst x fp64,
+# inner steps = 30, n_live = 200, num_delete = 100, dlogz = -10.
+#
+# ARM: n_live 200, num_mcmc_steps 30, num_delete 100, termination -10.0,
+#      seed 42, unchunked. The ONLY change from the recorded inner30_nd100
+#      row (seed 42, termination -3.0, ~3528 s sampler wall) is the
+#      termination criterion, so the diff is attributable to depth alone.
+#
+# QUESTION: dlogz -3 is the workspace default and stops while a non-trivial
+#      tail of evidence is still unaccumulated. Two things depend on how much
+#      that matters here: (1) logZ itself — the wave-1 inner30 row sits at
+#      31691.20 against the Nautilus reference 31690.5, and part of a ~0.7-nat
+#      offset can be un-integrated tail rather than a sampler difference;
+#      (2) the posterior's outer contours, which the tail populates. Running
+#      the same arm to dlogz -10 bounds both: if logZ moves by << 1 nat the
+#      -3 rows are safe to compare against Nautilus as-is, and if it moves by
+#      ~1 nat the Phase 2 evidence comparisons need re-basing on a deeper
+#      termination. Feeds the H2.2 cost/accuracy trade directly, since the
+#      extra depth is pure added wall.
+#
+# WALL-TIME ESTIMATE: deeper termination extends the run — the outer loop
+#      keeps compressing until the remaining-evidence bound falls below
+#      dlogz, so 7 extra nats of tail is a materially longer tail phase, and
+#      the added outer iterations are the EXPENSIVE ones (the live set is by
+#      then in a tight, hard-to-replace shell). No measured -10 row exists on
+#      this cell to scale from, so the estimate is a bound, not a model:
+#      assume up to 2x the nd100 baseline (3528 s) => ~7056 s (~1 h 58 m)
+#      sampler + ~45 s viz + compile. --time 4:00:00 is ~2x that bound —
+#      deliberately generous because an under-estimate here does not just lose
+#      the row, it loses a nearly-complete two-hour fit.
+#
+# ARTIFACT ISOLATION: --config-name hpc_a100_fp64_inner30_nd100_dlogz10 keeps
+#      the results JSON and the af search name disjoint from the dlogz -3 row.
+#      ``termination`` is ALSO an af.NSS __identifier_fields__ entry
+#      ('n_live', 'num_mcmc_steps', 'num_delete', 'termination', 'seed'), so
+#      the autofit identifier differs from the -3 arm too — the seed being
+#      shared with the recorded row is therefore safe.
+#
+# VRAM: peak inner-step memory scales with num_delete, not n_live (af.NSS
+#      chunk_size docstring). ~18.7 MiB/particle -> ~1.83 GiB here.
+#      Comfortable on an 80 GB A100; chunk_size stays unset (it is also the
+#      one NSS knob absent from __identifier_fields__, so it must never be
+#      used to distinguish arms).
+
+#SBATCH -J search_nss_imaging_mge_hst_fp64_inner30_nd100_dlogz10
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=4:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_profiling
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+# Phase 2 scan knobs. Every value is stated explicitly (including the ones that
+# match the builder defaults in searches/_samplers.py) so the arm is readable
+# from this file alone and cannot drift if a default changes.
+export SEARCHES_NSS_N_LIVE=200
+export SEARCHES_NSS_NUM_MCMC_STEPS=30
+export SEARCHES_NSS_NUM_DELETE=100
+export SEARCHES_NSS_TERMINATION=-10.0
+export SEARCHES_NSS_SEED=42
+
+nvidia-smi
+
+echo "=========================================="
+date
+echo "Cell:       searches/nss/imaging/mge"
+echo "Instrument: hst"
+echo "Precision:  fp64"
+echo "Arm:        inner30_nd100 dlogz=-10 (n_live=200, num_delete=100, seed=42)"
+
+cd $AP_ROOT
+python3 scripts/imaging/searches/nss/mge.py \
+    --instrument hst \
+    --config-name hpc_a100_fp64_inner30_nd100_dlogz10 \
+    --output-dir $AP_ROOT/results/searches/nss/imaging/mge/hst
+
+echo "Finished."
+date

@@ -1,0 +1,118 @@
+#!/bin/bash -l
+#
+# Inference programme CP-3 / Phase 3 — MultiStartProdigy MGE reliability scan,
+# WAVE 1 follow-up (positions-OFF), arm n_starts=256, EXTRA SEEDS 105-114.
+#
+# WHY THIS EXISTS — TIGHTENING THE p_hit CI WITH GENUINELY FRESH DRAWS
+#   Gate B part 1 is currently read at n=256 off FIVE seeds (0-4), and the
+#   adversarial review's caveat (b) is that the n16/n64/n256 tiers SHARE their
+#   draw table — lane indices 0-15 gave the identical 1-hit-in-80 pattern in
+#   every tier — so the effective sample behind p_hat is ~1,280 lanes, not
+#   3 x 400. p_hat itself swings 45% (0.0406 -> 0.0588) across classification
+#   thresholds (ADVERSARIAL_REVIEW.md §4), and the joint-95% worst case is what
+#   the >=99% reliability claim rests on.
+#   These ten runs add 10 x 256 = 2,560 lanes of GENUINELY FRESH draws at the
+#   gate tier: seeds 105-114 are disjoint from the 0-4 block used by every
+#   earlier tier AND from the 100-104 block used by the new n128 tier. That
+#   roughly triples the independent lane count at n=256 and narrows the
+#   binomial CI on p_hit, which is what turns the provisional Gate B reading
+#   into a defensible one. It does NOT address caveat (a) (n-dependence) —
+#   that is the n128 tier's job.
+#
+# ARM
+#   cell        searches/multi_start_prodigy_autoconv/imaging/mge  x  hst  x  fp64
+#   n_starts    256
+#   n_steps     3000 (CEILING — auto-convergence is ON; stop_reason is recorded)
+#   seeds       105..114, one per SLURM array task (10 tasks)
+#   clipper     prior_box   (best-supported config, hygiene)
+#   scaler      none        (falsified as a fix — not an arm)
+#   momentum    no reset on clip
+#   positions   OFF (wave 1; the positions-on half needs PositionsLH plumbing
+#               the searches framework does not have — out of scope)
+#
+#   Every other knob is byte-identical to the existing n256 script, so these
+#   seeds pool directly with the recorded 0-4 runs: the ONLY difference is the
+#   RNG stream.
+#
+# ESTIMATED WALL (A100 fp64, warm compile cache)
+#   ~0.77 s/step at 256 lanes -> ~2300 s at the 3000-step ceiling, + ~5 min
+#   compile => ~45 min per array task. Auto-convergence means the recorded
+#   n256 runs actually finished in 172-225 s wall; --time 4:00:00 matches the
+#   existing n256 script's budget (>= 3x headroom on the ceiling-bound
+#   estimate) rather than betting the queue on early convergence.
+#   Ten tasks at this budget is the largest single item in the overnight
+#   queue — schedule accordingly.
+#
+# DEPENDENCY — READ BEFORE SUBMITTING
+#   Requires **PyAutoFit >= PR#1515** (branch feature/multistart-per-lane-best)
+#   on the RAL PYTHONPATH checkout. That change writes the per-lane best
+#   records (lane_best_params / lane_best_foms / lane_best_steps) into
+#   search_internal, and per-lane basin classification — the whole point of
+#   CP-3 — is computed from them. Run `HPCPullPyAuto` and confirm RAL's
+#   PyAutoFit main contains the merge first; an older PyAutoFit still completes
+#   the fit but writes `diagnostics.valid: false` and the arm is unusable.
+#
+# MEMORY NOTE
+#   imaging/mge/hst is 16 MB per vmap replica (scripts/misc/vram/config.py:64),
+#   so even the 256-lane tier is small on an A100. Do NOT introduce
+#   SEARCHES_BATCH_SIZE for one tier only if something OOMs: batch_size is
+#   documented to change WHICH optimum is found on at least one mesh family, so
+#   a per-tier batch setting would confound the reliability comparison.
+#
+# ARTIFACT ISOLATION
+#   --config-name carries n_starts AND seed, so these ten tasks write ten
+#   distinct results JSONs and never touch the recorded seed 0-4 artifacts.
+
+#SBATCH -J cp3_prodigy_mge_n256_s105
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=4:00:00
+#SBATCH --array=0-9
+#SBATCH -o output/output.%A_%a.out
+#SBATCH -e error/error.%A_%a.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_profiling
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+# Seeds 105-114: fresh, disjoint from 0-4 (earlier tiers) and 100-104 (n128).
+SEED=$((105 + SLURM_ARRAY_TASK_ID))
+N_STARTS=256
+
+export SEARCHES_N_STARTS=$N_STARTS
+export SEARCHES_N_STEPS=3000
+export SEARCHES_SEED=$SEED
+export SEARCHES_CLIPPER=prior_box
+export SEARCHES_SCALER=none
+# Visualization is not the measurement and its cost would land inside the
+# recorded wall; the results JSON records viz_disabled: true.
+export SEARCHES_DISABLE_VIZ=1
+
+nvidia-smi
+
+echo "=========================================="
+date
+echo "Cell:       searches/multi_start_prodigy_autoconv/imaging/mge"
+echo "Instrument: hst"
+echo "Precision:  fp64"
+echo "Arm:        n_starts=$N_STARTS  seed=$SEED  clipper=prior_box  positions=off"
+
+cd $AP_ROOT
+python3 scripts/imaging/searches/multi_start_prodigy_autoconv/mge.py \
+    --instrument hst \
+    --config-name hpc_a100_fp64_n${N_STARTS}_seed${SEED} \
+    --output-dir $AP_ROOT/results/searches/multi_start_prodigy_autoconv/imaging/mge/hst
+
+echo "Finished."
+date
