@@ -1,0 +1,97 @@
+#!/bin/bash -l
+#
+# Phase 8A / CP-4 — slogdet vs cholesky A/B on the free-AdaptSplit NaN wall.
+# RAL CPU tier: the cheap, deterministic half of the experiment.
+#
+# PRE-REGISTERED PASS CRITERIA (all four must hold; stated before any run):
+#
+#   1. zero slogdet NaNs on the replay set
+#   2. value equality within float tolerance on PD points
+#   3. finite gradients
+#   4. runtime within 2x
+#
+# TWO CELLS, and the difference matters. The pre-registration names the
+# free-AdaptSplit stressor as `knn`, but this repo's #117 record says the KNN
+# mesh's high-coefficient region is a finite over-regularized floor, while the
+# NaN WALL is on the Delaunay mesh with the same free AdaptSplit reg
+# (_setup._delaunay_adapt_split_model; multi_start_prodigy/delaunay.py). Both
+# arms run here: `knn` is what was registered, `delaunay_adapt_split` is where
+# the failure slogdet exists to remove has actually been seen. A `knn` arm that
+# reports zero cholesky NaNs is a real finding about that cell, and the script
+# exits non-zero calling it VOID rather than reporting four vacuous passes — do
+# not read that exit code as a broken job without reading the verdict block.
+#
+# What this tier can and cannot answer. The conditioning wall is crossed
+# deterministically by the lambda transect at any hardware tier, which is what
+# makes this CPU-viable. What CPU cannot supply is a REAL search trajectory
+# through the wall: the 335003-5 arms measured zero value-NaN lane-steps here
+# (results/notes/inference/phase_00_unblocking/RESULTS.md:189), so the
+# trajectory-side observation remains GPU-scale. Run the A100 sibling
+# (../batch_gpu/submit_slogdet_ab_adaptsplit_a100, which adds --descent-steps).
+#
+# Runtime estimate: the knn cell measured ~59 s per 16-start batch_size=4
+# value_and_grad step on this tier (RESUME.md, jobs 335003-5) => ~3.7 s per
+# per-draw value_and_grad; a laptop-CPU validation of this script measured
+# ~10 s/draw with a ~30-50 s XLA compile per arm. 384 draws x 2 arms x 2 cells
+# ~= 1.5-4 h of warm wall. 6 h wall with headroom.
+#
+# NOTE on --partition: jobs 335003-5 ran on partition `ral`
+# (euclid-ral-compute-1). The older CPU exemplar in this directory uses `cpu`.
+# Check `sinfo` before submitting.
+
+#SBATCH -J slogdet_ab_adaptsplit_cpu
+#SBATCH --partition=ral
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=32
+#SBATCH --mem=128gb
+#SBATCH --time=6:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_profiling
+source $AP_ROOT/activate.sh
+
+# fp64 is not optional here: an fp32 run manufactures conditioning failures of
+# its own and the cholesky-vs-slogdet delta on the PD set would be round-off
+# rather than the two algorithms. The script exits if this is unset.
+export JAX_ENABLE_X64=True
+export JAX_PLATFORM_NAME=cpu
+export JAX_PLATFORMS=cpu
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+echo "=========================================="
+date
+echo "Experiment: phase 8A slogdet A/B (CP-4)"
+echo "Cells:      imaging/knn/hst and imaging/delaunay_adapt_split/hst"
+echo "Arms:       cholesky (control) vs slogdet (treatment)"
+
+cd $AP_ROOT
+
+# One cell must not sink the other: a VOID verdict exits non-zero by design, and
+# without this the second cell would never run.
+run_cell () {
+    echo "=== cell: $1 ==="
+    date
+    python3 scripts/misc/searches/slogdet_ab.py \
+        --stage all \
+        --dataset-class imaging \
+        --model-type "$1" \
+        --instrument hst \
+        --seed 0 \
+        --n-prior 128 \
+        --n-truth-bar 128 \
+        --transect-points 128 \
+        --batch-size 4 \
+        --draws-tag ral_cpu \
+        --tag "CP-4 phase 8A, RAL CPU tier" \
+        || echo "!!! cell $1 exited non-zero — read its verdict block above (a VOID verdict exits 1)"
+}
+
+run_cell delaunay_adapt_split
+run_cell knn
+
+echo "Finished."
+date

@@ -32,7 +32,8 @@ expectation · **[CONTRADICTED]** existing evidence pushed back on the brief ·
 | Phase 0(e) searches README dashboard loop | **complete** | PR#139 (2026-08-18): nested-layout scanner, 34 rows render, truth-bar rows verified |
 | Phase 2 NSS mainline re-tune | **scan complete 2026-08-24 (CP-2 ✅, CP-5 ✅)** — H2.1 closed: logZ bias was inner-kernel under-mixing (inner=30: 5/5 seeds +1.0 ± 0.4 nats vs Nautilus); operating point n200/nd100/inner30 costs 5.0× the Nautilus sampler wall on MGE, 18.4× on Delaunay (same-night re-baselines: Nautilus mge 707 s, delaunay 1,891 s). Sample economy: Kish ESS 1,315 vs Nautilus 4,121 per run; ~940 vs ~15 evals/ESS. **GATE A CALLED 2026-08-24 — Nautilus stays baseline; af.NSS = tuned alternative** | `phase_02_nss_mainline/RESULTS.md` + DECISIONS.md 2026-08-24 |
 | Phase 3 Prodigy reliability | **wave 1 complete + adversarially reviewed (CP-3 ✅ 2026-08-23, positions-off)** — p̂_hit = 0.048 [0.037, 0.061] (lower bound; n256 tier, ~1,280 distinct draws — tiers share lane-index draws, n-dependence unmeasured); demonstrated ≥99% reliability at **n=256 only** (joint-95% worst case), 3.4–4.5× under the viz-stripped Nautilus wall; zero parameter-recovery impostors; ~half of lanes end pinned (H3.3, measured not closed); θ_E diagnostic uninformative for H3.1 (withdrawn). **Gate B pt 1 CALLED (human-ratified 2026-08-23** — DECISIONS.md): Prodigy(n=256, prior_box, autoconv, positions-off) ratified as global MAP searcher on MGE; pt 2 (PositionsLH) open. Fresh-seed tier 2026-08-24: n128 5/5, n256 15/15 cumulative (Wilson-95 lower 0.80); Nautilus re-baseline 707 s → 3.1–4.3× | `phase_03_prodigy_reliability/RESULTS.md` + `ADVERSARIAL_REVIEW.md` |
-| Phases 1, 4–13 | not started | — |
+| Phase 8A slogdet A/B (CP-4) | **complete 2026-08-24 — FAIL as pre-registered.** knn stressor never walls (VOID both tiers); on Delaunay+AdaptSplit slogdet rescues 64–73 % of NaNs, 0 regressions, but 20–32 NaN-under-both, λ-transect grads non-finite, marginal-band Δ up to 9,619 nats (A100), CPU 3.7×. Human call: adopt as this repo's GPU gradient-cell default (W8), library stays opt-in, residual NaNs → W7, 8B in parallel | `phase_08_regularization/RESULTS.md` + DECISIONS.md 2026-08-24 |
+| Phases 1, 4–7, 8B–13 | not started | — |
 | Gates A–F | **A CALLED 2026-08-24** (Nautilus stays nested baseline; af.NSS tuned alternative); **B part 1 CALLED 2026-08-23** (Prodigy n=256 global MAP, MGE, positions-off; caveat (a) n=256-only stands 2026-08-24); B pt 2, C–F open — C criterion reworded 2026-08-24 (batched-pipeline value, not single-fit ESS/s vs Nautilus) | DECISIONS.md |
 
 ---
@@ -926,9 +927,10 @@ Maximum information before large A100 commitment — strictly ordered:
    called below n=256 — `phase_03_prodigy_reliability/RESULTS.md` +
    `ADVERSARIAL_REVIEW.md`. Positions-on half awaits Phase-4 PositionsLH
    plumbing.**
-4. **CP-4 · slogdet A/B on the AdaptSplit NaN wall** (hours). Expected pass;
-   converts Phase 8A from plan to record and sets the gradient-work
-   likelihood profile early.
+4. **CP-4 · slogdet A/B on the AdaptSplit NaN wall** (hours). ~~Expected pass~~
+   **DONE 2026-08-24 — FAILED the pre-registration**, adopted anyway by
+   human call as the repo's GPU gradient-cell default (W8); residual
+   NaN-under-both → W7; Phase 8B in parallel (`phase_08_regularization/`).
 5. **CP-5 · NSS inner-steps/logZ-bias scan + one pixelized probe**
    (laptop/RAL + 1 short A100 slot). Decides Gate A and whether NSS's 7–11×
    pixelized deficit is configuration or structure.
