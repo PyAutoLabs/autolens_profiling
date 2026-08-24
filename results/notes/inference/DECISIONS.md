@@ -246,3 +246,20 @@ tripling claim withdrawn on adversarial review — see
 PROGRAMME.md phase/gate table (this commit); overnight strengthening
 jobs 339065-339073 (n128 fresh seeds, n256 extra seeds, Nautilus
 re-baselines) submitted before the call and noted here for the record.
+
+---
+
+## 2026-08-24 — CP-4 / Phase 8A recorded: slogdet FAILS the pre-registered A/B; not the gradient-work default
+
+**Record (Gates E/F remain open):** slogdet vs cholesky A/B run on RAL
+(A100 338808, CPU 338807). The pre-registered stressor (knn + free
+AdaptSplit) never walls — VOID on both tiers, as the driver's #117 note
+predicted. On the real wall (Delaunay + free AdaptSplit) slogdet rescues
+64–73 % of Cholesky NaNs with zero regressions but leaves 20–32 draws NaN
+under both arms, leaves all λ-transect gradients non-finite, disagrees
+with Cholesky by up to 9,619 nats (A100) in the marginal band, and costs
+3.7× on CPU. Three of four criteria fail. **Not recommended as the
+gradient-work default; may be opted in per-fit on GPU as a zero-cost
+softener.** Phase 8B (log-coordinate stepping) becomes the live smoothing
+candidate. Record: `phase_08_regularization/RESULTS.md`.
+
