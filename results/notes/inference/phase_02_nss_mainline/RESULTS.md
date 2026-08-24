@@ -142,10 +142,111 @@ inner-step cost per replacement. inner=30 (2d) is the working operating
 point for those axes (0.7 nats is within Phase-1 evidence tolerance;
 inner=45 doubles down for a final confirmation row only).
 
-## Next (per PROGRAMME §4 Phase 2)
+## Scan wave 2 — the wall-time axes at inner=30, seeds, dlogz, pixelized probe (2026-08-24)
 
-- Scan wave 2: num_delete {20, 50 (done), 100} × n_live {200 (done), 500,
-  1000} at inner=2d, dlogz −3 — the wall-time axes. Then ≥5-seed
-  reliability at the chosen operating point, one dlogz −10 termination
-  row, and the pixelized-cell probe.
-- Gate A judged per model family, not on MGE alone.
+Overnight RAL A100 queue submitted 2026-08-23 ~22:30, harvested 2026-08-24
+14:30 UTC. All jobs COMPLETED; every artifact carries the current version
+stamp (2026.8.17.1), a plausible wall and no "Fit Already Completed" marker.
+Nautilus re-baselines on the same stack ran alongside (see below) so every
+ratio here is same-night, same-node.
+
+### `num_delete` × `n_live` at inner=30, dlogz −3, seed 42
+
+| arm (job) | n_live | num_delete | logZ | bias vs Nautilus 31690.50 | max logL | sampler wall | evals | ms/eval |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| inner30 (wave 1) | 200 | 50 | 31691.20 | +0.7 | 31785.83 | 4,219 s | 1,492,747 | 2.83 |
+| nd20 (338871) | 200 | 20 | 31690.75 | +0.25 | 31786.04 | 6,138 s | 1,638,384 | 3.75 |
+| **nd100 (338870)** | 200 | 100 | 31691.35 | +0.85 | 31786.29 | **3,528 s** | 1,236,644 | 2.85 |
+| n500 (338872) | 500 | 125 | 31691.43 | +0.9 | 31786.62 | 9,966 s | 3,718,760 | 2.68 |
+| n1000 (338873) | 1000 | 250 | 31690.21 | −0.3 | 31786.56 | 20,266 s | 7,519,030 | 2.70 |
+
+- `num_delete` is the GPU-parallelism axis and it behaves as predicted:
+  nd20 → nd100 cuts sampler wall 6,138 → 3,528 s (1.74×) at ~constant
+  eval count and ms/eval, because the per-step vmap batch grows. Beyond
+  nd100 = n_live/2 there is no further block to enlarge at n_live=200.
+- `n_live` buys nothing on wall: evals and wall scale ~linearly (n500 2.8×,
+  n1000 5.7× the nd100 wall). n1000 gives the closest logZ to Nautilus
+  (−0.3) but at 29× the Nautilus sampler wall.
+- **Operating point: n_live 200 / num_delete 100 / inner 30 / dlogz −3.**
+
+### Seed reliability at the operating point (339067[0-3], seeds 43–46)
+
+| seed | logZ | max logL | sampler wall |
+|---:|---:|---:|---:|
+| 42 | 31691.35 | 31786.29 | 3,528 s |
+| 43 | 31690.98 | 31786.34 | 3,483 s |
+| 44 | 31691.69 | 31786.29 | 3,449 s |
+| 45 | 31691.53 | 31786.23 | 3,430 s |
+| 46 | 31692.04 | 31786.25 | 3,456 s |
+
+5/5 seeds land in the truth basin; logZ mean 31691.52, sample std 0.40,
+range [31690.98, 31692.04]; max logL within 0.5 nats of the truth bar every
+time; wall spread <3 %. The residual +1.0 ± 0.4 nat offset from Nautilus is
+inside the seed scatter and inside the Phase-1 evidence tolerance — **H2.1
+is closed: the fork-era +7–13-nat logZ bias was entirely inner-kernel
+under-mixing. There is no evidence-estimator defect in mainline
+`blackjax.nss`.**
+
+### Termination row (339068, dlogz −10)
+
+logZ 31691.81 / max logL **31787.33** (the highest NSS max logL on record,
+0.55 above the Nautilus bar and matching the Prodigy +1.1 plateau to within
+0.6) / 3,688 s (+4.5 % wall) / 15,400 posterior samples. Tighter
+termination is nearly free and improves the MAP; it does not move logZ
+beyond seed scatter. Adopt dlogz −10 for any row where the MAP matters.
+
+### Pixelized probe — `imaging/delaunay/hst` mainline at fork knobs (339069)
+
+| method | logZ | max logL | sampler wall | evals | ms/eval |
+|---|---:|---:|---:|---:|---:|
+| Nautilus fork-era row (2026.5.21.1) | 30562.22 | 30623.45 | 2,673 s | 31,536 | 84.8 |
+| **Nautilus re-baseline (339071, 2026.8.17.1)** | 30562.24 | 30623.17 | **1,891 s** | 30,240 | 62.5 |
+| NSS fork row (2026.5.21.1) | 30567.76 | 30622.15 | 29,721 s | 206,448 | 144.0 |
+| **NSS mainline (339069, 2026.8.17.1)** | 30565.22 | 30624.13 | **34,726 s** | 150,991 | 230.0 |
+
+Same answer (max logL 30624.13 — above both Nautilus rows; logZ +3.0 vs
+Nautilus, consistent with the inner=5 under-mixing seen on MGE), same
+pathology: mainline NSS is 1.17× the fork wall and **18.4× the Nautilus
+re-baseline** on the pixelized cell (fork-era: 11×; the gap widened because
+Nautilus got 1.4× faster on the current stack while NSS ms/eval rose 1.6×).
+The per-eval cost (230 ms vs Nautilus 62 ms) says the deficit is
+structural — the inner slice kernel's serial per-live-point evaluations
+cannot be batched the way Nautilus's neural-network proposal is — not a
+knob. No inner-steps scan was run on this cell (each row is a 10–12 h A100
+slot); given the MGE result the bias would fall with inner steps and the
+wall would grow further.
+
+### Nautilus re-baselines on the current stack (339070, 339071, 339073)
+
+| cell | logZ (fork-era → now) | max logL | sampler wall (fork-era → now) | n_batch |
+|---|---|---:|---|---:|
+| imaging/mge/hst | 31690.47 → 31690.50 | 31786.63 | 773 → **707 s** (total 831 → 775) | 100 → 64 |
+| imaging/delaunay/hst | 30562.22 → 30562.24 | 30623.17 | 2,673 → **1,891 s** | 16 |
+| imaging/pixelization/hst | — | — | **not run**: job 339073 died in 6 s (`AttributeError: RectangularRTUAdaptImage` — RAL PyAutoArray mirror predated the Phase-14 Bilinear/RTU mesh split). Mirror pulled 2026-08-24, resubmitted as 339795. | — |
+
+The truth bars are reaffirmed to 2 dp on the current stack; the fork-era
+Nautilus rows remain valid references. The MGE re-baseline settles the
+"831/772.7 vs 523 s" wall discrepancy noted in phase_03: 707–773 s is the
+reproducible fp64 A100 tier; 523 s is not reproduced on this stack and is
+retired as a reference.
+
+### Gate A reading (proposed — human call pending)
+
+On MGE, evidence-correct mainline NSS costs **5.0× the Nautilus sampler
+wall** at its best operating point (3,528 vs 707 s, 20× the evals at 1/4
+the ms/eval); on Delaunay it costs 18×. NSS matches Nautilus's answer
+everywhere but is faster nowhere. Unless Gate A is judged on a criterion
+other than wall (e.g. GPU-only deployments where Nautilus's CPU-side
+proposal is the bottleneck — not measured here), the reading is:
+**Nautilus stays the nested-sampling baseline; `af.NSS` remains available
+as a correct, tuned alternative (operating point recorded) but is not
+adopted as default on any model family.**
+
+## Next
+
+- Human Gate A call on the reading above (DECISIONS.md entry).
+- Pixelization re-baseline 339795 pending (queue held by another user's
+  8-GPU allocation at harvest time).
+- If Gate A is to be re-opened on a non-wall criterion: one GPU-utilisation
+  row per engine (nvidia-smi sampling) would decide whether Nautilus's wall
+  is CPU-proposal-bound.

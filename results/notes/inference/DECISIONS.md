@@ -246,3 +246,27 @@ tripling claim withdrawn on adversarial review — see
 PROGRAMME.md phase/gate table (this commit); overnight strengthening
 jobs 339065-339073 (n128 fresh seeds, n256 extra seeds, Nautilus
 re-baselines) submitted before the call and noted here for the record.
+
+---
+
+## 2026-08-24 — Phase 2 scan COMPLETE: H2.1 closed, NSS operating point recorded, Gate A reading proposed (human call pending)
+
+**Record (not a gate call):** Phase 2 wave 2 harvested (RAL 338870-338873,
+339067[0-3], 339068, 339069, 339070/71). Mainline `blackjax.nss` (af.NSS)
+reproduces the Nautilus answer on both `imaging/mge/hst` and
+`imaging/delaunay/hst`; the fork-era +7–13-nat logZ bias is entirely
+inner-kernel under-mixing (inner=30: 5/5 seeds within +1.0 ± 0.4 nats of
+Nautilus 31690.50). Operating point n_live 200 / num_delete 100 / inner 30
+/ dlogz −3 (−10 when the MAP matters). Cost at that point: **5.0× the
+Nautilus sampler wall on MGE (3,528 vs 707 s), 18.4× on Delaunay (34,726 vs
+1,891 s)**, measured same-night against Nautilus re-baselines on the
+current stack. Nautilus truth bars reaffirmed to 2 dp; the 523 s Nautilus
+wall is retired as a reference (707–773 s reproduces).
+
+**Proposed Gate A reading (for the human):** Nautilus remains the nested
+baseline on every model family; af.NSS stays mainlined as a correct,
+tuned alternative, not default. Basis and caveats:
+`phase_02_nss_mainline/RESULTS.md` "Scan wave 2". The pixelization-cell
+Nautilus re-baseline (339795) is still queued and does not affect the
+reading.
+
