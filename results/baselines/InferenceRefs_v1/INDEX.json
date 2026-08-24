@@ -1,0 +1,21 @@
+{
+  "schema": "InferenceRefs_v1_index",
+  "generated_by": "W4 / issue #161, Phase 1 (searches._targets registry)",
+  "generated_at": "2026-08-24",
+  "baselines": [
+    {
+      "target_key": "mge_fp64",
+      "cell": "imaging/mge/hst",
+      "path": "results/baselines/InferenceRefs_v1/mge_fp64/",
+      "certified_by": "retro",
+      "target_id": "sha256:770ccd47439d"
+    },
+    {
+      "target_key": "delaunay_fp64",
+      "cell": "imaging/delaunay/hst",
+      "path": "results/baselines/InferenceRefs_v1/delaunay_fp64/",
+      "certified_by": "retro",
+      "target_id": "sha256:6b016e5752ac"
+    }
+  ]
+}
