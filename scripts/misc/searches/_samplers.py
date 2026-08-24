@@ -416,6 +416,158 @@ def _scaler_object(label: str):
     return af.ScalerPriorWidth()
 
 
+# Per-parameter change-of-variables arms (PyAutoFit#1525 / PR#1525, W5 Phase
+# 8B, issue #162). ``none`` is the library default and is bit-identical to a
+# search built with no ``bijector`` at all (``BijectorNone``, see its
+# docstring); ``auto_log`` is ``BijectorAuto`` (log on every eligible
+# LogUniform/LogGaussian prior, unrestricted); ``log_reg`` is
+# ``BijectorPerPath`` RESTRICTED to the regularization coefficient paths only
+# (log on every path containing ``"regularization."`` backed by a
+# ``LogUniformPrior``) -- the arm Phase 8B's pre-registration is actually
+# about; ``logit`` is ``BijectorLogit``, a secondary/opt-in arm (see
+# ``autofit.non_linear.bijector``'s module docstring on why it is not a
+# default).
+#
+# Recorded as a STRING for the same reason as the clipper/scaler above: the
+# config dict is serialised straight into the results JSON and a Bijector
+# instance is not JSON-serialisable.
+_MULTI_START_BIJECTORS: dict[str, str] = {
+    "none": "BijectorNone",
+    "auto_log": "BijectorAuto",
+    "log_reg": "BijectorPerPath",
+    "logit": "BijectorLogit",
+}
+
+
+def multi_start_bijector() -> str:
+    """Resolve the bijector arm label, honouring ``SEARCHES_BIJECTOR``.
+
+    Defaults to ``none`` so every pre-existing cell keeps its recorded numbers
+    (``BijectorNone`` is bit-identical to no bijector at all).
+    """
+    label = os.environ.get("SEARCHES_BIJECTOR", "none").strip().lower()
+    if label not in _MULTI_START_BIJECTORS:
+        raise ValueError(
+            f"SEARCHES_BIJECTOR={label!r} is not one of {sorted(_MULTI_START_BIJECTORS)}"
+        )
+    return label
+
+
+# Arbitrary placeholder. ``_build_model``'s ``mask_radius`` only scales prior
+# WIDTHS (MGE centre priors etc.) -- it never changes which parameters exist,
+# their names, or their paths -- so a throwaway model built at this radius has
+# EXACTLY the same path structure as the real model the search fits, and is
+# safe to use purely to resolve paths before the real model is (or needs to
+# be) in hand.
+_PROBE_MASK_RADIUS = 3.0
+
+
+def _probe_model(dataset_class: str, model_type: str):
+    """A throwaway, dataset-free model built only to read off parameter paths
+    and prior types.
+
+    Needed because ``BijectorPerPath`` (unlike ``ClipperPriorBox`` /
+    ``ScalerPriorWidth``, which resolve lazily against the model at fit time
+    via ``from_model``) needs its ``{path: kind}`` map built EAGERLY, at
+    construction -- and ``build_multi_start`` is called with only
+    ``(dataset_class, model_type, instrument)`` strings, before the real
+    dataset/model/analysis exist. Building a second, real model here would be
+    wasteful (and for some cells, requires a real dataset on disk); this one
+    never touches a dataset and is cheap to discard. Also used to resolve
+    ``SEARCHES_TRACE_PARAMS`` paths to indices (below), for the same reason.
+    """
+    from searches._setup import _build_model
+
+    return _build_model(dataset_class, model_type, mask_radius=_PROBE_MASK_RADIUS)
+
+
+def _bijector_object(label: str, *, dataset_class: str, model_type: str):
+    """The ``af`` bijector instance for a resolved arm label.
+
+    ``log_reg`` is the one arm that needs a model to resolve at all -- see
+    ``_probe_model``'s docstring for why a throwaway one is used rather than
+    threading the real model through every ``SAMPLER_BUILDERS`` call.
+    """
+    if label == "none":
+        return af.BijectorNone()
+    if label == "auto_log":
+        return af.BijectorAuto()
+    if label == "logit":
+        return af.BijectorLogit()
+
+    # log_reg: log on every path containing "regularization." that is backed
+    # by a LogUniformPrior. Restricted (not BijectorAuto's unconditional
+    # every-eligible-prior sweep) because Phase 8B's question is specifically
+    # about the regularization coefficients' own conditioning -- a future
+    # model adding an unrelated LogUniform parameter must not silently start
+    # being reparameterised by this arm too.
+    from autofit.mapper.prior.log_uniform import LogUniformPrior
+
+    model = _probe_model(dataset_class, model_type)
+    kind_by_path: dict[str, str] = {}
+    for prior in model.priors_ordered_by_id:
+        path = model.path_for_prior(prior)
+        path_str = ".".join(str(p) for p in path) if path is not None else None
+        if path_str and "regularization." in path_str and isinstance(prior, LogUniformPrior):
+            kind_by_path[path_str] = "log"
+    return af.BijectorPerPath(kind_by_path)
+
+
+def multi_start_lane_history() -> bool:
+    """Resolve ``record_lane_nan_history``, honouring ``SEARCHES_LANE_HISTORY``.
+
+    Off by default: this is an opt-in, per-step diagnostic (PyAutoFit#1525)
+    that costs extra memory/time on every step, so a pre-existing cell run
+    without the env var keeps its exact recorded behaviour. ``"1"`` turns it
+    on; anything else (including unset) stays off.
+    """
+    return os.environ.get("SEARCHES_LANE_HISTORY", "").strip() == "1"
+
+
+def multi_start_trace_param_paths() -> list[str] | None:
+    """Resolve the raw dotted paths from ``SEARCHES_TRACE_PARAMS`` (a
+    comma-separated list, ``model.path_for_prior`` format -- the same format
+    every other per-path env resolution in this module and ``_per_lane.py``
+    uses). ``None`` when unset, so a reader can tell "not traced" from
+    "traced, zero paths" -- the same absent-vs-empty discipline the bijector
+    kinds and lane-history counters already follow.
+    """
+    raw = os.environ.get("SEARCHES_TRACE_PARAMS", "").strip()
+    if not raw:
+        return None
+    return [p.strip() for p in raw.split(",") if p.strip()]
+
+
+def _trace_param_indices(
+    paths: list[str], dataset_class: str | None, model_type: str | None
+) -> list[int]:
+    """Resolve dotted paths to ``model.priors_ordered_by_id`` indices --
+    the same ordering ``AbstractBijector`` and every array
+    ``MultiStartGradient`` writes uses, via a throwaway probe model (see
+    ``_probe_model``).
+    """
+    if dataset_class is None or model_type is None:
+        raise ValueError(
+            "SEARCHES_TRACE_PARAMS is set but dataset_class/model_type were not "
+            "provided to multi_start_settings(); trace_param_indices cannot be "
+            "resolved without a model to resolve paths against."
+        )
+    model = _probe_model(dataset_class, model_type)
+    names = []
+    for prior in model.priors_ordered_by_id:
+        path = model.path_for_prior(prior)
+        names.append(".".join(str(p) for p in path) if path is not None else None)
+    indices = []
+    for path in paths:
+        if path not in names:
+            raise ValueError(
+                f"SEARCHES_TRACE_PARAMS names a path not in this model "
+                f"({dataset_class}/{model_type}): {path!r}. Known paths: {names}"
+            )
+        indices.append(names.index(path))
+    return indices
+
+
 def multi_start_seed() -> int | None:
     """Resolve the search's own RNG seed, honouring ``SEARCHES_SEED``.
 
@@ -459,10 +611,22 @@ def multi_start_unique_tag(
     shares a positions-off cell's output path); ``None`` only when neither
     applies, so the ordinary unseeded/positions-off cell keeps byte-identical
     output paths to its recorded runs.
+
+    And also composes in the bijector arm label (W5 Phase 8B, issue #162),
+    for the SAME reason again: ``bijector`` is not among
+    ``AbstractMultiStartGradient.__identifier_fields__`` either, so a
+    ``SEARCHES_BIJECTOR=log_reg`` arm would otherwise resume the ``none``
+    arm's ``.completed`` fit rather than actually running. Only a NON-"none"
+    label adds a tag (``BijectorNone`` is bit-identical to no bijector at all,
+    so the "none" arm's output path must stay exactly as recorded), which is
+    also why an unseeded, positions-off, "none"-bijector cell still resolves
+    to ``None`` here — identical to today's tag.
     """
     seed = multi_start_seed()
     pos_tag = positions_arm_tag()
-    if seed is None and pos_tag is None:
+    bijector_label = multi_start_bijector()
+    bijector_tag = None if bijector_label == "none" else f"bij_{bijector_label}"
+    if seed is None and pos_tag is None and bijector_tag is None:
         return None
     seed_tag = (
         f"n{multi_start_n_starts(dataset_class, model_type)}"
@@ -471,7 +635,7 @@ def multi_start_unique_tag(
         if seed is not None
         else None
     )
-    return arm_unique_tag(seed_tag, pos_tag)
+    return arm_unique_tag(seed_tag, pos_tag, bijector_tag)
 
 
 def multi_start_batch_size(
@@ -542,14 +706,19 @@ def multi_start_settings(
     sampler: str = "multi_start_adam",
     dataset_class: str | None = None,
     model_type: str | None = None,
+    instrument: str | None = None,
 ) -> dict:
     """The ``n_starts`` / ``n_steps`` / ``learning_rate`` knobs a MultiStart
     builder constructs the search with.
 
     Exposed so ``_sampler_config_dict`` records exactly what was run. Prodigy
     variants omit ``learning_rate`` (they self-tune it). ``n_starts`` is
-    per-cell (see ``multi_start_n_starts``).
+    per-cell (see ``multi_start_n_starts``). ``instrument`` is accepted but
+    unused here (kept for call-site symmetry with ``build_multi_start``) --
+    the ``_runner.py`` call site does not pass it and does not need to; a
+    default keeps that call working unchanged.
     """
+    del instrument
     settings: dict = {
         "n_starts": multi_start_n_starts(dataset_class, model_type),
         "n_steps": multi_start_n_steps(dataset_class, model_type),
@@ -571,6 +740,22 @@ def multi_start_settings(
     # positions-off run must be distinguishable in the artifact (Phase 4
     # Stage 1, issue #159).
     settings["positions"] = positions_settings()
+    # W5 Phase 8B (#162): a string label, always recorded (same "never
+    # ambiguous" reason as clipper/scaler above), swapped for the live object
+    # in build_multi_start.
+    settings["bijector"] = multi_start_bijector()
+    # Always recorded (default False), matching the positions/clipper/scaler
+    # "never ambiguous" convention -- also a real constructor kwarg name, so
+    # it is passed straight through by build_multi_start's **settings spread.
+    settings["record_lane_nan_history"] = multi_start_lane_history()
+    # Only present when SEARCHES_TRACE_PARAMS is set (like batch_size): most
+    # runs trace nothing, and an absent key reads more cleanly than an
+    # always-present `null`.
+    trace_paths = multi_start_trace_param_paths()
+    if trace_paths is not None:
+        settings["trace_param_indices"] = _trace_param_indices(
+            trace_paths, dataset_class, model_type
+        )
     return settings
 
 
@@ -597,12 +782,16 @@ def build_multi_start(
     metadata (the search runs a single-process vmap loop).
     """
     cls = _MULTI_START_CLASSES[sampler]
-    settings = multi_start_settings(sampler, dataset_class, model_type)
+    settings = multi_start_settings(sampler, dataset_class, model_type, instrument)
     # Swap the recorded string label for the live object. Done here rather than
     # in ``multi_start_settings`` so that function stays serialisable — it is
     # what ``_sampler_config_dict`` writes into the results JSON.
     settings["clipper"] = _clipper_object(settings["clipper"])
     settings["scaler"] = _scaler_object(settings["scaler"])
+    # Same swap for the bijector (W5 Phase 8B, issue #162).
+    settings["bijector"] = _bijector_object(
+        settings["bijector"], dataset_class=dataset_class, model_type=model_type
+    )
     # "positions" is a recorded-config-only block (consumed by
     # _sampler_config_dict / multi_start_settings' JSON shape); no
     # af.MultiStart* class accepts it as a constructor kwarg.
