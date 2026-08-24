@@ -26,6 +26,11 @@ of PyAutoFit machinery is exercised and measured.
 | `multi_start_prodigy` | `point_source/source_plane/simple` | `hpc_a100_fp64` | -109.7 | — | 35.85 s | 65 | 401.4 ms | v2026.7.23.1 |
 | `multi_start_prodigy` | `point_source/source_plane_solved/simple` | `hpc_a100_fp64` | 4.5 | — | 44.77 s | 65 | 550.3 ms | v2026.7.23.1 |
 | `multi_start_prodigy` | `point_source/source_plane_tensor/simple` | `hpc_a100_fp64` | 13.4 | — | 31.68 s | 65 | 338.6 ms | v2026.7.23.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n128_seed100` | 31,787.9 | — | 198.29 s | 129 | 1537.2 ms | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n128_seed101` | 31,787.9 | — | 144.51 s | 129 | 1120.2 ms | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n128_seed102` | 31,787.9 | — | 137.26 s | 129 | 1064.0 ms | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n128_seed103` | 31,787.9 | — | 153.15 s | 129 | 1187.2 ms | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n128_seed104` | 31,787.9 | — | 159.00 s | 129 | 1232.6 ms | v2026.8.17.1 |
 | `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n16_seed0` | 31,787.9 | — | 245.80 s | 17 | 14459.0 ms | v2026.8.17.1 |
 | `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n16_seed0_diag_theta_e` | 31,787.9 | — | 271.44 s | 17 | 15967.0 ms | v2026.8.17.1 |
 | `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n16_seed1` | -95,708.6 | — | 111.70 s | 17 | 6570.3 ms | v2026.8.17.1 |
@@ -38,6 +43,16 @@ of PyAutoFit machinery is exercised and measured.
 | `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n16_seed4_diag_theta_e` | -128,632.1 | — | 137.83 s | 17 | 8107.8 ms | v2026.8.17.1 |
 | `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed0` | 31,787.9 | — | 224.77 s | 257 | 874.6 ms | v2026.8.17.1 |
 | `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed1` | 31,787.9 | — | 216.51 s | 257 | 842.5 ms | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed105` | 31,787.9 | — | 174.55 s | 257 | 679.2 ms | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed106` | 31,787.9 | — | 179.25 s | 257 | 697.5 ms | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed107` | 31,787.9 | — | 168.77 s | 257 | 656.7 ms | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed108` | 31,787.9 | — | 182.25 s | 257 | 709.2 ms | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed109` | 31,787.9 | — | 184.13 s | 257 | 716.4 ms | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed110` | 31,787.9 | — | 182.97 s | 257 | 711.9 ms | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed111` | 31,787.9 | — | 164.87 s | 257 | 641.5 ms | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed112` | 31,787.9 | — | 178.90 s | 257 | 696.1 ms | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed113` | 31,787.9 | — | 169.37 s | 257 | 659.0 ms | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed114` | 31,787.9 | — | 179.30 s | 257 | 697.7 ms | v2026.8.17.1 |
 | `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed2` | 31,787.9 | — | 176.52 s | 257 | 686.9 ms | v2026.8.17.1 |
 | `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed3` | 31,787.9 | — | 172.18 s | 257 | 669.9 ms | v2026.8.17.1 |
 | `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed4` | 31,787.9 | — | 191.40 s | 257 | 744.8 ms | v2026.8.17.1 |
@@ -129,6 +144,9 @@ separate axis a future sweep can introduce.
 **JAX rows force `force_x1_cpu=True` and `use_jax_vmap=True`.** This is
 mandatory: `nautilus.Sampler` forking under multiprocessing corrupts
 JAX state. The trade-off is one batched evaluation per Nautilus step.
+
+**Positions penalty is opt-in (`SEARCHES_POSITIONS`, Phase 4 Stage 1).**
+Off by default; see the dedicated "Position likelihood" section below.
 
 **Visualization wall-time is split out.** `_metrics.attach_viz_timer`
 wraps every visualize-family hook on the analysis (`visualize`,
@@ -232,6 +250,78 @@ turnaround sane).
   Related but distinct: `misc/hazards/checks/nonfinite_gradient.py` *detects*
   non-finite gradients on a likelihood surface; this one measures what it costs
   to *count* them during a fit.
+
+## Position likelihood (`SEARCHES_POSITIONS`)
+
+Phase 4 Stage 1 (issue #159). Attaches a real `al.PositionsLH` penalty to a
+cell's analysis — the SLaM `result.positions_likelihood_from` idiom
+(`autolens_workspace` SLaM scripts: `factor=3.0, minimum_threshold=0.2`) —
+sourced from the simulator's own **truth** positions rather than positions
+re-solved from a completed prior search's max-likelihood model (there is no
+prior search here to chain from; this is an idealisation, not the production
+SLaM chained-fit workflow).
+
+Off by default. Three env vars, all validated (an unrecognised value raises
+rather than falling back silently):
+
+| Env var | Values | Default |
+|---------|--------|---------|
+| `SEARCHES_POSITIONS` | `off` \| `on` | `off` |
+| `SEARCHES_POSITIONS_THRESHOLD` | a float, or `auto` | `0.3` |
+| `SEARCHES_POSITIONS_FACTOR` | a float (e.g. `1e5`, `1e8`) | `1e8` |
+
+`auto` replicates SLaM's `positions_threshold_from(factor=3.0,
+minimum_threshold=0.2)`: `max(3.0 * max_sep(truth positions, truth tracer),
+0.2)`. Because truth positions trace back to ~zero separation through the
+truth tracer by construction, `auto` **collapses to the 0.2 floor** for every
+dataset this Stage-1 plumbing supports — a caveat recorded verbatim in every
+run's `positions_settings()` block, not left implicit.
+
+**Supported cells**: single-plane `imaging` / `interferometer` only. `group`,
+`cluster`, `datacube`(`_img`/`_img_hetero`) and `point_source` all raise
+`NotImplementedError` when `SEARCHES_POSITIONS=on` — a per-system or
+multi-plane structure the single `PositionsLH` list here does not model, and
+a silently-ignored positions request is exactly the failure this plumbing
+must not permit.
+
+**Truth positions**: loaded from `dataset/<class>/<instrument>/positions.json`
+when present (every shipped `interferometer` dataset already has one). For
+`dataset/imaging/hst/` — which does not — they are derived **once** from the
+committed `tracer.json` via the simulator's own `PointSolver.for_grid(
+pixel_scale_precision=0.001, magnification_threshold=0.1)` recipe
+(`scripts/misc/simulators/imaging.py`) and written to
+`dataset/imaging/hst/positions.json` (committed to the repo, loudly logged
+when it happens). This never touches `data.fits` / `psf.fits` /
+`noise_map.fits` — it does not re-simulate.
+
+**Correctness guard — output-path/identifier collisions.** PyAutoFit's
+identifier hashes only `[search, model, unique_tag]`; the `Analysis` object
+— and therefore whether a `positions_likelihood_list` is attached — is never
+part of that hash. A positions-on and positions-off run of the "same"
+search/model/config_name would otherwise resolve to the *same* output
+directory and identifier, and the `.completed` resume gate would make the
+second run's `fit()` silently return the first run's cached result.
+`_setup.positions_arm_tag()` (e.g. `pos_t0.3_f1e8`, or `pos_tauto0.2_f1e5`
+for the auto/`1e5` arm) is composed into every sampler's `unique_tag` via
+`_samplers.arm_unique_tag()`, and appended to `run_search`'s `config_name`,
+so this can never happen silently. `_samplers.assert_disjoint_output_paths`
+is the reusable guard (see `scripts/misc/test/test_searches_positions.py`).
+
+Every cell's results JSON always carries a `"positions"` block
+(`{"enabled": false}` when off) in both `sampler_config` and the top-level
+summary, so a positions-on and a positions-off artifact are never ambiguous
+after the fact.
+
+Run the Stage-1 hazard/reliability transects with:
+
+```bash
+JAX_ENABLE_X64=True python scripts/misc/searches/positions_transects.py --quick
+JAX_ENABLE_X64=True python scripts/misc/searches/positions_transects.py
+```
+
+See `results/notes/inference/phase_04_positions/transects/RESULTS.md` for the
+write-up (classification rule, arms run, and the measured C0 hinge /
+interior-plateau / argmax-switch numbers).
 
 ## What this *doesn't* profile (yet)
 
