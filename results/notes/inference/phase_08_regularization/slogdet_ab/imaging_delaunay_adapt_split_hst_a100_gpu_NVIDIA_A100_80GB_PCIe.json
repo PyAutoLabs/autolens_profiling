@@ -1,0 +1,325 @@
+{
+  "schema_version": 2,
+  "experiment": "phase_8a_slogdet_ab",
+  "critical_path_item": "CP-4",
+  "version": "2026.8.17.1",
+  "jax_version": "0.10.2",
+  "platform": "Linux-5.14.0-687.39.1.el9_8.x86_64-x86_64-with-glibc2.34",
+  "tag": "CP-4 phase 8A, A100 tier, with descent-trajectory draws",
+  "target_control": {
+    "cell": "imaging/delaunay_adapt_split/hst",
+    "model_dim": 13,
+    "parameter_names": [
+      "galaxies.lens.bulge.profile_list.19.centre_0",
+      "galaxies.lens.bulge.profile_list.19.centre_1",
+      "galaxies.lens.bulge.profile_list.19.ell_comps_0",
+      "galaxies.lens.bulge.profile_list.19.ell_comps_1",
+      "galaxies.lens.mass.centre_0",
+      "galaxies.lens.mass.centre_1",
+      "galaxies.lens.mass.ell_comps_0",
+      "galaxies.lens.mass.ell_comps_1",
+      "galaxies.lens.mass.einstein_radius",
+      "galaxies.lens.shear.gamma_1",
+      "galaxies.lens.shear.gamma_2",
+      "galaxies.source.pixelization.regularization.inner_coefficient",
+      "galaxies.source.pixelization.regularization.outer_coefficient"
+    ],
+    "priors": [
+      "<UniformPrior id=0>",
+      "<UniformPrior id=1>",
+      "<TruncatedGaussianPrior id=2>",
+      "<TruncatedGaussianPrior id=3>",
+      "<GaussianPrior id=104>",
+      "<GaussianPrior id=105>",
+      "<TruncatedGaussianPrior id=106>",
+      "<TruncatedGaussianPrior id=107>",
+      "<UniformPrior id=108>",
+      "<UniformPrior id=109>",
+      "<UniformPrior id=110>",
+      "<LogUniformPrior id=111>",
+      "<LogUniformPrior id=112>"
+    ],
+    "likelihood": {
+      "positive_only": true,
+      "border_relocator": true,
+      "curvature_floor": 0.001,
+      "regularization_term_method": "matmul",
+      "precision": "fp64",
+      "log_det_method": "cholesky"
+    },
+    "positions": {
+      "enabled": false
+    },
+    "target_common_id": "sha256:f3a2f862460f",
+    "target_id": "sha256:cca39f6e96e5",
+    "target_class_vs_control": null
+  },
+  "target_treatment": {
+    "cell": "imaging/delaunay_adapt_split/hst",
+    "model_dim": 13,
+    "parameter_names": [
+      "galaxies.lens.bulge.profile_list.19.centre_0",
+      "galaxies.lens.bulge.profile_list.19.centre_1",
+      "galaxies.lens.bulge.profile_list.19.ell_comps_0",
+      "galaxies.lens.bulge.profile_list.19.ell_comps_1",
+      "galaxies.lens.mass.centre_0",
+      "galaxies.lens.mass.centre_1",
+      "galaxies.lens.mass.ell_comps_0",
+      "galaxies.lens.mass.ell_comps_1",
+      "galaxies.lens.mass.einstein_radius",
+      "galaxies.lens.shear.gamma_1",
+      "galaxies.lens.shear.gamma_2",
+      "galaxies.source.pixelization.regularization.inner_coefficient",
+      "galaxies.source.pixelization.regularization.outer_coefficient"
+    ],
+    "priors": [
+      "<UniformPrior id=0>",
+      "<UniformPrior id=1>",
+      "<TruncatedGaussianPrior id=2>",
+      "<TruncatedGaussianPrior id=3>",
+      "<GaussianPrior id=104>",
+      "<GaussianPrior id=105>",
+      "<TruncatedGaussianPrior id=106>",
+      "<TruncatedGaussianPrior id=107>",
+      "<UniformPrior id=108>",
+      "<UniformPrior id=109>",
+      "<UniformPrior id=110>",
+      "<LogUniformPrior id=111>",
+      "<LogUniformPrior id=112>"
+    ],
+    "likelihood": {
+      "positive_only": true,
+      "border_relocator": true,
+      "curvature_floor": 0.001,
+      "regularization_term_method": "matmul",
+      "precision": "fp64",
+      "log_det_method": "slogdet"
+    },
+    "positions": {
+      "enabled": false
+    },
+    "target_common_id": "sha256:f3a2f862460f",
+    "target_id": "sha256:ece5682e5f10",
+    "target_class_vs_control": 2
+  },
+  "draws": {
+    "path": "results/notes/inference/phase_08_regularization/slogdet_ab/draws/imaging_delaunay_adapt_split_hst_a100.npz",
+    "n": 416,
+    "seed": 0,
+    "anchor_provenance": "prior_medians (no truth-basin vector is recorded in-repo)",
+    "per_source_n": {
+      "descent": 32,
+      "lambda_transect": 128,
+      "prior": 128,
+      "truth_bar": 128
+    }
+  },
+  "hardware": {
+    "tier": "gpu_NVIDIA_A100_80GB_PCIe",
+    "backend": "gpu",
+    "device": "cuda:0",
+    "x64_enabled": true,
+    "cache_state": "warm (compile timed separately)",
+    "compile_s": {
+      "cholesky": 29.79402301897062,
+      "slogdet": 30.555462975986302
+    }
+  },
+  "arms": {
+    "cholesky": {
+      "log_det_method": "cholesky",
+      "compile_s": 29.79402301897062,
+      "warm_wall_s": 67.10336729197297,
+      "s_per_draw": 0.16130617137493503,
+      "n_batches": 104,
+      "batch_size": 4
+    },
+    "slogdet": {
+      "log_det_method": "slogdet",
+      "compile_s": 30.555462975986302,
+      "warm_wall_s": 69.33597969898256,
+      "s_per_draw": 0.16667302812255422,
+      "n_batches": 104,
+      "batch_size": 4
+    }
+  },
+  "verdict": {
+    "criteria": {
+      "zero_slogdet_nans": false,
+      "value_equality_on_pd_points": false,
+      "finite_gradients": false,
+      "runtime_within_factor": true
+    },
+    "attribution": {
+      "grad_nonfinite_under_both": 160,
+      "grad_nonfinite_only_under_slogdet": 0,
+      "grad_finite_only_under_slogdet": 32,
+      "slogdet_introduces_no_new_grad_nans": true,
+      "slogdet_nan_not_shared_with_cholesky": 0
+    },
+    "pass": false,
+    "void": false,
+    "void_reasons": [],
+    "counts": {
+      "n_draws": 416,
+      "cholesky_nan": 90,
+      "cholesky_nan_on_transect": 26,
+      "slogdet_nan": 32,
+      "both_finite": 326,
+      "rescued_by_slogdet": 58,
+      "regressed_by_slogdet": 0,
+      "nan_under_both": 32,
+      "cholesky_grad_nonfinite": 192,
+      "slogdet_grad_nonfinite": 160
+    },
+    "value_equality": {
+      "n_compared": 326,
+      "max_abs_delta": 9619.190746979788,
+      "max_rel_delta": 0.02238422503458007,
+      "n_exceeding_tolerance": 75,
+      "atol": 1e-06,
+      "rtol": 1e-09,
+      "clean_pd": {
+        "n": 251,
+        "max_abs_delta": 0.00017466879216954112
+      }
+    },
+    "marginal_band": {
+      "n": 75,
+      "draw_indices": [
+        0,
+        3,
+        7,
+        11,
+        12,
+        18,
+        21,
+        24,
+        25,
+        26,
+        28,
+        29,
+        31,
+        33,
+        37,
+        41,
+        42,
+        44,
+        47,
+        55,
+        56,
+        57,
+        62,
+        72,
+        73,
+        79,
+        84,
+        87,
+        96,
+        99,
+        100,
+        105,
+        108,
+        109,
+        115,
+        120,
+        124,
+        137,
+        224,
+        235,
+        331,
+        333,
+        334,
+        335,
+        336,
+        337,
+        338,
+        339,
+        341,
+        343,
+        344,
+        350,
+        352,
+        353,
+        355,
+        356,
+        357,
+        359,
+        362,
+        363,
+        364,
+        371,
+        373,
+        375,
+        377,
+        388,
+        389,
+        392,
+        394,
+        395,
+        396,
+        398,
+        402,
+        403,
+        405
+      ],
+      "max_abs_delta": 9619.190746979788,
+      "coefficient_min": -5.216166794372556,
+      "coefficient_max": 802192.7691166284
+    },
+    "category_2_rescued_values": {
+      "n": 58,
+      "min": -667174.5636592361,
+      "max": -159830.0345671358,
+      "median": -219412.43567569036
+    },
+    "runtime": {
+      "cholesky_warm_wall_s": 67.10336729197297,
+      "slogdet_warm_wall_s": 69.33597969898256,
+      "ratio": 1.0332712425189525,
+      "ceiling": 2.0,
+      "cholesky_compile_s": 29.79402301897062,
+      "slogdet_compile_s": 30.555462975986302
+    },
+    "per_source": {
+      "descent": {
+        "n": 32,
+        "cholesky_nan": 15,
+        "slogdet_nan": 10,
+        "rescued": 5,
+        "cholesky_grad_nonfinite": 15,
+        "slogdet_grad_nonfinite": 10
+      },
+      "lambda_transect": {
+        "n": 128,
+        "cholesky_nan": 26,
+        "slogdet_nan": 0,
+        "rescued": 26,
+        "cholesky_grad_nonfinite": 128,
+        "slogdet_grad_nonfinite": 128
+      },
+      "prior": {
+        "n": 128,
+        "cholesky_nan": 49,
+        "slogdet_nan": 22,
+        "rescued": 27,
+        "cholesky_grad_nonfinite": 49,
+        "slogdet_grad_nonfinite": 22
+      },
+      "truth_bar": {
+        "n": 128,
+        "cholesky_nan": 0,
+        "slogdet_nan": 0,
+        "rescued": 0,
+        "cholesky_grad_nonfinite": 0,
+        "slogdet_grad_nonfinite": 0
+      }
+    }
+  },
+  "pass_criteria_preregistered": [
+    "zero slogdet NaNs on the replay set",
+    "value equality within float tolerance on PD points",
+    "finite gradients",
+    "runtime within 2x"
+  ]
+}

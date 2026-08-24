@@ -1,0 +1,74 @@
+{
+  "sampler": "nss",
+  "dataset_class": "imaging",
+  "model": "mge",
+  "instrument": "hst",
+  "config_name": "hpc_a100_fp64_inner45",
+  "version": "2026.8.17.1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "omp_num_threads": null,
+    "cpu_count": 124,
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 8701 MiB, 81920 MiB"
+  },
+  "use_mixed_precision": false,
+  "sampler_config": {
+    "n_live": 200,
+    "num_mcmc_steps": 45,
+    "num_delete": 50,
+    "chunk_size": null,
+    "termination": -3.0,
+    "seed": 42,
+    "jax_native": true
+  },
+  "model_summary": {
+    "free_parameters": 15,
+    "best_fit": "lens.mass.einstein_radius=1.5998  lens.mass.centre=(0.000, 0.000)  shear=(0.0481, 0.0494)"
+  },
+  "results": {
+    "log_evidence": 31690.038487292877,
+    "max_log_likelihood": 31786.348836094756,
+    "posterior_samples": 17250,
+    "posterior_stats": {
+      "centre_0": {
+        "mean": 0.0003751098236416512,
+        "std": 0.0002680544152843502
+      },
+      "centre_1": {
+        "mean": 0.00030881012552261874,
+        "std": 0.0002251764330552759
+      },
+      "ell_comps_0": {
+        "mean": 0.09224933518493174,
+        "std": 0.0022094667827207985
+      },
+      "ell_comps_1": {
+        "mean": -0.051188075495919964,
+        "std": 0.0018570118318158146
+      },
+      "einstein_radius": {
+        "mean": 1.5996643070151513,
+        "std": 0.00021511644278563634
+      },
+      "gamma_1": {
+        "mean": 0.04855287597818582,
+        "std": 0.00040776430535565316
+      },
+      "gamma_2": {
+        "mean": 0.04955182446147022,
+        "std": 0.0003824530247296863
+      }
+    }
+  },
+  "performance": {
+    "total_wall_s": 6382.991672754288,
+    "viz_wall_s": 41.65867720905226,
+    "viz_n_calls": 5,
+    "viz_disabled": false,
+    "sampler_wall_s": 6341.3329955452355,
+    "likelihood_evals": 2264857,
+    "time_per_eval_ms": 2.7998822864071484
+  }
+}

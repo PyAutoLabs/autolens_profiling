@@ -82,9 +82,20 @@ _HILBERT_PIXELS: int = 1500
 # meshes share the Hilbert image-mesh + AdaptImages plumbing, and the choice
 # of regularization parametrization is load-bearing for gradient search (see
 # the model builders below).
-_PIX_MODEL_TYPES: tuple[str, ...] = ("pixelization", "delaunay", "knn", "delaunay_matern")
+_PIX_MODEL_TYPES: tuple[str, ...] = (
+    "pixelization",
+    "delaunay",
+    "knn",
+    "delaunay_matern",
+    "delaunay_adapt_split",
+)
 # The subset whose mesh vertices come from a precomputed image-plane mesh grid.
-_DELAUNAY_FAMILY: tuple[str, ...] = ("delaunay", "knn", "delaunay_matern")
+_DELAUNAY_FAMILY: tuple[str, ...] = (
+    "delaunay",
+    "knn",
+    "delaunay_matern",
+    "delaunay_adapt_split",
+)
 _MGE_TOTAL_GAUSSIANS: int = (
     20  # ``source_lp[1]`` SLaM fiducial; lighter than likelihood_runtime's 60
 )
@@ -128,6 +139,14 @@ class _ClusterDatasetList(list):
 # -----------------------------------------------------------------------------
 
 
+# Dataset classes whose analysis is built through ``al.Settings`` and therefore
+# can carry an inversion ``log_det_method`` override. point_source / cluster
+# analyses have no inversion at all, and the datacube builders compose their own
+# per-channel analyses, so an override there would be silently discarded — hence
+# the explicit rejection in ``build_for_cell`` rather than a quiet no-op.
+_LOG_DET_METHOD_DATASET_CLASSES: tuple[str, ...] = ("imaging", "group", "interferometer")
+
+
 def build_for_cell(
     *,
     dataset_class: str,
@@ -135,6 +154,7 @@ def build_for_cell(
     instrument: str,
     use_jax: bool,
     use_mixed_precision: bool = False,
+    log_det_method: str | None = None,
 ) -> tuple[Any, Any, Any]:
     """Build dataset, model and analysis for one profiling cell.
 
@@ -146,7 +166,23 @@ def build_for_cell(
     factor_graph)`` — the search treats the factor graph as both the model
     source and the analysis, per the multi-dataset pattern in
     ``autolens_workspace/scripts/multi_dataset/modeling.py``.
+
+    ``log_det_method`` selects the inversion's Bayesian-evidence
+    log-determinant computation (``None`` = the packaged default, currently
+    ``"cholesky"``; ``"slogdet"`` is the opt-in alternative from
+    PyAutoArray#391). It is threaded straight into ``al.Settings`` and is the
+    ONLY knob a Phase-8A A/B is allowed to vary — see ``build_ab_for_cell``,
+    which is what an A/B driver should call so that both sides share one
+    dataset, one model and one adapt image by construction.
     """
+    if log_det_method is not None and dataset_class not in _LOG_DET_METHOD_DATASET_CLASSES:
+        raise ValueError(
+            f"log_det_method={log_det_method!r} was passed for dataset_class="
+            f"{dataset_class!r}, whose analysis is not built through al.Settings. "
+            f"The override would be silently ignored. Supported: "
+            f"{_LOG_DET_METHOD_DATASET_CLASSES}."
+        )
+
     if dataset_class == "datacube":
         return _build_for_datacube(
             model_type=model_type,
@@ -206,9 +242,73 @@ def build_for_cell(
         use_jax=use_jax,
         use_mixed_precision=use_mixed_precision,
         adapt_images=adapt_images,
+<<<<<<< HEAD
         positions_likelihood_list=positions_likelihood_list,
+=======
+        log_det_method=log_det_method,
+>>>>>>> origin/main
     )
     return dataset, model, analysis
+
+
+def build_ab_for_cell(
+    *,
+    dataset_class: str,
+    model_type: str,
+    instrument: str,
+    use_jax: bool,
+    use_mixed_precision: bool = False,
+    log_det_methods: tuple[str, ...] = ("cholesky", "slogdet"),
+) -> tuple[Any, Any, dict[str, Any]]:
+    """One cell, N analyses that differ ONLY in ``log_det_method``.
+
+    Returns ``(dataset, model, {log_det_method: analysis})``.
+
+    This exists instead of calling :func:`build_for_cell` twice because the
+    programme's category-1/2 rule (``PROGRAMME.md`` §3, "Target ≠ algorithm")
+    requires the two arms to differ in exactly one field of the target. Calling
+    the builder twice re-derives the dataset, the model priors AND the Hilbert
+    image-plane mesh grid from the adapt image; each of those is deterministic
+    today, but "deterministic today" is an assumption the artifact would then be
+    resting on rather than a property it can state. Building them ONCE and
+    sharing the same objects across the arms makes the single-field difference
+    structural: there is one dataset object, one model object and one
+    ``AdaptImages`` object, and the analyses are constructed from them with a
+    different ``al.Settings(log_det_method=...)`` and nothing else.
+
+    Restricted to the ``al.Settings``-backed dataset classes for the reason
+    given on ``_LOG_DET_METHOD_DATASET_CLASSES``.
+    """
+    if dataset_class not in _LOG_DET_METHOD_DATASET_CLASSES:
+        raise ValueError(
+            f"build_ab_for_cell does not support dataset_class={dataset_class!r}; "
+            f"its analysis is not built through al.Settings, so a log_det_method "
+            f"A/B would compare two identical arms. Supported: "
+            f"{_LOG_DET_METHOD_DATASET_CLASSES}."
+        )
+    if len(set(log_det_methods)) != len(log_det_methods):
+        raise ValueError(f"log_det_methods must be unique, got {log_det_methods!r}")
+
+    dataset, dataset_path = _build_dataset(dataset_class, instrument)
+    mask_radius = _mask_radius_for(dataset_class, instrument)
+    model = _build_model(dataset_class, model_type, mask_radius=mask_radius)
+    adapt_images = _adapt_images_for(
+        dataset_class, model_type, dataset_path=dataset_path, dataset=dataset
+    )
+
+    analysis_dict = {
+        method: _build_analysis(
+            dataset_class=dataset_class,
+            model_type=model_type,
+            dataset=dataset,
+            use_jax=use_jax,
+            use_mixed_precision=use_mixed_precision,
+            adapt_images=adapt_images,
+            log_det_method=method,
+        )
+        for method in log_det_methods
+    }
+    return dataset, model, analysis_dict
 
 
 def _build_for_datacube(
@@ -683,6 +783,8 @@ def _build_model(
         return _knn_model(mask_radius=mask_radius)
     if model_type == "delaunay_matern":
         return _delaunay_matern_model(mask_radius=mask_radius)
+    if model_type == "delaunay_adapt_split":
+        return _delaunay_adapt_split_model(mask_radius=mask_radius)
     if model_type in ("image_plane", "source_plane", "source_plane_tensor"):
         return _point_source_model()
     if model_type in ("image_plane_solved", "source_plane_solved", "image_plane_repeat_solved"):
@@ -1195,6 +1297,56 @@ def _knn_model(*, mask_radius: float) -> af.Collection:
     return af.Collection(galaxies=af.Collection(lens=lens, source=source))
 
 
+def _delaunay_adapt_split_model(*, mask_radius: float) -> af.Collection:
+    """Hilbert image_mesh + Delaunay mesh + free ``AdaptSplit`` regularization.
+
+    **The cell where the NaN wall actually lives**, added for Phase 8A / CP-4.
+
+    The programme text names the free-AdaptSplit stressor as the ``knn`` cell,
+    but this repo's own #117 record separates the two mesh/reg pairings and only
+    one of them walls:
+
+    - ``knn`` + free AdaptSplit — the high-coefficient region is an
+      over-regularized floor that is bad but **finite**, escapable by
+      resurrection at ~step 1300 (see ``_knn_model``).
+    - Delaunay + free AdaptSplit — a **NaN wall** at high coefficients, the #104
+      doubly-squared lambda^4 fragility; lanes die instead of learning and the
+      campaign needed a ~2000-step resurrection lottery to escape the resulting
+      +8.5k-logL plateau (see ``_delaunay_matern_model`` and
+      ``scripts/imaging/searches/multi_start_prodigy/delaunay.py``).
+
+    That second pairing had no ``model_type`` of its own, because the campaign's
+    conclusion was to stop using it: the registered gradient cell for this mesh
+    is ``delaunay_matern``, which reaches the same fit ceiling while degrading
+    gracefully. It is registered here so a slogdet A/B can be run against the
+    configuration that actually fails, rather than against the one the
+    pre-registration named. It is a DIAGNOSTIC cell — not a recommendation, and
+    not a sampler-benchmark cell.
+
+    Identical to ``_delaunay_model`` except for the regularization, and
+    identical to ``_knn_model`` except for the mesh, so a three-way comparison
+    isolates mesh from reg.
+    """
+    lens_bulge = al.model_util.mge_model_from(
+        mask_radius=mask_radius,
+        total_gaussians=_MGE_TOTAL_GAUSSIANS,
+        centre_prior_is_uniform=True,
+    )
+    mass, shear = _lens_mass_and_shear()
+    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
+    # Free (inner, outer) with signal_scale pinned — the #117 AdaptSplit surface,
+    # matching _knn_model exactly so the mesh is the only difference.
+    regularization = af.Model(al.reg.AdaptSplit)
+    regularization.signal_scale = 1.0
+    pixelization = af.Model(
+        al.Pixelization,
+        mesh=al.mesh.Delaunay(pixels=_HILBERT_PIXELS, areas_factor=0.5, zeroed_pixels=0),
+        regularization=regularization,
+    )
+    source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
+    return af.Collection(galaxies=af.Collection(lens=lens, source=source))
+
+
 def _delaunay_matern_model(*, mask_radius: float) -> af.Collection:
     """Hilbert image_mesh + Delaunay mesh + free MaternKernel regularization.
 
@@ -1500,7 +1652,11 @@ def _build_analysis(
     use_mixed_precision: bool,
     adapt_images: al.AdaptImages | None,
     model: Any | None = None,
+<<<<<<< HEAD
     positions_likelihood_list: list | None = None,
+=======
+    log_det_method: str | None = None,
+>>>>>>> origin/main
 ) -> Any:
     # Pixelization / Delaunay analyses normally require ``positions_likelihood_list``
     # to guard against the demagnified-source systematic. For pure profiling we
@@ -1511,15 +1667,21 @@ def _build_analysis(
     # attached) regardless of model_type, so it is switched off symmetrically.
     raise_positions_exc = positions_likelihood_list is None and model_type not in _PIX_MODEL_TYPES
 
+    # ``log_det_method=None`` reads the packaged default ("cholesky"); passing it
+    # through unconditionally therefore leaves every existing caller's target
+    # bit-identical while letting a Phase-8A arm name "slogdet" explicitly.
+    settings = al.Settings(
+        use_border_relocator=model_type in _PIX_MODEL_TYPES,
+        use_mixed_precision=use_mixed_precision,
+        log_det_method=log_det_method,
+    )
+
     if dataset_class in ("imaging", "group"):
         return al.AnalysisImaging(
             dataset=dataset,
             positions_likelihood_list=positions_likelihood_list,
             adapt_images=adapt_images,
-            settings=al.Settings(
-                use_border_relocator=model_type in _PIX_MODEL_TYPES,
-                use_mixed_precision=use_mixed_precision,
-            ),
+            settings=settings,
             raise_inversion_positions_likelihood_exception=raise_positions_exc,
             use_jax=use_jax,
         )
@@ -1528,10 +1690,7 @@ def _build_analysis(
             dataset=dataset,
             positions_likelihood_list=positions_likelihood_list,
             adapt_images=adapt_images,
-            settings=al.Settings(
-                use_border_relocator=model_type in _PIX_MODEL_TYPES,
-                use_mixed_precision=use_mixed_precision,
-            ),
+            settings=settings,
             raise_inversion_positions_likelihood_exception=raise_positions_exc,
             use_jax=use_jax,
         )

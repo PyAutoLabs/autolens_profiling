@@ -1,0 +1,74 @@
+{
+  "sampler": "nss",
+  "dataset_class": "imaging",
+  "model": "mge",
+  "instrument": "hst",
+  "config_name": "hpc_a100_fp64_inner30_n1000",
+  "version": "2026.8.17.1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "omp_num_threads": null,
+    "cpu_count": 124,
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 33277 MiB, 81920 MiB"
+  },
+  "use_mixed_precision": false,
+  "sampler_config": {
+    "n_live": 1000,
+    "num_mcmc_steps": 30,
+    "num_delete": 250,
+    "chunk_size": null,
+    "termination": -3.0,
+    "seed": 42,
+    "jax_native": true
+  },
+  "model_summary": {
+    "free_parameters": 15,
+    "best_fit": "lens.mass.einstein_radius=1.5997  lens.mass.centre=(0.000, 0.000)  shear=(0.0487, 0.0498)"
+  },
+  "results": {
+    "log_evidence": 31690.21141605254,
+    "max_log_likelihood": 31786.556490582778,
+    "posterior_samples": 86000,
+    "posterior_stats": {
+      "centre_0": {
+        "mean": 0.0003834287380072026,
+        "std": 0.0002651047308526986
+      },
+      "centre_1": {
+        "mean": 0.00031420828813160854,
+        "std": 0.00021963208076957732
+      },
+      "ell_comps_0": {
+        "mean": 0.09232843092438987,
+        "std": 0.002153543244871545
+      },
+      "ell_comps_1": {
+        "mean": -0.05121840956233826,
+        "std": 0.0018538551041509656
+      },
+      "einstein_radius": {
+        "mean": 1.5996740890864496,
+        "std": 0.0002152444012535066
+      },
+      "gamma_1": {
+        "mean": 0.04855252130589126,
+        "std": 0.00040011400397547975
+      },
+      "gamma_2": {
+        "mean": 0.04955840225733095,
+        "std": 0.00037272154369875953
+      }
+    }
+  },
+  "performance": {
+    "total_wall_s": 20319.5598154068,
+    "viz_wall_s": 53.662749030045234,
+    "viz_n_calls": 5,
+    "viz_disabled": false,
+    "sampler_wall_s": 20265.897066376754,
+    "likelihood_evals": 7519030,
+    "time_per_eval_ms": 2.6952807830766408
+  }
+}

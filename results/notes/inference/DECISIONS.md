@@ -246,3 +246,69 @@ tripling claim withdrawn on adversarial review — see
 PROGRAMME.md phase/gate table (this commit); overnight strengthening
 jobs 339065-339073 (n128 fresh seeds, n256 extra seeds, Nautilus
 re-baselines) submitted before the call and noted here for the record.
+
+---
+
+## 2026-08-24 — Phase 2 scan COMPLETE: H2.1 closed, NSS operating point recorded, GATE A CALLED (human): Nautilus stays the nested baseline
+
+**Record (not a gate call):** Phase 2 wave 2 harvested (RAL 338870-338873,
+339067[0-3], 339068, 339069, 339070/71). Mainline `blackjax.nss` (af.NSS)
+reproduces the Nautilus answer on both `imaging/mge/hst` and
+`imaging/delaunay/hst`; the fork-era +7–13-nat logZ bias is entirely
+inner-kernel under-mixing (inner=30: 5/5 seeds within +1.0 ± 0.4 nats of
+Nautilus 31690.50). Operating point n_live 200 / num_delete 100 / inner 30
+/ dlogz −3 (−10 when the MAP matters). Cost at that point: **5.0× the
+Nautilus sampler wall on MGE (3,528 vs 707 s), 18.4× on Delaunay (34,726 vs
+1,891 s)**, measured same-night against Nautilus re-baselines on the
+current stack. Nautilus truth bars reaffirmed to 2 dp; the 523 s Nautilus
+wall is retired as a reference (707–773 s reproduces).
+
+**GATE A CALLED (human, 2026-08-24):** Nautilus remains the nested
+baseline on every model family; af.NSS stays mainlined as a correct,
+tuned alternative, not default. Phase 5's NSS arm is dropped. Sample
+economy sealed it beyond wall: Kish ESS 4,121 vs 1,315 per run on MGE
+(14× wall for equal ESS; ~15 vs ~940 likelihood evals per effective
+sample, reject-inclusive) — `phase_02_nss_mainline/RESULTS.md` "Sample
+economy". Only re-opening condition (unmeasured): a GPU-only deployment
+where Nautilus's host-side proposal is the bottleneck; W6 (n_batch scan)
+queued to bound it. The pixelization-cell Nautilus re-baseline (339795)
+is still queued and does not affect the call.
+
+**Same-day human calls, recorded here to keep DECISIONS.md linear:**
+- **Gate B pt 1 caveat (a) "n=256 only" STANDS.** n128 fresh-seed 5/5
+  (phase_03 addendum) is consistent but cannot demonstrate ≥99 % at 95 %
+  confidence; the ~1.3 GPU-h for a 30-seed n128 tier is not worth the
+  ~90 s/fit it would save. Revisit only if Prodigy enters a loop where
+  seconds compound.
+- **Gate C criterion reworded (PROGRAMME §4 Phase 6):** initialized
+  gradient MCMC is judged on *batched-pipeline* value (vmap across
+  datasets, posterior without an evidence run, ESS per gradient eval
+  acceptable), not on beating Nautilus's single-fit ESS/s — Nautilus's
+  ~15 evals/ESS on MGE is not a bar warm NUTS is expected to clear.
+
+---
+
+## 2026-08-24 — CP-4 / Phase 8A: slogdet FAILS the pre-registered A/B — human call: ADOPT as the profiling-repo testing default, keep library-optional, chase the residual NaNs
+
+**Record (Gates E/F remain open):** slogdet vs cholesky A/B run on RAL
+(A100 338808, CPU 338807). The pre-registered stressor (knn + free
+AdaptSplit) never walls — VOID on both tiers, as the driver's #117 note
+predicted. On the real wall (Delaunay + free AdaptSplit) slogdet rescues
+64–73 % of Cholesky NaNs with zero regressions but leaves 20–32 draws NaN
+under both arms, leaves all λ-transect gradients non-finite, disagrees
+with Cholesky by up to 9,619 nats (A100) in the marginal band, and costs
+3.7× on CPU. Three of four criteria fail.
+
+**Human call (2026-08-24), overriding the record's "not recommended":**
+zero regressions + 64–73 % rescue is worth having now. (1) `slogdet`
+becomes the **default `log_det_method` for gradient-work cells in this
+repo's searches framework** (`_setup.py`; GPU tiers — CPU keeps cholesky
+for the 3.7× cost) — W8. (2) The PyAutoArray default stays cholesky
+(opt-in), **to be revisited once (3) lands — reminder owed to the human at
+the end of the queue: "make slogdet standard".** (3) The NaN-under-both
+draws (32 A100 / 20 CPU) and the all-transect non-finite gradients are a
+named investigation, W7 — are they genuinely singular systems (λ⁴, #104)
+or a formula-independent overflow that a different scaling removes? Phase
+8B stays the live reparameterization candidate alongside. Record:
+`phase_08_regularization/RESULTS.md`.
+
