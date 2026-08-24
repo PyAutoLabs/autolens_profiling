@@ -1,0 +1,102 @@
+#!/bin/bash -l
+#
+# Inference programme CP-3 follow-up — af.Nautilus RE-BASELINE on the current
+# stack: searches/nautilus/imaging/mge x hst x fp64.
+#
+# WHY THIS EXISTS — CP-3 ADVERSARIAL REVIEW CAVEATS (d) AND (e)
+#   The Nautilus truth bar that Gate B part 1 is measured against is a
+#   fork-era row: results/searches/nautilus/imaging/mge/hst/hpc_a100_fp64.json,
+#   v2026.5.21.1, total wall 831.3 s (sampler 772.7 s, viz 58.6 s over 8 calls,
+#   63,800 evals at 12.11 ms/eval, logZ 31690.47, max logL 31786.78).
+#   The review flagged two defects in using it:
+#     (d) two unreconciled Nautilus walls — 831 / 772.7 s here versus the
+#         523 s recorded in PROGRAMME.md §1.2 for "the same node" — and a
+#         version/flag mismatch: the baseline is v2026.5.21.1 with no XLA
+#         flags, while the Prodigy rows are v2026.8.17.1 with autotune off.
+#         The same NSS config re-run across that gap moved 679 s -> 883 s
+#         (+30%), so the gap is NOT negligible and "same tier" is not
+#         "same stack".
+#     (e) no `target_id` on any artifact, so §3 comparability is unverified.
+#   Re-running the baseline on the current stack addresses both: it produces
+#   a Nautilus wall measured with the same code, same flags and the same
+#   artifact schema as the Prodigy rows it is compared with, and it is the
+#   evidence that decides which of 831 / 772.7 / 523 s the reconciled number
+#   is. Until it lands, every Prodigy-vs-Nautilus speedup in RESULTS.md
+#   carries caveat (d).
+#
+# ARM: builder defaults for this cell, stated for the record and NOT
+#   overridden — n_live 200, n_batch 100, number_of_cores 1, use_jax_vmap
+#   true, force_x1_cpu true, iterations_per_update 600 (= 3 x n_live). These
+#   are exactly the fork row's sampler_config, and af.Nautilus here has no
+#   SEARCHES_* env knobs: the values come from ``n_live_for`` /
+#   ``vmap_batch_for_cell`` in scripts/misc/searches/_samplers.py, so leaving
+#   them alone IS the replication. Visualization is left ENABLED (the fork
+#   row's 58.6 s of viz is inside its 831 s; disabling it here would change
+#   what the number means — the artifact records viz_wall_s separately, so
+#   both the like-for-like and the sampler-only comparison stay available).
+#
+# ARTIFACT OVERWRITE — INTENDED, AND NARROWER THAN IT LOOKS
+#   Per repo convention a re-run overwrites its cell's artifact and git
+#   history preserves the old one; the ``version`` field distinguishes them
+#   regardless. In practice this run does not even collide: the current
+#   resolve_output_paths prefixes the cell token, so --config-name
+#   hpc_a100_fp64 writes hpc_hpc_a100_fp64.json, while the fork row sits at
+#   hpc_a100_fp64.json (the same split already visible in the NSS MGE cell,
+#   where both filenames coexist at v2026.5.21.1 and v2026.8.17.1).
+#
+# WARNING — COMPLETED-FIT RESUME TRAP, CHECK BEFORE SUBMITTING
+#   The af search ``name`` IS the config name, so this run targets
+#     $AP_ROOT/output/searches/nautilus/imaging/mge/hst/hpc_a100_fp64/
+#   which is exactly where the fork-era run wrote its search state, with the
+#   same knobs and therefore the same identifier. If that directory survives
+#   on RAL with a completed fit, PyAutoFit will resume/short-circuit it and
+#   this job will report FORK-ERA numbers wearing a current-stack version
+#   stamp — silently defeating the whole purpose of the re-baseline.
+#   Before submitting:
+#     ls $AP_ROOT/output/searches/nautilus/imaging/mge/hst/
+#   and move any existing hpc_a100_fp64/ aside (or delete it) so the fit
+#   starts cold.
+#
+# ESTIMATED WALL: fork row 831 s total. Allowing the +30% cross-version drift
+#   measured on NSS gives ~1080 s (~18 min). --time 1:30:00 is ~5x that —
+#   cheap insurance on a short job.
+
+#SBATCH -J search_nautilus_imaging_mge_hst_fp64
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=1:30:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_profiling
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+nvidia-smi
+
+echo "=========================================="
+date
+echo "Cell:       searches/nautilus/imaging/mge"
+echo "Instrument: hst"
+echo "Precision:  fp64"
+echo "Arm:        re-baseline, default knobs (n_live=200, n_batch=100, cores=1)"
+
+cd $AP_ROOT
+python3 scripts/imaging/searches/nautilus/mge.py \
+    --instrument hst \
+    --config-name hpc_a100_fp64 \
+    --output-dir $AP_ROOT/results/searches/nautilus/imaging/mge/hst
+
+echo "Finished."
+date

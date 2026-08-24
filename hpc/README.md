@@ -30,3 +30,20 @@ merges local and A100 rows into one `comparison.json`. Copy/commit the result
 JSONs from the HPC checkout back via the normal git flow. The PyAuto*
 libraries resolve from sibling source checkouts on `PYTHONPATH` — never
 pip-install them into the venv (`HPCPullPyAuto` is the update story).
+
+## Array submits (repeated-seed campaigns)
+
+A submit whose name ends in a tier (e.g. `..._fp64_n64`) and that declares
+`#SBATCH --array=0-4` runs one **seed per array task** — the shape a
+reliability measurement needs (`results/notes/inference/PROGRAMME.md` §3:
+"reliability is P(correct | fixed budget), measured over >= 5 seeds"). The
+seed is read from a `SEEDS=(...)` bash array indexed by `SLURM_ARRAY_TASK_ID`
+and exported as `SEARCHES_SEED`; stdout/stderr use the `%A_%a` (job_array)
+pattern so each task's log is separate.
+
+Every arm must land in its own results file **and** its own autofit output
+directory. `--config-name` carries the tier and seed, which makes the results
+filename distinct; the search-side half is handled by
+`searches/_samplers.multi_start_unique_tag` — read its docstring before adding
+an arm, because only `clipper` enters a MultiStart search's identifier and an
+untagged arm silently returns a sibling arm's completed fit.

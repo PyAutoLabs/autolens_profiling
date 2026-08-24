@@ -1,0 +1,110 @@
+#!/bin/bash -l
+#
+# Inference programme CP-3 / Phase 3 — MultiStartProdigy MGE reliability scan,
+# WAVE 1 (positions-OFF), arm n_starts=256.
+#
+# ARM
+#   cell        searches/multi_start_prodigy_autoconv/imaging/mge  x  hst  x  fp64
+#   n_starts    256
+#   n_steps     3000 (CEILING — auto-convergence is ON; stop_reason is recorded)
+#   seeds       0..4, one per SLURM array task (>= 5 seeds, PROGRAMME.md §3)
+#   clipper     prior_box   (best-supported config, hygiene)
+#   scaler      none        (falsified as a fix — not an arm)
+#   momentum    no reset on clip
+#   positions   OFF (wave 1; the positions-on half needs PositionsLH plumbing
+#               the searches framework does not have — out of scope)
+#
+# HYPOTHESES
+#   H3.1  the limitation is basin discovery (the theta_E=0 attractor), not
+#         bound handling — the null.
+#   H3.2  p_hit(Prodigy) is O(0.1-0.2) like Adam's; if much lower, Prodigy is
+#         done as a global searcher at any n. This is the Gate B tier: if no
+#         n_starts <= 256 reaches >= 99% reliability below the nested-sampling
+#         cost, MultiStartProdigy is classified LOCAL/INITIALIZED and global-
+#         search investment stops (PROGRAMME.md §4 Phase 3, Gate B part 1).
+#         It is also the single A100 row the phase budgets "to time the
+#         256-start config honestly".
+#   H3.3  ell_comps trapping above the 0.999 magnitude clamp survives clipping.
+#         Recorded per lane, raw counts only, at FINAL and at BEST.
+#
+# ESTIMATED WALL (A100 fp64, warm compile cache)
+#   ~0.77 s/step at 256 lanes  ->  ~2300 s at the 3000-step ceiling, + ~5 min
+#   compile  =>  ~45 min per array task, ~3.8 h for the tier. This tier
+#   dominates the wave's GPU cost.
+#   Anchors: multi-start Adam 128x fp32 A100 warm = 50 s (PROGRAMME.md §1.2,
+#   ~0.167 s/step at n_steps=300; A100 fp64 is ~2x fp32 here), cross-checked
+#   against MultiStartProdigy 16x3000 fp64 on the laptop GPU = 1255 s
+#   (results/notes/clipper_campaign/, ~0.42 s/step) — the implied ~9x A100
+#   advantage sits below the raw 16x fp64 rate ratio (GeForce 1:32 vs A100
+#   1:2), so the estimate is conservative. The --time below carries >= 3x
+#   headroom on top.
+#
+# DEPENDENCY — READ BEFORE SUBMITTING
+#   Requires **PyAutoFit >= PR#1515** (branch feature/multistart-per-lane-best)
+#   on the RAL PYTHONPATH checkout. That change writes the per-lane best
+#   records (lane_best_params / lane_best_foms / lane_best_steps) into
+#   search_internal, and per-lane basin classification — the whole point of
+#   CP-3 — is computed from them. Run `HPCPullPyAuto` and confirm RAL's
+#   PyAutoFit main contains the merge first; an older PyAutoFit still completes
+#   the fit but writes `diagnostics.valid: false` and the arm is unusable.
+#
+# MEMORY NOTE
+#   imaging/mge/hst is 16 MB per vmap replica (scripts/misc/vram/config.py:64),
+#   so even the 256-lane tier is small on an A100. Do NOT introduce
+#   SEARCHES_BATCH_SIZE for one tier only if something OOMs: batch_size is
+#   documented to change WHICH optimum is found on at least one mesh family, so
+#   a per-tier batch setting would confound the reliability comparison.
+
+#SBATCH -J cp3_prodigy_mge_n256
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=4:00:00
+#SBATCH --array=0-4
+#SBATCH -o output/output.%A_%a.out
+#SBATCH -e error/error.%A_%a.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_profiling
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+SEEDS=(0 1 2 3 4)
+SEED=${SEEDS[$SLURM_ARRAY_TASK_ID]}
+N_STARTS=256
+
+export SEARCHES_N_STARTS=$N_STARTS
+export SEARCHES_N_STEPS=3000
+export SEARCHES_SEED=$SEED
+export SEARCHES_CLIPPER=prior_box
+export SEARCHES_SCALER=none
+# Visualization is not the measurement and its cost would land inside the
+# recorded wall; the results JSON records viz_disabled: true.
+export SEARCHES_DISABLE_VIZ=1
+
+nvidia-smi
+
+echo "=========================================="
+date
+echo "Cell:       searches/multi_start_prodigy_autoconv/imaging/mge"
+echo "Instrument: hst"
+echo "Precision:  fp64"
+echo "Arm:        n_starts=$N_STARTS  seed=$SEED  clipper=prior_box  positions=off"
+
+cd $AP_ROOT
+python3 scripts/imaging/searches/multi_start_prodigy_autoconv/mge.py \
+    --instrument hst \
+    --config-name hpc_a100_fp64_n${N_STARTS}_seed${SEED} \
+    --output-dir $AP_ROOT/results/searches/multi_start_prodigy_autoconv/imaging/mge/hst
+
+echo "Finished."
+date
