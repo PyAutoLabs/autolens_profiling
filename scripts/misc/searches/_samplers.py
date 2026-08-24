@@ -106,6 +106,13 @@ def vmap_batch_for_cell(dataset_class: str, model_type: str, instrument: str) ->
     point_source / datacube / un-probed cells (these have small inversions
     or no vmap surface and the Nautilus default is fine).
     """
+    override = os.environ.get("SEARCHES_NAUTILUS_N_BATCH")
+    if override:
+        # W6 (autolens_profiling#163): the n_batch scan drives the same builder
+        # via this override; ``_sampler_config_dict`` calls this too, so the
+        # JSON records the value actually run. n_batch is NOT an af.Nautilus
+        # identifier field — the submit's --config-name must carry it.
+        return int(override)
     val = vmap_batch_for(dataset_class, model_type, instrument)
     return val if val is not None else _FALLBACK_BATCH
 

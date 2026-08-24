@@ -1,0 +1,66 @@
+#!/bin/bash -l
+#
+# W6 (issue #163) — Nautilus n_batch scan, searches/nautilus/imaging/mge x hst x fp64.
+#
+# QUESTION: Phase 2 "Sample economy" — Nautilus needs ~15 likelihood evals per
+#      effective sample but pays 11.4 ms/eval on MGE vs af.NSS's 2.85 ms for
+#      the SAME likelihood: the proposal loop is host-side numpy/sklearn around
+#      n_batch-sized GPU batches (re-baseline 339070 ran n_batch=64; fork-era
+#      rows 100). If ms/eval falls toward ~3 ms as n_batch grows, the "JAX
+#      Nautilus" question is closed as a config knob and W2/W4 adopt the best
+#      value; if it does not, the host overhead is recorded as irreducible.
+#      n_batch changes WHEN the network retrains, so logZ / max logL are
+#      reported per arm to confirm the answer does not move.
+#
+# ARM: one n_batch per array task — BATCHES=(64 128 256 512 1000); n_live and every other
+#      knob at the cell default. --config-name carries n_batch: it sets the
+#      results basename AND the af.Nautilus search name, and n_batch is NOT an
+#      identifier field, so this is the ONLY thing keeping the arms' output/
+#      directories and results JSONs disjoint (see the seeds submits).
+#
+# WALL-TIME: re-baseline 775 s total at n_batch=64; larger batches should be faster. 1:30:00 is ~7x.
+#
+#SBATCH -J search_nautilus_imaging_mge_hst_fp64_nbatch
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=1:30:00
+#SBATCH --array=0-4
+#SBATCH -o output/output.%A_%a.out
+#SBATCH -e error/error.%A_%a.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_profiling
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+nvidia-smi
+
+echo "=========================================="
+date
+echo "Cell:       searches/nautilus/imaging/mge"
+echo "Instrument: hst"
+echo "Precision:  fp64"
+echo "Arm:        W6 n_batch scan — n_batch=$NB (SEARCHES_NAUTILUS_N_BATCH), default n_live, cores=1"
+
+BATCHES=(64 128 256 512 1000)
+NB=${BATCHES[$SLURM_ARRAY_TASK_ID]}
+export SEARCHES_NAUTILUS_N_BATCH=$NB
+
+cd $AP_ROOT
+python3 scripts/imaging/searches/nautilus/mge.py \
+    --instrument hst \
+    --config-name hpc_a100_fp64_nbatch${NB} \
+    --output-dir $AP_ROOT/results/searches/nautilus/imaging/mge/hst
+
+echo "Finished."
+date
