@@ -58,6 +58,7 @@ from searches._samplers import (  # noqa: E402
     SAMPLER_BUILDERS,
     multi_start_settings,
     n_live_for,
+    nautilus_seed,
     nss_settings,
     vmap_batch_for_cell,
 )
@@ -73,6 +74,8 @@ from _profile_cli import (  # noqa: E402
 _SAMPLERS_WITH_N_LIVE = frozenset({"nautilus", "nss"})
 from searches._recovery import load_truth, recovery_report  # noqa: E402
 from searches._setup import (  # noqa: E402
+    _LOG_DET_METHOD_DATASET_CLASSES,
+    _PIX_MODEL_TYPES,
     apply_diagnostic_prior_overrides,
     build_for_cell,
     cluster_point_fit_cls_for,
@@ -384,12 +387,20 @@ def run_search(
     print(f"  n_live: {n_live if n_live is not None else 'n/a (MAP optimizer)'}")
 
     print("  Building dataset / model / analysis...")
+    log_det_method = resolve_log_det_method(
+        sampler=sampler, dataset_class=dataset_class, model_type=model_type, use_jax=use_jax
+    )
+    if log_det_method is not None:
+        print(
+            f"  log_det_method: {log_det_method} (W8 GPU gradient-cell default / SEARCHES_LOG_DET_METHOD)"
+        )
     dataset, model, analysis = build_for_cell(
         dataset_class=dataset_class,
         model_type=model_type,
         instrument=instrument,
         use_jax=use_jax,
         use_mixed_precision=cli.use_mixed_precision,
+        log_det_method=log_det_method,
     )
     print(f"  Model free parameters: {model.total_free_parameters}")
 
@@ -561,6 +572,7 @@ def _sampler_config_dict(
             "use_jax_vmap": use_jax,
             "force_x1_cpu": use_jax,
             "iterations_per_update": 3 * n_live,
+            "seed": nautilus_seed(),
             "positions": positions_settings(),
         }
     if sampler == "nss":
@@ -594,6 +606,49 @@ def _sampler_config_dict(
             cfg["convergence"] = {"check_for_convergence": False}
         return cfg
     return {"n_live": n_live, "_note": f"unknown sampler {sampler!r}"}
+
+
+# W8 (autolens_profiling#165, DECISIONS.md 2026-08-24 CP-4 human call): slogdet
+# is the default evidence log-det for GRADIENT-WORK cells on GPU tiers only.
+# CP-4 measured zero regressions and 64-73 % NaN-wall rescue at 1.03x GPU cost,
+# but 3.7x on CPU (fails the 2x ceiling) — so CPU keeps cholesky. Nested
+# samplers (nautilus / nss) keep cholesky everywhere so the truth bars do not
+# move. ``SEARCHES_LOG_DET_METHOD`` overrides everything (A/B rows). The
+# PyAutoArray library default is untouched (W9, #166).
+_GRADIENT_SAMPLERS: frozenset[str] = frozenset({*_MULTI_START_CLASSES, "nuts"})
+
+
+def _jax_backend_is_gpu() -> bool:
+    try:
+        import jax
+
+        return jax.default_backend() in ("gpu", "cuda", "rocm")
+    except Exception:
+        return False
+
+
+def resolve_log_det_method(
+    *, sampler: str, dataset_class: str, model_type: str, use_jax: bool
+) -> str | None:
+    """The ``log_det_method`` a cell runs with, or ``None`` for the packaged default.
+
+    Precedence: ``SEARCHES_LOG_DET_METHOD`` env (any value the library accepts)
+    > W8 default (``"slogdet"`` iff gradient sampler AND pixelized model AND a
+    dataset class whose analysis is built through ``al.Settings`` AND JAX on a
+    GPU backend) > ``None``.
+    """
+    override = os.environ.get("SEARCHES_LOG_DET_METHOD")
+    if override:
+        return override.strip().lower()
+    if (
+        use_jax
+        and sampler in _GRADIENT_SAMPLERS
+        and model_type in _PIX_MODEL_TYPES
+        and dataset_class in _LOG_DET_METHOD_DATASET_CLASSES
+        and _jax_backend_is_gpu()
+    ):
+        return "slogdet"
+    return None
 
 
 def _decide_use_jax() -> bool:
@@ -655,6 +710,10 @@ def _build_summary(
         # SEARCHES_POSITIONS is off, so a positions-on and positions-off run
         # of the "same" cell/config_name are never ambiguous in the artifact.
         "positions": positions_settings(),
+        # W8: the evidence log-det the cell ran with (None = packaged default).
+        "log_det_method": resolve_log_det_method(
+            sampler=sampler, dataset_class=dataset_class, model_type=model_type, use_jax=use_jax
+        ),
         "model_summary": {
             "free_parameters": n_free_params,
             "best_fit": best_fit,
