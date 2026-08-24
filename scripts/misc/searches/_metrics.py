@@ -23,9 +23,11 @@ fit take?" and "how much of that was visualization?".
 
 from __future__ import annotations
 
+import json
 import time
 import types
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -202,11 +204,12 @@ def collect_metrics(
     ``search_internal["total_steps"]`` from
     ``searches._per_lane.capture_search_internal``): e.g. 178 steps x 256
     starts = 45,568 evals, not the handful of stored samples. Pass
-    ``is_multi_start=True`` with ``n_starts`` + ``multi_start_total_steps``
-    (both required together — ``ValueError`` if only one is given) to apply
-    the fix; without them (nested samplers, or a MultiStart run whose
-    ``search_internal`` capture is unavailable) ``likelihood_evals`` falls
-    back to the old ``total_samples`` reading, same as before this change.
+    ``is_multi_start=True`` with both ``n_starts`` and
+    ``multi_start_total_steps`` to apply the fix; if either is ``None``
+    (nested samplers, or a MultiStart run whose ``search_internal`` capture
+    is unavailable — e.g. an older PyAutoFit predating the counters) it
+    falls back to the old ``total_samples`` reading rather than raising, so
+    a completed run's summary is never discarded over a missing diagnostic.
 
     ``stored_samples`` is always ``total_samples`` — the raw posterior/best-
     point storage count, kept distinct from the (corrected) evaluation count
@@ -232,13 +235,6 @@ def collect_metrics(
         posterior_samples = 0
 
     sampler_wall_s = max(total_wall_s - viz_wall_s, 0.0)
-
-    if is_multi_start and (n_starts is not None) != (multi_start_total_steps is not None):
-        raise ValueError(
-            "collect_metrics: n_starts and multi_start_total_steps must be "
-            "given together (or both omitted); got "
-            f"n_starts={n_starts!r}, multi_start_total_steps={multi_start_total_steps!r}"
-        )
 
     likelihood_evals = total_samples
     gradient_evals = None
@@ -271,3 +267,54 @@ def collect_metrics(
         evals_per_ess=evals_per_ess,
         ess_per_min=ess_per_min,
     )
+
+
+def load_summary(path: str | Path) -> dict:
+    """Load a results JSON, normalising a v1-shaped summary to v2 in memory.
+
+    W4 / issue #161 (Phase 1). A v1 summary (no ``schema_version`` key, or
+    ``schema_version`` != 2) predates the Phase 1 schema additions and lacks
+    ``target`` / ``algorithm`` / ``hardware``. This loader synthesises
+    best-effort versions of those three blocks from the v1 keys that ARE
+    present (``sampler`` / ``dataset_class`` / ``model`` / ``instrument`` /
+    ``config_name`` / ``device`` / ``sampler_config`` / ``use_mixed_precision``)
+    so a caller can treat every summary — old or new — uniformly without a
+    schema-version branch of its own. The synthesised ``target`` block has
+    ``target_id: None`` — a v1 run predates ``_targets.py`` and has no
+    provenance to hash, so fabricating an id would be worse than omitting
+    one. The file on disk is NEVER rewritten by this function; normalisation
+    happens only in the returned ``dict``.
+    """
+    data = json.loads(Path(path).read_text())
+    if data.get("schema_version") == 2:
+        return data
+
+    normalised = dict(data)
+    normalised["schema_version"] = normalised.get("schema_version", 1)
+
+    if "target" not in normalised:
+        cell = "/".join(
+            str(normalised.get(k, "?")) for k in ("dataset_class", "model", "instrument")
+        )
+        normalised["target"] = {
+            "target_id": None,
+            "cell": cell,
+            "model_dim": (normalised.get("model_summary") or {}).get("free_parameters"),
+            "priors_ref": None,
+            "note": "synthesised by load_summary() from a v1 (pre-schema-v2) results JSON",
+        }
+    if "algorithm" not in normalised:
+        sampler_config = normalised.get("sampler_config") or {}
+        normalised["algorithm"] = {
+            "name": normalised.get("sampler"),
+            "config_id": normalised.get("config_name"),
+            "settings": sampler_config,
+            "seed": sampler_config.get("seed"),
+        }
+    if "hardware" not in normalised:
+        normalised["hardware"] = {
+            "tier": normalised.get("config_name"),
+            "precision": "mp" if normalised.get("use_mixed_precision") else "fp64",
+            "device": normalised.get("device"),
+        }
+    return normalised

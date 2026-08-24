@@ -50,6 +50,7 @@ _WORKSPACE_ROOT = _profiling_root()
 if str(_WORKSPACE_ROOT) not in sys.path:
     sys.path.insert(0, str(_WORKSPACE_ROOT))
 
+from searches import _targets  # noqa: E402
 from searches._metrics import attach_viz_timer, collect_metrics  # noqa: E402
 from searches._per_lane import capture_search_internal, per_lane_block  # noqa: E402
 from searches._samplers import (  # noqa: E402
@@ -76,12 +77,14 @@ from searches._recovery import load_truth, recovery_report  # noqa: E402
 from searches._setup import (  # noqa: E402
     _LOG_DET_METHOD_DATASET_CLASSES,
     _PIX_MODEL_TYPES,
+    _adapt_images_for,
     apply_diagnostic_prior_overrides,
     build_for_cell,
     cluster_point_fit_cls_for,
     format_best_fit,
     point_source_fit_cls_for,
     positions_arm_tag,
+    positions_enabled,
     positions_settings,
 )
 
@@ -123,6 +126,9 @@ def _truth_anchor_for_cell(
     model_type: str,
     dataset: Any,
     max_log_likelihood: float,
+    *,
+    use_mixed_precision: bool = False,
+    log_det_method: str | None = None,
 ) -> dict | None:
     """Truth-anchored log likelihood for point_source cells (#678 phase B).
 
@@ -135,16 +141,29 @@ def _truth_anchor_for_cell(
     ``delta_max_ll_vs_truth`` is directly comparable to the search's own
     ``max_log_likelihood``.
 
-    Returns ``None`` for non point_source / cluster cells. Never raises: on
-    any exception the failure is printed loudly and the exception string is
-    stored in place of the numeric fields instead of crashing the run.
+    Returns ``None`` for non point_source / cluster / imaging cells. Never
+    raises: on any exception the failure is printed loudly and the exception
+    string is stored in place of the numeric fields instead of crashing the
+    run.
 
     Extended for cluster cells (#678 phase B chunk 2) — see
-    ``_cluster_truth_anchor`` below; dispatched here so both dataset_classes
-    share one entry point from ``run_search``.
+    ``_cluster_truth_anchor`` below — and for imaging cells (W4 / issue #161,
+    Phase 1) — see ``_imaging_truth_anchor``; dispatched here so every
+    dataset_class shares one entry point from ``run_search``.
+    ``use_mixed_precision`` / ``log_det_method`` are only consumed by the
+    imaging branch (its ``al.Settings`` must match the search's own).
     """
     if dataset_class == "cluster":
         return _cluster_truth_anchor(instrument, model_type, dataset, max_log_likelihood)
+    if dataset_class == "imaging":
+        return _imaging_truth_anchor(
+            instrument,
+            model_type,
+            dataset,
+            max_log_likelihood,
+            use_mixed_precision=use_mixed_precision,
+            log_det_method=log_det_method,
+        )
     if dataset_class != "point_source":
         return None
     try:
@@ -189,6 +208,7 @@ def _truth_anchor_for_cell(
         return {
             "truth_log_likelihood": truth_log_likelihood,
             "delta_max_ll_vs_truth": float(max_log_likelihood) - truth_log_likelihood,
+            "bar_source": "truth_tracer",
         }
     except Exception as exc:  # never let the anchor step kill a completed search
         print(f"  WARNING: truth-anchor step failed [{dataset_class}/{model_type}]: {exc!r}")
@@ -279,10 +299,76 @@ def _cluster_truth_anchor(
         return {
             "truth_log_likelihood": truth_log_likelihood,
             "delta_max_ll_vs_truth": float(max_log_likelihood) - truth_log_likelihood,
+            "bar_source": "truth_tracer",
         }
     except Exception as exc:  # never let the anchor step kill a completed search
         print(f"  WARNING: truth-anchor step failed [cluster/{model_type}]: {exc!r}")
         return {"truth_log_likelihood": repr(exc), "delta_max_ll_vs_truth": repr(exc)}
+
+
+def _imaging_truth_anchor(
+    instrument: str,
+    model_type: str,
+    dataset: Any,
+    max_log_likelihood: float,
+    *,
+    use_mixed_precision: bool = False,
+    log_det_method: str | None = None,
+) -> dict:
+    """Truth-anchored log likelihood for imaging cells (W4 / issue #161, Phase 1).
+
+    Extends the truth-anchor mechanism (previously point_source/cluster only)
+    to imaging: builds ``al.FitImaging`` directly from the simulator's own
+    truth tracer (``dataset/imaging/<instrument>/tracer.json``) using the
+    SAME adapt images + ``al.Settings`` the search's own analysis was built
+    with (``use_border_relocator`` gated on ``model_type in _PIX_MODEL_TYPES``,
+    matching ``_setup._build_analysis`` exactly), so ``delta_max_ll_vs_truth``
+    is directly comparable to the search's own ``max_log_likelihood``.
+
+    ``bar_source`` is always ``"truth_tracer"`` here — there is no completed
+    reference run to anchor against instead (the other value the schema
+    allows, ``"reference_run"``, is reserved for a future baseline-anchored
+    mode). **The Δ<=2 nats tolerance (``Tolerances.delta_max_ll_nats``,
+    ``searches._targets``) applies to the ``mge`` target only**: for
+    pixelized targets (``pixelization``/``delaunay*``/``knn``/
+    ``slam_source_pix*``) the truth tracer's PSF-convolved analytic image and
+    the mesh reconstruction's best fit are not expected to agree to within a
+    couple of nats even at the true lens parameters — the inversion smooths
+    and regularizes the source differently from the noiseless analytic
+    truth — so a large delta on those targets reflects that structural
+    mismatch, not a search failure.
+
+    Never raises: on any exception the failure is printed loudly and the
+    exception string is stored in place of the numeric fields instead of
+    crashing a completed run.
+    """
+    try:
+        dataset_path = _WORKSPACE_ROOT / "dataset" / "imaging" / instrument
+        tracer = al.from_json(file_path=dataset_path / "tracer.json")
+        adapt_images = _adapt_images_for(
+            "imaging", model_type, dataset_path=dataset_path, dataset=dataset
+        )
+        settings = al.Settings(
+            use_border_relocator=model_type in _PIX_MODEL_TYPES,
+            use_mixed_precision=use_mixed_precision,
+            log_det_method=log_det_method,
+        )
+        fit = al.FitImaging(
+            dataset=dataset, tracer=tracer, adapt_images=adapt_images, settings=settings
+        )
+        truth_log_likelihood = float(fit.log_likelihood)
+        return {
+            "truth_log_likelihood": truth_log_likelihood,
+            "delta_max_ll_vs_truth": float(max_log_likelihood) - truth_log_likelihood,
+            "bar_source": "truth_tracer",
+        }
+    except Exception as exc:  # never let the anchor step kill a completed search
+        print(f"  WARNING: truth-anchor step failed [imaging/{model_type}]: {exc!r}")
+        return {
+            "truth_log_likelihood": repr(exc),
+            "delta_max_ll_vs_truth": repr(exc),
+            "bar_source": "truth_tracer",
+        }
 
 
 def _posterior_stats(result: Any, uses_n_live: bool) -> dict[str, dict[str, float]] | None:
@@ -456,10 +542,22 @@ def run_search(
     # global instance.
     primary_result = result[0] if isinstance(result, list) else result
 
+    # W4 / issue #161 (Phase 1): MultiStart's likelihood_evals correction needs
+    # total_steps from the captured search_internal, read here (before
+    # per_lane_block, which also reads `captured`) so both derive from the
+    # same capture.
+    _captured_total_steps = captured.get("total_steps") if is_multi_start else None
+    _multi_start_total_steps = (
+        int(_captured_total_steps) if _captured_total_steps is not None else None
+    )
+    _multi_start_n_starts = int(search.n_starts) if is_multi_start else None
     metrics = collect_metrics(
         result=primary_result,
         total_wall_s=total_wall_s,
         viz_wall_s=viz_timer.total_s,
+        is_multi_start=is_multi_start,
+        n_starts=_multi_start_n_starts,
+        multi_start_total_steps=_multi_start_total_steps,
     )
 
     best_instance = None
@@ -478,7 +576,13 @@ def run_search(
         )
 
     truth_anchor = _truth_anchor_for_cell(
-        dataset_class, instrument, model_type, dataset, metrics.max_log_likelihood
+        dataset_class,
+        instrument,
+        model_type,
+        dataset,
+        metrics.max_log_likelihood,
+        use_mixed_precision=cli.use_mixed_precision,
+        log_det_method=log_det_method,
     )
     if truth_anchor is not None:
         print(
@@ -512,7 +616,7 @@ def run_search(
         config_name=config_name,
         cli=cli,
         use_jax=use_jax,
-        n_free_params=int(model.total_free_parameters),
+        model=model,
         n_live=n_live,
         metrics=metrics,
         viz_n_calls=viz_timer.n_calls,
@@ -662,6 +766,30 @@ def _decide_use_jax() -> bool:
     return os.environ.get("PYAUTO_DISABLE_JAX") != "1"
 
 
+def _target_for_cell(
+    dataset_class: str, model_type: str, instrument: str, use_mixed_precision: bool
+) -> Any | None:
+    """Resolve the ``searches._targets.Target`` a cell's arm corresponds to, if any.
+
+    W4 / issue #161 (Phase 1): the ``TARGETS`` registry covers
+    ``dataset_class="imaging"``, ``instrument="hst"`` only today (every other
+    dataset_class / instrument returns ``None`` here, not a mismatched
+    lookup) — a positions-on/off + fp64/mp cell maps to a registry key via
+    the same ``<model_type>[_pos]_<precision>`` convention
+    ``searches._targets._target_key`` uses, so a leaf script needs no changes
+    to pick up the schema-v2 ``target`` block automatically.
+    """
+    if dataset_class != "imaging" or instrument != "hst":
+        return None
+    key = _targets._target_key(
+        model_type, "on" if positions_enabled() else "off", "mp" if use_mixed_precision else "fp64"
+    )
+    target = _targets.TARGETS.get(key)
+    if target is not None and target.instrument != instrument:
+        return None
+    return target
+
+
 def _build_summary(
     *,
     sampler: str,
@@ -671,7 +799,7 @@ def _build_summary(
     config_name: str,
     cli: Any,
     use_jax: bool,
-    n_free_params: int,
+    model: Any,
     n_live: int | None,
     metrics: Any,
     viz_n_calls: int,
@@ -683,6 +811,7 @@ def _build_summary(
     diagnostics: dict | None = None,
     target_override: dict | None = None,
 ) -> dict:
+    n_free_params = int(model.total_free_parameters)
     results_block: dict = {
         "log_evidence": metrics.log_evidence,
         "max_log_likelihood": metrics.max_log_likelihood,
@@ -694,6 +823,10 @@ def _build_summary(
     # order + shape is stable across every cell, not just point_source ones.
     results_block["posterior_stats"] = posterior_stats
 
+    sampler_config = _sampler_config_dict(
+        sampler, dataset_class, model_type, instrument, n_live, use_jax
+    )
+
     summary = {
         "sampler": sampler,
         "dataset_class": dataset_class,
@@ -703,9 +836,7 @@ def _build_summary(
         "version": al.__version__,
         "device": device_info_dict(),
         "use_mixed_precision": bool(cli.use_mixed_precision),
-        "sampler_config": _sampler_config_dict(
-            sampler, dataset_class, model_type, instrument, n_live, use_jax
-        ),
+        "sampler_config": sampler_config,
         # Always present (Phase 4 Stage 1, issue #159): {"enabled": False} when
         # SEARCHES_POSITIONS is off, so a positions-on and positions-off run
         # of the "same" cell/config_name are never ambiguous in the artifact.
@@ -727,6 +858,12 @@ def _build_summary(
             "sampler_wall_s": metrics.sampler_wall_s,
             "likelihood_evals": metrics.likelihood_evals,
             "time_per_eval_ms": metrics.time_per_eval_ms,
+            # W4 / issue #161 (Phase 1) schema-v2 additions — additive.
+            "stored_samples": metrics.stored_samples,
+            "gradient_evals": metrics.gradient_evals,
+            "kish_ess": metrics.kish_ess,
+            "evals_per_ess": metrics.evals_per_ess,
+            "ess_per_min": metrics.ess_per_min,
         },
     }
     if recovery is not None:
@@ -737,6 +874,37 @@ def _build_summary(
         summary["target_override"] = target_override
     if diagnostics is not None:
         summary["diagnostics"] = diagnostics
+
+    # ---- Schema v2 (W4 / issue #161, Phase 1) — added BESIDE every v1 key
+    # above, never replacing one, so a v1-shaped reader (build_readme.py's
+    # dashboard scan) keeps working unchanged.
+    summary["schema_version"] = 2
+    target = _target_for_cell(dataset_class, model_type, instrument, bool(cli.use_mixed_precision))
+    if target is not None:
+        dataset_path = _WORKSPACE_ROOT / "dataset" / dataset_class / instrument
+        summary["target"] = _targets.target_block(target, model, dataset_path)
+    else:
+        # Not covered by the Phase 1 TARGETS registry (imaging/hst only
+        # today) — shape stays stable (the key is always present) with an
+        # honest null id rather than a fabricated one.
+        summary["target"] = {
+            "target_id": None,
+            "cell": f"{dataset_class}/{model_type}/{instrument}",
+            "model_dim": n_free_params,
+            "priors_ref": None,
+            "note": "not covered by the Phase 1 TARGETS registry (imaging/hst only today)",
+        }
+    summary["algorithm"] = {
+        "name": sampler,
+        "config_id": config_name,
+        "settings": sampler_config,
+        "seed": sampler_config.get("seed"),
+    }
+    summary["hardware"] = {
+        "tier": config_name,
+        "precision": "mp" if bool(cli.use_mixed_precision) else "fp64",
+        "device": device_info_dict(),
+    }
     return summary
 
 
