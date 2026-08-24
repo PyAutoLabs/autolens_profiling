@@ -30,6 +30,7 @@ if _misc_dir not in _sys.path:
     _sys.path.insert(0, _misc_dir)
 
 
+import dataclasses
 import json
 import os
 import sys
@@ -518,8 +519,17 @@ def run_search(
     default_dir = (
         _WORKSPACE_ROOT / "results" / "searches" / sampler / dataset_class / model_type / instrument
     )
+    # resolve_output_paths derives its basename from cli.config_name (the RAW
+    # CLI flag), not the positions-tagged `config_name` local above -- so
+    # without this, a positions-on and positions-off run of the same
+    # --config-name silently overwrite the SAME results/searches/.../*.json
+    # (even though their output/searches/... PyAutoFit directories are
+    # correctly disambiguated, see positions_arm_tag's docstring). Passing a
+    # cli with the tagged config_name fixes the results-JSON path too.
     json_path, png_path = resolve_output_paths(
-        cli, default_dir=default_dir, default_basename=config_name
+        dataclasses.replace(cli, config_name=config_name),
+        default_dir=default_dir,
+        default_basename=config_name,
     )
     json_path.write_text(json.dumps(summary, indent=2))
     print(f"\n  Results JSON saved to: {json_path}")
