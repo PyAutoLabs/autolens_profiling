@@ -242,11 +242,8 @@ def build_for_cell(
         use_jax=use_jax,
         use_mixed_precision=use_mixed_precision,
         adapt_images=adapt_images,
-<<<<<<< HEAD
         positions_likelihood_list=positions_likelihood_list,
-=======
         log_det_method=log_det_method,
->>>>>>> origin/main
     )
     return dataset, model, analysis
 
@@ -1652,11 +1649,8 @@ def _build_analysis(
     use_mixed_precision: bool,
     adapt_images: al.AdaptImages | None,
     model: Any | None = None,
-<<<<<<< HEAD
     positions_likelihood_list: list | None = None,
-=======
     log_det_method: str | None = None,
->>>>>>> origin/main
 ) -> Any:
     # Pixelization / Delaunay analyses normally require ``positions_likelihood_list``
     # to guard against the demagnified-source systematic. For pure profiling we
