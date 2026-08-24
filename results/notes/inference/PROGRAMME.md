@@ -936,6 +936,28 @@ Maximum information before large A100 commitment — strictly ordered:
 First full A100 block only after CP-1..5: Phase 5 mesh campaign + Phase 6
 warm-start MGE confirmation, with arms already pruned by the cheap results.
 
+### 9b · Next block — queued 2026-08-24 (after Gate A + CP-4 calls)
+
+CP-1..5 complete. Ordered by dependency; the A100 partition is held 8/8 by
+another user at queue time, so GPU rows are submitted early and CPU/source
+work runs meanwhile. Issues are the queue of record (epics.md rule: slices
+ship as autolens_profiling issues/PRs, not Mind prompts).
+
+| # | Work | Issue | Hardware | Depends |
+|---|---|---|---|---|
+| W1 | Phase 4 Stage 1 — PositionsLH plumbing in `_setup.py` + hazard transects | autolens_profiling#159 | laptop / RAL CPU | — (unblocks B pt 2, Phase 5) |
+| W3 | Phase 6 pre-req — PyAutoFit warm-start abstraction, vmapped multi-chain NUTS, metric/start injection | PyAutoFit#1521 | source, CPU | — |
+| W6 | Nautilus `n_batch` scan (MGE + Delaunay) — bounds the "JAX Nautilus" ceiling | #163 | A100, ~30 min | — (submit now) |
+| W8 | slogdet default for GPU gradient-work cells in the searches framework | #165 | source | — |
+| W7 | CP-4 follow-up: NaN-under-both draws, transect gradients, marginal-band tier dependence | #164 | laptop / A100 replay | — |
+| W4 | Phase 1 targets registry, schema v2 (ESS + reject-inclusive evals), `slam_source_pix`, reference baselines | #161 | CPU + one A100 bake | rides behind W1/W6 |
+| W2 | Phase 4 Stage 2 — Nautilus / Prodigy ± positions × 5 seeds on MGE (NSS arm dropped per Gate A) | #160 | A100 ~5 GPU-h | W1 (+ W6 for n_batch) |
+| W5 | Phase 8B log-coordinate stepping (Scaler → bijector) | #162 | source + laptop | — (parallel smoothing arc) |
+| W9 | REMINDER: make slogdet standard in PyAutoArray | #166 | source | W7 |
+
+Then: Phase 5 mesh campaign (Nautilus + Prodigy only) + Phase 6 warm-start
+MGE confirmation — the first full A100 block.
+
 ## 10 · Expected final decision tree — HYPOTHETICAL
 
 Written now so the programme has a falsifiable shape; every branch is
