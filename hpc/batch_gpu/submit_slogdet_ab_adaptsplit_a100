@@ -1,0 +1,106 @@
+#!/bin/bash -l
+#
+# Phase 8A / CP-4 — slogdet vs cholesky A/B on the free-AdaptSplit NaN wall.
+# A100 tier: the half the CPU sibling cannot supply.
+#
+# PRE-REGISTERED PASS CRITERIA (all four must hold; stated before any run):
+#
+#   1. zero slogdet NaNs on the replay set
+#   2. value equality within float tolerance on PD points
+#   3. finite gradients
+#   4. runtime within 2x
+#
+# TWO CELLS, and the difference matters. The pre-registration names the
+# free-AdaptSplit stressor as `knn`, but this repo's #117 record says the KNN
+# mesh's high-coefficient region is a finite over-regularized floor, while the
+# NaN WALL is on the Delaunay mesh with the same free AdaptSplit reg
+# (_setup._delaunay_adapt_split_model; multi_start_prodigy/delaunay.py). Both
+# run here. A VOID verdict exits non-zero by design — read the verdict block
+# before treating a non-zero exit as a broken job.
+#
+# Why the A100 rather than only the CPU sibling
+# (../batch_cpu/submit_slogdet_ab_adaptsplit_ral_cpu): the deterministic lambda
+# transect crosses the conditioning wall on any tier, but the wall as a SEARCH
+# phenomenon has so far only been observed at GPU scale — the CPU arms of jobs
+# 335003-5 measured zero value-NaN lane-steps
+# (results/notes/inference/phase_00_unblocking/RESULTS.md:189), while the 62%
+# value-NaN MGE finding (#128) is a GPU result. This job therefore adds
+# --descent-steps: a short cholesky-arm MultiStartProdigy run whose checkpointed
+# lane vectors are harvested into the replay set, so the A/B is tested on draws
+# a real gradient search actually visited, not only on a synthetic transect.
+#
+# The harvested draws are written to their own npz (--draws-tag a100) so this
+# run cannot overwrite the CPU run's draw set.
+#
+# batch_size=4 is MANDATORY on these cells: the unbatched 16-start jvp fusion is
+# the ~58 GB allocation (see scripts/imaging/searches/multi_start_prodigy/knn.py).
+#
+# Runtime: the descent harvests dominate — 2 cells x 16 starts x 150 steps at
+# the A100's per-step cost, then 2 x 2 x ~600 draws of value_and_grad replay.
+# 8 h with headroom for the four XLA compiles.
+
+#SBATCH -J slogdet_ab_adaptsplit_a100
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=128gb
+#SBATCH --time=8:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_profiling
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+# fp64 is not optional here: an fp32 run manufactures conditioning failures of
+# its own and the cholesky-vs-slogdet delta on the PD set would be round-off
+# rather than the two algorithms. The script exits if this is unset. On this
+# cluster sbatch does NOT inherit it from the login shell — it must be exported
+# in the job script.
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+nvidia-smi
+
+echo "=========================================="
+date
+echo "Experiment: phase 8A slogdet A/B (CP-4)"
+echo "Cells:      imaging/knn/hst and imaging/delaunay_adapt_split/hst"
+echo "Arms:       cholesky (control) vs slogdet (treatment)"
+echo "Draws:      prior + truth_bar + lambda_transect + descent trajectory"
+
+cd $AP_ROOT
+
+# One cell must not sink the other: a VOID verdict exits non-zero by design, and
+# without this the second cell would never run.
+run_cell () {
+    echo "=== cell: $1 ==="
+    date
+    python3 scripts/misc/searches/slogdet_ab.py \
+        --stage all \
+        --dataset-class imaging \
+        --model-type "$1" \
+        --instrument hst \
+        --seed 0 \
+        --n-prior 128 \
+        --n-truth-bar 128 \
+        --transect-points 128 \
+        --descent-starts 16 \
+        --descent-steps 150 \
+        --batch-size 4 \
+        --draws-tag a100 \
+        --tag "CP-4 phase 8A, A100 tier, with descent-trajectory draws" \
+        || echo "!!! cell $1 exited non-zero — read its verdict block above (a VOID verdict exits 1)"
+}
+
+run_cell delaunay_adapt_split
+run_cell knn
+
+echo "Finished."
+date

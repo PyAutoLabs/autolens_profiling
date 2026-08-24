@@ -1,0 +1,244 @@
+{
+  "schema_version": 2,
+  "experiment": "phase_8a_slogdet_ab",
+  "critical_path_item": "CP-4",
+  "version": "2026.8.17.1",
+  "jax_version": "0.10.2",
+  "platform": "Linux-5.14.0-687.39.1.el9_8.x86_64-x86_64-with-glibc2.34",
+  "tag": "CP-4 phase 8A, RAL CPU tier",
+  "target_control": {
+    "cell": "imaging/knn/hst",
+    "model_dim": 13,
+    "parameter_names": [
+      "galaxies.lens.bulge.profile_list.19.centre_0",
+      "galaxies.lens.bulge.profile_list.19.centre_1",
+      "galaxies.lens.bulge.profile_list.19.ell_comps_0",
+      "galaxies.lens.bulge.profile_list.19.ell_comps_1",
+      "galaxies.lens.mass.centre_0",
+      "galaxies.lens.mass.centre_1",
+      "galaxies.lens.mass.ell_comps_0",
+      "galaxies.lens.mass.ell_comps_1",
+      "galaxies.lens.mass.einstein_radius",
+      "galaxies.lens.shear.gamma_1",
+      "galaxies.lens.shear.gamma_2",
+      "galaxies.source.pixelization.regularization.inner_coefficient",
+      "galaxies.source.pixelization.regularization.outer_coefficient"
+    ],
+    "priors": [
+      "<UniformPrior id=0>",
+      "<UniformPrior id=1>",
+      "<TruncatedGaussianPrior id=2>",
+      "<TruncatedGaussianPrior id=3>",
+      "<GaussianPrior id=104>",
+      "<GaussianPrior id=105>",
+      "<TruncatedGaussianPrior id=106>",
+      "<TruncatedGaussianPrior id=107>",
+      "<UniformPrior id=108>",
+      "<UniformPrior id=109>",
+      "<UniformPrior id=110>",
+      "<LogUniformPrior id=111>",
+      "<LogUniformPrior id=112>"
+    ],
+    "likelihood": {
+      "positive_only": true,
+      "border_relocator": true,
+      "curvature_floor": 0.001,
+      "regularization_term_method": "matmul",
+      "precision": "fp64",
+      "log_det_method": "cholesky"
+    },
+    "positions": {
+      "enabled": false
+    },
+    "target_common_id": "sha256:6b0870ef2516",
+    "target_id": "sha256:907b6aa3a84d",
+    "target_class_vs_control": null
+  },
+  "target_treatment": {
+    "cell": "imaging/knn/hst",
+    "model_dim": 13,
+    "parameter_names": [
+      "galaxies.lens.bulge.profile_list.19.centre_0",
+      "galaxies.lens.bulge.profile_list.19.centre_1",
+      "galaxies.lens.bulge.profile_list.19.ell_comps_0",
+      "galaxies.lens.bulge.profile_list.19.ell_comps_1",
+      "galaxies.lens.mass.centre_0",
+      "galaxies.lens.mass.centre_1",
+      "galaxies.lens.mass.ell_comps_0",
+      "galaxies.lens.mass.ell_comps_1",
+      "galaxies.lens.mass.einstein_radius",
+      "galaxies.lens.shear.gamma_1",
+      "galaxies.lens.shear.gamma_2",
+      "galaxies.source.pixelization.regularization.inner_coefficient",
+      "galaxies.source.pixelization.regularization.outer_coefficient"
+    ],
+    "priors": [
+      "<UniformPrior id=0>",
+      "<UniformPrior id=1>",
+      "<TruncatedGaussianPrior id=2>",
+      "<TruncatedGaussianPrior id=3>",
+      "<GaussianPrior id=104>",
+      "<GaussianPrior id=105>",
+      "<TruncatedGaussianPrior id=106>",
+      "<TruncatedGaussianPrior id=107>",
+      "<UniformPrior id=108>",
+      "<UniformPrior id=109>",
+      "<UniformPrior id=110>",
+      "<LogUniformPrior id=111>",
+      "<LogUniformPrior id=112>"
+    ],
+    "likelihood": {
+      "positive_only": true,
+      "border_relocator": true,
+      "curvature_floor": 0.001,
+      "regularization_term_method": "matmul",
+      "precision": "fp64",
+      "log_det_method": "slogdet"
+    },
+    "positions": {
+      "enabled": false
+    },
+    "target_common_id": "sha256:6b0870ef2516",
+    "target_id": "sha256:59004dd180b4",
+    "target_class_vs_control": 2
+  },
+  "draws": {
+    "path": "results/notes/inference/phase_08_regularization/slogdet_ab/draws/imaging_knn_hst_ral_cpu.npz",
+    "n": 384,
+    "seed": 0,
+    "anchor_provenance": "prior_medians (no truth-basin vector is recorded in-repo)",
+    "per_source_n": {
+      "lambda_transect": 128,
+      "prior": 128,
+      "truth_bar": 128
+    }
+  },
+  "hardware": {
+    "tier": "cpu_x86_64",
+    "backend": "cpu",
+    "device": "cpu:0",
+    "x64_enabled": true,
+    "cache_state": "warm (compile timed separately)",
+    "compile_s": {
+      "cholesky": 61.81508880399633,
+      "slogdet": 115.96655351301888
+    }
+  },
+  "arms": {
+    "cholesky": {
+      "log_det_method": "cholesky",
+      "compile_s": 61.81508880399633,
+      "warm_wall_s": 3297.1916674409877,
+      "s_per_draw": 8.586436633960906,
+      "n_batches": 96,
+      "batch_size": 4
+    },
+    "slogdet": {
+      "log_det_method": "slogdet",
+      "compile_s": 115.96655351301888,
+      "warm_wall_s": 8295.19576969702,
+      "s_per_draw": 21.602072316919323,
+      "n_batches": 96,
+      "batch_size": 4
+    }
+  },
+  "verdict": {
+    "criteria": {
+      "zero_slogdet_nans": true,
+      "value_equality_on_pd_points": false,
+      "finite_gradients": false,
+      "runtime_within_factor": false
+    },
+    "attribution": {
+      "grad_nonfinite_under_both": 129,
+      "grad_nonfinite_only_under_slogdet": 0,
+      "grad_finite_only_under_slogdet": 0,
+      "slogdet_introduces_no_new_grad_nans": true,
+      "slogdet_nan_not_shared_with_cholesky": 0
+    },
+    "pass": false,
+    "void": true,
+    "void_reasons": [
+      "the cholesky arm produced ZERO NaNs on the whole replay set: this run never reached the wall, so its four passes are vacuous. Widen the transect, raise --transect-points, or move to the hardware tier where the wall was observed"
+    ],
+    "counts": {
+      "n_draws": 384,
+      "cholesky_nan": 0,
+      "cholesky_nan_on_transect": 0,
+      "slogdet_nan": 0,
+      "both_finite": 384,
+      "rescued_by_slogdet": 0,
+      "regressed_by_slogdet": 0,
+      "nan_under_both": 0,
+      "cholesky_grad_nonfinite": 129,
+      "slogdet_grad_nonfinite": 129
+    },
+    "value_equality": {
+      "n_compared": 384,
+      "max_abs_delta": 0.009001563128549606,
+      "max_rel_delta": 3.6028452602425895e-08,
+      "n_exceeding_tolerance": 1,
+      "atol": 1e-06,
+      "rtol": 1e-09,
+      "clean_pd": {
+        "n": 383,
+        "max_abs_delta": 7.2812545113265514e-06
+      }
+    },
+    "marginal_band": {
+      "n": 1,
+      "draw_indices": [
+        109
+      ],
+      "max_abs_delta": 0.009001563128549606,
+      "coefficient_min": 0.007800141504348491,
+      "coefficient_max": 142106.54003100356
+    },
+    "category_2_rescued_values": {
+      "n": 0,
+      "min": null,
+      "max": null,
+      "median": null
+    },
+    "runtime": {
+      "cholesky_warm_wall_s": 3297.1916674409877,
+      "slogdet_warm_wall_s": 8295.19576969702,
+      "ratio": 2.515836689632022,
+      "ceiling": 2.0,
+      "cholesky_compile_s": 61.81508880399633,
+      "slogdet_compile_s": 115.96655351301888
+    },
+    "per_source": {
+      "lambda_transect": {
+        "n": 128,
+        "cholesky_nan": 0,
+        "slogdet_nan": 0,
+        "rescued": 0,
+        "cholesky_grad_nonfinite": 128,
+        "slogdet_grad_nonfinite": 128
+      },
+      "prior": {
+        "n": 128,
+        "cholesky_nan": 0,
+        "slogdet_nan": 0,
+        "rescued": 0,
+        "cholesky_grad_nonfinite": 1,
+        "slogdet_grad_nonfinite": 1
+      },
+      "truth_bar": {
+        "n": 128,
+        "cholesky_nan": 0,
+        "slogdet_nan": 0,
+        "rescued": 0,
+        "cholesky_grad_nonfinite": 0,
+        "slogdet_grad_nonfinite": 0
+      }
+    }
+  },
+  "pass_criteria_preregistered": [
+    "zero slogdet NaNs on the replay set",
+    "value equality within float tolerance on PD points",
+    "finite gradients",
+    "runtime within 2x"
+  ]
+}
