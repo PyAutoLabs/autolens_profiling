@@ -199,9 +199,7 @@ def truth_anchor_vector(model, tracer) -> np.ndarray:
         ("source", "bulge", "ell_comps_0"): float(source.bulge.ell_comps[0]),
         ("source", "bulge", "ell_comps_1"): float(source.bulge.ell_comps[1]),
     }
-    physical = np.asarray(
-        model.vector_from_unit_vector([0.5] * model.prior_count), dtype=float
-    )
+    physical = np.asarray(model.vector_from_unit_vector([0.5] * model.prior_count), dtype=float)
     unmatched = 0
     for i, path in enumerate(model.unique_prior_paths):
         key = (path[1], path[2], path[-1])
@@ -254,7 +252,9 @@ def make_scalar_fns(model, analysis, anchor_vector, idx: int):
     )
 
 
-def get_scalar_fns(cache: dict, model, analysis, anchor_vector, idx: int, arm_name: str, positions, arm_cfg):
+def get_scalar_fns(
+    cache: dict, model, analysis, anchor_vector, idx: int, arm_name: str, positions, arm_cfg
+):
     """Cached ``make_scalar_fns`` keyed by ``(idx, arm_name)``.
 
     JAX's own per-jit-object shape cache still applies on top of this: the
@@ -310,7 +310,9 @@ def max_sep_and_argmax(model, analysis, anchor_vector, idx: int, grid: np.ndarra
 def argmax_switch_locations(grid: np.ndarray, seps_all: np.ndarray, max_sep: np.ndarray):
     """Grid indices where the SET of positions attaining ``max_sep`` changes."""
     pair_sets = [
-        frozenset(np.flatnonzero(np.isclose(seps_all[i], max_sep[i], rtol=1e-9, atol=1e-9)).tolist())
+        frozenset(
+            np.flatnonzero(np.isclose(seps_all[i], max_sep[i], rtol=1e-9, atol=1e-9)).tolist()
+        )
         for i in range(len(grid))
     ]
     switches = []
@@ -452,7 +454,9 @@ def run_transect_b(
             if len(fine_grid) < 3:
                 continue
 
-            max_sep_fine, seps_fine = max_sep_and_argmax(model, analysis, anchor_vector, idx, fine_grid)
+            max_sep_fine, seps_fine = max_sep_and_argmax(
+                model, analysis, anchor_vector, idx, fine_grid
+            )
             all_argmax_switches.extend(argmax_switch_locations(fine_grid, seps_fine, max_sep_fine))
 
             logl_fn, penalty_fn = get_scalar_fns(
@@ -572,7 +576,9 @@ def make_full_grad_fns(model, analysis, anchor_vector, idx: int):
     return jax.jit(jax.vmap(jax.grad(logl))), jax.jit(jax.vmap(jax.grad(penalty)))
 
 
-def get_full_grad_fns(cache: dict, model, analysis, anchor_vector, idx: int, arm_name: str, positions, arm_cfg):
+def get_full_grad_fns(
+    cache: dict, model, analysis, anchor_vector, idx: int, arm_name: str, positions, arm_cfg
+):
     """Cached ``make_full_grad_fns``, mirroring ``get_scalar_fns`` — same
     "never rebuild a jit object you're about to call again" rationale."""
     key = ("full_grad", idx, arm_name)
@@ -646,7 +652,11 @@ def run_transect_c(model, analysis, anchor_vector, arms, positions, n: int, cach
                 )
             ratio_results[arm_name] = rows
 
-        sweeps[label] = {"grid": grid.tolist(), "arms": arm_results, "gradient_norm_ratio": ratio_results}
+        sweeps[label] = {
+            "grid": grid.tolist(),
+            "arms": arm_results,
+            "gradient_norm_ratio": ratio_results,
+        }
 
     return sweeps
 
@@ -677,7 +687,12 @@ def plot_transect_b(transect_b: dict, path: Path) -> None:
     plotted = False
     for arm_name, windows in transect_b["windows"].items():
         for w in windows:
-            ax.plot(w["fine_grid"], w["dpenalty"], label=f"{arm_name} @ {w['x_cross']:.3f}", linewidth=1.0)
+            ax.plot(
+                w["fine_grid"],
+                w["dpenalty"],
+                label=f"{arm_name} @ {w['x_cross']:.3f}",
+                linewidth=1.0,
+            )
             plotted = True
     if plotted:
         ax.legend(fontsize=7, ncol=2)
@@ -713,7 +728,9 @@ def plot_transect_c(transect_c: dict, path: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("--n", type=int, default=601, help="Transect A / C grid points (default 601).")
+    parser.add_argument(
+        "--n", type=int, default=601, help="Transect A / C grid points (default 601)."
+    )
     parser.add_argument(
         "--quick",
         action="store_true",
@@ -724,9 +741,7 @@ def main() -> None:
     import jax
 
     if not jax.config.jax_enable_x64:
-        raise RuntimeError(
-            "positions_transects.py requires fp64 — run with JAX_ENABLE_X64=True."
-        )
+        raise RuntimeError("positions_transects.py requires fp64 — run with JAX_ENABLE_X64=True.")
 
     n = 41 if args.quick else args.n
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -743,7 +758,9 @@ def main() -> None:
     print(f"  arms: {list(arms)}")
 
     anchor_vector = truth_anchor_vector(model, tracer)
-    print(f"  anchor vector (truth-mapped, {model.prior_count} free params): {anchor_vector.tolist()}")
+    print(
+        f"  anchor vector (truth-mapped, {model.prior_count} free params): {anchor_vector.tolist()}"
+    )
 
     # Shared across A/B/C: caches every (idx, arm) jit(vmap(...)) object so
     # it is compiled ONCE and reused for every grid shape asked of it — see
@@ -775,7 +792,14 @@ def main() -> None:
 
     print("\nTransect B: threshold-crossing fine sweep (+/- 0.05)...")
     transect_b = run_transect_b(
-        model, analysis, anchor_vector, arms, positions, transect_a, quick=args.quick, cache=fn_cache
+        model,
+        analysis,
+        anchor_vector,
+        arms,
+        positions,
+        transect_a,
+        quick=args.quick,
+        cache=fn_cache,
     )
     (OUTPUT_DIR / "transect_b.json").write_text(
         json.dumps({"arms_config": arms, **transect_b}, indent=2)
@@ -791,20 +815,30 @@ def main() -> None:
             )
     print(f"  {len(transect_b['argmax_switches_all'])} argmax-switch(es) found (coarse + fine).")
     for arm_name, p in transect_b["plateau"].items():
-        print(f"  [{arm_name}] interior plateau (theta_E in [1.5,1.7]) exact-zero={p['is_exact_zero_plateau']}")
+        print(
+            f"  [{arm_name}] interior plateau (theta_E in [1.5,1.7]) exact-zero={p['is_exact_zero_plateau']}"
+        )
     print("  wrote transect_b.json / transect_b.png")
 
     print("\nTransect C: ell_comps / shear at fixed theta_E...")
     n_c = 21 if args.quick else 121
     transect_c = run_transect_c(model, analysis, anchor_vector, arms, positions, n_c, fn_cache)
-    (OUTPUT_DIR / "transect_c.json").write_text(json.dumps({"arms_config": arms, **transect_c}, indent=2))
+    (OUTPUT_DIR / "transect_c.json").write_text(
+        json.dumps({"arms_config": arms, **transect_c}, indent=2)
+    )
     plot_transect_c(transect_c, OUTPUT_DIR / "transect_c.png")
     for label, sweep in transect_c.items():
         for arm_name, rows in sweep["gradient_norm_ratio"].items():
-            ratios = [r["ratio_penalty_over_logl"] for r in rows if r["ratio_penalty_over_logl"] is not None]
+            ratios = [
+                r["ratio_penalty_over_logl"]
+                for r in rows
+                if r["ratio_penalty_over_logl"] is not None
+            ]
             if ratios:
-                print(f"  [{label}/{arm_name}] grad-norm ratio (penalty/logl) range: "
-                      f"{min(ratios):.3e} - {max(ratios):.3e}")
+                print(
+                    f"  [{label}/{arm_name}] grad-norm ratio (penalty/logl) range: "
+                    f"{min(ratios):.3e} - {max(ratios):.3e}"
+                )
     print("  wrote transect_c.json / transect_c.png")
 
     print("\nDone.")

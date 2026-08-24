@@ -616,7 +616,9 @@ SAMPLER_BUILDERS: dict[str, SamplerBuilder] = {
 }
 
 
-def assert_disjoint_output_paths(search_a: af.NonLinearSearch, search_b: af.NonLinearSearch) -> None:
+def assert_disjoint_output_paths(
+    search_a: af.NonLinearSearch, search_b: af.NonLinearSearch
+) -> None:
     """Assert two constructed searches have BOTH a different ``output_path``
     and a different ``identifier``.
 

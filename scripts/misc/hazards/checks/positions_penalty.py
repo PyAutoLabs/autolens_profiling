@@ -79,9 +79,7 @@ class _FixedShapeAnalysis:
         mass = al.mp.Isothermal(
             centre=(0.0, 0.0), ell_comps=self._ell_comps, einstein_radius=einstein_radius
         )
-        shear = al.mp.ExternalShear(
-            gamma_1=self._shear_comps[0], gamma_2=self._shear_comps[1]
-        )
+        shear = al.mp.ExternalShear(gamma_1=self._shear_comps[0], gamma_2=self._shear_comps[1])
         lens = al.Galaxy(redshift=0.5, mass=mass, shear=shear)
         source = al.Galaxy(redshift=1.0)
         return al.Tracer(galaxies=[lens, source])
@@ -102,9 +100,7 @@ def _penalty_value_and_grad_fn(positions, ell_comps, shear_comps, threshold: flo
     )
 
     def penalty(theta_e):
-        return positions_lh.log_likelihood_penalty_from(
-            instance=theta_e, analysis=analysis, xp=jnp
-        )
+        return positions_lh.log_likelihood_penalty_from(instance=theta_e, analysis=analysis, xp=jnp)
 
     return jax.jit(jax.vmap(jax.value_and_grad(penalty))), analysis
 
@@ -140,7 +136,9 @@ def _sweep(positions, ell_comps, shear_comps, threshold: float, factor: float):
     return grid_np, value_np, grad_np, max_sep, argmax_pairs
 
 
-def _local_hinge_probe(positions, ell_comps, shear_comps, threshold: float, factor: float, x_cross: float):
+def _local_hinge_probe(
+    positions, ell_comps, shear_comps, threshold: float, factor: float, x_cross: float
+):
     """Tight ``x_cross +/- 1e-6`` probe of the REAL penalty function.
 
     The coarse sweep's grid spacing (~0.0075 for the default 401-pt grid)
@@ -155,7 +153,9 @@ def _local_hinge_probe(positions, ell_comps, shear_comps, threshold: float, fact
     import jax.numpy as jnp
 
     eps = 1.0e-6
-    value_and_grad_fn, _ = _penalty_value_and_grad_fn(positions, ell_comps, shear_comps, threshold, factor)
+    value_and_grad_fn, _ = _penalty_value_and_grad_fn(
+        positions, ell_comps, shear_comps, threshold, factor
+    )
     xs = jnp.asarray([max(x_cross - eps, _THETA_E_LO), min(x_cross + eps, _THETA_E_HI)])
     value, grad = value_and_grad_fn(xs)
     return {
@@ -199,7 +199,9 @@ class PositionsPenaltyCheck(HazardCheck):
             ),
         )
         reachability = reachability_measurement(
-            reachable_via=["AnalysisDataset.positions_likelihood_list -> PositionsLH.log_likelihood_penalty_from"]
+            reachable_via=[
+                "AnalysisDataset.positions_likelihood_list -> PositionsLH.log_likelihood_penalty_from"
+            ]
         )
 
         findings: list[Finding] = []
@@ -221,9 +223,9 @@ class PositionsPenaltyCheck(HazardCheck):
             hinge_probes.append(
                 _local_hinge_probe(positions, ell_comps, shear_comps, _THRESHOLD, _FACTOR, x_cross)
             )
-        hazard_persists = len(hinge_probes) > 0 and max(
-            abs(p["gradient_jump"]) for p in hinge_probes
-        ) > 1e-6
+        hazard_persists = (
+            len(hinge_probes) > 0 and max(abs(p["gradient_jump"]) for p in hinge_probes) > 1e-6
+        )
         if hazard_persists:
             max_jump = max(abs(p["gradient_jump"]) for p in hinge_probes)
             max_value_gap = max(p["value_continuity_gap"] for p in hinge_probes)
@@ -285,11 +287,15 @@ class PositionsPenaltyCheck(HazardCheck):
 
         # --- interior plateau --------------------------------------------------
         interior_mask = max_sep < _THRESHOLD
-        interior_grad_max_abs = float(np.max(np.abs(grad[interior_mask]))) if interior_mask.any() else None
+        interior_grad_max_abs = (
+            float(np.max(np.abs(grad[interior_mask]))) if interior_mask.any() else None
+        )
         interior_value_max_abs = (
             float(np.max(np.abs(value[interior_mask]))) if interior_mask.any() else None
         )
-        is_exact_zero = interior_mask.any() and interior_grad_max_abs == 0.0 and interior_value_max_abs == 0.0
+        is_exact_zero = (
+            interior_mask.any() and interior_grad_max_abs == 0.0 and interior_value_max_abs == 0.0
+        )
         if interior_mask.any():
             findings.append(
                 Finding(

@@ -942,9 +942,7 @@ def _positions_threshold_mode_value() -> tuple[str, float | None]:
     try:
         return "fixed", float(raw)
     except ValueError as exc:
-        raise ValueError(
-            f"{_POSITIONS_THRESHOLD_ENV}={raw!r} must be 'auto' or a float"
-        ) from exc
+        raise ValueError(f"{_POSITIONS_THRESHOLD_ENV}={raw!r} must be 'auto' or a float") from exc
 
 
 def _positions_factor_raw() -> str:
@@ -976,9 +974,7 @@ def positions_settings() -> dict:
     return {
         "enabled": True,
         "threshold_mode": mode,
-        "threshold_value": (
-            fixed_value if mode == "fixed" else _POSITIONS_AUTO_MINIMUM_THRESHOLD
-        ),
+        "threshold_value": (fixed_value if mode == "fixed" else _POSITIONS_AUTO_MINIMUM_THRESHOLD),
         "auto_factor": _POSITIONS_AUTO_FACTOR if mode == "auto" else None,
         "auto_minimum_threshold": _POSITIONS_AUTO_MINIMUM_THRESHOLD if mode == "auto" else None,
         "factor": _positions_factor_value(),
@@ -1015,7 +1011,9 @@ def positions_arm_tag() -> str | None:
         return None
     mode, _ = _positions_threshold_mode_value()
     threshold_str = (
-        f"auto{_POSITIONS_AUTO_MINIMUM_THRESHOLD:g}" if mode == "auto" else _positions_threshold_raw()
+        f"auto{_POSITIONS_AUTO_MINIMUM_THRESHOLD:g}"
+        if mode == "auto"
+        else _positions_threshold_raw()
     )
     return f"pos_t{threshold_str}_f{_positions_factor_raw()}"
 

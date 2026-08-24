@@ -149,9 +149,7 @@ def test_unsupported_dataset_class_raises_not_ignores(
 
 def test_positions_likelihood_list_none_when_off(monkeypatch):
     monkeypatch.delenv("SEARCHES_POSITIONS", raising=False)
-    assert (
-        _positions_likelihood_list_for("imaging", "hst", Path("dataset/imaging/hst")) is None
-    )
+    assert _positions_likelihood_list_for("imaging", "hst", Path("dataset/imaging/hst")) is None
 
 
 # ---------------------------------------------------------------------------
