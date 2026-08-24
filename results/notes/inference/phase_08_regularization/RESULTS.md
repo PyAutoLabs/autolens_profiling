@@ -62,7 +62,7 @@ prior medians (no truth-basin vector recorded in-repo — see driver).
    also 45 → 100 s). LU-based slogdet has no cheap CPU path at this matrix
    size; the GPU hides it.
 
-## Decision input for Gate E/F
+## Decision input for Gate E/F (superseded by the human call below)
 
 The pre-registration expected a clean pass; it did not get one. Recommended
 recording (DECISIONS.md 2026-08-24): **slogdet is NOT recommended as the
@@ -74,6 +74,14 @@ tier-dependent amount, and it is 3.7× slower on CPU. Phase 8B
 search away from the singular band altogether) is now the live candidate;
 8+ (analytic log-det on fixed-topology rectangular meshes) is the only
 lever that kills the Cholesky rather than dressing it.
+
+## Human call (2026-08-24)
+
+Adopt now, chase the rest: slogdet becomes the default for gradient-work
+cells in this repo on GPU tiers (W8, library default untouched); the
+NaN-under-both draws and transect gradients get their own investigation
+(W7); Phase 8B proceeds in parallel; "make slogdet standard in PyAutoArray"
+is a reminder owed once W7 reports. See DECISIONS.md 2026-08-24.
 
 ## Ops notes
 

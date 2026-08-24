@@ -249,7 +249,7 @@ re-baselines) submitted before the call and noted here for the record.
 
 ---
 
-## 2026-08-24 — CP-4 / Phase 8A recorded: slogdet FAILS the pre-registered A/B; not the gradient-work default
+## 2026-08-24 — CP-4 / Phase 8A: slogdet FAILS the pre-registered A/B — human call: ADOPT as the profiling-repo testing default, keep library-optional, chase the residual NaNs
 
 **Record (Gates E/F remain open):** slogdet vs cholesky A/B run on RAL
 (A100 338808, CPU 338807). The pre-registered stressor (knn + free
@@ -258,8 +258,18 @@ predicted. On the real wall (Delaunay + free AdaptSplit) slogdet rescues
 64–73 % of Cholesky NaNs with zero regressions but leaves 20–32 draws NaN
 under both arms, leaves all λ-transect gradients non-finite, disagrees
 with Cholesky by up to 9,619 nats (A100) in the marginal band, and costs
-3.7× on CPU. Three of four criteria fail. **Not recommended as the
-gradient-work default; may be opted in per-fit on GPU as a zero-cost
-softener.** Phase 8B (log-coordinate stepping) becomes the live smoothing
-candidate. Record: `phase_08_regularization/RESULTS.md`.
+3.7× on CPU. Three of four criteria fail.
+
+**Human call (2026-08-24), overriding the record's "not recommended":**
+zero regressions + 64–73 % rescue is worth having now. (1) `slogdet`
+becomes the **default `log_det_method` for gradient-work cells in this
+repo's searches framework** (`_setup.py`; GPU tiers — CPU keeps cholesky
+for the 3.7× cost) — W8. (2) The PyAutoArray default stays cholesky
+(opt-in), **to be revisited once (3) lands — reminder owed to the human at
+the end of the queue: "make slogdet standard".** (3) The NaN-under-both
+draws (32 A100 / 20 CPU) and the all-transect non-finite gradients are a
+named investigation, W7 — are they genuinely singular systems (λ⁴, #104)
+or a formula-independent overflow that a different scaling removes? Phase
+8B stays the live reparameterization candidate alongside. Record:
+`phase_08_regularization/RESULTS.md`.
 
