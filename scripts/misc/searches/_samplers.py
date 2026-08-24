@@ -172,8 +172,14 @@ def build_nautilus(
       ``--keep-completed`` flag; the default wipes search state).
     - ``iterations_per_update`` set explicitly so the visualization
       cadence does not silently change across PyAutoFit versions.
+
+    ``SEARCHES_NAUTILUS_N_LIVE`` (W4 / issue #161, Phase 1 reference
+    baselines) overrides the ``_N_LIVE`` table row when set — e.g. the
+    ``InferenceRefs_v1`` submit scripts want >= 2x the fiducial n_live for a
+    long-run reference posterior. Mirrors ``SEARCHES_NSS_N_LIVE``'s override
+    of the same table for the NSS sampler.
     """
-    n_live = n_live_for(dataset_class, model_type)
+    n_live = int(os.environ.get("SEARCHES_NAUTILUS_N_LIVE", n_live_for(dataset_class, model_type)))
     n_batch = vmap_batch_for_cell(dataset_class, model_type, instrument)
     seed = nautilus_seed()
     return af.Nautilus(

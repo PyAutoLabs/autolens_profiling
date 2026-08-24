@@ -464,6 +464,11 @@ def run_search(
         # The NSS builder honours SEARCHES_NSS_N_LIVE (Phase 2 n_live scan);
         # keep the recorded value in lockstep with what was actually built.
         n_live = int(os.environ.get("SEARCHES_NSS_N_LIVE", n_live))
+    if sampler == "nautilus":
+        # The Nautilus builder honours SEARCHES_NAUTILUS_N_LIVE (W4 / issue
+        # #161 reference-baseline submits); keep the recorded value in
+        # lockstep with what was actually built.
+        n_live = int(os.environ.get("SEARCHES_NAUTILUS_N_LIVE", n_live))
 
     print(
         f"\n--- searches/{sampler}/{dataset_class}/{model_type}"
