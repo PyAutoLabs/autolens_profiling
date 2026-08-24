@@ -59,6 +59,11 @@ _N_LIVE: dict[tuple[str, str], int] = {
     ("group", "mge"): 200,
     ("imaging", "pixelization"): 150,
     ("imaging", "delaunay"): 150,
+    # W4 / issue #161 (Phase 1 targets registry) — new pixelized targets,
+    # same 150 fiducial as every other imaging mesh cell above.
+    ("imaging", "delaunay_nn"): 150,
+    ("imaging", "slam_source_pix"): 150,
+    ("imaging", "slam_source_pix_nn"): 150,
     ("interferometer", "mge"): 200,
     ("interferometer", "pixelization"): 150,
     ("interferometer", "delaunay"): 150,
