@@ -138,14 +138,41 @@ unverified; Phase 1 dependency unmet; (f) MAP-only; (g) single cell,
 positions-off, one tier; (h) `likelihood_evals` field wrong for
 MultiStart.
 
+## Fresh-seed strengthening tier (2026-08-24, RAL 339065[0-4], 339066[0-9])
+
+Required by the adversarial review before the gate could be read below
+n=256 and to tighten the n256 CI. Seeds 100–104 (n128) and 105–114 (n256)
+draw fresh RNG streams — no lane-index draw is shared with the wave-1
+tiers. All 15 runs COMPLETED, version stamp 2026.8.17.1, no resume marker.
+
+| tier | seeds | hits | max logL range | sampler wall |
+|---|---|---:|---|---|
+| n128 | 100–104 | **5/5** | 31787.886 – 31787.918 | 137–198 s |
+| n256 | 105–114 | **10/10** | 31787.881 – 31787.918 | 165–184 s |
+| n256 cumulative | 0–4, 105–114 | **15/15** | 31787.881 – 31787.918 | 165–225 s |
+
+Every hit sits on the +1.10 to +1.14 plateau above the Nautilus bar
+(31786.782) — no impostor basins. Wilson 95 % lower bound on per-run
+success: n256 15/15 → 0.80 (was 0.57 at 5/5); n128 5/5 → 0.57. Under the
+lane-independent model the n128 tier's implied p_hit is consistent with
+wave 1's 0.048 (P(0 hits | n=128) ≈ 0.2 %, so 5/5 is expected, not
+informative about p at this depth). Caveat (a) "n=256 only" therefore
+stands: the n128 tier is now measured with independent streams, but five
+runs cannot demonstrate ≥99 % at 95 % confidence; calling the gate at
+n=128 needs ~30 fresh seeds.
+
+Wall reconciliation: the same-night Nautilus re-baseline on the current
+stack (RAL 339070) gives 707 s sampler / 775 s total on the A100 (fp64),
+matching the 772.7/831 s references; the 523 s figure does not reproduce
+and is retired. The n256 speed-up is therefore **3.1–4.3×** on
+sampler wall (165–225 s vs 707 s).
+
 ## Next
 
 - Human gate call on the narrowed reading above (DECISIONS.md entry).
-- **Required if the gate is to be called at n < 256:** a 5-seed n128 tier
-  with per-tier RNG stream offsets (so tiers stop sharing lane-index
-  draws — the flaw that made n16/n64 non-informative about n-dependence).
+- ~~5-seed n128 tier with independent streams~~ done 2026-08-24 (5/5);
+  a ≥30-seed n128 tier would be needed to actually call the gate at n=128.
 - Fix `_metrics.py` `likelihood_evals` for MultiStart artifacts.
-- Reconcile the two recorded Nautilus walls (831/772.7 vs 523 s) or
-  re-run the baseline on the current stack with compile split.
+- ~~Reconcile the Nautilus walls~~ done 2026-08-24: re-baseline 707/775 s; 523 s retired.
 - Phase 4: the same trio ± PositionsLH (needs positions plumbing in
   `_setup.py` — not built), including the H3.3 re-measurement per engine.
