@@ -535,6 +535,16 @@ def _group(rows: list[dict], *, cell: str, log_det_method: str | None = None) ->
     return out
 
 
+def _tiers_for_cell(rows: list[dict], cell: str) -> list[str | None]:
+    """Every distinct ``log_det_method`` present for one cell's rows, sorted
+    with ``None`` first. Used to score a cell PER tier rather than pooling —
+    ``delaunay_adapt_split`` legitimately has both ``cholesky`` and
+    ``slogdet`` rows in the real campaign, and ``_group`` refuses to mix
+    them."""
+    tiers = {r["log_det_method"] for r in rows if r["cell"] == cell}
+    return sorted(tiers, key=lambda t: (t is not None, t))
+
+
 def _by_bijector(rows: list[dict], label: str) -> list[dict]:
     return sorted((r for r in rows if r["bijector"] == label), key=lambda r: r["seed"])
 
@@ -636,35 +646,53 @@ def score_f2(knn_rows: list[dict]) -> dict:
     }
 
 
+def score_f3_group(group_rows: list[dict]) -> dict:
+    """F3 for one already (cell, log_det_method)-filtered group: fraction of
+    steps at lambda > 1e4, log_reg vs none."""
+    none_fracs = [
+        r["frac_steps_high_lambda"]
+        for r in _by_bijector(group_rows, "none")
+        if r["frac_steps_high_lambda"] is not None
+    ]
+    log_reg_fracs = [
+        r["frac_steps_high_lambda"]
+        for r in _by_bijector(group_rows, "log_reg")
+        if r["frac_steps_high_lambda"] is not None
+    ]
+    none_mean = float(np.mean(none_fracs)) if none_fracs else None
+    log_reg_mean = float(np.mean(log_reg_fracs)) if log_reg_fracs else None
+    falsified = None if none_mean is None or log_reg_mean is None else log_reg_mean >= none_mean
+    return {
+        "none_mean_frac_high_lambda": none_mean,
+        "log_reg_mean_frac_high_lambda": log_reg_mean,
+        "falsified": falsified,
+    }
+
+
 def score_f3(rows: list[dict]) -> dict:
     """F3 — fraction of steps at lambda > 1e4, log_reg vs none, on either
-    wall cell (evaluated per cell, falsified if EITHER cell fails)."""
-    per_cell = {}
+    wall cell (falsified if EITHER cell/tier fails). ``delaunay_adapt_split``
+    is scored PER log_det_method tier (never pooled across cholesky/slogdet
+    -- same "refuse to mix tiers" rule ``_group`` enforces for F1/F2)."""
+    per_cell: dict = {}
     falsified = False
-    for cell in ("delaunay_adapt_split", "knn"):
-        cell_rows = [r for r in rows if r["cell"] == cell]
-        none_fracs = [
-            r["frac_steps_high_lambda"]
-            for r in _by_bijector(cell_rows, "none")
-            if r["frac_steps_high_lambda"] is not None
-        ]
-        log_reg_fracs = [
-            r["frac_steps_high_lambda"]
-            for r in _by_bijector(cell_rows, "log_reg")
-            if r["frac_steps_high_lambda"] is not None
-        ]
-        none_mean = float(np.mean(none_fracs)) if none_fracs else None
-        log_reg_mean = float(np.mean(log_reg_fracs)) if log_reg_fracs else None
-        cell_falsified = (
-            None if none_mean is None or log_reg_mean is None else log_reg_mean >= none_mean
-        )
-        per_cell[cell] = {
-            "none_mean_frac_high_lambda": none_mean,
-            "log_reg_mean_frac_high_lambda": log_reg_mean,
-            "falsified": cell_falsified,
-        }
-        if cell_falsified:
+
+    delaunay_tiers = _tiers_for_cell(rows, "delaunay_adapt_split")
+    per_tier = {}
+    for tier in delaunay_tiers:
+        tier_rows = _group(rows, cell="delaunay_adapt_split", log_det_method=tier)
+        result = score_f3_group(tier_rows)
+        per_tier[tier if tier is not None else "auto"] = result
+        if result["falsified"]:
             falsified = True
+    per_cell["delaunay_adapt_split"] = {"per_log_det_method": per_tier}
+
+    knn_rows = _group(rows, cell="knn")
+    knn_result = score_f3_group(knn_rows) if knn_rows else None
+    per_cell["knn"] = knn_result
+    if knn_result and knn_result["falsified"]:
+        falsified = True
+
     return {"per_cell": per_cell, "falsified": falsified}
 
 
@@ -760,13 +788,24 @@ def score_rows(rows: list[dict]) -> dict:
             "verdict": "HALT — F5 tripped (bijector changed the physical objective; this is a bug)",
         }
 
-    delaunay_rows = _group(rows, cell="delaunay_adapt_split")
     knn_rows = _group(rows, cell="knn")
     mge_rows = _group(rows, cell="mge")
 
+    # delaunay_adapt_split legitimately carries BOTH cholesky and slogdet
+    # rows in the real campaign; score F1 per tier (never pooled — same
+    # "refuse to mix tiers" rule _group enforces elsewhere) and combine
+    # conservatively: falsified if EITHER tier falsifies.
+    delaunay_tiers = _tiers_for_cell(rows, "delaunay_adapt_split")
+    f1_per_tier = {}
+    for tier in delaunay_tiers:
+        tier_rows = _group(rows, cell="delaunay_adapt_split", log_det_method=tier)
+        f1_per_tier[tier if tier is not None else "auto"] = score_f1(tier_rows)
     f1 = (
-        score_f1(delaunay_rows)
-        if delaunay_rows
+        {
+            "per_log_det_method": f1_per_tier,
+            "falsified": any(bool(v["falsified"]) for v in f1_per_tier.values()),
+        }
+        if f1_per_tier
         else {"falsified": None, "note": "no delaunay_adapt_split rows"}
     )
     f2 = score_f2(knn_rows) if knn_rows else {"falsified": None, "note": "no knn rows"}
