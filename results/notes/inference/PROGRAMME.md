@@ -298,6 +298,19 @@ JSON under `results/searches/`.
 
 ### Phase 1 — Standard benchmark matrix & targets registry
 
+**IN PROGRESS 2026-08-24 (W4, autolens_profiling#161):** registry, schema v2
+and tests landed — `scripts/misc/searches/_targets.py` (32-target registry
++ `target_id` hashing), `slam_source_pix`/`slam_source_pix_nn`/`delaunay_nn`
+model builders, schema-v2 additions to `_runner.py` (`target`/`algorithm`/
+`hardware`/`schema_version`), the imaging truth-anchor extension, the
+MultiStart `likelihood_evals` fix + Kish ESS, and 25 new tests — see
+DECISIONS.md 2026-08-24. **Still open:** only 2 of 13 targets
+(`mge_fp64`, `delaunay_fp64`) have a certified `InferenceRefs_v1` reference
+baseline (both adopted retroactively, not freshly run); the remaining 11
+rows are queued in `results/baselines/InferenceRefs_v1/SUBMIT_LIST.md` with
+a prepared-but-NOT-submitted SLURM array
+(`hpc/batch_gpu/submit_search_nautilus_inference_refs_v1_array.sh`).
+
 - **Question:** Can every future result be expressed as (target,
   algorithm-config, seed, hardware) → metrics, stable across years?
 - **Design:** Formalize what §1 shows already half-exists. Targets v1 (all
@@ -952,7 +965,7 @@ ship as autolens_profiling issues/PRs, not Mind prompts).
 | W6 | Nautilus `n_batch` scan (MGE + Delaunay) — bounds the "JAX Nautilus" ceiling | #163 | A100, ~30 min | — (submit now) |
 | W8 | slogdet default for GPU gradient-work cells in the searches framework | #165 | source | — |
 | W7 | CP-4 follow-up: NaN-under-both draws, transect gradients, marginal-band tier dependence | #164 | laptop / A100 replay | — |
-| W4 | Phase 1 targets registry, schema v2 (ESS + reject-inclusive evals), `slam_source_pix`, reference baselines | #161 | CPU + one A100 bake | rides behind W1/W6 |
+| W4 | Phase 1 targets registry, schema v2 (ESS + reject-inclusive evals), `slam_source_pix`, reference baselines — **IN PROGRESS 2026-08-24: registry/schema/tests shipped; 2/13 targets have a certified baseline (both retro-adopted), 11 SUBMIT_LIST rows still queued, array script not submitted** | #161 | CPU + one A100 bake | rides behind W1/W6 |
 | W2 | Phase 4 Stage 2 — Nautilus / Prodigy ± positions × 5 seeds on MGE (NSS arm dropped per Gate A) | #160 | A100 ~5 GPU-h | W1 (+ W6 for n_batch) |
 | W5 | Phase 8B log-coordinate stepping (Scaler → bijector) | #162 | source + laptop | — (parallel smoothing arc) |
 | W9 | REMINDER: make slogdet standard in PyAutoArray | #166 | source | W7 |

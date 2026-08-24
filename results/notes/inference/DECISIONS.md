@@ -312,6 +312,90 @@ or a formula-independent overflow that a different scaling removes? Phase
 8B stays the live reparameterization candidate alongside. Record:
 `phase_08_regularization/RESULTS.md`.
 
+
+---
+
+## 2026-08-24 — W4 / Phase 1: targets registry, schema v2, `slam_source_pix(_nn)`, reference baselines (autolens_profiling#161)
+
+**Record (Phase 1 IN PROGRESS, not a gate call):** landed the Phase 1
+targets registry infrastructure PROGRAMME.md §"Phase 1" and §5 specify —
+`scripts/misc/searches/_targets.py` (`Target`/`Tolerances` dataclasses,
+`TARGETS` — 32 entries: {mge, delaunay, delaunay_nn, knn, delaunay_matern,
+pixelization, slam_source_pix, slam_source_pix_nn} x {positions off/on} x
+{fp64/mp} — and `target_id`/`target_block` canonical-identity hashing),
+schema-v2 additions to every `results/searches/` JSON
+(`schema_version`/`target`/`algorithm`/`hardware`, added beside every v1
+key, never replacing one — `build_readme.py`'s dashboard renders both
+unchanged), the imaging truth-anchor extension (previously point_source /
+cluster only), and the MultiStart `likelihood_evals` correction (was
+`total_samples`, a small posterior-storage count; now
+`total_steps * n_starts`, the actual reject-inclusive evaluation count) +
+Kish ESS.
+
+**Human mesh decisions (this commit implements, does not re-litigate):**
+- `slam_source_pix` = `al.mesh.RectangularRTUAdaptImage` (best gradient
+  behaviour of the rectangular family) + free-coefficient `al.reg.Adapt`
+  (inner/outer coefficient + signal_scale). **Deliberately differs** from
+  the workspace SLaM `source_pix[1]` fiducial
+  (`autolens_workspace/scripts/multi_galaxy/slam.py:653`, which pairs
+  `al.mesh.RectangularBilinearAdaptImage` — not RTU — with the same
+  `al.reg.Adapt`, and a 28x28 mesh vs this repo's 39x39
+  `_PIXELIZATION_MESH_SHAPE` fiducial). The RTU/Bilinear choice mirrors the
+  Phase 14 default-CPU-mesh adjudication (2026-08-21): RTU has the better
+  measured gradient surface, which is what this profiling repo's targets
+  exist to stress; the workspace's own default optimizes for a different
+  axis (new-user CPU speed) and is not overridden by this decision.
+- `delaunay_nn` is registered as a REAL target (scientifically the premier
+  model — Sibson/natural-neighbour interpolation vs the Delaunay mesh's C0
+  barycentric one), not a diagnostic cell: `al.mesh.DelaunayNN` (a
+  `Delaunay` subclass, identical `(pixels, zeroed_pixels, areas_factor)`
+  constructor) + the SAME `ConstantSplit` regularization `delaunay` uses,
+  so the two targets are a pure mesh-family A/B. `slam_source_pix_nn` pairs
+  DelaunayNN with the same free `reg.Adapt` as `slam_source_pix`, isolating
+  the mesh choice the same way.
+
+**Verification finding (not a target-definition bug):** at broad, untuned
+prior draws (CPU, `use_jax=False`, 8 draws in the unit-cube's [0.2, 0.8]
+band), `delaunay` resamples 0/8 times; `delaunay_nn` resamples 5/8
+(3 finite, 3 NaN, 2 `FitException`); `slam_source_pix_nn` resamples 7/8
+(1 finite, 2 NaN, 5 `FitException`). Both DelaunayNN-based targets are
+registered as specified — an elevated resample rate at broad priors is
+itself a legitimate Phase-1 finding about the mesh, not something this
+registry silently works around by swapping mesh/regularization. Recorded
+on the affected `Target.notes` and worth a named follow-up once Phase 5+
+starts running real searches against these targets.
+
+**Reference baselines:** adopted
+`results/searches/nautilus/imaging/{mge,delaunay}/hst/hpc_hpc_a100_fp64.json`
+(v2026.8.17.1, same-stack re-baselines already used as the programme's
+Nautilus truth bars — DECISIONS.md 2026-08-24 Gate A entry) as
+`certified_by: "retro"` `InferenceRefs_v1` baselines, each tagged with the
+`git sha` current at adoption (`b9c47062f2a46a211ca0df92cbce7e9edd2a3c4c`).
+The `pixelization` target's existing row
+(`.../pixelization/hst/hpc_a100_fp64.json`, v2026.5.21.1) is explicitly
+**NOT adopted** — it predates the version-gap refresh the other two rows
+already got. 11 further reference rows (fresh Nautilus fp64 runs, seed 0,
+`n_live >= 2x` fiducial via the new `SEARCHES_NAUTILUS_N_LIVE` override) are
+queued in `results/baselines/InferenceRefs_v1/SUBMIT_LIST.md`, with a
+prepared SLURM array
+(`hpc/batch_gpu/submit_search_nautilus_inference_refs_v1_array.sh`) that has
+**NOT been submitted** — writing the array is this commit's job; running an
+~11-task multi-hour A100 campaign is a separate decision.
+
+**Open questions carried forward:** (1) the DelaunayNN resample-rate finding
+above — worth a dedicated investigation once the reference-row campaign
+gives a real sample size to characterise it against. (2) Whether
+`slam_source_pix`'s deliberate RTU/Bilinear deviation from the workspace
+SLaM default should ever be reconciled (a future workspace-docs decision,
+out of scope here). (3) The 11-row SUBMIT_LIST campaign itself — queued,
+not run.
+
+**Records:** `scripts/misc/searches/_targets.py`,
+`results/baselines/InferenceRefs_v1/`, PROGRAMME.md Phase 1 section + W4
+table row (this commit).
+
+---
+
 ---
 
 ## 2026-08-24 — W7 (CP-4 follow-up, #164): per-draw attribution + CP-4 re-scored on the clean subset — verdict unchanged
@@ -384,4 +468,3 @@ descent-harvest time, and never anchor a transect/probe at an exact-zero
 ell_comps/shear component. Record: `phase_08_regularization/RESULTS.md`
 "W7 addendum" + "CP-4 re-scored" sections; attribution artifacts under
 `slogdet_ab/attribution/`.
-

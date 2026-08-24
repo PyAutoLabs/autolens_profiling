@@ -281,9 +281,22 @@ def _scan_runtime_cells(root: Path) -> list[RuntimeCell]:
 
 
 def _baseline_names() -> list[str]:
+    """Runtime-comparison baseline directories under ``results/baselines/``.
+
+    Only directories that actually contain at least one ``comparison.json``
+    qualify — ``results/baselines/`` also houses baselines of a different
+    shape (e.g. ``InferenceRefs_v1/``, the Phase 1 targets-registry search
+    reference baselines added by W4 / issue #161, which has no
+    ``comparison.json`` anywhere in it). Without this filter every such
+    directory would add an always-empty column to the runtime table.
+    """
     if not BASELINES_ROOT.exists():
         return []
-    return sorted(d.name for d in BASELINES_ROOT.iterdir() if d.is_dir())
+    return sorted(
+        d.name
+        for d in BASELINES_ROOT.iterdir()
+        if d.is_dir() and next(d.rglob("comparison.json"), None) is not None
+    )
 
 
 def _latest_per_group(artifacts: Iterable[Artifact], key) -> dict[tuple, Artifact]:
@@ -523,15 +536,27 @@ def _render_pipeline_resume_table(artifacts: list[Artifact]) -> str:
 
 
 def _render_searches_table(search_artifacts: list[SearchArtifact]) -> str:
-    """Latest run per (sampler, cell, config) from the searches framework."""
+    """Latest run per (sampler, cell, config) from the searches framework.
+
+    Every column below reads only ``results.*`` / ``performance.*`` — v1
+    keys present unchanged in a schema-v2 payload (W4 / issue #161, Phase 1
+    adds ``target``/``algorithm``/``hardware``/``schema_version`` BESIDE the
+    v1 keys, never in place of them) — so this table renders identically for
+    a v1 or v2 artifact except for the two trailing columns below, which read
+    the new ``target``/``performance.kish_ess`` keys and render ``—`` when
+    absent (v1 artifacts, or a cell the Phase 1 TARGETS registry doesn't
+    cover).
+    """
     if not search_artifacts:
         return _no_data_block(
             "run `searches/sweep.py` (see section README) to populate `results/searches/`."
         )
     latest = _latest_per_group(search_artifacts, key=lambda a: (a.sampler, a.cell, a.config))
     rows = [
-        "| Sampler | Cell | Config | max logL | logZ | Wall | Evals | Time / eval | Version |",
-        "|---------|------|--------|---------:|-----:|-----:|------:|------------:|---------|",
+        "| Sampler | Cell | Config | max logL | logZ | Wall | Evals | Time / eval | "
+        "Target | ESS | Version |",
+        "|---------|------|--------|---------:|-----:|-----:|------:|------------:|"
+        "--------|----:|---------|",
     ]
 
     def _fmt_num(v) -> str:
@@ -543,6 +568,8 @@ def _render_searches_table(search_artifacts: list[SearchArtifact]) -> str:
         perf = data.get("performance") or {}
         evals = perf.get("likelihood_evals")
         per_eval = perf.get("time_per_eval_ms")
+        target_id = (data.get("target") or {}).get("target_id")
+        kish_ess = perf.get("kish_ess")
         rows.append(
             f"| `{sampler}` | `{cell}` | `{config}` | "
             f"{_fmt_num(results.get('max_log_likelihood'))} | "
@@ -550,6 +577,8 @@ def _render_searches_table(search_artifacts: list[SearchArtifact]) -> str:
             f"{_format_time(perf.get('total_wall_s'))} | "
             f"{f'{evals:,}' if isinstance(evals, int) else '—'} | "
             f"{f'{per_eval:.1f} ms' if isinstance(per_eval, (int, float)) else '—'} | "
+            f"{f'`{target_id[7:15]}`' if isinstance(target_id, str) else '—'} | "
+            f"{_fmt_num(kish_ess)} | "
             f"v{art.raw_version} |"
         )
     return "\n" + "\n".join(rows) + "\n"

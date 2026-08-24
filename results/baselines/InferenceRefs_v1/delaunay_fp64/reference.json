@@ -1,0 +1,85 @@
+{
+  "certified_by": "retro",
+  "certified_at": "2026-08-24",
+  "certifying_git_sha": "b9c47062f2a46a211ca0df92cbce7e9edd2a3c4c",
+  "source_artifact": "results/searches/nautilus/imaging/delaunay/hst/hpc_hpc_a100_fp64.json",
+  "target_key": "delaunay_fp64",
+  "note": "Adopted retroactively as a Phase 1 InferenceRefs_v1 reference baseline (W4 / issue #161). This artifact predates the Phase 1 schema-v2 additions (schema_version/target/algorithm/hardware) and was NOT re-run for this adoption -- it is the source_artifact's own JSON content, copied verbatim into the `reference` key below, plus the certification metadata at this level. The matching `target.json` in this directory computes the CURRENT target_id for this target from the registry in scripts/misc/searches/_targets.py, so a future re-run can be compared against this baseline by target_id even though the baseline artifact itself has none.",
+  "reference": {
+    "sampler": "nautilus",
+    "dataset_class": "imaging",
+    "model": "delaunay",
+    "instrument": "hst",
+    "config_name": "hpc_a100_fp64",
+    "version": "2026.8.17.1",
+    "device": {
+      "backend": "gpu",
+      "device": "cuda:0",
+      "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+      "omp_num_threads": null,
+      "cpu_count": 124,
+      "nvidia_smi": "NVIDIA A100 80GB PCIe, 5149 MiB, 81920 MiB"
+    },
+    "use_mixed_precision": false,
+    "sampler_config": {
+      "n_live": 150,
+      "n_batch": 16,
+      "number_of_cores": 1,
+      "use_jax_vmap": true,
+      "force_x1_cpu": true,
+      "iterations_per_update": 450
+    },
+    "model_summary": {
+      "free_parameters": 12,
+      "best_fit": "lens.mass.einstein_radius=1.0381  lens.mass.centre=(0.011, 0.052)  shear=(-0.1362, 0.0315)"
+    },
+    "results": {
+      "log_evidence": 30562.24024269568,
+      "max_log_likelihood": 30623.166774195288,
+      "posterior_samples": 30240,
+      "posterior_stats": {
+        "centre_0": {
+          "mean": 0.010747864056998409,
+          "std": 0.010600954032089964
+        },
+        "centre_1": {
+          "mean": 0.054846174293517895,
+          "std": 0.0035069684428519843
+        },
+        "ell_comps_0": {
+          "mean": 0.0019448475092514116,
+          "std": 0.012861959763025836
+        },
+        "ell_comps_1": {
+          "mean": -0.48164251825170024,
+          "std": 0.011890040287690628
+        },
+        "einstein_radius": {
+          "mean": 1.0381552029028782,
+          "std": 0.011770664029921163
+        },
+        "gamma_1": {
+          "mean": -0.13398391097887727,
+          "std": 0.006356704570725096
+        },
+        "gamma_2": {
+          "mean": 0.028887817010192687,
+          "std": 0.005993333087561811
+        },
+        "coefficient": {
+          "mean": 1.425591297602015,
+          "std": 0.04089027716639862
+        }
+      }
+    },
+    "performance": {
+      "total_wall_s": 1938.5234243869781,
+      "viz_wall_s": 47.20374389999779,
+      "viz_n_calls": 8,
+      "viz_disabled": false,
+      "sampler_wall_s": 1891.3196804869804,
+      "likelihood_evals": 30240,
+      "time_per_eval_ms": 62.543640227744056
+    }
+  }
+}
