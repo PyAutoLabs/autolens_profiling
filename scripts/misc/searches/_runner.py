@@ -77,6 +77,8 @@ from searches._setup import (  # noqa: E402
     cluster_point_fit_cls_for,
     format_best_fit,
     point_source_fit_cls_for,
+    positions_arm_tag,
+    positions_settings,
 )
 
 # point_source model_types whose truth source profile is al.ps.PointSolved
@@ -350,6 +352,22 @@ def run_search(
     config_name = cli.config_name or "default"
     use_jax = _decide_use_jax()
 
+    # Opt-in positions-penalty arm (Phase 4 Stage 1, issue #159). Off unless
+    # SEARCHES_POSITIONS=on. Appended to config_name (not just unique_tag) so
+    # the JSON/PNG output filename itself makes a positions-on run impossible
+    # to mistake for the positions-off run of the "same" config_name — a
+    # positions-on run is a different objective (figure_of_merit minus a
+    # penalty term), so it must never silently overwrite the positions-off
+    # artifact on disk.
+    pos_tag = positions_arm_tag()
+    if pos_tag is not None:
+        config_name = f"{config_name}_{pos_tag}"
+        print("  " + "!" * 66)
+        print(f"  !! POSITIONS ARM (target_class 3): SEARCHES_POSITIONS=on -> {pos_tag!r}")
+        print(f"  !!   config_name -> {config_name!r}")
+        print("  !! Idealised: truth-derived positions, not re-solved from a completed search.")
+        print("  " + "!" * 66)
+
     uses_n_live = sampler in _SAMPLERS_WITH_N_LIVE
     n_live = n_live_for(dataset_class, model_type) if uses_n_live else None
     if sampler == "nss":
@@ -533,6 +551,7 @@ def _sampler_config_dict(
             "use_jax_vmap": use_jax,
             "force_x1_cpu": use_jax,
             "iterations_per_update": 3 * n_live,
+            "positions": positions_settings(),
         }
     if sampler == "nss":
         # Mirrors the fork-era JSON shape (n_live, num_mcmc_steps, num_delete,
@@ -542,6 +561,7 @@ def _sampler_config_dict(
             "n_live": n_live,
             **nss_settings(),
             "jax_native": True,
+            "positions": positions_settings(),
         }
     if sampler in _MULTI_START_CLASSES:
         # MAP optimizer: no n_live; records its own multi-start knobs, plus the
@@ -621,6 +641,10 @@ def _build_summary(
         "sampler_config": _sampler_config_dict(
             sampler, dataset_class, model_type, instrument, n_live, use_jax
         ),
+        # Always present (Phase 4 Stage 1, issue #159): {"enabled": False} when
+        # SEARCHES_POSITIONS is off, so a positions-on and positions-off run
+        # of the "same" cell/config_name are never ambiguous in the artifact.
+        "positions": positions_settings(),
         "model_summary": {
             "free_parameters": n_free_params,
             "best_fit": best_fit,

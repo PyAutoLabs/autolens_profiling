@@ -49,6 +49,7 @@ import autofit as af
 _WORKSPACE_ROOT = _profiling_root()
 if str(_WORKSPACE_ROOT) not in sys.path:
     sys.path.insert(0, str(_WORKSPACE_ROOT))
+from searches._setup import positions_arm_tag, positions_settings  # noqa: E402
 from vram import vmap_batch_for  # noqa: E402
 
 # (dataset_class, model_type) -> n_live. Matches the SLaM defaults so a
@@ -79,6 +80,22 @@ _N_LIVE: dict[tuple[str, str], int] = {
     ("cluster", "source_plane_tensor"): 100,
     ("cluster", "image_plane_solved"): 100,
 }
+
+
+def arm_unique_tag(*parts: str | None) -> str | None:
+    """Compose non-``None`` arm-tag parts into one ``unique_tag``, else ``None``.
+
+    Shared by every sampler builder (Nautilus, NSS, MultiStart*) so a
+    positions-on arm always gets a distinct ``unique_tag`` — and therefore a
+    distinct output directory and identifier (PyAutoFit's identifier hashes
+    ``[search, model, unique_tag]``; the ``Analysis`` object, and therefore
+    whether a positions penalty is attached, is NOT hashed — see
+    ``_setup.py``'s positions-plumbing docstring). Returns ``None`` only when
+    every part is ``None``, so an unseeded, positions-off cell keeps its exact
+    recorded output path.
+    """
+    resolved = [part for part in parts if part]
+    return "_".join(resolved) if resolved else None
 
 
 def n_live_for(dataset_class: str, model_type: str) -> int:
@@ -151,6 +168,10 @@ def build_nautilus(
         use_jax_vmap=use_jax,
         force_pickle_overwrite=True,
         iterations_per_update=3 * n_live,
+        # See arm_unique_tag's docstring: a positions-on arm MUST carry its own
+        # tag or it silently shares an output directory / identifier with the
+        # positions-off cell (the Analysis object is not hashed).
+        unique_tag=arm_unique_tag(positions_arm_tag()),
     )
 
 
@@ -218,6 +239,8 @@ def build_nss(
         path_prefix=f"searches/{sampler}/{dataset_class}/{model_type}/{instrument}",
         n_live=n_live,
         number_of_cores=1,
+        # See arm_unique_tag's docstring / build_nautilus's comment above.
+        unique_tag=arm_unique_tag(positions_arm_tag()),
         **nss_settings(),
     )
 
@@ -414,17 +437,27 @@ def multi_start_unique_tag(
     ``AbstractPaths._identifier`` *and* sits in ``output_path`` above ``name``,
     so tagging fixes both the hash and the directory.
 
-    Returned only when a seed is set, so unseeded cells keep byte-identical
-    output paths to their recorded runs.
+    Also composes in ``_setup.positions_arm_tag()`` (Phase 4 Stage 1, issue
+    #159) for the SAME reason: the ``Analysis`` object — and therefore whether
+    a ``positions_likelihood_list`` is attached — is not part of the
+    identifier hash either. Returned whenever a seed is set OR positions are
+    on, so an unseeded-but-positions-on cell still gets a tag (never silently
+    shares a positions-off cell's output path); ``None`` only when neither
+    applies, so the ordinary unseeded/positions-off cell keeps byte-identical
+    output paths to its recorded runs.
     """
     seed = multi_start_seed()
-    if seed is None:
+    pos_tag = positions_arm_tag()
+    if seed is None and pos_tag is None:
         return None
-    return (
+    seed_tag = (
         f"n{multi_start_n_starts(dataset_class, model_type)}"
         f"_s{multi_start_n_steps(dataset_class, model_type)}"
         f"_seed{seed}"
+        if seed is not None
+        else None
     )
+    return arm_unique_tag(seed_tag, pos_tag)
 
 
 def multi_start_batch_size(
@@ -520,6 +553,10 @@ def multi_start_settings(
     # Always recorded, including the ``None`` default: a seeded and an unseeded
     # run must be distinguishable in the artifact, not both read as "no key".
     settings["seed"] = multi_start_seed()
+    # Always recorded, including {"enabled": False}: a positions-on and
+    # positions-off run must be distinguishable in the artifact (Phase 4
+    # Stage 1, issue #159).
+    settings["positions"] = positions_settings()
     return settings
 
 
@@ -552,6 +589,10 @@ def build_multi_start(
     # what ``_sampler_config_dict`` writes into the results JSON.
     settings["clipper"] = _clipper_object(settings["clipper"])
     settings["scaler"] = _scaler_object(settings["scaler"])
+    # "positions" is a recorded-config-only block (consumed by
+    # _sampler_config_dict / multi_start_settings' JSON shape); no
+    # af.MultiStart* class accepts it as a constructor kwarg.
+    settings.pop("positions", None)
     kwargs: dict = dict(
         name=config_name,
         path_prefix=f"searches/{sampler}/{dataset_class}/{model_type}/{instrument}",
@@ -573,3 +614,29 @@ SAMPLER_BUILDERS: dict[str, SamplerBuilder] = {
     "nss": build_nss,
     **{name: build_multi_start for name in _MULTI_START_CLASSES},
 }
+
+
+def assert_disjoint_output_paths(search_a: af.NonLinearSearch, search_b: af.NonLinearSearch) -> None:
+    """Assert two constructed searches have BOTH a different ``output_path``
+    and a different ``identifier``.
+
+    A standalone correctness guard for every ``unique_tag`` composition above
+    (``arm_unique_tag`` / ``multi_start_unique_tag`` / the ``build_nautilus`` &
+    ``build_nss`` positions wiring). PyAutoFit's identifier hashes only
+    ``[search, model, unique_tag]`` — the ``Analysis`` object is never part of
+    the hash, so two arms that differ only in what's attached to the analysis
+    (e.g. a ``positions_likelihood_list``) MUST differ in ``unique_tag`` or
+    they silently share one output directory / identifier, and the second
+    arm's ``search.fit()`` short-circuits to the first arm's cached
+    ``.completed`` result instead of actually running.
+    """
+    if search_a.paths.output_path == search_b.paths.output_path:
+        raise AssertionError(
+            f"output_path collision between two arms expected to be distinct: "
+            f"{search_a.paths.output_path!r}"
+        )
+    if search_a.paths.identifier == search_b.paths.identifier:
+        raise AssertionError(
+            f"identifier collision between two arms expected to be distinct: "
+            f"{search_a.paths.identifier!r}"
+        )
