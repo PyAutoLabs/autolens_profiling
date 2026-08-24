@@ -249,7 +249,7 @@ re-baselines) submitted before the call and noted here for the record.
 
 ---
 
-## 2026-08-24 — Phase 2 scan COMPLETE: H2.1 closed, NSS operating point recorded, Gate A reading proposed (human call pending)
+## 2026-08-24 — Phase 2 scan COMPLETE: H2.1 closed, NSS operating point recorded, GATE A CALLED (human): Nautilus stays the nested baseline
 
 **Record (not a gate call):** Phase 2 wave 2 harvested (RAL 338870-338873,
 339067[0-3], 339068, 339069, 339070/71). Mainline `blackjax.nss` (af.NSS)
@@ -263,10 +263,26 @@ Nautilus sampler wall on MGE (3,528 vs 707 s), 18.4× on Delaunay (34,726 vs
 current stack. Nautilus truth bars reaffirmed to 2 dp; the 523 s Nautilus
 wall is retired as a reference (707–773 s reproduces).
 
-**Proposed Gate A reading (for the human):** Nautilus remains the nested
+**GATE A CALLED (human, 2026-08-24):** Nautilus remains the nested
 baseline on every model family; af.NSS stays mainlined as a correct,
-tuned alternative, not default. Basis and caveats:
-`phase_02_nss_mainline/RESULTS.md` "Scan wave 2". The pixelization-cell
-Nautilus re-baseline (339795) is still queued and does not affect the
-reading.
+tuned alternative, not default. Phase 5's NSS arm is dropped. Sample
+economy sealed it beyond wall: Kish ESS 4,121 vs 1,315 per run on MGE
+(14× wall for equal ESS; ~15 vs ~940 likelihood evals per effective
+sample, reject-inclusive) — `phase_02_nss_mainline/RESULTS.md` "Sample
+economy". Only re-opening condition (unmeasured): a GPU-only deployment
+where Nautilus's host-side proposal is the bottleneck; W6 (n_batch scan)
+queued to bound it. The pixelization-cell Nautilus re-baseline (339795)
+is still queued and does not affect the call.
+
+**Same-day human calls, recorded here to keep DECISIONS.md linear:**
+- **Gate B pt 1 caveat (a) "n=256 only" STANDS.** n128 fresh-seed 5/5
+  (phase_03 addendum) is consistent but cannot demonstrate ≥99 % at 95 %
+  confidence; the ~1.3 GPU-h for a 30-seed n128 tier is not worth the
+  ~90 s/fit it would save. Revisit only if Prodigy enters a loop where
+  seconds compound.
+- **Gate C criterion reworded (PROGRAMME §4 Phase 6):** initialized
+  gradient MCMC is judged on *batched-pipeline* value (vmap across
+  datasets, posterior without an evidence run, ESS per gradient eval
+  acceptable), not on beating Nautilus's single-fit ESS/s — Nautilus's
+  ~15 evals/ESS on MGE is not a bar warm NUTS is expected to clear.
 

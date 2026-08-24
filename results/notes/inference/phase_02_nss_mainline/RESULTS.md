@@ -230,17 +230,55 @@ Nautilus rows remain valid references. The MGE re-baseline settles the
 reproducible fp64 A100 tier; 523 s is not reproduced on this stack and is
 retired as a reference.
 
-### Gate A reading (proposed — human call pending)
+### Sample economy — ESS and reject-inclusive eval counts (2026-08-24)
 
-On MGE, evidence-correct mainline NSS costs **5.0× the Nautilus sampler
-wall** at its best operating point (3,528 vs 707 s, 20× the evals at 1/4
-the ms/eval); on Delaunay it costs 18×. NSS matches Nautilus's answer
-everywhere but is faster nowhere. Unless Gate A is judged on a criterion
-other than wall (e.g. GPU-only deployments where Nautilus's CPU-side
-proposal is the bottleneck — not measured here), the reading is:
-**Nautilus stays the nested-sampling baseline; `af.NSS` remains available
-as a correct, tuned alternative (operating point recorded) but is not
-adopted as default on any model family.**
+Wall alone understates the gap. Kish ESS = (Σw)²/Σw² over each run's
+stored `samples.csv` weights (autofit drops negligible-weight rows, so the
+stored count is below the JSON `posterior_samples`). `likelihood_evals`
+counts every likelihood call for both engines: for NSS that includes every
+rejected slice proposal (~87 evals per dead point at inner=30, ~⅔ rejects);
+for Nautilus every evaluated point is kept as a weighted sample and its
+"rejects" are the ≈0-weight rows autofit drops.
+
+| cell | engine / config | evals (incl. rejects) | stored (non-zero w) | ESS | ESS/n | sampler wall | ESS / min | evals per ESS |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| mge | **Nautilus** re-baseline | 62,208 | 10,586 | **4,121** | 0.39 | 707 s | **350** | **15** |
+| mge | NSS fork knobs (inner 5, biased) | 234,498 | 3,125 | 1,611 | 0.52 | 840 s | 115 | 146 |
+| mge | NSS op. point (inner30 nd100) | 1,236,644 | 2,725 | 1,315 | 0.48 | 3,528 s | 22 | 940 |
+| mge | NSS nd100 seeds 43–46 | 1.24 M | 2,701–2,763 | 1,338–1,405 | 0.50 | 3,430–3,483 s | 23–25 | ~900 |
+| mge | NSS nd100 dlogz −10 | 1,344,578 | 3,986 | 1,354 | 0.34 | 3,688 s | 22 | 993 |
+| mge | NSS nd20 | 1,638,384 | 3,341 | 1,787 | 0.54 | 6,138 s | 17 | 917 |
+| mge | NSS n500 | 3,718,760 | 7,820 | 4,236 | 0.54 | 9,966 s | 26 | 878 |
+| mge | NSS n1000 | 7,519,030 | 15,558 | 8,397 | 0.54 | 20,266 s | 25 | 895 |
+| delaunay | **Nautilus** re-baseline | 30,240 | 11,651 | **2,342** | 0.20 | 1,891 s | **74** | **13** |
+| delaunay | NSS fork | 206,448 | 2,898 | 1,115 | 0.39 | 29,721 s | 2.3 | 185 |
+| delaunay | NSS mainline | 150,991 | 3,163 | 1,271 | 0.40 | 34,726 s | 2.2 | 119 |
+| pixelization | NSS fork | 266,043 | 2,431 | 1,114 | 0.46 | 19,142 s | 3.5 | 239 |
+
+- NSS's ESS is pinned by `n_live` (ESS/n ≈ 0.50 on every inner/nd/dlogz
+  arm; ESS scales linearly with n_live at linear wall). Matching Nautilus's
+  4,100 ESS on MGE needs n_live ≈ 500 → 9,966 s = **14× the Nautilus wall
+  for equal ESS**; per unit wall Nautilus is 16× (MGE) / 33× (Delaunay).
+- Per likelihood call, Nautilus needs ~15 evals per effective sample on
+  both cells; evidence-correct NSS needs ~940 (MGE, 60×) — the slice
+  kernel walking a 269×-anisotropic, |r|=0.95 posterior one axis at a
+  time. Nautilus's importance draws from a learned bound are near-i.i.d.
+- Nautilus's evals are 4× dearer (11.4 vs 2.85 ms on MGE): the proposal
+  step is host-side numpy/sklearn around n_batch=64 GPU batches. That
+  overhead — not the eval economy — is the only thing a "JAX Nautilus"
+  could improve (ceiling ~4× on MGE, ~1.3× on Delaunay); the cheap test is
+  an `n_batch` scan (W6, queued).
+
+### Gate A — CALLED 2026-08-24 (human): Nautilus stays the nested baseline
+
+Evidence-correct mainline NSS matches Nautilus's answer everywhere and is
+faster nowhere: 5.0× / 18.4× on wall, 14× for equal ESS, ~60× per
+likelihood eval. **Nautilus remains the default nested sampler on every
+model family; `af.NSS` stays mainlined as a correct, tuned alternative
+(operating point n200 / nd100 / inner30 / dlogz −3, −10 when the MAP
+matters).** Not measured, recorded as the only re-opening condition: a
+GPU-only, likelihood-bound deployment where Nautilus's host-side proposal
+is the bottleneck. Phase 5's NSS arm is dropped. Recorded in DECISIONS.md.
 
 ## Next
 

@@ -30,10 +30,10 @@ expectation · **[CONTRADICTED]** existing evidence pushed back on the brief ·
 | Phase 0(d) commit plan + ledger structure | **complete** | PR#136 + PR#137 (2026-08-18) |
 | Phase 14 default CPU mesh decision | **adjudicated + shipped 2026-08-21** — Bilinear (rank-CDF) default, RTU (kernel-CDF) advanced; both meshes explicit in the cells via `--rect-mesh` (PR #155); versioned Bilinear-vs-RTU measurement outstanding | autolens_profiling#153, PyAutoArray#461/#462 |
 | Phase 0(e) searches README dashboard loop | **complete** | PR#139 (2026-08-18): nested-layout scanner, 34 rows render, truth-bar rows verified |
-| Phase 2 NSS mainline re-tune | **scan complete 2026-08-24 (CP-2 ✅, CP-5 ✅)** — H2.1 closed: logZ bias was inner-kernel under-mixing (inner=30: 5/5 seeds +1.0 ± 0.4 nats vs Nautilus); operating point n200/nd100/inner30 costs 5.0× the Nautilus sampler wall on MGE, 18.4× on Delaunay (same-night re-baselines: Nautilus mge 707 s, delaunay 1,891 s). **Gate A reading proposed (Nautilus stays baseline) — human call pending** | `phase_02_nss_mainline/RESULTS.md` + DECISIONS.md 2026-08-24 |
+| Phase 2 NSS mainline re-tune | **scan complete 2026-08-24 (CP-2 ✅, CP-5 ✅)** — H2.1 closed: logZ bias was inner-kernel under-mixing (inner=30: 5/5 seeds +1.0 ± 0.4 nats vs Nautilus); operating point n200/nd100/inner30 costs 5.0× the Nautilus sampler wall on MGE, 18.4× on Delaunay (same-night re-baselines: Nautilus mge 707 s, delaunay 1,891 s). Sample economy: Kish ESS 1,315 vs Nautilus 4,121 per run; ~940 vs ~15 evals/ESS. **GATE A CALLED 2026-08-24 — Nautilus stays baseline; af.NSS = tuned alternative** | `phase_02_nss_mainline/RESULTS.md` + DECISIONS.md 2026-08-24 |
 | Phase 3 Prodigy reliability | **wave 1 complete + adversarially reviewed (CP-3 ✅ 2026-08-23, positions-off)** — p̂_hit = 0.048 [0.037, 0.061] (lower bound; n256 tier, ~1,280 distinct draws — tiers share lane-index draws, n-dependence unmeasured); demonstrated ≥99% reliability at **n=256 only** (joint-95% worst case), 3.4–4.5× under the viz-stripped Nautilus wall; zero parameter-recovery impostors; ~half of lanes end pinned (H3.3, measured not closed); θ_E diagnostic uninformative for H3.1 (withdrawn). **Gate B pt 1 CALLED (human-ratified 2026-08-23** — DECISIONS.md): Prodigy(n=256, prior_box, autoconv, positions-off) ratified as global MAP searcher on MGE; pt 2 (PositionsLH) open | `phase_03_prodigy_reliability/RESULTS.md` + `ADVERSARIAL_REVIEW.md` |
 | Phases 1, 4–13 | not started | — |
-| Gates A–F | **B part 1 CALLED 2026-08-23** (Prodigy n=256 global MAP, MGE, positions-off — DECISIONS.md); A, B pt 2, C–F open | DECISIONS.md |
+| Gates A–F | **A CALLED 2026-08-24** (Nautilus stays nested baseline; af.NSS tuned alternative); **B part 1 CALLED 2026-08-23** (Prodigy n=256 global MAP, MGE, positions-off; caveat (a) n=256-only stands 2026-08-24); B pt 2, C–F open — C criterion reworded 2026-08-24 (batched-pipeline value, not single-fit ESS/s vs Nautilus) | DECISIONS.md |
 
 ---
 
@@ -513,11 +513,16 @@ JSON under `results/searches/`.
   loss measurement).
 - **Cheap/expensive:** MGE on laptop GPU → A100 mesh confirmation.
 - **Hardware / cost:** **M** → **L**.
-- **Gate:** **GATE C.** Initialized gradient MCMC with excellent ESS/s and no
-  material divergences on the truth basin → default initialized posterior
-  engine (record which variant per hardware). Divergences clustering at
-  NNLS/reg sites → Phase 9 gains its inference-failure evidence (Gate E
-  input).
+- **Gate:** **GATE C** *(reworded 2026-08-24, DECISIONS.md)*. Initialized
+  gradient MCMC is judged on what Nautilus cannot do: `vmap` across
+  datasets in one GPU program and deliver a posterior without an evidence
+  run. Pass = no material divergences on the truth basin, split-R̂ < 1.01,
+  ESS per gradient eval not worse than ~1/30 on MGE, and a demonstrated
+  batched (≥16-dataset) run whose per-dataset wall beats one Nautilus fit.
+  It is NOT required to beat Nautilus's single-fit ESS/s (~15 likelihood
+  evals per ESS on MGE — Phase 2 "Sample economy"). Record which variant
+  per hardware. Divergences clustering at NNLS/reg sites → Phase 9 gains
+  its inference-failure evidence (Gate E input).
 - **Depends:** Phases 2–5 (initializers + basin knowledge).
 
 ### Phase 7 — SMC and other high-dimensional candidates
