@@ -212,11 +212,28 @@ def build_for_cell(
             use_mixed_precision=use_mixed_precision,
         )
 
+    if dataset_class not in _POSITIONS_SUPPORTED_DATASET_CLASSES and positions_enabled():
+        # Fail BEFORE paying for a (possibly expensive, possibly
+        # auto-simulating) dataset build for a dataset_class this Stage-1
+        # plumbing does not support — same guard
+        # ``_positions_likelihood_list_for`` applies below, hoisted above
+        # ``_build_dataset`` so e.g. ``group`` (whose dataset is
+        # auto-simulated on first use) fails fast instead of silently paying
+        # that cost before raising.
+        raise NotImplementedError(
+            f"{_POSITIONS_ENV}=on is only implemented for single-plane "
+            f"{_POSITIONS_SUPPORTED_DATASET_CLASSES} cells (Phase 4 Stage 1, issue "
+            f"#159); dataset_class={dataset_class!r} is not supported."
+        )
+
     dataset, dataset_path = _build_dataset(dataset_class, instrument)
     mask_radius = _mask_radius_for(dataset_class, instrument)
     model = _build_model(dataset_class, model_type, mask_radius=mask_radius)
     adapt_images = _adapt_images_for(
         dataset_class, model_type, dataset_path=dataset_path, dataset=dataset
+    )
+    positions_likelihood_list = _positions_likelihood_list_for(
+        dataset_class, instrument, dataset_path
     )
     analysis = _build_analysis(
         dataset_class=dataset_class,
@@ -225,6 +242,7 @@ def build_for_cell(
         use_jax=use_jax,
         use_mixed_precision=use_mixed_precision,
         adapt_images=adapt_images,
+        positions_likelihood_list=positions_likelihood_list,
         log_det_method=log_det_method,
     )
     return dataset, model, analysis
@@ -309,6 +327,12 @@ def _build_for_datacube(
     so the adapt image is computed once and shared across every channel's
     AnalysisInterferometer.
     """
+    if positions_enabled():
+        raise NotImplementedError(
+            f"{_POSITIONS_ENV}=on is not implemented for dataset_class='datacube' "
+            "(Phase 4 Stage 1, issue #159, supports single-plane imaging/"
+            "interferometer only)."
+        )
     dataset_list, dataset_path = _build_datacube_channels(instrument)
     mask_radius = _mask_radius_for("datacube", instrument)
     model = _build_model("datacube", model_type, mask_radius=mask_radius)
@@ -366,6 +390,12 @@ def _build_for_datacube_imaging(
     is copied into each ``AnalysisFactor`` and the factors share global
     parameters — the only cross-factor difference is data shape.
     """
+    if positions_enabled():
+        raise NotImplementedError(
+            f"{_POSITIONS_ENV}=on is not implemented for the datacube_img(_hetero) "
+            "multi-band factor-graph cells (Phase 4 Stage 1, issue #159, supports "
+            "single-plane imaging/interferometer only)."
+        )
     mask_radius = _mask_radius_for("imaging", instruments[0])
     model = _build_model("imaging", model_type, mask_radius=mask_radius)
 
@@ -414,6 +444,12 @@ def _build_for_cluster(
     so the runner's generic ``search.fit(model=model, analysis=analysis)``
     path needs no cluster-specific branching.
     """
+    if positions_enabled():
+        raise NotImplementedError(
+            f"{_POSITIONS_ENV}=on is not implemented for dataset_class='cluster' "
+            "(Phase 4 Stage 1, issue #159, supports single-plane imaging/"
+            "interferometer only)."
+        )
     dataset_list, dataset_path = _build_dataset("cluster", instrument)
     mask_radius = _mask_radius_for("cluster", instrument)  # 0.0, unused by point models
     model = _build_model(
@@ -844,6 +880,266 @@ def apply_diagnostic_prior_overrides(model: af.Collection) -> tuple[af.Collectio
         ),
     }
     return model, record
+
+
+# -----------------------------------------------------------------------------
+# PositionsLH plumbing (Phase 4 Stage 1, issue #159)
+# -----------------------------------------------------------------------------
+#
+# ``SEARCHES_POSITIONS=on`` attaches a real ``al.PositionsLH`` penalty to the
+# cell's analysis, mirroring the SLaM ``result.positions_likelihood_from``
+# idiom (``autolens_workspace/scripts/multi_galaxy/slam.py`` etc.:
+# ``factor=3.0, minimum_threshold=0.2``) but sourced from the simulator's own
+# TRUTH positions rather than positions re-solved from a completed search's
+# maximum-likelihood model — there is no prior search here to chain from.
+#
+# **This is a correctness guard, not cosmetics** (mirrors the
+# ``multi_start_unique_tag`` note in ``_samplers.py``): PyAutoFit's identifier
+# hashes only ``[search, model, unique_tag]`` — the ``Analysis`` object (and
+# therefore whether a positions penalty is attached) is NOT hashed. A
+# positions-on and positions-off run of the same search/model would resolve
+# to the SAME output directory and identifier unless ``unique_tag`` /
+# ``config_name`` are made to differ (see ``positions_arm_tag``,
+# consumed by ``_samplers.py`` and ``_runner.py``).
+_POSITIONS_ENV = "SEARCHES_POSITIONS"
+_POSITIONS_THRESHOLD_ENV = "SEARCHES_POSITIONS_THRESHOLD"
+_POSITIONS_FACTOR_ENV = "SEARCHES_POSITIONS_FACTOR"
+
+_POSITIONS_THRESHOLD_DEFAULT = "0.3"
+_POSITIONS_FACTOR_DEFAULT = "1e8"
+
+# SLaM's own auto-threshold convention (autolens_workspace SLaM scripts):
+# ``result.positions_threshold_from(factor=3.0, minimum_threshold=0.2, ...)``.
+_POSITIONS_AUTO_FACTOR = 3.0
+_POSITIONS_AUTO_MINIMUM_THRESHOLD = 0.2
+
+# Dataset classes this Stage-1 plumbing supports. Deliberately narrow: group /
+# cluster / datacube / point_source all have per-system or multi-plane
+# structure the single ``PositionsLH`` list here does not model, and a
+# silently-ignored positions request is exactly the failure mode this plumbing
+# must not have. See ``_positions_likelihood_list_for`` and the explicit guards
+# in ``_build_for_datacube`` / ``_build_for_datacube_imaging`` / ``_build_for_cluster``.
+_POSITIONS_SUPPORTED_DATASET_CLASSES: tuple[str, ...] = ("imaging", "interferometer")
+
+
+def positions_enabled() -> bool:
+    """Resolve ``SEARCHES_POSITIONS`` (default ``off``). Any other value raises."""
+    raw = os.environ.get(_POSITIONS_ENV, "off").strip().lower()
+    if raw not in ("off", "on"):
+        raise ValueError(f"{_POSITIONS_ENV}={raw!r} must be 'off' or 'on'")
+    return raw == "on"
+
+
+def _positions_threshold_raw() -> str:
+    return os.environ.get(_POSITIONS_THRESHOLD_ENV, _POSITIONS_THRESHOLD_DEFAULT).strip().lower()
+
+
+def _positions_threshold_mode_value() -> tuple[str, float | None]:
+    """``("fixed", <float>)`` or ``("auto", None)``. Anything else raises."""
+    raw = _positions_threshold_raw()
+    if raw == "auto":
+        return "auto", None
+    try:
+        return "fixed", float(raw)
+    except ValueError as exc:
+        raise ValueError(f"{_POSITIONS_THRESHOLD_ENV}={raw!r} must be 'auto' or a float") from exc
+
+
+def _positions_factor_raw() -> str:
+    return os.environ.get(_POSITIONS_FACTOR_ENV, _POSITIONS_FACTOR_DEFAULT).strip()
+
+
+def _positions_factor_value() -> float:
+    raw = _positions_factor_raw()
+    try:
+        return float(raw)
+    except ValueError as exc:
+        raise ValueError(f"{_POSITIONS_FACTOR_ENV}={raw!r} must be a float") from exc
+
+
+def positions_settings() -> dict:
+    """The env-resolved ``SEARCHES_POSITIONS*`` knobs, for the results JSON.
+
+    Always present in a cell's recorded ``sampler_config`` (``{"enabled":
+    False}`` when off), mirroring how ``target_override`` / diagnostic-arm
+    blocks are always recorded rather than silently omitted. When enabled,
+    documents the idealisation up front: the penalty is built from the
+    simulator's own truth positions (see ``_truth_positions_for``), not
+    positions re-solved from a completed search's maximum-likelihood model —
+    this is a Stage-1 simplification, not the SLaM chained-fit workflow.
+    """
+    if not positions_enabled():
+        return {"enabled": False}
+    mode, fixed_value = _positions_threshold_mode_value()
+    return {
+        "enabled": True,
+        "threshold_mode": mode,
+        "threshold_value": (fixed_value if mode == "fixed" else _POSITIONS_AUTO_MINIMUM_THRESHOLD),
+        "auto_factor": _POSITIONS_AUTO_FACTOR if mode == "auto" else None,
+        "auto_minimum_threshold": _POSITIONS_AUTO_MINIMUM_THRESHOLD if mode == "auto" else None,
+        "factor": _positions_factor_value(),
+        "source": "simulator_truth_positions",
+        # Mirrors apply_diagnostic_prior_overrides's target_class taxonomy
+        # (PROGRAMME.md §3): attaching a positions penalty changes the
+        # objective the search sees (figure_of_merit minus the penalty), so
+        # a positions-on run is not directly comparable to a positions-off
+        # run of the "same" cell without accounting for this.
+        "target_class": 3,
+        "note": (
+            "IDEALISED: positions and (for 'auto') the threshold-resolution "
+            "tracer are the simulator's own truth, not solved from a completed "
+            "search's max-likelihood model (the SLaM chained-fit convention). "
+            "'auto' = max(auto_factor * max_sep(truth positions, truth tracer), "
+            "auto_minimum_threshold); truth positions trace to ~zero separation "
+            "through the truth tracer by construction, so 'auto' collapses to "
+            "the auto_minimum_threshold floor for every Stage-1 dataset."
+        ),
+    }
+
+
+def positions_arm_tag() -> str | None:
+    """A short, filesystem-safe arm tag for the positions config, or ``None``.
+
+    ``None`` when positions are off, so unseeded/positions-off cells keep
+    their exact recorded output paths (mirrors ``multi_start_unique_tag``).
+    When on, e.g. ``pos_t0.3_f1e8`` (fixed threshold) or ``pos_tauto0.2_f1e5``
+    (auto threshold, factor 1e5) — always non-``None`` whenever positions are
+    on, so a positions-on run can never silently share an output directory /
+    identifier with a positions-off run of the same search + model.
+    """
+    if not positions_enabled():
+        return None
+    mode, _ = _positions_threshold_mode_value()
+    threshold_str = (
+        f"auto{_POSITIONS_AUTO_MINIMUM_THRESHOLD:g}"
+        if mode == "auto"
+        else _positions_threshold_raw()
+    )
+    return f"pos_t{threshold_str}_f{_positions_factor_raw()}"
+
+
+def _derive_truth_positions_imaging(dataset_path: Path, instrument: str) -> al.Grid2DIrregular:
+    """Solve truth multiple-image positions from ``tracer.json`` (imaging only).
+
+    Replicates ``scripts/misc/simulators/imaging.py``'s own recipe exactly
+    (grid construction incl. its radial over-sampling, then
+    ``al.PointSolver.for_grid(pixel_scale_precision=0.001,
+    magnification_threshold=0.1)`` solved at the source galaxy's ``bulge``
+    centre) so a dataset missing ``positions.json`` gets EXACTLY the positions
+    the simulator would have written, not an independently-tuned solve.
+    """
+    cfg = _IMAGING_INSTRUMENTS[instrument]
+    pixel_scale = cfg["pixel_scale"]
+    mask_radius = cfg["mask_radius"]
+    shape_pixels = int(np.ceil(2 * mask_radius / pixel_scale))
+    if shape_pixels % 2 == 0:
+        shape_pixels += 1
+
+    grid = al.Grid2D.uniform(shape_native=(shape_pixels, shape_pixels), pixel_scales=pixel_scale)
+    over_sample_size = al.util.over_sample.over_sample_size_via_radial_bins_from(
+        grid=grid,
+        sub_size_list=[32, 8, 2],
+        radial_list=[0.3, 0.6],
+        centre_list=[(0.0, 0.0)],
+    )
+    grid = grid.apply_over_sampling(over_sample_size=over_sample_size)
+
+    tracer = al.from_json(file_path=dataset_path / "tracer.json")
+    source_galaxy = max(tracer.galaxies, key=lambda galaxy: float(galaxy.redshift))
+    solver = al.PointSolver.for_grid(
+        grid=grid, pixel_scale_precision=0.001, magnification_threshold=0.1
+    )
+    return solver.solve(tracer=tracer, source_plane_coordinate=source_galaxy.bulge.centre)
+
+
+def _truth_positions_for(
+    dataset_class: str, dataset_path: Path, instrument: str
+) -> al.Grid2DIrregular:
+    """Load (or, imaging-only, derive-and-cache) the dataset's truth positions.
+
+    Every ``dataset/interferometer/<instrument>/`` cell already ships a
+    ``positions.json`` written by its simulator. ``dataset/imaging/hst/``
+    does not — deriving it here (rather than re-simulating, which would
+    perturb ``data.fits`` via a fresh noise draw) is a ONE-TIME, loud,
+    committed side effect: see ``_derive_truth_positions_imaging``.
+    """
+    positions_path = dataset_path / "positions.json"
+    if positions_path.exists():
+        positions = al.from_json(file_path=positions_path)
+    else:
+        if dataset_class != "imaging":
+            raise RuntimeError(
+                f"{_POSITIONS_ENV}=on requires {positions_path} to exist for "
+                f"dataset_class={dataset_class!r}; no truth-position derivation "
+                "recipe is registered for this dataset_class (only 'imaging' has "
+                "one — see _derive_truth_positions_imaging)."
+            )
+        print(
+            f"  !! SEARCHES_POSITIONS: no {positions_path} found — deriving truth "
+            "positions from tracer.json via the simulator's own PointSolver recipe "
+            "(pixel_scale_precision=0.001, magnification_threshold=0.1) and writing "
+            "it ONCE. This does not touch data.fits / psf.fits / noise_map.fits."
+        )
+        positions = _derive_truth_positions_imaging(dataset_path, instrument)
+        al.output_to_json(obj=positions, file_path=positions_path)
+        print(f"  !! SEARCHES_POSITIONS: wrote {positions_path} ({len(positions)} position(s)).")
+    if len(positions) < 2:
+        raise RuntimeError(
+            f"Truth positions at {positions_path} have length {len(positions)} < 2; "
+            "al.PositionsLH requires >= 2 positions."
+        )
+    return positions
+
+
+def _positions_likelihood_list_for(
+    dataset_class: str, instrument: str, dataset_path: Path
+) -> list | None:
+    """Build the cell's ``positions_likelihood_list``, or ``None`` when off.
+
+    Raises ``NotImplementedError`` — never silently returns ``None`` — when
+    positions are requested for a ``dataset_class`` this Stage-1 plumbing
+    does not support (see ``_POSITIONS_SUPPORTED_DATASET_CLASSES``); a
+    silently-ignored positions request on group/cluster/datacube/point_source
+    is exactly the failure mode this function exists to prevent.
+    """
+    if not positions_enabled():
+        return None
+    if dataset_class not in _POSITIONS_SUPPORTED_DATASET_CLASSES:
+        raise NotImplementedError(
+            f"{_POSITIONS_ENV}=on is only implemented for single-plane "
+            f"{_POSITIONS_SUPPORTED_DATASET_CLASSES} cells (Phase 4 Stage 1, issue "
+            f"#159); dataset_class={dataset_class!r} is not supported."
+        )
+
+    positions = _truth_positions_for(dataset_class, dataset_path, instrument)
+    mode, fixed_value = _positions_threshold_mode_value()
+    if mode == "fixed":
+        threshold = fixed_value
+    else:
+        tracer = al.from_json(file_path=dataset_path / "tracer.json")
+        positions_fit = al.SourceMaxSeparation(
+            data=positions, noise_map=None, tracer=tracer, plane_redshift=None
+        )
+        threshold = _POSITIONS_AUTO_FACTOR * float(
+            np.nanmax(positions_fit.max_separation_of_plane_positions)
+        )
+        threshold = max(threshold, _POSITIONS_AUTO_MINIMUM_THRESHOLD)
+    factor = _positions_factor_value()
+
+    print("  " + "!" * 66)
+    print(f"  !! SEARCHES_POSITIONS=on: PositionsLH ACTIVE [{dataset_class}/{instrument}]")
+    print(f"  !!   positions: {len(positions)} truth-derived point(s), threshold mode={mode}")
+    print(f"  !!   threshold={threshold:.6f}  factor={factor:g}")
+    print("  !!   IDEALISED: truth positions, not re-solved from a completed search.")
+    print("  " + "!" * 66)
+
+    return [
+        al.PositionsLH(
+            positions=positions,
+            threshold=threshold,
+            log_likelihood_penalty_factor=factor,
+        )
+    ]
 
 
 def _group_mge_model(*, mask_radius: float) -> af.Collection:
@@ -1351,13 +1647,17 @@ def _build_analysis(
     use_mixed_precision: bool,
     adapt_images: al.AdaptImages | None,
     model: Any | None = None,
+    positions_likelihood_list: list | None = None,
     log_det_method: str | None = None,
 ) -> Any:
     # Pixelization / Delaunay analyses normally require ``positions_likelihood_list``
     # to guard against the demagnified-source systematic. For pure profiling we
     # don't care about solution quality — we're measuring sampler + likelihood
-    # cost — so disable the check rather than wire up truth-position plumbing.
-    raise_positions_exc = model_type not in _PIX_MODEL_TYPES
+    # cost — so disable the check rather than wire up truth-position plumbing,
+    # UNLESS a real positions_likelihood_list has been supplied (Phase 4 Stage 1,
+    # SEARCHES_POSITIONS=on): in that case the guard is redundant (a real list is
+    # attached) regardless of model_type, so it is switched off symmetrically.
+    raise_positions_exc = positions_likelihood_list is None and model_type not in _PIX_MODEL_TYPES
 
     # ``log_det_method=None`` reads the packaged default ("cholesky"); passing it
     # through unconditionally therefore leaves every existing caller's target
@@ -1371,6 +1671,7 @@ def _build_analysis(
     if dataset_class in ("imaging", "group"):
         return al.AnalysisImaging(
             dataset=dataset,
+            positions_likelihood_list=positions_likelihood_list,
             adapt_images=adapt_images,
             settings=settings,
             raise_inversion_positions_likelihood_exception=raise_positions_exc,
@@ -1379,12 +1680,19 @@ def _build_analysis(
     if dataset_class in ("interferometer", "datacube"):
         return al.AnalysisInterferometer(
             dataset=dataset,
+            positions_likelihood_list=positions_likelihood_list,
             adapt_images=adapt_images,
             settings=settings,
             raise_inversion_positions_likelihood_exception=raise_positions_exc,
             use_jax=use_jax,
         )
     if dataset_class == "point_source":
+        if positions_likelihood_list is not None:
+            raise NotImplementedError(
+                f"{_POSITIONS_ENV}=on is not implemented for dataset_class="
+                "'point_source' (Phase 4 Stage 1, issue #159, supports "
+                "single-plane imaging/interferometer only)."
+            )
         solver_kwargs = getattr(dataset, "_profiling_solver_kwargs", None)
         if solver_kwargs is None:
             raise RuntimeError(
@@ -1408,6 +1716,12 @@ def _build_analysis(
             use_jax=use_jax,
         )
     if dataset_class == "cluster":
+        if positions_likelihood_list is not None:
+            raise NotImplementedError(
+                f"{_POSITIONS_ENV}=on is not implemented for dataset_class="
+                "'cluster' (Phase 4 Stage 1, issue #159, supports single-plane "
+                "imaging/interferometer only)."
+            )
         # ``dataset`` is the cluster's List[PointDataset] (see
         # _build_cluster); ``model`` is the shared cluster prior model built
         # by _cluster_point_model — required here (unlike every other

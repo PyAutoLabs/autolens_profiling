@@ -46,6 +46,9 @@ token fingerprint helps relocate the implementation.
 | `component.spherical-geometry.radial-sqrt-gradient-at-zero` | `component` | `nonfinite_gradient` | epsilon_neighbourhood, reachability | jax |
 | `likelihood.imaging-pixelization.absolute-conditioning-floors` | `likelihood` | `conditioning_floor` | error_curve, reachability | numpy |
 | `likelihood.imaging-pixelization.nnls-active-set-kinks` | `likelihood` | `active_set` | epsilon_neighbourhood, error_curve | numpy |
+| `likelihood.positions-penalty.argmax-switch` | `likelihood` | `nonsmooth_objective` | error_curve, reachability | jax |
+| `likelihood.positions-penalty.interior-plateau` | `likelihood` | `zero_gradient_region` | error_curve, reachability | jax |
+| `likelihood.positions-penalty.threshold-hinge` | `likelihood` | `nonsmooth_objective` | error_curve, reachability | jax |
 | `matrix.curvature.absolute-diagonal-floor` | `matrix` | `conditioning_floor` | error_curve, reachability | numpy, jax |
 <!-- END auto-table:hazards -->
 

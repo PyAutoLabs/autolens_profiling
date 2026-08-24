@@ -157,6 +157,9 @@ separate axis a future sweep can introduce.
 mandatory: `nautilus.Sampler` forking under multiprocessing corrupts
 JAX state. The trade-off is one batched evaluation per Nautilus step.
 
+**Positions penalty is opt-in (`SEARCHES_POSITIONS`, Phase 4 Stage 1).**
+Off by default; see the dedicated "Position likelihood" section below.
+
 **Visualization wall-time is split out.** `_metrics.attach_viz_timer`
 wraps every visualize-family hook on the analysis (`visualize`,
 `visualize_combined`, `visualize_before_fit`,
@@ -259,6 +262,78 @@ turnaround sane).
   Related but distinct: `misc/hazards/checks/nonfinite_gradient.py` *detects*
   non-finite gradients on a likelihood surface; this one measures what it costs
   to *count* them during a fit.
+
+## Position likelihood (`SEARCHES_POSITIONS`)
+
+Phase 4 Stage 1 (issue #159). Attaches a real `al.PositionsLH` penalty to a
+cell's analysis — the SLaM `result.positions_likelihood_from` idiom
+(`autolens_workspace` SLaM scripts: `factor=3.0, minimum_threshold=0.2`) —
+sourced from the simulator's own **truth** positions rather than positions
+re-solved from a completed prior search's max-likelihood model (there is no
+prior search here to chain from; this is an idealisation, not the production
+SLaM chained-fit workflow).
+
+Off by default. Three env vars, all validated (an unrecognised value raises
+rather than falling back silently):
+
+| Env var | Values | Default |
+|---------|--------|---------|
+| `SEARCHES_POSITIONS` | `off` \| `on` | `off` |
+| `SEARCHES_POSITIONS_THRESHOLD` | a float, or `auto` | `0.3` |
+| `SEARCHES_POSITIONS_FACTOR` | a float (e.g. `1e5`, `1e8`) | `1e8` |
+
+`auto` replicates SLaM's `positions_threshold_from(factor=3.0,
+minimum_threshold=0.2)`: `max(3.0 * max_sep(truth positions, truth tracer),
+0.2)`. Because truth positions trace back to ~zero separation through the
+truth tracer by construction, `auto` **collapses to the 0.2 floor** for every
+dataset this Stage-1 plumbing supports — a caveat recorded verbatim in every
+run's `positions_settings()` block, not left implicit.
+
+**Supported cells**: single-plane `imaging` / `interferometer` only. `group`,
+`cluster`, `datacube`(`_img`/`_img_hetero`) and `point_source` all raise
+`NotImplementedError` when `SEARCHES_POSITIONS=on` — a per-system or
+multi-plane structure the single `PositionsLH` list here does not model, and
+a silently-ignored positions request is exactly the failure this plumbing
+must not permit.
+
+**Truth positions**: loaded from `dataset/<class>/<instrument>/positions.json`
+when present (every shipped `interferometer` dataset already has one). For
+`dataset/imaging/hst/` — which does not — they are derived **once** from the
+committed `tracer.json` via the simulator's own `PointSolver.for_grid(
+pixel_scale_precision=0.001, magnification_threshold=0.1)` recipe
+(`scripts/misc/simulators/imaging.py`) and written to
+`dataset/imaging/hst/positions.json` (committed to the repo, loudly logged
+when it happens). This never touches `data.fits` / `psf.fits` /
+`noise_map.fits` — it does not re-simulate.
+
+**Correctness guard — output-path/identifier collisions.** PyAutoFit's
+identifier hashes only `[search, model, unique_tag]`; the `Analysis` object
+— and therefore whether a `positions_likelihood_list` is attached — is never
+part of that hash. A positions-on and positions-off run of the "same"
+search/model/config_name would otherwise resolve to the *same* output
+directory and identifier, and the `.completed` resume gate would make the
+second run's `fit()` silently return the first run's cached result.
+`_setup.positions_arm_tag()` (e.g. `pos_t0.3_f1e8`, or `pos_tauto0.2_f1e5`
+for the auto/`1e5` arm) is composed into every sampler's `unique_tag` via
+`_samplers.arm_unique_tag()`, and appended to `run_search`'s `config_name`,
+so this can never happen silently. `_samplers.assert_disjoint_output_paths`
+is the reusable guard (see `scripts/misc/test/test_searches_positions.py`).
+
+Every cell's results JSON always carries a `"positions"` block
+(`{"enabled": false}` when off) in both `sampler_config` and the top-level
+summary, so a positions-on and a positions-off artifact are never ambiguous
+after the fact.
+
+Run the Stage-1 hazard/reliability transects with:
+
+```bash
+JAX_ENABLE_X64=True python scripts/misc/searches/positions_transects.py --quick
+JAX_ENABLE_X64=True python scripts/misc/searches/positions_transects.py
+```
+
+See `results/notes/inference/phase_04_positions/transects/RESULTS.md` for the
+write-up (classification rule, arms run, and the measured C0 hinge /
+interior-plateau / argmax-switch numbers).
 
 ## What this *doesn't* profile (yet)
 

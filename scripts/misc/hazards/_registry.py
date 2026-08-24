@@ -34,6 +34,12 @@ SUBJECTS = {
             "Prior support of the MAP objective, where a bounded prior can make a "
             "finite likelihood non-finite",
         ),
+        SubjectSpec(
+            "likelihood",
+            "positions_penalty",
+            "PositionsLH threshold hinge, zero-gradient interior plateau, and "
+            "argmax-switch kinks (Phase 4 Stage 1, issue #159)",
+        ),
     )
 }
 
