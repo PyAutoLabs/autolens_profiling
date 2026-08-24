@@ -30,11 +30,11 @@ expectation · **[CONTRADICTED]** existing evidence pushed back on the brief ·
 | Phase 0(d) commit plan + ledger structure | **complete** | PR#136 + PR#137 (2026-08-18) |
 | Phase 14 default CPU mesh decision | **adjudicated + shipped 2026-08-21** — Bilinear (rank-CDF) default, RTU (kernel-CDF) advanced; both meshes explicit in the cells via `--rect-mesh` (PR #155); versioned Bilinear-vs-RTU measurement outstanding | autolens_profiling#153, PyAutoArray#461/#462 |
 | Phase 0(e) searches README dashboard loop | **complete** | PR#139 (2026-08-18): nested-layout scanner, 34 rows render, truth-bar rows verified |
-| Phase 2 NSS mainline re-tune | **entry complete (CP-2 ✅ 2026-08-23)** — wiring + laptop smoke + A100 anchor row: mainline matches the fork answer at fork knobs (max logL 31786.62, logZ bias +8.4 persists at inner=5 per H2.1) but is ~1.35× slower sampler-wall; scan + Gate A pending | `phase_02_nss_mainline/RESULTS.md` |
+| Phase 2 NSS mainline re-tune | **scan complete 2026-08-24 (CP-2 ✅, CP-5 ✅)** — H2.1 closed: logZ bias was inner-kernel under-mixing (inner=30: 5/5 seeds +1.0 ± 0.4 nats vs Nautilus); operating point n200/nd100/inner30 costs 5.0× the Nautilus sampler wall on MGE, 18.4× on Delaunay (same-night re-baselines: Nautilus mge 707 s, delaunay 1,891 s). Sample economy: Kish ESS 1,315 vs Nautilus 4,121 per run; ~940 vs ~15 evals/ESS. **GATE A CALLED 2026-08-24 — Nautilus stays baseline; af.NSS = tuned alternative** | `phase_02_nss_mainline/RESULTS.md` + DECISIONS.md 2026-08-24 |
 | Phase 3 Prodigy reliability | **wave 1 complete + adversarially reviewed (CP-3 ✅ 2026-08-23, positions-off)** — p̂_hit = 0.048 [0.037, 0.061] (lower bound; n256 tier, ~1,280 distinct draws — tiers share lane-index draws, n-dependence unmeasured); demonstrated ≥99% reliability at **n=256 only** (joint-95% worst case), 3.4–4.5× under the viz-stripped Nautilus wall; zero parameter-recovery impostors; ~half of lanes end pinned (H3.3, measured not closed); θ_E diagnostic uninformative for H3.1 (withdrawn). **Gate B pt 1 CALLED (human-ratified 2026-08-23** — DECISIONS.md): Prodigy(n=256, prior_box, autoconv, positions-off) ratified as global MAP searcher on MGE; pt 2 (PositionsLH) open. Fresh-seed tier 2026-08-24: n128 5/5, n256 15/15 cumulative (Wilson-95 lower 0.80); Nautilus re-baseline 707 s → 3.1–4.3× | `phase_03_prodigy_reliability/RESULTS.md` + `ADVERSARIAL_REVIEW.md` |
 | Phase 8A slogdet A/B (CP-4) | **complete 2026-08-24 — FAIL as pre-registered.** knn stressor never walls (VOID both tiers); on Delaunay+AdaptSplit slogdet rescues 64–73 % of NaNs, 0 regressions, but 20–32 NaN-under-both, λ-transect grads non-finite, marginal-band Δ up to 9,619 nats (A100), CPU 3.7×. Human call: adopt as this repo's GPU gradient-cell default (W8), library stays opt-in, residual NaNs → W7, 8B in parallel | `phase_08_regularization/RESULTS.md` + DECISIONS.md 2026-08-24 |
 | Phases 1, 4–7, 8B–13 | not started | — |
-| Gates A–F | **B part 1 CALLED 2026-08-23** (Prodigy n=256 global MAP, MGE, positions-off — DECISIONS.md); A, B pt 2, C–F open | DECISIONS.md |
+| Gates A–F | **A CALLED 2026-08-24** (Nautilus stays nested baseline; af.NSS tuned alternative); **B part 1 CALLED 2026-08-23** (Prodigy n=256 global MAP, MGE, positions-off; caveat (a) n=256-only stands 2026-08-24); B pt 2, C–F open — C criterion reworded 2026-08-24 (batched-pipeline value, not single-fit ESS/s vs Nautilus) | DECISIONS.md |
 
 ---
 
@@ -514,11 +514,16 @@ JSON under `results/searches/`.
   loss measurement).
 - **Cheap/expensive:** MGE on laptop GPU → A100 mesh confirmation.
 - **Hardware / cost:** **M** → **L**.
-- **Gate:** **GATE C.** Initialized gradient MCMC with excellent ESS/s and no
-  material divergences on the truth basin → default initialized posterior
-  engine (record which variant per hardware). Divergences clustering at
-  NNLS/reg sites → Phase 9 gains its inference-failure evidence (Gate E
-  input).
+- **Gate:** **GATE C** *(reworded 2026-08-24, DECISIONS.md)*. Initialized
+  gradient MCMC is judged on what Nautilus cannot do: `vmap` across
+  datasets in one GPU program and deliver a posterior without an evidence
+  run. Pass = no material divergences on the truth basin, split-R̂ < 1.01,
+  ESS per gradient eval not worse than ~1/30 on MGE, and a demonstrated
+  batched (≥16-dataset) run whose per-dataset wall beats one Nautilus fit.
+  It is NOT required to beat Nautilus's single-fit ESS/s (~15 likelihood
+  evals per ESS on MGE — Phase 2 "Sample economy"). Record which variant
+  per hardware. Divergences clustering at NNLS/reg sites → Phase 9 gains
+  its inference-failure evidence (Gate E input).
 - **Depends:** Phases 2–5 (initializers + basin knowledge).
 
 ### Phase 7 — SMC and other high-dimensional candidates
@@ -932,6 +937,28 @@ Maximum information before large A100 commitment — strictly ordered:
 
 First full A100 block only after CP-1..5: Phase 5 mesh campaign + Phase 6
 warm-start MGE confirmation, with arms already pruned by the cheap results.
+
+### 9b · Next block — queued 2026-08-24 (after Gate A + CP-4 calls)
+
+CP-1..5 complete. Ordered by dependency; the A100 partition is held 8/8 by
+another user at queue time, so GPU rows are submitted early and CPU/source
+work runs meanwhile. Issues are the queue of record (epics.md rule: slices
+ship as autolens_profiling issues/PRs, not Mind prompts).
+
+| # | Work | Issue | Hardware | Depends |
+|---|---|---|---|---|
+| W1 | Phase 4 Stage 1 — PositionsLH plumbing in `_setup.py` + hazard transects | autolens_profiling#159 | laptop / RAL CPU | — (unblocks B pt 2, Phase 5) |
+| W3 | Phase 6 pre-req — PyAutoFit warm-start abstraction, vmapped multi-chain NUTS, metric/start injection | PyAutoFit#1521 | source, CPU | — |
+| W6 | Nautilus `n_batch` scan (MGE + Delaunay) — bounds the "JAX Nautilus" ceiling | #163 | A100, ~30 min | — (submit now) |
+| W8 | slogdet default for GPU gradient-work cells in the searches framework | #165 | source | — |
+| W7 | CP-4 follow-up: NaN-under-both draws, transect gradients, marginal-band tier dependence | #164 | laptop / A100 replay | — |
+| W4 | Phase 1 targets registry, schema v2 (ESS + reject-inclusive evals), `slam_source_pix`, reference baselines | #161 | CPU + one A100 bake | rides behind W1/W6 |
+| W2 | Phase 4 Stage 2 — Nautilus / Prodigy ± positions × 5 seeds on MGE (NSS arm dropped per Gate A) | #160 | A100 ~5 GPU-h | W1 (+ W6 for n_batch) |
+| W5 | Phase 8B log-coordinate stepping (Scaler → bijector) | #162 | source + laptop | — (parallel smoothing arc) |
+| W9 | REMINDER: make slogdet standard in PyAutoArray | #166 | source | W7 |
+
+Then: Phase 5 mesh campaign (Nautilus + Prodigy only) + Phase 6 warm-start
+MGE confirmation — the first full A100 block.
 
 ## 10 · Expected final decision tree — HYPOTHETICAL
 

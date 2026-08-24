@@ -1,0 +1,78 @@
+{
+  "sampler": "nss",
+  "dataset_class": "imaging",
+  "model": "delaunay",
+  "instrument": "hst",
+  "config_name": "hpc_a100_fp64_mainline",
+  "version": "2026.8.17.1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "omp_num_threads": null,
+    "cpu_count": 124,
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 35335 MiB, 81920 MiB"
+  },
+  "use_mixed_precision": false,
+  "sampler_config": {
+    "n_live": 150,
+    "num_mcmc_steps": 5,
+    "num_delete": 50,
+    "chunk_size": null,
+    "termination": -3.0,
+    "seed": 42,
+    "jax_native": true
+  },
+  "model_summary": {
+    "free_parameters": 12,
+    "best_fit": "lens.mass.einstein_radius=1.0300  lens.mass.centre=(0.011, 0.053)  shear=(-0.1344, 0.0316)"
+  },
+  "results": {
+    "log_evidence": 30565.21991298246,
+    "max_log_likelihood": 30624.125504754473,
+    "posterior_samples": 7550,
+    "posterior_stats": {
+      "centre_0": {
+        "mean": 0.014241995954159717,
+        "std": 0.008564427891899281
+      },
+      "centre_1": {
+        "mean": 0.05319857722994032,
+        "std": 0.00460188881108427
+      },
+      "ell_comps_0": {
+        "mean": 0.010432350517286903,
+        "std": 0.023001685423253607
+      },
+      "ell_comps_1": {
+        "mean": -0.4781251467884598,
+        "std": 0.01269306278149339
+      },
+      "einstein_radius": {
+        "mean": 1.0340401135976833,
+        "std": 0.011544095408110336
+      },
+      "gamma_1": {
+        "mean": -0.132455005022391,
+        "std": 0.006618293825653518
+      },
+      "gamma_2": {
+        "mean": 0.03247477676831373,
+        "std": 0.007310082086917499
+      },
+      "coefficient": {
+        "mean": 1.414204836472231,
+        "std": 0.03687411679642975
+      }
+    }
+  },
+  "performance": {
+    "total_wall_s": 34777.23485350609,
+    "viz_wall_s": 51.3870282729622,
+    "viz_n_calls": 5,
+    "viz_disabled": false,
+    "sampler_wall_s": 34725.847825233126,
+    "likelihood_evals": 150991,
+    "time_per_eval_ms": 229.98620994120924
+  }
+}

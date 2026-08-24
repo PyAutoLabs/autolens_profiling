@@ -1,0 +1,117 @@
+#!/bin/bash -l
+#
+# Inference programme Phase 2 (issue #149) — mainline af.NSS A100 scan,
+# wave 2 arm (a1): searches/nss/imaging/mge x hst x fp64,
+# inner steps = 30, n_live = 200, num_delete = 20 (= 0.1m).
+#
+# ARM: n_live 200, num_mcmc_steps 30, num_delete 20, dlogz -3, seed 42,
+#      unchunked. Wave 2 holds inner steps at 30 (= 2d, the operating point
+#      wave 1 established: H2.1 confirmed, logZ 31691.20 vs the Nautilus
+#      reference 31690.5) and moves the WALL-TIME axes instead.
+#      Baseline for every wave-2 estimate is the wave-1 inner30 row
+#      results/searches/nss/imaging/mge/hst/hpc_hpc_a100_fp64_inner30.json
+#      (n_live 200, num_delete 50: sampler wall 4218.6 s, 1,492,747 evals,
+#      2.826 ms/eval, viz 42.1 s over 5 calls).
+#
+# QUESTION: this is the low end of the PROGRAMME §4 num_delete grid
+#      (k/m = 0.1). It buys the finest volume compression per outer
+#      iteration — the most accurate nested-sampling shrinkage — at the cost
+#      of ~2.73x more outer iterations than num_delete=50 and a 2.5x
+#      narrower inner-step vmap. Together with the nd100 arm it maps how far
+#      k/m can be pushed before either accuracy (this end) or GPU
+#      utilisation (the other end) gives way. Feeds H2.2.
+#
+# SCALING MODEL (stated so the estimate is auditable; identical in every
+#      wave-2 arm):
+#        sampler_wall ~ total_evals x ms_per_eval
+#        total_evals  = R x inner x c      (c = evals per inner slice step)
+#        R            = n_outer x num_delete          (total replacements)
+#        n_outer      = dlogX / -ln(1 - k/m)   (volume compression per outer)
+#      =>  R = dlogX x m x g(k/m),  where g(x) = x / -ln(1-x)
+#      Consequences: total replacements scale ~LINEARLY in n_live, and are
+#      only WEAKLY dependent on num_delete (g = 0.949 at k/m=0.1, 0.869 at
+#      0.25, 0.721 at 0.5). num_delete mostly trades outer-iteration COUNT
+#      against work PER outer iteration — evals per replacement is constant,
+#      replacements per outer step = num_delete.
+#      Wave-1 support for the "R is inner-invariant" leg: at fixed
+#      (m=200, k=50) evals ran 234,498 -> 1,492,747 -> 2,264,857 for inner
+#      5/30/45, i.e. 6.37x and 9.66x against the nominal 6x / 9x — linear in
+#      inner steps to within 6-7%. ms/eval was stable (2.826 / 2.800).
+#
+# WALL-TIME ESTIMATE: m*g = 200 x 0.949122 = 189.82 vs the baseline
+#      200 x 0.869015 = 173.80 -> eval-model ratio 1.0922 -> ~1.63M evals,
+#      ~4607 s at the baseline's 2.826 ms/eval.
+#      UTILISATION PENALTY, ASSUMED NOT MEASURED: the inner-step vmap is
+#      2.5x narrower (20 vs 50 particles) and there are 2.73x more outer
+#      iterations, each paying its own dispatch / host-sync / checkpoint
+#      overhead, so ms/eval should RISE here. A 1.30x penalty is assumed ->
+#      ~5990 s sampler + ~45 s viz + ~120 s compile margin = ~6155 s
+#      (~1 h 43 m). --time is ~1.7x that (~2 h 54 m), rounded to 3:00:00.
+#      This is the one wave-2 arm whose estimate rests on an unmeasured
+#      penalty factor; the 1.7x margin is doing real work here.
+#
+# VRAM: peak inner-step memory scales with num_delete, not n_live (af.NSS
+#      chunk_size docstring: "Peak GPU memory becomes chunk_size x
+#      per_particle_state instead of num_delete x per_particle_state").
+#      From the recorded 937 MiB at num_delete=50 -> ~18.7 MiB/particle ->
+#      ~375 MiB here. Trivial on an 80 GB A100; chunk_size stays unset.
+#
+# ARTIFACT ISOLATION: --config-name carries the full arm label (inner steps
+#      AND the moved axis) so the arm is readable from the filename alone.
+#      It sets both the results basename (_profile_cli.resolve_output_paths)
+#      and the af.NSS search ``name`` (searches/_samplers.build_nss) ->
+#      hpc_hpc_a100_fp64_inner30_nd20.json under its own output/ directory.
+#      num_delete is also an NSS __identifier_fields__ entry, so the autofit
+#      identifier differs from every other arm too.
+
+#SBATCH -J search_nss_imaging_mge_hst_fp64_inner30_nd20
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=3:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_profiling
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+# Phase 2 scan knobs. Every value is stated explicitly (including the ones that
+# match the builder defaults in searches/_samplers.py) so the arm is readable
+# from this file alone and cannot drift if a default changes.
+export SEARCHES_NSS_N_LIVE=200
+export SEARCHES_NSS_NUM_MCMC_STEPS=30
+export SEARCHES_NSS_NUM_DELETE=20
+export SEARCHES_NSS_TERMINATION=-3.0
+export SEARCHES_NSS_SEED=42
+# chunk_size deliberately unset: ~375 MiB projected on an 80 GB A100. (It is
+# also the one NSS knob absent from __identifier_fields__, so it must never be
+# used to distinguish arms.)
+
+nvidia-smi
+
+echo "=========================================="
+date
+echo "Cell:       searches/nss/imaging/mge"
+echo "Instrument: hst"
+echo "Precision:  fp64"
+echo "Arm:        inner30_nd20 (n_live=200, num_delete=20 = 0.1m), H2.2"
+
+cd $AP_ROOT
+python3 scripts/imaging/searches/nss/mge.py \
+    --instrument hst \
+    --config-name hpc_a100_fp64_inner30_nd20 \
+    --output-dir $AP_ROOT/results/searches/nss/imaging/mge/hst
+
+echo "Finished."
+date
