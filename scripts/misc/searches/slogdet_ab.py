@@ -199,6 +199,16 @@ TREATMENT = "slogdet"
 # produces the wall, and the transect sweeps them.
 _REG_COEFFICIENT_NAMES = ("inner_coefficient", "outer_coefficient")
 
+# Ellipticity/shear components whose sqrt-magnitude conversion
+# (autogalaxy/convert.py:86 axis_ratio_and_angle_from, :220
+# shear_magnitude_and_angle_from) has an undefined gradient at exactly (0, 0).
+# The prior-median anchor lands every one of these on exactly 0.0 (W7,
+# autolens_profiling#164 finding 2) — a driver artefact that manufactures a
+# NaN-gradient population unrelated to the regularization wall this script
+# exists to probe. See ``_jitter_anchor_off_zeros``.
+_ANCHOR_SENSITIVE_SUFFIXES = ("ell_comps_0", "ell_comps_1", "gamma_1", "gamma_2")
+_ANCHOR_JITTER_UNIT = 1e-3
+
 # batch_size=4 is MANDATORY on pixelized cells: the unbatched 16-wide jvp fusion
 # is the ~58 GB allocation that killed the #117 runs (see
 # scripts/imaging/searches/multi_start_prodigy/knn.py). The default here matches
@@ -366,16 +376,50 @@ def target_block(args, model, log_det_method: str) -> dict:
 # -----------------------------------------------------------------------------
 
 
+def _jitter_anchor_off_zeros(model, vector: np.ndarray) -> np.ndarray:
+    """Nudge ell_comps/shear components off exactly 0.0, by
+    ``_ANCHOR_JITTER_UNIT`` in UNIT-CUBE space (W7, autolens_profiling#164
+    finding 2).
+
+    Every ``lambda_transect`` draw is built from a copy of the anchor
+    (``harvest``'s "lambda_transect" loop only overwrites the regularization
+    coefficients), so an anchor sitting exactly at ``ell_comps = shear = 0``
+    puts the whole transect on the sqrt-magnitude singularity of
+    ``autogalaxy/convert.py`` — every transect gradient is then non-finite for
+    a reason that has nothing to do with the coefficient conditioning this
+    script exists to measure. ``truth_bar`` draws are unaffected in practice
+    (their unit-cube Gaussian perturbation moves them off 0.0 with
+    probability 1), but the anchor itself is jittered unconditionally so no
+    caller — including a future ``--anchor-json`` override that happens to
+    land on an axis — can silently reproduce this artefact.
+    """
+    names = list(model.model_component_and_parameter_names)
+    sensitive = [
+        i for i, name in enumerate(names) if name.split(".")[-1] in _ANCHOR_SENSITIVE_SUFFIXES
+    ]
+    if not sensitive:
+        return vector
+    unit = _unit_vector_of(model, vector)
+    for i in sensitive:
+        if vector[i] == 0.0:
+            unit[i] = float(np.clip(unit[i] + _ANCHOR_JITTER_UNIT, 0.0, 1.0))
+    jittered = np.asarray(model.vector_from_unit_vector(list(unit)), dtype=float)
+    return jittered
+
+
 def anchor_vector(args, model) -> tuple[np.ndarray, str]:
     """The centre of the truth-bar region and the base of the transect.
 
     Returns ``(vector, provenance)``. Defaults to prior medians and SAYS SO —
     the knn truth-basin vector is not recorded in this repo, and a run centred
-    on prior medians must not be readable as one centred on truth.
+    on prior medians must not be readable as one centred on truth. The
+    returned vector is also jittered off any exact-zero ell_comps/shear
+    component — see ``_jitter_anchor_off_zeros``.
     """
     names = list(model.model_component_and_parameter_names)
     vector = np.asarray(model.vector_from_unit_vector([0.5] * model.prior_count), dtype=float)
     if args.anchor_json is None:
+        vector = _jitter_anchor_off_zeros(model, vector)
         return vector, "prior_medians (no truth-basin vector is recorded in-repo)"
 
     overrides = json.loads(_Path(args.anchor_json).read_text())
@@ -387,6 +431,7 @@ def anchor_vector(args, model) -> tuple[np.ndarray, str]:
         )
     for name, value in overrides.items():
         vector[names.index(name)] = float(value)
+    vector = _jitter_anchor_off_zeros(model, vector)
     return vector, f"{args.anchor_json} ({len(overrides)} overrides on prior medians)"
 
 
@@ -531,11 +576,46 @@ def harvest_descent(args, model, analysis, record: dict) -> dict:
     # Duplicate lane states across adjacent checkpoints carry no extra
     # information and would inflate every count in the verdict.
     stacked = np.unique(stacked, axis=0)
+    n_before_filter = len(stacked)
+
+    # A dead lane (checkpointed at a step where every parameter is NaN) or a
+    # regularization coefficient below its own prior's lower limit is not a
+    # draw of the target this script measures — it is a harvest artefact (W7,
+    # autolens_profiling#164 finding 1: A100 descent indices 406-415 were
+    # entirely-NaN checkpoints, and 384/391/393/394/397/405 carried a
+    # NEGATIVE physical `inner_coefficient`/`outer_coefficient`, which
+    # `RESULTS.md`'s prior "Ops notes" misread as a log axis). Dropping them
+    # here rather than filtering downstream keeps every consumer of the
+    # draws npz (this script's own replay stage, slogdet_nan_attribution.py)
+    # from having to re-derive the same guard.
+    finite_mask = np.isfinite(stacked).all(axis=1)
+    coefficient_indices = np.asarray(record["coefficient_indices"], dtype=int)
+    priors = list(model.priors_ordered_by_id)
+    coefficient_lowers = np.asarray([float(priors[i].lower_limit) for i in coefficient_indices])
+    # `finite_mask &` gates the comparison itself: a NaN row must never reach
+    # `>=` (which would emit a RuntimeWarning and silently compare False),
+    # so the coefficient check only ever runs on already-finite rows.
+    valid_coefficient_mask = finite_mask & np.all(
+        np.where(finite_mask[:, None], stacked[:, coefficient_indices], 0.0)
+        >= coefficient_lowers[None, :],
+        axis=1,
+    )
+    keep = finite_mask & valid_coefficient_mask
+    n_dropped = int(n_before_filter - int(keep.sum()))
+    if n_dropped:
+        print(
+            f"  descent harvest: dropped {n_dropped}/{n_before_filter} checkpointed "
+            f"lane(s) ({int((~finite_mask).sum())} dead-lane, "
+            f"{int((finite_mask & ~valid_coefficient_mask).sum())} invalid-coefficient)",
+            flush=True,
+        )
+    stacked = stacked[keep]
 
     record["vectors"] = np.concatenate([record["vectors"], stacked], axis=0)
     record["sources"] = np.concatenate([record["sources"], np.array(["descent"] * len(stacked))])
     record["descent_steps"] = args.descent_steps
     record["descent_starts"] = args.descent_starts
+    record["descent_dropped_dead_lane_or_invalid_coefficient"] = n_dropped
     return record
 
 

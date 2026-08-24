@@ -393,3 +393,78 @@ not run.
 **Records:** `scripts/misc/searches/_targets.py`,
 `results/baselines/InferenceRefs_v1/`, PROGRAMME.md Phase 1 section + W4
 table row (this commit).
+
+---
+
+---
+
+## 2026-08-24 — W7 (CP-4 follow-up, #164): per-draw attribution + CP-4 re-scored on the clean subset — verdict unchanged
+
+**Record:** `scripts/misc/searches/slogdet_nan_attribution.py` replayed
+individual stored `delaunay_adapt_split` draws (both tiers) non-jitted,
+drilling into `inversion.*` matrices and small `jax.grad` closures to
+assign each sampled draw one mechanism label (170 draws classified across
+both tiers: 8 full-gradient, 87 A100 + 83 RAL CPU matrix-only). Two driver
+artefacts identified and fixed at harvest (`slogdet_ab.py`): (1) six
+`descent`-source draws carried a NEGATIVE physical regularization
+coefficient and ten more were dead (entirely-NaN) checkpointed lanes — the
+prior "Ops notes" misread this as a log axis; both are now dropped at
+harvest. (2) all 128 `lambda_transect` draws sat at the anchor where
+`ell_comps`/shear are exactly (0, 0), an undefined-gradient point in
+`autogalaxy/convert.py`'s sqrt-magnitude conversion unrelated to the
+regularization wall; the anchor is now jittered 1e-3 in unit-cube space off
+any exact zero. A tier-attack on draw 96 (coefficients [3.5e5, 536]: finite
+under both arms on A100 with a 9,619-nat slogdet/cholesky delta, NaN under
+both arms on RAL CPU for the IDENTICAL input vector) traced the
+tier-dependence to `cond(curvature_reg_matrix_reduced) = 4.5e18` — far past
+float64's ~1e16 precision floor — where the log-det terms remain
+individually computable (and agree with the original A100 value to 5
+significant figures) while the reconstruction linear solve on the SAME
+matrix is itself NaN; different BLAS/LAPACK backends (cuSOLVER vs OpenBLAS)
+diverge on whether that solve returns a number. Cross-tier value agreement
+on mutually-finite shared draws: slogdet max|Δ| 6.72 nats, cholesky 1.30
+nats — both far above the ~1e-4 clean-PD floor, confirming disagreement
+concentrates in the marginal band.
+
+**CP-4 re-scored on the clean subset (excluding dead-lane,
+invalid-coefficient and anchor-singularity draws):** A100 n=416 → 272 clean
+(144 excluded: 10 dead-lane, 6 invalid-coefficient, 128
+anchor-singularity); RAL CPU n=384 → 256 clean (128 excluded, all
+anchor-singularity — this tier's harvest never ran the descent arm, so it
+has no dead-lane/invalid-coefficient rows). On the clean subset, all three
+per-draw criteria STILL fail on both tiers — criterion 1 (zero slogdet
+NaNs): 22/272 A100, 20/256 CPU still NaN; criterion 2 (value equality):
+48/218 A100 and 40/207 CPU mutually-finite comparisons exceed tolerance,
+max|Δ| unchanged (9,619 nats A100, 1.62 nats CPU); criterion 3 (finite
+gradients): 22/272 A100, 23/256 CPU still non-finite. Criterion 4 (runtime)
+is population-level and unchanged (1.03× A100, 3.74× CPU). **Verdict: FAIL
+on both tiers, unchanged from the original Phase 8A run.** Matrix-only
+population sampling (170 draws) confirms the residual failures are not
+driver artefacts: once the two fixed bugs are excluded, the sampled
+`nan_both` draws are 53% (A100) / 80% (RAL CPU) `genuinely_singular`
+(cond ≥ 1e16 or LAPACK-Cholesky failure) — the genuinely-singular λ⁴
+population (`prior`-source draws, regularization coefficient ~4e5-9e5)
+that CP-4 was measuring in the first place. A `marginal_tier_flippable`
+band (`cond` in `[1e12, 1e16)`) is also a real, sizeable population
+(18/87 A100, 18/83 RAL CPU sampled draws, every class except `truth_bar`)
+— the conditioning range where a hardware/BLAS change can flip a draw's
+NaN verdict even though the matrix is nominally still invertible.
+
+**Human call (2026-08-24), confirming the W8 adoption stands unchanged:**
+the re-score does not overturn anything — slogdet remains the GPU
+gradient-work default in this repo (W8, already shipped), the library
+default stays cholesky (opt-in), and the reminder to revisit the
+PyAutoArray default is still owed once W9 lands. W9 (#166) is unblocked
+with three concrete inputs from this investigation: (i) quantify whether
+slogdet ever returns a wrong-but-finite number where cholesky legitimately
+NaNs, using the `cond >= 1e16` threshold and the max|Δ| vs an
+eigvalsh-reference logdet (established here: up to 9,619 nats,
+tier-dependent, concentrated in the `[1e12, 1e16)` marginal band); (ii) the
+library-default recommendation is slogdet on GPU / cholesky on CPU, with
+the 3.7× CPU cost restated as the reason CPU keeps the historical default;
+(iii) two guards independent of log-det method, both now shipped in
+`slogdet_ab.py`: reject non-finite or out-of-prior-bound lane vectors at
+descent-harvest time, and never anchor a transect/probe at an exact-zero
+ell_comps/shear component. Record: `phase_08_regularization/RESULTS.md`
+"W7 addendum" + "CP-4 re-scored" sections; attribution artifacts under
+`slogdet_ab/attribution/`.

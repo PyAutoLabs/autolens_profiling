@@ -1,0 +1,4822 @@
+{
+  "schema_version": 1,
+  "experiment": "w7_slogdet_nan_attribution",
+  "issue": "autolens_profiling#164",
+  "cell": "imaging_delaunay_adapt_split_hst",
+  "tier_file": "ral_cpu",
+  "other_tier_available": true,
+  "matrix_only": true,
+  "classes_requested": [
+    "nan_both",
+    "rescued",
+    "marginal_band",
+    "transect",
+    "tier_flip",
+    "truth_bar"
+  ],
+  "max_per_class": 15,
+  "n_draws_analyzed": 83,
+  "classification_totals": {
+    "marginal_tier_flippable": 18,
+    "genuinely_singular": 30,
+    "clean": 35
+  },
+  "summary_by_class": {
+    "marginal_band": {
+      "marginal_tier_flippable": 4,
+      "genuinely_singular": 4,
+      "clean": 7
+    },
+    "tier_flip": {
+      "genuinely_singular": 6,
+      "marginal_tier_flippable": 4,
+      "clean": 5
+    },
+    "nan_both": {
+      "marginal_tier_flippable": 3,
+      "genuinely_singular": 12
+    },
+    "rescued": {
+      "genuinely_singular": 8,
+      "marginal_tier_flippable": 3,
+      "clean": 4
+    },
+    "truth_bar": {
+      "clean": 15
+    },
+    "transect": {
+      "marginal_tier_flippable": 6,
+      "clean": 7,
+      "genuinely_singular": 2
+    }
+  },
+  "anchor_sensitive_parameter_indices": [
+    2,
+    3,
+    6,
+    7,
+    9,
+    10
+  ],
+  "anchor_sensitive_parameter_names": [
+    "galaxies.lens.bulge.profile_list.19.ell_comps_0",
+    "galaxies.lens.bulge.profile_list.19.ell_comps_1",
+    "galaxies.lens.mass.ell_comps_0",
+    "galaxies.lens.mass.ell_comps_1",
+    "galaxies.lens.shear.gamma_1",
+    "galaxies.lens.shear.gamma_2"
+  ],
+  "coefficient_indices": [
+    11,
+    12
+  ],
+  "coefficient_parameter_names": [
+    "galaxies.source.pixelization.regularization.inner_coefficient",
+    "galaxies.source.pixelization.regularization.outer_coefficient"
+  ],
+  "thresholds": {
+    "cond_singular": 1e+16,
+    "cond_marginal_low": 1000000000000.0,
+    "regularization_floor_value": 2e-08
+  },
+  "draws": [
+    {
+      "draw_index": 0,
+      "source": "prior",
+      "classes": [
+        "marginal_band"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        1.0786039391690982e-06,
+        19446.942005426103
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        -0.520510090037149,
+        -0.6364311643633345,
+        0.08109702135301734,
+        0.18320884762261203,
+        0.26104345427266,
+        0.18951213247292
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 1342731.9521656656,
+        "regularization_term": 6.60707151874983e-07,
+        "log_det_curvature_reg_matrix_term": 61351.456590951246,
+        "log_det_regularization_matrix_term": 61341.69157087729,
+        "figure_of_merit": -631553.2249744877
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -4.930248857836536e+17,
+        "max": 1.8692132215461996e+18,
+        "eig_min": 15502.83427810669,
+        "eig_max": 2.2510376814771154e+18,
+        "cond": 145201686420402.56,
+        "eigvalsh_logdet": 61351.46214007765,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 61351.456590951246,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 61351.457053708524
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 61351.457053708466,
+      "classification": "marginal_tier_flippable"
+    },
+    {
+      "draw_index": 2,
+      "source": "prior",
+      "classes": [
+        "tier_flip"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        47190.438424227024,
+        161630.0813346852
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.1448413877994793,
+        0.11586359810065718,
+        -0.33035334634434016,
+        0.17601078635436945,
+        -0.11385487466463,
+        -0.00849878470093
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 632282.5279319906,
+        "regularization_term": 1.5835087107130831e-10,
+        "log_det_curvature_reg_matrix_term": 74174.79250974458,
+        "log_det_regularization_matrix_term": null,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -2.0731854776280193e+21,
+        "max": 9.834466019322733e+21,
+        "eig_min": -7685974.640625,
+        "eig_max": 1.1854183741284053e+22,
+        "cond": Infinity,
+        "eigvalsh_logdet": null,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 74174.79250974458,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 74179.65232214896
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 74179.65232214893,
+      "classification": "genuinely_singular"
+    },
+    {
+      "draw_index": 5,
+      "source": "prior",
+      "classes": [
+        "nan_both"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        27.705208584423147,
+        873289.1468503538
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.47084861832375274,
+        -0.10335736364078986,
+        0.4356837539555178,
+        -0.0449650093611232,
+        -6.251178741e-05,
+        -0.04486282509055
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": false,
+        "chi_squared": null,
+        "regularization_term": null,
+        "log_det_curvature_reg_matrix_term": null,
+        "log_det_regularization_matrix_term": null,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -2.004728066248989e+24,
+        "max": 1.0161007126211121e+25,
+        "eig_min": 3130717696.0,
+        "eig_max": 1.169234658920218e+25,
+        "cond": 3734717634918361.0,
+        "eigvalsh_logdet": 84154.8235620367,
+        "lapack_cholesky_ok": false,
+        "lapack_cholesky_error": "Matrix is not positive definite",
+        "lapack_cholesky_logdet": null,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 84148.37717043434
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 84148.37717043443,
+      "classification": "marginal_tier_flippable"
+    },
+    {
+      "draw_index": 6,
+      "source": "prior",
+      "classes": [
+        "nan_both"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        559.9914612260677,
+        134613.0435180752
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.20949238223605293,
+        -0.0019364536293997325,
+        -0.06461896104167417,
+        0.18774495968918792,
+        0.25923581196803,
+        -0.23104042003146
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 1089666.7432145406,
+        "regularization_term": 573108.791079297,
+        "log_det_curvature_reg_matrix_term": 73001.78962558045,
+        "log_det_regularization_matrix_term": 73001.31869559635,
+        "figure_of_merit": -791570.3689931984
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -1.0949261693520684e+21,
+        "max": 5.198043601120891e+21,
+        "eig_min": -12888208.130859375,
+        "eig_max": 6.025038216854794e+21,
+        "cond": Infinity,
+        "eigvalsh_logdet": null,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 73001.78962558045,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 73001.78032318776
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 73001.78032318779,
+      "classification": "genuinely_singular"
+    },
+    {
+      "draw_index": 7,
+      "source": "prior",
+      "classes": [
+        "rescued"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        4193.406312510753,
+        120882.07809773606
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.32861830133767017,
+        0.6210531179278774,
+        0.5743565374486194,
+        0.3673225916210062,
+        -0.0120072457153,
+        -0.16057624821642
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 1276507.798860948,
+        "regularization_term": 1.3635985195326084e-09,
+        "log_det_curvature_reg_matrix_term": 71783.41188360668,
+        "log_det_regularization_matrix_term": 71782.66052864704,
+        "figure_of_merit": -598436.6414892421
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -7.358628007297871e+20,
+        "max": 3.6427014266946275e+21,
+        "eig_min": 48132.125,
+        "eig_max": 3.91088800954937e+21,
+        "cond": 8.125317570228554e+16,
+        "eigvalsh_logdet": 71784.22051938422,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 71783.41188360666,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 71783.40267166843
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 71783.40267166845,
+      "classification": "genuinely_singular"
+    },
+    {
+      "draw_index": 10,
+      "source": "prior",
+      "classes": [
+        "tier_flip"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        13.3995563482629,
+        15118.005510335555
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.2627558815088512,
+        0.045613331131931514,
+        0.2721583053383878,
+        0.09669841283711385,
+        -0.07835735334499,
+        0.03156690631277
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 514994.54774733237,
+        "regularization_term": -0.6617312077304973,
+        "log_det_curvature_reg_matrix_term": 59672.503660854534,
+        "log_det_regularization_matrix_term": 59660.58401124473,
+        "figure_of_merit": -217685.2692141548
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -1.3850406839236614e+17,
+        "max": 6.486814888223628e+17,
+        "eig_min": 16098.729452989995,
+        "eig_max": 7.658269204269491e+17,
+        "cond": 47570643550675.555,
+        "eigvalsh_logdet": 59672.546774662536,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 59672.503660854534,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 59672.50381519361
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 59672.50381519362,
+      "classification": "marginal_tier_flippable"
+    },
+    {
+      "draw_index": 12,
+      "source": "prior",
+      "classes": [
+        "marginal_band"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        22774.16434244052,
+        37643.15993049002
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.33018091551064277,
+        -0.4668299318564854,
+        -0.008378906226801021,
+        0.5934947701332323,
+        -0.11468558236844,
+        -0.13809792869952
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 1087041.6028066059,
+        "regularization_term": 1.1446800858491607e-07,
+        "log_det_curvature_reg_matrix_term": 65355.06580364069,
+        "log_det_regularization_matrix_term": 65350.14066618202,
+        "figure_of_merit": -503705.6303533772
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -6.313131589702055e+18,
+        "max": 2.907964715042886e+19,
+        "eig_min": 76643.63671875,
+        "eig_max": 3.2839038609321275e+19,
+        "cond": 428463992775118.06,
+        "eigvalsh_logdet": 65356.67405385891,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 65355.0658036407,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 65355.06596487583
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 65355.06596487586,
+      "classification": "marginal_tier_flippable"
+    },
+    {
+      "draw_index": 15,
+      "source": "prior",
+      "classes": [
+        "nan_both"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        354060.2058269977,
+        7.365176967533069e-06
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.22404733770300395,
+        0.6034024674997376,
+        -0.26583662535716746,
+        0.13394720976779362,
+        0.04661273551072,
+        0.06134350582778
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": false,
+        "chi_squared": null,
+        "regularization_term": null,
+        "log_det_curvature_reg_matrix_term": 64392.77350109686,
+        "log_det_regularization_matrix_term": null,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -1.836386657161218e+22,
+        "max": 3.910031166835806e+22,
+        "eig_min": -20587.53619727163,
+        "eig_max": 5.211143575494574e+22,
+        "cond": Infinity,
+        "eigvalsh_logdet": null,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 64392.77350109686,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 64392.376786637324
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 64392.37678663744,
+      "classification": "genuinely_singular"
+    },
+    {
+      "draw_index": 16,
+      "source": "prior",
+      "classes": [
+        "nan_both"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        1552.4063583871105,
+        96357.94322454087
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        -0.27747604881755766,
+        -0.08523320186518882,
+        -0.40572387156548795,
+        -0.07975159920942584,
+        -0.01661979794999,
+        0.24757316018453
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": false,
+        "chi_squared": null,
+        "regularization_term": null,
+        "log_det_curvature_reg_matrix_term": 70932.98110759113,
+        "log_det_regularization_matrix_term": null,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -3.3369198995402673e+20,
+        "max": 1.1263981699612524e+21,
+        "eig_min": 75791.5,
+        "eig_max": 1.4451335691440095e+21,
+        "cond": 1.9067224809431264e+16,
+        "eigvalsh_logdet": 70935.48719397665,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 70932.98110759113,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 70932.95945737606
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 70932.959457376,
+      "classification": "genuinely_singular"
+    },
+    {
+      "draw_index": 20,
+      "source": "prior",
+      "classes": [
+        "rescued"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        16692.09880724997,
+        4.64708000504253e-05
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.24863302914221821,
+        -0.22606060034672673,
+        0.03116909456102681,
+        -0.3633025245750758,
+        -0.29981958593585,
+        0.14662843580844
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 685581.0287406673,
+        "regularization_term": 24.64824086612174,
+        "log_det_curvature_reg_matrix_term": 41146.04285390416,
+        "log_det_regularization_matrix_term": 40651.79776423203,
+        "figure_of_merit": -303232.32741689036
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -1.5305935460180013e+17,
+        "max": 3.1057141683148166e+17,
+        "eig_min": -2.702751684530392,
+        "eig_max": 4.257814133321171e+17,
+        "cond": Infinity,
+        "eigvalsh_logdet": null,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 41146.04285390417,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 41146.042856415
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 41146.04285641498,
+      "classification": "genuinely_singular"
+    },
+    {
+      "draw_index": 22,
+      "source": "prior",
+      "classes": [
+        "nan_both"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        160408.3307565501,
+        161.66104317136325
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.05338901197606313,
+        -0.39460940697926034,
+        -0.01791743614608718,
+        -0.0539811641526487,
+        0.05178021215447,
+        -0.22638560389436
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": false,
+        "chi_squared": null,
+        "regularization_term": null,
+        "log_det_curvature_reg_matrix_term": 56080.38005085068,
+        "log_det_regularization_matrix_term": 56077.10394683895,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -9.166564724731727e+20,
+        "max": 2.6483029802379934e+21,
+        "eig_min": 16021.724206946177,
+        "eig_max": 3.2909313296866413e+21,
+        "cond": 2.0540431773628125e+17,
+        "eigvalsh_logdet": 56080.38669585002,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 56080.38005085068,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 56080.34650703187
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 56080.34650703186,
+      "classification": "genuinely_singular"
+    },
+    {
+      "draw_index": 25,
+      "source": "prior",
+      "classes": [
+        "tier_flip"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        2957.8120849080733,
+        4.8086800367144615
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.13583586204115133,
+        -0.10518364810586574,
+        -0.25296206041251745,
+        0.009148012368614785,
+        -0.20197914531783,
+        0.23005124018014
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 513383.8088699541,
+        "regularization_term": 265.94597797034083,
+        "log_det_curvature_reg_matrix_term": 37309.6355491127,
+        "log_det_regularization_matrix_term": null,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -36921761398897.81,
+        "max": 113869538835749.7,
+        "eig_min": 10596.84706264292,
+        "eig_max": 138927448765419.19,
+        "cond": 13110262698.343576,
+        "eigvalsh_logdet": 37309.63554911639,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 37309.6355491127,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 37309.63554911328
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 37309.63554911328,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 28,
+      "source": "prior",
+      "classes": [
+        "marginal_band"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        511.790500581499,
+        9.85605028923341e-06
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.06049249306999435,
+        -0.26185178949416554,
+        -0.036084584338266994,
+        -0.08008783468346432,
+        0.14925343500236,
+        0.08622285724819
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 632515.3484103541,
+        "regularization_term": 3202.0491522458415,
+        "log_det_curvature_reg_matrix_term": 25854.622678274136,
+        "log_det_regularization_matrix_term": 25648.243059203385,
+        "figure_of_merit": -278144.25497212296
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -39212476324.2034,
+        "max": 98818228205.27039,
+        "eig_min": -3.4516030661651706e-08,
+        "eig_max": 125462083183.73895,
+        "cond": Infinity,
+        "eigvalsh_logdet": null,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 25854.622678274136,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 25854.62267827412
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 25854.62267827412,
+      "classification": "genuinely_singular"
+    },
+    {
+      "draw_index": 32,
+      "source": "prior",
+      "classes": [
+        "rescued"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        1336.100676789709,
+        2.0793836879900203e-05
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.10065211134787419,
+        -0.11035881330521337,
+        0.2289378858033717,
+        -0.28582116713124156,
+        0.02153935774747,
+        0.10314168208661
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 540002.046989511,
+        "regularization_term": 784.2406505073561,
+        "log_det_curvature_reg_matrix_term": 26197.676538374304,
+        "log_det_regularization_matrix_term": null,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -3186814143340.081,
+        "max": 9561028240418.574,
+        "eig_min": -1.6812864755158745e-06,
+        "eig_max": 12342424231571.725,
+        "cond": Infinity,
+        "eigvalsh_logdet": null,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 26197.676538374304,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 26197.676538374115
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 26197.676538374122,
+      "classification": "genuinely_singular"
+    },
+    {
+      "draw_index": 37,
+      "source": "prior",
+      "classes": [
+        "marginal_band"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        3.5398637659561456,
+        22.289527794973825
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        -0.11117551530355174,
+        0.1053777646915908,
+        -0.08583715732389158,
+        0.09464010782592495,
+        -0.0958056855716,
+        -0.11807939240145
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 476512.64544604707,
+        "regularization_term": 1254.5855980006377,
+        "log_det_curvature_reg_matrix_term": 20771.343694252377,
+        "log_det_regularization_matrix_term": 20690.608669575697,
+        "figure_of_merit": -199106.34941564978
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -805354.4620875824,
+        "max": 3414317.5010237354,
+        "eig_min": 604.5600952169043,
+        "eig_max": 4004935.9767307625,
+        "cond": 6624.545695980596,
+        "eigvalsh_logdet": 20771.34369425238,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 20771.343694252373,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 20771.343694252373
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 20771.343694252377,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 47,
+      "source": "prior",
+      "classes": [
+        "marginal_band"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        4.377311143816515e-05,
+        92.08838825490939
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        -0.05518963222214272,
+        0.09441465188858099,
+        -0.22051650261553893,
+        -0.3185827256939074,
+        0.10123687785723,
+        -0.04237758402314
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 532817.5955209258,
+        "regularization_term": 791.8771202604386,
+        "log_det_curvature_reg_matrix_term": 29201.237594510792,
+        "log_det_regularization_matrix_term": 29172.998159290004,
+        "figure_of_merit": -227001.22241949104
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -228560280.78053814,
+        "max": 812244759.7137173,
+        "eig_min": 15269.443607900257,
+        "eig_max": 1078644186.9409099,
+        "cond": 70640.70012235614,
+        "eigvalsh_logdet": 29201.23759451083,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 29201.237594510796,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 29201.237594510796
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 29201.237594510792,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 48,
+      "source": "prior",
+      "classes": [
+        "tier_flip"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        609.482163400991,
+        2.060707567824933
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.14802363884611686,
+        -0.11094385729454526,
+        -0.1802951868266021,
+        0.4606034833815436,
+        -0.18910559131296,
+        -0.15485821731172
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 521334.72348209505,
+        "regularization_term": 9625.984774708679,
+        "log_det_curvature_reg_matrix_term": 27974.5268454346,
+        "log_det_regularization_matrix_term": null,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -117877728813.78299,
+        "max": 251154822629.2137,
+        "eig_min": 3260.912731981797,
+        "eig_max": 347381557483.9948,
+        "cond": 106528934.08554238,
+        "eigvalsh_logdet": 27974.526845434622,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 27974.5268454346,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 27974.5268454346
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 27974.52684543462,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 52,
+      "source": "prior",
+      "classes": [
+        "nan_both"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        21132.360878397296,
+        48344.262502256344
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.05777289553497686,
+        0.24728707968381436,
+        0.17952152207246128,
+        -0.018120040250805658,
+        -0.24753292951819,
+        0.14230050068365
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": false,
+        "chi_squared": null,
+        "regularization_term": null,
+        "log_det_curvature_reg_matrix_term": 65202.61769370035,
+        "log_det_regularization_matrix_term": 65194.509929016465,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -1.5739758955279553e+19,
+        "max": 3.5360385791461093e+19,
+        "eig_min": 11518.940068989992,
+        "eig_max": 4.612240613273813e+19,
+        "cond": 4004049492097258.0,
+        "eigvalsh_logdet": 65202.333883015206,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 65202.61769370035,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 65202.61718042776
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 65202.61718042777,
+      "classification": "marginal_tier_flippable"
+    },
+    {
+      "draw_index": 54,
+      "source": "prior",
+      "classes": [
+        "nan_both"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        1.935346675213963,
+        299237.4278787035
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        -0.000744350454525404,
+        -0.2534690254626542,
+        0.046457771312716445,
+        0.07387999619223024,
+        -0.02000007618863,
+        0.19793476869657
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": false,
+        "chi_squared": null,
+        "regularization_term": null,
+        "log_det_curvature_reg_matrix_term": null,
+        "log_det_regularization_matrix_term": null,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -2.5038038450681225e+22,
+        "max": 1.2103155877384376e+23,
+        "eig_min": 169326162.20134148,
+        "eig_max": 1.4231525623046542e+23,
+        "cond": 840480020218269.2,
+        "eigvalsh_logdet": 77824.98696395413,
+        "lapack_cholesky_ok": false,
+        "lapack_cholesky_error": "Matrix is not positive definite",
+        "lapack_cholesky_logdet": null,
+        "np_slogdet_sign": -1.0,
+        "np_slogdet_logabsdet": 77817.88265463602
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 77817.88265463615,
+      "classification": "genuinely_singular"
+    },
+    {
+      "draw_index": 55,
+      "source": "prior",
+      "classes": [
+        "tier_flip"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        17946.197534867886,
+        3.9233361938690365e-05
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.4714867401542974,
+        0.2546217674269232,
+        0.08860913429068223,
+        -0.1825725676020312,
+        -0.19570309402582,
+        0.15730299783623
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 966797.0883124253,
+        "regularization_term": 1.1338345668117011,
+        "log_det_curvature_reg_matrix_term": 42419.47508937883,
+        "log_det_regularization_matrix_term": null,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -1.0377219734055574e+17,
+        "max": 4.149815798704312e+17,
+        "eig_min": -0.03404055568627456,
+        "eig_max": 5.045881774588681e+17,
+        "cond": Infinity,
+        "eigvalsh_logdet": null,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 42419.47508937883,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 42419.475101552525
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 42419.475101552496,
+      "classification": "genuinely_singular"
+    },
+    {
+      "draw_index": 56,
+      "source": "prior",
+      "classes": [
+        "rescued"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        2426.4577028443887,
+        0.0018223342105907442
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.24168334197706567,
+        -0.026336586284748654,
+        0.6033025436481171,
+        -0.060796736847128,
+        -0.05073685002412,
+        -0.19039880916551
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 485379.1238265637,
+        "regularization_term": 1031.6411851573553,
+        "log_det_curvature_reg_matrix_term": 30489.208419209874,
+        "log_det_regularization_matrix_term": 29706.05000120221,
+        "figure_of_merit": -203779.32809615193
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -54980924854517.97,
+        "max": 138668526837445.47,
+        "eig_min": -0.00011354877555351973,
+        "eig_max": 184587696016107.75,
+        "cond": Infinity,
+        "eigvalsh_logdet": null,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 30489.20841920987,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 30489.208419166644
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 30489.20841916665,
+      "classification": "genuinely_singular"
+    },
+    {
+      "draw_index": 63,
+      "source": "prior",
+      "classes": [
+        "nan_both"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        6977.398577008371,
+        55506.66227288647
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        -0.0569787012467325,
+        -0.19997830314202972,
+        -0.23936095089767168,
+        -0.3373677570431278,
+        0.24544317770958,
+        -0.05796507744237
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": false,
+        "chi_squared": null,
+        "regularization_term": null,
+        "log_det_curvature_reg_matrix_term": 66043.1445762509,
+        "log_det_regularization_matrix_term": 66037.9402345891,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -2.559870990452378e+19,
+        "max": 5.925577016222125e+19,
+        "eig_min": 13750.178583025932,
+        "eig_max": 7.393737774527085e+19,
+        "cond": 5377193997796051.0,
+        "eigvalsh_logdet": 66043.0386059061,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 66043.1445762509,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 66043.14803110172
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 66043.14803110172,
+      "classification": "marginal_tier_flippable"
+    },
+    {
+      "draw_index": 66,
+      "source": "prior",
+      "classes": [
+        "tier_flip"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        4143.051887715125,
+        10145.535045335993
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        -0.2418962776307098,
+        0.09642456702063655,
+        0.3614148369850251,
+        0.3556020762229518,
+        0.12365761652224,
+        -0.02916795896788
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 670194.9357086123,
+        "regularization_term": 0.30266598618982243,
+        "log_det_curvature_reg_matrix_term": 57561.05108189327,
+        "log_det_regularization_matrix_term": null,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -3.941889716697104e+16,
+        "max": 1.611477665317238e+17,
+        "eig_min": 15496.698486328125,
+        "eig_max": 1.906534708537845e+17,
+        "cond": 12302844442768.727,
+        "eigvalsh_logdet": 57561.055780001654,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 57561.051081893274,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 57561.051056996876
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 57561.0510569968,
+      "classification": "marginal_tier_flippable"
+    },
+    {
+      "draw_index": 68,
+      "source": "prior",
+      "classes": [
+        "rescued"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        17366.7384634736,
+        0.00014238568425378644
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.012707610068419957,
+        0.3658090408140885,
+        0.0036738322335551615,
+        -0.41032575050631237,
+        -0.12528216141248,
+        0.0167310267983
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 702131.6695405899,
+        "regularization_term": 51.577548905908316,
+        "log_det_curvature_reg_matrix_term": null,
+        "log_det_regularization_matrix_term": null,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -1.254662077054296e+17,
+        "max": 3.638590631209357e+17,
+        "eig_min": -0.4084647359431932,
+        "eig_max": 4.520262357887488e+17,
+        "cond": Infinity,
+        "eigvalsh_logdet": null,
+        "lapack_cholesky_ok": false,
+        "lapack_cholesky_error": "Matrix is not positive definite",
+        "lapack_cholesky_logdet": null,
+        "np_slogdet_sign": -1.0,
+        "np_slogdet_logabsdet": 39696.24051003434
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 39696.24051003432,
+      "classification": "genuinely_singular"
+    },
+    {
+      "draw_index": 71,
+      "source": "prior",
+      "classes": [
+        "marginal_band"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        75.38888394660785,
+        1.4477319173785587e-06
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        -0.20966188551420775,
+        0.2565070808632284,
+        0.26776857418691674,
+        -0.1772361713112787,
+        0.02727397419427,
+        -0.0359405526584
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 672220.7789603979,
+        "regularization_term": 10452.662219244974,
+        "log_det_curvature_reg_matrix_term": 11777.719195545866,
+        "log_det_regularization_matrix_term": 8182.085025569084,
+        "figure_of_merit": -303316.90405609744
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -58781853.02410881,
+        "max": 124437519.54028335,
+        "eig_min": 9.816053992386496e-09,
+        "eig_max": 172208500.05242318,
+        "cond": 1.7543556727172764e+16,
+        "eigvalsh_logdet": 11777.687936445755,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 11777.719195545866,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 11777.719195552549
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 11777.719195552534,
+      "classification": "genuinely_singular"
+    },
+    {
+      "draw_index": 79,
+      "source": "prior",
+      "classes": [
+        "tier_flip"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        3503.2255045864686,
+        0.1965406369509926
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.05190787226659843,
+        0.014044383487781092,
+        0.0031593399919815873,
+        -0.09223425346738862,
+        -0.11589201452705,
+        0.03648423201542
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 481801.0881543336,
+        "regularization_term": 42.853723564421415,
+        "log_det_curvature_reg_matrix_term": 34044.63647348181,
+        "log_det_regularization_matrix_term": null,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -176219320594994.44,
+        "max": 323370091757204.6,
+        "eig_min": 9982.165709903724,
+        "eig_max": 449142304664475.75,
+        "cond": 44994474918.28982,
+        "eigvalsh_logdet": 34044.636473461826,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 34044.63647348181,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 34044.636473477694
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 34044.636473477694,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 81,
+      "source": "prior",
+      "classes": [
+        "nan_both"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        154793.9265064155,
+        142234.19117941384
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.30476771534358776,
+        -0.18776670829341496,
+        0.22061946822139275,
+        -0.6124644182829846,
+        0.22233198258612,
+        -0.08993700011323
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": false,
+        "chi_squared": null,
+        "regularization_term": null,
+        "log_det_curvature_reg_matrix_term": 72170.37777933084,
+        "log_det_regularization_matrix_term": 72169.52854073685,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -1.4971632251926395e+21,
+        "max": 4.2969876154517616e+21,
+        "eig_min": 415549.41578370123,
+        "eig_max": 5.282371687057526e+21,
+        "cond": 1.271177743589241e+16,
+        "eigvalsh_logdet": 72173.21229950014,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 72170.37777933085,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 72170.05225367262
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 72170.05225367262,
+      "classification": "genuinely_singular"
+    },
+    {
+      "draw_index": 86,
+      "source": "prior",
+      "classes": [
+        "marginal_band",
+        "tier_flip"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        6534.334004134979,
+        0.01400457154979521
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        -0.023133588899106144,
+        0.04126557359936311,
+        0.14771656855148327,
+        0.14503588389655153,
+        -0.06083632276974,
+        -0.22854849525614
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 493633.50726623775,
+        "regularization_term": 1.2026951294189403,
+        "log_det_curvature_reg_matrix_term": 38351.82188325998,
+        "log_det_regularization_matrix_term": null,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -2449041479379889.0,
+        "max": 7292365980048560.0,
+        "eig_min": -0.002263413460105668,
+        "eig_max": 9335110671161742.0,
+        "cond": Infinity,
+        "eigvalsh_logdet": null,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 38351.82188325998,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 38351.821883139426
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 38351.8218831394,
+      "classification": "genuinely_singular"
+    },
+    {
+      "draw_index": 89,
+      "source": "prior",
+      "classes": [
+        "rescued"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        0.0127321142645436,
+        7770.14798119926
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        -0.41639182814709536,
+        0.1045445692909542,
+        0.016034366069695903,
+        0.3945459343346718,
+        -0.17596660322492,
+        0.2798956049991
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 869044.67554755,
+        "regularization_term": -0.1118912150137703,
+        "log_det_curvature_reg_matrix_term": 55760.30363578561,
+        "log_det_regularization_matrix_term": null,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -1.1754805204492248e+16,
+        "max": 4.136774813159387e+16,
+        "eig_min": 15425.914081573486,
+        "eig_max": 4.9306459931509224e+16,
+        "cond": 3196339592634.3594,
+        "eigvalsh_logdet": 55760.303792719096,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 55760.3036357856,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 55760.30364629986
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 55760.30364629981,
+      "classification": "marginal_tier_flippable"
+    },
+    {
+      "draw_index": 94,
+      "source": "prior",
+      "classes": [
+        "nan_both"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        5.723512423104415,
+        516047.0941032701
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.16221124507153936,
+        0.15295734119779797,
+        -0.1370171682537133,
+        0.0940804014221178,
+        -0.25698352639728,
+        -0.09166453855705
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": false,
+        "chi_squared": null,
+        "regularization_term": null,
+        "log_det_curvature_reg_matrix_term": 80388.5973239649,
+        "log_det_regularization_matrix_term": 80388.5973239649,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -1.8487305037487787e+23,
+        "max": 8.762621795894982e+23,
+        "eig_min": -2099665493.5,
+        "eig_max": 9.966717278870123e+23,
+        "cond": Infinity,
+        "eigvalsh_logdet": null,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 80388.59732396489,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 80388.87869148442
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 80388.87869148441,
+      "classification": "genuinely_singular"
+    },
+    {
+      "draw_index": 96,
+      "source": "prior",
+      "classes": [
+        "nan_both"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        349315.6925229668,
+        536.3203176241303
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        -0.2361960614231025,
+        -0.3288561424957106,
+        -0.12366737576233418,
+        -0.6620223595505783,
+        -0.1073757632613,
+        0.20572704762237
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": false,
+        "chi_squared": null,
+        "regularization_term": null,
+        "log_det_curvature_reg_matrix_term": 59813.94846754112,
+        "log_det_regularization_matrix_term": 59812.693958461015,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -2.380872470397707e+22,
+        "max": 5.955694621097712e+22,
+        "eig_min": 16822.61625277996,
+        "eig_max": 7.575047078043963e+22,
+        "cond": 4.502894772263604e+18,
+        "eigvalsh_logdet": 59813.87939250468,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 59813.94846754112,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 59814.14800223919
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 59814.14800223922,
+      "classification": "genuinely_singular"
+    },
+    {
+      "draw_index": 99,
+      "source": "prior",
+      "classes": [
+        "rescued",
+        "tier_flip"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        17158.444859943535,
+        21614.21136478969
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        -0.028756077977175935,
+        0.04990787258215709,
+        0.5843458421062466,
+        -0.41873266920657887,
+        0.04384635670063,
+        0.16438327520467
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 550344.2578313404,
+        "regularization_term": 1.491013610821002e-07,
+        "log_det_curvature_reg_matrix_term": 60535.64679988712,
+        "log_det_regularization_matrix_term": null,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -5.452009773426544e+17,
+        "max": 1.1804472605774728e+18,
+        "eig_min": 15478.805225659275,
+        "eig_max": 1.5911789717379415e+18,
+        "cond": 102797273338657.83,
+        "eigvalsh_logdet": 60535.65129714546,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 60535.646799887116,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 60535.647119295776
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 60535.64711929584,
+      "classification": "marginal_tier_flippable"
+    },
+    {
+      "draw_index": 104,
+      "source": "prior",
+      "classes": [
+        "nan_both"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        4.815548271308146e-05,
+        424704.3098775733
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.017901829047729703,
+        -0.34418841255300453,
+        0.16218216187813506,
+        -0.10019824252008863,
+        0.17940167555426,
+        -0.14209436245413
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": false,
+        "chi_squared": null,
+        "regularization_term": null,
+        "log_det_curvature_reg_matrix_term": 79879.09347989244,
+        "log_det_regularization_matrix_term": null,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -9.500436429966052e+22,
+        "max": 5.415899108385101e+23,
+        "eig_min": 31259008.0,
+        "eig_max": 6.076955633742922e+23,
+        "cond": 1.9440654142776772e+16,
+        "eigvalsh_logdet": 79904.18473912665,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 79879.09347989246,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 79882.82488902767
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 79882.82488902773,
+      "classification": "genuinely_singular"
+    },
+    {
+      "draw_index": 105,
+      "source": "prior",
+      "classes": [
+        "tier_flip"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        64080.1548679867,
+        0.0010457244351139007
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        -0.017160819981624838,
+        -0.5406835025033603,
+        0.5425345998374549,
+        -0.5390580318903176,
+        -0.09792112697649,
+        0.09995382825697
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 1044984.3227229706,
+        "regularization_term": 72.51816941505689,
+        "log_det_curvature_reg_matrix_term": 49580.63872864064,
+        "log_det_regularization_matrix_term": null,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -1.7913328028504576e+19,
+        "max": 6.753078567890226e+19,
+        "eig_min": -37.01821875627702,
+        "eig_max": 8.052404945513597e+19,
+        "cond": Infinity,
+        "eigvalsh_logdet": null,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 49580.63872864065,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 49580.639872038024
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 49580.63987203796,
+      "classification": "genuinely_singular"
+    },
+    {
+      "draw_index": 106,
+      "source": "prior",
+      "classes": [
+        "nan_both"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        201.08872669110318,
+        68324.09094462161
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        -0.36003625235913467,
+        -0.014523318428442952,
+        0.30706167682344865,
+        0.5647219782806607,
+        -0.05621076479259,
+        0.05367005537667
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": false,
+        "chi_squared": null,
+        "regularization_term": null,
+        "log_det_curvature_reg_matrix_term": 68004.229712551,
+        "log_det_regularization_matrix_term": 68000.82600935095,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -6.433324140608053e+19,
+        "max": 2.1692555506529396e+20,
+        "eig_min": 4336.625,
+        "eig_max": 2.5502906834932616e+20,
+        "cond": 5.8808190320658616e+16,
+        "eigvalsh_logdet": 68002.9705685724,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 68004.22971255101,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 68004.2021645966
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 68004.20216459659,
+      "classification": "genuinely_singular"
+    },
+    {
+      "draw_index": 112,
+      "source": "prior",
+      "classes": [
+        "tier_flip"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        236372.9277267686,
+        0.023798237071367235
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        -0.3207132325969966,
+        -0.2591960755354526,
+        0.6899305333452795,
+        -0.39865016065467357,
+        0.18101809552861,
+        0.08183337794253
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": false,
+        "chi_squared": null,
+        "regularization_term": null,
+        "log_det_curvature_reg_matrix_term": 62447.68481101889,
+        "log_det_regularization_matrix_term": null,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -3.0556026159342415e+21,
+        "max": 5.66138211954324e+21,
+        "eig_min": 17221.64520870466,
+        "eig_max": 7.796040300692748e+21,
+        "cond": 4.526884746616571e+17,
+        "eigvalsh_logdet": 62447.82138895105,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 62447.68481101889,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 62447.73108215188
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 62447.73108215195,
+      "classification": "genuinely_singular"
+    },
+    {
+      "draw_index": 115,
+      "source": "prior",
+      "classes": [
+        "rescued",
+        "tier_flip"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        2813.909576633537,
+        6.966661510926584e-06
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.4274836574774426,
+        0.21654794505736782,
+        0.12063722895992195,
+        -0.6742485336238775,
+        -0.28610325613611,
+        0.04387828954021
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 824509.9072040559,
+        "regularization_term": 2380.9725937915136,
+        "log_det_curvature_reg_matrix_term": 36815.18001439972,
+        "log_det_regularization_matrix_term": null,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -34920709121744.96,
+        "max": 85362772154931.25,
+        "eig_min": 11064.032173220925,
+        "eig_max": 112718560005662.69,
+        "cond": 10187837330.99435,
+        "eigvalsh_logdet": 36815.18001439408,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 36815.180014399724,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 36815.180014398546
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 36815.18001439859,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 119,
+      "source": "prior",
+      "classes": [
+        "marginal_band"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        0.0005920549302790533,
+        601.9699644046786
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        -0.09400360990364352,
+        0.006146390465756912,
+        -0.20332758868873482,
+        0.3976011921449781,
+        0.28873390113417,
+        -0.21041761651001
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 625352.0120750994,
+        "regularization_term": 0.5808433616842497,
+        "log_det_curvature_reg_matrix_term": 38429.08414546403,
+        "log_det_regularization_matrix_term": 38405.38981224784,
+        "figure_of_merit": -272870.5100071262
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -269483630949.5474,
+        "max": 761788202902.7665,
+        "eig_min": 15423.165943566597,
+        "eig_max": 1018786235411.7393,
+        "cond": 66055584.121929355,
+        "eigvalsh_logdet": 38429.08414546112,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 38429.084145464025,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 38429.08414546407
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 38429.08414546405,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 121,
+      "source": "prior",
+      "classes": [
+        "tier_flip"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        12125.335814476453,
+        0.6991529942735649
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        -0.1368478401010716,
+        -0.1756611942809565,
+        -0.19067765149475055,
+        -0.4337930405330276,
+        0.04363887369691,
+        -0.09841978994162
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 558894.2596669276,
+        "regularization_term": 293.3462546774555,
+        "log_det_curvature_reg_matrix_term": 40942.38561718541,
+        "log_det_regularization_matrix_term": 40803.94086308271,
+        "figure_of_merit": -239845.3917191415
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -2.1615988537411656e+16,
+        "max": 5.961451687349734e+16,
+        "eig_min": 0.509191345374698,
+        "eig_max": 7.660084298762966e+16,
+        "cond": 1.504362626809014e+17,
+        "eigvalsh_logdet": 40942.3761285535,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 40942.38561718541,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 40942.385624274444
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 40942.38562427435,
+      "classification": "genuinely_singular"
+    },
+    {
+      "draw_index": 126,
+      "source": "prior",
+      "classes": [
+        "nan_both"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        431090.4745978045,
+        0.00837797138853772
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.09760239256981164,
+        -0.35289268026325366,
+        -0.35547363667330645,
+        -0.2286188119072425,
+        0.16863801596709,
+        -0.03103885736639
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": false,
+        "chi_squared": null,
+        "regularization_term": null,
+        "log_det_curvature_reg_matrix_term": 62837.58731528044,
+        "log_det_regularization_matrix_term": null,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -5.570438136517232e+22,
+        "max": 1.3814453165346472e+23,
+        "eig_min": -250691.1347596661,
+        "eig_max": 1.8014556956291577e+23,
+        "cond": Infinity,
+        "eigvalsh_logdet": null,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 62837.58731528044,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 62838.22277736421
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 62838.222777364295,
+      "classification": "genuinely_singular"
+    },
+    {
+      "draw_index": 127,
+      "source": "prior",
+      "classes": [
+        "nan_both"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        4.182910906615489e-06,
+        79390.8242025803
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        -0.030686453400960524,
+        -0.20659461527188674,
+        0.3611448130580351,
+        0.3787224431999799,
+        0.23155888673487,
+        -0.11856976300672
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": false,
+        "chi_squared": null,
+        "regularization_term": null,
+        "log_det_curvature_reg_matrix_term": 69733.9309532388,
+        "log_det_regularization_matrix_term": null,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -1.4766263247850268e+20,
+        "max": 6.017406704431884e+20,
+        "eig_min": -894528.6126098633,
+        "eig_max": 7.096207392449966e+20,
+        "cond": Infinity,
+        "eigvalsh_logdet": null,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 69733.9309532388,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 69733.97667548808
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 69733.97667548813,
+      "classification": "genuinely_singular"
+    },
+    {
+      "draw_index": 128,
+      "source": "truth_bar",
+      "classes": [
+        "truth_bar"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        2.751052614797396,
+        0.5948748843550089
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.006808117138191708,
+        -0.028135231440439522,
+        0.06995457015937148,
+        -0.019914945474465533,
+        0.0176239115098,
+        -0.02709788478611
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 363195.2909793113,
+        "regularization_term": 3666.087041745588,
+        "log_det_curvature_reg_matrix_term": 8931.880781475797,
+        "log_det_regularization_matrix_term": 779.6347639922774,
+        "figure_of_merit": -147689.17840055778
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -46.438234461128616,
+        "max": 80355.05957325446,
+        "eig_min": 0.4584151059202495,
+        "eig_max": 105697.22143918567,
+        "cond": 230570.98266210675,
+        "eigvalsh_logdet": 8931.880781475787,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 8931.880781475797,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 8931.8807814758
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 8931.880781475797,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 137,
+      "source": "truth_bar",
+      "classes": [
+        "marginal_band",
+        "truth_bar"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        0.19640323920816674,
+        41.27190258950899
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        -1.4055824433775363e-05,
+        -0.08109288384595456,
+        0.0009560232004644707,
+        0.017241818604120968,
+        0.01536819460346,
+        0.04680261441363
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 419298.8726756463,
+        "regularization_term": 935.4624107521674,
+        "log_det_curvature_reg_matrix_term": 24252.697026435562,
+        "log_det_regularization_matrix_term": 24211.00546114578,
+        "figure_of_merit": -170320.3797071317
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -11208729.341070581,
+        "max": 42568993.92713982,
+        "eig_min": 1469.148879116623,
+        "eig_max": 52505444.27505104,
+        "cond": 35738.681777861595,
+        "eigvalsh_logdet": 24252.697026435573,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 24252.697026435555,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 24252.69702643554
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 24252.697026435555,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 146,
+      "source": "truth_bar",
+      "classes": [
+        "truth_bar"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        0.34322569575255885,
+        0.2090062587219041
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.001640358501060052,
+        -0.023473881112037676,
+        0.062009921800819996,
+        -0.07690725559507403,
+        -0.03248916613593,
+        0.02460549716324
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 370401.0874203337,
+        "regularization_term": 88.11929345301657,
+        "log_det_curvature_reg_matrix_term": 9132.616692191854,
+        "log_det_regularization_matrix_term": -6806.120322834247,
+        "figure_of_merit": -153396.338245694
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -0.018403226634946944,
+        "max": 13547.175910197684,
+        "eig_min": 0.007291011585802608,
+        "eig_max": 37351.42321994317,
+        "cond": 5122941.142032414,
+        "eigvalsh_logdet": 9132.616692191725,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 9132.616692191852,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 9132.616692191834
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 9132.616692191852,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 155,
+      "source": "truth_bar",
+      "classes": [
+        "truth_bar"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        0.06147705137430108,
+        0.28467115474731175
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.07042028415847498,
+        -0.030887027926374638,
+        0.0658787699078829,
+        0.002450754241346487,
+        0.02251901912142,
+        -0.01667447191106
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 369868.12124702416,
+        "regularization_term": 3.9541296486987383,
+        "log_det_curvature_reg_matrix_term": 9152.272014740305,
+        "log_det_regularization_matrix_term": -5428.152972203119,
+        "figure_of_merit": -152408.6165630957
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -0.01619367581156743,
+        "max": 17857.85951914441,
+        "eig_min": 0.020947374795573223,
+        "eig_max": 42144.389887749385,
+        "cond": 2011917.4979699936,
+        "eigvalsh_logdet": 9152.272014740325,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 9152.272014740305,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 9152.272014740303
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 9152.272014740305,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 164,
+      "source": "truth_bar",
+      "classes": [
+        "truth_bar"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        0.14506672349046282,
+        1.5650351205359456
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.0608695350790755,
+        -0.01778291128221244,
+        -0.055889652847519636,
+        -0.02003526725580897,
+        0.01212156560054,
+        -0.01530903971006
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 367899.311296882,
+        "regularization_term": 5419.4887970920345,
+        "log_det_curvature_reg_matrix_term": 9607.936970061724,
+        "log_det_regularization_matrix_term": 4849.779936352559,
+        "figure_of_merit": -149220.84494512918
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -14.573281336950245,
+        "max": 37191.09148833031,
+        "eig_min": 11.488470146460694,
+        "eig_max": 40020.837732279615,
+        "cond": 3483.5654549364885,
+        "eigvalsh_logdet": 9607.936970061724,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 9607.936970061724,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 9607.936970061739
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 9607.936970061724,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 173,
+      "source": "truth_bar",
+      "classes": [
+        "truth_bar"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        1.2869983207811106,
+        1.085758459766802
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.023208079978903114,
+        -0.00575707947905003,
+        -0.07349679924844675,
+        -0.009888660555939859,
+        -0.01673897399433,
+        -0.00253064632078
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 365265.45692858193,
+        "regularization_term": 7081.128540765987,
+        "log_det_curvature_reg_matrix_term": 9409.190893099982,
+        "log_det_regularization_matrix_term": 2982.6413181131365,
+        "figure_of_merit": -149568.93390345498
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -4.652409345952216,
+        "max": 29524.223679438725,
+        "eig_min": 5.0658422679725446,
+        "eig_max": 59177.806166876,
+        "cond": 11681.73090208752,
+        "eigvalsh_logdet": 9409.190893099978,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 9409.190893099982,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 9409.190893099978
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 9409.190893099982,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 182,
+      "source": "truth_bar",
+      "classes": [
+        "truth_bar"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        0.6115940875986168,
+        1.0728914006205241
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.07024790904618301,
+        -0.06491984079125133,
+        -0.07451094239901317,
+        0.05506877109879018,
+        -0.01509744666985,
+        0.02601830971701
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 357597.4053457664,
+        "regularization_term": 5236.8243828138875,
+        "log_det_curvature_reg_matrix_term": 9326.459870740302,
+        "log_det_regularization_matrix_term": 2756.094493902704,
+        "figure_of_merit": -144884.66393399652
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -3.227330507553029,
+        "max": 16734.89474459835,
+        "eig_min": 3.941089722118317,
+        "eig_max": 36126.288140076445,
+        "cond": 9166.573381297885,
+        "eigvalsh_logdet": 9326.459870740304,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 9326.459870740304,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 9326.459870740306
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 9326.459870740306,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 192,
+      "source": "truth_bar",
+      "classes": [
+        "truth_bar"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        2.5497446872368643,
+        0.4214027081960175
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.012866204192671926,
+        -0.014677387523357724,
+        -0.07054654499651859,
+        0.03541288788511364,
+        -0.02872071066356,
+        0.04424924860907
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 362662.88593925466,
+        "regularization_term": 4239.205899510835,
+        "log_det_curvature_reg_matrix_term": 9214.97334600275,
+        "log_det_regularization_matrix_term": -1460.734062419987,
+        "figure_of_merit": -148971.2660048817
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -77.85769840085999,
+        "max": 19706.65875904234,
+        "eig_min": 0.09460106036948429,
+        "eig_max": 43309.34370809918,
+        "cond": 457810.34101462975,
+        "eigvalsh_logdet": 9214.973346002713,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 9214.97334600275,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 9214.97334600275
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 9214.97334600275,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 201,
+      "source": "truth_bar",
+      "classes": [
+        "truth_bar"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        1.5684689966909233,
+        5.12533783976307
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        -0.0510609492455817,
+        -0.006519305023503809,
+        -0.024114863989880095,
+        -0.009042359800906395,
+        -0.01677524912711,
+        0.01929712849975
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 411870.233461539,
+        "regularization_term": 3988.4936321514933,
+        "log_det_curvature_reg_matrix_term": 12768.420020528014,
+        "log_det_regularization_matrix_term": 12021.538672651364,
+        "figure_of_merit": -168485.17060207122
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -1978.250081834839,
+        "max": 20355.670900692283,
+        "eig_min": 206.27347983128834,
+        "eig_max": 37054.69455624868,
+        "cond": 179.63867476592637,
+        "eigvalsh_logdet": 12768.420020528014,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 12768.420020528014,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 12768.420020528007
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 12768.420020528014,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 210,
+      "source": "truth_bar",
+      "classes": [
+        "truth_bar"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        0.2071433405780021,
+        0.5655905878028294
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.023805882465112987,
+        -0.025090821242445122,
+        -0.025856623626260518,
+        -0.04226533139900482,
+        -0.05453986090654,
+        -0.02347263554844
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 358834.03299643396,
+        "regularization_term": 253.74221621800922,
+        "log_det_curvature_reg_matrix_term": 9283.402259650418,
+        "log_det_regularization_matrix_term": -1334.6778330308443,
+        "figure_of_merit": -145035.2940339542
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -0.2655069453925943,
+        "max": 14303.853166204879,
+        "eig_min": 0.20463567678987035,
+        "eig_max": 36547.97542094012,
+        "cond": 178600.21279900926,
+        "eigvalsh_logdet": 9283.402259650433,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 9283.402259650418,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 9283.402259650424
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 9283.402259650422,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 219,
+      "source": "truth_bar",
+      "classes": [
+        "truth_bar"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        6.392069325191831,
+        0.783479192272496
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        -0.058947473239730236,
+        0.03547558372705472,
+        -0.04013244069883423,
+        0.057230250189440744,
+        -0.02665958240805,
+        0.01044195466965
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 405257.7602090376,
+        "regularization_term": 2592.4376834470363,
+        "log_det_curvature_reg_matrix_term": 9508.456427744954,
+        "log_det_regularization_matrix_term": 3055.389054644443,
+        "figure_of_merit": -167333.99901408015
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -2870.764303253672,
+        "max": 14372.190609131618,
+        "eig_min": 1.1981769076344773,
+        "eig_max": 34556.6032885661,
+        "cond": 28840.985891465814,
+        "eigvalsh_logdet": 9508.45642774495,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 9508.456427744954,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 9508.456427744934
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 9508.456427744954,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 228,
+      "source": "truth_bar",
+      "classes": [
+        "truth_bar"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        1.0858984660799884,
+        1.4392488892995559
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.0024168398899542276,
+        -0.008577133107841497,
+        -0.036943951215045734,
+        -0.009402463712805443,
+        -0.02620706101772,
+        -0.03579026126812
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 369924.3877963615,
+        "regularization_term": 4237.555198463852,
+        "log_det_curvature_reg_matrix_term": 9572.139139894229,
+        "log_det_regularization_matrix_term": 4457.744187313476,
+        "figure_of_merit": -149820.53535499063
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -11.469839300676725,
+        "max": 17266.985343122204,
+        "eig_min": 14.11857977767692,
+        "eig_max": 36487.190068876334,
+        "cond": 2584.338555537061,
+        "eigvalsh_logdet": 9572.139139894229,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 9572.139139894229,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 9572.139139894229
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 9572.139139894229,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 237,
+      "source": "truth_bar",
+      "classes": [
+        "truth_bar"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        0.10427433478207904,
+        1.9700889873827532
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.017207319678095825,
+        0.062032211140745794,
+        0.005303507064570044,
+        -0.04348614033069601,
+        0.0055899520142,
+        0.0040408188204
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 366509.91688466,
+        "regularization_term": 6770.445640427211,
+        "log_det_curvature_reg_matrix_term": 9802.132846914068,
+        "log_det_regularization_matrix_term": 5939.152250282894,
+        "figure_of_merit": -148754.03794214682
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -39.152351395372264,
+        "max": 20013.388372172187,
+        "eig_min": 3.7245540802459547,
+        "eig_max": 42156.73273816556,
+        "cond": 11318.59863755333,
+        "eigvalsh_logdet": 9802.13284691407,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 9802.132846914068,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 9802.132846914088
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 9802.132846914066,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 246,
+      "source": "truth_bar",
+      "classes": [
+        "truth_bar"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        0.31482270699307013,
+        1.1281721123954607
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        -0.04473604651313399,
+        0.0036080787465615095,
+        0.019262621745820028,
+        0.0016375329243078572,
+        0.03832413277685,
+        0.0116626932436
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 360846.5823286135,
+        "regularization_term": 5317.271377053266,
+        "log_det_curvature_reg_matrix_term": 9368.765900879791,
+        "log_det_regularization_matrix_term": 2621.2339168239932,
+        "figure_of_merit": -146638.05922614888
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -4.606112243819467,
+        "max": 18890.637473960716,
+        "eig_min": 1.6239802115822983,
+        "eig_max": 36937.81120571445,
+        "cond": 22745.234789360336,
+        "eigvalsh_logdet": 9368.765900879793,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 9368.76590087979,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 9368.765900879782
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 9368.76590087979,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 255,
+      "source": "truth_bar",
+      "classes": [
+        "truth_bar"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        0.6905694103876798,
+        2.0772262243452415
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        -0.023606871570515404,
+        -0.021552451650889464,
+        -0.014077728832611637,
+        0.00701256025468863,
+        -0.04972252893772,
+        -0.03316511091357
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 378790.06113295944,
+        "regularization_term": 4056.029829956088,
+        "log_det_curvature_reg_matrix_term": 9935.838018647904,
+        "log_det_regularization_matrix_term": 6454.876187256239,
+        "figure_of_merit": -153345.8927784412
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -51.2672977699102,
+        "max": 16843.173918156954,
+        "eig_min": 11.754183770517766,
+        "eig_max": 37678.09644409178,
+        "cond": 3205.505135847649,
+        "eigvalsh_logdet": 9935.838018647903,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 9935.838018647904,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 9935.838018647897
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 9935.838018647904,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 256,
+      "source": "lambda_transect",
+      "classes": [
+        "transect"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        1e-06,
+        1e-06
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "has_exact_zero_anchor_component": true,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 386348.4957576272,
+        "regularization_term": 3.4612482918632123e-07,
+        "log_det_curvature_reg_matrix_term": 7475.864163760538,
+        "log_det_regularization_matrix_term": -27631.02111592854,
+        "figure_of_merit": -170910.05690011877
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -3.3566339794077885e-13,
+        "max": 20482.30142151306,
+        "eig_min": 9.994670275708933e-09,
+        "eig_max": 39981.53310756512,
+        "cond": 4000285352557.9844,
+        "eigvalsh_logdet": 7475.864067112032,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 7475.864163760538,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 7475.86416376054
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 7475.864163760538,
+      "classification": "marginal_tier_flippable"
+    },
+    {
+      "draw_index": 265,
+      "source": "lambda_transect",
+      "classes": [
+        "transect"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        7.085878491488879e-06,
+        7.085878491488879e-06
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "has_exact_zero_anchor_component": true,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 386348.4957576271,
+        "regularization_term": 3.4612482918675957e-07,
+        "log_det_curvature_reg_matrix_term": 7475.864163760635,
+        "log_det_regularization_matrix_term": -27631.02111592608,
+        "figure_of_merit": -170910.05690011755
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -3.3566339794077885e-13,
+        "max": 20482.30142151306,
+        "eig_min": 9.994966395992138e-09,
+        "eig_max": 39981.53310756512,
+        "cond": 4000166836338.463,
+        "eigvalsh_logdet": 7475.863969652988,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 7475.864163760635,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 7475.864163760631
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 7475.864163760634,
+      "classification": "marginal_tier_flippable"
+    },
+    {
+      "draw_index": 274,
+      "source": "lambda_transect",
+      "classes": [
+        "transect"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        5.020967399614471e-05,
+        5.020967399614471e-05
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "has_exact_zero_anchor_component": true,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 386348.4957576272,
+        "regularization_term": 3.4612483027812245e-07,
+        "log_det_curvature_reg_matrix_term": 7475.8641640057995,
+        "log_det_regularization_matrix_term": -27631.02110970328,
+        "figure_of_merit": -170910.05689712876
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -3.3566339794077885e-13,
+        "max": 20482.30142151306,
+        "eig_min": 9.99473172917085e-09,
+        "eig_max": 39981.53310756512,
+        "cond": 4000260756461.738,
+        "eigvalsh_logdet": 7475.864036916783,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 7475.864164005801,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 7475.864164005796
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 7475.864164005801,
+      "classification": "marginal_tier_flippable"
+    },
+    {
+      "draw_index": 283,
+      "source": "lambda_transect",
+      "classes": [
+        "transect"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        0.0003557796490339495,
+        0.0003557796490339495
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "has_exact_zero_anchor_component": true,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 386348.4957576272,
+        "regularization_term": 3.4612758165931827e-07,
+        "log_det_curvature_reg_matrix_term": 7475.864782069956,
+        "log_det_regularization_matrix_term": -27631.00542205992,
+        "figure_of_merit": -170910.0493623392
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -3.3566339794077885e-13,
+        "max": 20482.30142151306,
+        "eig_min": 9.997717223811948e-09,
+        "eig_max": 39981.53310756512,
+        "cond": 3999066208067.934,
+        "eigvalsh_logdet": 7475.8651395492925,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 7475.864782069955,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 7475.864782069952
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 7475.864782069954,
+      "classification": "marginal_tier_flippable"
+    },
+    {
+      "draw_index": 292,
+      "source": "lambda_transect",
+      "classes": [
+        "transect"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        0.002521011362799125,
+        0.002521011362799125
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "has_exact_zero_anchor_component": true,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 386348.4957576271,
+        "regularization_term": 3.530632748621321e-07,
+        "log_det_curvature_reg_matrix_term": 7477.40707024115,
+        "log_det_regularization_matrix_term": -27592.11642238607,
+        "figure_of_merit": -170891.3760065913
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -1.3365628060500358e-10,
+        "max": 20482.30142151337,
+        "eig_min": 1.0067484308076863e-08,
+        "eig_max": 39981.53310756533,
+        "cond": 3971352910427.6084,
+        "eigvalsh_logdet": 7477.407157350755,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 7477.40707024115,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 7477.407070241143
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 7477.40707024115,
+      "classification": "marginal_tier_flippable"
+    },
+    {
+      "draw_index": 301,
+      "source": "lambda_transect",
+      "classes": [
+        "transect"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        0.01786358019245735,
+        0.01786358019245735
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "has_exact_zero_anchor_component": true,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 386348.49575763167,
+        "regularization_term": 1.774857982421082e-05,
+        "log_det_curvature_reg_matrix_term": 7798.707106505524,
+        "log_det_regularization_matrix_term": -21662.914908561746,
+        "figure_of_merit": -168087.42527651135
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -3.3694900211468026e-07,
+        "max": 20482.301422294448,
+        "eig_min": 1.8025908209885285e-07,
+        "eig_max": 39981.53310817262,
+        "cond": 221800381110.60068,
+        "eigvalsh_logdet": 7798.70710236822,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 7798.707106505524,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 7798.707106505523
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 7798.707106505524,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 310,
+      "source": "lambda_transect",
+      "classes": [
+        "transect"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        0.1265791586667203,
+        0.1265791586667203
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "has_exact_zero_anchor_component": true,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 386348.49576805125,
+        "regularization_term": 0.04383200242367802,
+        "log_det_curvature_reg_matrix_term": 8462.43362735358,
+        "log_det_regularization_matrix_term": -10005.838920847393,
+        "figure_of_merit": -162590.77245541493
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -0.0008494522630149367,
+        "max": 20482.303391403155,
+        "eig_min": 0.000429235271411299,
+        "eig_max": 39981.534639087484,
+        "cond": 93145967.49617215,
+        "eigvalsh_logdet": 8462.433627356766,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 8462.433627353581,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 8462.433627353576
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 8462.433627353581,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 320,
+      "source": "lambda_transect",
+      "classes": [
+        "transect"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        1.1149209970080916,
+        1.1149209970080916
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "has_exact_zero_anchor_component": true,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 386364.408089802,
+        "regularization_term": 213.56077568162118,
+        "log_det_curvature_reg_matrix_term": 9265.289961542847,
+        "log_det_regularization_matrix_term": 3039.3517129952725,
+        "figure_of_merit": -156584.3199383032
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -5.11289102931114,
+        "max": 20494.158277794486,
+        "eig_min": 2.5785524804476685,
+        "eig_max": 39990.753940908886,
+        "cond": 15508.993609455641,
+        "eigvalsh_logdet": 9265.289961542849,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 9265.289961542847,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 9265.289961542841
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 9265.289961542847,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 329,
+      "source": "lambda_transect",
+      "classes": [
+        "transect"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        7.900194712408972,
+        7.900194712408972
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "has_exact_zero_anchor_component": true,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 397015.7900480253,
+        "regularization_term": 820.9838329683769,
+        "log_det_curvature_reg_matrix_term": 15125.811447735037,
+        "log_det_regularization_matrix_term": 14780.142397973525,
+        "figure_of_merit": -159273.58784666524
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -12889.65638164712,
+        "max": 81182.16339527181,
+        "eig_min": 745.9564342234062,
+        "eig_max": 88062.14637531072,
+        "cond": 118.05266679814846,
+        "eigvalsh_logdet": 15125.81144773504,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 15125.81144773504,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 15125.81144773505
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 15125.81144773504,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 335,
+      "source": "lambda_transect",
+      "classes": [
+        "marginal_band"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        29.145192568009907,
+        29.145192568009907
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "has_exact_zero_anchor_component": true,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 398935.03735372,
+        "regularization_term": 78.55257606763648,
+        "log_det_curvature_reg_matrix_term": 22657.907375207433,
+        "log_det_regularization_matrix_term": 22607.341425840685,
+        "figure_of_merit": -159714.4443208648
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -2611352.223201886,
+        "max": 13433247.133656343,
+        "eig_min": 13208.18091541248,
+        "eig_max": 15046220.717148475,
+        "cond": 1139.1591933444224,
+        "eigvalsh_logdet": 22657.907375207433,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 22657.907375207436,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 22657.907375207404
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 22657.907375207433,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 338,
+      "source": "lambda_transect",
+      "classes": [
+        "transect"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        55.979819791232785,
+        55.979819791232785
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "has_exact_zero_anchor_component": true,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 399167.92500673723,
+        "regularization_term": 56.1110833162511,
+        "log_det_curvature_reg_matrix_term": 26552.605192377192,
+        "log_det_regularization_matrix_term": 26521.262265190686,
+        "figure_of_merit": -159810.05588990758
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -35559221.38412698,
+        "max": 182716744.80072713,
+        "eig_min": 15252.39635721728,
+        "eig_max": 204705958.41557738,
+        "cond": 13421.232547416235,
+        "eigvalsh_logdet": 26552.60519237719,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 26552.60519237719,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 26552.605192377203
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 26552.605192377192,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 341,
+      "source": "lambda_transect",
+      "classes": [
+        "marginal_band"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        107.52168531898921,
+        107.52168531898921
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "has_exact_zero_anchor_component": true,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 399283.03409322246,
+        "regularization_term": 6.596640617301787,
+        "log_det_curvature_reg_matrix_term": 30462.936033798396,
+        "log_det_regularization_matrix_term": 30434.893302174638,
+        "figure_of_merit": -159841.20311401936
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -483979867.8129796,
+        "max": 2486665904.087532,
+        "eig_min": 15410.96762343785,
+        "eig_max": 2785975899.6915135,
+        "cond": 180778.77831982775,
+        "eigvalsh_logdet": 30462.93603379837,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 30462.936033798393,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 30462.9360337984
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 30462.936033798396,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 342,
+      "source": "lambda_transect",
+      "classes": [
+        "rescued"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        133.65470508911145,
+        133.65470508911145
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "has_exact_zero_anchor_component": true,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 399290.6857720185,
+        "regularization_term": 2.8361465066038987,
+        "log_det_curvature_reg_matrix_term": 31767.27236670794,
+        "log_det_regularization_matrix_term": null,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -1155528938.240894,
+        "max": 5937030932.000479,
+        "eig_min": 15418.350107551338,
+        "eig_max": 6651653012.506924,
+        "cond": 431411.46530647203,
+        "eigvalsh_logdet": 31767.272366707606,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 31767.272366707937,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 31767.272366707868
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 31767.272366707944,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 345,
+      "source": "lambda_transect",
+      "classes": [
+        "tier_flip"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        256.71356563109873,
+        256.71356563109873
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "has_exact_zero_anchor_component": true,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 399295.96582377685,
+        "regularization_term": 0.2121191869259072,
+        "log_det_curvature_reg_matrix_term": 35680.734466273774,
+        "log_det_regularization_matrix_term": 35654.331644317135,
+        "figure_of_merit": -159843.6567637478
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -15726772716.136433,
+        "max": 80802907691.25009,
+        "eig_min": 15423.283658544673,
+        "eig_max": 90528954103.54823,
+        "cond": 5869629.069124601,
+        "eigvalsh_logdet": 35680.73446627139,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 35680.734466273774,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 35680.734466273854
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 35680.7344662738,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 347,
+      "source": "lambda_transect",
+      "classes": [
+        "transect"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        396.6662010161207,
+        396.6662010161207
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "has_exact_zero_anchor_component": true,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 399296.31601964054,
+        "regularization_term": 0.03725479221268066,
+        "log_det_curvature_reg_matrix_term": 38289.790141493126,
+        "log_det_regularization_matrix_term": null,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -89648939403.11555,
+        "max": 460609045404.73035,
+        "eig_min": 15423.606590424839,
+        "eig_max": 516051437085.58594,
+        "cond": 33458545.124326296,
+        "eigvalsh_logdet": 38289.790141504476,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 38289.79014149313,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 38289.79014149313
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 38289.79014149308,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 348,
+      "source": "lambda_transect",
+      "classes": [
+        "rescued"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        493.07545690287543,
+        493.07545690287543
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "has_exact_zero_anchor_component": true,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 399296.35936076136,
+        "regularization_term": 0.015606021009183015,
+        "log_det_curvature_reg_matrix_term": 39594.32134002737,
+        "log_det_regularization_matrix_term": null,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -214041465610.00937,
+        "max": 1099727824743.5547,
+        "eig_min": 15423.646203984754,
+        "eig_max": 1232099396557.6548,
+        "cond": 79883795.32716055,
+        "eigvalsh_logdet": 39594.32134002111,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 39594.32134002737,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 39594.321340027134
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 39594.32134002716,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 352,
+      "source": "lambda_transect",
+      "classes": [
+        "marginal_band"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        1177.243067676929,
+        1177.243067676929
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "has_exact_zero_anchor_component": true,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 399296.389640739,
+        "regularization_term": 0.00048035218785847755,
+        "log_det_curvature_reg_matrix_term": 44812.449783841694,
+        "log_det_regularization_matrix_term": 44795.62327836719,
+        "figure_of_merit": -159838.9746945704
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -6955189105964.698,
+        "max": 35735201374661.016,
+        "eig_min": 15423.66697562323,
+        "eig_max": 40036561043614.695,
+        "cond": 2595787441.9158306,
+        "eigvalsh_logdet": 44812.44978332329,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 44812.4497838417,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 44812.44978383653
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 44812.44978383655,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 356,
+      "source": "lambda_transect",
+      "classes": [
+        "rescued",
+        "transect"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        2810.728502080722,
+        2810.728502080722
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "has_exact_zero_anchor_component": true,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 399296.3905726753,
+        "regularization_term": 1.4795258951598648e-05,
+        "log_det_curvature_reg_matrix_term": 50030.57897603672,
+        "log_det_regularization_matrix_term": 50013.2008825617,
+        "figure_of_merit": -159839.25072176039
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -226005998636382.75,
+        "max": 1161200615328955.2,
+        "eig_min": 15423.948795616627,
+        "eig_max": 1300971522072393.8,
+        "cond": 84347500067.0464,
+        "eigvalsh_logdet": 50030.57899386741,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 50030.57897603671,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 50030.57897604497
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 50030.578976045,
+      "classification": "clean"
+    },
+    {
+      "draw_index": 359,
+      "source": "lambda_transect",
+      "classes": [
+        "marginal_band"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        5398.628767382507,
+        5398.628767382507
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "has_exact_zero_anchor_component": true,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 399296.39060009085,
+        "regularization_term": 1.1093542457278813e-06,
+        "log_det_curvature_reg_matrix_term": 53944.17589324486,
+        "log_det_regularization_matrix_term": 53932.29300935325,
+        "figure_of_merit": -159836.5031238335
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -3075942650826547.5,
+        "max": 1.5803945560561936e+16,
+        "eig_min": 15421.083796739578,
+        "eig_max": 1.770622822560852e+16,
+        "cond": 1148183127657.479,
+        "eigvalsh_logdet": 53944.17571947264,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 53944.17589324486,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 53944.175891521256
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 53944.17589152132,
+      "classification": "marginal_tier_flippable"
+    },
+    {
+      "draw_index": 365,
+      "source": "lambda_transect",
+      "classes": [
+        "transect"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        19916.48063830854,
+        19916.48063830854
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "has_exact_zero_anchor_component": true,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 399296.39060226275,
+        "regularization_term": 7.674430557803153e-09,
+        "log_det_curvature_reg_matrix_term": 61771.369497492546,
+        "log_det_regularization_matrix_term": null,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -5.697636906268236e+17,
+        "max": 2.9273999457116933e+18,
+        "eig_min": 17167.418228149414,
+        "eig_max": 3.2797639898079764e+18,
+        "cond": 191045848957657.94,
+        "eigvalsh_logdet": 61771.47682121172,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 61771.369497492546,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 61771.36987233746
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 61771.36987233754,
+      "classification": "marginal_tier_flippable"
+    },
+    {
+      "draw_index": 366,
+      "source": "lambda_transect",
+      "classes": [
+        "rescued"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        24757.157946593376,
+        24757.157946593376
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "has_exact_zero_anchor_component": true,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 399296.390602269,
+        "regularization_term": 3.4711314996288518e-09,
+        "log_det_curvature_reg_matrix_term": 63075.895435405415,
+        "log_det_regularization_matrix_term": null,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -1.360340178392968e+18,
+        "max": 6.989318255777107e+18,
+        "eig_min": 16121.821533203125,
+        "eig_max": 7.830605572766137e+18,
+        "cond": 485714691521605.75,
+        "eigvalsh_logdet": 63075.94628566673,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 63075.89543540543,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 63075.896925433684
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 63075.89692543357,
+      "classification": "marginal_tier_flippable"
+    },
+    {
+      "draw_index": 367,
+      "source": "lambda_transect",
+      "classes": [
+        "marginal_band",
+        "tier_flip"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        30774.356208980553,
+        30774.356208980553
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "has_exact_zero_anchor_component": true,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 399296.39060227195,
+        "regularization_term": 1.7183874997182668e-09,
+        "log_det_curvature_reg_matrix_term": 64380.453454239,
+        "log_det_regularization_matrix_term": 64376.48784365099,
+        "figure_of_merit": -159832.54448771843
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -3.247882291190511e+18,
+        "max": 1.6687357582314516e+19,
+        "eig_min": 8125.1075439453125,
+        "eig_max": 1.869597441364251e+19,
+        "cond": 2301012548144599.5,
+        "eigvalsh_logdet": 64379.793374926354,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 64380.453454239,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 64380.451482017874
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 64380.451482017874,
+      "classification": "marginal_tier_flippable"
+    },
+    {
+      "draw_index": 372,
+      "source": "lambda_transect",
+      "classes": [
+        "rescued"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        91333.46228248625,
+        91333.46228248625
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "has_exact_zero_anchor_component": true,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 399296.3906022741,
+        "regularization_term": 1.0739588408256781e-10,
+        "log_det_curvature_reg_matrix_term": null,
+        "log_det_regularization_matrix_term": null,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -2.5197883333114105e+20,
+        "max": 1.2946469477592693e+21,
+        "eig_min": -264568.5625,
+        "eig_max": 1.4504804664616377e+21,
+        "cond": Infinity,
+        "eigvalsh_logdet": null,
+        "lapack_cholesky_ok": false,
+        "lapack_cholesky_error": "Matrix is not positive definite",
+        "lapack_cholesky_logdet": null,
+        "np_slogdet_sign": -1.0,
+        "np_slogdet_logabsdet": 70902.99569349889
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 70902.99569349905,
+      "classification": "genuinely_singular"
+    },
+    {
+      "draw_index": 374,
+      "source": "lambda_transect",
+      "classes": [
+        "transect"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        141125.7617811452,
+        141125.7617811452
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "has_exact_zero_anchor_component": true,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 399296.390602274,
+        "regularization_term": 2.7259147070975528e-11,
+        "log_det_curvature_reg_matrix_term": null,
+        "log_det_regularization_matrix_term": null,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -1.436380738180595e+21,
+        "max": 7.380008526596717e+21,
+        "eig_min": -1573088.625,
+        "eig_max": 8.268322285605313e+21,
+        "cond": Infinity,
+        "eigvalsh_logdet": null,
+        "lapack_cholesky_ok": false,
+        "lapack_cholesky_error": "Matrix is not positive definite",
+        "lapack_cholesky_logdet": null,
+        "np_slogdet_sign": -1.0,
+        "np_slogdet_logabsdet": 73514.11213362226
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 73514.11213362215,
+      "classification": "genuinely_singular"
+    },
+    {
+      "draw_index": 378,
+      "source": "lambda_transect",
+      "classes": [
+        "rescued"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        336945.0302212153,
+        336945.0302212153
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "has_exact_zero_anchor_component": true,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 399296.390602274,
+        "regularization_term": 9.484870730017853e-13,
+        "log_det_curvature_reg_matrix_term": null,
+        "log_det_regularization_matrix_term": null,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -4.66745990858915e+22,
+        "max": 2.3981033027891666e+23,
+        "eig_min": 66675526.0,
+        "eig_max": 2.6867571914282277e+23,
+        "cond": 4029600293559330.5,
+        "eigvalsh_logdet": 78738.66135346922,
+        "lapack_cholesky_ok": false,
+        "lapack_cholesky_error": "Matrix is not positive definite",
+        "lapack_cholesky_logdet": null,
+        "np_slogdet_sign": -1.0,
+        "np_slogdet_logabsdet": 78736.09577440565
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 78736.09577440572,
+      "classification": "genuinely_singular"
+    },
+    {
+      "draw_index": 381,
+      "source": "lambda_transect",
+      "classes": [
+        "marginal_band"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        647177.8159406801,
+        647177.8159406801
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "has_exact_zero_anchor_component": true,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 399296.390602274,
+        "regularization_term": 7.246492430738426e-14,
+        "log_det_curvature_reg_matrix_term": 82651.41552735397,
+        "log_det_regularization_matrix_term": 82651.41435776319,
+        "figure_of_merit": -159830.56226722
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -6.35241502012675e+23,
+        "max": 3.2638196661143313e+24,
+        "eig_min": -1135441600.0,
+        "eig_max": 3.6566777374679693e+24,
+        "cond": Infinity,
+        "eigvalsh_logdet": null,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 82651.41552735397,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 82651.19666063656
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 82651.19666063655,
+      "classification": "genuinely_singular"
+    },
+    {
+      "draw_index": 383,
+      "source": "lambda_transect",
+      "classes": [
+        "rescued",
+        "transect"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        1000000.0,
+        1000000.0
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "has_exact_zero_anchor_component": true,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 399296.390602274,
+        "regularization_term": 1.256408927766065e-14,
+        "log_det_curvature_reg_matrix_term": null,
+        "log_det_regularization_matrix_term": null,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -3.6211321622590815e+24,
+        "max": 1.860508535310478e+25,
+        "eig_min": -325346304.0,
+        "eig_max": 2.0844534433296265e+25,
+        "cond": Infinity,
+        "eigvalsh_logdet": null,
+        "lapack_cholesky_ok": false,
+        "lapack_cholesky_error": "Matrix is not positive definite",
+        "lapack_cholesky_logdet": null,
+        "np_slogdet_sign": -1.0,
+        "np_slogdet_logabsdet": 85262.73608172713
+      },
+      "upstream_nan": false,
+      "treatment_log_det_curvature_reg_matrix_term": 85262.73608172707,
+      "classification": "genuinely_singular"
+    }
+  ]
+}
