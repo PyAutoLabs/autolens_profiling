@@ -127,6 +127,18 @@ def vmap_batch_for_cell(dataset_class: str, model_type: str, instrument: str) ->
     return val if val is not None else _FALLBACK_BATCH
 
 
+def nautilus_seed() -> int | None:
+    """Resolve ``SEARCHES_NAUTILUS_SEED`` (default ``None`` = af.Nautilus default).
+
+    Phase 4 Stage 2 (W2, #160) needs >= 5 Nautilus seeds per positions arm.
+    ``seed`` IS an ``af.Nautilus.__identifier_fields__`` entry, so seeded arms
+    get distinct autofit output directories; the submit must still carry the
+    seed in ``--config-name`` so the results JSON basenames stay disjoint.
+    """
+    raw = os.environ.get("SEARCHES_NAUTILUS_SEED")
+    return int(raw) if raw else None
+
+
 def build_nautilus(
     *,
     sampler: str,
@@ -158,8 +170,10 @@ def build_nautilus(
     """
     n_live = n_live_for(dataset_class, model_type)
     n_batch = vmap_batch_for_cell(dataset_class, model_type, instrument)
+    seed = nautilus_seed()
     return af.Nautilus(
         name=config_name,
+        seed=seed,
         path_prefix=f"searches/{sampler}/{dataset_class}/{model_type}/{instrument}",
         n_live=n_live,
         n_batch=n_batch,

@@ -282,6 +282,9 @@ rather than falling back silently):
 | `SEARCHES_POSITIONS_THRESHOLD` | a float, or `auto` | `0.3` |
 | `SEARCHES_POSITIONS_FACTOR` | a float (e.g. `1e5`, `1e8`) | `1e8` |
 
+- `SEARCHES_NAUTILUS_SEED=<int>` — af.Nautilus RNG seed (identifier field) for repeated-seed campaigns; carry it in `--config-name` (W2, #160).
+- `SEARCHES_LOG_DET_METHOD=cholesky|slogdet` — overrides the evidence log-det. Default (W8, #165): `slogdet` for gradient-work samplers (MultiStart*/NUTS) on pixelized cells when JAX runs on a GPU; `cholesky` (packaged default) for nested samplers and on CPU. Recorded in the results JSON as `log_det_method`.
+
 `auto` replicates SLaM's `positions_threshold_from(factor=3.0,
 minimum_threshold=0.2)`: `max(3.0 * max_sep(truth positions, truth tracer),
 0.2)`. Because truth positions trace back to ~zero separation through the

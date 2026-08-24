@@ -1,0 +1,72 @@
+#!/bin/bash -l
+#
+# Phase 4 Stage 2 (W2, issue #160) — matched trio ± PositionsLH on imaging/mge/hst.
+# ARM: MultiStartProdigy(n=256, prior_box, autoconv) — the Gate B pt 1 config —
+#      SEEDS 0-4 with POSITIONS ON (threshold 0.3, factor 1e8). The positions-OFF
+#      half is the CP-3 wave-1 tier (seeds 0-4, hpc_hpc_a100_fp64_n256_seed{0..4}).
+#      Measures H4.1 (p_hit shift / basin-failure elimination), H4.2 (lane fling
+#      / fence oscillation via the per-lane record) and H3.3 trapped-lane
+#      accounting on the positions-on arm.
+# WALL-TIME: 165-225 s per seed positions-off; 4:00:00 mirrors the seeds105 submit.
+#
+# ARTIFACT ISOLATION: --config-name carries the seed; run_search appends the
+#      positions arm tag (pos_t0.3_f1e8) to config_name AND unique_tag when
+#      SEARCHES_POSITIONS=on, so on/off arms never share a results JSON or an
+#      autofit output directory (Phase 4 Stage 1, #159 / PR #168).
+#
+#SBATCH -J w2_prodigy_mge_n256_pos
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=4:00:00
+#SBATCH --array=0-4
+#SBATCH -o output/output.%A_%a.out
+#SBATCH -e error/error.%A_%a.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_profiling
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+# Seeds 105-114: fresh, disjoint from 0-4 (earlier tiers) and 100-104 (n128).
+SEED=$SLURM_ARRAY_TASK_ID
+export SEARCHES_POSITIONS=on
+export SEARCHES_POSITIONS_THRESHOLD=0.3
+export SEARCHES_POSITIONS_FACTOR=1e8
+N_STARTS=256
+
+export SEARCHES_N_STARTS=$N_STARTS
+export SEARCHES_N_STEPS=3000
+export SEARCHES_SEED=$SEED
+export SEARCHES_CLIPPER=prior_box
+export SEARCHES_SCALER=none
+# Visualization is not the measurement and its cost would land inside the
+# recorded wall; the results JSON records viz_disabled: true.
+export SEARCHES_DISABLE_VIZ=1
+
+nvidia-smi
+
+echo "=========================================="
+date
+echo "Cell:       searches/multi_start_prodigy_autoconv/imaging/mge"
+echo "Instrument: hst"
+echo "Precision:  fp64"
+echo "Arm:        n_starts=$N_STARTS  seed=$SEED  clipper=prior_box  positions=on (t0.3 f1e8)"
+
+cd $AP_ROOT
+python3 scripts/imaging/searches/multi_start_prodigy_autoconv/mge.py \
+    --instrument hst \
+    --config-name hpc_a100_fp64_n${N_STARTS}_seed${SEED} \
+    --output-dir $AP_ROOT/results/searches/multi_start_prodigy_autoconv/imaging/mge/hst
+
+echo "Finished."
+date
