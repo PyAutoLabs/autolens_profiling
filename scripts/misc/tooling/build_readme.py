@@ -281,9 +281,22 @@ def _scan_runtime_cells(root: Path) -> list[RuntimeCell]:
 
 
 def _baseline_names() -> list[str]:
+    """Runtime-comparison baseline directories under ``results/baselines/``.
+
+    Only directories that actually contain at least one ``comparison.json``
+    qualify — ``results/baselines/`` also houses baselines of a different
+    shape (e.g. ``InferenceRefs_v1/``, the Phase 1 targets-registry search
+    reference baselines added by W4 / issue #161, which has no
+    ``comparison.json`` anywhere in it). Without this filter every such
+    directory would add an always-empty column to the runtime table.
+    """
     if not BASELINES_ROOT.exists():
         return []
-    return sorted(d.name for d in BASELINES_ROOT.iterdir() if d.is_dir())
+    return sorted(
+        d.name
+        for d in BASELINES_ROOT.iterdir()
+        if d.is_dir() and next(d.rglob("comparison.json"), None) is not None
+    )
 
 
 def _latest_per_group(artifacts: Iterable[Artifact], key) -> dict[tuple, Artifact]:
