@@ -32,7 +32,7 @@ expectation · **[CONTRADICTED]** existing evidence pushed back on the brief ·
 | Phase 0(e) searches README dashboard loop | **complete** | PR#139 (2026-08-18): nested-layout scanner, 34 rows render, truth-bar rows verified |
 | Phase 2 NSS mainline re-tune | **scan complete 2026-08-24 (CP-2 ✅, CP-5 ✅)** — H2.1 closed: logZ bias was inner-kernel under-mixing (inner=30: 5/5 seeds +1.0 ± 0.4 nats vs Nautilus); operating point n200/nd100/inner30 costs 5.0× the Nautilus sampler wall on MGE, 18.4× on Delaunay (same-night re-baselines: Nautilus mge 707 s, delaunay 1,891 s). Sample economy: Kish ESS 1,315 vs Nautilus 4,121 per run; ~940 vs ~15 evals/ESS. **GATE A CALLED 2026-08-24 — Nautilus stays baseline; af.NSS = tuned alternative** | `phase_02_nss_mainline/RESULTS.md` + DECISIONS.md 2026-08-24 |
 | Phase 3 Prodigy reliability | **wave 1 complete + adversarially reviewed (CP-3 ✅ 2026-08-23, positions-off)** — p̂_hit = 0.048 [0.037, 0.061] (lower bound; n256 tier, ~1,280 distinct draws — tiers share lane-index draws, n-dependence unmeasured); demonstrated ≥99% reliability at **n=256 only** (joint-95% worst case), 3.4–4.5× under the viz-stripped Nautilus wall; zero parameter-recovery impostors; ~half of lanes end pinned (H3.3, measured not closed); θ_E diagnostic uninformative for H3.1 (withdrawn). **Gate B pt 1 CALLED (human-ratified 2026-08-23** — DECISIONS.md): Prodigy(n=256, prior_box, autoconv, positions-off) ratified as global MAP searcher on MGE; pt 2 (PositionsLH) open. Fresh-seed tier 2026-08-24: n128 5/5, n256 15/15 cumulative (Wilson-95 lower 0.80); Nautilus re-baseline 707 s → 3.1–4.3× | `phase_03_prodigy_reliability/RESULTS.md` + `ADVERSARIAL_REVIEW.md` |
-| Phase 8A slogdet A/B (CP-4) | **complete 2026-08-24 — FAIL as pre-registered.** knn stressor never walls (VOID both tiers); on Delaunay+AdaptSplit slogdet rescues 64–73 % of NaNs, 0 regressions, but 20–32 NaN-under-both, λ-transect grads non-finite, marginal-band Δ up to 9,619 nats (A100), CPU 3.7×. Human call: adopt as this repo's GPU gradient-cell default (W8), library stays opt-in, residual NaNs → W7, 8B in parallel | `phase_08_regularization/RESULTS.md` + DECISIONS.md 2026-08-24 |
+| Phase 8A slogdet A/B (CP-4) | **complete 2026-08-24 — FAIL as pre-registered.** knn stressor never walls (VOID both tiers); on Delaunay+AdaptSplit slogdet rescues 64–73 % of NaNs, 0 regressions, but 20–32 NaN-under-both, λ-transect grads non-finite, marginal-band Δ up to 9,619 nats (A100), CPU 3.7×. Human call: adopt as this repo's GPU gradient-cell default (W8), library stays opt-in, residual NaNs → W7, 8B in parallel — re-scored 2026-08-24 (W7): per-draw attribution (170 draws classified) finds two harvest/driver bugs (negative-coefficient + dead-lane descent rows; zero-anchor λ-transect gradient) now fixed; CP-4 re-scored on the clean subset excluding both — **verdict unchanged, FAIL on both tiers** (residual failures are the genuinely-singular λ⁴ population, 53–80% of sampled `nan_both` draws); tier-dependence traced to `cond ~ 1e15-1e19` where the reconstruction solve NaNs despite finite log-det terms. W8 adoption stands; W9 unblocked | `phase_08_regularization/RESULTS.md` + DECISIONS.md 2026-08-24 |
 | Phase 8B log-coordinate bijector A/B (W5) | **pre-registered, A100 submit prepared 2026-08-24** — PyAutoFit half merged (PR#1525: `bijector.py`, `MultiStartGradient(bijector=...)`, opt-in lane-NaN-history/trace-param diagnostics); driver `scripts/misc/searches/bijector_ab.py` (39-arm table, F1–F5 falsification scorer); submit `hpc/batch_gpu/submit_phase8b_bijector_a100` (39-task array, not yet dispatched) | `phase_08_regularization/RESULTS.md` "8B" |
 | Phases 1, 4–7, 9–13 | not started | — |
 | Gates A–F | **A CALLED 2026-08-24** (Nautilus stays nested baseline; af.NSS tuned alternative); **B part 1 CALLED 2026-08-23** (Prodigy n=256 global MAP, MGE, positions-off; caveat (a) n=256-only stands 2026-08-24); B pt 2, C–F open — C criterion reworded 2026-08-24 (batched-pipeline value, not single-fit ESS/s vs Nautilus) | DECISIONS.md |
@@ -298,6 +298,19 @@ JSON under `results/searches/`.
   proceeds until both land.
 
 ### Phase 1 — Standard benchmark matrix & targets registry
+
+**IN PROGRESS 2026-08-24 (W4, autolens_profiling#161):** registry, schema v2
+and tests landed — `scripts/misc/searches/_targets.py` (32-target registry
++ `target_id` hashing), `slam_source_pix`/`slam_source_pix_nn`/`delaunay_nn`
+model builders, schema-v2 additions to `_runner.py` (`target`/`algorithm`/
+`hardware`/`schema_version`), the imaging truth-anchor extension, the
+MultiStart `likelihood_evals` fix + Kish ESS, and 25 new tests — see
+DECISIONS.md 2026-08-24. **Still open:** only 2 of 13 targets
+(`mge_fp64`, `delaunay_fp64`) have a certified `InferenceRefs_v1` reference
+baseline (both adopted retroactively, not freshly run); the remaining 11
+rows are queued in `results/baselines/InferenceRefs_v1/SUBMIT_LIST.md` with
+a prepared-but-NOT-submitted SLURM array
+(`hpc/batch_gpu/submit_search_nautilus_inference_refs_v1_array.sh`).
 
 - **Question:** Can every future result be expressed as (target,
   algorithm-config, seed, hardware) → metrics, stable across years?
@@ -953,7 +966,7 @@ ship as autolens_profiling issues/PRs, not Mind prompts).
 | W6 | Nautilus `n_batch` scan (MGE + Delaunay) — bounds the "JAX Nautilus" ceiling | #163 | A100, ~30 min | — (submit now) |
 | W8 | slogdet default for GPU gradient-work cells in the searches framework | #165 | source | — |
 | W7 | CP-4 follow-up: NaN-under-both draws, transect gradients, marginal-band tier dependence | #164 | laptop / A100 replay | — |
-| W4 | Phase 1 targets registry, schema v2 (ESS + reject-inclusive evals), `slam_source_pix`, reference baselines | #161 | CPU + one A100 bake | rides behind W1/W6 |
+| W4 | Phase 1 targets registry, schema v2 (ESS + reject-inclusive evals), `slam_source_pix`, reference baselines — **IN PROGRESS 2026-08-24: registry/schema/tests shipped; 2/13 targets have a certified baseline (both retro-adopted), 11 SUBMIT_LIST rows still queued, array script not submitted** | #161 | CPU + one A100 bake | rides behind W1/W6 |
 | W2 | Phase 4 Stage 2 — Nautilus / Prodigy ± positions × 5 seeds on MGE (NSS arm dropped per Gate A) | #160 | A100 ~5 GPU-h | W1 (+ W6 for n_batch) |
 | W5 | Phase 8B log-coordinate stepping (Scaler → bijector) | #162 | source + laptop; A100 submit prepared 2026-08-24, not yet dispatched | — (parallel smoothing arc) |
 | W9 | REMINDER: make slogdet standard in PyAutoArray | #166 | source | W7 |

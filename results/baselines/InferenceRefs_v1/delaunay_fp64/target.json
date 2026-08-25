@@ -1,0 +1,27 @@
+{
+  "target_id": "sha256:6b016e5752ac",
+  "cell": "imaging/delaunay/hst",
+  "model_dim": 12,
+  "priors_ref": "_targets.py@bf2c8742c334",
+  "likelihood": {
+    "log_det_method": null,
+    "positive_only": true,
+    "border_relocator": true,
+    "curvature_floor": 0.001,
+    "regularization_term_method": "matmul",
+    "precision": "fp64"
+  },
+  "positions": {
+    "enabled": false
+  },
+  "tolerances": {
+    "delta_max_ll_nats": 2.0,
+    "mean_shift_sigma": 0.2,
+    "sigma_ratio": [
+      0.8,
+      1.25
+    ],
+    "per_parameter_recovery": {}
+  },
+  "target_class_vs_v1": null
+}

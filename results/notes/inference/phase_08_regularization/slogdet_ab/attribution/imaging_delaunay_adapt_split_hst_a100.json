@@ -1,0 +1,902 @@
+{
+  "schema_version": 1,
+  "experiment": "w7_slogdet_nan_attribution",
+  "issue": "autolens_profiling#164",
+  "cell": "imaging_delaunay_adapt_split_hst",
+  "tier_file": "a100",
+  "other_tier_available": true,
+  "matrix_only": false,
+  "classes_requested": [
+    "nan_both",
+    "transect"
+  ],
+  "max_per_class": 4,
+  "n_draws_analyzed": 8,
+  "classification_totals": {
+    "marginal_tier_flippable": 1,
+    "genuinely_singular": 3,
+    "anchor_singularity": 3,
+    "dead_lane": 1
+  },
+  "summary_by_class": {
+    "nan_both": {
+      "marginal_tier_flippable": 1,
+      "genuinely_singular": 2,
+      "dead_lane": 1
+    },
+    "transect": {
+      "anchor_singularity": 3,
+      "genuinely_singular": 1
+    }
+  },
+  "anchor_sensitive_parameter_indices": [
+    2,
+    3,
+    6,
+    7,
+    9,
+    10
+  ],
+  "anchor_sensitive_parameter_names": [
+    "galaxies.lens.bulge.profile_list.19.ell_comps_0",
+    "galaxies.lens.bulge.profile_list.19.ell_comps_1",
+    "galaxies.lens.mass.ell_comps_0",
+    "galaxies.lens.mass.ell_comps_1",
+    "galaxies.lens.shear.gamma_1",
+    "galaxies.lens.shear.gamma_2"
+  ],
+  "coefficient_indices": [
+    11,
+    12
+  ],
+  "coefficient_parameter_names": [
+    "galaxies.source.pixelization.regularization.inner_coefficient",
+    "galaxies.source.pixelization.regularization.outer_coefficient"
+  ],
+  "thresholds": {
+    "cond_singular": 1e+16,
+    "cond_marginal_low": 1000000000000.0,
+    "regularization_floor_value": 2e-08
+  },
+  "draws": [
+    {
+      "draw_index": 5,
+      "source": "prior",
+      "classes": [
+        "nan_both"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        27.705208584423147,
+        873289.1468503538
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.47084861832375274,
+        -0.10335736364078986,
+        0.4356837539555178,
+        -0.0449650093611232,
+        -6.251178741e-05,
+        -0.04486282509055
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": false,
+        "chi_squared": null,
+        "regularization_term": null,
+        "log_det_curvature_reg_matrix_term": null,
+        "log_det_regularization_matrix_term": null,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -2.004728066248989e+24,
+        "max": 1.0161007126211121e+25,
+        "eig_min": 3130717696.0,
+        "eig_max": 1.169234658920218e+25,
+        "cond": 3734717634918361.0,
+        "eigvalsh_logdet": 84154.8235620367,
+        "lapack_cholesky_ok": false,
+        "lapack_cholesky_error": "Matrix is not positive definite",
+        "lapack_cholesky_logdet": null,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 84148.37717043434
+      },
+      "upstream_nan": false,
+      "treatment": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": false,
+        "chi_squared": null,
+        "regularization_term": null,
+        "log_det_curvature_reg_matrix_term": 84148.37717043443,
+        "log_det_regularization_matrix_term": 84148.37717043443,
+        "figure_of_merit": null
+      },
+      "anchor_grad": {
+        "cholesky": {
+          "value": null,
+          "value_finite": false,
+          "grad": [
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN
+          ],
+          "grad_finite": false
+        },
+        "slogdet": {
+          "value": null,
+          "value_finite": false,
+          "grad": [
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN
+          ],
+          "grad_finite": false
+        }
+      },
+      "coefficient_grad": {
+        "cholesky": {
+          "value": null,
+          "value_finite": false,
+          "grad": [
+            NaN,
+            NaN
+          ],
+          "grad_finite": false
+        },
+        "slogdet": {
+          "value": null,
+          "value_finite": false,
+          "grad": [
+            NaN,
+            NaN
+          ],
+          "grad_finite": false
+        }
+      },
+      "classification": "marginal_tier_flippable"
+    },
+    {
+      "draw_index": 61,
+      "source": "prior",
+      "classes": [
+        "nan_both"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        1282.2952318982002,
+        8.029062976223893e-06
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        -0.09769018857599475,
+        -0.24023056788123467,
+        0.7701792670160204,
+        0.32158365099176883,
+        -0.18364923127905,
+        0.11274871283342
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": false,
+        "chi_squared": null,
+        "regularization_term": null,
+        "log_det_curvature_reg_matrix_term": null,
+        "log_det_regularization_matrix_term": null,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -4994500522515.576,
+        "max": 10823679184420.254,
+        "eig_min": -0.00022241972240882543,
+        "eig_max": 15217141185118.33,
+        "cond": Infinity,
+        "eigvalsh_logdet": null,
+        "lapack_cholesky_ok": false,
+        "lapack_cholesky_error": "Matrix is not positive definite",
+        "lapack_cholesky_logdet": null,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 29418.67747789041
+      },
+      "upstream_nan": false,
+      "treatment": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": false,
+        "chi_squared": null,
+        "regularization_term": null,
+        "log_det_curvature_reg_matrix_term": 29418.677477890436,
+        "log_det_regularization_matrix_term": 29192.6732165374,
+        "figure_of_merit": null
+      },
+      "anchor_grad": {
+        "cholesky": {
+          "value": null,
+          "value_finite": false,
+          "grad": [
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN
+          ],
+          "grad_finite": false
+        },
+        "slogdet": {
+          "value": null,
+          "value_finite": false,
+          "grad": [
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN
+          ],
+          "grad_finite": false
+        }
+      },
+      "coefficient_grad": {
+        "cholesky": {
+          "value": null,
+          "value_finite": false,
+          "grad": [
+            NaN,
+            NaN
+          ],
+          "grad_finite": false
+        },
+        "slogdet": {
+          "value": null,
+          "value_finite": false,
+          "grad": [
+            NaN,
+            NaN
+          ],
+          "grad_finite": false
+        }
+      },
+      "classification": "genuinely_singular"
+    },
+    {
+      "draw_index": 127,
+      "source": "prior",
+      "classes": [
+        "nan_both"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        4.182910906615489e-06,
+        79390.8242025803
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        -0.030686453400960524,
+        -0.20659461527188674,
+        0.3611448130580351,
+        0.3787224431999799,
+        0.23155888673487,
+        -0.11856976300672
+      ],
+      "has_exact_zero_anchor_component": false,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": false,
+        "chi_squared": null,
+        "regularization_term": null,
+        "log_det_curvature_reg_matrix_term": 69733.9309532388,
+        "log_det_regularization_matrix_term": null,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -1.4766263247850268e+20,
+        "max": 6.017406704431884e+20,
+        "eig_min": -894528.6126098633,
+        "eig_max": 7.096207392449966e+20,
+        "cond": Infinity,
+        "eigvalsh_logdet": null,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 69733.9309532388,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 69733.97667548808
+      },
+      "upstream_nan": false,
+      "treatment": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": false,
+        "chi_squared": null,
+        "regularization_term": null,
+        "log_det_curvature_reg_matrix_term": 69733.97667548813,
+        "log_det_regularization_matrix_term": 69731.12776153462,
+        "figure_of_merit": null
+      },
+      "anchor_grad": {
+        "cholesky": {
+          "value": null,
+          "value_finite": false,
+          "grad": [
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN
+          ],
+          "grad_finite": false
+        },
+        "slogdet": {
+          "value": null,
+          "value_finite": false,
+          "grad": [
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN
+          ],
+          "grad_finite": false
+        }
+      },
+      "coefficient_grad": {
+        "cholesky": {
+          "value": null,
+          "value_finite": false,
+          "grad": [
+            NaN,
+            NaN
+          ],
+          "grad_finite": false
+        },
+        "slogdet": {
+          "value": null,
+          "value_finite": false,
+          "grad": [
+            NaN,
+            NaN
+          ],
+          "grad_finite": false
+        }
+      },
+      "classification": "genuinely_singular"
+    },
+    {
+      "draw_index": 256,
+      "source": "lambda_transect",
+      "classes": [
+        "transect"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        1e-06,
+        1e-06
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "has_exact_zero_anchor_component": true,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 386348.4957576272,
+        "regularization_term": 3.4612482918632123e-07,
+        "log_det_curvature_reg_matrix_term": 7475.864163760538,
+        "log_det_regularization_matrix_term": -27631.02111592854,
+        "figure_of_merit": -170910.05690011877
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -3.3566339794077885e-13,
+        "max": 20482.30142151306,
+        "eig_min": 9.994670275708933e-09,
+        "eig_max": 39981.53310756512,
+        "cond": 4000285352557.9844,
+        "eigvalsh_logdet": 7475.864067112032,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 7475.864163760538,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 7475.86416376054
+      },
+      "upstream_nan": false,
+      "treatment": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 386348.4957576272,
+        "regularization_term": 3.4612482918632123e-07,
+        "log_det_curvature_reg_matrix_term": 7475.864163760538,
+        "log_det_regularization_matrix_term": -27631.02111592854,
+        "figure_of_merit": -170910.05690011877
+      },
+      "anchor_grad": {
+        "cholesky": {
+          "value": -170910.0569001187,
+          "value_finite": true,
+          "grad": [
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN
+          ],
+          "grad_finite": false
+        },
+        "slogdet": {
+          "value": -170910.0569001187,
+          "value_finite": true,
+          "grad": [
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN
+          ],
+          "grad_finite": false
+        }
+      },
+      "coefficient_grad": {
+        "cholesky": {
+          "value": -170910.0569001187,
+          "value_finite": true,
+          "grad": [
+            1.9186378970363898e-07,
+            1.6899732596086448e-06
+          ],
+          "grad_finite": true
+        },
+        "slogdet": {
+          "value": -170910.0569001187,
+          "value_finite": true,
+          "grad": [
+            1.9186378970363898e-07,
+            1.6899732596086448e-06
+          ],
+          "grad_finite": true
+        }
+      },
+      "classification": "anchor_singularity"
+    },
+    {
+      "draw_index": 298,
+      "source": "lambda_transect",
+      "classes": [
+        "transect"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        0.009300449458481392,
+        0.009300449458481392
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "has_exact_zero_anchor_component": true,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 386348.49575762986,
+        "regularization_term": 1.6397418980369386e-06,
+        "log_det_curvature_reg_matrix_term": 7598.7658232729955,
+        "log_det_regularization_matrix_term": -25158.44215816458,
+        "figure_of_merit": -169735.2182516412
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -2.4757449782902192e-08,
+        "max": 20482.30142157047,
+        "eig_min": 2.250979906494932e-08,
+        "eig_max": 39981.53310760975,
+        "cond": 1776183474239.2786,
+        "eigvalsh_logdet": 7598.766062346533,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 7598.7658232729955,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 7598.765823273001
+      },
+      "upstream_nan": false,
+      "treatment": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 386348.49575762986,
+        "regularization_term": 1.6397418980369386e-06,
+        "log_det_curvature_reg_matrix_term": 7598.7658232729955,
+        "log_det_regularization_matrix_term": -25158.44215816458,
+        "figure_of_merit": -169735.2182516412
+      },
+      "anchor_grad": {
+        "cholesky": {
+          "value": -169735.2182516412,
+          "value_finite": true,
+          "grad": [
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN
+          ],
+          "grad_finite": false
+        },
+        "slogdet": {
+          "value": -169735.2182516412,
+          "value_finite": true,
+          "grad": [
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN
+          ],
+          "grad_finite": false
+        }
+      },
+      "coefficient_grad": {
+        "cholesky": {
+          "value": -169735.2182516412,
+          "value_finite": true,
+          "grad": [
+            24527.569192830004,
+            210435.9815431419
+          ],
+          "grad_finite": true
+        },
+        "slogdet": {
+          "value": -169735.2182516412,
+          "value_finite": true,
+          "grad": [
+            24527.569192830004,
+            210435.9815431419
+          ],
+          "grad_finite": true
+        }
+      },
+      "classification": "anchor_singularity"
+    },
+    {
+      "draw_index": 341,
+      "source": "lambda_transect",
+      "classes": [
+        "transect"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        107.52168531898921,
+        107.52168531898921
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "has_exact_zero_anchor_component": true,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 399283.03409322246,
+        "regularization_term": 6.596640617301787,
+        "log_det_curvature_reg_matrix_term": 30462.936033798396,
+        "log_det_regularization_matrix_term": 30434.893302174638,
+        "figure_of_merit": -159841.20311401936
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -483979867.8129796,
+        "max": 2486665904.087532,
+        "eig_min": 15410.96762343785,
+        "eig_max": 2785975899.6915135,
+        "cond": 180778.77831982775,
+        "eigvalsh_logdet": 30462.93603379837,
+        "lapack_cholesky_ok": true,
+        "lapack_cholesky_error": null,
+        "lapack_cholesky_logdet": 30462.936033798393,
+        "np_slogdet_sign": 1.0,
+        "np_slogdet_logabsdet": 30462.9360337984
+      },
+      "upstream_nan": false,
+      "treatment": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 399283.03409322246,
+        "regularization_term": 6.596640617301787,
+        "log_det_curvature_reg_matrix_term": 30462.936033798396,
+        "log_det_regularization_matrix_term": 30434.78351814951,
+        "figure_of_merit": -159841.25800603192
+      },
+      "anchor_grad": {
+        "cholesky": {
+          "value": -159841.0236551806,
+          "value_finite": true,
+          "grad": [
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN
+          ],
+          "grad_finite": false
+        },
+        "slogdet": {
+          "value": -159841.18098576716,
+          "value_finite": true,
+          "grad": [
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN
+          ],
+          "grad_finite": false
+        }
+      },
+      "coefficient_grad": {
+        "cholesky": {
+          "value": -159841.0236551806,
+          "value_finite": true,
+          "grad": [
+            -0.010357795781979613,
+            -0.10274268230379285
+          ],
+          "grad_finite": true
+        },
+        "slogdet": {
+          "value": -159841.18098576716,
+          "value_finite": true,
+          "grad": [
+            -0.010196501123192264,
+            -0.10738396203022144
+          ],
+          "grad_finite": true
+        }
+      },
+      "classification": "anchor_singularity"
+    },
+    {
+      "draw_index": 383,
+      "source": "lambda_transect",
+      "classes": [
+        "transect"
+      ],
+      "vector_finite": true,
+      "coefficients": [
+        1000000.0,
+        1000000.0
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "has_exact_zero_anchor_component": true,
+      "control": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 399296.390602274,
+        "regularization_term": 1.256408927766065e-14,
+        "log_det_curvature_reg_matrix_term": null,
+        "log_det_regularization_matrix_term": null,
+        "figure_of_merit": null
+      },
+      "regularization_matrix_reduced_floor_fraction": 0.0,
+      "curvature_reg_matrix_reduced": {
+        "finite": true,
+        "min": -3.6211321622590815e+24,
+        "max": 1.860508535310478e+25,
+        "eig_min": -325346304.0,
+        "eig_max": 2.0844534433296265e+25,
+        "cond": Infinity,
+        "eigvalsh_logdet": null,
+        "lapack_cholesky_ok": false,
+        "lapack_cholesky_error": "Matrix is not positive definite",
+        "lapack_cholesky_logdet": null,
+        "np_slogdet_sign": -1.0,
+        "np_slogdet_logabsdet": 85262.73608172713
+      },
+      "upstream_nan": false,
+      "treatment": {
+        "mapping_matrix_finite": true,
+        "mapping_matrix_min": 0.0,
+        "mapping_matrix_max": 1.0,
+        "data_vector_finite": true,
+        "curvature_matrix_finite": true,
+        "reconstruction_finite": true,
+        "chi_squared": 399296.390602274,
+        "regularization_term": 1.256408927766065e-14,
+        "log_det_curvature_reg_matrix_term": 85262.73608172707,
+        "log_det_regularization_matrix_term": 85262.73608172707,
+        "figure_of_merit": -159830.56168242457
+      },
+      "anchor_grad": {
+        "cholesky": {
+          "value": null,
+          "value_finite": false,
+          "grad": [
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN
+          ],
+          "grad_finite": false
+        },
+        "slogdet": {
+          "value": -159830.56168242457,
+          "value_finite": true,
+          "grad": [
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN
+          ],
+          "grad_finite": false
+        }
+      },
+      "coefficient_grad": {
+        "cholesky": {
+          "value": null,
+          "value_finite": false,
+          "grad": [
+            NaN,
+            NaN
+          ],
+          "grad_finite": false
+        },
+        "slogdet": {
+          "value": -159830.56168242457,
+          "value_finite": true,
+          "grad": [
+            0.0,
+            0.0
+          ],
+          "grad_finite": true
+        }
+      },
+      "classification": "genuinely_singular"
+    },
+    {
+      "draw_index": 415,
+      "source": "descent",
+      "classes": [
+        "nan_both"
+      ],
+      "vector_finite": false,
+      "coefficients": [
+        null,
+        null
+      ],
+      "coefficient_lowers": [
+        1e-06,
+        1e-06
+      ],
+      "invalid_coefficient": false,
+      "anchor_component_values": [],
+      "has_exact_zero_anchor_component": false,
+      "classification": "dead_lane"
+    }
+  ]
+}

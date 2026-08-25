@@ -1,0 +1,65 @@
+#!/bin/bash -l
+#
+# W7 — CP-4 follow-up: per-draw NaN attribution on the AdaptSplit NaN wall
+# (autolens_profiling#164). Copy of ../batch_gpu/submit_slogdet_ab_adaptsplit_a100
+# pointed at scripts/misc/searches/slogdet_nan_attribution.py's tier-attack mode.
+#
+# NOT SUBMITTED as part of W7 (2026-08-24): the laptop/CPU replay of both
+# tier files (a100, ral_cpu) already answered the tier-attack question — see
+# results/notes/inference/phase_08_regularization/slogdet_ab/attribution/ and
+# RESULTS.md's "W7 addendum" section. This script exists so the SAME
+# comparison can be re-run natively on an A100 (rather than replayed on CPU
+# under JAX_PLATFORMS=cpu) if a future phase needs GPU-native
+# cholesky/slogdet numbers for the tier_flip / marginal_band draws specifically
+# — e.g. to check whether cuSOLVER's slogdet/cholesky agree with the CPU
+# LAPACK reference the same way OpenBLAS does. Submit manually if that
+# question comes up; do not submit as a matter of course.
+#
+# --matrix-only skips the fit_from() gradient closures (the expensive part —
+# see the module docstring's cost note) and only forms
+# curvature_reg_matrix_reduced, comparing LAPACK cholesky, np.linalg.slogdet,
+# an eigvalsh-reference logdet, and jnp cholesky/slogdet on it. --classes
+# tier_flip,marginal_band targets exactly the draws whose classification
+# depends on hardware (see PROGRAMME.md #164 / RESULTS.md).
+
+#SBATCH -J slogdet_nan_attribution_a100
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=64gb
+#SBATCH --time=2:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_profiling
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+nvidia-smi
+
+echo "=========================================="
+date
+echo "Experiment: W7 slogdet NaN attribution — GPU-native tier attack"
+echo "Cell:       imaging/delaunay_adapt_split/hst"
+
+cd $AP_ROOT
+
+python3 scripts/misc/searches/slogdet_nan_attribution.py \
+    --dataset-class imaging \
+    --model-type delaunay_adapt_split \
+    --instrument hst \
+    --tier-file a100 \
+    --classes tier_flip,marginal_band \
+    --matrix-only
+
+echo "Finished."
+date
