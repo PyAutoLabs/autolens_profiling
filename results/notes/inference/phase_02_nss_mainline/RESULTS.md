@@ -222,10 +222,16 @@ wall would grow further.
 |---|---|---:|---|---:|
 | imaging/mge/hst | 31690.47 → 31690.50 | 31786.63 | 773 → **707 s** (total 831 → 775) | 100 → 64 |
 | imaging/delaunay/hst | 30562.22 → 30562.24 | 30623.17 | 2,673 → **1,891 s** | 16 |
-| imaging/pixelization/hst | — | — | **not run**: job 339073 died in 6 s (`AttributeError: RectangularRTUAdaptImage` — RAL PyAutoArray mirror predated the Phase-14 Bilinear/RTU mesh split). Mirror pulled 2026-08-24, resubmitted as 339795. | — |
+| imaging/pixelization/hst | 29066.32 → **29590.14** | 29670.38 (May: 29143.29) | 2,721 → 3,293 s (339795, 56 min) | 16 |
 
-The truth bars are reaffirmed to 2 dp on the current stack; the fork-era
-Nautilus rows remain valid references. The MGE re-baseline settles the
+The mge and delaunay truth bars are reaffirmed to 2 dp on the current stack;
+their fork-era Nautilus rows remain valid references. **The pixelization row
+is NOT a reaffirmation: logZ moved +524 nats and max logL +527 because the
+cell's mesh changed at the Phase-14 split (`_pixelization_model` now builds
+`RectangularRTUAdaptImage`; the May row used `RectangularAdaptImage`). It is a
+different target (different `target_id` under schema v2), so the May
+pixelization row is retired as a reference and 29590.14 / 29670.38 is the
+bar for the RTU cell going forward.** The MGE re-baseline settles the
 "831/772.7 vs 523 s" wall discrepancy noted in phase_03: 707–773 s is the
 reproducible fp64 A100 tier; 523 s is not reproduced on this stack and is
 retired as a reference.

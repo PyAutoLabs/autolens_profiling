@@ -67,7 +67,7 @@ of PyAutoFit machinery is exercised and measured.
 | `nautilus` | `cluster/source_plane_tensor/simple` | `hpc_a100_fp64` | 69.8 | 8.5 | 482.73 s | 20,500 | 8.8 ms | — | — | v2026.7.23.1 |
 | `nautilus` | `imaging/delaunay/hst` | `hpc_a100_fp64` | 30,623.2 | 30,562.2 | 1938.52 s | 30,240 | 62.5 ms | — | — | v2026.8.17.1 |
 | `nautilus` | `imaging/mge/hst` | `hpc_a100_fp64` | 31,786.6 | 31,690.5 | 775.11 s | 62,208 | 11.4 ms | — | — | v2026.8.17.1 |
-| `nautilus` | `imaging/pixelization/hst` | `hpc_a100_fp64` | 29,143.3 | 29,066.3 | 2768.06 s | 58,464 | 46.5 ms | — | — | v2026.5.21.1 |
+| `nautilus` | `imaging/pixelization/hst` | `hpc_a100_fp64` | 29,670.4 | 29,590.1 | 3351.29 s | 55,984 | 58.8 ms | `801ba27b` | 2,215.8 | v2026.8.17.1 |
 | `nautilus` | `point_source/image_plane/simple` | `default` | 9.6 | -16.9 | 739.70 s | 13,760 | 53.8 ms | — | — | v2026.7.23.1 |
 | `nautilus` | `point_source/image_plane/simple` | `hpc_a100_fp64` | 9.6 | -16.8 | 217.11 s | 14,464 | 9.8 ms | — | — | v2026.7.23.1 |
 | `nautilus` | `point_source/image_plane_repeat_solved/simple` | `hpc_a100_fp64` | 7.9 | -8.0 | 162.72 s | 7,100 | 15.5 ms | — | — | v2026.7.23.1 |
