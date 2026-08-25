@@ -92,3 +92,77 @@ is a reminder owed once W7 reports. See DECISIONS.md 2026-08-24.
 - `coefficient_min = −5.2` in the A100 marginal band is the driver
   reporting the log-coefficient axis for transect draws; not a negative
   regularization.
+
+## 8B — pre-registration (2026-08-24)
+
+W5 (issue #162). PyAutoFit half merged to main (PR#1525 — `bijector.py`,
+`MultiStartGradient(bijector=...)`, opt-in `record_lane_nan_history` /
+`trace_param_indices`). Driver: `scripts/misc/searches/bijector_ab.py`
+(full pre-registration, arm table and readouts in its module docstring).
+Submit prepared, **not yet run**: `hpc/batch_gpu/submit_phase8b_bijector_a100`
+(A100, 39-task array, `--time=0:30:00` each). Submit id: **TBD** (fill in
+once dispatched).
+
+**Question.** Does stepping in `log(lambda)` for the free AdaptSplit
+regularization coefficients (`log_reg`: `af.BijectorPerPath` restricted to
+`"regularization."` paths backed by a `LogUniformPrior`) move the NaN-wall
+position, speed up free-regularization convergence, or reduce time spent at
+high coefficients — without moving the physical objective (a category-1
+reparameterization; see `autofit.non_linear.bijector`'s equivalence
+argument)?
+
+**Arms (39 tasks)**:
+
+| cell | log_det_method | bijector | seeds | n |
+|---|---|---|---|---:|
+| `delaunay_adapt_split` (the NaN wall — Phase 8A/CP-4) | cholesky, slogdet | none, log_reg | 0-4 | 20 |
+| `knn` (finite over-regularized floor; the cell 8B's text names) | auto (W8-resolved) | none, log_reg | 0-4 | 10 |
+| `knn` (secondary arm) | auto | logit | 0-4 | 5 |
+| `mge` (F4 control — no regularization coefficients at all) | auto | none, log_reg | 0-1 | 4 |
+
+Every arm: `multi_start_prodigy` (fixed-step), `n_starts=16`, `n_steps=3000`
+(#117-validated pixelized budget), `batch_size=4`, `clipper=prior_box`,
+`scaler=none`, `record_lane_nan_history=True`; `knn`/`delaunay_adapt_split`
+also trace the two regularization coefficients
+(`SEARCHES_TRACE_PARAMS`).
+
+**Pre-registered falsification** (any two of F1-F4 -> 8B falsified; F5 halts
+and is scored first — a trip means the bijector changed the physical
+objective, a bug, not a science finding):
+
+- **F1** — median first value-NaN step under `log_reg` not earlier than
+  `none` on `delaunay_adapt_split`, OR value-NaN lane-steps do not fall
+  below 50% of `none`'s.
+- **F2** — steps-to-within-10-nats of a reference log-posterior not reduced
+  >= 2x at matched seeds on `knn`. Framed against the historical
+  free-vs-fixed-regularization convergence figures cited in
+  `PROGRAMME.md:579` (**2,200 steps free vs 98 steps fixed**) — but see the
+  driver's module docstring: this campaign has no dedicated fixed-reg
+  control arm, so the actual reference used is the max `none`-arm
+  log-posterior per (cell, log_det_method) group, and the artifact records
+  the resolved value rather than replaying the bare 2,200/98 figures
+  literally. **This is a documented deviation from a literal reading of the
+  pre-registration**, flagged here for a human to confirm or override before
+  the verdict is treated as final.
+- **F3** — `log_reg` lanes spend >= the same fraction of steps at
+  lambda > 1e4 as `none`, on either wall cell.
+- **F4** — the `mge` control differs by any bit between `none`/`log_reg`
+  (it must not — MGE carries zero `LogUniformPrior` "regularization." paths,
+  so `log_reg` resolves to an empty `BijectorPerPath` map), OR the `knn`
+  `logit` arm reproduces a pinned-lane-to-infinity pathology.
+- **F5** — figure of merit at the shared initial broad-start draw (step-0
+  global-best fom) differs by more than 1e-9 relative between arms at a
+  matched seed.
+
+**Not yet run.** This section will be replaced with the verdict table once
+`--stage run` completes on RAL and `--stage score` (or `--score`) produces
+`results/notes/inference/phase_08_regularization/bijector_ab/verdict_<hardware>.json`.
+
+**Known gap, recorded rather than hidden**: the driver cannot recover
+Prodigy's internal step-scale estimate ("final `d`",
+`optax.contrib.ProdigyState.estim_lr`) from the standard results JSON
+pipeline — `search_internal["opt_state"]` is not serialized by
+`_per_lane.per_lane_block` (an unbounded, non-JSON-safe JAX pytree), and each
+arm runs in its own subprocess (matching the real SLURM array), so there is
+no in-process handle either. Every scored row carries `final_d: null` with
+this note rather than a silently-dropped field.

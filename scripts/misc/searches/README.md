@@ -284,6 +284,9 @@ rather than falling back silently):
 
 - `SEARCHES_NAUTILUS_SEED=<int>` — af.Nautilus RNG seed (identifier field) for repeated-seed campaigns; carry it in `--config-name` (W2, #160).
 - `SEARCHES_LOG_DET_METHOD=cholesky|slogdet` — overrides the evidence log-det. Default (W8, #165): `slogdet` for gradient-work samplers (MultiStart*/NUTS) on pixelized cells when JAX runs on a GPU; `cholesky` (packaged default) for nested samplers and on CPU. Recorded in the results JSON as `log_det_method`.
+- `SEARCHES_BIJECTOR=none|auto_log|log_reg|logit` — the MultiStart* per-parameter bijector arm (W5 Phase 8B, #162). See "Bijector A/B" below.
+- `SEARCHES_LANE_HISTORY=1` — turns on `record_lane_nan_history` (PyAutoFit PR#1525): per-step, per-lane value/grad-NaN booleans recorded into the results JSON's `diagnostics` block. Off by default (extra memory/time cost per step).
+- `SEARCHES_TRACE_PARAMS=<comma-separated dotted paths>` — turns on `trace_param_indices` (PyAutoFit PR#1525): per-step physical values for the named parameters, recorded as `diagnostics.trace_history`. Paths use `model.path_for_prior` format (the same format `SEARCHES_POSITIONS`/scaler/bijector info blocks use elsewhere in this repo).
 
 `auto` replicates SLaM's `positions_threshold_from(factor=3.0,
 minimum_threshold=0.2)`: `max(3.0 * max_sep(truth positions, truth tracer),
@@ -337,6 +340,48 @@ JAX_ENABLE_X64=True python scripts/misc/searches/positions_transects.py
 See `results/notes/inference/phase_04_positions/transects/RESULTS.md` for the
 write-up (classification rule, arms run, and the measured C0 hinge /
 interior-plateau / argmax-switch numbers).
+
+## Bijector A/B (`SEARCHES_BIJECTOR`)
+
+W5 Phase 8B (issue #162), following on from Phase 8A's `slogdet_ab.py`. The
+PyAutoFit half (`autofit/non_linear/bijector.py`, `MultiStartGradient
+(bijector=...)`, opt-in `record_lane_nan_history` / `trace_param_indices`
+diagnostics) is PyAutoFit PR#1525. `_samplers.py` resolves an arm label to a
+live `af.Bijector*` object and composes it into `multi_start_unique_tag` (a
+bijector arm never resumes another arm's `.completed` fit, same discipline as
+`SEARCHES_POSITIONS`/`SEARCHES_CLIPPER`/`SEARCHES_SCALER` above).
+
+| Label | Object | Notes |
+|---|---|---|
+| `none` (default) | `af.BijectorNone` | bit-identical to no bijector at all |
+| `auto_log` | `af.BijectorAuto` | log on every eligible `LogUniformPrior`/`LogGaussianPrior`, unrestricted |
+| `log_reg` | `af.BijectorPerPath` | log ONLY on paths containing `"regularization."` backed by a `LogUniformPrior` — resolved via a throwaway probe model (`_samplers._probe_model`), never the real dataset |
+| `logit` | `af.BijectorLogit` | secondary/opt-in arm — see `autofit.non_linear.bijector`'s module docstring on why it is not a default |
+
+`SEARCHES_LANE_HISTORY=1` / `SEARCHES_TRACE_PARAMS=<paths>` (see the env-var
+list above) are the diagnostics the A/B reads: `_per_lane.per_lane_block`
+forwards `lane_value_nan_history` / `lane_grad_nan_history` / `trace_history`
+/ `trace_param_indices` from `search_internal` straight into every
+MultiStart* results JSON's `diagnostics` block when the search was built with
+them on.
+
+Driver: `scripts/misc/searches/bijector_ab.py` — pre-registration, the 39-arm
+table (`delaunay_adapt_split` x {cholesky,slogdet} x {none,log_reg} x 5 seeds;
+`knn` x {none,log_reg,logit} x 5 seeds; `mge` control x {none,log_reg} x 2
+seeds), readouts and the F1-F5 falsification scorer are all in its module
+docstring. Run:
+
+```bash
+python3 scripts/misc/searches/bijector_ab.py --stage run     # 39 real searches (GPU)
+python3 scripts/misc/searches/bijector_ab.py --stage score   # F1-F5 verdict from the JSONs
+```
+
+Results land under
+`results/searches/multi_start_prodigy/imaging/<cell>/hst/phase8b/` (per-arm
+JSON+PNG) and `results/notes/inference/phase_08_regularization/bijector_ab/`
+(the verdict artifact). See `results/notes/inference/phase_08_regularization/RESULTS.md`
+"8B" for the write-up once run, and `hpc/batch_gpu/submit_phase8b_bijector_a100`
+for the A100 submit.
 
 ## What this *doesn't* profile (yet)
 
