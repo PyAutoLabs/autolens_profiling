@@ -1444,11 +1444,37 @@ def _slam_source_pix_nn_model(*, mask_radius: float) -> af.Collection:
     reason; ``_slam_source_pix_model``'s ``Adapt`` is safe only because the
     rectangular family has analytic neighbors.
 
-    CONFOUND, recorded not resolved: this arm now differs from
-    ``_slam_source_pix_model`` in BOTH mesh and regularization, so the pair no
-    longer isolates the mesh. Restoring that would mean giving
-    ``slam_source_pix`` a matching ``AdaptSplit`` variant — a science call that
-    has not been made. Cite this caveat with any RTU-vs-DelaunayNN comparison.
+    CONFOUND — RECORDED, DELIBERATELY NOT FIXED (human call 2026-08-26). This
+    arm differs from ``_slam_source_pix_model`` in BOTH mesh and
+    regularization, so the pair does not isolate the mesh. Cite this caveat
+    with any RTU-vs-DelaunayNN comparison.
+
+    Note the pair was **never** a clean mesh comparison, before or after this
+    change: ``RectangularRTUAdaptImage`` carries two free adapt-weighting
+    priors (``weight_power``, ``weight_floor``) and ``DelaunayNN`` carries
+    none, so ``slam_source_pix`` is 16 free parameters against this cell's 14.
+    The regularization was the matched half and the mesh never was. Giving
+    ``slam_source_pix`` a matching ``AdaptSplit`` variant would restore the
+    regularization axis but leave the two-parameter mesh gap standing, which is
+    why it was judged not worth another reference row and another A100 bake.
+
+    RISK ON THIS ARM, live at the time of writing. ``AdaptSplit`` on a
+    Delaunay-family mesh is the combination ``_delaunay_adapt_split_model``
+    documents as "the cell where the NaN wall actually lives" (Phase 8A/CP-4),
+    and ``_knn_model`` records that AdaptSplit's double-squared coefficients
+    make its high-coefficient region a *finite* floor on KNN but a NaN wall on
+    the Delaunay family. This cell also had the worst broad-prior-draw record
+    of the registry even under ``reg.Adapt`` (1/8 finite, 2/8 NaN, 5/8
+    FitException — see ``_targets.py``'s W4 verification note). Against that:
+    every one of those measurements comes from GRADIENT campaigns, where a NaN
+    traps a lane, and this target runs under Nautilus, which rejects a NaN draw
+    instead. No Nautilus run on any free-AdaptSplit cell existed when this was
+    written, so reference row `ref` (positions off) was submitted first, alone,
+    as the pilot that decides it. If it converges, the positions-on row
+    follows; if it thrashes on resamples, that is a Phase-1 finding to record
+    rather than a config to quietly swap — DECISIONS.md 2026-08-24 is explicit
+    that DelaunayNN's resample behaviour is a finding, not something this
+    registry engineers around.
     """
     lens_bulge = al.model_util.mge_model_from(
         mask_radius=mask_radius,

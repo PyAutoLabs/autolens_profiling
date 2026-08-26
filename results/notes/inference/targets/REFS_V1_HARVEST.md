@@ -74,8 +74,27 @@ regularization, so the RTU-vs-DelaunayNN pair no longer isolates the mesh.
 Either `slam_source_pix` gains a matching `AdaptSplit` variant, or the confound
 is accepted and recorded on both targets' `notes`.
 
-The confound is recorded in `_slam_source_pix_nn_model`'s docstring and must
-be cited with any RTU-vs-DelaunayNN comparison until the call is made.
+**Human call 2026-08-26: record the confound, do not fix it.** The pair was
+never a clean mesh comparison anyway — `RectangularRTUAdaptImage` carries two
+free adapt-weighting priors (`weight_power`, `weight_floor`) and `DelaunayNN`
+carries none, so `slam_source_pix` is 16 free parameters against this cell's
+14. The regularization was the matched half; the mesh never was. A matching
+`AdaptSplit` variant of `slam_source_pix` would restore one axis and leave the
+mesh gap, so it was judged not worth another reference row and A100 bake. Cite
+the caveat with any RTU-vs-DelaunayNN reading.
+
+**Pilot in flight.** `AdaptSplit` on a Delaunay-family mesh is the combination
+`_delaunay_adapt_split_model` documents as "the cell where the NaN wall
+actually lives", and this cell already had the registry's worst broad-prior
+record even under `reg.Adapt` (1/8 finite, 2/8 NaN, 5/8 FitException). But all
+of that was measured under GRADIENT search, where a NaN traps a lane; this
+target runs under Nautilus, which rejects the draw instead, and no Nautilus run
+on a free-AdaptSplit cell existed to settle it. So the positions-off row went
+up alone as **RAL job 341908** rather than spending both rows at once. If it
+converges the positions-on row follows; if it thrashes on resamples, that is a
+Phase-1 finding to record — DECISIONS.md 2026-08-24 is explicit that
+DelaunayNN's resample behaviour is a finding, not something to engineer
+around.
 
 ## Status
 
