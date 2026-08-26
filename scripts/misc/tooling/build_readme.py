@@ -57,6 +57,16 @@ from pathlib import Path
 from typing import Optional
 
 REPO_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "ruff.toml").exists())
+
+_MISC_DIR = str(REPO_ROOT / "scripts" / "misc")
+if _MISC_DIR not in sys.path:
+    sys.path.insert(0, _MISC_DIR)
+
+from searches._metrics import (  # noqa: E402
+    EVAL_BASIS_STORED_ONLY,
+    eval_counter_basis,
+)
+
 RESULTS_ROOT = REPO_ROOT / "results"
 RUNTIME_ROOT = RESULTS_ROOT / "runtime"
 BASELINES_ROOT = RESULTS_ROOT / "baselines"
@@ -538,14 +548,24 @@ def _render_pipeline_resume_table(artifacts: list[Artifact]) -> str:
 def _render_searches_table(search_artifacts: list[SearchArtifact]) -> str:
     """Latest run per (sampler, cell, config) from the searches framework.
 
-    Every column below reads only ``results.*`` / ``performance.*`` — v1
-    keys present unchanged in a schema-v2 payload (W4 / issue #161, Phase 1
-    adds ``target``/``algorithm``/``hardware``/``schema_version`` BESIDE the
-    v1 keys, never in place of them) — so this table renders identically for
-    a v1 or v2 artifact except for the two trailing columns below, which read
-    the new ``target``/``performance.kish_ess`` keys and render ``—`` when
-    absent (v1 artifacts, or a cell the Phase 1 TARGETS registry doesn't
-    cover).
+    Most columns read only ``results.*`` / ``performance.*`` — v1 keys
+    present unchanged in a schema-v2 payload (W4 / issue #161, Phase 1 adds
+    ``target``/``algorithm``/``hardware``/``schema_version`` BESIDE the v1
+    keys, never in place of them). ``Target`` and ``ESS`` read the new
+    ``target``/``performance.kish_ess`` keys and render ``—`` when absent
+    (v1 artifacts, or a cell the Phase 1 TARGETS registry doesn't cover).
+
+    ``Evals`` and ``Time / eval`` are the exception, and the reason this
+    function is not schema-blind (issue #177). ``likelihood_evals`` changed
+    MEANING for ``MultiStart*`` searches between v1 and v2: v1 recorded the
+    posterior-storage count, v2 the reject-inclusive ``total_steps *
+    n_starts``. Rendering both as "Evals" in one column put 257 next to
+    247,808 for the same Prodigy n256 configuration, and the derived
+    per-eval figures 874.58 ms next to 2.23 ms. Such a row is now marked
+    ``stored`` in the ``Basis`` column with both cells rendered ``—``: the
+    step count was never written, so the true eval figure is not recoverable
+    from the artifact and a placeholder would be a guess. A v1 NESTED row is
+    unaffected — ``total_samples`` was already reject-inclusive there.
     """
     if not search_artifacts:
         return _no_data_block(
@@ -554,9 +574,9 @@ def _render_searches_table(search_artifacts: list[SearchArtifact]) -> str:
     latest = _latest_per_group(search_artifacts, key=lambda a: (a.sampler, a.cell, a.config))
     rows = [
         "| Sampler | Cell | Config | max logL | logZ | Wall | Evals | Time / eval | "
-        "Target | ESS | Version |",
+        "Basis | Target | ESS | Version |",
         "|---------|------|--------|---------:|-----:|-----:|------:|------------:|"
-        "--------|----:|---------|",
+        "-------|--------|----:|---------|",
     ]
 
     def _fmt_num(v) -> str:
@@ -566,8 +586,13 @@ def _render_searches_table(search_artifacts: list[SearchArtifact]) -> str:
         data = art.data
         results = data.get("results") or {}
         perf = data.get("performance") or {}
-        evals = perf.get("likelihood_evals")
-        per_eval = perf.get("time_per_eval_ms")
+        basis = eval_counter_basis(data)
+        stored_only = basis == EVAL_BASIS_STORED_ONLY
+        # Withheld, not approximated: a v1 MultiStart artifact never recorded
+        # total_steps, so there is no honest number to put here.
+        evals = None if stored_only else perf.get("likelihood_evals")
+        per_eval = None if stored_only else perf.get("time_per_eval_ms")
+        basis_cell = "stored" if stored_only else "evals"
         target_id = (data.get("target") or {}).get("target_id")
         kish_ess = perf.get("kish_ess")
         rows.append(
@@ -577,11 +602,20 @@ def _render_searches_table(search_artifacts: list[SearchArtifact]) -> str:
             f"{_format_time(perf.get('total_wall_s'))} | "
             f"{f'{evals:,}' if isinstance(evals, int) else '—'} | "
             f"{f'{per_eval:.1f} ms' if isinstance(per_eval, (int, float)) else '—'} | "
+            f"{basis_cell} | "
             f"{f'`{target_id[7:15]}`' if isinstance(target_id, str) else '—'} | "
             f"{_fmt_num(kish_ess)} | "
             f"v{art.raw_version} |"
         )
-    return "\n" + "\n".join(rows) + "\n"
+    footnote = (
+        "\n_`Basis` — what `likelihood_evals` counts in that row. `evals` = "
+        "reject-inclusive evaluations, comparable across rows. `stored` = a "
+        "pre-schema-v2 MultiStart run that recorded stored samples, not "
+        "evaluations; its step count was never written, so `Evals` and "
+        "`Time / eval` are withheld rather than guessed. Never compare a "
+        "per-eval figure against a `stored` row (issue #177)._\n"
+    )
+    return "\n" + "\n".join(rows) + "\n" + footnote
 
 
 def _render_headline(
