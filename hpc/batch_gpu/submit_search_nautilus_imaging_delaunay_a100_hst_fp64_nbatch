@@ -20,6 +20,18 @@
 #
 # WALL-TIME: re-baseline 1,939 s total at n_batch=16 (VRAM-probed cap; 64/256 rely on the 80 GB A100). 3:00:00 is ~5.5x.
 #
+# WALL-BASIS: — one row per cell this submit runs. See scripts/misc/wall/README.md.
+#   `rates` cites a step rate measured on THAT cell (wall/rates.py); an MGE rate
+#   can never stand in for a pixelized cell — that is what killed RAL job 340576.
+#   Every arm of this submit has now RUN, so the basis is this cell's own
+#   completed totals rather than the re-baseline the WALL-TIME line cites:
+#   n_batch 16/64/256 came in at 2088.2 / 1750.8 / 1758.4 s. NOTE the slowest
+#   arm (2088 s) OVERRAN that 1,939 s re-baseline by 8% — the --time was ample
+#   either way, but the re-baseline was not itself a safe ceiling.
+#   cell: imaging/delaunay/hst  device: a100  precision: fp64
+#   wall: 2089  source: measured-wall  ref: nbatch-scan-arms-max
+#   compile: 0  headroom: 1.25
+
 #SBATCH -J search_nautilus_imaging_delaunay_hst_fp64_nbatch
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1

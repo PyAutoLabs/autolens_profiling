@@ -20,6 +20,18 @@
 #
 # WALL-TIME: re-baseline 775 s total at n_batch=64; larger batches should be faster. 1:30:00 is ~7x.
 #
+# WALL-BASIS: — one row per cell this submit runs. See scripts/misc/wall/README.md.
+#   `rates` cites a step rate measured on THAT cell (wall/rates.py); an MGE rate
+#   can never stand in for a pixelized cell — that is what killed RAL job 340576.
+#   Every arm of this submit has now RUN, so the basis is this cell's own
+#   completed totals rather than the re-baseline the WALL-TIME line cites:
+#   n_batch 64/128/256/512/1000 came in at 737.8 / 680.8 / 612.3 / 633.2 / 525.6 s.
+#   `wall` is the slowest of them, not the mean — the budget has to cover the
+#   worst arm, and n_batch=64 is the slowest by construction here.
+#   cell: imaging/mge/hst  device: a100  precision: fp64
+#   wall: 738  source: measured-wall  ref: nbatch-scan-arms-max
+#   compile: 0  headroom: 1.25
+
 #SBATCH -J search_nautilus_imaging_mge_hst_fp64_nbatch
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
