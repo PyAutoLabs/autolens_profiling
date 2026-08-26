@@ -29,6 +29,14 @@
 #      the anchor's completed fit. (num_mcmc_steps is also an NSS
 #      __identifier_fields__ entry, so the autofit identifier differs too.)
 
+# WALL-BASIS: — one row per cell this submit runs. See scripts/misc/wall/README.md.
+#   `rates` cites a step rate measured on THAT cell (wall/rates.py); an MGE rate
+#   can never stand in for a pixelized cell — that is what killed RAL job 340576.
+#   cell: imaging/mge/hst  device: a100  precision: fp64
+#   source: unmeasured  probe-first: yes
+#   NOTE: no step rate has been measured on this cell. Run one short arm
+#   before trusting --time; a truncated arm still measures s/step.
+
 #SBATCH -J search_nss_imaging_mge_hst_fp64_inner30
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1

@@ -60,6 +60,13 @@
 #   knob absent from __identifier_fields__ and must never distinguish arms).
 #   Do not co-schedule anything else on the card.
 
+# WALL-BASIS: — one row per cell this submit runs. See scripts/misc/wall/README.md.
+#   `rates` cites a step rate measured on THAT cell (wall/rates.py); an MGE rate
+#   can never stand in for a pixelized cell — that is what killed RAL job 340576.
+#   cell: imaging/delaunay/hst  device: a100  precision: fp64
+#   wall: 29720  source: measured-wall  ref: fork-row-sampler-wall
+#   compile: 0  headroom: 1.25
+
 #SBATCH -J search_nss_imaging_delaunay_hst_fp64_mainline
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
