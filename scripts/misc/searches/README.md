@@ -66,7 +66,15 @@ of PyAutoFit machinery is exercised and measured.
 | `nautilus` | `cluster/source_plane_solved/simple` | `hpc_a100_fp64` | 43.4 | 12.7 | 442.81 s | 7,200 | 14.4 ms | — | — | v2026.7.23.1 |
 | `nautilus` | `cluster/source_plane_tensor/simple` | `hpc_a100_fp64` | 69.8 | 8.5 | 482.73 s | 20,500 | 8.8 ms | — | — | v2026.7.23.1 |
 | `nautilus` | `imaging/delaunay/hst` | `hpc_a100_fp64` | 30,623.2 | 30,562.2 | 1938.52 s | 30,240 | 62.5 ms | — | — | v2026.8.17.1 |
+| `nautilus` | `imaging/delaunay/hst` | `hpc_a100_fp64_nbatch16` | 30,623.8 | 30,562.1 | 2088.15 s | 30,432 | 66.7 ms | `a45841ff` | 2,464.3 | v2026.8.17.1 |
+| `nautilus` | `imaging/delaunay/hst` | `hpc_a100_fp64_nbatch256` | 30,622.8 | 30,562.2 | 1758.41 s | 33,536 | 50.8 ms | `a45841ff` | 2,387.1 | v2026.8.17.1 |
+| `nautilus` | `imaging/delaunay/hst` | `hpc_a100_fp64_nbatch64` | 30,623.0 | 30,562.2 | 1750.83 s | 32,064 | 53.0 ms | `a45841ff` | 2,335.1 | v2026.8.17.1 |
 | `nautilus` | `imaging/mge/hst` | `hpc_a100_fp64` | 31,786.6 | 31,690.5 | 775.11 s | 62,208 | 11.4 ms | — | — | v2026.8.17.1 |
+| `nautilus` | `imaging/mge/hst` | `hpc_a100_fp64_nbatch1000` | 31,787.0 | 31,690.4 | 525.55 s | 77,000 | 5.9 ms | `770ccd47` | 4,693.6 | v2026.8.17.1 |
+| `nautilus` | `imaging/mge/hst` | `hpc_a100_fp64_nbatch128` | 31,786.7 | 31,690.5 | 680.84 s | 64,768 | 9.5 ms | `770ccd47` | 4,247.8 | v2026.8.17.1 |
+| `nautilus` | `imaging/mge/hst` | `hpc_a100_fp64_nbatch256` | 31,786.9 | 31,690.5 | 612.28 s | 66,304 | 8.1 ms | `770ccd47` | 4,156.3 | v2026.8.17.1 |
+| `nautilus` | `imaging/mge/hst` | `hpc_a100_fp64_nbatch512` | 31,786.9 | 31,690.5 | 633.18 s | 67,584 | 8.4 ms | `770ccd47` | 4,574.5 | v2026.8.17.1 |
+| `nautilus` | `imaging/mge/hst` | `hpc_a100_fp64_nbatch64` | 31,786.9 | 31,690.5 | 737.83 s | 63,424 | 10.6 ms | `770ccd47` | 4,304.1 | v2026.8.17.1 |
 | `nautilus` | `imaging/pixelization/hst` | `hpc_a100_fp64` | 29,670.4 | 29,590.1 | 3351.29 s | 55,984 | 58.8 ms | `801ba27b` | 2,215.8 | v2026.8.17.1 |
 | `nautilus` | `point_source/image_plane/simple` | `default` | 9.6 | -16.9 | 739.70 s | 13,760 | 53.8 ms | — | — | v2026.7.23.1 |
 | `nautilus` | `point_source/image_plane/simple` | `hpc_a100_fp64` | 9.6 | -16.8 | 217.11 s | 14,464 | 9.8 ms | — | — | v2026.7.23.1 |
