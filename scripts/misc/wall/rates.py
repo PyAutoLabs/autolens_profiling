@@ -1,0 +1,146 @@
+"""Per-cell measured step rates for HPC submit `--time` estimates.
+
+Populated **only** from rates measured on the cell the row names. Nothing in
+this table is interpolated, extrapolated, or carried over from a neighbouring
+cell — that carry-over is the defect this module exists to prevent.
+
+Why it exists
+-------------
+
+`hpc/batch_gpu/submit_phase8b_bijector_a100` set ``--time=0:30:00`` and
+justified it in its own comment with an **MGE** step rate, for an array whose
+arms were mostly ``knn`` and ``delaunay_adapt_split``. Rates measured on RAL
+2026-08-25 (from the truncated arms of job 340576):
+
+===================== ========== ==================
+cell                  s/step     3000 steps
+===================== ========== ==================
+mge                   0.117      ~350 s
+knn                   2.23       ~1.9 h  (19x)
+delaunay_adapt_split  4.83       ~4.0 h  (41x)
+===================== ========== ==================
+
+So the "6x headroom" the comment claimed was ~8x short for knn and ~16x short
+for delaunay. **35 of 39 arms were killed at ~12% of budget**, losing an
+overnight A100 block; the only 4 that finished were the mge controls — the
+cells the citation actually described.
+
+Pixelized cells are per-eval-inversion bound and parametric cells are not.
+Nothing about a step rate is portable across that boundary.
+
+The rule
+--------
+
+Never carry a ``--time`` justification across cells. Derive it from a measured
+rate for *that* cell, and when no measurement exists, run one short arm first —
+a 30-minute truncated arm still measures s/step, which is exactly how the
+numbers above were recovered from the failed block.
+
+`wall/check_submits.py` enforces this on every submit that runs a searches
+cell; `hpc/README.md` states the authoring contract.
+
+Table shape
+-----------
+
+Keys are ``(dataset, cell, instrument, device, precision, n_lanes,
+batch_size)``. ``batch_size`` is part of the key — not a detail — because the
+unbatched MGE lane rows and the ``batch_size=4`` pixelized rows are genuinely
+different configurations of the same cell, and their rates differ by more than
+2x at the same lane count. ``None`` means the arm ran unbatched.
+
+Adding a row
+------------
+
+1. Measure it on the cell itself — a full arm, or a truncated one (steps
+   completed / wall elapsed, from the arm's own log).
+2. Add the row below with an inline comment naming the job and date.
+3. Add or extend the matching ``PROVENANCE`` entry.
+4. Point the submit's ``# WALL-BASIS:`` block at it with ``source: rates``.
+"""
+
+from __future__ import annotations
+
+# Key: (dataset, cell, instrument, device, precision, n_lanes, batch_size)
+# Value: seconds per step, measured on that exact configuration.
+STEP_RATE: dict[tuple[str, str, str, str, str, int, int | None], float] = {
+    # =========================================================================
+    # Pixelized imaging cells, 16 lanes, batch_size=4 (the mandatory chunking
+    # on pixelized cells). Measured 2026-08-25 from the truncated arms of RAL
+    # job 340576 — the block that phase8b's MGE citation killed.
+    # =========================================================================
+    ("imaging", "delaunay_adapt_split", "hst", "a100", "fp64", 16, 4): 4.83,  # 3000 steps ~ 4.0 h
+    ("imaging", "knn", "hst", "a100", "fp64", 16, 4): 2.23,  # 3000 steps ~ 1.9 h
+    #
+    # The MGE control arms from the same job — the 4 of 39 that completed.
+    # 41x faster than delaunay_adapt_split at the SAME lanes/batch_size.
+    ("imaging", "mge", "hst", "a100", "fp64", 16, 4): 0.117,  # 3000 steps ~ 350 s
+    #
+    # =========================================================================
+    # Parametric imaging cell, unbatched, per lane tier. These are the rows the
+    # n16/n64/n256 multi_start_prodigy submits already cite in their own
+    # ESTIMATED WALL blocks, measured on A100 fp64 with a warm compile cache.
+    # They are MGE-only and must never be quoted for a pixelized cell.
+    # =========================================================================
+    ("imaging", "mge", "hst", "a100", "fp64", 16, None): 0.05,  # ~150 s at the 3000-step ceiling
+    ("imaging", "mge", "hst", "a100", "fp64", 64, None): 0.19,  # ~570 s
+    ("imaging", "mge", "hst", "a100", "fp64", 256, None): 0.77,  # ~2300 s
+    #
+    # NOTE — the n128 tier is deliberately ABSENT. Its submit's ~0.38 s/step is
+    # interpolated between the n64 and n256 rows, not measured. An interpolated
+    # rate is exactly the kind of unearned citation this table refuses to carry;
+    # that submit declares `source: measured-wall` against its observed runs
+    # instead.
+}
+
+PROVENANCE: dict[str, str] = {
+    "pixelized_hst_a100_fp64_n16_b4": (
+        "measured 2026-08-25 on RAL A100 (job 340576) from the truncated arms of the "
+        "Phase 8B bijector A/B; steps completed / wall elapsed per arm. 35 of 39 arms "
+        "were killed at ~12% of a 0:30:00 budget set from an MGE citation — these are "
+        "the rates recovered from that failure. Write-up: "
+        "results/notes/inference/phase_08_regularization/wall_clock_340576.md"
+    ),
+    "mge_hst_a100_fp64_unbatched": (
+        "A100 fp64 with a warm compile cache, as cited by the n16/n64/n256 "
+        "multi_start_prodigy submits' own ESTIMATED WALL blocks. MGE only."
+    ),
+}
+
+
+class UnmeasuredCellError(KeyError):
+    """No measured step rate exists for the requested configuration.
+
+    Raised instead of returning a nearby cell's rate. Falling back across cells
+    is the bug — see this module's docstring.
+    """
+
+
+def step_rate_for(
+    dataset: str,
+    cell: str,
+    instrument: str,
+    device: str,
+    precision: str,
+    n_lanes: int,
+    batch_size: int | None = None,
+) -> float:
+    """Seconds per step for exactly this configuration.
+
+    There is **no** nearest-neighbour fallback: an unmeasured configuration
+    raises `UnmeasuredCellError` rather than silently answering with a rate
+    measured on a different cell, lane count or batching.
+    """
+    key = (dataset, cell, instrument, device, precision, n_lanes, batch_size)
+    try:
+        return STEP_RATE[key]
+    except KeyError:
+        raise UnmeasuredCellError(
+            f"no measured step rate for {key!r}. Do not substitute another cell's rate — "
+            f"run one short arm on this cell and add the row to wall/rates.py, or declare "
+            f"`source: unmeasured` with `probe-first: yes` in the submit's WALL-BASIS block."
+        ) from None
+
+
+def wall_estimate(rate_s_per_step: float, n_steps: int, compile_s: float = 0.0) -> float:
+    """Estimated wall seconds for `n_steps` at `rate_s_per_step`, plus compile."""
+    return rate_s_per_step * n_steps + compile_s

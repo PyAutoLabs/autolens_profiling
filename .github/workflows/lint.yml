@@ -91,6 +91,15 @@ jobs:
         working-directory: autolens_profiling
         run: python scripts/misc/tooling/build_readme.py --check
 
+      - name: wall check_submits.py --check (per-cell --time basis)
+        working-directory: autolens_profiling
+        run: |
+          # Every searches submit must justify its --time from a rate measured
+          # on the cell it runs. submit_phase8b_bijector_a100 cited an MGE rate
+          # for a mostly-pixelized array and RAL job 340576 lost 35 of 39 arms
+          # at ~12% of budget. Pure stdlib -- no PyAuto* imports, no PYTHONPATH.
+          python scripts/misc/wall/check_submits.py --check
+
       - name: pytest — scripts/misc/test/
         working-directory: autolens_profiling
         env:

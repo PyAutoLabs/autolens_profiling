@@ -69,6 +69,13 @@
 #   --config-name carries n_starts AND seed, so each of the 5 array tasks
 #   writes its own results JSON and its own af search name/output directory.
 
+# WALL-BASIS: — one row per cell this submit runs. See scripts/misc/wall/README.md.
+#   `rates` cites a step rate measured on THAT cell (wall/rates.py); an MGE rate
+#   can never stand in for a pixelized cell — that is what killed RAL job 340576.
+#   cell: imaging/mge/hst  device: a100  precision: fp64
+#   wall: 225  source: measured-wall  ref: observed-172-225s-prior-runs
+#   compile: 0  headroom: 1.25
+
 #SBATCH -J cp3_prodigy_mge_n128
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1

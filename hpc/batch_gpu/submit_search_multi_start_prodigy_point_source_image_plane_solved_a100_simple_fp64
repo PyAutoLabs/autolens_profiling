@@ -8,6 +8,14 @@
 # Feeds exp2 (image-plane solved-vs-free): solved-centre gradient MAP
 # counterpart to image_plane.py.
 
+# WALL-BASIS: — one row per cell this submit runs. See scripts/misc/wall/README.md.
+#   `rates` cites a step rate measured on THAT cell (wall/rates.py); an MGE rate
+#   can never stand in for a pixelized cell — that is what killed RAL job 340576.
+#   cell: point_source/image_plane_solved/simple  device: a100  precision: fp64
+#   source: unmeasured  probe-first: yes
+#   NOTE: no step rate has been measured on this cell. Run one short arm
+#   before trusting --time; a truncated arm still measures s/step.
+
 #SBATCH -J search_msp_point_source_image_plane_solved_simple_fp64
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1

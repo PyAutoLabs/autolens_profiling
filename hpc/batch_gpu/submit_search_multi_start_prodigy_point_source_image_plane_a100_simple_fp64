@@ -9,6 +9,14 @@
 # galaxy-tier cells because the free-centre fit runs the full 256-start
 # Prodigy history.
 
+# WALL-BASIS: — one row per cell this submit runs. See scripts/misc/wall/README.md.
+#   `rates` cites a step rate measured on THAT cell (wall/rates.py); an MGE rate
+#   can never stand in for a pixelized cell — that is what killed RAL job 340576.
+#   cell: point_source/image_plane/simple  device: a100  precision: fp64
+#   source: unmeasured  probe-first: yes
+#   NOTE: no step rate has been measured on this cell. Run one short arm
+#   before trusting --time; a truncated arm still measures s/step.
+
 #SBATCH -J search_msp_point_source_image_plane_simple_fp64
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1

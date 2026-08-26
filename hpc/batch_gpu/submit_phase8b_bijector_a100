@@ -25,9 +25,25 @@
 # none). SEARCHES_LOG_DET_METHOD is only exported for delaunay_adapt_split
 # (LOG_DETS[i]="auto" -> unset, uses the W8-resolved default).
 #
-# ESTIMATED WALL — 16 starts x 3000 steps at the #117-validated pixelized
-# throughput is ~5 min including compile per task (matches the diagnostic_
-# theta_e submit's n16/3000-step citation); --time below gives it 6x headroom.
+# ESTIMATED WALL — set by the SLOWEST cell in the array, not the fastest.
+# The WALL-BASIS block below is the machine-checked half; this is the why.
+#
+# The original version of this comment cited "the #117-validated pixelized
+# throughput ... ~5 min including compile per task ... 6x headroom". That was
+# an MGE rate. It does not transfer: at 16 lanes / batch_size=4 on A100 fp64,
+# mge runs 0.117 s/step but knn runs 2.23 (19x) and delaunay_adapt_split 4.83
+# (41x). The claimed 6x headroom was ~8x short for knn and ~16x short for
+# delaunay, and RAL job 340576 was killed at ~12% of budget on 35 of its 39
+# arms — an entire overnight A100 block. The 4 that finished were the mge
+# controls, i.e. the only cells the citation actually described.
+#
+#   delaunay_adapt_split  4.83 s/step x 3000 = 14,490 s + ~300 s compile ~ 4.1 h
+#   knn                   2.23 s/step x 3000 =  6,690 s + ~300 s compile ~ 1.9 h
+#   mge                   0.117 s/step x 3000 =   351 s + ~150 s compile ~ 8 min
+#
+# --time=7:00:00 clears 1.5x the delaunay row (22,185 s needed). Rates measured
+# 2026-08-25 from this job's own truncated arms; they live in
+# scripts/misc/wall/rates.py and `wall/check_submits.py` enforces them.
 #
 # RESULTS — one JSON+PNG per task under
 #   results/searches/multi_start_prodigy/imaging/<cell>/hst/phase8b/
@@ -40,13 +56,26 @@
 # record_lane_nan_history=..., trace_param_indices=...)`) — run `HPCPullPyAuto`
 # and check first; an older PyAutoFit raises on the `bijector=` kwarg.
 
+# WALL-BASIS: — one row per cell this submit runs. See scripts/misc/wall/README.md.
+#   `rates` cites a step rate measured on THAT cell (wall/rates.py); an MGE rate
+#   can never stand in for a pixelized cell — that is what killed RAL job 340576.
+#   cell: imaging/delaunay_adapt_split/hst  device: a100  precision: fp64
+#   lanes: 16  batch_size: 4  steps: 3000  rate: 4.83  source: rates
+#   compile: 300  headroom: 1.5
+#   cell: imaging/knn/hst  device: a100  precision: fp64
+#   lanes: 16  batch_size: 4  steps: 3000  rate: 2.23  source: rates
+#   compile: 300  headroom: 1.5
+#   cell: imaging/mge/hst  device: a100  precision: fp64
+#   lanes: 16  batch_size: 4  steps: 3000  rate: 0.117  source: rates
+#   compile: 150  headroom: 1.5
+
 #SBATCH -J phase8b_bijector_ab
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=64gb
-#SBATCH --time=0:30:00
+#SBATCH --time=7:00:00
 #SBATCH --array=0-38
 #SBATCH -o output/output.%A_%a.out
 #SBATCH -e error/error.%A_%a.err
