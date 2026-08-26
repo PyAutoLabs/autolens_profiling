@@ -36,19 +36,43 @@ Fixed in this change: both added at the 150 fiducial every other imaging mesh
 cell uses. **These two rows need a resubmit** — they are not in the table
 above.
 
-## Rows lost — cause 2: Sibson mesh is not jit-safe (OPEN)
+## Rows lost — cause 2: `reg.Adapt` on a Delaunay-family mesh (OPEN)
 
 Tasks 5 and 6 (`imaging/slam_source_pix_nn`) died after ~52 s with
-`jax.errors.TracerArrayConversionError`: `scipy.spatial.Delaunay.__init__`
-called on a traced `float64[1500,2]`, traced from
-`autofit/non_linear/fitness.py:205`. Call site is
-`PyAutoArray/autoarray/inversion/mesh/interpolator/sibson.py:555`.
+`jax.errors.TracerArrayConversionError`. The frames enter through the
+**regularization**, not the mesh interpolator:
 
-This is a library defect, not a submit error — filed in PyAutoMind as
-`draft/bug/autoarray/sibson_mesh_scipy_delaunay_under_jit.md`. Note that plain
-`delaunay_nn` completed normally in the same array (rows above), because
-`interpolator/delaunay.py:170` carries a JAX point-location routine that
-Sibson lacks. **`slam_source_pix_nn` cannot be certified until that is fixed.**
+    linear_obj.py:171            regularization_matrix
+      regularization/adapt.py:251      regularization_matrix_from
+        mesh/mesh_geometry/delaunay.py:151   neighbors
+          scipy/spatial/_qhull.pyx:1874      Delaunay.__init__
+
+PyAutoArray documents the constraint in
+`autoarray/inversion/regularization/constant.py`: on the Delaunay mesh family
+(`Delaunay`, `DelaunayNN`, `KNearestNeighbor`, `KNNBarycentric`) the neighbors
+come from a direct `scipy.spatial.Delaunay` call on the traced source-plane
+mesh grid, so a non-split scheme cannot be traced — a split-family scheme must
+be used there.
+
+`_slam_source_pix_nn_model` (`scripts/misc/searches/_setup.py:1425`) pairs
+`al.mesh.DelaunayNN` with `af.Model(al.reg.Adapt)` and is the only target that
+breaks the rule. Every sibling obeys it: `delaunay_nn` is DelaunayNN +
+`ConstantSplit` (row certified above), `knn` is KNearestNeighbor + free
+`AdaptSplit`, and `slam_source_pix`'s `reg.Adapt` is safe only because the
+rectangular family has analytic neighbors.
+
+**This is a target-configuration error in this repo, not a library defect.**
+The fix is `al.reg.AdaptSplit`, one line — filed as PyAutoMind
+`draft/bug/autolens_profiling/slam_source_pix_nn_needs_adapt_split.md`.
+
+It forces a science call first. `_setup.py:1428` records the W4 intent as
+"same free `al.reg.Adapt` regularization ... so the mesh choice is isolated
+with the regularization scheme held fixed" — but `AdaptSplit` changes mesh AND
+regularization, so the RTU-vs-DelaunayNN pair no longer isolates the mesh.
+Either `slam_source_pix` gains a matching `AdaptSplit` variant, or the confound
+is accepted and recorded on both targets' `notes`.
+
+**`slam_source_pix_nn` cannot be certified until that call is made.**
 
 ## Status
 
