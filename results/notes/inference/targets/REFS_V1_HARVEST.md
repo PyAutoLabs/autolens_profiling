@@ -62,8 +62,10 @@ breaks the rule. Every sibling obeys it: `delaunay_nn` is DelaunayNN +
 rectangular family has analytic neighbors.
 
 **This is a target-configuration error in this repo, not a library defect.**
-The fix is `al.reg.AdaptSplit`, one line — filed as PyAutoMind
-`draft/bug/autolens_profiling/slam_source_pix_nn_needs_adapt_split.md`.
+**FIXED in this PR**: `_slam_source_pix_nn_model` now uses
+`af.Model(al.reg.AdaptSplit)`. The model builds at 14 free parameters — the
+same count the failed run reported — so the change is in the regularization's
+form, not its dimensionality. The two reference rows still need a resubmit.
 
 It forces a science call first. `_setup.py:1428` records the W4 intent as
 "same free `al.reg.Adapt` regularization ... so the mesh choice is isolated
@@ -72,7 +74,8 @@ regularization, so the RTU-vs-DelaunayNN pair no longer isolates the mesh.
 Either `slam_source_pix` gains a matching `AdaptSplit` variant, or the confound
 is accepted and recorded on both targets' `notes`.
 
-**`slam_source_pix_nn` cannot be certified until that call is made.**
+The confound is recorded in `_slam_source_pix_nn_model`'s docstring and must
+be cited with any RTU-vs-DelaunayNN comparison until the call is made.
 
 ## Status
 
