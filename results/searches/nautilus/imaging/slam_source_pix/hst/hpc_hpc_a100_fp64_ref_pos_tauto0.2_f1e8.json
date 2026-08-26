@@ -1,0 +1,197 @@
+{
+  "sampler": "nautilus",
+  "dataset_class": "imaging",
+  "model": "slam_source_pix",
+  "instrument": "hst",
+  "config_name": "hpc_a100_fp64_ref_pos_tauto0.2_f1e8",
+  "version": "2026.8.17.1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "omp_num_threads": null,
+    "cpu_count": 124,
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 33821 MiB, 81920 MiB"
+  },
+  "use_mixed_precision": false,
+  "sampler_config": {
+    "n_live": 300,
+    "n_batch": 100,
+    "number_of_cores": 1,
+    "use_jax_vmap": true,
+    "force_x1_cpu": true,
+    "iterations_per_update": 900,
+    "seed": 0,
+    "positions": {
+      "enabled": true,
+      "threshold_mode": "auto",
+      "threshold_value": 0.2,
+      "auto_factor": 3.0,
+      "auto_minimum_threshold": 0.2,
+      "factor": 100000000.0,
+      "source": "simulator_truth_positions",
+      "target_class": 3,
+      "note": "IDEALISED: positions and (for 'auto') the threshold-resolution tracer are the simulator's own truth, not solved from a completed search's max-likelihood model (the SLaM chained-fit convention). 'auto' = max(auto_factor * max_sep(truth positions, truth tracer), auto_minimum_threshold); truth positions trace to ~zero separation through the truth tracer by construction, so 'auto' collapses to the auto_minimum_threshold floor for every Stage-1 dataset."
+    }
+  },
+  "positions": {
+    "enabled": true,
+    "threshold_mode": "auto",
+    "threshold_value": 0.2,
+    "auto_factor": 3.0,
+    "auto_minimum_threshold": 0.2,
+    "factor": 100000000.0,
+    "source": "simulator_truth_positions",
+    "target_class": 3,
+    "note": "IDEALISED: positions and (for 'auto') the threshold-resolution tracer are the simulator's own truth, not solved from a completed search's max-likelihood model (the SLaM chained-fit convention). 'auto' = max(auto_factor * max_sep(truth positions, truth tracer), auto_minimum_threshold); truth positions trace to ~zero separation through the truth tracer by construction, so 'auto' collapses to the auto_minimum_threshold floor for every Stage-1 dataset."
+  },
+  "log_det_method": null,
+  "model_summary": {
+    "free_parameters": 16,
+    "best_fit": "lens.mass.einstein_radius=1.6007  lens.mass.centre=(0.003, 0.002)  shear=(0.0505, 0.0503)"
+  },
+  "results": {
+    "log_evidence": 31305.064772092188,
+    "max_log_likelihood": 31411.3805315004,
+    "posterior_samples": 123700,
+    "truth_log_likelihood": 31521.743789581255,
+    "delta_max_ll_vs_truth": -110.3632580808553,
+    "bar_source": "truth_tracer",
+    "posterior_stats": {
+      "centre_0": {
+        "mean": 0.0024229981241815756,
+        "std": 0.00035974365854958155
+      },
+      "centre_1": {
+        "mean": 0.0020466944473371326,
+        "std": 0.0003709226984069202
+      },
+      "ell_comps_0": {
+        "mean": 0.05298717019853008,
+        "std": 0.0005847480114037672
+      },
+      "ell_comps_1": {
+        "mean": 0.0017238136468891386,
+        "std": 0.0005753207387058407
+      },
+      "einstein_radius": {
+        "mean": 1.6005310674134852,
+        "std": 0.00022655676337497352
+      },
+      "gamma_1": {
+        "mean": 0.050658394622677176,
+        "std": 0.0003012365650112387
+      },
+      "gamma_2": {
+        "mean": 0.050311559873227524,
+        "std": 0.0003320326282204167
+      },
+      "weight_power": {
+        "mean": 0.31101815908616565,
+        "std": 0.0011800923089780588
+      },
+      "weight_floor": {
+        "mean": 0.0003888109628696599,
+        "std": 0.0005297562088775183
+      },
+      "inner_coefficient": {
+        "mean": 0.1717992879477046,
+        "std": 0.05672591395508113
+      },
+      "outer_coefficient": {
+        "mean": 97.52306807495687,
+        "std": 16.973581307210946
+      },
+      "signal_scale": {
+        "mean": 0.006576493804468805,
+        "std": 0.0012627280770344078
+      }
+    }
+  },
+  "performance": {
+    "total_wall_s": 5387.126826286316,
+    "viz_wall_s": 57.99289663787931,
+    "viz_n_calls": 8,
+    "viz_disabled": false,
+    "sampler_wall_s": 5329.133929648437,
+    "likelihood_evals": 123700,
+    "time_per_eval_ms": 43.081115033536264,
+    "stored_samples": 123700,
+    "gradient_evals": null,
+    "kish_ess": 4737.779082899842,
+    "evals_per_ess": 26.1092798620503,
+    "ess_per_min": 53.342015555751594
+  },
+  "schema_version": 2,
+  "target": {
+    "target_id": "sha256:b29616db92cf",
+    "cell": "imaging/slam_source_pix/hst",
+    "model_dim": 16,
+    "priors_ref": "_targets.py@bf2c8742c334",
+    "likelihood": {
+      "log_det_method": null,
+      "positive_only": true,
+      "border_relocator": true,
+      "curvature_floor": 0.001,
+      "regularization_term_method": "matmul",
+      "precision": "fp64"
+    },
+    "positions": {
+      "enabled": true,
+      "threshold_mode": "auto",
+      "threshold_value": 0.2,
+      "auto_factor": 3.0,
+      "auto_minimum_threshold": 0.2,
+      "factor": 100000000.0,
+      "source": "simulator_truth_positions",
+      "target_class": 3
+    },
+    "tolerances": {
+      "delta_max_ll_nats": 2.0,
+      "mean_shift_sigma": 0.2,
+      "sigma_ratio": [
+        0.8,
+        1.25
+      ],
+      "per_parameter_recovery": {}
+    },
+    "target_class_vs_v1": null
+  },
+  "algorithm": {
+    "name": "nautilus",
+    "config_id": "hpc_a100_fp64_ref_pos_tauto0.2_f1e8",
+    "settings": {
+      "n_live": 300,
+      "n_batch": 100,
+      "number_of_cores": 1,
+      "use_jax_vmap": true,
+      "force_x1_cpu": true,
+      "iterations_per_update": 900,
+      "seed": 0,
+      "positions": {
+        "enabled": true,
+        "threshold_mode": "auto",
+        "threshold_value": 0.2,
+        "auto_factor": 3.0,
+        "auto_minimum_threshold": 0.2,
+        "factor": 100000000.0,
+        "source": "simulator_truth_positions",
+        "target_class": 3,
+        "note": "IDEALISED: positions and (for 'auto') the threshold-resolution tracer are the simulator's own truth, not solved from a completed search's max-likelihood model (the SLaM chained-fit convention). 'auto' = max(auto_factor * max_sep(truth positions, truth tracer), auto_minimum_threshold); truth positions trace to ~zero separation through the truth tracer by construction, so 'auto' collapses to the auto_minimum_threshold floor for every Stage-1 dataset."
+      }
+    },
+    "seed": 0
+  },
+  "hardware": {
+    "tier": "hpc_a100_fp64_ref_pos_tauto0.2_f1e8",
+    "precision": "fp64",
+    "device": {
+      "backend": "gpu",
+      "device": "cuda:0",
+      "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+      "omp_num_threads": null,
+      "cpu_count": 124,
+      "nvidia_smi": "NVIDIA A100 80GB PCIe, 33821 MiB, 81920 MiB"
+    }
+  }
+}

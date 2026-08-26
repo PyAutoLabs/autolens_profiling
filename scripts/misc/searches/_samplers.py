@@ -64,6 +64,12 @@ _N_LIVE: dict[tuple[str, str], int] = {
     ("imaging", "delaunay_nn"): 150,
     ("imaging", "slam_source_pix"): 150,
     ("imaging", "slam_source_pix_nn"): 150,
+    # InferenceRefs_v1 harvest (RAL 340210, 2026-08-25) — these two cells had
+    # no row, so tasks 7 and 8 died in ~3 s on the KeyError from
+    # ``n_live_for`` and cost 2 of the 11 reference baselines. Same 150
+    # fiducial as every other imaging mesh cell above.
+    ("imaging", "knn"): 150,
+    ("imaging", "delaunay_matern"): 150,
     ("interferometer", "mge"): 200,
     ("interferometer", "pixelization"): 150,
     ("interferometer", "delaunay"): 150,
