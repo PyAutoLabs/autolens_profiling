@@ -9,6 +9,14 @@
 # v2026.5.21.1 fork band (max logL 31786.3-31786.5, logZ 31697.7-31700.4,
 # 657-679 s) is code-version only. H2.1's inner-steps scan comes after.
 
+# WALL-BASIS: — one row per cell this submit runs. See scripts/misc/wall/README.md.
+#   `rates` cites a step rate measured on THAT cell (wall/rates.py); an MGE rate
+#   can never stand in for a pixelized cell — that is what killed RAL job 340576.
+#   cell: imaging/mge/hst  device: a100  precision: fp64
+#   source: unmeasured  probe-first: yes
+#   NOTE: no step rate has been measured on this cell. Run one short arm
+#   before trusting --time; a truncated arm still measures s/step.
+
 #SBATCH -J search_nss_imaging_mge_hst_fp64
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1

@@ -66,6 +66,42 @@
 #      this commit series (delaunay_nn / slam_source_pix(_nn) model_types,
 #      SEARCHES_NAUTILUS_N_LIVE) — run HPCPullPyAuto first.
 
+# WALL-BASIS: — one row per cell this submit runs. See scripts/misc/wall/README.md.
+#   `rates` cites a step rate measured on THAT cell (wall/rates.py); an MGE rate
+#   can never stand in for a pixelized cell — that is what killed RAL job 340576.
+#   cell: imaging/delaunay/hst  device: a100  precision: fp64
+#   source: unmeasured  probe-first: yes
+#   NOTE: no step rate has been measured on this cell. Run one short arm
+#   before trusting --time; a truncated arm still measures s/step.
+#   cell: imaging/delaunay_matern/hst  device: a100  precision: fp64
+#   source: unmeasured  probe-first: yes
+#   NOTE: no step rate has been measured on this cell. Run one short arm
+#   before trusting --time; a truncated arm still measures s/step.
+#   cell: imaging/delaunay_nn/hst  device: a100  precision: fp64
+#   source: unmeasured  probe-first: yes
+#   NOTE: no step rate has been measured on this cell. Run one short arm
+#   before trusting --time; a truncated arm still measures s/step.
+#   cell: imaging/knn/hst  device: a100  precision: fp64
+#   source: unmeasured  probe-first: yes
+#   NOTE: no step rate has been measured on this cell. Run one short arm
+#   before trusting --time; a truncated arm still measures s/step.
+#   cell: imaging/mge/hst  device: a100  precision: fp64
+#   source: unmeasured  probe-first: yes
+#   NOTE: no step rate has been measured on this cell. Run one short arm
+#   before trusting --time; a truncated arm still measures s/step.
+#   cell: imaging/pixelization/hst  device: a100  precision: fp64
+#   source: unmeasured  probe-first: yes
+#   NOTE: no step rate has been measured on this cell. Run one short arm
+#   before trusting --time; a truncated arm still measures s/step.
+#   cell: imaging/slam_source_pix/hst  device: a100  precision: fp64
+#   source: unmeasured  probe-first: yes
+#   NOTE: no step rate has been measured on this cell. Run one short arm
+#   before trusting --time; a truncated arm still measures s/step.
+#   cell: imaging/slam_source_pix_nn/hst  device: a100  precision: fp64
+#   source: unmeasured  probe-first: yes
+#   NOTE: no step rate has been measured on this cell. Run one short arm
+#   before trusting --time; a truncated arm still measures s/step.
+
 #SBATCH -J search_nautilus_inference_refs_v1
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
