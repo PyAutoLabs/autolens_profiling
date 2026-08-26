@@ -1,0 +1,74 @@
+{
+  "sampler": "nss",
+  "dataset_class": "imaging",
+  "model": "mge",
+  "instrument": "hst",
+  "config_name": "hpc_a100_fp64_inner30_n500",
+  "version": "2026.8.17.1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "omp_num_threads": null,
+    "cpu_count": 124,
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 16893 MiB, 81920 MiB"
+  },
+  "use_mixed_precision": false,
+  "sampler_config": {
+    "n_live": 500,
+    "num_mcmc_steps": 30,
+    "num_delete": 125,
+    "chunk_size": null,
+    "termination": -3.0,
+    "seed": 42,
+    "jax_native": true
+  },
+  "model_summary": {
+    "free_parameters": 15,
+    "best_fit": "lens.mass.einstein_radius=1.5997  lens.mass.centre=(-0.000, 0.000)  shear=(0.0485, 0.0495)"
+  },
+  "results": {
+    "log_evidence": 31691.427445805068,
+    "max_log_likelihood": 31786.617702986245,
+    "posterior_samples": 42500,
+    "posterior_stats": {
+      "centre_0": {
+        "mean": 0.00036963186988090796,
+        "std": 0.00026919471708599713
+      },
+      "centre_1": {
+        "mean": 0.00031571299302544226,
+        "std": 0.00022393039091812774
+      },
+      "ell_comps_0": {
+        "mean": 0.09229788001376744,
+        "std": 0.002144781463204165
+      },
+      "ell_comps_1": {
+        "mean": -0.051168986481974314,
+        "std": 0.001841535488719077
+      },
+      "einstein_radius": {
+        "mean": 1.599673767630028,
+        "std": 0.00020921373832540735
+      },
+      "gamma_1": {
+        "mean": 0.048565777272287634,
+        "std": 0.00039445471058635167
+      },
+      "gamma_2": {
+        "mean": 0.04956117273239958,
+        "std": 0.00037053071584544037
+      }
+    }
+  },
+  "performance": {
+    "total_wall_s": 10002.547321796417,
+    "viz_wall_s": 36.33616202900885,
+    "viz_n_calls": 5,
+    "viz_disabled": false,
+    "sampler_wall_s": 9966.211159767408,
+    "likelihood_evals": 3718760,
+    "time_per_eval_ms": 2.6799823488924828
+  }
+}

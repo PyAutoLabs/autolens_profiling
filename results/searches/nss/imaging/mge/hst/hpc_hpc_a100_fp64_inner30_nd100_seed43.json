@@ -1,0 +1,74 @@
+{
+  "sampler": "nss",
+  "dataset_class": "imaging",
+  "model": "mge",
+  "instrument": "hst",
+  "config_name": "hpc_a100_fp64_inner30_nd100_seed43",
+  "version": "2026.8.17.1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "omp_num_threads": null,
+    "cpu_count": 124,
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 8701 MiB, 81920 MiB"
+  },
+  "use_mixed_precision": false,
+  "sampler_config": {
+    "n_live": 200,
+    "num_mcmc_steps": 30,
+    "num_delete": 100,
+    "chunk_size": null,
+    "termination": -3.0,
+    "seed": 43,
+    "jax_native": true
+  },
+  "model_summary": {
+    "free_parameters": 15,
+    "best_fit": "lens.mass.einstein_radius=1.5996  lens.mass.centre=(-0.000, 0.000)  shear=(0.0484, 0.0493)"
+  },
+  "results": {
+    "log_evidence": 31690.982798342986,
+    "max_log_likelihood": 31786.339054640364,
+    "posterior_samples": 14300,
+    "posterior_stats": {
+      "centre_0": {
+        "mean": 0.00039614057199235107,
+        "std": 0.00026845925584172354
+      },
+      "centre_1": {
+        "mean": 0.0003282986779756663,
+        "std": 0.00023077467236011078
+      },
+      "ell_comps_0": {
+        "mean": 0.0921338134833198,
+        "std": 0.0022069557351657573
+      },
+      "ell_comps_1": {
+        "mean": -0.05121154517035532,
+        "std": 0.0019139124058284683
+      },
+      "einstein_radius": {
+        "mean": 1.5996707055972756,
+        "std": 0.00021615167662033388
+      },
+      "gamma_1": {
+        "mean": 0.048552566508191404,
+        "std": 0.00041625141832754727
+      },
+      "gamma_2": {
+        "mean": 0.04955728887119868,
+        "std": 0.00037382667070260273
+      }
+    }
+  },
+  "performance": {
+    "total_wall_s": 3522.11501121521,
+    "viz_wall_s": 38.964492257044185,
+    "viz_n_calls": 5,
+    "viz_disabled": false,
+    "sampler_wall_s": 3483.150518958166,
+    "likelihood_evals": 1246385,
+    "time_per_eval_ms": 2.7946024053227263
+  }
+}

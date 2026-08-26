@@ -1035,9 +1035,19 @@ print(f"  Bar chart saved to:    {chart_path}")
 # Regression assertion — eager log_evidence only
 # ===================================================================
 
-EXPECTED_LOG_EVIDENCE_HST = (
-    28370.27770182  # 39x39 = 1521 source pixels, MGE-60 lens light, adapt_image=lensed_source
-)
+# Keyed by --rect-mesh since 2026-08-26 — the Bilinear (rank-CDF) and RTU
+# (kernel-CDF) families reconstruct differently, so one number cannot pin both.
+# Same fiducial, and the same paired measurement, as
+# likelihood_runtime/pixelization.py: PyAutoArray 72fb01d1 (#490) fixed the
+# mirrored bilinear ROW weights and the round-off-dependent cell assignment in
+# the shared adaptive rectangular mapper, and bilinear gives 28370.240585918986
+# at 72fb01d1^ (the 2026-05-18 pin, to 1.3e-6) against the value below at
+# 72fb01d1.
+EXPECTED_LOG_EVIDENCE_HST = {
+    # 39x39 = 1521 source pixels, MGE-60 lens light, adapt_image=lensed_source
+    "bilinear": 28622.397322591198,
+    "rtu": 28506.318157467784,
+}[_cli.rect_mesh]
 
 np.testing.assert_allclose(
     log_evidence_ref,

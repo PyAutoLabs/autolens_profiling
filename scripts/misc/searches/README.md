@@ -11,79 +11,91 @@ of PyAutoFit machinery is exercised and measured.
 ## Latest results
 
 <!-- BEGIN auto-table:searches -->
-| Sampler | Cell | Config | max logL | logZ | Wall | Evals | Time / eval | Version |
-|---------|------|--------|---------:|-----:|-----:|------:|------------:|---------|
-| `multi_start_adam` | `group/mge/hst` | `local_gpu_fp64` | -231,891.0 | — | 2368.26 s | 33 | 71765.4 ms | v2026.7.9.1 |
-| `multi_start_prodigy` | `cluster/image_plane_solved/simple` | `hpc_a100_fp64` | -1,708.9 | — | 832.23 s | 65 | 8727.0 ms | v2026.7.23.1 |
-| `multi_start_prodigy` | `cluster/source_plane_solved/simple` | `hpc_a100_fp64` | 21.4 | — | 250.86 s | 65 | 1853.8 ms | v2026.7.23.1 |
-| `multi_start_prodigy` | `cluster/source_plane_tensor/simple` | `hpc_a100_fp64` | -11,000.5 | — | 261.36 s | 65 | 1182.0 ms | v2026.7.23.1 |
-| `multi_start_prodigy` | `point_source/image_plane/simple` | `default` | -79.9 | — | 852.82 s | 65 | 13120.3 ms | v2026.7.23.1 |
-| `multi_start_prodigy` | `point_source/image_plane/simple` | `hpc_a100_fp64` | -68.5 | — | 90.31 s | 65 | 923.8 ms | v2026.7.23.1 |
-| `multi_start_prodigy` | `point_source/image_plane/simple` | `starts256` | -47.7 | — | 3515.50 s | 257 | 13679.0 ms | v2026.7.23.1 |
-| `multi_start_prodigy` | `point_source/image_plane_solved/simple` | `default` | 2.4 | — | 981.87 s | 65 | 15105.7 ms | v2026.7.23.1 |
-| `multi_start_prodigy` | `point_source/image_plane_solved/simple` | `hpc_a100_fp64` | 9.7 | — | 117.74 s | 65 | 1243.7 ms | v2026.7.23.1 |
-| `multi_start_prodigy` | `point_source/source_plane/simple` | `default` | -109.7 | — | 19.41 s | 65 | 298.6 ms | v2026.7.23.1 |
-| `multi_start_prodigy` | `point_source/source_plane/simple` | `hpc_a100_fp64` | -109.7 | — | 35.85 s | 65 | 401.4 ms | v2026.7.23.1 |
-| `multi_start_prodigy` | `point_source/source_plane_solved/simple` | `hpc_a100_fp64` | 4.5 | — | 44.77 s | 65 | 550.3 ms | v2026.7.23.1 |
-| `multi_start_prodigy` | `point_source/source_plane_tensor/simple` | `hpc_a100_fp64` | 13.4 | — | 31.68 s | 65 | 338.6 ms | v2026.7.23.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n128_seed100` | 31,787.9 | — | 198.29 s | 129 | 1537.2 ms | v2026.8.17.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n128_seed101` | 31,787.9 | — | 144.51 s | 129 | 1120.2 ms | v2026.8.17.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n128_seed102` | 31,787.9 | — | 137.26 s | 129 | 1064.0 ms | v2026.8.17.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n128_seed103` | 31,787.9 | — | 153.15 s | 129 | 1187.2 ms | v2026.8.17.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n128_seed104` | 31,787.9 | — | 159.00 s | 129 | 1232.6 ms | v2026.8.17.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n16_seed0` | 31,787.9 | — | 245.80 s | 17 | 14459.0 ms | v2026.8.17.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n16_seed0_diag_theta_e` | 31,787.9 | — | 271.44 s | 17 | 15967.0 ms | v2026.8.17.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n16_seed1` | -95,708.6 | — | 111.70 s | 17 | 6570.3 ms | v2026.8.17.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n16_seed1_diag_theta_e` | 31,787.9 | — | 283.98 s | 17 | 16704.6 ms | v2026.8.17.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n16_seed2` | -134,315.3 | — | 127.69 s | 17 | 7511.4 ms | v2026.8.17.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n16_seed2_diag_theta_e` | 26,076.8 | — | 133.22 s | 17 | 7836.6 ms | v2026.8.17.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n16_seed3` | -125,319.1 | — | 114.45 s | 17 | 6732.3 ms | v2026.8.17.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n16_seed3_diag_theta_e` | 31,787.9 | — | 105.88 s | 17 | 6228.4 ms | v2026.8.17.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n16_seed4` | 26,076.8 | — | 123.04 s | 17 | 7237.9 ms | v2026.8.17.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n16_seed4_diag_theta_e` | -128,632.1 | — | 137.83 s | 17 | 8107.8 ms | v2026.8.17.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed0` | 31,787.9 | — | 224.77 s | 257 | 874.6 ms | v2026.8.17.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed1` | 31,787.9 | — | 216.51 s | 257 | 842.5 ms | v2026.8.17.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed105` | 31,787.9 | — | 174.55 s | 257 | 679.2 ms | v2026.8.17.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed106` | 31,787.9 | — | 179.25 s | 257 | 697.5 ms | v2026.8.17.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed107` | 31,787.9 | — | 168.77 s | 257 | 656.7 ms | v2026.8.17.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed108` | 31,787.9 | — | 182.25 s | 257 | 709.2 ms | v2026.8.17.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed109` | 31,787.9 | — | 184.13 s | 257 | 716.4 ms | v2026.8.17.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed110` | 31,787.9 | — | 182.97 s | 257 | 711.9 ms | v2026.8.17.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed111` | 31,787.9 | — | 164.87 s | 257 | 641.5 ms | v2026.8.17.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed112` | 31,787.9 | — | 178.90 s | 257 | 696.1 ms | v2026.8.17.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed113` | 31,787.9 | — | 169.37 s | 257 | 659.0 ms | v2026.8.17.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed114` | 31,787.9 | — | 179.30 s | 257 | 697.7 ms | v2026.8.17.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed2` | 31,787.9 | — | 176.52 s | 257 | 686.9 ms | v2026.8.17.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed3` | 31,787.9 | — | 172.18 s | 257 | 669.9 ms | v2026.8.17.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed4` | 31,787.9 | — | 191.40 s | 257 | 744.8 ms | v2026.8.17.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n64_seed0` | 31,787.9 | — | 172.13 s | 65 | 2648.2 ms | v2026.8.17.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n64_seed1` | 31,787.9 | — | 117.63 s | 65 | 1809.6 ms | v2026.8.17.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n64_seed2` | 31,787.9 | — | 116.10 s | 65 | 1786.1 ms | v2026.8.17.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n64_seed3` | 31,787.9 | — | 279.98 s | 65 | 4307.5 ms | v2026.8.17.1 |
-| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n64_seed4` | 31,787.9 | — | 121.12 s | 65 | 1863.3 ms | v2026.8.17.1 |
-| `nautilus` | `cluster/image_plane_solved/simple` | `hpc_a100_fp64` | 31.5 | -1.8 | 742.08 s | 8,400 | 44.1 ms | v2026.7.23.1 |
-| `nautilus` | `cluster/source_plane/simple` | `hpc_a100_fp64` | 42.3 | -36.5 | 551.28 s | 34,600 | 8.5 ms | v2026.7.23.1 |
-| `nautilus` | `cluster/source_plane_solved/simple` | `hpc_a100_fp64` | 43.4 | 12.7 | 442.81 s | 7,200 | 14.4 ms | v2026.7.23.1 |
-| `nautilus` | `cluster/source_plane_tensor/simple` | `hpc_a100_fp64` | 69.8 | 8.5 | 482.73 s | 20,500 | 8.8 ms | v2026.7.23.1 |
-| `nautilus` | `imaging/delaunay/hst` | `hpc_a100_fp64` | 30,623.5 | 30,562.2 | 2722.51 s | 31,536 | 84.8 ms | v2026.5.21.1 |
-| `nautilus` | `imaging/mge/hst` | `hpc_a100_fp64` | 31,786.8 | 31,690.5 | 831.28 s | 63,800 | 12.1 ms | v2026.5.21.1 |
-| `nautilus` | `imaging/pixelization/hst` | `hpc_a100_fp64` | 29,143.3 | 29,066.3 | 2768.06 s | 58,464 | 46.5 ms | v2026.5.21.1 |
-| `nautilus` | `point_source/image_plane/simple` | `default` | 9.6 | -16.9 | 739.70 s | 13,760 | 53.8 ms | v2026.7.23.1 |
-| `nautilus` | `point_source/image_plane/simple` | `hpc_a100_fp64` | 9.6 | -16.8 | 217.11 s | 14,464 | 9.8 ms | v2026.7.23.1 |
-| `nautilus` | `point_source/image_plane_repeat_solved/simple` | `hpc_a100_fp64` | 7.9 | -8.0 | 162.72 s | 7,100 | 15.5 ms | v2026.7.23.1 |
-| `nautilus` | `point_source/image_plane_repeat_solved/simple_missing` | `hpc_a100_fp64` | 13.1 | -8.2 | 186.72 s | 9,800 | 13.5 ms | v2026.7.23.1 |
-| `nautilus` | `point_source/image_plane_solved/near_caustic` | `hpc_a100_fp64` | 29.1 | 5.0 | 176.35 s | 10,500 | 11.7 ms | v2026.7.23.1 |
-| `nautilus` | `point_source/image_plane_solved/simple` | `hpc_a100_fp64` | 10.6 | -5.3 | 147.21 s | 7,500 | 12.2 ms | v2026.7.23.1 |
-| `nautilus` | `point_source/image_plane_solved/simple_missing` | `hpc_a100_fp64` | 22.1 | 4.8 | 193.29 s | 11,700 | 12.0 ms | v2026.7.23.1 |
-| `nautilus` | `point_source/source_plane/simple` | `default` | -313.2 | -343.9 | 168.00 s | 15,552 | 10.8 ms | v2026.7.23.1 |
-| `nautilus` | `point_source/source_plane/simple` | `hpc_a100_fp64` | -313.9 | -344.7 | 217.83 s | 14,400 | 11.2 ms | v2026.7.23.1 |
-| `nautilus` | `point_source/source_plane_solved/near_caustic` | `hpc_a100_fp64` | 16.5 | -7.8 | 112.85 s | 10,200 | 9.1 ms | v2026.7.23.1 |
-| `nautilus` | `point_source/source_plane_solved/simple` | `hpc_a100_fp64` | 6.4 | -10.6 | 86.58 s | 7,700 | 8.3 ms | v2026.7.23.1 |
-| `nautilus` | `point_source/source_plane_tensor/near_caustic` | `hpc_a100_fp64` | 34.5 | -8.9 | 270.32 s | 23,400 | 9.3 ms | v2026.7.23.1 |
-| `nautilus` | `point_source/source_plane_tensor/simple` | `hpc_a100_fp64` | 15.3 | -11.8 | 184.36 s | 14,900 | 9.0 ms | v2026.7.23.1 |
-| `nss` | `imaging/delaunay/hst` | `hpc_a100_fp64` | 30,622.2 | 30,567.8 | 29770.41 s | 206,448 | 144.0 ms | v2026.5.21.1 |
-| `nss` | `imaging/mge/hst` | `hpc_a100_fp64` | 31,786.6 | 31,698.9 | 882.78 s | 234,498 | 3.6 ms | v2026.8.17.1 |
-| `nss` | `imaging/pixelization/hst` | `hpc_a100_fp64` | 29,142.5 | 29,078.9 | 19190.01 s | 266,043 | 72.0 ms | v2026.5.21.1 |
+| Sampler | Cell | Config | max logL | logZ | Wall | Evals | Time / eval | Target | ESS | Version |
+|---------|------|--------|---------:|-----:|-----:|------:|------------:|--------|----:|---------|
+| `multi_start_adam` | `group/mge/hst` | `local_gpu_fp64` | -231,891.0 | — | 2368.26 s | 33 | 71765.4 ms | — | — | v2026.7.9.1 |
+| `multi_start_prodigy` | `cluster/image_plane_solved/simple` | `hpc_a100_fp64` | -1,708.9 | — | 832.23 s | 65 | 8727.0 ms | — | — | v2026.7.23.1 |
+| `multi_start_prodigy` | `cluster/source_plane_solved/simple` | `hpc_a100_fp64` | 21.4 | — | 250.86 s | 65 | 1853.8 ms | — | — | v2026.7.23.1 |
+| `multi_start_prodigy` | `cluster/source_plane_tensor/simple` | `hpc_a100_fp64` | -11,000.5 | — | 261.36 s | 65 | 1182.0 ms | — | — | v2026.7.23.1 |
+| `multi_start_prodigy` | `point_source/image_plane/simple` | `default` | -79.9 | — | 852.82 s | 65 | 13120.3 ms | — | — | v2026.7.23.1 |
+| `multi_start_prodigy` | `point_source/image_plane/simple` | `hpc_a100_fp64` | -68.5 | — | 90.31 s | 65 | 923.8 ms | — | — | v2026.7.23.1 |
+| `multi_start_prodigy` | `point_source/image_plane/simple` | `starts256` | -47.7 | — | 3515.50 s | 257 | 13679.0 ms | — | — | v2026.7.23.1 |
+| `multi_start_prodigy` | `point_source/image_plane_solved/simple` | `default` | 2.4 | — | 981.87 s | 65 | 15105.7 ms | — | — | v2026.7.23.1 |
+| `multi_start_prodigy` | `point_source/image_plane_solved/simple` | `hpc_a100_fp64` | 9.7 | — | 117.74 s | 65 | 1243.7 ms | — | — | v2026.7.23.1 |
+| `multi_start_prodigy` | `point_source/source_plane/simple` | `default` | -109.7 | — | 19.41 s | 65 | 298.6 ms | — | — | v2026.7.23.1 |
+| `multi_start_prodigy` | `point_source/source_plane/simple` | `hpc_a100_fp64` | -109.7 | — | 35.85 s | 65 | 401.4 ms | — | — | v2026.7.23.1 |
+| `multi_start_prodigy` | `point_source/source_plane_solved/simple` | `hpc_a100_fp64` | 4.5 | — | 44.77 s | 65 | 550.3 ms | — | — | v2026.7.23.1 |
+| `multi_start_prodigy` | `point_source/source_plane_tensor/simple` | `hpc_a100_fp64` | 13.4 | — | 31.68 s | 65 | 338.6 ms | — | — | v2026.7.23.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n128_seed100` | 31,787.9 | — | 198.29 s | 129 | 1537.2 ms | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n128_seed101` | 31,787.9 | — | 144.51 s | 129 | 1120.2 ms | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n128_seed102` | 31,787.9 | — | 137.26 s | 129 | 1064.0 ms | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n128_seed103` | 31,787.9 | — | 153.15 s | 129 | 1187.2 ms | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n128_seed104` | 31,787.9 | — | 159.00 s | 129 | 1232.6 ms | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n16_seed0` | 31,787.9 | — | 245.80 s | 17 | 14459.0 ms | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n16_seed0_diag_theta_e` | 31,787.9 | — | 271.44 s | 17 | 15967.0 ms | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n16_seed1` | -95,708.6 | — | 111.70 s | 17 | 6570.3 ms | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n16_seed1_diag_theta_e` | 31,787.9 | — | 283.98 s | 17 | 16704.6 ms | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n16_seed2` | -134,315.3 | — | 127.69 s | 17 | 7511.4 ms | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n16_seed2_diag_theta_e` | 26,076.8 | — | 133.22 s | 17 | 7836.6 ms | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n16_seed3` | -125,319.1 | — | 114.45 s | 17 | 6732.3 ms | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n16_seed3_diag_theta_e` | 31,787.9 | — | 105.88 s | 17 | 6228.4 ms | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n16_seed4` | 26,076.8 | — | 123.04 s | 17 | 7237.9 ms | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n16_seed4_diag_theta_e` | -128,632.1 | — | 137.83 s | 17 | 8107.8 ms | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed0` | 31,787.9 | — | 224.77 s | 257 | 874.6 ms | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed1` | 31,787.9 | — | 216.51 s | 257 | 842.5 ms | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed105` | 31,787.9 | — | 174.55 s | 257 | 679.2 ms | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed106` | 31,787.9 | — | 179.25 s | 257 | 697.5 ms | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed107` | 31,787.9 | — | 168.77 s | 257 | 656.7 ms | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed108` | 31,787.9 | — | 182.25 s | 257 | 709.2 ms | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed109` | 31,787.9 | — | 184.13 s | 257 | 716.4 ms | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed110` | 31,787.9 | — | 182.97 s | 257 | 711.9 ms | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed111` | 31,787.9 | — | 164.87 s | 257 | 641.5 ms | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed112` | 31,787.9 | — | 178.90 s | 257 | 696.1 ms | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed113` | 31,787.9 | — | 169.37 s | 257 | 659.0 ms | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed114` | 31,787.9 | — | 179.30 s | 257 | 697.7 ms | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed2` | 31,787.9 | — | 176.52 s | 257 | 686.9 ms | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed3` | 31,787.9 | — | 172.18 s | 257 | 669.9 ms | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed4` | 31,787.9 | — | 191.40 s | 257 | 744.8 ms | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n64_seed0` | 31,787.9 | — | 172.13 s | 65 | 2648.2 ms | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n64_seed1` | 31,787.9 | — | 117.63 s | 65 | 1809.6 ms | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n64_seed2` | 31,787.9 | — | 116.10 s | 65 | 1786.1 ms | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n64_seed3` | 31,787.9 | — | 279.98 s | 65 | 4307.5 ms | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n64_seed4` | 31,787.9 | — | 121.12 s | 65 | 1863.3 ms | — | — | v2026.8.17.1 |
+| `nautilus` | `cluster/image_plane_solved/simple` | `hpc_a100_fp64` | 31.5 | -1.8 | 742.08 s | 8,400 | 44.1 ms | — | — | v2026.7.23.1 |
+| `nautilus` | `cluster/source_plane/simple` | `hpc_a100_fp64` | 42.3 | -36.5 | 551.28 s | 34,600 | 8.5 ms | — | — | v2026.7.23.1 |
+| `nautilus` | `cluster/source_plane_solved/simple` | `hpc_a100_fp64` | 43.4 | 12.7 | 442.81 s | 7,200 | 14.4 ms | — | — | v2026.7.23.1 |
+| `nautilus` | `cluster/source_plane_tensor/simple` | `hpc_a100_fp64` | 69.8 | 8.5 | 482.73 s | 20,500 | 8.8 ms | — | — | v2026.7.23.1 |
+| `nautilus` | `imaging/delaunay/hst` | `hpc_a100_fp64` | 30,623.2 | 30,562.2 | 1938.52 s | 30,240 | 62.5 ms | — | — | v2026.8.17.1 |
+| `nautilus` | `imaging/mge/hst` | `hpc_a100_fp64` | 31,786.6 | 31,690.5 | 775.11 s | 62,208 | 11.4 ms | — | — | v2026.8.17.1 |
+| `nautilus` | `imaging/pixelization/hst` | `hpc_a100_fp64` | 29,670.4 | 29,590.1 | 3351.29 s | 55,984 | 58.8 ms | `801ba27b` | 2,215.8 | v2026.8.17.1 |
+| `nautilus` | `point_source/image_plane/simple` | `default` | 9.6 | -16.9 | 739.70 s | 13,760 | 53.8 ms | — | — | v2026.7.23.1 |
+| `nautilus` | `point_source/image_plane/simple` | `hpc_a100_fp64` | 9.6 | -16.8 | 217.11 s | 14,464 | 9.8 ms | — | — | v2026.7.23.1 |
+| `nautilus` | `point_source/image_plane_repeat_solved/simple` | `hpc_a100_fp64` | 7.9 | -8.0 | 162.72 s | 7,100 | 15.5 ms | — | — | v2026.7.23.1 |
+| `nautilus` | `point_source/image_plane_repeat_solved/simple_missing` | `hpc_a100_fp64` | 13.1 | -8.2 | 186.72 s | 9,800 | 13.5 ms | — | — | v2026.7.23.1 |
+| `nautilus` | `point_source/image_plane_solved/near_caustic` | `hpc_a100_fp64` | 29.1 | 5.0 | 176.35 s | 10,500 | 11.7 ms | — | — | v2026.7.23.1 |
+| `nautilus` | `point_source/image_plane_solved/simple` | `hpc_a100_fp64` | 10.6 | -5.3 | 147.21 s | 7,500 | 12.2 ms | — | — | v2026.7.23.1 |
+| `nautilus` | `point_source/image_plane_solved/simple_missing` | `hpc_a100_fp64` | 22.1 | 4.8 | 193.29 s | 11,700 | 12.0 ms | — | — | v2026.7.23.1 |
+| `nautilus` | `point_source/source_plane/simple` | `default` | -313.2 | -343.9 | 168.00 s | 15,552 | 10.8 ms | — | — | v2026.7.23.1 |
+| `nautilus` | `point_source/source_plane/simple` | `hpc_a100_fp64` | -313.9 | -344.7 | 217.83 s | 14,400 | 11.2 ms | — | — | v2026.7.23.1 |
+| `nautilus` | `point_source/source_plane_solved/near_caustic` | `hpc_a100_fp64` | 16.5 | -7.8 | 112.85 s | 10,200 | 9.1 ms | — | — | v2026.7.23.1 |
+| `nautilus` | `point_source/source_plane_solved/simple` | `hpc_a100_fp64` | 6.4 | -10.6 | 86.58 s | 7,700 | 8.3 ms | — | — | v2026.7.23.1 |
+| `nautilus` | `point_source/source_plane_tensor/near_caustic` | `hpc_a100_fp64` | 34.5 | -8.9 | 270.32 s | 23,400 | 9.3 ms | — | — | v2026.7.23.1 |
+| `nautilus` | `point_source/source_plane_tensor/simple` | `hpc_a100_fp64` | 15.3 | -11.8 | 184.36 s | 14,900 | 9.0 ms | — | — | v2026.7.23.1 |
+| `nss` | `imaging/delaunay/hst` | `hpc_a100_fp64` | 30,622.2 | 30,567.8 | 29770.41 s | 206,448 | 144.0 ms | — | — | v2026.5.21.1 |
+| `nss` | `imaging/delaunay/hst` | `hpc_a100_fp64_mainline` | 30,624.1 | 30,565.2 | 34777.23 s | 150,991 | 230.0 ms | — | — | v2026.8.17.1 |
+| `nss` | `imaging/mge/hst` | `hpc_a100_fp64` | 31,786.6 | 31,698.9 | 882.78 s | 234,498 | 3.6 ms | — | — | v2026.8.17.1 |
+| `nss` | `imaging/mge/hst` | `hpc_a100_fp64_inner30` | 31,785.8 | 31,691.2 | 4260.68 s | 1,492,747 | 2.8 ms | — | — | v2026.8.17.1 |
+| `nss` | `imaging/mge/hst` | `hpc_a100_fp64_inner30_n1000` | 31,786.6 | 31,690.2 | 20319.56 s | 7,519,030 | 2.7 ms | — | — | v2026.8.17.1 |
+| `nss` | `imaging/mge/hst` | `hpc_a100_fp64_inner30_n500` | 31,786.6 | 31,691.4 | 10002.55 s | 3,718,760 | 2.7 ms | — | — | v2026.8.17.1 |
+| `nss` | `imaging/mge/hst` | `hpc_a100_fp64_inner30_nd100` | 31,786.3 | 31,691.4 | 3572.52 s | 1,236,644 | 2.9 ms | — | — | v2026.8.17.1 |
+| `nss` | `imaging/mge/hst` | `hpc_a100_fp64_inner30_nd100_dlogz10` | 31,787.3 | 31,691.8 | 3724.98 s | 1,344,578 | 2.7 ms | — | — | v2026.8.17.1 |
+| `nss` | `imaging/mge/hst` | `hpc_a100_fp64_inner30_nd100_seed43` | 31,786.3 | 31,691.0 | 3522.12 s | 1,246,385 | 2.8 ms | — | — | v2026.8.17.1 |
+| `nss` | `imaging/mge/hst` | `hpc_a100_fp64_inner30_nd100_seed44` | 31,786.3 | 31,691.7 | 3490.55 s | 1,236,569 | 2.8 ms | — | — | v2026.8.17.1 |
+| `nss` | `imaging/mge/hst` | `hpc_a100_fp64_inner30_nd100_seed45` | 31,786.2 | 31,691.5 | 3467.15 s | 1,235,718 | 2.8 ms | — | — | v2026.8.17.1 |
+| `nss` | `imaging/mge/hst` | `hpc_a100_fp64_inner30_nd100_seed46` | 31,786.2 | 31,692.0 | 3498.88 s | 1,237,066 | 2.8 ms | — | — | v2026.8.17.1 |
+| `nss` | `imaging/mge/hst` | `hpc_a100_fp64_inner30_nd20` | 31,786.0 | 31,690.7 | 6175.09 s | 1,638,384 | 3.7 ms | — | — | v2026.8.17.1 |
+| `nss` | `imaging/mge/hst` | `hpc_a100_fp64_inner45` | 31,786.3 | 31,690.0 | 6382.99 s | 2,264,857 | 2.8 ms | — | — | v2026.8.17.1 |
+| `nss` | `imaging/pixelization/hst` | `hpc_a100_fp64` | 29,142.5 | 29,078.9 | 19190.01 s | 266,043 | 72.0 ms | — | — | v2026.5.21.1 |
 <!-- END auto-table:searches -->
 
 Auto-generated by `scripts/misc/tooling/build_readme.py` from the search-run artifacts under `results/searches/<sampler>/<class>/<model>/<instrument>/` (latest version per sampler × cell × config).
@@ -144,6 +156,9 @@ separate axis a future sweep can introduce.
 **JAX rows force `force_x1_cpu=True` and `use_jax_vmap=True`.** This is
 mandatory: `nautilus.Sampler` forking under multiprocessing corrupts
 JAX state. The trade-off is one batched evaluation per Nautilus step.
+
+**Positions penalty is opt-in (`SEARCHES_POSITIONS`, Phase 4 Stage 1).**
+Off by default; see the dedicated "Position likelihood" section below.
 
 **Visualization wall-time is split out.** `_metrics.attach_viz_timer`
 wraps every visualize-family hook on the analysis (`visualize`,
@@ -247,6 +262,126 @@ turnaround sane).
   Related but distinct: `misc/hazards/checks/nonfinite_gradient.py` *detects*
   non-finite gradients on a likelihood surface; this one measures what it costs
   to *count* them during a fit.
+
+## Position likelihood (`SEARCHES_POSITIONS`)
+
+Phase 4 Stage 1 (issue #159). Attaches a real `al.PositionsLH` penalty to a
+cell's analysis — the SLaM `result.positions_likelihood_from` idiom
+(`autolens_workspace` SLaM scripts: `factor=3.0, minimum_threshold=0.2`) —
+sourced from the simulator's own **truth** positions rather than positions
+re-solved from a completed prior search's max-likelihood model (there is no
+prior search here to chain from; this is an idealisation, not the production
+SLaM chained-fit workflow).
+
+Off by default. Three env vars, all validated (an unrecognised value raises
+rather than falling back silently):
+
+| Env var | Values | Default |
+|---------|--------|---------|
+| `SEARCHES_POSITIONS` | `off` \| `on` | `off` |
+| `SEARCHES_POSITIONS_THRESHOLD` | a float, or `auto` | `0.3` |
+| `SEARCHES_POSITIONS_FACTOR` | a float (e.g. `1e5`, `1e8`) | `1e8` |
+
+- `SEARCHES_NAUTILUS_SEED=<int>` — af.Nautilus RNG seed (identifier field) for repeated-seed campaigns; carry it in `--config-name` (W2, #160).
+- `SEARCHES_LOG_DET_METHOD=cholesky|slogdet` — overrides the evidence log-det. Default (W8, #165): `slogdet` for gradient-work samplers (MultiStart*/NUTS) on pixelized cells when JAX runs on a GPU; `cholesky` (packaged default) for nested samplers and on CPU. Recorded in the results JSON as `log_det_method`.
+- `SEARCHES_BIJECTOR=none|auto_log|log_reg|logit` — the MultiStart* per-parameter bijector arm (W5 Phase 8B, #162). See "Bijector A/B" below.
+- `SEARCHES_LANE_HISTORY=1` — turns on `record_lane_nan_history` (PyAutoFit PR#1525): per-step, per-lane value/grad-NaN booleans recorded into the results JSON's `diagnostics` block. Off by default (extra memory/time cost per step).
+- `SEARCHES_TRACE_PARAMS=<comma-separated dotted paths>` — turns on `trace_param_indices` (PyAutoFit PR#1525): per-step physical values for the named parameters, recorded as `diagnostics.trace_history`. Paths use `model.path_for_prior` format (the same format `SEARCHES_POSITIONS`/scaler/bijector info blocks use elsewhere in this repo).
+
+`auto` replicates SLaM's `positions_threshold_from(factor=3.0,
+minimum_threshold=0.2)`: `max(3.0 * max_sep(truth positions, truth tracer),
+0.2)`. Because truth positions trace back to ~zero separation through the
+truth tracer by construction, `auto` **collapses to the 0.2 floor** for every
+dataset this Stage-1 plumbing supports — a caveat recorded verbatim in every
+run's `positions_settings()` block, not left implicit.
+
+**Supported cells**: single-plane `imaging` / `interferometer` only. `group`,
+`cluster`, `datacube`(`_img`/`_img_hetero`) and `point_source` all raise
+`NotImplementedError` when `SEARCHES_POSITIONS=on` — a per-system or
+multi-plane structure the single `PositionsLH` list here does not model, and
+a silently-ignored positions request is exactly the failure this plumbing
+must not permit.
+
+**Truth positions**: loaded from `dataset/<class>/<instrument>/positions.json`
+when present (every shipped `interferometer` dataset already has one). For
+`dataset/imaging/hst/` — which does not — they are derived **once** from the
+committed `tracer.json` via the simulator's own `PointSolver.for_grid(
+pixel_scale_precision=0.001, magnification_threshold=0.1)` recipe
+(`scripts/misc/simulators/imaging.py`) and written to
+`dataset/imaging/hst/positions.json` (committed to the repo, loudly logged
+when it happens). This never touches `data.fits` / `psf.fits` /
+`noise_map.fits` — it does not re-simulate.
+
+**Correctness guard — output-path/identifier collisions.** PyAutoFit's
+identifier hashes only `[search, model, unique_tag]`; the `Analysis` object
+— and therefore whether a `positions_likelihood_list` is attached — is never
+part of that hash. A positions-on and positions-off run of the "same"
+search/model/config_name would otherwise resolve to the *same* output
+directory and identifier, and the `.completed` resume gate would make the
+second run's `fit()` silently return the first run's cached result.
+`_setup.positions_arm_tag()` (e.g. `pos_t0.3_f1e8`, or `pos_tauto0.2_f1e5`
+for the auto/`1e5` arm) is composed into every sampler's `unique_tag` via
+`_samplers.arm_unique_tag()`, and appended to `run_search`'s `config_name`,
+so this can never happen silently. `_samplers.assert_disjoint_output_paths`
+is the reusable guard (see `scripts/misc/test/test_searches_positions.py`).
+
+Every cell's results JSON always carries a `"positions"` block
+(`{"enabled": false}` when off) in both `sampler_config` and the top-level
+summary, so a positions-on and a positions-off artifact are never ambiguous
+after the fact.
+
+Run the Stage-1 hazard/reliability transects with:
+
+```bash
+JAX_ENABLE_X64=True python scripts/misc/searches/positions_transects.py --quick
+JAX_ENABLE_X64=True python scripts/misc/searches/positions_transects.py
+```
+
+See `results/notes/inference/phase_04_positions/transects/RESULTS.md` for the
+write-up (classification rule, arms run, and the measured C0 hinge /
+interior-plateau / argmax-switch numbers).
+
+## Bijector A/B (`SEARCHES_BIJECTOR`)
+
+W5 Phase 8B (issue #162), following on from Phase 8A's `slogdet_ab.py`. The
+PyAutoFit half (`autofit/non_linear/bijector.py`, `MultiStartGradient
+(bijector=...)`, opt-in `record_lane_nan_history` / `trace_param_indices`
+diagnostics) is PyAutoFit PR#1525. `_samplers.py` resolves an arm label to a
+live `af.Bijector*` object and composes it into `multi_start_unique_tag` (a
+bijector arm never resumes another arm's `.completed` fit, same discipline as
+`SEARCHES_POSITIONS`/`SEARCHES_CLIPPER`/`SEARCHES_SCALER` above).
+
+| Label | Object | Notes |
+|---|---|---|
+| `none` (default) | `af.BijectorNone` | bit-identical to no bijector at all |
+| `auto_log` | `af.BijectorAuto` | log on every eligible `LogUniformPrior`/`LogGaussianPrior`, unrestricted |
+| `log_reg` | `af.BijectorPerPath` | log ONLY on paths containing `"regularization."` backed by a `LogUniformPrior` — resolved via a throwaway probe model (`_samplers._probe_model`), never the real dataset |
+| `logit` | `af.BijectorLogit` | secondary/opt-in arm — see `autofit.non_linear.bijector`'s module docstring on why it is not a default |
+
+`SEARCHES_LANE_HISTORY=1` / `SEARCHES_TRACE_PARAMS=<paths>` (see the env-var
+list above) are the diagnostics the A/B reads: `_per_lane.per_lane_block`
+forwards `lane_value_nan_history` / `lane_grad_nan_history` / `trace_history`
+/ `trace_param_indices` from `search_internal` straight into every
+MultiStart* results JSON's `diagnostics` block when the search was built with
+them on.
+
+Driver: `scripts/misc/searches/bijector_ab.py` — pre-registration, the 39-arm
+table (`delaunay_adapt_split` x {cholesky,slogdet} x {none,log_reg} x 5 seeds;
+`knn` x {none,log_reg,logit} x 5 seeds; `mge` control x {none,log_reg} x 2
+seeds), readouts and the F1-F5 falsification scorer are all in its module
+docstring. Run:
+
+```bash
+python3 scripts/misc/searches/bijector_ab.py --stage run     # 39 real searches (GPU)
+python3 scripts/misc/searches/bijector_ab.py --stage score   # F1-F5 verdict from the JSONs
+```
+
+Results land under
+`results/searches/multi_start_prodigy/imaging/<cell>/hst/phase8b/` (per-arm
+JSON+PNG) and `results/notes/inference/phase_08_regularization/bijector_ab/`
+(the verdict artifact). See `results/notes/inference/phase_08_regularization/RESULTS.md`
+"8B" for the write-up once run, and `hpc/batch_gpu/submit_phase8b_bijector_a100`
+for the A100 submit.
 
 ## What this *doesn't* profile (yet)
 

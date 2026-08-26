@@ -246,3 +246,225 @@ tripling claim withdrawn on adversarial review — see
 PROGRAMME.md phase/gate table (this commit); overnight strengthening
 jobs 339065-339073 (n128 fresh seeds, n256 extra seeds, Nautilus
 re-baselines) submitted before the call and noted here for the record.
+
+---
+
+## 2026-08-24 — Phase 2 scan COMPLETE: H2.1 closed, NSS operating point recorded, GATE A CALLED (human): Nautilus stays the nested baseline
+
+**Record (not a gate call):** Phase 2 wave 2 harvested (RAL 338870-338873,
+339067[0-3], 339068, 339069, 339070/71). Mainline `blackjax.nss` (af.NSS)
+reproduces the Nautilus answer on both `imaging/mge/hst` and
+`imaging/delaunay/hst`; the fork-era +7–13-nat logZ bias is entirely
+inner-kernel under-mixing (inner=30: 5/5 seeds within +1.0 ± 0.4 nats of
+Nautilus 31690.50). Operating point n_live 200 / num_delete 100 / inner 30
+/ dlogz −3 (−10 when the MAP matters). Cost at that point: **5.0× the
+Nautilus sampler wall on MGE (3,528 vs 707 s), 18.4× on Delaunay (34,726 vs
+1,891 s)**, measured same-night against Nautilus re-baselines on the
+current stack. Nautilus truth bars reaffirmed to 2 dp; the 523 s Nautilus
+wall is retired as a reference (707–773 s reproduces).
+
+**GATE A CALLED (human, 2026-08-24):** Nautilus remains the nested
+baseline on every model family; af.NSS stays mainlined as a correct,
+tuned alternative, not default. Phase 5's NSS arm is dropped. Sample
+economy sealed it beyond wall: Kish ESS 4,121 vs 1,315 per run on MGE
+(14× wall for equal ESS; ~15 vs ~940 likelihood evals per effective
+sample, reject-inclusive) — `phase_02_nss_mainline/RESULTS.md` "Sample
+economy". Only re-opening condition (unmeasured): a GPU-only deployment
+where Nautilus's host-side proposal is the bottleneck; W6 (n_batch scan)
+queued to bound it. The pixelization-cell Nautilus re-baseline (339795)
+is still queued and does not affect the call.
+
+**Same-day human calls, recorded here to keep DECISIONS.md linear:**
+- **Gate B pt 1 caveat (a) "n=256 only" STANDS.** n128 fresh-seed 5/5
+  (phase_03 addendum) is consistent but cannot demonstrate ≥99 % at 95 %
+  confidence; the ~1.3 GPU-h for a 30-seed n128 tier is not worth the
+  ~90 s/fit it would save. Revisit only if Prodigy enters a loop where
+  seconds compound.
+- **Gate C criterion reworded (PROGRAMME §4 Phase 6):** initialized
+  gradient MCMC is judged on *batched-pipeline* value (vmap across
+  datasets, posterior without an evidence run, ESS per gradient eval
+  acceptable), not on beating Nautilus's single-fit ESS/s — Nautilus's
+  ~15 evals/ESS on MGE is not a bar warm NUTS is expected to clear.
+
+---
+
+## 2026-08-24 — CP-4 / Phase 8A: slogdet FAILS the pre-registered A/B — human call: ADOPT as the profiling-repo testing default, keep library-optional, chase the residual NaNs
+
+**Record (Gates E/F remain open):** slogdet vs cholesky A/B run on RAL
+(A100 338808, CPU 338807). The pre-registered stressor (knn + free
+AdaptSplit) never walls — VOID on both tiers, as the driver's #117 note
+predicted. On the real wall (Delaunay + free AdaptSplit) slogdet rescues
+64–73 % of Cholesky NaNs with zero regressions but leaves 20–32 draws NaN
+under both arms, leaves all λ-transect gradients non-finite, disagrees
+with Cholesky by up to 9,619 nats (A100) in the marginal band, and costs
+3.7× on CPU. Three of four criteria fail.
+
+**Human call (2026-08-24), overriding the record's "not recommended":**
+zero regressions + 64–73 % rescue is worth having now. (1) `slogdet`
+becomes the **default `log_det_method` for gradient-work cells in this
+repo's searches framework** (`_setup.py`; GPU tiers — CPU keeps cholesky
+for the 3.7× cost) — W8. (2) The PyAutoArray default stays cholesky
+(opt-in), **to be revisited once (3) lands — reminder owed to the human at
+the end of the queue: "make slogdet standard".** (3) The NaN-under-both
+draws (32 A100 / 20 CPU) and the all-transect non-finite gradients are a
+named investigation, W7 — are they genuinely singular systems (λ⁴, #104)
+or a formula-independent overflow that a different scaling removes? Phase
+8B stays the live reparameterization candidate alongside. Record:
+`phase_08_regularization/RESULTS.md`.
+
+
+---
+
+## 2026-08-24 — W4 / Phase 1: targets registry, schema v2, `slam_source_pix(_nn)`, reference baselines (autolens_profiling#161)
+
+**Record (Phase 1 IN PROGRESS, not a gate call):** landed the Phase 1
+targets registry infrastructure PROGRAMME.md §"Phase 1" and §5 specify —
+`scripts/misc/searches/_targets.py` (`Target`/`Tolerances` dataclasses,
+`TARGETS` — 32 entries: {mge, delaunay, delaunay_nn, knn, delaunay_matern,
+pixelization, slam_source_pix, slam_source_pix_nn} x {positions off/on} x
+{fp64/mp} — and `target_id`/`target_block` canonical-identity hashing),
+schema-v2 additions to every `results/searches/` JSON
+(`schema_version`/`target`/`algorithm`/`hardware`, added beside every v1
+key, never replacing one — `build_readme.py`'s dashboard renders both
+unchanged), the imaging truth-anchor extension (previously point_source /
+cluster only), and the MultiStart `likelihood_evals` correction (was
+`total_samples`, a small posterior-storage count; now
+`total_steps * n_starts`, the actual reject-inclusive evaluation count) +
+Kish ESS.
+
+**Human mesh decisions (this commit implements, does not re-litigate):**
+- `slam_source_pix` = `al.mesh.RectangularRTUAdaptImage` (best gradient
+  behaviour of the rectangular family) + free-coefficient `al.reg.Adapt`
+  (inner/outer coefficient + signal_scale). **Deliberately differs** from
+  the workspace SLaM `source_pix[1]` fiducial
+  (`autolens_workspace/scripts/multi_galaxy/slam.py:653`, which pairs
+  `al.mesh.RectangularBilinearAdaptImage` — not RTU — with the same
+  `al.reg.Adapt`, and a 28x28 mesh vs this repo's 39x39
+  `_PIXELIZATION_MESH_SHAPE` fiducial). The RTU/Bilinear choice mirrors the
+  Phase 14 default-CPU-mesh adjudication (2026-08-21): RTU has the better
+  measured gradient surface, which is what this profiling repo's targets
+  exist to stress; the workspace's own default optimizes for a different
+  axis (new-user CPU speed) and is not overridden by this decision.
+- `delaunay_nn` is registered as a REAL target (scientifically the premier
+  model — Sibson/natural-neighbour interpolation vs the Delaunay mesh's C0
+  barycentric one), not a diagnostic cell: `al.mesh.DelaunayNN` (a
+  `Delaunay` subclass, identical `(pixels, zeroed_pixels, areas_factor)`
+  constructor) + the SAME `ConstantSplit` regularization `delaunay` uses,
+  so the two targets are a pure mesh-family A/B. `slam_source_pix_nn` pairs
+  DelaunayNN with the same free `reg.Adapt` as `slam_source_pix`, isolating
+  the mesh choice the same way.
+
+**Verification finding (not a target-definition bug):** at broad, untuned
+prior draws (CPU, `use_jax=False`, 8 draws in the unit-cube's [0.2, 0.8]
+band), `delaunay` resamples 0/8 times; `delaunay_nn` resamples 5/8
+(3 finite, 3 NaN, 2 `FitException`); `slam_source_pix_nn` resamples 7/8
+(1 finite, 2 NaN, 5 `FitException`). Both DelaunayNN-based targets are
+registered as specified — an elevated resample rate at broad priors is
+itself a legitimate Phase-1 finding about the mesh, not something this
+registry silently works around by swapping mesh/regularization. Recorded
+on the affected `Target.notes` and worth a named follow-up once Phase 5+
+starts running real searches against these targets.
+
+**Reference baselines:** adopted
+`results/searches/nautilus/imaging/{mge,delaunay}/hst/hpc_hpc_a100_fp64.json`
+(v2026.8.17.1, same-stack re-baselines already used as the programme's
+Nautilus truth bars — DECISIONS.md 2026-08-24 Gate A entry) as
+`certified_by: "retro"` `InferenceRefs_v1` baselines, each tagged with the
+`git sha` current at adoption (`b9c47062f2a46a211ca0df92cbce7e9edd2a3c4c`).
+The `pixelization` target's existing row
+(`.../pixelization/hst/hpc_a100_fp64.json`, v2026.5.21.1) is explicitly
+**NOT adopted** — it predates the version-gap refresh the other two rows
+already got. 11 further reference rows (fresh Nautilus fp64 runs, seed 0,
+`n_live >= 2x` fiducial via the new `SEARCHES_NAUTILUS_N_LIVE` override) are
+queued in `results/baselines/InferenceRefs_v1/SUBMIT_LIST.md`, with a
+prepared SLURM array
+(`hpc/batch_gpu/submit_search_nautilus_inference_refs_v1_array.sh`) that has
+**NOT been submitted** — writing the array is this commit's job; running an
+~11-task multi-hour A100 campaign is a separate decision.
+
+**Open questions carried forward:** (1) the DelaunayNN resample-rate finding
+above — worth a dedicated investigation once the reference-row campaign
+gives a real sample size to characterise it against. (2) Whether
+`slam_source_pix`'s deliberate RTU/Bilinear deviation from the workspace
+SLaM default should ever be reconciled (a future workspace-docs decision,
+out of scope here). (3) The 11-row SUBMIT_LIST campaign itself — queued,
+not run.
+
+**Records:** `scripts/misc/searches/_targets.py`,
+`results/baselines/InferenceRefs_v1/`, PROGRAMME.md Phase 1 section + W4
+table row (this commit).
+
+---
+
+---
+
+## 2026-08-24 — W7 (CP-4 follow-up, #164): per-draw attribution + CP-4 re-scored on the clean subset — verdict unchanged
+
+**Record:** `scripts/misc/searches/slogdet_nan_attribution.py` replayed
+individual stored `delaunay_adapt_split` draws (both tiers) non-jitted,
+drilling into `inversion.*` matrices and small `jax.grad` closures to
+assign each sampled draw one mechanism label (170 draws classified across
+both tiers: 8 full-gradient, 87 A100 + 83 RAL CPU matrix-only). Two driver
+artefacts identified and fixed at harvest (`slogdet_ab.py`): (1) six
+`descent`-source draws carried a NEGATIVE physical regularization
+coefficient and ten more were dead (entirely-NaN) checkpointed lanes — the
+prior "Ops notes" misread this as a log axis; both are now dropped at
+harvest. (2) all 128 `lambda_transect` draws sat at the anchor where
+`ell_comps`/shear are exactly (0, 0), an undefined-gradient point in
+`autogalaxy/convert.py`'s sqrt-magnitude conversion unrelated to the
+regularization wall; the anchor is now jittered 1e-3 in unit-cube space off
+any exact zero. A tier-attack on draw 96 (coefficients [3.5e5, 536]: finite
+under both arms on A100 with a 9,619-nat slogdet/cholesky delta, NaN under
+both arms on RAL CPU for the IDENTICAL input vector) traced the
+tier-dependence to `cond(curvature_reg_matrix_reduced) = 4.5e18` — far past
+float64's ~1e16 precision floor — where the log-det terms remain
+individually computable (and agree with the original A100 value to 5
+significant figures) while the reconstruction linear solve on the SAME
+matrix is itself NaN; different BLAS/LAPACK backends (cuSOLVER vs OpenBLAS)
+diverge on whether that solve returns a number. Cross-tier value agreement
+on mutually-finite shared draws: slogdet max|Δ| 6.72 nats, cholesky 1.30
+nats — both far above the ~1e-4 clean-PD floor, confirming disagreement
+concentrates in the marginal band.
+
+**CP-4 re-scored on the clean subset (excluding dead-lane,
+invalid-coefficient and anchor-singularity draws):** A100 n=416 → 272 clean
+(144 excluded: 10 dead-lane, 6 invalid-coefficient, 128
+anchor-singularity); RAL CPU n=384 → 256 clean (128 excluded, all
+anchor-singularity — this tier's harvest never ran the descent arm, so it
+has no dead-lane/invalid-coefficient rows). On the clean subset, all three
+per-draw criteria STILL fail on both tiers — criterion 1 (zero slogdet
+NaNs): 22/272 A100, 20/256 CPU still NaN; criterion 2 (value equality):
+48/218 A100 and 40/207 CPU mutually-finite comparisons exceed tolerance,
+max|Δ| unchanged (9,619 nats A100, 1.62 nats CPU); criterion 3 (finite
+gradients): 22/272 A100, 23/256 CPU still non-finite. Criterion 4 (runtime)
+is population-level and unchanged (1.03× A100, 3.74× CPU). **Verdict: FAIL
+on both tiers, unchanged from the original Phase 8A run.** Matrix-only
+population sampling (170 draws) confirms the residual failures are not
+driver artefacts: once the two fixed bugs are excluded, the sampled
+`nan_both` draws are 53% (A100) / 80% (RAL CPU) `genuinely_singular`
+(cond ≥ 1e16 or LAPACK-Cholesky failure) — the genuinely-singular λ⁴
+population (`prior`-source draws, regularization coefficient ~4e5-9e5)
+that CP-4 was measuring in the first place. A `marginal_tier_flippable`
+band (`cond` in `[1e12, 1e16)`) is also a real, sizeable population
+(18/87 A100, 18/83 RAL CPU sampled draws, every class except `truth_bar`)
+— the conditioning range where a hardware/BLAS change can flip a draw's
+NaN verdict even though the matrix is nominally still invertible.
+
+**Human call (2026-08-24), confirming the W8 adoption stands unchanged:**
+the re-score does not overturn anything — slogdet remains the GPU
+gradient-work default in this repo (W8, already shipped), the library
+default stays cholesky (opt-in), and the reminder to revisit the
+PyAutoArray default is still owed once W9 lands. W9 (#166) is unblocked
+with three concrete inputs from this investigation: (i) quantify whether
+slogdet ever returns a wrong-but-finite number where cholesky legitimately
+NaNs, using the `cond >= 1e16` threshold and the max|Δ| vs an
+eigvalsh-reference logdet (established here: up to 9,619 nats,
+tier-dependent, concentrated in the `[1e12, 1e16)` marginal band); (ii) the
+library-default recommendation is slogdet on GPU / cholesky on CPU, with
+the 3.7× CPU cost restated as the reason CPU keeps the historical default;
+(iii) two guards independent of log-det method, both now shipped in
+`slogdet_ab.py`: reject non-finite or out-of-prior-bound lane vectors at
+descent-harvest time, and never anchor a transect/probe at an exact-zero
+ell_comps/shear component. Record: `phase_08_regularization/RESULTS.md`
+"W7 addendum" + "CP-4 re-scored" sections; attribution artifacts under
+`slogdet_ab/attribution/`.

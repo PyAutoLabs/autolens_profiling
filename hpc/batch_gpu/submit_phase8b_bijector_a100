@@ -1,0 +1,128 @@
+#!/bin/bash -l
+#
+# Inference programme W5 / Phase 8B (issue #162) — bijector (log-coordinate)
+# A/B on the free-regularization NaN wall / conditioning. Pre-registration,
+# arm table and falsification criteria (F1-F5) are in
+# `scripts/misc/searches/bijector_ab.py`'s module docstring; read that before
+# touching this file. Cloned from
+# `submit_search_multi_start_prodigy_autoconv_imaging_mge_a100_hst_fp64_n16_diagnostic_theta_e`'s
+# shape (gres gpu:1, JAX_ENABLE_X64, prior_box, scaler none).
+#
+# ARMS — one SLURM array task per (cell, log_det_method, bijector, seed),
+# generated to match `bijector_ab.build_arms()` EXACTLY (see that function's
+# docstring for the "why" of each count):
+#
+#   delaunay_adapt_split : {cholesky, slogdet} x {none, log_reg} x seed 0-4 = 20
+#   knn                  : {none, log_reg} x seed 0-4 = 10, + logit x seed 0-4 = 5  -> 15
+#   mge                  : {none, log_reg} x seed {0, 1}  (F4 control)         = 4
+#   total                                                                       = 39
+#
+# Every task: multi_start_prodigy (fixed-step: check_for_convergence=False),
+# n_starts=16, n_steps=3000 (the #117-validated pixelized-cell budget),
+# batch_size=4 (mandatory on pixelized cells), clipper=prior_box, scaler=none,
+# SEARCHES_LANE_HISTORY=1. SEARCHES_TRACE_PARAMS is set on the two
+# regularization-coefficient paths for delaunay_adapt_split/knn (mge has
+# none). SEARCHES_LOG_DET_METHOD is only exported for delaunay_adapt_split
+# (LOG_DETS[i]="auto" -> unset, uses the W8-resolved default).
+#
+# ESTIMATED WALL — 16 starts x 3000 steps at the #117-validated pixelized
+# throughput is ~5 min including compile per task (matches the diagnostic_
+# theta_e submit's n16/3000-step citation); --time below gives it 6x headroom.
+#
+# RESULTS — one JSON+PNG per task under
+#   results/searches/multi_start_prodigy/imaging/<cell>/hst/phase8b/
+# via --output-dir, config-name carrying log_det+bijector+seed so no two
+# tasks' JSONs collide. Score with:
+#   python3 scripts/misc/searches/bijector_ab.py --score
+#
+# DO NOT SUBMIT without first confirming the RAL PyAutoFit checkout is on a
+# commit >= PR#1525 (`bijector.py`, `MultiStartGradient(bijector=...,
+# record_lane_nan_history=..., trace_param_indices=...)`) — run `HPCPullPyAuto`
+# and check first; an older PyAutoFit raises on the `bijector=` kwarg.
+
+#SBATCH -J phase8b_bijector_ab
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=0:30:00
+#SBATCH --array=0-38
+#SBATCH -o output/output.%A_%a.out
+#SBATCH -e error/error.%A_%a.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_profiling
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+# Generated from `bijector_ab.build_arms()` — index i is task i's
+# (cell, log_det_method, bijector, seed). "auto" in LOG_DETS means
+# SEARCHES_LOG_DET_METHOD is left unset (W8-resolved default).
+CELLS=(delaunay_adapt_split delaunay_adapt_split delaunay_adapt_split delaunay_adapt_split delaunay_adapt_split delaunay_adapt_split delaunay_adapt_split delaunay_adapt_split delaunay_adapt_split delaunay_adapt_split delaunay_adapt_split delaunay_adapt_split delaunay_adapt_split delaunay_adapt_split delaunay_adapt_split delaunay_adapt_split delaunay_adapt_split delaunay_adapt_split delaunay_adapt_split delaunay_adapt_split knn knn knn knn knn knn knn knn knn knn knn knn knn knn knn mge mge mge mge)
+LOG_DETS=(cholesky cholesky cholesky cholesky cholesky cholesky cholesky cholesky cholesky cholesky slogdet slogdet slogdet slogdet slogdet slogdet slogdet slogdet slogdet slogdet auto auto auto auto auto auto auto auto auto auto auto auto auto auto auto auto auto auto auto)
+BIJECTORS=(none none none none none log_reg log_reg log_reg log_reg log_reg none none none none none log_reg log_reg log_reg log_reg log_reg none none none none none log_reg log_reg log_reg log_reg log_reg logit logit logit logit logit none none log_reg log_reg)
+SEEDS=(0 1 2 3 4 0 1 2 3 4 0 1 2 3 4 0 1 2 3 4 0 1 2 3 4 0 1 2 3 4 0 1 2 3 4 0 1 0 1)
+
+I=$SLURM_ARRAY_TASK_ID
+CELL=${CELLS[$I]}
+LOG_DET=${LOG_DETS[$I]}
+BIJECTOR=${BIJECTORS[$I]}
+SEED=${SEEDS[$I]}
+
+N_STARTS=16
+N_STEPS=3000
+
+export SEARCHES_N_STARTS=$N_STARTS
+export SEARCHES_N_STEPS=$N_STEPS
+export SEARCHES_BATCH_SIZE=4
+export SEARCHES_SEED=$SEED
+export SEARCHES_CLIPPER=prior_box
+export SEARCHES_SCALER=none
+export SEARCHES_BIJECTOR=$BIJECTOR
+export SEARCHES_LANE_HISTORY=1
+export SEARCHES_DISABLE_VIZ=1
+
+if [ "$LOG_DET" != "auto" ]; then
+    export SEARCHES_LOG_DET_METHOD=$LOG_DET
+else
+    unset SEARCHES_LOG_DET_METHOD
+fi
+
+if [ "$CELL" == "mge" ]; then
+    unset SEARCHES_TRACE_PARAMS
+else
+    export SEARCHES_TRACE_PARAMS="galaxies.source.pixelization.regularization.inner_coefficient,galaxies.source.pixelization.regularization.outer_coefficient"
+fi
+
+CONFIG_NAME="${CELL}_${LOG_DET}_${BIJECTOR}_seed${SEED}"
+OUT_DIR="$AP_ROOT/results/searches/multi_start_prodigy/imaging/${CELL}/hst/phase8b"
+
+nvidia-smi
+
+echo "=========================================="
+date
+echo "Task:        $I / 38"
+echo "Cell:        searches/multi_start_prodigy/imaging/$CELL"
+echo "Instrument:  hst"
+echo "Precision:   fp64"
+echo "log_det:     $LOG_DET"
+echo "bijector:    $BIJECTOR"
+echo "seed:        $SEED"
+echo "n_starts=$N_STARTS  n_steps=$N_STEPS  batch_size=4  clipper=prior_box  positions=off"
+
+cd $AP_ROOT
+python3 scripts/imaging/searches/multi_start_prodigy/${CELL}.py \
+    --instrument hst \
+    --config-name $CONFIG_NAME \
+    --output-dir $OUT_DIR
+
+echo "Finished."
+date

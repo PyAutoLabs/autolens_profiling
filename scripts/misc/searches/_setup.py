@@ -82,9 +82,31 @@ _HILBERT_PIXELS: int = 1500
 # meshes share the Hilbert image-mesh + AdaptImages plumbing, and the choice
 # of regularization parametrization is load-bearing for gradient search (see
 # the model builders below).
-_PIX_MODEL_TYPES: tuple[str, ...] = ("pixelization", "delaunay", "knn", "delaunay_matern")
+_PIX_MODEL_TYPES: tuple[str, ...] = (
+    "pixelization",
+    "delaunay",
+    "knn",
+    "delaunay_matern",
+    "delaunay_adapt_split",
+    # W4 / issue #161 (targets registry, Phase 1): delaunay_nn is a REAL
+    # target (the DelaunayNN Sibson-interpolant mesh, PyAutoArray
+    # autoarray/inversion/mesh/mesh/delaunay_nn.py, a Delaunay subclass with
+    # the identical constructor). slam_source_pix(_nn) mirror the production
+    # SLaM SOURCE-PIX shape (RectangularRTUAdaptImage / DelaunayNN +
+    # reg.Adapt) — see DECISIONS.md 2026-08-24 for the human mesh calls.
+    "delaunay_nn",
+    "slam_source_pix",
+    "slam_source_pix_nn",
+)
 # The subset whose mesh vertices come from a precomputed image-plane mesh grid.
-_DELAUNAY_FAMILY: tuple[str, ...] = ("delaunay", "knn", "delaunay_matern")
+_DELAUNAY_FAMILY: tuple[str, ...] = (
+    "delaunay",
+    "knn",
+    "delaunay_matern",
+    "delaunay_adapt_split",
+    "delaunay_nn",
+    "slam_source_pix_nn",
+)
 _MGE_TOTAL_GAUSSIANS: int = (
     20  # ``source_lp[1]`` SLaM fiducial; lighter than likelihood_runtime's 60
 )
@@ -128,13 +150,24 @@ class _ClusterDatasetList(list):
 # -----------------------------------------------------------------------------
 
 
+# Dataset classes whose analysis is built through ``al.Settings`` and therefore
+# can carry an inversion ``log_det_method`` override. point_source / cluster
+# analyses have no inversion at all, and the datacube builders compose their own
+# per-channel analyses, so an override there would be silently discarded — hence
+# the explicit rejection in ``build_for_cell`` rather than a quiet no-op.
+_LOG_DET_METHOD_DATASET_CLASSES: tuple[str, ...] = ("imaging", "group", "interferometer")
+
+
 def build_for_cell(
     *,
-    dataset_class: str,
-    model_type: str,
-    instrument: str,
+    dataset_class: str | None = None,
+    model_type: str | None = None,
+    instrument: str | None = None,
     use_jax: bool,
-    use_mixed_precision: bool = False,
+    use_mixed_precision: bool | None = None,
+    log_det_method: str | None = None,
+    target: Any = None,
+    positions_enabled_override: bool | None = None,
 ) -> tuple[Any, Any, Any]:
     """Build dataset, model and analysis for one profiling cell.
 
@@ -146,7 +179,54 @@ def build_for_cell(
     factor_graph)`` — the search treats the factor graph as both the model
     source and the analysis, per the multi-dataset pattern in
     ``autolens_workspace/scripts/multi_dataset/modeling.py``.
+
+    ``log_det_method`` selects the inversion's Bayesian-evidence
+    log-determinant computation (``None`` = the packaged default, currently
+    ``"cholesky"``; ``"slogdet"`` is the opt-in alternative from
+    PyAutoArray#391). It is threaded straight into ``al.Settings`` and is the
+    ONLY knob a Phase-8A A/B is allowed to vary — see ``build_ab_for_cell``,
+    which is what an A/B driver should call so that both sides share one
+    dataset, one model and one adapt image by construction.
+
+    ``target`` (W4 / issue #161, Phase 1 targets registry — a
+    ``searches._targets.Target``, typed ``Any`` here to avoid a circular
+    import since ``_targets.py`` imports FROM this module): when given,
+    ``dataset_class`` / ``model_type`` / ``instrument`` / precision /
+    ``log_det_method`` / positions default to the target's own fields, so a
+    caller can write ``build_for_cell(target=t, use_jax=...)`` instead of
+    spelling every field out. Any field also passed explicitly wins over the
+    target's value (an explicit ``dataset_class=`` etc. is never silently
+    overridden). ``positions_enabled_override`` (bool or ``None``) makes the
+    target's ``positions`` field ("off"/"on") authoritative regardless of the
+    ambient ``SEARCHES_POSITIONS`` env var — ``None`` preserves the original
+    env-only behaviour when no ``target`` is given.
     """
+    if target is not None:
+        dataset_class = target.dataset_class if dataset_class is None else dataset_class
+        model_type = target.model_type if model_type is None else model_type
+        instrument = target.instrument if instrument is None else instrument
+        if use_mixed_precision is None:
+            use_mixed_precision = target.precision == "mp"
+        if log_det_method is None:
+            log_det_method = target.log_det_method
+        if positions_enabled_override is None:
+            positions_enabled_override = target.positions == "on"
+    if use_mixed_precision is None:
+        use_mixed_precision = False
+    if dataset_class is None or model_type is None or instrument is None:
+        raise ValueError(
+            "build_for_cell requires dataset_class/model_type/instrument, either "
+            "passed directly or derivable from `target`."
+        )
+
+    if log_det_method is not None and dataset_class not in _LOG_DET_METHOD_DATASET_CLASSES:
+        raise ValueError(
+            f"log_det_method={log_det_method!r} was passed for dataset_class="
+            f"{dataset_class!r}, whose analysis is not built through al.Settings. "
+            f"The override would be silently ignored. Supported: "
+            f"{_LOG_DET_METHOD_DATASET_CLASSES}."
+        )
+
     if dataset_class == "datacube":
         return _build_for_datacube(
             model_type=model_type,
@@ -176,11 +256,47 @@ def build_for_cell(
             use_mixed_precision=use_mixed_precision,
         )
 
+    _positions_wanted = (
+        positions_enabled() if positions_enabled_override is None else positions_enabled_override
+    )
+    if dataset_class not in _POSITIONS_SUPPORTED_DATASET_CLASSES and _positions_wanted:
+        # Fail BEFORE paying for a (possibly expensive, possibly
+        # auto-simulating) dataset build for a dataset_class this Stage-1
+        # plumbing does not support — same guard
+        # ``_positions_likelihood_list_for`` applies below, hoisted above
+        # ``_build_dataset`` so e.g. ``group`` (whose dataset is
+        # auto-simulated on first use) fails fast instead of silently paying
+        # that cost before raising.
+        raise NotImplementedError(
+            f"{_POSITIONS_ENV}=on is only implemented for single-plane "
+            f"{_POSITIONS_SUPPORTED_DATASET_CLASSES} cells (Phase 4 Stage 1, issue "
+            f"#159); dataset_class={dataset_class!r} is not supported."
+        )
+
     dataset, dataset_path = _build_dataset(dataset_class, instrument)
     mask_radius = _mask_radius_for(dataset_class, instrument)
     model = _build_model(dataset_class, model_type, mask_radius=mask_radius)
     adapt_images = _adapt_images_for(
         dataset_class, model_type, dataset_path=dataset_path, dataset=dataset
+    )
+    # SLaM's own auto-threshold convention for the slam_source_pix(_nn)
+    # targets' positions-on arm (W4 / issue #161 human call) — every other
+    # target keeps the fixed-threshold default.
+    _threshold_mode_override = (
+        "auto"
+        if (
+            positions_enabled_override
+            and model_type in ("slam_source_pix", "slam_source_pix_nn")
+            and os.environ.get(_POSITIONS_THRESHOLD_ENV) is None
+        )
+        else None
+    )
+    positions_likelihood_list = _positions_likelihood_list_for(
+        dataset_class,
+        instrument,
+        dataset_path,
+        enabled_override=positions_enabled_override,
+        threshold_mode_override=_threshold_mode_override,
     )
     analysis = _build_analysis(
         dataset_class=dataset_class,
@@ -189,8 +305,70 @@ def build_for_cell(
         use_jax=use_jax,
         use_mixed_precision=use_mixed_precision,
         adapt_images=adapt_images,
+        positions_likelihood_list=positions_likelihood_list,
+        log_det_method=log_det_method,
     )
     return dataset, model, analysis
+
+
+def build_ab_for_cell(
+    *,
+    dataset_class: str,
+    model_type: str,
+    instrument: str,
+    use_jax: bool,
+    use_mixed_precision: bool = False,
+    log_det_methods: tuple[str, ...] = ("cholesky", "slogdet"),
+) -> tuple[Any, Any, dict[str, Any]]:
+    """One cell, N analyses that differ ONLY in ``log_det_method``.
+
+    Returns ``(dataset, model, {log_det_method: analysis})``.
+
+    This exists instead of calling :func:`build_for_cell` twice because the
+    programme's category-1/2 rule (``PROGRAMME.md`` §3, "Target ≠ algorithm")
+    requires the two arms to differ in exactly one field of the target. Calling
+    the builder twice re-derives the dataset, the model priors AND the Hilbert
+    image-plane mesh grid from the adapt image; each of those is deterministic
+    today, but "deterministic today" is an assumption the artifact would then be
+    resting on rather than a property it can state. Building them ONCE and
+    sharing the same objects across the arms makes the single-field difference
+    structural: there is one dataset object, one model object and one
+    ``AdaptImages`` object, and the analyses are constructed from them with a
+    different ``al.Settings(log_det_method=...)`` and nothing else.
+
+    Restricted to the ``al.Settings``-backed dataset classes for the reason
+    given on ``_LOG_DET_METHOD_DATASET_CLASSES``.
+    """
+    if dataset_class not in _LOG_DET_METHOD_DATASET_CLASSES:
+        raise ValueError(
+            f"build_ab_for_cell does not support dataset_class={dataset_class!r}; "
+            f"its analysis is not built through al.Settings, so a log_det_method "
+            f"A/B would compare two identical arms. Supported: "
+            f"{_LOG_DET_METHOD_DATASET_CLASSES}."
+        )
+    if len(set(log_det_methods)) != len(log_det_methods):
+        raise ValueError(f"log_det_methods must be unique, got {log_det_methods!r}")
+
+    dataset, dataset_path = _build_dataset(dataset_class, instrument)
+    mask_radius = _mask_radius_for(dataset_class, instrument)
+    model = _build_model(dataset_class, model_type, mask_radius=mask_radius)
+    adapt_images = _adapt_images_for(
+        dataset_class, model_type, dataset_path=dataset_path, dataset=dataset
+    )
+
+    analysis_dict = {
+        method: _build_analysis(
+            dataset_class=dataset_class,
+            model_type=model_type,
+            dataset=dataset,
+            use_jax=use_jax,
+            use_mixed_precision=use_mixed_precision,
+            adapt_images=adapt_images,
+            log_det_method=method,
+        )
+        for method in log_det_methods
+    }
+    return dataset, model, analysis_dict
 
 
 def _build_for_datacube(
@@ -212,6 +390,12 @@ def _build_for_datacube(
     so the adapt image is computed once and shared across every channel's
     AnalysisInterferometer.
     """
+    if positions_enabled():
+        raise NotImplementedError(
+            f"{_POSITIONS_ENV}=on is not implemented for dataset_class='datacube' "
+            "(Phase 4 Stage 1, issue #159, supports single-plane imaging/"
+            "interferometer only)."
+        )
     dataset_list, dataset_path = _build_datacube_channels(instrument)
     mask_radius = _mask_radius_for("datacube", instrument)
     model = _build_model("datacube", model_type, mask_radius=mask_radius)
@@ -269,6 +453,12 @@ def _build_for_datacube_imaging(
     is copied into each ``AnalysisFactor`` and the factors share global
     parameters — the only cross-factor difference is data shape.
     """
+    if positions_enabled():
+        raise NotImplementedError(
+            f"{_POSITIONS_ENV}=on is not implemented for the datacube_img(_hetero) "
+            "multi-band factor-graph cells (Phase 4 Stage 1, issue #159, supports "
+            "single-plane imaging/interferometer only)."
+        )
     mask_radius = _mask_radius_for("imaging", instruments[0])
     model = _build_model("imaging", model_type, mask_radius=mask_radius)
 
@@ -317,6 +507,12 @@ def _build_for_cluster(
     so the runner's generic ``search.fit(model=model, analysis=analysis)``
     path needs no cluster-specific branching.
     """
+    if positions_enabled():
+        raise NotImplementedError(
+            f"{_POSITIONS_ENV}=on is not implemented for dataset_class='cluster' "
+            "(Phase 4 Stage 1, issue #159, supports single-plane imaging/"
+            "interferometer only)."
+        )
     dataset_list, dataset_path = _build_dataset("cluster", instrument)
     mask_radius = _mask_radius_for("cluster", instrument)  # 0.0, unused by point models
     model = _build_model(
@@ -643,10 +839,18 @@ def _build_model(
         return _pixelization_model(mask_radius=mask_radius)
     if model_type == "delaunay":
         return _delaunay_model(mask_radius=mask_radius)
+    if model_type == "delaunay_nn":
+        return _delaunay_nn_model(mask_radius=mask_radius)
     if model_type == "knn":
         return _knn_model(mask_radius=mask_radius)
     if model_type == "delaunay_matern":
         return _delaunay_matern_model(mask_radius=mask_radius)
+    if model_type == "delaunay_adapt_split":
+        return _delaunay_adapt_split_model(mask_radius=mask_radius)
+    if model_type == "slam_source_pix":
+        return _slam_source_pix_model(mask_radius=mask_radius)
+    if model_type == "slam_source_pix_nn":
+        return _slam_source_pix_nn_model(mask_radius=mask_radius)
     if model_type in ("image_plane", "source_plane", "source_plane_tensor"):
         return _point_source_model()
     if model_type in ("image_plane_solved", "source_plane_solved", "image_plane_repeat_solved"):
@@ -745,6 +949,306 @@ def apply_diagnostic_prior_overrides(model: af.Collection) -> tuple[af.Collectio
         ),
     }
     return model, record
+
+
+# -----------------------------------------------------------------------------
+# PositionsLH plumbing (Phase 4 Stage 1, issue #159)
+# -----------------------------------------------------------------------------
+#
+# ``SEARCHES_POSITIONS=on`` attaches a real ``al.PositionsLH`` penalty to the
+# cell's analysis, mirroring the SLaM ``result.positions_likelihood_from``
+# idiom (``autolens_workspace/scripts/multi_galaxy/slam.py`` etc.:
+# ``factor=3.0, minimum_threshold=0.2``) but sourced from the simulator's own
+# TRUTH positions rather than positions re-solved from a completed search's
+# maximum-likelihood model — there is no prior search here to chain from.
+#
+# **This is a correctness guard, not cosmetics** (mirrors the
+# ``multi_start_unique_tag`` note in ``_samplers.py``): PyAutoFit's identifier
+# hashes only ``[search, model, unique_tag]`` — the ``Analysis`` object (and
+# therefore whether a positions penalty is attached) is NOT hashed. A
+# positions-on and positions-off run of the same search/model would resolve
+# to the SAME output directory and identifier unless ``unique_tag`` /
+# ``config_name`` are made to differ (see ``positions_arm_tag``,
+# consumed by ``_samplers.py`` and ``_runner.py``).
+_POSITIONS_ENV = "SEARCHES_POSITIONS"
+_POSITIONS_THRESHOLD_ENV = "SEARCHES_POSITIONS_THRESHOLD"
+_POSITIONS_FACTOR_ENV = "SEARCHES_POSITIONS_FACTOR"
+
+_POSITIONS_THRESHOLD_DEFAULT = "0.3"
+_POSITIONS_FACTOR_DEFAULT = "1e8"
+
+# SLaM's own auto-threshold convention (autolens_workspace SLaM scripts):
+# ``result.positions_threshold_from(factor=3.0, minimum_threshold=0.2, ...)``.
+_POSITIONS_AUTO_FACTOR = 3.0
+_POSITIONS_AUTO_MINIMUM_THRESHOLD = 0.2
+
+# Dataset classes this Stage-1 plumbing supports. Deliberately narrow: group /
+# cluster / datacube / point_source all have per-system or multi-plane
+# structure the single ``PositionsLH`` list here does not model, and a
+# silently-ignored positions request is exactly the failure mode this plumbing
+# must not have. See ``_positions_likelihood_list_for`` and the explicit guards
+# in ``_build_for_datacube`` / ``_build_for_datacube_imaging`` / ``_build_for_cluster``.
+_POSITIONS_SUPPORTED_DATASET_CLASSES: tuple[str, ...] = ("imaging", "interferometer")
+
+
+def positions_enabled() -> bool:
+    """Resolve ``SEARCHES_POSITIONS`` (default ``off``). Any other value raises."""
+    raw = os.environ.get(_POSITIONS_ENV, "off").strip().lower()
+    if raw not in ("off", "on"):
+        raise ValueError(f"{_POSITIONS_ENV}={raw!r} must be 'off' or 'on'")
+    return raw == "on"
+
+
+def _positions_threshold_raw() -> str:
+    return os.environ.get(_POSITIONS_THRESHOLD_ENV, _POSITIONS_THRESHOLD_DEFAULT).strip().lower()
+
+
+def _positions_threshold_mode_value() -> tuple[str, float | None]:
+    """``("fixed", <float>)`` or ``("auto", None)``. Anything else raises."""
+    raw = _positions_threshold_raw()
+    if raw == "auto":
+        return "auto", None
+    try:
+        return "fixed", float(raw)
+    except ValueError as exc:
+        raise ValueError(f"{_POSITIONS_THRESHOLD_ENV}={raw!r} must be 'auto' or a float") from exc
+
+
+def _positions_factor_raw() -> str:
+    return os.environ.get(_POSITIONS_FACTOR_ENV, _POSITIONS_FACTOR_DEFAULT).strip()
+
+
+def _positions_factor_value() -> float:
+    raw = _positions_factor_raw()
+    try:
+        return float(raw)
+    except ValueError as exc:
+        raise ValueError(f"{_POSITIONS_FACTOR_ENV}={raw!r} must be a float") from exc
+
+
+def positions_settings_for(
+    *, enabled: bool, mode: str = "fixed", fixed_value: float | None = None, factor: float = None
+) -> dict:
+    """Pure (env-free) builder for the ``positions`` results-JSON block.
+
+    Split out of :func:`positions_settings` (W4 / issue #161, Phase 1 targets
+    registry) so ``searches/_targets.py`` can compute a target's canonical
+    ``positions`` block from the ``Target`` object alone — ``target_id`` must
+    be reproducible independent of ambient ``SEARCHES_POSITIONS*`` env state,
+    which the original env-reading function could not offer. ``factor``
+    defaults to :data:`_POSITIONS_FACTOR_DEFAULT` when ``None``.
+    """
+    if not enabled:
+        return {"enabled": False}
+    if mode not in ("fixed", "auto"):
+        raise ValueError(f"mode must be 'fixed' or 'auto', got {mode!r}")
+    if factor is None:
+        factor = float(_POSITIONS_FACTOR_DEFAULT)
+    return {
+        "enabled": True,
+        "threshold_mode": mode,
+        "threshold_value": (fixed_value if mode == "fixed" else _POSITIONS_AUTO_MINIMUM_THRESHOLD),
+        "auto_factor": _POSITIONS_AUTO_FACTOR if mode == "auto" else None,
+        "auto_minimum_threshold": _POSITIONS_AUTO_MINIMUM_THRESHOLD if mode == "auto" else None,
+        "factor": factor,
+        "source": "simulator_truth_positions",
+        # Mirrors apply_diagnostic_prior_overrides's target_class taxonomy
+        # (PROGRAMME.md §3): attaching a positions penalty changes the
+        # objective the search sees (figure_of_merit minus the penalty), so
+        # a positions-on run is not directly comparable to a positions-off
+        # run of the "same" cell without accounting for this.
+        "target_class": 3,
+        "note": (
+            "IDEALISED: positions and (for 'auto') the threshold-resolution "
+            "tracer are the simulator's own truth, not solved from a completed "
+            "search's max-likelihood model (the SLaM chained-fit convention). "
+            "'auto' = max(auto_factor * max_sep(truth positions, truth tracer), "
+            "auto_minimum_threshold); truth positions trace to ~zero separation "
+            "through the truth tracer by construction, so 'auto' collapses to "
+            "the auto_minimum_threshold floor for every Stage-1 dataset."
+        ),
+    }
+
+
+def positions_settings() -> dict:
+    """The env-resolved ``SEARCHES_POSITIONS*`` knobs, for the results JSON.
+
+    Always present in a cell's recorded ``sampler_config`` (``{"enabled":
+    False}`` when off), mirroring how ``target_override`` / diagnostic-arm
+    blocks are always recorded rather than silently omitted. When enabled,
+    documents the idealisation up front: the penalty is built from the
+    simulator's own truth positions (see ``_truth_positions_for``), not
+    positions re-solved from a completed search's maximum-likelihood model —
+    this is a Stage-1 simplification, not the SLaM chained-fit workflow.
+    """
+    if not positions_enabled():
+        return {"enabled": False}
+    mode, fixed_value = _positions_threshold_mode_value()
+    return positions_settings_for(
+        enabled=True, mode=mode, fixed_value=fixed_value, factor=_positions_factor_value()
+    )
+
+
+def positions_arm_tag() -> str | None:
+    """A short, filesystem-safe arm tag for the positions config, or ``None``.
+
+    ``None`` when positions are off, so unseeded/positions-off cells keep
+    their exact recorded output paths (mirrors ``multi_start_unique_tag``).
+    When on, e.g. ``pos_t0.3_f1e8`` (fixed threshold) or ``pos_tauto0.2_f1e5``
+    (auto threshold, factor 1e5) — always non-``None`` whenever positions are
+    on, so a positions-on run can never silently share an output directory /
+    identifier with a positions-off run of the same search + model.
+    """
+    if not positions_enabled():
+        return None
+    mode, _ = _positions_threshold_mode_value()
+    threshold_str = (
+        f"auto{_POSITIONS_AUTO_MINIMUM_THRESHOLD:g}"
+        if mode == "auto"
+        else _positions_threshold_raw()
+    )
+    return f"pos_t{threshold_str}_f{_positions_factor_raw()}"
+
+
+def _derive_truth_positions_imaging(dataset_path: Path, instrument: str) -> al.Grid2DIrregular:
+    """Solve truth multiple-image positions from ``tracer.json`` (imaging only).
+
+    Replicates ``scripts/misc/simulators/imaging.py``'s own recipe exactly
+    (grid construction incl. its radial over-sampling, then
+    ``al.PointSolver.for_grid(pixel_scale_precision=0.001,
+    magnification_threshold=0.1)`` solved at the source galaxy's ``bulge``
+    centre) so a dataset missing ``positions.json`` gets EXACTLY the positions
+    the simulator would have written, not an independently-tuned solve.
+    """
+    cfg = _IMAGING_INSTRUMENTS[instrument]
+    pixel_scale = cfg["pixel_scale"]
+    mask_radius = cfg["mask_radius"]
+    shape_pixels = int(np.ceil(2 * mask_radius / pixel_scale))
+    if shape_pixels % 2 == 0:
+        shape_pixels += 1
+
+    grid = al.Grid2D.uniform(shape_native=(shape_pixels, shape_pixels), pixel_scales=pixel_scale)
+    over_sample_size = al.util.over_sample.over_sample_size_via_radial_bins_from(
+        grid=grid,
+        sub_size_list=[32, 8, 2],
+        radial_list=[0.3, 0.6],
+        centre_list=[(0.0, 0.0)],
+    )
+    grid = grid.apply_over_sampling(over_sample_size=over_sample_size)
+
+    tracer = al.from_json(file_path=dataset_path / "tracer.json")
+    source_galaxy = max(tracer.galaxies, key=lambda galaxy: float(galaxy.redshift))
+    solver = al.PointSolver.for_grid(
+        grid=grid, pixel_scale_precision=0.001, magnification_threshold=0.1
+    )
+    return solver.solve(tracer=tracer, source_plane_coordinate=source_galaxy.bulge.centre)
+
+
+def _truth_positions_for(
+    dataset_class: str, dataset_path: Path, instrument: str
+) -> al.Grid2DIrregular:
+    """Load (or, imaging-only, derive-and-cache) the dataset's truth positions.
+
+    Every ``dataset/interferometer/<instrument>/`` cell already ships a
+    ``positions.json`` written by its simulator. ``dataset/imaging/hst/``
+    does not — deriving it here (rather than re-simulating, which would
+    perturb ``data.fits`` via a fresh noise draw) is a ONE-TIME, loud,
+    committed side effect: see ``_derive_truth_positions_imaging``.
+    """
+    positions_path = dataset_path / "positions.json"
+    if positions_path.exists():
+        positions = al.from_json(file_path=positions_path)
+    else:
+        if dataset_class != "imaging":
+            raise RuntimeError(
+                f"{_POSITIONS_ENV}=on requires {positions_path} to exist for "
+                f"dataset_class={dataset_class!r}; no truth-position derivation "
+                "recipe is registered for this dataset_class (only 'imaging' has "
+                "one — see _derive_truth_positions_imaging)."
+            )
+        print(
+            f"  !! SEARCHES_POSITIONS: no {positions_path} found — deriving truth "
+            "positions from tracer.json via the simulator's own PointSolver recipe "
+            "(pixel_scale_precision=0.001, magnification_threshold=0.1) and writing "
+            "it ONCE. This does not touch data.fits / psf.fits / noise_map.fits."
+        )
+        positions = _derive_truth_positions_imaging(dataset_path, instrument)
+        al.output_to_json(obj=positions, file_path=positions_path)
+        print(f"  !! SEARCHES_POSITIONS: wrote {positions_path} ({len(positions)} position(s)).")
+    if len(positions) < 2:
+        raise RuntimeError(
+            f"Truth positions at {positions_path} have length {len(positions)} < 2; "
+            "al.PositionsLH requires >= 2 positions."
+        )
+    return positions
+
+
+def _positions_likelihood_list_for(
+    dataset_class: str,
+    instrument: str,
+    dataset_path: Path,
+    *,
+    enabled_override: bool | None = None,
+    threshold_mode_override: str | None = None,
+) -> list | None:
+    """Build the cell's ``positions_likelihood_list``, or ``None`` when off.
+
+    Raises ``NotImplementedError`` — never silently returns ``None`` — when
+    positions are requested for a ``dataset_class`` this Stage-1 plumbing
+    does not support (see ``_POSITIONS_SUPPORTED_DATASET_CLASSES``); a
+    silently-ignored positions request on group/cluster/datacube/point_source
+    is exactly the failure mode this function exists to prevent.
+
+    ``enabled_override`` / ``threshold_mode_override`` (W4 / issue #161,
+    Phase 1 targets registry): when given, take precedence over the
+    ``SEARCHES_POSITIONS*`` env vars — this is what lets
+    ``build_for_cell(target=...)`` make a target's ``positions`` field
+    ("off"/"on") authoritative without requiring the caller to also set env
+    vars. ``None`` (the default) preserves the original env-only behaviour.
+    """
+    enabled = positions_enabled() if enabled_override is None else enabled_override
+    if not enabled:
+        return None
+    if dataset_class not in _POSITIONS_SUPPORTED_DATASET_CLASSES:
+        raise NotImplementedError(
+            f"{_POSITIONS_ENV}=on is only implemented for single-plane "
+            f"{_POSITIONS_SUPPORTED_DATASET_CLASSES} cells (Phase 4 Stage 1, issue "
+            f"#159); dataset_class={dataset_class!r} is not supported."
+        )
+
+    positions = _truth_positions_for(dataset_class, dataset_path, instrument)
+    mode = threshold_mode_override
+    if mode is None:
+        mode, fixed_value = _positions_threshold_mode_value()
+    else:
+        _, fixed_value = _positions_threshold_mode_value()
+    if mode == "fixed":
+        threshold = fixed_value
+    else:
+        tracer = al.from_json(file_path=dataset_path / "tracer.json")
+        positions_fit = al.SourceMaxSeparation(
+            data=positions, noise_map=None, tracer=tracer, plane_redshift=None
+        )
+        threshold = _POSITIONS_AUTO_FACTOR * float(
+            np.nanmax(positions_fit.max_separation_of_plane_positions)
+        )
+        threshold = max(threshold, _POSITIONS_AUTO_MINIMUM_THRESHOLD)
+    factor = _positions_factor_value()
+
+    print("  " + "!" * 66)
+    print(f"  !! SEARCHES_POSITIONS=on: PositionsLH ACTIVE [{dataset_class}/{instrument}]")
+    print(f"  !!   positions: {len(positions)} truth-derived point(s), threshold mode={mode}")
+    print(f"  !!   threshold={threshold:.6f}  factor={factor:g}")
+    print("  !!   IDEALISED: truth positions, not re-solved from a completed search.")
+    print("  " + "!" * 66)
+
+    return [
+        al.PositionsLH(
+            positions=positions,
+            threshold=threshold,
+            log_likelihood_penalty_factor=factor,
+        )
+    ]
 
 
 def _group_mge_model(*, mask_radius: float) -> af.Collection:
@@ -857,6 +1361,92 @@ def _delaunay_model(*, mask_radius: float) -> af.Collection:
     return af.Collection(galaxies=af.Collection(lens=lens, source=source))
 
 
+def _delaunay_nn_model(*, mask_radius: float) -> af.Collection:
+    """Hilbert image_mesh + DelaunayNN mesh + ConstantSplit regularization.
+
+    W4 / issue #161 (Phase 1 targets registry) human call: ``delaunay_nn`` is
+    a REAL target (scientifically the premier model — Sibson/natural-neighbour
+    interpolation rather than the Delaunay mesh's C0 barycentric one), NOT a
+    diagnostic cell. It is registered here as a mesh-family comparison against
+    ``_delaunay_model``: identical Hilbert image_mesh, identical
+    ``ConstantSplit`` regularization, identical everything except the mesh
+    class itself (``al.mesh.DelaunayNN`` — a ``Delaunay`` subclass with the
+    identical ``(pixels, zeroed_pixels, areas_factor)`` constructor, see
+    ``autoarray/inversion/mesh/mesh/delaunay_nn.py``), so a target-registry
+    A/B isolates the mesh's interpolation scheme with nothing else varying.
+    """
+    lens_bulge = al.model_util.mge_model_from(
+        mask_radius=mask_radius,
+        total_gaussians=_MGE_TOTAL_GAUSSIANS,
+        centre_prior_is_uniform=True,
+    )
+    mass, shear = _lens_mass_and_shear()
+    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
+    pixelization = af.Model(
+        al.Pixelization,
+        mesh=al.mesh.DelaunayNN(pixels=_HILBERT_PIXELS, areas_factor=0.5, zeroed_pixels=0),
+        regularization=al.reg.ConstantSplit,
+    )
+    source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
+    return af.Collection(galaxies=af.Collection(lens=lens, source=source))
+
+
+def _slam_source_pix_model(*, mask_radius: float) -> af.Collection:
+    """Production-SLaM-shaped SOURCE-PIX target (W4 / issue #161, Phase 1).
+
+    Human call (DECISIONS.md 2026-08-24): mesh
+    ``al.mesh.RectangularRTUAdaptImage`` (best gradient behaviour of the
+    rectangular family) with free-coefficient ``al.reg.Adapt`` regularization
+    (inner/outer coefficient + signal_scale all free). This deliberately
+    DIFFERS from the workspace SLaM ``source_pix[1]`` fiducial
+    (``autolens_workspace/scripts/multi_galaxy/slam.py:653``, which pairs
+    ``al.mesh.RectangularBilinearAdaptImage`` with the same ``al.reg.Adapt``
+    class) — see DECISIONS.md for the reasoning. Mesh shape 39x39 matches
+    this repo's own ``_PIXELIZATION_MESH_SHAPE`` fiducial (not the workspace's
+    28x28), so the target is comparable to the existing ``pixelization``
+    target's resolution.
+    """
+    lens_bulge = al.model_util.mge_model_from(
+        mask_radius=mask_radius,
+        total_gaussians=_MGE_TOTAL_GAUSSIANS,
+        centre_prior_is_uniform=True,
+    )
+    mass, shear = _lens_mass_and_shear()
+    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
+    pixelization = af.Model(
+        al.Pixelization,
+        mesh=af.Model(al.mesh.RectangularRTUAdaptImage, shape=_PIXELIZATION_MESH_SHAPE),
+        regularization=af.Model(al.reg.Adapt),
+    )
+    source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
+    return af.Collection(galaxies=af.Collection(lens=lens, source=source))
+
+
+def _slam_source_pix_nn_model(*, mask_radius: float) -> af.Collection:
+    """``slam_source_pix`` with a ``DelaunayNN`` mesh in place of the RTU one.
+
+    W4 / issue #161 human call: same free ``al.reg.Adapt`` regularization,
+    same lens light / mass, but the Hilbert-mesh Delaunay-family mesh
+    (``al.mesh.DelaunayNN``) instead of the rectangular one — so the mesh
+    choice is isolated with the regularization scheme held fixed, mirroring
+    how ``_delaunay_nn_model`` isolates it against ``_delaunay_model``.
+    """
+    lens_bulge = al.model_util.mge_model_from(
+        mask_radius=mask_radius,
+        total_gaussians=_MGE_TOTAL_GAUSSIANS,
+        centre_prior_is_uniform=True,
+    )
+    mass, shear = _lens_mass_and_shear()
+    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
+    pixelization = af.Model(
+        al.Pixelization,
+        mesh=al.mesh.DelaunayNN(pixels=_HILBERT_PIXELS, areas_factor=0.5, zeroed_pixels=0),
+        regularization=af.Model(al.reg.Adapt),
+    )
+    source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
+    return af.Collection(galaxies=af.Collection(lens=lens, source=source))
+
+
 def _knn_model(*, mask_radius: float) -> af.Collection:
     """Hilbert image_mesh + KNearestNeighbor mesh + free AdaptSplit reg.
 
@@ -891,6 +1481,56 @@ def _knn_model(*, mask_radius: float) -> af.Collection:
     pixelization = af.Model(
         al.Pixelization,
         mesh=al.mesh.KNearestNeighbor(pixels=_HILBERT_PIXELS, zeroed_pixels=0),
+        regularization=regularization,
+    )
+    source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
+    return af.Collection(galaxies=af.Collection(lens=lens, source=source))
+
+
+def _delaunay_adapt_split_model(*, mask_radius: float) -> af.Collection:
+    """Hilbert image_mesh + Delaunay mesh + free ``AdaptSplit`` regularization.
+
+    **The cell where the NaN wall actually lives**, added for Phase 8A / CP-4.
+
+    The programme text names the free-AdaptSplit stressor as the ``knn`` cell,
+    but this repo's own #117 record separates the two mesh/reg pairings and only
+    one of them walls:
+
+    - ``knn`` + free AdaptSplit — the high-coefficient region is an
+      over-regularized floor that is bad but **finite**, escapable by
+      resurrection at ~step 1300 (see ``_knn_model``).
+    - Delaunay + free AdaptSplit — a **NaN wall** at high coefficients, the #104
+      doubly-squared lambda^4 fragility; lanes die instead of learning and the
+      campaign needed a ~2000-step resurrection lottery to escape the resulting
+      +8.5k-logL plateau (see ``_delaunay_matern_model`` and
+      ``scripts/imaging/searches/multi_start_prodigy/delaunay.py``).
+
+    That second pairing had no ``model_type`` of its own, because the campaign's
+    conclusion was to stop using it: the registered gradient cell for this mesh
+    is ``delaunay_matern``, which reaches the same fit ceiling while degrading
+    gracefully. It is registered here so a slogdet A/B can be run against the
+    configuration that actually fails, rather than against the one the
+    pre-registration named. It is a DIAGNOSTIC cell — not a recommendation, and
+    not a sampler-benchmark cell.
+
+    Identical to ``_delaunay_model`` except for the regularization, and
+    identical to ``_knn_model`` except for the mesh, so a three-way comparison
+    isolates mesh from reg.
+    """
+    lens_bulge = al.model_util.mge_model_from(
+        mask_radius=mask_radius,
+        total_gaussians=_MGE_TOTAL_GAUSSIANS,
+        centre_prior_is_uniform=True,
+    )
+    mass, shear = _lens_mass_and_shear()
+    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
+    # Free (inner, outer) with signal_scale pinned — the #117 AdaptSplit surface,
+    # matching _knn_model exactly so the mesh is the only difference.
+    regularization = af.Model(al.reg.AdaptSplit)
+    regularization.signal_scale = 1.0
+    pixelization = af.Model(
+        al.Pixelization,
+        mesh=al.mesh.Delaunay(pixels=_HILBERT_PIXELS, areas_factor=0.5, zeroed_pixels=0),
         regularization=regularization,
     )
     source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
@@ -1202,36 +1842,52 @@ def _build_analysis(
     use_mixed_precision: bool,
     adapt_images: al.AdaptImages | None,
     model: Any | None = None,
+    positions_likelihood_list: list | None = None,
+    log_det_method: str | None = None,
 ) -> Any:
     # Pixelization / Delaunay analyses normally require ``positions_likelihood_list``
     # to guard against the demagnified-source systematic. For pure profiling we
     # don't care about solution quality — we're measuring sampler + likelihood
-    # cost — so disable the check rather than wire up truth-position plumbing.
-    raise_positions_exc = model_type not in _PIX_MODEL_TYPES
+    # cost — so disable the check rather than wire up truth-position plumbing,
+    # UNLESS a real positions_likelihood_list has been supplied (Phase 4 Stage 1,
+    # SEARCHES_POSITIONS=on): in that case the guard is redundant (a real list is
+    # attached) regardless of model_type, so it is switched off symmetrically.
+    raise_positions_exc = positions_likelihood_list is None and model_type not in _PIX_MODEL_TYPES
+
+    # ``log_det_method=None`` reads the packaged default ("cholesky"); passing it
+    # through unconditionally therefore leaves every existing caller's target
+    # bit-identical while letting a Phase-8A arm name "slogdet" explicitly.
+    settings = al.Settings(
+        use_border_relocator=model_type in _PIX_MODEL_TYPES,
+        use_mixed_precision=use_mixed_precision,
+        log_det_method=log_det_method,
+    )
 
     if dataset_class in ("imaging", "group"):
         return al.AnalysisImaging(
             dataset=dataset,
+            positions_likelihood_list=positions_likelihood_list,
             adapt_images=adapt_images,
-            settings=al.Settings(
-                use_border_relocator=model_type in _PIX_MODEL_TYPES,
-                use_mixed_precision=use_mixed_precision,
-            ),
+            settings=settings,
             raise_inversion_positions_likelihood_exception=raise_positions_exc,
             use_jax=use_jax,
         )
     if dataset_class in ("interferometer", "datacube"):
         return al.AnalysisInterferometer(
             dataset=dataset,
+            positions_likelihood_list=positions_likelihood_list,
             adapt_images=adapt_images,
-            settings=al.Settings(
-                use_border_relocator=model_type in _PIX_MODEL_TYPES,
-                use_mixed_precision=use_mixed_precision,
-            ),
+            settings=settings,
             raise_inversion_positions_likelihood_exception=raise_positions_exc,
             use_jax=use_jax,
         )
     if dataset_class == "point_source":
+        if positions_likelihood_list is not None:
+            raise NotImplementedError(
+                f"{_POSITIONS_ENV}=on is not implemented for dataset_class="
+                "'point_source' (Phase 4 Stage 1, issue #159, supports "
+                "single-plane imaging/interferometer only)."
+            )
         solver_kwargs = getattr(dataset, "_profiling_solver_kwargs", None)
         if solver_kwargs is None:
             raise RuntimeError(
@@ -1255,6 +1911,12 @@ def _build_analysis(
             use_jax=use_jax,
         )
     if dataset_class == "cluster":
+        if positions_likelihood_list is not None:
+            raise NotImplementedError(
+                f"{_POSITIONS_ENV}=on is not implemented for dataset_class="
+                "'cluster' (Phase 4 Stage 1, issue #159, supports single-plane "
+                "imaging/interferometer only)."
+            )
         # ``dataset`` is the cluster's List[PointDataset] (see
         # _build_cluster); ``model`` is the shared cluster prior model built
         # by _cluster_point_model — required here (unlike every other

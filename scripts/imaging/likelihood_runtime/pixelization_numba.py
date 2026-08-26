@@ -357,14 +357,35 @@ print(f"  Bar chart path:        {chart_path} (no per-step chart in runtime vari
 
 _pinned_drift: list = []
 
-# Pinned 2026-08-20 (v2026.8.17.1). Values vary at the ~1e-9 relative level
-# across numba compile sessions (fp reassociation) — rtol=1e-6 accommodates.
-EXPECTED_LOG_LIKELIHOOD: dict[str, float] = {
-    "euclid": 5860.175003697541,
-    "hst": 22803.472837136276,
+# Keyed by --rect-mesh as well as instrument since 2026-08-26. The 2026-08-20
+# pins (v2026.8.17.1) were measured the day BEFORE the Bilinear/RTU split, when
+# the mesh this cell built was the kernel-CDF one — i.e. they are RTU values,
+# and this cell has defaulted to Bilinear ever since e8a0626 without being
+# re-measured. Confirmed here: at 72fb01d1^ the rtu leg reproduces the old hst
+# pin (22803.473216499442 vs 22803.472837136276, 1.7e-8) while the bilinear leg
+# gives 24840.37338333133.
+#
+# On top of that, PyAutoArray 72fb01d1 (#490) corrected the mirrored bilinear
+# ROW weights and the round-off-dependent cell assignment in the shared
+# adaptive rectangular mapper, moving both families. Paired measurement at this
+# fiducial, one host, one library set, differing only in that commit:
+#
+#   bilinear   72fb01d1^  24840.37338333133
+#              72fb01d1   27661.910133665442  <- pinned below
+#   rtu        72fb01d1^  22803.473216499442  <- the 2026-08-20 pin, to 1.7e-8
+#              72fb01d1   27180.704715698186  <- pinned below
+#
+# euclid is deliberately absent: no euclid dataset is committed here, so the
+# old kernel-era value could not be re-measured on this host. A clean euclid run
+# now prints its value and skips the check — paste it back in under the mesh it
+# was run with. Values vary at the ~1e-9 relative level across numba compile
+# sessions (fp reassociation) — rtol=1e-6 accommodates.
+EXPECTED_LOG_LIKELIHOOD: dict[str, dict[str, float]] = {
+    "bilinear": {"hst": 27661.910133665442},
+    "rtu": {"hst": 27180.704715698186},
 }
 
-_pinned_expected = EXPECTED_LOG_LIKELIHOOD.get(instrument)
+_pinned_expected = EXPECTED_LOG_LIKELIHOOD.get(_cli.rect_mesh, {}).get(instrument)
 
 if _pinned_expected is None:
     print(

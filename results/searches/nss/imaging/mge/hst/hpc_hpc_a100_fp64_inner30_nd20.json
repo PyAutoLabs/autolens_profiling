@@ -1,0 +1,74 @@
+{
+  "sampler": "nss",
+  "dataset_class": "imaging",
+  "model": "mge",
+  "instrument": "hst",
+  "config_name": "hpc_a100_fp64_inner30_nd20",
+  "version": "2026.8.17.1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "omp_num_threads": null,
+    "cpu_count": 124,
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 8701 MiB, 81920 MiB"
+  },
+  "use_mixed_precision": false,
+  "sampler_config": {
+    "n_live": 200,
+    "num_mcmc_steps": 30,
+    "num_delete": 20,
+    "chunk_size": null,
+    "termination": -3.0,
+    "seed": 42,
+    "jax_native": true
+  },
+  "model_summary": {
+    "free_parameters": 15,
+    "best_fit": "lens.mass.einstein_radius=1.5996  lens.mass.centre=(0.000, 0.000)  shear=(0.0485, 0.0494)"
+  },
+  "results": {
+    "log_evidence": 31690.747628610283,
+    "max_log_likelihood": 31786.04004632357,
+    "posterior_samples": 18660,
+    "posterior_stats": {
+      "centre_0": {
+        "mean": 0.0003813854168532733,
+        "std": 0.00027054335213548656
+      },
+      "centre_1": {
+        "mean": 0.00031283712444929185,
+        "std": 0.00022460495246396303
+      },
+      "ell_comps_0": {
+        "mean": 0.09232986161051888,
+        "std": 0.0021603728318193567
+      },
+      "ell_comps_1": {
+        "mean": -0.05116683847404221,
+        "std": 0.0018608178427153494
+      },
+      "einstein_radius": {
+        "mean": 1.5996660952942972,
+        "std": 0.00021701276265800016
+      },
+      "gamma_1": {
+        "mean": 0.048556936000303856,
+        "std": 0.00040026364884794443
+      },
+      "gamma_2": {
+        "mean": 0.04954666095182878,
+        "std": 0.0003772954496787366
+      }
+    }
+  },
+  "performance": {
+    "total_wall_s": 6175.087612628937,
+    "viz_wall_s": 36.68744197790511,
+    "viz_n_calls": 5,
+    "viz_disabled": false,
+    "sampler_wall_s": 6138.400170651032,
+    "likelihood_evals": 1638384,
+    "time_per_eval_ms": 3.7466187234805957
+  }
+}

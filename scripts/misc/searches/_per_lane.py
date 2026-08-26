@@ -152,6 +152,34 @@ def _finite_or_none(value: Any) -> float | None:
     return value if np.isfinite(value) else None
 
 
+def _nested_list(value: Any) -> list | None:
+    """JSON-safe nested list from an array-like, preserving shape.
+
+    Unlike ``_as_list`` (which ``ravel()``s to a flat 1D list), the two new
+    per-step diagnostic arrays PyAutoFit#1525 adds -- ``lane_value_nan_history``
+    / ``lane_grad_nan_history`` (``(n_recorded_steps, n_starts)`` bool) and
+    ``trace_history`` (``(n_recorded_steps, n_starts, n_traced_params)`` float)
+    -- carry meaning in their shape (per-step, per-lane), so flattening them
+    would discard it. Bool arrays pass straight through (no NaN to guard
+    against); float arrays get the same non-finite-to-``None`` treatment as
+    ``_as_list``, applied recursively.
+    """
+    if value is None:
+        return None
+    array = np.asarray(value)
+    if array.dtype == bool:
+        return array.tolist()
+    array = array.astype(float)
+
+    def convert(a):
+        if a.ndim == 0:
+            v = float(a)
+            return None if not np.isfinite(v) else v
+        return [convert(a[i]) for i in range(a.shape[0])]
+
+    return convert(array)
+
+
 def _ell_comps_pairs(names: list[str]) -> dict[str, tuple[int, int]]:
     """Map ``<component path>.ell_comps`` -> the (index_0, index_1) pair.
 
@@ -331,6 +359,20 @@ def per_lane_block(
         "alive_history": alive,
         "fom_history_global_best": _as_list(fom_history),
         "per_lane": lanes,
+        # Opt-in per-step diagnostics (PyAutoFit#1525, W5 Phase 8B / #162):
+        # ``None`` when the search was NOT built with
+        # ``record_lane_nan_history=True`` / ``trace_param_indices=[...]``
+        # (the ``multi_start_lane_history`` / ``SEARCHES_TRACE_PARAMS`` env
+        # resolution in ``_samplers.py``), rather than an empty array -- same
+        # absent-vs-empty discipline as everything else in this module.
+        "lane_value_nan_history": _nested_list(captured.get("lane_value_nan_history")),
+        "lane_grad_nan_history": _nested_list(captured.get("lane_grad_nan_history")),
+        "trace_history": _nested_list(captured.get("trace_history")),
+        "trace_param_indices": (
+            list(captured["trace_param_indices"])
+            if captured.get("trace_param_indices") is not None
+            else None
+        ),
         "valid": not problems,
         "invalid_reasons": problems,
     }
