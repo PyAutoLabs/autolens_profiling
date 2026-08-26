@@ -674,11 +674,32 @@ print(f"  Bar chart path:        {chart_path} (no per-step chart in runtime vari
 _pinned_drift: list = []
 _pinned_expected = None
 
+# Keyed by --rect-mesh as well as instrument since 2026-08-26: the Bilinear
+# (rank-CDF) and RTU (kernel-CDF) families reconstruct differently, so one
+# number cannot pin both, and a single-value dict silently flagged whichever
+# family it was not measured on.
+#
+# The hst values were measured on 2026-08-26 after PyAutoArray 72fb01d1 (#490)
+# corrected the mirrored bilinear ROW weights and the round-off-dependent cell
+# assignment in the adaptive rectangular mapper — the mapper every
+# Rectangular*Adapt* mesh shares, so every reconstruction on one moves. Paired
+# measurement at this fiducial, one host, one library set, differing only in
+# that commit:
+#
+#   bilinear   72fb01d1^  28370.240585918986  <- the 2026-05-18 pin, to 1.3e-6
+#              72fb01d1   28622.397322591198  <- pinned below
+#   rtu        72fb01d1^  28670.178876077545  (never pinned before)
+#              72fb01d1   28506.318157467784  <- pinned below
+#
+# The pre-fix leg reproducing the old pin is what makes the new one
+# attributable to #490 rather than to accumulated drift.
 EXPECTED_LOG_EVIDENCE = {
-    "hst": 28370.27770182  # 39x39 = 1521 source pixels, MGE-60 lens light, adapt_image=lensed_source
+    # 39x39 = 1521 source pixels, MGE-60 lens light, adapt_image=lensed_source
+    "bilinear": {"hst": 28622.397322591198},
+    "rtu": {"hst": 28506.318157467784},
 }
 
-expected_log_evidence = EXPECTED_LOG_EVIDENCE.get(instrument)
+expected_log_evidence = EXPECTED_LOG_EVIDENCE.get(_cli.rect_mesh, {}).get(instrument)
 _pinned_expected = expected_log_evidence
 
 if expected_log_evidence is None:
