@@ -1425,11 +1425,30 @@ def _slam_source_pix_model(*, mask_radius: float) -> af.Collection:
 def _slam_source_pix_nn_model(*, mask_radius: float) -> af.Collection:
     """``slam_source_pix`` with a ``DelaunayNN`` mesh in place of the RTU one.
 
-    W4 / issue #161 human call: same free ``al.reg.Adapt`` regularization,
-    same lens light / mass, but the Hilbert-mesh Delaunay-family mesh
-    (``al.mesh.DelaunayNN``) instead of the rectangular one — so the mesh
-    choice is isolated with the regularization scheme held fixed, mirroring
-    how ``_delaunay_nn_model`` isolates it against ``_delaunay_model``.
+    W4 / issue #161 human call: same lens light / mass, but the Hilbert-mesh
+    Delaunay-family mesh (``al.mesh.DelaunayNN``) instead of the rectangular
+    one, mirroring how ``_delaunay_nn_model`` isolates the mesh against
+    ``_delaunay_model``.
+
+    **Regularization is ``AdaptSplit``, not ``Adapt`` (2026-08-26).** The W4
+    call was to hold ``al.reg.Adapt`` fixed so the mesh choice was isolated,
+    but that pairing cannot be traced: on the Delaunay mesh family the
+    regularization takes its neighbors from a direct ``scipy.spatial.Delaunay``
+    call on the traced source-plane grid, so a non-split scheme raises
+    ``TracerArrayConversionError`` under ``jax.jit`` (see
+    ``autoarray/inversion/regularization/constant.py``'s "JAX & gradient
+    support" note; frames run ``regularization/adapt.py`` ->
+    ``mesh_geometry/delaunay.py`` -> qhull). It killed RAL 340210 tasks 5 and 6
+    in ~52 s and cost two ``InferenceRefs_v1`` rows. ``_delaunay_nn_model``
+    uses ``ConstantSplit`` and ``_knn_model`` uses ``AdaptSplit`` for the same
+    reason; ``_slam_source_pix_model``'s ``Adapt`` is safe only because the
+    rectangular family has analytic neighbors.
+
+    CONFOUND, recorded not resolved: this arm now differs from
+    ``_slam_source_pix_model`` in BOTH mesh and regularization, so the pair no
+    longer isolates the mesh. Restoring that would mean giving
+    ``slam_source_pix`` a matching ``AdaptSplit`` variant — a science call that
+    has not been made. Cite this caveat with any RTU-vs-DelaunayNN comparison.
     """
     lens_bulge = al.model_util.mge_model_from(
         mask_radius=mask_radius,
@@ -1441,7 +1460,7 @@ def _slam_source_pix_nn_model(*, mask_radius: float) -> af.Collection:
     pixelization = af.Model(
         al.Pixelization,
         mesh=al.mesh.DelaunayNN(pixels=_HILBERT_PIXELS, areas_factor=0.5, zeroed_pixels=0),
-        regularization=af.Model(al.reg.Adapt),
+        regularization=af.Model(al.reg.AdaptSplit),
     )
     source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
     return af.Collection(galaxies=af.Collection(lens=lens, source=source))

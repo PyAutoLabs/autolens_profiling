@@ -55,6 +55,13 @@
 # VRAM: 37,415 MiB of 81,920 MiB on the fork row at n_batch=16. Comfortable,
 #   but do not co-schedule anything else on the card.
 
+# WALL-BASIS: — one row per cell this submit runs. See scripts/misc/wall/README.md.
+#   `rates` cites a step rate measured on THAT cell (wall/rates.py); an MGE rate
+#   can never stand in for a pixelized cell — that is what killed RAL job 340576.
+#   cell: imaging/pixelization/hst  device: a100  precision: fp64
+#   wall: 2768  source: measured-wall  ref: fork-row-total
+#   compile: 0  headroom: 1.25
+
 #SBATCH -J search_nautilus_imaging_pixelization_hst_fp64
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1

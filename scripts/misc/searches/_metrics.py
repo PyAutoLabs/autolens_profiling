@@ -318,3 +318,81 @@ def load_summary(path: str | Path) -> dict:
             "device": normalised.get("device"),
         }
     return normalised
+
+
+# ---------------------------------------------------------------------------
+# Eval-counter comparability (issue #177)
+# ---------------------------------------------------------------------------
+
+EVAL_BASIS_REJECT_INCLUSIVE = "reject_inclusive"
+EVAL_BASIS_STORED_ONLY = "stored_only"
+EVAL_BASIS_UNKNOWN = "unknown"
+
+_EVAL_BASIS_LABELS = {
+    EVAL_BASIS_REJECT_INCLUSIVE: "reject-inclusive evals",
+    EVAL_BASIS_STORED_ONLY: "stored-sample count (NOT evals)",
+    EVAL_BASIS_UNKNOWN: "unknown eval basis",
+}
+
+
+def eval_counter_basis(summary: dict) -> str:
+    """What ``performance.likelihood_evals`` actually counts in this summary.
+
+    ``likelihood_evals`` changed MEANING, not just shape, between results
+    schema v1 and v2 — but only for ``MultiStart*`` searches. See
+    ``collect_metrics`` above: a nested sampler's ``samples.total_samples``
+    already counted every likelihood call including rejected proposals, so a
+    v1 nested row is directly comparable to a v2 one. A v1 ``MultiStart*``
+    row is not: there ``total_samples`` is a small posterior-storage count
+    (typically ``n_starts + 1``), while v2 records the reject-inclusive
+    ``total_steps * n_starts``.
+
+    The concrete case this exists to catch (issue #177), one cell directory,
+    two arms of the same Prodigy n256 configuration::
+
+        hpc_..._n256_seed0.json               v1   257 evals    874.58 ms/eval
+        hpc_..._n256_seed0_pos_t0.3_f1e8.json v2   247,808      2.23 ms/eval
+
+    Their ``config_name`` values differ, so nothing dedupes them and both
+    reach the same table and the same log-scale chart — implying a ~390x
+    per-eval speedup that is purely an artifact of the counter change.
+
+    Note the bridge: the v1 row's 257 IS the v2 row's ``stored_samples``
+    (also 257). A v1 MultiStart row therefore has an honest stored count and
+    NO recoverable evaluation count — ``total_steps`` was never written, so
+    its per-eval figure cannot be repaired after the fact, only refused.
+
+    A missing ``schema_version`` key means v1 (the key did not exist then).
+    ``sampler`` is absent only in payloads that are not search runs at all,
+    which is what ``EVAL_BASIS_UNKNOWN`` reports.
+    """
+    sampler = summary.get("sampler")
+    if not isinstance(sampler, str):
+        return EVAL_BASIS_UNKNOWN
+    if summary.get("schema_version") == 2:
+        return EVAL_BASIS_REJECT_INCLUSIVE
+    # v1 (key absent, or any value that is not 2).
+    if sampler.startswith("multi_start"):
+        return EVAL_BASIS_STORED_ONLY
+    return EVAL_BASIS_REJECT_INCLUSIVE
+
+
+def eval_basis_label(basis: str) -> str:
+    """Human-readable name for a basis, for tables and error messages."""
+    return _EVAL_BASIS_LABELS.get(basis, basis)
+
+
+def basis_conflicts(summaries: dict[str, dict]) -> dict[str, list[str]]:
+    """Group ``{name: summary}`` by eval basis, but only when they disagree.
+
+    Returns ``{}`` when every summary shares one basis (the comparable case)
+    and ``{basis: [names...]}`` when more than one is present — the caller is
+    then holding rows whose eval-derived metrics must not be put side by side.
+    Returned lists are sorted so callers render a stable message.
+    """
+    grouped: dict[str, list[str]] = {}
+    for name, summary in summaries.items():
+        grouped.setdefault(eval_counter_basis(summary), []).append(name)
+    if len(grouped) <= 1:
+        return {}
+    return {basis: sorted(names) for basis, names in sorted(grouped.items())}

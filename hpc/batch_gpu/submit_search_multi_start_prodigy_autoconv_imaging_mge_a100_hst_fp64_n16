@@ -50,6 +50,13 @@
 #   documented to change WHICH optimum is found on at least one mesh family, so
 #   a per-tier batch setting would confound the reliability comparison.
 
+# WALL-BASIS: — one row per cell this submit runs. See scripts/misc/wall/README.md.
+#   `rates` cites a step rate measured on THAT cell (wall/rates.py); an MGE rate
+#   can never stand in for a pixelized cell — that is what killed RAL job 340576.
+#   cell: imaging/mge/hst  device: a100  precision: fp64
+#   lanes: 16  batch_size: none  steps: 3000  rate: 0.05  source: rates
+#   compile: 150  headroom: 1.5
+
 #SBATCH -J cp3_prodigy_mge_n16
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1

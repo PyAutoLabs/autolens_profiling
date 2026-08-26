@@ -14,6 +14,13 @@
 #      SEARCHES_POSITIONS=on, so on/off arms never share a results JSON or an
 #      autofit output directory (Phase 4 Stage 1, #159 / PR #168).
 #
+# WALL-BASIS: — one row per cell this submit runs. See scripts/misc/wall/README.md.
+#   `rates` cites a step rate measured on THAT cell (wall/rates.py); an MGE rate
+#   can never stand in for a pixelized cell — that is what killed RAL job 340576.
+#   cell: imaging/mge/hst  device: a100  precision: fp64
+#   lanes: 256  batch_size: none  steps: 3000  rate: 0.77  source: rates
+#   compile: 150  headroom: 1.5
+
 #SBATCH -J w2_prodigy_mge_n256_pos
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1

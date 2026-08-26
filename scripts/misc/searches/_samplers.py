@@ -64,6 +64,12 @@ _N_LIVE: dict[tuple[str, str], int] = {
     ("imaging", "delaunay_nn"): 150,
     ("imaging", "slam_source_pix"): 150,
     ("imaging", "slam_source_pix_nn"): 150,
+    # InferenceRefs_v1 harvest (RAL 340210, 2026-08-25) — these two cells had
+    # no row, so tasks 7 and 8 died in ~3 s on the KeyError from
+    # ``n_live_for`` and cost 2 of the 11 reference baselines. Same 150
+    # fiducial as every other imaging mesh cell above.
+    ("imaging", "knn"): 150,
+    ("imaging", "delaunay_matern"): 150,
     ("interferometer", "mge"): 200,
     ("interferometer", "pixelization"): 150,
     ("interferometer", "delaunay"): 150,
@@ -639,12 +645,39 @@ def multi_start_unique_tag(
     so the "none" arm's output path must stay exactly as recorded), which is
     also why an unseeded, positions-off, "none"-bijector cell still resolves
     to ``None`` here — identical to today's tag.
+
+    And also composes in ``log_det_method`` (W8 Phase 8B, issue #175), for the
+    SAME reason a fourth time: it is not among
+    ``AbstractMultiStartGradient.__identifier_fields__`` either, so a
+    ``cholesky`` arm and a ``slogdet`` arm that differ in nothing else resolve
+    to one output directory and the second returns the first's ``.completed``
+    fit. RAL job 340576 proved it: 20 ``delaunay_adapt_split`` arms
+    (cholesky x10, slogdet x10) produced only 10 output dirs. The results JSON
+    basename still differed — ``--config-name`` carries ``log_det`` — so the
+    campaign would have reported 20 rows of which 10 were duplicates, with
+    nothing in the artifact revealing it. A distinct results filename proves
+    nothing about whether two arms actually ran; only a distinct output
+    directory does.
+
+    Tag on the ``SEARCHES_LOG_DET_METHOD`` **env override only**, never on the
+    value ``_runner.resolve_log_det_method`` resolves: that resolver falls back
+    to ``slogdet`` for every GPU gradient-pixelized arm alike, so tagging the
+    resolved value would add a suffix to cells that never had one and break
+    byte-identity with their recorded output paths. An unset env therefore
+    returns exactly the pre-#175 tag. The env is read directly here rather than
+    by calling the resolver because ``_runner`` imports ``_samplers`` — the
+    other direction would be circular.
     """
     seed = multi_start_seed()
     pos_tag = positions_arm_tag()
     bijector_label = multi_start_bijector()
     bijector_tag = None if bijector_label == "none" else f"bij_{bijector_label}"
-    if seed is None and pos_tag is None and bijector_tag is None:
+    # ``.strip().lower()`` mirrors ``_runner.resolve_log_det_method``'s own
+    # normalisation, so ``SEARCHES_LOG_DET_METHOD="Cholesky"`` and
+    # ``"cholesky"`` cannot resolve one arm to two output paths.
+    log_det = os.environ.get("SEARCHES_LOG_DET_METHOD")
+    log_det_tag = None if not log_det else f"ld_{log_det.strip().lower()}"
+    if seed is None and pos_tag is None and bijector_tag is None and log_det_tag is None:
         return None
     seed_tag = (
         f"n{multi_start_n_starts(dataset_class, model_type)}"
@@ -653,7 +686,7 @@ def multi_start_unique_tag(
         if seed is not None
         else None
     )
-    return arm_unique_tag(seed_tag, pos_tag, bijector_tag)
+    return arm_unique_tag(seed_tag, pos_tag, bijector_tag, log_det_tag)
 
 
 def multi_start_batch_size(
