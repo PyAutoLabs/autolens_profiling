@@ -964,7 +964,7 @@ ship as autolens_profiling issues/PRs, not Mind prompts).
 |---|---|---|---|---|
 | W1 | Phase 4 Stage 1 — PositionsLH plumbing in `_setup.py` + hazard transects | autolens_profiling#159 | laptop / RAL CPU | — (unblocks B pt 2, Phase 5) |
 | W3 | Phase 6 pre-req — PyAutoFit warm-start abstraction, vmapped multi-chain NUTS, metric/start injection | PyAutoFit#1521 | source, CPU | — |
-| W6 | Nautilus `n_batch` scan (MGE + Delaunay) — bounds the "JAX Nautilus" ceiling | #163 | A100, ~30 min | — (submit now) |
+| W6 | Nautilus `n_batch` scan (MGE + Delaunay) — bounds the "JAX Nautilus" ceiling | #163 | A100, ~30 min | **COMPLETE 2026-08-25** (RAL 339842/339843, 8/8 arms): MGE 1.78x recoverable (10.56 -> 5.95 ms/eval at n_batch 64 -> 1000, logZ flat to 0.12 nats, not yet plateaued); Delaunay saturates by n_batch=64 at 1.26x. Partly a knob, not the full 4x — `methods/nautilus.md` "n_batch SCAN" |
 | W8 | slogdet default for GPU gradient-work cells in the searches framework | #165 | source | — |
 | W7 | CP-4 follow-up: NaN-under-both draws, transect gradients, marginal-band tier dependence | #164 | laptop / A100 replay | — |
 | W4 | Phase 1 targets registry, schema v2 (ESS + reject-inclusive evals), `slam_source_pix`, reference baselines — **HARVESTED 2026-08-26 (RAL 340210): 7 of 11 rows certified.** 2 lost to missing `_N_LIVE` presets (fixed, resubmit pending); 2 lost to a Sibson jit defect blocking `slam_source_pix_nn` (PyAutoArray, filed) — `targets/REFS_V1_HARVEST.md` | #161 | CPU + one A100 bake | rides behind W1/W6 |

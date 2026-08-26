@@ -82,6 +82,50 @@ current truth-bar source.
 - Full matrix: the searches dashboard
   (`scripts/misc/searches/README.md`, auto-table `searches`).
 
+## n_batch SCAN (W6, issue #163 — A100, 2026-08-25)
+
+Question: is the JAX-Nautilus per-eval overhead a config knob, or structural?
+Answer: **partly a knob on MGE, essentially structural on Delaunay.**
+
+MGE/hst, `n_live=200`, fp64, one seed per arm
+(`results/searches/nautilus/imaging/mge/hst/hpc_hpc_a100_fp64_nbatch*.json`):
+
+| n_batch | ms/eval | sampler wall | evals | Kish ESS | logZ |
+|--------:|--------:|-------------:|------:|---------:|-----:|
+| 64      | 10.56   | 670 s        | 63,424 | 4,304   | 31690.45 |
+| 128     |  9.52   | 617 s        | 64,768 | 4,248   | 31690.45 |
+| 256     |  8.15   | 540 s        | 66,304 | 4,156   | 31690.48 |
+| 512     |  8.37   | 565 s        | 67,584 | 4,575   | 31690.47 |
+| 1000    |  **5.95** | **458 s**  | 77,000 | 4,694   | 31690.36 |
+
+1.78x of the per-eval cost is recovered for free: logZ spans 0.12 nats across
+the whole scan, max logL 31786.73-31787.04, best-fit r_E 1.5996-1.5998, and
+Kish ESS is flat. The scan has **not** plateaued at n_batch=1000, but the
+trade is visible — evals rise 21% (63,424 -> 77,000) as larger batches
+overshoot the shrinking live set, while wall still falls. There is an optimum
+past 1000 that this scan does not bracket.
+
+Delaunay/hst, `n_live=150`
+(`.../imaging/delaunay/hst/hpc_hpc_a100_fp64_nbatch*.json`):
+
+| n_batch | ms/eval | sampler wall | evals | Kish ESS | logZ |
+|--------:|--------:|-------------:|------:|---------:|-----:|
+| 16      | 66.73   | 2,031 s      | 30,432 | 2,464   | 30562.10 |
+| 64      | 52.95   | 1,698 s      | 32,064 | 2,335   | 30562.17 |
+| 256     | 50.80   | 1,704 s      | 33,536 | 2,387   | 30562.17 |
+
+Saturates by n_batch=64 (1.26x, then flat). The pixelized cell's cost is
+dominated by the per-eval inversion, not by batch occupancy, so batching
+cannot buy back what MGE's cheaper likelihood gives up to launch overhead.
+
+READING: raise `n_batch` on parametric cells; leave it at the default on
+pixelized ones. This does **not** close the ~4x JAX-vs-NumPy per-eval gap —
+it recovers under half of it on the cell where it is recoverable at all.
+
+CONFIDENCE: **single-seed per arm.** logZ agreement across five independent
+MGE arms is itself weak evidence of seed-stability, but no arm was repeated;
+treat the wall numbers as one draw each.
+
 ## RECOMMENDED
 
 - All SLaM stages today (baseline pipeline); the global engine wherever no
