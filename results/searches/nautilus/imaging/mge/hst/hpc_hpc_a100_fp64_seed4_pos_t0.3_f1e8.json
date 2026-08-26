@@ -1,0 +1,177 @@
+{
+  "sampler": "nautilus",
+  "dataset_class": "imaging",
+  "model": "mge",
+  "instrument": "hst",
+  "config_name": "hpc_a100_fp64_seed4_pos_t0.3_f1e8",
+  "version": "2026.8.17.1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "omp_num_threads": null,
+    "cpu_count": 124,
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 2615 MiB, 81920 MiB"
+  },
+  "use_mixed_precision": false,
+  "sampler_config": {
+    "n_live": 200,
+    "n_batch": 64,
+    "number_of_cores": 1,
+    "use_jax_vmap": true,
+    "force_x1_cpu": true,
+    "iterations_per_update": 600,
+    "seed": 4,
+    "positions": {
+      "enabled": true,
+      "threshold_mode": "fixed",
+      "threshold_value": 0.3,
+      "auto_factor": null,
+      "auto_minimum_threshold": null,
+      "factor": 100000000.0,
+      "source": "simulator_truth_positions",
+      "target_class": 3,
+      "note": "IDEALISED: positions and (for 'auto') the threshold-resolution tracer are the simulator's own truth, not solved from a completed search's max-likelihood model (the SLaM chained-fit convention). 'auto' = max(auto_factor * max_sep(truth positions, truth tracer), auto_minimum_threshold); truth positions trace to ~zero separation through the truth tracer by construction, so 'auto' collapses to the auto_minimum_threshold floor for every Stage-1 dataset."
+    }
+  },
+  "positions": {
+    "enabled": true,
+    "threshold_mode": "fixed",
+    "threshold_value": 0.3,
+    "auto_factor": null,
+    "auto_minimum_threshold": null,
+    "factor": 100000000.0,
+    "source": "simulator_truth_positions",
+    "target_class": 3,
+    "note": "IDEALISED: positions and (for 'auto') the threshold-resolution tracer are the simulator's own truth, not solved from a completed search's max-likelihood model (the SLaM chained-fit convention). 'auto' = max(auto_factor * max_sep(truth positions, truth tracer), auto_minimum_threshold); truth positions trace to ~zero separation through the truth tracer by construction, so 'auto' collapses to the auto_minimum_threshold floor for every Stage-1 dataset."
+  },
+  "log_det_method": null,
+  "model_summary": {
+    "free_parameters": 15,
+    "best_fit": "lens.mass.einstein_radius=1.5996  lens.mass.centre=(0.000, 0.000)  shear=(0.0487, 0.0495)"
+  },
+  "results": {
+    "log_evidence": 31690.485056112266,
+    "max_log_likelihood": 31786.725579095153,
+    "posterior_samples": 63616,
+    "truth_log_likelihood": 31521.743789581255,
+    "delta_max_ll_vs_truth": 264.98178951389855,
+    "bar_source": "truth_tracer",
+    "posterior_stats": {
+      "centre_0": {
+        "mean": 0.0003818312023737341,
+        "std": 0.00026402643553664754
+      },
+      "centre_1": {
+        "mean": 0.0003158694731158611,
+        "std": 0.00023095527233862463
+      },
+      "ell_comps_0": {
+        "mean": 0.09238412383906518,
+        "std": 0.002153389473957251
+      },
+      "ell_comps_1": {
+        "mean": -0.05121388860485852,
+        "std": 0.0018704628328241547
+      },
+      "einstein_radius": {
+        "mean": 1.5996723253567111,
+        "std": 0.00021451232663055248
+      },
+      "gamma_1": {
+        "mean": 0.04855740370847194,
+        "std": 0.00040208924248343736
+      },
+      "gamma_2": {
+        "mean": 0.04955500622419672,
+        "std": 0.0003746765623168057
+      }
+    }
+  },
+  "performance": {
+    "total_wall_s": 810.3569569587708,
+    "viz_wall_s": 72.86395183287095,
+    "viz_n_calls": 8,
+    "viz_disabled": false,
+    "sampler_wall_s": 737.4930051258998,
+    "likelihood_evals": 63616,
+    "time_per_eval_ms": 11.592885518201392,
+    "stored_samples": 63616,
+    "gradient_evals": null,
+    "kish_ess": 4622.738414605925,
+    "evals_per_ess": 13.76154008606673,
+    "ess_per_min": 376.09076011372576
+  },
+  "schema_version": 2,
+  "target": {
+    "target_id": "sha256:bf3d096fda76",
+    "cell": "imaging/mge/hst",
+    "model_dim": 15,
+    "priors_ref": "_targets.py@bf2c8742c334",
+    "likelihood": {
+      "log_det_method": null,
+      "positive_only": true,
+      "border_relocator": false,
+      "curvature_floor": 0.001,
+      "regularization_term_method": "matmul",
+      "precision": "fp64"
+    },
+    "positions": {
+      "enabled": true,
+      "threshold_mode": "fixed",
+      "threshold_value": 0.3,
+      "auto_factor": null,
+      "auto_minimum_threshold": null,
+      "factor": 100000000.0,
+      "source": "simulator_truth_positions",
+      "target_class": 3
+    },
+    "tolerances": {
+      "delta_max_ll_nats": 2.0,
+      "mean_shift_sigma": 0.2,
+      "sigma_ratio": [
+        0.8,
+        1.25
+      ],
+      "per_parameter_recovery": {}
+    },
+    "target_class_vs_v1": null
+  },
+  "algorithm": {
+    "name": "nautilus",
+    "config_id": "hpc_a100_fp64_seed4_pos_t0.3_f1e8",
+    "settings": {
+      "n_live": 200,
+      "n_batch": 64,
+      "number_of_cores": 1,
+      "use_jax_vmap": true,
+      "force_x1_cpu": true,
+      "iterations_per_update": 600,
+      "seed": 4,
+      "positions": {
+        "enabled": true,
+        "threshold_mode": "fixed",
+        "threshold_value": 0.3,
+        "auto_factor": null,
+        "auto_minimum_threshold": null,
+        "factor": 100000000.0,
+        "source": "simulator_truth_positions",
+        "target_class": 3,
+        "note": "IDEALISED: positions and (for 'auto') the threshold-resolution tracer are the simulator's own truth, not solved from a completed search's max-likelihood model (the SLaM chained-fit convention). 'auto' = max(auto_factor * max_sep(truth positions, truth tracer), auto_minimum_threshold); truth positions trace to ~zero separation through the truth tracer by construction, so 'auto' collapses to the auto_minimum_threshold floor for every Stage-1 dataset."
+      }
+    },
+    "seed": 4
+  },
+  "hardware": {
+    "tier": "hpc_a100_fp64_seed4_pos_t0.3_f1e8",
+    "precision": "fp64",
+    "device": {
+      "backend": "gpu",
+      "device": "cuda:0",
+      "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+      "omp_num_threads": null,
+      "cpu_count": 124,
+      "nvidia_smi": "NVIDIA A100 80GB PCIe, 2615 MiB, 81920 MiB"
+    }
+  }
+}

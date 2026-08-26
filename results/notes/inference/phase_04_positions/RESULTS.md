@@ -206,3 +206,88 @@ JAX_ENABLE_X64=True python scripts/misc/searches/positions_transects.py         
 - The `ell_comps_0=0.0` anomalous base-likelihood gradient norm (§4 caveat)
   is unexplained; worth a standalone look if Stage 2's gradient search
   starts landing near that configuration.
+
+---
+
+# Phase 4 Stage 2 — matched trio +/- PositionsLH (imaging/mge/hst): results
+
+RAL jobs 340114 (Nautilus, 10 arms) and 340115 (Prodigy n256, 5 arms),
+harvested 2026-08-26. All 15 COMPLETED, version stamp 2026.8.17.1, walls
+plausible, no resumed fits. The NSS arm was dropped per Gate A.
+
+Positions arms use `threshold_mode=fixed`, `threshold_value=0.3`,
+`factor=1e8`, `source=simulator_truth_positions` — **IDEALISED**: the
+positions are the simulator's own truth, not solved from a completed
+search's max-likelihood model as the SLaM chained-fit convention would.
+
+## Nautilus — PositionsLH is a no-op
+
+| seed | logZ (off) | logZ (on) | maxL (off) | maxL (on) | wall off | wall on |
+|-----:|-----------:|----------:|-----------:|----------:|---------:|--------:|
+| 0 | 31690.50 | 31690.50 | 31786.69 | 31786.46 | 774 s | 764 s |
+| 1 | 31690.50 | 31690.48 | 31786.77 | 31786.76 | 734 s | 735 s |
+| 2 | 31690.50 | 31690.49 | 31786.57 | 31786.49 | 742 s | 720 s |
+| 3 | 31690.50 | 31690.50 | 31786.61 | 31786.47 | 716 s | 769 s |
+| 4 | 31690.48 | 31690.49 | 31786.89 | 31786.73 | 758 s | 810 s |
+
+logZ agrees to 0.02 nats, maxL to well inside the seed spread, wall within
++/-3%, Kish ESS 4,209-4,315 (off) vs 4,262-4,623 (on). Nautilus already
+recovers the dominant mode 5/5 without positions, so the penalty has no
+failure mode left to prevent. **H4.1 as applied to Nautilus on MGE: positions
+neither help nor hurt.**
+
+## Prodigy n=256 — PositionsLH degrades it, 5/5 to 1/5
+
+| seed | maxL (positions off) | maxL (positions on) | recovered model (on) |
+|-----:|---------------------:|--------------------:|---------------------|
+| 0 | 31787.906 | 31764.30 | r_E 1.5995 |
+| 1 | 31787.913 | 31785.55 | r_E 1.5997 |
+| 2 | 31787.904 | **31787.38** | r_E 1.5997 |
+| 3 | 31787.906 | 31702.48 | r_E 1.5997, shear 0.0537 (truth ~0.0485/0.0495) |
+| 4 | 31787.919 | **16727.52** | r_E 1.6023, centre (-0.028, -0.017) |
+
+Positions-off is 5/5 within a 0.04-nat band. Positions-on is one clean hit
+(seed 2), two near-misses, one -85 nat arm and one catastrophic arm.
+
+This is **not** purely a scoring artifact of the penalty riding on the
+reported likelihood. Seeds 0/1/3 land at r_E ~ 1.5997 — the right basin — and
+still fall short of the positions-off band, and seed 4 converges to a
+genuinely displaced centre rather than to truth-plus-penalty.
+
+LEADING HYPOTHESIS (untested): with idealised truth positions the hinge
+should be inert at the true model, so the fact that it is not implies the
+0.3" threshold is tighter than the PointSolver's achievable image-position
+precision for the recovered model. The hinge then stays live in the
+neighbourhood of truth, and a fixed-step gradient searcher — which cannot
+line-search its way around a steep discontinuity — is exactly the method that
+breaks on it. Nautilus, sampling by rejection, never feels it.
+
+A ~1 GPU-h diagnostic separates "PositionsLH is hostile to gradient search"
+from "this hinge is mis-scaled": re-run the Prodigy arms at
+`threshold_mode=auto` (t=0.2) and at `factor=1e5`. Filed as PyAutoMind
+`draft/bug/autolens_profiling/` follow-up work; NOT run here.
+
+## CAVEAT — the two Prodigy arms are not on the same eval counter
+
+The positions-OFF n256 arms are schema v1 (no `schema_version` key,
+`likelihood_evals=257`); the positions-ON arms are schema v2
+(reject-inclusive, 32,000-247,808 evals). `max_log_likelihood` is comparable
+between them and every claim above rests only on that. `likelihood_evals`,
+`time_per_eval_ms` and anything derived from them are **not** comparable, and
+no wall or throughput claim is made for the Prodigy pair. The positions-off
+baseline comes from the earlier CP-3 wave; nothing in either artifact flags
+the mismatch. Filed as a guard task in PyAutoMind.
+
+## Artifacts (Stage 2)
+
+- `results/searches/nautilus/imaging/mge/hst/hpc_hpc_a100_fp64_seed{0-4}.json`
+  and `..._seed{0-4}_pos_t0.3_f1e8.json`
+- `results/searches/multi_start_prodigy_autoconv/imaging/mge/hst/
+  hpc_hpc_a100_fp64_n256_seed{0-4}_pos_t0.3_f1e8.json`
+
+## Next (Stage 2)
+
+- The threshold/factor diagnostic above, before any Gate B pt 2 reading.
+- Gate B pt 2 cannot be called on this evidence: the Nautilus half says
+  positions are inert, the Prodigy half says they are harmful, and the
+  Prodigy half is confounded by a threshold that may simply be mis-set.
