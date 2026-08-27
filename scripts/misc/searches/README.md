@@ -17,6 +17,19 @@ of PyAutoFit machinery is exercised and measured.
 | `multi_start_prodigy` | `cluster/image_plane_solved/simple` | `hpc_a100_fp64` | -1,708.9 | — | 832.23 s | — | — | stored | — | — | v2026.7.23.1 |
 | `multi_start_prodigy` | `cluster/source_plane_solved/simple` | `hpc_a100_fp64` | 21.4 | — | 250.86 s | — | — | stored | — | — | v2026.7.23.1 |
 | `multi_start_prodigy` | `cluster/source_plane_tensor/simple` | `hpc_a100_fp64` | -11,000.5 | — | 261.36 s | — | — | stored | — | — | v2026.7.23.1 |
+| `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_cholesky_log_reg_seed2` | 29,977.7 | — | 14539.65 s | 48,000 | 302.9 ms | evals | — | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_cholesky_none_seed1` | 22,945.1 | — | 12818.73 s | 48,000 | 267.1 ms | evals | — | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_slogdet_log_reg_seed0` | 28,127.4 | — | 13321.76 s | 48,000 | 277.5 ms | evals | — | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_slogdet_log_reg_seed1` | 213,567,532,327,722,107,774,660,770,831,379,455,134,060,534,200,008,704.0 | — | 11254.95 s | 48,000 | 234.5 ms | evals | — | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_slogdet_none_seed0` | -146,802.6 | — | 6531.21 s | 48,000 | 136.1 ms | evals | — | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/knn/hst` | `knn_auto_log_reg_seed3` | 30,557.0 | — | 6560.66 s | 48,000 | 136.7 ms | evals | `84c0d88d` | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/knn/hst` | `knn_auto_logit_seed1` | 28,683.3 | — | 6593.35 s | 48,000 | 137.4 ms | evals | `84c0d88d` | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/knn/hst` | `knn_auto_none_seed0` | 28,901.9 | — | 6436.91 s | 48,000 | 134.1 ms | evals | `84c0d88d` | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/knn/hst` | `knn_auto_none_seed2` | 28,870.3 | — | 6422.37 s | 48,000 | 133.8 ms | evals | `84c0d88d` | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/mge/hst` | `mge_auto_log_reg_seed0` | 31,787.9 | — | 354.05 s | 48,000 | 7.4 ms | evals | `770ccd47` | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/mge/hst` | `mge_auto_log_reg_seed1` | -89,460.3 | — | 340.85 s | 48,000 | 7.1 ms | evals | `770ccd47` | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/mge/hst` | `mge_auto_none_seed0` | 31,787.9 | — | 372.92 s | 48,000 | 7.8 ms | evals | `770ccd47` | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/mge/hst` | `mge_auto_none_seed1` | -91,031.2 | — | 285.62 s | 48,000 | 6.0 ms | evals | `770ccd47` | — | v2026.8.17.1 |
 | `multi_start_prodigy` | `point_source/image_plane/simple` | `default` | -79.9 | — | 852.82 s | — | — | stored | — | — | v2026.7.23.1 |
 | `multi_start_prodigy` | `point_source/image_plane/simple` | `hpc_a100_fp64` | -68.5 | — | 90.31 s | — | — | stored | — | — | v2026.7.23.1 |
 | `multi_start_prodigy` | `point_source/image_plane/simple` | `starts256` | -47.7 | — | 3515.50 s | — | — | stored | — | — | v2026.7.23.1 |
@@ -42,7 +55,9 @@ of PyAutoFit machinery is exercised and measured.
 | `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n16_seed4` | 26,076.8 | — | 123.04 s | — | — | stored | — | — | v2026.8.17.1 |
 | `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n16_seed4_diag_theta_e` | -128,632.1 | — | 137.83 s | — | — | stored | — | — | v2026.8.17.1 |
 | `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed0` | 31,787.9 | — | 224.77 s | — | — | stored | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed0_pos_t0.3_f1e5` | 31,787.9 | — | 165.37 s | 45,312 | 3.6 ms | evals | `cd522872` | — | v2026.8.17.1 |
 | `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed0_pos_t0.3_f1e8` | 31,764.3 | — | 553.39 s | 247,808 | 2.2 ms | evals | `bf3d096f` | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed0_pos_tauto0.2_f1e8` | — | — | — | — | — | **INVALID** | — | — | v2026.8.17.1 |
 | `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed1` | 31,787.9 | — | 216.51 s | — | — | stored | — | — | v2026.8.17.1 |
 | `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed105` | 31,787.9 | — | 174.55 s | — | — | stored | — | — | v2026.8.17.1 |
 | `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed106` | 31,787.9 | — | 179.25 s | — | — | stored | — | — | v2026.8.17.1 |
@@ -54,13 +69,21 @@ of PyAutoFit machinery is exercised and measured.
 | `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed112` | 31,787.9 | — | 178.90 s | — | — | stored | — | — | v2026.8.17.1 |
 | `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed113` | 31,787.9 | — | 169.37 s | — | — | stored | — | — | v2026.8.17.1 |
 | `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed114` | 31,787.9 | — | 179.30 s | — | — | stored | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed1_pos_t0.3_f1e5` | 31,787.9 | — | 164.13 s | 45,312 | 3.6 ms | evals | `cd522872` | — | v2026.8.17.1 |
 | `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed1_pos_t0.3_f1e8` | 31,785.6 | — | 232.52 s | 70,656 | 3.3 ms | evals | `bf3d096f` | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed1_pos_tauto0.2_f1e8` | 31,736.9 | — | 323.08 s | 207,104 | 1.6 ms | evals | `6b93f0e5` | — | v2026.8.17.1 |
 | `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed2` | 31,787.9 | — | 176.52 s | — | — | stored | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed2_pos_t0.3_f1e5` | 31,787.9 | — | 163.30 s | 44,544 | 3.7 ms | evals | `cd522872` | — | v2026.8.17.1 |
 | `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed2_pos_t0.3_f1e8` | 31,787.4 | — | 209.26 s | 61,184 | 3.4 ms | evals | `bf3d096f` | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed2_pos_tauto0.2_f1e8` | 31,779.3 | — | 336.40 s | 217,088 | 1.5 ms | evals | `6b93f0e5` | — | v2026.8.17.1 |
 | `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed3` | 31,787.9 | — | 172.18 s | — | — | stored | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed3_pos_t0.3_f1e5` | 31,787.9 | — | 163.14 s | 44,288 | 3.7 ms | evals | `cd522872` | — | v2026.8.17.1 |
 | `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed3_pos_t0.3_f1e8` | 31,702.5 | — | 487.85 s | 173,312 | 2.8 ms | evals | `bf3d096f` | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed3_pos_tauto0.2_f1e8` | 27,913.5 | — | 147.55 s | 29,184 | 5.1 ms | evals | `6b93f0e5` | — | v2026.8.17.1 |
 | `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed4` | 31,787.9 | — | 191.40 s | — | — | stored | — | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed4_pos_t0.3_f1e5` | 31,787.9 | — | 297.37 s | 46,080 | 6.5 ms | evals | `cd522872` | — | v2026.8.17.1 |
 | `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed4_pos_t0.3_f1e8` | 16,727.5 | — | 172.66 s | 32,000 | 5.4 ms | evals | `bf3d096f` | — | v2026.8.17.1 |
+| `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n256_seed4_pos_tauto0.2_f1e8` | 31,660.3 | — | 315.82 s | 156,672 | 2.0 ms | evals | `6b93f0e5` | — | v2026.8.17.1 |
 | `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n64_seed0` | 31,787.9 | — | 172.13 s | — | — | stored | — | — | v2026.8.17.1 |
 | `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n64_seed1` | 31,787.9 | — | 117.63 s | — | — | stored | — | — | v2026.8.17.1 |
 | `multi_start_prodigy_autoconv` | `imaging/mge/hst` | `hpc_a100_fp64_n64_seed2` | 31,787.9 | — | 116.10 s | — | — | stored | — | — | v2026.8.17.1 |
@@ -74,16 +97,18 @@ of PyAutoFit machinery is exercised and measured.
 | `nautilus` | `imaging/delaunay/hst` | `hpc_a100_fp64_nbatch16` | 30,623.8 | 30,562.1 | 2088.15 s | 30,432 | 66.7 ms | evals | `a45841ff` | 2,464.3 | v2026.8.17.1 |
 | `nautilus` | `imaging/delaunay/hst` | `hpc_a100_fp64_nbatch256` | 30,622.8 | 30,562.2 | 1758.41 s | 33,536 | 50.8 ms | evals | `a45841ff` | 2,387.1 | v2026.8.17.1 |
 | `nautilus` | `imaging/delaunay/hst` | `hpc_a100_fp64_nbatch64` | 30,623.0 | 30,562.2 | 1750.83 s | 32,064 | 53.0 ms | evals | `a45841ff` | 2,335.1 | v2026.8.17.1 |
-| `nautilus` | `imaging/delaunay/hst` | `hpc_a100_fp64_ref_pos_tauto0.2_f1e8` | 31,339.0 | 31,264.8 | 3265.47 s | 50,736 | 63.2 ms | evals | `6d52f9dc` | 4,128.9 | v2026.8.17.1 |
+| `nautilus` | `imaging/delaunay/hst` | `hpc_a100_fp64_ref_pos_tauto0.2_f1e8` | 31,339.0 | 31,264.8 | 3265.47 s | 50,736 | 63.2 ms | evals | `dcbcb962` | 4,128.9 | v2026.8.17.1 |
+| `nautilus` | `imaging/delaunay_matern/hst` | `hpc_a100_fp64_ref` | 30,676.6 | 30,615.0 | 3351.74 s | 62,900 | 52.5 ms | evals | `3f17a372` | 5,728.2 | v2026.8.17.1 |
 | `nautilus` | `imaging/delaunay_nn/hst` | `hpc_a100_fp64_ref` | 30,650.8 | 30,591.1 | 3230.23 s | 46,400 | 68.3 ms | evals | `6a13b9a4` | 4,400.7 | v2026.8.17.1 |
 | `nautilus` | `imaging/delaunay_nn/hst` | `hpc_a100_fp64_ref_pos_t0.3_f1e8` | 31,347.9 | 31,275.2 | 3111.05 s | 49,800 | 61.1 ms | evals | `1e007f22` | 4,364.7 | v2026.8.17.1 |
+| `nautilus` | `imaging/knn/hst` | `hpc_a100_fp64_ref` | 30,077.0 | 30,010.2 | 3343.59 s | 65,200 | 50.4 ms | evals | `84c0d88d` | 4,848.8 | v2026.8.17.1 |
 | `nautilus` | `imaging/mge/hst` | `hpc_a100_fp64` | 31,786.6 | 31,690.5 | 775.11 s | 62,208 | 11.4 ms | evals | — | — | v2026.8.17.1 |
 | `nautilus` | `imaging/mge/hst` | `hpc_a100_fp64_nbatch1000` | 31,787.0 | 31,690.4 | 525.55 s | 77,000 | 5.9 ms | evals | `770ccd47` | 4,693.6 | v2026.8.17.1 |
 | `nautilus` | `imaging/mge/hst` | `hpc_a100_fp64_nbatch128` | 31,786.7 | 31,690.5 | 680.84 s | 64,768 | 9.5 ms | evals | `770ccd47` | 4,247.8 | v2026.8.17.1 |
 | `nautilus` | `imaging/mge/hst` | `hpc_a100_fp64_nbatch256` | 31,786.9 | 31,690.5 | 612.28 s | 66,304 | 8.1 ms | evals | `770ccd47` | 4,156.3 | v2026.8.17.1 |
 | `nautilus` | `imaging/mge/hst` | `hpc_a100_fp64_nbatch512` | 31,786.9 | 31,690.5 | 633.18 s | 67,584 | 8.4 ms | evals | `770ccd47` | 4,574.5 | v2026.8.17.1 |
 | `nautilus` | `imaging/mge/hst` | `hpc_a100_fp64_nbatch64` | 31,786.9 | 31,690.5 | 737.83 s | 63,424 | 10.6 ms | evals | `770ccd47` | 4,304.1 | v2026.8.17.1 |
-| `nautilus` | `imaging/mge/hst` | `hpc_a100_fp64_ref_pos_tauto0.2_f1e8` | 31,786.8 | 31,690.4 | 1015.28 s | 96,704 | 9.7 ms | evals | `bf3d096f` | 7,586.1 | v2026.8.17.1 |
+| `nautilus` | `imaging/mge/hst` | `hpc_a100_fp64_ref_pos_tauto0.2_f1e8` | 31,786.8 | 31,690.4 | 1015.28 s | 96,704 | 9.7 ms | evals | `6b93f0e5` | 7,586.1 | v2026.8.17.1 |
 | `nautilus` | `imaging/mge/hst` | `hpc_a100_fp64_seed0` | 31,786.7 | 31,690.5 | 773.51 s | 63,552 | 11.1 ms | evals | `770ccd47` | 4,314.8 | v2026.8.17.1 |
 | `nautilus` | `imaging/mge/hst` | `hpc_a100_fp64_seed0_pos_t0.3_f1e8` | 31,786.5 | 31,690.5 | 764.23 s | 63,104 | 11.0 ms | evals | `bf3d096f` | 4,393.4 | v2026.8.17.1 |
 | `nautilus` | `imaging/mge/hst` | `hpc_a100_fp64_seed1` | 31,786.8 | 31,690.5 | 734.27 s | 63,936 | 10.4 ms | evals | `770ccd47` | 4,302.5 | v2026.8.17.1 |
@@ -128,6 +153,8 @@ of PyAutoFit machinery is exercised and measured.
 | `nss` | `imaging/pixelization/hst` | `hpc_a100_fp64` | 29,142.5 | 29,078.9 | 19190.01 s | 266,043 | 72.0 ms | evals | — | — | v2026.5.21.1 |
 
 _`Basis` — what `likelihood_evals` counts in that row. `evals` = reject-inclusive evaluations, comparable across rows. `stored` = a pre-schema-v2 MultiStart run that recorded stored samples, not evaluations; its step count was never written, so `Evals` and `Time / eval` are withheld rather than guessed. Never compare a per-eval figure against a `stored` row (issue #177)._
+
+_`Basis: INVALID` — the artifact carries a top-level `invalid: true` with an `invalid_reason`: the run completed and wrote a file, but what it recorded cannot be interpreted (e.g. a silent resume that re-read an earlier fit's results and took zero steps). Its measured columns are withheld; read `invalid_reason` in the JSON before using the row for anything._
 <!-- END auto-table:searches -->
 
 Auto-generated by `scripts/misc/tooling/build_readme.py` from the search-run artifacts under `results/searches/<sampler>/<class>/<model>/<instrument>/` (latest version per sampler × cell × config).
@@ -362,6 +389,43 @@ Every cell's results JSON always carries a `"positions"` block
 summary, so a positions-on and a positions-off artifact are never ambiguous
 after the fact.
 
+**`results.penalty_at_best`** (schema v2, issue #182). A positions-on row's
+`results.max_log_likelihood` is the PENALISED value — the analysis returns
+`fit.figure_of_merit - log_likelihood_penalty` and PyAutoFit records that as
+the sample's log-likelihood — so how much of it was penalty used to be
+unrecoverable from the artifact. Every row now carries a `penalty_at_best`
+block (`null` when positions are off, or when no best instance was
+recoverable) with `positions_penalty`, `log_likelihood_penalised`,
+`log_likelihood_unpenalised` and `delta_log_likelihood` (= `-penalty`). It
+costs **no likelihood evaluation**: `analysis.log_likelihood_penalty_from`
+builds the tracer and traces the truth positions, nothing else. A recorded
+`0.0` is a real measurement — the best model traced inside the threshold —
+and is deliberately distinguishable from `null`.
+
+**Positions arms have distinct `target_id`s** (issue #182). `Target.positions`
+is only `"off"`/`"on"`, so `_targets._positions_block` used to hash the module
+DEFAULTS and gave `pos_t0.3_f1e8`, `pos_t0.3_f1e5` and `pos_tauto0.2_f1e8` —
+three different objectives — one shared id. It now takes the resolved
+positions block as an argument, and `_runner` passes the same dict it records
+as the artifact's top-level `positions`, so the id stays derivable from the
+record rather than from ambient env at read time. To repair an
+already-written row, use `scripts/misc/searches/restamp_target_block.py` —
+never hand-edit a hash:
+
+```bash
+python3 scripts/misc/searches/restamp_target_block.py <paths...>          # report
+python3 scripts/misc/searches/restamp_target_block.py --write <paths...>  # apply
+python3 scripts/misc/searches/restamp_target_block.py --check <paths...>  # CI-style
+```
+
+It re-derives the whole block from the row's own recorded configuration and
+is gated by a **reproduction control**: the running environment must first
+reproduce the id the row already carries the OLD way. A pixelized row
+measured on the HPC will typically FAIL that control locally (a regenerated
+`lensed_source.fits` adapt-image cache hashes differently) and is refused
+rather than re-stamped — overwriting it would launder a local hash onto a
+foreign measurement.
+
 Run the Stage-1 hazard/reliability transects with:
 
 ```bash
@@ -397,6 +461,19 @@ forwards `lane_value_nan_history` / `lane_grad_nan_history` / `trace_history`
 MultiStart* results JSON's `diagnostics` block when the search was built with
 them on.
 
+**Scorer amendments 2026-08-27 (issue #182).** `score_f1`/`score_f2` used to
+collapse missing inputs into a verdict — and in opposite directions (`F1` read
+absence as a silent PASS, `F2` as a silent FAIL). Every criterion now has a
+third state, `{"scorable": false, "falsified": null, "reason": ...}`, and
+`score_rows` returns `INCONCLUSIVE` rather than a verdict while any criterion
+is unscorable and fewer than two have fired. `F4` also changed: it now asks
+whether the MGE control's **winning lane** agrees between arms on `best_fom`
+and `max_log_likelihood` within fp64 relative `1e-9`, instead of demanding
+byte-identity of every per-lane parameter vector — two separate GPU runs of an
+identical objective differ in trailing bits for reasons that are not the
+bijector, and `F5` already proves the objective is inert at matched physical
+points. The byte-identity result is kept as an informational field.
+
 Driver: `scripts/misc/searches/bijector_ab.py` — pre-registration, the 39-arm
 table (`delaunay_adapt_split` x {cholesky,slogdet} x {none,log_reg} x 5 seeds;
 `knn` x {none,log_reg,logit} x 5 seeds; `mge` control x {none,log_reg} x 2
@@ -414,6 +491,48 @@ JSON+PNG) and `results/notes/inference/phase_08_regularization/bijector_ab/`
 (the verdict artifact). See `results/notes/inference/phase_08_regularization/RESULTS.md`
 "8B" for the write-up once run, and `hpc/batch_gpu/submit_phase8b_bijector_a100`
 for the A100 submit.
+
+## Recovering a crashed arm (`recover_multistart_from_internal.py`)
+
+An arm can complete every step on the GPU and still lose its results file:
+PyAutoFit's post-fit `save_results` raises `SamplesException` from
+`Result.instance` -> `SamplesSummary` when the best point's `ell_comps` lie
+outside the unit disk (PyAutoFit#1487, still open). The search's answer is
+already on disk in `search_internal.dill`; only the driver's write step is
+missing. Six Phase 8B arms of RAL jobs 341874/341875 were rebuilt this way on
+2026-08-27.
+
+`scripts/misc/searches/recover_multistart_from_internal.py` reads each arm's
+harvested output directory (`model.json` / `search.json` / `settings.json` /
+`search_internal.dill`) plus its SLURM log and re-runs the SAME driver helpers
+the leaf script would have (`collect_metrics`, `per_lane_block`,
+`_build_summary`). It runs on CPU, evaluates no likelihood and touches no GPU.
+
+```bash
+python3 scripts/misc/searches/recover_multistart_from_internal.py \
+    --preset phase8b \
+    --dill-root <harvest>/output_dills \
+    --log-dir  <harvest>/hpc/batch_gpu/output \
+    --out-root results/searches/multi_start_prodigy/imaging \
+    --arm n16_s3000_seed1_bij_logit/knn_auto_logit_seed1:341874_31
+```
+
+Two inputs are **not** derivable from the harvested artifacts and are required
+rather than guessed: the `SEARCHES_*` environment the submit script exported
+(it is what `multi_start_settings()` reads to rebuild `sampler_config` — a
+guess writes a wrong block onto sound data) and the device block (a crashed
+run never reached `device_info_dict()`; carrying it from a successful sibling
+of the same campaign is legitimate, inventing it is not). `--preset phase8b`
+supplies both for the 2026-08-27 campaign. Without a device source the device
+fields are recorded as unavailable, not filled in with the recovering
+machine's hardware.
+
+Every recovered file leads with `recovered_offline: true` plus
+`recovered_offline_note` / `_provenance` / `_verification` blocks naming what
+is first-hand, what was carried over from siblings, and what is simply gone
+(the truth anchor, the instantaneous `nvidia-smi` reading). Recovered paths
+are recorded relative to the run's own output tree and SLURM job, never to
+the transient harvest mirror they were read from.
 
 ## What this *doesn't* profile (yet)
 
@@ -480,6 +599,15 @@ results/searches/
     comparison.json            # cross-config aggregation (aggregate.py)
     comparison.png             # cross-config bar chart (aggregate.py)
 ```
+
+An artifact may also carry a top-level `"invalid": true` with an
+`"invalid_reason"` string. This means the run completed and wrote a file, but
+what it recorded cannot be interpreted — e.g. a silent MultiStart resume that
+re-read an earlier fit's results, reported a wall clock and took zero steps.
+The row is KEPT (deleting it would make the dashboard quietly disagree with
+`results/searches/`); `build_readme.py` renders it with every measured column
+withheld and `Basis: INVALID`. This is separate from `diagnostics.valid` /
+`diagnostics.invalid_reasons`, which judge the per-lane block only.
 
 The PyAutoFit search itself writes its own output (`samples.csv`,
 `samples_info.json`, `search.summary`, visualization, ...) to the

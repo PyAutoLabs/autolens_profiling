@@ -250,6 +250,9 @@ def _synthetic_row(**overrides) -> dict:
         coefficient_at_first_nan=None,
         frac_steps_high_lambda=0.0,
         best_log_posterior=-100.0,
+        winning_lane_index=0,
+        best_fom=180.0,
+        max_log_likelihood=-90.0,
         fom_history_global_best=[200.0, 190.0, 180.0],
         step0_fom=200.0,
         n_lanes_pinned_final=0,
@@ -288,63 +291,143 @@ def test_score_rows_f5_does_not_trip_on_matching_step0_fom():
     assert verdict["halted"] is False
 
 
-def test_score_rows_f4_flags_mge_control_byte_difference():
+def test_score_rows_f4_flags_winning_lane_disagreement():
+    """The amended F4 (issue #182): the criterion is the winning lane's
+    best_fom / max_log_likelihood, not per-lane byte-identity."""
     import bijector_ab as m
 
     rows = [
-        _synthetic_row(
-            cell="mge",
-            bijector="none",
-            seed=0,
-            final_params_per_lane=[[1.0, 2.0]],
-            lane_best_params_per_lane=[[1.0, 2.0]],
-        ),
-        _synthetic_row(
-            cell="mge",
-            bijector="log_reg",
-            seed=0,
-            final_params_per_lane=[[1.0, 2.5]],
-            lane_best_params_per_lane=[[1.0, 2.0]],
-        ),
+        _synthetic_row(cell="mge", bijector="none", seed=0, best_fom=180.0),
+        _synthetic_row(cell="mge", bijector="log_reg", seed=0, best_fom=180.5),
     ]
     verdict = m.score_rows(rows)
     assert verdict["halted"] is False
-    assert verdict["f4_mge_control_and_logit_pathology"]["mge_differs"] is True
-    assert verdict["f4_mge_control_and_logit_pathology"]["falsified"] is True
+    f4 = verdict["f4_mge_control_and_logit_pathology"]
+    assert f4["falsified"] is True
+    assert f4["mge_per_seed_equivalence"][0]["agree_within_fp64"] is False
 
 
-def test_score_rows_f4_passes_on_byte_identical_mge_control():
+def test_score_rows_f4_tolerates_trailing_bit_drift_in_the_winning_lane():
+    """fp64 noise in the last bits is not a bijector effect and must not
+    falsify the control (the whole point of the 2026-08-27 amendment)."""
     import bijector_ab as m
 
-    identical_params = [[1.0, 2.0], [3.0, 4.0]]
     rows = [
         _synthetic_row(
-            cell="mge",
-            bijector="none",
-            seed=0,
-            final_params_per_lane=identical_params,
-            lane_best_params_per_lane=identical_params,
+            cell="mge", bijector="none", seed=0, best_fom=180.0, max_log_likelihood=-90.0
         ),
         _synthetic_row(
             cell="mge",
             bijector="log_reg",
             seed=0,
-            final_params_per_lane=identical_params,
-            lane_best_params_per_lane=identical_params,
+            best_fom=180.0 + 1e-11,
+            max_log_likelihood=-90.0 - 1e-11,
+            # per-lane vectors differ in a lane that never won — informational
+            # only under the amended criterion.
+            final_params_per_lane=[[1.0, 2.0], [3.0, 4.5]],
         ),
+        _synthetic_row(cell="knn", bijector="logit", seed=0, max_pinned_final_count=0),
     ]
     verdict = m.score_rows(rows)
-    assert verdict["f4_mge_control_and_logit_pathology"]["mge_differs"] is False
-    assert verdict["f4_mge_control_and_logit_pathology"]["falsified"] is False
+    f4 = verdict["f4_mge_control_and_logit_pathology"]
+    assert f4["falsified"] is False
+    # byte-identity DID fail — reported, not scored.
+    assert f4["mge_per_seed_byte_identical"][0] is False
 
 
-def test_score_rows_no_rows_for_a_cell_does_not_crash():
+def test_score_rows_f4_unscorable_without_matched_mge_seeds():
+    import bijector_ab as m
+
+    rows = [_synthetic_row(cell="mge", bijector="none", seed=0)]
+    verdict = m.score_rows(rows)
+    f4 = verdict["f4_mge_control_and_logit_pathology"]
+    assert f4["scorable"] is False
+    assert f4["falsified"] is None
+
+
+def test_score_rows_no_rows_for_a_cell_is_unscorable_not_a_verdict():
+    """The #182 repair: absent data used to read as a silent PASS (F1) and a
+    silent FAIL (F2) — the same absence, opposite confident answers."""
     import bijector_ab as m
 
     rows = [_synthetic_row(cell="mge", bijector="none", seed=0)]
     verdict = m.score_rows(rows)
     assert verdict["f1_nan_wall_position"]["falsified"] is None
+    assert verdict["f1_nan_wall_position"]["scorable"] is False
     assert verdict["f2_steps_to_reference"]["falsified"] is None
+    assert verdict["f2_steps_to_reference"]["scorable"] is False
+    assert verdict["verdict"] == "INCONCLUSIVE"
+    assert verdict["falsified"] is None
+    assert set(verdict["unscorable_criteria"]) == {
+        "f1_nan_wall_position",
+        "f2_steps_to_reference",
+        "f3_time_at_high_lambda",
+        "f4_mge_control_and_logit_pathology",
+    }
+
+
+def test_score_f1_unscorable_when_no_nan_history_recorded():
+    import bijector_ab as m
+
+    rows = [
+        _synthetic_row(
+            cell="delaunay_adapt_split",
+            bijector="none",
+            seed=0,
+            first_value_nan_step=None,
+            n_value_nan_lane_steps=None,
+        ),
+        _synthetic_row(
+            cell="delaunay_adapt_split",
+            bijector="log_reg",
+            seed=0,
+            first_value_nan_step=None,
+            n_value_nan_lane_steps=None,
+        ),
+    ]
+    result = m.score_f1(rows)
+    assert result["scorable"] is False
+    assert result["falsified"] is None
+
+
+def test_score_f1_stays_conclusive_when_one_limb_fires():
+    """A disjunction with a fired limb is settled even if the other is
+    unmeasurable — unscorable must not swallow a real result."""
+    import bijector_ab as m
+
+    rows = [
+        _synthetic_row(
+            cell="delaunay_adapt_split",
+            bijector="none",
+            seed=0,
+            first_value_nan_step=100,
+            n_value_nan_lane_steps=None,
+        ),
+        _synthetic_row(
+            cell="delaunay_adapt_split",
+            bijector="log_reg",
+            seed=0,
+            first_value_nan_step=200,
+            n_value_nan_lane_steps=None,
+        ),
+    ]
+    result = m.score_f1(rows)
+    assert result["scorable"] is True
+    assert result["falsified"] is True  # log_reg's NaN wall is LATER, not earlier
+
+
+def test_score_f2_unscorable_rather_than_falsified_without_a_reference():
+    """The old code returned falsified=True here: 'never reached the
+    reference' silently became 'reached it too slowly'."""
+    import bijector_ab as m
+
+    rows = [
+        _synthetic_row(cell="knn", bijector="none", seed=0, best_log_posterior=None),
+        _synthetic_row(cell="knn", bijector="log_reg", seed=0, best_log_posterior=None),
+    ]
+    result = m.score_f2(rows)
+    assert result["scorable"] is False
+    assert result["falsified"] is None
 
 
 def test_arm_table_has_39_arms_and_unique_config_names():

@@ -468,3 +468,231 @@ descent-harvest time, and never anchor a transect/probe at an exact-zero
 ell_comps/shear component. Record: `phase_08_regularization/RESULTS.md`
 "W7 addendum" + "CP-4 re-scored" sections; attribution artifacts under
 `slogdet_ab/attribution/`.
+
+---
+
+## 2026-08-27 — W6 (#163): `n_batch` scan recorded — 1.78× is per-eval, not wall; the recommended arm's logZ is a ~9σ outlier
+
+**Record (not a gate call):** RAL 339842/339843, 8/8 arms, harvested
+2026-08-25; MGE `n_live=200`, Delaunay `n_live=150`, fp64 A100, **one seed
+per arm**. Recomputed from the raw JSONs 2026-08-27, the MGE scan from
+`n_batch` 64 → 1000 recovers **1.775× per likelihood eval** (10.56 →
+5.95 ms), **1.463× on sampler wall** (670 → 458 s) and **1.594× on
+ESS/min**; likelihood evals rise 21 % (63,424 → 77,000) and Kish ESS per
+eval falls ~10 %. The committed "1.78× free" sentence carried a per-eval
+figure into a wall-shaped claim; corrected in `methods/nautilus.md` this
+commit. Delaunay saturates by `n_batch=64` at 1.26×, unchanged.
+
+**logZ is not flat at the arm the scan recommends.** logZ spans 0.12 nats
+across the whole scan, but the `n_batch=1000` arm sits **−0.10 nat** from
+the `n_batch=64` arm — ~9σ of the 0.011-nat five-seed logZ standard
+deviation measured on the same cell in Phase 4 Stage 2. With one seed per
+arm the scan cannot separate an `n_batch` bias from a seed draw, so no
+`n_batch` above the measured baseline is adopted as a default on this
+evidence; the finding is "the knob is real on MGE, its evidence cost is
+unmeasured", not "free".
+
+**Records:** `methods/nautilus.md` "n_batch SCAN"; PROGRAMME.md §9b W6
+row; `results/searches/nautilus/imaging/{mge,delaunay}/hst/hpc_hpc_a100_fp64_nbatch*.json`.
+
+---
+
+## 2026-08-27 — W2 / Phase 4 Stage 2 (#160, PR#174) harvested: corrected reading of both halves
+
+**Record (not a gate call — the Gate B pt 2 call is the separate entry
+below):** RAL 340114 (Nautilus, 10 arms) / 340115 (Prodigy n256, 5 arms),
+15/15 COMPLETED, harvested 2026-08-26 and merged as PR#174. Independently
+recomputed from raw JSON 2026-08-27; two claims in the merged write-up are
+corrected here rather than edited away:
+
+1. **Nautilus + PositionsLH is not a strict no-op.** logZ and the recovered
+   mode are unchanged to 0.02 nats across 5 seeds — that half holds — but
+   max log-likelihood is **lower with positions on in 5/5 seeds** (mean
+   −0.126 nats, paired t = −3.45, p ≈ 0.026): the penalty demonstrably
+   fires at the maximum-likelihood point. Wall is **−3…+7 %**, not the
+   committed "±3 %". No penalty diagnostic exists in the nested JSONs, so
+   the penalty's size at the reported maximum cannot be read off the
+   artifact.
+2. **Prodigy positions-on is 2/5, not 1/5**, scored under Phase 3's own
+   coded rule (≥1 lane ≥ 31784.782): seed 1 has a hit lane at 31785.464.
+   The 1/5 headline used a stricter, undeclared 0.04-nat band around the
+   positions-off plateau. **If that band is kept it must be declared as the
+   rule of record**; the direction of the finding stands under either bar.
+   The eval-counter caveat (positions-off arms schema v1 at 257 evals,
+   positions-on schema v2 at 32k–248k) stands unchanged.
+
+**Records:** `phase_04_positions/RESULTS.md` "Stage 2" (wording corrected
+this commit); PROGRAMME.md §9b W2 row + phase/gate table.
+
+---
+
+## 2026-08-27 — W4 / Phase 1 (#161): InferenceRefs_v1 at 9/13 certified; the `slam_source_pix_nn` pilot thrashes
+
+**Record (Phase 1 still IN PROGRESS):** RAL **341879** tasks 7/8 landed the
+two rows lost to the missing `_N_LIVE` presets — `imaging/knn` (logZ
+30010.170, maxL 30077.028, Kish ESS 4,848.8, 3,343.6 s,
+`sha256:84c0d88d3032`) and `imaging/delaunay_matern` (30614.972 /
+30676.594 / 5,728.2 / 3,351.7 s, `sha256:3f17a37225f9`), both Nautilus
+`n_live=300`, fp64, A100, version stamp 2026.8.17.1. The registry stands at
+**9 certified rows of 13 targets**.
+
+**"Certified" means the three provenance checks only** — fresh version
+stamp, wall consistent with the cell's recorded cost, no resume marker.
+There is no certification function and **no coded tolerance**; `INDEX.json`
+still lists only the 2 retro-certified rows; and the mge row ran
+`n_live=400`, not the campaign's 300, sitting +265 nats from its truth bar
+against a 2-nat registry tolerance.
+
+**Pilot answer: it thrashes.** `slam_source_pix_nn` (free `AdaptSplit` on
+DelaunayNN, positions-off) went up alone as **RAL 341908**; it compiled in
+20 s and then made **zero Nautilus calls in 6 h** before hitting its
+wall-clock limit. Per the 2026-08-24 W4 entry that is a Phase-1 finding to
+record, not something to engineer around — the DelaunayNN resample
+behaviour costs Nautilus as well as gradient search. The positions-on row
+is not submitted.
+
+**Flag on the knn reference row:** its maxL (30077.028) sits **480 nats
+below** a same-`target_id` Phase 8B Prodigy `log_reg` arm (30557.03). Until
+that is explained the knn reference is not a valid bar for that cell — do
+not score anything against it.
+
+**Records:** `targets/REFS_V1_HARVEST.md`; PROGRAMME.md §9b W4 row + phase/
+gate table.
+
+---
+
+## 2026-08-27 — W5 / Phase 8B (#162): 340576 lost, the rerun crashed at results-write, six arms recovered offline — NO verdict yet
+
+**Record (Gates E/F remain open; no 8B verdict is called and none may be
+scored from today's data):**
+
+**Dispatch history.** The prepared 39-task array went up as **340576** and
+lost **35 of 39 arms**, dispatched at ~12 % of the wall budget a
+3000-step pixelized arm needs. Reruns **341845** (15 tasks) and **341860**
+(14 tasks) followed; 341860 lost 13 of its 14 tasks to
+`PREFLIGHT: giving up after 12 requeues` — PR#181's MIG guard fires
+correctly but its requeue cap is too low. The live reruns are **341874**
+(knn, 13 tasks) and **341875** (delaunay, 20 tasks). Across the campaign
+45 of 62 tasks never produced a step: 31 starved on the MIG-mode A100, 14
+earlier ones died with `CUDA_ERROR_NO_DEVICE`.
+
+**Crash root cause.** Six of the seven arms that reached their write step
+died with `ModelParameterException: ell_comps must satisfy e0²+e1² < 1`
+(magnitudes 1.03–1.414). The `ell_comps` prior is an independent
+per-component box, so 21.5 % of it is non-physical; `validate_ell_comps`
+returns silently on JAX tracers, so the jitted likelihood is finite and
+differentiable in the corner and lanes settle there. On completion
+`Result.instance` materialises through `SamplesSummary`, which inherits the
+raising policy — the recovery added by PyAutoFit#1486 covers `Samples`, not
+the path that runs. Filed as **PyAutoFit#1535** (2026-08-27); the same `updater._save_samples`
+early return is the suspect named by the older, still-open PyAutoFit#1487
+(weight-threshold prune never runs) — the #1535 PR fixes both.
+Downstream, `updater._save_samples` swallows the exception and skips
+`samples.csv`, and autolens `save_results` catches only `AttributeError`,
+so the process dies before `.completed`. Bijector and log-det method are
+innocent: `none` and `logit`, `cholesky` and `slogdet` all appear among the
+crashes.
+
+**Recovery (zero GPU time).** `search_internal.dill` survives because the
+crash pre-empts its deletion; `MultiStartGradient.samples_via_internal_from`
+rebuilds full `Samples` offline. All six arms were rebuilt through the
+driver's own `collect_metrics` / `per_lane_block` / `_build_summary`,
+marked `recovered_offline: true`, and verified: every −½·`best_fom` matches
+that arm's final `prodigy step 3000/3000` log line to 4 d.p., and the knn
+arm's `target_id` is byte-identical to its successful sibling's. A bare
+rerun would short-circuit to 0 steps and crash identically, so the pending
+arms are left to run — they will crash the same way and leave a
+recoverable dill.
+
+**Falsification state — partial, no verdict.** **F5 is clean**: the step-0
+global-best fom is bit-identical across bijectors on the MGE control
+(423546.4213174847 / 380535.00536054926), so the bijector provably leaves
+the physical objective alone. **F4 is amended** from byte-identity to
+"`best_fom` and max log-likelihood equivalent within fp64 on the winning
+lane" — byte-identity is unachievable for a reparameterised 3000-step
+optimizer, and F5 already carries the objective-inertness proof; F4 is
+therefore informational, not a trip. **F1** becomes scorable only with the
+recovered delaunay rows. **F3** (knn, n=1) is not falsified. **F2's
+reference deviation** — the driver uses the max `none`-arm log-posterior
+per (cell, log_det_method) group instead of a fixed-regularization control
+— **still needs a human ruling** before any verdict; it is recorded here
+as owed, per this file's discipline.
+
+**Scorer diagnostic readout after the fix (13 rows, no verdict artifact written):** `score_rows` **HALTs at F5** on `delaunay_adapt_split[slogdet]` seed 0 — step-0 global-best fom 357347.020 (`none`) vs 357343.242 (`log_reg`), rel 1.06e-5 — so F5 is clean on MGE but NOT on the slogdet delaunay cell, and the halt is correct behaviour. Scored individually with F5 bypassed: F1[cholesky] falsified, F1[slogdet] UNSCORABLE, F2 UNSCORABLE (no matched seed), F3 falsified, F4 falsified (seed 0 agrees to 9.8e-15, seed 1 disagrees at 1.7e-2). This machine reading disagrees with the hand reading above (F3 "not falsified", F1 pending) and is recorded, not adjudicated: the verdict stage runs only once all 341875 arms land and the F2 reference ruling is in.
+
+**Scorer defect (fixed in this PR's sibling half).** `score_f1` returned a
+spurious PASS and `score_f2` a spurious FAIL on missing data (`bool(None)`
+defaults); both now return UNSCORABLE. Run with today's data before the
+fix, `bijector_ab.py --stage verdict` would have emitted
+"falsified_criteria_count=2 → close, no rescoping to logit" — an
+artefact-driven false close.
+
+**Erratum to the 2026-08-24 W7 entry above ("CP-4 re-scored on the clean
+subset"):** the RAL CPU marginal-band max|Δ| of **1.62 nats is a change
+from the original 2.27**, measured on a different (clean) subset — only the
+A100 figure (9,619) is genuinely unchanged.
+
+**Records:** `phase_08_regularization/RESULTS.md` "8B"; recovered artifacts
+under `results/searches/multi_start_prodigy/imaging/{knn,delaunay_adapt_split}/hst/phase8b/`;
+`scripts/misc/searches/bijector_ab.py`.
+
+---
+
+## 2026-08-27 — GATE B part 2 CALLED (human-approved 2026-08-27): PositionsLH is safe for gradient MAP at factor ≤ 1e5 on MGE; factor 1e8 is rejected
+
+**Decision (human, 2026-08-27):** **PositionsLH is not intrinsically
+hostile to gradient MAP search on MGE; the pre-registered factor 1e8 was
+mis-scaled for a fixed-step searcher.** At factor 1e5, Prodigy(n=256,
+prior_box, autoconv) is **5/5 with positions on**, at parity with
+positions-off in likelihood, parameters, steps and wall. **Gate B part 1
+extends to positions-on at factor ≤ 1e5; factor 1e8 is rejected for
+gradient search.**
+
+**Evidence (RAL 341892, 10 arms, harvested 2026-08-27 —
+`phase_04_positions/RESULTS.md` "Stage 3"):** the ledger's leading
+hypothesis (0.3″ tighter than achievable position precision) does not
+survive. The resolved `auto` threshold is 0.200000 — a *tighter* arm — and
+it is the arm that fails hardest (0/4 hits, +1 invalid resume), while
+loosening the factor at the *same* 0.3″ threshold restores 5/5. Hits
+(±2 nats of 31786.78): positions-off 5/5, t0.3·f1e5 5/5, t0.3·f1e8 2/5,
+tauto0.2·f1e8 0/4. The f1e5 winner reproduces the positions-off answer to
+3 d.p. in likelihood and parameters (r_E 1.5997, shear ≈ (0.0485, 0.0496)),
+so the penalty is ≈0 at the recovered model. The damage is *transit*
+damage: a 1e8 slope against a 3×10⁴-scale log-likelihood inflates Prodigy's
+step scale (median 0.21–0.22 vs 0.14–0.16 at f1e5), throws lanes into the
+non-physical prior corner (29 % of best points at |e| ≥ 1 vs 17 % off) and
+pins them.
+
+**Six caveats that ride with the call:**
+
+1. **Idealised positions.** The positions are the simulator's own truth,
+   and for `auto` the threshold-resolution tracer is the truth tracer —
+   not positions solved from a completed search's max-likelihood model as
+   the SLaM chained-fit convention would.
+2. **One cell, five seeds.** `imaging/mge/hst`, A100 fp64 only. Wilson-95
+   lower bound on run success at 5/5 is 0.57 — **this does not re-establish
+   the ≥99 % reliability Gate B pt 1 demonstrated at n=256 positions-off**.
+3. **1e5 is shown safe, not calibrated.** Nothing was run between 1e5 and
+   1e8, and SLaM's own `factor=3` convention is untested here. The call
+   licenses "≤ 1e5", it does not locate the boundary.
+4. **Nautilus is unaffected either way** — see the W2 entry above: logZ and
+   mode unchanged to 0.02 nats, a small but systematic maxL penalty, no
+   reliability consequence. The call is about gradient search only.
+5. **No `penalty_at_best` field.** Schema v2 records no penalty readout at
+   the recovered model, so "the penalty is ≈0 at the winner" is inferred
+   from parameter/likelihood parity, not measured. Adding the field is
+   owed.
+6. **Provenance defect, fixed in this PR.** All three positions-on arms
+   hashed to the same `target_id` (`sha256:bf3d096fda76`) and every JSON
+   recorded threshold 0.3 / factor 1e8 regardless of what ran —
+   `_targets.py`'s positions block was built from module defaults. A
+   target_class-3 change was invisible to the target hash, which is exactly
+   the §3 comparability guarantee Phase 4 rests on. Fixed here, and affected
+   rows re-derived with `restamp_target_block.py` — the three arms now hash
+   distinctly (`bf3d096fda76` / `cd522872a7ed` / `6b93f0e52ecd`). Rows whose
+   recorded `positions` block was itself defaulted cannot be re-derived and
+   must be read against the `config_name` suffix.
+
+**Records:** `phase_04_positions/RESULTS.md` "Stage 3 — threshold vs
+stiffness diagnostic (job 341892)"; PROGRAMME.md phase/gate table + §9b;
+`results/searches/multi_start_prodigy_autoconv/imaging/mge/hst/hpc_hpc_a100_fp64_n256_seed{0-4}_pos_{t0.3_f1e5,tauto0.2_f1e8}.json`.

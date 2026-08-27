@@ -104,16 +104,46 @@ rescoping to logit)
   ``knn``; historical framing: 2,200 -> <= 1,100).
 - **F3** — ``log_reg`` lanes spend >= the same fraction of steps at
   lambda > 1e4 as ``none`` (on either wall cell).
-- **F4** — the MGE control differs by ANY bit between ``none`` and
-  ``log_reg`` (per-lane final/best params, byte-for-byte), OR the ``knn``
-  ``logit`` arm reproduces the pinned-lane-to-infinity pathology (a lane
-  parked on the logit box boundary at completion).
+- **F4** — the MGE control's **winning lane** disagrees between ``none`` and
+  ``log_reg`` on ``best_fom`` OR ``max_log_likelihood`` by more than fp64
+  relative 1e-9 at a matched seed, OR the ``knn`` ``logit`` arm reproduces the
+  pinned-lane-to-infinity pathology (a lane parked on the logit box boundary
+  at completion). *(Amended 2026-08-27 — was byte-identity of every per-lane
+  final/best parameter vector; see "Scorer amendments 2026-08-27" below.)*
+  Every criterion also has a third state, **UNSCORABLE**: the inputs it needs
+  are absent, so it neither fired nor did not fire. The verdict stage refuses
+  to conclude while any criterion is unscorable and fewer than two have fired.
+
 - **F5** — figure of merit at matched physical points (the shared initial
   broad-start draw, i.e. the step-0 global-best fom) differs by more than
   1e-9 relative between arms at a matched seed -> this is a BUG (the
   bijector must not change the physical objective — see
   ``autofit.non_linear.bijector``'s equivalence argument), not a science
   finding, and HALTS the verdict rather than counting toward the other four.
+
+Scorer amendments 2026-08-27 (issue #182)
+------------------------------------------------------------------------------
+Two repairs, both to the scorer only — the arm table, the readouts and the
+"any two -> falsified" threshold are untouched:
+
+1. **UNSCORABLE is a first-class state.** ``score_f1`` collapsed missing
+   inputs to ``False`` (silent PASS) and ``score_f2`` collapsed them to
+   ``True`` (silent FAIL): the same absence produced opposite confident
+   answers. Every criterion now returns ``{"scorable": False, "falsified":
+   None, "reason": ...}`` when it cannot be asked, and ``score_rows`` returns
+   ``INCONCLUSIVE`` (``falsified: None``) rather than a verdict while any
+   criterion is unscorable and fewer than two have fired. A criterion whose
+   disjunction has already fired stays conclusive — one fired limb settles it
+   regardless of the others.
+2. **F4 no longer demands byte-identity.** The MGE control's ``log_reg`` map
+   is empty, so both arms compute the same objective — but they are two
+   separate GPU runs, and byte-identity across all 16 lanes' parameter
+   vectors is a claim about float reduction order, resurrection draws and
+   lane batching, not about the bijector. F5 already proves the objective is
+   inert at matched physical points. F4 now asks whether the **winning
+   lane's** ``best_fom`` and ``max_log_likelihood`` agree within fp64
+   relative 1e-9; the old byte-identity result is kept as an informational
+   field (``mge_per_seed_byte_identical``), reported and never scored.
 
 Usage (from the ``autolens_profiling/`` root)::
 
@@ -433,6 +463,11 @@ def row_from_payload(payload: dict, *, source: Path | None = None) -> dict:
     lane_bests = [lane.get("lane_best_log_posterior") for lane in per_lane]
     lane_bests_finite = [v for v in lane_bests if v is not None]
     best_log_posterior = max(lane_bests_finite) if lane_bests_finite else None
+    winning_lane = (
+        int(np.argmax([-np.inf if v is None else v for v in lane_bests]))
+        if lane_bests_finite
+        else None
+    )
 
     pinned_final_counts = [
         lane.get("n_pinned_final") for lane in per_lane if lane.get("n_pinned_final")
@@ -459,6 +494,12 @@ def row_from_payload(payload: dict, *, source: Path | None = None) -> dict:
         "coefficient_at_first_nan": coeff_at_first_nan,
         "frac_steps_high_lambda": frac_high_lambda,
         "best_log_posterior": best_log_posterior,
+        "winning_lane_index": winning_lane,
+        # The two winning-lane scalars F4 compares between bijector arms:
+        # the global best figure of merit the search reached, and the best
+        # point's log-likelihood as PyAutoFit recorded it.
+        "best_fom": counters.get("best_fom"),
+        "max_log_likelihood": (payload.get("results") or {}).get("max_log_likelihood"),
         "fom_history_global_best": None if fom_hist is None else fom_hist.tolist(),
         "step0_fom": (
             float(fom_hist[0])
@@ -567,6 +608,32 @@ def _steps_to_reference(row: dict, reference: float | None, tolerance: float) ->
     return int(hits[0]) if hits.size else None
 
 
+# -----------------------------------------------------------------------------
+# UNSCORABLE — the third state (2026-08-27, issue #182)
+# -----------------------------------------------------------------------------
+#
+# Every criterion below returns THREE states, never two:
+#
+#   {"scorable": True,  "falsified": True}   the criterion fired
+#   {"scorable": True,  "falsified": False}  the criterion did not fire
+#   {"scorable": False, "falsified": None, "reason": ...}   it could not be asked
+#
+# The scorer used to collapse the third into one of the first two, and in
+# OPPOSITE directions: ``score_f1`` computed ``bool(None) or bool(None)`` ->
+# ``False`` (missing data read as "criterion did not fire" = a silent PASS),
+# while ``score_f2`` computed ``median_ratio is None or ...`` -> ``True``
+# (missing data read as "criterion fired" = a silent FAIL). A campaign with
+# arms still running, or with the diagnostics it needs switched off, therefore
+# produced a confident verdict about data that did not exist. A criterion that
+# cannot be asked must say so, and ``score_rows`` must refuse to conclude
+# while any criterion is in that state.
+
+
+def _unscorable(reason: str, **extra) -> dict:
+    """The third state: this criterion could not be evaluated at all."""
+    return {"falsified": None, "scorable": False, "reason": reason, **extra}
+
+
 def score_f1(delaunay_rows: list[dict]) -> dict:
     """F1 — median first-NaN step / value-NaN lane-steps, none vs log_reg, on
     delaunay_adapt_split (the actual wall cell)."""
@@ -592,16 +659,31 @@ def score_f1(delaunay_rows: list[dict]) -> dict:
         None if none_median is None or log_reg_median is None else log_reg_median >= none_median
     )
     not_reduced_50 = None if not none_total else (log_reg_total or 0) >= 0.5 * none_total
-    falsified = bool(not_earlier) or bool(not_reduced_50)
-    return {
+
+    measured = {
         "none_median_first_nan_step": none_median,
         "log_reg_median_first_nan_step": log_reg_median,
         "none_total_value_nan_lane_steps": none_total,
         "log_reg_total_value_nan_lane_steps": log_reg_total,
         "not_earlier": not_earlier,
         "not_reduced_50pct": not_reduced_50,
-        "falsified": falsified,
+        "n_none_rows": len(none_rows),
+        "n_log_reg_rows": len(log_reg_rows),
     }
+    # F1 is a disjunction: either limb firing falsifies it, so a True limb is
+    # conclusive even when the other limb is missing. Only when NO limb fires
+    # and at least one is unmeasurable is the criterion unscorable.
+    if not_earlier is True or not_reduced_50 is True:
+        return {**measured, "falsified": True, "scorable": True}
+    if not_earlier is None or not_reduced_50 is None:
+        return _unscorable(
+            "F1 needs both a first-value-NaN step and a value-NaN lane-step total for the "
+            "none AND log_reg arms on delaunay_adapt_split; at least one is missing "
+            "(no rows for an arm, or SEARCHES_LANE_HISTORY was off so no NaN history was "
+            "recorded).",
+            **measured,
+        )
+    return {**measured, "falsified": False, "scorable": True}
 
 
 def score_f2(knn_rows: list[dict]) -> dict:
@@ -631,8 +713,7 @@ def score_f2(knn_rows: list[dict]) -> dict:
             ratios.append(ratio)
 
     median_ratio = float(np.median(ratios)) if ratios else None
-    falsified = median_ratio is None or median_ratio < STEPS_TO_REFERENCE_FACTOR
-    return {
+    measured = {
         "reference_log_posterior": reference,
         "reference_note": (
             "max best_log_posterior across none-arm seeds for this (cell, "
@@ -642,8 +723,29 @@ def score_f2(knn_rows: list[dict]) -> dict:
         "per_seed": per_seed,
         "median_reduction_ratio": median_ratio,
         "required_ratio": STEPS_TO_REFERENCE_FACTOR,
-        "falsified": falsified,
+        "n_matched_seeds": len(per_seed),
     }
+    if reference is None:
+        return _unscorable(
+            "F2 has no reference log-posterior: no none-arm knn row recorded a "
+            "lane_best_log_posterior to resolve one from.",
+            **measured,
+        )
+    if not per_seed:
+        return _unscorable(
+            "F2 needs matched seeds present in BOTH the none and log_reg knn arms; there are none.",
+            **measured,
+        )
+    if median_ratio is None:
+        return _unscorable(
+            "F2 could not compute a steps-to-reference ratio on any matched seed — no arm "
+            "reached within "
+            f"{REFERENCE_TOLERANCE_NATS} nats of the reference, or fom_history_global_best "
+            "was not recorded. 'never reached the reference' is not the same measurement as "
+            "'reached it too slowly', so this is unscorable rather than falsified.",
+            **measured,
+        )
+    return {**measured, "falsified": median_ratio < STEPS_TO_REFERENCE_FACTOR, "scorable": True}
 
 
 def score_f3_group(group_rows: list[dict]) -> dict:
@@ -661,12 +763,18 @@ def score_f3_group(group_rows: list[dict]) -> dict:
     ]
     none_mean = float(np.mean(none_fracs)) if none_fracs else None
     log_reg_mean = float(np.mean(log_reg_fracs)) if log_reg_fracs else None
-    falsified = None if none_mean is None or log_reg_mean is None else log_reg_mean >= none_mean
-    return {
+    measured = {
         "none_mean_frac_high_lambda": none_mean,
         "log_reg_mean_frac_high_lambda": log_reg_mean,
-        "falsified": falsified,
     }
+    if none_mean is None or log_reg_mean is None:
+        return _unscorable(
+            "F3 needs a traced high-lambda fraction for BOTH arms in this group; at least "
+            "one arm has no row with trace_history recorded (SEARCHES_TRACE_PARAMS off, or "
+            "the arm has not run).",
+            **measured,
+        )
+    return {**measured, "falsified": log_reg_mean >= none_mean, "scorable": True}
 
 
 def score_f3(rows: list[dict]) -> dict:
@@ -676,29 +784,73 @@ def score_f3(rows: list[dict]) -> dict:
     -- same "refuse to mix tiers" rule ``_group`` enforces for F1/F2)."""
     per_cell: dict = {}
     falsified = False
+    unscorable_reasons: list[str] = []
 
     delaunay_tiers = _tiers_for_cell(rows, "delaunay_adapt_split")
     per_tier = {}
     for tier in delaunay_tiers:
         tier_rows = _group(rows, cell="delaunay_adapt_split", log_det_method=tier)
         result = score_f3_group(tier_rows)
-        per_tier[tier if tier is not None else "auto"] = result
+        label = tier if tier is not None else "auto"
+        per_tier[label] = result
         if result["falsified"]:
             falsified = True
+        elif not result.get("scorable"):
+            unscorable_reasons.append(f"delaunay_adapt_split[{label}]: {result['reason']}")
+    if not delaunay_tiers:
+        unscorable_reasons.append("delaunay_adapt_split: no rows")
     per_cell["delaunay_adapt_split"] = {"per_log_det_method": per_tier}
 
     knn_rows = _group(rows, cell="knn")
     knn_result = score_f3_group(knn_rows) if knn_rows else None
     per_cell["knn"] = knn_result
-    if knn_result and knn_result["falsified"]:
+    if knn_result is None:
+        unscorable_reasons.append("knn: no rows")
+    elif knn_result["falsified"]:
         falsified = True
+    elif not knn_result.get("scorable"):
+        unscorable_reasons.append(f"knn: {knn_result['reason']}")
 
-    return {"per_cell": per_cell, "falsified": falsified}
+    # Same disjunction rule as F1: EITHER cell/tier firing falsifies F3, so a
+    # fired limb is conclusive even with the rest unscorable.
+    if falsified:
+        return {"per_cell": per_cell, "falsified": True, "scorable": True}
+    if unscorable_reasons:
+        return _unscorable("; ".join(unscorable_reasons), per_cell=per_cell)
+    return {"per_cell": per_cell, "falsified": False, "scorable": True}
+
+
+FP64_RELATIVE_TOLERANCE = 1e-9
+
+
+def _rel_diff(a: float | None, b: float | None) -> float | None:
+    if a is None or b is None:
+        return None
+    return abs(a - b) / max(abs(a), abs(b), 1e-300)
 
 
 def score_f4(mge_rows: list[dict], knn_rows: list[dict]) -> dict:
-    """F4 — MGE control byte-identity (none vs log_reg) and the knn `logit`
-    pinned-lane pathology."""
+    """F4 — MGE control equivalence (none vs log_reg) and the knn `logit`
+    pinned-lane pathology.
+
+    **Criterion amended 2026-08-27 (issue #182).** It used to be byte-identity
+    of every per-lane final/best parameter vector. That is a stronger claim
+    than the pre-registration's own equivalence argument supports: the MGE
+    control's ``log_reg`` map is EMPTY, so the two arms compute the same
+    objective, but they are still two separate GPU runs, and non-associative
+    float reduction, resurrection draws and lane-batch ordering move
+    trailing bits in lanes that never mattered to the answer. Byte-identity
+    across all 16 lanes therefore fails for reasons that have nothing to do
+    with the bijector, and F5 already proves the objective itself is inert at
+    matched physical points.
+
+    The criterion is now: the **winning lane's** ``best_fom`` and
+    ``max_log_likelihood`` agree between the two arms within fp64 relative
+    tolerance (1e-9) at matched seeds. That is the quantity the campaign's
+    conclusions are actually drawn from. The old byte-identity check is kept
+    as an INFORMATIONAL field (``mge_per_seed_byte_identical``) — reported,
+    never scored.
+    """
     none_rows = {r["seed"]: r for r in _by_bijector(mge_rows, "none")}
     log_reg_rows = {r["seed"]: r for r in _by_bijector(mge_rows, "log_reg")}
 
@@ -709,10 +861,30 @@ def score_f4(mge_rows: list[dict], knn_rows: list[dict]) -> dict:
         return pa == pb and a["lane_best_params_per_lane"] == b["lane_best_params_per_lane"]
 
     per_seed_identity = {}
+    per_seed_equivalence = {}
     for seed in sorted(set(none_rows) & set(log_reg_rows)):
-        per_seed_identity[seed] = _identical(none_rows[seed], log_reg_rows[seed])
-    mge_differs = any(v is False for v in per_seed_identity.values())
-    mge_checked = any(v is not None for v in per_seed_identity.values())
+        a, b = none_rows[seed], log_reg_rows[seed]
+        per_seed_identity[seed] = _identical(a, b)
+        fom_rel = _rel_diff(a["best_fom"], b["best_fom"])
+        ll_rel = _rel_diff(a["max_log_likelihood"], b["max_log_likelihood"])
+        agree = (
+            None
+            if fom_rel is None or ll_rel is None
+            else (fom_rel <= FP64_RELATIVE_TOLERANCE and ll_rel <= FP64_RELATIVE_TOLERANCE)
+        )
+        per_seed_equivalence[seed] = {
+            "none_best_fom": a["best_fom"],
+            "log_reg_best_fom": b["best_fom"],
+            "best_fom_rel_diff": fom_rel,
+            "none_max_log_likelihood": a["max_log_likelihood"],
+            "log_reg_max_log_likelihood": b["max_log_likelihood"],
+            "max_log_likelihood_rel_diff": ll_rel,
+            "none_winning_lane_index": a["winning_lane_index"],
+            "log_reg_winning_lane_index": b["winning_lane_index"],
+            "agree_within_fp64": agree,
+        }
+    mge_differs = any(v["agree_within_fp64"] is False for v in per_seed_equivalence.values())
+    mge_checked = any(v["agree_within_fp64"] is not None for v in per_seed_equivalence.values())
 
     logit_rows = _by_bijector(knn_rows, "logit")
     # A crude, documented threshold for "reproduces the pinned-lane pathology":
@@ -728,15 +900,40 @@ def score_f4(mge_rows: list[dict], knn_rows: list[dict]) -> dict:
         any(r["max_pinned_final_count"] >= 1 for r in logit_rows) if logit_rows else None
     )
 
-    falsified = bool(mge_differs) or bool(logit_pathology)
-    return {
-        "mge_per_seed_identical": per_seed_identity,
+    measured = {
+        "criterion": (
+            "winning-lane best_fom AND max_log_likelihood agree between the none and "
+            f"log_reg MGE control arms within relative {FP64_RELATIVE_TOLERANCE:g} "
+            "(amended 2026-08-27, issue #182), OR the knn logit arm reproduces the "
+            "pinned-lane pathology"
+        ),
+        "fp64_relative_tolerance": FP64_RELATIVE_TOLERANCE,
+        "mge_per_seed_equivalence": per_seed_equivalence,
+        # INFORMATIONAL ONLY — the pre-amendment byte-identity check. Reported
+        # so a reader can see how far the two arms' per-lane vectors drifted,
+        # never scored (see this function's docstring).
+        "mge_per_seed_byte_identical": per_seed_identity,
         "mge_checked": mge_checked,
         "mge_differs": mge_differs,
         "knn_logit_pinned_final_counts": logit_pinned,
         "knn_logit_pathology_suspected": logit_pathology,
-        "falsified": falsified,
     }
+    # Disjunction, same rule as F1/F3: either limb firing is conclusive.
+    if mge_differs or logit_pathology:
+        return {**measured, "falsified": True, "scorable": True}
+    if not mge_checked:
+        return _unscorable(
+            "F4's MGE control could not be compared: no seed is present in BOTH the none "
+            "and log_reg mge arms with a recorded best_fom and max_log_likelihood.",
+            **measured,
+        )
+    if logit_pathology is None:
+        return _unscorable(
+            "F4's MGE control is clean but the knn logit arm has no rows, so the second "
+            "limb of the criterion is unmeasured.",
+            **measured,
+        )
+    return {**measured, "falsified": False, "scorable": True}
 
 
 def score_f5(rows: list[dict]) -> dict:
@@ -800,30 +997,54 @@ def score_rows(rows: list[dict]) -> dict:
     for tier in delaunay_tiers:
         tier_rows = _group(rows, cell="delaunay_adapt_split", log_det_method=tier)
         f1_per_tier[tier if tier is not None else "auto"] = score_f1(tier_rows)
-    f1 = (
-        {
-            "per_log_det_method": f1_per_tier,
-            "falsified": any(bool(v["falsified"]) for v in f1_per_tier.values()),
-        }
-        if f1_per_tier
-        else {"falsified": None, "note": "no delaunay_adapt_split rows"}
-    )
-    f2 = score_f2(knn_rows) if knn_rows else {"falsified": None, "note": "no knn rows"}
+    if not f1_per_tier:
+        f1 = _unscorable("no delaunay_adapt_split rows")
+    elif any(bool(v["falsified"]) for v in f1_per_tier.values()):
+        f1 = {"per_log_det_method": f1_per_tier, "falsified": True, "scorable": True}
+    elif all(v.get("scorable") for v in f1_per_tier.values()):
+        f1 = {"per_log_det_method": f1_per_tier, "falsified": False, "scorable": True}
+    else:
+        f1 = _unscorable(
+            "; ".join(
+                f"delaunay_adapt_split[{tier}]: {v['reason']}"
+                for tier, v in f1_per_tier.items()
+                if not v.get("scorable")
+            ),
+            per_log_det_method=f1_per_tier,
+        )
+    f2 = score_f2(knn_rows) if knn_rows else _unscorable("no knn rows")
     f3 = score_f3(rows)
-    f4 = score_f4(mge_rows, knn_rows) if mge_rows else {"falsified": None, "note": "no mge rows"}
+    f4 = score_f4(mge_rows, knn_rows) if mge_rows else _unscorable("no mge rows")
 
-    falsified_count = sum(bool(c.get("falsified")) for c in (f1, f2, f3, f4))
-    falsified = falsified_count >= 2
-    return {
+    criteria = {
         "f1_nan_wall_position": f1,
         "f2_steps_to_reference": f2,
         "f3_time_at_high_lambda": f3,
         "f4_mge_control_and_logit_pathology": f4,
+    }
+    falsified_count = sum(bool(c.get("falsified")) for c in criteria.values())
+    unscorable = {k: v.get("reason") for k, v in criteria.items() if not v.get("scorable")}
+
+    # The pre-registration says "any TWO criteria falsified -> 8B falsified".
+    # That threshold cannot be evaluated while a criterion is unscorable: two
+    # already-fired criteria settle it either way, but anything less is a
+    # verdict about data that does not exist. INCONCLUSIVE is a real outcome
+    # here, not a failure of the scorer (2026-08-27, issue #182).
+    if unscorable and falsified_count < 2:
+        verdict = "INCONCLUSIVE"
+        falsified = None
+    else:
+        falsified = falsified_count >= 2
+        verdict = "FALSIFIED" if falsified else "NOT FALSIFIED"
+
+    return {
+        **criteria,
         "f5_physical_point_equality": f5,
         "falsified_criteria_count": falsified_count,
+        "unscorable_criteria": unscorable,
         "halted": False,
         "falsified": falsified,
-        "verdict": "FALSIFIED" if falsified else "NOT FALSIFIED",
+        "verdict": verdict,
     }
 
 
@@ -875,10 +1096,22 @@ def main(argv=None) -> None:
             "OR value-NaN lane-steps fall < 50%",
             "F2: steps-to-reference not reduced >= 2x at matched seeds",
             "F3: log_reg lanes spend >= same fraction of steps at lambda > 1e4",
-            "F4: MGE control differs by any bit, OR knn logit arm reproduces "
-            "the pinned-lane pathology",
+            "F4 (amended 2026-08-27, issue #182): MGE control winning-lane best_fom "
+            f"or max_log_likelihood differ by > {FP64_RELATIVE_TOLERANCE:g} relative, OR "
+            "knn logit arm reproduces the pinned-lane pathology. Byte-identity of every "
+            "per-lane vector is retained as an informational field, not a criterion.",
             "F5: fom at matched physical points differs > 1e-9 relative -> bug, halts",
+            "Every criterion has a third state, UNSCORABLE: its inputs are absent, so it "
+            "neither fired nor did not fire. The verdict is INCONCLUSIVE while any "
+            "criterion is unscorable and fewer than two have fired.",
         ],
+        "scorer_amendments": {
+            "2026-08-27": (
+                "UNSCORABLE state added to F1-F4 (they previously collapsed missing data "
+                "to a silent PASS in F1 and a silent FAIL in F2); F4 changed from "
+                "per-lane byte-identity to winning-lane fp64 equivalence. Issue #182."
+            )
+        },
     }
 
     dest_dir = results_dir()
@@ -916,8 +1149,13 @@ def _print_verdict(artifact: dict) -> None:
         "f4_mge_control_and_logit_pathology",
     ):
         block = v[key]
-        print(f"  {key}: falsified={block.get('falsified')}")
+        state = "UNSCORABLE" if not block.get("scorable") else f"falsified={block['falsified']}"
+        print(f"  {key}: {state}")
+        if not block.get("scorable"):
+            print(f"      reason: {block.get('reason')}")
     print(f"\nfalsified criteria: {v['falsified_criteria_count']} / 4")
+    if v.get("unscorable_criteria"):
+        print(f"unscorable criteria: {len(v['unscorable_criteria'])} / 4")
     print(f"VERDICT: {v['verdict']}")
 
 

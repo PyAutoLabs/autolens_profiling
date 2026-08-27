@@ -104,10 +104,10 @@
   },
   "schema_version": 2,
   "target": {
-    "target_id": "sha256:bf3d096fda76",
+    "target_id": "sha256:6b93f0e52ecd",
     "cell": "imaging/mge/hst",
     "model_dim": 15,
-    "priors_ref": "_targets.py@bf2c8742c334",
+    "priors_ref": "_targets.py@7f2f14765de7",
     "likelihood": {
       "log_det_method": null,
       "positive_only": true,
@@ -118,10 +118,10 @@
     },
     "positions": {
       "enabled": true,
-      "threshold_mode": "fixed",
-      "threshold_value": 0.3,
-      "auto_factor": null,
-      "auto_minimum_threshold": null,
+      "threshold_mode": "auto",
+      "threshold_value": 0.2,
+      "auto_factor": 3.0,
+      "auto_minimum_threshold": 0.2,
       "factor": 100000000.0,
       "source": "simulator_truth_positions",
       "target_class": 3

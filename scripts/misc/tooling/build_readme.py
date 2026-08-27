@@ -572,6 +572,7 @@ def _render_searches_table(search_artifacts: list[SearchArtifact]) -> str:
             "run `searches/sweep.py` (see section README) to populate `results/searches/`."
         )
     latest = _latest_per_group(search_artifacts, key=lambda a: (a.sampler, a.cell, a.config))
+    any_invalid = False
     rows = [
         "| Sampler | Cell | Config | max logL | logZ | Wall | Evals | Time / eval | "
         "Basis | Target | ESS | Version |",
@@ -584,6 +585,18 @@ def _render_searches_table(search_artifacts: list[SearchArtifact]) -> str:
 
     for (sampler, cell, config), art in sorted(latest.items()):
         data = art.data
+        # A row the harvest marked INVALID (top-level `invalid: true`, e.g. a
+        # silent MultiStart resume that recorded a wall clock but zero steps)
+        # keeps its place in the table — dropping it would make the dashboard
+        # quietly disagree with `results/searches/` — but every measured cell
+        # is withheld rather than rendered as if it meant something.
+        if data.get("invalid"):
+            rows.append(
+                f"| `{sampler}` | `{cell}` | `{config}` | — | — | — | — | — | "
+                f"**INVALID** | — | — | v{art.raw_version} |"
+            )
+            any_invalid = True
+            continue
         results = data.get("results") or {}
         perf = data.get("performance") or {}
         basis = eval_counter_basis(data)
@@ -615,6 +628,15 @@ def _render_searches_table(search_artifacts: list[SearchArtifact]) -> str:
         "`Time / eval` are withheld rather than guessed. Never compare a "
         "per-eval figure against a `stored` row (issue #177)._\n"
     )
+    if any_invalid:
+        footnote += (
+            "\n_`Basis: INVALID` — the artifact carries a top-level `invalid: true` "
+            "with an `invalid_reason`: the run completed and wrote a file, but what it "
+            "recorded cannot be interpreted (e.g. a silent resume that re-read an "
+            "earlier fit's results and took zero steps). Its measured columns are "
+            "withheld; read `invalid_reason` in the JSON before using the row for "
+            "anything._\n"
+        )
     return "\n" + "\n".join(rows) + "\n" + footnote
 
 

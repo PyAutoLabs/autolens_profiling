@@ -5,8 +5,12 @@ submitted 2026-08-24, harvested 2026-08-26. Nautilus, fp64, `n_live=300`
 (2x the 150 fiducial), A100.
 
 **7 of 11 rows landed.** Four tasks died, for two distinct reasons — both
-recorded below because both cost reference rows, and one of them is a library
-defect that is still open.
+recorded below because both cost reference rows.
+
+**Update 2026-08-27 (RAL 341879, tasks 7/8):** the two rows lost to cause 1
+have landed, taking InferenceRefs_v1 to **9 certified rows of 13 targets**.
+The `slam_source_pix_nn` pilot (341908) came back with an answer of its own:
+it thrashes. Both are recorded below.
 
 ## Rows certified
 
@@ -19,10 +23,34 @@ defect that is still open.
 | imaging/pixelization/hst | ref | 6,535 s | 29590.70 | 29670.33 | `sha256:801ba27b970d` |
 | imaging/slam_source_pix/hst | ref | 5,663 s | 30718.02 | 30809.46 | `sha256:37150b628da1` |
 | imaging/slam_source_pix/hst | ref_pos_tauto0.2_f1e8 | 5,387 s | 31305.06 | 31411.38 | `sha256:b29616db92cf` |
+| imaging/knn/hst (341879_7) | ref | 3,343.6 s | 30010.170 | 30077.028 | `sha256:84c0d88d3032` |
+| imaging/delaunay_matern/hst (341879_8) | ref | 3,351.7 s | 30614.972 | 30676.594 | `sha256:3f17a37225f9` |
 
-All seven carry version stamp 2026.8.17.1, walls consistent with their cell's
-recorded cost, and no "Fit Already Completed" line — the three checks
-`../PROGRAMME.md` requires before an artifact is trusted.
+All nine carry version stamp 2026.8.17.1, walls consistent with their cell's
+recorded cost, and no resume marker — the three provenance checks
+`../PROGRAMME.md` §3 requires before an artifact is trusted. Both marker
+forms are checked: `Fit Already Completed` (nested searches) and
+`Resuming .* previous samples found` (MultiStartGradient); the second was
+added to the rule on 2026-08-27 after a 68 s silent Prodigy resume passed
+the single-string check (RAL 341892 task 0).
+
+The two 2026-08-27 rows ran Nautilus `n_live=300`, fp64, A100; the walls
+quoted are `total_wall_s` (sampler walls 3,287.4 s and 3,299.3 s), Kish ESS
+**4,848.8** (knn) and **5,728.2** (delaunay_matern).
+
+**What "certified" does and does not mean.** It is these three human
+provenance checks and nothing more: there is **no certification function and
+no coded tolerance** anywhere in the framework. Two known blemishes ride
+with the table: the **mge row ran `n_live=400`**, not the campaign's 300,
+and sits **+265 nats** from its truth bar against the 2-nat registry
+tolerance; and `results/baselines/InferenceRefs_v1/INDEX.json` **still lists
+only the 2 retro-certified rows**, so the index is not the registry's state.
+
+**FLAG — do not score against the knn reference.** Its maxL (30077.028)
+sits **480 nats below** a same-`target_id` Phase 8B Prodigy `log_reg` arm
+(30557.03 — `../phase_08_regularization/RESULTS.md` "8B — run history and
+harvest"). A reference row that a gradient searcher beats by 480 nats is not
+a bar; the discrepancy must be explained before this row is used as one.
 
 ## Rows lost — cause 1: missing `_N_LIVE` presets (FIXED here)
 
@@ -33,8 +61,9 @@ each. Both cells were reachable from the submit list but had never been given
 a row.
 
 Fixed in this change: both added at the 150 fiducial every other imaging mesh
-cell uses. **These two rows need a resubmit** — they are not in the table
-above.
+cell uses. ~~These two rows need a resubmit~~ — **resubmitted as RAL 341879
+tasks 7/8 and certified 2026-08-27**; both are in the table above (they ran
+at `n_live=300`, the campaign preset, in ~56 min each).
 
 ## Rows lost — cause 2: `reg.Adapt` on a Delaunay-family mesh (OPEN)
 
@@ -96,8 +125,23 @@ Phase-1 finding to record — DECISIONS.md 2026-08-24 is explicit that
 DelaunayNN's resample behaviour is a finding, not something to engineer
 around.
 
+**Pilot answer 2026-08-27: it thrashes.** 341908 compiled in 20 s and then
+made **zero Nautilus likelihood calls in 6 h**, hitting its wall-clock limit
+with nothing to harvest. Free `AdaptSplit` on a Delaunay-family mesh is
+therefore not merely a gradient hazard — it is unaffordable under nested
+sampling too, on this cell at `n_live=300`. Recorded as the Phase-1 finding
+the entry above anticipated; the positions-on row is **not** submitted, and
+`slam_source_pix_nn` stays uncertified pending a decision about the target
+itself (DECISIONS.md 2026-08-27 W4).
+
 ## Status
 
-InferenceRefs_v1 stands at 7 certified rows of the 13 targets in the registry
-(plus the 2 retro-certified mge/delaunay rows recorded at W4 ship time).
-Two more are a resubmit away; two are blocked on the Sibson fix.
+InferenceRefs_v1 stands at **9 certified rows of the 13 targets** in the
+registry as of 2026-08-27 (the 7 from 340210 plus knn and delaunay_matern
+from 341879; the 2 retro-certified mge/delaunay rows recorded at W4 ship
+time are counted separately and are the only rows `INDEX.json` lists).
+
+The remaining gap is the `slam_source_pix_nn` pair. It was never a library
+(Sibson) defect — it is the target-configuration error fixed above (commit
+512b805) — and the fixed target's pilot thrashed, so the two rows are
+blocked on a science decision about the target, not on a resubmit.

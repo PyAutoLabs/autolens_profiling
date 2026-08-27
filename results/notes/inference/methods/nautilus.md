@@ -75,9 +75,13 @@ current truth-bar source.
 
 ## PERFORMANCE (never cross-tier)
 
-- hpc_a100_fp64 (CPU-hosted sampler, GPU likelihood): mge/hst 831 s /
-  63,800 evals / 12.1 ms per eval; delaunay/hst 2,723 s / 31,536 evals /
-  84.8 ms; pixelization/hst 2,768 s / 58,464 evals / 46.5 ms
+- hpc_a100_fp64 (CPU-hosted sampler, GPU likelihood): mge/hst **707 s
+  sampler / 775 s total, 10.56 ms per eval at `n_batch=64`** (63,424 evals)
+  — the 2026-08-24 re-baseline on the current stack (RAL 339070) plus the
+  W6 scan's baseline arm; the historical 831 s / 63,800 evals / 12.1 ms row
+  pre-dates that re-baseline and is retired as a reference.
+  delaunay/hst 2,723 s / 31,536 evals / 84.8 ms; pixelization/hst 2,768 s /
+  58,464 evals / 46.5 ms
   (`results/searches/nautilus/imaging/*/hst/hpc_a100_fp64.json`).
 - Full matrix: the searches dashboard
   (`scripts/misc/searches/README.md`, auto-table `searches`).
@@ -98,12 +102,22 @@ MGE/hst, `n_live=200`, fp64, one seed per arm
 | 512     |  8.37   | 565 s        | 67,584 | 4,575   | 31690.47 |
 | 1000    |  **5.95** | **458 s**  | 77,000 | 4,694   | 31690.36 |
 
-1.78x of the per-eval cost is recovered for free: logZ spans 0.12 nats across
-the whole scan, max logL 31786.73-31787.04, best-fit r_E 1.5996-1.5998, and
-Kish ESS is flat. The scan has **not** plateaued at n_batch=1000, but the
-trade is visible — evals rise 21% (63,424 -> 77,000) as larger batches
-overshoot the shrinking live set, while wall still falls. There is an optimum
-past 1000 that this scan does not bracket.
+**State the basis (corrected 2026-08-27 — `../DECISIONS.md` 2026-08-27 W6).**
+64 -> 1000 recovers **1.775x per likelihood eval** (10.56 -> 5.95 ms) but only
+**1.463x on sampler wall** (670 -> 458 s) and **1.594x on ESS/min**: evals rise
+21% (63,424 -> 77,000) as larger batches overshoot the shrinking live set, and
+Kish ESS per eval falls ~10%. The earlier "1.78x free" sentence carried the
+per-eval figure into a wall-shaped claim.
+
+**The evidence is not flat at the recommended arm.** logZ spans 0.12 nats over
+the whole scan, but the n_batch=1000 arm sits **-0.10 nat** from the n_batch=64
+arm — about **9 sigma** of the 0.011-nat five-seed logZ standard deviation
+measured on this cell in Phase 4 Stage 2. max logL 31786.73-31787.04 and
+best-fit r_E 1.5996-1.5998 across the scan. **One seed per arm**: the scan
+cannot separate an n_batch bias from a seed draw, so no n_batch above the
+baseline is adopted as a default on this evidence. The scan has **not**
+plateaued at n_batch=1000 and there is an optimum past it that this scan does
+not bracket.
 
 Delaunay/hst, `n_live=150`
 (`.../imaging/delaunay/hst/hpc_hpc_a100_fp64_nbatch*.json`):

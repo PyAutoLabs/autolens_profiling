@@ -18,8 +18,11 @@ A lane HIT = `lane_best_log_posterior ≥ 31786.782 − 2` (the Nautilus truth
 bar minus the Phase-1 tolerance; prior contribution measured at −0.092 in
 every successful run, so the effective logL threshold is 31784.87). The
 lane-level margin is NOT large: hit lanes span 31785.01–31787.83 and the
-nearest non-hit lane sits 0.251 nats below the cut, so the lane-level p̂
-swings 0.0406→0.0588 across thresholds bar→26100. The threshold-stable
+nearest non-hit lane sits **0.028 nats** below the cut, so the lane-level p̂
+swings **0.0406→0.0609 (50 %)** across thresholds bar→26100. (Both figures
+corrected 2026-08-27 from the raw per-lane arrays: the previously recorded
+"0.251" is the hit-to-non-hit *gap*, not the distance to the cut, and the
+upper swing was transcribed as 0.0588.) The threshold-stable
 quantity is **run-level success — 11/15 campaign runs at every threshold
 in that range**. Run SUCCESS = ≥1 hit lane.
 
@@ -100,6 +103,47 @@ artifact for the Phase-4 positions-on re-measurement (measured, not
 closed, per the 2026-08-20 absorption directive). Trap for aggregators:
 the diagnostic arm's prior override *reorders* `parameter_names` (θ_E at
 index 14 vs 8) — never assume a shared parameter order across arms.
+
+## Non-physical ellipticity lanes (added 2026-08-27)
+
+A scan of all 40 MultiStart artifacts carrying per-lane blocks (6,240 lanes)
+finds that **1,252 lane best points (20.1 %)** and **1,964 final points
+(31.5 %)** sit **outside the ellipticity unit disk** (|`ell_comps`| ≥ 1),
+max |e| = 1.41421 — the (±1, ±1) corner of the per-component box prior. Only
+lens-mass and source/lens-light Gaussian `ell_comps` are involved. The
+mechanism is the box itself: the prior is an independent
+`TruncatedGaussian(−1, 1)` per component, so **21.5 % of its volume is
+non-physical**; `validate_ell_comps` returns silently on JAX tracers, so the
+jitted likelihood is finite and differentiable there; and `prior_box`
+clipping is faithful to that (wrong) box, so a lane that walks into the
+corner is held in it.
+
+- **The p̂ numerator and the 15/15 record are clean**: **0 of 246 hit lanes**
+  are out of the disk. Nothing above is contaminated.
+- **But 216/1,280 wave-1 n256 lanes** spent their budget in a non-physical
+  corner. Re-based on physical lanes only, **p̂ = 61/1064 = 0.057** — a
+  second, independent reason the published 0.048 is a **lower bound**
+  (the first being budget censoring by the stop rule).
+- **Disjoint from the other two failure populations.** These are not the
+  θ_E→0 lanes (median θ_E 4.5 at their best points) and not the CP-4 λ⁴
+  NaN population (0 of the out-of-disk replay draws are cholesky-NaN).
+- **Cumulative lane-level p̂ across all 15 positions-off n256 runs** (wave-1
+  seeds 0–4 + fresh seeds 105–114, 3,840 lanes): **193/3840 = 0.0503** under
+  the coded rule — consistent with wave 1's 0.048 and subject to the same
+  two lower-bound reasons.
+- Nested samplers propose in the same 21.5 % of prior volume and simply
+  down-weight it; there is no evidence they converge there, and none that
+  anything rejects it.
+
+Positions-on doubles the population (17 % → 29 % of best points, 26 % → 53 %
+of final points — `../phase_04_positions/RESULTS.md` "Stage 3"), and the same
+corner is where six Phase 8B arms crashed at results-write
+(`../phase_08_regularization/RESULTS.md` "8B — run history and harvest").
+The library follow-up — a joint disk constraint or reparameterisation the
+clipper and model can honour, *not* making `validate_ell_comps` fire on
+tracers — is filed as PyAutoMind draft
+`feature/autogalaxy/ell_comps_joint_disk_constraint.md` (PROGRAMME §9b W10)
+and is not implemented here.
 
 ## Diagnostic arm — θ_E ~ U(0.2, 8) (target_class 3): NO SUPPORT for H3.1
 

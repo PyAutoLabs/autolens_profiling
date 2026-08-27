@@ -4,6 +4,14 @@ Living method card (template: `../PROGRAMME.md` §6). Seeded 2026-08-18.
 Phase 3 (per-start hit-probability measurement) and Phase 4 (PositionsLH) are
 the pending experiments that decide this method's classification — Gate B.
 
+> **STALE BANNER (2026-08-27).** The body below pre-dates **Gate B part 1
+> (called 2026-08-23)** and **Gate B part 2 (called 2026-08-27)**, and its
+> "Phase 3 pending / nothing unconditional yet" framing contradicts both.
+> Read `../DECISIONS.md` (2026-08-23, 2026-08-24 and 2026-08-27 entries),
+> `../phase_03_prodigy_reliability/RESULTS.md` and
+> `../phase_04_positions/RESULTS.md` for the current standing of this method.
+> The card is not rewritten here — only dated.
+
 ## IDENTITY
 
 Multi-start gradient MAP optimizer (`af.MultiStartProdigy`; Prodigy = a

@@ -5,6 +5,14 @@ the fork-era benchmark record; **Phase 2 re-tunes this method against
 mainline blackjax ≥1.6 — every number below is fork-era and pre-registered
 for re-measurement.** Gate A pending.
 
+> **STALE BANNER (2026-08-27).** "Gate A pending" and the "mildly faster"
+> reading below pre-date **Gate A (called 2026-08-24)**: Nautilus stays the
+> nested baseline, af.NSS is a correct tuned alternative and not a default,
+> and at the tuned operating point it costs 5.0× the Nautilus sampler wall
+> on MGE and 18.4× on Delaunay (Phase 5's NSS arm is dropped). Read
+> `../DECISIONS.md` 2026-08-24 and `../phase_02_nss_mainline/RESULTS.md` for
+> the current standing. The card is not rewritten here — only dated.
+
 ## IDENTITY
 
 Global nested sampler, slice-sampling inner kernel, GPU-native (vectorized
