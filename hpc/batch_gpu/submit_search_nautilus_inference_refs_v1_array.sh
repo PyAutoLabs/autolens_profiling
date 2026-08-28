@@ -156,6 +156,10 @@ fi
 
 nvidia-smi
 
+# Bounce off the MIG-mode GPU that SLURM still hands out as a plain A100.
+# Requires the submit to be dispatched with --requeue. See the script's header.
+source "$AP_ROOT/hpc/batch_gpu/_gpu_preflight.sh"
+
 echo "=========================================="
 date
 echo "Task:       $SLURM_ARRAY_TASK_ID"
