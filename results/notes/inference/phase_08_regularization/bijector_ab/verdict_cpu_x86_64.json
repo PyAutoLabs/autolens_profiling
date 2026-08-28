@@ -1,0 +1,206 @@
+{
+  "schema_version": 1,
+  "experiment": "phase_8b_bijector_ab",
+  "issue": 162,
+  "hardware": "cpu_x86_64",
+  "hardware_note": "hardware/`<hardware>` in the artifact filename is the scoring host, resolved from the local JAX backend. Each row's own run hardware is in its results JSON under `device` / `hardware`.",
+  "n_rows": 24,
+  "n_rows_expected": 39,
+  "preliminary": true,
+  "historical_reference": {
+    "free_reg_steps": 2200,
+    "fixed_reg_steps": 98,
+    "source": "results/notes/inference/PROGRAMME.md:579"
+  },
+  "verdict": {
+    "f1_nan_wall_position": {
+      "per_log_det_method": {
+        "cholesky": {
+          "none_median_first_nan_step": 0.0,
+          "log_reg_median_first_nan_step": 0.0,
+          "none_total_value_nan_lane_steps": 18143,
+          "log_reg_total_value_nan_lane_steps": 139205,
+          "not_earlier": true,
+          "not_reduced_50pct": true,
+          "n_none_rows": 2,
+          "n_log_reg_rows": 5,
+          "falsified": true,
+          "scorable": true
+        },
+        "slogdet": {
+          "falsified": null,
+          "scorable": false,
+          "reason": "F1 needs both a first-value-NaN step and a value-NaN lane-step total for the none AND log_reg arms on delaunay_adapt_split; at least one is missing (no rows for an arm, or SEARCHES_LANE_HISTORY was off so no NaN history was recorded).",
+          "none_median_first_nan_step": null,
+          "log_reg_median_first_nan_step": 89.0,
+          "none_total_value_nan_lane_steps": 0,
+          "log_reg_total_value_nan_lane_steps": 23241,
+          "not_earlier": null,
+          "not_reduced_50pct": null,
+          "n_none_rows": 4,
+          "n_log_reg_rows": 3
+        }
+      },
+      "falsified": true,
+      "scorable": true
+    },
+    "f2_steps_to_reference": {
+      "reference_log_posterior": 30559.283151302792,
+      "reference_note": "max best_log_posterior over ALL bijector arms in this (cell, log_det_method) group, restricted to physically valid rows (2026-08-28 ruling) \u2014 see module docstring, not the literal historical fixed-reg run cited as 98 steps.",
+      "reference_resolution": {
+        "rule": "max lane_best_log_posterior over ALL bijector arms in this (cell, log_det_method) group, restricted to physically valid rows (2026-08-28 ruling, DECISIONS.md / issue #185)",
+        "reference_row": "knn\u00b7slogdet\u00b7log_reg\u00b7seed3",
+        "n_rows_in_group": 6,
+        "n_rows_considered": 4,
+        "rows_considered": [
+          "knn\u00b7slogdet\u00b7log_reg\u00b7seed3",
+          "knn\u00b7slogdet\u00b7none\u00b7seed0",
+          "knn\u00b7slogdet\u00b7none\u00b7seed2",
+          "knn\u00b7slogdet\u00b7none\u00b7seed3"
+        ],
+        "rows_excluded": [
+          {
+            "row": "knn\u00b7slogdet\u00b7log_reg\u00b7seed4",
+            "best_log_posterior": 28987.684259537615,
+            "reason": "non-physical: best-point ell_comps magnitude 1.27727 >= 1 (outside the unit disk), from recovered_offline_verification.best_point_ell_comps_magnitude"
+          },
+          {
+            "row": "knn\u00b7slogdet\u00b7logit\u00b7seed1",
+            "best_log_posterior": 28672.21109300902,
+            "reason": "non-physical: best-point ell_comps magnitude 1.41407 >= 1 (outside the unit disk), from recovered_offline_verification.best_point_ell_comps_magnitude"
+          }
+        ],
+        "ell_comps_max_magnitude": 1.0,
+        "void_min_wall_s": 120.0
+      },
+      "per_seed": {
+        "3": {
+          "steps_none": null,
+          "steps_log_reg": 2882,
+          "reduction_ratio": "inf",
+          "note": "none never reached the reference while log_reg did \u2014 counts as >= 2x"
+        }
+      },
+      "median_reduction_ratio": "inf",
+      "required_ratio": 2.0,
+      "n_matched_seeds": 1,
+      "n_scorable_seeds": 1,
+      "falsified": false,
+      "scorable": true
+    },
+    "f3_time_at_high_lambda": {
+      "per_cell": {
+        "delaunay_adapt_split": {
+          "per_log_det_method": {
+            "cholesky": {
+              "none_mean_frac_high_lambda": 0.0,
+              "log_reg_mean_frac_high_lambda": 0.0007624999999999999,
+              "falsified": true,
+              "scorable": true
+            },
+            "slogdet": {
+              "none_mean_frac_high_lambda": 0.046875,
+              "log_reg_mean_frac_high_lambda": 0.0368125,
+              "falsified": false,
+              "scorable": true
+            }
+          }
+        },
+        "knn": {
+          "none_mean_frac_high_lambda": 0.0625,
+          "log_reg_mean_frac_high_lambda": 0.051958333333333336,
+          "falsified": false,
+          "scorable": true
+        }
+      },
+      "falsified": true,
+      "scorable": true
+    },
+    "f4_mge_control_and_logit_pathology": {
+      "criterion": "the knn logit arm reproduces the pinned-lane-to-boundary pathology (amended 2026-08-28, issue #185 \u2014 the MGE winning-lane best_fom / max_log_likelihood fp-equivalence limb is INFORMATIONAL only: it is the same cross-run fp-reproducibility quantity F5 measures, not an objective difference the bijector could cause)",
+      "fp64_relative_tolerance": 1e-09,
+      "mge_per_seed_equivalence": {
+        "0": {
+          "none_best_fom": -63575.67359062914,
+          "log_reg_best_fom": -63575.67359062914,
+          "best_fom_rel_diff": 0.0,
+          "none_max_log_likelihood": 31787.928856965882,
+          "log_reg_max_log_likelihood": 31787.928856966195,
+          "max_log_likelihood_rel_diff": 9.842295130886578e-15,
+          "none_winning_lane_index": 3,
+          "log_reg_winning_lane_index": 3,
+          "agree_within_fp64": true
+        },
+        "1": {
+          "none_best_fom": 182077.94221313758,
+          "log_reg_best_fom": 178936.77331429746,
+          "best_fom_rel_diff": 0.01725178163076509,
+          "none_max_log_likelihood": -91031.24307909903,
+          "log_reg_max_log_likelihood": -89460.34924915335,
+          "max_log_likelihood_rel_diff": 0.017256644826663465,
+          "none_winning_lane_index": 5,
+          "log_reg_winning_lane_index": 5,
+          "agree_within_fp64": false
+        }
+      },
+      "mge_per_seed_byte_identical": {
+        "0": false,
+        "1": false
+      },
+      "mge_checked": true,
+      "mge_differs": true,
+      "knn_logit_pinned_final_counts": [
+        {
+          "seed": 1,
+          "max_pinned_final_count": 7
+        }
+      ],
+      "knn_logit_pathology_suspected": true,
+      "falsified": true,
+      "scorable": true
+    },
+    "diagnostics": {
+      "f5": {
+        "role": "fp-reproducibility diagnostic (DEMOTED from HALT, 2026-08-28, issue #185)",
+        "note": "compares the step-0 global-best fom between two separate GPU runs at a matched seed. A difference is cross-run floating-point non-reproducibility, not evidence the bijector moved the objective \u2014 the MGE control's map is EMPTY and still diverges. Reported, never scored, never halts.",
+        "problems": [
+          {
+            "cell": "delaunay_adapt_split",
+            "log_det_method": "slogdet",
+            "seed": 0,
+            "bijector_a": "log_reg",
+            "bijector_b": "none",
+            "fom_a": 357347.01986475434,
+            "fom_b": 357343.24159050506,
+            "rel_diff": 1.0573123712394267e-05
+          }
+        ],
+        "n_problems": 1,
+        "max_rel_diff": 1.0573123712394267e-05,
+        "reproducible_within_1e-9": false,
+        "halts": false
+      }
+    },
+    "falsified_criteria_count": 3,
+    "unscorable_criteria": {},
+    "halted": false,
+    "falsified": true,
+    "verdict": "FALSIFIED"
+  },
+  "pass_criteria_preregistered": [
+    "F1: median first-NaN step under log_reg not later than none, OR value-NaN lane-steps fall < 50%",
+    "F2 (reference amended 2026-08-28, issue #185): steps-to-reference not reduced >= 2x at matched seeds, where the reference is the group-wide max lane_best_log_posterior over ALL bijector arms restricted to physically valid rows, and 'never reached' scores as +inf / 0 / seed-unscorable",
+    "F3: log_reg lanes spend >= same fraction of steps at lambda > 1e4",
+    "F4 (amended 2026-08-27 #182, again 2026-08-28 #185): the knn logit arm reproduces the pinned-lane pathology. The MGE control's winning-lane best_fom / max_log_likelihood fp64 agreement (1e-09 relative) and the older per-lane byte-identity check are both retained as informational fields, not criteria.",
+    "F5 (demoted 2026-08-28, issue #185): fom at matched physical points differs > 1e-9 relative. Reported as an fp-reproducibility diagnostic under verdict.diagnostics.f5; it does not halt and is not a criterion.",
+    "Every criterion has a third state, UNSCORABLE: its inputs are absent, so it neither fired nor did not fire. The verdict is INCONCLUSIVE while any criterion is unscorable and fewer than two have fired."
+  ],
+  "scorer_amendments": {
+    "2026-08-27": "UNSCORABLE state added to F1-F4 (they previously collapsed missing data to a silent PASS in F1 and a silent FAIL in F2); F4 changed from per-lane byte-identity to winning-lane fp64 equivalence. Issue #182.",
+    "2026-08-28": "F2's reference became the group-wide max over ALL bijector arms restricted to physically valid rows (not void, best-point ell_comps magnitude < 1) instead of the max over the none arm alone; F2 'never reached' given explicit +inf / 0 / seed-unscorable semantics; F5 demoted from HALT to a reported fp-reproducibility diagnostic; F4's fp-equivalence limb made informational so F4 trips only on the knn logit pinned-lane pathology. Issue #185; the authoritative record is the dated results/notes/inference/DECISIONS.md entry."
+  },
+  "campaign_notes": {
+    "stack_version_split": "The arms scored here ran on 2026.8.17.1 with pre-#1536 PyAutoFit; the 15 resubmitted arms (RAL job 341978, array indices 0,2,3,14,17,19,21,24,25,26,27,30,32,33,34) run on PyAutoFit f466dce1a / PyAutoGalaxy 0fbe863d / PyAutoLens b23ee53e9. The likelihood code is unchanged between them (#1536/#713/#1538/#589 touch results-writing and an OPT-IN clipper only, and no 8B arm opts in), so the two halves are pooled \u2014 but this rests on a reading of four diffs, not a measurement, and is flagged.",
+    "clipper": "No 8B arm used ClipperPriorBoxJoint: with a bijector set, the joint disk clipper is refused at construction (PyAutoFit multi_start_gradient/search.py:368-383). Every arm ran the per-component prior_box clipper, which is the mechanism that lets best points settle outside the unit disk. Filed as a PyAutoFit follow-up."
+  }
+}

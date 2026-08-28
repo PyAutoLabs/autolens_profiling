@@ -75,10 +75,12 @@ repo's ``_per_lane.per_lane_block`` write into every MultiStart* results JSON)
   historical 98-step figure is from a different, undocumented run cited only
   as a step count in ``PROGRAMME.md``, not as a log-posterior value this
   script can replay against) — so the reference used here is the maximum
-  ``lane_best_log_posterior`` observed across every ``none``-bijector seed
-  for that (cell, log_det_method) group. This is a DOCUMENTED DEVIATION from
-  a literal "vs the historical fixed-reg run" reading; the resolved
-  reference value is recorded in the verdict artifact so it can be checked,
+  ``lane_best_log_posterior`` observed across every PHYSICALLY VALID arm in
+  that (cell, log_det_method) group, every bijector included (ruled
+  2026-08-28, see "Scorer amendments 2026-08-28" below). This is a
+  DOCUMENTED DEVIATION from a literal "vs the historical fixed-reg run"
+  reading; the resolved reference value, the row it came from and every
+  excluded row are recorded in the verdict artifact so it can be checked,
   and F2 is scored as "log_reg reduces steps-to-THIS-reference by >= 2x
   relative to none, at matched seeds" rather than against the bare "2,200 /
   98" figures (which the artifact still cites for context).
@@ -116,10 +118,9 @@ rescoping to logit)
 
 - **F5** — figure of merit at matched physical points (the shared initial
   broad-start draw, i.e. the step-0 global-best fom) differs by more than
-  1e-9 relative between arms at a matched seed -> this is a BUG (the
-  bijector must not change the physical objective — see
-  ``autofit.non_linear.bijector``'s equivalence argument), not a science
-  finding, and HALTS the verdict rather than counting toward the other four.
+  1e-9 relative between arms at a matched seed. *(DEMOTED 2026-08-28 from a
+  HALT to a reported fp-reproducibility diagnostic — see "Scorer amendments
+  2026-08-28" below.)*
 
 Scorer amendments 2026-08-27 (issue #182)
 ------------------------------------------------------------------------------
@@ -145,6 +146,54 @@ Two repairs, both to the scorer only — the arm table, the readouts and the
    relative 1e-9; the old byte-identity result is kept as an informational
    field (``mge_per_seed_byte_identical``), reported and never scored.
 
+Scorer amendments 2026-08-28 (issue #185; mirrors the dated
+``results/notes/inference/DECISIONS.md`` entry of the same day, which is the
+authoritative record — this section is its scorer-side restatement)
+------------------------------------------------------------------------------
+Four repairs, all to the scorer. The arm table, the readouts and the "any two
+-> falsified" threshold are again untouched:
+
+1. **The F2 reference is the group-wide PHYSICALLY VALID maximum.** It was the
+   max ``lane_best_log_posterior`` over the ``none`` arm only — a target
+   defined by the control arm's own stalling, which is circular when the
+   question is whether ``none`` stalls. It is now the max over ALL arms in the
+   (cell, log_det_method) group (``none``/``log_reg``/``logit`` alike),
+   restricted to rows that are neither VOID (``diagnostics.valid`` false,
+   total wall < ``VOID_MIN_WALL_S``, or no ``schema_version``) nor
+   NON-PHYSICAL (best-point ``ell_comps`` magnitude >=
+   ``ELL_COMPS_MAX_MAGNITUDE``, i.e. outside the unit disk). Without the
+   physicality filter the max-over-arms rule would be set by a box corner:
+   ``delaunay_adapt_split·slogdet·log_reg·seed1`` reports 2.1e53 at a point
+   pinned to (±1, ±1). The magnitude comes from
+   ``recovered_offline_verification.best_point_ell_comps_magnitude`` where the
+   row carries it, else is computed from the winning lane's
+   ``lane_best_params`` via ``diagnostics.ell_comps_pairs``; each row records
+   which in ``ell_comps_source``. Tolerance is unchanged at
+   ``REFERENCE_TOLERANCE_NATS``.
+2. **F2 "never reached" has explicit semantics.** At a matched seed, within
+   the step budget: ``none`` never within tolerance while ``log_reg`` is ->
+   ratio ``+inf`` (counts as >= 2x); ``log_reg`` never while ``none`` is ->
+   ratio ``0`` (counts against); both never -> that seed is unscorable and
+   drops out. Median over the scorable seeds, as before. Previously "never
+   reached" produced no ratio at all, so the strongest possible pass —
+   ``none`` never converges, ``log_reg`` always does — scored as UNSCORABLE.
+3. **F5 is DEMOTED from a HALT to a reported diagnostic.** As written it
+   compares the step-0 global-best fom between two SEPARATE GPU runs: that
+   measures floating-point reproducibility across processes, not the
+   objective. The MGE control's ``log_reg`` map is provably EMPTY (an identity
+   reparameterization) and its two arms still diverge 1.7e-2 relative by step
+   3000. F5 is still computed and reported with the same 1e-9 number, now
+   labelled an "fp-reproducibility diagnostic" under the verdict's
+   ``diagnostics.f5`` key with ``halts: false``. The sound F5 — evaluate one
+   physical point under both parameterizations IN ONE PROCESS and assert
+   bit-equality — is a PyAutoFit unit test, filed separately; a two-run A/B
+   cannot measure it.
+4. **F4's fp-equivalence limb is informational only.** The winning-lane
+   ``best_fom`` / ``max_log_likelihood`` comparison is the same cross-run
+   quantity F5 measures and fails for the same reason, so it is reported and
+   never sets ``falsified``. F4 now trips on ONE thing: the ``knn`` ``logit``
+   arm reproducing the pinned-lane-to-boundary pathology.
+
 Usage (from the ``autolens_profiling/`` root)::
 
     python3 scripts/misc/searches/bijector_ab.py --stage run
@@ -157,6 +206,12 @@ Writes:
 
     results/notes/inference/phase_08_regularization/bijector_ab/verdict_<hardware>.json
     results/notes/inference/phase_08_regularization/bijector_ab/rows_<hardware>.npz
+
+``<hardware>`` names the machine that ran the SCORER (``hardware_label()``
+reads the local JAX backend), not the machine that ran the arms — the rows are
+loaded from JSONs that may have been produced anywhere. The ``rows_*.npz`` dump
+is a re-derivable restatement of those JSONs and is gitignored; only the
+verdict JSON is committed.
 """
 
 from __future__ import annotations
@@ -218,6 +273,15 @@ BATCH_SIZE = 4
 HIGH_LAMBDA_THRESHOLD = 1e4
 REFERENCE_TOLERANCE_NATS = 10.0
 STEPS_TO_REFERENCE_FACTOR = 2.0
+# A row is VOID (cannot contribute a reference) if its diagnostics say so, if
+# it never ran long enough to mean anything, or if it carries no schema stamp.
+# 2 minutes: the shortest real arm in this campaign is the ~5 min MGE control,
+# and every pixelized arm is >= 1.7 h -- anything under 2 min never fit.
+VOID_MIN_WALL_S = 120.0
+# ell_comps is an independent per-component box prior, so 21.5% of its volume
+# is outside the unit disk and NON-PHYSICAL. A best point there cannot define
+# a reference log-posterior (2026-08-28 ruling, DECISIONS.md).
+ELL_COMPS_MAX_MAGNITUDE = 1.0
 # Cited from PROGRAMME.md:579 ("historical: 2,200 steps vs 98 fixed") -- kept
 # for the artifact/RESULTS.md framing; NOT used as the numeric reference in
 # `score_rows` (see the module docstring's "READOUTS" section on why).
@@ -422,6 +486,43 @@ def _nan_safe_array(nested) -> np.ndarray | None:
     return np.asarray(convert(nested), dtype=float)
 
 
+def _best_point_ell_comps(
+    payload: dict, per_lane: list[dict], winning_lane: int | None
+) -> tuple[dict | None, str | None]:
+    """``ell_comps`` magnitude at this row's best point, and the field it came
+    from (2026-08-28 ruling — see the module docstring's amendments section).
+
+    Preferred source is the recovery verifier's own recorded value; rows that
+    completed normally do not carry it, so it is recomputed from the winning
+    lane's best parameter vector through ``diagnostics.ell_comps_pairs``. The
+    two agree exactly on every recovered row in this campaign, so the fallback
+    is the same measurement, not a looser one.
+    """
+    recorded = (payload.get("recovered_offline_verification") or {}).get(
+        "best_point_ell_comps_magnitude"
+    )
+    if recorded:
+        return (
+            {k: float(v) for k, v in recorded.items()},
+            "recovered_offline_verification.best_point_ell_comps_magnitude",
+        )
+
+    pairs = (payload.get("diagnostics") or {}).get("ell_comps_pairs") or {}
+    if not pairs or winning_lane is None or winning_lane >= len(per_lane):
+        return None, None
+    params = (per_lane[winning_lane] or {}).get("lane_best_params")
+    if not params:
+        return None, None
+    magnitudes = {}
+    for path, indices in pairs.items():
+        if len(indices) != 2 or max(indices) >= len(params):
+            continue
+        magnitudes[path] = float(np.hypot(params[indices[0]], params[indices[1]]))
+    if not magnitudes:
+        return None, None
+    return magnitudes, "diagnostics.ell_comps_pairs + per_lane[winning].lane_best_params"
+
+
 def row_from_payload(payload: dict, *, source: Path | None = None) -> dict:
     """Extract this experiment's readouts from one MultiStart* results JSON
     (``_runner._build_summary`` / ``_per_lane.per_lane_block`` shape).
@@ -473,6 +574,18 @@ def row_from_payload(payload: dict, *, source: Path | None = None) -> dict:
         lane.get("n_pinned_final") for lane in per_lane if lane.get("n_pinned_final")
     ]
 
+    ell_comps, ell_comps_source = _best_point_ell_comps(payload, per_lane, winning_lane)
+    ell_comps_max = max(ell_comps.values()) if ell_comps else None
+
+    total_wall_s = (payload.get("performance") or {}).get("total_wall_s")
+    void_reasons = []
+    if diag.get("valid") is False:
+        void_reasons.append(f"diagnostics.valid=false {diag.get('invalid_reasons') or []}")
+    if total_wall_s is not None and total_wall_s < VOID_MIN_WALL_S:
+        void_reasons.append(f"total_wall_s={total_wall_s:.1f} < {VOID_MIN_WALL_S:g}")
+    if payload.get("schema_version") is None:
+        void_reasons.append("no schema_version")
+
     return {
         "source": str(source) if source is not None else None,
         "cell": payload.get("model"),
@@ -495,6 +608,13 @@ def row_from_payload(payload: dict, *, source: Path | None = None) -> dict:
         "frac_steps_high_lambda": frac_high_lambda,
         "best_log_posterior": best_log_posterior,
         "winning_lane_index": winning_lane,
+        # Physical-validity inputs to the 2026-08-28 F2 reference rule.
+        "total_wall_s": total_wall_s,
+        "diagnostics_valid": diag.get("valid"),
+        "void_reasons": void_reasons,
+        "best_point_ell_comps_magnitude": ell_comps,
+        "best_point_ell_comps_magnitude_max": ell_comps_max,
+        "ell_comps_source": ell_comps_source,
         # The two winning-lane scalars F4 compares between bijector arms:
         # the global best figure of merit the search reached, and the best
         # point's log-likelihood as PyAutoFit recorded it.
@@ -590,13 +710,69 @@ def _by_bijector(rows: list[dict], label: str) -> list[dict]:
     return sorted((r for r in rows if r["bijector"] == label), key=lambda r: r["seed"])
 
 
-def _resolve_reference(none_rows: list[dict]) -> float | None:
-    """The empirical reference log-posterior for a (cell, log_det_method)
-    group -- see the module docstring's READOUTS section for why this is not
-    the literal historical fixed-reg value.
+def _row_label(row: dict) -> str:
+    return f"{row.get('cell')}·{row.get('log_det_method') or 'auto'}·{row.get('bijector')}·seed{row.get('seed')}"
+
+
+def _reference_exclusion(row: dict) -> str | None:
+    """Why this row may not define a reference log-posterior, or ``None`` if
+    it may (2026-08-28 ruling — module docstring, amendment 1)."""
+    if row.get("best_log_posterior") is None:
+        return "no lane_best_log_posterior recorded"
+    void = row.get("void_reasons") or []
+    if void:
+        return "void: " + "; ".join(void)
+    magnitude = row.get("best_point_ell_comps_magnitude_max")
+    if magnitude is not None and magnitude >= ELL_COMPS_MAX_MAGNITUDE:
+        return (
+            f"non-physical: best-point ell_comps magnitude {magnitude:.6g} >= "
+            f"{ELL_COMPS_MAX_MAGNITUDE:g} (outside the unit disk), from "
+            f"{row.get('ell_comps_source')}"
+        )
+    return None
+
+
+def _resolve_reference(group_rows: list[dict]) -> tuple[float | None, dict]:
+    """The empirical reference log-posterior for one (cell, log_det_method)
+    group, plus the audit trail behind it.
+
+    **Amended 2026-08-28 (issue #185).** The maximum is taken over EVERY arm
+    in the group -- ``none``, ``log_reg`` and ``logit`` alike -- restricted to
+    physically valid rows (see ``_reference_exclusion``). It used to be the
+    max over the ``none`` arm only, which made the control arm's own stalling
+    define the target. See the module docstring's READOUTS section for why
+    this is not the literal historical fixed-reg value either way.
     """
-    values = [r["best_log_posterior"] for r in none_rows if r["best_log_posterior"] is not None]
-    return max(values) if values else None
+    considered, excluded = [], []
+    for row in group_rows:
+        reason = _reference_exclusion(row)
+        if reason is None:
+            considered.append(row)
+        else:
+            excluded.append(
+                {
+                    "row": _row_label(row),
+                    "best_log_posterior": row.get("best_log_posterior"),
+                    "reason": reason,
+                }
+            )
+
+    best = max(considered, key=lambda r: r["best_log_posterior"]) if considered else None
+    detail = {
+        "rule": (
+            "max lane_best_log_posterior over ALL bijector arms in this (cell, "
+            "log_det_method) group, restricted to physically valid rows "
+            "(2026-08-28 ruling, DECISIONS.md / issue #185)"
+        ),
+        "reference_row": _row_label(best) if best is not None else None,
+        "n_rows_in_group": len(group_rows),
+        "n_rows_considered": len(considered),
+        "rows_considered": [_row_label(r) for r in considered],
+        "rows_excluded": excluded,
+        "ell_comps_max_magnitude": ELL_COMPS_MAX_MAGNITUDE,
+        "void_min_wall_s": VOID_MIN_WALL_S,
+    }
+    return (best["best_log_posterior"] if best is not None else None), detail
 
 
 def _steps_to_reference(row: dict, reference: float | None, tolerance: float) -> int | None:
@@ -687,10 +863,18 @@ def score_f1(delaunay_rows: list[dict]) -> dict:
 
 
 def score_f2(knn_rows: list[dict]) -> dict:
-    """F2 — steps-to-reference, none vs log_reg, at matched seeds, on knn."""
+    """F2 — steps-to-reference, none vs log_reg, at matched seeds, on knn.
+
+    **Amended 2026-08-28 (issue #185).** The reference is now the group-wide
+    physically-valid maximum (``_resolve_reference``), and "never reached
+    within the step budget" has explicit semantics rather than silently
+    producing no ratio: ``none`` never / ``log_reg`` does -> ``+inf`` (counts
+    as >= 2x); ``log_reg`` never / ``none`` does -> ``0`` (counts against);
+    both never -> that seed is unscorable and drops out of the median.
+    """
     none_rows = {r["seed"]: r for r in _by_bijector(knn_rows, "none")}
     log_reg_rows = {r["seed"]: r for r in _by_bijector(knn_rows, "log_reg")}
-    reference = _resolve_reference(list(none_rows.values()))
+    reference, reference_detail = _resolve_reference(knn_rows)
 
     per_seed = {}
     ratios = []
@@ -699,15 +883,25 @@ def score_f2(knn_rows: list[dict]) -> dict:
         n_steps_log_reg = _steps_to_reference(
             log_reg_rows[seed], reference, REFERENCE_TOLERANCE_NATS
         )
-        ratio = (
-            None
-            if not n_steps_none or n_steps_log_reg is None
-            else n_steps_none / max(n_steps_log_reg, 1)
-        )
+        if n_steps_none is None and n_steps_log_reg is None:
+            ratio, note = None, "neither arm reached the reference — seed unscorable"
+        elif n_steps_none is None:
+            ratio, note = (
+                float("inf"),
+                "none never reached the reference while log_reg did — counts as >= 2x",
+            )
+        elif n_steps_log_reg is None:
+            ratio, note = (
+                0.0,
+                "log_reg never reached the reference while none did — counts against",
+            )
+        else:
+            ratio, note = n_steps_none / max(n_steps_log_reg, 1), None
         per_seed[seed] = {
             "steps_none": n_steps_none,
             "steps_log_reg": n_steps_log_reg,
             "reduction_ratio": ratio,
+            "note": note,
         }
         if ratio is not None:
             ratios.append(ratio)
@@ -716,18 +910,21 @@ def score_f2(knn_rows: list[dict]) -> dict:
     measured = {
         "reference_log_posterior": reference,
         "reference_note": (
-            "max best_log_posterior across none-arm seeds for this (cell, "
-            "log_det_method) group — see module docstring, not the literal "
+            "max best_log_posterior over ALL bijector arms in this (cell, "
+            "log_det_method) group, restricted to physically valid rows "
+            "(2026-08-28 ruling) — see module docstring, not the literal "
             f"historical fixed-reg run cited as {HISTORICAL_FIXED_REG_STEPS} steps."
         ),
+        "reference_resolution": reference_detail,
         "per_seed": per_seed,
         "median_reduction_ratio": median_ratio,
         "required_ratio": STEPS_TO_REFERENCE_FACTOR,
         "n_matched_seeds": len(per_seed),
+        "n_scorable_seeds": len(ratios),
     }
     if reference is None:
         return _unscorable(
-            "F2 has no reference log-posterior: no none-arm knn row recorded a "
+            "F2 has no reference log-posterior: no physically valid knn row recorded a "
             "lane_best_log_posterior to resolve one from.",
             **measured,
         )
@@ -738,11 +935,11 @@ def score_f2(knn_rows: list[dict]) -> dict:
         )
     if median_ratio is None:
         return _unscorable(
-            "F2 could not compute a steps-to-reference ratio on any matched seed — no arm "
-            "reached within "
-            f"{REFERENCE_TOLERANCE_NATS} nats of the reference, or fom_history_global_best "
-            "was not recorded. 'never reached the reference' is not the same measurement as "
-            "'reached it too slowly', so this is unscorable rather than falsified.",
+            "F2 could not compute a steps-to-reference ratio on any matched seed — on every "
+            f"matched seed NEITHER arm reached within {REFERENCE_TOLERANCE_NATS} nats of the "
+            "reference, or fom_history_global_best was not recorded. 'neither reached the "
+            "reference' is not the same measurement as 'reached it too slowly', so this is "
+            "unscorable rather than falsified.",
             **measured,
         )
     return {**measured, "falsified": median_ratio < STEPS_TO_REFERENCE_FACTOR, "scorable": True}
@@ -844,12 +1041,16 @@ def score_f4(mge_rows: list[dict], knn_rows: list[dict]) -> dict:
     with the bijector, and F5 already proves the objective itself is inert at
     matched physical points.
 
-    The criterion is now: the **winning lane's** ``best_fom`` and
-    ``max_log_likelihood`` agree between the two arms within fp64 relative
-    tolerance (1e-9) at matched seeds. That is the quantity the campaign's
-    conclusions are actually drawn from. The old byte-identity check is kept
-    as an INFORMATIONAL field (``mge_per_seed_byte_identical``) — reported,
-    never scored.
+    **Amended again 2026-08-28 (issue #185): the fp-equivalence limb is now
+    INFORMATIONAL too.** The winning lane's ``best_fom`` /
+    ``max_log_likelihood`` comparison is a cross-run reproducibility
+    measurement — exactly what F5 measures, and it fails for exactly the same
+    reason (the MGE control's map is EMPTY and its two arms still diverge
+    1.7e-2 relative by step 3000). It is reported and never sets
+    ``falsified``. F4 now trips on ONE thing: the ``knn`` ``logit`` arm
+    reproducing the pinned-lane-to-boundary pathology. Both the fp-equivalence
+    result and the pre-amendment byte-identity result
+    (``mge_per_seed_byte_identical``) ride along as informational fields.
     """
     none_rows = {r["seed"]: r for r in _by_bijector(mge_rows, "none")}
     log_reg_rows = {r["seed"]: r for r in _by_bijector(mge_rows, "log_reg")}
@@ -902,12 +1103,14 @@ def score_f4(mge_rows: list[dict], knn_rows: list[dict]) -> dict:
 
     measured = {
         "criterion": (
-            "winning-lane best_fom AND max_log_likelihood agree between the none and "
-            f"log_reg MGE control arms within relative {FP64_RELATIVE_TOLERANCE:g} "
-            "(amended 2026-08-27, issue #182), OR the knn logit arm reproduces the "
-            "pinned-lane pathology"
+            "the knn logit arm reproduces the pinned-lane-to-boundary pathology "
+            "(amended 2026-08-28, issue #185 — the MGE winning-lane best_fom / "
+            "max_log_likelihood fp-equivalence limb is INFORMATIONAL only: it is "
+            "the same cross-run fp-reproducibility quantity F5 measures, not an "
+            "objective difference the bijector could cause)"
         ),
         "fp64_relative_tolerance": FP64_RELATIVE_TOLERANCE,
+        # INFORMATIONAL ONLY since 2026-08-28 — reported, never scored.
         "mge_per_seed_equivalence": per_seed_equivalence,
         # INFORMATIONAL ONLY — the pre-amendment byte-identity check. Reported
         # so a reader can see how far the two arms' per-lane vectors drifted,
@@ -918,19 +1121,15 @@ def score_f4(mge_rows: list[dict], knn_rows: list[dict]) -> dict:
         "knn_logit_pinned_final_counts": logit_pinned,
         "knn_logit_pathology_suspected": logit_pathology,
     }
-    # Disjunction, same rule as F1/F3: either limb firing is conclusive.
-    if mge_differs or logit_pathology:
+    # 2026-08-28: only the logit limb scores. mge_differs stays in `measured`
+    # as a reported diagnostic and can no longer set `falsified`.
+    if logit_pathology:
         return {**measured, "falsified": True, "scorable": True}
-    if not mge_checked:
-        return _unscorable(
-            "F4's MGE control could not be compared: no seed is present in BOTH the none "
-            "and log_reg mge arms with a recorded best_fom and max_log_likelihood.",
-            **measured,
-        )
     if logit_pathology is None:
         return _unscorable(
-            "F4's MGE control is clean but the knn logit arm has no rows, so the second "
-            "limb of the criterion is unmeasured.",
+            "F4 has no knn logit rows, so its only scoring limb (the pinned-lane-to-boundary "
+            "pathology) is unmeasured. The MGE fp-equivalence limb is informational since "
+            "2026-08-28 and cannot settle F4 on its own.",
             **measured,
         )
     return {**measured, "falsified": False, "scorable": True}
@@ -938,8 +1137,18 @@ def score_f4(mge_rows: list[dict], knn_rows: list[dict]) -> dict:
 
 def score_f5(rows: list[dict]) -> dict:
     """F5 — fom at the shared initial broad-start draw (step-0 global-best
-    fom) must match between arms at a matched seed within 1e-9 relative. A
-    trip here HALTS the verdict (bug, not a science finding)."""
+    fom) between arms at a matched seed, compared at 1e-9 relative.
+
+    **DEMOTED 2026-08-28 (issue #185) from a HALT to a reported diagnostic.**
+    The two arms are two SEPARATE GPU processes, so this compares floating-
+    point reproducibility across runs, not the objective: the MGE control's
+    ``log_reg`` map is provably EMPTY (an identity reparameterization) and its
+    two arms still diverge 1.7e-2 relative by step 3000. The same 1e-9 number
+    is still computed and reported, now as an fp-reproducibility diagnostic
+    with ``halts: False``. The sound version — one process, one physical
+    point, both parameterizations, assert bit-equality — is a PyAutoFit unit
+    test, filed separately; a two-run A/B cannot measure it.
+    """
     problems = []
     for cell in {r["cell"] for r in rows}:
         for log_det in {r["log_det_method"] for r in rows if r["cell"] == cell}:
@@ -969,7 +1178,20 @@ def score_f5(rows: list[dict]) -> dict:
                                     "rel_diff": rel,
                                 }
                             )
-    return {"problems": problems, "falsified": bool(problems), "halts": bool(problems)}
+    return {
+        "role": "fp-reproducibility diagnostic (DEMOTED from HALT, 2026-08-28, issue #185)",
+        "note": (
+            "compares the step-0 global-best fom between two separate GPU runs at a "
+            "matched seed. A difference is cross-run floating-point non-reproducibility, "
+            "not evidence the bijector moved the objective — the MGE control's map is "
+            "EMPTY and still diverges. Reported, never scored, never halts."
+        ),
+        "problems": problems,
+        "n_problems": len(problems),
+        "max_rel_diff": max((p["rel_diff"] for p in problems), default=0.0),
+        "reproducible_within_1e-9": not problems,
+        "halts": False,
+    }
 
 
 def score_rows(rows: list[dict]) -> dict:
@@ -977,13 +1199,9 @@ def score_rows(rows: list[dict]) -> dict:
     no filesystem/network dependency, so it is exercised directly by
     ``test_searches_bijector.py`` on synthetic rows.
     """
+    # F5 is a reported diagnostic since 2026-08-28 (issue #185): it is computed
+    # and carried in the verdict under `diagnostics.f5`, and never halts.
     f5 = score_f5(rows)
-    if f5["halts"]:
-        return {
-            "f5": f5,
-            "halted": True,
-            "verdict": "HALT — F5 tripped (bijector changed the physical objective; this is a bug)",
-        }
 
     knn_rows = _group(rows, cell="knn")
     mge_rows = _group(rows, cell="mge")
@@ -1039,7 +1257,7 @@ def score_rows(rows: list[dict]) -> dict:
 
     return {
         **criteria,
-        "f5_physical_point_equality": f5,
+        "diagnostics": {"f5": f5},
         "falsified_criteria_count": falsified_count,
         "unscorable_criteria": unscorable,
         "halted": False,
@@ -1053,9 +1271,29 @@ def score_rows(rows: list[dict]) -> dict:
 # -----------------------------------------------------------------------------
 
 
+def _json_safe(obj):
+    """``inf``/``-inf``/``nan`` -> JSON-valid sentinels.
+
+    F2's ratios are legitimately ``+inf`` (``none`` never reached the
+    reference, ``log_reg`` did), and ``json.dumps`` would emit a bare
+    ``Infinity``, which is not valid JSON. The value is kept exact in the
+    scored dict (so tests and callers can compare it numerically) and only
+    stringified on the way into the artifact.
+    """
+    if isinstance(obj, dict):
+        return {k: _json_safe(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_json_safe(v) for v in obj]
+    if isinstance(obj, float) and not np.isfinite(obj):
+        return "inf" if obj > 0 else ("-inf" if obj < 0 else None)
+    return obj
+
+
 def parse_args(argv=None):
     p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    p.add_argument("--stage", choices=("run", "score"), default=None)
+    # "verdict" is a documented synonym for "score" -- the campaign notes and
+    # DECISIONS entries refer to this step as `--stage verdict`.
+    p.add_argument("--stage", choices=("run", "score", "verdict"), default=None)
     p.add_argument("--score", action="store_true", help="shorthand for --stage score")
     p.add_argument("--smoke", action="store_true", help="tiny arm table / two-row scorer smoke")
     p.add_argument("--dry-run", action="store_true", help="print run commands without executing")
@@ -1065,8 +1303,12 @@ def parse_args(argv=None):
 def main(argv=None) -> None:
     args = parse_args(argv)
     stage = args.stage or ("score" if args.score else None)
+    if stage == "verdict":
+        stage = "score"
     if stage is None:
-        raise SystemExit("pass --stage run|score (or --score as a shorthand for --stage score)")
+        raise SystemExit(
+            "pass --stage run|score|verdict (or --score as a shorthand for --stage score)"
+        )
 
     if stage == "run":
         arms = build_arms(smoke=args.smoke)
@@ -1084,7 +1326,18 @@ def main(argv=None) -> None:
         "experiment": "phase_8b_bijector_ab",
         "issue": 162,
         "hardware": hardware_label(),
+        # The label above names the machine that ran the SCORER, not the arms
+        # -- rows are loaded from JSONs that may have been produced anywhere.
+        "hardware_note": (
+            "hardware/`<hardware>` in the artifact filename is the scoring host, resolved "
+            "from the local JAX backend. Each row's own run hardware is in its results JSON "
+            "under `device` / `hardware`."
+        ),
         "n_rows": len(rows),
+        "n_rows_expected": len(build_arms()),
+        # A verdict scored on fewer than the full pre-registered arm table is
+        # PRELIMINARY and must be re-run when the missing arms land.
+        "preliminary": len(rows) < len(build_arms()),
         "historical_reference": {
             "free_reg_steps": HISTORICAL_FREE_REG_STEPS,
             "fixed_reg_steps": HISTORICAL_FIXED_REG_STEPS,
@@ -1094,13 +1347,19 @@ def main(argv=None) -> None:
         "pass_criteria_preregistered": [
             "F1: median first-NaN step under log_reg not later than none, "
             "OR value-NaN lane-steps fall < 50%",
-            "F2: steps-to-reference not reduced >= 2x at matched seeds",
+            "F2 (reference amended 2026-08-28, issue #185): steps-to-reference not reduced "
+            ">= 2x at matched seeds, where the reference is the group-wide max "
+            "lane_best_log_posterior over ALL bijector arms restricted to physically valid "
+            "rows, and 'never reached' scores as +inf / 0 / seed-unscorable",
             "F3: log_reg lanes spend >= same fraction of steps at lambda > 1e4",
-            "F4 (amended 2026-08-27, issue #182): MGE control winning-lane best_fom "
-            f"or max_log_likelihood differ by > {FP64_RELATIVE_TOLERANCE:g} relative, OR "
-            "knn logit arm reproduces the pinned-lane pathology. Byte-identity of every "
-            "per-lane vector is retained as an informational field, not a criterion.",
-            "F5: fom at matched physical points differs > 1e-9 relative -> bug, halts",
+            "F4 (amended 2026-08-27 #182, again 2026-08-28 #185): the knn logit arm "
+            "reproduces the pinned-lane pathology. The MGE control's winning-lane "
+            f"best_fom / max_log_likelihood fp64 agreement ({FP64_RELATIVE_TOLERANCE:g} "
+            "relative) and the older per-lane byte-identity check are both retained as "
+            "informational fields, not criteria.",
+            "F5 (demoted 2026-08-28, issue #185): fom at matched physical points differs "
+            "> 1e-9 relative. Reported as an fp-reproducibility diagnostic under "
+            "verdict.diagnostics.f5; it does not halt and is not a criterion.",
             "Every criterion has a third state, UNSCORABLE: its inputs are absent, so it "
             "neither fired nor did not fire. The verdict is INCONCLUSIVE while any "
             "criterion is unscorable and fewer than two have fired.",
@@ -1110,7 +1369,35 @@ def main(argv=None) -> None:
                 "UNSCORABLE state added to F1-F4 (they previously collapsed missing data "
                 "to a silent PASS in F1 and a silent FAIL in F2); F4 changed from "
                 "per-lane byte-identity to winning-lane fp64 equivalence. Issue #182."
-            )
+            ),
+            "2026-08-28": (
+                "F2's reference became the group-wide max over ALL bijector arms restricted "
+                "to physically valid rows (not void, best-point ell_comps magnitude < 1) "
+                "instead of the max over the none arm alone; F2 'never reached' given "
+                "explicit +inf / 0 / seed-unscorable semantics; F5 demoted from HALT to a "
+                "reported fp-reproducibility diagnostic; F4's fp-equivalence limb made "
+                "informational so F4 trips only on the knn logit pinned-lane pathology. "
+                "Issue #185; the authoritative record is the dated "
+                "results/notes/inference/DECISIONS.md entry."
+            ),
+        },
+        "campaign_notes": {
+            "stack_version_split": (
+                "The arms scored here ran on 2026.8.17.1 with pre-#1536 PyAutoFit; the 15 "
+                "resubmitted arms (RAL job 341978, array indices 0,2,3,14,17,19,21,24,25,"
+                "26,27,30,32,33,34) run on PyAutoFit f466dce1a / PyAutoGalaxy 0fbe863d / "
+                "PyAutoLens b23ee53e9. The likelihood code is unchanged between them "
+                "(#1536/#713/#1538/#589 touch results-writing and an OPT-IN clipper only, "
+                "and no 8B arm opts in), so the two halves are pooled — but this rests on "
+                "a reading of four diffs, not a measurement, and is flagged."
+            ),
+            "clipper": (
+                "No 8B arm used ClipperPriorBoxJoint: with a bijector set, the joint disk "
+                "clipper is refused at construction (PyAutoFit "
+                "multi_start_gradient/search.py:368-383). Every arm ran the per-component "
+                "prior_box clipper, which is the mechanism that lets best points settle "
+                "outside the unit disk. Filed as a PyAutoFit follow-up."
+            ),
         },
     }
 
@@ -1118,13 +1405,13 @@ def main(argv=None) -> None:
     dest_dir.mkdir(parents=True, exist_ok=True)
     suffix = "_smoke" if args.smoke else f"_{hardware_label()}"
     dest = dest_dir / f"verdict{suffix}.json"
-    dest.write_text(json.dumps(artifact, indent=2) + "\n")
+    dest.write_text(json.dumps(_json_safe(artifact), indent=2) + "\n")
     print(f"\nwritten: {dest}")
 
     rows_npz = dest_dir / f"rows{suffix}.npz"
     np.savez(
         rows_npz,
-        rows_json=json.dumps(rows),
+        rows_json=json.dumps(_json_safe(rows)),
     )
     print(f"written: {rows_npz}")
 
@@ -1136,12 +1423,20 @@ def _print_verdict(artifact: dict) -> None:
     print("\n" + "=" * 78)
     print("PHASE 8B — bijector A/B")
     print("=" * 78)
-    print(f"rows: {artifact['n_rows']}  hardware: {artifact['hardware']}")
-    if v.get("halted"):
-        print(f"\n{v['verdict']}")
-        for problem in v["f5"]["problems"]:
-            print(f"  {problem}")
-        return
+    print(
+        f"rows: {artifact['n_rows']} / {artifact['n_rows_expected']}  "
+        f"hardware: {artifact['hardware']}"
+    )
+    if artifact.get("preliminary"):
+        print(
+            f"*** PRELIMINARY — scored on {artifact['n_rows']} of "
+            f"{artifact['n_rows_expected']} pre-registered arms; re-run when the rest land ***"
+        )
+    f5 = v["diagnostics"]["f5"]
+    print(
+        f"  [diagnostic] f5 fp-reproducibility: {f5['n_problems']} matched-seed pair(s) "
+        f"above 1e-9 (max rel {f5['max_rel_diff']:.3g}) — reported, does not halt"
+    )
     for key in (
         "f1_nan_wall_position",
         "f2_steps_to_reference",

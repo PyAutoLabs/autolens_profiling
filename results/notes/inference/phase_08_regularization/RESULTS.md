@@ -504,3 +504,117 @@ mechanism Phase 4 Stage 3 measures as the PositionsLH degradation channel
 second reason p̂ is a lower bound
 (`../phase_03_prodigy_reliability/RESULTS.md` "Non-physical ellipticity
 lanes"). The library follow-up is PROGRAMME §9b W10.
+
+## 8B — PRELIMINARY verdict on 24/39 arms (2026-08-28): **FALSIFIED**, 3 of 4 criteria fired
+
+The three things the 2026-08-27 section left owed — the F2 reference ruling,
+F5's spurious HALT and F4's uncertain fp limb — were settled by the architect
+on 2026-08-28 and recorded in `../DECISIONS.md` **before** any scoring was run
+(autolens_profiling#185). The scorer was amended to match and run on the **24
+arms that have landed**. This verdict is **PRELIMINARY**: the artifact carries
+`preliminary: true` / `n_rows_expected: 39`, and it is re-run when RAL job
+**341978**'s 15 arms land.
+
+### The ruling in one paragraph
+
+The F2 reference is now the max `lane_best_log_posterior` over **all** bijector
+arms in a (cell, log_det_method) group, restricted to physically valid rows —
+not void, and best-point `ell_comps` magnitude **< 1**. F2's "never reached"
+scores as `+inf` (`none` never, `log_reg` does), `0` (the reverse) or an
+unscorable seed (neither). F5 is demoted from HALT to a reported
+fp-reproducibility diagnostic. F4's MGE fp-equivalence limb is informational;
+F4 trips only on the `knn` `logit` pinned-lane pathology.
+
+### Resolved F2 reference per group, and what the filter removed
+
+| group | reference | set by | rows kept |
+|---|---:|---|---:|
+| `delaunay_adapt_split` · cholesky | 30,609.94 | `log_reg` seed 1 | 2 / 7 |
+| `delaunay_adapt_split` · slogdet | 30,286.10 | `log_reg` seed 3 | 2 / 7 |
+| `knn` · slogdet (resolved `auto`) | 30,559.28 | `log_reg` seed 3 | 4 / 6 |
+| `mge` · auto (control) | 31,787.84 | `log_reg` seed 0 | 4 / 4 |
+
+**Twelve of the 24 rows — exactly half — are excluded, every one of them for
+the same reason: the best point sits outside the unit disk.** Not one row is
+void: all 24 have `diagnostics.valid = true`, ran 3000 steps and 1.7–4.0 h. The
+excluded magnitudes run 1.032 → 1.41421 (the (±1, ±1) box corner). On
+`delaunay_adapt_split` the rate is **10 of 14 (71 %)** and it is indifferent to
+bijector and log-det method alike — `none`, `log_reg`, `cholesky`, `slogdet`
+all appear. The `slogdet·log_reg·seed1` row that reports 2.1e53 is one of them,
+which is precisely what ruling 1 exists to keep out of a reference.
+
+The magnitude came from `recovered_offline_verification.best_point_ell_comps_magnitude`
+on the nine recovered rows and was recomputed from
+`diagnostics.ell_comps_pairs` + the winning lane's `lane_best_params` on the
+other fifteen. Where both exist they agree to every printed digit, so the
+recomputed path is the same measurement, not a looser one.
+
+### F1–F5
+
+| criterion | state | numbers |
+|---|---|---|
+| **F1** — NaN-wall position (`delaunay_adapt_split`) | **FALSIFIED** (cholesky tier; slogdet tier UNSCORABLE) | cholesky: median first-value-NaN step **0.0 under both** arms (so `log_reg`'s wall is not earlier), and value-NaN lane-steps **rise**, 18,143 (`none`) → 139,205 (`log_reg`). slogdet: no `none` arm recorded a single value-NaN (total 0), so neither limb is measurable; `log_reg` there has median first-NaN step 89 and 23,241 lane-steps. |
+| **F2** — steps-to-reference (`knn`) | **NOT falsified** | reference 30,559.28; **1 matched seed** (seed 3) of a possible 5. `none` **never** comes within 10 nats — it tops out at 28,914.21, **1,645 nats short** — while `log_reg` is inside the band by step **2,882**. Ratio `+inf` ≥ the 2× bar. |
+| **F3** — time at λ > 1e4 (either wall cell) | **FALSIFIED** (delaunay cholesky tier) | cholesky: `none` **0.0000** vs `log_reg` **0.00076** — `log_reg` ≥ `none`, so the criterion fires. slogdet: 0.0469 vs 0.0368 (not falsified). knn: 0.0625 vs 0.0520 (not falsified). |
+| **F4** — MGE control + `logit` pathology | **FALSIFIED** (logit limb) | `knn·logit·seed1` finishes with a lane holding **7 parameters pinned to the box bound**. Informational fp limb: MGE seed 0 agrees (`best_fom` rel **0.0**, maxL rel **9.8e-15**); MGE seed 1 disagrees at rel **1.73e-2** on both — reported, not scored. Byte-identity fails on both seeds — reported, not scored. |
+| **F5** — fp-reproducibility diagnostic | **1 pair above 1e-9**, does not halt | `delaunay_adapt_split·slogdet·seed0`: step-0 global-best fom **357,347.020** (`log_reg`) vs **357,343.242** (`none`), rel **1.06e-5**. Every other matched pair, MGE and knn included, agrees within 1e-9. |
+
+**VERDICT: FALSIFIED — 3 of 4 criteria fired (F1, F3, F4)** against the
+pre-registered "any two → 8B falsified, record and close, no rescoping to
+logit" threshold. **PRELIMINARY (24 of 39 arms).**
+
+### Three reasons to hold this loosely until 341978 lands
+
+The verdict word is what the pre-registered rule returns on today's data, and
+it is reported as such. But each of the three fired criteria is thin in a
+different way, and all three are the kind of thinness 15 more arms can move:
+
+1. **F1's fired limb is a raw sum over unbalanced arms.** 18,143 is the total
+   over **2** `none` rows and 139,205 the total over **5** `log_reg` rows —
+   9,072 vs 27,841 per arm. The limb still fires per-arm (a 3× rise, not a 50 %
+   fall), so the conclusion survives normalisation, but the scorer's own
+   comparison does not normalise and should not be read as if it did. The
+   pre-registration fixes this limb's wording, so it is left alone and filed as
+   a follow-up.
+2. **F3 fires on a knife-edge.** On the cholesky tier `none` is *exactly*
+   0.0000 and `log_reg` is 0.00076 — both arms are essentially never at
+   λ > 1e4, and the criterion is written as `>=`, so any non-zero `log_reg`
+   value beats an exactly-zero `none`. The two tiers where there is real
+   high-λ occupancy to compare (slogdet 4.7 % vs 3.7 %, knn 6.3 % vs 5.2 %)
+   both go the *other* way — `log_reg` spends **less** time at high λ.
+3. **F4 fires on a necessary-not-sufficient proxy.** `n_pinned_final` counts
+   *all* pinned parameters, not only the traced regularization ones, and the
+   `knn` `logit` arm has exactly **one** seed. Seven pinned parameters in a
+   lane is consistent with the pathology and is not proof of it.
+
+**F2, the one criterion that did not fire, also rests on a single matched
+seed**, and its reference is set by the `log_reg` arm at that same seed. The
+`+inf` therefore reads "`none` never reached what `log_reg` reached", which is
+a real 1,645-nat gap but is not the "2× fewer steps to a common target" the
+criterion was drafted to measure. Four more matched knn seeds are in 341978.
+
+### Provenance
+
+These 24 arms ran on **2026.8.17.1 with pre-#1536 PyAutoFit**; the 15 in job
+**341978** (indices 0, 2, 3, 14, 17, 19, 21, 24, 25, 26, 27, 30, 32, 33, 34)
+run on **PyAutoFit f466dce1a / PyAutoGalaxy 0fbe863d / PyAutoLens b23ee53e9**.
+The likelihood code is unchanged across the split (#1536/#713/#1538/#589 touch
+results-writing and an **opt-in** clipper, which no 8B arm opts into), so the
+final verdict pools them — flagged, because that rests on reading four diffs
+rather than on a measurement.
+
+**No 8B arm used `ClipperPriorBoxJoint`.** With a bijector set it is refused at
+construction (`PyAutoFit multi_start_gradient/search.py:368-383`), so every arm
+ran the per-component `prior_box` clipper — the clipper that is faithful to a
+*wrong* box, and the direct mechanism behind the 50 % non-physical best-point
+rate above. Filed as a PyAutoFit follow-up.
+
+**Artifacts:** `bijector_ab/verdict_<hardware>.json` (`preliminary: true`,
+`n_rows_expected: 39`, the full per-group reference resolution and every
+exclusion reason) and the 24 results JSON + 12 PNG under
+`results/searches/multi_start_prodigy/imaging/{delaunay_adapt_split,knn,mge}/hst/phase8b/`.
+The `<hardware>` in the verdict filename is the machine that ran the **scorer**
+(`hardware_label()` reads the local backend), not the machine that ran the
+arms — every arm in this campaign ran on the RAL A100. The companion
+`rows_<hardware>.npz` is a re-derivable dump of those same JSONs and is
+gitignored; `--stage score` rewrites it.

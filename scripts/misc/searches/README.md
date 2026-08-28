@@ -17,15 +17,26 @@ of PyAutoFit machinery is exercised and measured.
 | `multi_start_prodigy` | `cluster/image_plane_solved/simple` | `hpc_a100_fp64` | -1,708.9 | — | 832.23 s | — | — | stored | — | — | v2026.7.23.1 |
 | `multi_start_prodigy` | `cluster/source_plane_solved/simple` | `hpc_a100_fp64` | 21.4 | — | 250.86 s | — | — | stored | — | — | v2026.7.23.1 |
 | `multi_start_prodigy` | `cluster/source_plane_tensor/simple` | `hpc_a100_fp64` | -11,000.5 | — | 261.36 s | — | — | stored | — | — | v2026.7.23.1 |
+| `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_cholesky_log_reg_seed0` | 30,437.9 | — | 14434.58 s | 48,000 | 300.7 ms | evals | — | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_cholesky_log_reg_seed1` | 30,608.0 | — | 14650.16 s | 48,000 | 305.2 ms | evals | — | — | v2026.8.17.1 |
 | `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_cholesky_log_reg_seed2` | 29,977.7 | — | 14539.65 s | 48,000 | 302.9 ms | evals | — | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_cholesky_log_reg_seed3` | 30,285.3 | — | 14328.50 s | 48,000 | 298.5 ms | evals | — | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_cholesky_log_reg_seed4` | 30,303.8 | — | 12923.11 s | 48,000 | 269.2 ms | evals | — | — | v2026.8.17.1 |
 | `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_cholesky_none_seed1` | 22,945.1 | — | 12818.73 s | 48,000 | 267.1 ms | evals | — | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_cholesky_none_seed4` | 29,731.7 | — | 10064.01 s | 48,000 | 209.7 ms | evals | — | — | v2026.8.17.1 |
 | `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_slogdet_log_reg_seed0` | 28,127.4 | — | 13321.76 s | 48,000 | 277.5 ms | evals | — | — | v2026.8.17.1 |
 | `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_slogdet_log_reg_seed1` | 213,567,532,327,722,107,774,660,770,831,379,455,134,060,534,200,008,704.0 | — | 11254.95 s | 48,000 | 234.5 ms | evals | — | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_slogdet_log_reg_seed3` | 30,298.2 | — | 12504.34 s | 48,000 | 260.5 ms | evals | — | — | v2026.8.17.1 |
 | `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_slogdet_none_seed0` | -146,802.6 | — | 6531.21 s | 48,000 | 136.1 ms | evals | — | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_slogdet_none_seed1` | 29,754.2 | — | 6550.43 s | 48,000 | 136.5 ms | evals | — | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_slogdet_none_seed2` | 30,242.1 | — | 6477.82 s | 48,000 | 135.0 ms | evals | — | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_slogdet_none_seed3` | 30,259.8 | — | 6481.56 s | 48,000 | 135.0 ms | evals | — | — | v2026.8.17.1 |
 | `multi_start_prodigy` | `imaging/knn/hst` | `knn_auto_log_reg_seed3` | 30,557.0 | — | 6560.66 s | 48,000 | 136.7 ms | evals | `84c0d88d` | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/knn/hst` | `knn_auto_log_reg_seed4` | 29,042.6 | — | 6435.76 s | 48,000 | 134.1 ms | evals | `84c0d88d` | — | v2026.8.17.1 |
 | `multi_start_prodigy` | `imaging/knn/hst` | `knn_auto_logit_seed1` | 28,683.3 | — | 6593.35 s | 48,000 | 137.4 ms | evals | `84c0d88d` | — | v2026.8.17.1 |
 | `multi_start_prodigy` | `imaging/knn/hst` | `knn_auto_none_seed0` | 28,901.9 | — | 6436.91 s | 48,000 | 134.1 ms | evals | `84c0d88d` | — | v2026.8.17.1 |
 | `multi_start_prodigy` | `imaging/knn/hst` | `knn_auto_none_seed2` | 28,870.3 | — | 6422.37 s | 48,000 | 133.8 ms | evals | `84c0d88d` | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/knn/hst` | `knn_auto_none_seed3` | 28,925.2 | — | 6536.68 s | 48,000 | 136.2 ms | evals | `84c0d88d` | — | v2026.8.17.1 |
 | `multi_start_prodigy` | `imaging/mge/hst` | `mge_auto_log_reg_seed0` | 31,787.9 | — | 354.05 s | 48,000 | 7.4 ms | evals | `770ccd47` | — | v2026.8.17.1 |
 | `multi_start_prodigy` | `imaging/mge/hst` | `mge_auto_log_reg_seed1` | -89,460.3 | — | 340.85 s | 48,000 | 7.1 ms | evals | `770ccd47` | — | v2026.8.17.1 |
 | `multi_start_prodigy` | `imaging/mge/hst` | `mge_auto_none_seed0` | 31,787.9 | — | 372.92 s | 48,000 | 7.8 ms | evals | `770ccd47` | — | v2026.8.17.1 |
