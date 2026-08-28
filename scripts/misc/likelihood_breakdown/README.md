@@ -25,8 +25,8 @@ For *how long the likelihood actually takes* on production hardware — i.e. a s
 | `imaging/delaunay` | hst | hpc_a100_fp64 | sparse (w-tilde) | 98.0 ms | v2026.7.6.649 |
 | `imaging/delaunay` | hst | hpc_a100_mp | dense (mapping) | 96.8 ms | v2026.7.6.649 |
 | `imaging/delaunay` | hst | hpc_a100_mp | sparse (w-tilde) | 95.5 ms | v2026.7.6.649 |
-| `imaging/delaunay_numba` | euclid | local_cpu_fp64 | sparse (numba) | 4.84 s | v2026.8.17.1 |
-| `imaging/delaunay_numba` | hst | local_cpu_fp64 | sparse (numba) | 4.48 s | v2026.8.17.1 |
+| `imaging/delaunay_numba` | euclid | local_cpu_fp64 | sparse (numba) | 1.19 s | v2026.8.17.1 |
+| `imaging/delaunay_numba` | hst | local_cpu_fp64 | sparse (numba) | 3.22 s | v2026.8.17.1 |
 | `imaging/mge` | hst | local_cpu_fp64 | dense (mapping) | 179.5 ms | v2026.7.6.649 |
 | `imaging/mge` | hst | hpc_a100_fp64 | dense (mapping) | 7.8 ms | v2026.7.6.649 |
 | `imaging/pixelization` | hst | local_cpu_fp64 | dense (mapping) | 8.65 s | v2026.7.6.649 |
