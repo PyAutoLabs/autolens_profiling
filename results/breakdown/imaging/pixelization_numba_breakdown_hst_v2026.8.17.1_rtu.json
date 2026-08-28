@@ -1,0 +1,58 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "omp_num_threads": "1",
+    "cpu_count": 8
+  },
+  "instrument": "hst",
+  "configuration": {
+    "pixel_scale_arcsec": 0.05,
+    "mask_radius_arcsec": 3.5,
+    "image_pixels_masked": 15361,
+    "over_sampled_pixels": 17980,
+    "mesh_shape": [
+      28,
+      28
+    ],
+    "rect_mesh": "rtu",
+    "source_pixels": 784,
+    "inversion_path": "sparse_numba",
+    "use_jax": false,
+    "lens_light": "mge_60_linear",
+    "omp_num_threads": "1"
+  },
+  "steps": {
+    "FitImaging construct": 8.007999967958312e-05,
+    "Blurred image (FFT convolve)": 0.011726339999586343,
+    "Profile subtracted image": 6.287999967753421e-05,
+    "Inversion build (trace+mesh+mapper)": 0.028949229999852832,
+    "PSF-weighted data [numba]": 0.010060549999616341,
+    "MGE operated mapping matrix (60 funcs)": 0.2594623800006957,
+    "Mapper sparse triplets": 7.882085640000878,
+    "Data vector D [numba]": 0.0046177699994586876,
+    "F: mapper\u00d7mapper block [sparse-op]": 0.30361820999969497,
+    "F: mapper\u00d7linear-func block [dense conv]": 0.9293810399994982,
+    "F: linear-func\u00d7linear-func block [BLAS]": 0.022155819999898085,
+    "Curvature matrix F [residual: mirror + diag-add]": -0.005108249999466352,
+    "Regularization matrix H": 0.001966090000496479,
+    "F + H": 0.0008599400003731717,
+    "Reconstruction solve (BLAS)": 0.011146019999796409,
+    "Mapped reconstruction [numba+FFT]": 0.0039728600004309556,
+    "Model data + chi^2": 0.0040215199991507685,
+    "log det (F+H) [Cholesky]": 0.009912790000089444,
+    "log det H [Cholesky]": 0.009328589999859105,
+    "Regularization term s'Hs": 0.00037919999958830887,
+    "Log evidence (figure of merit)": 0.0169211099993845
+  },
+  "total_step_by_step": 9.50559980999824,
+  "curvature_matrix_f_total_s": 1.2500468199996249,
+  "curvature_matrix_f_split_note": "The four 'F: ...' / 'Curvature matrix F' rows sum to curvature_matrix_f_total_s, the raw un-split cost of the inversion.curvature_matrix step. The three block rows are direct measurements of the (uncached) per-block helpers in imaging_numba/sparse.py; the 'Curvature matrix F [residual: ...]' row is t(curvature_matrix) minus those three, i.e. the global mirror, the no-regularization diagonal add and assembly overhead, and it carries the combined noise of the four timings. PyAutoArray#505 step 0.",
+  "direct_log_likelihood_function_per_call": 8.500609949999852,
+  "warmup_incl_numba_compile_s": 15.407786099996883,
+  "log_likelihood": 27180.70471569685,
+  "pinned_expected": 27180.704715698186,
+  "pinned_drift": []
+}

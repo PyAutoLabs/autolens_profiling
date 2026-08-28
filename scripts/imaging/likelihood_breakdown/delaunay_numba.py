@@ -203,6 +203,62 @@ print(f"  OMP_NUM_THREADS:         {os.environ.get('OMP_NUM_THREADS', '(unset)')
 # Per-step decomposition via sequential cached-property access
 # ===================================================================
 
+# -------------------------------------------------------------------
+# Curvature matrix F sub-block instrumentation (PyAutoArray#505 step 0)
+# -------------------------------------------------------------------
+#
+# F is assembled from three blocks (see
+# ``autoarray/inversion/inversion/imaging_numba/sparse.py``):
+#
+#   1. mapper x mapper       ``_curvature_matrix_mapper_diag``          [sparse-op numba kernel]
+#   2. mapper x linear-func  ``_curvature_matrix_mapper_func_blocks_from`` [dense sliding-window conv]
+#   3. linear-func x l-func  ``_curvature_matrix_func_func_blocks_from``   [BLAS dot]
+#
+# and then, in the ``curvature_matrix`` cached property, a global mirror plus
+# (when linear funcs are present) the no-regularization diagonal add.
+#
+# The three helpers are plain (uncached) methods, so touching them here does not
+# prime the cached property: the F step that follows recomputes all three and
+# then mirrors + adds the diagonal. The F row is therefore reported as a
+# RESIDUAL,
+#
+#     F residual = t(curvature_matrix) - (t_block_1 + t_block_2 + t_block_3)
+#
+# using the three measured block costs as the estimate of the recompute inside
+# the cached property. This is the design that stays truthful *and* keeps the
+# artifact comparable with pre-instrumentation runs: the four F rows sum to
+# exactly the un-instrumented ``curvature_matrix`` step, so "TOTAL
+# (step-by-step)" and the coverage cross-check are unchanged in meaning. The raw
+# (unsplit) F total is written to the result JSON as
+# ``curvature_matrix_f_total_s``.
+#
+# Caveat: the residual is a difference of averaged timings, so at the 1e-4 s
+# level it carries the noise of all four measurements and can in principle come
+# out slightly negative. It is recorded as measured, never clipped.
+
+F_MAPPER_MAPPER_LABEL = "F: mapper×mapper block [sparse-op]"
+F_MAPPER_FUNC_LABEL = "F: mapper×linear-func block [dense conv]"
+F_FUNC_FUNC_LABEL = "F: linear-func×linear-func block [BLAS]"
+F_RESIDUAL_LABEL = "Curvature matrix F [residual: mirror + diag-add]"
+
+_f_scratch: dict[int, np.ndarray] = {}
+
+
+def _f_block_scratch(inversion) -> np.ndarray:
+    """Reusable (P, P) buffer the timed F sub-block helpers write into.
+
+    Reused across repeats so each timing measures the block itself rather than a
+    fresh multi-MB allocation. Both helpers *assign* their block (they never
+    accumulate into it), so a dirty buffer cannot change what is measured.
+    """
+    total_params = inversion.total_params
+    scratch = _f_scratch.get(total_params)
+    if scratch is None:
+        scratch = np.zeros((total_params, total_params))
+        _f_scratch[total_params] = scratch
+    return scratch
+
+
 STEP_ACCESSORS = [
     ("FitImaging construct", None),  # handled specially (constructor)
     ("Blurred image (FFT convolve)", lambda fit: fit.blurred_image),
@@ -225,7 +281,23 @@ STEP_ACCESSORS = [
         ],
     ),
     ("Data vector D [numba]", lambda fit: fit.inversion.data_vector),
-    ("Curvature matrix F [numba sparse-op]", lambda fit: fit.inversion.curvature_matrix),
+    (
+        F_MAPPER_MAPPER_LABEL,
+        lambda fit: fit.inversion._curvature_matrix_mapper_diag,
+    ),
+    (
+        F_MAPPER_FUNC_LABEL,
+        lambda fit: fit.inversion._curvature_matrix_mapper_func_blocks_from(
+            curvature_matrix=_f_block_scratch(fit.inversion)
+        ),
+    ),
+    (
+        F_FUNC_FUNC_LABEL,
+        lambda fit: fit.inversion._curvature_matrix_func_func_blocks_from(
+            curvature_matrix=_f_block_scratch(fit.inversion)
+        ),
+    ),
+    (F_RESIDUAL_LABEL, lambda fit: fit.inversion.curvature_matrix),
     ("Regularization matrix H (ConstantSplit)", lambda fit: fit.inversion.regularization_matrix),
     ("F + H", lambda fit: fit.inversion.curvature_reg_matrix),
     ("Reconstruction solve (BLAS)", lambda fit: fit.inversion.reconstruction),
@@ -293,6 +365,21 @@ for _ in range(n_repeats):
 
 likelihood_steps = [(label, accumulated[label] / n_repeats) for label, _ in STEP_ACCESSORS]
 
+# Convert the raw F step into the residual (mirror + diag-add): see the
+# "Curvature matrix F sub-block instrumentation" note above. The four F rows
+# then sum to the raw, un-split F cost recorded here.
+_step_dict = dict(likelihood_steps)
+curvature_matrix_f_total = _step_dict[F_RESIDUAL_LABEL]
+_f_block_total = (
+    _step_dict[F_MAPPER_MAPPER_LABEL]
+    + _step_dict[F_MAPPER_FUNC_LABEL]
+    + _step_dict[F_FUNC_FUNC_LABEL]
+)
+likelihood_steps = [
+    (label, curvature_matrix_f_total - _f_block_total if label == F_RESIDUAL_LABEL else per_call)
+    for label, per_call in likelihood_steps
+]
+
 start = time.perf_counter()
 for _ in range(n_repeats):
     log_likelihood_direct = analysis.log_likelihood_function(instance=instance)
@@ -345,6 +432,17 @@ breakdown_summary = {
     },
     "steps": {label: per_call for label, per_call in likelihood_steps},
     "total_step_by_step": step_total,
+    "curvature_matrix_f_total_s": curvature_matrix_f_total,
+    "curvature_matrix_f_split_note": (
+        "The four 'F: ...' / 'Curvature matrix F' rows sum to "
+        "curvature_matrix_f_total_s, the raw un-split cost of the "
+        "inversion.curvature_matrix step. The three block rows are direct "
+        "measurements of the (uncached) per-block helpers in "
+        "imaging_numba/sparse.py; the 'Curvature matrix F [residual: ...]' row "
+        "is t(curvature_matrix) minus those three, i.e. the global mirror, the "
+        "no-regularization diagonal add and assembly overhead, and it carries "
+        "the combined noise of the four timings. PyAutoArray#505 step 0."
+    ),
     "direct_log_likelihood_function_per_call": direct_per_call,
     "warmup_incl_numba_compile_s": warmup_s,
     "log_likelihood": float(log_likelihood_direct),
@@ -363,7 +461,7 @@ print(f"\n  Results dict saved to: {dict_path}")
 labels = [label for label, _ in likelihood_steps]
 times = [per_call for _, per_call in likelihood_steps]
 
-fig, ax = plt.subplots(figsize=(10, 6.5))
+fig, ax = plt.subplots(figsize=(10, 7.8))
 y_pos = range(len(labels))
 bars = ax.barh(y_pos, times, color="#4C72B0", edgecolor="white", height=0.6)
 
