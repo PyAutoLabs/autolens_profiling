@@ -61,6 +61,7 @@ from searches._samplers import (  # noqa: E402
     n_live_for,
     nautilus_seed,
     nss_settings,
+    nuts_settings,
     vmap_batch_for_cell,
 )
 
@@ -72,7 +73,17 @@ from _profile_cli import (  # noqa: E402
 
 # Samplers that have an ``n_live`` (nested sampling). MAP optimizers such as
 # ``multi_start_adam`` do not, and record ``null`` rather than a misleading value.
+# ``nuts`` is MCMC: it has a genuine posterior but no live points, which is why
+# it is in _SAMPLERS_WITH_POSTERIOR below and NOT here.
 _SAMPLERS_WITH_N_LIVE = frozenset({"nautilus", "nss"})
+
+# Samplers that return a real posterior, and for which ``_posterior_stats`` is
+# therefore meaningful. Deliberately a SEPARATE set from _SAMPLERS_WITH_N_LIVE:
+# those two questions ("does it have live points?" and "does it have a
+# posterior?") coincided while every sampler here was nested, and adding an
+# MCMC cell is exactly where conflating them starts reporting `null` posterior
+# statistics for a search that has a full chain.
+_SAMPLERS_WITH_POSTERIOR = frozenset({"nautilus", "nss", "nuts"})
 from searches._recovery import load_truth, recovery_report  # noqa: E402
 from searches._setup import (  # noqa: E402
     _LOG_DET_METHOD_DATASET_CLASSES,
@@ -371,14 +382,18 @@ def _imaging_truth_anchor(
         }
 
 
-def _posterior_stats(result: Any, uses_n_live: bool) -> dict[str, dict[str, float]] | None:
+def _posterior_stats(result: Any, has_posterior: bool) -> dict[str, dict[str, float]] | None:
     """Per-free-parameter ``{name: {"mean": .., "std": ..}}`` from the search
     posterior (#678 phase B).
 
     Only meaningful for samplers with an actual posterior (``nautilus`` /
-    nested sampling, gated by ``uses_n_live``); MAP optimizers (MultiStart*)
-    return a single best point, so this is ``None`` for them, matching the
-    existing ``n_live: null`` convention for MAP rows.
+    ``nss`` / ``nuts``, gated by ``_SAMPLERS_WITH_POSTERIOR``); MAP optimizers
+    (MultiStart*) return a single best point, so this is ``None`` for them,
+    matching the existing ``n_live: null`` convention for MAP rows.
+
+    The gate used to be ``uses_n_live``, which was the same set purely because
+    every posterior-bearing sampler here was nested. NUTS has a posterior and
+    no live points, so the two questions had to be separated.
 
     Reads the same ``samples.parameter_lists`` / ``samples.weight_list`` the
     framework's own ``SamplesPDF.summary()`` derives its statistics from,
@@ -388,7 +403,7 @@ def _posterior_stats(result: Any, uses_n_live: bool) -> dict[str, dict[str, floa
     instance). Key order follows ``parameter_names`` and is therefore stable
     across runs of the same cell.
     """
-    if not uses_n_live:
+    if not has_posterior:
         return None
     try:
         samples = result.samples
@@ -456,6 +471,81 @@ def _penalty_at_best(
             "re-evaluated likelihood"
         ),
     }
+
+
+_NUTS_DIAGNOSTIC_KEYS = (
+    "num_warmup",
+    "num_samples",
+    "num_chains",
+    "ess_min",
+    "ess_bulk_min",
+    "ess_tail_min",
+    "rhat_max",
+    "mean_acceptance",
+    "n_divergent",
+    "tree_depth_histogram",
+    "n_logl_evals",
+    "warm_start_source",
+    "inverse_mass_matrix_kind",
+)
+
+
+def _nuts_samples_info(result: Any) -> dict:
+    """``samples_info`` off a completed NUTS result, or ``{}``.
+
+    ``af.BlackJAXNUTS.samples_info_from`` records the entire Phase-6 metric set
+    (PROGRAMME.md §Phase 6: divergences, acceptance, ESS bulk/tail, split-R-hat,
+    tree-depth distribution) plus ``n_logl_evals`` — the summed
+    ``num_integration_steps`` over every sample and chain. Never raises: a
+    completed multi-hour fit is not discarded because a diagnostic key moved.
+    """
+    try:
+        info = getattr(result.samples, "samples_info", None)
+        return dict(info) if info else {}
+    except Exception as exc:  # never let the diagnostics read kill a completed run
+        print(f"  WARNING: could not read NUTS samples_info: {exc!r}")
+        return {}
+
+
+def _nuts_diagnostics(samples_info: dict) -> dict | None:
+    """The recorded NUTS diagnostics block, or ``None`` when unavailable.
+
+    A straight projection of ``samples_info`` onto the keys Phase 6 is graded
+    on, so the artifact answers Gate C's questions (split-R-hat < 1.01, no
+    material divergences, ESS per gradient eval) without re-deriving anything
+    from the chain. ``valid`` is ``False`` when the two keys the gate cannot be
+    read without — ``rhat_max`` and ``n_divergent`` — are missing, which is
+    shouted but never raised, matching the per-lane block's discipline.
+    """
+    if not samples_info:
+        return None
+    block = {key: samples_info[key] for key in _NUTS_DIAGNOSTIC_KEYS if key in samples_info}
+    if not block:
+        return None
+    missing = [key for key in ("rhat_max", "n_divergent") if key not in block]
+    block["valid"] = not missing
+    if missing:
+        block["invalid_reasons"] = [
+            f"samples_info is missing {key!r}, so Gate C cannot be read from this artifact"
+            for key in missing
+        ]
+    return block
+
+
+def _finite_or_none(value: Any) -> float | None:
+    """``float(value)`` when finite, else ``None``.
+
+    A NaN ESS or R-hat means "not computable for this run" and must reach the
+    artifact as ``null``, not as a NaN that JSON renders as invalid syntax and
+    a reader silently coerces to a number.
+    """
+    if value is None:
+        return None
+    try:
+        result = float(value)
+    except (TypeError, ValueError):
+        return None
+    return result if np.isfinite(result) else None
 
 
 _DEFAULT_INSTRUMENTS: dict[str, str] = {
@@ -526,7 +616,14 @@ def run_search(
         f" [{instrument}, {config_name}, use_jax={use_jax},"
         f" mp={cli.use_mixed_precision}] ---"
     )
-    print(f"  n_live: {n_live if n_live is not None else 'n/a (MAP optimizer)'}")
+    if n_live is not None:
+        print(f"  n_live: {n_live}")
+    else:
+        # "no n_live" has two distinct causes now: a MAP optimizer has no
+        # posterior at all, whereas NUTS has a full posterior and simply has no
+        # live points. Printing "MAP optimizer" for an MCMC run was wrong.
+        kind = "MCMC" if sampler in _SAMPLERS_WITH_POSTERIOR else "MAP optimizer"
+        print(f"  n_live: n/a ({kind})")
 
     print("  Building dataset / model / analysis...")
     log_det_method = resolve_log_det_method(
@@ -566,6 +663,11 @@ def run_search(
         instrument=instrument,
         config_name=config_name,
         use_jax=use_jax,
+        # The REAL model, after apply_diagnostic_prior_overrides — not a probe
+        # model. Only build_nuts consumes it (its warm-start initializer keys
+        # start points on the target model's own Prior objects); every other
+        # builder accepts and ignores it so the dispatch stays branch-free.
+        model=model,
     )
 
     # Capture visualization wall-time across the full fit (pre-fit + every
@@ -607,6 +709,17 @@ def run_search(
         int(_captured_total_steps) if _captured_total_steps is not None else None
     )
     _multi_start_n_starts = int(search.n_starts) if is_multi_start else None
+
+    # NUTS records its own honest counters, so neither of the two numbers a
+    # naive read would use is taken: `total_samples` is the count of KEPT
+    # draws (chains x num_samples), not evaluations — NUTS spends up to 2**10
+    # leapfrog steps per draw — and the Kish ESS of an unweighted chain
+    # degenerates to that same raw count, which ignores autocorrelation
+    # entirely. See collect_metrics for how each is substituted.
+    _nuts_info = _nuts_samples_info(primary_result) if sampler == "nuts" else {}
+    _nuts_logl_evals = _nuts_info.get("n_logl_evals")
+    _nuts_ess = _finite_or_none(_nuts_info.get("ess_min"))
+
     metrics = collect_metrics(
         result=primary_result,
         total_wall_s=total_wall_s,
@@ -614,6 +727,8 @@ def run_search(
         is_multi_start=is_multi_start,
         n_starts=_multi_start_n_starts,
         multi_start_total_steps=_multi_start_total_steps,
+        nuts_logl_evals=int(_nuts_logl_evals) if _nuts_logl_evals is not None else None,
+        nuts_ess=_nuts_ess,
     )
 
     best_instance = None
@@ -646,7 +761,7 @@ def run_search(
             f"(delta vs max: {truth_anchor['delta_max_ll_vs_truth']!r})"
         )
 
-    posterior_stats = _posterior_stats(primary_result, uses_n_live)
+    posterior_stats = _posterior_stats(primary_result, sampler in _SAMPLERS_WITH_POSTERIOR)
 
     penalty_at_best = _penalty_at_best(analysis, best_instance, metrics.max_log_likelihood)
     if penalty_at_best is not None and "positions_penalty" in penalty_at_best:
@@ -656,6 +771,28 @@ def run_search(
         )
 
     diagnostics = None
+    if sampler == "nuts":
+        diagnostics = _nuts_diagnostics(_nuts_info)
+        if diagnostics is not None:
+            print(
+                f"  NUTS chains:        {diagnostics.get('num_chains')} x "
+                f"{diagnostics.get('num_samples')} samples "
+                f"(warmup {diagnostics.get('num_warmup')}), "
+                f"mass={diagnostics.get('inverse_mass_matrix_kind')!r}, "
+                f"init={diagnostics.get('warm_start_source')!r}"
+            )
+            print(
+                f"  NUTS diagnostics:   rhat_max={diagnostics.get('rhat_max')!r}, "
+                f"divergences={diagnostics.get('n_divergent')!r}, "
+                f"ess_min={diagnostics.get('ess_min')!r}, "
+                f"acceptance={diagnostics.get('mean_acceptance')!r}"
+            )
+            if not diagnostics.get("valid", True):
+                print("  !! NUTS DIAGNOSTICS INCOMPLETE — Gate C cannot be read from this run:")
+                for reason in diagnostics["invalid_reasons"]:
+                    print(f"     - {reason}")
+        else:
+            print("  WARNING: no NUTS samples_info recorded — diagnostics block omitted.")
     if is_multi_start:
         diagnostics = per_lane_block(captured=captured, model=model, n_starts=int(search.n_starts))
         print(
@@ -753,6 +890,10 @@ def _sampler_config_dict(
             "jax_native": True,
             "positions": positions_settings(),
         }
+    if sampler == "nuts":
+        # Gradient MCMC: no n_live (it has a posterior but no live points), so
+        # the key is recorded as null rather than a borrowed nested value.
+        return {"n_live": None, **nuts_settings()}
     if sampler in _MULTI_START_CLASSES:
         # MAP optimizer: no n_live; records its own multi-start knobs, plus the
         # auto-convergence early-stop criterion for the ``*_autoconv`` variants.

@@ -186,6 +186,8 @@ def collect_metrics(
     is_multi_start: bool = False,
     n_starts: int | None = None,
     multi_start_total_steps: int | None = None,
+    nuts_logl_evals: int | None = None,
+    nuts_ess: float | None = None,
 ) -> RunMetrics:
     """Assemble the headline metric block from a finished ``search.fit`` result.
 
@@ -215,6 +217,26 @@ def collect_metrics(
     point storage count, kept distinct from the (corrected) evaluation count
     so the two questions ("how many evals ran" vs "how many samples are
     stored") never collapse into the same, ambiguous field again.
+
+    **NUTS needs the same correction as MultiStart, for both counters.** Its
+    ``total_samples`` is ``num_chains * num_samples`` — the KEPT draws — while
+    a single NUTS draw costs up to ``2 ** max_num_doublings`` (1024) leapfrog
+    steps, each one a likelihood + gradient evaluation. Reading evals off the
+    stored count would therefore under-report by up to three orders of
+    magnitude and produce a per-eval figure that flatters NUTS against every
+    nested row in the same table — the exact class of error issue #177 was
+    about. ``nuts_logl_evals`` is the search's own summed
+    ``num_integration_steps`` (``samples_info["n_logl_evals"]``) and IS
+    reject-inclusive, so a NUTS row stays comparable with the nested rows.
+
+    ``nuts_ess`` matters for the same reason in the other direction: NUTS
+    weights are all 1.0, so the Kish formula ``(sum w)^2 / sum w^2``
+    degenerates to the raw sample count and would report the nominal draw
+    count as the effective sample size, ignoring autocorrelation entirely —
+    for a chain whose real ESS can be an order of magnitude smaller. The
+    rank-normalised ``samples_info["ess_min"]`` is substituted instead, which
+    is also the quantity Phase 6's gate is written in terms of. Both fall back
+    to the generic path when ``None``, so no other sampler's numbers move.
     """
     samples = result.samples
     total_samples = int(samples.total_samples)
@@ -241,12 +263,20 @@ def collect_metrics(
     if is_multi_start and n_starts is not None and multi_start_total_steps is not None:
         likelihood_evals = int(multi_start_total_steps) * int(n_starts)
         gradient_evals = likelihood_evals  # one gradient eval per likelihood eval per lane-step
+    elif nuts_logl_evals is not None:
+        # Summed num_integration_steps: one leapfrog step is one likelihood and
+        # one gradient evaluation, so the two counts coincide for NUTS.
+        likelihood_evals = int(nuts_logl_evals)
+        gradient_evals = likelihood_evals
 
     time_per_eval_ms = (
         sampler_wall_s / max(likelihood_evals, 1) * 1e3 if likelihood_evals else float("nan")
     )
 
-    kish_ess = None if is_multi_start else _kish_ess(getattr(samples, "weight_list", None))
+    if nuts_ess is not None:
+        kish_ess = float(nuts_ess)
+    else:
+        kish_ess = None if is_multi_start else _kish_ess(getattr(samples, "weight_list", None))
     evals_per_ess = likelihood_evals / kish_ess if kish_ess is not None and kish_ess > 0 else None
     ess_per_min = (
         kish_ess / (sampler_wall_s / 60.0) if kish_ess is not None and sampler_wall_s > 0 else None

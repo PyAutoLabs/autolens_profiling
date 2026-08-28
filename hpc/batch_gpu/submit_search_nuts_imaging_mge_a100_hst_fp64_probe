@@ -1,0 +1,170 @@
+#!/bin/bash -l
+#
+# Inference programme Phase 6 (PROGRAMME.md "Initialized posterior sampling")
+# — FIRST PROBE of af.BlackJAXNUTS in this framework. Warm-vs-cold A/B on
+# searches/nuts/imaging/mge x hst x fp64.
+#
+# WHY THIS EXISTS
+#   Phase 6's H6.1 is that NUTS warm-started at the MAP, with a mass matrix
+#   informed by the previous fit, achieves ESS/s far above nested sampling on
+#   MGE — the 269x prior/posterior anisotropy and |r|=0.95 correlations that
+#   motivate it are already measured. Nothing in this repo could test it: the
+#   searches framework had no MCMC cell at all until this branch.
+#
+#   PROGRAMME.md's Phase-0 checklist recorded the blocker as "af.BlackJAXNUTS
+#   exists but is single-chain, diagonal-mass, no covariance/start-vector
+#   injection". That is now STALE — PyAutoFit PR#1522 shipped vmapped
+#   multi-chain NUTS, `initializer=result.start_point_from(...)` and
+#   `inverse_mass_matrix=None|"diagonal"|"dense"|ndarray|Result`. The checklist
+#   row is corrected in the same PR as this submit.
+#
+# THIS IS A PROBE, NOT A MEASUREMENT
+#   Nothing about NUTS on this cell has ever been measured, so there is no
+#   step rate to size a budget from — the WALL-BASIS block below says exactly
+#   that (`source: unmeasured  probe-first: yes`) rather than borrowing the
+#   MultiStart or Nautilus MGE rate, neither of which describes a NUTS
+#   trajectory. A NUTS draw costs up to 2**max_num_doublings (1024) leapfrog
+#   steps; the MGE rates in wall/rates.py are per optimizer STEP, which is one
+#   evaluation. The two are not the same unit and must not be substituted —
+#   that substitution across cells is what killed RAL job 340576.
+#
+#   The point of this job is therefore to MEASURE the rate: warmup 200 +
+#   samples 200 at 4 chains is short enough that even a pessimistic trajectory
+#   fits the budget, and the results JSON records `n_logl_evals` (the summed
+#   num_integration_steps) so a real per-eval rate falls straight out of it.
+#   Add the measured row to scripts/misc/wall/rates.py before sizing any
+#   longer NUTS job, and switch this submit's row to `source: rates`.
+#
+# ARMS — 2 array tasks, differing ONLY in initialization:
+#   task 0  COLD: InitializerBall around the prior median (the af default).
+#   task 1  WARM: 4 start points drawn from the completed Prodigy MGE MAP fit
+#           named by WARM_FROM below, jittered by 0.05 sigma per chain.
+#           `InitializerParamStartPoints.from_result` maps by prior PATH and
+#           never rewrites a prior — the scientific model is identical between
+#           the two arms, only the starting vectors move.
+#
+#   Both arms use SEARCHES_NUTS_MASS=diag. `result` (a dense metric seeded
+#   from the source's covariance) is deliberately NOT used here: the warm
+#   source is a MAP optimizer whose stored samples are best-points, not a
+#   posterior, so its covariance is MLE-only and PyAutoFit rejects it by
+#   design. A dense-metric arm belongs on a Nautilus-sourced warm start, which
+#   is a follow-up once this probe has a rate.
+#
+#   The seed is held FIXED at 0 across both tasks on purpose — this is a
+#   warm-vs-cold A/B, not a reliability scan, so the seed must not be the
+#   thing that differs. A >= 5-seed reliability run (PROGRAMME.md §3) comes
+#   after Phase 6 has a rate and a verdict.
+#
+# COLLISION SAFETY
+#   `seed` and `initializer` are NOT in BlackJAXNUTS.__identifier_fields__
+#   (which is num_warmup / num_samples / num_chains / inverse_mass_matrix), so
+#   the cold and warm arms would otherwise resolve to ONE output directory and
+#   the second task would return the first's `.completed` fit — reporting the
+#   cold arm's numbers twice, with nothing in either artifact revealing it.
+#   `searches/_samplers.nuts_unique_tag` carries the seed and a digest of the
+#   warm-start path into the unique_tag, and therefore into both the
+#   identifier and the output path. --config-name additionally keeps the two
+#   results JSONs disjoint. Read that function's docstring before adding an arm.
+#
+# DEPENDENCY — READ BEFORE SUBMITTING
+#   Requires PyAutoFit >= PR#1522 on the RAL PYTHONPATH checkout (multi-chain
+#   BlackJAXNUTS, `initializer=`, `inverse_mass_matrix=`). Run `HPCPullPyAuto`
+#   and confirm first; an older PyAutoFit raises on the `num_chains=` kwarg.
+#   Task 1 additionally requires WARM_FROM below to exist and to hold a
+#   COMPLETED fit (files/model.json + samples.csv + samples_info.json). The
+#   driver raises a clear error rather than silently starting cold if it does
+#   not — a "warm" arm that was actually cold is the one failure this must not
+#   permit.
+
+# WALL-BASIS: — one row per cell this submit runs. See scripts/misc/wall/README.md.
+#   `rates` cites a step rate measured on THAT cell (wall/rates.py); an MGE rate
+#   can never stand in for a pixelized cell — that is what killed RAL job 340576.
+#   NUTS has never been run on this cell, and the existing MGE rows in rates.py
+#   are per-optimizer-step, a different unit from a NUTS leapfrog trajectory.
+#   Nothing measured => `unmeasured`, and this job is the probe that measures it.
+#   cell: imaging/mge/hst  device: a100  precision: fp64
+#   steps: 400  source: unmeasured  probe-first: yes
+#   compile: 300
+
+#SBATCH -J phase6_nuts_mge_probe
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=0:45:00
+#SBATCH --array=0-1
+#SBATCH -o output/output.%A_%a.out
+#SBATCH -e error/error.%A_%a.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_profiling
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+# sbatch does NOT inherit JAX_ENABLE_X64 from the submitting shell; without
+# this line the job silently runs float32 and every number it produces is a
+# different measurement from the fp64 rows it would be compared against.
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+# The completed Prodigy MGE MAP fit task 1 warm-starts from. Point this at the
+# fit's own output directory (the one holding `files/`), or at the directory
+# holding exactly one such fit — the driver resolves both and refuses anything
+# ambiguous.
+WARM_FROM="$AP_ROOT/output/searches/multi_start_prodigy/imaging/mge/hst/n16_s3000_seed0_bij_none/mge_auto_none_seed0"
+
+ARMS=(cold warm)
+ARM=${ARMS[$SLURM_ARRAY_TASK_ID]}
+
+export SEARCHES_NUTS_NUM_CHAINS=4
+export SEARCHES_NUTS_NUM_WARMUP=200
+export SEARCHES_NUTS_NUM_SAMPLES=200
+export SEARCHES_NUTS_MASS=diag
+# Fixed across both arms: this A/B varies the initializer, nothing else.
+export SEARCHES_SEED=0
+# Visualization is not the measurement and its cost would land inside the
+# recorded wall; the results JSON records viz_disabled: true.
+export SEARCHES_DISABLE_VIZ=1
+
+if [ "$ARM" == "warm" ]; then
+    if [ ! -d "$WARM_FROM" ]; then
+        echo "FATAL: warm-start source does not exist: $WARM_FROM"
+        echo "Re-point WARM_FROM at a completed Prodigy MGE fit, or run only task 0."
+        exit 1
+    fi
+    export SEARCHES_NUTS_WARM_FROM="$WARM_FROM"
+else
+    unset SEARCHES_NUTS_WARM_FROM
+fi
+
+CONFIG_NAME="hpc_a100_fp64_c4_w200_s200_${ARM}"
+
+nvidia-smi
+
+# Bounce off the MIG-mode GPU that SLURM still hands out as a plain A100.
+# Requires the submit to be dispatched with --requeue. See the script's header.
+source "$AP_ROOT/hpc/batch_gpu/_gpu_preflight.sh"
+
+echo "=========================================="
+date
+echo "Task:        $SLURM_ARRAY_TASK_ID / 1"
+echo "Cell:        searches/nuts/imaging/mge"
+echo "Instrument:  hst"
+echo "Precision:   fp64"
+echo "Arm:         $ARM"
+echo "chains=4  warmup=200  samples=200  mass=diag  seed=0  positions=off"
+echo "warm_from:   ${SEARCHES_NUTS_WARM_FROM:-<none, cold start>}"
+
+cd $AP_ROOT
+python3 scripts/imaging/searches/nuts/mge.py \
+    --instrument hst \
+    --config-name $CONFIG_NAME \
+    --output-dir $AP_ROOT/results/searches/nuts/imaging/mge/hst
+
+echo "Finished."
+date
