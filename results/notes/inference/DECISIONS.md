@@ -696,3 +696,162 @@ pins them.
 **Records:** `phase_04_positions/RESULTS.md` "Stage 3 — threshold vs
 stiffness diagnostic (job 341892)"; PROGRAMME.md phase/gate table + §9b;
 `results/searches/multi_start_prodigy_autoconv/imaging/mge/hst/hpc_hpc_a100_fp64_n256_seed{0-4}_pos_{t0.3_f1e5,tauto0.2_f1e8}.json`.
+
+---
+
+## 2026-08-28 — W5 / Phase 8B: F2 reference ruling, F5 demoted, preliminary verdict on 24/39 arms
+
+**Ruling (architect, 2026-08-28, recorded BEFORE any scoring was run —
+autolens_profiling#185).** The 2026-08-27 entry above left three things owed:
+the F2 reference deviation needed a ruling, F5 was HALTing the verdict stage,
+and F4's fp-equivalence limb was of uncertain status. All three are settled
+here, and the scorer (`scripts/misc/searches/bijector_ab.py`) is amended to
+match. The arm table, the readouts and the pre-registered "any two criteria
+falsified → 8B falsified" threshold are **untouched**.
+
+**1. The F2 reference is the group-wide physically-valid maximum.** The
+reference log-posterior for a `(cell, log_det_method)` group is the maximum
+`lane_best_log_posterior` over **ALL** arms in that group — every bijector,
+`none` / `log_reg` / `logit` alike — restricted to physically valid rows. A row
+is excluded if it is **void** (`diagnostics.valid = false`, total wall < 2 min,
+or no `schema_version`) or if its **best point has an ell_comps magnitude
+≥ 1** — i.e. it sits outside the unit disk, in the 21.5 % of the independent
+per-component `ell_comps` prior box that is non-physical. The magnitude is read
+from `recovered_offline_verification.best_point_ell_comps_magnitude` where the
+row carries it, and otherwise computed from the winning lane's
+`lane_best_params` through `diagnostics.ell_comps_pairs`; every row records
+which field was used (`ell_comps_source`). The two agree exactly on all nine
+recovered rows, so the computed path is not a second, looser measurement.
+The tolerance is unchanged: `REFERENCE_TOLERANCE_NATS = 10`.
+
+*Rationale.* The old reference — max over the `none` arm only — was defined by
+the control arm's own stalling: it made "steps to reach where `none` got to"
+the target, which is circular when the whole question is whether `none` stalls.
+It is now also contaminated: `delaunay_adapt_split · slogdet · log_reg · seed 1`
+reports a `lane_best_log_posterior` of **2.1e53** at a best point pinned to the
+(±1, ±1) box corner (|e| = 1.41421 on both `ell_comps` pairs). A reference is a
+physical target, so a non-physical point cannot set one — under any
+max-over-arms rule the corner row would otherwise define every group's bar.
+
+**2. F2 "never reached" has explicit semantics.** At a matched seed, within the
+3000-step budget: `none` never comes within tolerance while `log_reg` does →
+that seed's reduction ratio is **+inf** and counts as ≥ 2×; `log_reg` never
+reaches while `none` does → ratio **0**, counting against; **both** never reach
+→ the seed is **unscorable** and drops out. The median is taken over the
+scorable seeds, as before. This replaces a silent conflation in which "never
+reached" produced no ratio at all, so a group in which `none` never converged
+and `log_reg` always did scored as UNSCORABLE rather than as the strongest
+possible pass.
+
+**3. F5 is demoted from HALT to a reported diagnostic.** As written, F5
+compares the step-0 global-best (min-over-lanes) figure of merit between two
+**separate GPU runs**. That is a measurement of floating-point reproducibility
+across two processes, not of the objective: the MGE control, whose `log_reg`
+map is provably EMPTY (an identity reparameterization), still diverges by
+**1.7e-2** relative by step 3000, and the `delaunay_adapt_split · slogdet`
+seed-0 pair differs by 1.06e-5 at step 0 — neither can be a bijector effect.
+F5 is still computed and reported with the same 1e-9 number, now labelled an
+**"fp-reproducibility diagnostic"**, and it no longer halts the verdict. The
+sound version of F5 — evaluate the same physical point under both
+parameterizations **in one process** and assert bit-equality — is an in-process
+PyAutoFit unit test and is filed separately; it is not something a two-run A/B
+can measure.
+
+**4. F4's fp-equivalence limb is informational only.** Per the 2026-08-27
+amendment, the MGE control's winning-lane `best_fom` / `max_log_likelihood`
+comparison is **reported and never scored** — it is the same cross-run
+fp-reproducibility quantity F5 measures, and it fails for the same reason.
+F4 now trips on one thing only: the `knn` `logit` arm reproducing the
+**pinned-lane-to-boundary pathology** (a lane parked on the logit box bound at
+completion). The old per-lane byte-identity check remains as a second
+informational field.
+
+**5. Stack-version split across the campaign, deliberately not treated as an
+A/B split.** The 24 arms landed and scored here ran on **2026.8.17.1 with
+pre-#1536 PyAutoFit**. The 15 resubmitted arms (RAL job **341978**, array
+indices 0, 2, 3, 14, 17, 19, 21, 24, 25, 26, 27, 30, 32, 33, 34) run on the
+post-pull stack (**PyAutoFit f466dce1a, PyAutoGalaxy 0fbe863d, PyAutoLens
+b23ee53e9**). The **likelihood code is unchanged between the two**: #1536,
+#713, #1538 and #589 touch results-writing and an **opt-in** clipper only, and
+no 8B arm opts in. The two halves are therefore pooled rather than analysed as
+separate populations — **but it is flagged**, because the claim rests on a
+reading of four PRs' diffs and not on a measurement, and the final verdict
+should re-check it if any pooled criterion sits near its threshold.
+
+**6. This verdict is PRELIMINARY (24 of 39 arms).** It is emitted now because
+the ruling above is what was blocking it and because 24 arms is enough to see
+the shape of every criterion; it is **not** the campaign's answer. The verdict
+artifact carries `preliminary: true` and `n_rows_expected: 39`, and the final
+verdict is re-run when 341978 lands.
+
+**7. No 8B arm used `ClipperPriorBoxJoint`.** With a bijector set, the joint
+disk clipper is **refused at construction** (`PyAutoFit
+multi_start_gradient/search.py:368-383`) — the joint constraint is expressed in
+the untransformed coordinate and the search has no way to apply it through an
+arbitrary bijector. Every 8B arm therefore ran `SEARCHES_CLIPPER=prior_box`,
+the per-component box that is faithful to a *wrong* box, which is exactly the
+mechanism that puts best points outside the unit disk and forced ruling 1.
+Filed as a PyAutoFit follow-up: the bijector and the joint clipper need to
+compose, or the refusal needs to be a documented, surfaced incompatibility
+rather than a silent constraint on the experiment design.
+
+**Scored readout under the ruling (24 rows, `bijector_ab.py --stage verdict`,
+artifact `phase_08_regularization/bijector_ab/verdict_<hardware>.json`):**
+
+**VERDICT: FALSIFIED — 3 of 4 criteria fired (F1, F3, F4)**, against the
+pre-registered "any two → 8B falsified; record and close, no rescoping to
+logit" threshold. **PRELIMINARY (24 of 39 arms.)**
+
+| criterion | state | numbers |
+|---|---|---|
+| **F1** NaN-wall position (delaunay) | **FALSIFIED** (cholesky tier; slogdet tier UNSCORABLE) | cholesky: median first-value-NaN step **0.0 under both** arms, and value-NaN lane-steps **rise** 18,143 (`none`, 2 rows) → 139,205 (`log_reg`, 5 rows). slogdet: no `none` arm recorded a single value-NaN, so neither limb is measurable. |
+| **F2** steps-to-reference (knn) | **NOT falsified** | reference **30,559.28**; 1 matched seed (3). `none` never comes within 10 nats — it tops out 1,645 nats short at 28,914.21 — while `log_reg` is inside the band by step **2,882**. Ratio **+inf** ≥ 2×. |
+| **F3** time at λ > 1e4 | **FALSIFIED** (delaunay cholesky) | cholesky `none` **0.0000** vs `log_reg` **0.00076**. The other two groups go the other way: slogdet 0.0469 → 0.0368, knn 0.0625 → 0.0520. |
+| **F4** MGE control + logit pathology | **FALSIFIED** (logit limb) | `knn·logit·seed1` ends with a lane holding **7 parameters pinned to the box bound**. Informational: MGE seed 0 agrees (`best_fom` rel 0.0, maxL rel 9.8e-15), seed 1 disagrees at rel **1.73e-2**; byte-identity fails on both. |
+| **F5** fp-reproducibility diagnostic | **1 pair above 1e-9**, does not halt | `delaunay·slogdet·seed0` step-0 fom 357,347.020 (`log_reg`) vs 357,343.242 (`none`), rel **1.06e-5**. Every other matched pair, MGE and knn included, agrees within 1e-9. |
+
+**Resolved references and what ruling 1 removed.** delaunay·cholesky
+**30,609.94** (`log_reg` s1, 2/7 rows kept) · delaunay·slogdet **30,286.10**
+(`log_reg` s3, 2/7) · knn **30,559.28** (`log_reg` s3, 4/6) · mge **31,787.84**
+(`log_reg` s0, 4/4). **Twelve of the 24 rows — exactly half — are excluded, all
+twelve for the same reason: the best point is outside the unit disk**
+(magnitudes 1.032 – 1.41421). **Zero rows are void**: all 24 have
+`diagnostics.valid = true`, ran the full 3000 steps and took 1.7–4.0 h. On
+`delaunay_adapt_split` the non-physical rate is **10 of 14 (71 %)** and it is
+indifferent to bijector and log-det method alike. The 2.1e53 row is one of the
+twelve, as intended.
+
+**How much weight this verdict carries.** It is the pre-registered rule's
+answer on today's data and is reported as such, but each fired criterion is
+thin in a way 15 more arms can move, and this is recorded so the final verdict
+is not read as a mere confirmation:
+
+- **F1's fired limb sums raw counts over unbalanced arms** — 2 `none` rows vs
+  5 `log_reg` rows (9,072 vs 27,841 per arm). The limb survives normalisation
+  (a 3× rise, not a 50 % fall), but the scorer does not normalise and the
+  pre-registration's wording fixes that; filed as a follow-up rather than
+  changed mid-campaign.
+- **F3 fires on a knife-edge**: `none` is *exactly* 0.0000 on the cholesky
+  tier and the criterion is `>=`, so any non-zero `log_reg` value trips it.
+  Both groups with real high-λ occupancy show `log_reg` spending **less** time
+  there.
+- **F4 fires on a necessary-not-sufficient proxy**: `n_pinned_final` counts all
+  pinned parameters, not just the traced regularization ones, on a single
+  `logit` seed.
+- **F2, the criterion that did NOT fire, also rests on one matched seed**, and
+  its reference is set by the `log_reg` arm at that same seed — so the `+inf`
+  reads "`none` never reached what `log_reg` reached" (a real 1,645-nat gap)
+  rather than the "2× fewer steps to a common target" the criterion was drafted
+  to measure.
+
+**Owed, and not paid here:** the final verdict when 341978 lands; the
+in-process PyAutoFit unit test that is the sound F5; the PyAutoFit follow-up on
+bijector × `ClipperPriorBoxJoint`; and an F1 limb that normalises per arm.
+
+**Records:** `phase_08_regularization/RESULTS.md` "8B — PRELIMINARY verdict on
+24/39 arms"; `phase_08_regularization/bijector_ab/verdict_<hardware>.json`
+(`<hardware>` names the machine that ran the SCORER, not the arms — every arm
+ran on the RAL A100); the 24 results JSON + 12 PNG under
+`results/searches/multi_start_prodigy/imaging/{delaunay_adapt_split,knn,mge}/hst/phase8b/`;
+`scripts/misc/searches/bijector_ab.py` ("Scorer amendments 2026-08-28") and
+`scripts/misc/test/test_searches_bijector.py`. Issue autolens_profiling#185.

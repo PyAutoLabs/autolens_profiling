@@ -71,7 +71,13 @@ class PriorExitCheck(HazardCheck):
             context.workspace_root,
             repo="PyAutoFit",
             path="autofit/non_linear/clipper.py",
-            pattern="class ClipperPriorBox",
+            # The trailing "(" matters: PyAutoFit main also defines
+            # `class ClipperPriorBoxJoint(ClipperPriorBox)`, so the bare
+            # "class ClipperPriorBox" prefix matches TWO lines and
+            # `anchor_from_pattern` (which demands exactly one) raises —
+            # `maybe_anchor_from_pattern` then swallows it to None and the
+            # hazard silently loses its blocked_by anchor.
+            pattern="class ClipperPriorBox(",
             symbol="autofit.non_linear.clipper.ClipperPriorBox",
         )
 

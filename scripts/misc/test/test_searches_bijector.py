@@ -6,8 +6,9 @@ Covers: env-var parsing/validation, the ``_bijector_object`` label -> ``af``
 class resolution (including the ``log_reg`` per-path restriction), the
 composed ``multi_start_unique_tag`` (none vs log_reg differ; none resolves
 identically to the pre-8B tag), the recorded ``multi_start_settings()`` block,
-and the ``bijector_ab.score_rows`` verdict logic on synthetic rows (F5 trip,
-F4 byte-identity).
+and the ``bijector_ab.score_rows`` verdict logic on synthetic rows (the F5
+diagnostic, F4's informational limbs, and the 2026-08-28 F2 reference / "never
+reached" rules of issue #185).
 
 Run::
 
@@ -251,6 +252,12 @@ def _synthetic_row(**overrides) -> dict:
         frac_steps_high_lambda=0.0,
         best_log_posterior=-100.0,
         winning_lane_index=0,
+        total_wall_s=3600.0,
+        diagnostics_valid=True,
+        void_reasons=[],
+        best_point_ell_comps_magnitude={"galaxies.lens.mass.ell_comps": 0.2},
+        best_point_ell_comps_magnitude_max=0.2,
+        ell_comps_source="diagnostics.ell_comps_pairs + per_lane[winning].lane_best_params",
         best_fom=180.0,
         max_log_likelihood=-90.0,
         fom_history_global_best=[200.0, 190.0, 180.0],
@@ -267,7 +274,10 @@ def _synthetic_row(**overrides) -> dict:
     return row
 
 
-def test_score_rows_f5_trips_on_mismatched_step0_fom():
+def test_score_rows_f5_is_reported_but_never_halts():
+    """The 2026-08-28 demotion (issue #185): F5 compares two SEPARATE GPU
+    runs, so a mismatch is cross-run fp non-reproducibility, not a bijector
+    effect. It is still measured, and it no longer stops the verdict."""
     import bijector_ab as m
 
     rows = [
@@ -275,12 +285,16 @@ def test_score_rows_f5_trips_on_mismatched_step0_fom():
         _synthetic_row(cell="knn", bijector="log_reg", seed=0, step0_fom=999.0),
     ]
     verdict = m.score_rows(rows)
-    assert verdict["halted"] is True
-    assert verdict["f5"]["falsified"] is True
-    assert len(verdict["f5"]["problems"]) == 1
+    assert verdict["halted"] is False
+    f5 = verdict["diagnostics"]["f5"]
+    assert f5["halts"] is False
+    assert f5["n_problems"] == 1
+    assert f5["reproducible_within_1e-9"] is False
+    # the verdict still reaches the four real criteria rather than stopping
+    assert "f1_nan_wall_position" in verdict
 
 
-def test_score_rows_f5_does_not_trip_on_matching_step0_fom():
+def test_score_rows_f5_clean_when_step0_fom_matches():
     import bijector_ab as m
 
     rows = [
@@ -289,22 +303,39 @@ def test_score_rows_f5_does_not_trip_on_matching_step0_fom():
     ]
     verdict = m.score_rows(rows)
     assert verdict["halted"] is False
+    assert verdict["diagnostics"]["f5"]["reproducible_within_1e-9"] is True
 
 
-def test_score_rows_f4_flags_winning_lane_disagreement():
-    """The amended F4 (issue #182): the criterion is the winning lane's
-    best_fom / max_log_likelihood, not per-lane byte-identity."""
+def test_score_rows_f4_fp_disagreement_is_informational_only():
+    """The 2026-08-28 amendment (issue #185): the MGE winning-lane
+    best_fom / max_log_likelihood limb is the same cross-run quantity F5
+    measures, so it is reported and can no longer falsify F4."""
     import bijector_ab as m
 
     rows = [
         _synthetic_row(cell="mge", bijector="none", seed=0, best_fom=180.0),
         _synthetic_row(cell="mge", bijector="log_reg", seed=0, best_fom=180.5),
+        _synthetic_row(cell="knn", bijector="logit", seed=0, max_pinned_final_count=0),
     ]
     verdict = m.score_rows(rows)
     assert verdict["halted"] is False
     f4 = verdict["f4_mge_control_and_logit_pathology"]
-    assert f4["falsified"] is True
     assert f4["mge_per_seed_equivalence"][0]["agree_within_fp64"] is False
+    assert f4["mge_differs"] is True
+    assert f4["falsified"] is False
+
+
+def test_score_rows_f4_trips_only_on_the_logit_pinned_lane_pathology():
+    import bijector_ab as m
+
+    rows = [
+        _synthetic_row(cell="mge", bijector="none", seed=0, best_fom=180.0),
+        _synthetic_row(cell="mge", bijector="log_reg", seed=0, best_fom=180.0),
+        _synthetic_row(cell="knn", bijector="logit", seed=0, max_pinned_final_count=7),
+    ]
+    f4 = m.score_rows(rows)["f4_mge_control_and_logit_pathology"]
+    assert f4["falsified"] is True
+    assert f4["knn_logit_pathology_suspected"] is True
 
 
 def test_score_rows_f4_tolerates_trailing_bit_drift_in_the_winning_lane():
@@ -333,6 +364,172 @@ def test_score_rows_f4_tolerates_trailing_bit_drift_in_the_winning_lane():
     assert f4["falsified"] is False
     # byte-identity DID fail — reported, not scored.
     assert f4["mge_per_seed_byte_identical"][0] is False
+
+
+# ---------------------------------------------------------------------------
+# 2026-08-28 ruling (issue #185) — the F2 reference and "never reached"
+# ---------------------------------------------------------------------------
+
+
+def test_reference_is_group_wide_not_none_arm_only():
+    """The reference is now the max over EVERY bijector arm in the group, so a
+    log_reg arm that outruns every none arm sets it."""
+    import bijector_ab as m
+
+    rows = [
+        _synthetic_row(cell="knn", bijector="none", seed=0, best_log_posterior=100.0),
+        _synthetic_row(cell="knn", bijector="log_reg", seed=0, best_log_posterior=500.0),
+    ]
+    reference, detail = m._resolve_reference(rows)
+    assert reference == 500.0
+    assert detail["reference_row"].endswith("log_reg·seed0")
+    assert detail["n_rows_considered"] == 2
+
+
+def test_reference_excludes_rows_whose_best_point_is_outside_the_unit_disk():
+    """The contaminating case: the 2.1e53 row sits on the (+-1, +-1) box
+    corner, so it may not define a physical reference."""
+    import bijector_ab as m
+
+    rows = [
+        _synthetic_row(cell="knn", bijector="none", seed=0, best_log_posterior=100.0),
+        _synthetic_row(
+            cell="knn",
+            bijector="log_reg",
+            seed=1,
+            best_log_posterior=2.1e53,
+            best_point_ell_comps_magnitude={"galaxies.lens.mass.ell_comps": 1.4142107},
+            best_point_ell_comps_magnitude_max=1.4142107,
+        ),
+    ]
+    reference, detail = m._resolve_reference(rows)
+    assert reference == 100.0
+    assert len(detail["rows_excluded"]) == 1
+    assert "non-physical" in detail["rows_excluded"][0]["reason"]
+    assert detail["rows_excluded"][0]["best_log_posterior"] == 2.1e53
+
+
+def test_reference_excludes_void_rows():
+    import bijector_ab as m
+
+    rows = [
+        _synthetic_row(cell="knn", bijector="none", seed=0, best_log_posterior=100.0),
+        _synthetic_row(
+            cell="knn",
+            bijector="log_reg",
+            seed=1,
+            best_log_posterior=9_000.0,
+            total_wall_s=3.0,
+            void_reasons=["total_wall_s=3.0 < 120"],
+        ),
+    ]
+    reference, detail = m._resolve_reference(rows)
+    assert reference == 100.0
+    assert detail["rows_excluded"][0]["reason"].startswith("void:")
+
+
+def test_row_from_payload_computes_ell_comps_magnitude_from_the_best_point():
+    """Rows that completed normally carry no recovery-verifier field, so the
+    magnitude has to come from ell_comps_pairs + the winning lane."""
+    import bijector_ab as m
+
+    payload = {
+        "model": "knn",
+        "schema_version": 2,
+        "performance": {"total_wall_s": 3600.0},
+        "sampler_config": {"bijector": "none", "seed": 0},
+        "diagnostics": {
+            "valid": True,
+            "n_starts_configured": 1,
+            "ell_comps_pairs": {"galaxies.lens.mass.ell_comps": [0, 1]},
+            "per_lane": [{"lane_best_log_posterior": 1.0, "lane_best_params": [0.6, 0.8, 5.0]}],
+        },
+    }
+    row = m.row_from_payload(payload)
+    assert row["best_point_ell_comps_magnitude_max"] == pytest.approx(1.0)
+    assert row["ell_comps_source"].startswith("diagnostics.ell_comps_pairs")
+    assert row["void_reasons"] == []
+
+
+def test_row_from_payload_prefers_the_recovery_verifier_field():
+    import bijector_ab as m
+
+    payload = {
+        "model": "knn",
+        "schema_version": 2,
+        "performance": {"total_wall_s": 3600.0},
+        "sampler_config": {"bijector": "none", "seed": 0},
+        "recovered_offline_verification": {
+            "best_point_ell_comps_magnitude": {"galaxies.lens.mass.ell_comps": 1.032127}
+        },
+        "diagnostics": {
+            "valid": True,
+            "ell_comps_pairs": {"galaxies.lens.mass.ell_comps": [0, 1]},
+            "per_lane": [{"lane_best_log_posterior": 1.0, "lane_best_params": [0.1, 0.1]}],
+        },
+    }
+    row = m.row_from_payload(payload)
+    assert row["best_point_ell_comps_magnitude_max"] == pytest.approx(1.032127)
+    assert row["ell_comps_source"] == (
+        "recovered_offline_verification.best_point_ell_comps_magnitude"
+    )
+
+
+def _knn_pair(reference: float, none_fom: list, log_reg_fom: list, seed: int = 0) -> list[dict]:
+    """A knn none/log_reg pair whose fom histories are chosen so that
+    ``-0.5 * fom`` crosses (or never crosses) ``reference``."""
+    return [
+        _synthetic_row(
+            cell="knn",
+            bijector="none",
+            seed=seed,
+            best_log_posterior=reference,
+            fom_history_global_best=none_fom,
+        ),
+        _synthetic_row(
+            cell="knn",
+            bijector="log_reg",
+            seed=seed,
+            best_log_posterior=reference,
+            fom_history_global_best=log_reg_fom,
+        ),
+    ]
+
+
+def test_score_f2_never_reached_by_none_scores_as_infinite_reduction():
+    """Ruling 2: none never within tolerance, log_reg is -> +inf, counts as
+    >= 2x. Before the amendment this produced no ratio and read UNSCORABLE."""
+    import bijector_ab as m
+
+    # reference 100 -> target fom -200; none stays at fom 0 (log_post 0).
+    rows = _knn_pair(100.0, [0.0, 0.0, 0.0], [0.0, 0.0, -200.0])
+    result = m.score_f2(rows)
+    assert result["scorable"] is True
+    assert result["per_seed"][0]["steps_none"] is None
+    assert result["per_seed"][0]["reduction_ratio"] == float("inf")
+    assert result["median_reduction_ratio"] == float("inf")
+    assert result["falsified"] is False
+
+
+def test_score_f2_never_reached_by_log_reg_scores_as_zero_and_falsifies():
+    import bijector_ab as m
+
+    rows = _knn_pair(100.0, [0.0, 0.0, -200.0], [0.0, 0.0, 0.0])
+    result = m.score_f2(rows)
+    assert result["scorable"] is True
+    assert result["per_seed"][0]["reduction_ratio"] == 0.0
+    assert result["falsified"] is True
+
+
+def test_score_f2_neither_arm_reaching_leaves_the_seed_unscorable():
+    import bijector_ab as m
+
+    rows = _knn_pair(100.0, [0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
+    result = m.score_f2(rows)
+    assert result["scorable"] is False
+    assert result["falsified"] is None
+    assert result["per_seed"][0]["reduction_ratio"] is None
+    assert result["n_scorable_seeds"] == 0
 
 
 def test_score_rows_f4_unscorable_without_matched_mge_seeds():
