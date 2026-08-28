@@ -97,7 +97,9 @@ def test_target_id_signature_has_no_algorithm_knobs():
     params = set(inspect.signature(t.target_id).parameters)
     assert "sampler" not in params
     assert "n_live" not in params
-    assert params == {"target", "model", "dataset_path"}
+    # ``positions_setup`` is the resolved positions arm (issue #182) — a
+    # recorded, run-defining input, not an algorithm knob.
+    assert params == {"target", "model", "dataset_path", "positions_setup"}
 
 
 # ---------------------------------------------------------------------------
@@ -110,6 +112,87 @@ def test_target_id_sensitive_to_positions():
     off = t.target_id(t.TARGETS["mge_fp64"], model, _HST_DATASET_PATH)
     on = t.target_id(t.TARGETS["mge_pos_fp64"], model, _HST_DATASET_PATH)
     assert off != on
+
+
+def _positions_setup(mode="fixed", threshold=0.3, factor=1e8):
+    """A resolved positions block of the shape ``_setup.positions_settings()``
+    returns and ``_runner`` records as the artifact's top-level ``positions``."""
+    from searches._setup import positions_settings_for
+
+    return positions_settings_for(
+        enabled=True,
+        mode=mode,
+        fixed_value=threshold if mode == "fixed" else None,
+        factor=factor,
+    )
+
+
+def test_target_id_positions_default_setup_matches_no_setup():
+    """The historical default arm (fixed / 0.3 / 1e8) must keep the exact id
+    it was recorded with — passing it explicitly changes nothing."""
+    model = _mge_model(mask_radius=3.5)
+    target = t.TARGETS["mge_pos_fp64"]
+    implicit = t.target_id(target, model, _HST_DATASET_PATH)
+    explicit = t.target_id(target, model, _HST_DATASET_PATH, _positions_setup())
+    assert implicit == explicit
+
+
+def test_target_id_sensitive_to_positions_factor():
+    """The Phase-4 defect (issue #182): f1e5 and f1e8 are different objectives
+    and must not share a target_id."""
+    model = _mge_model(mask_radius=3.5)
+    target = t.TARGETS["mge_pos_fp64"]
+    f1e8 = t.target_id(target, model, _HST_DATASET_PATH, _positions_setup(factor=1e8))
+    f1e5 = t.target_id(target, model, _HST_DATASET_PATH, _positions_setup(factor=1e5))
+    assert f1e8 != f1e5
+
+
+def test_target_id_sensitive_to_positions_threshold_mode():
+    model = _mge_model(mask_radius=3.5)
+    target = t.TARGETS["mge_pos_fp64"]
+    fixed = t.target_id(target, model, _HST_DATASET_PATH, _positions_setup(mode="fixed"))
+    auto = t.target_id(target, model, _HST_DATASET_PATH, _positions_setup(mode="auto"))
+    assert fixed != auto
+
+
+def test_target_id_sensitive_to_positions_threshold_value():
+    model = _mge_model(mask_radius=3.5)
+    target = t.TARGETS["mge_pos_fp64"]
+    t03 = t.target_id(target, model, _HST_DATASET_PATH, _positions_setup(threshold=0.3))
+    t05 = t.target_id(target, model, _HST_DATASET_PATH, _positions_setup(threshold=0.5))
+    assert t03 != t05
+
+
+def test_target_id_positions_off_unchanged_by_setup_argument():
+    """A positions-OFF row's id must be untouched by the #182 change."""
+    model = _mge_model(mask_radius=3.5)
+    target = t.TARGETS["mge_fp64"]
+    from searches._setup import positions_settings_for
+
+    a = t.target_id(target, model, _HST_DATASET_PATH)
+    b = t.target_id(target, model, _HST_DATASET_PATH, positions_settings_for(enabled=False))
+    assert a == b
+
+
+def test_positions_block_refuses_setup_contradicting_target():
+    with pytest.raises(ValueError, match="positions='off'"):
+        t._positions_block(t.TARGETS["mge_fp64"], _positions_setup())
+    from searches._setup import positions_settings_for
+
+    with pytest.raises(ValueError, match="positions='on'"):
+        t._positions_block(t.TARGETS["mge_pos_fp64"], positions_settings_for(enabled=False))
+
+
+def test_positions_block_note_is_not_hashed():
+    """The free-text note must never enter the identity (pre-existing rule,
+    re-asserted now that the block is caller-supplied)."""
+    setup = _positions_setup()
+    setup["note"] = "totally different wording"
+    model = _mge_model(mask_radius=3.5)
+    target = t.TARGETS["mge_pos_fp64"]
+    assert t.target_id(target, model, _HST_DATASET_PATH, setup) == t.target_id(
+        target, model, _HST_DATASET_PATH, _positions_setup()
+    )
 
 
 def test_target_id_sensitive_to_precision():
@@ -439,3 +522,68 @@ def test_kish_ess_one_hot_gives_one():
 
 def test_kish_ess_none_for_no_weights():
     assert _kish_ess(None) is None
+
+
+# ---------------------------------------------------------------------------
+# penalty_at_best (Phase 4 / issue #182)
+# ---------------------------------------------------------------------------
+
+
+class _FakeAnalysisWithPositions:
+    """Minimal stand-in for an ``AnalysisImaging`` carrying a positions list.
+
+    Only the two attributes ``_penalty_at_best`` touches are provided —
+    deliberately, so the test proves the readout's arithmetic and its
+    absent-vs-null discipline rather than re-testing PyAutoLens's penalty.
+    """
+
+    def __init__(self, penalty, positions_likelihood_list=("sentinel",)):
+        self._penalty = penalty
+        self.positions_likelihood_list = list(positions_likelihood_list) or None
+
+    def log_likelihood_penalty_from(self, instance):
+        if isinstance(self._penalty, Exception):
+            raise self._penalty
+        return self._penalty
+
+
+def test_penalty_at_best_decomposes_the_recorded_likelihood():
+    from searches._runner import _penalty_at_best
+
+    block = _penalty_at_best(_FakeAnalysisWithPositions(500.0), object(), -1500.0)
+    assert block["positions_penalty"] == pytest.approx(500.0)
+    assert block["log_likelihood_penalised"] == pytest.approx(-1500.0)
+    # The search recorded fit - penalty; the unpenalised fit is that plus back.
+    assert block["log_likelihood_unpenalised"] == pytest.approx(-1000.0)
+    assert block["delta_log_likelihood"] == pytest.approx(-500.0)
+
+
+def test_penalty_at_best_zero_penalty_is_recorded_not_omitted():
+    """0.0 (best model traced inside the threshold) is a REAL measurement and
+    must be distinguishable from 'positions off'."""
+    from searches._runner import _penalty_at_best
+
+    block = _penalty_at_best(_FakeAnalysisWithPositions(0.0), object(), -1500.0)
+    assert block["positions_penalty"] == pytest.approx(0.0)
+    assert block["log_likelihood_unpenalised"] == pytest.approx(-1500.0)
+
+
+def test_penalty_at_best_none_when_positions_off():
+    from searches._runner import _penalty_at_best
+
+    analysis = _FakeAnalysisWithPositions(500.0, positions_likelihood_list=())
+    assert _penalty_at_best(analysis, object(), -1500.0) is None
+
+
+def test_penalty_at_best_none_without_a_best_instance():
+    from searches._runner import _penalty_at_best
+
+    assert _penalty_at_best(_FakeAnalysisWithPositions(500.0), None, -1500.0) is None
+
+
+def test_penalty_at_best_records_the_error_rather_than_killing_the_run():
+    from searches._runner import _penalty_at_best
+
+    block = _penalty_at_best(_FakeAnalysisWithPositions(RuntimeError("boom")), object(), -1500.0)
+    assert "boom" in block["error"]
+    assert "positions_penalty" not in block

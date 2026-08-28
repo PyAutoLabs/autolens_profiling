@@ -1,0 +1,293 @@
+{
+  "sampler": "multi_start_prodigy_autoconv",
+  "dataset_class": "imaging",
+  "model": "mge",
+  "instrument": "hst",
+  "config_name": "hpc_a100_fp64_n256_seed0_pos_tauto0.2_f1e8",
+  "invalid": true,
+  "invalid_reason": "silent MultiStart resume (job 341892_0): zero steps, results re-read from an earlier run",
+  "version": "2026.8.17.1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "omp_num_threads": null,
+    "cpu_count": 124,
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 553 MiB, 81920 MiB"
+  },
+  "use_mixed_precision": false,
+  "sampler_config": {
+    "n_starts": 256,
+    "n_steps": 3000,
+    "clipper": "prior_box",
+    "scaler": "none",
+    "seed": 0,
+    "positions": {
+      "enabled": true,
+      "threshold_mode": "auto",
+      "threshold_value": 0.2,
+      "auto_factor": 3.0,
+      "auto_minimum_threshold": 0.2,
+      "factor": 100000000.0,
+      "source": "simulator_truth_positions",
+      "target_class": 3,
+      "note": "IDEALISED: positions and (for 'auto') the threshold-resolution tracer are the simulator's own truth, not solved from a completed search's max-likelihood model (the SLaM chained-fit convention). 'auto' = max(auto_factor * max_sep(truth positions, truth tracer), auto_minimum_threshold); truth positions trace to ~zero separation through the truth tracer by construction, so 'auto' collapses to the auto_minimum_threshold floor for every Stage-1 dataset."
+    },
+    "bijector": "none",
+    "record_lane_nan_history": false,
+    "number_of_cores": 1,
+    "convergence": {
+      "check_for_convergence": true,
+      "window": 50,
+      "rtol": 0.0001,
+      "atol": 0.001,
+      "min_steps": 100
+    }
+  },
+  "positions": {
+    "enabled": true,
+    "threshold_mode": "auto",
+    "threshold_value": 0.2,
+    "auto_factor": 3.0,
+    "auto_minimum_threshold": 0.2,
+    "factor": 100000000.0,
+    "source": "simulator_truth_positions",
+    "target_class": 3,
+    "note": "IDEALISED: positions and (for 'auto') the threshold-resolution tracer are the simulator's own truth, not solved from a completed search's max-likelihood model (the SLaM chained-fit convention). 'auto' = max(auto_factor * max_sep(truth positions, truth tracer), auto_minimum_threshold); truth positions trace to ~zero separation through the truth tracer by construction, so 'auto' collapses to the auto_minimum_threshold floor for every Stage-1 dataset."
+  },
+  "log_det_method": null,
+  "model_summary": {
+    "free_parameters": 15,
+    "best_fit": "lens.mass.einstein_radius=1.6000  lens.mass.centre=(0.000, 0.000)  shear=(0.0468, 0.0502)"
+  },
+  "results": {
+    "log_evidence": NaN,
+    "max_log_likelihood": 31775.78232411397,
+    "posterior_samples": 257,
+    "truth_log_likelihood": 31521.743789581255,
+    "delta_max_ll_vs_truth": 254.03853453271586,
+    "bar_source": "truth_tracer",
+    "posterior_stats": null
+  },
+  "performance": {
+    "total_wall_s": 68.24480938911438,
+    "viz_wall_s": 0.0,
+    "viz_n_calls": 5,
+    "viz_disabled": true,
+    "sampler_wall_s": 68.24480938911438,
+    "likelihood_evals": 257,
+    "time_per_eval_ms": 265.5440054051143,
+    "stored_samples": 257,
+    "gradient_evals": null,
+    "kish_ess": null,
+    "evals_per_ess": null,
+    "ess_per_min": null
+  },
+  "diagnostics": {
+    "n_starts_configured": 256,
+    "n_lanes_recorded": null,
+    "parameter_names": [
+      "galaxies.lens.bulge.profile_list.19.centre_0",
+      "galaxies.lens.bulge.profile_list.19.centre_1",
+      "galaxies.lens.bulge.profile_list.19.ell_comps_0",
+      "galaxies.lens.bulge.profile_list.19.ell_comps_1",
+      "galaxies.lens.mass.centre_0",
+      "galaxies.lens.mass.centre_1",
+      "galaxies.lens.mass.ell_comps_0",
+      "galaxies.lens.mass.ell_comps_1",
+      "galaxies.lens.mass.einstein_radius",
+      "galaxies.lens.shear.gamma_1",
+      "galaxies.lens.shear.gamma_2",
+      "galaxies.source.bulge.profile_list.19.centre_0",
+      "galaxies.source.bulge.profile_list.19.centre_1",
+      "galaxies.source.bulge.profile_list.19.ell_comps_0",
+      "galaxies.source.bulge.profile_list.19.ell_comps_1"
+    ],
+    "prior_box": {
+      "clipper_lower": [
+        -0.0999998,
+        -0.0999998,
+        -0.999998,
+        -0.999998,
+        null,
+        null,
+        -0.999998,
+        -0.999998,
+        8e-06,
+        -0.29999939999999997,
+        -0.29999939999999997,
+        null,
+        null,
+        -0.999998,
+        -0.999998
+      ],
+      "clipper_upper": [
+        0.0999998,
+        0.0999998,
+        0.999998,
+        0.999998,
+        null,
+        null,
+        0.999998,
+        0.999998,
+        7.999992,
+        0.29999939999999997,
+        0.29999939999999997,
+        null,
+        null,
+        0.999998,
+        0.999998
+      ],
+      "prior_lower": [
+        -0.1,
+        -0.1,
+        -1.0,
+        -1.0,
+        null,
+        null,
+        -1.0,
+        -1.0,
+        0.0,
+        -0.3,
+        -0.3,
+        null,
+        null,
+        -1.0,
+        -1.0
+      ],
+      "prior_upper": [
+        0.1,
+        0.1,
+        1.0,
+        1.0,
+        null,
+        null,
+        1.0,
+        1.0,
+        8.0,
+        0.3,
+        0.3,
+        null,
+        null,
+        1.0,
+        1.0
+      ]
+    },
+    "ell_comps_pairs": {
+      "galaxies.lens.bulge.profile_list.19.ell_comps": [
+        2,
+        3
+      ],
+      "galaxies.lens.mass.ell_comps": [
+        6,
+        7
+      ],
+      "galaxies.source.bulge.profile_list.19.ell_comps": [
+        13,
+        14
+      ]
+    },
+    "counters": {
+      "total_steps": null,
+      "stop_reason": null,
+      "best_fom": null,
+      "n_resurrections": null,
+      "n_value_nan_lane_steps": null,
+      "n_grad_nan_lane_steps": null,
+      "n_constrained_lane_steps": null,
+      "n_clipped_lane_steps": null
+    },
+    "alive_history": null,
+    "fom_history_global_best": null,
+    "per_lane": [],
+    "lane_value_nan_history": null,
+    "lane_grad_nan_history": null,
+    "trace_history": null,
+    "trace_param_indices": null,
+    "valid": false,
+    "invalid_reasons": [
+      "no search_internal was captured: the search wrote no checkpoint, so every per-lane field below is null and this run cannot be interpreted",
+      "search_internal has no 'lane_best_params': the installed PyAutoFit predates the per-lane-best change (PR#1515), so per-lane basin classification is not possible from this artifact"
+    ]
+  },
+  "schema_version": 2,
+  "target": {
+    "target_id": "sha256:6b93f0e52ecd",
+    "cell": "imaging/mge/hst",
+    "model_dim": 15,
+    "priors_ref": "_targets.py@7f2f14765de7",
+    "likelihood": {
+      "log_det_method": null,
+      "positive_only": true,
+      "border_relocator": false,
+      "curvature_floor": 0.001,
+      "regularization_term_method": "matmul",
+      "precision": "fp64"
+    },
+    "positions": {
+      "enabled": true,
+      "threshold_mode": "auto",
+      "threshold_value": 0.2,
+      "auto_factor": 3.0,
+      "auto_minimum_threshold": 0.2,
+      "factor": 100000000.0,
+      "source": "simulator_truth_positions",
+      "target_class": 3
+    },
+    "tolerances": {
+      "delta_max_ll_nats": 2.0,
+      "mean_shift_sigma": 0.2,
+      "sigma_ratio": [
+        0.8,
+        1.25
+      ],
+      "per_parameter_recovery": {}
+    },
+    "target_class_vs_v1": null
+  },
+  "algorithm": {
+    "name": "multi_start_prodigy_autoconv",
+    "config_id": "hpc_a100_fp64_n256_seed0_pos_tauto0.2_f1e8",
+    "settings": {
+      "n_starts": 256,
+      "n_steps": 3000,
+      "clipper": "prior_box",
+      "scaler": "none",
+      "seed": 0,
+      "positions": {
+        "enabled": true,
+        "threshold_mode": "auto",
+        "threshold_value": 0.2,
+        "auto_factor": 3.0,
+        "auto_minimum_threshold": 0.2,
+        "factor": 100000000.0,
+        "source": "simulator_truth_positions",
+        "target_class": 3,
+        "note": "IDEALISED: positions and (for 'auto') the threshold-resolution tracer are the simulator's own truth, not solved from a completed search's max-likelihood model (the SLaM chained-fit convention). 'auto' = max(auto_factor * max_sep(truth positions, truth tracer), auto_minimum_threshold); truth positions trace to ~zero separation through the truth tracer by construction, so 'auto' collapses to the auto_minimum_threshold floor for every Stage-1 dataset."
+      },
+      "bijector": "none",
+      "record_lane_nan_history": false,
+      "number_of_cores": 1,
+      "convergence": {
+        "check_for_convergence": true,
+        "window": 50,
+        "rtol": 0.0001,
+        "atol": 0.001,
+        "min_steps": 100
+      }
+    },
+    "seed": 0
+  },
+  "hardware": {
+    "tier": "hpc_a100_fp64_n256_seed0_pos_tauto0.2_f1e8",
+    "precision": "fp64",
+    "device": {
+      "backend": "gpu",
+      "device": "cuda:0",
+      "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+      "omp_num_threads": null,
+      "cpu_count": 124,
+      "nvidia_smi": "NVIDIA A100 80GB PCIe, 553 MiB, 81920 MiB"
+    }
+  }
+}

@@ -286,9 +286,12 @@ tiers. The residual failures are the genuinely-singular λ⁴ population
 in ~4e5-9e5) — exactly the systems CP-4 set out to measure, not artefacts of
 how the replay set was built.
 
-- `coefficient_min = −5.2` in the A100 marginal band is the driver
-  reporting the log-coefficient axis for transect draws; not a negative
-  regularization.
+- `coefficient_min = −5.2` in the A100 marginal band is a **harvest bug**,
+  not a log-coefficient axis — six `descent`-source draws carried a
+  genuinely negative physical `inner`/`outer_coefficient` from the unbounded
+  lane-checkpoint spy in `harvest_descent`, and are now dropped at harvest.
+  (This bullet previously repeated the superseded log-axis reading; it now
+  agrees with the corrected "Ops notes" entry above — PR#171.)
 
 ## 8B — pre-registration (2026-08-24)
 
@@ -296,9 +299,10 @@ W5 (issue #162). PyAutoFit half merged to main (PR#1525 — `bijector.py`,
 `MultiStartGradient(bijector=...)`, opt-in `record_lane_nan_history` /
 `trace_param_indices`). Driver: `scripts/misc/searches/bijector_ab.py`
 (full pre-registration, arm table and readouts in its module docstring).
-Submit prepared, **not yet run**: `hpc/batch_gpu/submit_phase8b_bijector_a100`
-(A100, 39-task array, `--time=0:30:00` each). Submit id: **TBD** (fill in
-once dispatched).
+Submit: `hpc/batch_gpu/submit_phase8b_bijector_a100` (A100, 39-task array,
+`--time=0:30:00` each). **Submit ids: 340576** (first dispatch),
+**341845**, **341860**, **341874**, **341875** (reruns) — see "8B — run
+history and harvest" below.
 
 **Question.** Does stepping in `log(lambda)` for the free AdaptSplit
 regularization coefficients (`log_reg`: `af.BijectorPerPath` restricted to
@@ -351,9 +355,12 @@ objective, a bug, not a science finding):
   global-best fom) differs by more than 1e-9 relative between arms at a
   matched seed.
 
-**Not yet run.** This section will be replaced with the verdict table once
-`--stage run` completes on RAL and `--stage score` (or `--score`) produces
-`results/notes/inference/phase_08_regularization/bijector_ab/verdict_<hardware>.json`.
+**Verdict state: NONE.** The delaunay arms are still running and F2's
+reference deviation is unruled; `--stage score` must not be run on the
+current data (see the scorer note below). The run history, the arms that did
+land, and the per-criterion state are recorded in the next section; a
+verdict table replaces this line only when the pending arms finish and the
+F2 ruling exists.
 
 **Known gap, recorded rather than hidden**: the driver cannot recover
 Prodigy's internal step-scale estimate ("final `d`",
@@ -363,3 +370,137 @@ pipeline — `search_internal["opt_state"]` is not serialized by
 arm runs in its own subprocess (matching the real SLURM array), so there is
 no in-process handle either. Every scored row carries `final_d: null` with
 this note rather than a silently-dropped field.
+
+## 8B — run history and harvest (2026-08-27): one bug, six lost arms, all recovered
+
+**No verdict is emitted here.** The delaunay arms are still running, F2's
+reference deviation is unruled, and the scorer was returning spurious
+defaults on missing data (below).
+
+### Run history
+
+| submit | tasks | outcome |
+|---|---:|---|
+| **340576** | 39 | first dispatch — **35 of 39 arms lost**, run at ~12 % of the wall budget a 3000-step pixelized arm needs |
+| **341845** | 15 | rerun; the knn arms that landed come from here |
+| **341860** | 14 | 13 of 14 tasks ended `PREFLIGHT: giving up after 12 requeues` on a MIG-mode A100 — PR#181's guard fires correctly, its requeue cap is too low |
+| **341874** | 13 | knn rerun, in flight at harvest |
+| **341875** | 20 | delaunay rerun, in flight at harvest |
+
+Across the campaign **45 of 62 tasks never produced a step**: 31 starved on
+the MIG-mode A100 and 14 earlier ones died with `CUDA_ERROR_NO_DEVICE`.
+Raising the requeue cap to ~60 is PR#181's open follow-up.
+
+### Crash root cause — out-of-unit-disk `ell_comps` at results-write
+
+Six of the seven arms that reached their write step died with the same
+chained exception: `ModelParameterException: ell_comps must satisfy
+e0² + e1² < 1`, magnitudes **1.03–1.414** (1.41421 = the (±1, ±1) box
+corner). The chain:
+
+- the `ell_comps` prior is an independent per-component box, so **21.5 % of
+  the prior volume is non-physical**;
+- `validate_ell_comps` returns silently on JAX tracers, so the jitted
+  likelihood is finite and differentiable in the corner and lanes settle
+  there (`−0.999998` is `PriorBoxClipper`'s 1e-6 inset — the clipper is
+  faithful to a wrong box);
+- on completion `Result.instance` materialises through `SamplesSummary`,
+  which holds one sample and inherits the raising policy; the recovery
+  added by PyAutoFit#1486 applies to `Samples`, not to the path that runs
+  (**PyAutoFit#1535**; the same early return is the suspect in the older,
+  still-open PyAutoFit#1487, and the #1535 PR fixes both);
+- `updater._save_samples` then catches the exception and silently skips
+  `samples.csv`, autolens `save_results` catches only `AttributeError`, and
+  the process dies before `.completed`.
+
+**Bijector and log-det method are innocent**: `none` and `logit`,
+`cholesky` and `slogdet` all appear among the crashes.
+
+### Recovery — offline, zero GPU time
+
+`search_internal.dill` survives because the crash pre-empts its deletion,
+and `MultiStartGradient.samples_via_internal_from` rebuilds full `Samples`
+from it. The six arms were rebuilt through the driver's own
+`collect_metrics` / `per_lane_block` / `_build_summary`, marked
+`recovered_offline: true`, and verified two ways: every −½·`best_fom`
+matches that arm's final `prodigy step 3000/3000` log line to 4 d.p., and
+the knn arm's `target_id` is byte-identical to its successful sibling's.
+A bare rerun would short-circuit to 0 steps and crash identically, so the
+pending arms are left to run — they will crash the same way and leave a
+recoverable dill.
+
+### Per-arm results
+
+| cell · log-det · bijector · seed | best log_post | max logL | alive | constrained | value-NaN steps | \|e\| at best | wall | source |
+|---|---:|---:|---:|---:|---:|---:|---:|---|
+| knn · none · s0 | 28873.80 | — | 16/16 | 4/16 | 0 | — | 1.8 h | json |
+| knn · none · s2 | 28863.84 | — | 16/16 | 4/16 | 0 | — | 1.8 h | json |
+| knn · log_reg · s3 | 30559.28 | 30557.03 | 16/16 | 9/16 | 0 | — | 1.8 h | json |
+| knn · logit · s1 | 28672.21 | 28683.33 | 16/16 | 10/16 | 0 | 1.414 | 1.8 h | recovered |
+| delaunay · slogdet · none · s0 | −146872.80 | −146802.60 | 16/16 | 5/16 | 0 | 1.078 | 1.8 h | recovered |
+| delaunay · cholesky · none · s1 | 20395.84 | 22945.06 | 13/16 | 3/16 | 9,226 | 1.414 | 3.6 h | recovered |
+| delaunay · slogdet · log_reg · s0 | 28004.15 | 28127.40 | 13/16 | 7/16 | 6,381 | 1.228 | 3.7 h | recovered |
+| delaunay · slogdet · log_reg · s1 | 2.1e53 (diverged; 2nd lane 29871) | — | 12/16 | 9/16 | 7,105 | 1.414 | 3.1 h | recovered |
+| delaunay · cholesky · log_reg · s2 | 29894.80 | 29977.66 | 7/16 | 6/16 | 26,690 | 1.032 | 4.0 h | recovered |
+
+Still running at harvest: delaunay `cholesky·log_reg·s3` (30117 @ step
+1600), `slogdet·none·s1` (28881 @ 2660), `slogdet·none·s2` (−132469, frozen
+since step 10, @ 920), `slogdet·log_reg·s3` (30286 @ 2450). The four MGE F4
+controls landed earlier (no logs in this harvest).
+
+### Signal
+
+- **Every `log_reg` arm on both wall cells clears +28,000 by step
+  100–500**; no `none` arm on delaunay reaches a positive log-posterior
+  before step ~2000, and `slogdet·none·s0` never does.
+- On knn: `log_reg` (30559) >> `none` (28874 / 28864) > `logit` (28672).
+- Substantive F2 material on knn: steps-to-(reference − 10 nats) =
+  **2631 / 2633 (`none`) vs 263 (`log_reg`)** — 10× against a >=2× bar, but
+  **with no matched seed**, so it is not yet a scored pass.
+- A preliminary memory note ("none at −154k/−137k, log_reg/logit at
+  +20.8k/+28.0k") is **mis-attributed** and should not be cited: −154k is a
+  step-100 waypoint, −137k matches nothing in the harvest, and +20.4k is a
+  `none` arm.
+
+### Falsification criteria — partial, no verdict
+
+| criterion | state |
+|---|---|
+| **F5** (objective inert under the bijector) | **CLEAN.** Step-0 global-best fom bit-identical across bijectors on the MGE control: 423546.4213174847 / 380535.00536054926. The bijector provably leaves the physical objective alone. |
+| **F4** (mge control differs by any bit) | **AMENDED, informational.** It trips as written (16/16 lanes differ in final params), but `best_fom` is bit-identical on the winning lane and maxL agrees to 1e-14. Byte-identity is unachievable for a reparameterised 3000-step optimizer, and F5 already carries the inertness proof; F4 is restated as "`best_fom` and max log-likelihood equivalent within fp64 on the winning lane" and is **not** counted as a trip. |
+| **F1** (NaN-wall position on delaunay) | **Scorable only now** — the driver never wrote the delaunay JSONs; the recovered set supplies them. Not scored here. |
+| **F2** (steps-to-reference on knn) | **Partially scorable.** 10× improvement, but unmatched seeds, and the reference itself is a **documented deviation** (max `none`-arm log-posterior per group, not a fixed-regularization control) that **needs a human ruling** before any verdict — recorded as owed in `../DECISIONS.md` 2026-08-27. |
+| **F3** (fraction of steps at λ > 1e4) | **Not falsified** (knn only, n=1): 12.5 % / 6.25 % under `none` (whole lanes parked for 3000 steps) vs 0 % under `log_reg`. |
+
+### Scorer defect (fixed in this PR)
+
+`bijector_ab.py` returned **spurious verdicts on missing data**: `score_f1`
+gave a PASS (`bool(None) or bool(None)`) and `score_f2` a FAIL
+(`falsified = median_ratio is None or …`). Combined with F4's byte-identity
+trip, `--stage verdict` on today's data would have emitted
+"falsified_criteria_count=2 → close, no rescoping to logit" — an
+artefact-driven false close. Both now return **UNSCORABLE** on missing
+inputs, and F4 carries the fp64-equivalence wording. **Do not run
+`--stage verdict` until the pending arms land and the F2 reference is
+ruled on.**
+
+### Scorer diagnostic readout after the fix (2026-08-27, 13 rows, no verdict)
+
+`score_rows` **halts at F5** on `delaunay_adapt_split[slogdet]` seed 0: step-0 global-best fom
+357347.020 (`none`) vs 357343.242 (`log_reg`), rel 1.06e-5. F5 is therefore clean on the MGE
+control only; on the slogdet delaunay cell the two arms do not start from the same objective and
+the halt is the correct response. Scored individually with F5 bypassed (diagnostic only):
+F1[cholesky] falsified · F1[slogdet] UNSCORABLE · F2 UNSCORABLE (no matched knn seed) · F3
+falsified · F4 falsified (seed 0 `best_fom`/maxL agree to 9.8e-15; seed 1 disagrees at 1.7e-2).
+This machine reading disagrees with the hand reading in "Falsification criteria" above (F3 not
+falsified; F1 pending) and is recorded, not adjudicated — the verdict stage runs once every
+341875 arm has landed and the F2 reference deviation has a human ruling.
+
+### Cross-references
+
+The out-of-disk `ell_comps` population behind the crash is the same
+mechanism Phase 4 Stage 3 measures as the PositionsLH degradation channel
+(`../phase_04_positions/RESULTS.md` "Stage 3") and Phase 3 records as a
+second reason p̂ is a lower bound
+(`../phase_03_prodigy_reliability/RESULTS.md` "Non-physical ellipticity
+lanes"). The library follow-up is PROGRAMME §9b W10.

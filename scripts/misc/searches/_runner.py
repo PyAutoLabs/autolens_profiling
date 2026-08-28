@@ -407,6 +407,57 @@ def _posterior_stats(result: Any, uses_n_live: bool) -> dict[str, dict[str, floa
         return {"_error": repr(exc)}
 
 
+def _penalty_at_best(
+    analysis: Any, best_instance: Any, max_log_likelihood: float | None
+) -> dict | None:
+    """Decompose the best point's recorded log-likelihood into fit and penalty.
+
+    Phase 4 / issue #182. Every ``PositionsLH``-attached analysis returns
+    ``fit.figure_of_merit - log_likelihood_penalty`` from its
+    ``log_likelihood_function`` (``autolens/imaging/model/analysis.py``), and
+    PyAutoFit records THAT as the sample's ``log_likelihood``. So a
+    positions-on row's ``results.max_log_likelihood`` is the PENALISED value,
+    and how much of it is penalty was, until now, unrecoverable from the
+    artifact — the question every Phase-4 arm's write-up had to answer with
+    "not recorded".
+
+    This costs **no likelihood evaluation**: ``AnalysisDataset.
+    log_likelihood_penalty_from`` builds the tracer and traces the (four)
+    truth positions to the source plane. No imaging fit, no inversion — it is
+    the penalty term alone, evaluated at the best instance the search already
+    returned.
+
+    ``None`` when positions are off, when the analysis carries no positions
+    list, or when no best instance was recoverable — never a fabricated 0.0,
+    which would be indistinguishable from "positions on and the model traced
+    inside the threshold".
+    """
+    positions_list = getattr(analysis, "positions_likelihood_list", None)
+    if best_instance is None or not positions_list:
+        return None
+    try:
+        penalty = float(np.asarray(analysis.log_likelihood_penalty_from(instance=best_instance)))
+    except Exception as exc:  # never let the readout kill a completed search
+        print(f"  WARNING: penalty_at_best step failed: {exc!r}")
+        return {"error": repr(exc)}
+    penalised = None if max_log_likelihood is None else float(max_log_likelihood)
+    return {
+        "positions_penalty": penalty,
+        "log_likelihood_penalised": penalised,
+        "log_likelihood_unpenalised": None if penalised is None else penalised + penalty,
+        # with-penalty MINUS without-penalty, i.e. what the penalty cost the
+        # objective at this point. Zero means the best model traced inside the
+        # threshold, so the penalty was inert AT THE BEST POINT — it says
+        # nothing about the rest of the trajectory.
+        "delta_log_likelihood": -penalty,
+        "source": (
+            "analysis.log_likelihood_penalty_from(max_log_likelihood_instance) — "
+            "the penalty term alone (tracer + truth-position trace), not a "
+            "re-evaluated likelihood"
+        ),
+    }
+
+
 _DEFAULT_INSTRUMENTS: dict[str, str] = {
     "imaging": "hst",
     "interferometer": "sma",
@@ -597,6 +648,13 @@ def run_search(
 
     posterior_stats = _posterior_stats(primary_result, uses_n_live)
 
+    penalty_at_best = _penalty_at_best(analysis, best_instance, metrics.max_log_likelihood)
+    if penalty_at_best is not None and "positions_penalty" in penalty_at_best:
+        print(
+            f"  Positions penalty:  {penalty_at_best['positions_penalty']!r} at the best point "
+            f"(unpenalised logL {penalty_at_best['log_likelihood_unpenalised']!r})"
+        )
+
     diagnostics = None
     if is_multi_start:
         diagnostics = per_lane_block(captured=captured, model=model, n_starts=int(search.n_starts))
@@ -632,6 +690,7 @@ def run_search(
         posterior_stats=posterior_stats,
         diagnostics=diagnostics,
         target_override=target_override,
+        penalty_at_best=penalty_at_best,
     )
 
     _print_summary(summary, metrics)
@@ -815,6 +874,7 @@ def _build_summary(
     posterior_stats: dict | None = None,
     diagnostics: dict | None = None,
     target_override: dict | None = None,
+    penalty_at_best: dict | None = None,
 ) -> dict:
     n_free_params = int(model.total_free_parameters)
     results_block: dict = {
@@ -827,6 +887,10 @@ def _build_summary(
     # Always present (null for MAP optimizers without a posterior) so the key
     # order + shape is stable across every cell, not just point_source ones.
     results_block["posterior_stats"] = posterior_stats
+    # Always present (null when positions are off, or when the best instance
+    # was unavailable) — same absent-vs-null discipline. See
+    # ``_penalty_at_best`` for what the block decomposes.
+    results_block["penalty_at_best"] = penalty_at_best
 
     sampler_config = _sampler_config_dict(
         sampler, dataset_class, model_type, instrument, n_live, use_jax
@@ -887,7 +951,14 @@ def _build_summary(
     target = _target_for_cell(dataset_class, model_type, instrument, bool(cli.use_mixed_precision))
     if target is not None:
         dataset_path = _WORKSPACE_ROOT / "dataset" / dataset_class / instrument
-        summary["target"] = _targets.target_block(target, model, dataset_path)
+        # The RESOLVED positions arm (issue #182), not the registry defaults:
+        # `Target.positions` is only "off"/"on", so without this the three
+        # Phase-4 arms (t0.3/f1e8, t0.3/f1e5, tauto0.2/f1e8) — three different
+        # objectives with three different output directories — all hashed to
+        # one target_id. It is the SAME dict recorded above as
+        # ``summary["positions"]``, so any later reader can re-derive this id
+        # from the artifact alone (see _targets._positions_block).
+        summary["target"] = _targets.target_block(target, model, dataset_path, summary["positions"])
     else:
         # Not covered by the Phase 1 TARGETS registry (imaging/hst only
         # today) — shape stays stable (the key is always present) with an

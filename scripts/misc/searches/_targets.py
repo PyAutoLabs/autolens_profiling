@@ -303,28 +303,74 @@ def _likelihood_block(target: Target) -> dict:
     }
 
 
-def _positions_block(target: Target) -> dict:
+def _positions_block(target: Target, positions_setup: dict | None = None) -> dict:
     """The target's ``positions`` block, independent of ambient env state.
 
     Mirrors ``searches._setup.positions_settings()``'s shape (built via the
     same ``positions_settings_for`` this module's registration prompted —
-    see ``_setup.py``) but derived purely from ``target`` rather than
-    ``SEARCHES_POSITIONS*`` env vars, since ``target_id`` must be
-    reproducible independent of the calling process's environment. The
-    free-text ``"note"`` key is stripped (Step 1 of the plan: "positions
-    (minus free-text note)") — it is documentation, not part of the target's
-    identity, and changing its wording must never change ``target_id``.
+    see ``_setup.py``). The free-text ``"note"`` key is stripped (Step 1 of
+    the plan: "positions (minus free-text note)") — it is documentation, not
+    part of the target's identity, and changing its wording must never
+    change ``target_id``.
+
+    ``positions_setup`` is the **resolved** positions configuration this run
+    actually used — the exact dict ``_setup.positions_settings()`` returns
+    and ``_runner`` records verbatim as the results JSON's top-level
+    ``"positions"`` key. Pass it whenever it is known.
+
+    Why it is a parameter and not read from the environment (2026-08-27,
+    issue #182): ``Target.positions`` is only ``"off"``/``"on"`` — the arm's
+    threshold mode, threshold value and factor live in
+    ``SEARCHES_POSITIONS_THRESHOLD`` / ``SEARCHES_POSITIONS_FACTOR`` and are
+    NOT registry axes. This function used to fall back to the module
+    defaults (``fixed``/``0.3``/``1e8``) unconditionally, so the Phase-4
+    diagnostic arms ``pos_t0.3_f1e8``, ``pos_t0.3_f1e5`` and
+    ``pos_tauto0.2_f1e8`` — three genuinely different objectives, correctly
+    given three distinct ``positions_arm_tag()``s and three distinct output
+    directories — all hashed to the SAME ``target_id``. Reading the env vars
+    here instead would have fixed the collision at the cost of the property
+    the whole module exists for: a ``target_id`` recomputable from a recorded
+    artifact in any process. Taking the resolved block as an argument keeps
+    both — the caller resolves the environment ONCE (``_runner``, at run
+    time), records it in the artifact, and a later reader re-derives the same
+    id from that record.
+
+    Passing ``None`` keeps the historical default-derived block, so every
+    positions-off row and every positions-on row that really did run at the
+    ``fixed``/``0.3``/``1e8`` defaults keeps the exact ``target_id`` it was
+    recorded with.
     """
     if target.positions == "off":
+        if positions_setup is not None and positions_setup.get("enabled"):
+            raise ValueError(
+                f"target {target.name!r} has positions='off' but positions_setup says "
+                f"enabled=True — refusing to hash a positions block that contradicts "
+                f"the target."
+            )
         block = _setup.positions_settings_for(enabled=False)
     else:
-        mode = "auto" if target.model_type in _SLAM_AUTO_THRESHOLD_MODEL_TYPES else "fixed"
-        fixed_value = None if mode == "auto" else float(_setup._POSITIONS_THRESHOLD_DEFAULT)
+        if positions_setup is not None and not positions_setup.get("enabled"):
+            raise ValueError(
+                f"target {target.name!r} has positions='on' but positions_setup says "
+                f"enabled=False — refusing to hash a positions block that contradicts "
+                f"the target."
+            )
+        if positions_setup is None:
+            mode = "auto" if target.model_type in _SLAM_AUTO_THRESHOLD_MODEL_TYPES else "fixed"
+            fixed_value = None if mode == "auto" else float(_setup._POSITIONS_THRESHOLD_DEFAULT)
+            factor = float(_setup._POSITIONS_FACTOR_DEFAULT)
+        else:
+            mode = positions_setup["threshold_mode"]
+            fixed_value = float(positions_setup["threshold_value"]) if mode == "fixed" else None
+            factor = float(positions_setup["factor"])
+        # Rebuilt through positions_settings_for rather than copied: a recorded
+        # block that gained (or lost) a key must not perturb the hash, and an
+        # unrecognised threshold_mode must raise rather than hash silently.
         block = _setup.positions_settings_for(
             enabled=True,
             mode=mode,
             fixed_value=fixed_value,
-            factor=float(_setup._POSITIONS_FACTOR_DEFAULT),
+            factor=factor,
         )
     block = dict(block)
     block.pop("note", None)
@@ -354,14 +400,16 @@ def _adapt_image_source_block(target: Target, dataset_path: Path) -> str | None:
     return f"lensed_source.fits:sha256:{digest}"
 
 
-def _canonical_target_dict(target: Target, model: Any, dataset_path: Path) -> dict:
+def _canonical_target_dict(
+    target: Target, model: Any, dataset_path: Path, positions_setup: dict | None = None
+) -> dict:
     return {
         "cell": target.cell,
         "model_dim": int(model.prior_count),
         "parameter_names": list(model.model_component_and_parameter_names),
         "priors": [_canonical_prior(p) for p in model.priors_ordered_by_id],
         "likelihood": _likelihood_block(target),
-        "positions": _positions_block(target),
+        "positions": _positions_block(target, positions_setup),
         "dataset_hashes": _dataset_hashes(dataset_path),
         "mask": _mask_block(target),
         "adapt_image_source": _adapt_image_source_block(target, dataset_path),
@@ -373,7 +421,9 @@ def _canonical_target_dict(target: Target, model: Any, dataset_path: Path) -> di
     }
 
 
-def target_id(target: Target, model: Any, dataset_path: Path) -> str:
+def target_id(
+    target: Target, model: Any, dataset_path: Path, positions_setup: dict | None = None
+) -> str:
     """A short, stable, cross-process identifier for one (target, model, dataset) triple.
 
     Two calls with structurally identical inputs — same cell, same free
@@ -382,8 +432,14 @@ def target_id(target: Target, model: Any, dataset_path: Path) -> str:
     adapt image — hash identically, in any process, on any machine. Changing
     any of those changes the id; changing the sampler, seed, n_live, or any
     other pure-algorithm knob does NOT.
+
+    ``positions_setup`` is the resolved positions configuration the run used
+    (``_setup.positions_settings()``'s dict, recorded verbatim in the results
+    JSON's top-level ``"positions"``). It is a plain argument, never read
+    from the environment here, so the id stays recomputable from a recorded
+    artifact in any process — see :func:`_positions_block`.
     """
-    canonical = _canonical_target_dict(target, model, dataset_path)
+    canonical = _canonical_target_dict(target, model, dataset_path, positions_setup)
     blob = json.dumps(canonical, sort_keys=True, separators=(",", ":"), default=str)
     return "sha256:" + hashlib.sha256(blob.encode()).hexdigest()[:12]
 
@@ -393,7 +449,9 @@ def _module_sha() -> str:
     return _sha256_file(Path(__file__))[:12]
 
 
-def target_block(target: Target, model: Any, dataset_path: Path) -> dict:
+def target_block(
+    target: Target, model: Any, dataset_path: Path, positions_setup: dict | None = None
+) -> dict:
     """The schema-v2 ``target`` block for one resolved (target, model, dataset).
 
     See PROGRAMME.md §5 "Benchmark & result schema (v2)" for the field
@@ -402,12 +460,12 @@ def target_block(target: Target, model: Any, dataset_path: Path) -> dict:
     v1 target by construction.
     """
     return {
-        "target_id": target_id(target, model, dataset_path),
+        "target_id": target_id(target, model, dataset_path, positions_setup),
         "cell": target.cell,
         "model_dim": int(model.prior_count),
         "priors_ref": f"_targets.py@{_module_sha()}",
         "likelihood": _likelihood_block(target),
-        "positions": _positions_block(target),
+        "positions": _positions_block(target, positions_setup),
         "tolerances": dataclasses.asdict(target.tolerances),
         "target_class_vs_v1": None,
     }
