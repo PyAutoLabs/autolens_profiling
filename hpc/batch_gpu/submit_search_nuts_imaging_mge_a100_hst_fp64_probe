@@ -116,7 +116,12 @@ export MPLCONFIGDIR=/tmp/matplotlib
 # fit's own output directory (the one holding `files/`), or at the directory
 # holding exactly one such fit — the driver resolves both and refuses anything
 # ambiguous.
-WARM_FROM="$AP_ROOT/output/searches/multi_start_prodigy/imaging/mge/hst/n16_s3000_seed0_bij_none/mge_auto_none_seed0"
+# Verified present and `.completed` on RAL 2026-08-28, holding exactly one
+# identifier dir (9958b4c4686bc2288dc6cb7d5fac9b5f) with the model.json /
+# samples.csv / samples_info.json the loader needs. Note there is no `_bij_none`
+# suffix in the tag: `BijectorNone` is bit-identical to no bijector at all, so
+# `multi_start_unique_tag` deliberately adds nothing for that arm.
+WARM_FROM="$AP_ROOT/output/searches/multi_start_prodigy/imaging/mge/hst/n16_s3000_seed0/mge_auto_none_seed0"
 
 ARMS=(cold warm)
 ARM=${ARMS[$SLURM_ARRAY_TASK_ID]}
