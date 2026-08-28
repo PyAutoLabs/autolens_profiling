@@ -247,3 +247,256 @@ This matches the code: `Convolver`'s FFT path uses `np.fft.rfft2`, which has no
 dataset is a 2828-pixel 0.1"/pixel simulation with a small rectangular mesh, so
 F is a much smaller share of the evaluation than in the HST harness cells and
 the end-to-end gain is correspondingly smaller than the 2.6x measured there.
+
+
+---
+
+# Phase 2 (#507): the mapper x mapper block + the MGE operated matrix
+
+Measured 2026-08-28 on the same local WSL host and settings as phase 1
+(`OMP_NUM_THREADS=1`, `AUTOARRAY_NUMBA_OPERATED_MEMO=0`, `n_repeats = 10`,
+autolens `v2026.8.17.1`), branch `feature/numba-hst-curvature-matrix-phase2`
+across PyAutoArray, PyAutoGalaxy and this repo.
+
+Phase 1 left the HST rectangular evaluation at 0.60 s with two terms carrying
+it: the mapper x mapper sparse-operator block (46 %) and the MGE operated
+mapping matrix (37 %). Phase 2 is those two.
+
+## Step 0 — the split, measured before anything was changed
+
+Two additions to both numba CPU breakdown harnesses (commit `3f69b34`): the
+`MGE operated mapping matrix` row split into its three pieces plus a residual
+(the same residual scheme the phase-1 F rows use, so the four rows sum to the
+un-split step, recorded as `mge_operated_mapping_matrix_total_s`), and the
+model-independent geometry constants written once into the result JSON.
+
+| cell | step total | mapper x mapper | MGE total | MGE = grid eval + blurring eval + convolution |
+|---|---|---|---|---|
+| hst, rectangular bilinear | 0.633 | **0.2551** | **0.2086** | 0.1160 + 0.0460 + 0.0541 (residual -0.0075) |
+| euclid, rectangular bilinear | 0.198 | 0.0491 | 0.0704 | |
+| hst, Delaunay-1250 | 0.734 | 0.1304 | 0.2229 | |
+
+**Profile evaluation is 78 % of the MGE row** at HST — not the convolution,
+which phase 1's batching had already reduced to 0.054 s. And the geometry
+constants turned the plan's "~2e8 inner operations" estimate into a
+measurement: `sum over stored (data_0, data_1) pairs of u0 * u1` = **1.773e8**
+at HST (11.08e6 stored pairs, mean row length 721, `u0 = u1 = 4.0` for the
+bilinear mapper).
+
+That checkpoint fixed the two levers: restructure the mapper x mapper kernel,
+and hoist the geometry the 60 Gaussians share.
+
+## What changed in the libraries
+
+**Step 1 (PyAutoArray `a583f1a6`) — oracle first, then hoist.** The kernel had
+no direct unit test; it now has one pinned to `F = M.T @ W @ M` with a dense
+`W`, plus a symmetry / halved-diagonal test, and the pre-change quadruple loop
+is retained as `curvature_matrix_via_sparse_operator_reference_from`. The hoist
+itself takes 1-D row views once per data pixel instead of re-gathering from
+wide-stride 2-D arrays u0 times, leaving the accumulated expression
+operand-for-operand identical. Bit-identical (`np.array_equal` on both the
+kernel output and the assembled `curvature_matrix`), 1.04-1.12x.
+
+**Step 2 (PyAutoArray `88e14bc6`) — the two-stage reformulation.** `w0` does
+not depend on `data_1`, so the sum factorises into a per-data-pixel dense
+accumulator over source space followed by contiguous AXPYs over whole rows of
+`F`. Replaces ~1.8e8 irregular read-modify-writes into a 4.9 MB matrix with
+~4.4e7 L1 scatters plus vectorisable dense adds. Agrees with the direct form to
+floating-point reassociation, not bit-identically.
+
+**Step 3a (PyAutoArray `d8bc3bac`) — the OverSampler divisor.**
+`binned_array_2d_from` recomputed `np.bincount(segment_ids)` *and* the
+`sub_is_uniform` check on every call — 120 calls per evaluation for a
+60-Gaussian MGE. Both depend only on the constructor's `sub_size`, and are now
+`cached_property`. On the HST over sampler (17980 sub-pixels into 15361 pixels)
+the divisor cost 38.8 us and the uniformity check 61.3 us per call, against
+81.5 us for the whole cached call. Bit-identical; the cached divisor is
+read-only, because the old code guarded zeros by mutating in place.
+
+**Step 3b (PyAutoGalaxy `6031aa0a`) — one eccentric-radius grid per MGE
+basis.** Each of the 60 Gaussians re-ran the same reference-frame transform
+(`arctan2` + `sin` + `cos` per coordinate) and formed the same eccentric radii
+from it. cProfile on the HST cell: the transform alone was 951 us of the 1.3 ms
+each profile took, ~70 % of the MGE's profile-evaluation cost.
+`LightProfileLinearObjFuncList._image_slim_list_from` now groups the profiles by
+`(class, centre, ell_comps)` and computes each group's transform and radii once.
+Bit-identical.
+
+Grouping rather than an all-or-nothing check is deliberate: the workspace's
+canonical MGE recipe stacks two sets of 30 Gaussians which share a centre but
+carry their own `ell_comps`, and `GalaxiesToInversion` lands both sets in a
+single func list — an all-or-nothing test would fall back to 60 independent
+evaluations on exactly the model users are told to write.
+
+The membership test is the identity of the `image_2d_from` function object
+against `Gaussian.image_2d_from`, not `isinstance`. `Sersic` is deliberately
+excluded even in a same-geometry Sersic basis: it already avoids the polar
+transform via `_eccentric_radii_grid_from_cartesian`, a branch taken only when
+the grid handed to it is *not* pre-transformed, so hoisting into it would be
+both slower and a different floating-point expression. Giving `Gaussian` that
+same Cartesian shortcut is a larger, value-changing lever, and is left as a
+follow-up.
+
+## The measured crossover (step 2)
+
+`pix_pixels` swept on the two production HST geometries — real 15361-pixel
+sparse operator, real mapper mappings, only the source-space extent varied.
+Speed-up of two-stage over direct:
+
+```
+pix_pixels           128    784   1250   2048   4096   6144   8192
+rectangular u0=4.00  3.10   2.93   2.47   2.10   1.36   1.12   1.04
+delaunay    u0=1.55  1.79   1.72   1.53   1.33   1.04   1.01   0.98
+```
+
+The crossover is geometry-dependent and sits at or beyond 8192 source pixels —
+outside the range a PyAuto pixelization is run at. Two-stage also wins on the
+Delaunay cell (1.53x at its native 1250) despite executing 2.05x *more*
+arithmetic there, because a vectorised contiguous AXPY is several times cheaper
+per operation than a scattered read-modify-write into a 12.5 MB matrix. The
+guard `CURVATURE_TWO_STAGE_MAX_PIX_PIXELS = 4096` is therefore the conservative
+end of the measured envelope, an explicit module-level constant carrying this
+sweep, not a fitted crossover and not a silent heuristic.
+
+## Before / after (seconds per evaluation)
+
+Three arms measured **paired in one session, alternating B/A/B/A**, on this
+host's 20-30 % run-to-run variance: `base` = PyAutoArray `main` @ `1b89404b`
+with PyAutoGalaxy `main` @ `0fbe863d` (the phase-2 starting point, i.e. phase 1
+as merged); `step2` = after PyAutoArray steps 1-2; `final` = after step 3 in
+both libraries. Three rounds were run per cell in rotating arm order; the first
+round is discarded (numba `cache: true` recompiles on an arm switch) and the
+table is the mean of rounds 2 and 3.
+
+**hst, rectangular bilinear (784 source pixels)**
+
+| row | base | step 2 | final | step 3 | whole phase |
+|---|---|---|---|---|---|
+| step total | 0.6214 | 0.4324 | **0.3334** | 1.30x | **1.86x** |
+| direct `log_likelihood_function` | 0.6184 | 0.4207 | **0.3013** | 1.40x | **2.05x** |
+| F total | 0.3246 | 0.1441 | 0.1494 | 0.96x | 2.17x |
+| F: mapper x mapper | 0.2581 | 0.0819 | 0.0825 | 0.99x | **3.13x** |
+| MGE total | 0.1970 | 0.1937 | **0.0844** | **2.29x** | 2.33x |
+| MGE: 60x image_2d_from(grid) | 0.1042 | 0.0995 | 0.0233 | **4.28x** | 4.48x |
+| MGE: 60x image_2d_from(blurring) | 0.0436 | 0.0420 | 0.0115 | 3.67x | 3.81x |
+| MGE: batched PSF convolution | 0.0512 | 0.0504 | 0.0523 | 0.96x | 0.98x |
+| Blurred image (FFT convolve) | 0.0101 | 0.0097 | 0.0099 | 0.98x | 1.02x |
+
+**euclid, rectangular bilinear (784 source pixels)**
+
+| row | base | step 2 | final | step 3 | whole phase |
+|---|---|---|---|---|---|
+| step total | 0.2226 | 0.1870 | **0.1417** | 1.32x | **1.57x** |
+| direct `log_likelihood_function` | 0.2076 | 0.1644 | 0.1224 | 1.34x | 1.70x |
+| F: mapper x mapper | 0.0531 | 0.0188 | 0.0191 | 0.98x | 2.78x |
+| MGE total | 0.0802 | 0.0797 | 0.0316 | 2.52x | 2.54x |
+| MGE: 60x image_2d_from(grid) | 0.0353 | 0.0353 | 0.0081 | 4.37x | 4.36x |
+| MGE: 60x image_2d_from(blurring) | 0.0283 | 0.0280 | 0.0075 | 3.75x | 3.79x |
+
+**hst, Delaunay-1250**
+
+| row | base | step 2 | final | step 3 | whole phase |
+|---|---|---|---|---|---|
+| step total | 0.6331 | 0.6076 | **0.4884** | 1.24x | **1.30x** |
+| direct `log_likelihood_function` | 0.5785 | 0.5640 | 0.4563 | 1.24x | 1.27x |
+| F: mapper x mapper | 0.1088 | 0.0697 | 0.0676 | 1.03x | 1.61x |
+| MGE total | 0.1881 | 0.1932 | 0.0839 | 2.30x | 2.24x |
+| MGE: 60x image_2d_from(grid) | 0.0971 | 0.1015 | 0.0224 | 4.53x | 4.33x |
+
+**The issue's goal — 0.60 s -> ~0.35 s at HST rectangular — is met**: 0.6214 ->
+0.3334 s step total, 0.6184 -> 0.3013 s directly timed. The mapper x mapper
+block and the MGE profile evaluation, the two terms step 0 identified, are down
+3.1x and 4.3x respectively. Nothing outside those two moves, which is the
+control the unrelated rows above provide (`Blurred image` 0.98-1.02x, the
+batched PSF convolution 0.96-1.00x).
+
+The Delaunay cell gains least (1.30x) because its evaluation is spread across
+more terms: after phase 2 its largest steps are the regularization matrix H
+(ConstantSplit, 0.060 s), the batched MGE convolution (0.057 s) and the
+mapper x linear-func block (0.049 s), none of which this issue touched.
+
+### What was not paired
+
+`hst, rectangular RTU` is an 7.1 s cell dominated by its 6.73 s "mapper sparse
+triplets" step and is GPU-only by the 2026-08-28 decision, so it was re-run once
+on `final` for currency (`_rtu` artifact) rather than paired. Its pinned check
+passes and its MGE row moves with the others.
+
+The harness's `MGE: image_2d_from(blurring_grid) x60` row was changed in this
+phase (commit below): it hand-rolled the per-profile loop, which after step 3b
+would have kept timing the *old* code on the new library and mis-attributed the
+win to the residual row. It now calls the same path
+`operated_mapping_matrix_override` calls, dispatching on the attribute so both
+libraries are measurable, and records which branch it took in the result JSON as
+`mge_blurring_stack_path` (`per_profile_loop` on `base`/`step2`,
+`shared_geometry` on `final`, as the artifacts show).
+
+## Correctness
+
+Pinned log-likelihood checks (explicit `rtol=1e-6`) **PASSED** on all three
+pinned cells, on every arm, to every recorded digit:
+
+| cell | pinned | measured (base / step2 / final) |
+|---|---|---|
+| hst bilinear | 27661.910133665442 | 27661.91013366411 on all three |
+| hst RTU | 27180.704715698186 | 27180.70471569685 (final, unpaired) |
+| hst Delaunay | 29090.527192092646 | 29090.527210448134 on all three |
+
+euclid has no pinned value by design and measured 6213.306873885871 on all
+three arms — unchanged to every recorded digit.
+
+Array-level, on `inversion.curvature_matrix` and on the MGE operated mapping
+matrix, computed from the same instance on each arm:
+
+| comparison | MGE operated matrix | curvature matrix F |
+|---|---|---|
+| step 2 -> final (step 3 alone), hst | bit-identical | **bit-identical** |
+| step 2 -> final (step 3 alone), euclid | bit-identical | **bit-identical** |
+| base -> final (whole phase), hst | bit-identical | max rel 1.24e-14, `allclose(rtol=1e-12)` True |
+| base -> final (whole phase), euclid | bit-identical | max rel 2.63e-15, `allclose(rtol=1e-12)` True |
+
+Step 3 is bit-identical by construction in both libraries; the only
+floating-point movement in the whole phase comes from step 2's reassociation,
+and it is twelve orders inside the pins.
+
+## Pool run (multiprocessing oversubscription check)
+
+Same purpose and setup as phase 1's: the harness measures one process at
+`OMP_NUM_THREADS=1`, but Nautilus runs one process per core, so a single-thread
+win only counts if it survives the real pool.
+
+**Setup.** `autolens_workspace/scripts/imaging/features/pixelization/cpu_fast_modeling.py`,
+first (non-SLaM) fit, reproduced from the workspace CWD on an 8-core host,
+against `base` (PyAutoArray `1b89404b` + PyAutoGalaxy `0fbe863d`) and `final`,
+with `autoarray.__file__` asserted on both. `PYAUTO_TEST_MODE=1` (Nautilus
+`n_like_max = 1`, one exploration batch of 100 evaluations, so per-evaluation
+time is wall/100), `PYAUTO_SMALL_DATASETS` unset (2828 masked image-pixels, the
+simulator's full resolution), `number_of_cores` raised 2 -> 8. One deviation
+from phase 1's config B: the lens light is
+`al.model_util.mge_model_from(total_gaussians=60)` — a single 60-Gaussian basis
+— rather than phase 1's 30 x 2 recipe, because the two-basis form gives its two
+halves different `ell_comps` and this run needs the step-3b path exercised.
+(Grouping means the 30 x 2 form takes it too, as two groups.)
+
+Per evaluation (s), alternating arms:
+
+| | run 1 | run 2 | run 3 | median |
+|---|---|---|---|---|
+| base, pool of 8 | 0.2115 | 0.1918 | 0.2000 | 0.2000 |
+| final, pool of 8 | 0.1606 | 0.1816 | 0.1697 | 0.1697 |
+| base, serial (`number_of_cores=1`) | 0.4099 | | | 0.4099 |
+| final, serial (`number_of_cores=1`) | 0.3634 | | | 0.3634 |
+
+**Verdict — no oversubscription.** The pool improves by 15 % and the single
+process by 11 %, so the pool gain tracks (slightly exceeds) the single-thread
+gain rather than eroding it. The parallel speed-up ratio is flat to slightly up
+across the change — 0.4099/0.2000 = **2.05x** on 8 cores before, 0.3634/0.1697
+= **2.14x** after — which is the number that would fall if any of the three
+levers had introduced hidden threads. None of them can: the two-stage kernel is
+a single-threaded numba `njit` with no `prange`, and both step-3 changes remove
+work rather than add machinery.
+
+**Read this as a regression check, not a speed-up measurement**, for the same
+reason as phase 1: the workspace dataset is a 2828-pixel 0.1"/pixel simulation
+with a small rectangular mesh, so both the F block and the MGE are a much
+smaller share of the evaluation than in the HST harness cells.
