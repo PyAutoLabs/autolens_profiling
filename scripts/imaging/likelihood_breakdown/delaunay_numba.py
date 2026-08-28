@@ -211,7 +211,7 @@ print(f"  OMP_NUM_THREADS:         {os.environ.get('OMP_NUM_THREADS', '(unset)')
 # ``autoarray/inversion/inversion/imaging_numba/sparse.py``):
 #
 #   1. mapper x mapper       ``_curvature_matrix_mapper_diag``          [sparse-op numba kernel]
-#   2. mapper x linear-func  ``_curvature_matrix_mapper_func_blocks_from`` [dense sliding-window conv]
+#   2. mapper x linear-func  ``_curvature_matrix_mapper_func_blocks_from`` [batched FFT conv + numba scatter]
 #   3. linear-func x l-func  ``_curvature_matrix_func_func_blocks_from``   [BLAS dot]
 #
 # and then, in the ``curvature_matrix`` cached property, a global mirror plus
@@ -237,7 +237,7 @@ print(f"  OMP_NUM_THREADS:         {os.environ.get('OMP_NUM_THREADS', '(unset)')
 # out slightly negative. It is recorded as measured, never clipped.
 
 F_MAPPER_MAPPER_LABEL = "F: mapper×mapper block [sparse-op]"
-F_MAPPER_FUNC_LABEL = "F: mapper×linear-func block [dense conv]"
+F_MAPPER_FUNC_LABEL = "F: mapper×linear-func block [FFT conv + scatter]"
 F_FUNC_FUNC_LABEL = "F: linear-func×linear-func block [BLAS]"
 F_RESIDUAL_LABEL = "Curvature matrix F [residual: mirror + diag-add]"
 
