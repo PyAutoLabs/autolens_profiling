@@ -304,17 +304,12 @@ _mge_scratch: dict[str, list] = {}
 
 def _mge_linear_func_list(inversion) -> list:
     """The inversion's linear-func objects (the MGE lens light), never its mappers."""
-    return [
-        obj for obj in inversion.linear_obj_list if hasattr(obj, "light_profile_list")
-    ]
+    return [obj for obj in inversion.linear_obj_list if hasattr(obj, "light_profile_list")]
 
 
 def _mge_mapping_matrix(fit) -> list:
     """Piece 1: the 60 unblurred profile images on the (over-sampled) data grid."""
-    matrices = [
-        linear_func.mapping_matrix
-        for linear_func in _mge_linear_func_list(fit.inversion)
-    ]
+    matrices = [linear_func.mapping_matrix for linear_func in _mge_linear_func_list(fit.inversion)]
     _mge_scratch["mapping_matrix"] = matrices
     return matrices
 
@@ -343,9 +338,7 @@ def _mge_blurring_stack(linear_func):
 
     return np.stack(
         [
-            light_profile.image_2d_from(
-                grid=linear_func.blurring_grid, xp=np
-            ).slim.array
+            light_profile.image_2d_from(grid=linear_func.blurring_grid, xp=np).slim.array
             for light_profile in linear_func.light_profile_list
         ],
         axis=1,
@@ -356,8 +349,7 @@ def _mge_blurring_mapping_matrix(fit) -> list:
     """Piece 2: the same 60 profiles on the blurring grid (flux blurred in from
     outside the mask), stacked exactly as the override stacks them."""
     matrices = [
-        _mge_blurring_stack(linear_func)
-        for linear_func in _mge_linear_func_list(fit.inversion)
+        _mge_blurring_stack(linear_func) for linear_func in _mge_linear_func_list(fit.inversion)
     ]
     _mge_scratch["blurring_mapping_matrix"] = matrices
     return matrices
@@ -387,10 +379,7 @@ def _mge_split_reproduces_step(fit) -> bool:
     if len(actual) != len(reconstructed) or len(actual) == 0:
         return False
 
-    return all(
-        np.array_equal(np.asarray(a), np.asarray(b))
-        for a, b in zip(actual, reconstructed)
-    )
+    return all(np.array_equal(np.asarray(a), np.asarray(b)) for a, b in zip(actual, reconstructed))
 
 
 def _geometry_constants(fit) -> dict:
@@ -439,8 +428,7 @@ def _geometry_constants(fit) -> dict:
             {
                 "params": n_source,
                 "data_to_pix_unique_shape": [
-                    int(s)
-                    for s in np.asarray(mapper.unique_mappings.data_to_pix_unique).shape
+                    int(s) for s in np.asarray(mapper.unique_mappings.data_to_pix_unique).shape
                 ],
                 "pix_lengths_mean": float(pix_lengths.mean()),
                 "pix_lengths_max": int(pix_lengths.max()),
