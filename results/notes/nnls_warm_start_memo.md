@@ -35,6 +35,9 @@ level so every solve's `stats` is captured from inside a real `FitImaging`. Medi
 0.470 s of 1.189 s step-total (40%); hst 0.542 s of 3.223 s (17%) — no longer the ~70% it was
 when #498 was written (previously recorded euclid: 3.615 s of 4.839 s). Pins PASSED both.
 
+**Model robustness.** This measured ONE fiducial. The same A/B across 11 model variants and
+both instruments is in [`nnls_warm_start_memo_matrix.md`](./nnls_warm_start_memo_matrix.md).
+
 ## Verdict
 
 **Gate met: `nnls_warm_start_memo` defaults to `true`.** The random-walk median iteration
@@ -52,6 +55,23 @@ case; iid stays the regime to revisit if a search class proves uncorrelated thro
 **Shipped default:** `nnls_warm_start_memo: true` in `autoarray/config/general.yaml`, with the
 `KeyError` fallback in `Settings.nnls_warm_start_memo` returning `True` for workspaces whose own
 `general.yaml` shadows autoarray's without the key.
+
+## Fallback guard
+
+`nnls_warm_start_error_tolerance` (config `inversion.nnls_warm_start_error_tolerance: 1.5`;
+`inf`, `0` or a negative value disables it) makes the memo self-calibrating: each entry remembers
+the error fraction of the most recent **dense-sign-started** solve for its key, and a seeded solve
+whose own fraction exceeds `1.5 ×` that reference has its entry dropped — the next solve for that
+key restarts dense and refreshes the reference. The rule is *relative* because the absolute
+fraction does not separate helpful from harmful seeds (0.048–0.138 overlap) while the seed/dense
+ratio does (helpful ≤ 0.89, worst 1.42), and 1.5 sits above that worst measured ratio, so the
+guard is protective against unmeasured regimes rather than flapping inside the matrix.
+
+Re-run with the guard on (`--n-instances 20`, same env, so the fiducial JSONs/PNGs on disk are now
+these 20-instance cells, not the 30-instance ones tabulated above): euclid fiducial 10.00×/0.91×,
+hst fiducial 4.27×/**0.62×**, hst source_complex 3.39×/0.73× (rw/iid). It fired **3 times in 240
+evaluations**, all in `hst/fiducial/iid` — the one cell whose seed was worse than the dense-sign
+start. No cell's ratio, solve seconds or parity moved beyond sampling noise (parity ≤ 9.5e-15).
 
 ## Phase 3b (batched active-set moves)
 
