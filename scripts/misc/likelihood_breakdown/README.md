@@ -95,6 +95,8 @@ If, on the other hand, the two numbers agree closely, the per-step bars are a fa
 | `imaging/delaunay.py` | Imaging | DelaunayBrightnessImage | 13-step pipeline; Hilbert-curve mesh. |
 | `interferometer/delaunay.py` | Interferometer | DelaunayBrightnessImage + sparse-DFT | 11-step pipeline. The transform-mapping-matrix step is the interferometer-specific replacement for imaging's PSF convolution. |
 | `datacube/delaunay.py` | Datacube | DelaunayBrightnessImage × N channels | 8-step pipeline. Channel-invariant steps profiled once; channel-variant steps profiled on channel 0 and multiplied by `N_channels` for the cube cost. |
+| `imaging/delaunay_numba.py` | Imaging | DelaunayBrightnessImage (numba CPU, `use_jax=False`) | 18-step pipeline; sparse-operator CPU path, MGE-60 linear lens light. |
+| `imaging/delaunay_numba_nnls_iterations.py` | Imaging | as `delaunay_numba.py` | **Diagnostic, not a breakdown.** A/B of the cross-evaluation NNLS warm-start memo (`aa.Settings(nnls_warm_start_memo=...)`, PyAutoArray#498) over two 30-instance sequences (random walk / i.i.d.), reporting active-set iterations, solve and evaluation time, and memo-vs-no-memo parity. Findings: [`results/notes/nnls_warm_start_memo.md`](../../../results/notes/nnls_warm_start_memo.md). |
 
 Four cells are intentionally absent from this package:
 - `interferometer/mge` — full-pipeline-by-design, no per-step decomposition (see runtime).
