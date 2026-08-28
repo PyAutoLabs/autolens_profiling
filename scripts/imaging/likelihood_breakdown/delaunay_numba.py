@@ -319,19 +319,44 @@ def _mge_mapping_matrix(fit) -> list:
     return matrices
 
 
+def _mge_blurring_stack(linear_func):
+    """The blurring stack of one linear-func object, built the way the override builds it.
+
+    ``operated_mapping_matrix_override`` stacked the 60 blurring-grid images with an
+    inline per-profile loop until PyAutoArray#507 step 3, which moved both stacks behind
+    ``LightProfileLinearObjFuncList._image_slim_list_from`` so that an MGE basis shares one
+    reference-frame transform and one eccentric-radius grid. This harness is run against
+    both libraries (the paired before/after of that step), so it dispatches on the
+    attribute rather than hard-coding either shape -- a hand-rolled loop would keep timing
+    the *old* code on the new library and mis-attribute the win to the residual row. Which
+    branch was taken is recorded in the result JSON as ``mge_blurring_stack_path``.
+    """
+    if hasattr(linear_func, "_image_slim_list_from"):
+        _mge_scratch["blurring_stack_path"] = "shared_geometry"
+
+        return np.stack(
+            linear_func._image_slim_list_from(grid=linear_func.blurring_grid, xp=np),
+            axis=1,
+        )
+
+    _mge_scratch["blurring_stack_path"] = "per_profile_loop"
+
+    return np.stack(
+        [
+            light_profile.image_2d_from(
+                grid=linear_func.blurring_grid, xp=np
+            ).slim.array
+            for light_profile in linear_func.light_profile_list
+        ],
+        axis=1,
+    )
+
+
 def _mge_blurring_mapping_matrix(fit) -> list:
     """Piece 2: the same 60 profiles on the blurring grid (flux blurred in from
     outside the mask), stacked exactly as the override stacks them."""
     matrices = [
-        np.stack(
-            [
-                light_profile.image_2d_from(
-                    grid=linear_func.blurring_grid, xp=np
-                ).slim.array
-                for light_profile in linear_func.light_profile_list
-            ],
-            axis=1,
-        )
+        _mge_blurring_stack(linear_func)
         for linear_func in _mge_linear_func_list(fit.inversion)
     ]
     _mge_scratch["blurring_mapping_matrix"] = matrices
@@ -534,6 +559,7 @@ geometry_constants = _geometry_constants(fit_check)
 print("\n--- Geometry constants (model-independent) ---")
 print(json.dumps(geometry_constants, indent=2))
 print(f"  MGE split reproduces step bit-identically: {mge_split_reproduces_step}")
+print(f"  MGE blurring stack path: {_mge_scratch.get('blurring_stack_path')}")
 
 del fit_check
 
@@ -645,6 +671,7 @@ breakdown_summary = {
         "reconstruct the step's output bit-identically. PyAutoArray#507 step 0."
     ),
     "mge_split_reproduces_step": mge_split_reproduces_step,
+    "mge_blurring_stack_path": _mge_scratch.get("blurring_stack_path"),
     "geometry": geometry_constants,
     "curvature_matrix_f_split_note": (
         "The four 'F: ...' / 'Curvature matrix F' rows sum to "
