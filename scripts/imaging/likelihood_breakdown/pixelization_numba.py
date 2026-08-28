@@ -19,7 +19,14 @@ incremental cost. The step list follows the traced call graph:
 4.  Inversion build — ray trace, adaptive mesh + interpolation, mapper
 5.  PSF-weighted data                       [numba]
 6.  MGE operated mapping matrix — the 60 linear-Gaussian lens-light images
-    + their PSF convolution (cached, reused by data vector + curvature)
+    + their PSF convolution (cached, reused by data vector + curvature),
+    split into its three pieces plus the assembly residual — see the "MGE
+    operated mapping matrix sub-block instrumentation" note beside
+    ``STEP_ACCESSORS``:
+    6a. 60x image_2d_from(grid)             [numpy profile evaluation]
+    6b. 60x image_2d_from(blurring_grid)    [numpy profile evaluation]
+    6c. 1x batched real-space PSF convolution
+    6d. MGE residual: dict assembly
 7.  Mapper sparse triplets — the sparse [data -> source-pixel] mapping
     weights (cached, reused by data vector + curvature)
 8.  Data vector D                           [numba]
@@ -195,6 +202,7 @@ analysis = al.AnalysisImaging(
 from autoarray.inversion.inversion.imaging_numba.sparse import (  # noqa: E402
     InversionImagingSparseNumba,
 )
+from autoarray.inversion.mappers.abstract import Mapper  # noqa: E402
 
 n_image_pixels = dataset.data.shape[0]
 n_over_sampled_pixels = dataset.grids.lp.over_sampled.shape[0]
@@ -270,14 +278,188 @@ def _f_block_scratch(inversion) -> np.ndarray:
     return scratch
 
 
+# -------------------------------------------------------------------
+# MGE operated mapping matrix sub-block instrumentation (PyAutoArray#507 step 0)
+# -------------------------------------------------------------------
+#
+# ``inversion.linear_func_operated_mapping_matrix_dict`` builds, for the linear
+# MGE lens light, the PSF-convolved image of every one of its 60 Gaussians. On
+# the numpy path that is
+# ``LightProfileLinearObjFuncList.operated_mapping_matrix_override``
+# (autogalaxy/profiles/light/linear/abstract.py), whose fast branch is three
+# distinct pieces of work:
+#
+#   1. ``mapping_matrix``            -- 60x ``image_2d_from(grid)``, stacked
+#   2. the blurring stack            -- 60x ``image_2d_from(blurring_grid)``, stacked
+#   3. one batched real-space PSF convolution of the two stacks
+#
+# The override is a ``cached_property`` on the linear-func object and the three
+# pieces below are recomputed from scratch (``mapping_matrix`` is a plain
+# ``property``), so timing them does *not* prime the step that follows. As with
+# the F sub-blocks, the pre-existing row is therefore reported as a RESIDUAL,
+#
+#     MGE residual = t(linear_func_operated_mapping_matrix_dict) - (t1 + t2 + t3)
+#
+# so the four MGE rows sum to exactly the un-instrumented step and the artifact
+# stays comparable with pre-instrumentation runs. The raw (unsplit) MGE total is
+# written to the result JSON as ``mge_operated_mapping_matrix_total_s``.
+#
+# ``mge_split_reproduces_step`` in the JSON records a one-off bit-identical
+# check that the three timed pieces really do reconstruct the dict the step
+# returns -- if a dataset ever takes a different branch of the override the
+# split is flagged rather than silently mis-attributed.
+#
+# Caveat (as for F): the residual is a difference of averaged timings and can in
+# principle come out slightly negative. It is recorded as measured, never clipped.
+
+MGE_PROFILE_IMAGE_LABEL = "MGE: image_2d_from(grid) x60 [numpy]"
+MGE_BLURRING_IMAGE_LABEL = "MGE: image_2d_from(blurring_grid) x60 [numpy]"
+MGE_CONVOLVE_LABEL = "MGE: batched PSF convolution [real-space np]"
+MGE_RESIDUAL_LABEL = "MGE operated mapping matrix [residual: dict assembly]"
+
+_mge_scratch: dict[str, list] = {}
+
+
+def _mge_linear_func_list(inversion) -> list:
+    """The inversion's linear-func objects (the MGE lens light), never its mappers."""
+    return [
+        obj for obj in inversion.linear_obj_list if hasattr(obj, "light_profile_list")
+    ]
+
+
+def _mge_mapping_matrix(fit) -> list:
+    """Piece 1: the 60 unblurred profile images on the (over-sampled) data grid."""
+    matrices = [
+        linear_func.mapping_matrix
+        for linear_func in _mge_linear_func_list(fit.inversion)
+    ]
+    _mge_scratch["mapping_matrix"] = matrices
+    return matrices
+
+
+def _mge_blurring_mapping_matrix(fit) -> list:
+    """Piece 2: the same 60 profiles on the blurring grid (flux blurred in from
+    outside the mask), stacked exactly as the override stacks them."""
+    matrices = [
+        np.stack(
+            [
+                light_profile.image_2d_from(
+                    grid=linear_func.blurring_grid, xp=np
+                ).slim.array
+                for light_profile in linear_func.light_profile_list
+            ],
+            axis=1,
+        )
+        for linear_func in _mge_linear_func_list(fit.inversion)
+    ]
+    _mge_scratch["blurring_mapping_matrix"] = matrices
+    return matrices
+
+
+def _mge_convolved(fit) -> list:
+    """Piece 3: the single batched real-space convolution of the two stacks."""
+    return [
+        linear_func.psf.convolved_mapping_matrix_via_real_space_np_from(
+            mapping_matrix=_mge_scratch["mapping_matrix"][index],
+            mask=linear_func.grid.mask,
+            blurring_mapping_matrix=_mge_scratch["blurring_mapping_matrix"][index],
+            blurring_mask=linear_func.blurring_grid.mask,
+        )
+        for index, linear_func in enumerate(_mge_linear_func_list(fit.inversion))
+    ]
+
+
+def _mge_split_reproduces_step(fit) -> bool:
+    """Bit-identical check that pieces 1-3 reconstruct the timed step's output."""
+    _mge_mapping_matrix(fit)
+    _mge_blurring_mapping_matrix(fit)
+    reconstructed = _mge_convolved(fit)
+
+    actual = list(fit.inversion.linear_func_operated_mapping_matrix_dict.values())
+
+    if len(actual) != len(reconstructed) or len(actual) == 0:
+        return False
+
+    return all(
+        np.array_equal(np.asarray(a), np.asarray(b))
+        for a, b in zip(actual, reconstructed)
+    )
+
+
+def _geometry_constants(fit) -> dict:
+    """Model-independent geometry of the sparse operator and of each mapper.
+
+    Recorded once, outside the timed loop, so that the complexity of the
+    mapper x mapper kernel (`curvature_matrix_via_sparse_operator_from`) is a
+    measurement rather than an estimate. `mapper_mapper_inner_ops` is the exact
+    count of that kernel's innermost accumulations,
+
+        sum over stored (data_0, data_1) pairs of u0(data_0) * u1(data_1),
+
+    and the `two_stage_*` counts are the same geometry costed for the phase-2
+    reformulation (a dense n_source accumulator per data pixel, then one AXPY
+    per mapping). PyAutoArray#507 step 0.
+    """
+    inversion = fit.inversion
+
+    lengths = np.asarray(inversion.sparse_operator.lengths).astype("int64")
+    indexes = np.asarray(inversion.sparse_operator.indexes).astype("int64")
+
+    geometry = {
+        "psf_shape_native": [int(s) for s in dataset.psf.kernel.shape_native],
+        "image_pixels_masked": int(n_image_pixels),
+        "psf_precision_pairs_stored": int(indexes.shape[0]),
+        "psf_precision_lengths_sum": int(lengths.sum()),
+        "psf_precision_lengths_mean": float(lengths.mean()),
+        "psf_precision_lengths_max": int(lengths.max()),
+        "mappers": [],
+    }
+
+    for mapper in inversion.cls_list_from(cls=Mapper):
+        pix_lengths = np.asarray(mapper.unique_mappings.pix_lengths).astype("int64")
+
+        pair_u0 = np.repeat(pix_lengths, lengths)
+        pair_u1 = pix_lengths[indexes]
+
+        n_source = int(mapper.params)
+        data_pixels = int(lengths.shape[0])
+
+        stage_1_ops = int(pair_u1.sum())
+        stage_2_ops = int(pix_lengths.sum()) * n_source
+        clear_ops = data_pixels * n_source
+
+        geometry["mappers"].append(
+            {
+                "params": n_source,
+                "data_to_pix_unique_shape": [
+                    int(s)
+                    for s in np.asarray(mapper.unique_mappings.data_to_pix_unique).shape
+                ],
+                "pix_lengths_mean": float(pix_lengths.mean()),
+                "pix_lengths_max": int(pix_lengths.max()),
+                "pix_lengths_sum": int(pix_lengths.sum()),
+                "mapper_mapper_inner_ops": int((pair_u0 * pair_u1).sum()),
+                "two_stage_stage_1_scatter_ops": stage_1_ops,
+                "two_stage_stage_2_axpy_ops": stage_2_ops,
+                "two_stage_clear_ops": clear_ops,
+                "two_stage_total_ops": stage_1_ops + stage_2_ops + clear_ops,
+            }
+        )
+
+    return geometry
+
+
 STEP_ACCESSORS = [
     ("FitImaging construct", None),  # handled specially (constructor)
     ("Blurred image (FFT convolve)", lambda fit: fit.blurred_image),
     ("Profile subtracted image", lambda fit: fit.profile_subtracted_image),
     ("Inversion build (trace+mesh+mapper)", lambda fit: fit.inversion),
     ("PSF-weighted data [numba]", lambda fit: fit.inversion.psf_weighted_data),
+    (MGE_PROFILE_IMAGE_LABEL, _mge_mapping_matrix),
+    (MGE_BLURRING_IMAGE_LABEL, _mge_blurring_mapping_matrix),
+    (MGE_CONVOLVE_LABEL, _mge_convolved),
     (
-        "MGE operated mapping matrix (60 funcs)",
+        MGE_RESIDUAL_LABEL,
         lambda fit: fit.inversion.linear_func_operated_mapping_matrix_dict,
     ),
     (
@@ -360,6 +542,15 @@ fit_check = analysis.fit_from(instance=instance)
 assert isinstance(fit_check.inversion, InversionImagingSparseNumba), (
     f"Expected InversionImagingSparseNumba, got {type(fit_check.inversion).__name__}"
 )
+
+# One-off, untimed (PyAutoArray#507 step 0).
+mge_split_reproduces_step = _mge_split_reproduces_step(fit_check)
+geometry_constants = _geometry_constants(fit_check)
+
+print("\n--- Geometry constants (model-independent) ---")
+print(json.dumps(geometry_constants, indent=2))
+print(f"  MGE split reproduces step bit-identically: {mge_split_reproduces_step}")
+
 del fit_check
 
 n_repeats = 10
@@ -384,9 +575,24 @@ _f_block_total = (
     + _step_dict[F_MAPPER_FUNC_LABEL]
     + _step_dict[F_FUNC_FUNC_LABEL]
 )
+
+# The same scheme for the MGE row (PyAutoArray#507 step 0): the three timed
+# pieces of the operated-mapping-matrix override are subtracted from the raw
+# step, so the four MGE rows sum to the raw, un-split MGE cost recorded here.
+mge_operated_mapping_matrix_total = _step_dict[MGE_RESIDUAL_LABEL]
+_mge_piece_total = (
+    _step_dict[MGE_PROFILE_IMAGE_LABEL]
+    + _step_dict[MGE_BLURRING_IMAGE_LABEL]
+    + _step_dict[MGE_CONVOLVE_LABEL]
+)
+
+_residual_of = {
+    F_RESIDUAL_LABEL: curvature_matrix_f_total - _f_block_total,
+    MGE_RESIDUAL_LABEL: mge_operated_mapping_matrix_total - _mge_piece_total,
+}
+
 likelihood_steps = [
-    (label, curvature_matrix_f_total - _f_block_total if label == F_RESIDUAL_LABEL else per_call)
-    for label, per_call in likelihood_steps
+    (label, _residual_of.get(label, per_call)) for label, per_call in likelihood_steps
 ]
 
 # Cross-check: a directly timed, undecomposed evaluation via the production
@@ -443,6 +649,20 @@ breakdown_summary = {
     "steps": {label: per_call for label, per_call in likelihood_steps},
     "total_step_by_step": step_total,
     "curvature_matrix_f_total_s": curvature_matrix_f_total,
+    "mge_operated_mapping_matrix_total_s": mge_operated_mapping_matrix_total,
+    "mge_operated_mapping_matrix_split_note": (
+        "The four 'MGE: ...' / 'MGE operated mapping matrix' rows sum to "
+        "mge_operated_mapping_matrix_total_s, the raw un-split cost of the "
+        "inversion.linear_func_operated_mapping_matrix_dict step. The three "
+        "piece rows re-run, uncached, the three parts of "
+        "LightProfileLinearObjFuncList.operated_mapping_matrix_override (60 "
+        "profile images on the data grid, 60 on the blurring grid, one batched "
+        "real-space PSF convolution); the residual row is the step minus those "
+        "three. mge_split_reproduces_step records that the three pieces "
+        "reconstruct the step's output bit-identically. PyAutoArray#507 step 0."
+    ),
+    "mge_split_reproduces_step": mge_split_reproduces_step,
+    "geometry": geometry_constants,
     "curvature_matrix_f_split_note": (
         "The four 'F: ...' / 'Curvature matrix F' rows sum to "
         "curvature_matrix_f_total_s, the raw un-split cost of the "
