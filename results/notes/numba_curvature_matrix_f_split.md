@@ -182,3 +182,68 @@ unchanged to every recorded digit.
 The `F: mapper x linear-func block` step label was `[dense conv]` and is now
 `[FFT conv + scatter]`, since that is what it now times. Nothing else about the
 step list, the residual design or the pins changed.
+
+## Pool run (multiprocessing oversubscription check)
+
+The harness measures one process at `OMP_NUM_THREADS=1`. Nautilus fits run one
+process per core, so a single-thread win only counts if it survives the real
+pool — and an FFT that quietly spins up its own threads would show up as a pool
+regression even with the microbenchmark improving. This section is that check.
+
+**Setup.** `autolens_workspace/scripts/imaging/features/pixelization/cpu_fast_modeling.py`,
+first (non-SLaM) fit, run from the workspace CWD on an 8-core host, once against
+canonical `PyAutoArray` `main` (caabe2d4) and once with `PYTHONPATH` shadowing
+the task worktree; `autoarray.__file__` was asserted on both. `number_of_cores`
+was raised 2 -> 8. Two deliberate departures from the smoke profile, both
+forced:
+
+- `PYAUTO_TEST_MODE=1`, not the smoke default `2`. Level 2 bypasses the sampler
+  altogether, so the smoke profile as written runs **no pool at all**. Level 1
+  sets Nautilus `n_like_max = 1`, which runs exactly one exploration batch:
+  100 likelihood evaluations, so per-evaluation time is wall/100.
+- `PYAUTO_SMALL_DATASETS` left unset. Under the 15x15 cap the fit sees 256
+  masked image-pixels and the curvature matrix is too small to time; unset it is
+  2828, the simulator's full resolution.
+
+Everything else is the smoke default (`PYAUTO_SKIP_FIT_OUTPUT/VISUALIZATION/CHECKS=1`,
+`PYAUTO_DISABLE_JAX=1`). The shell profile already exports
+`OMP_NUM_THREADS=MKL_NUM_THREADS=OPENBLAS_NUM_THREADS=1`; that was left as-is,
+since it is what a real user on this machine runs.
+
+**Config A — the script as written.** Its lens is mass + shear with no light,
+so `linear_obj_list` holds the mapper alone and the block this task moved to the
+FFT does no work. As expected, nothing moves (s/eval, pool of 8, three runs):
+
+| | run 1 | run 2 | run 3 | median |
+|---|---|---|---|---|
+| main | 0.0756 | 0.0625 | 0.0610 | 0.0625 |
+| branch | 0.0677 | 0.0682 | 0.0628 | 0.0677 |
+
+**Config B — the same fit plus linear light.** A 60-component linear MGE bulge
+(the `features/multi_gaussian_expansion/modeling.py` recipe: 30 Gaussians x 2
+bases) added to the lens, so the mapper x linear-func block is non-empty. This
+is the configuration the change actually touches:
+
+| | run 1 | run 2 | run 3 | median |
+|---|---|---|---|---|
+| main, pool of 8 | 0.1706 | 0.2124 | 0.1919 | 0.1919 |
+| branch, pool of 8 | 0.1601 | 0.1747 | 0.1767 | 0.1747 |
+| main, serial (`number_of_cores=1`) | 0.4845 | | | 0.4845 |
+| branch, serial (`number_of_cores=1`) | 0.4489 | | | 0.4489 |
+
+**Verdict — no oversubscription.** The pool improves by 9 % and the single
+process by 7 %: the pool gain tracks the single-thread gain rather than eroding
+it. The parallel speed-up ratio is flat across the change — 0.4845/0.1919 =
+**2.52x** on 8 cores before, 0.4489/0.1747 = **2.57x** after — which is the
+number that would drop if the FFT had introduced hidden threads. (That ~2.5x on
+8 cores is Nautilus's own batching and serialisation overhead; it is identical
+before and after and is not something this task touched.)
+
+This matches the code: `Convolver`'s FFT path uses `np.fft.rfft2`, which has no
+`workers=` parameter and is single-threaded; `scipy.fft` appears only as
+`next_fast_len`, a shape calculation, not a transform.
+
+**Read this as a regression check, not a speed-up measurement.** The workspace
+dataset is a 2828-pixel 0.1"/pixel simulation with a small rectangular mesh, so
+F is a much smaller share of the evaluation than in the HST harness cells and
+the end-to-end gain is correspondingly smaller than the 2.6x measured there.
