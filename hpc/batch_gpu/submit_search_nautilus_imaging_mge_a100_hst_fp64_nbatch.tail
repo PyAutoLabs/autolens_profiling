@@ -1,0 +1,72 @@
+#!/bin/bash -l
+#
+# W6 TAIL (issue #163) — Nautilus n_batch scan, imaging/mge x hst x fp64,
+# extending the committed scan (64..1000) past its plateau: n_batch 2000, 4000.
+# Untracked RAL-side sibling of `submit_search_nautilus_imaging_mge_a100_hst_fp64_nbatch`
+# (same shape, BATCHES replaced). Created 2026-08-28.
+#
+# WHY A SEPARATE FILE: RAL jobs 341894/341895 re-ran the ALREADY-COMPLETED arms
+# of the committed scan (array 0-1 -> n_batch 64/128), PyAutoFit resumed them
+# ("Fit Already Completed"), each finished in ~10 s and overwrote its JSON.
+# These two arms are new config-names, so no `output/searches/.../<name>/`
+# exists and no resume is possible — verified before submit.
+#
+# WALL-BASIS: — one row per cell this submit runs. See scripts/misc/wall/README.md.
+#   cell: imaging/mge/hst  device: a100  precision: fp64
+#   wall: 738  source: measured-wall  ref: nbatch-scan-arms-max (64..1000: 525-738 s)
+#   compile: 0  headroom: 1.25
+#   -> 1:30:00 keeps the committed submit's budget.
+
+#SBATCH -J search_nautilus_imaging_mge_hst_fp64_nbatch_tail
+#SBATCH --partition=gpu
+# Node exclusion (2026-08-28): euclid-ral-gpu-1 carries a MIG-mode A100 with
+# no instances that SLURM still hands out as a plain gpu:A100 — see
+# _gpu_preflight.sh, which stays armed as the backstop.
+#SBATCH --exclude=euclid-ral-gpu-1
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=1:30:00
+#SBATCH --array=0-1
+#SBATCH -o output/output.%A_%a.out
+#SBATCH -e error/error.%A_%a.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_profiling
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+nvidia-smi
+
+# MIG backstop (primary guard is --exclude=euclid-ral-gpu-1 on the sbatch line).
+if [ -f "$AP_ROOT/hpc/batch_gpu/_gpu_preflight.sh" ]; then
+    source "$AP_ROOT/hpc/batch_gpu/_gpu_preflight.sh"
+fi
+
+BATCHES=(2000 4000)
+NB=${BATCHES[$SLURM_ARRAY_TASK_ID]}
+export SEARCHES_NAUTILUS_N_BATCH=$NB
+
+echo "=========================================="
+date
+echo "Cell:       searches/nautilus/imaging/mge"
+echo "Instrument: hst"
+echo "Precision:  fp64"
+echo "Arm:        W6 n_batch TAIL — n_batch=$NB (SEARCHES_NAUTILUS_N_BATCH), default n_live, cores=1"
+
+cd $AP_ROOT
+python3 scripts/imaging/searches/nautilus/mge.py \
+    --instrument hst \
+    --config-name hpc_a100_fp64_nbatch${NB} \
+    --output-dir $AP_ROOT/results/searches/nautilus/imaging/mge/hst
+
+echo "Finished."
+date
