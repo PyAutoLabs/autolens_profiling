@@ -8,6 +8,66 @@
 #   the array so it exists and is reviewable is one plan step; running an
 #   ~11-task, multi-hour-per-task A100 campaign is a separate decision this
 #   commit does NOT make. Do not `sbatch` this without a human go-ahead.
+#   (Superseded in part: tasks 0-4 and 7-10 have since been RUN — 340210 and
+#   341879. See "RESUBMIT 2026-08-29" below for the three tasks that have not
+#   produced a valid row and are queued to go back up.)
+#
+# RESUBMIT 2026-08-29 — TASKS 5, 6 AND 7 (autolens_profiling#196)
+#   Three of the eleven rows are still missing or invalid, and all three fail
+#   for the SAME reason: the free-adapt-split regularization was the legacy
+#   lambda^4 `al.reg.AdaptSplit` under a LogUniform(1e-6, 1e6) prior, whose
+#   matrix goes non-PD from c~1e4 and whose fp64 Cholesky then returns FINITE
+#   GARBAGE rather than NaN.
+#
+#     task 5  slam_source_pix_nn, positions off — 341908_5 was ledgered as
+#             "0 Nautilus calls in 6 h". checkpoint.hdf5: 90,000 calls, 29
+#             bounds, explored=FALSE, maxL 30,701.3 at 0.239 s/eval, zero NaN,
+#             finite log_l up to 3e+303, shell_log_l 1e56 at shell_n_eff ~ 1.
+#             It was flooded, not thrashing, and f_live could never terminate.
+#     task 6  slam_source_pix_nn, positions on  — never submitted, because
+#             task 5 was read as a "this cell is unaffordable" finding.
+#     task 7  knn, positions off — 341879_7 LANDED and is CERTIFIED, but its
+#             maxL (30,077.028) sits 480 nats below a same-`target_id` Phase 8B
+#             Prodigy arm (30,557.03). That is the same overflow signature at
+#             lower amplitude, so the row is suspect and must be re-run rather
+#             than trusted. Its old `target_id` sha256:84c0d88d3032 is retired
+#             with the legacy class.
+#
+#   All three cells now fit the squared-once `al.reg.AdaptSplitPower` on a
+#   capped LogUniform(1e-6, 1e4) coefficient prior
+#   (`searches/_setup._free_adapt_split`), and PyAutoFit's `Fitness` rejects
+#   implausibly large finite log-likelihoods as a backstop
+#   (`general.test.log_likelihood_ceiling`, default 1e20).
+#
+#   THEIR `target_id`s HAVE THEREFORE CHANGED. These are NEW targets, not
+#   re-runs of the old ones, and the rows they produce are on the far side of a
+#   library/target stack boundary from every pre-2026-08-29 adapt-split row
+#   (DECISIONS.md 2026-08-29):
+#
+#       knn_fp64                     sha256:84c0d88d3032 -> sha256:ccafb8b191bc
+#       knn_pos_fp64                 sha256:f2bebfcc525f -> sha256:d06e54bad6c0
+#       slam_source_pix_nn_fp64      sha256:1721493bba6b -> sha256:ad291b57fc62
+#       slam_source_pix_nn_pos_fp64  sha256:6befb71d64ee -> sha256:8021b4b697ff
+#
+#   Run AFTER `HPCPullPyAuto` has brought the post-2026-08-29 PyAutoArray
+#   (`al.reg.AdaptSplitPower`) and PyAutoFit onto the RAL checkout:
+#
+#       sbatch --array=5,6,7 --requeue submit_search_nautilus_inference_refs_v1_array.sh
+#
+#   RESUME COLLISION — checked, and there isn't one. Task 7 has a completed fit
+#   on disk from 341879, but PyAutoFit's identifier hashes
+#   `[search, model, unique_tag]` (paths/abstract.py `_identifier`) and the
+#   MODEL is what changed, so the corrected cells resolve to new identifier
+#   directories under the same `hpc_a100_fp64_ref/` name dir. Verified by
+#   constructing both searches locally 2026-08-29:
+#
+#       knn                 36d5967e91391122bff82e879c619548 -> 39b5ccc228ad4b4389b1129a7e5cf605
+#       slam_source_pix_nn  c16ff7b02fc168edd8eb9b4aaa4f4bc7 -> 7ced3989425354c2a53d4a79d7da2b11
+#
+#   Step 2 below still applies to a partial re-run of THIS script against the
+#   corrected targets, which would collide with itself. Confirm the identifier
+#   directory is new before assuming a task started cold — an absent `.identifier`
+#   match is the check, not the presence or absence of the parent directory.
 #
 # WHY THIS EXISTS
 #   InferenceRefs_v1 today certifies exactly two targets (mge_fp64,
@@ -37,9 +97,10 @@
 #   2  delaunay_nn            on   fixed 0.3
 #   3  slam_source_pix        off  --
 #   4  slam_source_pix        on   auto (SLaM convention)
-#   5  slam_source_pix_nn     off  --
+#   5  slam_source_pix_nn     off  --      <- RESUBMIT 2026-08-29 (corrected target)
 #   6  slam_source_pix_nn     on   auto (SLaM convention)
-#   7  knn                    off  --
+#                                          <- RESUBMIT 2026-08-29 (corrected target)
+#   7  knn                    off  --      <- RESUBMIT 2026-08-29 (341879_7 row suspect)
 #   8  delaunay_matern        off  --
 #   9  mge                    on   auto (reference-row-specific choice)
 #   10 delaunay               on   auto (reference-row-specific choice)

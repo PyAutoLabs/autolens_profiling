@@ -448,6 +448,125 @@ leapfrog trajectory, and must not be substituted — so that submit declares
 `source: unmeasured  probe-first: yes`. Add the measured row from its
 `n_logl_evals` before sizing any longer NUTS job.
 
+## Sequential Monte Carlo (`smc`)
+
+`af.SMC` — blackjax **adaptive tempered SMC** — is the framework's second MCMC
+cell (PROGRAMME.md Phase 7) and the first sampler here that produces a posterior
+**and** a `log_evidence` by a gradient route. A cloud of `num_particles` weighted
+particles is annealed from the prior to the posterior along a λ schedule the
+sampler picks adaptively to hold the ESS at `target_ess`, with `num_mcmc_steps`
+of an inner `mala` (default) or `hmc` kernel rejuvenating the cloud at each
+temperature. Like `nss` and `nuts` it is JAX-native, so a `PYAUTO_DISABLE_JAX=1`
+config raises rather than silently profiling nothing. One cell today:
+`scripts/imaging/searches/smc/mge.py`.
+
+**Why it earns a cell.** Nautilus's `log_evidence` is this programme's incumbent
+bar and nothing here could produce an independent estimate of it — NSS is
+another nested sampler, NUTS and the MultiStart optimizers give no evidence at
+all. SMC's tempering bridge does, from the gradient side, so a *cold* SMC run is
+the first available cross-check on the number every gate is scored against.
+
+It is in `_SAMPLERS_WITH_POSTERIOR` and not in `_SAMPLERS_WITH_N_LIVE`: SMC's
+particle cloud is a weighted population, not a live set with a shrinking
+likelihood bound, so `n_live` is recorded as `null` rather than having
+`num_particles` written into it and inviting a comparison it does not support.
+
+| Env var | Values | Default |
+|---------|--------|---------|
+| `SEARCHES_SMC_NUM_PARTICLES` | int | `256` |
+| `SEARCHES_SMC_KERNEL` | `mala` \| `hmc` | `mala` |
+| `SEARCHES_SMC_NUM_MCMC_STEPS` | int | `5` |
+| `SEARCHES_SMC_NUM_INTEGRATION_STEPS` | int (HMC only) | `8` |
+| `SEARCHES_SMC_TARGET_ESS` | float | `0.5` |
+| `SEARCHES_SMC_STEP_SIZE` | float | unset (auto, from the whitened width) |
+| `SEARCHES_SMC_WHITEN_INFLATE` | float | `2.0` |
+| `SEARCHES_SMC_MAX_STEPS` | int | `200` |
+| `SEARCHES_SMC_BATCH_SIZE` | int (`0` = full vmap) | the cell's `vram/config.py` row |
+| `SEARCHES_SMC_MASS` | `none` \| `result` \| `prior_scaled` | `none` |
+| `SEARCHES_SMC_WARM_FROM` | path to a completed fit's output dir | unset (cold) |
+| `SEARCHES_SMC_JITTER` | float | `0.05` |
+| `SEARCHES_SMC_WARM_SCALE` | float (`prior_scaled` only) | `0.1` |
+| `SEARCHES_SEED` | int | `42` |
+
+**NEVER JUDGE AN SMC RUN BY `Converged`.** `af.SMC` sets `converged` when λ
+reaches 1.0 and nothing else, and an adaptive schedule will walk a *collapsed*
+particle cloud all the way there — reporting a converged fit whose
+`log_evidence` is meaningless. Every SMC row therefore carries a `diagnostics`
+block (`_runner._smc_diagnostics`) with the λ schedule, the per-step acceptance
+trace and the per-step ESS, plus `lambda_final` / `acceptance_mean` /
+`ess_final`. It marks itself `valid: false` — shouted, never raised — when λ
+never reached 1.0 (a `max_smc_steps` timeout, where `log_evidence` is a
+partial-path value rather than an evidence) or when the final ESS is below 10 %
+of the particle count. Read those three traces, not the flag.
+
+**Warm starting is all-or-nothing.** `af.SMC.is_warm_start` is literally
+`inverse_mass_matrix is not None`, and warmth changes three things at once: the
+Gaussian reference is centred on the initializer's point instead of the prior
+median, the particles are drawn from that reference instead of from the prior,
+and `log_evidence` picks up the whitening Jacobian. There is **no** "warm start
+points, cold reference" configuration — asking for one by passing only an
+initializer makes `samples_from_model` raise, because a start-point initializer
+returns the same vector every time while cold SMC asks it for `num_particles`
+distinct ones. Hence the three `SEARCHES_SMC_MASS` arms:
+
+- `none` — cold. Prior-width whitening, prior-draw particles, and the only
+  configuration whose `log_evidence` is a clean evidence estimate.
+- `result` — whiten by the warm source's `samples.covariance_matrix`. Requires
+  `SEARCHES_SMC_WARM_FROM`. PyAutoFit **refuses** a source carrying fewer than
+  `2 * n_dim` samples, or one whose covariance is the identity fallback — which
+  is what every `MultiStart*` MAP fit is. That refusal is not worked around:
+  silently degrading to a prior-width reference would report a
+  covariance-informed arm that never ran one. Use a Nautilus-sourced warm start.
+- `prior_scaled` — the library's own documented escape hatch ("pass an explicit
+  `inverse_mass_matrix` array instead"). Centres the reference on the warm
+  source's best point with a **declared** width of
+  `SEARCHES_SMC_WARM_SCALE × prior width` per parameter. It is *not* a metric:
+  it carries no parameter correlations, so it cannot test H6.1's anisotropy —
+  it exists so a warm arm can RUN and produce a step rate from the only warm
+  source that exists on RAL today. The scale and the resulting `whitening_kind`
+  are both recorded, so a `prior_scaled` row can never be read as a
+  covariance-informed one.
+
+The arithmetic behind that: the Phase-6 NUTS probe warm-started from
+`multi_start_prodigy/imaging/mge/hst/n16_s3000_seed0` — a **16-lane MAP**
+run — and `imaging/mge` has **15** free parameters, so that source offers 16
+samples against a `2 × 15 = 30` floor and `result` is rejected on sight.
+
+**Eval accounting is DERIVED, not counted.** `af.SMC` records no evaluation
+counter, and `samples.total_samples` is `num_particles` — a few hundred stored
+particles for a run that made six figures of evaluations, the error class of
+issue #177. `_samplers.smc_likelihood_evals` reconstructs the count from the
+recorded schedule as
+`num_particles * (1 + n_smc_steps * num_mcmc_steps * per_step)`, where
+`per_step` is 1 for MALA and `num_integration_steps` for HMC. That arithmetic is
+exact for the kernel work but does **not** include the log-likelihood
+evaluations blackjax spends solving for the next λ, so an SMC `ms/eval` is
+slightly optimistic. Never present it as a measured counter the way the NUTS
+`n_logl_evals` row is.
+
+**ESS is the Kish ESS, and here that is correct.** Unlike NUTS (whose all-`1.0`
+weights degenerate the formula to the raw draw count), SMC particles carry
+genuine normalised importance weights, so `_metrics._kish_ess` on `weight_list`
+is exactly the right quantity and no substitute is passed.
+
+**Correctness guard — output-path/identifier collisions.**
+`SMC.__identifier_fields__` is `(num_particles, kernel, num_mcmc_steps,
+num_integration_steps, target_ess, inverse_mass_matrix)`. `seed` and
+`initializer` are **not** in it, so a seed sweep, or two warm arms from
+different sources at identical particle settings, would resolve to one output
+directory and the second arm's `fit()` would return the first's `.completed`
+result — the defect RAL job 340576 exposed for `log_det_method`.
+`_samplers.smc_unique_tag` carries the seed, the mass mode and an 8-hex digest
+of the resolved warm-start path into the `unique_tag`, and therefore into both
+the identifier and the output path (e.g. `n256_mala_m5_seed0_warm1a2b3c4d_massprior_scaled`).
+
+A100 probe: `hpc/batch_gpu/submit_search_smc_imaging_mge_a100_hst_fp64_probe`
+(3 tasks: `mala_warm`, `hmc_warm`, `mala_cold`). SMC has **no** measured step
+rate on any cell — a tempering step is a different unit from both an optimizer
+step and a NUTS leapfrog trajectory and must not be substituted — so that submit
+declares `source: unmeasured  probe-first: yes`. Add the measured row from its
+`n_smc_steps` and derived eval count before sizing any longer SMC job.
+
 ## Position likelihood (`SEARCHES_POSITIONS`)
 
 Phase 4 Stage 1 (issue #159). Attaches a real `al.PositionsLH` penalty to a

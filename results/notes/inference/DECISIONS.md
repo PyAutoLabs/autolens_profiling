@@ -1175,3 +1175,226 @@ PROGRAMME.md §3. Filed as a follow-up, **not** started here.
 `scripts/misc/wall/rates.py` (`nuts_mge_hst_a100_fp64_c4_warm`);
 `hpc/batch_gpu/submit_search_nuts_imaging_mge_a100_hst_fp64_probe`. Issue #187
 (closed), #194.
+
+---
+
+## 2026-08-29 — 341908_5 diagnosed: it was a **likelihood-overflow flood**, not thrashing. The 2026-08-27 W4 pilot answer is superseded, and a **library/target stack boundary** is declared for every adapt-split row
+
+**Supersedes** the 2026-08-27 W4 entry ("Pilot answer: it thrashes") and the
+`targets/REFS_V1_HARVEST.md` text it pointed at. That entry is not deleted —
+this one corrects it. Issue: autolens_profiling#196.
+
+**Decision (five parts):**
+
+1. **The 341908_5 record is corrected.** `slam_source_pix_nn` did not make zero
+   Nautilus calls and did not thrash on resamples. It was killed by an
+   overflow flood.
+2. **The free-adapt-split targets move to `al.reg.AdaptSplitPower` under a
+   capped `LogUniform(1e-6, 1e4)` coefficient prior** — `knn`,
+   `slam_source_pix_nn` and the `delaunay_adapt_split` diagnostic cell, all
+   built through one helper (`searches/_setup._free_adapt_split`) so the
+   documented knn ≡ delaunay_adapt_split parameter identity holds by
+   construction.
+3. **A stack boundary is declared.** No adapt-split coefficient measured after
+   2026-08-29 is comparable with one measured before it. Same number, different
+   meaning: λ² here, λ⁴ there (`c_new = c_old ** 2` maps between them).
+4. **The `knn` reference row is withdrawn as a bar** and queued to re-run. Its
+   480-nat deficit is the same pathology at lower amplitude.
+5. **Recorded rows are NOT re-stamped.** They ran the legacy target and their
+   `target_id`s correctly identify it.
+
+**Evidence — 341908_5's `checkpoint.hdf5`, the only artifact the run left:**
+
+| | recorded | previously believed |
+|---|---|---|
+| likelihood calls | **90,000** | 0 |
+| bounds | 29 | — |
+| `explored` | **FALSE** | — |
+| max log L | **30,701.3** | none |
+| per-eval | 0.239 s | — |
+| MaxRSS | 3.66 GB | — |
+| exit | TIMEOUT (6 h wall) | TIMEOUT |
+| NaN draws | **0** | "thrashing on resamples" |
+| −inf draws | **0** | — |
+| max finite `log_l` | **3e+303** (shells 14/23/24/26/28) | — |
+| max `shell_log_l` | **1e56**, at `shell_n_eff` ≈ 1 | — |
+
+**Mechanism.** `al.reg.AdaptSplit` squares its coefficient twice, so under the
+legacy `LogUniform(1e-6, 1e6)` prior the regularization term reaches 1e24. The
+curvature-plus-regularization matrix goes non-positive-definite from c ≈ 1e4,
+and the fp64 Cholesky there returns **finite garbage** rather than NaN.
+PyAutoFit's `Fitness` passed the finite value through — it screened NaN and
+±inf and nothing else — Nautilus accepted 3e+303 as its best point,
+`shell_log_l` reached 1e56 with an effective sample count of one, and `f_live`
+could never fall below its termination threshold. The run could only end at the
+wall clock. **A NaN would have been rejected by every search in the stack; a
+finite 3e+303 was accepted.** That asymmetry is the whole failure.
+
+The `.out` froze at `Calls | 0` for a separate and compounding reason: a SLURM
+`.out` is a file, so Python block-buffers stdout at 8 KiB and the wall-clock
+kill discarded the buffer. Two independent defects made a healthy-but-doomed
+6 h run indistinguishable from a job that never started, and the run was
+ledgered wrongly for two days on the strength of it.
+
+**Why maxL 30,701.3 matters more than any of the above.** It is ABOVE the
+certified `delaunay_nn` reference (30,650.77). The cell is not unaffordable
+under nested sampling — it was finding good fits the entire time and could not
+be told it had converged. The 2026-08-24 W4 entry's framing (DelaunayNN's
+resample behaviour is a finding, not something to engineer around) still
+stands; it simply was not what happened here. Zero NaN draws means the resample
+hazard never fired.
+
+**What was changed, on both sides:**
+
+| | change | where |
+|---|---|---|
+| library | `al.reg.AdaptSplitPower` — squares the coefficient once; `power` is a `Constant` (never sampled), so the model dimension is unchanged and `power=2.0` reproduces the legacy numerics exactly | PyAutoArray, merged 2026-08-29 |
+| library | `Fitness` rejects implausibly large finite log-likelihoods — `general.test.log_likelihood_ceiling`, default 1e20 | PyAutoFit, merged 2026-08-29 |
+| target | coefficient priors capped at `LogUniform(1e-6, 1e4)`, below the measured non-PD onset | `searches/_setup._free_adapt_split` |
+| ops | `export PYTHONUNBUFFERED=1` in the `$SLURM_JOB_ID` block — covers all 85+ submits at once | `activate.sh` |
+
+The class change alone would not have been enough: it still admits c² = 1e12 at
+the top of the legacy prior. The cap is what keeps the sampler off the non-PD
+region; the `Fitness` ceiling is the backstop, not the fix.
+
+**The stack boundary, precisely.** The `target_id`s of every registry target
+that uses free adapt-split regularization have changed, because the priors are
+hashed:
+
+| target | before (legacy λ⁴, cap 1e6) | after (λ², cap 1e4) |
+|---|---|---|
+| `knn_fp64` | `sha256:84c0d88d3032` | `sha256:ccafb8b191bc` |
+| `knn_mp` | `sha256:5b3f2dd1a8f9` | `sha256:a027990c04bf` |
+| `knn_pos_fp64` | `sha256:f2bebfcc525f` | `sha256:d06e54bad6c0` |
+| `knn_pos_mp` | `sha256:f946c4cae821` | `sha256:58fa92c1cec3` |
+| `slam_source_pix_nn_fp64` | `sha256:1721493bba6b` | `sha256:ad291b57fc62` |
+| `slam_source_pix_nn_mp` | `sha256:d302d3c1b597` | `sha256:dc6f6afac7e4` |
+| `slam_source_pix_nn_pos_fp64` | `sha256:6befb71d64ee` | `sha256:8021b4b697ff` |
+| `slam_source_pix_nn_pos_mp` | `sha256:16f97c3a75b4` | `sha256:fda3bd6f4be0` |
+
+These are **new targets, not re-runs of the old ones**, and the id change is
+the mechanism that says so. Every recorded row keeps its old id: 17 `knn` rows
+(the 341879_7 reference plus 16 Phase 8B Prodigy arms) genuinely ran the legacy
+target, and re-stamping them would erase exactly the boundary this entry draws.
+`restamp_target_block.py` refuses them of its own accord — its reproduction
+control fires, reporting that the environment computes the same id both the old
+way and the corrected way while the row carries a third — which is the correct
+behaviour: the hashing function did not change, the target did.
+
+Cells NOT affected: `delaunay_nn` and `slam_source_pix` (ConstantSplit /
+rectangular `Adapt` respectively), `delaunay_matern`, `mge`, `delaunay`,
+`pixelization`. Their rows and ids are untouched.
+
+**InferenceRefs_v1 moves from "9 certified of 13" to "8 that stand of 13".**
+The knn row is withdrawn as a bar (not deleted — it is a valid measurement of
+the legacy target), and three tasks go back up after `HPCPullPyAuto`:
+`--array=5,6,7` on `submit_search_nautilus_inference_refs_v1_array.sh`.
+
+**Two collateral findings, both fixed here:**
+
+- **`build_nautilus`, `build_nss`, `build_nuts` and `build_smc` did not tag the
+  `log_det_method` arm into their `unique_tag`.** #175 fixed this for the
+  MultiStart path only, after RAL 340576 produced 10 output directories for 20
+  arms. `Nautilus.__identifier_fields__` contains no log-det field either, so
+  the `slam_source_pix_nn` slogdet A/B this wave adds would have hit the same
+  defect on the nested path — two arms, one run, two results JSONs with
+  different basenames and identical contents. `searches/_samplers.log_det_arm_tag`
+  is now shared by all five builders. Tagged on the env override only, so every
+  existing output path stays byte-identical.
+- **The `slam_source_pix_nn` docstring's "RISK ON THIS ARM" note and the `knn`
+  docstring's #117 lambda^4 lesson both describe the legacy class** and are
+  marked as superseded in place, so the next reader is not budgeting a
+  resurrection plateau for a surface that no longer exists.
+
+**What is NOT decided here.** Whether the corrected target converges — that is
+what refs 5/6/7 measure. Whether `slogdet` changes anything a nested sampler
+can see on the corrected target — that is what the new 2-arm
+`submit_search_nautilus_slogdet_ab_imaging_slam_source_pix_nn_a100_hst_fp64`
+measures, and "no difference, because the cap already removed the failure" is a
+real finding rather than a failed experiment. The factor-2 `Adapt` scatter
+asymmetry (`inner=outer=1` is 2x `Constant(1)`) is documented and filed, not
+fixed. Whether the `*Power` classes become the library default is a separate,
+deferred, breaking-release decision.
+
+**Records:** `targets/REFS_V1_HARVEST.md` (the corrected pilot section);
+PROGRAMME.md §Phase-1 row + §9b W4 row; `searches/_setup._free_adapt_split`.
+
+---
+
+## 2026-08-29 — Phase 7 opened: `af.SMC` cell added, first A100 probe prepared (3 arms)
+
+**Decision:** The searches framework gets a **Sequential Monte Carlo cell**
+(`smc`), wrapping the `af.SMC` search merged into PyAutoFit on 2026-08-29
+(blackjax adaptive tempered SMC, MALA or HMC inner kernel). One cell today,
+`scripts/imaging/searches/smc/mge.py`, on the same `imaging/mge/hst` target
+every other sampler in the framework fits. Phase 7 moves to **in flight**.
+GATE C is not called and nothing is adopted.
+
+**Why SMC and why now.** Every gate in this programme is scored against a
+`log_evidence`, and every one of those numbers has come from a nested sampler.
+Nautilus is the bar; `af.NSS` is another nested sampler and so is not an
+independent check on it; `BlackJAXNUTS` and the MultiStart optimizers produce
+no evidence at all. SMC's tempering bridge produces one **from the gradient
+side, by a different route**, which makes a cold SMC run the first available
+cross-check on the quantity Gates A and C are written in terms of. The
+Phase-6 NUTS probe (341981) also left the gradient-MCMC question open in an
+unsatisfying way — right basin, invalid posterior (split-R̂ 3.89, 400/800
+divergences, ESS/min 0.088 against Nautilus's 727) — so "a gradient sampler
+that gets there" is not yet demonstrated on this cell by anything.
+
+**The probe** (`submit_search_smc_imaging_mge_a100_hst_fp64_probe`, 3 tasks,
+`--time=2:00:00`, `source: unmeasured  probe-first: yes`):
+
+| task | arm | what it answers |
+|---|---|---|
+| 0 | `mala_warm` | the cheap kernel's rate and acceptance from a known-good centre |
+| 1 | `hmc_warm` | whether 8x the gradient work per rejuvenation step buys longer moves on a 269x-anisotropic posterior |
+| 2 | `mala_cold` | the **evidence bridge**: cold SMC's `log_evidence` against Nautilus's 31690.42 nats on this cell |
+
+256 particles, 5 rejuvenation steps, `target_ess=0.5`, `max_smc_steps=60`,
+seed 0 fixed across all three, positions off.
+
+**Warm start: `prior_scaled`, not `result`, and the artifact says so.**
+`af.SMC.is_warm_start` is literally `inverse_mass_matrix is not None`, and
+warmth changes three things at once — the Gaussian reference centre, the
+particle draw, and the evidence Jacobian. There is no "warm centre, cold
+reference" configuration. Passing the warm source itself would whiten by its
+`samples.covariance_matrix`, and PyAutoFit **refuses** that here, correctly: the
+only warm source on RAL is `multi_start_prodigy/imaging/mge/hst/n16_s3000_seed0`,
+a 16-lane MAP run, and `imaging/mge` has 15 free parameters — 16 samples against
+a `2 * n_dim = 30` floor, so its covariance is the identity fallback. The
+library's own named alternative ("pass an explicit `inverse_mass_matrix` array
+instead") is what the warm arms use: reference centred on the MAP, width
+`0.1 x prior width` per parameter, recorded as `whitening_kind` in every row.
+**It carries no parameter correlations, so it cannot test H6.1's anisotropy** —
+that needs a Nautilus-sourced warm start and is a follow-up, exactly as it is
+for the NUTS `result` arm.
+
+**Two accounting decisions, both to keep an SMC row honest beside a nested one:**
+
+- **Evals are DERIVED, not counted.** `af.SMC` records no evaluation counter,
+  and `samples.total_samples` is `num_particles` — 256 stored particles for a
+  run that made six figures of evaluations, the error class of issue #177.
+  `_samplers.smc_likelihood_evals` reconstructs
+  `num_particles * (1 + n_smc_steps * num_mcmc_steps * per_step)` from the
+  recorded schedule (`per_step` = 1 for MALA, `num_integration_steps` for HMC).
+  Exact for the kernel work, and it does **not** include the evaluations
+  blackjax spends solving for the next λ — so an SMC `ms/eval` is slightly
+  optimistic and must never be presented as a measured counter the way the NUTS
+  `n_logl_evals` row is.
+- **ESS is the Kish ESS, and here that is right.** SMC particles carry genuine
+  normalised importance weights, so the generic path is correct. The NUTS
+  substitution (rank-normalised `ess_min`) exists only because NUTS weights are
+  all 1.0; it is deliberately not applied to SMC.
+
+**`Converged` is not evidence of anything.** `af.SMC` sets it when λ reaches
+1.0 and nothing else, and an adaptive schedule will walk a collapsed cloud all
+the way there. Every SMC row carries a diagnostics block with the λ schedule,
+the per-step acceptance trace and the per-step ESS, and marks itself
+`valid: false` — shouted, never raised — on a partial tempering path or a final
+ESS below 10% of the particle count. The local test-mode smoke exercised that
+path: an 8-particle / 3-temperature run stopped at λ = 1.9e-4 and correctly
+reported itself uninterpretable rather than offering its `log_evidence`.
+
+**Records:** `scripts/misc/searches/README.md` "Sequential Monte Carlo (`smc`)";
+PROGRAMME.md §Phase 7.

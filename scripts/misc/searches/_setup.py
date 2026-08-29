@@ -1422,6 +1422,78 @@ def _slam_source_pix_model(*, mask_radius: float) -> af.Collection:
     return af.Collection(galaxies=af.Collection(lens=lens, source=source))
 
 
+_FREE_ADAPT_SPLIT_CAP = 1e4
+"""Upper limit of the free ``AdaptSplitPower`` coefficient priors.
+
+See :func:`_free_adapt_split`. ``1e4`` is where the regularization matrix was
+measured to go non-positive-definite on ``slam_source_pix_nn``
+(DECISIONS.md 2026-08-29); the prior stops at the wall rather than spanning it.
+"""
+
+
+def _free_adapt_split(*, signal_scale: float | None = 1.0, cap: float = _FREE_ADAPT_SPLIT_CAP):
+    """The free split-family adapt regularization every free-AdaptSplit cell uses.
+
+    Returns ``af.Model(al.reg.AdaptSplitPower)`` with free ``inner_coefficient``
+    and ``outer_coefficient`` on ``LogUniformPrior(1e-6, cap)``, and
+    ``signal_scale`` either pinned to the given value or left free when
+    ``signal_scale=None``.
+
+    WHY ``AdaptSplitPower`` AND NOT ``AdaptSplit`` (2026-08-29, this repo's #196)
+    ---------------------------------------------------------------------------
+    ``al.reg.AdaptSplit`` squares its coefficient twice — the lambda^4 fragility
+    #104 named and every campaign since has paid for. Under the legacy
+    ``LogUniform(1e-6, 1e6)`` prior the sampled coefficient reaches 1e6, so the
+    regularization term reaches 1e24, the curvature-plus-regularization matrix
+    goes non-PD from c ~ 1e4, and the fp64 Cholesky then returns **finite
+    garbage** rather than NaN. That is the failure mode that is hardest to see:
+    a NaN is rejected by every search in the stack, a finite 3e+303 is
+    *accepted*.
+
+    RAL 341908_5 is the worked example. It was ledgered for two days as
+    "0 Nautilus calls in 6 h — it thrashes". Its ``checkpoint.hdf5`` says it
+    made **90,000 calls**, reached maxL 30,701.3 at 0.239 s/eval, and had
+    ``explored=FALSE`` after 29 bounds: zero NaN, zero ``-inf``, and finite
+    ``log_l`` up to **3e+303** in shells 14/23/24/26/28, driving
+    ``shell_log_l`` to 1e56 with ``shell_n_eff`` ~ 1. Nautilus took the
+    overflowed draw as its best point, so ``f_live`` could never fall below its
+    threshold and the run could only end at the wall clock. The knn reference
+    row's 480-nat deficit against a same-``target_id`` Prodigy arm is the same
+    pathology at lower amplitude.
+
+    Two changes close it, and both are needed:
+
+    - ``al.reg.AdaptSplitPower`` (PyAutoArray, 2026-08-29) squares the
+      coefficient **once**: its ``power`` is a ``Constant`` of ``1.0``, never
+      sampled, so it never enters ``prior_count`` and these cells keep the same
+      model dimension they had. ``power=2.0`` would reproduce the legacy
+      numerics exactly; it is deliberately not used here.
+    - The prior stops at ``cap=1e4`` instead of ``1e6``. The class change alone
+      still admits c^2 = 1e12 at the top of the legacy prior; the cap is what
+      keeps the sampler off the non-PD region entirely rather than relying on
+      the PyAutoFit ``Fitness`` magnitude guard
+      (``general.test.log_likelihood_ceiling``, default 1e20) to reject what it
+      finds there. The guard is the backstop, not the fix.
+
+    LIBRARY STACK BOUNDARY. A coefficient sampled under this helper is NOT
+    comparable with one recorded before 2026-08-29: the same number means
+    lambda^2 here and lambda^4 there (``c_new = c_old ** 2`` maps between them).
+    Every row measured under the legacy class is on the far side of that
+    boundary — DECISIONS.md 2026-08-29.
+
+    Used by :func:`_knn_model`, :func:`_slam_source_pix_nn_model` and
+    :func:`_delaunay_adapt_split_model`, which is what keeps the first and last
+    of those parameter-identical to each other by construction rather than by
+    two hand-maintained copies that could drift apart.
+    """
+    regularization = af.Model(al.reg.AdaptSplitPower)
+    regularization.inner_coefficient = af.LogUniformPrior(lower_limit=1e-6, upper_limit=cap)
+    regularization.outer_coefficient = af.LogUniformPrior(lower_limit=1e-6, upper_limit=cap)
+    if signal_scale is not None:
+        regularization.signal_scale = signal_scale
+    return regularization
+
+
 def _slam_source_pix_nn_model(*, mask_radius: float) -> af.Collection:
     """``slam_source_pix`` with a ``DelaunayNN`` mesh in place of the RTU one.
 
@@ -1475,6 +1547,21 @@ def _slam_source_pix_nn_model(*, mask_radius: float) -> af.Collection:
     rather than a config to quietly swap — DECISIONS.md 2026-08-24 is explicit
     that DelaunayNN's resample behaviour is a finding, not something this
     registry engineers around.
+
+    PILOT ANSWERED, AND THE FIRST ANSWER WAS WRONG (corrected 2026-08-29,
+    #196). RAL 341908_5 was ledgered as "0 Nautilus calls in 6 h — it
+    thrashes". Its ``checkpoint.hdf5`` records **90,000 calls**, 29 bounds,
+    ``explored=FALSE``, maxL 30,701.3, 0.239 s/eval, MaxRSS 3.66 GB, killed by
+    the 6 h wall. There were **no** resamples to thrash on: zero NaN, zero
+    ``-inf``. What there was is a likelihood-overflow flood — finite ``log_l``
+    up to 3e+303 from the non-PD lambda^4 regularization matrix, accepted as
+    the best point, ``shell_log_l`` 1e56 at ``shell_n_eff`` ~ 1, so ``f_live``
+    could never terminate. The ``.out`` froze at ``Calls | 0`` only because
+    stdout was block-buffered (fixed in ``activate.sh``). The cell is not
+    unaffordable under nested sampling; it was running fine into a broken
+    objective. It now fits the squared-once class under a capped prior via
+    :func:`_free_adapt_split`, and both reference rows (5 and 6) are to be
+    re-submitted on that stack. DECISIONS.md 2026-08-29.
     """
     lens_bulge = al.model_util.mge_model_from(
         mask_radius=mask_radius,
@@ -1486,7 +1573,11 @@ def _slam_source_pix_nn_model(*, mask_radius: float) -> af.Collection:
     pixelization = af.Model(
         al.Pixelization,
         mesh=al.mesh.DelaunayNN(pixels=_HILBERT_PIXELS, areas_factor=0.5, zeroed_pixels=0),
-        regularization=af.Model(al.reg.AdaptSplit),
+        # Squared-once AdaptSplitPower on a capped (1e-6, 1e4) coefficient
+        # prior — see _free_adapt_split for why, and for the stack boundary
+        # this puts between rows measured before and after 2026-08-29.
+        # `signal_scale` stays FREE on this cell, as it always has been.
+        regularization=_free_adapt_split(signal_scale=None),
     )
     source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
     return af.Collection(galaxies=af.Collection(lens=lens, source=source))
@@ -1510,6 +1601,17 @@ def _knn_model(*, mask_radius: float) -> af.Collection:
     wall (see ``_delaunay_matern_model``). Budget accordingly
     (``_MULTI_START_N_STEPS_BY_CELL``): a long plateau is a reg mode, not
     convergence.
+
+    SUPERSEDED 2026-08-29 (#196): that lesson describes the LEGACY
+    ``al.reg.AdaptSplit`` under ``LogUniform(1e-6, 1e6)``, which is no longer
+    what this cell fits. It now uses the squared-once
+    ``al.reg.AdaptSplitPower`` on a capped ``(1e-6, 1e4)`` prior via
+    :func:`_free_adapt_split`; the over-regularized floor should be far
+    shallower and the plateau budget above is an upper bound, not a
+    prediction. The certified ``knn`` reference row (341879_7, maxL 30077.028)
+    was measured on the legacy class and sits 480 nats below a
+    same-``target_id`` Prodigy arm — the overflow-flood signature — so it is
+    **not** a valid bar for this cell and is scheduled to be re-run.
     """
     lens_bulge = al.model_util.mge_model_from(
         mask_radius=mask_radius,
@@ -1520,9 +1622,10 @@ def _knn_model(*, mask_radius: float) -> af.Collection:
     lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
     # Mesh instance pins all parameters (see _delaunay_model note on why the
     # bare class form cannot be used). Regularization: free (inner, outer)
-    # with signal_scale pinned, matching the #117 validated surface.
-    regularization = af.Model(al.reg.AdaptSplit)
-    regularization.signal_scale = 1.0
+    # with signal_scale pinned, matching the #117 validated surface — now on
+    # the squared-once AdaptSplitPower class under a capped coefficient prior
+    # (see _free_adapt_split).
+    regularization = _free_adapt_split(signal_scale=1.0)
     pixelization = af.Model(
         al.Pixelization,
         mesh=al.mesh.KNearestNeighbor(pixels=_HILBERT_PIXELS, zeroed_pixels=0),
@@ -1561,6 +1664,14 @@ def _delaunay_adapt_split_model(*, mask_radius: float) -> af.Collection:
     Identical to ``_delaunay_model`` except for the regularization, and
     identical to ``_knn_model`` except for the mesh, so a three-way comparison
     isolates mesh from reg.
+
+    UPDATED 2026-08-29 (#196): the regularization is now the squared-once
+    ``al.reg.AdaptSplitPower`` on a capped ``(1e-6, 1e4)`` coefficient prior
+    (:func:`_free_adapt_split`), shared with ``_knn_model`` so the mesh really
+    is the only difference. The NaN wall this cell was registered to exhibit is
+    a property of the LEGACY lambda^4 class, so a Phase-8A-style A/B re-run
+    here is measuring a different surface from the one CP-4 scored — cite the
+    stack boundary (DECISIONS.md 2026-08-29) with any comparison across it.
     """
     lens_bulge = al.model_util.mge_model_from(
         mask_radius=mask_radius,
@@ -1569,10 +1680,11 @@ def _delaunay_adapt_split_model(*, mask_radius: float) -> af.Collection:
     )
     mass, shear = _lens_mass_and_shear()
     lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
-    # Free (inner, outer) with signal_scale pinned — the #117 AdaptSplit surface,
-    # matching _knn_model exactly so the mesh is the only difference.
-    regularization = af.Model(al.reg.AdaptSplit)
-    regularization.signal_scale = 1.0
+    # Free (inner, outer) with signal_scale pinned — the #117 AdaptSplit surface
+    # on the squared-once AdaptSplitPower class (see _free_adapt_split), built
+    # through the SAME helper as _knn_model so the mesh is the only difference
+    # by construction rather than by two copies that could drift apart.
+    regularization = _free_adapt_split(signal_scale=1.0)
     pixelization = af.Model(
         al.Pixelization,
         mesh=al.mesh.Delaunay(pixels=_HILBERT_PIXELS, areas_factor=0.5, zeroed_pixels=0),

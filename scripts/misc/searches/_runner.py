@@ -62,6 +62,8 @@ from searches._samplers import (  # noqa: E402
     nautilus_seed,
     nss_settings,
     nuts_settings,
+    smc_likelihood_evals,
+    smc_settings,
     vmap_batch_for_cell,
 )
 
@@ -83,7 +85,7 @@ _SAMPLERS_WITH_N_LIVE = frozenset({"nautilus", "nss"})
 # posterior?") coincided while every sampler here was nested, and adding an
 # MCMC cell is exactly where conflating them starts reporting `null` posterior
 # statistics for a search that has a full chain.
-_SAMPLERS_WITH_POSTERIOR = frozenset({"nautilus", "nss", "nuts"})
+_SAMPLERS_WITH_POSTERIOR = frozenset({"nautilus", "nss", "nuts", "smc"})
 from searches._recovery import load_truth, recovery_report  # noqa: E402
 from searches._setup import (  # noqa: E402
     _LOG_DET_METHOD_DATASET_CLASSES,
@@ -532,6 +534,99 @@ def _nuts_diagnostics(samples_info: dict) -> dict | None:
     return block
 
 
+_SMC_DIAGNOSTIC_KEYS = (
+    "num_particles",
+    "kernel",
+    "num_mcmc_steps",
+    "num_integration_steps",
+    "target_ess",
+    "step_size",
+    "log_evidence",
+    "log_jacobian",
+    "n_smc_steps",
+    "converged",
+    "is_warm_start",
+    "whitening_kind",
+    "warm_start_source",
+    "inverse_mass_matrix_kind",
+    "lambda_list",
+    "acceptance_rate_list",
+    "ess_list",
+    "log_likelihood_increment_list",
+    "max_log_likelihood_list",
+)
+
+
+def _smc_samples_info(result: Any) -> dict:
+    """``samples_info`` off a completed SMC result, or ``{}``.
+
+    ``af.SMC.samples_info_from`` records the full tempering history — the
+    lambda schedule, the per-step acceptance rate, the per-step ESS, the
+    per-step log-likelihood increment — alongside the settings the run resolved.
+    Never raises: a completed multi-hour fit is not discarded because a
+    diagnostic key moved.
+    """
+    try:
+        info = getattr(result.samples, "samples_info", None)
+        return dict(info) if info else {}
+    except Exception as exc:  # never let the diagnostics read kill a completed run
+        print(f"  WARNING: could not read SMC samples_info: {exc!r}")
+        return {}
+
+
+def _smc_diagnostics(samples_info: dict) -> dict | None:
+    """The recorded SMC diagnostics block, or ``None`` when unavailable.
+
+    **The reason this block exists is that ``converged`` cannot be trusted on
+    its own.** ``af.SMC`` sets ``converged`` when the tempering parameter
+    reaches 1.0 and nothing else — and an adaptive schedule will happily walk a
+    collapsed particle cloud all the way to lambda = 1, reporting a converged
+    fit whose ``log_evidence`` is meaningless. The three traces that DO answer
+    it (lambda, acceptance, ESS) are projected onto the row so a reader can see
+    the collapse instead of trusting the flag.
+
+    ``valid`` is ``False`` when the lambda schedule is missing, when lambda
+    never reached 1.0 (a ``max_smc_steps`` timeout: ``log_evidence`` is then a
+    partial-path value, not an evidence), or when the final ESS has fallen
+    below 10 % of the particle count. Shouted, never raised — the per-lane
+    block's discipline.
+    """
+    if not samples_info:
+        return None
+    block = {key: samples_info[key] for key in _SMC_DIAGNOSTIC_KEYS if key in samples_info}
+    if not block:
+        return None
+
+    lambdas = block.get("lambda_list") or []
+    ess = block.get("ess_list") or []
+    particles = block.get("num_particles")
+
+    block["lambda_final"] = float(lambdas[-1]) if lambdas else None
+    block["ess_final"] = float(ess[-1]) if ess else None
+    acceptance = block.get("acceptance_rate_list") or []
+    block["acceptance_mean"] = float(np.mean(acceptance)) if acceptance else None
+    block["acceptance_final"] = float(acceptance[-1]) if acceptance else None
+    block["likelihood_evals_derived"] = smc_likelihood_evals(samples_info)
+
+    reasons: list[str] = []
+    if not lambdas:
+        reasons.append("samples_info carries no `lambda_list`, so the tempering path is unreadable")
+    elif block["lambda_final"] is None or block["lambda_final"] < 1.0:
+        reasons.append(
+            f"tempering stopped at lambda={block['lambda_final']!r} < 1.0 "
+            f"(max_smc_steps reached): `log_evidence` is a PARTIAL-PATH value, not an evidence"
+        )
+    if particles and block["ess_final"] is not None and block["ess_final"] < 0.1 * int(particles):
+        reasons.append(
+            f"final ESS {block['ess_final']:.1f} is below 10 % of {particles} particles — "
+            f"the cloud collapsed; neither the posterior nor `log_evidence` is usable"
+        )
+    block["valid"] = not reasons
+    if reasons:
+        block["invalid_reasons"] = reasons
+    return block
+
+
 def _finite_or_none(value: Any) -> float | None:
     """``float(value)`` when finite, else ``None``.
 
@@ -720,6 +815,15 @@ def run_search(
     _nuts_logl_evals = _nuts_info.get("n_logl_evals")
     _nuts_ess = _finite_or_none(_nuts_info.get("ess_min"))
 
+    # SMC needs the eval correction for the same reason and NOT the ESS one.
+    # Its `total_samples` is `num_particles` — 256 stored particles for a run
+    # that made six figures of evaluations — so reading evals off it is the
+    # issue-#177 error again. Its weights, however, are genuine normalised
+    # importance weights, so the Kish ESS the generic path computes IS the right
+    # quantity here (unlike NUTS, whose all-1.0 weights degenerate it).
+    _smc_info = _smc_samples_info(primary_result) if sampler == "smc" else {}
+    _smc_logl_evals = smc_likelihood_evals(_smc_info) if _smc_info else None
+
     metrics = collect_metrics(
         result=primary_result,
         total_wall_s=total_wall_s,
@@ -729,6 +833,7 @@ def run_search(
         multi_start_total_steps=_multi_start_total_steps,
         nuts_logl_evals=int(_nuts_logl_evals) if _nuts_logl_evals is not None else None,
         nuts_ess=_nuts_ess,
+        smc_logl_evals=_smc_logl_evals,
     )
 
     best_instance = None
@@ -793,6 +898,33 @@ def run_search(
                     print(f"     - {reason}")
         else:
             print("  WARNING: no NUTS samples_info recorded — diagnostics block omitted.")
+    if sampler == "smc":
+        diagnostics = _smc_diagnostics(_smc_info)
+        if diagnostics is not None:
+            print(
+                f"  SMC cloud:          {diagnostics.get('num_particles')} particles, "
+                f"kernel={diagnostics.get('kernel')!r} x {diagnostics.get('num_mcmc_steps')} steps, "
+                f"whitening={diagnostics.get('whitening_kind')!r}, "
+                f"init={diagnostics.get('warm_start_source')!r}"
+            )
+            print(
+                f"  SMC schedule:       {diagnostics.get('n_smc_steps')} temperatures to "
+                f"lambda={diagnostics.get('lambda_final')!r}, "
+                f"acceptance mean={diagnostics.get('acceptance_mean')!r} "
+                f"final={diagnostics.get('acceptance_final')!r}, "
+                f"ESS final={diagnostics.get('ess_final')!r}"
+            )
+            print(
+                f"  SMC log_evidence:   {diagnostics.get('log_evidence')!r} "
+                f"(bridge + Jacobian {diagnostics.get('log_jacobian')!r}); "
+                f"evals (DERIVED) {diagnostics.get('likelihood_evals_derived')!r}"
+            )
+            if not diagnostics.get("valid", True):
+                print("  !! SMC RUN NOT INTERPRETABLE — do not read logZ or the posterior off it:")
+                for reason in diagnostics["invalid_reasons"]:
+                    print(f"     - {reason}")
+        else:
+            print("  WARNING: no SMC samples_info recorded — diagnostics block omitted.")
     if is_multi_start:
         diagnostics = per_lane_block(captured=captured, model=model, n_starts=int(search.n_starts))
         print(
@@ -894,6 +1026,12 @@ def _sampler_config_dict(
         # Gradient MCMC: no n_live (it has a posterior but no live points), so
         # the key is recorded as null rather than a borrowed nested value.
         return {"n_live": None, **nuts_settings()}
+    if sampler == "smc":
+        # Particle MCMC: no n_live either. SMC's particle cloud is a weighted
+        # population, not a live set with a shrinking likelihood bound, so
+        # recording `num_particles` under `n_live` would invite exactly the
+        # cross-sampler comparison it does not support.
+        return {"n_live": None, **smc_settings()}
     if sampler in _MULTI_START_CLASSES:
         # MAP optimizer: no n_live; records its own multi-start knobs, plus the
         # auto-convergence early-stop criterion for the ``*_autoconv`` variants.
@@ -924,7 +1062,7 @@ def _sampler_config_dict(
 # samplers (nautilus / nss) keep cholesky everywhere so the truth bars do not
 # move. ``SEARCHES_LOG_DET_METHOD`` overrides everything (A/B rows). The
 # PyAutoArray library default is untouched (W9, #166).
-_GRADIENT_SAMPLERS: frozenset[str] = frozenset({*_MULTI_START_CLASSES, "nuts"})
+_GRADIENT_SAMPLERS: frozenset[str] = frozenset({*_MULTI_START_CLASSES, "nuts", "smc"})
 
 
 def _jax_backend_is_gpu() -> bool:

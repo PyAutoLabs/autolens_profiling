@@ -1,0 +1,151 @@
+#!/bin/bash -l
+#
+# Inference programme rung 4 of the overflow-flood wave (autolens_profiling#196)
+# — cholesky-vs-slogdet A/B on searches/nautilus/imaging/slam_source_pix_nn x
+# hst x fp64, under the CORRECTED target.
+#
+# WHY THIS EXISTS
+#   Phase 8A (CP-4) scored slogdet on a replay set and on gradient cells, and
+#   called FAIL as pre-registered. Nothing has ever run a NESTED sampler with
+#   `log_det_method="slogdet"` on a free-adapt-split cell — and the pilot that
+#   would have is the one this whole wave is about.
+#
+#   RAL 341908_5 was ledgered as "0 Nautilus calls in 6 h — it thrashes". Its
+#   checkpoint.hdf5 says it made 90,000 calls, 29 bounds, explored=FALSE, maxL
+#   30,701.3 at 0.239 s/eval, and died at the wall clock. There were no
+#   resamples to thrash on: zero NaN, zero -inf. What there was is a
+#   likelihood-overflow flood — the lambda^4 regularization matrix goes non-PD
+#   from c~1e4, the fp64 Cholesky returns FINITE GARBAGE (log_l up to 3e+303),
+#   Nautilus accepts it as the best point, shell_log_l hits 1e56 at
+#   shell_n_eff ~ 1, and f_live can never fall below its threshold.
+#   DECISIONS.md 2026-08-29.
+#
+#   Two things changed since. (1) The target: this cell now fits the
+#   squared-once `al.reg.AdaptSplitPower` on a capped LogUniform(1e-6, 1e4)
+#   coefficient prior (`_setup._free_adapt_split`), which should keep the
+#   sampler off the non-PD region entirely. (2) The library: PyAutoFit's
+#   `Fitness` now rejects implausibly large finite log-likelihoods
+#   (`general.test.log_likelihood_ceiling`, default 1e20) as a backstop.
+#
+#   This job asks the remaining question: on the corrected target, does
+#   `log_det_method="slogdet"` change anything a nested sampler can see? The
+#   pre-registered CP-4 criteria are about equality where the Cholesky
+#   SUCCEEDED, and the honest answer here may well be "no difference, because
+#   the cap already removed the failure" — which is a real finding, not a
+#   failed experiment. What it must NOT be is unmeasured while a slogdet
+#   default is being argued for elsewhere (W9, #166).
+#
+# ARMS — 2 array tasks, differing ONLY in `log_det_method`:
+#   task 0  cholesky  (SEARCHES_LOG_DET_METHOD=cholesky)
+#   task 1  slogdet   (SEARCHES_LOG_DET_METHOD=slogdet)
+#
+#   Both at n_live=300 (2x the 150 fiducial), positions OFF, seed 0 — the same
+#   configuration as the InferenceRefs_v1 `ref` row for this cell, so a
+#   converging arm is directly comparable to the reference table rather than
+#   being its own island.
+#
+# COLLISION SAFETY — READ THIS BEFORE ADDING AN ARM
+#   `log_det_method` is a property of the ANALYSIS, and PyAutoFit's identifier
+#   hashes only [search, model, unique_tag] — the Analysis is never in it.
+#   `Nautilus.__identifier_fields__` contains no log-det field, so before
+#   #196 these two tasks would have resolved to ONE output directory and task 1
+#   would have returned task 0's `.completed` fit: two arms, one run, and two
+#   results JSONs with different basenames (--config-name carries the arm) and
+#   identical contents. That is RAL job 340576's defect — 20 arms, 10 dirs —
+#   and it was fixed on the MultiStart path only (#175).
+#   `searches/_samplers.log_det_arm_tag` now composes into every builder's
+#   unique_tag, including `build_nautilus`, so the two arms get distinct
+#   identifiers and distinct output paths (`..._ld_cholesky` / `..._ld_slogdet`).
+#   Confirm both directories exist after the run; if only one does, this
+#   submit measured nothing.
+#
+# DEPENDENCY — READ BEFORE SUBMITTING
+#   Requires the post-2026-08-29 stack on the RAL PYTHONPATH checkout:
+#   PyAutoArray with `al.reg.AdaptSplitPower` and PyAutoFit with the `Fitness`
+#   ceiling. Run `HPCPullPyAuto` and confirm first — an older PyAutoArray has no
+#   `AdaptSplitPower` and every task dies building the model.
+
+# WALL-BASIS: — one row per cell this submit runs. See scripts/misc/wall/README.md.
+#   NOTHING has ever completed on this cell. The one run that exists (341908_5)
+#   was killed at the 6 h wall with `explored=FALSE` after 90,000 calls at
+#   0.239 s/eval — a demonstrated FLOOR of >21,600 s on a target that could not
+#   terminate, not a measured wall for one that can. And it is not even the same
+#   target: the coefficient prior is capped now, so the number of calls to
+#   convergence is exactly what is unknown. Citing the delaunay_nn `ref` row
+#   (3,230 s) or the slam_source_pix `ref` row (5,663 s) would be the
+#   cross-cell substitution that killed job 340576. `source: unmeasured` with
+#   `probe-first: yes` is what this is; --time=8:00:00 is chosen as ~1.5x the
+#   heaviest COMPLETED reference row in this family (pixelization, 6,535 s) and
+#   the run is expected to either converge well inside it or to demonstrate a
+#   second non-termination, which is itself the result.
+#   cell: imaging/slam_source_pix_nn/hst  device: a100  precision: fp64
+#   lanes: 300  batch_size: none  steps: 0  source: unmeasured  probe-first: yes
+
+#SBATCH -J slogdet_ab_sspnn_hst_fp64
+#SBATCH --partition=gpu
+# Node exclusion (2026-08-28): euclid-ral-gpu-1 carries a MIG-mode A100 with
+# no instances that SLURM still hands out as a plain gpu:A100 — see
+# _gpu_preflight.sh, which stays armed as the backstop.
+#SBATCH --exclude=euclid-ral-gpu-1
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=8:00:00
+#SBATCH --array=0-1
+#SBATCH -o output/output.%A_%a.out
+#SBATCH -e error/error.%A_%a.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_profiling
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+# sbatch does NOT inherit JAX_ENABLE_X64 from the submitting shell; without
+# this line the job silently runs float32 and every number it produces is a
+# different measurement from the fp64 rows it would be compared against.
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+ARMS=(cholesky slogdet)
+ARM=${ARMS[$SLURM_ARRAY_TASK_ID]}
+
+export SEARCHES_LOG_DET_METHOD=$ARM
+export SEARCHES_NAUTILUS_N_LIVE=300
+export SEARCHES_NAUTILUS_SEED=0
+export SEARCHES_POSITIONS=off
+# Visualization is not the measurement and its cost would land inside the
+# recorded wall; the results JSON records viz_disabled: true.
+export SEARCHES_DISABLE_VIZ=1
+
+CONFIG_NAME="hpc_a100_fp64_slogdet_ab_${ARM}"
+
+nvidia-smi
+
+# Bounce off the MIG-mode GPU that SLURM still hands out as a plain A100.
+# Requires the submit to be dispatched with --requeue. See the script's header.
+source "$AP_ROOT/hpc/batch_gpu/_gpu_preflight.sh"
+
+echo "=========================================="
+date
+echo "Task:            $SLURM_ARRAY_TASK_ID / 1"
+echo "Cell:            searches/nautilus/imaging/slam_source_pix_nn"
+echo "Instrument:      hst"
+echo "Precision:       fp64"
+echo "Arm:             $ARM"
+echo "log_det_method:  $SEARCHES_LOG_DET_METHOD"
+echo "n_live:          $SEARCHES_NAUTILUS_N_LIVE (2x fiducial 150)  seed=0  positions=off"
+echo "Target:          AdaptSplitPower, LogUniform(1e-6, 1e4) coefficients (corrected 2026-08-29)"
+
+cd $AP_ROOT
+python3 scripts/imaging/searches/nautilus/slam_source_pix_nn.py \
+    --instrument hst \
+    --config-name $CONFIG_NAME \
+    --output-dir $AP_ROOT/results/searches/nautilus/imaging/slam_source_pix_nn/hst
+
+echo "Finished."
+date
