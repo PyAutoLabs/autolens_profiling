@@ -35,10 +35,12 @@ if _misc_dir not in _sys.path:
     _sys.path.insert(0, _misc_dir)
 
 
+import hashlib
 import os
 import sys
 from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 import autofit as af
 
@@ -165,8 +167,14 @@ def build_nautilus(
     instrument: str,
     config_name: str,
     use_jax: bool,
+    model: Any = None,
 ) -> af.Nautilus:
     """Construct a first-class ``af.Nautilus`` search for one profiling cell.
+
+    ``model`` is accepted and ignored. Every ``SAMPLER_BUILDERS`` entry takes
+    the same keyword set so ``_runner`` can dispatch without per-sampler
+    branching; only ``build_nuts`` (warm-start initializer) actually needs the
+    model, and it must be the real one — see its docstring.
 
     Profiling-specific choices:
 
@@ -257,8 +265,11 @@ def build_nss(
     instrument: str,
     config_name: str,
     use_jax: bool,
+    model: Any = None,
 ) -> af.NonLinearSearch:
     """Construct a first-class ``af.NSS`` search for one profiling cell.
+
+    ``model`` is accepted and ignored (see ``build_nautilus``).
 
     ``af.NSS`` is JAX-native (the whole sampler loop runs inside ``jax.jit``),
     so a pure-NumPy config is a contradiction and raises rather than silently
@@ -818,8 +829,13 @@ def build_multi_start(
     instrument: str,
     config_name: str,
     use_jax: bool,
+    model: Any = None,
 ) -> af.NonLinearSearch:
     """Construct a first-class MultiStart gradient MAP search for one cell.
+
+    ``model`` is accepted and ignored (see ``build_nautilus``); the bijector's
+    own path resolution deliberately uses a throwaway ``_probe_model`` instead,
+    because it needs only paths and prior TYPES, never prior identity.
 
     Dispatches on ``sampler`` to the right ``af.MultiStart*`` class. An explicit
     ``af.MultiStartGradientConvergence`` is **always** attached: early-stopping
@@ -862,10 +878,399 @@ def build_multi_start(
     return cls(**kwargs)
 
 
+# ---------------------------------------------------------------------------
+# NUTS (``af.BlackJAXNUTS`` — gradient MCMC on mainline blackjax)
+# ---------------------------------------------------------------------------
+#
+# The first MCMC cell in this framework (PROGRAMME.md Phase 6). Defaults mirror
+# ``af.BlackJAXNUTS``'s own, except ``num_chains``: the library defaults to a
+# single chain, but a single chain cannot produce a split-R-hat, and Phase 6's
+# gate is stated in terms of one — so the profiling default is 4.
+_NUTS_NUM_CHAINS = 4
+_NUTS_NUM_WARMUP = 500
+_NUTS_NUM_SAMPLES = 1000
+_NUTS_TARGET_ACCEPT = 0.8
+_NUTS_SEED = 42  # af.BlackJAXNUTS's own default
+
+# NUTS doubling cap: the trajectory is at most ``2 ** max_num_doublings``
+# leapfrog steps, each a likelihood + gradient evaluation. 10 (=1024) is the
+# standard Stan ceiling and the library default, and is what a real
+# measurement must use — the tree-depth histogram Phase 6 grades on is
+# meaningless if the cap is what truncated it. It is exposed only so a smoke
+# run can be bounded: at the local CPU rate of ~1.5 s/eval, one draw at the
+# default cap is a ~25-minute worst case.
+_NUTS_MAX_DOUBLINGS = 10
+
+# Physical-space jitter applied around the warm-start point, one draw per chain
+# (``InitializerParamStartPoints.from_result``: `jitter * sigma * N(0,1)`, with
+# sigma taken from the source result's covariance diagonal when finite). 0.05
+# is the value the af.BlackJAXNUTS docstring itself demonstrates.
+_NUTS_JITTER = 0.05
+
+# Profiling label -> the value ``af.BlackJAXNUTS(inverse_mass_matrix=...)``
+# takes. ``result`` is not a literal: it means "the warm-start source object",
+# resolved in ``build_nuts``, and requires SEARCHES_NUTS_WARM_FROM to be set.
+_NUTS_MASS_MODES: dict[str, str] = {
+    "diag": "diagonal",
+    "dense": "dense",
+    "result": "result",
+}
+
+_WARM_START_FILES = ("model.json", "samples.csv", "samples_info.json")
+
+
+def nuts_num_chains() -> int:
+    """Resolve ``num_chains``, honouring ``SEARCHES_NUTS_NUM_CHAINS``."""
+    return int(os.environ.get("SEARCHES_NUTS_NUM_CHAINS", _NUTS_NUM_CHAINS))
+
+
+def nuts_num_warmup() -> int:
+    """Resolve ``num_warmup``, honouring ``SEARCHES_NUTS_NUM_WARMUP``."""
+    return int(os.environ.get("SEARCHES_NUTS_NUM_WARMUP", _NUTS_NUM_WARMUP))
+
+
+def nuts_num_samples() -> int:
+    """Resolve ``num_samples``, honouring ``SEARCHES_NUTS_NUM_SAMPLES``."""
+    return int(os.environ.get("SEARCHES_NUTS_NUM_SAMPLES", _NUTS_NUM_SAMPLES))
+
+
+def nuts_target_accept() -> float:
+    """Resolve ``target_accept``, honouring ``SEARCHES_NUTS_TARGET_ACCEPT``."""
+    return float(os.environ.get("SEARCHES_NUTS_TARGET_ACCEPT", _NUTS_TARGET_ACCEPT))
+
+
+def nuts_jitter() -> float:
+    """Resolve the warm-start jitter, honouring ``SEARCHES_NUTS_JITTER``."""
+    return float(os.environ.get("SEARCHES_NUTS_JITTER", _NUTS_JITTER))
+
+
+def nuts_max_doublings() -> int:
+    """Resolve ``max_num_doublings``, honouring ``SEARCHES_NUTS_MAX_DOUBLINGS``.
+
+    Defaults to the standard Stan ceiling of 10. Lowering it is a **smoke-only**
+    lever: a capped run's tree-depth histogram piles up at the cap and its
+    ESS-per-gradient-eval is not a measurement of NUTS, so an explicitly
+    lowered cap is tagged into the output path (see ``nuts_unique_tag``) and
+    recorded in the artifact rather than left to be inferred.
+    """
+    return int(os.environ.get("SEARCHES_NUTS_MAX_DOUBLINGS", _NUTS_MAX_DOUBLINGS))
+
+
+def nuts_seed() -> int:
+    """Resolve the NUTS RNG seed from the shared ``SEARCHES_SEED``.
+
+    ``af.BlackJAXNUTS.seed`` is a plain ``int`` (default 42), not an
+    ``Optional``, so this always returns a concrete value — unlike
+    ``multi_start_seed`` / ``nautilus_seed``, whose ``None`` means "the
+    library's own default draw". The shared ``SEARCHES_SEED`` is reused rather
+    than a NUTS-specific variable so a submit's per-array-task seed export
+    drives every sampler in this framework identically.
+
+    **``seed`` is NOT in ``BlackJAXNUTS.__identifier_fields__``** — see
+    ``nuts_unique_tag``, which is what stops two seeds sharing one output
+    directory.
+    """
+    return int(os.environ.get("SEARCHES_SEED") or _NUTS_SEED)
+
+
+def nuts_mass_mode() -> str:
+    """Resolve the inverse-mass-matrix arm, honouring ``SEARCHES_NUTS_MASS``.
+
+    One of ``diag`` (default), ``dense`` or ``result``. An unrecognised value
+    raises rather than falling back silently — a mass-matrix arm that quietly
+    became the default arm would be indistinguishable from a real measurement.
+    """
+    label = os.environ.get("SEARCHES_NUTS_MASS", "diag").strip().lower()
+    if label not in _NUTS_MASS_MODES:
+        raise ValueError(f"SEARCHES_NUTS_MASS={label!r} is not one of {sorted(_NUTS_MASS_MODES)}")
+    return label
+
+
+def nuts_warm_from() -> str | None:
+    """The raw ``SEARCHES_NUTS_WARM_FROM`` path, or ``None`` for a cold start."""
+    raw = os.environ.get("SEARCHES_NUTS_WARM_FROM", "").strip()
+    return raw or None
+
+
+class WarmStartSource:
+    """A minimal ``.samples`` / ``.model`` carrier for a completed fit on disk.
+
+    ``InitializerParamStartPoints.from_result`` and
+    ``resolve_inverse_mass_matrix`` are both documented to accept "any object
+    exposing ``.samples`` and ``.model``" — they duck-type rather than
+    requiring a live ``af.Result``, which is what makes warm-starting from a
+    directory (rather than from an in-process result) possible at all.
+
+    Note ``from_result`` reads its source values off ``samples.model``, NOT
+    ``.model``; ``.model`` is only the fallback target when the caller does not
+    pass one. ``build_nuts`` always passes the real target model explicitly, so
+    ``.model`` here is carried for completeness and for the mass-matrix path.
+    """
+
+    def __init__(self, samples, model, source_path: Path):
+        self.samples = samples
+        self.model = model
+        self.source_path = source_path
+
+
+def _resolve_warm_start_files(path: Path) -> Path:
+    """Resolve a warm-start path to the ``files/`` dir of a completed fit.
+
+    PyAutoFit writes a fit's artifacts to
+    ``<output>/<path_prefix>/<unique_tag>/<name>/<identifier>/files/``. The env
+    var may name that ``files/`` dir, its parent (the identifier dir), or the
+    ``<name>`` dir holding exactly one identifier dir — the last being the
+    shape a human actually has to hand, since the identifier is a hash nobody
+    types. Anything more ambiguous than that raises: silently picking one of
+    several completed fits would warm-start from an arm nobody chose.
+    """
+    if not path.exists():
+        raise ValueError(f"SEARCHES_NUTS_WARM_FROM path does not exist: {path}")
+    if not path.is_dir():
+        raise ValueError(f"SEARCHES_NUTS_WARM_FROM must be a directory, got: {path}")
+
+    if path.name == "files":
+        files = path
+    elif (path / "files").is_dir():
+        files = path / "files"
+    else:
+        candidates = sorted(p / "files" for p in path.iterdir() if (p / "files").is_dir())
+        if len(candidates) != 1:
+            raise ValueError(
+                f"SEARCHES_NUTS_WARM_FROM={path} is neither a fit directory (no `files/`) nor a "
+                f"directory holding exactly one; found {len(candidates)} candidate(s): "
+                f"{[str(c.parent) for c in candidates]}. Name the fit directory explicitly."
+            )
+        files = candidates[0]
+
+    missing = [name for name in _WARM_START_FILES if not (files / name).exists()]
+    if missing:
+        raise ValueError(
+            f"SEARCHES_NUTS_WARM_FROM resolved to {files}, which is missing {missing}. "
+            f"That is not a completed fit's output directory."
+        )
+    return files
+
+
+def load_warm_start_source(path: str | Path) -> WarmStartSource:
+    """Load a completed fit's samples + model from its output directory.
+
+    Rebuilds the samples through the framework's OWN path — the same three
+    steps ``DirectoryPaths.samples`` takes (``load_from_table`` over
+    ``samples.csv``, ``get_class`` on the recorded ``class_path``, then that
+    class's ``from_list_info_and_model``) — rather than flattening everything
+    to a generic ``SamplesStored``. That matters because the source class is
+    what decides whether a weighted posterior (``SamplesNest`` from Nautilus)
+    or an unweighted best-point set (a ``MultiStart*`` MAP run) is being read,
+    and therefore whether ``samples.covariance_matrix`` means anything.
+    """
+    import json as _json
+
+    from autofit.non_linear.samples import load_from_table
+    from autonerves.class_path import get_class
+
+    files = _resolve_warm_start_files(Path(path))
+    model = af.from_json(file_path=files / "model.json")
+    samples_info = _json.loads((files / "samples_info.json").read_text())
+    sample_list = load_from_table(filename=files / "samples.csv")
+    cls = get_class(samples_info["class_path"])
+    samples = cls.from_list_info_and_model(
+        sample_list=sample_list, samples_info=samples_info, model=model
+    )
+    return WarmStartSource(samples=samples, model=model, source_path=files.parent)
+
+
+def nuts_warm_start_settings() -> dict:
+    """The JSON-recordable warm-start block for this arm.
+
+    Always present, including ``{"enabled": False}``, matching the
+    positions/clipper/scaler convention: a cold and a warm run of the same cell
+    must never be ambiguous in the artifact.
+    """
+    warm = nuts_warm_from()
+    return {
+        "enabled": warm is not None,
+        "source": warm,
+        "point": "max_log_likelihood",
+        "jitter": nuts_jitter() if warm is not None else None,
+        "n_points": nuts_num_chains() if warm is not None else None,
+    }
+
+
+def nuts_settings() -> dict:
+    """The ``af.BlackJAXNUTS`` knobs a profiling cell constructs the search with.
+
+    Exposed so ``_sampler_config_dict`` records exactly what was run. Every
+    knob honours a ``SEARCHES_NUTS_*`` env override (``seed`` honours the
+    shared ``SEARCHES_SEED``). ``inverse_mass_matrix`` is recorded as the
+    profiling MODE label (``diag``/``dense``/``result``), which is also what
+    the tag and the arm table speak in; the library's own kind string
+    (``"diagonal"``/``"dense"``/``"result"``) is recorded beside it so the
+    artifact is readable without this module in hand.
+    """
+    mode = nuts_mass_mode()
+    return {
+        "num_chains": nuts_num_chains(),
+        "num_warmup": nuts_num_warmup(),
+        "num_samples": nuts_num_samples(),
+        "target_accept": nuts_target_accept(),
+        "max_num_doublings": nuts_max_doublings(),
+        "inverse_mass_matrix": mode,
+        "inverse_mass_matrix_kind": _NUTS_MASS_MODES[mode],
+        "seed": nuts_seed(),
+        "warm_start": nuts_warm_start_settings(),
+        "positions": positions_settings(),
+    }
+
+
+def nuts_unique_tag() -> str | None:
+    """A per-arm ``unique_tag`` for a NUTS run.
+
+    **A correctness guard, not cosmetics** — the same one
+    ``multi_start_unique_tag`` documents at length, applied to a different
+    identifier-field set. ``BlackJAXNUTS.__identifier_fields__`` is
+    ``("num_warmup", "num_samples", "num_chains", "inverse_mass_matrix")``, so
+    those four DO enter the identifier hash on their own (``inverse_mass_matrix``
+    is stored as its kind string, never the seed array or the source object, so
+    it hashes cleanly). Two knobs do **not**:
+
+    - ``seed`` — two seeds of one reliability arm would resolve to one output
+      directory, and the second ``fit()`` would return the first's
+      ``.completed`` result. This is the same defect RAL job 340576 exposed for
+      ``log_det_method``, where 20 arms produced 10 directories.
+    - ``initializer`` — and therefore the whole warm-start question. A cold and
+      a warm arm at identical chains/warmup/samples/mass differ in nothing the
+      hash can see. Since warm-vs-cold IS this cell's experiment, an untagged
+      warm arm would silently report the cold arm's numbers.
+
+    ``c{chains}_w{warmup}_s{samples}`` is belt-and-braces (those three are
+    already hashed) and is included only so the output directory is legible to
+    a human scanning ``output/searches/nuts/``; ``seed`` and the warm-source
+    digest are the load-bearing parts. The warm source is identified by an
+    8-hex digest of its resolved path rather than the path itself, which would
+    not survive in a directory name.
+
+    Never returns ``None``: unlike the MultiStart / Nautilus cells there are no
+    already-recorded NUTS rows whose output paths must stay byte-identical, so
+    every arm is tagged and none can collide.
+    """
+    warm = nuts_warm_from()
+    if warm is None:
+        warm_tag = "cold"
+    else:
+        digest = hashlib.sha1(str(Path(warm).resolve()).encode()).hexdigest()[:8]
+        warm_tag = f"warm{digest}"
+    # Tagged on the ENV OVERRIDE only, mirroring how SEARCHES_LOG_DET_METHOD is
+    # handled for the MultiStart cells: an un-capped run (the only kind whose
+    # tree-depth histogram is a measurement) keeps the plain tag, and a capped
+    # smoke run can never overwrite it.
+    doublings = os.environ.get("SEARCHES_NUTS_MAX_DOUBLINGS")
+    doublings_tag = f"md{int(doublings)}" if doublings else None
+    return arm_unique_tag(
+        f"c{nuts_num_chains()}_w{nuts_num_warmup()}_s{nuts_num_samples()}",
+        f"seed{nuts_seed()}",
+        warm_tag,
+        doublings_tag,
+        positions_arm_tag(),
+    )
+
+
+def build_nuts(
+    *,
+    sampler: str,
+    dataset_class: str,
+    model_type: str,
+    instrument: str,
+    config_name: str,
+    use_jax: bool,
+    model: Any = None,
+) -> af.NonLinearSearch:
+    """Construct a first-class ``af.BlackJAXNUTS`` search for one profiling cell.
+
+    ``af.BlackJAXNUTS`` is JAX-native (blackjax's NUTS kernel runs inside
+    ``jax.lax.scan``, and the sampler needs ``jax.grad`` of the likelihood), so
+    a pure-NumPy config is a contradiction and raises rather than silently
+    profiling nothing — the same guard ``build_nss`` applies.
+
+    ``model`` is REQUIRED whenever a warm start is requested, and it must be
+    the real model the search is about to fit. ``InitializerParamStartPoints``
+    stores its start points in a ``{Prior: float}`` dict and looks them up at
+    fit time with ``point_dict[prior]`` keyed by
+    ``model.priors_ordered_by_id`` — the target model's own ``Prior``
+    *objects*. Handing it a probe model (``_probe_model``) or the warm source's
+    own model would key the dict on different objects, every lookup would miss,
+    and the search would silently fall back to prior defaults: a "warm" run
+    that was cold, with nothing in the artifact to say so.
+    """
+    if not use_jax:
+        raise ValueError(
+            "af.BlackJAXNUTS is JAX-native; a PYAUTO_DISABLE_JAX=1 profiling config cannot run it."
+        )
+
+    num_chains = nuts_num_chains()
+    mode = nuts_mass_mode()
+    warm = nuts_warm_from()
+
+    warm_source = None
+    initializer = None
+    if warm is not None:
+        if model is None:
+            raise ValueError(
+                "SEARCHES_NUTS_WARM_FROM is set but build_nuts was called without `model`. "
+                "The warm-start initializer must be keyed on the real target model's Prior "
+                "objects (see this function's docstring); it cannot be built without it."
+            )
+        warm_source = load_warm_start_source(warm)
+        initializer = af.InitializerParamStartPoints.from_result(
+            warm_source,
+            model=model,
+            point="max_log_likelihood",
+            n_points=num_chains,
+            jitter=nuts_jitter(),
+            seed=nuts_seed(),
+        )
+        print(f"  NUTS warm start: {num_chains} chains from {warm_source.source_path}")
+
+    if mode == "result":
+        if warm_source is None:
+            raise ValueError(
+                "SEARCHES_NUTS_MASS=result seeds the metric from a previous fit's "
+                "`samples.covariance_matrix`, so it requires SEARCHES_NUTS_WARM_FROM. "
+                "Use `diag` or `dense` for a cold run."
+            )
+        # PyAutoFit raises a clear error of its own if this covariance looks
+        # MLE-only (too few samples) -- which is exactly what a MultiStart MAP
+        # source will be. Let it: a mass matrix seeded from a handful of
+        # best-points is not a metric, and silently degrading to `diagonal`
+        # would report a `result` arm that never ran one.
+        inverse_mass_matrix = warm_source
+    else:
+        inverse_mass_matrix = _NUTS_MASS_MODES[mode]
+
+    return af.BlackJAXNUTS(
+        name=config_name,
+        path_prefix=f"searches/{sampler}/{dataset_class}/{model_type}/{instrument}",
+        num_chains=num_chains,
+        num_warmup=nuts_num_warmup(),
+        num_samples=nuts_num_samples(),
+        target_accept=nuts_target_accept(),
+        max_num_doublings=nuts_max_doublings(),
+        seed=nuts_seed(),
+        initializer=initializer,
+        inverse_mass_matrix=inverse_mass_matrix,
+        number_of_cores=1,
+        # See nuts_unique_tag: `seed` and `initializer` are NOT identifier
+        # fields, so a seed sweep or a warm/cold A/B would otherwise share one
+        # output directory and resume each other's completed fits.
+        unique_tag=nuts_unique_tag(),
+    )
+
+
 SamplerBuilder = Callable[..., af.NonLinearSearch]
 SAMPLER_BUILDERS: dict[str, SamplerBuilder] = {
     "nautilus": build_nautilus,
     "nss": build_nss,
+    "nuts": build_nuts,
     **{name: build_multi_start for name in _MULTI_START_CLASSES},
 }
 
