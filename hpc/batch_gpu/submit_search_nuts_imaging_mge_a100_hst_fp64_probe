@@ -79,12 +79,29 @@
 # WALL-BASIS: — one row per cell this submit runs. See scripts/misc/wall/README.md.
 #   `rates` cites a step rate measured on THAT cell (wall/rates.py); an MGE rate
 #   can never stand in for a pixelized cell — that is what killed RAL job 340576.
-#   NUTS has never been run on this cell, and the existing MGE rows in rates.py
-#   are per-optimizer-step, a different unit from a NUTS leapfrog trajectory.
-#   Nothing measured => `unmeasured`, and this job is the probe that measures it.
+#   MEASURED 2026-08-29 (this job, 341981). The row below was `unmeasured /
+#   probe-first: yes` until the probe ran; the probe is what it was for, and the
+#   rate it produced is now in wall/rates.py under
+#   (imaging, mge, hst, a100, fp64, lanes=4, batch_size=None) = 3.42 s per DRAW.
+#   The unit is per DRAW, not per optimizer step: 341981_1 took 1368.78 s for
+#   400 draws (200 warmup + 200 samples x 4 vmapped chains), spending 35,523
+#   logl/gradient evals — 88.8 evals per draw, 38.53 ms per eval. `steps: 400`
+#   is therefore the draw count this submit configures, which is knowable in
+#   advance; the eval count is not, because it depends on the tree depth NUTS
+#   picks. The rate is measured INCLUSIVE of the one-time JIT compile, so
+#   `compile: 0` here rather than double-counting the old 300 s allowance.
+#   ---
+#   THE RATE IS FROM THE **WARM** ARM AND THE COLD ARM DOES NOT FIT IT. Task 0
+#   (cold, InitializerBall, everything else identical) TIMED OUT at 45:26 still
+#   inside window adaptation and produced no result — cold is >2726 s and
+#   remains unmeasured. --time is raised 0:45:00 -> 2:00:00 and the row declares
+#   `headroom: 5.0` (against the 1.5 floor for `rates`) so the budget covers
+#   that demonstrated cold-start overrun rather than the warm arm alone. A
+#   proper cold rate needs its own measurement; do not narrow this headroom
+#   until one exists.
 #   cell: imaging/mge/hst  device: a100  precision: fp64
-#   steps: 400  source: unmeasured  probe-first: yes
-#   compile: 300
+#   lanes: 4  batch_size: none  steps: 400  rate: 3.42  source: rates
+#   compile: 0  headroom: 5.0
 
 #SBATCH -J phase6_nuts_mge_probe
 #SBATCH --partition=gpu
@@ -96,7 +113,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=64gb
-#SBATCH --time=0:45:00
+#SBATCH --time=2:00:00
 #SBATCH --array=0-1
 #SBATCH -o output/output.%A_%a.out
 #SBATCH -e error/error.%A_%a.err

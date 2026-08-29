@@ -22,21 +22,36 @@ of PyAutoFit machinery is exercised and measured.
 | `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_cholesky_log_reg_seed2` | 29,977.7 | — | 14539.65 s | 48,000 | 302.9 ms | evals | — | — | v2026.8.17.1 |
 | `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_cholesky_log_reg_seed3` | 30,285.3 | — | 14328.50 s | 48,000 | 298.5 ms | evals | — | — | v2026.8.17.1 |
 | `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_cholesky_log_reg_seed4` | 30,303.8 | — | 12923.11 s | 48,000 | 269.2 ms | evals | — | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_cholesky_none_seed0` | -75,839.9 | — | 14548.76 s | 48,000 | 303.1 ms | evals | — | — | v2026.8.17.1 |
 | `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_cholesky_none_seed1` | 22,945.1 | — | 12818.73 s | 48,000 | 267.1 ms | evals | — | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_cholesky_none_seed2` | 30,254.4 | — | 14634.98 s | 48,000 | 304.9 ms | evals | — | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_cholesky_none_seed3` | 29,638.3 | — | 14259.30 s | 48,000 | 297.1 ms | evals | — | — | v2026.8.17.1 |
 | `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_cholesky_none_seed4` | 29,731.7 | — | 10064.01 s | 48,000 | 209.7 ms | evals | — | — | v2026.8.17.1 |
 | `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_slogdet_log_reg_seed0` | 28,127.4 | — | 13321.76 s | 48,000 | 277.5 ms | evals | — | — | v2026.8.17.1 |
 | `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_slogdet_log_reg_seed1` | 213,567,532,327,722,107,774,660,770,831,379,455,134,060,534,200,008,704.0 | — | 11254.95 s | 48,000 | 234.5 ms | evals | — | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_slogdet_log_reg_seed2` | 30,310.3 | — | 12448.59 s | 48,000 | 259.3 ms | evals | — | — | v2026.8.17.1 |
 | `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_slogdet_log_reg_seed3` | 30,298.2 | — | 12504.34 s | 48,000 | 260.5 ms | evals | — | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_slogdet_log_reg_seed4` | 30,251.5 | — | 13398.13 s | 48,000 | 279.1 ms | evals | — | — | v2026.8.17.1 |
 | `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_slogdet_none_seed0` | -146,802.6 | — | 6531.21 s | 48,000 | 136.1 ms | evals | — | — | v2026.8.17.1 |
 | `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_slogdet_none_seed1` | 29,754.2 | — | 6550.43 s | 48,000 | 136.5 ms | evals | — | — | v2026.8.17.1 |
 | `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_slogdet_none_seed2` | 30,242.1 | — | 6477.82 s | 48,000 | 135.0 ms | evals | — | — | v2026.8.17.1 |
 | `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_slogdet_none_seed3` | 30,259.8 | — | 6481.56 s | 48,000 | 135.0 ms | evals | — | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/delaunay_adapt_split/hst` | `delaunay_adapt_split_slogdet_none_seed4` | 30,233.0 | — | 8253.83 s | 48,000 | 172.0 ms | evals | — | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/knn/hst` | `knn_auto_log_reg_seed0` | 28,767.5 | — | 6594.88 s | 48,000 | 137.4 ms | evals | `84c0d88d` | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/knn/hst` | `knn_auto_log_reg_seed1` | 29,021.1 | — | 6435.42 s | 48,000 | 134.1 ms | evals | `84c0d88d` | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/knn/hst` | `knn_auto_log_reg_seed2` | 29,189.1 | — | 6494.76 s | 48,000 | 135.3 ms | evals | `84c0d88d` | — | v2026.8.17.1 |
 | `multi_start_prodigy` | `imaging/knn/hst` | `knn_auto_log_reg_seed3` | 30,557.0 | — | 6560.66 s | 48,000 | 136.7 ms | evals | `84c0d88d` | — | v2026.8.17.1 |
 | `multi_start_prodigy` | `imaging/knn/hst` | `knn_auto_log_reg_seed4` | 29,042.6 | — | 6435.76 s | 48,000 | 134.1 ms | evals | `84c0d88d` | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/knn/hst` | `knn_auto_logit_seed0` | 28,623.9 | — | 6729.30 s | 48,000 | 140.2 ms | evals | `84c0d88d` | — | v2026.8.17.1 |
 | `multi_start_prodigy` | `imaging/knn/hst` | `knn_auto_logit_seed1` | 28,683.3 | — | 6593.35 s | 48,000 | 137.4 ms | evals | `84c0d88d` | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/knn/hst` | `knn_auto_logit_seed2` | 28,792.0 | — | 6543.48 s | 48,000 | 136.3 ms | evals | `84c0d88d` | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/knn/hst` | `knn_auto_logit_seed3` | 28,754.6 | — | 6604.75 s | 48,000 | 137.6 ms | evals | `84c0d88d` | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/knn/hst` | `knn_auto_logit_seed4` | 28,837.5 | — | 6735.61 s | 48,000 | 140.3 ms | evals | `84c0d88d` | — | v2026.8.17.1 |
 | `multi_start_prodigy` | `imaging/knn/hst` | `knn_auto_none_seed0` | 28,901.9 | — | 6436.91 s | 48,000 | 134.1 ms | evals | `84c0d88d` | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/knn/hst` | `knn_auto_none_seed1` | 28,801.1 | — | 6557.92 s | 48,000 | 136.6 ms | evals | `84c0d88d` | — | v2026.8.17.1 |
 | `multi_start_prodigy` | `imaging/knn/hst` | `knn_auto_none_seed2` | 28,870.3 | — | 6422.37 s | 48,000 | 133.8 ms | evals | `84c0d88d` | — | v2026.8.17.1 |
 | `multi_start_prodigy` | `imaging/knn/hst` | `knn_auto_none_seed3` | 28,925.2 | — | 6536.68 s | 48,000 | 136.2 ms | evals | `84c0d88d` | — | v2026.8.17.1 |
+| `multi_start_prodigy` | `imaging/knn/hst` | `knn_auto_none_seed4` | 29,361.2 | — | 6393.36 s | 48,000 | 133.2 ms | evals | `84c0d88d` | — | v2026.8.17.1 |
 | `multi_start_prodigy` | `imaging/mge/hst` | `mge_auto_log_reg_seed0` | 31,787.9 | — | 354.05 s | 48,000 | 7.4 ms | evals | `770ccd47` | — | v2026.8.17.1 |
 | `multi_start_prodigy` | `imaging/mge/hst` | `mge_auto_log_reg_seed1` | -89,460.3 | — | 340.85 s | 48,000 | 7.1 ms | evals | `770ccd47` | — | v2026.8.17.1 |
 | `multi_start_prodigy` | `imaging/mge/hst` | `mge_auto_none_seed0` | 31,787.9 | — | 372.92 s | 48,000 | 7.8 ms | evals | `770ccd47` | — | v2026.8.17.1 |
@@ -116,7 +131,9 @@ of PyAutoFit machinery is exercised and measured.
 | `nautilus` | `imaging/mge/hst` | `hpc_a100_fp64` | 31,786.6 | 31,690.5 | 775.11 s | 62,208 | 11.4 ms | evals | — | — | v2026.8.17.1 |
 | `nautilus` | `imaging/mge/hst` | `hpc_a100_fp64_nbatch1000` | 31,787.0 | 31,690.4 | 525.55 s | 77,000 | 5.9 ms | evals | `770ccd47` | 4,693.6 | v2026.8.17.1 |
 | `nautilus` | `imaging/mge/hst` | `hpc_a100_fp64_nbatch128` | 31,786.7 | 31,690.5 | 680.84 s | 64,768 | 9.5 ms | evals | `770ccd47` | 4,247.8 | v2026.8.17.1 |
+| `nautilus` | `imaging/mge/hst` | `hpc_a100_fp64_nbatch2000` | 31,786.9 | 31,690.2 | 518.52 s | 106,000 | 4.2 ms | evals | `770ccd47` | 5,377.6 | v2026.8.17.1 |
 | `nautilus` | `imaging/mge/hst` | `hpc_a100_fp64_nbatch256` | 31,786.9 | 31,690.5 | 612.28 s | 66,304 | 8.1 ms | evals | `770ccd47` | 4,156.3 | v2026.8.17.1 |
+| `nautilus` | `imaging/mge/hst` | `hpc_a100_fp64_nbatch4000` | 31,787.1 | 31,690.2 | 539.81 s | 156,000 | 3.0 ms | evals | `770ccd47` | 6,057.9 | v2026.8.17.1 |
 | `nautilus` | `imaging/mge/hst` | `hpc_a100_fp64_nbatch512` | 31,786.9 | 31,690.5 | 633.18 s | 67,584 | 8.4 ms | evals | `770ccd47` | 4,574.5 | v2026.8.17.1 |
 | `nautilus` | `imaging/mge/hst` | `hpc_a100_fp64_nbatch64` | 31,786.9 | 31,690.5 | 737.83 s | 63,424 | 10.6 ms | evals | `770ccd47` | 4,304.1 | v2026.8.17.1 |
 | `nautilus` | `imaging/mge/hst` | `hpc_a100_fp64_ref_pos_tauto0.2_f1e8` | 31,786.8 | 31,690.4 | 1015.28 s | 96,704 | 9.7 ms | evals | `6b93f0e5` | 7,586.1 | v2026.8.17.1 |
@@ -162,6 +179,7 @@ of PyAutoFit machinery is exercised and measured.
 | `nss` | `imaging/mge/hst` | `hpc_a100_fp64_inner30_nd20` | 31,786.0 | 31,690.7 | 6175.09 s | 1,638,384 | 3.7 ms | evals | — | — | v2026.8.17.1 |
 | `nss` | `imaging/mge/hst` | `hpc_a100_fp64_inner45` | 31,786.3 | 31,690.0 | 6382.99 s | 2,264,857 | 2.8 ms | evals | — | — | v2026.8.17.1 |
 | `nss` | `imaging/pixelization/hst` | `hpc_a100_fp64` | 29,142.5 | 29,078.9 | 19190.01 s | 266,043 | 72.0 ms | evals | — | — | v2026.5.21.1 |
+| `nuts` | `imaging/mge/hst` | `hpc_a100_fp64_c4_w200_s200_warm` | 31,786.0 | — | 1368.78 s | 35,523 | 38.5 ms | evals | `770ccd47` | 2.0 | v2026.8.17.1 |
 
 _`Basis` — what `likelihood_evals` counts in that row. `evals` = reject-inclusive evaluations, comparable across rows. `stored` = a pre-schema-v2 MultiStart run that recorded stored samples, not evaluations; its step count was never written, so `Evals` and `Time / eval` are withheld rather than guessed. Never compare a per-eval figure against a `stored` row (issue #177)._
 

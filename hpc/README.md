@@ -75,6 +75,55 @@ srun --partition=gpu --nodelist=euclid-ral-gpu-1 --gres=gpu:1 --time=1:00 \
 
 A silent removal re-opens the trap.
 
+## A crashed job FAILS: the SLURM exit-code guard (2026-08-29)
+
+Every submit here ends the same way:
+
+```bash
+python3 scripts/... \
+    --instrument hst ...
+
+echo "Finished."
+date
+```
+
+A bash script exits with the status of its **last** command, so that `date`
+made every job exit `0` no matter what Python did. RAL job **341988** (the W6
+delaunay `n_batch` tail) hit a cuFFT batched plan needing **25.31 GiB** of
+scratch, died with `JaxRuntimeError`, printed `Finished.`, and was recorded by
+SLURM as **COMPLETED 0:0** in 1:02 and 1:07. `sacct` showed a clean, fast run.
+The traceback existed only in `error/error.341988_*.err`, and the only other
+tell was a results JSON that never appeared.
+
+The guard now lives in the repo-root **`activate.sh`**, which every submit
+already sources:
+
+```bash
+if [ -n "${SLURM_JOB_ID:-}" ]; then
+    set -eE
+    trap '...; exit ${rc}' ERR
+fi
+```
+
+- **Scoped to a SLURM job.** `activate.sh` is also sourced in interactive
+  login-node shells, where `errexit` would close the terminal on the first
+  typo. `$SLURM_JOB_ID` is set only inside a job.
+- **No `pipefail`.** `_gpu_preflight.sh` reads
+  `nvidia-smi ... | head -1 | tr -d ' '` and tolerates a failing `nvidia-smi`
+  by design, and no submit pipes anything into `python3`, so `pipefail` would
+  add risk without covering the failure the guard exists for.
+- **Deliberately-tolerated failures are unaffected.** `run_probe` in
+  `submit_probe_fast_a100` and `run_cell` in `submit_slogdet_ab_adaptsplit_*`
+  already end in `|| echo "!!! ... FAILED"`, and `errexit` does not fire on a
+  command whose status is consumed by `||`.
+- **Nothing per-submit to remember.** A new submit inherits the guard by
+  sourcing `activate.sh`, which it must do anyway to get the venv and
+  `PYTHONPATH`.
+
+After this, a Python crash exits the job with Python's status and SLURM records
+`FAILED`. Read `sacct` states as real again — but keep reading `.err`: an arm
+can still fail *by producing wrong numbers*, which no exit code catches.
+
 ## Array submits (repeated-seed campaigns)
 
 A submit whose name ends in a tier (e.g. `..._fp64_n64`) and that declares

@@ -86,7 +86,7 @@ current truth-bar source.
 - Full matrix: the searches dashboard
   (`scripts/misc/searches/README.md`, auto-table `searches`).
 
-## n_batch SCAN (W6, issue #163 — A100, 2026-08-25)
+## n_batch SCAN (W6, issue #163 — A100, 2026-08-25; tail 2026-08-29)
 
 Question: is the JAX-Nautilus per-eval overhead a config knob, or structural?
 Answer: **partly a knob on MGE, essentially structural on Delaunay.**
@@ -100,7 +100,9 @@ MGE/hst, `n_live=200`, fp64, one seed per arm
 | 128     |  9.52   | 617 s        | 64,768 | 4,248   | 31690.45 |
 | 256     |  8.15   | 540 s        | 66,304 | 4,156   | 31690.48 |
 | 512     |  8.37   | 565 s        | 67,584 | 4,575   | 31690.47 |
-| 1000    |  **5.95** | **458 s**  | 77,000 | 4,694   | 31690.36 |
+| 1000    |  5.95   | 458 s        | 77,000 | 4,694   | 31690.36 |
+| **2000** | **4.19** | **444 s**  | 106,000 | 5,378  | 31690.24 |
+| 4000    |  3.03   | 473 s        | 156,000 | 6,058  | 31690.22 |
 
 **State the basis (corrected 2026-08-27 — `../DECISIONS.md` 2026-08-27 W6).**
 64 -> 1000 recovers **1.775x per likelihood eval** (10.56 -> 5.95 ms) but only
@@ -110,14 +112,41 @@ Kish ESS per eval falls ~10%. The earlier "1.78x free" sentence carried the
 per-eval figure into a wall-shaped claim.
 
 **The evidence is not flat at the recommended arm.** logZ spans 0.12 nats over
-the whole scan, but the n_batch=1000 arm sits **-0.10 nat** from the n_batch=64
-arm — about **9 sigma** of the 0.011-nat five-seed logZ standard deviation
-measured on this cell in Phase 4 Stage 2. max logL 31786.73-31787.04 and
-best-fit r_E 1.5996-1.5998 across the scan. **One seed per arm**: the scan
+the 64-1000 scan, but the n_batch=1000 arm sits **-0.10 nat** from the
+n_batch=64 arm — about **9 sigma** of the 0.011-nat five-seed logZ standard
+deviation measured on this cell in Phase 4 Stage 2. max logL 31786.73-31787.04
+and best-fit r_E 1.5996-1.5998 across the scan. **One seed per arm**: the scan
 cannot separate an n_batch bias from a seed draw, so no n_batch above the
-baseline is adopted as a default on this evidence. The scan has **not**
-plateaued at n_batch=1000 and there is an optimum past it that this scan does
-not bracket.
+baseline is adopted as a default on this evidence.
+
+**TAIL 2026-08-29 (RAL 341987) — the optimum is bracketed: WALL OPTIMUM IS
+n_batch=2000.** The 2026-08-27 reading closed on "the scan has not plateaued at
+n_batch=1000 and there is an optimum past it that this scan does not bracket".
+It does now:
+
+- **Wall turns over between 2000 and 4000.** Sampler wall 458 -> **444** -> 473
+  s; total wall (the number a user waits) 526 -> **519** -> 540 s.
+- **ms/eval never turns over** — it keeps falling to 3.03 ms at n_batch=4000 —
+  because likelihood evals run away as larger batches overshoot the shrinking
+  live set: 77,000 -> 106,000 -> **156,000**. This is the same trap the
+  2026-08-27 correction named. **Read the wall column, not the per-eval one.**
+- **ESS/min disagrees with wall, and both are right.** ESS/min is still rising
+  at 4000 (615 -> 727 -> **769**) because Kish ESS rises faster than wall does
+  (4,694 -> 5,378 -> 6,058). Posterior-per-minute prefers 4000; fit-per-minute
+  prefers 2000. Neither margin is large.
+- **The logZ drift got worse and is now monotone across five arms:** 31690.477
+  (256) -> 31690.474 (512) -> 31690.358 (1000) -> **31690.239** (2000) ->
+  **31690.216** (4000). Against n_batch=64 that is **-0.2155 nat** at 2000 and
+  **-0.2386 nat** at 4000 — roughly **20 and 22 sigma** of the 0.011-nat seed
+  sd, and 2-2.4x the deviation that already blocked adopting n_batch=1000.
+- **n_batch=4000 sits on the VRAM edge**: its stderr carries 10 BFC-allocator
+  retry lines on an 80 GB A100; n_batch=2000 carries none.
+
+**Still nothing adopted.** A monotone drift over five arms is harder to read as
+a seed draw than one point was, but with **one seed per arm** the scan still
+cannot separate an n_batch bias from seed noise. The next step for this knob is
+`n_batch in {64, 2000} x 5 seeds` on MGE — a reliability run, not more points
+along the scan.
 
 Delaunay/hst, `n_live=150`
 (`.../imaging/delaunay/hst/hpc_hpc_a100_fp64_nbatch*.json`):
@@ -132,8 +161,21 @@ Saturates by n_batch=64 (1.26x, then flat). The pixelized cell's cost is
 dominated by the per-eval inversion, not by batch occupancy, so batching
 cannot buy back what MGE's cheaper likelihood gives up to launch overhead.
 
+**The delaunay tail (n_batch 512 / 1000) is UNRUN and is not a resubmit.** RAL
+341988 died immediately on both arms: a **cuFFT batched plan needing 25.31 GiB**
+of scratch at 512, and a flat `RESOURCE_EXHAUSTED: Out of memory while trying
+to allocate 100.97GiB` at 1000. A pixelized cell batches the convolution FFT
+n_batch-wide, so the scratch requirement is linear in the batch and 100.97 GiB
+does not fit an 80 GB card at any allocator setting; asking the question needs a
+**chunked / smaller-batch redesign** of the batched evaluation first. Given that
+delaunay already saturated at n_batch=64, the cost/benefit is poor and the leg
+stays unrun. (Both tasks were recorded by SLURM as `COMPLETED 0:0` after
+crashing — the submit exit-code guard added 2026-08-29 closes that channel;
+`hpc/README.md` "A crashed job FAILS".)
+
 READING: raise `n_batch` on parametric cells; leave it at the default on
-pixelized ones. This does **not** close the ~4x JAX-vs-NumPy per-eval gap —
+pixelized ones. On MGE the **wall** optimum is `n_batch=2000` (2026-08-29
+tail), but see the logZ drift above before adopting it. This does **not** close the ~4x JAX-vs-NumPy per-eval gap —
 it recovers under half of it on the cell where it is recoverable at all.
 
 CONFIDENCE: **single-seed per arm.** logZ agreement across five independent
