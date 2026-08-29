@@ -1,0 +1,223 @@
+#!/bin/bash -l
+#
+# Inference programme Phase 7 (PROGRAMME.md "particle / sequential Monte
+# Carlo") — FIRST PROBE of af.SMC in this framework, on
+# searches/smc/imaging/mge x hst x fp64.
+#
+# WHY THIS EXISTS
+#   Every gate in this programme is scored against a `log_evidence`, and every
+#   one of those numbers has come from a NESTED sampler. Nautilus is the bar;
+#   af.NSS is another nested sampler and so is not an independent check of it;
+#   BlackJAXNUTS and the MultiStart optimizers produce no evidence at all. SMC's
+#   tempering bridge produces one from the gradient side, by a completely
+#   different route, which makes a COLD SMC run the first available cross-check
+#   on the quantity Gates A and C are written in terms of. That is what task 2
+#   is for, and it is the reason this probe carries a cold arm at all.
+#
+#   The warm arms answer the other half: whether annealing a particle cloud from
+#   a known-good centre is competitive per GPU-minute with the incumbent. Phase
+#   6's NUTS probe (341981) reached the right basin and produced an INVALID
+#   posterior — split-Rhat 3.89, 400/800 divergences, ESS/min 0.088 against
+#   Nautilus's 727 — so "a gradient sampler that gets there" is not yet
+#   demonstrated on this cell by anything.
+#
+# THIS IS A PROBE, NOT A MEASUREMENT
+#   Nothing about SMC on this cell has ever been measured, so there is no rate
+#   to size a budget from and the WALL-BASIS block below says exactly that
+#   (`source: unmeasured  probe-first: yes`). An SMC temperature is not an
+#   optimizer step and not a NUTS leapfrog trajectory: it is
+#   `num_particles x num_mcmc_steps` kernel evaluations, and the NUMBER of
+#   temperatures is chosen adaptively by the sampler and is not knowable in
+#   advance. Neither the MGE optimizer rate (3.42 s per NUTS draw / 38.53 ms per
+#   eval, wall/rates.py) nor any Nautilus number may be substituted — that
+#   substitution across cells is what killed RAL job 340576.
+#
+#   The point of this job is to MEASURE that rate. `max_smc_steps=60` caps the
+#   schedule so a pathological run ends inside the budget instead of annealing
+#   forever, and the results JSON records `n_smc_steps`, the full lambda
+#   schedule, the per-step acceptance and ESS traces, and a DERIVED eval count
+#   (`num_particles * (1 + n_smc_steps * num_mcmc_steps * per_step)`), so a real
+#   per-eval rate falls straight out of it. Add the measured row to
+#   scripts/misc/wall/rates.py before sizing any longer SMC job, and switch this
+#   submit's row to `source: rates`.
+#
+# ARMS — 3 array tasks:
+#   task 0  MALA_WARM: reference centred on the completed Prodigy MGE MAP fit
+#           named by WARM_FROM below, width = 0.1 x prior width per parameter
+#           (SEARCHES_SMC_MASS=prior_scaled). The cheap inner kernel: one
+#           gradient evaluation per Metropolis step.
+#   task 1  HMC_WARM: identical, with the HMC inner kernel at 8 integration
+#           steps — 8x the gradient work per rejuvenation step, in exchange for
+#           much longer moves. This is the arm that pays off if the 269x
+#           anisotropy makes MALA's isotropic proposal crawl.
+#   task 2  MALA_COLD: prior-draw particles, prior-width whitening. SLOWER and
+#           less likely to reach lambda=1 in the budget — and the ONLY arm whose
+#           log_evidence is a clean evidence estimate, because cold SMC's
+#           evidence is valid exactly when the initial particles came from the
+#           prior. It is the evidence-bridge check against Nautilus's
+#           31690.42 nats on this cell (targets/REFS_V1_HARVEST.md).
+#
+#   WHY THE WARM ARMS ARE `prior_scaled` AND NOT `result`
+#     af.SMC is warm exactly when `inverse_mass_matrix` is not None, and passing
+#     the warm source itself would whiten by its `samples.covariance_matrix`.
+#     PyAutoFit REFUSES that here, correctly: WARM_FROM is a 16-lane MAP
+#     optimizer run and imaging/mge has 15 free parameters, so it offers 16
+#     samples against a `2 * n_dim = 30` floor and its covariance is the
+#     identity fallback. `prior_scaled` is the library's own named alternative
+#     ("pass an explicit inverse_mass_matrix array instead") and it DECLARES
+#     what it is: reference centred on the MAP, width 0.1 x prior width, no
+#     parameter correlations. It therefore cannot test H6.1's anisotropy — that
+#     needs a Nautilus-sourced warm start, which is a follow-up once this probe
+#     has a rate. Do not read a `prior_scaled` row as a covariance-informed one;
+#     the artifact records `whitening_kind` so it cannot be mistaken for one.
+#
+#   The seed is held FIXED at 0 across all three tasks on purpose — this varies
+#   the kernel and the initialization, not the seed. A >= 5-seed reliability run
+#   (PROGRAMME.md §3) comes after Phase 7 has a rate and a verdict.
+#
+# READ THE SCHEDULE, NOT THE FLAG
+#   af.SMC reports `converged` when lambda reaches 1.0 and nothing else, and an
+#   adaptive schedule will walk a COLLAPSED particle cloud all the way there.
+#   Every row from this job carries a diagnostics block with the lambda
+#   schedule, the per-step acceptance trace and the per-step ESS, and marks
+#   itself `valid: false` on a partial tempering path or a final ESS below 10 %
+#   of the particle count. A "converged" SMC row whose final ESS is 3 particles
+#   measures nothing.
+#
+# COLLISION SAFETY
+#   `seed` and `initializer` are NOT in SMC.__identifier_fields__ (which is
+#   num_particles / kernel / num_mcmc_steps / num_integration_steps / target_ess
+#   / inverse_mass_matrix), so two arms differing only in warm source or seed
+#   would resolve to ONE output directory and the second task would return the
+#   first's `.completed` fit. `searches/_samplers.smc_unique_tag` carries the
+#   seed, the mass mode and a digest of the warm-start path into the unique_tag,
+#   and therefore into both the identifier and the output path. --config-name
+#   additionally keeps the three results JSONs disjoint. Tasks 0 and 1 differ in
+#   `kernel`, which IS an identifier field, but do not rely on that alone.
+#
+# DEPENDENCY — READ BEFORE SUBMITTING
+#   Requires PyAutoFit >= the af.SMC merge (2026-08-29) on the RAL PYTHONPATH
+#   checkout. Run `HPCPullPyAuto` and confirm first; an older PyAutoFit has no
+#   `af.SMC` at all and every task dies on the import.
+#   Tasks 0 and 1 additionally require WARM_FROM below to exist and to hold a
+#   COMPLETED fit (files/model.json + samples.csv + samples_info.json). The
+#   driver raises a clear error rather than silently starting cold if it does
+#   not — a "warm" arm that was actually cold is the one failure this must not
+#   permit.
+
+# WALL-BASIS: — one row per cell this submit runs. See scripts/misc/wall/README.md.
+#   NOTHING about SMC has been measured on any cell in this framework. An SMC
+#   temperature is `num_particles x num_mcmc_steps` kernel evaluations and the
+#   number of temperatures is chosen adaptively at run time, so there is no
+#   `steps` this submit can state in advance and no rate to cite. The MGE rows
+#   in wall/rates.py are per optimizer step (MultiStart) and per NUTS draw —
+#   different units, not substitutable. This row therefore declares `unmeasured`
+#   with `probe-first: yes`, which is what it is. `max_smc_steps=60` is the
+#   budget control instead of a rate: at 256 particles x 5 MALA steps that is at
+#   most ~77k gradient evaluations, and at 38.53 ms/eval (the NUTS-measured MGE
+#   per-eval cost, cited here ONLY as an order-of-magnitude sanity check and NOT
+#   as this row's basis) the 2 h budget covers it with room for the HMC arm's 8x
+#   inner work to fall short of lambda=1 and stop at the cap.
+#   cell: imaging/mge/hst  device: a100  precision: fp64
+#   lanes: 256  batch_size: none  steps: 60  source: unmeasured  probe-first: yes
+
+#SBATCH -J phase7_smc_mge_probe
+#SBATCH --partition=gpu
+# Node exclusion (2026-08-28): euclid-ral-gpu-1 carries a MIG-mode A100 with
+# no instances that SLURM still hands out as a plain gpu:A100 — see
+# _gpu_preflight.sh, which stays armed as the backstop.
+#SBATCH --exclude=euclid-ral-gpu-1
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=2:00:00
+#SBATCH --array=0-2
+#SBATCH -o output/output.%A_%a.out
+#SBATCH -e error/error.%A_%a.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_profiling
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+# sbatch does NOT inherit JAX_ENABLE_X64 from the submitting shell; without
+# this line the job silently runs float32 and every number it produces is a
+# different measurement from the fp64 rows it would be compared against.
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+# The completed Prodigy MGE MAP fit tasks 0 and 1 centre their reference on.
+# Point this at the fit's own output directory (the one holding `files/`), or at
+# the directory holding exactly one such fit — the driver resolves both and
+# refuses anything ambiguous. Verified present and `.completed` on RAL
+# 2026-08-28 for the Phase-6 NUTS probe, holding exactly one identifier dir.
+WARM_FROM="$AP_ROOT/output/searches/multi_start_prodigy/imaging/mge/hst/n16_s3000_seed0/mge_auto_none_seed0"
+
+ARMS=(mala_warm hmc_warm mala_cold)
+ARM=${ARMS[$SLURM_ARRAY_TASK_ID]}
+
+export SEARCHES_SMC_NUM_PARTICLES=256
+export SEARCHES_SMC_NUM_MCMC_STEPS=5
+export SEARCHES_SMC_NUM_INTEGRATION_STEPS=8
+export SEARCHES_SMC_TARGET_ESS=0.5
+export SEARCHES_SMC_MAX_STEPS=60
+# Fixed across all three arms: this probe varies the kernel and the
+# initialization, nothing else.
+export SEARCHES_SEED=0
+# Visualization is not the measurement and its cost would land inside the
+# recorded wall; the results JSON records viz_disabled: true.
+export SEARCHES_DISABLE_VIZ=1
+
+case "$ARM" in
+  mala_warm) export SEARCHES_SMC_KERNEL=mala ;;
+  hmc_warm)  export SEARCHES_SMC_KERNEL=hmc  ;;
+  mala_cold) export SEARCHES_SMC_KERNEL=mala ;;
+  *) echo "Unknown arm $ARM" >&2; exit 1 ;;
+esac
+
+if [ "$ARM" == "mala_cold" ]; then
+    unset SEARCHES_SMC_WARM_FROM
+    export SEARCHES_SMC_MASS=none
+else
+    if [ ! -d "$WARM_FROM" ]; then
+        echo "FATAL: warm-start source does not exist: $WARM_FROM"
+        echo "Re-point WARM_FROM at a completed Prodigy MGE fit, or run only task 2."
+        exit 1
+    fi
+    export SEARCHES_SMC_WARM_FROM="$WARM_FROM"
+    export SEARCHES_SMC_MASS=prior_scaled
+    export SEARCHES_SMC_WARM_SCALE=0.1
+fi
+
+CONFIG_NAME="hpc_a100_fp64_n256_${ARM}"
+
+nvidia-smi
+
+# Bounce off the MIG-mode GPU that SLURM still hands out as a plain A100.
+# Requires the submit to be dispatched with --requeue. See the script's header.
+source "$AP_ROOT/hpc/batch_gpu/_gpu_preflight.sh"
+
+echo "=========================================="
+date
+echo "Task:        $SLURM_ARRAY_TASK_ID / 2"
+echo "Cell:        searches/smc/imaging/mge"
+echo "Instrument:  hst"
+echo "Precision:   fp64"
+echo "Arm:         $ARM"
+echo "particles=256  kernel=$SEARCHES_SMC_KERNEL  mcmc_steps=5  target_ess=0.5  max_smc_steps=60  seed=0  positions=off"
+echo "mass:        $SEARCHES_SMC_MASS"
+echo "warm_from:   ${SEARCHES_SMC_WARM_FROM:-<none, cold start>}"
+
+cd $AP_ROOT
+python3 scripts/imaging/searches/smc/mge.py \
+    --instrument hst \
+    --config-name $CONFIG_NAME \
+    --output-dir $AP_ROOT/results/searches/smc/imaging/mge/hst
+
+echo "Finished."
+date

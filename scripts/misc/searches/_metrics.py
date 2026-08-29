@@ -188,6 +188,7 @@ def collect_metrics(
     multi_start_total_steps: int | None = None,
     nuts_logl_evals: int | None = None,
     nuts_ess: float | None = None,
+    smc_logl_evals: int | None = None,
 ) -> RunMetrics:
     """Assemble the headline metric block from a finished ``search.fit`` result.
 
@@ -237,6 +238,18 @@ def collect_metrics(
     rank-normalised ``samples_info["ess_min"]`` is substituted instead, which
     is also the quantity Phase 6's gate is written in terms of. Both fall back
     to the generic path when ``None``, so no other sampler's numbers move.
+
+    **SMC needs the eval correction and NOT the ESS one.** ``af.SMC``'s
+    ``total_samples`` is ``num_particles`` — a few hundred stored particles for
+    a run that spent ``num_particles * n_smc_steps * num_mcmc_steps``
+    evaluations rejuvenating the cloud — so reading evals off it is the #177
+    error a third time. ``smc_logl_evals`` (from
+    ``searches._samplers.smc_likelihood_evals``) is that arithmetic, and it is
+    **derived from the recorded schedule, not counted by the sampler**: see that
+    function for what it does and does not include. The ESS is the opposite
+    case — SMC particles carry genuine normalised importance weights, so the
+    Kish formula on ``weight_list`` is exactly right and no substitute is
+    passed. ``nuts_ess`` exists only because NUTS weights are all 1.0.
     """
     samples = result.samples
     total_samples = int(samples.total_samples)
@@ -267,6 +280,12 @@ def collect_metrics(
         # Summed num_integration_steps: one leapfrog step is one likelihood and
         # one gradient evaluation, so the two counts coincide for NUTS.
         likelihood_evals = int(nuts_logl_evals)
+        gradient_evals = likelihood_evals
+    elif smc_logl_evals is not None:
+        # Derived from the recorded tempering schedule. Both inner kernels
+        # (MALA and HMC) are gradient kernels, so one likelihood evaluation is
+        # one gradient evaluation here too.
+        likelihood_evals = int(smc_logl_evals)
         gradient_evals = likelihood_evals
 
     time_per_eval_ms = (

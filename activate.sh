@@ -43,6 +43,18 @@
 if [ -n "${SLURM_JOB_ID:-}" ]; then
     set -eE
     trap 'rc=$?; echo "FATAL: command exited ${rc} (line ${LINENO}) — failing the SLURM job rather than reporting COMPLETED 0:0." >&2; exit ${rc}' ERR
+    # A SLURM `.out` is a file, not a tty, so Python block-buffers stdout at
+    # 8 KiB. RAL 341908_5 (`slam_source_pix_nn`) ran for six hours making
+    # 90,000 likelihood calls and its `.out` never advanced past
+    # `Calls | 0`: every progress line the driver printed was sitting in an
+    # unflushed buffer that the wall-clock kill then discarded. The job was
+    # therefore read as "0 calls in 6 h / it thrashes" for two days, and the
+    # real failure (a likelihood-overflow flood — DECISIONS.md 2026-08-29)
+    # was only found in `checkpoint.hdf5`. Line buffering costs nothing at
+    # these cadences and is the difference between a live job you can watch
+    # and one you can only autopsy. Scoped to SLURM alongside `set -eE` for
+    # the same reason: interactive login shells are not the failure mode.
+    export PYTHONUNBUFFERED=1
 fi
 
 BASE=/mnt/ral/jnightin/PyAuto

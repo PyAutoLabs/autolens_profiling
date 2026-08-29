@@ -43,6 +43,7 @@ from pathlib import Path
 from typing import Any
 
 import autofit as af
+import numpy as np
 
 # ``vram/config.py`` lives at the workspace root and stores per-(dataset, model,
 # instrument) A100-probed vmap batch sizes. The samplers read it so we don't
@@ -93,6 +94,47 @@ _N_LIVE: dict[tuple[str, str], int] = {
     ("cluster", "source_plane_tensor"): 100,
     ("cluster", "image_plane_solved"): 100,
 }
+
+
+def log_det_arm_tag() -> str | None:
+    """``"ld_<method>"`` when a ``log_det_method`` A/B arm is being driven, else ``None``.
+
+    A COLLISION GUARD, and one that was missing from four of the five builders
+    until 2026-08-29 (#196). ``log_det_method`` is a property of the
+    ``Analysis``, and PyAutoFit's identifier hashes only
+    ``[search, model, unique_tag]`` — the ``Analysis`` is never part of it. So a
+    ``cholesky`` arm and a ``slogdet`` arm that differ in nothing else resolve
+    to ONE output directory, and the second arm's ``fit()`` short-circuits to
+    the first's ``.completed`` result. RAL job 340576 proved it on the
+    MultiStart path: 20 ``delaunay_adapt_split`` arms (cholesky x10, slogdet
+    x10) produced only 10 output dirs, and the results JSONs' basenames still
+    differed (``--config-name`` carries ``log_det``), so it would have reported
+    20 rows of which 10 were duplicates with nothing in any artifact revealing
+    it. **A distinct results filename proves nothing about whether two arms
+    actually ran; only a distinct output directory does.**
+
+    #175 fixed ``multi_start_unique_tag``. It did not fix the others, and
+    ``Nautilus.__identifier_fields__`` /
+    ``NSS.__identifier_fields__`` / ``BlackJAXNUTS.__identifier_fields__`` /
+    ``SMC.__identifier_fields__`` contain no log-det field either — so a
+    *nested-sampler* slogdet A/B, which is exactly what the Phase-1
+    ``slam_source_pix_nn`` A/B is, would have hit the same defect. Every builder
+    composes this tag now.
+
+    Tagged on the ``SEARCHES_LOG_DET_METHOD`` **env override only**, never on
+    the value ``_runner.resolve_log_det_method`` resolves. That resolver falls
+    back to ``slogdet`` for every GPU gradient-pixelized arm alike, so tagging
+    the resolved value would add a suffix to cells that never carried one and
+    break byte-identity with their recorded output paths. An unset env
+    therefore returns ``None`` and every existing output path is unchanged.
+    The env is read directly here rather than by calling the resolver because
+    ``_runner`` imports ``_samplers``; the other direction would be circular.
+
+    ``.strip().lower()`` mirrors the resolver's own normalisation, so
+    ``"Cholesky"`` and ``"cholesky"`` cannot resolve one arm to two paths.
+    """
+    log_det = os.environ.get("SEARCHES_LOG_DET_METHOD")
+    return None if not log_det else f"ld_{log_det.strip().lower()}"
 
 
 def arm_unique_tag(*parts: str | None) -> str | None:
@@ -216,8 +258,9 @@ def build_nautilus(
         iterations_per_update=3 * n_live,
         # See arm_unique_tag's docstring: a positions-on arm MUST carry its own
         # tag or it silently shares an output directory / identifier with the
-        # positions-off cell (the Analysis object is not hashed).
-        unique_tag=arm_unique_tag(positions_arm_tag()),
+        # positions-off cell (the Analysis object is not hashed). The same is
+        # true of a log_det_method A/B arm — see log_det_arm_tag.
+        unique_tag=arm_unique_tag(positions_arm_tag(), log_det_arm_tag()),
     )
 
 
@@ -289,7 +332,7 @@ def build_nss(
         n_live=n_live,
         number_of_cores=1,
         # See arm_unique_tag's docstring / build_nautilus's comment above.
-        unique_tag=arm_unique_tag(positions_arm_tag()),
+        unique_tag=arm_unique_tag(positions_arm_tag(), log_det_arm_tag()),
         **nss_settings(),
     )
 
@@ -658,36 +701,15 @@ def multi_start_unique_tag(
     to ``None`` here — identical to today's tag.
 
     And also composes in ``log_det_method`` (W8 Phase 8B, issue #175), for the
-    SAME reason a fourth time: it is not among
-    ``AbstractMultiStartGradient.__identifier_fields__`` either, so a
-    ``cholesky`` arm and a ``slogdet`` arm that differ in nothing else resolve
-    to one output directory and the second returns the first's ``.completed``
-    fit. RAL job 340576 proved it: 20 ``delaunay_adapt_split`` arms
-    (cholesky x10, slogdet x10) produced only 10 output dirs. The results JSON
-    basename still differed — ``--config-name`` carries ``log_det`` — so the
-    campaign would have reported 20 rows of which 10 were duplicates, with
-    nothing in the artifact revealing it. A distinct results filename proves
-    nothing about whether two arms actually ran; only a distinct output
-    directory does.
-
-    Tag on the ``SEARCHES_LOG_DET_METHOD`` **env override only**, never on the
-    value ``_runner.resolve_log_det_method`` resolves: that resolver falls back
-    to ``slogdet`` for every GPU gradient-pixelized arm alike, so tagging the
-    resolved value would add a suffix to cells that never had one and break
-    byte-identity with their recorded output paths. An unset env therefore
-    returns exactly the pre-#175 tag. The env is read directly here rather than
-    by calling the resolver because ``_runner`` imports ``_samplers`` — the
-    other direction would be circular.
+    SAME reason a fourth time — see :func:`log_det_arm_tag`, which is now the
+    shared implementation every builder uses. An unset
+    ``SEARCHES_LOG_DET_METHOD`` returns exactly the pre-#175 tag.
     """
     seed = multi_start_seed()
     pos_tag = positions_arm_tag()
     bijector_label = multi_start_bijector()
     bijector_tag = None if bijector_label == "none" else f"bij_{bijector_label}"
-    # ``.strip().lower()`` mirrors ``_runner.resolve_log_det_method``'s own
-    # normalisation, so ``SEARCHES_LOG_DET_METHOD="Cholesky"`` and
-    # ``"cholesky"`` cannot resolve one arm to two output paths.
-    log_det = os.environ.get("SEARCHES_LOG_DET_METHOD")
-    log_det_tag = None if not log_det else f"ld_{log_det.strip().lower()}"
+    log_det_tag = log_det_arm_tag()
     if seed is None and pos_tag is None and bijector_tag is None and log_det_tag is None:
         return None
     seed_tag = (
@@ -1013,7 +1035,7 @@ class WarmStartSource:
         self.source_path = source_path
 
 
-def _resolve_warm_start_files(path: Path) -> Path:
+def _resolve_warm_start_files(path: Path, env_var: str = "SEARCHES_NUTS_WARM_FROM") -> Path:
     """Resolve a warm-start path to the ``files/`` dir of a completed fit.
 
     PyAutoFit writes a fit's artifacts to
@@ -1025,9 +1047,9 @@ def _resolve_warm_start_files(path: Path) -> Path:
     several completed fits would warm-start from an arm nobody chose.
     """
     if not path.exists():
-        raise ValueError(f"SEARCHES_NUTS_WARM_FROM path does not exist: {path}")
+        raise ValueError(f"{env_var} path does not exist: {path}")
     if not path.is_dir():
-        raise ValueError(f"SEARCHES_NUTS_WARM_FROM must be a directory, got: {path}")
+        raise ValueError(f"{env_var} must be a directory, got: {path}")
 
     if path.name == "files":
         files = path
@@ -1037,7 +1059,7 @@ def _resolve_warm_start_files(path: Path) -> Path:
         candidates = sorted(p / "files" for p in path.iterdir() if (p / "files").is_dir())
         if len(candidates) != 1:
             raise ValueError(
-                f"SEARCHES_NUTS_WARM_FROM={path} is neither a fit directory (no `files/`) nor a "
+                f"{env_var}={path} is neither a fit directory (no `files/`) nor a "
                 f"directory holding exactly one; found {len(candidates)} candidate(s): "
                 f"{[str(c.parent) for c in candidates]}. Name the fit directory explicitly."
             )
@@ -1046,13 +1068,15 @@ def _resolve_warm_start_files(path: Path) -> Path:
     missing = [name for name in _WARM_START_FILES if not (files / name).exists()]
     if missing:
         raise ValueError(
-            f"SEARCHES_NUTS_WARM_FROM resolved to {files}, which is missing {missing}. "
+            f"{env_var} resolved to {files}, which is missing {missing}. "
             f"That is not a completed fit's output directory."
         )
     return files
 
 
-def load_warm_start_source(path: str | Path) -> WarmStartSource:
+def load_warm_start_source(
+    path: str | Path, env_var: str = "SEARCHES_NUTS_WARM_FROM"
+) -> WarmStartSource:
     """Load a completed fit's samples + model from its output directory.
 
     Rebuilds the samples through the framework's OWN path — the same three
@@ -1069,7 +1093,7 @@ def load_warm_start_source(path: str | Path) -> WarmStartSource:
     from autofit.non_linear.samples import load_from_table
     from autonerves.class_path import get_class
 
-    files = _resolve_warm_start_files(Path(path))
+    files = _resolve_warm_start_files(Path(path), env_var=env_var)
     model = af.from_json(file_path=files / "model.json")
     samples_info = _json.loads((files / "samples_info.json").read_text())
     sample_list = load_from_table(filename=files / "samples.csv")
@@ -1172,6 +1196,7 @@ def nuts_unique_tag() -> str | None:
         warm_tag,
         doublings_tag,
         positions_arm_tag(),
+        log_det_arm_tag(),
     )
 
 
@@ -1266,11 +1291,421 @@ def build_nuts(
     )
 
 
+# --------------------------------------------------------------------------
+# Sequential Monte Carlo (``af.SMC``) — PROGRAMME.md Phase 7
+# --------------------------------------------------------------------------
+
+_SMC_NUM_PARTICLES = 256
+_SMC_KERNEL = "mala"
+_SMC_NUM_MCMC_STEPS = 5
+_SMC_NUM_INTEGRATION_STEPS = 8  # HMC only; ignored by the MALA kernel
+_SMC_TARGET_ESS = 0.5
+_SMC_WHITEN_INFLATE = 2.0
+_SMC_MAX_STEPS = 200
+_SMC_SEED = 42  # af.SMC's own default
+_SMC_JITTER = 0.05
+_SMC_WARM_SCALE = 0.1
+
+_SMC_KERNELS = ("mala", "hmc")
+
+# ``SEARCHES_SMC_MASS`` -> what is passed as ``af.SMC(inverse_mass_matrix=...)``.
+#
+# ``af.SMC`` is warm exactly when this is not ``None`` — ``is_warm_start`` is
+# literally ``spec is not None`` — and warmth changes THREE things at once: the
+# Gaussian reference is centred on the initializer's point instead of the prior
+# median, the particles are drawn from that reference instead of from the prior,
+# and ``log_evidence`` picks up the whitening Jacobian. There is no "warm
+# start-points, cold reference" configuration; asking for one by passing only an
+# initializer makes ``samples_from_model`` raise, because a start-point
+# initializer returns the same vector every time and cold SMC asks it for
+# ``num_particles`` distinct ones.
+_SMC_MASS_MODES = ("none", "result", "prior_scaled")
+
+
+def smc_num_particles() -> int:
+    """Resolve ``num_particles``, honouring ``SEARCHES_SMC_NUM_PARTICLES``."""
+    return int(os.environ.get("SEARCHES_SMC_NUM_PARTICLES", _SMC_NUM_PARTICLES))
+
+
+def smc_kernel() -> str:
+    """Resolve the inner kernel, honouring ``SEARCHES_SMC_KERNEL``."""
+    kernel = os.environ.get("SEARCHES_SMC_KERNEL", _SMC_KERNEL).strip().lower()
+    if kernel not in _SMC_KERNELS:
+        raise ValueError(f"SEARCHES_SMC_KERNEL={kernel!r} is not one of {list(_SMC_KERNELS)}")
+    return kernel
+
+
+def smc_num_mcmc_steps() -> int:
+    """Resolve ``num_mcmc_steps``, honouring ``SEARCHES_SMC_NUM_MCMC_STEPS``."""
+    return int(os.environ.get("SEARCHES_SMC_NUM_MCMC_STEPS", _SMC_NUM_MCMC_STEPS))
+
+
+def smc_num_integration_steps() -> int:
+    """Resolve ``num_integration_steps``, honouring ``SEARCHES_SMC_NUM_INTEGRATION_STEPS``."""
+    return int(os.environ.get("SEARCHES_SMC_NUM_INTEGRATION_STEPS", _SMC_NUM_INTEGRATION_STEPS))
+
+
+def smc_target_ess() -> float:
+    """Resolve ``target_ess``, honouring ``SEARCHES_SMC_TARGET_ESS``."""
+    return float(os.environ.get("SEARCHES_SMC_TARGET_ESS", _SMC_TARGET_ESS))
+
+
+def smc_step_size() -> float | None:
+    """Resolve ``step_size``, honouring ``SEARCHES_SMC_STEP_SIZE`` (unset = auto)."""
+    raw = os.environ.get("SEARCHES_SMC_STEP_SIZE", "").strip()
+    return float(raw) if raw else None
+
+
+def smc_whiten_inflate() -> float:
+    """Resolve ``whiten_inflate``, honouring ``SEARCHES_SMC_WHITEN_INFLATE``."""
+    return float(os.environ.get("SEARCHES_SMC_WHITEN_INFLATE", _SMC_WHITEN_INFLATE))
+
+
+def smc_max_steps() -> int:
+    """Resolve ``max_smc_steps``, honouring ``SEARCHES_SMC_MAX_STEPS``."""
+    return int(os.environ.get("SEARCHES_SMC_MAX_STEPS", _SMC_MAX_STEPS))
+
+
+def smc_batch_size(dataset_class: str, model_type: str, instrument: str) -> int:
+    """Resolve ``batch_size``, honouring ``SEARCHES_SMC_BATCH_SIZE``.
+
+    ``af.SMC(batch_size=0)`` keeps the full ``jax.vmap`` over particles; a
+    positive value switches to ``jax.lax.map`` over batches of that size,
+    trading speed for peak VRAM. The default is the A100-probed batch this
+    workspace already records for the cell (``vram/config.py``), so a heavy
+    pixelized cell does not OOM on its first SMC run for the reason issue #163
+    documented for Nautilus — ``None`` there (no probed row) means "full vmap",
+    which is ``0`` here.
+    """
+    raw = os.environ.get("SEARCHES_SMC_BATCH_SIZE", "").strip()
+    if raw:
+        return int(raw)
+    probed = vmap_batch_for(dataset_class, model_type, instrument)
+    return int(probed) if probed else 0
+
+
+def smc_seed() -> int:
+    """Resolve the seed, honouring ``SEARCHES_SEED`` (shared across samplers)."""
+    return int(os.environ.get("SEARCHES_SEED") or _SMC_SEED)
+
+
+def smc_jitter() -> float:
+    """Resolve the warm-start jitter, honouring ``SEARCHES_SMC_JITTER``."""
+    return float(os.environ.get("SEARCHES_SMC_JITTER", _SMC_JITTER))
+
+
+def smc_warm_scale() -> float:
+    """Resolve the ``prior_scaled`` reference width, honouring ``SEARCHES_SMC_WARM_SCALE``."""
+    return float(os.environ.get("SEARCHES_SMC_WARM_SCALE", _SMC_WARM_SCALE))
+
+
+def smc_mass_mode() -> str:
+    """Resolve the whitening arm, honouring ``SEARCHES_SMC_MASS``."""
+    label = os.environ.get("SEARCHES_SMC_MASS", "none").strip().lower()
+    if label not in _SMC_MASS_MODES:
+        raise ValueError(f"SEARCHES_SMC_MASS={label!r} is not one of {list(_SMC_MASS_MODES)}")
+    return label
+
+
+def smc_warm_from() -> str | None:
+    """The raw ``SEARCHES_SMC_WARM_FROM`` path, or ``None`` for a cold start."""
+    raw = os.environ.get("SEARCHES_SMC_WARM_FROM", "").strip()
+    return raw or None
+
+
+def smc_prior_scaled_covariance(model: Any, scale: float) -> np.ndarray:
+    """A diagonal covariance seed of ``(scale * prior_width) ** 2`` per parameter.
+
+    The library's own documented escape hatch. ``resolve_inverse_mass_matrix``
+    REFUSES a ``Result``/``Samples`` warm source carrying fewer than
+    ``2 * n_dim`` samples, because ``Samples.covariance_matrix`` falls back to
+    the identity there and an identity metric silently reported as a measured
+    one is worse than no warm start at all. Its error names the alternative:
+    "pass an explicit inverse_mass_matrix array instead". This is that array.
+
+    It matters because of what the only warm source on RAL actually is. The
+    Phase-6 NUTS probe (341981) warm-started from
+    ``multi_start_prodigy/imaging/mge/hst/n16_s3000_seed0`` — a **16-lane MAP
+    optimizer** run. ``imaging/mge`` has 15 free parameters, so that source
+    carries 16 samples against a ``2 * 15 = 30`` floor and is rejected on sight.
+    ``SEARCHES_SMC_MASS=result`` is therefore unusable with the sources that
+    exist today, and the honest choices are (a) run cold or (b) declare a
+    reference width rather than pretend one was measured.
+
+    This is (b), and it is deliberately NOT a metric. It says: put the Gaussian
+    reference at the previous fit's best point, with a width of ``scale`` of the
+    prior width per parameter. ``scale`` and the resulting ``whitening_kind``
+    are both recorded in the artifact, so a ``prior_scaled`` row can never be
+    read as a covariance-informed one. It carries no parameter correlations at
+    all — the |r| = 0.95 pairs H6.1 is about are invisible to it — so it cannot
+    test the anisotropy hypothesis; it exists so a warm SMC arm can RUN and
+    produce a step rate. A covariance-informed arm needs a Nautilus-sourced
+    warm start, exactly as the NUTS ``result`` arm does.
+
+    ``af.SMC`` reads a 1-D seed as a covariance diagonal and whitens by
+    ``sqrt(cov) * whiten_inflate``, so the effective reference sigma is
+    ``scale * whiten_inflate * prior_width``.
+    """
+    from autofit.non_linear.search.mcmc.blackjax.smc.search import prior_scales_from
+
+    widths = np.asarray(prior_scales_from(model=model), dtype=float)
+    return (scale * widths) ** 2
+
+
+def smc_warm_start_settings() -> dict:
+    """The JSON-recordable warm-start block for this arm.
+
+    Always present, including ``{"enabled": False}`` — the same convention the
+    positions / clipper / scaler / NUTS blocks follow, so a cold and a warm run
+    of the same cell are never ambiguous in the artifact.
+    """
+    warm = smc_warm_from()
+    mode = smc_mass_mode()
+    return {
+        "enabled": warm is not None,
+        "source": warm,
+        "point": "max_log_likelihood",
+        "jitter": smc_jitter() if warm is not None else None,
+        "inverse_mass_matrix_kind": mode,
+        "prior_scale": smc_warm_scale() if mode == "prior_scaled" else None,
+    }
+
+
+def smc_settings() -> dict:
+    """The JSON-recordable ``settings`` block for an SMC row.
+
+    Mirrors ``nuts_settings``: every knob the search was built with, resolved
+    through the same helpers ``build_smc`` calls, so the artifact records what
+    ran rather than what the defaults say.
+    """
+    return {
+        "num_particles": smc_num_particles(),
+        "kernel": smc_kernel(),
+        "num_mcmc_steps": smc_num_mcmc_steps(),
+        "num_integration_steps": smc_num_integration_steps(),
+        "target_ess": smc_target_ess(),
+        "step_size": smc_step_size(),
+        "whiten_inflate": smc_whiten_inflate(),
+        "max_smc_steps": smc_max_steps(),
+        "seed": smc_seed(),
+        "warm_start": smc_warm_start_settings(),
+        "positions": positions_settings(),
+    }
+
+
+def smc_unique_tag() -> str | None:
+    """A per-arm ``unique_tag`` for an SMC run.
+
+    The same correctness guard ``nuts_unique_tag`` documents, against a
+    different identifier-field set. ``SMC.__identifier_fields__`` is
+    ``("num_particles", "kernel", "num_mcmc_steps", "num_integration_steps",
+    "target_ess", "inverse_mass_matrix")``, so those six enter the hash on
+    their own. Two knobs do not:
+
+    - ``seed`` — a reliability scan's arms would share one output directory and
+      every ``fit()`` after the first would return the first's ``.completed``
+      result (RAL 340576's defect: 20 arms, 10 directories).
+    - ``initializer`` — and therefore the warm SOURCE. Two warm arms from
+      different previous fits, at identical particle/kernel settings, differ in
+      nothing the hash can see.
+
+    ``inverse_mass_matrix`` is in the field list, but a ``prior_scaled`` seed is
+    an ndarray built at construction time; the arm's MODE and scale are tagged
+    here rather than trusting an array to hash legibly.
+    """
+    warm = smc_warm_from()
+    if warm is None:
+        warm_tag = "cold"
+    else:
+        digest = hashlib.sha1(str(Path(warm).resolve()).encode()).hexdigest()[:8]
+        warm_tag = f"warm{digest}"
+    mode = smc_mass_mode()
+    mass_tag = None if mode == "none" else f"mass{mode}"
+    kernel = smc_kernel()
+    inner = (
+        f"n{smc_num_particles()}_{kernel}_m{smc_num_mcmc_steps()}"
+        if kernel == "mala"
+        else f"n{smc_num_particles()}_{kernel}_m{smc_num_mcmc_steps()}_i{smc_num_integration_steps()}"
+    )
+    return arm_unique_tag(
+        inner,
+        f"seed{smc_seed()}",
+        warm_tag,
+        mass_tag,
+        positions_arm_tag(),
+        log_det_arm_tag(),
+    )
+
+
+def smc_likelihood_evals(samples_info: dict) -> int | None:
+    """A reject-inclusive likelihood-evaluation count for an SMC run, or ``None``.
+
+    **DERIVED, NOT COUNTED — read this before comparing an SMC row to a nested
+    one.** ``af.SMC`` records no evaluation counter, and the two numbers a naive
+    read would reach for are both wrong in the direction that flatters SMC:
+    ``samples.total_samples`` is ``num_particles`` (256 stored particles for a
+    run that made six figures of evaluations), and the stored-sample count is
+    what issue #177 is about.
+
+    The count below is reconstructed from the schedule the search *did* record
+    (``n_smc_steps``, ``num_particles``, ``num_mcmc_steps``,
+    ``num_integration_steps``, ``kernel``):
+
+        evals = num_particles * (1 + n_smc_steps * num_mcmc_steps * per_step)
+
+    where ``per_step`` is 1 for the MALA kernel (one log-density + gradient per
+    Metropolis step) and ``num_integration_steps`` for HMC (one per leapfrog
+    step). The leading ``1`` is the initial particle evaluation.
+
+    It is a lower bound in one respect and exact in another: the MCMC-step
+    arithmetic is exact for both kernels, but blackjax's own tempering search
+    evaluates the log-likelihood while solving for the next lambda, and that is
+    not in the recorded schedule. Treat an SMC ``ms/eval`` as accurate to the
+    kernel work and slightly optimistic overall — and never present it as a
+    measured counter the way the NUTS ``n_logl_evals`` row is.
+    """
+    if not samples_info:
+        return None
+    try:
+        particles = int(samples_info["num_particles"])
+        steps = int(samples_info["n_smc_steps"])
+        mcmc_steps = int(samples_info["num_mcmc_steps"])
+        kernel = str(samples_info["kernel"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    per_step = 1 if kernel == "mala" else int(samples_info.get("num_integration_steps", 1))
+    return particles * (1 + steps * mcmc_steps * per_step)
+
+
+def build_smc(
+    *,
+    sampler: str,
+    dataset_class: str,
+    model_type: str,
+    instrument: str,
+    config_name: str,
+    use_jax: bool,
+    model: Any = None,
+) -> af.NonLinearSearch:
+    """Construct a first-class ``af.SMC`` search for one profiling cell.
+
+    ``af.SMC`` is blackjax adaptive-tempered SMC: a cloud of ``num_particles``
+    weighted particles annealed from the prior to the posterior along a lambda
+    schedule the sampler chooses adaptively to hold the ESS at ``target_ess``,
+    with ``num_mcmc_steps`` of an inner ``mala`` or ``hmc`` kernel rejuvenating
+    the cloud at each temperature. It is the framework's second MCMC cell
+    (PROGRAMME.md Phase 7) and the FIRST sampler here that produces both a
+    posterior and a ``log_evidence`` by a gradient route — which is the whole
+    reason it is worth a cell: Nautilus's logZ is the incumbent bar, and an
+    independent gradient-side estimate of the same quantity is a check nothing
+    in this framework could previously make.
+
+    It is JAX-native (the kernels run inside ``jax.lax.scan`` and need
+    ``jax.grad`` of the likelihood), so a ``PYAUTO_DISABLE_JAX=1`` config raises
+    rather than silently profiling nothing — the guard ``build_nss`` and
+    ``build_nuts`` both apply.
+
+    ``model`` is REQUIRED for a warm start, for exactly the reason
+    ``build_nuts`` documents: ``InitializerParamStartPoints`` keys its start
+    points on the target model's own ``Prior`` objects, so a probe model or the
+    warm source's own model would miss every lookup and produce a "warm" run
+    that was silently cold. It is also required for ``prior_scaled``, whose
+    covariance is built from the target model's prior widths.
+
+    NEVER JUDGE AN SMC RUN BY ``Converged``. ``converged`` records one thing —
+    that lambda reached 1.0 — and an adaptive schedule can walk all the way to
+    lambda = 1 on a collapsed cloud, reporting a converged fit and a
+    ``log_evidence`` that is nonsense. The artifact carries the lambda schedule,
+    the per-step acceptance trace and the per-step ESS for that reason; read
+    those. ``_runner._smc_diagnostics`` projects them onto the row.
+    """
+    if not use_jax:
+        raise ValueError(
+            "af.SMC is JAX-native; a PYAUTO_DISABLE_JAX=1 profiling config cannot run it."
+        )
+
+    num_particles = smc_num_particles()
+    mode = smc_mass_mode()
+    warm = smc_warm_from()
+
+    warm_source = None
+    initializer = None
+    if warm is not None:
+        if model is None:
+            raise ValueError(
+                "SEARCHES_SMC_WARM_FROM is set but build_smc was called without `model`. "
+                "The warm-start initializer must be keyed on the real target model's Prior "
+                "objects (see this function's docstring); it cannot be built without it."
+            )
+        warm_source = load_warm_start_source(warm, env_var="SEARCHES_SMC_WARM_FROM")
+        # n_points=1: warm SMC needs only the CENTRE of the Gaussian reference
+        # (af.SMC._fit asks the initializer for one point and draws the
+        # particles from the reference itself). Asking a start-point
+        # initializer for `num_particles` identical points is what
+        # `samples_from_model` rejects.
+        initializer = af.InitializerParamStartPoints.from_result(
+            warm_source,
+            model=model,
+            point="max_log_likelihood",
+            n_points=1,
+            jitter=smc_jitter(),
+            seed=smc_seed(),
+        )
+        print(f"  SMC warm start: reference centred on {warm_source.source_path}")
+
+    if mode == "none":
+        inverse_mass_matrix = None
+    elif mode == "result":
+        if warm_source is None:
+            raise ValueError(
+                "SEARCHES_SMC_MASS=result whitens by a previous fit's "
+                "`samples.covariance_matrix`, so it requires SEARCHES_SMC_WARM_FROM."
+            )
+        # PyAutoFit refuses an MLE-only covariance (< 2 * n_dim samples, or an
+        # identity fallback), which is exactly what a MultiStart MAP source is.
+        # Let it refuse: silently degrading to a prior-width reference would
+        # report a covariance-informed arm that never ran one. Use
+        # `prior_scaled` for a declared reference width, or source the warm
+        # start from a Nautilus fit.
+        inverse_mass_matrix = warm_source
+    else:  # prior_scaled
+        if warm_source is None:
+            raise ValueError(
+                "SEARCHES_SMC_MASS=prior_scaled centres the Gaussian reference on a previous "
+                "fit's best point, so it requires SEARCHES_SMC_WARM_FROM. Use "
+                "SEARCHES_SMC_MASS=none for a cold run."
+            )
+        inverse_mass_matrix = smc_prior_scaled_covariance(model, smc_warm_scale())
+
+    return af.SMC(
+        name=config_name,
+        path_prefix=f"searches/{sampler}/{dataset_class}/{model_type}/{instrument}",
+        num_particles=num_particles,
+        kernel=smc_kernel(),
+        num_mcmc_steps=smc_num_mcmc_steps(),
+        num_integration_steps=smc_num_integration_steps(),
+        target_ess=smc_target_ess(),
+        step_size=smc_step_size(),
+        whiten_inflate=smc_whiten_inflate(),
+        max_smc_steps=smc_max_steps(),
+        batch_size=smc_batch_size(dataset_class, model_type, instrument),
+        seed=smc_seed(),
+        initializer=initializer,
+        inverse_mass_matrix=inverse_mass_matrix,
+        number_of_cores=1,
+        # See smc_unique_tag: `seed` and `initializer` are NOT identifier
+        # fields, so a seed sweep or a warm-source A/B would otherwise share one
+        # output directory and resume each other's completed fits.
+        unique_tag=smc_unique_tag(),
+    )
+
+
 SamplerBuilder = Callable[..., af.NonLinearSearch]
 SAMPLER_BUILDERS: dict[str, SamplerBuilder] = {
     "nautilus": build_nautilus,
     "nss": build_nss,
     "nuts": build_nuts,
+    "smc": build_smc,
     **{name: build_multi_start for name in _MULTI_START_CLASSES},
 }
 
