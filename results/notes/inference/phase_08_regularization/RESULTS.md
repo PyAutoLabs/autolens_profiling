@@ -618,3 +618,220 @@ The `<hardware>` in the verdict filename is the machine that ran the **scorer**
 arms — every arm in this campaign ran on the RAL A100. The companion
 `rows_<hardware>.npz` is a re-derivable dump of those same JSONs and is
 gitignored; `--stage score` rewrites it.
+
+## 8B — FINAL verdict on 39/39 arms (2026-08-29): **FALSIFIED**, 3 of 4 criteria fired
+
+RAL job **341978** landed the last 15 arms (array indices 0, 2, 3, 14, 17, 19,
+21, 24, 25, 26, 27, 30, 32, 33, 34; all `COMPLETED 0:0`, walls **1:46:42 –
+4:02:41**), and `bijector_ab.py --stage score` was re-run on the complete set.
+The verdict artifact carries `n_rows: 39`, `n_rows_expected: 39`,
+**`preliminary: false`**. Nothing about the rules changed: the 2026-08-28
+ruling (F2 reference, F5 demoted to a diagnostic, F4's fp limb informational)
+and the pre-registered "any two criteria falsified → 8B falsified, record and
+close, no rescoping to logit" threshold are both applied exactly as they stood.
+
+**VERDICT: FALSIFIED — 3 of 4 criteria fired (F1, F3, F4). FINAL.**
+
+### F1–F5 at 39 rows
+
+| criterion | state | numbers |
+|---|---|---|
+| **F1** — NaN-wall position (`delaunay_adapt_split`) | **FALSIFIED on both log-det tiers** (was: cholesky only, slogdet UNSCORABLE) | **cholesky:** median first-value-NaN step **0.0 under both** arms; value-NaN lane-steps **80,956** (`none`, 5 rows) vs **139,205** (`log_reg`, 5 rows). **slogdet:** now measurable — `none` 1 seed of 5 (median first step **938**, total **2,062**), `log_reg` 5 of 5 (steps 36/173/180/89/144, median **144**, total **38,367**). `log_reg` walls **earlier** and **18.6×** harder |
+| **F2** — steps-to-reference (`knn`) | **NOT falsified** | reference **30,559.28** (`knn·slogdet·log_reg·seed3`), unchanged from 24 rows. 5 matched seeds now, but **4 are unscorable** — neither arm reaches the reference — so the median still comes from seed 3 alone: `none` never arrives, `log_reg` arrives at step **2,882**, ratio `+inf` ≥ the 2× bar |
+| **F3** — time at λ > 1e4 | **FALSIFIED** (delaunay cholesky), **knife-edge gone** | cholesky `none` **0.000329** vs `log_reg` **0.000762** — both non-zero now, a real 2.3× ratio, where at 24 rows `none` was *exactly* 0.0000. delaunay·slogdet 0.0375 → 0.0255 and knn 0.0375 → 0.0326 still go the **other** way |
+| **F4** — MGE control + `logit` pathology | **FALSIFIED on all five logit seeds** (was: one) | `knn·logit` max pinned-at-completion parameters: **9 / 7 / 9 / 10 / 7** for seeds 0–4. Informational MGE limb unchanged: seed 0 agrees (`best_fom` rel **0.0**, maxL rel **9.8e-15**), seed 1 disagrees at rel **1.73e-2**; byte-identity fails on both |
+| **F5** — fp-reproducibility *(diagnostic, never scored, never halts)* | **2 pairs above 1e-9**, max rel **1.06e-05** | `delaunay·slogdet·seed0` 357,347.020 vs 357,343.242 (rel **1.06e-05**) and `delaunay·cholesky·seed0` 357,343.888 vs 357,343.021 (rel **2.43e-06**) |
+
+### What 15 arms changed — and what they did not
+
+**F1 gained a tier it could not score before.** At 24 rows the slogdet limb was
+UNSCORABLE because not one `none` arm had recorded a value-NaN.
+`slogdet·none·seed4` supplies the first (2,062 lane-steps, first at step 938),
+and with it the tier fires on **both** limbs: `log_reg` walls **earlier**
+(median step 144 vs 938 — the only place in the campaign where the "not
+earlier" limb is contradicted outright) and **18.6×** harder. The final F1
+rests on two tiers where the preliminary one rested on one.
+
+**F1's unbalanced-counts caveat is gone.** The cholesky limb now sums **5 rows
+against 5** rather than 2 against 5, so the scorer's raw comparison *is* the
+per-arm one: **16,191 vs 27,841** value-NaN lane-steps per arm. The owed
+"normalise F1 per arm" fix is no longer load-bearing on this evidence.
+
+**F1's effect size deflated 4.5× and the criterion still fires.** The three new
+`none` cholesky rows are NaN-heavy, and `delaunay·cholesky·none·seed0` alone
+contributes **29,938 lane-steps — 37 % of the entire `none` total**. It is also
+a failed fit: `max_log_likelihood = −75,839.87`, best point at the box corner.
+
+| `none` total | `log_reg` total | ratio | `not_reduced_50pct` |
+|---:|---:|---:|---|
+| 18,143 (24 rows, seeds 1 & 4 only) | 139,205 | **7.67×** | True — fires |
+| 80,956 (39 rows, with seed 0) | 139,205 | **1.72×** | True — fires |
+| 51,018 (39 rows, seed 0 dropped) | 139,205 | **2.73×** | True — fires |
+
+The criterion is `log_reg ≥ 50 % of none` and 139,205 exceeds `none`'s total
+outright in all three, so the verdict is insensitive to that row. Recorded
+because the *effect size* moved by 4.5× even though the verdict did not.
+
+**F3 stopped being a knife-edge.** The preliminary reading flagged that `none`
+was exactly 0.0000 and the criterion is `≥`, so any non-zero `log_reg` tripped
+it. Both arms now carry real occupancy and `log_reg` is 2.3× higher. The
+counter-observation is unchanged and still worth more than the criterion: on
+the two tiers with substantial high-λ occupancy, `log_reg` spends **less** time
+at λ > 1e4, not more.
+
+**F4 stopped resting on one seed** — all five `knn·logit` seeds finish with a
+lane pinned to the box bound. The proxy is still necessary-not-sufficient
+(`n_pinned_final` counts every pinned parameter, not only traced regularization
+ones), but it is no longer a single observation.
+
+**The `logit` arm collapses to a no-lens solution.** Four of five `logit` seeds
+have a winning-lane best point with `einstein_radius` ≈ **0** (0.0000, 0.0008,
+0.0018, 0.0017; seed 4 is the exception at 6.99), and **all five** are
+non-physical in `ell_comps` (|e| 1.2366 – 1.41407). That degenerate fit is the
+concrete content behind F4's pinning statistic, and it is why the
+pre-registration's refusal to rescope to `logit` needs no further argument.
+
+**F2 did not improve.** Five knn seeds match instead of one, but four are
+unscorable — neither arm reaches the reference within the 3000-step budget. The
+`+inf` still comes from seed 3 alone and still reads "`none` never reached what
+`log_reg` reached" (a 1,645-nat gap), not the "2× fewer steps to a common
+target" F2 was drafted to measure. Fifteen arms bought this criterion no second
+data point.
+
+### Non-physical best points: 23 of 39 (59 %)
+
+| cell | log_det | arms | non-physical | rate |
+|---|---|---:|---:|---:|
+| `delaunay_adapt_split` | cholesky | 10 | 6 | 60 % |
+| `delaunay_adapt_split` | slogdet | 10 | 7 | 70 % |
+| `knn` | slogdet | 15 | 10 | 67 % |
+| `mge` (control) | — | 4 | 0 | 0 % |
+| **TOTAL** | | **39** | **23** | **59 %** |
+
+Zero rows are void: all 39 have `diagnostics.valid = true` and ran the full
+3000 steps. The excluded magnitudes cluster at **1.41421** — the (±1, ±1)
+corner of the per-component `ell_comps` box, the farthest point from the unit
+disk the box admits — and the rate is indifferent to bijector and to log-det
+method alike. It is **zero on the parametric control**. This is a property of
+the pixelized cells' box-clipped `ell_comps` geometry (W10), not of the thing
+8B set out to test, and it is the campaign's largest single finding.
+
+### Provenance and the two owed items PyAutoFit#1540 paid
+
+All 39 results JSONs record `version: 2026.8.17.1` and **no library git SHAs** —
+the schema does not carry them. The 2026-08-28 stack-split ruling (the two
+halves ran different PyAutoFit commits, pooled because the likelihood code is
+unchanged) therefore **cannot be re-verified from the artifacts**; it still
+rests on a reading of four PR diffs. Every arm ran `SEARCHES_CLIPPER=prior_box`,
+so PyAutoFit **#1540** (merged 2026-08-28 16:35 UTC, before 341978 started at
+18:11) is behaviour-neutral for this campaign either way. **Recording library
+SHAs in the results JSON is filed as a schema follow-up.**
+
+- **PAID — the sound, in-process F5.** #1540 ships
+  `test_bijector.py::test__round_tripping_a_per_path_map_is_bit_exact_where_it_is_identity`:
+  a `BijectorPerPath` map evaluated in **one** process, asserting bit-equality
+  on identity coordinates. That is what a two-run A/B could never measure, and
+  it is why F5 remains a reported diagnostic here.
+- **PAID — bijector × `ClipperPriorBoxJoint`.** #1540 replaces the blanket
+  refusal with a per-pair resolution (a ball under one common positive linear
+  scale composes as `R → R/s`; anything non-linear raises, at model resolution
+  inside `_fit`). **The follow-up it creates:** a rerun would use
+  `BijectorPerPath` with `logit` **everywhere except the `ell_comps` pair**
+  (`logit` on the ball pair still raises, by design), letting the joint disk
+  clipper hold lanes off the corner while the regularization coefficients still
+  step transformed. That is a **new experiment**, not a rescoping of 8B.
+- **OUTSTANDING —** a per-arm-normalised F1 limb in the scorer (no longer
+  load-bearing), and library SHAs in the schema.
+
+**Artifacts:** `bijector_ab/verdict_<hardware>.json` (`preliminary: false`,
+`n_rows: 39`, the per-group reference resolution and every exclusion reason);
+the 39 results JSON under
+`results/searches/multi_start_prodigy/imaging/{delaunay_adapt_split,knn,mge}/hst/phase8b/`.
+`<hardware>` names the machine that ran the **scorer**, not the arms — every arm
+ran on the RAL A100. The companion `rows_<hardware>.npz` is a re-derivable dump
+of those same JSONs and is gitignored. Decision record: `../DECISIONS.md`
+2026-08-29.
+
+### Appendix — per-arm table (all 39 arms)
+
+Re-derived from the committed JSONs under
+`results/searches/multi_start_prodigy/imaging/{delaunay_adapt_split,knn,mge}/hst/phase8b/`.
+Winning lane = argmax `lane_best_log_posterior`; `r_E` and the `|e|` columns are
+read from that lane's `lane_best_params` through `diagnostics.ell_comps_pairs`.
+`|e|max` is the larger of the two `ell_comps` magnitudes (mass and bulge); a row
+with `|e|max >= 1` is non-physical and is excluded from F2's reference.
+
+| cell | log_det | bijector | seed | max_log_likelihood | lane_best_log_posterior | win lane | r_E | \|e\|max | \|e\| mass | \|e\| bulge | phys | value-NaN lane-steps | wall (h) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| delaunay_adapt_split | cholesky | log_reg | 0 | 30437.92 | 30430.96 | 0 | 1.1532 | 0.85982 | 0.85982 | 0.05301 | yes | 36341 | 4.01 |
+| delaunay_adapt_split | cholesky | log_reg | 1 | 30608.05 | 30609.94 | 15 | 1.6079 | 0.05300 | 0.05300 | 0.05201 | yes | 28924 | 4.07 |
+| delaunay_adapt_split | cholesky | log_reg | 2 | 29977.66 | 29894.80 | 2 | 1.2978 | 1.03213 | 1.03213 | 0.05232 | **NO** | 26690 | 4.04 |
+| delaunay_adapt_split | cholesky | log_reg | 3 | 30285.28 | 30138.66 | 7 | 0.7774 | 1.34963 | 1.34963 | 0.05272 | **NO** | 25788 | 3.98 |
+| delaunay_adapt_split | cholesky | log_reg | 4 | 30303.81 | 30232.98 | 4 | 5.4429 | 1.40442 | 1.40442 | 0.05245 | **NO** | 21462 | 3.59 |
+| delaunay_adapt_split | cholesky | none | 0 | -75839.87 | -76080.63 | 13 | 3.4573 | 1.41421 | 1.41421 | 0.06734 | **NO** | 29938 | 4.04 |
+| delaunay_adapt_split | cholesky | none | 1 | 22945.06 | 20395.84 | 0 | 0.0000 | 1.41421 | 1.41421 | 0.10927 | **NO** | 9226 | 3.56 |
+| delaunay_adapt_split | cholesky | none | 2 | 30254.35 | 29900.73 | 2 | 5.4492 | 0.05224 | 0.02805 | 0.05224 | yes | 20972 | 4.07 |
+| delaunay_adapt_split | cholesky | none | 3 | 29638.31 | 29213.19 | 14 | 1.3940 | 0.98095 | 0.98095 | 0.05172 | yes | 11903 | 3.96 |
+| delaunay_adapt_split | cholesky | none | 4 | 29731.70 | 28389.72 | 15 | 0.0000 | 1.41233 | 1.41233 | 0.05746 | **NO** | 8917 | 2.80 |
+| delaunay_adapt_split | slogdet | log_reg | 0 | 28127.40 | 28004.15 | 9 | 3.5123 | 1.22827 | 1.22827 | 0.04847 | **NO** | 6381 | 3.70 |
+| delaunay_adapt_split | slogdet | log_reg | 1 | 2.136e+53 | 2.136e+53 | 10 | 8.0000 | 1.41421 | 1.41421 | 1.41421 | **NO** | 7105 | 3.13 |
+| delaunay_adapt_split | slogdet | log_reg | 2 | 30310.29 | 30201.79 | 2 | 4.2757 | 1.39439 | 1.39439 | 0.05217 | **NO** | 7072 | 3.46 |
+| delaunay_adapt_split | slogdet | log_reg | 3 | 30298.22 | 30286.10 | 3 | 1.7428 | 0.98829 | 0.98829 | 0.05533 | yes | 9755 | 3.47 |
+| delaunay_adapt_split | slogdet | log_reg | 4 | 30251.51 | 29593.55 | 1 | 7.2643 | 0.21779 | 0.21779 | 0.05261 | yes | 8054 | 3.72 |
+| delaunay_adapt_split | slogdet | none | 0 | -146802.60 | -146872.80 | 11 | 3.3174 | 1.07804 | 1.07804 | 0.01338 | **NO** | 0 | 1.81 |
+| delaunay_adapt_split | slogdet | none | 1 | 29754.23 | 29511.90 | 10 | 7.0431 | 0.14308 | 0.14308 | 0.05361 | yes | 0 | 1.82 |
+| delaunay_adapt_split | slogdet | none | 2 | 30242.07 | 29823.17 | 11 | 4.8664 | 1.38956 | 1.38956 | 0.05216 | **NO** | 0 | 1.80 |
+| delaunay_adapt_split | slogdet | none | 3 | 30259.79 | 30177.03 | 0 | 3.9595 | 1.23912 | 1.23912 | 0.05218 | **NO** | 0 | 1.80 |
+| delaunay_adapt_split | slogdet | none | 4 | 30233.01 | 30109.19 | 2 | 4.1055 | 1.40726 | 1.40726 | 0.05285 | **NO** | 2062 | 2.29 |
+| knn | slogdet | log_reg | 0 | 28767.45 | 28757.04 | 0 | 3.5617 | 1.12466 | 1.12466 | 0.05197 | **NO** | 0 | 1.83 |
+| knn | slogdet | log_reg | 1 | 29021.06 | 28980.00 | 2 | 2.8519 | 1.41403 | 1.41403 | 0.04820 | **NO** | 0 | 1.79 |
+| knn | slogdet | log_reg | 2 | 29189.11 | 29179.92 | 7 | 1.7423 | 1.28446 | 1.28446 | 0.04771 | **NO** | 28 | 1.80 |
+| knn | slogdet | log_reg | 3 | 30557.03 | 30559.28 | 3 | 1.7145 | 0.29918 | 0.29918 | 0.05472 | yes | 0 | 1.82 |
+| knn | slogdet | log_reg | 4 | 29042.56 | 28987.68 | 2 | 3.5408 | 1.27727 | 1.27727 | 0.04980 | **NO** | 1 | 1.79 |
+| knn | slogdet | logit | 0 | 28623.85 | 28585.74 | 11 | 0.0000 | 1.40659 | 1.40659 | 0.04624 | **NO** | 0 | 1.87 |
+| knn | slogdet | logit | 1 | 28683.33 | 28672.21 | 12 | 0.0008 | 1.41407 | 1.41407 | 0.04548 | **NO** | 0 | 1.83 |
+| knn | slogdet | logit | 2 | 28791.99 | 28780.95 | 3 | 0.0018 | 1.40863 | 1.40863 | 0.04920 | **NO** | 1 | 1.82 |
+| knn | slogdet | logit | 3 | 28754.62 | 28743.50 | 6 | 0.0017 | 1.41386 | 1.41386 | 0.04729 | **NO** | 0 | 1.83 |
+| knn | slogdet | logit | 4 | 28837.50 | 28716.78 | 6 | 6.9916 | 1.23662 | 1.23662 | 0.04856 | **NO** | 0 | 1.87 |
+| knn | slogdet | none | 0 | 28901.91 | 28873.80 | 4 | 1.4441 | 0.98220 | 0.98220 | 0.04868 | yes | 0 | 1.79 |
+| knn | slogdet | none | 1 | 28801.05 | 28794.44 | 0 | 0.8907 | 1.06153 | 1.06153 | 0.04979 | **NO** | 0 | 1.82 |
+| knn | slogdet | none | 2 | 28870.27 | 28863.84 | 13 | 2.4579 | 0.99414 | 0.99414 | 0.04997 | yes | 0 | 1.78 |
+| knn | slogdet | none | 3 | 28925.19 | 28914.21 | 9 | 1.4421 | 0.97257 | 0.97257 | 0.04911 | yes | 0 | 1.82 |
+| knn | slogdet | none | 4 | 29361.25 | 29355.61 | 1 | 0.7111 | 0.64311 | 0.64311 | 0.05351 | yes | 0 | 1.78 |
+| mge | None | log_reg | 0 | 31787.93 | 31787.84 | 3 | 1.5997 | 0.10555 | 0.05159 | 0.05261 | yes | 2908 | 0.10 |
+| mge | None | log_reg | 1 | -89460.35 | -89468.39 | 5 | 1.8715 | 0.88014 | 0.81336 | 0.07739 | yes | 0 | 0.09 |
+| mge | None | none | 0 | 31787.93 | 31787.84 | 3 | 1.5997 | 0.10555 | 0.05159 | 0.05261 | yes | 422 | 0.10 |
+| mge | None | none | 1 | -91031.24 | -91038.97 | 5 | 1.8912 | 0.86515 | 0.79427 | 0.07365 | yes | 0 | 0.08 |
+
+#### delaunay_adapt_split / cholesky — value-NaN lane-steps (F1 fired limb)
+
+| bijector | seed | value-NaN lane-steps | max_log_likelihood |
+|---|---|---|---|
+| log_reg | 0 | 36341 | 30437.92 |
+| log_reg | 1 | 28924 | 30608.05 |
+| log_reg | 2 | 26690 | 29977.66 |
+| log_reg | 3 | 25788 | 30285.28 |
+| log_reg | 4 | 21462 | 30303.81 |
+| none | 0 | 29938 | -75839.87 |
+| none | 1 | 9226 | 22945.06 |
+| none | 2 | 20972 | 30254.35 |
+| none | 3 | 11903 | 29638.31 |
+| none | 4 | 8917 | 29731.70 |
+
+- **log_reg** total: 139205
+- **none** total: 80956
+
+First-value-NaN step, delaunay/cholesky: `0` for all five `none` seeds and for
+four of five `log_reg` seeds (seed 3 = step 1) — median 0.0 on both arms, so F1's
+"not earlier" limb holds regardless of the new rows.
+
+#### delaunay/slogdet — the limb that was UNSCORABLE at 24 rows
+
+| bijector | seeds with any value-NaN | median first-NaN step | total value-NaN lane-steps |
+|---|---|---|---|
+| none | 1 of 5 (seed 4, step 938) | 938.0 | 2,062 |
+| log_reg | 5 of 5 (steps 36, 173, 180, 89, 144) | 144.0 | 38,367 |
+
+Both limbs now measurable: log_reg NaNs *earlier* (144 vs 938) and 18.6x more
+lane-steps, so the slogdet tier fires too.
+

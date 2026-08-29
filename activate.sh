@@ -14,6 +14,37 @@
 #     source /mnt/ral/jnightin/autolens_profiling/activate.sh
 #     python3 scripts/imaging/searches/nautilus/mge.py ...
 
+# --- SLURM exit-code guard ------------------------------------------------
+# Inside a batch job, abort on the first failing command so the job's exit
+# status is the failure's, not the last `date`'s.
+#
+# WHY (RAL job 341988, 2026-08-29). Every hpc/batch_* submit ends
+#
+#     python3 scripts/... ; echo "Finished." ; date
+#
+# so the script's exit status is `date`'s and is ALWAYS 0. The W6 delaunay
+# n_batch tail died on a cuFFT batched plan wanting 25.31 GiB of scratch
+# (`JaxRuntimeError`), ran straight on through those two lines, and SLURM
+# recorded both array tasks as COMPLETED 0:0 in 1:02 and 1:07. `sacct` showed a
+# clean fast run; the traceback existed only in the .err file, and the only
+# other tell was the missing results JSON. That is the same shape of silent
+# loss as the MIG-mode GPU (see hpc/batch_gpu/_gpu_preflight.sh) — a failure
+# that reports success — and it must not be discoverable only by noticing an
+# absence.
+#
+# `set -e` is scoped to a SLURM job on purpose: this file is also sourced in
+# interactive login-node shells, where errexit would close the terminal on the
+# first typo. `pipefail` is deliberately NOT set — the preflight reads
+# `nvidia-smi ... | head -1 | tr -d ' '` and tolerates a failing nvidia-smi by
+# design, and the submits pipe nothing into python, so pipefail would add risk
+# without covering the failure this guard is for. Commands whose non-zero exit
+# is expected already guard themselves with `|| echo ...` (run_probe, run_cell),
+# which errexit leaves alone.
+if [ -n "${SLURM_JOB_ID:-}" ]; then
+    set -eE
+    trap 'rc=$?; echo "FATAL: command exited ${rc} (line ${LINENO}) — failing the SLURM job rather than reporting COMPLETED 0:0." >&2; exit ${rc}' ERR
+fi
+
 BASE=/mnt/ral/jnightin/PyAuto
 
 source "$BASE/PyAuto/bin/activate"

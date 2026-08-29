@@ -4,9 +4,9 @@
   "issue": 162,
   "hardware": "cpu_x86_64",
   "hardware_note": "hardware/`<hardware>` in the artifact filename is the scoring host, resolved from the local JAX backend. Each row's own run hardware is in its results JSON under `device` / `hardware`.",
-  "n_rows": 24,
+  "n_rows": 39,
   "n_rows_expected": 39,
-  "preliminary": true,
+  "preliminary": false,
   "historical_reference": {
     "free_reg_steps": 2200,
     "fixed_reg_steps": 98,
@@ -18,27 +18,26 @@
         "cholesky": {
           "none_median_first_nan_step": 0.0,
           "log_reg_median_first_nan_step": 0.0,
-          "none_total_value_nan_lane_steps": 18143,
+          "none_total_value_nan_lane_steps": 80956,
           "log_reg_total_value_nan_lane_steps": 139205,
           "not_earlier": true,
           "not_reduced_50pct": true,
-          "n_none_rows": 2,
+          "n_none_rows": 5,
           "n_log_reg_rows": 5,
           "falsified": true,
           "scorable": true
         },
         "slogdet": {
-          "falsified": null,
-          "scorable": false,
-          "reason": "F1 needs both a first-value-NaN step and a value-NaN lane-step total for the none AND log_reg arms on delaunay_adapt_split; at least one is missing (no rows for an arm, or SEARCHES_LANE_HISTORY was off so no NaN history was recorded).",
-          "none_median_first_nan_step": null,
-          "log_reg_median_first_nan_step": 89.0,
-          "none_total_value_nan_lane_steps": 0,
-          "log_reg_total_value_nan_lane_steps": 23241,
-          "not_earlier": null,
-          "not_reduced_50pct": null,
-          "n_none_rows": 4,
-          "n_log_reg_rows": 3
+          "none_median_first_nan_step": 938.0,
+          "log_reg_median_first_nan_step": 144.0,
+          "none_total_value_nan_lane_steps": 2062,
+          "log_reg_total_value_nan_lane_steps": 38367,
+          "not_earlier": false,
+          "not_reduced_50pct": true,
+          "n_none_rows": 5,
+          "n_log_reg_rows": 5,
+          "falsified": true,
+          "scorable": true
         }
       },
       "falsified": true,
@@ -50,40 +49,105 @@
       "reference_resolution": {
         "rule": "max lane_best_log_posterior over ALL bijector arms in this (cell, log_det_method) group, restricted to physically valid rows (2026-08-28 ruling, DECISIONS.md / issue #185)",
         "reference_row": "knn\u00b7slogdet\u00b7log_reg\u00b7seed3",
-        "n_rows_in_group": 6,
-        "n_rows_considered": 4,
+        "n_rows_in_group": 15,
+        "n_rows_considered": 5,
         "rows_considered": [
           "knn\u00b7slogdet\u00b7log_reg\u00b7seed3",
           "knn\u00b7slogdet\u00b7none\u00b7seed0",
           "knn\u00b7slogdet\u00b7none\u00b7seed2",
-          "knn\u00b7slogdet\u00b7none\u00b7seed3"
+          "knn\u00b7slogdet\u00b7none\u00b7seed3",
+          "knn\u00b7slogdet\u00b7none\u00b7seed4"
         ],
         "rows_excluded": [
+          {
+            "row": "knn\u00b7slogdet\u00b7log_reg\u00b7seed0",
+            "best_log_posterior": 28757.040263152056,
+            "reason": "non-physical: best-point ell_comps magnitude 1.12466 >= 1 (outside the unit disk), from diagnostics.ell_comps_pairs + per_lane[winning].lane_best_params"
+          },
+          {
+            "row": "knn\u00b7slogdet\u00b7log_reg\u00b7seed1",
+            "best_log_posterior": 28979.998994091897,
+            "reason": "non-physical: best-point ell_comps magnitude 1.41403 >= 1 (outside the unit disk), from diagnostics.ell_comps_pairs + per_lane[winning].lane_best_params"
+          },
+          {
+            "row": "knn\u00b7slogdet\u00b7log_reg\u00b7seed2",
+            "best_log_posterior": 29179.917773572157,
+            "reason": "non-physical: best-point ell_comps magnitude 1.28446 >= 1 (outside the unit disk), from diagnostics.ell_comps_pairs + per_lane[winning].lane_best_params"
+          },
           {
             "row": "knn\u00b7slogdet\u00b7log_reg\u00b7seed4",
             "best_log_posterior": 28987.684259537615,
             "reason": "non-physical: best-point ell_comps magnitude 1.27727 >= 1 (outside the unit disk), from recovered_offline_verification.best_point_ell_comps_magnitude"
           },
           {
+            "row": "knn\u00b7slogdet\u00b7logit\u00b7seed0",
+            "best_log_posterior": 28585.735798925172,
+            "reason": "non-physical: best-point ell_comps magnitude 1.40659 >= 1 (outside the unit disk), from diagnostics.ell_comps_pairs + per_lane[winning].lane_best_params"
+          },
+          {
             "row": "knn\u00b7slogdet\u00b7logit\u00b7seed1",
             "best_log_posterior": 28672.21109300902,
             "reason": "non-physical: best-point ell_comps magnitude 1.41407 >= 1 (outside the unit disk), from recovered_offline_verification.best_point_ell_comps_magnitude"
+          },
+          {
+            "row": "knn\u00b7slogdet\u00b7logit\u00b7seed2",
+            "best_log_posterior": 28780.953047989588,
+            "reason": "non-physical: best-point ell_comps magnitude 1.40863 >= 1 (outside the unit disk), from diagnostics.ell_comps_pairs + per_lane[winning].lane_best_params"
+          },
+          {
+            "row": "knn\u00b7slogdet\u00b7logit\u00b7seed3",
+            "best_log_posterior": 28743.50405812855,
+            "reason": "non-physical: best-point ell_comps magnitude 1.41386 >= 1 (outside the unit disk), from diagnostics.ell_comps_pairs + per_lane[winning].lane_best_params"
+          },
+          {
+            "row": "knn\u00b7slogdet\u00b7logit\u00b7seed4",
+            "best_log_posterior": 28716.775304395072,
+            "reason": "non-physical: best-point ell_comps magnitude 1.23662 >= 1 (outside the unit disk), from diagnostics.ell_comps_pairs + per_lane[winning].lane_best_params"
+          },
+          {
+            "row": "knn\u00b7slogdet\u00b7none\u00b7seed1",
+            "best_log_posterior": 28794.438171716294,
+            "reason": "non-physical: best-point ell_comps magnitude 1.06153 >= 1 (outside the unit disk), from diagnostics.ell_comps_pairs + per_lane[winning].lane_best_params"
           }
         ],
         "ell_comps_max_magnitude": 1.0,
         "void_min_wall_s": 120.0
       },
       "per_seed": {
+        "0": {
+          "steps_none": null,
+          "steps_log_reg": null,
+          "reduction_ratio": null,
+          "note": "neither arm reached the reference \u2014 seed unscorable"
+        },
+        "1": {
+          "steps_none": null,
+          "steps_log_reg": null,
+          "reduction_ratio": null,
+          "note": "neither arm reached the reference \u2014 seed unscorable"
+        },
+        "2": {
+          "steps_none": null,
+          "steps_log_reg": null,
+          "reduction_ratio": null,
+          "note": "neither arm reached the reference \u2014 seed unscorable"
+        },
         "3": {
           "steps_none": null,
           "steps_log_reg": 2882,
           "reduction_ratio": "inf",
           "note": "none never reached the reference while log_reg did \u2014 counts as >= 2x"
+        },
+        "4": {
+          "steps_none": null,
+          "steps_log_reg": null,
+          "reduction_ratio": null,
+          "note": "neither arm reached the reference \u2014 seed unscorable"
         }
       },
       "median_reduction_ratio": "inf",
       "required_ratio": 2.0,
-      "n_matched_seeds": 1,
+      "n_matched_seeds": 5,
       "n_scorable_seeds": 1,
       "falsified": false,
       "scorable": true
@@ -93,22 +157,22 @@
         "delaunay_adapt_split": {
           "per_log_det_method": {
             "cholesky": {
-              "none_mean_frac_high_lambda": 0.0,
+              "none_mean_frac_high_lambda": 0.0003291666666666667,
               "log_reg_mean_frac_high_lambda": 0.0007624999999999999,
               "falsified": true,
               "scorable": true
             },
             "slogdet": {
-              "none_mean_frac_high_lambda": 0.046875,
-              "log_reg_mean_frac_high_lambda": 0.0368125,
+              "none_mean_frac_high_lambda": 0.0375,
+              "log_reg_mean_frac_high_lambda": 0.025525000000000003,
               "falsified": false,
               "scorable": true
             }
           }
         },
         "knn": {
-          "none_mean_frac_high_lambda": 0.0625,
-          "log_reg_mean_frac_high_lambda": 0.051958333333333336,
+          "none_mean_frac_high_lambda": 0.0375,
+          "log_reg_mean_frac_high_lambda": 0.032625,
           "falsified": false,
           "scorable": true
         }
@@ -151,7 +215,23 @@
       "mge_differs": true,
       "knn_logit_pinned_final_counts": [
         {
+          "seed": 0,
+          "max_pinned_final_count": 9
+        },
+        {
           "seed": 1,
+          "max_pinned_final_count": 7
+        },
+        {
+          "seed": 2,
+          "max_pinned_final_count": 9
+        },
+        {
+          "seed": 3,
+          "max_pinned_final_count": 10
+        },
+        {
+          "seed": 4,
           "max_pinned_final_count": 7
         }
       ],
@@ -166,6 +246,16 @@
         "problems": [
           {
             "cell": "delaunay_adapt_split",
+            "log_det_method": "cholesky",
+            "seed": 0,
+            "bijector_a": "log_reg",
+            "bijector_b": "none",
+            "fom_a": 357343.88820739026,
+            "fom_b": 357343.0213734612,
+            "rel_diff": 2.4257695673412975e-06
+          },
+          {
+            "cell": "delaunay_adapt_split",
             "log_det_method": "slogdet",
             "seed": 0,
             "bijector_a": "log_reg",
@@ -175,7 +265,7 @@
             "rel_diff": 1.0573123712394267e-05
           }
         ],
-        "n_problems": 1,
+        "n_problems": 2,
         "max_rel_diff": 1.0573123712394267e-05,
         "reproducible_within_1e-9": false,
         "halts": false

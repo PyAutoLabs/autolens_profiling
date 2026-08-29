@@ -855,3 +855,323 @@ ran on the RAL A100); the 24 results JSON + 12 PNG under
 `results/searches/multi_start_prodigy/imaging/{delaunay_adapt_split,knn,mge}/hst/phase8b/`;
 `scripts/misc/searches/bijector_ab.py` ("Scorer amendments 2026-08-28") and
 `scripts/misc/test/test_searches_bijector.py`. Issue autolens_profiling#185.
+
+---
+
+## 2026-08-29 — W5 / Phase 8B: FINAL verdict on 39/39 arms — **FALSIFIED, 3 of 4 criteria (F1, F3, F4)**
+
+**This supersedes nothing and changes no rule.** RAL job **341978** landed its
+15 arms (array indices 0, 2, 3, 14, 17, 19, 21, 24, 25, 26, 27, 30, 32, 33, 34;
+`COMPLETED 0:0`, walls **1:46:42 – 4:02:41**), the campaign is at **39 of 39**
+arms, and `bijector_ab.py --stage score` was re-run on the full set. The
+2026-08-28 ruling (F2 reference, F5 demotion, F4's informational limb) is
+applied unchanged; the pre-registered "any two criteria falsified → 8B
+falsified, record and close, **no rescoping to logit**" threshold is applied
+unchanged. The verdict artifact now carries `n_rows: 39`,
+`n_rows_expected: 39`, **`preliminary: false`**.
+
+**VERDICT: FALSIFIED — 3 of 4 criteria fired (F1, F3, F4). FINAL.**
+
+| criterion | 24 rows (preliminary) | 39 rows (FINAL) |
+|---|---|---|
+| **F1** NaN-wall position | FALSIFIED on the **cholesky** tier only; slogdet **UNSCORABLE** | **FALSIFIED on BOTH tiers.** cholesky: median first-value-NaN step **0.0 under both** arms, value-NaN lane-steps 80,956 (`none`, 5 rows) vs **139,205** (`log_reg`, 5 rows). slogdet: now measurable — `none` 1 seed of 5 NaNs (median first step **938**, total **2,062**), `log_reg` 5 of 5 (median first step **144**, total **38,367**) — `log_reg` walls **earlier** and **18.6× harder** |
+| **F2** steps-to-reference (knn) | NOT falsified; 1 matched seed | **NOT falsified; still 1 scorable seed.** 5 seeds now match, 4 are unscorable (neither arm reaches the reference). Reference **30,559.28**, unchanged, still set by `knn·slogdet·log_reg·seed3`; that seed's `none` never arrives, `log_reg` arrives at step **2,882** → ratio `+inf` ≥ 2× |
+| **F3** time at λ > 1e4 | FALSIFIED on a knife-edge (`none` **exactly** 0.0000) | **FALSIFIED, knife-edge gone.** delaunay·cholesky `none` **0.000329** vs `log_reg` **0.000762** — both non-zero, and `log_reg` is 2.3× higher. The other two groups still go the other way: delaunay·slogdet 0.0375 → 0.0255, knn 0.0375 → 0.0326 |
+| **F4** MGE control + logit pathology | FALSIFIED on **one** logit seed (7 pinned) | **FALSIFIED on all five.** `knn·logit` max pinned-at-completion parameters per seed: **9 / 7 / 9 / 10 / 7** (seeds 0–4). Informational MGE limb unchanged: seed 0 agrees (`best_fom` rel **0.0**, maxL rel **9.8e-15**), seed 1 disagrees at rel **1.73e-2**; byte-identity fails on both |
+| **F5** fp-reproducibility *(diagnostic, never scored)* | 1 pair above 1e-9 | **2 pairs**, max rel **1.06e-05** (`delaunay·slogdet·seed0`; the second is `delaunay·cholesky·seed0` at 2.43e-06). Does not halt |
+
+**What the 15 arms actually changed, criterion by criterion.**
+
+1. **F1 gained a whole tier.** At 24 rows the slogdet limb was unscorable
+   because no `none` arm had recorded a single value-NaN. `slogdet·none·seed4`
+   supplies one (2,062 lane-steps, first at step 938), and with it the tier is
+   measurable and fires on **both** limbs at once: `log_reg` NaNs **earlier**
+   (median step 144 vs 938 — the only place in the campaign where the "not
+   earlier" limb is actually contradicted) and **18.6×** more often. The
+   preliminary verdict's F1 rested on one tier; the final one rests on two.
+2. **F1's "unbalanced raw counts" caveat is gone.** The cholesky limb now sums
+   **5 `none` rows against 5 `log_reg` rows**, not 2 against 5, so the raw
+   comparison the scorer performs is the normalised one: **16,191 vs 27,841
+   value-NaN lane-steps per arm**. The owed per-arm-normalised limb is
+   therefore no longer load-bearing on this evidence.
+3. **F1's ratio deflates 7.7× → 1.7×, and the criterion still fires.** The
+   three new `none` cholesky rows are NaN-heavy, and one of them —
+   `delaunay·cholesky·none·seed0`, **29,938 lane-steps, 37 % of the whole
+   `none` total** — is the single largest contributor on either arm. It is
+   also the arm with `max_log_likelihood = −75,839.87` and a best point at the
+   box corner (|e| = 1.41421), i.e. a failed fit. Counterfactual, since a
+   reader will ask: 24 rows **7.67×** (18,143 vs 139,205) · 39 rows with seed 0
+   **1.72×** · 39 rows without it **2.73×**. The criterion is
+   `log_reg ≥ 50 % of none`, and 139,205 exceeds `none`'s total outright in
+   every one of the three, so **F1 fires with or without the row.** Recorded
+   because the *effect size* moved by 4.5× even though the verdict did not.
+4. **F3 stopped being a knife-edge.** The preliminary reading flagged that
+   `none` was *exactly* 0.0000 on the cholesky tier and the criterion is `≥`,
+   so any non-zero `log_reg` tripped it. With the three new `none` rows the
+   comparison is 0.000329 vs 0.000762 — a real 2.3× ratio between two small
+   numbers. The caveat that both tiers with substantial high-λ occupancy go the
+   *other* way (`log_reg` spends **less** time at λ > 1e4) still stands.
+5. **F4 stopped resting on one seed.** All five `knn·logit` seeds now finish
+   with a lane pinned to the box bound (9/7/9/10/7 parameters). The proxy is
+   still necessary-not-sufficient — `n_pinned_final` counts every pinned
+   parameter, not only the traced regularization ones — but it is no longer a
+   single observation.
+6. **The `logit` arm collapses to a no-lens solution.** Four of the five
+   `logit` seeds have a winning lane whose best point has
+   `einstein_radius` ≈ **0** (0.0000, 0.0008, 0.0018, 0.0017; seed 4 is the
+   exception at 6.99), and **all five** are non-physical in `ell_comps`
+   (|e| 1.2366 – 1.41407). A degenerate no-lens fit at the corner of the
+   parameter box is what the `logit` reparameterization produced on this cell,
+   and it is the concrete content behind F4's pinning statistic.
+7. **F2, the criterion that did not fire, did not improve.** Five knn seeds now
+   match instead of one, but four are **unscorable** — neither arm reaches the
+   reference. The `+inf` still comes from seed 3 alone and still reads
+   "`none` never reached what `log_reg` reached", not the "2× fewer steps to a
+   common target" F2 was drafted to measure. Fifteen more arms did not buy this
+   criterion a second data point.
+
+**Non-physical best points: 23 of 39 (59 %), and it is the campaign's largest
+single finding.** Per group: delaunay·cholesky **6/10 (60 %)**,
+delaunay·slogdet **7/10 (70 %)**, knn **10/15 (67 %)**, mge **0/4**. The
+excluded magnitudes cluster hard at **1.41421** — the (±1, ±1) corner of the
+per-component `ell_comps` box, the farthest point from the unit disk that the
+box admits. Zero rows are void: all 39 have `diagnostics.valid = true` and ran
+the full 3000 steps. The rate is indifferent to bijector and to log-det method,
+and it is zero on the parametric control — this is a property of the **pixelized
+cells' box-clipped `ell_comps` geometry**, not of the thing 8B was testing
+(W10; PyAutoMind `feature/autogalaxy/ell_comps_joint_disk_constraint.md`).
+
+**Stack provenance — what the artifacts do and do not support.** All 39 results
+JSONs record `version: 2026.8.17.1` and **nothing else about the stack**: no
+library git SHAs are captured in the schema. The 2026-08-28 entry's ruling 5
+(the two halves ran different PyAutoFit commits, pooled because the likelihood
+code is unchanged) therefore **cannot be re-verified from the harvested
+artifacts** — it rests, as it did then, on a reading of four PR diffs. What can
+be said from the artifacts: every row is the same declared version, and every
+arm ran `SEARCHES_CLIPPER=prior_box`, so PyAutoFit **#1540** (merged 2026-08-28
+16:35 UTC, before 341978 started at 18:11) is behaviour-neutral for this
+campaign whichever side of it an arm ran on. A future campaign should record
+the library SHAs in the results JSON so this is a measurement.
+
+**Owed items, settled and outstanding.**
+
+- **PAID — the sound, in-process F5.** PyAutoFit **#1540** ships
+  `test_bijector.py::test__round_tripping_a_per_path_map_is_bit_exact_where_it_is_identity`,
+  which evaluates a `BijectorPerPath` map in **one** process and asserts
+  bit-equality on the identity coordinates (`rel=1e-12` on the `log` one). That
+  is the test the 2026-08-28 entry said a two-run A/B could never be, and it is
+  why F5 stays a reported diagnostic here rather than evidence about the
+  bijector.
+- **PAID — bijector × `ClipperPriorBoxJoint`.** #1540 replaces the blanket
+  construction-time refusal with a per-pair resolution: a ball pair under one
+  common positive linear scale composes (radius `R → R/s`), anything genuinely
+  non-linear raises, and the check moved to model resolution inside `_fit`.
+  **Restating the follow-up it creates:** a rerun of this experiment would run
+  `BijectorPerPath` applying `logit` **everywhere except the `ell_comps`
+  pair** — `logit` on the ball pair still raises, by design — so that the joint
+  disk clipper can hold lanes off the 1.41421 corner while the
+  regularization coefficients still step in a transformed coordinate. That is a
+  **new experiment**, not a rescoping of 8B: the pre-registration forbids
+  rescoping to logit, and this verdict is final on the arms as designed.
+- **OUTSTANDING — a per-arm-normalised F1 limb** in the scorer. No longer
+  load-bearing (point 2 above), still the correct wording, still not written.
+- **OUTSTANDING — library SHAs in the results JSON schema**, per the provenance
+  paragraph above.
+
+**Records:** `phase_08_regularization/RESULTS.md` "8B — FINAL verdict on 39/39
+arms" and its per-arm appendix; `phase_08_regularization/bijector_ab/verdict_<hardware>.json`
+(`preliminary: false`, `n_rows: 39`, every exclusion reason); the 39 results
+JSON under `results/searches/multi_start_prodigy/imaging/{delaunay_adapt_split,knn,mge}/hst/phase8b/`;
+PROGRAMME.md phase table + §9b W5. Issues autolens_profiling#162 / #185 (both
+closed) and #194.
+
+---
+
+## 2026-08-29 — W6 tail: MGE `n_batch` wall optimum is **2000**; the delaunay leg was lost to a cuFFT OOM that reported success
+
+**Record, not a gate call.** The 2026-08-27 W6 entry closed on "the scan has
+not plateaued at `n_batch=1000` and there is an optimum past it that this scan
+does not bracket". Two tail jobs were dispatched to bracket it. One landed.
+
+**MGE/hst (RAL 341987, both arms `COMPLETED`, 8:48 and 9:12).** Appending the
+two new arms to the scan (`n_live=200`, fp64, one seed per arm, viz on):
+
+| n_batch | ms/eval | sampler wall | total wall | evals | Kish ESS | ESS/min | logZ |
+|--------:|--------:|-------------:|-----------:|------:|---------:|--------:|-----:|
+| 64   | 10.56 | 670 s | 738 s | 63,424 | 4,304 | 386 | 31690.4548 |
+| 1000 |  5.95 | 458 s | 526 s | 77,000 | 4,694 | 615 | 31690.3580 |
+| **2000** | **4.19** | **444 s** | **519 s** | 106,000 | 5,378 | 727 | 31690.2393 |
+| 4000 |  3.03 | 473 s | 540 s | 156,000 | 6,058 | 769 | 31690.2162 |
+
+**The wall optimum is `n_batch=2000`, and the scan now brackets it.** Sampler
+wall turns over between 2000 and 4000 (444 → 473 s) and so does total wall
+(519 → 540 s). **ms/eval has still not plateaued** — it keeps falling to 3.03
+ms at 4000 — which is exactly the trap the 2026-08-27 entry named: the per-eval
+number improves monotonically while the thing anyone cares about stops
+improving, because the eval count runs away (77,000 → 106,000 → **156,000**) as
+larger batches overshoot the shrinking live set. Read the wall column.
+
+**ESS/min disagrees with the wall, and that is not a contradiction.** ESS/min
+is still rising at 4000 (727 → 769) because Kish ESS rises faster than wall
+does (5,378 → 6,058). If the deliverable is a posterior sample, 4000 is
+marginally better; if it is a completed fit, 2000 is better. Neither margin is
+large and both rest on **one seed per arm**, so neither is adopted as a default
+here.
+
+**The logZ drift got worse, monotonically, and it is the reason nothing is
+adopted.** logZ falls without interruption across the whole upper scan:
+31690.4772 (nb256) → 31690.4738 (512) → 31690.3580 (1000) → **31690.2393**
+(2000) → **31690.2162** (4000). Against nb64 that is **−0.2155 nat** at 2000
+and **−0.2386 nat** at 4000 — roughly **20σ and 22σ** of the 0.011-nat
+five-seed logZ standard deviation measured on this same cell in Phase 4 Stage
+2, and 2–2.4× the −0.10 nat deviation that already blocked adopting nb1000.
+A monotone drift over five arms is harder to read as a seed draw than the
+single point was, but with one seed per arm the scan still **cannot** separate
+an `n_batch` bias from seed noise. **No `n_batch` above the measured baseline
+is adopted as a default.** The next step, if anyone wants this knob, is
+`n_batch ∈ {64, 2000} × 5 seeds` on MGE — not more points along the scan.
+
+**`n_batch=4000` is at the VRAM edge.** `error.341987_1.err` carries **10**
+BFC-allocator retry lines ("ran out of memory trying to allocate … The caller
+indicates that this is not a failure"); `error.341987_0.err` (nb2000) has
+**none**. The 4000 arm completed, but it is buying its ESS/min inside the
+allocator's fallback path on an 80 GB A100.
+
+**Delaunay/hst (RAL 341988, `n_batch` 512 and 1000): NO DATA, and the job said
+it was fine.** Task 0 died initializing a **cuFFT batched plan that wanted
+25.31 GiB** of scratch (`Failed to initialize batched cufft plan with
+customized allocator` → `INTERNAL: RET_CHECK failure (fft_thunk.cc:200)` →
+`jax.errors.JaxRuntimeError`); task 1 died on a straight
+`RESOURCE_EXHAUSTED: Out of memory while trying to allocate 100.97GiB`. Both
+were recorded by SLURM as **`COMPLETED 0:0`**, in **1:02** and **1:07**.
+
+This is **not** a resubmit. A pixelized cell at `n_batch` 512 batches the
+convolution FFT 512-wide; the scratch requirement is linear in the batch and
+100.97 GiB does not fit an 80 GB card at any allocator setting. It needs a
+**chunked / smaller-batch redesign** of the batched evaluation before the
+question can be asked at all. Its cost/benefit is also poor: delaunay
+**saturated at `n_batch=64`** (1.26×, then flat) in the original scan, because
+a pixelized cell's cost is the per-eval inversion and not batch occupancy. The
+W6 reading is unchanged — **raise `n_batch` on parametric cells, leave it at
+the default on pixelized ones** — and the delaunay tail stays **unrun**.
+
+**The failure channel is closed in this commit.** Every `hpc/batch_*` submit
+ended `python3 … ; echo "Finished." ; date`, so the script's exit status was
+`date`'s and was always 0 — a Python crash was indistinguishable from a clean
+run in `sacct`, and 341988's traceback existed only in `.err` beside a results
+JSON that never appeared. The repo-root `activate.sh`, which every submit
+already sources, now arms `set -eE` plus an `ERR` trap **when `$SLURM_JOB_ID`
+is set** (interactive login shells are untouched, and `pipefail` is
+deliberately not set — `_gpu_preflight.sh` tolerates a failing `nvidia-smi` by
+design). A crashed job now exits with Python's status and SLURM records
+`FAILED`. Verified against a submit-shaped script: the guard propagates exit 7,
+`echo "Finished."` never runs, `|| echo` tolerated failures (`run_probe`,
+`run_cell`) still pass, and the preflight's `nvidia-smi | head | tr` pipeline
+still survives a failing `nvidia-smi`. Written up in `hpc/README.md`
+"A crashed job FAILS".
+
+**Records:** `methods/nautilus.md` "n_batch SCAN"; PROGRAMME.md §9b W6;
+`results/searches/nautilus/imaging/mge/hst/hpc_hpc_a100_fp64_nbatch{2000,4000}.json`;
+`hpc/README.md` "A crashed job FAILS"; `activate.sh`. Issue #163 (closed),
+#194. The tail submits themselves are PR#193, unmerged and untouched by this
+work.
+
+---
+
+## 2026-08-29 — Phase 6 first NUTS probe (#187): the rate is measured, **H6.1 is unsupported with a MAP-sourced diagonal metric**, and the A/B is unscorable
+
+**Record, not a gate call — GATE C is not called and is not close.** RAL job
+**341981** ran the first `af.BlackJAXNUTS` arm this repo has ever produced, on
+`searches/nuts/imaging/mge × hst × fp64`: 4 vmapped chains, 200 warmup + 200
+samples, `target_accept=0.8`, `max_num_doublings=10`,
+`inverse_mass_matrix=diagonal`, seed 0 fixed across both arms, visualization
+off. The two arms differ **only** in initialization.
+
+**Arm 0 (COLD, `InitializerBall` at the prior median): TIMEOUT.** Elapsed
+**45:26** against a 45:00 limit, still inside window adaptation — the last line
+it logged was `BlackJAXNUTS: window adaptation (200 steps x 4 chains …)` at
+13:29:08, and it produced no result artifact. A cold start on this cell costs
+**more than 2,726 s** and remains **unmeasured**.
+
+**Arm 1 (WARM, 4 start points from a completed MultiStartProdigy MGE MAP fit,
+jittered 0.05σ): COMPLETED in 1368.78 s.**
+
+| quantity | value |
+|---|---|
+| wall | **1368.78 s** (22:49), visualization disabled |
+| likelihood + gradient evals | **35,523** |
+| **per eval** | **38.53 ms** |
+| per draw (400 draws × 4 chains, lockstep) | **3.42 s**, i.e. 88.8 evals per draw |
+| max log likelihood | **31,786.03** |
+| split-R̂ max | **3.89** |
+| divergences | **400 of 800** sampling draws |
+| ESS min / bulk / tail | **2.01** / 4.33 / 4.04 |
+| mean acceptance | 0.672 |
+| ESS per gradient eval | 1 / **17,672** |
+| ESS/min | **0.088** |
+| log evidence | `nan` (NUTS computes none) |
+
+**1. The warm start works: it reaches the right basin.** maxL **31,786.03**
+sits within ~1 nat of the Nautilus optimum on the same cell (31,786.9 –
+31,787.1) and 264.3 nats above the truth likelihood. `InitializerParamStartPoints`
+placed the chains where it was asked to; nothing about the warm-start
+machinery (PyAutoFit #1522) failed.
+
+**2. The posterior it produced is invalid, and not marginally.** Split-R̂
+**3.89** against Gate C's < 1.01; **half** the sampling draws divergent against
+"no material divergences"; ESS per gradient eval **1/17,672** against "not
+worse than ~1/30". These are not three near-misses, they are three failures by
+2–3 orders of magnitude. Nothing about H6.1 — "NUTS warm-started at the MAP
+achieves ESS/s ≫ nested sampling on MGE" — is supported by this run. For scale
+on the same cell and hardware: Nautilus at `n_batch=2000` delivers **727
+ESS/min**; this arm delivered **0.088**, a factor of ~8,000 the wrong way.
+
+**3. The diagnosis is the metric, and H6.1 predicted it.** H6.1's own wording
+says "dense/low-rank mass matrix from the previous fit's covariance … the 269×
+prior/posterior anisotropy and |r| = 0.95 correlations are measured — **diagonal
+mass will not suffice**". This arm ran `SEARCHES_NUTS_MASS=diag`, deliberately:
+the warm source is a **MAP optimizer** whose stored samples are best-points and
+not a posterior, so its covariance is MLE-only and PyAutoFit refuses to seed a
+dense metric from it. So the probe tested the one configuration H6.1 says
+should fail, because it is the only one a MAP warm-start can express. **H6.1 is
+untested, not refuted** — what is measured is that a MAP-sourced *diagonal*
+metric does not mix on this geometry, which is the anisotropy argument
+reproduced from the inside.
+
+**4. The warm-vs-cold A/B is unscorable.** The cold arm produced nothing, so
+there is no comparison. It also cannot be recovered from this job's budget.
+
+**5. The rate is now measured, which is what the probe was for.**
+`wall/rates.py` gains
+`("imaging", "mge", "hst", "a100", "fp64", 4, None) = 3.42` **seconds per
+draw**, and `submit_search_nuts_imaging_mge_a100_hst_fp64_probe`'s WALL-BASIS
+row moves from `source: unmeasured / probe-first: yes` to **`source: rates`**.
+Three things about that row are load-bearing:
+   - **The unit is per DRAW, not per optimizer step.** Every other row in
+     `rates.py` is seconds per optimizer step = one likelihood evaluation. A
+     NUTS draw is a whole leapfrog trajectory (up to `2**max_num_doublings`
+     evaluations) and cost **88.8 evals** here. The 38.53 ms/eval figure is the
+     one comparable with the optimizer rows (MGE unbatched n16 is 0.05 s/step);
+     the per-draw figure is the one a submit can multiply by a step count it
+     knows in advance, because the eval count depends on the tree depth NUTS
+     chooses at runtime. Both are recorded; they must not be swapped.
+   - **The rate is WARM-only.** Sizing a cold NUTS job from it is precisely the
+     cross-configuration substitution `rates.py` exists to refuse.
+   - **The submit's `--time` is raised 0:45:00 → 2:00:00** with
+     `headroom: 5.0` declared against the 1.5 floor, so the budget covers the
+     cold arm's demonstrated >2,726 s overrun rather than the warm arm alone.
+     Leaving 45 minutes beside a `rates` row measured from the arm that *fit*
+     it would have re-armed the trap that killed arm 0.
+
+**6. What the next Phase 6 probe should be.** A **dense** metric seeded from a
+**Nautilus** warm start — a real posterior, whose covariance PyAutoFit will
+accept — on the same cell, with **≥ 2 h** budgeted for a cold control arm.
+That is the configuration H6.1 actually names, and it is the first one capable
+of testing it. A ≥5-seed reliability run comes after Phase 6 has a verdict, per
+PROGRAMME.md §3. Filed as a follow-up, **not** started here.
+
+**Records:** PROGRAMME.md Phase 6 + §9b W11;
+`results/searches/nuts/imaging/mge/hst/hpc_hpc_a100_fp64_c4_w200_s200_warm.json`;
+`scripts/misc/wall/rates.py` (`nuts_mge_hst_a100_fp64_c4_warm`);
+`hpc/batch_gpu/submit_search_nuts_imaging_mge_a100_hst_fp64_probe`. Issue #187
+(closed), #194.

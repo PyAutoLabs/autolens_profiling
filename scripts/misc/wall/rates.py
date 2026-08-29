@@ -104,6 +104,27 @@ STEP_RATE: dict[tuple[str, str, str, str, str, int, int | None], float] = {
     ("imaging", "mge", "hst", "a100", "fp64", 64, None): 0.19,  # ~570 s
     ("imaging", "mge", "hst", "a100", "fp64", 256, None): 0.77,  # ~2300 s
     #
+    # =========================================================================
+    # Gradient MCMC (`nuts`) on the parametric imaging cell, 4 vmapped chains.
+    # THE STEP UNIT IS DIFFERENT HERE AND MUST NOT BE MIXED WITH THE ROWS ABOVE.
+    # Every row above is seconds per OPTIMIZER step, which is one likelihood
+    # evaluation. A NUTS "step" is one draw of the sampler — a whole leapfrog
+    # trajectory, up to 2**max_num_doublings evaluations — so this row is
+    # seconds per DRAW across all 4 chains advancing in lockstep, and `lanes`
+    # names the chain count. Measured 2026-08-29 on RAL job 341981 task 1
+    # (the WARM arm; see PROVENANCE `nuts_mge_hst_a100_fp64_c4_warm`):
+    # 1368.78 s total wall / 400 draws (200 warmup + 200 samples) = 3.42 s per
+    # draw, 35,523 likelihood+gradient evaluations = 88.8 evals per draw
+    # (22.2 per chain per draw) = 38.53 ms per eval.
+    #
+    # WARM ONLY. The COLD arm of the same job (task 0, identical model, seed and
+    # chain count, InitializerBall instead of warm start points) TIMED OUT at
+    # 45:26 still inside window adaptation and produced no result — so a cold
+    # start costs MORE than 2726 s and this row cannot size one. Sizing a cold
+    # NUTS job from it is the cross-configuration substitution this module
+    # exists to refuse.
+    ("imaging", "mge", "hst", "a100", "fp64", 4, None): 3.42,  # 400 draws ~ 1369 s, WARM
+    #
     # NOTE — the n128 tier is deliberately ABSENT. Its submit's ~0.38 s/step is
     # interpolated between the n64 and n256 rows, not measured. An interpolated
     # rate is exactly the kind of unearned citation this table refuses to carry;
@@ -129,6 +150,24 @@ PROVENANCE: dict[str, str] = {
         "slowest arm; anything else would under-size an array sized by its slowest cell. "
         "These full walls confirm the 2026-08-25 truncated-arm rates (340576) to within "
         "1.4% (knn) and 0.4% (delaunay_adapt_split) — the recovery method was sound."
+    ),
+    "nuts_mge_hst_a100_fp64_c4_warm": (
+        "measured 2026-08-29 on RAL A100 (job 341981, task 1 — the WARM arm of the Phase 6 "
+        "af.BlackJAXNUTS probe, autolens_profiling#187). num_chains=4, num_warmup=200, "
+        "num_samples=200, target_accept=0.8, max_num_doublings=10, "
+        "inverse_mass_matrix=diagonal, seed 0, visualization disabled, start points drawn "
+        "from a completed MultiStartProdigy MGE MAP fit and jittered 0.05 sigma. Total wall "
+        "1368.78 s over 400 draws -> 3.42 s per draw; 35,523 logl/gradient evals -> 38.53 ms "
+        "per eval and 88.8 evals per draw. The per-eval number is the one comparable with "
+        "the optimizer rows above (MGE unbatched n16 is 0.05 s/step); the per-DRAW number is "
+        "the one a submit multiplies by a knowable step count, because the eval count depends "
+        "on the tree depth NUTS chooses and is not knowable in advance. "
+        "DO NOT use this row for a cold start: the cold arm of the same job (task 0) timed "
+        "out at 45:26 inside warmup with no result, so cold is >2726 s and unmeasured. "
+        "The posterior this arm produced is INVALID (rhat_max 3.89, 400/800 divergences, "
+        "ess_min 2.0) — this row is a wall-clock rate, not a certificate that the "
+        "configuration samples correctly. Write-up: "
+        "results/notes/inference/DECISIONS.md 2026-08-29 Phase 6."
     ),
     "mge_hst_a100_fp64_unbatched": (
         "A100 fp64 with a warm compile cache, as cited by the n16/n64/n256 "
