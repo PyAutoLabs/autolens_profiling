@@ -19,10 +19,22 @@
 # Since SLURM cannot be asked to avoid that GPU, bounce off it: requeue and let
 # the scheduler try again elsewhere. Requeues are cheap; a burned arm is not.
 #
+# 2026-08-28 — THIS IS NOW THE BACKSTOP, NOT THE PRIMARY GUARD. Requeueing
+# alone could not escape the bad GPU: in jobs 341874/341875 the scheduler kept
+# re-offering the same free slot, and 13 tasks burned 46-52 requeues each
+# before failing — every one of them on `euclid-ral-gpu-1`, while all 12 tasks
+# that landed on `euclid-ral-gpu-2` completed. Every batch_gpu submit therefore
+# now carries `#SBATCH --exclude=euclid-ral-gpu-1`, which costs half the A100
+# fleet (4 of 8) but is deterministic. This preflight stays sourced to cover
+# the two cases the exclusion does not: `euclid-ral-gpu-2` developing the same
+# fault, and a new submit written without the --exclude line. See hpc/README.md
+# "GPU node exclusion".
+#
 # The submit must be dispatched with `--requeue` for this to work.
 #
 # TO RETIRE: when the RAL admins either create MIG instances on that GPU or
-# take it out of MIG mode, this becomes a no-op that costs one `nvidia-smi`
+# take it out of MIG mode, drop the `--exclude` lines from the submits first,
+# then this, which until then is a no-op costing one `nvidia-smi`
 # call per task. Check with `nvidia-smi --query-gpu=mig.mode.current` inside a
 # job before removing it — a silent removal re-opens the trap.
 

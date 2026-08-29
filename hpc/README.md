@@ -31,6 +31,50 @@ JSONs from the HPC checkout back via the normal git flow. The PyAuto*
 libraries resolve from sibling source checkouts on `PYTHONPATH` — never
 pip-install them into the venv (`HPCPullPyAuto` is the update story).
 
+## GPU node exclusion: `euclid-ral-gpu-1` is off-limits (2026-08-28)
+
+Every `batch_gpu/` submit carries
+
+```
+#SBATCH --exclude=euclid-ral-gpu-1
+```
+
+The `gpu` partition has exactly **two** nodes, `euclid-ral-gpu-1` and
+`euclid-ral-gpu-2`, four A100s each. One A100 on `euclid-ral-gpu-1` (PCI
+`07:00.0`) was switched into MIG mode with **no MIG instances created**, while
+SLURM keeps advertising the node as a plain `Gres=gpu:A100:4`. A job that lands
+on that GPU dies about four seconds in with
+
+```
+RuntimeError: Unable to initialize backend 'cuda'
+```
+
+SLURM offers no way to avoid a single GPU inside a node, so the whole node is
+excluded. Evidence (jobs `341874` / `341875`, 2026-08-26): **13 tasks failed,
+every one of them on `euclid-ral-gpu-1`** after 46-52 `_gpu_preflight.sh`
+requeues each; all 12 tasks that ran on `euclid-ral-gpu-2` completed. The
+requeue backstop could not escape the bad GPU because the scheduler kept
+re-offering the same free slot.
+
+**Cost of the exclusion:** 4 usable A100s instead of 8. Three healthy GPUs on
+`euclid-ral-gpu-1` are given up to dodge the one broken one — worth it against
+a ~40% task-loss rate, but it does halve GPU throughput.
+
+`_gpu_preflight.sh` stays sourced in every submit as the backstop: it still
+catches the case where `euclid-ral-gpu-2` develops the same fault, or where a
+new submit is written without the `--exclude` line.
+
+**To retire:** when RAL either creates MIG instances on that GPU or takes it
+out of MIG mode, drop the `--exclude` lines (and then the preflight). Confirm
+first from inside a job on `euclid-ral-gpu-1`:
+
+```bash
+srun --partition=gpu --nodelist=euclid-ral-gpu-1 --gres=gpu:1 --time=1:00 \
+     nvidia-smi --query-gpu=pci.bus_id,mig.mode.current --format=csv
+```
+
+A silent removal re-opens the trap.
+
 ## Array submits (repeated-seed campaigns)
 
 A submit whose name ends in a tier (e.g. `..._fp64_n64`) and that declares
