@@ -54,10 +54,20 @@
 #
 #       sbatch --array=5,6,7 --requeue submit_search_nautilus_inference_refs_v1_array.sh
 #
-#   Move the existing knn output directory aside first (step 2 below) — task 7
-#   has a completed fit on disk from 341879 and would otherwise resume it. The
-#   `target_id` change does NOT protect against that: the output path is keyed
-#   on the search identifier, not on the target hash.
+#   RESUME COLLISION — checked, and there isn't one. Task 7 has a completed fit
+#   on disk from 341879, but PyAutoFit's identifier hashes
+#   `[search, model, unique_tag]` (paths/abstract.py `_identifier`) and the
+#   MODEL is what changed, so the corrected cells resolve to new identifier
+#   directories under the same `hpc_a100_fp64_ref/` name dir. Verified by
+#   constructing both searches locally 2026-08-29:
+#
+#       knn                 36d5967e91391122bff82e879c619548 -> 39b5ccc228ad4b4389b1129a7e5cf605
+#       slam_source_pix_nn  c16ff7b02fc168edd8eb9b4aaa4f4bc7 -> 7ced3989425354c2a53d4a79d7da2b11
+#
+#   Step 2 below still applies to a partial re-run of THIS script against the
+#   corrected targets, which would collide with itself. Confirm the identifier
+#   directory is new before assuming a task started cold — an absent `.identifier`
+#   match is the check, not the presence or absence of the parent directory.
 #
 # WHY THIS EXISTS
 #   InferenceRefs_v1 today certifies exactly two targets (mge_fp64,
