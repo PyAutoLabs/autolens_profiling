@@ -1,5 +1,6 @@
 test:
   check_likelihood_function: true   # resume recomputes one likelihood per stage to verify consistency — a real resume cost this repo measures, so keep the production default.
   disable_positions_lh_inversion_check: true   # workspace parity: slam source_pix[2]/light/mass compose pixelizations without positions_likelihood_list, as in autolens_workspace.
+  log_likelihood_ceiling: 1.0e+20    # opt in to PyAutoFit's magnitude guard (off in the packaged config, PyAutoFit#1549): finite garbage above this is replaced by the resample figure of merit. Enabled HERE and not by default because the threshold is unit-dependent, and this repo's cells have known units. Cites 341908_5 — killed by a likelihood-overflow flood (90,000 calls, max log L 30,701.3, never explored), DECISIONS.md 2026-08-29.
 version:
   workspace_version_check: false    # this repo tracks main, not a release tag; the mismatch warning is expected noise in profiling logs.

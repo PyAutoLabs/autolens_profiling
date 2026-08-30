@@ -1398,3 +1398,42 @@ reported itself uninterpretable rather than offering its `log_evidence`.
 
 **Records:** `scripts/misc/searches/README.md` "Sequential Monte Carlo (`smc`)";
 PROGRAMME.md §Phase 7.
+
+---
+
+## 2026-08-29 — The log-likelihood magnitude ceiling is **profiling-only**: PyAutoFit ships it OFF, this repo opts in
+
+**Decision (human, 2026-08-29):** PyAutoFit's
+`general.test.log_likelihood_ceiling` guard — added by PyAutoFit#1545 after the
+341908_5 diagnosis above, and shipped enabled at `1.0e+20` — is flipped to
+**off** in the packaged config (PyAutoFit#1549). The code path stays. This repo
+enables it in its own `config/general.yaml` at `1.0e+20`, cited to 341908_5.
+
+**Why it cannot be a library default:** the ceiling is a bare magnitude in
+*unspecified units*. A log likelihood is
+`-0.5 * chi_squared - 0.5 * noise_normalization`, and both terms scale with the
+noise map — `chi_squared` as `noise ** -2`, `noise_normalization` linearly in
+the pixel count. A dataset whose noise map is expressed in a small unit can
+therefore produce a **legitimate** log likelihood above `1e20`, and every model
+would be silently mapped to the resample sentinel: the search would see nothing
+but rejections and could not fit at all. The guard reads only a magnitude, so it
+cannot distinguish that from the fp64-Cholesky garbage it was built for. A
+default that can silently break a correctly-specified fit is the wrong default;
+an opt-in on a surface whose units are known is not.
+
+**Why this repo opts in anyway:** these cells are the surface where the failure
+was actually observed and where the units are fixed and known — HST/Euclid
+imaging at the pixel scales in `instruments/`, reaching max log L ~3e4. `1e20`
+is sixteen orders of magnitude above anything a healthy cell here produces, so
+the guard cannot fire on a real fit, and it is the only thing that turns an
+overflow flood into a bounded, diagnosable run rather than a wall-clock burn.
+
+**Reassessment owed.** Whether *real PyAutoLens analyses* should run with the
+ceiling on is **deferred to after the Wave-B harvest**, when there are enough
+results to say what magnitudes science fits actually reach across instruments
+and units. Until then the library default stays off and no recommendation is
+made to users. Re-open this entry with the harvest evidence rather than
+extending the profiling opt-in by analogy.
+
+**Records:** PyAutoFit#1549; `config/general.yaml` (`test.log_likelihood_ceiling`);
+the 341908_5 entry above.
