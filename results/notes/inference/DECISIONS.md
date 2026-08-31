@@ -1437,3 +1437,82 @@ extending the profiling opt-in by analogy.
 
 **Records:** PyAutoFit#1549; `config/general.yaml` (`test.log_likelihood_ceiling`);
 the 341908_5 entry above.
+
+---
+
+## 2026-08-31 — Programme rewind (human directive): quarantine the runs, restart at Phase 1 under batch-and-review
+
+**Decision (human, 2026-08-31):** the inference programme **rewinds**. The epic
+ran largely without human review, and every mesh / pixelization result it
+produced goes to an unphysical solution. This ledger already carries the three
+symptoms: the λ⁴ non-PD **overflow flood** (the regularization matrix goes non-PD
+from c~1e4, fp64 Cholesky returns finite garbage, and Nautilus accepts `log_l` up
+to **3e+303** as a best point — the 341908_5 entry); **59 %** of Phase-8B best
+points (23 of 39) clustered at the **|e| = 1.41421** box corner of the pixelized
+cells' box-clipped `ell_comps` geometry (W10); and a `cond ~ 1e15–1e19` NaN
+population where the reconstruction solve NaNs despite finite log-det terms
+(CP-4/W7). Beyond the failures, the human had lost track of what the programme
+had actually established. The rewind quarantines the bad evidence and restarts
+the review discipline.
+
+**What moved where (executed 2026-08-31, identically on RAL
+`/mnt/ral/jnightin/autolens_profiling/output/` and the laptop mirror
+`/mnt/c/Users/Jammy/Science/inference_programme/output/`, directory structure
+preserved):**
+
+| Tree | Contents | Run-config dirs |
+|---|---|---|
+| `output/legacy/searches/…` | **MGE** — reusable, pending batch review | **83**: nautilus 16, nss 13, nuts 2, smc 3, multi_start_prodigy 4, multi_start_prodigy_autoconv 45 |
+| `output/legacy_wrong/searches/…` | **mesh / pixelization** — unphysical, quarantined | **71**: nautilus 21 (delaunay, delaunay_matern, delaunay_nn, knn, pixelization, slam_source_pix, slam_source_pix_nn), nss 3, multi_start_prodigy 47 (delaunay_adapt_split, knn); plus RAL-only `slogdet_ab_harvest` and `_void_341874_24` |
+
+The active `output/searches/` now holds only the **point_source** and **cluster**
+trees. `hpc/sync pull` scopes to `output/searches` and passes no `--delete`, so it
+can never reach into `legacy*/`.
+
+**Restart point: Phase 1 — the `InferenceRefs_v1` reference baselines**, the
+first phase whose design does RAL runs. Phase 0 outcomes stand, and **all shipped
+source and registry code stands** — the PositionsLH fix (PyAutoLens#699/#700),
+blackjax 1.6.2 on cloud/local/RAL, `_targets.py`, benchmark schema v2, `af.SMC`,
+the NUTS plumbing. Nothing is reverted. Only **run evidence** and **phase/gate
+state** rewind. Re-execution is human-driven and step-by-step under the
+batch-and-review workflow: human-declared `review-at:` slots, review packets at
+`PyAutoMind/batches/packets/` (spec `batches/packets/TEMPLATE.md`), with the
+laptop mirror as the review surface.
+
+**Gates → PROVISIONAL.** Each call below stands as a *working assumption* and may
+continue to be used as one, but the legacy MGE evidence beneath it must be
+surfaced in batch review packets and ruled on by a human before the gate is
+re-confirmed:
+
+- **Gate A** (2026-08-24 — Nautilus stays the nested baseline; `af.NSS` is the
+  tuned alternative) → **provisional**. Re-confirmation needs the Phase-2 inner-steps
+  / logZ-bias scan reviewed in packets; note its Delaunay comparison re-baselines
+  now sit in `legacy_wrong` and cannot be cited.
+- **Gate B pt 1** (2026-08-23 — Prodigy n=256, prior_box, autoconv, positions-off
+  ratified as global MAP searcher on MGE) → **provisional**. Re-confirmation needs
+  the Phase-3 reliability wave (p̂_hit, fresh-seed tiers) reviewed in packets.
+- **Gate B pt 2** (2026-08-27 — PositionsLH safe for gradient MAP at factor ≤ 1e5
+  on MGE, 1e8 rejected) → **provisional**. Re-confirmation needs the Phase-4
+  Stage 2/3 arms reviewed in packets, with the six caveats that ride with the call
+  restated rather than assumed.
+
+Gates C–F remain open and unstarted.
+
+**MGE reuse rule (binding for the redo).** Before submitting any MGE run during
+the redo, check `output/legacy/searches/…` (RAL **and** the mirror) for an
+existing result at the same target/config. If one is present and has not yet been
+ruled on in a batch review packet, **do not resubmit** — surface it as a packet
+member (question → witness → health evidence → readout → where-to-look) for a
+human ruling. Accepted → cite it and `mv` it back into the active tree; rejected →
+queue a fresh run. `legacy_wrong` results are **never** reused or cited except as
+failure-mode documentation.
+
+**Resume-trap note.** The quarantine doubles as the mandated resume-trap
+relocation. With the old run directories off the active path, a redo run launched
+with identical knobs starts fresh instead of silently re-emitting the old fit —
+reuse means *reading from* `legacy/`, never resuming in place.
+
+**Records:** autolens_profiling#200 (queue-of-record anchor for the redo — redo
+slices ship as autolens_profiling issues/PRs per the epics rule);
+`PROGRAMME.md` §"2026-08-31 REWIND" + the annotated phase/gate table;
+`PyAutoMind/epics.md` (JAX profiling epic notes).
