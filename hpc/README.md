@@ -10,6 +10,10 @@ rows of the sweep matrix (and HPC-CPU rows) that the local
 batch_gpu/
   submit_<package>_<class>_<model>_a100_<inst>_<precision>[_sparse]   # one submit per cell/config
   output/   error/                                                    # SLURM stdout/stderr (gitignored)
+batch_cpu/
+  submit_...                                                          # HPC-CPU rows
+sync                                                                  # laptop-side driver (below)
+sync.conf.example                                                     # template; sync.conf is gitignored
 ```
 
 Submit names follow the same `<class>/<model>` cell grid as the rest of the
@@ -30,6 +34,72 @@ merges local and A100 rows into one `comparison.json`. Copy/commit the result
 JSONs from the HPC checkout back via the normal git flow. The PyAuto*
 libraries resolve from sibling source checkouts on `PYTHONPATH` — never
 pip-install them into the venv (`HPCPullPyAuto` is the update story).
+
+## `hpc/sync` — driving RAL from the laptop, and getting runs back
+
+`hpc/sync` is the laptop-side driver. Copy the config first:
+
+```bash
+cp hpc/sync.conf.example hpc/sync.conf   # then edit; sync.conf is gitignored
+```
+
+| verb | what it does |
+|------|--------------|
+| `hpc/sync pull` | Download batch logs, then run outputs and results |
+| `hpc/sync logs` | Batch logs only — small and fast, use mid-run |
+| `hpc/sync status` | Dry run: what a pull would transfer |
+| `hpc/sync submit [--gpu\|--cpu] <name>` | `sbatch` a submit script, from `hpc/batch_<type>/` |
+| `hpc/sync jobs` / `sacct` / `cancel <id>` | `squeue` / `sacct` / `scancel` |
+| `hpc/sync tail [gpu\|cpu]` | Stream the newest live `.out` |
+| `hpc/sync du` | Remote disk usage (`-d1` — never a bare recursive `du`; RAL's NFS is slow) |
+| `hpc/sync check` | Verify SSH, remote paths, `sbatch`, and the local pull root |
+
+`submit` runs `sbatch` **from `hpc/batch_<type>/`**, not the project root, because the
+submit scripts' `#SBATCH -o`/`-e` paths are relative — see the CWD trap below.
+
+### Where a pull lands: `LOCAL_PULL_ROOT`
+
+The pull destination is **not** this checkout. `output/` is gitignored here, `results/`
+holds small committed result rows that a staging copy must not overwrite, and a full pull
+is ~2 GB of run directories. So `sync.conf` sets `LOCAL_PULL_ROOT` — a separate local
+mirror whose only job is holding RAL runs so they can be read. It defaults to
+`/mnt/c/Users/Jammy/Science/inference_programme`.
+
+| on RAL | lands at |
+|--------|----------|
+| `output/searches/` | `$LOCAL_PULL_ROOT/output/searches/` |
+| `results/searches/` | `$LOCAL_PULL_ROOT/results/searches/` (a **staging copy** — the committed rows are the ones in this repo) |
+| `hpc/batch_gpu/output/` | `$LOCAL_PULL_ROOT/logs/output/` |
+| `hpc/batch_gpu/error/` | `$LOCAL_PULL_ROOT/logs/error/` |
+
+`search_internal/` is excluded from every pull: it is sampler state (Nautilus
+`checkpoint.hdf5`, live points), it is large, and it is not needed to read a result. A run
+that needs its checkpoint is read on RAL.
+
+The logs move from `hpc/batch_gpu/{output,error}/` on RAL to `logs/{output,error}/`
+locally. On RAL they live beside the submit scripts because that is where SLURM writes
+them; on the laptop they are review material, so they sit at the top of the mirror.
+
+`pull` tolerates rsync exit 23/24 (files vanished or partially transferred), which is
+normal while jobs are still writing, and skips any remote directory that does not exist
+yet rather than aborting.
+
+### There is no `push`
+
+`hpc/sync push` prints the real procedure and exits non-zero. The RAL copy of this repo is
+a **git checkout** with local uncommitted state; rsyncing a laptop tree over it would
+clobber that and leave the working tree disagreeing with its own HEAD. Code goes to RAL
+with git on the login node:
+
+```bash
+ssh euclid_jump
+cd /mnt/ral/jnightin/autolens_profiling
+git status        # look before you pull — the checkout is often dirty
+git pull
+```
+
+The PyAuto* libraries are a separate story again: resolved from the shared checkouts on
+`PYTHONPATH` and updated with `HPCPullPyAuto`, never pip-installed and never rsynced.
 
 ## GPU node exclusion: `euclid-ral-gpu-1` is off-limits (2026-08-28)
 
