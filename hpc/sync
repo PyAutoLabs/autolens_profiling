@@ -153,7 +153,16 @@ pull_indices() {
             while IFS= read -r -d '' zipfile; do
                 local target="${zipfile%.zip}"
                 if [[ ! -d "$target" ]]; then
-                    unzip -q -o "$zipfile" -d "$target" && (( zip_count++ )) || true
+                    # Not `&& (( zip_count++ ))`: at zip_count=0 that arithmetic returns 1
+                    # and `set -e` aborts the whole pull mid-way. (The Science-project sync
+                    # this was adapted from had exactly that bug — it silently stopped
+                    # after the first PULL_DIRS entry.) `|| true` would hide a real unzip
+                    # failure instead, so branch explicitly and say so.
+                    if unzip -q -o "$zipfile" -d "$target"; then
+                        zip_count=$(( zip_count + 1 ))
+                    else
+                        echo "        WARNING: could not unzip ${zipfile}"
+                    fi
                 fi
             done < <(find "$local_dir" -name '*.zip' -print0 2>/dev/null)
         fi
