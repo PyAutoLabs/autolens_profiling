@@ -1,0 +1,23 @@
+# hpc/sync configuration — copy to hpc/sync.conf and edit. sync.conf is gitignored.
+
+# SSH alias for the RAL login node (defined in ~/.ssh/config; ProxyJumps via jump_finan).
+HPC_HOST=euclid_jump
+
+# Parent directory of the project on RAL.
+HPC_BASE=/mnt/ral/jnightin
+
+# Directory name of this project under HPC_BASE. Set explicitly if you run `hpc/sync`
+# from a git worktree, whose directory name is the branch rather than the project.
+PROJECT_NAME=autolens_profiling
+
+# Where `hpc/sync pull` writes run outputs, results and batch logs.
+#
+# NOT the repo checkout: a pull is ~2 GB of run directories, `output/` is gitignored here
+# and the committed `results/` rows must not be overwritten by a staging copy. It points
+# at a separate local mirror instead, whose only job is holding RAL runs for review.
+#
+#   RAL output/searches/        ->  $LOCAL_PULL_ROOT/output/searches/
+#   RAL results/searches/       ->  $LOCAL_PULL_ROOT/results/searches/   (staging copy)
+#   RAL hpc/batch_gpu/output/   ->  $LOCAL_PULL_ROOT/logs/output/
+#   RAL hpc/batch_gpu/error/    ->  $LOCAL_PULL_ROOT/logs/error/
+LOCAL_PULL_ROOT=/mnt/c/Users/Jammy/Science/inference_programme

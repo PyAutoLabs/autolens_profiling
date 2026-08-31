@@ -63,6 +63,18 @@ checkouts via `PYTHONPATH`. On the HPC, `source activate.sh` activates the share
 deps only) and points `PYTHONPATH` at the canonical `PyAutoNerves`/`PyAutoFit`/`PyAutoArray`/
 `PyAutoGalaxy`/`PyAutoLens` checkouts; `HPCPullPyAuto` is then the whole library-update story.
 
+**RAL, and getting runs back.** `hpc/sync` is the laptop-side driver: `pull` / `logs` / `status`
+for transfers, `submit` / `jobs` / `sacct` / `cancel` / `tail` / `du` / `check` for the rest
+(`cp hpc/sync.conf.example hpc/sync.conf` first; `sync.conf` is gitignored). It only ever *reads*
+from RAL — there is deliberately **no `push`**, because the RAL copy of this repo is a git
+checkout with local state that an rsync would clobber; code goes over with `git pull` on the login
+node, and the libraries with `HPCPullPyAuto`. `hpc/sync pull` does **not** write into this
+checkout: `output/` is gitignored and `results/` holds committed rows, so pulls land under
+`LOCAL_PULL_ROOT` (set in `sync.conf`, default `/mnt/c/Users/Jammy/Science/inference_programme`) —
+`output/searches` and `results/searches` mirror across, and RAL's `hpc/batch_gpu/{output,error}`
+become `logs/{output,error}`. `search_internal/` is excluded: sampler state is large and stays on
+RAL. Full detail in `hpc/README.md`.
+
 JAX convention (mirrors `autolens_workspace_developer`): pass `xp=jnp` through PyAuto* functions to
 select the JAX backend, and extract `.array` from autoarray types before crossing the `jax.jit`
 boundary **as inputs**. See the PyAutoArray deep dive

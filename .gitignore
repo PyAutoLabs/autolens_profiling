@@ -20,6 +20,10 @@ __jax_cache__/
 .numba_cache/
 .mplconfig/
 
+# hpc/sync's local HPC configuration (host, base path, pull destination). Machine-
+# specific; hpc/sync.conf.example is the tracked template.
+hpc/sync.conf
+
 # Local virtualenvs
 .venv/
 venv/
