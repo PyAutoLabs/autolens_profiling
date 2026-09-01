@@ -1516,3 +1516,44 @@ reuse means *reading from* `legacy/`, never resuming in place.
 slices ship as autolens_profiling issues/PRs per the epics rule);
 `PROGRAMME.md` §"2026-08-31 REWIND" + the annotated phase/gate table;
 `PyAutoMind/epics.md` (JAX profiling epic notes).
+
+---
+
+## 2026-09-01 — Batch 2026-08-31-pm review rulings (InferenceRefs_v1 legacy-reuse members)
+
+Human review submitted 2026-09-01 15:13 (`PyAutoMind/batches/reviews/2026-08-31-pm.md`);
+three packet ruling members from the Phase-1 redo leg (autolens_profiling#201):
+
+- **mge-pos-ref-reuse — ACCEPTED.** The quarantined-but-reusable `340210_9` run
+  (2026-08-25) is adopted as the `mge_pos_fp64` InferenceRefs_v1 reference. Per
+  the MGE reuse rule: cite it and `mv` it from `output/legacy/searches/…` back
+  into the active tree (RAL **and** mirror) — laptop action, queued for the next
+  local-dev slot. Array task 9 stays excluded from the refs array.
+- **mge-fp64-retro-baseline — ACCEPTED.** The retro-adopted `mge_fp64` baseline
+  stands under the redo standard; no fresh `_ref` run needed.
+- **delaunay-fp64-retro-baseline — REJECTED, with a programme-wide finding.**
+  The human inspected
+  `output/legacy_wrong/searches/nautilus/imaging/delaunay/hst/hpc_a100_fp64/`
+  and identified the solution as a **demagnified-source unphysical solution** —
+  the classic Inversion bias `PositionsLH` exists to remove
+  (https://pyautolens.readthedocs.io/en/latest/general/demagnified_solutions.html).
+  Human, verbatim: *"This is why we basically need to rerun loads of JAX
+  gradient runs (MGE sources are not effect by this so safe) wit the position
+  penalty set up and used. The problem is it is not used in all these JAX
+  Gradient runs!"*
+
+**Binding consequence for the redo (from the rejection):** every mesh /
+pixelization run — the refs array's mesh rows included — must carry a
+`PositionsLH` positions penalty (positions + threshold per the workspace
+convention, e.g. 0.3"). MGE-source rows are unaffected and stay valid. The
+human also flagged that the "Inference Baselines v1" summary carries the same
+unphysical-solution issue. Mesh rows produced without the penalty are not
+citable as references. The 342091 wave's mesh rows should be checked against
+this before certification — a mesh row without the penalty is spent evidence.
+
+**Output-tree consequence (human directive, verbatim intent):** clear the RAL
+active `output/` of all mesh results, the `image_plane`/`source_plane` point
+source fits, the `Cluster` folder and the `point_source` folder — moved (not
+deleted) to a new `output/legacy_point/` folder, so the active tree is clean and
+updates with each task. Laptop action, queued as a local-dev prompt in the Mind
+(`draft/maintenance/autolens_profiling/legacy_point_output_sweep.md`).
