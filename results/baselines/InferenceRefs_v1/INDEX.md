@@ -22,6 +22,7 @@ implements, and the per-target tolerances a run is judged against in
 | `slam_source_pix_pos_fp64` | `imaging/slam_source_pix/hst` | R-20260902-01 | `sha256:b29616db92cf` |
 | `slam_source_pix_nn_pos_fp64` | `imaging/slam_source_pix_nn/hst` | R-20260902-01 | `sha256:8021b4b697ff` |
 | `delaunay_pos_fp64` | `imaging/delaunay/hst` | R-20260902-01 | `sha256:dcbcb9627b78` |
+| `mge_pos_fp64` | `imaging/mge/hst` | R-20260901-01 | `sha256:6b93f0e52ecd` |
 
 The first two were adopted **retroactively** from existing same-stack
 (`2026.8.17.1`) Nautilus runs rather than re-run for the Phase 1 commit —
@@ -46,6 +47,20 @@ nats *above* its positions-off twin; a penalty cannot raise a likelihood, so
 the positions-off searches ended in the demagnified basin. All four adopted
 rows' `target_id`s were re-derived from the current `_targets.py` registry and
 matched (`restamp_target_block.py`, report mode: 4 unchanged, 0 refused).
+
+## 2026-09-02 — `mge_pos_fp64` (R-20260901-01)
+
+The positions-on MGE reference is **not** a 342091 row. PyAutoCortex ruling
+[R-20260901-01](https://github.com/PyAutoLabs/PyAutoCortex/blob/main/rulings/2026/09/R-20260901-01.md)
+(2026-09-01) accepted the `mge_pos_ref_reuse` phase: the quarantined-but-reusable
+run **340210_9** (2026-08-25) is adopted as the `mge_pos_fp64` reference under
+the MGE reuse rule, its run dir cited and moved from `output/legacy/searches/…`
+back into the active tree on RAL and on the mirror. Array task 9 stays excluded
+from any refs rerun array. Ruling 2026-09-01, **disk adoption 2026-09-02**; the
+row's `target_id` was re-derived from the current `_targets.py` registry and
+matched (`sha256:6b93f0e52ecd`; `restamp_target_block.py` report mode: 1
+unchanged, 0 refused). MGE is a mesh-free target, so R-20260902-01's mesh
+positions rule does not gate it.
 
 ## Still needed
 

@@ -44,6 +44,13 @@
       "path": "results/baselines/InferenceRefs_v1/delaunay_pos_fp64/",
       "certified_by": "R-20260902-01",
       "target_id": "sha256:dcbcb9627b78"
+    },
+    {
+      "target_key": "mge_pos_fp64",
+      "cell": "imaging/mge/hst",
+      "path": "results/baselines/InferenceRefs_v1/mge_pos_fp64/",
+      "certified_by": "R-20260901-01",
+      "target_id": "sha256:6b93f0e52ecd"
     }
   ]
 }

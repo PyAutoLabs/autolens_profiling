@@ -35,7 +35,7 @@ delivered); see the ruling note below for which rows that leaves standing.
 | 6 | `slam_source_pix_nn_pos_fp64` | `imaging/slam_source_pix_nn/hst` | on | auto (SLaM convention) | new target, positions arm — **LANDED 342091 — adopted 2026-09-02 into `InferenceRefs_v1/slam_source_pix_nn_pos_fp64/` under R-20260902-01** |
 | ~~7~~ | ~~`knn_fp64`~~ | ~~`imaging/knn/hst`~~ | ~~off~~ | ~~—~~ | **struck 2026-09-02 (R-20260902-01)** — positions-off mesh row, not citable; replaced by row 12 |
 | ~~8~~ | ~~`delaunay_matern_fp64`~~ | ~~`imaging/delaunay_matern/hst`~~ | ~~off~~ | ~~—~~ | **struck 2026-09-02 (R-20260902-01)** — positions-off mesh row, not citable; replaced by row 13 |
-| 9 | `mge_pos_fp64` | `imaging/mge/hst` | on | auto | `mge_fp64` (off) is certified; the positions-on arm is not — **adopted from 340210_9 under R-20260901-01** |
+| 9 | `mge_pos_fp64` | `imaging/mge/hst` | on | auto | `mge_fp64` (off) is certified; the positions-on arm is not — **adopted 2026-09-02 into `InferenceRefs_v1/mge_pos_fp64/` under R-20260901-01** (run 340210_9, not a 342091 row) |
 | 10 | `delaunay_pos_fp64` | `imaging/delaunay/hst` | on | auto | `delaunay_fp64` (off) is certified; the positions-on arm is not — **LANDED 342091 — adopted 2026-09-02 into `InferenceRefs_v1/delaunay_pos_fp64/` under R-20260902-01** |
 | 11 | `pixelization_pos_fp64` | `imaging/pixelization/hst` | on | auto (`pos_tauto0.2_f1e8`) | positions-off row 0 struck; positions-on replacement, needs a new phase / array task |
 | 12 | `knn_pos_fp64` | `imaging/knn/hst` | on | auto (`pos_tauto0.2_f1e8`) | positions-off row 7 struck; positions-on replacement, needs a new phase / array task |
