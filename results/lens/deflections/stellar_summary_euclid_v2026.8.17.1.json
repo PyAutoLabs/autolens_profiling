@@ -1,0 +1,376 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "omp_num_threads": "1",
+    "cpu_count": 8
+  },
+  "instrument": "euclid",
+  "cell": "stellar",
+  "configuration": {
+    "pixel_scale_arcsec": 0.1,
+    "mask_radius_arcsec": 3.5,
+    "grid2d_n_points": 3841,
+    "irregular_n_points": 4468,
+    "sub_size_list": [
+      4,
+      2,
+      1
+    ],
+    "radial_list": [
+      0.3,
+      0.6
+    ],
+    "n_repeats": 20,
+    "cprofile_repeats": 5,
+    "omp_num_threads": "1",
+    "use_jax": false,
+    "xp": "numpy"
+  },
+  "profiles": {
+    "Gaussian": {
+      "family": "stellar",
+      "params": {
+        "centre": [
+          0.0,
+          0.0
+        ],
+        "ell_comps": [
+          0.11111111111111108,
+          6.803593328596405e-18
+        ],
+        "intensity": 1.0,
+        "sigma": 1.0
+      },
+      "grid2d_s": 0.0021848499995940074,
+      "irregular_s": 0.002384099999744649,
+      "tracer_s": 0.009517250000044442,
+      "grid2d_n_points": 3841,
+      "irregular_n_points": 4468,
+      "tracer_n_points": 3841,
+      "tracer_over_raw": 4.356019864893678,
+      "cprofile_repeats": 5,
+      "cprofile_note": "Attribution only, from a SEPARATE cProfile pass over cprofile_repeats calls of deflections_yx_2d_from(grid=grids.pixelization). Every number here is inflated by the profiler's per-call tracing overhead and by the profiler's own bookkeeping; they say WHICH function the time is charged to, not how long it takes. The headline timings are grid2d_s / irregular_s / tracer_s, measured with the profiler off.",
+      "cprofile_top": [
+        {
+          "func": "_driver.py:365(_call_grid2d)",
+          "ncalls": 1.0,
+          "tottime_s": 4.14e-06,
+          "cumtime_s": 0.00658768
+        },
+        {
+          "func": "gaussian.py:64(deflections_yx_2d_from)",
+          "ncalls": 1.0,
+          "tottime_s": 7.86e-06,
+          "cumtime_s": 0.006583540000000001
+        },
+        {
+          "func": "to_vector_yx.py:44(wrapper)",
+          "ncalls": 1.0,
+          "tottime_s": 7.98e-06,
+          "cumtime_s": 0.00657568
+        },
+        {
+          "func": "abstract.py:95(result)",
+          "ncalls": 3.0,
+          "tottime_s": 1.742e-05,
+          "cumtime_s": 0.0065611
+        },
+        {
+          "func": "abstract.py:91(evaluate_func)",
+          "ncalls": 3.0,
+          "tottime_s": 4.9680000000000005e-05,
+          "cumtime_s": 0.00628582
+        },
+        {
+          "func": "transform.py:63(wrapper)",
+          "ncalls": 1.0,
+          "tottime_s": 2.268e-05,
+          "cumtime_s": 0.00627592
+        },
+        {
+          "func": "gaussian.py:76(deflections_2d_via_analytic_from)",
+          "ncalls": 1.0,
+          "tottime_s": 7.334e-05,
+          "cumtime_s": 0.00484618
+        },
+        {
+          "func": "gaussian.py:163(zeta_from)",
+          "ncalls": 1.0,
+          "tottime_s": 0.00049344,
+          "cumtime_s": 0.0046146
+        },
+        {
+          "func": "gaussian.py:189(wofz)",
+          "ncalls": 2.0,
+          "tottime_s": 0.0038984000000000006,
+          "cumtime_s": 0.00406884
+        },
+        {
+          "func": "to_grid.py:53(wrapper)",
+          "ncalls": 2.0,
+          "tottime_s": 1.706e-05,
+          "cumtime_s": 0.0014038
+        },
+        {
+          "func": "geometry_profiles.py:402(transformed_to_reference_frame_grid_from)",
+          "ncalls": 1.0,
+          "tottime_s": 6.450000000000001e-05,
+          "cumtime_s": 0.00092148
+        },
+        {
+          "func": "geometry_util.py:489(transform_grid_2d_to_reference_frame)",
+          "ncalls": 1.0,
+          "tottime_s": 0.0005271000000000001,
+          "cumtime_s": 0.0007276
+        }
+      ]
+    },
+    "Gaussian_sph_case": {
+      "family": "stellar",
+      "params": {
+        "centre": [
+          0.0,
+          0.0
+        ],
+        "ell_comps": [
+          0.0,
+          0.0
+        ],
+        "intensity": 1.0,
+        "sigma": 1.0
+      },
+      "grid2d_s": 0.00707814999987022,
+      "irregular_s": 0.0063494000000901,
+      "tracer_s": 0.010092649999478454,
+      "grid2d_n_points": 3841,
+      "irregular_n_points": 4468,
+      "tracer_n_points": 3841,
+      "tracer_over_raw": 1.4258881204359197,
+      "cprofile_repeats": 5,
+      "cprofile_note": "Attribution only, from a SEPARATE cProfile pass over cprofile_repeats calls of deflections_yx_2d_from(grid=grids.pixelization). Every number here is inflated by the profiler's per-call tracing overhead and by the profiler's own bookkeeping; they say WHICH function the time is charged to, not how long it takes. The headline timings are grid2d_s / irregular_s / tracer_s, measured with the profiler off.",
+      "cprofile_top": [
+        {
+          "func": "_driver.py:365(_call_grid2d)",
+          "ncalls": 1.0,
+          "tottime_s": 2.3400000000000005e-06,
+          "cumtime_s": 0.005016120000000001
+        },
+        {
+          "func": "gaussian.py:64(deflections_yx_2d_from)",
+          "ncalls": 1.0,
+          "tottime_s": 4.6400000000000005e-06,
+          "cumtime_s": 0.005013780000000001
+        },
+        {
+          "func": "to_vector_yx.py:44(wrapper)",
+          "ncalls": 1.0,
+          "tottime_s": 4.88e-06,
+          "cumtime_s": 0.0050091400000000005
+        },
+        {
+          "func": "abstract.py:95(result)",
+          "ncalls": 3.0,
+          "tottime_s": 1.172e-05,
+          "cumtime_s": 0.00500122
+        },
+        {
+          "func": "abstract.py:91(evaluate_func)",
+          "ncalls": 3.0,
+          "tottime_s": 1.448e-05,
+          "cumtime_s": 0.00479254
+        },
+        {
+          "func": "transform.py:63(wrapper)",
+          "ncalls": 1.0,
+          "tottime_s": 1.3460000000000002e-05,
+          "cumtime_s": 0.004785940000000001
+        },
+        {
+          "func": "gaussian.py:76(deflections_2d_via_analytic_from)",
+          "ncalls": 1.0,
+          "tottime_s": 8.772000000000001e-05,
+          "cumtime_s": 0.00394096
+        },
+        {
+          "func": "gaussian.py:163(zeta_from)",
+          "ncalls": 1.0,
+          "tottime_s": 0.00036236000000000005,
+          "cumtime_s": 0.00373866
+        },
+        {
+          "func": "gaussian.py:189(wofz)",
+          "ncalls": 2.0,
+          "tottime_s": 0.00320654,
+          "cumtime_s": 0.0033456
+        },
+        {
+          "func": "to_grid.py:53(wrapper)",
+          "ncalls": 2.0,
+          "tottime_s": 1.2040000000000002e-05,
+          "cumtime_s": 0.0008296000000000001
+        },
+        {
+          "func": "geometry_profiles.py:402(transformed_to_reference_frame_grid_from)",
+          "ncalls": 1.0,
+          "tottime_s": 7.000000000000001e-06,
+          "cumtime_s": 0.00052176
+        },
+        {
+          "func": "geometry_util.py:489(transform_grid_2d_to_reference_frame)",
+          "ncalls": 1.0,
+          "tottime_s": 0.00032276,
+          "cumtime_s": 0.00047448000000000005
+        }
+      ]
+    }
+  },
+  "pinned_expected": {
+    "Gaussian": {
+      "abs_sum": 4180.333690680411,
+      "abs_max": 1.0045988177091016,
+      "n_non_finite": 0,
+      "sample": [
+        [
+          -0.08522848494462226,
+          0.8223777453345469
+        ],
+        [
+          0.5347249918530897,
+          0.5347249214028542
+        ],
+        [
+          0.8223777453345469,
+          -0.08522848494462215
+        ],
+        [
+          0.6240102336059056,
+          -0.6240102336059056
+        ],
+        [
+          0.08522848494462248,
+          -0.8223777453345469
+        ],
+        [
+          -0.5347249918530889,
+          -0.534724921402854
+        ],
+        [
+          -0.8223777453345469,
+          0.08522848494462237
+        ],
+        [
+          -0.6240102336059056,
+          0.6240102336059056
+        ],
+        [
+          -0.0165657619170127,
+          0.14931861195098112
+        ],
+        [
+          0.14931861195098112,
+          -0.016565761917012686
+        ],
+        [
+          0.016565761917012825,
+          -0.149318611950981
+        ],
+        [
+          -0.149318611950981,
+          0.016565761917012797
+        ],
+        [
+          0.6179239070956012,
+          0.6179239070956013
+        ],
+        [
+          0.5837883046591865,
+          -0.5837883046591864
+        ],
+        [
+          -0.6179239070956013,
+          -0.6179239070956012
+        ],
+        [
+          -0.5837883046591865,
+          0.5837883046591864
+        ]
+      ]
+    },
+    "Gaussian_sph_case": {
+      "abs_sum": 3591.144756659599,
+      "abs_max": 0.9025078735164493,
+      "n_non_finite": 0,
+      "sample": [
+        [
+          0.0,
+          0.786932145996389
+        ],
+        [
+          0.5564879497286803,
+          0.5564369184553719
+        ],
+        [
+          0.7869812951406054,
+          4.818428722308927e-17
+        ],
+        [
+          0.5564879497286802,
+          -0.5564369184553721
+        ],
+        [
+          9.638023174804209e-17,
+          -0.786932145996389
+        ],
+        [
+          -0.5564879497286802,
+          -0.5564369184553721
+        ],
+        [
+          -0.7869812951406054,
+          4.818428722308927e-17
+        ],
+        [
+          -0.5564879497286803,
+          0.5564369184553719
+        ],
+        [
+          -6.592519057047366e-37,
+          0.1491521048809516
+        ],
+        [
+          0.14916687747075894,
+          9.13292525159712e-18
+        ],
+        [
+          1.8267678339669237e-17,
+          -0.1491521048809516
+        ],
+        [
+          -0.14916687747075894,
+          9.13292525159712e-18
+        ],
+        [
+          0.4951122158556473,
+          0.4950889571720242
+        ],
+        [
+          0.49511221585564746,
+          -0.4950889571720242
+        ],
+        [
+          -0.49511221585564746,
+          -0.4950889571720242
+        ],
+        [
+          -0.4951122158556473,
+          0.4950889571720242
+        ]
+      ]
+    }
+  },
+  "pinned_drift": [],
+  "pin_provenance": null
+}
