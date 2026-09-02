@@ -17,12 +17,18 @@ implements, and the per-target tolerances a run is judged against in
 | Target key | Cell | Certified by | target_id |
 |---|---|---|---|
 | `mge_fp64` | `imaging/mge/hst` | retro | `sha256:770ccd47439d` |
-| `delaunay_fp64` | `imaging/delaunay/hst` | retro | `sha256:6b016e5752ac` |
+| ~~`delaunay_fp64`~~ | ~~`imaging/delaunay/hst`~~ | **dropped** (R-20260901-03) | ~~`sha256:6b016e5752ac`~~ |
 | `delaunay_nn_pos_fp64` | `imaging/delaunay_nn/hst` | R-20260902-01 | `sha256:1e007f224db6` |
 | `slam_source_pix_pos_fp64` | `imaging/slam_source_pix/hst` | R-20260902-01 | `sha256:b29616db92cf` |
 | `slam_source_pix_nn_pos_fp64` | `imaging/slam_source_pix_nn/hst` | R-20260902-01 | `sha256:8021b4b697ff` |
 | `delaunay_pos_fp64` | `imaging/delaunay/hst` | R-20260902-01 | `sha256:dcbcb9627b78` |
 | `mge_pos_fp64` | `imaging/mge/hst` | R-20260901-01 | `sha256:6b93f0e52ecd` |
+
+`delaunay_fp64` was **dropped** on 2026-09-01 by PyAutoCortex ruling
+[R-20260901-03](https://github.com/PyAutoLabs/PyAutoCortex/blob/main/rulings/2026/09/R-20260901-03.md):
+its source run is a positions-off demagnified-source solution, so it is not
+citable under the mesh positions rule (R-20260902-01). The directory is kept as
+failure-mode documentation only; `delaunay_pos_fp64` is its replacement.
 
 The first two were adopted **retroactively** from existing same-stack
 (`2026.8.17.1`) Nautilus runs rather than re-run for the Phase 1 commit —

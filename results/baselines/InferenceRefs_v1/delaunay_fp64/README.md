@@ -1,5 +1,10 @@
 # InferenceRefs_v1 — `delaunay_fp64`
 
+> **DROPPED 2026-09-01 — PyAutoCortex ruling [R-20260901-03](https://github.com/PyAutoLabs/PyAutoCortex/blob/main/rulings/2026/09/R-20260901-03.md).**
+> The source run is a positions-off, demagnified-source solution. Not a citable
+> reference under the mesh positions rule (R-20260902-01). Kept as failure-mode
+> documentation only; the positions-on `delaunay_pos_fp64` row replaces it.
+
 Reference baseline for the `delaunay_fp64` target
 (`_targets.TARGETS["delaunay_fp64"]` — `imaging/delaunay/hst`, positions
 off, fp64), adopted **retroactively** (`certified_by: "retro"` in
