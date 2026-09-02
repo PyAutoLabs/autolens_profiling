@@ -16,6 +16,34 @@
       "path": "results/baselines/InferenceRefs_v1/delaunay_fp64/",
       "certified_by": "retro",
       "target_id": "sha256:6b016e5752ac"
+    },
+    {
+      "target_key": "delaunay_nn_pos_fp64",
+      "cell": "imaging/delaunay_nn/hst",
+      "path": "results/baselines/InferenceRefs_v1/delaunay_nn_pos_fp64/",
+      "certified_by": "R-20260902-01",
+      "target_id": "sha256:1e007f224db6"
+    },
+    {
+      "target_key": "slam_source_pix_pos_fp64",
+      "cell": "imaging/slam_source_pix/hst",
+      "path": "results/baselines/InferenceRefs_v1/slam_source_pix_pos_fp64/",
+      "certified_by": "R-20260902-01",
+      "target_id": "sha256:b29616db92cf"
+    },
+    {
+      "target_key": "slam_source_pix_nn_pos_fp64",
+      "cell": "imaging/slam_source_pix_nn/hst",
+      "path": "results/baselines/InferenceRefs_v1/slam_source_pix_nn_pos_fp64/",
+      "certified_by": "R-20260902-01",
+      "target_id": "sha256:8021b4b697ff"
+    },
+    {
+      "target_key": "delaunay_pos_fp64",
+      "cell": "imaging/delaunay/hst",
+      "path": "results/baselines/InferenceRefs_v1/delaunay_pos_fp64/",
+      "certified_by": "R-20260902-01",
+      "target_id": "sha256:dcbcb9627b78"
     }
   ]
 }
