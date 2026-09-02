@@ -1557,3 +1557,32 @@ source fits, the `Cluster` folder and the `point_source` folder — moved (not
 deleted) to a new `output/legacy_point/` folder, so the active tree is clean and
 updates with each task. Laptop action, queued as a local-dev prompt in the Mind
 (`draft/maintenance/autolens_profiling/legacy_point_output_sweep.md`).
+
+---
+
+## 2026-09-01 — Rulings of record (PyAutoCortex backfill)
+
+From 2026-09-01 the **ruling of record** for every verdict in this programme lives in
+PyAutoCortex `rulings/`; this ledger is **scientific commentary** and cites the id. The
+entries below are **mapped, not edited** — per this file's append-only rule, nothing above
+this line has been touched.
+
+| DECISIONS entry (date — title, line anchor) | Cortex ruling id(s) | Cortex phase path |
+|---|---|---|
+| 2026-08-31 — Programme rewind (human directive): quarantine the runs, restart at Phase 1 under batch-and-review (`DECISIONS.md:1443`) | **R-20260831-01** (drop) | `phases/inference_programme/rewind_2026_08_31.md` |
+| *(same rewind, no entry of its own here — the only prior record was `PyAutoMind/batches/reviews/2026-08-31-am.md`)*: the four am members rejected wholesale | **R-20260831-02** `smc_probe_342018`, **R-20260831-03** `knn_rerun_342016_7`, **R-20260831-04** `refs_5_6_342016_56`, **R-20260831-05** `slogdet_ab_342017` (all drop) | `phases/inference_programme/{smc_probe_342018,knn_rerun_342016_7,refs_5_6_342016_56,slogdet_ab_342017}.md` |
+| 2026-09-01 — Batch 2026-08-31-pm review rulings (InferenceRefs_v1 legacy-reuse members) (`DECISIONS.md:1522`) — mge-pos-ref-reuse ACCEPTED | **R-20260901-01** (accept) | `phases/inference_programme/mge_pos_ref_reuse.md` |
+| …same entry — mge-fp64-retro-baseline ACCEPTED | **R-20260901-02** (accept) | `phases/inference_programme/mge_fp64_retro_baseline.md` |
+| …same entry — delaunay-fp64-retro-baseline REJECTED, carrying the PositionsLH directive (follow-up autolens_profiling#203) | **R-20260901-03** (drop) | `phases/inference_programme/delaunay_fp64_retro_baseline.md` |
+| Failed submissions `342008`/`342009`/`342010` — no entry here; carried UNREVIEWED through the 2026-08-31-am batch, then superseded by the rewind | **R-20260901-04** (drop) | `phases/inference_programme/failed_submissions_342008_10.md` |
+| The `342091` refs redo wave (named in the pm entry, `DECISIONS.md:1551`) | *awaiting ruling — no id yet* | `phases/inference_programme/inference_refs_v1_redo.md` |
+
+**Follow-ups filed in PyAutoMind at this backfill** (both carry an `Issue:` line opened at
+filing — see the prompt's `Issue:` line; `start_dev` reuses it, never opens a second):
+
+- `PyAutoMind/draft/maintenance/autolens_profiling/legacy_point_output_sweep.md` — the
+  `output/legacy_point/` sweep directed by R-20260901-03's output-tree consequence.
+- `PyAutoMind/draft/feature/autogalaxy/ell_comps_joint_disk_constraint.md` — the W10
+  `|e| = 1.41421` box-corner finding.
+
+Ruling of record: PyAutoCortex `rulings/2026/08/` and `rulings/2026/09/` (ids above).
