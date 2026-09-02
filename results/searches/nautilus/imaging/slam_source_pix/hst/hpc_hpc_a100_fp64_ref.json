@@ -32,86 +32,87 @@
   "log_det_method": null,
   "model_summary": {
     "free_parameters": 16,
-    "best_fit": "lens.mass.einstein_radius=0.7783  lens.mass.centre=(-0.007, 0.001)  shear=(0.1028, 0.0473)"
+    "best_fit": "lens.mass.einstein_radius=0.6358  lens.mass.centre=(0.037, -0.024)  shear=(0.0409, 0.2524)"
   },
   "results": {
-    "log_evidence": 30718.022488215163,
-    "max_log_likelihood": 30809.456494490136,
-    "posterior_samples": 127256,
+    "log_evidence": 30951.788489103357,
+    "max_log_likelihood": 31026.63541815301,
+    "posterior_samples": 104300,
     "truth_log_likelihood": 31521.743789581255,
-    "delta_max_ll_vs_truth": -712.2872950911187,
+    "delta_max_ll_vs_truth": -495.1083714282431,
     "bar_source": "truth_tracer",
     "posterior_stats": {
       "centre_0": {
-        "mean": -0.009376789380886567,
-        "std": 0.002326909071195156
+        "mean": 0.04105338233692408,
+        "std": 0.023797638184562545
       },
       "centre_1": {
-        "mean": -0.0006455112655932749,
-        "std": 0.0012979533449879416
+        "mean": -0.033252919273727026,
+        "std": 0.02692796300344196
       },
       "ell_comps_0": {
-        "mean": 0.20755564062923254,
-        "std": 0.0020215517025276176
+        "mean": -0.5072480581627249,
+        "std": 0.03591639981976578
       },
       "ell_comps_1": {
-        "mean": 0.1257726549036507,
-        "std": 0.004386089637477446
+        "mean": 0.21111200169940608,
+        "std": 0.04082087270573018
       },
       "einstein_radius": {
-        "mean": 0.7697889483085995,
-        "std": 0.008733017271683127
+        "mean": 0.6580249716790975,
+        "std": 0.021197127080912974
       },
       "gamma_1": {
-        "mean": 0.09441342318425705,
-        "std": 0.01096946852367535
+        "mean": 0.04612734278967464,
+        "std": 0.011131224519599721
       },
       "gamma_2": {
-        "mean": 0.04626893168919063,
-        "std": 0.000613816779281453
+        "mean": 0.24545430174406252,
+        "std": 0.007255576156672886
       },
       "weight_power": {
-        "mean": 0.26741260260971367,
-        "std": 0.0004396002981017002
+        "mean": 1.3616497723458767,
+        "std": 0.3784172636258029
       },
       "weight_floor": {
-        "mean": 0.00013878391555818053,
-        "std": 0.0001609833142805032
+        "mean": 0.14185111628104335,
+        "std": 0.05036663150355824
       },
       "inner_coefficient": {
-        "mean": 0.0012178763324969938,
-        "std": 0.003560473267658383
+        "mean": 0.0009172136319169444,
+        "std": 0.002627221956092735
       },
       "outer_coefficient": {
-        "mean": 106.5711715419123,
-        "std": 16.964465283174167
+        "mean": 112.98374754716917,
+        "std": 21.563953116818126
       },
       "signal_scale": {
-        "mean": 0.0056270481559546354,
-        "std": 0.0009195584338897232
+        "mean": 0.005253539201473702,
+        "std": 0.0009894371094866408
       }
-    }
+    },
+    "penalty_at_best": null
   },
   "performance": {
-    "total_wall_s": 5663.270579814911,
-    "viz_wall_s": 60.90512642893009,
+    "total_wall_s": 4403.975692749023,
+    "viz_wall_s": 67.86646210448816,
     "viz_n_calls": 8,
     "viz_disabled": false,
-    "sampler_wall_s": 5602.365453385981,
-    "likelihood_evals": 127300,
-    "time_per_eval_ms": 44.009155171924434,
-    "stored_samples": 127300,
+    "sampler_wall_s": 4336.109230644535,
+    "likelihood_evals": 104300,
+    "time_per_eval_ms": 41.57343461787666,
+    "stored_samples": 104300,
     "gradient_evals": null,
-    "kish_ess": 4386.790583332848,
-    "evals_per_ess": 29.018937098037696,
-    "ess_per_min": 46.981482588018686
+    "kish_ess": 4545.786723244112,
+    "evals_per_ess": 22.944323249192394,
+    "ess_per_min": 62.90136822824101
   },
   "schema_version": 2,
   "target": {
     "target_id": "sha256:37150b628da1",
     "cell": "imaging/slam_source_pix/hst",
     "model_dim": 16,
-    "priors_ref": "_targets.py@bf2c8742c334",
+    "priors_ref": "_targets.py@7f2f14765de7",
     "likelihood": {
       "log_det_method": null,
       "positive_only": true,

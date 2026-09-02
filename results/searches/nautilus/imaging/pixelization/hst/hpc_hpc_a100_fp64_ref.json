@@ -11,7 +11,7 @@
     "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
     "omp_num_threads": null,
     "cpu_count": 124,
-    "nvidia_smi": "NVIDIA A100 80GB PCIe, 5151 MiB, 81920 MiB"
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 5149 MiB, 81920 MiB"
   },
   "use_mixed_precision": false,
   "sampler_config": {
@@ -32,70 +32,71 @@
   "log_det_method": null,
   "model_summary": {
     "free_parameters": 12,
-    "best_fit": "lens.mass.einstein_radius=0.8944  lens.mass.centre=(0.057, -0.092)  shear=(-0.0558, 0.0303)"
+    "best_fit": "lens.mass.einstein_radius=0.9642  lens.mass.centre=(0.050, -0.049)  shear=(0.1001, 0.0245)"
   },
   "results": {
-    "log_evidence": 29590.70371954217,
-    "max_log_likelihood": 29670.327178836145,
-    "posterior_samples": 101296,
+    "log_evidence": 29778.056929435577,
+    "max_log_likelihood": 29835.450888594398,
+    "posterior_samples": 38192,
     "truth_log_likelihood": 31521.743789581255,
-    "delta_max_ll_vs_truth": -1851.4166107451092,
+    "delta_max_ll_vs_truth": -1686.2929009868567,
     "bar_source": "truth_tracer",
     "posterior_stats": {
       "centre_0": {
-        "mean": 0.05723079526523174,
-        "std": 0.0005801429385573231
+        "mean": 0.04949072059109266,
+        "std": 0.004501101778333641
       },
       "centre_1": {
-        "mean": -0.09185462306467168,
-        "std": 0.0003273004889107485
+        "mean": -0.032333489930226195,
+        "std": 0.012708429928891459
       },
       "ell_comps_0": {
-        "mean": -0.38316657667558446,
-        "std": 0.0008091708867832659
+        "mean": -0.5219937353793148,
+        "std": 0.011975967454202827
       },
       "ell_comps_1": {
-        "mean": -0.20338382911072372,
-        "std": 0.00082452945883441
+        "mean": 0.15852899805391366,
+        "std": 0.019886953725907635
       },
       "einstein_radius": {
-        "mean": 0.8938081243568803,
-        "std": 0.0028012090608043423
+        "mean": 0.9686947638476633,
+        "std": 0.012089106027207154
       },
       "gamma_1": {
-        "mean": -0.056658007844373644,
-        "std": 0.0029795736647217786
+        "mean": 0.1001991219841772,
+        "std": 0.0060110626628798475
       },
       "gamma_2": {
-        "mean": 0.030279651057672077,
-        "std": 0.00016075366410306098
+        "mean": 0.01836932330905793,
+        "std": 0.007057739065691711
       },
       "coefficient": {
-        "mean": 1.2234709004030635,
-        "std": 0.030184786816345968
+        "mean": 1.3904806772315366,
+        "std": 0.03423090728085762
       }
-    }
+    },
+    "penalty_at_best": null
   },
   "performance": {
-    "total_wall_s": 6535.366914272308,
-    "viz_wall_s": 55.205749753979035,
+    "total_wall_s": 2152.542499065399,
+    "viz_wall_s": 59.50901060807519,
     "viz_n_calls": 8,
     "viz_disabled": false,
-    "sampler_wall_s": 6480.161164518329,
-    "likelihood_evals": 101296,
-    "time_per_eval_ms": 63.97252768636796,
-    "stored_samples": 101296,
+    "sampler_wall_s": 2093.033488457324,
+    "likelihood_evals": 38192,
+    "time_per_eval_ms": 54.80292963074267,
+    "stored_samples": 38192,
     "gradient_evals": null,
-    "kish_ess": 3687.995047372911,
-    "evals_per_ess": 27.466414325083413,
-    "ess_per_min": 34.147253011850424
+    "kish_ess": 4193.455901886374,
+    "evals_per_ess": 9.107523935763771,
+    "ess_per_min": 120.21181481364177
   },
   "schema_version": 2,
   "target": {
     "target_id": "sha256:801ba27b970d",
     "cell": "imaging/pixelization/hst",
     "model_dim": 12,
-    "priors_ref": "_targets.py@bf2c8742c334",
+    "priors_ref": "_targets.py@7f2f14765de7",
     "likelihood": {
       "log_det_method": null,
       "positive_only": true,
@@ -144,7 +145,7 @@
       "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
       "omp_num_threads": null,
       "cpu_count": 124,
-      "nvidia_smi": "NVIDIA A100 80GB PCIe, 5151 MiB, 81920 MiB"
+      "nvidia_smi": "NVIDIA A100 80GB PCIe, 5149 MiB, 81920 MiB"
     }
   }
 }

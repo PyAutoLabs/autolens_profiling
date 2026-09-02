@@ -32,70 +32,71 @@
   "log_det_method": null,
   "model_summary": {
     "free_parameters": 12,
-    "best_fit": "lens.mass.einstein_radius=1.0559  lens.mass.centre=(0.011, 0.056)  shear=(-0.1391, 0.0137)"
+    "best_fit": "lens.mass.einstein_radius=1.0559  lens.mass.centre=(0.009, 0.055)  shear=(-0.1399, 0.0129)"
   },
   "results": {
-    "log_evidence": 30591.09050826123,
-    "max_log_likelihood": 30650.768205837492,
-    "posterior_samples": 46400,
+    "log_evidence": 30591.127951022416,
+    "max_log_likelihood": 30650.828348585957,
+    "posterior_samples": 46200,
     "truth_log_likelihood": 31521.743789581255,
-    "delta_max_ll_vs_truth": -870.9755837437624,
+    "delta_max_ll_vs_truth": -870.9154409952971,
     "bar_source": "truth_tracer",
     "posterior_stats": {
       "centre_0": {
-        "mean": 0.00995732641685351,
-        "std": 0.013574357569534484
+        "mean": 0.010420607182835565,
+        "std": 0.013381834443443676
       },
       "centre_1": {
-        "mean": 0.05481705141870506,
-        "std": 0.004780796445469415
+        "mean": 0.05473735870912832,
+        "std": 0.004589260605265099
       },
       "ell_comps_0": {
-        "mean": -0.009884525908146832,
-        "std": 0.014976863208830779
+        "mean": -0.009716975855971428,
+        "std": 0.014625252339697043
       },
       "ell_comps_1": {
-        "mean": -0.47957663942390105,
-        "std": 0.013286265639859612
+        "mean": -0.4798242318950229,
+        "std": 0.013000505214173516
       },
       "einstein_radius": {
-        "mean": 1.042881707518583,
-        "std": 0.012685112468643536
+        "mean": 1.0431365282719445,
+        "std": 0.012622156103977065
       },
       "gamma_1": {
-        "mean": -0.13403602624432978,
-        "std": 0.00644708027819792
+        "mean": -0.1343846058489781,
+        "std": 0.006560032582788487
       },
       "gamma_2": {
-        "mean": 0.02408589578431765,
-        "std": 0.007130808515719546
+        "mean": 0.024391074409406126,
+        "std": 0.006823667418319065
       },
       "coefficient": {
-        "mean": 1.3929476366244533,
-        "std": 0.04246855527357083
+        "mean": 1.3937732131502338,
+        "std": 0.043194672317964276
       }
-    }
+    },
+    "penalty_at_best": null
   },
   "performance": {
-    "total_wall_s": 3230.234533071518,
-    "viz_wall_s": 59.72073531278875,
+    "total_wall_s": 3167.0973784923553,
+    "viz_wall_s": 56.129848380805925,
     "viz_n_calls": 8,
     "viz_disabled": false,
-    "sampler_wall_s": 3170.513797758729,
-    "likelihood_evals": 46400,
-    "time_per_eval_ms": 68.3300387448002,
-    "stored_samples": 46400,
+    "sampler_wall_s": 3110.9675301115494,
+    "likelihood_evals": 46200,
+    "time_per_eval_ms": 67.336959526224,
+    "stored_samples": 46200,
     "gradient_evals": null,
-    "kish_ess": 4400.651577943787,
-    "evals_per_ess": 10.543893143587725,
-    "ess_per_min": 83.2795917378689
+    "kish_ess": 4285.382668836148,
+    "evals_per_ess": 10.780834191534941,
+    "ess_per_min": 82.65048016137578
   },
   "schema_version": 2,
   "target": {
     "target_id": "sha256:6a13b9a4e64b",
     "cell": "imaging/delaunay_nn/hst",
     "model_dim": 12,
-    "priors_ref": "_targets.py@bf2c8742c334",
+    "priors_ref": "_targets.py@7f2f14765de7",
     "likelihood": {
       "log_det_method": null,
       "positive_only": true,
