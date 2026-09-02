@@ -43,87 +43,87 @@
         ],
         "einstein_radius": 1.6
       },
-      "grid2d_s": 0.0007105499998942832,
-      "irregular_s": 0.0007352499997068662,
-      "tracer_s": 0.0009336499997516512,
+      "grid2d_s": 0.0006962499992368976,
+      "irregular_s": 0.0006573500013473677,
+      "tracer_s": 0.0008997000004455913,
       "grid2d_n_points": 3841,
       "irregular_n_points": 4468,
       "tracer_n_points": 3841,
-      "tracer_over_raw": 1.3139821263676885,
+      "tracer_over_raw": 1.2922082605840985,
       "cprofile_repeats": 5,
       "cprofile_note": "Attribution only, from a SEPARATE cProfile pass over cprofile_repeats calls of deflections_yx_2d_from(grid=grids.pixelization). Every number here is inflated by the profiler's per-call tracing overhead and by the profiler's own bookkeeping; they say WHICH function the time is charged to, not how long it takes. The headline timings are grid2d_s / irregular_s / tracer_s, measured with the profiler off.",
       "cprofile_top": [
         {
           "func": "_driver.py:365(_call_grid2d)",
           "ncalls": 1.0,
-          "tottime_s": 9.000000000000001e-07,
-          "cumtime_s": 0.0008649
+          "tottime_s": 7.6e-07,
+          "cumtime_s": 0.0007957800000000001
         },
         {
           "func": "to_vector_yx.py:44(wrapper)",
           "ncalls": 1.0,
-          "tottime_s": 2.68e-06,
-          "cumtime_s": 0.000864
+          "tottime_s": 2.4e-06,
+          "cumtime_s": 0.0007950200000000001
         },
         {
           "func": "abstract.py:95(result)",
           "ncalls": 3.0,
-          "tottime_s": 7.620000000000001e-06,
-          "cumtime_s": 0.0008598200000000001
+          "tottime_s": 4.5e-06,
+          "cumtime_s": 0.00079124
         },
         {
           "func": "abstract.py:91(evaluate_func)",
           "ncalls": 3.0,
-          "tottime_s": 6.2399999999999995e-06,
-          "cumtime_s": 0.0007596200000000001
+          "tottime_s": 5.36e-06,
+          "cumtime_s": 0.0007085800000000001
         },
         {
           "func": "transform.py:63(wrapper)",
           "ncalls": 1.0,
-          "tottime_s": 5.62e-06,
-          "cumtime_s": 0.00075694
+          "tottime_s": 5.3400000000000005e-06,
+          "cumtime_s": 0.00070618
         },
         {
           "func": "to_grid.py:62(wrapper)",
           "ncalls": 2.0,
-          "tottime_s": 4.48e-06,
-          "cumtime_s": 0.00047466
+          "tottime_s": 3.8400000000000005e-06,
+          "cumtime_s": 0.00043432000000000003
         },
         {
           "func": "geometry_profiles.py:402(transformed_to_reference_frame_grid_from)",
           "ncalls": 1.0,
-          "tottime_s": 3.980000000000001e-06,
-          "cumtime_s": 0.00033796000000000005
+          "tottime_s": 3.7000000000000006e-06,
+          "cumtime_s": 0.00031334
         },
         {
           "func": "geometry_util.py:489(transform_grid_2d_to_reference_frame)",
           "ncalls": 1.0,
-          "tottime_s": 0.00022192000000000002,
-          "cumtime_s": 0.00031076000000000004
+          "tottime_s": 0.00020038,
+          "cumtime_s": 0.00028474
         },
         {
           "func": "isothermal.py:101(deflections_yx_2d_from)",
           "ncalls": 1.0,
-          "tottime_s": 0.00012496,
-          "cumtime_s": 0.00027576
+          "tottime_s": 0.00012274,
+          "cumtime_s": 0.00026574000000000004
         },
         {
           "func": "convert.py:46(axis_ratio_and_angle_from)",
           "ncalls": 8.0,
-          "tottime_s": 0.00011378,
-          "cumtime_s": 0.0001188
+          "tottime_s": 0.00011410000000000001,
+          "cumtime_s": 0.00011868
         },
         {
           "func": "fromnumeric.py:2338(sum)",
           "ncalls": 5.0,
-          "tottime_s": 8.220000000000001e-06,
-          "cumtime_s": 0.00011762
+          "tottime_s": 7.22e-06,
+          "cumtime_s": 0.00010932000000000002
         },
         {
           "func": "fromnumeric.py:69(_wrapreduction)",
           "ncalls": 5.0,
-          "tottime_s": 1.106e-05,
-          "cumtime_s": 0.00010854
+          "tottime_s": 1.0680000000000001e-05,
+          "cumtime_s": 0.0001013
         }
       ]
     },
@@ -136,87 +136,87 @@
         ],
         "einstein_radius": 1.6
       },
-      "grid2d_s": 0.00038199999971766374,
-      "irregular_s": 0.00027909999971598154,
-      "tracer_s": 0.0005767000002379064,
+      "grid2d_s": 0.00033974999860220123,
+      "irregular_s": 0.0002691999998205574,
+      "tracer_s": 0.0005481500011228491,
       "grid2d_n_points": 3841,
       "irregular_n_points": 4468,
       "tracer_n_points": 3841,
-      "tracer_over_raw": 1.5096858656129462,
+      "tracer_over_raw": 1.6133922100899094,
       "cprofile_repeats": 5,
       "cprofile_note": "Attribution only, from a SEPARATE cProfile pass over cprofile_repeats calls of deflections_yx_2d_from(grid=grids.pixelization). Every number here is inflated by the profiler's per-call tracing overhead and by the profiler's own bookkeeping; they say WHICH function the time is charged to, not how long it takes. The headline timings are grid2d_s / irregular_s / tracer_s, measured with the profiler off.",
       "cprofile_top": [
         {
           "func": "_driver.py:365(_call_grid2d)",
           "ncalls": 1.0,
-          "tottime_s": 1.1600000000000001e-06,
-          "cumtime_s": 0.00048625999999999997
+          "tottime_s": 1.08e-06,
+          "cumtime_s": 0.00047476
         },
         {
           "func": "to_vector_yx.py:44(wrapper)",
           "ncalls": 1.0,
-          "tottime_s": 2.74e-06,
-          "cumtime_s": 0.00048510000000000003
+          "tottime_s": 2.4e-06,
+          "cumtime_s": 0.00047368000000000003
         },
         {
           "func": "abstract.py:95(result)",
           "ncalls": 4.0,
-          "tottime_s": 6.42e-06,
-          "cumtime_s": 0.00048056
+          "tottime_s": 7.9e-06,
+          "cumtime_s": 0.00046974
         },
         {
           "func": "abstract.py:91(evaluate_func)",
           "ncalls": 4.0,
-          "tottime_s": 7.7e-06,
-          "cumtime_s": 0.00040336
+          "tottime_s": 7.2999999999999996e-06,
+          "cumtime_s": 0.00039388
         },
         {
           "func": "transform.py:63(wrapper)",
           "ncalls": 1.0,
-          "tottime_s": 3.5800000000000005e-06,
-          "cumtime_s": 0.00040052
+          "tottime_s": 3.52e-06,
+          "cumtime_s": 0.00039132
         },
         {
           "func": "to_grid.py:62(wrapper)",
           "ncalls": 3.0,
-          "tottime_s": 5.14e-06,
-          "cumtime_s": 0.00038148
+          "tottime_s": 4.84e-06,
+          "cumtime_s": 0.00037262000000000005
         },
         {
           "func": "isothermal.py:268(deflections_yx_2d_from)",
           "ncalls": 1.0,
-          "tottime_s": 4.7200000000000005e-06,
-          "cumtime_s": 0.00027154
+          "tottime_s": 4.6e-06,
+          "cumtime_s": 0.00026768
         },
         {
           "func": "geometry_profiles.py:131(_cartesian_grid_via_radial_from)",
           "ncalls": 1.0,
-          "tottime_s": 9.002000000000001e-05,
-          "cumtime_s": 0.00020864
+          "tottime_s": 8.936e-05,
+          "cumtime_s": 0.00020686000000000004
         },
         {
           "func": "uniform_2d.py:24(__init__)",
           "ncalls": 4.0,
-          "tottime_s": 1.196e-05,
-          "cumtime_s": 0.00013328
+          "tottime_s": 1.2220000000000002e-05,
+          "cumtime_s": 0.00012534
         },
         {
           "func": "grid_2d_util.py:130(convert_grid_2d)",
           "ncalls": 6.0,
-          "tottime_s": 7.960000000000002e-06,
-          "cumtime_s": 0.00012914
+          "tottime_s": 8.020000000000001e-06,
+          "cumtime_s": 0.00012294
         },
         {
           "func": "to_grid.py:20(via_grid_2d)",
           "ncalls": 3.0,
-          "tottime_s": 9.34e-06,
-          "cumtime_s": 0.00011712
+          "tottime_s": 1.18e-05,
+          "cumtime_s": 0.00011618000000000002
         },
         {
           "func": "grid_2d_util.py:90(check_grid_2d_and_mask_2d)",
           "ncalls": 6.0,
-          "tottime_s": 8.98e-06,
-          "cumtime_s": 0.00011036000000000002
+          "tottime_s": 8.62e-06,
+          "cumtime_s": 0.00010396000000000001
         }
       ]
     },
@@ -234,87 +234,87 @@
         "einstein_radius": 1.6,
         "slope": 2.2
       },
-      "grid2d_s": 0.0025921500000549713,
-      "irregular_s": 0.0028526000000965723,
-      "tracer_s": 0.0030069999997976993,
+      "grid2d_s": 0.002514649999284302,
+      "irregular_s": 0.0027195999973628204,
+      "tracer_s": 0.0026271999995515216,
       "grid2d_n_points": 3841,
       "irregular_n_points": 4468,
       "tracer_n_points": 3841,
-      "tracer_over_raw": 1.1600408925926087,
+      "tracer_over_raw": 1.0447577198811973,
       "cprofile_repeats": 5,
       "cprofile_note": "Attribution only, from a SEPARATE cProfile pass over cprofile_repeats calls of deflections_yx_2d_from(grid=grids.pixelization). Every number here is inflated by the profiler's per-call tracing overhead and by the profiler's own bookkeeping; they say WHICH function the time is charged to, not how long it takes. The headline timings are grid2d_s / irregular_s / tracer_s, measured with the profiler off.",
       "cprofile_top": [
         {
           "func": "_driver.py:365(_call_grid2d)",
           "ncalls": 1.0,
-          "tottime_s": 1.14e-06,
-          "cumtime_s": 0.00271504
+          "tottime_s": 1.04e-06,
+          "cumtime_s": 0.00249036
         },
         {
           "func": "to_vector_yx.py:44(wrapper)",
           "ncalls": 1.0,
-          "tottime_s": 2.86e-06,
-          "cumtime_s": 0.0027139000000000004
+          "tottime_s": 4.620000000000001e-06,
+          "cumtime_s": 0.00248932
         },
         {
           "func": "abstract.py:95(result)",
           "ncalls": 3.0,
-          "tottime_s": 4.620000000000001e-06,
-          "cumtime_s": 0.00270944
+          "tottime_s": 4.6400000000000005e-06,
+          "cumtime_s": 0.00248302
         },
         {
           "func": "abstract.py:91(evaluate_func)",
           "ncalls": 3.0,
-          "tottime_s": 6.120000000000001e-06,
-          "cumtime_s": 0.0026023400000000003
+          "tottime_s": 9.76e-06,
+          "cumtime_s": 0.00240052
         },
         {
           "func": "transform.py:63(wrapper)",
           "ncalls": 1.0,
-          "tottime_s": 6.020000000000001e-06,
-          "cumtime_s": 0.0025994800000000004
+          "tottime_s": 5.760000000000001e-06,
+          "cumtime_s": 0.00239606
         },
         {
           "func": "power_law.py:86(deflections_yx_2d_from)",
           "ncalls": 1.0,
-          "tottime_s": 0.0019883,
-          "cumtime_s": 0.00215048
+          "tottime_s": 0.0018431600000000004,
+          "cumtime_s": 0.00198604
         },
         {
           "func": "to_grid.py:62(wrapper)",
           "ncalls": 2.0,
-          "tottime_s": 4.52e-06,
-          "cumtime_s": 0.0004419
+          "tottime_s": 4.000000000000001e-06,
+          "cumtime_s": 0.0004033
         },
         {
           "func": "geometry_profiles.py:402(transformed_to_reference_frame_grid_from)",
           "ncalls": 1.0,
-          "tottime_s": 3.76e-06,
-          "cumtime_s": 0.00031672000000000004
+          "tottime_s": 3.5600000000000006e-06,
+          "cumtime_s": 0.00028576000000000003
         },
         {
           "func": "geometry_util.py:489(transform_grid_2d_to_reference_frame)",
           "ncalls": 1.0,
-          "tottime_s": 0.00020196000000000002,
-          "cumtime_s": 0.00028766
+          "tottime_s": 0.00018036000000000001,
+          "cumtime_s": 0.00025754
         },
         {
           "func": "convert.py:46(axis_ratio_and_angle_from)",
           "ncalls": 11.0,
-          "tottime_s": 0.00015776,
-          "cumtime_s": 0.00016444000000000002
+          "tottime_s": 0.00014386000000000002,
+          "cumtime_s": 0.0001499
         },
         {
           "func": "geometry_profiles.py:282(axis_ratio)",
           "ncalls": 9.0,
-          "tottime_s": 5.5e-06,
-          "cumtime_s": 0.00013716000000000002
+          "tottime_s": 4.7200000000000005e-06,
+          "cumtime_s": 0.00012194
         },
         {
           "func": "convert.py:98(axis_ratio_from)",
           "ncalls": 9.0,
-          "tottime_s": 4.680000000000001e-06,
-          "cumtime_s": 0.00013166
+          "tottime_s": 4.000000000000001e-06,
+          "cumtime_s": 0.00011721999999999999
         }
       ]
     },
@@ -328,87 +328,87 @@
         "einstein_radius": 1.6,
         "slope": 2.2
       },
-      "grid2d_s": 0.0005098500000713102,
-      "irregular_s": 0.0004106500000489177,
-      "tracer_s": 0.0006788000000597094,
+      "grid2d_s": 0.0004626000009011477,
+      "irregular_s": 0.0003619500002969289,
+      "tracer_s": 0.0006218499984242953,
       "grid2d_n_points": 3841,
       "irregular_n_points": 4468,
       "tracer_n_points": 3841,
-      "tracer_over_raw": 1.3313719720795705,
+      "tracer_over_raw": 1.3442498858904617,
       "cprofile_repeats": 5,
       "cprofile_note": "Attribution only, from a SEPARATE cProfile pass over cprofile_repeats calls of deflections_yx_2d_from(grid=grids.pixelization). Every number here is inflated by the profiler's per-call tracing overhead and by the profiler's own bookkeeping; they say WHICH function the time is charged to, not how long it takes. The headline timings are grid2d_s / irregular_s / tracer_s, measured with the profiler off.",
       "cprofile_top": [
         {
           "func": "_driver.py:365(_call_grid2d)",
           "ncalls": 1.0,
-          "tottime_s": 1.06e-06,
-          "cumtime_s": 0.0007163
+          "tottime_s": 9.800000000000001e-07,
+          "cumtime_s": 0.00059886
         },
         {
           "func": "to_vector_yx.py:44(wrapper)",
           "ncalls": 1.0,
-          "tottime_s": 2.5200000000000004e-06,
-          "cumtime_s": 0.00071524
+          "tottime_s": 2.1400000000000003e-06,
+          "cumtime_s": 0.0005978800000000001
         },
         {
           "func": "abstract.py:95(result)",
           "ncalls": 5.0,
-          "tottime_s": 8.48e-06,
-          "cumtime_s": 0.0007113800000000001
+          "tottime_s": 7.26e-06,
+          "cumtime_s": 0.00059458
         },
         {
           "func": "abstract.py:91(evaluate_func)",
           "ncalls": 5.0,
-          "tottime_s": 1.024e-05,
-          "cumtime_s": 0.00063776
+          "tottime_s": 8.88e-06,
+          "cumtime_s": 0.00052874
         },
         {
           "func": "transform.py:63(wrapper)",
           "ncalls": 1.0,
-          "tottime_s": 4.2800000000000005e-06,
-          "cumtime_s": 0.00063524
+          "tottime_s": 3.6000000000000003e-06,
+          "cumtime_s": 0.00052656
         },
         {
           "func": "power_law.py:280(deflections_yx_2d_from)",
           "ncalls": 1.0,
-          "tottime_s": 0.00010222000000000001,
-          "cumtime_s": 0.0005006800000000001
+          "tottime_s": 8.986000000000001e-05,
+          "cumtime_s": 0.00041198
         },
         {
           "func": "to_grid.py:62(wrapper)",
           "ncalls": 3.0,
-          "tottime_s": 5.84e-06,
-          "cumtime_s": 0.00040518000000000005
+          "tottime_s": 5.02e-06,
+          "cumtime_s": 0.00035318000000000003
         },
         {
           "func": "geometry_profiles.py:131(_cartesian_grid_via_radial_from)",
           "ncalls": 1.0,
-          "tottime_s": 9.934e-05,
-          "cumtime_s": 0.00022012
+          "tottime_s": 8.572e-05,
+          "cumtime_s": 0.00019272
         },
         {
           "func": "uniform_2d.py:24(__init__)",
           "ncalls": 4.0,
-          "tottime_s": 1.528e-05,
-          "cumtime_s": 0.00013464
-        },
-        {
-          "func": "abstract_mask.py:123(pixels_in_mask)",
-          "ncalls": 7.0,
-          "tottime_s": 2.4580000000000002e-05,
-          "cumtime_s": 0.00012848
+          "tottime_s": 1.16e-05,
+          "cumtime_s": 0.00012108000000000001
         },
         {
           "func": "grid_2d_util.py:130(convert_grid_2d)",
           "ncalls": 6.0,
-          "tottime_s": 8.62e-06,
-          "cumtime_s": 0.00012732000000000002
+          "tottime_s": 7.460000000000001e-06,
+          "cumtime_s": 0.0001167
         },
         {
           "func": "to_grid.py:20(via_grid_2d)",
           "ncalls": 3.0,
-          "tottime_s": 1e-05,
-          "cumtime_s": 0.00012412
+          "tottime_s": 9.12e-06,
+          "cumtime_s": 0.00011154
+        },
+        {
+          "func": "abstract_mask.py:123(pixels_in_mask)",
+          "ncalls": 7.0,
+          "tottime_s": 1.896e-05,
+          "cumtime_s": 0.00010432
         }
       ]
     }
