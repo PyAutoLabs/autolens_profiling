@@ -19,6 +19,11 @@
 #   hpc/sync logs                Download SLURM output/error logs only (fast, use mid-run)
 #   hpc/sync status              Dry run — show what a pull would transfer
 #
+#   A real `pull` also writes `$LOCAL_PULL_ROOT/.cortex/pull.json`: the size and mtime of
+#   every Nautilus checkpoint.hdf5 on RAL, which the pull itself excludes. It is how
+#   PyAutoCortex tells a run that is still advancing from one that has stalled. `status`
+#   is a dry run and never writes it.
+#
 # Jobs:
 #   hpc/sync submit <script>     sbatch a submit script from hpc/batch_gpu/ (or --cpu)
 #   hpc/sync jobs                Show queued/running jobs (squeue)
@@ -180,6 +185,106 @@ pull_logs() {
     pull_indices "$dryrun" "${LOG_INDICES[@]}"
 }
 
+# ---------------------------------------------------------------------------
+# Cortex pull manifest
+# ---------------------------------------------------------------------------
+# `${LOCAL_PULL_ROOT}/.cortex/pull.json` records the size and mtime of every Nautilus
+# `checkpoint.hdf5` on RAL at the moment of the pull. The pull deliberately excludes the
+# checkpoints themselves (`search_internal/` — large, and only readable on RAL), so
+# without this file nothing on the laptop can tell a run that is still advancing from one
+# that has stalled. PyAutoCortex `collect` reads it to score the checkpoint leg.
+#
+# Schema (v1):
+#   {"schema": 1, "pulled_at": "<ISO UTC>",
+#    "checkpoints": {"<run dir relative to the pull root>": {"bytes": N, "mtime": "<ISO>"}},
+#    "runs": {}}
+#
+# Keys are `output/searches/<…>/<hash>` — RAL's `output/searches/` maps 1:1 onto the
+# mirror. `runs` stays empty here: this repo's SLURM logs do not name the run directory a
+# job wrote, so a job id cannot honestly be linked to a checkpoint (subhalo_validation's
+# sync can, and fills it).
+#
+# Gathered with one `find` over the existing ControlMaster mux, read-only like the rest of
+# this script. A failed gather is not fatal: the manifest is still written, with empty
+# `checkpoints` and a `gather_error`. Written only by a real pull — `status` runs
+# `pull --dry-run` and must not touch it. `.cortex/` is gitignored in the mirror.
+write_pull_manifest() {
+    local manifest="${LOCAL_PULL_ROOT}/.cortex/pull.json"
+    local listing gather_error=""
+
+    listing="$(mktemp)"
+    if ! ssh "${HPC_HOST}" \
+        "find '${REMOTE_ROOT}/output/searches' -name checkpoint.hdf5 -printf '%s %T@ %p\n' 2>/dev/null || true" \
+        > "$listing" 2>/dev/null; then
+        gather_error="could not list checkpoints on ${HPC_HOST}"
+        : > "$listing"
+        echo "    WARNING: ${gather_error} — manifest written with no checkpoints"
+    fi
+
+    # The listing goes in by path, not on stdin: `python3 -` reads the program itself from
+    # stdin, so a pipe into it would be swallowed by the heredoc.
+    CORTEX_RAL_ROOT="${REMOTE_ROOT}" \
+    CORTEX_MANIFEST="$manifest" \
+    CORTEX_LISTING="$listing" \
+    CORTEX_GATHER_ERROR="$gather_error" \
+    python3 - <<'PYEOF'
+import json
+import os
+from datetime import datetime, timezone
+from pathlib import Path
+
+ral_root = os.environ["CORTEX_RAL_ROOT"].rstrip("/")
+manifest = Path(os.environ["CORTEX_MANIFEST"])
+gather_error = os.environ.get("CORTEX_GATHER_ERROR", "")
+
+checkpoints = {}
+for line in Path(os.environ["CORTEX_LISTING"]).read_text(errors="replace").splitlines():
+    line = line.strip()
+    if not line:
+        continue
+    parts = line.split(" ", 2)
+    if len(parts) != 3:
+        continue
+    size, mtime, path = parts
+    # PyAutoFit writes the checkpoint to <run dir>/files/search_internal/checkpoint.hdf5
+    # (AbstractPaths.search_internal_path is _files_path / "search_internal"), so the
+    # parent of search_internal is not the run directory — its `files/` is. The key is the
+    # run directory itself, which is what a Cortex member resolves, so the `files` segment
+    # is dropped.
+    run_dir = path.split("/search_internal/")[0].rstrip("/")
+    if run_dir.endswith("/files"):
+        run_dir = run_dir[: -len("/files")]
+    prefix = ral_root + "/"
+    if not run_dir.startswith(prefix):
+        continue
+    try:
+        checkpoints[run_dir[len(prefix):]] = {
+            "bytes": int(size),
+            "mtime": datetime.fromtimestamp(float(mtime), timezone.utc).isoformat(),
+        }
+    except ValueError:
+        continue
+
+document = {
+    "schema": 1,
+    "pulled_at": datetime.now(timezone.utc).isoformat(),
+    "checkpoints": checkpoints,
+    "runs": {},
+}
+if gather_error:
+    document["gather_error"] = gather_error
+
+manifest.parent.mkdir(parents=True, exist_ok=True)
+tmp = manifest.with_name(manifest.name + ".tmp")
+tmp.write_text(json.dumps(document, indent=2, sort_keys=True) + "\n")
+os.replace(tmp, manifest)  # atomic: a reader sees either the old file or the new one
+
+print(f"    .cortex/pull.json: {len(checkpoints)} checkpoint(s)")
+PYEOF
+
+    rm -f "$listing"
+}
+
 pull() {
     local dryrun="${1:-}"
 
@@ -200,6 +305,11 @@ pull() {
     done
 
     pull_indices "$dryrun" "${data_indices[@]}"
+
+    # Record the RAL checkpoint state this pull deliberately could not bring back.
+    if [[ -z "$dryrun" ]]; then
+        write_pull_manifest
+    fi
 }
 
 status() {

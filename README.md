@@ -2,6 +2,9 @@
 
 Profiling and run-time tracking for [PyAutoLens](https://github.com/PyAutoLabs/PyAutoLens) likelihood functions, simulators, and samplers across CPU, laptop GPU, and HPC GPU.
 
+> **Rulings of record live in [PyAutoCortex](https://github.com/PyAutoLabs/PyAutoCortex)**
+> (`projects.yaml`, row `inference_programme`) — see [`CORTEX.md`](CORTEX.md).
+
 ## Vision
 
 This repository is the single home for PyAutoLens performance measurement. It exists so that the run-times that matter for science — fitting a real lens, simulating an Euclid-resolution dataset, sampling a model with Nautilus — are visible, reproducible, and versioned across PyAutoLens releases.
