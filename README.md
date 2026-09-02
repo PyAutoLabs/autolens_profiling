@@ -142,6 +142,15 @@ Scripts are laid out **dataset-first, task-second**: `scripts/<dataset>/<task>/<
 `autolens_workspace*` repos. Each task's shared drivers, framework and narrative README (with the
 auto-tables) live under `scripts/misc/<task>/`; dataset-agnostic tooling lives under `scripts/misc/`.
 
+Beside those dataset-first families sits a second, **dataset-free** axis:
+[`scripts/lens/`](./scripts/lens/README.md) profiles a single **library component** — one function,
+one grid, one set of fiducial parameters — rather than a pipeline. A dataset is loaded only to build
+a realistic grid; nothing about the data enters the measurement. It answers *"what does this piece of
+the lensing calculation cost per call, and where inside it does the time go?"*, which is the evidence
+library-level optimisation work needs and a pipeline breakdown cannot give. Today that is
+[`lens/deflections/`](./scripts/lens/deflections/README.md) (deflection angles per mass profile);
+`convergence/`, `potential/` and `shear/` follow the same shape.
+
 | Task (`scripts/<dataset>/<task>/` + shared home) | Contents |
 |--------|----------|
 | `likelihood_runtime/` · [README](./scripts/misc/likelihood_runtime/README.md) | Full-pipeline JIT only, driven by `scripts/misc/likelihood_runtime/sweep.py` across CPU/GPU/A100 × fp64/mp. *How long will this likelihood take on this hardware?* |
@@ -155,6 +164,7 @@ auto-tables) live under `scripts/misc/<task>/`; dataset-agnostic tooling lives u
 | [`scripts/misc/hazards/`](./scripts/misc/hazards/README.md) | Numerical-hazard profiling — saturations, non-finite gradients, backend divergence, and conditioning mechanisms. |
 | [`scripts/misc/simulators/`](./scripts/misc/simulators/README.md) | Run-time tracking for the PyAutoLens simulators. |
 | [`scripts/misc/pipeline_resume/`](./scripts/misc/pipeline_resume/README.md) | SLaM pipeline resume overhead — the wall time a re-run pays per completed stage. |
+| [`scripts/lens/`](./scripts/lens/README.md) | **Library-component profiling** (dataset-free axis). [`deflections/`](./scripts/lens/deflections/README.md) — per-call deflection-angle cost per mass profile on the numpy CPU path, pinned on the values it computes. |
 | [`instruments/`](./instruments/README.md) | Instrument presets (pixel scale, shape) that frame every result. |
 | [`hpc/`](./hpc/README.md) | SLURM submit scripts for the RAL HPC (A100 rows of the sweep matrix). |
 | [`results/`](./results/README.md) | JSON + PNG artifacts written by the above scripts; named baselines. |
