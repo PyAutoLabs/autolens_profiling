@@ -22,6 +22,10 @@ scripts/
     searches/<sampler>/   Sampler / search profiling (Nautilus first)
     latent/               Latent-variable profiling
     quick_update/         Fast incremental re-profiling helpers (unversioned scratch tier)
+  lens/                 Second, DATASET-FREE axis: library-component profiling (one function, one
+                        grid, fiducial parameters) rather than a pipeline. lens/deflections/ =
+                        per-mass-profile deflection cost, pinned on the values computed. Shared
+                        driver sits beside the cells, not under misc/.
   misc/                 Dataset-agnostic material + each task's shared drivers / framework / README:
                         misc/likelihood_runtime/ (sweep.py + aggregate.py + README dashboard),
                         misc/searches/ (framework _*.py + sweep/aggregate), misc/vram/ (A100 vmap
