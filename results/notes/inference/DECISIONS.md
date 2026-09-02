@@ -1586,3 +1586,25 @@ filing — see the prompt's `Issue:` line; `start_dev` reuses it, never opens a 
   `|e| = 1.41421` box-corner finding.
 
 Ruling of record: PyAutoCortex `rulings/2026/08/` and `rulings/2026/09/` (ids above).
+
+---
+
+## 2026-09-02 — Rulings of record (append: the 342091 refs redo)
+
+Same convention as the 2026-09-01 backfill entry above, appended rather than edited
+(this file is append-only): the placeholder row *"The `342091` refs redo wave …
+awaiting ruling — no id yet"* is now answered.
+
+| DECISIONS entry (date — title, line anchor) | Cortex ruling id(s) | Cortex phase path |
+|---|---|---|
+| The `342091` refs redo wave (named in the 2026-08-31-pm entry, `DECISIONS.md:1551`; supersedes that entry's *awaiting ruling* placeholder row) | **R-20260902-01** (accept, scoped to the four positions-on rows) | `phases/inference_programme/inference_refs_v1_redo.md` |
+
+R-20260902-01 carries the **binding mesh positions rule** — a mesh / pixelization run
+without a `positions.info` file is unreliable and cannot be used or cited — which
+generalises R-20260901-03. Its consequences are recorded in
+`PROGRAMME.md` (2026-08-31 REWIND section and §"Phase 1") and in
+`results/baselines/InferenceRefs_v1/{INDEX.md,SUBMIT_LIST.md}`. The `mge_pos_fp64`
+baseline adopted the same day is the disk execution of **R-20260901-01** (row above),
+not a 342091 row.
+
+Ruling of record: PyAutoCortex `rulings/2026/09/R-20260902-01.md`.

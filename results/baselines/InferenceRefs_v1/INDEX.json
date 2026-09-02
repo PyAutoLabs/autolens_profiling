@@ -14,8 +14,10 @@
       "target_key": "delaunay_fp64",
       "cell": "imaging/delaunay/hst",
       "path": "results/baselines/InferenceRefs_v1/delaunay_fp64/",
-      "certified_by": "retro",
-      "target_id": "sha256:6b016e5752ac"
+      "certified_by": "dropped (R-20260901-03)",
+      "target_id": "sha256:6b016e5752ac",
+      "dropped": true,
+      "note": "Retro positions-off Delaunay row rejected by PyAutoCortex R-20260901-03 (demagnified-source solution); not citable under the mesh positions rule (R-20260902-01). Replacement: delaunay_pos_fp64."
     },
     {
       "target_key": "delaunay_nn_pos_fp64",
@@ -44,6 +46,13 @@
       "path": "results/baselines/InferenceRefs_v1/delaunay_pos_fp64/",
       "certified_by": "R-20260902-01",
       "target_id": "sha256:dcbcb9627b78"
+    },
+    {
+      "target_key": "mge_pos_fp64",
+      "cell": "imaging/mge/hst",
+      "path": "results/baselines/InferenceRefs_v1/mge_pos_fp64/",
+      "certified_by": "R-20260901-01",
+      "target_id": "sha256:6b93f0e52ecd"
     }
   ]
 }
