@@ -44,87 +44,87 @@
         "intensity": 1.0,
         "sigma": 1.0
       },
-      "grid2d_s": 0.0026839999995900143,
-      "irregular_s": 0.002982949999932316,
-      "tracer_s": 0.0030400999999073974,
+      "grid2d_s": 0.001807750000807573,
+      "irregular_s": 0.0019119000007776776,
+      "tracer_s": 0.0020532500002445886,
       "grid2d_n_points": 3841,
       "irregular_n_points": 4468,
       "tracer_n_points": 3841,
-      "tracer_over_raw": 1.1326751119119889,
+      "tracer_over_raw": 1.1358041760903574,
       "cprofile_repeats": 5,
       "cprofile_note": "Attribution only, from a SEPARATE cProfile pass over cprofile_repeats calls of deflections_yx_2d_from(grid=grids.pixelization). Every number here is inflated by the profiler's per-call tracing overhead and by the profiler's own bookkeeping; they say WHICH function the time is charged to, not how long it takes. The headline timings are grid2d_s / irregular_s / tracer_s, measured with the profiler off.",
       "cprofile_top": [
         {
           "func": "_driver.py:365(_call_grid2d)",
           "ncalls": 1.0,
-          "tottime_s": 1.7399999999999999e-06,
-          "cumtime_s": 0.00313362
+          "tottime_s": 8.000000000000002e-07,
+          "cumtime_s": 0.00200496
         },
         {
-          "func": "gaussian.py:64(deflections_yx_2d_from)",
+          "func": "gaussian.py:70(deflections_yx_2d_from)",
           "ncalls": 1.0,
-          "tottime_s": 3.1600000000000002e-06,
-          "cumtime_s": 0.00313188
+          "tottime_s": 1.7e-06,
+          "cumtime_s": 0.00200416
         },
         {
           "func": "to_vector_yx.py:44(wrapper)",
           "ncalls": 1.0,
-          "tottime_s": 3.7200000000000004e-06,
-          "cumtime_s": 0.00312872
+          "tottime_s": 4.540000000000001e-06,
+          "cumtime_s": 0.00200246
         },
         {
           "func": "abstract.py:95(result)",
           "ncalls": 3.0,
-          "tottime_s": 6.8e-06,
-          "cumtime_s": 0.00312288
+          "tottime_s": 4.22e-06,
+          "cumtime_s": 0.00199636
         },
         {
           "func": "abstract.py:91(evaluate_func)",
           "ncalls": 3.0,
-          "tottime_s": 9.2e-06,
-          "cumtime_s": 0.00297728
+          "tottime_s": 5.58e-06,
+          "cumtime_s": 0.0019136200000000002
         },
         {
           "func": "transform.py:63(wrapper)",
           "ncalls": 1.0,
-          "tottime_s": 8.24e-06,
-          "cumtime_s": 0.00297312
+          "tottime_s": 4.88e-06,
+          "cumtime_s": 0.00191112
         },
         {
-          "func": "gaussian.py:76(deflections_2d_via_analytic_from)",
+          "func": "gaussian.py:82(deflections_2d_via_analytic_from)",
           "ncalls": 1.0,
-          "tottime_s": 3.218e-05,
-          "cumtime_s": 0.00236364
+          "tottime_s": 3.5720000000000004e-05,
+          "cumtime_s": 0.0014587600000000001
         },
         {
-          "func": "gaussian.py:163(zeta_from)",
+          "func": "gaussian.py:177(zeta_from)",
           "ncalls": 1.0,
-          "tottime_s": 0.00021606,
-          "cumtime_s": 0.0022539
+          "tottime_s": 0.00014554000000000002,
+          "cumtime_s": 0.0013532000000000001
         },
         {
-          "func": "gaussian.py:189(wofz)",
+          "func": "mge.py:97(_wofz)",
           "ncalls": 2.0,
-          "tottime_s": 0.0019326200000000001,
-          "cumtime_s": 0.00200482
+          "tottime_s": 0.0011783800000000001,
+          "cumtime_s": 0.0011796
+        },
+        {
+          "func": "mge.py:109(_wofz_masked)",
+          "ncalls": 1.0,
+          "tottime_s": 4.3e-06,
+          "cumtime_s": 0.0006018800000000001
+        },
+        {
+          "func": "mge.py:273(wofz)",
+          "ncalls": 1.0,
+          "tottime_s": 6e-07,
+          "cumtime_s": 0.00058912
         },
         {
           "func": "to_grid.py:62(wrapper)",
           "ncalls": 2.0,
-          "tottime_s": 6.840000000000001e-06,
-          "cumtime_s": 0.0005999600000000001
-        },
-        {
-          "func": "geometry_profiles.py:402(transformed_to_reference_frame_grid_from)",
-          "ncalls": 1.0,
-          "tottime_s": 6.040000000000001e-06,
-          "cumtime_s": 0.0004020800000000001
-        },
-        {
-          "func": "geometry_util.py:489(transform_grid_2d_to_reference_frame)",
-          "ncalls": 1.0,
-          "tottime_s": 0.00025572,
-          "cumtime_s": 0.00036374000000000004
+          "tottime_s": 4.14e-06,
+          "cumtime_s": 0.00044664000000000005
         }
       ]
     },
@@ -142,231 +142,231 @@
         "intensity": 1.0,
         "sigma": 1.0
       },
-      "grid2d_s": 0.0029254500000206463,
-      "irregular_s": 0.003179599999839411,
-      "tracer_s": 0.0032453499998155166,
+      "grid2d_s": 0.0005462000008265022,
+      "irregular_s": 0.0005301500004861737,
+      "tracer_s": 0.0007340499996644212,
       "grid2d_n_points": 3841,
       "irregular_n_points": 4468,
       "tracer_n_points": 3841,
-      "tracer_over_raw": 1.1093506981122947,
+      "tracer_over_raw": 1.3439216377767613,
       "cprofile_repeats": 5,
       "cprofile_note": "Attribution only, from a SEPARATE cProfile pass over cprofile_repeats calls of deflections_yx_2d_from(grid=grids.pixelization). Every number here is inflated by the profiler's per-call tracing overhead and by the profiler's own bookkeeping; they say WHICH function the time is charged to, not how long it takes. The headline timings are grid2d_s / irregular_s / tracer_s, measured with the profiler off.",
       "cprofile_top": [
         {
           "func": "_driver.py:365(_call_grid2d)",
           "ncalls": 1.0,
-          "tottime_s": 1.5599999999999999e-06,
-          "cumtime_s": 0.0033442200000000006
+          "tottime_s": 8.8e-07,
+          "cumtime_s": 0.00065412
         },
         {
-          "func": "gaussian.py:64(deflections_yx_2d_from)",
+          "func": "gaussian.py:70(deflections_yx_2d_from)",
           "ncalls": 1.0,
-          "tottime_s": 3.18e-06,
-          "cumtime_s": 0.00334266
+          "tottime_s": 1.72e-06,
+          "cumtime_s": 0.00065324
         },
         {
           "func": "to_vector_yx.py:44(wrapper)",
           "ncalls": 1.0,
-          "tottime_s": 3.6400000000000003e-06,
-          "cumtime_s": 0.00333948
+          "tottime_s": 2.06e-06,
+          "cumtime_s": 0.00065152
         },
         {
           "func": "abstract.py:95(result)",
           "ncalls": 3.0,
-          "tottime_s": 7.08e-06,
-          "cumtime_s": 0.0033334800000000006
+          "tottime_s": 4.04e-06,
+          "cumtime_s": 0.00064806
         },
         {
           "func": "abstract.py:91(evaluate_func)",
           "ncalls": 3.0,
-          "tottime_s": 9.240000000000001e-06,
-          "cumtime_s": 0.0031955200000000003
+          "tottime_s": 5.060000000000001e-06,
+          "cumtime_s": 0.0005606200000000001
         },
         {
           "func": "transform.py:63(wrapper)",
           "ncalls": 1.0,
-          "tottime_s": 8.12e-06,
-          "cumtime_s": 0.00319132
-        },
-        {
-          "func": "gaussian.py:76(deflections_2d_via_analytic_from)",
-          "ncalls": 1.0,
-          "tottime_s": 3.274e-05,
-          "cumtime_s": 0.0025517
-        },
-        {
-          "func": "gaussian.py:163(zeta_from)",
-          "ncalls": 1.0,
-          "tottime_s": 0.00020740000000000003,
-          "cumtime_s": 0.0024530800000000003
-        },
-        {
-          "func": "gaussian.py:189(wofz)",
-          "ncalls": 2.0,
-          "tottime_s": 0.0021378400000000002,
-          "cumtime_s": 0.00221896
+          "tottime_s": 4.340000000000001e-06,
+          "cumtime_s": 0.00055824
         },
         {
           "func": "to_grid.py:62(wrapper)",
           "ncalls": 2.0,
-          "tottime_s": 7.42e-06,
-          "cumtime_s": 0.0006301
+          "tottime_s": 3.68e-06,
+          "cumtime_s": 0.00039250000000000005
         },
         {
           "func": "geometry_profiles.py:402(transformed_to_reference_frame_grid_from)",
           "ncalls": 1.0,
-          "tottime_s": 5.48e-06,
-          "cumtime_s": 0.00042042
+          "tottime_s": 3.32e-06,
+          "cumtime_s": 0.00027622000000000004
         },
         {
           "func": "geometry_util.py:489(transform_grid_2d_to_reference_frame)",
           "ncalls": 1.0,
-          "tottime_s": 0.00026684,
-          "cumtime_s": 0.00038124000000000003
+          "tottime_s": 0.00017570000000000002,
+          "cumtime_s": 0.00025344
+        },
+        {
+          "func": "gaussian.py:82(deflections_2d_via_analytic_from)",
+          "ncalls": 1.0,
+          "tottime_s": 3.26e-06,
+          "cumtime_s": 0.0001605
+        },
+        {
+          "func": "mge.py:142(_spherical_mge_deflections_from)",
+          "ncalls": 1.0,
+          "tottime_s": 0.00010302,
+          "cumtime_s": 0.00013672
+        },
+        {
+          "func": "fromnumeric.py:2338(sum)",
+          "ncalls": 6.0,
+          "tottime_s": 8.580000000000001e-06,
+          "cumtime_s": 0.00011746
         }
       ]
     }
   },
   "pinned_expected": {
     "Gaussian": {
-      "abs_sum": 4180.333690680411,
-      "abs_max": 1.0045988177091016,
+      "abs_sum": 4180.333936988291,
+      "abs_max": 1.004598819684994,
       "n_non_finite": 0,
       "sample": [
         [
-          -0.08522848494462226,
-          0.8223777453345469
+          -0.08522849052042059,
+          0.8223777592115288
         ],
         [
-          0.5347249918530897,
-          0.5347249214028542
+          0.5347232749072048,
+          0.5347232749072048
         ],
         [
-          0.8223777453345469,
-          -0.08522848494462215
+          0.8223777592115288,
+          -0.08522849052042047
         ],
         [
-          0.6240102336059056,
-          -0.6240102336059056
+          0.6240102400561088,
+          -0.6240102400561087
         ],
         [
-          0.08522848494462248,
-          -0.8223777453345469
+          0.08522849052042097,
+          -0.8223777592115287
         ],
         [
-          -0.5347249918530889,
-          -0.534724921402854
+          -0.5347232749072052,
+          -0.5347232749072051
         ],
         [
-          -0.8223777453345469,
-          0.08522848494462237
+          -0.8223777592115287,
+          0.08522849052042086
         ],
         [
-          -0.6240102336059056,
-          0.6240102336059056
+          -0.6240102400561088,
+          0.6240102400561087
         ],
         [
-          -0.0165657619170127,
-          0.14931861195098112
+          -0.016565763250107057,
+          0.14931860950686004
         ],
         [
-          0.14931861195098112,
-          -0.016565761917012686
+          0.14931860950686004,
+          -0.016565763250107043
         ],
         [
-          0.016565761917012825,
-          -0.149318611950981
+          0.016565763250108057,
+          -0.1493186095068597
         ],
         [
-          -0.149318611950981,
-          0.016565761917012797
+          -0.1493186095068597,
+          0.01656576325010803
         ],
         [
-          0.6179239070956012,
-          0.6179239070956013
+          0.6179244621552085,
+          0.6179244621552086
         ],
         [
-          0.5837883046591865,
-          -0.5837883046591864
+          0.5837883073848549,
+          -0.5837883073848548
         ],
         [
-          -0.6179239070956013,
-          -0.6179239070956012
+          -0.6179244621552097,
+          -0.6179244621552095
         ],
         [
-          -0.5837883046591865,
-          0.5837883046591864
+          -0.5837883073848549,
+          0.5837883073848548
         ]
       ]
     },
     "Gaussian_sph_case": {
-      "abs_sum": 3591.144756659599,
-      "abs_max": 0.9025078735164493,
+      "abs_sum": 3590.885170005575,
+      "abs_max": 0.9024533744335073,
       "n_non_finite": 0,
       "sample": [
         [
           0.0,
-          0.786932145996389
+          0.7869386805747332
         ],
         [
-          0.5564879497286803,
-          0.5564369184553719
+          0.5564496774123882,
+          0.5564496774123883
         ],
         [
-          0.7869812951406054,
-          4.818428722308927e-17
+          0.7869386805747332,
+          4.818609681455442e-17
         ],
         [
-          0.5564879497286802,
-          -0.5564369184553721
+          0.5564496774123883,
+          -0.5564496774123882
         ],
         [
-          9.638023174804209e-17,
-          -0.786932145996389
+          9.637219362910884e-17,
+          -0.7869386805747332
         ],
         [
-          -0.5564879497286802,
-          -0.5564369184553721
+          -0.5564496774123883,
+          -0.5564496774123882
         ],
         [
-          -0.7869812951406054,
-          4.818428722308927e-17
+          -0.7869386805747332,
+          4.818609681455442e-17
         ],
         [
-          -0.5564879497286803,
-          0.5564369184553719
+          -0.5564496774123882,
+          0.5564496774123883
         ],
         [
-          -6.592519057047366e-37,
-          0.1491521048809516
+          0.0,
+          0.14915940518355933
         ],
         [
-          0.14916687747075894,
-          9.13292525159712e-18
+          0.14915940518355933,
+          9.133379406038452e-18
         ],
         [
-          1.8267678339669237e-17,
-          -0.1491521048809516
+          1.8266758812076904e-17,
+          -0.14915940518355933
         ],
         [
-          -0.14916687747075894,
-          9.13292525159712e-18
+          -0.14915940518355933,
+          9.133379406038452e-18
         ],
         [
-          0.4951122158556473,
-          0.4950889571720242
+          0.4950550061047418,
+          0.49505500610474185
         ],
         [
-          0.49511221585564746,
-          -0.4950889571720242
+          0.49505500610474185,
+          -0.4950550061047418
         ],
         [
-          -0.49511221585564746,
-          -0.4950889571720242
+          -0.49505500610474185,
+          -0.4950550061047418
         ],
         [
-          -0.4951122158556473,
-          0.4950889571720242
+          -0.4950550061047418,
+          0.49505500610474185
         ]
       ]
     }

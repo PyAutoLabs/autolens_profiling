@@ -423,3 +423,225 @@ So read this table the way the before pass asked to be read:
 Finding 1 of the before pass is the remaining target: `gNFW` still costs 293 ms on hst and
 `gNFWSph` 301 ms, essentially all of it in `mge.py:wofz`. Phase 1 removed the wrapper around that
 math; it did not make the math cheaper.
+
+---
+
+# After phase 2 — `scipy.special.wofz` + the exact spherical MGE branch (2026-09-02)
+
+Phase 1 removed the *wrapper* around the MGE math and left finding 1 open: `gNFW` still cost
+293 ms on hst and `gNFWSph` 301 ms, essentially all of it in the hand-rolled Faddeeva kernel
+`mge.py:wofz`. Phase 2 is the library change that goes after that math, filed as
+[PyAutoGalaxy#596](https://github.com/PyAutoLabs/PyAutoGalaxy/issues/596).
+
+| Repo | SHA | What it does |
+|---|---|---|
+| PyAutoGalaxy | `09785e32` | `MGEDecomposer.wofz` dispatches to `scipy.special.wofz` on numpy (the hand-rolled rational approximation is kept for JAX tracing); `Gaussian.wofz` deduped onto it; `_wofz_masked` skips the second Faddeeva call where the Gaussian envelope has underflowed; new `_spherical_mge_deflections_from` takes the exact q → 1 radial form on the numpy path |
+
+Parent is `e76c062e` (the phase-1 merge), so this is again a one-commit A/B, and the "before"
+column below is the **committed phase-1 after** artifact for every cell.
+
+**The JAX path is untouched and bit-identical** (a jitted `gNFW` deflection matches to max abs
+diff 0.0): the dispatch only changes what runs when `xp is np`.
+
+## Why the answers moved — the two mechanisms, adjudicated
+
+Both mechanisms move pinned values, and in both cases the **new** value is the more accurate one.
+Neither is a tolerance being loosened.
+
+### 1. Faddeeva accuracy — the routine that was replaced is the inaccurate side
+
+Against an **mpmath reference at dps 40**, over the argument range these profiles actually
+evaluate:
+
+| Faddeeva implementation | max relative error vs mpmath (dps 40) |
+|---|---|
+| hand-rolled `mge.py:wofz` rational approximation (the old numpy path) | **3.0e-6** |
+| `scipy.special.wofz` (the new numpy path) | **1.3e-14** |
+
+So the ~6-significant-figure routine is the one being retired. Every wofz-driven pin move below
+is ≤ ~4e-6 relative — exactly the size of the old routine's own error — and it moves *towards*
+the reference, not away from it.
+
+The `_wofz_masked` skip is separately bounded: only `Im(z) >= 0` is ever passed, where
+`|w(z)| <= 1`, so the term dropped where the Gaussian envelope has underflowed is negligible to
+< 1e-15 — three orders of magnitude below float64 round-off on these sums, and nine below the
+error it replaces.
+
+### 2. The spherical branch — the clamp bias measured by lifting the clamp
+
+The MGE deflection is an elliptical formula; the spherical members used to reach it with the axis
+ratio **clamped to `q = 0.9999`**, because the elliptical form is singular at q = 1. The new
+branch instead evaluates the exact q → 1 limit,
+
+    alpha_r(r) = sum_j 2 A_j sigma_j^2 (1 - exp(-r^2 / 2 sigma_j^2)) / r
+
+with no Faddeeva call at all. That it is the right limit was checked by **lifting the clamp** and
+letting the elliptical path converge to it:
+
+| q | `gNFWSph` rel. difference (elliptical path vs the exact form) | `Gaussian` (q → 1) |
+|---|---|---|
+| 0.999 | 6.4e-4 | 8.4e-4 |
+| 0.99999 | 6.4e-6 | 8.4e-6 |
+| 0.999999 | 6.4e-7 | 8.4e-7 |
+
+Linear in (1 − q), to the exact form, in both profiles. Read back at the clamp itself
+(1 − q = 1e-4) that is a **~6e-5 relative bias** the old spherical deflections carried — which is
+precisely the size of the `abs_sum` / `abs_max` pin moves recorded below.
+
+The clamp also produced **spurious cross-axis deflections**: a strictly spherical profile has no
+tangential component, but at q = 0.9999 the elliptical formula returns a tiny non-zero one. The
+16-coordinate sample pins caught two of them, and both are now **exactly 0** (`gNFWSph`
+−3.078e-8 → 0; `Gaussian_sph_case` −6.593e-37 → 0). Those are the only two pin entries whose
+*relative* shift is 1.0, which is why `--repin-force` was required.
+
+## Pin drift — every moved value, with its mechanism
+
+`total.py` (`Isothermal`, `IsothermalSph`, `PowerLaw`, `PowerLawSph`) has **no MGE profile**, and
+its pins were re-run on both instruments and **PASSED untouched** — no `--repin`, `pinned_drift`
+empty, `pin_provenance` `null`. The same is true of `NFW` and `NFWSph` inside `dark.py`: both have
+closed-form deflections that never enter `mge.py`, and both diffed at exactly `0.000e+00` on every
+pinned scalar and all 32 sample values. That is the control: only the MGE-routed profiles moved.
+
+| Profile · pin | old (phase-1) | new (phase 2) | rel. shift | Mechanism |
+|---|---|---|---|---|
+| `gNFW.abs_sum` (hst) | 64242.42298664075 | 64242.42549321639 | 3.90e-08 | scipy wofz |
+| `gNFW.abs_max` (hst) | 3.5464245674350785 | 3.5464245920500037 | 6.94e-09 | scipy wofz |
+| `gNFW.sample[29]` (both) | −2.3386045451451705 | −2.3386138347416985 | **3.97e-06** | scipy wofz — inside the retired routine's own 3.0e-6 error |
+| `gNFW.abs_sum` (euclid) | 16071.750238845096 | 16071.750916861929 | 4.22e-08 | scipy wofz |
+| `gNFW.abs_max` (euclid) | 3.541525075621922 | 3.5415250998628403 | 6.85e-09 | scipy wofz |
+| `gNFWSph.abs_sum` (hst) | 70483.143338306 | 70480.27024532984 | **4.08e-05** | q = 0.9999 clamp bias removed |
+| `gNFWSph.abs_max` (hst) | 3.930477262532153 | 3.930229113965614 | **6.31e-05** | clamp bias removed |
+| `gNFWSph.abs_sum` (euclid) | 17629.28040028201 | 17628.561740673365 | **4.08e-05** | clamp bias removed |
+| `gNFWSph.abs_max` (euclid) | 3.9238007576720246 | 3.923553220872915 | **6.31e-05** | clamp bias removed |
+| `gNFWSph.sample[0]` (both) | −3.078160248954665e-08 | **0.0** | 1.00e+00 | spurious cross-axis deflection → exactly 0 |
+| `Gaussian.abs_sum` (hst) | 16710.89555761894 | 16710.89642173353 | 5.17e-08 | scipy wofz |
+| `Gaussian.abs_max` (both) | 1.0045988177091016 | 1.004598819684994 | 1.97e-09 | scipy wofz |
+| `Gaussian.sample[2]` (both) | 0.5347249918530897 | 0.5347232749072048 | **3.21e-06** | scipy wofz |
+| `Gaussian.abs_sum` (euclid) | 4180.333690680411 | 4180.333936988291 | 5.89e-08 | scipy wofz |
+| `Gaussian_sph_case.abs_sum` (hst) | 14360.33826028308 | 14359.300577425658 | **7.23e-05** | clamp bias removed |
+| `Gaussian_sph_case.abs_max` (both) | 0.9025078735164493 | 0.9024533744335073 | **6.04e-05** | clamp bias removed |
+| `Gaussian_sph_case.abs_sum` (euclid) | 3591.144756659599 | 3590.885170005575 | **7.23e-05** | clamp bias removed |
+| `Gaussian_sph_case.sample[16]` (both) | −6.592519057047366e-37 | **0.0** | 1.00e+00 | spurious cross-axis deflection → exactly 0 |
+
+`n_non_finite` is unchanged everywhere (0 for every MGE profile; `PowerLawSph`'s 2 is in the
+untouched `total` cell).
+
+`dark.py` and `stellar.py` were re-pinned on both instruments with
+`--repin --repin-reason "…" --repin-force`, the diff read first in a refused (non-forced) pass;
+`--repin-force` was needed **only** because of the two exact-zero entries, whose relative shift is
+1.0 by construction. Each re-pinned cell was then re-run **without** `--repin`: all four
+**PASSED** at rtol 1e-6. The reason string is stored as `pin_provenance` in the re-pin run's JSON.
+
+## The after table — phase-1 after (committed) → phase 2
+
+Same host, same day, `OMP_NUM_THREADS=1`, median of 20 timed calls. Only the four MGE-routed
+profiles are expected to move; the rest are printed in the dashboard and are noise in both
+directions.
+
+### `hst` — 0.05"/px · 15361 Grid2D points · 17980 over-sampled points
+
+| Profile | Cell | Grid2D before → after | Grid2D × | Irregular before → after | Irreg × | Tracer before → after | Tracer × | Pin |
+|---------|------|-----------------------|----------|--------------------------|---------|-----------------------|----------|-----|
+| `gNFW` | dark | 292.78 ms → 95.62 ms | **3.06×** | 343.15 ms → 117.62 ms | 2.92× | 280.71 ms → 99.62 ms | **2.82×** | re-pinned, PASS |
+| `gNFWSph` | dark | 300.94 ms → 4.52 ms | **66.56×** | 336.95 ms → 5.11 ms | 65.96× | 275.06 ms → 4.79 ms | **57.39×** | re-pinned, PASS |
+| `Gaussian` | stellar | 11.07 ms → 6.56 ms | **1.69×** | 13.70 ms → 8.31 ms | 1.65× | 13.96 ms → 7.94 ms | **1.76×** | re-pinned, PASS |
+| `Gaussian_sph_case` | stellar | 12.86 ms → 2.13 ms | **6.05×** | 14.12 ms → 2.27 ms | 6.23× | 13.62 ms → 2.81 ms | **4.85×** | re-pinned, PASS |
+| `NFW` | dark | 3.53 ms → 2.23 ms | 1.58× | 3.85 ms → 2.46 ms | 1.57× | 3.81 ms → 2.63 ms | 1.45× | PASS untouched |
+| `NFWSph` | dark | 4.17 ms → 2.99 ms | 1.39× | 4.34 ms → 3.25 ms | 1.33× | 4.35 ms → 3.20 ms | 1.36× | PASS untouched |
+| `Isothermal` | total | 2.07 ms → 1.99 ms | 1.04× | 2.21 ms → 2.08 ms | 1.07× | 2.70 ms → 2.41 ms | 1.12× | PASS untouched |
+| `IsothermalSph` | total | 985 µs → 962 µs | 1.02× | 932 µs → 944 µs | 0.99× | 1.43 ms → 1.59 ms | 0.90× | PASS untouched |
+| `PowerLaw` | total | 9.14 ms → 10.55 ms | 0.87× | 10.04 ms → 12.52 ms | 0.80× | 9.00 ms → 10.84 ms | 0.83× | PASS untouched |
+| `PowerLawSph` | total | 1.23 ms → 1.39 ms | 0.89× | 1.21 ms → 1.39 ms | 0.87× | 1.68 ms → 1.86 ms | 0.91× | PASS untouched |
+
+### `euclid` — 0.1"/px · 3841 Grid2D points · 4468 over-sampled points
+
+| Profile | Cell | Grid2D before → after | Grid2D × | Irregular before → after | Irreg × | Tracer before → after | Tracer × | Pin |
+|---------|------|-----------------------|----------|--------------------------|---------|-----------------------|----------|-----|
+| `gNFW` | dark | 54.60 ms → 28.24 ms | **1.93×** | 75.84 ms → 33.40 ms | 2.27× | 71.04 ms → 29.75 ms | **2.39×** | re-pinned, PASS |
+| `gNFWSph` | dark | 61.39 ms → 1.63 ms | **37.56×** | 81.71 ms → 1.70 ms | 48.03× | 93.22 ms → 1.83 ms | **51.00×** | re-pinned, PASS |
+| `Gaussian` | stellar | 2.68 ms → 1.81 ms | **1.48×** | 2.98 ms → 1.91 ms | 1.56× | 3.04 ms → 2.05 ms | **1.48×** | re-pinned, PASS |
+| `Gaussian_sph_case` | stellar | 2.93 ms → 546 µs | **5.36×** | 3.18 ms → 530 µs | 6.00× | 3.25 ms → 734 µs | **4.42×** | re-pinned, PASS |
+| `NFW` | dark | 961 µs → 900 µs | 1.07× | 975 µs → 924 µs | 1.06× | 1.19 ms → 1.22 ms | 0.97× | PASS untouched |
+| `NFWSph` | dark | 1.14 ms → 1.12 ms | 1.02× | 1.11 ms → 1.12 ms | 1.00× | 1.31 ms → 1.31 ms | 1.00× | PASS untouched |
+| `Isothermal` | total | 711 µs → 696 µs | 1.02× | 735 µs → 657 µs | 1.12× | 934 µs → 900 µs | 1.04× | PASS untouched |
+| `IsothermalSph` | total | 382 µs → 340 µs | 1.12× | 279 µs → 269 µs | 1.04× | 577 µs → 548 µs | 1.05× | PASS untouched |
+| `PowerLaw` | total | 2.59 ms → 2.51 ms | 1.03× | 2.85 ms → 2.72 ms | 1.05× | 3.01 ms → 2.63 ms | 1.14× | PASS untouched |
+| `PowerLawSph` | total | 510 µs → 463 µs | 1.10× | 411 µs → 362 µs | 1.13× | 679 µs → 622 µs | 1.09× | PASS untouched |
+
+### How much of that is real
+
+The same ±30% host band as the two earlier passes applies, and the non-MGE rows show it directly:
+`PowerLaw` came out 0.87× on hst and 1.03× on euclid for **identical, untouched code**, and hst
+`NFW` reads 1.58× against euclid's 1.07× for the same reason. Read those rows as noise.
+
+The MGE rows were measured three times each on hst during the re-pin sequence, and the spread is
+the honest error bar on the headline ratios:
+
+| Profile (hst, Grid2D) | run 1 | run 2 | run 3 (committed) | before | ratio range |
+|---|---|---|---|---|---|
+| `gNFW` | 110.8 ms | 121.8 ms | 95.6 ms | 292.8 ms | 2.4× – 3.1× |
+| `gNFWSph` | 5.20 ms | 5.18 ms | 4.52 ms | 300.9 ms | 58× – 67× |
+| `Gaussian` | 6.11 ms | 6.04 ms | 6.56 ms | 11.1 ms | 1.7× – 1.8× |
+| `Gaussian_sph_case` | 1.40 ms | 1.61 ms | 2.13 ms | 12.9 ms | 6× – 9× |
+
+So: **`gNFWSph` ~40–67× and `Gaussian_sph_case` ~4–9× are the two large, unambiguous wins**
+(the spherical branch removes the Faddeeva evaluation entirely, not just speeds it up), and
+**`gNFW` ~2.4–3.1× and `Gaussian` ~1.5–1.8×** are the wofz-dispatch wins — smaller, still well
+outside the band, and consistent across both instruments.
+
+## Likelihood breakdown — pins hold, artifacts not overwritten
+
+`scripts/imaging/likelihood_breakdown/pixelization_numba.py` was run on both instruments as a
+correctness check: its fiducial mass profile is `Isothermal` (no MGE), and its MGE *light*
+profiles go through a different code path that this change does not touch.
+
+| Cell | Pin | Result |
+|---|---|---|
+| `pixelization_numba` hst | 27661.910133665442 | **PASSED** — `log_likelihood` 27661.91013366411 |
+| `pixelization_numba` euclid | none defined | `log_likelihood` **6213.306873885871** — bit-identical to the phase-1 value |
+
+As in phase 1, the tracked `results/breakdown/imaging/*_v2026.8.17.1.json` artifacts were
+**reverted rather than committed**: these were load-contaminated re-runs of a quiet-host record and
+replacing them would regress the timing board for no information. Only the pin verdicts above are
+taken from them.
+
+## Re-scoped targets
+
+The phase-2 prompt asked for 5× on `gNFW`, 20× on `gNFWSph` and 1.5× on `Gaussian`. Measured
+against the committed phase-1 baseline, the achieved ceilings are:
+
+| Profile | Asked | Measured | Verdict |
+|---|---|---|---|
+| `gNFW` | 5× | ~2.5–3.1× | **short** — the Faddeeva call is still there, scipy just evaluates it faster and correctly |
+| `gNFWSph` | 20× | ~40–67× | **exceeded** — the branch removes the Faddeeva evaluation outright |
+| `Gaussian` (elliptical) | 1.5× | ~1.1–1.8× | **met, marginally** — same mechanism as `gNFW`, on a much smaller array |
+| `Gaussian` (q = 1) | — | ~4–9× | spherical branch, as `gNFWSph` |
+
+`gNFW` is the one that falls short, and the reason is structural rather than fixable by another
+kernel swap: an elliptical MGE deflection *needs* the Faddeeva function, and `scipy.special.wofz`
+is already a well-optimised C implementation. Getting to 5× would take reducing the number of
+Gaussians in the expansion, or evaluating the (30, N) array in a lower precision where that is
+defensible — both of which change the answer and belong in their own phase with their own
+adjudication.
+
+## Filed follow-up — the JAX path
+
+The JAX path still runs the hand-rolled rational approximation, still clamps spherical profiles to
+q = 0.9999, and is therefore **still carrying both defects this phase fixed on numpy** — the 3.0e-6
+Faddeeva error and the ~6e-5 clamp bias, including the spurious cross-axis deflections. That was
+deliberate here (keeping the JAX arithmetic bit-identical made this a clean single-axis change),
+and it is filed for its own task:
+
+- `PyAutoMind/draft/research/autogalaxy/jax_faddeeva_seams_and_spherical_clamp_audit.md`
+
+## Epic ledger — `numpy-deflections-cpu`
+
+| Step | What | Status |
+|------|------|--------|
+| 0 | Measurement package `scripts/lens/deflections/` + BASELINE artifacts | ✓ 2026-09-02 |
+| 1 | Diagnose the `Grid2D`-entry `over_sampled` cost and the `gNFW` MGE expansion cost | ✓ 2026-09-02 |
+| 2 | Phase 1 library change (PyAutoArray `92bb9b2c` / PyAutoGalaxy `2605c924` / PyAutoLens `b1515e5d3`) | ✓ 2026-09-02 |
+| 3 | Phase 1 re-run; pins held, no `--repin` | ✓ 2026-09-02 |
+| 4 | Phase 2 library change — scipy `wofz` + exact spherical MGE branch (PyAutoGalaxy `09785e32`, issue #596) | ✓ 2026-09-02 |
+| 5 | Phase 2 re-run; `total` pins held, `dark` / `stellar` re-pinned with provenance | ✓ this commit |
+| 6 | JAX-path audit — Faddeeva seams and the spherical clamp | filed (PyAutoMind draft) |
