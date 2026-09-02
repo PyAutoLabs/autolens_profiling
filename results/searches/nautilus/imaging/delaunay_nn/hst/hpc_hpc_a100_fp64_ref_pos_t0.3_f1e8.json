@@ -48,70 +48,77 @@
   "log_det_method": null,
   "model_summary": {
     "free_parameters": 12,
-    "best_fit": "lens.mass.einstein_radius=1.5996  lens.mass.centre=(0.001, -0.000)  shear=(0.0473, 0.0478)"
+    "best_fit": "lens.mass.einstein_radius=1.5996  lens.mass.centre=(0.002, 0.000)  shear=(0.0475, 0.0478)"
   },
   "results": {
-    "log_evidence": 31275.23453662113,
-    "max_log_likelihood": 31347.87522498317,
-    "posterior_samples": 49800,
+    "log_evidence": 31275.23000963468,
+    "max_log_likelihood": 31351.390900388455,
+    "posterior_samples": 50900,
     "truth_log_likelihood": 31521.743789581255,
-    "delta_max_ll_vs_truth": -173.86856459808405,
+    "delta_max_ll_vs_truth": -170.35288919279992,
     "bar_source": "truth_tracer",
     "posterior_stats": {
       "centre_0": {
-        "mean": 0.000884783315884576,
-        "std": 0.0007150596130817878
+        "mean": 0.0008912558791613364,
+        "std": 0.0007437813728818281
       },
       "centre_1": {
-        "mean": 0.0001327013694355655,
-        "std": 0.0006559438300579925
+        "mean": 0.00014512429957951742,
+        "std": 0.0006777224858974931
       },
       "ell_comps_0": {
-        "mean": 0.04804526875962844,
-        "std": 0.0017930155648864926
+        "mean": 0.04809651172938156,
+        "std": 0.0018916041846912966
       },
       "ell_comps_1": {
-        "mean": -0.008066763940819387,
-        "std": 0.0017265849003179846
+        "mean": -0.00801629042572231,
+        "std": 0.0017286868007373199
       },
       "einstein_radius": {
-        "mean": 1.5994693027374258,
-        "std": 0.0003745393462727619
+        "mean": 1.5994671864618457,
+        "std": 0.0003749272774180537
       },
       "gamma_1": {
-        "mean": 0.04740311687787733,
-        "std": 0.0007834960829976396
+        "mean": 0.04742631928372085,
+        "std": 0.0007663086020608843
       },
       "gamma_2": {
-        "mean": 0.047875101470915796,
-        "std": 0.0009983644397450297
+        "mean": 0.04790713018960716,
+        "std": 0.001045950170841769
       },
       "coefficient": {
-        "mean": 2.9852200012309376,
-        "std": 0.12890530967376024
+        "mean": 2.9843832610337433,
+        "std": 0.12682130921740556
       }
+    },
+    "penalty_at_best": {
+      "positions_penalty": 0.0,
+      "log_likelihood_penalised": 31351.390900388455,
+      "log_likelihood_unpenalised": 31351.390900388455,
+      "delta_log_likelihood": -0.0,
+      "source": "analysis.log_likelihood_penalty_from(max_log_likelihood_instance) \u2014 the penalty term alone (tracer + truth-position trace), not a re-evaluated likelihood"
     }
   },
   "performance": {
-    "total_wall_s": 3111.0520927906036,
-    "viz_wall_s": 68.66658681270201,
+    "total_wall_s": 3170.1108520030975,
+    "viz_wall_s": 56.52416164637543,
     "viz_n_calls": 8,
     "viz_disabled": false,
-    "sampler_wall_s": 3042.3855059779016,
-    "likelihood_evals": 49800,
-    "time_per_eval_ms": 61.09207843329119,
-    "stored_samples": 49800,
+    "sampler_wall_s": 3113.586690356722,
+    "likelihood_evals": 50900,
+    "time_per_eval_ms": 61.17066189305937,
+    "stored_samples": 50900,
     "gradient_evals": null,
-    "kish_ess": 4364.662379199938,
-    "evals_per_ess": 11.409817226029876,
-    "ess_per_min": 86.07710700614233
+    "kish_ess": 4354.345487581359,
+    "evals_per_ess": 11.68947207913735,
+    "ess_per_min": 83.90989403444199
   },
   "schema_version": 2,
   "target": {
     "target_id": "sha256:1e007f224db6",
     "cell": "imaging/delaunay_nn/hst",
     "model_dim": 12,
-    "priors_ref": "_targets.py@bf2c8742c334",
+    "priors_ref": "_targets.py@7f2f14765de7",
     "likelihood": {
       "log_det_method": null,
       "positive_only": true,

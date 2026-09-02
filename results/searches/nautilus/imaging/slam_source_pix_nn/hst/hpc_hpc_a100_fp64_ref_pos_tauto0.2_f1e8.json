@@ -1,7 +1,7 @@
 {
   "sampler": "nautilus",
   "dataset_class": "imaging",
-  "model": "slam_source_pix",
+  "model": "slam_source_pix_nn",
   "instrument": "hst",
   "config_name": "hpc_a100_fp64_ref_pos_tauto0.2_f1e8",
   "version": "2026.8.17.1",
@@ -11,7 +11,7 @@
     "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
     "omp_num_threads": null,
     "cpu_count": 124,
-    "nvidia_smi": "NVIDIA A100 80GB PCIe, 33821 MiB, 81920 MiB"
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 33791 MiB, 81920 MiB"
   },
   "use_mixed_precision": false,
   "sampler_config": {
@@ -47,93 +47,85 @@
   },
   "log_det_method": null,
   "model_summary": {
-    "free_parameters": 16,
-    "best_fit": "lens.mass.einstein_radius=1.5995  lens.mass.centre=(0.000, 0.000)  shear=(0.0486, 0.0493)"
+    "free_parameters": 14,
+    "best_fit": "lens.mass.einstein_radius=1.5999  lens.mass.centre=(-0.000, 0.001)  shear=(0.0473, 0.0478)"
   },
   "results": {
-    "log_evidence": 31452.099742270497,
-    "max_log_likelihood": 31547.239572734106,
-    "posterior_samples": 93700,
+    "log_evidence": 31324.838233172763,
+    "max_log_likelihood": 31405.628186874696,
+    "posterior_samples": 71079,
     "truth_log_likelihood": 31521.743789581255,
-    "delta_max_ll_vs_truth": 25.4957831528518,
+    "delta_max_ll_vs_truth": -116.115602706559,
     "bar_source": "truth_tracer",
     "posterior_stats": {
       "centre_0": {
-        "mean": 0.0003343433647924398,
-        "std": 0.0004575054710826696
+        "mean": 0.00023876035303554069,
+        "std": 0.0006379494966478261
       },
       "centre_1": {
-        "mean": 0.00029152357159896734,
-        "std": 0.00040929396009216053
+        "mean": 0.0006199323061520952,
+        "std": 0.0005143278694780234
       },
       "ell_comps_0": {
-        "mean": 0.05123404873708033,
-        "std": 0.0010717932850689605
+        "mean": 0.04819311076258108,
+        "std": 0.0013758921927910664
       },
       "ell_comps_1": {
-        "mean": -0.00471698185868896,
-        "std": 0.0013418716318825373
+        "mean": -0.007551508854676614,
+        "std": 0.0015289738896745791
       },
       "einstein_radius": {
-        "mean": 1.599686518101517,
-        "std": 0.00022287260815821724
+        "mean": 1.5996247517981808,
+        "std": 0.00029874237291618107
       },
       "gamma_1": {
-        "mean": 0.04851512209858502,
-        "std": 0.0005621696103433821
+        "mean": 0.047620561816244196,
+        "std": 0.0005930134123039924
       },
       "gamma_2": {
-        "mean": 0.049354665314373866,
-        "std": 0.0005793448415583465
-      },
-      "weight_power": {
-        "mean": 0.0010227515658424752,
-        "std": 0.006469568612846245
-      },
-      "weight_floor": {
-        "mean": 0.09072773622374522,
-        "std": 0.19372883348462222
-      },
-      "inner_coefficient": {
-        "mean": 0.044735041738233394,
-        "std": 0.06332640100741488
-      },
-      "outer_coefficient": {
-        "mean": 109.87286365890554,
-        "std": 30.89642000564524
+        "mean": 0.048042121022819524,
+        "std": 0.0008140492661953075
       },
       "signal_scale": {
-        "mean": 0.008511834854256066,
-        "std": 0.0024580970029503104
+        "mean": 0.07851374136205078,
+        "std": 0.02821416615422144
+      },
+      "inner_coefficient": {
+        "mean": 0.006589210999988174,
+        "std": 0.021842222063409314
+      },
+      "outer_coefficient": {
+        "mean": 19.74154297068359,
+        "std": 5.899060725803892
       }
     },
     "penalty_at_best": {
       "positions_penalty": 0.0,
-      "log_likelihood_penalised": 31547.239572734106,
-      "log_likelihood_unpenalised": 31547.239572734106,
+      "log_likelihood_penalised": 31405.628186874696,
+      "log_likelihood_unpenalised": 31405.628186874696,
       "delta_log_likelihood": -0.0,
       "source": "analysis.log_likelihood_penalty_from(max_log_likelihood_instance) \u2014 the penalty term alone (tracer + truth-position trace), not a re-evaluated likelihood"
     }
   },
   "performance": {
-    "total_wall_s": 4038.573699235916,
-    "viz_wall_s": 55.73728083213791,
+    "total_wall_s": 4387.960510730743,
+    "viz_wall_s": 57.69496853114106,
     "viz_n_calls": 8,
     "viz_disabled": false,
-    "sampler_wall_s": 3982.836418403778,
-    "likelihood_evals": 93700,
-    "time_per_eval_ms": 42.50625846748963,
-    "stored_samples": 93700,
+    "sampler_wall_s": 4330.265542199602,
+    "likelihood_evals": 71100,
+    "time_per_eval_ms": 60.90387541771593,
+    "stored_samples": 71100,
     "gradient_evals": null,
-    "kish_ess": 5630.012482883974,
-    "evals_per_ess": 16.642947113325434,
-    "ess_per_min": 84.8141157422731
+    "kish_ess": 4701.196025118422,
+    "evals_per_ess": 15.123810966425083,
+    "ess_per_min": 65.1395991211717
   },
   "schema_version": 2,
   "target": {
-    "target_id": "sha256:b29616db92cf",
-    "cell": "imaging/slam_source_pix/hst",
-    "model_dim": 16,
+    "target_id": "sha256:8021b4b697ff",
+    "cell": "imaging/slam_source_pix_nn/hst",
+    "model_dim": 14,
     "priors_ref": "_targets.py@7f2f14765de7",
     "likelihood": {
       "log_det_method": null,
@@ -198,7 +190,7 @@
       "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
       "omp_num_threads": null,
       "cpu_count": 124,
-      "nvidia_smi": "NVIDIA A100 80GB PCIe, 33821 MiB, 81920 MiB"
+      "nvidia_smi": "NVIDIA A100 80GB PCIe, 33791 MiB, 81920 MiB"
     }
   }
 }
