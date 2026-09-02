@@ -76,6 +76,21 @@ mirror whose only job is holding RAL runs so they can be read. It defaults to
 `checkpoint.hdf5`, live points), it is large, and it is not needed to read a result. A run
 that needs its checkpoint is read on RAL.
 
+### The pull manifest: `.cortex/pull.json`
+
+Because `search_internal/` never comes back, a checkpoint that is still growing on RAL is
+invisible from the laptop — and "is this run alive?" is exactly what a stalled overnight
+sweep needs answered. So a real `pull` ends by writing
+`$LOCAL_PULL_ROOT/.cortex/pull.json`: one `find` over the ControlMaster mux records the
+size and mtime of every `checkpoint.hdf5` under `output/searches` on RAL, keyed by run
+directory relative to the pull root (`output/searches/<…>/<hash>` — the mirror maps 1:1).
+PyAutoCortex `collect` reads it to score the checkpoint leg of a run's evidence. The
+`runs` map stays empty here: this repo's SLURM logs do not name the run directory a job
+wrote, so a job id cannot honestly be linked to a checkpoint. `hpc/sync status` is a dry
+run and does not write the manifest, a failed gather writes it anyway with a
+`gather_error` key rather than failing the pull, and `.cortex/` is gitignored in the
+mirror — it is pull state, like `output/`.
+
 The logs move from `hpc/batch_gpu/{output,error}/` on RAL to `logs/{output,error}/`
 locally. On RAL they live beside the submit scripts because that is where SLURM writes
 them; on the laptop they are review material, so they sit at the top of the mirror.
