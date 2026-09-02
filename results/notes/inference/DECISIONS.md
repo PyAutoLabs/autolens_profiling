@@ -1608,3 +1608,48 @@ baseline adopted the same day is the disk execution of **R-20260901-01** (row ab
 not a 342091 row.
 
 Ruling of record: PyAutoCortex `rulings/2026/09/R-20260902-01.md`.
+
+---
+
+## 2026-09-02 — Rulings of record (append: batch 2026-09-02-pm, Gates A / B1 / B2 re-called)
+
+Same convention as the entries above, appended rather than edited (this file is
+append-only). Batch `2026-09-02-pm` (reviewed 2026-09-02T21:18Z,
+`PyAutoCortex/batches/reviews/2026-09-02-pm.md`) put the three legacy-reuse members —
+the MGE evidence beneath Gates A, B pt 1 and B pt 2, quarantined into `output/legacy/`
+by the 2026-08-31 rewind — to a human under the **MGE reuse rule**. All three were
+accepted, so the gates move from PROVISIONAL back to **CALLED** on evidence that was
+recovered by ruling, not rerun.
+
+Human, 2026-09-02, verbatim: *"continue"* — one word, ratifying all three packet
+recommendations (accept; for Gate A, accept with one sentence struck) after the members
+were presented with their recomputed witness numbers.
+
+| DECISIONS entry (date — title, line anchor) | Cortex ruling id(s) | Cortex phase path |
+|---|---|---|
+| 2026-08-24 — GATE A CALLED (`DECISIONS.md` § 2026-08-24) — phase 13, `phase2_nss_mainline_gate_a_reuse`; ACCEPTED, Gate A re-called on the MGE evidence with the *"18.4× on Delaunay"* leg **struck** (339069 / 339071 are `legacy_wrong` and not citable, so the per-family NSS-on-mesh cost is unmeasured); Kish ESS figures read from the write-up, not re-derived | **R-20260902-08** (accept) | `phases/inference_programme/phase2_nss_mainline_gate_a_reuse.md` |
+| 2026-08-23 — GATE B part 1 CALLED (`DECISIONS.md` § 2026-08-23) — phase 14, `phase3_prodigy_reliability_gate_b1_reuse`; ACCEPTED, Gate B pt 1 re-called (n256 15/15, Wilson-95 lower 0.796, 3.1–4.3× the Nautilus wall, caveat (a) **n=256 only** stands); the lane-level layer (p̂_hit = 61/1280, tier overlap, pinned-lane fraction, the `ell_comps` scan) was **not re-verified** — the gate rests on run-level reliability, which was | **R-20260902-09** (accept) | `phases/inference_programme/phase3_prodigy_reliability_gate_b1_reuse.md` |
+| 2026-08-27 — GATE B part 2 CALLED (`DECISIONS.md:641`) — phase 15, `phase4_positions_gate_b2_reuse`; ACCEPTED, Gate B pt 2 re-called (PositionsLH safe for gradient MAP on MGE at factor ≤ 1e5, f1e8 rejected for gradient search; Nautilus inert, Δ logZ ≤ 0.022 nats), the six caveats of the 2026-08-27 call riding unchanged and 341892_0 still excluded | **R-20260902-10** (accept) | `phases/inference_programme/phase4_positions_gate_b2_reuse.md` |
+
+**The `f1e8` question is engine-split, not contradictory.** R-20260902-01's mesh
+positions rule and the `pos_tauto0.2_f1e8` reference rows are **nested-sampling**
+results — rejection sampling never walks the hinge, and R-20260902-10 measures Nautilus
+inert at f1e8. The *"1e8 rejected"* finding is about **fixed-step gradient MAP**.
+Different engines; no conflict.
+
+**Phase 5 factor — a recommendation awaiting a ruling, not a decision.** R-20260902-10
+carries a design note: gradient search on a mesh with positions on should run at factor
+**1e5** (threshold per the cell's convention), not the reference rows' f1e8, or the
+transit damage measured on MGE returns. The human did **not** pin this in the ruling —
+it is the scribe's recommendation, to be decided explicitly when Phase 5 is filed.
+Whether MGE's 1e5 transfers to a mesh likelihood scale is unmeasured and is Phase 5's
+first check.
+
+Consequences recorded in `PROGRAMME.md` (the "Gates A–F", "Phase 2", "Phase 3" and
+"Phases 4–7, 9–13" rows, the 2026-08-31 REWIND section, and the Phase 2 / 3 / 4 status
+notes). The legacy MGE runs stay in `output/legacy/` as cited, reusable evidence. Next:
+Phase 12 (positions-on refs for `pixelization` / `knn` / `delaunay_matern`, RAL 342241),
+then Phase 5 positions-on. Follow-ups: autolens_profiling#201.
+
+Ruling of record: PyAutoCortex `rulings/2026/09/R-20260902-08.md`,
+`R-20260902-09.md`, `R-20260902-10.md`.
