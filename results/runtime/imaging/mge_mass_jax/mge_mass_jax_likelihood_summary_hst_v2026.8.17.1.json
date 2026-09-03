@@ -1,0 +1,140 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "omp_num_threads": "1",
+    "cpu_count": 8
+  },
+  "instrument": "hst",
+  "configuration": {
+    "pixel_scale_arcsec": 0.05,
+    "mask_radius_arcsec": 3.5,
+    "image_pixels_masked": 15361,
+    "over_sampled_pixels": 17980,
+    "mesh_shape": [
+      28,
+      28
+    ],
+    "rect_mesh": "bilinear",
+    "source_pixels": 784,
+    "use_jax": true,
+    "vmap_batch_size": 3,
+    "lens_light": "mge_30_lmp_linear_fixed_geometry",
+    "lens_mass": "mge_basis + NFWSph + ExternalShear",
+    "free_parameters": 4,
+    "n_repeats": 3,
+    "n_steady": 10,
+    "omp_num_threads": "1",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0"
+  },
+  "full_pipeline_single_jit": 2.6022102699997047,
+  "deflections_memo_off": {
+    "first_call_s": [
+      11.118886800002656,
+      10.836940400000458,
+      9.292015699997137
+    ],
+    "first_call_median_s": 10.836940400000458,
+    "first_call_min_s": 9.292015699997137,
+    "steady_s": [
+      2.6415598700001284,
+      2.5053048300000227,
+      2.2549100600001113
+    ],
+    "steady_median_s": 2.5053048300000227,
+    "steady_min_s": 2.2549100600001113,
+    "wofz_compile": {
+      "numpy": 0,
+      "jnp": 240
+    },
+    "wofz_steady": {
+      "numpy": 0,
+      "jnp": 0
+    },
+    "memo_stats": {
+      "hits": 0,
+      "misses": 0,
+      "evictions": 0,
+      "bytes": 0,
+      "entries": 0,
+      "jax_folds": 0
+    },
+    "log_likelihood": -56107.56407588691
+  },
+  "deflections_memo_on": {
+    "first_call_s": [
+      4.655174800001987,
+      5.36212180000075,
+      6.096579299999576
+    ],
+    "first_call_median_s": 5.36212180000075,
+    "first_call_min_s": 4.655174800001987,
+    "steady_s": [
+      2.594590690000041,
+      2.6106883899999955,
+      2.6022102699997047
+    ],
+    "steady_median_s": 2.6022102699997047,
+    "steady_min_s": 2.594590690000041,
+    "wofz_compile": {
+      "numpy": 180,
+      "jnp": 0
+    },
+    "wofz_steady": {
+      "numpy": 0,
+      "jnp": 0
+    },
+    "memo_stats": {
+      "hits": 30,
+      "misses": 90,
+      "evictions": 0,
+      "bytes": 18864480,
+      "entries": 90,
+      "jax_folds": 90
+    },
+    "log_likelihood": -56107.56407588643
+  },
+  "deflections_memo_jaxpr_equations_off": 53369,
+  "deflections_memo_jaxpr_equations_on": 13289,
+  "deflections_memo_jaxpr_equations_delta": -40080,
+  "deflections_memo_max_relative_likelihood_difference": 8.558796134628221e-15,
+  "controls": {
+    "kill_switch": {
+      "log_likelihood": -56107.56407588691,
+      "wofz": {
+        "numpy": 0,
+        "jnp": 240
+      },
+      "memo_stats": {
+        "hits": 0,
+        "misses": 0,
+        "evictions": 0,
+        "bytes": 0,
+        "entries": 0,
+        "jax_folds": 0
+      }
+    },
+    "free_grid_offset": {
+      "log_likelihood": -56107.56407588693,
+      "wofz": {
+        "numpy": 0,
+        "jnp": 240
+      },
+      "memo_stats": {
+        "hits": 0,
+        "misses": 0,
+        "evictions": 0,
+        "bytes": 0,
+        "entries": 0,
+        "jax_folds": 0
+      },
+      "free_parameters": 6
+    }
+  },
+  "log_likelihood": -56107.56407588643,
+  "log_likelihood_memo_off": -56107.56407588691,
+  "pinned_expected": -56107.56407588643,
+  "pinned_drift": []
+}
