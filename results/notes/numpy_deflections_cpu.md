@@ -820,3 +820,379 @@ the two deflection components; it is not a mask or a hoist and was not attempted
 | 7 | Phase 3 library change — omega series + NFW masks + hoists (PyAutoGalaxy `8aefe5a6`, #599) and rotation-matrix transform + one `Grid2D` per `VectorYX2D` (PyAutoArray `755e43d1`, #519) | ✓ 2026-09-03 |
 | 8 | Phase 3 re-run; `total` / `dark` pins held, `stellar` re-pinned for the exact-zero sample with provenance | ✓ this commit |
 
+
+# JAX-path audit — Faddeeva seams and the spherical clamp (2026-09-03)
+
+Phase 2 fixed both defects on the **numpy** path (`scipy.special.wofz`, plus an exact real radial
+branch for circular profiles). The **JAX** path kept them: the hand-rolled rational
+`_wofz_rational` — three `xp.where`-selected regions, so its *derivative* jumps at the boundaries —
+and the spherical clamp `q = 0.9999`. This section measures what those two cost under
+`jax.jacfwd` / `jax.grad`, prices a seam-free replacement, and records a keep/replace verdict
+([PyAutoGalaxy#600](https://github.com/PyAutoLabs/PyAutoGalaxy/issues/600), phase A).
+**No library code was changed to take any of these measurements** — the clamp is bypassed by a
+probe-local `MGEDecomposer` subclass, and the `w(z)` arguments are captured by wrapping the
+library's own `_wofz` / `_wofz_masked` for the duration of one call.
+
+Probe: `scripts/misc/hazards/mge_faddeeva.py` (the study) and
+`scripts/misc/hazards/checks/mge_faddeeva.py` (the two stable findings
+`component.mge.faddeeva-seam-gradient` and `component.mge.spherical-clamp-bias`). Artifact:
+`results/hazards/component/mge/faddeeva_audit.{json,png}`.
+
+## Environment
+
+| | |
+|---|---|
+| Host | WSL2 (Linux 5.10.16.3), Python 3.12.10, `OMP_NUM_THREADS=1` |
+| Backends | JAX 0.10.2 (`cpu:0`, float64 enabled), NumPy 2.2.6, SciPy `wofz`, mpmath dps 40 |
+| Grid | hst `dataset.grids.pixelization`, 15,361 points (`_driver.build_dataset`, imported, not transcribed) |
+| Profiles | `_profiles.py` fiducials — gNFW/gNFWSph `kappa_s=0.2`, `inner_slope=1.5`, `scale_radius=10.0` (MGE-30); `Gaussian` `intensity=1.0`, `sigma=1.0` |
+
+## a. Seam derivative jumps
+
+Rays crossing each region boundary at relative offsets 1e-9 … 1e-6; `jax.jacfwd` of
+`_wofz_rational` on `z = x + iy` against the exact identity `w'(z) = -2 z w(z) + 2i/sqrt(pi)`
+evaluated with `scipy.special.wofz`. "Jump at 1e-9" is the cleanest discriminator: at that offset
+the true `w'` moves by ~2.6e-9, so everything above that is the seam.
+
+| Seam | Regions | max abs value jump | max rel value jump | max rel `w'` error below / above | rel `w'` jump at 1e-9 | max rel `w'` jump |
+|---|---|---|---|---|---|---|
+| `r2 = 2.5` | 6 → 5 (on the rays that cross; high-`y` rays stay in 6) | 3.33e-06 | 7.17e-06 | 5.08e-05 / 7.71e-06 | **5.83e-05** | 5.83e-05 |
+| `r2 = 30` | 6/5 → 5/large | 1.09e-07 | 1.04e-06 | 3.77e-06 / 3.77e-06 | 1.99e-07 | 2.11e-06 |
+| `r2 = 62` | 5/large → large | 7.51e-08 | 1.04e-06 | 8.72e-07 / 3.85e-09 | 8.78e-07 | 2.93e-06 |
+| `y2 = 0.072` (2.5≤r2<30) | 5 → 6 | 1.16e-06 | 6.13e-06 | 3.32e-05 / 4.60e-05 | **2.72e-05** | 2.75e-05 |
+| `y2 = 1e-13` (30≤r2<62) | 5 → large | 2.78e-08 | 3.26e-07 | 5.52e-06 / 3.12e-08 | 5.49e-06 | 5.49e-06 |
+
+The seams are real and the derivative is the worse-behaved side: the value is continuous to
+~1e-6 relative, the derivative discontinuous by up to **5.8e-5** relative — 2.3e4× the genuine
+variation of `w'` across the same offset. The same table for the Weideman candidate (leg e) gives
+2.55e-9 at every boundary, i.e. exactly the genuine variation: it has no seams.
+
+## b. Deflection gradients — gNFW MGE-30 on the hst grid
+
+**Jacobian.** `jax.jacfwd` of the (y,x) deflection field w.r.t. `(centre_y, centre_x, ell_comps_0,
+ell_comps_1, scale_radius)` against central finite differences, relative L2 over the 15,361-point
+column. Two comparisons, because only the second isolates the seams: against the **numpy (scipy)**
+path (mixes the routine's 3.4e-6 value error with FD truncation) and against **finite differences
+of the JAX path itself** (same routine on both sides, so a residual that does not fall with the
+step is non-smoothness).
+
+| Step `h` | AD vs numpy-FD, `centre_x` | AD vs jax-FD, `centre_x` | AD vs jax-FD, `ell_comps_0` | AD vs jax-FD, `ell_comps_1` | grid points > 1 % (jax-FD, `centre_x`) |
+|---|---|---|---|---|---|
+| 1e-3 | 1.20e-01 | 1.20e-01 | 2.95e-05 | 1.96e-04 | 1 |
+| 1e-4 | 1.78e-03 | 2.53e-03 | 5.55e-05 | 1.61e-03 | 0 |
+| 1e-5 | 1.90e-05 | 1.79e-02 | **2.93e-11** | 1.61e-02 | 0 |
+| 1e-6 | 5.62e-06 | 1.76e-01 | **2.36e-10** | 1.59e-01 | 58 |
+| 1e-7 | 5.61e-06 | 8.69e-01 | **2.45e-09** | 8.47e-01 | 96 |
+
+Read the `ell_comps_0` column against `ell_comps_1`: in the `ell_comps_0` direction no grid point
+crosses a region boundary and the JAX field is smooth to **2.9e-11**; in `ell_comps_1`, `centre_x`
+and `centre_y` the boundary crossings make finite differences of the JAX path diverge as `h`
+shrinks. The damage is *local*, not diffuse — 58 to 96 points out of 15,361 exceed 1 % of the
+column's largest entry, because at a crossing point FD sees the 3e-6 **value** jump divided by
+`2h`, which is O(1) at `h = 1e-7`. AD against the smooth numpy path floors at **5.6e-6**, the
+routine's own accuracy. Practical consequence: finite-difference checking a JAX MGE gradient with
+`h ≲ 1e-5` produces false alarms.
+
+**Transect.** `centre_x` over ±0.05", 2000 steps (5.00e-5"/step); per step the region label of all
+921,660 `w` arguments (two (30, 15361) blocks) and `jax.grad` of `S = sum(alpha_y^2 + alpha_x^2)`,
+against a smooth baseline (central differences of `S` on the numpy path).
+
+| Quantity | Value |
+|---|---|
+| Fraction of `w` arguments changing region per step | median 1.08e-06 (≈1 argument), max 1.49e-04 (≈137) |
+| Steps with at least one label change | 1215 / 1999 |
+| AD vs FD-smooth residual | max **1.97e-04**, median 7.62e-06 |
+| Step-to-step AD gradient jump | max 1.43e-02, median 7.77e-04 |
+| Step-to-step *smooth-baseline* jump | max 1.42e-02, median 7.77e-04 |
+| AD jump where labels changed / stayed static | median 7.762e-04 / 7.770e-04 |
+| Non-finite AD gradients | 2 / 2000, at exactly `centre_x = ±0.05"` |
+
+**Negative result:** the kinks are not visible in this scalar gradient. The step-to-step variation
+of the AD gradient is indistinguishable from the smooth baseline's, and conditioning on whether a
+label changed moves the median jump by 0.1 %. What the seams do leave is the 2e-4 worst-case
+AD-vs-smooth residual. Separately, the two non-finite gradients are the known measure-zero radial
+site, not a seam: at `centre_x = ±0.05"` the profile centre lands exactly on a grid coordinate
+(the hst grid contains `r = 0`), and there **reverse-mode `jax.grad` returns NaN while forward-mode
+`jax.jacfwd` returns a finite 143.15** — a `where`-NaN propagating backwards, reachable on any
+pixel-aligned centre.
+
+## c. Likelihood level
+
+A bounded in-memory fixture (21×21 masked `Imaging`, 193 pixels, `radius 2.4"`, gNFW lens +
+`SersicSph` source, no inversion), `jax.grad` of `FitImaging.figure_of_merit` w.r.t. `centre_x`
+over the same ±0.05" transect, 400 steps.
+
+| Quantity | Autodiff (JAX) | Smooth baseline (numpy FD) |
+|---|---|---|
+| Step-to-step jump, max / median | 0.340 / 1.638e-04 | 0.315 / 1.658e-04 |
+| "Kinks" above 5× the baseline median jump | 93 / 399 | **93 / 399** |
+| AD vs FD residual | max 2.64e-02, median **3.50e-07** | — |
+
+The kink count is identical to the count the smooth path produces under the same threshold: at
+this fixture and resolution there is **no measurable likelihood-gradient kink**. The median
+AD-vs-FD agreement is 3.5e-7; the 2.6e-2 maximum sits where the gradient turns fastest and the
+central-difference baseline is itself least accurate. Per the plan's rule (NUTS/Prodigy comparisons
+only if legs 1–3 show kinks above 1e-3 relative), the sampler comparison was **not run**.
+
+## d. The spherical clamp
+
+JAX (elliptical at `q = 0.9999`) against the exact spherical form the numpy path takes:
+
+| Profile | max rel bias (hst, 15,361 pts) | median | max spurious cross-axis deflection |
+|---|---|---|---|
+| gNFWSph (MGE-30) | **6.35e-05** | 5.56e-05 | 1.45e-04" |
+| Gaussian, `ell_comps=(0,0)` | **1.13e-04** | 8.19e-05 | 3.78e-05" |
+
+At `r = 1"` the bias is orientation-dependent — gNFWSph: 1.01e-05 on the x axis, 6.02e-05 on the y
+axis, 5.31e-05 at 45°, where the cross-axis term reaches 1.2e-04". The −3e-08 cross-axis figure in
+the task prompt was measured on-axis at (0, 1"); off-axis it is four thousand times larger.
+
+Raising the clamp instead of removing it (elliptical kernel evaluated at a caller-chosen `q` via a
+probe-local decomposer subclass, float64, gNFWSph on the 16 pin coordinates):
+
+| `1 - q` | max rel error | median | max cross-axis | non-finite |
+|---|---|---|---|---|
+| 1e-04 (current) | 6.02e-05 | 5.49e-05 | 1.43e-04 | 0 |
+| 1e-05 | 6.06e-06 | 5.52e-06 | 1.43e-05 | 0 |
+| 1e-06 | 6.51e-07 | 5.88e-07 | 1.43e-06 | 0 |
+| 1e-07 | 1.09e-07 | 9.97e-08 | 1.43e-07 | 0 |
+| 1e-08 | 6.16e-08 | 5.18e-08 | 1.43e-08 | 0 |
+| 1e-09 | 5.81e-08 | 4.90e-08 | 1.43e-09 | 0 |
+
+The `Gaussian` sweep behaves the same (9.50e-05 at the clamp, falling to 1.49e-09 at `1-q = 1e-09`).
+**The feared cancellation does not materialise**: the error falls linearly with `1-q` to ~1e-07 and
+then floors at 5.8e-08 — the rational routine's own accuracy on these inputs, not lost digits —
+with no non-finite values anywhere. Raising the clamp is numerically viable; it is simply strictly
+worse than taking the exact branch, which removes the bias entirely *and* removes a
+(30, 15361) complex Faddeeva evaluation.
+
+## e. Replacement candidate — Weideman (1994)
+
+A single rational expression over the upper half-plane (which is all `zeta_from` ever passes, since
+`ys = |y| * scale >= 0`), coefficients precomputed once by NumPy FFT, `xp`-generic Horner
+evaluation. Accuracy against mpmath at dps 40:
+
+| Domain | `scipy.special.wofz` | `_wofz_rational` (current) | Weideman N=32 | Weideman N=64 |
+|---|---|---|---|---|
+| Log-spaced \|z\| sweep, 3600 points | 1.73e-14 | 5.65e-06 | 3.07e-13 | 1.23e-15 |
+| Real gNFW MGE-30 hst inputs, 3000 of 921,660 | 1.21e-14 | **3.40e-06** | **1.89e-13** | **1.22e-15** |
+| \|z\| = 1e2 … 1e5, three arguments | 2.16e-16 | — | 3.06e-14 | 5.55e-16 |
+
+(The real input domain spans \|z\| = 0 … 1.02e04 and is 45 % large-\|z\|, 0.4 % region 5, 55 %
+region 6.) Cost on the real (30, 15361) complex128 block, `OMP_NUM_THREADS=1`, median of 5 warm
+calls:
+
+| Routine | JAX compile (s) | JAX warm (s) | ratio to current | NumPy warm (s) |
+|---|---|---|---|---|
+| `_wofz_rational` | 0.568 | 0.004696 | 1.00× | 0.101 |
+| Weideman N=32 | **0.237** | **0.003499** | **0.745×** | 0.055 |
+| Weideman N=64 | 0.390 | 0.004955 | 1.055× | 0.101 |
+| `scipy.special.wofz` | — | — | — | 0.043 |
+
+(An earlier run with another process competing for the box gave 0.0099 / 0.0061 / 0.0112 s — the
+same ordering, ratio 0.62×.) Weideman is **seam-free** by construction and measurably so: leg (a)
+re-run against it gives a derivative jump of 2.55e-09 at every boundary, equal to the true
+variation of `w'`, and a derivative error of ≤1e-11 (N=32) / ≤1e-12 (N=64). `w(0) = 1` exactly and
+`w'(0)` is finite and correct to 3.6e-13 (N=32), against 4.4e-08 for the current routine.
+
+## f. `ell_comps` is static under `jax.vmap` — the phase-B premise
+
+| Probe | `type(ell_comps[0])` | `_is_circular` | free parameter type |
+|---|---|---|---|
+| `al.mp.gNFWSph` built inside `jax.vmap` over `kappa_s`, `scale_radius` | `float` | `True` (a Python `bool`) | `BatchTracer` |
+| `af.Model(al.mp.gNFWSph)` instance through `autofit.jax.register_model` + `tree_map` | `float` | — | `ArrayImpl` |
+
+Confirmed: for a `*Sph` class `ell_comps` is a literal `(0.0, 0.0)` set in `__init__` and never
+becomes a tracer, so `_is_circular(self.ell_comps)` is a **static** Python bool even under `vmap`.
+A `xp is np and` guard is therefore not needed to keep the spherical branch off the trace.
+
+## Verdict
+
+**The clamp: lift it on JAX, via the static spherical branch, for every `*Sph` class — yes.** The
+branch predicate is static under `jax.vmap` and through the `autofit` pytree (measured above:
+`ell_comps[0]` is a Python `float`, `_is_circular` a Python `bool`, while the free parameters are
+tracers), so dropping `xp is np and` introduces no data-dependent branching. It buys the removal of
+a 6.3e-05 (gNFWSph) / 1.1e-04 (Gaussian) relative bias and a spurious cross-axis deflection of up
+to 1.45e-04", and it replaces a (30, 15361) complex Faddeeva evaluation with real arithmetic.
+Raising the clamp toward 1−1e-09 is a viable fallback — the kernel is stable there in float64, with
+no digit collapse and no non-finite values — but it only reaches ~6e-08 bias and keeps the cost, so
+it is second best. **The Faddeeva routine: replace it with Weideman N=32.** On the real MGE input
+domain it is 1.9e-13 accurate against 3.4e-06 for `_wofz_rational` (seven orders better, within
+1e-13 of SciPy), and *cheaper* — 0.0035 s against 0.0047 s warm on the (30, 15361) block, 0.745×,
+comfortably inside the 1.5× budget, with less than half the compile time — so it wins on both legs
+of the decision rule independently of the gradient evidence, which is just as well because the
+gradient evidence is negative: the seams produce **no measurable kink** in either the deflection
+transect or the bounded likelihood transect (kink count 93, identical to the smooth baseline's 93).
+What they do produce is a 5.8e-05 derivative discontinuity at `r2 = 2.5`, a 2e-04 worst-case
+AD-vs-smooth residual, and O(1) *local* errors in finite-difference Jacobians of the JAX path at
+`h ≲ 1e-05` — a real trap for anyone FD-checking a JAX gradient. N=64 is the drop-in if bit-parity
+with SciPy is ever wanted (1.2e-15) at 1.055× the current cost. Risks to carry into phase B: the
+series is valid only for `Im(z) >= 0`, which every `zeta_from` call satisfies today but nothing in
+the signature enforces — a future caller passing the lower half-plane would be silently wrong, so
+the constraint belongs in the docstring; large-|z| is verified clean to |z| = 1e05; `w(0)` and
+`w'(0)` are exact. Unrelated to both verdicts, and pre-existing: reverse-mode `jax.grad` of an MGE
+deflection returns **NaN** whenever the profile centre lands exactly on a grid coordinate
+(forward-mode returns a finite value at the same point) — the measure-zero `r = 0` site, reachable
+on any pixel-aligned centre, and worth its own task.
+
+## After phase B — both verdicts implemented (2026-09-03)
+
+Phase A's verdict was accepted on both legs and landed in PyAutoGalaxy on
+`feature/jax-faddeeva-clamp-audit`:
+
+- `autogalaxy/profiles/mass/abstract/mge.py` — `_wofz_rational` (and its Poppe-Wijers /
+  Zaghloul-Ali coefficient blocks) **deleted**, replaced by `_wofz_weideman`, the Weideman (1994)
+  N=32 series with coefficients computed once at import by NumPy FFT and hoisted to a module-level
+  tuple of Python floats. `_wofz` dispatches to it on JAX and still calls `scipy.special.wofz` on
+  numpy. `_is_circular` now answers `False` (instead of raising) for anything that is not a
+  Python/numpy scalar — detected by `type(x).__module__`, so nothing imports jax — and
+  `_spherical_mge_deflections_from` takes `xp`, with the `np.divide(out=, where=)` guard replaced by
+  a `where`-safe denominator. The `xp is np and` half of the circular guard is gone from
+  `MGEDecomposer.deflections_2d_via_mge_from`.
+- `autogalaxy/profiles/mass/stellar/gaussian.py` — the same guard change. The `axis_ratio` clamp at
+  0.9999 itself stays: it still protects the elliptical kernel when a *traced* `q` lands near 1.
+
+All numbers below are on the same host, backends and grid as the phase-A sections above.
+Probe artifacts re-run: `results/hazards/component/mge/faddeeva_audit.{json,png}`.
+
+### a. The branch predicate is static, and the model traces
+
+| Probe | `type(ell_comps[0])` | `_is_circular` | free parameter | result |
+|---|---|---|---|---|
+| `gNFWSph` + `Gaussian(0,0)` + elliptical `gNFW` built inside `jax.vmap` over 4 free parameters | `float` | `True` / `True` / `False` | `BatchTracer` | traces, `(4, 256, 2)` finite |
+| the same three through `af.Collection` + `autofit.jax.register_model`, instances stacked as a pytree and `vmap`-ed | `float` | — | `ArrayImpl` | traces, `(4, 256, 2)` finite |
+
+No `TracerArrayConversionError`, on either leg. (Note for anyone repeating this:
+`model.instance_from_unit_vector` is *not* traceable — the prior transform calls
+`scipy.special.erfinv` — so the pytree leg builds instances outside the trace and batches them,
+exactly as `vmap_ell_comps_staticness` does.)
+
+### b. JAX against the numpy/scipy path — hst grid, 15,361 points
+
+Maximum relative difference over the grid points carrying more than 1 % of the field's largest
+deflection. "Before" is the same comparison with the canonical (pre-phase-B) PyAutoGalaxy on
+`PYTHONPATH`, everything else identical.
+
+| Profile | before | after | non-finite |
+|---|---|---|---|
+| `gNFW` (q = 0.8, MGE-30) | 4.00e-06 | **1.63e-07** | 0 |
+| `gNFWSph` (MGE-30) | 1.32e-04 | **9.22e-08** | 0 |
+| `Gaussian`, q = 0.8 | 1.71e-05 | **7.12e-13** | 0 |
+| `Gaussian`, `ell_comps=(0,0)` | 1.55e-04 | **4.68e-16** | 0 |
+| `SersicCoreSph` | 1.20e-04 | **2.14e-07** | 0 |
+
+The two `Gaussian` rows are the clean read of the change: that profile's deflection is a single
+Faddeeva evaluation with no MGE quadrature in front of it, and it now agrees with SciPy to 7e-13
+(elliptical) and to rounding (circular, both sides taking the exact radial form).
+
+**The 1e-07 floor on the three MGE-routed rows is not the Faddeeva routine.** Attribution, gNFW
+MGE-30: `kesi` agrees to 2.3e-16, `eta` exactly, `density_3d_func` on the complex kesi grid to
+2.8e-15, `sigmas_factor_from` exactly, and `zeta_from` on identical sigmas to 6.2e-11 — but the
+amplitudes out of `decompose_convergence_via_mge` differ by **8.1e-07**. That step is the Shajib
+(2019) Eq. 6 contour sum, whose terms alternate in sign and cancel by a factor 4.0e+09; the float64
+cancellation floor is `4.0e9 x 2.2e-16 = 8.7e-07`, which is what is measured. So it is a
+**pre-existing backend divergence in the MGE quadrature's summation order** (NumPy pairwise vs XLA),
+independent of this task and unchanged by it — improved from ~1e-04 only because the terms in front
+of it got accurate. Not fixed here.
+
+### c. Gradients — the finite-difference trap is gone
+
+`jax.jacfwd` of the gNFW deflection field against central differences, relative L2 over the
+15,361-point column (phase-A values in brackets):
+
+| Step `h` | AD vs numpy-FD, `centre_x` | AD vs jax-FD, `centre_x` | AD vs jax-FD, `ell_comps_1` | points > 1 % (jax-FD, `centre_x`) |
+|---|---|---|---|---|
+| 1e-4 | 1.78e-03 (1.78e-03) | 1.78e-03 (2.53e-03) | 4.54e-08 (1.61e-03) | 0 (0) |
+| 1e-5 | 1.81e-05 (1.90e-05) | 1.79e-05 (1.79e-02) | 8.30e-10 (1.61e-02) | 0 (0) |
+| 1e-6 | 3.93e-07 (5.62e-06) | **1.79e-07** (1.76e-01) | 6.94e-09 (1.59e-01) | **0** (58) |
+| 1e-7 | 2.19e-07 (5.61e-06) | 7.67e-08 (8.69e-01) | 6.92e-08 (8.47e-01) | **0** (96) |
+
+Both FD comparisons now fall with the step and floor at the FD roundoff, in every parameter
+direction; the AD-vs-numpy floor drops from 5.6e-06 (the old routine's own accuracy) to 2.2e-07
+(the MGE amplitude divergence of leg b). No grid point exceeds 1 % at any step.
+
+Two by-products of removing the `xp.where` region cascade, both from the 2000-step `centre_x`
+transect:
+
+| Quantity | phase A | after |
+|---|---|---|
+| Non-finite autodiff gradients | **2 / 2000**, at `centre_x = ±0.05"` | **0 / 2000** |
+| AD vs FD-smooth residual, max / median | 1.97e-04 / 7.62e-06 | 1.76e-04 / **1.47e-07** |
+
+The NaN at a pixel-aligned centre that phase A flagged as "pre-existing, worth its own task" was the
+`where`-selected `w_large` branch, whose continued fraction divides by zero at `z = 0`: `where`
+discards the value but not its NaN gradient. Weideman has no branch, so `jax.grad` is finite at the
+`r = 0` site. (`SersicCore`/`Gaussian` still route through other `where`s; this note only claims the
+MGE Faddeeva site.) The bounded likelihood transect is unchanged — kink count 93 against a
+93-kink smooth baseline, median AD-vs-FD 3.40e-07 (was 3.50e-07).
+
+### d. Cost — (30, 15361) complex128 block, `OMP_NUM_THREADS=1`
+
+| Routine | JAX compile (s) | JAX warm (s) | ratio |
+|---|---|---|---|
+| `_wofz_rational` (phase A, now deleted) | 0.509 | 0.004958 | 1.00x |
+| `_wofz_weideman` (library, now) | **0.208** | **0.003723** | **0.751x** |
+| `weideman_64` (the drop-in for SciPy parity) | 0.396 | 0.005046 | 1.018x |
+
+Medians of 10 interleaved warm calls, so the ordering is not a drift artifact; it reproduces phase
+A's 0.745x. The library routine is bit-identical to the probe's independent `weideman_32`
+implementation on both accuracy domains, which is the cross-check that the coefficients hoisted into
+PyAutoGalaxy are the right ones. Whole-profile deflection calls under `jax.jit` on the same grid:
+
+| Profile | before | after | ratio |
+|---|---|---|---|
+| `gNFW` (elliptical, Weideman only) | 0.02147 s | 0.01921 s | 0.895x |
+| `gNFWSph` (spherical branch, no Faddeeva at all) | 0.02776 s | **0.001743 s** | **0.063x** (15.9x faster) |
+
+### e. The two phase-A findings, re-measured
+
+| Quantity | phase A | after |
+|---|---|---|
+| `_wofz*` max rel error, gNFW MGE-30 hst inputs (mpmath dps 40) | 3.40e-06 | **1.89e-13** |
+| `_wofz*` max rel error, log-spaced \|z\| sweep | 5.65e-06 | **3.07e-13** |
+| Derivative error just above the `r2 = 2.5` seam | 7.71e-06 | **1.04e-12** |
+| Derivative jump straddling that seam at offset 1e-9 | 5.83e-05 | **2.5549e-09** |
+| — as a multiple of the jump `w'` genuinely makes there (2.5549e-09) | **2.28e+04** | **1.000** |
+| gNFWSph max relative bias vs the exact spherical form (hst) | 6.35e-05 | 9.22e-08 (leg b's amplitude floor) |
+| gNFWSph max spurious cross-axis deflection | 1.45e-04" | **5.4e-16"** |
+| `Gaussian(0,0)` max relative bias / cross-axis | 1.13e-04 / 3.78e-05" | 4.7e-16 / **9.3e-17"** |
+
+`scripts/misc/hazards/scan.py --check --subject component` returns 0 and reports both
+`component.mge.faddeeva-seam-gradient` and `component.mge.spherical-clamp-bias` as **resolved** —
+the framework's own mechanism for a hazard that has gone away (`_check` fails only on *new* IDs;
+the records and the index row stay, because they remain true of the released library until this
+branch merges and ships). To make that verdict about the mechanism rather than a magnitude, each
+reproducer now gates on the thing its finding ID names: the seam finding on the dimensionless
+excess factor above (2.28e+04 before, 1.000 after — any gate between 10 and 1e3 gives the same
+answer), the clamp finding on the spurious cross-axis deflection, which is exactly zero for a
+radial branch and 1.39e-04" for the clamp. Both gates were re-run against the canonical pre-phase-B
+PyAutoGalaxy and both still fire there.
+
+### f. `autolens_workspace_test` pins — no pin edited
+
+Every script under `scripts/imaging/jax_likelihood/` (15 of them) run under the smoke profile
+(`ENV: jax full_datasets`), before and after, with only the PyAutoGalaxy checkout swapped. All 15
+pass in both states. Instrumenting `_wofz` and the spherical branch shows exactly one script reaches
+the changed code (72 JAX `w(z)` calls, 18 exact-branch calls): `mge.py`, whose lens bulge is a
+`Basis` of `lmp_linear.GaussianGradient`, i.e. Gaussian *mass* profiles.
+
+| Script | Pin | Before | After | Rel shift |
+|---|---|---|---|---|
+| `imaging/jax_likelihood/mge.py` | vmap likelihood (`assert_allclose(..., -86283.10392994, rtol=1e-4)`) | −86283.10392994 | −86283.10390232 | **3.20e-10** |
+| `imaging/jax_likelihood/mge.py` | `jit(fit_from)` vs NumPy scalar (`rtol=1e-4`) | JIT −86283.10392994939 | JIT −86283.10390232565 | 3.20e-10 |
+| the other 14 scripts | — | unchanged | unchanged | 0 (no `w(z)` or spherical-branch call) |
+
+Well inside the expected ≤4e-06 and four orders inside the pins' `rtol=1e-4`. The NumPy-side
+scalar in `mge.py` is bit-identical before and after (−86286.96129482672), as it must be: the numpy
+path was not touched. Its 4.5e-05 relative gap to the JAX scalar is pre-existing, unchanged by this
+work, and dominated by something other than the deflection (both states differ from NumPy by 3.857).
+
+`dark.py` and `stellar.py` (numpy path) re-run to a scratch output directory: pins hold.
+
+## Epic ledger — `numpy-deflections-cpu`
+
+| Step | What | Status |
+|------|------|--------|
+| 0–8 | Phases 1–3 | ✓ 2026-09-02 / 2026-09-03 (above) |
+| 6 | JAX-path audit — Faddeeva seams and the spherical clamp (#600 phase A) | ✓ this commit — verdict: lift the clamp, replace with Weideman N=32 |
+| 7 | Phase B — Weideman N=32 on the JAX path + the exact spherical branch lifted onto JAX (PyAutoGalaxy `feature/jax-faddeeva-clamp-audit`, #600) | ✓ this commit — both findings resolve; workspace_test pins move 3.2e-10 |

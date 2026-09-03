@@ -1,0 +1,180 @@
+{
+  "findings": [
+    {
+      "affects_science": true,
+      "anchors": [
+        {
+          "commit": "e5fb32f79426e8198c0b7c135dda0331b5b0b609",
+          "config_key": null,
+          "end_line": 91,
+          "path": "autogalaxy/profiles/mass/abstract/mge.py",
+          "repo": "PyAutoGalaxy",
+          "start_line": 85,
+          "symbol": "autogalaxy.profiles.mass.abstract.mge._wofz_rational",
+          "token_fingerprint": "a284d53ae4bc2157a4329dd1f0a456175a5facba325f29f8055205d14d09e2ed",
+          "tokens": [
+            "reg1",
+            "=",
+            "(",
+            "r2",
+            ">=",
+            "62.0",
+            ")",
+            "(",
+            "(",
+            "r2",
+            ">=",
+            "30.0",
+            ")",
+            "(",
+            "r2",
+            "<",
+            "62.0",
+            ")",
+            "(",
+            "y2",
+            ">=",
+            "1e-13",
+            ")",
+            ")",
+            "reg2",
+            "=",
+            "(",
+            "(",
+            "r2",
+            ">=",
+            "30",
+            ")",
+            "(",
+            "r2",
+            "<",
+            "62",
+            ")",
+            "(",
+            "y2",
+            "<",
+            "1e-13",
+            ")",
+            ")",
+            "(",
+            "(",
+            "r2",
+            ">=",
+            "2.5",
+            ")",
+            "(",
+            "r2",
+            "<",
+            "30",
+            ")",
+            "(",
+            "y2",
+            "<",
+            "0.072",
+            ")",
+            ")",
+            "w",
+            "=",
+            "w6",
+            "w",
+            "=",
+            "xp.where",
+            "(",
+            "reg2",
+            ",",
+            "w5",
+            ",",
+            "w",
+            ")"
+          ]
+        }
+      ],
+      "backend_reachability": {
+        "jax": {
+          "implementation": "_wofz_rational",
+          "region_boundaries": [
+            "r2=2.5",
+            "r2=30",
+            "r2=62",
+            "y2=0.072",
+            "y2=1e-13"
+          ]
+        },
+        "numpy": {
+          "implementation": "scipy.special.wofz",
+          "seams": 0
+        }
+      },
+      "backends": [
+        "jax"
+      ],
+      "blocked_by": [],
+      "code_exists": true,
+      "finding_id": "component.mge.faddeeva-seam-gradient",
+      "hazard_class": "nonsmooth_objective",
+      "measurements": [
+        {
+          "basis": "error_curve",
+          "details": {
+            "maximum_parameter": 1e-09,
+            "parameter": [
+              1e-09,
+              1e-08,
+              1e-07,
+              1e-06
+            ],
+            "parameter_name": "relative offset above the r2=2.5 region seam",
+            "relative_error": [
+              7.712484975462794e-06,
+              7.712484785663215e-06,
+              7.712482886855193e-06,
+              7.71246389983646e-06
+            ]
+          },
+          "unit": "relative_error",
+          "value": 7.712484975462794e-06
+        },
+        {
+          "basis": "reachability",
+          "details": {
+            "blocked_paths": {},
+            "reachable_via": [
+              "jax_gaussian_deflections",
+              "jax_mge_deflections"
+            ]
+          },
+          "unit": "boolean",
+          "value": 1.0
+        }
+      ],
+      "reachable_via": [
+        "jax_mge_deflections",
+        "jax_gaussian_deflections"
+      ],
+      "reproducer": {
+        "angle": 0.0,
+        "offsets": [
+          1e-09,
+          1e-08,
+          1e-07,
+          1e-06
+        ],
+        "relative_error": [
+          7.712484975462794e-06,
+          7.712484785663215e-06,
+          7.712482886855193e-06,
+          7.71246389983646e-06
+        ],
+        "seam": "r2=2.5",
+        "study": "scripts/misc/hazards/mge_faddeeva.py"
+      },
+      "schema_version": 1,
+      "subject": "component",
+      "subject_name": "mge",
+      "summary": "`_wofz_rational` selects one of three rational branches with `xp.where` on |z|^2 and Im(z)^2. The value is continuous to ~1e-6 across a seam but the derivative is not, so `jax.grad` of any MGE deflection carries a kink wherever a grid point crosses a boundary. Autodiff derivative error just above the r2=2.5 seam reaches 7.71e-06 relative, against 1.3e-14 for the SciPy path the numpy backend uses.",
+      "tier": 1,
+      "title": "The JAX Faddeeva routine's region seams make its derivative discontinuous"
+    }
+  ],
+  "schema_version": 1
+}
