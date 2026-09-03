@@ -1,0 +1,204 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "omp_num_threads": "1",
+    "cpu_count": 8
+  },
+  "instrument": "hst",
+  "cell": "basis",
+  "configuration": {
+    "pixel_scale_arcsec": 0.05,
+    "mask_radius_arcsec": 3.5,
+    "grid2d_n_points": 15361,
+    "irregular_n_points": 17980,
+    "sub_size_list": [
+      4,
+      2,
+      1
+    ],
+    "radial_list": [
+      0.3,
+      0.6
+    ],
+    "n_repeats": 20,
+    "cprofile_repeats": 5,
+    "omp_num_threads": "1",
+    "use_jax": false,
+    "xp": "numpy"
+  },
+  "profiles": {
+    "Basis_mge_30": {
+      "family": "basis",
+      "params": {
+        "total_gaussians": 30,
+        "sigma_min": 0.01,
+        "sigma_max": 3.5,
+        "axis_ratio": 0.8,
+        "angle": 45.0,
+        "intensity": 1.0,
+        "mass_to_light_ratio": 1.0
+      },
+      "grid2d_s": 0.1509865500011074,
+      "irregular_s": 0.1712074000006396,
+      "tracer_s": 0.1384149500008789,
+      "grid2d_n_points": 15361,
+      "irregular_n_points": 17980,
+      "tracer_n_points": 15361,
+      "tracer_over_raw": 0.9167369543834448,
+      "cprofile_repeats": 5,
+      "cprofile_note": "Attribution only, from a SEPARATE cProfile pass over cprofile_repeats calls of deflections_yx_2d_from(grid=grids.pixelization). Every number here is inflated by the profiler's per-call tracing overhead and by the profiler's own bookkeeping; they say WHICH function the time is charged to, not how long it takes. The headline timings are grid2d_s / irregular_s / tracer_s, measured with the profiler off.",
+      "cprofile_top": [
+        {
+          "func": "_driver.py:383(_call_grid2d)",
+          "ncalls": 1.0,
+          "tottime_s": 3.1199999999999998e-06,
+          "cumtime_s": 0.14428798
+        },
+        {
+          "func": "basis.py:227(deflections_yx_2d_from)",
+          "ncalls": 1.0,
+          "tottime_s": 9.28e-05,
+          "cumtime_s": 0.14428486000000001
+        },
+        {
+          "func": "deflections_memo.py:408(deflections_yx_2d_from)",
+          "ncalls": 30.0,
+          "tottime_s": 6.042000000000001e-05,
+          "cumtime_s": 0.14059908000000002
+        },
+        {
+          "func": "deflections_memo.py:427(direct)",
+          "ncalls": 30.0,
+          "tottime_s": 3.84e-05,
+          "cumtime_s": 0.1405319
+        },
+        {
+          "func": "gaussian.py:70(deflections_yx_2d_from)",
+          "ncalls": 30.0,
+          "tottime_s": 8.83e-05,
+          "cumtime_s": 0.1404935
+        },
+        {
+          "func": "to_vector_yx.py:44(wrapper)",
+          "ncalls": 30.0,
+          "tottime_s": 8.060000000000001e-05,
+          "cumtime_s": 0.1404052
+        },
+        {
+          "func": "abstract.py:95(result)",
+          "ncalls": 90.0,
+          "tottime_s": 0.00016272000000000001,
+          "cumtime_s": 0.14025962
+        },
+        {
+          "func": "abstract.py:91(evaluate_func)",
+          "ncalls": 90.0,
+          "tottime_s": 0.00021824000000000002,
+          "cumtime_s": 0.13815612000000002
+        },
+        {
+          "func": "transform.py:63(wrapper)",
+          "ncalls": 30.0,
+          "tottime_s": 0.00021526000000000002,
+          "cumtime_s": 0.13806190000000002
+        },
+        {
+          "func": "gaussian.py:82(deflections_2d_via_analytic_from)",
+          "ncalls": 30.0,
+          "tottime_s": 0.0017730600000000003,
+          "cumtime_s": 0.12240374000000001
+        },
+        {
+          "func": "gaussian.py:177(zeta_from)",
+          "ncalls": 30.0,
+          "tottime_s": 0.01996132,
+          "cumtime_s": 0.11797192000000001
+        },
+        {
+          "func": "mge.py:97(_wofz)",
+          "ncalls": 60.0,
+          "tottime_s": 0.09611302000000001,
+          "cumtime_s": 0.09615892000000001
+        }
+      ]
+    }
+  },
+  "pinned_expected": {
+    "Basis_mge_30": {
+      "abs_sum": 259587.23590204224,
+      "abs_max": 14.63398899797888,
+      "n_non_finite": 0,
+      "sample": [
+        [
+          -0.9777613190509087,
+          10.02843272927424
+        ],
+        [
+          6.576187656444237,
+          6.576187656444234
+        ],
+        [
+          10.028432729274243,
+          -0.9777613190509074
+        ],
+        [
+          7.578483087653899,
+          -7.5784830876538996
+        ],
+        [
+          0.9777613190509087,
+          -10.02843272927424
+        ],
+        [
+          -6.576187656444237,
+          -6.576187656444234
+        ],
+        [
+          -10.028432729274243,
+          0.9777613190509074
+        ],
+        [
+          -7.578483087653899,
+          7.5784830876538996
+        ],
+        [
+          -0.30247300400012683,
+          2.9049133883830156
+        ],
+        [
+          2.9049133883830156,
+          -0.3024730040001268
+        ],
+        [
+          0.30247300400012683,
+          -2.9049133883830156
+        ],
+        [
+          -2.9049133883830156,
+          0.3024730040001268
+        ],
+        [
+          9.76114474587484,
+          9.761144745874843
+        ],
+        [
+          10.574485349676419,
+          -10.57448534967642
+        ],
+        [
+          -9.76114474587484,
+          -9.761144745874843
+        ],
+        [
+          -10.574485349676419,
+          10.57448534967642
+        ]
+      ]
+    }
+  },
+  "pinned_drift": [],
+  "pin_provenance": null
+}

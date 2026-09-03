@@ -79,6 +79,9 @@ import autolens as al  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 from _profiles import PROFILES  # noqa: E402
+from autogalaxy.profiles.mass.abstract.deflections_memo import (  # noqa: E402
+    memo_disabled,
+)
 
 from _profile_cli import (  # noqa: E402
     auto_simulate_if_missing,
@@ -351,7 +354,22 @@ def _pins_from(alpha_grid2d, alpha_sample) -> dict:
 
 
 def measure_profile(spec, grids, sample_grid, cli) -> tuple[dict, dict]:
-    """Time + cProfile + pin one profile. Returns ``(record, pins)``."""
+    """Time + cProfile + pin one profile, with the deflection memo suspended.
+
+    ``memo_disabled()`` (PyAutoGalaxy#601) is held for the whole measurement. These cells
+    are the epic's **measurement of record** for what a deflection costs to *compute*,
+    and they must stay comparable across the library's history. Without it the ``tracer_s``
+    column would quietly change meaning: ``Tracer.traced_grid_2d_list_from`` routes through
+    ``Galaxy.deflections_yx_2d_from``, where the memo lives, and the timing loop holds the
+    profile and grid fixed — so from v2026.9 onward it would time a dict lookup and a copy
+    rather than the deflection (``gNFW``/hst 282 ms -> 1.1 ms). The memo's own on/off
+    numbers belong in ``basis.py``, which measures both deliberately.
+    """
+    with memo_disabled():
+        return _measure_profile(spec, grids, sample_grid, cli)
+
+
+def _measure_profile(spec, grids, sample_grid, cli) -> tuple[dict, dict]:
     profile = spec.build()
     tracer = al.Tracer(
         galaxies=[
