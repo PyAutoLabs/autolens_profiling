@@ -22,6 +22,12 @@ SUBJECTS = {
         SubjectSpec("component", "ell_comps", "Ellipticity conversion and profile construction"),
         SubjectSpec("component", "spherical_geometry", "Radial geometry at profile centre"),
         SubjectSpec("component", "power_law", "Elliptical power-law deflections"),
+        SubjectSpec(
+            "component",
+            "mge",
+            "Multi-Gaussian-Expansion deflections: the JAX Faddeeva regions and the "
+            "spherical axis-ratio clamp",
+        ),
         SubjectSpec("matrix", "curvature_matrix", "Synthetic inversion curvature matrices"),
         SubjectSpec(
             "likelihood",

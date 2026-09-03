@@ -4,6 +4,7 @@ from .active_set import ActiveSetCheck
 from .backend_divergence import BackendDivergenceCheck
 from .conditioning_floor import ConditioningFloorCheck
 from .likelihood_conditioning import LikelihoodConditioningCheck
+from .mge_faddeeva import MGEFaddeevaCheck
 from .nonfinite_gradient import NonFiniteGradientCheck
 from .positions_penalty import PositionsPenaltyCheck
 from .prior_exit import PriorExitCheck
@@ -15,6 +16,7 @@ CHECKS = (
     SaturationCheck(),
     NonFiniteGradientCheck(),
     BackendDivergenceCheck(),
+    MGEFaddeevaCheck(),
     ConditioningFloorCheck(),
     ActiveSetCheck(),
     LikelihoodConditioningCheck(),
