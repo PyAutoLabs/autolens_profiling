@@ -645,3 +645,178 @@ and it is filed for its own task:
 | 4 | Phase 2 library change — scipy `wofz` + exact spherical MGE branch (PyAutoGalaxy `09785e32`, issue #596) | ✓ 2026-09-02 |
 | 5 | Phase 2 re-run; `total` pins held, `dark` / `stellar` re-pinned with provenance | ✓ this commit |
 | 6 | JAX-path audit — Faddeeva seams and the spherical clamp | filed (PyAutoMind draft) |
+
+# After phase 3 — closed-form profiles and the shared geometry (2026-09-03)
+
+Phase 3 of the epic ([PyAutoGalaxy#598](https://github.com/PyAutoLabs/PyAutoGalaxy/issues/598)):
+the PowerLaw `hyp2f1` → omega series with a `factor`-driven term count, the NFW / NFWSph masks,
+the Isothermal hoists, and the rotation-matrix `transform_grid_2d_to_reference_frame` every
+`@transform`-decorated profile pays once per call. Library PRs:
+[PyAutoArray#519](https://github.com/PyAutoLabs/PyAutoArray/pull/519) (geometry) →
+[PyAutoGalaxy#599](https://github.com/PyAutoLabs/PyAutoGalaxy/pull/599) (profiles).
+
+## Environment — a different host from phases 1–2
+
+| | |
+|---|---|
+| Host | Claude Code web container (4 cores), `OMP_NUM_THREADS=1`, numpy backend (`use_jax=False`) |
+| PyAutoLens | v2026.8.29.1 (PyPI) — hence the `_v2026.8.29.1` artifact suffix; the committed phase-2 `_v2026.8.17.1` files are left in place as the laptop record |
+| PyAutoArray | `c9f67e78` (before) → `755e43d1` (after) |
+| PyAutoGalaxy | `8d152b15` (before) → `8aefe5a6` (after) |
+| Grids, repeats | identical to phases 1–2 (`_driver.py`) |
+
+The **before** numbers below were measured on *this* box against the `main` clones on the same
+day, so the ratios are same-machine. They are not comparable in absolute terms to the laptop
+tables above (this box is ~10 % slower on `PowerLaw`, ~35 % on `gNFW`). Every before pin held at
+rtol 1e-6 against the committed phase-2 pins, on both instruments, before any library change.
+
+## Micro-benchmarks that fixed the design (hst-sized grid, 15,361 points, this box)
+
+| Lever | before | after | × |
+|---|---|---|---|
+| PowerLaw angular factor, q = 0.8 (11 terms) | `hyp2f1` 7.40 ms | Horner series 0.21 ms | 35× |
+| … q = 0.5 (22 terms) | 12.2 ms | 0.40 ms | 30× |
+| … q = 0.3 (39 terms) | 18.2 ms | 0.89 ms | 20× |
+| … q = 0.1 (124 terms) | 48.9 ms | 2.10 ms | 23× |
+| `z = exp(iφ)` | `arctan2` + `cos` + `sin` 0.74 ms | `(q x + i y) / hypot` 0.24 ms | 3× |
+| `transform_grid_2d_to_reference_frame` | polar 1.42 ms | rotation matrix 0.21 ms | 7× |
+| `capital_F_from` (NFW) | both branches on the full grid 1.22 ms | each on its own subset 0.63 ms | 2× |
+
+Two consequences. The series wins at **every** axis ratio, including the low-q regime where the
+term count is in the hundreds, so no `hyp2f1` fallback is kept. And the Horner form matters: the
+term-by-term recurrence (the JAX `scan` body transcribed to numpy) is 2.7–3× slower than Horner on
+the same coefficients (0.57 vs 0.21 ms at q = 0.8), because it carries two complex arrays per step
+instead of one.
+
+### The term count follows `factor`
+
+`_omega_n_terms_from(f)` is the smallest `N` with `f^N / (1 − f) ≤ 1e-10` — every term is bounded
+by `f^n` (the recurrence ratio is below one for all slopes in (0, 2)), so that is a bound on the
+tail. Verified against `mpmath.hyp2f1` at 40 digits over slope 1.5–2.99 × q 0.05–0.99, 64 angles:
+**worst relative error 5.7e-11** (slope 2.99, q 0.3). Against the prompt's fixed-count table
+(20 terms → 2.9e-6 worst, 30 → 4.6e-9), and the hazard finding that a fixed count fails below
+q ≈ 0.25:
+
+| q | 1.0 | 0.99 | 0.9 | 0.8 | 0.5 | 0.3 | 0.25 | 0.1 | 0.05 | 0.01 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `n_terms` | 1 | 5 | 8 | 11 | 22 | 39 | 47 | 124 | 254 | 1348 |
+
+The JAX branch keeps `omega(..., n_terms=20)` and its trigonometric `z`; nothing on that path moved.
+
+## The after table — before (this box, `main`) → after (this box, phase 3)
+
+Same host, same day, `OMP_NUM_THREADS=1`, median of 20 timed calls. Bold marks ≥ 1.5×.
+### `hst` — 0.05"/px · 15361 Grid2D points · 17980 over-sampled points
+
+| Profile | Cell | Grid2D before → after | Grid2D × | Irregular before → after | Irreg × | Tracer before → after | Tracer × | Pin |
+|---------|------|-----------------------|----------|--------------------------|---------|-----------------------|----------|-----|
+| `Isothermal` | total | 1.95 ms → 938 µs | **2.08×** | 2.02 ms → 930 µs | **2.17×** | 4.83 ms → 3.13 ms | **1.55×** | PASS |
+| `IsothermalSph` | total | 1.01 ms → 931 µs | 1.08× | 947 µs → 909 µs | 1.04× | 2.96 ms → 2.96 ms | 1.00× | PASS |
+| `PowerLaw` | total | 9.59 ms → 1.68 ms | **5.70×** | 10.92 ms → 1.76 ms | **6.19×** | 20.01 ms → 4.52 ms | **4.42×** | PASS |
+| `PowerLawSph` | total | 1.30 ms → 1.29 ms | 1.00× | 1.20 ms → 1.26 ms | 0.96× | 3.45 ms → 3.65 ms | 0.95× | PASS |
+| `NFW` | dark | 2.97 ms → 1.83 ms | **1.62×** | 3.27 ms → 1.90 ms | **1.72×** | 6.97 ms → 5.02 ms | 1.39× | PASS |
+| `NFWSph` | dark | 3.65 ms → 1.92 ms | **1.90×** | 3.84 ms → 1.85 ms | **2.08×** | 8.41 ms → 4.60 ms | **1.83×** | PASS |
+| `gNFW` | dark | 135.68 ms → 139.17 ms | 0.97× | 155.36 ms → 163.20 ms | 0.95× | 275.26 ms → 281.96 ms | 0.98× | PASS |
+| `gNFWSph` | dark | 3.49 ms → 3.69 ms | 0.95× | 3.81 ms → 3.92 ms | 0.97× | 7.91 ms → 9.60 ms | 0.82× | PASS |
+| `Gaussian` | stellar | 7.70 ms → 7.03 ms | 1.09× | 8.42 ms → 7.78 ms | 1.08× | 16.73 ms → 15.03 ms | 1.11× | PASS |
+| `Gaussian_sph_case` | stellar | 1.75 ms → 892 µs | **1.96×** | 1.80 ms → 998 µs | **1.80×** | 4.45 ms → 2.91 ms | **1.53×** | re-pinned |
+
+### `euclid` — 0.1"/px · 3841 Grid2D points · 4468 over-sampled points
+
+| Profile | Cell | Grid2D before → after | Grid2D × | Irregular before → after | Irreg × | Tracer before → after | Tracer × | Pin |
+|---------|------|-----------------------|----------|--------------------------|---------|-----------------------|----------|-----|
+| `Isothermal` | total | 763 µs → 446 µs | **1.71×** | 678 µs → 360 µs | **1.88×** | 1.94 ms → 1.35 ms | 1.44× | PASS |
+| `IsothermalSph` | total | 337 µs → 320 µs | 1.05× | 253 µs → 255 µs | 0.99× | 1.02 ms → 1.04 ms | 0.99× | PASS |
+| `PowerLaw` | total | 2.84 ms → 656 µs | **4.32×** | 3.10 ms → 624 µs | **4.97×** | 6.06 ms → 1.85 ms | **3.27×** | PASS |
+| `PowerLawSph` | total | 533 µs → 524 µs | 1.02× | 359 µs → 391 µs | 0.92× | 1.36 ms → 1.38 ms | 0.99× | PASS |
+| `NFW` | dark | 1.07 ms → 668 µs | **1.60×** | 1.06 ms → 640 µs | **1.65×** | 2.55 ms → 1.87 ms | 1.36× | PASS |
+| `NFWSph` | dark | 1.03 ms → 644 µs | **1.60×** | 1.03 ms → 545 µs | **1.88×** | 2.38 ms → 1.74 ms | 1.37× | PASS |
+| `gNFW` | dark | 36.80 ms → 38.90 ms | 0.95× | 43.59 ms → 44.98 ms | 0.97× | 75.38 ms → 75.97 ms | 0.99× | PASS |
+| `gNFWSph` | dark | 1.80 ms → 1.64 ms | 1.10× | 1.61 ms → 1.60 ms | 1.01× | 3.53 ms → 3.58 ms | 0.99× | PASS |
+| `Gaussian` | stellar | 2.42 ms → 2.19 ms | 1.10× | 2.56 ms → 2.35 ms | 1.09× | 5.25 ms → 4.89 ms | 1.07× | PASS |
+| `Gaussian_sph_case` | stellar | 665 µs → 331 µs | **2.01×** | 612 µs → 289 µs | **2.12×** | 1.81 ms → 1.24 ms | 1.47× | re-pinned |
+
+## What moved, and why
+
+- **`PowerLaw` 5.7× (hst) / 4.3× (euclid) on the raw call, 4.4× / 3.3× through the tracer.** The
+  series replaces `hyp2f1`, which was ~75 % of the call on this box (7.4 of 9.6 ms, more than the
+  laptop's ~35 %); the `hypot` form of `z` and the single `axis_ratio` evaluation take most of
+  the rest. What is left (1.7 ms) is the `(b/R)^(t−1)` power, the series' 11 complex multiply-adds,
+  and the same geometry floor every profile pays.
+- **`Isothermal` 2.1× / 1.7×; `Gaussian_sph_case` 2.0× / 2.0×.** Neither profile's own math changed
+  beyond the hoists — this is the shared-geometry lever: the rotation-matrix transform (−1.2 ms
+  on hst) and one `Grid2D` construction per call instead of two. `Isothermal` is the floor the
+  prompt named, and it moved from 1.95 ms to 0.94 ms.
+- **`NFW` 1.6× / 1.6×; `NFWSph` 1.9× / 1.6×.** `NFW` gets the geometry lever plus the subset
+  `capital_F_from` and the hoisted squares. `NFWSph` gets the real-valued `coord_func_f_from`: its
+  spherical path was complex128 end to end (the `complex64` ones-array promoted `arccos`,
+  `arccosh`, `sqrt`, `log` and the final `where` to complex), and is now real — which is why the
+  spherical NFW is finally cheaper than the elliptical one on hst, as it should be.
+- **`IsothermalSph`, `PowerLawSph`, `gNFW`, `gNFWSph`, `Gaussian`: untouched, 0.95–1.1×.** The
+  `*Sph` profiles do not go through the rotation (their `transformed_to_reference_frame_grid_from`
+  is the translation only) and `gNFW` is the MGE kernel; those rows are the noise band on this box,
+  which reads ±10 % — narrower than the laptop's ±30 %, but the same caveat applies.
+- **`RuntimeWarning`s: gone.** The before runs of `dark.py` emitted three per `NFW` call on both
+  instruments (`arctanh` divide-by-zero, `log` divide-by-zero, `arctan` invalid) because the grid
+  contains the exact centre and the `where` guards were applied to already-evaluated full arrays.
+  The inputs are now masked to a point on the unit ellipse before evaluation and the centre is
+  zeroed through the prefactor — no `errstate`. `coord_func_g`'s r = 1 division is masked the
+  same way. `PowerLawSph`'s centre divide (phase-1 finding 4) is untouched and still warns.
+
+### Finding — the "rotate-back re-wrap" does not exist; the second `Grid2D` was in `VectorYX2D`
+
+The prompt asked to count and cut the `Grid2D` / `VectorYX2D` re-wraps per call. cProfile on the
+phase-2 code counted, per `Isothermal.deflections_yx_2d_from(Grid2D)` call: `Grid2D.__init__` **2×**,
+`VectorYX2D.__init__` 1×. The rotate-back was not one of them — `GridMaker.result` returns the
+function's output unchanged when the input is a bare array, so `@to_grid` on
+`rotated_grid_from_reference_frame_from` never wrapped anything. The second `Grid2D` was inside
+`VectorYX2D.__init__`, which re-converted the grid `@to_vector_yx` had handed it and rebuilt a
+`Grid2D` on the same mask. PyAutoArray#519 reuses the grid when it already is a `Grid2D` on that
+mask; the count is now 1 + 1, both API-bearing (the transformed grid the profile body indexes, and
+the `VectorYX2D` the caller receives).
+
+### Finding — one pin became exactly zero (`stellar`, re-pinned with provenance)
+
+The rotation matrix is exact where the polar form left round-off: at angle 0, `x' = x·1 + y·0`
+is exactly `0.0` for an on-axis point, where `r·cos(arctan2(y, 0))` gave `~6e-17`. The only
+pinned value that is such a point is the x-deflection of `Gaussian_sph_case` (the elliptical
+`Gaussian` at q = 1, which takes the rotation path) at the pin coordinate (1.0", 0.0"): pinned
+`4.818609681455442e-17`, now `0.0`. The driver's relative check reports that as a 1.0 shift — the
+same trap phase 2 recorded — so `stellar.py` was re-pinned with `--repin --repin-force` after
+reading the refused diff: every other value in the cell moved by 0 (`abs_sum`, `abs_max`) or
+≤ 7.6e-14 (the samples), on both instruments. `pin_provenance` carries the reason. The `total`
+and `dark` pins held without a re-pin; the `*Sph` on-axis pins (`[1.6, 9.8e-17]` and friends) are
+computed through `_cartesian_grid_via_radial_from`, which still uses `arctan2`/`cos`, and did not
+move.
+
+## Likelihood breakdown — pins hold
+
+| Cell | Pin | Result |
+|---|---|---|
+| `pixelization_numba` hst | 27661.910133665442 | **PASSED** |
+| `pixelization_numba` euclid | none defined | `log_likelihood` **6213.306873886171** — 5e-14 relative from the phase-2 value 6213.306873885871 (the series and the rotation change the last digits, not the answer) |
+| `delaunay_numba` hst | pinned | **PASSED** |
+| `delaunay_numba` euclid | pinned | **PASSED** |
+
+As in phases 1–2 the `results/breakdown/imaging/*` artifacts of those runs were **not committed**;
+only the pin verdicts are taken from them.
+
+## Against the phase-3 goal
+
+The prompt's goal was PowerLaw (0.0074 s), NFW (0.0024 s) and Isothermal (0.0014 s) — the epic's
+"every profile ≥ 2×" target for the closed-form four. On this box: `PowerLaw` **5.7×**, `Isothermal`
+**2.1×**, `NFWSph` **1.9×**, `NFW` **1.6×** on the hst `Grid2D` call. `NFW` is the one under 2×:
+its remaining cost is the HK24 polynomial arithmetic on `x1`, `x2` (a dozen full-grid products)
+plus one `sqrt` + `log` + `arctan` + the subset `F`, and the geometry floor it now shares with
+everything else (~0.6 ms of its 1.8 ms). A further step would be a single fused expression for
+the two deflection components; it is not a mask or a hoist and was not attempted here.
+
+## Epic ledger — `numpy-deflections-cpu`
+
+| Step | What | Status |
+|------|------|--------|
+| 0–5 | Phases 1–2 | ✓ 2026-09-02 (above) |
+| 6 | JAX-path audit — Faddeeva seams and the spherical clamp | filed (PyAutoMind draft) |
+| 7 | Phase 3 library change — omega series + NFW masks + hoists (PyAutoGalaxy `8aefe5a6`, #599) and rotation-matrix transform + one `Grid2D` per `VectorYX2D` (PyAutoArray `755e43d1`, #519) | ✓ 2026-09-03 |
+| 8 | Phase 3 re-run; `total` / `dark` pins held, `stellar` re-pinned for the exact-zero sample with provenance | ✓ this commit |
+
