@@ -1374,3 +1374,152 @@ replaced them with worse numbers.
 The JAX branch (phase 2); `convergence_2d_from` / `potential_2d_from`; the downstream
 `test_autolens` / SLaM / workspace_test sweep (phase 3); any profile with a traced or free
 geometry parameter.
+
+# Fixed-geometry deflection memo — phase 2: JAX trace-time constant (2026-09-03)
+
+Phase 2 of the `gaussian-deflections-precompute` epic (PyAutoGalaxy#604), the JAX half of the
+user's idea. Phase 1 memoised the fixed-geometry deflection field **across** numpy likelihood
+evaluations. On JAX there is nothing to memoise across calls — there is one call, the compiled
+one — so this phase folds the field **out of the trace** instead.
+
+## Design, in six lines
+
+1. Under `jax.jit` **every** `jax.numpy` call is staged into the jaxpr, even one whose operands are
+   all concrete: `jnp.asarray(numpy_grid) - jnp.array((0.0, 0.0))` inside a trace returns a
+   `DynamicJaxprTracer`, not an array (measured, JAX 0.10.2).
+2. So the grid a fixed-geometry Gaussian saw at the memo hook was a **tracer** at all 132 call
+   sites of a SLaM-shaped likelihood, and the plan's premise ("the grid arrives concrete") was
+   false. That is fixed upstream, in `PyAutoArray` `Grid2D.subtracted_and_rotated_from`: when
+   `offset` and `angle` are concrete (`validate.is_concrete_scalar` — a tracer fails it) the
+   shift-and-rotate is evaluated inside `jax.ensure_compile_time_eval()`. Both `array` and
+   `over_sampled.array` come out concrete; a free `grid_offset` still takes the staged path.
+3. `deflections_memo` gains a JAX branch: concrete grid + exact profile token → evaluate the
+   unit-ratio field **with numpy and `scipy.special.wofz`** on a numpy twin of the grid, store it in
+   the same dict the numpy path uses, and return `mass_to_light_ratio * jnp.asarray(field)`.
+4. Concreteness is tested positively on both sides (`mge._is_static_scalar` for scalars, an
+   `isinstance(a, jax.Array) and not isinstance(a, jax.core.Tracer)` for arrays, with `jax` read out
+   of `sys.modules` rather than imported). Never `try: np.asarray(...)`.
+5. Anything traced — a free geometry parameter, a traced grid — falls through to the direct JAX
+   call. Nothing branches on a traced value.
+6. `memo_stats()` gains `jax_folds`: the number of trace-time numpy evaluations done for a JAX
+   caller, one per (profile geometry, grid) per trace.
+
+XLA does not do this fold on its own here: `autonerves/jax_wrapper.py` sets
+`--xla_disable_hlo_passes=constant_folding` for compile-time reasons, so a staged constant is
+recomputed on every evaluation.
+
+## Witness — `_wofz` call counts, split by backend
+
+`mge._wofz` wrapped with a counter, `xp is np` versus not, on
+`scripts/imaging/likelihood_runtime/mge_mass_jax.py` (hst, 30 fixed `lmp_linear.Gaussian`s + one free
+`mass_to_light_ratio`, `NFWSph` + shear, rectangular bilinear source, `jax.jit(jax.vmap(...))`,
+batch 3):
+
+| Leg | compile call (numpy, jnp) | steady state (numpy, jnp) |
+|---|---|---|
+| memo **off** (`memo_disabled()`) | **(0, 240)** | (0, 0) |
+| memo **on** | **(180, 0)** | (0, 0) |
+| control — `AUTOGALAXY_DEFLECTIONS_MEMO=0` | (0, 240) | — |
+| control — free `grid_offset` (grid is a tracer) | (0, 240) | — |
+
+240 = 120 Gaussian deflection calls x 2 Faddeeva evaluations each; 180 = 90 folds x 2. The memo
+reports `jax_folds = 90`, `entries = 90`, `hits = 30`, **18.86 MB** — one fold per (Gaussian, grid),
+across the light-profile, pixelization and blurring grids, with the repeat traces hitting. Zero
+jnp-backend calls on the memo-on compile is the proof the Faddeeva evaluation moved to scipy at
+trace time; zero on both in steady state is just a compiled program calling no Python.
+
+## Jaxpr size
+
+`jax.make_jaxpr(jax.vmap(fitness))`, equations counted recursively through every sub-jaxpr:
+
+| Leg | equations |
+|---|---|
+| memo off | **53,369** |
+| memo on | **13,289** |
+| delta | **-40,080 (-75.1%)** |
+
+## Likelihood agreement
+
+| | log likelihood |
+|---|---|
+| memo off | -56107.56407588691 |
+| memo on | -56107.56407588643 (the cell's new pin, checked at rtol 1e-6) |
+| max relative difference | **8.559e-15** |
+
+The two differ only in `scipy.special.wofz` versus the Weideman-32 series, both accurate to ~1e-13
+on this domain, so this is the expected size. The kill-switch control reproduces the memo-off value
+exactly (-56107.56407588691); the free-`grid_offset` control gives -56107.56407588693 (3.6e-16
+relative to memo-off) with the Faddeeva block still traced, which is the point of that control.
+
+## Timings — hst, `jax.jit(jax.vmap(...))`, batch 3, 3 repeats, `OMP_NUM_THREADS=1`
+
+The recorded run (the artifact under `results/runtime/imaging/mge_mass_jax/`):
+
+| | memo off | memo on | ratio |
+|---|---|---|---|
+| `vmap_first_call` (trace + compile), median | 10.837 s | **5.362 s** | **2.02x** |
+| `vmap_first_call`, per repeat | 11.12 / 10.84 / 9.29 s | 4.66 / 5.36 / 6.10 s | |
+| `vmap_steady_x10`, median | 2.505 s | 2.602 s | 0.96x |
+| `vmap_steady_x10`, min | 2.255 s | 2.595 s | 0.87x |
+
+**The win is compile time, not steady state.** Each repeat builds a fresh closure so the trace and
+compile are paid again, and the memo is cleared before every memo-on repeat so each pays a real
+fold. A second full run of the same cell gave 9.955 s -> 6.082 s (1.64x) on the first call, so read
+the compile win as **1.6-2.0x**, not a single number — this is a contended developer host.
+
+The steady-state figures do **not** move: the two legs' per-repeat spreads overlap in both runs
+(recorded run: off 2.25/2.51/2.64, on 2.59/2.60/2.61; earlier run: off 2.82/2.90/3.03, on
+2.50/2.79/2.86). Read them as *unchanged*. In a compiled program the Faddeeva block for 30 fixed
+Gaussians is not where the runtime goes (the inversion is), so folding it away removes 75% of the
+*graph* without moving the wall clock. The value is the compile, which a sampler pays once per
+model and again on any `vmap` batch-size change.
+
+## Pins — held, none edited
+
+`autolens_workspace_test/scripts/imaging/jax_likelihood/` — **all 15 scripts run before and after**
+under the repo's smoke profile (`config/build/profile_smoke.yaml` + the scripts' own `# ENV:`
+declarations), with the task worktree's libraries on `PYTHONPATH` for the "after" leg:
+
+| Script | pin literal | before | after | vmap value before / after |
+|---|---|---|---|---|
+| delaunay.py | -22205.87818084 | PASS | PASS | — |
+| delaunay_mge.py | -561.39264708 | PASS | PASS | -561.39264243 / -561.39264243 |
+| delaunay_near_caustic.py | (no vmap pin) | PASS | PASS | — |
+| lp.py | -6.74165366e08 | PASS | PASS | — |
+| mge.py | -86283.10392994 | PASS | PASS | -86283.10390232 / -86283.10390232 |
+| mge_group.py | -28830.547173 | PASS | PASS | -28830.54717292 / -28830.54717292 |
+| multipole.py | (no vmap pin) | PASS | PASS | — |
+| potential_correction.py | (no vmap pin) | PASS | PASS | — |
+| rectangular.py | -650470.379097 | PASS | PASS | -650476.33024348 / -650476.33024348 |
+| rectangular_dspl.py | -69.493112 | PASS | PASS | -69.49308937 / -69.49308937 |
+| rectangular_dspl_rtu.py | -78.805812 | PASS | PASS | -78.80584494 / -78.80584494 |
+| rectangular_mge.py | -105.52806249 | PASS | PASS | — |
+| rectangular_mge_rtu.py | -131.56973816 | PASS | PASS | — |
+| rectangular_rtu.py | -652043.028434 | PASS | PASS | -652043.02843435 / -652043.02843435 |
+| smbh.py | 1194.84699035 | PASS | PASS | 1194.84699035 / 1194.84699035 |
+
+Every captured `_vmap` value is **bit-identical**, as expected: those models leave geometry
+parameters free, so the memo declines them and the Weideman path is unchanged.
+
+`scripts/lens/deflections/{total,dark,stellar,basis}.py` on hst: **pinned-value checks PASSED at
+rtol 1e-6** on all four (the numpy driver runs memo-off by construction, phase 1's fix).
+
+## Findings
+
+- **The `jit(fit_from)` round-trip in two workspace_test scripts got *more accurate*, not less.**
+  `imaging/jax_likelihood/mge.py` reports `NumPy fit.log_likelihood = -86286.96129482672`; its
+  `jit(fit_from)` value was **-86283.10390232565** before (4.5e-5 relative from numpy) and is
+  **-86286.96129482663** after — 1e-16 from numpy. `delaunay.py` moves the same way
+  (-11102.932387380364 -> -11102.93238648243 against numpy -11102.932386482322). Both are
+  `jit(fit_from)` on a *concrete* instance, where nothing is traced, so the memo folds the whole
+  field and the JAX path returns the scipy answer. Their round-trip assertions pass in both legs;
+  no pin moved, because the `_vmap` pins are on models with free geometry.
+- **The plan's central premise was wrong and the fix was upstream.** Nothing in
+  `deflections_memo.py` could have folded anything while the grid arrived as a tracer. The
+  measurement that settled it: `jnp.array((0.0, 0.0))` inside `jax.jit` returns a
+  `DynamicJaxprTracer` in JAX 0.10.2, and the same is true of `jnp.asarray` on a numpy array.
+- **`Grid2DIrregular.subtracted_and_rotated_from` was deliberately left alone.** Only the `Grid2D`
+  method is on the fit path (`FitDataset.grids`); the irregular sibling can take the same treatment
+  when something needs it.
+- **Ship order is PyAutoArray -> PyAutoGalaxy -> autolens_profiling.** The memo's JAX branch is inert
+  without the PyAutoArray change, and the profiling cell measures both.
