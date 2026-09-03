@@ -27,6 +27,8 @@ as `pin_provenance`. `total` has never been re-pinned.
 <!-- BEGIN auto-table:deflections -->
 | Cell | Instrument | Profile | Grid2D s/call | Irregular s/call | Tracer s/call | Pin | Version |
 |------|------------|---------|---------------|------------------|---------------|-----|---------|
+| `basis` | euclid | `Basis_mge_30` | 30.9 ms | 34.3 ms | 29.5 ms | ok | v2026.8.17.1 |
+| `basis` | hst | `Basis_mge_30` | 151.0 ms | 171.2 ms | 138.4 ms | ok | v2026.8.17.1 |
 | `dark` | euclid | `NFW` | 668 μs | 640 μs | 1.9 ms | ok | v2026.8.29.1 |
 | `dark` | euclid | `NFWSph` | 644 μs | 545 μs | 1.7 ms | ok | v2026.8.29.1 |
 | `dark` | euclid | `gNFW` | 38.9 ms | 45.0 ms | 76.0 ms | ok | v2026.8.29.1 |
@@ -54,7 +56,7 @@ artifacts under `results/lens/deflections/`.
 
 ## The cells
 
-Three thin files, split by mass-profile family. Each is a prologue, a pinned
+Four thin files, split by mass-profile family. Each is a prologue, a pinned
 `EXPECTED` block and one call into `_driver.py`:
 
 | Cell | Profiles |
@@ -62,6 +64,7 @@ Three thin files, split by mass-profile family. Each is a prologue, a pinned
 | `total.py` | `Isothermal`, `IsothermalSph`, `PowerLaw`, `PowerLawSph` |
 | `dark.py` | `NFW`, `NFWSph`, `gNFW`, `gNFWSph` |
 | `stellar.py` | `Gaussian`, `Gaussian_sph_case` |
+| `basis.py` | `Basis_mge_30` — 30 fixed `lmp.Gaussian`s, log-spaced sigma, one shared `mass_to_light_ratio` |
 
 `autogalaxy.mp` has **no** `GaussianSph`. The spherical case is the elliptical
 `Gaussian` with `ell_comps=(0.0, 0.0)`, recorded as `Gaussian_sph_case` so both
@@ -93,11 +96,31 @@ exactly — circular 3.5" mask, `over_sample_size_via_radial_bins_from` with
 `over_sample_size_pixelization=1` — so a number here is directly comparable to
 the ray-trace step of that cell's breakdown.
 
-`tracer_over_raw` records `tracer_s / grid2d_s`. It now lands at ≈ 0.9–1.5× for
-every profile: the tracer evaluates the same deflection and pays grid bookkeeping
-and plane assembly on top. Before phase 1 the **spherical** profiles came out far
-*below* 1 — that inverted ratio was the symptom of finding 2 below, and it is the
-thing to watch if it ever returns.
+`tracer_over_raw` records `tracer_s / grid2d_s`. It lands at ≈ 0.9–1.5× for every
+profile: the tracer evaluates the same deflection and pays grid bookkeeping and plane
+assembly on top. Before phase 1 of the `numpy-deflections-cpu` epic the **spherical**
+profiles came out far *below* 1 — that inverted ratio was the symptom of finding 2
+below, and it is the thing to watch if it ever returns.
+
+### The deflection memo is suspended while measuring — by design
+
+PyAutoGalaxy#601 put a cross-evaluation memo
+(`autogalaxy/profiles/mass/abstract/deflections_memo.py`) on the **summation** call
+sites, `Galaxy.deflections_yx_2d_from` and `Basis.deflections_yx_2d_from`: a mass profile
+whose parameter values and grid contents repeat returns its stored field instead of
+recomputing it.
+
+`_driver.measure_profile` therefore holds `deflections_memo.memo_disabled()` for the whole
+measurement — timings, cProfile pass and pins alike. These cells are the epic's
+measurement of record for what a deflection costs to **compute**, and every number here
+must stay comparable with phases 1–3. Without the suspension `tracer_s` would silently
+change meaning: `Tracer.traced_grid_2d_list_from` routes through `Galaxy`, and the timing
+loop holds the profile and grid fixed, so it would time a dict lookup and a copy rather
+than the deflection (measured: `gNFW`/hst 282 ms → 1.1 ms, `tracer_over_raw` 0.01×).
+
+The memo's own effect is measured deliberately, and only, in `basis.py` — which reports
+memo-off against memo-on for the same basis — and at the likelihood level in
+[`scripts/imaging/likelihood_runtime/pixelization_numba_mge_mass.py`](../../imaging/likelihood_runtime/pixelization_numba_mge_mass.py).
 
 ### cProfile: attribution, not timing
 

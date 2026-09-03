@@ -21,9 +21,11 @@ the dashboards.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
 import autolens as al
+import numpy as np
 
 # Axis ratio 0.8 at 45 degrees, shared by every elliptical fiducial so the
 # elliptical / spherical pairs differ only in the geometry code path.
@@ -38,12 +40,20 @@ class ProfileSpec:
     """One profile under measurement: what to build, and how to describe it."""
 
     name: str
-    family: str  # "total" | "dark" | "stellar" — matches the cell filename
-    cls_name: str  # attribute on ``al.mp``
+    family: str  # "total" | "dark" | "stellar" | "basis" — matches the cell filename
+    cls_name: str  # attribute on ``al.mp``, or the described class for a factory spec
     params: dict
+    factory: Callable[..., object] | None = None
 
     def build(self):
-        """Instantiate the profile from its fiducial parameters."""
+        """Instantiate the profile from its fiducial parameters.
+
+        A spec with a ``factory`` builds through it instead of ``al.mp``: a ``Basis``
+        is not an attribute of ``al.mp`` and its components are derived from the
+        parameters rather than passed straight through.
+        """
+        if self.factory is not None:
+            return self.factory(**self.params)
         return getattr(al.mp, self.cls_name)(**self.params)
 
     @property
@@ -54,6 +64,42 @@ class ProfileSpec:
 
 def _spec(name: str, family: str, cls_name: str, **params) -> ProfileSpec:
     return ProfileSpec(name=name, family=family, cls_name=cls_name, params=params)
+
+
+def mge_basis(
+    *,
+    total_gaussians: int,
+    sigma_min: float,
+    sigma_max: float,
+    axis_ratio: float,
+    angle: float,
+    intensity: float,
+    mass_to_light_ratio: float,
+) -> al.lp_basis.Basis:
+    """A ``Basis`` of light-and-mass Gaussians with log-spaced widths.
+
+    The shape of an MGE lens light in the SLaM ``mass_light_dark`` stage
+    (``autogalaxy/analysis/chaining_util.py``): every Gaussian's centre, ellipticity,
+    intensity and sigma is fixed by the light stage, and the whole stack shares **one**
+    ``mass_to_light_ratio``. The sigma spacing mirrors
+    ``mge_model_from`` — log-spaced from ``sigma_min`` to the mask radius.
+    """
+    ell = al.convert.ell_comps_from(axis_ratio=axis_ratio, angle=angle)
+
+    sigmas = np.logspace(np.log10(sigma_min), np.log10(sigma_max), total_gaussians)
+
+    return al.lp_basis.Basis(
+        profile_list=[
+            al.lmp.Gaussian(
+                centre=CENTRE,
+                ell_comps=(float(ell[0]), float(ell[1])),
+                intensity=intensity,
+                sigma=float(sigma),
+                mass_to_light_ratio=mass_to_light_ratio,
+            )
+            for sigma in sigmas
+        ]
+    )
 
 
 PROFILES: dict[str, ProfileSpec] = {
@@ -145,5 +191,21 @@ PROFILES: dict[str, ProfileSpec] = {
         ell_comps=(0.0, 0.0),
         intensity=1.0,
         sigma=1.0,
+    ),
+    # --- basis (the MGE stack the fixed-geometry deflection memo is built for) ---
+    "Basis_mge_30": ProfileSpec(
+        name="Basis_mge_30",
+        family="basis",
+        cls_name="Basis",
+        params={
+            "total_gaussians": 30,
+            "sigma_min": 0.01,
+            "sigma_max": 3.5,
+            "axis_ratio": 0.8,
+            "angle": 45.0,
+            "intensity": 1.0,
+            "mass_to_light_ratio": 1.0,
+        },
+        factory=mge_basis,
     ),
 }

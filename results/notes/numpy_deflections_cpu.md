@@ -1196,3 +1196,181 @@ work, and dominated by something other than the deflection (both states differ f
 | 0–8 | Phases 1–3 | ✓ 2026-09-02 / 2026-09-03 (above) |
 | 6 | JAX-path audit — Faddeeva seams and the spherical clamp (#600 phase A) | ✓ this commit — verdict: lift the clamp, replace with Weideman N=32 |
 | 7 | Phase B — Weideman N=32 on the JAX path + the exact spherical branch lifted onto JAX (PyAutoGalaxy `feature/jax-faddeeva-clamp-audit`, #600) | ✓ this commit — both findings resolve; workspace_test pins move 3.2e-10 |
+
+
+---
+
+# Fixed-geometry deflection memo — phase 1 (2026-09-03)
+
+Successor epic **`gaussian-deflections-precompute`**
+([PyAutoGalaxy#601](https://github.com/PyAutoLabs/PyAutoGalaxy/issues/601), phase 1 —
+numpy only; the JAX branch is phase 2, the downstream sweep phase 3). Same host as
+above: laptop CPU (WSL2), `OMP_NUM_THREADS=1`, numpy backend, PyAutoLens v2026.8.17.1.
+
+> **Host caveat.** Some of these runs shared the box with the parallel
+> `jax-faddeeva-clamp-audit` task (#600) — load average ~8, two other Python processes at
+> >200% CPU — which inflated every absolute millisecond by roughly 1.7x. The headline
+> numbers below are from the **quiet** re-runs (load ~2); where a contended run is quoted
+> it is labelled. The **ratios** — memo-off over memo-on, both legs measured back to back
+> in one process — held at 21x (hst) / 13–16x (euclid) across every run, contended or not.
+
+## Design, in six lines
+
+1. New private module `autogalaxy/profiles/mass/abstract/deflections_memo.py`: a
+   module-global dict, **byte-capped** (default 256 MB, FIFO, `AUTOGALAXY_DEFLECTIONS_MEMO_MAX_MB`),
+   kill switch `AUTOGALAXY_DEFLECTIONS_MEMO=0` plus an in-process `memo_disabled()`
+   context manager, read-only stored arrays, `memo_stats()` / `memo_clear()`.
+2. **Grid key is content**, not identity — `sha256` of the coordinate bytes plus the grid's
+   type name, shape, dtype, `pixel_scales` and `origin` — because `FitDataset.grids` rebuilds
+   the grid every likelihood call. A shifted or rotated grid changes the bytes and misses,
+   by construction.
+3. **Profile key is values**: the class (module + qualname) plus the values of its *constructor
+   arguments*, read off the instance. Only constructor arguments are read, so an array a profile
+   caches on its first call cannot turn a memoisable profile unmemoisable mid-run.
+4. **L1** — any mass profile whose constructor arguments are all scalars stores its final (y,x)
+   field; a hit returns a writable copy re-wrapped by the same maker `@to_vector_yx` uses.
+5. **L2** — `mp.Gaussian` and the `lmp` / `lmp_linear` Gaussians that inherit its deflections key
+   *past* `mass_to_light_ratio` and store the **unit-ratio** field, evaluated through the normal
+   path on a shallow copy whose ratio is `1.0`; every call (the filling miss included) returns
+   `ratio x field`. `GaussianGradient` is not linear in one scalar and takes L1 only.
+6. **Hooked at the two summation sites** — `Galaxy.deflections_yx_2d_from` and
+   `Basis.deflections_yx_2d_from` — so one intercept covers every profile and no class needs an
+   override. The memo engages only when `xp is np`; JAX falls straight through.
+
+Anything that cannot be keyed exactly (a non-scalar constructor argument, a `**kwargs`
+constructor, a tracer, a grid with no numpy array) falls through to the ordinary call.
+Failure modes are **misses, never stale hits**.
+
+### Exactness
+
+L1 is bit-identical: the stored array is the array the direct call returned. L2 differs from a
+direct call only in the order of one multiplication — `m2l * ((I*s)*K*z)` against
+`(((m2l*I)*s)*K)*z` — an ulp-level difference. Measured on the 30-Gaussian basis:
+**2.4e-13** (hst) and **2.9e-14** (euclid) max relative, against a tolerance of 1e-12; at the
+likelihood level the two legs agreed to **0.0e+00**.
+
+## Fingerprint cost
+
+`sha256` over the coordinate bytes, hst `Grid2D`, 15,361 points (246 KB):
+
+| | |
+|---|---|
+| cold (bytes hashed) | **936 μs** — of which `sha256` itself 672 μs (366 MB/s on this host), `tobytes` 10 μs, `pixel_scales` + `origin` 1.5 μs |
+| cached (same grid object) | **0.55 μs** |
+
+That is ~9x the ~0.1 ms the plan assumed, and it is why the module keeps a small
+`id(grid) -> (weakref, fingerprint)` cache: a 30-Gaussian basis would otherwise pay 28 ms of
+hashing per evaluation against the ~150 ms it saves. With the cache the hash is paid once per
+grid object, i.e. once per likelihood evaluation. The weakref makes a recycled `id` a miss, not a
+wrong answer; the cache does assume the grid's coordinate array is not mutated in place after it
+is first fingerprinted, which no library path does.
+
+## The existing cells still measure the physics
+
+`_driver.measure_profile` now holds `deflections_memo.memo_disabled()` for the whole
+measurement — timings, cProfile pass and pins alike. Those cells are the epic's measurement of
+record for what a deflection costs to **compute**, and they have to stay comparable with phases
+1–3. Left alone, `tracer_s` would have changed meaning without changing name:
+`Tracer.traced_grid_2d_list_from` routes through `Galaxy.deflections_yx_2d_from`, where the memo
+lives, and the driver's 20 repeats hold the profile and grid fixed — measured before the
+suspension was added, `gNFW`/hst fell to **1.1 ms** against a 282 ms phase-3 record
+(`tracer_over_raw` 0.01x) and `Gaussian`/hst from 15.0 ms to 1.5 ms. With the suspension in
+place `tracer_over_raw` is back in its usual band — on a quiet host, `gNFW`/hst
+`grid2d_s` 98.7 ms against `tracer_s` 101.2 ms (**1.02x**), `NFW` 1.29x, `Gaussian` 1.23x.
+
+The env var could not do this job: the module reads it at call time, but a harness needs a scope
+it can guarantee it restored — hence the context manager rather than an `os.environ` assignment.
+
+## New cell — `scripts/lens/deflections/basis.py`
+
+A `Basis` of **30 fixed `lmp.Gaussian`s**, log-spaced sigma 0.01"–3.5", axis ratio 0.8 at 45°,
+one shared `mass_to_light_ratio` — the MGE shape of a SLaM `mass_light_dark` lens light.
+`Grid2D` = `dataset.grids.pixelization`, median of 20 calls, measured in the cell's own witness
+block (the driver's own columns for this cell are memo-off, like every other cell).
+
+| Instrument | Points | memo OFF | memo ON (geometry + ratio fixed) | memo ON (ratio free per call) |
+|---|---|---|---|---|
+| hst | 15,361 | **135.6 ms** | **6.3 ms** (21.5x) | **6.2 ms** (21.8x) |
+| euclid | 3,841 | **33.6 ms** | **2.5 ms** (13.5x) | **2.1 ms** (15.9x) |
+
+Contended runs of the same cell gave hst 220.8 → 10.5 ms (21.1x) and euclid 55.5 → 4.3 ms
+(13.0x): the absolute numbers move with the host, the ratio does not. The "ratio free per
+call" column is the case the epic is for — the geometry is fixed, the shared
+`mass_to_light_ratio` moves every evaluation, and the basis still collapses to 30
+multiply-adds. It differs from the fixed-ratio column only by host noise; the two do
+identical work.
+
+The driver's own columns for this cell (memo suspended, like every cell) are
+151.0 / 171.2 / 138.4 ms hst and 30.9 / 34.3 / 29.5 ms euclid for
+`grid2d_s` / `irregular_s` / `tracer_s`.
+
+Machine noise on this host is substantial — a first, un-warmed measurement came out 3x high — so
+the cell runs a throwaway basis evaluation before its first timed leg.
+
+## Witness — `_wofz` call counts
+
+`autogalaxy.profiles.mass.abstract.mge._wofz` wrapped **in the cell**, counted across three
+consecutive `Basis.deflections_yx_2d_from` calls (2 calls per Gaussian, so 60 per full evaluation):
+
+| Condition | hst | euclid |
+|---|---|---|
+| fixed geometry, memo on | **[60, 0, 0]** | **[60, 0, 0]** |
+| a geometry parameter varied per call (control) | [60, 60, 60] | [60, 60, 60] |
+| `AUTOGALAXY_DEFLECTIONS_MEMO=0` (kill-switch control) | [60, 60, 60] | [60, 60, 60] |
+
+The Faddeeva function is not called at all on evaluations 2 and 3, and both controls prove the
+counter is live rather than the wrapper being bypassed.
+
+## Likelihood level — `scripts/imaging/likelihood_runtime/pixelization_numba_mge_mass.py`
+
+The existing `pixelization_numba.py` gives its lens a **light-only** MGE, so the MGE never enters
+the ray-trace and its hst bilinear pin (27661.910133665442) says nothing about this change; it
+was neither edited nor re-pinned. The new sibling puts the MGE in the mass model instead — 30
+fixed `lmp_linear.Gaussian`s sharing one free `mass_to_light_ratio` (the
+`chaining_util.mass_light_dark_basis_from` shape), plus `NFWSph` + `ExternalShear`, same numba
+sparse-operator rectangular-bilinear source, hst, 4 free parameters.
+
+Five consecutive `analysis.log_likelihood_function` calls per leg, each leg with its own untimed
+warm-up:
+
+| | memo OFF | memo ON | |
+|---|---|---|---|
+| per call (median of 5), quiet host | **0.583 s** | **0.195 s** | **3.00x** |
+| contended host, two runs | 1.233 s / 1.011 s | 0.453 s / 0.404 s | 2.72x / 2.50x |
+| `log_likelihood` | -56107.564075886374 | -56107.564075886374 | max relative **0.0e+00** |
+
+So a whole numba CPU likelihood evaluation of the SLaM-shaped model gets **2.5–3.0x faster**,
+and the answer does not move by a single bit. The remaining time is the inversion, not the
+ray-trace.
+
+Caveat on the model: its parameters sit at prior medians and are *not* fitted to the dataset, so
+the log likelihood is large and negative. That is a timing fiducial, not a fit — the memo's effect
+does not depend on it. The cell also surfaces a pre-existing library warning on this model shape
+("No blurring_image provided"), which is not this change's doing and is left alone.
+
+## Memory footprint
+
+| Run | Entries | Bytes | Cap |
+|---|---|---|---|
+| `basis.py` hst (30 Gaussians, 1 grid) | 30 | **7.03 MB** | 256 MB |
+| `basis.py` euclid | 30 | **1.76 MB** | 256 MB |
+| `pixelization_numba_mge_mass.py` hst (32 mass profiles x 3 grids) | 96 | **19.19 MB** | 256 MB |
+
+Every run asserts it stayed under the cap. Nothing came close: the default cap holds roughly a
+dozen full evaluations' worth of fields at hst resolution.
+
+## Pins — held, no re-pin
+
+`scripts/lens/deflections/{total,dark,stellar}.py` re-run on hst **and** euclid, before and
+after the driver's memo suspension: every `abs_sum` / `abs_max` / `n_non_finite` /
+16-coordinate `sample` check **PASSED** at rtol 1e-6 on all fourteen runs. `basis.py` pinned itself
+on its first run per the driver contract and PASSED on the second run for both instruments. The
+historical `v2026.8.17.1` artifacts of the three older cells were deliberately **not** overwritten
+by these verification runs — they are the phase-2 record, and this contended host would have
+replaced them with worse numbers.
+
+## What phase 1 did not do
+
+The JAX branch (phase 2); `convergence_2d_from` / `potential_2d_from`; the downstream
+`test_autolens` / SLaM / workspace_test sweep (phase 3); any profile with a traced or free
+geometry parameter.
