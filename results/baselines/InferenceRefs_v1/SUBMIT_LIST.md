@@ -61,3 +61,58 @@ Once run, each row's artifact should be adopted into
 `InferenceRefs_v1/<target_key>/` following the `mge_fp64`/`delaunay_fp64`
 pattern (`reference.json` + `target.json` + `README.md`), and this file's
 row removed / `INDEX.json`+`INDEX.md` updated.
+
+## 2026-08-31 — Phase 1 redo dispatch (rewind, #200)
+
+**Job 342091**, `sbatch --array=0-8,10 --requeue
+submit_search_nautilus_inference_refs_v1_array.sh` from
+`hpc/batch_gpu/`. Ten of the eleven rows are resubmitted **fresh**: the
+2026-08-31 rewind quarantined all pre-rewind mesh/pix evidence in
+`output/legacy_wrong/` (never-cite side), so nothing from the 340210 /
+341879 / 341908 waves may be reused for those rows. Tasks 5/6/7 run the
+corrected `AdaptSplitPower` targets (see "RESUBMIT 2026-08-29" in the array
+script header). At T+2 min: task 0 RUNNING on `euclid-ral-gpu-2`, tasks
+1-8,10 PENDING (Resources).
+
+**Task 9 (`mge_pos_fp64`) was deliberately excluded** under the rewind's
+MGE reuse rule. Its earlier run **340210_9** COMPLETED 2026-08-25 (17:07
+elapsed) and sits on the *reusable* side of the quarantine:
+
+    output/legacy/searches/nautilus/imaging/mge/hst/
+      pos_tauto0.2_f1e8/hpc_a100_fp64_ref_pos_tauto0.2_f1e8/
+      dc42087fb0524e78fd43eced7706b365/
+
+(identical on RAL and on the mirror
+`/mnt/c/Users/Jammy/Science/inference_programme/output/legacy/...`; repo
+artifact `results/searches/nautilus/imaging/mge/hst/hpc_hpc_a100_fp64_ref_pos_tauto0.2_f1e8.json`).
+It is an EXACT match to the refs spec — n_live 400 (2x the fiducial 200),
+seed 0, config `hpc_a100_fp64_ref`, positions on, threshold auto (collapses
+to the 0.2 floor), factor 1e8, version 2026.8.17.1, `.completed` present,
+`priors_ref` `_targets.py@7f2f14765de7` which IS the current `_targets.py`
+hash. Readout: sampler_wall **939.09 s**, maxLL **31786.7965**, logZ
+**31690.4174**, **96,704** evals, kish_ess **7586.1**, target_id
+`sha256:6b93f0e52ecd`. Adoption of this row is a human ruling, routed to the
+batch 2026-08-31-pm review packet.
+
+**Three rulings are pending in that packet:**
+
+1. `mge_pos_fp64` — adopt the 340210_9 legacy row as the reference, or
+   reject and queue array task 9 fresh.
+2. `mge_fp64` — the retro-adopted baseline is OFF-SPEC against the refs
+   standard (n_live 200 not 400, seed null not 0, config `hpc_a100_fp64`
+   not `_ref`, `target.json` pins the STALE `_targets.py@bf2c8742c334`).
+   Its source run `mge/hst/hpc_a100_fp64/181b13114ba3c2298191185ff74f90d8`
+   is in `legacy/` (reusable). Keep as-is, or queue a fresh mge-off `_ref`
+   run — for which **no array task exists**.
+3. `delaunay_fp64` — the retro-adopted baseline is also off-spec (n_live
+   150, seed null, stale `priors_ref` bf2c8742c334) AND its source run
+   `delaunay/hst/hpc_a100_fp64` is in **`legacy_wrong/`** (never-cite), so
+   it rests on rejected evidence. There is **no array task** for a
+   delaunay positions-off ref run; adding one (task 11) is an option.
+
+**Task 10 footnote.** 340210_10 (`delaunay_pos_fp64`) COMPLETED and is
+spec-conformant (n_live 300, seed 0, current `priors_ref`, maxLL
+31338.9667, logZ 31264.8427, wall 3206.5 s) — but it sits in
+`legacy_wrong/` and is therefore doctrine-blocked from reuse. A fresh run
+was dispatched as **342091_10**. Recorded so the cost of the doctrine call
+is visible.
