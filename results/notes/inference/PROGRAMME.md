@@ -68,9 +68,26 @@ laptop mirror as the review surface.
 > `mv` it back into the active tree; rejected → queue a fresh run. `legacy_wrong`
 > results are never reused or cited except as failure-mode documentation.
 
+**Mesh positions rule (binding, R-20260902-01, 2026-09-02):**
+
+> pos_tauto0.2_f1e8 gives a physical solution which is acceptable. All folders
+> with this name do, confirming that for a mesh source this is required to get a
+> physical source and that gradient profiling can be done robustly. If a fit uses
+> a mesh and does not have a positions.info file, it should be assumed its result
+> is unreliable and it cannot be used.
+
+Consequently the positions-off mesh reference rows are retired, and the active
+`output/searches/` tree holds no mesh run without a `positions.info` file.
+
+**Step 3 done 2026-09-02:** Phases 2, 3 and 4's MGE evidence was recovered by ruling, not
+rerun ([R-20260902-08](https://github.com/PyAutoLabs/PyAutoCortex/blob/main/rulings/2026/09/R-20260902-08.md), [R-20260902-09](https://github.com/PyAutoLabs/PyAutoCortex/blob/main/rulings/2026/09/R-20260902-09.md), [R-20260902-10](https://github.com/PyAutoLabs/PyAutoCortex/blob/main/rulings/2026/09/R-20260902-10.md)); Gates A, B1, B2 are
+CALLED again. Next: Phase 12 (positions-on refs for pixelization / knn / delaunay_matern, RAL
+342241) then Phase 5 positions-on.
+
 **Gates A, B pt 1 and B pt 2 are PROVISIONAL.** Each call stands as a working
 assumption, but the legacy MGE evidence beneath it must pass through batch review
-packets before the gate is re-confirmed. Gates C–F remain open.
+packets before the gate is re-confirmed. Gates C–F remain open. *(Superseded
+2026-09-02 — that review happened; see "Step 3 done 2026-09-02" above. C–F still open.)*
 
 **Resume-trap note.** The quarantine doubles as the mandated resume-trap
 relocation: with the old run directories off the active path, a redo run launched
@@ -87,13 +104,13 @@ Reuse means reading from `legacy/`, never resuming in place.
 | Phase 0(d) commit plan + ledger structure | **complete** | PR#136 + PR#137 (2026-08-18) |
 | Phase 14 default CPU mesh decision | **adjudicated + shipped 2026-08-21** — Bilinear (rank-CDF) default, RTU (kernel-CDF) advanced; both meshes explicit in the cells via `--rect-mesh` (PR #155); versioned Bilinear-vs-RTU measurement outstanding | autolens_profiling#153, PyAutoArray#461/#462 |
 | Phase 0(e) searches README dashboard loop | **complete** | PR#139 (2026-08-18): nested-layout scanner, 34 rows render, truth-bar rows verified |
-| Phase 2 NSS mainline re-tune | **REWIND 2026-08-31: evidence in legacy (MGE, pending batch review); the Delaunay re-baselines it is scored against are in legacy_wrong (mesh-pix, quarantined) — see REWIND** — **scan complete 2026-08-24 (CP-2 ✅, CP-5 ✅)** — H2.1 closed: logZ bias was inner-kernel under-mixing (inner=30: 5/5 seeds +1.0 ± 0.4 nats vs Nautilus); operating point n200/nd100/inner30 costs 5.0× the Nautilus sampler wall on MGE, 18.4× on Delaunay (same-night re-baselines: Nautilus mge 707 s, delaunay 1,891 s). Sample economy: Kish ESS 1,315 vs Nautilus 4,121 per run; ~940 vs ~15 evals/ESS. **GATE A CALLED 2026-08-24 — Nautilus stays baseline; af.NSS = tuned alternative** | `phase_02_nss_mainline/RESULTS.md` + DECISIONS.md 2026-08-24 |
-| Phase 3 Prodigy reliability | **REWIND 2026-08-31: evidence in legacy (MGE, pending batch review) — see REWIND** — **wave 1 complete + adversarially reviewed (CP-3 ✅ 2026-08-23, positions-off)** — p̂_hit = 0.048 [0.037, 0.061] (lower bound; n256 tier, ~1,280 distinct draws — tiers share lane-index draws, n-dependence unmeasured); demonstrated ≥99% reliability at **n=256 only** (joint-95% worst case), 3.4–4.5× under the viz-stripped Nautilus wall; zero parameter-recovery impostors; ~half of lanes end pinned (H3.3, measured not closed); θ_E diagnostic uninformative for H3.1 (withdrawn). **Gate B pt 1 CALLED (human-ratified 2026-08-23** — DECISIONS.md): Prodigy(n=256, prior_box, autoconv, positions-off) ratified as global MAP searcher on MGE; pt 2 (PositionsLH) open. Fresh-seed tier 2026-08-24: n128 5/5, n256 15/15 cumulative (Wilson-95 lower 0.80); Nautilus re-baseline 707 s → 3.1–4.3× | `phase_03_prodigy_reliability/RESULTS.md` + `ADVERSARIAL_REVIEW.md` |
+| Phase 2 NSS mainline re-tune | **RULED 2026-09-02 (R-20260902-08): legacy MGE evidence accepted and citable from `output/legacy/`; gate re-called — see Gates row** — **REWIND 2026-08-31: evidence in legacy (MGE, pending batch review); the Delaunay re-baselines it is scored against are in legacy_wrong (mesh-pix, quarantined) — see REWIND** — **scan complete 2026-08-24 (CP-2 ✅, CP-5 ✅)** — H2.1 closed: logZ bias was inner-kernel under-mixing (inner=30: 5/5 seeds +1.0 ± 0.4 nats vs Nautilus); operating point n200/nd100/inner30 costs 5.0× the Nautilus sampler wall on MGE, 18.4× on Delaunay (same-night re-baselines: Nautilus mge 707 s, delaunay 1,891 s). Sample economy: Kish ESS 1,315 vs Nautilus 4,121 per run; ~940 vs ~15 evals/ESS. **GATE A CALLED 2026-08-24 — Nautilus stays baseline; af.NSS = tuned alternative** | `phase_02_nss_mainline/RESULTS.md` + DECISIONS.md 2026-08-24 |
+| Phase 3 Prodigy reliability | **RULED 2026-09-02 (R-20260902-09): legacy MGE evidence accepted and citable from `output/legacy/`; gate re-called — see Gates row** — **REWIND 2026-08-31: evidence in legacy (MGE, pending batch review) — see REWIND** — **wave 1 complete + adversarially reviewed (CP-3 ✅ 2026-08-23, positions-off)** — p̂_hit = 0.048 [0.037, 0.061] (lower bound; n256 tier, ~1,280 distinct draws — tiers share lane-index draws, n-dependence unmeasured); demonstrated ≥99% reliability at **n=256 only** (joint-95% worst case), 3.4–4.5× under the viz-stripped Nautilus wall; zero parameter-recovery impostors; ~half of lanes end pinned (H3.3, measured not closed); θ_E diagnostic uninformative for H3.1 (withdrawn). **Gate B pt 1 CALLED (human-ratified 2026-08-23** — DECISIONS.md): Prodigy(n=256, prior_box, autoconv, positions-off) ratified as global MAP searcher on MGE; pt 2 (PositionsLH) open. Fresh-seed tier 2026-08-24: n128 5/5, n256 15/15 cumulative (Wilson-95 lower 0.80); Nautilus re-baseline 707 s → 3.1–4.3× | `phase_03_prodigy_reliability/RESULTS.md` + `ADVERSARIAL_REVIEW.md` |
 | Phase 8A slogdet A/B (CP-4) | **REWIND 2026-08-31: evidence in legacy_wrong (mesh-pix, quarantined) — see REWIND** — **complete 2026-08-24 — FAIL as pre-registered.** knn stressor never walls (VOID both tiers); on Delaunay+AdaptSplit slogdet rescues 64–73 % of NaNs, 0 regressions, but 20–32 NaN-under-both, λ-transect grads non-finite, marginal-band Δ up to 9,619 nats (A100), CPU 3.7×. Human call: adopt as this repo's GPU gradient-cell default (W8), library stays opt-in, residual NaNs → W7, 8B in parallel — re-scored 2026-08-24 (W7): per-draw attribution (170 draws classified) finds two harvest/driver bugs (negative-coefficient + dead-lane descent rows; zero-anchor λ-transect gradient) now fixed; CP-4 re-scored on the clean subset excluding both — **verdict unchanged, FAIL on both tiers** (residual failures are the genuinely-singular λ⁴ population, 53–80% of sampled `nan_both` draws); tier-dependence traced to `cond ~ 1e15-1e19` where the reconstruction solve NaNs despite finite log-det terms. W8 adoption stands; W9 unblocked | `phase_08_regularization/RESULTS.md` + DECISIONS.md 2026-08-24 |
 | Phase 8B log-coordinate bijector A/B (W5) | **REWIND 2026-08-31: evidence in legacy_wrong (mesh-pix, quarantined) — see REWIND** — **COMPLETE 2026-08-29 — FINAL verdict FALSIFIED 3/4 (F1 both log-det tiers, F3, F4 all five logit seeds) on 39/39 arms; `preliminary: false`. RAL 341978 landed the last 15 arms (walls 1:47–4:03).** F1 gained the slogdet tier (`log_reg` NaNs earlier, 144 vs 938, and 18.6× more lane-steps) and lost its unbalanced-counts caveat (5v5); F3's knife-edge is gone (0.000329 vs 0.000762, both non-zero); F4 fires on 9/7/9/10/7 pinned parameters across all five `knn·logit` seeds, four of which collapse to `einstein_radius` ≈ 0. F2 still does not fire and still rests on **one** scorable seed. **23 of 39 best points are non-physical (59 %), clustered at the \|e\|=1.41421 box corner** — a property of the pixelized cells' box-clipped `ell_comps` geometry (W10), not of the bijector. The preliminary verdict (24/39, PR#186, DECISIONS 2026-08-28; 12/24 excluded) is superseded, not contradicted — DECISIONS 2026-08-29. Harvested 2026-08-27 — 7 arms finished, 6 of them recovered offline. 340576 lost 35/39 arms (dispatched at ~12 % of the wall budget an arm needs); reruns 341845 / 341860 (13 of 14 tasks gave up after 12 MIG requeues — PR#181's guard fires, its cap is too low) then 341874 (knn, 13) / 341875 (delaunay, 20) in flight; 45 of 62 tasks never produced a step. Six finished arms crashed at results-write on out-of-unit-disk `ell_comps` (PyAutoFit#1535) and were rebuilt from `search_internal.dill` at zero GPU cost. F5 clean (bijector provably inert on the physical objective), F4 amended to fp64-equivalence, F1/F2/F3 only partially scorable; F2's reference deviation awaits a human ruling; scorer missing-data defaults fixed | `phase_08_regularization/RESULTS.md` "8B — FINAL" + DECISIONS.md 2026-08-29 |
-| Phase 1 targets registry / schema v2 | **REWOUND 2026-08-31 — restart point (see REWIND)** — **shipped 2026-08-24 (W4, PR#170)** — `_targets.py` + `target_id`, schema v2 (Kish ESS, reject-inclusive evals), `delaunay_nn` / `slam_source_pix(_nn)`; **9 of 13 targets certified after RAL 341879 (2026-08-27)** — "certified" = the three provenance checks only, no coded tolerance exists, `INDEX.json` still lists only the 2 retro rows; **`slam_source_pix_nn` pilot 341908 CORRECTED 2026-08-29** — read as "0 Nautilus calls in 6 h, it thrashes"; `checkpoint.hdf5` says **90,000 calls, 29 bounds, explored=FALSE, maxL 30,701.3, 0.239 s/eval, MaxRSS 3.66 GB**, killed by the wall clock. Zero NaN, zero -inf — it was not thrashing on resamples, it was drowning in a **likelihood-overflow flood**: the lambda^4 regularization matrix goes non-PD from c~1e4, fp64 Cholesky returns finite garbage (log_l up to **3e+303** in shells 14/23/24/26/28), Nautilus accepts it as the best point, `shell_log_l` hits 1e56 at `shell_n_eff` ~ 1 and `f_live` can never terminate. The `.out` froze at `Calls | 0` only because stdout was block-buffered. Same pathology, lower amplitude, on the knn reference row's 480-nat deficit below a same-`target_id` Prodigy arm. Fixed on both sides (`al.reg.AdaptSplitPower` + capped prior; PyAutoFit `Fitness` ceiling; `PYTHONUNBUFFERED=1`) — refs 5/6/7 queued to re-run, and every pre-2026-08-29 adapt-split row is behind a stack boundary. **Redo dispatched 2026-08-31: RAL job 342091 (array 0-8,10, fresh mesh/pix refs incl. corrected 5/6/7); task 9 (mge_pos) excluded — 340210_9 legacy row + both retro baselines routed to batch 2026-08-31-pm packet rulings** | DECISIONS.md 2026-08-24 W4 + 2026-08-27 + **2026-08-29** |
-| Phases 4–7, 9–13 | **REWIND 2026-08-31: this row spans both trees — the Phase 4/6/7 MGE arms are in legacy (pending batch review), the Phase 5 mesh arms in legacy_wrong (quarantined) — see REWIND** — Phase 4 Stage 1 shipped PR#168; **Stage 2 harvested (PR#174, RAL 340114/340115)** and **Stage 3 threshold-vs-stiffness diagnostic harvested 2026-08-27 (RAL 341892)** — **GATE B pt 2 CALLED 2026-08-27**: positions-on at factor ≤ 1e5 is at parity with positions-off (5/5), factor 1e8 rejected for gradient search. **Phase 7 IN FLIGHT 2026-08-29** — `af.SMC` cell wired in (`searches/smc/imaging/mge`, `SEARCHES_SMC_*`) and a 3-arm A100 probe prepared (`mala_warm`, `hmc_warm`, `mala_cold`); nothing measured, GATE D not called. Phases 5, 6 (probe run, see W11), 9–13 not started | `phase_04_positions/RESULTS.md` + DECISIONS.md 2026-08-27 + **2026-08-29** |
-| Gates A–F | **PROVISIONAL 2026-08-31 (see REWIND)** — **A CALLED 2026-08-24** (Nautilus stays nested baseline; af.NSS tuned alternative); **B part 1 CALLED 2026-08-23** (Prodigy n=256 global MAP, MGE, positions-off; caveat (a) n=256-only stands 2026-08-24); **B part 2 CALLED 2026-08-27** (PositionsLH safe for gradient MAP at factor ≤ 1e5 on MGE, 1e8 rejected; six caveats ride with the call — idealised truth positions, one cell/5 seeds Wilson-95 lower 0.57, 1e5 shown safe not calibrated, Nautilus unaffected, no `penalty_at_best` field, `target_id` positions block fixed only in the 2026-08-27 PR); C–F open — C criterion reworded 2026-08-24 (batched-pipeline value, not single-fit ESS/s vs Nautilus) | DECISIONS.md |
+| Phase 1 targets registry / schema v2 | **Phase 1 redo RULED 2026-09-02 ([R-20260902-01](https://github.com/PyAutoLabs/PyAutoCortex/blob/main/rulings/2026/09/R-20260902-01.md)):** job 342091 delivered 10/10; the four positions-on mesh rows (`delaunay_nn_pos`, `slam_source_pix_pos`, `slam_source_pix_nn_pos`, `delaunay_pos`) + `mge_pos` (340210_9, R-20260901-01) + `mge_fp64` (retro, R-20260901-02) are the certified `InferenceRefs_v1` set (6 baselines); the six positions-off mesh rows are spent (`legacy_wrong`); `pixelization`/`knn`/`delaunay_matern` need positions-on rows in a new phase — **REWOUND 2026-08-31 — restart point (see REWIND)** — **shipped 2026-08-24 (W4, PR#170)** — `_targets.py` + `target_id`, schema v2 (Kish ESS, reject-inclusive evals), `delaunay_nn` / `slam_source_pix(_nn)`; **9 of 13 targets certified after RAL 341879 (2026-08-27)** — "certified" = the three provenance checks only, no coded tolerance exists, `INDEX.json` still lists only the 2 retro rows; **`slam_source_pix_nn` pilot 341908 CORRECTED 2026-08-29** — read as "0 Nautilus calls in 6 h, it thrashes"; `checkpoint.hdf5` says **90,000 calls, 29 bounds, explored=FALSE, maxL 30,701.3, 0.239 s/eval, MaxRSS 3.66 GB**, killed by the wall clock. Zero NaN, zero -inf — it was not thrashing on resamples, it was drowning in a **likelihood-overflow flood**: the lambda^4 regularization matrix goes non-PD from c~1e4, fp64 Cholesky returns finite garbage (log_l up to **3e+303** in shells 14/23/24/26/28), Nautilus accepts it as the best point, `shell_log_l` hits 1e56 at `shell_n_eff` ~ 1 and `f_live` can never terminate. The `.out` froze at `Calls | 0` only because stdout was block-buffered. Same pathology, lower amplitude, on the knn reference row's 480-nat deficit below a same-`target_id` Prodigy arm. Fixed on both sides (`al.reg.AdaptSplitPower` + capped prior; PyAutoFit `Fitness` ceiling; `PYTHONUNBUFFERED=1`) — refs 5/6/7 queued to re-run, and every pre-2026-08-29 adapt-split row is behind a stack boundary | DECISIONS.md 2026-08-24 W4 + 2026-08-27 + **2026-08-29** |
+| Phases 4–7, 9–13 | **RULED 2026-09-02 (R-20260902-10), covering the Phase 4 MGE arms only: that legacy MGE evidence is accepted and citable from `output/legacy/`; gate re-called — see Gates row. The Phase 5 mesh arms stay `legacy_wrong` and are redone positions-on.** — **REWIND 2026-08-31: this row spans both trees — the Phase 4/6/7 MGE arms are in legacy (pending batch review), the Phase 5 mesh arms in legacy_wrong (quarantined) — see REWIND** — Phase 4 Stage 1 shipped PR#168; **Stage 2 harvested (PR#174, RAL 340114/340115)** and **Stage 3 threshold-vs-stiffness diagnostic harvested 2026-08-27 (RAL 341892)** — **GATE B pt 2 CALLED 2026-08-27**: positions-on at factor ≤ 1e5 is at parity with positions-off (5/5), factor 1e8 rejected for gradient search. **Phase 7 IN FLIGHT 2026-08-29** — `af.SMC` cell wired in (`searches/smc/imaging/mge`, `SEARCHES_SMC_*`) and a 3-arm A100 probe prepared (`mala_warm`, `hmc_warm`, `mala_cold`); nothing measured, GATE D not called. Phases 5, 6 (probe run, see W11), 9–13 not started | `phase_04_positions/RESULTS.md` + DECISIONS.md 2026-08-27 + **2026-08-29** |
+| Gates A–F | **RE-CALLED 2026-09-02 (PyAutoCortex R-20260902-08/09/10) on the legacy MGE evidence under the MGE reuse rule — Gate A (R-08; the '18.4× on Delaunay' leg is struck: 339069/339071 are legacy_wrong, the per-family NSS-on-mesh cost is unmeasured), Gate B pt 1 (R-09; caveat (a) n=256-only stands), Gate B pt 2 (R-10; six caveats ride; design note: gradient search on a mesh with positions on should run at factor 1e5, not the reference rows' 1e8 — recommendation, not yet ruled). C–F still open.** — **PROVISIONAL 2026-08-31 (see REWIND) → re-called 2026-09-02** — **A CALLED 2026-08-24** (Nautilus stays nested baseline; af.NSS tuned alternative); **B part 1 CALLED 2026-08-23** (Prodigy n=256 global MAP, MGE, positions-off; caveat (a) n=256-only stands 2026-08-24); **B part 2 CALLED 2026-08-27** (PositionsLH safe for gradient MAP at factor ≤ 1e5 on MGE, 1e8 rejected; six caveats ride with the call — idealised truth positions, one cell/5 seeds Wilson-95 lower 0.57, 1e5 shown safe not calibrated, Nautilus unaffected, no `penalty_at_best` field, `target_id` positions block fixed only in the 2026-08-27 PR); C–F open — C criterion reworded 2026-08-24 (batched-pipeline value, not single-fit ESS/s vs Nautilus) | DECISIONS.md |
 
 ---
 
@@ -365,6 +382,26 @@ JSON under `results/searches/`.
 
 ### Phase 1 — Standard benchmark matrix & targets registry
 
+**Status 2026-09-02 — Phase 1 redo RULED.** PyAutoCortex ruling
+[R-20260902-01](https://github.com/PyAutoLabs/PyAutoCortex/blob/main/rulings/2026/09/R-20260902-01.md)
+accepted the `inference_refs_v1` redo: SLURM array job **342091** delivered
+10/10 tasks, and the ruling is **scoped to the four positions-on mesh rows** —
+`delaunay_nn_pos_fp64`, `slam_source_pix_pos_fp64`,
+`slam_source_pix_nn_pos_fp64` and `delaunay_pos_fp64`. With `mge_pos_fp64`
+(run 340210_9, adopted under
+[R-20260901-01](https://github.com/PyAutoLabs/PyAutoCortex/blob/main/rulings/2026/09/R-20260901-01.md))
+and the retroactive `mge_fp64` (R-20260901-02), that is the certified
+`InferenceRefs_v1` set — **6 baselines**. (`results/baselines/InferenceRefs_v1/`
+holds a seventh directory, the retro `delaunay_fp64` row; it is a positions-off
+mesh row, so under the mesh positions rule it is not part of the certified set,
+and `delaunay_pos_fp64` is its positions-on replacement.) The **six
+positions-off mesh rows of 342091 are spent** and moved to
+`output/legacy_wrong/`: under the binding mesh positions rule in the 2026-08-31
+REWIND section above, a mesh fit without a `positions.info` file is unreliable
+and cannot be used. `pixelization`, `knn` and `delaunay_matern` therefore need
+**positions-on rows in a new phase**, not a rerun — see
+`results/baselines/InferenceRefs_v1/SUBMIT_LIST.md` rows 11–13.
+
 **IN PROGRESS 2026-08-24 (W4, autolens_profiling#161):** registry, schema v2
 and tests landed — `scripts/misc/searches/_targets.py` (32-target registry
 + `target_id` hashing), `slam_source_pix`/`slam_source_pix_nn`/`delaunay_nn`
@@ -435,6 +472,13 @@ a prepared-but-NOT-submitted SLURM array
   parametric models and Nautilus keeps mesh duty.
 - **Depends:** Phase 0(b), Phase 1.
 
+**Status 2026-09-02.** Gate A was re-called on the legacy MGE evidence by
+[R-20260902-08](https://github.com/PyAutoLabs/PyAutoCortex/blob/main/rulings/2026/09/R-20260902-08.md) (accept): the operating point n200 / nd100 / inner30, 5/5 seeds at
++1.02 ± 0.39 nats above the Nautilus bar and the 4.99× MGE wall all stand, but the
+"18.4× on Delaunay" leg is **struck** — runs 339069 / 339071 are `legacy_wrong` and not
+citable, so the per-family NSS-on-mesh cost is unmeasured until an NSS positions-on mesh run
+exists. The gate does not rest on it.
+
 ### Phase 3 — Final MultiStartProdigy investigation (MGE, from broad priors, no positions)
 
 - **Question:** What is Prodigy's per-start basin-hit probability p, at what
@@ -495,6 +539,14 @@ a prepared-but-NOT-submitted SLURM array
   classification).
 - **Depends:** Phase 1; the per-lane-best source change.
 
+**Status 2026-09-02.** Gate B part 1 was re-called on the legacy MGE evidence by
+[R-20260902-09](https://github.com/PyAutoLabs/PyAutoCortex/blob/main/rulings/2026/09/R-20260902-09.md) (accept): run-level reliability was recomputed from the committed rows
+(n256 15/15, Wilson-95 lower 0.796, 3.1–4.3× the Nautilus wall) and caveat (a) **n=256
+only** stands. The **lane-level layer was not re-verified** — p̂_hit = 61/1280 = 0.048
+[0.037, 0.061], the tier overlap, the ~half pinned-lane fraction and the `ell_comps` scan are
+read from RESULTS.md and the adversarial review, not recomputed; the gate rests on run-level
+reliability, which was.
+
 ### Phase 4 — PositionsLH on MGE (all three engines, identical treatment)
 
 - **Question:** Does the position penalty eliminate the catastrophic basin
@@ -534,6 +586,17 @@ a prepared-but-NOT-submitted SLURM array
   documented no-double-count argument; if not, recommend positions for early
   stages only and record the science rationale.
 - **Depends:** Phases 0(a), 2, 3.
+
+**Status 2026-09-02.** Gate B part 2 was re-called on the legacy MGE evidence by
+[R-20260902-10](https://github.com/PyAutoLabs/PyAutoCortex/blob/main/rulings/2026/09/R-20260902-10.md) (accept), the six caveats of the 2026-08-27 call riding unchanged.
+The `f1e8` question is **engine-split**: R-20260902-01's mesh positions rule and the
+`pos_tauto0.2_f1e8` reference rows are *nested-sampling* results — rejection sampling never
+walks the hinge, and this phase measures Nautilus inert at f1e8 (Δ logZ ≤ 0.022 nats) —
+whereas "1e8 rejected" is a finding about *fixed-step gradient MAP* (Prodigy n=256: t0.3 f1e5
+5/5, t0.3 f1e8 2/5, tauto0.2 f1e8 0/4). No conflict. **Design note for Phase 5**
+(recommendation, not yet ruled): gradient search on a mesh with positions on should run at
+factor **1e5**, not the reference rows' f1e8; whether MGE's 1e5 transfers to a mesh likelihood
+scale is unmeasured and is Phase 5's first check.
 
 ### Phase 5 — Pixelized / mesh global searches with PositionsLH
 

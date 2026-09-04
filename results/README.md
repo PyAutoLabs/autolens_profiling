@@ -16,7 +16,8 @@ packages; the dashboard tables in every README are rendered from this tree by
 | `quick_update/` | [`quick_update/`](../scripts/misc/quick_update/README.md) | Unversioned fast re-profiling snapshots (scratch tier) |
 | `delaunay_nn/` | [`delaunay_nn/`](../scripts/misc/delaunay_nn/README.md) | Versioned full-mapper cap and runtime benchmarks |
 | `hazards/` | [`hazards/`](../scripts/misc/hazards/README.md) | Semantic finding records, reproducer plots, generated seed summary, and consumer index |
-| `notes/` | humans + agents | Narrative findings and design notes (e.g. [`design_lock_in.md`](./notes/design_lock_in.md), [`nnls_solver_ledger.md`](./notes/nnls_solver_ledger.md), [`nnls_warm_start_memo.md`](./notes/nnls_warm_start_memo.md), [`nnls_warm_start_memo_matrix.md`](./notes/nnls_warm_start_memo_matrix.md)) |
+| `lens/` | [`scripts/lens/`](../scripts/lens/README.md) | Versioned **library-component** summaries (dataset-free axis) — today `lens/deflections/`, per-mass-profile deflection cost with pinned deflection values |
+| `notes/` | humans + agents | Narrative findings and design notes (e.g. [`design_lock_in.md`](./notes/design_lock_in.md), [`nnls_solver_ledger.md`](./notes/nnls_solver_ledger.md), [`nnls_warm_start_memo.md`](./notes/nnls_warm_start_memo.md), [`nnls_warm_start_memo_matrix.md`](./notes/nnls_warm_start_memo_matrix.md), [`numpy_deflections_cpu.md`](./notes/numpy_deflections_cpu.md)) |
 | `baselines/` | campaign snapshots | Named, frozen baselines (e.g. `PreOptimizationTimes/`) — see below |
 
 ## Performance artifact shapes

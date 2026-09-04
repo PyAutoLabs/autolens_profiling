@@ -14,7 +14,7 @@ What it checks:
 | `ruff format --check .` | Formatting parity with sister PyAutoLabs repos (black-compatible defaults) |
 | `python scripts/misc/tooling/build_readme.py --check` | Dashboard idempotence — the auto-generated tables in every section README must match what `build_readme.py` would generate from the current `results/` artifacts. Catches the "forgot to rerun the dashboard generator after dropping a new result" class of bug |
 | `lychee` | Markdown link-rot across every `README.md` |
-| Smoke — one script per section | Runs `likelihood/imaging/mge.py`, `simulators/imaging.py`, and `searches/nautilus/simple.py` with `AUTOLENS_PROFILING_SMOKE=1`. Every profile script reads that env var at module top and exits 0 after the import + setup section. Catches import-graph breakage (broken `sys.path` injection, missing dependency, renamed module) without running the full profile |
+| Smoke — one script per section | Runs one cell from each area — `imaging/likelihood_runtime/mge.py`, `imaging/likelihood_breakdown/mge.py`, `imaging/hazards/pixelization.py`, `misc/simulators/imaging.py`, `imaging/searches/nautilus/mge.py`, `misc/searches/multi_start_nan_accounting_overhead.py` and `lens/deflections/total.py` — with `AUTOLENS_PROFILING_SMOKE=1`. Every profile script reads that env var at module top and exits 0 after the import + setup section. Catches import-graph breakage (broken `sys.path` injection, missing dependency, renamed module) without running the full profile |
 
 The smoke step does **not** produce real result artifacts — every script short-circuits before the JIT compile / sampling / FITS writes. If you need full smoke output, run `profile.yml` manually instead.
 

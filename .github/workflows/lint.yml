@@ -144,3 +144,4 @@ jobs:
           python scripts/misc/simulators/imaging.py
           python scripts/imaging/searches/nautilus/mge.py
           python scripts/misc/searches/multi_start_nan_accounting_overhead.py
+          python scripts/lens/deflections/total.py

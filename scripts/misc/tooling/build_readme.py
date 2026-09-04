@@ -16,7 +16,7 @@ Each table region in a README is delimited by sentinel comments, e.g.
 
 This script:
 
-  1. Scans `results/{breakdown,simulators}/**` for **versioned
+  1. Scans `results/{breakdown,simulators,lens}/**` for **versioned
      artifacts** (`<script>_<purpose>_<extras>_v<version>[_sparse].json`)
      and picks the latest version per group.
   2. Scans `results/runtime/<class>/<model>[/<instrument>]/comparison.json`
@@ -40,6 +40,7 @@ Regions covered today:
   - simulators/README.md            | simulators
   - searches/README.md              | searches
   - hazards/README.md               | hazards
+  - lens/deflections/README.md      | deflections
 
 Artifact-shape reference: `results/notes/design_lock_in.md`.
 """
@@ -189,7 +190,7 @@ def _scan_artifacts() -> list[Artifact]:
         rel = p.relative_to(RESULTS_ROOT).parts
         if len(rel) < 2 or rel[0] in ("runtime", "baselines"):
             continue
-        section = rel[0]  # "breakdown" | "simulators" | "searches"
+        section = rel[0]  # "breakdown" | "simulators" | "searches" | "lens"
         subfolder = rel[1] if len(rel) > 2 else ""
         m = ARTIFACT_RE.match(p.name)
         if m:
@@ -754,6 +755,58 @@ def _render_hazards_table() -> str:
     return "\n" + "\n".join(rows) + "\n"
 
 
+def _deflection_pin_label(data: dict, name: str) -> str:
+    """Pin status for one profile row of a deflection artifact.
+
+    ``new`` — the run created the pins (first run for that instrument, or a
+    deliberate ``--repin``), so nothing was verified on it; ``ok`` — every
+    pinned value matched at rtol 1e-6; ``DRIFT`` — at least one did not, so the
+    row's timings are not comparable to the pinned baseline.
+    """
+    if data.get("pin_provenance"):
+        return "new"
+    expected = data.get("pinned_expected") or {}
+    if name not in expected:
+        return "—"
+    prefix = f"{name}."
+    for record in data.get("pinned_drift") or []:
+        if str(record.get("label", "")).startswith(prefix):
+            return "**DRIFT**"
+    return "ok"
+
+
+def _render_deflections_table(artifacts: list[Artifact]) -> str:
+    """One row per (cell, instrument, mass profile) with the three per-call times."""
+    relevant = [a for a in artifacts if a.section == "lens" and a.subfolder == "deflections"]
+    if not relevant:
+        return _no_data_block(
+            "run a cell under `scripts/lens/deflections/` to populate. See section README."
+        )
+    latest = _latest_per_group(relevant, key=lambda a: (a.script, a.instrument))
+    rows = [
+        "| Cell | Instrument | Profile | Grid2D s/call | Irregular s/call | "
+        "Tracer s/call | Pin | Version |",
+        "|------|------------|---------|---------------|------------------|"
+        "---------------|-----|---------|",
+    ]
+    for (script, instrument), art in sorted(
+        latest.items(), key=lambda kv: (kv[0][0], kv[0][1] or "")
+    ):
+        data = art.data
+        for name, record in (data.get("profiles") or {}).items():
+            rows.append(
+                f"| `{script}` | "
+                f"{instrument or '—'} | "
+                f"`{name}` | "
+                f"{_format_time(record.get('grid2d_s'))} | "
+                f"{_format_time(record.get('irregular_s'))} | "
+                f"{_format_time(record.get('tracer_s'))} | "
+                f"{_deflection_pin_label(data, name)} | "
+                f"v{art.raw_version} |"
+            )
+    return "\n" + "\n".join(rows) + "\n"
+
+
 def _build_renderers():
     artifacts = _scan_artifacts()
     search_artifacts = _scan_search_artifacts()
@@ -768,6 +821,7 @@ def _build_renderers():
         "pipeline-resume": lambda: _render_pipeline_resume_table(artifacts),
         "jax-compile-warm": _render_jax_compile_warm_table,
         "hazards": _render_hazards_table,
+        "deflections": lambda: _render_deflections_table(artifacts),
     }
 
 
@@ -785,6 +839,7 @@ TARGET_READMES = [
     _MISC / "pipeline_resume" / "README.md",
     _MISC / "jax_compile" / "README.md",
     _MISC / "hazards" / "README.md",
+    REPO_ROOT / "scripts" / "lens" / "deflections" / "README.md",
 ]
 
 

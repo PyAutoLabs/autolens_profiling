@@ -1,0 +1,48 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "omp_num_threads": "1",
+    "cpu_count": 8
+  },
+  "instrument": "hst",
+  "configuration": {
+    "pixel_scale_arcsec": 0.05,
+    "mask_radius_arcsec": 3.5,
+    "image_pixels_masked": 15361,
+    "over_sampled_pixels": 17980,
+    "mesh_shape": [
+      28,
+      28
+    ],
+    "rect_mesh": "bilinear",
+    "source_pixels": 784,
+    "inversion_path": "sparse_numba",
+    "use_jax": false,
+    "lens_light": "mge_30_lmp_linear_fixed_geometry",
+    "lens_mass": "mge_basis + NFWSph + ExternalShear",
+    "free_parameters": 4,
+    "n_repeats": 5,
+    "omp_num_threads": "1"
+  },
+  "full_pipeline_single_jit": 0.19465109999873675,
+  "deflections_memo_off_s": 0.58301819999906,
+  "deflections_memo_on_s": 0.19465109999873675,
+  "deflections_memo_speedup": 2.9951960199703147,
+  "deflections_memo_total_off_s": 3.0285240999983216,
+  "deflections_memo_total_on_s": 0.9716327000023739,
+  "deflections_memo_max_relative_likelihood_difference": 0.0,
+  "deflections_memo_stats": {
+    "hits": 672,
+    "misses": 96,
+    "evictions": 0,
+    "bytes": 20122112,
+    "entries": 96
+  },
+  "log_likelihood": -56107.564075886374,
+  "log_likelihood_memo_off": -56107.564075886374,
+  "pinned_expected": -56107.564075886374,
+  "pinned_drift": []
+}

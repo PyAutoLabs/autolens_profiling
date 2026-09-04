@@ -12,6 +12,18 @@
 #   341879. See "RESUBMIT 2026-08-29" below for the three tasks that have not
 #   produced a valid row and are queued to go back up.)
 #
+# COMPLETION 2026-09-02 — TASKS 11, 12 AND 13 (PyAutoCortex R-20260902-01)
+#
+#   The 342091 wave (tasks 0-8,10) was ruled 2026-09-02: its positions-off
+#   mesh rows (0/1/3/5/7/8) are spent — a mesh run without positions.info is
+#   unreliable and cannot be cited — and the positions-off mesh reference
+#   design is retired. Tasks 11-13 supply the positions-on rows for the three
+#   cells that had none (pixelization, knn, delaunay_matern), threshold auto
+#   (pos_tauto0.2_f1e8). Rows 0-8 and 10 are kept for the record only; do not
+#   resubmit the positions-off tasks 0/1/3/5/7/8.
+#
+#       sbatch --array=11-13 --requeue submit_search_nautilus_inference_refs_v1_array.sh
+#
 # SUBMITTED 2026-08-31 (Phase 1 redo, #200): job 342091, --array=0-8,10
 #   --requeue, from hpc/batch_gpu/. Task 9 excluded per the MGE reuse rule
 #   (340210_9 legacy row routed to batch-review ruling). Human go-ahead: the
@@ -179,7 +191,7 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=64gb
 #SBATCH --time=6:00:00
-#SBATCH --array=0-10
+#SBATCH --array=0-13
 #SBATCH -o output/output.%A_%a.out
 #SBATCH -e error/error.%A_%a.err
 #SBATCH --mail-type=END,FAIL
@@ -212,6 +224,13 @@ case "$SLURM_ARRAY_TASK_ID" in
   8)  MODEL=delaunay_matern    FIDUCIAL=150 POSITIONS=off THRESHOLD_MODE=""     ;;
   9)  MODEL=mge                FIDUCIAL=200 POSITIONS=on  THRESHOLD_MODE=auto   ;;
   10) MODEL=delaunay           FIDUCIAL=150 POSITIONS=on  THRESHOLD_MODE=auto   ;;
+  # 2026-09-02 (R-20260902-01): positions-on replacements for the struck
+  # positions-off mesh rows 0 / 7 / 8. pos_tauto0.2_f1e8 is the confirmed
+  # physical configuration for a mesh source; a mesh run without
+  # positions.info is not citable.
+  11) MODEL=pixelization       FIDUCIAL=150 POSITIONS=on  THRESHOLD_MODE=auto   ;;
+  12) MODEL=knn                FIDUCIAL=150 POSITIONS=on  THRESHOLD_MODE=auto   ;;
+  13) MODEL=delaunay_matern    FIDUCIAL=150 POSITIONS=on  THRESHOLD_MODE=auto   ;;
   *)
     echo "Unknown SLURM_ARRAY_TASK_ID=$SLURM_ARRAY_TASK_ID" >&2
     exit 1

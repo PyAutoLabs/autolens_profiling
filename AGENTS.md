@@ -22,6 +22,10 @@ scripts/
     searches/<sampler>/   Sampler / search profiling (Nautilus first)
     latent/               Latent-variable profiling
     quick_update/         Fast incremental re-profiling helpers (unversioned scratch tier)
+  lens/                 Second, DATASET-FREE axis: library-component profiling (one function, one
+                        grid, fiducial parameters) rather than a pipeline. lens/deflections/ =
+                        per-mass-profile deflection cost, pinned on the values computed. Shared
+                        driver sits beside the cells, not under misc/.
   misc/                 Dataset-agnostic material + each task's shared drivers / framework / README:
                         misc/likelihood_runtime/ (sweep.py + aggregate.py + README dashboard),
                         misc/searches/ (framework _*.py + sweep/aggregate), misc/vram/ (A100 vmap
@@ -134,3 +138,15 @@ tracked repo, no force-push to `main`, no fresh-start "Initial commit", no
 `filter-repo` / `filter-branch` / `rebase -i` on pushed branches. To get a
 clean tree: `git fetch origin && git reset --hard origin/main && git clean -fd`.
 <!-- repos_sync:history:end -->
+
+<!-- repos_sync:deliverable:begin -->
+## Sessions end at their deliverable
+
+A session ends when it reports its deliverable — never arm anything that
+outlives the turn to wait for CI, a review or a merge: no `send_later`, no
+`subscribe_pr_activity`, no `CronCreate`, no `ScheduleWakeup`, no `/loop`, no
+`RemoteTrigger` create/update/run. Judge once, report, stop; the human re-runs
+`/prm` (or the batch review) when it is green. Measured: five batch members
+armed hourly check-ins on 2026-08-31, and a mobile `/prm` re-armed a 60-minute
+`send_later` hourly all night on 2026-09-03 with no task active, draining usage.
+<!-- repos_sync:deliverable:end -->

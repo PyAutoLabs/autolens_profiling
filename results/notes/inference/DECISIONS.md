@@ -1516,3 +1516,140 @@ reuse means *reading from* `legacy/`, never resuming in place.
 slices ship as autolens_profiling issues/PRs per the epics rule);
 `PROGRAMME.md` §"2026-08-31 REWIND" + the annotated phase/gate table;
 `PyAutoMind/epics.md` (JAX profiling epic notes).
+
+---
+
+## 2026-09-01 — Batch 2026-08-31-pm review rulings (InferenceRefs_v1 legacy-reuse members)
+
+Human review submitted 2026-09-01 15:13 (`PyAutoMind/batches/reviews/2026-08-31-pm.md`);
+three packet ruling members from the Phase-1 redo leg (autolens_profiling#201):
+
+- **mge-pos-ref-reuse — ACCEPTED.** The quarantined-but-reusable `340210_9` run
+  (2026-08-25) is adopted as the `mge_pos_fp64` InferenceRefs_v1 reference. Per
+  the MGE reuse rule: cite it and `mv` it from `output/legacy/searches/…` back
+  into the active tree (RAL **and** mirror) — laptop action, queued for the next
+  local-dev slot. Array task 9 stays excluded from the refs array.
+- **mge-fp64-retro-baseline — ACCEPTED.** The retro-adopted `mge_fp64` baseline
+  stands under the redo standard; no fresh `_ref` run needed.
+- **delaunay-fp64-retro-baseline — REJECTED, with a programme-wide finding.**
+  The human inspected
+  `output/legacy_wrong/searches/nautilus/imaging/delaunay/hst/hpc_a100_fp64/`
+  and identified the solution as a **demagnified-source unphysical solution** —
+  the classic Inversion bias `PositionsLH` exists to remove
+  (https://pyautolens.readthedocs.io/en/latest/general/demagnified_solutions.html).
+  Human, verbatim: *"This is why we basically need to rerun loads of JAX
+  gradient runs (MGE sources are not effect by this so safe) wit the position
+  penalty set up and used. The problem is it is not used in all these JAX
+  Gradient runs!"*
+
+**Binding consequence for the redo (from the rejection):** every mesh /
+pixelization run — the refs array's mesh rows included — must carry a
+`PositionsLH` positions penalty (positions + threshold per the workspace
+convention, e.g. 0.3"). MGE-source rows are unaffected and stay valid. The
+human also flagged that the "Inference Baselines v1" summary carries the same
+unphysical-solution issue. Mesh rows produced without the penalty are not
+citable as references. The 342091 wave's mesh rows should be checked against
+this before certification — a mesh row without the penalty is spent evidence.
+
+**Output-tree consequence (human directive, verbatim intent):** clear the RAL
+active `output/` of all mesh results, the `image_plane`/`source_plane` point
+source fits, the `Cluster` folder and the `point_source` folder — moved (not
+deleted) to a new `output/legacy_point/` folder, so the active tree is clean and
+updates with each task. Laptop action, queued as a local-dev prompt in the Mind
+(`draft/maintenance/autolens_profiling/legacy_point_output_sweep.md`).
+
+---
+
+## 2026-09-01 — Rulings of record (PyAutoCortex backfill)
+
+From 2026-09-01 the **ruling of record** for every verdict in this programme lives in
+PyAutoCortex `rulings/`; this ledger is **scientific commentary** and cites the id. The
+entries below are **mapped, not edited** — per this file's append-only rule, nothing above
+this line has been touched.
+
+| DECISIONS entry (date — title, line anchor) | Cortex ruling id(s) | Cortex phase path |
+|---|---|---|
+| 2026-08-31 — Programme rewind (human directive): quarantine the runs, restart at Phase 1 under batch-and-review (`DECISIONS.md:1443`) | **R-20260831-01** (drop) | `phases/inference_programme/rewind_2026_08_31.md` |
+| *(same rewind, no entry of its own here — the only prior record was `PyAutoMind/batches/reviews/2026-08-31-am.md`)*: the four am members rejected wholesale | **R-20260831-02** `smc_probe_342018`, **R-20260831-03** `knn_rerun_342016_7`, **R-20260831-04** `refs_5_6_342016_56`, **R-20260831-05** `slogdet_ab_342017` (all drop) | `phases/inference_programme/{smc_probe_342018,knn_rerun_342016_7,refs_5_6_342016_56,slogdet_ab_342017}.md` |
+| 2026-09-01 — Batch 2026-08-31-pm review rulings (InferenceRefs_v1 legacy-reuse members) (`DECISIONS.md:1522`) — mge-pos-ref-reuse ACCEPTED | **R-20260901-01** (accept) | `phases/inference_programme/mge_pos_ref_reuse.md` |
+| …same entry — mge-fp64-retro-baseline ACCEPTED | **R-20260901-02** (accept) | `phases/inference_programme/mge_fp64_retro_baseline.md` |
+| …same entry — delaunay-fp64-retro-baseline REJECTED, carrying the PositionsLH directive (follow-up autolens_profiling#203) | **R-20260901-03** (drop) | `phases/inference_programme/delaunay_fp64_retro_baseline.md` |
+| Failed submissions `342008`/`342009`/`342010` — no entry here; carried UNREVIEWED through the 2026-08-31-am batch, then superseded by the rewind | **R-20260901-04** (drop) | `phases/inference_programme/failed_submissions_342008_10.md` |
+| The `342091` refs redo wave (named in the pm entry, `DECISIONS.md:1551`) | *awaiting ruling — no id yet* | `phases/inference_programme/inference_refs_v1_redo.md` |
+
+**Follow-ups filed in PyAutoMind at this backfill** (both carry an `Issue:` line opened at
+filing — see the prompt's `Issue:` line; `start_dev` reuses it, never opens a second):
+
+- `PyAutoMind/draft/maintenance/autolens_profiling/legacy_point_output_sweep.md` — the
+  `output/legacy_point/` sweep directed by R-20260901-03's output-tree consequence.
+- `PyAutoMind/draft/feature/autogalaxy/ell_comps_joint_disk_constraint.md` — the W10
+  `|e| = 1.41421` box-corner finding.
+
+Ruling of record: PyAutoCortex `rulings/2026/08/` and `rulings/2026/09/` (ids above).
+
+---
+
+## 2026-09-02 — Rulings of record (append: the 342091 refs redo)
+
+Same convention as the 2026-09-01 backfill entry above, appended rather than edited
+(this file is append-only): the placeholder row *"The `342091` refs redo wave …
+awaiting ruling — no id yet"* is now answered.
+
+| DECISIONS entry (date — title, line anchor) | Cortex ruling id(s) | Cortex phase path |
+|---|---|---|
+| The `342091` refs redo wave (named in the 2026-08-31-pm entry, `DECISIONS.md:1551`; supersedes that entry's *awaiting ruling* placeholder row) | **R-20260902-01** (accept, scoped to the four positions-on rows) | `phases/inference_programme/inference_refs_v1_redo.md` |
+
+R-20260902-01 carries the **binding mesh positions rule** — a mesh / pixelization run
+without a `positions.info` file is unreliable and cannot be used or cited — which
+generalises R-20260901-03. Its consequences are recorded in
+`PROGRAMME.md` (2026-08-31 REWIND section and §"Phase 1") and in
+`results/baselines/InferenceRefs_v1/{INDEX.md,SUBMIT_LIST.md}`. The `mge_pos_fp64`
+baseline adopted the same day is the disk execution of **R-20260901-01** (row above),
+not a 342091 row.
+
+Ruling of record: PyAutoCortex `rulings/2026/09/R-20260902-01.md`.
+
+---
+
+## 2026-09-02 — Rulings of record (append: batch 2026-09-02-pm, Gates A / B1 / B2 re-called)
+
+Same convention as the entries above, appended rather than edited (this file is
+append-only). Batch `2026-09-02-pm` (reviewed 2026-09-02T21:18Z,
+`PyAutoCortex/batches/reviews/2026-09-02-pm.md`) put the three legacy-reuse members —
+the MGE evidence beneath Gates A, B pt 1 and B pt 2, quarantined into `output/legacy/`
+by the 2026-08-31 rewind — to a human under the **MGE reuse rule**. All three were
+accepted, so the gates move from PROVISIONAL back to **CALLED** on evidence that was
+recovered by ruling, not rerun.
+
+Human, 2026-09-02, verbatim: *"continue"* — one word, ratifying all three packet
+recommendations (accept; for Gate A, accept with one sentence struck) after the members
+were presented with their recomputed witness numbers.
+
+| DECISIONS entry (date — title, line anchor) | Cortex ruling id(s) | Cortex phase path |
+|---|---|---|
+| 2026-08-24 — GATE A CALLED (`DECISIONS.md` § 2026-08-24) — phase 13, `phase2_nss_mainline_gate_a_reuse`; ACCEPTED, Gate A re-called on the MGE evidence with the *"18.4× on Delaunay"* leg **struck** (339069 / 339071 are `legacy_wrong` and not citable, so the per-family NSS-on-mesh cost is unmeasured); Kish ESS figures read from the write-up, not re-derived | **R-20260902-08** (accept) | `phases/inference_programme/phase2_nss_mainline_gate_a_reuse.md` |
+| 2026-08-23 — GATE B part 1 CALLED (`DECISIONS.md` § 2026-08-23) — phase 14, `phase3_prodigy_reliability_gate_b1_reuse`; ACCEPTED, Gate B pt 1 re-called (n256 15/15, Wilson-95 lower 0.796, 3.1–4.3× the Nautilus wall, caveat (a) **n=256 only** stands); the lane-level layer (p̂_hit = 61/1280, tier overlap, pinned-lane fraction, the `ell_comps` scan) was **not re-verified** — the gate rests on run-level reliability, which was | **R-20260902-09** (accept) | `phases/inference_programme/phase3_prodigy_reliability_gate_b1_reuse.md` |
+| 2026-08-27 — GATE B part 2 CALLED (`DECISIONS.md:641`) — phase 15, `phase4_positions_gate_b2_reuse`; ACCEPTED, Gate B pt 2 re-called (PositionsLH safe for gradient MAP on MGE at factor ≤ 1e5, f1e8 rejected for gradient search; Nautilus inert, Δ logZ ≤ 0.022 nats), the six caveats of the 2026-08-27 call riding unchanged and 341892_0 still excluded | **R-20260902-10** (accept) | `phases/inference_programme/phase4_positions_gate_b2_reuse.md` |
+
+**The `f1e8` question is engine-split, not contradictory.** R-20260902-01's mesh
+positions rule and the `pos_tauto0.2_f1e8` reference rows are **nested-sampling**
+results — rejection sampling never walks the hinge, and R-20260902-10 measures Nautilus
+inert at f1e8. The *"1e8 rejected"* finding is about **fixed-step gradient MAP**.
+Different engines; no conflict.
+
+**Phase 5 factor — a recommendation awaiting a ruling, not a decision.** R-20260902-10
+carries a design note: gradient search on a mesh with positions on should run at factor
+**1e5** (threshold per the cell's convention), not the reference rows' f1e8, or the
+transit damage measured on MGE returns. The human did **not** pin this in the ruling —
+it is the scribe's recommendation, to be decided explicitly when Phase 5 is filed.
+Whether MGE's 1e5 transfers to a mesh likelihood scale is unmeasured and is Phase 5's
+first check.
+
+Consequences recorded in `PROGRAMME.md` (the "Gates A–F", "Phase 2", "Phase 3" and
+"Phases 4–7, 9–13" rows, the 2026-08-31 REWIND section, and the Phase 2 / 3 / 4 status
+notes). The legacy MGE runs stay in `output/legacy/` as cited, reusable evidence. Next:
+Phase 12 (positions-on refs for `pixelization` / `knn` / `delaunay_matern`, RAL 342241),
+then Phase 5 positions-on. Follow-ups: autolens_profiling#201.
+
+Ruling of record: PyAutoCortex `rulings/2026/09/R-20260902-08.md`,
+`R-20260902-09.md`, `R-20260902-10.md`.

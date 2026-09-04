@@ -1,0 +1,159 @@
+{
+  "sampler": "nautilus",
+  "dataset_class": "imaging",
+  "model": "slam_source_pix_nn",
+  "instrument": "hst",
+  "config_name": "hpc_a100_fp64_ref",
+  "version": "2026.8.17.1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "omp_num_threads": null,
+    "cpu_count": 124,
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 33791 MiB, 81920 MiB"
+  },
+  "use_mixed_precision": false,
+  "sampler_config": {
+    "n_live": 300,
+    "n_batch": 100,
+    "number_of_cores": 1,
+    "use_jax_vmap": true,
+    "force_x1_cpu": true,
+    "iterations_per_update": 900,
+    "seed": 0,
+    "positions": {
+      "enabled": false
+    }
+  },
+  "positions": {
+    "enabled": false
+  },
+  "log_det_method": null,
+  "model_summary": {
+    "free_parameters": 14,
+    "best_fit": "lens.mass.einstein_radius=0.8790  lens.mass.centre=(0.047, 0.006)  shear=(-0.0397, 0.0425)"
+  },
+  "results": {
+    "log_evidence": 30684.114614499544,
+    "max_log_likelihood": 30750.989294847495,
+    "posterior_samples": 76400,
+    "truth_log_likelihood": 31521.743789581255,
+    "delta_max_ll_vs_truth": -770.7544947337592,
+    "bar_source": "truth_tracer",
+    "posterior_stats": {
+      "centre_0": {
+        "mean": 0.027058819652482566,
+        "std": 0.031485349857208064
+      },
+      "centre_1": {
+        "mean": 0.019236788487631967,
+        "std": 0.02235977731159532
+      },
+      "ell_comps_0": {
+        "mean": 0.03651029855093614,
+        "std": 0.052012048071833974
+      },
+      "ell_comps_1": {
+        "mean": -0.2546217866366428,
+        "std": 0.0361543509107465
+      },
+      "einstein_radius": {
+        "mean": 0.8900357970247396,
+        "std": 0.019850776217055315
+      },
+      "gamma_1": {
+        "mean": -0.04659546472913793,
+        "std": 0.01348331778604853
+      },
+      "gamma_2": {
+        "mean": 0.047899988262906874,
+        "std": 0.011535618310530606
+      },
+      "signal_scale": {
+        "mean": 0.024091137806765035,
+        "std": 0.008086952948338581
+      },
+      "inner_coefficient": {
+        "mean": 0.0020819900723077706,
+        "std": 0.006918796882154136
+      },
+      "outer_coefficient": {
+        "mean": 27.307618668650246,
+        "std": 7.980578096329566
+      }
+    },
+    "penalty_at_best": null
+  },
+  "performance": {
+    "total_wall_s": 5044.696133852005,
+    "viz_wall_s": 57.82592648686841,
+    "viz_n_calls": 8,
+    "viz_disabled": false,
+    "sampler_wall_s": 4986.870207365137,
+    "likelihood_evals": 76400,
+    "time_per_eval_ms": 65.27317025347037,
+    "stored_samples": 76400,
+    "gradient_evals": null,
+    "kish_ess": 8548.31503912486,
+    "evals_per_ess": 8.937433827640202,
+    "ess_per_min": 102.84985993619571
+  },
+  "schema_version": 2,
+  "target": {
+    "target_id": "sha256:ad291b57fc62",
+    "cell": "imaging/slam_source_pix_nn/hst",
+    "model_dim": 14,
+    "priors_ref": "_targets.py@7f2f14765de7",
+    "likelihood": {
+      "log_det_method": null,
+      "positive_only": true,
+      "border_relocator": true,
+      "curvature_floor": 0.001,
+      "regularization_term_method": "matmul",
+      "precision": "fp64"
+    },
+    "positions": {
+      "enabled": false
+    },
+    "tolerances": {
+      "delta_max_ll_nats": 2.0,
+      "mean_shift_sigma": 0.2,
+      "sigma_ratio": [
+        0.8,
+        1.25
+      ],
+      "per_parameter_recovery": {}
+    },
+    "target_class_vs_v1": null
+  },
+  "algorithm": {
+    "name": "nautilus",
+    "config_id": "hpc_a100_fp64_ref",
+    "settings": {
+      "n_live": 300,
+      "n_batch": 100,
+      "number_of_cores": 1,
+      "use_jax_vmap": true,
+      "force_x1_cpu": true,
+      "iterations_per_update": 900,
+      "seed": 0,
+      "positions": {
+        "enabled": false
+      }
+    },
+    "seed": 0
+  },
+  "hardware": {
+    "tier": "hpc_a100_fp64_ref",
+    "precision": "fp64",
+    "device": {
+      "backend": "gpu",
+      "device": "cuda:0",
+      "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+      "omp_num_threads": null,
+      "cpu_count": 124,
+      "nvidia_smi": "NVIDIA A100 80GB PCIe, 33791 MiB, 81920 MiB"
+    }
+  }
+}

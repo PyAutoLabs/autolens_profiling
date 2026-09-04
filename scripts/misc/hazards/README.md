@@ -42,6 +42,8 @@ token fingerprint helps relocate the implementation.
 |---|---|---|---|---|
 | `component.ell_comps.magnitude-saturation` | `component` | `saturation` | prior_mass, reachability | numpy, jax |
 | `component.isothermal.near-spherical-saturation` | `component` | `saturation` | epsilon_neighbourhood, reachability | numpy, jax |
+| `component.mge.faddeeva-seam-gradient` | `component` | `nonsmooth_objective` | error_curve, reachability | jax |
+| `component.mge.spherical-clamp-bias` | `component` | `backend_divergence` | error_curve, reachability | numpy, jax |
 | `component.power-law.series-vs-hyp2f1-divergence` | `component` | `backend_divergence` | error_curve, reachability | numpy, jax |
 | `component.spherical-geometry.radial-sqrt-gradient-at-zero` | `component` | `nonfinite_gradient` | epsilon_neighbourhood, reachability | jax |
 | `likelihood.imaging-pixelization.absolute-conditioning-floors` | `likelihood` | `conditioning_floor` | error_curve, reachability | numpy |
@@ -70,6 +72,29 @@ slower than the current path there on the recorded CPU run. The complete 7x7
 `FitImaging` fixture moved by at most 0.0056 log-likelihood units. That evidence
 does not support routing the high-cost counterfactual into PyAutoGalaxy; the
 stable finding remains profiling evidence.
+
+The two `component.mge` findings have their own bounded study in `mge_faddeeva.py` and
+`results/hazards/component/mge/faddeeva_audit.json` (issue PyAutoGalaxy#600, phase A). The JAX
+Faddeeva routine's three `xp.where` regions leave its derivative discontinuous by up to 5.8e-5
+relative at the `r2 = 2.5` seam, and finite differences of the JAX deflection field diverge as the
+step shrinks (58-96 of 15,361 grid points wrong by more than 1 % at `h <= 1e-6`) while the same
+comparison in a crossing-free parameter direction stays smooth to 2.9e-11. The kinks are not
+measurable further downstream: on a 2000-step `centre_x` transect and on a bounded `FitImaging`
+gradient the autodiff gradient is no rougher than the smooth-path baseline. The spherical clamp
+biases every `*Sph` MGE-routed profile by 6.3e-5 (gNFWSph) / 1.1e-4 (Gaussian) relative, with a
+spurious cross-axis deflection reaching 1.45e-4". The full verdict - lift the clamp on JAX, replace
+the routine with the seam-free Weideman N=32 series (1.9e-13 accurate, 0.745x the cost) - is in
+`results/notes/numpy_deflections_cpu.md`.
+
+Phase B implemented both. On a PyAutoGalaxy checkout carrying that change `scan.py --check
+--subject component` reports both `component.mge` findings **resolved**: the routine's derivative
+now steps across the former `r2 = 2.5` boundary by exactly the amount `w'` genuinely moves there
+(excess factor 1.000, against 2.28e4 for the routine it replaced), and a spherical profile's
+deflection is purely radial again (cross-axis 5e-16", against 1.4e-4"). Each reproducer gates on
+that mechanism rather than on an error magnitude, so the verdict does not depend on a tuned
+threshold; both gates still fire against the pre-phase-B library. The records and index rows are
+kept - they remain true of the released library until the change ships - and the after-state
+numbers are the "After phase B" section of the note.
 
 Tier 2 adds a full [`FitImaging` cell](../../imaging/hazards/README.md) around a
 rectangular source inversion. The generated

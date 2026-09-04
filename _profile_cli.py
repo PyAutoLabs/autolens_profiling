@@ -344,6 +344,64 @@ def check_pinned(got, expected, *, label: str, rtol: float = 1e-4):
     }
 
 
+def check_pinned_vector(got, expected, *, label: str, rtol: float = 1e-6):
+    """Vector sibling of :func:`check_pinned` — compare an array of pinned values.
+
+    Used by the deflection cells (``scripts/lens/deflections/``), whose pin is a
+    16-coordinate ``(y, x)`` deflection sample rather than a single scalar. The
+    comparison reduces to the **maximum relative deviation** over the flattened
+    pair, and keeps ``check_pinned``'s soft-failure discipline exactly: returns
+    ``None`` when every element is within ``rtol``; otherwise prints a loud
+    warning and returns a drift record for the result JSON. Never raises — a
+    changed computation must not kill a profiling job.
+    """
+    import numpy as _np
+
+    got_arr = _np.asarray(got, dtype=float).ravel()
+    exp_arr = _np.asarray(expected, dtype=float).ravel()
+
+    if got_arr.shape != exp_arr.shape:
+        print(
+            f"  WARNING: PINNED-VECTOR SHAPE CHANGE [{label}] — got {got_arr.size} value(s), "
+            f"pinned {exp_arr.size}. The pin and the computation no longer describe the same "
+            f"quantity; re-pin deliberately with --repin --repin-reason."
+        )
+        return {
+            "label": label,
+            "expected_size": int(exp_arr.size),
+            "got_size": int(got_arr.size),
+            "rel_diff": float("inf"),
+            "rtol": rtol,
+        }
+
+    # NaN is a legitimate pinned value here (a mass profile whose deflection
+    # field is non-finite somewhere on the grid pins that fact). Two NaNs at the
+    # same index match; a NaN facing a number — in either direction — is the
+    # loudest possible drift, so it reduces to inf rather than to NaN.
+    with _np.errstate(invalid="ignore"):
+        rel_each = _np.abs(got_arr - exp_arr) / _np.maximum(_np.abs(exp_arr), 1e-300)
+    rel_each = _np.where(_np.isnan(got_arr) & _np.isnan(exp_arr), 0.0, rel_each)
+    rel_each = _np.where(_np.isnan(rel_each), _np.inf, rel_each)
+    idx = int(_np.argmax(rel_each))
+    rel = float(rel_each[idx])
+    if rel <= rtol:
+        return None
+    print(
+        f"  WARNING: PINNED-VALUE DRIFT [{label}] — element {idx} got {float(got_arr[idx])!r}, "
+        f"pinned {float(exp_arr[idx])!r} (max rel diff {rel:.3e} > rtol {rtol:g}). "
+        f"Timings from this run are NOT comparable to the pinned baseline; "
+        f"file a bug / check autolens_workspace_test before trusting trends."
+    )
+    return {
+        "label": label,
+        "index": idx,
+        "expected": float(exp_arr[idx]),
+        "got": float(got_arr[idx]),
+        "rel_diff": rel,
+        "rtol": rtol,
+    }
+
+
 def record_pinned_check(json_path, expected, drift_records) -> None:
     """Merge the pinned-value check outcome into an already-written result JSON.
 
