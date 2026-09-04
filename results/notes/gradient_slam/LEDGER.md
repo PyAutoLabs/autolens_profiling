@@ -44,6 +44,18 @@ targets free the lens light, the mesh weights *and* every regularization
 parameter at once, which no SLaM stage does. It is not a pipeline result and is
 not read as one here. That withdrawal is why this epic exists.
 
+## Not in this epic
+
+**The cost of one gradient evaluation.** This epic measures whether a gradient
+search reaches the same optimum in **fewer inference steps** than Nautilus, not
+what a `value_and_grad` costs per evaluation. Re-measuring the CPU-only ~17×
+jvp/forward anomaly — on an A100 or anywhere else — belongs to the standing
+profiling tool asked for by the Mind prompt
+`PyAutoMind/draft/feature/autolens_profiling/gradient_cost_probe.md`, which runs
+on any registry cell on demand and gates nothing here. A Cortex phase 20 that
+would have run that probe was dropped on 2026-09-04 (R-20260904-04) for the same
+reason.
+
 ## The `mass_pix` target
 
 One cell: `imaging/mass_pix/hst`. Free parameters: **Isothermal (5) + ExternalShear
@@ -96,20 +108,20 @@ bar as well as the reference one.
 ## Phases
 
 Cortex phases under `PyAutoCortex/phases/inference_programme/`, all with
-`Epic: gradient-slam-baseline`. Each is one job and one ruling.
+`Epic: gradient-slam-baseline`. Each is one job and one ruling. There are
+**three**, numbered **21–23**.
 
 | Cortex phase | Slug | State | What it settles |
 |---|---|---|---|
-| **20** | `mass_pix_gradient_cost_probe` | `gated` on autolens_profiling#218 | Forward vs `value_and_grad` ms/eval on the `mass_pix` cell, strict FD on all 7 parameters, compile time. **Is the jvp/forward ratio sane (≲4×), or does the 17× CPU anomaly reproduce on an A100?** If it reproduces, a Mind bug comes before phase 22. |
-| **21** | `nautilus_mass_pix_baseline` | `planned`, ready when 20 rules | Two Nautilus runs, n_live 300, refs settings: `pos_tauto0.2_f1e8` and `pos_tauto0.2_f1e5`. The bar the gradient search has to beat, plus the like-for-like 1e5 arm. |
-| **22** | `prodigy_mass_pix` | `planned`, ready when 21 rules | `MultiStartProdigy` autoconv, n_starts 16, batch_size 4, n_steps ≤ 3000, `pos_tauto0.2_f1e5`, seeds 0–4. **The headline ruling**: p_hit and wall against phase 21. |
-| **23** | `likelihood_term_levers` | `planned`, gated on 22's ruling | Arms **only if** 22 shows NaN lanes or misses: `SEARCHES_LOG_DET_METHOD=slogdet` vs `cholesky` (folds autolens_profiling#166), and relative jitter on `reg.Adapt` (today only the kernel schemes carry `jitter_relative`; `constant.py:53` / `adapt.py` still take the absolute 1e-8 lift — a PyAutoArray task if it triggers). |
+| **21** | `nautilus_mass_pix_baseline` | `gated` on autolens_profiling#218 | Two Nautilus runs, n_live 300, refs settings: `pos_tauto0.2_f1e8` and `pos_tauto0.2_f1e5`. **The first science phase of the epic**: the bar the gradient search has to beat, plus the like-for-like 1e5 arm, and the wall basis every later submit inherits. |
+| **22** | `prodigy_mass_pix` | `planned`, ready when 21 rules | `MultiStartProdigy` autoconv, n_starts 16, batch_size 4, n_steps ≤ 3000, `pos_tauto0.2_f1e5`, seeds 0–4. **The headline ruling**: does the gradient search reach the same optimum as Nautilus in **fewer likelihood evaluations** and **less wall**? p_hit, evals and wall against phase 21's `f1e5` arm. |
+| **23** | `likelihood_term_levers` | `planned`, **conditional** — gated on 22's ruling | Arms **only if** 22 shows NaN lanes or misses: `SEARCHES_LOG_DET_METHOD=slogdet` vs `cholesky` (folds autolens_profiling#166), and relative jitter on `reg.Adapt` (today only the kernel schemes carry `jitter_relative`; `constant.py:53` / `adapt.py` still take the absolute 1e-8 lift — a PyAutoArray task if it triggers). Dropped rather than run if 22 is clean. |
 
-**The development leg** — the `mass_pix` target, its drivers and the probe script
+**The development leg** — the `mass_pix` target, its drivers and its HPC submits
 — is a Mind prompt, not a Cortex phase:
 `PyAutoMind/draft/feature/autolens_profiling/gradient_slam_mass_pix_target.md`,
 filed 2026-09-04 with its issue **autolens_profiling#218** opened at the same
-moment as phase 20's gate ref (Cortex schema decision 55: a `Gates:` line holds
+moment as phase 21's gate ref (Cortex schema decision 55: a `Gates:` line holds
 GitHub refs only). The prompt stays in `draft/` — an open issue there means
 "there is a ref", not "the work is in flight" — and `/start_dev` reuses that
 issue rather than opening a second.
