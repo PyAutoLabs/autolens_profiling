@@ -1653,3 +1653,72 @@ then Phase 5 positions-on. Follow-ups: autolens_profiling#201.
 
 Ruling of record: PyAutoCortex `rulings/2026/09/R-20260902-08.md`,
 `R-20260902-09.md`, `R-20260902-10.md`.
+
+
+---
+
+## 2026-09-04 — Phase 12 accepted; the programme is RETIRED and continues as `gradient-slam-baseline`
+
+**Decision:** Cortex phase 12 (`refs_v1_positions_on_completion`) is **accepted**
+— PyAutoCortex ruling
+[R-20260904-01](https://github.com/PyAutoLabs/PyAutoCortex/blob/main/rulings/2026/09/R-20260904-01.md)
+— and with it the **inference programme is retired**. `PROGRAMME.md` carries a
+`RETIRED 2026-09-04` banner and its phase & gate table is frozen; the Cortex epic
+`jax-inference-profiling` was deleted from `PyAutoCortex/epics.md` on the same
+check-in, and the work continues as the new epic **`gradient-slam-baseline`**
+with its own ledger, `results/notes/gradient_slam/LEDGER.md`.
+
+**Evidence:** RAL job **342241**, array tasks **11–13**, all `.completed`, all
+carrying `positions.info` (threshold `auto` resolved to 0.2, penalty at the best
+point exactly 0.0), all physical (`einstein_radius` 1.60):
+
+| Task | Target key | max logL | logZ | evals | sampler wall |
+|---|---|---|---|---|---|
+| t11 | `pixelization_pos_fp64` | 30,941.226 | 30,868.630 | 48,592 | 2,617.9 s |
+| t12 | `knn_pos_fp64` | 30,923.144 | 30,838.392 | 67,600 | 3,257.5 s |
+| t13 | `delaunay_matern_pos_fp64` | 31,405.425 | 31,328.964 | 57,600 | 2,963.4 s |
+
+All three `target_id`s re-derive from the current `_targets.py` registry
+(`restamp_target_block.py`, report mode: 0 changed, 3 unchanged, 0 refused).
+They are adopted into `results/baselines/InferenceRefs_v1/`, which now holds
+**9 certified baselines** and is closed.
+
+**Why retire.** Two findings from the 2026-09-04 surveys, neither of which the
+existing phase structure could absorb:
+
+1. The `slam_source_pix*` targets free the lens light, the mesh weights and every
+   regularization parameter at once — nothing a real SLaM stage does. The
+   certified `slam_source_pix_pos` (31,547) vs `pixelization_pos` (30,941) gap is
+   **4 extra free parameters, not a pipeline result**. The rows stay certified as
+   targets; the SLaM reading of them is withdrawn.
+2. **No gradient-search run exists on any rectangular mesh target, anywhere.**
+   MGE Prodigy is done and citable (n256, `pos_t0.3_f1e5`: 5/5 hits, 163–297 s
+   against Nautilus's 939 s). The only rectangular kernel-CDF gradient cost datum
+   is a CPU one — the ~17× `value_and_grad`-over-forward anomaly of
+   autolens_workspace_developer#117 — never re-measured on an A100.
+
+The programme had also grown past what one human could hold: 19 Cortex phases, 13
+rulings, a rewind, gates A–F and a W1–W11 queue. The restart is deliberately
+small and reviewed at every step.
+
+**What stands / what is superseded:** see the `RETIRED 2026-09-04` banner at the
+top of `PROGRAMME.md`. In short — the 9 certified baselines, Gates A / B pt 1 /
+B pt 2 with their caveats, the binding `positions.info` rule and the
+`legacy` / `legacy_wrong` quarantine stand; Phases 5–13, Gates C–F and the §9b
+W-queue are superseded.
+
+**Also ruled 2026-09-04:** Cortex phase 16
+(`phase5_mesh_gradient_positions_on`) **dropped** — R-20260904-02, superseded by
+`gradient-slam-baseline`, which restarts the mesh gradient question on a
+`mass[1]`-shaped target rather than the all-free SLaM targets; Cortex phase 17
+(`cluster_gradient_search_benchmark`) **dropped** — R-20260904-03, absorbed into
+its Mind prompt per the phase's own note. Phases 11 (cluster arc), 18 and 19 are
+untouched.
+
+**The successor's question:** dropped into a SLaM `mass[1]` search, would a
+gradient search beat Nautilus? Baseline target = lens light fixed to truth, mesh
+and regularization fixed at the certified `slam_source_pix_pos` values, only mass
++ shear free. Ledger: `results/notes/gradient_slam/LEDGER.md`.
+
+Ruling of record: PyAutoCortex `rulings/2026/09/R-20260904-01.md`,
+`R-20260904-02.md`, `R-20260904-03.md`.

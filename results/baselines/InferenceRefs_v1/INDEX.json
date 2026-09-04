@@ -53,6 +53,27 @@
       "path": "results/baselines/InferenceRefs_v1/mge_pos_fp64/",
       "certified_by": "R-20260901-01",
       "target_id": "sha256:6b93f0e52ecd"
+    },
+    {
+      "target_key": "pixelization_pos_fp64",
+      "cell": "imaging/pixelization/hst",
+      "path": "results/baselines/InferenceRefs_v1/pixelization_pos_fp64/",
+      "certified_by": "R-20260904-01",
+      "target_id": "sha256:4084c87d9ca2"
+    },
+    {
+      "target_key": "knn_pos_fp64",
+      "cell": "imaging/knn/hst",
+      "path": "results/baselines/InferenceRefs_v1/knn_pos_fp64/",
+      "certified_by": "R-20260904-01",
+      "target_id": "sha256:d06e54bad6c0"
+    },
+    {
+      "target_key": "delaunay_matern_pos_fp64",
+      "cell": "imaging/delaunay_matern/hst",
+      "path": "results/baselines/InferenceRefs_v1/delaunay_matern_pos_fp64/",
+      "certified_by": "R-20260904-01",
+      "target_id": "sha256:52bd5fb4279a"
     }
   ]
 }

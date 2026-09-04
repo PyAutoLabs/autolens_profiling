@@ -21,25 +21,18 @@ The laptop mirror at `/mnt/c/Users/Jammy/Science/inference_programme` (where
 staged result rows and SLURM logs. Nothing is decided there, and nothing there is a
 source of record.
 
-## Rulings of record filed 2026-09-01
+## The rulings themselves
 
-- **R-20260831-01** — the 2026-08-31 programme rewind: mesh/pixelization evidence
-  quarantined, restart at Phase 1 under batch-and-review (phase
-  `inference_programme/rewind_2026_08_31`, drop).
-- **R-20260831-02** — `smc_probe_342018` dropped (2026-08-31-am, rejected wholesale by the
-  rewind).
-- **R-20260831-03** — `knn_rerun_342016_7` dropped (same).
-- **R-20260831-04** — `refs_5_6_342016_56` dropped (same).
-- **R-20260831-05** — `slogdet_ab_342017` dropped (same).
-- **R-20260901-01** — `mge_pos_ref_reuse` accepted: `340210_9` adopted as the
-  `mge_pos_fp64` InferenceRefs_v1 reference.
-- **R-20260901-02** — `mge_fp64_retro_baseline` accepted: the retro-adopted `mge_fp64`
-  baseline stands under the redo standard.
-- **R-20260901-03** — `delaunay_fp64_retro_baseline` dropped (demagnified-source solution);
-  carries the binding PositionsLH directive for every mesh/pixelization redo run
-  (follow-up autolens_profiling#203).
-- **R-20260901-04** — `failed_submissions_342008_10` dropped: carried, then superseded by
-  the rewind.
+There is no hand-maintained list here — it went stale, and a copy of a ledger is
+not a ledger. Read the rulings where they live:
 
-`inference_refs_v1_redo` (the `342091` wave) has **no ruling yet** — it is awaiting the
-human's next review slot.
+- **`PyAutoCortex/rulings/<YYYY>/<MM>/`** — every ruling file, append-only.
+- **<https://pyautolabs.github.io/PyAutoCortex/>** — the Cortex board: what is
+  awaiting a ruling, what is running, what has been ruled, by project.
+- **`PyAutoCortex/phases/inference_programme/`** — this project's phases; each
+  one's `Ruling:` header names its chain head.
+
+Two ledgers of commentary sit in this repo. `results/notes/inference/PROGRAMME.md`
+is the **retired** `jax-inference-profiling` programme (frozen 2026-09-04,
+R-20260904-01); `results/notes/gradient_slam/LEDGER.md` is its live successor,
+the `gradient-slam-baseline` epic.

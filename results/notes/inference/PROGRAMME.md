@@ -1,10 +1,65 @@
 # PyAutoLens Inference Programme
 
+> # RETIRED 2026-09-04
+>
+> **This programme is closed.** Its last ruling is PyAutoCortex
+> [R-20260904-01](https://github.com/PyAutoLabs/PyAutoCortex/blob/main/rulings/2026/09/R-20260904-01.md)
+> (Cortex phase 12, job 342241 tasks 11–13). The Cortex epic
+> `jax-inference-profiling` was deleted from `PyAutoCortex/epics.md` on the same
+> check-in and **this file is its frozen ledger of record** — read it as history,
+> do not maintain it. Everything below this banner is preserved verbatim as it
+> stood on 2026-09-04; the phase & gate table is frozen and takes no further
+> edits.
+>
+> **What stands (still citable).**
+>
+> - The **9 certified `InferenceRefs_v1` baselines** —
+>   `results/baselines/InferenceRefs_v1/INDEX.md`: `mge_fp64` (retro),
+>   `mge_pos_fp64` (R-20260901-01), `delaunay_nn_pos_fp64`,
+>   `slam_source_pix_pos_fp64`, `slam_source_pix_nn_pos_fp64`,
+>   `delaunay_pos_fp64` (R-20260902-01), and `pixelization_pos_fp64`,
+>   `knn_pos_fp64`, `delaunay_matern_pos_fp64` (R-20260904-01).
+> - **Gate A**, **Gate B pt 1** and **Gate B pt 2**, re-called 2026-09-02 on the
+>   legacy MGE evidence by R-20260902-08 / -09 / -10, with their caveats riding.
+>   The MGE Prodigy result (n256, `pos_t0.3_f1e5`: 5/5 hits, 163–297 s against
+>   Nautilus's 939 s) is the citable gradient-search evidence this programme
+>   produced.
+> - The **binding rule**: a mesh / pixelization run with no `positions.info` file
+>   is unreliable and cannot be cited (R-20260901-03, generalised by
+>   R-20260902-01).
+> - The **quarantine**: `output/legacy_wrong/` is never cited except as
+>   failure-mode documentation; `output/legacy/` is reusable MGE evidence under
+>   the MGE reuse rule.
+> - All shipped source, registry and schema code (PositionsLH fix, `_targets.py`,
+>   schema v2, `af.SMC`, NUTS plumbing, the searches framework).
+>
+> **What is superseded (do not restart from it).**
+>
+> - **Phases 5–13** of the plan below, and **Gates C–F**, which were never called.
+> - The **§9b W-queue** (W1–W11) — already marked superseded by the 2026-08-31
+>   REWIND, and now closed for good.
+> - The `slam_source_pix*` targets as a *pipeline* claim: they free the lens
+>   light, the mesh weights and every regularization parameter at once, which no
+>   SLaM stage does, so the `slam_source_pix_pos` (31,547) vs `pixelization_pos`
+>   (30,941) gap is 4 extra free parameters, not a pipeline result. The rows stay
+>   certified as *targets*; the SLaM reading of them is withdrawn.
+> - Cortex phases 16 (`phase5_mesh_gradient_positions_on`) and 17
+>   (`cluster_gradient_search_benchmark`), dropped 2026-09-04 by R-20260904-02
+>   and R-20260904-03.
+>
+> **The successor.** The gradient-search question restarts small and in the loop
+> as the Cortex epic **`gradient-slam-baseline`** — *would a gradient search
+> dropped into a SLaM `mass[1]` search beat Nautilus?* Its ledger is
+> **`results/notes/gradient_slam/LEDGER.md`**, which carries the inherited
+> evidence, the `mass_pix` target definition and the new phases. Start there, not
+> here.
+
+
 A phased R&D plan for determining the fastest inference strategies that remain
 scientifically correct and reliably find the right solution as PyAutoLens models
 grow from ~15 to 100+ dimensions.
 
-**Status: ACTIVE.** Planned 2026-08-17 (planning pass — no runs, no PRs, no
+**Status: RETIRED 2026-09-04** (was ACTIVE). Planned 2026-08-17 (planning pass — no runs, no PRs, no
 source edits performed); **human-approved 2026-08-17 with notes** (see
 `DECISIONS.md`). Evidence base: 6 parallel reconnaissance sweeps over
 autolens_profiling, PyAutoFit@d6fef747, PyAutoArray@394514c0, PyAutoLens,
@@ -94,7 +149,11 @@ relocation: with the old run directories off the active path, a redo run launche
 with identical knobs starts fresh instead of silently re-emitting the old fit.
 Reuse means reading from `legacy/`, never resuming in place.
 
-## Phase & gate state (maintained)
+## Phase & gate state (FROZEN 2026-09-04 — was: maintained)
+
+**Frozen.** This table records where the programme stood when it was retired; it
+takes no further edits. The successor's state lives in
+`results/notes/gradient_slam/LEDGER.md`.
 
 | Item | State | Record |
 |---|---|---|

@@ -1,0 +1,200 @@
+{
+  "certified_by": "R-20260904-01",
+  "certified_at": "2026-09-04",
+  "certifying_git_sha": "991b4da26c74545d0343a84d011f140bf3a0a935",
+  "source_artifact": "results/searches/nautilus/imaging/delaunay_matern/hst/hpc_hpc_a100_fp64_ref_pos_tauto0.2_f1e8.json",
+  "target_key": "delaunay_matern_pos_fp64",
+  "note": "Adopted as an InferenceRefs_v1 reference baseline under PyAutoCortex ruling R-20260904-01, which accepted the refs-v1-positions-on-completion phase (SLURM array job 342241 on RAL, task t13) \u2014 the positions-on replacement wave for the three mesh cells R-20260902-01 struck. The `reference` key below is the source_artifact's own results JSON (schema v2), copied verbatim; the certification metadata at this level is the only thing added. The row carries its own schema-v2 target block with a non-null target_id, reproduced in this directory's target.json and re-derived from the current registry (MATCHED: restamp_target_block.py report mode, 3 unchanged, 0 refused). Binding rule of R-20260902-01: a mesh / pixelization run without a positions.info file is unreliable and cannot be cited \u2014 this run dir carries positions.info and .completed, and its positions penalty at the best point is exactly 0.0.",
+  "reference": {
+    "sampler": "nautilus",
+    "dataset_class": "imaging",
+    "model": "delaunay_matern",
+    "instrument": "hst",
+    "config_name": "hpc_a100_fp64_ref_pos_tauto0.2_f1e8",
+    "version": "2026.8.17.1",
+    "device": {
+      "backend": "gpu",
+      "device": "cuda:0",
+      "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+      "omp_num_threads": null,
+      "cpu_count": 124,
+      "nvidia_smi": "NVIDIA A100 80GB PCIe, 61395 MiB, 81920 MiB"
+    },
+    "use_mixed_precision": false,
+    "sampler_config": {
+      "n_live": 300,
+      "n_batch": 100,
+      "number_of_cores": 1,
+      "use_jax_vmap": true,
+      "force_x1_cpu": true,
+      "iterations_per_update": 900,
+      "seed": 0,
+      "positions": {
+        "enabled": true,
+        "threshold_mode": "auto",
+        "threshold_value": 0.2,
+        "auto_factor": 3.0,
+        "auto_minimum_threshold": 0.2,
+        "factor": 100000000.0,
+        "source": "simulator_truth_positions",
+        "target_class": 3,
+        "note": "IDEALISED: positions and (for 'auto') the threshold-resolution tracer are the simulator's own truth, not solved from a completed search's max-likelihood model (the SLaM chained-fit convention). 'auto' = max(auto_factor * max_sep(truth positions, truth tracer), auto_minimum_threshold); truth positions trace to ~zero separation through the truth tracer by construction, so 'auto' collapses to the auto_minimum_threshold floor for every Stage-1 dataset."
+      }
+    },
+    "positions": {
+      "enabled": true,
+      "threshold_mode": "auto",
+      "threshold_value": 0.2,
+      "auto_factor": 3.0,
+      "auto_minimum_threshold": 0.2,
+      "factor": 100000000.0,
+      "source": "simulator_truth_positions",
+      "target_class": 3,
+      "note": "IDEALISED: positions and (for 'auto') the threshold-resolution tracer are the simulator's own truth, not solved from a completed search's max-likelihood model (the SLaM chained-fit convention). 'auto' = max(auto_factor * max_sep(truth positions, truth tracer), auto_minimum_threshold); truth positions trace to ~zero separation through the truth tracer by construction, so 'auto' collapses to the auto_minimum_threshold floor for every Stage-1 dataset."
+    },
+    "log_det_method": null,
+    "model_summary": {
+      "free_parameters": 13,
+      "best_fit": "lens.mass.einstein_radius=1.5993  lens.mass.centre=(0.001, -0.000)  shear=(0.0476, 0.0483)"
+    },
+    "results": {
+      "log_evidence": 31328.963356981374,
+      "max_log_likelihood": 31405.424992729055,
+      "posterior_samples": 57600,
+      "truth_log_likelihood": 31521.743789581255,
+      "delta_max_ll_vs_truth": -116.31879685219974,
+      "bar_source": "truth_tracer",
+      "posterior_stats": {
+        "centre_0": {
+          "mean": 0.000742079210051229,
+          "std": 0.0005731502705922114
+        },
+        "centre_1": {
+          "mean": -1.321900993574369e-05,
+          "std": 0.0004987693394463191
+        },
+        "ell_comps_0": {
+          "mean": 0.048807001932053895,
+          "std": 0.0013474470137265755
+        },
+        "ell_comps_1": {
+          "mean": -0.007359762151603925,
+          "std": 0.001444763393583266
+        },
+        "einstein_radius": {
+          "mean": 1.5995249547051515,
+          "std": 0.0002813665822666802
+        },
+        "gamma_1": {
+          "mean": 0.047654377220247006,
+          "std": 0.0006286188408314858
+        },
+        "gamma_2": {
+          "mean": 0.04819760908940296,
+          "std": 0.0007418687945295501
+        },
+        "coefficient": {
+          "mean": 2.0574463285593847,
+          "std": 1.058939504846251
+        },
+        "scale": {
+          "mean": 12.462006976298873,
+          "std": 690.5731740819269
+        }
+      },
+      "penalty_at_best": {
+        "positions_penalty": 0.0,
+        "log_likelihood_penalised": 31405.424992729055,
+        "log_likelihood_unpenalised": 31405.424992729055,
+        "delta_log_likelihood": -0.0,
+        "source": "analysis.log_likelihood_penalty_from(max_log_likelihood_instance) \u2014 the penalty term alone (tracer + truth-position trace), not a re-evaluated likelihood"
+      }
+    },
+    "performance": {
+      "total_wall_s": 3017.919632434845,
+      "viz_wall_s": 54.51334794727154,
+      "viz_n_calls": 8,
+      "viz_disabled": false,
+      "sampler_wall_s": 2963.4062844875734,
+      "likelihood_evals": 57600,
+      "time_per_eval_ms": 51.4480257723537,
+      "stored_samples": 57600,
+      "gradient_evals": null,
+      "kish_ess": 4694.5626728374855,
+      "evals_per_ess": 12.269513480621068,
+      "ess_per_min": 95.05067254689838
+    },
+    "schema_version": 2,
+    "target": {
+      "target_id": "sha256:52bd5fb4279a",
+      "cell": "imaging/delaunay_matern/hst",
+      "model_dim": 13,
+      "priors_ref": "_targets.py@7f2f14765de7",
+      "likelihood": {
+        "log_det_method": null,
+        "positive_only": true,
+        "border_relocator": true,
+        "curvature_floor": 0.001,
+        "regularization_term_method": "matmul",
+        "precision": "fp64"
+      },
+      "positions": {
+        "enabled": true,
+        "threshold_mode": "auto",
+        "threshold_value": 0.2,
+        "auto_factor": 3.0,
+        "auto_minimum_threshold": 0.2,
+        "factor": 100000000.0,
+        "source": "simulator_truth_positions",
+        "target_class": 3
+      },
+      "tolerances": {
+        "delta_max_ll_nats": 2.0,
+        "mean_shift_sigma": 0.2,
+        "sigma_ratio": [
+          0.8,
+          1.25
+        ],
+        "per_parameter_recovery": {}
+      },
+      "target_class_vs_v1": null
+    },
+    "algorithm": {
+      "name": "nautilus",
+      "config_id": "hpc_a100_fp64_ref_pos_tauto0.2_f1e8",
+      "settings": {
+        "n_live": 300,
+        "n_batch": 100,
+        "number_of_cores": 1,
+        "use_jax_vmap": true,
+        "force_x1_cpu": true,
+        "iterations_per_update": 900,
+        "seed": 0,
+        "positions": {
+          "enabled": true,
+          "threshold_mode": "auto",
+          "threshold_value": 0.2,
+          "auto_factor": 3.0,
+          "auto_minimum_threshold": 0.2,
+          "factor": 100000000.0,
+          "source": "simulator_truth_positions",
+          "target_class": 3,
+          "note": "IDEALISED: positions and (for 'auto') the threshold-resolution tracer are the simulator's own truth, not solved from a completed search's max-likelihood model (the SLaM chained-fit convention). 'auto' = max(auto_factor * max_sep(truth positions, truth tracer), auto_minimum_threshold); truth positions trace to ~zero separation through the truth tracer by construction, so 'auto' collapses to the auto_minimum_threshold floor for every Stage-1 dataset."
+        }
+      },
+      "seed": 0
+    },
+    "hardware": {
+      "tier": "hpc_a100_fp64_ref_pos_tauto0.2_f1e8",
+      "precision": "fp64",
+      "device": {
+        "backend": "gpu",
+        "device": "cuda:0",
+        "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+        "omp_num_threads": null,
+        "cpu_count": 124,
+        "nvidia_smi": "NVIDIA A100 80GB PCIe, 61395 MiB, 81920 MiB"
+      }
+    }
+  }
+}
