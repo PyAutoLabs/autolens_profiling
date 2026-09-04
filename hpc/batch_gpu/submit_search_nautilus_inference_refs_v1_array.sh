@@ -24,6 +24,11 @@
 #
 #       sbatch --array=11-13 --requeue submit_search_nautilus_inference_refs_v1_array.sh
 #
+# SUBMITTED 2026-08-31 (Phase 1 redo, #200): job 342091, --array=0-8,10
+#   --requeue, from hpc/batch_gpu/. Task 9 excluded per the MGE reuse rule
+#   (340210_9 legacy row routed to batch-review ruling). Human go-ahead: the
+#   2026-08-31-pm batch dispatch.
+#
 # RESUBMIT 2026-08-29 — TASKS 5, 6 AND 7 (autolens_profiling#196)
 #   Three of the eleven rows are still missing or invalid, and all three fail
 #   for the SAME reason: the free-adapt-split regularization was the legacy
