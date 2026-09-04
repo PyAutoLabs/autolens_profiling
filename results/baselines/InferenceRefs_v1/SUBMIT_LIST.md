@@ -24,6 +24,14 @@ delivered); see the ruling note below for which rows that leaves standing.
 > reappear below as positions-on replacements needing a **new phase**, not a
 > rerun.
 
+> **2026-09-04 — ruling [R-20260904-01](https://github.com/PyAutoLabs/PyAutoCortex/blob/main/rulings/2026/09/R-20260904-01.md) (Cortex phase 12).**
+> The replacement wave landed as job **342241**, array tasks **11–13**, and all
+> three rows are accepted and adopted. **This list is closed**: every row that
+> was not struck is certified, and `InferenceRefs_v1` stands at 9 baselines.
+> The programme that commissioned it (`jax-inference-profiling`) is retired by
+> the same check-in; new baselines are commissioned by its successor
+> `gradient-slam-baseline` (`results/notes/gradient_slam/LEDGER.md`), not here.
+
 | # | Target key | Cell | Positions | Threshold | Why |
 |---|---|---|---|---|---|
 | ~~0~~ | ~~`pixelization_fp64`~~ | ~~`imaging/pixelization/hst`~~ | ~~off~~ | ~~—~~ | **struck 2026-09-02 (R-20260902-01)** — positions-off mesh row, not citable; replaced by row 11 |
@@ -37,9 +45,9 @@ delivered); see the ruling note below for which rows that leaves standing.
 | ~~8~~ | ~~`delaunay_matern_fp64`~~ | ~~`imaging/delaunay_matern/hst`~~ | ~~off~~ | ~~—~~ | **struck 2026-09-02 (R-20260902-01)** — positions-off mesh row, not citable; replaced by row 13 |
 | 9 | `mge_pos_fp64` | `imaging/mge/hst` | on | auto | `mge_fp64` (off) is certified; the positions-on arm is not — **adopted 2026-09-02 into `InferenceRefs_v1/mge_pos_fp64/` under R-20260901-01** (run 340210_9, not a 342091 row) |
 | 10 | `delaunay_pos_fp64` | `imaging/delaunay/hst` | on | auto | `delaunay_fp64` (off) is certified; the positions-on arm is not — **LANDED 342091 — adopted 2026-09-02 into `InferenceRefs_v1/delaunay_pos_fp64/` under R-20260902-01** |
-| 11 | `pixelization_pos_fp64` | `imaging/pixelization/hst` | on | auto (`pos_tauto0.2_f1e8`) | positions-off row 0 struck; positions-on replacement, needs a new phase / array task |
-| 12 | `knn_pos_fp64` | `imaging/knn/hst` | on | auto (`pos_tauto0.2_f1e8`) | positions-off row 7 struck; positions-on replacement, needs a new phase / array task |
-| 13 | `delaunay_matern_pos_fp64` | `imaging/delaunay_matern/hst` | on | auto (`pos_tauto0.2_f1e8`) | positions-off row 8 struck; positions-on replacement, needs a new phase / array task |
+| 11 | `pixelization_pos_fp64` | `imaging/pixelization/hst` | on | auto (`pos_tauto0.2_f1e8`) | positions-off row 0 struck; positions-on replacement — **LANDED 342241 t11 — adopted 2026-09-04 into `InferenceRefs_v1/pixelization_pos_fp64/` under R-20260904-01** |
+| 12 | `knn_pos_fp64` | `imaging/knn/hst` | on | auto (`pos_tauto0.2_f1e8`) | positions-off row 7 struck; positions-on replacement — **LANDED 342241 t12 — adopted 2026-09-04 into `InferenceRefs_v1/knn_pos_fp64/` under R-20260904-01** |
+| 13 | `delaunay_matern_pos_fp64` | `imaging/delaunay_matern/hst` | on | auto (`pos_tauto0.2_f1e8`) | positions-off row 8 struck; positions-on replacement — **LANDED 342241 t13 — adopted 2026-09-04 into `InferenceRefs_v1/delaunay_matern_pos_fp64/` under R-20260904-01** |
 
 Threshold "auto" rows need `SEARCHES_POSITIONS_THRESHOLD=auto` explicitly —
 the env-var-driven leaf-script path (these submits run the plain
@@ -57,7 +65,8 @@ R-20260902-01: `pos_tauto0.2_f1e8` is the confirmed physical configuration for
 a mesh source, so every mesh replacement row is a threshold-`auto` positions-on
 run.
 
-Once run, each row's artifact should be adopted into
+Every row that was going to be run has been run and adopted into
 `InferenceRefs_v1/<target_key>/` following the `mge_fp64`/`delaunay_fp64`
-pattern (`reference.json` + `target.json` + `README.md`), and this file's
-row removed / `INDEX.json`+`INDEX.md` updated.
+pattern (`reference.json` + `target.json` + `README.md`), with
+`INDEX.json`+`INDEX.md` updated. Nothing on this list is outstanding; it is
+kept as the record of what was commissioned, struck and certified.

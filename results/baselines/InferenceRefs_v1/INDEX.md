@@ -23,6 +23,9 @@ implements, and the per-target tolerances a run is judged against in
 | `slam_source_pix_nn_pos_fp64` | `imaging/slam_source_pix_nn/hst` | R-20260902-01 | `sha256:8021b4b697ff` |
 | `delaunay_pos_fp64` | `imaging/delaunay/hst` | R-20260902-01 | `sha256:dcbcb9627b78` |
 | `mge_pos_fp64` | `imaging/mge/hst` | R-20260901-01 | `sha256:6b93f0e52ecd` |
+| `pixelization_pos_fp64` | `imaging/pixelization/hst` | R-20260904-01 | `sha256:4084c87d9ca2` |
+| `knn_pos_fp64` | `imaging/knn/hst` | R-20260904-01 | `sha256:d06e54bad6c0` |
+| `delaunay_matern_pos_fp64` | `imaging/delaunay_matern/hst` | R-20260904-01 | `sha256:52bd5fb4279a` |
 
 `delaunay_fp64` was **dropped** on 2026-09-01 by PyAutoCortex ruling
 [R-20260901-03](https://github.com/PyAutoLabs/PyAutoCortex/blob/main/rulings/2026/09/R-20260901-03.md):
@@ -68,12 +71,41 @@ matched (`sha256:6b93f0e52ecd`; `restamp_target_block.py` report mode: 1
 unchanged, 0 refused). MGE is a mesh-free target, so R-20260902-01's mesh
 positions rule does not gate it.
 
+## 2026-09-04 — the three positions-on replacement rows (R-20260904-01)
+
+The replacement wave R-20260902-01 called for was submitted to RAL as job
+**342241**, array tasks **11–13**, and PyAutoCortex ruling
+[R-20260904-01](https://github.com/PyAutoLabs/PyAutoCortex/blob/main/rulings/2026/09/R-20260904-01.md)
+accepted all three. They are the positions-on references for the three cells
+whose positions-off rows were struck:
+
+| Task | Target key | max logL | logZ | evals | sampler wall | ms/eval |
+|---|---|---|---|---|---|---|
+| t11 | `pixelization_pos_fp64` | 30,941.226 | 30,868.630 | 48,592 | 2,617.9 s | 53.87 |
+| t12 | `knn_pos_fp64` | 30,923.144 | 30,838.392 | 67,600 | 3,257.5 s | 48.19 |
+| t13 | `delaunay_matern_pos_fp64` | 31,405.425 | 31,328.964 | 57,600 | 2,963.4 s | 51.45 |
+
+Every run dir carries `positions.info` and `.completed`; the positions penalty
+at each best point is exactly `0.0`; every row recovers a physical Einstein
+radius (`1.60`). All three `target_id`s were re-derived from the current
+`_targets.py` registry and matched (`restamp_target_block.py`, report mode: 0
+changed, 3 unchanged, 0 refused).
+
+**The `InferenceRefs_v1` set is now 9 certified baselines.** This ruling is
+also the last of the `jax-inference-profiling` programme, which is retired by
+the same check-in — see the `RETIRED 2026-09-04` banner at the top of
+`results/notes/inference/PROGRAMME.md` and the successor ledger
+`results/notes/gradient_slam/LEDGER.md`.
+
 ## Still needed
 
-The `hpc/batch_gpu/submit_search_nautilus_inference_refs_v1_array.sh` array
-script **has been submitted** (job 342091, 2026-09-02); what remains is the
-positions-on replacement wave for the three cells whose positions-off rows
-R-20260902-01 struck — `pixelization_pos_fp64`, `knn_pos_fp64` and
-`delaunay_matern_pos_fp64` — which need a **new phase**, not a rerun. See
-`SUBMIT_LIST.md` rows 11–13 for the full list of reference rows this
-directory still has no baseline for.
+**Nothing.** Every row of `SUBMIT_LIST.md` that was not struck has landed and
+been certified: rows 2, 4, 6, 9 and 10 under R-20260902-01 / R-20260901-01
+(job 342091 and the reused 340210_9), rows 11, 12 and 13 under R-20260904-01
+(job 342241 tasks 11–13). Rows 0, 1, 3, 5, 7 and 8 are struck by design. The
+`InferenceRefs_v1` set is closed at 9 certified baselines.
+
+New reference rows are no longer this directory's business: the programme that
+commissioned it is retired, and the successor epic `gradient-slam-baseline`
+commissions its own baselines against the `mass_pix` target — see
+`results/notes/gradient_slam/LEDGER.md`.

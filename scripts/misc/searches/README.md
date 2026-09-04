@@ -125,9 +125,11 @@ of PyAutoFit machinery is exercised and measured.
 | `nautilus` | `imaging/delaunay/hst` | `hpc_a100_fp64_nbatch64` | 30,623.0 | 30,562.2 | 1750.83 s | 32,064 | 53.0 ms | evals | `a45841ff` | 2,335.1 | v2026.8.17.1 |
 | `nautilus` | `imaging/delaunay/hst` | `hpc_a100_fp64_ref_pos_tauto0.2_f1e8` | 31,338.4 | 31,264.8 | 3197.64 s | 50,832 | 61.8 ms | evals | `dcbcb962` | 4,430.6 | v2026.8.17.1 |
 | `nautilus` | `imaging/delaunay_matern/hst` | `hpc_a100_fp64_ref` | 30,676.0 | 30,615.2 | 3304.05 s | 59,600 | 54.5 ms | evals | `3f17a372` | 5,900.0 | v2026.8.17.1 |
+| `nautilus` | `imaging/delaunay_matern/hst` | `hpc_a100_fp64_ref_pos_tauto0.2_f1e8` | 31,405.4 | 31,329.0 | 3017.92 s | 57,600 | 51.4 ms | evals | `52bd5fb4` | 4,694.6 | v2026.8.17.1 |
 | `nautilus` | `imaging/delaunay_nn/hst` | `hpc_a100_fp64_ref` | 30,650.8 | 30,591.1 | 3167.10 s | 46,200 | 67.3 ms | evals | `6a13b9a4` | 4,285.4 | v2026.8.17.1 |
 | `nautilus` | `imaging/delaunay_nn/hst` | `hpc_a100_fp64_ref_pos_t0.3_f1e8` | 31,351.4 | 31,275.2 | 3170.11 s | 50,900 | 61.2 ms | evals | `1e007f22` | 4,354.3 | v2026.8.17.1 |
 | `nautilus` | `imaging/knn/hst` | `hpc_a100_fp64_ref` | 30,062.6 | 29,995.7 | 3471.59 s | 67,900 | 50.3 ms | evals | `ccafb8b1` | 4,884.1 | v2026.8.17.1 |
+| `nautilus` | `imaging/knn/hst` | `hpc_a100_fp64_ref_pos_tauto0.2_f1e8` | 30,923.1 | 30,838.4 | 3315.64 s | 67,600 | 48.2 ms | evals | `d06e54ba` | 5,188.3 | v2026.8.17.1 |
 | `nautilus` | `imaging/mge/hst` | `hpc_a100_fp64` | 31,786.6 | 31,690.5 | 775.11 s | 62,208 | 11.4 ms | evals | — | — | v2026.8.17.1 |
 | `nautilus` | `imaging/mge/hst` | `hpc_a100_fp64_nbatch1000` | 31,787.0 | 31,690.4 | 525.55 s | 77,000 | 5.9 ms | evals | `770ccd47` | 4,693.6 | v2026.8.17.1 |
 | `nautilus` | `imaging/mge/hst` | `hpc_a100_fp64_nbatch128` | 31,786.7 | 31,690.5 | 680.84 s | 64,768 | 9.5 ms | evals | `770ccd47` | 4,247.8 | v2026.8.17.1 |
@@ -149,6 +151,7 @@ of PyAutoFit machinery is exercised and measured.
 | `nautilus` | `imaging/mge/hst` | `hpc_a100_fp64_seed4_pos_t0.3_f1e8` | 31,786.7 | 31,690.5 | 810.36 s | 63,616 | 11.6 ms | evals | `bf3d096f` | 4,622.7 | v2026.8.17.1 |
 | `nautilus` | `imaging/pixelization/hst` | `hpc_a100_fp64` | 29,670.4 | 29,590.1 | 3351.29 s | 55,984 | 58.8 ms | evals | `801ba27b` | 2,215.8 | v2026.8.17.1 |
 | `nautilus` | `imaging/pixelization/hst` | `hpc_a100_fp64_ref` | 29,835.5 | 29,778.1 | 2152.54 s | 38,192 | 54.8 ms | evals | `801ba27b` | 4,193.5 | v2026.8.17.1 |
+| `nautilus` | `imaging/pixelization/hst` | `hpc_a100_fp64_ref_pos_tauto0.2_f1e8` | 30,941.2 | 30,868.6 | 2676.32 s | 48,592 | 53.9 ms | evals | `4084c87d` | 4,462.9 | v2026.8.17.1 |
 | `nautilus` | `imaging/slam_source_pix/hst` | `hpc_a100_fp64_ref` | 31,026.6 | 30,951.8 | 4403.98 s | 104,300 | 41.6 ms | evals | `37150b62` | 4,545.8 | v2026.8.17.1 |
 | `nautilus` | `imaging/slam_source_pix/hst` | `hpc_a100_fp64_ref_pos_tauto0.2_f1e8` | 31,547.2 | 31,452.1 | 4038.57 s | 93,700 | 42.5 ms | evals | `b29616db` | 5,630.0 | v2026.8.17.1 |
 | `nautilus` | `imaging/slam_source_pix_nn/hst` | `hpc_a100_fp64_ref` | 30,751.0 | 30,684.1 | 5044.70 s | 76,400 | 65.3 ms | evals | `ad291b57` | 8,548.3 | v2026.8.17.1 |
