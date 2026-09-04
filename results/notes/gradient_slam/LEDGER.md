@@ -100,15 +100,19 @@ Cortex phases under `PyAutoCortex/phases/inference_programme/`, all with
 
 | Cortex phase | Slug | State | What it settles |
 |---|---|---|---|
-| **20** | `mass_pix_gradient_cost_probe` | `gated` on the dev leg | Forward vs `value_and_grad` ms/eval on the `mass_pix` cell, strict FD on all 7 parameters, compile time. **Is the jvp/forward ratio sane (≲4×), or does the 17× CPU anomaly reproduce on an A100?** If it reproduces, a Mind bug comes before phase 22. |
+| **20** | `mass_pix_gradient_cost_probe` | `gated` on autolens_profiling#218 | Forward vs `value_and_grad` ms/eval on the `mass_pix` cell, strict FD on all 7 parameters, compile time. **Is the jvp/forward ratio sane (≲4×), or does the 17× CPU anomaly reproduce on an A100?** If it reproduces, a Mind bug comes before phase 22. |
 | **21** | `nautilus_mass_pix_baseline` | `planned`, ready when 20 rules | Two Nautilus runs, n_live 300, refs settings: `pos_tauto0.2_f1e8` and `pos_tauto0.2_f1e5`. The bar the gradient search has to beat, plus the like-for-like 1e5 arm. |
 | **22** | `prodigy_mass_pix` | `planned`, ready when 21 rules | `MultiStartProdigy` autoconv, n_starts 16, batch_size 4, n_steps ≤ 3000, `pos_tauto0.2_f1e5`, seeds 0–4. **The headline ruling**: p_hit and wall against phase 21. |
 | **23** | `likelihood_term_levers` | `planned`, gated on 22's ruling | Arms **only if** 22 shows NaN lanes or misses: `SEARCHES_LOG_DET_METHOD=slogdet` vs `cholesky` (folds autolens_profiling#166), and relative jitter on `reg.Adapt` (today only the kernel schemes carry `jitter_relative`; `constant.py:53` / `adapt.py` still take the absolute 1e-8 lift — a PyAutoArray task if it triggers). |
 
 **The development leg** — the `mass_pix` target, its drivers and the probe script
 — is a Mind prompt, not a Cortex phase:
-`PyAutoMind/draft/feature/autolens_profiling/gradient_slam_mass_pix_target.md`.
-Phase 20 is gated on it.
+`PyAutoMind/draft/feature/autolens_profiling/gradient_slam_mass_pix_target.md`,
+filed 2026-09-04 with its issue **autolens_profiling#218** opened at the same
+moment as phase 20's gate ref (Cortex schema decision 55: a `Gates:` line holds
+GitHub refs only). The prompt stays in `draft/` — an open issue there means
+"there is a ref", not "the work is in flight" — and `/start_dev` reuses that
+issue rather than opening a second.
 
 ## Work-up queue (not filed)
 
