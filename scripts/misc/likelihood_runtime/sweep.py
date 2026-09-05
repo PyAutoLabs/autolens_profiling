@@ -77,6 +77,9 @@ CELLS: list[tuple[str, str, tuple[str, ...]]] = [
     ("imaging", "mge", ("hst", "jwst", "ao")),
     ("imaging", "pixelization", ("hst", "jwst", "ao")),
     ("imaging", "delaunay", ("hst", "jwst", "ao")),
+    # DelaunayNN mesh-family comparison against imaging/delaunay — hst only,
+    # the instrument the two cells are compared at (autolens_profiling#219).
+    ("imaging", "delaunay_nn", ("hst",)),
     # mge interferometer runs sma ONLY: the dense MGE mapping matrix needs a
     # ~62 GB gather buffer at 1M+ vis (vram/config.py marks alma+ INHERENTLY
     # blocked) — confirmed empirically by the first campaign pass (#56):

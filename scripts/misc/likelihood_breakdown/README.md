@@ -19,12 +19,13 @@ For *how long the likelihood actually takes* on production hardware — i.e. a s
 | `datacube/delaunay` | alma_high | hpc_a100_mp | dense (mapping) | — | v2026.7.6.649 |
 | `datacube/inversion` | alma_high | hpc_a100_fp64 | dense (mapping) | — | v2026.7.6.649 |
 | `datacube/inversion` | alma_high | hpc_a100_mp | dense (mapping) | — | v2026.7.6.649 |
-| `imaging/delaunay` | hst | local_cpu_fp64 | dense (mapping) | 10.07 s | v2026.7.6.649 |
+| `imaging/delaunay` | hst | local_cpu_fp64 | dense (mapping) | 3.15 s | v2026.8.17.1 |
 | `imaging/delaunay` | hst | local_cpu_fp64 | sparse (w-tilde) | 8.81 s | v2026.7.6.649 |
 | `imaging/delaunay` | hst | hpc_a100_fp64 | dense (mapping) | 96.6 ms | v2026.7.6.649 |
 | `imaging/delaunay` | hst | hpc_a100_fp64 | sparse (w-tilde) | 98.0 ms | v2026.7.6.649 |
 | `imaging/delaunay` | hst | hpc_a100_mp | dense (mapping) | 96.8 ms | v2026.7.6.649 |
 | `imaging/delaunay` | hst | hpc_a100_mp | sparse (w-tilde) | 95.5 ms | v2026.7.6.649 |
+| `imaging/delaunay_nn` | hst | local_cpu_fp64 | dense (mapping) | 3.55 s | v2026.8.17.1 |
 | `imaging/delaunay_numba` | euclid | local_cpu_fp64 | sparse (numba) | 1.19 s | v2026.8.17.1 |
 | `imaging/delaunay_numba` | hst | local_cpu_fp64 | sparse (numba) | 482.4 ms | v2026.8.17.1 |
 | `imaging/mge` | hst | local_cpu_fp64 | dense (mapping) | 179.5 ms | v2026.7.6.649 |
@@ -93,6 +94,7 @@ If, on the other hand, the two numbers agree closely, the per-step bars are a fa
 | `imaging/mge.py` | Imaging | MGE linear bulge | Linear MGE source; 8-step pipeline. |
 | `imaging/pixelization.py` | Imaging | RectangularBilinearAdaptImage (`--rect-mesh rtu` for the RTU variant) | 13-step pipeline incl. mesh + regularisation. |
 | `imaging/delaunay.py` | Imaging | DelaunayBrightnessImage | 13-step pipeline; Hilbert-curve mesh. |
+| `imaging/delaunay_nn.py` | Imaging | DelaunayBrightnessImage with `al.mesh.DelaunayNN` | Like-for-like sibling of `imaging/delaunay.py` — same 13 steps, same configuration, Sibson natural-neighbour interpolation (cap 32) instead of barycentric. |
 | `interferometer/delaunay.py` | Interferometer | DelaunayBrightnessImage + sparse-DFT | 11-step pipeline. The transform-mapping-matrix step is the interferometer-specific replacement for imaging's PSF convolution. |
 | `datacube/delaunay.py` | Datacube | DelaunayBrightnessImage × N channels | 8-step pipeline. Channel-invariant steps profiled once; channel-variant steps profiled on channel 0 and multiplied by `N_channels` for the cube cost. |
 | `imaging/delaunay_numba.py` | Imaging | DelaunayBrightnessImage (numba CPU, `use_jax=False`) | 18-step pipeline; sparse-operator CPU path, MGE-60 linear lens light. |

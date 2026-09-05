@@ -1,8 +1,11 @@
 #!/bin/bash -l
 #
-# A100 likelihood-breakdown profile: imaging/delaunay x hst x fp64.
+# A100 likelihood-breakdown profile: imaging/delaunay_nn x hst x fp64.
 # DENSE inversion path (mapping matrices).
-# Per-step JIT decomposition (PreOptimizationTimes campaign, autolens_profiling#59).
+#
+# The Sibson natural-neighbour counterpart of
+# submit_breakdown_imaging_delaunay_a100_hst_fp64, run with the same flags so
+# the two per-step tables are directly subtractable (autolens_profiling#219).
 # Compile-heavy: every pipeline step is JIT-compiled in isolation and then
 # re-compiled under jax.jit(jax.vmap(...)) at batch 16, so wall time is
 # dominated by XLA compiles, not the steady-state timing loops.
@@ -11,12 +14,11 @@
 #   --vmap-batch 16  batched re-timing; 16 is the Nautilus reference run's
 #                    n_batch, so the rows reconcile against its per-eval cost
 #
-# Re-run with these flags (autolens_profiling#219) both to pick up the
-# corrected, JIT-timed "Regularization matrix (H)" row — the previous 14.4 ms
-# figure was a host-to-device copy of the eager NumPy matrix, not a JIT step —
-# and to give the DelaunayNN sibling a like-for-like column to subtract from.
+# Writes results/breakdown/imaging/delaunay_nn_hpc_a100_fp64.{json,png} — the
+# script passes cell="delaunay_nn" explicitly, without which resolve_output_paths
+# would derive the cell "delaunay" and clobber the Delaunay row.
 
-#SBATCH -J breakdown_imaging_delaunay_hst_fp64
+#SBATCH -J breakdown_imaging_delaunay_nn_hst_fp64
 #SBATCH --partition=gpu
 # Exclusion of euclid-ral-gpu-1 dropped 2026-09-05: MIG mode confirmed Disabled
 # on all four GPUs and JAX cuda init verified per GPU from inside an srun; the
@@ -51,7 +53,7 @@ nvidia-smi
 
 echo "=========================================="
 date
-echo "Cell:           likelihood_breakdown/imaging/delaunay"
+echo "Cell:           likelihood_breakdown/imaging/delaunay_nn"
 echo "Instrument:     hst"
 echo "Precision:      fp64"
 echo "Inversion path: dense (mapping)"
@@ -64,7 +66,7 @@ done
 
 cd $AP_ROOT
 
-python3 -u scripts/imaging/likelihood_breakdown/delaunay.py \
+python3 -u scripts/imaging/likelihood_breakdown/delaunay_nn.py \
     --config-name hpc_a100_fp64 \
     --split-setup \
     --vmap-batch 16
