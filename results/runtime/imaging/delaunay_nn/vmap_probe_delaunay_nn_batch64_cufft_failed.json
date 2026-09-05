@@ -1,0 +1,21 @@
+{
+  "backend": "gpu",
+  "dataset": "imaging",
+  "model": "delaunay_nn",
+  "instrument": "hst",
+  "samples": [
+    {
+      "batch_size": 1,
+      "peak_bytes": 808420272,
+      "output_bytes": 8,
+      "temp_bytes": 805742048
+    }
+  ],
+  "per_replica_mb": 770.97,
+  "constant_overhead_mb": 0.0,
+  "vram_budget_gb": 65.0,
+  "safety_factor": 1.15,
+  "max_batch_cap": 64,
+  "recommended_batch_size": 64,
+  "inversion_path": "dense"
+}

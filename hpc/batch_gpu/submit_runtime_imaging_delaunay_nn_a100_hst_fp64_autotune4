@@ -1,22 +1,17 @@
 #!/bin/bash -l
 #
-# A100 likelihood-breakdown profile: imaging/delaunay x hst x fp64.
-# DENSE inversion path (mapping matrices).
-# Per-step JIT decomposition (PreOptimizationTimes campaign, autolens_profiling#59).
-# Compile-heavy: every pipeline step is JIT-compiled in isolation and then
-# re-compiled under jax.jit(jax.vmap(...)) at batch 16, so wall time is
-# dominated by XLA compiles, not the steady-state timing loops.
+# A100 likelihood-runtime profile: imaging/delaunay_nn × hst × fp64.
+# DENSE inversion path (InversionImagingMapping).
 #
-#   --split-setup    four-way split of the inversion-setup block
-#   --vmap-batch 16  batched re-timing; 16 is the Nautilus reference run's
-#                    n_batch, so the rows reconcile against its per-eval cost
-#
-# Re-run with these flags (autolens_profiling#219) both to pick up the
-# corrected, JIT-timed "Regularization matrix (H)" row — the previous 14.4 ms
-# figure was a host-to-device copy of the eager NumPy matrix, not a JIT step —
-# and to give the DelaunayNN sibling a like-for-like column to subtract from.
+# A/B arm: XLA GPU autotuning RE-ENABLED (--xla_gpu_autotune_level=4, XLA's
+# default). PyAutoNerves e8d5842 appends --xla_gpu_autotune_level=0 unless
+# XLA_FLAGS already names a level; the paired breakdown run shows the dense
+# fp64 curvature-matrix GEMM at 25.63 ms with autotuning off vs 4.82 ms on the
+# 2026-07-10 rows. This is the runtime-cell arm of that A/B: same cell and
+# flags as submit_runtime_imaging_delaunay_nn_a100_hst_fp64, autotuning on
+# (autolens_profiling#219).
 
-#SBATCH -J breakdown_imaging_delaunay_hst_fp64
+#SBATCH -J runtime_imaging_delaunay_nn_hst_fp64_autotune4
 #SBATCH --partition=gpu
 # Exclusion of euclid-ral-gpu-1 dropped 2026-09-05: MIG mode confirmed Disabled
 # on all four GPUs and JAX cuda init verified per GPU from inside an srun; the
@@ -25,7 +20,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=64gb
-#SBATCH --time=12:00:00
+#SBATCH --time=4:00:00
 #SBATCH -o output/output.%A.out
 #SBATCH -e error/error.%A.err
 #SBATCH --mail-type=END,FAIL
@@ -43,7 +38,7 @@ export JAX_PLATFORM_NAME=cuda
 export JAX_PLATFORMS=cuda,cpu
 export XLA_PYTHON_CLIENT_PREALLOCATE=false
 export JAX_ENABLE_X64=True
-export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding"
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=4"
 export NUMBA_CACHE_DIR=/tmp/numba_cache
 export MPLCONFIGDIR=/tmp/matplotlib
 
@@ -51,11 +46,10 @@ nvidia-smi
 
 echo "=========================================="
 date
-echo "Cell:           likelihood_breakdown/imaging/delaunay"
+echo "Cell:           likelihood_runtime/imaging/delaunay_nn"
 echo "Instrument:     hst"
 echo "Precision:      fp64"
-echo "Inversion path: dense (mapping)"
-echo "Flags:          --split-setup --vmap-batch 16"
+echo "Inversion path: dense"
 
 echo "=== source revisions ==="
 for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
@@ -64,10 +58,15 @@ done
 
 cd $AP_ROOT
 
-python3 -u scripts/imaging/likelihood_breakdown/delaunay.py \
-    --config-name hpc_a100_fp64 \
-    --split-setup \
-    --vmap-batch 16
+# The --vmap-probe step is skipped for this cell: its batch-1 extrapolation
+# recommends 64 replicas, which passes the memory budget but fails cuFFT
+# batched-plan creation (job 342280, 2026-09-05). With no probe JSON present
+# resolve_vmap_batch falls back to the VMAP_BATCH table (16). The failed probe
+# is kept as vmap_probe_delaunay_nn_batch64_cufft_failed.json.
+echo "--- full timing ---"
+python3 -u scripts/imaging/likelihood_runtime/delaunay_nn.py \
+    --instrument hst \
+    --config-name hpc_a100_fp64_autotune4
 
 echo "Finished."
 date

@@ -53,6 +53,14 @@ VMAP_BATCH: dict[tuple[str, str, str], int | None] = {
     ("imaging", "delaunay", "jwst"): 8,  # 2,415 MB / replica — probe said 23, cuFFT failed
     ("imaging", "delaunay", "ao"): 1,  # 17,485 MB / replica — probe said 3, OOM at 3
     #
+    # delaunay_nn (same 1500-node Hilbert mesh, Sibson natural-neighbour
+    # weights). UNPROBED — mirrors the delaunay row because the dominant
+    # per-replica term is the same mapping matrix (n_mask x n_source x 8 B);
+    # the Sibson cap-32 neighbour/weight tables are the second-order term.
+    # The A100 submit runs --vmap-probe first and the fresh probe JSON takes
+    # precedence over this fallback (autolens_profiling#219).
+    ("imaging", "delaunay_nn", "hst"): 16,
+    #
     # pixelization (35×35 = 1225-node rectangular mesh)
     ("imaging", "pixelization", "euclid"): 64,  # 273 MB / replica — probe OK
     ("imaging", "pixelization", "hst"): 16,  # 931 MB / replica — probe said 62, cuFFT failed

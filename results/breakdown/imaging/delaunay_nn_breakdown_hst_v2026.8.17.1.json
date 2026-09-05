@@ -1,0 +1,36 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "omp_num_threads": "1",
+    "cpu_count": 8
+  },
+  "instrument": "hst",
+  "configuration": {
+    "pixel_scale_arcsec": 0.05,
+    "mask_radius_arcsec": 3.5,
+    "image_pixels_masked": 15361,
+    "over_sampled_pixels": 17980,
+    "delaunay_vertices": 1500,
+    "edge_zeroed_pixels": 0,
+    "inversion_path": "dense"
+  },
+  "steps": {
+    "Ray-trace data grid": 0.001201390000005631,
+    "Ray-trace mesh grid": 0.0003753999999844382,
+    "Lens light images (pre-PSF)": 2.3079999982655865e-05,
+    "Blurred image (PSF convolution)": 0.0010193399999934628,
+    "Profile-subtracted image": 0.00015469999998458662,
+    "Inversion setup (steps 5-8 combined)": 1.271505359999992,
+    "Data vector (D)": 0.009372140000004947,
+    "Curvature matrix (F)": 1.2107200799999647,
+    "Regularization matrix (H)": 0.21327409000004982,
+    "Regularized reconstruction": 0.8028604600000108,
+    "Mapped recon + log evidence": 0.04230463000003511
+  },
+  "total_step_by_step": 3.552810670000008,
+  "regularization_matrix_prefix_s": 0.7214098100000228,
+  "interpolator_prefix_s": 0.508135719999973
+}

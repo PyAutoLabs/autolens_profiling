@@ -219,6 +219,7 @@ def resolve_output_paths(
     cli: ProfileCLI,
     default_dir: Path,
     default_basename: str,
+    cell: str | None = None,
 ) -> tuple[Path, Path]:
     """Resolve (json_path, png_path) for the per-cell write.
 
@@ -226,14 +227,19 @@ def resolve_output_paths(
       ``<output_dir>/<default_basename>.{json,png}`` (the single-config
       filename pattern).
     - When ``cli.config_name`` is set: use ``<output_dir>/<cell>_<config_name>.{json,png}``,
-      where ``<cell>`` is the first ``_``-separated token of ``default_basename``
-      (the leaf scripts use ``<cell>_likelihood_summary_...`` /
-      ``<cell>_breakdown_...`` so the cell name is always the leading token).
+      where ``<cell>`` defaults to the first ``_``-separated token of
+      ``default_basename`` (the leaf scripts use ``<cell>_likelihood_summary_...`` /
+      ``<cell>_breakdown_...`` so the cell name is usually the leading token).
       This keeps per-cell JSONs disjoint even when the same config name is
       shared across cells in a sweep — without it, every cell writes to the
       same ``<config_name>.json`` and the sweep loses 5 of 6 results to
       clobbering (the bug surfaced by the first A100 sparse-vs-dense sweep,
       autolens_profiling#44).
+    - ``cell`` overrides that first-token derivation. **Required for any cell
+      whose name itself contains an underscore**: ``delaunay_nn`` derives to
+      ``delaunay`` under the default rule and would silently clobber the
+      Delaunay cell's ``delaunay_<config_name>.json`` (autolens_profiling#219).
+      Callers that pass nothing keep the pre-existing behaviour exactly.
     - ``cli.output_dir`` overrides ``default_dir`` when set.
     - When ``cli.use_sparse_operator`` is set, ``_sparse`` is appended to the
       resolved basename so dense and sparse JSONs from the same config don't
@@ -244,11 +250,12 @@ def resolve_output_paths(
     if cli.config_name is None:
         basename = default_basename
     else:
-        # First underscore-separated token of default_basename is the cell.
-        # All callers (likelihood_runtime, likelihood_breakdown) follow the
+        # First underscore-separated token of default_basename is the cell,
+        # unless the caller named it explicitly. All callers
+        # (likelihood_runtime, likelihood_breakdown) follow the
         # ``<cell>_<purpose>_<inst>_v<version>`` convention.
-        cell = default_basename.split("_", 1)[0]
-        basename = f"{cell}_{cli.config_name}"
+        cell_name = cell if cell is not None else default_basename.split("_", 1)[0]
+        basename = f"{cell_name}_{cli.config_name}"
     if cli.use_sparse_operator:
         basename = f"{basename}_sparse"
     if cli.rect_mesh == "rtu":

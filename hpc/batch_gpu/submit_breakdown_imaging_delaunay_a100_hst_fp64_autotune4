@@ -11,12 +11,16 @@
 #   --vmap-batch 16  batched re-timing; 16 is the Nautilus reference run's
 #                    n_batch, so the rows reconcile against its per-eval cost
 #
-# Re-run with these flags (autolens_profiling#219) both to pick up the
-# corrected, JIT-timed "Regularization matrix (H)" row — the previous 14.4 ms
-# figure was a host-to-device copy of the eager NumPy matrix, not a JIT step —
-# and to give the DelaunayNN sibling a like-for-like column to subtract from.
+# A/B arm: XLA GPU autotuning RE-ENABLED (--xla_gpu_autotune_level=4, XLA's
+# default). PyAutoNerves e8d5842 appends --xla_gpu_autotune_level=0 unless
+# XLA_FLAGS already names a level, and between the 2026-07-10 A100 rows and
+# job 342277 (2026-09-05) the Curvature matrix (F) step went 4.82 -> 25.63 ms
+# while the Cholesky-bound steps did not move; F is one dense fp64 GEMM
+# (15361 x 1560)^T (15361 x 1560), so the hypothesis is that with autotuning
+# off XLA picks a poor cuBLAS fp64 GEMM algorithm. This run sets the level
+# explicitly (which Nerves respects) to measure it (autolens_profiling#219).
 
-#SBATCH -J breakdown_imaging_delaunay_hst_fp64
+#SBATCH -J breakdown_imaging_delaunay_hst_fp64_autotune4
 #SBATCH --partition=gpu
 # Exclusion of euclid-ral-gpu-1 dropped 2026-09-05: MIG mode confirmed Disabled
 # on all four GPUs and JAX cuda init verified per GPU from inside an srun; the
@@ -43,7 +47,7 @@ export JAX_PLATFORM_NAME=cuda
 export JAX_PLATFORMS=cuda,cpu
 export XLA_PYTHON_CLIENT_PREALLOCATE=false
 export JAX_ENABLE_X64=True
-export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding"
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=4"
 export NUMBA_CACHE_DIR=/tmp/numba_cache
 export MPLCONFIGDIR=/tmp/matplotlib
 
@@ -65,7 +69,7 @@ done
 cd $AP_ROOT
 
 python3 -u scripts/imaging/likelihood_breakdown/delaunay.py \
-    --config-name hpc_a100_fp64 \
+    --config-name hpc_a100_fp64_autotune4 \
     --split-setup \
     --vmap-batch 16
 

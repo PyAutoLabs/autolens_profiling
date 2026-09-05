@@ -1,0 +1,55 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "omp_num_threads": "1",
+    "cpu_count": 8
+  },
+  "instrument": "hst",
+  "configuration": {
+    "pixel_scale_arcsec": 0.05,
+    "mask_radius_arcsec": 3.5,
+    "image_pixels_masked": 15361,
+    "over_sampled_pixels": 17980,
+    "delaunay_vertices": 1500,
+    "edge_zeroed_pixels": 0,
+    "inversion_path": "dense"
+  },
+  "steps": {
+    "Ray-trace data grid": 0.0011634699999831355,
+    "Ray-trace mesh grid": 0.0003267900000082591,
+    "Lens light images (pre-PSF)": 2.297000000908156e-05,
+    "Blurred image (PSF convolution)": 0.0008680800000092859,
+    "Profile-subtracted image": 3.56399999873247e-05,
+    "Inversion setup (steps 5-8 combined)": 0.9212755799999741,
+    "Data vector (D)": 0.00767321999996966,
+    "Curvature matrix (F)": 0.9748105099999975,
+    "Regularization matrix (H)": 0.08296621999998023,
+    "Regularized reconstruction": 1.1167128999999931,
+    "Mapped recon + log evidence": 0.03966320999998061
+  },
+  "total_step_by_step": 3.145518589999892,
+  "regularization_matrix_prefix_s": 0.19026872999997976,
+  "interpolator_prefix_s": 0.10730250999999953,
+  "setup_split": {
+    "Border relocation": 0.0015106899999864254,
+    "Triangulation + interpolation": 0.10579182000001311,
+    "Mapping matrix": 0.02850688000003175,
+    "Blurred mapping matrix (PSF)": 0.8876858699999504
+  },
+  "vmap_batch": 2,
+  "steps_vmap_per_call": {
+    "Inversion setup (steps 5-8 combined)": 1.4409508650000133,
+    "Regularization matrix (H)": 0.015848444999983252
+  },
+  "setup_split_vmap": {
+    "Border relocation": 0.0012004250000018147,
+    "Triangulation + interpolation": 0.14088937500000612,
+    "Mapping matrix": 0.026385419999996884,
+    "Blurred mapping matrix (PSF)": 0.9402016499999946
+  },
+  "regularization_matrix_prefix_vmap_per_call_s": 0.15793824499999118,
+  "interpolator_prefix_vmap_per_call_s": 0.14208980000000793
+}

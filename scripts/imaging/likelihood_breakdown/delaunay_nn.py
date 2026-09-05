@@ -1,21 +1,45 @@
 """
-JAX Profiling: Delaunay Imaging Likelihood — Per-Step Breakdown
-================================================================
+JAX Profiling: DelaunayNN Imaging Likelihood — Per-Step Breakdown
+==================================================================
 
-Decomposes the JAX likelihood function for an imaging dataset (Hilbert/Delaunay
-source model) into its individual pipeline steps and JIT-profiles each one
-separately. This script is the **breakdown** counterpart to
-``likelihood_runtime/imaging/delaunay.py``, which measures only the
-full-pipeline single-JIT cost.
+The **Sibson natural-neighbour sibling** of
+``likelihood_breakdown/imaging/delaunay.py``. Every knob is deliberately
+identical — HST, 3.5" mask, radial-bin over-sampling, 1500-vertex Hilbert image
+mesh, MGE-60 lens light, Isothermal + ExternalShear mass, ConstantSplit
+regularization, border relocator on, dense inversion path — and the **only**
+difference is the source mesh's interpolation scheme:
 
-Key differences from the rectangular pixelization breakdown script:
+- ``delaunay.py``    — ``al.mesh.Delaunay`` + ``al.InterpolatorDelaunay``:
+  C0 barycentric interpolation inside the containing triangle, 3 weights per
+  query coordinate.
+- ``delaunay_nn.py`` — ``al.mesh.DelaunayNN`` + ``al.InterpolatorDelaunayNN``:
+  Sibson natural-neighbour interpolation over the whole circumcircle cavity,
+  continuous through Delaunay diagonal flips, and linearly precise.
 
-- Mesh vertices are computed in the **image-plane** via a Hilbert image mesh,
-  then ray-traced to the source-plane.
-- Edge points are appended around the mask border and zeroed during inversion.
-- Uses **InterpolatorDelaunay** (barycentric interpolation within triangles).
-- Uses **ConstantSplit** regularization (cross-derivative scheme).
-- Delaunay triangulation itself uses scipy on CPU and cannot be JIT-compiled.
+So a per-step diff between the two JSONs isolates the interpolation scheme with
+nothing else varying, and the four-way ``--split-setup`` labels mean exactly the
+same thing in both.
+
+Static caps (this is where the cost difference lives)
+-----------------------------------------------------
+
+Sibson weights need fixed-shape arrays for ``jax.jit``, so PyAutoArray pins
+production caps in ``autoarray/inversion/mesh/interpolator/sibson.py``:
+
+    SIBSON_MAX_CAVITY_TRIANGLES = 32
+    SIBSON_MAX_NEIGHBORS        = 32
+    SIBSON_QUERY_CHUNK          = 256
+
+``autoarray/inversion/mesh/mesh/delaunay_nn.py`` binds them onto the mesh class
+as ``max_cavity_triangles`` / ``max_neighbors`` / ``query_chunk``. The workspace
+mass-model audit (101 traced Hilbert meshes) observed maxima of 25 cavity
+triangles and 27 natural neighbours; caps 16 and 24 overflowed, so 32 is the
+smallest tested-safe shape. Every mapper row is therefore 32 wide here against
+Delaunay's 3, which is the structural reason the mapper geometry benchmark
+reads ~157 ms (cap 32) vs ~37 ms (Delaunay) unbatched on the A100 — this
+breakdown is what says how much of that survives into the whole likelihood.
+If a cap is exceeded the affected weights become NaN (the sample is rejected)
+rather than being silently truncated.
 
 Pipeline steps:
 
@@ -24,7 +48,7 @@ Pipeline steps:
 3. Lens light images (pre-PSF, JIT) + PSF convolution (eager)
 4. Profile-subtracted image
 5. Border relocation (data grid + mesh grid)
-6. Delaunay triangulation + interpolation + mapper
+6. Delaunay triangulation + Sibson interpolation + mapper
 7. Mapping matrix
 8. Blurred mapping matrix / Inversion setup (steps 5-8 combined)
 9. Data vector (D)
@@ -43,7 +67,7 @@ Regularization matrix (H) attribution
 
 The H row is a **JIT-timed step**, not a host-to-device copy. A prefix
 function ``params_tree -> regularization matrix`` is compiled — Tracer from
-the params pytree, traced grids, border relocation, ``InterpolatorDelaunay``,
+the params pytree, traced grids, border relocation, ``InterpolatorDelaunayNN``,
 ``Mapper``, then ``ConstantSplit.regularization_matrix_from(linear_obj=mapper,
 xp=jnp)`` — and the row is reported as the difference::
 
@@ -91,7 +115,10 @@ Output
 ------
 
 Results JSON and PNG are written to ``results/breakdown/imaging/`` using
-the basename ``delaunay_breakdown_{instrument}_v{al_version}``.
+the basename ``delaunay_nn_breakdown_{instrument}_v{al_version}``. Under
+``--config-name`` the cell name is passed explicitly as ``delaunay_nn``,
+because ``resolve_output_paths``'s default first-token derivation would give
+``delaunay`` and clobber the Delaunay cell's row.
 """
 
 import sys as _sys
@@ -376,8 +403,13 @@ with timer.section("model_build"):
 
     lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
 
-    mesh = al.mesh.Delaunay(
+    # Matches ``_delaunay_nn_model`` in scripts/misc/searches/_setup.py — the
+    # registered DelaunayNN target — so the breakdown and the sampler runs
+    # profile the same mesh. ``DelaunayNN`` is a ``Delaunay`` subclass with the
+    # identical (pixels, zeroed_pixels, areas_factor) constructor.
+    mesh = al.mesh.DelaunayNN(
         pixels=n_mesh_vertices,
+        areas_factor=0.5,
         zeroed_pixels=0,
     )
     regularization = al.reg.ConstantSplit(coefficient=1.0)
@@ -388,7 +420,7 @@ with timer.section("model_build"):
     model = af.Collection(galaxies=af.Collection(lens=lens, source=source))
 
 print(f"  Total free parameters: {model.total_free_parameters}")
-print(f"  Delaunay pixels: {n_mesh_vertices}")
+print(f"  DelaunayNN pixels: {n_mesh_vertices}")
 print(f"  Zeroed edge pixels: {edge_pixels_total}")
 
 # ---------------------------------------------------------------------------
@@ -437,7 +469,7 @@ print(f"  Pixel scale:             {pixel_scale} arcsec/pixel")
 print(f"  Mask radius:             {mask_radius} arcsec")
 print(f"  Image pixels (masked):   {n_image_pixels}")
 print(f"  Over-sampled pixels:     {n_over_sampled_pixels}")
-print(f"  Delaunay vertices:       {n_source_pixels}")
+print(f"  DelaunayNN vertices:     {n_source_pixels}")
 print(f"  Edge zeroed pixels:      {edge_pixels_total}")
 
 # ---------------------------------------------------------------------------
@@ -658,16 +690,16 @@ print(f"  relocated_mesh_grid shape: {relocated_mesh_grid.array.shape}")
 # Step 6: Delaunay triangulation + interpolation + mapper
 # ---------------------------------------------------------------------------
 
-print("\n--- Step 6: Delaunay triangulation + Interpolation + Mapper ---")
+print("\n--- Step 6: Delaunay triangulation + Sibson interpolation + Mapper ---")
 
 pixelization_obj = instance.galaxies.source.pixelization
 
-# Single symbol for the mesh family's interpolator, so the DelaunayNN sibling
-# (``delaunay_nn.py``) differs from this script only in the mesh class and this
+# Single symbol for the mesh family's interpolator, so this script differs from
+# its barycentric sibling (``delaunay.py``) only in the mesh class and this
 # line. Every direct interpolator construction below goes through it.
-_INTERPOLATOR_CLS = al.InterpolatorDelaunay
+_INTERPOLATOR_CLS = al.InterpolatorDelaunayNN
 
-with timer.section("delaunay_interpolation_and_mapper"):
+with timer.section("delaunay_nn_interpolation_and_mapper"):
     interpolator = _INTERPOLATOR_CLS(
         mesh=pixelization_obj.mesh,
         mesh_grid=relocated_mesh_grid,
@@ -1137,7 +1169,7 @@ def compute_log_evidence(
     ``Inversion.log_evidence`` chain:
 
     - chi^2 and the noise-normalisation term are computed over the *full*
-      reconstruction (lens-MGE linear params + source-Delaunay pixels)
+      reconstruction (lens-MGE linear params + source-DelaunayNN pixels)
       because they're per-pixel data terms over the masked image.
     - s^T H s and the two log-det terms operate on the *reduced* (rank-
       stripped) regularisation block, which slices out the non-mapper
@@ -1286,7 +1318,7 @@ print(f"  Pixel scale:           {pixel_scale} arcsec/pixel")
 print(f"  Mask radius:           {mask_radius} arcsec")
 print(f"  Image pixels (masked): {n_image_pixels}")
 print(f"  Over-sampled pixels:   {n_over_sampled_pixels}")
-print(f"  Delaunay vertices:     {n_source_pixels}")
+print(f"  DelaunayNN vertices:   {n_source_pixels}")
 print(f"  Edge zeroed pixels:    {edge_pixels_total}")
 print("-" * 70)
 
@@ -1366,8 +1398,11 @@ if _vmap_batch is not None:
 dict_path, chart_path = resolve_output_paths(
     _cli,
     default_dir=_workspace_root / "results" / "breakdown" / "imaging",
-    default_basename=f"delaunay_breakdown_{instrument}_v{al_version}",
-    cell="delaunay",
+    default_basename=f"delaunay_nn_breakdown_{instrument}_v{al_version}",
+    # Explicit: the default first-token rule resolves "delaunay_nn_..." to the
+    # cell "delaunay" and would overwrite the Delaunay cell's config-tagged
+    # JSON/PNG (autolens_profiling#219).
+    cell="delaunay_nn",
 )
 dict_path.write_text(json.dumps(breakdown_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")
@@ -1395,13 +1430,13 @@ ax.set_yticklabels(labels, fontsize=10)
 ax.invert_yaxis()
 ax.set_xlabel("Time per call (s)", fontsize=11)
 fig.suptitle(
-    f"Delaunay Imaging Likelihood — Per-Step Breakdown — {instrument.upper()}",
+    f"DelaunayNN Imaging Likelihood — Per-Step Breakdown — {instrument.upper()}",
     fontsize=12,
     fontweight="bold",
 )
 ax.set_title(
     f'AutoLens v{al_version}  |  {pixel_scale}"/px  |  {n_image_pixels} pixels  |  '
-    f"{n_over_sampled_pixels} over-sampled  |  {n_source_pixels} Delaunay vertices  |  "
+    f"{n_over_sampled_pixels} over-sampled  |  {n_source_pixels} DelaunayNN vertices  |  "
     f"total: {step_total:.6f} s",
     fontsize=9,
 )
@@ -1417,16 +1452,20 @@ print(f"  Bar chart saved to:    {chart_path}")
 # Regression assertion — eager log_evidence only
 # ===================================================================
 
-EXPECTED_LOG_EVIDENCE_HST = (
-    29110.92085793  # 1500-pixel Hilbert/Delaunay, MGE-60 lens, adapt_image=lensed_source
-)
+# Pinned from the first eager CPU run of this script: 2026-09-05, local CPU
+# (WSL, JAX fp64), PyAutoLens v2026.8.17.1 / PyAutoNerves 8f6a0b25 /
+# PyAutoFit 12b3e6b6 / PyAutoArray a1e4c0ef / PyAutoGalaxy 6b8b18b6.
+# 1500-pixel Hilbert/DelaunayNN, MGE-60 lens, adapt_image=lensed_source.
+# Compare: the barycentric Delaunay sibling pins 29110.92085793 — the meshes
+# have the same vertices, so the ~34 nat gap is the interpolation scheme.
+EXPECTED_LOG_EVIDENCE_HST = 29144.581943885652
 
 np.testing.assert_allclose(
     log_evidence_ref,
     EXPECTED_LOG_EVIDENCE_HST,
     rtol=1e-4,
     err_msg=(
-        f"imaging/delaunay[{instrument}]: regression — eager log_evidence drifted "
+        f"imaging/delaunay_nn[{instrument}]: regression — eager log_evidence drifted "
         f"(got {log_evidence_ref}, expected {EXPECTED_LOG_EVIDENCE_HST})"
     ),
 )
