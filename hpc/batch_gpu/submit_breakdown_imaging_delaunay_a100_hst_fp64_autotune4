@@ -1,0 +1,77 @@
+#!/bin/bash -l
+#
+# A100 likelihood-breakdown profile: imaging/delaunay x hst x fp64.
+# DENSE inversion path (mapping matrices).
+# Per-step JIT decomposition (PreOptimizationTimes campaign, autolens_profiling#59).
+# Compile-heavy: every pipeline step is JIT-compiled in isolation and then
+# re-compiled under jax.jit(jax.vmap(...)) at batch 16, so wall time is
+# dominated by XLA compiles, not the steady-state timing loops.
+#
+#   --split-setup    four-way split of the inversion-setup block
+#   --vmap-batch 16  batched re-timing; 16 is the Nautilus reference run's
+#                    n_batch, so the rows reconcile against its per-eval cost
+#
+# A/B arm: XLA GPU autotuning RE-ENABLED (--xla_gpu_autotune_level=4, XLA's
+# default). PyAutoNerves e8d5842 appends --xla_gpu_autotune_level=0 unless
+# XLA_FLAGS already names a level, and between the 2026-07-10 A100 rows and
+# job 342277 (2026-09-05) the Curvature matrix (F) step went 4.82 -> 25.63 ms
+# while the Cholesky-bound steps did not move; F is one dense fp64 GEMM
+# (15361 x 1560)^T (15361 x 1560), so the hypothesis is that with autotuning
+# off XLA picks a poor cuBLAS fp64 GEMM algorithm. This run sets the level
+# explicitly (which Nerves respects) to measure it (autolens_profiling#219).
+
+#SBATCH -J breakdown_imaging_delaunay_hst_fp64_autotune4
+#SBATCH --partition=gpu
+# Exclusion of euclid-ral-gpu-1 dropped 2026-09-05: MIG mode confirmed Disabled
+# on all four GPUs and JAX cuda init verified per GPU from inside an srun; the
+# preflight stays as the backstop. Fleet-wide retirement is a separate follow-up.
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=12:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+# Derive the repo root from where this was submitted (hpc/batch_gpu/../..)
+# rather than hardcoding /mnt/ral/jnightin/autolens_profiling: the canonical
+# RAL checkout sits on main with a dirty tree, so this runs from a worktree of
+# the feature branch. Same pattern as submit_delaunay_nn_benchmark_a100.
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=4"
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+nvidia-smi
+
+echo "=========================================="
+date
+echo "Cell:           likelihood_breakdown/imaging/delaunay"
+echo "Instrument:     hst"
+echo "Precision:      fp64"
+echo "Inversion path: dense (mapping)"
+echo "Flags:          --split-setup --vmap-batch 16"
+
+echo "=== source revisions ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r" "$(git -C /mnt/ral/jnightin/PyAuto/$r rev-parse HEAD 2>&1)"
+done
+
+cd $AP_ROOT
+
+python3 -u scripts/imaging/likelihood_breakdown/delaunay.py \
+    --config-name hpc_a100_fp64_autotune4 \
+    --split-setup \
+    --vmap-batch 16
+
+echo "Finished."
+date
