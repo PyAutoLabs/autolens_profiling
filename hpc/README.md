@@ -116,49 +116,38 @@ git pull
 The PyAuto* libraries are a separate story again: resolved from the shared checkouts on
 `PYTHONPATH` and updated with `HPCPullPyAuto`, never pip-installed and never rsynced.
 
-## GPU node exclusion: `euclid-ral-gpu-1` is off-limits (2026-08-28)
+## History: the euclid-ral-gpu-1 exclusion (2026-08-28 → 2026-09-05)
 
-Every `batch_gpu/` submit carries
+**Retired 2026-09-05 (autolens_profiling#220). Both GPU nodes are usable again;
+no submit here carries `--exclude` and there is no preflight to source.**
 
-```
-#SBATCH --exclude=euclid-ral-gpu-1
-```
+What happened: one A100 on `euclid-ral-gpu-1` (PCI `07:00.0`) was switched into
+MIG mode with **no MIG instances created**, while SLURM went on advertising the
+node as a plain `Gres=gpu:A100:4`. A job landing on that GPU died about four
+seconds in with `RuntimeError: Unable to initialize backend 'cuda'` — and,
+because every submit ended in `date`, SLURM recorded it as COMPLETED. Jobs
+`341874` / `341875` (2026-08-26) lost 13 tasks that way, all on that node.
 
-The `gpu` partition has exactly **two** nodes, `euclid-ral-gpu-1` and
-`euclid-ral-gpu-2`, four A100s each. One A100 on `euclid-ral-gpu-1` (PCI
-`07:00.0`) was switched into MIG mode with **no MIG instances created**, while
-SLURM keeps advertising the node as a plain `Gres=gpu:A100:4`. A job that lands
-on that GPU dies about four seconds in with
+The fix (PR #181, 2026-08-28) was `#SBATCH --exclude=euclid-ral-gpu-1` on every
+`batch_gpu/` submit plus `hpc/batch_gpu/_gpu_preflight.sh` sourced as a requeue
+backstop. SLURM cannot avoid a single GPU inside a node, so it cost 4 of the 8
+A100s.
 
-```
-RuntimeError: Unable to initialize backend 'cuda'
-```
+The retirement: on 2026-09-05, from inside
+`srun --partition=gpu --nodelist=euclid-ral-gpu-1 --gres=gpu:4`,
+`nvidia-smi --query-gpu=index,pci.bus_id,mig.mode.current --format=csv`
+reported `Disabled` on all four cards including `07:00.0`, and a JAX CUDA
+backend init plus a `jnp` reduction succeeded on each GPU in turn under
+`CUDA_VISIBLE_DEVICES=0..3`. A witness `submit_probe_fast_a100` was then
+dispatched with `sbatch --nodelist=euclid-ral-gpu-1` and completed: job
+`342276` on `euclid-ral-gpu-1`, COMPLETED 0:0 in 22:04, `nvidia-smi` reporting
+`MIG M. Disabled`, all 14 probes run, no `!!! probe FAILED` and no traceback in
+`error/error.342276.err`.
 
-SLURM offers no way to avoid a single GPU inside a node, so the whole node is
-excluded. Evidence (jobs `341874` / `341875`, 2026-08-26): **13 tasks failed,
-every one of them on `euclid-ral-gpu-1`** after 46-52 `_gpu_preflight.sh`
-requeues each; all 12 tasks that ran on `euclid-ral-gpu-2` completed. The
-requeue backstop could not escape the bad GPU because the scheduler kept
-re-offering the same free slot.
-
-**Cost of the exclusion:** 4 usable A100s instead of 8. Three healthy GPUs on
-`euclid-ral-gpu-1` are given up to dodge the one broken one — worth it against
-a ~40% task-loss rate, but it does halve GPU throughput.
-
-`_gpu_preflight.sh` stays sourced in every submit as the backstop: it still
-catches the case where `euclid-ral-gpu-2` develops the same fault, or where a
-new submit is written without the `--exclude` line.
-
-**To retire:** when RAL either creates MIG instances on that GPU or takes it
-out of MIG mode, drop the `--exclude` lines (and then the preflight). Confirm
-first from inside a job on `euclid-ral-gpu-1`:
-
-```bash
-srun --partition=gpu --nodelist=euclid-ral-gpu-1 --gres=gpu:1 --time=1:00 \
-     nvidia-smi --query-gpu=pci.bus_id,mig.mode.current --format=csv
-```
-
-A silent removal re-opens the trap.
+**If the four-second `cuInit` failure ever returns:** re-probe with that `srun`
+command, then re-add `#SBATCH --exclude=<node>` to every submit under
+`batch_gpu/` and restore `_gpu_preflight.sh` from git history (it was deleted in
+#220). A silent removal re-opens the trap.
 
 ## A crashed job FAILS: the SLURM exit-code guard (2026-08-29)
 
@@ -193,10 +182,8 @@ fi
 - **Scoped to a SLURM job.** `activate.sh` is also sourced in interactive
   login-node shells, where `errexit` would close the terminal on the first
   typo. `$SLURM_JOB_ID` is set only inside a job.
-- **No `pipefail`.** `_gpu_preflight.sh` reads
-  `nvidia-smi ... | head -1 | tr -d ' '` and tolerates a failing `nvidia-smi`
-  by design, and no submit pipes anything into `python3`, so `pipefail` would
-  add risk without covering the failure the guard exists for.
+- **No `pipefail`.** No submit pipes anything into `python3`, so `pipefail`
+  would add risk without covering the failure the guard exists for.
 - **Deliberately-tolerated failures are unaffected.** `run_probe` in
   `submit_probe_fast_a100` and `run_cell` in `submit_slogdet_ab_adaptsplit_*`
   already end in `|| echo "!!! ... FAILED"`, and `errexit` does not fire on a
