@@ -20,10 +20,6 @@
 
 #SBATCH -J search_msp_cluster_image_plane_solved_simple_fp64
 #SBATCH --partition=gpu
-# Node exclusion (2026-08-28): euclid-ral-gpu-1 carries a MIG-mode A100 with
-# no instances that SLURM still hands out as a plain gpu:A100 — see
-# _gpu_preflight.sh, which stays armed as the backstop.
-#SBATCH --exclude=euclid-ral-gpu-1
 #SBATCH --gres=gpu:1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
