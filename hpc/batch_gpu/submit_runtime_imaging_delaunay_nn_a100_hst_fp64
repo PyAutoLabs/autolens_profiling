@@ -4,15 +4,9 @@
 # DENSE inversion path (InversionImagingMapping).
 #
 # The Sibson natural-neighbour counterpart of
-# submit_runtime_imaging_delaunay_a100_hst_fp64 (autolens_profiling#219): same
-# two-phase probe-then-full pattern, so the single-JIT and vmap per-call
-# numbers are directly comparable to the Delaunay cell's.
-#
-# Phase A (--vmap-probe) writes
-# results/runtime/imaging/delaunay_nn/vmap_probe_delaunay_nn.json and exits;
-# Phase B's resolve_vmap_batch("imaging", "delaunay_nn", "hst") prefers that
-# fresh probe over the VMAP_BATCH table row, so a stale table can never OOM
-# this job. See results/notes/sparse_vs_dense_inversion_path.md.
+# submit_runtime_imaging_delaunay_a100_hst_fp64 (autolens_profiling#219), so
+# the single-JIT and vmap per-call numbers are directly comparable to the
+# Delaunay cell's. See results/notes/sparse_vs_dense_inversion_path.md.
 
 #SBATCH -J runtime_imaging_delaunay_nn_hst_fp64_dense
 #SBATCH --partition=gpu
@@ -61,13 +55,11 @@ done
 
 cd $AP_ROOT
 
-# Phase A — vmap-probe (early exit with memory_analysis + batch recommendation)
-echo "--- vmap-probe ---"
-python3 -u scripts/imaging/likelihood_runtime/delaunay_nn.py \
-    --instrument hst \
-    --vmap-probe
-
-# Phase B — full single-JIT + vmap timing
+# The --vmap-probe step is skipped for this cell: its batch-1 extrapolation
+# recommends 64 replicas, which passes the memory budget but fails cuFFT
+# batched-plan creation (job 342280, 2026-09-05). With no probe JSON present
+# resolve_vmap_batch falls back to the VMAP_BATCH table (16). The failed probe
+# is kept as vmap_probe_delaunay_nn_batch64_cufft_failed.json.
 echo "--- full timing ---"
 python3 -u scripts/imaging/likelihood_runtime/delaunay_nn.py \
     --instrument hst \
