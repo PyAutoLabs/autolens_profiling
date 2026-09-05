@@ -139,8 +139,10 @@ The retirement: on 2026-09-05, from inside
 reported `Disabled` on all four cards including `07:00.0`, and a JAX CUDA
 backend init plus a `jnp` reduction succeeded on each GPU in turn under
 `CUDA_VISIBLE_DEVICES=0..3`. A witness `submit_probe_fast_a100` was then
-dispatched with `sbatch --nodelist=euclid-ral-gpu-1` and completed
-(job `<WITNESS_JOB>`, node `<WITNESS_NODE>`).
+dispatched with `sbatch --nodelist=euclid-ral-gpu-1` and completed: job
+`342276` on `euclid-ral-gpu-1`, COMPLETED 0:0 in 22:04, `nvidia-smi` reporting
+`MIG M. Disabled`, all 14 probes run, no `!!! probe FAILED` and no traceback in
+`error/error.342276.err`.
 
 **If the four-second `cuInit` failure ever returns:** re-probe with that `srun`
 command, then re-add `#SBATCH --exclude=<node>` to every submit under
