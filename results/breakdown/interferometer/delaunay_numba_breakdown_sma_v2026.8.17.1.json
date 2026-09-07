@@ -1,0 +1,62 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "omp_num_threads": "1",
+    "cpu_count": 8
+  },
+  "instrument": "sma",
+  "configuration": {
+    "pixel_scale_arcsec": 0.1,
+    "mask_radius_arcsec": 3.5,
+    "real_space_shape": [
+      256,
+      256
+    ],
+    "image_pixels_masked": 3852,
+    "visibilities": 190,
+    "hilbert_pixels": 1500,
+    "delaunay_vertices": 1500,
+    "source_pixels": 1500,
+    "regularization_coefficient": 1.0,
+    "inversion_path": "sparse_numba",
+    "formalism": "w_tilde_numba",
+    "kernel": "reference",
+    "use_jax": false,
+    "mesh": "delaunay_hilbert_1500",
+    "regularization": "constant_split",
+    "lens_light": null,
+    "n_repeats": 10,
+    "omp_num_threads": "1"
+  },
+  "steps": {
+    "FitInterferometer construct": 6.987999950069934e-05,
+    "Inversion build (trace+Delaunay+mapper)": 0.004154479999851901,
+    "Mapper index/weight arrays": 0.010366790000261972,
+    "Data vector D [numba]": 0.010355279999566846,
+    "F: mapper\u00d7mapper [numba preload scatter]": 0.23231266000002507,
+    "Curvature matrix F [residual: mirror + diag-add]": 2.381000085733831e-05,
+    "Regularization matrix H (ConstantSplit)": 0.08495997000027274,
+    "F + H": 0.0036501200000202518,
+    "Reconstruction solve": 0.08200436000042828,
+    "Fast chi^2": 0.008774810000249999,
+    "log det (F+H) [Cholesky]": 0.04061332000055699,
+    "log det H [Cholesky]": 0.03682144999984303,
+    "Regularization term s'Hs": 0.0009749700002430473,
+    "Log evidence (figure of merit)": 4.245000091032125e-05
+  },
+  "total_step_by_step": 0.5151243500025884,
+  "curvature_matrix_f_total_s": 0.2323364700008824,
+  "curvature_matrix_f_split_note": "The two 'F: ...' / 'Curvature matrix F' rows sum to curvature_matrix_f_total_s, the whole cost of inversion.curvature_matrix. Both are cached properties and the scatter row is touched first, so the second row is a direct measurement of the remaining work (the no-regularization diagonal add) rather than an arithmetic residual: the recovered kernel loops the full N x N image-pixel pair space and returns a complete symmetric F, so there is no mirroring pass here, unlike the imaging numba and modern interferometer sparse classes.",
+  "preload_build_s": 1.7426354000017454,
+  "preload_note": "The W~ preload and dirty image are one-off per dataset (built by dataset.apply_sparse_operator(use_jax=False) and read by NumbaPreload), so they are recorded here but are not a per-evaluation step. Phase 3 of the numba-interferometer-revisit epic profiles the preload build itself.",
+  "direct_log_likelihood_function_per_call": 0.5175771000001987,
+  "warmup_incl_numba_compile_s": 1.3942948000003526,
+  "log_evidence": -3169.6493766794806,
+  "jax_reference_log_evidence": -3169.6493766794806,
+  "jax_reference_note": "figure_of_merit of the same dataset and model through InversionInterferometerSparse \u2014 the JAX/FFT path the sibling delaunay.py profiles. The numba log evidence must match it; only the application of W~ differs between the two, not the algebra.",
+  "pinned_expected": -3169.6493766794806,
+  "pinned_drift": []
+}
