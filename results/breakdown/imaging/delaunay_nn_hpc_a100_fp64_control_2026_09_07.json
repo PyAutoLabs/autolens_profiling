@@ -1,0 +1,56 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "omp_num_threads": null,
+    "cpu_count": 124,
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 41495 MiB, 81920 MiB"
+  },
+  "instrument": "hst",
+  "configuration": {
+    "pixel_scale_arcsec": 0.05,
+    "mask_radius_arcsec": 3.5,
+    "image_pixels_masked": 15361,
+    "over_sampled_pixels": 17980,
+    "delaunay_vertices": 1500,
+    "edge_zeroed_pixels": 0,
+    "inversion_path": "dense"
+  },
+  "steps": {
+    "Ray-trace data grid": 0.00017087310552597046,
+    "Ray-trace mesh grid": 0.0001385691110044718,
+    "Lens light images (pre-PSF)": 0.00014830308500677348,
+    "Blurred image (PSF convolution)": 0.0008490002015605569,
+    "Profile-subtracted image": 0.00014221209567040206,
+    "Inversion setup (steps 5-8 combined)": 0.1354279973078519,
+    "Data vector (D)": 0.0003226821077987552,
+    "Curvature matrix (F)": 0.004821999906562268,
+    "Regularization matrix (H)": 0.05546664176508785,
+    "Regularized reconstruction": 0.030796876596286892,
+    "Mapped recon + log evidence": 0.002287936117500067
+  },
+  "total_step_by_step": 0.23057309139985588,
+  "regularization_matrix_prefix_s": 0.17897086418233812,
+  "interpolator_prefix_s": 0.12350422241725027,
+  "setup_split": {
+    "Border relocation": 0.0010540070012211799,
+    "Triangulation + interpolation": 0.12245021541602909,
+    "Mapping matrix": -0.0006168675143271712,
+    "Blurred mapping matrix (PSF)": 0.00909734289161862
+  },
+  "vmap_batch": 16,
+  "steps_vmap_per_call": {
+    "Inversion setup (steps 5-8 combined)": 0.022263527681934646,
+    "Regularization matrix (H)": 0.012741508361068556
+  },
+  "setup_split_vmap": {
+    "Border relocation": 6.409913767129183e-05,
+    "Triangulation + interpolation": 0.01595128248154651,
+    "Mapping matrix": -0.002431770932162179,
+    "Blurred mapping matrix (PSF)": 0.010330748069100082
+  },
+  "regularization_matrix_prefix_vmap_per_call_s": 0.02875688998028636,
+  "interpolator_prefix_vmap_per_call_s": 0.016015381619217804
+}

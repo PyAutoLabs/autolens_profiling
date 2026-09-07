@@ -66,6 +66,21 @@ interpolator prefix — a nonsensical -175 ms row. ``_setup_prefix_fn(11)``
 therefore returns the step-6 outputs alongside H, making it a strict superset
 of ``_setup_prefix_fn(6)``.
 
+Since PyAutoArray#531 the H row is a **prefix difference only** and may read
+~0 or negative on the JAX path. The early-exit walk locates the data grid and
+the ConstantSplit cross points in one concatenated ``lax.while_loop`` call, so
+the split-point walk now runs *inside* ``_setup_prefix_fn(6)`` — i.e. inside
+the "Triangulation + interpolation" row — where it previously could not (a
+prefix stopping at step 6 never asked for the split points, XLA eliminated
+them, and their whole cost surfaced in the H row's subtraction). What the
+subtraction leaves is therefore only the regularization assembly, which is
+small enough for scatter between two nested prefixes to take it below zero.
+**The aggregate to compare across library versions is the params->H prefix
+itself** — ``regularization_matrix_prefix_s`` in the JSON, equivalently
+"Triangulation + interpolation" + the H row — not either row alone. The
+NumPy/scipy path is unchanged and still charges the split walk to H. Nothing
+in the measurement changed; only where the same work is attributed.
+
 Before 2026-09 this row timed ``jnp.array(inversion.regularization_matrix)`` —
 a host-to-device copy of the 19.5 MB matrix the *eager NumPy* ``FitImaging``
 had already computed. On the A100 that read as ~14.4 ms of PCIe traffic and
@@ -782,6 +797,11 @@ print(f"  blurred_mapping_matrix (JIT) shape: {bmm_jit.shape}")
 # interpolator prefix (``upto=6``) is timed **either way**, because step 11
 # attributes the H row as t(params -> H) - t(params -> interpolator outputs);
 # when ``--split-setup`` is on its timing is reused rather than compiled twice.
+#
+# NOTE (PyAutoArray#531): on the JAX path the split-point walk now rides inside
+# prefix 6 (single concatenated locate call), so the step-11 difference is the
+# regularization assembly alone and can read ~0/negative. Compare the params->H
+# prefix across versions, not the H row. See the module docstring.
 
 
 def _setup_prefix_fn(upto):
