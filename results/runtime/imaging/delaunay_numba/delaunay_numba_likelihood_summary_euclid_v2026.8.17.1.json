@@ -11,13 +11,13 @@
   "configuration": {
     "preset": "euclid_vis_pix",
     "variant": "production",
-    "provenance": "euclid_strong_lens_modeling_pipeline/scripts/initial_lens_model.py (vis_pix stage, job 342301): mesh :613-615, image mesh :392-396, edge :448-455, regularization :617, over-sampling :498-511, sparse operator :364-365, positions :544-546, MGE :162-168, threads euclid_dr1_prelim/hpc/batch_cpu/submit_initial_lens_model_two_stage:48,161-166",
+    "provenance": "euclid_strong_lens_modeling_pipeline/scripts/initial_lens_model.py (vis_pix stage, job 342301): mesh :613-615, image mesh :392-396, edge :448-455, regularization :617, over-sampling :498-511, sparse operator :364-365, positions :544-546, MGE :162-168, threads euclid_dr1_prelim/hpc/batch_cpu/submit_initial_lens_model_two_stage:48,161-166; light-profile radial bins util.py:931-937 ([4, 4, 2] since euclid_strong_lens_modeling_pipeline#56, 2026-09-08)",
     "mesh_kind": "delaunay",
     "adapt_snr_cap": null,
     "over_sample_size_lp_rule": {
       "sub_size_list": [
         4,
-        2,
+        4,
         2
       ],
       "radial_list": [
@@ -81,7 +81,7 @@
     "pixel_scale_arcsec": 0.1,
     "mask_radius_arcsec": 3.5,
     "image_pixels_masked": 3841,
-    "over_sampled_pixels": 15424,
+    "over_sampled_pixels": 15664,
     "mesh_shape": [
       530
     ],
@@ -139,17 +139,17 @@
       }
     }
   },
-  "full_pipeline_single_jit": 0.23189034999995783,
+  "full_pipeline_single_jit": 0.24339530000179366,
   "protocol": "instance 0 discarded (numba compile / cold-cache hazard); the next n_cold evaluations are cold evals comparable to PyAutoFit's logged 'Log Likelihood Function Evaluation Time'; the rest are warm iid evaluations.",
-  "warmup_incl_numba_compile_s": 0.292498799997702,
+  "warmup_incl_numba_compile_s": 0.3051908999987063,
   "cold_eval_s": [
-    0.2948209999995015,
-    0.2394894999997632,
-    0.19618869999976596
+    0.22905589999936637,
+    0.23458579999714857,
+    0.25365099999908125
   ],
-  "cold_eval_median_s": 0.2394894999997632,
-  "warm_iid_median_s": 0.23189034999995783,
-  "warm_iid_mean_s": 0.23340201249925485,
+  "cold_eval_median_s": 0.23458579999714857,
+  "warm_iid_median_s": 0.24339530000179366,
+  "warm_iid_mean_s": 0.25737988125047195,
   "n_warm": 16,
   "n_cold": 3,
   "witness": {
@@ -164,38 +164,38 @@
       0.45999999999999996,
       1.6949999999999998
     ],
-    "measured_cold_eval_median_s": 0.2394894999997632,
+    "measured_cold_eval_median_s": 0.23458579999714857,
     "verdict": "FAIL"
   },
-  "first_call_incl_numba_compile_s": 0.292498799997702,
+  "first_call_incl_numba_compile_s": 0.3051908999987063,
   "first_call_finite": true,
-  "sparse_operator_setup_s": 1.305192399999214,
+  "sparse_operator_setup_s": 1.1658600000009756,
   "sparse_operator_nbytes": 37132632,
-  "hilbert_image_mesh_s": 0.1102035000003525,
-  "log_likelihood": 5817.7313621849535,
+  "hilbert_image_mesh_s": 0.1003435000020545,
+  "log_likelihood": 5818.189684514178,
   "log_likelihood_sequence": [
-    7085.134979061725,
-    6357.611609550732,
-    4507.750309240509,
-    6010.641484652162,
-    6261.334186388965,
-    -12693.240214209698,
-    6679.135015835413,
-    5414.874878795552,
-    -8006.379994666782,
-    -20859.111341299144,
-    6186.939423790996,
-    -14827.926373054983,
-    6094.014728988465,
-    6912.875905460583,
-    6957.659157875252,
-    7309.263919445266,
-    5174.338954315365,
-    5948.761541431233,
-    3252.0998694823647,
-    5817.7313621849535
+    7085.8641085946265,
+    6359.402514533745,
+    4509.458498581188,
+    6010.709020959048,
+    6265.600994278336,
+    -12691.714897377315,
+    6680.120967757814,
+    5415.587246401381,
+    -8005.362339392643,
+    -20858.30984604669,
+    6188.2043971264,
+    -14826.614976769666,
+    6095.073626233102,
+    6912.8077175562485,
+    6957.722916586155,
+    7309.50081653608,
+    5174.435817017631,
+    5949.382062339647,
+    3255.028383102038,
+    5818.189684514178
   ],
   "log_likelihood_repeat_spread": null,
-  "pinned_expected": null,
+  "pinned_expected": 5818.189684514178,
   "pinned_drift": []
 }

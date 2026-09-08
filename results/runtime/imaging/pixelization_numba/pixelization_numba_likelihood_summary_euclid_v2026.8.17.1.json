@@ -11,13 +11,13 @@
   "configuration": {
     "preset": "euclid_rect_adapt",
     "variant": "production",
-    "provenance": "subhalo_validation/scripts/pipelines/rectangular_adapt.py (rect_adapt source_pix[2], job 342311): RectangularBilinearAdaptImage shape (32, 32) (MESH_PIXELS_YX :38), regularization Adapt; the rest of the stage (adapt S/N cap, over-sampling, MGE, threads) as hst_source_pix_2 \u2014 no Euclid rectangular production stage exists (the Euclid pipeline's pixelized stage is Delaunay only), so the Euclid rectangular row runs this configuration on the Euclid dataset",
+    "provenance": "subhalo_validation/scripts/pipelines/rectangular_adapt.py (rect_adapt source_pix[2], job 342311): RectangularBilinearAdaptImage shape (32, 32) (MESH_PIXELS_YX :38), regularization Adapt; the rest of the stage (adapt S/N cap, over-sampling, MGE, threads) as hst_source_pix_2 \u2014 no Euclid rectangular production stage exists (the Euclid pipeline's pixelized stage is Delaunay only), so the Euclid rectangular row takes the rectangular mesh from this configuration and everything the stage owns (adapt S/N cap, light-profile radial bins, positions penalty, MGE) from the Euclid vis_pix stage, on the Euclid dataset",
     "mesh_kind": "rectangular",
     "adapt_snr_cap": null,
     "over_sample_size_lp_rule": {
       "sub_size_list": [
         4,
-        2,
+        4,
         2
       ],
       "radial_list": [
@@ -64,7 +64,7 @@
     "pixel_scale_arcsec": 0.1,
     "mask_radius_arcsec": 3.5,
     "image_pixels_masked": 3841,
-    "over_sampled_pixels": 15424,
+    "over_sampled_pixels": 15664,
     "mesh_shape": [
       32,
       32
@@ -103,17 +103,17 @@
     },
     "omp_num_threads": "1"
   },
-  "full_pipeline_single_jit": 0.5297209000000294,
+  "full_pipeline_single_jit": 0.5853628500008199,
   "protocol": "instance 0 discarded (numba compile / cold-cache hazard); the next n_cold evaluations are cold evals comparable to PyAutoFit's logged 'Log Likelihood Function Evaluation Time'; the rest are warm iid evaluations.",
-  "warmup_incl_numba_compile_s": 0.7502061000013782,
+  "warmup_incl_numba_compile_s": 0.7761465000003227,
   "cold_eval_s": [
-    0.7219065999997838,
-    0.4613640999996278,
-    0.715452099997492
+    0.5051673999987543,
+    0.500445599998784,
+    0.8724115000004531
   ],
-  "cold_eval_median_s": 0.715452099997492,
-  "warm_iid_median_s": 0.5297209000000294,
-  "warm_iid_mean_s": 0.5508650687506815,
+  "cold_eval_median_s": 0.5051673999987543,
+  "warm_iid_median_s": 0.5853628500008199,
+  "warm_iid_mean_s": 0.6226571812501334,
   "n_warm": 16,
   "n_cold": 3,
   "witness": {
@@ -128,36 +128,36 @@
       0.45999999999999996,
       1.6949999999999998
     ],
-    "measured_cold_eval_median_s": 0.715452099997492,
+    "measured_cold_eval_median_s": 0.5051673999987543,
     "verdict": "PASS"
   },
-  "first_call_incl_numba_compile_s": 0.7502061000013782,
+  "first_call_incl_numba_compile_s": 0.7761465000003227,
   "first_call_finite": true,
-  "sparse_operator_setup_s": 1.072419699998136,
+  "sparse_operator_setup_s": 1.3176381000012043,
   "sparse_operator_nbytes": 37132632,
-  "log_likelihood": 4242.698962741273,
+  "log_likelihood": 4243.160082020453,
   "log_likelihood_sequence": [
-    7364.817205355965,
-    5956.483086019578,
-    -1172.678678414697,
-    3179.4765082878675,
-    6319.761149538763,
-    -25543.818250688957,
-    6339.138581550138,
-    3892.666247043803,
-    -9003.915524363492,
-    -30780.26696087329,
-    6297.942130233243,
-    -21264.951494600147,
-    3963.829935504612,
-    7241.279516979926,
-    6978.708660609629,
-    7358.4677960307945,
-    -725.1251463621866,
-    4252.2349617499685,
-    -4141.690253832585,
-    4242.698962741273
+    7365.545528232125,
+    5958.267431742789,
+    -1170.8582093387995,
+    3179.539379164031,
+    6324.00608548856,
+    -25543.0162586203,
+    6340.142673250501,
+    3893.425614910273,
+    -9003.029809423468,
+    -30779.590882486118,
+    6299.149554148952,
+    -21264.050702557284,
+    3964.8176849592264,
+    7241.216672236822,
+    6978.753020416098,
+    7358.725212390896,
+    -725.0076907163293,
+    4252.859789578688,
+    -4138.554729515185,
+    4243.160082020453
   ],
-  "pinned_expected": null,
+  "pinned_expected": 4243.160082020453,
   "pinned_drift": []
 }
