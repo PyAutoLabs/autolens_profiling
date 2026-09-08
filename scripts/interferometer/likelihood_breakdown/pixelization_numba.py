@@ -47,6 +47,7 @@ if _misc_dir not in _sys.path:
 
 _sys.path.insert(0, str(_profiling_root()))
 
+import argparse
 import json
 import os
 
@@ -65,10 +66,15 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
     _smoke_sys.exit(0)
 
+from autoarray.inversion.mappers.abstract import Mapper  # noqa: E402
 from numba_interferometer.inversion import (  # noqa: E402
+    KERNELS,
     InversionInterferometerNumba,
 )
-from numba_interferometer.preload import NumbaPreload  # noqa: E402
+from numba_interferometer.preload import (  # noqa: E402
+    NumbaPreload,
+    curvature_preload_from,
+)
 
 from _adapt_image_util import adapt_image_for_dataset  # noqa: E402
 from _profile_cli import (  # noqa: E402
@@ -83,6 +89,20 @@ from _profile_cli import (  # noqa: E402
 from instruments.interferometer import INSTRUMENTS  # noqa: E402
 
 _cli = parse_profile_cli()
+
+# ``--kernel`` selects which curvature kernel assembles F. The shared profiling CLI
+# uses ``parse_known_args``, so this second parser can claim its own flag without
+# either seeing the other's. ``"jax"`` is not a numba kernel: it swaps the whole
+# inversion for ``InversionInterferometerSparse``, the JAX/FFT path this pack exists
+# to be compared against, so that both arms are measured by one harness on one fit.
+_kernel_parser = argparse.ArgumentParser(add_help=False)
+_kernel_parser.add_argument("--kernel", default="reference")
+kernel = _kernel_parser.parse_known_args()[0].kernel
+
+if kernel != "jax" and kernel not in KERNELS:
+    raise SystemExit(f"--kernel {kernel!r} is not available; choose one of {KERNELS + ('jax',)}.")
+
+is_jax_arm = kernel == "jax"
 
 instrument = _cli.instrument or "sma"  # default; override via --instrument
 
@@ -149,11 +169,35 @@ print("\n--- Sparse operator (one-off: W~ preload + dirty image) ---")
 
 # use_jax=False keeps the whole numba path off JAX. The preload this builds is the
 # same array the numba pack reads; `dirty_image` is taken straight off the operator.
+#
+# The preload is `O(N_pix * K)` — seconds at sma, 10-15 minutes at alma's million
+# visibilities — and it is model-independent, geometry-keyed and identical across every
+# kernel arm. It is therefore built once and cached beside the dataset, then handed to
+# both `apply_sparse_operator` and `NumbaPreload`, so a paired B/A/B/A sweep over
+# kernels pays it once rather than twice per arm. The cache key carries the grid shape
+# and mask radius because those are what the array's shape and values depend on.
+_preload_cache_path = (
+    dataset_path
+    / f"nufft_precision_operator_{real_space_shape[0]}x{real_space_shape[1]}_r{mask_radius}.npy"
+)
+
 _preload_start = time.perf_counter()
-dataset = dataset.apply_sparse_operator(use_jax=False)
-numba_preload = NumbaPreload.from_sparse_operator(dataset)
+
+if _preload_cache_path.exists():
+    curvature_preload = np.load(_preload_cache_path)
+    preload_cache_hit = True
+else:
+    curvature_preload = curvature_preload_from(dataset)
+    np.save(_preload_cache_path, curvature_preload)
+    preload_cache_hit = False
+
+dataset = dataset.apply_sparse_operator(use_jax=False, nufft_precision_operator=curvature_preload)
+numba_preload = NumbaPreload.from_curvature_preload(dataset, curvature_preload)
 preload_s = time.perf_counter() - _preload_start
-print(f"  preload + dirty image: {preload_s:.4f} s")
+print(
+    f"  preload + dirty image: {preload_s:.4f} s "
+    f"({'cache hit' if preload_cache_hit else 'built + cached'}: {_preload_cache_path})"
+)
 
 print("\n--- Adapt image (one-off; drives the adaptive rectangular mesh) ---")
 
@@ -230,6 +274,8 @@ print(f"  OMP_NUM_THREADS:         {os.environ.get('OMP_NUM_THREADS', '(unset)')
 # has to subtract). The two rows therefore sum, by construction, to the whole cost
 # of ``inversion.curvature_matrix``, recorded as ``curvature_matrix_f_total_s``.
 
+INVERSION_BUILD_LABEL = "Inversion build (trace+mesh+mapper)"
+H_LABEL = "Regularization matrix H (Constant)"
 F_SCATTER_LABEL = "F: mapper×mapper [numba preload scatter]"
 F_RESIDUAL_LABEL = "Curvature matrix F [residual: mirror + diag-add]"
 
@@ -246,12 +292,17 @@ def _build_inversion(fit):
     inversion object itself plus the precondition checks — the preload is passed in,
     never rebuilt.
     """
+    if is_jax_arm:
+        _state["inversion"] = fit.inversion
+        return _state["inversion"]
+
     _state["inversion"] = InversionInterferometerNumba(
         dataset=fit.inversion.dataset,
         linear_obj_list=fit.inversion.linear_obj_list,
         settings=fit.inversion.settings,
         xp=np,
         numba_preload=numba_preload,
+        kernel=kernel,
     )
     return _state["inversion"]
 
@@ -290,13 +341,13 @@ def _log_evidence(fit):
 
 STEP_ACCESSORS = [
     ("FitInterferometer construct", None),  # handled specially (constructor)
-    ("Inversion build (trace+mesh+mapper)", _build_inversion),
+    (INVERSION_BUILD_LABEL, _build_inversion),
     ("Mapper index/weight arrays", lambda fit: _inversion(fit).mapper_index_arrays),
     ("Data vector D [numba]", lambda fit: _inversion(fit).data_vector),
     (F_SCATTER_LABEL, lambda fit: _inversion(fit).curvature_matrix_scatter),
     (F_RESIDUAL_LABEL, lambda fit: _inversion(fit).curvature_matrix),
     (
-        "Regularization matrix H (Constant)",
+        H_LABEL,
         lambda fit: _inversion(fit).regularization_matrix,
     ),
     ("F + H", lambda fit: _inversion(fit).curvature_reg_matrix),
@@ -318,6 +369,116 @@ STEP_ACCESSORS = [
 ]
 
 
+# -------------------------------------------------------------------
+# The JAX/FFT arm's step list
+# -------------------------------------------------------------------
+#
+# ``InversionInterferometerSparse`` exposes ``data_vector`` and ``curvature_matrix`` as
+# plain (uncached) properties, so walking the same sequential cached-property chain the
+# numba arm walks would recompute F inside ``curvature_reg_matrix`` and charge it twice.
+# The JAX arm therefore records the rows it can measure directly — the ones the
+# comparison actually needs, F above all — and times the whole likelihood separately;
+# ``steps_are_partial`` says so in the JSON rather than implying a total that is not one.
+
+JAX_F_LABEL = "F: mapper×mapper [sparse-op FFT]"
+
+
+def _jax_triplets(fit):
+    inversion = _inversion(fit)
+    mapper = inversion.cls_list_from(cls=Mapper)[0]
+    return inversion._sparse_triplets_curvature_from(mapper=mapper)
+
+
+JAX_STEP_ACCESSORS = [
+    ("FitInterferometer construct", None),  # handled specially (constructor)
+    (INVERSION_BUILD_LABEL, _build_inversion),
+    ("Mapper sparse triplets [extent-flat]", _jax_triplets),
+    ("Data vector D [sparse-op]", lambda fit: _inversion(fit).data_vector),
+    (JAX_F_LABEL, lambda fit: np.asarray(_inversion(fit).curvature_matrix)),
+    (H_LABEL, lambda fit: np.asarray(_inversion(fit).regularization_matrix)),
+]
+
+
+def jax_curvature_jit_callable(inversion):
+    """A jitted, warm callable returning the JAX/FFT arm's ``F``.
+
+    Read eagerly — which is what a step-by-step breakdown does — the sparse operator's
+    ``lax.fori_loop`` over source-column blocks dispatches op by op, so the eager ``F``
+    row is dominated by dispatch, not by the FFT. Production wraps the log likelihood in
+    ``jax.jit``; this closure reproduces that regime for the one row the comparison turns
+    on, with the mapper triplets as arguments and the operator (hence ``Khat``) closed
+    over exactly as an inversion closes over it.
+    """
+    import jax
+    import jax.numpy as jnp
+
+    mapper = inversion.cls_list_from(cls=Mapper)[0]
+    rows, cols, vals = inversion._sparse_triplets_curvature_from(mapper=mapper)
+
+    rows = jnp.asarray(rows)
+    cols = jnp.asarray(cols)
+    vals = jnp.asarray(vals)
+
+    operator = inversion.dataset.sparse_operator
+    source_pixels = int(mapper.params)
+
+    jitted = jax.jit(lambda r, c, v: operator.curvature_matrix_diag_from(r, c, v, S=source_pixels))
+
+    def call():
+        result = jitted(rows, cols, vals)
+        result.block_until_ready()
+        return result
+
+    return call
+
+
+# ===================================================================
+# Machine-speed controls
+# ===================================================================
+
+
+def dgemm_control_s(n: int = 1500, repeats: int = 3) -> float:
+    """A fixed 1500x1500 ``dgemm``, timed identically in every arm.
+
+    Run at the head and tail of an arm it is the machine-speed normaliser the paired
+    B/A/B/A protocol needs: this laptop (i9-10885H) throttles, so a cross-arm ratio is
+    only believable if the same BLAS call costs the same at both ends of both arms.
+    """
+    rng = np.random.default_rng(0)
+    a = rng.standard_normal((n, n))
+    b = rng.standard_normal((n, n))
+
+    a @ b  # warm the BLAS thread pool / first-touch the pages
+
+    samples = []
+    for _ in range(repeats):
+        start = time.perf_counter()
+        a @ b
+        samples.append(time.perf_counter() - start)
+
+    return float(np.median(samples))
+
+
+def cholesky_control_s(matrix, repeats: int = 3) -> float:
+    """A Cholesky of the arm's own ``F + H``.
+
+    Arm-invariant by construction (the two arms assemble the *same* matrix, pinned to
+    ``rtol=1e-6`` on the log evidence) and magnitude-matched, so a drift here is the
+    machine, not the kernel.
+    """
+    matrix = np.asarray(matrix, dtype=np.float64)
+
+    np.linalg.cholesky(matrix)
+
+    samples = []
+    for _ in range(repeats):
+        start = time.perf_counter()
+        np.linalg.cholesky(matrix)
+        samples.append(time.perf_counter() - start)
+
+    return float(np.median(samples))
+
+
 def _fit_from() -> al.FitInterferometer:
     return al.FitInterferometer(
         dataset=dataset,
@@ -337,17 +498,26 @@ def one_decomposed_evaluation() -> tuple[dict[str, float], float]:
     fit = _fit_from()
     step_times["FitInterferometer construct"] = time.perf_counter() - start
 
-    for label, accessor in STEP_ACCESSORS[1:]:
+    for label, accessor in ARM_STEP_ACCESSORS[1:]:
         start = time.perf_counter()
         result = accessor(fit)
         step_times[label] = time.perf_counter() - start
 
-    return step_times, float(result)  # final accessor is the log evidence
+    # The numba arm's last accessor is the log evidence; the JAX arm's step list stops
+    # at H (see JAX_STEP_ACCESSORS), so there is no scalar to return there.
+    return step_times, float("nan") if is_jax_arm else float(result)
 
 
 def direct_log_evidence() -> float:
-    """One whole numba likelihood, undecomposed — the step total's cross-check."""
+    """One whole likelihood, undecomposed — the step total's cross-check.
+
+    On the JAX arm this is ``FitInterferometer.figure_of_merit`` itself, i.e. the
+    production JAX/FFT likelihood, so the two arms' whole-evaluation numbers are
+    like for like."""
     fit = _fit_from()
+
+    if is_jax_arm:
+        return float(fit.figure_of_merit)
 
     inversion = InversionInterferometerNumba(
         dataset=fit.inversion.dataset,
@@ -355,6 +525,7 @@ def direct_log_evidence() -> float:
         settings=fit.inversion.settings,
         xp=np,
         numba_preload=numba_preload,
+        kernel=kernel,
     )
 
     return float(
@@ -368,7 +539,13 @@ def direct_log_evidence() -> float:
     )
 
 
-print("\n--- Warm-up evaluation (numba compile) ---")
+ARM_STEP_ACCESSORS = JAX_STEP_ACCESSORS if is_jax_arm else STEP_ACCESSORS
+
+print("\n--- Machine-speed control (head of arm) ---")
+control_dgemm_head_s = dgemm_control_s()
+print(f"  1500x1500 dgemm: {control_dgemm_head_s:.4f} s")
+
+print(f"\n--- Warm-up evaluation (kernel={kernel}; numba/JIT compile) ---")
 _warm_start = time.perf_counter()
 _warm_steps, _warm_fom = one_decomposed_evaluation()
 warmup_s = time.perf_counter() - _warm_start
@@ -378,21 +555,58 @@ n_repeats = N_REPEATS
 
 print(f"\n--- Timed decomposition (x{n_repeats}) ---")
 
-accumulated: dict[str, float] = {label: 0.0 for label, _ in STEP_ACCESSORS}
+accumulated: dict[str, float] = {label: 0.0 for label, _ in ARM_STEP_ACCESSORS}
 for _ in range(n_repeats):
     step_times, log_evidence_step = one_decomposed_evaluation()
     for label, elapsed in step_times.items():
         accumulated[label] += elapsed
 
-likelihood_steps = [(label, accumulated[label] / n_repeats) for label, _ in STEP_ACCESSORS]
+likelihood_steps = [(label, accumulated[label] / n_repeats) for label, _ in ARM_STEP_ACCESSORS]
 
 _step_dict = dict(likelihood_steps)
-curvature_matrix_f_total = _step_dict[F_SCATTER_LABEL] + _step_dict[F_RESIDUAL_LABEL]
+curvature_matrix_f_total = (
+    _step_dict[JAX_F_LABEL]
+    if is_jax_arm
+    else _step_dict[F_SCATTER_LABEL] + _step_dict[F_RESIDUAL_LABEL]
+)
 
 start = time.perf_counter()
 for _ in range(n_repeats):
     log_evidence_direct = direct_log_evidence()
 direct_per_call = (time.perf_counter() - start) / n_repeats
+
+# The kernel identity is read off the inversion the arm actually built, not from
+# the CLI string, so a mis-wired dispatch cannot label itself correctly.
+arm_kernel = "jax" if is_jax_arm else _state["inversion"].kernel
+
+# The JAX arm's fair F row: jit-compiled and warm, i.e. the regime production runs in.
+# The eager row in the step list above is kept because it is what an un-jitted
+# evaluation actually costs, but it is dispatch-bound and is not the comparator.
+curvature_matrix_f_jit_steady_s = None
+
+if is_jax_arm:
+    _jit_call = jax_curvature_jit_callable(_state["inversion"])
+    _jit_call()  # compile
+
+    _jit_start = time.perf_counter()
+    for _ in range(n_repeats):
+        _jit_call()
+    curvature_matrix_f_jit_steady_s = (time.perf_counter() - _jit_start) / n_repeats
+
+    print(
+        f"\n--- JAX F (jit warm, steady x{n_repeats}) ---\n"
+        f"  {curvature_matrix_f_jit_steady_s:.6f} s"
+    )
+
+
+control_cholesky_s = cholesky_control_s(_state["inversion"].curvature_reg_matrix)
+
+print("\n--- Machine-speed control (tail of arm) ---")
+control_dgemm_tail_s = dgemm_control_s()
+print(
+    f"  1500x1500 dgemm: {control_dgemm_tail_s:.4f} s "
+    f"(head {control_dgemm_head_s:.4f} s, drift {control_dgemm_tail_s / control_dgemm_head_s:.3f}x)"
+)
 
 # ===================================================================
 # JAX comparator — the same dataset/model through the FFT sparse path
@@ -419,7 +633,7 @@ al_version = al.__version__
 print("\n" + "=" * 78)
 print(
     f"NUMBA CPU PIXELIZATION INTERFEROMETER PER-STEP BREAKDOWN — "
-    f"{instrument.upper()} — v{al_version}"
+    f"{instrument.upper()} — kernel={arm_kernel} — v{al_version}"
 )
 print("=" * 78)
 
@@ -452,19 +666,54 @@ breakdown_summary = {
         # "sparse_numba" is the token scripts/misc/tooling/build_readme.py maps
         # to the "sparse (numba)" dashboard label; this cell is the numba w-tilde
         # (sparse) formalism, not the dense transformed-mapping-matrix one.
-        "inversion_path": "sparse_numba",
-        "formalism": "w_tilde_numba",
-        "kernel": "reference",
-        "use_jax": False,
+        "inversion_path": "sparse" if is_jax_arm else "sparse_numba",
+        "formalism": "w_tilde_fft_jax" if is_jax_arm else "w_tilde_numba",
+        "kernel": arm_kernel,
+        "use_jax": is_jax_arm,
         "mesh": f"rectangular_adapt_image_{mesh_pixels_yx}x{mesh_pixels_yx}",
         "regularization": "constant",
         "lens_light": None,
         "n_repeats": n_repeats,
         "omp_num_threads": os.environ.get("OMP_NUM_THREADS", None),
+        "numba_num_threads": os.environ.get("NUMBA_NUM_THREADS", None),
+        "mkl_num_threads": os.environ.get("MKL_NUM_THREADS", None),
+        "openblas_num_threads": os.environ.get("OPENBLAS_NUM_THREADS", None),
+        "xla_flags": os.environ.get("XLA_FLAGS", None),
+        "jax_platforms": os.environ.get("JAX_PLATFORMS", None),
     },
+    "steps_are_partial": is_jax_arm,
+    "steps_note": (
+        "The JAX/FFT arm records only the rows it can measure directly: "
+        "InversionInterferometerSparse exposes data_vector and curvature_matrix as "
+        "plain (uncached) properties, so walking the numba arm's sequential "
+        "cached-property chain would recompute and double-charge F. Its whole "
+        "evaluation is measured separately as "
+        "direct_log_likelihood_function_per_call (= FitInterferometer.figure_of_merit), "
+        "which is the number to compare across arms."
+    )
+    if is_jax_arm
+    else None,
+    "control_dgemm_head_s": control_dgemm_head_s,
+    "control_dgemm_tail_s": control_dgemm_tail_s,
+    "control_cholesky_s": control_cholesky_s,
+    "control_note": (
+        "control_dgemm_* is a fixed 1500x1500 BLAS dgemm timed at the head and tail "
+        "of the arm (this laptop throttles, so a cross-arm ratio is only believable "
+        "if these agree); control_cholesky_s is a Cholesky of the arm's own F + H, "
+        "which both arms assemble identically."
+    ),
     "steps": {label: per_call for label, per_call in likelihood_steps},
     "total_step_by_step": step_total,
     "curvature_matrix_f_total_s": curvature_matrix_f_total,
+    "curvature_matrix_f_jit_steady_s": curvature_matrix_f_jit_steady_s,
+    "curvature_matrix_f_jit_note": (
+        "JAX arm only: F assembled through a jax.jit-compiled, warm "
+        "InterferometerSparseOperator.curvature_matrix_diag_from — the regime "
+        "production runs in, and the row to compare against the numba arm's "
+        "curvature_matrix_f_total_s. The eager step-list row is dispatch-bound "
+        "(lax.fori_loop over source-column blocks, op by op) and is reported "
+        "only as what an un-jitted evaluation costs."
+    ),
     "curvature_matrix_f_split_note": (
         "The two 'F: ...' / 'Curvature matrix F' rows sum to "
         "curvature_matrix_f_total_s, the whole cost of "
@@ -477,6 +726,7 @@ breakdown_summary = {
         "interferometer sparse classes."
     ),
     "preload_build_s": preload_s,
+    "preload_cache_hit": preload_cache_hit,
     "preload_note": (
         "The W~ preload and dirty image are one-off per dataset (built by "
         "dataset.apply_sparse_operator(use_jax=False) and read by NumbaPreload), "
@@ -499,8 +749,8 @@ breakdown_summary = {
 dict_path, chart_path = resolve_output_paths(
     _cli,
     default_dir=_workspace_root / "results" / "breakdown" / "interferometer",
-    default_basename=f"{CELL}_breakdown_{instrument}_v{al_version}",
-    cell=CELL,
+    default_basename=f"{CELL}_{arm_kernel}_breakdown_{instrument}_v{al_version}",
+    cell=f"{CELL}_{arm_kernel}",
 )
 dict_path.write_text(json.dumps(breakdown_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")
@@ -528,7 +778,7 @@ ax.set_yticklabels(labels, fontsize=10)
 ax.invert_yaxis()
 ax.set_xlabel("Time per call (s)", fontsize=11)
 fig.suptitle(
-    f"Numba CPU Pixelization Interferometer Likelihood — Per-Step Breakdown — {instrument.upper()}",
+    f"Numba CPU Pixelization Interferometer Likelihood — Per-Step Breakdown — {instrument.upper()} — kernel={arm_kernel}",
     fontsize=12,
     fontweight="bold",
 )

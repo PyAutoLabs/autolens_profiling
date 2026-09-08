@@ -17,8 +17,13 @@ What is pinned
    ``rtol=1e-6``.
 4. The preconditions. Multiple mappers and ``over_sample_size != 1`` must raise,
    not silently produce a different ``F``.
-5. The control. Scaling the kernel's ``preload * w0 * w1`` product by 1.01 must
-   make pins 2 and 3 fail — a pin that cannot fail is not a pin.
+5. Every phase-2 kernel variant. Each member of ``KERNELS`` — and the NumPy
+   ``rfft2``/``fft2`` convolution routes the bake-off times — must reproduce the
+   reference kernel's ``F`` at ``rtol=1e-10`` with ``atol`` scaled by ``max|F|``,
+   and the whole log evidence at ``rtol=1e-6``. A number from an unpinned kernel
+   is not a result.
+6. The control. Scaling the kernel's ``preload * w0 * w1`` product by 1.01 must
+   make pins 2, 3 and 5 fail — a pin that cannot fail is not a pin.
 
 The comparator ``InversionInterferometerSparse`` runs its curvature assembly
 through ``jax.numpy`` (imported inside ``InterferometerSparseOperator``), so JAX
@@ -64,8 +69,12 @@ from instruments.interferometer import INSTRUMENTS  # noqa: E402
 from numba_interferometer import (  # noqa: E402
     inversion_interferometer_numba_util as numba_util_pack,
 )
+from numba_interferometer import kernels as kernels_pack  # noqa: E402
 from numba_interferometer.fit import numba_log_evidence_from  # noqa: E402
-from numba_interferometer.inversion import InversionInterferometerNumba  # noqa: E402
+from numba_interferometer.inversion import (  # noqa: E402
+    KERNELS,
+    InversionInterferometerNumba,
+)
 from numba_interferometer.preload import NumbaPreload  # noqa: E402
 
 INSTRUMENT = "sma"
@@ -79,6 +88,10 @@ ORACLE_MESH_PIXELS = 25
 
 RTOL_PRELOAD = 1.0e-10
 RTOL_PARITY = 1.0e-6
+
+# The kernel variants are algebraically identical to the reference, so they may only
+# differ by summation order: a far tighter pin than the cross-formalism one above.
+RTOL_KERNEL = 1.0e-10
 
 
 def _dataset_path() -> Path:
@@ -185,8 +198,8 @@ def oracle_fit():
     return _fit(mask_radius=ORACLE_MASK_RADIUS, mesh_pixels=ORACLE_MESH_PIXELS)
 
 
-def _numba_inversion_from(fit) -> InversionInterferometerNumba:
-    """A fresh (uncached) numba inversion for ``fit``.
+def _numba_inversion_from(fit, kernel: str = "reference") -> InversionInterferometerNumba:
+    """A fresh (uncached) numba inversion for ``fit`` on ``kernel``.
 
     Used by the tests that must build ``F`` again after a monkeypatch, since
     ``curvature_matrix`` is a cached property.
@@ -198,6 +211,26 @@ def _numba_inversion_from(fit) -> InversionInterferometerNumba:
         linear_obj_list=inversion.linear_obj_list,
         settings=inversion.settings,
         xp=np,
+        kernel=kernel,
+    )
+
+
+def _assert_kernel_pin(candidate, anchor, *, rtol: float = RTOL_KERNEL):
+    """The brief's kernel pin: ``rtol`` on ``F`` with ``atol`` scaled by ``max|F_anchor|``.
+
+    A plain ``rtol`` alone would be vacuous on the near-zero entries of a sparse
+    curvature matrix and impossibly strict on the ones that are exactly zero in one
+    kernel and ``1e-300`` in another; scaling ``atol`` by the matrix norm is the pin
+    that actually discriminates a wrong kernel from a different summation order.
+    """
+    candidate = np.asarray(candidate, dtype=np.float64)
+    anchor = np.asarray(anchor, dtype=np.float64)
+
+    np.testing.assert_allclose(
+        candidate,
+        anchor,
+        rtol=rtol,
+        atol=rtol * float(np.abs(anchor).max()),
     )
 
 
@@ -422,12 +455,88 @@ def test_unknown_kernel_raises(fit):
             linear_obj_list=inversion.linear_obj_list,
             settings=inversion.settings,
             xp=np,
-            kernel="two_stage",
+            kernel="no_such_kernel",
         )
 
 
 # ---------------------------------------------------------------------------
-# 5. The control
+# 5. The phase-2 kernel variants
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def reference_curvature(fit):
+    return np.asarray(_numba_inversion_from(fit, kernel="reference").curvature_matrix_scatter)
+
+
+@pytest.mark.parametrize("kernel", [k for k in KERNELS if k != "reference"])
+def test_kernel_variant_matches_reference(fit, reference_curvature, kernel):
+    """Every wired kernel assembles the reference kernel's ``F``.
+
+    This is the gate the phase-2 bake-off's timings sit behind: an unpinned kernel's
+    seconds are not a result.
+    """
+    _assert_kernel_pin(
+        _numba_inversion_from(fit, kernel=kernel).curvature_matrix_scatter,
+        reference_curvature,
+    )
+
+
+@pytest.mark.parametrize("kernel", [k for k in KERNELS if k != "reference"])
+def test_kernel_variant_log_evidence_matches_fit(fit, kernel):
+    """...and the whole likelihood it produces is still the fit's figure of merit."""
+    log_evidence, _inversion = numba_log_evidence_from(fit, kernel=kernel)
+
+    np.testing.assert_allclose(
+        log_evidence,
+        float(fit.figure_of_merit),
+        rtol=RTOL_PARITY,
+        atol=0.0,
+    )
+
+
+@pytest.mark.parametrize("real_fft", [True, False])
+def test_fft_convolution_kernels_match_reference(fit, reference_curvature, real_fft):
+    """The NumPy ``rfft2``/``fft2`` routes agree with the numba reference.
+
+    ``real_fft=False`` is the algorithm ``InterferometerSparseOperator.apply_operator``
+    implements (pad to ``(2y, 2x)``, complex ``fft2``, multiply, ``ifft2``, real part);
+    ``real_fft=True`` is the real-transform route the verdict weighs. Both are timed by
+    the bake-off, so both are pinned here on the real mapper rather than only on the
+    bake-off's synthetic one.
+    """
+    inversion = _numba_inversion_from(fit, kernel="direct_conv")
+    inputs = inversion.kernel_index_arrays
+
+    curvature_matrix = kernels_pack.curvature_fft_numpy(
+        inversion.curvature_preload,
+        inputs["rows_nnz"],
+        inputs["col"],
+        inputs["val"],
+        inputs["ny"],
+        inputs["nx"],
+        inputs["pix_pixels"],
+        real_fft=real_fft,
+        batch_size=32,
+    )
+
+    _assert_kernel_pin(curvature_matrix, reference_curvature)
+
+
+def test_control_scaled_variant_fails_the_kernel_pin(fit, reference_curvature):
+    """A 1% scale on a variant's ``F`` must fail the kernel pin.
+
+    Without this the parametrized pins above could pass by being loose rather than by
+    the kernels agreeing.
+    """
+    curvature_matrix = _numba_inversion_from(fit, kernel="direct_conv").curvature_matrix_scatter
+
+    with pytest.raises(AssertionError):
+        _assert_kernel_pin(1.01 * np.asarray(curvature_matrix), reference_curvature)
+
+
+# ---------------------------------------------------------------------------
+# 6. The control
 # ---------------------------------------------------------------------------
 
 

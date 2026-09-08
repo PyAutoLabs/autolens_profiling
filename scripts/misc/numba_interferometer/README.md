@@ -4,9 +4,10 @@ A standalone, profiling-only pack that runs the numba w-tilde interferometer
 likelihood PyAutoArray deleted, against **today's** PyAutoArray. Nothing here is
 imported by the libraries; PyAutoArray is a read-only dependency.
 
-Phase 1 of the `numba-interferometer-revisit` epic
-(`autolens_profiling#223`). Phase 2 adds kernel variants behind the `kernel=`
-switch and delivers the numba-vs-JAX verdict; phase 3 takes the preload build
+Phase 1 of the `numba-interferometer-revisit` epic (`autolens_profiling#223`)
+recovered the pack; **phase 2** (`autolens_profiling#226`) added the kernel
+variants behind the `kernel=` switch, the synthetic bake-off, and the verdict in
+`results/notes/numba_interferometer_verdict.md`. Phase 3 takes the preload build
 itself as its own line item.
 
 ## Provenance
@@ -95,10 +96,40 @@ this pack inherits the guarantee by reading the operator's dirty image.
 | File | What it is |
 |---|---|
 | `inversion_interferometer_numba_util.py` | The recovered numba kernels, `jit` from `autoarray.numba_util`. |
-| `preload.py` | `NumbaPreload` — `curvature_preload`, `dirty_image`, `real_space_mask`, `native_index_for_slim_index`. `from_sparse_operator(dataset)` / `via_numba(dataset)`. |
-| `inversion.py` | `InversionInterferometerNumba(AbstractInversionInterferometer)`. |
-| `fit.py` | `numba_log_evidence_from(fit) -> (log_evidence, inversion)`. |
-| `test_parity.py` | The pins, including a control that a broken kernel constant fails them. |
+| `kernels.py` | The phase-2 kernel variants (below) plus the NumPy/JAX FFT routes the bake-off compares them against. |
+| `preload.py` | `NumbaPreload` — `curvature_preload`, `dirty_image`, `real_space_mask`, `native_index_for_slim_index`. `from_sparse_operator(dataset)` / `from_curvature_preload(dataset, array)` / `via_numba(dataset)`; `curvature_preload_from(dataset)` for the expensive `O(N·K)` build. |
+| `inversion.py` | `InversionInterferometerNumba(AbstractInversionInterferometer)` with the `kernel=` switch over `KERNELS`. |
+| `fit.py` | `numba_log_evidence_from(fit, kernel=...) -> (log_evidence, inversion)`. |
+| `bakeoff.py` | The synthetic bake-off and thread-scaling driver (phase 2, step 1-2). |
+| `test_parity.py` | The pins, including controls that a broken kernel constant and a 1% scale both fail them. |
+
+### The kernels (`kernel=`, all pinned to `reference`)
+
+Every one assembles the *same* `F`; they differ only in how the triple product
+`Mᵀ W~ M` is evaluated. `N` = masked pixels, `P` = mapper neighbours per pixel,
+`S` = source pixels, `M = Ny·Nx` = the unmasked-extent rectangle,
+`nnz = N·P`.
+
+| `kernel=` | What it does | Cost |
+|---|---|---|
+| `reference` | The recovered pair loop over image pixels. | `O(N² P²)` |
+| `hoisted` | Same loop, destination row and `ip0` weight hoisted out of the `ip1` loop, flat CSR triplets. | `O(N² P²)` |
+| `symmetric` | `hoisted` over the upper image-pixel triangle only, then `F = A + Aᵀ` (`W~` is even in the offset). | `O(N² P² / 2)` |
+| `two_stage` | The imaging two-stage source-space accumulator: a dense `acc[S]` per data pixel, then row AXPYs. | `O(N² P + N P S)` |
+| `direct_conv` | The extent-grid form: convolve each source column of `A` over the `(Ny, Nx)` rectangle with contiguous preload rows, then project with `Aᵀ`. | `O(nnz·M + S·nnz)` |
+| `source_loop` | The recovered `..._from_2`, source-pixel-major over the upper source triangle. | `O(nnz² / 2)` |
+
+`kernels.py` additionally carries `curvature_fft_numpy` (`rfft2` and complex
+`fft2` convolution on the NumPy/scipy stack) and `jax_curvature_callable` (the
+library's own `InterferometerSparseOperator` route) — the baselines, not levers.
+
+`--kernel jax` is not one of these: it swaps the whole inversion for
+`InversionInterferometerSparse`. Because that class exposes `curvature_matrix` and
+`data_vector` as plain (uncached) properties, the JAX arm records only the rows it can
+measure directly and flags `steps_are_partial: true`; its dashboard `total_step_by_step`
+entry is therefore **not** a whole likelihood. Compare arms on
+`curvature_matrix_f_total_s` / `curvature_matrix_f_jit_steady_s`, as
+`results/notes/numba_interferometer_verdict.md` does.
 
 `InversionInterferometerNumba` **raises** (never falls back silently) on a
 linear-function list, on more than one mapper, on `over_sample_size != 1`, on a
@@ -124,12 +155,31 @@ From the repository root, with the worktree's `activate.sh` sourced:
 python -m pytest scripts/misc/numba_interferometer/test_parity.py -q
 
 # The per-step breakdowns (JSON + PNG under results/breakdown/interferometer/).
-OMP_NUM_THREADS=1 python scripts/interferometer/likelihood_breakdown/delaunay_numba.py
-OMP_NUM_THREADS=1 python scripts/interferometer/likelihood_breakdown/pixelization_numba.py
+# --kernel selects the curvature kernel and lands in the output basename, so arms
+# never overwrite each other. --kernel jax runs InversionInterferometerSparse
+# instead, on the same fit — that is the comparator arm.
+OMP_NUM_THREADS=1 python scripts/interferometer/likelihood_breakdown/delaunay_numba.py --kernel direct_conv
+OMP_NUM_THREADS=1 python scripts/interferometer/likelihood_breakdown/pixelization_numba.py --kernel jax
+
+# The synthetic bake-off (no PyAutoLens stack; sma / alma / alma_high x delaunay / rect).
+OMP_NUM_THREADS=1 NUMBA_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 \
+  XLA_FLAGS="--xla_cpu_multi_thread_eigen=false --xla_force_host_platform_device_count=1" \
+  JAX_PLATFORMS=cpu python scripts/misc/numba_interferometer/bakeoff.py --reps 5
+
+# Thread scaling (step 2). NUMBA_NUM_THREADS must be set before numba imports.
+OMP_NUM_THREADS=8 NUMBA_NUM_THREADS=8 MKL_NUM_THREADS=8 OPENBLAS_NUM_THREADS=8 \
+  python scripts/misc/numba_interferometer/bakeoff.py --mode threads --threads 8
 
 # The JAX/FFT comparator whose rows phase 2 ingests.
 python scripts/interferometer/likelihood_breakdown/delaunay.py --instrument sma
 ```
+
+The `W~` preload is `O(N_pix · K)` — seconds at `sma`, 10-15 minutes at `alma`'s
+million visibilities — and it is model-independent. Both breakdown scripts cache
+it beside the dataset as
+`nufft_precision_operator_<shape>_r<radius>.npy` (git-ignored) and hand the
+cached array to both `apply_sparse_operator` and `NumbaPreload`, so a paired
+sweep over kernels pays the build once rather than twice per arm.
 
 Both breakdown scripts default to `--instrument sma`; `alma` works but the
 reference kernel costs seconds per call there, so `N_REPEATS` drops

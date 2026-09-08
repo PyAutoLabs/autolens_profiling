@@ -1,0 +1,1382 @@
+{
+  "autoarray_version": "2026.8.17.1",
+  "mode": "bakeoff",
+  "batch_size": 128,
+  "pin": {
+    "rtol": 1e-10,
+    "atol": "1e-10 * max|F_reference|",
+    "note": "every kernel is pinned before any of its timings are recorded"
+  },
+  "environment": {
+    "OMP_NUM_THREADS": "1",
+    "NUMBA_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "XLA_FLAGS": "--xla_cpu_multi_thread_eigen=false --xla_force_host_platform_device_count=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "JAX_PLATFORMS": "cpu",
+    "JAX_ENABLE_X64": "True",
+    "numba_threads_effective": 1,
+    "numba_version": "0.62.1",
+    "scipy_version": "1.17.1",
+    "jax_version": "0.10.2",
+    "jax_devices": [
+      "cpu:0"
+    ],
+    "numpy_version": "2.2.6",
+    "platform": "Linux-5.10.16.3-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+    "processor": "x86_64",
+    "cpu_count": 8
+  },
+  "cells": {
+    "sma/delaunay": {
+      "geometry": {
+        "instrument": "sma",
+        "pixel_scale_arcsec": 0.1,
+        "mask_radius_arcsec": 3.5,
+        "real_space_shape": [
+          256,
+          256
+        ],
+        "image_pixels_masked": 3852,
+        "extent_shape": [
+          70,
+          70
+        ],
+        "extent_cells": 4900,
+        "visibilities": 190
+      },
+      "mesh": {
+        "name": "delaunay",
+        "source_pixels": 1500,
+        "p_per_pixel": 3,
+        "nnz": 11556,
+        "nnz_per_source_column": 7.704
+      },
+      "pin_anchor": "reference",
+      "anchor_first_call_s": 1.3212574999997742,
+      "control": {
+        "kernel": "reference",
+        "scale": 1.01,
+        "pin_passed": false,
+        "max_abs_diff_over_scale": 0.010000000000000031,
+        "non_vacuous": true
+      },
+      "kernels": {
+        "reference": {
+          "status": "measured",
+          "median_s": 0.6788575500031584,
+          "min_s": 0.6346573999981047,
+          "all_rounds_s": [
+            0.8368654000005336,
+            0.6346573999981047,
+            0.9550661000030232,
+            0.6671452000009594,
+            0.6905699000053573
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 0.0,
+            "max_abs_diff_over_scale": 0.0,
+            "rtol": 1e-10,
+            "atol": 0.0,
+            "note": "anchor"
+          },
+          "operations": 133541136
+        },
+        "hoisted": {
+          "status": "measured",
+          "median_s": 0.6519343000036315,
+          "min_s": 0.6260278000045219,
+          "all_rounds_s": [
+            0.8743679999970482,
+            0.6811397000055877,
+            0.6260278000045219,
+            0.6421601000038208,
+            0.6617085000034422
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 0.0,
+            "max_abs_diff_over_scale": 0.0,
+            "rtol": 1e-10,
+            "atol": 7.58984906985504e-08
+          },
+          "operations": 133541136
+        },
+        "symmetric": {
+          "status": "measured",
+          "median_s": 0.40756490000421763,
+          "min_s": 0.39762250000057975,
+          "all_rounds_s": [
+            0.49030820000189124,
+            0.40229760000511305,
+            0.42346790000010515,
+            0.4128322000033222,
+            0.39762250000057975
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 6.821210263296962e-13,
+            "max_abs_diff_over_scale": 8.987280511794475e-16,
+            "rtol": 1e-10,
+            "atol": 7.58984906985504e-08
+          },
+          "operations": 66770568.0
+        },
+        "two_stage": {
+          "status": "measured",
+          "median_s": 0.23633604999849922,
+          "min_s": 0.22447840000677388,
+          "all_rounds_s": [
+            0.24825850000343053,
+            0.23000559999491088,
+            0.24266650000208756,
+            0.25009729999874253,
+            0.22447840000677388
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 6.821210263296962e-13,
+            "max_abs_diff_over_scale": 8.987280511794475e-16,
+            "rtol": 1e-10,
+            "atol": 7.58984906985504e-08
+          },
+          "operations": 61847712
+        },
+        "direct_conv": {
+          "status": "measured",
+          "median_s": 0.21348494999983814,
+          "min_s": 0.18819950000033714,
+          "all_rounds_s": [
+            0.22099750000052154,
+            0.2179736000034609,
+            0.20899629999621538,
+            0.23418640000454616,
+            0.18819950000033714
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 6.821210263296962e-13,
+            "max_abs_diff_over_scale": 8.987280511794475e-16,
+            "rtol": 1e-10,
+            "atol": 7.58984906985504e-08
+          },
+          "operations": 73958400
+        },
+        "source_loop": {
+          "status": "measured",
+          "median_s": 0.5082600499990804,
+          "min_s": 0.3961135999998078,
+          "all_rounds_s": [
+            0.473271199996816,
+            0.4780568999995012,
+            0.6641922000053455,
+            0.5384631999986595,
+            0.3961135999998078
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 5.115907697472721e-13,
+            "max_abs_diff_over_scale": 6.740460383845856e-16,
+            "rtol": 1e-10,
+            "atol": 7.58984906985504e-08
+          },
+          "operations": 66770568.0
+        },
+        "rfft2_numpy": {
+          "status": "measured",
+          "median_s": 1.2659630999987712,
+          "min_s": 0.975284100000863,
+          "all_rounds_s": [
+            1.1291989000019385,
+            1.330975999997463,
+            1.2009502000000793,
+            1.3847198000003118,
+            0.975284100000863
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 6.821210263296962e-13,
+            "max_abs_diff_over_scale": 8.987280511794475e-16,
+            "rtol": 1e-10,
+            "atol": 7.58984906985504e-08
+          },
+          "operations": 447012701.5898768
+        },
+        "fft2_numpy": {
+          "status": "measured",
+          "median_s": 1.7478602500013949,
+          "min_s": 1.677441899999394,
+          "all_rounds_s": [
+            1.7395681999987573,
+            1.9747017999980017,
+            1.7252741000047536,
+            1.677441899999394,
+            1.7704463999980362
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 6.821210263296962e-13,
+            "max_abs_diff_over_scale": 8.987280511794475e-16,
+            "rtol": 1e-10,
+            "atol": 7.58984906985504e-08
+          },
+          "operations": 876275387.1797535
+        },
+        "fft2_jax": {
+          "status": "measured",
+          "median_s": 1.5238657500049158,
+          "min_s": 1.1673955000005662,
+          "all_rounds_s": [
+            1.584651600001962,
+            2.4270357999994303,
+            1.6764564000040991,
+            1.3712751000057324,
+            1.1673955000005662
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 6.821210263296962e-13,
+            "max_abs_diff_over_scale": 8.987280511794475e-16,
+            "rtol": 1e-10,
+            "atol": 7.58984906985504e-08
+          },
+          "operations": 876275387.1797535
+        }
+      }
+    },
+    "sma/rect": {
+      "geometry": {
+        "instrument": "sma",
+        "pixel_scale_arcsec": 0.1,
+        "mask_radius_arcsec": 3.5,
+        "real_space_shape": [
+          256,
+          256
+        ],
+        "image_pixels_masked": 3852,
+        "extent_shape": [
+          70,
+          70
+        ],
+        "extent_cells": 4900,
+        "visibilities": 190
+      },
+      "mesh": {
+        "name": "rect",
+        "source_pixels": 784,
+        "p_per_pixel": 4,
+        "nnz": 15408,
+        "nnz_per_source_column": 19.653061224489797
+      },
+      "pin_anchor": "reference",
+      "anchor_first_call_s": 0.8136825999972643,
+      "control": {
+        "kernel": "reference",
+        "scale": 1.01,
+        "pin_passed": false,
+        "max_abs_diff_over_scale": 0.010000000000000024,
+        "non_vacuous": true
+      },
+      "kernels": {
+        "reference": {
+          "status": "measured",
+          "median_s": 1.1003922499985492,
+          "min_s": 0.8728648999967845,
+          "all_rounds_s": [
+            1.0563295999963884,
+            1.4133688000001712,
+            1.2645854000002146,
+            0.9361990999968839,
+            0.8728648999967845
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 0.0,
+            "max_abs_diff_over_scale": 0.0,
+            "rtol": 1e-10,
+            "atol": 0.0,
+            "note": "anchor"
+          },
+          "operations": 237406464
+        },
+        "hoisted": {
+          "status": "measured",
+          "median_s": 1.0708443500006979,
+          "min_s": 1.0474480999982916,
+          "all_rounds_s": [
+            1.380570200002694,
+            1.0736163999972632,
+            1.248253099998692,
+            1.0474480999982916,
+            1.0680723000041326
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 0.0,
+            "max_abs_diff_over_scale": 0.0,
+            "rtol": 1e-10,
+            "atol": 1.113510843733704e-07
+          },
+          "operations": 237406464
+        },
+        "symmetric": {
+          "status": "measured",
+          "median_s": 0.6746138000016799,
+          "min_s": 0.5828125999978511,
+          "all_rounds_s": [
+            0.7976399000035599,
+            0.7479733000000124,
+            0.8251454999990528,
+            0.6012543000033475,
+            0.5828125999978511
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 2.6147972675971687e-12,
+            "max_abs_diff_over_scale": 2.3482458947858233e-15,
+            "rtol": 1e-10,
+            "atol": 1.113510843733704e-07
+          },
+          "operations": 118703232.0
+        },
+        "two_stage": {
+          "status": "measured",
+          "median_s": 0.320959299999231,
+          "min_s": 0.24662810000154423,
+          "all_rounds_s": [
+            0.2842549999986659,
+            0.5083950000043842,
+            0.31923700000334065,
+            0.24662810000154423,
+            0.32268159999512136
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 2.6147972675971687e-12,
+            "max_abs_diff_over_scale": 2.3482458947858233e-15,
+            "rtol": 1e-10,
+            "atol": 1.113510843733704e-07
+          },
+          "operations": 71431488
+        },
+        "direct_conv": {
+          "status": "measured",
+          "median_s": 0.2597914999969362,
+          "min_s": 0.20975000000180444,
+          "all_rounds_s": [
+            0.19967539999925066,
+            0.5403461999958381,
+            0.2516038999965531,
+            0.20975000000180444,
+            0.2679790999973193
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 2.6147972675971687e-12,
+            "max_abs_diff_over_scale": 2.3482458947858233e-15,
+            "rtol": 1e-10,
+            "atol": 1.113510843733704e-07
+          },
+          "operations": 87579072
+        },
+        "source_loop": {
+          "status": "measured",
+          "median_s": 0.8051226000025054,
+          "min_s": 0.7338882999974885,
+          "all_rounds_s": [
+            0.8212796000007074,
+            1.8074869000047329,
+            0.8127688000022317,
+            0.7338882999974885,
+            0.797476400002779
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 2.1600499167107046e-12,
+            "max_abs_diff_over_scale": 1.939855304388289e-15,
+            "rtol": 1e-10,
+            "atol": 1.113510843733704e-07
+          },
+          "operations": 118703232.0
+        },
+        "rfft2_numpy": {
+          "status": "measured",
+          "median_s": 0.7360748999999487,
+          "min_s": 0.6130911000000197,
+          "all_rounds_s": [
+            0.6124711000011303,
+            1.2638095000002068,
+            0.6130911000000197,
+            0.646592299999611,
+            0.8255575000002864
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 2.6147972675971687e-12,
+            "max_abs_diff_over_scale": 2.3482458947858233e-15,
+            "rtol": 1e-10,
+            "atol": 1.113510843733704e-07
+          },
+          "operations": 264208801.26076144
+        },
+        "fft2_numpy": {
+          "status": "measured",
+          "median_s": 1.012385499998345,
+          "min_s": 0.8235869999989518,
+          "all_rounds_s": [
+            0.9629392000060761,
+            1.7915646000037668,
+            0.8594325000012759,
+            0.8235869999989518,
+            1.1653384999954142
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 2.7284841053187847e-12,
+            "max_abs_diff_over_scale": 2.450343542385207e-15,
+            "rtol": 1e-10,
+            "atol": 1.113510843733704e-07
+          },
+          "operations": 514612034.5215229
+        },
+        "fft2_jax": {
+          "status": "measured",
+          "median_s": 0.8509947999991709,
+          "min_s": 0.7869960000025458,
+          "all_rounds_s": [
+            1.0377760999981547,
+            0.9621899999983725,
+            0.7869960000025458,
+            0.8307753999979468,
+            0.8712142000003951
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 2.6147972675971687e-12,
+            "max_abs_diff_over_scale": 2.3482458947858233e-15,
+            "rtol": 1e-10,
+            "atol": 1.113510843733704e-07
+          },
+          "operations": 514612034.5215229
+        }
+      }
+    },
+    "alma/delaunay": {
+      "geometry": {
+        "instrument": "alma",
+        "pixel_scale_arcsec": 0.05,
+        "mask_radius_arcsec": 3.5,
+        "real_space_shape": [
+          800,
+          800
+        ],
+        "image_pixels_masked": 15380,
+        "extent_shape": [
+          140,
+          140
+        ],
+        "extent_cells": 19600,
+        "visibilities": 1000000
+      },
+      "mesh": {
+        "name": "delaunay",
+        "source_pixels": 1500,
+        "p_per_pixel": 3,
+        "nnz": 46140,
+        "nnz_per_source_column": 30.76
+      },
+      "pin_anchor": "reference",
+      "anchor_first_call_s": 20.294152700000268,
+      "control": {
+        "kernel": "reference",
+        "scale": 1.01,
+        "pin_passed": false,
+        "max_abs_diff_over_scale": 0.009999999999999974,
+        "non_vacuous": true
+      },
+      "kernels": {
+        "reference": {
+          "status": "measured",
+          "median_s": 12.936440199999197,
+          "min_s": 10.531206100000418,
+          "all_rounds_s": [
+            11.56893310000305,
+            12.955543099997158,
+            13.751451100004488,
+            12.917337300001236,
+            10.531206100000418
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 0.0,
+            "max_abs_diff_over_scale": 0.0,
+            "rtol": 1e-10,
+            "atol": 0.0,
+            "note": "anchor"
+          },
+          "operations": 2128899600
+        },
+        "hoisted": {
+          "status": "measured",
+          "median_s": 11.554006200000003,
+          "min_s": 9.738393300001917,
+          "all_rounds_s": [
+            12.45943580000312,
+            13.468143199999759,
+            11.37181750000309,
+            11.736194899996917,
+            9.738393300001917
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 0.0,
+            "max_abs_diff_over_scale": 0.0,
+            "rtol": 1e-10,
+            "atol": 6.405358580407681e-07
+          },
+          "operations": 2128899600
+        },
+        "symmetric": {
+          "status": "measured",
+          "median_s": 7.057434349997493,
+          "min_s": 5.816320099998848,
+          "all_rounds_s": [
+            7.301508099997591,
+            7.20430359999591,
+            10.254682999999204,
+            6.910565099999076,
+            5.816320099998848
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 1.7280399333685637e-11,
+            "max_abs_diff_over_scale": 2.697803583790276e-15,
+            "rtol": 1e-10,
+            "atol": 6.405358580407681e-07
+          },
+          "operations": 1064449800.0
+        },
+        "two_stage": {
+          "status": "measured",
+          "median_s": 4.441599900001165,
+          "min_s": 3.7997728000045754,
+          "all_rounds_s": [
+            3.7285932000013418,
+            3.997659000000567,
+            5.055056599994714,
+            4.885540800001763,
+            3.7997728000045754
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 1.8189894035458565e-11,
+            "max_abs_diff_over_scale": 2.8397932460950274e-15,
+            "rtol": 1e-10,
+            "atol": 6.405358580407681e-07
+          },
+          "operations": 778843200
+        },
+        "direct_conv": {
+          "status": "measured",
+          "median_s": 2.852180950001639,
+          "min_s": 2.1928164000055403,
+          "all_rounds_s": [
+            2.601698700003908,
+            2.8281776000003447,
+            2.876184300002933,
+            3.831162599999516,
+            2.1928164000055403
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 1.8189894035458565e-11,
+            "max_abs_diff_over_scale": 2.8397932460950274e-15,
+            "rtol": 1e-10,
+            "atol": 6.405358580407681e-07
+          },
+          "operations": 973554000
+        },
+        "source_loop": {
+          "status": "measured",
+          "median_s": 8.75075745000504,
+          "min_s": 7.964871999996831,
+          "all_rounds_s": [
+            11.292830699996557,
+            8.902086600006442,
+            8.599428300003638,
+            11.063240600000427,
+            7.964871999996831
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 8.185452315956354e-12,
+            "max_abs_diff_over_scale": 1.2779069607427623e-15,
+            "rtol": 1e-10,
+            "atol": 6.405358580407681e-07
+          },
+          "operations": 1064449800.0
+        },
+        "rfft2_numpy": {
+          "status": "measured",
+          "median_s": 4.395138399999269,
+          "min_s": 3.438712700000906,
+          "all_rounds_s": [
+            5.42125980000128,
+            4.762214900001709,
+            4.028061899996828,
+            4.898767600003339,
+            3.438712700000906
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 1.7280399333685637e-11,
+            "max_abs_diff_over_scale": 2.697803583790276e-15,
+            "rtol": 1e-10,
+            "atol": 6.405358580407681e-07
+          },
+          "operations": 2028766582.3595073
+        },
+        "fft2_numpy": {
+          "status": "measured",
+          "median_s": 6.5002699500000745,
+          "min_s": 4.979276199999731,
+          "all_rounds_s": [
+            6.668904199999815,
+            6.60789069999737,
+            6.392649200002779,
+            6.610863999994763,
+            4.979276199999731
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 1.7280399333685637e-11,
+            "max_abs_diff_over_scale": 2.697803583790276e-15,
+            "rtol": 1e-10,
+            "atol": 6.405358580407681e-07
+          },
+          "operations": 3986662124.7190146
+        },
+        "fft2_jax": {
+          "status": "measured",
+          "median_s": 5.5156137499980105,
+          "min_s": 5.2050880000024335,
+          "all_rounds_s": [
+            6.052236300005461,
+            5.697049399997923,
+            5.334178099998098,
+            5.2050880000024335,
+            5.745368800002325
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 1.6370904631912708e-11,
+            "max_abs_diff_over_scale": 2.5558139214855246e-15,
+            "rtol": 1e-10,
+            "atol": 6.405358580407681e-07
+          },
+          "operations": 3986662124.7190146
+        }
+      }
+    },
+    "alma/rect": {
+      "geometry": {
+        "instrument": "alma",
+        "pixel_scale_arcsec": 0.05,
+        "mask_radius_arcsec": 3.5,
+        "real_space_shape": [
+          800,
+          800
+        ],
+        "image_pixels_masked": 15380,
+        "extent_shape": [
+          140,
+          140
+        ],
+        "extent_cells": 19600,
+        "visibilities": 1000000
+      },
+      "mesh": {
+        "name": "rect",
+        "source_pixels": 784,
+        "p_per_pixel": 4,
+        "nnz": 61520,
+        "nnz_per_source_column": 78.46938775510205
+      },
+      "pin_anchor": "reference",
+      "anchor_first_call_s": 17.545049799999106,
+      "control": {
+        "kernel": "reference",
+        "scale": 1.01,
+        "pin_passed": false,
+        "max_abs_diff_over_scale": 0.009999999999999972,
+        "non_vacuous": true
+      },
+      "kernels": {
+        "reference": {
+          "status": "measured",
+          "median_s": 13.048659699998097,
+          "min_s": 10.421467799998936,
+          "all_rounds_s": [
+            12.506034300000465,
+            10.421467799998936,
+            14.96960240000044,
+            11.127716999995755,
+            19.529015100000834
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 0.0,
+            "max_abs_diff_over_scale": 0.0,
+            "rtol": 1e-10,
+            "atol": 0.0,
+            "note": "anchor"
+          },
+          "operations": 3784710400
+        },
+        "hoisted": {
+          "status": "measured",
+          "median_s": 16.8512579499984,
+          "min_s": 11.834720300001209,
+          "all_rounds_s": [
+            12.683463699999265,
+            16.315320599998813,
+            11.834720300001209,
+            17.387195299997984,
+            21.61488750000717
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 0.0,
+            "max_abs_diff_over_scale": 0.0,
+            "rtol": 1e-10,
+            "atol": 8.756436140086613e-07
+          },
+          "operations": 3784710400
+        },
+        "symmetric": {
+          "status": "measured",
+          "median_s": 10.7361567500011,
+          "min_s": 6.922927300001902,
+          "all_rounds_s": [
+            13.264556499998434,
+            10.382791600000928,
+            6.922927300001902,
+            11.712026699999114,
+            11.089521900001273
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 5.820766091346741e-11,
+            "max_abs_diff_over_scale": 6.6474145396887065e-15,
+            "rtol": 1e-10,
+            "atol": 8.756436140086613e-07
+          },
+          "operations": 1892355200.0
+        },
+        "two_stage": {
+          "status": "measured",
+          "median_s": 4.457882550002978,
+          "min_s": 2.9197368000022834,
+          "all_rounds_s": [
+            4.004296700004488,
+            5.718883499997901,
+            2.9197368000022834,
+            4.696890000006533,
+            4.218875099999423
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 5.638867150992155e-11,
+            "max_abs_diff_over_scale": 6.4396828353234346e-15,
+            "rtol": 1e-10,
+            "atol": 8.756436140086613e-07
+          },
+          "operations": 994409280
+        },
+        "direct_conv": {
+          "status": "measured",
+          "median_s": 2.684256650001771,
+          "min_s": 2.2156383999972604,
+          "all_rounds_s": [
+            2.5244917000018177,
+            3.1202274000024772,
+            2.2156383999972604,
+            2.248285900001065,
+            3.251036900001054
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 5.638867150992155e-11,
+            "max_abs_diff_over_scale": 6.4396828353234346e-15,
+            "rtol": 1e-10,
+            "atol": 8.756436140086613e-07
+          },
+          "operations": 1254023680
+        },
+        "source_loop": {
+          "status": "measured",
+          "median_s": 15.673930500001006,
+          "min_s": 9.51192749999609,
+          "all_rounds_s": [
+            10.955762899997353,
+            19.33804070000042,
+            9.51192749999609,
+            13.738669200000004,
+            17.60919180000201
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 3.5925040720030665e-11,
+            "max_abs_diff_over_scale": 4.102701161214124e-15,
+            "rtol": 1e-10,
+            "atol": 8.756436140086613e-07
+          },
+          "operations": 1892355200.0
+        },
+        "rfft2_numpy": {
+          "status": "measured",
+          "median_s": 2.6556922499985376,
+          "min_s": 1.4956023000049754,
+          "all_rounds_s": [
+            1.560344299999997,
+            2.832673500000965,
+            1.4956023000049754,
+            2.4787109999961103,
+            3.546509400002833
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 5.729816621169448e-11,
+            "max_abs_diff_over_scale": 6.5435486875060705e-15,
+            "rtol": 1e-10,
+            "atol": 8.756436140086613e-07
+          },
+          "operations": 1197227653.043046
+        },
+        "fft2_numpy": {
+          "status": "measured",
+          "median_s": 3.3786321000006865,
+          "min_s": 2.2449491000006674,
+          "all_rounds_s": [
+            1.8149400999973295,
+            3.6605098,
+            2.2449491000006674,
+            3.096754400001373,
+            5.751252999994904
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 5.729816621169448e-11,
+            "max_abs_diff_over_scale": 6.5435486875060705e-15,
+            "rtol": 1e-10,
+            "atol": 8.756436140086613e-07
+          },
+          "operations": 2339333386.086092
+        },
+        "fft2_jax": {
+          "status": "measured",
+          "median_s": 2.9317307000019355,
+          "min_s": 2.0914676999964286,
+          "all_rounds_s": [
+            1.7000601999970968,
+            3.636622800004261,
+            2.0914676999964286,
+            2.22683859999961,
+            4.349980999999389
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 5.638867150992155e-11,
+            "max_abs_diff_over_scale": 6.4396828353234346e-15,
+            "rtol": 1e-10,
+            "atol": 8.756436140086613e-07
+          },
+          "operations": 2339333386.086092
+        }
+      }
+    },
+    "alma_high/delaunay": {
+      "geometry": {
+        "instrument": "alma_high",
+        "pixel_scale_arcsec": 0.025,
+        "mask_radius_arcsec": 3.5,
+        "real_space_shape": [
+          800,
+          800
+        ],
+        "image_pixels_masked": 61572,
+        "extent_shape": [
+          280,
+          280
+        ],
+        "extent_cells": 78400,
+        "visibilities": 5000000
+      },
+      "mesh": {
+        "name": "delaunay",
+        "source_pixels": 1500,
+        "p_per_pixel": 3,
+        "nnz": 184716,
+        "nnz_per_source_column": 123.144
+      },
+      "pin_anchor": "direct_conv",
+      "anchor_first_call_s": 26.52793340000062,
+      "control": {
+        "kernel": "direct_conv",
+        "scale": 1.01,
+        "pin_passed": false,
+        "max_abs_diff_over_scale": 0.01000000000000004,
+        "non_vacuous": true
+      },
+      "kernels": {
+        "symmetric": {
+          "status": "measured: single round",
+          "median_s": 77.34870299999602,
+          "min_s": 77.34870299999602,
+          "all_rounds_s": [
+            77.34870299999602
+          ],
+          "rounds_timed": 1,
+          "rounds_discarded": 0,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 3.637978807091713e-10,
+            "max_abs_diff_over_scale": 4.421620079322072e-15,
+            "rtol": 1e-10,
+            "atol": 8.227705550969661e-06
+          },
+          "operations": 17060000328.0
+        },
+        "two_stage": {
+          "status": "measured",
+          "median_s": 34.39164940000046,
+          "min_s": 31.96973699999944,
+          "all_rounds_s": [
+            38.6704394000044,
+            31.96973699999944,
+            37.89111039999989,
+            34.39164940000046
+          ],
+          "rounds_timed": 3,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 4.001776687800884e-11,
+            "max_abs_diff_over_scale": 4.863782087254279e-16,
+            "rtol": 1e-10,
+            "atol": 8.227705550969661e-06
+          },
+          "operations": 11650407552
+        },
+        "direct_conv": {
+          "status": "measured",
+          "median_s": 17.40243190000183,
+          "min_s": 16.705567200006044,
+          "all_rounds_s": [
+            25.101612500002375,
+            17.40243190000183,
+            16.705567200006044,
+            18.244639099997585
+          ],
+          "rounds_timed": 3,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 0.0,
+            "max_abs_diff_over_scale": 0.0,
+            "rtol": 1e-10,
+            "atol": 0.0,
+            "note": "anchor"
+          },
+          "operations": 14758808400
+        },
+        "source_loop": {
+          "status": "measured: single round",
+          "median_s": 91.81429889999708,
+          "min_s": 91.81429889999708,
+          "all_rounds_s": [
+            91.81429889999708
+          ],
+          "rounds_timed": 1,
+          "rounds_discarded": 0,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 8.585629984736443e-10,
+            "max_abs_diff_over_scale": 1.043502338720009e-14,
+            "rtol": 1e-10,
+            "atol": 8.227705550969661e-06
+          },
+          "operations": 17060000328.0
+        },
+        "rfft2_numpy": {
+          "status": "measured",
+          "median_s": 11.034614700001839,
+          "min_s": 9.84341420000419,
+          "all_rounds_s": [
+            16.258437900003628,
+            11.034614700001839,
+            9.84341420000419,
+            11.826065699999162
+          ],
+          "rounds_timed": 3,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 5.093170329928398e-11,
+            "max_abs_diff_over_scale": 6.190268111050901e-16,
+            "rtol": 1e-10,
+            "atol": 8.227705550969661e-06
+          },
+          "operations": 9078685145.438028
+        },
+        "fft2_numpy": {
+          "status": "measured",
+          "median_s": 17.73617530000047,
+          "min_s": 16.120318599998427,
+          "all_rounds_s": [
+            17.928712999993877,
+            17.73617530000047,
+            16.120318599998427,
+            24.05031699999381
+          ],
+          "rounds_timed": 3,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 4.729372449219227e-11,
+            "max_abs_diff_over_scale": 5.748106103118694e-16,
+            "rtol": 1e-10,
+            "atol": 8.227705550969661e-06
+          },
+          "operations": 17873646514.876057
+        },
+        "fft2_jax": {
+          "status": "measured",
+          "median_s": 12.965490599999612,
+          "min_s": 12.002107300002535,
+          "all_rounds_s": [
+            13.602468499993847,
+            12.965490599999612,
+            12.002107300002535,
+            13.200058700000227
+          ],
+          "rounds_timed": 3,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 4.3655745685100555e-11,
+            "max_abs_diff_over_scale": 5.305944095186487e-16,
+            "rtol": 1e-10,
+            "atol": 8.227705550969661e-06
+          },
+          "operations": 17873646514.876057
+        },
+        "reference": {
+          "status": "skipped: extrapolated",
+          "extrapolated_seconds": 207.33309739467157,
+          "scaling": "O(N^2) in masked pixels, from the alma measurement",
+          "budget_seconds": 180.0,
+          "median_s": null,
+          "operations": 34120000656
+        },
+        "hoisted": {
+          "status": "skipped: extrapolated",
+          "extrapolated_seconds": 185.17674535869523,
+          "scaling": "O(N^2) in masked pixels, from the alma measurement",
+          "budget_seconds": 180.0,
+          "median_s": null,
+          "operations": 34120000656
+        }
+      }
+    },
+    "alma_high/rect": {
+      "geometry": {
+        "instrument": "alma_high",
+        "pixel_scale_arcsec": 0.025,
+        "mask_radius_arcsec": 3.5,
+        "real_space_shape": [
+          800,
+          800
+        ],
+        "image_pixels_masked": 61572,
+        "extent_shape": [
+          280,
+          280
+        ],
+        "extent_cells": 78400,
+        "visibilities": 5000000
+      },
+      "mesh": {
+        "name": "rect",
+        "source_pixels": 784,
+        "p_per_pixel": 4,
+        "nnz": 246288,
+        "nnz_per_source_column": 314.14285714285717
+      },
+      "pin_anchor": "direct_conv",
+      "anchor_first_call_s": 23.39126109999779,
+      "control": {
+        "kernel": "direct_conv",
+        "scale": 1.01,
+        "pin_passed": false,
+        "max_abs_diff_over_scale": 0.010000000000000037,
+        "non_vacuous": true
+      },
+      "kernels": {
+        "symmetric": {
+          "status": "measured: single round",
+          "median_s": 63.139455099997576,
+          "min_s": 63.139455099997576,
+          "all_rounds_s": [
+            63.139455099997576
+          ],
+          "rounds_timed": 1,
+          "rounds_discarded": 0,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 1.6152625903487206e-09,
+            "max_abs_diff_over_scale": 1.0491720595441543e-14,
+            "rtol": 1e-10,
+            "atol": 1.539559289303341e-05
+          },
+          "operations": 30328889472.0
+        },
+        "two_stage": {
+          "status": "measured",
+          "median_s": 30.6292012000049,
+          "min_s": 30.15563619999739,
+          "all_rounds_s": [
+            32.145472500000324,
+            31.067273900000146,
+            30.6292012000049,
+            30.15563619999739
+          ],
+          "rounds_timed": 3,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 2.0372681319713593e-10,
+            "max_abs_diff_over_scale": 1.3232800751007352e-15,
+            "rtol": 1e-10,
+            "atol": 1.539559289303341e-05
+          },
+          "operations": 15357534528
+        },
+        "direct_conv": {
+          "status": "measured",
+          "median_s": 17.947507299999415,
+          "min_s": 17.83745099999942,
+          "all_rounds_s": [
+            19.403884899998957,
+            17.947507299999415,
+            18.265228000003844,
+            17.83745099999942
+          ],
+          "rounds_timed": 3,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 0.0,
+            "max_abs_diff_over_scale": 0.0,
+            "rtol": 1e-10,
+            "atol": 0.0,
+            "note": "anchor"
+          },
+          "operations": 19502068992
+        },
+        "rfft2_numpy": {
+          "status": "measured",
+          "median_s": 4.841417299998284,
+          "min_s": 4.826080200000433,
+          "all_rounds_s": [
+            5.718473300003097,
+            4.826080200000433,
+            4.850142199997208,
+            4.841417299998284
+          ],
+          "rounds_timed": 3,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 2.0372681319713593e-10,
+            "max_abs_diff_over_scale": 1.3232800751007352e-15,
+            "rtol": 1e-10,
+            "atol": 1.539559289303341e-05
+          },
+          "operations": 5351068180.172184
+        },
+        "fft2_numpy": {
+          "status": "measured",
+          "median_s": 6.93604349999805,
+          "min_s": 6.785355100000743,
+          "all_rounds_s": [
+            7.752515599997423,
+            6.93604349999805,
+            8.239652600001136,
+            6.785355100000743
+          ],
+          "rounds_timed": 3,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 2.0372681319713593e-10,
+            "max_abs_diff_over_scale": 1.3232800751007352e-15,
+            "rtol": 1e-10,
+            "atol": 1.539559289303341e-05
+          },
+          "operations": 10481462312.344368
+        },
+        "fft2_jax": {
+          "status": "measured",
+          "median_s": 6.281695400000899,
+          "min_s": 6.246603999999934,
+          "all_rounds_s": [
+            7.529381400003331,
+            6.246603999999934,
+            6.669435300005716,
+            6.281695400000899
+          ],
+          "rounds_timed": 3,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 1.1641532182693481e-10,
+            "max_abs_diff_over_scale": 7.561600429147058e-16,
+            "rtol": 1e-10,
+            "atol": 1.539559289303341e-05
+          },
+          "operations": 10481462312.344368
+        },
+        "reference": {
+          "status": "skipped: extrapolated",
+          "extrapolated_seconds": 209.13164600334173,
+          "scaling": "O(N^2) in masked pixels, from the alma measurement",
+          "budget_seconds": 180.0,
+          "median_s": null,
+          "operations": 60657778944
+        },
+        "hoisted": {
+          "status": "skipped: extrapolated",
+          "extrapolated_seconds": 270.076114584441,
+          "scaling": "O(N^2) in masked pixels, from the alma measurement",
+          "budget_seconds": 180.0,
+          "median_s": null,
+          "operations": 60657778944
+        },
+        "source_loop": {
+          "status": "skipped: extrapolated",
+          "extrapolated_seconds": 251.20701743855497,
+          "scaling": "O(N^2) in masked pixels, from the alma measurement",
+          "budget_seconds": 180.0,
+          "median_s": null,
+          "operations": 30328889472.0
+        }
+      }
+    }
+  },
+  "kill_gate": "passed",
+  "kill_gate_detail": {
+    "rule": "best numba kernel must beat rfft2_numpy by >1.3x at sma or alma",
+    "threshold": 1.3,
+    "per_cell": {
+      "sma/delaunay": {
+        "best_numba_kernel": "direct_conv",
+        "best_numba_s": 0.21348494999983814,
+        "rfft2_numpy_s": 1.2659630999987712,
+        "speedup_rfft2_over_numba": 5.929987570551138
+      },
+      "sma/rect": {
+        "best_numba_kernel": "direct_conv",
+        "best_numba_s": 0.2597914999969362,
+        "rfft2_numpy_s": 0.7360748999999487,
+        "speedup_rfft2_over_numba": 2.8333294199718986
+      },
+      "alma/delaunay": {
+        "best_numba_kernel": "direct_conv",
+        "best_numba_s": 2.852180950001639,
+        "rfft2_numpy_s": 4.395138399999269,
+        "speedup_rfft2_over_numba": 1.5409746005058842
+      },
+      "alma/rect": {
+        "best_numba_kernel": "direct_conv",
+        "best_numba_s": 2.684256650001771,
+        "rfft2_numpy_s": 2.6556922499985376,
+        "speedup_rfft2_over_numba": 0.9893585436388079
+      }
+    },
+    "kill_gate": "passed"
+  }
+}
