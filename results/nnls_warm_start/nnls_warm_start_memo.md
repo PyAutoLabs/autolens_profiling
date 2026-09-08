@@ -4,8 +4,8 @@ Measurement leg of [PyAutoArray#498](https://github.com/PyAutoLabs/PyAutoArray/i
 phase 3a — the default for `aa.Settings(nnls_warm_start_memo=...)`, which seeds the numba-CPU
 fnnls active-set loop from the **previous evaluation's** final passive set instead of the sign
 of the unconstrained dense solve. Script:
-`scripts/imaging/likelihood_breakdown/delaunay_numba_nnls_iterations.py`; results:
-`results/breakdown/imaging/delaunay_numba_nnls_iterations_{euclid,hst}_v2026.8.17.1.{json,png}`.
+`scripts/misc/nnls_warm_start/delaunay_numba_nnls_iterations.py`; results:
+`results/nnls_warm_start/delaunay_numba_nnls_iterations_{euclid,hst}_v2026.8.17.1.{json,png}`.
 Laptop CPU fp64, `OMP_NUM_THREADS=1`, `AUTOARRAY_NUMBA_OPERATED_MEMO=0`, v2026.8.17.1, Delaunay
 Hilbert-1250 + MGE-60 linear lens light, sparse-operator numba path, n = 1310.
 

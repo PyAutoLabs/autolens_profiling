@@ -114,7 +114,6 @@ If, on the other hand, the two numbers agree closely, the per-step bars are a fa
 | `interferometer/delaunay.py` | Interferometer | DelaunayBrightnessImage + sparse-DFT | 11-step pipeline. The transform-mapping-matrix step is the interferometer-specific replacement for imaging's PSF convolution. |
 | `datacube/delaunay.py` | Datacube | DelaunayBrightnessImage × N channels | 8-step pipeline. Channel-invariant steps profiled once; channel-variant steps profiled on channel 0 and multiplied by `N_channels` for the cube cost. |
 | `imaging/delaunay_numba.py` | Imaging | DelaunayBrightnessImage (numba CPU, `use_jax=False`) | 18-step pipeline; sparse-operator CPU path, MGE-60 linear lens light. |
-| `imaging/delaunay_numba_nnls_iterations.py` | Imaging | as `delaunay_numba.py` | **Diagnostic, not a breakdown.** A/B of the cross-evaluation NNLS warm-start memo (`aa.Settings(nnls_warm_start_memo=...)`, PyAutoArray#498) over two 30-instance sequences (random walk / i.i.d.), reporting active-set iterations, solve and evaluation time, and memo-vs-no-memo parity. Findings: [`results/notes/nnls_warm_start_memo.md`](../../../results/notes/nnls_warm_start_memo.md). |
 
 Four cells are intentionally absent from this package:
 - `interferometer/mge` — full-pipeline-by-design, no per-step decomposition (see runtime).
@@ -122,6 +121,12 @@ Four cells are intentionally absent from this package:
 - `point_source/{image_plane,source_plane}` — single short JIT shots.
 
 These four live only in `likelihood_runtime/`.
+
+`imaging/delaunay_numba_nnls_iterations.py` used to sit in this package. It is a
+diagnostic A/B of the NNLS cross-evaluation warm-start memo, not a per-step
+breakdown, and it moved to [`scripts/misc/nnls_warm_start/`](../nnls_warm_start/README.md)
+(results under `results/nnls_warm_start/`) on 2026-09-08 so no default cell or README
+table cites a memo-on number.
 
 ## How to read the output
 

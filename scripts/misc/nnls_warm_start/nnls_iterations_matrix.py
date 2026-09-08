@@ -20,9 +20,10 @@ it replaces.
 
 Usage
 -----
-``python nnls_iterations_matrix.py [--version 2026.8.17.1] [--results-dir ...] [--out ...]``
+``python scripts/misc/nnls_warm_start/nnls_iterations_matrix.py [--version 2026.8.17.1]
+[--results-dir ...] [--out ...]``
 
-Writes ``results/notes/nnls_warm_start_memo_matrix.md`` and prints the same table.
+Writes ``results/nnls_warm_start/nnls_warm_start_memo_matrix.md`` and prints the same table.
 """
 
 import argparse
@@ -440,12 +441,12 @@ def main() -> int:
     args = parser.parse_args()
 
     results_dir = (
-        Path(args.results_dir) if args.results_dir else ROOT / "results" / "breakdown" / "imaging"
+        Path(args.results_dir) if args.results_dir else ROOT / "results" / "nnls_warm_start"
     )
     out_path = (
         Path(args.out)
         if args.out
-        else ROOT / "results" / "notes" / "nnls_warm_start_memo_matrix.md"
+        else ROOT / "results" / "nnls_warm_start" / "nnls_warm_start_memo_matrix.md"
     )
 
     cells, version = load_cells(results_dir, args.version)
@@ -458,8 +459,8 @@ def main() -> int:
     header = [
         "# NNLS warm-start memo: model robustness matrix",
         "",
-        f"Aggregated from `results/breakdown/imaging/delaunay_numba_nnls_iterations_*_v{version}.json`",
-        "by `scripts/imaging/likelihood_breakdown/nnls_iterations_matrix.py`. Companion to",
+        f"Aggregated from `results/nnls_warm_start/delaunay_numba_nnls_iterations_*_v{version}.json`",
+        "by `scripts/misc/nnls_warm_start/nnls_iterations_matrix.py`. Companion to",
         "[`nnls_warm_start_memo.md`](./nnls_warm_start_memo.md), which measured the single fiducial.",
         "",
         "Each model variant changes exactly ONE thing about that fiducial (Delaunay Hilbert-1250 +",
