@@ -48,6 +48,22 @@ if _misc_dir not in _sys.path:
 
 _sys.path.insert(0, str(_profiling_root()))
 
+# The CLI is parsed and the thread environment pinned BEFORE numpy is imported:
+# OpenBLAS / MKL read their thread-count variables once, when the shared library
+# loads, so pinning after `import numpy` has no effect on the pools the timings
+# actually run through. Both modules are stdlib-only at import time.
+from _production_config import (  # noqa: E402
+    observe_thread_env as _observe_thread_env,
+)
+from _production_config import (
+    pin_thread_env as _pin_thread_env,
+)
+from _profile_cli import parse_profile_cli as _parse_profile_cli  # noqa: E402
+
+_cli = _parse_profile_cli()
+
+thread_env = _pin_thread_env(1) if _cli.variant == "production" else _observe_thread_env()
+
 import json
 import os
 
@@ -69,19 +85,36 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 from simulators.imaging import INSTRUMENTS  # noqa: E402
 
 from _adapt_image_util import adapt_image_for_dataset  # noqa: E402
+from _production_config import (  # noqa: E402
+    adapt_image_capped,
+    adapt_images_for,
+    analysis_settings,
+    apply_production_over_sampling,
+    iid_instances,
+    mge_lens_bulge,
+    positions_likelihood,
+    preset_for,
+    regularization_model,
+    timing_summary,
+    witness_verdict,
+)
 from _profile_cli import (  # noqa: E402
     auto_simulate_if_missing,
     check_pinned,
     delaunay_regularization,
     device_info_dict,
-    parse_profile_cli,
     record_pinned_check,
     resolve_output_paths,
 )
 
-_cli = parse_profile_cli()
-
 instrument = _cli.instrument or "euclid"  # default; override via --instrument
+
+preset = preset_for("delaunay_numba", instrument=instrument, variant=_cli.variant)
+
+print(f"\n--- Preset [{preset.name} / {preset.variant}] ---")
+print(f"  {preset.provenance}")
+if thread_env["overridden"]:
+    print(f"  WARNING: thread env overridden from {thread_env['overridden']} to 1.")
 
 if _cli.use_mixed_precision:
     print("NOTE: --use-mixed-precision has no effect on the numba CPU path (fp64 numpy).")
@@ -140,17 +173,19 @@ with timer.section("mask_and_oversample"):
 
     dataset = dataset.apply_mask(mask=mask)
 
-    over_sample_size = al.util.over_sample.over_sample_size_via_radial_bins_from(
-        grid=dataset.grid,
-        sub_size_list=[4, 2, 1],
-        radial_list=[0.3, 0.6],
-        centre_list=[(0.0, 0.0)],
+    # The source adapt image, capped at the preset's S/N if it has one — the
+    # same map that drives the Hilbert mesh, the adaptive regularization AND the
+    # pixelization over-sampling rule, exactly as production.
+    adapt_image = adapt_image_capped(
+        adapt_image_for_dataset(dataset_path=dataset_path, dataset=dataset),
+        preset,
     )
 
-    dataset = dataset.apply_over_sampling(
-        over_sample_size_lp=over_sample_size,
-        over_sample_size_pixelization=1,
-    )
+    # Light-profile radial bins, then the S/N-driven pixelization map, then the
+    # sparse CPU operator — production's order. `apply_over_sampling` returns a
+    # fresh `Imaging` that drops the precomputed operator, so it is re-applied
+    # last or the fit silently falls back to the dense inversion.
+    dataset = apply_production_over_sampling(dataset, adapt_image, preset)
 
 with timer.section("apply_sparse_operator_cpu"):
     dataset = dataset.apply_sparse_operator_cpu()
@@ -170,17 +205,29 @@ print(f"  sparse operator memory: {sparse_operator_nbytes / 1024**2:.1f} MB")
 
 print("\n--- Adapt image + Hilbert image mesh ---")
 
-n_mesh_vertices = 1250  # production campaign fiducial (user-set 2026-08-20)
-
-with timer.section("adapt_image_build"):
-    adapt_image = adapt_image_for_dataset(dataset_path=dataset_path, dataset=dataset)
-
 with timer.section("image_mesh_hilbert"):
-    image_mesh = al.image_mesh.Hilbert(pixels=n_mesh_vertices, weight_power=1.0, weight_floor=0.0)
+    image_mesh = al.image_mesh.Hilbert(
+        pixels=preset.hilbert_pixels,
+        weight_power=preset.hilbert_weight_power,
+        weight_floor=preset.hilbert_weight_floor,
+    )
     image_plane_mesh_grid = image_mesh.image_plane_mesh_grid_from(
         mask=dataset.mask, adapt_data=adapt_image
     )
 
+    # Production appends `edge_pixels` points on the mask edge and zeroes
+    # exactly those vertices, so the reconstruction cannot put flux outside the
+    # data (Euclid initial_lens_model.py:448-455; subhalo
+    # delaunay_adapt_split.py:49-56).
+    if preset.edge_pixels:
+        image_plane_mesh_grid = al.image_mesh.append_with_circle_edge_points(
+            image_plane_mesh_grid=image_plane_mesh_grid,
+            centre=dataset.mask.mask_centre,
+            radius=mask_radius + dataset.mask.pixel_scale / 2.0,
+            n_points=preset.edge_pixels,
+        )
+
+n_mesh_vertices = int(image_plane_mesh_grid.shape[0])
 hilbert_mesh_s = timer.records[-1][1]
 print(f"  Mesh vertices placed: {image_plane_mesh_grid.shape[0]}")
 
@@ -191,11 +238,10 @@ print(f"  Mesh vertices placed: {image_plane_mesh_grid.shape[0]}")
 print("\n--- Model construction ---")
 
 with timer.section("model_build"):
-    lens_bulge = al.model_util.mge_model_from(
-        mask_radius=mask_radius,
-        total_gaussians=60,
-        centre_prior_is_uniform=True,
-    )
+    # Linear MGE lens light. Basis structure matters, not just the Gaussian
+    # count: production is 20x2 (Euclid) / 30x2 (subhalo), the pre-2026-09-08
+    # cell was 60x1.
+    lens_bulge = mge_lens_bulge(preset, mask_radius=mask_radius)
 
     mass = af.Model(al.mp.Isothermal)
     mass.centre.centre_0 = af.GaussianPrior(mean=0.0, sigma=0.005)
@@ -213,10 +259,25 @@ with timer.section("model_build"):
 
     mesh = al.mesh.Delaunay(
         pixels=n_mesh_vertices,
-        zeroed_pixels=0,
+        zeroed_pixels=preset.edge_pixels,
     )
-    reg_scheme, regularization, reg_provenance = delaunay_regularization(_cli)
-    pixelization = al.Pixelization(mesh=mesh, regularization=regularization)
+
+    # Production samples the regularization coefficients, so the production
+    # preset hands back a free `af.Model(al.reg.AdaptSplit)` with the production
+    # priors. `--variant legacy` keeps #232's `--regularization` flag, which
+    # picks between the fixed `AdaptSplit(0.1, 10.0, 0.1)` and `ConstantSplit(1.0)`
+    # the historic rows were measured with.
+    if preset.variant == "production":
+        regularization = regularization_model(preset)
+        reg_scheme = preset.regularization
+        reg_provenance = preset.as_json()["regularization"]
+    else:
+        reg_scheme, regularization, reg_provenance = delaunay_regularization(_cli)
+
+    if isinstance(regularization, af.Model):
+        pixelization = af.Model(al.Pixelization, mesh=mesh, regularization=regularization)
+    else:
+        pixelization = al.Pixelization(mesh=mesh, regularization=regularization)
 
     source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
 
@@ -225,27 +286,77 @@ with timer.section("model_build"):
 print(f"  Total free parameters: {model.total_free_parameters}")
 print(f"  Regularization: {reg_scheme} ({reg_provenance})")
 
-with timer.section("instance_from_vector"):
-    param_vector = model.physical_values_from_prior_medians
-    instance = model.instance_from_vector(vector=param_vector)
+# The instance sequence. Production's Nautilus pool hands each worker draws
+# that are, from that worker's point of view, unrelated — so the profiled stream
+# is `--n-instances` iid draws from the central 20 % of every prior. Repeating
+# one instance instead lets the NNLS cross-evaluation warm-start memo seed
+# itself from a 100 %-correct previous solve, which production never gets. The
+# legacy variant keeps the single prior-median instance the historic rows used.
+n_instances = max(int(_cli.n_instances), 2 + int(_cli.cold_evals))
+n_cold = int(_cli.cold_evals)
 
-# The adapt image is passed alongside the mesh grid: it is the per-pixel signal
-# ``AdaptSplit`` weights its regularization by. Passed unconditionally —
-# ``ConstantSplit`` ignores it, so the two ``--regularization`` legs differ only
-# in the scheme.
-adapt_images = al.AdaptImages(
-    galaxy_image_dict={
-        instance.galaxies.source: adapt_image,
-    },
-    galaxy_name_image_dict={
-        "('galaxies', 'source')": adapt_image,
-    },
-    galaxy_image_plane_mesh_grid_dict={
-        instance.galaxies.source: image_plane_mesh_grid,
-    },
-    galaxy_name_image_plane_mesh_grid_dict={
-        "('galaxies', 'source')": image_plane_mesh_grid,
-    },
+with timer.section("instance_sequence"):
+    if preset.sequence == "iid":
+        instances = iid_instances(model, n_instances, preset)
+    else:
+        _median = model.instance_from_vector(vector=model.physical_values_from_prior_medians)
+        instances = [_median] * n_instances
+
+instance = instances[0]
+
+# `--memo` only applies to the production variant: the legacy variant must
+# leave both memo gates untouched (`library_default`), because the historic rows
+# it exists to reproduce were measured with the library default (`true`).
+memo = _cli.memo if preset.variant == "production" else preset.memo
+
+settings, memo_provenance = analysis_settings(preset, memo)
+print(
+    f"  memo: requested {memo_provenance['requested']}, "
+    f"Settings.nnls_warm_start_memo={memo_provenance['settings_nnls_warm_start_memo']}, "
+    f"AUTOARRAY_NNLS_WARM_START={memo_provenance['env_AUTOARRAY_NNLS_WARM_START']}"
+)
+
+# The Euclid stage carries a positions penalty; the subhalo `source_pix[2]`
+# stage does not. It is a per-evaluation cost (the positions are ray-traced
+# every call), so it belongs inside the timed likelihood.
+positions_lh = positions_likelihood(
+    preset,
+    dataset_path=dataset_path,
+    tracer=al.Tracer(galaxies=list(instance.galaxies)),
+)
+positions_likelihood_list = [positions_lh] if positions_lh is not None else None
+if positions_lh is not None:
+    print(
+        f"  positions penalty: {len(positions_lh.positions)} images, "
+        f"threshold {positions_lh.threshold:.4f}"
+    )
+
+
+def analysis_for(one_instance):
+    """A fresh `AnalysisImaging` for one instance of the sequence.
+
+    The adapt-image dicts are keyed on the instance's own source-galaxy object,
+    so they cannot be shared across the sequence. The adapt image is passed
+    unconditionally — `ConstantSplit` ignores it, so the variants differ only in
+    the scheme.
+    """
+    return al.AnalysisImaging(
+        dataset=dataset,
+        adapt_images=adapt_images_for(
+            one_instance,
+            image_plane_mesh_grid=image_plane_mesh_grid,
+            adapt_image=adapt_image,
+        ),
+        positions_likelihood_list=positions_likelihood_list,
+        settings=settings,
+        use_jax=False,
+    )
+
+
+adapt_images = adapt_images_for(
+    instance,
+    image_plane_mesh_grid=image_plane_mesh_grid,
+    adapt_image=adapt_image,
 )
 
 n_image_pixels = dataset.data.shape[0]
@@ -267,12 +378,7 @@ print(f"  OMP_NUM_THREADS:         {os.environ.get('OMP_NUM_THREADS', '(unset)')
 
 print("\n--- Likelihood evaluation (use_jax=False) ---")
 
-analysis = al.AnalysisImaging(
-    dataset=dataset,
-    adapt_images=adapt_images,
-    settings=al.Settings(use_border_relocator=True),
-    use_jax=False,
-)
+analysis = analysis_for(instance)
 
 from autoarray.inversion.inversion.imaging_numba.sparse import (  # noqa: E402
     InversionImagingSparseNumba,
@@ -286,41 +392,62 @@ assert isinstance(fit_check.inversion, InversionImagingSparseNumba), (
 print(f"  inversion class: {type(fit_check.inversion).__name__} (numba sparse path confirmed)")
 del fit_check
 
-# First call: warm-up only (lazy numba compile; cold-cache hazard — see the
-# pixelization_numba.py sibling).
-with timer.section("first_call_incl_numba_compile"):
-    log_likelihood_first = analysis.log_likelihood_function(instance=instance)
+# One timed evaluation per instance of the sequence. Instance 0 is warm-up only
+# and is discarded: it pays the lazy numba compilation of every jitted kernel,
+# and on a COLD numba cache the first call of `psf_weighted_data_from` returns
+# uninitialized-memory garbage (~1e299). Instances 1..n_cold are the cold
+# evaluations — the quantity comparable to PyAutoFit's logged "Log Likelihood
+# Function Evaluation Time" — and the rest are warm.
+per_eval_s: list[float] = []
+log_likelihoods: list[float] = []
 
-first_call_s = timer.records[-1][1]
-first_call_finite = bool(np.isfinite(float(log_likelihood_first)))
-print(f"  log_likelihood (first call) = {log_likelihood_first}")
+for _index, _one_instance in enumerate(instances):
+    _analysis = analysis if _index == 0 else analysis_for(_one_instance)
+    _start = time.perf_counter()
+    _ll = _analysis.log_likelihood_function(instance=_one_instance)
+    per_eval_s.append(time.perf_counter() - _start)
+    log_likelihoods.append(float(_ll))
+    if _index == 0:
+        print(f"  [instance 0 warm-up] {per_eval_s[0]:.4f} s (log_likelihood = {_ll})")
+    elif _index <= n_cold:
+        print(f"  [instance {_index} cold] {per_eval_s[_index]:.4f} s")
+
+first_call_s = per_eval_s[0]
+first_call_finite = bool(np.isfinite(log_likelihoods[0]))
 if not first_call_finite:
     print("  WARNING: first call non-finite (known cold-numba-cache first-call hazard).")
 
-n_repeats = 10
-
-with timer.section(f"steady_x{n_repeats}"):
-    log_likelihoods = [
-        analysis.log_likelihood_function(instance=instance) for _ in range(n_repeats)
-    ]
+timing = timing_summary(per_eval_s, n_cold=n_cold)
+per_call = timing["warm_iid_median_s"]  # headline: the warm iid MEDIAN
 log_likelihood = log_likelihoods[-1]
 
-per_call = timer.records[-1][1] / n_repeats
-print(f"    -> per-call avg: {per_call:.6f} s")
+print(f"  cold eval median:   {timing['cold_eval_median_s']:.6f} s (n = {timing['n_cold']})")
+print(f"  warm iid median:    {timing['warm_iid_median_s']:.6f} s (n = {timing['n_warm']})")
+print(f"  warm iid mean:      {timing['warm_iid_mean_s']:.6f} s")
 
-# NOTE: the Delaunay numba likelihood is bistable at the ~1e-8 relative level —
-# repeats alternate between two values (observed euclid: 7193.174445 vs
-# 7193.174517, i.e. summation-order nondeterminism somewhere in the pipeline).
-# Asserted at 1e-7 and the spread recorded in the JSON.
-_ll_arr = np.array([float(ll) for ll in log_likelihoods])
-log_likelihood_spread = float(np.max(_ll_arr) - np.min(_ll_arr))
-np.testing.assert_allclose(
-    _ll_arr,
-    float(log_likelihood),
-    rtol=1e-7,
-    err_msg="numba CPU likelihood is not deterministic across steady-state repeats",
-)
-print(f"  repeat spread: {log_likelihood_spread:.3e}")
+witness = witness_verdict(timing["cold_eval_median_s"], instrument)
+if witness.get("verdict") in ("PASS", "FAIL"):
+    print(
+        f"  witness vs production job {witness['job']} "
+        f"({witness['reference_cold_eval_s']} s, x{witness['factor']}): {witness['verdict']}"
+    )
+
+# NOTE: the Delaunay numba likelihood is bistable at the ~1e-8 relative level
+# (summation-order nondeterminism). Under an iid sequence every draw is a
+# different model, so there is no repeat-spread to measure; the legacy variant,
+# which does repeat one instance, still asserts determinism at 1e-7.
+_ll_arr = np.array(log_likelihoods[1:])
+if preset.sequence == "iid":
+    log_likelihood_spread = None
+else:
+    log_likelihood_spread = float(np.max(_ll_arr) - np.min(_ll_arr))
+    np.testing.assert_allclose(
+        _ll_arr,
+        float(log_likelihood),
+        rtol=1e-7,
+        err_msg="numba CPU likelihood is not deterministic across repeats of one instance",
+    )
+    print(f"  repeat spread: {log_likelihood_spread:.3e}")
 
 # ===================================================================
 # Summary + JSON
@@ -334,8 +461,10 @@ print("=" * 70)
 print(f"  Sparse operator setup:      {sparse_operator_setup_s:>12.4f} s (one-off)")
 print(f"  Sparse operator memory:     {sparse_operator_nbytes / 1024**2:>12.1f} MB")
 print(f"  Hilbert image mesh:         {hilbert_mesh_s:>12.4f} s (one-off)")
-print(f"  First call (numba compile): {first_call_s:>12.4f} s")
-print(f"  Steady-state per call:      {per_call:>12.6f} s")
+print(f"  Warm-up (numba compile):    {first_call_s:>12.4f} s (discarded)")
+print(f"  Cold eval median:           {timing['cold_eval_median_s']:>12.6f} s")
+print(f"  Warm iid median per call:   {per_call:>12.6f} s")
+print(f"  Warm iid mean per call:     {timing['warm_iid_mean_s']:>12.6f} s")
 print("=" * 70)
 
 likelihood_summary = {
@@ -343,6 +472,7 @@ likelihood_summary = {
     "device": device_info_dict(),
     "instrument": instrument,
     "configuration": {
+        **preset.as_json(),
         "pixel_scale_arcsec": pixel_scale,
         "mask_radius_arcsec": mask_radius,
         "image_pixels_masked": int(n_image_pixels),
@@ -351,27 +481,40 @@ likelihood_summary = {
         "source_pixels": int(n_source_pixels),
         "inversion_path": "sparse_numba",
         "use_jax": False,
-        "mesh": "delaunay_hilbert_1250",
-        "lens_light": "mge_60_linear",
+        "n_instances": n_instances,
+        "thread_env": thread_env,
+        "memo_provenance": memo_provenance,
         "omp_num_threads": os.environ.get("OMP_NUM_THREADS", None),
     },
     # Regularization scheme + coefficients. Pre-2026-09-08 rows carry the flat
     # string ``configuration.regularization = "constant_split"`` instead.
     "regularization": reg_provenance,
-    "full_pipeline_single_jit": per_call,  # headline key aggregate.py reads
+    # Headline key aggregate.py reads. Since 2026-09-08 it is the warm iid
+    # MEDIAN, not the arithmetic mean of ten repeats of one instance — the
+    # pre-#235 rows are a different quantity and are not comparable.
+    "full_pipeline_single_jit": per_call,
+    **timing,
+    "witness": witness,
     "first_call_incl_numba_compile_s": first_call_s,
     "first_call_finite": first_call_finite,
     "sparse_operator_setup_s": sparse_operator_setup_s,
     "sparse_operator_nbytes": sparse_operator_nbytes,
     "hilbert_image_mesh_s": hilbert_mesh_s,
     "log_likelihood": float(log_likelihood),
+    "log_likelihood_sequence": log_likelihoods,
     "log_likelihood_repeat_spread": log_likelihood_spread,
 }
 
 dict_path, chart_path = resolve_output_paths(
     _cli,
     default_dir=_workspace_root / "results" / "runtime" / "imaging" / "delaunay_numba",
-    default_basename=f"delaunay_numba_likelihood_summary_{instrument}_v{al_version}",
+    # `--variant legacy` writes its own basename so a legacy row can never
+    # overwrite (or be mistaken for) the production row of the same instrument.
+    default_basename=(
+        f"delaunay_numba_likelihood_summary_{instrument}"
+        f"{'' if preset.variant == 'production' else '_' + preset.variant}"
+        f"_v{al_version}"
+    ),
 )
 dict_path.write_text(json.dumps(likelihood_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")
@@ -384,31 +527,47 @@ print(f"  Bar chart path:        {chart_path} (no per-step chart in runtime vari
 
 _pinned_drift: list = []
 
-# One pin per ``--regularization`` scheme, nested under the instrument. A
-# missing instrument *or* scheme resolves to None and skips the check.
-# Delaunay repeats are bistable at the ~1e-8 relative level (summation-order
-# nondeterminism) — rtol=1e-6 covers it.
+# Keyed by variant, then instrument, then (legacy only) `--regularization`.
 #
-# constant_split: pinned 2026-08-20 (v2026.8.17.1, 1250-vertex fiducial) on a
-#   4-core cloud container (autoarray 2026.8.20.1), after that machine
-#   reproduced the earlier 1500-vertex euclid pin exactly — so the pins are
-#   expected hardware-independent.
-# adapt_split:    pinned 2026-09-08 from this script's first CPU run per
-#   instrument (WSL, numba sparse path, OMP_NUM_THREADS=1),
-#   PyAutoLens 08a05858a / PyAutoNerves 0e7163b / PyAutoFit 08207bad0 /
-#   PyAutoArray 47a00e8c / PyAutoGalaxy ec5ce75d.
-EXPECTED_LOG_LIKELIHOOD: dict[str, dict[str, float | None]] = {
-    "euclid": {
-        "constant_split": 7215.3687893658935,
-        "adapt_split": 5579.104036561161,
+# Every pre-2026-09-08 pin is GONE, not moved: autolens_profiling#235 replaced
+# this cell's fiducial with the production configuration per instrument (Euclid
+# `vis_pix`: Hilbert 500 + 30 zeroed edge points, weights 3.5/0.01, free
+# AdaptSplit sampled from the production priors, MGE 20x2, the S/N>3 4/2
+# pixelization map, a positions penalty; HST `source_pix[2]`: Hilbert 1250 + 30,
+# S/N-3-capped adapt image, free AdaptSplit, MGE 30x2), and the stream became
+# iid rather than one prior-median draw repeated. The old values —
+#
+#   constant_split  euclid 7215.3687893658935   hst 29090.527192092646
+#   adapt_split     euclid 5579.104036561161    hst 29212.44050977029  (#232)
+#
+# describe a model that no longer exists here; they are recorded in
+# `results/notes/production_representative_cells.md`. The `legacy` variant is
+# the closest thing that remains, and it no longer reproduces them exactly
+# either: the light-profile radial bins moved from [4, 2, 1] to [4, 2, 2]
+# repo-wide (sub-size 1 causes gradient issues).
+#
+# Delaunay repeats are bistable at the ~1e-8 relative level (summation-order
+# nondeterminism) — rtol=1e-6 covers it. A missing entry resolves to None and
+# skips the check, printing the measured value to paste back in.
+# Pinned 2026-09-08 from this cell's first production run per instrument on the
+# local WSL host (fp64 numba sparse path, threads pinned to 1, memo off,
+# --n-instances 20 --cold-evals 3, seed 235): the value is the LAST instance of
+# the seeded iid sequence, so it is a deterministic function of
+# (model, seed, n_instances). Libraries: PyAutoArray 47a00e8c, PyAutoFit
+# 08207bad0, PyAutoGalaxy ec5ce75d, PyAutoLens 08a05858a, PyAutoNerves 0e7163b,
+# autolens 2026.8.17.1.
+EXPECTED_LOG_LIKELIHOOD: dict[str, dict] = {
+    "production": {
+        "euclid": 5817.7313621849535,
+        "hst": 23996.231413329842,
     },
-    "hst": {
-        "constant_split": 29090.527192092646,
-        "adapt_split": 29212.44050977029,
-    },
+    "legacy": {},
 }
 
-_pinned_expected = EXPECTED_LOG_LIKELIHOOD.get(instrument, {}).get(reg_scheme)
+if preset.variant == "production":
+    _pinned_expected = EXPECTED_LOG_LIKELIHOOD["production"].get(instrument)
+else:
+    _pinned_expected = EXPECTED_LOG_LIKELIHOOD["legacy"].get(instrument, {}).get(reg_scheme)
 
 if _pinned_expected is None:
     print(
