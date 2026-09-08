@@ -528,7 +528,12 @@ relocated_grid_raw = jnp.array(relocated_grid.array)
 
 print("\n--- Step 5: Overlay grid (source pixel centres) ---")
 
-from autoarray.inversion.mesh.mesh.rectangular_adapt_density import overlay_grid_from
+# `overlay_grid_from` lives in the RTU module after PyAutoArray split the old
+# `rectangular_adapt_density` into `rectangular_bilinear_adapt_density` /
+# `rectangular_rtu_adapt_density` (f9aceea3): `RectangularBilinearAdaptDensity`
+# subclasses `RectangularRTUAdaptDensity` and inherits this overlay, so the one
+# function serves both `--rect-mesh` families.
+from autoarray.inversion.mesh.mesh.rectangular_rtu_adapt_density import overlay_grid_from
 
 with timer.section("overlay_grid_eager"):
     mesh_grid = overlay_grid_from(
@@ -1043,20 +1048,24 @@ print(f"  Bar chart saved to:    {chart_path}")
 # the shared adaptive rectangular mapper, and bilinear gives 28370.240585918986
 # at 72fb01d1^ (the 2026-05-18 pin, to 1.3e-6) against the value below at
 # 72fb01d1.
-# NOT re-measured on 2026-09-08 when the light-profile radial bins moved from
-# [4, 2, 1] to [4, 2, 2] (autolens_profiling#235): this cell does not run on
-# `main` either, so no eager value could be taken. It raises at step 5 —
-# `from autoarray.inversion.mesh.mesh.rectangular_adapt_density import
-# overlay_grid_from` — a module PyAutoArray split into
-# `rectangular_bilinear_adapt_density` / `rectangular_rtu_adapt_density`. The
-# runtime sibling (`likelihood_runtime/pixelization.py`), which has no such
-# import, re-ran clean and its pins PASSED unchanged under [4, 2, 2], so these
-# values are likely still within rtol; they are left as measured rather than
-# guessed. Filed as a follow-up.
+# RE-MEASURED 2026-09-08 (autolens_profiling#237), one eager run per
+# `--rect-mesh` on the local WSL host. Two changes are folded into these values:
+# the light-profile radial bins moved from [4, 2, 1] to [4, 2, 2] repo-wide
+# (autolens_profiling#235, sub-size 1 causes gradient issues), and the step-5
+# import was repaired — the cell used to raise on `main` importing
+# `autoarray.inversion.mesh.mesh.rectangular_adapt_density`, a module
+# PyAutoArray split into `rectangular_bilinear_adapt_density` /
+# `rectangular_rtu_adapt_density`, so #235 could take no eager value here and
+# left the pins as previously measured. Both old pins in fact still PASSED at
+# `rtol=1e-4` (bilinear 28622.397322591198 -> 28621.128714095972, 4.4e-5; rtu
+# 28506.318157467784 -> 28505.343980143432, 3.4e-5); they are replaced by the
+# measured values so the pin describes what the cell computes today.
+# Libraries: PyAutoArray 35aa681f, PyAutoFit 74884c5e, PyAutoGalaxy f1225037,
+# PyAutoLens 08a05858, PyAutoNerves 0e7163bc; autolens 2026.8.17.1.
 EXPECTED_LOG_EVIDENCE_HST = {
     # 39x39 = 1521 source pixels, MGE-60 lens light, adapt_image=lensed_source
-    "bilinear": 28622.397322591198,
-    "rtu": 28506.318157467784,
+    "bilinear": 28621.128714095972,
+    "rtu": 28505.343980143432,
 }[_cli.rect_mesh]
 
 np.testing.assert_allclose(
