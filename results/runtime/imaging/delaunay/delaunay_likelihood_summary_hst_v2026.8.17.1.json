@@ -60,20 +60,13 @@
     "outer_coefficient": 10.0,
     "signal_scale": 0.1
   },
-  "steps": {
-    "Ray-trace data grid": 0.0025954900000215277,
-    "Ray-trace mesh grid": 0.0004659199999878183,
-    "Lens light images (pre-PSF)": 3.6749999708263204e-05,
-    "Blurred image (PSF convolution)": 0.001944290000028559,
-    "Profile-subtracted image": 0.0002037999998719897,
-    "Inversion setup (steps 5-8 combined)": 1.203248309999981,
-    "Data vector (D)": 0.00983181000010518,
-    "Curvature matrix (F)": 0.9937664800003404,
-    "Regularization matrix (H)": -0.09392032000032485,
-    "Regularized reconstruction": 1.1708813099998223,
-    "Mapped recon + log evidence": 0.049759160000030535
+  "full_pipeline_single_jit": 4.523518409999815,
+  "vmap": {
+    "batch_size": 3,
+    "batch_time": 11.323890290000055,
+    "per_call": 3.774630096666685,
+    "speedup_vs_single_jit": 1.2
   },
-  "total_step_by_step": 3.338812999999573,
-  "regularization_matrix_prefix_s": 0.11634508999995888,
-  "interpolator_prefix_s": 0.21026541000028373
+  "pinned_expected": 29140.29588193227,
+  "pinned_drift": []
 }

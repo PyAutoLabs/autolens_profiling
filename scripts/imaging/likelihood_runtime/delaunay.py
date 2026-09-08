@@ -86,6 +86,7 @@ import os as _smoke_os
 import sys as _smoke_sys
 
 from _adapt_image_util import adapt_image_for_dataset  # noqa: E402
+from _production_config import observe_thread_env as _observe_thread_env  # noqa: E402
 
 if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
@@ -233,7 +234,7 @@ with timer.section("mask_and_oversample"):
 
     over_sample_size = al.util.over_sample.over_sample_size_via_radial_bins_from(
         grid=dataset.grid,
-        sub_size_list=[4, 2, 1],
+        sub_size_list=[4, 2, 2],
         radial_list=[0.3, 0.6],
         centre_list=[(0.0, 0.0)],
     )
@@ -451,6 +452,24 @@ _early_summary = {
         "delaunay_vertices": int(n_source_pixels),
         "edge_zeroed_pixels": int(edge_pixels_total),
         "inversion_path": "sparse" if _cli.use_sparse_operator else "dense",
+        # Provenance only (autolens_profiling#235 decision 3): this cell's
+        # over-sampling and mesh are the A100-pinned JAX configuration and are
+        # deliberately NOT production-matched — GPU representativeness is a
+        # separate task. What it does record is the thread environment as found
+        # (never pinned here) and the NNLS cross-evaluation warm-start memo,
+        # which on the JAX path is inert (it seeds the numba fnnls loop only).
+        "thread_env": _observe_thread_env(),
+        "memo": "library_default (inert on the JAX path)",
+        "over_sample_size_lp_rule": {
+            "sub_size_list": [4, 2, 2],
+            "radial_list": [0.3, 0.6],
+            "centre": [0.0, 0.0],
+            "note": (
+                "Outer sub-size 1 retired repo-wide on 2026-09-08 "
+                "(autolens_profiling#235): it leaves the outermost annulus "
+                "un-over-sampled and causes gradient issues."
+            ),
+        },
     },
     # Regularization scheme + coefficients. A result JSON without this key is a
     # pre-2026-09-08 row and was measured with ``constant_split``.
@@ -632,6 +651,24 @@ likelihood_summary = {
         "delaunay_vertices": int(n_source_pixels),
         "edge_zeroed_pixels": int(edge_pixels_total),
         "inversion_path": "sparse" if _cli.use_sparse_operator else "dense",
+        # Provenance only (autolens_profiling#235 decision 3): this cell's
+        # over-sampling and mesh are the A100-pinned JAX configuration and are
+        # deliberately NOT production-matched — GPU representativeness is a
+        # separate task. What it does record is the thread environment as found
+        # (never pinned here) and the NNLS cross-evaluation warm-start memo,
+        # which on the JAX path is inert (it seeds the numba fnnls loop only).
+        "thread_env": _observe_thread_env(),
+        "memo": "library_default (inert on the JAX path)",
+        "over_sample_size_lp_rule": {
+            "sub_size_list": [4, 2, 2],
+            "radial_list": [0.3, 0.6],
+            "centre": [0.0, 0.0],
+            "note": (
+                "Outer sub-size 1 retired repo-wide on 2026-09-08 "
+                "(autolens_profiling#235): it leaves the outermost annulus "
+                "un-over-sampled and causes gradient issues."
+            ),
+        },
     },
     # Regularization scheme + coefficients. A result JSON without this key is a
     # pre-2026-09-08 row and was measured with ``constant_split``.
@@ -687,10 +724,17 @@ _pinned_expected = None
 #   local CPU (WSL, JAX fp64), PyAutoLens 08a05858a / PyAutoNerves 0e7163b /
 #   PyAutoFit 08207bad0 / PyAutoArray 47a00e8c / PyAutoGalaxy ec5ce75d — equal
 #   to the breakdown sibling's adapt_split pin, as it must be.
+# Re-pinned 2026-09-08 (autolens_profiling#235): the light-profile radial-bin
+# recipe retired its outer sub-size-1 bin ([4, 2, 1] -> [4, 2, 2]) repo-wide,
+# because sub-size 1 leaves the outermost annulus un-over-sampled and causes
+# gradient issues. That changes the over-sampled light-profile grid, so the
+# pinned evidences moved. Measured from one eager run per scheme on this host
+# (WSL, fp64). `constant_split` for delaunay_nn moved too but by 7.6e-5
+# relative, inside rtol=1e-4, so it PASSED and is left as measured in August.
 EXPECTED_LOG_EVIDENCE = {
     "hst": {
-        "constant_split": 29110.92085793,
-        "adapt_split": 29155.0010494252,
+        "constant_split": 29083.548352148413,  # was 29110.92085793
+        "adapt_split": 29140.29588193227,  # was 29155.0010494252
     }
 }
 

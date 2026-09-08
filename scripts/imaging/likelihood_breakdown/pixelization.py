@@ -220,7 +220,7 @@ with timer.section("mask_and_oversample"):
 
     over_sample_size = al.util.over_sample.over_sample_size_via_radial_bins_from(
         grid=dataset.grid,
-        sub_size_list=[4, 2, 1],
+        sub_size_list=[4, 2, 2],
         radial_list=[0.3, 0.6],
         centre_list=[(0.0, 0.0)],
     )
@@ -1043,6 +1043,16 @@ print(f"  Bar chart saved to:    {chart_path}")
 # the shared adaptive rectangular mapper, and bilinear gives 28370.240585918986
 # at 72fb01d1^ (the 2026-05-18 pin, to 1.3e-6) against the value below at
 # 72fb01d1.
+# NOT re-measured on 2026-09-08 when the light-profile radial bins moved from
+# [4, 2, 1] to [4, 2, 2] (autolens_profiling#235): this cell does not run on
+# `main` either, so no eager value could be taken. It raises at step 5 —
+# `from autoarray.inversion.mesh.mesh.rectangular_adapt_density import
+# overlay_grid_from` — a module PyAutoArray split into
+# `rectangular_bilinear_adapt_density` / `rectangular_rtu_adapt_density`. The
+# runtime sibling (`likelihood_runtime/pixelization.py`), which has no such
+# import, re-ran clean and its pins PASSED unchanged under [4, 2, 2], so these
+# values are likely still within rtol; they are left as measured rather than
+# guessed. Filed as a follow-up.
 EXPECTED_LOG_EVIDENCE_HST = {
     # 39x39 = 1521 source pixels, MGE-60 lens light, adapt_image=lensed_source
     "bilinear": 28622.397322591198,

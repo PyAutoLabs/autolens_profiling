@@ -3,7 +3,7 @@
   "device": {
     "backend": "cpu",
     "device": "cpu:0",
-    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
     "omp_num_threads": "1",
     "cpu_count": 8
   },
@@ -12,7 +12,7 @@
     "pixel_scale_arcsec": 0.05,
     "mask_radius_arcsec": 3.5,
     "image_pixels_masked": 15361,
-    "over_sampled_pixels": 17980,
+    "over_sampled_pixels": 62752,
     "mesh_shape": [
       28,
       28
@@ -27,24 +27,24 @@
     "n_repeats": 3,
     "n_steady": 10,
     "omp_num_threads": "1",
-    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0"
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
   },
-  "full_pipeline_single_jit": 2.6022102699997047,
+  "full_pipeline_single_jit": 2.546184300000095,
   "deflections_memo_off": {
     "first_call_s": [
-      11.118886800002656,
-      10.836940400000458,
-      9.292015699997137
+      20.633017800002563,
+      11.78735400000005,
+      10.662058599999
     ],
-    "first_call_median_s": 10.836940400000458,
-    "first_call_min_s": 9.292015699997137,
+    "first_call_median_s": 11.78735400000005,
+    "first_call_min_s": 10.662058599999,
     "steady_s": [
-      2.6415598700001284,
-      2.5053048300000227,
-      2.2549100600001113
+      2.664658260000215,
+      2.499270820000311,
+      2.70003398000008
     ],
-    "steady_median_s": 2.5053048300000227,
-    "steady_min_s": 2.2549100600001113,
+    "steady_median_s": 2.664658260000215,
+    "steady_min_s": 2.499270820000311,
     "wofz_compile": {
       "numpy": 0,
       "jnp": 240
@@ -61,23 +61,23 @@
       "entries": 0,
       "jax_folds": 0
     },
-    "log_likelihood": -56107.56407588691
+    "log_likelihood": -56107.03327291354
   },
   "deflections_memo_on": {
     "first_call_s": [
-      4.655174800001987,
-      5.36212180000075,
-      6.096579299999576
+      11.56574819999878,
+      5.001198300000397,
+      6.233408000000054
     ],
-    "first_call_median_s": 5.36212180000075,
-    "first_call_min_s": 4.655174800001987,
+    "first_call_median_s": 6.233408000000054,
+    "first_call_min_s": 5.001198300000397,
     "steady_s": [
-      2.594590690000041,
-      2.6106883899999955,
-      2.6022102699997047
+      2.3654207399998994,
+      2.546184300000095,
+      2.7549897600001714
     ],
-    "steady_median_s": 2.6022102699997047,
-    "steady_min_s": 2.594590690000041,
+    "steady_median_s": 2.546184300000095,
+    "steady_min_s": 2.3654207399998994,
     "wofz_compile": {
       "numpy": 180,
       "jnp": 0
@@ -90,19 +90,19 @@
       "hits": 30,
       "misses": 90,
       "evictions": 0,
-      "bytes": 18864480,
+      "bytes": 40355040,
       "entries": 90,
       "jax_folds": 90
     },
-    "log_likelihood": -56107.56407588643
+    "log_likelihood": -56107.03327291309
   },
   "deflections_memo_jaxpr_equations_off": 53369,
   "deflections_memo_jaxpr_equations_on": 13289,
   "deflections_memo_jaxpr_equations_delta": -40080,
-  "deflections_memo_max_relative_likelihood_difference": 8.558796134628221e-15,
+  "deflections_memo_max_relative_likelihood_difference": 8.040157280908163e-15,
   "controls": {
     "kill_switch": {
-      "log_likelihood": -56107.56407588691,
+      "log_likelihood": -56107.03327291354,
       "wofz": {
         "numpy": 0,
         "jnp": 240
@@ -117,7 +117,7 @@
       }
     },
     "free_grid_offset": {
-      "log_likelihood": -56107.56407588693,
+      "log_likelihood": -56107.03327291357,
       "wofz": {
         "numpy": 0,
         "jnp": 240
@@ -133,8 +133,16 @@
       "free_parameters": 6
     }
   },
-  "log_likelihood": -56107.56407588643,
-  "log_likelihood_memo_off": -56107.56407588691,
+  "log_likelihood": -56107.03327291309,
+  "log_likelihood_memo_off": -56107.03327291354,
   "pinned_expected": -56107.56407588643,
-  "pinned_drift": []
+  "pinned_drift": [
+    {
+      "label": "jax_mge_mass",
+      "expected": -56107.56407588643,
+      "got": -56107.03327291309,
+      "rel_diff": 9.460453008161982e-06,
+      "rtol": 1e-06
+    }
+  ]
 }

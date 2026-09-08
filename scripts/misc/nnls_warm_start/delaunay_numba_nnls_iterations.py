@@ -45,11 +45,11 @@ thing about the fiducial, so a pathological cell is attributable. ``--n-instance
 overrides the sequence length (30 for the fiducial, 20 for the matrix).
 
 ``nnls_iterations_matrix.py`` aggregates every JSON written here into
-``results/notes/nnls_warm_start_memo_matrix.md``.
+``results/nnls_warm_start/nnls_warm_start_memo_matrix.md``.
 
 Output
 ------
-``results/breakdown/imaging/delaunay_numba_nnls_iterations_<instrument>[_<model>]_v<version>.{json,png}``
+``results/nnls_warm_start/delaunay_numba_nnls_iterations_<instrument>[_<model>]_v<version>.{json,png}``
 (``--model fiducial`` keeps the original, unsuffixed filename.)
 """
 
@@ -194,7 +194,7 @@ dataset = dataset.apply_mask(mask=mask)
 
 over_sample_size = al.util.over_sample.over_sample_size_via_radial_bins_from(
     grid=dataset.grid,
-    sub_size_list=[4, 2, 1],
+    sub_size_list=[4, 2, 2],
     radial_list=[0.3, 0.6],
     centre_list=[(0.0, 0.0)],
 )
@@ -812,7 +812,7 @@ _model_suffix = "" if MODEL == "fiducial" else f"_{MODEL}"
 
 dict_path, chart_path = resolve_output_paths(
     _cli,
-    default_dir=_workspace_root / "results" / "breakdown" / "imaging",
+    default_dir=_workspace_root / "results" / "nnls_warm_start",
     default_basename=(f"delaunay_numba_nnls_iterations_{instrument}{_model_suffix}_v{al_version}"),
 )
 dict_path.write_text(json.dumps(summary_dict, indent=2))

@@ -58,17 +58,17 @@ Results are framed by **astronomy instrument** (HST, Euclid, JWST, …) rather t
 | `datacube/delaunay` | alma_high | hpc_a100_mp | dense (mapping) | — | v2026.7.6.649 |
 | `datacube/inversion` | alma_high | hpc_a100_fp64 | dense (mapping) | — | v2026.7.6.649 |
 | `datacube/inversion` | alma_high | hpc_a100_mp | dense (mapping) | — | v2026.7.6.649 |
-| `imaging/delaunay` | hst | local_cpu_fp64 | dense (mapping) | 3.15 s | v2026.8.17.1 |
+| `imaging/delaunay` | hst | local_cpu_fp64 | dense (mapping) | 3.34 s | v2026.8.17.1 |
 | `imaging/delaunay` | hst | local_cpu_fp64 | sparse (w-tilde) | 8.81 s | v2026.7.6.649 |
 | `imaging/delaunay` | hst | hpc_a100_fp64 | dense (mapping) | 71.9 ms | v2026.8.17.1 |
 | `imaging/delaunay` | hst | hpc_a100_fp64 | sparse (w-tilde) | 98.0 ms | v2026.7.6.649 |
 | `imaging/delaunay` | hst | hpc_a100_mp | dense (mapping) | 96.8 ms | v2026.7.6.649 |
 | `imaging/delaunay` | hst | hpc_a100_mp | sparse (w-tilde) | 95.5 ms | v2026.7.6.649 |
-| `imaging/delaunay_nn` | hst | local_cpu_fp64 | dense (mapping) | 3.55 s | v2026.8.17.1 |
+| `imaging/delaunay_nn` | hst | local_cpu_fp64 | dense (mapping) | 4.49 s | v2026.8.17.1 |
 | `imaging/delaunay_nn` | hst | hpc_a100_fp64 | dense (mapping) | 85.1 ms | v2026.8.17.1 |
-| `imaging/delaunay_numba` | euclid | local_cpu_fp64 | sparse (numba) | 1.19 s | v2026.8.17.1 |
-| `imaging/delaunay_numba` | hst | local_cpu_fp64 | sparse (numba) | 482.4 ms | v2026.8.17.1 |
-| `imaging/mge` | hst | local_cpu_fp64 | dense (mapping) | 179.5 ms | v2026.7.6.649 |
+| `imaging/delaunay_numba` | euclid | local_cpu_fp64 | sparse (numba) | 291.3 ms | v2026.8.17.1 |
+| `imaging/delaunay_numba` | hst | local_cpu_fp64 | sparse (numba) | 2.04 s | v2026.8.17.1 |
+| `imaging/mge` | hst | local_cpu_fp64 | dense (mapping) | 40.3 ms | v2026.8.17.1 |
 | `imaging/mge` | hst | hpc_a100_fp64 | dense (mapping) | 7.8 ms | v2026.7.6.649 |
 | `imaging/pixelization` | hst | local_cpu_fp64 | dense (mapping) | 8.65 s | v2026.7.6.649 |
 | `imaging/pixelization` | hst | local_cpu_fp64 | sparse (w-tilde) | 10.17 s | v2026.7.6.649 |
@@ -76,8 +76,8 @@ Results are framed by **astronomy instrument** (HST, Euclid, JWST, …) rather t
 | `imaging/pixelization` | hst | hpc_a100_fp64 | sparse (w-tilde) | 57.9 ms | v2026.7.6.649 |
 | `imaging/pixelization` | hst | hpc_a100_mp | dense (mapping) | 56.4 ms | v2026.7.6.649 |
 | `imaging/pixelization` | hst | hpc_a100_mp | sparse (w-tilde) | 55.5 ms | v2026.7.6.649 |
-| `imaging/pixelization_numba` | euclid | local_cpu_fp64 | sparse (numba) | 124.3 ms | v2026.8.17.1 |
-| `imaging/pixelization_numba` | hst | local_cpu_fp64 | sparse (numba) | 304.5 ms | v2026.8.17.1 |
+| `imaging/pixelization_numba` | euclid | local_cpu_fp64 | sparse (numba) | 669.2 ms | v2026.8.17.1 |
+| `imaging/pixelization_numba` | hst | local_cpu_fp64 | sparse (numba) | 1.30 s | v2026.8.17.1 |
 | `interferometer/delaunay_numba_direct_conv` | alma | local_cpu_fp64 | sparse (numba) | 1.80 s | v2026.8.17.1 |
 | `interferometer/delaunay_numba_direct_conv` | sma | local_cpu_fp64 | sparse (numba) | 378.2 ms | v2026.8.17.1 |
 | `interferometer/delaunay_numba_jax` | alma | local_cpu_fp64 | sparse (w-tilde) | 3.28 s | v2026.8.17.1 |

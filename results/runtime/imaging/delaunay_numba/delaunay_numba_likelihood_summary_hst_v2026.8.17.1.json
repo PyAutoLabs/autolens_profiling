@@ -3,35 +3,196 @@
   "device": {
     "backend": "cpu",
     "device": "cpu:0",
-    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
     "omp_num_threads": "1",
-    "cpu_count": 4
+    "cpu_count": 8
   },
   "instrument": "hst",
   "configuration": {
+    "preset": "hst_source_pix_2",
+    "variant": "production",
+    "provenance": "subhalo_validation/scripts/imaging.py + scripts/pipelines/delaunay_adapt_split.py (source_pix[2], job 342311): mesh :41,:61-63, image mesh :37-38,:125-129, regularization :151, adapt S/N cap pipelines/spec.py:9,:31, over-sampling :213,:216-255, sparse operator :252-253,:807, no positions penalty :384-388, MGE :273-278, threads hpc/batch_cpu/submit_source_pix:5,51-55",
+    "mesh_kind": "delaunay",
+    "adapt_snr_cap": 3.0,
+    "over_sample_size_lp_rule": {
+      "sub_size_list": [
+        4,
+        2,
+        2
+      ],
+      "radial_list": [
+        0.1,
+        0.3
+      ],
+      "centre": [
+        0.0,
+        0.0
+      ]
+    },
+    "over_sample_size_pixelization_rule": {
+      "source_snr_cut": 3.0,
+      "sub_size_above": 4,
+      "sub_size_below": 2
+    },
+    "regularization": {
+      "scheme": "adapt_split",
+      "free": true,
+      "priors": {
+        "inner_coefficient": {
+          "type": "LogUniform",
+          "lower": 1e-06,
+          "upper": 1000000.0
+        },
+        "outer_coefficient": {
+          "type": "LogUniform",
+          "lower": 1e-06,
+          "upper": 1000000.0
+        },
+        "signal_scale": {
+          "type": "Uniform",
+          "lower": 0.0,
+          "upper": 1.0
+        }
+      }
+    },
+    "positions_penalty": null,
+    "lens_light": "mge_60_linear_2_basis",
+    "mge_total_gaussians": 30,
+    "mge_gaussian_per_basis": 2,
+    "sequence": {
+      "kind": "iid",
+      "unit_low": 0.4,
+      "unit_high": 0.6,
+      "seed": 235
+    },
+    "memo": "off",
+    "mesh": {
+      "kind": "delaunay",
+      "hilbert_pixels": 1250,
+      "edge_pixels": 30,
+      "zeroed_pixels": 30,
+      "vertices": 1280,
+      "hilbert_weight_power": 3.5,
+      "hilbert_weight_floor": 0.01
+    },
     "pixel_scale_arcsec": 0.05,
     "mask_radius_arcsec": 3.5,
     "image_pixels_masked": 15361,
-    "over_sampled_pixels": 17980,
+    "over_sampled_pixels": 61600,
     "mesh_shape": [
-      1250
+      1280
     ],
-    "source_pixels": 1250,
+    "source_pixels": 1280,
     "inversion_path": "sparse_numba",
     "use_jax": false,
-    "mesh": "delaunay_hilbert_1250",
-    "regularization": "constant_split",
-    "lens_light": "mge_60_linear",
+    "n_instances": 20,
+    "thread_env": {
+      "n_threads": 1,
+      "vars": [
+        "OPENBLAS_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OMP_NUM_THREADS",
+        "VECLIB_MAXIMUM_THREADS",
+        "NUMEXPR_NUM_THREADS"
+      ],
+      "set_to": "1",
+      "preexisting": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "VECLIB_MAXIMUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1"
+      },
+      "overridden": {},
+      "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+    },
+    "memo_provenance": {
+      "requested": "off",
+      "settings_nnls_warm_start_memo": false,
+      "env_AUTOARRAY_NNLS_WARM_START": "0",
+      "env_before": null,
+      "note": "Both gates are set for memo=off: the Settings flag and the AUTOARRAY_NNLS_WARM_START env kill-switch (autoarray/inversion/inversion/nnls_memo.py:63). settings_nnls_warm_start_memo is read back off the constructed Settings, so it records what took effect. The library default is true and both production projects leave it unset."
+    },
     "omp_num_threads": "1"
   },
-  "full_pipeline_single_jit": 3.947948381699996,
-  "first_call_incl_numba_compile_s": 4.339454148999948,
+  "regularization": {
+    "scheme": "adapt_split",
+    "free": true,
+    "priors": {
+      "inner_coefficient": {
+        "type": "LogUniform",
+        "lower": 1e-06,
+        "upper": 1000000.0
+      },
+      "outer_coefficient": {
+        "type": "LogUniform",
+        "lower": 1e-06,
+        "upper": 1000000.0
+      },
+      "signal_scale": {
+        "type": "Uniform",
+        "lower": 0.0,
+        "upper": 1.0
+      }
+    }
+  },
+  "full_pipeline_single_jit": 1.969045499998174,
+  "protocol": "instance 0 discarded (numba compile / cold-cache hazard); the next n_cold evaluations are cold evals comparable to PyAutoFit's logged 'Log Likelihood Function Evaluation Time'; the rest are warm iid evaluations.",
+  "warmup_incl_numba_compile_s": 2.801997800001118,
+  "cold_eval_s": [
+    1.8292569999975967,
+    1.3578894999991462,
+    1.463179799997306
+  ],
+  "cold_eval_median_s": 1.463179799997306,
+  "warm_iid_median_s": 1.969045499998174,
+  "warm_iid_mean_s": 1.9384697187499569,
+  "n_warm": 16,
+  "n_cold": 3,
+  "witness": {
+    "instrument": "hst",
+    "job": "342311",
+    "reference_cold_eval_s": [
+      0.52,
+      0.81
+    ],
+    "factor": 1.5,
+    "allowed_s": [
+      0.3466666666666667,
+      1.215
+    ],
+    "measured_cold_eval_median_s": 1.463179799997306,
+    "verdict": "FAIL"
+  },
+  "first_call_incl_numba_compile_s": 2.801997800001118,
   "first_call_finite": true,
-  "sparse_operator_setup_s": 11.217000401000007,
+  "sparse_operator_setup_s": 5.910277500002849,
   "sparse_operator_nbytes": 177412056,
-  "hilbert_image_mesh_s": 0.3818914749999749,
-  "log_likelihood": 29090.527192092646,
-  "log_likelihood_repeat_spread": 7.057024049572647e-07,
+  "hilbert_image_mesh_s": 0.3207196000003023,
+  "log_likelihood": 23996.231413329842,
+  "log_likelihood_sequence": [
+    28117.60695148041,
+    25011.205866533553,
+    23667.37965822439,
+    27762.335058666067,
+    22964.266059229634,
+    -23294.487862053895,
+    26460.47739271618,
+    23381.782867199043,
+    -17336.642868230403,
+    -57576.86954199095,
+    22382.90366236034,
+    -37164.340786307046,
+    23853.440100531203,
+    27133.819367667158,
+    26681.74652132062,
+    29208.407710153602,
+    24815.725359833275,
+    24866.61996693451,
+    19592.182405561907,
+    23996.231413329842
+  ],
+  "log_likelihood_repeat_spread": null,
   "pinned_expected": null,
   "pinned_drift": []
 }

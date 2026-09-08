@@ -38,6 +38,10 @@ class ProfileCLI:
     use_sparse_operator: bool
     rect_mesh: str
     regularization: str | None
+    variant: str
+    memo: str
+    n_instances: int
+    cold_evals: int
 
 
 def parse_profile_cli(default_config_name: str | None = None) -> ProfileCLI:
@@ -162,6 +166,62 @@ def parse_profile_cli(default_config_name: str | None = None) -> ProfileCLI:
         ),
     )
 
+    parser.add_argument(
+        "--variant",
+        choices=("production", "legacy"),
+        default="production",
+        help=(
+            "Which configuration the production-preset cells build. "
+            "'production' (the default) resolves the instrument's production "
+            "preset from ``_production_config`` — the Euclid ``vis_pix`` stage "
+            "for ``--instrument euclid``, the subhalo ``source_pix[2]`` stage "
+            "for ``--instrument hst`` — matching mesh, over-sampling, "
+            "regularization, MGE basis, positions penalty and thread pinning "
+            "field for field. 'legacy' rebuilds the cell's own pre-2026-09-08 "
+            "configuration, so the historic rows stay reproducible. Cells that "
+            "carry no preset ignore the flag."
+        ),
+    )
+
+    parser.add_argument(
+        "--memo",
+        choices=("off", "on"),
+        default="off",
+        help=(
+            "The NNLS cross-evaluation warm-start memo "
+            "(``aa.Settings(nnls_warm_start_memo=...)``, PyAutoArray#498). Off "
+            "by default in the preset cells: its measured gains come from a "
+            "random-walk stream a Nautilus pool never hands one worker, and "
+            "with the memo on a cell that repeats one instance seeds itself "
+            "from a 100 %-correct previous solve. The library default is "
+            "``true`` and production leaves it unset, so 'on' is what "
+            "production pays; the resolved flag is recorded in every result "
+            "JSON. ``--variant legacy`` leaves both gates untouched."
+        ),
+    )
+
+    parser.add_argument(
+        "--n-instances",
+        type=int,
+        default=20,
+        help=(
+            "Length of the seeded iid instance sequence the production-preset "
+            "cells profile (default 20): one warm-up, ``--cold-evals`` cold "
+            "evaluations, the rest warm."
+        ),
+    )
+
+    parser.add_argument(
+        "--cold-evals",
+        type=int,
+        default=3,
+        help=(
+            "How many of the iid instances are timed as cold evaluations "
+            "(default 3) — the quantity comparable to PyAutoFit's logged 'Log "
+            "Likelihood Function Evaluation Time'."
+        ),
+    )
+
     args, _unknown = parser.parse_known_args()
     config_name = args.config_name or default_config_name
     output_dir = Path(args.output_dir).resolve() if args.output_dir else None
@@ -174,6 +234,10 @@ def parse_profile_cli(default_config_name: str | None = None) -> ProfileCLI:
         use_sparse_operator=bool(args.sparse),
         rect_mesh=args.rect_mesh,
         regularization=args.regularization,
+        variant=args.variant,
+        memo=args.memo,
+        n_instances=int(args.n_instances),
+        cold_evals=int(args.cold_evals),
     )
 
 

@@ -3,7 +3,7 @@
   "device": {
     "backend": "cpu",
     "device": "cpu:0",
-    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
     "omp_num_threads": "1",
     "cpu_count": 8
   },
@@ -13,11 +13,11 @@
     "pixel_scale_arcsec": 0.05,
     "mask_radius_arcsec": 3.5,
     "grid2d_n_points": 15361,
-    "irregular_n_points": 17980,
+    "irregular_n_points": 62752,
     "sub_size_list": [
       4,
       2,
-      1
+      2
     ],
     "radial_list": [
       0.3,
@@ -41,87 +41,87 @@
         "intensity": 1.0,
         "mass_to_light_ratio": 1.0
       },
-      "grid2d_s": 0.1509865500011074,
-      "irregular_s": 0.1712074000006396,
-      "tracer_s": 0.1384149500008789,
+      "grid2d_s": 0.13894260000051872,
+      "irregular_s": 0.6354216500003531,
+      "tracer_s": 0.14756155000031868,
       "grid2d_n_points": 15361,
-      "irregular_n_points": 17980,
+      "irregular_n_points": 62752,
       "tracer_n_points": 15361,
-      "tracer_over_raw": 0.9167369543834448,
+      "tracer_over_raw": 1.0620324508089511,
       "cprofile_repeats": 5,
       "cprofile_note": "Attribution only, from a SEPARATE cProfile pass over cprofile_repeats calls of deflections_yx_2d_from(grid=grids.pixelization). Every number here is inflated by the profiler's per-call tracing overhead and by the profiler's own bookkeeping; they say WHICH function the time is charged to, not how long it takes. The headline timings are grid2d_s / irregular_s / tracer_s, measured with the profiler off.",
       "cprofile_top": [
         {
-          "func": "_driver.py:383(_call_grid2d)",
+          "func": "_driver.py:384(_call_grid2d)",
           "ncalls": 1.0,
-          "tottime_s": 3.1199999999999998e-06,
-          "cumtime_s": 0.14428798
+          "tottime_s": 3.9e-06,
+          "cumtime_s": 0.13841214000000002
         },
         {
           "func": "basis.py:227(deflections_yx_2d_from)",
           "ncalls": 1.0,
-          "tottime_s": 9.28e-05,
-          "cumtime_s": 0.14428486000000001
+          "tottime_s": 0.00041088,
+          "cumtime_s": 0.13840824000000002
         },
         {
-          "func": "deflections_memo.py:408(deflections_yx_2d_from)",
+          "func": "deflections_memo.py:620(deflections_yx_2d_from)",
           "ncalls": 30.0,
-          "tottime_s": 6.042000000000001e-05,
-          "cumtime_s": 0.14059908000000002
+          "tottime_s": 7.632e-05,
+          "cumtime_s": 0.1346601
         },
         {
-          "func": "deflections_memo.py:427(direct)",
+          "func": "deflections_memo.py:646(direct)",
           "ncalls": 30.0,
-          "tottime_s": 3.84e-05,
-          "cumtime_s": 0.1405319
+          "tottime_s": 4.126e-05,
+          "cumtime_s": 0.13457494
         },
         {
           "func": "gaussian.py:70(deflections_yx_2d_from)",
           "ncalls": 30.0,
-          "tottime_s": 8.83e-05,
-          "cumtime_s": 0.1404935
+          "tottime_s": 8.6e-05,
+          "cumtime_s": 0.13453368000000002
         },
         {
           "func": "to_vector_yx.py:44(wrapper)",
           "ncalls": 30.0,
-          "tottime_s": 8.060000000000001e-05,
-          "cumtime_s": 0.1404052
+          "tottime_s": 8.004e-05,
+          "cumtime_s": 0.13444768
         },
         {
           "func": "abstract.py:95(result)",
           "ncalls": 90.0,
-          "tottime_s": 0.00016272000000000001,
-          "cumtime_s": 0.14025962
+          "tottime_s": 0.00017384000000000003,
+          "cumtime_s": 0.13429664000000002
         },
         {
           "func": "abstract.py:91(evaluate_func)",
           "ncalls": 90.0,
-          "tottime_s": 0.00021824000000000002,
-          "cumtime_s": 0.13815612000000002
+          "tottime_s": 0.00024676000000000006,
+          "cumtime_s": 0.13217346000000002
         },
         {
           "func": "transform.py:63(wrapper)",
           "ncalls": 30.0,
-          "tottime_s": 0.00021526000000000002,
-          "cumtime_s": 0.13806190000000002
+          "tottime_s": 0.00021604000000000003,
+          "cumtime_s": 0.13206338
         },
         {
           "func": "gaussian.py:82(deflections_2d_via_analytic_from)",
           "ncalls": 30.0,
-          "tottime_s": 0.0017730600000000003,
-          "cumtime_s": 0.12240374000000001
+          "tottime_s": 0.00191594,
+          "cumtime_s": 0.11589476000000001
         },
         {
-          "func": "gaussian.py:177(zeta_from)",
+          "func": "gaussian.py:179(zeta_from)",
           "ncalls": 30.0,
-          "tottime_s": 0.01996132,
-          "cumtime_s": 0.11797192000000001
+          "tottime_s": 0.01940286,
+          "cumtime_s": 0.11103716000000001
         },
         {
-          "func": "mge.py:97(_wofz)",
+          "func": "mge.py:79(_wofz)",
           "ncalls": 60.0,
-          "tottime_s": 0.09611302000000001,
-          "cumtime_s": 0.09615892000000001
+          "tottime_s": 0.08973962,
+          "cumtime_s": 0.08978258
         }
       ]
     }

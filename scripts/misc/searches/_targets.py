@@ -240,7 +240,7 @@ _DATASET_FILES: tuple[str, ...] = (
 # recorded literally here rather than re-derived from a live dataset object
 # so target_id can be computed from (target, model, dataset_path) alone.
 _OVER_SAMPLE_RECIPE: dict[str, Any] = {
-    "sub_size_list": [4, 2, 1],
+    "sub_size_list": [4, 2, 2],
     "radial_list": [0.3, 0.6],
     "centre_list": [[0.0, 0.0]],
 }

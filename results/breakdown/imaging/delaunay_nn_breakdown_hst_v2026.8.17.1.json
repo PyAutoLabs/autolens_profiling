@@ -3,7 +3,7 @@
   "device": {
     "backend": "cpu",
     "device": "cpu:0",
-    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
     "omp_num_threads": "1",
     "cpu_count": 8
   },
@@ -12,25 +12,77 @@
     "pixel_scale_arcsec": 0.05,
     "mask_radius_arcsec": 3.5,
     "image_pixels_masked": 15361,
-    "over_sampled_pixels": 17980,
+    "over_sampled_pixels": 62752,
     "delaunay_vertices": 1500,
     "edge_zeroed_pixels": 0,
-    "inversion_path": "dense"
+    "inversion_path": "dense",
+    "thread_env": {
+      "n_threads": null,
+      "vars": [
+        "OPENBLAS_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OMP_NUM_THREADS",
+        "VECLIB_MAXIMUM_THREADS",
+        "NUMEXPR_NUM_THREADS"
+      ],
+      "set_to": null,
+      "preexisting": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "VECLIB_MAXIMUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1"
+      },
+      "overridden": {},
+      "note": "Not pinned (legacy variant): recorded as found."
+    },
+    "memo": "library_default (inert on the JAX path)",
+    "over_sample_size_lp_rule": {
+      "sub_size_list": [
+        4,
+        2,
+        2
+      ],
+      "radial_list": [
+        0.3,
+        0.6
+      ],
+      "centre": [
+        0.0,
+        0.0
+      ],
+      "note": "Outer sub-size 1 retired repo-wide on 2026-09-08 (autolens_profiling#235): it leaves the outermost annulus un-over-sampled and causes gradient issues."
+    }
+  },
+  "sibson": {
+    "PYAUTO_SIBSON_QUERY_CHUNK": null,
+    "query_chunk": 4096,
+    "max_cavity_triangles": 32,
+    "max_neighbors": 32,
+    "mesh_query_chunk": 4096,
+    "mesh_max_cavity_triangles": 32,
+    "mesh_max_neighbors": 32
+  },
+  "regularization": {
+    "scheme": "adapt_split",
+    "inner_coefficient": 0.1,
+    "outer_coefficient": 10.0,
+    "signal_scale": 0.1
   },
   "steps": {
-    "Ray-trace data grid": 0.001201390000005631,
-    "Ray-trace mesh grid": 0.0003753999999844382,
-    "Lens light images (pre-PSF)": 2.3079999982655865e-05,
-    "Blurred image (PSF convolution)": 0.0010193399999934628,
-    "Profile-subtracted image": 0.00015469999998458662,
-    "Inversion setup (steps 5-8 combined)": 1.271505359999992,
-    "Data vector (D)": 0.009372140000004947,
-    "Curvature matrix (F)": 1.2107200799999647,
-    "Regularization matrix (H)": 0.21327409000004982,
-    "Regularized reconstruction": 0.8028604600000108,
-    "Mapped recon + log evidence": 0.04230463000003511
+    "Ray-trace data grid": 0.0022041800002625678,
+    "Ray-trace mesh grid": 0.00042131000009248964,
+    "Lens light images (pre-PSF)": 4.685999992943834e-05,
+    "Blurred image (PSF convolution)": 0.0013650200002302882,
+    "Profile-subtracted image": 6.499000010080635e-05,
+    "Inversion setup (steps 5-8 combined)": 1.809875870000178,
+    "Data vector (D)": 0.00991293000006408,
+    "Curvature matrix (F)": 1.0405615600000602,
+    "Regularization matrix (H)": -0.04064440999973162,
+    "Regularized reconstruction": 1.6091650799997297,
+    "Mapped recon + log evidence": 0.05613736000013887
   },
-  "total_step_by_step": 3.552810670000008,
-  "regularization_matrix_prefix_s": 0.7214098100000228,
-  "interpolator_prefix_s": 0.508135719999973
+  "total_step_by_step": 4.489110750001054,
+  "regularization_matrix_prefix_s": 0.6390189600002486,
+  "interpolator_prefix_s": 0.6796633699999802
 }
