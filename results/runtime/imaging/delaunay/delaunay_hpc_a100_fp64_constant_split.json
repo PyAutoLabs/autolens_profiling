@@ -19,18 +19,16 @@
     "inversion_path": "dense"
   },
   "regularization": {
-    "scheme": "adapt_split",
-    "inner_coefficient": 0.1,
-    "outer_coefficient": 10.0,
-    "signal_scale": 0.1
+    "scheme": "constant_split",
+    "coefficient": 1.0
   },
-  "full_pipeline_single_jit": 0.07432319179642946,
+  "full_pipeline_single_jit": 0.05975286851171404,
   "vmap": {
     "batch_size": 16,
-    "batch_time": 0.7321561913006007,
-    "per_call": 0.045759761956287545,
-    "speedup_vs_single_jit": 1.6
+    "batch_time": 0.6348494558129459,
+    "per_call": 0.03967809098830912,
+    "speedup_vs_single_jit": 1.5
   },
-  "pinned_expected": 29348.90938612374,
+  "pinned_expected": 29110.92085793,
   "pinned_drift": []
 }

@@ -24,13 +24,13 @@
     "outer_coefficient": 10.0,
     "signal_scale": 0.1
   },
-  "full_pipeline_single_jit": 0.07432319179642946,
+  "full_pipeline_single_jit": 0.0645106425974518,
   "vmap": {
     "batch_size": 16,
-    "batch_time": 0.7321561913006007,
-    "per_call": 0.045759761956287545,
-    "speedup_vs_single_jit": 1.6
+    "batch_time": 0.6794797878013924,
+    "per_call": 0.042467486737587025,
+    "speedup_vs_single_jit": 1.5
   },
-  "pinned_expected": 29348.90938612374,
+  "pinned_expected": 29155.0010494252,
   "pinned_drift": []
 }

@@ -54,6 +54,13 @@ key. **A row with no `regularization` key was measured with
 each cell pins one log-evidence per scheme. Same-node ConstantSplit control
 rows are written with a `_constant_split` config name.
 
+Since the same date the canonical A100 rows `breakdown/imaging/delaunay{,_nn}_hpc_a100_fp64`
+and `runtime/imaging/delaunay{,_nn}/delaunay{,_nn}_hpc_a100_fp64` are **AdaptSplit** rows. The
+ConstantSplit rows they replaced were not overwritten — they survive as
+`..._hpc_a100_fp64_constant_split_2026_09_05.{json,png}` — and the 2026-09-08 same-node
+ConstantSplit controls are `..._hpc_a100_fp64_constant_split.{json,png}`. See
+`results/notes/delaunay_adapt_split_regularization.md`.
+
 ## Semantic hazard findings
 
 Numerical-hazard records are keyed by stable semantic finding ID rather than by

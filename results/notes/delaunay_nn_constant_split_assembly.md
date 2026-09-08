@@ -341,3 +341,10 @@ The 2026-09-08 `..._launch_latency` rows in `delaunay_nn_launch_latency.md` are 
 untouched; this note's control leg supersedes that note's rows for any comparison against
 this branch (its merge base moved from `d7c96762` to `180c8a40`), and the two control legs
 agree to 0.2 %, so the row sets are in practice on one scale.
+
+**Follow-up (2026-09-08, autolens_profiling#232):** the Delaunay cells now default to
+`AdaptSplit(0.1, 10.0, 0.1)`, and the same-node A/B in
+`results/notes/delaunay_adapt_split_regularization.md` shows this note's compaction carries
+over unchanged — the DelaunayNN params→H prefix at `vmap` 16 reads 7.28 ms on AdaptSplit
+against 7.25 on its ConstantSplit control (7.26 here). The canonical
+`delaunay{,_nn}_hpc_a100_fp64` rows are AdaptSplit from that date.
