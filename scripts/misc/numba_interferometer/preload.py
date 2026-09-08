@@ -56,6 +56,24 @@ def _preload_inputs_from(dataset) -> dict:
     }
 
 
+def curvature_preload_from(dataset) -> np.ndarray:
+    """The real-space ``W~`` preload of ``dataset``, built by the modern NumPy builder.
+
+    Public because it is the expensive object: ``O(N_pix * K)``, ~6 s at sma and
+    10-15 minutes at alma's million visibilities. A harness that runs several arms over
+    one dataset should build it once, cache it, and hand it to both
+    ``Interferometer.apply_sparse_operator(nufft_precision_operator=...)`` and
+    :meth:`NumbaPreload.from_curvature_preload`, so the cost is paid once rather than
+    twice per arm.
+    """
+    return np.asarray(
+        inversion_interferometer_util.nufft_precision_operator_via_np_from(
+            **_preload_inputs_from(dataset)
+        ),
+        dtype=np.float64,
+    )
+
+
 def _dirty_image_from(dataset) -> np.ndarray:
     """``d~ = Re(Fᴴ W d)``, read off the dataset's sparse operator.
 
@@ -109,6 +127,23 @@ class NumbaPreload:
             **_preload_inputs_from(dataset)
         )
 
+        return cls(
+            curvature_preload=np.asarray(curvature_preload, dtype=np.float64),
+            dirty_image=_dirty_image_from(dataset),
+            real_space_mask=dataset.transformer.real_space_mask,
+            native_index_for_slim_index=_native_index_for_slim_index_from(dataset),
+        )
+
+    @classmethod
+    def from_curvature_preload(cls, dataset, curvature_preload) -> NumbaPreload:
+        """Build the preload around an already-computed ``curvature_preload`` array.
+
+        The same object :meth:`from_sparse_operator` produces, without paying the
+        ``O(N_pix * K)`` build a second time. The array must be the one the dataset's
+        sparse operator was itself built from — pass it to
+        ``apply_sparse_operator(nufft_precision_operator=...)`` and to this method, so
+        the two paths cannot drift apart.
+        """
         return cls(
             curvature_preload=np.asarray(curvature_preload, dtype=np.float64),
             dirty_image=_dirty_image_from(dataset),

@@ -44,9 +44,20 @@ from autoarray.structures.visibilities import Visibilities
 from autonerves import cached_property
 
 from numba_interferometer import inversion_interferometer_numba_util as numba_util_pack
+from numba_interferometer import kernels as kernels_pack
 from numba_interferometer.preload import NumbaPreload
 
-KERNELS = ("reference",)
+# Every kernel here assembles the same F; they differ only in how the triple product
+# M^T W~ M is evaluated. `kernels.py` documents each one and `test_parity.py` pins all
+# of them to `reference` before any timing of them is believed.
+KERNELS = (
+    "reference",
+    "hoisted",
+    "symmetric",
+    "two_stage",
+    "direct_conv",
+    "source_loop",
+)
 
 
 class InversionInterferometerNumba(AbstractInversionInterferometer):
@@ -80,8 +91,9 @@ class InversionInterferometerNumba(AbstractInversionInterferometer):
             The dataset's :class:`NumbaPreload`. Built via
             ``NumbaPreload.from_sparse_operator(dataset)`` when omitted.
         kernel
-            Which curvature kernel assembles ``F``. Only ``"reference"`` exists in phase 1 of
-            the ``numba-interferometer-revisit`` epic; phase 2 adds variants.
+            Which curvature kernel assembles ``F`` (one of :data:`KERNELS`). They are
+            algebraically identical and pinned to each other; ``"reference"`` is the
+            phase-1 recovered kernel.
         """
         if xp is not np:
             raise exc.InversionException(
@@ -201,13 +213,21 @@ class InversionInterferometerNumba(AbstractInversionInterferometer):
         return np.dot(self.mapping_matrix.T, self.dirty_image)
 
     @cached_property
-    def curvature_matrix_scatter(self) -> np.ndarray:
-        """``F = Mᵀ W~ M`` from the recovered numba scatter kernel.
+    def kernel_index_arrays(self) -> dict:
+        """The flat (CSR / CSC / extent-flat) form of the mapper the variants consume.
 
-        ``curvature_matrix_via_w_tilde_curvature_preload_interferometer_from`` loops the
-        full ``N x N`` image-pixel pair space (it does **not** halve on symmetry), so the
-        matrix it returns is already complete and symmetric — no mirroring pass is applied
-        to it here. ``test_parity.py`` pins that against the dense oracle ``Mᵀ W~ M``.
+        The recovered kernel reads the mapper's ``[N_pix, P]`` triplet arrays directly;
+        every phase-2 variant reads flat arrays instead, and the extent-grid and FFT
+        forms additionally need extent-local row/column indexes. Marshalling is done
+        here, inside the ``F`` step (``curvature_matrix_scatter`` touches this property),
+        so a variant's timing carries its own input-preparation cost rather than hiding
+        it in an earlier row. A reinstated library kernel would either pay the same cost
+        or have the mapper emit this layout directly; charging it here is the
+        conservative choice.
+
+        The extent implied by the mapper's own native indexes is checked against the
+        preload's ``(2Ny, 2Nx)`` shape, because the convolution kernels index the
+        preload by extent offsets and a mismatch would silently wrap.
         """
         (
             pix_indexes_for_sub_slim_index,
@@ -217,13 +237,139 @@ class InversionInterferometerNumba(AbstractInversionInterferometer):
             pix_pixels,
         ) = self.mapper_index_arrays
 
-        return numba_util_pack.curvature_matrix_via_w_tilde_curvature_preload_interferometer_from(
-            curvature_preload=self.curvature_preload,
+        inputs = kernels_pack.kernel_inputs_from(
             pix_indexes_for_sub_slim_index=pix_indexes_for_sub_slim_index,
             pix_size_for_sub_slim_index=pix_sizes_for_sub_slim_index,
             pix_weights_for_sub_slim_index=pix_weights_for_sub_slim_index,
             native_index_for_slim_index=native_index_for_slim_index,
             pix_pixels=pix_pixels,
+        )
+
+        preload_shape = self.curvature_preload.shape
+
+        if (2 * inputs["ny"], 2 * inputs["nx"]) != preload_shape:
+            raise exc.InversionException(
+                "The unmasked extent implied by the mapper's native indexes "
+                f"({inputs['ny']} x {inputs['nx']}) does not match the curvature "
+                f"preload's shape {preload_shape}, which must be (2Ny, 2Nx). The "
+                "extent-grid and FFT kernels index the preload by extent offsets, so a "
+                "mismatch would wrap silently instead of failing."
+            )
+
+        return inputs
+
+    @cached_property
+    def source_loop_index_arrays(self):
+        """The source-major arrays the recovered ``..._from_2`` variant consumes."""
+        (
+            pix_indexes_for_sub_slim_index,
+            pix_sizes_for_sub_slim_index,
+            pix_weights_for_sub_slim_index,
+            _,
+            pix_pixels,
+        ) = self.mapper_index_arrays
+
+        return kernels_pack.source_loop_inputs_from(
+            pix_indexes_for_sub_slim_index=pix_indexes_for_sub_slim_index,
+            pix_size_for_sub_slim_index=pix_sizes_for_sub_slim_index,
+            pix_weights_for_sub_slim_index=pix_weights_for_sub_slim_index,
+            pix_pixels=pix_pixels,
+        )
+
+    @cached_property
+    def curvature_matrix_scatter(self) -> np.ndarray:
+        """``F = Mᵀ W~ M`` from the selected numba kernel.
+
+        ``reference`` is the recovered kernel: it loops the full ``N x N`` image-pixel
+        pair space (it does **not** halve on symmetry), so the matrix it returns is
+        already complete and symmetric — no mirroring pass is applied to it here, and
+        ``test_parity.py`` pins that against the dense oracle ``Mᵀ W~ M``. ``symmetric``
+        does halve and mirrors internally; every variant therefore returns a complete
+        symmetric ``F`` from this property, whatever it does inside.
+        """
+        (
+            pix_indexes_for_sub_slim_index,
+            pix_sizes_for_sub_slim_index,
+            pix_weights_for_sub_slim_index,
+            native_index_for_slim_index,
+            pix_pixels,
+        ) = self.mapper_index_arrays
+
+        if self.kernel == "reference":
+            return (
+                numba_util_pack.curvature_matrix_via_w_tilde_curvature_preload_interferometer_from(
+                    curvature_preload=self.curvature_preload,
+                    pix_indexes_for_sub_slim_index=pix_indexes_for_sub_slim_index,
+                    pix_size_for_sub_slim_index=pix_sizes_for_sub_slim_index,
+                    pix_weights_for_sub_slim_index=pix_weights_for_sub_slim_index,
+                    native_index_for_slim_index=native_index_for_slim_index,
+                    pix_pixels=pix_pixels,
+                )
+            )
+
+        if self.kernel == "source_loop":
+            sub_indexes, sub_sizes, sub_weights = self.source_loop_index_arrays
+
+            return numba_util_pack.curvature_matrix_via_w_tilde_curvature_preload_interferometer_from_2(
+                curvature_preload=self.curvature_preload,
+                native_index_for_slim_index=native_index_for_slim_index,
+                pix_pixels=pix_pixels,
+                sub_slim_indexes_for_pix_index=sub_indexes,
+                sub_slim_sizes_for_pix_index=sub_sizes,
+                sub_slim_weights_for_pix_index=sub_weights,
+            )
+
+        inputs = self.kernel_index_arrays
+        preload = self.curvature_preload
+
+        if self.kernel == "hoisted":
+            return kernels_pack.curvature_hoisted(
+                preload,
+                inputs["iy"],
+                inputs["ix"],
+                inputs["indptr"],
+                inputs["col"],
+                inputs["val"],
+                pix_pixels,
+            )
+
+        if self.kernel == "symmetric":
+            return kernels_pack.curvature_symmetric(
+                preload,
+                inputs["iy"],
+                inputs["ix"],
+                inputs["indptr"],
+                inputs["col"],
+                inputs["val"],
+                pix_pixels,
+            )
+
+        if self.kernel == "two_stage":
+            return kernels_pack.curvature_two_stage(
+                preload,
+                inputs["iy"],
+                inputs["ix"],
+                inputs["indptr"],
+                inputs["col"],
+                inputs["val"],
+                pix_pixels,
+            )
+
+        # `direct_conv` — the only remaining member of KERNELS.
+        return kernels_pack.curvature_direct_conv(
+            preload,
+            inputs["iy"],
+            inputs["ix"],
+            inputs["flat"],
+            inputs["indptr"],
+            inputs["col"],
+            inputs["val"],
+            inputs["cscptr"],
+            inputs["csc_row"],
+            inputs["csc_val"],
+            inputs["ny"],
+            inputs["nx"],
+            pix_pixels,
         )
 
     @cached_property

@@ -95,3 +95,8 @@ latent/results/
 # and no sibling npz in this tree is anywhere near that size, so it is a local
 # convenience only — `--stage score` rewrites it from the JSONs on demand.
 results/notes/inference/phase_08_regularization/bijector_ab/rows_*.npz
+
+# W~ preload caches: derived arrays (O(N_pix * K), 10-15 min to rebuild at alma),
+# written beside the dataset by scripts/misc/numba_interferometer so a paired kernel
+# sweep pays the build once. Regenerated on demand; never an input.
+dataset/interferometer/*/nufft_precision_operator_*.npy
