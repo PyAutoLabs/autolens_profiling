@@ -18,7 +18,7 @@ packages; the dashboard tables in every README are rendered from this tree by
 | `nnls_warm_start/` | [`nnls_warm_start/`](../scripts/misc/nnls_warm_start/README.md) | The NNLS cross-evaluation warm-start memo A/B experiment — per-model JSON/PNG pairs plus its two notes ([`nnls_warm_start_memo.md`](./nnls_warm_start/nnls_warm_start_memo.md), [`nnls_warm_start_memo_matrix.md`](./nnls_warm_start/nnls_warm_start_memo_matrix.md)). A diagnostic, **not** a production baseline. |
 | `hazards/` | [`hazards/`](../scripts/misc/hazards/README.md) | Semantic finding records, reproducer plots, generated seed summary, and consumer index |
 | `lens/` | [`scripts/lens/`](../scripts/lens/README.md) | Versioned **library-component** summaries (dataset-free axis) — today `lens/deflections/`, per-mass-profile deflection cost with pinned deflection values |
-| `notes/` | humans + agents | Narrative findings and design notes (e.g. [`design_lock_in.md`](./notes/design_lock_in.md), [`nnls_solver_ledger.md`](./notes/nnls_solver_ledger.md), [`numpy_deflections_cpu.md`](./notes/numpy_deflections_cpu.md)) |
+| `notes/` | humans + agents | Narrative findings and design notes (e.g. [`design_lock_in.md`](./notes/design_lock_in.md), [`production_representative_cells.md`](./notes/production_representative_cells.md), [`nnls_solver_ledger.md`](./notes/nnls_solver_ledger.md), [`numpy_deflections_cpu.md`](./notes/numpy_deflections_cpu.md)) |
 | `baselines/` | campaign snapshots | Named, frozen baselines (e.g. `PreOptimizationTimes/`) — see below |
 
 ## Performance artifact shapes
