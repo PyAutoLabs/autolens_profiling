@@ -109,11 +109,12 @@ If, on the other hand, the two numbers agree closely, the per-step bars are a fa
 |--------|--------------|--------------|-------|
 | `imaging/mge.py` | Imaging | MGE linear bulge | Linear MGE source; 8-step pipeline. |
 | `imaging/pixelization.py` | Imaging | RectangularBilinearAdaptImage (`--rect-mesh rtu` for the RTU variant) | 13-step pipeline incl. mesh + regularisation. |
+| `imaging/pixelization_numba.py` | Imaging | Adaptive rectangular + free `Adapt` (numba CPU, `use_jax=False`) | Rectangular sibling of `imaging/delaunay_numba.py`, production-configured on the subhalo `rect_adapt` stage since 2026-09-08 (autolens_profiling#235); same `--variant` / `--memo` / `--n-instances` / `--cold-evals` protocol. |
 | `imaging/delaunay.py` | Imaging | DelaunayBrightnessImage | 13-step pipeline; Hilbert-curve mesh. |
 | `imaging/delaunay_nn.py` | Imaging | DelaunayBrightnessImage with `al.mesh.DelaunayNN` | Like-for-like sibling of `imaging/delaunay.py` — same 13 steps, same configuration, Sibson natural-neighbour interpolation (cap 32) instead of barycentric. |
 | `interferometer/delaunay.py` | Interferometer | DelaunayBrightnessImage + sparse-DFT | 11-step pipeline. The transform-mapping-matrix step is the interferometer-specific replacement for imaging's PSF convolution. |
 | `datacube/delaunay.py` | Datacube | DelaunayBrightnessImage × N channels | 8-step pipeline. Channel-invariant steps profiled once; channel-variant steps profiled on channel 0 and multiplied by `N_channels` for the cube cost. |
-| `imaging/delaunay_numba.py` | Imaging | DelaunayBrightnessImage (numba CPU, `use_jax=False`) | 18-step pipeline; sparse-operator CPU path, MGE-60 linear lens light. |
+| `imaging/delaunay_numba.py` | Imaging | Delaunay + free `AdaptSplit` (numba CPU, `use_jax=False`) | 18-step pipeline; sparse-operator CPU path. **Production-configured since 2026-09-08** (autolens_profiling#235): `--instrument euclid` builds the Euclid `vis_pix` stage, `--instrument hst` the subhalo `source_pix[2]` stage — mesh, S/N-driven pixelization over-sampling, MGE basis, positions penalty and thread pinning all matched; the instance stream is seeded iid and the NNLS memo is off and recorded. `--variant legacy` rebuilds the old fiducial. See [`results/notes/production_representative_cells.md`](../../../results/notes/production_representative_cells.md). |
 
 Four cells are intentionally absent from this package:
 - `interferometer/mge` — full-pipeline-by-design, no per-step decomposition (see runtime).
