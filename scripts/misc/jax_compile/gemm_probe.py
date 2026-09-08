@@ -68,15 +68,21 @@ print("XLA_FLAGS:", os.environ.get("XLA_FLAGS"), flush=True)
 cache_dir = os.environ.get("JAX_COMPILATION_CACHE_DIR")
 print("JAX_COMPILATION_CACHE_DIR:", cache_dir, flush=True)
 try:
-    print(subprocess.run(
-        ["nvidia-smi", "--query-gpu=name,uuid", "--format=csv"],
-        capture_output=True, text=True, timeout=120).stdout, flush=True)
+    print(
+        subprocess.run(
+            ["nvidia-smi", "--query-gpu=name,uuid", "--format=csv"],
+            capture_output=True,
+            text=True,
+            timeout=120,
+        ).stdout,
+        flush=True,
+    )
 except Exception as e:
     print("nvidia-smi failed:", e, flush=True)
 
-import numpy as np
 import jax
 import jax.numpy as jnp
+import numpy as np
 
 print("jax.__version__:", jax.__version__, flush=True)
 
@@ -84,8 +90,11 @@ print("jax.__version__:", jax.__version__, flush=True)
 if cache_dir:
     jax.config.update("jax_compilation_cache_dir", cache_dir)
 jax.config.update("jax_persistent_cache_min_compile_time_secs", 0)
-print("jax_persistent_cache_enable_xla_caches:",
-      jax.config.jax_persistent_cache_enable_xla_caches, flush=True)
+print(
+    "jax_persistent_cache_enable_xla_caches:",
+    jax.config.jax_persistent_cache_enable_xla_caches,
+    flush=True,
+)
 print("jax.devices():", jax.devices(), flush=True)
 
 rng = np.random.default_rng(0)
@@ -130,10 +139,10 @@ for _ in range(10):
     times.append((tb - ta) * 1e3)
 steady_mean = float(np.mean(times))
 steady_min = float(np.min(times))
-print("per-call ms:", ["%.3f" % t for t in times], flush=True)
+print("per-call ms:", [f"{t:.3f}" for t in times], flush=True)
 
 val = np.float64(np.asarray(compiled(M, w))[0, 0])
-print("F[0,0] = %.17g" % val, flush=True)
+print(f"F[0,0] = {val:.17g}", flush=True)
 
 level = "?"
 for tok in (os.environ.get("XLA_FLAGS") or "").split():
