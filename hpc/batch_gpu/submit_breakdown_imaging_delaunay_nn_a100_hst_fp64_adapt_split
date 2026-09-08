@@ -1,0 +1,98 @@
+#!/bin/bash -l
+#
+# A100 likelihood-breakdown profile: imaging/delaunay_nn x hst x fp64 — autolens_profiling#232
+# A/B leg: **AdaptSplit (feature leg — the cell's new default)**.
+#
+# The Delaunay-family profiling cells used to measure ConstantSplit(1.0), but
+# production (Euclid pipeline, SLaM) pairs Delaunay with AdaptSplit. Issue #232
+# re-bases the cells on AdaptSplit and keeps ConstantSplit reachable behind
+# --regularization, so the historical rows stay comparable. This pair is the
+# same-node A/B that re-pins the cell and prices the regularization change:
+#
+#   adapt_split     -> al.reg.AdaptSplit(0.1, 10.0, 0.1)     [canonical row name]
+#   constant_split  -> al.reg.ConstantSplit(coefficient=1.0)  [_constant_split row name]
+#
+# Both legs run one PyAutoArray revision — the SHARED install
+# /mnt/ral/jnightin/PyAuto/PyAutoArray, which is at 47a00e8c (the merge of
+# PyAutoArray#537, containing 04152bb7), i.e. it already carries the split-
+# stencil assembly compaction the AdaptSplit path inherits. No PYTHONPATH
+# override and NO write of any kind to the shared install; the private
+# checkouts under /mnt/ral/jnightin/PyAuto_wt/ are not needed for this A/B.
+# The revisions are printed below and recorded in the results note.
+#
+# WITNESS (results/notes/delaunay_adapt_split_regularization.md):
+#   * this leg's log-evidence pin passes (pinned_drift: []) — AdaptSplit pin on
+#     the adapt_split leg, the historical ConstantSplit pin on the control;
+#   * the DelaunayNN AdaptSplit params->H prefix at vmap 16 stays within ~1 ms
+#     per call of the same-node ConstantSplit control (7.26 ms is the earlier
+#     reference in results/breakdown/imaging/delaunay_nn_hpc_a100_fp64_assembly.json),
+#     i.e. the #537 compaction survives the regularization change.
+#
+#   --regularization adapt_split
+#   --split-setup    four-way split of the inversion-setup block (+ the
+#                    split-point Sibson cut of the params->H interval)
+#   --vmap-batch 16  batched re-timing at the Nautilus reference n_batch
+
+#SBATCH -J bd_delnn_adapt
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=12:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding"
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+# PYAUTO_SIBSON_QUERY_CHUNK is deliberately left UNSET on both legs (library
+# default 4096, what production uses); the script records the effective chunk
+# under "sibson" in the result JSON.
+
+nvidia-smi
+
+# MIG backstop. A no-op since the fleet's MIG mode was confirmed Disabled
+# (2026-09-05); kept because a silent removal re-opens the trap. Only bounces
+# when the job was dispatched with --requeue. The 2026-08-28
+# "#SBATCH --exclude=euclid-ral-gpu-1" block is deliberately NOT copied here
+# (retired fleet-wide by autolens_profiling#220).
+source "$AP_ROOT/hpc/batch_gpu/_gpu_preflight.sh"
+
+echo "=========================================="
+date
+echo "Cell:           likelihood_breakdown/imaging/delaunay_nn"
+echo "Instrument:     hst"
+echo "Precision:      fp64"
+echo "A/B leg:        adapt_split — al.reg.AdaptSplit(inner_coefficient=0.1, outer_coefficient=10.0, signal_scale=0.1)"
+echo "Config name:    hpc_a100_fp64"
+echo "Sibson chunk:   PYAUTO_SIBSON_QUERY_CHUNK=${PYAUTO_SIBSON_QUERY_CHUNK:-unset (library default)}"
+
+echo "=== source revisions (shared install, untouched) ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r" "$(git -C /mnt/ral/jnightin/PyAuto/$r rev-parse HEAD 2>&1)"
+done
+echo "AP_ROOT rev:   $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+
+cd $AP_ROOT
+
+echo "=== import provenance ==="
+python3 -c "import autoarray, autolens; print('autoarray.__file__ =', autoarray.__file__); print('autoarray.__version__ =', autoarray.__version__); print('autolens.__file__ =', autolens.__file__)"
+
+python3 -u scripts/imaging/likelihood_breakdown/delaunay_nn.py \
+    --regularization adapt_split \
+    --config-name hpc_a100_fp64 \
+    --split-setup \
+    --vmap-batch 16
+
+echo "Finished."
+date
