@@ -287,6 +287,182 @@ ratios (inputs prebuilt) are the pure-kernel ones.
   put together. The pack now caches it beside the dataset (git-ignored) so a paired sweep
   pays it once; every in-situ JSON records `preload_cache_hit`.
 
+## 7. The preload
+
+Phase 3 of the epic (autolens_profiling#229). Every number below is read from
+`results/breakdown/interferometer/preload_breakdown_{sma,alma,alma_high}_v2026.8.17.1.json`,
+written by `scripts/interferometer/likelihood_breakdown/preload_numba.py`.
+
+Section 6 left the preload as the epic's largest unmeasured cost: the `O(N_pix·K)` build
+every w-tilde arm pays once per dataset, numba and JAX alike, before a single likelihood is
+evaluated. It is not a per-evaluation step, so no breakdown cell had ever timed it. This
+phase times it four ways and tests the design review's hypothesis that the array is exactly
+`Re` of a **type-1 (adjoint) NUFFT**. It is — and that is worth two to three orders of
+magnitude.
+
+### The construction
+
+The brute-force builders compute, over the mask's bounding extent `(Ny, Nx)`,
+`P[i, j] = Σ_k w_k cos(2π(dx·u_k + dy·v_k))` with `w_k = 1/σ_k²`, `dx = −j·Δ_rad`,
+`dy = +i·Δ_rad` on autoarray's radian grid, the four quadrants filled from the four corners
+into a `[2Ny, 2Nx]` wraparound array with the middle row `Ny` and column `Nx` left zero as
+FFT padding. With the transformer's own scaled frequencies `x_k = 2π u_k Δ_rad`,
+`y_k = 2π v_k Δ_rad` (`transformer.py:334-335`) that is `P[i,j] = Re Σ_k w_k exp(i(−j·x_k + i·y_k))`,
+i.e.
+
+```
+f = nufftax.nufft2d1(−x, y, w, n_modes=(2Nx, 2Ny), eps, isign=+1)
+P = ifftshift(Re f);   P[Ny, :] = 0;   P[:, Nx] = 0
+```
+
+Pinned empirically at sma rather than assumed
+(`test_parity.py::test_preload_via_nufft_matches_modern_np_builder`). Of the eight candidate
+mappings (axis swap × sign of `x` × sign of `y`) exactly **two** reproduce the brute force —
+`(−x, +y)` and `(+x, −y)` — at `max|Δ| = 1.7e-17`, i.e. `8.7e-14` of the peak `P[0,0]`. The
+other six are wrong by `2.1e-1` of the peak. The identification is not marginal: thirteen
+orders of magnitude separate right from wrong. The two survivors are the same construction
+(`w` is real, so the two transforms are conjugates and their real parts are equal), which is
+also why `P[i,j] == P[−i,−j]`. `fftshift` vs `ifftshift` is not a choice here either: both
+axes have even length `2N`, for which the two shifts are the same permutation. The padding
+row/column is at index `N`, not `N−1` — after `ifftshift` that index carries the Nyquist
+mode, which the brute force never evaluates and the NUFFT does, so it is zeroed explicitly.
+
+Pinned separately: the exactly-zero padding row/column (and that its neighbours are *not*
+zero, so the pin is not vacuous), the `P[i,j] == P[−i,−j]` evenness, invariance to
+visibility chunking, a square-pixel guard, and a control in which a wrong permutation must
+fail the parity rule.
+
+### The four builders
+
+Wall seconds, with CPU-seconds in brackets. `parity` is `max|Δ| / P[0,0]` against the NumPy
+builder's array. sma is the median of 3 repeats after a discarded warm-up; alma's
+brute-force trio is one build each (a repeat is half an hour) and its NUFFT row is 3
+repeats.
+
+| instrument | `K` | `N_pix` | preload | `numba` | `numpy` (library default) | `jax_cpu` | **`nufft`** (`eps=1e-12`) |
+|---|---|---|---|---|---|---|---|
+| sma | 190 | 3 852 | 140×140 | 0.2537 s (0.254) | 0.1643 s (0.164) | 0.7360 s (1.891) | **0.0210 s (0.031)** |
+| alma | 1 000 000 | 15 380 | 280×280 | 3258.6 s (3235.7) | 2101.5 s (2097.1) | 1046.2 s (2705.2) | **7.278 s (18.84)** |
+| alma_high | 5 000 000 | 61 572 | 560×560 | refused | refused | refused | **22.15 s (89.99)** |
+
+**At alma the NUFFT builder replaces a 35-minute build with 7 seconds** — `289×` on wall
+clock, `111×` on CPU-seconds against the library's own NumPy default. The recovered numba
+builder is the *slowest* of the four (54.3 min, 1.55× the NumPy one); `jax_cpu` is the
+fastest brute force at 17.4 min but only by spending 2.59 cores.
+
+| instrument | `numba` parity | `numpy` parity | `jax_cpu` parity | `nufft` parity | pin |
+|---|---|---|---|---|---|
+| sma | 2.3e-15 | 0 (reference) | 3.3e-16 | 8.7e-14 | all four **pass** |
+| alma | **2.2e-11 — FAILS** | 0 (reference) | 1.4e-16 | 1.9e-14 | three of four pass |
+| alma_high | — | — | — | — | no affordable reference; eps self-consistency only |
+
+**The one pin that fails is the recovered numba builder at alma**, at `2.195e-11` of the
+peak against a bound of `1e-11` (`10·eps·P[0,0]`, `eps=1e-12`). It is recorded, not
+loosened. What it means: the numba kernel accumulates all `10⁶` visibilities into one
+running scalar per offset, while the NumPy reference sums them in `chunk_k = 2048` blocks,
+so the two differ by summation-order round-off that grows with `K` — `2e-15` at sma's
+`K = 190`, `2e-11` at alma's `K = 10⁶`, on 11 of 78 400 entries. That is a floating-point
+property of the recovered kernel, not an algebraic disagreement, and it is not the NUFFT's
+problem: the **NUFFT agrees with the reference a thousand times better than the numba brute
+force does** (`1.9e-14` vs `2.2e-11`). It does mean the eps-scaled bound is the wrong ruler
+for an exact-but-unchunked builder, and that a `10⁶`-visibility naive accumulation is worth
+knowing about on its own.
+
+`alma_high` hard-refuses the brute-force builders: `O(61572 × 5e6)` is hours per builder, and
+nothing here needs it — the NUFFT builder is pinned where a pin is affordable.
+
+### Threading — read both columns
+
+`OMP/MKL/OPENBLAS/NUMBA_NUM_THREADS=1` pin NumPy's BLAS and numba to one core, but XLA's CPU
+runtime keeps its own intra-op pool that `--xla_cpu_multi_thread_eigen=false` does not close.
+The two JAX-backed builders therefore run multi-core (`jax_cpu` 2.57× at sma and 2.59× at
+alma; `nufft` 1.48× at sma, 2.59× at alma, 4.06× at alma_high) while the NumPy and numba
+ones are measured at 1.00× and 0.99×. Every row records `build_cpu_s` (`time.process_time()`, summing all threads) and
+`threads_effective`; quote the CPU-seconds column before claiming a speed-up over a
+single-threaded loop.
+
+### Accuracy: which `eps` holds the pin
+
+Each `eps`'s preload is pushed through `apply_sparse_operator` →
+`NumbaPreload.from_curvature_preload` → `InversionInterferometerNumba(kernel="direct_conv")`
+→ `fit_util.log_evidence_from` and compared with the same chain on the brute-force preload.
+
+| `eps` | build (sma / alma / alma_high) | peak-scaled parity (sma / alma) | log-evidence rel diff (sma / alma) | pin `rtol=1e-6` |
+|---|---|---|---|---|
+| `1e-6`  | 0.0195 / 2.26 / 9.30 s | 4.8e-08 / 5.7e-09 | 1.8e-11 / 5.2e-12 | **holds** |
+| `1e-9`  | 0.0138 / 3.19 / 16.12 s | 6.6e-10 / 4.7e-11 | 2.0e-14 / 3.9e-14 | **holds** |
+| `1e-12` | 0.0144 / 5.46 / 22.73 s | 8.7e-14 / 1.9e-14 | 1.4e-16 / **0** | **holds** |
+
+**Every `eps` in the sweep holds the `rtol=1e-6` log-evidence pin**, by five orders of margin
+even at the loosest. At `eps=1e-12` and alma the log evidence is *bit-identical* to the brute
+force's (`-12050103.936303042`). The recommendation is nonetheless `eps=1e-12`: it is the
+only value that also holds the *array* pin at sma, it saturates fp64 (`eps=1e-14` moves
+`max|Δ|` only from `1.7e-17` to `1.4e-17`), and it costs seconds. A preload is reused by
+every likelihood call in a fit; error budget spent here is spent for the whole run.
+
+The two parity rules are both reported for every row, so neither has to be taken on trust.
+At sma the rule is **mixed** — `allclose(rtol=1e-10, atol=1e-10·P[0,0])` — because a type-1
+NUFFT bounds its error against `Σ_k|c_k|`, i.e. against the peak, so the preload's near-zero
+entries (five orders below it, at the fp64 noise floor) carry no relative guarantee and a
+relative-only test there measures round-off rather than the builder; at `eps=1e-12` the
+strict elementwise relative error still reaches `6.0e-10` on 32 of 19 600 entries. At alma
+the rule is the peak-scaled `max|Δ| ≤ 10·eps·P[0,0]`, and the JSON also records
+`parity_max_rel_elementwise` and the count of entries over `rtol=1e-10` in both regimes.
+
+### Scaling
+
+The brute force evaluates one cosine per (offset, visibility) pair over four quadrants:
+`4·Ny·Nx·K`, linear in both the extent and the visibility count. The NUFFT spreads each
+visibility onto a fine grid with a separable kernel of width `nspread ≈ 14` per axis
+(at `eps=1e-12`) and takes one FFT of the doubled grid: `K·nspread² + M log M`, `M = 4·Ny·Nx`.
+Predicted ratios over the NumPy builder: **12× (sma)**, **398× (alma)**, **1590×
+(alma_high)**. Measured (wall clock): **7.8× (sma)**, **289× (alma)** — the flop model is
+right to within ~1.4×, which is as much as a flop count can claim across a numba loop, a
+chunked NumPy broadcast and a spread-and-FFT. sma's ratio is small only because `K = 190` is
+too few visibilities for the `K·nspread²` term to dominate the fixed `M log M` FFT; the gap
+widens with instrument size because only one of the two costs is linear in `K`. On
+CPU-seconds the alma win is `111×` rather than `289×` — the model counts flops, not cores.
+
+### Verdict — a library follow-up is justified (architect's call)
+
+**Yes — file the PyAutoArray follow-up.** `nufft_precision_operator_from` should build via
+the transformer's own type-1 NUFFT, with the brute-force builders kept as the reference the
+new path is pinned against. The case:
+
+- It is the *same array*, not an approximation of a different one: pinned
+  elementwise-with-an-absolute-floor at sma, peak-scaled at alma, and the log evidence it
+  produces at alma is identical to every digit (`rel diff 0.0`).
+- The saving is the largest single one in this epic — 35 minutes down to 7 seconds at alma,
+  more than every likelihood lever in sections 1–5 put together, because it is a cost every
+  arm pays and no arm was measuring.
+- It removes a scaling wall rather than a constant: the brute force is linear in `K`, the
+  NUFFT is `K·nspread²` plus a fixed FFT, so the gap widens with instrument size (predicted
+  `1590×` at alma_high, where the brute force is simply not runnable here).
+- It costs the library nothing new. `nufftax` is already a hard dependency of
+  `TransformerNUFFT`, the mapping uses that transformer's own `_x`/`_y` convention, and the
+  same call runs on GPU — so it also gives the GPU path a preload it does not currently have.
+
+Caveats the follow-up must carry:
+
+- **`eps` is a real dial.** `eps=1e-12` is the recommendation: it saturates fp64
+  (`eps=1e-14` moves `max|Δ|` only from `1.7e-17` to `1.4e-17` at sma) and is the only value
+  that also holds the array pin at sma. Every value tested holds the `rtol=1e-6`
+  log-evidence pin with at least five orders of margin, so the dial is not load-bearing for
+  correctness — but a preload is reused by every likelihood call in a fit, and error budget
+  spent here is spent for the whole run.
+- **Chunking is required, not optional.** The spreader's gather buffer is `K·nspread²`
+  complex128; alma_high's 5 M visibilities need ~15 GB in one shot and were OOM-killed here
+  before chunking was added. The library already has the right knob — the transformer's
+  `chunk_size` (PyAutoArray#330) — and the chunked and one-shot arrays are pinned equal.
+- **The mapping is convention-bound.** Six of the eight index permutations are wrong by 21 %
+  of the peak and all eight are structurally plausible, so a library implementation must
+  carry the permutation pin, not just a smoke test.
+- **The wall-clock ratio is not a single-core ratio.** The NUFFT builder ran at 2.6× cores
+  at alma; on CPU-seconds the win is `111×`, not `289×`. Both are in the JSON. The machine
+  also drifted between the two measurements (`control_dgemm_s` 0.2550 for the brute-force
+  builds, 0.3162 for the assembling run that timed the NUFFT), which makes the reported
+  ratio conservative rather than flattering.
+
 ## Reproducing
 
 ```bash
@@ -307,4 +483,29 @@ for k in reference symmetric two_stage direct_conv source_loop jax; do
   OMP_NUM_THREADS=1 NUMBA_NUM_THREADS=1 \
     python scripts/interferometer/likelihood_breakdown/delaunay_numba.py --kernel "$k"
 done
+
+# Section 7 — the preload bake-off. Same pinning for all three.
+PIN='OMP_NUM_THREADS=1 NUMBA_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1'
+export OMP_NUM_THREADS=1 NUMBA_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
+export JAX_PLATFORMS=cpu JAX_ENABLE_X64=True
+export XLA_FLAGS="--xla_cpu_multi_thread_eigen=false --xla_force_host_platform_device_count=1"
+
+# sma — all four builders, 3 repeats (seconds).
+python scripts/interferometer/likelihood_breakdown/preload_numba.py \
+  --instrument sma --builders all --reps 3
+
+# alma — the brute-force trio first (~30 min each, isolated + 90-min capped, each
+# result cached beside the dataset the moment it finishes), then the assembling run,
+# which hits those caches and times the NUFFT builder and the eps sweep fresh.
+python scripts/interferometer/likelihood_breakdown/preload_numba.py \
+  --instrument alma --builders numba,numpy,jax_cpu --eps 1e-12 --reps 1
+python scripts/interferometer/likelihood_breakdown/preload_numba.py \
+  --instrument alma --builders all --reps 3
+
+# alma_high — NUFFT only; the brute-force builders are hard-refused there.
+python scripts/interferometer/likelihood_breakdown/preload_numba.py \
+  --instrument alma_high --builders all --reps 3
 ```
+
+`--builders all` at alma works in one shot too; the trio is split out above only so a
+90-minute build can be driven in the background and re-assembled from its cache.
