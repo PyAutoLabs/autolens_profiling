@@ -184,6 +184,24 @@ legacy variant runs `[4, 2, 2]` too. What legacy does reproduce is the *cost
 structure* — the mesh, regularization, over-sampling, MGE basis and repeated
 instance the historic timings were measured with.
 
+### The deflection axis, re-pinned (2026-09-08)
+
+`scripts/lens/deflections/_driver.py` carried the last `[4, 2, 1]` in the repo;
+its `SUB_SIZE_LIST` is now `[4, 2, 2]` as well, so the axis is retired
+everywhere without exception. The over-sampled `Grid2DIrregular` grows
+accordingly (hst 17980 -> 62752 points), which changes the `irregular_s` column
+but not what any profile computes: the deflection pins are taken on
+`dataset.grids.pixelization` (still `over_sample_size_pixelization=1`) and on a
+dedicated fixed-coordinate `Grid2DIrregular`, neither of which the lp recipe
+touches.
+
+All four cells were nonetheless re-pinned on both instruments with `--repin`
+(reason recorded as `pin_provenance`), and every value held: the **largest
+relative move across all eight runs was 3.284e-11** (`total` / `PowerLaw`
+sample, both instruments; `basis` moved by exactly zero). No re-pin came near
+the `--repin-max-shift` guard, so `--repin-force` was never used. Each cell was
+then re-run without `--repin` and all eight pin checks PASSED at rtol 1e-6.
+
 ## What deliberately did not change
 
 - **The JAX / A100 Delaunay cells** (`likelihood_{breakdown,runtime}/delaunay.py`,

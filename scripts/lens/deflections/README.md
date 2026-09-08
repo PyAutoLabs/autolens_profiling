@@ -22,13 +22,21 @@ compute a corrected answer — and `stellar` again in phase 3 for one on-axis sa
 the rotation-matrix transform makes exactly zero (was 4.8e-17); each reason is recorded
 as `pin_provenance`. `total` has never been re-pinned.
 
+Every pin was re-measured on 2026-09-08 (autolens_profiling#235) after
+`SUB_SIZE_LIST` moved to `[4, 2, 2]`, and every value held (largest relative
+move 3.3e-11, `total` / `PowerLaw`). The `Irregular s/call` column is
+per-artifact, so only the `basis` rows — whose newest artifact is
+v2026.8.17.1 — were rewritten on the larger `[4, 2, 2]` grid; the
+v2026.8.29.1 `dark` / `stellar` / `total` rows predate it and refresh on their
+next run on a v2026.8.29.1-or-newer host.
+
 ## Latest results
 
 <!-- BEGIN auto-table:deflections -->
 | Cell | Instrument | Profile | Grid2D s/call | Irregular s/call | Tracer s/call | Pin | Version |
 |------|------------|---------|---------------|------------------|---------------|-----|---------|
-| `basis` | euclid | `Basis_mge_30` | 30.9 ms | 34.3 ms | 29.5 ms | ok | v2026.8.17.1 |
-| `basis` | hst | `Basis_mge_30` | 151.0 ms | 171.2 ms | 138.4 ms | ok | v2026.8.17.1 |
+| `basis` | euclid | `Basis_mge_30` | 44.8 ms | 183.5 ms | 47.4 ms | ok | v2026.8.17.1 |
+| `basis` | hst | `Basis_mge_30` | 138.9 ms | 635.4 ms | 147.6 ms | ok | v2026.8.17.1 |
 | `dark` | euclid | `NFW` | 668 μs | 640 μs | 1.9 ms | ok | v2026.8.29.1 |
 | `dark` | euclid | `NFWSph` | 644 μs | 545 μs | 1.7 ms | ok | v2026.8.29.1 |
 | `dark` | euclid | `gNFW` | 38.9 ms | 45.0 ms | 76.0 ms | ok | v2026.8.29.1 |
@@ -89,12 +97,15 @@ Each is one warm-up call followed by the **median** of `--n-repeats` (default
 20) timed calls. `n_points` for both grids is recorded alongside, so a timing is
 always divisible by the work it did.
 
-The grid construction mirrors
+The grid construction mirrors the `--variant legacy` configuration of
 [`scripts/imaging/likelihood_breakdown/pixelization_numba.py`](../../misc/likelihood_breakdown/README.md)
 exactly — circular 3.5" mask, `over_sample_size_via_radial_bins_from` with
-`sub_size_list=[4, 2, 1]` at `radial_list=[0.3, 0.6]`,
+`sub_size_list=[4, 2, 2]` at `radial_list=[0.3, 0.6]`,
 `over_sample_size_pixelization=1` — so a number here is directly comparable to
-the ray-trace step of that cell's breakdown.
+the ray-trace step of that cell's legacy breakdown. (That cell's **production**
+variant runs the radial bins at `[0.1, 0.3]` and over-samples the pixelization
+grid; these deflection cells stay on the legacy grid so the whole pin history
+above remains one series.)
 
 `tracer_over_raw` records `tracer_s / grid2d_s`. It lands at ≈ 0.9–1.5× for every
 profile: the tracer evaluates the same deflection and pays grid bookkeeping and plane
