@@ -83,7 +83,7 @@ sequence — which is also exactly the regime the memo does not help. That, not 
 
 ## Relation to the JAX solver ledger
 
-[`nnls_solver_ledger.md`](./nnls_solver_ledger.md) closed the *JAX PDIP* solver, where warm
+[`nnls_solver_ledger.md`](../notes/nnls_solver_ledger.md) closed the *JAX PDIP* solver, where warm
 starting from the unconstrained solve **hurt** (17 → 38 iterations) by un-centering the interior
 point. That does not transfer: this is the numpy/numba Bro & De Jong active-set solver, where a
 warm start is a discrete guess at the passive set and a wrong guess costs iterations rather than
