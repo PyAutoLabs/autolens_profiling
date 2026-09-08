@@ -490,6 +490,21 @@ program alone, +1.59 s across all breakdown compiles and +8.75 s across the runt
 cell's lower/compile/first-call phases — so the flag pays for itself after ~68 calls of
 the F step and ~453 batched likelihood evaluations respectively.
 
+### Addendum (2026-09-08)
+
+The pair above is real, but the level-0 rows recorded after it — 342315, 342316, 342321
+and 342322, all measuring F at 4.80–4.83 ms with autotuning still off — do **not**
+contradict it. They were reading a per-fusion autotune cache that jobs 342282/342283
+seeded on `euclid-ral-gpu-2`: JAX persists XLA's autotune cache under
+`JAX_COMPILATION_CACHE_DIR` keyed by fusion fingerprint rather than by the autotune
+flag, and RAL `$HOME` is node-local. The controlled fresh-cache-per-arm probe (job
+342333, 2026-09-08) reproduces the pair on a bare GEMM — 25.52 ms at level 0 against
+4.92 ms at level 4 — and shows the level-0 arm lowering to an un-autotuned Triton
+fusion. The cure is not to re-enable autotuning but to add
+`--xla_gpu_enable_triton_gemm=false`, which reaches cuBLAS (4.79 ms) with no autotune
+compile cost; adopted in PyAutoNerves#161. Full write-up:
+[`xla_autotune_triton_gemm.md`](./xla_autotune_triton_gemm.md).
+
 ## See also
 
 - `results/notes/preopt_breakdown_baseline.md` — the 2026-07-10 A100 tier this note

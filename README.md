@@ -114,9 +114,12 @@ likelihoods XLA compilation is a first-class cost in its own right —
 `scripts/misc/jax_compile/` measures trace / compile / first-call / steady-state
 separately per likelihood × transform. Standing conclusions:
 
-- **Settings suffice** — the persistent compilation cache and `--xla_gpu_autotune_level=0`
-  (both shipped as autonerves defaults) take the worst measured first fit from
-  ~70 min to ~35 s. Never restructure a likelihood or sampler for compile time
+- **Settings suffice** — the persistent compilation cache, `--xla_gpu_autotune_level=0`
+  and `--xla_gpu_enable_triton_gemm=false` (all shipped as autonerves defaults) take the
+  worst measured first fit from ~70 min to ~35 s; the Triton flag is there because at
+  autotune level 0 XLA's default Triton tile makes dense fp64 GEMMs ~5× slower than
+  cuBLAS ([`results/notes/xla_autotune_triton_gemm.md`](./results/notes/xla_autotune_triton_gemm.md)).
+  Never restructure a likelihood or sampler for compile time
   ([`scripts/misc/jax_compile/README.md`](./scripts/misc/jax_compile/README.md)).
 - **`af.MultiStartProdigy` compile is a non-problem** on MGE and every pixelized
   mesh (rectangular / KNN / Delaunay) — ≤ 75 s cold, ≤ 2 s warm on a 32-core
