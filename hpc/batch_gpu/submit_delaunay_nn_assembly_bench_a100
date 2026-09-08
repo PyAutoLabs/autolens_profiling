@@ -1,0 +1,65 @@
+#!/bin/bash -l
+#
+# A100 direct bench of the DelaunayNN ConstantSplit assembly — PyAutoArray#536.
+#
+# The companion to the breakdown/runtime A/B legs: instead of timing the
+# assembly as a difference of two compiled prefixes, this times the assembly
+# function itself on the real (4P, K) HST split stencil tables committed at
+# results/delaunay_nn/tables_hst_1500.npz. `V0` is the pre-#536 full padded
+# (4P, K, K) scatter and `V6_library` is the shipped library path with its
+# default compaction, so the V0-vs-V6_library row is the direct statement of
+# what the change bought, free of any prefix-attribution caveat.
+#
+# Runs on the **feature** private checkout (the library default constants are
+# what V6_library exercises); V0 is reproduced from the same code by forcing
+# compact_width = K, so both rows come from one checkout and no control
+# checkout is needed here.
+#
+# Cheap: no dataset, no imaging fit, minutes not hours.
+
+#SBATCH -J delnn_asm_bench
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=1:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+AA_ROOT=/mnt/ral/jnightin/PyAuto_wt/delaunay-nn-constant-split-assembly/PyAutoArray_feature
+export PYTHONPATH=$AA_ROOT:$PYTHONPATH
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding"
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+nvidia-smi
+
+# MIG backstop; no-op since 2026-09-05, only bounces under --requeue.
+source "$AP_ROOT/hpc/batch_gpu/_gpu_preflight.sh"
+
+echo "=========================================="
+date
+printf 'PyAutoArray(AB) %s\n' "$(git -C $AA_ROOT rev-parse HEAD 2>&1)"
+echo "AP_ROOT rev:   $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+
+cd $AP_ROOT
+python3 -c "import autoarray; print('autoarray.__file__ =', autoarray.__file__)"
+
+python3 -u scripts/misc/delaunay_nn/assembly_bench.py \
+    --batch 16 \
+    --repeats 10 \
+    --label "A100 fp64, PyAutoArray#536 A/B session" \
+    --out results/delaunay_nn/assembly_bench_a100_fp64.json
+
+echo "Finished."
+date
