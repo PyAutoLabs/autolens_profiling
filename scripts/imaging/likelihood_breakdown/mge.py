@@ -216,7 +216,7 @@ with timer.section("mask_and_oversample"):
 
     over_sample_size = al.util.over_sample.over_sample_size_via_radial_bins_from(
         grid=dataset.grid,
-        sub_size_list=[4, 2, 1],
+        sub_size_list=[4, 2, 2],
         radial_list=[0.3, 0.6],
         centre_list=[(0.0, 0.0)],
     )
@@ -737,7 +737,13 @@ print(f"  Bar chart saved to:    {chart_path}")
 # Regression assertion — eager log_likelihood only
 # ===================================================================
 
-EXPECTED_LOG_LIKELIHOOD_HST = 27379.38890685539
+# Re-pinned 2026-09-08 (autolens_profiling#235): the light-profile radial-bin
+# recipe retired its outer sub-size-1 bin ([4, 2, 1] -> [4, 2, 2]) repo-wide,
+# because sub-size 1 leaves the outermost annulus un-over-sampled and causes
+# gradient issues. That changes the over-sampled light-profile grid, so every
+# pinned likelihood on this cell moved. Measured on this host (WSL, fp64,
+# OMP_NUM_THREADS=1) from one eager run per instrument.
+EXPECTED_LOG_LIKELIHOOD_HST = 27373.152646517723  # was 27379.38890685539
 
 np.testing.assert_allclose(
     log_likelihood_ref,
