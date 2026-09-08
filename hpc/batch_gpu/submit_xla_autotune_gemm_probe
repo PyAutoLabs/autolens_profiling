@@ -1,0 +1,116 @@
+#!/bin/bash -l
+#
+# XLA GPU autotuning / Triton-GEMM probe (autolens_profiling, 2026-09-08).
+#
+# Five arms of one dense fp64 GEMM — the (15361 x 1560) mapping-matrix shape of
+# the HST / Delaunay-1500 imaging cell's Curvature matrix (F) step — run in one
+# job on one node, to separate the effect of --xla_gpu_autotune_level from the
+# effect of the per-fusion autotune cache JAX persists under
+# JAX_COMPILATION_CACHE_DIR.
+#
+#   A  level 0, fresh cache          -- the shipped default on a virgin node
+#   B  level 4, fresh cache          -- XLA's default; writes autotune entries
+#   C  level 0, reading B's cache    -- the trap: level 0 gets B's kernel
+#   D  level 0, reading its own      -- level 0 stays slow when nothing seeded it
+#   E  level 0 + triton_gemm=false   -- the cure; cuBLAS without autotuning
+#
+# Each arm prints a RESULT line (compile_s / first_ms / steady_mean_ms), then
+# the arm's cache listing and its autotune-entry count (AUTOTUNE_ENTRIES), and
+# the job ends with an HLO pass reporting whether each arm's dot lowered to a
+# Triton __triton_nested_gemm_fusion or to the __cublas$lt$matmul custom call.
+#
+# Findings: results/notes/xla_autotune_triton_gemm.md (job 342333).
+
+#SBATCH -J xla_autotune_gemm_probe
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=00:30:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+
+# Derive the repo root from where this was submitted (hpc/batch_gpu/../..)
+# rather than hardcoding the RAL checkout path, so this runs from a worktree.
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+# Per-arm scratch: compilation caches and HLO dumps. Wiped at the start of every
+# job — arms A, B and E must each begin from an empty cache or the A/B is void.
+S=$AP_ROOT/output/xla_autotune_probe
+mkdir -p $S
+
+echo "=== node ==="
+hostname
+date
+nvidia-smi
+echo "python3: $(which python3)"
+echo "scratch: $S"
+
+rm -rf $S/cache_A $S/cache_B $S/cache_E
+rm -rf $S/hlo_A $S/hlo_B $S/hlo_C $S/hlo_D $S/hlo_E
+mkdir -p $S/cache_A $S/cache_B $S/cache_E
+mkdir -p $S/hlo_A $S/hlo_B $S/hlo_C $S/hlo_D $S/hlo_E
+
+BASE="--xla_disable_hlo_passes=constant_folding"
+
+run_arm () {
+    ARM=$1
+    LEVELFLAGS=$2
+    CACHE=$3
+    echo ""
+    echo "############################################################"
+    echo "### ARM $ARM  flags=[$LEVELFLAGS]  cache=$CACHE"
+    echo "############################################################"
+    export XLA_FLAGS="$BASE $LEVELFLAGS --xla_dump_to=$S/hlo_$ARM --xla_dump_hlo_as_text"
+    export JAX_COMPILATION_CACHE_DIR=$CACHE
+    python3 -u $AP_ROOT/scripts/misc/jax_compile/gemm_probe.py $ARM || echo "ARM $ARM FAILED"
+    echo "--- cache listing for $CACHE ---"
+    ls -R $CACHE 2>/dev/null | head -20
+    echo "--- autotune cache entry count ---"
+    echo -n "AUTOTUNE_ENTRIES arm=$ARM count="
+    ls $CACHE/xla_gpu_per_fusion_autotune_cache_dir 2>/dev/null | wc -l
+}
+
+run_arm A "--xla_gpu_autotune_level=0" $S/cache_A
+run_arm B "--xla_gpu_autotune_level=4" $S/cache_B
+run_arm C "--xla_gpu_autotune_level=0" $S/cache_B
+run_arm D "--xla_gpu_autotune_level=0" $S/cache_A
+run_arm E "--xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false" $S/cache_E
+
+echo ""
+echo "############################################################"
+echo "### HLO lowering analysis"
+echo "############################################################"
+for ARM in A B C D E; do
+    D=$S/hlo_$ARM
+    echo "--- arm $ARM  ($D) ---"
+    ls $D 2>/dev/null | head -20
+    CUB=$(cd $D 2>/dev/null && grep -l -E 'custom_call_target="__cublas\$gemm"|__cublas\$lt\$matmul' *after_optimizations*.txt 2>/dev/null | head)
+    TRI=$(cd $D 2>/dev/null && grep -l -E 'triton_gemm|__triton' *after_optimizations*.txt 2>/dev/null | head)
+    echo "LOWERING arm=$ARM cublas_files=[$CUB] triton_files=[$TRI]"
+    if [ -n "$CUB" ] && [ -z "$TRI" ]; then echo "LOWERING_VERDICT arm=$ARM cuBLAS"
+    elif [ -n "$TRI" ] && [ -z "$CUB" ]; then echo "LOWERING_VERDICT arm=$ARM Triton"
+    elif [ -n "$TRI" ] && [ -n "$CUB" ]; then echo "LOWERING_VERDICT arm=$ARM both"
+    else echo "LOWERING_VERDICT arm=$ARM unknown"; fi
+    echo "--- dot lines arm=$ARM ---"
+    for f in $D/*after_optimizations*.txt; do
+        [ -e "$f" ] || continue
+        echo "  file: $(basename $f)"
+        grep -E 'custom-call|kind=kCustom' "$f" 2>/dev/null | head -5
+    done
+done
+
+echo ""
+echo "=== RESULT LINES ==="
+date
+echo "Finished."
