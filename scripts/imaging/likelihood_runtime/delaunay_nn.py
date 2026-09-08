@@ -15,9 +15,11 @@ interpolation scheme and nothing else.
 
 Sibson weights need fixed-shape arrays under ``jax.jit``: PyAutoArray pins
 ``SIBSON_MAX_CAVITY_TRIANGLES = 32``, ``SIBSON_MAX_NEIGHBORS = 32`` and
-``SIBSON_QUERY_CHUNK = 256`` in
-``autoarray/inversion/mesh/interpolator/sibson.py``, so every mapper row is 32
-wide here against Delaunay's 3. The per-step attribution of that cost is the
+``SIBSON_QUERY_CHUNK = 4096`` in
+``autoarray/inversion/mesh/interpolator/sibson.py`` (the chunk default was
+raised from 256 to 4096 by PyAutoArray#533; ``PYAUTO_SIBSON_QUERY_CHUNK``
+overrides it at import time), so every mapper row is 32 wide here against
+Delaunay's 3. The per-step attribution of that cost is the
 breakdown cell's job (``likelihood_breakdown/imaging/delaunay_nn.py``); this
 script answers only "what does one likelihood cost end to end".
 

@@ -28,8 +28,12 @@ production caps in ``autoarray/inversion/mesh/interpolator/sibson.py``:
 
     SIBSON_MAX_CAVITY_TRIANGLES = 32
     SIBSON_MAX_NEIGHBORS        = 32
-    SIBSON_QUERY_CHUNK          = 256
+    SIBSON_QUERY_CHUNK          = 4096
 
+The first two are correctness caps; ``SIBSON_QUERY_CHUNK`` is a memory guard
+only (it is bit-neutral — the same log evidence at every chunk) and its default
+was raised from 256 to 4096 by PyAutoArray#533, with the import-time override
+``PYAUTO_SIBSON_QUERY_CHUNK`` for a smaller GPU or a much larger cell.
 ``autoarray/inversion/mesh/mesh/delaunay_nn.py`` binds them onto the mesh class
 as ``max_cavity_triangles`` / ``max_neighbors`` / ``query_chunk``. The workspace
 mass-model audit (101 traced Hilbert meshes) observed maxima of 25 cavity
@@ -90,6 +94,67 @@ interpolator prefix — a nonsensical -175 ms row. ``_setup_prefix_fn(11)``
 therefore returns the step-6 outputs alongside H, making it a strict superset
 of ``_setup_prefix_fn(6)``.
 
+Split-point Sibson vs ConstantSplit assembly (``--split-setup``)
+----------------------------------------------------------------
+
+Under ``--split-setup`` a third prefix is compiled *between* those two. It
+stops right after ``InterpolatorDelaunayNN._mappings_sizes_weights_split`` —
+returning the split-point mappings, sizes **and** weights alongside the step-6
+outputs, the same strict-superset trick prefix 11 uses — and two more rows come
+out of the same prefix-difference arithmetic::
+
+    Split-point Sibson
+        = t(params -> split mappings/sizes/weights) - t(params -> interpolator)
+    Regularization matrix (H, ConstantSplit assembly)
+        = t(params -> H) - t(params -> split mappings/sizes/weights)
+
+The first row is the **second Sibson pass alone** (the ~6,000 split queries,
+about a quarter of the ~24,000 queries the concatenated Sibson pass makes); the
+second is the 33-wide ConstantSplit assembly alone (``reg_split_from`` plus the
+block-diagonal build), with no Sibson work left in it. Both attribute the same
+interval the "Regularization matrix (H)" row reports and sum to it, so they are
+printed beside the four-way ``--split-setup`` table rather than added to the
+step list: the step list, ``steps``, ``setup_split`` and every other
+pre-existing JSON field are unchanged, so older result JSONs stay comparable
+row-for-row. The absolute prefix is recorded as ``split_sibson_prefix_s`` next
+to ``interpolator_prefix_s`` and ``regularization_matrix_prefix_s``.
+
+The DCE trap bites this prefix exactly as it bites prefix 11, and for the same
+reason: return only the step-6 outputs and XLA eliminates the split walk, so
+the row reads ~0 and the split cost reappears in the H row. The prefix
+therefore returns all three split arrays, the ones ``ConstantSplit`` actually
+consumes.
+
+**Judge an A/B on the prefixes, not on the differenced rows.** A change that
+moves work across a prefix boundary (the #531 concatenated locate did exactly
+that) moves the rows without moving the total; ``regularization_matrix_prefix_s``
+is the params->H number that is comparable across legs, with
+``split_sibson_prefix_s`` and ``interpolator_prefix_s`` saying where inside it
+the time went.
+
+That is not hypothetical for this cell: PyAutoArray#532 gives ``jax_delaunay_nn``
+one concatenated Sibson pass over data grid + split points, exactly as #531 did
+for the locate. Where XLA cannot narrow the concatenated pass back down, the
+split-side work moves *inside* ``_setup_prefix_fn(6)`` — into the "Triangulation
++ interpolation" row — and "Split-point Sibson" collapses towards ~0 on the
+feature leg while the interpolator prefix grows. That is an attribution shift,
+not a saving; only the params->H prefix says whether the work went away.
+
+Provenance
+----------
+
+The Sibson static caps in force are recorded in the result JSON under
+``sibson``: ``SIBSON_MAX_CAVITY_TRIANGLES`` / ``SIBSON_MAX_NEIGHBORS`` /
+``SIBSON_QUERY_CHUNK`` as imported, the mesh's own ``query_chunk``, and the
+raw ``PYAUTO_SIBSON_QUERY_CHUNK`` env override PyAutoArray reads once at
+import. The chunk sets how many sequential ``lax.map`` trips the two Sibson
+passes take, so it rescales every Sibson timing in the run the way a stray
+``XLA_FLAGS`` rescales everything else (autolens_profiling#59) — a sweep row
+that does not carry its chunk is comparable to nothing. The chunk sweep names
+its rows through ``--config-name`` (e.g.
+``--config-name hpc_a100_fp64_chunk1024`` writes
+``delaunay_nn_hpc_a100_fp64_chunk1024.json``).
+
 Before 2026-09 this row timed ``jnp.array(inversion.regularization_matrix)`` —
 a host-to-device copy of the 19.5 MB matrix the *eager NumPy* ``FitImaging``
 had already computed. On the A100 that read as ~14.4 ms of PCIe traffic and
@@ -137,6 +202,7 @@ if _misc_dir not in _sys.path:
     _sys.path.insert(0, _misc_dir)
 
 
+import os
 import subprocess
 import sys
 import time
@@ -278,6 +344,35 @@ def jit_profile(func, label, *args, n_repeats=10):
     per_call = timer.records[-1][1] / n_repeats
     print(f"    -> per-call avg: {per_call:.6f} s")
     return compiled, result
+
+
+def sibson_provenance(mesh=None) -> dict:
+    """Record the Sibson static caps in force for this run.
+
+    Recorded the way ``device_info_dict`` records ``xla_flags``: the query
+    chunk sets the number of sequential ``lax.map`` trips the Sibson passes
+    make, so changing it rescales every Sibson timing in the result. A sweep
+    row that does not carry its chunk cannot be compared to another row.
+
+    ``PYAUTO_SIBSON_QUERY_CHUNK`` is PyAutoArray's env override, read once at
+    import; the imported ``SIBSON_QUERY_CHUNK`` is therefore the *effective*
+    value and is recorded whether or not the override is set. ``mesh`` (when
+    given) contributes the mesh instance's own ``query_chunk``, which is what
+    the interpolator actually passes down.
+    """
+    from autoarray.inversion.mesh.interpolator import sibson as _sibson_mod
+
+    info = {
+        "PYAUTO_SIBSON_QUERY_CHUNK": os.environ.get("PYAUTO_SIBSON_QUERY_CHUNK") or None,
+        "query_chunk": int(_sibson_mod.SIBSON_QUERY_CHUNK),
+        "max_cavity_triangles": int(_sibson_mod.SIBSON_MAX_CAVITY_TRIANGLES),
+        "max_neighbors": int(_sibson_mod.SIBSON_MAX_NEIGHBORS),
+    }
+    if mesh is not None:
+        info["mesh_query_chunk"] = int(mesh.query_chunk)
+        info["mesh_max_cavity_triangles"] = int(mesh.max_cavity_triangles)
+        info["mesh_max_neighbors"] = int(mesh.max_neighbors)
+    return info
 
 
 timer = Timer()
@@ -714,6 +809,16 @@ with timer.section("delaunay_nn_interpolation_and_mapper"):
 print(f"  mapper.pixels (source): {mapper.pixels}")
 print(f"  pix_indexes shape: {mapper.pix_indexes_for_sub_slim_index.shape}")
 
+# Sibson caps / query chunk in force — printed here (the first Sibson call of
+# the run) and again in the summary header, and carried in the result JSON.
+sibson_info = sibson_provenance(mesh=pixelization_obj.mesh)
+print(
+    f"  Sibson caps: cavity={sibson_info['max_cavity_triangles']}, "
+    f"neighbors={sibson_info['max_neighbors']}, "
+    f"query_chunk={sibson_info['query_chunk']} "
+    f"(PYAUTO_SIBSON_QUERY_CHUNK={sibson_info['PYAUTO_SIBSON_QUERY_CHUNK'] or 'unset'})"
+)
+
 # ---------------------------------------------------------------------------
 # Steps 7-13: Extract matrices from FitImaging inversion for consistency
 # ---------------------------------------------------------------------------
@@ -820,10 +925,20 @@ def _setup_prefix_fn(upto):
     """Return a ``params_tree -> <stage output>`` function for the given stage.
 
     ``upto`` is the pipeline step the prefix stops at: 5 border relocation,
-    6 interpolator+mapper, 7 mapping matrix, 8 blurred mapping matrix, and
+    6 interpolator+mapper, ``_SPLIT_SIBSON_STAGE`` the interpolator's
+    split-point Sibson pass, 7 mapping matrix, 8 blurred mapping matrix, and
     11 the ConstantSplit regularization matrix H (the step-11 row's prefix;
     it branches off after the mapper, before the mapping matrix, because
     that is exactly what the inversion's H depends on).
+
+    ``_SPLIT_SIBSON_STAGE`` sits between 6 and 11 and is timed under
+    ``--split-setup``: it stops right after
+    ``InterpolatorDelaunayNN._mappings_sizes_weights_split``, so
+    ``t(split) - t(6)`` is the split-side Sibson pass alone and
+    ``t(11) - t(split)`` is the ConstantSplit assembly alone (module
+    docstring, "Split-point Sibson vs ConstantSplit assembly"). Like prefix
+    11 it is a strict superset of prefix 6 and returns all three split
+    arrays — drop them and XLA eliminates the split walk it is there to time.
 
     Prefix 11 returns the step-6 outputs **as well as** H. That is load-bearing,
     not cosmetic: H is built from the interpolator's split-point walk
@@ -865,6 +980,21 @@ def _setup_prefix_fn(upto):
                 m.pix_indexes_for_sub_slim_index,
                 m.pix_weights_for_sub_slim_index,
             )
+        if upto == _SPLIT_SIBSON_STAGE:
+            # Stop right after the split-point Sibson pass. All three arrays
+            # are returned (mappings, sizes, weights — exactly what
+            # ``ConstantSplit.regularization_matrix_from`` consumes) on top of
+            # the step-6 outputs, making this a strict superset of prefix 6
+            # and a strict subset of prefix 11. Returning fewer of them lets
+            # XLA dead-code-eliminate the walk this stage exists to measure.
+            split_mappings, split_sizes, split_weights = interp._mappings_sizes_weights_split
+            return (
+                m.pix_indexes_for_sub_slim_index,
+                m.pix_weights_for_sub_slim_index,
+                split_mappings,
+                split_sizes,
+                split_weights,
+            )
         if upto == 11:
             # H is the mapper's own regularization block: the same call the
             # inversion makes (``AbstractRegularization.regularization_matrix_from``
@@ -896,13 +1026,23 @@ _prefix_labels = {
     7: "Mapping matrix",
     8: "Blurred mapping matrix (PSF)",
 }
+# Stage key of the split-point Sibson prefix. Deliberately not an int: it is
+# not a pipeline step, it is a cut *inside* the params->H interval between
+# steps 6 and 11, and the four-way setup split must keep differencing over
+# (5, 6, 7, 8) only.
+_SPLIT_SIBSON_STAGE = "6s"
+_REG_SPLIT_LABELS = (
+    "Split-point Sibson",
+    "Regularization matrix (H, ConstantSplit assembly)",
+)
 _split_setup = "--split-setup" in sys.argv
-_prefix_per_call: dict[int, float] = {}
+_prefix_per_call: dict[int | str, float] = {}
 _setup_split: dict | None = None
+_reg_split: dict | None = None
 
 if _split_setup:
     print("\n--- Inversion setup four-way split (--split-setup) ---")
-    _prefix_stages = (5, 6, 7, 8)
+    _prefix_stages = (5, 6, _SPLIT_SIBSON_STAGE, 7, 8)
 else:
     print("\n--- Interpolator prefix (needed for the step-11 H attribution) ---")
     _prefix_stages = (6,)
@@ -921,6 +1061,10 @@ if _split_setup:
     print(
         "  prefix per-call: "
         + ", ".join(f"5..{u}={_prefix_per_call[u] * 1000:.2f} ms" for u in (5, 6, 7, 8))
+    )
+    print(
+        "    split-point Sibson prefix (5..6 + split walk): "
+        f"{_prefix_per_call[_SPLIT_SIBSON_STAGE] * 1000:.2f} ms"
     )
     for _label, _dt in _setup_split.items():
         print(f"    {_label}: {_dt * 1000:8.2f} ms")
@@ -1018,6 +1162,28 @@ likelihood_steps.append(("Regularization matrix (H)", reg_matrix_attributed))
 print(f"  params->H prefix per-call:       {reg_matrix_prefix_per_call * 1000:9.3f} ms")
 print(f"  params->interpolator prefix:     {_prefix_per_call[6] * 1000:9.3f} ms")
 print(f"  attributed H row (difference):   {reg_matrix_attributed * 1000:9.3f} ms")
+
+# Split the same interval in two with the intermediate prefix (--split-setup
+# only): split-side Sibson pass vs the ConstantSplit assembly that consumes it.
+# These sum to the H row above; the step list is untouched.
+_split_sibson_prefix = _prefix_per_call.get(_SPLIT_SIBSON_STAGE)
+if _split_sibson_prefix is not None:
+    _reg_split = {
+        _REG_SPLIT_LABELS[0]: _split_sibson_prefix - _prefix_per_call[6],
+        _REG_SPLIT_LABELS[1]: reg_matrix_prefix_per_call - _split_sibson_prefix,
+    }
+    print(f"  params->split-Sibson prefix:     {_split_sibson_prefix * 1000:9.3f} ms")
+    for _lab, _dt in _reg_split.items():
+        print(f"    {_lab + ':':<52}{_dt * 1000:9.3f} ms")
+    if min(_reg_split.values()) < 0.0:
+        # Same caveat as the H row: the split prefix has to *materialise* the
+        # split mappings/sizes/weights as outputs, while prefix 11 fuses them
+        # straight into ``reg_split_from`` — so the assembly row can come out
+        # slightly negative even though prefix 11 strictly contains this one.
+        print(
+            "  NOTE: negative attribution — XLA fused work across the prefix "
+            "boundary; read the row as ~0 and the prefixes as the bound."
+        )
 if reg_matrix_attributed < 0.0:
     print(
         "  NOTE: negative attribution — XLA fused work across the prefix "
@@ -1042,6 +1208,8 @@ print(f"  regularization_matrix shape: {regularization_matrix.shape}")
 
 _vmap_steps: dict[str, float] | None = None
 _vmap_split: dict[str, float] | None = None
+_vmap_reg_split: dict[str, float] | None = None
+_vmap_split_sibson_prefix: float | None = None
 _vmap_error: str | None = None
 
 if _vmap_batch is not None:
@@ -1071,8 +1239,11 @@ if _vmap_batch is not None:
         return per_call
 
     try:
-        _vmap_prefix_per_call: dict[int, float] = {}
-        for _upto in (5, 6, 7, 8, 11):
+        _vmap_prefix_per_call: dict[int | str, float] = {}
+        _vmap_prefix_stages = (
+            (5, 6, _SPLIT_SIBSON_STAGE, 7, 8, 11) if _split_setup else (5, 6, 7, 8, 11)
+        )
+        for _upto in _vmap_prefix_stages:
             _vmap_prefix_per_call[_upto] = _vmap_profile(
                 _setup_prefix_fn(_upto), f"setup_prefix_{_upto}"
             )
@@ -1090,10 +1261,18 @@ if _vmap_batch is not None:
         }
         _vmap_h_prefix = _vmap_prefix_per_call[11]
         _vmap_interp_prefix = _vmap_prefix_per_call[6]
+        _vmap_split_sibson_prefix = _vmap_prefix_per_call.get(_SPLIT_SIBSON_STAGE)
+        if _vmap_split_sibson_prefix is not None:
+            _vmap_reg_split = {
+                _REG_SPLIT_LABELS[0]: _vmap_split_sibson_prefix - _vmap_interp_prefix,
+                _REG_SPLIT_LABELS[1]: _vmap_h_prefix - _vmap_split_sibson_prefix,
+            }
     except Exception:  # noqa: BLE001 — a vmap failure must not lose the unbatched run
         _vmap_error = _traceback.format_exc()
         _vmap_h_prefix = None
         _vmap_interp_prefix = None
+        _vmap_split_sibson_prefix = None
+        _vmap_reg_split = None
         print("  VMAP FAILED — unbatched results are unaffected. Traceback:")
         print(_vmap_error)
 else:
@@ -1320,6 +1499,11 @@ print(f"  Image pixels (masked): {n_image_pixels}")
 print(f"  Over-sampled pixels:   {n_over_sampled_pixels}")
 print(f"  DelaunayNN vertices:   {n_source_pixels}")
 print(f"  Edge zeroed pixels:    {edge_pixels_total}")
+print(
+    f"  Sibson query chunk:    {sibson_info['query_chunk']} "
+    f"(PYAUTO_SIBSON_QUERY_CHUNK={sibson_info['PYAUTO_SIBSON_QUERY_CHUNK'] or 'unset'}; "
+    f"caps {sibson_info['max_cavity_triangles']}/{sibson_info['max_neighbors']})"
+)
 print("-" * 70)
 
 max_label = max(len(label) for label, _ in likelihood_steps)
@@ -1341,10 +1525,17 @@ print("=" * 70)
 
 print(f"  Regularization matrix (H) — params->H prefix:  {reg_matrix_prefix_per_call:.6f} s")
 print(f"  Regularization matrix (H) — interp. prefix:    {_prefix_per_call[6]:.6f} s")
+if _split_sibson_prefix is not None:
+    print(f"  Regularization matrix (H) — split-Sibson pfx:  {_split_sibson_prefix:.6f} s")
+
+_have_reg_split = _reg_split is not None or _vmap_reg_split is not None
 
 if _setup_split is not None or _vmap_split is not None:
     print("-" * 70)
-    _split_label_width = max(len(k) for k in _prefix_labels.values())
+    _split_row_labels = list(_prefix_labels.values())
+    if _have_reg_split:
+        _split_row_labels += list(_REG_SPLIT_LABELS)
+    _split_label_width = max(len(k) for k in _split_row_labels)
     print(
         f"  inversion-setup split{'':<{_split_label_width - 21}}  "
         f"{'unbatched':>14}"
@@ -1355,6 +1546,15 @@ if _setup_split is not None or _vmap_split is not None:
         _unb = f"{_setup_split[_lab]:12.6f} s" if _setup_split is not None else f"{'—':>14}"
         _bat = f"  {_vmap_split[_lab]:20.6f} s" if _vmap_split is not None else ""
         print(f"    {_lab:<{_split_label_width}}  {_unb}{_bat}")
+    if _have_reg_split:
+        # The same params->H interval the "Regularization matrix (H)" step row
+        # reports, cut at the split-point Sibson prefix. These two sum to that
+        # row; they are not extra steps and are not added to the step total.
+        print("  params->H interval (cut at the split-point Sibson prefix)")
+        for _lab in _REG_SPLIT_LABELS:
+            _unb = f"{_reg_split[_lab]:12.6f} s" if _reg_split is not None else f"{'—':>14}"
+            _bat = f"  {_vmap_reg_split[_lab]:20.6f} s" if _vmap_reg_split is not None else ""
+            print(f"    {_lab:<{_split_label_width}}  {_unb}{_bat}")
 if _vmap_error is not None:
     print("-" * 70)
     print(f"  vmap batch {_vmap_batch}: FAILED (traceback in the result JSON).")
@@ -1374,6 +1574,9 @@ breakdown_summary = {
         "edge_zeroed_pixels": int(edge_pixels_total),
         "inversion_path": "sparse" if _cli.use_sparse_operator else "dense",
     },
+    # Sibson caps / query chunk provenance (see the module docstring): the
+    # chunk rescales every Sibson timing, so a sweep row carries its own.
+    "sibson": sibson_info,
     "steps": {label: per_call for label, per_call in likelihood_steps},
     "total_step_by_step": step_total,
     # Absolute prefix times behind the attributed "Regularization matrix (H)"
@@ -1381,6 +1584,15 @@ breakdown_summary = {
     "regularization_matrix_prefix_s": float(reg_matrix_prefix_per_call),
     "interpolator_prefix_s": float(_prefix_per_call[6]),
 }
+
+if _split_sibson_prefix is not None:
+    # Third prefix, between the interpolator and H: stops after the
+    # interpolator's split-point Sibson pass. ``regularization_split`` cuts the
+    # params->H interval in two with it (split-side Sibson / ConstantSplit
+    # assembly); ``steps`` and ``setup_split`` are unchanged.
+    breakdown_summary["split_sibson_prefix_s"] = float(_split_sibson_prefix)
+if _reg_split is not None:
+    breakdown_summary["regularization_split"] = {k: float(v) for k, v in _reg_split.items()}
 
 if _setup_split is not None:
     breakdown_summary["setup_split"] = {k: float(v) for k, v in _setup_split.items()}
@@ -1394,6 +1606,14 @@ if _vmap_batch is not None:
         breakdown_summary["setup_split_vmap"] = {k: float(v) for k, v in _vmap_split.items()}
         breakdown_summary["regularization_matrix_prefix_vmap_per_call_s"] = float(_vmap_h_prefix)
         breakdown_summary["interpolator_prefix_vmap_per_call_s"] = float(_vmap_interp_prefix)
+        if _vmap_split_sibson_prefix is not None:
+            breakdown_summary["split_sibson_prefix_vmap_per_call_s"] = float(
+                _vmap_split_sibson_prefix
+            )
+        if _vmap_reg_split is not None:
+            breakdown_summary["regularization_split_vmap"] = {
+                k: float(v) for k, v in _vmap_reg_split.items()
+            }
 
 dict_path, chart_path = resolve_output_paths(
     _cli,

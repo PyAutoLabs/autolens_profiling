@@ -1,0 +1,138 @@
+#!/bin/bash -l
+#
+# A100 likelihood-breakdown SWEEP: imaging/delaunay_nn x hst x fp64 — PyAutoArray#532
+# One array task per SIBSON_QUERY_CHUNK value, on the **feature** checkout.
+#
+# WHAT THIS MEASURES
+#   The Sibson passes push their queries through a `jax.lax.map` over
+#   SIBSON_QUERY_CHUNK-sized blocks, so the chunk sets how many *sequential*
+#   trips the two passes take: at chunk 256 the HST cell runs 95 of them (71
+#   data + 24 split) and each trip pays the A100 kernel-launch floor. The chunk
+#   was only ever a memory guard on the (chunk, 3, 2) cavity intermediates.
+#   This sweep says what the largest safe value is: per-call time from the
+#   result JSON, peak VRAM from the nvidia-smi sampler below.
+#
+#   DECISION RULE (plan A.3): ship the largest of 512/1024/2048/4096 whose peak
+#   VRAM at vmap 16 stays under ~50 % of the 80 GB and which is fastest per
+#   call; if 4096 wins on both, ship 2048 unless the margin is > 15 %, to keep
+#   headroom for larger cells. The chosen default lands as a follow-up commit on
+#   the library branch before its PR is merged.
+#
+# ARMS — 4 array tasks, chunk = 512 / 1024 / 2048 / 4096 (index -> CHUNKS below).
+#   PYAUTO_SIBSON_QUERY_CHUNK is PyAutoArray's env override of
+#   SIBSON_QUERY_CHUNK, read once at import; the breakdown script records the
+#   effective value (and the raw env var) under "sibson" in every result JSON,
+#   so a sweep row is self-describing and cannot be mistaken for another row.
+#
+#   Each task writes delaunay_nn_hpc_a100_fp64_chunk<N>.{json,png} —
+#   --config-name is the existing suffix mechanism in _profile_cli.resolve_output_paths
+#   (basename = <cell>_<config_name>), so the four rows never clobber each other
+#   or the A/B legs' rows.
+#
+# PEAK VRAM
+#   `nvidia-smi --query-gpu=memory.used --format=csv -l 2` runs in the
+#   background for the life of the Python process and writes into this task's
+#   SLURM log; the CSV header repeats, so read the peak with
+#
+#       grep -o '[0-9]\+ MiB' output/output.<jobid>_<task>.out | sort -n | tail -1
+#
+#   It is sampled, not a high-water mark from the allocator: XLA_PYTHON_CLIENT_-
+#   PREALLOCATE=false means the reading tracks real allocation, but a spike
+#   shorter than the 2 s period can be missed. Read it as a floor on the peak.
+#
+# WALL
+#   The #531 A/B legs of this exact cell (breakdown, --split-setup --vmap-batch 16)
+#   ran 2:29 and 2:28 wall on euclid-ral-gpu-2 (jobs 342317/342318,
+#   results/notes/delaunay_walk_early_exit.md). This adds one more prefix compile
+#   unbatched and one under vmap, and a larger chunk trades launches for bigger
+#   kernels, so 4:00:00 per task is ~50x the measured wall.
+
+#SBATCH -J bd_delnn_chunksweep
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=4:00:00
+#SBATCH --array=0-3
+#SBATCH -o output/output.%A_%a.out
+#SBATCH -e error/error.%A_%a.err
+
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+# --- PyAutoArray override (private feature checkout, shared install untouched) ---
+AA_ROOT=/mnt/ral/jnightin/PyAuto_wt/delaunay-nn-launch-latency/PyAutoArray_feature
+export PYTHONPATH=$AA_ROOT:$PYTHONPATH
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding"
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+CHUNKS=(512 1024 2048 4096)
+CHUNK=${CHUNKS[$SLURM_ARRAY_TASK_ID]}
+if [ -z "$CHUNK" ]; then
+    echo "FATAL: no chunk for array task ${SLURM_ARRAY_TASK_ID} (expected 0-3)." >&2
+    exit 1
+fi
+export PYAUTO_SIBSON_QUERY_CHUNK=$CHUNK
+CONFIG_NAME="hpc_a100_fp64_chunk${CHUNK}"
+
+nvidia-smi
+
+# MIG backstop. A no-op since the fleet's MIG mode was confirmed Disabled
+# (2026-09-05); kept because a silent removal re-opens the trap. Only bounces
+# when the job was dispatched with --requeue.
+source "$AP_ROOT/hpc/batch_gpu/_gpu_preflight.sh"
+
+echo "=========================================="
+date
+echo "Task:           $SLURM_ARRAY_TASK_ID / 3"
+echo "Cell:           likelihood_breakdown/imaging/delaunay_nn"
+echo "Instrument:     hst"
+echo "Precision:      fp64"
+echo "A/B leg:        launch_latency (feature/delaunay-nn-launch-latency)"
+echo "Sibson chunk:   PYAUTO_SIBSON_QUERY_CHUNK=$PYAUTO_SIBSON_QUERY_CHUNK"
+echo "Flags:          --split-setup --vmap-batch 16 --config-name $CONFIG_NAME"
+
+echo "=== source revisions ==="
+printf '%-14s %s\n' "PyAutoArray(AB)" "$(git -C $AA_ROOT rev-parse HEAD 2>&1)"
+for r in PyAutoNerves PyAutoFit PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r" "$(git -C /mnt/ral/jnightin/PyAuto/$r rev-parse HEAD 2>&1)"
+done
+echo "AP_ROOT rev:   $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+
+cd $AP_ROOT
+
+echo "=== import provenance ==="
+python3 -c "import autoarray, autolens; print('autoarray.__file__ =', autoarray.__file__); print('autoarray.__version__ =', autoarray.__version__); print('autolens.__file__ =', autolens.__file__)"
+python3 -c "from autoarray.inversion.mesh.interpolator.sibson import SIBSON_QUERY_CHUNK; print('SIBSON_QUERY_CHUNK (effective) =', SIBSON_QUERY_CHUNK)"
+
+# --- background peak-VRAM sampler (killed after the run) ---
+echo "=== nvidia-smi memory.used sampler (every 2 s) ==="
+nvidia-smi --query-gpu=memory.used --format=csv -l 2 &
+VRAM_SAMPLER_PID=$!
+trap 'kill "$VRAM_SAMPLER_PID" 2>/dev/null' EXIT
+
+python3 -u scripts/imaging/likelihood_breakdown/delaunay_nn.py \
+    --config-name $CONFIG_NAME \
+    --split-setup \
+    --vmap-batch 16
+
+kill "$VRAM_SAMPLER_PID" 2>/dev/null
+trap - EXIT
+
+# The SLURM log path is relative to the submit dir (hpc/batch_gpu), not to
+# $AP_ROOT which this script cd'd into. Trailing lines may still be buffered,
+# so re-read the log after the job for the authoritative peak.
+_LOG_DIR="${SLURM_SUBMIT_DIR:-$AP_ROOT/hpc/batch_gpu}/output"
+echo "Peak sampled VRAM this task (so far):"
+grep -o '[0-9]\+ MiB' "$_LOG_DIR/output.${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.out" 2>/dev/null | sort -n | tail -1
+
+echo "Finished."
+date
