@@ -1,0 +1,176 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "xla_flags": "--xla_cpu_multi_thread_eigen=false --xla_force_host_platform_device_count=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 8
+  },
+  "instrument": "alma_high",
+  "control_dgemm_s": 0.22770130000026256,
+  "control_note": "A fixed 1500x1500 BLAS dgemm. This laptop throttles and the alma brute-force trio is deliberately split across processes/runs, so a build_s is only comparable across runs when this agrees.",
+  "geometry": {
+    "K": 5000000,
+    "N_pix": 61572,
+    "extent": [
+      280,
+      280
+    ],
+    "preload_shape": [
+      560,
+      560
+    ],
+    "pixel_scale_arcsec": 0.025,
+    "mask_radius_arcsec": 3.5,
+    "real_space_shape": [
+      800,
+      800
+    ]
+  },
+  "configuration": {
+    "builders": [
+      "nufft"
+    ],
+    "eps_sweep": [
+      1e-06,
+      1e-09,
+      1e-12
+    ],
+    "eps_primary": 1e-12,
+    "reps": 3,
+    "reps_note": "Applies to the NUFFT builder at every instrument and to the brute-force trio at sma only; elsewhere the brute force runs once, isolated in its own interpreter under builder_timeout_s.",
+    "builder_timeout_s": 5400.0,
+    "chunk_k": 2048,
+    "nufft_chunk_size": 1000000,
+    "inversion_path": "sparse_numba",
+    "kernel": "direct_conv",
+    "mesh": "delaunay_hilbert_1500",
+    "regularization": "constant_split",
+    "regularization_coefficient": 1.0,
+    "threads": {
+      "omp_num_threads": "1",
+      "numba_num_threads": "1",
+      "mkl_num_threads": "1",
+      "openblas_num_threads": "1",
+      "xla_flags": "--xla_cpu_multi_thread_eigen=false --xla_force_host_platform_device_count=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+      "jax_platforms": "cpu"
+    }
+  },
+  "builders": {
+    "nufft": {
+      "build_s": 22.149495400000887,
+      "build_cpu_s": 89.98790510000003,
+      "threads_effective": 4.062751926167873,
+      "cache_hit": false,
+      "timed_out": false,
+      "reps": 3,
+      "warmup_s": 32.16238879999946,
+      "threads": {
+        "omp_num_threads": "1",
+        "numba_num_threads": "1",
+        "mkl_num_threads": "1",
+        "openblas_num_threads": "1",
+        "xla_flags": "--xla_cpu_multi_thread_eigen=false --xla_force_host_platform_device_count=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+        "jax_platforms": "cpu"
+      },
+      "build_s_source": "in_process",
+      "built_utc": "2026-09-08T15:41:50+00:00",
+      "description": "type-1 adjoint NUFFT (numba_interferometer.preload.nufft_preload_from)",
+      "eps": 1e-12,
+      "parity_reference": null,
+      "parity_rule": null,
+      "parity_peak_scaled_rule": null,
+      "parity_max_abs": null,
+      "parity_rel_peak": null,
+      "parity_max_rel_elementwise": null,
+      "parity_n_elementwise_over_1e10": null,
+      "passes_pin": null,
+      "passes_peak_scaled_pin": null
+    }
+  },
+  "threads_note": "build_s is wall clock; build_cpu_s is time.process_time(), which sums every thread, so threads_effective = build_cpu_s / build_s is the effective core count of the build. OMP/MKL/OPENBLAS/NUMBA_NUM_THREADS=1 pin NumPy's BLAS and numba to one core, but XLA's CPU runtime keeps its own intra-op pool, so the two JAX-backed builders (jax_cpu, and nufft via nufftax) can use several cores even under --xla_cpu_multi_thread_eigen=false. Quote both numbers before comparing them with a single-threaded loop.",
+  "parity_reference": null,
+  "parity_reference_peak": null,
+  "parity_note": "parity_rel_peak = max|d| / P[0,0]; parity_max_rel_elementwise is the strictest possible reading, with parity_n_elementwise_over_1e10 counting the entries that breach rtol=1e-10. The sma rule is mixed (rtol=1e-10, atol=1e-10*P[0,0]): a type-1 NUFFT bounds its error against sum|c_k|, i.e. against the peak, so its near-zero entries \u2014 five orders below the peak, at the fp64 noise floor \u2014 carry no relative guarantee and a relative-only test there measures round-off, not the builder. The alma rule is the peak-scaled bound 10*eps*P[0,0], evaluated at each row's own eps. Both metrics and both verdicts (passes_pin under the instrument's rule, passes_peak_scaled_pin always) are recorded under either rule, so the choice of rule is visible rather than baked into one boolean.",
+  "nufft_eps_sweep": {
+    "1e-06": {
+      "build_s": 9.298795799999425,
+      "build_cpu_s": 33.928468599999974,
+      "threads_effective": 3.648694877244435,
+      "warmup_s": 9.807296699998915,
+      "reps": 3,
+      "parity_reference": null,
+      "parity_rule": null,
+      "parity_peak_scaled_rule": null,
+      "parity_max_abs": null,
+      "parity_rel_peak": null,
+      "parity_max_rel_elementwise": null,
+      "parity_n_elementwise_over_1e10": null,
+      "passes_pin": null,
+      "passes_peak_scaled_pin": null,
+      "log_evidence": null,
+      "log_evidence_reference": null,
+      "log_evidence_rel_diff": null,
+      "passes_log_evidence_pin": null
+    },
+    "1e-09": {
+      "build_s": 16.122235199998613,
+      "build_cpu_s": 62.20474060000004,
+      "threads_effective": 3.8583198811046615,
+      "warmup_s": 16.111550100000386,
+      "reps": 3,
+      "parity_reference": null,
+      "parity_rule": null,
+      "parity_peak_scaled_rule": null,
+      "parity_max_abs": null,
+      "parity_rel_peak": null,
+      "parity_max_rel_elementwise": null,
+      "parity_n_elementwise_over_1e10": null,
+      "passes_pin": null,
+      "passes_peak_scaled_pin": null,
+      "log_evidence": null,
+      "log_evidence_reference": null,
+      "log_evidence_rel_diff": null,
+      "passes_log_evidence_pin": null
+    },
+    "1e-12": {
+      "build_s": 22.730024200000116,
+      "build_cpu_s": 89.53551659999994,
+      "threads_effective": 3.939085845759877,
+      "warmup_s": 25.6597141000002,
+      "reps": 3,
+      "parity_reference": null,
+      "parity_rule": null,
+      "parity_peak_scaled_rule": null,
+      "parity_max_abs": null,
+      "parity_rel_peak": null,
+      "parity_max_rel_elementwise": null,
+      "parity_n_elementwise_over_1e10": null,
+      "passes_pin": null,
+      "passes_peak_scaled_pin": null,
+      "log_evidence": null,
+      "log_evidence_reference": null,
+      "log_evidence_rel_diff": null,
+      "passes_log_evidence_pin": null
+    }
+  },
+  "nufft_eps_self_consistency": {
+    "1e-06": {
+      "vs_eps": "1e-12",
+      "max_abs": 2.8636515025937115e-06,
+      "rel_peak": 5.72730300518733e-09
+    },
+    "1e-09": {
+      "vs_eps": "1e-12",
+      "max_abs": 2.344529548281571e-08,
+      "rel_peak": 4.689059096563066e-11
+    }
+  },
+  "log_evidence_rtol": 1e-06,
+  "log_evidence_note": "Each eps's preload is pushed through apply_sparse_operator -> NumbaPreload.from_curvature_preload -> InversionInterferometerNumba(kernel='direct_conv') -> fit_util.log_evidence_from, the chain delaunay_numba.py profiles, and compared with the same chain on the brute-force reference preload. A preload that passes an array pin but moves the log evidence is not usable.",
+  "mesh_vertices": null,
+  "hilbert_pixels": 1500,
+  "pinned_expected": null,
+  "pinned_drift": []
+}

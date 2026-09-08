@@ -100,3 +100,12 @@ results/notes/inference/phase_08_regularization/bijector_ab/rows_*.npz
 # written beside the dataset by scripts/misc/numba_interferometer so a paired kernel
 # sweep pays the build once. Regenerated on demand; never an input.
 dataset/interferometer/*/nufft_precision_operator_*.npy
+
+# Per-builder W~ preload caches + their timing sidecars, written beside the dataset
+# by scripts/interferometer/likelihood_breakdown/preload_numba.py so the alma
+# brute-force trio (~30 min each) is paid once and can be assembled across runs;
+# preload_inputs_*.npz is the four builder arguments handed to an isolated build.
+# All derived, all recomputable, and the timings that matter live in the result JSON.
+dataset/interferometer/*/preload_*_*.npy
+dataset/interferometer/*/preload_*_*.json
+dataset/interferometer/*/preload_inputs_*.npz

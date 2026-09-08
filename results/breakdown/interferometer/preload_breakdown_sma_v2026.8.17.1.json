@@ -1,0 +1,269 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "xla_flags": "--xla_cpu_multi_thread_eigen=false --xla_force_host_platform_device_count=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 8
+  },
+  "instrument": "sma",
+  "control_dgemm_s": 0.3084041999991314,
+  "control_note": "A fixed 1500x1500 BLAS dgemm. This laptop throttles and the alma brute-force trio is deliberately split across processes/runs, so a build_s is only comparable across runs when this agrees.",
+  "geometry": {
+    "K": 190,
+    "N_pix": 3852,
+    "extent": [
+      70,
+      70
+    ],
+    "preload_shape": [
+      140,
+      140
+    ],
+    "pixel_scale_arcsec": 0.1,
+    "mask_radius_arcsec": 3.5,
+    "real_space_shape": [
+      256,
+      256
+    ]
+  },
+  "configuration": {
+    "builders": [
+      "numba",
+      "numpy",
+      "jax_cpu",
+      "nufft"
+    ],
+    "eps_sweep": [
+      1e-06,
+      1e-09,
+      1e-12
+    ],
+    "eps_primary": 1e-12,
+    "reps": 3,
+    "reps_note": "Applies to the NUFFT builder at every instrument and to the brute-force trio at sma only; elsewhere the brute force runs once, isolated in its own interpreter under builder_timeout_s.",
+    "builder_timeout_s": 5400.0,
+    "chunk_k": 2048,
+    "nufft_chunk_size": null,
+    "inversion_path": "sparse_numba",
+    "kernel": "direct_conv",
+    "mesh": "delaunay_hilbert_1500",
+    "regularization": "constant_split",
+    "regularization_coefficient": 1.0,
+    "threads": {
+      "omp_num_threads": "1",
+      "numba_num_threads": "1",
+      "mkl_num_threads": "1",
+      "openblas_num_threads": "1",
+      "xla_flags": "--xla_cpu_multi_thread_eigen=false --xla_force_host_platform_device_count=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+      "jax_platforms": "cpu"
+    }
+  },
+  "builders": {
+    "numba": {
+      "build_s": 0.2536780999998882,
+      "build_cpu_s": 0.25368170000000045,
+      "threads_effective": 1.0000141912136373,
+      "cache_hit": false,
+      "timed_out": false,
+      "reps": 3,
+      "warmup_s": 1.0971360000003187,
+      "threads": {
+        "omp_num_threads": "1",
+        "numba_num_threads": "1",
+        "mkl_num_threads": "1",
+        "openblas_num_threads": "1",
+        "xla_flags": "--xla_cpu_multi_thread_eigen=false --xla_force_host_platform_device_count=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+        "jax_platforms": "cpu"
+      },
+      "build_s_source": "in_process",
+      "built_utc": "2026-09-08T14:46:56+00:00",
+      "description": "recovered numba w_tilde_curvature_preload_interferometer_from (0b90c401)",
+      "eps": null,
+      "parity_reference": "numpy_builder_this_run",
+      "parity_rule": "allclose(rtol=1e-10, atol=1e-10*P[0,0]=1.900000e-14)",
+      "parity_peak_scaled_rule": "max|d| <= 10 * eps(1e-12) * P[0,0] = 1.900000e-15",
+      "parity_max_abs": 4.336808689942018e-19,
+      "parity_rel_peak": 2.282530889443167e-15,
+      "parity_max_rel_elementwise": 5.2481281694378065e-12,
+      "parity_n_elementwise_over_1e10": 0,
+      "passes_pin": true,
+      "passes_peak_scaled_pin": true
+    },
+    "numpy": {
+      "build_s": 0.16432419999910053,
+      "build_cpu_s": 0.16433319999999974,
+      "threads_effective": 1.0000547697837523,
+      "cache_hit": false,
+      "timed_out": false,
+      "reps": 3,
+      "warmup_s": 0.1495111000003817,
+      "threads": {
+        "omp_num_threads": "1",
+        "numba_num_threads": "1",
+        "mkl_num_threads": "1",
+        "openblas_num_threads": "1",
+        "xla_flags": "--xla_cpu_multi_thread_eigen=false --xla_force_host_platform_device_count=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+        "jax_platforms": "cpu"
+      },
+      "build_s_source": "in_process",
+      "built_utc": "2026-09-08T14:46:57+00:00",
+      "description": "nufft_precision_operator_via_np_from (library default, chunk_k=2048)",
+      "eps": null,
+      "parity_reference": "numpy_builder_this_run",
+      "parity_rule": "allclose(rtol=1e-10, atol=1e-10*P[0,0]=1.900000e-14)",
+      "parity_peak_scaled_rule": "max|d| <= 10 * eps(1e-12) * P[0,0] = 1.900000e-15",
+      "parity_max_abs": 0.0,
+      "parity_rel_peak": 0.0,
+      "parity_max_rel_elementwise": 0.0,
+      "parity_n_elementwise_over_1e10": 0,
+      "passes_pin": true,
+      "passes_peak_scaled_pin": true
+    },
+    "jax_cpu": {
+      "build_s": 0.7360166999987996,
+      "build_cpu_s": 1.8905189,
+      "threads_effective": 2.568581528113538,
+      "cache_hit": false,
+      "timed_out": false,
+      "reps": 3,
+      "warmup_s": 1.2609549000007974,
+      "threads": {
+        "omp_num_threads": "1",
+        "numba_num_threads": "1",
+        "mkl_num_threads": "1",
+        "openblas_num_threads": "1",
+        "xla_flags": "--xla_cpu_multi_thread_eigen=false --xla_force_host_platform_device_count=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+        "jax_platforms": "cpu"
+      },
+      "build_s_source": "in_process",
+      "built_utc": "2026-09-08T14:47:00+00:00",
+      "description": "nufft_precision_operator_via_jax_from on CPU (chunk_k=2048)",
+      "eps": null,
+      "parity_reference": "numpy_builder_this_run",
+      "parity_rule": "allclose(rtol=1e-10, atol=1e-10*P[0,0]=1.900000e-14)",
+      "parity_peak_scaled_rule": "max|d| <= 10 * eps(1e-12) * P[0,0] = 1.900000e-15",
+      "parity_max_abs": 6.268043809681823e-20,
+      "parity_rel_peak": 3.2989704261483274e-16,
+      "parity_max_rel_elementwise": 4.71442022002484e-12,
+      "parity_n_elementwise_over_1e10": 0,
+      "passes_pin": true,
+      "passes_peak_scaled_pin": true
+    },
+    "nufft": {
+      "build_s": 0.0210084000009374,
+      "build_cpu_s": 0.03107040000000083,
+      "threads_effective": 1.4789512765662527,
+      "cache_hit": false,
+      "timed_out": false,
+      "reps": 3,
+      "warmup_s": 3.4073208999998315,
+      "threads": {
+        "omp_num_threads": "1",
+        "numba_num_threads": "1",
+        "mkl_num_threads": "1",
+        "openblas_num_threads": "1",
+        "xla_flags": "--xla_cpu_multi_thread_eigen=false --xla_force_host_platform_device_count=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+        "jax_platforms": "cpu"
+      },
+      "build_s_source": "in_process",
+      "built_utc": "2026-09-08T14:47:03+00:00",
+      "description": "type-1 adjoint NUFFT (numba_interferometer.preload.nufft_preload_from)",
+      "eps": 1e-12,
+      "parity_reference": "numpy_builder_this_run",
+      "parity_rule": "allclose(rtol=1e-10, atol=1e-10*P[0,0]=1.900000e-14)",
+      "parity_peak_scaled_rule": "max|d| <= 10 * eps(1e-12) * P[0,0] = 1.900000e-15",
+      "parity_max_abs": 1.6575587744819403e-17,
+      "parity_rel_peak": 8.723993549904948e-14,
+      "parity_max_rel_elementwise": 5.985713020626993e-10,
+      "parity_n_elementwise_over_1e10": 32,
+      "passes_pin": true,
+      "passes_peak_scaled_pin": true
+    }
+  },
+  "threads_note": "build_s is wall clock; build_cpu_s is time.process_time(), which sums every thread, so threads_effective = build_cpu_s / build_s is the effective core count of the build. OMP/MKL/OPENBLAS/NUMBA_NUM_THREADS=1 pin NumPy's BLAS and numba to one core, but XLA's CPU runtime keeps its own intra-op pool, so the two JAX-backed builders (jax_cpu, and nufft via nufftax) can use several cores even under --xla_cpu_multi_thread_eigen=false. Quote both numbers before comparing them with a single-threaded loop.",
+  "parity_reference": "numpy_builder_this_run",
+  "parity_reference_peak": 0.00019,
+  "parity_note": "parity_rel_peak = max|d| / P[0,0]; parity_max_rel_elementwise is the strictest possible reading, with parity_n_elementwise_over_1e10 counting the entries that breach rtol=1e-10. The sma rule is mixed (rtol=1e-10, atol=1e-10*P[0,0]): a type-1 NUFFT bounds its error against sum|c_k|, i.e. against the peak, so its near-zero entries \u2014 five orders below the peak, at the fp64 noise floor \u2014 carry no relative guarantee and a relative-only test there measures round-off, not the builder. The alma rule is the peak-scaled bound 10*eps*P[0,0], evaluated at each row's own eps. Both metrics and both verdicts (passes_pin under the instrument's rule, passes_peak_scaled_pin always) are recorded under either rule, so the choice of rule is visible rather than baked into one boolean.",
+  "nufft_eps_sweep": {
+    "1e-06": {
+      "build_s": 0.019494599999234197,
+      "build_cpu_s": 0.03013869999999841,
+      "threads_effective": 1.5460024827994594,
+      "warmup_s": 1.7041687999990245,
+      "reps": 3,
+      "parity_reference": "numpy_builder_this_run",
+      "parity_rule": "allclose(rtol=1e-10, atol=1e-10*P[0,0]=1.900000e-14)",
+      "parity_peak_scaled_rule": "max|d| <= 10 * eps(1e-06) * P[0,0] = 1.900000e-09",
+      "parity_max_abs": 9.109746640810956e-12,
+      "parity_rel_peak": 4.794603495163661e-08,
+      "parity_max_rel_elementwise": 0.0003004604481681431,
+      "parity_n_elementwise_over_1e10": 19295,
+      "passes_pin": false,
+      "passes_peak_scaled_pin": true,
+      "log_evidence": -3169.6493767351308,
+      "log_evidence_reference": -3169.6493766794806,
+      "log_evidence_rel_diff": 1.7557198036326955e-11,
+      "passes_log_evidence_pin": true
+    },
+    "1e-09": {
+      "build_s": 0.013799399999697926,
+      "build_cpu_s": 0.01984329999999801,
+      "threads_effective": 1.4379828108781822,
+      "warmup_s": 1.7976832000003924,
+      "reps": 3,
+      "parity_reference": "numpy_builder_this_run",
+      "parity_rule": "allclose(rtol=1e-10, atol=1e-10*P[0,0]=1.900000e-14)",
+      "parity_peak_scaled_rule": "max|d| <= 10 * eps(1e-09) * P[0,0] = 1.900000e-12",
+      "parity_max_abs": 1.2476501138513263e-13,
+      "parity_rel_peak": 6.566579546585928e-10,
+      "parity_max_rel_elementwise": 3.458748896148032e-06,
+      "parity_n_elementwise_over_1e10": 16978,
+      "passes_pin": false,
+      "passes_peak_scaled_pin": true,
+      "log_evidence": -3169.649376679543,
+      "log_evidence_reference": -3169.6493766794806,
+      "log_evidence_rel_diff": 1.965529295757986e-14,
+      "passes_log_evidence_pin": true
+    },
+    "1e-12": {
+      "build_s": 0.014367099998708,
+      "build_cpu_s": 0.021396899999999164,
+      "threads_effective": 1.4892984667694482,
+      "warmup_s": 0.016528399999515386,
+      "reps": 3,
+      "parity_reference": "numpy_builder_this_run",
+      "parity_rule": "allclose(rtol=1e-10, atol=1e-10*P[0,0]=1.900000e-14)",
+      "parity_peak_scaled_rule": "max|d| <= 10 * eps(1e-12) * P[0,0] = 1.900000e-15",
+      "parity_max_abs": 1.6575587744819403e-17,
+      "parity_rel_peak": 8.723993549904948e-14,
+      "parity_max_rel_elementwise": 5.985713020626993e-10,
+      "parity_n_elementwise_over_1e10": 32,
+      "passes_pin": true,
+      "passes_peak_scaled_pin": true,
+      "log_evidence": -3169.649376679481,
+      "log_evidence_reference": -3169.6493766794806,
+      "log_evidence_rel_diff": 1.4346929166116685e-16,
+      "passes_log_evidence_pin": true
+    }
+  },
+  "nufft_eps_self_consistency": {
+    "1e-06": {
+      "vs_eps": "1e-12",
+      "max_abs": 9.109758821144738e-12,
+      "rel_peak": 4.7946099058655675e-08
+    },
+    "1e-09": {
+      "vs_eps": "1e-12",
+      "max_abs": 1.2475912535318216e-13,
+      "rel_peak": 6.566269755430526e-10
+    }
+  },
+  "log_evidence_rtol": 1e-06,
+  "log_evidence_note": "Each eps's preload is pushed through apply_sparse_operator -> NumbaPreload.from_curvature_preload -> InversionInterferometerNumba(kernel='direct_conv') -> fit_util.log_evidence_from, the chain delaunay_numba.py profiles, and compared with the same chain on the brute-force reference preload. A preload that passes an array pin but moves the log evidence is not usable.",
+  "mesh_vertices": 1500,
+  "hilbert_pixels": 1500,
+  "pinned_expected": -3169.6493766794806,
+  "pinned_drift": []
+}

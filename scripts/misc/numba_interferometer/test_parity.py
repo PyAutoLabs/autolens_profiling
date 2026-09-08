@@ -8,7 +8,12 @@ What is pinned
 --------------
 1. The preload. Both ``NumbaPreload`` routes must reproduce
    ``nufft_precision_operator_via_np_from`` — the array today's
-   ``apply_sparse_operator`` builds — elementwise at ``rtol=1e-10``.
+   ``apply_sparse_operator`` builds — elementwise at ``rtol=1e-10``. The phase-3
+   type-1 NUFFT builder ``nufft_preload_from`` must reproduce it too, under the
+   mixed rule ``rtol=1e-10`` / ``atol=1e-10·P[0,0]`` (a NUFFT's error is bounded
+   against ``Σ|c_k|``, so its near-zero entries have no relative guarantee), and
+   its two structural invariants — zero padding row/column, ``P[i,j] == P[-i,-j]``
+   — are pinned separately. A wrong index permutation must fail that rule.
 2. The dense oracle. On a small mask, the scatter kernel's ``F`` must equal
    ``Mᵀ W~ M`` formed explicitly from ``w_tilde_via_preload_from``. This is the
    pin that has no shared code with the thing it checks.
@@ -75,7 +80,11 @@ from numba_interferometer.inversion import (  # noqa: E402
     KERNELS,
     InversionInterferometerNumba,
 )
-from numba_interferometer.preload import NumbaPreload  # noqa: E402
+from numba_interferometer.preload import (  # noqa: E402
+    NumbaPreload,
+    nufft_preload_from,
+    preload_inputs_from,
+)
 
 INSTRUMENT = "sma"
 
@@ -88,6 +97,11 @@ ORACLE_MESH_PIXELS = 25
 
 RTOL_PRELOAD = 1.0e-10
 RTOL_PARITY = 1.0e-6
+
+# The NUFFT builder's requested precision. 1e-12 saturates fp64 at sma: eps=1e-14
+# only moves max|Δ| from 1.7e-17 to 1.4e-17, so the residual below is round-off,
+# not the transform's approximation.
+NUFFT_EPS = 1.0e-12
 
 # The kernel variants are algebraically identical to the reference, so they may only
 # differ by summation order: a far tighter pin than the cross-formalism one above.
@@ -280,6 +294,156 @@ def test_preload_from_sparse_operator_matches_modern_np_builder(fit):
         rtol=RTOL_PRELOAD,
         atol=0.0,
     )
+
+
+def _assert_preload_pin(candidate, reference):
+    """The mixed sma preload rule: ``rtol=1e-10`` with ``atol = 1e-10 · P[0,0]``.
+
+    A type-1 NUFFT bounds its error against ``Σ_k |c_k|``, i.e. against the *peak*
+    ``P[0, 0]``, not against each entry — so ``atol=0`` would test the preload's
+    near-zero entries (five orders below the peak, at the fp64 noise floor) for a
+    relative accuracy no NUFFT of any ``eps`` can offer, and would be measuring
+    round-off rather than the builder. The relative leg is kept at full strength for
+    every entry that carries signal; the absolute floor covers the rest.
+
+    The rule still discriminates: the measured ``max|Δ|`` here is ``1.7e-17`` while
+    the ``atol`` floor is ``1.9e-14`` and a *wrong* index permutation misses by
+    ``4.3e-5`` — nine orders above the floor (pinned by the control below).
+    """
+    candidate = np.asarray(candidate, dtype=np.float64)
+    reference = np.asarray(reference, dtype=np.float64)
+
+    np.testing.assert_allclose(
+        candidate,
+        reference,
+        rtol=RTOL_PRELOAD,
+        atol=RTOL_PRELOAD * float(reference[0, 0]),
+    )
+
+
+def test_preload_via_nufft_matches_modern_np_builder(fit):
+    """The type-1 NUFFT builder == today's chunked NumPy builder.
+
+    The phase-3 hypothesis, pinned: the ``O(N_pix·K)`` brute force really is the
+    real part of a type-1 (adjoint) NUFFT of the weights ``1/σ²`` onto the doubled
+    offset grid, so it can be built in ``O(K·nspread² + M log M)``.
+    """
+    dataset = fit.inversion.dataset
+
+    _assert_preload_pin(
+        nufft_preload_from(**preload_inputs_from(dataset), eps=NUFFT_EPS),
+        _modern_preload(dataset),
+    )
+
+
+def test_preload_via_nufft_padding_row_and_column_are_exactly_zero(fit):
+    """The FFT padding row ``Ny`` and column ``Nx`` are zero, exactly, not nearly.
+
+    The brute force never evaluates them (its four quadrants span offsets
+    ``−(N−1) … N−1``) whereas the NUFFT returns a real value at the Nyquist mode,
+    so they have to be zeroed explicitly — and at index ``N``, not ``N−1``. A
+    ``rtol``-only comparison against the reference would pass either way, since
+    ``0`` matches ``0`` and the neighbouring entries are small.
+    """
+    dataset = fit.inversion.dataset
+    y_shape, x_shape = (int(s) for s in preload_inputs_from(dataset)["shape_masked_pixels_2d"])
+
+    preload = nufft_preload_from(**preload_inputs_from(dataset), eps=NUFFT_EPS)
+
+    assert preload.shape == (2 * y_shape, 2 * x_shape)
+    np.testing.assert_array_equal(preload[y_shape, :], 0.0)
+    np.testing.assert_array_equal(preload[:, x_shape], 0.0)
+
+    # ...and the rows/columns either side are *not* zero, so the pin above is
+    # asserting a convention rather than an all-zero array.
+    assert np.abs(preload[y_shape - 1, :]).max() > 0.0
+    assert np.abs(preload[:, x_shape - 1]).max() > 0.0
+
+
+def test_preload_via_nufft_is_even_under_offset_negation(fit):
+    """``P[i, j] == P[-i, -j]`` — the cosine evenness of ``Σ w cos(...)``.
+
+    Structural, and free of the reference builder: the preload is a sum of cosines
+    of a linear function of the offset, so negating the offset cannot change it.
+    Catches a sign or axis error that happened to agree with the reference on the
+    quadrant the elementwise pin looks hardest at.
+    """
+    dataset = fit.inversion.dataset
+
+    preload = nufft_preload_from(**preload_inputs_from(dataset), eps=NUFFT_EPS)
+
+    y_index = (-np.arange(preload.shape[0])) % preload.shape[0]
+    x_index = (-np.arange(preload.shape[1])) % preload.shape[1]
+
+    _assert_preload_pin(preload[y_index][:, x_index], preload)
+
+
+def test_preload_via_nufft_is_invariant_to_visibility_chunking(fit):
+    """Chunking the visibilities changes the summation order and nothing else.
+
+    ``chunk_size`` is the memory ceiling alma_high needs (the spreader's gather
+    buffer is ``K · nspread²``; 5e6 visibilities at ``eps=1e-12`` is ~15 GB in one
+    shot, which the OOM reaper reaches before the transform does). Since the
+    transform is linear in ``c``, summing the chunks must reproduce the one-shot
+    array — pinned here at sma, where both regimes are affordable, rather than
+    assumed at the one instrument where only the chunked regime can run.
+    """
+    inputs = preload_inputs_from(fit.inversion.dataset)
+
+    one_shot = nufft_preload_from(**inputs, eps=NUFFT_EPS)
+    chunked = nufft_preload_from(**inputs, eps=NUFFT_EPS, chunk_size=64)
+
+    assert inputs["uv_wavelengths"].shape[0] > 64  # the pin is not vacuous
+
+    _assert_preload_pin(chunked, one_shot)
+
+
+def test_control_wrong_nufft_sign_fails_the_preload_pin(fit):
+    """The seventh and eighth candidates must FAIL — a pin that cannot fail is not a pin.
+
+    ``(−x, +y)`` and ``(+x, −y)`` are the same construction (``w`` is real, so the
+    two transforms are conjugates and their real parts are equal). The control is
+    therefore ``(+x, +y)``, one of the six genuinely wrong permutations, injected by
+    negating ``u`` — which flips the sign of the builder's ``x`` alone.
+    """
+    dataset = fit.inversion.dataset
+    inputs = preload_inputs_from(dataset)
+
+    uv_wavelengths = inputs["uv_wavelengths"].copy()
+    uv_wavelengths[:, 0] *= -1.0
+
+    wrong = nufft_preload_from(
+        noise_map_real=inputs["noise_map_real"],
+        uv_wavelengths=uv_wavelengths,
+        shape_masked_pixels_2d=inputs["shape_masked_pixels_2d"],
+        grid_radians_2d=inputs["grid_radians_2d"],
+        eps=NUFFT_EPS,
+    )
+
+    with pytest.raises(AssertionError):
+        _assert_preload_pin(wrong, _modern_preload(dataset))
+
+
+def test_nufft_preload_requires_square_pixels(fit):
+    """A rectangular radian grid raises rather than producing a plausible wrong array.
+
+    The ``[2Ny, 2Nx]`` mode grid has one spacing per axis by construction, so a
+    non-square pixel would be silently absorbed into the frequencies — the exact
+    class of failure the builder is here to rule out.
+    """
+    inputs = preload_inputs_from(fit.inversion.dataset)
+
+    grid_radians_2d = inputs["grid_radians_2d"].copy()
+    grid_radians_2d[..., 1] *= 2.0
+
+    with pytest.raises(ValueError, match="square pixels"):
+        nufft_preload_from(
+            noise_map_real=inputs["noise_map_real"],
+            uv_wavelengths=inputs["uv_wavelengths"],
+            shape_masked_pixels_2d=inputs["shape_masked_pixels_2d"],
+            grid_radians_2d=grid_radians_2d,
+            eps=NUFFT_EPS,
+        )
 
 
 def test_dirty_image_is_the_sparse_operators_own_array(fit):
