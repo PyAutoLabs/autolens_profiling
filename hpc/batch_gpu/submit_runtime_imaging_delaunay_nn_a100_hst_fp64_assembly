@@ -1,0 +1,64 @@
+#!/bin/bash -l
+#
+# A100 likelihood-runtime profile: imaging/delaunay_nn x hst x fp64 — PyAutoArray#536
+# A/B leg: **feature**. Single-JIT whole-likelihood cost, the end-to-end companion
+# to submit_breakdown_imaging_delaunay_nn_a100_hst_fp64_assembly.
+#
+# Same private-checkout PYTHONPATH override as the breakdown A/B legs; the
+# shared /mnt/ral/jnightin/PyAuto install is untouched. Phase A (--vmap-probe)
+# is skipped: only the full single-JIT + vmap timing is wanted here, and this
+# cell's probe is known to over-recommend batch 64 (cuFFT batched-plan failure,
+# job 342280) — with no probe JSON present the script falls back to the
+# VMAP_BATCH table (16), which is the number both legs must share.
+#
+#   control  -> 180c8a40 (the branch's merge base = PyAutoArray main)
+#   feature  -> feature/delaunay-nn-constant-split-assembly (04152bb7)
+#
+# PYAUTO_SIBSON_QUERY_CHUNK is left unset on both legs (the library default
+# 4096 is what production uses); the result JSON records the effective chunk.
+
+#SBATCH -J rt_delnn_asm
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=3:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+AA_ROOT=/mnt/ral/jnightin/PyAuto_wt/delaunay-nn-constant-split-assembly/PyAutoArray_feature
+export PYTHONPATH=$AA_ROOT:$PYTHONPATH
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+nvidia-smi
+
+# MIG backstop; no-op since 2026-09-05, only bounces under --requeue.
+source "$AP_ROOT/hpc/batch_gpu/_gpu_preflight.sh"
+
+echo "=========================================="
+date
+echo "Cell:           likelihood_runtime/imaging/delaunay_nn"
+echo "A/B leg:        assembly (feature/delaunay-nn-constant-split-assembly, 04152bb7)"
+echo "Sibson chunk:   PYAUTO_SIBSON_QUERY_CHUNK=${PYAUTO_SIBSON_QUERY_CHUNK:-unset (library default)}"
+printf 'PyAutoArray(AB) %s\n' "$(git -C $AA_ROOT rev-parse HEAD 2>&1)"
+
+cd $AP_ROOT
+python3 -c "import autoarray; print('autoarray.__file__ =', autoarray.__file__)"
+
+python3 -u scripts/imaging/likelihood_runtime/delaunay_nn.py \
+    --instrument hst \
+    --config-name hpc_a100_fp64_assembly
+
+echo "Finished."
+date
