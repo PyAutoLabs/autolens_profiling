@@ -1,0 +1,114 @@
+#!/bin/bash -l
+#
+# A100 likelihood-breakdown profile: imaging/delaunay_nn x hst x fp64 — PyAutoArray#532
+# A/B leg: **launch_latency** (feature).
+#
+# Verification run for the DelaunayNN Sibson launch-latency change
+# (PyAutoArray issue #532 / branch feature/delaunay-nn-launch-latency: candidate
+# loop unrolled inside the cavity walk, data grid + split points located and
+# interpolated in one concatenated Sibson pass, SIBSON_QUERY_CHUNK returned to
+# being only a memory guard). Both legs of the A/B run in the same session on
+# the same node class with the same everything except the PyAutoArray checkout
+# prepended to PYTHONPATH:
+#
+#   control  -> d7c96762 (the branch's merge base = PyAutoArray main, #531 merged)
+#   feature  -> feature/delaunay-nn-launch-latency
+#
+# The previous A/B on this cell (#531, merge base bcd15cd9) is recorded in
+# results/notes/delaunay_walk_early_exit.md; its feature leg is kept as
+# submit_breakdown_imaging_delaunay_nn_a100_hst_fp64_walk_early_exit and is not
+# comparable to these two rows (different merge base, and this profiling
+# checkout adds the split-point Sibson cut).
+#
+# The shared /mnt/ral/jnightin/PyAuto/PyAutoArray install is NOT touched — long
+# science runs (subhalo validation, Euclid DR1) share it. The private checkouts
+# live under /mnt/ral/jnightin/PyAuto_wt/delaunay-nn-launch-latency/ and are
+# prepended to the PYTHONPATH that $AP_ROOT/activate.sh exports, so only
+# PyAutoArray is overridden and Nerves/Fit/Galaxy/Lens stay on the shared tree.
+#
+# WITNESS. Compare the **params->H prefix** (regularization_matrix_prefix_s,
+# equivalently Tri+interp + H) across the two legs — 144.79 ms unbatched /
+# 24.4 ms per call at vmap 16 on the control (#531's post-merge DelaunayNN
+# numbers); the task's witness is <= 60 ms unbatched and <= 11 ms at vmap 16.
+# Do NOT judge on the differenced rows: the feature moves the split-point walk
+# across a prefix boundary exactly as #531 did, so the individual rows shift
+# even where the aggregate does not.
+#
+# The four-way --split-setup table now also carries the params->H interval cut
+# at the split-point Sibson prefix ("Split-point Sibson" /
+# "Regularization matrix (H, ConstantSplit assembly)", JSON
+# split_sibson_prefix_s + regularization_split), which is what says how much of
+# the residual is the second Sibson pass and how much is the 33-wide
+# ConstantSplit assembly. Both legs must run the *same* profiling checkout for
+# those rows to exist on both sides.
+#
+#   --split-setup    four-way split of the inversion-setup block (+ the
+#                    split-point Sibson cut of the params->H interval)
+#   --vmap-batch 16  batched re-timing at the Nautilus reference n_batch
+
+#SBATCH -J bd_delnn_launch
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=12:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+# --- PyAutoArray A/B override (private checkout, shared install untouched) ---
+AA_ROOT=/mnt/ral/jnightin/PyAuto_wt/delaunay-nn-launch-latency/PyAutoArray_feature
+export PYTHONPATH=$AA_ROOT:$PYTHONPATH
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding"
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+# PYAUTO_SIBSON_QUERY_CHUNK is deliberately left UNSET on both A/B legs: the
+# chunk sweep (submit_..._chunk_sweep) is where it varies, and a leg that set
+# it would not be comparable to one that did not. The script records the
+# effective SIBSON_QUERY_CHUNK either way under "sibson" in the result JSON.
+
+nvidia-smi
+
+# MIG backstop. A no-op since the fleet's MIG mode was confirmed Disabled
+# (2026-09-05); kept because a silent removal re-opens the trap. Only bounces
+# when the job was dispatched with --requeue.
+source "$AP_ROOT/hpc/batch_gpu/_gpu_preflight.sh"
+
+echo "=========================================="
+date
+echo "Cell:           likelihood_breakdown/imaging/delaunay_nn"
+echo "Instrument:     hst"
+echo "Precision:      fp64"
+echo "A/B leg:        launch_latency (feature/delaunay-nn-launch-latency)"
+echo "Flags:          --split-setup --vmap-batch 16 --config-name hpc_a100_fp64_launch_latency"
+echo "Sibson chunk:   PYAUTO_SIBSON_QUERY_CHUNK=${PYAUTO_SIBSON_QUERY_CHUNK:-unset (library default)}"
+
+echo "=== source revisions ==="
+printf '%-14s %s\n' "PyAutoArray(AB)" "$(git -C $AA_ROOT rev-parse HEAD 2>&1)"
+for r in PyAutoNerves PyAutoFit PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r" "$(git -C /mnt/ral/jnightin/PyAuto/$r rev-parse HEAD 2>&1)"
+done
+echo "AP_ROOT rev:   $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+
+cd $AP_ROOT
+
+echo "=== import provenance ==="
+python3 -c "import autoarray, autolens; print('autoarray.__file__ =', autoarray.__file__); print('autoarray.__version__ =', autoarray.__version__); print('autolens.__file__ =', autolens.__file__)"
+
+python3 -u scripts/imaging/likelihood_breakdown/delaunay_nn.py \
+    --config-name hpc_a100_fp64_launch_latency \
+    --split-setup \
+    --vmap-batch 16
+
+echo "Finished."
+date
