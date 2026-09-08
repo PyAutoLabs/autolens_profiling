@@ -541,7 +541,9 @@ def jax_curvature_callable(preload, flat, col, val, ny, nx, pix_pixels, *, batch
 
     @jax.jit
     def _curvature(rows_, cols_, vals_):
-        return operator.curvature_matrix_diag_from(rows_, cols_, vals_, S=int(pix_pixels))
+        # `xp=jnp` keeps this on the operator's JAX branch; since PyAutoArray#544 the
+        # default `xp=np` would call `np.asarray` on a tracer under `jit`.
+        return operator.curvature_matrix_diag_from(rows_, cols_, vals_, S=int(pix_pixels), xp=jnp)
 
     def call():
         result = _curvature(rows, cols, vals)

@@ -1008,7 +1008,11 @@ else:
     print("\n--- Step 5: Sparse curvature matrix F via FFT W~ (per channel) ---")
 
     def compute_curvature_matrix_sparse(rows, cols, vals):
-        return sparse_operator.curvature_matrix_diag_from(rows=rows, cols=cols, vals=vals, S=S)
+        # `xp=jnp` keeps this on the operator's JAX branch; since PyAutoArray#544 the
+        # default `xp=np` would call `np.asarray` on a tracer under `jit`.
+        return sparse_operator.curvature_matrix_diag_from(
+            rows=rows, cols=cols, vals=vals, S=S, xp=jnp
+        )
 
     with timer.section("curvature_matrix_sparse_eager"):
         curvature_matrix = compute_curvature_matrix_sparse(rows_jnp, cols_jnp, vals_jnp)

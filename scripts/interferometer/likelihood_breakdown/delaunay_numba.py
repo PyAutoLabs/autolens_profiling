@@ -430,7 +430,12 @@ def jax_curvature_jit_callable(inversion):
     operator = inversion.dataset.sparse_operator
     source_pixels = int(mapper.params)
 
-    jitted = jax.jit(lambda r, c, v: operator.curvature_matrix_diag_from(r, c, v, S=source_pixels))
+    # `xp=jnp` keeps this arm on the operator's JAX branch: since PyAutoArray#544 the
+    # sparse-operator methods default to `xp=np`, which under `jit` would call
+    # `np.asarray` on a tracer and raise `TracerArrayConversionError`.
+    jitted = jax.jit(
+        lambda r, c, v: operator.curvature_matrix_diag_from(r, c, v, S=source_pixels, xp=jnp)
+    )
 
     def call():
         result = jitted(rows, cols, vals)
