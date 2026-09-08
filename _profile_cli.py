@@ -37,6 +37,7 @@ class ProfileCLI:
     vmap_probe: bool
     use_sparse_operator: bool
     rect_mesh: str
+    regularization: str | None
 
 
 def parse_profile_cli(default_config_name: str | None = None) -> ProfileCLI:
@@ -142,6 +143,25 @@ def parse_profile_cli(default_config_name: str | None = None) -> ProfileCLI:
         ),
     )
 
+    parser.add_argument(
+        "--regularization",
+        choices=("adapt_split", "constant_split"),
+        default=None,
+        help=(
+            "Regularization scheme for the Delaunay-family cells. "
+            "'adapt_split' — ``al.reg.AdaptSplit(inner_coefficient=0.1, "
+            "outer_coefficient=10.0, signal_scale=0.1)``, what production "
+            "(SLaM, the Euclid pipeline) pairs Delaunay with and the cells' "
+            "default — or 'constant_split' — ``al.reg.ConstantSplit("
+            "coefficient=1.0)``, the scheme every Delaunay row recorded before "
+            "2026-09-08 was measured with, kept reachable so those rows stay "
+            "comparable. Omitted (None) leaves each cell on its own default; "
+            "cells outside the Delaunay family ignore the flag. The resolved "
+            "scheme selects the cell's pinned log-evidence and is embedded in "
+            "the result JSON as ``regularization``."
+        ),
+    )
+
     args, _unknown = parser.parse_known_args()
     config_name = args.config_name or default_config_name
     output_dir = Path(args.output_dir).resolve() if args.output_dir else None
@@ -153,6 +173,58 @@ def parse_profile_cli(default_config_name: str | None = None) -> ProfileCLI:
         vmap_probe=bool(args.vmap_probe),
         use_sparse_operator=bool(args.sparse),
         rect_mesh=args.rect_mesh,
+        regularization=args.regularization,
+    )
+
+
+#: What ``--regularization`` resolves to in the Delaunay-family cells when the
+#: flag is omitted. Production pairs Delaunay with ``AdaptSplit``, so that is
+#: what the profiled rows measure; ``constant_split`` reproduces the pre-
+#: 2026-09-08 rows.
+DELAUNAY_REGULARIZATION_DEFAULT = "adapt_split"
+
+
+def delaunay_regularization(cli: ProfileCLI):
+    """Resolve ``--regularization`` into the Delaunay-family regularization object.
+
+    Returns ``(scheme, regularization, provenance)``: the resolved scheme name,
+    the ``al.reg`` object to hand ``al.Pixelization``, and the dict every
+    Delaunay-family result JSON records under ``regularization``.
+
+    ``AdaptSplit`` is given the in-repo production-shaped coefficients
+    (``inner=0.1``, ``outer=10.0``, ``signal_scale=0.1``, as used by
+    ``likelihood_breakdown/delaunay_numba_nnls_iterations.py``) rather than its
+    ``inner == outer == 1.0`` defaults, which make the per-pixel weights uniform
+    and the scheme numerically indistinguishable from ``ConstantSplit``.
+
+    ``AdaptSplit`` reads the mapper's ``adapt_data``, so a cell using it must
+    also pass ``galaxy_image_dict`` / ``galaxy_name_image_dict`` to its
+    ``al.AdaptImages``; the cells do so unconditionally, since ``ConstantSplit``
+    ignores them and the two legs then differ only in the scheme.
+
+    Imports autolens lazily so ``_profile_cli`` stays importable without the
+    modelling stack.
+    """
+    import autolens as al
+
+    scheme = cli.regularization or DELAUNAY_REGULARIZATION_DEFAULT
+
+    if scheme == "constant_split":
+        return (
+            scheme,
+            al.reg.ConstantSplit(coefficient=1.0),
+            {"scheme": scheme, "coefficient": 1.0},
+        )
+
+    return (
+        scheme,
+        al.reg.AdaptSplit(inner_coefficient=0.1, outer_coefficient=10.0, signal_scale=0.1),
+        {
+            "scheme": scheme,
+            "inner_coefficient": 0.1,
+            "outer_coefficient": 10.0,
+            "signal_scale": 0.1,
+        },
     )
 
 

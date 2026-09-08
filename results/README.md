@@ -44,6 +44,23 @@ runtime/<class>/<model>[/<instrument>]/comparison.{json,png}
 Config names: `local_cpu_fp64 | local_cpu_mp | local_gpu_fp64 | local_gpu_mp |
 hpc_a100_fp64 | hpc_a100_mp`, with `_sparse` as a filename suffix.
 
+**Regularization provenance (Delaunay family).** Since 2026-09-08 the Delaunay
+cells (`likelihood_breakdown/{delaunay,delaunay_nn}.py`,
+`likelihood_runtime/{delaunay,delaunay_nn,delaunay_numba}.py`) default to
+`AdaptSplit(inner=0.1, outer=10.0, signal_scale=0.1)` — what production pairs
+Delaunay with — and record the resolved scheme in a top-level `regularization`
+key. **A row with no `regularization` key was measured with
+`ConstantSplit(1.0)`**, which `--regularization constant_split` still selects;
+each cell pins one log-evidence per scheme. Same-node ConstantSplit control
+rows are written with a `_constant_split` config name.
+
+Since the same date the canonical A100 rows `breakdown/imaging/delaunay{,_nn}_hpc_a100_fp64`
+and `runtime/imaging/delaunay{,_nn}/delaunay{,_nn}_hpc_a100_fp64` are **AdaptSplit** rows. The
+ConstantSplit rows they replaced were not overwritten — they survive as
+`..._hpc_a100_fp64_constant_split_2026_09_05.{json,png}` — and the 2026-09-08 same-node
+ConstantSplit controls are `..._hpc_a100_fp64_constant_split.{json,png}`. See
+`results/notes/delaunay_adapt_split_regularization.md`.
+
 ## Semantic hazard findings
 
 Numerical-hazard records are keyed by stable semantic finding ID rather than by

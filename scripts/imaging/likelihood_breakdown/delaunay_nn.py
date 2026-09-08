@@ -5,9 +5,11 @@ JAX Profiling: DelaunayNN Imaging Likelihood — Per-Step Breakdown
 The **Sibson natural-neighbour sibling** of
 ``likelihood_breakdown/imaging/delaunay.py``. Every knob is deliberately
 identical — HST, 3.5" mask, radial-bin over-sampling, 1500-vertex Hilbert image
-mesh, MGE-60 lens light, Isothermal + ExternalShear mass, ConstantSplit
-regularization, border relocator on, dense inversion path — and the **only**
-difference is the source mesh's interpolation scheme:
+mesh, MGE-60 lens light, Isothermal + ExternalShear mass, split regularization
+(``AdaptSplit`` by default, ``--regularization constant_split`` for the
+pre-2026-09-08 ``ConstantSplit(1.0)`` rows), border relocator on, dense
+inversion path — and the **only** difference is the source mesh's
+interpolation scheme:
 
 - ``delaunay.py``    — ``al.mesh.Delaunay`` + ``al.InterpolatorDelaunay``:
   C0 barycentric interpolation inside the containing triangle, 3 weights per
@@ -57,7 +59,7 @@ Pipeline steps:
 8. Blurred mapping matrix / Inversion setup (steps 5-8 combined)
 9. Data vector (D)
 10. Curvature matrix (F)
-11. Regularization matrix (H) — ConstantSplit scheme (JIT-timed from params)
+11. Regularization matrix (H) — split scheme (JIT-timed from params)
 12. Regularized reconstruction: s = (F + H)^{-1} D
 13. Map reconstruction to image + log evidence
 
@@ -110,8 +112,13 @@ out of the same prefix-difference arithmetic::
 
 The first row is the **second Sibson pass alone** (the ~6,000 split queries,
 about a quarter of the ~24,000 queries the concatenated Sibson pass makes); the
-second is the 33-wide ConstantSplit assembly alone (``reg_split_from`` plus the
-block-diagonal build), with no Sibson work left in it. Both attribute the same
+second is the 33-wide split assembly alone (``reg_split_from`` plus the
+block-diagonal build), with no Sibson work left in it. Its row/JSON label still
+reads "ConstantSplit assembly": that is
+``pixel_splitted_regularization_matrix_from``, which ``AdaptSplit`` shares with
+``ConstantSplit`` (adding only its per-pixel signal weights), and the label is
+kept verbatim so rows stay comparable across both schemes and with the
+pre-2026-09-08 JSONs. Both attribute the same
 interval the "Regularization matrix (H)" row reports and sum to it, so they are
 printed beside the four-way ``--split-setup`` table rather than added to the
 step list: the step list, ``steps``, ``setup_split`` and every other
@@ -144,6 +151,8 @@ Provenance
 ----------
 
 The Sibson static caps in force are recorded in the result JSON under
+``regularization`` (scheme + coefficients; a JSON without that key is a
+pre-2026-09-08 row and was measured with ``constant_split``) and under
 ``sibson``: ``SIBSON_MAX_CAVITY_TRIANGLES`` / ``SIBSON_MAX_NEIGHBORS`` /
 ``SIBSON_QUERY_CHUNK`` as imported, the mesh's own ``query_chunk``, and the
 raw ``PYAUTO_SIBSON_QUERY_CHUNK`` env override PyAutoArray reads once at
@@ -239,6 +248,7 @@ from simulators.imaging import INSTRUMENTS  # noqa: E402
 
 from _profile_cli import (  # noqa: E402
     auto_simulate_if_missing,
+    delaunay_regularization,
     device_info_dict,
     parse_profile_cli,
     resolve_output_paths,
@@ -507,7 +517,7 @@ with timer.section("model_build"):
         areas_factor=0.5,
         zeroed_pixels=0,
     )
-    regularization = al.reg.ConstantSplit(coefficient=1.0)
+    reg_scheme, regularization, reg_provenance = delaunay_regularization(_cli)
     pixelization = al.Pixelization(mesh=mesh, regularization=regularization)
 
     source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
@@ -517,6 +527,7 @@ with timer.section("model_build"):
 print(f"  Total free parameters: {model.total_free_parameters}")
 print(f"  DelaunayNN pixels: {n_mesh_vertices}")
 print(f"  Zeroed edge pixels: {edge_pixels_total}")
+print(f"  Regularization: {reg_scheme} ({reg_provenance})")
 
 # ---------------------------------------------------------------------------
 # 4. Instantiate concrete objects from prior medians
@@ -538,8 +549,17 @@ print(f"  Pytree JAX leaves: {n_pytree_leaves}")
 
 tracer = al.Tracer(galaxies=list(instance.galaxies))
 
-# AdaptImages tells FitImaging where mesh vertices live in image-plane
+# AdaptImages tells FitImaging where mesh vertices live in image-plane, and
+# carries the source's adapt image — the per-pixel signal ``AdaptSplit`` weights
+# its regularization by. Passed unconditionally: ``ConstantSplit`` ignores it, so
+# the two ``--regularization`` legs differ only in the scheme.
 adapt_images = al.AdaptImages(
+    galaxy_image_dict={
+        instance.galaxies.source: adapt_image,
+    },
+    galaxy_name_image_dict={
+        "('galaxies', 'source')": adapt_image,
+    },
     galaxy_image_plane_mesh_grid_dict={
         instance.galaxies.source: image_plane_mesh_grid,
     },
@@ -799,6 +819,7 @@ with timer.section("delaunay_nn_interpolation_and_mapper"):
         mesh=pixelization_obj.mesh,
         mesh_grid=relocated_mesh_grid,
         data_grid=relocated_grid,
+        adapt_data=adapt_image,
     )
     mapper = al.Mapper(
         interpolator=interpolator,
@@ -878,6 +899,12 @@ def blurred_mm_from_params(params_tree):
     t = al.Tracer(galaxies=list(params_tree.galaxies))
     # Recreate adapt_images with new galaxy instance so dict lookup by object identity works.
     adapt_images_jax = al.AdaptImages(
+        galaxy_image_dict={
+            params_tree.galaxies.source: adapt_image,
+        },
+        galaxy_name_image_dict={
+            "('galaxies', 'source')": adapt_image,
+        },
         galaxy_image_plane_mesh_grid_dict={
             params_tree.galaxies.source: image_plane_mesh_grid,
         },
@@ -968,6 +995,11 @@ def _setup_prefix_fn(upto):
             mesh=pixelization_obj.mesh,
             mesh_grid=relocated_mesh,
             data_grid=relocated,
+            # The mapper reads ``adapt_data`` off its interpolator, and it is
+            # what ``AdaptSplit`` weights H by. Without it the ``upto == 11``
+            # branch below raises on a ``None`` adapt image; ``ConstantSplit``
+            # never reads it, so both schemes build the same mapper here.
+            adapt_data=adapt_image,
             xp=jnp,
         )
         m = al.Mapper(
@@ -1137,10 +1169,10 @@ likelihood_steps.append(("Curvature matrix (F)", timer.records[-1][1] / 10))
 print(f"  curvature_matrix shape: {curvature_matrix.shape}")
 
 # ---------------------------------------------------------------------------
-# Step 11: Regularization matrix (H) — ConstantSplit scheme
+# Step 11: Regularization matrix (H) — split scheme (AdaptSplit / ConstantSplit)
 # ---------------------------------------------------------------------------
 
-print("\n--- Step 11: Regularization matrix (ConstantSplit) ---")
+print(f"\n--- Step 11: Regularization matrix ({reg_scheme}) ---")
 
 # ConstantSplit uses a cross-derivative scheme via the interpolator's
 # _mappings_sizes_weights_split, not the simple neighbour-difference approach.
@@ -1577,6 +1609,9 @@ breakdown_summary = {
     # Sibson caps / query chunk provenance (see the module docstring): the
     # chunk rescales every Sibson timing, so a sweep row carries its own.
     "sibson": sibson_info,
+    # Regularization scheme + coefficients. A result JSON without this key is a
+    # pre-2026-09-08 row and was measured with ``constant_split``.
+    "regularization": reg_provenance,
     "steps": {label: per_call for label, per_call in likelihood_steps},
     "total_step_by_step": step_total,
     # Absolute prefix times behind the attributed "Regularization matrix (H)"
@@ -1672,21 +1707,42 @@ print(f"  Bar chart saved to:    {chart_path}")
 # Regression assertion — eager log_evidence only
 # ===================================================================
 
-# Pinned from the first eager CPU run of this script: 2026-09-05, local CPU
-# (WSL, JAX fp64), PyAutoLens v2026.8.17.1 / PyAutoNerves 8f6a0b25 /
-# PyAutoFit 12b3e6b6 / PyAutoArray a1e4c0ef / PyAutoGalaxy 6b8b18b6.
-# 1500-pixel Hilbert/DelaunayNN, MGE-60 lens, adapt_image=lensed_source.
-# Compare: the barycentric Delaunay sibling pins 29110.92085793 — the meshes
-# have the same vertices, so the ~34 nat gap is the interpolation scheme.
-EXPECTED_LOG_EVIDENCE_HST = 29144.581943885652
+# 1500-pixel Hilbert/DelaunayNN, MGE-60 lens, adapt_image=lensed_source. One pin
+# per ``--regularization`` scheme — the two legs fit the same data with the same
+# mesh, so only the regularization matrix (and hence the evidence) differs.
+#
+# constant_split: pinned from the first eager CPU run of this script:
+#   2026-09-05, local CPU (WSL, JAX fp64), PyAutoLens v2026.8.17.1 /
+#   PyAutoNerves 8f6a0b25 / PyAutoFit 12b3e6b6 / PyAutoArray a1e4c0ef /
+#   PyAutoGalaxy 6b8b18b6. Compare: the barycentric Delaunay sibling pins
+#   29110.92085793 — the meshes have the same vertices, so the ~34 nat gap is
+#   the interpolation scheme.
+#   Re-checked through this cell's adapt-image wiring on 2026-09-08: reproduced
+#   to the last digit.
+# adapt_split:    pinned 2026-09-08 from this script's first eager CPU run,
+#   local CPU (WSL, JAX fp64), PyAutoLens 08a05858a / PyAutoNerves 0e7163b /
+#   PyAutoFit 08207bad0 / PyAutoArray 47a00e8c / PyAutoGalaxy ec5ce75d.
+EXPECTED_LOG_EVIDENCE_HST = {
+    "constant_split": 29144.581943885652,
+    "adapt_split": 29348.90938612374,
+}
 
-np.testing.assert_allclose(
-    log_evidence_ref,
-    EXPECTED_LOG_EVIDENCE_HST,
-    rtol=1e-4,
-    err_msg=(
-        f"imaging/delaunay_nn[{instrument}]: regression — eager log_evidence drifted "
-        f"(got {log_evidence_ref}, expected {EXPECTED_LOG_EVIDENCE_HST})"
-    ),
-)
-print(f"  Eager regression assertion PASSED: log_evidence matches {EXPECTED_LOG_EVIDENCE_HST:.6f}")
+_expected_log_evidence = EXPECTED_LOG_EVIDENCE_HST.get(reg_scheme)
+
+if _expected_log_evidence is None:
+    print(
+        f"  Eager regression assertion SKIPPED for regularization={reg_scheme} "
+        f"(no pinned value). Eager log_evidence = {log_evidence_ref!r}"
+    )
+else:
+    np.testing.assert_allclose(
+        log_evidence_ref,
+        _expected_log_evidence,
+        rtol=1e-4,
+        err_msg=(
+            f"imaging/delaunay_nn[{instrument}, {reg_scheme}]: regression — eager "
+            f"log_evidence drifted (got {log_evidence_ref}, expected "
+            f"{_expected_log_evidence})"
+        ),
+    )
+    print(f"  Eager regression assertion PASSED: log_evidence matches {_expected_log_evidence:.6f}")

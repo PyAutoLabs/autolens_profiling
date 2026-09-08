@@ -14,7 +14,11 @@ Key differences from the rectangular pixelization breakdown script:
   then ray-traced to the source-plane.
 - Edge points are appended around the mask border and zeroed during inversion.
 - Uses **InterpolatorDelaunay** (barycentric interpolation within triangles).
-- Uses **ConstantSplit** regularization (cross-derivative scheme).
+- Uses **AdaptSplit** regularization by default (the cross-derivative split
+  scheme with per-pixel weights adapted to the source's signal — what
+  production pairs Delaunay with); ``--regularization constant_split``
+  selects ``ConstantSplit(1.0)``, the scheme this cell's pre-2026-09-08
+  rows were measured with.
 - Delaunay triangulation itself uses scipy on CPU and cannot be JIT-compiled.
 
 Pipeline steps:
@@ -29,7 +33,7 @@ Pipeline steps:
 8. Blurred mapping matrix / Inversion setup (steps 5-8 combined)
 9. Data vector (D)
 10. Curvature matrix (F)
-11. Regularization matrix (H) — ConstantSplit scheme (JIT-timed from params)
+11. Regularization matrix (H) — split scheme (JIT-timed from params)
 12. Regularized reconstruction: s = (F + H)^{-1} D
 13. Map reconstruction to image + log evidence
 
@@ -161,6 +165,7 @@ from simulators.imaging import INSTRUMENTS  # noqa: E402
 
 from _profile_cli import (  # noqa: E402
     auto_simulate_if_missing,
+    delaunay_regularization,
     device_info_dict,
     parse_profile_cli,
     resolve_output_paths,
@@ -395,7 +400,7 @@ with timer.section("model_build"):
         pixels=n_mesh_vertices,
         zeroed_pixels=0,
     )
-    regularization = al.reg.ConstantSplit(coefficient=1.0)
+    reg_scheme, regularization, reg_provenance = delaunay_regularization(_cli)
     pixelization = al.Pixelization(mesh=mesh, regularization=regularization)
 
     source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
@@ -405,6 +410,7 @@ with timer.section("model_build"):
 print(f"  Total free parameters: {model.total_free_parameters}")
 print(f"  Delaunay pixels: {n_mesh_vertices}")
 print(f"  Zeroed edge pixels: {edge_pixels_total}")
+print(f"  Regularization: {reg_scheme} ({reg_provenance})")
 
 # ---------------------------------------------------------------------------
 # 4. Instantiate concrete objects from prior medians
@@ -426,8 +432,17 @@ print(f"  Pytree JAX leaves: {n_pytree_leaves}")
 
 tracer = al.Tracer(galaxies=list(instance.galaxies))
 
-# AdaptImages tells FitImaging where mesh vertices live in image-plane
+# AdaptImages tells FitImaging where mesh vertices live in image-plane, and
+# carries the source's adapt image — the per-pixel signal ``AdaptSplit`` weights
+# its regularization by. Passed unconditionally: ``ConstantSplit`` ignores it, so
+# the two ``--regularization`` legs differ only in the scheme.
 adapt_images = al.AdaptImages(
+    galaxy_image_dict={
+        instance.galaxies.source: adapt_image,
+    },
+    galaxy_name_image_dict={
+        "('galaxies', 'source')": adapt_image,
+    },
     galaxy_image_plane_mesh_grid_dict={
         instance.galaxies.source: image_plane_mesh_grid,
     },
@@ -687,6 +702,7 @@ with timer.section("delaunay_interpolation_and_mapper"):
         mesh=pixelization_obj.mesh,
         mesh_grid=relocated_mesh_grid,
         data_grid=relocated_grid,
+        adapt_data=adapt_image,
     )
     mapper = al.Mapper(
         interpolator=interpolator,
@@ -756,6 +772,12 @@ def blurred_mm_from_params(params_tree):
     t = al.Tracer(galaxies=list(params_tree.galaxies))
     # Recreate adapt_images with new galaxy instance so dict lookup by object identity works.
     adapt_images_jax = al.AdaptImages(
+        galaxy_image_dict={
+            params_tree.galaxies.source: adapt_image,
+        },
+        galaxy_name_image_dict={
+            "('galaxies', 'source')": adapt_image,
+        },
         galaxy_image_plane_mesh_grid_dict={
             params_tree.galaxies.source: image_plane_mesh_grid,
         },
@@ -841,6 +863,11 @@ def _setup_prefix_fn(upto):
             mesh=pixelization_obj.mesh,
             mesh_grid=relocated_mesh,
             data_grid=relocated,
+            # The mapper reads ``adapt_data`` off its interpolator, and it is
+            # what ``AdaptSplit`` weights H by. Without it the ``upto == 11``
+            # branch below raises on a ``None`` adapt image; ``ConstantSplit``
+            # never reads it, so both schemes build the same mapper here.
+            adapt_data=adapt_image,
             xp=jnp,
         )
         m = al.Mapper(
@@ -981,10 +1008,10 @@ likelihood_steps.append(("Curvature matrix (F)", timer.records[-1][1] / 10))
 print(f"  curvature_matrix shape: {curvature_matrix.shape}")
 
 # ---------------------------------------------------------------------------
-# Step 11: Regularization matrix (H) — ConstantSplit scheme
+# Step 11: Regularization matrix (H) — split scheme (AdaptSplit / ConstantSplit)
 # ---------------------------------------------------------------------------
 
-print("\n--- Step 11: Regularization matrix (ConstantSplit) ---")
+print(f"\n--- Step 11: Regularization matrix ({reg_scheme}) ---")
 
 # ConstantSplit uses a cross-derivative scheme via the interpolator's
 # _mappings_sizes_weights_split, not the simple neighbour-difference approach.
@@ -1362,6 +1389,9 @@ breakdown_summary = {
         "edge_zeroed_pixels": int(edge_pixels_total),
         "inversion_path": "sparse" if _cli.use_sparse_operator else "dense",
     },
+    # Regularization scheme + coefficients. A result JSON without this key is a
+    # pre-2026-09-08 row and was measured with ``constant_split``.
+    "regularization": reg_provenance,
     "steps": {label: per_call for label, per_call in likelihood_steps},
     "total_step_by_step": step_total,
     # Absolute prefix times behind the attributed "Regularization matrix (H)"
@@ -1437,17 +1467,36 @@ print(f"  Bar chart saved to:    {chart_path}")
 # Regression assertion — eager log_evidence only
 # ===================================================================
 
-EXPECTED_LOG_EVIDENCE_HST = (
-    29110.92085793  # 1500-pixel Hilbert/Delaunay, MGE-60 lens, adapt_image=lensed_source
-)
+# 1500-pixel Hilbert/Delaunay, MGE-60 lens, adapt_image=lensed_source. One pin
+# per ``--regularization`` scheme — the two legs fit the same data with the same
+# mesh, so only the regularization matrix (and hence the evidence) differs.
+#
+# constant_split: the pre-2026-09-08 value, kept verbatim (re-checked through
+#   this cell's adapt-image wiring on 2026-09-08: 29110.92085737855, rel 2e-11).
+# adapt_split:    pinned 2026-09-08 from this script's first eager CPU run,
+#   local CPU (WSL, JAX fp64), PyAutoLens 08a05858a / PyAutoNerves 0e7163b /
+#   PyAutoFit 08207bad0 / PyAutoArray 47a00e8c / PyAutoGalaxy ec5ce75d.
+EXPECTED_LOG_EVIDENCE_HST = {
+    "constant_split": 29110.92085793,
+    "adapt_split": 29155.0010494252,
+}
 
-np.testing.assert_allclose(
-    log_evidence_ref,
-    EXPECTED_LOG_EVIDENCE_HST,
-    rtol=1e-4,
-    err_msg=(
-        f"imaging/delaunay[{instrument}]: regression — eager log_evidence drifted "
-        f"(got {log_evidence_ref}, expected {EXPECTED_LOG_EVIDENCE_HST})"
-    ),
-)
-print(f"  Eager regression assertion PASSED: log_evidence matches {EXPECTED_LOG_EVIDENCE_HST:.6f}")
+_expected_log_evidence = EXPECTED_LOG_EVIDENCE_HST.get(reg_scheme)
+
+if _expected_log_evidence is None:
+    print(
+        f"  Eager regression assertion SKIPPED for regularization={reg_scheme} "
+        f"(no pinned value). Eager log_evidence = {log_evidence_ref!r}"
+    )
+else:
+    np.testing.assert_allclose(
+        log_evidence_ref,
+        _expected_log_evidence,
+        rtol=1e-4,
+        err_msg=(
+            f"imaging/delaunay[{instrument}, {reg_scheme}]: regression — eager "
+            f"log_evidence drifted (got {log_evidence_ref}, expected "
+            f"{_expected_log_evidence})"
+        ),
+    )
+    print(f"  Eager regression assertion PASSED: log_evidence matches {_expected_log_evidence:.6f}")
