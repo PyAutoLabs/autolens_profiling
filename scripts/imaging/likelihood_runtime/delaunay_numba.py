@@ -8,7 +8,10 @@ Euclid-resolution CPU campaigns use:
 
 - Hilbert image-mesh (1250 vertices) placed from the lensed-source adapt image
   (one-off per analysis; passed in via ``al.AdaptImages``).
-- ``al.mesh.Delaunay`` source pixelization + ``ConstantSplit`` regularization.
+- ``al.mesh.Delaunay`` source pixelization + split regularization —
+  ``AdaptSplit`` by default (what production pairs Delaunay with);
+  ``--regularization constant_split`` selects the ``ConstantSplit(1.0)``
+  scheme this cell's pre-2026-09-08 rows were measured with.
 - MGE-60 linear lens light, Isothermal + shear mass.
 - ``dataset.apply_sparse_operator_cpu()`` + ``al.AnalysisImaging(use_jax=False)``
   — the numba route of the workspace ``cpu_fast_modeling.py`` example.
@@ -69,6 +72,7 @@ from _adapt_image_util import adapt_image_for_dataset  # noqa: E402
 from _profile_cli import (  # noqa: E402
     auto_simulate_if_missing,
     check_pinned,
+    delaunay_regularization,
     device_info_dict,
     parse_profile_cli,
     record_pinned_check,
@@ -211,7 +215,7 @@ with timer.section("model_build"):
         pixels=n_mesh_vertices,
         zeroed_pixels=0,
     )
-    regularization = al.reg.ConstantSplit(coefficient=1.0)
+    reg_scheme, regularization, reg_provenance = delaunay_regularization(_cli)
     pixelization = al.Pixelization(mesh=mesh, regularization=regularization)
 
     source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
@@ -219,12 +223,23 @@ with timer.section("model_build"):
     model = af.Collection(galaxies=af.Collection(lens=lens, source=source))
 
 print(f"  Total free parameters: {model.total_free_parameters}")
+print(f"  Regularization: {reg_scheme} ({reg_provenance})")
 
 with timer.section("instance_from_vector"):
     param_vector = model.physical_values_from_prior_medians
     instance = model.instance_from_vector(vector=param_vector)
 
+# The adapt image is passed alongside the mesh grid: it is the per-pixel signal
+# ``AdaptSplit`` weights its regularization by. Passed unconditionally —
+# ``ConstantSplit`` ignores it, so the two ``--regularization`` legs differ only
+# in the scheme.
 adapt_images = al.AdaptImages(
+    galaxy_image_dict={
+        instance.galaxies.source: adapt_image,
+    },
+    galaxy_name_image_dict={
+        "('galaxies', 'source')": adapt_image,
+    },
     galaxy_image_plane_mesh_grid_dict={
         instance.galaxies.source: image_plane_mesh_grid,
     },
@@ -337,10 +352,12 @@ likelihood_summary = {
         "inversion_path": "sparse_numba",
         "use_jax": False,
         "mesh": "delaunay_hilbert_1250",
-        "regularization": "constant_split",
         "lens_light": "mge_60_linear",
         "omp_num_threads": os.environ.get("OMP_NUM_THREADS", None),
     },
+    # Regularization scheme + coefficients. Pre-2026-09-08 rows carry the flat
+    # string ``configuration.regularization = "constant_split"`` instead.
+    "regularization": reg_provenance,
     "full_pipeline_single_jit": per_call,  # headline key aggregate.py reads
     "first_call_incl_numba_compile_s": first_call_s,
     "first_call_finite": first_call_finite,
@@ -367,21 +384,35 @@ print(f"  Bar chart path:        {chart_path} (no per-step chart in runtime vari
 
 _pinned_drift: list = []
 
-# Pinned 2026-08-20 (v2026.8.17.1, 1250-vertex fiducial). Delaunay repeats are bistable at the
-# ~1e-8 relative level (summation-order nondeterminism) — rtol=1e-6 covers it.
-# Captured on a 4-core cloud container (autoarray 2026.8.20.1) after that
-# machine reproduced the earlier 1500-vertex euclid pin exactly, so the pins
-# are expected hardware-independent.
-EXPECTED_LOG_LIKELIHOOD: dict[str, float] = {
-    "euclid": 7215.3687893658935,
-    "hst": 29090.527192092646,
+# One pin per ``--regularization`` scheme, nested under the instrument. A
+# missing instrument *or* scheme resolves to None and skips the check.
+# Delaunay repeats are bistable at the ~1e-8 relative level (summation-order
+# nondeterminism) — rtol=1e-6 covers it.
+#
+# constant_split: pinned 2026-08-20 (v2026.8.17.1, 1250-vertex fiducial) on a
+#   4-core cloud container (autoarray 2026.8.20.1), after that machine
+#   reproduced the earlier 1500-vertex euclid pin exactly — so the pins are
+#   expected hardware-independent.
+# adapt_split:    pinned 2026-09-08 from this script's first CPU run per
+#   instrument (WSL, numba sparse path, OMP_NUM_THREADS=1),
+#   PyAutoLens 08a05858a / PyAutoNerves 0e7163b / PyAutoFit 08207bad0 /
+#   PyAutoArray 47a00e8c / PyAutoGalaxy ec5ce75d.
+EXPECTED_LOG_LIKELIHOOD: dict[str, dict[str, float | None]] = {
+    "euclid": {
+        "constant_split": 7215.3687893658935,
+        "adapt_split": 5579.104036561161,
+    },
+    "hst": {
+        "constant_split": 29090.527192092646,
+        "adapt_split": 29212.44050977029,
+    },
 }
 
-_pinned_expected = EXPECTED_LOG_LIKELIHOOD.get(instrument)
+_pinned_expected = EXPECTED_LOG_LIKELIHOOD.get(instrument, {}).get(reg_scheme)
 
 if _pinned_expected is None:
     print(
-        f"  Pinned check SKIPPED for {instrument} (no pinned value). "
+        f"  Pinned check SKIPPED for {instrument}/{reg_scheme} (no pinned value). "
         f"log_likelihood = {float(log_likelihood)!r}"
     )
 else:

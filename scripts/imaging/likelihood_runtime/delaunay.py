@@ -4,7 +4,7 @@ JAX Profiling: Delaunay Imaging Likelihood (Step-by-Step)
 
 Profiles each step of the JAX likelihood function for an imaging dataset where
 the source galaxy is reconstructed using a Delaunay triangulation mesh with
-ConstantSplit regularization.
+split regularization (``AdaptSplit`` by default).
 
 Key differences from the rectangular pixelization profiling script:
 
@@ -13,8 +13,12 @@ Key differences from the rectangular pixelization profiling script:
 - Edge points are appended around the mask border and zeroed during inversion.
 - Uses **InterpolatorDelaunay** (barycentric interpolation within triangles)
   instead of bilinear interpolation on a rectangular grid.
-- Uses **ConstantSplit** regularization (cross-derivative scheme) instead of
-  the simpler Constant neighbour-difference scheme.
+- Uses **AdaptSplit** regularization by default (the cross-derivative split
+  scheme with per-pixel weights adapted to the source's signal — what
+  production pairs Delaunay with) instead of the simpler Constant
+  neighbour-difference scheme; ``--regularization constant_split`` selects
+  ``ConstantSplit(1.0)``, the scheme this cell's pre-2026-09-08 rows were
+  measured with.
 - Delaunay triangulation itself uses scipy on CPU and cannot be JIT-compiled.
 
 Pipeline steps:
@@ -29,7 +33,7 @@ Pipeline steps:
 8. Blurred mapping matrix (PSF convolution)
 9. Data vector (D)
 10. Curvature matrix (F)
-11. Regularization matrix (H) — ConstantSplit scheme
+11. Regularization matrix (H) — split scheme
 12. Regularized reconstruction: s = (F + H)^{-1} D
 13. Map reconstruction to image + log evidence
 
@@ -100,6 +104,7 @@ from vram import (  # noqa: E402
 from _profile_cli import (
     auto_simulate_if_missing,
     check_pinned,
+    delaunay_regularization,
     device_info_dict,
     parse_profile_cli,
     record_pinned_check,  # noqa: E402
@@ -316,7 +321,7 @@ with timer.section("model_build"):
         pixels=n_mesh_vertices,
         zeroed_pixels=0,
     )
-    regularization = al.reg.ConstantSplit(coefficient=1.0)
+    reg_scheme, regularization, reg_provenance = delaunay_regularization(_cli)
     pixelization = al.Pixelization(mesh=mesh, regularization=regularization)
 
     source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
@@ -326,6 +331,7 @@ with timer.section("model_build"):
 print(f"  Total free parameters: {model.total_free_parameters}")
 print(f"  Delaunay pixels: {n_mesh_vertices}")
 print(f"  Zeroed edge pixels: {edge_pixels_total}")
+print(f"  Regularization: {reg_scheme} ({reg_provenance})")
 
 # ---------------------------------------------------------------------------
 # 4. Instantiate concrete objects from prior medians
@@ -347,8 +353,17 @@ print(f"  Pytree JAX leaves: {n_pytree_leaves}")
 
 tracer = al.Tracer(galaxies=list(instance.galaxies))
 
-# AdaptImages tells FitImaging where mesh vertices live in image-plane
+# AdaptImages tells FitImaging where mesh vertices live in image-plane, and
+# carries the source's adapt image — the per-pixel signal ``AdaptSplit`` weights
+# its regularization by. Passed unconditionally: ``ConstantSplit`` ignores it, so
+# the two ``--regularization`` legs differ only in the scheme.
 adapt_images = al.AdaptImages(
+    galaxy_image_dict={
+        instance.galaxies.source: adapt_image,
+    },
+    galaxy_name_image_dict={
+        "('galaxies', 'source')": adapt_image,
+    },
     galaxy_image_plane_mesh_grid_dict={
         instance.galaxies.source: image_plane_mesh_grid,
     },
@@ -437,6 +452,9 @@ _early_summary = {
         "edge_zeroed_pixels": int(edge_pixels_total),
         "inversion_path": "sparse" if _cli.use_sparse_operator else "dense",
     },
+    # Regularization scheme + coefficients. A result JSON without this key is a
+    # pre-2026-09-08 row and was measured with ``constant_split``.
+    "regularization": reg_provenance,
     "full_pipeline_single_jit": full_pipeline_per_call,
     "vmap": "PENDING — vmap phase has not run yet (or was killed)",
 }
@@ -615,6 +633,9 @@ likelihood_summary = {
         "edge_zeroed_pixels": int(edge_pixels_total),
         "inversion_path": "sparse" if _cli.use_sparse_operator else "dense",
     },
+    # Regularization scheme + coefficients. A result JSON without this key is a
+    # pre-2026-09-08 row and was measured with ``constant_split``.
+    "regularization": reg_provenance,
     "full_pipeline_single_jit": full_pipeline_per_call,
     "vmap": "SKIPPED — batch resolution returned None for this (cell, instrument)"
     if _vmap_skipped
@@ -656,17 +677,30 @@ print(f"  Bar chart path:        {chart_path} (no per-step chart in runtime vari
 _pinned_drift: list = []
 _pinned_expected = None
 
+# 1500-pixel Hilbert/Delaunay, MGE-60 lens, adapt_image=lensed_source; one pin
+# per ``--regularization`` scheme, nested under the instrument. A missing
+# instrument *or* scheme resolves to None and skips the assertion.
+#
+# hst/constant_split: the pre-2026-09-08 value, kept verbatim (re-checked
+#   through this cell's adapt-image wiring on 2026-09-08: 29110.92085737855).
+# hst/adapt_split:    pinned 2026-09-08 from this cell's first eager CPU run,
+#   local CPU (WSL, JAX fp64), PyAutoLens 08a05858a / PyAutoNerves 0e7163b /
+#   PyAutoFit 08207bad0 / PyAutoArray 47a00e8c / PyAutoGalaxy ec5ce75d — equal
+#   to the breakdown sibling's adapt_split pin, as it must be.
 EXPECTED_LOG_EVIDENCE = {
-    "hst": 29110.92085793  # 1500-pixel Hilbert/Delaunay, MGE-60 lens, adapt_image=lensed_source
+    "hst": {
+        "constant_split": 29110.92085793,
+        "adapt_split": 29155.0010494252,
+    }
 }
 
-expected_log_evidence = EXPECTED_LOG_EVIDENCE.get(instrument)
+expected_log_evidence = EXPECTED_LOG_EVIDENCE.get(instrument, {}).get(reg_scheme)
 _pinned_expected = expected_log_evidence
 
 if expected_log_evidence is None:
     print(
-        f"  Regression assertion SKIPPED for {instrument} "
-        f"(no pinned value). Eager log_evidence = {log_evidence_ref}"
+        f"  Regression assertion SKIPPED for {instrument}/{reg_scheme} "
+        f"(no pinned value). Eager log_evidence = {log_evidence_ref!r}"
     )
 else:
     _rec = check_pinned(log_evidence_ref, _pinned_expected, label="eager", rtol=1e-4)
