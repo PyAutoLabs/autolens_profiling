@@ -970,10 +970,19 @@ _pinned_drift: list = []
 # (model, seed, n_instances). Libraries: PyAutoArray 47a00e8c, PyAutoFit
 # 08207bad0, PyAutoGalaxy ec5ce75d, PyAutoLens 08a05858a, PyAutoNerves 0e7163b,
 # autolens 2026.8.17.1.
+#
+# Euclid RE-PINNED 2026-09-08 (autolens_profiling#237): the Euclid presets'
+# light-profile radial bins moved from `[4, 2, 2]` to `[4, 4, 2]`, following
+# euclid_strong_lens_modeling_pipeline#56 (`util.py:931-937`) — sub-size 2 in
+# the 0.1-0.3" annulus under-integrates a compact source. Over-sampled pixels
+# 15424 -> 15664. A control run of `likelihood_runtime/delaunay_numba.py` with
+# the Euclid presets put back to `[4, 2, 2]`, on the same libraries, re-PASSED
+# its old pin unchanged, so the whole move is the bin change, none of it drift. HST is
+# untouched (subhalo_validation still runs `[4, 2, 2]`).
 EXPECTED_LOG_LIKELIHOOD: dict[str, dict[str, dict[str, float]]] = {
     "production": {
         "bilinear": {
-            "euclid": 4242.698962741273,
+            "euclid": 4243.160082020453,
             "hst": 22677.756578185603,
         },
     },

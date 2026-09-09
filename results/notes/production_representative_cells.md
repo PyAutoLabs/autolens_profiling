@@ -26,7 +26,7 @@ Euclid DR1 `vis_pix` stage (job 342301); the HST cell is subhalo-validation's
 | Rectangular mesh | (no rectangular production stage) | `(32, 32)` adapt, `Adapt` reg | **(28, 28)**, `Constant(1.0)` |
 | Regularization | **free** `AdaptSplit`, LogUniform 1e-6..1e6 / Uniform 0..1 | same | fixed `ConstantSplit(1.0)` / `Constant(1.0)` |
 | Adapt-image S/N cap | none | **3.0** | none |
-| `over_sample_size_lp` | `[4, 2, 2]` at `[0.1, 0.3]` | same | `[4, 2, 1]` at `[0.3, 0.6]` |
+| `over_sample_size_lp` | `[4, 4, 2]` at `[0.1, 0.3]` (`[4, 2, 2]` until #237) | `[4, 2, 2]` at `[0.1, 0.3]` | `[4, 2, 1]` at `[0.3, 0.6]` |
 | `over_sample_size_pixelization` | `4` where source S/N > 3, else `2` | same | **flat `1`** |
 | Sparse operator | re-applied after every over-sampling change | same | applied once |
 | Positions penalty | `factor=3.0, minimum_threshold=0.2` | none | none |
@@ -159,6 +159,7 @@ Two pins could not be re-measured and say so in place:
   importing `autoarray.inversion.mesh.mesh.rectangular_adapt_density`, a module
   PyAutoArray has since split into `rectangular_bilinear_adapt_density` /
   `rectangular_rtu_adapt_density`. Unrelated to this task; filed as a follow-up.
+  **Closed by #237** — see "The follow-up #235 left open, closed" below.
 - The four #232 JAX Delaunay cells' `EXPECTED_LOG_EVIDENCE` — see below.
 
 The four converted cells' pins are **gone, not moved**: their configuration is a
@@ -201,6 +202,70 @@ relative move across all eight runs was 3.284e-11** (`total` / `PowerLaw`
 sample, both instruments; `basis` moved by exactly zero). No re-pin came near
 the `--repin-max-shift` guard, so `--repin-force` was never used. Each cell was
 then re-run without `--repin` and all eight pin checks PASSED at rtol 1e-6.
+
+## The Euclid presets move to lp `[4, 4, 2]` (2026-09-08, #237)
+
+`euclid_strong_lens_modeling_pipeline#56` raised the production light-profile
+radial bins one more notch, `[4, 2, 2]` -> `[4, 4, 2]` at the same
+`[0.1, 0.3]` radii (`util.py:931-937`): sub-size 2 in the 0.1-0.3" annulus
+under-integrates a compact source by ~0.6 % on a magnification cross-check, and
+the old `[4, 2, 1]` agreement was two under-integrations cancelling. Both
+Euclid presets in [`_production_config.py`](../../_production_config.py) —
+`EUCLID_VIS_PIX` and `EUCLID_RECT_ADAPT`, which takes only its mesh from the
+subhalo rectangular stage and everything the stage owns from `vis_pix` — now
+carry `lp_sub_size_list=(4, 4, 2)`; the two HST presets stay at `[4, 2, 2]`,
+because `subhalo_validation` did not change. Euclid over-sampled pixels go
+3841 masked -> 15424 -> **15664**.
+
+The four Euclid production rows, re-run and re-pinned. Same host, protocol and
+libraries as the table above except PyAutoArray `35aa681f`, PyAutoFit
+`74884c5e`, PyAutoGalaxy `f1225037` (PyAutoLens `08a05858`, PyAutoNerves
+`0e7163bc` unchanged):
+
+| cell | lp `[4, 2, 2]` cold / warm median (s) | lp `[4, 4, 2]` cold / warm median (s) | witness |
+|---|---|---|---|
+| `likelihood_runtime/delaunay_numba` | 0.239 / 0.232 | 0.235 / 0.243 | below range (unchanged) |
+| `likelihood_breakdown/delaunay_numba` | 0.271 / 0.275 | 0.268 / 0.246 | below range (unchanged) |
+| `likelihood_runtime/pixelization_numba` | 0.715 / 0.530 | 0.505 / 0.585 | **PASS** |
+| `likelihood_breakdown/pixelization_numba` | 0.693 / 0.588 | 0.739 / 0.539 | **PASS** |
+
+**The extra over-sampling costs nothing measurable, and the table cannot prove
+otherwise.** 240 more over-sampled pixels on 15424 is +1.6 %, well inside the
+host's run-to-run spread: an earlier pass of the same four `[4, 4, 2]` runs, an
+hour before, gave 0.170 / 0.178 / 0.399 / 0.485 s cold on an idle host. Read
+the two columns as "no change", not as a measured speed-up.
+
+Pinned log-likelihoods moved, and only because of the bins:
+
+| cell family | old pin (lp `[4, 2, 2]`) | new pin (lp `[4, 4, 2]`) | rel |
+|---|---|---|---|
+| `delaunay_numba` euclid (both cells) | 5817.7313621849535 | 5818.189684514178 | 7.9e-5 |
+| `pixelization_numba` euclid / bilinear (both cells) | 4242.698962741273 | 4243.160082020453 | 1.1e-4 |
+
+The control that makes that claim: `likelihood_runtime/delaunay_numba.py` was
+re-run with the Euclid presets put back to `[4, 2, 2]` on today's libraries and
+**re-PASSED the old pin unchanged at rtol 1e-6** (over-sampled pixels back to
+15424), so none of the move is library drift between #235 and now. The
+breakdown and runtime cell of each family again agree to the last digit. HST
+pins are untouched.
+
+### The follow-up #235 left open, closed
+
+`likelihood_breakdown/pixelization.py` — the one imaging cell #235 could not
+re-run — now runs. Its step-5 import of
+`autoarray.inversion.mesh.mesh.rectangular_adapt_density` moved when PyAutoArray
+split that module (`f9aceea3`): `overlay_grid_from` lives in
+`rectangular_rtu_adapt_density`, and `RectangularBilinearAdaptDensity`
+subclasses `RectangularRTUAdaptDensity` and inherits it, so the one function
+serves both `--rect-mesh` families. Both keys were re-measured from one eager
+run each with `[4, 2, 2]` in place (HST, so `[4, 4, 2]` does not apply). Both
+old pins still passed at the cell's `rtol=1e-4`; they are replaced by the
+measured values so the pin describes what the cell computes:
+
+| `--rect-mesh` | old pin | new pin | rel |
+|---|---|---|---|
+| `bilinear` | 28622.397322591198 | 28621.128714095972 | 4.4e-5 |
+| `rtu` | 28506.318157467784 | 28505.343980143432 | 3.4e-5 |
 
 ## What deliberately did not change
 

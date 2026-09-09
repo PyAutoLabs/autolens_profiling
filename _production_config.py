@@ -167,9 +167,13 @@ class ProductionPreset:
     adapt_snr_cap: float | None = None
 
     # --- over-sampling ------------------------------------------------------
-    #: Light-profile radial-bin recipe. Euclid ``util.py:831-836``; subhalo
-    #: ``scripts/imaging.py:179-184``. Both are `[4, 2, 2]` at `[0.1, 0.3]`
-    #: after autolens_profiling#235 retired the outer sub-size-1 bin.
+    #: Light-profile radial-bin recipe. The default is the subhalo recipe,
+    #: ``subhalo_validation/scripts/imaging.py:179-184`` — `[4, 2, 2]` at
+    #: `[0.1, 0.3]` after autolens_profiling#235 retired the outer sub-size-1
+    #: bin. The two Euclid presets override it to `[4, 4, 2]`: the Euclid
+    #: pipeline raised the middle bin in ``util.py:931-937``
+    #: (euclid_strong_lens_modeling_pipeline#56, 2026-09-08) because sub-size 2
+    #: in the 0.1-0.3" annulus under-integrates a compact source by ~0.6 %.
     lp_sub_size_list: tuple[int, ...] = (4, 2, 2)
     lp_radial_list: tuple[float, ...] = (0.1, 0.3)
     lp_centre: tuple[float, float] = (0.0, 0.0)
@@ -316,7 +320,9 @@ EUCLID_VIS_PIX = ProductionPreset(
         "(vis_pix stage, job 342301): mesh :613-615, image mesh :392-396, edge "
         ":448-455, regularization :617, over-sampling :498-511, sparse operator "
         ":364-365, positions :544-546, MGE :162-168, threads "
-        "euclid_dr1_prelim/hpc/batch_cpu/submit_initial_lens_model_two_stage:48,161-166"
+        "euclid_dr1_prelim/hpc/batch_cpu/submit_initial_lens_model_two_stage:48,161-166; "
+        "light-profile radial bins util.py:931-937 ([4, 4, 2] since "
+        "euclid_strong_lens_modeling_pipeline#56, 2026-09-08)"
     ),
     mesh_kind="delaunay",
     hilbert_pixels=500,
@@ -324,6 +330,7 @@ EUCLID_VIS_PIX = ProductionPreset(
     hilbert_weight_power=3.5,
     hilbert_weight_floor=0.01,
     adapt_snr_cap=None,
+    lp_sub_size_list=(4, 4, 2),
     pix_snr_cut=3.0,
     pix_high=4,
     pix_low=2,
@@ -394,11 +401,15 @@ EUCLID_RECT_ADAPT = ProductionPreset(
     provenance=(
         HST_RECT_ADAPT.provenance + " — no Euclid rectangular production stage exists (the Euclid "
         "pipeline's pixelized stage is Delaunay only), so the Euclid "
-        "rectangular row runs this configuration on the Euclid dataset"
+        "rectangular row takes the rectangular mesh from this configuration and "
+        "everything the stage owns (adapt S/N cap, light-profile radial bins, "
+        "positions penalty, MGE) from the Euclid vis_pix stage, on the Euclid "
+        "dataset"
     ),
     mesh_kind="rectangular",
     rect_pixels_yx=32,
     adapt_snr_cap=None,
+    lp_sub_size_list=(4, 4, 2),
     pix_snr_cut=3.0,
     pix_high=4,
     pix_low=2,
