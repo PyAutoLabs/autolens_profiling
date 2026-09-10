@@ -1,35 +1,263 @@
 {
-  "autolens_version": "2026.7.6.649",
+  "autolens_version": "2026.8.17.1",
   "device": {
     "backend": "gpu",
     "device": "cuda:0",
-    "xla_flags": "--xla_disable_hlo_passes=constant_folding",
+    "hostname": "euclid-ral-gpu-2",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
     "omp_num_threads": null,
     "cpu_count": 124,
-    "nvidia_smi": "NVIDIA A100 80GB PCIe, 4701 MiB, 81920 MiB"
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/autolens_profiling_wt/a100-pixelized-baseline/output/jax_cache/baseline_342627",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 1543 MiB, 81920 MiB"
   },
   "instrument": "hst",
   "configuration": {
     "pixel_scale_arcsec": 0.05,
     "mask_radius_arcsec": 3.5,
     "image_pixels_masked": 15361,
-    "over_sampled_pixels": 17980,
+    "over_sampled_pixels": 62752,
     "delaunay_vertices": 1500,
     "edge_zeroed_pixels": 0,
-    "inversion_path": "sparse"
+    "inversion_path": "sparse",
+    "total_params": 1560,
+    "sparse_batch_size": 128,
+    "sparse_nnz": 46083,
+    "sparse_operator_build_s": 0.6425656541250646,
+    "thread_env": {
+      "n_threads": null,
+      "vars": [
+        "OPENBLAS_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OMP_NUM_THREADS",
+        "VECLIB_MAXIMUM_THREADS",
+        "NUMEXPR_NUM_THREADS"
+      ],
+      "set_to": null,
+      "preexisting": {},
+      "overridden": {},
+      "note": "Not pinned (legacy variant): recorded as found."
+    },
+    "memo": "library_default (inert on the JAX path)",
+    "over_sample_size_lp_rule": {
+      "sub_size_list": [
+        4,
+        2,
+        2
+      ],
+      "radial_list": [
+        0.3,
+        0.6
+      ],
+      "centre": [
+        0.0,
+        0.0
+      ],
+      "note": "Outer sub-size 1 retired repo-wide on 2026-09-08 (autolens_profiling#235): it leaves the outermost annulus un-over-sampled and causes gradient issues."
+    }
+  },
+  "regularization": {
+    "scheme": "adapt_split",
+    "inner_coefficient": 0.1,
+    "outer_coefficient": 10.0,
+    "signal_scale": 0.1
   },
   "steps": {
-    "Ray-trace data grid": 0.00011405620007280959,
-    "Ray-trace mesh grid": 0.00015693100003772998,
-    "Lens light images (pre-PSF)": 5.8916599937219874e-05,
-    "Blurred image (PSF convolution)": 0.0007329633999688667,
-    "Profile-subtracted image": 8.804649996818625e-05,
-    "Inversion setup (steps 5-8 combined)": 0.04142457910002122,
-    "Data vector (D)": 0.00031941799998094214,
-    "Curvature matrix (F)": 0.0047273813000174416,
-    "Regularization matrix (H)": 0.01542312200035667,
-    "Regularized reconstruction": 0.03274251569991975,
-    "Mapped recon + log evidence": 0.002231738899990887
+    "Ray-trace data grid": 0.00018918991554528475,
+    "Ray-trace mesh grid": 0.0001581371994689107,
+    "Lens light images (pre-PSF)": 0.00011877238284796476,
+    "Blurred image (PSF convolution)": 0.0013265134999528526,
+    "Profile-subtracted image": 0.0001288444036617875,
+    "Inversion setup (sparse, steps 5-8 combined)": 0.01362770211417228,
+    "Data vector (D, w-tilde)": 0.00018980989698320628,
+    "Curvature matrix (F, w-tilde)": 0.017870017094537616,
+    "Regularization matrix (H)": 0.00023215170949697495,
+    "Regularized reconstruction": 0.037607514788396655,
+    "Mapped recon + log evidence (sparse)": 0.00228804110083729
   },
-  "total_step_by_step": 0.0980196687002717
+  "total_step_by_step": 0.07373669410590082,
+  "regularization_matrix_prefix_s": 0.007471556798554957,
+  "interpolator_prefix_s": 0.007239405089057982,
+  "jit_phases": {
+    "ray_trace_data_jit": {
+      "lower_s": 0.12744358088821173,
+      "compile_s": 0.3390360560733825,
+      "first_call_s": 0.001391132129356265,
+      "steady_per_call_s": 0.00018918991554528475
+    },
+    "ray_trace_mesh_jit": {
+      "lower_s": 0.07950668106786907,
+      "compile_s": 0.47409681510180235,
+      "first_call_s": 0.0011987639591097832,
+      "steady_per_call_s": 0.0001581371994689107
+    },
+    "lens_image_jit": {
+      "lower_s": 0.06473444495350122,
+      "compile_s": 0.04357666498981416,
+      "first_call_s": 0.0006755860522389412,
+      "steady_per_call_s": 0.00011877238284796476
+    },
+    "blurred_image_jit": {
+      "lower_s": 0.06000221101567149,
+      "compile_s": 0.20424184785224497,
+      "first_call_s": 0.005267051048576832,
+      "steady_per_call_s": 0.0013265134999528526
+    },
+    "profile_subtract_jit": {
+      "lower_s": 0.006213145097717643,
+      "compile_s": 0.027800642885267735,
+      "first_call_s": 0.0007155360653996468,
+      "steady_per_call_s": 0.0001288444036617875
+    },
+    "inversion_setup_sparse_jit": {
+      "lower_s": 3.257297459989786,
+      "compile_s": 10.178283445071429,
+      "first_call_s": 0.1343103121034801,
+      "steady_per_call_s": 0.01362770211417228
+    },
+    "setup_prefix_5": {
+      "lower_s": 0.17618404515087605,
+      "compile_s": 0.9200176491867751,
+      "first_call_s": 0.005297841038554907,
+      "steady_per_call_s": 0.0011140795890241862
+    },
+    "setup_prefix_6": {
+      "lower_s": 0.24103555991314352,
+      "compile_s": 1.8595935960765928,
+      "first_call_s": 0.011731584090739489,
+      "steady_per_call_s": 0.007239405089057982
+    },
+    "setup_prefix_7": {
+      "lower_s": 2.60325315897353,
+      "compile_s": 1.9767377858515829,
+      "first_call_s": 0.012694098055362701,
+      "steady_per_call_s": 0.007322671706788242
+    },
+    "sparse_triplets_jit": {
+      "lower_s": 0.012182221049442887,
+      "compile_s": 0.045365934958681464,
+      "first_call_s": 0.0008077260572463274,
+      "steady_per_call_s": 0.00016650299075990916
+    },
+    "mge_operated_basis_jit": {
+      "lower_s": 3.1609079530462623,
+      "compile_s": 11.04640586511232,
+      "first_call_s": 0.08961059502325952,
+      "steady_per_call_s": 0.005150685016997158
+    },
+    "psf_weighted_data_jit": {
+      "lower_s": 0.014986065216362476,
+      "compile_s": 0.14360313978977501,
+      "first_call_s": 0.00085063511505723,
+      "steady_per_call_s": 0.00019297190010547638
+    },
+    "data_vector_sparse_jit": {
+      "lower_s": 0.011366755003109574,
+      "compile_s": 0.12010477297008038,
+      "first_call_s": 0.0011770238634198904,
+      "steady_per_call_s": 0.00018980989698320628
+    },
+    "curvature_matrix_sparse_jit": {
+      "lower_s": 0.07032519322820008,
+      "compile_s": 0.6624282321427017,
+      "first_call_s": 0.02811231091618538,
+      "steady_per_call_s": 0.017870017094537616
+    },
+    "curvature_F_diag_jit": {
+      "lower_s": 0.030604817904531956,
+      "compile_s": 0.23466270486824214,
+      "first_call_s": 0.02383546601049602,
+      "steady_per_call_s": 0.01844158498570323
+    },
+    "curvature_F_off_diag_jit": {
+      "lower_s": 0.018297647126019,
+      "compile_s": 0.16335050691850483,
+      "first_call_s": 0.003990306984633207,
+      "steady_per_call_s": 0.0006713783135637641
+    },
+    "curvature_F_func_func_jit": {
+      "lower_s": 0.006328864023089409,
+      "compile_s": 0.04260840895585716,
+      "first_call_s": 0.0009124749340116978,
+      "steady_per_call_s": 0.0004001497058197856
+    },
+    "regularization_matrix_jit": {
+      "lower_s": 0.33120952104218304,
+      "compile_s": 3.3865774390287697,
+      "first_call_s": 0.013332744827494025,
+      "steady_per_call_s": 0.007471556798554957
+    },
+    "setup_prefix_5_vmap16": {
+      "first_call_s": 1.2494983689393848,
+      "batch_per_call_s": 0.001025133184157312,
+      "steady_per_call_s": 6.4070824009832e-05
+    },
+    "setup_prefix_6_vmap16": {
+      "first_call_s": 2.6801479959394783,
+      "batch_per_call_s": 0.08210716859903186,
+      "steady_per_call_s": 0.005131698037439491
+    },
+    "setup_prefix_7_vmap16": {
+      "first_call_s": 7.6325983598362654,
+      "batch_per_call_s": 0.08272339119575918,
+      "steady_per_call_s": 0.005170211949734949
+    },
+    "setup_prefix_11_vmap16": {
+      "first_call_s": 3.693808966083452,
+      "batch_per_call_s": 0.08410152841825039,
+      "steady_per_call_s": 0.005256345526140649
+    },
+    "inversion_setup_vmap16": {
+      "first_call_s": 18.113168199080974,
+      "batch_per_call_s": 0.09275328770745546,
+      "steady_per_call_s": 0.005797080481715966
+    },
+    "reconstruction_jit": {
+      "lower_s": 0.029751081950962543,
+      "compile_s": 0.48787490697577596,
+      "first_call_s": 0.038995839888229966,
+      "steady_per_call_s": 0.037607514788396655
+    },
+    "log_evidence_sparse_jit": {
+      "lower_s": 0.03349951095879078,
+      "compile_s": 0.37129108398221433,
+      "first_call_s": 0.005221780855208635,
+      "steady_per_call_s": 0.00228804110083729
+    }
+  },
+  "steps_sparse_setup_rows": {
+    "Sparse triplets (data + curvature)": 0.00016650299075990916,
+    "MGE operated basis (params prefix)": 0.005150685016997158,
+    "PSF-weighted data": 0.00019297190010547638
+  },
+  "steps_sparse_sub_rows": {
+    "F diag (FFT blocks)": 0.01844158498570323,
+    "F off-diag (mapper x MGE)": 0.0006713783135637641,
+    "F MGE x MGE GEMM": 0.0004001497058197856
+  },
+  "sparse_equivalence": {
+    "curvature_matrix_max_rel_diff": 3.917356278765775e-15,
+    "data_vector_max_rel_diff": 3.3280650987054534e-15,
+    "tolerance": 1e-08
+  },
+  "setup_split": {
+    "Border relocation": 0.0011140795890241862,
+    "Triangulation + interpolation": 0.0061253255000337965,
+    "Sparse triplets": 8.326661773025955e-05,
+    "MGE operated basis + PSF-weighted data": 0.006305030407384038
+  },
+  "vmap_batch": 16,
+  "steps_vmap_per_call": {
+    "Inversion setup (sparse, steps 5-8 combined)": 0.005797080481715966,
+    "Regularization matrix (H)": 0.00012464748870115797
+  },
+  "setup_split_vmap": {
+    "Border relocation": 6.4070824009832e-05,
+    "Triangulation + interpolation": 0.005067627213429659,
+    "Sparse triplets": 3.8513912295457496e-05,
+    "MGE operated basis + PSF-weighted data": 0.0006268685319810174
+  },
+  "regularization_matrix_prefix_vmap_per_call_s": 0.005256345526140649,
+  "interpolator_prefix_vmap_per_call_s": 0.005131698037439491
 }
