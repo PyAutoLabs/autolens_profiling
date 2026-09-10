@@ -43,9 +43,6 @@ export MPLCONFIGDIR=/tmp/matplotlib
 
 nvidia-smi
 
-# MIG backstop; no-op since 2026-09-05, only bounces under --requeue.
-source "$AP_ROOT/hpc/batch_gpu/_gpu_preflight.sh"
-
 echo "=========================================="
 date
 echo "Cell:           likelihood_runtime/imaging/delaunay_nn"

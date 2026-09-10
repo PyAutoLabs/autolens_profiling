@@ -44,9 +44,6 @@ export MPLCONFIGDIR=/tmp/matplotlib
 
 nvidia-smi
 
-# MIG backstop; no-op since 2026-09-05, only bounces under --requeue.
-source "$AP_ROOT/hpc/batch_gpu/_gpu_preflight.sh"
-
 echo "=========================================="
 date
 printf 'PyAutoArray(AB) %s\n' "$(git -C $AA_ROOT rev-parse HEAD 2>&1)"

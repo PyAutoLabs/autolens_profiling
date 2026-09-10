@@ -182,10 +182,6 @@
 
 #SBATCH -J search_nautilus_inference_refs_v1
 #SBATCH --partition=gpu
-# Node exclusion (2026-08-28): euclid-ral-gpu-1 carries a MIG-mode A100 with
-# no instances that SLURM still hands out as a plain gpu:A100 — see
-# _gpu_preflight.sh, which stays armed as the backstop.
-#SBATCH --exclude=euclid-ral-gpu-1
 #SBATCH --gres=gpu:1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
@@ -244,10 +240,6 @@ if [ "$POSITIONS" = "on" ]; then
 fi
 
 nvidia-smi
-
-# Bounce off the MIG-mode GPU that SLURM still hands out as a plain A100.
-# Requires the submit to be dispatched with --requeue. See the script's header.
-source "$AP_ROOT/hpc/batch_gpu/_gpu_preflight.sh"
 
 echo "=========================================="
 date

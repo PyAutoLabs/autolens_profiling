@@ -79,11 +79,6 @@ export MPLCONFIGDIR=/tmp/matplotlib
 
 nvidia-smi
 
-# MIG backstop. A no-op since the fleet's MIG mode was confirmed Disabled
-# (2026-09-05); kept because a silent removal re-opens the trap. Only bounces
-# when the job was dispatched with --requeue.
-source "$AP_ROOT/hpc/batch_gpu/_gpu_preflight.sh"
-
 echo "=========================================="
 date
 echo "Cell:           likelihood_breakdown/imaging/delaunay_nn"
