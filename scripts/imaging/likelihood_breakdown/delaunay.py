@@ -106,6 +106,57 @@ The Delaunay triangulation's qhull ``pure_callback`` is
 row is expected to stay roughly linear in ``N`` while the dense linear algebra
 amortizes.
 
+Sparse (w-tilde) step map
+-------------------------
+
+``--sparse`` attaches the w-tilde sparse operator
+(``dataset.apply_sparse_operator(batch_size=--sparse-batch-size)``) and — since
+2026-09-10 — actually **times the w-tilde steps**. Before that the ``_sparse``
+rows were dense tables with a sparse dataset attached: the cell called
+``apply_sparse_operator()`` and then timed ``operated_mapping_matrix`` and
+``curvature_matrix_via_mapping_matrix_from``, neither of which
+``InversionImagingSparse`` ever calls, which is why dense and ``_sparse`` rows
+agreed to <1 %.
+
+The dense rows and their sparse replacements:
+
+===================================== =========================================
+dense                                 sparse
+===================================== =========================================
+Inversion setup (steps 5-8 combined)  Inversion setup (sparse, steps 5-8
+                                      combined) — triplets + MGE operated
+                                      basis + PSF-weighted data
+Data vector (D)                       Data vector (D, w-tilde)
+Curvature matrix (F)                  Curvature matrix (F, w-tilde)
+Mapped recon + log evidence           Mapped recon + log evidence (sparse)
+===================================== =========================================
+
+Steps 1-6 (ray-trace, lens light, PSF, profile subtraction, border relocation,
+triangulation + interpolation) are path-independent and are timed identically in
+both legs. H, ``F + λH``, the NNLS reconstruction and both Choleskys are **the
+same code in both legs** — that is the point of the comparison: the w-tilde path
+replaces the mapping matrix, not the log-det. The two legs therefore share one
+pinned log evidence.
+
+Two extra JSON-only tables come out of the sparse leg:
+
+- ``steps_sparse_setup_rows`` — the setup pieces timed separately: ``Sparse
+  triplets (data + curvature)``, ``MGE operated basis (params prefix)`` (60
+  PSF-convolved columns, still dense, and a matrix-free line has to beat it too)
+  and ``PSF-weighted data``. The MGE row is a ``params -> basis`` prefix rather
+  than an array-level convolution because a linear light profile overrides the
+  inversion's convolution (``operated_mapping_matrix_override``) to include flux
+  that blurs in from outside the mask.
+- ``steps_sparse_sub_rows`` — the three blocks inside the single F row: ``F diag
+  (FFT blocks)`` (the ``ceil(S / batch_size)`` rFFT2 column sweep), ``F off-diag
+  (mapper x MGE)`` and ``F MGE x MGE GEMM``.
+
+Neither is added to ``total_step_by_step`` — both overlap rows that are. The
+standalone step functions live in
+``scripts/misc/likelihood_breakdown/sparse_steps.py``; see that module and
+``scripts/misc/likelihood_breakdown/README.md`` for the library provenance of
+each one.
+
 Output
 ------
 
@@ -131,8 +182,6 @@ if _misc_dir not in _sys.path:
 
 import subprocess
 import sys
-import time
-from contextlib import contextmanager
 from pathlib import Path
 
 import autoarray as aa
@@ -152,6 +201,10 @@ sys.path.insert(0, str(_profiling_root()))
 # the full profiling pipeline. Skipped entirely when the env var is unset.
 import os as _smoke_os
 import sys as _smoke_sys
+
+# Shared breakdown helpers. Imported *before* the smoke short-circuit so the CI
+# import smoke covers the package too.
+from likelihood_breakdown import sparse_steps, timing  # noqa: E402
 
 from _adapt_image_util import adapt_image_for_dataset  # noqa: E402
 
@@ -175,23 +228,7 @@ from _profile_cli import (  # noqa: E402
 _cli = parse_profile_cli()
 
 
-def _parse_vmap_batch(argv) -> int | None:
-    """Parse ``--vmap-batch N`` / ``--vmap-batch=N`` out of *argv*.
-
-    Read straight from ``sys.argv`` rather than added to
-    ``_profile_cli.parse_profile_cli`` because it is a breakdown-only flag —
-    the runtime cells resolve their batch from the VRAM table / probe JSON
-    instead, and the shared parser stays the sweep-driver contract.
-    """
-    for i, arg in enumerate(argv):
-        if arg == "--vmap-batch" and i + 1 < len(argv):
-            return int(argv[i + 1])
-        if arg.startswith("--vmap-batch="):
-            return int(arg.split("=", 1)[1])
-    return None
-
-
-_vmap_batch = _parse_vmap_batch(sys.argv)
+_vmap_batch = timing.parse_vmap_batch(sys.argv)
 if _vmap_batch is not None and _vmap_batch < 1:
     raise ValueError(f"--vmap-batch must be >= 1 (got {_vmap_batch})")
 
@@ -203,79 +240,32 @@ instrument = "hst"  # <-- change this to profile a different instrument
 # ---------------------------------------------------------------------------
 
 
-class Timer:
-    """Accumulates named timing measurements and prints a summary."""
+# ``Timer`` / ``block`` / ``jit_profile`` moved to
+# ``scripts/misc/likelihood_breakdown/timing.py`` on 2026-09-10 — this cell's
+# copies were the source the shared module was lifted from, so behaviour is
+# unchanged. The wrapper binds them to this cell's Timer and ``jit_records``,
+# which is what carries lower / compile / first-call time into the result JSON.
 
-    def __init__(self):
-        self.records: list[tuple[str, float]] = []
-
-    @contextmanager
-    def section(self, label: str):
-        """Context manager that records wall-clock time for *label*."""
-        start = time.perf_counter()
-        yield
-        elapsed = time.perf_counter() - start
-        self.records.append((label, elapsed))
-        print(f"  [{label}] {elapsed:.4f} s")
-
-    def summary(self):
-        print("\n" + "=" * 70)
-        print("PROFILING SUMMARY")
-        print("=" * 70)
-        max_label = max(len(r[0]) for r in self.records)
-        total = 0.0
-        for label, elapsed in self.records:
-            print(f"  {label:<{max_label}}  {elapsed:>10.4f} s")
-            total += elapsed
-        print("-" * 70)
-        print(f"  {'TOTAL':<{max_label}}  {total:>10.4f} s")
-        print("=" * 70)
-
-
-def block(x):
-    """Force synchronisation on every JAX array in *x* (array or pytree).
-
-    Tuple-returning prefixes (steps 5 and 6 of the ``--split-setup`` walk)
-    used to slip through an ``hasattr(x, "block_until_ready")`` test and were
-    therefore timed asynchronously, which is exactly the artifact the H-row
-    fix removes elsewhere. Blocking over ``tree_leaves`` makes every timed
-    step synchronous on the same terms.
-    """
-    for leaf in jax.tree_util.tree_leaves(x):
-        if hasattr(leaf, "block_until_ready"):
-            leaf.block_until_ready()
-    return x
-
-
-def jit_profile(func, label, *args, n_repeats=10):
-    """JIT-compile *func*, time first call and steady-state average.
-
-    Returns the compiled function and its result.
-    """
-    jitted = jax.jit(func)
-
-    with timer.section(f"{label}_lower"):
-        lowered = jitted.lower(*args)
-
-    with timer.section(f"{label}_compile"):
-        compiled = lowered.compile()
-
-    with timer.section(f"{label}_first_call"):
-        result = compiled(*args)
-        block(result)
-
-    with timer.section(f"{label}_steady_x{n_repeats}"):
-        for _ in range(n_repeats):
-            result = compiled(*args)
-            block(result)
-
-    per_call = timer.records[-1][1] / n_repeats
-    print(f"    -> per-call avg: {per_call:.6f} s")
-    return compiled, result
+Timer = timing.Timer
+block = timing.block
 
 
 timer = Timer()
 likelihood_steps = []  # (label, per_call_seconds) for the final summary
+jit_records: dict[str, dict] = {}  # {label: {lower_s, compile_s, first_call_s, ...}}
+
+
+def jit_profile(func, label, *args, n_repeats=10):
+    """Cell-local binding of ``timing.jit_profile`` (this cell's timer/records)."""
+    return timing.jit_profile(
+        func,
+        label,
+        *args,
+        n_repeats=n_repeats,
+        timer=timer,
+        jit_records=jit_records,
+    )
+
 
 # ===================================================================
 # PART A — Setup (not JIT-compiled)
@@ -336,8 +326,14 @@ with timer.section("mask_and_oversample"):
 
     if _cli.use_sparse_operator:
         # Engage the w-tilde sparse-operator path. See the runtime sibling
-        # script for the rationale (autolens_profiling#44).
-        dataset = dataset.apply_sparse_operator()
+        # script for the rationale (autolens_profiling#44). The operator build
+        # itself is two rFFT2s of the padded PSF and is timed here, eagerly, as
+        # a one-off — it is not a per-call cost.
+        with timer.section("sparse_operator_build"):
+            dataset = dataset.apply_sparse_operator(batch_size=_cli.sparse_batch_size)
+        sparse_operator_build_s = timer.records[-1][1]
+    else:
+        sparse_operator_build_s = None
 
 # ---------------------------------------------------------------------------
 # 2. Adapt image + image mesh (Hilbert)
@@ -726,52 +722,70 @@ print("\n--- Extracting inversion matrices from FitImaging ---")
 
 inversion = fit.inversion
 
+print(f"  inversion class: {type(inversion).__name__}")
+
 with timer.section("extract_inversion_matrices"):
-    bmm_ref = jnp.array(inversion.operated_mapping_matrix)
-    mapping_matrix_ref = jnp.array(inversion.mapping_matrix)
+    # The w-tilde path never builds the operated mapping matrix; only the dense
+    # leg reads it.
+    if not _cli.use_sparse_operator:
+        bmm_ref = jnp.array(inversion.operated_mapping_matrix)
+        mapping_matrix_ref = jnp.array(inversion.mapping_matrix)
+    else:
+        bmm_ref = None
+        mapping_matrix_ref = None
 
     inv_mapper = inversion.cls_list_from(cls=al.Mapper)[0]
     neighbors = inv_mapper.neighbors
     neighbors_array = jnp.array(np.asarray(neighbors))
     neighbors_sizes = jnp.array(neighbors.sizes)
 
-print(f"  operated_mapping_matrix shape: {bmm_ref.shape}")
-print(f"  mapping_matrix shape: {mapping_matrix_ref.shape}")
+if not _cli.use_sparse_operator:
+    print(f"  operated_mapping_matrix shape: {bmm_ref.shape}")
+    print(f"  mapping_matrix shape: {mapping_matrix_ref.shape}")
 
 # ---------------------------------------------------------------------------
 # Step 7: Mapping matrix
 # ---------------------------------------------------------------------------
 
-print("\n--- Step 7: Mapping matrix ---")
+if not _cli.use_sparse_operator:
+    print("\n--- Step 7: Mapping matrix ---")
 
-with timer.section("mapping_matrix"):
-    mapping_matrix = inv_mapper.mapping_matrix
+    with timer.section("mapping_matrix"):
+        mapping_matrix = inv_mapper.mapping_matrix
 
-print(f"  mapping_matrix shape: {mapping_matrix.shape}")
+    print(f"  mapping_matrix shape: {mapping_matrix.shape}")
 
-# ---------------------------------------------------------------------------
-# Step 8: Blurred mapping matrix (PSF convolution)
-# ---------------------------------------------------------------------------
+    # -----------------------------------------------------------------------
+    # Step 8: Blurred mapping matrix (PSF convolution)
+    # -----------------------------------------------------------------------
 
-print("\n--- Step 8: Blurred mapping matrix ---")
+    print("\n--- Step 8: Blurred mapping matrix ---")
 
-with timer.section("blurred_mapping_matrix"):
-    blurred_mapping_matrix = dataset.psf.convolved_mapping_matrix_from(
-        mapping_matrix=mapping_matrix,
-        mask=dataset.mask,
-        xp=jnp,
-    )
-    block(blurred_mapping_matrix)
+    with timer.section("blurred_mapping_matrix"):
+        blurred_mapping_matrix = dataset.psf.convolved_mapping_matrix_from(
+            mapping_matrix=mapping_matrix,
+            mask=dataset.mask,
+            xp=jnp,
+        )
+        block(blurred_mapping_matrix)
+
+    print(f"  blurred_mapping_matrix shape: {blurred_mapping_matrix.shape}")
 
 # JIT-profile the full inversion setup pipeline (steps 5-8 combined):
 # border relocation → Delaunay triangulation → interpolation → mapper → mapping matrix → PSF convolution.
 # These steps are tightly sequential; the full pipeline JIT-compiles them all together.
 
 
-def blurred_mm_from_params(params_tree):
-    """Compute blurred mapping matrix via full inversion setup from a pytree ModelInstance."""
+def _fit_imaging_from_params(params_tree):
+    """A JIT-traceable ``FitImaging`` on this cell's dataset/settings.
+
+    ``AdaptImages`` is recreated against the JIT-rebuilt galaxies so the
+    object-identity ``galaxy_image_dict`` lookup hits; the path-keyed dicts are
+    kept as a redundant fallback. Factored out of ``blurred_mm_from_params`` on
+    2026-09-10 so the sparse combined row and the sparse prefixes build the fit
+    exactly the same way the dense row does.
+    """
     t = al.Tracer(galaxies=list(params_tree.galaxies))
-    # Recreate adapt_images with new galaxy instance so dict lookup by object identity works.
     adapt_images_jax = al.AdaptImages(
         galaxy_image_dict={
             params_tree.galaxies.source: adapt_image,
@@ -786,7 +800,7 @@ def blurred_mm_from_params(params_tree):
             "('galaxies', 'source')": image_plane_mesh_grid,
         },
     )
-    fit_jax = al.FitImaging(
+    return al.FitImaging(
         dataset=dataset,
         tracer=t,
         adapt_images=adapt_images_jax,
@@ -796,13 +810,44 @@ def blurred_mm_from_params(params_tree):
         ),
         xp=jnp,
     )
-    return jnp.array(fit_jax.inversion.operated_mapping_matrix)
 
 
-_, bmm_jit = jit_profile(blurred_mm_from_params, "inversion_setup_jit", params_tree)
-likelihood_steps.append(("Inversion setup (steps 5-8 combined)", timer.records[-1][1] / 10))
+def blurred_mm_from_params(params_tree):
+    """Compute blurred mapping matrix via full inversion setup from a pytree ModelInstance."""
+    return jnp.array(_fit_imaging_from_params(params_tree).inversion.operated_mapping_matrix)
 
-print(f"  blurred_mapping_matrix (JIT) shape: {bmm_jit.shape}")
+
+def _sparse_setup_outputs(inv):
+    """Everything the w-tilde steps consume, off an ``InversionImagingSparse``.
+
+    The triplets, the dense MGE operated basis and the ``psf_weighted_data``
+    vector — read off the inversion the library itself builds, so the standalone
+    steps below consume exactly the objects ``InversionImagingSparse`` does.
+    """
+    m = inv.cls_list_from(cls=al.Mapper)[0]
+    rows_d, cols_d, vals_d = m.sparse_triplets_data
+    rows_c, _, _ = m.sparse_triplets_curvature
+    operated = next(iter(inv.linear_func_operated_mapping_matrix_dict.values()))
+    return rows_d, cols_d, vals_d, rows_c, operated, inv.psf_weighted_data
+
+
+def sparse_setup_from_params(params_tree):
+    """The sparse combined-setup row: params -> triplets + MGE basis + weighted data."""
+    return _sparse_setup_outputs(_fit_imaging_from_params(params_tree).inversion)
+
+
+if _cli.use_sparse_operator:
+    _combined_label = "Inversion setup (sparse, steps 5-8 combined)"
+    _combined_fn = sparse_setup_from_params
+    _combined_jit_label = "inversion_setup_sparse_jit"
+else:
+    _combined_label = "Inversion setup (steps 5-8 combined)"
+    _combined_fn = blurred_mm_from_params
+    _combined_jit_label = "inversion_setup_jit"
+
+_, _combined_result = jit_profile(_combined_fn, _combined_jit_label, params_tree)
+_combined_per_call = timer.records[-1][1] / 10
+likelihood_steps.append((_combined_label, _combined_per_call))
 
 # ---------------------------------------------------------------------------
 # Staged prefix JITs of the inversion-setup block
@@ -849,6 +894,17 @@ def _setup_prefix_fn(upto):
     """
 
     def fn(pt):
+        if upto in (7, 8) and _cli.use_sparse_operator:
+            # Under ``--sparse`` stages 7 and 8 are the w-tilde setup: 7 the
+            # mapper's sparse triplets, 8 the whole sparse setup (triplets + MGE
+            # operated basis + PSF-weighted data). Both ride on the inversion the
+            # library builds, so stage 8 is also the sparse leg's combined row —
+            # exactly as ``blurred_mm_from_params`` is the dense leg's.
+            outputs = _sparse_setup_outputs(_fit_imaging_from_params(pt).inversion)
+            if upto == 7:
+                return outputs[:4]
+            return outputs
+
         t = al.Tracer(galaxies=list(pt.galaxies))
         traced_source = t.traced_grid_2d_list_from(grid=dataset.grids.pixelization, xp=jnp)[-1]
         traced_mesh = t.traced_grid_2d_list_from(
@@ -906,19 +962,38 @@ def _setup_prefix_fn(upto):
     return fn
 
 
-_prefix_labels = {
-    5: "Border relocation",
-    6: "Triangulation + interpolation",
-    7: "Mapping matrix",
-    8: "Blurred mapping matrix (PSF)",
-}
+_prefix_labels = (
+    {
+        5: "Border relocation",
+        6: "Triangulation + interpolation",
+        7: "Sparse triplets",
+        8: "MGE operated basis + PSF-weighted data",
+    }
+    if _cli.use_sparse_operator
+    else {
+        5: "Border relocation",
+        6: "Triangulation + interpolation",
+        7: "Mapping matrix",
+        8: "Blurred mapping matrix (PSF)",
+    }
+)
 _split_setup = "--split-setup" in sys.argv
 _prefix_per_call: dict[int, float] = {}
 _setup_split: dict | None = None
 
+# Stage 8's prefix. Dense: its own direct ``params -> blurred mapping matrix``
+# prefix. Sparse: the combined FitImaging row *is* stage 8 (it is what builds
+# the triplets, the MGE basis and the PSF-weighted data), so it is reused rather
+# than compiled a second time.
+if _cli.use_sparse_operator:
+    _prefix_per_call[8] = _combined_per_call
+    _stage_8_needs_own_prefix = False
+else:
+    _stage_8_needs_own_prefix = True
+
 if _split_setup:
     print("\n--- Inversion setup four-way split (--split-setup) ---")
-    _prefix_stages = (5, 6, 7, 8)
+    _prefix_stages = (5, 6, 7, 8) if _stage_8_needs_own_prefix else (5, 6, 7)
 else:
     print("\n--- Interpolator prefix (needed for the step-11 H attribution) ---")
     _prefix_stages = (6,)
@@ -928,11 +1003,7 @@ for _upto in _prefix_stages:
     _prefix_per_call[_upto] = timer.records[-1][1] / 10
 
 if _split_setup:
-    _setup_split = {}
-    _prev = 0.0
-    for _upto in (5, 6, 7, 8):
-        _setup_split[_prefix_labels[_upto]] = _prefix_per_call[_upto] - _prev
-        _prev = _prefix_per_call[_upto]
+    _setup_split = timing.split_by_successive_differences(_prefix_per_call, _prefix_labels)
 
     print(
         "  prefix per-call: "
@@ -940,13 +1011,95 @@ if _split_setup:
     )
     for _label, _dt in _setup_split.items():
         print(f"    {_label}: {_dt * 1000:8.2f} ms")
-    _combined = dict(likelihood_steps)["Inversion setup (steps 5-8 combined)"]
-    print(f"  (combined single-JIT reference: {_combined * 1000:.2f} ms)")
+    print(f"  (combined single-JIT reference: {_combined_per_call * 1000:.2f} ms)")
 else:
     print(f"  interpolator prefix (5..6) per-call: {_prefix_per_call[6] * 1000:.2f} ms")
 
-bmm_jnp = bmm_ref  # Use the reference matrices for linear algebra steps
-print(f"  blurred_mapping_matrix shape: {blurred_mapping_matrix.shape}")
+bmm_jnp = bmm_ref  # Use the reference matrices for linear algebra steps (dense leg)
+
+# ---------------------------------------------------------------------------
+# Sparse setup rows, timed standalone
+# ---------------------------------------------------------------------------
+# The three pieces the sparse setup is made of, each on explicit arrays so it is
+# its own compiled program. They overlap the combined row above, so they are
+# reported as ``steps_sparse_setup_rows`` in the JSON rather than added to the
+# step total.
+
+sparse_setup_rows: dict[str, float] = {}
+sparse_sub_rows: dict[str, float] = {}
+sparse_ctx = None
+sparse_nnz = None
+
+if _cli.use_sparse_operator:
+    from functools import partial
+
+    print("\n--- Sparse setup rows (standalone) ---")
+
+    sparse_ctx = sparse_steps.sparse_context_from(inversion=inversion, dataset=dataset)
+
+    _pix_indexes = jnp.asarray(inv_mapper.pix_indexes_for_sub_slim_index)
+    _pix_weights = jnp.asarray(inv_mapper.pix_weights_for_sub_slim_index)
+    _slim_index_for_sub = jnp.asarray(inv_mapper.slim_index_for_sub_slim_index)
+    _fft_index = jnp.asarray(dataset.mask.fft_index_for_masked_pixel)
+    _sub_fraction = jnp.asarray(inv_mapper.over_sampler.sub_fraction.array)
+
+    _, _triplets = jit_profile(
+        sparse_steps.sparse_triplets,
+        "sparse_triplets_jit",
+        _pix_indexes,
+        _pix_weights,
+        _slim_index_for_sub,
+        _fft_index,
+        _sub_fraction,
+    )
+    sparse_setup_rows["Sparse triplets (data + curvature)"] = timer.records[-1][1] / 10
+
+    rows_data_jnp, cols_jnp, vals_jnp, rows_curv_jnp = _triplets
+    sparse_nnz = int(cols_jnp.shape[0])
+    print(f"  sparse nnz: {sparse_nnz}")
+
+    # MGE operated basis — 60 PSF-convolved columns. Still dense; kept visible
+    # because a matrix-free line has to beat this too.
+    #
+    # Timed as a **params prefix**, not as an array-level PSF convolution, and
+    # that is not a stylistic choice: a linear light profile overrides the
+    # inversion's convolution entirely
+    # (``LightProfileLinearObjFuncList.operated_mapping_matrix_override``,
+    # PyAutoGalaxy) because its flux outside the mask blurs *into* the mask, and
+    # the mapping matrix has no columns for that region. Convolving
+    # ``linear_func_mapping_matrix_dict`` at image resolution therefore does not
+    # reproduce the basis the inversion uses — measured 2.1e-2 relative on F when
+    # this row was first written that way. The basis is a function of the model
+    # parameters, so the honest program is params -> basis.
+    _mge_func = inversion.cls_list_from(cls=aa.AbstractLinearObjFuncList)[0]
+
+    def _mge_operated_basis_from_params(pt):
+        inv = _fit_imaging_from_params(pt).inversion
+        return next(iter(inv.linear_func_operated_mapping_matrix_dict.values()))
+
+    jit_profile(_mge_operated_basis_from_params, "mge_operated_basis_jit", params_tree)
+    sparse_setup_rows["MGE operated basis (params prefix)"] = timer.records[-1][1] / 10
+
+    # The array the w-tilde steps consume is the inversion's own, so F and D are
+    # assembled from exactly the object ``InversionImagingSparse`` assembles them
+    # from.
+    operated_mge_jnp = jnp.asarray(inversion.linear_func_operated_mapping_matrix_dict[_mge_func])
+    print(f"  MGE operated basis shape: {operated_mge_jnp.shape}")
+
+    _weight_map_native = jnp.asarray(dataset.sparse_operator.weight_map.array)
+    _psf_kernel_native = jnp.asarray(dataset.psf.kernel.native)
+    _native_for_slim = jnp.asarray(dataset.mask.derive_indexes.native_for_slim)
+
+    _, psf_weighted_data_jnp = jit_profile(
+        sparse_steps.psf_weighted_data,
+        "psf_weighted_data_jit",
+        _weight_map_native,
+        _psf_kernel_native,
+        _native_for_slim,
+    )
+    sparse_setup_rows["PSF-weighted data"] = timer.records[-1][1] / 10
+else:
+    print(f"  blurred_mapping_matrix shape: {blurred_mapping_matrix.shape}")
 
 # ---------------------------------------------------------------------------
 # Step 9: Data vector (D)
@@ -966,14 +1119,33 @@ def compute_data_vector(blurred_mapping_matrix, image, noise_map):
 profile_sub_jnp = jnp.array(fit.profile_subtracted_image.array)
 noise_jnp = jnp.array(dataset.noise_map.array)
 
-with timer.section("data_vector_eager"):
-    data_vector = compute_data_vector(bmm_jnp, profile_sub_jnp, noise_jnp)
-    block(data_vector)
+if _cli.use_sparse_operator:
+    _data_vector_sparse = partial(sparse_steps.data_vector, sparse_ctx)
+    _data_vector_args = (
+        psf_weighted_data_jnp,
+        rows_data_jnp,
+        cols_jnp,
+        vals_jnp,
+        operated_mge_jnp,
+        profile_sub_jnp,
+        noise_jnp,
+    )
 
-_, data_vector = jit_profile(
-    compute_data_vector, "data_vector_jit", bmm_jnp, profile_sub_jnp, noise_jnp
-)
-likelihood_steps.append(("Data vector (D)", timer.records[-1][1] / 10))
+    with timer.section("data_vector_eager"):
+        data_vector = _data_vector_sparse(*_data_vector_args)
+        block(data_vector)
+
+    _, data_vector = jit_profile(_data_vector_sparse, "data_vector_sparse_jit", *_data_vector_args)
+    likelihood_steps.append(("Data vector (D, w-tilde)", timer.records[-1][1] / 10))
+else:
+    with timer.section("data_vector_eager"):
+        data_vector = compute_data_vector(bmm_jnp, profile_sub_jnp, noise_jnp)
+        block(data_vector)
+
+    _, data_vector = jit_profile(
+        compute_data_vector, "data_vector_jit", bmm_jnp, profile_sub_jnp, noise_jnp
+    )
+    likelihood_steps.append(("Data vector (D)", timer.records[-1][1] / 10))
 
 print(f"  data_vector shape: {data_vector.shape}")
 
@@ -997,16 +1169,101 @@ def compute_curvature_matrix(blurred_mapping_matrix, noise_map):
     )
 
 
-with timer.section("curvature_matrix_eager"):
-    curvature_matrix = compute_curvature_matrix(bmm_jnp, noise_jnp)
-    block(curvature_matrix)
+if _cli.use_sparse_operator:
+    _curvature_sparse = partial(sparse_steps.curvature_matrix, sparse_ctx)
+    _curvature_args = (rows_curv_jnp, cols_jnp, vals_jnp, operated_mge_jnp, noise_jnp)
 
-_, curvature_matrix = jit_profile(
-    compute_curvature_matrix, "curvature_matrix_jit", bmm_jnp, noise_jnp
-)
-likelihood_steps.append(("Curvature matrix (F)", timer.records[-1][1] / 10))
+    with timer.section("curvature_matrix_eager"):
+        curvature_matrix = _curvature_sparse(*_curvature_args)
+        block(curvature_matrix)
+
+    _, curvature_matrix = jit_profile(
+        _curvature_sparse, "curvature_matrix_sparse_jit", *_curvature_args
+    )
+    likelihood_steps.append(("Curvature matrix (F, w-tilde)", timer.records[-1][1] / 10))
+
+    # The three blocks inside that one row, each its own compiled program.
+    print("\n--- F sub-rows (w-tilde blocks) ---")
+
+    jit_profile(
+        partial(sparse_steps.curvature_diag, sparse_ctx),
+        "curvature_F_diag_jit",
+        rows_curv_jnp,
+        cols_jnp,
+        vals_jnp,
+    )
+    sparse_sub_rows["F diag (FFT blocks)"] = timer.records[-1][1] / 10
+
+    jit_profile(
+        partial(sparse_steps.curvature_off_diag_func_list, sparse_ctx),
+        "curvature_F_off_diag_jit",
+        rows_curv_jnp,
+        cols_jnp,
+        vals_jnp,
+        operated_mge_jnp,
+        noise_jnp,
+    )
+    sparse_sub_rows["F off-diag (mapper x MGE)"] = timer.records[-1][1] / 10
+
+    jit_profile(
+        sparse_steps.curvature_func_func,
+        "curvature_F_func_func_jit",
+        operated_mge_jnp,
+        noise_jnp,
+    )
+    sparse_sub_rows["F MGE x MGE GEMM"] = timer.records[-1][1] / 10
+else:
+    with timer.section("curvature_matrix_eager"):
+        curvature_matrix = compute_curvature_matrix(bmm_jnp, noise_jnp)
+        block(curvature_matrix)
+
+    _, curvature_matrix = jit_profile(
+        compute_curvature_matrix, "curvature_matrix_jit", bmm_jnp, noise_jnp
+    )
+    likelihood_steps.append(("Curvature matrix (F)", timer.records[-1][1] / 10))
 
 print(f"  curvature_matrix shape: {curvature_matrix.shape}")
+
+# ---------------------------------------------------------------------------
+# Sparse F / D equivalence assertion
+# ---------------------------------------------------------------------------
+# The standalone sparse steps must reproduce ``InversionImagingSparse`` exactly,
+# not approximately: that is the whole claim of the sparse leg. Compared against
+# the eager inversion's own F and D, scaled by the matrix/vector magnitude.
+
+sparse_equivalence: dict | None = None
+
+if _cli.use_sparse_operator:
+    print("\n--- Sparse F / D equivalence vs fit.inversion ---")
+
+    _F_ref = np.asarray(inversion.curvature_matrix, dtype=float)
+    _D_ref = np.asarray(inversion.data_vector, dtype=float)
+    _F_got = np.asarray(curvature_matrix, dtype=float)
+    _D_got = np.asarray(data_vector, dtype=float)
+
+    _F_scale = max(float(np.max(np.abs(_F_ref))), 1e-300)
+    _D_scale = max(float(np.max(np.abs(_D_ref))), 1e-300)
+    _F_diff = float(np.max(np.abs(_F_got - _F_ref))) / _F_scale
+    _D_diff = float(np.max(np.abs(_D_got - _D_ref))) / _D_scale
+
+    print(f"  F: max |diff| / max|F| = {_F_diff:.3e}  (shape {_F_got.shape})")
+    print(f"  D: max |diff| / max|D| = {_D_diff:.3e}  (shape {_D_got.shape})")
+
+    sparse_equivalence = {
+        "curvature_matrix_max_rel_diff": _F_diff,
+        "data_vector_max_rel_diff": _D_diff,
+        "tolerance": 1e-8,
+    }
+
+    assert _F_diff <= 1e-8, (
+        f"sparse_steps.curvature_matrix does not reproduce "
+        f"InversionImagingSparse.curvature_matrix (max rel diff {_F_diff:.3e} > 1e-8)"
+    )
+    assert _D_diff <= 1e-8, (
+        f"sparse_steps.data_vector does not reproduce "
+        f"InversionImagingSparse.data_vector (max rel diff {_D_diff:.3e} > 1e-8)"
+    )
+    print("  Assertion PASSED: sparse F and D match fit.inversion to 1e-8")
 
 # ---------------------------------------------------------------------------
 # Step 11: Regularization matrix (H) — split scheme (AdaptSplit / ConstantSplit)
@@ -1070,38 +1327,31 @@ if _vmap_batch is not None:
         params_tree,
     )
 
-    def _vmap_profile(func, label, n_repeats=10):
-        """Time ``jax.jit(jax.vmap(func))``; return amortized per-call seconds."""
-        fn = jax.jit(jax.vmap(func))
-        with timer.section(f"{label}_vmap{_vmap_batch}_first_call"):
-            block(fn(_params_batched))
-        with timer.section(f"{label}_vmap{_vmap_batch}_steady_x{n_repeats}"):
-            for _ in range(n_repeats):
-                block(fn(_params_batched))
-        batch_time = timer.records[-1][1] / n_repeats
-        per_call = batch_time / _vmap_batch
-        print(
-            f"    -> batch {_vmap_batch}: {batch_time * 1000:9.3f} ms; "
-            f"per call: {per_call * 1000:9.3f} ms"
+    def _vmap_profile(func, label):
+        return timing.vmap_profile(
+            func,
+            label,
+            _params_batched,
+            _vmap_batch,
+            timer=timer,
+            jit_records=jit_records,
         )
-        return per_call
 
     try:
         _vmap_prefix_per_call: dict[int, float] = {}
-        for _upto in (5, 6, 7, 8, 11):
+        _vmap_stages = (5, 6, 7, 8, 11) if _stage_8_needs_own_prefix else (5, 6, 7, 11)
+        for _upto in _vmap_stages:
             _vmap_prefix_per_call[_upto] = _vmap_profile(
                 _setup_prefix_fn(_upto), f"setup_prefix_{_upto}"
             )
-        _vmap_combined = _vmap_profile(blurred_mm_from_params, "inversion_setup")
+        _vmap_combined = _vmap_profile(_combined_fn, "inversion_setup")
+        if not _stage_8_needs_own_prefix:
+            _vmap_prefix_per_call[8] = _vmap_combined
 
-        _vmap_split = {}
-        _prev = 0.0
-        for _upto in (5, 6, 7, 8):
-            _vmap_split[_prefix_labels[_upto]] = _vmap_prefix_per_call[_upto] - _prev
-            _prev = _vmap_prefix_per_call[_upto]
+        _vmap_split = timing.split_by_successive_differences(_vmap_prefix_per_call, _prefix_labels)
 
         _vmap_steps = {
-            "Inversion setup (steps 5-8 combined)": _vmap_combined,
+            _combined_label: _vmap_combined,
             "Regularization matrix (H)": (_vmap_prefix_per_call[11] - _vmap_prefix_per_call[6]),
         }
         _vmap_h_prefix = _vmap_prefix_per_call[11]
@@ -1258,8 +1508,58 @@ reduced_indices_jnp = jnp.array(inversion.mapper_indices)
 reg_reduced_jnp = jnp.array(inversion.regularization_matrix_reduced)
 curv_reg_reduced_jnp = jnp.array(inversion.curvature_reg_matrix_reduced)
 
-with timer.section("log_evidence_eager"):
-    log_evidence = compute_log_evidence(
+inv_recon_jnp = jnp.array(inversion.reconstruction)
+
+if _cli.use_sparse_operator:
+    # Sparse model image: the mapper's contribution via the sparse operator +
+    # PSF, the MGE's via the already-operated basis. Every other term is the
+    # dense code on the same reduced blocks.
+    _log_evidence_fn = partial(sparse_steps.log_evidence, sparse_ctx)
+
+    def _log_evidence_args(recon):
+        return (
+            data_array,
+            noise_jnp,
+            blurred_img_jnp,
+            recon,
+            rows_curv_jnp,
+            cols_jnp,
+            vals_jnp,
+            operated_mge_jnp,
+            reduced_indices_jnp,
+            reg_reduced_jnp,
+            curv_reg_reduced_jnp,
+        )
+
+    with timer.section("log_evidence_eager"):
+        log_evidence = _log_evidence_fn(*_log_evidence_args(recon_jnp))
+        block(log_evidence)
+
+    _, log_evidence = jit_profile(
+        _log_evidence_fn, "log_evidence_sparse_jit", *_log_evidence_args(recon_jnp)
+    )
+    likelihood_steps.append(("Mapped recon + log evidence (sparse)", timer.records[-1][1] / 10))
+
+    print(f"  log_evidence (step-by-step) = {log_evidence}")
+
+    log_evidence_check = _log_evidence_fn(*_log_evidence_args(inv_recon_jnp))
+else:
+    with timer.section("log_evidence_eager"):
+        log_evidence = compute_log_evidence(
+            data_array,
+            noise_jnp,
+            blurred_img_jnp,
+            bmm_jnp,
+            recon_jnp,
+            reduced_indices_jnp,
+            reg_reduced_jnp,
+            curv_reg_reduced_jnp,
+        )
+        block(log_evidence)
+
+    _, log_evidence = jit_profile(
+        compute_log_evidence,
+        "log_evidence_jit",
         data_array,
         noise_jnp,
         blurred_img_jnp,
@@ -1269,39 +1569,23 @@ with timer.section("log_evidence_eager"):
         reg_reduced_jnp,
         curv_reg_reduced_jnp,
     )
-    block(log_evidence)
+    likelihood_steps.append(("Mapped recon + log evidence", timer.records[-1][1] / 10))
 
-_, log_evidence = jit_profile(
-    compute_log_evidence,
-    "log_evidence_jit",
-    data_array,
-    noise_jnp,
-    blurred_img_jnp,
-    bmm_jnp,
-    recon_jnp,
-    reduced_indices_jnp,
-    reg_reduced_jnp,
-    curv_reg_reduced_jnp,
-)
-likelihood_steps.append(("Mapped recon + log evidence", timer.records[-1][1] / 10))
+    print(f"  log_evidence (step-by-step) = {log_evidence}")
 
-print(f"  log_evidence (step-by-step) = {log_evidence}")
-
-# Correctness check: recompute log_evidence using the inversion's own
-# reconstruction to avoid accumulated FP drift from the JIT-compiled
-# reconstruction step.
-inv_recon_jnp = jnp.array(inversion.reconstruction)
-
-log_evidence_check = compute_log_evidence(
-    data_array,
-    noise_jnp,
-    blurred_img_jnp,
-    bmm_jnp,
-    inv_recon_jnp,
-    reduced_indices_jnp,
-    reg_reduced_jnp,
-    curv_reg_reduced_jnp,
-)
+    # Correctness check: recompute log_evidence using the inversion's own
+    # reconstruction to avoid accumulated FP drift from the JIT-compiled
+    # reconstruction step.
+    log_evidence_check = compute_log_evidence(
+        data_array,
+        noise_jnp,
+        blurred_img_jnp,
+        bmm_jnp,
+        inv_recon_jnp,
+        reduced_indices_jnp,
+        reg_reduced_jnp,
+        curv_reg_reduced_jnp,
+    )
 print(f"  log_evidence (inv matrices) = {log_evidence_check}")
 print(f"  log_evidence (reference)    = {log_evidence_ref}")
 
@@ -1371,11 +1655,41 @@ if _setup_split is not None or _vmap_split is not None:
         _unb = f"{_setup_split[_lab]:12.6f} s" if _setup_split is not None else f"{'—':>14}"
         _bat = f"  {_vmap_split[_lab]:20.6f} s" if _vmap_split is not None else ""
         print(f"    {_lab:<{_split_label_width}}  {_unb}{_bat}")
+if sparse_setup_rows:
+    print("-" * 70)
+    print("  sparse setup rows (standalone; overlap the combined row, not summed)")
+    _w = max(len(k) for k in sparse_setup_rows)
+    for _lab, _dt in sparse_setup_rows.items():
+        print(f"    {_lab:<{_w}}  {_dt:12.6f} s")
+
+if sparse_sub_rows:
+    print("-" * 70)
+    print("  F sub-rows (w-tilde blocks; sum to the single F row, not summed here)")
+    _w = max(len(k) for k in sparse_sub_rows)
+    for _lab, _dt in sparse_sub_rows.items():
+        print(f"    {_lab:<{_w}}  {_dt:12.6f} s")
+
 if _vmap_error is not None:
     print("-" * 70)
     print(f"  vmap batch {_vmap_batch}: FAILED (traceback in the result JSON).")
 
 # --- Save results dictionary ---
+
+# Sparse-path provenance, recorded only on the sparse leg.
+# ``ImagingSparseOperator`` casts triplets, vectors and FFT state to float64
+# (``inversion_imaging_util.py``), so ``--use-mixed-precision`` never reaches the
+# w-tilde blocks; recording that is better than a row implying it did.
+_sparse_provenance: dict = {}
+if _cli.use_sparse_operator:
+    _sparse_provenance["sparse_batch_size"] = int(_cli.sparse_batch_size)
+    _sparse_provenance["sparse_nnz"] = int(sparse_nnz)
+    _sparse_provenance["sparse_operator_build_s"] = float(sparse_operator_build_s)
+    if _cli.use_mixed_precision:
+        _sparse_provenance["mixed_precision_note"] = (
+            "--use-mixed-precision does not reach the w-tilde blocks: "
+            "ImagingSparseOperator casts triplets, vectors and FFT state to "
+            "float64 unconditionally."
+        )
 
 breakdown_summary = {
     "autolens_version": al_version,
@@ -1389,6 +1703,8 @@ breakdown_summary = {
         "delaunay_vertices": int(n_source_pixels),
         "edge_zeroed_pixels": int(edge_pixels_total),
         "inversion_path": "sparse" if _cli.use_sparse_operator else "dense",
+        "total_params": int(inversion.total_params),
+        **_sparse_provenance,
         # Provenance only (autolens_profiling#235 decision 3): this cell's
         # over-sampling and mesh are the A100-pinned JAX configuration and are
         # deliberately NOT production-matched — GPU representativeness is a
@@ -1417,7 +1733,20 @@ breakdown_summary = {
     # row: the row is ``regularization_matrix_prefix_s - interpolator_prefix_s``.
     "regularization_matrix_prefix_s": float(reg_matrix_prefix_per_call),
     "interpolator_prefix_s": float(_prefix_per_call[6]),
+    # lower / compile / first-call / steady per label, for every timed JIT.
+    "jit_phases": jit_records,
 }
+
+if sparse_setup_rows:
+    breakdown_summary["steps_sparse_setup_rows"] = {
+        k: float(v) for k, v in sparse_setup_rows.items()
+    }
+
+if sparse_sub_rows:
+    breakdown_summary["steps_sparse_sub_rows"] = {k: float(v) for k, v in sparse_sub_rows.items()}
+
+if sparse_equivalence is not None:
+    breakdown_summary["sparse_equivalence"] = sparse_equivalence
 
 if _setup_split is not None:
     breakdown_summary["setup_split"] = {k: float(v) for k, v in _setup_split.items()}

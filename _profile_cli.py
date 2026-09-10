@@ -42,6 +42,7 @@ class ProfileCLI:
     memo: str
     n_instances: int
     cold_evals: int
+    sparse_batch_size: int
 
 
 def parse_profile_cli(default_config_name: str | None = None) -> ProfileCLI:
@@ -110,7 +111,8 @@ def parse_profile_cli(default_config_name: str | None = None) -> ProfileCLI:
         "--sparse",
         action="store_true",
         help=(
-            "Call ``dataset.apply_sparse_operator(use_jax=True)`` after "
+            "Call ``dataset.apply_sparse_operator(batch_size=...)`` "
+            "(the width is ``--sparse-batch-size``, default 128) after "
             "dataset construction so the inversion factory selects the "
             "w-tilde sparse path (``InversionImagingSparse``) instead of "
             "the dense ``InversionImagingMapping``. The sparse path "
@@ -125,6 +127,23 @@ def parse_profile_cli(default_config_name: str | None = None) -> ProfileCLI:
             "(e.g. the pure-MGE-source reference cell). Per-cell scripts "
             "that read this flag embed the chosen path into the result "
             "JSON as ``inversion_path``."
+        ),
+    )
+
+    parser.add_argument(
+        "--sparse-batch-size",
+        type=int,
+        default=128,
+        help=(
+            "Column-block width handed to ``dataset.apply_sparse_operator("
+            "batch_size=...)`` — how many source-pixel columns of the w-tilde "
+            "curvature sweep share one rFFT2/irFFT2 batch "
+            "(``ImagingSparseOperator.curvature_matrix_diag_from`` runs "
+            "``ceil(S / batch_size)`` blocks). Larger blocks raise GPU "
+            "occupancy and VRAM together; 128 is the library default and what "
+            "every recorded sparse row was measured with. Ignored without "
+            "``--sparse``; recorded in the result JSON as "
+            "``configuration.sparse_batch_size``."
         ),
     )
 
@@ -238,6 +257,7 @@ def parse_profile_cli(default_config_name: str | None = None) -> ProfileCLI:
         memo=args.memo,
         n_instances=int(args.n_instances),
         cold_evals=int(args.cold_evals),
+        sparse_batch_size=int(args.sparse_batch_size),
     )
 
 
@@ -311,17 +331,53 @@ def rect_mesh_classes(cli: ProfileCLI):
     )
 
 
+#: Name of the per-fusion autotune subdirectory XLA writes inside
+#: ``JAX_COMPILATION_CACHE_DIR``. A seeded autotune cache silently changes which
+#: GPU kernels a run uses — the F row moving between ~4.8 ms and ~25.6 ms on the
+#: A100 was the only tell — so every result records how many entries were
+#: already there when the process started.
+AUTOTUNE_CACHE_SUBDIR = "xla_gpu_per_fusion_autotune_cache_dir"
+
+
+def _autotune_cache_entries(cache_dir: str | None) -> int:
+    """Count entries in ``<cache_dir>/xla_gpu_per_fusion_autotune_cache_dir``.
+
+    Zero when the cache dir is unset, absent, or has no autotune subdirectory —
+    i.e. zero means "nothing was seeded", which is what a comparable run wants.
+    """
+    if not cache_dir:
+        return 0
+    autotune_dir = Path(cache_dir) / AUTOTUNE_CACHE_SUBDIR
+    try:
+        return sum(1 for _ in autotune_dir.iterdir())
+    except OSError:
+        return 0
+
+
+#: Compilation-cache state as found at **import** time, before any JAX
+#: compilation this process performs can add to it. Captured here rather than at
+#: JSON-write time for exactly that reason.
+_CACHE_DIR_AT_IMPORT = os.environ.get("JAX_COMPILATION_CACHE_DIR") or None
+_AUTOTUNE_ENTRIES_AT_IMPORT = _autotune_cache_entries(_CACHE_DIR_AT_IMPORT)
+
+
 def device_info_dict() -> dict:
     """Capture backend / device / nvidia-smi summary for the current JAX process.
 
     Imports jax lazily so callers can collect this near the JSON write without
     re-importing.
     """
+    import socket
+
     import jax
 
     info = {
         "backend": jax.default_backend(),
         "device": str(jax.devices()[0]),
+        # Which node ran it. RAL's $HOME is node-local, so two legs of one grid
+        # landing on different nodes do not share a compilation cache and are
+        # not comparable at the compile-time level; the hostname is what says so.
+        "hostname": socket.gethostname(),
         # Environment provenance: a stray XLA_FLAGS (e.g. disabling
         # constant_folding) or thread pinning silently rescales every timing
         # in a result by integer factors — record them so drift between runs
@@ -329,6 +385,12 @@ def device_info_dict() -> dict:
         "xla_flags": os.environ.get("XLA_FLAGS") or None,
         "omp_num_threads": os.environ.get("OMP_NUM_THREADS") or None,
         "cpu_count": os.cpu_count(),
+        # Compilation / autotune cache provenance. ``cache_fresh`` is the flag
+        # a harvest gates on: a run that inherited a populated autotune cache
+        # measured somebody else's kernel choices.
+        "jax_compilation_cache_dir": _CACHE_DIR_AT_IMPORT,
+        "autotune_cache_entries_at_start": _AUTOTUNE_ENTRIES_AT_IMPORT,
+        "cache_fresh": bool(_CACHE_DIR_AT_IMPORT) and _AUTOTUNE_ENTRIES_AT_IMPORT == 0,
     }
     if info["backend"] == "gpu":
         try:
