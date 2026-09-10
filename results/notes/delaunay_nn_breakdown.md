@@ -1,5 +1,12 @@
 # DelaunayNN vs Delaunay — A100 likelihood breakdown (2026-09-05)
 
+> **Pointer (2026-09-10).** The canonical A100 rows for the Delaunay and DelaunayNN
+> breakdowns — dense *and* sparse, all six legs on one node after
+> `--xla_gpu_enable_triton_gemm=false` (PyAutoNerves#162) and PyAutoArray #531/#533/#537 —
+> are now in [`a100_pixelized_baseline_2026_09.md`](./a100_pixelized_baseline_2026_09.md).
+> The rows in this note (2026-09-05, jobs 342277–342281) predate both and are kept for the
+> Delaunay-vs-DelaunayNN comparison they were taken for, not as current absolute costs.
+
 ## Verdict
 
 Swapping barycentric `Delaunay` for Sibson natural-neighbour `DelaunayNN` (cap 32) in

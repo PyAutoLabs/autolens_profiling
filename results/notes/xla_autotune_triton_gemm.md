@@ -4,6 +4,12 @@ PyAutoNerves issue #161, task `xla-triton-gemm-off`. Controlled probe:
 `scripts/misc/jax_compile/gemm_probe.py` via
 `hpc/batch_gpu/submit_xla_autotune_gemm_probe`.
 
+> **Confirmed, not superseded (2026-09-10).** The 2026-09-10 A100 pixelized baseline
+> ([`a100_pixelized_baseline_2026_09.md`](./a100_pixelized_baseline_2026_09.md)) measured
+> the live dense `Curvature matrix (F)` step at **4.826 / 4.824 / 4.830 ms** on the
+> rectangular / Delaunay / DelaunayNN cells with the flag shipped and a fresh per-job
+> autotune cache — matching arm E's 4.79 ms synthetic GEMM. Nothing here needs revising.
+
 ## What was measured and why
 
 The 2026-09-05 A/B in [`delaunay_nn_breakdown.md`](./delaunay_nn_breakdown.md)
