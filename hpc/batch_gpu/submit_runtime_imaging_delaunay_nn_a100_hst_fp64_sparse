@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #
-# A100 likelihood-runtime profile: imaging/delaunay x hst x fp64, dense inversion.
+# A100 likelihood-runtime profile: imaging/delaunay_nn x hst x fp64, sparse inversion.
 # Leg of the 2026-09 pixelized baseline grid (autolens_profiling#241):
 # {pixelization, delaunay, delaunay_nn} x {runtime, breakdown} x {dense, sparse},
 # twelve legs pinned to one A100 node by submit_baseline_grid.sh. Fiducial tier
@@ -12,6 +12,7 @@
 #   --config-name hpc_a100_fp64   output-filename label for this row
 #   --regularization adapt_split  al.reg.AdaptSplit(0.1, 10.0, 0.1) — what
 #                                 production pairs Delaunay with (#232)
+#   --sparse                      dataset.apply_sparse_operator() -> w-tilde path
 #
 # Every leg starts from an EMPTY JAX compilation cache: a seeded XLA autotune
 # cache silently changes kernels (results/notes/xla_autotune_triton_gemm.md — F
@@ -22,8 +23,12 @@
 # --vmap-probe is deliberately NOT run on the runtime legs: it sys.exit()s before
 # the vmap phase, and this grid needs the vmap per-call row. With no probe JSON
 # present resolve_vmap_batch falls back to the VMAP_BATCH table (16 at hst).
+# For this cell the probe is also actively harmful: its batch-1 extrapolation
+# recommends 64 replicas, which passes the memory budget but fails cuFFT
+# batched-plan creation (RAL job 342280, 2026-09-05). The failed probe is kept
+# as vmap_probe_delaunay_nn_batch64_cufft_failed.json.
 
-#SBATCH -J baseline_runtime_delaunay_dense
+#SBATCH -J baseline_runtime_delaunay_nn_sparse
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --ntasks=1
@@ -63,14 +68,14 @@ nvidia-smi
 echo "=========================================="
 date
 hostname
-echo "Cell:           likelihood_runtime/imaging/delaunay"
+echo "Cell:           likelihood_runtime/imaging/delaunay_nn"
 echo "Instrument:     hst"
 echo "Precision:      fp64"
-echo "Inversion path: dense (mapping matrices, InversionImagingMapping)"
-echo "Source mesh:    Delaunay mesh, linear interpolation"
+echo "Inversion path: sparse (w-tilde operator, InversionImagingSparse)"
+echo "Source mesh:    Delaunay mesh, Sibson natural-neighbour"
 echo "Config name:    hpc_a100_fp64"
 echo "Regularization: al.reg.AdaptSplit(inner_coefficient=0.1, outer_coefficient=10.0, signal_scale=0.1)"
-echo "Flags:          --instrument hst --config-name hpc_a100_fp64 --regularization adapt_split"
+echo "Flags:          --instrument hst --config-name hpc_a100_fp64 --regularization adapt_split --sparse"
 
 echo "=== source revisions (shared install, untouched) ==="
 for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
@@ -83,10 +88,11 @@ cd $AP_ROOT
 echo "=== import provenance ==="
 python3 -c "import autoarray, autolens; print('autoarray.__file__ =', autoarray.__file__); print('autoarray.__version__ =', autoarray.__version__); print('autolens.__file__ =', autolens.__file__)"
 
-python3 -u scripts/imaging/likelihood_runtime/delaunay.py \
+python3 -u scripts/imaging/likelihood_runtime/delaunay_nn.py \
     --instrument hst \
     --config-name hpc_a100_fp64 \
-    --regularization adapt_split
+    --regularization adapt_split \
+    --sparse
 
 # Autotune-cache census. Must be non-fatal: the directory only exists if XLA
 # wrote autotune results, and activate.sh's ERR trap fails the job on any

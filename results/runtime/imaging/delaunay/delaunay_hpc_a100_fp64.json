@@ -3,20 +3,55 @@
   "device": {
     "backend": "gpu",
     "device": "cuda:0",
+    "hostname": "euclid-ral-gpu-2",
     "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
     "omp_num_threads": null,
     "cpu_count": 124,
-    "nvidia_smi": "NVIDIA A100 80GB PCIe, 35333 MiB, 81920 MiB"
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/autolens_profiling_wt/a100-pixelized-baseline/output/jax_cache/baseline_342618",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 35339 MiB, 81920 MiB"
   },
   "instrument": "hst",
   "configuration": {
     "pixel_scale_arcsec": 0.05,
     "mask_radius_arcsec": 3.5,
     "image_pixels_masked": 15361,
-    "over_sampled_pixels": 17980,
+    "over_sampled_pixels": 62752,
     "delaunay_vertices": 1500,
     "edge_zeroed_pixels": 0,
-    "inversion_path": "dense"
+    "inversion_path": "dense",
+    "thread_env": {
+      "n_threads": null,
+      "vars": [
+        "OPENBLAS_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OMP_NUM_THREADS",
+        "VECLIB_MAXIMUM_THREADS",
+        "NUMEXPR_NUM_THREADS"
+      ],
+      "set_to": null,
+      "preexisting": {},
+      "overridden": {},
+      "note": "Not pinned (legacy variant): recorded as found."
+    },
+    "memo": "library_default (inert on the JAX path)",
+    "over_sample_size_lp_rule": {
+      "sub_size_list": [
+        4,
+        2,
+        2
+      ],
+      "radial_list": [
+        0.3,
+        0.6
+      ],
+      "centre": [
+        0.0,
+        0.0
+      ],
+      "note": "Outer sub-size 1 retired repo-wide on 2026-09-08 (autolens_profiling#235): it leaves the outermost annulus un-over-sampled and causes gradient issues."
+    }
   },
   "regularization": {
     "scheme": "adapt_split",
@@ -24,13 +59,16 @@
     "outer_coefficient": 10.0,
     "signal_scale": 0.1
   },
-  "full_pipeline_single_jit": 0.0645106425974518,
+  "full_pipeline_single_jit": 0.06495481780730188,
+  "full_pipeline_lower_s": 3.4326989098917693,
+  "full_pipeline_compile_s": 13.688468290027231,
+  "full_pipeline_first_call_s": 0.22718132915906608,
   "vmap": {
     "batch_size": 16,
-    "batch_time": 0.6794797878013924,
-    "per_call": 0.042467486737587025,
+    "batch_time": 0.6805371165042743,
+    "per_call": 0.04253356978151714,
     "speedup_vs_single_jit": 1.5
   },
-  "pinned_expected": 29155.0010494252,
+  "pinned_expected": 29140.29588193227,
   "pinned_drift": []
 }

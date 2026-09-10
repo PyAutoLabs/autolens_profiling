@@ -35,6 +35,36 @@ JSONs from the HPC checkout back via the normal git flow. The PyAuto*
 libraries resolve from sibling source checkouts on `PYTHONPATH` — never
 pip-install them into the venv (`HPCPullPyAuto` is the update story).
 
+### The 2026-09 pixelized baseline grid (`#241`)
+
+`submit_baseline_grid.sh` submits the twelve legs of the A100 fp64 pixelized
+reference set — {`pixelization`, `delaunay`, `delaunay_nn`} x {`runtime`,
+`breakdown`} x {dense, `_sparse`} — in one command:
+
+```bash
+hpc/batch_gpu/submit_baseline_grid.sh --node euclid-ral-gpu-2   # pin all 12 to one GPU
+hpc/batch_gpu/submit_baseline_grid.sh --dry-run                 # print, submit nothing
+```
+
+It `cd`s to `hpc/batch_gpu/` itself (the submits' `-o`/`-e` paths are relative),
+prints `job=<id> <submit-name>` per leg, and passes `--nodelist` through so every
+row is measured on the same GPU. Runtime legs go first, then the compile-heavy
+breakdown legs; dense before sparse.
+
+Each of the twelve exports a **fresh** `JAX_COMPILATION_CACHE_DIR` under
+`output/jax_cache/baseline_$SLURM_JOB_ID`, wipes it, and prints an
+`AUTOTUNE_ENTRIES count=` census at the end. This is not hygiene, it is the
+measurement: a seeded XLA autotune cache silently changes kernels — the same code
+measured F at 4.8 vs 25.6 ms across two cache states
+(`results/notes/xla_autotune_triton_gemm.md`), and RAL `$HOME` is node-local, so
+a leg that inherits a neighbour's cache reports a number no one can reproduce.
+`output/` is gitignored, so the caches never reach git.
+
+Fiducial tier, not the `#235` production preset; the `_sparse` legs are the
+half-matrix-free comparator, not a production GPU path (production GPU runs fit
+the plain dataset). Result JSONs are committed from the RAL worktree with plain
+`git` — this grid has no `hpc/sync` leg.
+
 ## `hpc/sync` — driving RAL from the laptop, and getting runs back
 
 `hpc/sync` is the laptop-side driver. Copy the config first:

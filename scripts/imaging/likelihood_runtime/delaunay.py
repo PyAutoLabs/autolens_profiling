@@ -250,7 +250,7 @@ with timer.section("mask_and_oversample"):
         # the linear-obj list — true here (Delaunay source mesh). The MGE
         # lens-light columns ride through the same sparse inversion alongside
         # the Mapper columns.
-        dataset = dataset.apply_sparse_operator()
+        dataset = dataset.apply_sparse_operator(batch_size=_cli.sparse_batch_size)
 
 # ---------------------------------------------------------------------------
 # 2. Adapt image + image mesh (Hilbert)
@@ -434,12 +434,37 @@ def full_pipeline_from_params(params_tree):
 _, full_result = jit_profile(full_pipeline_from_params, "full_pipeline", params_tree)
 full_pipeline_per_call = timer.records[-1][1] / 10
 
+# Trace / compile / first-call cost of the full-pipeline JIT. ``jit_profile``
+# already times all four phases, but until 2026-09-10 only the steady-state
+# per-call number reached the JSON and the compile time lived solely in SLURM
+# stdout — where it is unrecoverable once the job's log rotates. Compile time is
+# what a seeded XLA autotune cache changes, so it belongs beside the
+# ``device.cache_fresh`` flag in the artifact.
+_full_pipeline_records = dict(timer.records)
+full_pipeline_lower = _full_pipeline_records.get("full_pipeline_lower")
+full_pipeline_compile = _full_pipeline_records.get("full_pipeline_compile")
+full_pipeline_first_call = _full_pipeline_records.get("full_pipeline_first_call")
+
 print(f"  full log_likelihood = {full_result}")
 
 
 # ===================================================================
 # Early JSON write — single-JIT only (survives vmap OOM)
 # ===================================================================
+# Sparse-path provenance folded into every result JSON under ``--sparse``.
+# ``ImagingSparseOperator`` casts its triplets and vectors to float64 (see
+# ``inversion_imaging_util.py``), so ``--use-mixed-precision`` never reaches the
+# w-tilde blocks; recording that is better than a row that implies it did.
+_sparse_provenance = {}
+if _cli.use_sparse_operator:
+    _sparse_provenance["sparse_batch_size"] = int(_cli.sparse_batch_size)
+    if _cli.use_mixed_precision:
+        _sparse_provenance["mixed_precision_note"] = (
+            "--use-mixed-precision does not reach the w-tilde blocks: "
+            "ImagingSparseOperator casts triplets, vectors and FFT state to "
+            "float64 unconditionally."
+        )
+
 _early_summary = {
     "autolens_version": al.__version__,
     "device": device_info_dict(),
@@ -452,6 +477,7 @@ _early_summary = {
         "delaunay_vertices": int(n_source_pixels),
         "edge_zeroed_pixels": int(edge_pixels_total),
         "inversion_path": "sparse" if _cli.use_sparse_operator else "dense",
+        **_sparse_provenance,
         # Provenance only (autolens_profiling#235 decision 3): this cell's
         # over-sampling and mesh are the A100-pinned JAX configuration and are
         # deliberately NOT production-matched — GPU representativeness is a
@@ -475,6 +501,9 @@ _early_summary = {
     # pre-2026-09-08 row and was measured with ``constant_split``.
     "regularization": reg_provenance,
     "full_pipeline_single_jit": full_pipeline_per_call,
+    "full_pipeline_lower_s": full_pipeline_lower,
+    "full_pipeline_compile_s": full_pipeline_compile,
+    "full_pipeline_first_call_s": full_pipeline_first_call,
     "vmap": "PENDING — vmap phase has not run yet (or was killed)",
 }
 _early_dict_path, _ = resolve_output_paths(
@@ -651,6 +680,7 @@ likelihood_summary = {
         "delaunay_vertices": int(n_source_pixels),
         "edge_zeroed_pixels": int(edge_pixels_total),
         "inversion_path": "sparse" if _cli.use_sparse_operator else "dense",
+        **_sparse_provenance,
         # Provenance only (autolens_profiling#235 decision 3): this cell's
         # over-sampling and mesh are the A100-pinned JAX configuration and are
         # deliberately NOT production-matched — GPU representativeness is a
@@ -674,6 +704,9 @@ likelihood_summary = {
     # pre-2026-09-08 row and was measured with ``constant_split``.
     "regularization": reg_provenance,
     "full_pipeline_single_jit": full_pipeline_per_call,
+    "full_pipeline_lower_s": full_pipeline_lower,
+    "full_pipeline_compile_s": full_pipeline_compile,
+    "full_pipeline_first_call_s": full_pipeline_first_call,
     "vmap": "SKIPPED — batch resolution returned None for this (cell, instrument)"
     if _vmap_skipped
     else {

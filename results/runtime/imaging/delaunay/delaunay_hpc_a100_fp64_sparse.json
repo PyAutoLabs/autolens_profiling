@@ -7,10 +7,10 @@
     "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
     "omp_num_threads": null,
     "cpu_count": 124,
-    "jax_compilation_cache_dir": "/mnt/ral/jnightin/autolens_profiling_wt/a100-pixelized-baseline/output/jax_cache/baseline_342619",
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/autolens_profiling_wt/a100-pixelized-baseline/output/jax_cache/baseline_342621",
     "autotune_cache_entries_at_start": 0,
     "cache_fresh": true,
-    "nvidia_smi": "NVIDIA A100 80GB PCIe, 35339 MiB, 81920 MiB"
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 4875 MiB, 81920 MiB"
   },
   "instrument": "hst",
   "configuration": {
@@ -20,7 +20,8 @@
     "over_sampled_pixels": 62752,
     "delaunay_vertices": 1500,
     "edge_zeroed_pixels": 0,
-    "inversion_path": "dense",
+    "inversion_path": "sparse",
+    "sparse_batch_size": 128,
     "thread_env": {
       "n_threads": null,
       "vars": [
@@ -59,16 +60,16 @@
     "outer_coefficient": 10.0,
     "signal_scale": 0.1
   },
-  "full_pipeline_single_jit": 0.07340575398411602,
-  "full_pipeline_lower_s": 3.7068114129360765,
-  "full_pipeline_compile_s": 17.454233550000936,
-  "full_pipeline_first_call_s": 0.2285088209901005,
+  "full_pipeline_single_jit": 0.07075177289079874,
+  "full_pipeline_lower_s": 4.587509765056893,
+  "full_pipeline_compile_s": 16.797035977011546,
+  "full_pipeline_first_call_s": 0.20963516808114946,
   "vmap": {
     "batch_size": 16,
-    "batch_time": 0.7430808106902986,
-    "per_call": 0.046442550668143665,
-    "speedup_vs_single_jit": 1.6
+    "batch_time": 0.7686683984007686,
+    "per_call": 0.04804177490004804,
+    "speedup_vs_single_jit": 1.5
   },
-  "pinned_expected": 29277.464588118037,
+  "pinned_expected": 29140.29588193227,
   "pinned_drift": []
 }

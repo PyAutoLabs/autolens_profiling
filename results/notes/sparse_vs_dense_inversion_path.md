@@ -2,8 +2,13 @@
 
 **Issue:** [autolens_profiling#44](https://github.com/PyAutoLabs/autolens_profiling/issues/44)
 **Branch:** `feature/sparse-vs-dense-profile`
-**Status:** Local CPU fp64 baselines complete. A100 submits drafted, not yet
-dispatched.
+**Status:** **Superseded for the A100 pixelized rows** by
+[`a100_pixelized_baseline_2026_09.md`](./a100_pixelized_baseline_2026_09.md)
+(2026-09-10, autolens_profiling#241), which re-measured all six
+`{rectangular, Delaunay, DelaunayNN} × {dense, sparse}` legs on one node after
+PyAutoNerves#162 (`--xla_gpu_enable_triton_gemm=false`) and PyAutoArray #531/#533/#537.
+Every A100 number below predates those changes. The CPU baselines and the NSS/Nautilus
+production findings stand.
 
 ## TL;DR
 
@@ -106,6 +111,25 @@ into the table below.
 | Delaunay | rec. batch (A100 80GB) | 62 | 64 | sparse fits +3% more batch |
 
 log_L agreement to 6+ sig figs across dense/sparse on all three cells.
+
+**Superseded (2026-09-10).** The pixelization and Delaunay rows above were taken on
+2026-07-11 with XLA autotuning at level 0 and Triton GEMM on, before the mesh split and
+before `[4, 2, 2]` over-sampling. The current canonical rows, all from one node in one
+window, are in
+[`a100_pixelized_baseline_2026_09.md`](./a100_pixelized_baseline_2026_09.md):
+
+| Cell | Phase | Dense | Sparse | Δ |
+|---|---|---:|---:|---|
+| Rectangular 1521 | single-JIT per-call | 50.63 ms | 57.63 ms | sparse +13.8 % |
+| Rectangular 1521 | `vmap` 16 per-call | 32.08 ms | 36.65 ms | sparse +14.3 % |
+| Delaunay 1500 | single-JIT per-call | 64.95 ms | 70.75 ms | sparse +8.9 % |
+| Delaunay 1500 | `vmap` 16 per-call | 42.53 ms | 48.04 ms | sparse +13.0 % |
+| DelaunayNN 1500 | single-JIT per-call | 73.41 ms | 80.09 ms | sparse +9.1 % |
+| DelaunayNN 1500 | `vmap` 16 per-call | 46.44 ms | 49.25 ms | sparse +6.1 % |
+
+The direction of the verdict is unchanged — sparse is the memory lever, not the speed
+lever — but the dense per-call cost is far lower than it was, because the dense curvature
+matrix F fell 25.6 → 4.83 ms with `--xla_gpu_enable_triton_gemm=false`.
 
 ### Why A100 differs from CPU
 
@@ -247,7 +271,14 @@ For MGE the dominant cost is also in the mapping matrix:
    NSS-vs-Nautilus session.
 3. **MGE sparse-loss is expected**, not a bug. Don't investigate further
    unless A100 numbers contradict this CPU finding.
-4. **Defer matrix-free CG + SLQ** (the original plan-B). The sparse path
+4. **Defer matrix-free CG + SLQ** — **SUPERSEDED 2026-09-10.** The user has taken up
+   the matrix-free line, and the reference set it is judged against is
+   [`a100_pixelized_baseline_2026_09.md`](./a100_pixelized_baseline_2026_09.md).
+   That baseline also reframes the target: the dense F is now 4.83 ms (not the 25.6 ms
+   that motivated a matrix-free F), and 37 ms of every ~50–65 ms per-call cost is the
+   NNLS + Cholesky solve, which neither path touches. Original text follows.
+
+   The sparse path
    gives clean wins on inversion-heavy imaging cells (pix / Delaunay)
    with direct Cholesky log-det preserved. Matrix-free CG would add SLQ
    noise for log-det and is only worth pursuing if a future scenario

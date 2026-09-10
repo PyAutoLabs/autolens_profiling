@@ -238,7 +238,7 @@ with timer.section("mask_and_oversample"):
         # in the model is a Mapper — which is true here (the source is a
         # Rectangular pixelization). The MGE lens-light columns ride through
         # the same sparse inversion alongside the Mapper columns.
-        dataset = dataset.apply_sparse_operator()
+        dataset = dataset.apply_sparse_operator(batch_size=_cli.sparse_batch_size)
 
 # ---------------------------------------------------------------------------
 # 2. Model construction
@@ -401,6 +401,17 @@ def full_pipeline_from_params(params_tree):
 _, full_result = jit_profile(full_pipeline_from_params, "full_pipeline", params_tree)
 full_pipeline_per_call = timer.records[-1][1] / 10
 
+# Trace / compile / first-call cost of the full-pipeline JIT. ``jit_profile``
+# already times all four phases, but until 2026-09-10 only the steady-state
+# per-call number reached the JSON and the compile time lived solely in SLURM
+# stdout — where it is unrecoverable once the job's log rotates. Compile time is
+# what a seeded XLA autotune cache changes, so it belongs beside the
+# ``device.cache_fresh`` flag in the artifact.
+_full_pipeline_records = dict(timer.records)
+full_pipeline_lower = _full_pipeline_records.get("full_pipeline_lower")
+full_pipeline_compile = _full_pipeline_records.get("full_pipeline_compile")
+full_pipeline_first_call = _full_pipeline_records.get("full_pipeline_first_call")
+
 print(f"  full log_likelihood = {full_result}")
 
 
@@ -412,6 +423,20 @@ print(f"  full log_likelihood = {full_result}")
 # so the JSON survives an OOM kill during vmap (a real laptop scenario
 # with the 1500-source-pixel HST cells). The vmap block updates the
 # JSON in place if it succeeds.
+# Sparse-path provenance folded into every result JSON under ``--sparse``.
+# ``ImagingSparseOperator`` casts its triplets and vectors to float64 (see
+# ``inversion_imaging_util.py``), so ``--use-mixed-precision`` never reaches the
+# w-tilde blocks; recording that is better than a row that implies it did.
+_sparse_provenance = {}
+if _cli.use_sparse_operator:
+    _sparse_provenance["sparse_batch_size"] = int(_cli.sparse_batch_size)
+    if _cli.use_mixed_precision:
+        _sparse_provenance["mixed_precision_note"] = (
+            "--use-mixed-precision does not reach the w-tilde blocks: "
+            "ImagingSparseOperator casts triplets, vectors and FFT state to "
+            "float64 unconditionally."
+        )
+
 _early_summary = {
     "autolens_version": al.__version__,
     "device": device_info_dict(),
@@ -425,8 +450,12 @@ _early_summary = {
         "rect_mesh": _cli.rect_mesh,
         "source_pixels": int(n_source_pixels),
         "inversion_path": "sparse" if _cli.use_sparse_operator else "dense",
+        **_sparse_provenance,
     },
     "full_pipeline_single_jit": full_pipeline_per_call,
+    "full_pipeline_lower_s": full_pipeline_lower,
+    "full_pipeline_compile_s": full_pipeline_compile,
+    "full_pipeline_first_call_s": full_pipeline_first_call,
     "vmap": "PENDING — vmap phase has not run yet (or was killed)",
 }
 _early_dict_path, _ = resolve_output_paths(
@@ -631,8 +660,12 @@ likelihood_summary = {
         "rect_mesh": _cli.rect_mesh,
         "source_pixels": int(n_source_pixels),
         "inversion_path": "sparse" if _cli.use_sparse_operator else "dense",
+        **_sparse_provenance,
     },
     "full_pipeline_single_jit": full_pipeline_per_call,
+    "full_pipeline_lower_s": full_pipeline_lower,
+    "full_pipeline_compile_s": full_pipeline_compile,
+    "full_pipeline_first_call_s": full_pipeline_first_call,
     "vmap": "SKIPPED — model has 0 free parameters (all fixed to truth)"
     if vmap_per_call is None
     else {
