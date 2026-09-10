@@ -1,0 +1,79 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 8
+  },
+  "instrument": "hst",
+  "configuration": {
+    "pixel_scale_arcsec": 0.05,
+    "mask_radius_arcsec": 3.5,
+    "image_pixels_masked": 15361,
+    "over_sampled_pixels": 62752,
+    "delaunay_vertices": 1500,
+    "edge_zeroed_pixels": 0,
+    "inversion_path": "dense",
+    "thread_env": {
+      "n_threads": null,
+      "vars": [
+        "OPENBLAS_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OMP_NUM_THREADS",
+        "VECLIB_MAXIMUM_THREADS",
+        "NUMEXPR_NUM_THREADS"
+      ],
+      "set_to": null,
+      "preexisting": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "VECLIB_MAXIMUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1"
+      },
+      "overridden": {},
+      "note": "Not pinned (legacy variant): recorded as found."
+    },
+    "memo": "library_default (inert on the JAX path)",
+    "over_sample_size_lp_rule": {
+      "sub_size_list": [
+        4,
+        2,
+        2
+      ],
+      "radial_list": [
+        0.3,
+        0.6
+      ],
+      "centre": [
+        0.0,
+        0.0
+      ],
+      "note": "Outer sub-size 1 retired repo-wide on 2026-09-08 (autolens_profiling#235): it leaves the outermost annulus un-over-sampled and causes gradient issues."
+    }
+  },
+  "regularization": {
+    "scheme": "adapt_split",
+    "inner_coefficient": 0.1,
+    "outer_coefficient": 10.0,
+    "signal_scale": 0.1
+  },
+  "steps": {
+    "Ray-trace data grid": 0.0025954900000215277,
+    "Ray-trace mesh grid": 0.0004659199999878183,
+    "Lens light images (pre-PSF)": 3.6749999708263204e-05,
+    "Blurred image (PSF convolution)": 0.001944290000028559,
+    "Profile-subtracted image": 0.0002037999998719897,
+    "Inversion setup (steps 5-8 combined)": 1.203248309999981,
+    "Data vector (D)": 0.00983181000010518,
+    "Curvature matrix (F)": 0.9937664800003404,
+    "Regularization matrix (H)": -0.09392032000032485,
+    "Regularized reconstruction": 1.1708813099998223,
+    "Mapped recon + log evidence": 0.049759160000030535
+  },
+  "total_step_by_step": 3.338812999999573,
+  "regularization_matrix_prefix_s": 0.11634508999995888,
+  "interpolator_prefix_s": 0.21026541000028373
+}

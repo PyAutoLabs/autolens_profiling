@@ -1,0 +1,103 @@
+#!/bin/bash -l
+#
+# A100 likelihood-breakdown profile: imaging/delaunay_nn x hst x fp64 — PyAutoArray#536
+# A/B leg: **control**.
+#
+# Verification run for the ConstantSplit split-stencil assembly compaction
+# (PyAutoArray issue #536 / branch feature/delaunay-nn-constant-split-assembly:
+# the JAX path of pixel_splitted_regularization_matrix_from scatters only the
+# first SPLIT_REG_COMPACT_WIDTH = 12 columns of every (4P, K) stencil row
+# instead of the full padded (4P, K, K) outer product, supplements the
+# SPLIT_REG_WIDE_ROW_BUDGET = 256 widest rows at full width, and NaNs the
+# matrix out if more rows exceed the compact width than the budget holds).
+# Both legs of the A/B run in the same session on the same node class with the
+# same everything except the PyAutoArray checkout prepended to PYTHONPATH:
+#
+#   control  -> 180c8a40 (the branch's merge base = PyAutoArray main)
+#   feature  -> feature/delaunay-nn-constant-split-assembly (04152bb7)
+#
+# The predecessor A/B on this cell (#532/#533, merge base d7c96762) is recorded
+# in results/notes/delaunay_nn_launch_latency.md; its legs are kept as
+# submit_..._launch_latency{,_control} and are comparable to these rows only
+# insofar as the merge base moved by that one merge.
+#
+# The shared /mnt/ral/jnightin/PyAuto/PyAutoArray install is NOT touched — long
+# science runs (subhalo validation, Euclid DR1) share it. The private checkouts
+# live under /mnt/ral/jnightin/PyAuto_wt/delaunay-nn-constant-split-assembly/
+# and are prepended to the PYTHONPATH that $AP_ROOT/activate.sh exports, so only
+# PyAutoArray is overridden and Nerves/Fit/Galaxy/Lens stay on the shared tree.
+#
+# WITNESS. The target row is "Regularization matrix (H, ConstantSplit
+# assembly)" in the --split-setup table (JSON regularization_split /
+# regularization_split_vmap): 10.0 ms per call at vmap 16 on the #533 shipped
+# leg, and the witness is < 3 ms per call. The params->H prefix
+# (regularization_matrix_prefix_s) carries it: 16.4 ms per call at vmap 16 on
+# that leg, witness < 11 ms. Judge on the params->H prefix and the assembly
+# row; the H *step* row is a prefix difference and shifts with attribution
+# (the caveat in results/notes/delaunay_walk_early_exit.md).
+#
+#   --split-setup    four-way split of the inversion-setup block (+ the
+#                    split-point Sibson cut of the params->H interval)
+#   --vmap-batch 16  batched re-timing at the Nautilus reference n_batch
+
+#SBATCH -J bd_delnn_asm_ctl
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=12:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+# --- PyAutoArray A/B override (private checkout, shared install untouched) ---
+AA_ROOT=/mnt/ral/jnightin/PyAuto_wt/delaunay-nn-constant-split-assembly/PyAutoArray_control
+export PYTHONPATH=$AA_ROOT:$PYTHONPATH
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding"
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+# PYAUTO_SIBSON_QUERY_CHUNK is deliberately left UNSET on both A/B legs, as in
+# the #533 run whose rows these are compared against: the library default
+# (4096, chosen by that run's sweep) is what production uses. The script
+# records the effective SIBSON_QUERY_CHUNK under "sibson" in the result JSON.
+
+nvidia-smi
+
+echo "=========================================="
+date
+echo "Cell:           likelihood_breakdown/imaging/delaunay_nn"
+echo "Instrument:     hst"
+echo "Precision:      fp64"
+echo "A/B leg:        control (merge base 180c8a40)"
+echo "Flags:          --split-setup --vmap-batch 16 --config-name hpc_a100_fp64_assembly_control"
+echo "Sibson chunk:   PYAUTO_SIBSON_QUERY_CHUNK=${PYAUTO_SIBSON_QUERY_CHUNK:-unset (library default)}"
+
+echo "=== source revisions ==="
+printf '%-14s %s\n' "PyAutoArray(AB)" "$(git -C $AA_ROOT rev-parse HEAD 2>&1)"
+for r in PyAutoNerves PyAutoFit PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r" "$(git -C /mnt/ral/jnightin/PyAuto/$r rev-parse HEAD 2>&1)"
+done
+echo "AP_ROOT rev:   $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+
+cd $AP_ROOT
+
+echo "=== import provenance ==="
+python3 -c "import autoarray, autolens; print('autoarray.__file__ =', autoarray.__file__); print('autoarray.__version__ =', autoarray.__version__); print('autolens.__file__ =', autolens.__file__)"
+
+python3 -u scripts/imaging/likelihood_breakdown/delaunay_nn.py \
+    --config-name hpc_a100_fp64_assembly_control \
+    --split-setup \
+    --vmap-batch 16
+
+echo "Finished."
+date

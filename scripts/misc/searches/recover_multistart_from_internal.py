@@ -483,6 +483,7 @@ def _make_cli(config_name: str, instrument: str):
         vmap_probe=False,
         use_sparse_operator=False,
         rect_mesh="bilinear",
+        regularization=None,
     )
 
 

@@ -1,0 +1,134 @@
+{
+  "autoarray_version": "2026.8.17.1",
+  "mode": "thread_scaling",
+  "threads_requested": 8,
+  "environment": {
+    "OMP_NUM_THREADS": "8",
+    "NUMBA_NUM_THREADS": "8",
+    "MKL_NUM_THREADS": "8",
+    "OPENBLAS_NUM_THREADS": "8",
+    "XLA_FLAGS": "--xla_cpu_multi_thread_eigen=false --xla_force_host_platform_device_count=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "JAX_PLATFORMS": "cpu",
+    "JAX_ENABLE_X64": "True",
+    "numba_threads_effective": 8,
+    "numba_version": "0.62.1",
+    "scipy_version": "1.17.1",
+    "jax_version": "0.10.2",
+    "jax_devices": [
+      "cpu:0"
+    ],
+    "numpy_version": "2.2.6",
+    "platform": "Linux-5.10.16.3-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+    "processor": "x86_64",
+    "cpu_count": 8
+  },
+  "pool_caveat": "kernel threads are unavailable under a Nautilus multiprocessing pool; the single-thread number is the production number",
+  "cells": {
+    "sma/delaunay": {
+      "direct_conv_serial": {
+        "median_s": 0.09330510000290815,
+        "all_rounds_s": [
+          0.08704649999708636,
+          0.09790000000066357,
+          0.11020250000001397,
+          0.086290100000042,
+          0.08871020000515273
+        ],
+        "pin": {
+          "passed": true,
+          "max_abs_diff": 6.821210263296962e-13,
+          "max_abs_diff_over_scale": 8.987280511794475e-16,
+          "rtol": 1e-10,
+          "atol": 7.58984906985504e-08
+        }
+      },
+      "direct_conv_parallel": {
+        "median_s": 0.02316534999772557,
+        "all_rounds_s": [
+          0.027356599995982833,
+          0.02396959999896353,
+          0.022593699999561068,
+          0.02180229999794392,
+          0.023736999995890073
+        ],
+        "pin": {
+          "passed": true,
+          "max_abs_diff": 6.821210263296962e-13,
+          "max_abs_diff_over_scale": 8.987280511794475e-16,
+          "rtol": 1e-10,
+          "atol": 7.58984906985504e-08
+        }
+      },
+      "rfft2_numpy": {
+        "median_s": 0.32462070000110543,
+        "all_rounds_s": [
+          0.23557609999988927,
+          0.2630111999969813,
+          0.24257600000419188,
+          0.42471870000008494,
+          0.38623020000522956
+        ],
+        "pin": {
+          "passed": true,
+          "max_abs_diff": 6.821210263296962e-13,
+          "max_abs_diff_over_scale": 8.987280511794475e-16,
+          "rtol": 1e-10,
+          "atol": 7.58984906985504e-08
+        }
+      }
+    },
+    "alma/delaunay": {
+      "direct_conv_serial": {
+        "median_s": 0.9139289500017185,
+        "all_rounds_s": [
+          0.9389254999987315,
+          0.9025030999982846,
+          0.9136780999979237,
+          0.9263716999994358,
+          0.9141798000055132
+        ],
+        "pin": {
+          "passed": true,
+          "max_abs_diff": 1.8189894035458565e-11,
+          "max_abs_diff_over_scale": 2.8397932460950274e-15,
+          "rtol": 1e-10,
+          "atol": 6.405358580407681e-07
+        }
+      },
+      "direct_conv_parallel": {
+        "median_s": 0.2072113000031095,
+        "all_rounds_s": [
+          0.23368240000127116,
+          0.19447719999880064,
+          0.2052112000019406,
+          0.2092114000042784,
+          0.21279550000326708
+        ],
+        "pin": {
+          "passed": true,
+          "max_abs_diff": 1.8189894035458565e-11,
+          "max_abs_diff_over_scale": 2.8397932460950274e-15,
+          "rtol": 1e-10,
+          "atol": 6.405358580407681e-07
+        }
+      },
+      "rfft2_numpy": {
+        "median_s": 0.8079457499989076,
+        "all_rounds_s": [
+          0.8337009000024409,
+          0.8103371999968658,
+          0.8055543000009493,
+          0.8324208000049111,
+          0.7825380000067526
+        ],
+        "pin": {
+          "passed": true,
+          "max_abs_diff": 1.7280399333685637e-11,
+          "max_abs_diff_over_scale": 2.697803583790276e-15,
+          "rtol": 1e-10,
+          "atol": 6.405358580407681e-07
+        }
+      }
+    }
+  }
+}

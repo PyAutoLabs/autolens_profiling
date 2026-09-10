@@ -348,6 +348,19 @@ every point in the lifecycle. Any further reduction would come from upstream
 JAX (tracing speed, compile speed), not from this stack — no further
 engineering is warranted here. The compile-time arc (#71 → #74 → #77) is done.
 
+**Amendment (2026-09-08) — autotune-off stays, but it needed a companion flag.**
+Autotuning off remains the right compile-time call; finding 7's "no measurable
+evaluation penalty", however, was measured on cells whose GEMMs were not the
+bottleneck, or on a node whose per-fusion autotune cache a level-4 run had
+already seeded (JAX persists that cache under `JAX_COMPILATION_CACHE_DIR`
+keyed by fusion fingerprint, not by the autotune flag). The controlled
+fresh-cache probe of 2026-09-08 (job 342333) found the un-autotuned Triton
+kernel **5× slower than cuBLAS on a dense fp64 GEMM** — 25.52 vs 4.79 ms on the
+(15361×1560) mapping-matrix shape — cured by additionally passing
+`--xla_gpu_enable_triton_gemm=false`, which reaches cuBLAS with no autotune
+compile cost at all (PyAutoNerves#161). Details, arms and HLO evidence:
+[`results/notes/xla_autotune_triton_gemm.md`](../../../results/notes/xla_autotune_triton_gemm.md).
+
 ## Multi-band `FactorGraphModel` `value_and_grad` — the heterogeneous-shape cliff
 
 The #71 → #77 census measured **single-band** cells only. Real multi-wavelength

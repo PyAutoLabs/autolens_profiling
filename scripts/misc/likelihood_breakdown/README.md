@@ -19,24 +19,44 @@ For *how long the likelihood actually takes* on production hardware — i.e. a s
 | `datacube/delaunay` | alma_high | hpc_a100_mp | dense (mapping) | — | v2026.7.6.649 |
 | `datacube/inversion` | alma_high | hpc_a100_fp64 | dense (mapping) | — | v2026.7.6.649 |
 | `datacube/inversion` | alma_high | hpc_a100_mp | dense (mapping) | — | v2026.7.6.649 |
-| `imaging/delaunay` | hst | local_cpu_fp64 | dense (mapping) | 10.07 s | v2026.7.6.649 |
+| `imaging/delaunay` | hst | local_cpu_fp64 | dense (mapping) | 3.34 s | v2026.8.17.1 |
 | `imaging/delaunay` | hst | local_cpu_fp64 | sparse (w-tilde) | 8.81 s | v2026.7.6.649 |
-| `imaging/delaunay` | hst | hpc_a100_fp64 | dense (mapping) | 96.6 ms | v2026.7.6.649 |
+| `imaging/delaunay` | hst | hpc_a100_fp64 | dense (mapping) | 71.9 ms | v2026.8.17.1 |
 | `imaging/delaunay` | hst | hpc_a100_fp64 | sparse (w-tilde) | 98.0 ms | v2026.7.6.649 |
 | `imaging/delaunay` | hst | hpc_a100_mp | dense (mapping) | 96.8 ms | v2026.7.6.649 |
 | `imaging/delaunay` | hst | hpc_a100_mp | sparse (w-tilde) | 95.5 ms | v2026.7.6.649 |
-| `imaging/delaunay_numba` | euclid | local_cpu_fp64 | sparse (numba) | 1.19 s | v2026.8.17.1 |
-| `imaging/delaunay_numba` | hst | local_cpu_fp64 | sparse (numba) | 482.4 ms | v2026.8.17.1 |
-| `imaging/mge` | hst | local_cpu_fp64 | dense (mapping) | 179.5 ms | v2026.7.6.649 |
+| `imaging/delaunay_nn` | hst | local_cpu_fp64 | dense (mapping) | 4.49 s | v2026.8.17.1 |
+| `imaging/delaunay_nn` | hst | hpc_a100_fp64 | dense (mapping) | 85.1 ms | v2026.8.17.1 |
+| `imaging/delaunay_numba` | euclid | local_cpu_fp64 | sparse (numba) | 255.0 ms | v2026.8.17.1 |
+| `imaging/delaunay_numba` | hst | local_cpu_fp64 | sparse (numba) | 2.04 s | v2026.8.17.1 |
+| `imaging/mge` | hst | local_cpu_fp64 | dense (mapping) | 40.3 ms | v2026.8.17.1 |
 | `imaging/mge` | hst | hpc_a100_fp64 | dense (mapping) | 7.8 ms | v2026.7.6.649 |
-| `imaging/pixelization` | hst | local_cpu_fp64 | dense (mapping) | 8.65 s | v2026.7.6.649 |
+| `imaging/pixelization` | hst | local_cpu_fp64 | dense (mapping) | 3.40 s | v2026.8.17.1 |
 | `imaging/pixelization` | hst | local_cpu_fp64 | sparse (w-tilde) | 10.17 s | v2026.7.6.649 |
 | `imaging/pixelization` | hst | hpc_a100_fp64 | dense (mapping) | 57.6 ms | v2026.7.6.649 |
 | `imaging/pixelization` | hst | hpc_a100_fp64 | sparse (w-tilde) | 57.9 ms | v2026.7.6.649 |
 | `imaging/pixelization` | hst | hpc_a100_mp | dense (mapping) | 56.4 ms | v2026.7.6.649 |
 | `imaging/pixelization` | hst | hpc_a100_mp | sparse (w-tilde) | 55.5 ms | v2026.7.6.649 |
-| `imaging/pixelization_numba` | euclid | local_cpu_fp64 | sparse (numba) | 124.3 ms | v2026.8.17.1 |
-| `imaging/pixelization_numba` | hst | local_cpu_fp64 | sparse (numba) | 304.5 ms | v2026.8.17.1 |
+| `imaging/pixelization_numba` | euclid | local_cpu_fp64 | sparse (numba) | 611.9 ms | v2026.8.17.1 |
+| `imaging/pixelization_numba` | hst | local_cpu_fp64 | sparse (numba) | 1.30 s | v2026.8.17.1 |
+| `interferometer/delaunay_numba_direct_conv` | alma | local_cpu_fp64 | sparse (numba) | 1.80 s | v2026.8.17.1 |
+| `interferometer/delaunay_numba_direct_conv` | sma | local_cpu_fp64 | sparse (numba) | 378.2 ms | v2026.8.17.1 |
+| `interferometer/delaunay_numba_jax` | alma | local_cpu_fp64 | sparse (w-tilde) | 3.28 s | v2026.8.17.1 |
+| `interferometer/delaunay_numba_jax` | sma | local_cpu_fp64 | sparse (w-tilde) | 727.7 ms | v2026.8.17.1 |
+| `interferometer/delaunay_numba_reference` | alma | local_cpu_fp64 | sparse (numba) | 4.54 s | v2026.8.17.1 |
+| `interferometer/delaunay_numba_reference` | sma | local_cpu_fp64 | sparse (numba) | 535.9 ms | v2026.8.17.1 |
+| `interferometer/delaunay_numba_source_loop` | sma | local_cpu_fp64 | sparse (numba) | 461.7 ms | v2026.8.17.1 |
+| `interferometer/delaunay_numba_symmetric` | sma | local_cpu_fp64 | sparse (numba) | 443.1 ms | v2026.8.17.1 |
+| `interferometer/delaunay_numba_two_stage` | sma | local_cpu_fp64 | sparse (numba) | 388.7 ms | v2026.8.17.1 |
+| `interferometer/pixelization_numba_direct_conv` | alma | local_cpu_fp64 | sparse (numba) | 1.76 s | v2026.8.17.1 |
+| `interferometer/pixelization_numba_direct_conv` | sma | local_cpu_fp64 | sparse (numba) | 184.5 ms | v2026.8.17.1 |
+| `interferometer/pixelization_numba_jax` | alma | local_cpu_fp64 | sparse (w-tilde) | 2.28 s | v2026.8.17.1 |
+| `interferometer/pixelization_numba_jax` | sma | local_cpu_fp64 | sparse (w-tilde) | 584.6 ms | v2026.8.17.1 |
+| `interferometer/pixelization_numba_reference` | alma | local_cpu_fp64 | sparse (numba) | 7.31 s | v2026.8.17.1 |
+| `interferometer/pixelization_numba_reference` | sma | local_cpu_fp64 | sparse (numba) | 480.5 ms | v2026.8.17.1 |
+| `interferometer/preload` | alma | local_cpu_fp64 | sparse (numba) | — | v2026.8.17.1 |
+| `interferometer/preload` | alma_high | local_cpu_fp64 | sparse (numba) | — | v2026.8.17.1 |
+| `interferometer/preload` | sma | local_cpu_fp64 | sparse (numba) | — | v2026.8.17.1 |
 <!-- END auto-table:breakdown -->
 
 Auto-generated by `scripts/build_readme.py` from the versioned artifacts under `results/breakdown/`.
@@ -92,11 +112,12 @@ If, on the other hand, the two numbers agree closely, the per-step bars are a fa
 |--------|--------------|--------------|-------|
 | `imaging/mge.py` | Imaging | MGE linear bulge | Linear MGE source; 8-step pipeline. |
 | `imaging/pixelization.py` | Imaging | RectangularBilinearAdaptImage (`--rect-mesh rtu` for the RTU variant) | 13-step pipeline incl. mesh + regularisation. |
+| `imaging/pixelization_numba.py` | Imaging | Adaptive rectangular + free `Adapt` (numba CPU, `use_jax=False`) | Rectangular sibling of `imaging/delaunay_numba.py`, production-configured on the subhalo `rect_adapt` stage since 2026-09-08 (autolens_profiling#235); same `--variant` / `--memo` / `--n-instances` / `--cold-evals` protocol. |
 | `imaging/delaunay.py` | Imaging | DelaunayBrightnessImage | 13-step pipeline; Hilbert-curve mesh. |
+| `imaging/delaunay_nn.py` | Imaging | DelaunayBrightnessImage with `al.mesh.DelaunayNN` | Like-for-like sibling of `imaging/delaunay.py` — same 13 steps, same configuration, Sibson natural-neighbour interpolation (cap 32) instead of barycentric. |
 | `interferometer/delaunay.py` | Interferometer | DelaunayBrightnessImage + sparse-DFT | 11-step pipeline. The transform-mapping-matrix step is the interferometer-specific replacement for imaging's PSF convolution. |
 | `datacube/delaunay.py` | Datacube | DelaunayBrightnessImage × N channels | 8-step pipeline. Channel-invariant steps profiled once; channel-variant steps profiled on channel 0 and multiplied by `N_channels` for the cube cost. |
-| `imaging/delaunay_numba.py` | Imaging | DelaunayBrightnessImage (numba CPU, `use_jax=False`) | 18-step pipeline; sparse-operator CPU path, MGE-60 linear lens light. |
-| `imaging/delaunay_numba_nnls_iterations.py` | Imaging | as `delaunay_numba.py` | **Diagnostic, not a breakdown.** A/B of the cross-evaluation NNLS warm-start memo (`aa.Settings(nnls_warm_start_memo=...)`, PyAutoArray#498) over two 30-instance sequences (random walk / i.i.d.), reporting active-set iterations, solve and evaluation time, and memo-vs-no-memo parity. Findings: [`results/notes/nnls_warm_start_memo.md`](../../../results/notes/nnls_warm_start_memo.md). |
+| `imaging/delaunay_numba.py` | Imaging | Delaunay + free `AdaptSplit` (numba CPU, `use_jax=False`) | 18-step pipeline; sparse-operator CPU path. **Production-configured since 2026-09-08** (autolens_profiling#235): `--instrument euclid` builds the Euclid `vis_pix` stage, `--instrument hst` the subhalo `source_pix[2]` stage — mesh, S/N-driven pixelization over-sampling, MGE basis, positions penalty and thread pinning all matched; the instance stream is seeded iid and the NNLS memo is off and recorded. `--variant legacy` rebuilds the old fiducial. See [`results/notes/production_representative_cells.md`](../../../results/notes/production_representative_cells.md). |
 
 Four cells are intentionally absent from this package:
 - `interferometer/mge` — full-pipeline-by-design, no per-step decomposition (see runtime).
@@ -104,6 +125,12 @@ Four cells are intentionally absent from this package:
 - `point_source/{image_plane,source_plane}` — single short JIT shots.
 
 These four live only in `likelihood_runtime/`.
+
+`imaging/delaunay_numba_nnls_iterations.py` used to sit in this package. It is a
+diagnostic A/B of the NNLS cross-evaluation warm-start memo, not a per-step
+breakdown, and it moved to [`scripts/misc/nnls_warm_start/`](../nnls_warm_start/README.md)
+(results under `results/nnls_warm_start/`) on 2026-09-08 so no default cell or README
+table cites a memo-on number.
 
 ## How to read the output
 

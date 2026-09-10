@@ -14,7 +14,11 @@ Key differences from the rectangular pixelization breakdown script:
   then ray-traced to the source-plane.
 - Edge points are appended around the mask border and zeroed during inversion.
 - Uses **InterpolatorDelaunay** (barycentric interpolation within triangles).
-- Uses **ConstantSplit** regularization (cross-derivative scheme).
+- Uses **AdaptSplit** regularization by default (the cross-derivative split
+  scheme with per-pixel weights adapted to the source's signal — what
+  production pairs Delaunay with); ``--regularization constant_split``
+  selects ``ConstantSplit(1.0)``, the scheme this cell's pre-2026-09-08
+  rows were measured with.
 - Delaunay triangulation itself uses scipy on CPU and cannot be JIT-compiled.
 
 Pipeline steps:
@@ -29,13 +33,78 @@ Pipeline steps:
 8. Blurred mapping matrix / Inversion setup (steps 5-8 combined)
 9. Data vector (D)
 10. Curvature matrix (F)
-11. Regularization matrix (H) — ConstantSplit scheme
+11. Regularization matrix (H) — split scheme (JIT-timed from params)
 12. Regularized reconstruction: s = (F + H)^{-1} D
 13. Map reconstruction to image + log evidence
 
 Per-step timing is approximate: XLA may fuse operations differently when
 compiled as one program vs separate pieces. All JAX timings use
-``block_until_ready()`` to force synchronous measurement.
+``block_until_ready()`` to force synchronous measurement (over every leaf of
+the returned pytree, so multi-output prefixes are synchronised too).
+
+Regularization matrix (H) attribution
+-------------------------------------
+
+The H row is a **JIT-timed step**, not a host-to-device copy. A prefix
+function ``params_tree -> regularization matrix`` is compiled — Tracer from
+the params pytree, traced grids, border relocation, ``InterpolatorDelaunay``,
+``Mapper``, then ``ConstantSplit.regularization_matrix_from(linear_obj=mapper,
+xp=jnp)`` — and the row is reported as the difference::
+
+    t(params -> H) - t(params -> interpolator outputs)
+
+where the interpolator prefix is exactly ``_setup_prefix_fn(6)``. The shared
+tracer / relocation / triangulation work is already charged to "Triangulation +
+interpolation" in the four-way ``--split-setup`` table, so subtracting the
+interpolator prefix leaves the incremental cost of the split-point walk plus
+the regularization assembly and avoids double-counting the mesh build. The
+absolute prefix time is kept in the JSON as ``regularization_matrix_prefix_s``
+beside the attributed row.
+
+For that subtraction to mean anything the two prefixes must nest, and they do
+not by default: ConstantSplit reads the interpolator's split-point walk, never
+the per-query interpolation, so a prefix returning H alone lets XLA
+dead-code-eliminate the whole query side of the mapper. Measured on local CPU
+(DelaunayNN/HST, 2026-09-05) that gave a 215 ms H prefix against a 391 ms
+interpolator prefix — a nonsensical -175 ms row. ``_setup_prefix_fn(11)``
+therefore returns the step-6 outputs alongside H, making it a strict superset
+of ``_setup_prefix_fn(6)``.
+
+Since PyAutoArray#531 the H row is a **prefix difference only** and may read
+~0 or negative on the JAX path. The early-exit walk locates the data grid and
+the ConstantSplit cross points in one concatenated ``lax.while_loop`` call, so
+the split-point walk now runs *inside* ``_setup_prefix_fn(6)`` — i.e. inside
+the "Triangulation + interpolation" row — where it previously could not (a
+prefix stopping at step 6 never asked for the split points, XLA eliminated
+them, and their whole cost surfaced in the H row's subtraction). What the
+subtraction leaves is therefore only the regularization assembly, which is
+small enough for scatter between two nested prefixes to take it below zero.
+**The aggregate to compare across library versions is the params->H prefix
+itself** — ``regularization_matrix_prefix_s`` in the JSON, equivalently
+"Triangulation + interpolation" + the H row — not either row alone. The
+NumPy/scipy path is unchanged and still charges the split walk to H. Nothing
+in the measurement changed; only where the same work is attributed.
+
+Before 2026-09 this row timed ``jnp.array(inversion.regularization_matrix)`` —
+a host-to-device copy of the 19.5 MB matrix the *eager NumPy* ``FitImaging``
+had already computed. On the A100 that read as ~14.4 ms of PCIe traffic and
+was not a JIT step at all (autolens_profiling#219). The downstream
+reconstruction and log-evidence steps still consume the inversion's own
+``regularization_matrix``, so every correctness assertion is unchanged.
+
+Batched re-timing (``--vmap-batch N``)
+--------------------------------------
+
+With ``--vmap-batch N`` the combined inversion-setup block, each
+``--split-setup`` prefix and the params->H prefix are re-timed under
+``jax.jit(jax.vmap(fn))`` on a params pytree broadcast to batch ``N``, and
+reported as amortized per-call time (batch time / N) in a column beside the
+unbatched one. Batch 16 matches the ``n_batch=16`` of the Nautilus reference
+runs, so the breakdown can be reconciled against their per-evaluation cost.
+The Delaunay triangulation's qhull ``pure_callback`` is
+``vmap_method="sequential"`` (one host call per lane), so the triangulation
+row is expected to stay roughly linear in ``N`` while the dense linear algebra
+amortizes.
 
 Output
 ------
@@ -94,14 +163,37 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 # Tolerates extra/unknown args via parse_known_args inside the helper.
 from simulators.imaging import INSTRUMENTS  # noqa: E402
 
+from _production_config import observe_thread_env as _observe_thread_env  # noqa: E402
 from _profile_cli import (  # noqa: E402
     auto_simulate_if_missing,
+    delaunay_regularization,
     device_info_dict,
     parse_profile_cli,
     resolve_output_paths,
 )
 
 _cli = parse_profile_cli()
+
+
+def _parse_vmap_batch(argv) -> int | None:
+    """Parse ``--vmap-batch N`` / ``--vmap-batch=N`` out of *argv*.
+
+    Read straight from ``sys.argv`` rather than added to
+    ``_profile_cli.parse_profile_cli`` because it is a breakdown-only flag —
+    the runtime cells resolve their batch from the VRAM table / probe JSON
+    instead, and the shared parser stays the sweep-driver contract.
+    """
+    for i, arg in enumerate(argv):
+        if arg == "--vmap-batch" and i + 1 < len(argv):
+            return int(argv[i + 1])
+        if arg.startswith("--vmap-batch="):
+            return int(arg.split("=", 1)[1])
+    return None
+
+
+_vmap_batch = _parse_vmap_batch(sys.argv)
+if _vmap_batch is not None and _vmap_batch < 1:
+    raise ValueError(f"--vmap-batch must be >= 1 (got {_vmap_batch})")
 
 instrument = "hst"  # <-- change this to profile a different instrument
 
@@ -141,9 +233,17 @@ class Timer:
 
 
 def block(x):
-    """Call block_until_ready if available (JAX arrays)."""
-    if hasattr(x, "block_until_ready"):
-        x.block_until_ready()
+    """Force synchronisation on every JAX array in *x* (array or pytree).
+
+    Tuple-returning prefixes (steps 5 and 6 of the ``--split-setup`` walk)
+    used to slip through an ``hasattr(x, "block_until_ready")`` test and were
+    therefore timed asynchronously, which is exactly the artifact the H-row
+    fix removes elsewhere. Blocking over ``tree_leaves`` makes every timed
+    step synchronous on the same terms.
+    """
+    for leaf in jax.tree_util.tree_leaves(x):
+        if hasattr(leaf, "block_until_ready"):
+            leaf.block_until_ready()
     return x
 
 
@@ -224,7 +324,7 @@ with timer.section("mask_and_oversample"):
 
     over_sample_size = al.util.over_sample.over_sample_size_via_radial_bins_from(
         grid=dataset.grid,
-        sub_size_list=[4, 2, 1],
+        sub_size_list=[4, 2, 2],
         radial_list=[0.3, 0.6],
         centre_list=[(0.0, 0.0)],
     )
@@ -301,7 +401,7 @@ with timer.section("model_build"):
         pixels=n_mesh_vertices,
         zeroed_pixels=0,
     )
-    regularization = al.reg.ConstantSplit(coefficient=1.0)
+    reg_scheme, regularization, reg_provenance = delaunay_regularization(_cli)
     pixelization = al.Pixelization(mesh=mesh, regularization=regularization)
 
     source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
@@ -311,6 +411,7 @@ with timer.section("model_build"):
 print(f"  Total free parameters: {model.total_free_parameters}")
 print(f"  Delaunay pixels: {n_mesh_vertices}")
 print(f"  Zeroed edge pixels: {edge_pixels_total}")
+print(f"  Regularization: {reg_scheme} ({reg_provenance})")
 
 # ---------------------------------------------------------------------------
 # 4. Instantiate concrete objects from prior medians
@@ -332,8 +433,17 @@ print(f"  Pytree JAX leaves: {n_pytree_leaves}")
 
 tracer = al.Tracer(galaxies=list(instance.galaxies))
 
-# AdaptImages tells FitImaging where mesh vertices live in image-plane
+# AdaptImages tells FitImaging where mesh vertices live in image-plane, and
+# carries the source's adapt image — the per-pixel signal ``AdaptSplit`` weights
+# its regularization by. Passed unconditionally: ``ConstantSplit`` ignores it, so
+# the two ``--regularization`` legs differ only in the scheme.
 adapt_images = al.AdaptImages(
+    galaxy_image_dict={
+        instance.galaxies.source: adapt_image,
+    },
+    galaxy_name_image_dict={
+        "('galaxies', 'source')": adapt_image,
+    },
     galaxy_image_plane_mesh_grid_dict={
         instance.galaxies.source: image_plane_mesh_grid,
     },
@@ -583,11 +693,17 @@ print("\n--- Step 6: Delaunay triangulation + Interpolation + Mapper ---")
 
 pixelization_obj = instance.galaxies.source.pixelization
 
+# Single symbol for the mesh family's interpolator, so the DelaunayNN sibling
+# (``delaunay_nn.py``) differs from this script only in the mesh class and this
+# line. Every direct interpolator construction below goes through it.
+_INTERPOLATOR_CLS = al.InterpolatorDelaunay
+
 with timer.section("delaunay_interpolation_and_mapper"):
-    interpolator = al.InterpolatorDelaunay(
+    interpolator = _INTERPOLATOR_CLS(
         mesh=pixelization_obj.mesh,
         mesh_grid=relocated_mesh_grid,
         data_grid=relocated_grid,
+        adapt_data=adapt_image,
     )
     mapper = al.Mapper(
         interpolator=interpolator,
@@ -657,6 +773,12 @@ def blurred_mm_from_params(params_tree):
     t = al.Tracer(galaxies=list(params_tree.galaxies))
     # Recreate adapt_images with new galaxy instance so dict lookup by object identity works.
     adapt_images_jax = al.AdaptImages(
+        galaxy_image_dict={
+            params_tree.galaxies.source: adapt_image,
+        },
+        galaxy_name_image_dict={
+            "('galaxies', 'source')": adapt_image,
+        },
         galaxy_image_plane_mesh_grid_dict={
             params_tree.galaxies.source: image_plane_mesh_grid,
         },
@@ -683,70 +805,129 @@ likelihood_steps.append(("Inversion setup (steps 5-8 combined)", timer.records[-
 print(f"  blurred_mapping_matrix (JIT) shape: {bmm_jit.shape}")
 
 # ---------------------------------------------------------------------------
-# Optional: four-way split of the inversion-setup block (--split-setup)
+# Staged prefix JITs of the inversion-setup block
 # ---------------------------------------------------------------------------
 # Nested prefix-JITs of the same staged computation: params -> step-5 output,
-# -> step-6, -> step-7, -> step-8. Successive differences attribute the
-# combined block's cost to border relocation / triangulation+interpolation /
-# mapping matrix / PSF convolution. The differences inherit the fusion caveat
-# (XLA may move work across prefix boundaries, so small negatives are noise),
-# and every prefix pays the ray-trace preamble (~0.3 ms, measured separately
-# in steps 1-2) which lands in the first difference.
+# -> step-6, -> step-7, -> step-8, and (``upto=11``) -> the ConstantSplit
+# regularization matrix. Successive differences attribute the combined block's
+# cost to border relocation / triangulation+interpolation / mapping matrix /
+# PSF convolution. The differences inherit the fusion caveat (XLA may move work
+# across prefix boundaries, so small negatives are noise), and every prefix pays
+# the ray-trace preamble (~0.3 ms, measured separately in steps 1-2) which lands
+# in the first difference.
+#
+# ``--split-setup`` selects whether the whole four-way walk is timed. The
+# interpolator prefix (``upto=6``) is timed **either way**, because step 11
+# attributes the H row as t(params -> H) - t(params -> interpolator outputs);
+# when ``--split-setup`` is on its timing is reused rather than compiled twice.
+#
+# NOTE (PyAutoArray#531): on the JAX path the split-point walk now rides inside
+# prefix 6 (single concatenated locate call), so the step-11 difference is the
+# regularization assembly alone and can read ~0/negative. Compare the params->H
+# prefix across versions, not the H row. See the module docstring.
 
+
+def _setup_prefix_fn(upto):
+    """Return a ``params_tree -> <stage output>`` function for the given stage.
+
+    ``upto`` is the pipeline step the prefix stops at: 5 border relocation,
+    6 interpolator+mapper, 7 mapping matrix, 8 blurred mapping matrix, and
+    11 the ConstantSplit regularization matrix H (the step-11 row's prefix;
+    it branches off after the mapper, before the mapping matrix, because
+    that is exactly what the inversion's H depends on).
+
+    Prefix 11 returns the step-6 outputs **as well as** H. That is load-bearing,
+    not cosmetic: H is built from the interpolator's split-point walk
+    (``_mappings_sizes_weights_split``) and does not consume the per-query
+    interpolation at all, so returning H alone lets XLA dead-code-eliminate the
+    whole query side of the mapper — the prefixes stop nesting and their
+    difference goes *negative* (measured: 215 ms H prefix vs 391 ms interpolator
+    prefix on local CPU, DelaunayNN/HST). Keeping the step-6 outputs live makes
+    prefix 11 a strict superset of prefix 6, so the difference is exactly the
+    incremental cost of the split walk plus the regularization assembly, with
+    the shared triangulation charged once to "Triangulation + interpolation".
+    """
+
+    def fn(pt):
+        t = al.Tracer(galaxies=list(pt.galaxies))
+        traced_source = t.traced_grid_2d_list_from(grid=dataset.grids.pixelization, xp=jnp)[-1]
+        traced_mesh = t.traced_grid_2d_list_from(
+            grid=al.Grid2DIrregular(image_plane_mesh_grid), xp=jnp
+        )[-1]
+        relocated = border_relocator.relocated_grid_from(grid=traced_source, xp=jnp)
+        relocated_mesh = border_relocator.relocated_mesh_grid_from(
+            grid=traced_source, mesh_grid=traced_mesh, xp=jnp
+        )
+        if upto == 5:
+            return relocated.array, relocated_mesh.array
+        interp = _INTERPOLATOR_CLS(
+            mesh=pixelization_obj.mesh,
+            mesh_grid=relocated_mesh,
+            data_grid=relocated,
+            # The mapper reads ``adapt_data`` off its interpolator, and it is
+            # what ``AdaptSplit`` weights H by. Without it the ``upto == 11``
+            # branch below raises on a ``None`` adapt image; ``ConstantSplit``
+            # never reads it, so both schemes build the same mapper here.
+            adapt_data=adapt_image,
+            xp=jnp,
+        )
+        m = al.Mapper(
+            interpolator=interp,
+            image_plane_mesh_grid=image_plane_mesh_grid,
+            xp=jnp,
+        )
+        if upto == 6:
+            return (
+                m.pix_indexes_for_sub_slim_index,
+                m.pix_weights_for_sub_slim_index,
+            )
+        if upto == 11:
+            # H is the mapper's own regularization block: the same call the
+            # inversion makes (``AbstractRegularization.regularization_matrix_from``
+            # on each linear object, block-diagonalised). The lens MGE's block
+            # is all-zero and is not built here — this prefix times the source
+            # mesh's ConstantSplit matrix, which is the whole non-trivial cost.
+            #
+            # The step-6 outputs ride along so this prefix strictly contains
+            # prefix 6 (see the docstring) — without them XLA prunes the query
+            # interpolation and the attribution difference goes negative.
+            return (
+                m.pix_indexes_for_sub_slim_index,
+                m.pix_weights_for_sub_slim_index,
+                pixelization_obj.regularization.regularization_matrix_from(linear_obj=m, xp=jnp),
+            )
+        mm = m.mapping_matrix
+        if upto == 7:
+            return mm
+        return dataset.psf.convolved_mapping_matrix_from(
+            mapping_matrix=mm, mask=dataset.mask, xp=jnp
+        )
+
+    return fn
+
+
+_prefix_labels = {
+    5: "Border relocation",
+    6: "Triangulation + interpolation",
+    7: "Mapping matrix",
+    8: "Blurred mapping matrix (PSF)",
+}
+_split_setup = "--split-setup" in sys.argv
+_prefix_per_call: dict[int, float] = {}
 _setup_split: dict | None = None
 
-if "--split-setup" in sys.argv:
+if _split_setup:
     print("\n--- Inversion setup four-way split (--split-setup) ---")
+    _prefix_stages = (5, 6, 7, 8)
+else:
+    print("\n--- Interpolator prefix (needed for the step-11 H attribution) ---")
+    _prefix_stages = (6,)
 
-    def _setup_prefix_fn(upto):
-        def fn(pt):
-            t = al.Tracer(galaxies=list(pt.galaxies))
-            traced_source = t.traced_grid_2d_list_from(grid=dataset.grids.pixelization, xp=jnp)[-1]
-            traced_mesh = t.traced_grid_2d_list_from(
-                grid=al.Grid2DIrregular(image_plane_mesh_grid), xp=jnp
-            )[-1]
-            relocated = border_relocator.relocated_grid_from(grid=traced_source, xp=jnp)
-            relocated_mesh = border_relocator.relocated_mesh_grid_from(
-                grid=traced_source, mesh_grid=traced_mesh, xp=jnp
-            )
-            if upto == 5:
-                return relocated.array, relocated_mesh.array
-            interp = al.InterpolatorDelaunay(
-                mesh=pixelization_obj.mesh,
-                mesh_grid=relocated_mesh,
-                data_grid=relocated,
-                xp=jnp,
-            )
-            m = al.Mapper(
-                interpolator=interp,
-                image_plane_mesh_grid=image_plane_mesh_grid,
-                xp=jnp,
-            )
-            if upto == 6:
-                return (
-                    m.pix_indexes_for_sub_slim_index,
-                    m.pix_weights_for_sub_slim_index,
-                )
-            mm = m.mapping_matrix
-            if upto == 7:
-                return mm
-            return dataset.psf.convolved_mapping_matrix_from(
-                mapping_matrix=mm, mask=dataset.mask, xp=jnp
-            )
+for _upto in _prefix_stages:
+    jit_profile(_setup_prefix_fn(_upto), f"setup_prefix_{_upto}", params_tree)
+    _prefix_per_call[_upto] = timer.records[-1][1] / 10
 
-        return fn
-
-    _prefix_labels = {
-        5: "Border relocation",
-        6: "Triangulation + interpolation",
-        7: "Mapping matrix",
-        8: "Blurred mapping matrix (PSF)",
-    }
-    _prefix_per_call = {}
-    for _upto in (5, 6, 7, 8):
-        jit_profile(_setup_prefix_fn(_upto), f"setup_prefix_{_upto}", params_tree)
-        _prefix_per_call[_upto] = timer.records[-1][1] / 10
-
+if _split_setup:
     _setup_split = {}
     _prev = 0.0
     for _upto in (5, 6, 7, 8):
@@ -761,6 +942,8 @@ if "--split-setup" in sys.argv:
         print(f"    {_label}: {_dt * 1000:8.2f} ms")
     _combined = dict(likelihood_steps)["Inversion setup (steps 5-8 combined)"]
     print(f"  (combined single-JIT reference: {_combined * 1000:.2f} ms)")
+else:
+    print(f"  interpolator prefix (5..6) per-call: {_prefix_per_call[6] * 1000:.2f} ms")
 
 bmm_jnp = bmm_ref  # Use the reference matrices for linear algebra steps
 print(f"  blurred_mapping_matrix shape: {blurred_mapping_matrix.shape}")
@@ -826,22 +1009,112 @@ likelihood_steps.append(("Curvature matrix (F)", timer.records[-1][1] / 10))
 print(f"  curvature_matrix shape: {curvature_matrix.shape}")
 
 # ---------------------------------------------------------------------------
-# Step 11: Regularization matrix (H) — ConstantSplit scheme
+# Step 11: Regularization matrix (H) — split scheme (AdaptSplit / ConstantSplit)
 # ---------------------------------------------------------------------------
 
-print("\n--- Step 11: Regularization matrix (ConstantSplit) ---")
+print(f"\n--- Step 11: Regularization matrix ({reg_scheme}) ---")
 
 # ConstantSplit uses a cross-derivative scheme via the interpolator's
 # _mappings_sizes_weights_split, not the simple neighbour-difference approach.
-# We extract it from the inversion for consistency and JIT-profile separately.
+#
+# TIMING: the reported row is the JIT-timed ``params -> H`` prefix minus the
+# ``params -> interpolator outputs`` prefix (module docstring, "Regularization
+# matrix (H) attribution"). Timing ``jnp.array(inversion.regularization_matrix)``
+# instead — as this script did before 2026-09 — measures a host-to-device copy
+# of an eagerly-computed NumPy matrix, not a JIT step.
+#
+# VALUE: steps 12 and 13 still consume the inversion's own matrix, so the
+# correctness assertions compare like with like against eager FitImaging.
 
-with timer.section("regularization_matrix_eager"):
+jit_profile(_setup_prefix_fn(11), "regularization_matrix_jit", params_tree)
+reg_matrix_prefix_per_call = timer.records[-1][1] / 10
+reg_matrix_attributed = reg_matrix_prefix_per_call - _prefix_per_call[6]
+likelihood_steps.append(("Regularization matrix (H)", reg_matrix_attributed))
+
+print(f"  params->H prefix per-call:       {reg_matrix_prefix_per_call * 1000:9.3f} ms")
+print(f"  params->interpolator prefix:     {_prefix_per_call[6] * 1000:9.3f} ms")
+print(f"  attributed H row (difference):   {reg_matrix_attributed * 1000:9.3f} ms")
+if reg_matrix_attributed < 0.0:
+    print(
+        "  NOTE: negative attribution — XLA fused work across the prefix "
+        "boundary; read the row as ~0 and the absolute prefix as the bound."
+    )
+
+# The eager copy is still made (steps 12-13 need the value); it is no longer
+# reported as the H row's cost.
+with timer.section("regularization_matrix_eager_copy"):
     regularization_matrix = jnp.array(inversion.regularization_matrix)
     block(regularization_matrix)
 
-likelihood_steps.append(("Regularization matrix (H)", timer.records[-1][1]))
-
 print(f"  regularization_matrix shape: {regularization_matrix.shape}")
+
+# ---------------------------------------------------------------------------
+# Batched re-timing of the setup block and H (--vmap-batch N)
+# ---------------------------------------------------------------------------
+# Mirrors PART D of ``likelihood_runtime/delaunay.py``: broadcast every leaf of
+# the params pytree to a leading batch axis, wrap in ``jax.jit(jax.vmap(fn))``
+# and report ``batch_time / N``. Placed after step 11 so the H prefix is
+# available; the compiles are the expensive part of this block.
+
+_vmap_steps: dict[str, float] | None = None
+_vmap_split: dict[str, float] | None = None
+_vmap_error: str | None = None
+
+if _vmap_batch is not None:
+    print(f"\n--- Batched re-timing (--vmap-batch {_vmap_batch}) ---")
+
+    import traceback as _traceback
+
+    _params_batched = jax.tree_util.tree_map(
+        lambda leaf: jnp.broadcast_to(leaf, (_vmap_batch, *leaf.shape)),
+        params_tree,
+    )
+
+    def _vmap_profile(func, label, n_repeats=10):
+        """Time ``jax.jit(jax.vmap(func))``; return amortized per-call seconds."""
+        fn = jax.jit(jax.vmap(func))
+        with timer.section(f"{label}_vmap{_vmap_batch}_first_call"):
+            block(fn(_params_batched))
+        with timer.section(f"{label}_vmap{_vmap_batch}_steady_x{n_repeats}"):
+            for _ in range(n_repeats):
+                block(fn(_params_batched))
+        batch_time = timer.records[-1][1] / n_repeats
+        per_call = batch_time / _vmap_batch
+        print(
+            f"    -> batch {_vmap_batch}: {batch_time * 1000:9.3f} ms; "
+            f"per call: {per_call * 1000:9.3f} ms"
+        )
+        return per_call
+
+    try:
+        _vmap_prefix_per_call: dict[int, float] = {}
+        for _upto in (5, 6, 7, 8, 11):
+            _vmap_prefix_per_call[_upto] = _vmap_profile(
+                _setup_prefix_fn(_upto), f"setup_prefix_{_upto}"
+            )
+        _vmap_combined = _vmap_profile(blurred_mm_from_params, "inversion_setup")
+
+        _vmap_split = {}
+        _prev = 0.0
+        for _upto in (5, 6, 7, 8):
+            _vmap_split[_prefix_labels[_upto]] = _vmap_prefix_per_call[_upto] - _prev
+            _prev = _vmap_prefix_per_call[_upto]
+
+        _vmap_steps = {
+            "Inversion setup (steps 5-8 combined)": _vmap_combined,
+            "Regularization matrix (H)": (_vmap_prefix_per_call[11] - _vmap_prefix_per_call[6]),
+        }
+        _vmap_h_prefix = _vmap_prefix_per_call[11]
+        _vmap_interp_prefix = _vmap_prefix_per_call[6]
+    except Exception:  # noqa: BLE001 — a vmap failure must not lose the unbatched run
+        _vmap_error = _traceback.format_exc()
+        _vmap_h_prefix = None
+        _vmap_interp_prefix = None
+        print("  VMAP FAILED — unbatched results are unaffected. Traceback:")
+        print(_vmap_error)
+else:
+    _vmap_h_prefix = None
+    _vmap_interp_prefix = None
 
 # ---------------------------------------------------------------------------
 # Step 12: Regularized reconstruction: s = NNLS(F + H, D)
@@ -1066,14 +1339,41 @@ print(f"  Edge zeroed pixels:    {edge_pixels_total}")
 print("-" * 70)
 
 max_label = max(len(label) for label, _ in likelihood_steps)
+_have_vmap = _vmap_steps is not None
 step_total = 0.0
+
+if _have_vmap:
+    print(f"      {'':<{max_label}}  {'unbatched':>14}  {f'vmap/{_vmap_batch} per call':>22}")
 for i, (label, per_call) in enumerate(likelihood_steps, 1):
-    print(f"  {i:>2}. {label:<{max_label}}  {per_call:>12.6f} s")
+    if _have_vmap and label in _vmap_steps:
+        print(f"  {i:>2}. {label:<{max_label}}  {per_call:>12.6f} s  {_vmap_steps[label]:>20.6f} s")
+    else:
+        print(f"  {i:>2}. {label:<{max_label}}  {per_call:>12.6f} s")
     step_total += per_call
 
 print("-" * 70)
 print(f"      {'TOTAL (step-by-step)':<{max_label}}  {step_total:>12.6f} s")
 print("=" * 70)
+
+print(f"  Regularization matrix (H) — params->H prefix:  {reg_matrix_prefix_per_call:.6f} s")
+print(f"  Regularization matrix (H) — interp. prefix:    {_prefix_per_call[6]:.6f} s")
+
+if _setup_split is not None or _vmap_split is not None:
+    print("-" * 70)
+    _split_label_width = max(len(k) for k in _prefix_labels.values())
+    print(
+        f"  inversion-setup split{'':<{_split_label_width - 21}}  "
+        f"{'unbatched':>14}"
+        + (f"  {f'vmap/{_vmap_batch} per call':>22}" if _vmap_split is not None else "")
+    )
+    for _upto in (5, 6, 7, 8):
+        _lab = _prefix_labels[_upto]
+        _unb = f"{_setup_split[_lab]:12.6f} s" if _setup_split is not None else f"{'—':>14}"
+        _bat = f"  {_vmap_split[_lab]:20.6f} s" if _vmap_split is not None else ""
+        print(f"    {_lab:<{_split_label_width}}  {_unb}{_bat}")
+if _vmap_error is not None:
+    print("-" * 70)
+    print(f"  vmap batch {_vmap_batch}: FAILED (traceback in the result JSON).")
 
 # --- Save results dictionary ---
 
@@ -1089,18 +1389,54 @@ breakdown_summary = {
         "delaunay_vertices": int(n_source_pixels),
         "edge_zeroed_pixels": int(edge_pixels_total),
         "inversion_path": "sparse" if _cli.use_sparse_operator else "dense",
+        # Provenance only (autolens_profiling#235 decision 3): this cell's
+        # over-sampling and mesh are the A100-pinned JAX configuration and are
+        # deliberately NOT production-matched — GPU representativeness is a
+        # separate task. What it does record is the thread environment as found
+        # (never pinned here) and the NNLS cross-evaluation warm-start memo,
+        # which on the JAX path is inert (it seeds the numba fnnls loop only).
+        "thread_env": _observe_thread_env(),
+        "memo": "library_default (inert on the JAX path)",
+        "over_sample_size_lp_rule": {
+            "sub_size_list": [4, 2, 2],
+            "radial_list": [0.3, 0.6],
+            "centre": [0.0, 0.0],
+            "note": (
+                "Outer sub-size 1 retired repo-wide on 2026-09-08 "
+                "(autolens_profiling#235): it leaves the outermost annulus "
+                "un-over-sampled and causes gradient issues."
+            ),
+        },
     },
+    # Regularization scheme + coefficients. A result JSON without this key is a
+    # pre-2026-09-08 row and was measured with ``constant_split``.
+    "regularization": reg_provenance,
     "steps": {label: per_call for label, per_call in likelihood_steps},
     "total_step_by_step": step_total,
+    # Absolute prefix times behind the attributed "Regularization matrix (H)"
+    # row: the row is ``regularization_matrix_prefix_s - interpolator_prefix_s``.
+    "regularization_matrix_prefix_s": float(reg_matrix_prefix_per_call),
+    "interpolator_prefix_s": float(_prefix_per_call[6]),
 }
 
 if _setup_split is not None:
     breakdown_summary["setup_split"] = {k: float(v) for k, v in _setup_split.items()}
 
+if _vmap_batch is not None:
+    breakdown_summary["vmap_batch"] = int(_vmap_batch)
+    if _vmap_error is not None:
+        breakdown_summary["vmap_error"] = _vmap_error
+    else:
+        breakdown_summary["steps_vmap_per_call"] = {k: float(v) for k, v in _vmap_steps.items()}
+        breakdown_summary["setup_split_vmap"] = {k: float(v) for k, v in _vmap_split.items()}
+        breakdown_summary["regularization_matrix_prefix_vmap_per_call_s"] = float(_vmap_h_prefix)
+        breakdown_summary["interpolator_prefix_vmap_per_call_s"] = float(_vmap_interp_prefix)
+
 dict_path, chart_path = resolve_output_paths(
     _cli,
     default_dir=_workspace_root / "results" / "breakdown" / "imaging",
     default_basename=f"delaunay_breakdown_{instrument}_v{al_version}",
+    cell="delaunay",
 )
 dict_path.write_text(json.dumps(breakdown_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")
@@ -1150,17 +1486,43 @@ print(f"  Bar chart saved to:    {chart_path}")
 # Regression assertion — eager log_evidence only
 # ===================================================================
 
-EXPECTED_LOG_EVIDENCE_HST = (
-    29110.92085793  # 1500-pixel Hilbert/Delaunay, MGE-60 lens, adapt_image=lensed_source
-)
+# 1500-pixel Hilbert/Delaunay, MGE-60 lens, adapt_image=lensed_source. One pin
+# per ``--regularization`` scheme — the two legs fit the same data with the same
+# mesh, so only the regularization matrix (and hence the evidence) differs.
+#
+# constant_split: the pre-2026-09-08 value, kept verbatim (re-checked through
+#   this cell's adapt-image wiring on 2026-09-08: 29110.92085737855, rel 2e-11).
+# adapt_split:    pinned 2026-09-08 from this script's first eager CPU run,
+#   local CPU (WSL, JAX fp64), PyAutoLens 08a05858a / PyAutoNerves 0e7163b /
+#   PyAutoFit 08207bad0 / PyAutoArray 47a00e8c / PyAutoGalaxy ec5ce75d.
+# Re-pinned 2026-09-08 (autolens_profiling#235): the light-profile radial-bin
+# recipe retired its outer sub-size-1 bin ([4, 2, 1] -> [4, 2, 2]) repo-wide,
+# because sub-size 1 leaves the outermost annulus un-over-sampled and causes
+# gradient issues. That changes the over-sampled light-profile grid, so the
+# pinned evidences moved. Measured from one eager run per scheme on this host
+# (WSL, fp64). `constant_split` for delaunay_nn moved too but by 7.6e-5
+# relative, inside rtol=1e-4, so it PASSED and is left as measured in August.
+EXPECTED_LOG_EVIDENCE_HST = {
+    "constant_split": 29083.548352148413,  # was 29110.92085793
+    "adapt_split": 29140.29588193227,  # was 29155.0010494252
+}
 
-np.testing.assert_allclose(
-    log_evidence_ref,
-    EXPECTED_LOG_EVIDENCE_HST,
-    rtol=1e-4,
-    err_msg=(
-        f"imaging/delaunay[{instrument}]: regression — eager log_evidence drifted "
-        f"(got {log_evidence_ref}, expected {EXPECTED_LOG_EVIDENCE_HST})"
-    ),
-)
-print(f"  Eager regression assertion PASSED: log_evidence matches {EXPECTED_LOG_EVIDENCE_HST:.6f}")
+_expected_log_evidence = EXPECTED_LOG_EVIDENCE_HST.get(reg_scheme)
+
+if _expected_log_evidence is None:
+    print(
+        f"  Eager regression assertion SKIPPED for regularization={reg_scheme} "
+        f"(no pinned value). Eager log_evidence = {log_evidence_ref!r}"
+    )
+else:
+    np.testing.assert_allclose(
+        log_evidence_ref,
+        _expected_log_evidence,
+        rtol=1e-4,
+        err_msg=(
+            f"imaging/delaunay[{instrument}, {reg_scheme}]: regression — eager "
+            f"log_evidence drifted (got {log_evidence_ref}, expected "
+            f"{_expected_log_evidence})"
+        ),
+    )
+    print(f"  Eager regression assertion PASSED: log_evidence matches {_expected_log_evidence:.6f}")

@@ -1,5 +1,11 @@
 # Numba CPU curvature matrix F — sub-block split (PyAutoArray#505)
 
+> **Since 2026-09-08 the numba CPU cells measure the production configuration**
+> per instrument (mesh, over-sampling, free `AdaptSplit`, MGE basis, iid instance
+> stream, threads pinned, memo off and recorded) — see
+> [`production_representative_cells.md`](./production_representative_cells.md).
+> The timings below predate that and were measured on the old fiducial.
+
 Step 0 (the baseline below) measured 2026-08-28 on the local WSL host, `OMP_NUM_THREADS=1`,
 `AUTOARRAY_NUMBA_OPERATED_MEMO=0`, PyAutoArray branch
 `feature/numba-hst-curvature-matrix-speedup`, autolens `v2026.8.17.1`,

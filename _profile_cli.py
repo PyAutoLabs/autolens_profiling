@@ -37,6 +37,11 @@ class ProfileCLI:
     vmap_probe: bool
     use_sparse_operator: bool
     rect_mesh: str
+    regularization: str | None
+    variant: str
+    memo: str
+    n_instances: int
+    cold_evals: int
 
 
 def parse_profile_cli(default_config_name: str | None = None) -> ProfileCLI:
@@ -142,6 +147,81 @@ def parse_profile_cli(default_config_name: str | None = None) -> ProfileCLI:
         ),
     )
 
+    parser.add_argument(
+        "--regularization",
+        choices=("adapt_split", "constant_split"),
+        default=None,
+        help=(
+            "Regularization scheme for the Delaunay-family cells. "
+            "'adapt_split' — ``al.reg.AdaptSplit(inner_coefficient=0.1, "
+            "outer_coefficient=10.0, signal_scale=0.1)``, what production "
+            "(SLaM, the Euclid pipeline) pairs Delaunay with and the cells' "
+            "default — or 'constant_split' — ``al.reg.ConstantSplit("
+            "coefficient=1.0)``, the scheme every Delaunay row recorded before "
+            "2026-09-08 was measured with, kept reachable so those rows stay "
+            "comparable. Omitted (None) leaves each cell on its own default; "
+            "cells outside the Delaunay family ignore the flag. The resolved "
+            "scheme selects the cell's pinned log-evidence and is embedded in "
+            "the result JSON as ``regularization``."
+        ),
+    )
+
+    parser.add_argument(
+        "--variant",
+        choices=("production", "legacy"),
+        default="production",
+        help=(
+            "Which configuration the production-preset cells build. "
+            "'production' (the default) resolves the instrument's production "
+            "preset from ``_production_config`` — the Euclid ``vis_pix`` stage "
+            "for ``--instrument euclid``, the subhalo ``source_pix[2]`` stage "
+            "for ``--instrument hst`` — matching mesh, over-sampling, "
+            "regularization, MGE basis, positions penalty and thread pinning "
+            "field for field. 'legacy' rebuilds the cell's own pre-2026-09-08 "
+            "configuration, so the historic rows stay reproducible. Cells that "
+            "carry no preset ignore the flag."
+        ),
+    )
+
+    parser.add_argument(
+        "--memo",
+        choices=("off", "on"),
+        default="off",
+        help=(
+            "The NNLS cross-evaluation warm-start memo "
+            "(``aa.Settings(nnls_warm_start_memo=...)``, PyAutoArray#498). Off "
+            "by default in the preset cells: its measured gains come from a "
+            "random-walk stream a Nautilus pool never hands one worker, and "
+            "with the memo on a cell that repeats one instance seeds itself "
+            "from a 100 %-correct previous solve. The library default is "
+            "``true`` and production leaves it unset, so 'on' is what "
+            "production pays; the resolved flag is recorded in every result "
+            "JSON. ``--variant legacy`` leaves both gates untouched."
+        ),
+    )
+
+    parser.add_argument(
+        "--n-instances",
+        type=int,
+        default=20,
+        help=(
+            "Length of the seeded iid instance sequence the production-preset "
+            "cells profile (default 20): one warm-up, ``--cold-evals`` cold "
+            "evaluations, the rest warm."
+        ),
+    )
+
+    parser.add_argument(
+        "--cold-evals",
+        type=int,
+        default=3,
+        help=(
+            "How many of the iid instances are timed as cold evaluations "
+            "(default 3) — the quantity comparable to PyAutoFit's logged 'Log "
+            "Likelihood Function Evaluation Time'."
+        ),
+    )
+
     args, _unknown = parser.parse_known_args()
     config_name = args.config_name or default_config_name
     output_dir = Path(args.output_dir).resolve() if args.output_dir else None
@@ -153,6 +233,62 @@ def parse_profile_cli(default_config_name: str | None = None) -> ProfileCLI:
         vmap_probe=bool(args.vmap_probe),
         use_sparse_operator=bool(args.sparse),
         rect_mesh=args.rect_mesh,
+        regularization=args.regularization,
+        variant=args.variant,
+        memo=args.memo,
+        n_instances=int(args.n_instances),
+        cold_evals=int(args.cold_evals),
+    )
+
+
+#: What ``--regularization`` resolves to in the Delaunay-family cells when the
+#: flag is omitted. Production pairs Delaunay with ``AdaptSplit``, so that is
+#: what the profiled rows measure; ``constant_split`` reproduces the pre-
+#: 2026-09-08 rows.
+DELAUNAY_REGULARIZATION_DEFAULT = "adapt_split"
+
+
+def delaunay_regularization(cli: ProfileCLI):
+    """Resolve ``--regularization`` into the Delaunay-family regularization object.
+
+    Returns ``(scheme, regularization, provenance)``: the resolved scheme name,
+    the ``al.reg`` object to hand ``al.Pixelization``, and the dict every
+    Delaunay-family result JSON records under ``regularization``.
+
+    ``AdaptSplit`` is given the in-repo production-shaped coefficients
+    (``inner=0.1``, ``outer=10.0``, ``signal_scale=0.1``, as used by
+    ``likelihood_breakdown/delaunay_numba_nnls_iterations.py``) rather than its
+    ``inner == outer == 1.0`` defaults, which make the per-pixel weights uniform
+    and the scheme numerically indistinguishable from ``ConstantSplit``.
+
+    ``AdaptSplit`` reads the mapper's ``adapt_data``, so a cell using it must
+    also pass ``galaxy_image_dict`` / ``galaxy_name_image_dict`` to its
+    ``al.AdaptImages``; the cells do so unconditionally, since ``ConstantSplit``
+    ignores them and the two legs then differ only in the scheme.
+
+    Imports autolens lazily so ``_profile_cli`` stays importable without the
+    modelling stack.
+    """
+    import autolens as al
+
+    scheme = cli.regularization or DELAUNAY_REGULARIZATION_DEFAULT
+
+    if scheme == "constant_split":
+        return (
+            scheme,
+            al.reg.ConstantSplit(coefficient=1.0),
+            {"scheme": scheme, "coefficient": 1.0},
+        )
+
+    return (
+        scheme,
+        al.reg.AdaptSplit(inner_coefficient=0.1, outer_coefficient=10.0, signal_scale=0.1),
+        {
+            "scheme": scheme,
+            "inner_coefficient": 0.1,
+            "outer_coefficient": 10.0,
+            "signal_scale": 0.1,
+        },
     )
 
 
@@ -219,6 +355,7 @@ def resolve_output_paths(
     cli: ProfileCLI,
     default_dir: Path,
     default_basename: str,
+    cell: str | None = None,
 ) -> tuple[Path, Path]:
     """Resolve (json_path, png_path) for the per-cell write.
 
@@ -226,14 +363,19 @@ def resolve_output_paths(
       ``<output_dir>/<default_basename>.{json,png}`` (the single-config
       filename pattern).
     - When ``cli.config_name`` is set: use ``<output_dir>/<cell>_<config_name>.{json,png}``,
-      where ``<cell>`` is the first ``_``-separated token of ``default_basename``
-      (the leaf scripts use ``<cell>_likelihood_summary_...`` /
-      ``<cell>_breakdown_...`` so the cell name is always the leading token).
+      where ``<cell>`` defaults to the first ``_``-separated token of
+      ``default_basename`` (the leaf scripts use ``<cell>_likelihood_summary_...`` /
+      ``<cell>_breakdown_...`` so the cell name is usually the leading token).
       This keeps per-cell JSONs disjoint even when the same config name is
       shared across cells in a sweep — without it, every cell writes to the
       same ``<config_name>.json`` and the sweep loses 5 of 6 results to
       clobbering (the bug surfaced by the first A100 sparse-vs-dense sweep,
       autolens_profiling#44).
+    - ``cell`` overrides that first-token derivation. **Required for any cell
+      whose name itself contains an underscore**: ``delaunay_nn`` derives to
+      ``delaunay`` under the default rule and would silently clobber the
+      Delaunay cell's ``delaunay_<config_name>.json`` (autolens_profiling#219).
+      Callers that pass nothing keep the pre-existing behaviour exactly.
     - ``cli.output_dir`` overrides ``default_dir`` when set.
     - When ``cli.use_sparse_operator`` is set, ``_sparse`` is appended to the
       resolved basename so dense and sparse JSONs from the same config don't
@@ -244,11 +386,12 @@ def resolve_output_paths(
     if cli.config_name is None:
         basename = default_basename
     else:
-        # First underscore-separated token of default_basename is the cell.
-        # All callers (likelihood_runtime, likelihood_breakdown) follow the
+        # First underscore-separated token of default_basename is the cell,
+        # unless the caller named it explicitly. All callers
+        # (likelihood_runtime, likelihood_breakdown) follow the
         # ``<cell>_<purpose>_<inst>_v<version>`` convention.
-        cell = default_basename.split("_", 1)[0]
-        basename = f"{cell}_{cli.config_name}"
+        cell_name = cell if cell is not None else default_basename.split("_", 1)[0]
+        basename = f"{cell_name}_{cli.config_name}"
     if cli.use_sparse_operator:
         basename = f"{basename}_sparse"
     if cli.rect_mesh == "rtu":

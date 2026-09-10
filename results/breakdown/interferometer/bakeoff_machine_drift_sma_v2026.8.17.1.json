@@ -1,0 +1,530 @@
+{
+  "autoarray_version": "2026.8.17.1",
+  "mode": "bakeoff",
+  "batch_size": 128,
+  "pin": {
+    "rtol": 1e-10,
+    "atol": "1e-10 * max|F_reference|",
+    "note": "every kernel is pinned before any of its timings are recorded"
+  },
+  "environment": {
+    "OMP_NUM_THREADS": "1",
+    "NUMBA_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "XLA_FLAGS": "--xla_cpu_multi_thread_eigen=false --xla_force_host_platform_device_count=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "JAX_PLATFORMS": "cpu",
+    "JAX_ENABLE_X64": "True",
+    "numba_threads_effective": 1,
+    "numba_version": "0.62.1",
+    "scipy_version": "1.17.1",
+    "jax_version": "0.10.2",
+    "jax_devices": [
+      "cpu:0"
+    ],
+    "numpy_version": "2.2.6",
+    "platform": "Linux-5.10.16.3-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+    "processor": "x86_64",
+    "cpu_count": 8
+  },
+  "cells": {
+    "sma/delaunay": {
+      "geometry": {
+        "instrument": "sma",
+        "pixel_scale_arcsec": 0.1,
+        "mask_radius_arcsec": 3.5,
+        "real_space_shape": [
+          256,
+          256
+        ],
+        "image_pixels_masked": 3852,
+        "extent_shape": [
+          70,
+          70
+        ],
+        "extent_cells": 4900,
+        "visibilities": 190
+      },
+      "mesh": {
+        "name": "delaunay",
+        "source_pixels": 1500,
+        "p_per_pixel": 3,
+        "nnz": 11556,
+        "nnz_per_source_column": 7.704
+      },
+      "control_dgemm_head_s": 0.12690670000301907,
+      "control_dgemm_tail_s": 0.1251228000037372,
+      "control_dgemm_drift": 0.9859432165579957,
+      "control_note": "A fixed 1500x1500 dgemm at the head and tail of the cell. The machine throttles under sustained load, so absolute seconds drift across a long run; the round-robin interleaving makes the within-cell ratios immune to that, and this is how much drift there was.",
+      "pin_anchor": "reference",
+      "anchor_first_call_s": 0.45813230000203475,
+      "control": {
+        "kernel": "reference",
+        "scale": 1.01,
+        "pin_passed": false,
+        "max_abs_diff_over_scale": 0.010000000000000031,
+        "non_vacuous": true
+      },
+      "kernels": {
+        "reference": {
+          "status": "measured",
+          "median_s": 0.2619729500001995,
+          "min_s": 0.25937299999350216,
+          "all_rounds_s": [
+            0.26119910000124946,
+            0.2644298000013805,
+            0.27350500000466127,
+            0.25937299999350216,
+            0.2595160999990185
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 0.0,
+            "max_abs_diff_over_scale": 0.0,
+            "rtol": 1e-10,
+            "atol": 0.0,
+            "note": "anchor"
+          },
+          "operations": 133541136
+        },
+        "hoisted": {
+          "status": "measured",
+          "median_s": 0.261256850004429,
+          "min_s": 0.25416779999795835,
+          "all_rounds_s": [
+            0.2503597999966587,
+            0.25982560000556987,
+            0.25416779999795835,
+            0.2626881000032881,
+            0.3047967000020435
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 0.0,
+            "max_abs_diff_over_scale": 0.0,
+            "rtol": 1e-10,
+            "atol": 7.58984906985504e-08
+          },
+          "operations": 133541136
+        },
+        "symmetric": {
+          "status": "measured",
+          "median_s": 0.17216465000092285,
+          "min_s": 0.16332849999889731,
+          "all_rounds_s": [
+            0.16169819999777246,
+            0.17890230000193696,
+            0.16332849999889731,
+            0.17377390000183368,
+            0.17055540000001201
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 6.821210263296962e-13,
+            "max_abs_diff_over_scale": 8.987280511794475e-16,
+            "rtol": 1e-10,
+            "atol": 7.58984906985504e-08
+          },
+          "operations": 66770568.0
+        },
+        "two_stage": {
+          "status": "measured",
+          "median_s": 0.09707430000344175,
+          "min_s": 0.09583310000016354,
+          "all_rounds_s": [
+            0.09827270000096178,
+            0.09685770000214688,
+            0.10340390000055777,
+            0.09729090000473661,
+            0.09583310000016354
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 6.821210263296962e-13,
+            "max_abs_diff_over_scale": 8.987280511794475e-16,
+            "rtol": 1e-10,
+            "atol": 7.58984906985504e-08
+          },
+          "operations": 61847712
+        },
+        "direct_conv": {
+          "status": "measured",
+          "median_s": 0.08624649999910616,
+          "min_s": 0.08046699999977136,
+          "all_rounds_s": [
+            0.08437779999803752,
+            0.08594559999619378,
+            0.08709649999946123,
+            0.08046699999977136,
+            0.08654740000201855
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 6.821210263296962e-13,
+            "max_abs_diff_over_scale": 8.987280511794475e-16,
+            "rtol": 1e-10,
+            "atol": 7.58984906985504e-08
+          },
+          "operations": 73958400
+        },
+        "source_loop": {
+          "status": "measured",
+          "median_s": 0.17932434999966063,
+          "min_s": 0.17631570000230568,
+          "all_rounds_s": [
+            0.18289509999885922,
+            0.1946488000030513,
+            0.17631570000230568,
+            0.17899770000076387,
+            0.17965099999855738
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 5.115907697472721e-13,
+            "max_abs_diff_over_scale": 6.740460383845856e-16,
+            "rtol": 1e-10,
+            "atol": 7.58984906985504e-08
+          },
+          "operations": 66770568.0
+        },
+        "rfft2_numpy": {
+          "status": "measured",
+          "median_s": 0.47317409999959636,
+          "min_s": 0.45763179999630665,
+          "all_rounds_s": [
+            0.4488696999978856,
+            0.45763179999630665,
+            0.46324459999596,
+            0.5172405999983312,
+            0.4831036000032327
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 6.821210263296962e-13,
+            "max_abs_diff_over_scale": 8.987280511794475e-16,
+            "rtol": 1e-10,
+            "atol": 7.58984906985504e-08
+          },
+          "operations": 447012701.5898768
+        },
+        "fft2_numpy": {
+          "status": "measured",
+          "median_s": 0.7178183500000159,
+          "min_s": 0.6930386000021826,
+          "all_rounds_s": [
+            0.7508738999968045,
+            0.6930386000021826,
+            0.7018110999997589,
+            1.0646602999986499,
+            0.733825600000273
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 6.821210263296962e-13,
+            "max_abs_diff_over_scale": 8.987280511794475e-16,
+            "rtol": 1e-10,
+            "atol": 7.58984906985504e-08
+          },
+          "operations": 876275387.1797535
+        },
+        "fft2_jax": {
+          "status": "measured",
+          "median_s": 0.5814526499998465,
+          "min_s": 0.5650128999986919,
+          "all_rounds_s": [
+            0.5903359000003547,
+            0.5650128999986919,
+            0.5756034000005457,
+            0.5873018999991473,
+            0.5876476999983424
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 6.821210263296962e-13,
+            "max_abs_diff_over_scale": 8.987280511794475e-16,
+            "rtol": 1e-10,
+            "atol": 7.58984906985504e-08
+          },
+          "operations": 876275387.1797535
+        }
+      }
+    },
+    "sma/rect": {
+      "geometry": {
+        "instrument": "sma",
+        "pixel_scale_arcsec": 0.1,
+        "mask_radius_arcsec": 3.5,
+        "real_space_shape": [
+          256,
+          256
+        ],
+        "image_pixels_masked": 3852,
+        "extent_shape": [
+          70,
+          70
+        ],
+        "extent_cells": 4900,
+        "visibilities": 190
+      },
+      "mesh": {
+        "name": "rect",
+        "source_pixels": 784,
+        "p_per_pixel": 4,
+        "nnz": 15408,
+        "nnz_per_source_column": 19.653061224489797
+      },
+      "control_dgemm_head_s": 0.13537730000098236,
+      "control_dgemm_tail_s": 0.14258139999583364,
+      "control_dgemm_drift": 1.0532149776572513,
+      "control_note": "A fixed 1500x1500 dgemm at the head and tail of the cell. The machine throttles under sustained load, so absolute seconds drift across a long run; the round-robin interleaving makes the within-cell ratios immune to that, and this is how much drift there was.",
+      "pin_anchor": "reference",
+      "anchor_first_call_s": 0.3690357999948901,
+      "control": {
+        "kernel": "reference",
+        "scale": 1.01,
+        "pin_passed": false,
+        "max_abs_diff_over_scale": 0.010000000000000024,
+        "non_vacuous": true
+      },
+      "kernels": {
+        "reference": {
+          "status": "measured",
+          "median_s": 0.3673892999977397,
+          "min_s": 0.3556605999983731,
+          "all_rounds_s": [
+            0.3776066999998875,
+            0.36691679999785265,
+            0.3835714000015287,
+            0.3556605999983731,
+            0.3678617999976268
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 0.0,
+            "max_abs_diff_over_scale": 0.0,
+            "rtol": 1e-10,
+            "atol": 0.0,
+            "note": "anchor"
+          },
+          "operations": 237406464
+        },
+        "hoisted": {
+          "status": "measured",
+          "median_s": 0.3886745500021789,
+          "min_s": 0.37706440000329167,
+          "all_rounds_s": [
+            0.3745952999961446,
+            0.40305959999386687,
+            0.392130600004748,
+            0.37706440000329167,
+            0.3852184999996098
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 0.0,
+            "max_abs_diff_over_scale": 0.0,
+            "rtol": 1e-10,
+            "atol": 1.113510843733704e-07
+          },
+          "operations": 237406464
+        },
+        "symmetric": {
+          "status": "measured",
+          "median_s": 0.24179874999754247,
+          "min_s": 0.2285833000059938,
+          "all_rounds_s": [
+            0.24578309999924386,
+            0.23978619999979855,
+            0.26304849999723956,
+            0.2285833000059938,
+            0.2438112999952864
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 2.6147972675971687e-12,
+            "max_abs_diff_over_scale": 2.3482458947858233e-15,
+            "rtol": 1e-10,
+            "atol": 1.113510843733704e-07
+          },
+          "operations": 118703232.0
+        },
+        "two_stage": {
+          "status": "measured",
+          "median_s": 0.10759840000173426,
+          "min_s": 0.10354240000015125,
+          "all_rounds_s": [
+            0.11004749999847263,
+            0.10584200000448618,
+            0.11344449999887729,
+            0.10935479999898234,
+            0.10354240000015125
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 2.6147972675971687e-12,
+            "max_abs_diff_over_scale": 2.3482458947858233e-15,
+            "rtol": 1e-10,
+            "atol": 1.113510843733704e-07
+          },
+          "operations": 71431488
+        },
+        "direct_conv": {
+          "status": "measured",
+          "median_s": 0.09136284999840427,
+          "min_s": 0.08929630000056932,
+          "all_rounds_s": [
+            0.09421580000343965,
+            0.112683699997433,
+            0.08929630000056932,
+            0.09161499999754597,
+            0.09111069999926258
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 2.6147972675971687e-12,
+            "max_abs_diff_over_scale": 2.3482458947858233e-15,
+            "rtol": 1e-10,
+            "atol": 1.113510843733704e-07
+          },
+          "operations": 87579072
+        },
+        "source_loop": {
+          "status": "measured",
+          "median_s": 0.2943022999970708,
+          "min_s": 0.27246849999937695,
+          "all_rounds_s": [
+            0.2985218000030727,
+            0.30625119999604067,
+            0.28235339999810094,
+            0.27246849999937695,
+            0.3214213000028394
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 2.1600499167107046e-12,
+            "max_abs_diff_over_scale": 1.939855304388289e-15,
+            "rtol": 1e-10,
+            "atol": 1.113510843733704e-07
+          },
+          "operations": 118703232.0
+        },
+        "rfft2_numpy": {
+          "status": "measured",
+          "median_s": 0.25977879999845754,
+          "min_s": 0.25050029999692924,
+          "all_rounds_s": [
+            0.2575815000018338,
+            0.2791579999975511,
+            0.25050029999692924,
+            0.25325249999877997,
+            0.2663050999981351
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 2.6147972675971687e-12,
+            "max_abs_diff_over_scale": 2.3482458947858233e-15,
+            "rtol": 1e-10,
+            "atol": 1.113510843733704e-07
+          },
+          "operations": 264208801.26076144
+        },
+        "fft2_numpy": {
+          "status": "measured",
+          "median_s": 0.37220089999755146,
+          "min_s": 0.36302259999501985,
+          "all_rounds_s": [
+            0.36565970000083325,
+            0.36989249999896856,
+            0.36302259999501985,
+            0.38648429999739164,
+            0.37450929999613436
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 2.7284841053187847e-12,
+            "max_abs_diff_over_scale": 2.450343542385207e-15,
+            "rtol": 1e-10,
+            "atol": 1.113510843733704e-07
+          },
+          "operations": 514612034.5215229
+        },
+        "fft2_jax": {
+          "status": "measured",
+          "median_s": 0.3352422500029206,
+          "min_s": 0.32974210000247695,
+          "all_rounds_s": [
+            0.3611850000015693,
+            0.3397852000052808,
+            0.3339166000005207,
+            0.32974210000247695,
+            0.33656790000532055
+          ],
+          "rounds_timed": 4,
+          "rounds_discarded": 1,
+          "pin": {
+            "passed": true,
+            "max_abs_diff": 2.6147972675971687e-12,
+            "max_abs_diff_over_scale": 2.3482458947858233e-15,
+            "rtol": 1e-10,
+            "atol": 1.113510843733704e-07
+          },
+          "operations": 514612034.5215229
+        }
+      }
+    }
+  },
+  "kill_gate": "passed",
+  "kill_gate_detail": {
+    "rule": "best numba kernel must beat rfft2_numpy by >1.3x at sma or alma",
+    "threshold": 1.3,
+    "per_cell": {
+      "sma/delaunay": {
+        "best_numba_kernel": "direct_conv",
+        "best_numba_s": 0.08624649999910616,
+        "rfft2_numpy_s": 0.47317409999959636,
+        "speedup_rfft2_over_numba": 5.486299154220753
+      },
+      "sma/rect": {
+        "best_numba_kernel": "direct_conv",
+        "best_numba_s": 0.09136284999840427,
+        "rfft2_numpy_s": 0.25977879999845754,
+        "speedup_rfft2_over_numba": 2.843374522609516
+      }
+    },
+    "kill_gate": "passed"
+  }
+}

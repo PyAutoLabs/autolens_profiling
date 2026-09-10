@@ -1,0 +1,79 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": null,
+    "cpu_count": 124,
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 41495 MiB, 81920 MiB"
+  },
+  "instrument": "hst",
+  "configuration": {
+    "pixel_scale_arcsec": 0.05,
+    "mask_radius_arcsec": 3.5,
+    "image_pixels_masked": 15361,
+    "over_sampled_pixels": 17980,
+    "delaunay_vertices": 1500,
+    "edge_zeroed_pixels": 0,
+    "inversion_path": "dense"
+  },
+  "sibson": {
+    "PYAUTO_SIBSON_QUERY_CHUNK": null,
+    "query_chunk": 4096,
+    "max_cavity_triangles": 32,
+    "max_neighbors": 32,
+    "mesh_query_chunk": 4096,
+    "mesh_max_cavity_triangles": 32,
+    "mesh_max_neighbors": 32
+  },
+  "regularization": {
+    "scheme": "constant_split",
+    "coefficient": 1.0
+  },
+  "steps": {
+    "Ray-trace data grid": 0.0001565270824357867,
+    "Ray-trace mesh grid": 0.00016295909881591797,
+    "Lens light images (pre-PSF)": 0.00013823620975017548,
+    "Blurred image (PSF convolution)": 0.0008487703045830131,
+    "Profile-subtracted image": 0.00014115821104496718,
+    "Inversion setup (steps 5-8 combined)": 0.0273892231984064,
+    "Data vector (D)": 0.00031771629583090546,
+    "Curvature matrix (F)": 0.004847314488142729,
+    "Regularization matrix (H)": 0.0007674218853935596,
+    "Regularized reconstruction": 0.030882706004194915,
+    "Mapped recon + log evidence": 0.0022791150957345964
+  },
+  "total_step_by_step": 0.06793114787433296,
+  "regularization_matrix_prefix_s": 0.015288548404350876,
+  "interpolator_prefix_s": 0.014521126518957317,
+  "split_sibson_prefix_s": 0.014372898591682315,
+  "regularization_split": {
+    "Split-point Sibson": -0.00014822792727500235,
+    "Regularization matrix (H, ConstantSplit assembly)": 0.0009156498126685619
+  },
+  "setup_split": {
+    "Border relocation": 0.001035875198431313,
+    "Triangulation + interpolation": 0.013485251320526003,
+    "Mapping matrix": -0.0001766029279679053,
+    "Blurred mapping matrix (PSF)": 0.008493771008215845
+  },
+  "vmap_batch": 16,
+  "steps_vmap_per_call": {
+    "Inversion setup (steps 5-8 combined)": 0.015196861825825182,
+    "Regularization matrix (H)": -0.0016081892012152817
+  },
+  "setup_split_vmap": {
+    "Border relocation": 6.562100606970489e-05,
+    "Triangulation + interpolation": 0.008792069807532242,
+    "Mapping matrix": -0.002326186945720109,
+    "Blurred mapping matrix (PSF)": 0.008351730987487826
+  },
+  "regularization_matrix_prefix_vmap_per_call_s": 0.007249501612386666,
+  "interpolator_prefix_vmap_per_call_s": 0.008857690813601948,
+  "split_sibson_prefix_vmap_per_call_s": 0.008908680581953377,
+  "regularization_split_vmap": {
+    "Split-point Sibson": 5.0989768351428905e-05,
+    "Regularization matrix (H, ConstantSplit assembly)": -0.0016591789695667106
+  }
+}

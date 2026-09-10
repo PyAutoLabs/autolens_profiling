@@ -1,0 +1,30 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 8
+  },
+  "instrument": "hst",
+  "configuration": {
+    "pixel_scale_arcsec": 0.05,
+    "mask_radius_arcsec": 3.5,
+    "image_pixels_masked": 15361,
+    "over_sampled_pixels": 62752,
+    "linear_gaussians": 0,
+    "inversion_path": "dense"
+  },
+  "steps": {
+    "Ray-trace grids": 0.001367469999968307,
+    "Mapping matrix": 0.01297446000007767,
+    "Blurred mapping matrix": 0.02304483000007167,
+    "Data vector (D)": 0.00043889999997190896,
+    "Curvature matrix (F)": 0.001382009999906586,
+    "Reconstruction (NNLS)": 0.0005667700001140474,
+    "Mapped reconstructed image": 0.00030317999990074894,
+    "Chi-squared & log likelihood": 0.00021653999992850005
+  },
+  "total_step_by_step": 0.04029415999993944
+}

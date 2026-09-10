@@ -79,7 +79,7 @@ def _dataset(noise_scale: float = 1.0):
         data=data,
         psf=aa.Convolver(kernel=kernel),
         noise_map=noise_map,
-        over_sample_size_lp=1,
+        over_sample_size_lp=2,
     ).apply_mask(mask=mask)
 
 

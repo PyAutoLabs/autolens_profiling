@@ -4,8 +4,8 @@ Measurement leg of [PyAutoArray#498](https://github.com/PyAutoLabs/PyAutoArray/i
 phase 3a — the default for `aa.Settings(nnls_warm_start_memo=...)`, which seeds the numba-CPU
 fnnls active-set loop from the **previous evaluation's** final passive set instead of the sign
 of the unconstrained dense solve. Script:
-`scripts/imaging/likelihood_breakdown/delaunay_numba_nnls_iterations.py`; results:
-`results/breakdown/imaging/delaunay_numba_nnls_iterations_{euclid,hst}_v2026.8.17.1.{json,png}`.
+`scripts/misc/nnls_warm_start/delaunay_numba_nnls_iterations.py`; results:
+`results/nnls_warm_start/delaunay_numba_nnls_iterations_{euclid,hst}_v2026.8.17.1.{json,png}`.
 Laptop CPU fp64, `OMP_NUM_THREADS=1`, `AUTOARRAY_NUMBA_OPERATED_MEMO=0`, v2026.8.17.1, Delaunay
 Hilbert-1250 + MGE-60 linear lens light, sparse-operator numba path, n = 1310.
 
@@ -83,7 +83,7 @@ sequence — which is also exactly the regime the memo does not help. That, not 
 
 ## Relation to the JAX solver ledger
 
-[`nnls_solver_ledger.md`](./nnls_solver_ledger.md) closed the *JAX PDIP* solver, where warm
+[`nnls_solver_ledger.md`](../notes/nnls_solver_ledger.md) closed the *JAX PDIP* solver, where warm
 starting from the unconstrained solve **hurt** (17 → 38 iterations) by un-centering the interior
 point. That does not transfer: this is the numpy/numba Bro & De Jong active-set solver, where a
 warm start is a discrete guess at the passive set and a wrong guess costs iterations rather than

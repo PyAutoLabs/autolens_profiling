@@ -17,17 +17,18 @@ a. ``profile.deflections_yx_2d_from(grid=dataset.grids.pixelization)``
    This is the ray-trace grid the mapper consumes.
 b. ``profile.deflections_yx_2d_from(grid=dataset.grids.lp.over_sampled)``
    — the ``Grid2DIrregular`` companion of the light-profile grid, carrying the
-   radial-bin over-sampling ([4, 2, 1] inside 0.3" / 0.6"). Slightly larger than
+   radial-bin over-sampling ([4, 2, 2] inside 0.3" / 0.6"). Slightly larger than
    (a); the ratio between the two is the over-sampling tax.
 c. ``al.Tracer([Galaxy(z=0.5, mass=profile), Galaxy(z=1.0)]).traced_grid_2d_list_from(...)``
    — the same deflection through the two-plane tracer, so the wrapper cost
    (grid bookkeeping, plane assembly, the subtraction) is visible next to the
    raw call rather than assumed.
 
-The grid construction mirrors ``scripts/imaging/likelihood_breakdown/
-pixelization_numba.py`` exactly (circular 3.5" mask, radial-bin over-sampling,
-``over_sample_size_pixelization=1``), so a deflection number here is directly
-comparable to the ray-trace row of that cell's breakdown.
+The grid construction mirrors the ``--variant legacy`` configuration of
+``scripts/imaging/likelihood_breakdown/pixelization_numba.py`` exactly (circular
+3.5" mask, radial-bin over-sampling, ``over_sample_size_pixelization=1``), so a
+deflection number here is directly comparable to the ray-trace row of that
+cell's legacy breakdown.
 
 cProfile
 --------
@@ -101,7 +102,8 @@ DEFAULT_INSTRUMENT = "hst"
 INSTRUMENT_CHOICES = ("hst", "euclid")
 
 MASK_RADIUS = 3.5
-SUB_SIZE_LIST = [4, 2, 1]
+# sub-size 1 retired 2026-09-08 (#235): it causes gradient issues
+SUB_SIZE_LIST = [4, 2, 2]
 RADIAL_LIST = [0.3, 0.6]
 
 PIN_RTOL = 1e-6

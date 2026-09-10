@@ -57,6 +57,26 @@ return garbage — see the runtime sibling's hazard note).
 Output
 ------
 ``results/breakdown/imaging/pixelization_numba_breakdown_<instrument>_v<version>.{json,png}``
+
+Since 2026-09-08 (autolens_profiling#235) the cell defaults to the **production
+configuration** rather than a fiducial of its own. ``--variant production``
+resolves the rectangular production stage from ``_production_config``:
+``subhalo_validation``'s ``rect_adapt`` (32x32, free ``Adapt`` regularization,
+adapt image capped at S/N 3, MGE 30 x 2) for ``--instrument hst``, the same
+stage on the Euclid dataset plus the Euclid positions penalty and MGE 20 x 2 for
+``--instrument euclid``, both with pixelization over-sampling 4 where the source
+S/N exceeds 3 and 2 elsewhere. ``--variant legacy`` rebuilds the pre-2026-09-08
+cell (28x28, ``Constant(1.0)``, flat ``over_sample_size_pixelization=1``, MGE
+60 x 1) so the historic rows stay reproducible.
+
+Threads are pinned to 1 before numpy imports (as both production submit scripts
+do), the instances are a seeded iid stream rather than one prior-median draw
+repeated, and the NNLS cross-evaluation warm-start memo is off by default and
+recorded (``--memo on`` measures it). Alongside the decomposition the cell times
+the undecomposed ``log_likelihood_function`` over the sequence: instance 0 is a
+discarded warm-up, the next ``--cold-evals`` are cold evaluations (comparable to
+PyAutoFit's logged "Log Likelihood Function Evaluation Time"), the rest warm iid
+evaluations reported as median and mean.
 """
 
 import sys as _sys
@@ -75,6 +95,22 @@ if _misc_dir not in _sys.path:
     _sys.path.insert(0, _misc_dir)
 
 _sys.path.insert(0, str(_profiling_root()))
+
+# The CLI is parsed and the thread environment pinned BEFORE numpy is imported:
+# OpenBLAS / MKL read their thread-count variables once, when the shared library
+# loads, so pinning after `import numpy` has no effect on the pools the timings
+# actually run through. Both modules are stdlib-only at import time.
+from _production_config import (  # noqa: E402
+    observe_thread_env as _observe_thread_env,
+)
+from _production_config import (
+    pin_thread_env as _pin_thread_env,
+)
+from _profile_cli import parse_profile_cli as _parse_profile_cli  # noqa: E402
+
+_cli = _parse_profile_cli()
+
+thread_env = _pin_thread_env(1) if _cli.variant == "production" else _observe_thread_env()
 
 import json
 import os
@@ -95,19 +131,37 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 
 from simulators.imaging import INSTRUMENTS  # noqa: E402
 
+from _adapt_image_util import adapt_image_for_dataset  # noqa: E402
+from _production_config import (  # noqa: E402
+    adapt_image_capped,
+    adapt_images_for,
+    analysis_settings,
+    apply_production_over_sampling,
+    iid_instances,
+    mge_lens_bulge,
+    positions_likelihood,
+    preset_for,
+    regularization_model,
+    timing_summary,
+    witness_verdict,
+)
 from _profile_cli import (  # noqa: E402
     auto_simulate_if_missing,
     check_pinned,
     device_info_dict,
-    parse_profile_cli,
     record_pinned_check,
     rect_mesh_classes,
     resolve_output_paths,
 )
 
-_cli = parse_profile_cli()
-
 instrument = _cli.instrument or "euclid"  # default; override via --instrument
+
+preset = preset_for("pixelization_numba", instrument=instrument, variant=_cli.variant)
+
+print(f"\n--- Preset [{preset.name} / {preset.variant}] ---")
+print(f"  {preset.provenance}")
+if thread_env["overridden"]:
+    print(f"  WARNING: thread env overridden from {thread_env['overridden']} to 1.")
 
 # ===================================================================
 # Setup — identical fiducial to the runtime sibling
@@ -143,30 +197,28 @@ mask = al.Mask2D.circular(
 
 dataset = dataset.apply_mask(mask=mask)
 
-over_sample_size = al.util.over_sample.over_sample_size_via_radial_bins_from(
-    grid=dataset.grid,
-    sub_size_list=[4, 2, 1],
-    radial_list=[0.3, 0.6],
-    centre_list=[(0.0, 0.0)],
+# The source adapt image, capped at the preset's S/N if it has one — the same
+# map that drives the adaptive mesh, the adaptive regularization AND the
+# pixelization over-sampling rule, exactly as production.
+adapt_image = adapt_image_capped(
+    adapt_image_for_dataset(dataset_path=dataset_path, dataset=dataset),
+    preset,
 )
 
-dataset = dataset.apply_over_sampling(
-    over_sample_size_lp=over_sample_size,
-    over_sample_size_pixelization=1,
-)
-
-dataset = dataset.apply_sparse_operator_cpu()
+# Light-profile radial bins, then the S/N-driven pixelization map, then the
+# sparse CPU operator — production's order. `apply_over_sampling` returns a
+# fresh `Imaging` that drops the precomputed operator, so it is re-applied last
+# or the fit silently falls back to the dense inversion.
+dataset = apply_production_over_sampling(dataset, adapt_image, preset)
 
 print("\n--- Model construction ---")
 
-mesh_pixels_yx = 28
+mesh_pixels_yx = preset.rect_pixels_yx
 mesh_shape = (mesh_pixels_yx, mesh_pixels_yx)
 
-lens_bulge = al.model_util.mge_model_from(
-    mask_radius=mask_radius,
-    total_gaussians=60,
-    centre_prior_is_uniform=True,
-)
+# Linear MGE lens light. Basis structure matters, not just the Gaussian count:
+# production is 20x2 (Euclid) / 30x2 (subhalo), the pre-2026-09-08 cell 60x1.
+lens_bulge = mge_lens_bulge(preset, mask_radius=mask_radius)
 
 mass = af.Model(al.mp.Isothermal)
 mass.centre.centre_0 = af.GaussianPrior(mean=0.0, sigma=0.005)
@@ -182,22 +234,86 @@ shear.gamma_2 = af.GaussianPrior(mean=0.05, sigma=0.005)
 
 lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
 
-pixelization = al.Pixelization(
-    mesh=rect_mesh_classes(_cli)[0](shape=mesh_shape),
-    regularization=al.reg.Constant(coefficient=1.0),
-)
+# Production samples the regularization coefficients, so `regularization` is a
+# free `af.Model` under `--variant production` and the historic fixed instance
+# under `--variant legacy`. A free regularization has to ride inside an
+# `af.Model(al.Pixelization)` for its priors to reach the model.
+regularization = regularization_model(preset)
+mesh = rect_mesh_classes(_cli)[0](shape=mesh_shape)
+
+if isinstance(regularization, af.Model):
+    pixelization = af.Model(al.Pixelization, mesh=mesh, regularization=regularization)
+else:
+    pixelization = al.Pixelization(mesh=mesh, regularization=regularization)
 
 source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
 
 model = af.Collection(galaxies=af.Collection(lens=lens, source=source))
 
-instance = model.instance_from_vector(vector=model.physical_values_from_prior_medians)
+# The instance sequence. Production's Nautilus pool hands each worker draws
+# that are, from that worker's point of view, unrelated — so the profiled stream
+# is `--n-instances` iid draws from the central 20 % of every prior. Repeating
+# one instance instead lets the NNLS cross-evaluation warm-start memo seed
+# itself from a 100 %-correct previous solve, which production never gets. The
+# legacy variant keeps the single prior-median instance the historic rows used.
+n_instances = max(int(_cli.n_instances), 2 + int(_cli.cold_evals))
+n_cold = int(_cli.cold_evals)
 
-analysis = al.AnalysisImaging(
-    dataset=dataset,
-    settings=al.Settings(use_border_relocator=True),
-    use_jax=False,
+if preset.sequence == "iid":
+    instances = iid_instances(model, n_instances, preset)
+else:
+    _median = model.instance_from_vector(vector=model.physical_values_from_prior_medians)
+    instances = [_median] * n_instances
+
+instance = instances[0]
+
+# `--memo` only applies to the production variant: the legacy variant must
+# leave both memo gates untouched (`library_default`), because the historic rows
+# it exists to reproduce were measured with the library default (`true`).
+memo = _cli.memo if preset.variant == "production" else preset.memo
+
+settings, memo_provenance = analysis_settings(preset, memo)
+print(
+    f"  memo: requested {memo_provenance['requested']}, "
+    f"Settings.nnls_warm_start_memo={memo_provenance['settings_nnls_warm_start_memo']}, "
+    f"AUTOARRAY_NNLS_WARM_START={memo_provenance['env_AUTOARRAY_NNLS_WARM_START']}"
 )
+
+# The Euclid stage carries a positions penalty; the subhalo `source_pix[2]`
+# stage does not. It is an analysis-level term, so it enters the directly-timed
+# `log_likelihood_function` but NOT the per-step `FitImaging` decomposition
+# below — which the JSON records.
+positions_lh = positions_likelihood(
+    preset,
+    dataset_path=dataset_path,
+    tracer=al.Tracer(galaxies=list(instance.galaxies)),
+)
+positions_likelihood_list = [positions_lh] if positions_lh is not None else None
+if positions_lh is not None:
+    print(
+        f"  positions penalty: {len(positions_lh.positions)} images, "
+        f"threshold {positions_lh.threshold:.4f}"
+    )
+
+
+def adapt_images_of(one_instance):
+    """`AdaptImages` for one instance — the dicts are keyed on its own galaxy."""
+    return adapt_images_for(one_instance, adapt_image=adapt_image)
+
+
+def analysis_for(one_instance):
+    """A fresh `AnalysisImaging` for one instance of the sequence."""
+    return al.AnalysisImaging(
+        dataset=dataset,
+        adapt_images=adapt_images_of(one_instance),
+        positions_likelihood_list=positions_likelihood_list,
+        settings=settings,
+        use_jax=False,
+    )
+
+
+adapt_images = adapt_images_of(instance)
+analysis = analysis_for(instance)
 
 from autoarray.inversion.inversion.imaging_numba.sparse import (  # noqa: E402
     InversionImagingSparseNumba,
@@ -522,15 +638,22 @@ STEP_ACCESSORS = [
 ]
 
 
-def one_decomposed_evaluation() -> tuple[dict[str, float], float]:
-    """Run one likelihood evaluation, timing each step's incremental cost."""
+def one_decomposed_evaluation(one_instance=None) -> tuple[dict[str, float], float]:
+    """Run one likelihood evaluation, timing each step's incremental cost.
+
+    Takes the instance so the decomposition averages over the iid sequence
+    rather than over repeats of one draw: the step costs (active-set size, mesh
+    geometry) genuinely vary with the model, and a single draw hides that.
+    """
+    one_instance = instance if one_instance is None else one_instance
     step_times: dict[str, float] = {}
 
     start = time.perf_counter()
     fit = al.FitImaging(
         dataset=dataset,
-        tracer=al.Tracer(galaxies=list(instance.galaxies)),
-        settings=al.Settings(use_border_relocator=True),
+        tracer=al.Tracer(galaxies=list(one_instance.galaxies)),
+        adapt_images=adapt_images_of(one_instance),
+        settings=settings,
         xp=np,
     )
     step_times["FitImaging construct"] = time.perf_counter() - start
@@ -567,13 +690,16 @@ print(f"  MGE blurring stack path: {_mge_scratch.get('blurring_stack_path')}")
 
 del fit_check
 
-n_repeats = 10
+# The warm instances the decomposition averages over: everything after the
+# warm-up and the cold evals.
+warm_instances = instances[1 + n_cold :]
+n_repeats = len(warm_instances)
 
-print(f"\n--- Timed decomposition (x{n_repeats}) ---")
+print(f"\n--- Timed decomposition (x{n_repeats} iid instances) ---")
 
 accumulated: dict[str, float] = {label: 0.0 for label, _ in STEP_ACCESSORS}
-for _ in range(n_repeats):
-    step_times, figure_of_merit = one_decomposed_evaluation()
+for _warm_instance in warm_instances:
+    step_times, figure_of_merit = one_decomposed_evaluation(_warm_instance)
     for label, elapsed in step_times.items():
         accumulated[label] += elapsed
 
@@ -611,10 +737,39 @@ likelihood_steps = [
 
 # Cross-check: a directly timed, undecomposed evaluation via the production
 # entry point. The step total should account for (nearly) all of it.
-start = time.perf_counter()
-for _ in range(n_repeats):
-    log_likelihood_direct = analysis.log_likelihood_function(instance=instance)
-direct_per_call = (time.perf_counter() - start) / n_repeats
+# Cold / warm evaluation timing on the UNDECOMPOSED production entry point —
+# the quantity comparable to PyAutoFit's logged "Log Likelihood Function
+# Evaluation Time" (autofit/non_linear/search/updater.py:311-317). Instance 0 is
+# the discarded warm-up, instances 1..n_cold the cold evals, the rest warm.
+print(f"\n--- Direct log_likelihood_function over the sequence (x{n_instances}) ---")
+
+per_eval_s: list[float] = []
+log_likelihoods: list[float] = []
+
+for _index, _one_instance in enumerate(instances):
+    _analysis = analysis if _index == 0 else analysis_for(_one_instance)
+    _start = time.perf_counter()
+    _ll = _analysis.log_likelihood_function(instance=_one_instance)
+    per_eval_s.append(time.perf_counter() - _start)
+    log_likelihoods.append(float(_ll))
+
+log_likelihood_direct = log_likelihoods[-1]
+
+timing = timing_summary(per_eval_s, n_cold=n_cold)
+# The step total is compared against the WARM iid median, the same population
+# the decomposition averaged over.
+direct_per_call = timing["warm_iid_median_s"]
+
+witness = witness_verdict(timing["cold_eval_median_s"], instrument)
+
+print(f"  cold eval median:   {timing['cold_eval_median_s']:.6f} s (n = {timing['n_cold']})")
+print(f"  warm iid median:    {timing['warm_iid_median_s']:.6f} s (n = {timing['n_warm']})")
+print(f"  warm iid mean:      {timing['warm_iid_mean_s']:.6f} s")
+if witness.get("verdict") in ("PASS", "FAIL"):
+    print(
+        f"  witness vs production job {witness['job']} "
+        f"({witness['reference_cold_eval_s']} s, x{witness['factor']}): {witness['verdict']}"
+    )
 
 # ===================================================================
 # Per-step breakdown summary + JSON + PNG
@@ -648,6 +803,7 @@ breakdown_summary = {
     "device": device_info_dict(),
     "instrument": instrument,
     "configuration": {
+        **preset.as_json(),
         "pixel_scale_arcsec": pixel_scale,
         "mask_radius_arcsec": mask_radius,
         "image_pixels_masked": int(n_image_pixels),
@@ -657,7 +813,9 @@ breakdown_summary = {
         "source_pixels": int(n_source_pixels),
         "inversion_path": "sparse_numba",
         "use_jax": False,
-        "lens_light": "mge_60_linear",
+        "n_instances": n_instances,
+        "thread_env": thread_env,
+        "memo_provenance": memo_provenance,
         "omp_num_threads": os.environ.get("OMP_NUM_THREADS", None),
     },
     "steps": {label: per_call for label, per_call in likelihood_steps},
@@ -688,15 +846,35 @@ breakdown_summary = {
         "no-regularization diagonal add and assembly overhead, and it carries "
         "the combined noise of the four timings. PyAutoArray#505 step 0."
     ),
+    # The warm iid MEDIAN of the undecomposed entry point. Pre-2026-09-08 rows
+    # carry the arithmetic mean of ten repeats of ONE prior-median instance,
+    # which is a different quantity and is not comparable.
     "direct_log_likelihood_function_per_call": direct_per_call,
+    **timing,
+    "witness": witness,
+    "positions_penalty_in_steps": False,
+    "positions_penalty_note": (
+        "The positions penalty (Euclid preset only) is an analysis-level term: "
+        "it is inside direct_log_likelihood_function_per_call and the cold/warm "
+        "numbers, but NOT inside the per-step decomposition, which times "
+        "FitImaging properties."
+    ),
+    "decomposition_warmup_incl_numba_compile_s": warmup_s,
     "warmup_incl_numba_compile_s": warmup_s,
     "log_likelihood": float(log_likelihood_direct),
+    "log_likelihood_sequence": log_likelihoods,
 }
 
 dict_path, chart_path = resolve_output_paths(
     _cli,
     default_dir=_workspace_root / "results" / "breakdown" / "imaging",
-    default_basename=f"pixelization_numba_breakdown_{instrument}_v{al_version}",
+    # `--variant legacy` writes its own basename so a legacy row can never
+    # overwrite (or be mistaken for) the production row of the same instrument.
+    default_basename=(
+        f"pixelization_numba_breakdown_{instrument}"
+        f"{'' if preset.variant == 'production' else '_' + preset.variant}"
+        f"_v{al_version}"
+    ),
 )
 dict_path.write_text(json.dumps(breakdown_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")
@@ -773,12 +951,47 @@ _pinned_drift: list = []
 # run now prints its value and skips the check — paste it back in under the mesh
 # it was run with. Values vary at the ~1e-9 relative level across numba compile
 # sessions (fp reassociation) — rtol=1e-6 accommodates.
-EXPECTED_LOG_LIKELIHOOD: dict[str, dict[str, float]] = {
-    "bilinear": {"hst": 27661.910133665442},
-    "rtu": {"hst": 27180.704715698186},
+# Keyed by variant, then --rect-mesh, then instrument.
+#
+# Every pre-2026-09-08 pin is GONE, not moved: autolens_profiling#235 replaced
+# this cell's fiducial with the production configuration (mesh 28x28 -> 32x32,
+# flat over-sampling -> the S/N>3 4/2 map, Constant(1.0) -> free Adapt, MGE 60x1
+# -> 30x2, one repeated instance -> an iid stream), so the old values describe a
+# model that no longer exists here. They are recorded in
+# `results/notes/production_representative_cells.md`.
+#
+# Values vary at the ~1e-9 relative level across numba compile sessions (fp
+# reassociation) — rtol=1e-6 accommodates. A missing entry resolves to None and
+# skips the check, printing the measured value to paste back in.
+# Pinned 2026-09-08 from this cell's first production run per instrument on the
+# local WSL host (fp64 numba sparse path, threads pinned to 1, memo off,
+# --n-instances 20 --cold-evals 3, seed 235): the value is the LAST instance of
+# the seeded iid sequence, so it is a deterministic function of
+# (model, seed, n_instances). Libraries: PyAutoArray 47a00e8c, PyAutoFit
+# 08207bad0, PyAutoGalaxy ec5ce75d, PyAutoLens 08a05858a, PyAutoNerves 0e7163b,
+# autolens 2026.8.17.1.
+#
+# Euclid RE-PINNED 2026-09-08 (autolens_profiling#237): the Euclid presets'
+# light-profile radial bins moved from `[4, 2, 2]` to `[4, 4, 2]`, following
+# euclid_strong_lens_modeling_pipeline#56 (`util.py:931-937`) — sub-size 2 in
+# the 0.1-0.3" annulus under-integrates a compact source. Over-sampled pixels
+# 15424 -> 15664. A control run of `likelihood_runtime/delaunay_numba.py` with
+# the Euclid presets put back to `[4, 2, 2]`, on the same libraries, re-PASSED
+# its old pin unchanged, so the whole move is the bin change, none of it drift. HST is
+# untouched (subhalo_validation still runs `[4, 2, 2]`).
+EXPECTED_LOG_LIKELIHOOD: dict[str, dict[str, dict[str, float]]] = {
+    "production": {
+        "bilinear": {
+            "euclid": 4243.160082020453,
+            "hst": 22677.756578185603,
+        },
+    },
+    "legacy": {},
 }
 
-_pinned_expected = EXPECTED_LOG_LIKELIHOOD.get(_cli.rect_mesh, {}).get(instrument)
+_pinned_expected = (
+    EXPECTED_LOG_LIKELIHOOD.get(preset.variant, {}).get(_cli.rect_mesh, {}).get(instrument)
+)
 
 if _pinned_expected is None:
     print(

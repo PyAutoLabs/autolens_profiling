@@ -3,32 +3,158 @@
   "device": {
     "backend": "cpu",
     "device": "cpu:0",
-    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
     "omp_num_threads": "1",
     "cpu_count": 8
   },
   "instrument": "hst",
   "configuration": {
+    "preset": "hst_rect_adapt",
+    "variant": "production",
+    "provenance": "subhalo_validation/scripts/pipelines/rectangular_adapt.py (rect_adapt source_pix[2], job 342311): RectangularBilinearAdaptImage shape (32, 32) (MESH_PIXELS_YX :38), regularization Adapt; the rest of the stage (adapt S/N cap, over-sampling, MGE, threads) as hst_source_pix_2",
+    "mesh_kind": "rectangular",
+    "adapt_snr_cap": 3.0,
+    "over_sample_size_lp_rule": {
+      "sub_size_list": [
+        4,
+        2,
+        2
+      ],
+      "radial_list": [
+        0.1,
+        0.3
+      ],
+      "centre": [
+        0.0,
+        0.0
+      ]
+    },
+    "over_sample_size_pixelization_rule": {
+      "source_snr_cut": 3.0,
+      "sub_size_above": 4,
+      "sub_size_below": 2
+    },
+    "regularization": {
+      "scheme": "adapt",
+      "free": false,
+      "coefficient": 1.0
+    },
+    "positions_penalty": null,
+    "lens_light": "mge_60_linear_2_basis",
+    "mge_total_gaussians": 30,
+    "mge_gaussian_per_basis": 2,
+    "sequence": {
+      "kind": "iid",
+      "unit_low": 0.4,
+      "unit_high": 0.6,
+      "seed": 235
+    },
+    "memo": "off",
+    "mesh": {
+      "kind": "rectangular",
+      "shape": [
+        32,
+        32
+      ],
+      "source_pixels": 1024
+    },
     "pixel_scale_arcsec": 0.05,
     "mask_radius_arcsec": 3.5,
     "image_pixels_masked": 15361,
-    "over_sampled_pixels": 17980,
+    "over_sampled_pixels": 61600,
     "mesh_shape": [
-      28,
-      28
+      32,
+      32
     ],
-    "source_pixels": 784,
+    "rect_mesh": "bilinear",
+    "source_pixels": 1024,
     "inversion_path": "sparse_numba",
     "use_jax": false,
-    "lens_light": "mge_60_linear",
+    "n_instances": 20,
+    "thread_env": {
+      "n_threads": 1,
+      "vars": [
+        "OPENBLAS_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OMP_NUM_THREADS",
+        "VECLIB_MAXIMUM_THREADS",
+        "NUMEXPR_NUM_THREADS"
+      ],
+      "set_to": "1",
+      "preexisting": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "VECLIB_MAXIMUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1"
+      },
+      "overridden": {},
+      "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+    },
+    "memo_provenance": {
+      "requested": "off",
+      "settings_nnls_warm_start_memo": false,
+      "env_AUTOARRAY_NNLS_WARM_START": "0",
+      "env_before": null,
+      "note": "Both gates are set for memo=off: the Settings flag and the AUTOARRAY_NNLS_WARM_START env kill-switch (autoarray/inversion/inversion/nnls_memo.py:63). settings_nnls_warm_start_memo is read back off the constructed Settings, so it records what took effect. The library default is true and both production projects leave it unset."
+    },
     "omp_num_threads": "1"
   },
-  "full_pipeline_single_jit": 21.587133480000013,
-  "first_call_incl_numba_compile_s": 24.399476500000674,
+  "full_pipeline_single_jit": 1.4185542499999428,
+  "protocol": "instance 0 discarded (numba compile / cold-cache hazard); the next n_cold evaluations are cold evals comparable to PyAutoFit's logged 'Log Likelihood Function Evaluation Time'; the rest are warm iid evaluations.",
+  "warmup_incl_numba_compile_s": 1.8716077999997651,
+  "cold_eval_s": [
+    1.3282362000027206,
+    0.9152584000003117,
+    1.0435688999968988
+  ],
+  "cold_eval_median_s": 1.0435688999968988,
+  "warm_iid_median_s": 1.4185542499999428,
+  "warm_iid_mean_s": 1.4160926875006226,
+  "n_warm": 16,
+  "n_cold": 3,
+  "witness": {
+    "instrument": "hst",
+    "job": "342311",
+    "reference_cold_eval_s": [
+      0.52,
+      0.81
+    ],
+    "factor": 1.5,
+    "allowed_s": [
+      0.3466666666666667,
+      1.215
+    ],
+    "measured_cold_eval_median_s": 1.0435688999968988,
+    "verdict": "PASS"
+  },
+  "first_call_incl_numba_compile_s": 1.8716077999997651,
   "first_call_finite": true,
-  "sparse_operator_setup_s": 5.9513955999991595,
+  "sparse_operator_setup_s": 7.626057199999195,
   "sparse_operator_nbytes": 177412056,
-  "log_likelihood": 22803.472837136276,
+  "log_likelihood": 22677.756578185603,
+  "log_likelihood_sequence": [
+    28561.324868578205,
+    24526.12055427338,
+    9169.653247744634,
+    22292.75260884229,
+    22921.37449633011,
+    -80043.15674307146,
+    26302.19520498994,
+    22489.284708371037,
+    -14115.528981010277,
+    -111618.42757993653,
+    23254.41179471886,
+    -56430.66431985251,
+    20961.248675477185,
+    27619.96485970443,
+    26441.29197290464,
+    29342.697882886037,
+    9687.232069434864,
+    24245.43608107478,
+    71.58253489452181,
+    22677.756578185603
+  ],
   "pinned_expected": null,
   "pinned_drift": []
 }

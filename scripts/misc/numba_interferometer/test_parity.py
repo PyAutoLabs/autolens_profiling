@@ -1,0 +1,767 @@
+"""Parity pins for the recovered numba w-tilde interferometer likelihood.
+
+Run from the repository root::
+
+    python -m pytest scripts/misc/numba_interferometer/test_parity.py -q
+
+What is pinned
+--------------
+1. The preload. Both ``NumbaPreload`` routes must reproduce
+   ``nufft_precision_operator_via_np_from`` — the array today's
+   ``apply_sparse_operator`` builds — elementwise at ``rtol=1e-10``. The phase-3
+   type-1 NUFFT builder ``nufft_preload_from`` must reproduce it too, under the
+   mixed rule ``rtol=1e-10`` / ``atol=1e-10·P[0,0]`` (a NUFFT's error is bounded
+   against ``Σ|c_k|``, so its near-zero entries have no relative guarantee), and
+   its two structural invariants — zero padding row/column, ``P[i,j] == P[-i,-j]``
+   — are pinned separately. A wrong index permutation must fail that rule.
+2. The dense oracle. On a small mask, the scatter kernel's ``F`` must equal
+   ``Mᵀ W~ M`` formed explicitly from ``w_tilde_via_preload_from``. This is the
+   pin that has no shared code with the thing it checks.
+3. The modern path. ``D``, ``F``, the reconstruction and the log evidence must
+   match ``InversionInterferometerSparse`` (the JAX/FFT successor) at
+   ``rtol=1e-6``.
+4. The preconditions. Multiple mappers and ``over_sample_size != 1`` must raise,
+   not silently produce a different ``F``.
+5. Every phase-2 kernel variant. Each member of ``KERNELS`` — and the NumPy
+   ``rfft2``/``fft2`` convolution routes the bake-off times — must reproduce the
+   reference kernel's ``F`` at ``rtol=1e-10`` with ``atol`` scaled by ``max|F|``,
+   and the whole log evidence at ``rtol=1e-6``. A number from an unpinned kernel
+   is not a result.
+6. The control. Scaling the kernel's ``preload * w0 * w1`` product by 1.01 must
+   make pins 2, 3 and 5 fail — a pin that cannot fail is not a pin.
+
+The comparator ``InversionInterferometerSparse`` runs its curvature assembly
+through ``jax.numpy`` (imported inside ``InterferometerSparseOperator``), so JAX
+is exercised on CPU here. The numba pack itself never touches JAX.
+"""
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+from types import SimpleNamespace
+
+
+def _profiling_root() -> Path:
+    for _p in Path(__file__).resolve().parents:
+        if (_p / "ruff.toml").exists():
+            return _p
+    raise RuntimeError("autolens_profiling root (ruff.toml) not found")
+
+
+_ROOT = _profiling_root()
+
+for _path in (str(_ROOT), str(_ROOT / "scripts" / "misc")):
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
+
+import autofit as af  # noqa: E402
+import autolens as al  # noqa: E402
+import numpy as np  # noqa: E402
+import pytest  # noqa: E402
+from autoarray import exc  # noqa: E402
+from autoarray.inversion.inversion.interferometer import (  # noqa: E402
+    inversion_interferometer_util,
+)
+from autoarray.inversion.inversion.interferometer.sparse import (  # noqa: E402
+    InversionInterferometerSparse,
+)
+from autoarray.inversion.mappers.abstract import Mapper  # noqa: E402
+
+from _adapt_image_util import adapt_image_for_dataset  # noqa: E402
+from _profile_cli import auto_simulate_if_missing  # noqa: E402
+from instruments.interferometer import INSTRUMENTS  # noqa: E402
+from numba_interferometer import (  # noqa: E402
+    inversion_interferometer_numba_util as numba_util_pack,
+)
+from numba_interferometer import kernels as kernels_pack  # noqa: E402
+from numba_interferometer.fit import numba_log_evidence_from  # noqa: E402
+from numba_interferometer.inversion import (  # noqa: E402
+    KERNELS,
+    InversionInterferometerNumba,
+)
+from numba_interferometer.preload import (  # noqa: E402
+    NumbaPreload,
+    nufft_preload_from,
+    preload_inputs_from,
+)
+
+INSTRUMENT = "sma"
+
+# Kept small so the O(N^2 P^2) reference scatter and the dense O(N^2) oracle both
+# run in seconds: the pins are algebraic, not statistical, so a production-sized
+# mesh would buy nothing but run time.
+MESH_PIXELS = 60
+ORACLE_MASK_RADIUS = 1.0
+ORACLE_MESH_PIXELS = 25
+
+RTOL_PRELOAD = 1.0e-10
+RTOL_PARITY = 1.0e-6
+
+# The NUFFT builder's requested precision. 1e-12 saturates fp64 at sma: eps=1e-14
+# only moves max|Δ| from 1.7e-17 to 1.4e-17, so the residual below is round-off,
+# not the transform's approximation.
+NUFFT_EPS = 1.0e-12
+
+# The kernel variants are algebraically identical to the reference, so they may only
+# differ by summation order: a far tighter pin than the cross-formalism one above.
+RTOL_KERNEL = 1.0e-10
+
+
+def _dataset_path() -> Path:
+    dataset_path = Path("dataset") / "interferometer" / INSTRUMENT
+
+    auto_simulate_if_missing(
+        dataset_path,
+        dataset_type="interferometer",
+        instrument=INSTRUMENT,
+        workspace_root=_ROOT,
+    )
+
+    return dataset_path
+
+
+def _dataset(mask_radius: float):
+    """The SMA dataset with its sparse operator applied, on a mask of ``mask_radius``."""
+    cfg = INSTRUMENTS[INSTRUMENT]
+
+    real_space_mask = al.Mask2D.circular(
+        shape_native=cfg["real_space_shape"],
+        pixel_scales=cfg["pixel_scale"],
+        radius=mask_radius,
+    )
+
+    dataset_path = _dataset_path()
+
+    dataset = al.Interferometer.from_fits(
+        data_path=dataset_path / "data.fits",
+        noise_map_path=dataset_path / "noise_map.fits",
+        uv_wavelengths_path=dataset_path / "uv_wavelengths.fits",
+        real_space_mask=real_space_mask,
+        transformer_class=lambda uv_wavelengths, real_space_mask: al.TransformerNUFFT(
+            uv_wavelengths=uv_wavelengths,
+            real_space_mask=real_space_mask,
+            chunk_size=cfg.get("transformer_chunk_size"),
+        ),
+    )
+
+    return dataset.apply_sparse_operator(use_jax=False), dataset_path
+
+
+def _fit(mask_radius: float, mesh_pixels: int):
+    """An ``al.FitInterferometer`` on the eager NumPy path, at the prior medians."""
+    dataset, dataset_path = _dataset(mask_radius=mask_radius)
+
+    adapt_image = adapt_image_for_dataset(dataset_path=dataset_path, dataset=dataset)
+
+    image_mesh = al.image_mesh.Hilbert(pixels=mesh_pixels, weight_power=1.0, weight_floor=0.0)
+    image_plane_mesh_grid = image_mesh.image_plane_mesh_grid_from(
+        mask=dataset.real_space_mask, adapt_data=adapt_image
+    )
+
+    mass = af.Model(al.mp.Isothermal)
+    mass.centre.centre_0 = af.GaussianPrior(mean=0.0, sigma=0.005)
+    mass.centre.centre_1 = af.GaussianPrior(mean=0.0, sigma=0.005)
+    mass.einstein_radius = af.GaussianPrior(mean=1.6, sigma=0.05)
+    ell_comps = al.convert.ell_comps_from(axis_ratio=0.9, angle=45.0)
+    mass.ell_comps.ell_comps_0 = af.GaussianPrior(mean=ell_comps[0], sigma=0.01)
+    mass.ell_comps.ell_comps_1 = af.GaussianPrior(mean=ell_comps[1], sigma=0.01)
+
+    shear = af.Model(al.mp.ExternalShear)
+    shear.gamma_1 = af.GaussianPrior(mean=0.05, sigma=0.005)
+    shear.gamma_2 = af.GaussianPrior(mean=0.05, sigma=0.005)
+
+    lens = af.Model(al.Galaxy, redshift=0.5, mass=mass, shear=shear)
+
+    pixelization = al.Pixelization(
+        mesh=al.mesh.Delaunay(pixels=image_plane_mesh_grid.shape[0], zeroed_pixels=0),
+        regularization=al.reg.ConstantSplit(coefficient=1.0),
+    )
+    source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
+
+    model = af.Collection(galaxies=af.Collection(lens=lens, source=source))
+    instance = model.instance_from_vector(vector=model.physical_values_from_prior_medians)
+
+    adapt_images = al.AdaptImages(
+        galaxy_image_plane_mesh_grid_dict={instance.galaxies.source: image_plane_mesh_grid},
+        galaxy_name_image_plane_mesh_grid_dict={"('galaxies', 'source')": image_plane_mesh_grid},
+    )
+
+    return al.FitInterferometer(
+        dataset=dataset,
+        tracer=al.Tracer(galaxies=list(instance.galaxies)),
+        adapt_images=adapt_images,
+        settings=al.Settings(),
+        xp=np,
+    )
+
+
+@pytest.fixture(scope="module")
+def fit():
+    return _fit(mask_radius=INSTRUMENTS[INSTRUMENT]["mask_radius"], mesh_pixels=MESH_PIXELS)
+
+
+@pytest.fixture(scope="module")
+def numba_inversion(fit):
+    _log_evidence, inversion = numba_log_evidence_from(fit)
+    return inversion
+
+
+@pytest.fixture(scope="module")
+def oracle_fit():
+    return _fit(mask_radius=ORACLE_MASK_RADIUS, mesh_pixels=ORACLE_MESH_PIXELS)
+
+
+def _numba_inversion_from(fit, kernel: str = "reference") -> InversionInterferometerNumba:
+    """A fresh (uncached) numba inversion for ``fit`` on ``kernel``.
+
+    Used by the tests that must build ``F`` again after a monkeypatch, since
+    ``curvature_matrix`` is a cached property.
+    """
+    inversion = fit.inversion
+
+    return InversionInterferometerNumba(
+        dataset=inversion.dataset,
+        linear_obj_list=inversion.linear_obj_list,
+        settings=inversion.settings,
+        xp=np,
+        kernel=kernel,
+    )
+
+
+def _assert_kernel_pin(candidate, anchor, *, rtol: float = RTOL_KERNEL):
+    """The brief's kernel pin: ``rtol`` on ``F`` with ``atol`` scaled by ``max|F_anchor|``.
+
+    A plain ``rtol`` alone would be vacuous on the near-zero entries of a sparse
+    curvature matrix and impossibly strict on the ones that are exactly zero in one
+    kernel and ``1e-300`` in another; scaling ``atol`` by the matrix norm is the pin
+    that actually discriminates a wrong kernel from a different summation order.
+    """
+    candidate = np.asarray(candidate, dtype=np.float64)
+    anchor = np.asarray(anchor, dtype=np.float64)
+
+    np.testing.assert_allclose(
+        candidate,
+        anchor,
+        rtol=rtol,
+        atol=rtol * float(np.abs(anchor).max()),
+    )
+
+
+def _modern_preload(dataset) -> np.ndarray:
+    mask = dataset.transformer.grid.mask
+
+    return inversion_interferometer_util.nufft_precision_operator_via_np_from(
+        noise_map_real=np.asarray(dataset.noise_map.array.real, dtype=np.float64),
+        uv_wavelengths=np.asarray(dataset.transformer.uv_wavelengths, dtype=np.float64),
+        shape_masked_pixels_2d=mask.shape_native_masked_pixels,
+        grid_radians_2d=np.asarray(
+            mask.derive_grid.all_false.in_radians.native.array, dtype=np.float64
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------
+# 1. The preload
+# ---------------------------------------------------------------------------
+
+
+def test_preload_via_numba_matches_modern_np_builder(fit):
+    """The recovered numba preload kernel == today's chunked NumPy builder.
+
+    This is the pin that the two names — ``curvature_preload`` (0b90c401) and
+    ``nufft_precision_operator`` (main) — really are the same object. The two
+    implementations sum the ``K`` visibilities in different orders, so they agree
+    to round-off rather than bitwise; at ``K=190`` that is ~5e-12.
+    """
+    dataset = fit.inversion.dataset
+
+    np.testing.assert_allclose(
+        NumbaPreload.via_numba(dataset).curvature_preload,
+        _modern_preload(dataset),
+        rtol=RTOL_PRELOAD,
+        atol=0.0,
+    )
+
+
+def test_preload_from_sparse_operator_matches_modern_np_builder(fit):
+    """``from_sparse_operator`` rebuilds the operator's own preload array."""
+    dataset = fit.inversion.dataset
+
+    np.testing.assert_allclose(
+        NumbaPreload.from_sparse_operator(dataset).curvature_preload,
+        _modern_preload(dataset),
+        rtol=RTOL_PRELOAD,
+        atol=0.0,
+    )
+
+
+def _assert_preload_pin(candidate, reference):
+    """The mixed sma preload rule: ``rtol=1e-10`` with ``atol = 1e-10 · P[0,0]``.
+
+    A type-1 NUFFT bounds its error against ``Σ_k |c_k|``, i.e. against the *peak*
+    ``P[0, 0]``, not against each entry — so ``atol=0`` would test the preload's
+    near-zero entries (five orders below the peak, at the fp64 noise floor) for a
+    relative accuracy no NUFFT of any ``eps`` can offer, and would be measuring
+    round-off rather than the builder. The relative leg is kept at full strength for
+    every entry that carries signal; the absolute floor covers the rest.
+
+    The rule still discriminates: the measured ``max|Δ|`` here is ``1.7e-17`` while
+    the ``atol`` floor is ``1.9e-14`` and a *wrong* index permutation misses by
+    ``4.3e-5`` — nine orders above the floor (pinned by the control below).
+    """
+    candidate = np.asarray(candidate, dtype=np.float64)
+    reference = np.asarray(reference, dtype=np.float64)
+
+    np.testing.assert_allclose(
+        candidate,
+        reference,
+        rtol=RTOL_PRELOAD,
+        atol=RTOL_PRELOAD * float(reference[0, 0]),
+    )
+
+
+def test_preload_via_nufft_matches_modern_np_builder(fit):
+    """The type-1 NUFFT builder == today's chunked NumPy builder.
+
+    The phase-3 hypothesis, pinned: the ``O(N_pix·K)`` brute force really is the
+    real part of a type-1 (adjoint) NUFFT of the weights ``1/σ²`` onto the doubled
+    offset grid, so it can be built in ``O(K·nspread² + M log M)``.
+    """
+    dataset = fit.inversion.dataset
+
+    _assert_preload_pin(
+        nufft_preload_from(**preload_inputs_from(dataset), eps=NUFFT_EPS),
+        _modern_preload(dataset),
+    )
+
+
+def test_preload_via_nufft_padding_row_and_column_are_exactly_zero(fit):
+    """The FFT padding row ``Ny`` and column ``Nx`` are zero, exactly, not nearly.
+
+    The brute force never evaluates them (its four quadrants span offsets
+    ``−(N−1) … N−1``) whereas the NUFFT returns a real value at the Nyquist mode,
+    so they have to be zeroed explicitly — and at index ``N``, not ``N−1``. A
+    ``rtol``-only comparison against the reference would pass either way, since
+    ``0`` matches ``0`` and the neighbouring entries are small.
+    """
+    dataset = fit.inversion.dataset
+    y_shape, x_shape = (int(s) for s in preload_inputs_from(dataset)["shape_masked_pixels_2d"])
+
+    preload = nufft_preload_from(**preload_inputs_from(dataset), eps=NUFFT_EPS)
+
+    assert preload.shape == (2 * y_shape, 2 * x_shape)
+    np.testing.assert_array_equal(preload[y_shape, :], 0.0)
+    np.testing.assert_array_equal(preload[:, x_shape], 0.0)
+
+    # ...and the rows/columns either side are *not* zero, so the pin above is
+    # asserting a convention rather than an all-zero array.
+    assert np.abs(preload[y_shape - 1, :]).max() > 0.0
+    assert np.abs(preload[:, x_shape - 1]).max() > 0.0
+
+
+def test_preload_via_nufft_is_even_under_offset_negation(fit):
+    """``P[i, j] == P[-i, -j]`` — the cosine evenness of ``Σ w cos(...)``.
+
+    Structural, and free of the reference builder: the preload is a sum of cosines
+    of a linear function of the offset, so negating the offset cannot change it.
+    Catches a sign or axis error that happened to agree with the reference on the
+    quadrant the elementwise pin looks hardest at.
+    """
+    dataset = fit.inversion.dataset
+
+    preload = nufft_preload_from(**preload_inputs_from(dataset), eps=NUFFT_EPS)
+
+    y_index = (-np.arange(preload.shape[0])) % preload.shape[0]
+    x_index = (-np.arange(preload.shape[1])) % preload.shape[1]
+
+    _assert_preload_pin(preload[y_index][:, x_index], preload)
+
+
+def test_preload_via_nufft_is_invariant_to_visibility_chunking(fit):
+    """Chunking the visibilities changes the summation order and nothing else.
+
+    ``chunk_size`` is the memory ceiling alma_high needs (the spreader's gather
+    buffer is ``K · nspread²``; 5e6 visibilities at ``eps=1e-12`` is ~15 GB in one
+    shot, which the OOM reaper reaches before the transform does). Since the
+    transform is linear in ``c``, summing the chunks must reproduce the one-shot
+    array — pinned here at sma, where both regimes are affordable, rather than
+    assumed at the one instrument where only the chunked regime can run.
+    """
+    inputs = preload_inputs_from(fit.inversion.dataset)
+
+    one_shot = nufft_preload_from(**inputs, eps=NUFFT_EPS)
+    chunked = nufft_preload_from(**inputs, eps=NUFFT_EPS, chunk_size=64)
+
+    assert inputs["uv_wavelengths"].shape[0] > 64  # the pin is not vacuous
+
+    _assert_preload_pin(chunked, one_shot)
+
+
+def test_control_wrong_nufft_sign_fails_the_preload_pin(fit):
+    """The seventh and eighth candidates must FAIL — a pin that cannot fail is not a pin.
+
+    ``(−x, +y)`` and ``(+x, −y)`` are the same construction (``w`` is real, so the
+    two transforms are conjugates and their real parts are equal). The control is
+    therefore ``(+x, +y)``, one of the six genuinely wrong permutations, injected by
+    negating ``u`` — which flips the sign of the builder's ``x`` alone.
+    """
+    dataset = fit.inversion.dataset
+    inputs = preload_inputs_from(dataset)
+
+    uv_wavelengths = inputs["uv_wavelengths"].copy()
+    uv_wavelengths[:, 0] *= -1.0
+
+    wrong = nufft_preload_from(
+        noise_map_real=inputs["noise_map_real"],
+        uv_wavelengths=uv_wavelengths,
+        shape_masked_pixels_2d=inputs["shape_masked_pixels_2d"],
+        grid_radians_2d=inputs["grid_radians_2d"],
+        eps=NUFFT_EPS,
+    )
+
+    with pytest.raises(AssertionError):
+        _assert_preload_pin(wrong, _modern_preload(dataset))
+
+
+def test_nufft_preload_requires_square_pixels(fit):
+    """A rectangular radian grid raises rather than producing a plausible wrong array.
+
+    The ``[2Ny, 2Nx]`` mode grid has one spacing per axis by construction, so a
+    non-square pixel would be silently absorbed into the frequencies — the exact
+    class of failure the builder is here to rule out.
+    """
+    inputs = preload_inputs_from(fit.inversion.dataset)
+
+    grid_radians_2d = inputs["grid_radians_2d"].copy()
+    grid_radians_2d[..., 1] *= 2.0
+
+    with pytest.raises(ValueError, match="square pixels"):
+        nufft_preload_from(
+            noise_map_real=inputs["noise_map_real"],
+            uv_wavelengths=inputs["uv_wavelengths"],
+            shape_masked_pixels_2d=inputs["shape_masked_pixels_2d"],
+            grid_radians_2d=grid_radians_2d,
+            eps=NUFFT_EPS,
+        )
+
+
+def test_dirty_image_is_the_sparse_operators_own_array(fit):
+    """``d~`` is read off the sparse operator, never recomputed."""
+    dataset = fit.inversion.dataset
+
+    np.testing.assert_array_equal(
+        NumbaPreload.from_sparse_operator(dataset).dirty_image,
+        np.asarray(dataset.sparse_operator.dirty_image, dtype=np.float64),
+    )
+
+
+# ---------------------------------------------------------------------------
+# 2. The dense oracle
+# ---------------------------------------------------------------------------
+
+
+def _dense_oracle_curvature(inversion: InversionInterferometerNumba) -> np.ndarray:
+    """``F = Mᵀ W~ M`` formed explicitly, with no scatter kernel involved."""
+    w_matrix = inversion.numba_preload.w_matrix()
+    mapping_matrix = np.asarray(inversion.mapping_matrix)
+
+    return mapping_matrix.T @ w_matrix @ mapping_matrix
+
+
+def test_curvature_matrix_matches_dense_oracle(oracle_fit):
+    """The scatter kernel really does compute ``Mᵀ W~ M``.
+
+    ``w_tilde_via_preload_from`` expands the preload to the dense ``[N_pix, N_pix]``
+    ``W~``, so this runs on a deliberately small mask.
+    """
+    inversion = _numba_inversion_from(oracle_fit)
+
+    np.testing.assert_allclose(
+        inversion.curvature_matrix_scatter,
+        _dense_oracle_curvature(inversion),
+        rtol=RTOL_PARITY,
+        atol=0.0,
+    )
+
+
+def test_curvature_matrix_is_symmetric_without_mirroring(numba_inversion):
+    """The reference kernel loops the full ``N x N`` pair space, so ``F`` arrives complete.
+
+    Pinned because the imaging numba class and the modern sparse class both *do*
+    need a mirroring pass — assuming this one does too (or does not) is exactly the
+    convention error this test exists to catch.
+    """
+    curvature_matrix = numba_inversion.curvature_matrix_scatter
+
+    np.testing.assert_allclose(
+        curvature_matrix,
+        curvature_matrix.T,
+        rtol=RTOL_PARITY,
+        atol=0.0,
+    )
+
+
+# ---------------------------------------------------------------------------
+# 3. The modern path
+# ---------------------------------------------------------------------------
+
+
+def test_comparator_is_the_sparse_inversion(fit):
+    """Guards the comparison itself: the fit must be on the JAX/FFT sparse path."""
+    assert isinstance(fit.inversion, InversionInterferometerSparse)
+
+
+def test_data_vector_matches_sparse(fit, numba_inversion):
+    np.testing.assert_allclose(
+        numba_inversion.data_vector,
+        np.asarray(fit.inversion.data_vector),
+        rtol=RTOL_PARITY,
+        atol=0.0,
+    )
+
+
+def test_curvature_matrix_matches_sparse(fit, numba_inversion):
+    np.testing.assert_allclose(
+        numba_inversion.curvature_matrix,
+        np.asarray(fit.inversion.curvature_matrix),
+        rtol=RTOL_PARITY,
+        atol=0.0,
+    )
+
+
+def test_reconstruction_matches_sparse(fit, numba_inversion):
+    np.testing.assert_allclose(
+        numba_inversion.reconstruction,
+        np.asarray(fit.inversion.reconstruction),
+        rtol=RTOL_PARITY,
+        atol=0.0,
+    )
+
+
+def test_log_evidence_matches_fit_figure_of_merit(fit):
+    log_evidence, _inversion = numba_log_evidence_from(fit)
+
+    np.testing.assert_allclose(
+        log_evidence,
+        float(fit.figure_of_merit),
+        rtol=RTOL_PARITY,
+        atol=0.0,
+    )
+
+
+# ---------------------------------------------------------------------------
+# 4. The preconditions
+# ---------------------------------------------------------------------------
+
+
+def test_multiple_mappers_raise(fit):
+    inversion = fit.inversion
+
+    with pytest.raises(exc.InversionException, match="mappers"):
+        InversionInterferometerNumba(
+            dataset=inversion.dataset,
+            linear_obj_list=list(inversion.linear_obj_list) * 2,
+            settings=inversion.settings,
+            xp=np,
+        )
+
+
+def test_over_sampled_mapper_raises(fit, monkeypatch):
+    """``over_sample_size != 1`` must raise, not agree with the modern path by accident.
+
+    The modern sparse triplets fold ``over_sampler.sub_fraction`` into the mapping
+    weights; the recovered kernel does not. The interferometer datasets profiled here
+    all use ``over_sample_size = 1``, so the guard is asserted rather than handled.
+    """
+    inversion = fit.inversion
+    mapper = inversion.cls_list_from(cls=Mapper)[0]
+
+    sub_fraction = np.asarray(mapper.over_sampler.sub_fraction.array)
+
+    over_sampled_stub = SimpleNamespace(
+        sub_fraction=SimpleNamespace(array=0.25 * np.ones(sub_fraction.shape))
+    )
+
+    monkeypatch.setattr(
+        Mapper, "over_sampler", property(lambda self: over_sampled_stub), raising=True
+    )
+
+    with pytest.raises(exc.InversionException, match="sub_fraction"):
+        InversionInterferometerNumba(
+            dataset=inversion.dataset,
+            linear_obj_list=inversion.linear_obj_list,
+            settings=inversion.settings,
+            xp=np,
+        )
+
+
+def test_jax_array_module_raises(fit):
+    import jax.numpy as jnp
+
+    inversion = fit.inversion
+
+    with pytest.raises(exc.InversionException, match="non-NumPy"):
+        InversionInterferometerNumba(
+            dataset=inversion.dataset,
+            linear_obj_list=inversion.linear_obj_list,
+            settings=inversion.settings,
+            xp=jnp,
+        )
+
+
+def test_unknown_kernel_raises(fit):
+    inversion = fit.inversion
+
+    with pytest.raises(exc.InversionException, match="Unknown curvature kernel"):
+        InversionInterferometerNumba(
+            dataset=inversion.dataset,
+            linear_obj_list=inversion.linear_obj_list,
+            settings=inversion.settings,
+            xp=np,
+            kernel="no_such_kernel",
+        )
+
+
+# ---------------------------------------------------------------------------
+# 5. The phase-2 kernel variants
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def reference_curvature(fit):
+    return np.asarray(_numba_inversion_from(fit, kernel="reference").curvature_matrix_scatter)
+
+
+@pytest.mark.parametrize("kernel", [k for k in KERNELS if k != "reference"])
+def test_kernel_variant_matches_reference(fit, reference_curvature, kernel):
+    """Every wired kernel assembles the reference kernel's ``F``.
+
+    This is the gate the phase-2 bake-off's timings sit behind: an unpinned kernel's
+    seconds are not a result.
+    """
+    _assert_kernel_pin(
+        _numba_inversion_from(fit, kernel=kernel).curvature_matrix_scatter,
+        reference_curvature,
+    )
+
+
+@pytest.mark.parametrize("kernel", [k for k in KERNELS if k != "reference"])
+def test_kernel_variant_log_evidence_matches_fit(fit, kernel):
+    """...and the whole likelihood it produces is still the fit's figure of merit."""
+    log_evidence, _inversion = numba_log_evidence_from(fit, kernel=kernel)
+
+    np.testing.assert_allclose(
+        log_evidence,
+        float(fit.figure_of_merit),
+        rtol=RTOL_PARITY,
+        atol=0.0,
+    )
+
+
+@pytest.mark.parametrize("real_fft", [True, False])
+def test_fft_convolution_kernels_match_reference(fit, reference_curvature, real_fft):
+    """The NumPy ``rfft2``/``fft2`` routes agree with the numba reference.
+
+    ``real_fft=False`` is the algorithm ``InterferometerSparseOperator.apply_operator``
+    implements (pad to ``(2y, 2x)``, complex ``fft2``, multiply, ``ifft2``, real part);
+    ``real_fft=True`` is the real-transform route the verdict weighs. Both are timed by
+    the bake-off, so both are pinned here on the real mapper rather than only on the
+    bake-off's synthetic one.
+    """
+    inversion = _numba_inversion_from(fit, kernel="direct_conv")
+    inputs = inversion.kernel_index_arrays
+
+    curvature_matrix = kernels_pack.curvature_fft_numpy(
+        inversion.curvature_preload,
+        inputs["rows_nnz"],
+        inputs["col"],
+        inputs["val"],
+        inputs["ny"],
+        inputs["nx"],
+        inputs["pix_pixels"],
+        real_fft=real_fft,
+        batch_size=32,
+    )
+
+    _assert_kernel_pin(curvature_matrix, reference_curvature)
+
+
+def test_control_scaled_variant_fails_the_kernel_pin(fit, reference_curvature):
+    """A 1% scale on a variant's ``F`` must fail the kernel pin.
+
+    Without this the parametrized pins above could pass by being loose rather than by
+    the kernels agreeing.
+    """
+    curvature_matrix = _numba_inversion_from(fit, kernel="direct_conv").curvature_matrix_scatter
+
+    with pytest.raises(AssertionError):
+        _assert_kernel_pin(1.01 * np.asarray(curvature_matrix), reference_curvature)
+
+
+# ---------------------------------------------------------------------------
+# 6. The control
+# ---------------------------------------------------------------------------
+
+
+def _broken_curvature_kernel(scale: float):
+    """The reference kernel with its accumulated ``preload * w0 * w1`` product scaled.
+
+    The kernel accumulates ``F[s0, s1] += curvature_preload[Δy, Δx] * w0 * w1``, which
+    is linear in that product, so scaling every accumulation by ``scale`` is the same
+    break as scaling the constant inside the innermost loop — expressed here without
+    copying 80 lines of numba into the test. The unpatched kernel is bound at closure
+    creation so ``monkeypatch.setattr`` on the module attribute does not recurse.
+    """
+    reference = numba_util_pack.curvature_matrix_via_w_tilde_curvature_preload_interferometer_from
+
+    def kernel(**kwargs):
+        return scale * reference(**kwargs)
+
+    return kernel
+
+
+def test_control_broken_kernel_fails_the_dense_oracle_pin(oracle_fit, monkeypatch):
+    """The oracle pin must FAIL when the kernel's constant is broken by 1%."""
+    monkeypatch.setattr(
+        numba_util_pack,
+        "curvature_matrix_via_w_tilde_curvature_preload_interferometer_from",
+        _broken_curvature_kernel(scale=1.01),
+    )
+
+    inversion = _numba_inversion_from(oracle_fit)
+
+    with pytest.raises(AssertionError):
+        np.testing.assert_allclose(
+            inversion.curvature_matrix_scatter,
+            _dense_oracle_curvature(inversion),
+            rtol=RTOL_PARITY,
+            atol=0.0,
+        )
+
+
+def test_control_broken_kernel_fails_the_sparse_and_evidence_pins(fit, monkeypatch):
+    """The F and log-evidence pins must FAIL when the kernel's constant is broken by 1%."""
+    monkeypatch.setattr(
+        numba_util_pack,
+        "curvature_matrix_via_w_tilde_curvature_preload_interferometer_from",
+        _broken_curvature_kernel(scale=1.01),
+    )
+
+    log_evidence, inversion = numba_log_evidence_from(fit)
+
+    with pytest.raises(AssertionError):
+        np.testing.assert_allclose(
+            inversion.curvature_matrix,
+            np.asarray(fit.inversion.curvature_matrix),
+            rtol=RTOL_PARITY,
+            atol=0.0,
+        )
+
+    with pytest.raises(AssertionError):
+        np.testing.assert_allclose(
+            log_evidence,
+            float(fit.figure_of_merit),
+            rtol=RTOL_PARITY,
+            atol=0.0,
+        )

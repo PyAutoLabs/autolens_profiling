@@ -6,6 +6,16 @@ after a nufftax venv install on RAL. Task: autolens_profiling#59.
 
 ## A100 canonical tier — imaging (jobs 330062–330070)
 
+> **Superseded for the `imaging/delaunay` rows (2026-09-05).** The Delaunay A100 rows
+> below were re-run at `v2026.8.17.1` and are superseded by
+> [`delaunay_nn_breakdown.md`](./delaunay_nn_breakdown.md) (job 342277). Two reasons:
+> the "Regularization matrix (H)" row here is a **measurement artifact** — it timed an
+> eager `jnp.array()` host-to-device copy of the NumPy inversion's 1560×1560 fp64
+> matrix (14.4 ms of PCIe), not a JIT step — and the new rows carry a JIT-timed H
+> (10.4 ms) plus `vmap`/16 per-call columns for the inversion-setup block, the four-way
+> split and H. The `mge` and `pixelization` rows, the CPU tier and the methodology
+> section below are unaffected.
+
 | Cell (hst) | Path | A100 fp64 | A100 mp | CPU fp64 | GPU speedup | Top step (A100) |
 |------------|------|----------:|--------:|---------:|------------:|-----------------|
 | `imaging/mge` | dense | 7.8 ms | — | 179.5 ms | 23× | Blurred mapping matrix (41%) |

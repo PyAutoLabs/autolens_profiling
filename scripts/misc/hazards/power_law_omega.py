@@ -409,7 +409,7 @@ def complete_likelihood_materiality() -> dict:
         data=data,
         psf=aa.Convolver(kernel=kernel),
         noise_map=noise_map,
-        over_sample_size_lp=1,
+        over_sample_size_lp=2,
     ).apply_mask(mask=mask)
 
     def figure_of_merit(factor, public_slope, xp):

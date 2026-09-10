@@ -15,9 +15,10 @@ packages; the dashboard tables in every README are rendered from this tree by
 | `pipeline_resume/` | [`pipeline_resume/`](../scripts/misc/pipeline_resume/README.md) | Versioned SLaM resume-overhead summaries (cold + resume run records) |
 | `quick_update/` | [`quick_update/`](../scripts/misc/quick_update/README.md) | Unversioned fast re-profiling snapshots (scratch tier) |
 | `delaunay_nn/` | [`delaunay_nn/`](../scripts/misc/delaunay_nn/README.md) | Versioned full-mapper cap and runtime benchmarks |
+| `nnls_warm_start/` | [`nnls_warm_start/`](../scripts/misc/nnls_warm_start/README.md) | The NNLS cross-evaluation warm-start memo A/B experiment — per-model JSON/PNG pairs plus its two notes ([`nnls_warm_start_memo.md`](./nnls_warm_start/nnls_warm_start_memo.md), [`nnls_warm_start_memo_matrix.md`](./nnls_warm_start/nnls_warm_start_memo_matrix.md)). A diagnostic, **not** a production baseline. |
 | `hazards/` | [`hazards/`](../scripts/misc/hazards/README.md) | Semantic finding records, reproducer plots, generated seed summary, and consumer index |
 | `lens/` | [`scripts/lens/`](../scripts/lens/README.md) | Versioned **library-component** summaries (dataset-free axis) — today `lens/deflections/`, per-mass-profile deflection cost with pinned deflection values |
-| `notes/` | humans + agents | Narrative findings and design notes (e.g. [`design_lock_in.md`](./notes/design_lock_in.md), [`nnls_solver_ledger.md`](./notes/nnls_solver_ledger.md), [`nnls_warm_start_memo.md`](./notes/nnls_warm_start_memo.md), [`nnls_warm_start_memo_matrix.md`](./notes/nnls_warm_start_memo_matrix.md), [`numpy_deflections_cpu.md`](./notes/numpy_deflections_cpu.md)) |
+| `notes/` | humans + agents | Narrative findings and design notes (e.g. [`design_lock_in.md`](./notes/design_lock_in.md), [`production_representative_cells.md`](./notes/production_representative_cells.md), [`nnls_solver_ledger.md`](./notes/nnls_solver_ledger.md), [`numpy_deflections_cpu.md`](./notes/numpy_deflections_cpu.md)) |
 | `baselines/` | campaign snapshots | Named, frozen baselines (e.g. `PreOptimizationTimes/`) — see below |
 
 ## Performance artifact shapes
@@ -43,6 +44,23 @@ runtime/<class>/<model>[/<instrument>]/comparison.{json,png}
 
 Config names: `local_cpu_fp64 | local_cpu_mp | local_gpu_fp64 | local_gpu_mp |
 hpc_a100_fp64 | hpc_a100_mp`, with `_sparse` as a filename suffix.
+
+**Regularization provenance (Delaunay family).** Since 2026-09-08 the Delaunay
+cells (`likelihood_breakdown/{delaunay,delaunay_nn}.py`,
+`likelihood_runtime/{delaunay,delaunay_nn,delaunay_numba}.py`) default to
+`AdaptSplit(inner=0.1, outer=10.0, signal_scale=0.1)` — what production pairs
+Delaunay with — and record the resolved scheme in a top-level `regularization`
+key. **A row with no `regularization` key was measured with
+`ConstantSplit(1.0)`**, which `--regularization constant_split` still selects;
+each cell pins one log-evidence per scheme. Same-node ConstantSplit control
+rows are written with a `_constant_split` config name.
+
+Since the same date the canonical A100 rows `breakdown/imaging/delaunay{,_nn}_hpc_a100_fp64`
+and `runtime/imaging/delaunay{,_nn}/delaunay{,_nn}_hpc_a100_fp64` are **AdaptSplit** rows. The
+ConstantSplit rows they replaced were not overwritten — they survive as
+`..._hpc_a100_fp64_constant_split_2026_09_05.{json,png}` — and the 2026-09-08 same-node
+ConstantSplit controls are `..._hpc_a100_fp64_constant_split.{json,png}`. See
+`results/notes/delaunay_adapt_split_regularization.md`.
 
 ## Semantic hazard findings
 

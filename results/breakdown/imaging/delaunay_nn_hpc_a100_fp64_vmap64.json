@@ -1,0 +1,45 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "omp_num_threads": null,
+    "cpu_count": 124,
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 25111 MiB, 81920 MiB"
+  },
+  "instrument": "hst",
+  "configuration": {
+    "pixel_scale_arcsec": 0.05,
+    "mask_radius_arcsec": 3.5,
+    "image_pixels_masked": 15361,
+    "over_sampled_pixels": 17980,
+    "delaunay_vertices": 1500,
+    "edge_zeroed_pixels": 0,
+    "inversion_path": "dense"
+  },
+  "steps": {
+    "Ray-trace data grid": 0.0001519351964816451,
+    "Ray-trace mesh grid": 0.0001475970959290862,
+    "Lens light images (pre-PSF)": 0.00012075048871338368,
+    "Blurred image (PSF convolution)": 0.0008283608127385378,
+    "Profile-subtracted image": 0.00011879049707204103,
+    "Inversion setup (steps 5-8 combined)": 0.13658689379226416,
+    "Data vector (D)": 0.00030764220282435416,
+    "Curvature matrix (F)": 0.025735294190235437,
+    "Regularization matrix (H)": 0.05481250227894632,
+    "Regularized reconstruction": 0.030630071088671683,
+    "Mapped recon + log evidence": 0.002220816700719297
+  },
+  "total_step_by_step": 0.25166065434459595,
+  "regularization_matrix_prefix_s": 0.17926478509325533,
+  "interpolator_prefix_s": 0.124452282814309,
+  "setup_split": {
+    "Border relocation": 0.0010555141139775514,
+    "Triangulation + interpolation": 0.12339676870033145,
+    "Mapping matrix": -0.0008042882196605261,
+    "Blurred mapping matrix (PSF)": 0.009222927805967618
+  },
+  "vmap_batch": 64,
+  "vmap_error": "Traceback (most recent call last):\n  File \"/mnt/ral/jnightin/autolens_profiling_wt/delaunay-nn-breakdown/scripts/imaging/likelihood_breakdown/delaunay_nn.py\", line 1076, in <module>\n    _vmap_prefix_per_call[_upto] = _vmap_profile(\n                                   ^^^^^^^^^^^^^^\n  File \"/mnt/ral/jnightin/autolens_profiling_wt/delaunay-nn-breakdown/scripts/imaging/likelihood_breakdown/delaunay_nn.py\", line 1061, in _vmap_profile\n    block(fn(_params_batched))\n  File \"/mnt/ral/jnightin/autolens_profiling_wt/delaunay-nn-breakdown/scripts/imaging/likelihood_breakdown/delaunay_nn.py\", line 252, in block\n    leaf.block_until_ready()\njax.errors.JaxRuntimeError: RESOURCE_EXHAUSTED: Out of memory while trying to allocate 46.86GiB. [executable_name='jit_fn'] [tf-allocator-allocation-error='']\n"
+}

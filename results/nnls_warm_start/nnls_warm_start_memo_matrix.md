@@ -1,7 +1,7 @@
 # NNLS warm-start memo: model robustness matrix
 
-Aggregated from `results/breakdown/imaging/delaunay_numba_nnls_iterations_*_v2026.8.17.1.json`
-by `scripts/imaging/likelihood_breakdown/nnls_iterations_matrix.py`. Companion to
+Aggregated from `results/nnls_warm_start/delaunay_numba_nnls_iterations_*_v2026.8.17.1.json`
+by `scripts/misc/nnls_warm_start/nnls_iterations_matrix.py`. Companion to
 [`nnls_warm_start_memo.md`](./nnls_warm_start_memo.md), which measured the single fiducial.
 
 Each model variant changes exactly ONE thing about that fiducial (Delaunay Hilbert-1250 +

@@ -58,24 +58,44 @@ Results are framed by **astronomy instrument** (HST, Euclid, JWST, …) rather t
 | `datacube/delaunay` | alma_high | hpc_a100_mp | dense (mapping) | — | v2026.7.6.649 |
 | `datacube/inversion` | alma_high | hpc_a100_fp64 | dense (mapping) | — | v2026.7.6.649 |
 | `datacube/inversion` | alma_high | hpc_a100_mp | dense (mapping) | — | v2026.7.6.649 |
-| `imaging/delaunay` | hst | local_cpu_fp64 | dense (mapping) | 10.07 s | v2026.7.6.649 |
+| `imaging/delaunay` | hst | local_cpu_fp64 | dense (mapping) | 3.34 s | v2026.8.17.1 |
 | `imaging/delaunay` | hst | local_cpu_fp64 | sparse (w-tilde) | 8.81 s | v2026.7.6.649 |
-| `imaging/delaunay` | hst | hpc_a100_fp64 | dense (mapping) | 96.6 ms | v2026.7.6.649 |
+| `imaging/delaunay` | hst | hpc_a100_fp64 | dense (mapping) | 71.9 ms | v2026.8.17.1 |
 | `imaging/delaunay` | hst | hpc_a100_fp64 | sparse (w-tilde) | 98.0 ms | v2026.7.6.649 |
 | `imaging/delaunay` | hst | hpc_a100_mp | dense (mapping) | 96.8 ms | v2026.7.6.649 |
 | `imaging/delaunay` | hst | hpc_a100_mp | sparse (w-tilde) | 95.5 ms | v2026.7.6.649 |
-| `imaging/delaunay_numba` | euclid | local_cpu_fp64 | sparse (numba) | 1.19 s | v2026.8.17.1 |
-| `imaging/delaunay_numba` | hst | local_cpu_fp64 | sparse (numba) | 482.4 ms | v2026.8.17.1 |
-| `imaging/mge` | hst | local_cpu_fp64 | dense (mapping) | 179.5 ms | v2026.7.6.649 |
+| `imaging/delaunay_nn` | hst | local_cpu_fp64 | dense (mapping) | 4.49 s | v2026.8.17.1 |
+| `imaging/delaunay_nn` | hst | hpc_a100_fp64 | dense (mapping) | 85.1 ms | v2026.8.17.1 |
+| `imaging/delaunay_numba` | euclid | local_cpu_fp64 | sparse (numba) | 255.0 ms | v2026.8.17.1 |
+| `imaging/delaunay_numba` | hst | local_cpu_fp64 | sparse (numba) | 2.04 s | v2026.8.17.1 |
+| `imaging/mge` | hst | local_cpu_fp64 | dense (mapping) | 40.3 ms | v2026.8.17.1 |
 | `imaging/mge` | hst | hpc_a100_fp64 | dense (mapping) | 7.8 ms | v2026.7.6.649 |
-| `imaging/pixelization` | hst | local_cpu_fp64 | dense (mapping) | 8.65 s | v2026.7.6.649 |
+| `imaging/pixelization` | hst | local_cpu_fp64 | dense (mapping) | 3.40 s | v2026.8.17.1 |
 | `imaging/pixelization` | hst | local_cpu_fp64 | sparse (w-tilde) | 10.17 s | v2026.7.6.649 |
 | `imaging/pixelization` | hst | hpc_a100_fp64 | dense (mapping) | 57.6 ms | v2026.7.6.649 |
 | `imaging/pixelization` | hst | hpc_a100_fp64 | sparse (w-tilde) | 57.9 ms | v2026.7.6.649 |
 | `imaging/pixelization` | hst | hpc_a100_mp | dense (mapping) | 56.4 ms | v2026.7.6.649 |
 | `imaging/pixelization` | hst | hpc_a100_mp | sparse (w-tilde) | 55.5 ms | v2026.7.6.649 |
-| `imaging/pixelization_numba` | euclid | local_cpu_fp64 | sparse (numba) | 124.3 ms | v2026.8.17.1 |
-| `imaging/pixelization_numba` | hst | local_cpu_fp64 | sparse (numba) | 304.5 ms | v2026.8.17.1 |
+| `imaging/pixelization_numba` | euclid | local_cpu_fp64 | sparse (numba) | 611.9 ms | v2026.8.17.1 |
+| `imaging/pixelization_numba` | hst | local_cpu_fp64 | sparse (numba) | 1.30 s | v2026.8.17.1 |
+| `interferometer/delaunay_numba_direct_conv` | alma | local_cpu_fp64 | sparse (numba) | 1.80 s | v2026.8.17.1 |
+| `interferometer/delaunay_numba_direct_conv` | sma | local_cpu_fp64 | sparse (numba) | 378.2 ms | v2026.8.17.1 |
+| `interferometer/delaunay_numba_jax` | alma | local_cpu_fp64 | sparse (w-tilde) | 3.28 s | v2026.8.17.1 |
+| `interferometer/delaunay_numba_jax` | sma | local_cpu_fp64 | sparse (w-tilde) | 727.7 ms | v2026.8.17.1 |
+| `interferometer/delaunay_numba_reference` | alma | local_cpu_fp64 | sparse (numba) | 4.54 s | v2026.8.17.1 |
+| `interferometer/delaunay_numba_reference` | sma | local_cpu_fp64 | sparse (numba) | 535.9 ms | v2026.8.17.1 |
+| `interferometer/delaunay_numba_source_loop` | sma | local_cpu_fp64 | sparse (numba) | 461.7 ms | v2026.8.17.1 |
+| `interferometer/delaunay_numba_symmetric` | sma | local_cpu_fp64 | sparse (numba) | 443.1 ms | v2026.8.17.1 |
+| `interferometer/delaunay_numba_two_stage` | sma | local_cpu_fp64 | sparse (numba) | 388.7 ms | v2026.8.17.1 |
+| `interferometer/pixelization_numba_direct_conv` | alma | local_cpu_fp64 | sparse (numba) | 1.76 s | v2026.8.17.1 |
+| `interferometer/pixelization_numba_direct_conv` | sma | local_cpu_fp64 | sparse (numba) | 184.5 ms | v2026.8.17.1 |
+| `interferometer/pixelization_numba_jax` | alma | local_cpu_fp64 | sparse (w-tilde) | 2.28 s | v2026.8.17.1 |
+| `interferometer/pixelization_numba_jax` | sma | local_cpu_fp64 | sparse (w-tilde) | 584.6 ms | v2026.8.17.1 |
+| `interferometer/pixelization_numba_reference` | alma | local_cpu_fp64 | sparse (numba) | 7.31 s | v2026.8.17.1 |
+| `interferometer/pixelization_numba_reference` | sma | local_cpu_fp64 | sparse (numba) | 480.5 ms | v2026.8.17.1 |
+| `interferometer/preload` | alma | local_cpu_fp64 | sparse (numba) | — | v2026.8.17.1 |
+| `interferometer/preload` | alma_high | local_cpu_fp64 | sparse (numba) | — | v2026.8.17.1 |
+| `interferometer/preload` | sma | local_cpu_fp64 | sparse (numba) | — | v2026.8.17.1 |
 <!-- END auto-table:headline -->
 
 The tables above are auto-generated by `scripts/misc/tooling/build_readme.py` from the artifacts under [`results/`](./results/README.md) — never edit them by hand; run `python scripts/misc/tooling/build_readme.py` after a profiling run and commit the result (CI checks idempotence via `--check`). Narrative context — per-cell "where to optimize next" recommendations and the mp-vs-fp64 verdicts — lives in [`scripts/misc/likelihood_runtime/OPTIMIZATION_NOTES.md`](./scripts/misc/likelihood_runtime/OPTIMIZATION_NOTES.md).
@@ -97,9 +117,12 @@ likelihoods XLA compilation is a first-class cost in its own right —
 `scripts/misc/jax_compile/` measures trace / compile / first-call / steady-state
 separately per likelihood × transform. Standing conclusions:
 
-- **Settings suffice** — the persistent compilation cache and `--xla_gpu_autotune_level=0`
-  (both shipped as autonerves defaults) take the worst measured first fit from
-  ~70 min to ~35 s. Never restructure a likelihood or sampler for compile time
+- **Settings suffice** — the persistent compilation cache, `--xla_gpu_autotune_level=0`
+  and `--xla_gpu_enable_triton_gemm=false` (all shipped as autonerves defaults) take the
+  worst measured first fit from ~70 min to ~35 s; the Triton flag is there because at
+  autotune level 0 XLA's default Triton tile makes dense fp64 GEMMs ~5× slower than
+  cuBLAS ([`results/notes/xla_autotune_triton_gemm.md`](./results/notes/xla_autotune_triton_gemm.md)).
+  Never restructure a likelihood or sampler for compile time
   ([`scripts/misc/jax_compile/README.md`](./scripts/misc/jax_compile/README.md)).
 - **`af.MultiStartProdigy` compile is a non-problem** on MGE and every pixelized
   mesh (rectangular / KNN / Delaunay) — ≤ 75 s cold, ≤ 2 s warm on a 32-core

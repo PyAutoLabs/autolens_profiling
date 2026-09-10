@@ -3,51 +3,236 @@
   "device": {
     "backend": "cpu",
     "device": "cpu:0",
-    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
     "omp_num_threads": "1",
     "cpu_count": 8
   },
   "instrument": "euclid",
   "configuration": {
+    "preset": "euclid_vis_pix",
+    "variant": "production",
+    "provenance": "euclid_strong_lens_modeling_pipeline/scripts/initial_lens_model.py (vis_pix stage, job 342301): mesh :613-615, image mesh :392-396, edge :448-455, regularization :617, over-sampling :498-511, sparse operator :364-365, positions :544-546, MGE :162-168, threads euclid_dr1_prelim/hpc/batch_cpu/submit_initial_lens_model_two_stage:48,161-166; light-profile radial bins util.py:931-937 ([4, 4, 2] since euclid_strong_lens_modeling_pipeline#56, 2026-09-08)",
+    "mesh_kind": "delaunay",
+    "adapt_snr_cap": null,
+    "over_sample_size_lp_rule": {
+      "sub_size_list": [
+        4,
+        4,
+        2
+      ],
+      "radial_list": [
+        0.1,
+        0.3
+      ],
+      "centre": [
+        0.0,
+        0.0
+      ]
+    },
+    "over_sample_size_pixelization_rule": {
+      "source_snr_cut": 3.0,
+      "sub_size_above": 4,
+      "sub_size_below": 2
+    },
+    "regularization": {
+      "scheme": "adapt_split",
+      "free": true,
+      "priors": {
+        "inner_coefficient": {
+          "type": "LogUniform",
+          "lower": 1e-06,
+          "upper": 1000000.0
+        },
+        "outer_coefficient": {
+          "type": "LogUniform",
+          "lower": 1e-06,
+          "upper": 1000000.0
+        },
+        "signal_scale": {
+          "type": "Uniform",
+          "lower": 0.0,
+          "upper": 1.0
+        }
+      }
+    },
+    "positions_penalty": {
+      "factor": 3.0,
+      "minimum_threshold": 0.2
+    },
+    "lens_light": "mge_40_linear_2_basis",
+    "mge_total_gaussians": 20,
+    "mge_gaussian_per_basis": 2,
+    "sequence": {
+      "kind": "iid",
+      "unit_low": 0.4,
+      "unit_high": 0.6,
+      "seed": 235
+    },
+    "memo": "off",
+    "mesh": {
+      "kind": "delaunay",
+      "hilbert_pixels": 500,
+      "edge_pixels": 30,
+      "zeroed_pixels": 30,
+      "vertices": 530,
+      "hilbert_weight_power": 3.5,
+      "hilbert_weight_floor": 0.01
+    },
     "pixel_scale_arcsec": 0.1,
     "mask_radius_arcsec": 3.5,
     "image_pixels_masked": 3841,
-    "over_sampled_pixels": 4468,
+    "over_sampled_pixels": 15664,
     "mesh_shape": [
-      1250
+      530
     ],
-    "source_pixels": 1250,
+    "source_pixels": 530,
     "inversion_path": "sparse_numba",
     "use_jax": false,
-    "mesh": "delaunay_hilbert_1250",
-    "regularization": "constant_split",
-    "lens_light": "mge_60_linear",
+    "n_instances": 20,
+    "thread_env": {
+      "n_threads": 1,
+      "vars": [
+        "OPENBLAS_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OMP_NUM_THREADS",
+        "VECLIB_MAXIMUM_THREADS",
+        "NUMEXPR_NUM_THREADS"
+      ],
+      "set_to": "1",
+      "preexisting": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "VECLIB_MAXIMUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1"
+      },
+      "overridden": {},
+      "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+    },
+    "memo_provenance": {
+      "requested": "off",
+      "settings_nnls_warm_start_memo": false,
+      "env_AUTOARRAY_NNLS_WARM_START": "0",
+      "env_before": null,
+      "note": "Both gates are set for memo=off: the Settings flag and the AUTOARRAY_NNLS_WARM_START env kill-switch (autoarray/inversion/inversion/nnls_memo.py:63). settings_nnls_warm_start_memo is read back off the constructed Settings, so it records what took effect. The library default is true and both production projects leave it unset."
+    },
     "omp_num_threads": "1"
   },
   "steps": {
-    "FitImaging construct": 8.208000008380623e-05,
-    "Blurred image (FFT convolve)": 0.008638289999908011,
-    "Profile subtracted image": 4.433999993125326e-05,
-    "Inversion build (trace+Delaunay+mapper)": 0.022416690000000017,
-    "PSF-weighted data [numba]": 0.003058889999965686,
-    "MGE operated mapping matrix (60 funcs)": 0.14983798000002935,
-    "Mapper sparse triplets": 0.017052480000074866,
-    "Data vector D [numba]": 0.0014287400000284833,
-    "Curvature matrix F [numba sparse-op]": 0.2916402800000014,
-    "Regularization matrix H (ConstantSplit)": 0.09061346000003141,
-    "F + H": 0.002813830000013695,
-    "Reconstruction solve (BLAS)": 0.47000207000000954,
-    "Mapped reconstruction [numba+FFT]": 0.0017286499999954684,
-    "Model data + chi^2": 0.0018000400000346417,
-    "log det (F+H) [Cholesky]": 0.03419463000004726,
-    "log det H [Cholesky]": 0.031532190000007176,
-    "Regularization term s'Hs": 0.000812050000013187,
-    "Log evidence (figure of merit)": 0.061450309999963794
+    "FitImaging construct": 8.478125027977512e-05,
+    "Blurred image (FFT convolve)": 0.006299043750232158,
+    "Profile subtracted image": 4.016249977212283e-05,
+    "Inversion build (trace+Delaunay+mapper)": 0.017101768750535484,
+    "PSF-weighted data [numba]": 0.0026993249998668034,
+    "MGE: image_2d_from(grid) x60 [numpy]": 0.014156599999296304,
+    "MGE: image_2d_from(blurring_grid) x60 [numpy]": 0.007012637499883567,
+    "MGE: batched PSF convolution [real-space np]": 0.014247837499624438,
+    "MGE operated mapping matrix [residual: dict assembly]": 0.004638643750695337,
+    "Mapper sparse triplets": 0.01332938750078938,
+    "Data vector D [numba]": 0.0020554375003030145,
+    "F: mapper\u00d7mapper block [sparse-op]": 0.03991903125097451,
+    "F: mapper\u00d7linear-func block [FFT conv + scatter]": 0.014842449999832752,
+    "F: linear-func\u00d7linear-func block [BLAS]": 0.000996887499695731,
+    "Curvature matrix F [residual: mirror + diag-add]": -0.001277193750411243,
+    "Regularization matrix H": 0.031828937499994936,
+    "F + H": 0.0003956125001423061,
+    "Reconstruction solve (BLAS)": 0.07106030000045394,
+    "Mapped reconstruction [numba+FFT]": 0.0015559125004074303,
+    "Model data + chi^2": 0.0015517000001636916,
+    "log det (F+H) [Cholesky]": 0.003499462500030859,
+    "log det H [Cholesky]": 0.0030862250000609492,
+    "Regularization term s'Hs": 0.00017279375015277765,
+    "Log evidence (figure of merit)": 0.0057469062498967105
   },
-  "total_step_by_step": 1.1891470000001392,
-  "direct_log_likelihood_function_per_call": 1.2646348100000069,
-  "warmup_incl_numba_compile_s": 3.253364899999724,
-  "log_likelihood": 7215.369093236955,
-  "pinned_expected": 7215.3687893658935,
+  "total_step_by_step": 0.25504465000267373,
+  "curvature_matrix_f_total_s": 0.05448117500009175,
+  "mge_operated_mapping_matrix_total_s": 0.04005571874949965,
+  "mge_operated_mapping_matrix_split_note": "The four 'MGE: ...' / 'MGE operated mapping matrix' rows sum to mge_operated_mapping_matrix_total_s, the raw un-split cost of the inversion.linear_func_operated_mapping_matrix_dict step. The three piece rows re-run, uncached, the three parts of LightProfileLinearObjFuncList.operated_mapping_matrix_override (60 profile images on the data grid, 60 on the blurring grid, one batched real-space PSF convolution); the residual row is the step minus those three. mge_split_reproduces_step records that the three pieces reconstruct the step's output bit-identically. PyAutoArray#507 step 0.",
+  "mge_split_reproduces_step": true,
+  "mge_blurring_stack_path": "shared_geometry",
+  "geometry": {
+    "psf_shape_native": [
+      21,
+      21
+    ],
+    "image_pixels_masked": 3841,
+    "psf_precision_pairs_stored": 2318869,
+    "psf_precision_lengths_sum": 2318869,
+    "psf_precision_lengths_mean": 603.7149179901068,
+    "psf_precision_lengths_max": 841,
+    "mappers": [
+      {
+        "params": 530,
+        "data_to_pix_unique_shape": [
+          3841,
+          48
+        ],
+        "pix_lengths_mean": 4.827128351991669,
+        "pix_lengths_max": 26,
+        "pix_lengths_sum": 18541,
+        "mapper_mapper_inner_ops": 62346463,
+        "two_stage_stage_1_scatter_ops": 11983430,
+        "two_stage_stage_2_axpy_ops": 9826730,
+        "two_stage_clear_ops": 2035730,
+        "two_stage_total_ops": 23845890
+      }
+    ]
+  },
+  "curvature_matrix_f_split_note": "The four 'F: ...' / 'Curvature matrix F' rows sum to curvature_matrix_f_total_s, the raw un-split cost of the inversion.curvature_matrix step. The three block rows are direct measurements of the (uncached) per-block helpers in imaging_numba/sparse.py; the 'Curvature matrix F [residual: ...]' row is t(curvature_matrix) minus those three, i.e. the global mirror, the no-regularization diagonal add and assembly overhead, and it carries the combined noise of the four timings. PyAutoArray#505 step 0.",
+  "direct_log_likelihood_function_per_call": 0.24589134999951057,
+  "protocol": "instance 0 discarded (numba compile / cold-cache hazard); the next n_cold evaluations are cold evals comparable to PyAutoFit's logged 'Log Likelihood Function Evaluation Time'; the rest are warm iid evaluations.",
+  "warmup_incl_numba_compile_s": 1.7974834999986342,
+  "cold_eval_s": [
+    0.4024009999993723,
+    0.2675053000020853,
+    0.19910429999799817
+  ],
+  "cold_eval_median_s": 0.2675053000020853,
+  "warm_iid_median_s": 0.24589134999951057,
+  "warm_iid_mean_s": 0.24620099999992817,
+  "n_warm": 16,
+  "n_cold": 3,
+  "witness": {
+    "instrument": "euclid",
+    "job": "342301",
+    "reference_cold_eval_s": [
+      0.69,
+      1.13
+    ],
+    "factor": 1.5,
+    "allowed_s": [
+      0.45999999999999996,
+      1.6949999999999998
+    ],
+    "measured_cold_eval_median_s": 0.2675053000020853,
+    "verdict": "FAIL"
+  },
+  "positions_penalty_in_steps": false,
+  "positions_penalty_note": "The positions penalty (Euclid preset only) is an analysis-level term: it is inside direct_log_likelihood_function_per_call and the cold/warm numbers, but NOT inside the per-step decomposition, which times FitImaging properties.",
+  "decomposition_warmup_incl_numba_compile_s": 1.7974834999986342,
+  "log_likelihood": 5818.189684514178,
+  "log_likelihood_sequence": [
+    7085.8641085946265,
+    6359.402514533745,
+    4509.458498581188,
+    6010.709020959048,
+    6265.600994278336,
+    -12691.714897377315,
+    6680.120967757814,
+    5415.587246401381,
+    -8005.362339392643,
+    -20858.30984604669,
+    6188.2043971264,
+    -14826.614976769666,
+    6095.073626233102,
+    6912.8077175562485,
+    6957.722916586155,
+    7309.50081653608,
+    5174.435817017631,
+    5949.382062339647,
+    3255.028383102038,
+    5818.189684514178
+  ],
+  "pinned_expected": 5818.189684514178,
   "pinned_drift": []
 }

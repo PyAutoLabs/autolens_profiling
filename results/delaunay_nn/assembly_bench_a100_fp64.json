@@ -1,0 +1,139 @@
+{
+  "label": "A100 fp64, PyAutoArray#536 A/B session",
+  "backend": "gpu",
+  "devices": [
+    "cuda:0"
+  ],
+  "x64": true,
+  "S": 6000,
+  "K": 33,
+  "P": 1500,
+  "batch": 16,
+  "repeats": 10,
+  "tables": "/mnt/ral/jnightin/autolens_profiling_wt/delaunay-nn-constant-split-assembly/results/delaunay_nn/tables_hst_1500.npz",
+  "duplicate_stats": {
+    "padded_scatter_entries": 6534000,
+    "real_contributions": 187242,
+    "unique_ij_pairs": 29020,
+    "max_multiplicity": 40,
+    "mean_multiplicity": 6.452170916609235,
+    "size_min": 1,
+    "size_max": 11,
+    "size_mean": 5.449666666666666
+  },
+  "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0",
+  "results": [
+    {
+      "variant": "V0",
+      "backend": "gpu",
+      "unbatched_ms": 10.494538000784814,
+      "peak_mem_mib_after_unbatched": 91.29052734375,
+      "batched_total_ms": 160.48924287315458,
+      "per_call_vmap_ms": 10.030577679572161,
+      "peak_mem_mib_after_batched": 669.7373046875,
+      "h_slogdet": [
+        1.0,
+        995.7174023428239
+      ],
+      "h_frobenius": 121.94212479561611
+    },
+    {
+      "variant": "V0a_4wide",
+      "backend": "gpu",
+      "unbatched_ms": 0.1839539036154747,
+      "peak_mem_mib_after_unbatched": 669.7373046875,
+      "batched_total_ms": 0.6146070081740618,
+      "per_call_vmap_ms": 0.03841293801087886,
+      "peak_mem_mib_after_batched": 669.7373046875
+    },
+    {
+      "variant": "V1_dense_gemm",
+      "backend": "gpu",
+      "unbatched_ms": 9.83729655854404,
+      "peak_mem_mib_after_unbatched": 669.7373046875,
+      "max_abs_diff": 1.7763568394002505e-15,
+      "max_rel_diff": 1.380094597460517e-13,
+      "batched_total_ms": 161.71646094880998,
+      "per_call_vmap_ms": 10.107278809300624,
+      "peak_mem_mib_after_batched": 2864.466552734375,
+      "h_slogdet": [
+        1.0,
+        995.7174023299104
+      ]
+    },
+    {
+      "variant": "V1_highest",
+      "backend": "gpu",
+      "unbatched_ms": 9.81782702729106,
+      "peak_mem_mib_after_unbatched": 2864.466552734375,
+      "max_abs_diff": 1.7763568394002505e-15,
+      "max_rel_diff": 1.380094597460517e-13,
+      "batched_total_ms": 161.72618698328733,
+      "per_call_vmap_ms": 10.107886686455458,
+      "peak_mem_mib_after_batched": 2864.466552734375
+    },
+    {
+      "variant": "V2_bcoo_dense",
+      "backend": "gpu",
+      "unbatched_ms": 19.93540208786726,
+      "peak_mem_mib_after_unbatched": 2864.466552734375,
+      "max_abs_diff": 1.7763568394002505e-15,
+      "max_rel_diff": 2.3831650384478404e-13,
+      "batched_total_ms": 335.31418396160007,
+      "per_call_vmap_ms": 20.957136497600004,
+      "peak_mem_mib_after_batched": 2906.764404296875
+    },
+    {
+      "variant": "V2b_bcoo_bcoo",
+      "backend": "gpu",
+      "unbatched_error": "JaxRuntimeError: UNIMPLEMENTED: Stable sorting of more than 2^31-1 elements is not implemented",
+      "batched_error": "JaxRuntimeError: UNIMPLEMENTED: Stable sorting of more than 2^31-1 elements is not implemented"
+    },
+    {
+      "variant": "V3_dedup_segsum",
+      "backend": "gpu",
+      "unbatched_ms": 31.788493040949106,
+      "peak_mem_mib_after_unbatched": 2906.764404296875,
+      "max_abs_diff": 1.7763568394002505e-15,
+      "max_rel_diff": 1.2869336668767806e-13,
+      "batched_total_ms": 626.161597087048,
+      "per_call_vmap_ms": 39.1350998179405,
+      "peak_mem_mib_after_batched": 3577.910400390625
+    },
+    {
+      "variant": "V5_compact_k12",
+      "backend": "gpu",
+      "unbatched_ms": 0.8457755902782083,
+      "peak_mem_mib_after_unbatched": 3577.910400390625,
+      "max_abs_diff": 1.7763568394002505e-15,
+      "max_rel_diff": 4.766330076894545e-13,
+      "batched_total_ms": 9.260324528440833,
+      "per_call_vmap_ms": 0.5787702830275521,
+      "peak_mem_mib_after_batched": 3577.910400390625
+    },
+    {
+      "variant": "V5_compact_k16",
+      "backend": "gpu",
+      "unbatched_ms": 1.782560022547841,
+      "peak_mem_mib_after_unbatched": 3577.910400390625,
+      "max_abs_diff": 1.7763568394002505e-15,
+      "max_rel_diff": 2.3831650384478404e-13,
+      "batched_total_ms": 23.340504500083625,
+      "per_call_vmap_ms": 1.4587815312552266,
+      "peak_mem_mib_after_batched": 3577.910400390625
+    },
+    {
+      "variant": "V6_library",
+      "backend": "gpu",
+      "unbatched_ms": 1.2854335363954306,
+      "peak_mem_mib_after_unbatched": 3577.910400390625,
+      "max_abs_diff": 1.7763568394002505e-15,
+      "max_rel_diff": 4.766330076894545e-13,
+      "batched_total_ms": 13.394007459282875,
+      "per_call_vmap_ms": 0.8371254662051797,
+      "peak_mem_mib_after_batched": 3577.910400390625
+    }
+  ],
+  "autoarray_file": "/mnt/ral/jnightin/PyAuto_wt/delaunay-nn-constant-split-assembly/PyAutoArray_feature/autoarray/__init__.py",
+  "autoarray_version": "2026.8.17.1"
+}
