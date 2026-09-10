@@ -126,6 +126,38 @@ The standalone step functions live in
 ``scripts/misc/likelihood_breakdown/README.md`` for the library provenance of
 each one.
 
+Reconstruction sub-rows
+-----------------------
+
+Steps 12 and 13 each carry a table of **overlapping** sub-rows
+(``steps_reconstruction_sub_rows``), measured on both legs and — like the
+sparse tables above — never appended to ``likelihood_steps`` or
+``total_step_by_step``. They are not a partition of the reconstruction row:
+the library never factorises ``F + λH`` once. It Jacobi-rescales the system and
+runs a PDIP ``lax.while_loop`` in which **every iteration is a fresh dense
+Cholesky of the (n, n) KKT system**, inside the external ``jaxnnls`` package.
+The rows are therefore comparators on the same matrices:
+
+- ``Cholesky (F+λH)`` and ``Cholesky solve (unconstrained)`` — one
+  factorisation, and one factorisation plus two triangular solves. The second
+  is the number a matrix-free line has to beat, not the ~37 ms row.
+- ``NNLS PDIP (cell-driven, max_iter 50)`` and ``NNLS PDIP one iteration`` —
+  the same solve driven from the cell via ``autoarray.util.jax_nnls.solve_nnls``
+  rather than through ``reconstruction_positive_only_from``, because the
+  library's ``custom_vjp`` primal discards ``converged`` and ``pdip_iter``.
+  The ``nnls`` JSON block records the iteration count, the convergence flag,
+  ms/iteration and the max-abs agreement of the cell-driven reconstruction with
+  the library's (recorded as ``pinned_drift`` at 1e-8, never asserted).
+- ``Log det Cholesky (F+λH reduced)`` / ``(H reduced)`` — the two log-dets step
+  13 folds into its row, plus ``log_evidence_terms``: every term of the
+  evidence, evaluated eagerly once from the *inversion's own* reconstruction and
+  reduced blocks, so the emitted values are comparable to the pin rather than to
+  the step-by-step chain (which drifts through the ill-conditioned solve).
+
+With ``--vmap-batch N`` an extra ``NNLS PDIP @vmap N (identical lanes)`` row is
+attempted. All lanes are copies of one system so they converge on the same
+iteration — a best case, stated in ``steps_reconstruction_vmap_note``.
+
 Output
 ------
 
@@ -174,7 +206,7 @@ import sys as _smoke_sys
 
 # Shared breakdown helpers. Imported *before* the smoke short-circuit so the CI
 # import smoke covers the package too.
-from likelihood_breakdown import sparse_steps, timing  # noqa: E402
+from likelihood_breakdown import reconstruction_steps, sparse_steps, timing  # noqa: E402
 
 from _adapt_image_util import adapt_image_for_dataset  # noqa: E402
 
@@ -1326,8 +1358,155 @@ _, reconstruction = jit_profile(
     regularization_matrix_full,
 )
 likelihood_steps.append(("Regularized reconstruction", timer.records[-1][1] / 10))
+_reconstruction_row_s = timer.records[-1][1] / 10
 
 print(f"  reconstruction shape: {reconstruction.shape}")
+
+# ---------------------------------------------------------------------------
+# Reconstruction sub-rows (overlap the step-12 row)
+# ---------------------------------------------------------------------------
+# See the module docstring, "Reconstruction sub-rows". These rows re-measure
+# pieces of the same solve on the same matrices, so they are deliberately NOT
+# appended to ``likelihood_steps`` and never enter ``total_step_by_step``.
+# Identical on the dense and w-tilde legs: the sparse path replaces the mapping
+# matrix, not the solve.
+
+print("\n--- Reconstruction sub-rows (overlap the reconstruction row) ---")
+
+reconstruction_sub_rows: dict[str, float] = {}
+
+_curv_reg_jnp = jnp.array(curvature_matrix) + regularization_matrix_full
+_data_vector_jnp = jnp.array(data_vector)
+
+jit_profile(
+    reconstruction_steps.cholesky_curvature_reg,
+    "cholesky_curvature_reg_jit",
+    _curv_reg_jnp,
+)
+reconstruction_sub_rows["Cholesky (F+λH)"] = timer.records[-1][1] / 10
+
+jit_profile(
+    reconstruction_steps.cholesky_solve,
+    "cholesky_solve_jit",
+    _curv_reg_jnp,
+    _data_vector_jnp,
+)
+reconstruction_sub_rows["Cholesky solve (unconstrained)"] = timer.records[-1][1] / 10
+
+# The cell-driven NNLS twin: same Jacobi scaling, same PDIP driver, same
+# iteration cap as ``reconstruction_positive_only_from`` — but calling
+# ``solve_nnls`` directly, so the iteration count and the convergence flag the
+# library's ``custom_vjp`` primal discards come back out.
+_Q_pc, _q_pc, _D_scale = reconstruction_steps.jacobi_scaled(_curv_reg_jnp, _data_vector_jnp)
+
+_, _nnls_out = jit_profile(reconstruction_steps.nnls_pdip, "nnls_pdip_jit", _Q_pc, _q_pc)
+_nnls_row_s = timer.records[-1][1] / 10
+reconstruction_sub_rows["NNLS PDIP (cell-driven, max_iter 50)"] = _nnls_row_s
+
+jit_profile(
+    reconstruction_steps.nnls_pdip_one_iteration,
+    "nnls_pdip_one_iteration_jit",
+    _Q_pc,
+    _q_pc,
+)
+_nnls_one_iteration_s = timer.records[-1][1] / 10
+reconstruction_sub_rows["NNLS PDIP one iteration"] = _nnls_one_iteration_s
+
+_x_pc, _nnls_converged, _nnls_iterations = _nnls_out
+_nnls_iterations = int(_nnls_iterations)
+_nnls_recon_diff = float(
+    np.max(
+        np.abs(np.asarray(_x_pc * _D_scale, dtype=float) - np.asarray(reconstruction, dtype=float))
+    )
+)
+
+print(f"  PDIP iterations:            {_nnls_iterations} (cap 50)")
+print(f"  converged:                  {bool(_nnls_converged)}")
+print(
+    f"  step-12 row / iteration:    {_reconstruction_row_s * 1e3 / max(_nnls_iterations, 1):9.3f} ms"
+)
+print(f"  cell-driven row / iteration:{_nnls_row_s * 1e3 / max(_nnls_iterations, 1):9.3f} ms")
+print(f"  one-iteration row:          {_nnls_one_iteration_s * 1e3:9.3f} ms")
+print(f"  max |recon_cell - recon_library| = {_nnls_recon_diff:.3e}")
+
+# Recorded, never asserted: a drift record lands in ``pinned_drift`` alongside
+# the evidence pins (``check_pinned`` discipline — a profiling run flags drift,
+# it does not adjudicate library correctness). ``check_pinned`` itself is a
+# *relative* comparison against a non-zero baseline; this quantity is an
+# absolute max-abs difference against an exact zero, so the record is built
+# here in the same shape.
+_nnls_drift = None
+if _nnls_recon_diff <= 1e-8:
+    print("  Check PASSED: cell-driven NNLS reproduces the library reconstruction to 1e-8")
+else:
+    _nnls_drift = {
+        "label": (
+            f"imaging/pixelization[{instrument}] cell-driven NNLS vs "
+            f"reconstruction_positive_only_from"
+        ),
+        "expected": 0.0,
+        "got": _nnls_recon_diff,
+        "rel_diff": _nnls_recon_diff,
+        "rtol": 1e-8,
+    }
+    print(
+        f"  WARNING: PINNED-VALUE DRIFT [{_nnls_drift['label']}] — the cell-driven NNLS "
+        f"twin no longer reproduces the library reconstruction (max abs diff "
+        f"{_nnls_recon_diff:.3e} > 1e-8). The sub-rows below describe a different "
+        f"solve from the step-12 row."
+    )
+
+nnls_provenance = {
+    "iterations": _nnls_iterations,
+    "converged": bool(_nnls_converged),
+    "ms_per_iteration": (_nnls_row_s * 1e3 / _nnls_iterations) if _nnls_iterations else None,
+    "one_iteration_ms": _nnls_one_iteration_s * 1e3,
+    "max_iter": 50,
+    "solver_tol": "jaxnnls default",
+    "jacobi_preconditioning": True,
+    "reconstruction_max_abs_diff_vs_library": _nnls_recon_diff,
+    "reconstruction_tolerance": 1e-8,
+    "drift": _nnls_drift,
+}
+
+# Optional batched NNLS row. Every lane is a copy of the same system, so all
+# lanes converge on the same iteration — the ``while_loop`` never waits for a
+# straggler. That makes this the *best case* for amortization, not a
+# representative one; the note goes into the JSON beside the row.
+_reconstruction_vmap_note = None
+if _vmap_batch is not None:
+    try:
+
+        def _nnls_pdip_batched(qq):
+            return reconstruction_steps.nnls_pdip(qq[0], qq[1])
+
+        _nnls_batched = (
+            jnp.broadcast_to(_Q_pc, (_vmap_batch, *_Q_pc.shape)),
+            jnp.broadcast_to(_q_pc, (_vmap_batch, *_q_pc.shape)),
+        )
+        _nnls_vmap_per_call = timing.vmap_profile(
+            _nnls_pdip_batched,
+            "nnls_pdip",
+            _nnls_batched,
+            _vmap_batch,
+            timer=timer,
+            jit_records=jit_records,
+        )
+        reconstruction_sub_rows[f"NNLS PDIP @vmap {_vmap_batch} (identical lanes)"] = (
+            _nnls_vmap_per_call
+        )
+        _reconstruction_vmap_note = (
+            f"The @vmap {_vmap_batch} NNLS row batches {_vmap_batch} copies of the same "
+            f"(Q_pc, q_pc); identical lanes converge on the same PDIP iteration, so the "
+            f"lax.while_loop never runs on for a straggler. It is the best case for "
+            f"amortization, not a representative one — a real batch of distinct "
+            f"parameter draws runs until its slowest lane converges."
+        )
+    except Exception:  # noqa: BLE001 — a vmap failure must not lose the unbatched rows
+        import traceback as _nnls_traceback
+
+        print("  NNLS vmap row FAILED — the unbatched sub-rows are unaffected. Traceback:")
+        print(_nnls_traceback.format_exc())
 
 # ---------------------------------------------------------------------------
 # Step 13: Map reconstruction to image + log evidence
@@ -1499,6 +1678,55 @@ print(f"  log_evidence (step-by-step) = {log_evidence}")
 print(f"  log_evidence (inv matrices) = {log_evidence_check}")
 print(f"  log_evidence (reference)    = {log_evidence_ref}")
 
+# ---------------------------------------------------------------------------
+# Log-evidence sub-rows (overlap the step-13 row) + the evidence term by term
+# ---------------------------------------------------------------------------
+# The two log-det Choleskys step 13 folds into its single row, plus one eager
+# evaluation of every term of the evidence. Overlapping rows: not appended to
+# ``likelihood_steps``.
+#
+# Both use the **inversion's own** reduced blocks and reconstruction — the same
+# quantities ``log_evidence_check`` above uses, and for the same reason: the
+# step-by-step chain accumulates ~1 % of drift through the ill-conditioned
+# solve, so its evidence is not comparable to the pin. Timing is unaffected
+# (same shapes, same dtype as the blocks step 13 slices internally), and the
+# emitted terms are then the reference inversion's, which is what an SLQ
+# estimate has to be checked against.
+
+print("\n--- Log-evidence sub-rows (overlap the log-evidence row) ---")
+
+_creg_reduced_row = jnp.array(inversion.curvature_reg_matrix_reduced)
+_reg_reduced_row = jnp.array(inversion.regularization_matrix_reduced)
+
+jit_profile(reconstruction_steps.log_det_cholesky, "log_det_curvature_reg_jit", _creg_reduced_row)
+reconstruction_sub_rows["Log det Cholesky (F+λH reduced)"] = timer.records[-1][1] / 10
+
+jit_profile(reconstruction_steps.log_det_cholesky, "log_det_regularization_jit", _reg_reduced_row)
+reconstruction_sub_rows["Log det Cholesky (H reduced)"] = timer.records[-1][1] / 10
+
+if _cli.use_sparse_operator:
+    _mapped_recon_eager = sparse_steps.mapped_reconstructed_operated_data(
+        sparse_ctx, inv_recon_jnp, rows_curv_jnp, cols_jnp, vals_jnp, operated_mge_jnp
+    )
+else:
+    _mapped_recon_eager = al.util.inversion.mapped_reconstructed_data_via_mapping_matrix_from(
+        mapping_matrix=bmm_ref,
+        reconstruction=inv_recon_jnp,
+        xp=jnp,
+    )
+
+log_evidence_term_values = reconstruction_steps.log_evidence_terms(
+    data_array,
+    noise_jnp,
+    blurred_img_jnp + _mapped_recon_eager,
+    inv_recon_jnp,
+    mapper_indices_jnp,
+    _reg_reduced_row,
+    _creg_reduced_row,
+)
+for _term, _value in log_evidence_term_values.items():
+    print(f"  {_term:<24} {_value!r}")
+
 _step_by_step_drift = check_pinned(
     float(log_evidence_check),
     float(log_evidence_ref),
@@ -1583,6 +1811,17 @@ if sparse_sub_rows:
     for _lab, _dt in sparse_sub_rows.items():
         print(f"    {_lab:<{_w}}  {_dt:12.6f} s")
 
+if reconstruction_sub_rows:
+    print("-" * 70)
+    print("  Reconstruction sub-rows (overlap the reconstruction row)")
+    _w = max(len(k) for k in reconstruction_sub_rows)
+    for _lab, _dt in reconstruction_sub_rows.items():
+        print(f"    {_lab:<{_w}}  {_dt:12.6f} s")
+    print(
+        f"    -> {nnls_provenance['iterations']} PDIP iterations, "
+        f"converged={nnls_provenance['converged']}"
+    )
+
 if _vmap_error is not None:
     print("-" * 70)
     print(f"  vmap batch {_vmap_batch}: FAILED (traceback in the result JSON).")
@@ -1659,6 +1898,17 @@ if sparse_setup_rows:
 
 if sparse_sub_rows:
     breakdown_summary["steps_sparse_sub_rows"] = {k: float(v) for k, v in sparse_sub_rows.items()}
+
+# Overlapping rows inside steps 12 and 13 — never part of ``steps`` or
+# ``total_step_by_step``. See ``scripts/misc/likelihood_breakdown/README.md``.
+breakdown_summary["steps_reconstruction_sub_rows"] = {
+    k: float(v) for k, v in reconstruction_sub_rows.items()
+}
+breakdown_summary["nnls"] = nnls_provenance
+breakdown_summary["log_evidence_terms"] = log_evidence_term_values
+
+if _reconstruction_vmap_note is not None:
+    breakdown_summary["steps_reconstruction_vmap_note"] = _reconstruction_vmap_note
 
 if sparse_equivalence is not None:
     breakdown_summary["sparse_equivalence"] = sparse_equivalence
@@ -1776,5 +2026,5 @@ if _pin_drift is None:
 _rel_to_pin = abs(log_evidence_ref - EXPECTED_LOG_EVIDENCE_HST) / abs(EXPECTED_LOG_EVIDENCE_HST)
 print(f"  relative difference vs pin: {_rel_to_pin:.3e}")
 
-_drift_records = [r for r in (_pin_drift, _step_by_step_drift) if r is not None]
+_drift_records = [r for r in (_pin_drift, _step_by_step_drift, _nnls_drift) if r is not None]
 record_pinned_check(dict_path, EXPECTED_LOG_EVIDENCE_HST, _drift_records)
