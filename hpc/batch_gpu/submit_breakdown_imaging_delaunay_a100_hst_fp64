@@ -1,26 +1,27 @@
 #!/bin/bash -l
 #
-# A100 likelihood-breakdown profile: imaging/delaunay x hst x fp64.
-# DENSE inversion path (mapping matrices).
-# Per-step JIT decomposition (PreOptimizationTimes campaign, autolens_profiling#59).
-# Compile-heavy: every pipeline step is JIT-compiled in isolation and then
-# re-compiled under jax.jit(jax.vmap(...)) at batch 16, so wall time is
-# dominated by XLA compiles, not the steady-state timing loops.
+# A100 likelihood-breakdown profile: imaging/delaunay x hst x fp64, dense inversion.
+# Leg of the 2026-09 pixelized baseline grid (autolens_profiling#241):
+# {pixelization, delaunay, delaunay_nn} x {runtime, breakdown} x {dense, sparse},
+# twelve legs pinned to one A100 node by submit_baseline_grid.sh. Fiducial tier
+# (1500/1521 source pixels, MGE-60, lp [4,2,2]), NOT the #235 production preset;
+# the sparse legs are the half-matrix-free comparator for the CG + SLQ work, not
+# a production GPU path (production GPU runs fit the plain dataset).
 #
-#   --split-setup    four-way split of the inversion-setup block
-#   --vmap-batch 16  batched re-timing; 16 is the Nautilus reference run's
-#                    n_batch, so the rows reconcile against its per-eval cost
+#   --config-name hpc_a100_fp64   output-filename label for this row
+#   --regularization adapt_split  al.reg.AdaptSplit(0.1, 10.0, 0.1) — what
+#                                 production pairs Delaunay with (#232)
+#   --split-setup                 four-way split of the inversion-setup block
+#   --vmap-batch 16               batched re-timing at the Nautilus n_batch
 #
-# Re-run with these flags (autolens_profiling#219) both to pick up the
-# corrected, JIT-timed "Regularization matrix (H)" row — the previous 14.4 ms
-# figure was a host-to-device copy of the eager NumPy matrix, not a JIT step —
-# and to give the DelaunayNN sibling a like-for-like column to subtract from.
+# Every leg starts from an EMPTY JAX compilation cache: a seeded XLA autotune
+# cache silently changes kernels (results/notes/xla_autotune_triton_gemm.md — F
+# 4.8 vs 25.6 ms on the same code), which is the whole reason for this re-run.
+# XLA_FLAGS carries only constant_folding; the autotune/Triton flags are left to
+# autonerves' jax_wrapper so this measures the library default.
 
-#SBATCH -J breakdown_imaging_delaunay_hst_fp64
+#SBATCH -J baseline_breakdown_delaunay_dense
 #SBATCH --partition=gpu
-# Exclusion of euclid-ral-gpu-1 dropped 2026-09-05: MIG mode confirmed Disabled
-# on all four GPUs and JAX cuda init verified per GPU from inside an srun; the
-# preflight stays as the backstop. Fleet-wide retirement is a separate follow-up.
 #SBATCH --gres=gpu:1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
@@ -31,10 +32,11 @@
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=james.w.nightingale@durham.ac.uk
 
-# Derive the repo root from where this was submitted (hpc/batch_gpu/../..)
-# rather than hardcoding /mnt/ral/jnightin/autolens_profiling: the canonical
-# RAL checkout sits on main with a dirty tree, so this runs from a worktree of
-# the feature branch. Same pattern as submit_delaunay_nn_benchmark_a100.
+# Derive the repo root from where this was submitted (hpc/batch_gpu/../..) rather
+# than hardcoding /mnt/ral/jnightin/autolens_profiling: the canonical RAL
+# checkout sits on main with a dirty tree, so this runs from a worktree of the
+# feature branch. The -o/-e paths above are relative, so sbatch from inside
+# hpc/batch_gpu/ (submit_baseline_grid.sh does the cd for you).
 export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
 echo "AP_ROOT=$AP_ROOT"
 source $AP_ROOT/activate.sh
@@ -47,27 +49,48 @@ export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding"
 export NUMBA_CACHE_DIR=/tmp/numba_cache
 export MPLCONFIGDIR=/tmp/matplotlib
 
+# Fresh per-job compilation cache. output/ is gitignored, so these never reach
+# git; ${SLURM_JOB_ID} keeps concurrent legs on the same node from sharing one.
+export JAX_COMPILATION_CACHE_DIR="$AP_ROOT/output/jax_cache/baseline_${SLURM_JOB_ID:-local}"
+rm -rf "$JAX_COMPILATION_CACHE_DIR" && mkdir -p "$JAX_COMPILATION_CACHE_DIR"
+echo "JAX_COMPILATION_CACHE_DIR=$JAX_COMPILATION_CACHE_DIR (fresh)"
+
 nvidia-smi
 
 echo "=========================================="
 date
+hostname
 echo "Cell:           likelihood_breakdown/imaging/delaunay"
 echo "Instrument:     hst"
 echo "Precision:      fp64"
-echo "Inversion path: dense (mapping)"
-echo "Flags:          --split-setup --vmap-batch 16"
+echo "Inversion path: dense (mapping matrices, InversionImagingMapping)"
+echo "Source mesh:    Delaunay mesh, linear interpolation"
+echo "Config name:    hpc_a100_fp64"
+echo "Regularization: al.reg.AdaptSplit(inner_coefficient=0.1, outer_coefficient=10.0, signal_scale=0.1)"
+echo "Flags:          --config-name hpc_a100_fp64 --regularization adapt_split --split-setup --vmap-batch 16"
 
-echo "=== source revisions ==="
+echo "=== source revisions (shared install, untouched) ==="
 for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
     printf '%-14s %s\n' "$r" "$(git -C /mnt/ral/jnightin/PyAuto/$r rev-parse HEAD 2>&1)"
 done
+echo "AP_ROOT rev:   $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
 
 cd $AP_ROOT
 
+echo "=== import provenance ==="
+python3 -c "import autoarray, autolens; print('autoarray.__file__ =', autoarray.__file__); print('autoarray.__version__ =', autoarray.__version__); print('autolens.__file__ =', autolens.__file__)"
+
 python3 -u scripts/imaging/likelihood_breakdown/delaunay.py \
     --config-name hpc_a100_fp64 \
+    --regularization adapt_split \
     --split-setup \
     --vmap-batch 16
+
+# Autotune-cache census. Must be non-fatal: the directory only exists if XLA
+# wrote autotune results, and activate.sh's ERR trap fails the job on any
+# non-zero exit (the `ls` failure is swallowed by the pipe to `wc -l`).
+echo -n "AUTOTUNE_ENTRIES count="
+ls "$JAX_COMPILATION_CACHE_DIR/xla_gpu_per_fusion_autotune_cache_dir" 2>/dev/null | wc -l
 
 echo "Finished."
 date
