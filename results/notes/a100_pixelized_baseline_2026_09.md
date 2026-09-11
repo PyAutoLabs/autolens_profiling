@@ -251,6 +251,10 @@ step timings. If per-term log-det values are wanted for the matrix-free / SLQ co
 (the natural place to check SLQ noise against exact Cholesky) the breakdown cells need a
 new emission; file it as a follow-up rather than reading it out of this grid.
 
+*Now recorded (2026-09-11, issue #243) — the per-term values are in
+[Reconstruction split](#reconstruction-split-2026-09-11); this paragraph is kept as the
+history of why they were missing from the 2026-09-10 grid.*
+
 ## Compile times
 
 Full-pipeline compile from the runtime legs is in the runtime table above (13.3–17.6 s).
@@ -292,6 +296,9 @@ independently compiled): 1.540 / 1.540 ms unbatched and 0.180 / 0.174 ms per cal
 
 1. **The target is the solve.** 37 ms of a ~50–65 ms per-call cost is NNLS +
    Cholesky on the reduced system, unchanged by the dense/sparse choice.
+   *Refined 2026-09-11 — see [Reconstruction split](#reconstruction-split-2026-09-11):
+   the target is the NNLS **iterations** (21–22 × ~1.7 ms), not the linear solve; one
+   exact unconstrained solve of the same system is only 1.5–1.6 ms.*
 2. **F is no longer the villain.** With `--xla_gpu_enable_triton_gemm=false` the dense
    F is 4.83 ms flat on all three meshes — 5.3× cheaper than the pre-flag 25.6 ms that
    originally motivated a matrix-free F. A matrix-free F has ~4.8 ms (dense) to beat,
@@ -319,3 +326,135 @@ matrix-free) and every A100 pixelized/sparse row in that note's tables. The synt
 GEMM probe in [`xla_autotune_triton_gemm.md`](./xla_autotune_triton_gemm.md) (arm E,
 4.79 ms) is **confirmed** rather than superseded: the live dense F rows here are
 4.824–4.830 ms on all three meshes, so nothing needs folding in.
+
+## Reconstruction split (2026-09-11)
+
+autolens_profiling issue [#243](https://github.com/PyAutoLabs/autolens_profiling/issues/243),
+branch `feature/reconstruction-row-split`, code commit `353b9cf`. Four jobs re-run the
+**dense** legs of the grid above with the reconstruction row instrumented: overlapping
+sub-rows around steps 12/13, the PDIP iteration count threaded out of `jax_nnls`, and
+every `log_evidence` term emitted. Written under the `_recon_split` output tag so the
+2026-09-10 baseline JSONs above stay canonical.
+
+### Provenance and gate
+
+| Job | Cell | Task | Start (2026-09-11 BST) | Elapsed |
+|---|---|---|---|---:|
+| 342643 | pixelization | breakdown, dense | 00:04:28 | 1:45 |
+| 342644 | delaunay | breakdown, dense | 00:06:14 | 1:36 |
+| 342645 | delaunay_nn | breakdown, dense | 00:07:50 | 2:27 |
+| 342646 | pixelization | runtime, dense | 00:10:18 | 0:55 |
+
+All four `COMPLETED` on `euclid-ral-gpu-2` (NVIDIA A100 80GB PCIe), fp64,
+`PyAutoLens 2026.8.17.1`, same three XLA flags (Triton GEMM off), a **fresh per-job**
+`JAX_COMPILATION_CACHE_DIR` (`output/jax_cache/recon_split_<jobid>`),
+`autotune_cache_entries_at_start: 0`, `cache_fresh: true`, `AUTOTUNE_ENTRIES count=0` at
+exit. Gate: dense `Curvature matrix (F)` 4.821 / 4.860 / 4.820 ms (threshold < 6 ms), no
+`cache_fresh: false`, `pinned_drift: []` on both rectangular legs, `nnls.converged: true`
+on all three, and the cell-driven NNLS reconstruction matches the library's to
+4.7e-10 / 7.6e-10 / 1.2e-9 (tolerance 1e-8). The eager regression pins PASSED at
+28621.128714 (rect, relative difference 2.0e-14), 29140.295882, 29277.464588; the
+rectangular **runtime** pin is now `28621.128714095972` and PASSED, closing the
+bookkeeping wrinkle flagged above. Runtime leg: single-JIT 50.66 ms, 32.10 ms per call at
+`vmap` 16 (baseline 50.63 / 32.08).
+
+The shared RAL library install was refreshed between 2026-09-10 and this re-run
+(PyAutoFit `e354dbb6`, PyAutoArray `667deed3`, PyAutoGalaxy `6640a749`,
+PyAutoLens `0da06de6`; PyAutoNerves unchanged at `0e7163bc`). Every step row lands within
+0.7 % of the 2026-09-10 dense numbers, so the split below is directly comparable to the
+tables above.
+
+### The split — unbatched per-call (ms)
+
+**These sub-rows overlap the reconstruction row; they are not a partition of it.** Each
+is an independently compiled `jit` over the *same* `F + λH` / `D` the fused step-12 unit
+receives, so they are comparators ("what would this piece cost on its own?"), never
+addends. Step 12 remains `reconstruction_positive_only_from` and is unchanged; the
+cell-driven `solve_nnls` row is its instrumented twin.
+
+| Row | Rectangular | Delaunay | DelaunayNN |
+|---|---:|---:|---:|
+| **Regularized reconstruction** (step 12, timed) | **36.962** | **37.386** | **37.569** |
+| NNLS PDIP (cell-driven, max_iter 50) | 37.124 | 37.316 | 37.304 |
+| — PDIP iterations to convergence | 21 | 22 | 22 |
+| — ms per PDIP iteration | 1.768 | 1.696 | 1.696 |
+| NNLS PDIP, one iteration (upper bound) | 3.318 | 3.166 | 3.184 |
+| NNLS PDIP @ `vmap` 16, identical lanes | 21.874 | 21.926 | 21.911 |
+| Cholesky (F+λH) | 1.263 | 1.194 | 1.235 |
+| Cholesky solve (unconstrained, factorise + 2 triangular solves) | 1.556 | 1.576 | 1.522 |
+| Log det Cholesky (F+λH reduced) | 1.271 | 1.156 | 1.164 |
+| Log det Cholesky (H reduced) | 1.191 | 1.147 | 1.184 |
+| **Mapped recon + log evidence** (step 13, timed) | **2.412** | **2.233** | **2.261** |
+
+**The "one iteration" row is an upper bound, not the marginal cost.**
+`solve_nnls(..., max_iter=1)` pays the whole solver entry — Jacobi scaling of the
+returned arrays, the initial interior point, and the first KKT factorisation — which the
+`lax.while_loop` pays once and then amortises. It is ~1.9× the amortised 1.70–1.77 ms per
+iteration for exactly that reason. Read `row / iterations` as the per-iteration cost and
+the one-iteration row as the ceiling on what removing a single iteration buys.
+
+**The `vmap` 16 row is the best case for batching, not a representative one.** All 16
+lanes are `broadcast_to` copies of the same `(Q_pc, q_pc)`, so they converge on the same
+PDIP iteration and the `lax.while_loop` never runs on for a straggler. A real batch of
+distinct parameter draws runs until its slowest lane converges. Even in this best case the
+NNLS amortises only **1.70×** (37.1 → 21.9 ms per call), against 12× for the batched
+sparse inversion setup.
+
+### `log_evidence_terms` — the exact Cholesky log-dets
+
+Now emitted per leg (`log_evidence_terms` in each breakdown JSON). The two log-det terms
+are the exact dense-Cholesky values an SLQ estimator is to be checked against:
+
+| Term | Rectangular | Delaunay | DelaunayNN |
+|---|---:|---:|---:|
+| χ² | 19992.673552 | 19821.951111 | 19745.505861 |
+| regularization term | 204.864985 | 928.937527 | 800.447160 |
+| log det (F+λH) | 3888.258090 | 8360.401763 | 7224.568778 |
+| log det (H) | 1692.786817 | 7756.614959 | 6690.183752 |
+| noise normalization | −79635.267237 | −79635.267237 | −79635.267237 |
+| **log evidence** | **28621.128714** | **29140.295898** | **29277.464595** |
+
+The rectangular log-dets are ~2× smaller than the Delaunay family's because its
+regularization is `Constant(1.0)` while the Delaunay cells use `adapt_split`
+(0.1 / 10.0 / 0.1) — compare terms within a mesh, not across.
+
+### What this says to the matrix-free work
+
+**The 37 ms is not a linear solve — it is 21–22 PDIP iterations at ~1.7 ms each, and
+every one of them is a fresh dense KKT Cholesky inside `jaxnnls`.** A single Cholesky of
+the same `F + λH` is **1.19–1.26 ms**, and a full *exact* unconstrained solve (that
+factorisation plus two triangular solves) is **1.52–1.58 ms**. The positivity constraint
+therefore costs about **24×** the exact solve it replaces.
+
+The consequence for matrix-free CG + SLQ is blunt: **a CG line that only replaces the
+linear solve has ~1.6 ms per call to beat, not 37 ms** — plus the ~2.4 ms of the two
+log-det Choleskys (1.15–1.27 ms each), which is the part SLQ actually targets. Even a CG
+solve that were free would take ~4 ms off a ~50–65 ms call, and would leave the 37 ms
+untouched.
+
+The lever on the reconstruction row is the **NNLS iteration count**, not the cost of a
+factorisation: warm starts across likelihood evaluations, a looser `solver_tol`, a lower
+`max_iter`, or a different treatment of positivity altogether (project, penalise, or drop
+it and justify the drop). Batching does not rescue it either — under `vmap` 16 with
+*identical* lanes the NNLS amortises only 1.7× (21.9 ms per call), so a prototype must
+either attack the iteration count or make the case for dropping positivity before any CG
+work is worth doing. This supersedes item 1 of "What this baseline says to the
+matrix-free work" above: the target is the NNLS, not the solve.
+
+### Artifacts
+
+```
+results/breakdown/imaging/{pixelization,delaunay,delaunay_nn}_hpc_a100_fp64_recon_split.{json,png}
+results/runtime/imaging/pixelization/pixelization_hpc_a100_fp64_recon_split.json
+```
+
+New JSON keys on the breakdown legs: `steps_reconstruction_sub_rows`, `nnls`,
+`log_evidence_terms`, `steps_reconstruction_vmap_note`; new `jit_phases` entries
+`cholesky_curvature_reg_jit`, `cholesky_solve_jit`, `nnls_pdip_jit`,
+`nnls_pdip_one_iteration_jit`, `nnls_pdip_vmap16`, `log_det_curvature_reg_jit`,
+`log_det_regularization_jit`. Sub-row compile is cheap (0.07–0.10 s for the Cholesky
+rows, 0.43–0.46 s for each NNLS row — the same order as the step-12 `reconstruction_jit`
+at 0.45 s), so the instrumentation adds ~1.1 s of compile and no per-call cost to the
+timed steps. `log_det_regularization_jit.compile_s` is ~1e-5 s on every leg: it is a
+cache hit on the identically shaped `log_det_cholesky` traced one row earlier, not a
+mis-measurement.

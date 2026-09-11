@@ -726,10 +726,25 @@ _pinned_expected = None
 #
 # The pre-fix leg reproducing the old pin is what makes the new one
 # attributable to #490 rather than to accumulated drift.
+#
+# bilinear/hst RE-MEASURED 2026-09-10 (autolens_profiling#243), jobs 342617 /
+# 342620 on euclid-ral-gpu-2, light-profile over-sample rule [4, 2, 2]:
+# 28622.397322591198 -> 28621.128714095972 (4.4e-5 relative, so the old value
+# still PASSED at rtol=1e-4 and was never flagged). The move is the repo-wide
+# retirement of the outer sub-size-1 radial bin (#235), not a library change,
+# and this cell and ``likelihood_breakdown/pixelization.py`` fit the same
+# fiducial — the breakdown cell took the same value on 2026-09-08 (#237), so
+# the two pins now agree exactly instead of straddling the tolerance.
+#
+# rtu/hst RE-MEASURED 2026-09-10 (#243) the same way, one eager run of this cell
+# with `--rect-mesh rtu` on the local WSL host (JAX fp64):
+# 28506.318157467784 -> 28505.343980143432 (3.4e-5 relative, likewise inside
+# rtol=1e-4 and never flagged). The same [4, 2, 2] move, and the same value the
+# breakdown cell measured on 2026-09-08 (#237) — measured here, not copied.
 EXPECTED_LOG_EVIDENCE = {
     # 39x39 = 1521 source pixels, MGE-60 lens light, adapt_image=lensed_source
-    "bilinear": {"hst": 28622.397322591198},
-    "rtu": {"hst": 28506.318157467784},
+    "bilinear": {"hst": 28621.128714095972},
+    "rtu": {"hst": 28505.343980143432},
 }
 
 expected_log_evidence = EXPECTED_LOG_EVIDENCE.get(_cli.rect_mesh, {}).get(instrument)

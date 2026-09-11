@@ -1,6 +1,6 @@
 """Shared helpers for the per-step likelihood breakdown cells.
 
-Two modules live here:
+Three modules live here:
 
 1. **``timing``** — the JIT/vmap timing harness every breakdown cell shares:
    ``Timer``, ``block``, ``jit_profile``, ``vmap_profile``,
@@ -14,6 +14,15 @@ Two modules live here:
    step by step for the *func-list + mapper* case (an MGE lens-light basis
    alongside one pixelized ``Mapper``), so a ``--sparse`` breakdown times the
    real w-tilde steps instead of the dense mapping-matrix ones.
+
+3. **``reconstruction_steps``** — standalone JAX pieces of the *inside* of the
+   reconstruction and log-evidence rows: the Jacobi scaling and the PDIP NNLS
+   driver (which, unlike the library's ``custom_vjp`` primal, keeps the
+   iteration count and the convergence flag), a single Cholesky and a full
+   unconstrained Cholesky solve of the same ``F + λH``, the two reduced log-det
+   Choleskys, and every term of the evidence. These feed **overlapping**
+   sub-rows (``steps_reconstruction_sub_rows``, ``nnls``,
+   ``log_evidence_terms``) that are never summed against their parent row.
 
 The package is imported as ``from likelihood_breakdown import timing`` —
 ``scripts/misc`` is already on ``sys.path`` in every cell (see the

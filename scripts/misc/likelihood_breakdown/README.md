@@ -69,13 +69,14 @@ alongside its README. `scripts/misc` is already on `sys.path` in every cell, so 
 imaging cells do:
 
 ```python
-from likelihood_breakdown import sparse_steps, timing
+from likelihood_breakdown import reconstruction_steps, sparse_steps, timing
 ```
 
 | Module | What it holds |
 |--------|---------------|
 | `timing.py` | `Timer`, `block`, `jit_profile`, `vmap_profile`, `parse_vmap_batch`, `split_by_successive_differences` — the JIT/vmap harness the cells shared by copy-paste until the copies drifted. `jit_profile` / `vmap_profile` record `{lower_s, compile_s, first_call_s, steady_per_call_s}` per label into the cell's `jit_records` dict, which lands in the result JSON as `jit_phases`; before this, compile time existed only in SLURM stdout. |
 | `sparse_steps.py` | Standalone JAX functions reproducing `InversionImagingSparse` for the **func-list + mapper** case (an MGE lens-light basis alongside one pixelized `Mapper`) — the configuration all three production-fiducial imaging cells build. |
+| `reconstruction_steps.py` | Standalone JAX pieces of the *inside* of steps 12 and 13: `jacobi_scaled`, `nnls_pdip` / `nnls_pdip_one_iteration` (the PDIP driver, which keeps the iteration count the library's `custom_vjp` primal throws away), `cholesky_curvature_reg`, `cholesky_solve`, `log_det_cholesky`, `log_evidence_terms`. They feed the **overlapping** `steps_reconstruction_sub_rows` table on both legs. |
 
 `block()` synchronises every leaf of a returned pytree. That matters: the rectangular
 cell's older local copy tested `hasattr(x, "block_until_ready")`, so a tuple-returning
@@ -138,6 +139,41 @@ relative on F.
 
 `jit_phases` (both legs) carries lower / compile / first-call / steady time per timed
 JIT, so compile cost is recoverable from the artifact rather than only from job stdout.
+
+### Why `reconstruction_steps.py` exists
+
+The 2026-09-10 A100 baseline found `Regularized reconstruction` to be 36.7–37.9 ms on
+every pixelized cell — 61–71 % of the per-call cost, and identical dense vs sparse. That
+row is one fused JIT unit, and it is **not separable into stages**: the library never
+factorises `F + λH` once. `reconstruction_positive_only_from` Jacobi-rescales the system
+and hands it to a PDIP `lax.while_loop` (`autoarray/util/jax_nnls.py`, cap 50 iterations)
+in which *every iteration is a fresh dense Cholesky of the (n, n) KKT system*, inside the
+external `jaxnnls` package. Worse, `solve_nnls_primal`'s `custom_vjp` discards
+`converged` and `pdip_iter`, so the iteration count is invisible through the library call.
+
+So the sub-rows are **comparators measured on the same matrices**, not a partition:
+
+| sub-row | what it measures |
+|---------|------------------|
+| `Cholesky (F+λH)` | one factorisation of the full matrix the NNLS receives |
+| `Cholesky solve (unconstrained)` | that factorisation plus two triangular solves — the reconstruction with the non-negativity constraint dropped. **This is the number a matrix-free CG line has to beat**, not the ~37 ms row |
+| `NNLS PDIP (cell-driven, max_iter 50)` | the same solve, driven from the cell through `jax_nnls.solve_nnls` so the iteration count survives; agrees with the library reconstruction to 1e-8 |
+| `NNLS PDIP one iteration` | `max_iter=1` — initialisation plus one PDIP step, the cross-check on `row / iterations` |
+| `NNLS PDIP @vmap N (identical lanes)` | only with `--vmap-batch N`, and only a best case: identical lanes converge on the same iteration, so the `while_loop` never waits for a straggler |
+| `Log det Cholesky (F+λH reduced)` | the first of the two log-dets folded into the step-13 row, on the rank-stripped block |
+| `Log det Cholesky (H reduced)` | the second |
+
+### Extra JSON keys on both legs (reconstruction split)
+
+| key | meaning |
+|-----|---------|
+| `steps_reconstruction_sub_rows` | the table above, in seconds per call. **Overlapping** — never in `steps` or `total_step_by_step` |
+| `nnls` | `iterations`, `converged`, `ms_per_iteration` (the cell-driven row / iterations), `one_iteration_ms`, `max_iter`, `solver_tol`, `jacobi_preconditioning`, `reconstruction_max_abs_diff_vs_library` and its 1e-8 tolerance, plus a `drift` record when that tolerance is breached (recorded, never asserted; the rectangular cell also copies it into `pinned_drift`) |
+| `log_evidence_terms` | `chi_squared`, `regularization_term`, `log_det_curvature_reg`, `log_det_regularization`, `noise_normalization`, `log_evidence` — evaluated eagerly once, not inside a timed row, and from the **inversion's own** reconstruction and reduced blocks (the quantities the cell's `log_evidence_check` compares to `FitImaging`). The step-by-step chain accumulates ~1 % of drift through the ill-conditioned solve, so its evidence is not the one an SLQ estimate should be checked against |
+| `steps_reconstruction_vmap_note` | present only when the `@vmap` row ran: says in words that identical lanes make it a best case |
+
+Because H, `F + λH`, the NNLS solve and both Choleskys are the same code on both legs,
+these rows are measured on the dense and `--sparse` legs alike and are expected to agree.
 
 **The sparse rows are a comparator, not a production path.** Production GPU runs fit the
 plain dataset (memory `jax-path-never-applies-sparse-operator`); these rows exist to say
