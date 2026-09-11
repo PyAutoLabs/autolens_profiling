@@ -34,7 +34,7 @@ on:
   workflow_dispatch:
     inputs:
       sections:
-        description: "Comma-separated section list to run (likelihood,simulators,searches) — leave blank for all"
+        description: "Comma-separated section list to run (likelihood,simulators) — leave blank for all"
         required: false
         default: ""
   release:
@@ -131,21 +131,6 @@ jobs:
             echo "::endgroup::"
           done
 
-      - name: Run searches/nautilus/ scripts
-        if: ${{ inputs.sections == '' || contains(inputs.sections, 'searches') }}
-        working-directory: autolens_profiling
-        continue-on-error: true
-        env:
-          NUMBA_CACHE_DIR: /tmp/numba_cache
-          MPLCONFIGDIR: /tmp/matplotlib
-          PYTHONPATH: ${{ github.workspace }}/PyAutoNerves:${{ github.workspace }}/PyAutoFit:${{ github.workspace }}/PyAutoArray:${{ github.workspace }}/PyAutoGalaxy:${{ github.workspace }}/PyAutoLens
-        run: |
-          set +e
-          # Nautilus at n_live=200 on CPU takes O(minutes) to O(hours) per
-          # script. The full pair runs sequentially; expect 30-60 min total
-          # on the GitHub-hosted runner.
-          python scripts/imaging/searches/nautilus/mge.py || echo "::warning::nautilus/imaging/mge failed"
-
       - name: Refresh dashboard tables
         working-directory: autolens_profiling
         run: python scripts/misc/tooling/build_readme.py
@@ -160,13 +145,13 @@ jobs:
             exit 0
           fi
           # Force-add tracked-but-gitignored result artifacts. Phase 4
-          # currently keeps results/{likelihood,simulators,searches}/
+          # currently keeps results/{likelihood,simulators}/
           # gitignored; future hardware-tier work may flip a subset to
           # tracked, in which case this `add -f` becomes redundant but
           # harmless.
           git add -f results/ scripts/misc/likelihood_runtime/README.md \
                      scripts/misc/likelihood_breakdown/README.md \
-                     scripts/misc/simulators/README.md scripts/misc/searches/README.md \
+                     scripts/misc/simulators/README.md \
                      README.md
           git commit -m "chore: refresh profile artifacts + dashboard tables [skip ci]
 

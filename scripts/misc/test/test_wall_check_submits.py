@@ -4,7 +4,9 @@ The load-bearing test here is `test__phase8b_as_shipped_is_rejected`: it
 reconstructs `submit_phase8b_bijector_a100` exactly as it was submitted (an MGE
 step rate quoted as the basis for a `knn` / `delaunay_adapt_split` array at
 ``--time=0:30:00``) and asserts the checker refuses it. That submit lost 35 of
-39 arms on RAL job 340576. No JAX dependency.
+39 arms on RAL job 340576; it was removed with the retired inference programme,
+so the fixture below is the only copy of its shape that still runs. No JAX
+dependency.
 
 Run::
 
@@ -64,11 +66,10 @@ PHASE8B_AS_SHIPPED = """#!/bin/bash -l
 export JAX_ENABLE_X64=True
 CELLS=(delaunay_adapt_split knn mge)
 CELL=${CELLS[$SLURM_ARRAY_TASK_ID]}
-export SEARCHES_BATCH_SIZE=4
 N_STARTS=16
 N_STEPS=3000
 
-python3 scripts/imaging/searches/multi_start_prodigy/${CELL}.py \\
+python3 scripts/imaging/likelihood_runtime/${CELL}.py \\
     --instrument hst \\
     --config-name $CONFIG_NAME
 """
@@ -83,7 +84,7 @@ def _submit(basis: str, time: str = "7:00:00", cell: str = "knn") -> str:
 #SBATCH --time={time}
 
 export JAX_ENABLE_X64=True
-python3 scripts/imaging/searches/multi_start_prodigy/{cell}.py --instrument hst
+python3 scripts/imaging/likelihood_runtime/{cell}.py --instrument hst
 """
 
 
@@ -101,7 +102,7 @@ KNN_RATES_ROW = (
 
 def test__phase8b_as_shipped_is_rejected():
     """The submit that killed 35 of 39 arms must not pass the gate."""
-    problems = check_text(PHASE8B_AS_SHIPPED, "submit_phase8b_bijector_a100")
+    problems = check_text(PHASE8B_AS_SHIPPED)
     joined = "\n".join(problems)
 
     # The central rule: the two cells with no row of their own are named.
@@ -135,7 +136,7 @@ def test__phase8b_as_fixed_passes():
         "#   compile: 150  headroom: 1.5",
         "# WALL-BASIS:\n" + rows,
     ).replace("--time=0:30:00", "--time=7:00:00")
-    assert check_text(fixed, "submit_phase8b_bijector_a100") == []
+    assert check_text(fixed) == []
 
 
 # ---------------------------------------------------------------------------
@@ -143,17 +144,15 @@ def test__phase8b_as_fixed_passes():
 # ---------------------------------------------------------------------------
 
 
-def test__missing_header_is_required_only_on_searches_submits():
-    bare = (
-        "#!/bin/bash -l\n#SBATCH --time=1:00:00\npython3 scripts/imaging/searches/nautilus/mge.py\n"
-    )
-    assert check_text(bare, "submit_search_nautilus_imaging_mge_a100_hst_fp64")
-    assert check_text(bare, "submit_runtime_imaging_mge_a100_hst_fp64") == []
+def test__a_submit_without_a_block_is_not_checked():
+    """No block, nothing to validate — the gate only judges declared bases."""
+    bare = "#!/bin/bash -l\n#SBATCH --time=1:00:00\npython3 scripts/imaging/likelihood_runtime/mge.py\n"
+    assert check_text(bare) == []
 
 
 def test__cited_rate_must_match_the_table():
     wrong = KNN_RATES_ROW.replace("rate: 2.23", "rate: 0.117")
-    problems = "\n".join(check_text(_submit(wrong), "submit_search_x"))
+    problems = "\n".join(check_text(_submit(wrong)))
     assert "disagrees with wall/rates.py" in problems
 
 
@@ -164,22 +163,22 @@ def test__rates_source_needs_a_measured_row_for_that_cell():
         "#   lanes: 16  batch_size: 4  steps: 3000  rate: 2.23  source: rates\n"
         "#   compile: 300  headroom: 1.5"
     )
-    problems = "\n".join(check_text(_submit(row, cell="delaunay_matern"), "submit_search_x"))
+    problems = "\n".join(check_text(_submit(row, cell="delaunay_matern")))
     assert "no measured row" in problems
     assert "do NOT cite another cell's rate" in problems
 
 
 def test__time_below_headroom_is_rejected():
-    problems = "\n".join(check_text(_submit(KNN_RATES_ROW, time="1:00:00"), "submit_search_x"))
+    problems = "\n".join(check_text(_submit(KNN_RATES_ROW, time="1:00:00")))
     assert "killed mid-run" in problems
 
 
 def test__unmeasured_needs_probe_first():
     row = "#   cell: imaging/knn/hst  device: a100  precision: fp64\n#   source: unmeasured"
-    assert "probe-first" in "\n".join(check_text(_submit(row), "submit_search_x"))
+    assert "probe-first" in "\n".join(check_text(_submit(row)))
 
     ok = row + "  probe-first: yes"
-    assert check_text(_submit(ok), "submit_search_x") == []
+    assert check_text(_submit(ok)) == []
 
 
 def test__unmeasured_wall_carries_a_3x_floor():
@@ -187,7 +186,7 @@ def test__unmeasured_wall_carries_a_3x_floor():
         "#   cell: imaging/knn/hst  device: a100  precision: fp64\n"
         "#   source: unmeasured  probe-first: yes  wall: 6000  headroom: 1.5"
     )
-    assert "below the 3.0 floor" in "\n".join(check_text(_submit(row), "submit_search_x"))
+    assert "below the 3.0 floor" in "\n".join(check_text(_submit(row)))
 
 
 def test__declared_cell_must_be_one_the_submit_runs():
@@ -196,13 +195,13 @@ def test__declared_cell_must_be_one_the_submit_runs():
         "#   lanes: 16  batch_size: 4  steps: 3000  rate: 0.117  source: rates\n"
         "#   compile: 150  headroom: 1.5"
     )
-    problems = "\n".join(check_text(_submit(row, cell="knn"), "submit_search_x"))
+    problems = "\n".join(check_text(_submit(row, cell="knn")))
     assert "never runs imaging/mge" in problems
 
 
 def test__measured_wall_needs_a_ref():
     row = "#   cell: imaging/knn/hst  device: a100  precision: fp64\n#   wall: 800  source: measured-wall"
-    assert "needs both" in "\n".join(check_text(_submit(row), "submit_search_x"))
+    assert "needs both" in "\n".join(check_text(_submit(row)))
 
 
 # ---------------------------------------------------------------------------
@@ -253,7 +252,7 @@ case "$SLURM_ARRAY_TASK_ID" in
   0)  MODEL=pixelization  ;;
   1)  MODEL=delaunay_nn   ;;
 esac
-python3 scripts/imaging/searches/nautilus/${MODEL}.py --instrument hst
+python3 scripts/imaging/likelihood_runtime/${MODEL}.py --instrument hst
 """
     cells, _ = cells_run(text)
     assert cells == {("imaging", "pixelization"), ("imaging", "delaunay_nn")}
@@ -263,8 +262,8 @@ def test__cells_run_ignores_commented_invocations():
     """A command merely *mentioned* in the header is not a cell the job runs."""
     text = """#!/bin/bash -l
 # Score with:
-#   python3 scripts/misc/searches/bijector_ab.py --score
-python3 scripts/imaging/searches/nautilus/mge.py --instrument hst
+#   python3 scripts/misc/tooling/build_readme.py
+python3 scripts/imaging/likelihood_runtime/mge.py --instrument hst
 """
     cells, _ = cells_run(text)
     assert cells == {("imaging", "mge")}

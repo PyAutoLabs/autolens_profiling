@@ -97,8 +97,8 @@ mirror whose only job is holding RAL runs so they can be read. It defaults to
 
 | on RAL | lands at |
 |--------|----------|
-| `output/searches/` | `$LOCAL_PULL_ROOT/output/searches/` |
-| `results/searches/` | `$LOCAL_PULL_ROOT/results/searches/` (a **staging copy** — the committed rows are the ones in this repo) |
+| `output/` | `$LOCAL_PULL_ROOT/output/` |
+| `results/` | `$LOCAL_PULL_ROOT/results/` (a **staging copy** — the committed rows are the ones in this repo) |
 | `hpc/batch_gpu/output/` | `$LOCAL_PULL_ROOT/logs/output/` |
 | `hpc/batch_gpu/error/` | `$LOCAL_PULL_ROOT/logs/error/` |
 
@@ -112,8 +112,8 @@ Because `search_internal/` never comes back, a checkpoint that is still growing 
 invisible from the laptop — and "is this run alive?" is exactly what a stalled overnight
 sweep needs answered. So a real `pull` ends by writing
 `$LOCAL_PULL_ROOT/.cortex/pull.json`: one `find` over the ControlMaster mux records the
-size and mtime of every `checkpoint.hdf5` under `output/searches` on RAL, keyed by run
-directory relative to the pull root (`output/searches/<…>/<hash>` — the mirror maps 1:1).
+size and mtime of every `checkpoint.hdf5` under `output/` on RAL, keyed by run
+directory relative to the pull root (`output/<…>/<hash>` — the mirror maps 1:1).
 PyAutoCortex `collect` reads it to score the checkpoint leg of a run's evidence. The
 `runs` map stays empty here: this repo's SLURM logs do not name the run directory a job
 wrote, so a job id cannot honestly be linked to a checkpoint. `hpc/sync status` is a dry
@@ -230,17 +230,16 @@ can still fail *by producing wrong numbers*, which no exit code catches.
 
 A submit whose name ends in a tier (e.g. `..._fp64_n64`) and that declares
 `#SBATCH --array=0-4` runs one **seed per array task** — the shape a
-reliability measurement needs (`results/notes/inference/PROGRAMME.md` §3:
-"reliability is P(correct | fixed budget), measured over >= 5 seeds"). The
-seed is read from a `SEEDS=(...)` bash array indexed by `SLURM_ARRAY_TASK_ID`
-and exported as `SEARCHES_SEED`; stdout/stderr use the `%A_%a` (job_array)
+reliability measurement needs. The seed is read from a `SEEDS=(...)` bash array
+indexed by `SLURM_ARRAY_TASK_ID`; stdout/stderr use the `%A_%a` (job_array)
 pattern so each task's log is separate.
 
-## Wall clock: `# WALL-BASIS:` is mandatory on searches submits
+## Wall clock: the `# WALL-BASIS:` block
 
-Every `submit_search_*` / `submit_phase8b_*` must carry a `# WALL-BASIS:` block
-above its `#SBATCH` stanza, with **one row per cell it runs**, and
-`scripts/misc/wall/check_submits.py --check` gates it on every PR.
+A submit that runs more than one cell should carry a `# WALL-BASIS:` block above
+its `#SBATCH` stanza, with **one row per cell it runs**;
+`scripts/misc/wall/check_submits.py --check` validates every block it finds, on
+every PR.
 
 The rule the block enforces: **never carry a `--time` justification across
 cells.** `submit_phase8b_bijector_a100` cited an MGE step rate for an array of
@@ -256,8 +255,6 @@ measurement, say so with `source: unmeasured  probe-first: yes` and run one
 short arm — a truncated arm still measures s/step.
 
 Every arm must land in its own results file **and** its own autofit output
-directory. `--config-name` carries the tier and seed, which makes the results
-filename distinct; the search-side half is handled by
-`searches/_samplers.multi_start_unique_tag` — read its docstring before adding
-an arm, because only `clipper` enters a MultiStart search's identifier and an
-untagged arm silently returns a sibling arm's completed fit.
+directory: `--config-name` carries the tier and seed, which makes the results
+filename distinct, and an arm whose output directory is not distinct silently
+returns a sibling arm's completed fit.

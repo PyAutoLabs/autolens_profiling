@@ -541,10 +541,9 @@ with timer.section("model_build"):
 
     lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
 
-    # Matches ``_delaunay_nn_model`` in scripts/misc/searches/_setup.py — the
-    # registered DelaunayNN target — so the breakdown and the sampler runs
-    # profile the same mesh. ``DelaunayNN`` is a ``Delaunay`` subclass with the
-    # identical (pixels, zeroed_pixels, areas_factor) constructor.
+    # ``DelaunayNN`` is a ``Delaunay`` subclass with the identical
+    # (pixels, zeroed_pixels, areas_factor) constructor, so this mesh is the
+    # one every DelaunayNN cell in this repo profiles.
     mesh = al.mesh.DelaunayNN(
         pixels=n_mesh_vertices,
         areas_factor=0.5,

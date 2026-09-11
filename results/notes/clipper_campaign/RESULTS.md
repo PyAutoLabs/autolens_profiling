@@ -19,7 +19,8 @@ limit.
 ## The result
 
 Reference bar: Nautilus `max_log_likelihood = 31786.782462488976`
-(`results/searches/nautilus/imaging/mge/hst/hpc_a100_fp64.json`, A100 fp64).
+(the searches framework's `nautilus/imaging/mge/hst/hpc_a100_fp64.json` row, A100 fp64,
+archived in PyAutoGut ref `refs/heads/archive/condemned/autolens-profiling/inference-programme` @ `c8b605801068ec3de04314b47da8f7272a038ba1`).
 Nautilus samples in unit-cube coordinates, so it is structurally immune to this
 failure mode. A negative `gap` means the MAP optimizer exceeded it, which is
 expected — it maximises the posterior rather than sampling it.
@@ -241,7 +242,7 @@ outstanding. Phase 3 should not be written on `imaging/mge` alone.
 ```bash
 JAX_PLATFORM_NAME=cuda JAX_PLATFORMS=cuda,cpu XLA_PYTHON_CLIENT_MEM_FRACTION=0.5 \
 JAX_ENABLE_X64=True SEARCHES_DISABLE_VIZ=1 \
-python scripts/misc/searches/clipper_campaign.py \
+python clipper_campaign.py  # removed with the inference programme; recover from the archive ref \
     --arms none,prior_box,prior_box_reset --seeds 0,1 \
     --n-starts 16 --n-steps 3000 --sampler multi_start_prodigy
 ```
@@ -449,7 +450,7 @@ python -c "import autofit; print(autofit.__file__)"   # MUST be the task checkou
 PYAUTO_SKIP_API_GATE=1 SEARCHES_DISABLE_VIZ=1 \
 JAX_PLATFORM_NAME=cuda JAX_PLATFORMS=cuda,cpu \
 XLA_PYTHON_CLIENT_MEM_FRACTION=0.5 JAX_ENABLE_X64=True \
-~/venv/PyAutoGPU/bin/python scripts/misc/searches/clipper_campaign.py \
+~/venv/PyAutoGPU/bin/python clipper_campaign.py  # removed with the inference programme; recover from the archive ref \
   --sampler multi_start_prodigy --arms prior_box_scaled --seeds 0,1 \
   --n-starts 16 --n-steps 3000 --out /tmp/gpu_out
 ```

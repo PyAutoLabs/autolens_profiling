@@ -9,8 +9,8 @@ the remaining 2 are the `simple_extra` exp-3 arms, which did not finish and
 COMPLETED 00:14:16) following the two gradient bug fixes it exposed
 (PyAutoFit#1441, PyAutoLens#685), plus clean re-runs of the two free `simple`
 Nautilus cells (331888/331889) that had been silent resumes.
-**Instrument:** `scripts/{point_source,cluster}/searches/**` via
-`scripts/misc/searches/_runner.py`; every JSON carries
+**Instrument:** the searches framework's point-source and cluster cells, since
+removed with the retired inference programme (archived in PyAutoGut ref `refs/heads/archive/condemned/autolens-profiling/inference-programme` @ `c8b605801068ec3de04314b47da8f7272a038ba1`); every JSON carries
 `results.truth_log_likelihood` (likelihood of the simulator-truth model under
 the cell's own fit class) and `results.delta_max_ll_vs_truth`
 (`max_log_likelihood − truth_log_likelihood`).

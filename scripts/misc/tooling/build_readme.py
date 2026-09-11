@@ -22,10 +22,6 @@ This script:
   2. Scans `results/runtime/<class>/<model>[/<instrument>]/comparison.json`
      for **sweep comparison artifacts** (written by
      `likelihood_runtime/aggregate.py`).
-  2b. Scans `results/searches/<sampler>/<class>/<model>/<instrument>/*.json`
-     for **search-run artifacts** (written by `searches/_runner.py`; the
-     payload self-describes sampler/cell/config/version) and keeps the
-     latest version per (sampler, cell, config).
   3. When `results/baselines/<name>/` exists, reads the same comparison
      layout beneath it so dashboard tables can carry a named-baseline
      column (e.g. `PreOptimizationTimes`).
@@ -38,7 +34,6 @@ Regions covered today:
   - likelihood_runtime/README.md    | runtime
   - likelihood_breakdown/README.md  | breakdown
   - simulators/README.md            | simulators
-  - searches/README.md              | searches
   - hazards/README.md               | hazards
   - lens/deflections/README.md      | deflections
 
@@ -59,15 +54,6 @@ from typing import Optional
 
 REPO_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "ruff.toml").exists())
 
-_MISC_DIR = str(REPO_ROOT / "scripts" / "misc")
-if _MISC_DIR not in sys.path:
-    sys.path.insert(0, _MISC_DIR)
-
-from searches._metrics import (  # noqa: E402
-    EVAL_BASIS_STORED_ONLY,
-    eval_counter_basis,
-)
-
 RESULTS_ROOT = REPO_ROOT / "results"
 RUNTIME_ROOT = RESULTS_ROOT / "runtime"
 BASELINES_ROOT = RESULTS_ROOT / "baselines"
@@ -83,8 +69,8 @@ SENTINEL_RE = re.compile(
 
 # Versioned artifact filename:
 #   <script>_<purpose>_<extras>_v<version>[_sparse].json
-# `<purpose>` is `summary` (runtime-style standalone artifacts, simulators,
-# searches) or `breakdown` (likelihood_breakdown). `<extras>` is optional
+# `<purpose>` is `summary` (runtime-style standalone artifacts, simulators)
+# or `breakdown` (likelihood_breakdown). `<extras>` is optional
 # and captures the instrument / dataset_name suffix. Examples:
 #   mge_breakdown_hst_v2026.5.29.4.json
 #   pixelization_breakdown_hst_v2026.5.29.4_sparse.json
@@ -124,7 +110,7 @@ CONFIG_ORDER = (
 @dataclass(frozen=True)
 class Artifact:
     path: Path
-    section: str  # "breakdown", "simulators", "searches"
+    section: str  # "breakdown", "simulators", "lens"
     subfolder: str  # "imaging", "nautilus", or "" for flat
     script: str  # e.g. "mge", "pixelization", "simple"
     purpose: str  # "summary" | "breakdown"
@@ -157,27 +143,6 @@ class RuntimeCell:
         return json.loads(self.path.read_text()).get("configs", {})
 
 
-@dataclass(frozen=True)
-class SearchArtifact:
-    """One search-run artifact under ``results/searches/`` (nested cell layout).
-
-    The payload self-describes its identity (`sampler`, `dataset_class`,
-    `model`, `instrument`, `config_name`, `version`), so nothing is parsed
-    from the path or filename.
-    """
-
-    path: Path
-    sampler: str
-    cell: str  # "<dataset_class>/<model>/<instrument>"
-    config: str  # payload config_name, e.g. "hpc_a100_fp64", "default"
-    version: tuple[int, ...]
-    raw_version: str
-
-    @property
-    def data(self) -> dict:
-        return json.loads(self.path.read_text())
-
-
 def _parse_version(s: str) -> tuple[int, ...]:
     return tuple(int(x) for x in s.split("."))
 
@@ -190,7 +155,7 @@ def _scan_artifacts() -> list[Artifact]:
         rel = p.relative_to(RESULTS_ROOT).parts
         if len(rel) < 2 or rel[0] in ("runtime", "baselines"):
             continue
-        section = rel[0]  # "breakdown" | "simulators" | "searches" | "lens"
+        section = rel[0]  # "breakdown" | "simulators" | "lens"
         subfolder = rel[1] if len(rel) > 2 else ""
         m = ARTIFACT_RE.match(p.name)
         if m:
@@ -240,45 +205,6 @@ def _scan_artifacts() -> list[Artifact]:
     return out
 
 
-def _scan_search_artifacts() -> list[SearchArtifact]:
-    """Scan the searches framework's nested cell layout.
-
-    ``results/searches/<sampler>/<dataset_class>/<model>/<instrument>/<name>.json``
-    where ``<name>`` is a config tag (``hpc_a100_fp64``, ``default``, …).
-    Identity comes from the JSON payload; files without a ``sampler`` key
-    (e.g. the multi_start_nan_accounting overhead study) are not search runs
-    and are skipped.
-    """
-    root = RESULTS_ROOT / "searches"
-    if not root.exists():
-        return []
-    out: list[SearchArtifact] = []
-    for p in sorted(root.rglob("*.json")):
-        try:
-            payload = json.loads(p.read_text())
-        except (OSError, json.JSONDecodeError):
-            continue
-        if not isinstance(payload, dict) or "sampler" not in payload:
-            continue
-        raw_version = str(payload.get("version", ""))
-        try:
-            version = _parse_version(raw_version)
-        except ValueError:
-            continue
-        cell = "/".join(str(payload.get(k, "?")) for k in ("dataset_class", "model", "instrument"))
-        out.append(
-            SearchArtifact(
-                path=p,
-                sampler=str(payload["sampler"]),
-                cell=cell,
-                config=str(payload.get("config_name") or p.stem),
-                version=version,
-                raw_version=raw_version,
-            )
-        )
-    return out
-
-
 def _scan_runtime_cells(root: Path) -> list[RuntimeCell]:
     """Find every comparison.json under a runtime-layout root."""
     if not root.exists():
@@ -295,11 +221,10 @@ def _baseline_names() -> list[str]:
     """Runtime-comparison baseline directories under ``results/baselines/``.
 
     Only directories that actually contain at least one ``comparison.json``
-    qualify — ``results/baselines/`` also houses baselines of a different
-    shape (e.g. ``InferenceRefs_v1/``, the Phase 1 targets-registry search
-    reference baselines added by W4 / issue #161, which has no
-    ``comparison.json`` anywhere in it). Without this filter every such
-    directory would add an always-empty column to the runtime table.
+    qualify — ``results/baselines/`` may also house baselines of a different
+    shape, with no ``comparison.json`` anywhere in them. Without this filter
+    every such directory would add an always-empty column to the runtime
+    table.
     """
     if not BASELINES_ROOT.exists():
         return []
@@ -546,101 +471,6 @@ def _render_pipeline_resume_table(artifacts: list[Artifact]) -> str:
     return "\n" + "\n".join(rows) + "\n"
 
 
-def _render_searches_table(search_artifacts: list[SearchArtifact]) -> str:
-    """Latest run per (sampler, cell, config) from the searches framework.
-
-    Most columns read only ``results.*`` / ``performance.*`` — v1 keys
-    present unchanged in a schema-v2 payload (W4 / issue #161, Phase 1 adds
-    ``target``/``algorithm``/``hardware``/``schema_version`` BESIDE the v1
-    keys, never in place of them). ``Target`` and ``ESS`` read the new
-    ``target``/``performance.kish_ess`` keys and render ``—`` when absent
-    (v1 artifacts, or a cell the Phase 1 TARGETS registry doesn't cover).
-
-    ``Evals`` and ``Time / eval`` are the exception, and the reason this
-    function is not schema-blind (issue #177). ``likelihood_evals`` changed
-    MEANING for ``MultiStart*`` searches between v1 and v2: v1 recorded the
-    posterior-storage count, v2 the reject-inclusive ``total_steps *
-    n_starts``. Rendering both as "Evals" in one column put 257 next to
-    247,808 for the same Prodigy n256 configuration, and the derived
-    per-eval figures 874.58 ms next to 2.23 ms. Such a row is now marked
-    ``stored`` in the ``Basis`` column with both cells rendered ``—``: the
-    step count was never written, so the true eval figure is not recoverable
-    from the artifact and a placeholder would be a guess. A v1 NESTED row is
-    unaffected — ``total_samples`` was already reject-inclusive there.
-    """
-    if not search_artifacts:
-        return _no_data_block(
-            "run `searches/sweep.py` (see section README) to populate `results/searches/`."
-        )
-    latest = _latest_per_group(search_artifacts, key=lambda a: (a.sampler, a.cell, a.config))
-    any_invalid = False
-    rows = [
-        "| Sampler | Cell | Config | max logL | logZ | Wall | Evals | Time / eval | "
-        "Basis | Target | ESS | Version |",
-        "|---------|------|--------|---------:|-----:|-----:|------:|------------:|"
-        "-------|--------|----:|---------|",
-    ]
-
-    def _fmt_num(v) -> str:
-        return f"{v:,.1f}" if isinstance(v, (int, float)) and math.isfinite(v) else "—"
-
-    for (sampler, cell, config), art in sorted(latest.items()):
-        data = art.data
-        # A row the harvest marked INVALID (top-level `invalid: true`, e.g. a
-        # silent MultiStart resume that recorded a wall clock but zero steps)
-        # keeps its place in the table — dropping it would make the dashboard
-        # quietly disagree with `results/searches/` — but every measured cell
-        # is withheld rather than rendered as if it meant something.
-        if data.get("invalid"):
-            rows.append(
-                f"| `{sampler}` | `{cell}` | `{config}` | — | — | — | — | — | "
-                f"**INVALID** | — | — | v{art.raw_version} |"
-            )
-            any_invalid = True
-            continue
-        results = data.get("results") or {}
-        perf = data.get("performance") or {}
-        basis = eval_counter_basis(data)
-        stored_only = basis == EVAL_BASIS_STORED_ONLY
-        # Withheld, not approximated: a v1 MultiStart artifact never recorded
-        # total_steps, so there is no honest number to put here.
-        evals = None if stored_only else perf.get("likelihood_evals")
-        per_eval = None if stored_only else perf.get("time_per_eval_ms")
-        basis_cell = "stored" if stored_only else "evals"
-        target_id = (data.get("target") or {}).get("target_id")
-        kish_ess = perf.get("kish_ess")
-        rows.append(
-            f"| `{sampler}` | `{cell}` | `{config}` | "
-            f"{_fmt_num(results.get('max_log_likelihood'))} | "
-            f"{_fmt_num(results.get('log_evidence'))} | "
-            f"{_format_time(perf.get('total_wall_s'))} | "
-            f"{f'{evals:,}' if isinstance(evals, int) else '—'} | "
-            f"{f'{per_eval:.1f} ms' if isinstance(per_eval, (int, float)) else '—'} | "
-            f"{basis_cell} | "
-            f"{f'`{target_id[7:15]}`' if isinstance(target_id, str) else '—'} | "
-            f"{_fmt_num(kish_ess)} | "
-            f"v{art.raw_version} |"
-        )
-    footnote = (
-        "\n_`Basis` — what `likelihood_evals` counts in that row. `evals` = "
-        "reject-inclusive evaluations, comparable across rows. `stored` = a "
-        "pre-schema-v2 MultiStart run that recorded stored samples, not "
-        "evaluations; its step count was never written, so `Evals` and "
-        "`Time / eval` are withheld rather than guessed. Never compare a "
-        "per-eval figure against a `stored` row (issue #177)._\n"
-    )
-    if any_invalid:
-        footnote += (
-            "\n_`Basis: INVALID` — the artifact carries a top-level `invalid: true` "
-            "with an `invalid_reason`: the run completed and wrote a file, but what it "
-            "recorded cannot be interpreted (e.g. a silent resume that re-read an "
-            "earlier fit's results and took zero steps). Its measured columns are "
-            "withheld; read `invalid_reason` in the JSON before using the row for "
-            "anything._\n"
-        )
-    return "\n" + "\n".join(rows) + "\n" + footnote
-
-
 def _render_headline(
     artifacts: list[Artifact],
     cells: list[RuntimeCell],
@@ -809,7 +639,6 @@ def _render_deflections_table(artifacts: list[Artifact]) -> str:
 
 def _build_renderers():
     artifacts = _scan_artifacts()
-    search_artifacts = _scan_search_artifacts()
     cells = _scan_runtime_cells(RUNTIME_ROOT)
     baselines = {name: _scan_runtime_cells(BASELINES_ROOT / name) for name in _baseline_names()}
     return artifacts, {
@@ -817,7 +646,6 @@ def _build_renderers():
         "runtime": lambda: _render_runtime_table(cells, baselines),
         "breakdown": lambda: _render_breakdown_table(artifacts),
         "simulators": lambda: _render_simulator_table(artifacts),
-        "searches": lambda: _render_searches_table(search_artifacts),
         "pipeline-resume": lambda: _render_pipeline_resume_table(artifacts),
         "jax-compile-warm": _render_jax_compile_warm_table,
         "hazards": _render_hazards_table,
@@ -835,7 +663,6 @@ TARGET_READMES = [
     _MISC / "likelihood_runtime" / "README.md",
     _MISC / "likelihood_breakdown" / "README.md",
     _MISC / "simulators" / "README.md",
-    _MISC / "searches" / "README.md",
     _MISC / "pipeline_resume" / "README.md",
     _MISC / "jax_compile" / "README.md",
     _MISC / "hazards" / "README.md",

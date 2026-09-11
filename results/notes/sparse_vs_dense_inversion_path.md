@@ -267,8 +267,8 @@ For MGE the dominant cost is also in the mapping matrix:
    with `peak_memory_in_bytes` per batch + recommended A100 batch size) then
    a `--config-name hpc_a100_fp64` phase (full single-JIT + vmap timing,
    writes `hpc_a100_fp64{,_sparse}.json`). Compare against the existing
-   A100 dense numbers committed to `results/searches/` from the
-   NSS-vs-Nautilus session.
+   A100 dense numbers from the NSS-vs-Nautilus session (archived in
+   PyAutoGut ref `refs/heads/archive/condemned/autolens-profiling/inference-programme` @ `c8b605801068ec3de04314b47da8f7272a038ba1`).
 3. **MGE sparse-loss is expected**, not a bug. Don't investigate further
    unless A100 numbers contradict this CPU finding.
 4. **Defer matrix-free CG + SLQ** — **SUPERSEDED 2026-09-10.** The user has taken up

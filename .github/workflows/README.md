@@ -14,7 +14,7 @@ What it checks:
 | `ruff format --check .` | Formatting parity with sister PyAutoLabs repos (black-compatible defaults) |
 | `python scripts/misc/tooling/build_readme.py --check` | Dashboard idempotence — the auto-generated tables in every section README must match what `build_readme.py` would generate from the current `results/` artifacts. Catches the "forgot to rerun the dashboard generator after dropping a new result" class of bug |
 | `lychee` | Markdown link-rot across every `README.md` |
-| Smoke — one script per section | Runs one cell from each area — `imaging/likelihood_runtime/mge.py`, `imaging/likelihood_breakdown/mge.py`, `imaging/hazards/pixelization.py`, `misc/simulators/imaging.py`, `imaging/searches/nautilus/mge.py`, `misc/searches/multi_start_nan_accounting_overhead.py` and `lens/deflections/total.py` — with `AUTOLENS_PROFILING_SMOKE=1`. Every profile script reads that env var at module top and exits 0 after the import + setup section. Catches import-graph breakage (broken `sys.path` injection, missing dependency, renamed module) without running the full profile |
+| Smoke — one script per section | Runs one cell from each area — `imaging/likelihood_runtime/mge.py`, `imaging/likelihood_breakdown/mge.py`, `imaging/hazards/pixelization.py`, `misc/simulators/imaging.py` and `lens/deflections/total.py` — with `AUTOLENS_PROFILING_SMOKE=1`. Every profile script reads that env var at module top and exits 0 after the import + setup section. Catches import-graph breakage (broken `sys.path` injection, missing dependency, renamed module) without running the full profile |
 
 The smoke step does **not** produce real result artifacts — every script short-circuits before the JIT compile / sampling / FITS writes. If you need full smoke output, run `profile.yml` manually instead.
 
@@ -22,12 +22,12 @@ The smoke step does **not** produce real result artifacts — every script short
 
 Triggered by:
 
-- `workflow_dispatch` (manual via the GitHub UI). Optional `sections` input lets you scope a run to one of `likelihood`, `simulators`, `searches`, or any comma-separated combination. Leave blank to run everything.
+- `workflow_dispatch` (manual via the GitHub UI). Optional `sections` input lets you scope a run to one of `likelihood`, `simulators`, or any comma-separated combination. Leave blank to run everything.
 - `release: published` — when a new GitHub release is published.
 
 What it does:
 
-1. Runs every script under `likelihood/`, `simulators/`, and `searches/nautilus/`, producing JSON+PNG artifacts under `results/`. `continue-on-error: true` per section so a single regression doesn't block the dashboard refresh for the remaining 16+ scripts; failures emit a `::warning::` annotation and the matching dashboard cell will show `ERR`.
+1. Runs every script under `likelihood/` and `simulators/`, producing JSON+PNG artifacts under `results/`. `continue-on-error: true` per section so a single regression doesn't block the dashboard refresh for the remaining 16+ scripts; failures emit a `::warning::` annotation and the matching dashboard cell will show `ERR`.
 2. Skips `simulators/point_source.py` in the simulator loop because its default `dataset_name="simple"` overwrites the Phase 1 likelihood input JSONs (see `simulators/README.md`). Run that one manually with a non-conflicting `dataset_name` when needed.
 3. Runs `python scripts/misc/tooling/build_readme.py` to refresh every auto-generated table from the latest artifacts.
 4. Commits the diff back to `main` as `github-actions[bot]` with `[skip ci]` in the subject (prevents the lint workflow from re-triggering on the auto-generated commit).

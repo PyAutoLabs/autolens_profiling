@@ -3,7 +3,7 @@
 # Cheap, fast (<5 min), CPU-only. Runs on every PR and on push to main.
 # Does NOT produce real result artifacts — the smoke step short-circuits
 # every profile script via AUTOLENS_PROFILING_SMOKE=1 (see scripts under
-# likelihood_runtime/, likelihood_breakdown/, simulators/, searches/nautilus/).
+# likelihood_runtime/, likelihood_breakdown/, simulators/, lens/deflections/).
 #
 # Profile re-runs that actually produce results live in `profile.yml`.
 
@@ -94,10 +94,10 @@ jobs:
       - name: wall check_submits.py --check (per-cell --time basis)
         working-directory: autolens_profiling
         run: |
-          # Every searches submit must justify its --time from a rate measured
-          # on the cell it runs. submit_phase8b_bijector_a100 cited an MGE rate
-          # for a mostly-pixelized array and RAL job 340576 lost 35 of 39 arms
-          # at ~12% of budget. Pure stdlib -- no PyAuto* imports, no PYTHONPATH.
+          # Every HPC submit must justify its --time from a rate measured
+          # on the cell it runs: a submit that cites an MGE rate for a
+          # mostly-pixelized array loses its arms partway through the budget
+          # (RAL job 340576). Pure stdlib -- no PyAuto* imports, no PYTHONPATH.
           python scripts/misc/wall/check_submits.py --check
 
       - name: pytest — scripts/misc/test/
@@ -142,6 +142,4 @@ jobs:
           python scripts/imaging/likelihood_breakdown/mge.py
           python scripts/imaging/hazards/pixelization.py
           python scripts/misc/simulators/imaging.py
-          python scripts/imaging/searches/nautilus/mge.py
-          python scripts/misc/searches/multi_start_nan_accounting_overhead.py
           python scripts/lens/deflections/total.py
