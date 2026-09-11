@@ -369,14 +369,21 @@ bands have **different pixel scales** (e.g. JWST F115W/F150W at 0.03 arcsec/px v
 F277W/F444W at 0.06 arcsec/px) — so the factors carry **different masked-pixel
 counts**. This section bounds the cold `vag` compile of that graph.
 
-Reproduce via the imaging-datacube cells added to `scripts/misc/searches/_setup.py`
-(`datacube_img` = 4 identical `jwst` 0.03″ channels; `datacube_img_hetero` =
-2×`jwst` 0.03″ + 2×`jwst_lw` 0.06″, two distinct shapes):
+Reproduced with the imaging-datacube cells `datacube_img` (4 identical `jwst`
+0.03″ channels) and `datacube_img_hetero` (2×`jwst` 0.03″ + 2×`jwst_lw` 0.06″,
+two distinct shapes):
 
 ```bash
 python scripts/misc/jax_compile/probe.py --dataset-class datacube_img        --model-type mge --transforms vag --cache-dir /tmp/c_homo
 python scripts/misc/jax_compile/probe.py --dataset-class datacube_img_hetero --model-type mge --transforms vag --cache-dir /tmp/c_het
 ```
+
+> **Not currently reproducible.** `probe.py` built these cells with
+> `searches._setup.build_for_cell`, removed with the retired inference
+> programme (#245); the builder lives in PyAutoGut ref
+> `refs/heads/archive/condemned/autolens-profiling/inference-programme` @
+> `c8b605801068ec3de04314b47da8f7272a038ba1`. The numbers below stand as
+> measured; re-running them needs a profiling-owned per-cell builder.
 
 **Local CPU, MGE `vag`, 4-band factor graph (ndim 15):**
 

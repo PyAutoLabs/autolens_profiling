@@ -90,12 +90,6 @@ results/likelihood/
 # Retired legacy latent output home (latent now writes results/latent/, in-repo).
 latent/results/
 
-# bijector_ab.py's rows dump: a 6.5 MB re-derivable restatement of the results
-# JSONs already committed under results/searches/.../phase8b/. Nothing reads it
-# and no sibling npz in this tree is anywhere near that size, so it is a local
-# convenience only — `--stage score` rewrites it from the JSONs on demand.
-results/notes/inference/phase_08_regularization/bijector_ab/rows_*.npz
-
 # W~ preload caches: derived arrays (O(N_pix * K), 10-15 min to rebuild at alma),
 # written beside the dataset by scripts/misc/numba_interferometer so a paired kernel
 # sweep pays the build once. Regenerated on demand; never an input.

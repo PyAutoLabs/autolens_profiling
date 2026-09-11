@@ -11,8 +11,10 @@ Why
 `submit_phase8b_bijector_a100` justified ``--time=0:30:00`` with an **MGE**
 step rate for an array whose arms were mostly ``knn`` and
 ``delaunay_adapt_split``. 35 of 39 arms were killed at ~12% of budget, losing
-an overnight A100 block. See `wall/rates.py` for the measured numbers and
-`wall/README.md` for the authoring contract.
+an overnight A100 block. (That submit was removed with the retired inference
+programme; it survives in the PyAutoGut archive ref named in `wall/rates.py`.)
+See `wall/rates.py` for the measured numbers and `wall/README.md` for the
+authoring contract.
 
 This checker's central rule is the one that would have caught it:
 
@@ -56,11 +58,10 @@ the author actually knows:
 Which submits must carry one
 ----------------------------
 
-Required on ``submit_search_*`` and ``submit_phase8b_*`` — the multi-cell array
-submits where a cross-cell mis-citation is possible at all. Validated wherever
-else it appears. This is a path predicate, not a hand-maintained allowlist: no
-submit is individually exempted, because an exemption list would hide exactly
-the class of leak this gate exists to close.
+Every submit that declares a block is validated, and no submit is individually
+exempted — an exemption list would hide exactly the class of leak this gate
+exists to close. Any submit that runs more than one cell should carry one: the
+cross-cell mis-citation above is only possible there.
 """
 
 from __future__ import annotations
@@ -85,9 +86,6 @@ if str(ROOT / "scripts" / "misc") not in sys.path:
     sys.path.insert(0, str(ROOT / "scripts" / "misc"))
 
 from wall.rates import STEP_RATE, UnmeasuredCellError, step_rate_for, wall_estimate  # noqa: E402
-
-# Submits required to carry a WALL-BASIS block.
-REQUIRED_PREFIXES = ("submit_search_", "submit_phase8b_")
 
 # Tolerance on a `source: rates` row against the table.
 RATE_TOLERANCE = 0.05
@@ -181,10 +179,10 @@ def _expand(text: str, token: str) -> set[str]:
 def strip_comments(text: str) -> str:
     """The script with whole-line comments blanked out.
 
-    Submit headers routinely *mention* commands the job does not run — phase8b's
-    header cites `python3 scripts/misc/searches/bijector_ab.py --score` as the
-    scoring step. Reading cells out of prose would credit the submit with a cell
-    it never executes, so only executable lines are scanned.
+    Submit headers routinely *mention* commands the job does not run — a header
+    that cites `python3 scripts/<dataset>/<task>/<cell>.py` as a follow-up
+    scoring step, say. Reading cells out of prose would credit the submit with a
+    cell it never executes, so only executable lines are scanned.
     """
     return "\n".join("" if ln.lstrip().startswith("#") else ln for ln in text.splitlines())
 
@@ -322,20 +320,12 @@ def _row_wall(row: dict[str, str], where: str, problems: list[Problem]) -> float
     return None
 
 
-def check_text(text: str, name: str) -> list[Problem]:
+def check_text(text: str) -> list[Problem]:
     """Every violation in one submit script."""
     problems: list[Problem] = []
-    required = name.startswith(REQUIRED_PREFIXES)
     rows = parse_basis_rows(text)
 
     if not rows:
-        if required:
-            problems.append(
-                Problem(
-                    "no `# WALL-BASIS:` block. Every cell this submit runs needs its own "
-                    "basis row — see wall/README.md"
-                )
-            )
         return problems
 
     time_match = re.search(r"^#SBATCH\s+--time=(\S+)", text, re.M)
@@ -433,8 +423,8 @@ def main(argv: list[str] | None = None) -> int:
 
     for path in paths:
         text = path.read_text()
-        problems = check_text(text, path.name)
-        if path.name.startswith(REQUIRED_PREFIXES) or parse_basis_rows(text):
+        problems = check_text(text)
+        if parse_basis_rows(text):
             checked += 1
         if problems:
             failures += 1

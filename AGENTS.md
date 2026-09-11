@@ -1,7 +1,7 @@
 # autolens_profiling — Agent Instructions
 
-This repo is the single home for **PyAutoLens performance measurement**: it benchmarks likelihood
-runtime, per-step breakdown, VRAM usage, simulators, and samplers/searches across CPU, laptop GPU,
+This repo is the single home for **PyAutoLens likelihood timing**: it benchmarks likelihood
+runtime, per-step breakdown, VRAM usage and simulators across CPU, laptop GPU,
 and HPC GPU (A100), framed by astronomy instrument (HST, Euclid, JWST, …). It is a collection of
 standalone profiling scripts, **not** an installable package — there is no `pyproject.toml`. These
 are the canonical, agent-agnostic instructions for this repo. The `README.md` is the human-facing
@@ -19,7 +19,6 @@ scripts/
                         interferometer datacube cells nest under interferometer/<task>/datacube/.
     likelihood_runtime/   Full-pipeline JIT runtime per cell (<model>.py; driven by the sweep driver)
     likelihood_breakdown/ Per-step JIT decomposition of a single likelihood config
-    searches/<sampler>/   Sampler / search profiling (Nautilus first)
     latent/               Latent-variable profiling
     quick_update/         Fast incremental re-profiling helpers (unversioned scratch tier)
   lens/                 Second, DATASET-FREE axis: library-component profiling (one function, one
@@ -28,8 +27,8 @@ scripts/
                         driver sits beside the cells, not under misc/.
   misc/                 Dataset-agnostic material + each task's shared drivers / framework / README:
                         misc/likelihood_runtime/ (sweep.py + aggregate.py + README dashboard),
-                        misc/searches/ (framework _*.py + sweep/aggregate), misc/vram/ (A100 vmap
-                        batch-size table), misc/simulators/, misc/latent/, misc/jax_compile/,
+                        misc/vram/ (A100 vmap batch-size table), misc/simulators/,
+                        misc/latent/, misc/jax_compile/, misc/wall/,
                         misc/pipeline_resume/, misc/test/, misc/tooling/ (build_readme.py +
                         build_baseline.py)
 _profile_cli.py         Shared CLI/JSON/auto-simulate helper imported by every per-cell script
@@ -45,7 +44,7 @@ config/ dataset/ output/   Config, input data, runtime output
 up to the directory containing `ruff.toml` (a depth-proof sentinel) and puts both the **repo root**
 and **`scripts/misc/`** on `sys.path`. That keeps the shared libraries importable by their
 top-level names with no per-file path math: `_profile_cli` / `_adapt_image_util` / `instruments`
-(repo root) and `vram` / `simulators` / `searches` (under `scripts/misc/`).
+(repo root) and `vram` / `simulators` / `wall` (under `scripts/misc/`).
 
 ## Running Profiles
 
@@ -74,10 +73,9 @@ from RAL — there is deliberately **no `push`**, because the RAL copy of this r
 checkout with local state that an rsync would clobber; code goes over with `git pull` on the login
 node, and the libraries with `HPCPullPyAuto`. `hpc/sync pull` does **not** write into this
 checkout: `output/` is gitignored and `results/` holds committed rows, so pulls land under
-`LOCAL_PULL_ROOT` (set in `sync.conf`, default `/mnt/c/Users/Jammy/Science/inference_programme`) —
-`output/searches` and `results/searches` mirror across, and RAL's `hpc/batch_gpu/{output,error}`
-become `logs/{output,error}`. `search_internal/` is excluded: sampler state is large and stays on
-RAL. Full detail in `hpc/README.md`.
+`LOCAL_PULL_ROOT` (set in `sync.conf`) — the mirrored result trees land there and RAL's
+`hpc/batch_gpu/{output,error}` become `logs/{output,error}`. `search_internal/` is excluded:
+sampler state is large and stays on RAL. Full detail in `hpc/README.md`.
 
 JAX convention (mirrors `autolens_workspace_developer`): pass `xp=jnp` through PyAuto* functions to
 select the JAX backend, and extract `.array` from autoarray types before crossing the `jax.jit`
@@ -116,6 +114,13 @@ NUMBA_CACHE_DIR=/tmp/numba_cache MPLCONFIGDIR=/tmp/matplotlib python3 scripts/im
 When editing the same region across many scripts in one pass, only rewrite the targeted region.
 **Never produce a whole-file write unless you have read the entire current file** — a whole-file
 write from a header skim silently deletes every section below the header.
+
+## Scope
+
+Science runs are the Cortex's; inference benchmarking lives in `autolens_inference`. The retired
+inference programme's tree (searches framework, InferenceRefs_v1, notes) is PyAutoGut ref
+`refs/heads/archive/condemned/autolens-profiling/inference-programme` @
+`c8b605801068ec3de04314b47da8f7272a038ba1` — never cite it.
 
 ## Related Repos
 

@@ -1,8 +1,8 @@
 """Detect the PositionsLH penalty's three characteristic non-smooth features.
 
-Phase 4 Stage 1 (issue #159, ``results/notes/inference/PROGRAMME.md``
-[H4.2]: "the hinge/argmax kinks and zero-gradient interior create *new*
-failure modes ... measured, not assumed"). ``al.PositionsLH`` adds
+Issue #159 [H4.2]: "the hinge/argmax kinks and zero-gradient interior
+create *new* failure modes ... measured, not assumed" (write-up archived in
+PyAutoGut ref ``refs/heads/archive/condemned/autolens-profiling/inference-programme`` @ ``c8b605801068ec3de04314b47da8f7272a038ba1``). ``al.PositionsLH`` adds
 ``factor * max(max_sep - threshold, 0)`` to the negative log-likelihood
 (autolens/analysis/positions.py), which is:
 

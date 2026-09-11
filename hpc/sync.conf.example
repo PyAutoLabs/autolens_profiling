@@ -16,8 +16,8 @@ PROJECT_NAME=autolens_profiling
 # and the committed `results/` rows must not be overwritten by a staging copy. It points
 # at a separate local mirror instead, whose only job is holding RAL runs for review.
 #
-#   RAL output/searches/        ->  $LOCAL_PULL_ROOT/output/searches/
-#   RAL results/searches/       ->  $LOCAL_PULL_ROOT/results/searches/   (staging copy)
+#   RAL output/                 ->  $LOCAL_PULL_ROOT/output/
+#   RAL results/                ->  $LOCAL_PULL_ROOT/results/   (staging copy)
 #   RAL hpc/batch_gpu/output/   ->  $LOCAL_PULL_ROOT/logs/output/
 #   RAL hpc/batch_gpu/error/    ->  $LOCAL_PULL_ROOT/logs/error/
 LOCAL_PULL_ROOT=/mnt/c/Users/Jammy/Science/inference_programme

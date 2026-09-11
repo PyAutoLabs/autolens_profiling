@@ -11,7 +11,6 @@ packages; the dashboard tables in every README are rendered from this tree by
 | `runtime/` | [`likelihood_runtime/`](../scripts/misc/likelihood_runtime/README.md) sweeps | Per-config sweep outputs + `comparison.{json,png}` per cell; A100 logs/probes |
 | `breakdown/` | [`likelihood_breakdown/`](../scripts/misc/likelihood_breakdown/README.md) | Versioned per-step decompositions |
 | `simulators/` | [`simulators/`](../scripts/misc/simulators/README.md) | Versioned simulator run-time summaries |
-| `searches/` | [`searches/`](../scripts/misc/searches/README.md) | Versioned sampler profiling summaries |
 | `pipeline_resume/` | [`pipeline_resume/`](../scripts/misc/pipeline_resume/README.md) | Versioned SLaM resume-overhead summaries (cold + resume run records) |
 | `quick_update/` | [`quick_update/`](../scripts/misc/quick_update/README.md) | Unversioned fast re-profiling snapshots (scratch tier) |
 | `delaunay_nn/` | [`delaunay_nn/`](../scripts/misc/delaunay_nn/README.md) | Versioned full-mapper cap and runtime benchmarks |

@@ -34,8 +34,8 @@ The claimed 6x headroom was ~8x short for knn and ~16x short for delaunay.
 overnight A100 block. The 4 that finished were the mge controls — the only
 cells the citation actually described.
 
-Full write-up of the loss and how the rates were recovered from it:
-[`results/notes/inference/phase_08_regularization/wall_clock_340576.md`](../../../results/notes/inference/phase_08_regularization/wall_clock_340576.md).
+Full write-up of the loss and how the rates were recovered from it is archived in
+PyAutoGut ref `refs/heads/archive/condemned/autolens-profiling/inference-programme` @ `c8b605801068ec3de04314b47da8f7272a038ba1`, as `phase_08_regularization/wall_clock_340576.md`.
 
 Pixelized cells are per-eval-inversion bound; parametric cells are not. Nothing
 about a step rate is portable across that boundary, and no amount of confident

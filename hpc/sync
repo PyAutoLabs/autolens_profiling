@@ -32,7 +32,7 @@
 #
 # Inspect:
 #   hpc/sync tail [gpu|cpu]      Stream the newest live SLURM log (Ctrl+C to stop)
-#   hpc/sync du                  Show remote disk usage of output/searches
+#   hpc/sync du                  Show remote disk usage of output/ and results/
 #   hpc/sync check               Verify SSH connection and remote paths
 
 set -euo pipefail
@@ -73,16 +73,16 @@ REMOTE_ROOT="${HPC_BASE}/${PROJECT_NAME}"
 # material, so they land under logs/.
 # ---------------------------------------------------------------------------
 PULL_DIRS=(
-    "output/searches"
-    "results/searches"
+    "output"
+    "results"
     "hpc/batch_gpu/output"
     "hpc/batch_gpu/error"
 )
 
 # Local destination for each PULL_DIRS entry, same order.
 PULL_DESTS=(
-    "output/searches"
-    "results/searches"
+    "output"
+    "results"
     "logs/output"
     "logs/error"
 )
@@ -199,8 +199,7 @@ pull_logs() {
 #    "checkpoints": {"<run dir relative to the pull root>": {"bytes": N, "mtime": "<ISO>"}},
 #    "runs": {}}
 #
-# Keys are `output/searches/<…>/<hash>` — RAL's `output/searches/` maps 1:1 onto the
-# mirror. `runs` stays empty here: this repo's SLURM logs do not name the run directory a
+# Keys are `output/<…>/<hash>` — RAL's `output/` maps 1:1 onto the mirror. `runs` stays empty here: this repo's SLURM logs do not name the run directory a
 # job wrote, so a job id cannot honestly be linked to a checkpoint (subhalo_validation's
 # sync can, and fills it).
 #
@@ -214,7 +213,7 @@ write_pull_manifest() {
 
     listing="$(mktemp)"
     if ! ssh "${HPC_HOST}" \
-        "find '${REMOTE_ROOT}/output/searches' -name checkpoint.hdf5 -printf '%s %T@ %p\n' 2>/dev/null || true" \
+        "find '${REMOTE_ROOT}/output' -name checkpoint.hdf5 -printf '%s %T@ %p\n' 2>/dev/null || true" \
         > "$listing" 2>/dev/null; then
         gather_error="could not list checkpoints on ${HPC_HOST}"
         : > "$listing"
@@ -358,7 +357,7 @@ submit() {
 
     if [[ -z "$script_name" ]]; then
         echo "Usage: $(basename "$0") submit [--gpu|--cpu] <submit_script_name>"
-        echo "  e.g. hpc/sync submit submit_search_nautilus_inference_refs_v1_array.sh"
+        echo "  e.g. hpc/sync submit submit_runtime_imaging_mge_a100_hst_fp64"
         exit 1
     fi
 
@@ -419,8 +418,8 @@ du_cmd() {
     echo ""
     # -d1, never a bare recursive du: RAL's NFS makes a full walk of output/ very slow.
     ssh "${HPC_HOST}" "cd '${REMOTE_ROOT}' && \
-        du -h -d1 output/searches 2>/dev/null; \
-        du -sh results/searches hpc/batch_gpu/output hpc/batch_gpu/error 2>/dev/null"
+        du -h -d1 output 2>/dev/null; \
+        du -sh results hpc/batch_gpu/output hpc/batch_gpu/error 2>/dev/null"
 }
 
 check_cmd() {

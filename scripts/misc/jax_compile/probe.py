@@ -108,30 +108,29 @@ def hardware_label(jax) -> str:
 
 
 def build_objective(args):
-    """Dataset/model/analysis via the searches/ builders; returns (f, x0, ndim).
+    """Dataset/model/analysis for one cell; returns (f, x0, ndim).
 
-    ``f`` is the physical-parameter negative log posterior, the same objective
-    the gradient samplers optimize (searches_minimal/_grad_setup.py pattern).
+    ``f`` is the physical-parameter negative log posterior.
+
+    NEEDS A BUILDER. This probe built its cell with
+    ``searches._setup.build_for_cell``, removed with the retired inference
+    programme (autolens_profiling#245). The pre-deletion tree — builder
+    included — is PyAutoGut ref
+    ``refs/heads/archive/condemned/autolens-profiling/inference-programme`` @
+    ``c8b605801068ec3de04314b47da8f7272a038ba1``. Until this repo owns a
+    per-cell builder of its own, the probe cannot run; the warm-compile
+    records already pinned in ``jax_compile/pins.json`` are unaffected and the
+    dashboard still renders them.
     """
-    import jax.numpy as jnp
-    from searches._setup import build_for_cell
-
-    dataset, model, analysis = build_for_cell(
-        dataset_class=args.dataset_class,
-        model_type=args.model_type,
-        instrument=args.instrument,
-        use_jax=True,
-        use_mixed_precision=args.mixed_precision,
+    raise NotImplementedError(
+        "jax_compile/probe.py has no per-cell builder: searches._setup.build_for_cell "
+        "was removed with the retired inference programme (autolens_profiling#245). "
+        "Recover it from PyAutoGut ref refs/heads/archive/condemned/"
+        "autolens-profiling/inference-programme @ "
+        "c8b605801068ec3de04314b47da8f7272a038ba1, or build the cell from this "
+        f"repo's own likelihood_runtime/ setup (requested: {args.dataset_class}/"
+        f"{args.model_type}/{args.instrument})."
     )
-
-    def f(params):
-        instance = model.instance_from_vector(vector=params, xp=jnp)
-        log_l = analysis.log_likelihood_function(instance=instance)
-        log_p = jnp.sum(jnp.asarray(model.log_prior_list_from_vector(vector=params, xp=jnp)))
-        return -(log_l + log_p)
-
-    x0 = jnp.asarray(model.vector_from_unit_vector([0.5] * model.prior_count))
-    return f, x0, model.prior_count
 
 
 def transformed_fn_and_arg(name, f, x0, n_batch, batch_size):

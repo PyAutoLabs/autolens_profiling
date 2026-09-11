@@ -27,7 +27,8 @@ seed, **cloud CPU, float32**. Raw rows in
 | `prior_box` | 150 | **-15529.587987** | 47316.370 | **47** | 9 | 1920 | **11 / 16** |
 
 Nautilus reference (structurally immune, unit-cube): `max_log_L = 31786.782462`
-(`results/searches/nautilus/imaging/mge/hst/hpc_a100_fp64.json`, A100 fp64).
+(the searches framework's `nautilus/imaging/mge/hst/hpc_a100_fp64.json` row, A100 fp64,
+archived in PyAutoGut ref `refs/heads/archive/condemned/autolens-profiling/inference-programme` @ `c8b605801068ec3de04314b47da8f7272a038ba1`).
 
 ### What fired
 
@@ -128,7 +129,7 @@ The clipper is unreleased, so a PyPI `autofit` silently has no `clipper` argumen
 Verify the path before trusting a number.
 
 ```bash
-python scripts/misc/searches/clipper_campaign.py \
+python clipper_campaign.py  # removed with the inference programme; recover from the archive ref \
     --arms none,prior_box --seeds 0 --n-starts 16 --n-steps 150
 ```
 

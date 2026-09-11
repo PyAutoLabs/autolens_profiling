@@ -7,10 +7,11 @@ cell — that carry-over is the defect this module exists to prevent.
 Why it exists
 -------------
 
-`hpc/batch_gpu/submit_phase8b_bijector_a100` set ``--time=0:30:00`` and
-justified it in its own comment with an **MGE** step rate, for an array whose
-arms were mostly ``knn`` and ``delaunay_adapt_split``. Rates measured on RAL
-2026-08-25 (from the truncated arms of job 340576):
+`submit_phase8b_bijector_a100` set ``--time=0:30:00`` and justified it in its
+own comment with an **MGE** step rate, for an array whose arms were mostly
+``knn`` and ``delaunay_adapt_split``. (That submit was removed with the retired
+inference programme; it survives in PyAutoGut ref `refs/heads/archive/condemned/autolens-profiling/inference-programme` @ `c8b605801068ec3de04314b47da8f7272a038ba1`.)
+Rates measured on RAL 2026-08-25 (from the truncated arms of job 340576):
 
 ===================== ========== ==================
 cell                  s/step     3000 steps
@@ -42,8 +43,8 @@ rate for *that* cell, and when no measurement exists, run one short arm first �
 a 30-minute truncated arm still measures s/step, which is exactly how the
 numbers above were recovered from the failed block.
 
-`wall/check_submits.py` enforces this on every submit that runs a searches
-cell; `hpc/README.md` states the authoring contract.
+`wall/check_submits.py` enforces this on every submit that declares a
+``# WALL-BASIS:`` block; `hpc/README.md` states the authoring contract.
 
 Table shape
 -----------
@@ -95,9 +96,9 @@ STEP_RATE: dict[tuple[str, str, str, str, str, int, int | None], float] = {
     ("imaging", "mge", "hst", "a100", "fp64", 16, 4): 0.117,  # 3000 steps ~ 350 s
     #
     # =========================================================================
-    # Parametric imaging cell, unbatched, per lane tier. These are the rows the
-    # n16/n64/n256 multi_start_prodigy submits already cite in their own
-    # ESTIMATED WALL blocks, measured on A100 fp64 with a warm compile cache.
+    # Parametric imaging cell, unbatched, per lane tier. Measured on A100 fp64
+    # with a warm compile cache (the rows the since-removed n16/n64/n256
+    # multi_start_prodigy submits cited in their own ESTIMATED WALL blocks).
     # They are MGE-only and must never be quoted for a pixelized cell.
     # =========================================================================
     ("imaging", "mge", "hst", "a100", "fp64", 16, None): 0.05,  # ~150 s at the 3000-step ceiling
@@ -125,11 +126,11 @@ STEP_RATE: dict[tuple[str, str, str, str, str, int, int | None], float] = {
     # exists to refuse.
     ("imaging", "mge", "hst", "a100", "fp64", 4, None): 3.42,  # 400 draws ~ 1369 s, WARM
     #
-    # NOTE — the n128 tier is deliberately ABSENT. Its submit's ~0.38 s/step is
-    # interpolated between the n64 and n256 rows, not measured. An interpolated
-    # rate is exactly the kind of unearned citation this table refuses to carry;
-    # that submit declares `source: measured-wall` against its observed runs
-    # instead.
+    # NOTE — the n128 tier is deliberately ABSENT. The submit that ran it cited
+    # ~0.38 s/step interpolated between the n64 and n256 rows, not measured. An
+    # interpolated rate is exactly the kind of unearned citation this table
+    # refuses to carry; that submit declared `source: measured-wall` against its
+    # observed runs instead.
 }
 
 PROVENANCE: dict[str, str] = {
@@ -137,8 +138,8 @@ PROVENANCE: dict[str, str] = {
         "measured 2026-08-25 on RAL A100 (job 340576) from the truncated arms of the "
         "Phase 8B bijector A/B; steps completed / wall elapsed per arm. 35 of 39 arms "
         "were killed at ~12% of a 0:30:00 budget set from an MGE citation — these are "
-        "the rates recovered from that failure. Write-up: "
-        "results/notes/inference/phase_08_regularization/wall_clock_340576.md"
+        "the rates recovered from that failure. Write-up: archived in "
+        "PyAutoGut ref `refs/heads/archive/condemned/autolens-profiling/inference-programme` @ `c8b605801068ec3de04314b47da8f7272a038ba1`."
     ),
     "pixelized_hst_a100_fp64_n16_b4_full_arms": (
         "re-measured 2026-08-27 on RAL A100 from the COMPLETED 3000-step arms of jobs "
@@ -166,12 +167,13 @@ PROVENANCE: dict[str, str] = {
         "out at 45:26 inside warmup with no result, so cold is >2726 s and unmeasured. "
         "The posterior this arm produced is INVALID (rhat_max 3.89, 400/800 divergences, "
         "ess_min 2.0) — this row is a wall-clock rate, not a certificate that the "
-        "configuration samples correctly. Write-up: "
-        "results/notes/inference/DECISIONS.md 2026-08-29 Phase 6."
+        "configuration samples correctly. Write-up: archived in "
+        "PyAutoGut ref `refs/heads/archive/condemned/autolens-profiling/inference-programme` @ `c8b605801068ec3de04314b47da8f7272a038ba1`."
     ),
     "mge_hst_a100_fp64_unbatched": (
-        "A100 fp64 with a warm compile cache, as cited by the n16/n64/n256 "
-        "multi_start_prodigy submits' own ESTIMATED WALL blocks. MGE only."
+        "A100 fp64 with a warm compile cache, as cited by the since-removed "
+        "n16/n64/n256 multi_start_prodigy submits' own ESTIMATED WALL blocks. "
+        "MGE only."
     ),
 }
 
