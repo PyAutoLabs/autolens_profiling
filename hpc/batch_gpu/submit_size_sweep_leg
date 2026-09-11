@@ -1,0 +1,251 @@
+#!/bin/bash -l
+#
+# 2026-09 reduced N_src size sweep — ONE templated leg (autolens_profiling#247, phase 3).
+#
+# One SLURM script for all 26 legs of the reduced sweep. The leg is chosen by
+# three environment variables, passed by submit_size_sweep.sh as
+# `sbatch --export=ALL,SWEEP_MESH=...,SWEEP_PATH=...,SWEEP_N=...`:
+#
+#   SWEEP_MESH   rectangular | delaunay | delaunay_nn
+#   SWEEP_PATH   dense | sparse | matrix_free
+#   SWEEP_N      requested source-pixel count (3000, 5000, 8000, 12000)
+#
+# A templated leg rather than 26 files because the 26 differ only in those three
+# values: 26 near-identical submits would be 26 places for one flag to drift out
+# of step with the fiducial legs these rows are compared against.
+#
+# What each path measures
+# -----------------------
+#
+#   dense        the shipped exact path (InversionImagingMapping): builds F, the
+#                Cholesky of F+lambda*H and the two log-det Choleskys. The heaviest
+#                leg in memory and the first to stop fitting.
+#   sparse       the same cell with `--sparse` (the w-tilde operator,
+#                InversionImagingSparse). The half-matrix-free comparator: it
+#                replaces the mapping matrix, not the solve, so it still forms a
+#                dense F+lambda*H for the reconstruction sub-rows.
+#   matrix_free  scripts/imaging/likelihood_breakdown/matrix_free.py — PCG on
+#                operator products plus SLQ for both log determinants, with the
+#                dense comparators measured in the same process (and wrapped, so
+#                a leg whose comparators OOM still emits every matrix-free row).
+#
+# After the CPU reference measured cond(F+lambda*H) ~ 4e10, the sweep's primary
+# question is memory, not speed: **at what mesh size do the dense and sparse
+# exact paths stop fitting an A100?** So **OOM is a datum**, not a failure. A leg
+# that dies out of memory has answered the question it was submitted to answer;
+# the aggregator (scripts/misc/likelihood_breakdown/size_sweep_table.py) reads
+# the `.err` log and records `OOM` in the fits table. Do not re-run an OOM leg at
+# a smaller batch to "make it pass" — that changes the measurement.
+#
+# The matrix-free legs carry `--no-pdip`: the CPU reference measured the
+# matrix-free PDIP at 1300-2000x the dense PDIP and hitting its iteration cap, so
+# it is not what the crossover turns on. The unconstrained PCG solve plus the two
+# SLQ log-dets are. `--slq-steps 20,80,320` is the reduced three-point bias curve
+# (the fiducial legs trace 20..640); 320 is the cell's default pair at p=16, so
+# `matrix_free.evidence.log_evidence_error` is the m=320 error.
+#
+# Rectangular N maps to the nearest square inside the cell (3000 -> 55x55 = 3025,
+# 5000 -> 71x71 = 5041, 8000 -> 89x89 = 7921, 12000 -> 110x110 = 12100); the
+# Delaunay family takes N vertices directly. The JSON records the count actually
+# built (`configuration.source_pixels` / `delaunay_vertices`) alongside
+# `configuration.source_pixels_requested`; the results **label** keeps the
+# requested N, so `n5000` is one column across all three meshes.
+#
+# Every leg starts from an EMPTY JAX compilation cache: a seeded XLA autotune
+# cache silently changes kernels (results/notes/xla_autotune_triton_gemm.md — F
+# 4.8 vs 25.6 ms on the same code). XLA_FLAGS carries only constant_folding; the
+# autotune/Triton flags are left to autonerves' jax_wrapper so this measures the
+# library default.
+#
+# Provenance you can read back off a `.out`: the first line is
+# `SWEEP_LEG mesh=<mesh> path=<path> n=<N> job=<id>` and the last is
+# `SWEEP_EXIT code=<rc>` (printed from an EXIT trap, so an OOM or a Python crash
+# still prints it). `output/output.<job>.out` and `error/error.<job>.err` are the
+# only record of a leg that never wrote a JSON.
+#
+# Usage (normally via the launcher, which does the cd and the manifest):
+#
+#     cd hpc/batch_gpu
+#     sbatch --export=ALL,SWEEP_MESH=delaunay,SWEEP_PATH=dense,SWEEP_N=5000 \
+#            -J sweep_delaunay_dense_n5000 submit_size_sweep_leg
+
+# WALL-BASIS:
+#   Each JOB runs exactly ONE cell (the case below dispatches on SWEEP_PATH and
+#   SWEEP_MESH), so no cell's --time is justified by another cell's rate. The
+#   12:00:00 budget is the one every fiducial breakdown leg of these same cells
+#   carries; those legs ran in ~1 h at n=1500. Nothing above n=1500 has been
+#   measured on any of them — that is what this sweep is for — so every row is
+#   declared `unmeasured` rather than extrapolated from the fiducial rate.
+#   cell: imaging/pixelization/hst  device: a100  precision: fp64
+#   source: unmeasured  probe-first: yes
+#   cell: imaging/delaunay/hst  device: a100  precision: fp64
+#   source: unmeasured  probe-first: yes
+#   cell: imaging/delaunay_nn/hst  device: a100  precision: fp64
+#   source: unmeasured  probe-first: yes
+#   cell: imaging/matrix_free/hst  device: a100  precision: fp64
+#   source: unmeasured  probe-first: yes
+#SBATCH -J size_sweep
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=12:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+# Leg header FIRST, before anything that can fail, so a `.out` can always be
+# mapped back to its leg — including the `.out` of a leg that died in setup.
+echo "SWEEP_LEG mesh=${SWEEP_MESH:-unset} path=${SWEEP_PATH:-unset} n=${SWEEP_N:-unset} job=${SLURM_JOB_ID:-local}"
+
+# Exit census. An EXIT trap (not ERR) so it also fires on an OOM kill, a Python
+# crash caught by activate.sh's ERR trap, or a plain `exit 2` below. activate.sh
+# installs its own ERR trap under SLURM; the two are independent.
+trap '_sweep_rc=$?; echo "SWEEP_EXIT code=${_sweep_rc}"' EXIT
+
+if [ -z "${SWEEP_MESH:-}" ] || [ -z "${SWEEP_PATH:-}" ] || [ -z "${SWEEP_N:-}" ]; then
+    echo "submit_size_sweep_leg: SWEEP_MESH, SWEEP_PATH and SWEEP_N must all be set" >&2
+    echo "  e.g. sbatch --export=ALL,SWEEP_MESH=delaunay,SWEEP_PATH=dense,SWEEP_N=5000 ..." >&2
+    exit 2
+fi
+
+# Derive the repo root from where this was submitted (hpc/batch_gpu/../..) rather
+# than hardcoding /mnt/ral/jnightin/autolens_profiling: the canonical RAL
+# checkout sits on main with a dirty tree, so this runs from a worktree of the
+# feature branch. The -o/-e paths above are relative, so sbatch from inside
+# hpc/batch_gpu/ (submit_size_sweep.sh does the cd for you).
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding"
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+# Fresh per-job compilation cache. output/ is gitignored, so these never reach
+# git; ${SLURM_JOB_ID} keeps concurrent legs on the same node from sharing one.
+export JAX_COMPILATION_CACHE_DIR="$AP_ROOT/output/jax_cache/sweep_${SLURM_JOB_ID:-local}"
+rm -rf "$JAX_COMPILATION_CACHE_DIR" && mkdir -p "$JAX_COMPILATION_CACHE_DIR"
+echo "JAX_COMPILATION_CACHE_DIR=$JAX_COMPILATION_CACHE_DIR (fresh)"
+
+nvidia-smi
+
+# Which cell this mesh names, and the regularization the fiducial legs of that
+# mesh pass. The Delaunay family's baseline and matrix-free legs both run
+# `--regularization adapt_split`; the rectangular cell has no such flag (its
+# scheme is al.reg.Constant(coefficient=1.0), fixed in the cell). Copied from
+# the fiducial submits so a sweep row is comparable to its n=1500 row.
+case "$SWEEP_MESH" in
+    rectangular)
+        SWEEP_CELL=pixelization
+        REG_ARGS=()
+        MESH_DESC="rectangular bilinear adapt mesh, nearest square to N"
+        ;;
+    delaunay)
+        SWEEP_CELL=delaunay
+        REG_ARGS=(--regularization adapt_split)
+        MESH_DESC="Hilbert/Delaunay mesh, N vertices"
+        ;;
+    delaunay_nn)
+        SWEEP_CELL=delaunay_nn
+        REG_ARGS=(--regularization adapt_split)
+        MESH_DESC="Hilbert/Delaunay mesh with Sibson natural-neighbour interpolation, N vertices"
+        ;;
+    *)
+        echo "submit_size_sweep_leg: unknown SWEEP_MESH '$SWEEP_MESH'" >&2
+        echo "  want one of: rectangular delaunay delaunay_nn" >&2
+        exit 2
+        ;;
+esac
+
+case "$SWEEP_PATH" in
+    dense)
+        SWEEP_SCRIPT="$SWEEP_CELL"
+        SWEEP_CONFIG_NAME="hpc_a100_fp64_n${SWEEP_N}"
+        PATH_DESC="dense (mapping matrices, InversionImagingMapping)"
+        ;;
+    sparse)
+        SWEEP_SCRIPT="$SWEEP_CELL"
+        SWEEP_CONFIG_NAME="hpc_a100_fp64_n${SWEEP_N}"
+        PATH_DESC="sparse (w-tilde operator, InversionImagingSparse); label gains _sparse"
+        ;;
+    matrix_free)
+        SWEEP_SCRIPT="matrix_free"
+        SWEEP_CONFIG_NAME="hpc_a100_fp64_matrix_free_n${SWEEP_N}"
+        PATH_DESC="matrix-free (PCG + SLQ on operator products)"
+        ;;
+    *)
+        echo "submit_size_sweep_leg: unknown SWEEP_PATH '$SWEEP_PATH'" >&2
+        echo "  want one of: dense sparse matrix_free" >&2
+        exit 2
+        ;;
+esac
+
+echo "=========================================="
+date
+hostname
+echo "Sweep leg:      mesh=$SWEEP_MESH path=$SWEEP_PATH n=$SWEEP_N"
+echo "Cell:           likelihood_breakdown/imaging/${SWEEP_SCRIPT}"
+echo "Instrument:     hst"
+echo "Precision:      fp64"
+echo "Inversion path: $PATH_DESC"
+echo "Source mesh:    $MESH_DESC"
+echo "Config name:    $SWEEP_CONFIG_NAME"
+echo "Regularization: ${REG_ARGS[*]:-cell default (al.reg.Constant(coefficient=1.0))}"
+
+echo "=== source revisions (shared install, untouched) ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r" "$(git -C /mnt/ral/jnightin/PyAuto/$r rev-parse HEAD 2>&1)"
+done
+echo "AP_ROOT rev:   $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+
+cd $AP_ROOT
+
+echo "=== import provenance ==="
+python3 -c "import autoarray, autolens; print('autoarray.__file__ =', autoarray.__file__); print('autoarray.__version__ =', autoarray.__version__); print('autolens.__file__ =', autolens.__file__)"
+
+case "$SWEEP_PATH" in
+    dense)
+        python3 -u scripts/imaging/likelihood_breakdown/${SWEEP_CELL}.py \
+            --config-name "$SWEEP_CONFIG_NAME" \
+            --source-pixels "$SWEEP_N" \
+            "${REG_ARGS[@]}" \
+            --split-setup \
+            --vmap-batch 16
+        ;;
+    sparse)
+        python3 -u scripts/imaging/likelihood_breakdown/${SWEEP_CELL}.py \
+            --config-name "$SWEEP_CONFIG_NAME" \
+            --source-pixels "$SWEEP_N" \
+            "${REG_ARGS[@]}" \
+            --split-setup \
+            --vmap-batch 16 \
+            --sparse
+        ;;
+    matrix_free)
+        python3 -u scripts/imaging/likelihood_breakdown/matrix_free.py \
+            --mesh "$SWEEP_MESH" \
+            --source-pixels "$SWEEP_N" \
+            --config-name "$SWEEP_CONFIG_NAME" \
+            "${REG_ARGS[@]}" \
+            --no-pdip \
+            --slq-probes 16 \
+            --slq-steps 20,80,320 \
+            --vmap-batch 16
+        ;;
+esac
+
+# Autotune-cache census. Must be non-fatal: the directory only exists if XLA
+# wrote autotune results, and activate.sh's ERR trap fails the job on any
+# non-zero exit (the `ls` failure is swallowed by the pipe to `wc -l`).
+echo -n "AUTOTUNE_ENTRIES count="
+ls "$JAX_COMPILATION_CACHE_DIR/xla_gpu_per_fusion_autotune_cache_dir" 2>/dev/null | wc -l
+
+echo "Finished."
+date
