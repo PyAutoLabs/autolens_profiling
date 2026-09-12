@@ -255,9 +255,7 @@ def test_masked_jax_certifies_at_the_numpy_pass_count(seed):
         )
 
     # Once certified the fixed set is frozen, so the leftover budget is idempotent.
-    assert np.allclose(
-        np.asarray(out["x"], dtype=float), reference.x, rtol=1e-9, atol=1e-11
-    )
+    assert np.allclose(np.asarray(out["x"], dtype=float), reference.x, rtol=1e-9, atol=1e-11)
 
 
 def test_masked_jax_violation_counts_match_the_reference():
@@ -423,9 +421,7 @@ def test_certified_scheme_reproduces_the_library_reconstruction(tiny_systems):
     _, s3 = tiny_systems
 
     x_unc = ass.unconstrained_solve(s3.Q, s3.q, fixed0=s3.edge_zero_mask)
-    result = ass.active_set_certified(
-        s3.Q, s3.q, x_unc, fixed0=s3.edge_zero_mask, max_passes=60
-    )
+    result = ass.active_set_certified(s3.Q, s3.q, x_unc, fixed0=s3.edge_zero_mask, max_passes=60)
     assert result.certified
 
     x = result.x * s3.d_scale
@@ -437,9 +433,7 @@ def test_certified_scheme_reproduces_the_library_reconstruction(tiny_systems):
     # Scored against the library's own reconstruction — NOT against the PDIP
     # solution, which solves the *unzeroed* system and therefore sits at a
     # different evidence (see the next test).
-    delta = ass.active_set_evidence_error(
-        s3, x, reference_log_evidence=s3.log_evidence(reference)
-    )
+    delta = ass.active_set_evidence_error(s3, x, reference_log_evidence=s3.log_evidence(reference))
     assert abs(delta) <= 1e-6
 
 
@@ -469,9 +463,7 @@ def test_certified_scheme_without_the_edge_zero_seed_matches_pdip(tiny_systems):
 def test_masked_jax_matches_the_reference_on_the_real_system(tiny_systems):
     _, s3 = tiny_systems
     x_unc = ass.unconstrained_solve(s3.Q, s3.q, fixed0=s3.edge_zero_mask)
-    reference = ass.active_set_certified(
-        s3.Q, s3.q, x_unc, fixed0=s3.edge_zero_mask, max_passes=60
-    )
+    reference = ass.active_set_certified(s3.Q, s3.q, x_unc, fixed0=s3.edge_zero_mask, max_passes=60)
     assert reference.certified
 
     out = jax.jit(ass.active_set_masked_jax, static_argnums=(3,))(

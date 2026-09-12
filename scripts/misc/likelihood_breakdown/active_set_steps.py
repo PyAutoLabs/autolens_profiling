@@ -579,14 +579,10 @@ def active_set_certified(
     q = np.asarray(q, dtype=float)
     n = Q.shape[0]
 
-    permanent = (
-        np.zeros(n, dtype=bool) if fixed0 is None else np.asarray(fixed0, dtype=bool).copy()
-    )
+    permanent = np.zeros(n, dtype=bool) if fixed0 is None else np.asarray(fixed0, dtype=bool).copy()
 
     seed = (
-        np.zeros(n, dtype=bool)
-        if initial_fixed is None
-        else np.asarray(initial_fixed, dtype=bool)
+        np.zeros(n, dtype=bool) if initial_fixed is None else np.asarray(initial_fixed, dtype=bool)
     )
 
     n_fact = 0

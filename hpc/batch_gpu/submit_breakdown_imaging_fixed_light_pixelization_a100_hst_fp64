@@ -1,0 +1,115 @@
+#!/bin/bash -l
+#
+# 2026-09 fixed-lens-light source-only legs (autolens_profiling#248, phase 2).
+#
+# Measures the reconstruction row on TWO linear systems in one process:
+#   S0 -- the system the library solves today (60 unregularised linear-MGE
+#         columns sharing F + lambda H with the source pixels, cond ~ 4e10);
+#   S3 -- the source-only system left once that lens light is converted to
+#         regular light profiles at its solved intensities and subtracted from
+#         the dataset (one mapper, no linear funcs, cond ~ 1e6-1e7).
+#
+# On each system: the dense F + lambda H build, the unconstrained Cholesky
+# solve, the library's own NNLS PDIP (cell-driven, so the iteration count
+# survives), both log determinants and log_evidence_terms. On S3 additionally
+# the certified active-set scheme at fixed pass budgets 1..8, each its own
+# compile, each recording per-pass primal/dual violation counts, its
+# certification flag and its delta-log-evidence against the PDIP solution.
+#
+# The phase-1 CPU probe (results/misc/fixed_light_probe/) is what set the budget
+# ceiling: S3 certifies at 7 passes / 8 factorisations on the rectangular mesh
+# and at 2 / 3 on Delaunay, while S0 never certifies at all. Budgets above 8
+# would measure nothing new.
+#
+#   --config-name hpc_a100_fp64_fixed_light  output-filename label for these rows.
+#                                            Deliberately NOT a dashboard config
+#                                            name: this is a comparator study
+#                                            for #248, not a published tier.
+#   --vmap-batch 16                          batched re-timing at the Nautilus n_batch
+#
+# Every leg starts from an EMPTY JAX compilation cache: a seeded XLA autotune
+# cache silently changes kernels (results/notes/xla_autotune_triton_gemm.md -- F
+# 4.8 vs 25.6 ms on the same code). XLA_FLAGS carries only constant_folding; the
+# autotune/Triton flags are left to autonerves' jax_wrapper so this measures the
+# library default.
+#
+# parse_known_args IGNORES unknown flags, so a checkout WITHOUT this cell's
+# flags would run and silently produce a different table -- check
+# configuration.pass_budget_max and vmap_batch in the JSON.
+# Rectangular fiducial. The pinned S0 log-dets this leg checks are
+# 3888.258090 / 1692.786817, from the 2026-09-11 _recon_split leg of the
+# same mesh (autolens_profiling#243, PR #244).
+
+#SBATCH -J fixed_light_breakdown_pixelization
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=12:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+# Derive the repo root from where this was submitted (hpc/batch_gpu/../..) rather
+# than hardcoding /mnt/ral/jnightin/autolens_profiling: the canonical RAL
+# checkout sits on main with a dirty tree, so this runs from a worktree of the
+# feature branch. The -o/-e paths above are relative, so sbatch from inside
+# hpc/batch_gpu/ (submit_fixed_light.sh does the cd for you).
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding"
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+# Fresh per-job compilation cache. output/ is gitignored, so these never reach
+# git; ${SLURM_JOB_ID} keeps concurrent legs on the same node from sharing one.
+export JAX_COMPILATION_CACHE_DIR="$AP_ROOT/output/jax_cache/fixed_light_rectangular_${SLURM_JOB_ID:-local}"
+rm -rf "$JAX_COMPILATION_CACHE_DIR" && mkdir -p "$JAX_COMPILATION_CACHE_DIR"
+echo "JAX_COMPILATION_CACHE_DIR=$JAX_COMPILATION_CACHE_DIR (fresh)"
+
+nvidia-smi
+
+echo "=========================================="
+date
+hostname
+echo "Cell:           likelihood_breakdown/imaging/fixed_light"
+echo "Instrument:     hst"
+echo "Precision:      fp64"
+echo "Inversion path: dense (mapping matrices, InversionImagingMapping)"
+echo "Source mesh:    rectangular bilinear adapt-image mesh, 39x39 = 1521 pixels"
+echo "Config name:    hpc_a100_fp64_fixed_light"
+echo "Regularization: al.reg.Constant(coefficient=1.0) -- the rectangular cell's fixed scheme"
+echo "Flags:          --mesh rectangular --config-name hpc_a100_fp64_fixed_light --vmap-batch 16"
+
+echo "=== source revisions (shared install, untouched) ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r" "$(git -C /mnt/ral/jnightin/PyAuto/$r rev-parse HEAD 2>&1)"
+done
+echo "AP_ROOT rev:   $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+
+cd $AP_ROOT
+
+echo "=== import provenance ==="
+python3 -c "import autoarray, autolens; print('autoarray.__file__ =', autoarray.__file__); print('autoarray.__version__ =', autoarray.__version__); print('autolens.__file__ =', autolens.__file__)"
+
+python3 -u scripts/imaging/likelihood_breakdown/fixed_light.py \
+    --mesh rectangular \
+    --config-name hpc_a100_fp64_fixed_light \
+    --vmap-batch 16
+
+# Autotune-cache census. Must be non-fatal: the directory only exists if XLA
+# wrote autotune results, and activate.sh's ERR trap fails the job on any
+# non-zero exit (the `ls` failure is swallowed by the pipe to `wc -l`).
+echo -n "AUTOTUNE_ENTRIES count="
+ls "$JAX_COMPILATION_CACHE_DIR/xla_gpu_per_fusion_autotune_cache_dir" 2>/dev/null | wc -l
+
+echo "Finished."
+date

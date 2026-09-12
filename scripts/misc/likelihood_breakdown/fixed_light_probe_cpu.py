@@ -528,17 +528,13 @@ def measure_system(
         if certified_flags.any()
         else None,
         "n_fixed_per_pass": [int(v) for v in np.asarray(masked["n_fixed"])],
-        "n_primal_violations_per_pass": [
-            int(v) for v in np.asarray(masked["n_primal_violations"])
-        ],
+        "n_primal_violations_per_pass": [int(v) for v in np.asarray(masked["n_primal_violations"])],
         "n_dual_violations_per_pass": [int(v) for v in np.asarray(masked["n_dual_violations"])],
         "max_abs_dev_vs_numpy_reference_rel": float(
             np.max(np.abs(x_masked - x_library)) / max(float(np.max(np.abs(x_library))), 1e-300)
         ),
         "d_log_evidence": (
-            ass.active_set_evidence_error(
-                system, x_masked, reference_log_evidence=log_ev_library
-            )
+            ass.active_set_evidence_error(system, x_masked, reference_log_evidence=log_ev_library)
             if with_evidence
             else None
         ),
@@ -587,9 +583,7 @@ def render_markdown(payload: dict) -> str:
     ]
 
     def row(label, getter):
-        lines.append(
-            f"| {label} | " + " | ".join(_fmt(getter(s)) for s in systems) + " |"
-        )
+        lines.append(f"| {label} | " + " | ".join(_fmt(getter(s)) for s in systems) + " |")
 
     row("n_params", lambda s: s["n_params"])
     row("n_funcs (MGE columns)", lambda s: s["n_funcs"])
@@ -648,7 +642,10 @@ def render_markdown(payload: dict) -> str:
     lines.append("| **masked JAX (edge-zeroed, free_all)** |" + " |" * len(names))
     row("  pass budget", lambda s: s["masked_jax"]["n_passes"])
     row("  certified at pass", lambda s: s["masked_jax"]["certified_at_pass"])
-    row("  max dev vs library / max x", lambda s: s["masked_jax"]["max_abs_dev_vs_numpy_reference_rel"])
+    row(
+        "  max dev vs library / max x",
+        lambda s: s["masked_jax"]["max_abs_dev_vs_numpy_reference_rel"],
+    )
     row("  d log_ev", lambda s: s["masked_jax"]["d_log_evidence"])
 
     lines += [
@@ -750,9 +747,7 @@ def main() -> None:
             over_sample_size_lp=shared["dataset"].over_sample_size_lp,
             over_sample_size_pixelization=shared["dataset"].over_sample_size_pixelization,
         )
-        tracer_source_only = al.Tracer(
-            galaxies=[lens_galaxy(instance, with_light=False), source]
-        )
+        tracer_source_only = al.Tracer(galaxies=[lens_galaxy(instance, with_light=False), source])
         system_s1 = ass.linear_system_from(
             fit_from(shared, tracer_source_only, dataset=dataset_s1),
             dataset_s1,
