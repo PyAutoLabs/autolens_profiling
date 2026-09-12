@@ -1,0 +1,268 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "hostname": "euclid-ral-gpu-2",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": null,
+    "cpu_count": 124,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/autolens_profiling_wt/matrix-free-pixelized-likelihood/output/jax_cache/sweep_342689",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 33307 MiB, 81920 MiB"
+  },
+  "instrument": "hst",
+  "configuration": {
+    "pixel_scale_arcsec": 0.05,
+    "mask_radius_arcsec": 3.5,
+    "image_pixels_masked": 15361,
+    "over_sampled_pixels": 62752,
+    "delaunay_vertices": 5000,
+    "source_pixels_requested": 5000,
+    "edge_zeroed_pixels": 0,
+    "inversion_path": "dense",
+    "total_params": 5060,
+    "thread_env": {
+      "n_threads": null,
+      "vars": [
+        "OPENBLAS_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OMP_NUM_THREADS",
+        "VECLIB_MAXIMUM_THREADS",
+        "NUMEXPR_NUM_THREADS"
+      ],
+      "set_to": null,
+      "preexisting": {},
+      "overridden": {},
+      "note": "Not pinned (legacy variant): recorded as found."
+    },
+    "memo": "library_default (inert on the JAX path)",
+    "over_sample_size_lp_rule": {
+      "sub_size_list": [
+        4,
+        2,
+        2
+      ],
+      "radial_list": [
+        0.3,
+        0.6
+      ],
+      "centre": [
+        0.0,
+        0.0
+      ],
+      "note": "Outer sub-size 1 retired repo-wide on 2026-09-08 (autolens_profiling#235): it leaves the outermost annulus un-over-sampled and causes gradient issues."
+    }
+  },
+  "regularization": {
+    "scheme": "adapt_split",
+    "inner_coefficient": 0.1,
+    "outer_coefficient": 10.0,
+    "signal_scale": 0.1
+  },
+  "steps": {
+    "Ray-trace data grid": 0.00016762400045990943,
+    "Ray-trace mesh grid": 0.0001781479921191931,
+    "Lens light images (pre-PSF)": 0.0001485031098127365,
+    "Blurred image (PSF convolution)": 0.001284187287092209,
+    "Profile-subtracted image": 0.00014023319818079472,
+    "Inversion setup (steps 5-8 combined)": 0.05166750899516046,
+    "Data vector (D)": 0.0006359583232551814,
+    "Curvature matrix (F)": 0.04649100680835545,
+    "Regularization matrix (H)": -0.008877583034336566,
+    "Regularized reconstruction": 0.17133002481423318,
+    "Mapped recon + log evidence": 0.010517030721530318
+  },
+  "total_step_by_step": 0.27368264221586286,
+  "regularization_matrix_prefix_s": 0.02041931329295039,
+  "interpolator_prefix_s": 0.029296896327286957,
+  "jit_phases": {
+    "ray_trace_data_jit": {
+      "lower_s": 0.1255430607125163,
+      "compile_s": 0.3767919037491083,
+      "first_call_s": 0.0015311907045543194,
+      "steady_per_call_s": 0.00016762400045990943
+    },
+    "ray_trace_mesh_jit": {
+      "lower_s": 0.11563668120652437,
+      "compile_s": 0.49156991112977266,
+      "first_call_s": 0.0013968311250209808,
+      "steady_per_call_s": 0.0001781479921191931
+    },
+    "lens_image_jit": {
+      "lower_s": 0.06509260227903724,
+      "compile_s": 0.04072243673726916,
+      "first_call_s": 0.0006852159276604652,
+      "steady_per_call_s": 0.0001485031098127365
+    },
+    "blurred_image_jit": {
+      "lower_s": 0.09128369484096766,
+      "compile_s": 0.21171834785491228,
+      "first_call_s": 0.005219350103288889,
+      "steady_per_call_s": 0.001284187287092209
+    },
+    "profile_subtract_jit": {
+      "lower_s": 0.006393641233444214,
+      "compile_s": 0.02741169696673751,
+      "first_call_s": 0.0006959149613976479,
+      "steady_per_call_s": 0.00014023319818079472
+    },
+    "inversion_setup_jit": {
+      "lower_s": 3.5079954210668802,
+      "compile_s": 11.51009535510093,
+      "first_call_s": 0.1682450668886304,
+      "steady_per_call_s": 0.05166750899516046
+    },
+    "setup_prefix_5": {
+      "lower_s": 0.16871667373925447,
+      "compile_s": 0.9055887227877975,
+      "first_call_s": 0.00490942969918251,
+      "steady_per_call_s": 0.0010831045918166637
+    },
+    "setup_prefix_6": {
+      "lower_s": 0.23642750084400177,
+      "compile_s": 1.8313193740323186,
+      "first_call_s": 0.035172190982848406,
+      "steady_per_call_s": 0.029296896327286957
+    },
+    "setup_prefix_7": {
+      "lower_s": 0.3753778920508921,
+      "compile_s": 2.005298567004502,
+      "first_call_s": 0.037125888746231794,
+      "steady_per_call_s": 0.020111538097262384
+    },
+    "setup_prefix_8": {
+      "lower_s": 0.2546507022343576,
+      "compile_s": 2.111492873635143,
+      "first_call_s": 0.05354834068566561,
+      "steady_per_call_s": 0.050292952172458175
+    },
+    "data_vector_jit": {
+      "lower_s": 0.008292470593005419,
+      "compile_s": 0.06178353168070316,
+      "first_call_s": 0.0013660420663654804,
+      "steady_per_call_s": 0.0006359583232551814
+    },
+    "curvature_matrix_jit": {
+      "lower_s": 0.015536925755441189,
+      "compile_s": 0.06313320389017463,
+      "first_call_s": 0.04422882618382573,
+      "steady_per_call_s": 0.04649100680835545
+    },
+    "regularization_matrix_jit": {
+      "lower_s": 0.48072679433971643,
+      "compile_s": 2.6777093103155494,
+      "first_call_s": 0.02572225732728839,
+      "steady_per_call_s": 0.02041931329295039
+    },
+    "setup_prefix_5_vmap16": {
+      "first_call_s": 1.4009224502369761,
+      "batch_per_call_s": 0.00108526349067688,
+      "steady_per_call_s": 6.7828968167305e-05
+    },
+    "setup_prefix_6_vmap16": {
+      "first_call_s": 2.851865630596876,
+      "batch_per_call_s": 0.2695116520859301,
+      "steady_per_call_s": 0.01684447825537063
+    },
+    "setup_prefix_7_vmap16": {
+      "first_call_s": 3.090779561083764,
+      "batch_per_call_s": 0.2766260534990579,
+      "steady_per_call_s": 0.017289128343691118
+    },
+    "reconstruction_jit": {
+      "lower_s": 0.04206263506785035,
+      "compile_s": 0.48578958911821246,
+      "first_call_s": 0.17290158104151487,
+      "steady_per_call_s": 0.17133002481423318
+    },
+    "cholesky_curvature_reg_jit": {
+      "lower_s": 0.010103445965796709,
+      "compile_s": 0.08809241512790322,
+      "first_call_s": 0.005974211730062962,
+      "steady_per_call_s": 0.005587491812184453
+    },
+    "cholesky_solve_jit": {
+      "lower_s": 0.01246644277125597,
+      "compile_s": 0.08657576376572251,
+      "first_call_s": 0.007124665193259716,
+      "steady_per_call_s": 0.0066290663089603186
+    },
+    "nnls_pdip_jit": {
+      "lower_s": 0.02389453910291195,
+      "compile_s": 0.43325493205338717,
+      "first_call_s": 0.17264291178435087,
+      "steady_per_call_s": 0.17148702992126347
+    },
+    "nnls_pdip_one_iteration_jit": {
+      "lower_s": 0.024315565824508667,
+      "compile_s": 0.42472740495577455,
+      "first_call_s": 0.015294952783733606,
+      "steady_per_call_s": 0.013562665600329638
+    },
+    "nnls_pdip_vmap16": {
+      "first_call_s": 4.99656171631068,
+      "batch_per_call_s": 4.4950091823935505,
+      "steady_per_call_s": 0.2809380738995969
+    },
+    "log_evidence_jit": {
+      "lower_s": 0.018915600143373013,
+      "compile_s": 0.2398699689656496,
+      "first_call_s": 0.011706355959177017,
+      "steady_per_call_s": 0.010517030721530318
+    },
+    "log_det_curvature_reg_jit": {
+      "lower_s": 0.01324872625991702,
+      "compile_s": 0.08322063600644469,
+      "first_call_s": 0.005711024161428213,
+      "steady_per_call_s": 0.005155753530561924
+    },
+    "log_det_regularization_jit": {
+      "lower_s": 0.0003546476364135742,
+      "compile_s": 1.4250166714191437e-05,
+      "first_call_s": 0.005266636610031128,
+      "steady_per_call_s": 0.005146899493411183
+    }
+  },
+  "steps_reconstruction_sub_rows": {
+    "Cholesky (F+\u03bbH)": 0.005587491812184453,
+    "Cholesky solve (unconstrained)": 0.0066290663089603186,
+    "NNLS PDIP (cell-driven, max_iter 50)": 0.17148702992126347,
+    "NNLS PDIP one iteration": 0.013562665600329638,
+    "NNLS PDIP @vmap 16 (identical lanes)": 0.2809380738995969,
+    "Log det Cholesky (F+\u03bbH reduced)": 0.005155753530561924,
+    "Log det Cholesky (H reduced)": 0.005146899493411183
+  },
+  "nnls": {
+    "iterations": 23,
+    "converged": true,
+    "ms_per_iteration": 7.4559578226636285,
+    "one_iteration_ms": 13.562665600329638,
+    "max_iter": 50,
+    "solver_tol": "jaxnnls default",
+    "jacobi_preconditioning": true,
+    "reconstruction_max_abs_diff_vs_library": 1.0584066956198512e-09,
+    "reconstruction_tolerance": 1e-08,
+    "drift": null
+  },
+  "log_evidence_terms": {
+    "chi_squared": 25428.263361186062,
+    "regularization_term": 9117.725945624043,
+    "log_det_curvature_reg": 40142.22681519933,
+    "log_det_regularization": 39671.93781744747,
+    "noise_normalization": -79635.26723742482,
+    "log_evidence": 22309.494466431424
+  },
+  "steps_reconstruction_vmap_note": "The @vmap 16 NNLS row batches 16 copies of the same (Q_pc, q_pc); identical lanes converge on the same PDIP iteration, so the lax.while_loop never runs on for a straggler. It is the best case for amortization, not a representative one \u2014 a real batch of distinct parameter draws runs until its slowest lane converges.",
+  "setup_split": {
+    "Border relocation": 0.0010831045918166637,
+    "Triangulation + interpolation": 0.028213791735470294,
+    "Mapping matrix": -0.009185358230024573,
+    "Blurred mapping matrix (PSF)": 0.03018141407519579
+  },
+  "vmap_batch": 16,
+  "vmap_error": "Traceback (most recent call last):\n  File \"/mnt/ral/jnightin/autolens_profiling_wt/matrix-free-pixelized-likelihood/scripts/imaging/likelihood_breakdown/delaunay.py\", line 1396, in <module>\n    _vmap_prefix_per_call[_upto] = _vmap_profile(\n                                   ^^^^^^^^^^^^^^\n  File \"/mnt/ral/jnightin/autolens_profiling_wt/matrix-free-pixelized-likelihood/scripts/imaging/likelihood_breakdown/delaunay.py\", line 1383, in _vmap_profile\n    return timing.vmap_profile(\n           ^^^^^^^^^^^^^^^^^^^^\n  File \"/mnt/ral/jnightin/autolens_profiling_wt/matrix-free-pixelized-likelihood/scripts/misc/likelihood_breakdown/timing.py\", line 146, in vmap_profile\n    block(fn(params_batched))\n  File \"/mnt/ral/jnightin/autolens_profiling_wt/matrix-free-pixelized-likelihood/scripts/misc/likelihood_breakdown/timing.py\", line 69, in block\n    leaf.block_until_ready()\njax.errors.JaxRuntimeError: RESOURCE_EXHAUSTED: Out of memory while trying to allocate 39.05GiB. [executable_name='jit_fn'] [tf-allocator-allocation-error='']\n",
+  "pinned_expected": null,
+  "pinned_drift": []
+}

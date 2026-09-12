@@ -1,0 +1,370 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "hostname": "euclid-ral-gpu-2",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": null,
+    "cpu_count": 124,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/autolens_profiling_wt/matrix-free-pixelized-likelihood/output/jax_cache/sweep_342674",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 16939 MiB, 81920 MiB"
+  },
+  "instrument": "hst",
+  "configuration": {
+    "pixel_scale_arcsec": 0.05,
+    "mask_radius_arcsec": 3.5,
+    "image_pixels_masked": 15361,
+    "over_sampled_pixels": 62752,
+    "mesh": "delaunay",
+    "mesh_shape": null,
+    "rect_mesh": null,
+    "source_pixels": 12000,
+    "source_pixels_requested": 12000,
+    "inversion_path": "matrix_free",
+    "total_params": 12060,
+    "sparse_batch_size": 128,
+    "sparse_operator_build_s": 0.7358035752549767,
+    "thread_env": {
+      "n_threads": null,
+      "vars": [
+        "OPENBLAS_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OMP_NUM_THREADS",
+        "VECLIB_MAXIMUM_THREADS",
+        "NUMEXPR_NUM_THREADS"
+      ],
+      "set_to": null,
+      "preexisting": {},
+      "overridden": {},
+      "note": "Not pinned (legacy variant): recorded as found."
+    },
+    "memo": "library_default (inert on the JAX path)",
+    "over_sample_size_lp_rule": {
+      "sub_size_list": [
+        4,
+        2,
+        2
+      ],
+      "radial_list": [
+        0.3,
+        0.6
+      ],
+      "centre": [
+        0.0,
+        0.0
+      ]
+    }
+  },
+  "regularization": {
+    "scheme": "adapt_split",
+    "inner_coefficient": 0.1,
+    "outer_coefficient": 10.0,
+    "signal_scale": 0.1
+  },
+  "log_evidence_eager": 12976.012212344052,
+  "steps_matrix_free_rows": [
+    {
+      "name": "context build (eager)",
+      "ms": 2137.1003496460617,
+      "mapper_nnz": 46083,
+      "reg_bcoo_nnz": 101196,
+      "total_params": 12060,
+      "mapper_params": 12000,
+      "n_funcs": 60,
+      "note": "one-off setup, not a per-call cost; the BCOO \u03bbH is built from the library's dense regularization matrix (open item for the PyAutoArray phase)"
+    },
+    {
+      "name": "curvature_reg_matvec x1",
+      "ms": 0.3425529692322016,
+      "columns": 1
+    },
+    {
+      "name": "curvature_reg_matvec x32",
+      "ms": 1.2445856351405382,
+      "columns": 32,
+      "ms_per_column": 0.03889330109814182,
+      "note": "one forward blur and one adjoint blur for the whole block, whatever B is"
+    },
+    {
+      "name": "cholesky solve (unconstrained, reference)",
+      "ms": 47.69222401082516,
+      "note": "one factorisation plus two triangular solves \u2014 the number a CG line has to beat"
+    },
+    {
+      "name": "PCG solve (unconstrained, Jacobi est.)",
+      "ms": 2831.271291896701,
+      "cg_iterations": 13320,
+      "rel_residual": 8.405963227070093e-11,
+      "converged": true,
+      "cg_tol": 1e-10,
+      "cg_maxiter": 120600,
+      "max_abs_diff_vs_cholesky_solve": 0.0001084715269588088,
+      "max_rel_diff_vs_cholesky_solve": 1.4754211195568978e-06
+    },
+    {
+      "name": "PCG solve (unconstrained, exact diag)",
+      "ms": 1902.8169537894428,
+      "cg_iterations": 8813,
+      "rel_residual": 9.169166358130595e-11,
+      "converged": true,
+      "cg_tol": 1e-10,
+      "cg_maxiter": 120600,
+      "max_abs_diff_vs_cholesky_solve": 0.0069760363539908,
+      "max_rel_diff_vs_cholesky_solve": 9.488749403687528e-05
+    },
+    {
+      "name": "PCG solve (unconstrained, no precond)",
+      "ms": 2618.7922886107117,
+      "cg_iterations": 12213,
+      "rel_residual": 9.250528049314103e-11,
+      "converged": true,
+      "cg_tol": 1e-10,
+      "cg_maxiter": 120600,
+      "max_abs_diff_vs_cholesky_solve": 0.004474041903616666,
+      "max_rel_diff_vs_cholesky_solve": 6.085556366220685e-05
+    },
+    {
+      "name": "SLQ log det (F+\u03bbH reduced) p=16 m=20",
+      "ms": 14.35129288583994,
+      "probes": 16,
+      "lanczos_steps": 20,
+      "estimate": 108579.51578772109,
+      "spread": 30.814919630165416,
+      "n_clamped": 0,
+      "error_vs_cholesky": 1340.4624794625852
+    },
+    {
+      "name": "SLQ log det (F+\u03bbH reduced) p=16 m=80",
+      "ms": 56.95131500251591,
+      "probes": 16,
+      "lanczos_steps": 80,
+      "estimate": 107369.39294506639,
+      "spread": 31.549161939242623,
+      "n_clamped": 0,
+      "error_vs_cholesky": 130.33963680788293
+    },
+    {
+      "name": "SLQ log det (F+\u03bbH reduced) p=16 m=320",
+      "ms": 236.11410311423242,
+      "probes": 16,
+      "lanczos_steps": 320,
+      "estimate": 107323.03914407303,
+      "spread": 31.51505248611159,
+      "n_clamped": 0,
+      "error_vs_cholesky": 83.9858358145284
+    },
+    {
+      "name": "SLQ log det (\u03bbH reduced) p=16 m=20",
+      "ms": 1.894268812611699,
+      "probes": 16,
+      "lanczos_steps": 20,
+      "estimate": 107182.09538256288,
+      "spread": 34.712124669715664,
+      "n_clamped": 0,
+      "error_vs_cholesky": 385.2040432984795
+    },
+    {
+      "name": "SLQ log det (\u03bbH reduced) p=16 m=80",
+      "ms": 6.9240078795701265,
+      "probes": 16,
+      "lanczos_steps": 80,
+      "estimate": 106908.337931229,
+      "spread": 36.260527825054105,
+      "n_clamped": 0,
+      "error_vs_cholesky": 111.4465919646027
+    },
+    {
+      "name": "SLQ log det (\u03bbH reduced) p=16 m=320",
+      "ms": 39.21861331909895,
+      "probes": 16,
+      "lanczos_steps": 320,
+      "estimate": 106890.01860037909,
+      "spread": 36.39536615215958,
+      "n_clamped": 0,
+      "error_vs_cholesky": 93.1272611146851
+    },
+    {
+      "name": "PCG solve @vmap 16 (identical lanes)",
+      "ms": 669.0769810142228,
+      "batch": 16
+    },
+    {
+      "name": "SLQ log det (F+\u03bbH reduced) p=16 m=320 @vmap 16 (identical lanes)",
+      "ms": 90.78304347058292,
+      "batch": 16
+    }
+  ],
+  "matrix_free": {
+    "mesh": "delaunay",
+    "source_pixels": 12000,
+    "total_params": 12060,
+    "mapper_params": 12000,
+    "n_funcs": 60,
+    "mapper_nnz": 46083,
+    "reg_bcoo_nnz": 101196,
+    "add_to_diag_value": 0.001,
+    "cg_tol": 1e-10,
+    "cg_maxiter": 120600,
+    "pdip_cg_tol": 1e-08,
+    "pdip_cg_maxiter": 12060,
+    "slq_probes": [
+      16
+    ],
+    "slq_lanczos_steps": [
+      20,
+      80,
+      320
+    ],
+    "slq_key": 0,
+    "pdip": false,
+    "edge_zeroed_active": true,
+    "edge_zeroed_pixels": 0,
+    "context_build_s": 2.1371003496460617,
+    "cond_curvature_reg": 40565728357.100075,
+    "evidence": {
+      "slq_probes": 16,
+      "slq_lanczos_steps": 320,
+      "exact_terms": {
+        "chi_squared": 35652.60486611072,
+        "regularization_term": 17588.475916622512,
+        "log_det_curvature_reg": 107239.0533082585,
+        "log_det_regularization": 106796.8913392644,
+        "noise_normalization": -79635.26723742482,
+        "log_evidence": 12976.012242848738
+      },
+      "matrix_free_terms": {
+        "chi_squared": 35652.60486611072,
+        "regularization_term": 17588.47591662215,
+        "log_det_curvature_reg": 107323.03914407303,
+        "log_det_regularization": 106890.01860037909,
+        "noise_normalization": -79635.26723742482,
+        "log_evidence": 12980.582955499005
+      },
+      "term_errors": {
+        "chi_squared": 0.0,
+        "regularization_term": -3.637978807091713e-10,
+        "log_det_curvature_reg": 83.9858358145284,
+        "log_det_regularization": 93.1272611146851,
+        "noise_normalization": 0.0,
+        "log_evidence": 4.570712650267524
+      },
+      "log_evidence_error": 4.570712650267524,
+      "go_bar_nats": 0.5,
+      "within_go_bar": false,
+      "unconstrained_pcg_terms": {
+        "chi_squared": 35578.79102987166,
+        "regularization_term": 17410.6073484544,
+        "log_det_curvature_reg": 107323.03914407303,
+        "log_det_regularization": 106890.01860037909,
+        "noise_normalization": -79635.26723742482,
+        "log_evidence": 13106.424157702408
+      },
+      "unconstrained_pcg_log_evidence_error": 130.41191485367017,
+      "unconstrained_pcg_note": "The unconstrained PCG reconstruction is a different minimiser from the non-negative one the library returns, so these terms differ by more than the SLQ bias by design. The go bar reads log_evidence_error above, not this."
+    },
+    "exact_log_dets": {
+      "log_det_curvature_reg": 107239.0533082585,
+      "log_det_regularization": 106796.8913392644
+    },
+    "peak_bytes": {
+      "after_setup": 7144972800,
+      "after_dense_comparators": 8164154880,
+      "after_matrix_free": 8164154880,
+      "note": "jax.devices()[0].memory_stats()['peak_bytes_in_use']; None on a backend that does not report it (CPU). Process-wide high-water marks."
+    }
+  },
+  "dense_comparators": {
+    "status": "ok"
+  },
+  "jit_phases": {
+    "curvature_reg_matvec_x1": {
+      "lower_s": 0.06407571909949183,
+      "compile_s": 0.5660878303460777,
+      "first_call_s": 0.009567364118993282,
+      "steady_per_call_s": 0.0003425529692322016
+    },
+    "curvature_reg_matvec_x32": {
+      "lower_s": 0.042910146061331034,
+      "compile_s": 0.5823164549656212,
+      "first_call_s": 0.02590292738750577,
+      "steady_per_call_s": 0.0012445856351405381
+    },
+    "cholesky_solve_jit": {
+      "lower_s": 0.009713312145322561,
+      "compile_s": 0.0756241213530302,
+      "first_call_s": 0.04742740886285901,
+      "steady_per_call_s": 0.04769222401082516
+    },
+    "pcg_solve_jacobi_est_jit": {
+      "lower_s": 0.056717435363680124,
+      "compile_s": 0.7767096320167184,
+      "first_call_s": 2.8563129720278084,
+      "steady_per_call_s": 2.8312712918967007
+    },
+    "pcg_solve_exact_diag_jit": {
+      "lower_s": 0.07330897590145469,
+      "compile_s": 0.8406986519694328,
+      "first_call_s": 1.9294601809233427,
+      "steady_per_call_s": 1.9028169537894428
+    },
+    "pcg_solve_no_precond_jit": {
+      "lower_s": 0.05025575216859579,
+      "compile_s": 0.7669525691308081,
+      "first_call_s": 2.6088812313973904,
+      "steady_per_call_s": 2.618792288610712
+    },
+    "slq_log_det_curvature_reg_p16_m20": {
+      "lower_s": 0.15686393994838,
+      "compile_s": 0.9453041898086667,
+      "first_call_s": 0.024350294843316078,
+      "steady_per_call_s": 0.01435129288583994
+    },
+    "slq_log_det_curvature_reg_p16_m80": {
+      "lower_s": 0.07950126891955733,
+      "compile_s": 0.926234764046967,
+      "first_call_s": 0.0782284652814269,
+      "steady_per_call_s": 0.05695131500251591
+    },
+    "slq_log_det_curvature_reg_p16_m320": {
+      "lower_s": 0.08020376367494464,
+      "compile_s": 0.8986230976879597,
+      "first_call_s": 0.25322276819497347,
+      "steady_per_call_s": 0.23611410311423242
+    },
+    "slq_log_det_regularization_p16_m20": {
+      "lower_s": 0.07903699111193419,
+      "compile_s": 0.6123482473194599,
+      "first_call_s": 0.0037133777514100075,
+      "steady_per_call_s": 0.001894268812611699
+    },
+    "slq_log_det_regularization_p16_m80": {
+      "lower_s": 0.054481746163219213,
+      "compile_s": 0.6231523416936398,
+      "first_call_s": 0.00872967904433608,
+      "steady_per_call_s": 0.006924007879570126
+    },
+    "slq_log_det_regularization_p16_m320": {
+      "lower_s": 0.05369807220995426,
+      "compile_s": 0.6272246185690165,
+      "first_call_s": 0.04179500136524439,
+      "steady_per_call_s": 0.03921861331909895
+    },
+    "pcg_solve_jacobi_est_vmap16": {
+      "first_call_s": 11.789356479421258,
+      "batch_per_call_s": 10.705231696227566,
+      "steady_per_call_s": 0.6690769810142229
+    },
+    "slq_p16_m320_vmap16": {
+      "first_call_s": 2.487821528688073,
+      "batch_per_call_s": 1.4525286955293268,
+      "steady_per_call_s": 0.09078304347058293
+    }
+  },
+  "vmap_batch": 16,
+  "steps_matrix_free_vmap_note": "The @vmap 16 rows batch 16 copies of the same right-hand side and the same SLQ key; identical lanes converge on the same CG iteration, so the lax.while_loop never runs on for a straggler. Best case for amortization, not a representative one.",
+  "pinned_expected": null,
+  "pinned_drift": []
+}

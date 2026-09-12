@@ -43,6 +43,7 @@ class ProfileCLI:
     n_instances: int
     cold_evals: int
     sparse_batch_size: int
+    source_pixels: int | None
 
 
 def parse_profile_cli(default_config_name: str | None = None) -> ProfileCLI:
@@ -241,6 +242,25 @@ def parse_profile_cli(default_config_name: str | None = None) -> ProfileCLI:
         ),
     )
 
+    parser.add_argument(
+        "--source-pixels",
+        type=int,
+        default=None,
+        help=(
+            "Override the cell's fiducial source-pixel count, for the N_src "
+            "sweep (autolens_profiling#247). Rectangular cells take the nearest "
+            "square (``round(sqrt(N))`` per side, so 3000 -> 55x55 = 3025); the "
+            "Delaunay family takes N vertices directly. The count actually "
+            "built is what lands in the result JSON (``configuration."
+            "source_pixels`` / ``delaunay_vertices``), alongside "
+            "``configuration.source_pixels_requested``. Omitted (None) leaves "
+            "every cell on its fiducial (39x39 / 1500 / 1500) and changes "
+            "nothing. A non-fiducial count SKIPS the cell's pinned-evidence "
+            "check — the pin describes the fiducial mesh and nothing else — and "
+            "the JSON then carries ``pinned_expected: null``."
+        ),
+    )
+
     args, _unknown = parser.parse_known_args()
     config_name = args.config_name or default_config_name
     output_dir = Path(args.output_dir).resolve() if args.output_dir else None
@@ -258,6 +278,7 @@ def parse_profile_cli(default_config_name: str | None = None) -> ProfileCLI:
         n_instances=int(args.n_instances),
         cold_evals=int(args.cold_evals),
         sparse_batch_size=int(args.sparse_batch_size),
+        source_pixels=int(args.source_pixels) if args.source_pixels is not None else None,
     )
 
 
@@ -442,6 +463,11 @@ def resolve_output_paths(
     - When ``cli.use_sparse_operator`` is set, ``_sparse`` is appended to the
       resolved basename so dense and sparse JSONs from the same config don't
       clobber each other.
+    - When ``cli.source_pixels`` is set **and no ``--config-name`` was given**,
+      ``_n<N>`` is appended, so an ad-hoc local run at a non-fiducial mesh can
+      never overwrite the canonical single-config row. A sweep passes its own
+      label (``--config-name hpc_a100_fp64_n3000``) and gets no extra suffix —
+      the label already says the size.
     """
     results_dir = cli.output_dir if cli.output_dir is not None else default_dir
     results_dir.mkdir(parents=True, exist_ok=True)
@@ -454,6 +480,8 @@ def resolve_output_paths(
         # ``<cell>_<purpose>_<inst>_v<version>`` convention.
         cell_name = cell if cell is not None else default_basename.split("_", 1)[0]
         basename = f"{cell_name}_{cli.config_name}"
+    if cli.config_name is None and cli.source_pixels is not None:
+        basename = f"{basename}_n{int(cli.source_pixels)}"
     if cli.use_sparse_operator:
         basename = f"{basename}_sparse"
     if cli.rect_mesh == "rtu":

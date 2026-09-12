@@ -181,6 +181,7 @@ if _misc_dir not in _sys.path:
     _sys.path.insert(0, _misc_dir)
 
 
+import math
 import sys
 from pathlib import Path
 
@@ -338,8 +339,25 @@ with timer.section("mask_and_oversample"):
 
 print("\n--- Model construction ---")
 
-mesh_pixels_yx = 39  # 39x39 = 1521 source pixels — 1500-tier production fiducial
+#: The cell's fiducial mesh side. 39x39 = 1521 source pixels — 1500-tier
+#: production fiducial, and the mesh every pinned value below describes.
+MESH_PIXELS_YX_FIDUCIAL = 39
+
+# ``--source-pixels N`` (the N_src sweep, autolens_profiling#247) overrides it
+# with the nearest square: 3000 -> 55x55 = 3025. The count actually built is
+# what the JSON records; ``source_pixels_requested`` keeps what was asked for.
+mesh_pixels_yx = (
+    MESH_PIXELS_YX_FIDUCIAL
+    if _cli.source_pixels is None
+    else int(round(math.sqrt(_cli.source_pixels)))
+)  # 39x39 = 1521 source pixels — 1500-tier production fiducial
 mesh_shape = (mesh_pixels_yx, mesh_pixels_yx)
+
+#: Whether this run's mesh is the one the pinned evidence describes. A
+#: non-fiducial ``--source-pixels`` makes every pinned-value check meaningless
+#: (a different mesh fits the data differently), so the checks are skipped and
+#: the JSON carries ``pinned_expected: null`` rather than a pin it did not test.
+PIN_IS_FIDUCIAL = mesh_pixels_yx == MESH_PIXELS_YX_FIDUCIAL
 
 with timer.section("model_build"):
     # GaussianPrior(mean=truth, sigma=small) centres prior-median at the
@@ -1836,6 +1854,11 @@ _configuration = {
     "mesh_shape": list(mesh_shape),
     "rect_mesh": _cli.rect_mesh,
     "source_pixels": int(n_source_pixels),
+    # What ``--source-pixels`` asked for (None = the cell's fiducial); the
+    # realised count is ``source_pixels`` / ``mesh_shape`` above.
+    "source_pixels_requested": (
+        int(_cli.source_pixels) if _cli.source_pixels is not None else None
+    ),
     "inversion_path": "sparse" if _cli.use_sparse_operator else "dense",
     "total_params": int(inversion.total_params),
     # Provenance only (autolens_profiling#235 decision 3): this cell's
@@ -2009,22 +2032,41 @@ print(f"  Bar chart saved to:    {chart_path}")
 # ``assert_allclose``: a profiling run records and flags drift, it does not
 # adjudicate library correctness (results/notes/design_lock_in.md), and the
 # timings from a drifted run are still data.
+#
+# Both pins describe the 39x39 fiducial mesh and nothing else, so a run with a
+# non-fiducial ``--source-pixels`` skips the check entirely (autolens_profiling
+# #247): a different mesh fits the data differently, and comparing its evidence
+# to this number would flag drift that is not drift. Such a run writes
+# ``pinned_expected: null`` so the row says out loud that nothing checked it.
 EXPECTED_LOG_EVIDENCE_HST = {
     # 39x39 = 1521 source pixels, MGE-60 lens light, adapt_image=lensed_source
     "bilinear": 28621.128714095972,
     "rtu": 28505.343980143432,
 }[_cli.rect_mesh]
 
-_pin_drift = check_pinned(
-    log_evidence_ref,
-    EXPECTED_LOG_EVIDENCE_HST,
-    label=f"imaging/pixelization[{instrument}, {_cli.rect_mesh}] eager log_evidence",
-    rtol=1e-4,
-)
-if _pin_drift is None:
-    print(f"  Eager regression check PASSED: log_evidence matches {EXPECTED_LOG_EVIDENCE_HST:.6f}")
-_rel_to_pin = abs(log_evidence_ref - EXPECTED_LOG_EVIDENCE_HST) / abs(EXPECTED_LOG_EVIDENCE_HST)
-print(f"  relative difference vs pin: {_rel_to_pin:.3e}")
+if not PIN_IS_FIDUCIAL:
+    print(
+        f"  Eager regression check SKIPPED: --source-pixels {_cli.source_pixels} builds a "
+        f"{mesh_pixels_yx}x{mesh_pixels_yx} = {n_source_pixels}-pixel mesh, not the "
+        f"{MESH_PIXELS_YX_FIDUCIAL}x{MESH_PIXELS_YX_FIDUCIAL} fiducial the pin describes. "
+        f"Eager log_evidence = {log_evidence_ref!r}"
+    )
+    _pin_drift = None
+    _pinned_expected = None
+else:
+    _pin_drift = check_pinned(
+        log_evidence_ref,
+        EXPECTED_LOG_EVIDENCE_HST,
+        label=f"imaging/pixelization[{instrument}, {_cli.rect_mesh}] eager log_evidence",
+        rtol=1e-4,
+    )
+    if _pin_drift is None:
+        print(
+            f"  Eager regression check PASSED: log_evidence matches {EXPECTED_LOG_EVIDENCE_HST:.6f}"
+        )
+    _rel_to_pin = abs(log_evidence_ref - EXPECTED_LOG_EVIDENCE_HST) / abs(EXPECTED_LOG_EVIDENCE_HST)
+    print(f"  relative difference vs pin: {_rel_to_pin:.3e}")
+    _pinned_expected = EXPECTED_LOG_EVIDENCE_HST
 
 _drift_records = [r for r in (_pin_drift, _step_by_step_drift, _nnls_drift) if r is not None]
-record_pinned_check(dict_path, EXPECTED_LOG_EVIDENCE_HST, _drift_records)
+record_pinned_check(dict_path, _pinned_expected, _drift_records)

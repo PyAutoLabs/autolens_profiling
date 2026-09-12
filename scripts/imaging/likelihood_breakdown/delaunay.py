@@ -258,6 +258,7 @@ from _profile_cli import (  # noqa: E402
     delaunay_regularization,
     device_info_dict,
     parse_profile_cli,
+    record_pinned_check,
     resolve_output_paths,
 )
 
@@ -384,7 +385,22 @@ print(f"  adapt_image shape (slim): {adapt_image.shape_slim}")
 
 print("\n--- Image mesh construction (Hilbert) ---")
 
-n_mesh_vertices = 1500  # 1500-tier production fiducial
+#: The cell's fiducial vertex count, and the mesh every pinned value below
+#: describes.
+N_MESH_VERTICES_FIDUCIAL = 1500
+
+# ``--source-pixels N`` (the N_src sweep, autolens_profiling#247) overrides it.
+# Unlike the rectangular cell there is no rounding: a Delaunay mesh takes the
+# vertex count directly.
+n_mesh_vertices = (
+    N_MESH_VERTICES_FIDUCIAL if _cli.source_pixels is None else int(_cli.source_pixels)
+)  # 1500-tier production fiducial
+
+#: Whether this run's mesh is the one the pinned evidence describes. A
+#: non-fiducial ``--source-pixels`` makes the pinned-evidence check meaningless
+#: (a different mesh fits the data differently), so it is skipped and the JSON
+#: carries ``pinned_expected: null`` rather than a pin it did not test.
+PIN_IS_FIDUCIAL = n_mesh_vertices == N_MESH_VERTICES_FIDUCIAL
 
 with timer.section("image_mesh_hilbert"):
     image_mesh = al.image_mesh.Hilbert(pixels=n_mesh_vertices, weight_power=1.0, weight_floor=0.0)
@@ -1937,6 +1953,11 @@ breakdown_summary = {
         "image_pixels_masked": int(n_image_pixels),
         "over_sampled_pixels": int(n_over_sampled_pixels),
         "delaunay_vertices": int(n_source_pixels),
+        # What ``--source-pixels`` asked for (None = the cell's fiducial); the
+        # realised count is ``delaunay_vertices`` above.
+        "source_pixels_requested": (
+            int(_cli.source_pixels) if _cli.source_pixels is not None else None
+        ),
         "edge_zeroed_pixels": int(edge_pixels_total),
         "inversion_path": "sparse" if _cli.use_sparse_operator else "dense",
         "total_params": int(inversion.total_params),
@@ -2083,22 +2104,38 @@ EXPECTED_LOG_EVIDENCE_HST = {
     "adapt_split": 29140.29588193227,  # was 29155.0010494252
 }
 
-_expected_log_evidence = EXPECTED_LOG_EVIDENCE_HST.get(reg_scheme)
-
-if _expected_log_evidence is None:
+# The pins describe the 1500-vertex fiducial mesh and nothing else, so a run
+# with a non-fiducial ``--source-pixels`` skips the assertion entirely
+# (autolens_profiling#247): a different mesh fits the data differently, and
+# asserting its evidence against this number would fail on a correct run. Such a
+# run writes ``pinned_expected: null`` so the row says out loud that nothing
+# checked its evidence.
+if not PIN_IS_FIDUCIAL:
     print(
-        f"  Eager regression assertion SKIPPED for regularization={reg_scheme} "
-        f"(no pinned value). Eager log_evidence = {log_evidence_ref!r}"
+        f"  Eager regression assertion SKIPPED: --source-pixels {_cli.source_pixels} builds a "
+        f"{n_mesh_vertices}-vertex mesh, not the {N_MESH_VERTICES_FIDUCIAL}-vertex fiducial the "
+        f"pin describes. Eager log_evidence = {log_evidence_ref!r}"
     )
+    record_pinned_check(dict_path, None, [])
 else:
-    np.testing.assert_allclose(
-        log_evidence_ref,
-        _expected_log_evidence,
-        rtol=1e-4,
-        err_msg=(
-            f"imaging/delaunay[{instrument}, {reg_scheme}]: regression — eager "
-            f"log_evidence drifted (got {log_evidence_ref}, expected "
-            f"{_expected_log_evidence})"
-        ),
-    )
-    print(f"  Eager regression assertion PASSED: log_evidence matches {_expected_log_evidence:.6f}")
+    _expected_log_evidence = EXPECTED_LOG_EVIDENCE_HST.get(reg_scheme)
+
+    if _expected_log_evidence is None:
+        print(
+            f"  Eager regression assertion SKIPPED for regularization={reg_scheme} "
+            f"(no pinned value). Eager log_evidence = {log_evidence_ref!r}"
+        )
+    else:
+        np.testing.assert_allclose(
+            log_evidence_ref,
+            _expected_log_evidence,
+            rtol=1e-4,
+            err_msg=(
+                f"imaging/delaunay[{instrument}, {reg_scheme}]: regression — eager "
+                f"log_evidence drifted (got {log_evidence_ref}, expected "
+                f"{_expected_log_evidence})"
+            ),
+        )
+        print(
+            f"  Eager regression assertion PASSED: log_evidence matches {_expected_log_evidence:.6f}"
+        )
