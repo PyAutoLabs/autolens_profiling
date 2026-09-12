@@ -1,0 +1,1103 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "hostname": "euclid-ral-gpu-2",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": null,
+    "cpu_count": 124,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/autolens_profiling_wt/matrix-free-pixelized-likelihood/output/jax_cache/matrix_free_342664",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 1655 MiB, 81920 MiB"
+  },
+  "instrument": "hst",
+  "configuration": {
+    "pixel_scale_arcsec": 0.05,
+    "mask_radius_arcsec": 3.5,
+    "image_pixels_masked": 15361,
+    "over_sampled_pixels": 62752,
+    "mesh": "rectangular",
+    "mesh_shape": [
+      39,
+      39
+    ],
+    "rect_mesh": "bilinear",
+    "source_pixels": 1521,
+    "source_pixels_requested": null,
+    "inversion_path": "matrix_free",
+    "total_params": 1581,
+    "sparse_batch_size": 128,
+    "sparse_operator_build_s": 0.9986261278390884,
+    "thread_env": {
+      "n_threads": null,
+      "vars": [
+        "OPENBLAS_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OMP_NUM_THREADS",
+        "VECLIB_MAXIMUM_THREADS",
+        "NUMEXPR_NUM_THREADS"
+      ],
+      "set_to": null,
+      "preexisting": {},
+      "overridden": {},
+      "note": "Not pinned (legacy variant): recorded as found."
+    },
+    "memo": "library_default (inert on the JAX path)",
+    "over_sample_size_lp_rule": {
+      "sub_size_list": [
+        4,
+        2,
+        2
+      ],
+      "radial_list": [
+        0.3,
+        0.6
+      ],
+      "centre": [
+        0.0,
+        0.0
+      ]
+    }
+  },
+  "regularization": {
+    "scheme": "constant",
+    "coefficient": 1.0
+  },
+  "log_evidence_eager": 28621.12871409656,
+  "steps_matrix_free_rows": [
+    {
+      "name": "context build (eager)",
+      "ms": 1925.9920730255544,
+      "mapper_nnz": 61444,
+      "reg_bcoo_nnz": 7449,
+      "total_params": 1581,
+      "mapper_params": 1521,
+      "n_funcs": 60,
+      "note": "one-off setup, not a per-call cost; the BCOO \u03bbH is built from the library's dense regularization matrix (open item for the PyAutoArray phase)"
+    },
+    {
+      "name": "curvature_reg_matvec x1",
+      "ms": 0.405751820653677,
+      "columns": 1
+    },
+    {
+      "name": "curvature_reg_matvec x32",
+      "ms": 1.2627859134227037,
+      "columns": 32,
+      "ms_per_column": 0.03946205979445949,
+      "note": "one forward blur and one adjoint blur for the whole block, whatever B is"
+    },
+    {
+      "name": "nnls_pdip (dense KKT Cholesky, reference)",
+      "ms": 36.83587019331753,
+      "pdip_iterations": 21,
+      "converged": true,
+      "ms_per_iteration": 1.7540890568246443,
+      "note": "the exact comparator for the matrix-free PDIP row, same process"
+    },
+    {
+      "name": "cholesky solve (unconstrained, reference)",
+      "ms": 1.5924850944429636,
+      "note": "one factorisation plus two triangular solves \u2014 the number a CG line has to beat"
+    },
+    {
+      "name": "PCG solve (unconstrained, Jacobi est.)",
+      "ms": 1179.9467669799924,
+      "cg_iterations": 5578,
+      "rel_residual": 7.940855154542183e-11,
+      "converged": true,
+      "cg_tol": 1e-10,
+      "cg_maxiter": 15810,
+      "max_abs_diff_vs_cholesky_solve": 0.002534267252613631,
+      "max_rel_diff_vs_cholesky_solve": 0.00017479978866715993
+    },
+    {
+      "name": "PCG solve (unconstrained, exact diag)",
+      "ms": 1152.9704198706895,
+      "cg_iterations": 5263,
+      "rel_residual": 9.083995021543616e-11,
+      "converged": true,
+      "cg_tol": 1e-10,
+      "cg_maxiter": 15810,
+      "max_abs_diff_vs_cholesky_solve": 0.002716200213126463,
+      "max_rel_diff_vs_cholesky_solve": 0.00018734852164567115
+    },
+    {
+      "name": "PCG solve (unconstrained, no precond)",
+      "ms": 3135.2937567047775,
+      "cg_iterations": 14675,
+      "rel_residual": 9.502011360500455e-11,
+      "converged": true,
+      "cg_tol": 1e-10,
+      "cg_maxiter": 15810,
+      "max_abs_diff_vs_cholesky_solve": 0.0011904627265160173,
+      "max_rel_diff_vs_cholesky_solve": 8.21115582014965e-05
+    },
+    {
+      "name": "matrix-free PDIP",
+      "ms": 8232.383358944207,
+      "pdip_iterations": 36,
+      "total_cg_iterations": 31451,
+      "converged": true,
+      "cg_tol": 1e-08,
+      "cg_maxiter": 1581,
+      "max_abs_diff_vs_nnls_pdip": 0.00034281551157685933,
+      "max_rel_diff_vs_nnls_pdip": 2.420690355282353e-05,
+      "ratio_vs_nnls_pdip": 223.4882280706283
+    },
+    {
+      "name": "SLQ log det (F+\u03bbH reduced) p=4 m=20",
+      "ms": 10.60544103384018,
+      "probes": 4,
+      "lanczos_steps": 20,
+      "estimate": 5737.839785227659,
+      "spread": 47.38679918895055,
+      "n_clamped": 0,
+      "error_vs_cholesky": 1849.581695581889
+    },
+    {
+      "name": "SLQ log det (F+\u03bbH reduced) p=4 m=40",
+      "ms": 20.922125689685345,
+      "probes": 4,
+      "lanczos_steps": 40,
+      "estimate": 4545.135878570283,
+      "spread": 43.00428696787043,
+      "n_clamped": 0,
+      "error_vs_cholesky": 656.877788924513
+    },
+    {
+      "name": "SLQ log det (F+\u03bbH reduced) p=4 m=80",
+      "ms": 41.02264689281583,
+      "probes": 4,
+      "lanczos_steps": 80,
+      "estimate": 4094.5702957548356,
+      "spread": 34.77678864763636,
+      "n_clamped": 0,
+      "error_vs_cholesky": 206.3122061090653
+    },
+    {
+      "name": "SLQ log det (F+\u03bbH reduced) p=4 m=160",
+      "ms": 86.4072316326201,
+      "probes": 4,
+      "lanczos_steps": 160,
+      "estimate": 3945.3400305885916,
+      "spread": 33.91057170537453,
+      "n_clamped": 0,
+      "error_vs_cholesky": 57.08194094282135
+    },
+    {
+      "name": "SLQ log det (F+\u03bbH reduced) p=4 m=320",
+      "ms": 173.76201790757477,
+      "probes": 4,
+      "lanczos_steps": 320,
+      "estimate": 3907.277532696043,
+      "spread": 32.73141029962044,
+      "n_clamped": 0,
+      "error_vs_cholesky": 19.019443050272912
+    },
+    {
+      "name": "SLQ log det (F+\u03bbH reduced) p=4 m=640",
+      "ms": 350.6825653836131,
+      "probes": 4,
+      "lanczos_steps": 640,
+      "estimate": 3901.6093523726204,
+      "spread": 32.2021584969961,
+      "n_clamped": 0,
+      "error_vs_cholesky": 13.35126272685011
+    },
+    {
+      "name": "SLQ log det (F+\u03bbH reduced) p=8 m=20",
+      "ms": 11.725170770660043,
+      "probes": 8,
+      "lanczos_steps": 20,
+      "estimate": 5698.713155648838,
+      "spread": 19.78866547623271,
+      "n_clamped": 0,
+      "error_vs_cholesky": 1810.4550660030682
+    },
+    {
+      "name": "SLQ log det (F+\u03bbH reduced) p=8 m=40",
+      "ms": 23.12051639892161,
+      "probes": 8,
+      "lanczos_steps": 40,
+      "estimate": 4524.176851478419,
+      "spread": 18.1959434760458,
+      "n_clamped": 0,
+      "error_vs_cholesky": 635.9187618326487
+    },
+    {
+      "name": "SLQ log det (F+\u03bbH reduced) p=8 m=80",
+      "ms": 45.945546589791775,
+      "probes": 8,
+      "lanczos_steps": 80,
+      "estimate": 4075.136744326077,
+      "spread": 20.226927497474485,
+      "n_clamped": 0,
+      "error_vs_cholesky": 186.87865468030668
+    },
+    {
+      "name": "SLQ log det (F+\u03bbH reduced) p=8 m=160",
+      "ms": 96.18401830084622,
+      "probes": 8,
+      "lanczos_steps": 160,
+      "estimate": 3927.527337539688,
+      "spread": 22.224143011836293,
+      "n_clamped": 0,
+      "error_vs_cholesky": 39.26924789391751
+    },
+    {
+      "name": "SLQ log det (F+\u03bbH reduced) p=8 m=320",
+      "ms": 193.60607750713825,
+      "probes": 8,
+      "lanczos_steps": 320,
+      "estimate": 3887.5443842260916,
+      "spread": 22.413771837949934,
+      "n_clamped": 0,
+      "error_vs_cholesky": -0.7137054196787176
+    },
+    {
+      "name": "SLQ log det (F+\u03bbH reduced) p=8 m=640",
+      "ms": 394.59674917161465,
+      "probes": 8,
+      "lanczos_steps": 640,
+      "estimate": 3882.045763268057,
+      "spread": 22.360584342121463,
+      "n_clamped": 0,
+      "error_vs_cholesky": -6.2123263777134525
+    },
+    {
+      "name": "SLQ log det (F+\u03bbH reduced) p=16 m=20",
+      "ms": 16.417708713561296,
+      "probes": 16,
+      "lanczos_steps": 20,
+      "estimate": 5693.052915169746,
+      "spread": 19.843050086860398,
+      "n_clamped": 0,
+      "error_vs_cholesky": 1804.7948255239753
+    },
+    {
+      "name": "SLQ log det (F+\u03bbH reduced) p=16 m=40",
+      "ms": 33.443165104836226,
+      "probes": 16,
+      "lanczos_steps": 40,
+      "estimate": 4537.985413991376,
+      "spread": 14.9165092401652,
+      "n_clamped": 0,
+      "error_vs_cholesky": 649.7273243456057
+    },
+    {
+      "name": "SLQ log det (F+\u03bbH reduced) p=16 m=80",
+      "ms": 63.27734319493175,
+      "probes": 16,
+      "lanczos_steps": 80,
+      "estimate": 4091.444203004086,
+      "spread": 10.88355098638653,
+      "n_clamped": 0,
+      "error_vs_cholesky": 203.18611335831565
+    },
+    {
+      "name": "SLQ log det (F+\u03bbH reduced) p=16 m=160",
+      "ms": 129.69693788327277,
+      "probes": 16,
+      "lanczos_steps": 160,
+      "estimate": 3940.7938698694884,
+      "spread": 11.322118243990976,
+      "n_clamped": 0,
+      "error_vs_cholesky": 52.53578022371812
+    },
+    {
+      "name": "SLQ log det (F+\u03bbH reduced) p=16 m=320",
+      "ms": 253.70755749754608,
+      "probes": 16,
+      "lanczos_steps": 320,
+      "estimate": 3901.2349009474483,
+      "spread": 11.590799388208287,
+      "n_clamped": 0,
+      "error_vs_cholesky": 12.976811301678026
+    },
+    {
+      "name": "SLQ log det (F+\u03bbH reduced) p=16 m=640",
+      "ms": 518.6569754034281,
+      "probes": 16,
+      "lanczos_steps": 640,
+      "estimate": 3895.8310504418246,
+      "spread": 11.591102267195078,
+      "n_clamped": 0,
+      "error_vs_cholesky": 7.5729607960543035
+    },
+    {
+      "name": "SLQ log det (F+\u03bbH reduced) p=32 m=20",
+      "ms": 18.030740693211555,
+      "probes": 32,
+      "lanczos_steps": 20,
+      "estimate": 5721.25561451405,
+      "spread": 15.423324285944062,
+      "n_clamped": 0,
+      "error_vs_cholesky": 1832.9975248682795
+    },
+    {
+      "name": "SLQ log det (F+\u03bbH reduced) p=32 m=40",
+      "ms": 37.21264712512493,
+      "probes": 32,
+      "lanczos_steps": 40,
+      "estimate": 4530.664670600312,
+      "spread": 11.600475385949807,
+      "n_clamped": 0,
+      "error_vs_cholesky": 642.4065809545418
+    },
+    {
+      "name": "SLQ log det (F+\u03bbH reduced) p=32 m=80",
+      "ms": 71.25715278089046,
+      "probes": 32,
+      "lanczos_steps": 80,
+      "estimate": 4086.920344731407,
+      "spread": 9.808867808694052,
+      "n_clamped": 0,
+      "error_vs_cholesky": 198.66225508563684
+    },
+    {
+      "name": "SLQ log det (F+\u03bbH reduced) p=32 m=160",
+      "ms": 147.78107940219343,
+      "probes": 32,
+      "lanczos_steps": 160,
+      "estimate": 3934.6447374401364,
+      "spread": 10.025366780683008,
+      "n_clamped": 0,
+      "error_vs_cholesky": 46.38664779436613
+    },
+    {
+      "name": "SLQ log det (F+\u03bbH reduced) p=32 m=320",
+      "ms": 298.6193417105824,
+      "probes": 32,
+      "lanczos_steps": 320,
+      "estimate": 3894.3873173486236,
+      "spread": 10.342713786417375,
+      "n_clamped": 0,
+      "error_vs_cholesky": 6.1292277028533135
+    },
+    {
+      "name": "SLQ log det (F+\u03bbH reduced) p=32 m=640",
+      "ms": 618.3570751920342,
+      "probes": 32,
+      "lanczos_steps": 640,
+      "estimate": 3888.553715815466,
+      "spread": 10.410591522163532,
+      "n_clamped": 0,
+      "error_vs_cholesky": 0.29562616969587907
+    },
+    {
+      "name": "SLQ log det (\u03bbH reduced) p=4 m=20",
+      "ms": 1.0211284272372723,
+      "probes": 4,
+      "lanczos_steps": 20,
+      "estimate": 1705.9782994857944,
+      "spread": 12.297793180266162,
+      "n_clamped": 0,
+      "error_vs_cholesky": 13.191482392239777
+    },
+    {
+      "name": "SLQ log det (\u03bbH reduced) p=4 m=40",
+      "ms": 1.7212653998285532,
+      "probes": 4,
+      "lanczos_steps": 40,
+      "estimate": 1702.649040990992,
+      "spread": 11.864135692989404,
+      "n_clamped": 0,
+      "error_vs_cholesky": 9.862223897437389
+    },
+    {
+      "name": "SLQ log det (\u03bbH reduced) p=4 m=80",
+      "ms": 3.2203320879489183,
+      "probes": 4,
+      "lanczos_steps": 80,
+      "estimate": 1698.3278467474613,
+      "spread": 11.05499408983364,
+      "n_clamped": 0,
+      "error_vs_cholesky": 5.541029653906662
+    },
+    {
+      "name": "SLQ log det (\u03bbH reduced) p=4 m=160",
+      "ms": 10.89421040378511,
+      "probes": 4,
+      "lanczos_steps": 160,
+      "estimate": 1686.5689110948854,
+      "spread": 11.790201719877242,
+      "n_clamped": 0,
+      "error_vs_cholesky": -6.217905998669266
+    },
+    {
+      "name": "SLQ log det (\u03bbH reduced) p=4 m=320",
+      "ms": 22.574659390375018,
+      "probes": 4,
+      "lanczos_steps": 320,
+      "estimate": 1686.568910443114,
+      "spread": 11.790201762074615,
+      "n_clamped": 0,
+      "error_vs_cholesky": -6.217906650440682
+    },
+    {
+      "name": "SLQ log det (\u03bbH reduced) p=4 m=640",
+      "ms": 48.71159112080932,
+      "probes": 4,
+      "lanczos_steps": 640,
+      "estimate": 1686.5689104307817,
+      "spread": 11.790201779170214,
+      "n_clamped": 0,
+      "error_vs_cholesky": -6.217906662772975
+    },
+    {
+      "name": "SLQ log det (\u03bbH reduced) p=8 m=20",
+      "ms": 1.0788440238684416,
+      "probes": 8,
+      "lanczos_steps": 20,
+      "estimate": 1692.4786673979784,
+      "spread": 13.738819366293644,
+      "n_clamped": 0,
+      "error_vs_cholesky": -0.3081496955762759
+    },
+    {
+      "name": "SLQ log det (\u03bbH reduced) p=8 m=40",
+      "ms": 1.8866275437176228,
+      "probes": 8,
+      "lanczos_steps": 40,
+      "estimate": 1688.0401622898153,
+      "spread": 14.420995591468182,
+      "n_clamped": 0,
+      "error_vs_cholesky": -4.746654803739375
+    },
+    {
+      "name": "SLQ log det (\u03bbH reduced) p=8 m=80",
+      "ms": 3.525646310299635,
+      "probes": 8,
+      "lanczos_steps": 80,
+      "estimate": 1681.4273213490806,
+      "spread": 16.237368817251205,
+      "n_clamped": 0,
+      "error_vs_cholesky": -11.359495744474088
+    },
+    {
+      "name": "SLQ log det (\u03bbH reduced) p=8 m=160",
+      "ms": 11.58489161171019,
+      "probes": 8,
+      "lanczos_steps": 160,
+      "estimate": 1666.181110122469,
+      "spread": 20.463969449498347,
+      "n_clamped": 0,
+      "error_vs_cholesky": -26.605706971085738
+    },
+    {
+      "name": "SLQ log det (\u03bbH reduced) p=8 m=320",
+      "ms": 24.812051001936197,
+      "probes": 8,
+      "lanczos_steps": 320,
+      "estimate": 1666.1811095381033,
+      "spread": 20.4639694289547,
+      "n_clamped": 0,
+      "error_vs_cholesky": -26.605707555451318
+    },
+    {
+      "name": "SLQ log det (\u03bbH reduced) p=8 m=640",
+      "ms": 54.78042331524193,
+      "probes": 8,
+      "lanczos_steps": 640,
+      "estimate": 1666.1811094513362,
+      "spread": 20.463969476544342,
+      "n_clamped": 0,
+      "error_vs_cholesky": -26.605707642218476
+    },
+    {
+      "name": "SLQ log det (\u03bbH reduced) p=16 m=20",
+      "ms": 1.3101987075060606,
+      "probes": 16,
+      "lanczos_steps": 20,
+      "estimate": 1696.2361835527236,
+      "spread": 11.574235945378174,
+      "n_clamped": 0,
+      "error_vs_cholesky": 3.449366459168914
+    },
+    {
+      "name": "SLQ log det (\u03bbH reduced) p=16 m=40",
+      "ms": 2.2162067238241434,
+      "probes": 16,
+      "lanczos_steps": 40,
+      "estimate": 1693.417018328736,
+      "spread": 11.608130787975117,
+      "n_clamped": 0,
+      "error_vs_cholesky": 0.6302012351814028
+    },
+    {
+      "name": "SLQ log det (\u03bbH reduced) p=16 m=80",
+      "ms": 4.134741006419063,
+      "probes": 16,
+      "lanczos_steps": 80,
+      "estimate": 1689.6358329926622,
+      "spread": 11.657870686234167,
+      "n_clamped": 0,
+      "error_vs_cholesky": -3.1509841008924013
+    },
+    {
+      "name": "SLQ log det (\u03bbH reduced) p=16 m=160",
+      "ms": 13.178000831976533,
+      "probes": 16,
+      "lanczos_steps": 160,
+      "estimate": 1680.193917606029,
+      "spread": 12.003423023548079,
+      "n_clamped": 0,
+      "error_vs_cholesky": -12.592899487525756
+    },
+    {
+      "name": "SLQ log det (\u03bbH reduced) p=16 m=320",
+      "ms": 28.62995988689363,
+      "probes": 16,
+      "lanczos_steps": 320,
+      "estimate": 1680.193917087095,
+      "spread": 12.003423035892364,
+      "n_clamped": 0,
+      "error_vs_cholesky": -12.592900006459558
+    },
+    {
+      "name": "SLQ log det (\u03bbH reduced) p=16 m=640",
+      "ms": 68.96862960420549,
+      "probes": 16,
+      "lanczos_steps": 640,
+      "estimate": 1680.1939171203485,
+      "spread": 12.0034230326302,
+      "n_clamped": 0,
+      "error_vs_cholesky": -12.592899973206158
+    },
+    {
+      "name": "SLQ log det (\u03bbH reduced) p=32 m=20",
+      "ms": 1.5626012813299894,
+      "probes": 32,
+      "lanczos_steps": 20,
+      "estimate": 1698.5400525854122,
+      "spread": 8.450099188736106,
+      "n_clamped": 0,
+      "error_vs_cholesky": 5.753235491857595
+    },
+    {
+      "name": "SLQ log det (\u03bbH reduced) p=32 m=40",
+      "ms": 2.9923623893409967,
+      "probes": 32,
+      "lanczos_steps": 40,
+      "estimate": 1695.5238899702822,
+      "spread": 8.442868653863494,
+      "n_clamped": 0,
+      "error_vs_cholesky": 2.7370728767275523
+    },
+    {
+      "name": "SLQ log det (\u03bbH reduced) p=32 m=80",
+      "ms": 5.737925134599209,
+      "probes": 32,
+      "lanczos_steps": 80,
+      "estimate": 1691.6137094138744,
+      "spread": 8.55676987059825,
+      "n_clamped": 0,
+      "error_vs_cholesky": -1.1731076796802427
+    },
+    {
+      "name": "SLQ log det (\u03bbH reduced) p=32 m=160",
+      "ms": 16.863251198083162,
+      "probes": 32,
+      "lanczos_steps": 160,
+      "estimate": 1683.1292285869044,
+      "spread": 9.28979183120748,
+      "n_clamped": 0,
+      "error_vs_cholesky": -9.6575885066502
+    },
+    {
+      "name": "SLQ log det (\u03bbH reduced) p=32 m=320",
+      "ms": 38.35148066282272,
+      "probes": 32,
+      "lanczos_steps": 320,
+      "estimate": 1683.1292280617922,
+      "spread": 9.289791836487284,
+      "n_clamped": 0,
+      "error_vs_cholesky": -9.657589031762427
+    },
+    {
+      "name": "SLQ log det (\u03bbH reduced) p=32 m=640",
+      "ms": 102.10201130248606,
+      "probes": 32,
+      "lanczos_steps": 640,
+      "estimate": 1683.1292281033466,
+      "spread": 9.289791826946788,
+      "n_clamped": 0,
+      "error_vs_cholesky": -9.657588990208069
+    },
+    {
+      "name": "PCG solve @vmap 16 (identical lanes)",
+      "ms": 285.191356568248,
+      "batch": 16
+    },
+    {
+      "name": "SLQ log det (F+\u03bbH reduced) p=16 m=40 @vmap 16 (identical lanes)",
+      "ms": 10.437919219839387,
+      "batch": 16
+    }
+  ],
+  "matrix_free": {
+    "mesh": "rectangular",
+    "source_pixels": 1521,
+    "total_params": 1581,
+    "mapper_params": 1521,
+    "n_funcs": 60,
+    "mapper_nnz": 61444,
+    "reg_bcoo_nnz": 7449,
+    "add_to_diag_value": 0.001,
+    "cg_tol": 1e-10,
+    "cg_maxiter": 15810,
+    "pdip_cg_tol": 1e-08,
+    "pdip_cg_maxiter": 1581,
+    "slq_probes": [
+      4,
+      8,
+      16,
+      32
+    ],
+    "slq_lanczos_steps": [
+      20,
+      40,
+      80,
+      160,
+      320,
+      640
+    ],
+    "slq_key": 0,
+    "pdip": true,
+    "edge_zeroed_active": true,
+    "edge_zeroed_pixels": 152,
+    "context_build_s": 1.9259920730255544,
+    "cond_curvature_reg": 41171051778.76595,
+    "evidence": {
+      "slq_probes": 16,
+      "slq_lanczos_steps": 40,
+      "exact_terms": {
+        "chi_squared": 19992.673552138498,
+        "regularization_term": 204.86498454045733,
+        "log_det_curvature_reg": 3888.2580896457703,
+        "log_det_regularization": 1692.7868170935546,
+        "noise_normalization": -79635.26723742482,
+        "log_evidence": 28621.128714096827
+      },
+      "matrix_free_terms": {
+        "chi_squared": 19992.673552138498,
+        "regularization_term": 204.86498454045739,
+        "log_det_curvature_reg": 4537.985413991376,
+        "log_det_regularization": 1693.417018328736,
+        "noise_normalization": -79635.26723742482,
+        "log_evidence": 28296.58015254161
+      },
+      "term_errors": {
+        "chi_squared": 0.0,
+        "regularization_term": 5.684341886080802e-14,
+        "log_det_curvature_reg": 649.7273243456057,
+        "log_det_regularization": 0.6302012351814028,
+        "noise_normalization": 0.0,
+        "log_evidence": -324.548561555217
+      },
+      "log_evidence_error": -324.548561555217,
+      "go_bar_nats": 0.5,
+      "within_go_bar": false,
+      "unconstrained_pcg_terms": {
+        "chi_squared": 19310.941560782845,
+        "regularization_term": 208.62023026715968,
+        "log_det_curvature_reg": 4537.985413991376,
+        "log_det_regularization": 1693.417018328736,
+        "noise_normalization": -79635.26723742482,
+        "log_evidence": 28635.568525356088
+      },
+      "unconstrained_pcg_log_evidence_error": 14.43981125926075,
+      "unconstrained_pcg_note": "The unconstrained PCG reconstruction is a different minimiser from the non-negative one the library returns, so these terms differ by more than the SLQ bias by design. The go bar reads log_evidence_error above, not this."
+    },
+    "exact_log_dets": {
+      "log_det_curvature_reg": 3888.2580896457703,
+      "log_det_regularization": 1692.7868170935546
+    },
+    "peak_bytes": {
+      "after_setup": 216109824,
+      "after_dense_comparators": 216109824,
+      "after_matrix_free": 922273792,
+      "note": "jax.devices()[0].memory_stats()['peak_bytes_in_use']; None on a backend that does not report it (CPU). Process-wide high-water marks."
+    }
+  },
+  "dense_comparators": {
+    "status": "ok"
+  },
+  "jit_phases": {
+    "curvature_reg_matvec_x1": {
+      "lower_s": 0.056411616038531065,
+      "compile_s": 0.5385770960710943,
+      "first_call_s": 0.008977819234132767,
+      "steady_per_call_s": 0.000405751820653677
+    },
+    "curvature_reg_matvec_x32": {
+      "lower_s": 0.04288803180679679,
+      "compile_s": 0.5851748371496797,
+      "first_call_s": 0.025574957951903343,
+      "steady_per_call_s": 0.0012627859134227038
+    },
+    "nnls_pdip_jit": {
+      "lower_s": 0.05603427812457085,
+      "compile_s": 0.4200020646676421,
+      "first_call_s": 0.03850914491340518,
+      "steady_per_call_s": 0.036835870193317535
+    },
+    "cholesky_solve_jit": {
+      "lower_s": 0.009362687822431326,
+      "compile_s": 0.07805095613002777,
+      "first_call_s": 0.002092739101499319,
+      "steady_per_call_s": 0.0015924850944429637
+    },
+    "pcg_solve_jacobi_est_jit": {
+      "lower_s": 0.053885440807789564,
+      "compile_s": 0.6917920638807118,
+      "first_call_s": 1.1969191958196461,
+      "steady_per_call_s": 1.1799467669799923
+    },
+    "pcg_solve_exact_diag_jit": {
+      "lower_s": 0.04829039191827178,
+      "compile_s": 0.7087661391124129,
+      "first_call_s": 1.176963406149298,
+      "steady_per_call_s": 1.1529704198706896
+    },
+    "pcg_solve_no_precond_jit": {
+      "lower_s": 0.06642768019810319,
+      "compile_s": 0.7293496639467776,
+      "first_call_s": 3.1348463222384453,
+      "steady_per_call_s": 3.1352937567047774
+    },
+    "pdip_matrix_free_jit": {
+      "lower_s": 0.16978073585778475,
+      "compile_s": 4.746382673271,
+      "first_call_s": 5.42051316332072,
+      "steady_per_call_s": 8.232383358944208
+    },
+    "slq_log_det_curvature_reg_p4_m20": {
+      "lower_s": 0.15496470825746655,
+      "compile_s": 0.7273760661482811,
+      "first_call_s": 0.12879007309675217,
+      "steady_per_call_s": 0.010605441033840179
+    },
+    "slq_log_det_curvature_reg_p4_m40": {
+      "lower_s": 0.07819314487278461,
+      "compile_s": 0.7686931570060551,
+      "first_call_s": 0.3288366920314729,
+      "steady_per_call_s": 0.020922125689685343
+    },
+    "slq_log_det_curvature_reg_p4_m80": {
+      "lower_s": 0.07902823109179735,
+      "compile_s": 0.7523168679326773,
+      "first_call_s": 0.08389776386320591,
+      "steady_per_call_s": 0.04102264689281583
+    },
+    "slq_log_det_curvature_reg_p4_m160": {
+      "lower_s": 0.07912508863955736,
+      "compile_s": 0.7609608499333262,
+      "first_call_s": 0.1785555868409574,
+      "steady_per_call_s": 0.0864072316326201
+    },
+    "slq_log_det_curvature_reg_p4_m320": {
+      "lower_s": 0.28712832275778055,
+      "compile_s": 0.7478049229830503,
+      "first_call_s": 0.18418808607384562,
+      "steady_per_call_s": 0.17376201790757478
+    },
+    "slq_log_det_curvature_reg_p4_m640": {
+      "lower_s": 0.07967841764912009,
+      "compile_s": 0.7177031296305358,
+      "first_call_s": 0.36128140101209283,
+      "steady_per_call_s": 0.3506825653836131
+    },
+    "slq_log_det_curvature_reg_p8_m20": {
+      "lower_s": 0.09881412098184228,
+      "compile_s": 0.7322919392026961,
+      "first_call_s": 0.020410365890711546,
+      "steady_per_call_s": 0.011725170770660043
+    },
+    "slq_log_det_curvature_reg_p8_m40": {
+      "lower_s": 0.0786623121239245,
+      "compile_s": 0.7716829599812627,
+      "first_call_s": 0.034181800205260515,
+      "steady_per_call_s": 0.023120516398921608
+    },
+    "slq_log_det_curvature_reg_p8_m80": {
+      "lower_s": 0.07796295592561364,
+      "compile_s": 0.7691186042502522,
+      "first_call_s": 0.05436032824218273,
+      "steady_per_call_s": 0.045945546589791775
+    },
+    "slq_log_det_curvature_reg_p8_m160": {
+      "lower_s": 0.11424780497327447,
+      "compile_s": 0.7993622459471226,
+      "first_call_s": 0.10740042384713888,
+      "steady_per_call_s": 0.09618401830084622
+    },
+    "slq_log_det_curvature_reg_p8_m320": {
+      "lower_s": 0.07945956708863378,
+      "compile_s": 0.7344456361606717,
+      "first_call_s": 0.20219863578677177,
+      "steady_per_call_s": 0.19360607750713826
+    },
+    "slq_log_det_curvature_reg_p8_m640": {
+      "lower_s": 0.07790926704183221,
+      "compile_s": 0.8005495490506291,
+      "first_call_s": 0.40331678884103894,
+      "steady_per_call_s": 0.39459674917161464
+    },
+    "slq_log_det_curvature_reg_p16_m20": {
+      "lower_s": 0.1016616951674223,
+      "compile_s": 0.7907050237990916,
+      "first_call_s": 0.025224760174751282,
+      "steady_per_call_s": 0.016417708713561296
+    },
+    "slq_log_det_curvature_reg_p16_m40": {
+      "lower_s": 0.07861861260607839,
+      "compile_s": 0.8714780160225928,
+      "first_call_s": 0.04193613724783063,
+      "steady_per_call_s": 0.03344316510483623
+    },
+    "slq_log_det_curvature_reg_p16_m80": {
+      "lower_s": 0.07773054810240865,
+      "compile_s": 0.888737419154495,
+      "first_call_s": 0.07173178205266595,
+      "steady_per_call_s": 0.06327734319493175
+    },
+    "slq_log_det_curvature_reg_p16_m160": {
+      "lower_s": 0.07651312509551644,
+      "compile_s": 0.8126638322137296,
+      "first_call_s": 0.13818028196692467,
+      "steady_per_call_s": 0.12969693788327277
+    },
+    "slq_log_det_curvature_reg_p16_m320": {
+      "lower_s": 0.07917182892560959,
+      "compile_s": 0.8458192981779575,
+      "first_call_s": 0.2622830020263791,
+      "steady_per_call_s": 0.2537075574975461
+    },
+    "slq_log_det_curvature_reg_p16_m640": {
+      "lower_s": 0.0780329261906445,
+      "compile_s": 0.8874570466578007,
+      "first_call_s": 0.5354843232780695,
+      "steady_per_call_s": 0.518656975403428
+    },
+    "slq_log_det_curvature_reg_p32_m20": {
+      "lower_s": 0.0890783746726811,
+      "compile_s": 0.880579415243119,
+      "first_call_s": 0.028832589741796255,
+      "steady_per_call_s": 0.018030740693211554
+    },
+    "slq_log_det_curvature_reg_p32_m40": {
+      "lower_s": 0.07865293277427554,
+      "compile_s": 0.7977181347087026,
+      "first_call_s": 0.04549045814201236,
+      "steady_per_call_s": 0.03721264712512493
+    },
+    "slq_log_det_curvature_reg_p32_m80": {
+      "lower_s": 0.07800714625045657,
+      "compile_s": 0.7906253249384463,
+      "first_call_s": 0.0794708589091897,
+      "steady_per_call_s": 0.07125715278089047
+    },
+    "slq_log_det_curvature_reg_p32_m160": {
+      "lower_s": 0.07691805204376578,
+      "compile_s": 0.7923093340359628,
+      "first_call_s": 0.15581407397985458,
+      "steady_per_call_s": 0.14778107940219343
+    },
+    "slq_log_det_curvature_reg_p32_m320": {
+      "lower_s": 0.07754954881966114,
+      "compile_s": 0.7868019859306514,
+      "first_call_s": 0.3077104790136218,
+      "steady_per_call_s": 0.29861934171058235
+    },
+    "slq_log_det_curvature_reg_p32_m640": {
+      "lower_s": 0.07775180786848068,
+      "compile_s": 0.8152784379199147,
+      "first_call_s": 0.6266777762211859,
+      "steady_per_call_s": 0.6183570751920342
+    },
+    "slq_log_det_regularization_p4_m20": {
+      "lower_s": 0.0802336041815579,
+      "compile_s": 0.4901990946382284,
+      "first_call_s": 0.0027924352325499058,
+      "steady_per_call_s": 0.0010211284272372723
+    },
+    "slq_log_det_regularization_p4_m40": {
+      "lower_s": 0.05440168781206012,
+      "compile_s": 0.4794389051385224,
+      "first_call_s": 0.003466131165623665,
+      "steady_per_call_s": 0.0017212653998285531
+    },
+    "slq_log_det_regularization_p4_m80": {
+      "lower_s": 0.07955663604661822,
+      "compile_s": 0.5012190942652524,
+      "first_call_s": 0.004883461631834507,
+      "steady_per_call_s": 0.0032203320879489183
+    },
+    "slq_log_det_regularization_p4_m160": {
+      "lower_s": 0.053375544026494026,
+      "compile_s": 0.5649081589654088,
+      "first_call_s": 0.016918334644287825,
+      "steady_per_call_s": 0.01089421040378511
+    },
+    "slq_log_det_regularization_p4_m320": {
+      "lower_s": 0.05328652402386069,
+      "compile_s": 0.572139429859817,
+      "first_call_s": 0.02413936611264944,
+      "steady_per_call_s": 0.022574659390375017
+    },
+    "slq_log_det_regularization_p4_m640": {
+      "lower_s": 0.05366570223122835,
+      "compile_s": 0.4939068229869008,
+      "first_call_s": 0.05100066727027297,
+      "steady_per_call_s": 0.04871159112080932
+    },
+    "slq_log_det_regularization_p8_m20": {
+      "lower_s": 0.053301284089684486,
+      "compile_s": 0.4864348960109055,
+      "first_call_s": 0.0029036831110715866,
+      "steady_per_call_s": 0.0010788440238684415
+    },
+    "slq_log_det_regularization_p8_m40": {
+      "lower_s": 0.05341353313997388,
+      "compile_s": 0.4741685036569834,
+      "first_call_s": 0.0036642798222601414,
+      "steady_per_call_s": 0.0018866275437176227
+    },
+    "slq_log_det_regularization_p8_m80": {
+      "lower_s": 0.054021368734538555,
+      "compile_s": 0.565951103810221,
+      "first_call_s": 0.005251361057162285,
+      "steady_per_call_s": 0.003525646310299635
+    },
+    "slq_log_det_regularization_p8_m160": {
+      "lower_s": 0.05374331073835492,
+      "compile_s": 0.5262562138959765,
+      "first_call_s": 0.013285794761031866,
+      "steady_per_call_s": 0.011584891611710191
+    },
+    "slq_log_det_regularization_p8_m320": {
+      "lower_s": 0.05409356905147433,
+      "compile_s": 0.5345564279705286,
+      "first_call_s": 0.02656445186585188,
+      "steady_per_call_s": 0.024812051001936196
+    },
+    "slq_log_det_regularization_p8_m640": {
+      "lower_s": 0.05396042997017503,
+      "compile_s": 0.5317266630008817,
+      "first_call_s": 0.05657258629798889,
+      "steady_per_call_s": 0.05478042331524193
+    },
+    "slq_log_det_regularization_p16_m20": {
+      "lower_s": 0.05370550090447068,
+      "compile_s": 0.5766463540494442,
+      "first_call_s": 0.00298129441216588,
+      "steady_per_call_s": 0.0013101987075060605
+    },
+    "slq_log_det_regularization_p16_m40": {
+      "lower_s": 0.05383075075224042,
+      "compile_s": 0.5552777820266783,
+      "first_call_s": 0.00407630717381835,
+      "steady_per_call_s": 0.0022162067238241435
+    },
+    "slq_log_det_regularization_p16_m80": {
+      "lower_s": 0.05400076974183321,
+      "compile_s": 0.6168381408788264,
+      "first_call_s": 0.006474824622273445,
+      "steady_per_call_s": 0.004134741006419062
+    },
+    "slq_log_det_regularization_p16_m160": {
+      "lower_s": 0.053585801273584366,
+      "compile_s": 0.5266652926802635,
+      "first_call_s": 0.01496085710823536,
+      "steady_per_call_s": 0.013178000831976533
+    },
+    "slq_log_det_regularization_p16_m320": {
+      "lower_s": 0.053340303245931864,
+      "compile_s": 0.5165035780519247,
+      "first_call_s": 0.03039558231830597,
+      "steady_per_call_s": 0.02862995988689363
+    },
+    "slq_log_det_regularization_p16_m640": {
+      "lower_s": 0.05401612026616931,
+      "compile_s": 0.579383890144527,
+      "first_call_s": 0.07654111413285136,
+      "steady_per_call_s": 0.0689686296042055
+    },
+    "slq_log_det_regularization_p32_m20": {
+      "lower_s": 0.05268588708713651,
+      "compile_s": 0.5154204042628407,
+      "first_call_s": 0.003252701833844185,
+      "steady_per_call_s": 0.0015626012813299895
+    },
+    "slq_log_det_regularization_p32_m40": {
+      "lower_s": 0.05362645164132118,
+      "compile_s": 0.5390394921414554,
+      "first_call_s": 0.004609474912285805,
+      "steady_per_call_s": 0.0029923623893409967
+    },
+    "slq_log_det_regularization_p32_m80": {
+      "lower_s": 0.05377723090350628,
+      "compile_s": 0.5587999331764877,
+      "first_call_s": 0.007647428195923567,
+      "steady_per_call_s": 0.005737925134599209
+    },
+    "slq_log_det_regularization_p32_m160": {
+      "lower_s": 0.05376015091314912,
+      "compile_s": 0.5280942241661251,
+      "first_call_s": 0.01853659702464938,
+      "steady_per_call_s": 0.016863251198083164
+    },
+    "slq_log_det_regularization_p32_m320": {
+      "lower_s": 0.053898610174655914,
+      "compile_s": 0.5199434082023799,
+      "first_call_s": 0.04001134680584073,
+      "steady_per_call_s": 0.03835148066282272
+    },
+    "slq_log_det_regularization_p32_m640": {
+      "lower_s": 0.05373097211122513,
+      "compile_s": 0.5653202370740473,
+      "first_call_s": 0.1037551430054009,
+      "steady_per_call_s": 0.10210201130248606
+    },
+    "pcg_solve_jacobi_est_vmap16": {
+      "first_call_s": 5.414415598381311,
+      "batch_per_call_s": 4.563061705091968,
+      "steady_per_call_s": 0.285191356568248
+    },
+    "slq_p16_m40_vmap16": {
+      "first_call_s": 1.1416776818223298,
+      "batch_per_call_s": 0.1670067075174302,
+      "steady_per_call_s": 0.010437919219839387
+    }
+  },
+  "vmap_batch": 16,
+  "steps_matrix_free_vmap_note": "The @vmap 16 rows batch 16 copies of the same right-hand side and the same SLQ key; identical lanes converge on the same CG iteration, so the lax.while_loop never runs on for a straggler. Best case for amortization, not a representative one.",
+  "pinned_expected": {
+    "log_det_curvature_reg": 3888.258089645771,
+    "log_det_regularization": 1692.7868170935546
+  },
+  "pinned_drift": [
+    {
+      "label": "imaging/matrix_free[hst, rectangular] SLQ log_det_curvature_reg p=16 m=40",
+      "expected": 3888.258089645771,
+      "got": 4537.985413991376,
+      "rel_diff": 0.16709984506321604,
+      "abs_diff": 649.7273243456048,
+      "rtol": null,
+      "note": "Stochastic Lanczos quadrature estimate \u2014 recorded, never a fault. Its deviation from the exact log-det is what this cell measures."
+    },
+    {
+      "label": "imaging/matrix_free[hst, rectangular] SLQ log_det_regularization p=16 m=40",
+      "expected": 1692.7868170935546,
+      "got": 1693.417018328736,
+      "rel_diff": 0.00037228623759218095,
+      "abs_diff": 0.6302012351814028,
+      "rtol": null,
+      "note": "Stochastic Lanczos quadrature estimate \u2014 recorded, never a fault. Its deviation from the exact log-det is what this cell measures."
+    }
+  ]
+}
