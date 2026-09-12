@@ -139,6 +139,12 @@ separately per likelihood × transform. Standing conclusions:
   (CPU and laptop GPU); warm ~2–3 min, bit-identical numerics. The scan
   explosion is CPU-backend-specific — the GPU pipeline compiles it fine.
   Findings: [`results/notes/multiband_pyloop_productized.md`](./results/notes/multiband_pyloop_productized.md).
+- **Matrix-free pixelized likelihood (2026-09)** — PCG + SLQ reference vs the exact
+  Cholesky path at n≈1500 and on the N_src 3000–12000 sweep: no-go on speed (~350× at
+  1500, ~16× at 12000, no crossover) and on log-det accuracy (SLQ never reaches the
+  0.5-nat bar); cond(F+λH) ≈ 4e10 is set by the linear-MGE columns. Dense and sparse
+  single calls fit an A100 to n=12000; the NNLS row is 60–85 % of every call.
+  Findings: [`results/notes/matrix_free_pixelized_2026_09.md`](./results/notes/matrix_free_pixelized_2026_09.md).
 
 ## How to read this repo
 

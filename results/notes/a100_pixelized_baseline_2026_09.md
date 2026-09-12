@@ -441,6 +441,8 @@ either attack the iteration count or make the case for dropping positivity befor
 work is worth doing. This supersedes item 1 of "What this baseline says to the
 matrix-free work" above: the target is the NNLS, not the solve.
 
+Answered 2026-09-12: see [`matrix_free_pixelized_2026_09.md`](./matrix_free_pixelized_2026_09.md) — no crossover at any N ≤ 12000; the lever is the NNLS row, at every N.
+
 ### Artifacts
 
 ```
