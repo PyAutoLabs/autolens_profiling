@@ -1,0 +1,147 @@
+#!/bin/bash -l
+#
+# 2026-09 fixed-lens-light LOW-LIKELIHOOD DRAW legs (autolens_profiling#255, epic phase 3).
+#
+# Phases 0-2 measured the certified active set at ONE model: the prior-median
+# instance, which after SLaM light[1] is essentially the truth. It certifies in 2
+# passes on Delaunay and 7 on rectangular, and those pass counts ARE the cost of the
+# scheme. A search spends almost every evaluation far from the truth, so this leg
+# rebuilds the whole S0 -> S3 chain at a graded set of deliberately POOR models and
+# asks whether the pass count survives them.
+#
+# The draw set (seeded, identical on every mesh and every device):
+#
+#   walks    einstein_radius, ell_comps_0, centre_x and the mass SLOPE, each bisected
+#            onto delta log L ~ -10, -100, -1000, -1e4. The fiducial mass is an
+#            Isothermal, which has no slope, so the slope walk promotes it to a
+#            PowerLaw at slope 2.0 -- and the cell PINS that promotion against the
+#            Isothermal figure of merit before measuring a single slope row.
+#   random   24 seeded draws from SLaM-like priors at 5x the cell's own prior sigma,
+#            so the offsets are not all one-parameter walks.
+#
+# Per draw: certified pass count and ms, PDIP iterations and ms, the seed set
+# |x_unc < 0| and the final |Z|, the unconstrained solve's delta log-evidence and its
+# negative-pixel count, and the draw's delta log L. Derived: the FALLBACK RATE at
+# fixed pass budgets 2 / 4 / 6 / 7 -- the number that decides whether a fixed budget
+# is safe in production -- plus pass count vs |delta log L| and PDIP iterations vs
+# |delta log L|.
+#
+# A draw that has not certified by --pass-budget-max 16 is recorded as
+# `passes_to_certification: null` and counts as a fallback at EVERY budget. That is
+# the production event the rate measures; dropping it would report a rate over the
+# draws that happened to be easy.
+#
+#   --pins fp64                              ASSERT the fiducial pins: this mesh's
+#                                            phase-0 certifying budget (2) and S3
+#                                            PDIP iteration count (17), and the S0
+#                                            log-dets. The local CPU leg runs --pins
+#                                            none and RECORDS them; the A100 is where
+#                                            phase 0 measured them, so the A100 asserts.
+#   --config-name hpc_a100_fp64_fixed_light_draws
+#                                            output-filename label for these rows.
+#                                            Deliberately NOT a dashboard config name,
+#                                            and distinct from phases 0-2 so the
+#                                            harvests cannot clobber each other.
+#
+# NO --vmap-batch row. The pass budget differs per draw, so a batched budget is a
+# different measurement (phase 1's route d0), not this one.
+#
+# Runtime: the cost is the EAGER numpy S0 -> S3 rebuild, once per draw plus the
+# bisection's own evaluations (~4.5 s each on the phase-2 laptop, CPU-bound on any
+# node), not the GPU kernels. Budget 12:00:00 as phases 0-2 did; the leg is expected
+# to finish in 10-30 min.
+#
+# Every leg starts from an EMPTY JAX compilation cache: a seeded XLA autotune cache
+# silently changes kernels (results/notes/xla_autotune_triton_gemm.md -- F 4.8 vs
+# 25.6 ms on the same code).
+#
+# parse_known_args IGNORES unknown flags, so a checkout WITHOUT this cell's flags
+# would run and silently produce a different table -- check configuration.seed,
+# configuration.n_random and configuration.targets_d_log_l in the JSON.
+# Hilbert/Delaunay mesh, 1500 vertices
+# Delaunay is the CLEAN case at the fiducial: no edge zeroing, no dual violation at
+# any pass, and the free set settled after one correction (4 negative entries in the
+# unconstrained solve, phase 0 leg 342803). Its pass-2 budget is the one production
+# would most like to fix, so its fallback rate is the number this phase exists for.
+# Pinned S0 log-dets 8360.401763 / 7756.614959.
+
+#SBATCH -J fixed_light_draws_delaunay
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=12:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+# Derive the repo root from where this was submitted (hpc/batch_gpu/../..) rather
+# than hardcoding /mnt/ral/jnightin/autolens_profiling: the canonical RAL checkout
+# sits on main with a dirty tree, so this runs from a worktree of the feature
+# branch. The -o/-e paths above are relative, so sbatch from inside hpc/batch_gpu/
+# (submit_fixed_light_draws.sh does the cd for you).
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding"
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+# Fresh per-job compilation cache. output/ is gitignored, so these never reach
+# git; ${SLURM_JOB_ID} keeps concurrent legs on the same node from sharing one.
+export JAX_COMPILATION_CACHE_DIR="$AP_ROOT/output/jax_cache/fixed_light_draws_delaunay_${SLURM_JOB_ID:-local}"
+rm -rf "$JAX_COMPILATION_CACHE_DIR" && mkdir -p "$JAX_COMPILATION_CACHE_DIR"
+echo "JAX_COMPILATION_CACHE_DIR=$JAX_COMPILATION_CACHE_DIR (fresh)"
+
+nvidia-smi
+
+echo "=========================================="
+date
+hostname
+echo "Cell:           likelihood_breakdown/imaging/fixed_light_draws"
+echo "Instrument:     hst"
+echo "Precision:      fp64"
+echo "Inversion path: dense (mapping matrices, InversionImagingMapping)"
+echo "Source mesh:    Hilbert/Delaunay mesh, 1500 vertices"
+echo "Config name:    hpc_a100_fp64_fixed_light_draws"
+echo "Regularization: adapt_split (0.1 / 10.0 / 0.1) -- the Delaunay cell's default scheme"
+echo "Draw set:       4 walks x 4 targets + 24 random draws, seed 0"
+echo "Flags:          --mesh delaunay --config-name hpc_a100_fp64_fixed_light_draws --n-random 24 --seed 0 --targets=-10,-100,-1000,-1e4 --pass-budget-max 16 --budgets 2,4,6,7 --n-repeats 5 --pins fp64"
+
+echo "=== source revisions (shared install, untouched) ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r" "$(git -C /mnt/ral/jnightin/PyAuto/$r rev-parse HEAD 2>&1)"
+done
+echo "AP_ROOT rev:   $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+
+cd $AP_ROOT
+
+echo "=== import provenance ==="
+python3 -c "import autoarray, autolens; print('autoarray.__file__ =', autoarray.__file__); print('autoarray.__version__ =', autoarray.__version__); print('autolens.__file__ =', autolens.__file__)"
+
+python3 -u scripts/imaging/likelihood_breakdown/fixed_light_draws.py \
+    --mesh delaunay \
+    --config-name hpc_a100_fp64_fixed_light_draws \
+    --n-random 24 \
+    --seed 0 \
+    --targets=-10,-100,-1000,-1e4 \
+    --pass-budget-max 16 \
+    --budgets 2,4,6,7 \
+    --n-repeats 5 \
+    --pins fp64
+
+# Autotune-cache census. Must be non-fatal: the directory only exists if XLA
+# wrote autotune results, and activate.sh's ERR trap fails the job on any
+# non-zero exit (the `ls` failure is swallowed by the pipe to `wc -l`).
+echo -n "AUTOTUNE_ENTRIES count="
+ls "$JAX_COMPILATION_CACHE_DIR/xla_gpu_per_fusion_autotune_cache_dir" 2>/dev/null | wc -l
+
+echo "Finished."
+date
