@@ -79,6 +79,30 @@ defaults to ``--pass-budget`` + 1. ``--source-pixels N`` sweeps the mesh size an
 skips the pins. ``--no-fallback-row`` drops routes ``d`` and ``e`` (the
 ``lax.cond`` shapes) and keeps ``d0``. ``--vmap-batch N`` adds the batched rows.
 
+Phase 5 (autolens_profiling#259) adds three more. ``--dataset {hst,euclid}``
+(default ``hst``, byte-identical to phases 1-2) selects the ``INSTRUMENTS``
+preset: the pixel scale (0.05" / 0.1") and the dataset directory, and **nothing
+else** — the 3.5" mask, the ``[4, 2, 2]`` / ``[0.3, 0.6]`` light-profile
+over-sampling, the 60 x 1 MGE, the mass and shear priors and the regularization
+are held identical across datasets, which is what makes the HST and Euclid
+columns of the phase-5 table comparable rather than two different experiments.
+The cell also refuses a shared ``--instrument`` that disagrees with it, instead
+of profiling HST while its log says Euclid.
+
+``--pass-budget auto`` is the production setting. Route ``d`` runs at the budget
+a production search would FIX — phase 3's zero-fallback budget for the mesh,
+**11** rectangular / **7** Delaunay (``--safe-budget`` overrides) — while the
+certification sweep scans budgets 1..12 and records the smallest budget that
+actually certifies at *this* (dataset, mesh, N). Phase 4 showed the two do not
+track each other (the certifying budget wanders in 5-10 / 1-2 with no trend in
+N), so the certifying budget is a per-configuration fact worth recording —
+especially on Euclid, where no sweep has ever run — and never the number to fix.
+
+``--routes a,b,c,d`` selects which routes are built, compiled and timed. An
+unnamed route is not run at all, which is what makes a four-route phase-5 leg
+about half the wall clock of the six-route default. Unknown tokens are an error;
+``--no-fallback-row`` still owns the two ``lax.cond`` rows (``d`` and ``e``).
+
 ``--pins {fp64,none}`` (default ``fp64``) and the shared
 ``--use-mixed-precision`` are the phase-2 pair. ``--use-mixed-precision`` passes
 ``use_mixed_precision=True`` into ``al.Settings``, which makes the library
@@ -102,7 +126,13 @@ millisecond is not interpretable without both.
 Output
 ------
 
-``results/breakdown/imaging/fixed_light_library_<mesh>_<config_name>.{json,png}``.
+``results/breakdown/imaging/fixed_light_library_<mesh>[_<dataset>][_n<N>]_<config_name>.{json,png}``
+— the dataset and the built pixel count are appended only when they differ from
+phase 1's HST fiducial, so no phase-1 or phase-2 artifact can be clobbered. A leg
+for which no pin was ever calibrated (Euclid at any N, HST away from the fiducial
+mesh) asserts nothing and writes a ``reference_recorded`` block instead: the log
+determinants, the evidences and the certifying budget the pins WOULD have
+compared, as data, so a later phase can pin against this leg.
 The A100 legs run under ``--config-name hpc_a100_fp64_fixed_light_library``,
 deliberately **not** a config name ``build_readme.py`` surfaces: these rows are
 the phase-1 comparator study, not a dashboard tier. Phase 2's local legs use
@@ -192,15 +222,53 @@ _cell_parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
 _cell_parser.add_argument(
     "--mesh", choices=("rectangular", "delaunay", "delaunay_nn"), required=True
 )
-_cell_parser.add_argument("--pass-budget", type=int, default=None)
+_cell_parser.add_argument("--pass-budget", default=None)
+_cell_parser.add_argument("--safe-budget", type=int, default=None)
 _cell_parser.add_argument("--pass-budget-max", type=int, default=None)
 _cell_parser.add_argument("--source-pixels", type=int, default=None)
 _cell_parser.add_argument("--fallback-row", dest="fallback_row", action="store_true", default=True)
 _cell_parser.add_argument("--no-fallback-row", dest="fallback_row", action="store_false")
 _cell_parser.add_argument("--pins", choices=("fp64", "none"), default="fp64")
+_cell_parser.add_argument("--dataset", choices=("hst", "euclid"), default="hst")
+_cell_parser.add_argument("--routes", default=None)
 _cell_args, _ = _cell_parser.parse_known_args()
 
 MESH = _cell_args.mesh
+
+#: Phase 3's smallest **zero-fallback** pass budget per mesh
+#: (autolens_profiling#255, ``fixed_lens_light_low_likelihood_draws_2026_09.md``),
+#: confirmed N-independent from 484 to 3969 source pixels by phase 4 (#257,
+#: ``fixed_lens_light_source_pixel_scaling_2026_09.md``). This is the budget a
+#: PRODUCTION run fixes. ``CERTIFYING_BUDGET`` above is phase 0's fiducial
+#: budget, which falls back on 27.5 % (rectangular) / 67.5 % (Delaunay) of a
+#: graded draw set and is therefore NOT a production cost.
+PHASE3_SAFE_BUDGET = {"rectangular": 11, "delaunay": 7, "delaunay_nn": 7}
+
+#: Every route this cell can run, in the order the summary prints them.
+ALL_ROUTE_KEYS = ("a", "b", "c", "d", "d0", "e")
+
+#: Which dataset the leg fits. Phase 5 (autolens_profiling#259) is the first
+#: phase of the epic to leave HST. The switch changes the INSTRUMENTS preset
+#: (pixel scale and dataset directory) and NOTHING else: the mask radius, the
+#: over-sampling rule, the MGE, the mass/shear priors and the regularization are
+#: held byte-identical across datasets, which is what makes the two columns of
+#: the phase-5 table comparable. The HST path is unchanged, byte for byte.
+DATASET = _cell_args.dataset
+
+# The shared CLI owns an ``--instrument`` this cell never read, so a leg that
+# passed ``--instrument euclid`` used to profile HST and say Euclid in its log.
+# One lever, and it says so rather than guarding silently.
+if _cli.instrument is not None and _cli.instrument != DATASET:
+    raise ValueError(
+        f"--instrument {_cli.instrument!r} does not select the dataset in this cell; "
+        f"use --dataset {{hst,euclid}} (currently {DATASET!r})."
+    )
+
+SAFE_BUDGET = int(
+    _cell_args.safe_budget if _cell_args.safe_budget is not None else PHASE3_SAFE_BUDGET[MESH]
+)
+if SAFE_BUDGET < 1:
+    raise ValueError(f"--safe-budget must be >= 1 (got {SAFE_BUDGET})")
 
 #: ``fp64`` (default) asserts every pin phase 0 and phase 1 calibrated in fp64.
 #: ``none`` is the **mixed-precision** setting: a pin calibrated in fp64 is not
@@ -218,14 +286,93 @@ if USE_MIXED_PRECISION and PINS_ASSERT:
         "will be ASSERTED against a float32-accumulated curvature matrix; pass "
         "--pins none for the honest mixed-precision leg."
     )
-PASS_BUDGET = int(
-    _cell_args.pass_budget if _cell_args.pass_budget is not None else CERTIFYING_BUDGET[MESH]
+
+
+# ``--pass-budget auto`` is the phase-5 production setting: route d runs at the
+# budget a production search would FIX (phase 3's zero-fallback budget for the
+# mesh, 11 rectangular / 7 Delaunay), and the smallest budget that actually
+# certifies at THIS (dataset, mesh, N) is measured by the certification sweep
+# below and recorded beside it. The two are different questions and phase 4
+# showed they do not track each other: the certifying budget wanders in 5-10
+# (rectangular) / 1-2 (Delaunay) with no trend in N, so it is a per-configuration
+# fact worth recording — especially on Euclid, where no sweep has ever run — and
+# never the number a production run should fix.
+def _resolve_pass_budget(raw, mesh, safe_budget):
+    """``--pass-budget`` -> (budget routes d/d0 run at, a human-readable mode).
+
+    ``None`` keeps this cell's phase-0 default for the mesh. ``"auto"`` is the
+    phase-5 production setting: the budget a production search would FIX, which
+    is phase 3's zero-fallback budget, NOT whatever certifies here. Anything
+    else is an explicit integer.
+    """
+    if raw is None:
+        return int(
+            CERTIFYING_BUDGET[mesh]
+        ), "phase0-certifying-budget (this cell's default, unchanged)"
+    if str(raw).strip().lower() == "auto":
+        return int(safe_budget), (
+            f"auto -> phase 3's production safe budget for {mesh} ({int(safe_budget)}); the "
+            f"smallest certifying budget at this configuration is measured and recorded, "
+            f"not used"
+        )
+    try:
+        return int(raw), "explicit"
+    except (TypeError, ValueError):
+        raise ValueError(f"--pass-budget takes an integer or 'auto' (got {raw!r})") from None
+
+
+def _smallest_certifying_budget(entries):
+    """The smallest budget in a certification sweep that certified, else None."""
+    return next((int(e["pass_budget"]) for e in entries if e.get("certified")), None)
+
+
+PASS_BUDGET, PASS_BUDGET_MODE = _resolve_pass_budget(_cell_args.pass_budget, MESH, SAFE_BUDGET)
+
+PASS_BUDGET = int(PASS_BUDGET)
+#: Under ``auto`` the diagnostics sweep must reach far enough to FIND the
+#: certifying budget rather than stopping at the production one, so it scans to
+#: 12 — the range phase 4 swept, which covers both safe budgets at every N.
+_DEFAULT_PASS_BUDGET_MAX = (
+    max(12, PASS_BUDGET) if PASS_BUDGET_MODE.startswith("auto") else (PASS_BUDGET + 1)
 )
 PASS_BUDGET_MAX = int(
-    _cell_args.pass_budget_max if _cell_args.pass_budget_max is not None else PASS_BUDGET + 1
+    _cell_args.pass_budget_max
+    if _cell_args.pass_budget_max is not None
+    else _DEFAULT_PASS_BUDGET_MAX
 )
 SOURCE_PIXELS_REQUESTED = _cell_args.source_pixels
 RUN_FALLBACK_ROWS = bool(_cell_args.fallback_row)
+
+
+def _parse_routes(raw, fallback_rows):
+    """``--routes a,b,c,d`` -> the selected route keys, in canonical order.
+
+    ``None`` keeps this cell's historic selection (every route, minus the
+    ``lax.cond`` rows when ``--no-fallback-row`` is given). An explicit list is
+    validated against :data:`ALL_ROUTE_KEYS` — an unknown key is an error, never
+    a silently dropped row — and is still subject to ``--no-fallback-row``,
+    which owns the ``cond`` shapes.
+    """
+    if raw is None:
+        selected = set(ALL_ROUTE_KEYS)
+    else:
+        wanted = [token.strip().lower() for token in str(raw).split(",") if token.strip()]
+        if not wanted:
+            raise ValueError("--routes was given but names no routes")
+        unknown = [token for token in wanted if token not in ALL_ROUTE_KEYS]
+        if unknown:
+            raise ValueError(
+                f"--routes: unknown route(s) {unknown}; choose from {list(ALL_ROUTE_KEYS)}"
+            )
+        selected = set(wanted)
+    if not fallback_rows:
+        selected -= {"d", "e"}
+    return tuple(key for key in ALL_ROUTE_KEYS if key in selected)
+
+
+ROUTE_SELECTION = _parse_routes(_cell_args.routes, RUN_FALLBACK_ROWS)
+if not ROUTE_SELECTION:
+    raise ValueError("no routes left to run (--routes and --no-fallback-row cancel out)")
 
 if PASS_BUDGET < 1:
     raise ValueError(f"--pass-budget must be >= 1 (got {PASS_BUDGET})")
@@ -247,7 +394,10 @@ _vmap_batch = timing.parse_vmap_batch(sys.argv)
 if _vmap_batch is not None and _vmap_batch < 1:
     raise ValueError(f"--vmap-batch must be >= 1 (got {_vmap_batch})")
 
-instrument = "hst"  # <-- change this to profile a different instrument
+# The dataset the leg fits, from ``--dataset`` (default hst, unchanged). The
+# INSTRUMENTS preset supplies the pixel scale (0.05" hst / 0.1" euclid) and the
+# dataset directory; everything else below is held identical across datasets.
+instrument = DATASET
 
 #: Source-pixel count each mesh's cell builds at its fiducial, and the mesh the
 #: pinned log-dets below describe.
@@ -389,9 +539,19 @@ else:
     n_mesh_vertices = 1500 if SOURCE_PIXELS_REQUESTED is None else int(SOURCE_PIXELS_REQUESTED)
     n_source_pixels = n_mesh_vertices
 
-PIN_IS_FIDUCIAL = n_source_pixels == FIDUCIAL_SOURCE_PIXELS[MESH]
+# The S0 log-det pins were calibrated on HST at the fiducial mesh and describe
+# nothing else. Phase 5 runs Euclid, where NO pin has ever been calibrated, and
+# runs HST at N the pins do not describe — so both record instead of asserting,
+# and the recorded values are this family's first Euclid reference.
+PIN_IS_FIDUCIAL = (n_source_pixels == FIDUCIAL_SOURCE_PIXELS[MESH]) and DATASET == "hst"
 
 print(f"  Source pixels: {n_source_pixels} (fiducial: {FIDUCIAL_SOURCE_PIXELS[MESH]})")
+if not PIN_IS_FIDUCIAL:
+    print(
+        f"  Pins not applicable: dataset={DATASET} (calibrated on hst), "
+        f"N={n_source_pixels} (calibrated at {FIDUCIAL_SOURCE_PIXELS[MESH]}). "
+        f"The S0 log-dets and evidences are RECORDED below, not asserted."
+    )
 
 print("\n--- Adapt image (lensed source) ---")
 
@@ -483,7 +643,10 @@ print(f"  Instrument:              {instrument}")
 print(f"  Mask radius:             {mask_radius} arcsec")
 print(f"  Image pixels (masked):   {n_image_pixels}")
 print(f"  Source pixels:           {n_source_pixels}")
-print(f"  Pass budget (d / d0):    {PASS_BUDGET}")
+print(f"  Dataset:                 {DATASET}")
+print(f"  Routes:                  {','.join(ROUTE_SELECTION)}")
+print(f"  Pass budget (d / d0):    {PASS_BUDGET}  [{PASS_BUDGET_MODE}]")
+print(f"  Safe budget (phase 3):   {SAFE_BUDGET}")
 print(f"  Fallback-row budget (e): {FALLBACK_ROW_BUDGET}")
 print(f"  Mixed precision:         {USE_MIXED_PRECISION}")
 print(f"  Pins mode:               {PINS_MODE}")
@@ -690,7 +853,6 @@ _x_library_s3 = np.asarray(system_s3.inversion.reconstruction, dtype=float)
 _reference_log_evidence = float(system_s3.log_evidence(_x_library_s3))
 
 certification_budgets: list[dict] = []
-_certifying_budget_measured = None
 
 
 def _active_set_at(Q, q, fixed0, budget):
@@ -721,8 +883,6 @@ for _budget in range(1, PASS_BUDGET_MAX + 1):
         "n_negative_entries": int(np.sum(_x_full < 0.0)),
     }
     certification_budgets.append(_entry)
-    if _certifying_budget_measured is None and _entry["certified"]:
-        _certifying_budget_measured = _budget
 
     print(
         f"  budget {_budget}: certified={_entry['certified']} (at pass {_certified_at})  "
@@ -730,6 +890,8 @@ for _budget in range(1, PASS_BUDGET_MAX + 1):
         f"primal {_entry['n_primal_violations_per_pass']}  "
         f"dual {_entry['n_dual_violations_per_pass']}"
     )
+
+_certifying_budget_measured = _smallest_certifying_budget(certification_budgets)
 
 _route_d_certifies = any(
     e["certified"] for e in certification_budgets if e["pass_budget"] == PASS_BUDGET
@@ -909,10 +1071,21 @@ def _likelihood_fn(dataset_for_route, settings_for_route):
 #: ``(key, label, dataset, params tree, settings, injection)`` per route.
 #: ``injection`` is ``None`` (library solver as shipped) or
 #: ``(pass_budget, fallback)`` for the harness-injected certified scheme.
-ROUTES: list[tuple] = [
-    ("a_s0_pdip", "S0 PDIP (library today)", dataset, params_tree_s0, _settings, None),
-    ("b_s3_pdip", "S3 PDIP (source-only)", system_s3.dataset, params_tree_s3, _settings, None),
-    (
+#: Every route this cell knows, keyed by the ``--routes`` token, in the order
+#: the summary prints them. ``ROUTE_SELECTION`` filters this map — a route that
+#: is not selected is not built, not compiled and not timed, which is what makes
+#: a four-route phase-5 leg roughly half the wall clock of a six-route one.
+_ROUTE_SPECS: dict[str, tuple] = {
+    "a": ("a_s0_pdip", "S0 PDIP (library today)", dataset, params_tree_s0, _settings, None),
+    "b": (
+        "b_s3_pdip",
+        "S3 PDIP (source-only)",
+        system_s3.dataset,
+        params_tree_s3,
+        _settings,
+        None,
+    ),
+    "c": (
         "c_s3_positive_negative",
         "S3 positive-negative (xp.linalg.solve)",
         system_s3.dataset,
@@ -920,7 +1093,15 @@ ROUTES: list[tuple] = [
         _settings_positive_negative,
         None,
     ),
-    (
+    "d": (
+        "d_s3_certified_fallback",
+        f"S3 certified active set, budget {PASS_BUDGET}, PDIP fallback",
+        system_s3.dataset,
+        params_tree_s3,
+        _settings,
+        (PASS_BUDGET, True),
+    ),
+    "d0": (
         "d0_s3_certified_no_fallback",
         f"S3 certified active set, budget {PASS_BUDGET}, no fallback",
         system_s3.dataset,
@@ -928,30 +1109,19 @@ ROUTES: list[tuple] = [
         _settings,
         (PASS_BUDGET, False),
     ),
-]
+    "e": (
+        "e_s3_certified_budget1_fallback_fires",
+        f"S3 certified active set, budget {FALLBACK_ROW_BUDGET}, fallback FIRES",
+        system_s3.dataset,
+        params_tree_s3,
+        _settings,
+        (FALLBACK_ROW_BUDGET, True),
+    ),
+}
 
-if RUN_FALLBACK_ROWS:
-    ROUTES.insert(
-        3,
-        (
-            "d_s3_certified_fallback",
-            f"S3 certified active set, budget {PASS_BUDGET}, PDIP fallback",
-            system_s3.dataset,
-            params_tree_s3,
-            _settings,
-            (PASS_BUDGET, True),
-        ),
-    )
-    ROUTES.append(
-        (
-            "e_s3_certified_budget1_fallback_fires",
-            f"S3 certified active set, budget {FALLBACK_ROW_BUDGET}, fallback FIRES",
-            system_s3.dataset,
-            params_tree_s3,
-            _settings,
-            (FALLBACK_ROW_BUDGET, True),
-        )
-    )
+ROUTES: list[tuple] = [_ROUTE_SPECS[_token] for _token in ROUTE_SELECTION]
+
+print(f"  routes selected: {', '.join(spec[0] for spec in ROUTES)}")
 
 routes: dict[str, dict] = {}
 
@@ -1109,19 +1279,19 @@ def _pin(name, key, expectation, rtol=EQUIVALENCE_RTOL, reference=None, referenc
     return entry
 
 
-if RUN_FALLBACK_ROWS and _route_d_certifies:
+if "d" in ROUTE_SELECTION and _route_d_certifies:
     _pin(
         "route d (certified, fallback) == route b (library PDIP)",
         "d_s3_certified_fallback",
         "the certified active set returns the library's own positive solution",
     )
-if _route_d_certifies:
+if "d0" in ROUTE_SELECTION and _route_d_certifies:
     _pin(
         "route d0 (certified, no fallback) == route b (library PDIP)",
         "d0_s3_certified_no_fallback",
         "the certified iterate IS the constrained optimum at the certifying budget",
     )
-if RUN_FALLBACK_ROWS:
+if "e" in ROUTE_SELECTION:
     _pin(
         "route e (budget 1, fallback fires) == route b (library PDIP)",
         "e_s3_certified_budget1_fallback_fires",
@@ -1162,6 +1332,73 @@ equivalence_pins.append(_c_pin)
 print(f"  [{_c_pin['status']:>7}] {_c_pin['pin']}  rel {_a2_rel:.3e}")
 
 # ===================================================================
+# PART F — The recorded reference (no pin exists for this configuration)
+# ===================================================================
+# Phase 5 runs Euclid, where no pin has ever been calibrated, and HST at source
+# pixel counts the phase-0 pins do not describe. Nothing is asserted there — and
+# nothing is skipped either: the quantities a pin WOULD have compared are
+# computed and written as data, so this leg becomes the reference a later phase
+# can pin against. The block says plainly that it is a record, not a verdict.
+
+print("\n" + "=" * 70)
+print("RECORDED REFERENCE — the values no pin covers at this configuration")
+print("=" * 70)
+
+reference_recorded = {
+    "status": "RECORDED",
+    "asserted": bool(PIN_IS_FIDUCIAL and PINS_ASSERT),
+    "reason": (
+        "the phase-0 S0 log-det pins were calibrated on hst at the fiducial mesh "
+        f"({FIDUCIAL_SOURCE_PIXELS[MESH]} source pixels) in fp64; this leg is "
+        f"dataset={DATASET}, {n_source_pixels} source pixels, pins_mode={PINS_MODE}. "
+        "A pin calibrated elsewhere is not a pin here, so these are recorded."
+        if not (PIN_IS_FIDUCIAL and PINS_ASSERT)
+        else "this leg IS the fiducial hst configuration in fp64; the pins above are asserted"
+    ),
+    "dataset": DATASET,
+    "pixel_scale_arcsec": pixel_scale,
+    "mesh": MESH,
+    "source_pixels": int(n_source_pixels),
+    "image_pixels_masked": int(n_image_pixels),
+    "log_det_curvature_reg_s0": _mapper_log_dets["log_det_curvature_reg"]["s0"],
+    "log_det_curvature_reg_s3": _mapper_log_dets["log_det_curvature_reg"]["s3"],
+    "log_det_regularization_s0": _mapper_log_dets["log_det_regularization"]["s0"],
+    "log_det_regularization_s3": _mapper_log_dets["log_det_regularization"]["s3"],
+    "log_evidence_eager_s0": float(log_evidence_ref),
+    "log_evidence_eager_s3": float(log_evidence_s3_library),
+    "log_evidence_positive_negative": positive_negative_block["log_evidence_eager"],
+    "d_log_evidence_positive_negative_vs_s3": positive_negative_block[
+        "d_log_evidence_vs_library_s3"
+    ],
+    "n_negative_entries_positive_negative": positive_negative_block["n_negative_entries"],
+    "route_log_likelihoods": {
+        key: entry.get("log_likelihood")
+        for key, entry in routes.items()
+        if entry.get("status") == "ok"
+    },
+    "smallest_certifying_budget": _certifying_budget_measured,
+    "pass_budget_timed": PASS_BUDGET,
+    "safe_budget": SAFE_BUDGET,
+    "certifying_budget_headroom": (
+        None
+        if _certifying_budget_measured is None
+        else int(SAFE_BUDGET - _certifying_budget_measured)
+    ),
+}
+
+for _label, _key in (
+    ("S0 log_det_curvature_reg", "log_det_curvature_reg_s0"),
+    ("S0 log_det_regularization", "log_det_regularization_s0"),
+    ("S0 log evidence (eager)", "log_evidence_eager_s0"),
+    ("S3 log evidence (eager)", "log_evidence_eager_s3"),
+):
+    print(f"  [RECORDED] {_label}: {reference_recorded[_key]!r}")
+print(
+    f"  [RECORDED] smallest certifying budget {_certifying_budget_measured} vs safe budget "
+    f"{SAFE_BUDGET} (headroom {reference_recorded['certifying_budget_headroom']})"
+)
+
+# ===================================================================
 # Summary + JSON + PNG
 # ===================================================================
 
@@ -1198,10 +1435,20 @@ _configuration = {
         int(SOURCE_PIXELS_REQUESTED) if SOURCE_PIXELS_REQUESTED is not None else None
     ),
     "inversion_path": "dense",
+    "dataset": DATASET,
     "pass_budget": PASS_BUDGET,
+    "pass_budget_mode": PASS_BUDGET_MODE,
+    "safe_budget": SAFE_BUDGET,
+    "safe_budget_basis": (
+        "phase 3 (autolens_profiling#255): the smallest budget with ZERO fallback over a "
+        "graded 41-model draw set, confirmed N-independent from 484 to 3969 source pixels "
+        "by phase 4 (#257). This is the budget a production run fixes; the smallest budget "
+        "that certifies at this configuration is recorded under certification, never used."
+    ),
     "pass_budget_max_diagnostics": PASS_BUDGET_MAX,
     "fallback_row_budget": FALLBACK_ROW_BUDGET,
     "fallback_rows": RUN_FALLBACK_ROWS,
+    "routes_selected": list(ROUTE_SELECTION),
     "use_mixed_precision": USE_MIXED_PRECISION,
     "pins_mode": PINS_MODE,
     "tau_rel": TAU_REL,
@@ -1268,6 +1515,7 @@ breakdown_summary = {
     "routes": routes,
     "certification": certification_block,
     "positive_negative": positive_negative_block,
+    "reference_recorded": reference_recorded,
     "equivalence_pins": equivalence_pins,
     "equivalence_rtol": EQUIVALENCE_RTOL,
     "vmap": vmap_block,
@@ -1294,7 +1542,12 @@ if _vmap_batch is not None:
     if vmap_error is not None:
         breakdown_summary["vmap_error"] = vmap_error
 
+# ``fixed_light_library_<mesh>`` is phase 1's name and stays exactly that on the
+# HST fiducial, so no phase-1 or phase-2 artifact is ever clobbered. The dataset
+# and the built pixel count are appended only when they differ from it.
 _cell_name = f"fixed_light_library_{MESH}"
+if DATASET != "hst":
+    _cell_name = f"{_cell_name}_{DATASET}"
 if SOURCE_PIXELS_REQUESTED is not None:
     _cell_name = f"{_cell_name}_n{int(n_source_pixels)}"
 
@@ -1447,9 +1700,10 @@ if not PINS_ASSERT:
     record_pinned_check(dict_path, None, [])
 elif not PIN_IS_FIDUCIAL:
     print(
-        f"  Pinned log-det check SKIPPED: --source-pixels {SOURCE_PIXELS_REQUESTED} builds a "
-        f"{n_source_pixels}-pixel mesh, not the {FIDUCIAL_SOURCE_PIXELS[MESH]}-pixel fiducial "
-        f"the pins describe."
+        f"  Pinned log-det check SKIPPED: this leg is dataset={DATASET} at "
+        f"{n_source_pixels} source pixels; the pins describe hst at the "
+        f"{FIDUCIAL_SOURCE_PIXELS[MESH]}-pixel fiducial. Every value they would have "
+        f"compared is written under `reference_recorded` instead."
     )
     record_pinned_check(dict_path, None, [])
 else:
