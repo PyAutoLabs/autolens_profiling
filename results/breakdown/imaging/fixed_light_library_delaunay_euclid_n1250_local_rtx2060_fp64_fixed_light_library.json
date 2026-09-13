@@ -1,0 +1,738 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "hostname": "DESKTOP-H143S82",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 8,
+    "jax_compilation_cache_dir": "/tmp/jaxcache_flv_rtx_fp64_euclid_n1250",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "nvidia_smi": "NVIDIA GeForce RTX 2060 with Max-Q Design, 798 MiB, 6144 MiB"
+  },
+  "machine": {
+    "cpu_model": "Intel(R) Core(TM) i9-10885H CPU @ 2.40GHz",
+    "cpu_count_os": 8,
+    "nproc": 1,
+    "nproc_all": 8,
+    "nproc_note": "GNU nproc honours OMP_NUM_THREADS, so `nproc` can print 1 on a multi-core host; `nproc_all` is the core count.",
+    "ram_total": "16392692 kB",
+    "kernel": "5.10.16.3-microsoft-standard-WSL2",
+    "platform": "Linux-5.10.16.3-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+    "python": "3.12.10",
+    "jax_thread_env": {
+      "NPROC": "8"
+    },
+    "blas_thread_env": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "VECLIB_MAXIMUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1"
+    },
+    "thread_env_note": "NPROC sizes XLA's CPU intra-op pool (the JAX rows); the BLAS knobs pin OpenBLAS/MKL/OpenMP (the numpy/scipy rows) and do not touch JAX. Two disjoint families; both are recorded on every CPU timing.",
+    "gpu": "NVIDIA GeForce RTX 2060 with Max-Q Design, 6144 MiB, 580.97"
+  },
+  "precision": {
+    "use_mixed_precision": false,
+    "what_mixed_precision_changes": "Settings.use_mixed_precision makes the library accumulate the curvature matrix A.T A in float32 and cast the result back to float64 (inversion_util.py:127-136). The solve, the log determinants and the evidence are still fp64 arithmetic \u2014 on a matrix carrying float32 accumulation error.",
+    "pins_mode": "fp64",
+    "pins_note": "fp64: every pin phases 0 and 1 calibrated on the A100 is asserted. none: those verdicts are WITHDRAWN, not skipped \u2014 every comparison is still computed and written with status RECORDED, because a pin calibrated in fp64 is not a pin in fp32.",
+    "tau_rel": 1e-09,
+    "tau_rel_basis": "fp64 default (1e-09), as phases 0 and 1 calibrated it on the A100.",
+    "float32_eps": 1.1920928955078125e-07
+  },
+  "instrument": "euclid",
+  "configuration": {
+    "pixel_scale_arcsec": 0.1,
+    "mask_radius_arcsec": 3.5,
+    "image_pixels_masked": 3841,
+    "over_sampled_pixels": 15664,
+    "mesh": "delaunay",
+    "mesh_shape": null,
+    "rect_mesh": null,
+    "source_pixels": 1250,
+    "source_pixels_requested": 1250,
+    "inversion_path": "dense",
+    "dataset": "euclid",
+    "pass_budget": 7,
+    "pass_budget_mode": "auto -> phase 3's production safe budget for delaunay (7); the smallest certifying budget at this configuration is measured and recorded, not used",
+    "safe_budget": 7,
+    "safe_budget_basis": "phase 3 (autolens_profiling#255): the smallest budget with ZERO fallback over a graded 41-model draw set, confirmed N-independent from 484 to 3969 source pixels by phase 4 (#257). This is the budget a production run fixes; the smallest budget that certifies at this configuration is recorded under certification, never used.",
+    "pass_budget_max_diagnostics": 12,
+    "fallback_row_budget": 1,
+    "fallback_rows": true,
+    "routes_selected": [
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "use_mixed_precision": false,
+    "pins_mode": "fp64",
+    "tau_rel": 1e-09,
+    "thread_env": {
+      "n_threads": null,
+      "vars": [
+        "OPENBLAS_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OMP_NUM_THREADS",
+        "VECLIB_MAXIMUM_THREADS",
+        "NUMEXPR_NUM_THREADS"
+      ],
+      "set_to": null,
+      "preexisting": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "VECLIB_MAXIMUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1"
+      },
+      "overridden": {},
+      "note": "Not pinned (legacy variant): recorded as found."
+    },
+    "memo": "library_default (inert on the JAX path)",
+    "over_sample_size_lp_rule": {
+      "sub_size_list": [
+        4,
+        2,
+        2
+      ],
+      "radial_list": [
+        0.3,
+        0.6
+      ],
+      "centre": [
+        0.0,
+        0.0
+      ]
+    }
+  },
+  "regularization": {
+    "scheme": "adapt_split",
+    "inner_coefficient": 0.1,
+    "outer_coefficient": 10.0,
+    "signal_scale": 0.1
+  },
+  "solver_injection": "harness monkeypatch of autoarray.inversion.inversion.inversion_util.reconstruction_positive_only_from for the duration of routes d/d0/e \u2014 NOT library code. Nothing in PyAutoArray was modified; every other part of the likelihood is the library's own path.",
+  "log_evidence_eager_s0": 5579.095568881825,
+  "log_evidence_eager_s3": 5579.095568881779,
+  "systems": {
+    "s0": {
+      "n_params": 1310,
+      "n_mapper": 1250,
+      "n_funcs": 60,
+      "edge_zeroed_pixels": 0
+    },
+    "s3": {
+      "n_params": 1250,
+      "n_mapper": 1250,
+      "n_funcs": 0,
+      "edge_zeroed_pixels": 0,
+      "subtracted_light_flux": 1245.1205542216135
+    }
+  },
+  "mapper_block_log_dets": {
+    "log_det_curvature_reg": {
+      "s0": 9273.835600161692,
+      "s3": 9273.835600161692,
+      "rel_diff": 0.0,
+      "status": "PASS"
+    },
+    "log_det_regularization": {
+      "s0": 9037.306079741364,
+      "s3": 9037.306079741364,
+      "rel_diff": 0.0,
+      "status": "PASS"
+    }
+  },
+  "mapper_block_log_det_rtol": 1e-06,
+  "routes": {
+    "a_s0_pdip": {
+      "label": "S0 PDIP (library today)",
+      "status": "ok",
+      "solver": "library",
+      "ms": 308.02404999994906,
+      "log_likelihood": 5579.095563578743
+    },
+    "b_s3_pdip": {
+      "label": "S3 PDIP (source-only)",
+      "status": "ok",
+      "solver": "library",
+      "ms": 271.45210999988194,
+      "log_likelihood": 5579.095562697634
+    },
+    "c_s3_positive_negative": {
+      "label": "S3 positive-negative (xp.linalg.solve)",
+      "status": "ok",
+      "solver": "library",
+      "ms": 131.90456000011181,
+      "log_likelihood": 5603.446091987482
+    },
+    "d_s3_certified_fallback": {
+      "label": "S3 certified active set, budget 7, PDIP fallback",
+      "status": "ok",
+      "solver": "harness-injected certified active set",
+      "pass_budget": 7,
+      "fallback": true,
+      "injected_solver_calls_jax": 1,
+      "injected_solver_calls_numpy": 0,
+      "ms": 173.51402999993297,
+      "log_likelihood": 5579.095565805431
+    }
+  },
+  "certification": {
+    "problem": "the QP the library hands its positive-only solver: F + \u03bbH and D already subset to solve_ids_to_keep under edge zeroing, Jacobi-scaled exactly as inversion_util.reconstruction_positive_only_from does",
+    "n_full_system": 1250,
+    "n_edge_zeroed": 0,
+    "n_seen_by_solver": 1250,
+    "fixed0_is_zeros": true,
+    "fixed0_note": "zeros(n_keep), not the edge-zero mask: the library subsets before it calls, so the border pixels are not variables of this QP. Equivalent index-for-index to phase 0's full-size scheme with those indices permanently fixed.",
+    "tau_rel": 1e-09,
+    "tau_rel_fp64_default": 1e-09,
+    "tau_rel_basis": "fp64 default (1e-09), as phases 0 and 1 calibrated it on the A100.",
+    "tau_rel_re_derived_for_precision": false,
+    "reference_log_evidence": 5579.095572648113,
+    "reference": "the library's own reconstruction of S3 (PDIP on the edge-zeroed problem)",
+    "pass_budget_max": 12,
+    "smallest_certifying_budget": 4,
+    "phase0_certifying_budget": 2,
+    "route_d_pass_budget": 7,
+    "route_d_certifies": true,
+    "route_e_pass_budget": 1,
+    "route_e_certifies": false,
+    "route_e_fallback_fires": true,
+    "budgets": [
+      {
+        "pass_budget": 1,
+        "n_fixed_per_pass": [
+          51
+        ],
+        "n_primal_violations_per_pass": [
+          3
+        ],
+        "n_dual_violations_per_pass": [
+          5
+        ],
+        "certified": false,
+        "certified_at_pass": null,
+        "d_log_evidence_vs_library": -0.8735438030653313,
+        "max_abs_diff_vs_library": 0.047002379194274274,
+        "max_rel_diff_vs_library": 0.015278529982363584,
+        "n_negative_entries": 3
+      },
+      {
+        "pass_budget": 2,
+        "n_fixed_per_pass": [
+          51,
+          49
+        ],
+        "n_primal_violations_per_pass": [
+          3,
+          0
+        ],
+        "n_dual_violations_per_pass": [
+          5,
+          2
+        ],
+        "certified": false,
+        "certified_at_pass": null,
+        "d_log_evidence_vs_library": -0.1831181060497329,
+        "max_abs_diff_vs_library": 0.014992546690471417,
+        "max_rel_diff_vs_library": 0.004873457004709616,
+        "n_negative_entries": 0
+      },
+      {
+        "pass_budget": 3,
+        "n_fixed_per_pass": [
+          51,
+          49,
+          47
+        ],
+        "n_primal_violations_per_pass": [
+          3,
+          0,
+          0
+        ],
+        "n_dual_violations_per_pass": [
+          5,
+          2,
+          3
+        ],
+        "certified": false,
+        "certified_at_pass": null,
+        "d_log_evidence_vs_library": -0.009319660342953284,
+        "max_abs_diff_vs_library": 0.004208190415710162,
+        "max_rel_diff_vs_library": 0.0013679087003696838,
+        "n_negative_entries": 0
+      },
+      {
+        "pass_budget": 4,
+        "n_fixed_per_pass": [
+          51,
+          49,
+          47,
+          44
+        ],
+        "n_primal_violations_per_pass": [
+          3,
+          0,
+          0,
+          0
+        ],
+        "n_dual_violations_per_pass": [
+          5,
+          2,
+          3,
+          0
+        ],
+        "certified": true,
+        "certified_at_pass": 4,
+        "d_log_evidence_vs_library": 8.731149137020111e-11,
+        "max_abs_diff_vs_library": 3.3928415632544784e-13,
+        "max_rel_diff_vs_library": 1.1028725021627762e-13,
+        "n_negative_entries": 0
+      },
+      {
+        "pass_budget": 5,
+        "n_fixed_per_pass": [
+          51,
+          49,
+          47,
+          44,
+          44
+        ],
+        "n_primal_violations_per_pass": [
+          3,
+          0,
+          0,
+          0,
+          0
+        ],
+        "n_dual_violations_per_pass": [
+          5,
+          2,
+          3,
+          0,
+          0
+        ],
+        "certified": true,
+        "certified_at_pass": 4,
+        "d_log_evidence_vs_library": 8.731149137020111e-11,
+        "max_abs_diff_vs_library": 3.3928415632544784e-13,
+        "max_rel_diff_vs_library": 1.1028725021627762e-13,
+        "n_negative_entries": 0
+      },
+      {
+        "pass_budget": 6,
+        "n_fixed_per_pass": [
+          51,
+          49,
+          47,
+          44,
+          44,
+          44
+        ],
+        "n_primal_violations_per_pass": [
+          3,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "n_dual_violations_per_pass": [
+          5,
+          2,
+          3,
+          0,
+          0,
+          0
+        ],
+        "certified": true,
+        "certified_at_pass": 4,
+        "d_log_evidence_vs_library": 8.731149137020111e-11,
+        "max_abs_diff_vs_library": 3.3928415632544784e-13,
+        "max_rel_diff_vs_library": 1.1028725021627762e-13,
+        "n_negative_entries": 0
+      },
+      {
+        "pass_budget": 7,
+        "n_fixed_per_pass": [
+          51,
+          49,
+          47,
+          44,
+          44,
+          44,
+          44
+        ],
+        "n_primal_violations_per_pass": [
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "n_dual_violations_per_pass": [
+          5,
+          2,
+          3,
+          0,
+          0,
+          0,
+          0
+        ],
+        "certified": true,
+        "certified_at_pass": 4,
+        "d_log_evidence_vs_library": 8.731149137020111e-11,
+        "max_abs_diff_vs_library": 3.3928415632544784e-13,
+        "max_rel_diff_vs_library": 1.1028725021627762e-13,
+        "n_negative_entries": 0
+      },
+      {
+        "pass_budget": 8,
+        "n_fixed_per_pass": [
+          51,
+          49,
+          47,
+          44,
+          44,
+          44,
+          44,
+          44
+        ],
+        "n_primal_violations_per_pass": [
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "n_dual_violations_per_pass": [
+          5,
+          2,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "certified": true,
+        "certified_at_pass": 4,
+        "d_log_evidence_vs_library": 8.731149137020111e-11,
+        "max_abs_diff_vs_library": 3.3928415632544784e-13,
+        "max_rel_diff_vs_library": 1.1028725021627762e-13,
+        "n_negative_entries": 0
+      },
+      {
+        "pass_budget": 9,
+        "n_fixed_per_pass": [
+          51,
+          49,
+          47,
+          44,
+          44,
+          44,
+          44,
+          44,
+          44
+        ],
+        "n_primal_violations_per_pass": [
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "n_dual_violations_per_pass": [
+          5,
+          2,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "certified": true,
+        "certified_at_pass": 4,
+        "d_log_evidence_vs_library": 8.731149137020111e-11,
+        "max_abs_diff_vs_library": 3.3928415632544784e-13,
+        "max_rel_diff_vs_library": 1.1028725021627762e-13,
+        "n_negative_entries": 0
+      },
+      {
+        "pass_budget": 10,
+        "n_fixed_per_pass": [
+          51,
+          49,
+          47,
+          44,
+          44,
+          44,
+          44,
+          44,
+          44,
+          44
+        ],
+        "n_primal_violations_per_pass": [
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "n_dual_violations_per_pass": [
+          5,
+          2,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "certified": true,
+        "certified_at_pass": 4,
+        "d_log_evidence_vs_library": 8.731149137020111e-11,
+        "max_abs_diff_vs_library": 3.3928415632544784e-13,
+        "max_rel_diff_vs_library": 1.1028725021627762e-13,
+        "n_negative_entries": 0
+      },
+      {
+        "pass_budget": 11,
+        "n_fixed_per_pass": [
+          51,
+          49,
+          47,
+          44,
+          44,
+          44,
+          44,
+          44,
+          44,
+          44,
+          44
+        ],
+        "n_primal_violations_per_pass": [
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "n_dual_violations_per_pass": [
+          5,
+          2,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "certified": true,
+        "certified_at_pass": 4,
+        "d_log_evidence_vs_library": 8.731149137020111e-11,
+        "max_abs_diff_vs_library": 3.3928415632544784e-13,
+        "max_rel_diff_vs_library": 1.1028725021627762e-13,
+        "n_negative_entries": 0
+      },
+      {
+        "pass_budget": 12,
+        "n_fixed_per_pass": [
+          51,
+          49,
+          47,
+          44,
+          44,
+          44,
+          44,
+          44,
+          44,
+          44,
+          44,
+          44
+        ],
+        "n_primal_violations_per_pass": [
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "n_dual_violations_per_pass": [
+          5,
+          2,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "certified": true,
+        "certified_at_pass": 4,
+        "d_log_evidence_vs_library": 8.731149137020111e-11,
+        "max_abs_diff_vs_library": 3.3928415632544784e-13,
+        "max_rel_diff_vs_library": 1.1028725021627762e-13,
+        "n_negative_entries": 0
+      }
+    ]
+  },
+  "positive_negative": {
+    "route_verified": "reconstruction_positive_negative_from / xp.linalg.solve",
+    "positive_negative_solver_calls": 1,
+    "solve_ids_to_keep_is_none": true,
+    "edge_zeroing_disabled": true,
+    "edge_zeroing_note": "Inversion.solve_ids_to_keep returns None the moment use_positive_only_solver is False (abstract.py:540), so turning positivity off silently turns edge zeroing off with it. This route solves the FULL system; routes a/b/d/e solve the edge-zeroed one.",
+    "log_evidence_eager": 5603.446091562748,
+    "d_log_evidence_vs_library_s3": 24.35051891463445,
+    "n_negative_entries": 51,
+    "negative_flux_fraction": 0.0021958247958237718,
+    "max_abs_diff_vs_phase0_a2_cholesky": 4.1744385725905886e-13,
+    "max_rel_diff_vs_phase0_a2_cholesky": 1.3557734985794337e-13,
+    "phase0_a2_note": "phase 0's A2 row is one unconstrained Cholesky of the full S3 system. Route (c) is the library reaching the same solution through xp.linalg.solve, so the two vectors must agree to solver round-off \u2014 that agreement is what makes this row comparable with the phase-0 note's A2 evidence numbers.",
+    "warning": "A positive \u0394log-evidence here is NOT an improvement: the unconstrained solution is a different, infeasible minimiser scoring above the constrained optimum. Never quote this route's milliseconds without these numbers."
+  },
+  "reference_recorded": {
+    "status": "RECORDED",
+    "asserted": false,
+    "reason": "the phase-0 S0 log-det pins were calibrated on hst at the fiducial mesh (1500 source pixels) in fp64; this leg is dataset=euclid, 1250 source pixels, pins_mode=fp64. A pin calibrated elsewhere is not a pin here, so these are recorded.",
+    "dataset": "euclid",
+    "pixel_scale_arcsec": 0.1,
+    "mesh": "delaunay",
+    "source_pixels": 1250,
+    "image_pixels_masked": 3841,
+    "log_det_curvature_reg_s0": 9273.835600161692,
+    "log_det_curvature_reg_s3": 9273.835600161692,
+    "log_det_regularization_s0": 9037.306079741364,
+    "log_det_regularization_s3": 9037.306079741364,
+    "log_evidence_eager_s0": 5579.095568881825,
+    "log_evidence_eager_s3": 5579.095568881779,
+    "log_evidence_positive_negative": 5603.446091562748,
+    "d_log_evidence_positive_negative_vs_s3": 24.35051891463445,
+    "n_negative_entries_positive_negative": 51,
+    "route_log_likelihoods": {
+      "a_s0_pdip": 5579.095563578743,
+      "b_s3_pdip": 5579.095562697634,
+      "c_s3_positive_negative": 5603.446091987482,
+      "d_s3_certified_fallback": 5579.095565805431
+    },
+    "smallest_certifying_budget": 4,
+    "pass_budget_timed": 7,
+    "safe_budget": 7,
+    "certifying_budget_headroom": 3
+  },
+  "equivalence_pins": [
+    {
+      "pin": "route d (certified, fallback) == route b (library PDIP)",
+      "route": "d_s3_certified_fallback",
+      "expectation": "the certified active set returns the library's own positive solution",
+      "reference": "b_s3_pdip",
+      "rtol": 1e-08,
+      "got": 5579.095565805431,
+      "reference_value": 5579.095562697634,
+      "rel_diff": 5.570431660867271e-10,
+      "status": "PASS"
+    },
+    {
+      "pin": "route b (S3) == route a (S0) \u2014 fixing the light is a re-arrangement",
+      "route": "b_s3_pdip",
+      "reference": "a_s0_pdip",
+      "expectation": "the source-only fit is the same fit, so the likelihood is unchanged",
+      "rtol": 1e-06,
+      "got": 5579.095562697634,
+      "reference_value": 5579.095563578743,
+      "rel_diff": 1.5793050362546621e-10,
+      "status": "PASS"
+    },
+    {
+      "pin": "route c reconstruction == phase 0's A2 unconstrained Cholesky",
+      "route": "c_s3_positive_negative",
+      "reference": "reconstruction_steps.cholesky_solve on the same F+\u03bbH, D",
+      "expectation": "positivity off IS the unconstrained solve; the two must coincide",
+      "rtol": 1e-06,
+      "rel_diff": 1.3557734985794337e-13,
+      "status": "PASS"
+    }
+  ],
+  "equivalence_rtol": 1e-08,
+  "vmap": {},
+  "peak_bytes": {
+    "after_setup": 47283456,
+    "after_routes": 550144256,
+    "after_all": 550144256,
+    "note": "jax.devices()[0].memory_stats()['peak_bytes_in_use']; None on a backend that does not report it (CPU). Process-wide high-water marks."
+  },
+  "jit_phases": {
+    "a_s0_pdip_library_likelihood_jit": {
+      "lower_s": 3.8427798000011535,
+      "compile_s": 8.247317500001373,
+      "first_call_s": 1.0501226999986102,
+      "steady_per_call_s": 0.30802404999994903
+    },
+    "b_s3_pdip_library_likelihood_jit": {
+      "lower_s": 0.4590729999981704,
+      "compile_s": 3.059260699999868,
+      "first_call_s": 0.6440849999999045,
+      "steady_per_call_s": 0.27145210999988195
+    },
+    "c_s3_positive_negative_library_likelihood_jit": {
+      "lower_s": 0.46648110000023735,
+      "compile_s": 2.988958100002492,
+      "first_call_s": 0.6084749000001466,
+      "steady_per_call_s": 0.1319045600001118
+    },
+    "d_s3_certified_fallback_library_likelihood_jit": {
+      "lower_s": 0.5907310000002326,
+      "compile_s": 3.06808010000168,
+      "first_call_s": 0.5281274000008125,
+      "steady_per_call_s": 0.17351402999993298
+    }
+  },
+  "note": "Every row is ONE WHOLE library likelihood call (AnalysisImaging.log_likelihood_function under jax.jit), not a kernel. Never sum these with the kernel rows of the phase-0 fixed_light cell, and never quote route c's milliseconds without its \u0394log-evidence and negative-pixel count.",
+  "pinned_expected": null,
+  "pinned_drift": []
+}
