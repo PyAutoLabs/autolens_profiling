@@ -54,7 +54,18 @@ CONFIG_NAME = "hpc_a100_fp64_fixed_light"
 
 
 def _submits() -> list[_Path]:
-    return sorted(BATCH_GPU.glob("submit_breakdown_imaging_fixed_light_*"))
+    # The phase-1 library-path legs (`..._fixed_light_library_*`) are a second
+    # family with their own config name and their own static checks, in
+    # test_fixed_light_library.py. Excluding them here keeps each file's
+    # assertions owned by the submits they were written for -- without it this
+    # file's `--config-name hpc_a100_fp64_fixed_light` assertion would pass on a
+    # library leg only because `hpc_a100_fp64_fixed_light_library` happens to
+    # contain it as a substring.
+    return sorted(
+        p
+        for p in BATCH_GPU.glob("submit_breakdown_imaging_fixed_light_*")
+        if "_fixed_light_library_" not in p.name
+    )
 
 
 def test__the_cell_exists_and_declares_its_flags():
