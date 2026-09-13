@@ -80,6 +80,24 @@ is what a search would actually run. ``--source-pixels N`` sweeps the mesh size
 ``--no-library-row`` drops the two full-likelihood rows. ``--vmap-batch N`` adds
 the batched rows.
 
+``--pins {fp64,none}`` (default ``fp64``) and the shared ``--use-mixed-precision``
+are phase 2's pair, ported here for the phase-4 scaling sweep.
+``--use-mixed-precision`` passes ``use_mixed_precision=True`` into ``al.Settings``,
+which makes the library accumulate ``A.T A`` in float32 before casting back to
+float64 (``inversion_util.py:127-136``). ``--pins none`` then **withdraws the
+fp64-calibrated verdicts** — the S0 log-det pins and the mapper-block identity —
+and records every one of them as data instead, because a pin calibrated in fp64
+is not a pin in fp32. Nothing is skipped: every comparison is still computed and
+written with status ``RECORDED``. The active set's KKT tolerance ``tau_rel`` is
+likewise **re-derived** under mixed precision rather than inherited.
+
+``--safe-budget N`` (default: phase 3's zero-fallback budget for the mesh — 11
+rectangular, 7 Delaunay) names the budget a **production** run would fix, as
+distinct from the smallest budget that happens to certify at this N. Phase 3
+(autolens_profiling#255) showed the fiducial budgets 7 / 2 fall back on 27.5 % /
+67.5 % of a graded 41-model draw set, so the scaling sweep reports both: the
+certifying budget at each N *and* the cost of the safe fixed budget at each N.
+
 Output
 ------
 
@@ -149,6 +167,7 @@ from _profile_cli import (  # noqa: E402
     check_pinned,
     delaunay_regularization,
     device_info_dict,
+    machine_info_dict,
     parse_profile_cli,
     record_pinned_check,
     rect_mesh_classes,
@@ -167,6 +186,8 @@ _cell_parser.add_argument("--pass-budget-max", type=int, default=8)
 _cell_parser.add_argument("--source-pixels", type=int, default=None)
 _cell_parser.add_argument("--library-row", dest="library_row", action="store_true", default=True)
 _cell_parser.add_argument("--no-library-row", dest="library_row", action="store_false")
+_cell_parser.add_argument("--pins", choices=("fp64", "none"), default="fp64")
+_cell_parser.add_argument("--safe-budget", type=int, default=None)
 _cell_args, _ = _cell_parser.parse_known_args()
 
 MESH = _cell_args.mesh
@@ -174,10 +195,57 @@ PASS_BUDGET_MAX = int(_cell_args.pass_budget_max)
 SOURCE_PIXELS_REQUESTED = _cell_args.source_pixels
 RUN_LIBRARY_ROW = bool(_cell_args.library_row)
 
+#: ``fp64`` (default) asserts every pin phase 0 calibrated in fp64. ``none`` is
+#: the **mixed-precision** setting: a pin calibrated in fp64 is not a pin in
+#: fp32, so the fp64-calibrated *verdicts* are withdrawn — but nothing is
+#: skipped. Every comparison is still computed and written to the JSON with
+#: status ``RECORDED``. Phase 2's switch (``fixed_light_library.py``), ported.
+PINS_MODE = _cell_args.pins
+PINS_ASSERT = PINS_MODE == "fp64"
+USE_MIXED_PRECISION = bool(_cli.use_mixed_precision)
+
+if USE_MIXED_PRECISION and PINS_ASSERT:
+    print(
+        "  NOTE: --use-mixed-precision with --pins fp64. The fp64-calibrated pins "
+        "will be ASSERTED against a float32-accumulated curvature matrix; pass "
+        "--pins none for the honest mixed-precision leg."
+    )
+
+#: Phase 3's smallest **zero-fallback** pass budget per mesh, over its graded
+#: 41-model draw set (autolens_profiling#255,
+#: ``results/notes/fixed_lens_light_low_likelihood_draws_2026_09.md``). The
+#: fiducial budgets phases 0-2 used (7 rectangular / 2 Delaunay) fall back on
+#: 27.5 % / 67.5 % of that set and must not be quoted as production costs, so
+#: the scaling sweep times the certified row at THESE budgets as well as at
+#: whatever budget happens to certify at each N.
+PHASE3_SAFE_BUDGET = {"rectangular": 11, "delaunay": 7, "delaunay_nn": 7}
+
+SAFE_BUDGET = int(
+    _cell_args.safe_budget if _cell_args.safe_budget is not None else PHASE3_SAFE_BUDGET[MESH]
+)
+
 if PASS_BUDGET_MAX < 1:
     raise ValueError(f"--pass-budget-max must be >= 1 (got {PASS_BUDGET_MAX})")
+if SAFE_BUDGET < 1:
+    raise ValueError(f"--safe-budget must be >= 1 (got {SAFE_BUDGET})")
 
+#: Budgets 1..max, unchanged from phase 0 — the default (``--pass-budget-max 8``)
+#: measures exactly what phase 0 measured, so its A100 JSONs stay reproducible.
+#: The safe budget is REPORTED from this sweep rather than appended to it: a leg
+#: that wants the safe-budget row asks for a ``--pass-budget-max`` that reaches
+#: it (the phase-4 sweep runs 12, which covers both 11 and 7). When it does not,
+#: the row is recorded as not measured, never interpolated.
 PASS_BUDGETS = tuple(range(1, PASS_BUDGET_MAX + 1))
+
+SAFE_BUDGET_IN_SWEEP = SAFE_BUDGET <= PASS_BUDGET_MAX
+
+if not SAFE_BUDGET_IN_SWEEP:
+    print(
+        f"  NOTE: safe budget {SAFE_BUDGET} is above --pass-budget-max "
+        f"{PASS_BUDGET_MAX}, so the safe-budget row is NOT measured on this leg "
+        f"(it is recorded as null, never interpolated). Raise --pass-budget-max "
+        f"to {SAFE_BUDGET} to measure it."
+    )
 
 _vmap_batch = timing.parse_vmap_batch(sys.argv)
 if _vmap_batch is not None and _vmap_batch < 1:
@@ -453,6 +521,46 @@ print(f"  Image pixels (masked):   {n_image_pixels}")
 print(f"  Over-sampled pixels:     {n_over_sampled_pixels}")
 print(f"  Source pixels:           {n_source_pixels}")
 print(f"  Pass budgets:            {list(PASS_BUDGETS)}")
+print(f"  Safe budget (phase 3):   {SAFE_BUDGET}")
+print(f"  Mixed precision:         {USE_MIXED_PRECISION}")
+print(f"  Pins mode:               {PINS_MODE}")
+
+# ---------------------------------------------------------------------------
+# tau_rel — RE-DERIVED per precision, never inherited (phase 2's derivation)
+# ---------------------------------------------------------------------------
+# The active set's KKT tolerances are tau_g = tau_rel * max|q| (dual) and
+# tau_x = tau_rel * max|x| (primal). ``TAU_REL_DEFAULT = 1e-9`` was calibrated
+# in fp64, where the curvature matrix itself is accurate to ~1e-16 relative, so
+# 1e-9 sits far above the data's own noise floor and a certificate means what it
+# says.
+#
+# Under ``use_mixed_precision`` that is no longer true: the library accumulates
+# ``A.T A`` in float32 before casting the result back to float64
+# (``inversion_util.py:127-136``), so the matrix carries a relative error of
+# order ``eps_f32 * sqrt(M)`` over M image rows and the gradient g = Qx - q
+# inherits a floor of about that fraction of max|q|. Certifying at 1e-9 against
+# a matrix good to ~1e-5 would be certifying against round-off.
+_EPS_F32 = float(np.finfo(np.float32).eps)
+
+if USE_MIXED_PRECISION:
+    TAU_REL = _EPS_F32 * math.sqrt(float(n_image_pixels))
+    TAU_REL_BASIS = (
+        f"re-derived for mixed precision: eps_float32 ({_EPS_F32:.3e}) * "
+        f"sqrt(image pixels = {int(n_image_pixels)}) = {TAU_REL:.3e}. The library "
+        f"accumulates the curvature matrix in float32 under use_mixed_precision "
+        f"(inversion_util.py:127-136), so the KKT residual cannot be resolved "
+        f"below the float32 accumulation floor of the matrix itself; a pass "
+        f"budget certified at the fp64 tolerance would be certifying round-off."
+    )
+else:
+    TAU_REL = active_set_steps.TAU_REL_DEFAULT
+    TAU_REL_BASIS = (
+        f"fp64 default ({active_set_steps.TAU_REL_DEFAULT:g}), as phases 0-1 "
+        f"calibrated it on the A100."
+    )
+
+print(f"  tau_rel:                 {TAU_REL:.6e}")
+print(f"    basis: {TAU_REL_BASIS}")
 
 # ---------------------------------------------------------------------------
 # 5. S0 — the system the library solves today (eager FitImaging)
@@ -739,6 +847,7 @@ s0["d_log_evidence_terms_minus_figure_of_merit"] = s0["log_evidence_library_edge
 _MAPPER_LOGDET_RTOL = 1e-6
 
 _mapper_log_dets = {}
+_mapper_log_dets_status = "ASSERTED" if PINS_ASSERT else "RECORDED"
 for _key, _matrix_attr in (
     ("log_det_curvature_reg", "curv_reg_reduced"),
     ("log_det_regularization", "reg_reduced"),
@@ -756,7 +865,16 @@ for _key, _matrix_attr in (
     _rel = abs(_s3_value - _s0_value) / max(abs(_s0_value), 1e-300)
     _mapper_log_dets[_key] = {"s0": _s0_value, "s3": _s3_value, "rel_diff": _rel}
     print(f"  mapper-block {_key}: S0 {_s0_value:.9f}  S3 {_s3_value:.9f}  rel {_rel:.3e}")
-    if _rel > _MAPPER_LOGDET_RTOL:
+    _mapper_log_dets[_key]["status"] = _mapper_log_dets_status
+    if _rel > _MAPPER_LOGDET_RTOL and not PINS_ASSERT:
+        # --pins none (the mixed-precision leg): the identity is arithmetic, but
+        # the float32 accumulation of A.T A moves BOTH log-dets, so a tolerance
+        # calibrated in fp64 is not a tolerance here. Recorded, not asserted.
+        print(
+            f"  [RECORDED] mapper-block {_key} differs by {_rel:.3e} > "
+            f"{_MAPPER_LOGDET_RTOL:g} under --pins none; not asserted."
+        )
+    elif _rel > _MAPPER_LOGDET_RTOL:
         raise AssertionError(
             f"S3's mapper-block {_key} ({_s3_value!r}) does not match S0's ({_s0_value!r}) "
             f"to {_MAPPER_LOGDET_RTOL:g} (relative difference {_rel:.3e}). Fixing the lens "
@@ -797,7 +915,7 @@ certified_budget = None
 for _budget in PASS_BUDGETS:
 
     def _masked(Q, q, fixed0, budget=_budget):
-        return active_set_steps.active_set_masked_jax(Q, q, fixed0, budget)
+        return active_set_steps.active_set_masked_jax(Q, q, fixed0, budget, tau_rel=TAU_REL)
 
     _, _out = jit_profile(_masked, f"s3_active_set_masked_p{_budget}_jit", _Q_s3, _q_s3, _fixed0_s3)
     _per_call = timer.records[-1][1] / 10
@@ -848,6 +966,21 @@ for _budget in PASS_BUDGETS:
         f"dual {_entry['n_dual_violations_per_pass']}"
     )
 
+#: The budget a production run would fix (phase 3's zero-fallback budget), as
+#: distinct from ``certified_budget`` — the smallest budget that happens to
+#: certify at THIS N and this model. The scaling curves are drawn from both.
+_safe_budget_entry = next(
+    (e for e in active_set_budgets if e["pass_budget"] == SAFE_BUDGET),
+    None,
+)
+
+if _safe_budget_entry is not None:
+    print(
+        f"\n  safe budget {SAFE_BUDGET} (phase 3): {_safe_budget_entry['ms']:.3f} ms  "
+        f"certified={_safe_budget_entry['certified']}  "
+        f"(smallest certifying budget here: {certified_budget})"
+    )
+
 active_set_block = {
     "reference": (
         "the library's own reconstruction of S3 — PDIP on the edge-zeroed problem, "
@@ -858,9 +991,33 @@ active_set_block = {
     "edge_zeroing_penalty_nats": (reference_log_evidence_full_system_pdip - reference_log_evidence),
     "fixed0_is_edge_zero_mask": True,
     "n_fixed0": int(system_s3.edge_zero_mask.sum()),
-    "tau_rel": active_set_steps.TAU_REL_DEFAULT,
+    "tau_rel": TAU_REL,
+    "tau_rel_fp64_default": active_set_steps.TAU_REL_DEFAULT,
+    "tau_rel_basis": TAU_REL_BASIS,
+    "tau_rel_re_derived_for_precision": bool(USE_MIXED_PRECISION),
     "pass_budget_max": PASS_BUDGET_MAX,
     "smallest_certifying_budget": certified_budget,
+    "safe_budget": SAFE_BUDGET,
+    "safe_budget_basis": (
+        "phase 3 (autolens_profiling#255): the smallest budget with ZERO fallback "
+        "over a graded 41-model draw set. The fiducial budgets phases 0-2 quoted "
+        "(7 rectangular / 2 Delaunay) fall back on 27.5 % / 67.5 % of that set, so "
+        "a production run fixes this budget, not the one that certifies here."
+    ),
+    "safe_budget_ms": _safe_budget_entry["ms"] if _safe_budget_entry else None,
+    "safe_budget_certified": (_safe_budget_entry["certified"] if _safe_budget_entry else None),
+    "safe_budget_measured": bool(_safe_budget_entry is not None),
+    "safe_budget_not_measured_reason": (
+        None
+        if _safe_budget_entry is not None
+        else (
+            f"safe budget {SAFE_BUDGET} is above this leg's --pass-budget-max "
+            f"{PASS_BUDGET_MAX}; measured, not extrapolated, so the row is null"
+        )
+    ),
+    "safe_budget_covers_certifying_budget": (
+        None if certified_budget is None else bool(SAFE_BUDGET >= certified_budget)
+    ),
     "budgets": active_set_budgets,
     "note": (
         "Each budget is its own lax.scan length and therefore its own compile — "
@@ -964,9 +1121,9 @@ if _vmap_batch is not None:
         _fb3 = jnp.broadcast_to(_fixed0_s3, (_vmap_batch, system_s3.n_params))
 
         def _masked_lane(args):
-            return active_set_steps.active_set_masked_jax(args[0], args[1], args[2], _vmap_budget)[
-                "x"
-            ]
+            return active_set_steps.active_set_masked_jax(
+                args[0], args[1], args[2], _vmap_budget, tau_rel=TAU_REL
+            )["x"]
 
         vmap_block["s3_active_set_masked_per_call_s"] = timing.vmap_profile(
             _masked_lane,
@@ -1100,6 +1257,11 @@ _configuration = {
     ),
     "inversion_path": "dense",
     "pass_budget_max": PASS_BUDGET_MAX,
+    "pass_budgets": list(PASS_BUDGETS),
+    "safe_budget": SAFE_BUDGET,
+    "use_mixed_precision": USE_MIXED_PRECISION,
+    "pins_mode": PINS_MODE,
+    "tau_rel": TAU_REL,
     "thread_env": _observe_thread_env(),
     "memo": "library_default (inert on the JAX path)",
     "over_sample_size_lp_rule": {
@@ -1112,6 +1274,28 @@ _configuration = {
 breakdown_summary = {
     "autolens_version": al_version,
     "device": device_info_dict(),
+    "machine": machine_info_dict(),
+    "precision": {
+        "use_mixed_precision": USE_MIXED_PRECISION,
+        "what_mixed_precision_changes": (
+            "Settings.use_mixed_precision makes the library accumulate the "
+            "curvature matrix A.T A in float32 and cast the result back to "
+            "float64 (inversion_util.py:127-136). The solve, the log "
+            "determinants and the evidence are still fp64 arithmetic — on a "
+            "matrix carrying float32 accumulation error."
+        ),
+        "pins_mode": PINS_MODE,
+        "pins_note": (
+            "fp64: every pin phase 0 calibrated on the A100 is asserted (at the "
+            "fiducial mesh only). none: those verdicts are WITHDRAWN, not "
+            "skipped — every comparison is still computed and written with "
+            "status RECORDED, because a pin calibrated in fp64 is not a pin in "
+            "fp32."
+        ),
+        "tau_rel": TAU_REL,
+        "tau_rel_basis": TAU_REL_BASIS,
+        "float32_eps": _EPS_F32,
+    },
     "instrument": instrument,
     "configuration": _configuration,
     "regularization": reg_provenance,
@@ -1120,6 +1304,7 @@ breakdown_summary = {
     "s3": {k: v for k, v in s3.items() if not k.startswith("_")},
     "mapper_block_log_dets": _mapper_log_dets,
     "mapper_block_log_det_rtol": _MAPPER_LOGDET_RTOL,
+    "mapper_block_log_det_status": _mapper_log_dets_status,
     "active_set": active_set_block,
     "a2": a2_block,
     "vmap16": vmap_block,
@@ -1226,7 +1411,49 @@ print(f"  Bar chart saved to:    {chart_path}")
 # comparison between S0 and S3 is still internally consistent but no longer
 # describes the fiducial the rest of #248 is written about.
 
-if not PIN_IS_FIDUCIAL:
+if not PINS_ASSERT:
+    # --pins none (the mixed-precision leg). The S0 log-dets are fp64-calibrated
+    # baselines; asserting them against a float32-accumulated curvature matrix
+    # would report a precision choice as library drift. They are RECORDED
+    # instead: every comparison is computed and written under ``pins_recorded``,
+    # and ``pinned_drift`` stays empty so PyAutoHeart's profiling-drift scan is
+    # not handed a false positive from a leg whose pins were never applicable.
+    _recorded = []
+    if PIN_IS_FIDUCIAL:
+        for _key, _expected in PINNED_LOG_DETS[MESH].items():
+            _got = float(np.asarray(s0["log_evidence_terms"][_key], dtype=float).ravel()[0])
+            _rel = abs(_got - _expected) / max(abs(_expected), 1e-300)
+            _recorded.append(
+                {
+                    "label": f"imaging/fixed_light[{instrument}, {MESH}] S0 {_key}",
+                    "expected_fp64": _expected,
+                    "got": _got,
+                    "rel_diff": _rel,
+                    "fp64_rtol_for_reference": 1e-4,
+                    "status": "RECORDED",
+                }
+            )
+            print(
+                f"  [RECORDED] S0 {_key}: got {_got:.9f}  fp64 pin {_expected:.9f}  rel {_rel:.3e}"
+            )
+    else:
+        print(
+            f"  Pinned log-dets not comparable: --source-pixels "
+            f"{SOURCE_PIXELS_REQUESTED} is not the fiducial mesh."
+        )
+    _data = json.loads(dict_path.read_text())
+    _data["pins_recorded"] = {
+        "mode": PINS_MODE,
+        "reason": (
+            "--pins none: fp64-calibrated pins are recorded, not asserted, "
+            "because this leg did not run in the precision they were "
+            "calibrated in."
+        ),
+        "s0_log_dets": _recorded,
+    }
+    dict_path.write_text(json.dumps(_data, indent=2))
+    record_pinned_check(dict_path, None, [])
+elif not PIN_IS_FIDUCIAL:
     print(
         f"  Pinned log-det check SKIPPED: --source-pixels {SOURCE_PIXELS_REQUESTED} builds a "
         f"{n_source_pixels}-pixel mesh, not the {FIDUCIAL_SOURCE_PIXELS[MESH]}-pixel fiducial "
