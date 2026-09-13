@@ -231,16 +231,21 @@ almost nothing on Delaunay.
 
 ## Next
 
-Phase 2 of the PyAutoMind epic **`fixed-lens-light-profiling`**
-(`draft/research/autolens_profiling/fixed_light_cpu_and_consumer_gpu.md`): the same cell on CPU
-(CPU-appropriate methods, thread count recorded) and on the laptop RTX 2060 through the
-`PyAutoGPU` venv, fp64 **and** mixed precision, with the pins re-derived per precision. Phases
-3–5 (low-likelihood draws, source-pixel scaling, the HST + Euclid verdict) follow in order; each
-phase's grid is chosen from the previous phase's answer.
+**Phase 2 is DONE** (autolens_profiling#253, note
+[`fixed_lens_light_hardware_2026_09.md`](./fixed_lens_light_hardware_2026_09.md)): the same
+cell on the CPU at two thread settings and on the laptop RTX 2060 in fp64 and mixed precision,
+with the pins re-derived per precision. **Both warnings this note handed it were confirmed,
+and one turned out sharper than expected.** The mapper/mesh residue does make a consumer device
+worse: the a -> d prize falls from 2.03x / 2.56x / 2.01x here to 1.28x / 1.48x / 1.46x on the
+RTX 2060 and 1.16-1.22x on a single CPU thread. And the `cond`/`vmap` constraint turned out to
+be moot on consumer hardware, because **`@vmap 16` does not fit at all**: it needs 11.88 GiB on
+a 6 GB card, batch 4 also OOMs, batch 2 fits and is *slower per call* than the single call --
+and the same batched shape OOM-killed a 16 GB host on the CPU leg. The GeForce fp64 penalty, by
+contrast, never bit: mixed precision buys a flat 5-8 % for <= 2.5e-3 nats and 16 % more device
+memory, so fp64 stays the consumer-GPU path.
 
-Two things this note hands phase 2 beyond its grid: the mapper/mesh residue above (a consumer
-GPU will make that worse, not better), and the `cond`/`vmap` constraint on any batched
-implementation.
+Phases 3-5 (low-likelihood draws, source-pixel scaling, the HST + Euclid verdict) follow in
+order; each phase's grid is chosen from the previous phase's answer.
 
 ## Artifacts
 
