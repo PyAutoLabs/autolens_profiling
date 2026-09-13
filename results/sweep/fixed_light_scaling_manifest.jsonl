@@ -1,0 +1,40 @@
+{"mesh": "rectangular", "n": 500, "hardware": "local_rtx2060_fp64", "status": "ok", "seconds": 50.0, "log": "rtx_fp64_rect_n500.log", "launched_utc": "2026-09-13T15:44:55.271498Z"}
+{"mesh": "rectangular", "n": 1000, "hardware": "local_rtx2060_fp64", "status": "ok", "seconds": 59.0, "log": "local_rtx2060_fp64_rectangular_n1000.log", "launched_utc": "2026-09-13T15:45:54.490474Z"}
+{"mesh": "rectangular", "n": 1500, "hardware": "local_rtx2060_fp64", "status": "ok", "seconds": 111.0, "log": "local_rtx2060_fp64_rectangular_n1500.log", "launched_utc": "2026-09-13T15:47:45.991693Z"}
+{"mesh": "rectangular", "n": 2500, "hardware": "local_rtx2060_fp64", "status": "ok", "seconds": 275.0, "log": "local_rtx2060_fp64_rectangular_n2500.log", "launched_utc": "2026-09-13T15:52:21.831163Z"}
+{"mesh": "rectangular", "n": 4000, "hardware": "local_rtx2060_fp64", "status": "ok", "seconds": 663.0, "log": "local_rtx2060_fp64_rectangular_n4000.log", "launched_utc": "2026-09-13T16:03:25.452218Z"}
+{"mesh": "delaunay", "n": 500, "hardware": "local_rtx2060_fp64", "status": "ok", "seconds": 101.0, "log": "local_rtx2060_fp64_delaunay_n500.log", "launched_utc": "2026-09-13T16:05:07.833271Z"}
+{"mesh": "rectangular", "n": 500, "hardware": "hpc_a100_fp64", "status": "ok", "seconds": 48.0, "job": "343023_0", "node": "euclid-ral-gpu-2", "launched_utc": "2026-09-13T15:48:00Z"}
+{"mesh": "rectangular", "n": 1000, "hardware": "hpc_a100_fp64", "status": "ok", "seconds": 55.0, "job": "343023_1", "node": "euclid-ral-gpu-2", "launched_utc": "2026-09-13T15:48:00Z"}
+{"mesh": "rectangular", "n": 1500, "hardware": "hpc_a100_fp64", "status": "ok", "seconds": 61.0, "job": "343023_2", "node": "euclid-ral-gpu-2", "launched_utc": "2026-09-13T15:48:00Z"}
+{"mesh": "rectangular", "n": 2500, "hardware": "hpc_a100_fp64", "status": "ok", "seconds": 85.0, "job": "343023_3", "node": "euclid-ral-gpu-2", "launched_utc": "2026-09-13T15:48:00Z"}
+{"mesh": "rectangular", "n": 4000, "hardware": "hpc_a100_fp64", "status": "ok", "seconds": 146.0, "job": "343023_4", "node": "euclid-ral-gpu-2", "launched_utc": "2026-09-13T15:48:00Z"}
+{"mesh": "delaunay", "n": 500, "hardware": "hpc_a100_fp64", "status": "ok", "seconds": 48.0, "job": "343024_0", "node": "euclid-ral-gpu-2", "launched_utc": "2026-09-13T15:48:00Z"}
+{"mesh": "delaunay", "n": 1000, "hardware": "hpc_a100_fp64", "status": "ok", "seconds": 55.0, "job": "343024_1", "node": "euclid-ral-gpu-2", "launched_utc": "2026-09-13T15:48:00Z"}
+{"mesh": "delaunay", "n": 1500, "hardware": "hpc_a100_fp64", "status": "ok", "seconds": 61.0, "job": "343024_2", "node": "euclid-ral-gpu-2", "launched_utc": "2026-09-13T15:48:00Z"}
+{"mesh": "delaunay", "n": 2500, "hardware": "hpc_a100_fp64", "status": "ok", "seconds": 85.0, "job": "343024_3", "node": "euclid-ral-gpu-2", "launched_utc": "2026-09-13T15:48:00Z"}
+{"mesh": "delaunay", "n": 4000, "hardware": "hpc_a100_fp64", "status": "ok", "seconds": 146.0, "job": "343024_4", "node": "euclid-ral-gpu-2", "launched_utc": "2026-09-13T15:48:00Z"}
+{"mesh": "delaunay", "n": 1000, "hardware": "local_rtx2060_fp64", "status": "ok", "seconds": 111.0, "log": "local_rtx2060_fp64_delaunay_n1000.log", "launched_utc": "2026-09-13T16:06:59.731846Z"}
+{"mesh": "delaunay", "n": 1500, "hardware": "local_rtx2060_fp64", "status": "ok", "seconds": 153.0, "log": "local_rtx2060_fp64_delaunay_n1500.log", "launched_utc": "2026-09-13T16:09:33.895409Z"}
+{"mesh": "delaunay", "n": 2500, "hardware": "local_rtx2060_fp64", "status": "ok", "seconds": 296.0, "log": "local_rtx2060_fp64_delaunay_n2500.log", "launched_utc": "2026-09-13T16:14:31.066250Z"}
+{"mesh": "delaunay", "n": 4000, "hardware": "local_rtx2060_fp64", "status": "ok", "seconds": 692.0, "log": "local_rtx2060_fp64_delaunay_n4000.log", "launched_utc": "2026-09-13T16:26:04.018187Z"}
+{"mesh": "rectangular", "n": 500, "hardware": "local_rtx2060_mp", "status": "ok", "seconds": 102.0, "log": "local_rtx2060_mp_rectangular_n500.log", "launched_utc": "2026-09-13T16:27:47.153862Z"}
+{"mesh": "rectangular", "n": 1000, "hardware": "local_rtx2060_mp", "status": "ok", "seconds": 101.0, "log": "local_rtx2060_mp_rectangular_n1000.log", "launched_utc": "2026-09-13T16:29:28.451135Z"}
+{"mesh": "rectangular", "n": 1500, "hardware": "local_rtx2060_mp", "status": "ok", "seconds": 149.0, "log": "local_rtx2060_mp_rectangular_n1500.log", "launched_utc": "2026-09-13T16:31:57.951776Z"}
+{"mesh": "rectangular", "n": 2500, "hardware": "local_rtx2060_mp", "status": "ok", "seconds": 285.0, "log": "local_rtx2060_mp_rectangular_n2500.log", "launched_utc": "2026-09-13T16:36:43.739066Z"}
+{"mesh": "rectangular", "n": 4000, "hardware": "local_rtx2060_mp", "status": "ok", "seconds": 675.0, "log": "local_rtx2060_mp_rectangular_n4000.log", "launched_utc": "2026-09-13T16:47:59.931138Z"}
+{"mesh": "delaunay", "n": 500, "hardware": "local_rtx2060_mp", "status": "ok", "seconds": 106.0, "log": "local_rtx2060_mp_delaunay_n500.log", "launched_utc": "2026-09-13T16:49:46.876836Z"}
+{"mesh": "delaunay", "n": 1000, "hardware": "local_rtx2060_mp", "status": "ok", "seconds": 112.0, "log": "local_rtx2060_mp_delaunay_n1000.log", "launched_utc": "2026-09-13T16:51:39.404075Z"}
+{"mesh": "delaunay", "n": 1500, "hardware": "local_rtx2060_mp", "status": "ok", "seconds": 156.0, "log": "local_rtx2060_mp_delaunay_n1500.log", "launched_utc": "2026-09-13T16:54:15.374270Z"}
+{"mesh": "delaunay", "n": 2500, "hardware": "local_rtx2060_mp", "status": "ok", "seconds": 301.0, "log": "local_rtx2060_mp_delaunay_n2500.log", "launched_utc": "2026-09-13T16:59:16.494479Z"}
+{"mesh": "delaunay", "n": 4000, "hardware": "local_rtx2060_mp", "status": "ok", "seconds": 700.0, "log": "local_rtx2060_mp_delaunay_n4000.log", "launched_utc": "2026-09-13T17:10:57.412241Z"}
+{"mesh": "rectangular", "n": 500, "hardware": "local_cpu_fp64", "status": "ok", "seconds": 91.0, "log": "local_cpu_fp64_rectangular_n500.log", "launched_utc": "2026-09-13T17:12:29.215398Z"}
+{"mesh": "rectangular", "n": 1000, "hardware": "local_cpu_fp64", "status": "ok", "seconds": 95.0, "log": "local_cpu_fp64_rectangular_n1000.log", "launched_utc": "2026-09-13T17:14:04.179215Z"}
+{"mesh": "rectangular", "n": 1500, "hardware": "local_cpu_fp64", "status": "ok", "seconds": 170.0, "log": "local_cpu_fp64_rectangular_n1500.log", "launched_utc": "2026-09-13T17:16:54.865214Z"}
+{"mesh": "rectangular", "n": 2500, "hardware": "local_cpu_fp64", "status": "ok", "seconds": 487.0, "log": "local_cpu_fp64_rectangular_n2500.log", "launched_utc": "2026-09-13T17:25:02.147444Z"}
+{"mesh": "rectangular", "n": 4000, "hardware": "local_cpu_fp64", "status": "ok", "seconds": 1446.0, "log": "local_cpu_fp64_rectangular_n4000.log", "launched_utc": "2026-09-13T17:49:08.952768Z"}
+{"mesh": "delaunay", "n": 500, "hardware": "local_cpu_fp64", "status": "ok", "seconds": 44.0, "log": "local_cpu_fp64_delaunay_n500.log", "launched_utc": "2026-09-13T17:49:53.653083Z"}
+{"mesh": "delaunay", "n": 1000, "hardware": "local_cpu_fp64", "status": "ok", "seconds": 89.0, "log": "local_cpu_fp64_delaunay_n1000.log", "launched_utc": "2026-09-13T17:51:22.532039Z"}
+{"mesh": "delaunay", "n": 1500, "hardware": "local_cpu_fp64", "status": "ok", "seconds": 169.0, "log": "local_cpu_fp64_delaunay_n1500.log", "launched_utc": "2026-09-13T17:54:11.625887Z"}
+{"mesh": "delaunay", "n": 2500, "hardware": "local_cpu_fp64", "status": "ok", "seconds": 519.0, "log": "local_cpu_fp64_delaunay_n2500.log", "launched_utc": "2026-09-13T18:02:50.796059Z"}
+{"mesh": "delaunay", "n": 4000, "hardware": "local_cpu_fp64", "status": "ok", "seconds": 1587.0, "log": "local_cpu_fp64_delaunay_n4000.log", "launched_utc": "2026-09-13T18:29:17.486403Z"}
