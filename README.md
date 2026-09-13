@@ -153,6 +153,16 @@ separately per likelihood × transform. Standing conclusions:
   pass 7 on rectangular, against a 25.8–28.3 ms S3 PDIP row; dropping positivity costs
   6.4 / 335 nats and stays blocked on an injection witness.
   Findings: [`results/notes/fixed_lens_light_source_only_2026_09.md`](./results/notes/fixed_lens_light_source_only_2026_09.md).
+- **Fixed lens light, the library-path row (2026-09)** — the whole `FitImaging.figure_of_merit`
+  jit with the solver actually inside it, on the A100. With S3 and a certified active-set solve
+  injected at the library's own positive-solve entry point (a harness monkeypatch — no
+  PyAutoArray change), the call falls 50.97 → 25.10 ms on rectangular (2.03×), 65.10 → 25.39 ms
+  on Delaunay (2.56×) and 72.95 → 36.26 ms on DelaunayNN (2.01×), matching the library's own
+  likelihood to 1e-15…1e-11. Phase 0's projection held. Dropping positivity is faster still
+  (21.13 ms) and still costs +334.93 nats. Two traps: the library subsets to
+  `solve_ids_to_keep` *before* calling its solver, and `lax.cond` under `vmap` runs both
+  branches.
+  Findings: [`results/notes/fixed_lens_light_library_path_2026_09.md`](./results/notes/fixed_lens_light_library_path_2026_09.md).
 
 ## How to read this repo
 
