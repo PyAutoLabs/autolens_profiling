@@ -1,0 +1,190 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "hostname": "DESKTOP-H143S82",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 8,
+    "jax_compilation_cache_dir": "/tmp/claude-1000/-home-jammy-Code-PyAutoLabs/b209459d-bb23-47ab-96a8-43066e6b1e9b/scratchpad/jaxcache/cpu_kernels_delaunay_nn_t1",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true
+  },
+  "machine": {
+    "cpu_model": "Intel(R) Core(TM) i9-10885H CPU @ 2.40GHz",
+    "cpu_count_os": 8,
+    "nproc": 1,
+    "nproc_all": 8,
+    "nproc_note": "GNU nproc honours OMP_NUM_THREADS, so `nproc` can print 1 on a multi-core host; `nproc_all` is the core count.",
+    "ram_total": "16392692 kB",
+    "kernel": "5.10.16.3-microsoft-standard-WSL2",
+    "platform": "Linux-5.10.16.3-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+    "python": "3.12.10",
+    "jax_thread_env": {
+      "NPROC": "1"
+    },
+    "blas_thread_env": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "VECLIB_MAXIMUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1"
+    },
+    "thread_env_note": "NPROC sizes XLA's CPU intra-op pool (the JAX rows); the BLAS knobs pin OpenBLAS/MKL/OpenMP (the numpy/scipy rows) and do not touch JAX. Two disjoint families; both are recorded on every CPU timing.",
+    "gpu": "NVIDIA GeForce RTX 2060 with Max-Q Design, 6144 MiB, 580.97"
+  },
+  "instrument": "hst",
+  "configuration": {
+    "pixel_scale_arcsec": 0.05,
+    "mask_radius_arcsec": 3.5,
+    "image_pixels_masked": 15361,
+    "mesh": "delaunay_nn",
+    "mesh_shape": null,
+    "rect_mesh": null,
+    "source_pixels": 1500,
+    "source_pixels_requested": null,
+    "inversion_path": "dense",
+    "pass_budget": 2,
+    "n_repeats": 15
+  },
+  "regularization": {
+    "scheme": "adapt_split",
+    "inner_coefficient": 0.1,
+    "outer_coefficient": 10.0,
+    "signal_scale": 0.1
+  },
+  "log_evidence_eager_s0": 29277.464588118037,
+  "s3": {
+    "n_params": 1500,
+    "n_mapper": 1500,
+    "n_funcs": 0,
+    "edge_zeroed_pixels": 0,
+    "subtracted_light_flux": 5121.191062894994
+  },
+  "kernels": {
+    "threads": {
+      "blas": {
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "VECLIB_MAXIMUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1"
+      },
+      "jax_pool": {
+        "NPROC": "1"
+      },
+      "n_threads_blas": 1,
+      "n_threads_jax_pool": 1,
+      "cpu_count_os": 8,
+      "note": "NPROC sizes XLA's CPU intra-op pool (JAX rows). The BLAS knobs pin OpenBLAS/MKL/OpenMP (these rows) and are read once at import, so they can only be set before the process starts \u2014 hence one subprocess per thread setting."
+    },
+    "reference_log_evidence": 29277.46458811794,
+    "reference": "the library's own reconstruction of the S3 system",
+    "n_full_system": 1500,
+    "n_seen_by_solver": 1500,
+    "n_edge_zeroed": 0,
+    "rows": {
+      "library_numpy_nnls": {
+        "label": "library numpy NNLS (fnnls_cholesky, xp=np)",
+        "entry_point": "autoarray.inversion.inversion.inversion_util.reconstruction_positive_only_from (NumPy branch)",
+        "problem": "the edge-zeroed subset, as the library hands it",
+        "n": 1500,
+        "ms": 130.01680000161286,
+        "ms_min": 120.36369999987073,
+        "ms_max": 179.07759999980044,
+        "n_repeats": 15,
+        "n_warmup": 2,
+        "timer": "time.perf_counter, median of n_repeats",
+        "outer_iterations": 0,
+        "inner_iterations": 1,
+        "n_passive": 1495,
+        "log_evidence": 29277.46458811794,
+        "d_log_evidence_vs_library": 0.0,
+        "n_negative_entries": 0
+      },
+      "scipy_unconstrained": {
+        "subset": {
+          "label": "scipy unconstrained (subset)",
+          "entry_point": "scipy.linalg.cho_factor / cho_solve",
+          "problem": "the edge-zeroed subset \u2014 comparable with the two positivity rows",
+          "n": 1500,
+          "ms": 34.38370000003488,
+          "ms_min": 33.27669999998761,
+          "ms_max": 35.47649999927671,
+          "n_repeats": 15,
+          "n_warmup": 2,
+          "timer": "time.perf_counter, median of n_repeats",
+          "log_evidence": 29285.683122185546,
+          "d_log_evidence_vs_library": 8.218534067607834,
+          "n_negative_entries": 4
+        },
+        "full_system": {
+          "label": "scipy unconstrained (full system)",
+          "entry_point": "scipy.linalg.cho_factor / cho_solve",
+          "problem": "the FULL system \u2014 what the library's positive-negative route solves, because Inversion.solve_ids_to_keep returns None the moment positivity is off (abstract.py:540), and what phase 0 called A2",
+          "n": 1500,
+          "ms": 40.305200000148034,
+          "ms_min": 37.73269999874174,
+          "ms_max": 43.353700000807294,
+          "n_repeats": 15,
+          "n_warmup": 2,
+          "timer": "time.perf_counter, median of n_repeats",
+          "log_evidence": 29285.683122185546,
+          "d_log_evidence_vs_library": 8.218534067607834,
+          "n_negative_entries": 4
+        }
+      },
+      "numpy_certified_active_set": {
+        "label": "numpy certified active set (restricted Cholesky per pass)",
+        "entry_point": "likelihood_breakdown.active_set_steps.active_set_certified",
+        "problem": "the edge-zeroed subset, as the library hands it",
+        "n": 1500,
+        "pass_budget": 2,
+        "tau_rel": 1e-09,
+        "certified": true,
+        "passes_to_certification": 2,
+        "passes_run": 2,
+        "n_factorisations": 3,
+        "n_free_per_pass": [
+          1496,
+          1495
+        ],
+        "n_primal_violations_per_pass": [
+          1,
+          0
+        ],
+        "n_dual_violations_per_pass": [
+          0,
+          0
+        ],
+        "includes_pass_zero_unconstrained_solve": true,
+        "implementation_note": "restricted Cholesky on the free block, which shrinks as the active set fills \u2014 NOT the full-size masked solve the jit-able JAX twin must use for a static shape. The two are the same algorithm at different cost.",
+        "ms": 126.71279999995022,
+        "ms_min": 117.25979999937408,
+        "ms_max": 152.34049999889976,
+        "n_repeats": 15,
+        "n_warmup": 2,
+        "timer": "time.perf_counter, median of n_repeats",
+        "log_evidence": 29277.464588117986,
+        "d_log_evidence_vs_library": 4.729372449219227e-11,
+        "n_negative_entries": 0
+      }
+    },
+    "equalities": [
+      {
+        "check": "library numpy NNLS == the library's own reconstruction",
+        "rel_diff": 0.0,
+        "rtol": 1e-08,
+        "status": "PASS"
+      },
+      {
+        "check": "numpy certified active set == library numpy NNLS",
+        "rel_diff": 1.6153627084015365e-15,
+        "rtol": 1e-08,
+        "status": "PASS"
+      }
+    ]
+  },
+  "note": "Every row here is a SOLVE on the CPU in numpy/scipy \u2014 not a library likelihood call and not a JAX row. Never sum these with the fixed_light_library cell's whole-call rows, and never quote the unconstrained row without its \u0394log-evidence and negative-pixel count: it is a different, infeasible minimiser that scores above the constrained optimum."
+}

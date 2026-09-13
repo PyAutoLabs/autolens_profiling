@@ -79,13 +79,36 @@ defaults to ``--pass-budget`` + 1. ``--source-pixels N`` sweeps the mesh size an
 skips the pins. ``--no-fallback-row`` drops routes ``d`` and ``e`` (the
 ``lax.cond`` shapes) and keeps ``d0``. ``--vmap-batch N`` adds the batched rows.
 
+``--pins {fp64,none}`` (default ``fp64``) and the shared
+``--use-mixed-precision`` are the phase-2 pair. ``--use-mixed-precision`` passes
+``use_mixed_precision=True`` into ``al.Settings``, which makes the library
+accumulate ``A.T A`` in float32 before casting back to float64
+(``inversion_util.py:127-136``). ``--pins none`` then **withdraws the
+fp64-calibrated verdicts** — the S0 log-det pins, the mapper-block identity and
+the equivalence pins — and records every one of them as data instead, because a
+pin calibrated in fp64 is not a pin in fp32. Nothing is skipped: each
+comparison is still computed and written, with status ``RECORDED``. The active
+set's KKT tolerance ``tau_rel`` is likewise **re-derived** under mixed
+precision (``eps_float32 * sqrt(image pixels)``, the float32 accumulation floor
+of the matrix being certified) and the value used is reported in the JSON.
+
+Phase 2 (autolens_profiling#253) also records a ``machine`` block beside the
+existing ``device`` block — CPU model, core count, RAM, kernel, GPU, and **both**
+thread-knob families, because they are disjoint: ``NPROC`` sizes XLA's CPU
+intra-op pool (the JAX rows) while ``OMP_NUM_THREADS`` / ``OPENBLAS_NUM_THREADS``
+/ ``MKL_NUM_THREADS`` pin BLAS (the numpy rows) and do not touch JAX. A CPU
+millisecond is not interpretable without both.
+
 Output
 ------
 
 ``results/breakdown/imaging/fixed_light_library_<mesh>_<config_name>.{json,png}``.
 The A100 legs run under ``--config-name hpc_a100_fp64_fixed_light_library``,
 deliberately **not** a config name ``build_readme.py`` surfaces: these rows are
-the phase-1 comparator study, not a dashboard tier.
+the phase-1 comparator study, not a dashboard tier. Phase 2's local legs use
+``local_cpu_fp64_fixed_light_library_t1`` / ``_tall``,
+``local_rtx2060_fp64_fixed_light_library`` and
+``local_rtx2060_mp_fixed_light_library`` on the same convention.
 """
 
 import sys as _sys
@@ -146,6 +169,7 @@ from _profile_cli import (  # noqa: E402
     check_pinned,
     delaunay_regularization,
     device_info_dict,
+    machine_info_dict,
     parse_profile_cli,
     record_pinned_check,
     rect_mesh_classes,
@@ -173,9 +197,27 @@ _cell_parser.add_argument("--pass-budget-max", type=int, default=None)
 _cell_parser.add_argument("--source-pixels", type=int, default=None)
 _cell_parser.add_argument("--fallback-row", dest="fallback_row", action="store_true", default=True)
 _cell_parser.add_argument("--no-fallback-row", dest="fallback_row", action="store_false")
+_cell_parser.add_argument("--pins", choices=("fp64", "none"), default="fp64")
 _cell_args, _ = _cell_parser.parse_known_args()
 
 MESH = _cell_args.mesh
+
+#: ``fp64`` (default) asserts every pin phase 0 and phase 1 calibrated in fp64.
+#: ``none`` is the **mixed-precision** setting: a pin calibrated in fp64 is not
+#: a pin in fp32, so the fp64-calibrated *verdicts* are withdrawn — but nothing
+#: is skipped. Every comparison is still computed and written to the JSON with
+#: status ``RECORDED``, so the leg reports what the lower precision costs
+#: instead of asserting a tolerance it was never calibrated against.
+PINS_MODE = _cell_args.pins
+PINS_ASSERT = PINS_MODE == "fp64"
+USE_MIXED_PRECISION = bool(_cli.use_mixed_precision)
+
+if USE_MIXED_PRECISION and PINS_ASSERT:
+    print(
+        "  NOTE: --use-mixed-precision with --pins fp64. The fp64-calibrated pins "
+        "will be ASSERTED against a float32-accumulated curvature matrix; pass "
+        "--pins none for the honest mixed-precision leg."
+    )
 PASS_BUDGET = int(
     _cell_args.pass_budget if _cell_args.pass_budget is not None else CERTIFYING_BUDGET[MESH]
 )
@@ -443,6 +485,48 @@ print(f"  Image pixels (masked):   {n_image_pixels}")
 print(f"  Source pixels:           {n_source_pixels}")
 print(f"  Pass budget (d / d0):    {PASS_BUDGET}")
 print(f"  Fallback-row budget (e): {FALLBACK_ROW_BUDGET}")
+print(f"  Mixed precision:         {USE_MIXED_PRECISION}")
+print(f"  Pins mode:               {PINS_MODE}")
+
+# ---------------------------------------------------------------------------
+# tau_rel — RE-DERIVED per precision, never inherited
+# ---------------------------------------------------------------------------
+# The active set's KKT tolerances are tau_g = tau_rel * max|q| (dual) and
+# tau_x = tau_rel * max|x| (primal). ``TAU_REL_DEFAULT = 1e-9`` was calibrated
+# in fp64, where the curvature matrix itself is accurate to ~1e-16 relative, so
+# 1e-9 sits far above the data's own noise floor and a certificate means what it
+# says.
+#
+# Under ``use_mixed_precision`` that is no longer true. The setting makes the
+# library accumulate ``A.T A`` in float32 before casting the result back to
+# float64 (``inversion_util.py:127-136``): the SOLVE is still fp64 arithmetic,
+# but on a matrix whose entries carry float32 accumulation error. A dot product
+# over M image rows accumulates a relative error of order ``eps_f32 * sqrt(M)``,
+# so the gradient g = Qx - q inherits a floor of about that fraction of max|q|.
+# Certifying at 1e-9 against a matrix good to ~1e-5 would be certifying against
+# round-off. The tolerance is therefore re-derived from the precision actually
+# used, and the value is reported in the JSON rather than left implicit.
+_EPS_F32 = float(np.finfo(np.float32).eps)
+
+if USE_MIXED_PRECISION:
+    TAU_REL = _EPS_F32 * math.sqrt(float(n_image_pixels))
+    TAU_REL_BASIS = (
+        f"re-derived for mixed precision: eps_float32 ({_EPS_F32:.3e}) * "
+        f"sqrt(image pixels = {int(n_image_pixels)}) = {TAU_REL:.3e}. The library "
+        f"accumulates the curvature matrix in float32 under use_mixed_precision "
+        f"(inversion_util.py:127-136), so the KKT residual cannot be resolved "
+        f"below the float32 accumulation floor of the matrix itself; a pass "
+        f"budget certified at the fp64 tolerance would be certifying round-off."
+    )
+else:
+    TAU_REL = active_set_steps.TAU_REL_DEFAULT
+    TAU_REL_BASIS = (
+        f"fp64 default ({active_set_steps.TAU_REL_DEFAULT:g}), as phases 0 and 1 "
+        f"calibrated it on the A100."
+    )
+
+print(f"  tau_rel:                 {TAU_REL:.6e}")
+print(f"    basis: {TAU_REL_BASIS}")
 
 # ---------------------------------------------------------------------------
 # S0 and S3 — the two systems, built eagerly by the phase-0 builders
@@ -528,9 +612,18 @@ for _key, _matrix_attr in (
         )
     )
     _rel = abs(_s3_value - _s0_value) / max(abs(_s0_value), 1e-300)
-    _mapper_log_dets[_key] = {"s0": _s0_value, "s3": _s3_value, "rel_diff": _rel}
-    print(f"  mapper-block {_key}: S0 {_s0_value:.9f}  S3 {_s3_value:.9f}  rel {_rel:.3e}")
-    if _rel > _MAPPER_LOGDET_RTOL:
+    _status = ("PASS" if _rel <= _MAPPER_LOGDET_RTOL else "FAIL") if PINS_ASSERT else "RECORDED"
+    _mapper_log_dets[_key] = {
+        "s0": _s0_value,
+        "s3": _s3_value,
+        "rel_diff": _rel,
+        "status": _status,
+    }
+    print(
+        f"  [{_status:>8}] mapper-block {_key}: S0 {_s0_value:.9f}  "
+        f"S3 {_s3_value:.9f}  rel {_rel:.3e}"
+    )
+    if PINS_ASSERT and _rel > _MAPPER_LOGDET_RTOL:
         raise AssertionError(
             f"S3's mapper-block {_key} ({_s3_value!r}) does not match S0's ({_s0_value!r}) "
             f"to {_MAPPER_LOGDET_RTOL:g} (relative difference {_rel:.3e})."
@@ -599,8 +692,14 @@ _reference_log_evidence = float(system_s3.log_evidence(_x_library_s3))
 certification_budgets: list[dict] = []
 _certifying_budget_measured = None
 
+
+def _active_set_at(Q, q, fixed0, budget):
+    """``active_set_masked_jax`` at this leg's re-derived ``tau_rel``."""
+    return active_set_steps.active_set_masked_jax(Q, q, fixed0, budget, tau_rel=TAU_REL)
+
+
 for _budget in range(1, PASS_BUDGET_MAX + 1):
-    _out = jax.jit(active_set_steps.active_set_masked_jax, static_argnums=(3,))(
+    _out = jax.jit(_active_set_at, static_argnums=(3,))(
         _Q_solver, _q_solver, _fixed0_solver, _budget
     )
     _certified = [bool(c) for c in np.asarray(_out["certified"])]
@@ -661,7 +760,10 @@ certification_block = {
         "so the border pixels are not variables of this QP. Equivalent index-for-index "
         "to phase 0's full-size scheme with those indices permanently fixed."
     ),
-    "tau_rel": active_set_steps.TAU_REL_DEFAULT,
+    "tau_rel": TAU_REL,
+    "tau_rel_fp64_default": active_set_steps.TAU_REL_DEFAULT,
+    "tau_rel_basis": TAU_REL_BASIS,
+    "tau_rel_re_derived_for_precision": bool(USE_MIXED_PRECISION),
     "reference_log_evidence": _reference_log_evidence,
     "reference": "the library's own reconstruction of S3 (PDIP on the edge-zeroed problem)",
     "pass_budget_max": PASS_BUDGET_MAX,
@@ -867,7 +969,7 @@ for _key, _label, _ds, _tree, _settings_route, _injection in ROUTES:
         else:
             _budget, _fallback = _injection
             with library_solver_injection.certified_solver_injected(
-                _budget, fallback=_fallback
+                _budget, fallback=_fallback, tau_rel=TAU_REL
             ) as _counts:
                 _, _value = jit_profile(_fn, f"{_key}_library_likelihood_jit", _tree)
             _entry["solver"] = "harness-injected certified active set"
@@ -930,7 +1032,7 @@ if _vmap_batch is not None:
             else:
                 _budget, _fallback = _injection
                 with library_solver_injection.certified_solver_injected(
-                    _budget, fallback=_fallback
+                    _budget, fallback=_fallback, tau_rel=TAU_REL
                 ):
                     _per_call = timing.vmap_profile(
                         _fn, _key, _batched, _vmap_batch, timer=timer, jit_records=jit_records
@@ -994,7 +1096,7 @@ def _pin(name, key, expectation, rtol=EQUIVALENCE_RTOL, reference=None, referenc
         entry["got"] = got
         entry["reference_value"] = ref
         entry["rel_diff"] = rel
-        entry["status"] = "PASS" if rel <= rtol else "FAIL"
+        entry["status"] = ("PASS" if rel <= rtol else "FAIL") if PINS_ASSERT else "RECORDED"
     equivalence_pins.append(entry)
     print(
         f"  [{entry['status']:>7}] {name}"
@@ -1040,7 +1142,7 @@ if _s0_value is not None and _reference_value is not None:
         "got": _reference_value,
         "reference_value": _s0_value,
         "rel_diff": _rel_s3_s0,
-        "status": "PASS" if _rel_s3_s0 <= 1e-6 else "FAIL",
+        "status": ("PASS" if _rel_s3_s0 <= 1e-6 else "FAIL") if PINS_ASSERT else "RECORDED",
     }
     equivalence_pins.append(_entry)
     print(f"  [{_entry['status']:>7}] {_entry['pin']}  rel {_rel_s3_s0:.3e}")
@@ -1054,7 +1156,7 @@ _c_pin = {
     "expectation": "positivity off IS the unconstrained solve; the two must coincide",
     "rtol": 1e-6,
     "rel_diff": _a2_rel,
-    "status": "PASS" if _a2_rel <= 1e-6 else "FAIL",
+    "status": ("PASS" if _a2_rel <= 1e-6 else "FAIL") if PINS_ASSERT else "RECORDED",
 }
 equivalence_pins.append(_c_pin)
 print(f"  [{_c_pin['status']:>7}] {_c_pin['pin']}  rel {_a2_rel:.3e}")
@@ -1100,6 +1202,9 @@ _configuration = {
     "pass_budget_max_diagnostics": PASS_BUDGET_MAX,
     "fallback_row_budget": FALLBACK_ROW_BUDGET,
     "fallback_rows": RUN_FALLBACK_ROWS,
+    "use_mixed_precision": USE_MIXED_PRECISION,
+    "pins_mode": PINS_MODE,
+    "tau_rel": TAU_REL,
     "thread_env": _observe_thread_env(),
     "memo": "library_default (inert on the JAX path)",
     "over_sample_size_lp_rule": {
@@ -1112,6 +1217,27 @@ _configuration = {
 breakdown_summary = {
     "autolens_version": al_version,
     "device": device_info_dict(),
+    "machine": machine_info_dict(),
+    "precision": {
+        "use_mixed_precision": USE_MIXED_PRECISION,
+        "what_mixed_precision_changes": (
+            "Settings.use_mixed_precision makes the library accumulate the "
+            "curvature matrix A.T A in float32 and cast the result back to "
+            "float64 (inversion_util.py:127-136). The solve, the log "
+            "determinants and the evidence are still fp64 arithmetic — on a "
+            "matrix carrying float32 accumulation error."
+        ),
+        "pins_mode": PINS_MODE,
+        "pins_note": (
+            "fp64: every pin phases 0 and 1 calibrated on the A100 is asserted. "
+            "none: those verdicts are WITHDRAWN, not skipped — every comparison "
+            "is still computed and written with status RECORDED, because a pin "
+            "calibrated in fp64 is not a pin in fp32."
+        ),
+        "tau_rel": TAU_REL,
+        "tau_rel_basis": TAU_REL_BASIS,
+        "float32_eps": _EPS_F32,
+    },
     "instrument": instrument,
     "configuration": _configuration,
     "regularization": reg_provenance,
@@ -1273,7 +1399,53 @@ print(f"  Bar chart saved to:    {chart_path}")
 # The pins describe S0 at the fiducial mesh and nothing else, so a run with a
 # non-fiducial ``--source-pixels`` skips them and writes ``pinned_expected: null``.
 
-if not PIN_IS_FIDUCIAL:
+if not PINS_ASSERT:
+    # --pins none (the mixed-precision leg). The S0 log-dets are fp64-calibrated
+    # baselines; asserting them against a float32-accumulated curvature matrix
+    # would report a precision choice as library drift. They are RECORDED
+    # instead: every comparison is computed and written under
+    # ``pins_recorded``, and ``pinned_drift`` stays empty so PyAutoHeart's
+    # profiling-drift scan is not handed a false positive from a leg whose pins
+    # were never applicable.
+    _recorded = []
+    if PIN_IS_FIDUCIAL:
+        _s0_terms = system_s0.log_evidence_terms(
+            np.asarray(system_s0.inversion.reconstruction, dtype=float)
+        )
+        for _key, _expected in PINNED_LOG_DETS[MESH].items():
+            _got = float(np.asarray(_s0_terms[_key], dtype=float).ravel()[0])
+            _rel = abs(_got - _expected) / max(abs(_expected), 1e-300)
+            _recorded.append(
+                {
+                    "label": f"imaging/fixed_light_library[{instrument}, {MESH}] S0 {_key}",
+                    "expected_fp64": _expected,
+                    "got": _got,
+                    "rel_diff": _rel,
+                    "fp64_rtol_for_reference": 1e-4,
+                    "status": "RECORDED",
+                }
+            )
+            print(
+                f"  [RECORDED] S0 {_key}: got {_got:.9f}  fp64 pin {_expected:.9f}  rel {_rel:.3e}"
+            )
+    else:
+        print(
+            f"  Pinned log-dets not comparable: --source-pixels "
+            f"{SOURCE_PIXELS_REQUESTED} is not the fiducial mesh."
+        )
+    _data = json.loads(dict_path.read_text())
+    _data["pins_recorded"] = {
+        "mode": PINS_MODE,
+        "reason": (
+            "--pins none: fp64-calibrated pins are recorded, not asserted, "
+            "because this leg did not run in the precision they were "
+            "calibrated in."
+        ),
+        "s0_log_dets": _recorded,
+    }
+    dict_path.write_text(json.dumps(_data, indent=2))
+    record_pinned_check(dict_path, None, [])
+elif not PIN_IS_FIDUCIAL:
     print(
         f"  Pinned log-det check SKIPPED: --source-pixels {SOURCE_PIXELS_REQUESTED} builds a "
         f"{n_source_pixels}-pixel mesh, not the {FIDUCIAL_SOURCE_PIXELS[MESH]}-pixel fiducial "

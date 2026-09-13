@@ -99,6 +99,7 @@ def certified_reconstruction_from(
     n_passes: int,
     fallback: bool,
     original,
+    tau_rel: float = active_set_steps.TAU_REL_DEFAULT,
     settings=None,
     xp=np,
     fingerprint=None,
@@ -123,7 +124,7 @@ def certified_reconstruction_from(
 
     n = q_pc.shape[0]
     out = active_set_steps.active_set_masked_jax(
-        Q_pc, q_pc, jnp.zeros(n, dtype=bool), int(n_passes)
+        Q_pc, q_pc, jnp.zeros(n, dtype=bool), int(n_passes), tau_rel=tau_rel
     )
     x_active = out["x"] * scale
 
@@ -145,7 +146,12 @@ def certified_reconstruction_from(
 
 
 @contextlib.contextmanager
-def certified_solver_injected(n_passes: int, *, fallback: bool = True):
+def certified_solver_injected(
+    n_passes: int,
+    *,
+    fallback: bool = True,
+    tau_rel: float = active_set_steps.TAU_REL_DEFAULT,
+):
     """Rebind the library's positive-only solve to the certified scheme.
 
     Scoped: the original function is restored on exit, including on an
@@ -153,6 +159,13 @@ def certified_solver_injected(n_passes: int, *, fallback: bool = True):
     ``FitImaging`` the cell builds for its diagnostics, say) is delegated to the
     original untouched, so a patch left open around eager work cannot silently
     change a reference number.
+
+    ``tau_rel`` is the active set's relative KKT tolerance. It is a
+    **parameter, not a constant**, because a tolerance calibrated in fp64 is
+    not a tolerance in fp32: under ``Settings.use_mixed_precision`` the library
+    accumulates the curvature matrix in float32, and certifying at the fp64
+    default would certify against the matrix's own round-off. The caller
+    re-derives it per precision and records the value it used.
 
     Yields a mutable dict of call counters (``{"jax": n, "numpy": n}``) so the
     caller can assert the patched path was actually taken — a patch that never
@@ -181,6 +194,7 @@ def certified_solver_injected(n_passes: int, *, fallback: bool = True):
             n_passes=n_passes,
             fallback=fallback,
             original=original,
+            tau_rel=tau_rel,
             settings=settings,
             xp=xp,
             fingerprint=fingerprint,
