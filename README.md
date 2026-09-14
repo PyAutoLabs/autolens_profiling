@@ -187,6 +187,21 @@ separately per likelihood × transform. Standing conclusions:
   on the A100 and the CPU, so the fallback rate is a property of the problem. Dropping positivity
   is now unambiguously out: the A2 error grows to +4.1e4 / +6.3e3 nats.
   Findings: [`results/notes/fixed_lens_light_low_likelihood_draws_2026_09.md`](./results/notes/fixed_lens_light_low_likelihood_draws_2026_09.md).
+- **Fixed lens light, source-pixel scaling per hardware (2026-09)** — the same cell at
+  N_src 500 / 1000 / 1500 / 2500 / 4000, on rect and Delaunay, over four hardware legs (A100
+  fp64 `@vmap 16`; RTX 2060 6 GB in fp64 and mixed precision; JAX-CPU at 8 threads) — 40 legs,
+  none OOMed, none timed out. **The certifying pass budget does not scale with N**: it wanders
+  in 5–10 (rect) and 1–2 (Delaunay) with no trend, so phase 3's safe budgets **11 / 7** hold
+  from 500 to 4000 pixels. The certified active set leads at every N — 1.44–1.62× over S3 PDIP
+  on rect and 2.21–3.00× on Delaunay (A100), and on Delaunay the lever *grows* with N because
+  PDIP's iteration count does. **Phase 1's batched row has an N ceiling**: `@vmap 16` amortises
+  3.6× at N≈500, nothing at 2500, and is a **1.5× penalty at 4000** on an A100. Memory is not
+  the wall — the 6 GB laptop card fits the single call at ~4000 pixels (3.13 GB fp64 / 3.63 GB
+  mp) and the A100 uses 7.8 GB of 80 with 16 lanes. Affordable N is **4000 (A100) / 1500 (RTX
+  2060) / 1000 (JAX-CPU)**, set by time. On the A100 every solver row fits α ≈ 1 while the
+  dense `F+λH` build fits **α ≈ 1.69** and overtakes the certified solve above ~2500 pixels —
+  the next lever there is the assembly, not the solver.
+  Findings: [`results/notes/fixed_lens_light_source_pixel_scaling_2026_09.md`](./results/notes/fixed_lens_light_source_pixel_scaling_2026_09.md).
 
 ## How to read this repo
 

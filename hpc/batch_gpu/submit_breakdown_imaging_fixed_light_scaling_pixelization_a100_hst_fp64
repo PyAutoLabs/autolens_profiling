@@ -1,0 +1,153 @@
+#!/bin/bash -l
+#
+# 2026-09 fixed-lens-light SOURCE-PIXEL SCALING legs (autolens_profiling#257, epic phase 4).
+#
+# Phases 0-3 measured the fixed-lens-light rows at ONE source-pixel count. The
+# choice that actually sets production cost is how many source pixels a fit can
+# afford, and the three solvers scale differently: the unconstrained Cholesky is
+# one factorisation, the certified active set is a masked full-size Cholesky PER
+# PASS (so it multiplies by the pass count), and PDIP is an iteration count times
+# a solve. This array sweeps N_src and measures all three at each N, plus the
+# whole library likelihood call, so the ms-vs-N curves and their fitted exponents
+# are measured rather than reasoned about.
+#
+# ARMS — 5 array tasks, --source-pixels = 500 / 1000 / 1500 / 2500 / 4000
+# (index -> SOURCE_PIXELS below). Rectangular rounds the request to the nearest square, so the BUILT counts are 484 / 1024 / 1521 / 2500 / 3969.
+#
+#   --pass-budget-max 12   Budgets 1..12 are each compiled and timed separately,
+#                          because a fixed budget is what a search actually runs.
+#                          12 covers phase 3's safe budgets (11 rectangular, 7
+#                          Delaunay) at every N, so each leg reports BOTH the
+#                          budget that certifies at that N and the cost of the
+#                          safe fixed budget at that N. Phase 3
+#                          (autolens_profiling#255) showed the fiducial budgets
+#                          7 / 2 fall back on 27.5 % / 67.5 % of a graded
+#                          41-model draw set, so the fiducial budget is not a
+#                          production cost and must not be quoted as the curve.
+#   --safe-budget 11          Phase 3's zero-fallback budget on the rectangular mesh.
+#   --vmap-batch 16        The Nautilus n_batch shape, kept on the A100 ONLY.
+#                          Phase 2 measured it at 11.88 GiB on a 6 GB consumer
+#                          card (OOM at batch >= 4, a LOSS at batch 2) and the
+#                          same shape OOM-killed a 16 GB host, so the RTX 2060
+#                          and CPU legs of this phase are single-call by design.
+#   --pins fp64            ASSERT the fp64-calibrated S0 log-det pins and the
+#                          mapper-block identity. They describe the FIDUCIAL
+#                          mesh only, so only the n=1500 arm asserts them; the
+#                          other four arms record `pinned_expected: null`. That
+#                          one arm is this sweep's tie back to phase 0.
+#   --config-name hpc_a100_fp64_fixed_light
+#                          the phase-0 label. Each arm's JSON carries the cell's
+#                          own `_n<N>` suffix (the BUILT pixel count, which on
+#                          the rectangular mesh is the nearest square), so the
+#                          arms cannot clobber each other or the phase-0 file.
+#
+# A leg that OOMs or is killed on the wall clock is a RESULT, not a gap: the
+# scaling table reads the manifest and the logs and prints OOM / timeout in the
+# cell rather than dropping the row. Nothing in that table is extrapolated.
+#
+# Every leg starts from an EMPTY JAX compilation cache: a seeded XLA autotune
+# cache silently changes kernels (results/notes/xla_autotune_triton_gemm.md --
+# F 4.8 vs 25.6 ms on the same code).
+#
+# parse_known_args IGNORES unknown flags, so a checkout WITHOUT this cell's
+# --safe-budget / --pins flags would run and silently produce a different table
+# -- check configuration.safe_budget and configuration.pins_mode in the JSON.
+
+#SBATCH -J fls_pixelization
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=12:00:00
+#SBATCH --array=0-4
+#SBATCH -o output/output.%A_%a.out
+#SBATCH -e error/error.%A_%a.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+# Derive the repo root from where this was submitted (hpc/batch_gpu/../..) rather
+# than hardcoding /mnt/ral/jnightin/autolens_profiling: the canonical RAL checkout
+# sits on main with a dirty tree, so this runs from a worktree of the feature
+# branch. The -o/-e paths above are relative, so sbatch from inside hpc/batch_gpu/
+# (submit_fixed_light_scaling.sh does the cd for you).
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding"
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+SOURCE_PIXELS=(500 1000 1500 2500 4000)
+N_SRC=${SOURCE_PIXELS[$SLURM_ARRAY_TASK_ID]}
+if [ -z "$N_SRC" ]; then
+    echo "FATAL: no source-pixel count for array task ${SLURM_ARRAY_TASK_ID} (expected 0-4)." >&2
+    exit 1
+fi
+
+# Fresh per-job compilation cache. output/ is gitignored, so these never reach
+# git; ${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID} keeps concurrent arms on the
+# same node from sharing one.
+export JAX_COMPILATION_CACHE_DIR="$AP_ROOT/output/jax_cache/fixed_light_scaling_pixelization_${SLURM_ARRAY_JOB_ID:-local}_${SLURM_ARRAY_TASK_ID:-0}"
+rm -rf "$JAX_COMPILATION_CACHE_DIR" && mkdir -p "$JAX_COMPILATION_CACHE_DIR"
+echo "JAX_COMPILATION_CACHE_DIR=$JAX_COMPILATION_CACHE_DIR (fresh)"
+
+nvidia-smi
+
+echo "=========================================="
+date
+hostname
+echo "Task:           $SLURM_ARRAY_TASK_ID / 4"
+echo "Cell:           likelihood_breakdown/imaging/fixed_light"
+echo "Instrument:     hst"
+echo "Precision:      fp64"
+echo "Inversion path: dense (mapping matrices, InversionImagingMapping)"
+echo "Source mesh:    rectangular"
+echo "Source pixels:  --source-pixels $N_SRC (requested; the cell reports what it built)"
+echo "Config name:    hpc_a100_fp64_fixed_light"
+echo "Safe budget:    11 (phase 3 zero-fallback budget for this mesh)"
+echo "SWEEP_LEG mesh=rectangular n=$N_SRC hardware=hpc_a100_fp64"
+echo "Flags:          --mesh rectangular --source-pixels $N_SRC --pass-budget-max 12 --safe-budget 11 --vmap-batch 16 --pins fp64 --config-name hpc_a100_fp64_fixed_light"
+
+echo "=== source revisions (shared install, untouched) ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r" "$(git -C /mnt/ral/jnightin/PyAuto/$r rev-parse HEAD 2>&1)"
+done
+echo "AP_ROOT rev:   $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+
+cd $AP_ROOT
+
+echo "=== import provenance ==="
+python3 -c "import autoarray, autolens; print('autoarray.__file__ =', autoarray.__file__); print('autoarray.__version__ =', autoarray.__version__); print('autolens.__file__ =', autolens.__file__)"
+
+# --- background peak-VRAM sampler (killed after the run) ---
+echo "=== nvidia-smi memory.used sampler (every 5 s) ==="
+nvidia-smi --query-gpu=memory.used --format=csv -l 5 &
+VRAM_SAMPLER_PID=$!
+trap 'kill "$VRAM_SAMPLER_PID" 2>/dev/null' EXIT
+
+python3 -u scripts/imaging/likelihood_breakdown/fixed_light.py \
+    --mesh rectangular \
+    --source-pixels $N_SRC \
+    --pass-budget-max 12 \
+    --safe-budget 11 \
+    --vmap-batch 16 \
+    --pins fp64 \
+    --config-name hpc_a100_fp64_fixed_light
+
+kill "$VRAM_SAMPLER_PID" 2>/dev/null
+trap - EXIT
+
+# Autotune-cache census. Must be non-fatal: the directory only exists if XLA
+# wrote autotune results, and activate.sh's ERR trap fails the job on any
+# non-zero exit (the `ls` failure is swallowed by the pipe to `wc -l`).
+echo -n "AUTOTUNE_ENTRIES count="
+ls "$JAX_COMPILATION_CACHE_DIR/xla_gpu_per_fusion_autotune_cache_dir" 2>/dev/null | wc -l
+
+echo "Finished."
+date

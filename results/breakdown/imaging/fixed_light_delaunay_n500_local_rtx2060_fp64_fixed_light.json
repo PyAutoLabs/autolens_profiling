@@ -1,0 +1,1053 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "hostname": "DESKTOP-H143S82",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 8,
+    "jax_compilation_cache_dir": "/tmp/claude-1000/-home-jammy-Code-PyAutoLabs/b209459d-bb23-47ab-96a8-43066e6b1e9b/scratchpad/jaxcache/local_rtx2060_fp64_delaunay_n500",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "nvidia_smi": "NVIDIA GeForce RTX 2060 with Max-Q Design, 688 MiB, 6144 MiB"
+  },
+  "machine": {
+    "cpu_model": "Intel(R) Core(TM) i9-10885H CPU @ 2.40GHz",
+    "cpu_count_os": 8,
+    "nproc": 1,
+    "nproc_all": 8,
+    "nproc_note": "GNU nproc honours OMP_NUM_THREADS, so `nproc` can print 1 on a multi-core host; `nproc_all` is the core count.",
+    "ram_total": "16392692 kB",
+    "kernel": "5.10.16.3-microsoft-standard-WSL2",
+    "platform": "Linux-5.10.16.3-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+    "python": "3.12.10",
+    "jax_thread_env": {
+      "NPROC": "8"
+    },
+    "blas_thread_env": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "VECLIB_MAXIMUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1"
+    },
+    "thread_env_note": "NPROC sizes XLA's CPU intra-op pool (the JAX rows); the BLAS knobs pin OpenBLAS/MKL/OpenMP (the numpy/scipy rows) and do not touch JAX. Two disjoint families; both are recorded on every CPU timing.",
+    "gpu": "NVIDIA GeForce RTX 2060 with Max-Q Design, 6144 MiB, 580.97"
+  },
+  "precision": {
+    "use_mixed_precision": false,
+    "what_mixed_precision_changes": "Settings.use_mixed_precision makes the library accumulate the curvature matrix A.T A in float32 and cast the result back to float64 (inversion_util.py:127-136). The solve, the log determinants and the evidence are still fp64 arithmetic \u2014 on a matrix carrying float32 accumulation error.",
+    "pins_mode": "fp64",
+    "pins_note": "fp64: every pin phase 0 calibrated on the A100 is asserted (at the fiducial mesh only). none: those verdicts are WITHDRAWN, not skipped \u2014 every comparison is still computed and written with status RECORDED, because a pin calibrated in fp64 is not a pin in fp32.",
+    "tau_rel": 1e-09,
+    "tau_rel_basis": "fp64 default (1e-09), as phases 0-1 calibrated it on the A100.",
+    "float32_eps": 1.1920928955078125e-07
+  },
+  "instrument": "hst",
+  "configuration": {
+    "pixel_scale_arcsec": 0.05,
+    "mask_radius_arcsec": 3.5,
+    "image_pixels_masked": 15361,
+    "over_sampled_pixels": 62752,
+    "mesh": "delaunay",
+    "mesh_shape": null,
+    "rect_mesh": null,
+    "source_pixels": 500,
+    "source_pixels_requested": 500,
+    "inversion_path": "dense",
+    "pass_budget_max": 12,
+    "pass_budgets": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ],
+    "safe_budget": 7,
+    "use_mixed_precision": false,
+    "pins_mode": "fp64",
+    "tau_rel": 1e-09,
+    "thread_env": {
+      "n_threads": null,
+      "vars": [
+        "OPENBLAS_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OMP_NUM_THREADS",
+        "VECLIB_MAXIMUM_THREADS",
+        "NUMEXPR_NUM_THREADS"
+      ],
+      "set_to": null,
+      "preexisting": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "VECLIB_MAXIMUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1"
+      },
+      "overridden": {},
+      "note": "Not pinned (legacy variant): recorded as found."
+    },
+    "memo": "library_default (inert on the JAX path)",
+    "over_sample_size_lp_rule": {
+      "sub_size_list": [
+        4,
+        2,
+        2
+      ],
+      "radial_list": [
+        0.3,
+        0.6
+      ],
+      "centre": [
+        0.0,
+        0.0
+      ]
+    }
+  },
+  "regularization": {
+    "scheme": "adapt_split",
+    "inner_coefficient": 0.1,
+    "outer_coefficient": 10.0,
+    "signal_scale": 0.1
+  },
+  "log_evidence_eager": 29263.13287166255,
+  "s0": {
+    "name": "S0_current_mge60",
+    "n_params": 560,
+    "n_mapper": 500,
+    "n_funcs": 60,
+    "edge_zeroed_active": true,
+    "edge_zeroed_pixels": 0,
+    "rows": {
+      "curvature_reg_matrix build (dense)": 0.06537360000002082,
+      "Cholesky solve (unconstrained)": 0.004040170000007492,
+      "NNLS PDIP (cell-driven, max_iter 50)": 0.06105109999989509,
+      "NNLS PDIP one iteration": 0.004801850000148988,
+      "Log det Cholesky (F+\u03bbH reduced)": 0.0028329000000667293,
+      "Log det Cholesky (H reduced)": 0.0028401399998983835,
+      "log_evidence_terms (eager, PDIP solution)": 1.306676799998968
+    },
+    "nnls": {
+      "iterations": 20,
+      "converged": true,
+      "ms_per_iteration": 3.0525549999947543,
+      "one_iteration_ms": 4.801850000148988,
+      "max_iter": 50,
+      "solver_tol": "jaxnnls default",
+      "jacobi_preconditioning": true,
+      "full_system_pdip_vs_library_reconstruction_max_abs_diff": 0.0001894087894122812,
+      "full_system_pdip_vs_library_reconstruction_note": "Diagnostic, never a tolerance: the library subsets the solve to solve_ids_to_keep and this row solves the full system, so the two differ by construction wherever edge zeroing drops a pixel."
+    },
+    "log_evidence_terms": {
+      "chi_squared": 20110.629840435664,
+      "regularization_term": 357.96700670210885,
+      "log_det_curvature_reg": 2233.4879203969595,
+      "log_det_regularization": 1593.0832767331349,
+      "noise_normalization": -79635.26723742482,
+      "log_evidence": 29263.13287331161
+    },
+    "log_evidence_pdip": 29263.13287331161,
+    "log_evidence_cholesky": 29309.3697366287,
+    "log_evidence_library_edge_zeroed": 29263.13287331161,
+    "d_log_evidence_full_system_pdip_minus_library": 0.0,
+    "curvature_reg_build_max_abs_diff_vs_library": 5.029141902923584e-08,
+    "curvature_reg_build_max_rel_diff_vs_library": 3.917356278765775e-15,
+    "cond": {
+      "value": 41837527106.68308,
+      "seconds": 0.8135385000023234,
+      "skipped": null
+    },
+    "log_evidence_figure_of_merit": 29263.13287166255,
+    "d_log_evidence_terms_minus_figure_of_merit": 1.6490594134666026e-06
+  },
+  "s3": {
+    "name": "S3_mge_converted_to_regular",
+    "n_params": 500,
+    "n_mapper": 500,
+    "n_funcs": 0,
+    "edge_zeroed_active": true,
+    "edge_zeroed_pixels": 0,
+    "rows": {
+      "curvature_reg_matrix build (dense)": 0.056086660000073604,
+      "Cholesky solve (unconstrained)": 0.0028945600002771243,
+      "NNLS PDIP (cell-driven, max_iter 50)": 0.03386476000014227,
+      "NNLS PDIP one iteration": 0.0047933400001056725,
+      "Log det Cholesky (F+\u03bbH reduced)": 0.0029028399996605,
+      "Log det Cholesky (H reduced)": 0.0029329400000278837,
+      "log_evidence_terms (eager, PDIP solution)": 0.1138600000012957
+    },
+    "nnls": {
+      "iterations": 14,
+      "converged": true,
+      "ms_per_iteration": 2.4189114285815907,
+      "one_iteration_ms": 4.7933400001056725,
+      "max_iter": 50,
+      "solver_tol": "jaxnnls default",
+      "jacobi_preconditioning": true,
+      "full_system_pdip_vs_library_reconstruction_max_abs_diff": 1.1556332386156298e-12,
+      "full_system_pdip_vs_library_reconstruction_note": "Diagnostic, never a tolerance: the library subsets the solve to solve_ids_to_keep and this row solves the full system, so the two differ by construction wherever edge zeroing drops a pixel."
+    },
+    "log_evidence_terms": {
+      "chi_squared": 20110.629840435624,
+      "regularization_term": 357.9670067021757,
+      "log_det_curvature_reg": 2233.4879203969595,
+      "log_det_regularization": 1593.0832767331349,
+      "noise_normalization": -79635.26723742482,
+      "log_evidence": 29263.132873311595
+    },
+    "log_evidence_pdip": 29263.132873311595,
+    "log_evidence_cholesky": 29271.48094704502,
+    "log_evidence_library_edge_zeroed": 29263.13287331161,
+    "d_log_evidence_full_system_pdip_minus_library": -1.4551915228366852e-11,
+    "curvature_reg_build_max_abs_diff_vs_library": 6.51925802230835e-09,
+    "curvature_reg_build_max_rel_diff_vs_library": 1.1424795307382045e-15,
+    "cond": {
+      "value": 5975972.5485216165,
+      "seconds": 0.46671620000051917,
+      "skipped": null
+    },
+    "subtracted_light_flux": 5133.552826876263,
+    "system_build_s": 5.889996199999587,
+    "log_evidence_figure_of_merit": 29263.132871662558,
+    "d_log_evidence_terms_minus_figure_of_merit": 1.6490521375089884e-06
+  },
+  "mapper_block_log_dets": {
+    "log_det_curvature_reg": {
+      "s0": 2233.4879203969595,
+      "s3": 2233.4879203969595,
+      "rel_diff": 0.0,
+      "status": "ASSERTED"
+    },
+    "log_det_regularization": {
+      "s0": 1593.0832767331349,
+      "s3": 1593.0832767331349,
+      "rel_diff": 0.0,
+      "status": "ASSERTED"
+    }
+  },
+  "mapper_block_log_det_rtol": 1e-06,
+  "mapper_block_log_det_status": "ASSERTED",
+  "active_set": {
+    "reference": "the library's own reconstruction of S3 \u2014 PDIP on the edge-zeroed problem, which is the problem the seeded active set solves",
+    "reference_log_evidence": 29263.13287331161,
+    "reference_log_evidence_full_system_pdip": 29263.132873311595,
+    "edge_zeroing_penalty_nats": -1.4551915228366852e-11,
+    "fixed0_is_edge_zero_mask": true,
+    "n_fixed0": 0,
+    "tau_rel": 1e-09,
+    "tau_rel_fp64_default": 1e-09,
+    "tau_rel_basis": "fp64 default (1e-09), as phases 0-1 calibrated it on the A100.",
+    "tau_rel_re_derived_for_precision": false,
+    "pass_budget_max": 12,
+    "smallest_certifying_budget": 1,
+    "safe_budget": 7,
+    "safe_budget_basis": "phase 3 (autolens_profiling#255): the smallest budget with ZERO fallback over a graded 41-model draw set. The fiducial budgets phases 0-2 quoted (7 rectangular / 2 Delaunay) fall back on 27.5 % / 67.5 % of that set, so a production run fixes this budget, not the one that certifies here.",
+    "safe_budget_ms": 15.226429999893298,
+    "safe_budget_certified": true,
+    "safe_budget_measured": true,
+    "safe_budget_not_measured_reason": null,
+    "safe_budget_covers_certifying_budget": true,
+    "budgets": [
+      {
+        "pass_budget": 1,
+        "ms": 4.493000000002212,
+        "n_fixed_per_pass": [
+          3
+        ],
+        "n_primal_violations_per_pass": [
+          0
+        ],
+        "n_dual_violations_per_pass": [
+          0
+        ],
+        "certified_per_pass": [
+          true
+        ],
+        "certified": true,
+        "certified_at_pass": 1,
+        "d_log_evidence_vs_library": -2.1827872842550278e-11,
+        "d_log_evidence_vs_library_clipped": -2.1827872842550278e-11,
+        "d_log_evidence_vs_full_system_pdip": -7.275957614183426e-12,
+        "max_abs_diff_vs_library": 1.2256862191861728e-12,
+        "max_rel_diff_vs_library": 2.206874516636564e-13,
+        "max_abs_diff_vs_full_system_pdip": 1.2514433933574765e-12,
+        "max_rel_diff_vs_full_system_pdip": 2.253250865174451e-13,
+        "n_negative_entries": 0
+      },
+      {
+        "pass_budget": 2,
+        "ms": 6.314709999787738,
+        "n_fixed_per_pass": [
+          3,
+          3
+        ],
+        "n_primal_violations_per_pass": [
+          0,
+          0
+        ],
+        "n_dual_violations_per_pass": [
+          0,
+          0
+        ],
+        "certified_per_pass": [
+          true,
+          true
+        ],
+        "certified": true,
+        "certified_at_pass": 1,
+        "d_log_evidence_vs_library": -2.1827872842550278e-11,
+        "d_log_evidence_vs_library_clipped": -2.1827872842550278e-11,
+        "d_log_evidence_vs_full_system_pdip": -7.275957614183426e-12,
+        "max_abs_diff_vs_library": 1.2256862191861728e-12,
+        "max_rel_diff_vs_library": 2.206874516636564e-13,
+        "max_abs_diff_vs_full_system_pdip": 1.2514433933574765e-12,
+        "max_rel_diff_vs_full_system_pdip": 2.253250865174451e-13,
+        "n_negative_entries": 0
+      },
+      {
+        "pass_budget": 3,
+        "ms": 8.035930000187363,
+        "n_fixed_per_pass": [
+          3,
+          3,
+          3
+        ],
+        "n_primal_violations_per_pass": [
+          0,
+          0,
+          0
+        ],
+        "n_dual_violations_per_pass": [
+          0,
+          0,
+          0
+        ],
+        "certified_per_pass": [
+          true,
+          true,
+          true
+        ],
+        "certified": true,
+        "certified_at_pass": 1,
+        "d_log_evidence_vs_library": -2.1827872842550278e-11,
+        "d_log_evidence_vs_library_clipped": -2.1827872842550278e-11,
+        "d_log_evidence_vs_full_system_pdip": -7.275957614183426e-12,
+        "max_abs_diff_vs_library": 1.2256862191861728e-12,
+        "max_rel_diff_vs_library": 2.206874516636564e-13,
+        "max_abs_diff_vs_full_system_pdip": 1.2514433933574765e-12,
+        "max_rel_diff_vs_full_system_pdip": 2.253250865174451e-13,
+        "n_negative_entries": 0
+      },
+      {
+        "pass_budget": 4,
+        "ms": 9.678080000230693,
+        "n_fixed_per_pass": [
+          3,
+          3,
+          3,
+          3
+        ],
+        "n_primal_violations_per_pass": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "n_dual_violations_per_pass": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "certified_per_pass": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "certified": true,
+        "certified_at_pass": 1,
+        "d_log_evidence_vs_library": -2.1827872842550278e-11,
+        "d_log_evidence_vs_library_clipped": -2.1827872842550278e-11,
+        "d_log_evidence_vs_full_system_pdip": -7.275957614183426e-12,
+        "max_abs_diff_vs_library": 1.2256862191861728e-12,
+        "max_rel_diff_vs_library": 2.206874516636564e-13,
+        "max_abs_diff_vs_full_system_pdip": 1.2514433933574765e-12,
+        "max_rel_diff_vs_full_system_pdip": 2.253250865174451e-13,
+        "n_negative_entries": 0
+      },
+      {
+        "pass_budget": 5,
+        "ms": 11.518919999798527,
+        "n_fixed_per_pass": [
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        "n_primal_violations_per_pass": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "n_dual_violations_per_pass": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "certified_per_pass": [
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "certified": true,
+        "certified_at_pass": 1,
+        "d_log_evidence_vs_library": -2.1827872842550278e-11,
+        "d_log_evidence_vs_library_clipped": -2.1827872842550278e-11,
+        "d_log_evidence_vs_full_system_pdip": -7.275957614183426e-12,
+        "max_abs_diff_vs_library": 1.2256862191861728e-12,
+        "max_rel_diff_vs_library": 2.206874516636564e-13,
+        "max_abs_diff_vs_full_system_pdip": 1.2514433933574765e-12,
+        "max_rel_diff_vs_full_system_pdip": 2.253250865174451e-13,
+        "n_negative_entries": 0
+      },
+      {
+        "pass_budget": 6,
+        "ms": 13.43607000017073,
+        "n_fixed_per_pass": [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        "n_primal_violations_per_pass": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "n_dual_violations_per_pass": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "certified_per_pass": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "certified": true,
+        "certified_at_pass": 1,
+        "d_log_evidence_vs_library": -2.1827872842550278e-11,
+        "d_log_evidence_vs_library_clipped": -2.1827872842550278e-11,
+        "d_log_evidence_vs_full_system_pdip": -7.275957614183426e-12,
+        "max_abs_diff_vs_library": 1.2256862191861728e-12,
+        "max_rel_diff_vs_library": 2.206874516636564e-13,
+        "max_abs_diff_vs_full_system_pdip": 1.2514433933574765e-12,
+        "max_rel_diff_vs_full_system_pdip": 2.253250865174451e-13,
+        "n_negative_entries": 0
+      },
+      {
+        "pass_budget": 7,
+        "ms": 15.226429999893298,
+        "n_fixed_per_pass": [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        "n_primal_violations_per_pass": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "n_dual_violations_per_pass": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "certified_per_pass": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "certified": true,
+        "certified_at_pass": 1,
+        "d_log_evidence_vs_library": -2.1827872842550278e-11,
+        "d_log_evidence_vs_library_clipped": -2.1827872842550278e-11,
+        "d_log_evidence_vs_full_system_pdip": -7.275957614183426e-12,
+        "max_abs_diff_vs_library": 1.2256862191861728e-12,
+        "max_rel_diff_vs_library": 2.206874516636564e-13,
+        "max_abs_diff_vs_full_system_pdip": 1.2514433933574765e-12,
+        "max_rel_diff_vs_full_system_pdip": 2.253250865174451e-13,
+        "n_negative_entries": 0
+      },
+      {
+        "pass_budget": 8,
+        "ms": 16.686090000075637,
+        "n_fixed_per_pass": [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        "n_primal_violations_per_pass": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "n_dual_violations_per_pass": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "certified_per_pass": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "certified": true,
+        "certified_at_pass": 1,
+        "d_log_evidence_vs_library": -2.1827872842550278e-11,
+        "d_log_evidence_vs_library_clipped": -2.1827872842550278e-11,
+        "d_log_evidence_vs_full_system_pdip": -7.275957614183426e-12,
+        "max_abs_diff_vs_library": 1.2256862191861728e-12,
+        "max_rel_diff_vs_library": 2.206874516636564e-13,
+        "max_abs_diff_vs_full_system_pdip": 1.2514433933574765e-12,
+        "max_rel_diff_vs_full_system_pdip": 2.253250865174451e-13,
+        "n_negative_entries": 0
+      },
+      {
+        "pass_budget": 9,
+        "ms": 18.755590000000666,
+        "n_fixed_per_pass": [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        "n_primal_violations_per_pass": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "n_dual_violations_per_pass": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "certified_per_pass": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "certified": true,
+        "certified_at_pass": 1,
+        "d_log_evidence_vs_library": -2.1827872842550278e-11,
+        "d_log_evidence_vs_library_clipped": -2.1827872842550278e-11,
+        "d_log_evidence_vs_full_system_pdip": -7.275957614183426e-12,
+        "max_abs_diff_vs_library": 1.2256862191861728e-12,
+        "max_rel_diff_vs_library": 2.206874516636564e-13,
+        "max_abs_diff_vs_full_system_pdip": 1.2514433933574765e-12,
+        "max_rel_diff_vs_full_system_pdip": 2.253250865174451e-13,
+        "n_negative_entries": 0
+      },
+      {
+        "pass_budget": 10,
+        "ms": 20.35647999982757,
+        "n_fixed_per_pass": [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        "n_primal_violations_per_pass": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "n_dual_violations_per_pass": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "certified_per_pass": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "certified": true,
+        "certified_at_pass": 1,
+        "d_log_evidence_vs_library": -2.1827872842550278e-11,
+        "d_log_evidence_vs_library_clipped": -2.1827872842550278e-11,
+        "d_log_evidence_vs_full_system_pdip": -7.275957614183426e-12,
+        "max_abs_diff_vs_library": 1.2256862191861728e-12,
+        "max_rel_diff_vs_library": 2.206874516636564e-13,
+        "max_abs_diff_vs_full_system_pdip": 1.2514433933574765e-12,
+        "max_rel_diff_vs_full_system_pdip": 2.253250865174451e-13,
+        "n_negative_entries": 0
+      },
+      {
+        "pass_budget": 11,
+        "ms": 22.154220000084024,
+        "n_fixed_per_pass": [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        "n_primal_violations_per_pass": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "n_dual_violations_per_pass": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "certified_per_pass": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "certified": true,
+        "certified_at_pass": 1,
+        "d_log_evidence_vs_library": -2.1827872842550278e-11,
+        "d_log_evidence_vs_library_clipped": -2.1827872842550278e-11,
+        "d_log_evidence_vs_full_system_pdip": -7.275957614183426e-12,
+        "max_abs_diff_vs_library": 1.2256862191861728e-12,
+        "max_rel_diff_vs_library": 2.206874516636564e-13,
+        "max_abs_diff_vs_full_system_pdip": 1.2514433933574765e-12,
+        "max_rel_diff_vs_full_system_pdip": 2.253250865174451e-13,
+        "n_negative_entries": 0
+      },
+      {
+        "pass_budget": 12,
+        "ms": 23.634469999888097,
+        "n_fixed_per_pass": [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        "n_primal_violations_per_pass": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "n_dual_violations_per_pass": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "certified_per_pass": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "certified": true,
+        "certified_at_pass": 1,
+        "d_log_evidence_vs_library": -2.1827872842550278e-11,
+        "d_log_evidence_vs_library_clipped": -2.1827872842550278e-11,
+        "d_log_evidence_vs_full_system_pdip": -7.275957614183426e-12,
+        "max_abs_diff_vs_library": 1.2256862191861728e-12,
+        "max_rel_diff_vs_library": 2.206874516636564e-13,
+        "max_abs_diff_vs_full_system_pdip": 1.2514433933574765e-12,
+        "max_rel_diff_vs_full_system_pdip": 2.253250865174451e-13,
+        "n_negative_entries": 0
+      }
+    ],
+    "note": "Each budget is its own lax.scan length and therefore its own compile \u2014 a search runs one fixed budget on every iterate, which is why the table is per budget rather than a single run to convergence. The fixed set is seeded with the library's edge-zero mask and those indices are never released, so a certified row certifies the problem the library poses."
+  },
+  "a2": {
+    "row": "Cholesky solve (unconstrained)",
+    "ms": 2.8945600002771243,
+    "log_evidence": 29271.48094704502,
+    "d_log_evidence_vs_library": 8.348073733410274,
+    "d_log_evidence_vs_library_clipped": -0.49099307337019127,
+    "d_log_evidence_vs_full_system_pdip": 8.348073733424826,
+    "max_abs_diff_vs_library": 0.01376809827391251,
+    "max_rel_diff_vs_library": 0.002478975837993835,
+    "max_abs_diff_vs_full_system_pdip": 0.01376809827390757,
+    "max_rel_diff_vs_full_system_pdip": 0.002478975837992805,
+    "n_negative_entries": 3,
+    "negative_flux_fraction": 2.782620976539277e-05,
+    "edge_zeroing_disabled_note": true,
+    "note": "The unconstrained solve drops the non-negativity constraint AND the edge-zero set (it solves the full system, not solve_ids_to_keep). Its evidence can therefore sit above the constrained optimum: that is an infeasible point scoring well, not a win."
+  },
+  "vmap16": {},
+  "library_row": {
+    "status": "ok",
+    "s0_ms": 175.95479000010528,
+    "s0_log_likelihood": 29263.13287658096,
+    "s3_ms": 141.1116300001595,
+    "s3_log_likelihood": 29263.13287465012,
+    "ratio_s3_over_s0": 0.8019766327479636,
+    "note": "Both legs are dense. S3 is the source-only tracer on the lens-light-subtracted dataset, so it pays no lens-light image and carries 60 fewer columns in the linear system; it is NOT a like-for-like likelihood of the same model."
+  },
+  "edge_zeroed_pixels": {
+    "s0": 0,
+    "s3": 0,
+    "note": "The count the library holds at exactly zero via solve_ids_to_keep. The active-set fixed set is seeded with it and never releases it."
+  },
+  "reconstruction_alternatives_ms": {
+    "PDIP (S0, library today)": 61.05109999989509,
+    "PDIP (S3, source-only)": 33.86476000014227,
+    "active set (S3, budget 1) \u2713": 4.493000000002212,
+    "active set (S3, budget 2) \u2713": 6.314709999787738,
+    "active set (S3, budget 3) \u2713": 8.035930000187363,
+    "active set (S3, budget 4) \u2713": 9.678080000230693,
+    "active set (S3, budget 5) \u2713": 11.518919999798527,
+    "active set (S3, budget 6) \u2713": 13.43607000017073,
+    "active set (S3, budget 7) \u2713": 15.226429999893298,
+    "active set (S3, budget 8) \u2713": 16.686090000075637,
+    "active set (S3, budget 9) \u2713": 18.755590000000666,
+    "active set (S3, budget 10) \u2713": 20.35647999982757,
+    "active set (S3, budget 11) \u2713": 22.154220000084024,
+    "active set (S3, budget 12) \u2713": 23.634469999888097,
+    "Cholesky (S3, A2: no positivity)": 2.8945600002771243
+  },
+  "peak_bytes": {
+    "after_setup": 10897408,
+    "after_s0": 285212672,
+    "after_s3": 285212672,
+    "after_all": 541277184,
+    "note": "jax.devices()[0].memory_stats()['peak_bytes_in_use']; None on a backend that does not report it (CPU). Process-wide high-water marks."
+  },
+  "jit_phases": {
+    "s0_curvature_reg_build_jit": {
+      "lower_s": 0.11053499999979977,
+      "compile_s": 0.5108527999982471,
+      "first_call_s": 0.4487660999984655,
+      "steady_per_call_s": 0.06537360000002082
+    },
+    "s0_cholesky_solve_jit": {
+      "lower_s": 0.05978739999773097,
+      "compile_s": 0.39149879999968107,
+      "first_call_s": 0.038434300000517396,
+      "steady_per_call_s": 0.004040170000007492
+    },
+    "s0_nnls_pdip_jit": {
+      "lower_s": 0.45823290000043926,
+      "compile_s": 1.707127199999377,
+      "first_call_s": 0.2654562999996415,
+      "steady_per_call_s": 0.06105109999989509
+    },
+    "s0_nnls_pdip_one_iteration_jit": {
+      "lower_s": 0.03440659999978379,
+      "compile_s": 0.5343901999985974,
+      "first_call_s": 0.01078120000238414,
+      "steady_per_call_s": 0.004801850000148988
+    },
+    "s0_log_det_curvature_reg_jit": {
+      "lower_s": 0.019979299999249633,
+      "compile_s": 0.11297100000228966,
+      "first_call_s": 0.004127299998799572,
+      "steady_per_call_s": 0.0028329000000667293
+    },
+    "s0_log_det_regularization_jit": {
+      "lower_s": 0.0003169999981764704,
+      "compile_s": 1.1600001016631722e-05,
+      "first_call_s": 0.002841700003045844,
+      "steady_per_call_s": 0.0028401399998983835
+    },
+    "s3_curvature_reg_build_jit": {
+      "lower_s": 0.012108999999327352,
+      "compile_s": 0.11056770000141114,
+      "first_call_s": 0.05728639999870211,
+      "steady_per_call_s": 0.056086660000073604
+    },
+    "s3_cholesky_solve_jit": {
+      "lower_s": 0.010393199998361524,
+      "compile_s": 0.10286099999939324,
+      "first_call_s": 0.004240599999320693,
+      "steady_per_call_s": 0.0028945600002771243
+    },
+    "s3_nnls_pdip_jit": {
+      "lower_s": 0.03870370000004186,
+      "compile_s": 0.41142580000087037,
+      "first_call_s": 0.03960950000328012,
+      "steady_per_call_s": 0.03386476000014227
+    },
+    "s3_nnls_pdip_one_iteration_jit": {
+      "lower_s": 0.024686900000233436,
+      "compile_s": 0.4803953000009642,
+      "first_call_s": 0.012860899998486275,
+      "steady_per_call_s": 0.0047933400001056725
+    },
+    "s3_log_det_curvature_reg_jit": {
+      "lower_s": 0.00036220000038156286,
+      "compile_s": 1.5300000086426735e-05,
+      "first_call_s": 0.0029514999987441115,
+      "steady_per_call_s": 0.0029028399996605
+    },
+    "s3_log_det_regularization_jit": {
+      "lower_s": 0.00030899999910616316,
+      "compile_s": 1.2300002708798274e-05,
+      "first_call_s": 0.0029031000012764707,
+      "steady_per_call_s": 0.0029329400000278837
+    },
+    "s3_active_set_masked_p1_jit": {
+      "lower_s": 0.045277199998963624,
+      "compile_s": 0.2428338999998232,
+      "first_call_s": 0.00795060000018566,
+      "steady_per_call_s": 0.004493000000002212
+    },
+    "s3_active_set_masked_p2_jit": {
+      "lower_s": 0.035212099999625934,
+      "compile_s": 0.40492749999975786,
+      "first_call_s": 0.015275099998689257,
+      "steady_per_call_s": 0.006314709999787738
+    },
+    "s3_active_set_masked_p3_jit": {
+      "lower_s": 0.03170790000149282,
+      "compile_s": 0.3789835999996285,
+      "first_call_s": 0.014494000002741814,
+      "steady_per_call_s": 0.008035930000187364
+    },
+    "s3_active_set_masked_p4_jit": {
+      "lower_s": 0.03516920000038226,
+      "compile_s": 0.3710309000016423,
+      "first_call_s": 0.016724699999031145,
+      "steady_per_call_s": 0.009678080000230693
+    },
+    "s3_active_set_masked_p5_jit": {
+      "lower_s": 0.03210480000052485,
+      "compile_s": 0.3979676000017207,
+      "first_call_s": 0.021131299999979092,
+      "steady_per_call_s": 0.011518919999798528
+    },
+    "s3_active_set_masked_p6_jit": {
+      "lower_s": 0.040363000000070315,
+      "compile_s": 0.39158810000299127,
+      "first_call_s": 0.019009100000403123,
+      "steady_per_call_s": 0.01343607000017073
+    },
+    "s3_active_set_masked_p7_jit": {
+      "lower_s": 0.03157940000164672,
+      "compile_s": 0.3932095999989542,
+      "first_call_s": 0.02079030000095372,
+      "steady_per_call_s": 0.015226429999893298
+    },
+    "s3_active_set_masked_p8_jit": {
+      "lower_s": 0.034643699997104704,
+      "compile_s": 0.43390520000320976,
+      "first_call_s": 0.02274760000000242,
+      "steady_per_call_s": 0.016686090000075638
+    },
+    "s3_active_set_masked_p9_jit": {
+      "lower_s": 0.03183499999795458,
+      "compile_s": 0.41857420000087586,
+      "first_call_s": 0.029080899999826215,
+      "steady_per_call_s": 0.018755590000000665
+    },
+    "s3_active_set_masked_p10_jit": {
+      "lower_s": 0.03410280000025523,
+      "compile_s": 0.3966824000017368,
+      "first_call_s": 0.02701600000000326,
+      "steady_per_call_s": 0.02035647999982757
+    },
+    "s3_active_set_masked_p11_jit": {
+      "lower_s": 0.035134300000208896,
+      "compile_s": 0.3981702999990375,
+      "first_call_s": 0.028679299997747876,
+      "steady_per_call_s": 0.022154220000084025
+    },
+    "s3_active_set_masked_p12_jit": {
+      "lower_s": 0.034156500001699897,
+      "compile_s": 0.41016969999691355,
+      "first_call_s": 0.030552399999578483,
+      "steady_per_call_s": 0.023634469999888098
+    },
+    "s0_library_likelihood_jit": {
+      "lower_s": 4.566181499998493,
+      "compile_s": 24.945377500000177,
+      "first_call_s": 0.8337124000026961,
+      "steady_per_call_s": 0.17595479000010528
+    },
+    "s3_library_likelihood_jit": {
+      "lower_s": 0.5752217000008386,
+      "compile_s": 3.8946614999986195,
+      "first_call_s": 0.4912135999984457,
+      "steady_per_call_s": 0.1411116300001595
+    }
+  },
+  "pinned_expected": null,
+  "pinned_drift": []
+}
