@@ -434,6 +434,107 @@ def device_info_dict() -> dict:
     return info
 
 
+#: The two DISJOINT thread-knob families a CPU timing depends on. ``NPROC``
+#: sizes XLA's CPU intra-op thread pool — it is what throttles a JAX-CPU row
+#: (autolens_profiling `reference_nproc_throttles_jax_cpu`) — while the BLAS
+#: knobs pin OpenBLAS / MKL / OpenMP and govern the numpy/scipy rows without
+#: touching JAX at all. A CPU number is uninterpretable without both, so both
+#: are recorded on every CPU timing.
+JAX_THREAD_ENV_VARS = ("NPROC",)
+BLAS_THREAD_ENV_VARS = (
+    "OMP_NUM_THREADS",
+    "OPENBLAS_NUM_THREADS",
+    "MKL_NUM_THREADS",
+    "VECLIB_MAXIMUM_THREADS",
+    "NUMEXPR_NUM_THREADS",
+)
+
+
+def _proc_field(path: str, key: str) -> str | None:
+    """First ``key`` line of a ``/proc`` file, value only. ``None`` if absent."""
+    try:
+        with open(path) as f:
+            for line in f:
+                if line.startswith(key):
+                    return line.split(":", 1)[-1].strip()
+    except OSError:
+        return None
+    return None
+
+
+def machine_info_dict() -> dict:
+    """The host a timing was taken on — CPU, RAM, kernel, threads, GPU.
+
+    The companion of :func:`device_info_dict`, which records the *JAX* device.
+    This records the *machine*, and it exists because a laptop row and a
+    cluster row are only comparable when the laptop is described: which CPU,
+    how many cores were actually usable, how much RAM, which kernel, and —
+    when one is present — which GPU at which driver.
+
+    **``nproc`` is not the core count.** GNU ``nproc`` honours
+    ``OMP_NUM_THREADS``, so on a shell that exports ``OMP_NUM_THREADS=1`` it
+    prints 1 on an 8-core machine. ``nproc --all`` is the physical answer and
+    both are recorded, precisely so the discrepancy is visible rather than
+    silently halving a reader's understanding of a row.
+    """
+    import platform
+    import shutil
+
+    def _nproc(*args: str) -> int | None:
+        exe = shutil.which("nproc")
+        if exe is None:
+            return None
+        try:
+            return int(subprocess.check_output([exe, *args], timeout=5).decode().strip())
+        except Exception:  # noqa: BLE001 — an absent nproc is not an error
+            return None
+
+    mem_total_kb = _proc_field("/proc/meminfo", "MemTotal")
+    info = {
+        "cpu_model": _proc_field("/proc/cpuinfo", "model name"),
+        "cpu_count_os": os.cpu_count(),
+        "nproc": _nproc(),
+        "nproc_all": _nproc("--all"),
+        "nproc_note": (
+            "GNU nproc honours OMP_NUM_THREADS, so `nproc` can print 1 on a "
+            "multi-core host; `nproc_all` is the core count."
+        ),
+        "ram_total": mem_total_kb,
+        "kernel": platform.release(),
+        "platform": platform.platform(),
+        "python": platform.python_version(),
+        "jax_thread_env": {k: os.environ.get(k) for k in JAX_THREAD_ENV_VARS},
+        "blas_thread_env": {k: os.environ.get(k) for k in BLAS_THREAD_ENV_VARS},
+        "thread_env_note": (
+            "NPROC sizes XLA's CPU intra-op pool (the JAX rows); the BLAS knobs "
+            "pin OpenBLAS/MKL/OpenMP (the numpy/scipy rows) and do not touch "
+            "JAX. Two disjoint families; both are recorded on every CPU timing."
+        ),
+        "gpu": None,
+    }
+
+    try:
+        out = (
+            subprocess.check_output(
+                [
+                    "nvidia-smi",
+                    "--query-gpu=name,memory.total,driver_version",
+                    "--format=csv,noheader",
+                ],
+                stderr=subprocess.DEVNULL,
+                timeout=5,
+            )
+            .decode()
+            .strip()
+        )
+        if out:
+            info["gpu"] = out.replace("\n", "; ")
+    except Exception:  # noqa: BLE001 — no GPU on this host is a fact, not an error
+        pass
+
+    return info
+
+
 def resolve_output_paths(
     cli: ProfileCLI,
     default_dir: Path,

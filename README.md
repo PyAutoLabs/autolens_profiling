@@ -163,6 +163,16 @@ separately per likelihood × transform. Standing conclusions:
   `solve_ids_to_keep` *before* calling its solver, and `lax.cond` under `vmap` runs both
   branches.
   Findings: [`results/notes/fixed_lens_light_library_path_2026_09.md`](./results/notes/fixed_lens_light_library_path_2026_09.md).
+- **Fixed lens light on CPU and a consumer GPU (2026-09)** — the phase-1 rows again on a laptop:
+  JAX-CPU at 1 and 8 threads, and an RTX 2060 (6 GB) in fp64 and mixed precision. The certified
+  active set wins everywhere and the prize shrinks with the hardware — 2.03×/2.56×/2.01× on the
+  A100, 1.28×/1.48×/1.46× on the RTX 2060, 1.83×/1.74×/1.35× on 8 CPU threads, 1.16–1.22× on one.
+  The GeForce fp64 penalty never bit (mixed precision buys 5–8 % for ≤ 2.5e-3 nats and 16 % more
+  VRAM); **memory is the consumer wall** — `@vmap 16` needs 11.88 GiB, batch 4 OOMs, batch 2 is
+  slower than a single call, and the same shape OOM-killed a 16 GB host. In numpy the certified
+  active set does *not* beat the library's own `fnnls` NNLS, and both are 1.9–3.6× slower at 8
+  BLAS threads than at 1.
+  Findings: [`results/notes/fixed_lens_light_hardware_2026_09.md`](./results/notes/fixed_lens_light_hardware_2026_09.md).
 
 ## How to read this repo
 
