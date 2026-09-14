@@ -3,9 +3,13 @@
   "device": {
     "backend": "cpu",
     "device": "cpu:0",
+    "hostname": "DESKTOP-H143S82",
     "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
     "omp_num_threads": "1",
-    "cpu_count": 8
+    "cpu_count": 8,
+    "jax_compilation_cache_dir": "/home/jammy/.cache/pyauto_jax",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true
   },
   "instrument": "hst",
   "configuration": {
@@ -29,22 +33,22 @@
     "omp_num_threads": "1",
     "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
   },
-  "full_pipeline_single_jit": 2.546184300000095,
+  "full_pipeline_single_jit": 3.35121137999995,
   "deflections_memo_off": {
     "first_call_s": [
-      20.633017800002563,
-      11.78735400000005,
-      10.662058599999
+      15.312484100000802,
+      16.7745986000009,
+      16.45382140000038
     ],
-    "first_call_median_s": 11.78735400000005,
-    "first_call_min_s": 10.662058599999,
+    "first_call_median_s": 16.45382140000038,
+    "first_call_min_s": 15.312484100000802,
     "steady_s": [
-      2.664658260000215,
-      2.499270820000311,
-      2.70003398000008
+      4.743824550000136,
+      3.971219689999998,
+      3.344025799999872
     ],
-    "steady_median_s": 2.664658260000215,
-    "steady_min_s": 2.499270820000311,
+    "steady_median_s": 3.971219689999998,
+    "steady_min_s": 3.344025799999872,
     "wofz_compile": {
       "numpy": 0,
       "jnp": 240
@@ -65,19 +69,19 @@
   },
   "deflections_memo_on": {
     "first_call_s": [
-      11.56574819999878,
-      5.001198300000397,
-      6.233408000000054
+      10.942646199999217,
+      6.212954600001467,
+      7.458604999999807
     ],
-    "first_call_median_s": 6.233408000000054,
-    "first_call_min_s": 5.001198300000397,
+    "first_call_median_s": 7.458604999999807,
+    "first_call_min_s": 6.212954600001467,
     "steady_s": [
-      2.3654207399998994,
-      2.546184300000095,
-      2.7549897600001714
+      4.265327579999939,
+      3.35121137999995,
+      2.7672698200000014
     ],
-    "steady_median_s": 2.546184300000095,
-    "steady_min_s": 2.3654207399998994,
+    "steady_median_s": 3.35121137999995,
+    "steady_min_s": 2.7672698200000014,
     "wofz_compile": {
       "numpy": 180,
       "jnp": 0
@@ -135,14 +139,6 @@
   },
   "log_likelihood": -56107.03327291309,
   "log_likelihood_memo_off": -56107.03327291354,
-  "pinned_expected": -56107.56407588643,
-  "pinned_drift": [
-    {
-      "label": "jax_mge_mass",
-      "expected": -56107.56407588643,
-      "got": -56107.03327291309,
-      "rel_diff": 9.460453008161982e-06,
-      "rtol": 1e-06
-    }
-  ]
+  "pinned_expected": -56107.03327291309,
+  "pinned_drift": []
 }

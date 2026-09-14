@@ -131,6 +131,17 @@ it measures the same computation — *not* library regression testing (that is
 - **PyAutoHeart pairing**: the `pinned_drift` JSON field is the machine
   surface Heart's vitals scan reads (tracked as its own Mind task,
   `feature/pyautoheart/profiling_drift_check.md`).
+- **`pinned_drift` is a fault list, not a comparison log** (added 2026-09-14,
+  autolens_profiling#261). Heart's contract is "empty `pinned_drift` = every
+  compared value matched", so a cell that also records a deliberate
+  *estimate-vs-exact* comparison must write those rows under their **own**
+  top-level key, never into `pinned_drift`. The first case was
+  `likelihood_breakdown/matrix_free.py`, which appended its SLQ (stochastic
+  Lanczos quadrature) rows — `rtol: null`, "recorded, never a fault" — to
+  `pinned_drift`, so all three committed A100 matrix-free results read as
+  drifted to Heart while every Cholesky pin passed at 1e-13. They now go to
+  `slq_pin_comparison`. Any future recorded-but-not-asserted comparison follows
+  the same rule.
 
 ## CPU-usability policy (added phase 3, user-directed)
 
