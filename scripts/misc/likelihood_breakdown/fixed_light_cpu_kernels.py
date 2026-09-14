@@ -67,7 +67,7 @@ from typing import Any
 import numpy as np
 import scipy.linalg
 
-from likelihood_breakdown import active_set_steps
+from likelihood_breakdown import active_set_steps, fixed_light_system
 
 __all__ = [
     "BLAS_THREAD_VARS",
@@ -201,19 +201,13 @@ def solver_view_of(system) -> dict:
     }
 
 
-def _jacobi_scaled_np(curvature_reg_matrix, data_vector):
-    """``reconstruction_steps.jacobi_scaled`` in pure numpy.
-
-    The same preconditioning the library applies on both its paths
-    (``inversion_util.py:355-375``): ``d = sqrt(diag Q)``, ``D = 1/d``, solve
-    ``(D Q D) y = D q``, recover ``x = y * D``. Re-expressed in numpy here so a
-    CPU kernel row imports no JAX — these rows exist precisely to measure what
-    the CPU costs without it.
-    """
-    crm = np.asarray(curvature_reg_matrix, dtype=float)
-    dv = np.asarray(data_vector, dtype=float)
-    d_scale = 1.0 / np.sqrt(np.diag(crm))
-    return (crm * d_scale[:, None]) * d_scale[None, :], dv * d_scale, d_scale
+#: The numpy Jacobi scaling, **promoted** to
+#: ``likelihood_breakdown.fixed_light_system.jacobi_scaled_np`` so the numba CPU
+#: cell can reach it without importing this module (which pulls in
+#: ``active_set_steps``, and with it JAX). This name is an alias of that
+#: function — the same object, not a second copy — so every row measured through
+#: it is measured through the promoted implementation.
+_jacobi_scaled_np = fixed_light_system.jacobi_scaled_np
 
 
 def _scored(system, x_full, reference_log_evidence):

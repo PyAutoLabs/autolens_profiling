@@ -32,15 +32,19 @@ The package is imported as ``from likelihood_breakdown import timing`` —
 See ``README.md`` for the dense <-> sparse row correspondence.
 """
 
-from likelihood_breakdown.timing import (
-    Timer,
-    block,
-    jit_profile,
-    parse_vmap_batch,
-    split_by_successive_differences,
-    vmap_profile,
-)
-
+#: The ``timing`` names this package re-exports, resolved LAZILY (PEP 562).
+#:
+#: ``timing`` imports ``jax`` at module level, so importing it here made
+#: ``import likelihood_breakdown.<anything>`` an import of JAX — including
+#: ``fixed_light_system`` and ``call_accounting``, the two modules that exist
+#: precisely so a numba CPU cell can measure the likelihood with no JAX in the
+#: process (its device block records ``use_jax: false`` and it asserts
+#: ``"jax" not in sys.modules`` after its imports).
+#:
+#: Every consumer in this repo imports the *submodule*
+#: (``from likelihood_breakdown import timing``), which never went through these
+#: names; the ``__getattr__`` below keeps ``likelihood_breakdown.Timer`` working
+#: for anything that does not.
 __all__ = [
     "Timer",
     "block",
@@ -49,3 +53,15 @@ __all__ = [
     "split_by_successive_differences",
     "vmap_profile",
 ]
+
+
+def __getattr__(name):
+    if name in __all__:
+        from likelihood_breakdown import timing
+
+        return getattr(timing, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__():
+    return sorted(set(globals()) | set(__all__))
