@@ -444,6 +444,12 @@ solve, and not the log-dets.
    in **3 factorisations** on Delaunay against 17 PDIP iterations, and the evidence
    converges within 4 factorisations on rectangular (certification at 13). With the MGE
    still in the system the scheme never certifies.
+   **Answered 2026-09-13 on the A100** — see
+   [`fixed_lens_light_source_only_2026_09.md`](./fixed_lens_light_source_only_2026_09.md)
+   (autolens_profiling #248): the source-only system drops cond(F+λH) to 1.2e7 / 2.1e6, the
+   library call falls 26–30 %, and the certified active-set solve returns the exact
+   constrained optimum in 4.21 ms at pass 2 (Delaunay) / 11.05 ms at pass 7 (rectangular)
+   against a 25.8–28.3 ms S3 PDIP row.
 2. **The PyAutoArray matrix-free phase is NOT filed.** This is a no-go, and the note is the
    record of why. A structure-aware preconditioner — rectangular λH is a grid Laplacian, so
    a DCT preconditioner is available — remains a possible research prompt, but it cannot fix

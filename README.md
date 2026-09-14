@@ -145,6 +145,14 @@ separately per likelihood × transform. Standing conclusions:
   0.5-nat bar); cond(F+λH) ≈ 4e10 is set by the linear-MGE columns. Dense and sparse
   single calls fit an A100 to n=12000; the NNLS row is 60–85 % of every call.
   Findings: [`results/notes/matrix_free_pixelized_2026_09.md`](./results/notes/matrix_free_pixelized_2026_09.md).
+- **Fixed lens light, source-only inversion (2026-09)** — with the MGE converted to
+  regular profiles at their solved intensities and subtracted ("S3"), cond(F+λH) drops
+  4.1e10 → 1.2e7 / 2.1e6 and the library call falls 26–30 % with no solver change
+  (rect 51.7 → 38.4 ms). A certified active-set positive solve then returns the exact
+  constrained optimum (≤ 1.2e-10 nats) in 4.21 ms at pass 2 on Delaunay and 11.05 ms at
+  pass 7 on rectangular, against a 25.8–28.3 ms S3 PDIP row; dropping positivity costs
+  6.4 / 335 nats and stays blocked on an injection witness.
+  Findings: [`results/notes/fixed_lens_light_source_only_2026_09.md`](./results/notes/fixed_lens_light_source_only_2026_09.md).
 
 ## How to read this repo
 
