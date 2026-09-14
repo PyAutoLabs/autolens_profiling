@@ -1,0 +1,173 @@
+#!/bin/bash -l
+#
+# 2026-09 fixed-lens-light VERDICT legs (autolens_profiling#259, epic phase 5 — the last).
+#
+# Phases 0-4 measured the fixed-lens-light rows on HST only, one axis at a time.
+# Phase 5 is the assessment the human asked for: what the WHOLE likelihood call
+# costs on real survey data, on each hardware type, and which configuration
+# production should use. This array is the EUCLID x rectangular quarter of the
+# A100 grid — three arms at --source-pixels 500 / 1250 / 2500.
+#
+# FOUR ROUTES, not six (--routes a,b,c,d):
+#
+#   a   S0 PDIP                  the system + solver the library runs TODAY
+#   b   S3 PDIP                  source-only; the reference every S3 route scores against
+#   c   S3 positive-negative     use_positive_only_solver=False -> xp.linalg.solve.
+#                                Positivity off ALSO disables edge zeroing
+#                                (Inversion.solve_ids_to_keep returns None,
+#                                abstract.py:540), so this row is never quoted without
+#                                its delta-log-evidence in NATS and its negative-pixel
+#                                count -- both are in the JSON.
+#   d   S3 certified active set  at the PRODUCTION budget, with the PDIP fallback.
+#
+# Routes d0 and e are phase-1 diagnostics (the batched cost without the cond, and
+# the always-fallback worst case). They are measured and written up in
+# results/notes/fixed_lens_light_library_path_2026_09.md and are skipped here so a
+# leg is four library rows rather than six.
+#
+#   --pass-budget auto     Route d runs at the budget a PRODUCTION search would FIX:
+#                          phase 3's zero-fallback budget for this mesh (11),
+#                          not phase 0's fiducial budget, which falls back on 27.5 %
+#                          (rectangular) / 67.5 % (Delaunay) of a graded 41-model draw
+#                          set (autolens_profiling#255). The certification sweep still
+#                          scans budgets 1..12 and RECORDS the smallest budget that
+#                          certifies at this (dataset, mesh, N) — a per-configuration
+#                          fact that has never been measured on Euclid at all, and one
+#                          phase 4 showed does not track N (#257: rect 5-10, Delaunay
+#                          1-2 over a factor eight in pixels).
+#   --pins fp64            The phase-0 S0 log-det pins describe HST at the FIDUCIAL
+#                          mesh. No arm of this array is that configuration — and no Euclid pin has ever been calibrated,
+#                          so every arm records rather than asserts: the log
+#                          determinants, the evidences and the certifying budget go
+#                          into a `reference_recorded` block as DATA. The equivalence
+#                          pins (route d == route b, route b == route a, route c ==
+#                          the unconstrained Cholesky) are identities, not
+#                          calibrations, and ARE asserted on every arm.
+#
+# No --vmap-batch on this phase. Phase 4 measured the batched @vmap 16 amortisation
+# falling 3.6x -> 0.7x between N=500 and N=4000 on the A100 and answered the batching
+# question there; phase 5 times the single call, which is what the production
+# configuration is stated in.
+#
+# A leg that OOMs or is killed on the wall clock is a RESULT, not a gap: the verdict
+# note prints it as such rather than dropping the row. Nothing in that note is
+# extrapolated.
+#
+# Every leg starts from an EMPTY JAX compilation cache: a seeded XLA autotune cache
+# silently changes kernels (results/notes/xla_autotune_triton_gemm.md -- F 4.8 vs
+# 25.6 ms on the same code).
+#
+# parse_known_args IGNORES unknown flags, so a checkout WITHOUT this cell's
+# --dataset / --pass-budget auto / --routes flags would run and silently produce a
+# different table -- check configuration.dataset, configuration.pass_budget_mode and
+# configuration.routes_selected in the JSON.
+
+#SBATCH -J flv_pixelization_euclid
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=12:00:00
+#SBATCH --array=0-2
+#SBATCH -o output/output.%A_%a.out
+#SBATCH -e error/error.%A_%a.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+# Derive the repo root from where this was submitted (hpc/batch_gpu/../..) rather
+# than hardcoding /mnt/ral/jnightin/autolens_profiling: the canonical RAL checkout
+# sits on main with a dirty tree, so this runs from a worktree of the feature
+# branch. The -o/-e paths above are relative, so sbatch from inside hpc/batch_gpu/
+# (submit_fixed_light_verdict.sh does the cd for you).
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding"
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+SOURCE_PIXELS=(500 1250 2500)
+N_SRC=${SOURCE_PIXELS[$SLURM_ARRAY_TASK_ID]}
+if [ -z "$N_SRC" ]; then
+    echo "FATAL: no source-pixel count for array task ${SLURM_ARRAY_TASK_ID} (expected 0-2)." >&2
+    exit 1
+fi
+
+# The euclid dataset is gitignored and auto-simulated on first use. Three arms
+# racing to write the same dataset/imaging/euclid/ would interleave their FITS
+# writes, so the launcher simulates it ONCE before submitting; this is the check
+# that it did.
+if [ ! -f "$AP_ROOT/dataset/imaging/euclid/data.fits" ]; then
+    echo "FATAL: dataset/imaging/euclid/data.fits missing. Simulate it once before" >&2
+    echo "       submitting (concurrent arms must not auto-simulate the same dir)." >&2
+    exit 1
+fi
+
+# Fresh per-job compilation cache. output/ is gitignored, so these never reach
+# git; ${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID} keeps concurrent arms on the
+# same node from sharing one.
+export JAX_COMPILATION_CACHE_DIR="$AP_ROOT/output/jax_cache/fixed_light_verdict_pixelization_euclid_${SLURM_ARRAY_JOB_ID:-local}_${SLURM_ARRAY_TASK_ID:-0}"
+rm -rf "$JAX_COMPILATION_CACHE_DIR" && mkdir -p "$JAX_COMPILATION_CACHE_DIR"
+echo "JAX_COMPILATION_CACHE_DIR=$JAX_COMPILATION_CACHE_DIR (fresh)"
+
+nvidia-smi
+
+echo "=========================================="
+date
+hostname
+echo "Task:           $SLURM_ARRAY_TASK_ID / 2"
+echo "Cell:           likelihood_breakdown/imaging/fixed_light_library"
+echo "Dataset:        euclid (0.1\"/px)"
+echo "Precision:      fp64"
+echo "Inversion path: dense (mapping matrices, InversionImagingMapping)"
+echo "Source mesh:    rectangular"
+echo "Source pixels:  --source-pixels $N_SRC (requested; the cell reports what it built)"
+echo "Routes:         a,b,c,d"
+echo "Pass budget:    auto -> 11 (phase 3 zero-fallback budget for this mesh)"
+echo "Config name:    hpc_a100_fp64_fixed_light_library"
+echo "VERDICT_LEG mesh=rectangular dataset=euclid n=$N_SRC hardware=hpc_a100_fp64"
+echo "Flags:          --mesh rectangular --dataset euclid --source-pixels $N_SRC --pass-budget auto --routes a,b,c,d --pins fp64 --config-name hpc_a100_fp64_fixed_light_library"
+
+echo "=== source revisions (shared install, untouched) ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r" "$(git -C /mnt/ral/jnightin/PyAuto/$r rev-parse HEAD 2>&1)"
+done
+echo "AP_ROOT rev:   $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+
+cd $AP_ROOT
+
+echo "=== import provenance ==="
+python3 -c "import autoarray, autolens; print('autoarray.__file__ =', autoarray.__file__); print('autoarray.__version__ =', autoarray.__version__); print('autolens.__file__ =', autolens.__file__)"
+
+# --- background peak-VRAM sampler (killed after the run) ---
+echo "=== nvidia-smi memory.used sampler (every 5 s) ==="
+nvidia-smi --query-gpu=memory.used --format=csv -l 5 &
+VRAM_SAMPLER_PID=$!
+trap 'kill "$VRAM_SAMPLER_PID" 2>/dev/null' EXIT
+
+python3 -u scripts/imaging/likelihood_breakdown/fixed_light_library.py \
+    --mesh rectangular \
+    --dataset euclid \
+    --source-pixels $N_SRC \
+    --pass-budget auto \
+    --routes a,b,c,d \
+    --pins fp64 \
+    --config-name hpc_a100_fp64_fixed_light_library
+
+kill "$VRAM_SAMPLER_PID" 2>/dev/null
+trap - EXIT
+
+# Autotune-cache census. Must be non-fatal: the directory only exists if XLA
+# wrote autotune results, and activate.sh's ERR trap fails the job on any
+# non-zero exit (the `ls` failure is swallowed by the pipe to `wc -l`).
+echo -n "AUTOTUNE_ENTRIES count="
+ls "$JAX_COMPILATION_CACHE_DIR/xla_gpu_per_fusion_autotune_cache_dir" 2>/dev/null | wc -l
+
+echo "Finished."
+date
