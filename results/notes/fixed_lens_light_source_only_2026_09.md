@@ -32,7 +32,11 @@ because its **dual** violation set drains one or two indices at a time.
   library's own PDIP only (51.7 → 38.4 ms rect). Every "≈ 24 ms / ≈ 14 ms per call" figure
   below is *arithmetic on measured rows* — the S3 library call minus the PDIP-row-to-
   certified-row difference — and stays a projection until phase 1 of the
-  `fixed-lens-light-profiling` epic measures it. No sparse-operator leg (the sparse context
+  `fixed-lens-light-profiling` epic measures it. **Phase 1 has now measured it**
+  ([#251](https://github.com/PyAutoLabs/autolens_profiling/issues/251), note
+  [`fixed_lens_light_library_path_2026_09.md`](./fixed_lens_light_library_path_2026_09.md),
+  2026-09-13): the certified route inside `FitImaging.figure_of_merit` is 25.10 / 25.39 /
+  36.26 ms against the 23.7 / 25.0 / 33.1 ms projected below — the projection held. No sparse-operator leg (the sparse context
   rejects the multi-func-list S3 build and its weight map ignores the subtraction — bug
   filed, see "Next"). No CPU or consumer-GPU leg. No low-likelihood draws: every leg is the
   same good model. No PyAutoArray change — nothing in the library moved.
@@ -248,7 +252,12 @@ answer:
 
 1. **Library-path timing** of the S3 unconstrained (positive-negative) solve with the MGE
    subtracted as fixed regular profiles, and of the certified scheme — the row this note
-   could not measure (`fixed_light_unconstrained_library_path.md`).
+   could not measure (`fixed_light_unconstrained_library_path.md`). **DONE 2026-09-13**
+   ([#251](https://github.com/PyAutoLabs/autolens_profiling/issues/251)) — note
+   [`fixed_lens_light_library_path_2026_09.md`](./fixed_lens_light_library_path_2026_09.md):
+   the library call falls 50.97 → 25.10 ms (rect, 2.03×) / 65.10 → 25.39 ms (Delaunay, 2.56×) /
+   72.95 → 36.26 ms (DelaunayNN, 2.01×) with the certified active set injected at the library's
+   own solver entry point, and the positive-negative route stays prohibited at +334.93 nats.
 2. **The same cell on CPU and on the laptop RTX 2060** (`PyAutoGPU` venv), fp64 and mixed
    precision — consumer-GPU optimisation now that the method is converging
    (`fixed_light_cpu_and_consumer_gpu.md`).
