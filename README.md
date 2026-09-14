@@ -173,6 +173,20 @@ separately per likelihood × transform. Standing conclusions:
   active set does *not* beat the library's own `fnnls` NNLS, and both are 1.9–3.6× slower at 8
   BLAS threads than at 1.
   Findings: [`results/notes/fixed_lens_light_hardware_2026_09.md`](./results/notes/fixed_lens_light_hardware_2026_09.md).
+- **Fixed lens light on low-likelihood draws (2026-09)** — is the certified active set fast only
+  because the model is good? A seeded 41-model draw set (four one-parameter walks bisected onto
+  Δlog L ≈ −10 / −100 / −1000 / −1e4, plus 24 random draws from SLaM-like priors at 5σ), run on
+  the A100 and on JAX-CPU. **Both phase-0 pass budgets break.** The pass count *grows* with model
+  error on Delaunay (Spearman +0.698; pass 2 falls back on **67.5 %** of the set and 95.8 % of the
+  random draws) and *falls* on rectangular (−0.535 — a worse model has a bigger active set but an
+  easier one), where the spread alone puts the pass-7 budget at a **27.5 %** fallback rate. The
+  smallest zero-fallback budgets are **7 (Delaunay)** and **11 (rectangular)**. The lever survives
+  at about half its fiducial headline — 2.6×/5.4× median over PDIP, worst draw still faster than
+  the best PDIP call — and PDIP's own cost barely moves with the model (15→17 / 17→21 iterations),
+  so budget-plus-fallback stays the right design. Pass counts and PDIP iterations are **identical**
+  on the A100 and the CPU, so the fallback rate is a property of the problem. Dropping positivity
+  is now unambiguously out: the A2 error grows to +4.1e4 / +6.3e3 nats.
+  Findings: [`results/notes/fixed_lens_light_low_likelihood_draws_2026_09.md`](./results/notes/fixed_lens_light_low_likelihood_draws_2026_09.md).
 
 ## How to read this repo
 

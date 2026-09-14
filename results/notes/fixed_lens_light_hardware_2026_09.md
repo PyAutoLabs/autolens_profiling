@@ -339,11 +339,18 @@ matched-injection witness phase 0 demanded. Cheapness on a laptop is not a new a
 ## Next
 
 Phase 3 of the PyAutoMind epic **`fixed-lens-light-profiling`**
-(`draft/research/autolens_profiling/fixed_light_certified_low_likelihood_draws.md`): is the
-certified active set fast only because the model is good? Every leg in phases 0–2 is the same
-fiducial draw; phase 3 grades a draw set by Δlog L and asks whether the certifying pass budget
-holds away from the optimum. Phases 4 (source-pixel scaling across hardware) and 5 (the HST +
-Euclid verdict) follow in order.
+(`active/fixed_light_certified_low_likelihood_draws.md`): is the certified active set fast only
+because the model is good? Every leg in phases 0–2 is the same fiducial draw; phase 3 grades a
+draw set by Δlog L and asks whether the certifying pass budget holds away from the optimum.
+**DONE 2026-09-13** ([#255](https://github.com/PyAutoLabs/autolens_profiling/issues/255), note
+[`fixed_lens_light_low_likelihood_draws_2026_09.md`](./fixed_lens_light_low_likelihood_draws_2026_09.md)):
+**it does not.** Over a seeded 41-model draw set the pass count *grows* with model error on
+Delaunay (Spearman +0.698) and *falls* on rectangular (−0.535), and both phase-0 budgets break —
+Delaunay's pass 2 falls back on **67.5 %** of the set, rectangular's pass 7 on **27.5 %**. The
+smallest zero-fallback budgets are **7 (Delaunay)** and **11 (rectangular)**; the scheme still
+beats PDIP at every model (median 5.4× / 2.6× on the A100), and the pass counts are identical on
+the A100 and the CPU. Phases 4 (source-pixel scaling across hardware) and 5 (the HST + Euclid
+verdict) follow in order, and phase 4 should sweep budgets 7 and 11 rather than 2 and 7.
 
 Three things this note hands phase 3 and beyond:
 
