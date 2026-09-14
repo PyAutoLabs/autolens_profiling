@@ -1079,7 +1079,8 @@
     "log_det_curvature_reg": 8360.401762997288,
     "log_det_regularization": 7756.614958909804
   },
-  "pinned_drift": [
+  "pinned_drift": [],
+  "slq_pin_comparison": [
     {
       "label": "imaging/matrix_free[hst, delaunay] SLQ log_det_curvature_reg p=16 m=40",
       "expected": 8360.401762997288,

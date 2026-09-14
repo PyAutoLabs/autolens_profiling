@@ -99,6 +99,13 @@ Results JSON and PNG are written to ``results/breakdown/imaging/`` using the
 basename ``matrix_free_<mesh>_breakdown_{instrument}_v{al_version}``, or
 ``matrix_free_<mesh>_<config_name>`` under ``--config-name``.
 
+Two pin keys sit at the top level of that JSON and must not be conflated:
+``pinned_drift`` carries **only** genuine ``check_pinned`` failures on the exact
+dense-Cholesky log-dets (empty means every compared value matched — the contract
+PyAutoHeart's profiling-drift scan reads), while ``slq_pin_comparison`` carries
+the unconditional SLQ-estimate-vs-exact rows (``rtol: null``), which are a
+measurement this cell exists to make and never a fault.
+
 The results note this cell feeds is
 ``results/notes/matrix_free_pixelized_2026_09.md`` (written in phase 4 of #247).
 """
@@ -190,8 +197,8 @@ SLQ_KEY = int(_cell_args.slq_key)
 RUN_PDIP = bool(_cell_args.pdip)
 
 #: The (probes, steps) pair every "default" row is quoted at — the evidence
-#: comparison and the pinned SLQ drift. Falls back to the last available pair
-#: when a run narrows the lists (a local check with ``--slq-probes 4,8``).
+#: comparison and the ``slq_pin_comparison`` rows. Falls back to the last
+#: available pair when a run narrows the lists (``--slq-probes 4,8``).
 SLQ_DEFAULT_PROBES = 16 if 16 in SLQ_PROBES else SLQ_PROBES[-1]
 SLQ_DEFAULT_STEPS = 40 if 40 in SLQ_STEPS else SLQ_STEPS[-1]
 
@@ -1176,14 +1183,35 @@ print(f"  Bar chart saved to:    {chart_path}")
 # ===================================================================
 # The pins describe the fiducial mesh (39x39 / 1500 / 1500) and nothing else, so
 # a run with a non-fiducial ``--source-pixels`` skips them and writes
-# ``pinned_expected: null``. Two things are recorded when they do run:
+# ``pinned_expected: null``. Two things are recorded when they do run, and they
+# land in **different JSON keys** because they mean different things:
 #
-# - the **in-process Cholesky** log-dets against the pin, through
-#   ``check_pinned`` — this is a drift check in the ordinary sense (the exact
-#   computation should reproduce the recorded value);
-# - the **SLQ (probes, steps) error**, recorded unconditionally rather than
-#   compared to a tolerance, because it is an estimate: its deviation is the
-#   measurement this cell exists to make, not a fault.
+# - ``pinned_drift`` — the **in-process Cholesky** log-dets checked against the
+#   pin through ``check_pinned``. A drift check in the ordinary sense: the exact
+#   computation should reproduce the recorded value. Only genuine ``check_pinned``
+#   failures go here, because an empty ``pinned_drift`` is the contract
+#   PyAutoHeart's profiling-drift scan reads as "every compared value matched".
+# - ``slq_pin_comparison`` — the **SLQ (probes, steps) error**, recorded
+#   unconditionally rather than compared to a tolerance, because it is an
+#   estimate: its deviation from the exact log-det is the measurement this cell
+#   exists to make, not a fault. These records used to be appended to
+#   ``pinned_drift``, which made every A100 matrix-free result read as drifted to
+#   Heart even with every Cholesky pin passing at 1e-13.
+
+
+def _record_slq_pin_comparison(json_path, records) -> None:
+    """Merge the SLQ-vs-pin comparison records into the already-written JSON.
+
+    Mirrors ``record_pinned_check`` (which owns ``pinned_expected`` /
+    ``pinned_drift``) for the estimate-vs-exact rows, writing them under the
+    separate top-level ``slq_pin_comparison`` key so the fault list stays a
+    fault list. Runs after ``record_pinned_check``, so the key order on disk is
+    ``... pinned_expected, pinned_drift, slq_pin_comparison``.
+    """
+    data = json.loads(json_path.read_text())
+    data["slq_pin_comparison"] = records
+    json_path.write_text(json.dumps(data, indent=2))
+
 
 if not PIN_IS_FIDUCIAL:
     print(
@@ -1192,11 +1220,14 @@ if not PIN_IS_FIDUCIAL:
         f"the pins describe."
     )
     record_pinned_check(dict_path, None, [])
+    _record_slq_pin_comparison(dict_path, [])
 elif not DENSE_OK:
     print("  Pinned log-det check SKIPPED: dense comparators did not fit, so nothing exact to pin.")
     record_pinned_check(dict_path, PINNED_LOG_DETS[MESH], [])
+    _record_slq_pin_comparison(dict_path, [])
 else:
     _drift_records = []
+    _slq_records = []
 
     for _key, _expected in PINNED_LOG_DETS[MESH].items():
         _record = check_pinned(
@@ -1211,7 +1242,7 @@ else:
             _drift_records.append(_record)
 
         _slq_value = slq_estimates[(_key, SLQ_DEFAULT_PROBES, SLQ_DEFAULT_STEPS)]
-        _drift_records.append(
+        _slq_records.append(
             {
                 "label": (
                     f"imaging/matrix_free[{instrument}, {MESH}] SLQ {_key} "
@@ -1231,5 +1262,6 @@ else:
         print(f"  SLQ {_key}: {_slq_value:.6f} vs pin {_expected:.6f}")
 
     record_pinned_check(dict_path, PINNED_LOG_DETS[MESH], _drift_records)
+    _record_slq_pin_comparison(dict_path, _slq_records)
 
 print("\nFinished.")
