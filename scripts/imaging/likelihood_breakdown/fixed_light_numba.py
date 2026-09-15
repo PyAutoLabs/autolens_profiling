@@ -55,27 +55,55 @@ Three protocol facts follow from instrumenting the real call:
   from three counterbalanced blocks or more** (``--n-repeats 6``); below that it
   is RECORDED beside the observed clean-call spread, because one block cannot
   resolve a 3 % effect against a +-15 % noise floor.
-- The cross-evaluation NNLS warm-start memo is **off** and the memo dict is
-  cleared between rows *and between every call of a block*. Dense and
+- The cross-evaluation NNLS warm-start memo is **off by default** and the memo
+  dict is cleared between rows *and between every call of a block*. Dense and
   sparse-numba S3 key identically (``_nnls_warm_start_fingerprint`` is built
   from shapes), so without this a sparse row would inherit the dense row's
-  passive set and report a solve production never gets.
+  passive set and report a solve production never gets. ``--nnls-warm-start on``
+  reverses the first half of that — the env goes to ``"1"`` and the
+  **within-block** clears are skipped, so a block's calls warm-start from each
+  other as a sampler's successive evaluations do. The **between-row** clears stay
+  unconditional either way: they exist to stop one formalism seeding the other,
+  which is not a production channel at all.
 
-The three routes
-----------------
+The four routes
+---------------
 
-======  ==========================================================  ======================
-Route   What runs                                                   Solver
-======  ==========================================================  ======================
-``a``   S0 — the joint system the library runs today (linear MGE     ``fnnls_cholesky``
-        lens light + source mapper)
-``b``   S3 — source-only, lens light converted to regular profiles   ``fnnls_cholesky``
-        and subtracted. **The reference.**
-``c``   S3 with ``use_positive_only_solver=False``                   ``xp.linalg.solve``
-======  ==========================================================  ======================
+=======  =========================================================  ======================
+Route    What runs                                                  Solver
+=======  =========================================================  ======================
+``a``    S0 — the joint system the library runs today (linear MGE    ``fnnls_cholesky``
+         lens light + source mapper)
+``b``    S3 — source-only, lens light converted to regular profiles  ``fnnls_cholesky``
+         and subtracted. **The reference.**
+``c``    S3 with ``use_positive_only_solver=False``                  ``xp.linalg.solve``
+``d_np`` S3 with the factor-reuse NNLS injected                      ``nnls_factor_reuse``
+=======  =========================================================  ======================
+
+``--routes`` defaults to ``a,b,c``, so ``d_np`` runs only when it is named and
+every pre-existing invocation of this cell produces the row set it always did.
 
 There is no ``d``/``d0``/``e``: the certified active set is a JAX kernel and
 this cell imports no JAX.
+
+Route ``d_np``
+--------------
+
+Route ``b``'s likelihood with one function replaced: the library's positive-only
+entry point is rebound, for the duration of the row, to
+``fixed_light_numpy_solvers.nnls_factor_reuse`` — the Bro & de Jong active set
+started from a single Cholesky factorisation that is then *kept*, instead of the
+library's LU-for-the-sign-seed plus Cholesky-of-the-passive-block pair. Every
+other part of the call is the library's own code on the library's own path; the
+harness calls the library, not a copy of it.
+
+The injection is entered **outside** ``call_accounting.install``, so the
+accounting wrapper closes over the injected function and the decomposition's
+``solver.reconstruction_positive_only_from`` row attributes the injected solve.
+``solver.nnls_factor_reuse`` is instrumented as a site of its own, so the kernel
+also appears as its own exclusive row. The injection's call counters are
+**asserted non-zero** after the block: a patch that never fired would report
+route ``b``'s timing wearing route ``d_np``'s label.
 
 **Route ``c`` is never quoted as a bare millisecond.** Dropping positivity also
 silently drops edge zeroing — ``Inversion.solve_ids_to_keep`` returns ``None``
@@ -124,6 +152,11 @@ unconditionally**, including under ``--pins none``.
 ``P3`` dense and sparse-numba S3 agree on ``figure_of_merit`` to ``rtol=1e-6``,
 recording the Δ in nats and the number of passive-set differences between the two
 solves. Under ``--pins none`` P3 becomes ``RECORDED``.
+``P4`` (route ``d_np`` only, once per row) the injected factor-reuse solver and
+the library's own solver reach the same ``figure_of_merit`` on the same instance
+and formalism to ``rtol=1e-9``, recording the Δ in nats and the maximum absolute
+reconstruction difference. Under ``--pins none`` P4 becomes ``RECORDED``. A
+``d_np`` millisecond without P4 beside it is a number for a different problem.
 
 Plus, per row: the structural dispatch assert, ``fit._xp is np``,
 ``"jax" not in sys.modules``, ``n_calls == 1`` on every site declared cached, the
@@ -184,8 +217,16 @@ _cli = _parse_profile_cli()
 
 #: Every route this cell can run, in the order the summary prints them. There is
 #: no d/d0/e: those are the JAX certified-active-set rows of
-#: ``fixed_light_library.py``, and this cell imports no JAX.
-ALL_ROUTE_KEYS = ("a", "b", "c")
+#: ``fixed_light_library.py``, and this cell imports no JAX. ``d_np`` is the
+#: numpy factor-reuse kernel injected into the library's own positive-only entry
+#: point — a numpy row, not a JAX one.
+ALL_ROUTE_KEYS = ("a", "b", "c", "d_np")
+
+#: What ``--routes`` selects when it is not given. Deliberately NOT
+#: ``ALL_ROUTE_KEYS``: ``d_np`` patches the library for the duration of its row,
+#: and a cell invocation written before that route existed must produce the row
+#: set it always did. ``d_np`` runs only when it is named.
+DEFAULT_ROUTE_KEYS = ("a", "b", "c")
 
 #: The two CPU formalisms, in the order the summary prints them.
 ALL_FORMALISM_KEYS = ("dense", "sparse_numba")
@@ -202,6 +243,7 @@ _cell_parser.add_argument("--decompose", dest="decompose", action="store_true", 
 _cell_parser.add_argument("--no-decompose", dest="decompose", action="store_false")
 _cell_parser.add_argument("--row-order", choices=("grouped", "interleaved"), default="grouped")
 _cell_parser.add_argument("--pins", choices=("fp64", "none"), default="fp64")
+_cell_parser.add_argument("--nnls-warm-start", choices=("off", "on"), default="off")
 _cell_args, _ = _cell_parser.parse_known_args()
 
 MESH = _cell_args.mesh
@@ -214,11 +256,18 @@ ROW_ORDER = _cell_args.row_order
 PINS_MODE = _cell_args.pins
 PINS_ASSERT = PINS_MODE == "fp64"
 
+#: ``on`` leaves the cross-evaluation NNLS memo enabled AND skips the
+#: within-block memo clears, so a block's calls warm-start from each other the
+#: way a sampler's successive evaluations do. The between-row clears are not
+#: affected — see :func:`_clear_memos`.
+NNLS_WARM_START = _cell_args.nnls_warm_start
+NNLS_WARM_START_ON = NNLS_WARM_START == "on"
+
 
 def _parse_routes(raw):
     """``--routes a,b`` -> the selected keys in canonical order; unknown is an error."""
     if raw is None:
-        return tuple(ALL_ROUTE_KEYS)
+        return tuple(DEFAULT_ROUTE_KEYS)
     wanted = [token.strip() for token in str(raw).split(",") if token.strip()]
     if not wanted:
         raise ValueError("--routes was given but names no routes")
@@ -263,14 +312,21 @@ numba_thread_env = {
     ),
 }
 
-# The cross-evaluation NNLS warm-start memo is OFF for every row. Dense and
-# sparse-numba S3 produce the SAME memo key (the fingerprint is built from
-# shapes, not from the matrix — abstract.py:551+), so a memo left on would let
-# the second formalism start from the first's passive set and report a solve
+# The cross-evaluation NNLS warm-start memo is OFF for every row by default.
+# Dense and sparse-numba S3 produce the SAME memo key (the fingerprint is built
+# from shapes, not from the matrix — abstract.py:551+), so a memo left on would
+# let the second formalism start from the first's passive set and report a solve
 # production never gets. The dict is also cleared between rows; both facts are
 # recorded per row.
+#
+# `--nnls-warm-start on` turns it on deliberately, to measure the production
+# sampler's own regime (successive nearby evaluations seeding each other). It
+# also skips the WITHIN-BLOCK clears, because a memo that is cleared before every
+# call is a memo that is never used. It does NOT skip the between-row clears:
+# those stop one formalism seeding the other, which is not a channel production
+# has.
 _nnls_warm_start_before = _os.environ.get("AUTOARRAY_NNLS_WARM_START")
-_os.environ["AUTOARRAY_NNLS_WARM_START"] = "0"
+_os.environ["AUTOARRAY_NNLS_WARM_START"] = "1" if NNLS_WARM_START_ON else "0"
 
 import json  # noqa: E402
 import math  # noqa: E402
@@ -290,7 +346,11 @@ if os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
     sys.exit(0)
 
-from likelihood_breakdown import call_accounting, fixed_light_system  # noqa: E402
+from likelihood_breakdown import (  # noqa: E402
+    call_accounting,
+    fixed_light_numpy_solvers,
+    fixed_light_system,
+)
 from simulators.imaging import INSTRUMENTS  # noqa: E402
 
 from _adapt_image_util import adapt_image_for_dataset  # noqa: E402
@@ -618,6 +678,16 @@ def _site_spec():
             group="solve",
         ),
         function("solver.fnnls_cholesky", fnnls_module, "fnnls_cholesky", group="solve"),
+        # Route d_np's kernel, as its own exclusive row. `missing_ok` is not
+        # needed (the module is always importable) but the site reports
+        # `n_calls: 0` on every route that does not inject it, which is what
+        # keeps the two legs printing the same labels.
+        function(
+            "solver.nnls_factor_reuse",
+            fixed_light_numpy_solvers,
+            "nnls_factor_reuse",
+            group="solve",
+        ),
         descriptor(
             "inversion.reconstruction_reduced",
             AbstractInversion,
@@ -864,6 +934,7 @@ print(f"  n-repeats:               {N_REPEATS}")
 print(f"  Instances:               {INSTANCE_MODE}")
 print(f"  Row order:               {ROW_ORDER}")
 print(f"  Pins mode:               {PINS_MODE}")
+print(f"  NNLS warm start:         {NNLS_WARM_START}")
 print(f"  OMP_NUM_THREADS:         {os.environ.get('OMP_NUM_THREADS', '(unset)')}")
 print(f"  NUMBA_NUM_THREADS:       {os.environ.get('NUMBA_NUM_THREADS', '(unset)')}")
 
@@ -1272,13 +1343,23 @@ _ROUTE_DATASETS = {
     ("b", "sparse_numba"): dataset_s3_sparse,
     ("c", "dense"): dataset_s3_dense,
     ("c", "sparse_numba"): dataset_s3_sparse,
+    # d_np is route b's problem with route b's datasets and route b's settings.
+    # Only the solver differs, which is the whole point: any other difference
+    # would make the b -> d_np delta a comparison of two problems.
+    ("d_np", "dense"): dataset_s3_dense,
+    ("d_np", "sparse_numba"): dataset_s3_sparse,
 }
 
 _ROUTE_LABELS = {
     "a": "S0 fnnls (the joint system the library runs today)",
     "b": "S3 fnnls source-only (the reference)",
     "c": "S3 positive-negative (xp.linalg.solve)",
+    "d_np": "S3 source-only, factor-reuse NNLS injected (one Cholesky, downdates)",
 }
+
+#: The routes that are route ``b``'s problem in everything but the solver: same
+#: dataset, same instances, same settings, same expected inversion class.
+_ROUTES_LIKE_B = ("b", "d_np")
 
 
 def _row_plan():
@@ -1303,6 +1384,11 @@ def _analysis_for(route, formalism):
     The triple, in this order: the thread environment is already pinned (header),
     the dataset already carries its CPU operator (or deliberately does not), and
     the analysis is built with ``use_jax=False``.
+
+    ``d_np`` is built **exactly** as ``b`` is (:data:`_ROUTES_LIKE_B`) — same
+    dataset, same adapt images, same positive-only settings. The kernel is
+    swapped by patching the library's entry point for the duration of the row,
+    not by building a different analysis, so nothing but the solver differs.
     """
     return al.AnalysisImaging(
         dataset=_ROUTE_DATASETS[(route, formalism)],
@@ -1336,6 +1422,75 @@ def _assert_dispatch(route, formalism):
     return type(inversion).__name__
 
 
+#: P4's relative tolerance: the injected kernel must be the library's answer, not
+#: an approximation of it. 1e-9 is the scale fp64 round-off in a ~1500-parameter
+#: Cholesky reaches, and it is the tolerance the harness kernels are pinned at.
+P4_RTOL = 1.0e-9
+
+
+def _p4_equivalence(formalism):
+    """P4: route ``d_np``'s injected solve reaches route ``b``'s evidence.
+
+    One eager fit each way on the same instance and formalism — the same shape
+    as P3, and for the same reason: a millisecond that came from a different
+    minimiser is not a faster solve, it is a different answer. Both the Δ in nats
+    and the maximum absolute reconstruction difference are recorded, because a
+    figure of merit can agree while the reconstruction does not.
+    """
+    _clear_memos()
+    _fit_b = _analysis_for("b", formalism).fit_from(instance=_instance_for("b", 0))
+    _fom_b = float(_fit_b.figure_of_merit)
+    _x_b = np.asarray(_fit_b.inversion.reconstruction, dtype=float)
+
+    _clear_memos()
+    with fixed_light_numpy_solvers.numpy_solver_injected(
+        _factor_reuse_solver, label=f"P4_d_np_{formalism}"
+    ) as _counts:
+        _fit_d = _analysis_for("d_np", formalism).fit_from(instance=_instance_for("d_np", 0))
+        _fom_d = float(_fit_d.figure_of_merit)
+        _x_d = np.asarray(_fit_d.inversion.reconstruction, dtype=float)
+    _clear_memos()
+
+    if _counts["numpy"] <= 0:
+        raise AssertionError(
+            f"P4 ({formalism}): the injected solver was never called "
+            f"({_counts}); the gate would have compared route b against itself."
+        )
+
+    _rel = abs(_fom_d - _fom_b) / max(abs(_fom_b), 1e-300)
+    _max_abs = float(np.max(np.abs(_x_d - _x_b))) if _x_b.size else 0.0
+    _pass = _rel <= P4_RTOL
+    _status = ("PASS" if _pass else "FAIL") if PINS_ASSERT else "RECORDED"
+
+    _record_gate(
+        f"P4_d_np_equals_b_evidence_{formalism}",
+        _status,
+        {
+            "figure_of_merit_b": _fom_b,
+            "figure_of_merit_d_np": _fom_d,
+            "d_log_evidence_nats": _fom_d - _fom_b,
+            "rel_diff": _rel,
+            "rtol": P4_RTOL,
+            "max_abs_diff_reconstruction": _max_abs,
+            "injected_solver_calls": dict(_counts, last_stats=None),
+            "solver_stats": {
+                k: (v.tolist() if hasattr(v, "tolist") else v)
+                for k, v in (_counts["last_stats"] or {}).items()
+                if k != "passive_set"
+            },
+            "summary": (f"Δ {_fom_d - _fom_b:+.6e} nats (rel {_rel:.3e}), max |Δx| {_max_abs:.3e}"),
+        },
+    )
+    if PINS_ASSERT and not _pass:
+        raise AssertionError(
+            f"P4 FAILED ({formalism}): route b figure_of_merit {_fom_b!r} vs injected "
+            f"factor-reuse {_fom_d!r} (rel {_rel:.3e} > rtol {P4_RTOL:g}, max |Δx| "
+            f"{_max_abs:.3e}). The d_np row would be a different minimiser wearing a "
+            f"speedup's label."
+        )
+    return gates[f"P4_d_np_equals_b_evidence_{formalism}"]
+
+
 def _clear_memos():
     """Everything that can carry state from one row into the next.
 
@@ -1343,8 +1498,39 @@ def _clear_memos():
     key IDENTICALLY (``_nnls_warm_start_fingerprint`` is built from shapes, not
     from the matrix), so a memo entry left behind by the dense row would seed the
     sparse row's solve with a 100 %-correct previous answer.
+
+    Unconditional. ``--nnls-warm-start on`` does not reach this: seeding one
+    formalism from the other is not a channel production has, and a row that
+    inherited it would not be measuring the thing its label names.
     """
     nnls_memo._nnls_passive_set_memo.clear()
+
+
+def _clear_memos_within_block():
+    """The clears *inside* an ABBA block — the ones ``--nnls-warm-start`` gates.
+
+    With the memo off (the default) every call in a block starts from the
+    dense-sign seed, which is the cold production solve. With it on the calls
+    seed each other, which is what a sampler's successive evaluations do — and
+    clearing between them would leave the memo permanently empty and the flag
+    doing nothing at all.
+    """
+    if NNLS_WARM_START_ON:
+        return
+    _clear_memos()
+
+
+def _factor_reuse_solver(ZTZ, ZTx, *, stats=None):
+    """Route ``d_np``'s kernel, resolved on the module at **call** time.
+
+    ``numpy_solver_injected`` binds the callable it is handed once, when the
+    injection is entered — which is outside ``call_accounting.install``. Passing
+    ``nnls_factor_reuse`` directly would therefore bind the *unwrapped* function
+    and the ``solver.nnls_factor_reuse`` site would report ``n_calls: 0`` while
+    the kernel ran. This indirection resolves the module attribute per call, so
+    whatever ``install`` has rebound it to is what runs.
+    """
+    return fixed_light_numpy_solvers.nnls_factor_reuse(ZTZ, ZTx, stats=stats)
 
 
 def _operated_mapping_matrix_memo_size():
@@ -1469,11 +1655,11 @@ def _abba_blocks(analysis, route, n_blocks, site_spec):
     solver_stats: dict[str, dict] = {}
 
     for _block in range(n_blocks):
-        _clear_memos()
+        _clear_memos_within_block()
         a1, value = _one_call(analysis, route)
         values.append(value)
 
-        _clear_memos()
+        _clear_memos_within_block()
         call_accounting.install(site_spec())
         try:
             b1, value_b1 = _one_call(analysis, route)
@@ -1484,7 +1670,7 @@ def _abba_blocks(analysis, route, n_blocks, site_spec):
             call_accounting.uninstall()
         values.extend([value_b1, value_b2])
 
-        _clear_memos()
+        _clear_memos_within_block()
         a2, value = _one_call(analysis, route)
         values.append(value)
 
@@ -1543,6 +1729,33 @@ for _route, _formalism in _row_plan():
     _clear_memos()
     _memo_before = _operated_mapping_matrix_memo_size()
 
+    # --- P4, before anything is timed -------------------------------------
+    # The gate runs its own, separate injection: it must compare the injected
+    # solve against the LIBRARY's, and it cannot do that from inside a row whose
+    # library entry point is already patched.
+    _p4_gate = _p4_equivalence(_formalism) if _route == "d_np" else None
+
+    # --- the row's injection ----------------------------------------------
+    # Route d_np injects the factor-reuse kernel into the library's positive-only
+    # entry point for EVERYTHING this row does — the dispatch assert, the warm-up
+    # and every call of every ABBA block. It is entered OUTSIDE
+    # `call_accounting.install` (which happens inside `_abba_blocks`), so the
+    # accounting wrapper closes over the injected function and the
+    # decomposition's solver site attributes the injected solve rather than the
+    # library's.
+    #
+    # Entered and exited explicitly rather than with a `with` block: the row body
+    # below is module-level code and every failure in it is a gate raising, which
+    # ends the process. A patch leaked by a dying cell cannot reach another row,
+    # and wrapping 200 lines in a `with` to say so would bury them.
+    _injection = None
+    _injection_counts = None
+    if _route == "d_np":
+        _injection = fixed_light_numpy_solvers.numpy_solver_injected(
+            _factor_reuse_solver, label=_key
+        )
+        _injection_counts = _injection.__enter__()
+
     _inversion_class = _assert_dispatch(_route, _formalism)
     print(f"  inversion class: {_inversion_class}")
 
@@ -1568,6 +1781,8 @@ for _route, _formalism in _row_plan():
         "warmup_incl_numba_compile_s": _warmup["first_call_incl_numba_compile_s"],
         "row_order": ROW_ORDER,
         "memo_cleared_between_rows": True,
+        "memo_cleared_within_block": not NNLS_WARM_START_ON,
+        "nnls_warm_start_mode": NNLS_WARM_START,
         "nnls_warm_start_env": os.environ.get("AUTOARRAY_NNLS_WARM_START"),
         "operated_mapping_matrix_memo_entries_before": _memo_before,
         "decomposed": False,
@@ -1575,6 +1790,9 @@ for _route, _formalism in _row_plan():
 
     if _route == "c":
         _entry["route_c"] = route_c_block
+
+    if _p4_gate is not None:
+        _entry["p4_equivalence"] = _p4_gate
 
     if not DECOMPOSE:
         # No decomposition asked for: a plain clean pass, nothing to counterbalance.
@@ -1774,6 +1992,33 @@ for _route, _formalism in _row_plan():
                 f"does not cover this formalism's call graph."
             )
 
+    if _injection is not None:
+        _injection.__exit__(None, None, None)
+        _last_stats = _injection_counts["last_stats"] or {}
+        _entry["injected_solver"] = {
+            "kernel": "likelihood_breakdown.fixed_light_numpy_solvers.nnls_factor_reuse",
+            "dotted_name_patched": fixed_light_numpy_solvers.LIBRARY_POSITIVE_ONLY_DOTTED,
+            "installed_outside_call_accounting": True,
+            "n_calls_numpy": _injection_counts["numpy"],
+            "n_calls_jax": _injection_counts["jax"],
+            "last_solve_stats": {
+                k: (v.tolist() if hasattr(v, "tolist") else v)
+                for k, v in _last_stats.items()
+                if k != "passive_set"
+            },
+        }
+        print(
+            f"  injected solver: {_injection_counts['numpy']} numpy call(s), "
+            f"{_injection_counts['jax']} jax call(s); last solve "
+            f"{_entry['injected_solver']['last_solve_stats']}"
+        )
+        if _injection_counts["numpy"] <= 0:
+            raise AssertionError(
+                f"row {_key}: the injected factor-reuse solver was never called "
+                f"({_injection_counts['numpy']} numpy calls). This row's milliseconds "
+                f"are route b's, wearing route d_np's label."
+            )
+
     rows[_key] = _entry
 
 _clear_memos()
@@ -1849,9 +2094,16 @@ configuration = {
     "use_jax": False,
     "thread_env": thread_env,
     "numba_thread_env": numba_thread_env,
+    "nnls_warm_start_mode": NNLS_WARM_START,
     "nnls_warm_start_env": os.environ.get("AUTOARRAY_NNLS_WARM_START"),
     "nnls_warm_start_env_preexisting": _nnls_warm_start_before,
     "memo_cleared_between_rows": True,
+    "memo_cleared_within_block": not NNLS_WARM_START_ON,
+    "memo_note": (
+        "The between-row clears are unconditional; only the WITHIN-BLOCK clears are "
+        "gated by --nnls-warm-start. With the memo on, a block's calls seed each other "
+        "(the sampler's regime); with it off every call is a cold dense-sign solve."
+    ),
     "over_sample_size_lp_rule": {
         "sub_size_list": [4, 2, 2],
         "radial_list": [0.3, 0.6],
@@ -1936,6 +2188,7 @@ breakdown_summary = {
     "configuration": configuration,
     "regularization": reg_provenance,
     "all_route_keys": list(ALL_ROUTE_KEYS),
+    "default_route_keys": list(DEFAULT_ROUTE_KEYS),
     "all_formalism_keys": list(ALL_FORMALISM_KEYS),
     "systems": {
         "s0": {
@@ -1959,6 +2212,7 @@ breakdown_summary = {
     "gate_thresholds": {
         "P2_rtol": P2_RTOL,
         "P3_rtol": P3_RTOL,
+        "P4_rtol": P4_RTOL,
         "mapper_logdet_rtol": MAPPER_LOGDET_RTOL,
         "max_instrumentation_overhead_ratio": MAX_INSTRUMENTATION_OVERHEAD,
         "min_blocks_for_overhead_assert": MIN_BLOCKS_FOR_OVERHEAD_ASSERT,
@@ -2029,6 +2283,8 @@ for _key in _labels:
         _colors.append("#C44E52")
     elif _key.startswith("b_"):
         _colors.append("#DD8452")
+    elif _key.startswith("d_np_"):
+        _colors.append("#4C72B0")
     else:
         _colors.append("#55A868")
 
