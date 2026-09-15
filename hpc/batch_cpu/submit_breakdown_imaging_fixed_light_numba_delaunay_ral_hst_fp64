@@ -70,6 +70,22 @@
 # configuration.routes_selected, n_repeats, nnls_warm_start_env and
 # formalisms_selected in each JSON before quoting anything.
 
+# WHERE THIS ACTUALLY RAN (#265, job 343311, 2026-09-15). `ral` is the CPU
+# partition, but it runs saturated: 21 nodes at 252/252 allocated and four
+# shared nodes at 234/236, so even a 2-CPU request was scheduled three days
+# out. The idle `imp` partition cannot be used at all -- euclid-imp-compute-*
+# do NOT mount /mnt/ral, so the repo, the venv and activate.sh are all absent
+# and the job dies in 0 s with no output files. What worked: the `gpu`
+# partition CPUs-only, whose two 124-core nodes DO mount /mnt/ral and sat at
+# load 0.00 --
+#
+#   sbatch --partition=gpu --cpus-per-task=4 --mem=32gb <this script>
+#
+# with NO --gres, so the A100s stay free for the GPU legs. That gave loadavg
+# 0.02 at entry and ABBA overheads of 1.0000-1.0125 on every row. Check
+# `sinfo -p ral,gpu -N -o "%N %t %C %O"` before submitting and prefer whichever
+# is genuinely idle; the numbers only mean something on a quiet host.
+
 #SBATCH -J fixed_light_numba_delaunay
 #SBATCH --partition=ral
 #SBATCH --ntasks=1
