@@ -213,7 +213,7 @@ def parse_profile_cli(default_config_name: str | None = None) -> ProfileCLI:
             "by default in the preset cells: its measured gains come from a "
             "random-walk stream a Nautilus pool never hands one worker, and "
             "with the memo on a cell that repeats one instance seeds itself "
-            "from a 100 %-correct previous solve. The library default is "
+            "from a 100 %%-correct previous solve. The library default is "
             "``true`` and production leaves it unset, so 'on' is what "
             "production pays; the resolved flag is recorded in every result "
             "JSON. ``--variant legacy`` leaves both gates untouched."

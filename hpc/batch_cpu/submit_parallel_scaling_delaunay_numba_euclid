@@ -6,12 +6,9 @@
 # ConstantSplit (the delaunay_numba runtime/breakdown cells) — vs the
 # Rectangular sibling submit script. Artifacts land as
 # results/parallel_scaling/imaging/delaunay_numba_scaling_euclid_*.
-#
-# NOTE: adjust --partition to the RAL CPU partition name (check `sinfo`); the
-# gpu scripts in ../batch_gpu use --partition=gpu.
 
 #SBATCH -J parallel_scaling_delaunay_numba_euclid
-#SBATCH --partition=cpu
+#SBATCH --partition=ral
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=32
 #SBATCH --mem=64gb
