@@ -51,8 +51,15 @@
 # NUMBA_NUM_THREADS=1 and the whole BLAS family pinned to 1. These numbers are
 # per-likelihood costs a pool worker pays, NOT a threaded-likelihood scaling
 # study -- that is what hpc/batch_cpu/submit_parallel_scaling_* measure.
-# --cpus-per-task=4 is headroom for the process and its imports, not a thread
-# budget; the cell pins the thread env itself and records the pinned block.
+# --cpus-per-task=2 is headroom for the one process and its imports, not a
+# thread budget; the cell pins the thread env itself and records the pinned
+# block. It is 2 rather than 4 because the `ral` partition runs saturated: every
+# node sits at 252/252 or 234/236 CPUs allocated, leaving exactly two idle CPUs
+# per shared node, and a 4-CPU request was scheduled three days out. Two fits
+# the gap now. The co-tenants are allocation-heavy but load-light (node CPU_LOAD
+# ~35 of 236 cores), and this task's CPUs are cgroup-pinned, so the cell's own
+# contention gate (1-minute loadavg vs os.cpu_count()) is what decides whether
+# the numbers are quotable -- check contention.load_average_* in every JSON.
 #
 # This cell imports NO JAX of its own, but note that jax lands in sys.modules
 # via the first FitImaging regardless (recorded as jax_after_rows in the JSON).
@@ -66,7 +73,7 @@
 #SBATCH -J fixed_light_numba_delaunay
 #SBATCH --partition=ral
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=2
 #SBATCH --mem=32gb
 #SBATCH --time=4:00:00
 #SBATCH -o output/output.%A.out
