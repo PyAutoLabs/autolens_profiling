@@ -11,7 +11,8 @@ batch_gpu/
   submit_<package>_<class>_<model>_a100_<inst>_<precision>[_sparse]   # one submit per cell/config
   output/   error/                                                    # SLURM stdout/stderr (gitignored)
 batch_cpu/
-  submit_...                                                          # HPC-CPU rows
+  submit_...                                                          # HPC-CPU rows (partition `ral`)
+  output/   error/                                                    # SLURM stdout/stderr (gitignored)
 sync                                                                  # laptop-side driver (below)
 sync.conf.example                                                     # template; sync.conf is gitignored
 ```
