@@ -51,15 +51,11 @@
 # NUMBA_NUM_THREADS=1 and the whole BLAS family pinned to 1. These numbers are
 # per-likelihood costs a pool worker pays, NOT a threaded-likelihood scaling
 # study -- that is what hpc/batch_cpu/submit_parallel_scaling_* measure.
-# --cpus-per-task=2 is headroom for the one process and its imports, not a
+# --cpus-per-task=4 is headroom for the one process and its imports, not a
 # thread budget; the cell pins the thread env itself and records the pinned
-# block. It is 2 rather than 4 because the `ral` partition runs saturated: every
-# node sits at 252/252 or 234/236 CPUs allocated, leaving exactly two idle CPUs
-# per shared node, and a 4-CPU request was scheduled three days out. Two fits
-# the gap now. The co-tenants are allocation-heavy but load-light (node CPU_LOAD
-# ~35 of 236 cores), and this task's CPUs are cgroup-pinned, so the cell's own
-# contention gate (1-minute loadavg vs os.cpu_count()) is what decides whether
-# the numbers are quotable -- check contention.load_average_* in every JSON.
+# block. The cell's own contention gate (1-minute loadavg vs os.cpu_count()) is
+# what decides whether the numbers are quotable -- check
+# contention.load_average_* in every JSON, and prefer a host at load ~0.
 #
 # This cell imports NO JAX of its own, but note that jax lands in sys.modules
 # via the first FitImaging regardless (recorded as jax_after_rows in the JSON).
@@ -70,26 +66,36 @@
 # configuration.routes_selected, n_repeats, nnls_warm_start_env and
 # formalisms_selected in each JSON before quoting anything.
 
-# WHERE THIS ACTUALLY RAN (#265, job 343311, 2026-09-15). `ral` is the CPU
-# partition, but it runs saturated: 21 nodes at 252/252 allocated and four
-# shared nodes at 234/236, so even a 2-CPU request was scheduled three days
-# out. The idle `imp` partition cannot be used at all -- euclid-imp-compute-*
-# do NOT mount /mnt/ral, so the repo, the venv and activate.sh are all absent
-# and the job dies in 0 s with no output files. What worked: the `gpu`
-# partition CPUs-only, whose two 124-core nodes DO mount /mnt/ral and sat at
-# load 0.00 --
+# THE PARTITION THIS DECLARES, AND WHY IT IS NOT `ral` (#265, job 343311,
+# 2026-09-15 -- the job every number in
+# results/notes/fixed_lens_light_numba_2026_09.md came from).
 #
-#   sbatch --partition=gpu --cpus-per-task=4 --mem=32gb <this script>
+# The #SBATCH block below asks for `gpu` with FOUR CPUs and NO --gres: the gpu
+# partition's two 124-core nodes used CPUs-only, leaving both A100s free for the
+# GPU cells. That is what ran, so that is what this script declares -- a script
+# that asks for a partition the legs never used is a trap, not a record.
 #
-# with NO --gres, so the A100s stay free for the GPU legs. That gave loadavg
-# 0.02 at entry and ABBA overheads of 1.0000-1.0125 on every row. Check
-# `sinfo -p ral,gpu -N -o "%N %t %C %O"` before submitting and prefer whichever
-# is genuinely idle; the numbers only mean something on a quiet host.
+#   `ral` is the CPU partition and it runs saturated: 21 nodes at 252/252 CPUs
+#   allocated and four shared nodes at 234/236, so even a 2-CPU request was
+#   scheduled three days out (2026-09-18) and a 4-CPU one no sooner.
+#   `imp` is idle and unusable: euclid-imp-compute-* do NOT mount /mnt/ral, so
+#   the repo, the venv and activate.sh are all absent and the job dies in 0 s
+#   with no output files at all.
+#   `gpu` works: both nodes mount /mnt/ral and sat at load 0.00. Entry loadavg
+#   was 0.02 and every row's ABBA overhead came out 1.0000-1.0125.
+#
+# IF `ral` EVER FREES UP, prefer it -- it is the partition meant for this work:
+#
+#   sbatch --partition=ral --cpus-per-task=2 <this script>
+#
+# (two CPUs, because a free `ral` node still only offers the two idle CPUs per
+# shared node). Check `sinfo -p ral,gpu -N -o "%N %t %C %O"` first and submit to
+# whichever is genuinely idle; the numbers only mean something on a quiet host.
 
 #SBATCH -J fixed_light_numba_delaunay
-#SBATCH --partition=ral
+#SBATCH --partition=gpu
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=2
+#SBATCH --cpus-per-task=4
 #SBATCH --mem=32gb
 #SBATCH --time=4:00:00
 #SBATCH -o output/output.%A.out
