@@ -56,15 +56,17 @@ CONFIG_NAME = "hpc_a100_fp64_fixed_light"
 def _submits() -> list[_Path]:
     # The phase-1 library-path legs (`..._fixed_light_library_*`) are a second
     # family with their own config name and their own static checks, in
-    # test_fixed_light_library.py. Excluding them here keeps each file's
-    # assertions owned by the submits they were written for -- without it this
-    # file's `--config-name hpc_a100_fp64_fixed_light` assertion would pass on a
-    # library leg only because `hpc_a100_fp64_fixed_light_library` happens to
-    # contain it as a substring.
+    # test_fixed_light_library.py, and the trace legs (`..._fixed_light_trace_*`,
+    # autolens_profiling#268) are a third, in test_fixed_light_trace_submit.py.
+    # Excluding them here keeps each file's assertions owned by the submits they
+    # were written for -- without it this file's `--config-name
+    # hpc_a100_fp64_fixed_light` assertion would pass on a library or trace leg
+    # only because `hpc_a100_fp64_fixed_light_library` /
+    # `hpc_a100_fp64_fixed_light_trace` happens to contain it as a substring.
     return sorted(
         p
         for p in BATCH_GPU.glob("submit_breakdown_imaging_fixed_light_*")
-        if "_fixed_light_library_" not in p.name
+        if "_fixed_light_library_" not in p.name and "_fixed_light_trace_" not in p.name
     )
 
 

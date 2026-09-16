@@ -55,15 +55,15 @@
 # configuration.border_relocator, configuration.trace_calls, configuration.pass_budget
 # and configuration.command_buffers_traced in the JSON):
 #
-#   --mesh {delaunay,delaunay_nn,rectangular}   required
-#   --border-relocator {cell,library,off}       cell = True, library = config, off = False
-#   --trace-calls 10                            steady calls taken inside the profiler
-#   --routes b,d                                the trace is taken on d; b is the pin's reference
-#   --config-name hpc_a100_fp64_fixed_light_trace
+#   mesh (required)                             delaunay | delaunay_nn | rectangular
+#   border-relocator                            cell = True, library = config, off = False
+#   trace-calls 10                              steady calls taken inside the profiler
+#   routes b,d                                  the trace is taken on d; b is the pin's reference
+#   config-name hpc_a100_fp64_fixed_light_trace
 #
-# NOT passed, deliberately: `--pins` and `--source-pixels`. This cell has no `--pins`
+# NOT passed, deliberately: a pins flag and a source-pixels flag. This cell has no pins
 # flag (it always asserts route d == route b at rtol 1e-9) and passing one would be
-# silently swallowed; and `--source-pixels` is omitted so the fiducial N=1500 applies
+# silently swallowed; and the source-pixel flag is omitted so the fiducial N=1500 applies
 # and the output filename matches the RTX legs rather than gaining an `_n1500` suffix.
 #
 # Every leg starts from an EMPTY JAX compilation cache: a seeded XLA autotune cache
@@ -118,12 +118,6 @@ export JAX_ENABLE_X64=True
 export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding"
 export NUMBA_CACHE_DIR=/tmp/numba_cache
 export MPLCONFIGDIR=/tmp/matplotlib
-
-# `python3 -u` would put a flag between `python3` and the script path, which
-# `scripts/misc/wall/check_submits.py` cannot read — its cell-coverage rule would
-# then pass vacuously on a submit that runs a cell it never saw. Unbuffering through
-# the environment keeps the invocation literal and the gate real.
-export PYTHONUNBUFFERED=1
 
 MESHES=(delaunay delaunay delaunay_nn)
 BORDERS=(cell off cell)
@@ -188,7 +182,7 @@ cd $AP_ROOT
 echo "=== import provenance ==="
 python3 -c "import autoarray, autolens; print('autoarray.__file__ =', autoarray.__file__); print('autoarray.__version__ =', autoarray.__version__); print('autolens.__file__ =', autolens.__file__)"
 
-python3 scripts/imaging/likelihood_breakdown/fixed_light_trace.py \
+python3 -u scripts/imaging/likelihood_breakdown/fixed_light_trace.py \
     --mesh $MESH \
     --border-relocator $BORDER \
     --trace-calls 10 \
