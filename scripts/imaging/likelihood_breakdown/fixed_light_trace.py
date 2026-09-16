@@ -1034,10 +1034,26 @@ else:
         _span = sum(
             _v["ms"] for _k, _v in _by_name.items() if _k.lower().startswith("pure_callback")
         )
+        # The probe replaces the library body, and the profiler names a host event
+        # from the CODE OBJECT rather than __name__ -- so under the probe there is
+        # no "scipy_delaunay" event at all and a phase-1 matcher reports 0.0 ms of
+        # qhull in silence. The probe's own event names are matched here as well,
+        # and the finer qhull-vs-tables split comes from the probe's records.
+        _body_keys = ("scipy_delaunay", *host_callback_probe.PROBE_HOST_EVENT_FRAGMENTS)
         return {
             "pure_callback_span_ms": _span,
-            "qhull_ms": sum(
-                _v["ms"] for _k, _v in _by_name.items() if "scipy_delaunay" in _k.lower()
+            "qhull_ms": max(
+                (
+                    _v["ms"]
+                    for _k, _v in _by_name.items()
+                    if any(_f in _k.lower() for _f in _body_keys)
+                ),
+                default=0.0,
+            ),
+            "callback_body_ms_note": (
+                "the OUTERMOST matching body event, not a sum: under the probe the body "
+                "appears twice (the wrapper and the timed re-implementation it calls) and "
+                "summing them would count the same work twice"
             ),
             "events_by_name": dict(sorted(_by_name.items(), key=lambda kv: -kv[1]["ms"])),
             "note": (

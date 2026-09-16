@@ -139,20 +139,50 @@ def test__pass_through_mode_calls_the_library_and_times_the_whole_body():
         assert np.array_equal(a, b)
 
 
-def test__the_wrapper_keeps_the_library_functions_name():
-    """The profiler names the host event after the function it ran.
-
-    Phase 1 reads the qhull host span off an event called
-    ``scipy_delaunay_tri_only``; a wrapper called ``wrapped`` makes that span
-    0.0 ms in every trace taken under the probe, silently.
-    """
+def test__the_wrapper_keeps_the_library_functions_attribute_name():
+    """``functools.wraps``, so anything reading ``__name__`` still sees the library's."""
     original = delaunay_mod.scipy_delaunay_tri_only
     for reimplement in (True, False):
         with hcp.qhull_probe(reimplement=reimplement):
             assert delaunay_mod.scipy_delaunay_tri_only.__name__ == original.__name__, (
-                f"reimplement={reimplement}: the wrapper renamed the callback, so the "
-                f"trace's scipy_delaunay_tri_only host span would read 0.0 ms"
+                f"reimplement={reimplement}: the wrapper no longer carries the library "
+                f"function's __name__"
             )
+
+
+def test__the_probe_declares_the_host_event_names_it_substitutes():
+    """The profiler names host events from the CODE OBJECT, not ``__name__``.
+
+    So under the probe the xplane has no ``scipy_delaunay_tri_only`` event at
+    all, and a cell matching phase 1's name reports 0.0 ms of qhull without
+    saying anything. The published fragments are what a cell matches instead,
+    so they must actually name this module's wrapper.
+    """
+    assert hcp.PROBE_HOST_EVENT_FRAGMENTS, "no substitute host-event names published"
+    source_file = _Path(hcp.__file__).name
+    assert source_file in hcp.PROBE_HOST_EVENT_FRAGMENTS, (
+        f"the profiler's host events are named `$<file>:<line> <co_name>`, so "
+        f"{source_file!r} must be one of the published fragments"
+    )
+    with hcp.qhull_probe() as probe:
+        delaunay_mod.scipy_delaunay_tri_only(_points(40))
+    assert probe.calls == 1
+    co_names = {hcp._timed_tri_only.__code__.co_name}
+    assert co_names & set(hcp.PROBE_HOST_EVENT_FRAGMENTS), (
+        f"the timed body's code name {co_names} is not among the published fragments, "
+        f"so a cell matching them would miss the event the profiler actually emits"
+    )
+
+
+def test__the_cell_matches_the_probes_host_event_names():
+    """Or every batched leg reports `host_callback.qhull_ms: 0.0` in silence."""
+    cell = (
+        _profiling_root() / "scripts" / "imaging" / "likelihood_breakdown" / "fixed_light_trace.py"
+    ).read_text()
+    assert "host_callback_probe.PROBE_HOST_EVENT_FRAGMENTS" in cell, (
+        "fixed_light_trace.py no longer folds the probe's host-event names into its "
+        "qhull matcher, so its xplane qhull row would read 0.0 ms under the probe"
+    )
 
 
 def test__probe_is_restored_on_exit_including_on_an_exception():

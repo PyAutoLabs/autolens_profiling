@@ -78,6 +78,7 @@ import numpy as np
 
 __all__ = [
     "LIBRARY_QHULL_DOTTED",
+    "PROBE_HOST_EVENT_FRAGMENTS",
     "CallbackRecord",
     "HostCallbackProbe",
     "qhull_probe",
@@ -86,6 +87,13 @@ __all__ = [
 #: The dotted name this module rebinds. Recorded verbatim into the results
 #: JSON so a reader of the numbers knows exactly what was wrapped.
 LIBRARY_QHULL_DOTTED = "autoarray.inversion.mesh.interpolator.delaunay.scipy_delaunay_tri_only"
+
+#: Name fragments the profiler's host plane uses for the probe's own wrapper, in
+#: place of the library's ``scipy_delaunay_tri_only``. The profiler names a host
+#: event from the code object, not from ``__name__``, so a trace taken with the
+#: probe entered has NO event containing "scipy_delaunay" and a matcher written
+#: for phase 1's trace reports 0.0 ms of qhull without saying anything.
+PROBE_HOST_EVENT_FRAGMENTS = ("host_callback_probe.py", "_timed_tri_only")
 
 
 @dataclass
@@ -204,10 +212,14 @@ def qhull_probe(*, reimplement: bool = True):
     original = _delaunay.scipy_delaunay_tri_only
     probe = HostCallbackProbe()
 
-    # ``functools.wraps`` is not cosmetic here: the profiler names the host-plane
-    # event after the callback function, and phase 1's trace reads the qhull span
-    # off an event called ``scipy_delaunay_tri_only``. A wrapper called ``wrapped``
-    # silently makes that span 0.0 ms in every trace taken under the probe.
+    # ``functools.wraps`` keeps ``__name__``/``__doc__`` for anything that
+    # introspects the attribute, but it does NOT rename the host-plane event: the
+    # profiler builds that name from the CODE OBJECT (``$<file>:<line> <co_name>``),
+    # so under the probe phase 1's ``$delaunay.py:90 scipy_delaunay_tri_only``
+    # event becomes ``$host_callback_probe.py:<line> wrapped``. A cell that reads
+    # a qhull span off the xplane must therefore match THIS module's names too, or
+    # it silently reports 0.0 ms of qhull -- which is what
+    # :data:`PROBE_HOST_EVENT_FRAGMENTS` is for.
     if reimplement:
 
         @functools.wraps(original)
