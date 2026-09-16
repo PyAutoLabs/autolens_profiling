@@ -1,0 +1,320 @@
+#!/bin/bash -l
+#
+# 2026-09 fixed-lens-light numba LEVERS, lever 2 (autolens_profiling#267).
+#
+# Lever 2 changed how `AbstractInversion.log_det_regularization_matrix_term`
+# factorizes `H`. That term historically ran a DENSE Cholesky of
+# `regularization_matrix_reduced` — a (1500, 1500) matrix which, under the split
+# regularization family, carries ~8.5 non-zeros per row because it is a mesh's
+# adjacency. A dense O(pixels^3) factorization therefore spends nearly all of its
+# work on structural zeros: 37.2 ms of the 299.7 ms lever-1 call
+# (`inversion.log_det_regularization_matrix_term`, 12.4 % of the call).
+#
+# On the NUMPY path only, the matrix is now offered first to
+# `inversion_util.log_det_sparse_spd_from` — a SuperLU factorization in symmetric
+# mode (`permc_spec="MMD_AT_PLUS_A"`, `diag_pivot_thresh=0.0`,
+# `SymmetricMode=True`), whose `diag(U)` are the pivots, so
+# `log det H = sum(log(diag(U)))` with `L` unit-diagonal. The CSC triple is built
+# from ONE boolean mask scan of the dense matrix (no `csc_matrix(dense)`
+# conversion, which alone costs 13 ms). That function returns `None` — leaving the
+# unchanged dense Cholesky to run — outside two named regimes:
+#
+#   SPARSE_LOG_DET_MIN_PIXELS      = 256   below this, SuperLU's fixed ~0.14 ms
+#                                          setup loses to a small dense Cholesky
+#                                          (sparse/dense 0.07x at P=9, 0.38x at
+#                                          128, 1.77x at 256, 10.8x at 1500)
+#   SPARSE_LOG_DET_MAX_NNZ_PER_ROW = 32    above this the matrix is a kernel
+#                                          scheme's dense `coefficient * C^-1`,
+#                                          where sparse is ~7x SLOWER at P=1500
+#
+# The JAX branch is untouched: `sparse=self._xp is np` at the call site, and the
+# routine is SciPy, so neither traceable nor differentiable. Its A100 pair is
+# hpc/batch_gpu/submit_breakdown_imaging_fixed_light_numba_levers_l2_delaunay_a100_hst_fp64.
+#
+# WHERE THE MOVEMENT IS EXPECTED, AND NOWHERE ELSE.
+# Exactly one instrumented site should move: `inversion.log_det_regularization_matrix_term`,
+# ~37 ms -> ~6 ms (local measurement on the production H). Its sibling
+# `inversion.log_det_curvature_reg_matrix_term` (39.98 ms in lever 1) must NOT
+# move — `log_det_curvature_reg_matrix_term` calls `_log_det_symmetric_from`
+# WITHOUT `sparse=True`, because `F + λH` is dense, and a row that moved there
+# would mean the sparse route leaked into the wrong term. Every other row is
+# flat. Read the two `evidence`-group rows side by side in the two JSONs before
+# reading anything else.
+#
+# This job is the CPU A/B row for lever 2, and it is ONE job with TWO ARMS run
+# back-to-back so both arms share a host, a core count and a load:
+#
+#   CONTROL ARM  PyAutoArray at bae9296e — **LEVER 1**, not the merge base.
+#   FEATURE ARM  PyAutoArray at 0b17c292 — lever 2, stacked on lever 1.
+#                Plus the sparse log-det witness (below).
+#
+# WHY THE CONTROL IS LEVER 1 AND NOT THE MERGE BASE. Lever 2's commit sits ON TOP
+# OF lever 1; a merge-base control would measure both levers at once and attribute
+# the sum to lever 2. The lever-1-vs-merge-base row already exists and is recorded
+# (results/notes/fixed_lens_light_levers_2026_09.md: 413.301 -> 299.709 ms,
+# 1.379x), so the A/B this job runs is the INCREMENT lever 2 adds, and the
+# cumulative figure against the merge base is a multiplication of the two rows,
+# computed in the note rather than measured here. `PyAutoArray_control`
+# (5e2bc0f4, the merge base) still exists on the cluster from lever 1 and is
+# deliberately NOT used by this job.
+#
+# Each arm is phase 2's LEG D and nothing else, identical flags to lever 1's job:
+# `fixed_light_numba.py --routes b --formalism sparse_numba --nnls-warm-start on
+# --n-repeats 16 --instances iid --threads 1`. Route b is the S3 source-only
+# system on the numba sparse operator with the cross-evaluation NNLS memo ON (the
+# library default, so what production pays). The directly comparable prior row is
+# lever 1's feature arm
+# (`..._fixed_light_numba_lever1_b_warm_t1.json`, job 343345): whole call 299.709
+# ms with `inversion.log_det_regularization_matrix_term` 37.200 ms exclusive. A
+# Leg-D-shaped arm whose rows report `seed_source: "dense"` is a silently cold run
+# and a FAIL, not a number — check it in both arms' JSONs before quoting anything.
+#
+# WHY PRIVATE CHECKOUTS RATHER THAN THE SHARED INSTALL. The shared install
+# /mnt/ral/jnightin/PyAuto/PyAutoArray carries neither revision (it sits at the
+# merge base), HPCPullPyAuto moves it whenever anyone refreshes it, and it is
+# read-only to this job by policy. Both arms therefore run from private checkouts
+# under /mnt/ral/jnightin/PyAuto_wt/fixed-light-numba-levers/, prepended to
+# PYTHONPATH after activate.sh, and each arm PRINTS `autoarray.__file__`, its
+# checkout's `rev-parse HEAD`, and whether `inversion_util.SPARSE_LOG_DET_MIN_PIXELS`
+# EXISTS in the imported module. That last echo is the cheapest possible proof
+# that the two arms differ by exactly lever 2: the constant is absent in the
+# control (lever 1) and present in the feature (lever 2).
+#
+# Each arm runs in its OWN SUBSHELL so the PYTHONPATH prepend cannot leak into the
+# next arm. An arm that inherited the other's prepend would import whichever
+# checkout came first on the path and report it under the wrong label; the
+# `autoarray.__file__` echo is the check that this worked.
+#
+# LOG-LIKELIHOOD IS NOT COMPARABLE ACROSS THE TWO ARMS, and here — unlike lever 1
+# — the two arms are NOT expected to print the same value. Lever 1 was
+# bit-identical; lever 2 is not: two fp64 factorisations of a cond ~9e12 matrix
+# differ in their last bits, so the log det moves ~7.4e-10 relative (-5.7e-6 nats
+# on a log det of 7756.6) and the fit's log evidence ~9.8e-11 relative (-2.9e-6
+# nats on 29140.3) — locally measured. That is the matrix's own round-off, not an
+# error introduced on top of it: numpy's `slogdet` differs from the dense Cholesky
+# by up to 2.8e-8 on matrices of this conditioning. A last-digit difference in the
+# two arms' `log_likelihood` is therefore EXPECTED and is not a finding. The
+# correctness claim is the witness's W2/W3, inside one process, on one system,
+# against a forced-dense recomputation of the same fit. Across the arms, compare
+# milliseconds and nothing else.
+#
+# THE WITNESS (feature arm only). `fixed_light_numba_levers_l2_witness.py`
+# rebuilds the same HST Delaunay N=1500 source-only AdaptSplit system and asserts:
+#   W1 the sparse route actually FIRES on this system — `log_det_sparse_spd_from`
+#      is wrapped in a counter and must be called exactly once during
+#      `fit.figure_of_merit` and must return a float, not `None`;
+#   W2 `log_det_regularization_matrix_term` sparse vs dense-forced (the helper
+#      monkeypatched to return `None` on a fresh fit), relative <= 1e-8, with the
+#      matrix's conditioning recorded beside it;
+#   W3 `figure_of_merit` sparse vs dense-forced, relative <= 1e-9 — the phase's
+#      Witness pin — with the absolute nats printed;
+#   W4 both gates admit this matrix: `nnz/row` <= 32 and `pixels` >= 256, values
+#      recorded;
+#   W5 the sparse helper vs the dense `2*sum(log(diag(cholesky)))` on the SAME
+#      matrix, median of 20, at 1 thread — the site-level speedup in isolation.
+# It runs on the FEATURE arm because that is the arm whose factorization is in
+# question; on the control arm there is no sparse route to witness. W5 is the only
+# timing it takes and it is a site measurement, not the A/B row. It exits non-zero
+# on a FAIL, which `activate.sh`'s in-job `set -e` turns into a failed job rather
+# than a COMPLETED one with a bad witness buried in the log.
+#
+# SINGLE-THREAD SCOPE, unchanged from lever 1. Production for this path is
+# cpu_fast_modeling.py: one single-threaded numba likelihood per process under a
+# multiprocessing pool, every core carrying its own worker. Both arms run at
+# --threads 1 with NUMBA_NUM_THREADS=1 and the whole BLAS family pinned to 1. This
+# matters more for lever 2 than for lever 1: SuperLU and LAPACK's `dpotrf` scale
+# differently with threads, so the ratio measured here is the ratio a pool worker
+# sees and NOT the ratio a threaded likelihood would see.
+# --cpus-per-task=4 is headroom for the one process and its imports, not a thread
+# budget. The cell's own contention gate (1-minute loadavg vs os.cpu_count()) is
+# what decides whether the numbers are quotable — check `contention.load_average_*`
+# in BOTH JSONs, and prefer a host at load ~0. Lever 1's feature arm entered at
+# loadavg 2.25 because an A100 job was compiling on the same node, which made its
+# 1.379x a lower bound; SUBMIT THIS JOB BEFORE THE A100 JOB, not alongside it.
+#
+# This cell imports NO JAX of its own, but jax lands in sys.modules via the first
+# FitImaging regardless (recorded as jax_after_rows). There is no JAX_*/XLA_*
+# configuration here on purpose.
+#
+# parse_known_args IGNORES unknown flags, so a checkout WITHOUT this cell's flags
+# would run and silently produce a different table — check
+# `configuration.routes_selected`, `n_repeats`, `nnls_warm_start_env` and
+# `formalisms_selected` in each JSON before quoting anything.
+#
+# PER-ARM NUMBA CACHE. The two arms load their kernels from DIFFERENT source
+# trees, and numba's on-disk cache keys include the source path, so one cache
+# would already be safe. They get one directory each anyway: it makes the arms
+# independent by construction, so neither arm's first-call compile can be served
+# out of the other's cache.
+
+# THE PARTITION THIS DECLARES, AND WHY IT IS NOT `ral`.
+#
+# The #SBATCH block below asks for `gpu` with FOUR CPUs and NO --gres: the gpu
+# partition's two 124-core nodes used CPUs-only, leaving both A100s free for the
+# GPU cells (including this lever's own A100 row,
+# hpc/batch_gpu/submit_breakdown_imaging_fixed_light_numba_levers_l2_delaunay_a100_hst_fp64).
+# This is the same choice lever 1's job 343345 and phase 2's job 343311 made, for
+# the same reasons:
+#
+#   `ral` is the CPU partition and it runs saturated: 21 nodes at 252/252 CPUs
+#   allocated and four shared nodes at 234/236, so even a 2-CPU request was
+#   scheduled three days out and a 4-CPU one no sooner.
+#   `imp` is idle and unusable: euclid-imp-compute-* do NOT mount /mnt/ral, so
+#   the repo, the venv, activate.sh and the private checkouts are all absent and
+#   the job dies in 0 s with no output files at all.
+#   `gpu` works: both nodes mount /mnt/ral and sat at load 0.00-0.01.
+#
+# IF `ral` EVER FREES UP, prefer it — it is the partition meant for this work:
+#
+#   sbatch --partition=ral --cpus-per-task=2 <this script>
+#
+# Check `sinfo -p ral,gpu -N -o "%N %t %C %O"` first and submit to whichever is
+# genuinely idle; the numbers only mean something on a quiet host.
+#
+# The -o/-e paths below are relative, so sbatch from INSIDE hpc/batch_cpu/.
+
+#SBATCH -J fl_numba_lever2
+#SBATCH --partition=gpu
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=32gb
+#SBATCH --time=4:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+# Derive the repo root from where this was submitted (hpc/batch_cpu/../..) rather
+# than hardcoding /mnt/ral/jnightin/autolens_profiling: the canonical RAL
+# checkout sits on main with a dirty tree, so this runs from a worktree of the
+# feature branch.
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+# The two private PyAutoArray checkouts. Neither is the shared install and
+# neither is written to by this job. PYAUTOARRAY_CONTROL here is LEVER 1
+# (bae9296e), not the merge base — see the header.
+export PYAUTOARRAY_CONTROL=/mnt/ral/jnightin/PyAuto_wt/fixed-light-numba-levers/PyAutoArray_feature
+export PYAUTOARRAY_FEATURE=/mnt/ral/jnightin/PyAuto_wt/fixed-light-numba-levers/PyAutoArray_l2
+
+# One thread everywhere. NUMBA_NUM_THREADS must be in the environment BEFORE
+# numba is imported; the cell also sets it and records the resolved block.
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export NUMBA_NUM_THREADS=1
+export MPLCONFIGDIR=/tmp/matplotlib_${SLURM_JOB_ID:-local}
+mkdir -p "$MPLCONFIGDIR"
+# output/ is gitignored and ${SLURM_JOB_ID} keeps concurrent jobs on the same
+# shared node from fighting over one cache directory.
+export NUMBA_CACHE_CONTROL=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}_l2_control
+export NUMBA_CACHE_FEATURE=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}_l2_feature
+mkdir -p "$NUMBA_CACHE_CONTROL" "$NUMBA_CACHE_FEATURE"
+
+echo "=========================================="
+date
+hostname
+lscpu | grep 'Model name' || true
+echo "cpus-per-task:  ${SLURM_CPUS_PER_TASK:-unset}"
+echo "loadavg:        $(cat /proc/loadavg)"
+echo "Cell:           likelihood_breakdown/imaging/fixed_light_numba (route b, memo ON) x 2 arms"
+echo "Witness:        likelihood_breakdown/imaging/fixed_light_numba_levers_l2_witness (feature arm)"
+echo "Instrument:     hst"
+echo "Precision:      fp64"
+echo "Inversion path: numba sparse operator (InversionImagingSparseNumba), use_jax=False"
+echo "Source mesh:    Hilbert/Delaunay mesh, 1500 vertices"
+echo "Regularization: AdaptSplit(inner=0.1, outer=10.0, signal_scale=0.1)"
+echo "A/B:            PyAutoArray bae9296e (lever 1) vs 0b17c292 (lever 2, sparse log det H)"
+echo "Expected site:  inversion.log_det_regularization_matrix_term ~37 ms -> ~6 ms; all else flat"
+echo "Must NOT move:  inversion.log_det_curvature_reg_matrix_term (F+lambda*H is dense; no sparse=True there)"
+echo "Threads:        1 (numba + BLAS family), production pool-worker scope"
+echo "Thread env:     OMP=$OMP_NUM_THREADS MKL=$MKL_NUM_THREADS OPENBLAS=$OPENBLAS_NUM_THREADS NUMBA=$NUMBA_NUM_THREADS"
+
+echo "=== source revisions (shared install, untouched — PyAutoArray is overridden per arm) ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r" "$(git -C /mnt/ral/jnightin/PyAuto/$r rev-parse HEAD 2>&1)"
+done
+echo "PyAutoArray control (lever 1): $(git -C $PYAUTOARRAY_CONTROL rev-parse HEAD 2>&1)"
+echo "PyAutoArray feature (lever 2): $(git -C $PYAUTOARRAY_FEATURE rev-parse HEAD 2>&1)"
+echo "AP_ROOT rev:    $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+echo "AP_ROOT branch: $(git -C $AP_ROOT rev-parse --abbrev-ref HEAD 2>&1)"
+
+cd $AP_ROOT
+
+echo "=========================================="
+echo "CONTROL ARM: PyAutoArray bae9296e (lever 1) — DENSE Cholesky of H"
+echo "  route b, sparse_numba, memo ON, threads 1, n-repeats 16, instances iid"
+date
+echo "loadavg: $(cat /proc/loadavg)"
+(
+    export PYTHONPATH=$PYAUTOARRAY_CONTROL:$PYTHONPATH
+    export NUMBA_CACHE_DIR=$NUMBA_CACHE_CONTROL
+    echo "--- control arm import provenance ---"
+    echo "  checkout HEAD: $(git -C $PYAUTOARRAY_CONTROL rev-parse HEAD)"
+    python3 -c "
+import autoarray
+from autoarray.inversion.inversion import inversion_util
+print('  autoarray.__file__    =', autoarray.__file__)
+print('  autoarray.__version__ =', autoarray.__version__)
+print('  has SPARSE_LOG_DET_MIN_PIXELS      =', hasattr(inversion_util, 'SPARSE_LOG_DET_MIN_PIXELS'))
+print('  has SPARSE_LOG_DET_MAX_NNZ_PER_ROW =', hasattr(inversion_util, 'SPARSE_LOG_DET_MAX_NNZ_PER_ROW'))
+print('  has log_det_sparse_spd_from        =', hasattr(inversion_util, 'log_det_sparse_spd_from'))
+"
+    python3 -u scripts/imaging/likelihood_breakdown/fixed_light_numba.py \
+        --mesh delaunay \
+        --dataset hst \
+        --formalism sparse_numba \
+        --routes b \
+        --threads 1 \
+        --n-repeats 16 \
+        --instances iid \
+        --nnls-warm-start on \
+        --config-name hpc_ral_cpu_fp64_fixed_light_numba_lever2_control_b_warm_t1
+)
+
+echo "=========================================="
+echo "FEATURE ARM: PyAutoArray 0b17c292 (lever 2) — SPARSE SuperLU log det of H"
+echo "  route b, sparse_numba, memo ON, threads 1, n-repeats 16, instances iid"
+date
+echo "loadavg: $(cat /proc/loadavg)"
+(
+    export PYTHONPATH=$PYAUTOARRAY_FEATURE:$PYTHONPATH
+    export NUMBA_CACHE_DIR=$NUMBA_CACHE_FEATURE
+    echo "--- feature arm import provenance ---"
+    echo "  checkout HEAD: $(git -C $PYAUTOARRAY_FEATURE rev-parse HEAD)"
+    python3 -c "
+import autoarray
+from autoarray.inversion.inversion import inversion_util
+print('  autoarray.__file__    =', autoarray.__file__)
+print('  autoarray.__version__ =', autoarray.__version__)
+print('  has SPARSE_LOG_DET_MIN_PIXELS      =', hasattr(inversion_util, 'SPARSE_LOG_DET_MIN_PIXELS'))
+print('  has SPARSE_LOG_DET_MAX_NNZ_PER_ROW =', hasattr(inversion_util, 'SPARSE_LOG_DET_MAX_NNZ_PER_ROW'))
+print('  has log_det_sparse_spd_from        =', hasattr(inversion_util, 'log_det_sparse_spd_from'))
+print('  SPARSE_LOG_DET_MIN_PIXELS      =', getattr(inversion_util, 'SPARSE_LOG_DET_MIN_PIXELS', None))
+print('  SPARSE_LOG_DET_MAX_NNZ_PER_ROW =', getattr(inversion_util, 'SPARSE_LOG_DET_MAX_NNZ_PER_ROW', None))
+"
+    python3 -u scripts/imaging/likelihood_breakdown/fixed_light_numba.py \
+        --mesh delaunay \
+        --dataset hst \
+        --formalism sparse_numba \
+        --routes b \
+        --threads 1 \
+        --n-repeats 16 \
+        --instances iid \
+        --nnls-warm-start on \
+        --config-name hpc_ral_cpu_fp64_fixed_light_numba_lever2_b_warm_t1
+
+    echo "--- feature arm witness: lever 2 sparse log det (W1..W5) ---"
+    date
+    python3 -u scripts/imaging/likelihood_breakdown/fixed_light_numba_levers_l2_witness.py \
+        --mesh delaunay \
+        --dataset hst \
+        --threads 1 \
+        --config-name hpc_ral_cpu_fp64_lever2
+)
+
+echo "=========================================="
+echo "loadavg: $(cat /proc/loadavg)"
+echo "Finished."
+date
