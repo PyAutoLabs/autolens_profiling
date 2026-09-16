@@ -1,0 +1,2631 @@
+{
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "hostname": "DESKTOP-H143S82",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 8,
+    "jax_compilation_cache_dir": "/home/jammy/.cache/pyauto_jax",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "nvidia_smi": "NVIDIA GeForce RTX 2060 with Max-Q Design, 2326 MiB, 6144 MiB"
+  },
+  "machine": {
+    "cpu_model": "Intel(R) Core(TM) i9-10885H CPU @ 2.40GHz",
+    "cpu_count_os": 8,
+    "nproc": 1,
+    "nproc_all": 8,
+    "nproc_note": "GNU nproc honours OMP_NUM_THREADS, so `nproc` can print 1 on a multi-core host; `nproc_all` is the core count.",
+    "ram_total": "16392692 kB",
+    "kernel": "5.10.16.3-microsoft-standard-WSL2",
+    "platform": "Linux-5.10.16.3-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+    "python": "3.12.10",
+    "jax_thread_env": {
+      "NPROC": "8"
+    },
+    "blas_thread_env": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "VECLIB_MAXIMUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1"
+    },
+    "thread_env_note": "NPROC sizes XLA's CPU intra-op pool (the JAX rows); the BLAS knobs pin OpenBLAS/MKL/OpenMP (the numpy/scipy rows) and do not touch JAX. Two disjoint families; both are recorded on every CPU timing.",
+    "gpu": "NVIDIA GeForce RTX 2060 with Max-Q Design, 6144 MiB, 580.97"
+  },
+  "precision": "fp64",
+  "configuration": {
+    "pixel_scale_arcsec": 0.05,
+    "mask_radius_arcsec": 3.5,
+    "image_pixels_masked": 15361,
+    "over_sampled_pixels": 62752,
+    "mesh": "delaunay",
+    "mesh_shape": null,
+    "source_pixels": 1500,
+    "source_pixels_requested": null,
+    "dataset": "hst",
+    "inversion_path": "dense",
+    "pass_budget": 7,
+    "pass_budget_basis": "phase 3 (autolens_profiling#255): the smallest ZERO-fallback budget per mesh, the budget a production run fixes. NOT phase 0's certifying budget (2 for Delaunay), which falls back on 67.5 % of a graded draw set and is not a production cost.",
+    "border_relocator_mode": "cell",
+    "border_relocator": true,
+    "border_relocator_note": "'cell' is use_border_relocator=True, which every profiling cell in this family forces; 'library' passes None and takes the shipped config default, which is what production runs. The resolved boolean is what this leg actually ran.",
+    "routes_selected": [
+      "b",
+      "d"
+    ],
+    "trace_calls": 10,
+    "command_buffers_traced": "off",
+    "use_mixed_precision": false,
+    "tau_rel": 1e-09,
+    "regularization": {
+      "scheme": "adapt_split",
+      "inner_coefficient": 0.1,
+      "outer_coefficient": 10.0,
+      "signal_scale": 0.1
+    },
+    "thread_env": {
+      "n_threads": null,
+      "vars": [
+        "OPENBLAS_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OMP_NUM_THREADS",
+        "VECLIB_MAXIMUM_THREADS",
+        "NUMEXPR_NUM_THREADS"
+      ],
+      "set_to": null,
+      "preexisting": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "VECLIB_MAXIMUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1"
+      },
+      "overridden": {},
+      "note": "Not pinned (legacy variant): recorded as found."
+    },
+    "over_sample_size_lp_rule": {
+      "sub_size_list": [
+        4,
+        2,
+        2
+      ],
+      "radial_list": [
+        0.3,
+        0.6
+      ],
+      "centre": [
+        0.0,
+        0.0
+      ]
+    }
+  },
+  "solver_injection": {
+    "patched": "autoarray.inversion.inversion.inversion_util.reconstruction_positive_only_from",
+    "pass_budget": 7,
+    "fallback": true,
+    "calls_jax": 1,
+    "calls_numpy": 0,
+    "note": "Routes d and the traced program use a scoped harness monkeypatch of the library's own positive-only entry point. Everything else in the call \u2014 mapper, F + lambda*H, both log determinants, the evidence \u2014 is the library's own code, unmodified."
+  },
+  "routes": {
+    "b_s3_pdip": {
+      "label": "S3 PDIP (source-only)",
+      "status": "ok",
+      "solver": "library",
+      "ms": 699.8410399999557,
+      "log_likelihood": 29140.295879608046
+    },
+    "d_s3_certified_fallback": {
+      "label": "S3 certified active set, budget 7, PDIP fallback",
+      "status": "ok",
+      "solver": "harness-injected certified active set",
+      "pass_budget": 7,
+      "fallback": true,
+      "injected_solver_calls_jax": 1,
+      "injected_solver_calls_numpy": 0,
+      "ms": 595.0210999999399,
+      "log_likelihood": 29140.29587797028
+    }
+  },
+  "equivalence_pins": [
+    {
+      "pin": "route d (certified, fallback) == route b (library PDIP)",
+      "route": "d_s3_certified_fallback",
+      "reference": "b_s3_pdip",
+      "expectation": "the certified active set returns the library's own positive solution",
+      "rtol": 1e-09,
+      "got": 29140.29587797028,
+      "reference_value": 29140.295879608046,
+      "rel_diff": 5.62028310905201e-11,
+      "status": "PASS"
+    }
+  ],
+  "equivalence_rtol": 1e-09,
+  "reference": {
+    "log_evidence_s0_library": 29140.29588193227,
+    "log_evidence_s3_library": 29140.29588193218,
+    "s3": {
+      "n_params": 1500,
+      "n_mapper": 1500,
+      "n_funcs": 0,
+      "edge_zeroed_pixels": 0,
+      "subtracted_light_flux": 5121.542486997811
+    }
+  },
+  "command_buffers": {
+    "wall_on_ms": 603.5179599999537,
+    "wall_off_ms": 609.2101899999761,
+    "command_buffer_delta_ms": 5.692230000022391,
+    "command_buffer_delta_pct": 0.9431749139698887,
+    "traced": "off",
+    "compiler_option": "xla_gpu_enable_command_buffer",
+    "probe": {
+      "probed_program": "command_buffers_on",
+      "events": 1770,
+      "kernel_names_present": true,
+      "distinct_hlo_op": 52,
+      "joined_duration_pct": 35.15577229616768,
+      "top_hlo_op_by_duration": [
+        [
+          "command_buffer_94",
+          1155.072882
+        ],
+        [
+          "cholesky.70",
+          193.791992
+        ],
+        [
+          "fft.19.0",
+          125.609168
+        ],
+        [
+          "fft.15.0",
+          122.021079
+        ],
+        [
+          "fft.17.0",
+          60.737424
+        ],
+        [
+          "cholesky.110",
+          28.419754
+        ]
+      ],
+      "note": "CUPTI emits per-kernel events inside a CUDA graph, but their hlo_op stat is the graph node (command_buffer_N), not the instruction. joined_duration_pct is how much of the device time the name-based join recovers on that program."
+    },
+    "note": "ONE lowering, TWO compilations, one process. wall_on_ms is the PRODUCTION program (CUDA graphs as XLA ships them) and is the number comparable to phase 5's row; wall_off_ms is the graph-less program the stage rows attribute. The delta is the launch overhead the graphs remove \u2014 it lands in device_idle and host_outside_span, not in any stage. Reconciliation is computed against wall_off_ms."
+  },
+  "trace": {
+    "parser": "ProfileData.from_file(xplane) + as_text() + stack_frame_index(proto field 17)",
+    "stage_audit": {
+      "mixed_fusion": [
+        {
+          "instruction": "loop_gather_multiply_fusion",
+          "ms": 3.9588649999999994,
+          "opcode": "fusion",
+          "shape": "(f64[15361,1,1,1500]{3,2,1,0}, f64[15361,1,1,1500]{3,2,1,0})",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:138",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:138 (curvature_matrix_via_mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:92 (InversionImagingMapping.curvature_matrix)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:371 (AbstractInversion.curvature_reg_matrix)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:613 (AbstractInversion.reconstruction)"
+          ]
+        },
+        {
+          "instruction": "loop_broadcast_fusion.3",
+          "ms": 1.5131407000000001,
+          "opcode": "fusion",
+          "shape": "f64[1500,180,180]{2,1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/operators/convolver.py:1222",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/operators/convolver.py:1222 (Convolver.convolved_mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:196 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:755 (AbstractInversion.mapped_reconstructed_operated_data)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoLens/autolens/imaging/fit_imaging.py:199 (FitImaging.model_data)"
+          ]
+        },
+        {
+          "instruction": "input_reduce_fusion.13",
+          "ms": 0.9456539,
+          "opcode": "fusion",
+          "shape": "f64[92,1500]{1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/inversion_imaging_util.py:123",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/inversion_imaging_util.py:123 (data_vector_via_blurred_mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:67 (InversionImagingMapping.data_vector)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:612 (AbstractInversion.reconstruction)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)"
+          ]
+        },
+        {
+          "instruction": "input_reduce_fusion.17",
+          "ms": 0.7407813,
+          "opcode": "fusion",
+          "shape": "f64[15361]{0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:168",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:168 (mapped_reconstructed_data_via_mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:119 (InversionImagingMapping._mapped_reconstructed_data_dict_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:195 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:755 (AbstractInversion.mapped_reconstructed_operated_data)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoLens/autolens/imaging/fit_imaging.py:199 (FitImaging.model_data)"
+          ]
+        },
+        {
+          "instruction": "loop_broadcast_fusion.6",
+          "ms": 0.7147889999999999,
+          "opcode": "fusion",
+          "shape": "f64[15361,1500]{1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mappers/mapper_util.py:335",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mappers/mapper_util.py:335 (mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mappers/abstract.py:283 (Mapper.mapping_matrix)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:91 (AbstractInversionImaging._mapping_matrix_for_convolution_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:137 (AbstractInversionImaging.operated_mapping_matrix_list)"
+          ]
+        },
+        {
+          "instruction": "input_multiply_transpose_fusion",
+          "ms": 0.5827975999999999,
+          "opcode": "fusion",
+          "shape": "(f64[1500,1500]{1,0}, f64[1500,1500]{1,0}, f64[1500,1500]{1,0})",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:418",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:418 (_masked_solve)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:456 (active_set_masked_jax)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/library_solver_injection.py:126 (certified_reconstruction_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/library_solver_injection.py:191 (certified_solver_injected.<locals>.patched)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:619 (AbstractInversion.reconstruction)"
+          ]
+        }
+      ],
+      "ray_trace_data_grid": [
+        {
+          "instruction": "wrapped_divide",
+          "ms": 0.0013616000000000004,
+          "opcode": "fusion",
+          "shape": "f64[]",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoGalaxy/autogalaxy/cosmology/model.py:380",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoGalaxy/autogalaxy/cosmology/model.py:380 (LensingCosmology.scaling_factor_between_redshifts_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoLens/autolens/lens/tracer_util.py:239 (traced_grid_2d_list_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoLens/autolens/lens/tracer.py:490 (Tracer.traced_grid_2d_list_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/structures/decorators/abstract.py:93 (AbstractMaker.evaluate_func)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/structures/decorators/abstract.py:110 (AbstractMaker.result)"
+          ]
+        }
+      ],
+      "grids_and_structures": [
+        {
+          "instruction": "wrapped_sine",
+          "ms": 0.0046662,
+          "opcode": "fusion",
+          "shape": "f64[]",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/geometry/geometry_util.py:527",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/geometry/geometry_util.py:527 (transform_grid_2d_to_reference_frame)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoGalaxy/autogalaxy/profiles/geometry_profiles.py:418 (EllProfile.transformed_to_reference_frame_grid_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/structures/decorators/abstract.py:93 (AbstractMaker.evaluate_func)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/structures/decorators/abstract.py:112 (AbstractMaker.result)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/structures/decorators/to_grid.py:70 (to_grid.<locals>.wrapper)"
+          ]
+        },
+        {
+          "instruction": "wrapped_sine.1",
+          "ms": 0.0024766,
+          "opcode": "fusion",
+          "shape": "f64[]",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/geometry/geometry_util.py:527",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/geometry/geometry_util.py:527 (transform_grid_2d_to_reference_frame)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoGalaxy/autogalaxy/profiles/geometry_profiles.py:418 (EllProfile.transformed_to_reference_frame_grid_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/structures/decorators/abstract.py:93 (AbstractMaker.evaluate_func)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/structures/decorators/abstract.py:112 (AbstractMaker.result)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/structures/decorators/to_grid.py:70 (to_grid.<locals>.wrapper)"
+          ]
+        }
+      ],
+      "mass_profile_deflections": [
+        {
+          "instruction": "loop_sqrt_fusion.1",
+          "ms": 0.0029230999999999997,
+          "opcode": "fusion",
+          "shape": "f64[]",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoGalaxy/autogalaxy/convert.py:224",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoGalaxy/autogalaxy/convert.py:224 (shear_magnitude_and_angle_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoGalaxy/autogalaxy/convert.py:257 (shear_magnitude_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoGalaxy/autogalaxy/profiles/mass/sheets/external_shear.py:90 (ExternalShear.magnitude)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoGalaxy/autogalaxy/profiles/mass/sheets/external_shear.py:161 (ExternalShear.deflections_yx_2d_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/structures/decorators/transform.py:77 (transform.<locals>.decorator.<locals>.wrapper)"
+          ]
+        }
+      ],
+      "border_relocator": [
+        {
+          "instruction": "custom-call.2",
+          "ms": 0.47376480000000004,
+          "opcode": "custom-call",
+          "shape": "(f64[2,2]{1,0}, s8[4194304]{0})",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:242",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:242 (ellipse_params_via_border_pca_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:454 (BorderRelocator.relocated_mesh_grid_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/mesh/abstract.py:176 (AbstractMesh.relocated_mesh_grid_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/mesh/delaunay.py:214 (Delaunay.interpolator_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoGalaxy/autogalaxy/galaxy/to_inversion.py:489 (GalaxiesToInversion.mapper_from)"
+          ]
+        },
+        {
+          "instruction": "eigh.45",
+          "ms": 0.15336489999999997,
+          "opcode": "custom-call",
+          "shape": "(f64[2,2]{0,1}, f64[2]{0}, s32[])",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:245",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:245 (ellipse_params_via_border_pca_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:454 (BorderRelocator.relocated_mesh_grid_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/mesh/abstract.py:176 (AbstractMesh.relocated_mesh_grid_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/mesh/delaunay.py:214 (Delaunay.interpolator_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoGalaxy/autogalaxy/galaxy/to_inversion.py:489 (GalaxiesToInversion.mapper_from)"
+          ]
+        },
+        {
+          "instruction": "loop_add_rsqrt_fusion",
+          "ms": 0.0081351,
+          "opcode": "fusion",
+          "shape": "(f64[15361]{0}, f64[15361]{0}, f64[15361,1]{1,0}, f64[15361,1]{1,0})",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:311",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:311 (relocated_grid_via_ellipse_border_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:423 (BorderRelocator.relocated_grid_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/mesh/abstract.py:83 (AbstractMesh.relocated_grid_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/mesh/delaunay.py:208 (Delaunay.interpolator_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoGalaxy/autogalaxy/galaxy/to_inversion.py:489 (GalaxiesToInversion.mapper_from)"
+          ]
+        },
+        {
+          "instruction": "loop_multiply_fusion.8",
+          "ms": 0.0079528,
+          "opcode": "fusion",
+          "shape": "f64[2,2]{1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:245",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:245 (ellipse_params_via_border_pca_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:454 (BorderRelocator.relocated_mesh_grid_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/mesh/abstract.py:176 (AbstractMesh.relocated_mesh_grid_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/mesh/delaunay.py:214 (Delaunay.interpolator_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoGalaxy/autogalaxy/galaxy/to_inversion.py:489 (GalaxiesToInversion.mapper_from)"
+          ]
+        },
+        {
+          "instruction": "input_reduce_fusion.18",
+          "ms": 0.0028835,
+          "opcode": "fusion",
+          "shape": "f64[]",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:270",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:270 (ellipse_params_via_border_pca_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:454 (BorderRelocator.relocated_mesh_grid_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/mesh/abstract.py:176 (AbstractMesh.relocated_mesh_grid_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/mesh/delaunay.py:214 (Delaunay.interpolator_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoGalaxy/autogalaxy/galaxy/to_inversion.py:489 (GalaxiesToInversion.mapper_from)"
+          ]
+        },
+        {
+          "instruction": "input_reduce_fusion.19",
+          "ms": 0.0028614,
+          "opcode": "fusion",
+          "shape": "f64[]",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:269",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:269 (ellipse_params_via_border_pca_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:454 (BorderRelocator.relocated_mesh_grid_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/mesh/abstract.py:176 (AbstractMesh.relocated_mesh_grid_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/mesh/delaunay.py:214 (Delaunay.interpolator_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoGalaxy/autogalaxy/galaxy/to_inversion.py:489 (GalaxiesToInversion.mapper_from)"
+          ]
+        }
+      ],
+      "mesh_construction": [
+        {
+          "instruction": "loop_multiply_fusion.6",
+          "ms": 0.0014708,
+          "opcode": "fusion",
+          "shape": "f64[1500]{0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:412",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:412 (jax_delaunay)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:846 (InterpolatorDelaunay.delaunay)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:957 (InterpolatorDelaunay._mappings_sizes_weights)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)"
+          ]
+        },
+        {
+          "instruction": "input_concatenate_fusion.5",
+          "ms": 0.0011118,
+          "opcode": "fusion",
+          "shape": "f64[1500,2]{1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:820",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:820 (InterpolatorDelaunay.mesh_grid_xy)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:847 (InterpolatorDelaunay.delaunay)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:957 (InterpolatorDelaunay._mappings_sizes_weights)"
+          ]
+        }
+      ],
+      "mesh_qhull_callback": [
+        {
+          "instruction": "pure_callback.4",
+          "ms": 0.017377499999999994,
+          "opcode": "custom-call",
+          "shape": "(s32[3000,3]{1,0}, s32[3000,3]{1,0}, s32[1500]{0})",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:161",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:161 (_jax_delaunay_tables)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:405 (jax_delaunay)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:846 (InterpolatorDelaunay.delaunay)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:957 (InterpolatorDelaunay._mappings_sizes_weights)"
+          ]
+        }
+      ],
+      "certified_active_set_solve": [
+        {
+          "instruction": "cholesky.70",
+          "ms": 63.70781059999999,
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1500]{0,1}, s32[])",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:418",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:418 (_masked_solve)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:462 (active_set_masked_jax.<locals>.step)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:484 (active_set_masked_jax)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/library_solver_injection.py:126 (certified_reconstruction_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/library_solver_injection.py:191 (certified_solver_injected.<locals>.patched)"
+          ]
+        },
+        {
+          "instruction": "cholesky.100",
+          "ms": 8.9676707,
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1500]{0,1}, s32[])",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:418",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:418 (_masked_solve)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:456 (active_set_masked_jax)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/library_solver_injection.py:126 (certified_reconstruction_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/library_solver_injection.py:191 (certified_solver_injected.<locals>.patched)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:619 (AbstractInversion.reconstruction)"
+          ]
+        },
+        {
+          "instruction": "triangular-solve.1",
+          "ms": 2.377273300000001,
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1]{0,1}, s8[0]{0})",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:419",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:419 (_masked_solve)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:462 (active_set_masked_jax.<locals>.step)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:484 (active_set_masked_jax)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/library_solver_injection.py:126 (certified_reconstruction_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/library_solver_injection.py:191 (certified_solver_injected.<locals>.patched)"
+          ]
+        },
+        {
+          "instruction": "input_transpose_fusion",
+          "ms": 1.7226013000000002,
+          "opcode": "fusion",
+          "shape": "f64[1500,1500]{1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:418",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:418 (_masked_solve)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:462 (active_set_masked_jax.<locals>.step)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:484 (active_set_masked_jax)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/library_solver_injection.py:126 (certified_reconstruction_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/library_solver_injection.py:191 (certified_solver_injected.<locals>.patched)"
+          ]
+        },
+        {
+          "instruction": "input_transpose_fusion.1",
+          "ms": 1.7157672000000004,
+          "opcode": "fusion",
+          "shape": "f64[1500,1500]{1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:418",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:418 (_masked_solve)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:462 (active_set_masked_jax.<locals>.step)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:484 (active_set_masked_jax)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/library_solver_injection.py:126 (certified_reconstruction_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/library_solver_injection.py:191 (certified_solver_injected.<locals>.patched)"
+          ]
+        },
+        {
+          "instruction": "triangular-solve",
+          "ms": 1.4154118,
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1]{0,1}, s8[0]{0})",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:419",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:419 (_masked_solve)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:462 (active_set_masked_jax.<locals>.step)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:484 (active_set_masked_jax)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/library_solver_injection.py:126 (certified_reconstruction_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/library_solver_injection.py:191 (certified_solver_injected.<locals>.patched)"
+          ]
+        }
+      ],
+      "regularization_H": [
+        {
+          "instruction": "input_concatenate_fusion.9",
+          "ms": 0.0025865,
+          "opcode": "fusion",
+          "shape": "pred[3]{0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/regularization/regularization_util.py:87",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/regularization/regularization_util.py:87 (split_points_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:410 (jax_delaunay)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:846 (InterpolatorDelaunay.delaunay)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:957 (InterpolatorDelaunay._mappings_sizes_weights)"
+          ]
+        },
+        {
+          "instruction": "input_concatenate_fusion.10",
+          "ms": 0.0013265999999999998,
+          "opcode": "fusion",
+          "shape": "pred[3]{0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/regularization/regularization_util.py:86",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/regularization/regularization_util.py:86 (split_points_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:410 (jax_delaunay)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:846 (InterpolatorDelaunay.delaunay)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:957 (InterpolatorDelaunay._mappings_sizes_weights)"
+          ]
+        },
+        {
+          "instruction": "input_concatenate_fusion.7",
+          "ms": 0.001307,
+          "opcode": "fusion",
+          "shape": "pred[3]{0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/regularization/regularization_util.py:90",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/regularization/regularization_util.py:90 (split_points_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:410 (jax_delaunay)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:846 (InterpolatorDelaunay.delaunay)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:957 (InterpolatorDelaunay._mappings_sizes_weights)"
+          ]
+        },
+        {
+          "instruction": "input_concatenate_fusion.6",
+          "ms": 0.0013011000000000001,
+          "opcode": "fusion",
+          "shape": "pred[3]{0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/regularization/regularization_util.py:92",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/regularization/regularization_util.py:92 (split_points_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:410 (jax_delaunay)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:846 (InterpolatorDelaunay.delaunay)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:957 (InterpolatorDelaunay._mappings_sizes_weights)"
+          ]
+        },
+        {
+          "instruction": "input_concatenate_fusion.8",
+          "ms": 0.0012946,
+          "opcode": "fusion",
+          "shape": "pred[3]{0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/regularization/regularization_util.py:89",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/regularization/regularization_util.py:89 (split_points_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:410 (jax_delaunay)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:846 (InterpolatorDelaunay.delaunay)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:957 (InterpolatorDelaunay._mappings_sizes_weights)"
+          ]
+        },
+        {
+          "instruction": "input_scatter_fusion.10",
+          "ms": 0.0012493,
+          "opcode": "fusion",
+          "shape": "f64[1500,1500]{1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/regularization/regularization_util.py:468",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/regularization/regularization_util.py:468 (pixel_splitted_regularization_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/regularization/adapt_split.py:137 (AdaptSplit.regularization_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/linear_obj/linear_obj.py:171 (LinearObj.regularization_matrix)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:322 (AbstractInversion.regularization_matrix)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)"
+          ]
+        }
+      ],
+      "other": [
+        {
+          "instruction": "copy.65",
+          "ms": 0.009416699999999993,
+          "opcode": "copy",
+          "shape": "s32[21361]{0}",
+          "source": "",
+          "stack": []
+        },
+        {
+          "instruction": "copy.105",
+          "ms": 0.0026247,
+          "opcode": "copy",
+          "shape": "s64[]",
+          "source": "",
+          "stack": []
+        },
+        {
+          "instruction": "loop_multiply_fusion.12",
+          "ms": 0.0016593999999999997,
+          "opcode": "fusion",
+          "shape": "f64[]",
+          "source": "",
+          "stack": []
+        },
+        {
+          "instruction": "copy.107",
+          "ms": 0.0012335,
+          "opcode": "copy",
+          "shape": "pred[]",
+          "source": "",
+          "stack": []
+        },
+        {
+          "instruction": "copy.106",
+          "ms": 0.0012176999999999997,
+          "opcode": "copy",
+          "shape": "s32[]",
+          "source": "",
+          "stack": []
+        },
+        {
+          "instruction": "copy.75",
+          "ms": 0.0011596,
+          "opcode": "copy",
+          "shape": "s64[1500]{0}",
+          "source": "",
+          "stack": []
+        }
+      ],
+      "mesh_seed_argmin": [
+        {
+          "instruction": "input_reduce_fusion",
+          "ms": 3.845251700000001,
+          "opcode": "fusion",
+          "shape": "(f64[1024]{0}, s64[1024]{0})",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:191",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:191 (_nearest_vertex_seed_from.<locals>.argmin_chunk)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:204 (_nearest_vertex_seed_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:351 (pix_indexes_delaunay_walk_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:423 (jax_delaunay)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:846 (InterpolatorDelaunay.delaunay)"
+          ]
+        },
+        {
+          "instruction": "loop_dynamic_update_slice_fusion",
+          "ms": 0.03611210000000002,
+          "opcode": "fusion",
+          "shape": "s32[21,1024]{1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:204",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:204 (_nearest_vertex_seed_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:351 (pix_indexes_delaunay_walk_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:423 (jax_delaunay)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:846 (InterpolatorDelaunay.delaunay)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)"
+          ]
+        },
+        {
+          "instruction": "loop_add_fusion",
+          "ms": 0.033350899999999975,
+          "opcode": "fusion",
+          "shape": "s64[]",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:204",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:204 (_nearest_vertex_seed_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:351 (pix_indexes_delaunay_walk_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:423 (jax_delaunay)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:846 (InterpolatorDelaunay.delaunay)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)"
+          ]
+        },
+        {
+          "instruction": "loop_dynamic_slice_fusion",
+          "ms": 0.027059700000000016,
+          "opcode": "fusion",
+          "shape": "f64[1,1024,2]{2,1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:204",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:204 (_nearest_vertex_seed_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:351 (pix_indexes_delaunay_walk_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:423 (jax_delaunay)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:846 (InterpolatorDelaunay.delaunay)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)"
+          ]
+        },
+        {
+          "instruction": "loop_broadcast_fusion",
+          "ms": 0.0012175,
+          "opcode": "fusion",
+          "shape": "s32[21,1024]{1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:204",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:204 (_nearest_vertex_seed_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:351 (pix_indexes_delaunay_walk_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:423 (jax_delaunay)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:846 (InterpolatorDelaunay.delaunay)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)"
+          ]
+        }
+      ],
+      "mesh_locate_walk": [
+        {
+          "instruction": "loop_reduce_fusion",
+          "ms": 0.10505059999999997,
+          "opcode": "fusion",
+          "shape": "(f64[21361]{0}, s64[21361]{0})",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:264",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:264 (_walk_from_seed.<locals>.walk_step)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:292 (_walk_from_seed.<locals>.body)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:264 (_walk_from_seed.<locals>.walk_step)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:292 (_walk_from_seed.<locals>.body)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:295 (_walk_from_seed)"
+          ]
+        },
+        {
+          "instruction": "loop_subtract_fusion",
+          "ms": 0.034571300000000006,
+          "opcode": "fusion",
+          "shape": "f64[21361,1]{1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:236",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:236 (_walk_from_seed.<locals>.cross)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:245 (_walk_from_seed.<locals>.weights_of)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:262 (_walk_from_seed.<locals>.walk_step)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:292 (_walk_from_seed.<locals>.body)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:295 (_walk_from_seed)"
+          ]
+        },
+        {
+          "instruction": "loop_or_select_fusion",
+          "ms": 0.016170700000000003,
+          "opcode": "fusion",
+          "shape": "(s32[21361]{0}, pred[21361]{0}, pred[21361]{0})",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:270",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:270 (_walk_from_seed.<locals>.walk_step)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:292 (_walk_from_seed.<locals>.body)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:295 (_walk_from_seed)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:353 (pix_indexes_delaunay_walk_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:423 (jax_delaunay)"
+          ]
+        },
+        {
+          "instruction": "while.36",
+          "ms": 0.015728,
+          "opcode": "while",
+          "shape": "(s32[], s32[21361]{0}, pred[21361]{0}, pred[21361]{0}, s32[3000,3]{1,0}, /*index=5*/f64[1500,2]{1,0}, f64[21361,2]{1,0}, s32[3000,3]{1,0})",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:295",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:295 (_walk_from_seed)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:353 (pix_indexes_delaunay_walk_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:423 (jax_delaunay)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:846 (InterpolatorDelaunay.delaunay)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)"
+          ]
+        },
+        {
+          "instruction": "loop_gather_fusion",
+          "ms": 0.01449500000000001,
+          "opcode": "fusion",
+          "shape": "s32[21361,1,1]{2,1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:267",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:267 (_walk_from_seed.<locals>.walk_step)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:292 (_walk_from_seed.<locals>.body)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:295 (_walk_from_seed)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:353 (pix_indexes_delaunay_walk_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:423 (jax_delaunay)"
+          ]
+        },
+        {
+          "instruction": "input_reduce_fusion.1",
+          "ms": 0.013979800000000011,
+          "opcode": "fusion",
+          "shape": "pred[196]{0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:288",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:288 (_walk_from_seed.<locals>.cond)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:295 (_walk_from_seed)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:353 (pix_indexes_delaunay_walk_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:423 (jax_delaunay)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:846 (InterpolatorDelaunay.delaunay)"
+          ]
+        }
+      ],
+      "psf_convolution_mapping_matrix": [
+        {
+          "instruction": "fft.19.0",
+          "ms": 41.853056699999996,
+          "opcode": "fft",
+          "shape": "f64[1500,180,180]{2,1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/operators/convolver.py:1226",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/operators/convolver.py:1226 (Convolver.convolved_mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:196 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:755 (AbstractInversion.mapped_reconstructed_operated_data)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoLens/autolens/imaging/fit_imaging.py:199 (FitImaging.model_data)"
+          ]
+        },
+        {
+          "instruction": "fft.15.0",
+          "ms": 40.497129699999995,
+          "opcode": "fft",
+          "shape": "c128[1500,180,91]{2,1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/operators/convolver.py:1222",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/operators/convolver.py:1222 (Convolver.convolved_mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:196 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:755 (AbstractInversion.mapped_reconstructed_operated_data)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoLens/autolens/imaging/fit_imaging.py:199 (FitImaging.model_data)"
+          ]
+        },
+        {
+          "instruction": "fft.17.0",
+          "ms": 19.767103700000003,
+          "opcode": "fft",
+          "shape": "c128[1500,91,180]{2,1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/operators/convolver.py:1226",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/operators/convolver.py:1226 (Convolver.convolved_mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:196 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:755 (AbstractInversion.mapped_reconstructed_operated_data)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoLens/autolens/imaging/fit_imaging.py:199 (FitImaging.model_data)"
+          ]
+        },
+        {
+          "instruction": "input_scatter_fusion",
+          "ms": 6.617358899999999,
+          "opcode": "fusion",
+          "shape": "f64[1500,180,180]{2,1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/operators/convolver.py:1222",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/operators/convolver.py:1222 (Convolver.convolved_mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:196 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:755 (AbstractInversion.mapped_reconstructed_operated_data)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoLens/autolens/imaging/fit_imaging.py:199 (FitImaging.model_data)"
+          ]
+        },
+        {
+          "instruction": "wrapped_transpose",
+          "ms": 3.4020409000000007,
+          "opcode": "fusion",
+          "shape": "c128[1500,180,91]{2,1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/operators/convolver.py:1226",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/operators/convolver.py:1226 (Convolver.convolved_mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:196 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:755 (AbstractInversion.mapped_reconstructed_operated_data)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoLens/autolens/imaging/fit_imaging.py:199 (FitImaging.model_data)"
+          ]
+        },
+        {
+          "instruction": "input_transpose_fusion.4",
+          "ms": 3.4006803999999997,
+          "opcode": "fusion",
+          "shape": "c128[1500,91,180]{2,1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/operators/convolver.py:1226",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/operators/convolver.py:1226 (Convolver.convolved_mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:196 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:755 (AbstractInversion.mapped_reconstructed_operated_data)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoLens/autolens/imaging/fit_imaging.py:199 (FitImaging.model_data)"
+          ]
+        }
+      ],
+      "mapping_matrix": [
+        {
+          "instruction": "input_reduce_fusion.32",
+          "ms": 0.0042159,
+          "opcode": "fusion",
+          "shape": "f64[]",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mappers/mapper_util.py:93",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mappers/mapper_util.py:93 (adaptive_pixel_signals_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/mappers/abstract.py:507 (Mapper.pixel_signals_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/regularization/adapt.py:339 (Adapt.regularization_weights_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/regularization/adapt_split.py:120 (AdaptSplit.regularization_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/linear_obj/linear_obj.py:171 (LinearObj.regularization_matrix)"
+          ]
+        }
+      ],
+      "curvature_matrix_F": [
+        {
+          "instruction": "cublas-lt-matmul.2",
+          "ms": 374.3171291,
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1500]{1,0}, s8[4194304]{0})",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:139",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:139 (curvature_matrix_via_mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:92 (InversionImagingMapping.curvature_matrix)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:371 (AbstractInversion.curvature_reg_matrix)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:613 (AbstractInversion.reconstruction)"
+          ]
+        }
+      ],
+      "inversion_other": [
+        {
+          "instruction": "loop_slice_fusion.1",
+          "ms": 0.00197,
+          "opcode": "fusion",
+          "shape": "s64[94]{0}",
+          "source": "",
+          "stack": []
+        },
+        {
+          "instruction": "loop_reduce_window_fusion",
+          "ms": 0.0016370999999999998,
+          "opcode": "fusion",
+          "shape": "s64[94,16]{1,0}",
+          "source": "",
+          "stack": []
+        },
+        {
+          "instruction": "loop_reduce_window_fusion.1",
+          "ms": 0.0015313,
+          "opcode": "fusion",
+          "shape": "s64[6,16]{1,0}",
+          "source": "",
+          "stack": []
+        },
+        {
+          "instruction": "input_scatter_fusion.5",
+          "ms": 0.001326,
+          "opcode": "fusion",
+          "shape": "s64[1500]{0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:509",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:509 (AbstractInversion.zeroed_ids_to_keep)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:549 (AbstractInversion.solve_ids_to_keep)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:607 (AbstractInversion.reconstruction)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)"
+          ]
+        },
+        {
+          "instruction": "loop_broadcast_convert_fusion",
+          "ms": 0.0013006,
+          "opcode": "fusion",
+          "shape": "(s32[1500]{0}, s64[1500]{0})",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:509",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:509 (AbstractInversion.zeroed_ids_to_keep)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:549 (AbstractInversion.solve_ids_to_keep)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:607 (AbstractInversion.reconstruction)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)"
+          ]
+        },
+        {
+          "instruction": "loop_slice_fusion.2",
+          "ms": 0.0012945,
+          "opcode": "fusion",
+          "shape": "s64[6,1]{1,0}",
+          "source": "",
+          "stack": []
+        }
+      ],
+      "chi_squared_evidence": [
+        {
+          "instruction": "loop_multiply_fusion.5",
+          "ms": 0.0035621999999999997,
+          "opcode": "fusion",
+          "shape": "f64[15361]{0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/abstract_ndarray.py:300",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/abstract_ndarray.py:300 (AbstractNDArray.__pow__)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/abstract_ndarray.py:60 (unwrap_array.<locals>.wrapper)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/abstract_ndarray.py:35 (to_new_array.<locals>.wrapper)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/fit/fit_util.py:78 (chi_squared_map_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/fit/fit_dataset.py:78 (AbstractFit.chi_squared_map)"
+          ]
+        }
+      ],
+      "log_det_curvature_reg": [
+        {
+          "instruction": "cholesky.110",
+          "ms": 9.186580600000001,
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1500]{0,1}, s32[])",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:872",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:872 (AbstractInversion._log_det_symmetric_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:894 (AbstractInversion.log_det_curvature_reg_matrix_term)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoLens/autolens/imaging/model/analysis.py:135 (AnalysisImaging.log_likelihood_function)"
+          ]
+        }
+      ],
+      "log_det_regularization": [
+        {
+          "instruction": "cholesky.120",
+          "ms": 9.156828699999998,
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1500]{0,1}, s32[])",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:872",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:872 (AbstractInversion._log_det_symmetric_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:941 (AbstractInversion.log_det_regularization_matrix_term)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/fit/fit_dataset.py:348 (FitDataset.log_evidence)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoLens/autolens/imaging/model/analysis.py:135 (AnalysisImaging.log_likelihood_function)"
+          ]
+        }
+      ]
+    },
+    "stage_audit_note": "The HLO instructions that contributed most of each stage's milliseconds, with their full source stack. A stage row is only as good as the rules that built it; this is how a reader checks a row against the HLO instead of trusting it.",
+    "untraced_wall_ms": 622.2440800000186,
+    "reconciliation_vs_untraced_pct": -0.6879588472771795,
+    "wall_basis": "wall_ms is the TRACED run's wall, the run these kernel durations came from. untraced_wall_ms is the same executable without the profiler; the difference is the profiler's overhead and belongs in neither the stages nor the idle row.",
+    "calls": 10,
+    "call_split": "per-call (first-instruction recurrence)",
+    "call_blocks": 10,
+    "events": 5900,
+    "streams": [
+      "Stream #14(MemcpyD2D,MemcpyH2D,Compute,MemcpyD2H,Memset)"
+    ],
+    "per_stage_ms": {
+      "border_relocator": {
+        "median_ms": 0.6580935,
+        "min_ms": 0.640762,
+        "max_ms": 0.6985350000000001
+      },
+      "certified_active_set_solve": {
+        "median_ms": 81.40385600000002,
+        "min_ms": 80.45343000000004,
+        "max_ms": 82.249679
+      },
+      "chi_squared_evidence": {
+        "median_ms": 0.0035555,
+        "min_ms": 0.003462,
+        "max_ms": 0.00375
+      },
+      "curvature_matrix_F": {
+        "median_ms": 374.5837655,
+        "min_ms": 372.006241,
+        "max_ms": 375.429451
+      },
+      "grids_and_structures": {
+        "median_ms": 0.0049645,
+        "min_ms": 0.004777,
+        "max_ms": 0.017439
+      },
+      "inversion_other": {
+        "median_ms": 0.0091605,
+        "min_ms": 0.008546,
+        "max_ms": 0.009618
+      },
+      "log_det_curvature_reg": {
+        "median_ms": 9.0815135,
+        "min_ms": 8.800481,
+        "max_ms": 9.591504
+      },
+      "log_det_regularization": {
+        "median_ms": 9.0294045,
+        "min_ms": 8.896175,
+        "max_ms": 9.567119
+      },
+      "mapping_matrix": {
+        "median_ms": 0.004228,
+        "min_ms": 0.004135,
+        "max_ms": 0.004264
+      },
+      "mass_profile_deflections": {
+        "median_ms": 0.0014104999999999999,
+        "min_ms": 0.001376,
+        "max_ms": 0.016574
+      },
+      "memset": {
+        "median_ms": 0.0207055,
+        "min_ms": 0.020132000000000008,
+        "max_ms": 0.022661000000000008
+      },
+      "mesh_construction": {
+        "median_ms": 0.002595,
+        "min_ms": 0.0025329999999999997,
+        "max_ms": 0.002624
+      },
+      "mesh_locate_walk": {
+        "median_ms": 0.22934949999999998,
+        "min_ms": 0.21671099999999996,
+        "max_ms": 0.2791910000000001
+      },
+      "mesh_qhull_callback": {
+        "median_ms": 0.013497499999999999,
+        "min_ms": 0.012886,
+        "max_ms": 0.037091
+      },
+      "mesh_seed_argmin": {
+        "median_ms": 3.953184499999999,
+        "min_ms": 3.899814000000001,
+        "max_ms": 3.9739070000000005
+      },
+      "mixed_fusion": {
+        "median_ms": 9.4343975,
+        "min_ms": 9.410446000000002,
+        "max_ms": 9.459264999999998
+      },
+      "other": {
+        "median_ms": 0.017487000000000003,
+        "min_ms": 0.016832,
+        "max_ms": 0.027411999999999995
+      },
+      "psf_convolution_mapping_matrix": {
+        "median_ms": 115.438106,
+        "min_ms": 114.879249,
+        "max_ms": 116.30122099999998
+      },
+      "ray_trace_data_grid": {
+        "median_ms": 0.001376,
+        "min_ms": 0.001314,
+        "max_ms": 0.001378
+      },
+      "regularization_H": {
+        "median_ms": 0.009762,
+        "min_ms": 0.009521000000000002,
+        "max_ms": 0.024491000000000002
+      }
+    },
+    "stage_order": [
+      "ray_trace_data_grid",
+      "mass_profile_deflections",
+      "border_relocator",
+      "mesh_qhull_callback",
+      "mesh_seed_argmin",
+      "mesh_locate_walk",
+      "mesh_construction",
+      "mapping_matrix",
+      "psf_convolution_mapping_matrix",
+      "curvature_matrix_F",
+      "regularization_H",
+      "certified_active_set_solve",
+      "log_det_curvature_reg",
+      "log_det_regularization",
+      "chi_squared_evidence",
+      "grids_and_structures",
+      "inversion_other",
+      "mixed_fusion",
+      "other",
+      "memset"
+    ],
+    "mixed_fusion": {
+      "ms": 9.4343975,
+      "constituent_stage_sets": {
+        "curvature_matrix_F + psf_convolution_mapping_matrix": 3.9588649999999994,
+        "certified_active_set_solve + psf_convolution_mapping_matrix": 1.5131407000000001,
+        "certified_active_set_solve + data_vector_D": 0.9566614,
+        "certified_active_set_solve + mapped_reconstruction": 0.7407813,
+        "certified_active_set_solve + mapping_matrix": 0.7172813999999997,
+        "certified_active_set_solve + curvature_reg_add + edge_subset_gather + log_det_curvature_reg + reconstruction_scatter": 0.5827975999999999,
+        "certified_active_set_solve + log_det_regularization + regularization_H": 0.27581130000000004,
+        "edge_subset_gather + reconstruction_scatter": 0.1526381,
+        "certified_active_set_solve + inversion_other + mesh_construction + mesh_interpolation_weights + regularization_H": 0.08665689999999998,
+        "certified_active_set_solve + regularization_term": 0.0828255,
+        "certified_active_set_solve + regularization_H": 0.06888359999999999,
+        "certified_active_set_solve + inversion_other + mapping_matrix + mesh_construction + mesh_interpolation_weights + mesh_locate_walk + mesh_seed_argmin": 0.0492261,
+        "certified_active_set_solve + ray_trace_data_grid": 0.0331287,
+        "certified_active_set_solve + grids_and_structures + mass_profile_deflections": 0.024738899999999998,
+        "certified_active_set_solve + inversion_other + mesh_construction + mesh_dual_areas + mesh_interpolation_weights + mesh_locate_walk + mesh_seed_argmin + regularization_H": 0.022457100000000004,
+        "certified_active_set_solve + chi_squared_evidence": 0.0195324,
+        "border_relocator + certified_active_set_solve": 0.0165377,
+        "grids_and_structures + mass_profile_deflections": 0.014752300000000003,
+        "inversion_other + mapping_matrix + mesh_construction + mesh_interpolation_weights + mesh_locate_walk + mesh_seed_argmin": 0.0142913,
+        "certified_active_set_solve + grids_and_structures + mass_profile_deflections + ray_trace_data_grid": 0.012851699999999999,
+        "certified_active_set_solve + mesh_interpolation_weights + mesh_locate_walk + mesh_seed_argmin": 0.009666800000000001,
+        "certified_active_set_solve + log_det_curvature_reg + regularization_H": 0.0091627,
+        "certified_active_set_solve + mapping_matrix + regularization_H": 0.0066857999999999996,
+        "certified_active_set_solve + edge_subset_gather + reconstruction_scatter": 0.0063812999999999995,
+        "certified_active_set_solve + inversion_other + mesh_construction + regularization_H": 0.0061739,
+        "inversion_other + mesh_construction + mesh_dual_areas + mesh_interpolation_weights + mesh_locate_walk + mesh_seed_argmin": 0.0059565,
+        "grids_and_structures + mass_profile_deflections + ray_trace_data_grid": 0.0046268,
+        "certified_active_set_solve + inversion_other + mesh_construction + mesh_seed_argmin + regularization_H": 0.0045146,
+        "inversion_other + mesh_dual_areas + mesh_locate_walk": 0.004354499999999999,
+        "certified_active_set_solve + grids_and_structures": 0.0040054,
+        "mesh_construction + mesh_locate_walk + mesh_seed_argmin": 0.0039306,
+        "certified_active_set_solve + inversion_other + mesh_construction + mesh_interpolation_weights + mesh_locate_walk + mesh_seed_argmin + regularization_H": 0.0037287,
+        "certified_active_set_solve + edge_subset_gather + inversion_other + reconstruction_scatter + regularization_H": 0.0031394,
+        "certified_active_set_solve + mass_profile_deflections": 0.0029158000000000005,
+        "inversion_other + mesh_interpolation_weights": 0.0025215,
+        "certified_active_set_solve + log_det_regularization": 0.0022298000000000005,
+        "certified_active_set_solve + log_det_curvature_reg": 0.0021783,
+        "certified_active_set_solve + inversion_other + ray_trace_data_grid": 0.0019644000000000003,
+        "certified_active_set_solve + inversion_other + mesh_dual_areas + mesh_locate_walk": 0.0018745,
+        "certified_active_set_solve + reconstruction_scatter": 0.0018454,
+        "inversion_other + mesh_locate_walk + mesh_seed_argmin": 0.0014800999999999998,
+        "chi_squared_evidence + log_det_curvature_reg + log_det_regularization": 0.0014640999999999999,
+        "inversion_other + regularization_H": 0.0010957
+      },
+      "example_kernels": {
+        "curvature_matrix_F + psf_convolution_mapping_matrix": [
+          "loop_gather_multiply_fusion"
+        ],
+        "certified_active_set_solve + psf_convolution_mapping_matrix": [
+          "loop_broadcast_fusion.3"
+        ],
+        "certified_active_set_solve + data_vector_D": [
+          "input_reduce_fusion.13",
+          "input_reduce_fusion.30"
+        ],
+        "certified_active_set_solve + mapped_reconstruction": [
+          "input_reduce_fusion.17"
+        ],
+        "certified_active_set_solve + mapping_matrix": [
+          "loop_broadcast_fusion.6",
+          "loop_divide_fusion"
+        ],
+        "certified_active_set_solve + curvature_reg_add + edge_subset_gather + log_det_curvature_reg + reconstruction_scatter": [
+          "input_multiply_transpose_fusion"
+        ],
+        "certified_active_set_solve + log_det_regularization + regularization_H": [
+          "input_transpose_fusion.5",
+          "loop_log_fusion"
+        ],
+        "edge_subset_gather + reconstruction_scatter": [
+          "loop_gather_fusion.1"
+        ],
+        "certified_active_set_solve + inversion_other + mesh_construction + mesh_interpolation_weights + regularization_H": [
+          "input_scatter_fusion.2"
+        ],
+        "certified_active_set_solve + regularization_term": [
+          "input_reduce_fusion.21",
+          "input_reduce_fusion.28"
+        ]
+      },
+      "prorated_estimate_ms": {
+        "psf_convolution_mapping_matrix": 2.7360028499999998,
+        "certified_active_set_solve": 2.3426573672619044,
+        "curvature_matrix_F": 1.9794324999999997,
+        "data_vector_D": 0.4783307,
+        "mapped_reconstruction": 0.37039065,
+        "mapping_matrix": 0.3702834833333332,
+        "reconstruction_scatter": 0.19655625,
+        "edge_subset_gather": 0.19563355,
+        "regularization_H": 0.15595504726190476,
+        "log_det_curvature_reg": 0.12119093666666665,
+        "curvature_reg_add": 0.11655951999999999,
+        "log_det_regularization": 0.09354003333333334,
+        "regularization_term": 0.04141275,
+        "inversion_other": 0.03902928892857142,
+        "mesh_construction": 0.03483471726190476,
+        "mesh_interpolation_weights": 0.03475557226190476,
+        "grids_and_structures": 0.022380341666666664,
+        "ray_trace_data_grid": 0.021974341666666664,
+        "mass_profile_deflections": 0.021835541666666666,
+        "mesh_locate_walk": 0.019887133928571433,
+        "mesh_seed_argmin": 0.01886992892857143,
+        "chi_squared_evidence": 0.010254233333333333,
+        "border_relocator": 0.00826885,
+        "mesh_dual_areas": 0.0057200125
+      },
+      "prorated_note": "ESTIMATE ONLY \u2014 a mixed fusion's time split equally across the stages its constituents span. Never summed into the measured table, never reconciled."
+    },
+    "other_sources_ms": {
+      "copy.65": 0.009416699999999993,
+      "copy.105": 0.0026247,
+      "loop_multiply_fusion.12": 0.0016593999999999997,
+      "copy.107": 0.0012335,
+      "copy.106": 0.0012176999999999997,
+      "copy.75": 0.0011596,
+      "copy.50": 0.0010895999999999998
+    },
+    "device_span_ms": 617.7221053999999,
+    "device_busy_ms": 603.6592211,
+    "device_idle_ms": 14.06288429999995,
+    "largest_idle_gaps": [
+      {
+        "gap_ms": 5.021066,
+        "after": "pure_callback.4",
+        "before": "pure_callback.4"
+      },
+      {
+        "gap_ms": 0.353305,
+        "after": "pure_callback.4",
+        "before": "loop_select_fusion.5"
+      },
+      {
+        "gap_ms": 0.342726,
+        "after": "cond.3.clone",
+        "before": "input_scatter_fusion.1"
+      },
+      {
+        "gap_ms": 0.284286,
+        "after": "eigh.45",
+        "before": "eigh.45"
+      },
+      {
+        "gap_ms": 0.27656,
+        "after": "eigh.45",
+        "before": "eigh.45"
+      },
+      {
+        "gap_ms": 0.268931,
+        "after": "while.36",
+        "before": "loop_compare_fusion.6"
+      },
+      {
+        "gap_ms": 0.247099,
+        "after": "input_concatenate_fusion.1",
+        "before": "copy.105"
+      },
+      {
+        "gap_ms": 0.240175,
+        "after": "while.36",
+        "before": "loop_subtract_fusion"
+      }
+    ],
+    "kernel_ms": 603.9004125,
+    "sum_ms": 617.9632968,
+    "wall_ms": 618.5915699999896,
+    "host_outside_span_ms": 0.8694645999896693,
+    "reconciliation_pct": -0.10156510862080322,
+    "unjoined_ms": 0.0,
+    "unjoined_pct": 0.0,
+    "other_ms": 0.017487000000000003,
+    "other_pct": 0.0028269056430885887,
+    "note": "Stage rows attribute the command-buffers-OFF program (see the module docstring): kernel times are the same, the launch overhead the CUDA graphs remove is not. sum_ms = kernel rows + device_idle_ms; the residual against wall_ms is host_outside_span_ms (dispatch before the first kernel, teardown after the last).",
+    "host_callback_ms": 6.01361,
+    "host_callback": {
+      "pure_callback_span_ms": 6.01361,
+      "qhull_ms": 4.580280000000001,
+      "events_by_name": {
+        "pure_callback.4": {
+          "count": 10,
+          "ms": 6.01361
+        },
+        "$callback.py:815 _wrapped_callback": {
+          "count": 10,
+          "ms": 4.97767
+        },
+        "$callback.py:224 _callback": {
+          "count": 10,
+          "ms": 4.94606
+        },
+        "$callback.py:74 pure_callback_impl": {
+          "count": 10,
+          "ms": 4.9288
+        },
+        "$callback.py:69 __call__": {
+          "count": 10,
+          "ms": 4.618
+        },
+        "$delaunay.py:162 <lambda>": {
+          "count": 10,
+          "ms": 4.60257
+        },
+        "$delaunay.py:90 scipy_delaunay_tri_only": {
+          "count": 10,
+          "ms": 4.580280000000001
+        },
+        "ThenExecuteCallback:GetEventForComputeStreamSyncPoint": {
+          "count": 10,
+          "ms": 0.03681
+        },
+        "$callback.py:822 <genexpr>": {
+          "count": 40,
+          "ms": 0.01852
+        }
+      },
+      "note": "Host-plane events, aggregated BY NAME because they NEST: pure_callback.N contains _wrapped_callback contains pure_callback_impl contains scipy_delaunay_tri_only (the qhull call). pure_callback_span_ms is the outermost round trip; qhull_ms is the triangulation inside it. These are HOST milliseconds and are NOT a row of the device table \u2014 the device pays for them as the idle gap at pure_callback.N, which largest_idle_gaps names."
+    }
+  },
+  "hlo_census": {
+    "curvature_reg_add_nn": {
+      "count": 0,
+      "instructions": [],
+      "count_square_nn": 0,
+      "square_instructions": [],
+      "computations": [],
+      "callers": {},
+      "question": "How many (n,n) adds of F + lambda*H survive XLA? curvature_reg_matrix is a plain property reached twice per evaluation (abstract.py:613 and :397). 1 = CSE collapsed them; 2 = the matrix is built twice on the JAX path.",
+      "opcodes_at_line_371": {
+        "transpose": 1
+      },
+      "instructions_at_line_371": [
+        {
+          "name": "transpose.126.1.clone.1",
+          "opcode": "transpose",
+          "shape": "f64[1500,1500]{1,0}",
+          "computation": "fused_multiply_transpose"
+        }
+      ],
+      "where_the_sum_lives": {
+        "consumers_of_F_plus_lambda_H": [
+          {
+            "consumer": "gather.56.3",
+            "consumer_opcode": "gather",
+            "consumer_source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:613",
+            "operand": "param_1.1040",
+            "producer": "cublas-lt-matmul.2",
+            "producer_opcode": "custom-call",
+            "producer_shape": "(f64[1500,1500]{1,0}, s8[4194304]{0})",
+            "producer_computation": "main.199",
+            "producer_calls": [],
+            "producer_source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:139"
+          },
+          {
+            "consumer": "gather.57.1",
+            "consumer_opcode": "gather",
+            "consumer_source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:613",
+            "operand": "bitcast.185.1",
+            "producer": "gather.56.3",
+            "producer_opcode": "gather",
+            "producer_shape": "f64[1500,1,1500]{2,1,0}",
+            "producer_computation": "fused_gather.1",
+            "producer_calls": [],
+            "producer_source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:613"
+          },
+          {
+            "consumer": "gather.56.7.clone.1",
+            "consumer_opcode": "gather",
+            "consumer_source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:613",
+            "operand": "param_1.3387",
+            "producer": "cublas-lt-matmul.2",
+            "producer_opcode": "custom-call",
+            "producer_shape": "(f64[1500,1500]{1,0}, s8[4194304]{0})",
+            "producer_computation": "main.199",
+            "producer_calls": [],
+            "producer_source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:139"
+          },
+          {
+            "consumer": "gather.57.5.clone.1",
+            "consumer_opcode": "gather",
+            "consumer_source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:613",
+            "operand": "bitcast.185.5.clone.1",
+            "producer": "gather.56.7.clone.1",
+            "producer_opcode": "gather",
+            "producer_shape": "f64[1500,1,1500]{2,1,0}",
+            "producer_computation": "fused_multiply_transpose",
+            "producer_calls": [],
+            "producer_source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:613"
+          },
+          {
+            "consumer": "gather.56.9",
+            "consumer_opcode": "gather",
+            "consumer_source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:613",
+            "operand": "param_0.2778",
+            "producer": "cublas-lt-matmul.2",
+            "producer_opcode": "custom-call",
+            "producer_shape": "(f64[1500,1500]{1,0}, s8[4194304]{0})",
+            "producer_computation": "main.199",
+            "producer_calls": [],
+            "producer_source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:139"
+          },
+          {
+            "consumer": "gather.57.7",
+            "consumer_opcode": "gather",
+            "consumer_source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:613",
+            "operand": "bitcast.185.7",
+            "producer": "gather.56.9",
+            "producer_opcode": "gather",
+            "producer_shape": "f64[1500,1,1500]{2,1,0}",
+            "producer_computation": "fused_convert_rsqrt",
+            "producer_calls": [],
+            "producer_source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:613"
+          },
+          {
+            "consumer": "loop_gather_fusion.1",
+            "consumer_opcode": "fusion",
+            "consumer_source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:613",
+            "operand": "get-tuple-element.156.0",
+            "producer": "cublas-lt-matmul.2",
+            "producer_opcode": "custom-call",
+            "producer_shape": "(f64[1500,1500]{1,0}, s8[4194304]{0})",
+            "producer_computation": "main.199",
+            "producer_calls": [],
+            "producer_source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:139"
+          },
+          {
+            "consumer": "cholesky.110",
+            "consumer_opcode": "custom-call",
+            "consumer_source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:872",
+            "operand": "bitcast.735.0",
+            "producer": "input_multiply_transpose_fusion",
+            "producer_opcode": "fusion",
+            "producer_shape": "(f64[1500,1500]{1,0}, f64[1500,1500]{1,0}, f64[1500,1500]{1,0})",
+            "producer_computation": "main.199",
+            "producer_calls": [
+              "fused_multiply_transpose"
+            ],
+            "producer_source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:418"
+          }
+        ],
+        "producers": {
+          "cublas-lt-matmul.2": [
+            "gather.56.3",
+            "gather.56.7.clone.1",
+            "gather.56.9",
+            "loop_gather_fusion.1"
+          ],
+          "gather.56.3": [
+            "gather.57.1"
+          ],
+          "gather.56.7.clone.1": [
+            "gather.57.5.clone.1"
+          ],
+          "gather.56.9": [
+            "gather.57.7"
+          ],
+          "input_multiply_transpose_fusion": [
+            "cholesky.110"
+          ]
+        },
+        "producers_shared_by_more_than_one_consumer": [
+          "cublas-lt-matmul.2"
+        ],
+        "note": "The F + lambda*H matrix is located by its consumers (the edge subset at abstract.py:606-614 and the log-det Cholesky reached from log_det_curvature_reg_matrix_term) and one step back along their operands, because XLA leaves no standalone add at abstract.py:371 to find. A producer listed under producers_shared_by_more_than_one_consumer is ONE materialisation serving both, which is the JAX-side answer to curvature_reg_matrix_rebuilt_every_access; distinct producers per consumer would be the sum being built more than once."
+      },
+      "verdict": "NO add survives at abstract.py:371, though the line does resolve (transpose x1). XLA fused the F + lambda*H sum into its consumers: no standalone (n,n) sum is ever materialised on the JAX path, so 'the matrix is rebuilt on every access' has no cost to measure here. Its arithmetic is inside the mixed_fusion and curvature_reg_add rows of the device table, not in an add of its own."
+    },
+    "edge_subset_gathers_613": {
+      "count": 7,
+      "instructions": [
+        {
+          "name": "gather.56.9",
+          "opcode": "gather",
+          "shape": "f64[1500,1,1500]{2,1,0}",
+          "computation": "fused_convert_rsqrt",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:613",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:613 (AbstractInversion.reconstruction)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:112 (InversionImagingMapping._mapped_reconstructed_data_dict_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:195 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)"
+          ]
+        },
+        {
+          "name": "gather.57.7",
+          "opcode": "gather",
+          "shape": "f64[1500,1500,1]{2,0,1}",
+          "computation": "fused_convert_rsqrt",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:613",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:613 (AbstractInversion.reconstruction)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:112 (InversionImagingMapping._mapped_reconstructed_data_dict_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:195 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)"
+          ]
+        },
+        {
+          "name": "gather.56.3",
+          "opcode": "gather",
+          "shape": "f64[1500,1,1500]{2,1,0}",
+          "computation": "fused_gather.1",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:613",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:613 (AbstractInversion.reconstruction)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:112 (InversionImagingMapping._mapped_reconstructed_data_dict_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:195 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)"
+          ]
+        },
+        {
+          "name": "gather.57.1",
+          "opcode": "gather",
+          "shape": "f64[1500,1500,1]{2,0,1}",
+          "computation": "fused_gather.1",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:613",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:613 (AbstractInversion.reconstruction)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:112 (InversionImagingMapping._mapped_reconstructed_data_dict_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:195 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)"
+          ]
+        },
+        {
+          "name": "gather.59.3.clone.1",
+          "opcode": "gather",
+          "shape": "f64[1500,1]{1,0}",
+          "computation": "fused_gather_multiply_reduce",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:612",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:612 (AbstractInversion.reconstruction)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:112 (InversionImagingMapping._mapped_reconstructed_data_dict_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:195 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)"
+          ]
+        },
+        {
+          "name": "gather.56.7.clone.1",
+          "opcode": "gather",
+          "shape": "f64[1500,1,1500]{2,1,0}",
+          "computation": "fused_multiply_transpose",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:613",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:613 (AbstractInversion.reconstruction)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:112 (InversionImagingMapping._mapped_reconstructed_data_dict_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:195 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)"
+          ]
+        },
+        {
+          "name": "gather.57.5.clone.1",
+          "opcode": "gather",
+          "shape": "f64[1500,1500,1]{2,0,1}",
+          "computation": "fused_multiply_transpose",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:613",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:613 (AbstractInversion.reconstruction)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:112 (InversionImagingMapping._mapped_reconstructed_data_dict_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:195 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)"
+          ]
+        }
+      ]
+    },
+    "curvature_reg_reduced_gathers_397": {
+      "count": 0,
+      "instructions": []
+    },
+    "fft_convolver_total": {
+      "count": 3,
+      "instructions": [
+        {
+          "name": "fft.15.0",
+          "opcode": "fft",
+          "shape": "c128[1500,180,91]{2,1,0}",
+          "computation": "main.199",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/operators/convolver.py:1222",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/operators/convolver.py:1222 (Convolver.convolved_mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:196 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:755 (AbstractInversion.mapped_reconstructed_operated_data)"
+          ]
+        },
+        {
+          "name": "fft.17.0",
+          "opcode": "fft",
+          "shape": "c128[1500,91,180]{2,1,0}",
+          "computation": "main.199",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/operators/convolver.py:1226",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/operators/convolver.py:1226 (Convolver.convolved_mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:196 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:755 (AbstractInversion.mapped_reconstructed_operated_data)"
+          ]
+        },
+        {
+          "name": "fft.19.0",
+          "opcode": "fft",
+          "shape": "f64[1500,180,180]{2,1,0}",
+          "computation": "main.199",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/operators/convolver.py:1226",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/operators/convolver.py:1226 (Convolver.convolved_mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:196 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:755 (AbstractInversion.mapped_reconstructed_operated_data)"
+          ]
+        }
+      ],
+      "callers": {
+        "fft.15.0": [
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/operators/convolver.py:1222 (Convolver.convolved_mapping_matrix_from)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:196 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:755 (AbstractInversion.mapped_reconstructed_operated_data)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoLens/autolens/imaging/fit_imaging.py:199 (FitImaging.model_data)"
+        ],
+        "fft.17.0": [
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/operators/convolver.py:1226 (Convolver.convolved_mapping_matrix_from)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:196 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:755 (AbstractInversion.mapped_reconstructed_operated_data)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoLens/autolens/imaging/fit_imaging.py:199 (FitImaging.model_data)"
+        ],
+        "fft.19.0": [
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/operators/convolver.py:1226 (Convolver.convolved_mapping_matrix_from)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:196 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:755 (AbstractInversion.mapped_reconstructed_operated_data)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoLens/autolens/imaging/fit_imaging.py:199 (FitImaging.model_data)"
+        ]
+      },
+      "question": "Each FFT convolution is one rfft2 + one irfft2, so a convolution costs TWO fft instructions. The caller chain of each is recorded because the same convolved_mapping_matrix_from is reached from more than one place (operated_mapping_matrix_list for F, and mapped_reconstructed_operated_data_dict for the mapped reconstruction) -- counting instructions without their callers cannot tell a doubled convolution from two different convolutions."
+    },
+    "fft_mapping_matrix": {
+      "count": 3,
+      "instructions": [
+        {
+          "name": "fft.15.0",
+          "opcode": "fft",
+          "shape": "c128[1500,180,91]{2,1,0}",
+          "computation": "main.199",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/operators/convolver.py:1222",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/operators/convolver.py:1222 (Convolver.convolved_mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:196 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:755 (AbstractInversion.mapped_reconstructed_operated_data)"
+          ]
+        },
+        {
+          "name": "fft.17.0",
+          "opcode": "fft",
+          "shape": "c128[1500,91,180]{2,1,0}",
+          "computation": "main.199",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/operators/convolver.py:1226",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/operators/convolver.py:1226 (Convolver.convolved_mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:196 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:755 (AbstractInversion.mapped_reconstructed_operated_data)"
+          ]
+        },
+        {
+          "name": "fft.19.0",
+          "opcode": "fft",
+          "shape": "f64[1500,180,180]{2,1,0}",
+          "computation": "main.199",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/operators/convolver.py:1226",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/operators/convolver.py:1226 (Convolver.convolved_mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:196 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:755 (AbstractInversion.mapped_reconstructed_operated_data)"
+          ]
+        }
+      ],
+      "question": "Is the PSF convolution of the mapping-matrix cube compiled once or twice? operated_mapping_matrix_list is a plain property reached twice."
+    },
+    "fft_image": {
+      "count": 0,
+      "instructions": []
+    },
+    "cholesky": {
+      "count": 6,
+      "instructions": [
+        {
+          "name": "cholesky.100",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1500]{0,1}, s32[])",
+          "computation": "main.199",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:418",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:418 (_masked_solve)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:456 (active_set_masked_jax)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/library_solver_injection.py:126 (certified_reconstruction_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/library_solver_injection.py:191 (certified_solver_injected.<locals>.patched)"
+          ]
+        },
+        {
+          "name": "cholesky.110",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1500]{0,1}, s32[])",
+          "computation": "main.199",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:872",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:872 (AbstractInversion._log_det_symmetric_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:894 (AbstractInversion.log_det_curvature_reg_matrix_term)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)"
+          ]
+        },
+        {
+          "name": "cholesky.120",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1500]{0,1}, s32[])",
+          "computation": "main.199",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:872",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:872 (AbstractInversion._log_det_symmetric_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:941 (AbstractInversion.log_det_regularization_matrix_term)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/fit/fit_dataset.py:348 (FitDataset.log_evidence)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)"
+          ]
+        },
+        {
+          "name": "cholesky.70",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1500]{0,1}, s32[])",
+          "computation": "region_80.166",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:418",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:418 (_masked_solve)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:462 (active_set_masked_jax.<locals>.step)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:484 (active_set_masked_jax)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/library_solver_injection.py:126 (certified_reconstruction_from)"
+          ]
+        },
+        {
+          "name": "cholesky.90",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1500]{0,1}, s32[])",
+          "computation": "region_86.192",
+          "source": "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:62",
+          "stack": [
+            "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:62 (initialize)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/util/jax_nnls.py:63 (solve_nnls)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/util/jax_nnls.py:91 (_solve_nnls_primal_with.<locals>.primal)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/util/jax_nnls.py:120 (solve_nnls_primal)"
+          ]
+        },
+        {
+          "name": "cholesky.80",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1500]{0,1}, s32[])",
+          "computation": "region_89.190",
+          "source": "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:106",
+          "stack": [
+            "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:106 (factorize_kkt)",
+            "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:212 (pdip_pc_step)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/util/jax_nnls.py:74 (solve_nnls)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/util/jax_nnls.py:91 (_solve_nnls_primal_with.<locals>.primal)"
+          ]
+        }
+      ],
+      "callers": {
+        "cholesky.100": [
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:418 (_masked_solve)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:456 (active_set_masked_jax)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/library_solver_injection.py:126 (certified_reconstruction_from)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/library_solver_injection.py:191 (certified_solver_injected.<locals>.patched)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:619 (AbstractInversion.reconstruction)"
+        ],
+        "cholesky.110": [
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:872 (AbstractInversion._log_det_symmetric_from)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:894 (AbstractInversion.log_det_curvature_reg_matrix_term)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoLens/autolens/imaging/model/analysis.py:135 (AnalysisImaging.log_likelihood_function)"
+        ],
+        "cholesky.120": [
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:872 (AbstractInversion._log_det_symmetric_from)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/abstract.py:941 (AbstractInversion.log_det_regularization_matrix_term)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/fit/fit_dataset.py:348 (FitDataset.log_evidence)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoLens/autolens/imaging/model/analysis.py:135 (AnalysisImaging.log_likelihood_function)"
+        ],
+        "cholesky.70": [
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:418 (_masked_solve)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:462 (active_set_masked_jax.<locals>.step)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:484 (active_set_masked_jax)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/library_solver_injection.py:126 (certified_reconstruction_from)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/library_solver_injection.py:191 (certified_solver_injected.<locals>.patched)"
+        ],
+        "cholesky.90": [
+          "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:62 (initialize)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/util/jax_nnls.py:63 (solve_nnls)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/util/jax_nnls.py:91 (_solve_nnls_primal_with.<locals>.primal)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/util/jax_nnls.py:120 (solve_nnls_primal)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:367 (reconstruction_positive_only_from)"
+        ],
+        "cholesky.80": [
+          "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:106 (factorize_kkt)",
+          "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:212 (pdip_pc_step)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/util/jax_nnls.py:74 (solve_nnls)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/util/jax_nnls.py:91 (_solve_nnls_primal_with.<locals>.primal)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/util/jax_nnls.py:120 (solve_nnls_primal)"
+        ]
+      }
+    },
+    "triangular_solve": {
+      "count": 10,
+      "instructions": [
+        {
+          "name": "triangular-solve.8",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1]{0,1}, s8[0]{0})",
+          "computation": "main.199",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:419",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:419 (_masked_solve)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:456 (active_set_masked_jax)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/library_solver_injection.py:126 (certified_reconstruction_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/library_solver_injection.py:191 (certified_solver_injected.<locals>.patched)"
+          ]
+        },
+        {
+          "name": "triangular-solve.9",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1]{0,1}, s8[0]{0})",
+          "computation": "main.199",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:419",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:419 (_masked_solve)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:456 (active_set_masked_jax)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/library_solver_injection.py:126 (certified_reconstruction_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/library_solver_injection.py:191 (certified_solver_injected.<locals>.patched)"
+          ]
+        },
+        {
+          "name": "triangular-solve",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1]{0,1}, s8[0]{0})",
+          "computation": "region_80.166",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:419",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:419 (_masked_solve)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:462 (active_set_masked_jax.<locals>.step)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:484 (active_set_masked_jax)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/library_solver_injection.py:126 (certified_reconstruction_from)"
+          ]
+        },
+        {
+          "name": "triangular-solve.1",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1]{0,1}, s8[0]{0})",
+          "computation": "region_80.166",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:419",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:419 (_masked_solve)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:462 (active_set_masked_jax.<locals>.step)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/active_set_steps.py:484 (active_set_masked_jax)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/autolens_profiling/scripts/misc/likelihood_breakdown/library_solver_injection.py:126 (certified_reconstruction_from)"
+          ]
+        },
+        {
+          "name": "triangular-solve.6",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1]{0,1}, s8[0]{0})",
+          "computation": "region_86.192",
+          "source": "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:65",
+          "stack": [
+            "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:65 (initialize)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/util/jax_nnls.py:63 (solve_nnls)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/util/jax_nnls.py:91 (_solve_nnls_primal_with.<locals>.primal)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/util/jax_nnls.py:120 (solve_nnls_primal)"
+          ]
+        },
+        {
+          "name": "triangular-solve.7",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1]{0,1}, s8[0]{0})",
+          "computation": "region_86.192",
+          "source": "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:65",
+          "stack": [
+            "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:65 (initialize)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/util/jax_nnls.py:63 (solve_nnls)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/util/jax_nnls.py:91 (_solve_nnls_primal_with.<locals>.primal)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/util/jax_nnls.py:120 (solve_nnls_primal)"
+          ]
+        },
+        {
+          "name": "triangular-solve.2",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1]{0,1}, s8[0]{0})",
+          "computation": "region_89.190",
+          "source": "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:146",
+          "stack": [
+            "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:146 (solve_kkt_rhs)",
+            "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:213 (pdip_pc_step)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/util/jax_nnls.py:74 (solve_nnls)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/util/jax_nnls.py:91 (_solve_nnls_primal_with.<locals>.primal)"
+          ]
+        },
+        {
+          "name": "triangular-solve.3",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1]{0,1}, s8[0]{0})",
+          "computation": "region_89.190",
+          "source": "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:146",
+          "stack": [
+            "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:146 (solve_kkt_rhs)",
+            "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:213 (pdip_pc_step)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/util/jax_nnls.py:74 (solve_nnls)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/util/jax_nnls.py:91 (_solve_nnls_primal_with.<locals>.primal)"
+          ]
+        },
+        {
+          "name": "triangular-solve.4",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1]{0,1}, s8[0]{0})",
+          "computation": "region_89.190",
+          "source": "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:146",
+          "stack": [
+            "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:146 (solve_kkt_rhs)",
+            "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:217 (pdip_pc_step)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/util/jax_nnls.py:74 (solve_nnls)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/util/jax_nnls.py:91 (_solve_nnls_primal_with.<locals>.primal)"
+          ]
+        },
+        {
+          "name": "triangular-solve.5",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1]{0,1}, s8[0]{0})",
+          "computation": "region_89.190",
+          "source": "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:146",
+          "stack": [
+            "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:146 (solve_kkt_rhs)",
+            "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:217 (pdip_pc_step)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/util/jax_nnls.py:74 (solve_nnls)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p1/PyAutoArray/autoarray/util/jax_nnls.py:91 (_solve_nnls_primal_with.<locals>.primal)"
+          ]
+        }
+      ]
+    },
+    "instructions_total": 3973,
+    "instructions_with_frames": 2695
+  },
+  "stage_map_provenance": [
+    {
+      "label": "log_det_curvature_reg",
+      "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+      "lines": [
+        850,
+        882
+      ],
+      "requires": {
+        "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+        "lines": [
+          884,
+          896
+        ]
+      },
+      "function": null
+    },
+    {
+      "label": "log_det_regularization",
+      "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+      "lines": [
+        850,
+        882
+      ],
+      "requires": {
+        "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+        "lines": [
+          897,
+          943
+        ]
+      },
+      "function": null
+    },
+    {
+      "label": "curvature_reg_add",
+      "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+      "lines": [
+        359,
+        372
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "curvature_reg_reduce_gather",
+      "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+      "lines": [
+        374,
+        398
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "edge_subset_gather",
+      "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+      "lines": [
+        606,
+        614
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "regularization_term",
+      "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+      "lines": [
+        786,
+        849
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mapped_reconstruction",
+      "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+      "lines": [
+        722,
+        785
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "reconstruction_scatter",
+      "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+      "lines": [
+        583,
+        605
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "reconstruction_scatter",
+      "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+      "lines": [
+        615,
+        721
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "certified_active_set_solve",
+      "path": "likelihood_breakdown/active_set_steps.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "certified_active_set_solve",
+      "path": "likelihood_breakdown/library_solver_injection.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "pdip_solve",
+      "path": "PyAutoArray/autoarray/util/jax_nnls.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "pdip_solve",
+      "path": "PyAutoArray/autoarray/inversion/inversion/inversion_util.py",
+      "lines": [
+        256,
+        488
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mapped_reconstruction",
+      "path": "PyAutoArray/autoarray/inversion/inversion/inversion_util.py",
+      "lines": [
+        156,
+        200
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "curvature_matrix_F",
+      "path": "PyAutoArray/autoarray/inversion/inversion/inversion_util.py",
+      "lines": [
+        12,
+        155
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "reconstruction_scatter",
+      "path": "PyAutoArray/autoarray/inversion/inversion/inversion_util.py",
+      "lines": [
+        201,
+        255
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "data_vector_D",
+      "path": "PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py",
+      "lines": [
+        54,
+        73
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "curvature_matrix_F",
+      "path": "PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py",
+      "lines": [
+        74,
+        110
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "data_vector_D",
+      "path": "PyAutoArray/autoarray/inversion/inversion/imaging/inversion_imaging_util.py",
+      "lines": null,
+      "requires": null,
+      "function": "data_vector_via_blurred_mapping_matrix_from"
+    },
+    {
+      "label": "curvature_matrix_F",
+      "path": "PyAutoArray/autoarray/inversion/inversion/imaging/inversion_imaging_util.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "psf_convolution_mapping_matrix",
+      "path": "PyAutoArray/autoarray/operators/convolver.py",
+      "lines": [
+        1086,
+        1300
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "psf_convolution_mapping_matrix",
+      "path": "PyAutoArray/autoarray/operators/convolver.py",
+      "lines": [
+        632,
+        642
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "psf_convolution_mapping_matrix",
+      "path": "PyAutoArray/autoarray/operators/convolver.py",
+      "lines": [
+        670,
+        691
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "psf_convolution_mapping_matrix",
+      "path": "PyAutoArray/autoarray/operators/convolver.py",
+      "lines": null,
+      "requires": {
+        "path": "PyAutoArray/autoarray/operators/convolver.py",
+        "lines": [
+          1086,
+          1300
+        ]
+      },
+      "function": null
+    },
+    {
+      "label": "psf_convolution_mapping_matrix",
+      "path": "PyAutoArray/autoarray/operators/convolver.py",
+      "lines": null,
+      "requires": {
+        "path": "PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py",
+        "lines": [
+          119,
+          150
+        ]
+      },
+      "function": null
+    },
+    {
+      "label": "psf_convolution_image",
+      "path": "PyAutoArray/autoarray/operators/convolver.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "psf_convolution_mapping_matrix",
+      "path": "PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py",
+      "lines": [
+        119,
+        150
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mesh_qhull_callback",
+      "path": "PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py",
+      "lines": [
+        139,
+        172
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mesh_seed_argmin",
+      "path": "PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py",
+      "lines": [
+        173,
+        207
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mesh_locate_walk",
+      "path": "PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py",
+      "lines": [
+        208,
+        372
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mesh_dual_areas",
+      "path": "PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py",
+      "lines": [
+        373,
+        396
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mesh_dual_areas",
+      "path": "PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py",
+      "lines": [
+        437,
+        494
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mesh_dual_areas",
+      "path": "PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py",
+      "lines": [
+        605,
+        615
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mesh_interpolation_weights",
+      "path": "PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py",
+      "lines": [
+        616,
+        695
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mesh_interpolation_weights",
+      "path": "PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py",
+      "lines": [
+        896,
+        1000
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mesh_construction",
+      "path": "PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "border_relocator",
+      "path": "PyAutoArray/autoarray/inversion/mesh/border_relocator.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mesh_construction",
+      "path": "PyAutoArray/autoarray/inversion/mesh/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mapping_matrix",
+      "path": "PyAutoArray/autoarray/inversion/mappers/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mapping_matrix",
+      "path": "PyAutoArray/autoarray/inversion/mappings/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mapping_matrix",
+      "path": "PyAutoArray/autoarray/inversion/linear_obj/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "regularization_H",
+      "path": "PyAutoArray/autoarray/inversion/regularization/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "chi_squared_evidence",
+      "path": "PyAutoArray/autoarray/fit/fit_util.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "chi_squared_evidence",
+      "path": "PyAutoArray/autoarray/fit/fit_dataset.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "ray_trace_mesh_grid",
+      "path": "PyAutoLens/autolens/lens/to_inversion.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "ray_trace_mesh_grid",
+      "path": "PyAutoGalaxy/autogalaxy/galaxy/to_inversion.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mass_profile_deflections",
+      "path": "PyAutoGalaxy/autogalaxy/profiles/mass/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "light_profile_image",
+      "path": "PyAutoGalaxy/autogalaxy/profiles/light/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "light_profile_image",
+      "path": "PyAutoGalaxy/autogalaxy/operate/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "ray_trace_data_grid",
+      "path": "PyAutoLens/autolens/lens/tracer.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "ray_trace_data_grid",
+      "path": "PyAutoLens/autolens/lens/tracer_util.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "grids_and_structures",
+      "path": "PyAutoArray/autoarray/structures/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "grids_and_structures",
+      "path": "PyAutoArray/autoarray/operators/over_sampling/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "grids_and_structures",
+      "path": "PyAutoArray/autoarray/geometry/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "inversion_other",
+      "path": "PyAutoArray/autoarray/inversion/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "fit_imaging_other",
+      "path": "PyAutoLens/autolens/imaging/fit_imaging.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "fit_imaging_other",
+      "path": "PyAutoGalaxy/autogalaxy/imaging/fit_imaging.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "fit_imaging_other",
+      "path": "PyAutoArray/autoarray/fit/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "analysis_other",
+      "path": "PyAutoLens/autolens/analysis/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "analysis_other",
+      "path": "PyAutoGalaxy/autogalaxy/analysis/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    }
+  ],
+  "trace_timing": {
+    "traced_wall_ms": 618.5915699999896,
+    "untraced_wall_ms": 622.2440800000186,
+    "profiler_overhead_ms": -3.6525100000289967,
+    "profiler_overhead_pct": -0.5869899156017503
+  },
+  "jit_phases": {
+    "b_s3_pdip_library_likelihood_jit": {
+      "lower_s": 1.6467787000001408,
+      "compile_s": 2.8583539000010205,
+      "first_call_s": 1.0868728000004921,
+      "steady_per_call_s": 0.6998410399999557
+    },
+    "d_s3_certified_fallback_library_likelihood_jit": {
+      "lower_s": 0.5694763000010425,
+      "compile_s": 3.3898570999990625,
+      "first_call_s": 0.9620366999988619,
+      "steady_per_call_s": 0.5950210999999399
+    }
+  },
+  "peak_bytes": {
+    "after_setup": 85108992,
+    "after_routes": 1574807808,
+    "after_all": 1574808064,
+    "note": "jax.devices()[0].memory_stats()['peak_bytes_in_use']; None on a backend that does not report it (CPU). Process-wide high-water marks."
+  },
+  "note": "Every stage row is a MEASURED sum of GPU kernel durations joined to library source through the optimized HLO of ONE program \u2014 not arithmetic across compilations. The rows attribute the command-buffers-OFF program: kernel time is the same as production, the launch overhead the CUDA graphs remove is not, and command_buffers.* carries both walls and their delta. sum_ms = kernel rows + measured device_idle_ms; the residual against the wall is host_outside_span_ms and is reported, not absorbed. mixed_fusion.prorated_estimate_ms is an ESTIMATE and is never part of the table. No row may be quoted if reconciliation_pct is outside 5 % or unjoined_ms is non-zero."
+}
