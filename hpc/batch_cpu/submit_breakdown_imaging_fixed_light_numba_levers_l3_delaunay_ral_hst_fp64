@@ -127,9 +127,42 @@
 # base) and `PyAutoArray_feature` (bae9296e, lever 1) both still exist on the
 # cluster and are deliberately NOT used by this job.
 #
+# WHY --n-repeats 64 AND NOT 16 (the one flag that differs from levers 1 and 2).
+#
+# Job 343355 ran this A/B at 16 repeats, the lever-1/2 setting, and the CONTROL arm
+# completed cleanly (268.681 ms, ABBA overhead x1.0182 PASS) while the FEATURE arm
+# measured 224.330 ms and then died on
+#
+#   AssertionError: row b_sparse_numba: ABBA instrumentation_overhead_ratio 1.0366
+#   > 1.03 over 8 counterbalanced blocks
+#   [1.1086, 0.9855, 1.1747, 1.0515, 1.0312, 1.0105, 0.9215, 1.009]
+#
+# taking its result JSON with it. That gate is not noise-immune at 8 blocks on this
+# cell: the recorded rows of levers 1 and 2 show the overhead ratio climbing purely
+# as the call gets SHORTER -- 1.0147 at 413.301 ms, 1.0167 at 302.709, 1.0163 at
+# 299.709, 1.0221 at 267.448, 1.0182 at 268.681 -- against a clean-call spread of
+# 16-29 % in every one of them, and the per-block pattern is the same shape every
+# time (blocks 1 and 3 high, block 7 low). Lever 3 takes the call to ~224 ms, the
+# shortest yet, so the same absolute instrumentation cost lands hardest here and
+# 1.03 becomes a coin flip: the control arm's own 1.0182 +- 0.027 (standard error
+# over 8 blocks) overlaps the threshold just as plainly as the feature arm's 1.0366.
+#
+# The remedy is the one the cell itself prints ("Re-run with --n-repeats ... or
+# more to assert it"): more counterbalanced blocks, which shrinks the standard
+# error of the mean ratio without touching the estimator. 64 repeats gives **32
+# blocks** instead of 8. It is applied to BOTH arms so the A/B stays symmetric, and
+# it does not bias the whole-call figure -- it is the same mean over more samples of
+# the same call. The gate itself is untouched.
+#
+# The bridge to levers 1 and 2 does not depend on this flag and is already
+# measured: job 343355's control arm ran at 16 repeats against lever 2's
+# PyAutoArray and reported 268.681 ms against lever 2's recorded 267.448 ms,
+# agreeing to 0.5 %. Quote that row when comparing this job's numbers with the
+# earlier levers'.
+#
 # Each arm is phase 2's LEG D and nothing else, identical flags to levers 1 and 2:
 # `fixed_light_numba.py --routes b --formalism sparse_numba --nnls-warm-start on
-# --n-repeats 16 --instances iid --threads 1`. Route b is the S3 source-only
+# --n-repeats 64 --instances iid --threads 1`. Route b is the S3 source-only
 # system on the numba sparse operator with the cross-evaluation NNLS memo ON (the
 # library default, so what production pays). The directly comparable prior row is
 # lever 2's feature arm
@@ -374,7 +407,7 @@ PYPROV
 
 echo "=========================================="
 echo "CONTROL ARM: PyAutoArray 0b17c292 (lever 2) — a SECOND dense Cholesky of F + lambda*H"
-echo "  route b, sparse_numba, memo ON, threads 1, n-repeats 16, instances iid"
+echo "  route b, sparse_numba, memo ON, threads 1, n-repeats 64, instances iid"
 date
 echo "loadavg: $(cat /proc/loadavg)"
 (
@@ -390,7 +423,7 @@ echo "loadavg: $(cat /proc/loadavg)"
         --formalism sparse_numba \
         --routes b \
         --threads 1 \
-        --n-repeats 16 \
+        --n-repeats 64 \
         --instances iid \
         --nnls-warm-start on \
         --config-name hpc_ral_cpu_fp64_fixed_light_numba_lever3_control_b_warm_t1
@@ -398,7 +431,7 @@ echo "loadavg: $(cat /proc/loadavg)"
 
 echo "=========================================="
 echo "FEATURE ARM: PyAutoArray b4322c3e (lever 3) — log det read off the solver's factor"
-echo "  route b, sparse_numba, memo ON, threads 1, n-repeats 16, instances iid"
+echo "  route b, sparse_numba, memo ON, threads 1, n-repeats 64, instances iid"
 date
 echo "loadavg: $(cat /proc/loadavg)"
 (
@@ -414,7 +447,7 @@ echo "loadavg: $(cat /proc/loadavg)"
         --formalism sparse_numba \
         --routes b \
         --threads 1 \
-        --n-repeats 16 \
+        --n-repeats 64 \
         --instances iid \
         --nnls-warm-start on \
         --config-name hpc_ral_cpu_fp64_fixed_light_numba_lever3_b_warm_t1
