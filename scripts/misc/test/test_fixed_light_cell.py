@@ -61,10 +61,19 @@ def _submits() -> list[_Path]:
     # file's `--config-name hpc_a100_fp64_fixed_light` assertion would pass on a
     # library leg only because `hpc_a100_fp64_fixed_light_library` happens to
     # contain it as a substring.
+    #
+    # The numba-lever legs (`..._fixed_light_numba_levers_*`) are excluded for
+    # the same reason, and more strongly: they are PyAutoArray A/B jobs that run
+    # TWO arms in one job (a control and a feature checkout, each on its own
+    # PYTHONPATH inside its own subshell), so every contract below is written for
+    # the wrong shape -- `^python3 -u` cannot see the indented arms, and lever 1
+    # runs the `delaunay.py` cell rather than `fixed_light.py`, so it takes no
+    # `--mesh` and writes under its own config names. Their contract lives in
+    # test_fixed_light_numba_levers_submits.py.
     return sorted(
         p
         for p in BATCH_GPU.glob("submit_breakdown_imaging_fixed_light_*")
-        if "_fixed_light_library_" not in p.name
+        if "_fixed_light_library_" not in p.name and "_fixed_light_numba_levers_" not in p.name
     )
 
 
