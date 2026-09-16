@@ -89,7 +89,10 @@ def _arms(text: str) -> list[str]:
     A line that is exactly ``(`` opens an arm and a line that is exactly ``)``
     closes it. Heredoc bodies are stepped over rather than parsed, because the
     lever-3 submit builds its provenance snippet with ``$(cat <<'PYPROV' ...)``
-    and that Python code has closing parens in column 0.
+    and that Python code has closing parens in column 0. Comment lines are
+    skipped outright: that same submit's header *describes* the heredoc in prose
+    (``$(cat <<'EOF' ...)``), and reading that as a real opener would swallow
+    the rest of the file.
     """
     arms: list[str] = []
     current: list[str] | None = None
@@ -103,6 +106,11 @@ def _arms(text: str) -> list[str]:
                 current.append(line)
             if stripped == heredoc:
                 heredoc = None
+            continue
+
+        if stripped.startswith("#"):
+            if current is not None:
+                current.append(line)
             continue
 
         if current is not None:
