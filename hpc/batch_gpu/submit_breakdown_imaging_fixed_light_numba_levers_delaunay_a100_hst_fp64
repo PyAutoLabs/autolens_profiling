@@ -1,0 +1,177 @@
+#!/bin/bash -l
+#
+# A100 likelihood-breakdown profile: imaging/delaunay x hst x fp64 — the
+# numba-levers A/B (autolens_profiling#267, lever 1).
+#
+# WHAT THIS ROW IS FOR. Lever 1 replaced the two pure-Python loops in
+# PyAutoArray's split-regularization assembly — `reg_split_np_from` and
+# `pixel_splitted_regularization_matrix_np_from` — with numba kernels. Both
+# functions are reached through a dispatch on `xp`
+# (`regularization_util.reg_split_from` / `pixel_splitted_regularization_matrix_from`,
+# `if xp == np: ...` then the JAX body), and ONLY the numpy branch changed.
+# **So the expectation for this job is identity**, and that is the point: an A100
+# row that moved would mean lever 1 leaked out of the numpy branch.
+#
+# Two findings come out of this job, and neither is a speedup:
+#
+#   (i)  WHICH PATH THE GPU CELL ACTUALLY RUNS. Confirmed by reading the cell:
+#        `delaunay.py`'s step-11 prefix builds the mapper and calls
+#        `pixelization_obj.regularization.regularization_matrix_from(linear_obj=m, xp=jnp)`
+#        (the `upto == 11` branch of `_setup_prefix_fn`), so with
+#        `--regularization adapt_split` it is `AdaptSplit.regularization_matrix_from`
+#        -> `reg_split_from(..., xp=jnp)` -> `pixel_splitted_regularization_matrix_from(..., xp=jnp)`,
+#        i.e. the JAX branch, inside `jax.jit`. That branch is PyAutoArray#536's
+#        compacted scatter: a head scatter over the first
+#        `SPLIT_REG_COMPACT_WIDTH = 12` stencil columns plus an exact supplement
+#        for rows wider than that, budgeted by
+#        `SPLIT_REG_WIDE_ROW_BUDGET = 256` (both defaults in
+#        `regularization_util.py`, both left UNSET here, as production leaves
+#        them). This job's log is the record that the compacted path is what ran,
+#        on both arms, at the library defaults.
+#   (ii) THE MEASURED H ROW, control vs feature. The comparable prior row is
+#        `results/breakdown/imaging/delaunay_hpc_a100_fp64.json`:
+#        `steps["Regularization matrix (H)"]` 0.000234 s and
+#        `regularization_matrix_prefix_s` 0.00738 s. H is reported as a
+#        DIFFERENCE of two jitted prefixes (step 11's prefix minus step 6's), so
+#        it is small and noisy by construction; the absolute prefix is the
+#        sturdier number and both are quoted from both arms.
+#
+# THE TWO ARMS, run back-to-back in ONE job so both share a node, a GPU and a
+# driver:
+#
+#   CONTROL ARM  PyAutoArray 5e2bc0f4 — the merge base of the lever branch with
+#                main, i.e. the library WITHOUT the numba kernels.
+#   FEATURE ARM  PyAutoArray bae9296e — the lever branch.
+#
+# Both from PRIVATE checkouts under
+# /mnt/ral/jnightin/PyAuto_wt/fixed-light-numba-levers/, prepended to PYTHONPATH
+# after activate.sh, each in its OWN SUBSHELL so the prepend cannot leak into the
+# next arm, and each printing `autoarray.__file__` plus its checkout's
+# `rev-parse HEAD` inside the job. The shared install
+# /mnt/ral/jnightin/PyAuto/PyAutoArray is NOT used as the control even though it
+# happens to sit at 5e2bc0f4 today: HPCPullPyAuto moves it whenever anyone
+# refreshes it, and it is read-only to this job by policy. Its revisions are
+# echoed below for the other four libraries, which are the same on both arms.
+#
+# `--regularization adapt_split --split-setup --vmap-batch 16` and every
+# JAX/XLA/env setting below are copied verbatim from
+# `submit_breakdown_imaging_delaunay_a100_hst_fp64_adapt_split`, the job
+# `delaunay_hpc_a100_fp64.json`'s row set came from, so the only difference
+# between these arms and that record is the PyAutoArray revision.
+#
+#   --regularization adapt_split  al.reg.AdaptSplit(0.1, 10.0, signal_scale=0.1)
+#   --split-setup                 four-way split of the inversion-setup block
+#                                 (+ the split-point Sibson cut of params->H)
+#   --vmap-batch 16               batched re-timing at the Nautilus reference
+#                                 n_batch
+#
+# LOG-LIKELIHOOD IS NOT COMPARABLE ACROSS THE TWO ARMS: they are separate
+# processes and nothing here compares their evidences. Each arm's own pinned
+# drift (`pinned_drift`, the AdaptSplit log-evidence pin) is the per-arm
+# correctness statement, and the numpy-branch bit-identity claim lever 1 actually
+# makes is witnessed on the CPU job
+# (hpc/batch_cpu/submit_breakdown_imaging_fixed_light_numba_levers_delaunay_ral_hst_fp64,
+# W1/W2/W3). Across the arms, compare milliseconds and nothing else.
+#
+# TRAPS. `parse_known_args` IGNORES unknown flags, so a checkout without these
+# flags would run and silently produce a different table — check
+# `configuration` / `regularization` / `vmap` in each JSON before quoting.
+# SLURM `COMPLETED` can hide a Python crash (a job whose cell died still runs the
+# trailing `echo`/`date`), which is what `activate.sh`'s in-job `set -e` guard is
+# for — but read the `.out` AND the `.err` anyway, and confirm both result JSONs
+# exist. The -o/-e paths below are relative, so sbatch from INSIDE hpc/batch_gpu/.
+
+#SBATCH -J bd_del_lever1
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=12:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+# The two private PyAutoArray checkouts. Neither is the shared install and
+# neither is written to by this job.
+export PYAUTOARRAY_CONTROL=/mnt/ral/jnightin/PyAuto_wt/fixed-light-numba-levers/PyAutoArray_control
+export PYAUTOARRAY_FEATURE=/mnt/ral/jnightin/PyAuto_wt/fixed-light-numba-levers/PyAutoArray_feature
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding"
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+# PYAUTO_SIBSON_QUERY_CHUNK is deliberately left UNSET on both arms (library
+# default 4096, what production uses); the script records the effective chunk
+# under "sibson" in the result JSON. SPLIT_REG_COMPACT_WIDTH (12) and
+# SPLIT_REG_WIDE_ROW_BUDGET (256) are likewise left at their library defaults —
+# they are function keyword defaults in regularization_util.py, not environment
+# variables, and finding (i) above is about confirming that path ran, not
+# retuning it.
+
+nvidia-smi
+
+echo "=========================================="
+date
+hostname
+echo "loadavg:        $(cat /proc/loadavg)"
+echo "Cell:           likelihood_breakdown/imaging/delaunay x 2 arms (control / feature)"
+echo "Instrument:     hst"
+echo "Precision:      fp64"
+echo "Regularization: adapt_split — al.reg.AdaptSplit(inner_coefficient=0.1, outer_coefficient=10.0, signal_scale=0.1)"
+echo "A/B:            PyAutoArray 5e2bc0f4 (merge base) vs bae9296e (lever 1 numba split-reg kernels)"
+echo "Expectation:    IDENTITY — lever 1 changed only the xp==np branch; this cell runs xp=jnp"
+echo "Sibson chunk:   PYAUTO_SIBSON_QUERY_CHUNK=${PYAUTO_SIBSON_QUERY_CHUNK:-unset (library default)}"
+
+echo "=== source revisions (shared install, untouched — PyAutoArray is overridden per arm) ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r" "$(git -C /mnt/ral/jnightin/PyAuto/$r rev-parse HEAD 2>&1)"
+done
+echo "PyAutoArray control: $(git -C $PYAUTOARRAY_CONTROL rev-parse HEAD 2>&1)"
+echo "PyAutoArray feature: $(git -C $PYAUTOARRAY_FEATURE rev-parse HEAD 2>&1)"
+echo "AP_ROOT rev:    $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+echo "AP_ROOT branch: $(git -C $AP_ROOT rev-parse --abbrev-ref HEAD 2>&1)"
+
+cd $AP_ROOT
+
+echo "=========================================="
+echo "CONTROL ARM: PyAutoArray 5e2bc0f4 (merge base)"
+date
+(
+    export PYTHONPATH=$PYAUTOARRAY_CONTROL:$PYTHONPATH
+    echo "--- control arm import provenance ---"
+    echo "  checkout HEAD: $(git -C $PYAUTOARRAY_CONTROL rev-parse HEAD)"
+    python3 -c "import autoarray, autolens; print('  autoarray.__file__    =', autoarray.__file__); print('  autoarray.__version__ =', autoarray.__version__); print('  autolens.__file__     =', autolens.__file__)"
+    python3 -u scripts/imaging/likelihood_breakdown/delaunay.py \
+        --regularization adapt_split \
+        --config-name hpc_a100_fp64_lever1_control \
+        --split-setup \
+        --vmap-batch 16
+)
+
+echo "=========================================="
+echo "FEATURE ARM: PyAutoArray bae9296e (lever 1)"
+date
+(
+    export PYTHONPATH=$PYAUTOARRAY_FEATURE:$PYTHONPATH
+    echo "--- feature arm import provenance ---"
+    echo "  checkout HEAD: $(git -C $PYAUTOARRAY_FEATURE rev-parse HEAD)"
+    python3 -c "import autoarray, autolens; print('  autoarray.__file__    =', autoarray.__file__); print('  autoarray.__version__ =', autoarray.__version__); print('  autolens.__file__     =', autolens.__file__)"
+    python3 -u scripts/imaging/likelihood_breakdown/delaunay.py \
+        --regularization adapt_split \
+        --config-name hpc_a100_fp64_lever1 \
+        --split-setup \
+        --vmap-batch 16
+)
+
+echo "=========================================="
+echo "loadavg: $(cat /proc/loadavg)"
+echo "Finished."
+date
