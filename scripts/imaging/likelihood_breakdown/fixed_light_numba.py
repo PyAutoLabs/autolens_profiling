@@ -69,19 +69,22 @@ Three protocol facts follow from instrumenting the real call:
 The four routes
 ---------------
 
-=======  =========================================================  ======================
-Route    What runs                                                  Solver
-=======  =========================================================  ======================
-``a``    S0 — the joint system the library runs today (linear MGE    ``fnnls_cholesky``
-         lens light + source mapper)
-``b``    S3 — source-only, lens light converted to regular profiles  ``fnnls_cholesky``
-         and subtracted. **The reference.**
-``c``    S3 with ``use_positive_only_solver=False``                  ``xp.linalg.solve``
-``d_np`` S3 with the factor-reuse NNLS injected                      ``nnls_factor_reuse``
-=======  =========================================================  ======================
+============  ======================================================  ======================
+Route         What runs                                               Kernel replaced
+============  ======================================================  ======================
+``a``         S0 — the joint system the library runs today (linear     none
+              MGE lens light + source mapper)
+``b``         S3 — source-only, lens light converted to regular         none
+              profiles and subtracted. **The reference.**
+``c``         S3 with ``use_positive_only_solver=False``                none
+``d_np``      S3 with the factor-reuse NNLS injected                    ``nnls_factor_reuse``
+``b_direct``  S3 with the library's DIRECT curvature kernel forced      ``..._direct_from``
+``b_touched`` S3 with the touched-index two-stage curvature kernel      ``..._touched_from``
+============  ======================================================  ======================
 
-``--routes`` defaults to ``a,b,c``, so ``d_np`` runs only when it is named and
-every pre-existing invocation of this cell produces the row set it always did.
+``--routes`` defaults to ``a,b,c``, so ``d_np``, ``b_direct`` and ``b_touched``
+run only when they are named and every pre-existing invocation of this cell
+produces the row set it always did.
 
 There is no ``d``/``d0``/``e``: the certified active set is a JAX kernel and
 this cell imports no JAX.
@@ -104,6 +107,29 @@ accounting wrapper closes over the injected function and the decomposition's
 also appears as its own exclusive row. The injection's call counters are
 **asserted non-zero** after the block: a patch that never fired would report
 route ``b``'s timing wearing route ``d_np``'s label.
+
+Routes ``b_direct`` and ``b_touched``
+-------------------------------------
+
+Route ``b``'s likelihood with one function replaced, one level below ``d_np``:
+the library's curvature-matrix dispatcher
+``inversion_imaging_numba_util.curvature_matrix_via_sparse_operator_from`` is
+rebound, for the duration of the row, to one of
+``fixed_light_numpy_kernels.KERNELS``. ``b_direct`` forces the library's own
+direct quadruple loop (which production only reaches above 4096 source pixels);
+``b_touched`` runs the candidate two-stage kernel whose stage 2 and accumulator
+re-zero are restricted to the indices stage 1 touched.
+
+The dispatcher picks the two-stage kernel below
+``CURVATURE_TWO_STAGE_MAX_PIX_PIXELS = 4096``, so **route ``b`` is the two-stage
+branch** at every source size this cell measures, and ``b`` / ``b_direct`` /
+``b_touched`` in one process under the ABBA harness is the A/B. Row ``b`` is
+deliberately left un-patched — it is the production path byte for byte, and the
+row the verdict is taken against.
+
+Both are entered **outside** ``call_accounting.install``, exactly as ``d_np`` is,
+so the decomposition's ``sparse_numba.curvature_matrix`` site attributes the
+injected kernel. Their call counters are **asserted non-zero** after the block.
 
 **Route ``c`` is never quoted as a bare millisecond.** Dropping positivity also
 silently drops edge zeroing — ``Inversion.solve_ids_to_keep`` returns ``None``
@@ -222,13 +248,16 @@ _cli = _parse_profile_cli()
 #: no d/d0/e: those are the JAX certified-active-set rows of
 #: ``fixed_light_library.py``, and this cell imports no JAX. ``d_np`` is the
 #: numpy factor-reuse kernel injected into the library's own positive-only entry
-#: point — a numpy row, not a JAX one.
-ALL_ROUTE_KEYS = ("a", "b", "c", "d_np")
+#: point — a numpy row, not a JAX one. ``b_direct`` and ``b_touched`` sit next to
+#: ``b`` because they are route ``b`` with one curvature kernel swapped, and the
+#: three of them read as one A/B table.
+ALL_ROUTE_KEYS = ("a", "b", "b_direct", "b_touched", "c", "d_np")
 
 #: What ``--routes`` selects when it is not given. Deliberately NOT
-#: ``ALL_ROUTE_KEYS``: ``d_np`` patches the library for the duration of its row,
-#: and a cell invocation written before that route existed must produce the row
-#: set it always did. ``d_np`` runs only when it is named.
+#: ``ALL_ROUTE_KEYS``: ``d_np``, ``b_direct`` and ``b_touched`` each patch the
+#: library for the duration of their row, and a cell invocation written before
+#: those routes existed must produce the row set it always did. They run only
+#: when they are named.
 DEFAULT_ROUTE_KEYS = ("a", "b", "c")
 
 #: The two CPU formalisms, in the order the summary prints them.
@@ -353,6 +382,7 @@ if os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 
 from likelihood_breakdown import (  # noqa: E402
     call_accounting,
+    fixed_light_numpy_kernels,
     fixed_light_numpy_solvers,
     fixed_light_system,
 )
@@ -1411,6 +1441,12 @@ _ROUTE_DATASETS = {
     # would make the b -> d_np delta a comparison of two problems.
     ("d_np", "dense"): dataset_s3_dense,
     ("d_np", "sparse_numba"): dataset_s3_sparse,
+    # b_direct and b_touched are the same statement one level down: route b's
+    # problem with one curvature kernel swapped.
+    ("b_direct", "dense"): dataset_s3_dense,
+    ("b_direct", "sparse_numba"): dataset_s3_sparse,
+    ("b_touched", "dense"): dataset_s3_dense,
+    ("b_touched", "sparse_numba"): dataset_s3_sparse,
 }
 
 _ROUTE_LABELS = {
@@ -1418,11 +1454,22 @@ _ROUTE_LABELS = {
     "b": "S3 fnnls source-only (the reference)",
     "c": "S3 positive-negative (xp.linalg.solve)",
     "d_np": "S3 source-only, factor-reuse NNLS injected (one Cholesky, downdates)",
+    "b_direct": "S3 source-only, library direct curvature kernel injected",
+    "b_touched": "S3 source-only, touched-index two-stage curvature kernel injected",
+}
+
+#: Which curvature kernel each injected-kernel route installs, by
+#: :data:`fixed_light_numpy_kernels.KERNELS` name. A route absent from this map
+#: runs the library's own dispatcher untouched — which is what route ``b``, the
+#: control of this A/B, must keep doing.
+_ROUTE_CURVATURE_KERNELS = {
+    "b_direct": "direct",
+    "b_touched": "two_stage_touched",
 }
 
 #: The routes that are route ``b``'s problem in everything but the solver: same
 #: dataset, same instances, same settings, same expected inversion class.
-_ROUTES_LIKE_B = ("b", "d_np")
+_ROUTES_LIKE_B = ("b", "d_np", "b_direct", "b_touched")
 
 
 def _row_plan():
@@ -1448,10 +1495,11 @@ def _analysis_for(route, formalism):
     the dataset already carries its CPU operator (or deliberately does not), and
     the analysis is built with ``use_jax=False``.
 
-    ``d_np`` is built **exactly** as ``b`` is (:data:`_ROUTES_LIKE_B`) — same
-    dataset, same adapt images, same positive-only settings. The kernel is
-    swapped by patching the library's entry point for the duration of the row,
-    not by building a different analysis, so nothing but the solver differs.
+    ``d_np``, ``b_direct`` and ``b_touched`` are built **exactly** as ``b`` is
+    (:data:`_ROUTES_LIKE_B`) — same dataset, same adapt images, same positive-only
+    settings. The kernel is swapped by patching the library's entry point for the
+    duration of the row, not by building a different analysis, so nothing but the
+    one function differs.
     """
     return al.AnalysisImaging(
         dataset=_ROUTE_DATASETS[(route, formalism)],
@@ -1819,6 +1867,26 @@ for _route, _formalism in _row_plan():
         )
         _injection_counts = _injection.__enter__()
 
+    # Routes b_direct and b_touched inject a CURVATURE kernel rather than a
+    # solver — one level below d_np, at
+    # `inversion_imaging_numba_util.curvature_matrix_via_sparse_operator_from`,
+    # which the inversion resolves by module attribute at `sparse.py:385`. Same
+    # placement and the same reasoning as the solver injection above: entered
+    # OUTSIDE `call_accounting.install` so the accounting wrapper closes over the
+    # injected kernel and `sparse_numba.curvature_matrix` attributes it, and
+    # entered/exited explicitly rather than with a `with` because the row body is
+    # module-level code whose failures end the process.
+    #
+    # Route `b` is deliberately absent from `_ROUTE_CURVATURE_KERNELS`: it is the
+    # production path un-patched, and it is the row this A/B is taken against.
+    _kernel_injection = None
+    _kernel_injection_counts = None
+    if _route in _ROUTE_CURVATURE_KERNELS:
+        _kernel_injection = fixed_light_numpy_kernels.curvature_kernel_injected(
+            _ROUTE_CURVATURE_KERNELS[_route], label=_key
+        )
+        _kernel_injection_counts = _kernel_injection.__enter__()
+
     _inversion_class = _assert_dispatch(_route, _formalism)
     print(f"  inversion class: {_inversion_class}")
 
@@ -2100,6 +2168,30 @@ for _route, _formalism in _row_plan():
                 f"row {_key}: the injected factor-reuse solver was never called "
                 f"({_injection_counts['numpy']} numpy calls). This row's milliseconds "
                 f"are route b's, wearing route d_np's label."
+            )
+
+    if _kernel_injection is not None:
+        _kernel_injection.__exit__(None, None, None)
+        _entry["injected_kernel"] = {
+            "kernel": _kernel_injection_counts["dotted_name"],
+            "kernel_name": _kernel_injection_counts["kernel"],
+            "dotted_name_patched": fixed_light_numpy_kernels.LIBRARY_CURVATURE_DISPATCHER_DOTTED,
+            "installed_outside_call_accounting": True,
+            "n_calls": _kernel_injection_counts["n_calls"],
+            "last_pix_pixels": _kernel_injection_counts["last_pix_pixels"],
+        }
+        print(
+            f"  injected curvature kernel: "
+            f"{_kernel_injection_counts['kernel']} — "
+            f"{_kernel_injection_counts['n_calls']} call(s), last pix_pixels "
+            f"{_kernel_injection_counts['last_pix_pixels']}"
+        )
+        if _kernel_injection_counts["n_calls"] <= 0:
+            raise AssertionError(
+                f"row {_key}: the injected curvature kernel "
+                f"{_kernel_injection_counts['kernel']!r} was never called "
+                f"({_kernel_injection_counts['n_calls']} calls). This row's milliseconds "
+                f"are route b's, wearing route {_route}'s label."
             )
 
     rows[_key] = _entry

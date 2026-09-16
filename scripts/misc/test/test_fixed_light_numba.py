@@ -652,27 +652,37 @@ def test_the_cell_never_imports_jax():
     )
 
 
-def test_all_route_keys_is_a_b_c_and_d_np(cell_ns):
-    """Four routes exist; only three run by default.
+def test_all_route_keys_is_a_b_the_two_kernel_routes_c_and_d_np(cell_ns):
+    """Six routes exist; only three run by default.
 
-    ``d_np`` patches the library's positive-only entry point for the duration of
-    its row, so a cell invocation written before the route existed must produce
-    the row set it always did. ``--routes`` therefore defaults to
+    ``d_np`` patches the library's positive-only entry point, and ``b_direct`` /
+    ``b_touched`` (phase 4, #274) patch its curvature-matrix dispatcher, each for
+    the duration of their own row. A cell invocation written before any of them
+    existed must produce the row set it always did, so ``--routes`` defaults to
     :data:`DEFAULT_ROUTE_KEYS`, not to :data:`ALL_ROUTE_KEYS`.
+
+    ``b_direct`` and ``b_touched`` sit immediately after ``b`` in the canonical
+    order because the A/B is read as one table: ``b`` (production, two-stage) on
+    top, the two candidate kernels under it.
 
     Still no ``d``/``d0``/``e``: those are the JAX certified-active-set rows of
     another cell, and this one imports no JAX.
     """
-    assert cell_ns["ALL_ROUTE_KEYS"] == ("a", "b", "c", "d_np")
+    assert cell_ns["ALL_ROUTE_KEYS"] == ("a", "b", "b_direct", "b_touched", "c", "d_np")
     assert cell_ns["DEFAULT_ROUTE_KEYS"] == ("a", "b", "c")
     assert cell_ns["_parse_routes"](None) == ("a", "b", "c"), (
-        "the default row set must not silently grow d_np"
+        "the default row set must not silently grow d_np, b_direct or b_touched"
     )
     assert cell_ns["_parse_routes"]("c,a") == ("a", "c")
     assert cell_ns["_parse_routes"]("b,d_np") == ("b", "d_np")
     assert cell_ns["_parse_routes"]("d_np") == ("d_np",)
+    # The submit's own route string, in the order the summary will print it.
+    assert cell_ns["_parse_routes"]("b,b_direct,b_touched") == ("b", "b_direct", "b_touched")
+    assert cell_ns["_parse_routes"]("b_touched,b") == ("b", "b_touched")
     with pytest.raises(ValueError, match="unknown route"):
         cell_ns["_parse_routes"]("a,d")
+    with pytest.raises(ValueError, match="unknown route"):
+        cell_ns["_parse_routes"]("b_two_stage")
     assert cell_ns["ALL_FORMALISM_KEYS"] == ("dense", "sparse_numba")
     assert cell_ns["_parse_formalisms"]("both") == ("dense", "sparse_numba")
     assert cell_ns["_parse_formalisms"]("dense") == ("dense",)
@@ -688,14 +698,17 @@ def test_route_d_np_is_route_b_with_one_function_replaced():
     """
     source = CELL_PATH.read_text()
 
-    assert '("d_np", "dense"): dataset_s3_dense,' in source
-    assert '("d_np", "sparse_numba"): dataset_s3_sparse,' in source
+    for route in ("d_np", "b_direct", "b_touched"):
+        assert f'("{route}", "dense"): dataset_s3_dense,' in source
+        assert f'("{route}", "sparse_numba"): dataset_s3_sparse,' in source
     # The two branches that split a route off from b's setup name only "a" and
-    # "c", so d_np falls through to b's adapt images, instances and settings.
+    # "c", so every _ROUTES_LIKE_B route falls through to b's adapt images,
+    # instances and settings.
     assert 'adapt_images if route == "a" else adapt_images_s3' in source
     assert 'settings=_settings if route != "c" else _settings_positive_negative' in source
     assert 'instances[index] if route == "a" else instances_s3[index]' in source
     assert '"d_np"' in source and "_ROUTES_LIKE_B" in source
+    assert '_ROUTES_LIKE_B = ("b", "d_np", "b_direct", "b_touched")' in source
 
 
 def test_the_injection_is_entered_outside_call_accounting(cell_ns):
