@@ -343,3 +343,111 @@ def test_the_seam_drops_the_dispatchers_cap_keyword():
         "a `two_stage_max_pix_pixels` the caller supplied must not reach the library "
         "dispatcher and un-inject the row"
     )
+
+
+# ---------------------------------------------------------------------------
+# 3. The witness: static checks
+# ---------------------------------------------------------------------------
+
+
+def test_the_s4_witness_never_imports_jax():
+    """Not at module level, not in a function, not behind a flag.
+
+    The mirror of the cell's own ``test_the_cell_never_imports_jax``. This
+    witness runs beside the numba CPU arm of the s4 leg and its whole premise is
+    the numpy path; a JAX import at module scope would also pull a runtime into
+    the process the A/B rows are timed in, on the same node, at the same time.
+    (``jax`` still lands in ``sys.modules`` via the first ``FitImaging``, which is
+    the library's doing and is recorded in the witness JSON rather than hidden.)
+    """
+    assert WITNESS_PATH.exists(), f"{WITNESS_PATH} does not exist"
+    tree = ast.parse(WITNESS_PATH.read_text())
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                assert alias.name.split(".")[0] != "jax", f"`import {alias.name}`"
+        elif isinstance(node, ast.ImportFrom):
+            module = node.module or ""
+            assert module.split(".")[0] != "jax", f"`from {module} import ...`"
+
+    # ...and `device_info_dict` is never imported or called: it imports jax
+    # unconditionally (`_profile_cli.py:392`).
+    imported = {
+        alias.asname or alias.name
+        for node in ast.walk(tree)
+        if isinstance(node, ast.ImportFrom | ast.Import)
+        for alias in node.names
+    }
+    assert "device_info_dict" not in imported
+
+    called = {
+        node.func.id
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+    } | {
+        node.func.attr
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+    }
+    assert "device_info_dict" not in called
+
+
+def test_the_s4_witness_declares_the_flags_the_submit_passes_it():
+    """A flag the submit passes and the witness does not declare is silently dropped.
+
+    ``parse_known_args`` ignores what it does not recognise, so a witness whose
+    parser lost ``--threads`` would run at whatever thread count it defaulted to
+    and report the submit's number in its JSON anyway. The four flags below are
+    exactly what the s4 submit's witness invocation supplies.
+    """
+    source = WITNESS_PATH.read_text()
+
+    for flag in ('"--mesh"', '"--dataset"', '"--threads"'):
+        assert f"_cell_parser.add_argument({flag}" in source, (
+            f"the witness does not declare {flag}; the submit passes it"
+        )
+    # `--config-name` is the shared `_parse_profile_cli()` flag, and the output
+    # path is derived from it — a witness that hardcoded a name would overwrite
+    # the previous arm's JSON.
+    assert "_parse_profile_cli()" in source
+    assert "_cli.config_name" in source
+    assert 'f"fixed_light_numba_s4_witness_{_config_name}.json"' in source
+
+    # The smoke exit, the verdict and the non-zero exit on FAIL.
+    assert 'os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1"' in source
+    assert '"verdict": "PASS" if _all_pass else "FAIL"' in source
+    assert "raise SystemExit(" in source, (
+        "a FAILED witness must exit non-zero, or SLURM records a COMPLETED job with a "
+        "bad witness buried in the log"
+    )
+
+
+def test_the_s4_witness_gates_touched_at_exact_equality_not_a_tolerance():
+    """W2's two claims are different claims, and must be asserted differently.
+
+    ``direct`` reassociates and is gated at a tolerance. ``two_stage_touched``
+    does not reassociate — its promotion case is that it removes additions of
+    exact ``+0.0`` — so it is gated at ``np.array_equal``. A witness that gated
+    both at 1e-9 would pass a touched kernel that had started reordering, which
+    is exactly the change that would make promoting it a behaviour change.
+    """
+    source = WITNESS_PATH.read_text()
+
+    assert '"bit_identical_to_two_stage": bool(np.array_equal(' in source
+    assert (
+        '_w2_touched_identical = _w2_rows["two_stage_touched"]["bit_identical_to_two_stage"]'
+        in source
+    )
+    assert "_w2_direct_rel <= W2_RTOL" in source
+    assert "W2_RTOL = 1e-9" in source
+    assert "W3_RTOL = 1e-9" in source
+    assert "W4_N_REPEATS = 20" in source
+
+    # W4 is RECORDED, never gated: there is no calibrated ratio for an arbitrary
+    # host and the row that decides the lever is the whole-call A/B.
+    assert '"W4_kernel_site_cost",\n    "RECORDED",' in source
+    assert 'entry["status"] in ("PASS", "RECORDED")' in source
+
+    # And the control is checked to be the production path.
+    assert "_w2_control_is_production" in source
