@@ -451,3 +451,123 @@ def test_the_s4_witness_gates_touched_at_exact_equality_not_a_tolerance():
 
     # And the control is checked to be the production path.
     assert "_w2_control_is_production" in source
+
+
+# ---------------------------------------------------------------------------
+# 4. The RAL submit: static checks
+# ---------------------------------------------------------------------------
+
+
+def test_the_s4_submit_parses_and_runs_only_scripts_that_exist():
+    """``bash -n`` plus a path check on every cell it invokes.
+
+    A submit that references a moved or renamed script fails on the cluster, an
+    hour into a queue, with an exit status the log buries. Both of these are
+    free to check here.
+    """
+    assert SUBMIT_PATH.exists(), f"{SUBMIT_PATH} does not exist"
+
+    completed = subprocess.run(["bash", "-n", str(SUBMIT_PATH)], capture_output=True, text=True)
+    assert completed.returncode == 0, f"bash -n failed:\n{completed.stderr}"
+
+    source = SUBMIT_PATH.read_text()
+    invoked = re.findall(r"^\s*python3 -u (\S+)", source, flags=re.M)
+    assert invoked, "the submit invokes no cell at all"
+    for relative in invoked:
+        assert (ROOT / relative).exists(), (
+            f"the submit runs {relative}, which does not exist in this checkout"
+        )
+
+    assert "scripts/imaging/likelihood_breakdown/fixed_light_numba.py" in invoked
+    assert "scripts/imaging/likelihood_breakdown/fixed_light_numba_s4_witness.py" in invoked
+
+
+def test_the_s4_submit_runs_the_three_row_ab_at_the_settings_the_verdict_assumes():
+    """The flags are the measurement. A quiet drift in any of them is a new question.
+
+    ``parse_known_args`` ignores what it does not recognise, so a route string
+    the cell does not know would produce a silently different table rather than
+    an error. These are the flags the phase's verdict rule — a kernel is a lever
+    if it beats route ``b`` by >= 5 % on the whole call with the ABBA gate PASS —
+    is defined against.
+    """
+    source = SUBMIT_PATH.read_text()
+
+    assert "--routes b,b_direct,b_touched" in source, (
+        "the A/B is the three rows in one process; any other route string is a "
+        "different measurement"
+    )
+    assert "--n-repeats 64" in source, (
+        "32 counterbalanced blocks. 8 could not resolve this gate on this cell (job "
+        "343355), which is the whole reason this family moved off 16 repeats."
+    )
+    assert "--formalism sparse_numba" in source
+    assert "--instances iid" in source
+    assert "--nnls-warm-start on" in source, (
+        "memo ON is what production pays; a cold row is a different problem"
+    )
+    assert "--threads 1" in source
+
+    # Single-thread scope has to be pinned in the environment too: OpenBLAS/MKL
+    # and numba read their knobs once, when their libraries load, so the cell's
+    # own --threads cannot retrofit them.
+    for variable in (
+        "export OMP_NUM_THREADS=1",
+        "export MKL_NUM_THREADS=1",
+        "export OPENBLAS_NUM_THREADS=1",
+        "export NUMBA_NUM_THREADS=1",
+    ):
+        assert variable in source, f"the submit does not pin {variable.split('=')[0]}"
+
+    assert "export NUMBA_CACHE_DIR=" in source
+    assert "export MPLCONFIGDIR=" in source
+
+    # CPUs-only on the gpu partition. Checked on the #SBATCH directives rather
+    # than on the whole file, because the header explains the absence in prose
+    # and a substring search would read that explanation as the thing it denies.
+    directives = re.findall(r"^#SBATCH\s+(.*)$", source, flags=re.M)
+    assert "--partition=gpu" in directives
+    assert not any("--gres" in directive for directive in directives), (
+        "this is a CPU row on the gpu partition's CPUs; asking for a GPU would take "
+        "an A100 out of service for four hours to run numba on a core"
+    )
+    assert "--cpus-per-task=4" in directives
+    assert "--mem=32gb" in directives
+    assert "--time=4:00:00" in directives
+
+
+def test_the_s4_submit_carries_a_wall_basis_row_per_cell_it_runs():
+    """The gate `check_submits.py --check` enforces, asserted here on this submit.
+
+    The l3 submit this one is modelled on carries no ``# WALL-BASIS:`` block at
+    all, which means its ``--time`` rests on nothing a reader can check. This one
+    declares a row per cell, and the rows are read back through the checker's own
+    parser rather than by a substring search, so a malformed row fails here and
+    not on the cluster.
+    """
+    import importlib.util
+
+    checker_path = ROOT / "scripts" / "misc" / "wall" / "check_submits.py"
+    spec = importlib.util.spec_from_file_location("_s4_check_submits", checker_path)
+    checker = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(checker)
+
+    source = SUBMIT_PATH.read_text()
+    rows = checker.parse_basis_rows(source)
+
+    declared = {row["cell"] for row in rows}
+    assert declared == {
+        "imaging/fixed_light_numba/hst",
+        "imaging/fixed_light_numba_s4_witness/hst",
+    }, f"the submit runs two cells; its WALL-BASIS declares {sorted(declared)}"
+
+    for row in rows:
+        assert row["source"] == "measured-wall"
+        assert "wall" in row and "ref" in row, (
+            "`source: measured-wall` needs both `wall:` and `ref:` naming where it was observed"
+        )
+        assert float(row["headroom"]) >= checker.HEADROOM_FLOOR["measured-wall"]
+
+    assert checker.check_text(source) == [], (
+        f"check_submits.py rejects this submit: {checker.check_text(source)}"
+    )
