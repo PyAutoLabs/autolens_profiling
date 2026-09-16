@@ -1,14 +1,15 @@
 # Fixed lens light on the numba CPU path — the three levers (2026-09-16)
 
 autolens_profiling issue [#267](https://github.com/PyAutoLabs/autolens_profiling/issues/267),
-epic `fixed-lens-light-numba-cpu` phase 3, branch `feature/fixed-light-numba-levers`.
+epic `fixed-lens-light-numba-cpu` phase 3, branches `feature/fixed-light-numba-levers`
+(lever 1) and `feature/fixed-light-numba-levers-l2` (lever 2, stacked on it).
 Phase 2 ([`fixed_lens_light_numba_2026_09.md`](./fixed_lens_light_numba_2026_09.md)) closed the
 solver and left a memo-invariant, non-solver residue in the production numba CPU likelihood call:
 `inversion.regularization_matrix` at 111.5 ms, the two log-dets at 40.2 + 37.5 ms, and
 `sparse_numba.curvature_matrix` at 87.4 ms of a 404.6 ms call. Phase 3 attacks that residue in three
 levers, each paired with an A100 row: **lever 1** numba-jit the split-regularization assembly,
 **lever 2** log det H from sparsity, **lever 3** one shared Cholesky of `F + λH`.
-**Lever 1 is measured; levers 2 and 3 are pending** and will be appended here as their own sections.
+**Levers 1 and 2 are measured; lever 3 is pending** and will be appended here as its own sections.
 
 **Lever 1's result: 1.379× on the production numba CPU route (413.301 → 299.709 ms), and identity
 on the A100.** `inversion.regularization_matrix` falls 110.599 → 5.924 ms — 26.8 % of the call to
@@ -18,6 +19,19 @@ arm is identity to 0.036 % on the whole call because lever 1 changed only the `x
 the GPU cell never reaches; its one finding is negative and structural — **the `#536` compaction
 constants `SPLIT_REG_COMPACT_WIDTH` and `SPLIT_REG_WIDE_ROW_BUDGET` are inert at this
 configuration**, because `InterpolatorDelaunay`'s stencil table is K = 4 wide.
+
+**Lever 2's result: a further 1.132× on top of lever 1 (302.709 → 267.448 ms), identity on the
+A100's jitted rows, and a CPU-only verdict.** `inversion.log_det_regularization_matrix_term` falls
+37.480 → 6.508 ms — 12.38 % of the call to 2.43 % — with the sibling `F + λH` log-det term flat at
+−1.6 % and every other row inside the host's scatter. Cumulatively levers 1 and 2 take the
+merge-base call **413.301 → 267.448 ms, 1.545×**, removing 145.853 ms. Unlike lever 1, lever 2 is
+**not** bit-identical: SuperLU and a dense Cholesky are two different fp64 factorisations of the same
+matrix, whose condition number here is 6.491e12, so the log determinant moves −9.213e-6 nats
+(relative 1.201e-9) and the fit's `figure_of_merit` −4.606e-6 nats (relative 2.338e-10). The A100
+arm's six `log_evidence_terms` are bit-identical, and its own **dense** Cholesky of the same H costs
+**1.126 ms** against 37.480 ms on one CPU core — so the sparse route is not worth carrying to the
+GPU, and lever 2 is recorded as a CPU-only lever on the strength of that measurement rather than of
+an argument.
 
 ## Scope — read this before quoting a number
 
@@ -66,7 +80,53 @@ configuration**, because `InterpolatorDelaunay`'s stencil table is K = 4 wide.
 - **The process is not JAX-free**, as in phase 2: `jax_in_sys_modules` is `true` in the witness JSON.
   Recorded, not fixed (PyAutoArray bug, still unfiled).
 
+Six more caveats belong to **lever 2** only:
+
+- **Lever 2's control arm is lever 1, not the merge base.** Lever 2's commit is stacked on lever 1,
+  so a merge-base control would measure both levers at once and attribute the sum to lever 2. The
+  A/B therefore measures the **increment**: control PyAutoArray `bae9296e` (lever 1's feature
+  revision) against feature `0b17c292`. That control reproduces lever 1's feature arm to **+1.00 %**
+  (302.709 against 299.709 ms; the log-det site 37.480 against 37.200 ms, +0.75 %), which is what
+  makes the two jobs comparable. The cumulative figure against the merge base is quoted two ways —
+  the direct ratio 413.301 → 267.448 ms = **1.545×** and the product of the two measured rows
+  1.379 × 1.132 = 1.561× — and they differ by exactly that 1.0 %. **Quote 1.545×**; the product is
+  the same number's upper end.
+- **Lever 2 changes numbers, at the size of the matrix's own round-off — "bit-identical" is lever
+  1's claim, not lever 2's.** SuperLU in symmetric mode and a dense Cholesky are two different fp64
+  factorisations of one matrix, and `regularization_matrix_reduced` on this system has eigenvalues
+  1.000e-08 … 6.492e+04, **condition number 6.491e12** (witness, `eigvalsh`). The log determinant
+  moves **−9.213e-06 nats (relative 1.201e-09)** and the fit's `figure_of_merit`
+  **−4.606e-06 nats (relative 2.338e-10)**. Always quote those with the conditioning beside them: at
+  cond 6.5e12 an fp64 factorisation already carries orders of magnitude more relative error in the
+  *matrix* than 1e-9, so this is the matrix's round-off and not an error introduced on top of it.
+- **The two arms' `log_likelihood` differ, and it is the same round-off.** Control
+  **18665.014334145228**, feature **18665.014330695830**, relative **1.848e-10**, on the same iid
+  instance (`iid_seed` 263, same route set, same 32-entry sequence shape). Record it as an
+  observation of the value change; it is still **never** a cross-leg comparison and still not the
+  equivalence evidence — that is W2/W3 and the gates.
+- **"Identity on the A100" means the jitted rows.** The call site is
+  `self._log_det_symmetric_from(self.regularization_matrix_reduced, sparse=self._xp is np)`, so
+  `sparse` is false whenever `xp` is `jnp`, and the helper is SciPy — neither traceable nor
+  differentiable. All six `log_evidence_terms` of both systems are bit-identical across the two A100
+  arms. But `fixed_light.py` also builds an **eager `xp=np`** fit, and that one *does* take the
+  sparse route: `log_evidence_eager` and both systems' `log_evidence_figure_of_merit` move
+  **−3.4466e-06 nats (relative 1.183e-10)**. That was predicted in the submit header and is not a
+  finding.
+- **Lever 2 is a CPU-only lever, and that rests on a measurement.** The A100's *dense* Cholesky of
+  the same (1500, 1500) H is **1.126 ms** (`s3/rows["Log det Cholesky (H reduced)"]`, feature arm)
+  against **37.480 ms** on one CPU core — **33×**. The CPU's *sparse* route, at 6.265 ms (witness
+  W5), is still **5.6× slower than the GPU's dense one**. At ~1.1 ms the GPU log det is launch-bound,
+  not FLOP-bound, and a sparse triangular factorisation has no dense-BLAS kernel to beat there.
+- **The two regime switches are constants, not parameters this row tunes.**
+  `SPARSE_LOG_DET_MIN_PIXELS = 256` and `SPARSE_LOG_DET_MAX_NNZ_PER_ROW = 32` were calibrated on
+  off-cluster sweeps (recorded in "Lever 2 — verdict"). What this row measures is only that **both
+  gates admit the production matrix, with margin**: W4 records pixels 1500 ≥ 256 by 1244 and
+  nnz/row 8.493 ≤ 32 with a per-row maximum of 15. A retune of either constant needs its own sweep
+  on its own cell, exactly as the lever 1 compaction constants do.
+
 ## Provenance
+
+### Lever 1 — jobs 343345 / 343346
 
 Two SLURM jobs, one node, 2026-09-16.
 
@@ -110,7 +170,57 @@ The A100 cell runs the same dataset and mesh on the **dense** JAX path (`inversi
 `total_params` 1560, `vmap_batch` 16, XLA flags
 `--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false`).
 
+### Lever 2 — jobs 343353 / 343354
+
+Two SLURM jobs, the same node, the same day. The A100 job was submitted only **after** the CPU job
+had finished, so — unlike lever 1 — neither job shared the host with the other.
+
+| | CPU A/B + witness | A100 A/B |
+|---|---|---|
+| Job | **343353**, `COMPLETED` | **343354**, `COMPLETED` |
+| Elapsed / MaxRSS | 00:01:56 / 1 974 132 K of 32 GB | 00:01:58 / 5 431 032 K of 64 GB |
+| Node | **euclid-ral-gpu-1** | **euclid-ral-gpu-1** |
+| Partition | `gpu` CPUs-only, `--cpus-per-task=4 --mem=32gb`, **no `--gres`** | `gpu`, `--gres=gpu:1 --cpus-per-task=4 --mem=64gb` |
+| Device | AMD EPYC 7702 64-Core, `os.cpu_count()` 124, kernel 5.14.0-687.39.1.el9_8 | NVIDIA A100 80GB PCIe (`nvidia_smi`), `cuda:0` |
+| Job loadavg, entry → exit | `0.00 0.00 0.04` → `0.86 0.32 0.15` | `0.34 0.27 0.14` → `1.75 0.82 0.36` |
+| Cell | `scripts/imaging/likelihood_breakdown/fixed_light_numba.py` | `scripts/imaging/likelihood_breakdown/fixed_light.py` (**not** `delaunay.py`) |
+| Python / autolens | 3.12.4 / 2026.8.17.1 | 2026.8.17.1 |
+| `AP_ROOT` | `/mnt/ral/jnightin/autolens_profiling_wt/fixed-light-numba-levers` @ `289cea39`, branch `feature/fixed-light-numba-levers-l2` | same worktree |
+
+Per-arm checkouts and config names:
+
+| Arm | PyAutoArray checkout | rev | config name |
+|---|---|---|---|
+| CPU control (= **lever 1**) | `/mnt/ral/jnightin/PyAuto_wt/fixed-light-numba-levers/PyAutoArray_feature` | `bae9296ed528da6812613edc2ebc6ea367361ebb` | `hpc_ral_cpu_fp64_fixed_light_numba_lever2_control_b_warm_t1` |
+| CPU feature | `.../PyAutoArray_l2` | `0b17c292afc467dff1dbb0c171888daf8bb62731` | `hpc_ral_cpu_fp64_fixed_light_numba_lever2_b_warm_t1` |
+| CPU witness | `.../PyAutoArray_l2` | `0b17c292` | `hpc_ral_cpu_fp64_lever2` |
+| A100 control (= **lever 1**) | `.../PyAutoArray_feature` | `bae9296e` | `hpc_a100_fp64_fixed_light_lever2_control` |
+| A100 feature | `.../PyAutoArray_l2` | `0b17c292` | `hpc_a100_fp64_fixed_light_lever2` |
+
+The merge-base checkout `PyAutoArray_control` (`5e2bc0f4`) still exists on the cluster from lever 1
+and was deliberately **not** used by either job.
+
+**The in-job proof that the two arms differ by exactly lever 2** is a per-arm echo taken before the
+cell runs: each arm prints `autoarray.__file__`, its checkout's `rev-parse HEAD`, and whether
+`inversion_util.SPARSE_LOG_DET_MIN_PIXELS` and `SPARSE_LOG_DET_MAX_NNZ_PER_ROW` exist in the
+*imported* module. Control arm: `bae9296e…`, `PyAutoArray_feature/autoarray/__init__.py`, both
+constants **absent**. Feature arm: `0b17c292…`, `PyAutoArray_l2/autoarray/__init__.py`, both
+constants **present**, `256` and `32` (`output/output.343353.out`, lines 36–40 and 142–149).
+
+The rest of the stack is the shared RAL install, untouched and identical for all five arms — the
+same five revisions as lever 1's table above (PyAutoNerves `fac8b17b`, PyAutoFit `27d41e7c`,
+PyAutoArray shared-install `5e2bc0f4`, PyAutoGalaxy `840ffde0`, PyAutoLens `ccf9295f`) — and the
+system under test is the same HST / Hilbert-Delaunay N=1500 / `AdaptSplit(inner=0.1, outer=10.0,
+signal_scale=0.1)` / fp64 / `InversionImagingSparseNumba` configuration, with
+`image_pixels_masked` **15 361**, `over_sampled_pixels` **62 752** and `n_edge_zeroed` 0 in both CPU
+arms. The A100 arms run that same dataset and mesh on the dense JAX path
+(`inversion_path: "dense"`, `vmap_batch` 16, the same three XLA flags as lever 1) with a **fresh
+compilation and autotune cache per arm** (`autotune_cache_entries_at_start` 0, `cache_fresh: true`,
+separate `output/jax_cache/fixed_light_lever2_{control,feature}_343354` directories).
+
 ## Gate roll-up
+
+### Lever 1
 
 Cell gates, both CPU arms (`gates` in each JSON; thresholds in `gate_thresholds`):
 
@@ -153,6 +263,67 @@ reconstruction to 1e-8" **PASSED**, "inversion-matrix log_evidence matches FitIm
 **PASSED**, "Eager regression assertion PASSED: log_evidence matches 29140.295882". Every one of the
 six `log_evidence_terms` is bit-identical across the two arms, and `nnls.iterations` is 22 with
 `reconstruction_max_abs_diff_vs_library` **7.592702022662934e-10** in both — the same digits.
+
+### Lever 2
+
+Cell gates, both CPU arms of job 343353 (same cell, same `gate_thresholds`):
+
+| Gate | control | feature | value |
+|---|---|---|---|
+| `P1_rebaked_operator_equals_original` | **PASS** | **PASS** | 3/3 arrays identical, identical in both arms |
+| `S3_mapper_block_equals_S0` | **PASS** | **PASS** | log-dets rel diff **0.0** both arms, edge-zeroed 0 vs 0; the `log_det_regularization` *value* differs between arms (below) |
+| `P2_dense_equals_sparse_numba_system` | **PASS** | **PASS** | D 1.297e-15, F(mapper) 3.728e-15 (rtol 1e-09), identical in both arms |
+| `P3_dense_equals_sparse_numba_evidence` | **PASS** | **PASS** | Δ −9.094947e-11 nats, **0** passive-set differences, 1485 passive both sides, identical in both arms |
+| `instrumentation_overhead_ratio` (≤ 1.03) | 1.01671 **PASS** | 1.02206 **PASS** | 8 ABBA blocks each |
+| `unattributed_fraction` (≤ 0.05) | 0.00334 | 0.00328 | explicit measured remainder |
+| `cached_site_call_count_violations` | `{}` | `{}` | — |
+| `timing_status` / `contention_warning` | measured / false | measured / false | peak 1-min loadavg **0.57** / **0.81** on 124 cores |
+
+**Exactly five `gates` fields differ between the two arms, and every one of them is derived from the
+log determinant of H:**
+
+| field | control | feature | Δ |
+|---|---|---|---|
+| `S3_mapper_block_equals_S0.log_dets.log_det_regularization_matrix_term.{s0,s3}` | 7670.876894312947 | 7670.876885100281 | −9.213e-06 nats, rel 1.201e-09 |
+| `P3_dense_equals_sparse_numba_evidence.figure_of_merit_sparse_numba` | 19705.71758591176 | 19705.717581305427 | −4.606e-06 nats, rel 2.338e-10 |
+| `P3_dense_equals_sparse_numba_evidence.figure_of_merit_dense` | 19705.71758591185 | 19705.71758130552 | −4.606e-06 nats |
+| `P3_dense_equals_sparse_numba_evidence.rel_diff` | 4.6153848384752585e-15 | 4.615384839554133e-15 | last two digits |
+
+`figure_of_merit_dense` moving too is the expected reading, not an anomaly: the P3 gate's *dense*
+comparison fit is also a numpy fit, so it takes the same sparse route, and the gate stays PASS
+because it compares the two formalisms **within** an arm. Every other `gates` field — P1, P2, the
+passive sets, the `log_det_curvature_reg_matrix_term` log-dets (8326.70017133483 in both arms, rel
+diff 0.0) — is **byte-identical between the arms**. `pinned_expected` is `null` and `pinned_drift`
+empty in both, as in lever 1: every millisecond is RECORDED.
+
+Solver state, both arms, identical: `seed_source` `"memo"`, `warm_start_fallback` `false`,
+`n_passive` **1484**, `outer_iterations` 2, `inner_iterations` 1, `warm_start_errors` 5,
+`memo_cleared_within_block: false`. The solver saw the same problem in both arms, warm, which is
+what makes the −2.041 ms on `solver.fnnls_cholesky` readable as noise rather than as an effect.
+
+Witness (`fixed_light_numba_levers_l2_witness.py`, **verdict PASS**, feature arm's subshell,
+`slurm_job_id` 343353, wall 13.63 s, scipy 1.17.1, `nnls_warm_start_env: "0"`):
+
+| Gate | status | evidence |
+|---|---|---|
+| **W1** the sparse route fires | **PASS** | `log_det_sparse_spd_from` called **exactly once** during one `fit.figure_of_merit`, on a **(1500, 1500)** matrix, returning a float — **7670.876885100281** in **7.15 ms**. A count of 2 would mean the route leaked into `log_det_curvature_reg_matrix_term`; a `None` return would mean the fit silently took the dense Cholesky and every other check compared the dense route with itself |
+| **W2** the log determinant | **PASS** | sparse 7670.876885100281 vs dense-forced 7670.876894312947, **Δ −9.213e-06 nats, rel 1.201e-09** against a **1e-08** gate, with `h_identical_between_fits` **true** (so this is two factorisations of one matrix). Conditioning recorded beside it: eigenvalues **1.0001215e-08 … 64922.433**, **cond 6.491e12** (`eigvalsh`, 0.19 s). The dense route is forced through the library's own fallback by monkeypatching the helper to return `None` (patch fired, 2 calls), not by a hand-rolled copy of the Cholesky |
+| **W3** the likelihood | **PASS** | `figure_of_merit` sparse **19705.717581305427** vs dense **19705.71758591176**, **Δ −4.606e-06 nats, rel 2.338e-10** against a **1e-09** gate — about 4× of margin. This is the phase's tighter pin: a relative move in one of six evidence terms is diluted by the sum |
+| **W4** both regimes admit | **PASS** | pixels **1500** ≥ `SPARSE_LOG_DET_MIN_PIXELS` **256** (margin 1244); nnz **12 740** = **8.4933/row** mean ≤ `SPARSE_LOG_DET_MAX_NNZ_PER_ROW` **32**, per-row max **15**, density **5.662e-03**. W1 says the route fired; W4 says why, and with how much margin |
+| **W5** the site, in isolation | **PASS** | same matrix, median of 20 each at 1 thread: sparse **6.265 ms** vs dense **37.720 ms** = **6.02×**, same-matrix Δ −9.213e-06 nats (rel 1.201e-09). RECORDED, not pinned — the lever's number is the whole-call A/B, not this |
+
+Witness system block: `InversionImagingSparseNumba`, `InterpolatorDelaunay`, `AdaptSplit`,
+`n_params` **1500**, `n_funcs` **0**, `edge_zeroed_pixels` **0**, H shape (1500, 1500),
+subtracted light flux 4945.524141998385, `log_det_method` `"cholesky"` (the default — the
+`"slogdet"` mode is untouched by lever 2), `jax_in_sys_modules` **true** (the unfiled PyAutoArray
+bug, as in lever 1).
+
+A100 assertions, both arms (`output/output.343354.out`): **"Pin PASSED: S0 log_det_curvature_reg
+matches 8360.401763"** and **"Pin PASSED: S0 log_det_regularization matches 7756.614959"** in each
+arm, `mapper_block_log_det_status` **ASSERTED** at rtol 1e-06 and `pinned_drift` **empty** in both
+JSONs. `nnls` is 17 iterations (S3) and 22 (S0) in both, `converged: true`, with
+`full_system_pdip_vs_library_reconstruction_max_abs_diff` **3.254729818991109e-12** — the same
+digits — and `peak_bytes.after_all` **1 810 646 016** in both arms.
 
 ## Lever 1 — headline
 
@@ -340,51 +511,342 @@ and is not part of this A/B.
    than that because it includes the `AdaptSplit` weight construction and the split-point walk, not
    only the two kernels. **The lever the phase-2 note named as the biggest untouched one is closed.**
 
+## Lever 2 — headline
+
+### Host 1: `euclid-ral-gpu-1`, numba CPU
+
+`use_jax: false`, `backend: "numba_cpu"`, `InversionImagingSparseNumba`, `n_threads` 1,
+`NUMBA_NUM_THREADS` `"1"`, `OMP`/`OPENBLAS`/`MKL`/`VECLIB`/`NUMEXPR` all `"1"`,
+`cpu_over_wall` 1.0004 (control) / 1.0003 (feature). Clean (uninstrumented) calls, n-repeats 16,
+warm-up run to a steady state in 6 calls in both arms.
+
+| arm | PyAutoArray | mean ms | median ms | min | max | clean spread | ABBA | `inversion.log_det_regularization_matrix_term` ms | as % of call |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| control (**lever 1**) | `bae9296e` | **302.709** | 299.781 | 288.551 | 352.546 | 21.14 % | 1.0167 | **37.480** | 12.38 % |
+| feature (lever 2) | `0b17c292` | **267.448** | 264.081 | 254.461 | 317.170 | 23.45 % | 1.0221 | **6.508** | 2.43 % |
+
+| | value |
+|---|---:|
+| speedup on means | **1.132×** |
+| speedup on medians | **1.135×** |
+| whole-call saving | **35.261 ms** (means), 35.700 ms (medians) |
+| log-det-H site saving | **30.972 ms** (37.480 → 6.508, **5.76×** on that site) |
+| cumulative vs the merge base, direct | 413.301 → 267.448 ms = **1.545×**, **145.853 ms** removed |
+| cumulative as the product of the two measured rows | 1.379 × 1.132 = 1.561× |
+
+**Both arms ran alone on the host.** `contention.load_average_at_start` is `0.49` (control) and
+`0.78` (feature) on **124 cores**, rising to peaks of 0.57 and 0.81 — figures a single-threaded
+process generates by itself as it accumulates into the exponential average, and the shell echo at
+each arm's entry says the same (`0.00 0.00 0.04` before the control arm, `0.60 0.17 0.10` before the
+feature arm, `0.86 0.32 0.15` at job exit). There was no second tenant: the A100 job was submitted
+only after this one completed. So unlike lever 1's 1.379×, **1.132× is not a lower bound** — it is
+the number, on a quiet host, with the usual 21–23 % per-call scatter around it. Both arms stamp
+`timing_status: "measured"` and `contention_warning: false`.
+
+Anchor on lever 1's feature arm (job 343345, the same cell, same node, same flags): mean
+299.709 → **302.709** (**+1.00 %**), median 297.262 → 299.781 (+0.85 %), log-det-H site
+37.200 → 37.480 (+0.75 %). **The control reproduces lever 1**, which is what licenses multiplying
+the two rows; the 1.0 % gap is also exactly the difference between the direct cumulative ratio
+(1.545×) and the product (1.561×).
+
+Both arms ran 16 clean and 16 instrumented calls in 8 counterbalanced ABBA blocks, and the
+decomposition closes exactly: 48 instrumented sites (37 reached) plus the explicit
+`unattributed (call − sum of exclusive times)` row sum to the clean call to the last printed digit,
+**302.709** and **267.448**. `unattributed` is 1.027 ms (0.33 %) and 0.896 ms (0.33 %) of the two
+calls unrescaled, on a 5 % gate.
+
+### Host 2: `euclid-ral-gpu-1`, A100 80GB PCIe, JAX/XLA
+
+`backend: "gpu"`, `device: "cuda:0"`, fp64, `--mesh delaunay --regularization adapt_split
+--vmap-batch 16`, dense inversion path, the same three XLA flags as lever 1, and a fresh JAX
+compilation cache per arm (`cache_fresh: true`, `autotune_cache_entries_at_start` 0). The cell is
+**`fixed_light.py`**, not lever 1's `delaunay.py`: lever 1 changed the *assembly* of H, which
+`delaunay.py` times as a jitted-prefix difference, whereas lever 2 changes the *factorisation* of H,
+and `delaunay.py` has no log-det row at all. **There is therefore no lever-1 → lever-2 continuity
+row on the A100**; the anchor is the fiducial `fixed_light_delaunay_hpc_a100_fp64_fixed_light.json`,
+and it ran on `euclid-ral-gpu-2`, so it is a scale check and not a control.
+
+| `s3/rows` (ms) | control | feature | Δ | fiducial (gpu-2) |
+|---|---:|---:|---:|---:|
+| **`Log det Cholesky (H reduced)`** | **1.148** | **1.126** | −1.9 % | 1.204 |
+| `Log det Cholesky (F+λH reduced)` | 1.140 | 1.134 | −0.5 % | 1.171 |
+| `curvature_reg_matrix build (dense)` | 4.819 | 4.835 | +0.3 % | 4.918 |
+| `Cholesky solve (unconstrained)` | 1.461 | 1.456 | −0.3 % | 1.485 |
+| `NNLS PDIP (cell-driven, max_iter 50)` | 28.211 | 28.217 | +0.0 % | 28.347 |
+| `log_evidence_terms (eager, PDIP solution)` | 60.967 | 54.102 | −11.3 % (**scatter**, see below) | 63.319 |
+| `library_row.s3_ms` | 49.194 | 49.198 | +0.0 % | 49.169 |
+| `library_row.s0_ms` | 65.225 | 65.025 | −0.3 % | 70.406 |
+
+**Identity, as constructed.** The jitted rows move by tenths of a percent, and the numbers do not
+move at all: see the next section.
+
+## Lever 2 — decomposition
+
+Exclusive (self) time per instrumented site, rescaled by `decomposition_rescale_factor`
+(0.98439 control / 0.97942 feature) so the rows sum to the clean call. `n_sites_instrumented` 48 and
+`n_sites_reached` 37 in both arms. Top rows by control time:
+
+| site | group | control ms | feature ms | Δ ms | Δ % |
+|---|---|---:|---:|---:|---:|
+| `sparse_numba.curvature_matrix` | D and F assembly | 86.960 | 86.949 | −0.011 | −0.0 |
+| `solver.fnnls_cholesky` | Positivity solve | 64.530 | 62.489 | −2.041 | −3.2 (noise) |
+| `inversion.log_det_curvature_reg_matrix_term` | Log dets + evidence | 40.232 | 39.596 | −0.636 | **−1.6 (the sibling term — flat)** |
+| `inversion.log_det_regularization_matrix_term` | Log dets + evidence | **37.480** | **6.508** | **−30.972** | **−82.6** |
+| `delaunay.triangulation` | Mesh | 18.493 | 18.517 | +0.024 | +0.1 |
+| `sparse_numba.psf_weighted_data` | D and F assembly | 8.232 | 8.173 | −0.059 | −0.7 |
+| `solver.reconstruction_positive_only_from` | Positivity solve | 7.601 | 7.425 | −0.176 | −2.3 |
+| `inversion.reconstruction` | Positivity solve | 7.541 | 6.740 | −0.801 | −10.6 (noise) |
+| `to_inversion.lp_linear_func_list_galaxy_dict` | Mapper | 6.036 | 5.981 | −0.055 | −0.9 |
+| `inversion.regularization_matrix` | F + λH | 5.941 | 5.965 | +0.023 | +0.4 (lever 1's site, stable) |
+| `inversion.curvature_reg_matrix` | F + λH | 4.271 | 4.081 | −0.190 | −4.5 |
+| `unattributed (call − sum of exclusive times)` | — | 1.011 | 0.878 | −0.133 | −13.2 |
+
+**One row moved, and the row that must not move did not.**
+`inversion.log_det_curvature_reg_matrix_term` — the `F + λH` log det, which calls
+`_log_det_symmetric_from` **without** `sparse=True` because `F + λH` is dense — is
+40.232 → 39.596 ms, **−1.6 %**, against a clean spread of 21–23 %. That is the check that the sparse
+route did not leak into the wrong term, and it agrees with W1's call count of exactly one.
+
+**Two rows moved by more than half a millisecond and both are noise.**
+`solver.fnnls_cholesky` (−2.041 ms, −3.2 %) and `inversion.reconstruction` (−0.801 ms, −10.6 %) sit
+in a group lever 2 cannot reach: it changed one method's factorisation of H and nothing in the
+solver. `solver_stats` is identical in the two arms to the last field (`seed_source` `"memo"`,
+`n_passive` 1484, 2 outer / 1 inner iteration, 5 warm-start errors), so the solver did the same work
+in both — the row is the same work, timed twice on a host whose rows scatter 21–23 %.
+
+The whole-call saving (35.261 ms) exceeds the site saving (30.972 ms) by **4.289 ms**, which is — by
+the additive construction of the decomposition — precisely the sum of every non-log-det row's delta.
+**That 4.289 ms is scatter, not a secondary effect.** The honest reading is "the log-det-H site fell
+30.972 ms and the call fell 35.261 ms on a host whose rows scatter 21–23 %".
+
+Groups, before and after (percentages of each arm's own clean call):
+
+| group | control ms | control % | feature ms | feature % |
+|---|---:|---:|---:|---:|
+| D and F assembly | 95.357 | 31.50 | 95.282 | 35.63 |
+| **Log determinants + evidence** | **80.596** | **26.62** | **48.854** | **18.27** |
+| Positivity solve | 79.677 | 26.32 | 76.659 | 28.66 |
+| Mesh (ray trace, placement, triangulation) | 19.813 | 6.55 | 19.840 | 7.42 |
+| F + λH | 10.277 | 3.40 | 10.107 | 3.78 |
+| Mapper + mapping matrix | 9.513 | 3.14 | 9.432 | 3.53 |
+| Mapper weights (Delaunay) | 3.701 | 1.22 | 3.730 | 1.39 |
+| Image + blurring | 2.763 | 0.91 | 2.665 | 1.00 |
+| unattributed | 1.011 | 0.33 | 0.878 | 0.33 |
+
+The log-determinant group was the second largest in the lever 1 call and is now the third, and
+**39.596 of its remaining 48.854 ms is the single `F + λH` term lever 3 targets** — 81 % of the
+group. **After lever 2 the call's shape is: assembly 36 %, solve 29 %, log-dets 18 %, mesh 7 %.**
+
+## Lever 2 — the A100 row and the CPU-only verdict
+
+The A100 job asks one question, and it is not "is lever 2 faster on the GPU" — it cannot be, it
+never runs there (`sparse=self._xp is np`, and the helper is SciPy). The question is whether the
+sparse route is worth **carrying** to the JAX path in a later lever. The row that answers it is the
+A100's own **dense** Cholesky of the same (1500, 1500) H:
+
+| factorisation of the same H | ms |
+|---|---:|
+| dense Cholesky, one CPU core (numba CPU arm's site, control) | **37.480** |
+| dense Cholesky, one CPU core (witness W5, same matrix, median of 20) | 37.720 |
+| **sparse SuperLU, one CPU core** (witness W5, median of 20) | **6.265** |
+| **dense Cholesky, A100, jitted** (`s3/rows`, feature arm) | **1.126** |
+| dense Cholesky, A100, jitted (fiducial record, gpu-2) | 1.204 |
+
+**Verdict: a CPU-only lever.** The GPU's *dense* factorisation is **33× faster than the CPU's dense
+one** and still **5.6× faster than the CPU's sparse one**. At ~1.1 ms a dense Cholesky of a 1500²
+SPD matrix on an A100 is launch-bound, not FLOP-bound, and a sparse triangular factorisation — a
+sequential, data-dependent elimination — has no dense-BLAS kernel to beat there. Its sibling row
+`Log det Cholesky (F+λH reduced)` at 1.134 ms is the scale check: **on the GPU the two log dets cost
+the same**, whereas on the CPU only one of them is now sparse. Carrying the sparse route to JAX
+would buy at most 1.1 ms of a 49 ms call and would cost the differentiability of the term.
+
+**The numbers did not move on the jitted path.** All six `log_evidence_terms` are bit-identical
+across the two arms **and** against the fiducial record, in both systems. S3's six, in full:
+`chi_squared` 19821.951110654016, `regularization_term` 928.9375270506275,
+`log_det_curvature_reg` 8360.401762997288, `log_det_regularization` **7756.614958909804**,
+`noise_normalization` −79635.26723742482, `log_evidence` **29140.295897816348**. S0's differ from
+those only where the joint system differs from the source-only one (`chi_squared`
+19821.951110653972, `regularization_term` 928.9375270502924, `log_evidence` 29140.295897816537, the
+two log-dets identical), and are likewise the same digits in both arms.
+`mapper_block_log_dets`, `pinned_expected`, `log_evidence_pdip`,
+`log_evidence_cholesky`, `log_evidence_library_edge_zeroed`, the `nnls` block and `peak_bytes` are
+identical too, and both arms' S0 log-det pins PASSED.
+
+**What did move is the eager `xp=np` build, exactly as the submit header predicted.**
+`fixed_light.py` builds its S0 fit eagerly with `xp=np` and derives S3 from it, so those values take
+lever 2's sparse route:
+
+| field | control | feature | Δ |
+|---|---|---|---|
+| `log_evidence_eager` (= `s0.log_evidence_figure_of_merit`) | 29140.29587964608 | 29140.295876199474 | **−3.4466e-06 nats, rel 1.183e-10** |
+| `s3.log_evidence_figure_of_merit` | 29140.295879645884 | 29140.295876199274 | −3.4466e-06 nats |
+| `s0`/`s3` `d_log_evidence_terms_minus_figure_of_merit` | 1.8170e-05 | 2.1617e-05 | the same 3.45e-06, by construction |
+
+That move is attributable, and cleanly: the control arm's `log_evidence_eager` is **byte-identical
+to the fiducial record's** (29140.29587964608) even though the fiducial ran on a different node with
+a third PyAutoArray revision, so the eager value is reproducible run-to-run and the feature arm's
+−3.4466e-06 nats is lever 2 and nothing else. One refinement of the header's prediction:
+`log_evidence_library_edge_zeroed`, which it also listed as an eager-np value, is **bit-identical in
+both arms and both systems** — on this cell it is not reached through the numpy route.
+
+**Two rows to name as scatter rather than as findings.** `s3/rows["log_evidence_terms (eager,
+PDIP)"]` 60.967 → 54.102 ms (−11.3 %) and `s0/rows["Log det Cholesky (F+λH reduced)"]`
+1.283 → 1.135 ms (−11.5 %) are the two largest relative movers in the A100 pair. Both are
+eager-Python-dispatch rows around values that are **bit-identical**, and the fiducial's own figures
+(63.319 ms and 1.159 ms) sit *between* the two arms in both cases. A row whose value does not change
+and whose fiducial lies between the arms is being timed, not changed.
+
+**`library_row`'s log likelihoods are not bit-reproducible on this cell, at ~1e-06 nats.** Control
+vs feature: S0 −2.151e-06, S3 +1.601e-06 nats (relative ~7e-11), with opposite signs. The fiducial
+record differs from the *control* by +4.615e-07 (S0) and −7.355e-07 (S3) nats on the same code path,
+so that row scatters at this size across jobs and **its movement is not attributable to lever 2** —
+which is why the identity claim above rests on `log_evidence_terms`, the block that does reproduce
+bit-for-bit including against the fiducial.
+
+## Lever 2 — verdict
+
+1. **Lever 2 ships and is worth 1.132× on top of lever 1.** 302.709 → 267.448 ms mean
+   (1.135× on medians), a saving of **35.261 ms**, single-threaded, HST Delaunay N=1500, sparse
+   numba operator, route b, memo ON, on a host with no other tenant. **Cumulatively with lever 1 the
+   production numba CPU call is 413.301 → 267.448 ms, 1.545×, with 145.853 ms removed.**
+2. **What shipped** (PyAutoArray `0b17c292afc467dff1dbb0c171888daf8bb62731`, stacked on lever 1's
+   `bae9296e`, branch `feature/fixed-light-numba-levers-l2`):
+   `AbstractInversion.log_det_regularization_matrix_term`, **on the numpy path only and only with the
+   default `"cholesky"` method**, now offers `regularization_matrix_reduced` to
+   `inversion_util.log_det_sparse_spd_from`. That function does **one pass over the dense matrix** to
+   build the CSC triple — not `csc_matrix(dense)`, which alone costs 13 ms and would have eaten a
+   third of the win — then factorises with **SuperLU in symmetric mode**
+   (`permc_spec="MMD_AT_PLUS_A"`, `diag_pivot_thresh=0.0`), whose `diag(U)` are the pivots with `L`
+   unit-diagonal, so `log det H = Σ log diag(U)`. A non-positive pivot or a singular factor raises
+   `np.linalg.LinAlgError`, **exactly as the dense Cholesky did**, so the test-mode guard downstream
+   is unchanged. `"slogdet"` mode, the JAX path and `log_det_curvature_reg_matrix_term` are
+   **byte-identical to lever 1**. The stale `":903 uses scipy sparse"` docstring is replaced. Tests:
+   **17 new** in `test_log_det_sparse.py`; `pytest test_autoarray/inversion` **570 passed**.
+3. **Two measured regime switches, both riding the same non-zero scan** (so neither costs an extra
+   pass over the matrix):
+   - **`SPARSE_LOG_DET_MIN_PIXELS = 256`** — below it SuperLU's fixed ~0.14 ms setup loses to a small
+     dense Cholesky. Sparse/dense speed on the split-stencil pattern: **0.07× at P=9, 0.38× at 128,
+     1.77× at 256, 4.99× at 512, 10.77× at 1500**.
+   - **`SPARSE_LOG_DET_MAX_NNZ_PER_ROW = 32`** — geometric-stencil H (≈5–30 nnz/row) goes sparse;
+     **kernel** H (`MaternKernel` and family, `coefficient·C⁻¹`, fully dense) stays dense, because a
+     real Matern H at P=1500 is **34.9 ms dense against 335 ms forced-sparse**. Random sparsity
+     patterns at 11–153 nnz/row lose **2–10×** to fill-in, so **structure, not density, decides** —
+     and no library scheme produces a random pattern, which is why a mean-nnz threshold is a safe
+     proxy for "this is a mesh adjacency".
+4. **One option measured and rejected: RCM + banded Cholesky.** A reverse Cuthill-McKee permutation
+   does reduce the bandwidth to 143, and the log det is permutation-invariant, but the pattern scan
+   plus the permute eat the win — **43 ms**, worse than the 37 ms dense route it was meant to
+   replace. SuperLU's own fill-reducing ordering does that job for free inside the factorisation.
+5. **The equivalence is tolerance-level, not bit-level, and the tolerance is quoted with the
+   conditioning.** W2: Δ **−9.213e-06 nats**, relative **1.201e-09** against a 1e-08 gate, on a
+   matrix of **cond 6.491e12** (eigenvalues 1.0001e-08 … 6.492e+04) — two fp64 factorisations of that
+   matrix cannot agree more closely, and NumPy's own `slogdet` differs from the dense Cholesky by up
+   to 2.8e-08 on matrices of this conditioning, so the sparse route sits **well inside the round-off
+   the dense route already carried**. W3: `figure_of_merit` Δ **−4.606e-06 nats**, relative
+   **2.338e-10** against a 1e-09 gate — about 4× of margin. In the A/B arms the same change shows up
+   as `log_det_regularization` 7670.876894312947 → 7670.876885100281 and `figure_of_merit`
+   19705.71758591176 → 19705.717581305427. **Never write "lever 2 is bit-identical."**
+6. **A 1e-10 cross-backend pin is only met when both sides run the same algorithm.** At P=9/16 the
+   numpy-SuperLU log det differed from the jax-dense one by **4.3e-10 relative** in an existing
+   parity test pinned at **1e-10**. That pin was **not loosened**: `SPARSE_LOG_DET_MIN_PIXELS = 256`
+   keeps those small fixtures on the dense route, so numpy and JAX are still running the same
+   factorisation there and the pin still means what it meant. The size floor is therefore a
+   correctness boundary as well as a speed one — worth remembering before anyone lowers it.
+7. **The route was witnessed firing on the production system, not assumed.** W1: exactly **one** call
+   during one `figure_of_merit`, on the (1500, 1500) matrix, returning a float in 7.15 ms — which is
+   simultaneously the proof that it did **not** leak into the `F + λH` term, and it agrees with that
+   term's flat −1.6 % row in the decomposition. W4 records the margin against both regime switches
+   (1500 ≥ 256 by 1244; 8.493 ≤ 32, per-row max 15). W5 measures the two routes on **one** matrix:
+   **6.265 vs 37.720 ms, 6.02×**, against the in-call site ratio of 5.76×. The two agree to 4 %,
+   which is the closest thing this phase has to a cross-check of the site instrument.
+8. **On the A100 the jitted path is identity and the lever is CPU-only.** All six
+   `log_evidence_terms` bit-identical in both systems and against the fiducial; the A100's dense
+   Cholesky of the same H is **1.126 ms** against 37.480 ms on one CPU core and 6.265 ms sparse, so
+   there is nothing for a sparse factorisation to win on the GPU. The eager `xp=np` build does take
+   the route and moves −3.4466e-06 nats (relative 1.183e-10) — predicted in the submit header, not a
+   finding.
+9. **Where the site now sits.** `inversion.log_det_regularization_matrix_term` was **12.4 % of the
+   lever 1 call** and the phase-3 note's lever 2 target; it is now **6.508 ms, 2.43 %**. The
+   log-determinant group falls 80.596 → 48.854 ms, and **39.596 ms of what is left is the single
+   `F + λH` term** — which is lever 3, and is now the third-largest site in the call.
+
 ## Next
 
-Lever 1 removed the largest site and did not touch the others. The residue of the 299.709 ms feature
-call, from its own decomposition:
+Levers 1 and 2 removed the two H sites and did not touch the others. The residue of the
+267.448 ms lever 2 call, from its own decomposition:
 
-| site | feature ms | % of the 299.709 ms call | lever |
+| site | feature ms | % of the 267.448 ms call | lever |
 |---|---:|---:|---|
-| `sparse_numba.curvature_matrix` | 87.153 | 29.08 | — (phase 2 concluded; not a phase-3 lever) |
-| `solver.fnnls_cholesky` | 62.602 | 20.89 | — (phase 2 closed the solver) |
-| `inversion.log_det_curvature_reg_matrix_term` | 39.983 | 13.34 | **lever 3** |
-| `inversion.log_det_regularization_matrix_term` | 37.200 | 12.41 | **lever 2** |
-| `delaunay.triangulation` | 18.662 | 6.23 | — |
-| `inversion.regularization_matrix` | 5.924 | 1.98 | lever 1, done |
+| `sparse_numba.curvature_matrix` | 86.949 | 32.51 | — (phase 2 concluded; not a phase-3 lever) |
+| `solver.fnnls_cholesky` | 62.489 | 23.36 | — (phase 2 closed the solver; its **factor** is lever 3's input) |
+| `inversion.log_det_curvature_reg_matrix_term` | 39.596 | 14.80 | **lever 3** |
+| `delaunay.triangulation` | 18.517 | 6.92 | — |
+| `inversion.log_det_regularization_matrix_term` | 6.508 | 2.43 | lever 2, done |
+| `inversion.regularization_matrix` | 5.965 | 2.23 | lever 1, done |
 
-1. **Lever 2 — log det H from sparsity.** `inversion.log_det_regularization_matrix_term`, 37.468 ms in
-   phase 2's Leg D and 37.200 ms in the lever 1 feature arm (memo-invariant, as the two agree to
-   0.7 %). H is a split-regularization matrix: sparse and, for Delaunay, structurally banded once the
-   pixels are ordered. Options to measure: `scipy.sparse.linalg.splu` on the CSR form; a **banded
-   Cholesky after an RCM (reverse Cuthill-McKee) permutation**, whose log det is permutation-invariant;
-   or caching the factor across evaluations keyed on the mesh **and** the adapt weights, since
-   `AdaptSplit`'s weights move with the model while the mesh connectivity does not — the cache key is
-   the whole question, and a wrong key is a silent wrong evidence.
-2. **Lever 3 — one shared Cholesky of `F + λH`.** `inversion.log_det_curvature_reg_matrix_term`,
-   40.172 ms in Leg D and 39.983 ms here. The solver already factorises `F + λH`
-   (`solver.fnnls_cholesky`, 62.602 ms) and the log-det term then factorises it again. Lever 3 folds in
-   the `curvature_reg_matrix` rebuild draft, **on the numpy/numba path only** — the JAX side is the GPU
-   session's HLO census to answer, not this lever's. Together levers 2 and 3 address **77.183 ms,
-   25.8 %** of the feature call.
-3. **Both levers need the same A/B rig this one used**, and it worked: two private PyAutoArray
-   checkouts prepended to `PYTHONPATH` in separate subshells, both arms in one SLURM job on one node,
-   a bit-identity witness inside the feature arm, and an A100 row to prove the JAX branch did not move.
-   Re-use `hpc/batch_cpu/submit_breakdown_imaging_fixed_light_numba_levers_delaunay_ral_hst_fp64` and
-   `hpc/batch_gpu/submit_breakdown_imaging_fixed_light_numba_levers_delaunay_a100_hst_fp64`.
-4. **If either compaction constant is ever retuned**, the cell must be `DelaunayNN`. This Delaunay row
+1. **Lever 3 — one shared Cholesky of `F + λH`.** `inversion.log_det_curvature_reg_matrix_term`,
+   40.172 ms in phase 2's Leg D, 39.983 ms in the lever 1 feature arm and **39.596 ms here** — the
+   three agree to 1.4 %, so the site is memo-invariant and lever-invariant, and it is now the
+   **third-largest site in the call and 81 % of the log-determinant group**. The solver already
+   factorises `F + λH` inside `solver.fnnls_cholesky` (62.489 ms) and the log-det term then
+   factorises the same matrix again. Lever 3 reads the log determinant off the factor the solver
+   already has, via a **Schur complement** for the rows the active set drops: the design measures
+   **≤ 1.8e-12 nats** of disagreement and **~5–7 ms against ~40 ms**. It folds in **caching
+   `curvature_reg_matrix`** in the same change (4.081 ms across 2 calls here, and the rebuild is what
+   makes the second factorisation necessary at all). Expected landing: **≈ −37 ms, taking the call to
+   ≈ 230 ms** and the cumulative figure against the merge base to ≈ 1.80×. **On the numpy/numba path
+   only** — the JAX side is the GPU session's HLO census to answer, not this lever's.
+2. **Lever 3's tolerance is tighter than lever 2's, and that is deliberate.** Lever 2 accepted a
+   round-off-level value change because SuperLU and a dense Cholesky are genuinely different
+   factorisations. Lever 3 re-uses **the same** factor the solver computed, so its design target is
+   ≤ 1.8e-12 nats — three orders tighter than lever 2's 9.2e-06 — and its witness should pin at that
+   scale rather than inherit lever 2's 1e-08/1e-09 gates. A lever-3 arm that lands at lever 2's
+   tolerance is a sign the factor is being rebuilt somewhere, not shared.
+3. **Re-use lever 2's A/B rig, which is now the template.** Two private PyAutoArray checkouts
+   prepended to `PYTHONPATH` in separate subshells; both arms in one SLURM job on one node; the
+   **control arm is the previous lever**, not the merge base, so the row measures the increment; a
+   correctness witness inside the feature arm with the route's call count as its first gate; the
+   per-arm "does this constant exist in the imported module" echo as the cheapest proof the arms
+   differ by exactly the lever; and an A100 row on the cell that actually times the site. Copy
+   `hpc/batch_cpu/submit_breakdown_imaging_fixed_light_numba_levers_l2_delaunay_ral_hst_fp64` and
+   `hpc/batch_gpu/submit_breakdown_imaging_fixed_light_numba_levers_l2_delaunay_a100_hst_fp64`, and
+   **check which A100 cell times the site before copying the GPU job** — lever 1 needed
+   `delaunay.py` (a jitted-prefix difference over H's assembly) and lever 2 needed `fixed_light.py`
+   (which has the log-det rows at all). Lever 3's site is `F + λH`, so `fixed_light.py` again.
+4. **Do not carry the sparse log det to the JAX path.** That question is now answered with a
+   measurement rather than an argument: the A100's dense Cholesky of the same H is **1.126 ms**, 5.6×
+   faster than the CPU's sparse route, and the term is launch-bound there. It is not a lever.
+5. **If either compaction constant is ever retuned**, the cell must be `DelaunayNN`. This Delaunay row
    cannot observe them (K = 4 ⇒ `kc` = 4 ⇒ the wide-row branch is never traced), so a Delaunay
    measurement is not evidence about them in either direction.
-5. **Still unfiled, carried from phase 2**: the PyAutoArray bug that
+6. **Never lower `SPARSE_LOG_DET_MIN_PIXELS` without re-reading the cross-backend parity pins.** The
+   floor of 256 is what keeps the small numpy and JAX fixtures on the same algorithm; at P=9/16 the
+   two differ by 4.3e-10 relative against a 1e-10 pin (see "Lever 2 — verdict", point 6).
+7. **Still unfiled, carried from phase 2**: the PyAutoArray bug that
    `abstract_ndarray.__getitem__` imports `jax.numpy`, so a numba-only process cannot stay JAX-free
-   after the first `FitImaging` (`jax_in_sys_modules: true` in this phase's witness JSON too).
-6. **Out of scope throughout, as in phase 2**: route a, route c, rectangular meshes, Euclid, the
+   after the first `FitImaging` (`jax_in_sys_modules: true` in both of this phase's witness JSONs).
+8. **Out of scope throughout, as in phase 2**: route a, route c, rectangular meshes, Euclid, the
    source-pixel sweep, and the sparse-operator/profile-subtracted-image bug.
 
 ## Artifacts
 
-Result artifacts added by this commit (**9 files**):
+### Lever 2 — result artifacts added by this commit (**9 files**)
+
+```
+results/breakdown/imaging/fixed_light_numba_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_lever2_control_b_warm_t1.{json,png}  # CPU control = LEVER 1, bae9296e
+results/breakdown/imaging/fixed_light_numba_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_lever2_b_warm_t1.{json,png}          # CPU feature, 0b17c292
+results/breakdown/imaging/fixed_light_numba_levers_l2_witness_hpc_ral_cpu_fp64_lever2.json                                   # W1-W5, feature arm
+results/breakdown/imaging/fixed_light_delaunay_hpc_a100_fp64_fixed_light_lever2_control.{json,png}                            # A100 control = lever 1, bae9296e
+results/breakdown/imaging/fixed_light_delaunay_hpc_a100_fp64_fixed_light_lever2.{json,png}                                    # A100 feature, 0b17c292
+```
+
+Read alongside (already versioned, **not** part of lever 2's A/B):
+
+```
+results/breakdown/imaging/fixed_light_delaunay_hpc_a100_fp64_fixed_light.json   # the A100 fiducial, the anchor for the log-det rows (ran on gpu-2)
+```
+
+### Lever 1 — result artifacts (versioned by lever 1's commit, **9 files**)
 
 ```
 results/breakdown/imaging/fixed_light_numba_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_lever1_control_b_warm_t1.{json,png}  # CPU control, 5e2bc0f4
@@ -394,7 +856,7 @@ results/breakdown/imaging/delaunay_hpc_a100_fp64_lever1_control.{json,png}      
 results/breakdown/imaging/delaunay_hpc_a100_fp64_lever1.{json,png}                                                           # A100 feature, bae9296e
 ```
 
-Read alongside (already versioned, **not** part of this A/B):
+Read alongside (already versioned, **not** part of that A/B):
 
 ```
 results/breakdown/imaging/delaunay_hpc_a100_fp64.json                                              # prior A100 row, context only (ran on gpu-2)
@@ -409,31 +871,52 @@ useless as a timing host for this cell (phase 2, Scope).
 Cells and submit scripts:
 
 ```
-scripts/imaging/likelihood_breakdown/fixed_light_numba.py                 # the CPU cell (phase 2's Leg D)
-scripts/imaging/likelihood_breakdown/fixed_light_numba_levers_witness.py  # the W1/W2/W3 witness
-scripts/imaging/likelihood_breakdown/delaunay.py                          # the A100 cell
-scripts/misc/likelihood_breakdown/call_accounting.py                      # the decomposition instrument
-hpc/batch_cpu/submit_breakdown_imaging_fixed_light_numba_levers_delaunay_ral_hst_fp64   # job 343345, both CPU arms + witness
-hpc/batch_gpu/submit_breakdown_imaging_fixed_light_numba_levers_delaunay_a100_hst_fp64  # job 343346, both A100 arms
+scripts/imaging/likelihood_breakdown/fixed_light_numba.py                    # the CPU cell, both levers (phase 2's Leg D)
+scripts/imaging/likelihood_breakdown/fixed_light_numba_levers_witness.py     # lever 1's W1/W2/W3 witness
+scripts/imaging/likelihood_breakdown/fixed_light_numba_levers_l2_witness.py  # lever 2's W1-W5 witness
+scripts/imaging/likelihood_breakdown/delaunay.py                             # lever 1's A100 cell
+scripts/imaging/likelihood_breakdown/fixed_light.py                          # lever 2's A100 cell (the one with log-det rows)
+scripts/misc/likelihood_breakdown/call_accounting.py                         # the decomposition instrument
+hpc/batch_cpu/submit_breakdown_imaging_fixed_light_numba_levers_delaunay_ral_hst_fp64      # job 343345, lever 1 CPU arms + witness
+hpc/batch_gpu/submit_breakdown_imaging_fixed_light_numba_levers_delaunay_a100_hst_fp64     # job 343346, lever 1 A100 arms
+hpc/batch_cpu/submit_breakdown_imaging_fixed_light_numba_levers_l2_delaunay_ral_hst_fp64   # job 343353, lever 2 CPU arms + witness
+hpc/batch_gpu/submit_breakdown_imaging_fixed_light_numba_levers_l2_delaunay_a100_hst_fp64  # job 343354, lever 2 A100 arms
 ```
 
-Library change: **PyAutoArray `bae9296ed528da6812613edc2ebc6ea367361ebb`** on
-`feature/fixed-light-numba-levers`, merge base
-`5e2bc0f42940adfe04ff30fa42a7ce13a86ecbe0` — `autoarray/inversion/regularization/regularization_util.py`
-(+181/−17) and `test_autoarray/inversion/regularizations/test_regularization_util_numba.py` (+295).
+Library changes, both on PyAutoArray, lever 2 stacked on lever 1, merge base
+`5e2bc0f42940adfe04ff30fa42a7ce13a86ecbe0`:
 
-Job logs (SLURM, **not versioned** — `output/` is gitignored): `output/output.343345.out`,
-`output/output.343346.out` and `error/error.34334{5,6}.err`, on
+| lever | commit | branch | files |
+|---|---|---|---|
+| 1 | `bae9296ed528da6812613edc2ebc6ea367361ebb` | `feature/fixed-light-numba-levers` | `autoarray/inversion/regularization/regularization_util.py` (+181/−17), `test_autoarray/inversion/regularizations/test_regularization_util_numba.py` (+295) |
+| 2 | `0b17c292afc467dff1dbb0c171888daf8bb62731` | `feature/fixed-light-numba-levers-l2` | `AbstractInversion.log_det_regularization_matrix_term` (the numpy, `"cholesky"`-method branch) and `inversion_util` (the new `log_det_sparse_spd_from`, the two `SPARSE_LOG_DET_*` constants, and the stale `":903 uses scipy sparse"` docstring it replaces), plus `test_log_det_sparse.py` — 17 new tests, `pytest test_autoarray/inversion` **570 passed** |
+
+Job logs (SLURM, **not versioned** — `output/` is gitignored): `output/output.34334{5,6}.out`
+(lever 1) and `output/output.34335{3,4}.out` (lever 2), with `error/error.34334{5,6}.err` and
+`error/error.34335{3,4}.err`, on
 `/mnt/ral/jnightin/autolens_profiling_wt/fixed-light-numba-levers` and mirrored into this worktree's
 untracked `output/`.
 
-JSON keys specific to these arms: `rows["b_sparse_numba"]` with `call_ms` / `call_ms_median` /
-`call_ms_sequence` / `clean_relative_spread` / `abba` / `instrumentation_overhead_ratio`,
+Lever 2's A100 JSON is a `fixed_light.py` record, so its keys differ from lever 1's `delaunay.py`
+ones: read `s3/rows` and `s0/rows` (the explicit `Log det Cholesky (H reduced)` and
+`(F+λH reduced)` rows), `s3/log_evidence_terms` and `s0/log_evidence_terms` (six terms each, the
+identity evidence), `log_evidence_eager`, `{s0,s3}/log_evidence_figure_of_merit` (the eager `xp=np`
+values that move), `library_row`, `mapper_block_log_dets`, `pinned_expected`, `pinned_drift`,
+`jit_phases[*].compile_s`, `nnls`, `peak_bytes` and `vmap16`. Lever 2's witness JSON carries
+`results.W1_sparse_route_fires` … `results.W5_site_timing_sparse_vs_dense`, plus a `system` block
+with `h_nnz_total`, `h_nnz_per_row_{mean,max}`, `h_density` and
+`h_eigenvalue_{min,max}`/`h_condition_number`.
+
+JSON keys specific to the CPU arms of both levers: `rows["b_sparse_numba"]` with `call_ms` /
+`call_ms_median` / `call_ms_sequence` / `clean_relative_spread` / `abba` /
+`instrumentation_overhead_ratio`,
 `steps[*]` (`excl_s` already rescaled, plus `excl_s_unscaled`, `incl_s`, `n_calls`, `group`) including
 the explicit `unattributed (call − sum of exclusive times)` row, `decomposition_rescale_factor`,
-`solver_stats["solver.fnnls_cholesky"]`, `gates`, `contention`; and on the A100 side `steps`,
+`solver_stats["solver.fnnls_cholesky"]`, `gates`, `contention`; and on lever 1's `delaunay.py` A100
+side `steps`,
 `steps_vmap_per_call`, `setup_split`, `regularization_matrix_prefix_s`, `interpolator_prefix_s`,
 `jit_phases[*].compile_s`, `log_evidence_terms`, `nnls`, `total_step_by_step`.
 
-<!-- Levers 2 and 3 append their own "Lever N — headline / decomposition / A100 row / verdict"
-     sections below this line, and extend the Provenance, Gate roll-up and Artifacts sections. -->
+<!-- Lever 3 appends its own "Lever 3 — headline / decomposition / A100 row / verdict" sections
+     below this line, and extends the Scope, Provenance, Gate roll-up, Next and Artifacts sections,
+     exactly as lever 2 did. -->
