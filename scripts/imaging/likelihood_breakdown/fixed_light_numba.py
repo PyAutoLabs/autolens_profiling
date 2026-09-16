@@ -69,18 +69,18 @@ Three protocol facts follow from instrumenting the real call:
 The four routes
 ---------------
 
-============  ======================================================  ======================
-Route         What runs                                               Kernel replaced
-============  ======================================================  ======================
-``a``         S0 — the joint system the library runs today (linear     none
-              MGE lens light + source mapper)
-``b``         S3 — source-only, lens light converted to regular         none
-              profiles and subtracted. **The reference.**
-``c``         S3 with ``use_positive_only_solver=False``                none
-``d_np``      S3 with the factor-reuse NNLS injected                    ``nnls_factor_reuse``
-``b_direct``  S3 with the library's DIRECT curvature kernel forced      ``..._direct_from``
-``b_touched`` S3 with the touched-index two-stage curvature kernel      ``..._touched_from``
-============  ======================================================  ======================
+=============  ===================================================  =====================
+Route          What runs                                            Kernel replaced
+=============  ===================================================  =====================
+``a``          S0 — the joint system the library runs today         none
+               (linear MGE lens light + source mapper)
+``b``          S3 — source-only, lens light converted to            none
+               regular profiles and subtracted. **The reference.**
+``c``          S3 with ``use_positive_only_solver=False``           none
+``d_np``       S3 with the factor-reuse NNLS injected               ``nnls_factor_reuse``
+``b_direct``   S3 with the library's DIRECT curvature kernel        ``..._direct_from``
+``b_touched``  S3 with the touched-index two-stage kernel           ``..._touched_from``
+=============  ===================================================  =====================
 
 ``--routes`` defaults to ``a,b,c``, so ``d_np``, ``b_direct`` and ``b_touched``
 run only when they are named and every pre-existing invocation of this cell
