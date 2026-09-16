@@ -214,6 +214,22 @@ separately per likelihood × transform. Standing conclusions:
   (59.8 → 7.5 ms), so **no PyAutoArray solver change is proposed**. Remaining solver headroom
   is ~9 % of the call; the untouched levers are the regularization matrix and the two log-dets.
   Findings: [`results/notes/fixed_lens_light_numba_2026_09.md`](./results/notes/fixed_lens_light_numba_2026_09.md).
+- **HST GPU non-solver residue, phase 1 (2026-09)** — the first *measurement* of where the
+  **fused production program** spends its device time: one `jax.jit`, one process, one XLA
+  timeline, every GPU kernel joined to the library source line that emitted it through the
+  compiled HLO's stack frame index. Three A100 legs and two RTX 2060 legs, HST Delaunay
+  N=1500 at the production pass budget 7; every table reconciles to its wall within 2.6 %
+  with **zero unjoined kernel time**. **The campaign map's "~13.9 ms mesh / mapper / weights
+  / imaging / blurring" bucket is refuted** — mesh, mapper and weights are **0.37 ms**
+  (1.2 %). The production A100 call (**31.64 ms**, not the map's 25.39 ms, which was a
+  pass-budget-2 number) is **32 % certified solve, 25 % device idle — 5.44 ms of it one gap
+  at the qhull `pure_callback` — 22 % PSF convolution of the mapping-matrix cube, 13 % the
+  `A.T A` GEMM**. The HLO census settles two drafts: **no `add` of `F + λH` survives at
+  `abstract.py:371`** (XLA fuses it into a single shared `cublas-lt` producer, so
+  `curvature_reg_matrix_rebuilt_every_access` has no JAX cost), and the two
+  `operated_mapping_matrix_list` accesses **compile to one PSF convolution**. The border
+  relocator is production's default for lensing and costs 0.100 ms. No PyAutoArray change.
+  Findings: [`results/notes/hst_gpu_residue_phase1_2026_09.md`](./results/notes/hst_gpu_residue_phase1_2026_09.md).
 
 ## How to read this repo
 
