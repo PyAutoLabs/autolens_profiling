@@ -1,0 +1,251 @@
+#!/bin/bash -l
+#
+# 2026-09 fixed-lens-light numba LEVERS, lever 1 (autolens_profiling#267).
+#
+# Lever 1 replaced the two pure-Python loops in PyAutoArray's split-
+# regularization assembly — `regularization_util.reg_split_np_from` (the split-
+# point stencil completion) and
+# `regularization_util.pixel_splitted_regularization_matrix_np_from` (the dense
+# (P, P) scatter) — with numba kernels, keeping the original loop bodies verbatim
+# as `_reg_split_reference` / `_pixel_splitted_regularization_matrix_reference`
+# as the bit-identity ground truth. The JAX branch of both functions (`xp != np`)
+# is untouched.
+#
+# This job is the CPU A/B row for that lever, and it is ONE job with TWO ARMS run
+# back-to-back so both arms share a host, a core count and a load:
+#
+#   CONTROL ARM  PyAutoArray at 5e2bc0f4 — the merge base of the lever branch
+#                with main, i.e. the library WITHOUT the kernels. The pure-Python
+#                loops.
+#   FEATURE ARM  PyAutoArray at bae9296e — the lever branch. The numba kernels.
+#                Plus the bit-identity witness (below).
+#
+# Each arm is phase 2's LEG D and nothing else: `fixed_light_numba.py --routes b
+# --formalism sparse_numba --nnls-warm-start on --n-repeats 16 --instances iid
+# --threads 1`. Route b is the S3 source-only system (the lens light converted to
+# regular profiles at its solved intensities and subtracted) on the numba sparse
+# operator, and the memo is ON — the library default for
+# `aa.Settings(nnls_warm_start_memo=...)` is true and production leaves it unset,
+# so this is what production pays. Phase 2's Leg D
+# (`..._fixed_light_numba_sparse_b_warm_t1.json`, job 343311) is therefore the
+# directly comparable prior row: whole call 404.597 ms with
+# `inversion.regularization_matrix` at 111.501 ms exclusive. A Leg-D-shaped arm
+# whose rows report `seed_source: "dense"` is a silently cold run and a FAIL, not
+# a number — check it in both arms' JSONs before quoting anything.
+#
+# WHY A PRIVATE MERGE-BASE CONTROL RATHER THAN THE SHARED INSTALL.
+# /mnt/ral/jnightin/PyAuto/PyAutoArray happens to sit at 5e2bc0f4 today, which IS
+# the merge base — but "happens to sit at" is not a control arm. HPCPullPyAuto
+# moves the shared install whenever anyone refreshes it, and it is read-only to
+# this job by policy in any case. Both arms therefore run from private checkouts
+# under /mnt/ral/jnightin/PyAuto_wt/fixed-light-numba-levers/, prepended to
+# PYTHONPATH after activate.sh, and each arm PRINTS `autoarray.__file__` and its
+# checkout's `rev-parse HEAD` inside the job so the SLURM log carries the
+# provenance rather than this comment carrying it. The shared install's own
+# revisions are echoed too, for the other four libraries, which are the same on
+# both arms.
+#
+# Each arm runs in its OWN SUBSHELL so the PYTHONPATH prepend cannot leak into
+# the next arm. An arm that inherited the other's prepend would import whichever
+# checkout came first on the path and report it under the wrong label; the
+# `autoarray.__file__` echo is the check that this worked.
+#
+# LOG-LIKELIHOOD IS NOT COMPARABLE ACROSS THE TWO ARMS. The arms are separate
+# processes and nothing in this job compares their evidences: the cell has no
+# cross-process comparison and there is no calibrated pin for any numba
+# fixed-light configuration (`pinned_expected` is null and says so in as many
+# words). A log-evidence is only ever read per-instance WITHIN one process,
+# against that process's own gates (P1/P2/P3). The correctness claim for this
+# lever is therefore NOT "the two arms agree on log-evidence" — it is the
+# witness's W1/W2/W3, inside one process, on one system, against the retained
+# reference bodies. Across the arms, compare milliseconds and nothing else.
+#
+# THE WITNESS (feature arm only). `fixed_light_numba_levers_witness.py` rebuilds
+# the same HST Delaunay N=1500 source-only AdaptSplit system and asserts:
+#   W1 the reference chain reproduces `inversion.regularization_matrix` under
+#      `np.array_equal` (bit-identity, not a tolerance);
+#   W2 the interpolator's cached stencil tables are byte-identical after the
+#      library inversion (the kernels must not eat their input);
+#   W3 the fit's `figure_of_merit` is unchanged when both numpy entry points are
+#      monkeypatched to the references, to <= 1e-9 relative (expect exactly 0).
+# It runs on the FEATURE arm because that is the arm whose matrix is in question;
+# on the control arm the references ARE the library. It takes no timings, and it
+# exits non-zero on a FAIL, which `activate.sh`'s in-job `set -e` turns into a
+# failed job rather than a COMPLETED one with a bad witness buried in the log.
+#
+# SINGLE-THREAD SCOPE, unchanged from phase 2. Production for this path is
+# cpu_fast_modeling.py: one single-threaded numba likelihood per process under a
+# multiprocessing pool, every core carrying its own worker. Both arms run at
+# --threads 1 with NUMBA_NUM_THREADS=1 and the whole BLAS family pinned to 1.
+# These are per-likelihood costs a pool worker pays, NOT a threaded-likelihood
+# scaling study (that is hpc/batch_cpu/submit_parallel_scaling_*).
+# --cpus-per-task=4 is headroom for the one process and its imports, not a thread
+# budget. The cell's own contention gate (1-minute loadavg vs os.cpu_count()) is
+# what decides whether the numbers are quotable — check
+# `contention.load_average_*` in BOTH JSONs, and prefer a host at load ~0.
+#
+# This cell imports NO JAX of its own, but jax lands in sys.modules via the first
+# FitImaging regardless (recorded as jax_after_rows). There is no JAX_*/XLA_*
+# configuration here on purpose.
+#
+# parse_known_args IGNORES unknown flags, so a checkout WITHOUT this cell's flags
+# would run and silently produce a different table — check
+# `configuration.routes_selected`, `n_repeats`, `nnls_warm_start_env` and
+# `formalisms_selected` in each JSON before quoting anything.
+#
+# PER-ARM NUMBA CACHE. The two arms load their kernels from DIFFERENT source
+# trees, and numba's on-disk cache keys include the source path, so one cache
+# would already be safe. They get one directory each anyway: it makes the arms
+# independent by construction, so neither arm's first-call compile can be served
+# out of the other's cache. (The cell warms to a steady state and the compile
+# lands in call 1 either way, but "either way" is not a thing a record should
+# rely on.)
+
+# THE PARTITION THIS DECLARES, AND WHY IT IS NOT `ral`.
+#
+# The #SBATCH block below asks for `gpu` with FOUR CPUs and NO --gres: the gpu
+# partition's two 124-core nodes used CPUs-only, leaving both A100s free for the
+# GPU cells (including this lever's own A100 row,
+# hpc/batch_gpu/submit_breakdown_imaging_fixed_light_numba_levers_delaunay_a100_hst_fp64).
+# This is the same choice phase 2's job 343311 made, for the same reasons:
+#
+#   `ral` is the CPU partition and it runs saturated: 21 nodes at 252/252 CPUs
+#   allocated and four shared nodes at 234/236, so even a 2-CPU request was
+#   scheduled three days out and a 4-CPU one no sooner.
+#   `imp` is idle and unusable: euclid-imp-compute-* do NOT mount /mnt/ral, so
+#   the repo, the venv, activate.sh and the private checkouts are all absent and
+#   the job dies in 0 s with no output files at all.
+#   `gpu` works: both nodes mount /mnt/ral and sat at load 0.00-0.01.
+#
+# IF `ral` EVER FREES UP, prefer it — it is the partition meant for this work:
+#
+#   sbatch --partition=ral --cpus-per-task=2 <this script>
+#
+# Check `sinfo -p ral,gpu -N -o "%N %t %C %O"` first and submit to whichever is
+# genuinely idle; the numbers only mean something on a quiet host.
+#
+# The -o/-e paths below are relative, so sbatch from INSIDE hpc/batch_cpu/.
+
+#SBATCH -J fl_numba_lever1
+#SBATCH --partition=gpu
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=32gb
+#SBATCH --time=4:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+# Derive the repo root from where this was submitted (hpc/batch_cpu/../..) rather
+# than hardcoding /mnt/ral/jnightin/autolens_profiling: the canonical RAL
+# checkout sits on main with a dirty tree, so this runs from a worktree of the
+# feature branch.
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+# The two private PyAutoArray checkouts. Neither is the shared install and
+# neither is written to by this job.
+export PYAUTOARRAY_CONTROL=/mnt/ral/jnightin/PyAuto_wt/fixed-light-numba-levers/PyAutoArray_control
+export PYAUTOARRAY_FEATURE=/mnt/ral/jnightin/PyAuto_wt/fixed-light-numba-levers/PyAutoArray_feature
+
+# One thread everywhere. NUMBA_NUM_THREADS must be in the environment BEFORE
+# numba is imported; the cell also sets it and records the resolved block.
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export NUMBA_NUM_THREADS=1
+export MPLCONFIGDIR=/tmp/matplotlib_${SLURM_JOB_ID:-local}
+mkdir -p "$MPLCONFIGDIR"
+# output/ is gitignored and ${SLURM_JOB_ID} keeps concurrent jobs on the same
+# shared node from fighting over one cache directory.
+export NUMBA_CACHE_CONTROL=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}_control
+export NUMBA_CACHE_FEATURE=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}_feature
+mkdir -p "$NUMBA_CACHE_CONTROL" "$NUMBA_CACHE_FEATURE"
+
+echo "=========================================="
+date
+hostname
+lscpu | grep 'Model name' || true
+echo "cpus-per-task:  ${SLURM_CPUS_PER_TASK:-unset}"
+echo "loadavg:        $(cat /proc/loadavg)"
+echo "Cell:           likelihood_breakdown/imaging/fixed_light_numba (route b, memo ON) x 2 arms"
+echo "Witness:        likelihood_breakdown/imaging/fixed_light_numba_levers_witness (feature arm)"
+echo "Instrument:     hst"
+echo "Precision:      fp64"
+echo "Inversion path: numba sparse operator (InversionImagingSparseNumba), use_jax=False"
+echo "Source mesh:    Hilbert/Delaunay mesh, 1500 vertices"
+echo "Regularization: AdaptSplit(inner=0.1, outer=10.0, signal_scale=0.1)"
+echo "Threads:        1 (numba + BLAS family), production pool-worker scope"
+echo "Thread env:     OMP=$OMP_NUM_THREADS MKL=$MKL_NUM_THREADS OPENBLAS=$OPENBLAS_NUM_THREADS NUMBA=$NUMBA_NUM_THREADS"
+
+echo "=== source revisions (shared install, untouched — PyAutoArray is overridden per arm) ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r" "$(git -C /mnt/ral/jnightin/PyAuto/$r rev-parse HEAD 2>&1)"
+done
+echo "PyAutoArray control: $(git -C $PYAUTOARRAY_CONTROL rev-parse HEAD 2>&1)"
+echo "PyAutoArray feature: $(git -C $PYAUTOARRAY_FEATURE rev-parse HEAD 2>&1)"
+echo "AP_ROOT rev:    $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+echo "AP_ROOT branch: $(git -C $AP_ROOT rev-parse --abbrev-ref HEAD 2>&1)"
+
+cd $AP_ROOT
+
+echo "=========================================="
+echo "CONTROL ARM: PyAutoArray 5e2bc0f4 (merge base) — pure-Python split-reg loops"
+echo "  route b, sparse_numba, memo ON, threads 1, n-repeats 16, instances iid"
+date
+echo "loadavg: $(cat /proc/loadavg)"
+(
+    export PYTHONPATH=$PYAUTOARRAY_CONTROL:$PYTHONPATH
+    export NUMBA_CACHE_DIR=$NUMBA_CACHE_CONTROL
+    echo "--- control arm import provenance ---"
+    echo "  checkout HEAD: $(git -C $PYAUTOARRAY_CONTROL rev-parse HEAD)"
+    python3 -c "import autoarray; print('  autoarray.__file__    =', autoarray.__file__); print('  autoarray.__version__ =', autoarray.__version__)"
+    python3 -u scripts/imaging/likelihood_breakdown/fixed_light_numba.py \
+        --mesh delaunay \
+        --dataset hst \
+        --formalism sparse_numba \
+        --routes b \
+        --threads 1 \
+        --n-repeats 16 \
+        --instances iid \
+        --nnls-warm-start on \
+        --config-name hpc_ral_cpu_fp64_fixed_light_numba_lever1_control_b_warm_t1
+)
+
+echo "=========================================="
+echo "FEATURE ARM: PyAutoArray bae9296e (lever 1) — numba split-reg kernels"
+echo "  route b, sparse_numba, memo ON, threads 1, n-repeats 16, instances iid"
+date
+echo "loadavg: $(cat /proc/loadavg)"
+(
+    export PYTHONPATH=$PYAUTOARRAY_FEATURE:$PYTHONPATH
+    export NUMBA_CACHE_DIR=$NUMBA_CACHE_FEATURE
+    echo "--- feature arm import provenance ---"
+    echo "  checkout HEAD: $(git -C $PYAUTOARRAY_FEATURE rev-parse HEAD)"
+    python3 -c "import autoarray; print('  autoarray.__file__    =', autoarray.__file__); print('  autoarray.__version__ =', autoarray.__version__)"
+    python3 -u scripts/imaging/likelihood_breakdown/fixed_light_numba.py \
+        --mesh delaunay \
+        --dataset hst \
+        --formalism sparse_numba \
+        --routes b \
+        --threads 1 \
+        --n-repeats 16 \
+        --instances iid \
+        --nnls-warm-start on \
+        --config-name hpc_ral_cpu_fp64_fixed_light_numba_lever1_b_warm_t1
+
+    echo "--- feature arm witness: lever 1 bit-identity (W1/W2/W3) ---"
+    date
+    python3 -u scripts/imaging/likelihood_breakdown/fixed_light_numba_levers_witness.py \
+        --mesh delaunay \
+        --dataset hst \
+        --threads 1 \
+        --config-name hpc_ral_cpu_fp64_lever1
+)
+
+echo "=========================================="
+echo "loadavg: $(cat /proc/loadavg)"
+echo "Finished."
+date

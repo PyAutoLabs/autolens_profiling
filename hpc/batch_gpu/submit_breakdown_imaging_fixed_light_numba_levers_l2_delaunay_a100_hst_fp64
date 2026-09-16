@@ -1,0 +1,239 @@
+#!/bin/bash -l
+#
+# A100 likelihood-breakdown profile: imaging/fixed_light x delaunay x hst x fp64 —
+# the numba-levers A/B (autolens_profiling#267, lever 2).
+#
+# WHAT LEVER 2 IS. `AbstractInversion.log_det_regularization_matrix_term`
+# historically ran a DENSE Cholesky of `regularization_matrix_reduced`. On the
+# NUMPY path it now offers that matrix to `inversion_util.log_det_sparse_spd_from`
+# first — a SuperLU factorization in symmetric mode whose `diag(U)` are the
+# pivots — and falls back to the same dense Cholesky when the function returns
+# `None`, which it does below `SPARSE_LOG_DET_MIN_PIXELS = 256` and above
+# `SPARSE_LOG_DET_MAX_NNZ_PER_ROW = 32`. On the production HST Delaunay N=1500
+# `AdaptSplit` matrix (8.45 non-zeros per row) that is 37 ms -> 6 ms of the numba
+# CPU call.
+#
+# THE JAX PATH IS UNCHANGED, BY CONSTRUCTION. The call site is
+# `self._log_det_symmetric_from(self.regularization_matrix_reduced, sparse=self._xp is np)`,
+# so `sparse` is FALSE whenever `xp` is `jnp`, and the helper is a SciPy routine —
+# neither traceable nor differentiable — so it could not run under `jax.jit` even
+# if it were offered. **The expectation for the jitted rows of this job is
+# therefore identity**, and that is the point: a jitted row that moved would mean
+# lever 2 leaked out of the numpy branch.
+#
+# WHAT IS *NOT* EXPECTED TO BE BIT-IDENTICAL, AND WHY THAT IS NOT A FINDING.
+# `fixed_light.py` builds its S0 fit EAGERLY WITH `xp=np` (the `fit_imaging_eager`
+# section) and derives S3 from it, so the library's own
+# `figure_of_merit`/`log_evidence` values that this cell reads off those eager
+# numpy fits — `log_evidence_eager`, `s3.log_evidence_figure_of_merit`,
+# `*_log_evidence_library_edge_zeroed` — DO take lever 2's sparse route wherever
+# the two gates admit the matrix. Locally that moves the log det by 7.4e-10
+# relative (-5.7e-6 nats) and the fit log evidence by 9.8e-11 relative (-2.9e-6
+# nats): the round-off between two fp64 factorisations of a cond ~9e12 matrix, not
+# an error introduced on top of it. The cell's S0 pins are checked at rtol 1e-4
+# and are computed from `system.log_evidence_terms(...)` on the JAX side, so they
+# are unaffected either way. Read the eager numbers as "agree to ~1e-10", never as
+# "byte-identical"; the byte-identical claim belongs to lever 1, not here.
+#
+# THE QUESTION THIS JOB ANSWERS. Not "is lever 2 faster on the GPU" — it cannot
+# be, it never runs there. The question is whether the sparse route is worth
+# CARRYING to the GPU at all, i.e. whether the term is a cost worth attacking on
+# the JAX path in a future lever. The row that answers it is
+# `s3/rows/"Log det Cholesky (H reduced)"`: the DENSE Cholesky of the same
+# (1500, 1500) `H`, jitted, on the A100, which the fiducial record
+# (results/breakdown/imaging/fixed_light_delaunay_hpc_a100_fp64_fixed_light.json)
+# puts at **1.204 ms** — against 37 ms for the same factorization on one CPU core.
+# At 1.2 ms a dense Cholesky of a 1500^2 SPD matrix on an A100 is launch-bound,
+# not FLOP-bound, and a sparse triangular factorization has no dense-BLAS kernel
+# to beat there. **The expected verdict is therefore "CPU-only lever"**, recorded
+# with the A100's own dense number beside it so the verdict rests on a measurement
+# rather than on an argument. Its sibling row
+# `s3/rows/"Log det Cholesky (F+λH reduced)"` (1.171 ms in the fiducial) is the
+# scale check: the two log dets cost the same on the GPU, whereas on the CPU only
+# one of them is sparse.
+# `s3/log_evidence_terms/log_det_regularization` (7756.614958909804 in the
+# fiducial) is the value the CPU witness's W2 compares its two factorisations
+# against, quoted here from the JAX side of the same system.
+#
+# WHY THIS CELL AND NOT `delaunay.py`. Lever 1's A100 row ran `delaunay.py`,
+# because lever 1 changed the ASSEMBLY of H and `delaunay.py` times that assembly
+# as a jitted-prefix difference. Lever 2 changes the FACTORIZATION of H, and
+# `delaunay.py` has no log-det row at all. `fixed_light.py` does: it times both
+# log determinants explicitly on both systems, and it reports
+# `log_evidence_terms`, which is where `log_det_regularization` lives. The flags,
+# SBATCH block and every JAX/XLA setting below are copied from
+# `submit_breakdown_imaging_fixed_light_delaunay_a100_hst_fp64`, the job the
+# fiducial `fixed_light_delaunay_hpc_a100_fp64_fixed_light.json` came from, so the
+# only difference between these arms and that record is the PyAutoArray revision.
+#
+#   --mesh delaunay                Hilbert/Delaunay, 1500 source pixels (fiducial)
+#   --regularization adapt_split   al.reg.AdaptSplit(0.1, 10.0, signal_scale=0.1)
+#   --vmap-batch 16                batched re-timing at the Nautilus n_batch
+#
+# THE TWO ARMS, run back-to-back in ONE job so both share a node, a GPU and a
+# driver:
+#
+#   CONTROL ARM  PyAutoArray bae9296e — **LEVER 1**, not the merge base. Lever 2
+#                is stacked on lever 1, so a merge-base control would measure
+#                both levers at once; the lever-1-vs-merge-base A100 row already
+#                exists and was identity to 0.036 %.
+#   FEATURE ARM  PyAutoArray 0b17c292 — lever 2.
+#
+# Both from PRIVATE checkouts under
+# /mnt/ral/jnightin/PyAuto_wt/fixed-light-numba-levers/, prepended to PYTHONPATH
+# after activate.sh, each in its OWN SUBSHELL so the prepend cannot leak into the
+# next arm, and each printing `autoarray.__file__`, its checkout's
+# `rev-parse HEAD`, and whether `inversion_util.SPARSE_LOG_DET_MIN_PIXELS` exists
+# in the imported module — absent in the control, present in the feature, which is
+# the cheapest proof the two arms differ by exactly lever 2. The shared install
+# /mnt/ral/jnightin/PyAuto/PyAutoArray carries NEITHER revision (it sits at the
+# merge base 5e2bc0f4) and is read-only to this job by policy; its revisions are
+# echoed below for the other four libraries, which are the same on both arms.
+#
+# PER-ARM JAX COMPILATION CACHE. Both arms compile the SAME HLO — the JAX path is
+# untouched — so one shared cache would serve arm 2 out of arm 1's entries and
+# report a near-zero compile time for it. Each arm gets its own fresh directory,
+# so `cache_fresh` is true and `jit_phases`/`compile_s` are comparable in both.
+# A seeded XLA autotune cache also silently changes kernels
+# (results/notes/xla_autotune_triton_gemm.md — F 4.8 vs 25.6 ms on the same code).
+# XLA_FLAGS carries only constant_folding; the autotune/Triton flags are left to
+# autonerves' jax_wrapper so this measures the library default.
+#
+# TRAPS. `parse_known_args` IGNORES unknown flags, so a checkout without these
+# flags would run and silently produce a different table — check
+# `configuration`, `regularization` and `vmap_batch` in each JSON before quoting.
+# SLURM `COMPLETED` can hide a Python crash (a job whose cell died still runs the
+# trailing `echo`/`date`), which is what `activate.sh`'s in-job `set -e` guard is
+# for — but read the `.out` AND the `.err` anyway, and confirm both result JSONs
+# exist. The -o/-e paths below are relative, so sbatch from INSIDE hpc/batch_gpu/.
+#
+# SUBMIT THIS AFTER THE CPU JOB HAS FINISHED. Lever 1 ran its CPU and A100 jobs
+# concurrently on the same node and the A100 arm's XLA compiles put the CPU
+# feature arm's timed rows at loadavg 2.25, which made its 1.379x a lower bound.
+# The CPU A/B is the lever-2 headline; do not run this job under it.
+
+#SBATCH -J fl_del_lever2
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=12:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+# The two private PyAutoArray checkouts. Neither is the shared install and
+# neither is written to by this job. PYAUTOARRAY_CONTROL here is LEVER 1
+# (bae9296e), not the merge base — see the header.
+export PYAUTOARRAY_CONTROL=/mnt/ral/jnightin/PyAuto_wt/fixed-light-numba-levers/PyAutoArray_feature
+export PYAUTOARRAY_FEATURE=/mnt/ral/jnightin/PyAuto_wt/fixed-light-numba-levers/PyAutoArray_l2
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding"
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+# Fresh per-ARM compilation cache (see header). output/ is gitignored.
+export JAX_CACHE_CONTROL="$AP_ROOT/output/jax_cache/fixed_light_lever2_control_${SLURM_JOB_ID:-local}"
+export JAX_CACHE_FEATURE="$AP_ROOT/output/jax_cache/fixed_light_lever2_feature_${SLURM_JOB_ID:-local}"
+rm -rf "$JAX_CACHE_CONTROL" "$JAX_CACHE_FEATURE"
+mkdir -p "$JAX_CACHE_CONTROL" "$JAX_CACHE_FEATURE"
+echo "JAX_CACHE_CONTROL=$JAX_CACHE_CONTROL (fresh)"
+echo "JAX_CACHE_FEATURE=$JAX_CACHE_FEATURE (fresh)"
+
+nvidia-smi
+
+echo "=========================================="
+date
+hostname
+echo "loadavg:        $(cat /proc/loadavg)"
+echo "Cell:           likelihood_breakdown/imaging/fixed_light x 2 arms (control / feature)"
+echo "Instrument:     hst"
+echo "Precision:      fp64"
+echo "Source mesh:    Hilbert/Delaunay mesh, 1500 vertices"
+echo "Regularization: adapt_split — al.reg.AdaptSplit(inner_coefficient=0.1, outer_coefficient=10.0, signal_scale=0.1)"
+echo "A/B:            PyAutoArray bae9296e (lever 1) vs 0b17c292 (lever 2, sparse log det H on the numpy path)"
+echo "Expectation:    IDENTITY on every jitted row — lever 2 changed only the xp==np branch"
+echo "The row:        s3/rows['Log det Cholesky (H reduced)'] — the DENSE A100 cost of the same factorization"
+echo "Eager caveat:   this cell's eager xp=np fits DO take the sparse route; their log evidences agree to ~1e-10, not byte-identically"
+
+echo "=== source revisions (shared install, untouched — PyAutoArray is overridden per arm) ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r" "$(git -C /mnt/ral/jnightin/PyAuto/$r rev-parse HEAD 2>&1)"
+done
+echo "PyAutoArray control (lever 1): $(git -C $PYAUTOARRAY_CONTROL rev-parse HEAD 2>&1)"
+echo "PyAutoArray feature (lever 2): $(git -C $PYAUTOARRAY_FEATURE rev-parse HEAD 2>&1)"
+echo "AP_ROOT rev:    $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+echo "AP_ROOT branch: $(git -C $AP_ROOT rev-parse --abbrev-ref HEAD 2>&1)"
+
+cd $AP_ROOT
+
+echo "=========================================="
+echo "CONTROL ARM: PyAutoArray bae9296e (lever 1) — dense Cholesky of H on both backends"
+date
+(
+    export PYTHONPATH=$PYAUTOARRAY_CONTROL:$PYTHONPATH
+    export JAX_COMPILATION_CACHE_DIR=$JAX_CACHE_CONTROL
+    echo "--- control arm import provenance ---"
+    echo "  checkout HEAD: $(git -C $PYAUTOARRAY_CONTROL rev-parse HEAD)"
+    python3 -c "
+import autoarray, autolens
+from autoarray.inversion.inversion import inversion_util
+print('  autoarray.__file__    =', autoarray.__file__)
+print('  autoarray.__version__ =', autoarray.__version__)
+print('  autolens.__file__     =', autolens.__file__)
+print('  has SPARSE_LOG_DET_MIN_PIXELS      =', hasattr(inversion_util, 'SPARSE_LOG_DET_MIN_PIXELS'))
+print('  has log_det_sparse_spd_from        =', hasattr(inversion_util, 'log_det_sparse_spd_from'))
+"
+    python3 -u scripts/imaging/likelihood_breakdown/fixed_light.py \
+        --mesh delaunay \
+        --config-name hpc_a100_fp64_fixed_light_lever2_control \
+        --regularization adapt_split \
+        --vmap-batch 16
+
+    echo -n "  AUTOTUNE_ENTRIES control count="
+    ls "$JAX_CACHE_CONTROL/xla_gpu_per_fusion_autotune_cache_dir" 2>/dev/null | wc -l
+)
+
+echo "=========================================="
+echo "FEATURE ARM: PyAutoArray 0b17c292 (lever 2) — sparse SuperLU log det on the numpy path only"
+date
+(
+    export PYTHONPATH=$PYAUTOARRAY_FEATURE:$PYTHONPATH
+    export JAX_COMPILATION_CACHE_DIR=$JAX_CACHE_FEATURE
+    echo "--- feature arm import provenance ---"
+    echo "  checkout HEAD: $(git -C $PYAUTOARRAY_FEATURE rev-parse HEAD)"
+    python3 -c "
+import autoarray, autolens
+from autoarray.inversion.inversion import inversion_util
+print('  autoarray.__file__    =', autoarray.__file__)
+print('  autoarray.__version__ =', autoarray.__version__)
+print('  autolens.__file__     =', autolens.__file__)
+print('  has SPARSE_LOG_DET_MIN_PIXELS      =', hasattr(inversion_util, 'SPARSE_LOG_DET_MIN_PIXELS'))
+print('  has log_det_sparse_spd_from        =', hasattr(inversion_util, 'log_det_sparse_spd_from'))
+print('  SPARSE_LOG_DET_MIN_PIXELS      =', getattr(inversion_util, 'SPARSE_LOG_DET_MIN_PIXELS', None))
+print('  SPARSE_LOG_DET_MAX_NNZ_PER_ROW =', getattr(inversion_util, 'SPARSE_LOG_DET_MAX_NNZ_PER_ROW', None))
+"
+    python3 -u scripts/imaging/likelihood_breakdown/fixed_light.py \
+        --mesh delaunay \
+        --config-name hpc_a100_fp64_fixed_light_lever2 \
+        --regularization adapt_split \
+        --vmap-batch 16
+
+    echo -n "  AUTOTUNE_ENTRIES feature count="
+    ls "$JAX_CACHE_FEATURE/xla_gpu_per_fusion_autotune_cache_dir" 2>/dev/null | wc -l
+)
+
+echo "=========================================="
+echo "loadavg: $(cat /proc/loadavg)"
+echo "Finished."
+date

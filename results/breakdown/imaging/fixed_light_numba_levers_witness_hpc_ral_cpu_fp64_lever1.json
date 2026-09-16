@@ -1,0 +1,133 @@
+{
+  "cell": "fixed_light_numba_levers_witness",
+  "issue": "autolens_profiling#267 (lever 1: numba split-regularization assembly)",
+  "verdict": "PASS",
+  "results": {
+    "W1_regularization_matrix_bit_identical": {
+      "status": "PASS",
+      "array_equal": true,
+      "max_abs_diff": 0.0,
+      "shape": [
+        1500,
+        1500
+      ],
+      "n_zero_size_stencil_rows": 0,
+      "reference_wall_s": 0.1068422794342041,
+      "library_wall_s": 0.006465435028076172,
+      "summary": "array_equal=True, max|diff|=0.000e+00, zero-size rows=0, reference 106.8 ms vs library 6.5 ms"
+    },
+    "W2_interpolator_tables_unmutated": {
+      "status": "PASS",
+      "mappings_unchanged": true,
+      "sizes_unchanged": true,
+      "weights_unchanged": true,
+      "summary": "mappings=True, sizes=True, weights=True"
+    },
+    "W3_log_evidence_identical": {
+      "status": "PASS",
+      "figure_of_merit_kernel": 19705.71758591176,
+      "figure_of_merit_reference": 19705.71758591176,
+      "d_log_evidence_nats": 0.0,
+      "relative_difference": 0.0,
+      "rtol": 1e-09,
+      "monkeypatch_calls": {
+        "reg_split": 1,
+        "pixel_splitted": 1
+      },
+      "monkeypatch_fired": true,
+      "summary": "kernel 19705.717585911760 vs reference 19705.717585911760 (rel 0.000e+00 <= 1e-09), patch calls {'reg_split': 1, 'pixel_splitted': 1}"
+    }
+  },
+  "configuration": {
+    "config_name": "hpc_ral_cpu_fp64_lever1",
+    "mesh": "delaunay",
+    "dataset": "hst",
+    "source_pixels": 1500,
+    "mesh_vertices_placed": 1500,
+    "regularization": {
+      "scheme": "adapt_split",
+      "inner_coefficient": 0.1,
+      "outer_coefficient": 10.0,
+      "signal_scale": 0.1
+    },
+    "threads": 1,
+    "thread_env": {
+      "n_threads": 1,
+      "vars": [
+        "OPENBLAS_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OMP_NUM_THREADS",
+        "VECLIB_MAXIMUM_THREADS",
+        "NUMEXPR_NUM_THREADS"
+      ],
+      "set_to": "1",
+      "preexisting": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1"
+      },
+      "overridden": {},
+      "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+    },
+    "numba_thread_env": {
+      "NUMBA_NUM_THREADS": "1",
+      "preexisting": "1"
+    },
+    "nnls_warm_start_env": "0",
+    "use_jax": false,
+    "instance_seed": 263,
+    "w3_rtol": 1e-09
+  },
+  "system": {
+    "n_params": 1500,
+    "n_mapper": 1500,
+    "n_funcs": 0,
+    "edge_zeroed_pixels": 0,
+    "subtracted_light_flux": 4945.524141998385,
+    "mapper_params": 1500,
+    "h_shape_full": [
+      1500,
+      1500
+    ],
+    "h_sliced_to_mapper_block": false,
+    "stencil_mappings_shape": [
+      6000,
+      4
+    ],
+    "stencil_sizes_max": 3,
+    "n_zero_size_stencil_rows": 0
+  },
+  "provenance": {
+    "autoarray_file": "/mnt/ral/jnightin/PyAuto_wt/fixed-light-numba-levers/PyAutoArray_feature/autoarray/__init__.py",
+    "autoarray_version": "2026.8.17.1",
+    "autolens_version": "2026.8.17.1",
+    "hostname": "euclid-ral-gpu-1",
+    "slurm_job_id": "343345",
+    "jax_in_sys_modules": true,
+    "wall_s": 12.747674465179443
+  },
+  "machine": {
+    "cpu_model": "AMD EPYC 7702 64-Core Processor",
+    "cpu_count_os": 124,
+    "nproc": 1,
+    "nproc_all": 124,
+    "nproc_note": "GNU nproc honours OMP_NUM_THREADS, so `nproc` can print 1 on a multi-core host; `nproc_all` is the core count.",
+    "ram_total": "928298232 kB",
+    "kernel": "5.14.0-687.39.1.el9_8.x86_64",
+    "platform": "Linux-5.14.0-687.39.1.el9_8.x86_64-x86_64-with-glibc2.34",
+    "python": "3.12.4",
+    "jax_thread_env": {
+      "NPROC": null
+    },
+    "blas_thread_env": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "VECLIB_MAXIMUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1"
+    },
+    "thread_env_note": "NPROC sizes XLA's CPU intra-op pool (the JAX rows); the BLAS knobs pin OpenBLAS/MKL/OpenMP (the numpy/scipy rows) and do not touch JAX. Two disjoint families; both are recorded on every CPU timing.",
+    "gpu": null
+  },
+  "notes": "W1 asserts np.array_equal between the retained pure-Python reference chain (_reg_split_reference -> _pixel_splitted_regularization_matrix_reference) and the library's own inversion.regularization_matrix on the HST Delaunay N=1500 source-only (S3) AdaptSplit system fixed_light_numba.py route b builds. W2 asserts the interpolator's cached stencil tables are byte-identical after the library inversion. W3 asserts the fit's figure_of_merit is unchanged when both numpy entry points are monkeypatched to the references. No timing is taken here and no pin is asserted; the A/B milliseconds are the two arms of hpc/batch_cpu/submit_breakdown_imaging_fixed_light_numba_levers_delaunay_ral_hst_fp64."
+}

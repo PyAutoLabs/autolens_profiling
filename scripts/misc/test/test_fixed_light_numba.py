@@ -385,6 +385,9 @@ _LIFTED_CONSTANTS = (
     "WARMUP_TOLERANCE",
     "WARMUP_MAX_CALLS",
     "UNATTRIBUTED_LABEL",
+    # Lever 3 of #267: the site spec reads whether the installed PyAutoArray caches
+    # `curvature_reg_matrix` off the class, so the lifted spec needs the same value.
+    "CURVATURE_REG_MATRIX_IS_CACHED",
     "P2_RTOL",
     "P3_RTOL",
     "P4_RTOL",
@@ -400,6 +403,9 @@ def _cell_namespace() -> dict:
     one. A site the cell adds without this test seeing it is a site whose
     ``cached`` declaration is never checked.
     """
+    import functools
+    import inspect as _inspect
+
     from autoarray.inversion.inversion import inversion_util
     from autoarray.inversion.inversion.abstract import AbstractInversion
     from autoarray.inversion.inversion.imaging.abstract import AbstractInversionImaging
@@ -412,8 +418,15 @@ def _cell_namespace() -> dict:
     from autoarray.util import fnnls as fnnls_module
     from autolens.imaging.fit_imaging import FitImaging
     from autolens.lens.to_inversion import TracerToInversion
+    from autonerves import cached_property as autonerves_cached_property
 
     namespace = {
+        # `CURVATURE_REG_MATRIX_IS_CACHED`'s lifted assignment evaluates
+        # `isinstance(inspect.getattr_static(...), (functools.cached_property,
+        # autonerves_cached_property))`, so those three names have to be here too.
+        "functools": functools,
+        "inspect": _inspect,
+        "autonerves_cached_property": autonerves_cached_property,
         "call_accounting": ca,
         "inversion_util": inversion_util,
         "fnnls_module": fnnls_module,
@@ -544,12 +557,14 @@ def test_call_accounting_covers_a_real_likelihood_call(tiny_s3_pair, cell_ns):
         )
 
 
-def test_curvature_reg_matrix_is_recomputed_more_than_once(tiny_s3_pair, cell_ns):
-    """``F + lambda H`` is a plain ``property`` and the library rebuilds it repeatedly.
+def test_curvature_reg_matrix_is_cached(tiny_s3_pair, cell_ns):
+    """``F + lambda H`` is a ``cached_property`` and the library builds it once per call.
 
-    Pinned deliberately. If a future PyAutoArray change caches it, this fails and
-    the ``F + lambda H`` row of the decomposition is updated on purpose rather
-    than quietly becoming a different quantity.
+    Pins the cache. It became a ``cached_property`` in lever 3 of #267 (PyAutoArray
+    ``b4322c3e``), having been a plain ``property`` the likelihood rebuilt on every
+    access — twice per evaluation. If a future PyAutoArray change stops caching it,
+    this fails and the ``F + lambda H`` row of the decomposition is updated on
+    purpose rather than quietly becoming a different quantity.
     """
     _dense, sparse = tiny_s3_pair
     fit = sparse.fit
@@ -570,10 +585,11 @@ def test_curvature_reg_matrix_is_recomputed_more_than_once(tiny_s3_pair, cell_ns
     finally:
         ca.uninstall()
 
-    assert snapshot["inversion.curvature_reg_matrix"]["n_calls"] >= 2, (
+    assert snapshot["inversion.curvature_reg_matrix"]["n_calls"] == 1, (
         "AbstractInversion.curvature_reg_matrix was reached "
-        f"{snapshot['inversion.curvature_reg_matrix']['n_calls']} time(s). If PyAutoArray "
-        "now caches it, update the decomposition's F + lambda H row on purpose."
+        f"{snapshot['inversion.curvature_reg_matrix']['n_calls']} time(s), not once. If "
+        "PyAutoArray no longer caches it, update the decomposition's F + lambda H row on "
+        "purpose."
     )
 
 
