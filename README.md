@@ -202,6 +202,18 @@ separately per likelihood × transform. Standing conclusions:
   dense `F+λH` build fits **α ≈ 1.69** and overtakes the certified solve above ~2500 pixels —
   the next lever there is the assembly, not the solver.
   Findings: [`results/notes/fixed_lens_light_source_pixel_scaling_2026_09.md`](./results/notes/fixed_lens_light_source_pixel_scaling_2026_09.md).
+- **Fixed lens light on the numba CPU path (2026-09)** — the same lever on the *production*
+  CPU path: the whole `AnalysisImaging.log_likelihood_function`, numba sparse operator, HST
+  Delaunay N=1500, one thread. Fixing the lens light takes the call **932.4 → 459.2 ms
+  (2.03×)** with no solver change (laptop 2.036×, second host). The S3 call then splits
+  28 % positivity solve / 25 % `F + λH` / 21 % assembly / 18 % log-dets, and its single
+  largest site is `inversion.regularization_matrix` (112.3 ms, 24 %) — bigger than
+  `fnnls_cholesky` (62.1 ms). A factor-reuse NNLS (one Cholesky + 15 downdates) reaches
+  412.6 ms (1.11×), but the library's own cross-evaluation memo — **on by default, so already
+  in production** — reaches 404.6 ms (1.13×) by removing the wrapper's dense-sign seed
+  (59.8 → 7.5 ms), so **no PyAutoArray solver change is proposed**. Remaining solver headroom
+  is ~9 % of the call; the untouched levers are the regularization matrix and the two log-dets.
+  Findings: [`results/notes/fixed_lens_light_numba_2026_09.md`](./results/notes/fixed_lens_light_numba_2026_09.md).
 
 ## How to read this repo
 

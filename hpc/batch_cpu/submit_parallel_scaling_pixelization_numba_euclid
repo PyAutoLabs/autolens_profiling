@@ -4,12 +4,9 @@
 # Numba sparse-operator likelihood (use_jax=False) — the cpu_fast_modeling.py
 # production path. Measures likelihood throughput vs core count under the
 # object-pool (nautilus today) and initializer-cached pool designs.
-#
-# NOTE: adjust --partition to the RAL CPU partition name (check `sinfo`); the
-# gpu scripts in ../batch_gpu use --partition=gpu.
 
 #SBATCH -J parallel_scaling_pixelization_numba_euclid
-#SBATCH --partition=cpu
+#SBATCH --partition=ral
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=32
 #SBATCH --mem=64gb

@@ -58,19 +58,28 @@ what that subprocess was actually started with.
 
 from __future__ import annotations
 
-import os
-import statistics
-import time
-from collections.abc import Callable
-from typing import Any
-
 import numpy as np
 import scipy.linalg
 
 from likelihood_breakdown import active_set_steps, fixed_light_system
 
+# The four helpers below have nothing to do with JAX, and a numba cell that must
+# keep `"jax" not in sys.modules` cannot import THIS module to reach them (it
+# pulls in `active_set_steps`, and with it JAX). They therefore live in the
+# jax-free `fixed_light_cpu_common` and are imported here, so a row measured
+# through that module and a row measured through this one are timed by the SAME
+# function rather than by two that agree today.
+from likelihood_breakdown.fixed_light_cpu_common import (
+    BLAS_THREAD_VARS,
+    JAX_THREAD_VARS,
+    solver_view_of,
+    thread_block,
+    time_median,
+)
+
 __all__ = [
     "BLAS_THREAD_VARS",
+    "JAX_THREAD_VARS",
     "cpu_kernel_rows",
     "library_numpy_nnls_row",
     "numpy_certified_row",
@@ -79,126 +88,6 @@ __all__ = [
     "thread_block",
     "time_median",
 ]
-
-#: The knobs OpenBLAS / MKL / OpenMP read at import. Recorded, never set here —
-#: setting them after numpy is imported does nothing, which is the whole reason
-#: the cell forks one subprocess per thread setting.
-BLAS_THREAD_VARS = (
-    "OMP_NUM_THREADS",
-    "OPENBLAS_NUM_THREADS",
-    "MKL_NUM_THREADS",
-    "VECLIB_MAXIMUM_THREADS",
-    "NUMEXPR_NUM_THREADS",
-)
-
-#: The knob XLA reads for its CPU intra-op thread pool. Disjoint from the above:
-#: it does not touch BLAS, and the BLAS knobs do not touch it.
-JAX_THREAD_VARS = ("NPROC",)
-
-
-def thread_block() -> dict:
-    """Both thread-knob families, as this process was started with.
-
-    Recorded on **every** CPU timing — the JAX rows and the numpy rows alike —
-    because the two families are disjoint and a reader cannot tell from a
-    millisecond which one was throttling it.
-    """
-    return {
-        "blas": {name: os.environ.get(name) for name in BLAS_THREAD_VARS},
-        "jax_pool": {name: os.environ.get(name) for name in JAX_THREAD_VARS},
-        "n_threads_blas": _int_or_none(os.environ.get("OMP_NUM_THREADS")),
-        "n_threads_jax_pool": _int_or_none(os.environ.get("NPROC")),
-        "cpu_count_os": os.cpu_count(),
-        "note": (
-            "NPROC sizes XLA's CPU intra-op pool (JAX rows). The BLAS knobs pin "
-            "OpenBLAS/MKL/OpenMP (these rows) and are read once at import, so "
-            "they can only be set before the process starts — hence one "
-            "subprocess per thread setting."
-        ),
-    }
-
-
-def _int_or_none(value):
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return None
-
-
-def time_median(fn: Callable[[], Any], *, n_repeats: int = 10, n_warmup: int = 2) -> dict:
-    """Median wall time of ``fn`` over ``n_repeats`` calls, in milliseconds.
-
-    Median, not mean: a CPU row on a laptop picks up scheduler noise, and one
-    descheduled repeat should move the reported number by nothing. ``min`` is
-    reported beside it as the cleanest observation and ``max`` as the noise
-    scale, so a reader can see when the machine was not quiet.
-
-    The warm-up calls are discarded — the first call through a numpy/scipy path
-    pays for lazily-loaded BLAS kernels that no later call pays again.
-    """
-    if n_repeats < 1:
-        raise ValueError(f"n_repeats must be >= 1 (got {n_repeats})")
-
-    for _ in range(max(0, n_warmup)):
-        fn()
-
-    samples = []
-    for _ in range(n_repeats):
-        t0 = time.perf_counter()
-        fn()
-        samples.append((time.perf_counter() - t0) * 1e3)
-
-    return {
-        "ms": float(statistics.median(samples)),
-        "ms_min": float(min(samples)),
-        "ms_max": float(max(samples)),
-        "n_repeats": int(n_repeats),
-        "n_warmup": int(max(0, n_warmup)),
-        "timer": "time.perf_counter, median of n_repeats",
-    }
-
-
-def solver_view_of(system) -> dict:
-    """The QP the library's positive-only solver is actually handed.
-
-    ``(curvature_reg_matrix, data_vector)`` restricted to ``ids_to_keep`` when
-    the library is edge-zeroing, plus a ``scatter_back`` that puts a subset
-    solution into the full parameter vector exactly as the library does.
-    """
-    crm_full = np.asarray(system.curvature_reg_matrix, dtype=float)
-    dv_full = np.asarray(system.data_vector, dtype=float)
-    ids = system.ids_to_keep
-    n_full = int(system.n_params)
-
-    if ids is None:
-
-        def scatter_back(x_sub):
-            return np.asarray(x_sub, dtype=float)
-
-        return {
-            "curvature_reg_matrix": crm_full,
-            "data_vector": dv_full,
-            "ids_to_keep": None,
-            "n_full": n_full,
-            "n_seen_by_solver": n_full,
-            "scatter_back": scatter_back,
-        }
-
-    ids = np.asarray(ids, dtype=int)
-
-    def scatter_back(x_sub):
-        full = np.zeros(n_full, dtype=float)
-        full[ids] = np.asarray(x_sub, dtype=float)
-        return full
-
-    return {
-        "curvature_reg_matrix": crm_full[ids][:, ids],
-        "data_vector": dv_full[ids],
-        "ids_to_keep": ids,
-        "n_full": n_full,
-        "n_seen_by_solver": int(ids.shape[0]),
-        "scatter_back": scatter_back,
-    }
 
 
 #: The numpy Jacobi scaling, **promoted** to

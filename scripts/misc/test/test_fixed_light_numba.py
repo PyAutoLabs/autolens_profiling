@@ -60,12 +60,14 @@ if str(_misc) not in _sys.path:
     _sys.path.insert(0, str(_misc))
 
 from likelihood_breakdown import call_accounting as ca  # noqa: E402
+from likelihood_breakdown import fixed_light_numpy_solvers as flns  # noqa: E402
 from likelihood_breakdown import fixed_light_system as fls  # noqa: E402
 
 CELL_PATH = ROOT / "scripts" / "imaging" / "likelihood_breakdown" / "fixed_light_numba.py"
 
 P2_RTOL = 1.0e-9
 P3_RTOL = 1.0e-6
+P4_RTOL = 1.0e-9
 
 
 # ---------------------------------------------------------------------------
@@ -373,6 +375,7 @@ def test_the_rebuild_carries_the_psf_over_sampling_and_noise_covariance(tiny):
 _LIFTED_FUNCTIONS = ("_site_spec", "_parse_routes", "_parse_formalisms")
 _LIFTED_CONSTANTS = (
     "ALL_ROUTE_KEYS",
+    "DEFAULT_ROUTE_KEYS",
     "ALL_FORMALISM_KEYS",
     "GROUP_LABELS",
     "MAX_INSTRUMENTATION_OVERHEAD",
@@ -384,6 +387,7 @@ _LIFTED_CONSTANTS = (
     "UNATTRIBUTED_LABEL",
     "P2_RTOL",
     "P3_RTOL",
+    "P4_RTOL",
     "MAPPER_LOGDET_RTOL",
 )
 
@@ -413,6 +417,7 @@ def _cell_namespace() -> dict:
         "call_accounting": ca,
         "inversion_util": inversion_util,
         "fnnls_module": fnnls_module,
+        "fixed_light_numpy_solvers": flns,
         "AbstractInversion": AbstractInversion,
         "AbstractInversionImaging": AbstractInversionImaging,
         "InversionImagingMapping": InversionImagingMapping,
@@ -626,16 +631,139 @@ def test_the_cell_never_imports_jax():
     )
 
 
-def test_all_route_keys_is_exactly_a_b_c(cell_ns):
-    """No d/d0/e: those are the JAX certified-active-set rows of another cell."""
-    assert cell_ns["ALL_ROUTE_KEYS"] == ("a", "b", "c")
-    assert cell_ns["_parse_routes"](None) == ("a", "b", "c")
+def test_all_route_keys_is_a_b_c_and_d_np(cell_ns):
+    """Four routes exist; only three run by default.
+
+    ``d_np`` patches the library's positive-only entry point for the duration of
+    its row, so a cell invocation written before the route existed must produce
+    the row set it always did. ``--routes`` therefore defaults to
+    :data:`DEFAULT_ROUTE_KEYS`, not to :data:`ALL_ROUTE_KEYS`.
+
+    Still no ``d``/``d0``/``e``: those are the JAX certified-active-set rows of
+    another cell, and this one imports no JAX.
+    """
+    assert cell_ns["ALL_ROUTE_KEYS"] == ("a", "b", "c", "d_np")
+    assert cell_ns["DEFAULT_ROUTE_KEYS"] == ("a", "b", "c")
+    assert cell_ns["_parse_routes"](None) == ("a", "b", "c"), (
+        "the default row set must not silently grow d_np"
+    )
     assert cell_ns["_parse_routes"]("c,a") == ("a", "c")
+    assert cell_ns["_parse_routes"]("b,d_np") == ("b", "d_np")
+    assert cell_ns["_parse_routes"]("d_np") == ("d_np",)
     with pytest.raises(ValueError, match="unknown route"):
         cell_ns["_parse_routes"]("a,d")
     assert cell_ns["ALL_FORMALISM_KEYS"] == ("dense", "sparse_numba")
     assert cell_ns["_parse_formalisms"]("both") == ("dense", "sparse_numba")
     assert cell_ns["_parse_formalisms"]("dense") == ("dense",)
+
+
+def test_route_d_np_is_route_b_with_one_function_replaced():
+    """Every table the row loop reads must treat ``d_np`` exactly as it treats ``b``.
+
+    A ``d_np`` row on a different dataset, different instances or different
+    settings would make the ``b -> d_np`` delta a comparison of two problems
+    rather than of two solvers. The tables are read out of the cell's AST because
+    they are built from module-level objects this test cannot construct.
+    """
+    source = CELL_PATH.read_text()
+
+    assert '("d_np", "dense"): dataset_s3_dense,' in source
+    assert '("d_np", "sparse_numba"): dataset_s3_sparse,' in source
+    # The two branches that split a route off from b's setup name only "a" and
+    # "c", so d_np falls through to b's adapt images, instances and settings.
+    assert 'adapt_images if route == "a" else adapt_images_s3' in source
+    assert 'settings=_settings if route != "c" else _settings_positive_negative' in source
+    assert 'instances[index] if route == "a" else instances_s3[index]' in source
+    assert '"d_np"' in source and "_ROUTES_LIKE_B" in source
+
+
+def test_the_injection_is_entered_outside_call_accounting(cell_ns):
+    """The row's patch must be in place before ``install`` wraps the dotted name.
+
+    ``call_accounting.function_site`` rebinds
+    ``inversion_util.reconstruction_positive_only_from`` too. Entered outside, the
+    injection is in place first and the accounting wrapper closes over the
+    injected function, so the decomposition attributes the injected solve.
+    Entered inside, ``uninstall()`` would restore the library function over the
+    injection and the row would measure the wrong kernel.
+    """
+    source = CELL_PATH.read_text()
+    tree = ast.parse(source)
+
+    # `install` is only ever called inside `_abba_blocks` / `_solve_with_stats`,
+    # and the injection is entered in the row loop, which is module level.
+    assert "_injection.__enter__()" in source
+    assert "_injection.__exit__(None, None, None)" in source
+    assert source.index("_injection_counts = _injection.__enter__()") < source.index(
+        "_inversion_class = _assert_dispatch(_route, _formalism)"
+    ), "the injection must be entered before the row does anything"
+
+    # And the counters are asserted, not merely recorded: a patch that never
+    # fired would report route b's timing wearing route d_np's label.
+    assert 'if _injection_counts["numpy"] <= 0:' in source
+    assert "wearing route d_np's label" in source
+
+    # The kernel is reached through the module attribute, so `install` can wrap it.
+    assert "_factor_reuse_solver" in source
+    factor = next(
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.FunctionDef) and node.name == "_factor_reuse_solver"
+    )
+    assert "fixed_light_numpy_solvers.nnls_factor_reuse" in ast.unparse(factor), (
+        "the kernel must be resolved on the module at call time, or call_accounting cannot wrap it"
+    )
+    assert cell_ns["P4_RTOL"] == 1.0e-9
+
+
+def test_the_nnls_warm_start_flag_gates_only_the_within_block_clears(cell_ns):
+    """The between-row clears are unconditional; only the in-block ones are gated.
+
+    Dense and sparse-numba S3 key IDENTICALLY, so a memo carried between rows
+    would let one formalism inherit the other's passive set — a channel
+    production does not have. A memo carried between the calls of one block is
+    exactly what a sampler's successive evaluations do, which is the thing the
+    flag exists to measure.
+    """
+    source = CELL_PATH.read_text()
+    tree = ast.parse(source)
+
+    assert (
+        '_cell_parser.add_argument("--nnls-warm-start", choices=("off", "on"), default="off")'
+        in (source)
+    ), "the flag must default to off"
+    assert '_os.environ["AUTOARRAY_NNLS_WARM_START"] = "1" if NNLS_WARM_START_ON else "0"' in source
+
+    # `_clear_memos` itself is never gated...
+    clear = next(
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.FunctionDef) and node.name == "_clear_memos"
+    )
+    assert "NNLS_WARM_START" not in ast.unparse(clear)
+
+    # ...the block-level wrapper is.
+    within = next(
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.FunctionDef) and node.name == "_clear_memos_within_block"
+    )
+    within_src = ast.unparse(within)
+    assert "NNLS_WARM_START_ON" in within_src and "_clear_memos()" in within_src
+
+    # And the ABBA block calls the gated one, three times, while the row loop
+    # keeps the unconditional one.
+    abba = next(
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.FunctionDef) and node.name == "_abba_blocks"
+    )
+    abba_src = ast.unparse(abba)
+    assert abba_src.count("_clear_memos_within_block()") == 3
+    assert "_clear_memos()" not in abba_src.replace("_clear_memos_within_block()", "")
+
+    assert '"memo_cleared_within_block": not NNLS_WARM_START_ON' in source
+    assert '"nnls_warm_start_mode": NNLS_WARM_START' in source
 
 
 def test_analysis_imaging_is_built_with_use_jax_false():
@@ -841,3 +969,129 @@ def test_the_ramp_hypothesis_is_recorded_as_falsified():
         "It was queueing, not warming.",
     ):
         assert value in flat, f"the ramp evidence no longer records {value!r}"
+
+
+# ---------------------------------------------------------------------------
+# 4. Route d_np: the injection seam, over a real fit
+# ---------------------------------------------------------------------------
+
+
+def test_numpy_solver_injected_fires_on_the_numpy_path_and_delegates_jax():
+    """The counters are the evidence the patch took, and the JAX branch is inverted.
+
+    ``certified_solver_injected`` dispatches on JAX and delegates numpy; this one
+    dispatches on numpy and delegates JAX. A numba cell only ever produces the
+    first kind of call, which is exactly why the second is tested here — nothing
+    in that process could ever notice it being mis-routed.
+
+    The library function is replaced by a spy for the duration, so the delegated
+    call is *observed* rather than executed: the real JAX branch would import a
+    JAX runtime, which is the one thing this whole module exists to avoid.
+    """
+    from autoarray.inversion.inversion import inversion_util
+
+    library = inversion_util.reconstruction_positive_only_from
+    spy_calls = {"n": 0, "xp": None}
+
+    def spy(data_vector, curvature_reg_matrix, settings=None, xp=np, fingerprint=None):
+        spy_calls["n"] += 1
+        spy_calls["xp"] = xp
+        return "delegated-untouched"
+
+    seen = {}
+
+    def fake_solver(crm, dv, *, stats=None):
+        seen["crm_shape"] = np.asarray(crm).shape
+        if stats is not None:
+            stats["n_factorisations"] = 1
+        return np.zeros(np.asarray(dv).shape[0])
+
+    crm = np.eye(3) * 2.0
+    dv = np.array([1.0, 2.0, 3.0])
+
+    class _FakeXp:
+        pass
+
+    fake_jax = _FakeXp()
+    fake_jax.__name__ = "jax.numpy"
+
+    inversion_util.reconstruction_positive_only_from = spy
+    try:
+        with flns.numpy_solver_injected(fake_solver, label="unit") as counts:
+            patched = inversion_util.reconstruction_positive_only_from
+            assert patched is not spy
+            assert patched.__wrapped__ is spy
+
+            out = patched(data_vector=dv, curvature_reg_matrix=crm, settings=None, xp=np)
+            assert counts["numpy"] == 1 and counts["jax"] == 0
+            assert np.array_equal(out, np.zeros(3))
+            assert seen["crm_shape"] == (3, 3)
+            assert counts["last_stats"]["n_factorisations"] == 1
+            assert spy_calls["n"] == 0, "a numpy call must not reach the library"
+
+            delegated = patched(
+                data_vector=dv, curvature_reg_matrix=crm, settings=None, xp=fake_jax
+            )
+            assert counts["jax"] == 1 and counts["numpy"] == 1
+            assert delegated == "delegated-untouched"
+            assert spy_calls["n"] == 1 and spy_calls["xp"] is fake_jax
+
+        assert inversion_util.reconstruction_positive_only_from is spy
+    finally:
+        inversion_util.reconstruction_positive_only_from = library
+
+
+def test_numpy_solver_injected_restores_by_identity_and_refuses_a_stranger():
+    """Restoring over someone else's rebinding would hide a nesting bug."""
+    from autoarray.inversion.inversion import inversion_util
+
+    original = inversion_util.reconstruction_positive_only_from
+    stranger = object()
+
+    with pytest.raises(RuntimeError, match="rebound by something else"):
+        with flns.numpy_solver_injected(lambda *a, **k: None, label="unit"):
+            inversion_util.reconstruction_positive_only_from = stranger
+
+    assert inversion_util.reconstruction_positive_only_from is stranger
+    inversion_util.reconstruction_positive_only_from = original
+
+
+def test_route_d_np_reaches_route_bs_evidence_on_a_real_fit(tiny_s3_pair):
+    """P4, on the fixture: the injected kernel is the library's answer, not near it.
+
+    The whole ``FitImaging`` is run each way — the library's own mapper, ``F +
+    lambda H``, both log determinants and evidence — with one function swapped.
+    If this drifts, route ``d_np``'s milliseconds are for a different minimiser.
+    """
+    autolens = pytest.importorskip("autolens")
+    al = autolens
+
+    _dense, sparse = tiny_s3_pair
+
+    def one_fit():
+        _clear_nnls_memo()
+        return al.FitImaging(
+            dataset=sparse.dataset,
+            tracer=sparse.source_only_tracer,
+            adapt_images=sparse.fit.adapt_images,
+            settings=sparse.fit.settings,
+            xp=np,
+        )
+
+    fit_b = one_fit()
+    fom_b = float(fit_b.figure_of_merit)
+    x_b = np.asarray(fit_b.inversion.reconstruction, dtype=float)
+
+    with flns.numpy_solver_injected(flns.nnls_factor_reuse, label="d_np") as counts:
+        fit_d = one_fit()
+        fom_d = float(fit_d.figure_of_merit)
+        x_d = np.asarray(fit_d.inversion.reconstruction, dtype=float)
+
+    assert counts["numpy"] > 0, "the injected solver never fired; this compared b with b"
+    assert counts["jax"] == 0
+
+    rel = abs(fom_d - fom_b) / max(abs(fom_b), 1e-300)
+    assert rel <= P4_RTOL, (
+        f"d_np figure_of_merit {fom_d!r} vs b {fom_b!r} (rel {rel:.3e} > {P4_RTOL:g})"
+    )
+    assert np.max(np.abs(x_d - x_b)) <= P4_RTOL * max(float(np.max(np.abs(x_b))), 1e-300)

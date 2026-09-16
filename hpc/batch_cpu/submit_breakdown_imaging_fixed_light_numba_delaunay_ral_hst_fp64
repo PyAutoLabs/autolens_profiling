@@ -1,0 +1,212 @@
+#!/bin/bash -l
+#
+# 2026-09 fixed-lens-light on the NUMBA CPU path (autolens_profiling#265, phase 2).
+#
+# The four legs of phase 2, run back-to-back in ONE job so every millisecond in
+# them shares a host, a core count and a load. The laptop could not hold the
+# harness's 1.03 ABBA overhead gate (WSL2 + JVM jitter put clean spreads at
+# 70-190 % and two blocks at 1.48 / 1.33 on a quiet box), so the legs moved
+# here; the gate itself was never loosened.
+#
+#   Leg A  fixed_light_numba.py --routes a,b,c --formalism sparse_numba
+#          The headline. Route a is the joint S0 system the library solves
+#          today (60 linear-MGE lens-light columns sharing F + lambda H with
+#          the source pixels); route b is the source-only S3 system left once
+#          that lens light is converted to regular profiles at its solved
+#          intensities and subtracted. a -> b is the fixed-lens-light speedup.
+#          Route c (positivity off, xp.linalg.solve) is a contrast row and is
+#          never quoted as a bare millisecond.
+#
+#   Leg B  fixed_light_numba_solvers.py
+#          The solver kernels alone on the same S3 system: K0 the library's
+#          fnnls_cholesky cold, K1/K1i the cross-evaluation memo warm (walk and
+#          iid streams), K3 the factor-reuse NNLS (one Cholesky kept and
+#          downdated), K4 the unconstrained Cholesky floor (RECORDED, not
+#          equivalent). --n-stream 16 because the two memo rows are timed one
+#          call per stream member -- the memo seeds from the previous
+#          evaluation, so repeating one solve would warm-start it from its own
+#          answer -- and a longer stream is the only way to get more samples.
+#
+#   Leg C  fixed_light_numba.py --routes b,d_np
+#          Route d_np is route b's likelihood with the library's positive-only
+#          entry point rebound to fixed_light_numpy_solvers.nnls_factor_reuse.
+#          Gate P4 asserts the injected solver actually fired and reaches route
+#          b's evidence to 1e-9. Route b is re-run here so the comparison is
+#          within one process, not across Leg A.
+#
+#   Leg D  fixed_light_numba.py --routes b --nnls-warm-start on
+#          The memo-ON row. The library default for
+#          aa.Settings(nnls_warm_start_memo=...) is true and production leaves
+#          it unset, so this -- not the memo-off legs -- is what production
+#          pays. --nnls-warm-start on puts AUTOARRAY_NNLS_WARM_START=1 in the
+#          environment and skips the WITHIN-block memo clears, so a block's
+#          calls seed each other the way a sampler's successive evaluations do.
+#          The between-row clears stay unconditional either way. A Leg D whose
+#          rows still report seed_source "dense" is a silently cold run and a
+#          FAIL, not a number.
+#
+# SINGLE-THREAD SCOPE. Production for this path is cpu_fast_modeling.py: one
+# single-threaded numba likelihood per process under a multiprocessing pool,
+# every core carrying its own worker. So every leg runs at --threads 1 with
+# NUMBA_NUM_THREADS=1 and the whole BLAS family pinned to 1. These numbers are
+# per-likelihood costs a pool worker pays, NOT a threaded-likelihood scaling
+# study -- that is what hpc/batch_cpu/submit_parallel_scaling_* measure.
+# --cpus-per-task=4 is headroom for the one process and its imports, not a
+# thread budget; the cell pins the thread env itself and records the pinned
+# block. The cell's own contention gate (1-minute loadavg vs os.cpu_count()) is
+# what decides whether the numbers are quotable -- check
+# contention.load_average_* in every JSON, and prefer a host at load ~0.
+#
+# This cell imports NO JAX of its own, but note that jax lands in sys.modules
+# via the first FitImaging regardless (recorded as jax_after_rows in the JSON).
+# There is no JAX_* / XLA_* configuration here on purpose.
+#
+# parse_known_args IGNORES unknown flags, so a checkout WITHOUT this cell's
+# flags would run and silently produce a different table -- check
+# configuration.routes_selected, n_repeats, nnls_warm_start_env and
+# formalisms_selected in each JSON before quoting anything.
+
+# THE PARTITION THIS DECLARES, AND WHY IT IS NOT `ral` (#265, job 343311,
+# 2026-09-15 -- the job every number in
+# results/notes/fixed_lens_light_numba_2026_09.md came from).
+#
+# The #SBATCH block below asks for `gpu` with FOUR CPUs and NO --gres: the gpu
+# partition's two 124-core nodes used CPUs-only, leaving both A100s free for the
+# GPU cells. That is what ran, so that is what this script declares -- a script
+# that asks for a partition the legs never used is a trap, not a record.
+#
+#   `ral` is the CPU partition and it runs saturated: 21 nodes at 252/252 CPUs
+#   allocated and four shared nodes at 234/236, so even a 2-CPU request was
+#   scheduled three days out (2026-09-18) and a 4-CPU one no sooner.
+#   `imp` is idle and unusable: euclid-imp-compute-* do NOT mount /mnt/ral, so
+#   the repo, the venv and activate.sh are all absent and the job dies in 0 s
+#   with no output files at all.
+#   `gpu` works: both nodes mount /mnt/ral and sat at load 0.00. Entry loadavg
+#   was 0.02 and every row's ABBA overhead came out 1.0000-1.0125.
+#
+# IF `ral` EVER FREES UP, prefer it -- it is the partition meant for this work:
+#
+#   sbatch --partition=ral --cpus-per-task=2 <this script>
+#
+# (two CPUs, because a free `ral` node still only offers the two idle CPUs per
+# shared node). Check `sinfo -p ral,gpu -N -o "%N %t %C %O"` first and submit to
+# whichever is genuinely idle; the numbers only mean something on a quiet host.
+
+#SBATCH -J fixed_light_numba_delaunay
+#SBATCH --partition=gpu
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=32gb
+#SBATCH --time=4:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+# Derive the repo root from where this was submitted (hpc/batch_cpu/../..)
+# rather than hardcoding /mnt/ral/jnightin/autolens_profiling: the canonical RAL
+# checkout sits on main with a dirty tree, so this runs from a worktree of the
+# feature branch. The -o/-e paths above are relative, so sbatch from inside
+# hpc/batch_cpu/.
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+# One thread everywhere. NUMBA_NUM_THREADS must be in the environment BEFORE
+# numba is imported; the cell also sets it and records the resolved block.
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export NUMBA_NUM_THREADS=1
+# Per-job caches: output/ is gitignored and ${SLURM_JOB_ID} keeps concurrent
+# legs on the same shared node from fighting over one cache directory.
+export NUMBA_CACHE_DIR=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}
+export MPLCONFIGDIR=/tmp/matplotlib_${SLURM_JOB_ID:-local}
+mkdir -p "$NUMBA_CACHE_DIR" "$MPLCONFIGDIR"
+
+echo "=========================================="
+date
+hostname
+lscpu | grep 'Model name' || true
+echo "cpus-per-task:  ${SLURM_CPUS_PER_TASK:-unset}"
+echo "loadavg:        $(cat /proc/loadavg)"
+echo "Cell:           likelihood_breakdown/imaging/fixed_light_numba (+ _solvers)"
+echo "Instrument:     hst"
+echo "Precision:      fp64"
+echo "Inversion path: numba sparse operator (InversionImagingSparseNumba), use_jax=False"
+echo "Source mesh:    Hilbert/Delaunay mesh, 1500 vertices"
+echo "Threads:        1 (numba + BLAS family), production pool-worker scope"
+echo "Thread env:     OMP=$OMP_NUM_THREADS MKL=$MKL_NUM_THREADS OPENBLAS=$OPENBLAS_NUM_THREADS NUMBA=$NUMBA_NUM_THREADS"
+
+echo "=== source revisions (shared install, untouched) ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r" "$(git -C /mnt/ral/jnightin/PyAuto/$r rev-parse HEAD 2>&1)"
+done
+echo "AP_ROOT rev:   $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+echo "AP_ROOT branch: $(git -C $AP_ROOT rev-parse --abbrev-ref HEAD 2>&1)"
+
+cd $AP_ROOT
+
+echo "=== import provenance ==="
+python3 -c "import autoarray, autolens, autofit, autogalaxy; print('autoarray.__file__    =', autoarray.__file__); print('autoarray.__version__ =', autoarray.__version__); print('autolens.__file__     =', autolens.__file__); print('autolens.__version__  =', autolens.__version__); print('autogalaxy.__file__   =', autogalaxy.__file__); print('autofit.__file__      =', autofit.__file__)"
+
+echo "=========================================="
+echo "LEG A: routes a,b,c -- the fixed-lens-light speedup (memo off)"
+date
+echo "loadavg: $(cat /proc/loadavg)"
+python3 -u scripts/imaging/likelihood_breakdown/fixed_light_numba.py \
+    --mesh delaunay \
+    --dataset hst \
+    --formalism sparse_numba \
+    --routes a,b,c \
+    --threads 1 \
+    --n-repeats 16 \
+    --instances iid \
+    --config-name hpc_ral_cpu_fp64_fixed_light_numba_sparse_t1
+
+echo "=========================================="
+echo "LEG B: solver kernels K0/K1/K1i/K3/K4 on the S3 system"
+date
+echo "loadavg: $(cat /proc/loadavg)"
+python3 -u scripts/imaging/likelihood_breakdown/fixed_light_numba_solvers.py \
+    --mesh delaunay \
+    --dataset hst \
+    --threads 1 \
+    --n-repeats 8 \
+    --n-stream 16 \
+    --instances iid \
+    --config-name hpc_ral_cpu_fp64_fixed_light_numba_solvers_t1
+
+echo "=========================================="
+echo "LEG C: routes b,d_np -- factor-reuse NNLS injected into the library path"
+date
+echo "loadavg: $(cat /proc/loadavg)"
+python3 -u scripts/imaging/likelihood_breakdown/fixed_light_numba.py \
+    --mesh delaunay \
+    --dataset hst \
+    --formalism sparse_numba \
+    --routes b,d_np \
+    --threads 1 \
+    --n-repeats 16 \
+    --instances iid \
+    --config-name hpc_ral_cpu_fp64_fixed_light_numba_sparse_dnp_t1
+
+echo "=========================================="
+echo "LEG D: route b with the cross-evaluation NNLS memo ON (what production pays)"
+date
+echo "loadavg: $(cat /proc/loadavg)"
+python3 -u scripts/imaging/likelihood_breakdown/fixed_light_numba.py \
+    --mesh delaunay \
+    --dataset hst \
+    --formalism sparse_numba \
+    --routes b \
+    --threads 1 \
+    --n-repeats 16 \
+    --instances iid \
+    --nnls-warm-start on \
+    --config-name hpc_ral_cpu_fp64_fixed_light_numba_sparse_b_warm_t1
+
+echo "=========================================="
+echo "loadavg: $(cat /proc/loadavg)"
+echo "Finished."
+date

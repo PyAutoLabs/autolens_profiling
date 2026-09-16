@@ -1,0 +1,774 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "timing_status": "measured",
+  "timing_status_reason": "Load average stayed at or below the core count (1.00 on 124 cores) across the timed rows.",
+  "contention": {
+    "load_average_at_start": [
+      1.0,
+      0.69,
+      0.32
+    ],
+    "load_average_at_end": [
+      1.0,
+      0.7,
+      0.33
+    ],
+    "cpu_count": 124,
+    "load_average_peak_1min": 1.0,
+    "contention_warning": false,
+    "contention_note": "load_average_at_* are /proc/loadavg's 1/5/15-minute figures, read either side of the timed rows. contention_warning is the 1-minute figure exceeding the core count: the rows were competing for the cores they were timed on, which widens the per-call scatter and can inject multi-call transients. It does not affect any gate under `gates` \u2014 those are exact comparisons of numbers, not of times."
+  },
+  "device": {
+    "use_jax": false,
+    "backend": "numba_cpu",
+    "inversion_paths": [
+      "InversionImagingSparseNumba"
+    ],
+    "hostname": "euclid-ral-gpu-1",
+    "omp_num_threads": "1",
+    "numba_num_threads": "1",
+    "cpu_count": 124,
+    "note": "Cell-local. _profile_cli.device_info_dict() is deliberately NOT called: it imports jax unconditionally (_profile_cli.py:392), and a JAX runtime in this process changes the thread pools the numba rows are measured through."
+  },
+  "machine": {
+    "cpu_model": "AMD EPYC 7702 64-Core Processor",
+    "cpu_count_os": 124,
+    "nproc": 1,
+    "nproc_all": 124,
+    "nproc_note": "GNU nproc honours OMP_NUM_THREADS, so `nproc` can print 1 on a multi-core host; `nproc_all` is the core count.",
+    "ram_total": "928298232 kB",
+    "kernel": "5.14.0-687.39.1.el9_8.x86_64",
+    "platform": "Linux-5.14.0-687.39.1.el9_8.x86_64-x86_64-with-glibc2.34",
+    "python": "3.12.4",
+    "jax_thread_env": {
+      "NPROC": null
+    },
+    "blas_thread_env": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "VECLIB_MAXIMUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1"
+    },
+    "thread_env_note": "NPROC sizes XLA's CPU intra-op pool (the JAX rows); the BLAS knobs pin OpenBLAS/MKL/OpenMP (the numpy/scipy rows) and do not touch JAX. Two disjoint families; both are recorded on every CPU timing.",
+    "gpu": null
+  },
+  "instrument": "hst",
+  "configuration": {
+    "mesh": "delaunay",
+    "dataset": "hst",
+    "pixel_scale_arcsec": 0.05,
+    "mask_radius_arcsec": 3.5,
+    "image_pixels_masked": 15361,
+    "over_sampled_pixels": 62752,
+    "source_pixels": 1500,
+    "mesh_shape": null,
+    "routes_selected": [
+      "b"
+    ],
+    "formalisms_selected": [
+      "sparse_numba"
+    ],
+    "row_order": "grouped",
+    "n_threads": 1,
+    "n_repeats": 16,
+    "instances": "iid",
+    "iid_seed": 263,
+    "decompose": true,
+    "pins_mode": "fp64",
+    "use_jax": false,
+    "thread_env": {
+      "n_threads": 1,
+      "vars": [
+        "OPENBLAS_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OMP_NUM_THREADS",
+        "VECLIB_MAXIMUM_THREADS",
+        "NUMEXPR_NUM_THREADS"
+      ],
+      "set_to": "1",
+      "preexisting": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1"
+      },
+      "overridden": {},
+      "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+    },
+    "numba_thread_env": {
+      "NUMBA_NUM_THREADS": "1",
+      "preexisting": "1",
+      "overridden": null,
+      "note": "Set cell-locally before numpy/numba import. Deliberately NOT added to _production_config.THREAD_ENV_VARS: that tuple is recorded verbatim in every existing numba cell's configuration.thread_env and widening it would change those blocks and the pins that describe them."
+    },
+    "nnls_warm_start_mode": "on",
+    "nnls_warm_start_env": "1",
+    "nnls_warm_start_env_preexisting": null,
+    "memo_cleared_between_rows": true,
+    "memo_cleared_within_block": false,
+    "memo_note": "The between-row clears are unconditional; only the WITHIN-BLOCK clears are gated by --nnls-warm-start. With the memo on, a block's calls seed each other (the sampler's regime); with it off every call is a cold dense-sign solve.",
+    "over_sample_size_lp_rule": {
+      "sub_size_list": [
+        4,
+        2,
+        2
+      ],
+      "radial_list": [
+        0.3,
+        0.6
+      ],
+      "centre": [
+        0.0,
+        0.0
+      ]
+    }
+  },
+  "regularization": {
+    "scheme": "adapt_split",
+    "inner_coefficient": 0.1,
+    "outer_coefficient": 10.0,
+    "signal_scale": 0.1
+  },
+  "all_route_keys": [
+    "a",
+    "b",
+    "c",
+    "d_np"
+  ],
+  "default_route_keys": [
+    "a",
+    "b",
+    "c"
+  ],
+  "all_formalism_keys": [
+    "dense",
+    "sparse_numba"
+  ],
+  "systems": {
+    "s0": {
+      "n_params": 1560,
+      "n_mapper": 1500,
+      "n_funcs": 60,
+      "edge_zeroed_pixels": 0,
+      "log_evidence_eager": 19705.717585911676
+    },
+    "s3": {
+      "n_params": 1500,
+      "n_mapper": 1500,
+      "n_funcs": 0,
+      "edge_zeroed_pixels": 0,
+      "subtracted_light_flux": 4945.524141998385,
+      "log_evidence_eager_dense": 19705.71758591185,
+      "log_evidence_eager_sparse_numba": 19705.71758591176
+    }
+  },
+  "gates": {
+    "P1_rebaked_operator_equals_original": {
+      "status": "PASS",
+      "fields": {
+        "psf_precision_operator_sparse": true,
+        "indexes": true,
+        "lengths": true
+      },
+      "asserted_under_pins_none": true,
+      "basis": "apply_sparse_operator_cpu builds the operator from the noise map, PSF and mask alone (dataset.py:682-706); subtracting the fixed lens light changes only the data, so the re-baked operator must be identical element for element.",
+      "summary": "3/3 arrays identical"
+    },
+    "S3_mapper_block_equals_S0": {
+      "status": "PASS",
+      "log_dets": {
+        "log_det_curvature_reg_matrix_term": {
+          "s0": 8326.70017133483,
+          "s3": 8326.70017133483,
+          "rel_diff": 0.0,
+          "status": "PASS"
+        },
+        "log_det_regularization_matrix_term": {
+          "s0": 7670.876894312947,
+          "s3": 7670.876894312947,
+          "rel_diff": 0.0,
+          "status": "PASS"
+        }
+      },
+      "n_edge_zeroed_s0": 0,
+      "n_edge_zeroed_s3": 0,
+      "rtol": 1e-06,
+      "summary": "log-dets rel 0.000e+00, edge-zeroed 0 vs 0"
+    },
+    "P2_dense_equals_sparse_numba_system": {
+      "status": "PASS",
+      "data_vector_max_rel_diff": 1.2974807795913263e-15,
+      "curvature_matrix_mapper_block_max_rel_diff": 3.7275058948429935e-15,
+      "rtol": 1e-09,
+      "n_mapper": 1500,
+      "asserted_under_pins_none": true,
+      "summary": "D 1.297e-15, F(mapper) 3.728e-15 (rtol 1e-09)"
+    },
+    "P3_dense_equals_sparse_numba_evidence": {
+      "status": "PASS",
+      "figure_of_merit_dense": 19705.71758591185,
+      "figure_of_merit_sparse_numba": 19705.71758591176,
+      "d_log_evidence_nats": -9.094947017729282e-11,
+      "rel_diff": 4.6153848384752585e-15,
+      "rtol": 1e-06,
+      "n_passive_set_differences": 0,
+      "n_passive_dense": 1485,
+      "n_passive_sparse_numba": 1485,
+      "solver_stats_dense": {
+        "seed_source": "dense",
+        "warm_start_fallback": false,
+        "outer_iterations": 0,
+        "inner_iterations": 1,
+        "n_passive": 1485,
+        "warm_start_errors": 5
+      },
+      "solver_stats_sparse_numba": {
+        "seed_source": "dense",
+        "warm_start_fallback": false,
+        "outer_iterations": 0,
+        "inner_iterations": 1,
+        "n_passive": 1485,
+        "warm_start_errors": 5
+      },
+      "summary": "\u0394 -9.094947e-11 nats (rel 4.615e-15), 0 passive-set differences"
+    }
+  },
+  "gate_thresholds": {
+    "P2_rtol": 1e-09,
+    "P3_rtol": 1e-06,
+    "P4_rtol": 1e-09,
+    "mapper_logdet_rtol": 1e-06,
+    "max_instrumentation_overhead_ratio": 1.03,
+    "min_blocks_for_overhead_assert": 3,
+    "max_unattributed_fraction": 0.05,
+    "warmup_window": 3,
+    "warmup_tolerance": 0.1,
+    "warmup_max_calls": 12
+  },
+  "route_c": {
+    "solve_ids_to_keep_is_none": true,
+    "edge_zeroing_disabled": true,
+    "edge_zeroing_note": "Inversion.solve_ids_to_keep returns None the moment use_positive_only_solver is False (abstract.py:540-546), so turning positivity off silently turns edge zeroing off with it. Route c solves the FULL system; routes a and b solve the edge-zeroed one.",
+    "log_evidence_eager": 19783.98705569277,
+    "d_log_evidence_vs_route_b": 78.26946978092019,
+    "n_negative_entries": 10,
+    "negative_flux_fraction": 9.879318261208077e-05,
+    "note": "Never quote route c's milliseconds without these numbers. The unconstrained solution sits at a HIGHER evidence than the constrained optimum because it is a different, infeasible minimiser."
+  },
+  "rows": {
+    "b_sparse_numba": {
+      "route": "b",
+      "formalism": "sparse_numba",
+      "label": "S3 fnnls source-only (the reference) [sparse_numba]",
+      "inversion_class": "InversionImagingSparseNumba",
+      "n_repeats": 16,
+      "warmup": {
+        "sequence_s": [
+          0.46304587507620454,
+          0.3956947629339993,
+          0.4094507470726967,
+          0.40518518909811974,
+          0.40095071913674474,
+          0.4106665928848088
+        ],
+        "n_calls": 6,
+        "steady": true,
+        "window": 3,
+        "tolerance": 0.1,
+        "max_calls": 12,
+        "first_call_incl_numba_compile_s": 0.46304587507620454,
+        "note": "Warm-up ran to a steady state, not to a fixed count: calls repeat until the median of the last `window` agrees with the median of the previous `window` to `tolerance`, or `max_calls` is hit. Every call is recorded. `steady: false` means the row's timings were taken on a host that never settled and should be read with the sequence in hand."
+      },
+      "warmup_incl_numba_compile_s": 0.46304587507620454,
+      "row_order": "grouped",
+      "memo_cleared_between_rows": true,
+      "memo_cleared_within_block": false,
+      "nnls_warm_start_mode": "on",
+      "nnls_warm_start_env": "1",
+      "operated_mapping_matrix_memo_entries_before": 0,
+      "decomposed": true,
+      "call_ms": 407.86366420798004,
+      "call_ms_median": 404.59731570445,
+      "call_ms_min": 393.1133938021958,
+      "call_ms_max": 458.7047388777137,
+      "call_ms_sequence": [
+        415.68590281531215,
+        399.0915408357978,
+        413.9467841014266,
+        411.78189031779766,
+        416.11627815291286,
+        402.09090569987893,
+        393.1133938021958,
+        399.2165797390044,
+        406.0889780521393,
+        396.2634359486401,
+        394.5092768408358,
+        405.87773034349084,
+        407.28519298136234,
+        458.7047388777137,
+        402.7290977537632,
+        403.3169010654092
+      ],
+      "clean_relative_spread": 0.1608168386435895,
+      "n_clean_calls": 16,
+      "log_likelihood": 18665.014334145228,
+      "log_likelihood_sequence": [
+        19497.35174868952,
+        19651.457884697327,
+        19328.369614256386,
+        19488.202055828602,
+        18847.16626547022,
+        19319.244429423128,
+        19014.188491645276,
+        19652.641982502628,
+        18982.846275923246,
+        19314.213619474776,
+        19705.71758591176,
+        18820.528845843237,
+        18656.216134096525,
+        19403.96980059209,
+        18665.014334145228,
+        19343.4137410371,
+        18791.303045235916,
+        19497.35174868952,
+        19651.457884697153,
+        19328.369614256895,
+        19488.202055828788,
+        18847.166265470227,
+        19319.244429423157,
+        19014.188491645313,
+        19652.641982502777,
+        18982.84627592324,
+        19314.213619474453,
+        19705.71758591176,
+        18820.528845843237,
+        18656.216134096525,
+        19403.96980059209,
+        18665.014334145228
+      ],
+      "cpu_over_wall": 1.000221927977323,
+      "cpu_over_wall_note": "time.process_time() sums every thread of the process, so this is the effective thread count of the timed calls. At --threads 1 it should sit just above 1.0; anything higher means a pool this cell did not pin.",
+      "call_ms_instrumented": 412.19850024208426,
+      "call_ms_instrumented_sequence": [
+        464.3030008301139,
+        398.45612877979875,
+        403.69393676519394,
+        413.66049693897367,
+        423.383560962975,
+        457.0533582009375,
+        406.0161588713527,
+        402.00269501656294,
+        410.5011448264122,
+        394.2563496530056,
+        404.3328589759767,
+        396.42387395724654,
+        404.02299305424094,
+        415.04911007359624,
+        395.8585700020194,
+        406.1617669649422
+      ],
+      "n_instrumented_calls": 16,
+      "abba": {
+        "n_blocks": 8,
+        "block_ratios": [
+          1.0588893155212928,
+          0.9898583627110362,
+          1.0760562074486955,
+          1.0198009426257046,
+          1.0029975362903762,
+          1.0004619337215346,
+          0.9458217387926008,
+          0.9950056673463944
+        ],
+        "ratio_mean": 1.0111114630572042,
+        "ratio_median": 1.0017297350059553,
+        "ratio_min": 0.9458217387926008,
+        "ratio_max": 1.0760562074486955,
+        "design": "A B B A per block; ratio = mean(B) / mean(A)",
+        "why": "A B B A straddles the two instrumented calls with one clean call either side, so a drift linear in call index cancels exactly in the ratio. A sequential 'all clean then all instrumented' design charges the whole drift over the row to the instrumentation: measured on this configuration it returned 0.71, 0.98, 1.10, 1.11, 1.24 and 1.37 across six rows of one leg \u2014 including ratios below 1, which no real instrumentation can produce."
+      },
+      "instrumentation_overhead_ratio": 1.0111114630572042,
+      "instrumentation_overhead_status": "PASS",
+      "instrumentation_overhead_assertable": true,
+      "instrumentation_overhead_threshold": 1.03,
+      "min_blocks_for_overhead_assert": 3,
+      "decomposition_rescale_factor": 0.989483620072469,
+      "attributed_ms": 410.9762118314393,
+      "unattributed_ms": 1.2222884106449783,
+      "unattributed_fraction": 0.0029652907759905194,
+      "steps": {
+        "fit.blurred_image": {
+          "excl_s": 0.00285697615453126,
+          "excl_s_unscaled": 0.0028873405244667083,
+          "incl_s": 0.00285697615453126,
+          "n_calls": 1.0,
+          "group": "image"
+        },
+        "fit.profile_subtracted_image": {
+          "excl_s": 6.231487572422468e-05,
+          "excl_s_unscaled": 6.297716754488647e-05,
+          "incl_s": 0.0029192910302554844,
+          "n_calls": 1.0,
+          "group": "image"
+        },
+        "fit.tracer_to_inversion": {
+          "excl_s": 1.2364031788948744e-05,
+          "excl_s_unscaled": 1.2495438568294048e-05,
+          "incl_s": 0.0029316550620444334,
+          "n_calls": 1.0,
+          "group": "mesh"
+        },
+        "to_inversion.traced_grid_2d_list_of_inversion": {
+          "excl_s": 0.0008844316431834362,
+          "excl_s_unscaled": 0.0008938315149862319,
+          "incl_s": 0.0008844316431834362,
+          "n_calls": 1.0,
+          "group": "mesh"
+        },
+        "to_inversion.image_plane_mesh_grid_pg_list": {
+          "excl_s": 4.10321765736571e-05,
+          "excl_s_unscaled": 4.1468272684141994e-05,
+          "incl_s": 4.10321765736571e-05,
+          "n_calls": 1.0,
+          "group": "mesh"
+        },
+        "to_inversion.traced_mesh_grid_pg_list": {
+          "excl_s": 0.00038221995776921365,
+          "excl_s_unscaled": 0.0003862822486553341,
+          "incl_s": 0.00042325213434287075,
+          "n_calls": 1.0,
+          "group": "mesh"
+        },
+        "delaunay.mesh_geometry": {
+          "excl_s": 0.0,
+          "excl_s_unscaled": 0.0,
+          "incl_s": 0.0,
+          "n_calls": 0.0,
+          "group": "mesh"
+        },
+        "delaunay.triangulation": {
+          "excl_s": 0.018507833368009725,
+          "excl_s_unscaled": 0.018704537389567122,
+          "incl_s": 0.018507833368009725,
+          "n_calls": 1.0,
+          "group": "mesh"
+        },
+        "to_inversion.lp_linear_func_list_galaxy_dict": {
+          "excl_s": 0.007004982599126063,
+          "excl_s_unscaled": 0.00707943260204047,
+          "incl_s": 0.007004982599126063,
+          "n_calls": 1.0,
+          "group": "mapper"
+        },
+        "to_inversion.mapper_galaxy_dict": {
+          "excl_s": 0.0012356761217593279,
+          "excl_s_unscaled": 0.0012488090724218637,
+          "incl_s": 0.0025433598992856345,
+          "n_calls": 1.0,
+          "group": "mapper"
+        },
+        "mapper.unique_mappings": {
+          "excl_s": 0.0022265457963901196,
+          "excl_s_unscaled": 0.002250209858175367,
+          "incl_s": 0.023238150864570158,
+          "n_calls": 1.0,
+          "group": "mapper"
+        },
+        "mapper.mapping_matrix": {
+          "excl_s": 0.0,
+          "excl_s_unscaled": 0.0,
+          "incl_s": 0.0,
+          "n_calls": 0.0,
+          "group": "mapper"
+        },
+        "mapper.sparse_triplets_data": {
+          "excl_s": 0.0,
+          "excl_s_unscaled": 0.0,
+          "incl_s": 0.0,
+          "n_calls": 0.0,
+          "group": "mapper"
+        },
+        "mapper.sparse_triplets_curvature": {
+          "excl_s": 0.0,
+          "excl_s_unscaled": 0.0,
+          "incl_s": 0.0,
+          "n_calls": 0.0,
+          "group": "mapper"
+        },
+        "delaunay.mappings_sizes_weights": {
+          "excl_s": 0.0025037717001703125,
+          "excl_s_unscaled": 0.0025303821603301913,
+          "incl_s": 0.021011605068180037,
+          "n_calls": 1.0,
+          "group": "mapper_weights"
+        },
+        "delaunay.mappings_sizes_weights_split": {
+          "excl_s": 0.0012452804638703175,
+          "excl_s_unscaled": 0.001258515490917489,
+          "incl_s": 0.0012452804638703175,
+          "n_calls": 1.0,
+          "group": "mapper_weights"
+        },
+        "inversion.to_inversion": {
+          "excl_s": 2.734298689865007e-05,
+          "excl_s_unscaled": 2.7633592253550887e-05,
+          "incl_s": 0.009575685485310348,
+          "n_calls": 1.0,
+          "group": "DF"
+        },
+        "fit.inversion": {
+          "excl_s": 7.080978399567165e-05,
+          "excl_s_unscaled": 7.156236097216606e-05,
+          "incl_s": 0.012578150331350452,
+          "n_calls": 1.0,
+          "group": "DF"
+        },
+        "inversion.operated_mapping_matrix": {
+          "excl_s": 0.0,
+          "excl_s_unscaled": 0.0,
+          "incl_s": 0.0,
+          "n_calls": 0.0,
+          "group": "DF"
+        },
+        "inversion.linear_func_operated_mapping_matrix_dict": {
+          "excl_s": 0.0,
+          "excl_s_unscaled": 0.0,
+          "incl_s": 0.0,
+          "n_calls": 0.0,
+          "group": "DF"
+        },
+        "sparse_numba.linear_func_operated_mapping_matrix_dict": {
+          "excl_s": 0.0,
+          "excl_s_unscaled": 0.0,
+          "incl_s": 0.0,
+          "n_calls": 0.0,
+          "group": "DF"
+        },
+        "sparse_numba.psf_weighted_data": {
+          "excl_s": 0.008272752590022709,
+          "excl_s_unscaled": 0.008360676642041653,
+          "incl_s": 0.008272752590022709,
+          "n_calls": 1.0,
+          "group": "DF"
+        },
+        "sparse_numba.data_vector": {
+          "excl_s": 6.3331724754056e-05,
+          "excl_s_unscaled": 6.400482379831374e-05,
+          "incl_s": 0.031574235179346925,
+          "n_calls": 1.0,
+          "group": "DF"
+        },
+        "sparse_numba.curvature_matrix": {
+          "excl_s": 0.08741633934006086,
+          "excl_s_unscaled": 0.08834541327087209,
+          "incl_s": 0.08741633934006086,
+          "n_calls": 1.0,
+          "group": "DF"
+        },
+        "dense.data_vector": {
+          "excl_s": 0.0,
+          "excl_s_unscaled": 0.0,
+          "incl_s": 0.0,
+          "n_calls": 0.0,
+          "group": "DF"
+        },
+        "dense.curvature_matrix": {
+          "excl_s": 0.0,
+          "excl_s_unscaled": 0.0,
+          "incl_s": 0.0,
+          "n_calls": 0.0,
+          "group": "DF"
+        },
+        "inversion.regularization_matrix": {
+          "excl_s": 0.11150126750491268,
+          "excl_s_unscaled": 0.11268631965504028,
+          "incl_s": 0.11274654796878299,
+          "n_calls": 1.0,
+          "group": "F_plus_H"
+        },
+        "inversion.regularization_matrix_reduced": {
+          "excl_s": 2.1800194960991497e-06,
+          "excl_s_unscaled": 2.203189069405198e-06,
+          "incl_s": 2.1800194960991497e-06,
+          "n_calls": 1.0,
+          "group": "F_plus_H"
+        },
+        "inversion.curvature_reg_matrix": {
+          "excl_s": 0.004055660713916184,
+          "excl_s_unscaled": 0.004098764882655814,
+          "incl_s": 0.20421854802276004,
+          "n_calls": 2.0,
+          "group": "F_plus_H"
+        },
+        "inversion.curvature_reg_matrix_reduced": {
+          "excl_s": 1.332121185277014e-05,
+          "excl_s_unscaled": 1.3462791685014963e-05,
+          "incl_s": 0.001957850999670116,
+          "n_calls": 1.0,
+          "group": "F_plus_H"
+        },
+        "inversion.zeroed_ids_to_keep": {
+          "excl_s": 4.691541567162907e-05,
+          "excl_s_unscaled": 4.7414039727300406e-05,
+          "incl_s": 4.691541567162907e-05,
+          "n_calls": 1.0,
+          "group": "F_plus_H"
+        },
+        "inversion.reconstruction": {
+          "excl_s": 0.007430566257998903,
+          "excl_s_unscaled": 0.007509539427701384,
+          "incl_s": 0.3116587486960045,
+          "n_calls": 1.0,
+          "group": "solve"
+        },
+        "solver.reconstruction_positive_only_from": {
+          "excl_s": 0.0075445072299555535,
+          "excl_s_unscaled": 0.007624691381352022,
+          "incl_s": 0.07033301360804438,
+          "n_calls": 1.0,
+          "group": "solve"
+        },
+        "solver.reconstruction_positive_negative_from": {
+          "excl_s": 0.0,
+          "excl_s_unscaled": 0.0,
+          "incl_s": 0.0,
+          "n_calls": 0.0,
+          "group": "solve"
+        },
+        "solver.fnnls_cholesky": {
+          "excl_s": 0.06278850637808883,
+          "excl_s_unscaled": 0.06345583201618865,
+          "incl_s": 0.06278850637808883,
+          "n_calls": 1.0,
+          "group": "solve"
+        },
+        "solver.nnls_factor_reuse": {
+          "excl_s": 0.0,
+          "excl_s_unscaled": 0.0,
+          "incl_s": 0.0,
+          "n_calls": 0.0,
+          "group": "solve"
+        },
+        "inversion.reconstruction_reduced": {
+          "excl_s": 5.8235701319620395e-06,
+          "excl_s_unscaled": 5.88546390645206e-06,
+          "incl_s": 5.8235701319620395e-06,
+          "n_calls": 1.0,
+          "group": "solve"
+        },
+        "inversion.regularization_term": {
+          "excl_s": 0.0006929223113132392,
+          "excl_s_unscaled": 0.0007002867932897061,
+          "incl_s": 0.0007009259009413004,
+          "n_calls": 1.0,
+          "group": "evidence"
+        },
+        "inversion.log_det_curvature_reg_matrix_term": {
+          "excl_s": 0.040171705994418015,
+          "excl_s_unscaled": 0.040598656894871965,
+          "incl_s": 0.04212955699408813,
+          "n_calls": 1.0,
+          "group": "evidence"
+        },
+        "inversion.log_det_regularization_matrix_term": {
+          "excl_s": 0.0374675345456219,
+          "excl_s_unscaled": 0.037865745107410476,
+          "incl_s": 0.0374675345456219,
+          "n_calls": 1.0,
+          "group": "evidence"
+        },
+        "inversion.mapped_reconstructed_operated_data": {
+          "excl_s": 0.0017345580081712193,
+          "excl_s_unscaled": 0.0017529931501485407,
+          "incl_s": 0.31339330670417576,
+          "n_calls": 1.0,
+          "group": "evidence"
+        },
+        "fit.model_data": {
+          "excl_s": 5.9360369176064245e-05,
+          "excl_s_unscaled": 5.9991260059177876e-05,
+          "incl_s": 0.3134526670733518,
+          "n_calls": 1.0,
+          "group": "evidence"
+        },
+        "fit.residual_map": {
+          "excl_s": 5.036484058361507e-05,
+          "excl_s_unscaled": 5.0900125643238425e-05,
+          "incl_s": 0.3135030319139354,
+          "n_calls": 1.0,
+          "group": "evidence"
+        },
+        "fit.chi_squared_map": {
+          "excl_s": 4.204202774695348e-05,
+          "excl_s_unscaled": 4.2488856706768274e-05,
+          "incl_s": 0.3135450739416824,
+          "n_calls": 1.0,
+          "group": "evidence"
+        },
+        "fit.chi_squared": {
+          "excl_s": 2.2243997294572083e-05,
+          "excl_s_unscaled": 2.2480409825220704e-05,
+          "incl_s": 0.31356731793897696,
+          "n_calls": 1.0,
+          "group": "evidence"
+        },
+        "fit.noise_normalization": {
+          "excl_s": 0.0001438111641883768,
+          "excl_s_unscaled": 0.00014533961075358093,
+          "incl_s": 0.0001438111641883768,
+          "n_calls": 1.0,
+          "group": "evidence"
+        },
+        "fit.log_evidence": {
+          "excl_s": 5.6735971391114144e-05,
+          "excl_s_unscaled": 5.733896978199482e-05,
+          "incl_s": 0.3940658825152078,
+          "n_calls": 1.0,
+          "group": "evidence"
+        },
+        "fit.figure_of_merit": {
+          "excl_s": 1.019700008419635e-05,
+          "excl_s_unscaled": 1.0305375326424837e-05,
+          "incl_s": 0.4066542298466424,
+          "n_calls": 1.0,
+          "group": "evidence"
+        },
+        "unattributed (call - sum of exclusive times)": {
+          "excl_s": 0.0012094343613376177,
+          "excl_s_unscaled": 0.0012222884106449783,
+          "incl_s": null,
+          "n_calls": null,
+          "group": "unattributed"
+        }
+      },
+      "n_sites_instrumented": 48,
+      "n_sites_reached": 37,
+      "cached_site_call_count_violations": {},
+      "solver_stats": {
+        "solver.fnnls_cholesky": {
+          "seed_source": "memo",
+          "warm_start_fallback": false,
+          "outer_iterations": 2,
+          "inner_iterations": 1,
+          "n_passive": 1484,
+          "warm_start_errors": 5
+        }
+      },
+      "operated_mapping_matrix_memo_entries_after": 0
+    }
+  },
+  "decomposition_method": "likelihood_breakdown.call_accounting wraps ~40 named library descriptors and three module-level solver functions and the PRODUCTION AnalysisImaging.log_likelihood_function is then run untouched. Each row is inclusive time, exclusive (self) time and the number of times the library reached the site; exclusive times are additive by construction, so 'unattributed' is a measured remainder and not an estimate. It is always an explicit row. Rows are rescaled by decomposition_rescale_factor (clean / instrumented) so they sum to the quoted, uninstrumented call. The clean and instrumented calls are COUNTERBALANCED (A B B A per block), so the overhead ratio is free of any drift linear in call index, and the warm-up runs to a steady state with its whole per-call sequence recorded under rows[*].warmup.",
+  "group_labels": {
+    "image": "Image + blurring",
+    "mesh": "Mesh (ray trace, placement, triangulation)",
+    "mapper": "Mapper + mapping matrix",
+    "mapper_weights": "Mapper weights (Delaunay)",
+    "DF": "D and F assembly",
+    "F_plus_H": "F + lambda H",
+    "solve": "Positivity solve",
+    "evidence": "Log determinants + evidence"
+  },
+  "no_pin_note": "NO PIN WAS EVER CALIBRATED HERE. No numba fixed-light configuration has a pinned log likelihood, log evidence or log determinant anywhere in this repo, so every numerical quantity in this JSON is RECORDED, not asserted, and pinned_expected is null. The only hard verdicts this leg carries are the structural gates under `gates` (P1, P2, P3, the S3-equals-S0 mapper block, the per-row dispatch, the cached-access counts, the instrumentation overhead and the coverage), none of which is a calibrated number.",
+  "pinned_expected": null,
+  "pinned_drift": []
+}
