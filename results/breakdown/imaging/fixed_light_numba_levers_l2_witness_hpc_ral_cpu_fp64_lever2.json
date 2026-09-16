@@ -1,0 +1,230 @@
+{
+  "cell": "fixed_light_numba_levers_l2_witness",
+  "issue": "autolens_profiling#267 (lever 2: sparse log det of the split-regularization H)",
+  "verdict": "PASS",
+  "results": {
+    "W1_sparse_route_fires": {
+      "status": "PASS",
+      "n_calls_during_figure_of_merit": 1,
+      "called_exactly_once": true,
+      "returned_float": true,
+      "returned_none": false,
+      "calls": [
+        {
+          "shape": [
+            1500,
+            1500
+          ],
+          "returned_none": false,
+          "value": 7670.876885100281,
+          "wall_s": 0.007152135018259287
+        }
+      ],
+      "figure_of_merit_sparse": 19705.717581305427,
+      "log_det_regularization_matrix_term_sparse": 7670.876885100281,
+      "summary": "1 call(s) during figure_of_merit, returned float = 7670.876885100281 in 7.15 ms"
+    },
+    "W2_log_det_sparse_vs_dense": {
+      "status": "PASS",
+      "log_det_sparse": 7670.876885100281,
+      "log_det_dense": 7670.876894312947,
+      "d_log_det_nats": -9.21266655495856e-06,
+      "relative_difference": 1.2009926220806213e-09,
+      "rtol": 1e-08,
+      "dense_forcing_patch_calls": 2,
+      "dense_forcing_patch_fired": true,
+      "h_identical_between_fits": true,
+      "h_eigenvalue_min": 1.0001215410958969e-08,
+      "h_eigenvalue_max": 64922.43333162335,
+      "h_condition_number": 6491454354686.102,
+      "h_eigvalsh_wall_s": 0.18627405166625977,
+      "summary": "sparse 7670.876885100 vs dense 7670.876894313, \u0394 -9.213e-06 nats (rel 1.201e-09 <= 1e-08) on a matrix of cond 6.49e+12; same H both fits=True"
+    },
+    "W3_figure_of_merit_sparse_vs_dense": {
+      "status": "PASS",
+      "figure_of_merit_sparse": 19705.717581305427,
+      "figure_of_merit_dense": 19705.71758591176,
+      "d_log_evidence_nats": -4.606332367984578e-06,
+      "relative_difference": 2.3375613437583166e-10,
+      "rtol": 1e-09,
+      "dense_forcing_patch_fired": true,
+      "summary": "sparse 19705.717581305 vs dense 19705.717585912, \u0394 -4.606e-06 nats (rel 2.338e-10 <= 1e-09)"
+    },
+    "W4_both_regime_gates_admit": {
+      "status": "PASS",
+      "pixels": 1500,
+      "min_pixels_constant": 256,
+      "pixels_gate_admits": true,
+      "pixels_margin": 1244,
+      "nnz_total": 12740,
+      "nnz_per_row_mean": 8.493333333333334,
+      "nnz_per_row_max": 15,
+      "max_nnz_per_row_constant": 32,
+      "nnz_gate_admits": true,
+      "density": 0.005662222222222222,
+      "summary": "pixels 1500 >= 256 (True), nnz/row 8.493 <= 32 (True), density 5.662e-03"
+    },
+    "W5_site_timing_sparse_vs_dense": {
+      "status": "PASS",
+      "n_repeats": 20,
+      "threads": 1,
+      "sparse_ms_median": 6.26536994241178,
+      "dense_ms_median": 37.719890009611845,
+      "sparse_ms_samples": [
+        6.495142821222544,
+        6.375573109835386,
+        6.271834950894117,
+        6.3011846505105495,
+        6.312794052064419,
+        6.276065018028021,
+        6.251684855669737,
+        6.2928455881774426,
+        6.258904933929443,
+        6.252645049244165,
+        6.249425001442432,
+        6.309474818408489,
+        6.205095909535885,
+        6.20532501488924,
+        6.251055281609297,
+        6.236576940864325,
+        6.43470324575901,
+        6.274865008890629,
+        6.255584768950939,
+        6.239725276827812
+      ],
+      "dense_ms_samples": [
+        37.88766684010625,
+        37.812759168446064,
+        37.7902677282691,
+        38.025625981390476,
+        37.64451015740633,
+        38.97441364824772,
+        37.746138870716095,
+        37.76671923696995,
+        37.651930935680866,
+        37.728008814156055,
+        37.673619110137224,
+        37.71528974175453,
+        37.653590086847544,
+        37.61494066566229,
+        37.52977214753628,
+        37.70616790279746,
+        37.66980022192001,
+        37.83515840768814,
+        37.72449027746916,
+        37.55117114633322
+      ],
+      "speedup_dense_over_sparse": 6.020377145534046,
+      "sparse_returned_none": false,
+      "log_det_sparse_same_matrix": 7670.876885100281,
+      "log_det_dense_same_matrix": 7670.876894312947,
+      "d_log_det_same_matrix_nats": -9.21266655495856e-06,
+      "relative_difference_same_matrix": 1.2009926220806213e-09,
+      "rtol": 1e-08,
+      "note": "RECORDED, not pinned: no calibrated ratio exists for an arbitrary host. The gate is that the sparse route ran (did not return None) and agreed with the dense Cholesky on the one matrix to W2's tolerance. Compare the ratio with the A/B legs' whole-call rows, not with a literal.",
+      "summary": "sparse 6.265 ms vs dense 37.720 ms (6.02x), same-matrix \u0394 -9.213e-06 nats (rel 1.201e-09)"
+    }
+  },
+  "configuration": {
+    "config_name": "hpc_ral_cpu_fp64_lever2",
+    "mesh": "delaunay",
+    "dataset": "hst",
+    "source_pixels": 1500,
+    "mesh_vertices_placed": 1500,
+    "regularization": {
+      "scheme": "adapt_split",
+      "inner_coefficient": 0.1,
+      "outer_coefficient": 10.0,
+      "signal_scale": 0.1
+    },
+    "threads": 1,
+    "thread_env": {
+      "n_threads": 1,
+      "vars": [
+        "OPENBLAS_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OMP_NUM_THREADS",
+        "VECLIB_MAXIMUM_THREADS",
+        "NUMEXPR_NUM_THREADS"
+      ],
+      "set_to": "1",
+      "preexisting": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1"
+      },
+      "overridden": {},
+      "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+    },
+    "numba_thread_env": {
+      "NUMBA_NUM_THREADS": "1",
+      "preexisting": "1"
+    },
+    "nnls_warm_start_env": "0",
+    "use_jax": false,
+    "instance_seed": 263,
+    "w2_rtol": 1e-08,
+    "w3_rtol": 1e-09,
+    "w5_n_repeats": 20,
+    "sparse_log_det_min_pixels": 256,
+    "sparse_log_det_max_nnz_per_row": 32,
+    "log_det_method": "cholesky"
+  },
+  "system": {
+    "n_params": 1500,
+    "n_mapper": 1500,
+    "n_funcs": 0,
+    "edge_zeroed_pixels": 0,
+    "subtracted_light_flux": 4945.524141998385,
+    "inversion_class": "InversionImagingSparseNumba",
+    "interpolator_class": "InterpolatorDelaunay",
+    "regularization_class": "AdaptSplit",
+    "mapper_params": 1500,
+    "h_shape": [
+      1500,
+      1500
+    ],
+    "h_pixels": 1500,
+    "h_nnz_total": 12740,
+    "h_nnz_per_row_mean": 8.493333333333334,
+    "h_nnz_per_row_max": 15,
+    "h_density": 0.005662222222222222,
+    "h_eigenvalue_min": 1.0001215410958969e-08,
+    "h_eigenvalue_max": 64922.43333162335,
+    "h_condition_number": 6491454354686.102
+  },
+  "provenance": {
+    "autoarray_file": "/mnt/ral/jnightin/PyAuto_wt/fixed-light-numba-levers/PyAutoArray_l2/autoarray/__init__.py",
+    "autoarray_version": "2026.8.17.1",
+    "autolens_version": "2026.8.17.1",
+    "hostname": "euclid-ral-gpu-1",
+    "slurm_job_id": "343353",
+    "jax_in_sys_modules": true,
+    "scipy_version": "1.17.1",
+    "wall_s": 13.627886533737183
+  },
+  "machine": {
+    "cpu_model": "AMD EPYC 7702 64-Core Processor",
+    "cpu_count_os": 124,
+    "nproc": 1,
+    "nproc_all": 124,
+    "nproc_note": "GNU nproc honours OMP_NUM_THREADS, so `nproc` can print 1 on a multi-core host; `nproc_all` is the core count.",
+    "ram_total": "928298232 kB",
+    "kernel": "5.14.0-687.39.1.el9_8.x86_64",
+    "platform": "Linux-5.14.0-687.39.1.el9_8.x86_64-x86_64-with-glibc2.34",
+    "python": "3.12.4",
+    "jax_thread_env": {
+      "NPROC": null
+    },
+    "blas_thread_env": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "VECLIB_MAXIMUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1"
+    },
+    "thread_env_note": "NPROC sizes XLA's CPU intra-op pool (the JAX rows); the BLAS knobs pin OpenBLAS/MKL/OpenMP (the numpy/scipy rows) and do not touch JAX. Two disjoint families; both are recorded on every CPU timing.",
+    "gpu": null
+  },
+  "notes": "W1 wraps inversion_util.log_det_sparse_spd_from in a counter and asserts it is called exactly once during one fit.figure_of_merit and returns a float, not None \u2014 i.e. the sparse route fired on the HST Delaunay N=1500 source-only (S3) AdaptSplit system fixed_light_numba.py route b builds, and did not leak into log_det_curvature_reg_matrix_term. W2 compares log_det_regularization_matrix_term sparse against a fresh fit with that helper monkeypatched to return None (the library's own dense Cholesky fallback), gate 1e-8 relative, with the matrix's extreme eigenvalues and their ratio recorded beside it. W3 is the same comparison on figure_of_merit, gate 1e-9 relative. W4 records pixels and nnz/row against SPARSE_LOG_DET_MIN_PIXELS and SPARSE_LOG_DET_MAX_NNZ_PER_ROW. W5 times both routes on the same matrix, median of 20 at one thread, and RECORDS the ratio. Lever 2 is NOT bit-identical and no check here asserts that it is: the two routes are two fp64 factorizations of a cond ~9e12 matrix. The A/B milliseconds are the two arms of hpc/batch_cpu/submit_breakdown_imaging_fixed_light_numba_levers_l2_delaunay_ral_hst_fp64 (control = lever 1 bae9296e, feature = lever 2 0b17c292)."
+}

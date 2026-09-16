@@ -1,0 +1,467 @@
+#!/bin/bash -l
+#
+# 2026-09 fixed-lens-light numba LEVERS, lever 3 (autolens_profiling#267).
+#
+# WHAT LEVER 3 IS. The positive-only reconstruction is a non-negative least
+# squares solve, and `fnnls_cholesky` finishes it holding a Cholesky factor `U` of
+# `M[P][:, P]`, where `M` is `curvature_reg_matrix_reduced` and `P` is the solve's
+# final PASSIVE set — 1485 of the 1500 columns on this system. The Bayesian
+# evidence then needs `log det M` of the full system, and until lever 3 it
+# factorised that whole (1500, 1500) matrix a SECOND time from scratch: 39.596 ms
+# of lever 2's 267.448 ms call (14.80 %, the third-largest site in the call and
+# 81 % of the log-determinant group), redoing 99 % of the work the solver had just
+# done.
+#
+# Lever 3 publishes that factor and reads the log determinant off it. Three
+# changes, one commit (`b4322c3e`):
+#
+#   1. `fnnls_cholesky` gains an optional `factor` out-dict, filled on return with
+#      `U_buffer` (by reference — it is local to the call and untouched after the
+#      return, so there is no 18 MB copy to make), `k_active`, `passive_set` in
+#      the order the factor's rows and columns are in, and `matrix_shape`. Like
+#      `stats` it is purely observational: **the solve is byte-identical whether
+#      or not it is passed**, and `reconstruction_positive_only_from` CLEARS the
+#      dict on entry so a memo-seeded attempt that raised cannot leave a discarded
+#      solve's factor behind for the retry's caller to read.
+#   2. `inversion_util.log_det_from_passive_cholesky_from` turns that factor into
+#      `log det M` by the block-determinant identity
+#
+#          log det M = log det M_PP + log det(M_AA - M_AP M_PP^-1 M_PA)
+#
+#      — the first term is `2*sum(log(diag(U)))`, free; the second is a Schur
+#      complement over the ~15 ACTIVE columns, one triangular solve with |A|
+#      right-hand sides plus one |A| x |A| Cholesky. Either Cholesky failing
+#      raises `np.linalg.LinAlgError`, deliberately, because it means `M` is not
+#      positive-definite either and the dense route is the authority on it.
+#   3. `AbstractInversion.curvature_reg_matrix` becomes a `cached_property`. It
+#      was a plain `property` reached TWICE per evaluation (4.081 ms across the
+#      two in lever 2's row), and the rebuild is part of what made the second
+#      factorisation necessary at all.
+#
+# On the numpy path `log_det_curvature_reg_matrix_term` takes the fast route only
+# under every one of these guards — numpy backend, `log_det_method == "cholesky"`,
+# `use_positive_only_solver`, all linear objects regularised, a factor present
+# with a non-empty passive block, `matrix_shape` match, and the solve covering the
+# whole reduced system ("no subset OR the identity subset": with
+# `use_edge_zeroed_pixels` on but no edge pixels to zero, `solve_ids_to_keep`
+# returns `arange(n)`, not `None`, which is this system's production
+# configuration) — and falls back to the unchanged dense route otherwise or on
+# `LinAlgError`. Its A100 pair is
+# hpc/batch_gpu/submit_breakdown_imaging_fixed_light_numba_levers_l3_delaunay_a100_hst_fp64.
+#
+# WHERE THE MOVEMENT IS EXPECTED, AND NOWHERE ELSE.
+#
+#   `inversion.log_det_curvature_reg_matrix_term`  ~40 ms -> ~5-7 ms. The lever.
+#   `inversion.curvature_reg_matrix`               4.081 ms over `n_calls` 2
+#                                                  -> ~2 ms over `n_calls` 1.
+#                                                  READ THE CALL COUNT, not only
+#                                                  the milliseconds: the count is
+#                                                  the cache.
+#   `solver.fnnls_cholesky`                        62.489 ms, MUST NOT MOVE. The
+#                                                  solve is byte-identical; the
+#                                                  factor is published from a
+#                                                  buffer the solver already held.
+#                                                  A row that moved here would
+#                                                  mean `factor` is not free, and
+#                                                  the lever's whole premise —
+#                                                  that it re-uses work already
+#                                                  done — would be wrong.
+#   `inversion.reconstruction`                     may move either way. The fast
+#                                                  path EVALUATES `reconstruction`
+#                                                  (a `cached_property`) before
+#                                                  reading the factor, so the
+#                                                  `_xp.add(F, H)` build can move
+#                                                  into or out of this row
+#                                                  depending on which site reaches
+#                                                  `curvature_reg_matrix` first now
+#                                                  that it is cached. Judge the
+#                                                  GROUP total, not this row alone.
+#
+# Everything else is flat. Read the `F_plus_H` and `evidence` group rows side by
+# side in the two JSONs before reading anything else. Expected whole call
+# 267.448 -> ~230 ms.
+#
+# THE PROFILING-SIDE HANDSHAKE, AND WHY IT IS NOT A SILENT ONE. `curvature_reg_matrix`
+# becoming a `cached_property` changes what this cell's own decomposition MEANS at
+# that row, so the cell and its test were updated in the same commit as these
+# scripts:
+#
+#   * `fixed_light_numba.py`'s site spec now declares the site cached
+#     (`cached=CURVATURE_REG_MATRIX_IS_CACHED`), which turns the cell's
+#     `cached_site_call_count_violations` gate into a hard `n_calls == 1` — so the
+#     FEATURE arm below carries a gate the control arm does not, and lever 3's
+#     cache is asserted by the measurement itself rather than only described here.
+#     The flag is read off the installed class rather than written as a literal
+#     `True` because **this job runs one checkout of that cell against two
+#     PyAutoArray revisions**: a literal would fire that `AssertionError` in the
+#     CONTROL arm, where the site is genuinely reached twice, and kill the control
+#     arm of the measurement the gate exists to serve.
+#   * `scripts/misc/test/test_fixed_light_numba.py`'s
+#     `test_curvature_reg_matrix_is_recomputed_more_than_once` became
+#     `test_curvature_reg_matrix_is_cached`, asserting `n_calls == 1`
+#     UNCONDITIONALLY. That is the pin, and it is deliberately not
+#     version-aware: a PyAutoArray that stops caching the matrix must fail
+#     loudly. It therefore FAILS on a pre-lever-3 PyAutoArray, which is what this
+#     repo's CI checks out (`.github/workflows/lint.yml` checks out
+#     `PyAutoLabs/PyAutoArray` with no `ref:`, i.e. its default branch), so this
+#     branch's CI is RED on that one test until the PyAutoArray lever-3 PR merges
+#     to `main`. That is a stated consequence of pinning the cache, not a defect
+#     to dodge by weakening the assertion.
+#
+# This job is the CPU A/B row for lever 3, and it is ONE job with TWO ARMS run
+# back-to-back so both arms share a host, a core count and a load:
+#
+#   CONTROL ARM  PyAutoArray 0b17c292 — **LEVER 2**, not the merge base and not
+#                lever 1.
+#   FEATURE ARM  PyAutoArray b4322c3e — lever 3, stacked on lever 2. Plus the
+#                shared-factor witness (below).
+#
+# WHY THE CONTROL IS LEVER 2. Lever 3's commit sits ON TOP OF lever 2, which sits
+# on top of lever 1; a merge-base control would measure all three levers at once
+# and attribute the sum to lever 3. Both prior rows are already measured and
+# recorded (results/notes/fixed_lens_light_levers_2026_09.md: merge base 413.301
+# -> lever 1 299.709 ms, 1.379x; lever 1 302.709 -> lever 2 267.448 ms, 1.13x),
+# so the A/B this job runs is the INCREMENT lever 3 adds, and the cumulative
+# figure against the merge base is a multiplication of the three rows, computed in
+# the note rather than measured here. `PyAutoArray_control` (5e2bc0f4, the merge
+# base) and `PyAutoArray_feature` (bae9296e, lever 1) both still exist on the
+# cluster and are deliberately NOT used by this job.
+#
+# WHY --n-repeats 64 AND NOT 16 (the one flag that differs from levers 1 and 2).
+#
+# Job 343355 ran this A/B at 16 repeats, the lever-1/2 setting, and the CONTROL arm
+# completed cleanly (268.681 ms, ABBA overhead x1.0182 PASS) while the FEATURE arm
+# measured 224.330 ms and then died on
+#
+#   AssertionError: row b_sparse_numba: ABBA instrumentation_overhead_ratio 1.0366
+#   > 1.03 over 8 counterbalanced blocks
+#   [1.1086, 0.9855, 1.1747, 1.0515, 1.0312, 1.0105, 0.9215, 1.009]
+#
+# taking its result JSON with it. That gate is not noise-immune at 8 blocks on this
+# cell: the recorded rows of levers 1 and 2 show the overhead ratio climbing purely
+# as the call gets SHORTER -- 1.0147 at 413.301 ms, 1.0167 at 302.709, 1.0163 at
+# 299.709, 1.0221 at 267.448, 1.0182 at 268.681 -- against a clean-call spread of
+# 16-29 % in every one of them, and the per-block pattern is the same shape every
+# time (blocks 1 and 3 high, block 7 low). Lever 3 takes the call to ~224 ms, the
+# shortest yet, so the same absolute instrumentation cost lands hardest here and
+# 1.03 becomes a coin flip: the control arm's own 1.0182 +- 0.027 (standard error
+# over 8 blocks) overlaps the threshold just as plainly as the feature arm's 1.0366.
+#
+# The remedy is the one the cell itself prints ("Re-run with --n-repeats ... or
+# more to assert it"): more counterbalanced blocks, which shrinks the standard
+# error of the mean ratio without touching the estimator. 64 repeats gives **32
+# blocks** instead of 8. It is applied to BOTH arms so the A/B stays symmetric, and
+# it does not bias the whole-call figure -- it is the same mean over more samples of
+# the same call. The gate itself is untouched.
+#
+# The bridge to levers 1 and 2 does not depend on this flag and is already
+# measured: job 343355's control arm ran at 16 repeats against lever 2's
+# PyAutoArray and reported 268.681 ms against lever 2's recorded 267.448 ms,
+# agreeing to 0.5 %. Quote that row when comparing this job's numbers with the
+# earlier levers'.
+#
+# Each arm is phase 2's LEG D and nothing else, identical flags to levers 1 and 2:
+# `fixed_light_numba.py --routes b --formalism sparse_numba --nnls-warm-start on
+# --n-repeats 64 --instances iid --threads 1`. Route b is the S3 source-only
+# system on the numba sparse operator with the cross-evaluation NNLS memo ON (the
+# library default, so what production pays). The directly comparable prior row is
+# lever 2's feature arm
+# (`..._fixed_light_numba_lever2_b_warm_t1.json`, job 343353): whole call 267.448
+# ms with `inversion.log_det_curvature_reg_matrix_term` 39.596 ms exclusive and
+# `inversion.curvature_reg_matrix` 4.081 ms over 2 calls. A Leg-D-shaped arm whose
+# rows report `seed_source: "dense"` is a silently cold run and a FAIL, not a
+# number — check it in both arms' JSONs before quoting anything.
+#
+# WHY PRIVATE CHECKOUTS RATHER THAN THE SHARED INSTALL. The shared install
+# /mnt/ral/jnightin/PyAuto/PyAutoArray carries neither revision (it sits at the
+# merge base), HPCPullPyAuto moves it whenever anyone refreshes it, and it is
+# read-only to this job by policy. Both arms therefore run from private checkouts
+# under /mnt/ral/jnightin/PyAuto_wt/fixed-light-numba-levers/, prepended to
+# PYTHONPATH after activate.sh, and each arm PRINTS `autoarray.__file__`, its
+# checkout's `rev-parse HEAD`, and TWO in-job proofs that the arms differ by
+# exactly lever 3:
+#
+#   hasattr(inversion_util, "log_det_from_passive_cholesky_from")   False / True
+#   "factor" in inspect.signature(fnnls.fnnls_cholesky).parameters  False / True
+#
+# plus, for the third part of the lever, whether
+# `AbstractInversion.curvature_reg_matrix` is a `functools.cached_property`
+# (False / True). Three echoes for three changes, read off the IMPORTED module
+# rather than from the checkout path, which is the cheapest possible proof.
+#
+# Each arm runs in its OWN SUBSHELL so the PYTHONPATH prepend cannot leak into the
+# next arm. An arm that inherited the other's prepend would import whichever
+# checkout came first on the path and report it under the wrong label; the
+# `autoarray.__file__` echo is the check that this worked.
+#
+# LOG-LIKELIHOOD ACROSS THE TWO ARMS: unlike lever 2, near-identity is EXPECTED
+# here, and that is the point. Lever 2 swapped one factorisation for a different
+# one (SuperLU vs dense Cholesky of a cond ~9e12 matrix) and moved the evidence
+# ~9.8e-11 relative; lever 3 re-uses **the same** factor the solver already
+# computed, so its design target is <= 2e-12 nats — three orders tighter than
+# lever 2's 9.2e-06 — and the fiducial fit's log evidence was bit-identical when
+# the design measured it. A lever-3 arm that lands at LEVER 2's tolerance is a
+# sign the factor is being REBUILT somewhere rather than shared, and is a finding.
+# The correctness claim is still the witness's W2/W3, inside one process, on one
+# system, against a forced-dense recomputation of the same fit; across the arms,
+# compare milliseconds and the call counts.
+#
+# THE WITNESS (feature arm only). `fixed_light_numba_levers_l3_witness.py`
+# rebuilds the same HST Delaunay N=1500 source-only AdaptSplit system and asserts:
+#   W1 the fast path FIRES on this system — `log_det_from_passive_cholesky_from`
+#      is wrapped in a counter and must be called exactly once during
+#      `fit.figure_of_merit` and return a finite float, with
+#      `inversion._nnls_factor["k_active"]` (~1485) agreeing with
+#      `len(passive_set)` and `matrix_shape == (1500, 1500)` recorded beside it;
+#   W2 `log_det_curvature_reg_matrix_term` fast vs dense-forced (the helper
+#      monkeypatched to raise `np.linalg.LinAlgError` on a FRESH fit, which takes
+#      the library's own dense fallback), absolute nats and relative difference,
+#      gate 1e-10 relative — three decades tighter than lever 2's W2;
+#   W3 `figure_of_merit` fast vs dense-forced, gate 1e-9 relative (the phase pin),
+#      reporting whether it is BIT-IDENTICAL;
+#   W4 the cache and the solve: `curvature_reg_matrix` is the same object on two
+#      accesses (`is`), and `reconstruction` is byte-identical (`np.array_equal`)
+#      with and without the fast path — the `factor` out-dict is observational;
+#   W5 the site cost in isolation: `log_det_from_passive_cholesky_from` on the
+#      published factor vs the dense `2*sum(log(diag(cholesky(M))))`, and one
+#      `_xp.add(F, H)` build, medians of 20 at 1 thread.
+# It runs on the FEATURE arm because that is the arm whose log determinant is in
+# question; on the control arm there is no published factor to witness. W5 is the
+# only timing it takes and it is a site measurement, not the A/B row. It exits
+# non-zero on a FAIL, which `activate.sh`'s in-job `set -e` turns into a failed
+# job rather than a COMPLETED one with a bad witness buried in the log.
+#
+# SINGLE-THREAD SCOPE, unchanged from levers 1 and 2. Production for this path is
+# cpu_fast_modeling.py: one single-threaded numba likelihood per process under a
+# multiprocessing pool, every core carrying its own worker. Both arms run at
+# --threads 1 with NUMBA_NUM_THREADS=1 and the whole BLAS family pinned to 1. It
+# matters here because the fast path's cost is a LAPACK triangular solve on a
+# 1485 x 15 block and an |A| x |A| Cholesky, while the dense route it replaces is
+# a 1500^3 `dpotrf`: the two scale very differently with threads, so the ratio
+# measured here is the ratio a pool worker sees and NOT the ratio a threaded
+# likelihood would see.
+# --cpus-per-task=4 is headroom for the one process and its imports, not a thread
+# budget. The cell's own contention gate (1-minute loadavg vs os.cpu_count()) is
+# what decides whether the numbers are quotable — check `contention.load_average_*`
+# in BOTH JSONs, and prefer a host at load ~0. SUBMIT THIS JOB BEFORE THE A100
+# JOB, not alongside it: lever 1 ran them concurrently and its CPU feature arm
+# entered at loadavg 2.25, which made its 1.379x a lower bound; lever 2 ran them
+# in sequence and got a clean host for both.
+#
+# This cell imports NO JAX of its own, but jax lands in sys.modules via the first
+# FitImaging regardless (recorded as jax_after_rows). There is no JAX_*/XLA_*
+# configuration here on purpose.
+#
+# parse_known_args IGNORES unknown flags, so a checkout WITHOUT this cell's flags
+# would run and silently produce a different table — check
+# `configuration.routes_selected`, `n_repeats`, `nnls_warm_start_env` and
+# `formalisms_selected` in each JSON before quoting anything.
+#
+# PER-ARM NUMBA CACHE. The two arms load their kernels from DIFFERENT source
+# trees, and numba's on-disk cache keys include the source path, so one cache
+# would already be safe. They get one directory each anyway: it makes the arms
+# independent by construction, so neither arm's first-call compile can be served
+# out of the other's cache.
+
+# THE PARTITION THIS DECLARES, AND WHY IT IS NOT `ral`.
+#
+# The #SBATCH block below asks for `gpu` with FOUR CPUs and NO --gres: the gpu
+# partition's two 124-core nodes used CPUs-only, leaving both A100s free for the
+# GPU cells (including this lever's own A100 row,
+# hpc/batch_gpu/submit_breakdown_imaging_fixed_light_numba_levers_l3_delaunay_a100_hst_fp64).
+#
+# On 2026-09-16 the `ral` partition was, unusually, COMPLETELY IDLE — all 23
+# euclid-ral-compute-* nodes at 0/252 CPUs allocated and CPU_LOAD 0.00, where on
+# levers 1 and 2 it was saturated. This job nevertheless stays on `gpu`, on
+# purpose: levers 1 and 2 were both measured on euclid-ral-gpu-1 (AMD EPYC 7702,
+# os.cpu_count() 124), and the CUMULATIVE figure this lever reports — 413.301 ->
+# 299.709 -> 267.448 -> this row — is a chain of whole-call milliseconds that only
+# multiplies honestly if every link ran on the same silicon. A quieter partition
+# with a different CPU would buy nothing (the gpu nodes were also at load 0.00)
+# and would cost the chain. If a FUTURE lever starts a fresh chain, prefer `ral`:
+#
+#   sbatch --partition=ral --cpus-per-task=2 <this script>
+#
+# `imp` remains unusable: euclid-imp-compute-* do NOT mount /mnt/ral, so the repo,
+# the venv, activate.sh and the private checkouts are all absent and the job dies
+# in 0 s with no output files at all.
+#
+# Check `sinfo -p ral,gpu -N -o "%N %t %C %O"` before submitting; the numbers only
+# mean something on a quiet host.
+#
+# The -o/-e paths below are relative, so sbatch from INSIDE hpc/batch_cpu/.
+
+#SBATCH -J fl_numba_lever3
+#SBATCH --partition=gpu
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=32gb
+#SBATCH --time=4:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+# Derive the repo root from where this was submitted (hpc/batch_cpu/../..) rather
+# than hardcoding /mnt/ral/jnightin/autolens_profiling: the canonical RAL
+# checkout sits on main with a dirty tree, so this runs from a worktree of the
+# feature branch.
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+# The two private PyAutoArray checkouts. Neither is the shared install and
+# neither is written to by this job. PYAUTOARRAY_CONTROL here is LEVER 2
+# (0b17c292), not the merge base and not lever 1 — see the header.
+export PYAUTOARRAY_CONTROL=/mnt/ral/jnightin/PyAuto_wt/fixed-light-numba-levers/PyAutoArray_l2
+export PYAUTOARRAY_FEATURE=/mnt/ral/jnightin/PyAuto_wt/fixed-light-numba-levers/PyAutoArray_l3
+
+# One thread everywhere. NUMBA_NUM_THREADS must be in the environment BEFORE
+# numba is imported; the cell also sets it and records the resolved block.
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export NUMBA_NUM_THREADS=1
+export MPLCONFIGDIR=/tmp/matplotlib_${SLURM_JOB_ID:-local}
+mkdir -p "$MPLCONFIGDIR"
+# output/ is gitignored and ${SLURM_JOB_ID} keeps concurrent jobs on the same
+# shared node from fighting over one cache directory.
+export NUMBA_CACHE_CONTROL=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}_l3_control
+export NUMBA_CACHE_FEATURE=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}_l3_feature
+mkdir -p "$NUMBA_CACHE_CONTROL" "$NUMBA_CACHE_FEATURE"
+
+echo "=========================================="
+date
+hostname
+lscpu | grep 'Model name' || true
+echo "cpus-per-task:  ${SLURM_CPUS_PER_TASK:-unset}"
+echo "loadavg:        $(cat /proc/loadavg)"
+echo "Cell:           likelihood_breakdown/imaging/fixed_light_numba (route b, memo ON) x 2 arms"
+echo "Witness:        likelihood_breakdown/imaging/fixed_light_numba_levers_l3_witness (feature arm)"
+echo "Instrument:     hst"
+echo "Precision:      fp64"
+echo "Inversion path: numba sparse operator (InversionImagingSparseNumba), use_jax=False"
+echo "Source mesh:    Hilbert/Delaunay mesh, 1500 vertices"
+echo "Regularization: AdaptSplit(inner=0.1, outer=10.0, signal_scale=0.1)"
+echo "A/B:            PyAutoArray 0b17c292 (lever 2) vs b4322c3e (lever 3, shared NNLS Cholesky factor)"
+echo "Expected site:  inversion.log_det_curvature_reg_matrix_term ~40 ms -> ~5-7 ms"
+echo "Expected too:   inversion.curvature_reg_matrix 4.081 ms / n_calls 2 -> ~2 ms / n_calls 1"
+echo "Must NOT move:  solver.fnnls_cholesky (the solve is byte-identical; the factor is free)"
+echo "May move:       inversion.reconstruction (the _xp.add build can shift into/out of it)"
+echo "Threads:        1 (numba + BLAS family), production pool-worker scope"
+echo "Thread env:     OMP=$OMP_NUM_THREADS MKL=$MKL_NUM_THREADS OPENBLAS=$OPENBLAS_NUM_THREADS NUMBA=$NUMBA_NUM_THREADS"
+
+echo "=== source revisions (shared install, untouched — PyAutoArray is overridden per arm) ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r" "$(git -C /mnt/ral/jnightin/PyAuto/$r rev-parse HEAD 2>&1)"
+done
+echo "PyAutoArray control (lever 2): $(git -C $PYAUTOARRAY_CONTROL rev-parse HEAD 2>&1)"
+echo "PyAutoArray feature (lever 3): $(git -C $PYAUTOARRAY_FEATURE rev-parse HEAD 2>&1)"
+echo "AP_ROOT rev:    $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+echo "AP_ROOT branch: $(git -C $AP_ROOT rev-parse --abbrev-ref HEAD 2>&1)"
+
+cd $AP_ROOT
+
+# The three in-job proofs, one per part of lever 3, read off the IMPORTED module.
+# Absent/False in the control arm, present/True in the feature arm.
+# `$(cat <<'EOF' ...)` rather than `read -r -d '' ...`: `read` with an empty
+# delimiter returns non-zero at EOF, and activate.sh runs the job under `set -e`,
+# so the `read` form would kill the job here instead of defining the snippet.
+ARM_PROVENANCE="$(cat <<'PYPROV'
+import inspect
+import functools
+
+import autoarray
+from autoarray.inversion.inversion import inversion_util
+from autoarray.inversion.inversion.abstract import AbstractInversion
+from autoarray.util import fnnls
+from autonerves import cached_property as autonerves_cached_property
+
+print('  autoarray.__file__    =', autoarray.__file__)
+print('  autoarray.__version__ =', autoarray.__version__)
+print(
+    '  has log_det_from_passive_cholesky_from =',
+    hasattr(inversion_util, 'log_det_from_passive_cholesky_from'),
+)
+print(
+    '  fnnls_cholesky has `factor`            =',
+    'factor' in inspect.signature(fnnls.fnnls_cholesky).parameters,
+)
+# BOTH descriptor types: PyAutoArray decorates with `autonerves.cached_property`
+# (the `CachedProperty` class, which caches into `obj.__dict__` exactly as the
+# stdlib one does), NOT with `functools.cached_property`. A check against the
+# stdlib class alone prints False in the FEATURE arm too, and the proof says
+# nothing.
+_descriptor = inspect.getattr_static(AbstractInversion, 'curvature_reg_matrix')
+print(
+    '  curvature_reg_matrix is cached_property=',
+    isinstance(_descriptor, (functools.cached_property, autonerves_cached_property)),
+    '(' + type(_descriptor).__name__ + ')',
+)
+print(
+    '  reconstruction_positive_only_from has `factor` =',
+    'factor' in inspect.signature(inversion_util.reconstruction_positive_only_from).parameters,
+)
+PYPROV
+)"
+
+echo "=========================================="
+echo "CONTROL ARM: PyAutoArray 0b17c292 (lever 2) — a SECOND dense Cholesky of F + lambda*H"
+echo "  route b, sparse_numba, memo ON, threads 1, n-repeats 64, instances iid"
+date
+echo "loadavg: $(cat /proc/loadavg)"
+(
+    export PYTHONPATH=$PYAUTOARRAY_CONTROL:$PYTHONPATH
+    export NUMBA_CACHE_DIR=$NUMBA_CACHE_CONTROL
+    echo "--- control arm import provenance ---"
+    echo "  checkout HEAD: $(git -C $PYAUTOARRAY_CONTROL rev-parse HEAD)"
+    python3 -c "$ARM_PROVENANCE"
+
+    python3 -u scripts/imaging/likelihood_breakdown/fixed_light_numba.py \
+        --mesh delaunay \
+        --dataset hst \
+        --formalism sparse_numba \
+        --routes b \
+        --threads 1 \
+        --n-repeats 64 \
+        --instances iid \
+        --nnls-warm-start on \
+        --config-name hpc_ral_cpu_fp64_fixed_light_numba_lever3_control_b_warm_t1
+)
+
+echo "=========================================="
+echo "FEATURE ARM: PyAutoArray b4322c3e (lever 3) — log det read off the solver's factor"
+echo "  route b, sparse_numba, memo ON, threads 1, n-repeats 64, instances iid"
+date
+echo "loadavg: $(cat /proc/loadavg)"
+(
+    export PYTHONPATH=$PYAUTOARRAY_FEATURE:$PYTHONPATH
+    export NUMBA_CACHE_DIR=$NUMBA_CACHE_FEATURE
+    echo "--- feature arm import provenance ---"
+    echo "  checkout HEAD: $(git -C $PYAUTOARRAY_FEATURE rev-parse HEAD)"
+    python3 -c "$ARM_PROVENANCE"
+
+    python3 -u scripts/imaging/likelihood_breakdown/fixed_light_numba.py \
+        --mesh delaunay \
+        --dataset hst \
+        --formalism sparse_numba \
+        --routes b \
+        --threads 1 \
+        --n-repeats 64 \
+        --instances iid \
+        --nnls-warm-start on \
+        --config-name hpc_ral_cpu_fp64_fixed_light_numba_lever3_b_warm_t1
+
+    echo "--- feature arm witness: lever 3 shared Cholesky factor (W1..W5) ---"
+    date
+    python3 -u scripts/imaging/likelihood_breakdown/fixed_light_numba_levers_l3_witness.py \
+        --mesh delaunay \
+        --dataset hst \
+        --threads 1 \
+        --config-name hpc_ral_cpu_fp64_lever3
+)
+
+echo "=========================================="
+echo "loadavg: $(cat /proc/loadavg)"
+echo "Finished."
+date

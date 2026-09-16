@@ -1,0 +1,280 @@
+#!/bin/bash -l
+#
+# A100 likelihood-breakdown profile: imaging/fixed_light x delaunay x hst x fp64 —
+# the numba-levers A/B (autolens_profiling#267, lever 3).
+#
+# WHAT LEVER 3 IS. The positive-only reconstruction is a non-negative least
+# squares solve, and `fnnls_cholesky` finishes it holding a Cholesky factor `U` of
+# `M[P][:, P]`, where `M` is `curvature_reg_matrix_reduced` and `P` is the solve's
+# final passive set (1485 of 1500 columns on this system). Until lever 3,
+# `AbstractInversion.log_det_curvature_reg_matrix_term` factorised that whole
+# (1500, 1500) matrix a SECOND time from scratch — 39.596 ms of lever 2's
+# 267.448 ms numba CPU call. Lever 3 publishes the solver's factor through an
+# optional `factor` out-dict on `fnnls_cholesky` and reads `log det(F + λH)` off
+# it via `inversion_util.log_det_from_passive_cholesky_from`, a Schur complement
+# over the ~15 active columns: ~5-7 ms in place of ~40 ms, agreeing to <= 2e-12
+# nats. It also makes `curvature_reg_matrix` a `cached_property` (it was a plain
+# `property` reached twice per evaluation).
+#
+# THE JAX PATH IS UNCHANGED, AND HERE THE REASON IS STRUCTURAL RATHER THAN A
+# GUARD. The fast path's first guard is `self._xp is np`, but the deeper point is
+# that **the JAX path never runs `fnnls` at all**: `reconstruction_positive_only_from`
+# branches to its own `jax_nnls` implementation when `xp.__name__` starts with
+# "jax", and `fnnls_cholesky` — the only function that fills the `factor` dict — is
+# never reached. There is therefore **no factor in existence** on the JAX side for
+# a log-det term to read, and the dict the numpy branch would have been handed is
+# cleared on entry and left empty. **The expectation for the jitted rows of this
+# job is identity**, and that is the point: a jitted row that moved would mean
+# lever 3 leaked out of the numpy branch.
+#
+# The `curvature_reg_matrix` cache is likewise inert under `jit`: the traced graph
+# already computes `F + λH` once as a single HLO value, so caching the Python
+# property changes no HLO. A moved compile time or a changed `jit_phases` row here
+# would be a finding.
+#
+# WHAT IS *NOT* EXPECTED TO BE BIT-IDENTICAL, AND WHY THAT IS A PREDICTION RATHER
+# THAN A FINDING. `fixed_light.py` builds its S0 fit EAGERLY WITH `xp=np` (the
+# `fit_imaging_eager` section) and derives S3 from it, so the library's own
+# `figure_of_merit`/`log_evidence` values that this cell reads off those eager
+# numpy fits — `log_evidence_eager`, `s3.log_evidence_figure_of_merit`,
+# `*_log_evidence_library_edge_zeroed` — DO take lever 3's fast path wherever its
+# guards admit the system. Those eager fits satisfy them: numpy backend,
+# `log_det_method == "cholesky"`, `use_positive_only_solver`, all linear objects
+# regularized, and a full-coverage solve. The design measured that route against
+# the dense one at **<= 2e-12 nats** on the log-det term, with the fiducial fit's
+# log evidence BIT-IDENTICAL, so the eager values should agree to the last bit or
+# within a few units in the last place — three orders TIGHTER than lever 2's
+# ~1e-10, because lever 3 re-uses the same factor rather than computing a
+# different factorisation. **A movement at lever 2's 1e-10 scale here would be a
+# finding**: it would mean the factor is being rebuilt somewhere rather than
+# shared. The cell's S0 pins are checked at rtol 1e-4 and are computed from
+# `system.log_evidence_terms(...)` on the JAX side, so they are unaffected either
+# way.
+#
+# THE QUESTION THIS JOB ANSWERS. Not "is lever 3 faster on the GPU" — it cannot
+# be, it never runs there, and there is no factor there to share. The question is
+# whether the shared-factor route is worth CARRYING to the JAX path at all, i.e.
+# whether the term is a cost worth attacking on the GPU in a future lever. The row
+# that answers it is `s3/rows/"Log det Cholesky (F+λH reduced)"`: the DENSE
+# Cholesky of the same (1500, 1500) `F + λH`, jitted, on the A100, which lever 2's
+# record (results/breakdown/imaging/fixed_light_delaunay_hpc_a100_fp64_fixed_light_lever2.json)
+# puts at **~1.14 ms** — against ~40 ms for the same factorization on one CPU
+# core. At ~1.1 ms a dense Cholesky of a 1500^2 SPD matrix on an A100 is
+# launch-bound, not FLOP-bound, and the Schur-complement route would replace one
+# launch-bound kernel with a triangular solve, a gather and a second small
+# Cholesky — more launches, not fewer. **The expected verdict is therefore
+# "CPU-only lever"**, recorded with the A100's own dense number beside it so the
+# verdict rests on a measurement rather than on an argument. Its sibling row
+# `s3/rows/"Log det Cholesky (H reduced)"` (~1.13 ms, lever 2's own answer to the
+# same question about H) is the scale check: the two log dets cost the same on the
+# GPU, whereas on the CPU lever 2 made one of them sparse and lever 3 makes the
+# other one free.
+#
+# WHY THIS CELL. Lever 3's site is `F + λH`, and `fixed_light.py` is the cell that
+# times both log determinants explicitly on both systems and reports
+# `log_evidence_terms`. `delaunay.py` (lever 1's A100 cell, for a jitted-prefix
+# difference in H's ASSEMBLY) has no log-det row at all. Same cell as lever 2, and
+# the flags, SBATCH block and every JAX/XLA setting below are copied from
+# `submit_breakdown_imaging_fixed_light_delaunay_a100_hst_fp64`, the job the
+# fiducial `fixed_light_delaunay_hpc_a100_fp64_fixed_light.json` came from, so the
+# only difference between these arms and that record is the PyAutoArray revision.
+#
+#   --mesh delaunay                Hilbert/Delaunay, 1500 source pixels (fiducial)
+#   --regularization adapt_split   al.reg.AdaptSplit(0.1, 10.0, signal_scale=0.1)
+#   --vmap-batch 16                batched re-timing at the Nautilus n_batch
+#
+# THE TWO ARMS, run back-to-back in ONE job so both share a node, a GPU and a
+# driver:
+#
+#   CONTROL ARM  PyAutoArray 0b17c292 — **LEVER 2**, not the merge base and not
+#                lever 1. Lever 3 is stacked on lever 2, so an earlier control
+#                would measure several levers at once; the lever-1 and lever-2
+#                A100 rows already exist (lever 1 identity to 0.036 %; lever 2 all
+#                `log_evidence_terms` bit-identical).
+#   FEATURE ARM  PyAutoArray b4322c3e — lever 3.
+#
+# Both from PRIVATE checkouts under
+# /mnt/ral/jnightin/PyAuto_wt/fixed-light-numba-levers/, prepended to PYTHONPATH
+# after activate.sh, each in its OWN SUBSHELL so the prepend cannot leak into the
+# next arm, and each printing `autoarray.__file__`, its checkout's
+# `rev-parse HEAD`, and the three in-job proofs that the arms differ by exactly
+# lever 3 — `hasattr(inversion_util, "log_det_from_passive_cholesky_from")`,
+# `"factor" in inspect.signature(fnnls.fnnls_cholesky).parameters`, and whether
+# `AbstractInversion.curvature_reg_matrix` is a `functools.cached_property` — all
+# False in the control and all True in the feature, read off the IMPORTED module.
+# The shared install /mnt/ral/jnightin/PyAuto/PyAutoArray carries NEITHER revision
+# (it sits at the merge base 5e2bc0f4) and is read-only to this job by policy; its
+# revisions are echoed below for the other four libraries, which are the same on
+# both arms.
+#
+# PER-ARM JAX COMPILATION CACHE. Both arms compile the SAME HLO — the JAX path is
+# untouched — so one shared cache would serve arm 2 out of arm 1's entries and
+# report a near-zero compile time for it. Each arm gets its own fresh directory,
+# so `cache_fresh` is true and `jit_phases`/`compile_s` are comparable in both.
+# A seeded XLA autotune cache also silently changes kernels
+# (results/notes/xla_autotune_triton_gemm.md — F 4.8 vs 25.6 ms on the same code).
+# XLA_FLAGS carries only constant_folding; the autotune/Triton flags are left to
+# autonerves' jax_wrapper so this measures the library default.
+#
+# TRAPS. `parse_known_args` IGNORES unknown flags, so a checkout without these
+# flags would run and silently produce a different table — check
+# `configuration`, `regularization` and `vmap_batch` in each JSON before quoting.
+# SLURM `COMPLETED` can hide a Python crash (a job whose cell died still runs the
+# trailing `echo`/`date`), which is what `activate.sh`'s in-job `set -e` guard is
+# for — but read the `.out` AND the `.err` anyway, and confirm both result JSONs
+# exist. The -o/-e paths below are relative, so sbatch from INSIDE hpc/batch_gpu/.
+#
+# SUBMIT THIS AFTER THE CPU JOB HAS FINISHED. Lever 1 ran its CPU and A100 jobs
+# concurrently on the same node and the A100 arm's XLA compiles put the CPU
+# feature arm's timed rows at loadavg 2.25, which made its 1.379x a lower bound;
+# lever 2 ran them in sequence and got a clean host for both. The CPU A/B is the
+# lever-3 headline; do not run this job under it.
+
+#SBATCH -J fl_del_lever3
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=12:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+# The two private PyAutoArray checkouts. Neither is the shared install and
+# neither is written to by this job. PYAUTOARRAY_CONTROL here is LEVER 2
+# (0b17c292), not the merge base and not lever 1 — see the header.
+export PYAUTOARRAY_CONTROL=/mnt/ral/jnightin/PyAuto_wt/fixed-light-numba-levers/PyAutoArray_l2
+export PYAUTOARRAY_FEATURE=/mnt/ral/jnightin/PyAuto_wt/fixed-light-numba-levers/PyAutoArray_l3
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding"
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+# Fresh per-ARM compilation cache (see header). output/ is gitignored.
+export JAX_CACHE_CONTROL="$AP_ROOT/output/jax_cache/fixed_light_lever3_control_${SLURM_JOB_ID:-local}"
+export JAX_CACHE_FEATURE="$AP_ROOT/output/jax_cache/fixed_light_lever3_feature_${SLURM_JOB_ID:-local}"
+rm -rf "$JAX_CACHE_CONTROL" "$JAX_CACHE_FEATURE"
+mkdir -p "$JAX_CACHE_CONTROL" "$JAX_CACHE_FEATURE"
+echo "JAX_CACHE_CONTROL=$JAX_CACHE_CONTROL (fresh)"
+echo "JAX_CACHE_FEATURE=$JAX_CACHE_FEATURE (fresh)"
+
+nvidia-smi
+
+echo "=========================================="
+date
+hostname
+echo "loadavg:        $(cat /proc/loadavg)"
+echo "Cell:           likelihood_breakdown/imaging/fixed_light x 2 arms (control / feature)"
+echo "Instrument:     hst"
+echo "Precision:      fp64"
+echo "Source mesh:    Hilbert/Delaunay mesh, 1500 vertices"
+echo "Regularization: adapt_split — al.reg.AdaptSplit(inner_coefficient=0.1, outer_coefficient=10.0, signal_scale=0.1)"
+echo "A/B:            PyAutoArray 0b17c292 (lever 2) vs b4322c3e (lever 3, log det off the NNLS factor)"
+echo "Expectation:    IDENTITY on every jitted row — the JAX path never runs fnnls, so no factor exists there"
+echo "The row:        s3/rows['Log det Cholesky (F+λH reduced)'] — the DENSE A100 cost of the same factorization"
+echo "Eager caveat:   this cell's eager xp=np fits DO take the fast path; expect bit-identical or a few ULP, NOT lever 2's 1e-10"
+
+echo "=== source revisions (shared install, untouched — PyAutoArray is overridden per arm) ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r" "$(git -C /mnt/ral/jnightin/PyAuto/$r rev-parse HEAD 2>&1)"
+done
+echo "PyAutoArray control (lever 2): $(git -C $PYAUTOARRAY_CONTROL rev-parse HEAD 2>&1)"
+echo "PyAutoArray feature (lever 3): $(git -C $PYAUTOARRAY_FEATURE rev-parse HEAD 2>&1)"
+echo "AP_ROOT rev:    $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+echo "AP_ROOT branch: $(git -C $AP_ROOT rev-parse --abbrev-ref HEAD 2>&1)"
+
+cd $AP_ROOT
+
+# The three in-job proofs, one per part of lever 3, read off the IMPORTED module.
+# `$(cat <<'EOF' ...)` rather than `read -r -d '' ...`: `read` with an empty
+# delimiter returns non-zero at EOF, and activate.sh runs the job under `set -e`.
+ARM_PROVENANCE="$(cat <<'PYPROV'
+import inspect
+import functools
+
+import autoarray
+import autolens
+from autoarray.inversion.inversion import inversion_util
+from autoarray.inversion.inversion.abstract import AbstractInversion
+from autoarray.util import fnnls
+from autonerves import cached_property as autonerves_cached_property
+
+print('  autoarray.__file__    =', autoarray.__file__)
+print('  autoarray.__version__ =', autoarray.__version__)
+print('  autolens.__file__     =', autolens.__file__)
+print(
+    '  has log_det_from_passive_cholesky_from =',
+    hasattr(inversion_util, 'log_det_from_passive_cholesky_from'),
+)
+print(
+    '  fnnls_cholesky has `factor`            =',
+    'factor' in inspect.signature(fnnls.fnnls_cholesky).parameters,
+)
+# BOTH descriptor types: PyAutoArray decorates with `autonerves.cached_property`
+# (the `CachedProperty` class, which caches into `obj.__dict__` exactly as the
+# stdlib one does), NOT with `functools.cached_property`. A check against the
+# stdlib class alone prints False in the FEATURE arm too, and the proof says
+# nothing.
+_descriptor = inspect.getattr_static(AbstractInversion, 'curvature_reg_matrix')
+print(
+    '  curvature_reg_matrix is cached_property=',
+    isinstance(_descriptor, (functools.cached_property, autonerves_cached_property)),
+    '(' + type(_descriptor).__name__ + ')',
+)
+PYPROV
+)"
+
+echo "=========================================="
+echo "CONTROL ARM: PyAutoArray 0b17c292 (lever 2) — a second dense Cholesky of F + lambda*H on both backends"
+date
+(
+    export PYTHONPATH=$PYAUTOARRAY_CONTROL:$PYTHONPATH
+    export JAX_COMPILATION_CACHE_DIR=$JAX_CACHE_CONTROL
+    echo "--- control arm import provenance ---"
+    echo "  checkout HEAD: $(git -C $PYAUTOARRAY_CONTROL rev-parse HEAD)"
+    python3 -c "$ARM_PROVENANCE"
+
+    python3 -u scripts/imaging/likelihood_breakdown/fixed_light.py \
+        --mesh delaunay \
+        --config-name hpc_a100_fp64_fixed_light_lever3_control \
+        --regularization adapt_split \
+        --vmap-batch 16
+
+    echo -n "  AUTOTUNE_ENTRIES control count="
+    ls "$JAX_CACHE_CONTROL/xla_gpu_per_fusion_autotune_cache_dir" 2>/dev/null | wc -l
+)
+
+echo "=========================================="
+echo "FEATURE ARM: PyAutoArray b4322c3e (lever 3) — log det read off the solver's factor, numpy path only"
+date
+(
+    export PYTHONPATH=$PYAUTOARRAY_FEATURE:$PYTHONPATH
+    export JAX_COMPILATION_CACHE_DIR=$JAX_CACHE_FEATURE
+    echo "--- feature arm import provenance ---"
+    echo "  checkout HEAD: $(git -C $PYAUTOARRAY_FEATURE rev-parse HEAD)"
+    python3 -c "$ARM_PROVENANCE"
+
+    python3 -u scripts/imaging/likelihood_breakdown/fixed_light.py \
+        --mesh delaunay \
+        --config-name hpc_a100_fp64_fixed_light_lever3 \
+        --regularization adapt_split \
+        --vmap-batch 16
+
+    echo -n "  AUTOTUNE_ENTRIES feature count="
+    ls "$JAX_CACHE_FEATURE/xla_gpu_per_fusion_autotune_cache_dir" 2>/dev/null | wc -l
+)
+
+echo "=========================================="
+echo "loadavg: $(cat /proc/loadavg)"
+echo "Finished."
+date

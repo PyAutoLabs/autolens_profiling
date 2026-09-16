@@ -328,6 +328,8 @@ numba_thread_env = {
 _nnls_warm_start_before = _os.environ.get("AUTOARRAY_NNLS_WARM_START")
 _os.environ["AUTOARRAY_NNLS_WARM_START"] = "1" if NNLS_WARM_START_ON else "0"
 
+import functools  # noqa: E402
+import inspect  # noqa: E402
 import json  # noqa: E402
 import math  # noqa: E402
 import os  # noqa: E402
@@ -395,6 +397,7 @@ from autoarray.inversion.mesh.interpolator.delaunay import (  # noqa: E402
 from autoarray.util import fnnls as fnnls_module  # noqa: E402
 from autolens.imaging.fit_imaging import FitImaging  # noqa: E402
 from autolens.lens.to_inversion import TracerToInversion  # noqa: E402
+from autonerves import cached_property as autonerves_cached_property  # noqa: E402
 
 #: Relative tolerances of the three hard gates.
 P2_RTOL = 1.0e-9
@@ -434,6 +437,37 @@ WARMUP_MAX_CALLS = 12
 
 #: The explicit remainder row. Never folded into a neighbouring site.
 UNATTRIBUTED_LABEL = "unattributed (call - sum of exclusive times)"
+
+#: Does the installed PyAutoArray cache `AbstractInversion.curvature_reg_matrix`?
+#:
+#: `F + lambda*H` became a `cached_property` in **lever 3 of #267** (PyAutoArray
+#: `b4322c3e`); before it, it was a plain `property` that the likelihood rebuilt on
+#: every access — twice per evaluation, 4.081 ms across the two in lever 2's row.
+#:
+#: This is read off the installed class rather than written as a literal `True`
+#: because lever 3's own A/B runs ONE checkout of this cell against TWO PyAutoArray
+#: revisions in one job: the control arm is the pre-lever-3 library, where the site
+#: is genuinely reached twice, and the `cached_site_call_count_violations` gate
+#: below raises `AssertionError` on any site declared cached and reached a
+#: different number of times. A literal would therefore kill the control arm of the
+#: measurement it exists to serve, while saying nothing the library does not already
+#: say about itself. Declared this way, the gate fires as a hard `n_calls == 1` in
+#: exactly the arm where the cache is claimed.
+#:
+#: The PIN is unconditional and lives elsewhere:
+#: `scripts/misc/test/test_fixed_light_numba.py::test_curvature_reg_matrix_is_cached`
+#: asserts `n_calls == 1` against whatever PyAutoArray it is run on, so a library
+#: that stops caching it fails loudly rather than silently moving milliseconds
+#: between the decomposition's rows.
+#: Both descriptor types are checked because PyAutoArray decorates with
+#: `autonerves.cached_property` — the `autonerves.tools.decorators.CachedProperty`
+#: class, which caches into `obj.__dict__` exactly as the stdlib one does — and NOT
+#: with `functools.cached_property`. A check against the stdlib class alone reports
+#: `False` on a library that does cache it, which would silently un-declare the site.
+CURVATURE_REG_MATRIX_IS_CACHED = isinstance(
+    inspect.getattr_static(AbstractInversion, "curvature_reg_matrix"),
+    (functools.cached_property, autonerves_cached_property),
+)
 
 
 # ===================================================================
@@ -633,15 +667,13 @@ def _site_spec():
             cached=True,
             group="F_plus_H",
         ),
-        # NOT cached: a plain `property` (abstract.py:358), recomputed on every
-        # access. The `n_calls >= 2` this reports is a measurement of the
-        # library, and `test_fixed_light_numba.py` pins it so that a future
-        # PyAutoArray change caching it fails loudly rather than silently
-        # moving milliseconds between rows.
+        # Cached: it became a `cached_property` in lever 3 of #267, having been a
+        # plain `property` reached twice per evaluation before it.
         descriptor(
             "inversion.curvature_reg_matrix",
             AbstractInversion,
             "curvature_reg_matrix",
+            cached=CURVATURE_REG_MATRIX_IS_CACHED,
             group="F_plus_H",
         ),
         descriptor(

@@ -1,0 +1,295 @@
+{
+  "cell": "fixed_light_numba_levers_l3_witness",
+  "issue": "autolens_profiling#267 (lever 3: log det(F + \u03bbH) off the NNLS Cholesky factor)",
+  "verdict": "PASS",
+  "results": {
+    "W1_fast_path_fires": {
+      "status": "PASS",
+      "n_calls_during_figure_of_merit": 1,
+      "called_exactly_once": true,
+      "returned_finite_float": true,
+      "calls": [
+        {
+          "matrix_shape": [
+            1500,
+            1500
+          ],
+          "u_buffer_shape": [
+            1500,
+            1500
+          ],
+          "k_active": 1485,
+          "n_passive": 1485,
+          "value": 8326.700171334833,
+          "finite": true,
+          "wall_s": 0.007041926961392164
+        }
+      ],
+      "factor_k_active": 1485,
+      "factor_n_passive": 1485,
+      "k_active_agrees_with_passive_set": true,
+      "factor_matrix_shape": [
+        1500,
+        1500
+      ],
+      "reduced_matrix_shape": [
+        1500,
+        1500
+      ],
+      "matrix_shape_agrees": true,
+      "matrix_shape_is_1500": true,
+      "n_active_columns": 15,
+      "nnls_factor_ids_is_none": false,
+      "nnls_factor_ids_is_identity": true,
+      "fast_path_guards": {
+        "xp_is_numpy": true,
+        "log_det_method": "cholesky",
+        "log_det_method_is_cholesky": true,
+        "use_positive_only_solver": true,
+        "all_linear_obj_have_regularization": true
+      },
+      "figure_of_merit_fast": 19705.717581305427,
+      "log_det_curvature_reg_matrix_term_fast": 8326.700171334833,
+      "summary": "1 call(s) during figure_of_merit, k_active 1485 == len(passive_set) 1485 (True), matrix_shape (1500, 1500) == reduced (1500, 1500) (True), 15 active column(s), value 8326.700171334833 in 7.04 ms"
+    },
+    "W2_log_det_fast_vs_dense": {
+      "status": "PASS",
+      "log_det_fast": 8326.700171334833,
+      "log_det_dense": 8326.700171334833,
+      "d_log_det_nats": 0.0,
+      "relative_difference": 0.0,
+      "rtol": 1e-10,
+      "bit_identical": true,
+      "linalg_error_patch_calls": 2,
+      "linalg_error_patch_fired": true,
+      "matrix_identical_between_fits": true,
+      "matrix_eigenvalue_min": 1.5752076903789376,
+      "matrix_eigenvalue_max": 5253689.92344239,
+      "matrix_condition_number": 3335236.334567757,
+      "matrix_eigvalsh_wall_s": 0.18744707107543945,
+      "lever2_rtol_for_reference": 1e-08,
+      "summary": "fast 8326.700171335 vs dense 8326.700171335, \u0394 +0.000e+00 nats (rel 0.000e+00 <= 1e-10) on a matrix of cond 3.34e+06; bit-identical=True; same F+\u03bbH both fits=True"
+    },
+    "W3_figure_of_merit_fast_vs_dense": {
+      "status": "PASS",
+      "figure_of_merit_fast": 19705.717581305427,
+      "figure_of_merit_dense": 19705.717581305427,
+      "d_log_evidence_nats": 0.0,
+      "relative_difference": 0.0,
+      "rtol": 1e-09,
+      "bit_identical": true,
+      "linalg_error_patch_fired": true,
+      "summary": "fast 19705.717581305 vs dense 19705.717581305, \u0394 +0.000e+00 nats (rel 0.000e+00 <= 1e-09); bit-identical=True"
+    },
+    "W4_cache_and_byte_identical_solve": {
+      "status": "PASS",
+      "curvature_reg_matrix_same_object": true,
+      "curvature_reg_matrix_is_cached_property": true,
+      "curvature_reg_matrix_descriptor": "CachedProperty",
+      "reconstruction_byte_identical": true,
+      "reconstruction_max_abs_difference": 0.0,
+      "reconstruction_shape": [
+        1500
+      ],
+      "reconstruction_n_nonzero_fast": 1485,
+      "reconstruction_n_nonzero_dense": 1485,
+      "summary": "curvature_reg_matrix same object=True (cached_property=True); reconstruction byte-identical=True (max |\u0394| 0.000e+00, 1485 non-zero of 1500)"
+    },
+    "W5_site_timing_fast_vs_dense": {
+      "status": "PASS",
+      "n_repeats": 20,
+      "threads": 1,
+      "fast_ms_median": 5.3441207855939865,
+      "dense_ms_median": 37.71334793418646,
+      "add_f_plus_h_ms_median": 1.9359567668288946,
+      "fast_ms_samples": [
+        5.528814159333706,
+        5.362056195735931,
+        5.396855063736439,
+        5.348876118659973,
+        5.32631715759635,
+        5.364435259252787,
+        5.324095953255892,
+        5.330306943506002,
+        5.35876490175724,
+        5.346626043319702,
+        5.345966666936874,
+        5.342274904251099,
+        5.324967205524445,
+        5.3201960399746895,
+        5.3116860799491405,
+        5.278867203742266,
+        5.4163760505616665,
+        5.3516351617872715,
+        5.19928801804781,
+        5.198107101023197
+      ],
+      "dense_ms_samples": [
+        37.700867746025324,
+        37.681819871068,
+        37.734758108854294,
+        37.834546994417906,
+        37.757689133286476,
+        38.34992088377476,
+        37.72582812234759,
+        38.11384364962578,
+        37.60806983336806,
+        37.82173804938793,
+        37.563079968094826,
+        37.67623985186219,
+        37.80309809371829,
+        37.5819499604404,
+        37.676649168133736,
+        37.62426972389221,
+        37.695438135415316,
+        37.586180958896875,
+        38.13160303980112,
+        37.76390803977847
+      ],
+      "add_f_plus_h_ms_samples": [
+        2.0821550861001015,
+        2.1667839027941227,
+        2.1028751507401466,
+        2.159054856747389,
+        2.100394107401371,
+        2.1480550058186054,
+        1.8587368540465832,
+        1.8976172432303429,
+        1.9388971850275993,
+        1.9445768557488918,
+        1.8829372711479664,
+        1.9373167306184769,
+        1.8777772784233093,
+        1.9345968030393124,
+        1.882478129118681,
+        1.9331471994519234,
+        1.8861768767237663,
+        1.9206167198717594,
+        1.8391781486570835,
+        1.9389567896723747
+      ],
+      "speedup_dense_over_fast": 7.056978958231894,
+      "log_det_fast_same_matrix": 8326.700171334833,
+      "log_det_dense_same_matrix": 8326.700171334833,
+      "d_log_det_same_matrix_nats": 0.0,
+      "relative_difference_same_matrix": 0.0,
+      "bit_identical_same_matrix": true,
+      "rtol": 1e-10,
+      "note": "RECORDED, not pinned: no calibrated ratio exists for an arbitrary host. The gate is that the fast route ran and agreed with the dense Cholesky on the one matrix to W2's tolerance. The add row is part 3 of the lever: curvature_reg_matrix was a plain property paying for one of these on every access, and the A/B row shows it as movement in inversion.curvature_reg_matrix with n_calls 2 -> 1. Compare these ratios with the A/B legs' whole-call rows, not with a literal.",
+      "summary": "fast 5.344 ms vs dense 37.713 ms (7.06x), one _xp.add(F, H) 1.936 ms, same-matrix \u0394 +0.000e+00 nats (rel 0.000e+00)"
+    }
+  },
+  "configuration": {
+    "config_name": "hpc_ral_cpu_fp64_lever3",
+    "mesh": "delaunay",
+    "dataset": "hst",
+    "source_pixels": 1500,
+    "mesh_vertices_placed": 1500,
+    "regularization": {
+      "scheme": "adapt_split",
+      "inner_coefficient": 0.1,
+      "outer_coefficient": 10.0,
+      "signal_scale": 0.1
+    },
+    "threads": 1,
+    "thread_env": {
+      "n_threads": 1,
+      "vars": [
+        "OPENBLAS_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OMP_NUM_THREADS",
+        "VECLIB_MAXIMUM_THREADS",
+        "NUMEXPR_NUM_THREADS"
+      ],
+      "set_to": "1",
+      "preexisting": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1"
+      },
+      "overridden": {},
+      "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+    },
+    "numba_thread_env": {
+      "NUMBA_NUM_THREADS": "1",
+      "preexisting": "1"
+    },
+    "nnls_warm_start_env": "0",
+    "use_jax": false,
+    "instance_seed": 263,
+    "w2_rtol": 1e-10,
+    "w2_rtol_lever2_for_reference": 1e-08,
+    "w3_rtol": 1e-09,
+    "w5_n_repeats": 20,
+    "log_det_method": "cholesky",
+    "curvature_reg_matrix_is_cached_property": true,
+    "curvature_reg_matrix_descriptor": "CachedProperty",
+    "fast_path_guards": {
+      "xp_is_numpy": true,
+      "log_det_method": "cholesky",
+      "log_det_method_is_cholesky": true,
+      "use_positive_only_solver": true,
+      "all_linear_obj_have_regularization": true
+    }
+  },
+  "system": {
+    "n_params": 1500,
+    "n_mapper": 1500,
+    "n_funcs": 0,
+    "edge_zeroed_pixels": 0,
+    "subtracted_light_flux": 4945.524141998385,
+    "inversion_class": "InversionImagingSparseNumba",
+    "interpolator_class": "InterpolatorDelaunay",
+    "regularization_class": "AdaptSplit",
+    "mapper_params": 1500,
+    "curvature_reg_matrix_reduced_shape": [
+      1500,
+      1500
+    ],
+    "pixels": 1500,
+    "factor_k_active": 1485,
+    "factor_n_passive": 1485,
+    "n_active_columns": 15,
+    "factor_matrix_shape": [
+      1500,
+      1500
+    ],
+    "matrix_eigenvalue_min": 1.5752076903789376,
+    "matrix_eigenvalue_max": 5253689.92344239,
+    "matrix_condition_number": 3335236.334567757
+  },
+  "provenance": {
+    "autoarray_file": "/mnt/ral/jnightin/PyAuto_wt/fixed-light-numba-levers/PyAutoArray_l3/autoarray/__init__.py",
+    "autoarray_version": "2026.8.17.1",
+    "autolens_version": "2026.8.17.1",
+    "hostname": "euclid-ral-gpu-1",
+    "slurm_job_id": "343356",
+    "jax_in_sys_modules": true,
+    "scipy_version": "1.17.1",
+    "wall_s": 13.573098182678223
+  },
+  "machine": {
+    "cpu_model": "AMD EPYC 7702 64-Core Processor",
+    "cpu_count_os": 124,
+    "nproc": 1,
+    "nproc_all": 124,
+    "nproc_note": "GNU nproc honours OMP_NUM_THREADS, so `nproc` can print 1 on a multi-core host; `nproc_all` is the core count.",
+    "ram_total": "928298232 kB",
+    "kernel": "5.14.0-687.39.1.el9_8.x86_64",
+    "platform": "Linux-5.14.0-687.39.1.el9_8.x86_64-x86_64-with-glibc2.34",
+    "python": "3.12.4",
+    "jax_thread_env": {
+      "NPROC": null
+    },
+    "blas_thread_env": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "VECLIB_MAXIMUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1"
+    },
+    "thread_env_note": "NPROC sizes XLA's CPU intra-op pool (the JAX rows); the BLAS knobs pin OpenBLAS/MKL/OpenMP (the numpy/scipy rows) and do not touch JAX. Two disjoint families; both are recorded on every CPU timing.",
+    "gpu": null
+  },
+  "notes": "W1 wraps inversion_util.log_det_from_passive_cholesky_from in a counter and asserts it is called exactly once during one fit.figure_of_merit and returns a finite float \u2014 i.e. the shared-factor fast path fired on the HST Delaunay N=1500 source-only (S3) AdaptSplit system fixed_light_numba.py route b builds \u2014 recording the published factor's k_active, len(passive_set) and matrix_shape against the reduced matrix's own shape, plus the fast-path guards read off the fit. W2 compares log_det_curvature_reg_matrix_term fast against a fresh fit with that helper monkeypatched to raise np.linalg.LinAlgError (the library's own dense fallback), gate 1e-10 relative \u2014 THREE DECADES tighter than lever 2's 1e-8, because lever 3 re-uses the same factor rather than computing a different factorization, and an arm that only reaches lever 2's tolerance is a finding. W3 is the same comparison on figure_of_merit, gate 1e-9 relative, recording whether it is bit-identical. W4 pins part 3 of the lever (curvature_reg_matrix is the same object on two accesses and a functools.cached_property) and checks the library's claim that the factor out-dict is purely observational, by comparing the two fits' reconstruction arrays with np.array_equal. W5 times the fast route, the dense Cholesky and one _xp.add(F, H) build on the same matrix, median of 20 at one thread, and RECORDS the ratios. The A/B milliseconds are the two arms of hpc/batch_cpu/submit_breakdown_imaging_fixed_light_numba_levers_l3_delaunay_ral_hst_fp64 (control = lever 2 0b17c292, feature = lever 3 b4322c3e)."
+}

@@ -47,6 +47,7 @@ from a factorisation that is *kept*, rather than a different iteration.
 from __future__ import annotations
 
 import contextlib
+import inspect
 
 import numpy as np
 import scipy.linalg
@@ -406,17 +407,48 @@ def numpy_solver_injected(solver, *, label: str):
     original = inversion_util.reconstruction_positive_only_from
     counts: dict = {"numpy": 0, "jax": 0, "label": label, "last_stats": None}
 
-    def patched(data_vector, curvature_reg_matrix, settings=None, xp=np, fingerprint=None):
+    # `factor` is the Cholesky-factor out-dict lever 3 of #267 added to the
+    # library entry point (PyAutoArray `b4322c3e`): `AbstractInversion.reconstruction`
+    # now passes one down so `log_det_curvature_reg_matrix_term` can read
+    # `log det(F + lambda*H)` off the solve's factor instead of factorizing the same
+    # matrix again. Read off the signature rather than assumed, so this manager
+    # works against a pre-lever-3 library too — where the parameter does not exist
+    # and forwarding it would be a `TypeError`.
+    original_takes_factor = "factor" in inspect.signature(original).parameters
+
+    def patched(
+        data_vector,
+        curvature_reg_matrix,
+        settings=None,
+        xp=np,
+        fingerprint=None,
+        factor=None,
+    ):
         if xp.__name__.startswith("jax"):
             counts["jax"] += 1
+            kwargs = {}
+            if original_takes_factor:
+                kwargs["factor"] = factor
             return original(
                 data_vector=data_vector,
                 curvature_reg_matrix=curvature_reg_matrix,
                 settings=settings,
                 xp=xp,
                 fingerprint=fingerprint,
+                **kwargs,
             )
         counts["numpy"] += 1
+        if factor is not None:
+            # Mirror the library's own contract: `reconstruction_positive_only_from`
+            # clears this out-dict on entry so that a caller reading it after a solve
+            # that did not publish a factor sees "no factor" rather than one belonging
+            # to some other matrix. The injected solvers here keep their factorisation
+            # for their own reuse and publish nothing, so leaving the dict empty is
+            # what makes lever 3's `log_det_curvature_reg_matrix_term` decline the
+            # fast path and take the unchanged dense route on the injected routes —
+            # which is correct, and is why the `d_np` rows stay comparable with the
+            # library rows they are measured against.
+            factor.clear()
         stats: dict = {}
         counts["last_stats"] = stats
         return solver(
