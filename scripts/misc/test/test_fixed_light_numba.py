@@ -378,7 +378,8 @@ _LIFTED_CONSTANTS = (
     "DEFAULT_ROUTE_KEYS",
     "ALL_FORMALISM_KEYS",
     "GROUP_LABELS",
-    "MAX_INSTRUMENTATION_OVERHEAD",
+    "MAX_INSTRUMENTATION_OVERHEAD_MS",
+    "REFERENCE_OVERHEAD_RATIO",
     "MIN_BLOCKS_FOR_OVERHEAD_ASSERT",
     "MAX_UNATTRIBUTED_FRACTION",
     "WARMUP_WINDOW",
@@ -532,7 +533,11 @@ def test_call_accounting_covers_a_real_likelihood_call(tiny_s3_pair, cell_ns):
     # contended host: blocks 0.94-1.15 around a mean of 1.02, against a 1.03
     # threshold.) A GROSS regression still fails, because a harness that doubled
     # the call would clear any noise floor.
-    threshold = cell_ns["MAX_INSTRUMENTATION_OVERHEAD"]
+    # This fixture's call is a few milliseconds, so the cell's own MILLISECOND
+    # budget (12 ms, phase 4) cannot discriminate anything here: every ratio
+    # short of catastrophic clears it. The reference RATIO is the right gate at
+    # this scale, and it is the one this test has always used.
+    threshold = cell_ns["REFERENCE_OVERHEAD_RATIO"]
     block_spread = (max(block_ratios) - min(block_ratios)) / overhead
     if block_spread <= threshold - 1.0:
         assert overhead <= threshold, (
@@ -647,27 +652,37 @@ def test_the_cell_never_imports_jax():
     )
 
 
-def test_all_route_keys_is_a_b_c_and_d_np(cell_ns):
-    """Four routes exist; only three run by default.
+def test_all_route_keys_is_a_b_the_two_kernel_routes_c_and_d_np(cell_ns):
+    """Six routes exist; only three run by default.
 
-    ``d_np`` patches the library's positive-only entry point for the duration of
-    its row, so a cell invocation written before the route existed must produce
-    the row set it always did. ``--routes`` therefore defaults to
+    ``d_np`` patches the library's positive-only entry point, and ``b_direct`` /
+    ``b_touched`` (phase 4, #274) patch its curvature-matrix dispatcher, each for
+    the duration of their own row. A cell invocation written before any of them
+    existed must produce the row set it always did, so ``--routes`` defaults to
     :data:`DEFAULT_ROUTE_KEYS`, not to :data:`ALL_ROUTE_KEYS`.
+
+    ``b_direct`` and ``b_touched`` sit immediately after ``b`` in the canonical
+    order because the A/B is read as one table: ``b`` (production, two-stage) on
+    top, the two candidate kernels under it.
 
     Still no ``d``/``d0``/``e``: those are the JAX certified-active-set rows of
     another cell, and this one imports no JAX.
     """
-    assert cell_ns["ALL_ROUTE_KEYS"] == ("a", "b", "c", "d_np")
+    assert cell_ns["ALL_ROUTE_KEYS"] == ("a", "b", "b_direct", "b_touched", "c", "d_np")
     assert cell_ns["DEFAULT_ROUTE_KEYS"] == ("a", "b", "c")
     assert cell_ns["_parse_routes"](None) == ("a", "b", "c"), (
-        "the default row set must not silently grow d_np"
+        "the default row set must not silently grow d_np, b_direct or b_touched"
     )
     assert cell_ns["_parse_routes"]("c,a") == ("a", "c")
     assert cell_ns["_parse_routes"]("b,d_np") == ("b", "d_np")
     assert cell_ns["_parse_routes"]("d_np") == ("d_np",)
+    # The submit's own route string, in the order the summary will print it.
+    assert cell_ns["_parse_routes"]("b,b_direct,b_touched") == ("b", "b_direct", "b_touched")
+    assert cell_ns["_parse_routes"]("b_touched,b") == ("b", "b_touched")
     with pytest.raises(ValueError, match="unknown route"):
         cell_ns["_parse_routes"]("a,d")
+    with pytest.raises(ValueError, match="unknown route"):
+        cell_ns["_parse_routes"]("b_two_stage")
     assert cell_ns["ALL_FORMALISM_KEYS"] == ("dense", "sparse_numba")
     assert cell_ns["_parse_formalisms"]("both") == ("dense", "sparse_numba")
     assert cell_ns["_parse_formalisms"]("dense") == ("dense",)
@@ -683,14 +698,17 @@ def test_route_d_np_is_route_b_with_one_function_replaced():
     """
     source = CELL_PATH.read_text()
 
-    assert '("d_np", "dense"): dataset_s3_dense,' in source
-    assert '("d_np", "sparse_numba"): dataset_s3_sparse,' in source
+    for route in ("d_np", "b_direct", "b_touched"):
+        assert f'("{route}", "dense"): dataset_s3_dense,' in source
+        assert f'("{route}", "sparse_numba"): dataset_s3_sparse,' in source
     # The two branches that split a route off from b's setup name only "a" and
-    # "c", so d_np falls through to b's adapt images, instances and settings.
+    # "c", so every _ROUTES_LIKE_B route falls through to b's adapt images,
+    # instances and settings.
     assert 'adapt_images if route == "a" else adapt_images_s3' in source
     assert 'settings=_settings if route != "c" else _settings_positive_negative' in source
     assert 'instances[index] if route == "a" else instances_s3[index]' in source
     assert '"d_np"' in source and "_ROUTES_LIKE_B" in source
+    assert '_ROUTES_LIKE_B = ("b", "d_np", "b_direct", "b_touched")' in source
 
 
 def test_the_injection_is_entered_outside_call_accounting(cell_ns):
@@ -825,7 +843,8 @@ def test_the_unattributed_row_is_explicit(cell_ns):
     assert cell_ns["UNATTRIBUTED_LABEL"] in source
     assert "_steps[UNATTRIBUTED_LABEL]" in source
     assert cell_ns["MAX_UNATTRIBUTED_FRACTION"] == 0.05
-    assert cell_ns["MAX_INSTRUMENTATION_OVERHEAD"] == 1.03
+    assert cell_ns["MAX_INSTRUMENTATION_OVERHEAD_MS"] == 12.0
+    assert cell_ns["REFERENCE_OVERHEAD_RATIO"] == 1.03
 
 
 # ---------------------------------------------------------------------------
@@ -885,8 +904,125 @@ def test_the_overhead_gate_is_repeat_conditional(cell_ns):
     assert "clean_relative_spread" in source, (
         "the observed spread must be recorded beside the ratio it has to beat"
     )
-    # And the threshold itself is untouched — the estimator was the fix.
-    assert cell_ns["MAX_INSTRUMENTATION_OVERHEAD"] == 1.03
+    # The block threshold is untouched by phase 4 — the UNITS of the gate changed
+    # (ratio -> milliseconds), not how many blocks it takes to render a verdict.
+    assert cell_ns["MAX_INSTRUMENTATION_OVERHEAD_MS"] == 12.0
+    assert cell_ns["REFERENCE_OVERHEAD_RATIO"] == 1.03
+
+
+def _overhead_gate(cell_ns, *, ratio, clean_call_ms, n_blocks):
+    """Run the cell's OWN overhead-gate statements, lifted from its AST.
+
+    ``_overhead_ms`` and ``_overhead_status`` are assigned inside the row loop,
+    which is module-level code this test cannot import. The two assignments are
+    therefore lifted by name and executed against a prepared namespace, so what
+    is exercised below is the cell's arithmetic and the cell's branch, not a
+    re-implementation of them that could drift from it.
+    """
+    tree = ast.parse(CELL_PATH.read_text())
+    wanted = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Assign)
+        and any(
+            isinstance(t, ast.Name) and t.id in ("_overhead_ms", "_overhead_status")
+            for t in node.targets
+        )
+    ]
+    assert len(wanted) == 2, (
+        f"expected exactly one _overhead_ms and one _overhead_status assignment, "
+        f"found {len(wanted)}"
+    )
+    wanted.sort(key=lambda node: node.lineno)
+
+    namespace = {
+        "_overhead_ratio": ratio,
+        "_clean_mean": clean_call_ms / 1e3,
+        "_abba": {"n_blocks": n_blocks},
+        "MIN_BLOCKS_FOR_OVERHEAD_ASSERT": cell_ns["MIN_BLOCKS_FOR_OVERHEAD_ASSERT"],
+        "MAX_INSTRUMENTATION_OVERHEAD_MS": cell_ns["MAX_INSTRUMENTATION_OVERHEAD_MS"],
+        "_overhead_assertable": n_blocks >= cell_ns["MIN_BLOCKS_FOR_OVERHEAD_ASSERT"],
+    }
+    exec(
+        compile(ast.Module(body=wanted, type_ignores=[]), str(CELL_PATH), "exec"),
+        namespace,
+    )
+    return namespace["_overhead_ms"], namespace["_overhead_status"]
+
+
+def test_the_overhead_gate_is_a_millisecond_budget(cell_ns):
+    """The same ratio passes on a short call and fails on a long one.
+
+    ``call_accounting``'s cost is a fixed number of wrapper invocations per call,
+    so the ratio it produces is a function of the call LENGTH as much as of the
+    instrument. Read as a ratio the gate therefore tightened every time this
+    campaign made the call shorter, and on RAL it killed the shorter of two rows
+    for costing *more* instrument in absolute terms than the longer one that
+    passed: x1.0147 at 413 ms is 6.1 ms and cleared 1.03; x1.0366 at 224 ms is
+    8.2 ms and did not.
+
+    The three rows below are those measurements. The middle one is the
+    counterfactual: the SAME 1.037 ratio on a 400 ms call really is 14.8 ms of
+    instrument, and must still fail.
+    """
+    budget = cell_ns["MAX_INSTRUMENTATION_OVERHEAD_MS"]
+    assert budget == 12.0
+
+    # Job 343355, feature arm: the row the ratio gate killed.
+    overhead_ms, status = _overhead_gate(cell_ns, ratio=1.037, clean_call_ms=224.0, n_blocks=32)
+    assert overhead_ms == pytest.approx(8.288, rel=1e-6)
+    assert overhead_ms <= budget
+    assert status == "PASS", (
+        f"1.037 at a 224 ms call is {overhead_ms:.2f} ms of instrument — inside the "
+        f"{budget} ms budget, and the row the old ratio gate destroyed"
+    )
+
+    # The counterfactual: the same ratio on the call the 1.03 was calibrated on.
+    overhead_ms, status = _overhead_gate(cell_ns, ratio=1.037, clean_call_ms=400.0, n_blocks=32)
+    assert overhead_ms == pytest.approx(14.8, rel=1e-6)
+    assert status == "FAIL", (
+        f"1.037 at a 400 ms call is {overhead_ms:.2f} ms — over the {budget} ms budget. "
+        f"A budget that passed this would not be a gate."
+    )
+
+    # Job 343356, the 413 ms row that passed the ratio gate. It must still pass.
+    overhead_ms, status = _overhead_gate(cell_ns, ratio=1.0147, clean_call_ms=413.0, n_blocks=32)
+    assert overhead_ms == pytest.approx(6.0711, rel=1e-6)
+    assert status == "PASS"
+
+    # And the block threshold still overrides the verdict, in milliseconds too.
+    overhead_ms, status = _overhead_gate(cell_ns, ratio=1.037, clean_call_ms=400.0, n_blocks=1)
+    assert overhead_ms == pytest.approx(14.8, rel=1e-6)
+    assert status == "RECORDED", (
+        "one block cannot resolve the budget any better than it could resolve the ratio"
+    )
+
+
+def test_the_overhead_gate_records_both_the_ms_and_the_ratio(cell_ns):
+    """The ratio does not disappear — levers 1-3 are chained against it.
+
+    The note reads 1.0147 at 413.301 ms, 1.0167 at 302.709, 1.0221 at 267.448 and
+    so on. A JSON that published only the new milliseconds would make those rows
+    unreadable against this one.
+    """
+    source = CELL_PATH.read_text()
+
+    assert '"instrumentation_overhead_ratio": _overhead_ratio,' in source
+    assert '"instrumentation_overhead_ms": _overhead_ms,' in source
+    assert '"instrumentation_overhead_threshold_ms": MAX_INSTRUMENTATION_OVERHEAD_MS,' in source
+    assert '"instrumentation_overhead_reference_ratio": REFERENCE_OVERHEAD_RATIO,' in source
+    assert '"max_instrumentation_overhead_ms": MAX_INSTRUMENTATION_OVERHEAD_MS,' in source
+    assert '"min_blocks_for_overhead_assert": MIN_BLOCKS_FOR_OVERHEAD_ASSERT,' in source
+
+    # The gate compares milliseconds, not the ratio. A ratio comparison left in
+    # the status expression would be the old gate wearing the new name.
+    assert "_overhead_ms <= MAX_INSTRUMENTATION_OVERHEAD_MS" in source
+    assert "_overhead_ratio <= " not in source, (
+        "the status must be decided on the millisecond budget, not on the ratio"
+    )
+    assert "_overhead_ms = (_overhead_ratio - 1.0) * _clean_mean * 1e3" in source, (
+        "the overhead milliseconds must come from the row's own measured clean mean"
+    )
 
 
 def test_the_warmup_runs_to_steady_state_and_records_every_call(cell_ns):
