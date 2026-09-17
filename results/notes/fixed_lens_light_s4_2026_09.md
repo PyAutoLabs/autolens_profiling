@@ -27,8 +27,8 @@ where it wins by 1.20× against the direct kernel it is supposed to lose to.
 **All three kernels are numerically equivalent** — the two two-stage forms bit-identical, `direct` at
 relative 4.100e-13 on the matrix and 7.385e-16 on the log evidence — so the whole result is a timing
 result and nothing about the fit moves. The PyAutoArray work this phase promised therefore shrinks
-to its docstring: **PyAutoArray main `91240e43`, no kernel change; docstring-only PR pending
-(#274 wave A)**.
+to its docstring: **PyAutoArray main `91240e43`, no kernel change; docstring-only PR
+[PyAutoArray#557](https://github.com/PyAutoLabs/PyAutoArray/pull/557) (#274 wave A)**.
 
 ## Scope — read this before quoting a number
 
