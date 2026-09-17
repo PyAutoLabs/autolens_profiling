@@ -1,0 +1,327 @@
+{
+  "cell": "fixed_light_numba_s4_witness",
+  "issue": "autolens_profiling#274 (lever 4a: the curvature-matrix kernel A/B on Delaunay)",
+  "verdict": "PASS",
+  "results": {
+    "W1_each_kernel_fires_once": {
+      "status": "PASS",
+      "calls": {
+        "two_stage": {
+          "n_calls": 1,
+          "kernel_dotted_name": "autoarray.inversion.inversion.imaging_numba.inversion_imaging_numba_util.curvature_matrix_via_sparse_operator_two_stage_from",
+          "last_pix_pixels": 1500,
+          "figure_of_merit_wall_s": 0.290708065032959
+        },
+        "direct": {
+          "n_calls": 1,
+          "kernel_dotted_name": "autoarray.inversion.inversion.imaging_numba.inversion_imaging_numba_util.curvature_matrix_via_sparse_operator_direct_from",
+          "last_pix_pixels": 1500,
+          "figure_of_merit_wall_s": 0.2982137203216553
+        },
+        "two_stage_touched": {
+          "n_calls": 1,
+          "kernel_dotted_name": "likelihood_breakdown.fixed_light_numpy_kernels.curvature_matrix_via_sparse_operator_two_stage_touched_from",
+          "last_pix_pixels": 1500,
+          "figure_of_merit_wall_s": 0.298656702041626
+        }
+      },
+      "all_called_exactly_once": true,
+      "dotted_names_agree": true,
+      "pix_pixels_agree": true,
+      "patched_dotted_name": "autoarray.inversion.inversion.imaging_numba.inversion_imaging_numba_util.curvature_matrix_via_sparse_operator_from",
+      "production_branch_at_this_size": "two_stage",
+      "curvature_two_stage_max_pix_pixels": 4096,
+      "summary": "n_calls two_stage 1, direct 1, two_stage_touched 1 per figure_of_merit at pix_pixels 1500"
+    },
+    "W2_curvature_matrix_agrees": {
+      "status": "PASS",
+      "kernels": {
+        "two_stage": {
+          "max_abs_diff_vs_two_stage": 0.0,
+          "max_rel_diff_vs_two_stage": 0.0,
+          "bit_identical_to_two_stage": true,
+          "frobenius_norm": 7283350.905626731,
+          "shape": [
+            1500,
+            1500
+          ],
+          "symmetric": true
+        },
+        "direct": {
+          "max_abs_diff_vs_two_stage": 2.1513551473617554e-06,
+          "max_rel_diff_vs_two_stage": 4.1002564843272774e-13,
+          "bit_identical_to_two_stage": false,
+          "frobenius_norm": 7283350.905624719,
+          "shape": [
+            1500,
+            1500
+          ],
+          "symmetric": true
+        },
+        "two_stage_touched": {
+          "max_abs_diff_vs_two_stage": 0.0,
+          "max_rel_diff_vs_two_stage": 0.0,
+          "bit_identical_to_two_stage": true,
+          "frobenius_norm": 7283350.905626731,
+          "shape": [
+            1500,
+            1500
+          ],
+          "symmetric": true
+        }
+      },
+      "rtol": 1e-09,
+      "direct_vs_two_stage_max_rel_diff": 4.1002564843272774e-13,
+      "direct_within_rtol": true,
+      "touched_bit_identical_to_two_stage": true,
+      "touched_max_abs_diff": 0.0,
+      "all_symmetric": true,
+      "uninjected_dispatcher_matches_two_stage": true,
+      "note": "The two library kernels sum the same products in a different order and agree to floating-point reassociation, so `direct` is gated at a tolerance and its value is recorded. `two_stage_touched` removes additions of exact +0.0 and reorders nothing, so it is gated at EXACT equality \u2014 a pass at 1e-15 there would refute its promotion case rather than support it.",
+      "summary": "direct vs two-stage rel 4.100e-13 (<= 1e-09: True), touched bit-identical True, control == un-injected dispatcher True"
+    },
+    "W3_log_evidence_agrees": {
+      "status": "PASS",
+      "kernels": {
+        "two_stage": {
+          "figure_of_merit": 19705.717581305427,
+          "delta_nats_vs_library": 0.0,
+          "relative_difference": 0.0,
+          "bit_identical_to_library": true,
+          "within_rtol": true
+        },
+        "direct": {
+          "figure_of_merit": 19705.717581305442,
+          "delta_nats_vs_library": 1.4551915228366852e-11,
+          "relative_difference": 7.384615743286647e-16,
+          "bit_identical_to_library": false,
+          "within_rtol": true
+        },
+        "two_stage_touched": {
+          "figure_of_merit": 19705.717581305427,
+          "delta_nats_vs_library": 0.0,
+          "relative_difference": 0.0,
+          "bit_identical_to_library": true,
+          "within_rtol": true
+        }
+      },
+      "rtol": 1e-09,
+      "figure_of_merit_library": 19705.717581305427,
+      "all_within_rtol": true,
+      "two_stage_forms_bit_identical_to_library": true,
+      "note": "The phase's Witness pin: every kernel returns the library's log evidence to <= 1e-9 relative. The two two-stage forms are expected BIT-IDENTICAL because they produce a bit-identical matrix; recorded either way, because a merely tolerant pass there is a finding about the touched kernel and not a pass.",
+      "summary": "max rel 7.385e-16 (<= 1e-09: True); two-stage forms bit-identical True"
+    },
+    "W4_kernel_site_cost": {
+      "status": "RECORDED",
+      "kernels": {
+        "two_stage": {
+          "ms_median": 85.04296164028347,
+          "ms_min": 84.61674116551876,
+          "ms_max": 85.68320097401738,
+          "ms_samples": [
+            84.7028810530901,
+            84.74816987290978,
+            84.84672987833619,
+            85.03901725634933,
+            85.08423715829849,
+            84.9406779743731,
+            85.22095624357462,
+            85.0469060242176,
+            84.87245999276638,
+            84.81596922501922,
+            85.31503519043326,
+            85.10294603183866,
+            84.61674116551876,
+            85.21534595638514,
+            85.13307711109519,
+            85.31210385262966,
+            85.68320097401738,
+            85.2743349969387,
+            84.81098990887403,
+            84.85230803489685
+          ]
+        },
+        "direct": {
+          "ms_median": 102.0515647251159,
+          "ms_min": 101.74486832693219,
+          "ms_max": 103.01807522773743,
+          "ms_samples": [
+            103.01807522773743,
+            102.5565997697413,
+            102.20918292179704,
+            101.80234676226974,
+            102.18666307628155,
+            102.81333792954683,
+            101.84033680707216,
+            102.00837533921003,
+            101.81360691785812,
+            101.89067618921399,
+            102.17703320086002,
+            102.07423381507397,
+            102.05633472651243,
+            102.22291387617588,
+            101.82077577337623,
+            102.04679472371936,
+            101.74486832693219,
+            101.87979601323605,
+            101.8605069257319,
+            102.27515175938606
+          ]
+        },
+        "two_stage_touched": {
+          "ms_median": 97.01888752169907,
+          "ms_min": 96.72676585614681,
+          "ms_max": 97.2725311294198,
+          "ms_samples": [
+            97.09949186071754,
+            97.17626124620438,
+            97.2725311294198,
+            96.73097496852279,
+            96.78785502910614,
+            96.8113848939538,
+            97.06349205225706,
+            96.99192410334945,
+            97.03106200322509,
+            97.20030101016164,
+            97.2139211371541,
+            96.72676585614681,
+            97.11072081699967,
+            96.96081327274442,
+            97.17654203996062,
+            97.03978290781379,
+            96.8349538743496,
+            97.00671304017305,
+            96.96165332570672,
+            96.85672400519252
+          ]
+        }
+      },
+      "n_repeats": 20,
+      "threads": 1,
+      "speedup_vs_two_stage": {
+        "two_stage": 1.0,
+        "direct": 0.8333332454955839,
+        "two_stage_touched": 0.8765608822432942
+      },
+      "geometry": {
+        "pix_pixels": 1500,
+        "data_pixels": 15361,
+        "stored_pairs": 11080573,
+        "mean_mappings_per_data_pixel_u0": 1.604127335459931
+      },
+      "note": "RECORDED, never gated: no calibrated ratio exists for an arbitrary host, and the row that decides lever 4a is the WHOLE-CALL A/B \u2014 rows b, b_direct and b_touched of the s4 submit under the cell's ABBA harness at --n-repeats 64. A kernel that wins here and not there has not won. Compare these ratios with the A/B's `sparse_numba.curvature_matrix` site rows, not with a literal.",
+      "summary": "two_stage 85.043 ms (1.00x), direct 102.052 ms (0.83x), two_stage_touched 97.019 ms (0.88x)"
+    }
+  },
+  "configuration": {
+    "config_name": "hpc_ral_cpu_fp64_s4",
+    "mesh": "delaunay",
+    "dataset": "hst",
+    "source_pixels": 1500,
+    "mesh_vertices_placed": 1500,
+    "regularization": {
+      "scheme": "adapt_split",
+      "inner_coefficient": 0.1,
+      "outer_coefficient": 10.0,
+      "signal_scale": 0.1
+    },
+    "threads": 1,
+    "thread_env": {
+      "n_threads": 1,
+      "vars": [
+        "OPENBLAS_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OMP_NUM_THREADS",
+        "VECLIB_MAXIMUM_THREADS",
+        "NUMEXPR_NUM_THREADS"
+      ],
+      "set_to": "1",
+      "preexisting": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1"
+      },
+      "overridden": {},
+      "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+    },
+    "numba_thread_env": {
+      "NUMBA_NUM_THREADS": "1",
+      "preexisting": "1"
+    },
+    "nnls_warm_start_env": "0",
+    "use_jax": false,
+    "instance_seed": 263,
+    "kernels": [
+      "two_stage",
+      "direct",
+      "two_stage_touched"
+    ],
+    "kernel_dotted_names": {
+      "two_stage": "autoarray.inversion.inversion.imaging_numba.inversion_imaging_numba_util.curvature_matrix_via_sparse_operator_two_stage_from",
+      "direct": "autoarray.inversion.inversion.imaging_numba.inversion_imaging_numba_util.curvature_matrix_via_sparse_operator_direct_from",
+      "two_stage_touched": "likelihood_breakdown.fixed_light_numpy_kernels.curvature_matrix_via_sparse_operator_two_stage_touched_from"
+    },
+    "patched_dotted_name": "autoarray.inversion.inversion.imaging_numba.inversion_imaging_numba_util.curvature_matrix_via_sparse_operator_from",
+    "curvature_two_stage_max_pix_pixels": 4096,
+    "production_branch_at_this_size": "two_stage",
+    "w2_rtol": 1e-09,
+    "w3_rtol": 1e-09,
+    "w4_n_repeats": 20,
+    "log_det_method": "cholesky"
+  },
+  "system": {
+    "n_params": 1500,
+    "n_mapper": 1500,
+    "n_funcs": 0,
+    "edge_zeroed_pixels": 0,
+    "subtracted_light_flux": 4945.524141998385,
+    "inversion_class": "InversionImagingSparseNumba",
+    "interpolator_class": "InterpolatorDelaunay",
+    "regularization_class": "AdaptSplit",
+    "sparse_operator_class": "SparseLinAlgImagingNumba",
+    "mapper_params": 1500,
+    "curvature_matrix_mapper_block_shape": [
+      1500,
+      1500
+    ],
+    "pix_pixels": 1500,
+    "data_pixels": 15361,
+    "stored_pairs": 11080573,
+    "mean_mappings_per_data_pixel_u0": 1.604127335459931
+  },
+  "provenance": {
+    "autoarray_file": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/__init__.py",
+    "autoarray_version": "2026.8.17.1",
+    "autolens_version": "2026.8.17.1",
+    "hostname": "euclid-ral-gpu-1",
+    "slurm_job_id": "343394",
+    "jax_in_sys_modules": true,
+    "scipy_version": "1.17.1",
+    "wall_s": 19.269960403442383
+  },
+  "machine": {
+    "cpu_model": "AMD EPYC 7702 64-Core Processor",
+    "cpu_count_os": 124,
+    "nproc": 1,
+    "nproc_all": 124,
+    "nproc_note": "GNU nproc honours OMP_NUM_THREADS, so `nproc` can print 1 on a multi-core host; `nproc_all` is the core count.",
+    "ram_total": "928298232 kB",
+    "kernel": "5.14.0-687.39.1.el9_8.x86_64",
+    "platform": "Linux-5.14.0-687.39.1.el9_8.x86_64-x86_64-with-glibc2.34",
+    "python": "3.12.4",
+    "jax_thread_env": {
+      "NPROC": null
+    },
+    "blas_thread_env": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "VECLIB_MAXIMUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1"
+    },
+    "thread_env_note": "NPROC sizes XLA's CPU intra-op pool (the JAX rows); the BLAS knobs pin OpenBLAS/MKL/OpenMP (the numpy/scipy rows) and do not touch JAX. Two disjoint families; both are recorded on every CPU timing.",
+    "gpu": null
+  },
+  "notes": "W1 wraps the library's curvature-matrix dispatcher in a counting injection and asserts each of the three kernels is called exactly ONCE during one fit.figure_of_merit on the HST Delaunay N=1500 source-only (S3) AdaptSplit system fixed_light_numba.py route b builds, recording the dotted name that actually ran and the pix_pixels it saw. W2 computes the mapper block of curvature_matrix with all three kernels from the SAME seven arrays read off that fit's mapper and sparse operator: `direct` vs `two_stage` is gated at 1e-9 relative with the value recorded (they sum the same products in a different order), `two_stage_touched` vs `two_stage` is gated at np.array_equal because it removes additions of exact +0.0 and reorders nothing, and the un-injected dispatcher is checked to reproduce the `two_stage` row exactly so the control really is the production path. W3 is the same comparison on figure_of_merit, gate 1e-9 relative (the phase's Witness pin), in nats and recording bit-identity. W4 times each kernel on those identical arrays, median of 20 at one thread, and RECORDS the ratios. The milliseconds that decide lever 4a are rows b, b_direct and b_touched of hpc/batch_cpu/submit_breakdown_imaging_fixed_light_numba_s4_delaunay_ral_hst_fp64, not this cell: a kernel is a lever only if it beats route b by >= 5 % on the WHOLE CALL with the ABBA gate PASS."
+}
