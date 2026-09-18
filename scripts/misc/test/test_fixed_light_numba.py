@@ -1086,14 +1086,14 @@ def test_warm_to_steady_state_stops_on_a_flat_sequence_and_caps_on_a_ramp(cell_n
             )
 
 
-def test_s4b_resets_and_primes_the_same_timed_stream_before_abba():
-    """Variable warm-up lengths cannot shift b and d_perm onto different iid draws."""
+def test_resets_and_primes_the_same_timed_stream_before_abba():
+    """Variable warm-up lengths cannot shift compared rows onto different iid draws."""
     source = CELL_PATH.read_text()
     tree = ast.parse(source)
     helper = next(
         node
         for node in ast.walk(tree)
-        if isinstance(node, ast.FunctionDef) and node.name == "_prepare_s4b_timed_stream"
+        if isinstance(node, ast.FunctionDef) and node.name == "_prepare_timed_stream"
     )
     events = []
     call_index = {"next": 99}
@@ -1114,7 +1114,7 @@ def test_s4b_resets_and_primes_the_same_timed_stream_before_abba():
         compile(ast.Module(body=[helper], type_ignores=[]), str(CELL_PATH), "exec"),
         namespace,
     )
-    metadata = namespace["_prepare_s4b_timed_stream"](FakeAnalysis(), "b", 128)
+    metadata = namespace["_prepare_timed_stream"](FakeAnalysis(), "b", 128)
     events.append(("abba", call_index["next"]))
 
     assert events == [("clear",), ("prime", "b:0", 0), ("abba", 1)]
@@ -1124,7 +1124,7 @@ def test_s4b_resets_and_primes_the_same_timed_stream_before_abba():
     assert metadata["timed_instance_start_index"] == 1
     assert metadata["timed_instance_count"] == 128
     assert metadata["iid_seed"] == 263
-    assert source.index("_timed_stream = _prepare_s4b_timed_stream(") < source.index(
+    assert source.index("_timed_stream = _prepare_timed_stream(") < source.index(
         "_abba = _abba_blocks(_analysis, _route, _n_blocks, _site_spec)"
     )
 

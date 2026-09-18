@@ -26,7 +26,7 @@ parser.add_argument("--dataset", choices=("hst", "euclid"), default="hst")
 parser.add_argument("--threads", type=int, default=1)
 parser.add_argument("--n-draws", type=int, default=8)
 parser.add_argument("--kernel", choices=("library", "permuted"), default="library")
-args, _ = parser.parse_known_args()
+args = _cli.parse_cell_args(parser)
 if args.n_draws < 1 or args.threads < 1:
     parser.error("n-draws and threads must be positive")
 MESH, DATASET = args.mesh, args.dataset

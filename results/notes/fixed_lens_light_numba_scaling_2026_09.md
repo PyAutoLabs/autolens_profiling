@@ -1,5 +1,7 @@
 # Numba CPU likelihood source-pixel scaling — phase 6
 
+> **Status correction — 2026-09-18:** Phase 7 was explicitly shelved after this measurement; the CPU epic is complete. The suggestions below for representative-history work are historical, not an active next phase. Budget from cold timings with zero dependable memo benefit; production defaults remain unchanged. See the [current campaign summary](profiling_campaign_status_2026_09.md).
+
 Issue: [#282](https://github.com/PyAutoLabs/autolens_profiling/issues/282).
 All five source-pixel counts pass the declared numerical, timing, completeness and thread-configuration gates. Production behavior is unchanged.
 

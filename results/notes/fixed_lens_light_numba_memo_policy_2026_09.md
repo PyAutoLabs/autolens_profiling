@@ -1,5 +1,7 @@
 # CPU memo eligibility before solving — phase 5b (#280)
 
+> **Status correction — 2026-09-18:** The CPU epic is complete. Further memo-policy and sampler-order research is out of scope for current planning; phase 7 is shelved. Assume zero dependable memo benefit and leave production defaults unchanged. See the [current campaign summary](profiling_campaign_status_2026_09.md).
+
 **NO_LEVER under the declared promotion criteria.** The locked precheck removes
 35–38% of unchanged-memo runtime on the original stress orders, but is 11.7%
 slower than unchanged memo on the independent nearby walk and 5.3% slower than

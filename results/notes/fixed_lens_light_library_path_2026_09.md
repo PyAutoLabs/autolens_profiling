@@ -1,5 +1,7 @@
 # Fixed lens light — the library-path row (2026-09-13)
 
+> **Status correction — 2026-09-18:** The 25.39 ms certified A100 row uses pass budget 2, not the later selected budget 7 (31.64 ms). The ~13.9 ms mesh/mapper attribution was refuted by the [single-process trace](hst_gpu_residue_phase1_2026_09.md). Use the [current campaign summary](profiling_campaign_status_2026_09.md) before quoting these historical numbers.
+
 autolens_profiling issue [#251](https://github.com/PyAutoLabs/autolens_profiling/issues/251),
 branch `feature/fixed-light-library-path` (stacked on phase 0's `feature/fixed-lens-light-source-only`),
 harvest commit `f659dd5`. Three A100 legs (342908–342910) on `euclid-ral-gpu-2`, fp64, dense,

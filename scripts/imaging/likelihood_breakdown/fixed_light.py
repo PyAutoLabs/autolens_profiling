@@ -188,7 +188,7 @@ _cell_parser.add_argument("--library-row", dest="library_row", action="store_tru
 _cell_parser.add_argument("--no-library-row", dest="library_row", action="store_false")
 _cell_parser.add_argument("--pins", choices=("fp64", "none"), default="fp64")
 _cell_parser.add_argument("--safe-budget", type=int, default=None)
-_cell_args, _ = _cell_parser.parse_known_args()
+_cell_args = _cli.parse_cell_args(_cell_parser)
 
 MESH = _cell_args.mesh
 PASS_BUDGET_MAX = int(_cell_args.pass_budget_max)

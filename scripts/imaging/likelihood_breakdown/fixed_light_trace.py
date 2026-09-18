@@ -206,7 +206,7 @@ _cell_parser.add_argument("--routes", default="b,d")
 _cell_parser.add_argument("--command-buffers", choices=("off", "on"), default="off")
 _cell_parser.add_argument("--trace-dir", default=None)
 _cell_parser.add_argument("--safe-budget", type=int, default=None)
-_cell_args, _ = _cell_parser.parse_known_args()
+_cell_args = _cli.parse_cell_args(_cell_parser)
 
 MESH = _cell_args.mesh
 BORDER_RELOCATOR_MODE = _cell_args.border_relocator

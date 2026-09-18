@@ -231,7 +231,7 @@ _cell_parser.add_argument("--no-fallback-row", dest="fallback_row", action="stor
 _cell_parser.add_argument("--pins", choices=("fp64", "none"), default="fp64")
 _cell_parser.add_argument("--dataset", choices=("hst", "euclid"), default="hst")
 _cell_parser.add_argument("--routes", default=None)
-_cell_args, _ = _cell_parser.parse_known_args()
+_cell_args = _cli.parse_cell_args(_cell_parser)
 
 MESH = _cell_args.mesh
 

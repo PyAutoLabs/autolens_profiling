@@ -122,7 +122,7 @@ _cell_parser.add_argument(
 _cell_parser.add_argument("--pass-budget", type=int, default=None)
 _cell_parser.add_argument("--source-pixels", type=int, default=None)
 _cell_parser.add_argument("--n-repeats", type=int, default=10)
-_cell_args, _ = _cell_parser.parse_known_args()
+_cell_args = _cli.parse_cell_args(_cell_parser)
 
 MESH = _cell_args.mesh
 PASS_BUDGET = int(
