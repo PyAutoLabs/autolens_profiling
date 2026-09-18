@@ -1,0 +1,113 @@
+{
+  "task": "fixed-light-numba-s5b",
+  "issue": 280,
+  "job_id": "343413",
+  "source_base_revision": "cd685483b4f819801231bef0e1e9102be54f9fa5",
+  "source_archive_sha256": "c4f04b16fc3c7f0016f28cc9c880cba80c95ce669da0dc09e910ebd2286f11e3",
+  "source_files": {
+    "_adapt_image_util.py": "210dc4d752ceefcfc1d7b1f86663fd223f155fb37d36c0370685391d116a849c",
+    "_production_config.py": "2961ffabe42fc46b2257c59eba5080f5ac22e7b9e6af1f0511659d1f53c2b4e2",
+    "_profile_cli.py": "5f60d40237c3456e7088b288c78e2c41666ae719c661dade1e9f40681413ae7c",
+    "activate.sh": "f404d60a5aba2a16b0b4a98407c771f995abba77306bc2578d9dbe7ce69f801c",
+    "config/general.yaml": "a0f7c6787845e119cc27a85309f10872dfacfb0ea63929b616b66b6ba6f83dea",
+    "config/latent.yaml": "de197f4e5c5ab0d4d60d0d026dd34e46704e0597f4d683d317fd31e03ffcfcb0",
+    "dataset/imaging/hst/data.fits": "e4e833a28e9c6f6fb023cd85c0d3dde74068720256bc77a240633500e5b04fac",
+    "dataset/imaging/hst/lensed_source.fits": "091c90523d3c404170f1846725a66dabd7d999ecd5bae26b5e40205c694f00fb",
+    "dataset/imaging/hst/noise_map.fits": "315c6266a0acd3ac9c8da82fcd2b45a08697362481fd7a35072bab1658530ba3",
+    "dataset/imaging/hst/positions.json": "c18b7a596ba9db0acb1986939082026fb5d79df5e6ce413ada6989add47dff16",
+    "dataset/imaging/hst/psf.fits": "8389ba0e8bf4a09b4a561cfc246181a2fb944ed396754cd0ff76fdd22910d303",
+    "dataset/imaging/hst/tracer.json": "2f02fa9f0e24edbb63ee27f5d39146157f26da72e29b6ca2e5ce40db8da02517",
+    "hpc/batch_cpu/submit_breakdown_imaging_fixed_light_numba_memo_policy_delaunay_ral_hst_fp64": "bbaa6c67a689512f18504b7210f598d0fd30350b0172644c89dc149ec7761362",
+    "instruments/__init__.py": "bcaf074e6271ec42b7d3747649bcd10797aea28a382bf042da15132ffa1179b9",
+    "instruments/imaging.py": "f37153dbe4d597029c430b3785d150dafc0b2a43c84edae3568fa9296d5c8927",
+    "instruments/interferometer.py": "f05c65566fa59ca64fd6e25e990b98350d3c02b6ce727355dd04bd3c78f5568c",
+    "results/breakdown/imaging/fixed_light_draws_delaunay_hpc_a100_fp64_fixed_light_draws.json": "7d10341d96302c187600a5f3201f76847594bb6808b76d651c483dd4a42e854f",
+    "ruff.toml": "cb0f819e088011949e01088be7681bfe46372b3d7b9298ddb7dd597ecafca473",
+    "scripts/imaging/likelihood_breakdown/fixed_light_numba_draws.py": "13a1dc57b4162f4edcaffbf04315390eaf4a8bd4b141d4b4d9a5221cbdc28978",
+    "scripts/imaging/likelihood_breakdown/fixed_light_numba_memo_policy.py": "21227ac9d304cea20b07a6c5d61f61051fd3c38abd8f68f6ac456c8d408f3e55",
+    "scripts/misc/likelihood_breakdown/__init__.py": "437ed73a42c85680de2e75a35cffef319cc9205f957de3562621d86db6350e28",
+    "scripts/misc/likelihood_breakdown/active_set_steps.py": "bbcb3816825dcebd85d40d593494b6356682fcc8e59864d79bad85ec486f6be9",
+    "scripts/misc/likelihood_breakdown/call_accounting.py": "da90c6722ce50ce8fdb5483e94d1e2c314d2fc00cef3a4758c4adf8267d48d23",
+    "scripts/misc/likelihood_breakdown/fixed_light_cpu_common.py": "7b69000262f0187eadc7a857cae7f6fa40e2f1c59f8bea33865279c6753c31ed",
+    "scripts/misc/likelihood_breakdown/fixed_light_cpu_kernels.py": "754989f65e1f0bed49f9b0f2b0a3f647964d30291472c3d0a69e07ed5bfdbd02",
+    "scripts/misc/likelihood_breakdown/fixed_light_draws_steps.py": "94b822bd8b0e9017b5181ba1158034d565783772795706b40765e2a33fa82bd2",
+    "scripts/misc/likelihood_breakdown/fixed_light_numba_draws_steps.py": "f8d7fde9fc610f3acf2fba1c070e32e50394b7dad0bb157a05eadd96d84b3d3b",
+    "scripts/misc/likelihood_breakdown/fixed_light_numba_memo_policy_steps.py": "7a5e8daf329494e9db7f54e7d6c2aa0ff20e5495bd2cf69d5d070ee41ebcd178",
+    "scripts/misc/likelihood_breakdown/fixed_light_numpy_kernels.py": "0b5241e208d37bf9a5bf7d4ef498033d2d4511570bd73ab74b166c8d5e0338d0",
+    "scripts/misc/likelihood_breakdown/fixed_light_numpy_solvers.py": "267b792b0e7c7422dd17be26875279ee3b6016896760cd4b10f77a6fb80bccad",
+    "scripts/misc/likelihood_breakdown/fixed_light_probe_cpu.py": "3729224be17b59ff4c90c4142c6312671e66986ae7b42d0457b94735d08d218a",
+    "scripts/misc/likelihood_breakdown/fixed_light_scaling_table.py": "5b47aff3925c5fb2934b7dab376c147b4479066fc06dfc9950e93cf27ad698e6",
+    "scripts/misc/likelihood_breakdown/fixed_light_system.py": "f4d9c07046aa40d54c99a4ac4584b467d00481b5afd7a48be5d2060a44ef953a",
+    "scripts/misc/likelihood_breakdown/library_solver_injection.py": "f2b2d7d611d807239ca7c01488e220a32e45f0e7ea7b9493e0f2409392630d9f",
+    "scripts/misc/likelihood_breakdown/matrix_free_steps.py": "41203565f0d43157c723356056a5b888a1ba028ab626fbbb951f871e1e6ace84",
+    "scripts/misc/likelihood_breakdown/reconstruction_steps.py": "b760b37f80cda2081e872274c0ae453d6f8a62f5499acff2ff0dffc8e6968b8c",
+    "scripts/misc/likelihood_breakdown/size_sweep_table.py": "efc91f7081ec6a2a523701354c2ab99c8adfa62b67f6054d16b79a22a3729080",
+    "scripts/misc/likelihood_breakdown/sparse_steps.py": "78639f361b679b4b113597f8e6d57c7290cbd2988f36bbdd7cbeaca8a3a6c22f",
+    "scripts/misc/likelihood_breakdown/timing.py": "199ac31f29707ef96a9467d7af93dde193a38c71c332655cab4005cda306ccf1",
+    "scripts/misc/likelihood_breakdown/xla_attribution.py": "5ae74678e3441fb3762a74452f083a61bc7c254c9a147fac48e8f523a367d275",
+    "scripts/misc/simulators/cluster.py": "34dce2637d1138ee5d373174c3b1b3392b7ffb6e457613c1434bddfdb6db2d8e",
+    "scripts/misc/simulators/group.py": "c59e9456d46d315cfa3b9cd96cbd864b2c5cc642747629eba4ca4144cee901d9",
+    "scripts/misc/simulators/group4_mge.py": "81d6b0f105b93e357161acf2fd5539bc8c3700d1cf39762b75c20d9051836771",
+    "scripts/misc/simulators/imaging.py": "fa2c6238067859a4e008254ed1c13ae0f11e88d160cdbc95439d159b4cbde05e",
+    "scripts/misc/simulators/interferometer.py": "7220cb44ab7519ea1ae47fc08e2d4cd8fcc2ada42c795fdd788ad7b56124945a",
+    "scripts/misc/simulators/multi.py": "ed1b8564029b93d6c59b75864153e8acab822635e4ed9e1de115d503265a0a21",
+    "scripts/misc/simulators/point_source.py": "14d9843d1a992ec3c5319b7c11850ca481d4ab6add1a546eea50b7b33d4efcd1"
+  },
+  "source_verification": {
+    "file_count": 47,
+    "before_run": true,
+    "after_run": true,
+    "current_local_inputs_match": true
+  },
+  "allocation": {
+    "node": "euclid-ral-gpu-1",
+    "cpu_model": "AMD EPYC 7702 64-Core Processor",
+    "online_cpus": 124,
+    "allocated_cpus": 4,
+    "memory": "32G",
+    "gpu_requested": false,
+    "numba_runtime_threads": 1,
+    "blas_runtime_observation": "unavailable; threadpoolctl returned []; thread environment pinned one"
+  },
+  "completion": {
+    "state": "COMPLETED",
+    "exit_code": "0:0",
+    "elapsed": "01:01:18",
+    "max_rss_kib": 8155204
+  },
+  "libraries": {
+    "autoarray": {
+      "version": "2026.8.17.1",
+      "revision": "192d4b70215830ad3ad3c8c83550e477bd674b72"
+    },
+    "autofit": {
+      "version": "2026.8.17.1",
+      "revision": "7c0e79aab79bb7a238d0654c40a883eff0333ec3"
+    },
+    "autogalaxy": {
+      "version": "2026.8.17.1",
+      "revision": "33714b800b9239ada5e0531822883cf302703e1d"
+    },
+    "autolens": {
+      "version": "2026.8.17.1",
+      "revision": "7197380671c0a32be1a225d4de660b9e4097f6c7"
+    }
+  },
+  "additional_library": {
+    "PyAutoNerves": "8eca4b3e8cdf72ed4c13850ed5b333ec7306524d"
+  },
+  "library_state_before_and_after": "same revisions, tracked worktrees clean",
+  "artifact": {
+    "json": "fixed_light_numba_memo_policy_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s5b.json",
+    "raw_sha256": "59385d64470578379fefaf9f0414ed0e9a143f8452d9e681aa19c9c45c1ccb50",
+    "committed_sha256": "13d9661078c307c7f37ca604058a6c592e0a0039771bc932a72534294a79d793",
+    "parsed_json_equal": true,
+    "raw_bytes": 23189374,
+    "formatted_bytes": 29499820,
+    "formatting": "JSON object indentation; numeric arrays remain inline; parsed JSON equality asserted",
+    "png": "fixed_light_numba_memo_policy_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s5b.png",
+    "png_sha256": "1ae5e0ed615ad601be22231d82157260eef5c2bd021ab655f06325c557704162"
+  },
+  "lock_sha256": "cf19fdd9d31a100b3a9c4a64b6fc7697febca9512f6d4de664e6b13e66a7d22c",
+  "declaration_sha256": "8b91449e39d2807d70b7963f6d8af0d6c267a64d95c15764847791a989f4f2d6"
+}
