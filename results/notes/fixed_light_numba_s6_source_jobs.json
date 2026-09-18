@@ -1,0 +1,201 @@
+{
+  "base_revision": "fb303cf486990818cc846c19bedcf155706a1cc9",
+  "archive_sha256": "0f2bdad3f8d03e202e0ca6b67e9a7e526ad7792f77d63ce96a5c2383c8f72c80",
+  "source_sha256": {
+    "_adapt_image_util.py": "210dc4d752ceefcfc1d7b1f86663fd223f155fb37d36c0370685391d116a849c",
+    "_production_config.py": "2961ffabe42fc46b2257c59eba5080f5ac22e7b9e6af1f0511659d1f53c2b4e2",
+    "_profile_cli.py": "5f60d40237c3456e7088b288c78e2c41666ae719c661dade1e9f40681413ae7c",
+    "activate.sh": "f404d60a5aba2a16b0b4a98407c771f995abba77306bc2578d9dbe7ce69f801c",
+    "config/general.yaml": "a0f7c6787845e119cc27a85309f10872dfacfb0ea63929b616b66b6ba6f83dea",
+    "config/latent.yaml": "de197f4e5c5ab0d4d60d0d026dd34e46704e0597f4d683d317fd31e03ffcfcb0",
+    "dataset/imaging/hst/data.fits": "e4e833a28e9c6f6fb023cd85c0d3dde74068720256bc77a240633500e5b04fac",
+    "dataset/imaging/hst/lensed_source.fits": "091c90523d3c404170f1846725a66dabd7d999ecd5bae26b5e40205c694f00fb",
+    "dataset/imaging/hst/noise_map.fits": "315c6266a0acd3ac9c8da82fcd2b45a08697362481fd7a35072bab1658530ba3",
+    "dataset/imaging/hst/positions.json": "c18b7a596ba9db0acb1986939082026fb5d79df5e6ce413ada6989add47dff16",
+    "dataset/imaging/hst/psf.fits": "8389ba0e8bf4a09b4a561cfc246181a2fb944ed396754cd0ff76fdd22910d303",
+    "dataset/imaging/hst/tracer.json": "2f02fa9f0e24edbb63ee27f5d39146157f26da72e29b6ca2e5ce40db8da02517",
+    "hpc/batch_cpu/submit_breakdown_imaging_fixed_light_numba_scaling_delaunay_ral_hst_fp64": "b28aa0f9e0b973eeb5c32196efc289db6b5e4685e96e8665ee40e3e66b00857c",
+    "instruments/__init__.py": "bcaf074e6271ec42b7d3747649bcd10797aea28a382bf042da15132ffa1179b9",
+    "instruments/imaging.py": "f37153dbe4d597029c430b3785d150dafc0b2a43c84edae3568fa9296d5c8927",
+    "instruments/interferometer.py": "f05c65566fa59ca64fd6e25e990b98350d3c02b6ce727355dd04bd3c78f5568c",
+    "results/breakdown/imaging/fixed_light_draws_delaunay_hpc_a100_fp64_fixed_light_draws.json": "7d10341d96302c187600a5f3201f76847594bb6808b76d651c483dd4a42e854f",
+    "ruff.toml": "cb0f819e088011949e01088be7681bfe46372b3d7b9298ddb7dd597ecafca473",
+    "scripts/imaging/likelihood_breakdown/fixed_light_numba_draws.py": "13a1dc57b4162f4edcaffbf04315390eaf4a8bd4b141d4b4d9a5221cbdc28978",
+    "scripts/imaging/likelihood_breakdown/fixed_light_numba_scaling.py": "7e2a073c274f86929bf2b72f8349facb08c2ad9835059f35fff8ba6cd2cefbfe",
+    "scripts/misc/likelihood_breakdown/__init__.py": "437ed73a42c85680de2e75a35cffef319cc9205f957de3562621d86db6350e28",
+    "scripts/misc/likelihood_breakdown/active_set_steps.py": "bbcb3816825dcebd85d40d593494b6356682fcc8e59864d79bad85ec486f6be9",
+    "scripts/misc/likelihood_breakdown/call_accounting.py": "da90c6722ce50ce8fdb5483e94d1e2c314d2fc00cef3a4758c4adf8267d48d23",
+    "scripts/misc/likelihood_breakdown/fixed_light_cpu_common.py": "7b69000262f0187eadc7a857cae7f6fa40e2f1c59f8bea33865279c6753c31ed",
+    "scripts/misc/likelihood_breakdown/fixed_light_cpu_kernels.py": "754989f65e1f0bed49f9b0f2b0a3f647964d30291472c3d0a69e07ed5bfdbd02",
+    "scripts/misc/likelihood_breakdown/fixed_light_draws_steps.py": "94b822bd8b0e9017b5181ba1158034d565783772795706b40765e2a33fa82bd2",
+    "scripts/misc/likelihood_breakdown/fixed_light_numba_draws_steps.py": "f8d7fde9fc610f3acf2fba1c070e32e50394b7dad0bb157a05eadd96d84b3d3b",
+    "scripts/misc/likelihood_breakdown/fixed_light_numba_memo_policy_steps.py": "7a5e8daf329494e9db7f54e7d6c2aa0ff20e5495bd2cf69d5d070ee41ebcd178",
+    "scripts/misc/likelihood_breakdown/fixed_light_numba_scaling_steps.py": "bea1a5543feb8ab3f29a5f6c545d6fad676a82d66da9a215b38aae4823897ff7",
+    "scripts/misc/likelihood_breakdown/fixed_light_numpy_kernels.py": "0b5241e208d37bf9a5bf7d4ef498033d2d4511570bd73ab74b166c8d5e0338d0",
+    "scripts/misc/likelihood_breakdown/fixed_light_numpy_solvers.py": "267b792b0e7c7422dd17be26875279ee3b6016896760cd4b10f77a6fb80bccad",
+    "scripts/misc/likelihood_breakdown/fixed_light_probe_cpu.py": "3729224be17b59ff4c90c4142c6312671e66986ae7b42d0457b94735d08d218a",
+    "scripts/misc/likelihood_breakdown/fixed_light_scaling_table.py": "5b47aff3925c5fb2934b7dab376c147b4479066fc06dfc9950e93cf27ad698e6",
+    "scripts/misc/likelihood_breakdown/fixed_light_system.py": "f4d9c07046aa40d54c99a4ac4584b467d00481b5afd7a48be5d2060a44ef953a",
+    "scripts/misc/likelihood_breakdown/library_solver_injection.py": "f2b2d7d611d807239ca7c01488e220a32e45f0e7ea7b9493e0f2409392630d9f",
+    "scripts/misc/likelihood_breakdown/matrix_free_steps.py": "41203565f0d43157c723356056a5b888a1ba028ab626fbbb951f871e1e6ace84",
+    "scripts/misc/likelihood_breakdown/reconstruction_steps.py": "b760b37f80cda2081e872274c0ae453d6f8a62f5499acff2ff0dffc8e6968b8c",
+    "scripts/misc/likelihood_breakdown/size_sweep_table.py": "efc91f7081ec6a2a523701354c2ab99c8adfa62b67f6054d16b79a22a3729080",
+    "scripts/misc/likelihood_breakdown/sparse_steps.py": "78639f361b679b4b113597f8e6d57c7290cbd2988f36bbdd7cbeaca8a3a6c22f",
+    "scripts/misc/likelihood_breakdown/timing.py": "199ac31f29707ef96a9467d7af93dde193a38c71c332655cab4005cda306ccf1",
+    "scripts/misc/likelihood_breakdown/xla_attribution.py": "5ae74678e3441fb3762a74452f083a61bc7c254c9a147fac48e8f523a367d275",
+    "scripts/misc/simulators/cluster.py": "34dce2637d1138ee5d373174c3b1b3392b7ffb6e457613c1434bddfdb6db2d8e",
+    "scripts/misc/simulators/group.py": "c59e9456d46d315cfa3b9cd96cbd864b2c5cc642747629eba4ca4144cee901d9",
+    "scripts/misc/simulators/group4_mge.py": "81d6b0f105b93e357161acf2fd5539bc8c3700d1cf39762b75c20d9051836771",
+    "scripts/misc/simulators/imaging.py": "fa2c6238067859a4e008254ed1c13ae0f11e88d160cdbc95439d159b4cbde05e",
+    "scripts/misc/simulators/interferometer.py": "7220cb44ab7519ea1ae47fc08e2d4cd8fcc2ada42c795fdd788ad7b56124945a",
+    "scripts/misc/simulators/multi.py": "ed1b8564029b93d6c59b75864153e8acab822635e4ed9e1de115d503265a0a21",
+    "scripts/misc/simulators/point_source.py": "14d9843d1a992ec3c5319b7c11850ca481d4ab6add1a546eea50b7b33d4efcd1"
+  },
+  "study": "fixed-light-numba-s6",
+  "source_snapshot": "fixed-light-numba-s6-run",
+  "source_hashes_verified_before_after": true,
+  "libraries_unchanged_and_tracked_clean_after": {
+    "PyAutoArray": "192d4b70215830ad3ad3c8c83550e477bd674b72",
+    "PyAutoFit": "7c0e79aab79bb7a238d0654c40a883eff0333ec3",
+    "PyAutoGalaxy": "90e757d336e62b75790befacc77e2d6dde460879",
+    "PyAutoLens": "478213e787781517113e96f80013270df482f665",
+    "PyAutoNerves": "8eca4b3e8cdf72ed4c13850ed5b333ec7306524d"
+  },
+  "jobs": [
+    {
+      "JobID": "343430_0",
+      "State": "COMPLETED",
+      "ExitCode": "0:0",
+      "Elapsed": "00:03:22",
+      "MaxRSS": ""
+    },
+    {
+      "JobID": "343430_0.batch",
+      "State": "COMPLETED",
+      "ExitCode": "0:0",
+      "Elapsed": "00:03:22",
+      "MaxRSS": "2227924K"
+    },
+    {
+      "JobID": "343445_1",
+      "State": "COMPLETED",
+      "ExitCode": "0:0",
+      "Elapsed": "00:04:19",
+      "MaxRSS": ""
+    },
+    {
+      "JobID": "343445_1.batch",
+      "State": "COMPLETED",
+      "ExitCode": "0:0",
+      "Elapsed": "00:04:19",
+      "MaxRSS": "2345752K"
+    },
+    {
+      "JobID": "343445_2",
+      "State": "COMPLETED",
+      "ExitCode": "0:0",
+      "Elapsed": "00:06:53",
+      "MaxRSS": ""
+    },
+    {
+      "JobID": "343445_2.batch",
+      "State": "COMPLETED",
+      "ExitCode": "0:0",
+      "Elapsed": "00:06:53",
+      "MaxRSS": "2319256K"
+    },
+    {
+      "JobID": "343445_3",
+      "State": "COMPLETED",
+      "ExitCode": "0:0",
+      "Elapsed": "00:17:00",
+      "MaxRSS": ""
+    },
+    {
+      "JobID": "343445_3.batch",
+      "State": "COMPLETED",
+      "ExitCode": "0:0",
+      "Elapsed": "00:17:00",
+      "MaxRSS": "3951556K"
+    },
+    {
+      "JobID": "343445_4",
+      "State": "COMPLETED",
+      "ExitCode": "0:0",
+      "Elapsed": "00:42:21",
+      "MaxRSS": ""
+    },
+    {
+      "JobID": "343445_4.batch",
+      "State": "COMPLETED",
+      "ExitCode": "0:0",
+      "Elapsed": "00:42:21",
+      "MaxRSS": "5264328K"
+    }
+  ],
+  "hardware": {
+    "node": "euclid-ral-gpu-1",
+    "cpu": "AMD EPYC 7702 64-Core Processor",
+    "online_cpus": 124,
+    "cpus_per_task": 1,
+    "memory_requested_gib": 64,
+    "gpus_allocated": 0
+  },
+  "formatting": {
+    "fixed_light_numba_scaling_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s6_n1000.json": {
+      "raw_sha256": "5ec24b72b8057ac4947b56b69c4511a899d552a2cf0a2ba307e9f4e67b8cee8c",
+      "formatted_sha256": "7ffcb7f963e489dd537b1bd69f9561c2eba7140957442c5eca17627e1bfb6799",
+      "parsed_json_equal": true,
+      "raw_bytes": 2679794,
+      "formatted_bytes": 795594
+    },
+    "fixed_light_numba_scaling_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s6_n1500.json": {
+      "raw_sha256": "35088032fd15d1e24fc9559aead913a61fa2df1019a5fd720e257f811928ad0e",
+      "formatted_sha256": "e2d13b650dc5602ef482976d46276d072a327ebb8ef6f914ea9cb17f07a1520c",
+      "parsed_json_equal": true,
+      "raw_bytes": 4076302,
+      "formatted_bytes": 1166066
+    },
+    "fixed_light_numba_scaling_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s6_n2500.json": {
+      "raw_sha256": "1032121ba3ecfca5efde6efed7799d9a33576ecffb9cdf8bda0c41f3bce20cce",
+      "formatted_sha256": "485ce2fab2c7ddb7d82132f456e021fbb087e7f4d66c7671baaf3b4772d8921c",
+      "parsed_json_equal": true,
+      "raw_bytes": 6900496,
+      "formatted_bytes": 1918124
+    },
+    "fixed_light_numba_scaling_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s6_n500.json": {
+      "raw_sha256": "880c6aa98c38b5c2a9b7939cc665bd2bcc4246432351adc68f377ddf3354181f",
+      "formatted_sha256": "375ab7782e8e574b3e6859a708b3ba1f4d0c44db136d8fdbc4523864ddf8a11c",
+      "parsed_json_equal": true,
+      "raw_bytes": 1396153,
+      "formatted_bytes": 497069
+    },
+    "fixed_light_numba_scaling_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s6_n4000.json": {
+      "raw_sha256": "9d96bf29bbe3709833a3f1122d4ee1dd43ef803cd7915a92ce09288fa18b775b",
+      "formatted_sha256": "7ff2049e6220ed196a3d0e3976411d6d3df68e22ff651d98f51b81ff9dc57512",
+      "parsed_json_equal": true,
+      "raw_bytes": 11210099,
+      "formatted_bytes": 3065535
+    }
+  },
+  "artifact_sha256": {
+    "fixed_light_numba_scaling_components_hpc_ral_cpu_fp64_fixed_light_numba_s6.png": "f71b1d6862e2fbcdf01bf551464f12e53cde13198b7c43abe6f8e4348cc6dca7",
+    "fixed_light_numba_scaling_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s6_n1000.declaration.json": "8b88effe935e7ba7e27dd0ceefb0f978f58827330ca20f38d69034e00022a613",
+    "fixed_light_numba_scaling_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s6_n1000.json": "7ffcb7f963e489dd537b1bd69f9561c2eba7140957442c5eca17627e1bfb6799",
+    "fixed_light_numba_scaling_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s6_n1000.png": "568d4b24b95fd8648f12a5a799b8bcb5835a968117563d13f70589b9e20246a0",
+    "fixed_light_numba_scaling_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s6_n1500.declaration.json": "8b88effe935e7ba7e27dd0ceefb0f978f58827330ca20f38d69034e00022a613",
+    "fixed_light_numba_scaling_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s6_n1500.json": "e2d13b650dc5602ef482976d46276d072a327ebb8ef6f914ea9cb17f07a1520c",
+    "fixed_light_numba_scaling_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s6_n1500.png": "1d3d19b0e9d17880a308491c7b1bd86811ce177d89bf1918a8350b1d58c8da17",
+    "fixed_light_numba_scaling_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s6_n2500.declaration.json": "8b88effe935e7ba7e27dd0ceefb0f978f58827330ca20f38d69034e00022a613",
+    "fixed_light_numba_scaling_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s6_n2500.json": "485ce2fab2c7ddb7d82132f456e021fbb087e7f4d66c7671baaf3b4772d8921c",
+    "fixed_light_numba_scaling_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s6_n2500.png": "d87e23d43be43a5e0198b2efefa9e23084a9beaecb4c3a6c58042d55d64b3a2e",
+    "fixed_light_numba_scaling_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s6_n4000.declaration.json": "8b88effe935e7ba7e27dd0ceefb0f978f58827330ca20f38d69034e00022a613",
+    "fixed_light_numba_scaling_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s6_n4000.json": "7ff2049e6220ed196a3d0e3976411d6d3df68e22ff651d98f51b81ff9dc57512",
+    "fixed_light_numba_scaling_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s6_n4000.png": "405fb40531769155cd31ec6e77e652bc018b3447aae83b0408b29841c5fdb890",
+    "fixed_light_numba_scaling_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s6_n500.declaration.json": "8b88effe935e7ba7e27dd0ceefb0f978f58827330ca20f38d69034e00022a613",
+    "fixed_light_numba_scaling_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s6_n500.json": "375ab7782e8e574b3e6859a708b3ba1f4d0c44db136d8fdbc4523864ddf8a11c",
+    "fixed_light_numba_scaling_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s6_n500.png": "50edf6e3e38e54c946ada5b0c7d1d5d71b26d4e97ef95ba4f06d38c2529d3461",
+    "fixed_light_numba_scaling_summary_hpc_ral_cpu_fp64_fixed_light_numba_s6.json": "ef8d670582d37b31ca128fe09954efb17fbc251093d8d4e85bcf46f01045f601",
+    "fixed_light_numba_scaling_summary_hpc_ral_cpu_fp64_fixed_light_numba_s6.png": "67a6619669dabc348663436b98e90b7d9e8630fad4e421bc7cbda8f06d77b0cd"
+  }
+}

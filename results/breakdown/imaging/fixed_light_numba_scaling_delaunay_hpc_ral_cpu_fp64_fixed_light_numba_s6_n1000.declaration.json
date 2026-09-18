@@ -1,0 +1,279 @@
+{
+  "seed": 601,
+  "requested_pixels": [
+    500,
+    1000,
+    1500,
+    2500,
+    4000
+  ],
+  "draws_per_sequence": 8,
+  "groups": {
+    "nearby": [
+      {
+        "name": "seed601_nearby_00",
+        "kind": "nearby",
+        "seed": 601,
+        "index": 0,
+        "offsets": {
+          "einstein_radius": 0.002003327655375178,
+          "ell_comps_0": -2.2430929730268275e-05,
+          "ell_comps_1": 0.0002920255620549388,
+          "centre_0": 0.0001001594308098274,
+          "centre_1": -1.1455384476794531e-05
+        },
+        "mass_cls": "Isothermal",
+        "sigma_scale": 0.05,
+        "clipping": false
+      },
+      {
+        "name": "seed601_nearby_01",
+        "kind": "nearby",
+        "seed": 601,
+        "index": 1,
+        "offsets": {
+          "einstein_radius": -0.0019971962435398538,
+          "ell_comps_0": 0.0005704167831111372,
+          "ell_comps_1": 0.0005264419348741188,
+          "centre_0": -7.063966159384373e-05,
+          "centre_1": -0.0002057616789930252
+        },
+        "mass_cls": "Isothermal",
+        "sigma_scale": 0.05,
+        "clipping": false
+      },
+      {
+        "name": "seed601_nearby_02",
+        "kind": "nearby",
+        "seed": 601,
+        "index": 2,
+        "offsets": {
+          "einstein_radius": 0.001628741062839246,
+          "ell_comps_0": 0.0013654886257070812,
+          "ell_comps_1": 0.0005648335773197299,
+          "centre_0": 1.2647717853292301e-05,
+          "centre_1": -0.0001023477928383287
+        },
+        "mass_cls": "Isothermal",
+        "sigma_scale": 0.05,
+        "clipping": false
+      },
+      {
+        "name": "seed601_nearby_03",
+        "kind": "nearby",
+        "seed": 601,
+        "index": 3,
+        "offsets": {
+          "einstein_radius": -0.0005756039807572697,
+          "ell_comps_0": 0.0011838652912710777,
+          "ell_comps_1": 0.00046856986123673395,
+          "centre_0": 0.00021471345059714987,
+          "centre_1": -0.00043547324967062805
+        },
+        "mass_cls": "Isothermal",
+        "sigma_scale": 0.05,
+        "clipping": false
+      },
+      {
+        "name": "seed601_nearby_04",
+        "kind": "nearby",
+        "seed": 601,
+        "index": 4,
+        "offsets": {
+          "einstein_radius": -0.0026180224870622293,
+          "ell_comps_0": 0.0012927206505562122,
+          "ell_comps_1": -7.552551111321377e-05,
+          "centre_0": 8.047841983475286e-05,
+          "centre_1": -0.0007132988033874281
+        },
+        "mass_cls": "Isothermal",
+        "sigma_scale": 0.05,
+        "clipping": false
+      },
+      {
+        "name": "seed601_nearby_05",
+        "kind": "nearby",
+        "seed": 601,
+        "index": 5,
+        "offsets": {
+          "einstein_radius": -0.0037510222989061044,
+          "ell_comps_0": 0.0014835837555523786,
+          "ell_comps_1": -0.0003755838396364556,
+          "centre_0": 2.991552790250614e-05,
+          "centre_1": -0.0005515312598819486
+        },
+        "mass_cls": "Isothermal",
+        "sigma_scale": 0.05,
+        "clipping": false
+      },
+      {
+        "name": "seed601_nearby_06",
+        "kind": "nearby",
+        "seed": 601,
+        "index": 6,
+        "offsets": {
+          "einstein_radius": -0.004319538221091874,
+          "ell_comps_0": 0.0004505205982723551,
+          "ell_comps_1": 0.0007268426161608092,
+          "centre_0": 0.00017096385933606183,
+          "centre_1": -0.0006405591080112248
+        },
+        "mass_cls": "Isothermal",
+        "sigma_scale": 0.05,
+        "clipping": false
+      },
+      {
+        "name": "seed601_nearby_07",
+        "kind": "nearby",
+        "seed": 601,
+        "index": 7,
+        "offsets": {
+          "einstein_radius": -0.0035071750156503304,
+          "ell_comps_0": 0.0003295806188516198,
+          "ell_comps_1": 0.0006302150133377039,
+          "centre_0": 0.000546320091500037,
+          "centre_1": -0.0006986292228264794
+        },
+        "mass_cls": "Isothermal",
+        "sigma_scale": 0.05,
+        "clipping": false
+      }
+    ],
+    "broad": [
+      {
+        "name": "seed601_broad_00",
+        "kind": "broad",
+        "seed": 601,
+        "index": 0,
+        "offsets": {
+          "einstein_radius": 0.20033276553751772,
+          "ell_comps_0": -0.0022430929730268274,
+          "ell_comps_1": 0.02920255620549388,
+          "centre_0": 0.01001594308098274,
+          "centre_1": -0.001145538447679453
+        },
+        "mass_cls": "Isothermal",
+        "sigma_scale": 5.0,
+        "clipping": false
+      },
+      {
+        "name": "seed601_broad_01",
+        "kind": "broad",
+        "seed": 601,
+        "index": 1,
+        "offsets": {
+          "einstein_radius": -0.4000523898915031,
+          "ell_comps_0": 0.05928477128414055,
+          "ell_comps_1": 0.02344163728191799,
+          "centre_0": -0.017079909240367116,
+          "centre_1": -0.019430629451623067
+        },
+        "mass_cls": "Isothermal",
+        "sigma_scale": 5.0,
+        "clipping": false
+      },
+      {
+        "name": "seed601_broad_02",
+        "kind": "broad",
+        "seed": 601,
+        "index": 2,
+        "offsets": {
+          "einstein_radius": 0.3625937306379099,
+          "ell_comps_0": 0.07950718425959441,
+          "ell_comps_1": 0.003839164244561122,
+          "centre_0": 0.008328737944713603,
+          "centre_1": 0.01034138861546965
+        },
+        "mass_cls": "Isothermal",
+        "sigma_scale": 5.0,
+        "clipping": false
+      },
+      {
+        "name": "seed601_broad_03",
+        "kind": "broad",
+        "seed": 601,
+        "index": 3,
+        "offsets": {
+          "einstein_radius": -0.22043450435965153,
+          "ell_comps_0": -0.018162333443600354,
+          "ell_comps_1": -0.0096263716082996,
+          "centre_0": 0.02020657327438576,
+          "centre_1": -0.03331254568322994
+        },
+        "mass_cls": "Isothermal",
+        "sigma_scale": 5.0,
+        "clipping": false
+      },
+      {
+        "name": "seed601_broad_04",
+        "kind": "broad",
+        "seed": 601,
+        "index": 4,
+        "offsets": {
+          "einstein_radius": -0.20424185063049594,
+          "ell_comps_0": 0.010885535928513462,
+          "ell_comps_1": -0.05440953723499478,
+          "centre_0": -0.013423503076239702,
+          "centre_1": -0.027782555371680007
+        },
+        "mass_cls": "Isothermal",
+        "sigma_scale": 5.0,
+        "clipping": false
+      },
+      {
+        "name": "seed601_broad_05",
+        "kind": "broad",
+        "seed": 601,
+        "index": 5,
+        "offsets": {
+          "einstein_radius": -0.11329998118438749,
+          "ell_comps_0": 0.01908631049961665,
+          "ell_comps_1": -0.030005832852324183,
+          "centre_0": -0.005056289193224672,
+          "centre_1": 0.01617675435054795
+        },
+        "mass_cls": "Isothermal",
+        "sigma_scale": 5.0,
+        "clipping": false
+      },
+      {
+        "name": "seed601_broad_06",
+        "kind": "broad",
+        "seed": 601,
+        "index": 6,
+        "offsets": {
+          "einstein_radius": -0.05685159221857699,
+          "ell_comps_0": -0.10330631572800236,
+          "ell_comps_1": 0.11024264557972648,
+          "centre_0": 0.01410483314335557,
+          "centre_1": -0.008902784812927625
+        },
+        "mass_cls": "Isothermal",
+        "sigma_scale": 5.0,
+        "clipping": false
+      },
+      {
+        "name": "seed601_broad_07",
+        "kind": "broad",
+        "seed": 601,
+        "index": 7,
+        "offsets": {
+          "einstein_radius": 0.08123632054415439,
+          "ell_comps_0": -0.012093997942073527,
+          "ell_comps_1": -0.009662760282310525,
+          "centre_0": 0.03753562321639753,
+          "centre_1": -0.005807011481525451
+        },
+        "mass_cls": "Isothermal",
+        "sigma_scale": 5.0,
+        "clipping": false
+      }
+    ]
+  },
+  "nearby_sigma": 0.05,
+  "broad_sigma": 5.0,
+  "timing": "six counterbalanced fresh-cache traversals per lane/sequence",
+  "precision": "fp64",
+  "formalism": "sparse_numba",
+  "threads": 1
+}

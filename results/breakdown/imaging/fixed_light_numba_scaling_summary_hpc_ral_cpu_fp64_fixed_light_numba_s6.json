@@ -1,0 +1,236 @@
+{
+  "expected_pixels": [
+    500,
+    1000,
+    1500,
+    2500,
+    4000
+  ],
+  "lanes": {
+    "nearby/cold": {
+      "cells": [
+        {
+          "status": "measured",
+          "source_pixels": 500,
+          "total_ms": 118.56162187499999
+        },
+        {
+          "status": "measured",
+          "source_pixels": 1000,
+          "total_ms": 168.317658625
+        },
+        {
+          "status": "measured",
+          "source_pixels": 1500,
+          "total_ms": 274.939975
+        },
+        {
+          "status": "measured",
+          "source_pixels": 2500,
+          "total_ms": 709.8397942500001
+        },
+        {
+          "status": "measured",
+          "source_pixels": 4000,
+          "total_ms": 2137.8654466875
+        }
+      ],
+      "status_counts": {
+        "measured": 5
+      },
+      "measured_points": 5,
+      "log_log_exponent": 1.3966724707988336,
+      "r_squared": 0.9204035325438079
+    },
+    "nearby/memo": {
+      "cells": [
+        {
+          "status": "measured",
+          "source_pixels": 500,
+          "total_ms": 117.082339375
+        },
+        {
+          "status": "measured",
+          "source_pixels": 1000,
+          "total_ms": 150.8029108125
+        },
+        {
+          "status": "measured",
+          "source_pixels": 1500,
+          "total_ms": 237.3575795625
+        },
+        {
+          "status": "measured",
+          "source_pixels": 2500,
+          "total_ms": 595.1858173749999
+        },
+        {
+          "status": "measured",
+          "source_pixels": 4000,
+          "total_ms": 1288.8755740000001
+        }
+      ],
+      "status_counts": {
+        "measured": 5
+      },
+      "measured_points": 5,
+      "log_log_exponent": 1.1922445508215305,
+      "r_squared": 0.923773701086329
+    },
+    "broad/cold": {
+      "cells": [
+        {
+          "status": "measured",
+          "source_pixels": 500,
+          "total_ms": 127.461117
+        },
+        {
+          "status": "measured",
+          "source_pixels": 1000,
+          "total_ms": 222.34215125
+        },
+        {
+          "status": "measured",
+          "source_pixels": 1500,
+          "total_ms": 435.781520125
+        },
+        {
+          "status": "measured",
+          "source_pixels": 2500,
+          "total_ms": 1428.8719797499998
+        },
+        {
+          "status": "measured",
+          "source_pixels": 4000,
+          "total_ms": 4312.031273250001
+        }
+      ],
+      "status_counts": {
+        "measured": 5
+      },
+      "measured_points": 5,
+      "log_log_exponent": 1.727645374497641,
+      "r_squared": 0.952432997572036
+    },
+    "broad/memo": {
+      "cells": [
+        {
+          "status": "measured",
+          "source_pixels": 500,
+          "total_ms": 143.5951204375
+        },
+        {
+          "status": "measured",
+          "source_pixels": 1000,
+          "total_ms": 337.7483384375
+        },
+        {
+          "status": "measured",
+          "source_pixels": 1500,
+          "total_ms": 989.7075977500001
+        },
+        {
+          "status": "measured",
+          "source_pixels": 2500,
+          "total_ms": 3819.6749555
+        },
+        {
+          "status": "measured",
+          "source_pixels": 4000,
+          "total_ms": 10782.5959650625
+        }
+      ],
+      "status_counts": {
+        "measured": 5
+      },
+      "measured_points": 5,
+      "log_log_exponent": 2.155074037676876,
+      "r_squared": 0.9793703152190499
+    }
+  },
+  "input_sha256": {
+    "fixed_light_numba_scaling_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s6_n500.json": "375ab7782e8e574b3e6859a708b3ba1f4d0c44db136d8fdbc4523864ddf8a11c",
+    "fixed_light_numba_scaling_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s6_n1000.json": "7ffcb7f963e489dd537b1bd69f9561c2eba7140957442c5eca17627e1bfb6799",
+    "fixed_light_numba_scaling_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s6_n1500.json": "e2d13b650dc5602ef482976d46276d072a327ebb8ef6f914ea9cb17f07a1520c",
+    "fixed_light_numba_scaling_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s6_n2500.json": "485ce2fab2c7ddb7d82132f456e021fbb087e7f4d66c7671baaf3b4772d8921c",
+    "fixed_light_numba_scaling_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s6_n4000.json": "7ff2049e6220ed196a3d0e3976411d6d3df68e22ff651d98f51b81ff9dc57512"
+  },
+  "solve_curvature_crossover_brackets": {
+    "nearby/cold": [
+      {
+        "requested_pixels": [
+          1000,
+          1500
+        ],
+        "solve_minus_curvature_ms": [
+          -42.73314500000001,
+          28.117765562499997
+        ]
+      }
+    ],
+    "nearby/memo": [
+      {
+        "requested_pixels": [
+          1500,
+          2500
+        ],
+        "solve_minus_curvature_ms": [
+          -8.396719562499996,
+          239.1424183125
+        ]
+      }
+    ],
+    "broad/cold": [
+      {
+        "requested_pixels": [
+          500,
+          1000
+        ],
+        "solve_minus_curvature_ms": [
+          -59.8627843125,
+          6.403335375000012
+        ]
+      }
+    ],
+    "broad/memo": [
+      {
+        "requested_pixels": [
+          500,
+          1000
+        ],
+        "solve_minus_curvature_ms": [
+          -43.649711124999996,
+          122.2014806875
+        ]
+      }
+    ]
+  },
+  "crossover_scope": "Adjacent measured passing cells only; empty means no observed crossing, not no crossing exists.",
+  "memory": [
+    {
+      "requested_pixels": 500,
+      "peak_rss_kib": 2801512,
+      "status": "PASS"
+    },
+    {
+      "requested_pixels": 1000,
+      "peak_rss_kib": 3682120,
+      "status": "PASS"
+    },
+    {
+      "requested_pixels": 1500,
+      "peak_rss_kib": 4609356,
+      "status": "PASS"
+    },
+    {
+      "requested_pixels": 2500,
+      "peak_rss_kib": 6485508,
+      "status": "PASS"
+    },
+    {
+      "requested_pixels": 4000,
+      "peak_rss_kib": 9526500,
+      "status": "PASS"
+    }
+  ]
+}
