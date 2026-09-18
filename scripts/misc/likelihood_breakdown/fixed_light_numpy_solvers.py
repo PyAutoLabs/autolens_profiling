@@ -18,6 +18,13 @@ rather than guarded:
 - :func:`numpy_solver_injected` — the injection seam, with the ``xp`` branch
   inverted relative to ``certified_solver_injected``: a JAX call is delegated to
   the original untouched, a numpy call is dispatched to the candidate;
+- :func:`fnnls_kernel_injected` — the seam **one level below** that one, which
+  rebinds ``fnnls_cholesky`` itself rather than the entry point around it, so an
+  injected kernel still receives the library's memo seed and still publishes the
+  ``factor`` lever 3's log det reads (lever 4b, #276);
+- :func:`active_set_jaccard` / :func:`kkt_residuals` / :func:`evidence_delta` /
+  :func:`log_det_factor_check` — the metrics the lever 4b witness gates on, here
+  rather than in the cell so a test can import them without running a cell;
 - the row builders, which score every kernel against the library's own answer
   rather than leaving it as a bare millisecond.
 
@@ -65,11 +72,21 @@ from likelihood_breakdown.fixed_light_cpu_common import (
 )
 
 __all__ = [
+    "LIBRARY_FNNLS_KERNEL_DOTTED",
     "LIBRARY_POSITIVE_ONLY_DOTTED",
+    "WITNESS_EVIDENCE_RTOL",
+    "WITNESS_LOG_DET_ATOL",
+    "active_set_jaccard",
+    "evidence_delta",
     "factor_reuse_row",
+    "fnnls_cholesky_permuted",
+    "fnnls_kernel_injected",
+    "iteration_row",
+    "kkt_residuals",
     "library_cold_row",
     "library_nnls_solve",
     "library_reconstruction_positive_only",
+    "log_det_factor_check",
     "memo_warm_row",
     "nnls_factor_reuse",
     "numpy_solver_injected",
@@ -81,6 +98,26 @@ __all__ = [
 LIBRARY_POSITIVE_ONLY_DOTTED = (
     "autoarray.inversion.inversion.inversion_util.reconstruction_positive_only_from"
 )
+
+#: The dotted name :func:`fnnls_kernel_injected` rebinds — the NNLS kernel
+#: itself, one level below :data:`LIBRARY_POSITIVE_ONLY_DOTTED`. It is the
+#: ``fnnls`` module's attribute, because ``reconstruction_positive_only_from``
+#: imports the name inside its own body (``inversion_util.py:397``) and so
+#: resolves it from that module on every call.
+LIBRARY_FNNLS_KERNEL_DOTTED = "autoarray.util.fnnls.fnnls_cholesky"
+
+#: The lever 4b witness's W3 gate: Δ log evidence, relative. The phase's Witness
+#: pin, and the same number every other equivalence gate in this campaign uses.
+WITNESS_EVIDENCE_RTOL = 1.0e-9
+
+#: The lever 4b witness's W6 gate, in nats. ``log_det_from_passive_cholesky_from``
+#: agrees with a dense ``slogdet`` of the same matrix to <= 2e-12 nats — the
+#: original number from the issue. The full-size identity run exceeded it at
+#: floating-point roundoff; the approved gate also permits 32 scalar spacings
+#: and independently verifies the passive factor reconstruction (1e-12 relative).
+WITNESS_LOG_DET_ATOL = 2.0e-12
+WITNESS_LOG_DET_ULPS = 32
+WITNESS_FACTOR_RTOL = 1.0e-12
 
 #: ``fnnls.py:65`` — the library's own active-set tolerance, ``eps * n``.
 _EPSILON = 2.2204e-16
@@ -305,6 +342,165 @@ def nnls_factor_reuse(ZTZ, ZTx, *, stats: dict | None = None) -> np.ndarray:
     return d
 
 
+def fnnls_cholesky_permuted(
+    ZTZ,
+    ZTx,
+    P_initial=np.zeros(0, dtype=int),
+    stats: dict | None = None,
+    factor: dict | None = None,
+):
+    """Run the library FNNLS iteration after one passive-first permutation.
+
+    The symmetric gather is paid once.  Thereafter the initial passive block is
+    contiguous and every Cholesky insertion reads a row from the gathered
+    matrix.  Active-set choices retain NumPy's original-coordinate ``argmax``
+    tie rule, so the permutation does not deliberately change the algorithm.
+    """
+    ZTZ = np.asarray(ZTZ)
+    ZTx = np.asarray(ZTx)
+    P_initial = np.asarray(P_initial)
+
+    n = ZTZ.shape[0]
+    tolerance = _EPSILON * n
+    max_repetitions = 3
+
+    initial_mask = np.zeros(n, dtype=bool)
+    if P_initial.dtype == bool:
+        initial_mask[:] = P_initial
+        passive_original = np.where(P_initial)[0].astype(int)
+    else:
+        passive_original = P_initial.astype(int)
+        initial_mask[passive_original] = True
+
+    active_original = np.flatnonzero(~initial_mask)
+    perm = np.concatenate((passive_original, active_original))
+
+    # The sole full symmetric gather.  np.ix_ expresses the intended single
+    # n-by-n result directly; all later matrix access stays in this coordinate
+    # system.
+    ZTZp = ZTZ[np.ix_(perm, perm)]
+    ZTxp = ZTx[perm]
+
+    k_seed = passive_original.size
+    P = np.zeros(n, dtype=bool)
+    P[:k_seed] = True
+    P_inorder = np.arange(k_seed, dtype=int)
+
+    d = np.zeros(n)
+    w = ZTxp.copy()
+    s_chol = np.zeros(n)
+    U_buffer = np.zeros((n, n))
+    k_active = 0
+    loop_count = 0
+    loop_count2 = 0
+    no_update = 0
+
+    if k_seed:
+        U = scipy.linalg.cholesky(ZTZp[:k_seed, :k_seed], check_finite=False)
+        k_active = k_seed
+        U_buffer[:k_active, :k_active] = U
+        s_chol[P_inorder] = _cho_solve_buffer(U_buffer, k_active, ZTxp[P_inorder])
+
+        # A seed is not a feasible previous iterate.  Delete every non-positive
+        # member and re-solve until the reduced seed is feasible, exactly as the
+        # library kernel does before entering its outer loop.
+        while P_inorder.size and np.min(s_chol[P_inorder]) <= tolerance:
+            id_delete = np.where(s_chol[P_inorder] <= tolerance)[0]
+            k_active = choldeleteindexes_inplace(U_buffer, k_active, id_delete)
+            P[P_inorder[id_delete]] = False
+            P_inorder = np.delete(P_inorder, id_delete)
+            s_chol[~P] = 0.0
+            if P_inorder.size:
+                s_chol[P_inorder] = _cho_solve_buffer(U_buffer, k_active, ZTxp[P_inorder])
+            loop_count2 += 1
+            if loop_count2 > 10000:
+                raise RuntimeError
+
+        d = s_chol.copy()
+        w = ZTxp - ZTZp @ d
+
+    while (not np.all(P)) and np.max(w[~P]) > tolerance:
+        current_P = P.copy()
+
+        # np.argmax(w_original * ~P_original) selects the smallest original
+        # index on a tie.  A plain argmax in permuted coordinates would silently
+        # change that rule whenever ``perm`` is non-identity.
+        active_p = np.flatnonzero(~P)
+        max_w = np.max(w[active_p])
+        tied_p = active_p[w[active_p] == max_w]
+        idmax = int(tied_p[np.argmin(perm[tied_p])])
+        P_inorder = np.append(P_inorder, idmax)
+
+        if k_active == 0:
+            U = scipy.linalg.cholesky(
+                ZTZp[idmax : idmax + 1, idmax : idmax + 1],
+                check_finite=False,
+            )
+            k_active = 1
+            U_buffer[0, 0] = U[0, 0]
+        else:
+            k_active = cholinsertlast_inplace(U_buffer, k_active, ZTZp[idmax, P_inorder])
+
+        s_chol[P_inorder] = _cho_solve_buffer(U_buffer, k_active, ZTxp[P_inorder])
+        P[idmax] = True
+
+        while np.any(P) and np.min(s_chol[P]) <= tolerance:
+            s_chol, d, P, P_inorder, k_active = fix_constraint_cholesky(
+                ZTx=ZTxp,
+                s_chol=s_chol,
+                d=d,
+                P=P,
+                P_inorder=P_inorder,
+                U_buffer=U_buffer,
+                k_active=k_active,
+                tolerance=tolerance,
+            )
+            loop_count2 += 1
+            if loop_count2 > 10000:
+                raise RuntimeError
+
+        d = s_chol.copy()
+        w = ZTxp - ZTZp @ d
+        loop_count += 1
+        if loop_count > 10000:
+            raise RuntimeError
+
+        if np.all(current_P == P):
+            no_update += 1
+        else:
+            no_update = 0
+        if no_update >= max_repetitions:
+            break
+
+    if not np.all(np.isfinite(d)):
+        raise np.linalg.LinAlgError(
+            "fnnls_cholesky_permuted produced a non-finite solution "
+            f"({np.count_nonzero(~np.isfinite(d))} of {d.size} entries)."
+        )
+
+    passive_final_original = perm[P_inorder]
+    result = np.empty_like(d)
+    result[perm] = d
+
+    if stats is not None:
+        final_mask_original = np.zeros(n, dtype=bool)
+        final_mask_original[passive_final_original] = True
+        stats["outer_iterations"] = loop_count
+        stats["inner_iterations"] = loop_count2
+        stats["passive_set"] = passive_final_original.copy()
+        stats["n_passive"] = int(P_inorder.size)
+        stats["warm_start_errors"] = int(np.count_nonzero(initial_mask != final_mask_original))
+        stats["n_perm_gathers"] = 1
+
+    if factor is not None:
+        factor["U_buffer"] = U_buffer
+        factor["k_active"] = int(k_active)
+        factor["passive_set"] = passive_final_original.copy()
+        factor["matrix_shape"] = tuple(ZTZ.shape)
+
+    return result
+
+
 # ===================================================================
 # (b) The library's own paths, called as production calls them
 # ===================================================================
@@ -475,6 +671,119 @@ def numpy_solver_injected(solver, *, label: str):
                 f"it now; fix the nesting instead."
             )
         inversion_util.reconstruction_positive_only_from = original
+
+
+@contextlib.contextmanager
+def fnnls_kernel_injected(kernel, *, label: str):
+    """Rebind the NNLS **kernel** ``fnnls_cholesky`` itself to ``kernel``.
+
+    One level below :func:`numpy_solver_injected`, and for a reason that is the
+    whole design of lever 4b.
+
+    Why not the entry-point seam
+        ``numpy_solver_injected`` replaces
+        ``reconstruction_positive_only_from`` wholesale and calls its solver as
+        ``solver(ZTZ, ZTx, stats=...)``. Two things the library does are
+        therefore **not** done for the injected solver: the warm-start memo's
+        seed is never passed (production runs ``fnnls_cholesky(P_initial=entry
+        .passive_set)`` at ~2 outer iterations, so a kernel behind that seam
+        re-seeds from the dense sign and a ``b`` vs candidate delta measures the
+        seed rather than the kernel), and the ``factor`` out-dict is
+        ``clear()``-ed, so lever 3's ``log_det_from_passive_cholesky_from`` fast
+        path is declined and the route pays the dense log det instead. A
+        candidate whose win *is* the memo-seeded passive block cannot be
+        measured through it. It has to be a drop-in for ``fnnls_cholesky``.
+
+    What is rebound, and why that name
+        ``autoarray.util.fnnls.fnnls_cholesky`` — the module attribute, not a
+        name on ``inversion_util``. ``reconstruction_positive_only_from`` does
+        its ``from autoarray.util.fnnls import fnnls_cholesky`` **inside the
+        function body** (``inversion_util.py:397``), so the name is resolved
+        from the ``fnnls`` module on every call and rebinding it there is what
+        both of its call sites (``:424`` the memo-seeded attempt, ``:443`` the
+        dense-sign solve) actually see. Rebinding ``inversion_util
+        .fnnls_cholesky`` would create an attribute nothing reads. Note the
+        module-level ``fnnls_cholesky`` imported at the top of *this* module is
+        bound once at import and is deliberately unaffected: it stays the
+        genuine library kernel, which is what the witness's control pass and
+        :func:`library_nnls_solve` need.
+
+    ``kernel`` is called exactly as the library calls it —
+    ``kernel(ZTZ, ZTx, P_initial=..., stats=..., factor=...)`` — with the
+    library's own defaults, so a kernel that only forwards is transparent and
+    the memo seed and the factor out-dict reach it untouched.
+
+    Yields a mutable dict, ``{"calls": n, "label": label, "last_stats": dict |
+    None, "last_factor_keys": list | None}``. The counter exists to be
+    **asserted**: an injection that never fired would report the library
+    kernel's answer wearing the candidate's label. ``last_stats`` is the dict
+    the *library* handed down and the kernel filled, read after the call (the
+    library adds ``seed_source`` / ``warm_start_fallback`` to it afterwards, so
+    a caller must read it after the evaluation, not at the point the kernel
+    returns); ``last_factor_keys`` is what the kernel published into ``factor``,
+    the contract ``log_det_from_passive_cholesky_from`` reads.
+
+    Restoration is by identity, exactly as :func:`numpy_solver_injected` does
+    it. On exit the attribute must still be the wrapper this manager installed;
+    if something else has rebound it in the meantime the original is *not*
+    restored over the top — that is a bug in the caller's nesting, and silently
+    winning the race would hide it.
+
+    Install it **outside** ``call_accounting.install``
+        ``call_accounting.function_site("fnnls", fnnls_module, "fnnls_cholesky")``
+        rebinds this same attribute (``fixed_light_numba.py:1259``). Installed
+        outside, this manager is in place first and the accounting wrapper
+        closes over ``patched``, so the decomposition's ``solver.fnnls_cholesky``
+        site attributes the injected kernel; installed inside, ``uninstall()``
+        would restore the library kernel over the injection and the row would
+        measure the wrong thing. ``__wrapped__``, ``__name__`` and ``__doc__``
+        are carried over so a site that introspects the callable still resolves
+        it.
+    """
+    from autoarray.util import fnnls as fnnls_module
+
+    original = fnnls_module.fnnls_cholesky
+    counts: dict = {
+        "calls": 0,
+        "label": label,
+        "last_stats": None,
+        "last_factor_keys": None,
+    }
+
+    def patched(
+        ZTZ,
+        ZTx,
+        P_initial=np.zeros(0, dtype=int),
+        stats: dict | None = None,
+        factor: dict | None = None,
+    ):
+        counts["calls"] += 1
+        result = kernel(ZTZ, ZTx, P_initial=P_initial, stats=stats, factor=factor)
+        # After the call, never before: `fnnls_cholesky` publishes both dicts on
+        # a successful return only, and a call that raises must leave the
+        # previous call's record rather than a half-filled one.
+        counts["last_stats"] = stats
+        counts["last_factor_keys"] = None if factor is None else sorted(factor)
+        return result
+
+    patched.__wrapped__ = original
+    patched.__name__ = getattr(original, "__name__", "fnnls_cholesky")
+    patched.__doc__ = getattr(original, "__doc__", None)
+
+    fnnls_module.fnnls_cholesky = patched
+    try:
+        yield counts
+    finally:
+        current = fnnls_module.fnnls_cholesky
+        if current is not patched:
+            raise RuntimeError(
+                f"fnnls_kernel_injected({label!r}): "
+                f"{LIBRARY_FNNLS_KERNEL_DOTTED} was rebound by something else while "
+                f"the injection was open (found {current!r}, expected the injected "
+                f"wrapper). Restoring the original here would clobber whatever holds "
+                f"it now; fix the nesting instead."
+            )
+        fnnls_module.fnnls_cholesky = original
 
 
 # ===================================================================
@@ -765,3 +1074,248 @@ def memo_warm_row(
     row.update(scored_np(systems[0], x_full_warm, reference_log_evidence))
     row.update(_equivalence(x_full_warm, reference_x))
     return row
+
+
+# ===================================================================
+# (e) The lever 4b witness metrics
+# ===================================================================
+#
+# These four functions ARE the witness's gates. They live here rather than in
+# `scripts/imaging/likelihood_breakdown/fixed_light_numba_s4b_witness.py`
+# because that cell — like every cell in this repo — is a top-to-bottom script
+# with no `__main__` guard: importing it to test one metric would build an HST
+# Delaunay N=1500 system and run the whole witness. A metric that cannot be
+# tested on hand-built inputs is a metric nobody has checked, and the red
+# control in `scripts/misc/test/test_fixed_light_s4b.py` (a deliberately wrong
+# kernel that must FAIL W2 and W3) depends on calling them directly.
+
+
+def active_set_jaccard(passive_a, passive_b) -> dict:
+    """W2's metric: the Jaccard index of two solves' final passive sets.
+
+    ``|A ∩ B| / |A ∪ B|`` over the passive *indices*, order-insensitive — the
+    active-set solver appends and deletes, so ``stats["passive_set"]`` is in
+    insertion order and two solves that agree on the set can disagree on the
+    order. The order matters to the Cholesky factor (W6 guards that); it does
+    not matter to "did the two kernels land on the same active set", which is
+    what this measures.
+
+    Two empty sets are ``1.0`` (identical, vacuously), not ``0/0``.
+    """
+    set_a = {int(index) for index in np.asarray(passive_a, dtype=int).ravel()}
+    set_b = {int(index) for index in np.asarray(passive_b, dtype=int).ravel()}
+    union = set_a | set_b
+    intersection = set_a & set_b
+    return {
+        "jaccard": 1.0 if not union else len(intersection) / len(union),
+        "n_passive_a": len(set_a),
+        "n_passive_b": len(set_b),
+        "n_intersection": len(intersection),
+        "n_union": len(union),
+        "only_in_a": sorted(set_a - set_b),
+        "only_in_b": sorted(set_b - set_a),
+        "identical": set_a == set_b,
+    }
+
+
+def kkt_residuals(ZTZ, ZTx, x, passive_set) -> dict:
+    """The two numbers that say whether an NNLS answer is optimal.
+
+    With ``w = ZTx - ZTZ @ x`` and ``P`` the passive set, the KKT conditions of
+    ``min |Zs - x|^2  s.t.  s >= 0`` are ``w[~P] <= 0`` and ``x[P] > 0`` (the
+    library's own loop runs until ``max(w[~P]) <= eps * n``; ``fnnls.py:65``).
+    So ``max(w[~P])`` and ``min(x[P])`` are reported together: they are what
+    turns "the two kernels chose different active sets" into either "one of them
+    is wrong" or "both are optimal to the solver's tolerance and the difference
+    is a knife-edge index whose value is ~0".
+
+    That second reading is exactly the question W2 hands to the human, which is
+    why this is computed for **both** passes of every draw that disagrees rather
+    than only for the candidate.
+
+    ``max_w_active`` is ``None`` when the passive set is everything (no active
+    index to violate), ``min_x_passive`` is ``None`` when it is empty.
+    """
+    ZTZ = np.asarray(ZTZ, dtype=float)
+    ZTx = np.asarray(ZTx, dtype=float).ravel()
+    x = np.asarray(x, dtype=float).ravel()
+
+    n = x.size
+    mask = np.zeros(n, dtype=bool)
+    indices = np.asarray(passive_set, dtype=int).ravel()
+    if indices.size:
+        mask[indices] = True
+
+    w = ZTx - ZTZ @ x
+
+    return {
+        "max_w_active": None if bool(mask.all()) else float(np.max(w[~mask])),
+        "min_x_passive": None if not bool(mask.any()) else float(np.min(x[mask])),
+        "max_abs_w_passive": None if not bool(mask.any()) else float(np.max(np.abs(w[mask]))),
+        "solver_tolerance": float(_EPSILON * n),
+        "n": int(n),
+    }
+
+
+def evidence_delta(value, reference, *, rtol: float = WITNESS_EVIDENCE_RTOL) -> dict:
+    """W3's metric: Δ log evidence in nats, and relative, against the library.
+
+    Both are reported. Nats are the physical quantity a reader of this campaign
+    compares against a sampler's evidence differences; the relative number is
+    what the gate is written in, because the phase's Witness pin is relative.
+    """
+    value = float(value)
+    reference = float(reference)
+    delta = value - reference
+    relative = abs(delta) / max(abs(reference), 1e-300)
+    return {
+        "log_evidence": value,
+        "log_evidence_reference": reference,
+        "delta_nats": delta,
+        "relative_difference": relative,
+        "bit_identical": value == reference,
+        "rtol": rtol,
+        "within_rtol": bool(relative <= rtol),
+    }
+
+
+def log_det_factor_check(matrix, factor, *, atol: float = WITNESS_LOG_DET_ATOL) -> dict:
+    """W6's metric: the published ``factor`` really is a factor of ``matrix``.
+
+    ``log_det_from_passive_cholesky_from(matrix, **factor)`` against
+    ``np.linalg.slogdet(matrix)``. This is the contract lever 3 depends on: a
+    candidate kernel that returned the right reconstruction but published a
+    factor whose ``passive_set`` order did not match its ``U_buffer`` would
+    silently corrupt ``log det(F + λH)`` — the evidence term — while every
+    active-set and reconstruction check passed.
+
+    The four keys are checked for presence first, and reported, so a kernel that
+    publishes nothing fails with "no factor" rather than a ``TypeError``.
+    """
+    from autoarray.inversion.inversion import inversion_util
+
+    matrix = np.asarray(matrix, dtype=float)
+    expected_keys = ("U_buffer", "k_active", "passive_set", "matrix_shape")
+    keys = [] if factor is None else sorted(factor)
+    missing = [key for key in expected_keys if factor is None or key not in factor]
+
+    row = {
+        "factor_keys": keys,
+        "missing_keys": missing,
+        "expected_keys": list(expected_keys),
+        "atol_nats": atol,
+        "matrix_shape": list(matrix.shape),
+    }
+
+    if missing:
+        row.update(
+            {
+                "log_det_from_factor": None,
+                "log_det_slogdet": None,
+                "delta_nats": None,
+                "within_atol": False,
+                "error": f"factor is missing {missing}",
+            }
+        )
+        return row
+
+    row["k_active"] = int(factor["k_active"])
+    row["factor_matrix_shape"] = list(factor["matrix_shape"])
+    row["shape_agrees"] = tuple(factor["matrix_shape"]) == tuple(matrix.shape)
+    passive_set = np.asarray(factor["passive_set"], dtype=int).ravel()
+    U_buffer = np.asarray(factor["U_buffer"])
+    k_active = int(factor["k_active"])
+    structure_agrees = (
+        0 <= k_active <= matrix.shape[0]
+        and passive_set.size == k_active
+        and np.unique(passive_set).size == k_active
+        and np.all((0 <= passive_set) & (passive_set < matrix.shape[0]))
+        and U_buffer.ndim == 2
+        and U_buffer.shape[0] >= k_active
+        and U_buffer.shape[1] >= k_active
+    )
+    row["structure_agrees"] = bool(structure_agrees)
+    if not structure_agrees or not row["shape_agrees"]:
+        row.update(within_atol=False, error="invalid factor structure or matrix shape")
+        return row
+
+    # Approved 2026-09-18: the library identity itself differs from slogdet by
+    # 1.27e-11 nats at N=1500. Keep the original failure visible, allow only 32
+    # spacings of the scalar determinant, and independently verify the factor's
+    # matrix reconstruction so a determinant-preserving permutation cannot pass.
+    upper = np.triu(U_buffer[:k_active, :k_active])
+    passive_matrix = matrix[np.ix_(passive_set, passive_set)]
+    residual = (
+        float(np.max(np.abs(upper.T @ upper - passive_matrix)))
+        / max(float(np.max(np.abs(passive_matrix))), np.finfo(float).tiny)
+        if k_active
+        else 0.0
+    )
+    row["factor_relative_residual"] = residual
+    row["factor_rtol"] = WITNESS_FACTOR_RTOL
+
+    try:
+        sign, slogdet = np.linalg.slogdet(matrix)
+        from_factor = float(
+            inversion_util.log_det_from_passive_cholesky_from(
+                matrix=matrix,
+                U_buffer=U_buffer,
+                k_active=k_active,
+                passive_set=passive_set,
+            )
+        )
+    except (IndexError, TypeError, ValueError, np.linalg.LinAlgError) as error:
+        row.update(
+            {
+                "log_det_from_factor": None,
+                "log_det_slogdet": None,
+                "delta_nats": None,
+                "within_atol": False,
+                "error": f"invalid factor: {type(error).__name__}: {error}",
+            }
+        )
+        return row
+    delta = from_factor - float(slogdet)
+    effective_atol = max(atol, WITNESS_LOG_DET_ULPS * float(np.spacing(abs(slogdet))))
+
+    row.update(
+        {
+            "log_det_from_factor": from_factor,
+            "log_det_slogdet": float(slogdet),
+            "slogdet_sign": float(sign),
+            "delta_nats": delta,
+            "original_within_atol": bool(abs(delta) <= atol),
+            "effective_atol_nats": effective_atol,
+            "allowed_spacings": WITNESS_LOG_DET_ULPS,
+            "within_atol": bool(
+                np.isfinite(from_factor)
+                and np.isfinite(slogdet)
+                and abs(delta) <= effective_atol
+                and np.isfinite(residual)
+                and residual <= WITNESS_FACTOR_RTOL
+                and row["shape_agrees"]
+                and structure_agrees
+                and sign > 0
+            ),
+        }
+    )
+    return row
+
+
+def iteration_row(stats: dict | None) -> dict:
+    """W5's RECORDED row: what one solve's ``stats`` says it cost.
+
+    The library's five keys plus the two ``reconstruction_positive_only_from``
+    adds afterwards. ``None`` where a key is absent rather than a ``KeyError``:
+    W5 is a record, and a kernel that publishes fewer keys is a fact about that
+    kernel to be read in the table, not a crash.
+    """
+    stats = stats or {}
+    return {
+        "outer_iterations": stats.get("outer_iterations"),
+        "inner_iterations": stats.get("inner_iterations"),
+        "n_passive": stats.get("n_passive"),
+        "warm_start_errors": stats.get("warm_start_errors"),
+        "seed_source": stats.get("seed_source"),
+        "warm_start_fallback": stats.get("warm_start_fallback"),
+    }

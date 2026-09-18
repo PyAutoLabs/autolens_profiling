@@ -78,6 +78,7 @@ Route          What runs                                            Kernel repla
                regular profiles and subtracted. **The reference.**
 ``c``          S3 with ``use_positive_only_solver=False``           none
 ``d_np``       S3 with the factor-reuse NNLS injected               ``nnls_factor_reuse``
+``d_perm``     S3 with the permute-active-last fnnls injected       ``fnnls_cholesky_permuted``
 ``b_direct``   S3 with the library's DIRECT curvature kernel        ``..._direct_from``
 ``b_touched``  S3 with the touched-index two-stage kernel           ``..._touched_from``
 =============  ===================================================  =====================
@@ -251,7 +252,7 @@ _cli = _parse_profile_cli()
 #: point — a numpy row, not a JAX one. ``b_direct`` and ``b_touched`` sit next to
 #: ``b`` because they are route ``b`` with one curvature kernel swapped, and the
 #: three of them read as one A/B table.
-ALL_ROUTE_KEYS = ("a", "b", "b_direct", "b_touched", "c", "d_np")
+ALL_ROUTE_KEYS = ("a", "b", "b_direct", "b_touched", "c", "d_np", "d_perm")
 
 #: What ``--routes`` selects when it is not given. Deliberately NOT
 #: ``ALL_ROUTE_KEYS``: ``d_np``, ``b_direct`` and ``b_touched`` each patch the
@@ -1441,6 +1442,8 @@ _ROUTE_DATASETS = {
     # would make the b -> d_np delta a comparison of two problems.
     ("d_np", "dense"): dataset_s3_dense,
     ("d_np", "sparse_numba"): dataset_s3_sparse,
+    ("d_perm", "dense"): dataset_s3_dense,
+    ("d_perm", "sparse_numba"): dataset_s3_sparse,
     # b_direct and b_touched are the same statement one level down: route b's
     # problem with one curvature kernel swapped.
     ("b_direct", "dense"): dataset_s3_dense,
@@ -1454,6 +1457,7 @@ _ROUTE_LABELS = {
     "b": "S3 fnnls source-only (the reference)",
     "c": "S3 positive-negative (xp.linalg.solve)",
     "d_np": "S3 source-only, factor-reuse NNLS injected (one Cholesky, downdates)",
+    "d_perm": "S3 source-only, permute-active-last fnnls injected",
     "b_direct": "S3 source-only, library direct curvature kernel injected",
     "b_touched": "S3 source-only, touched-index two-stage curvature kernel injected",
 }
@@ -1469,7 +1473,7 @@ _ROUTE_CURVATURE_KERNELS = {
 
 #: The routes that are route ``b``'s problem in everything but the solver: same
 #: dataset, same instances, same settings, same expected inversion class.
-_ROUTES_LIKE_B = ("b", "d_np", "b_direct", "b_touched")
+_ROUTES_LIKE_B = ("b", "d_np", "d_perm", "b_direct", "b_touched")
 
 
 def _row_plan():
@@ -1537,6 +1541,8 @@ def _assert_dispatch(route, formalism):
 #: an approximation of it. 1e-9 is the scale fp64 round-off in a ~1500-parameter
 #: Cholesky reaches, and it is the tolerance the harness kernels are pinned at.
 P4_RTOL = 1.0e-9
+#: P5 applies the same evidence tolerance to the permuted fnnls candidate.
+P5_RTOL = 1.0e-9
 
 
 def _p4_equivalence(formalism):
@@ -1600,6 +1606,63 @@ def _p4_equivalence(formalism):
             f"speedup's label."
         )
     return gates[f"P4_d_np_equals_b_evidence_{formalism}"]
+
+
+def _p5_equivalence(formalism):
+    """P5: route ``d_perm`` reaches route ``b``'s evidence through the kernel seam."""
+    _clear_memos()
+    _fit_b = _analysis_for("b", formalism).fit_from(instance=_instance_for("b", 0))
+    _fom_b = float(_fit_b.figure_of_merit)
+    _x_b = np.asarray(_fit_b.inversion.reconstruction, dtype=float)
+
+    _clear_memos()
+    with fixed_light_numpy_solvers.fnnls_kernel_injected(
+        fixed_light_numpy_solvers.fnnls_cholesky_permuted,
+        label=f"P5_d_perm_{formalism}",
+    ) as _counts:
+        _fit_d = _analysis_for("d_perm", formalism).fit_from(instance=_instance_for("d_perm", 0))
+        _fom_d = float(_fit_d.figure_of_merit)
+        _x_d = np.asarray(_fit_d.inversion.reconstruction, dtype=float)
+    _clear_memos()
+
+    if _counts["calls"] <= 0:
+        raise AssertionError(
+            f"P5 ({formalism}): the injected fnnls kernel was never called ({_counts}); "
+            "the gate would have compared route b against itself."
+        )
+
+    _rel = abs(_fom_d - _fom_b) / max(abs(_fom_b), 1e-300)
+    _max_abs = float(np.max(np.abs(_x_d - _x_b))) if _x_b.size else 0.0
+    _pass = _rel <= P5_RTOL
+    _status = ("PASS" if _pass else "FAIL") if PINS_ASSERT else "RECORDED"
+    _last_stats = _counts["last_stats"] or {}
+    _record_gate(
+        f"P5_d_perm_equals_b_evidence_{formalism}",
+        _status,
+        {
+            "figure_of_merit_b": _fom_b,
+            "figure_of_merit_d_perm": _fom_d,
+            "d_log_evidence_nats": _fom_d - _fom_b,
+            "rel_diff": _rel,
+            "rtol": P5_RTOL,
+            "max_abs_diff_reconstruction": _max_abs,
+            "injected_kernel_calls": _counts["calls"],
+            "injected_factor_keys": _counts["last_factor_keys"],
+            "solver_stats": {
+                k: (v.tolist() if hasattr(v, "tolist") else v)
+                for k, v in _last_stats.items()
+                if k != "passive_set"
+            },
+            "summary": (f"Δ {_fom_d - _fom_b:+.6e} nats (rel {_rel:.3e}), max |Δx| {_max_abs:.3e}"),
+        },
+    )
+    if PINS_ASSERT and not _pass:
+        raise AssertionError(
+            f"P5 FAILED ({formalism}): route b figure_of_merit {_fom_b!r} vs "
+            f"permuted fnnls {_fom_d!r} (rel {_rel:.3e} > rtol {P5_RTOL:g}, "
+            f"max |Δx| {_max_abs:.3e})."
+        )
+    return gates[f"P5_d_perm_equals_b_evidence_{formalism}"]
 
 
 def _clear_memos():
@@ -1740,6 +1803,24 @@ def _warm_to_steady_state(analysis, route):
     }
 
 
+def _prepare_s4b_timed_stream(analysis, route, timed_call_count):
+    """Give every s4b A/B row the same memo seed and iid stream after warm-up."""
+    _clear_memos()
+    _call_index["next"] = 0
+    analysis.log_likelihood_function(instance=_instance_for(route, 0))
+    _call_index["next"] = 1
+    return {
+        "enabled": True,
+        "reason": "d_perm selected: align b and d_perm after variable-length warm-up",
+        "memo_reset_after_warmup": True,
+        "memo_primed": True,
+        "priming_instance_index": 0,
+        "timed_instance_start_index": 1,
+        "timed_instance_count": int(timed_call_count),
+        "iid_seed": _IID_SEED if INSTANCE_MODE == "iid" else None,
+    }
+
+
 def _abba_blocks(analysis, route, n_blocks, site_spec):
     """Counterbalanced clean-vs-instrumented timing. Cancels linear drift.
 
@@ -1845,6 +1926,7 @@ for _route, _formalism in _row_plan():
     # solve against the LIBRARY's, and it cannot do that from inside a row whose
     # library entry point is already patched.
     _p4_gate = _p4_equivalence(_formalism) if _route == "d_np" else None
+    _p5_gate = _p5_equivalence(_formalism) if _route == "d_perm" else None
 
     # --- the row's injection ----------------------------------------------
     # Route d_np injects the factor-reuse kernel into the library's positive-only
@@ -1866,6 +1948,14 @@ for _route, _formalism in _row_plan():
             _factor_reuse_solver, label=_key
         )
         _injection_counts = _injection.__enter__()
+
+    _fnnls_injection = None
+    _fnnls_injection_counts = None
+    if _route == "d_perm":
+        _fnnls_injection = fixed_light_numpy_solvers.fnnls_kernel_injected(
+            fixed_light_numpy_solvers.fnnls_cholesky_permuted, label=_key
+        )
+        _fnnls_injection_counts = _fnnls_injection.__enter__()
 
     # Routes b_direct and b_touched inject a CURVATURE kernel rather than a
     # solver — one level below d_np, at
@@ -1902,6 +1992,14 @@ for _route, _formalism in _row_plan():
         f"(incl. numba compile), last {_warmup['sequence_s'][-1]:.4f} s"
     )
 
+    _n_blocks = max(1, -(-N_REPEATS // 2)) if DECOMPOSE else None
+    _timed_call_count = 4 * _n_blocks if DECOMPOSE else N_REPEATS
+    _timed_stream = None
+    if "d_perm" in ROUTE_SELECTION:
+        _timed_stream = _prepare_s4b_timed_stream(
+            _analysis, _route, timed_call_count=_timed_call_count
+        )
+
     _entry = {
         "route": _route,
         "formalism": _formalism,
@@ -1909,6 +2007,7 @@ for _route, _formalism in _row_plan():
         "inversion_class": _inversion_class,
         "n_repeats": N_REPEATS,
         "warmup": _warmup,
+        "timed_stream": _timed_stream,
         "warmup_incl_numba_compile_s": _warmup["first_call_incl_numba_compile_s"],
         "row_order": ROW_ORDER,
         "memo_cleared_between_rows": True,
@@ -1942,7 +2041,6 @@ for _route, _formalism in _row_plan():
     else:
         # 2. ABBA — counterbalanced clean/instrumented. `--n-repeats` is the
         #    number of CLEAN calls; each block contributes two of them.
-        _n_blocks = max(1, -(-N_REPEATS // 2))
         _cpu_started = time.process_time()
         _abba = _abba_blocks(_analysis, _route, _n_blocks, _site_spec)
         _cpu_elapsed = time.process_time() - _cpu_started
@@ -2170,6 +2268,27 @@ for _route, _formalism in _row_plan():
                 f"are route b's, wearing route d_np's label."
             )
 
+    if _fnnls_injection is not None:
+        _fnnls_injection.__exit__(None, None, None)
+        _last_stats = _fnnls_injection_counts["last_stats"] or {}
+        _entry["fnnls_kernel"] = {
+            "kernel": "likelihood_breakdown.fixed_light_numpy_solvers.fnnls_cholesky_permuted",
+            "dotted_name_patched": fixed_light_numpy_solvers.LIBRARY_FNNLS_KERNEL_DOTTED,
+            "installed_outside_call_accounting": True,
+            "n_calls": _fnnls_injection_counts["calls"],
+            "last_factor_keys": _fnnls_injection_counts["last_factor_keys"],
+            "last_solve_stats": {
+                k: (v.tolist() if hasattr(v, "tolist") else v)
+                for k, v in _last_stats.items()
+                if k != "passive_set"
+            },
+        }
+        if _fnnls_injection_counts["calls"] <= 0:
+            raise AssertionError(
+                f"row {_key}: the injected permuted fnnls kernel was never called. "
+                "This row's milliseconds are route b's, wearing route d_perm's label."
+            )
+
     if _kernel_injection is not None:
         _kernel_injection.__exit__(None, None, None)
         _entry["injected_kernel"] = {
@@ -2198,6 +2317,47 @@ for _route, _formalism in _row_plan():
 
 _clear_memos()
 load_average_at_end = _load_average()
+
+_promotion_decision = {
+    "status": "not_applicable",
+    "reason": "promotion decision is defined only for a run containing b and d_perm",
+    "requires_separate_witness_pass": True,
+    "witness_evaluated_here": False,
+}
+_promotion_keys = [(f"b_{formalism}", f"d_perm_{formalism}") for formalism in FORMALISM_SELECTION]
+_promotion_pair = next(
+    ((b_key, d_key) for b_key, d_key in _promotion_keys if b_key in rows and d_key in rows),
+    None,
+)
+if _promotion_pair is not None:
+    _b_key, _d_key = _promotion_pair
+    _b_row, _d_row = rows[_b_key], rows[_d_key]
+    _whole_call_speedup = (_b_row["call_ms"] - _d_row["call_ms"]) / max(_b_row["call_ms"], 1e-300)
+    _abba_pass = all(
+        row.get("instrumentation_overhead_status") == "PASS" for row in (_b_row, _d_row)
+    )
+    _timing_candidate = _whole_call_speedup >= 0.05 and _abba_pass
+    _promotion_decision = {
+        "status": "timing_candidate" if _timing_candidate else "NO_LEVER",
+        "reference_row": _b_key,
+        "candidate_row": _d_key,
+        "whole_call_speedup_fraction": _whole_call_speedup,
+        "minimum_speedup_fraction": 0.05,
+        "reference_abba_status": _b_row.get("instrumentation_overhead_status"),
+        "candidate_abba_status": _d_row.get("instrumentation_overhead_status"),
+        "both_abba_gates_pass": _abba_pass,
+        "timing_gate_pass": _timing_candidate,
+        "requires_separate_witness_pass": True,
+        "witness_evaluated_here": False,
+        "promotion_ready": False,
+        "reason": (
+            "Timing qualifies for witness review; promotion still requires the separate "
+            "s4b witness to PASS every draw."
+            if _timing_candidate
+            else "Candidate did not meet the >=5% whole-call timing rule with both ABBA "
+            "gates PASS. This is a valid measured NO_LEVER result, not a failed job."
+        ),
+    }
 
 
 # ===================================================================
@@ -2343,6 +2503,7 @@ breakdown_summary = {
     "autolens_version": al_version,
     "timing_status": _timing_status,
     "timing_status_reason": _timing_status_reason,
+    "promotion_decision": _promotion_decision,
     "contention": {
         "load_average_at_start": load_average_at_start,
         "load_average_at_end": load_average_at_end,
@@ -2389,6 +2550,7 @@ breakdown_summary = {
         "P2_rtol": P2_RTOL,
         "P3_rtol": P3_RTOL,
         "P4_rtol": P4_RTOL,
+        "P5_rtol": P5_RTOL,
         "mapper_logdet_rtol": MAPPER_LOGDET_RTOL,
         "max_instrumentation_overhead_ms": MAX_INSTRUMENTATION_OVERHEAD_MS,
         "reference_overhead_ratio": REFERENCE_OVERHEAD_RATIO,

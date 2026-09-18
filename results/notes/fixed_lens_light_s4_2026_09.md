@@ -413,3 +413,139 @@ scripts/imaging/likelihood_breakdown/fixed_light_numba_s4_witness.py            
 scripts/misc/test/test_fixed_light_s4.py                                                  # kernel agreement on the tiny fixture, seam restores by identity, submit bash -n
 hpc/batch_cpu/submit_breakdown_imaging_fixed_light_numba_s4_delaunay_ral_hst_fp64          # job 343394; its WALL-BASIS block is the one to re-pin
 ```
+
+
+## Lever 4b — approved witness definition (2026-09-18)
+
+The user approved continuation with these correctness checks before the permutation
+prototype is judged. Each of eight seed-263 central-20-percent iid draws traverses
+three independent production memo streams: library, identity injection, candidate.
+The lens-light subtraction, sparse operator, thread count and model stream match
+route b. Every lane starts empty; no candidate inherits the reference answer.
+
+- W1: the identity injection reproduces the reconstruction and evidence exactly,
+  with identical iteration counters. Both lanes must solve identical matrices/RHS.
+- W2: final passive-set Jaccard **must equal 1.0 on every draw**. Report both
+  solutions' KKT residuals even on failure; do not waive a disagreement after seeing it.
+- W3: evidence difference is reported in nats and must be <=1e-9 relative.
+- W4: seed source, memo-discard flag, kernel exception sequence and invocation
+  count must agree. There is no PDIP fallback on this NumPy entrypoint; record that
+  explicitly rather than treating an unobserved PDIP counter as zero.
+- W5: record outer/inner iterations, passive count and warm-start errors.
+- W6: both published factors must reconstruct the full log determinant to
+  <=2e-12 nats against slogdet, with the expected keys and matrix shape.
+
+The witness retains all failed rows and exits nonzero after writing its JSON.
+Promotion additionally requires >=5% improvement on the whole call in the RAL
+64-repeat b/d_perm comparison with both ABBA overhead gates passing. A failed
+identity or candidate witness blocks promotion regardless of measured speed.
+
+### W6 identity calibration and explicit approval
+
+Before using the candidate verdict, the unchanged library failed the original
+2e-12-nat threshold on 7/8 local N=1500 draws (maximum 1.2732925824820995e-11
+nats). Identity evidence, reconstruction, passive sets and counters were exact.
+The user explicitly approved on 2026-09-18: **max(2e-12 nats, 32 floating-point
+spacings of abs(slogdet))**, together with a **1e-12 relative factor-reconstruction
+residual**. The residual is max(abs(U.T@U - M[P,P])) / max(abs(M[P,P])).
+This additional check catches determinant-preserving factor-order corruption.
+Each factor record retains `original_within_atol`, the effective tolerance, and
+the reconstruction residual. No active-set or evidence criterion changed.
+
+### Timing-stream correction and execution provenance
+
+Independent review found that variable warm-up lengths shifted the original
+cell's global instance cursor between rows. The s4b comparison now clears the
+memo after warm-up, primes each kernel untimed on instance 0, then resets the
+cursor to instance 1. Both timed rows replay the same stream; the row records
+its start, length, seed and priming. Other campaigns retain their existing
+behavior. Timing status is explicitly `timing_candidate` only above 5% with
+both ABBA gates PASS; a measured `NO_LEVER` is a valid experiment outcome.
+Neither status grants promotion without the separate witness and human review.
+
+The RAL run uses a private 48-file source snapshot under
+`autolens_profiling_wt/fixed-light-numba-s4b-run`, with a SHA-256 manifest and
+per-script hashes in its output, against the canonical shared libraries. The
+full git-worktree checkout was cancelled because the shared filesystem made
+copying the unrelated historical results very slow. No shared library changed.
+
+## Lever 4b verdict — no lever (RAL job 343397, 2026-09-18)
+
+**Do not promote the permutation prototype to PyAutoArray.** On
+`euclid-ral-gpu-1`, one thread, HST Delaunay N=1500, memo ON, 64 clean calls
+per row (32 ABBA blocks), it misses the pre-declared >=5% whole-call threshold.
+The observed 0.80% slowdown is not a claim of a statistically resolved regression;
+it is sufficient evidence that this run provides no qualifying improvement.
+
+| row | whole call (ms) | fnnls site (ms) | curvature site (ms) | ABBA overhead |
+|---|---:|---:|---:|---|
+| b: library | 226.772 | 60.886 | 85.744 | +3.321 ms PASS |
+| d_perm: symmetric permutation | 228.576 | 66.809 | 85.663 | +2.977 ms PASS |
+
+The candidate costs 1.804 ms more on the whole call; the solver site itself
+does not improve. It still allocates a full permuted matrix and factor buffer,
+and SciPy factors the leading passive block rather than eliminating the block
+copy entirely. The prior ~41 ms factorization-only estimate did not predict the
+whole solver or whole likelihood. No library follow-up is justified by this run.
+
+### Correctness and provenance
+
+- SLURM **COMPLETED 0:0**, elapsed **601 s**, CPUs only on the gpu partition.
+- Timed instance streams and memo priming metadata match exactly across rows.
+- Load average 1.00 on 124 CPUs; no contention warning; both overhead gates PASS.
+- P5 evidence comparison exact; injected kernel observed 135 times (dispatch,
+  warm-up, priming, and 128 clean/instrumented timed calls); memo seed retained
+  and all four factor keys published.
+- Both identity and candidate witnesses PASS on **all eight seeded draws**.
+  Evidence and reconstruction differences are exactly zero; passive-set
+  Jaccard is 1.0 throughout; fallback sequences and iteration counts agree.
+- Maximum factor reconstruction residual **3.5514e-16**; maximum determinant
+  difference against slogdet **1.2733e-11 nats**, passing the explicitly approved
+  roundoff-aware criterion. The original 2e-12 failures remain in each JSON row.
+- Shared PyAutoArray commit `192d4b70215830ad3ad3c8c83550e477bd674b72`. Source
+  snapshot base `92f1fadd`, actual files identified by the archived
+  `fixed_light_numba_s4b_source_job343397.json` manifest in this notes directory.
+  Its Python-file hashes match the tested local implementation.
+
+| draw | identity | candidate | passive Jaccard | delta evidence (nats) |
+|---|---|---|---:|---:|
+| 0 | PASS | PASS | 1.0 | 0.0 |
+| 1 | PASS | PASS | 1.0 | 0.0 |
+| 2 | PASS | PASS | 1.0 | 0.0 |
+| 3 | PASS | PASS | 1.0 | 0.0 |
+| 4 | PASS | PASS | 1.0 | 0.0 |
+| 5 | PASS | PASS | 1.0 | 0.0 |
+| 6 | PASS | PASS | 1.0 | 0.0 |
+| 7 | PASS | PASS | 1.0 | 0.0 |
+
+Artifacts under `results/breakdown/imaging/`:
+
+- `fixed_light_numba_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s4b_warm_t1.{json,png}`
+- `fixed_light_numba_s4b_witness_hpc_ral_cpu_fp64_s4b.json`
+
+The source-snapshot launch printed two misleading `FATAL ... 128` diagnostics
+from git provenance probes inside command substitutions (the snapshot has no
+`.git`). The enclosing echo commands continued and the numerical processes
+completed normally, with no gate bypass. The submit now checks whether the
+source is a git worktree before those probes and requires the snapshot manifest
+otherwise. Logs are retained locally under `output/s4b/`.
+
+### Phase 4 — the whole campaign
+
+| stage | production whole call (ms) | attributable gain |
+|---|---:|---|
+| Phase 3 start | 413.301 | baseline |
+| Phase 3, levers 1–3 | 230.031 | 1.80x cumulative |
+| Phase 4a, curvature alternatives | 230.149 control | no new lever |
+| Phase 4b, permutation prototype | 226.772 control / 228.576 candidate | no new lever |
+
+The campaign's established improvement remains **1.80x**. Do not attribute
+230.031 -> 226.772 to a source change: it is a fresh control, with aligned
+timed streams. The next planned phase is the memo warm-start robustness study
+over the graded draw set, followed by source-pixel scaling and the HST/Euclid
+production verdict. The existing curvature and solver arithmetic remain intact.
+
+Validation: **92 focused tests passed** (wave A, wave B, NumPy solvers, route
+harness), both changed-cell import smokes passed, repository Ruff check/format,
+README idempotence, submit wall contracts and shell syntax passed. Independent
+review: **CLEAN** after the timed-stream correction.
