@@ -165,7 +165,7 @@
 #   first whitespace-delimited token as the value, so `ref:` is written as one
 #   token rather than as the words "RAL job 343356".
 #   cell: imaging/fixed_light_numba/hst  device: cpu  precision: fp64
-#   source: measured-wall  wall: 7200  ref: RAL-job-343356  headroom: 1.5
+#   source: measured-wall  wall: 250  ref: RAL-job-343394  headroom: 1.5
 #   cell: imaging/fixed_light_numba_s4_witness/hst  device: cpu  precision: fp64
 #   source: measured-wall  wall: 600  ref: RAL-job-343356  headroom: 1.5
 

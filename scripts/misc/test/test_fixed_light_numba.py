@@ -392,6 +392,7 @@ _LIFTED_CONSTANTS = (
     "P2_RTOL",
     "P3_RTOL",
     "P4_RTOL",
+    "P5_RTOL",
     "MAPPER_LOGDET_RTOL",
 )
 
@@ -668,7 +669,7 @@ def test_all_route_keys_is_a_b_the_two_kernel_routes_c_and_d_np(cell_ns):
     Still no ``d``/``d0``/``e``: those are the JAX certified-active-set rows of
     another cell, and this one imports no JAX.
     """
-    assert cell_ns["ALL_ROUTE_KEYS"] == ("a", "b", "b_direct", "b_touched", "c", "d_np")
+    assert cell_ns["ALL_ROUTE_KEYS"] == ("a", "b", "b_direct", "b_touched", "c", "d_np", "d_perm")
     assert cell_ns["DEFAULT_ROUTE_KEYS"] == ("a", "b", "c")
     assert cell_ns["_parse_routes"](None) == ("a", "b", "c"), (
         "the default row set must not silently grow d_np, b_direct or b_touched"
@@ -676,6 +677,7 @@ def test_all_route_keys_is_a_b_the_two_kernel_routes_c_and_d_np(cell_ns):
     assert cell_ns["_parse_routes"]("c,a") == ("a", "c")
     assert cell_ns["_parse_routes"]("b,d_np") == ("b", "d_np")
     assert cell_ns["_parse_routes"]("d_np") == ("d_np",)
+    assert cell_ns["_parse_routes"]("b,d_perm") == ("b", "d_perm")
     # The submit's own route string, in the order the summary will print it.
     assert cell_ns["_parse_routes"]("b,b_direct,b_touched") == ("b", "b_direct", "b_touched")
     assert cell_ns["_parse_routes"]("b_touched,b") == ("b", "b_touched")
@@ -698,7 +700,7 @@ def test_route_d_np_is_route_b_with_one_function_replaced():
     """
     source = CELL_PATH.read_text()
 
-    for route in ("d_np", "b_direct", "b_touched"):
+    for route in ("d_np", "d_perm", "b_direct", "b_touched"):
         assert f'("{route}", "dense"): dataset_s3_dense,' in source
         assert f'("{route}", "sparse_numba"): dataset_s3_sparse,' in source
     # The two branches that split a route off from b's setup name only "a" and
@@ -708,7 +710,7 @@ def test_route_d_np_is_route_b_with_one_function_replaced():
     assert 'settings=_settings if route != "c" else _settings_positive_negative' in source
     assert 'instances[index] if route == "a" else instances_s3[index]' in source
     assert '"d_np"' in source and "_ROUTES_LIKE_B" in source
-    assert '_ROUTES_LIKE_B = ("b", "d_np", "b_direct", "b_touched")' in source
+    assert '_ROUTES_LIKE_B = ("b", "d_np", "d_perm", "b_direct", "b_touched")' in source
 
 
 def test_the_injection_is_entered_outside_call_accounting(cell_ns):
@@ -748,6 +750,10 @@ def test_the_injection_is_entered_outside_call_accounting(cell_ns):
         "the kernel must be resolved on the module at call time, or call_accounting cannot wrap it"
     )
     assert cell_ns["P4_RTOL"] == 1.0e-9
+    assert cell_ns["P5_RTOL"] == 1.0e-9
+    assert "P5_d_perm_equals_b_evidence_" in source
+    assert "fnnls_kernel_injected" in source
+    assert '_fnnls_injection_counts["calls"] <= 0' in source
 
 
 def test_the_nnls_warm_start_flag_gates_only_the_within_block_clears(cell_ns):
@@ -1078,6 +1084,49 @@ def test_warm_to_steady_state_stops_on_a_flat_sequence_and_caps_on_a_ramp(cell_n
             assert out["n_calls"] == cell_ns["WARMUP_MAX_CALLS"], (
                 "a sequence that never settles must run to the cap and say so"
             )
+
+
+def test_s4b_resets_and_primes_the_same_timed_stream_before_abba():
+    """Variable warm-up lengths cannot shift b and d_perm onto different iid draws."""
+    source = CELL_PATH.read_text()
+    tree = ast.parse(source)
+    helper = next(
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.FunctionDef) and node.name == "_prepare_s4b_timed_stream"
+    )
+    events = []
+    call_index = {"next": 99}
+
+    class FakeAnalysis:
+        def log_likelihood_function(self, *, instance):
+            events.append(("prime", instance, call_index["next"]))
+            return 0.0
+
+    namespace = {
+        "_clear_memos": lambda: events.append(("clear",)),
+        "_call_index": call_index,
+        "_instance_for": lambda route, index: f"{route}:{index}",
+        "_IID_SEED": 263,
+        "INSTANCE_MODE": "iid",
+    }
+    exec(
+        compile(ast.Module(body=[helper], type_ignores=[]), str(CELL_PATH), "exec"),
+        namespace,
+    )
+    metadata = namespace["_prepare_s4b_timed_stream"](FakeAnalysis(), "b", 128)
+    events.append(("abba", call_index["next"]))
+
+    assert events == [("clear",), ("prime", "b:0", 0), ("abba", 1)]
+    assert metadata["memo_reset_after_warmup"] is True
+    assert metadata["memo_primed"] is True
+    assert metadata["priming_instance_index"] == 0
+    assert metadata["timed_instance_start_index"] == 1
+    assert metadata["timed_instance_count"] == 128
+    assert metadata["iid_seed"] == 263
+    assert source.index("_timed_stream = _prepare_s4b_timed_stream(") < source.index(
+        "_abba = _abba_blocks(_analysis, _route, _n_blocks, _site_spec)"
+    )
 
 
 def test_the_artifact_declares_its_own_timing_status_and_contention():
