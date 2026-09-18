@@ -1,5 +1,7 @@
 # Fixed lens light on the numba CPU path — the three levers (2026-09-16)
 
+> **Status correction — 2026-09-18:** The three CPU library changes are merged and recorded as pending release; the CPU research epic is complete. Later curvature/permutation trials found no further lever and phase 7 was explicitly shelved. The 1.80x figure is the memo-on HST fixture, not a multiplier for the memo-off fixed-light result. Its bridge control is not versioned: see the [current summary and provenance limit](profiling_campaign_status_2026_09.md). Historical Next items below are not an active work queue.
+
 autolens_profiling issue [#267](https://github.com/PyAutoLabs/autolens_profiling/issues/267),
 epic `fixed-lens-light-numba-cpu` phase 3, branches `feature/fixed-light-numba-levers`
 (lever 1), `feature/fixed-light-numba-levers-l2` (lever 2, stacked on it) and

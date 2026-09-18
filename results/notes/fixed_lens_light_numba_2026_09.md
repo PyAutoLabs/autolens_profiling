@@ -1,5 +1,7 @@
 # Fixed lens light on the numba CPU path — the whole-call measurement (2026-09-15)
 
+> **Status correction — 2026-09-18:** The CPU epic is complete and phase 7 is shelved. For planning assume zero dependable memo benefit; production defaults were not changed. Subsequent numerical and timing results supersede the follow-up suggestions below: [current campaign summary](profiling_campaign_status_2026_09.md).
+
 autolens_profiling issue [#265](https://github.com/PyAutoLabs/autolens_profiling/issues/265),
 epic `fixed-lens-light-numba-cpu` phase 2, branch `feature/fixed-light-numba-solver`.
 Four legs in one SLURM job (343311) on one idle RAL host, plus two corroborating laptop legs.

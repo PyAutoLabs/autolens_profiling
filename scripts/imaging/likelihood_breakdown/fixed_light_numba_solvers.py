@@ -136,7 +136,7 @@ _cell_parser.add_argument("--n-repeats", type=int, default=10)
 _cell_parser.add_argument("--n-stream", type=int, default=9)
 _cell_parser.add_argument("--instances", choices=ALL_STREAM_KEYS, default="iid")
 _cell_parser.add_argument("--pins", choices=("fp64", "none"), default="fp64")
-_cell_args, _ = _cell_parser.parse_known_args()
+_cell_args = _cli.parse_cell_args(_cell_parser)
 
 MESH = _cell_args.mesh
 DATASET = _cell_args.dataset

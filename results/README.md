@@ -4,6 +4,13 @@ Profiling artifacts written by the packages above. Layout mirrors the source
 packages; the dashboard tables in every README are rendered from this tree by
 `scripts/misc/tooling/build_readme.py`.
 
+## Fixed-light campaign findings
+
+Read the [current CPU/GPU campaign summary](notes/profiling_campaign_status_2026_09.md)
+before reusing a headline or following a historical note's Next section. It records
+CPU closure, corrected GPU budgets/attribution, pending release obligations and
+the unversioned bridge-control limitation without changing historical artifacts.
+
 ## Sections
 
 | Folder | Written by | Contents |

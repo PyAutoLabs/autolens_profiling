@@ -1,5 +1,7 @@
 # Fixed lens light — the programme verdict: the whole likelihood on HST and Euclid (2026-09)
 
+> **Status correction — 2026-09-18:** The A100 25.39 ms figure used pass budget 2; the later budget-7 single-call measurement is 31.64 ms. The earlier solver-only vmap scaling curve does not establish whole-likelihood batching policy. See the [current campaign summary](profiling_campaign_status_2026_09.md) and [GPU trace correction](hst_gpu_residue_phase1_2026_09.md). Historical results below are retained with their original scope.
+
 autolens_profiling issue [#259](https://github.com/PyAutoLabs/autolens_profiling/issues/259),
 branch `feature/fixed-light-verdict` (stacked on phase 4's `feature/fixed-light-scaling`,
 itself on phases 3, 2, 1 and 0 — a stack of six). **Phase 5 of the

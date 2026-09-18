@@ -1,5 +1,7 @@
 # Fixed lens light on the numba CPU path — lever 4a, the curvature-kernel A/B on Delaunay (2026-09-17)
 
+> **Status correction — 2026-09-18:** Both curvature and permutation rounds concluded NO_LEVER; the CPU epic is now complete. Memo-policy research and phase 7 are shelved for current planning. Historical Next sections below do not reopen them. See the [current campaign summary](profiling_campaign_status_2026_09.md).
+
 autolens_profiling issue [#274](https://github.com/PyAutoLabs/autolens_profiling/issues/274),
 epic `fixed-lens-light-numba-cpu` **phase 4, wave A**, branch `feature/fixed-light-numba-s4`.
 Phase 3 ([`fixed_lens_light_levers_2026_09.md`](./fixed_lens_light_levers_2026_09.md)) took the

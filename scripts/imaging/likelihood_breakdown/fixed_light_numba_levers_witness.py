@@ -135,7 +135,7 @@ _cell_parser = _argparse.ArgumentParser(add_help=False, allow_abbrev=False)
 _cell_parser.add_argument("--mesh", choices=("delaunay",), default="delaunay")
 _cell_parser.add_argument("--dataset", choices=("hst", "euclid"), default="hst")
 _cell_parser.add_argument("--threads", type=int, default=1)
-_cell_args, _ = _cell_parser.parse_known_args()
+_cell_args = _cli.parse_cell_args(_cell_parser)
 
 MESH = _cell_args.mesh
 DATASET = _cell_args.dataset

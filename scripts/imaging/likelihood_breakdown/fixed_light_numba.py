@@ -277,12 +277,16 @@ _cell_parser.add_argument("--no-decompose", dest="decompose", action="store_fals
 _cell_parser.add_argument("--row-order", choices=("grouped", "interleaved"), default="grouped")
 _cell_parser.add_argument("--pins", choices=("fp64", "none"), default="fp64")
 _cell_parser.add_argument("--nnls-warm-start", choices=("off", "on"), default="off")
-_cell_args, _ = _cell_parser.parse_known_args()
+_cell_args = _cli.parse_cell_args(_cell_parser)
+if _cli.use_mixed_precision:
+    _cell_parser.error("this numba CPU cell measures fp64; mixed precision is unsupported")
+if _cli.instrument is not None and _cli.instrument != _cell_args.dataset:
+    _cell_parser.error("--instrument must match --dataset")
 
 MESH = _cell_args.mesh
 DATASET = _cell_args.dataset
-N_THREADS = max(1, int(_cell_args.threads))
-N_REPEATS = max(1, int(_cell_args.n_repeats))
+N_THREADS = int(_cell_args.threads)
+N_REPEATS = int(_cell_args.n_repeats)
 INSTANCE_MODE = _cell_args.instances
 DECOMPOSE = bool(_cell_args.decompose)
 ROW_ORDER = _cell_args.row_order
@@ -1803,15 +1807,15 @@ def _warm_to_steady_state(analysis, route):
     }
 
 
-def _prepare_s4b_timed_stream(analysis, route, timed_call_count):
-    """Give every s4b A/B row the same memo seed and iid stream after warm-up."""
+def _prepare_timed_stream(analysis, route, timed_call_count):
+    """Give every compared row the same memo seed and iid stream after warm-up."""
     _clear_memos()
     _call_index["next"] = 0
     analysis.log_likelihood_function(instance=_instance_for(route, 0))
     _call_index["next"] = 1
     return {
         "enabled": True,
-        "reason": "d_perm selected: align b and d_perm after variable-length warm-up",
+        "reason": "Align every row after variable-length warm-up",
         "memo_reset_after_warmup": True,
         "memo_primed": True,
         "priming_instance_index": 0,
@@ -1819,6 +1823,15 @@ def _prepare_s4b_timed_stream(analysis, route, timed_call_count):
         "timed_instance_count": int(timed_call_count),
         "iid_seed": _IID_SEED if INSTANCE_MODE == "iid" else None,
     }
+
+
+def _validate_timed_stream(stream, next_index, previous_rows):
+    """Fail before publishing a comparison with missing or mismatched draws."""
+    expected_end = stream["timed_instance_start_index"] + stream["timed_instance_count"]
+    if next_index != expected_end:
+        raise ValueError("Timed instance stream executed an unexpected number of calls")
+    if any(row["timed_stream"] != stream for row in previous_rows.values()):
+        raise ValueError("Compared rows used different timed instance streams")
 
 
 def _abba_blocks(analysis, route, n_blocks, site_spec):
@@ -1994,11 +2007,7 @@ for _route, _formalism in _row_plan():
 
     _n_blocks = max(1, -(-N_REPEATS // 2)) if DECOMPOSE else None
     _timed_call_count = 4 * _n_blocks if DECOMPOSE else N_REPEATS
-    _timed_stream = None
-    if "d_perm" in ROUTE_SELECTION:
-        _timed_stream = _prepare_s4b_timed_stream(
-            _analysis, _route, timed_call_count=_timed_call_count
-        )
+    _timed_stream = _prepare_timed_stream(_analysis, _route, timed_call_count=_timed_call_count)
 
     _entry = {
         "route": _route,
@@ -2025,8 +2034,7 @@ for _route, _formalism in _row_plan():
         _entry["p4_equivalence"] = _p4_gate
 
     if not DECOMPOSE:
-        # No decomposition asked for: a plain clean pass, nothing to counterbalance.
-        _clear_memos()
+        # Keep the declared post-warm-up priming for the clean-only lane too.
         _cpu_started = time.process_time()
         _clean_per_call = []
         _clean_values = []
@@ -2313,6 +2321,7 @@ for _route, _formalism in _row_plan():
                 f"are route b's, wearing route {_route}'s label."
             )
 
+    _validate_timed_stream(_timed_stream, _call_index["next"], rows)
     rows[_key] = _entry
 
 _clear_memos()

@@ -1,5 +1,7 @@
 # CPU NNLS memo robustness across graded draws — phase 5
 
+> **Status correction — 2026-09-18:** The CPU epic is complete. Phase 5b subsequently found NO_LEVER and phase 7 was explicitly shelved. Assume zero dependable memo benefit for planning and leave production defaults unchanged. Historical Next suggestions below are superseded by the [current campaign summary](profiling_campaign_status_2026_09.md).
+
 Issue: https://github.com/PyAutoLabs/autolens_profiling/issues/278. Campaign: `fixed-lens-light-numba-cpu`, phase 5. Measured 2026-09-18.
 
 **Study status: PASS.** The production memo is compared with the same production likelihood with memo disabled. No solver or library change was made.
