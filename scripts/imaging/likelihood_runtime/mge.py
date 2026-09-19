@@ -284,7 +284,8 @@ with timer.section("model_build"):
     shear.gamma_1 = 0.05
     shear.gamma_2 = 0.05
 
-    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
+    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass)
+    field = af.Model(al.MassField, redshift=0.5, shear=shear)
 
     source_bulge = al.model_util.mge_model_from(
         mask_radius=mask_radius, total_gaussians=20, centre_prior_is_uniform=False
@@ -292,7 +293,7 @@ with timer.section("model_build"):
 
     source = af.Model(al.Galaxy, redshift=1.0, bulge=source_bulge)
 
-    model = af.Collection(galaxies=af.Collection(lens=lens, source=source))
+    model = af.Collection(galaxies=af.Collection(lens=lens, source=source), fields=field)
 
 print(f"  Total free parameters: {model.total_free_parameters}")
 
@@ -318,7 +319,7 @@ with timer.section("register_pytrees"):
 # non-JIT setup that needs to read parameter values directly.
 params_tree = jax.tree_util.tree_map(jnp.asarray, instance)
 
-tracer = al.Tracer(galaxies=list(instance.galaxies))
+tracer = al.Tracer(galaxies=list(instance.galaxies), fields=[instance.fields])
 
 print(f"  Tracer planes: {tracer.total_planes}")
 

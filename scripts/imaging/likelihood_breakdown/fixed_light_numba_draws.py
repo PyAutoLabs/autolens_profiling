@@ -114,8 +114,9 @@ def prepare(rows, source_pixels):
             mask_radius=3.5, total_gaussians=60, centre_prior_is_uniform=True
         ),
         mass=mass,
-        shear=shear,
     )
+    field = af.Model(al.MassField, redshift=0.5, shear=shear)
+
     regularization = al.reg.AdaptSplit(
         inner_coefficient=0.1, outer_coefficient=10.0, signal_scale=0.1
     )
@@ -130,7 +131,8 @@ def prepare(rows, source_pixels):
                     regularization=regularization,
                 ),
             ),
-        )
+        ),
+        fields=field,
     )
     instance = model.instance_from_vector(vector=model.physical_values_from_prior_medians)
     source = instance.galaxies.source
@@ -152,7 +154,8 @@ def prepare(rows, source_pixels):
                         instance, draws.mass_from(base_mass, offsets, mass_cls=family)
                     ),
                     source,
-                ]
+                ],
+                fields=[instance.fields],
             ),
             adapt_images=adapt,
             settings=settings,

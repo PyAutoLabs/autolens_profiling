@@ -194,7 +194,9 @@ shear = af.Model(al.mp.ExternalShear)
 shear.gamma_1 = af.GaussianPrior(mean=0.05, sigma=0.005)
 shear.gamma_2 = af.GaussianPrior(mean=0.05, sigma=0.005)
 
-lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
+lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass)
+field = af.Model(al.MassField, redshift=0.5, shear=shear)
+
 
 # Two mesh fiducials, matching the runtime/breakdown siblings exactly:
 # rectangular = the pixelization_numba cells; delaunay = the delaunay_numba
@@ -235,7 +237,7 @@ else:
 
 source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
 
-model = af.Collection(galaxies=af.Collection(lens=lens, source=source))
+model = af.Collection(galaxies=af.Collection(lens=lens, source=source), fields=field)
 
 param_vector = np.array(model.physical_values_from_prior_medians)
 

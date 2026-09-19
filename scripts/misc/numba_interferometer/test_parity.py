@@ -171,7 +171,8 @@ def _fit(mask_radius: float, mesh_pixels: int):
     shear.gamma_1 = af.GaussianPrior(mean=0.05, sigma=0.005)
     shear.gamma_2 = af.GaussianPrior(mean=0.05, sigma=0.005)
 
-    lens = af.Model(al.Galaxy, redshift=0.5, mass=mass, shear=shear)
+    lens = af.Model(al.Galaxy, redshift=0.5, mass=mass)
+    field = af.Model(al.MassField, redshift=0.5, shear=shear)
 
     pixelization = al.Pixelization(
         mesh=al.mesh.Delaunay(pixels=image_plane_mesh_grid.shape[0], zeroed_pixels=0),
@@ -179,7 +180,7 @@ def _fit(mask_radius: float, mesh_pixels: int):
     )
     source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
 
-    model = af.Collection(galaxies=af.Collection(lens=lens, source=source))
+    model = af.Collection(galaxies=af.Collection(lens=lens, source=source), fields=field)
     instance = model.instance_from_vector(vector=model.physical_values_from_prior_medians)
 
     adapt_images = al.AdaptImages(
@@ -189,7 +190,7 @@ def _fit(mask_radius: float, mesh_pixels: int):
 
     return al.FitInterferometer(
         dataset=dataset,
-        tracer=al.Tracer(galaxies=list(instance.galaxies)),
+        tracer=al.Tracer(galaxies=list(instance.galaxies), fields=[instance.fields]),
         adapt_images=adapt_images,
         settings=al.Settings(),
         xp=np,

@@ -155,14 +155,16 @@ print(f"  mesh vertices: {image_plane_mesh_grid.shape[0]}")
 # Model: Isothermal + shear + Delaunay source
 mass = af.Model(al.mp.Isothermal)
 shear = af.Model(al.mp.ExternalShear)
-lens = af.Model(al.Galaxy, redshift=0.5, mass=mass, shear=shear)
+lens = af.Model(al.Galaxy, redshift=0.5, mass=mass)
+field = af.Model(al.MassField, redshift=0.5, shear=shear)
+
 
 mesh = al.mesh.Delaunay(pixels=mesh_pixels, zeroed_pixels=0)
 regularization = al.reg.ConstantSplit(coefficient=1.0)
 pixelization = al.Pixelization(mesh=mesh, regularization=regularization)
 source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
 
-model = af.Collection(galaxies=af.Collection(lens=lens, source=source))
+model = af.Collection(galaxies=af.Collection(lens=lens, source=source), fields=field)
 print(f"  free parameters: {model.prior_count}")
 
 instance = model.instance_from_prior_medians()

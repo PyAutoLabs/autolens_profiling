@@ -877,7 +877,8 @@ def _evidence_setup():
     shear.gamma_1 = af.GaussianPrior(mean=0.05, sigma=0.005)
     shear.gamma_2 = af.GaussianPrior(mean=0.05, sigma=0.005)
 
-    lens = af.Model(al.Galaxy, redshift=0.5, mass=mass, shear=shear)
+    lens = af.Model(al.Galaxy, redshift=0.5, mass=mass)
+    field = af.Model(al.MassField, redshift=0.5, shear=shear)
 
     pixelization = al.Pixelization(
         mesh=al.mesh.Delaunay(pixels=image_plane_mesh_grid.shape[0], zeroed_pixels=0),
@@ -885,7 +886,7 @@ def _evidence_setup():
     )
     source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
 
-    model = af.Collection(galaxies=af.Collection(lens=lens, source=source))
+    model = af.Collection(galaxies=af.Collection(lens=lens, source=source), fields=field)
     instance = model.instance_from_vector(vector=model.physical_values_from_prior_medians)
 
     _evidence_state["instance"] = instance
@@ -915,7 +916,9 @@ def log_evidence_for(preload: np.ndarray) -> float:
 
     fit = al.FitInterferometer(
         dataset=ds,
-        tracer=al.Tracer(galaxies=list(state["instance"].galaxies)),
+        tracer=al.Tracer(
+            galaxies=list(state["instance"].galaxies), fields=[state["instance"].fields]
+        ),
         adapt_images=state["adapt_images"],
         settings=al.Settings(),
         xp=np,

@@ -226,12 +226,14 @@ mass.ell_comps.ell_comps_1 = af.GaussianPrior(mean=_ell[1], sigma=0.01)
 shear = af.Model(al.mp.ExternalShear)
 shear.gamma_1 = af.GaussianPrior(mean=0.05, sigma=0.005)
 shear.gamma_2 = af.GaussianPrior(mean=0.05, sigma=0.005)
-lens = af.Model(al.Galaxy, redshift=0.5, mass=mass, shear=shear)
+lens = af.Model(al.Galaxy, redshift=0.5, mass=mass)
+field = af.Model(al.MassField, redshift=0.5, shear=shear)
+
 mesh = al.mesh.Delaunay(pixels=n_mesh_vertices, zeroed_pixels=0)
 regularization = al.reg.ConstantSplit(coefficient=regularization_coefficient)
 pixelization = al.Pixelization(mesh=mesh, regularization=regularization)
 source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
-model = af.Collection(galaxies=af.Collection(lens=lens, source=source))
+model = af.Collection(galaxies=af.Collection(lens=lens, source=source), fields=field)
 
 param_vector = model.physical_values_from_prior_medians
 instance = model.instance_from_vector(vector=param_vector)
@@ -254,7 +256,7 @@ def _adapt_images_from(params_tree):
 
 
 def _fit_from(params_tree):
-    tracer = al.Tracer(galaxies=list(params_tree.galaxies))
+    tracer = al.Tracer(galaxies=list(params_tree.galaxies), fields=[params_tree.fields])
     return al.FitInterferometer(
         dataset=dataset,
         tracer=tracer,
@@ -272,7 +274,7 @@ print("\n=== Cutpoint A: ray-trace only ===")
 
 
 def cut_trace(params_tree):
-    tracer = al.Tracer(galaxies=list(params_tree.galaxies))
+    tracer = al.Tracer(galaxies=list(params_tree.galaxies), fields=[params_tree.fields])
     grid = aa.Grid2DIrregular(values=mesh_grid_raw, xp=jnp)
     traced = tracer.traced_grid_2d_list_from(grid=grid, xp=jnp)
     return jnp.stack([tg.array for tg in traced])

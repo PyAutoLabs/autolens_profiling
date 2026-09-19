@@ -257,7 +257,8 @@ with timer.section("model_build"):
     shear.gamma_1 = af.GaussianPrior(mean=0.05, sigma=0.005)
     shear.gamma_2 = af.GaussianPrior(mean=0.05, sigma=0.005)
 
-    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
+    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass)
+    field = af.Model(al.MassField, redshift=0.5, shear=shear)
 
     # Production samples the regularization coefficients, so `regularization`
     # comes back as a free `af.Model` under `--variant production` and as the
@@ -274,7 +275,7 @@ with timer.section("model_build"):
 
     source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
 
-    model = af.Collection(galaxies=af.Collection(lens=lens, source=source))
+    model = af.Collection(galaxies=af.Collection(lens=lens, source=source), fields=field)
 
 print(f"  Total free parameters: {model.total_free_parameters}")
 
@@ -335,7 +336,7 @@ print(
 positions_lh = positions_likelihood(
     preset,
     dataset_path=dataset_path,
-    tracer=al.Tracer(galaxies=list(instance.galaxies)),
+    tracer=al.Tracer(galaxies=list(instance.galaxies), fields=[instance.fields]),
 )
 positions_likelihood_list = [positions_lh] if positions_lh is not None else None
 if positions_lh is not None:
