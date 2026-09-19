@@ -1,0 +1,40 @@
+{
+  "status": "historical-only",
+  "job": 343376,
+  "submitted": "2026-09-17T00:10:00+01:00",
+  "profiling_revision": "bf52147c7febed3d9588b1a74dcfef6f573ed60f",
+  "composition": "jax.vmap(jax.jit(fn))",
+  "composition_note": "This was the production Fitness._vmap composition when the array was designed. PyAutoFit#1638 subsequently changed production to jax.jit(jax.vmap(fn)); these rows must not be relabelled or used for the current batching policy.",
+  "library_revisions": {
+    "PyAutoNerves": "8eca4b3e8cdf72ed4c13850ed5b333ec7306524d",
+    "PyAutoFit": "b82fb3f69851ab9a6d68e8b80dd782e42ff48726",
+    "PyAutoArray": "91240e43abfdca08000bfca5b307d340fcf1edd3",
+    "PyAutoGalaxy": "67f6ca68f0d6abad012e774550d05a40315f40cf",
+    "PyAutoLens": "223132c0b524ee7819ff5648c77fbd825cdba10a"
+  },
+  "tasks": [
+    {"task": 0, "batch": 16, "lanes": "distinct", "fallback": "on", "slurm_state": "FAILED", "cell_exit": 1, "pin_passed": "14/16", "autotune_entries": null},
+    {"task": 1, "batch": 16, "lanes": "distinct", "fallback": "off", "slurm_state": "FAILED", "cell_exit": 1, "pin_passed": "14/16", "autotune_entries": null},
+    {"task": 2, "batch": 8, "lanes": "distinct", "fallback": "on", "slurm_state": "FAILED", "cell_exit": 1, "pin_passed": "7/8", "autotune_entries": null},
+    {"task": 3, "batch": 4, "lanes": "distinct", "fallback": "on", "slurm_state": "COMPLETED", "cell_exit": 0, "pin_passed": "4/4", "autotune_entries": 0},
+    {"task": 4, "batch": 16, "lanes": "identical", "fallback": "on", "slurm_state": "COMPLETED", "cell_exit": 0, "pin_passed": "16/16", "autotune_entries": 0}
+  ],
+  "validation": {
+    "fiducial_certified_vs_library_pdip": "PASS on all five tasks",
+    "trace_unjoined_ms": 0.0,
+    "failed_task_autotune_note": "Tasks 0-2 exited at the relative lane gate before the submit printed its cache census. Their autotune state is unknown and their timings are not publishable policy rows.",
+    "current_use": "Provenance-preserved historical evidence only; rerun the bounded grid with current jit(vmap)."
+  },
+  "artifact_sha256": {
+    "fixed_light_trace_delaunay_vmap16_distinct_fboff_hpc_a100_fp64_fixed_light_trace.json": "f3dc6fcfeb547c07933cda1170cc3aa84ccdeb51e50c687e90d326575742ea89",
+    "fixed_light_trace_delaunay_vmap16_distinct_fboff_hpc_a100_fp64_fixed_light_trace.png": "3543ae7a6b2c323e403a8a3f0e163fda742bb2514dad42bc4fa821e573bf9cd2",
+    "fixed_light_trace_delaunay_vmap16_distinct_fbon_hpc_a100_fp64_fixed_light_trace.json": "3f36586e5eb18e10f0117183a136705f8e45331d991556cb42fb017d5a490881",
+    "fixed_light_trace_delaunay_vmap16_distinct_fbon_hpc_a100_fp64_fixed_light_trace.png": "67940db3eb30c9a37c3800e58c960f3c1f3a1bdff051f93fc35dccfe530771a4",
+    "fixed_light_trace_delaunay_vmap16_identical_fbon_hpc_a100_fp64_fixed_light_trace.json": "fcc7ac2b91d127f8b87de24ca5e243c678427c770a0786e90cad59ae5177a08c",
+    "fixed_light_trace_delaunay_vmap16_identical_fbon_hpc_a100_fp64_fixed_light_trace.png": "14c571b9e22b8621af722aa787485693781af95a1c302ba710502f2089e527bd",
+    "fixed_light_trace_delaunay_vmap4_distinct_fbon_hpc_a100_fp64_fixed_light_trace.json": "19ad4ebf738608b1197889231dc4bd2e9360d62220c8818e95cb4b1ea31756f7",
+    "fixed_light_trace_delaunay_vmap4_distinct_fbon_hpc_a100_fp64_fixed_light_trace.png": "e8b6cd1e00a452087c1d4d3fa303f6db0485e10851bf19565c9cadbcac0a9666",
+    "fixed_light_trace_delaunay_vmap8_distinct_fbon_hpc_a100_fp64_fixed_light_trace.json": "b6fa27d5a462168156fe624e08a40a38f0777ee91699c37ace6630ad95f60f00",
+    "fixed_light_trace_delaunay_vmap8_distinct_fbon_hpc_a100_fp64_fixed_light_trace.png": "322fb60684be47c562bc77b39f6d746a9f748c79cac7b13ddf1946e80ae507c3"
+  }
+}

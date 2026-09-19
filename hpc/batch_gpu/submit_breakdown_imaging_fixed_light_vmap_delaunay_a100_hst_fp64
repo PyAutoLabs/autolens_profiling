@@ -1,0 +1,241 @@
+#!/bin/bash -l
+#
+# 2026-09 hst-gpu-non-solver-residue PHASE 2 — the matched vmap-vs-jit A100 legs
+# (autolens_profiling#273).
+#
+# Phase 1 (#268, job 343350) traced the FUSED SINGLE-CALL production program on the
+# a100 and found 8.05 ms of a 31.6 ms certified Delaunay call is device idle, 5.44 ms
+# of it one gap — the qhull pure_callback host round trip.
+#
+# But production does not evaluate one likelihood at a time. Current Fitness._vmap
+# (PyAutoFit#1638) is jax.jit(jax.vmap(call)) and Nautilus
+# drives it with use_jax_vmap=True; the Delaunay callback is vmap_method="sequential"
+# (PyAutoArray .../inversion/mesh/interpolator/delaunay.py), so that host round trip
+# runs ONCE PER LANE and is the one term that cannot amortise over a batch. Nobody had
+# traced the vmap program. The only whole-likelihood vmap number the campaign owns
+# (21.4 vs 25.3 ms/lane) came from IDENTICAL lanes, which hide straggler cost.
+#
+# This array is that measurement, and every leg is a MATCHED PAIR — the same B lanes,
+# in one process, under one solver injection, run both as jax.jit(jax.vmap(fn)) and as
+# B sequential jax.jit(fn) calls. Each lane is pinned between the arms and against an
+# independently compiled library-PDIP reference at 1e-9 relative. A failing leg exits
+# non-zero after writing its evidence.
+#
+# Array tasks
+# -----------
+#   0  B=16 distinct lanes, fallback on    the headline batch
+#   1  B=16 distinct lanes, fallback off   route d0, the cond-free program
+#   2  B=8  distinct lanes, fallback on    the crossover in B
+#   3  B=4  distinct lanes, fallback on    the crossover in B
+#   4  B=16 IDENTICAL lanes, fallback on   the CONTROL, ties to the 21.4 ms/lane row
+#
+# Distinct lanes are seeded random draws of the phase-3 draw family applied to the lens
+# mass (fixed_light_draws_steps.random_draws, seed 0), with the lens light fixed at S3.
+# Task 4's identical lanes are the control and are NOT the result — identical lanes
+# share one straggler and hide exactly the cost this array is looking for.
+#
+# The fallback is a row, not a footnote
+# -------------------------------------
+# Route d's PDIP fallback is a jax.lax.cond. Under jax.vmap a batched predicate turns
+# cond into select and BOTH branches run, so a batched fallback-on row costs the
+# certified solve PLUS the library PDIP. Task 1 is the same batch with the cond gone
+# (--fallback off, route d0). Neither is "the" number; the pair is.
+#
+# The certified solver is a HARNESS monkeypatch
+# ---------------------------------------------
+# As in phase 1, route d comes from a scoped rebinding of
+# `inversion_util.reconstruction_positive_only_from`
+# (likelihood_breakdown.library_solver_injection). Nothing in PyAutoArray was modified.
+# Phase 2 adds a second scoped wrapper of the same kind around the qhull callback
+# (likelihood_breakdown.host_callback_probe), which times scipy.spatial.Delaunay apart
+# from the adjacency table building and counts the callbacks per batched call — the
+# vmap arm must show B of them, the scalar arm 1 per likelihood. Both wrappers return
+# the library's own values and are restored on exit.
+#
+# Flags this cell owns (strict shared parsing rejects unknown ones):
+#
+#   mesh (required)                             delaunay | delaunay_nn | rectangular
+#   border-relocator                            cell = True, library = config, off = False
+#   trace-calls 10                              steady calls taken inside the profiler
+#   routes b,d                                  the trace is taken on d; b is the pin's reference
+#   vmap-batch B                                PHASE 2 — turns the batched experiment on
+#   lanes distinct|identical                    PHASE 2 — the lane family
+#   arms both                                   PHASE 2 — vmap AND scalar, matched
+#   fallback on|off                             PHASE 2 — route d vs route d0
+#   config-name hpc_a100_fp64_fixed_light_trace
+#
+# The output filename gains _jitvmap<B>_<lanes>_fb<on|off>, so no current-production
+# leg can collide with another, phase 1, or historical array 343376's vmap(jit) rows.
+#
+# Every leg starts from an EMPTY JAX compilation cache: a seeded XLA autotune cache
+# silently changes kernels (results/notes/xla_autotune_triton_gemm.md — F 4.8 vs
+# 25.6 ms on the same code). The AUTOTUNE_ENTRIES census at the end is the check.
+# --cpus-per-task=4 is kept from phase 1 deliberately: qhull is serial host work and
+# this array exists to measure it.
+#
+# WALL-BASIS:
+#   All five array tasks run the one fixed_light_trace script, so no task's --time is
+#   justified by a rate measured on something else. The phase-1 array of this SAME
+#   script on this same a100 and dataset ran in ~56 s per task end to end (job 343350,
+#   two compilations and 10 traced calls of one program). A phase-2 task compiles the
+#   scalar program and the batched program, each three times (production dispatch plus
+#   the command-buffers on and off executables), traces both arms, and runs the scalar
+#   arm B times per invocation - so the offered wall below is the phase-1 wall scaled
+#   by (1 + B) at the largest B in the array plus 600 s for the extra batched
+#   compilations, which are the term that grows with B and has never been measured.
+#   NOTE for anyone editing this block - check_submits reads any line here shaped like
+#   a keyword, a colon and a value as row data, so the prose must never contain that
+#   shape. Phase 1 lost a gate run to exactly that.
+#   cell: imaging/fixed_light_trace/hst  device: a100  precision: fp64
+#   source: measured-wall  ref: ral-343350  wall: 1600  headroom: 2.0
+
+#SBATCH -J flt_vmap_delaunay_hst
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=12:00:00
+#SBATCH --array=0-4
+#SBATCH -o output/output.%A_%a.out
+#SBATCH -e error/error.%A_%a.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+# Derive the repo root from where this was submitted (hpc/batch_gpu/../..) rather
+# than hardcoding /mnt/ral/jnightin/autolens_profiling: the canonical RAL checkout
+# sits on main with a dirty tree, so this runs from a worktree of the feature
+# branch. The -o/-e paths above are relative, so sbatch from inside hpc/batch_gpu/.
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding"
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+CELL="$AP_ROOT/scripts/imaging/likelihood_breakdown/fixed_light_trace.py"
+
+# The cell now rejects unknown flags, but retain an explicit source guard so a stale
+# checkout fails before allocating a GPU. The JSON records the exact composition too.
+if ! grep -q -- "--vmap-batch" "$CELL"; then
+    echo "FATAL: $CELL does not define --vmap-batch. This checkout predates #273;" >&2
+    echo "       refusing to run a stale phase-1 cell." >&2
+    exit 1
+fi
+
+BATCHES=(16 16 8 4 16)
+LANESETS=(distinct distinct distinct distinct identical)
+FALLBACKS=(on off on on on)
+BATCH=${BATCHES[$SLURM_ARRAY_TASK_ID]}
+LANESET=${LANESETS[$SLURM_ARRAY_TASK_ID]}
+FALLBACK=${FALLBACKS[$SLURM_ARRAY_TASK_ID]}
+if [ -z "$BATCH" ] || [ -z "$LANESET" ] || [ -z "$FALLBACK" ]; then
+    echo "FATAL: no (batch, lanes, fallback) arm for array task ${SLURM_ARRAY_TASK_ID} (expected 0-4)." >&2
+    exit 1
+fi
+
+MESH=delaunay
+BORDER=cell
+
+# The dataset is gitignored and auto-simulated on first use. Five arms racing to
+# write the same dataset/imaging/hst/ would interleave their FITS writes, so it is
+# simulated ONCE before submitting; this is the check that it was.
+if [ ! -f "$AP_ROOT/dataset/imaging/hst/data.fits" ]; then
+    echo "FATAL: dataset/imaging/hst/data.fits missing. Simulate it once before" >&2
+    echo "       submitting (concurrent arms must not auto-simulate the same dir)." >&2
+    exit 1
+fi
+
+# Fresh per-task compilation cache. output/ is gitignored, so these never reach git;
+# ${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID} keeps concurrent arms on the same node
+# from sharing one.
+export JAX_COMPILATION_CACHE_DIR="$AP_ROOT/output/jax_cache/fixed_light_vmap_${BATCH}_${LANESET}_${FALLBACK}_${SLURM_ARRAY_JOB_ID:-local}_${SLURM_ARRAY_TASK_ID:-0}"
+rm -rf "$JAX_COMPILATION_CACHE_DIR" && mkdir -p "$JAX_COMPILATION_CACHE_DIR"
+echo "JAX_COMPILATION_CACHE_DIR=$JAX_COMPILATION_CACHE_DIR (fresh)"
+
+# The profiler's xplanes (one per arm), and the optimized HLO + module proto the cell
+# dumps beside them. Under output/ (gitignored) so a disputed row can be re-derived
+# from the text that produced it without a recompile, but nothing reaches git.
+TRACE_DIR="$AP_ROOT/output/trace/fixed_light_vmap_${BATCH}_${LANESET}_${FALLBACK}_${SLURM_ARRAY_JOB_ID:-local}_${SLURM_ARRAY_TASK_ID:-0}"
+rm -rf "$TRACE_DIR" && mkdir -p "$TRACE_DIR"
+echo "TRACE_DIR=$TRACE_DIR (fresh)"
+
+nvidia-smi
+
+echo "=========================================="
+date
+hostname
+echo "Task:           $SLURM_ARRAY_TASK_ID / 4"
+echo "Cell:           likelihood_breakdown/imaging/fixed_light_trace"
+echo "Dataset:        hst (0.05\"/px)"
+echo "Precision:      fp64"
+echo "Inversion path: dense (mapping matrices, InversionImagingMapping)"
+echo "Source mesh:    $MESH, 1500 vertices (cell fiducial; --source-pixels NOT passed)"
+echo "Border reloc:   --border-relocator $BORDER (the cell reports the RESOLVED boolean)"
+echo "Routes:         b,d   (the fiducial d == b pin still runs)"
+echo "Pass budget:    7 (phase 3 zero-fallback budget for this mesh — the PRODUCTION budget)"
+echo "Batch:          --vmap-batch $BATCH  --lanes $LANESET  --fallback $FALLBACK"
+echo "Arms:           both (jax.jit(jax.vmap(fn)) and B x jax.jit(fn), matched)"
+echo "Draw seed:      0"
+echo "Trace calls:    10"
+echo "Config name:    hpc_a100_fp64_fixed_light_trace"
+echo "VMAP_LEG batch=$BATCH lanes=$LANESET fallback=$FALLBACK mesh=$MESH dataset=hst hardware=hpc_a100_fp64"
+echo "Flags:          --mesh $MESH --border-relocator $BORDER --vmap-batch $BATCH --lanes $LANESET --arms both --fallback $FALLBACK --draw-seed 0 --trace-calls 10 --routes b,d --config-name hpc_a100_fp64_fixed_light_trace"
+
+echo "=== source revisions (shared install, untouched) ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r" "$(git -C /mnt/ral/jnightin/PyAuto/$r rev-parse HEAD 2>&1)"
+done
+echo "AP_ROOT rev:   $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+
+cd $AP_ROOT
+
+echo "=== import provenance ==="
+python3 -c "import autoarray, autolens; print('autoarray.__file__ =', autoarray.__file__); print('autoarray.__version__ =', autoarray.__version__); print('autolens.__file__ =', autolens.__file__)"
+
+# The cell's exit code is CAPTURED, not inherited: it writes its JSON and PNG and
+# then raises if a lane pin failed, so a failing leg is still a leg whose provenance
+# has to be recorded. In array 343376 three of five tasks exited 1 at the (then
+# relative) lane pin and the autotune census below therefore never ran — the ERR trap
+# in activate.sh killed the job at the python line — so the one line that says whether
+# the kernels came from a seeded cache was missing from exactly the legs whose numbers
+# were under dispute. ``activate.sh`` installs an ERR trap which exits even while
+# ``errexit`` is disabled, so preserve and remove that trap around the expected
+# non-zero cell exit. Restore it before the census, then exit with the cell's code.
+SAVED_ERR_TRAP=$(trap -p ERR)
+trap - ERR
+set +e
+python3 -u scripts/imaging/likelihood_breakdown/fixed_light_trace.py \
+    --mesh $MESH \
+    --border-relocator $BORDER \
+    --vmap-batch $BATCH \
+    --lanes $LANESET \
+    --arms both \
+    --fallback $FALLBACK \
+    --draw-seed 0 \
+    --trace-calls 10 \
+    --routes b,d \
+    --trace-dir "$TRACE_DIR" \
+    --config-name hpc_a100_fp64_fixed_light_trace
+CELL_RC=$?
+set -e
+eval "$SAVED_ERR_TRAP"
+
+# Autotune-cache census. Must be non-fatal: the directory only exists if XLA wrote
+# autotune results, and activate.sh's ERR trap fails the job on any non-zero exit
+# (the `ls` failure is swallowed by the pipe to `wc -l`). A non-zero count means this
+# leg's kernels were chosen by a cache, not by the library default.
+echo -n "AUTOTUNE_ENTRIES count="
+ls "$JAX_COMPILATION_CACHE_DIR/xla_gpu_per_fusion_autotune_cache_dir" 2>/dev/null | wc -l
+
+echo "CELL_EXIT=$CELL_RC"
+echo "Finished."
+date
+
+# Fail the SLURM job with the cell's own code, now that the census is on record.
+exit $CELL_RC

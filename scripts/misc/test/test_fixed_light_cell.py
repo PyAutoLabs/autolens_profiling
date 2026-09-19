@@ -56,15 +56,18 @@ CONFIG_NAME = "hpc_a100_fp64_fixed_light"
 def _submits() -> list[_Path]:
     # The phase-1 library-path legs (`..._fixed_light_library_*`) are a second
     # family with their own config name and their own static checks, in
-    # test_fixed_light_library.py, the trace legs (`..._fixed_light_trace_*`,
-    # autolens_profiling#268) are a third, in test_fixed_light_trace_submit.py,
-    # and the numba-lever legs (`..._fixed_light_numba_levers_*`,
+    # test_fixed_light_library.py; the trace legs (`..._fixed_light_trace_*`,
+    # autolens_profiling#268) are a third, in test_fixed_light_trace_submit.py;
+    # the numba-lever legs (`..._fixed_light_numba_levers_*`,
     # autolens_profiling#267) are a fourth, in
-    # test_fixed_light_numba_levers_submits.py. Excluding them here keeps each
+    # test_fixed_light_numba_levers_submits.py; and the phase-2 batched legs
+    # (`..._fixed_light_vmap_*`, autolens_profiling#273) are a fifth, in
+    # test_fixed_light_vmap_submit.py. Excluding them here keeps each
     # file's assertions owned by the submits they were written for -- without it
     # this file's `--config-name hpc_a100_fp64_fixed_light` assertion would pass
-    # on a library or trace leg only because `hpc_a100_fp64_fixed_light_library`
-    # / `hpc_a100_fp64_fixed_light_trace` happens to contain it as a substring.
+    # on a library, trace or vmap leg only because
+    # `hpc_a100_fp64_fixed_light_library` / `hpc_a100_fp64_fixed_light_trace`
+    # happens to contain it as a substring.
     # The lever legs break the shape more strongly still: they are PyAutoArray
     # two-arm A/B jobs that run TWO arms in one job (a control and a feature
     # checkout, each on its own PYTHONPATH inside its own subshell), so
@@ -77,6 +80,7 @@ def _submits() -> list[_Path]:
         if "_fixed_light_library_" not in p.name
         and "_fixed_light_trace_" not in p.name
         and "_fixed_light_numba_levers_" not in p.name
+        and "_fixed_light_vmap_" not in p.name
     )
 
 

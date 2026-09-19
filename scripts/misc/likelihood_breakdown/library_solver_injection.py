@@ -19,6 +19,22 @@ likelihood — the mapper, the ``F + λH`` assembly, both log determinants, the
 evidence — is still the library's own code on the library's own path. The
 harness calls the library, not a copy of it.
 
+The wrapper must carry the library's whole signature
+----------------------------------------------------
+
+The wrapper replaces the library function outright, so every parameter the
+library declares it must declare too. PyAutoArray #553-#555 added ``factor`` —
+a mutable dict the numba solver publishes its Cholesky factor into so the
+log determinant can be read off it — and the phase-1 wrapper, which did not
+have it, raised ``TypeError`` tens of frames inside a traced likelihood.
+:func:`_assert_signature_covers` now compares the two signatures at injection
+time and says so in one sentence instead.
+
+``factor`` is forwarded and never written by the certified scheme: the log-det
+fast path that reads it is guarded on ``self._xp is np``
+(``inversion/inversion/abstract.py``), so on the JAX path it is inert and the
+library takes its own dense log determinant, exactly as it did before.
+
 Where the patch goes, and why it takes
 --------------------------------------
 
@@ -65,11 +81,41 @@ into ``select``, which evaluates **both** — so a batched certified-with-fallba
 row costs the certified solve *plus* the PDIP solve and is not the certified
 cost. :func:`certified_solver_injected` therefore takes ``fallback=False`` as
 well, and the cell measures both shapes and says which is which.
+
+Per-lane certification reporting (``report=``)
+----------------------------------------------
+
+Phase 2 (autolens_profiling#273) needs to know which **lane** of a batch
+certified and which fell back, because under ``vmap`` a single scalar
+"certified" flag is meaningless: the ``cond`` became a ``select`` and every
+lane ran both branches. ``certified_solver_injected(..., report=fn)`` emits one
+``fn(pass_at_certification, certified)`` per solver call through
+``jax.debug.callback(..., ordered=True)``, whose batching rule runs the
+callback once per lane **in lane order** — unordered callbacks come back
+permuted, which would silently mis-attribute every row of a lane table.
+
+Two things this hook does *not* do, deliberately:
+
+- It does not change the numerics. The reported values are read off the
+  active set's own ``certified`` flags; nothing is recomputed and no branch
+  is taken differently.
+- It does not report the PDIP iteration count. The fallback branch calls the
+  library's own ``reconstruction_positive_only_from``, which returns the
+  solution and nothing else (the iteration count ``jax_nnls.solve_nnls``
+  computes is discarded inside the library's ``custom_vjp`` primal). Getting it
+  would mean replacing the library's solve with a copy — exactly what this
+  module exists to avoid — so the cell reports the PDIP ``while_loop``'s
+  max-over-lanes trip count from the device trace instead, and says so.
+
+An ordered callback is a host round trip and serialises the batch, so it is a
+**diagnostic pass**, never a timed one: the caller runs the reporting pass once
+and then times and traces with ``report=None``.
 """
 
 from __future__ import annotations
 
 import contextlib
+import inspect
 
 import numpy as np
 
@@ -92,6 +138,35 @@ LIBRARY_POSITIVE_NEGATIVE_DOTTED = (
 )
 
 
+def _assert_signature_covers(original, patched) -> None:
+    """Fail at injection time if the library's entry point has grown a parameter.
+
+    The wrapper replaces the library function wholesale, so a parameter the
+    library gained and the wrapper did not is a ``TypeError`` raised from inside
+    a traced likelihood, tens of frames deep, at whatever point the first
+    reconstruction happens — which is how PyAutoArray #553-#555's ``factor=``
+    argument surfaced. Reading the signatures here turns that into one sentence
+    before anything is compiled.
+
+    Only *named* parameters are compared: a ``**kwargs`` in the library would be
+    unbounded and is reported as such rather than silently passing.
+    """
+    _kinds = (inspect.Parameter.POSITIONAL_OR_KEYWORD, inspect.Parameter.KEYWORD_ONLY)
+    library_params = {
+        name: p for name, p in inspect.signature(original).parameters.items() if p.kind in _kinds
+    }
+    wrapper_params = set(inspect.signature(patched).parameters)
+    missing = sorted(set(library_params) - wrapper_params)
+    if missing:
+        raise TypeError(
+            f"{LIBRARY_POSITIVE_ONLY_DOTTED} takes {missing}, which this harness wrapper does "
+            f"not accept. The library has changed under the injection: add the parameter to "
+            f"`patched` and forward it, or the injected route is a different call from the "
+            f"library's own. (Do NOT change the library — this module exists so nothing in "
+            f"PyAutoArray has to move.)"
+        )
+
+
 def certified_reconstruction_from(
     data_vector,
     curvature_reg_matrix,
@@ -103,6 +178,8 @@ def certified_reconstruction_from(
     settings=None,
     xp=np,
     fingerprint=None,
+    factor=None,
+    report=None,
 ):
     """The certified active-set solve of ``(curvature_reg_matrix, data_vector)``.
 
@@ -113,6 +190,11 @@ def certified_reconstruction_from(
     ``lax.cond``; with ``fallback=False`` the (possibly uncertified) active-set
     iterate is returned unconditionally, which is the shape a batched row must
     use (see the module docstring).
+
+    ``report`` is an optional ``fn(pass_at_certification, certified)`` host
+    callback (see the module docstring). It changes nothing that is computed;
+    it is an ordered ``jax.debug.callback``, so it serialises the batch and is
+    for a diagnostic pass, not a timed one.
     """
     import jax
     import jax.numpy as jnp
@@ -128,6 +210,15 @@ def certified_reconstruction_from(
     )
     x_active = out["x"] * scale
 
+    if report is not None:
+        # ``out["certified"]`` is the per-pass flag vector. The pass a lane
+        # certified ON is the first True, 1-indexed; -1 says it never did and
+        # therefore fell back (or, with fallback off, returned uncertified).
+        _flags = out["certified"]
+        _any = jnp.any(_flags)
+        _pass_at = jnp.where(_any, jnp.argmax(_flags) + 1, -1).astype(jnp.int32)
+        jax.debug.callback(report, _pass_at, _any, ordered=True)
+
     if not fallback:
         return x_active
 
@@ -140,6 +231,7 @@ def certified_reconstruction_from(
             settings=settings,
             xp=xp,
             fingerprint=fingerprint,
+            factor=factor,
         )
 
     return jax.lax.cond(certified, lambda: x_active, _library_pdip)
@@ -151,6 +243,7 @@ def certified_solver_injected(
     *,
     fallback: bool = True,
     tau_rel: float = active_set_steps.TAU_REL_DEFAULT,
+    report=None,
 ):
     """Rebind the library's positive-only solve to the certified scheme.
 
@@ -171,13 +264,24 @@ def certified_solver_injected(
     caller can assert the patched path was actually taken — a patch that never
     fires would otherwise report the library's own PDIP timing as the certified
     route's.
+
+    ``report`` is the optional per-lane certification hook described in the
+    module docstring. It defaults to ``None``, which is phase-1 behaviour
+    unchanged: nothing is emitted and no callback enters the program.
     """
     from autoarray.inversion.inversion import inversion_util
 
     original = inversion_util.reconstruction_positive_only_from
     counts = {"jax": 0, "numpy": 0}
 
-    def patched(data_vector, curvature_reg_matrix, settings=None, xp=np, fingerprint=None):
+    def patched(
+        data_vector,
+        curvature_reg_matrix,
+        settings=None,
+        xp=np,
+        fingerprint=None,
+        factor=None,
+    ):
         if not xp.__name__.startswith("jax"):
             counts["numpy"] += 1
             return original(
@@ -186,6 +290,7 @@ def certified_solver_injected(
                 settings=settings,
                 xp=xp,
                 fingerprint=fingerprint,
+                factor=factor,
             )
         counts["jax"] += 1
         return certified_reconstruction_from(
@@ -198,8 +303,11 @@ def certified_solver_injected(
             settings=settings,
             xp=xp,
             fingerprint=fingerprint,
+            factor=factor,
+            report=report,
         )
 
+    _assert_signature_covers(original, patched)
     inversion_util.reconstruction_positive_only_from = patched
     try:
         yield counts
@@ -228,6 +336,7 @@ def positive_negative_probe():
         counts["calls"] += 1
         return original(data_vector=data_vector, curvature_reg_matrix=curvature_reg_matrix, xp=xp)
 
+    _assert_signature_covers(original, patched)
     inversion_util.reconstruction_positive_negative_from = patched
     try:
         yield counts

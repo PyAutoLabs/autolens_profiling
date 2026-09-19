@@ -54,8 +54,8 @@ def test_shared_and_local_flags_survive_composition(name):
     assert result.mesh == "delaunay"
 
 
-@pytest.mark.parametrize("flag", ["--vmap-batch", "--n-repeatz", "--trace-call", "--source-pixel"])
-def test_old_trace_rejects_unknown_and_abbreviated_options(flag, capsys):
+@pytest.mark.parametrize("flag", ["--n-repeatz", "--trace-call", "--source-pixel"])
+def test_trace_rejects_unknown_and_abbreviated_options(flag, capsys):
     argv = ["--mesh", "delaunay", flag, "16"]
     cli = parse_profile_cli(argv=argv)
     with pytest.raises(SystemExit) as error:
@@ -64,9 +64,8 @@ def test_old_trace_rejects_unknown_and_abbreviated_options(flag, capsys):
     assert "unrecognized arguments" in capsys.readouterr().err
 
 
-def test_batching_branch_can_declare_its_own_flags():
+def test_trace_declares_its_batching_flag():
     parser = cell_parser("fixed_light_trace.py")
-    parser.add_argument("--vmap-batch", type=int)
     argv = ["--mesh", "delaunay", "--vmap-batch", "16", "--source-pixels", "500"]
     cli = parse_profile_cli(argv=argv)
     assert cli.parse_cell_args(parser, argv=argv).vmap_batch == 16

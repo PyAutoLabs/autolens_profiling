@@ -1,0 +1,42 @@
+{
+  "status": "measured-inconclusive",
+  "job": 344635,
+  "submitted": "2026-09-19",
+  "profiling_revision": "e2a51878588bb16d4a8619b8d920291bf5685ee0",
+  "composition": "jax.jit(jax.vmap(fn))",
+  "library_revisions": {
+    "PyAutoNerves": "1fa613aa8d89a79613009fb66f5b4e2d21deb57a",
+    "PyAutoFit": "a736840127be7a3c21e15a5c945e94d8f1082983",
+    "PyAutoArray": "22e6d6082e3365b10fb08d96e19ab02a5420e935",
+    "PyAutoGalaxy": "70a61e26cd715cefe7012a38285698091246a8a4",
+    "PyAutoLens": "2aaa1c1a8bb4a5923edf30a18451fcea330a6bd4"
+  },
+  "tasks": [
+    {"task": 0, "batch": 16, "lanes": "distinct", "fallback": "on", "slurm_state": "FAILED", "cell_exit": 1, "three_way_passed": "13/16", "certified": "16/16", "autotune_entries_at_start": 0, "autotune_entries_after_run": 0},
+    {"task": 1, "batch": 16, "lanes": "distinct", "fallback": "off", "slurm_state": "FAILED", "cell_exit": 1, "three_way_passed": "14/16", "certified": "16/16", "autotune_entries_at_start": 0, "autotune_entries_after_run": 0},
+    {"task": 2, "batch": 8, "lanes": "distinct", "fallback": "on", "slurm_state": "FAILED", "cell_exit": 1, "three_way_passed": "7/8", "certified": "8/8", "autotune_entries_at_start": 0, "autotune_entries_after_run": 0},
+    {"task": 3, "batch": 4, "lanes": "distinct", "fallback": "on", "slurm_state": "COMPLETED", "cell_exit": 0, "three_way_passed": "4/4", "certified": "4/4", "autotune_entries_at_start": 0, "autotune_entries_after_run": 0},
+    {"task": 4, "batch": 16, "lanes": "identical", "fallback": "on", "slurm_state": "COMPLETED", "cell_exit": 0, "three_way_passed": "16/16", "certified": "16/16", "autotune_entries_at_start": 0, "autotune_entries_after_run": 0}
+  ],
+  "validation": {
+    "lane_rtol": 1e-9,
+    "production_jitvmap_vs_library_pdip": "PASS on every lane in all five tasks; worst relative difference 5.288e-10",
+    "three_way_gate": "FAIL on tasks 0-2 because scalar jit and jit(vmap) differ on lanes 4, 7 and/or 10; scalar jit is also the arm outside the library-PDIP tolerance on those lanes",
+    "trace_unjoined_ms": 0.0,
+    "trace_reconciliation": "PASS on both arms of every task; absolute reconciliation error <= 0.160%",
+    "autotune_footer_note": "Tasks 0-2 were pre-empted by activate.sh's inherited ERR trap before their footer. Each JSON records zero entries at start and a post-run direct census found every task cache directory empty. The submit is corrected after this job so a future expected validation failure preserves its footer.",
+    "current_use": "Timing evidence with an explicit inconclusive policy verdict: the required three-way <=1e-9 numerical gate did not pass. Do not relabel failed tasks as accepted rows."
+  },
+  "artifact_sha256": {
+    "fixed_light_trace_delaunay_jitvmap16_distinct_fboff_hpc_a100_fp64_fixed_light_trace.json": "b1078e08b37ec7c4494afab2bd8afabe24bde2bc4db491ac101e4d63e3c2bd4a",
+    "fixed_light_trace_delaunay_jitvmap16_distinct_fboff_hpc_a100_fp64_fixed_light_trace.png": "1516b534bc4ecb1e0a63fd8d17893691f4f087303b92c5c9eac663f5382e3356",
+    "fixed_light_trace_delaunay_jitvmap16_distinct_fbon_hpc_a100_fp64_fixed_light_trace.json": "111af30fcbfc9e35cdbf17bedd779d01760c00bb9f6dd249d15de2f536371992",
+    "fixed_light_trace_delaunay_jitvmap16_distinct_fbon_hpc_a100_fp64_fixed_light_trace.png": "af4d0815fb5c53f4c2dce777244b9d243fdbd2d257c94462dd3032e073b94c14",
+    "fixed_light_trace_delaunay_jitvmap16_identical_fbon_hpc_a100_fp64_fixed_light_trace.json": "9544322745960381e6bf4e125e5c89218effb606857a322eec4117c3946cfba1",
+    "fixed_light_trace_delaunay_jitvmap16_identical_fbon_hpc_a100_fp64_fixed_light_trace.png": "158dd55e3d1081e6a94524caaea57069ad1b230a1fd29e4294bcf42f7daa838e",
+    "fixed_light_trace_delaunay_jitvmap4_distinct_fbon_hpc_a100_fp64_fixed_light_trace.json": "25995ed098d3fa5492bac74524fa712575dc4b051905dcc0a7a1e9a200aaa8fb",
+    "fixed_light_trace_delaunay_jitvmap4_distinct_fbon_hpc_a100_fp64_fixed_light_trace.png": "5ec2fc5c3b1c00f0d913df6eefdd4274ec8e4fbe77a9db805281b36acb4b9a4c",
+    "fixed_light_trace_delaunay_jitvmap8_distinct_fbon_hpc_a100_fp64_fixed_light_trace.json": "08be0f02901d7d285c62e34b5fdff2cf924ad270998f42b01eb45af189c23fa6",
+    "fixed_light_trace_delaunay_jitvmap8_distinct_fbon_hpc_a100_fp64_fixed_light_trace.png": "da74f95146e0126cfb73060a461cfb13c51c538a2840ffeb0430274d648093ef"
+  }
+}
