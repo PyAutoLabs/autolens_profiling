@@ -68,6 +68,7 @@ matplotlib.use("Agg")
 import autofit as af  # noqa: E402
 import autolens as al  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
+from autoarray.structures.triangles.array import MAX_CONTAINING_SIZE  # noqa: E402
 from autoarray.structures.triangles.shape import Point  # noqa: E402
 from autofit.jax import register_model as register_model_pytrees  # noqa: E402
 
@@ -379,6 +380,12 @@ summary = {
     "instrument": INSTRUMENT,
     "config_name": config_name,
     "device": device_info_dict(),
+    "thread_environment": {
+        "NPROC": os.environ.get("NPROC"),
+        "OMP_NUM_THREADS": os.environ.get("OMP_NUM_THREADS"),
+        "OPENBLAS_NUM_THREADS": os.environ.get("OPENBLAS_NUM_THREADS"),
+        "MKL_NUM_THREADS": os.environ.get("MKL_NUM_THREADS"),
+    },
     "precision": {
         "jax_enable_x64": bool(jax.config.jax_enable_x64),
         "mixed_precision_requested": bool(_cli.use_mixed_precision),
@@ -389,11 +396,15 @@ summary = {
         "plain_control": "image_plane (FitPositionsImagePairAll)",
         "observed_positions": int(dataset.positions.shape[0]),
         "position_noise_sigma": float(dataset.positions_noise_map[0]),
+        "dataset_noise_seed": 1,
+        "lens_redshift": 0.5,
+        "source_redshift": 1.0,
         "solver_grid_shape": [100, 100],
         "solver_grid_pixel_scale": 0.2,
         "solver_pixel_scale_precision": 0.001,
         "magnification_threshold": 0.1,
         "neighbor_degree": int(solver.neighbor_degree),
+        "max_containing_size": MAX_CONTAINING_SIZE,
         "n_steps": int(solver.n_steps),
         "n_repeats": N_REPEATS,
     },
@@ -434,21 +445,32 @@ dict_path.write_text(json.dumps(summary, indent=2))
 
 labels = list(steps)
 times = [steps[label] for label in labels]
-fig_height = max(8.0, 0.28 * len(labels))
-fig, ax = plt.subplots(figsize=(11, fig_height))
-colours = ["#C44E52" if value < 0.0 else "#4C72B0" for value in times]
-ax.barh(range(len(labels)), times, color=colours, edgecolor="white")
-ax.set_yticks(range(len(labels)))
-ax.set_yticklabels(labels, fontsize=7)
-ax.invert_yaxis()
-ax.axvline(0.0, color="black", linewidth=0.8)
-ax.set_xlabel("Successive-difference steady-state time [s]")
-ax.set_title(
-    f"Point-source image-plane solved breakdown ({config_name})\n"
-    f"fused={full_solved_time * 1000:.3f} ms; negative rows retain fusion/noise"
+prefix_labels = [label for label, _ in prefix_order] + ["Fused solved likelihood"]
+prefix_times = [value for _, value in prefix_order] + [full_solved_time]
+fig_height = max(8.0, 0.25 * len(labels))
+fig, (prefix_ax, difference_ax) = plt.subplots(
+    ncols=2, figsize=(18, fig_height), constrained_layout=True
 )
-fig.tight_layout()
-fig.savefig(chart_path, dpi=150, bbox_inches="tight")
+prefix_ax.barh(range(len(prefix_labels)), prefix_times, color="#4C72B0", edgecolor="white")
+prefix_ax.set_yticks(range(len(prefix_labels)))
+prefix_ax.set_yticklabels(prefix_labels, fontsize=6)
+prefix_ax.invert_yaxis()
+prefix_ax.set_xlabel("Absolute cumulative-prefix steady-state time [s]")
+prefix_ax.set_title("Absolute prefixes (compare these across runs)")
+
+colours = ["#C44E52" if value < 0.0 else "#4C72B0" for value in times]
+difference_ax.barh(range(len(labels)), times, color=colours, edgecolor="white")
+difference_ax.set_yticks(range(len(labels)))
+difference_ax.set_yticklabels(labels, fontsize=6)
+difference_ax.invert_yaxis()
+difference_ax.axvline(0.0, color="black", linewidth=0.8)
+difference_ax.set_xlabel("Successive-difference steady-state time [s]")
+difference_ax.set_title("Signed differences (fusion/noise retained)")
+fig.suptitle(
+    f"Point-source image-plane solved breakdown ({config_name}); "
+    f"fused={full_solved_time * 1000:.3f} ms"
+)
+fig.savefig(chart_path, dpi=150)
 plt.close(fig)
 
 print("\n" + "=" * 72)
