@@ -245,7 +245,8 @@ with timer.section("model_build"):
     shear.gamma_1 = af.GaussianPrior(mean=0.05, sigma=0.005)
     shear.gamma_2 = af.GaussianPrior(mean=0.05, sigma=0.005)
 
-    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
+    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass)
+    field = af.Model(al.MassField, redshift=0.5, shear=shear)
 
     if MESH == "rectangular":
         reg_scheme = "constant"
@@ -261,12 +262,12 @@ with timer.section("model_build"):
 
     pixelization = al.Pixelization(mesh=mesh_obj, regularization=regularization)
     source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
-    model = af.Collection(galaxies=af.Collection(lens=lens, source=source))
+    model = af.Collection(galaxies=af.Collection(lens=lens, source=source), fields=field)
 
 with timer.section("instance_from_vector"):
     instance = model.instance_from_vector(vector=model.physical_values_from_prior_medians)
 
-tracer = al.Tracer(galaxies=list(instance.galaxies))
+tracer = al.Tracer(galaxies=list(instance.galaxies), fields=[instance.fields])
 
 _adapt_kwargs = {
     "galaxy_image_dict": {instance.galaxies.source: adapt_image},

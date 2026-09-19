@@ -261,7 +261,8 @@ def model_from(free_grid_offset: bool = False):
     shear.gamma_1 = af.GaussianPrior(mean=0.05, sigma=0.005)
     shear.gamma_2 = af.GaussianPrior(mean=0.05, sigma=0.005)
 
-    lens = af.Model(al.Galaxy, redshift=0.5, bulge=basis_model_from(), dark=dark, shear=shear)
+    lens = af.Model(al.Galaxy, redshift=0.5, bulge=basis_model_from(), dark=dark)
+    field = af.Model(al.MassField, redshift=0.5, shear=shear)
 
     pixelization = al.Pixelization(
         mesh=rect_mesh_classes(_cli)[0](shape=(MESH_PIXELS_YX, MESH_PIXELS_YX)),
@@ -272,7 +273,7 @@ def model_from(free_grid_offset: bool = False):
     galaxies = af.Collection(lens=lens, source=source)
 
     if not free_grid_offset:
-        return af.Collection(galaxies=galaxies)
+        return af.Collection(galaxies=galaxies, fields=field)
 
     dataset_model = af.Model(al.DatasetModel)
     dataset_model.grid_offset.grid_offset_0 = af.GaussianPrior(mean=0.0, sigma=0.01)
@@ -280,7 +281,7 @@ def model_from(free_grid_offset: bool = False):
     dataset_model.grid_rotation_angle = 0.0
     dataset_model.background_sky_level = 0.0
 
-    return af.Collection(galaxies=galaxies, dataset_model=dataset_model)
+    return af.Collection(galaxies=galaxies, dataset_model=dataset_model, fields=field)
 
 
 model = model_from()

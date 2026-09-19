@@ -274,7 +274,9 @@ shear = af.Model(al.mp.ExternalShear)
 shear.gamma_1 = af.GaussianPrior(mean=0.05, sigma=0.005)
 shear.gamma_2 = af.GaussianPrior(mean=0.05, sigma=0.005)
 
-lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
+lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass)
+field = af.Model(al.MassField, redshift=0.5, shear=shear)
+
 
 galaxy_models = {"lens": lens}
 
@@ -311,7 +313,7 @@ pixelization = al.Pixelization(mesh=mesh, regularization=regularization)
 
 galaxy_models["source"] = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
 
-model = af.Collection(galaxies=af.Collection(**galaxy_models))
+model = af.Collection(galaxies=af.Collection(**galaxy_models), fields=field)
 
 # The one Settings deviation a variant may make; every cell otherwise shares these.
 SETTINGS_KWARGS: dict = {"use_border_relocator": True}
@@ -480,7 +482,7 @@ def one_evaluation(instance, memo_on: bool) -> dict:
     start = time.perf_counter()
     fit = al.FitImaging(
         dataset=dataset,
-        tracer=al.Tracer(galaxies=list(instance.galaxies)),
+        tracer=al.Tracer(galaxies=list(instance.galaxies), fields=[instance.fields]),
         adapt_images=adapt_images_for(instance),
         settings=al.Settings(**SETTINGS_KWARGS, nnls_warm_start_memo=memo_on),
         xp=np,
@@ -596,7 +598,7 @@ print(
 
 _check_fit = al.FitImaging(
     dataset=dataset,
-    tracer=al.Tracer(galaxies=list(_median_instance.galaxies)),
+    tracer=al.Tracer(galaxies=list(_median_instance.galaxies), fields=[_median_instance.fields]),
     adapt_images=adapt_images_for(_median_instance),
     settings=al.Settings(**SETTINGS_KWARGS),
     xp=np,

@@ -384,7 +384,8 @@ with timer.section("model_build"):
     shear.gamma_1 = af.GaussianPrior(mean=0.05, sigma=0.005)
     shear.gamma_2 = af.GaussianPrior(mean=0.05, sigma=0.005)
 
-    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
+    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass)
+    field = af.Model(al.MassField, redshift=0.5, shear=shear)
 
     # ``RectangularBilinearAdaptImage`` weights mesh pixels by the lensed-source
     # adapt image — the production-grade alternative to the coordinate-
@@ -398,7 +399,7 @@ with timer.section("model_build"):
 
     source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
 
-    model = af.Collection(galaxies=af.Collection(lens=lens, source=source))
+    model = af.Collection(galaxies=af.Collection(lens=lens, source=source), fields=field)
 
 # Regularization provenance, recorded in the JSON on the same terms as the
 # Delaunay family's ``regularization`` block (which carries the resolved
@@ -425,7 +426,7 @@ with timer.section("register_pytrees"):
     _register_model_pytrees(model)
 
 params_tree = jax.tree_util.tree_map(jnp.asarray, instance)
-tracer = al.Tracer(galaxies=list(instance.galaxies))
+tracer = al.Tracer(galaxies=list(instance.galaxies), fields=[instance.fields])
 
 print(f"  Tracer planes: {tracer.total_planes}")
 
@@ -589,7 +590,7 @@ print(f"  blurred_image shape: {blurred_image.array.shape}")
 
 def blurred_image_from_params(params_tree):
     """Compute blurred image directly from a pytree ModelInstance — fully JIT-traceable."""
-    t = al.Tracer(galaxies=list(params_tree.galaxies))
+    t = al.Tracer(galaxies=list(params_tree.galaxies), fields=[params_tree.fields])
     result = t.blurred_image_2d_from(
         grid=grid_lp,
         psf=dataset.psf,
@@ -799,7 +800,7 @@ def _fit_from(pt, xp=jnp):
     """A ``FitImaging`` on this cell's dataset/settings from a params pytree."""
     return al.FitImaging(
         dataset=dataset,
-        tracer=al.Tracer(galaxies=list(pt.galaxies)),
+        tracer=al.Tracer(galaxies=list(pt.galaxies), fields=[pt.fields]),
         adapt_images=_adapt_images_from(pt),
         settings=al.Settings(
             use_border_relocator=True,
@@ -854,7 +855,7 @@ def _setup_prefix_fn(upto):
                 return outputs[:4]
             return outputs
 
-        t = al.Tracer(galaxies=list(pt.galaxies))
+        t = al.Tracer(galaxies=list(pt.galaxies), fields=[pt.fields])
         traced_source = t.traced_grid_2d_list_from(grid=dataset.grids.pixelization, xp=jnp)[-1]
         relocated = border_relocator.relocated_grid_from(grid=traced_source, xp=jnp)
         if upto == 5:

@@ -80,9 +80,11 @@ class _FixedShapeAnalysis:
             centre=(0.0, 0.0), ell_comps=self._ell_comps, einstein_radius=einstein_radius
         )
         shear = al.mp.ExternalShear(gamma_1=self._shear_comps[0], gamma_2=self._shear_comps[1])
-        lens = al.Galaxy(redshift=0.5, mass=mass, shear=shear)
+        lens = al.Galaxy(redshift=0.5, mass=mass)
+        field = al.MassField(redshift=0.5, shear=shear)
+
         source = al.Galaxy(redshift=1.0)
-        return al.Tracer(galaxies=[lens, source])
+        return al.Tracer(galaxies=[lens, source], fields=[field])
 
 
 def _penalty_value_and_grad_fn(positions, ell_comps, shear_comps, threshold: float, factor: float):

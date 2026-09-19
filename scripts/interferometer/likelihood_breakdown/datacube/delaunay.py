@@ -307,7 +307,8 @@ with timer.section("model_build"):
     shear.gamma_1 = af.GaussianPrior(mean=0.05, sigma=0.005)
     shear.gamma_2 = af.GaussianPrior(mean=0.05, sigma=0.005)
 
-    lens = af.Model(al.Galaxy, redshift=0.5, mass=mass, shear=shear)
+    lens = af.Model(al.Galaxy, redshift=0.5, mass=mass)
+    field = af.Model(al.MassField, redshift=0.5, shear=shear)
 
     mesh = al.mesh.Delaunay(
         pixels=n_mesh_vertices,
@@ -318,7 +319,7 @@ with timer.section("model_build"):
 
     source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
 
-    model = af.Collection(galaxies=af.Collection(lens=lens, source=source))
+    model = af.Collection(galaxies=af.Collection(lens=lens, source=source), fields=field)
 
 print(f"  Total free parameters: {model.total_free_parameters}")
 print(f"  Delaunay pixels: {n_mesh_vertices}")
@@ -338,7 +339,7 @@ with timer.section("register_pytrees"):
 
 params_tree = jax.tree_util.tree_map(jnp.asarray, instance)
 
-tracer = al.Tracer(galaxies=list(instance.galaxies))
+tracer = al.Tracer(galaxies=list(instance.galaxies), fields=[instance.fields])
 
 # The adapt_images object is channel-invariant — the image-plane Delaunay mesh
 # vertices are shared across channels (the lens model is shared).
@@ -514,7 +515,7 @@ if dense_breakdown_feasible:
 
     def transformed_mm_from_params(params_tree):
         """Inversion setup from a pytree ModelInstance — full chain through NUFFT."""
-        t = al.Tracer(galaxies=list(params_tree.galaxies))
+        t = al.Tracer(galaxies=list(params_tree.galaxies), fields=[params_tree.fields])
         adapt_images_jax = al.AdaptImages(
             galaxy_image_plane_mesh_grid_dict={
                 params_tree.galaxies.source: image_plane_mesh_grid,
@@ -896,7 +897,7 @@ else:
 
     def inversion_setup_from_params(params_tree):
         """Full inversion setup via FitInterferometer; returns sparse data_vector."""
-        t = al.Tracer(galaxies=list(params_tree.galaxies))
+        t = al.Tracer(galaxies=list(params_tree.galaxies), fields=[params_tree.fields])
         adapt_images_jax = al.AdaptImages(
             galaxy_image_plane_mesh_grid_dict={
                 params_tree.galaxies.source: image_plane_mesh_grid,
@@ -944,7 +945,7 @@ else:
 
     def _mapper_L_from_params(params_tree):
         # Mirror inversion_setup_from_params but stop at the mapping matrix.
-        t = al.Tracer(galaxies=list(params_tree.galaxies))
+        t = al.Tracer(galaxies=list(params_tree.galaxies), fields=[params_tree.fields])
         adapt_images_jax = al.AdaptImages(
             galaxy_image_plane_mesh_grid_dict={
                 params_tree.galaxies.source: image_plane_mesh_grid,

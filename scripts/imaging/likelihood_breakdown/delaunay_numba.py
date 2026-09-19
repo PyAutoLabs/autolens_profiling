@@ -229,7 +229,9 @@ shear = af.Model(al.mp.ExternalShear)
 shear.gamma_1 = af.GaussianPrior(mean=0.05, sigma=0.005)
 shear.gamma_2 = af.GaussianPrior(mean=0.05, sigma=0.005)
 
-lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
+lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass)
+field = af.Model(al.MassField, redshift=0.5, shear=shear)
+
 
 # Production samples the regularization coefficients, so `regularization` is a
 # free `af.Model` under `--variant production` and the historic fixed instance
@@ -245,7 +247,7 @@ else:
 
 source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
 
-model = af.Collection(galaxies=af.Collection(lens=lens, source=source))
+model = af.Collection(galaxies=af.Collection(lens=lens, source=source), fields=field)
 
 # The instance sequence. Production's Nautilus pool hands each worker draws
 # that are, from that worker's point of view, unrelated — so the profiled stream
@@ -283,7 +285,7 @@ print(
 positions_lh = positions_likelihood(
     preset,
     dataset_path=dataset_path,
-    tracer=al.Tracer(galaxies=list(instance.galaxies)),
+    tracer=al.Tracer(galaxies=list(instance.galaxies), fields=[instance.fields]),
 )
 positions_likelihood_list = [positions_lh] if positions_lh is not None else None
 if positions_lh is not None:
@@ -652,7 +654,7 @@ def one_decomposed_evaluation(one_instance=None) -> tuple[dict[str, float], floa
     start = time.perf_counter()
     fit = al.FitImaging(
         dataset=dataset,
-        tracer=al.Tracer(galaxies=list(one_instance.galaxies)),
+        tracer=al.Tracer(galaxies=list(one_instance.galaxies), fields=[one_instance.fields]),
         adapt_images=adapt_images_of(one_instance),
         settings=settings,
         xp=np,
