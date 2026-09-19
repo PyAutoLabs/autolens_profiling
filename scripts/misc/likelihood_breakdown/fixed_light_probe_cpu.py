@@ -210,7 +210,8 @@ def build_shared(mesh: str, source_pixels: int | None, instrument: str = "hst") 
     shear.gamma_1 = af.GaussianPrior(mean=0.05, sigma=0.005)
     shear.gamma_2 = af.GaussianPrior(mean=0.05, sigma=0.005)
 
-    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
+    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass)
+    field = af.Model(al.MassField, redshift=0.5, shear=shear)
 
     if mesh == "rectangular":
         mesh_obj = al.mesh.RectangularBilinearAdaptImage(
@@ -232,7 +233,7 @@ def build_shared(mesh: str, source_pixels: int | None, instrument: str = "hst") 
 
     pixelization = al.Pixelization(mesh=mesh_obj, regularization=regularization)
     source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
-    model = af.Collection(galaxies=af.Collection(lens=lens, source=source))
+    model = af.Collection(galaxies=af.Collection(lens=lens, source=source), fields=field)
     instance = model.instance_from_vector(vector=model.physical_values_from_prior_medians)
 
     adapt_kwargs = {
@@ -723,7 +724,9 @@ def main() -> None:
     systems: list[dict] = []
 
     # --- S0: the control, MGE-60 linear lens light + source mapper ----------
-    fit_s0 = fit_from(shared, al.Tracer(galaxies=[lens_galaxy(instance), source]))
+    fit_s0 = fit_from(
+        shared, al.Tracer(galaxies=[lens_galaxy(instance), source], fields=[instance.fields])
+    )
     system_s0 = ass.linear_system_from(fit_s0, shared["dataset"], name="S0_current_mge60")
     result_s0 = measure_system("S0_current_mge60", system_s0, **measure_kwargs)
     result_s0["description"] = "MGE-60 linear lens light + source mapper (the cell's model)"
@@ -747,7 +750,9 @@ def main() -> None:
             over_sample_size_lp=shared["dataset"].over_sample_size_lp,
             over_sample_size_pixelization=shared["dataset"].over_sample_size_pixelization,
         )
-        tracer_source_only = al.Tracer(galaxies=[lens_galaxy(instance, with_light=False), source])
+        tracer_source_only = al.Tracer(
+            galaxies=[lens_galaxy(instance, with_light=False), source], fields=[instance.fields]
+        )
         system_s1 = ass.linear_system_from(
             fit_from(shared, tracer_source_only, dataset=dataset_s1),
             dataset_s1,
@@ -786,7 +791,10 @@ def main() -> None:
         for draw_name, perturbation, description in draw_defs:
             fit_draw = fit_from(
                 shared,
-                al.Tracer(galaxies=[lens_galaxy(instance, **perturbation), source]),
+                al.Tracer(
+                    galaxies=[lens_galaxy(instance, **perturbation), source],
+                    fields=[instance.fields],
+                ),
             )
             system_draw = ass.fixed_light_system_from(
                 fit_draw,

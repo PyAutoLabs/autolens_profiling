@@ -188,7 +188,7 @@ _cell_parser.add_argument("--library-row", dest="library_row", action="store_tru
 _cell_parser.add_argument("--no-library-row", dest="library_row", action="store_false")
 _cell_parser.add_argument("--pins", choices=("fp64", "none"), default="fp64")
 _cell_parser.add_argument("--safe-budget", type=int, default=None)
-_cell_args, _ = _cell_parser.parse_known_args()
+_cell_args = _cli.parse_cell_args(_cell_parser)
 
 MESH = _cell_args.mesh
 PASS_BUDGET_MAX = int(_cell_args.pass_budget_max)
@@ -461,7 +461,8 @@ with timer.section("model_build"):
     shear.gamma_1 = af.GaussianPrior(mean=0.05, sigma=0.005)
     shear.gamma_2 = af.GaussianPrior(mean=0.05, sigma=0.005)
 
-    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
+    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass)
+    field = af.Model(al.MassField, redshift=0.5, shear=shear)
 
     if MESH == "rectangular":
         # pixelization.py:375-379 — the rectangular cell takes no
@@ -481,7 +482,7 @@ with timer.section("model_build"):
 
     pixelization = al.Pixelization(mesh=mesh_obj, regularization=regularization)
     source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
-    model = af.Collection(galaxies=af.Collection(lens=lens, source=source))
+    model = af.Collection(galaxies=af.Collection(lens=lens, source=source), fields=field)
 
 print(f"  Total free parameters: {model.total_free_parameters}")
 print(f"  Regularization: {reg_scheme} ({reg_provenance})")
@@ -493,7 +494,7 @@ with timer.section("instance_from_vector"):
 with timer.section("register_pytrees"):
     _register_model_pytrees(model)
 
-tracer = al.Tracer(galaxies=list(instance.galaxies))
+tracer = al.Tracer(galaxies=list(instance.galaxies), fields=[instance.fields])
 
 # ``AdaptImages`` carries the per-pixel signal both the adaptive rectangular
 # mesh and ``AdaptSplit`` weight by; the Delaunay family additionally needs the

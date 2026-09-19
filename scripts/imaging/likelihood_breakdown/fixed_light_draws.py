@@ -199,7 +199,7 @@ _cell_parser.add_argument("--walk-rtol", type=float, default=0.2)
 _cell_parser.add_argument("--source-pixels", type=int, default=None)
 _cell_parser.add_argument("--pins", choices=("fp64", "none"), default="fp64")
 _cell_parser.add_argument("--no-walks", dest="walks", action="store_false", default=True)
-_cell_args, _ = _cell_parser.parse_known_args()
+_cell_args = _cli.parse_cell_args(_cell_parser)
 
 MESH = _cell_args.mesh
 N_RANDOM = int(_cell_args.n_random)

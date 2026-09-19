@@ -206,8 +206,9 @@ lens = af.Model(
     redshift=0.5,
     bulge=lens_bulge,
     mass=mass,
-    shear=shear,
 )
+field = af.Model(al.MassField, redshift=0.5, shear=shear)
+
 
 mesh = al.mesh.Delaunay(pixels=mesh_pixels, zeroed_pixels=0)
 regularization = al.reg.ConstantSplit(coefficient=1.0)
@@ -215,7 +216,7 @@ pixelization = al.Pixelization(mesh=mesh, regularization=regularization)
 
 source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
 
-model = af.Collection(galaxies=af.Collection(lens=lens, source=source))
+model = af.Collection(galaxies=af.Collection(lens=lens, source=source), fields=field)
 
 print(f"  free parameters: {model.prior_count}")
 

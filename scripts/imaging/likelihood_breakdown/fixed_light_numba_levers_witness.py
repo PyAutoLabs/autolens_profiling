@@ -135,7 +135,7 @@ _cell_parser = _argparse.ArgumentParser(add_help=False, allow_abbrev=False)
 _cell_parser.add_argument("--mesh", choices=("delaunay",), default="delaunay")
 _cell_parser.add_argument("--dataset", choices=("hst", "euclid"), default="hst")
 _cell_parser.add_argument("--threads", type=int, default=1)
-_cell_args, _ = _cell_parser.parse_known_args()
+_cell_args = _cli.parse_cell_args(_cell_parser)
 
 MESH = _cell_args.mesh
 DATASET = _cell_args.dataset
@@ -292,14 +292,16 @@ shear = af.Model(al.mp.ExternalShear)
 shear.gamma_1 = af.GaussianPrior(mean=0.05, sigma=0.005)
 shear.gamma_2 = af.GaussianPrior(mean=0.05, sigma=0.005)
 
-lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
+lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass)
+field = af.Model(al.MassField, redshift=0.5, shear=shear)
+
 
 mesh_obj = al.mesh.Delaunay(pixels=n_mesh_vertices, zeroed_pixels=0)
 reg_scheme, regularization, reg_provenance = delaunay_regularization(_cli)
 
 pixelization = al.Pixelization(mesh=mesh_obj, regularization=regularization)
 source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
-model = af.Collection(galaxies=af.Collection(lens=lens, source=source))
+model = af.Collection(galaxies=af.Collection(lens=lens, source=source), fields=field)
 
 print(f"  Total free parameters: {model.total_free_parameters}")
 print(f"  Regularization:        {reg_scheme} ({reg_provenance})")
@@ -331,7 +333,7 @@ _settings = al.Settings(use_border_relocator=True)
 print("\n--- S0: full FitImaging with linear MGE lens light (eager, dense) ---")
 fit_s0 = al.FitImaging(
     dataset=dataset,
-    tracer=al.Tracer(galaxies=list(instance.galaxies)),
+    tracer=al.Tracer(galaxies=list(instance.galaxies), fields=[instance.fields]),
     adapt_images=adapt_images,
     settings=_settings,
     xp=np,
@@ -368,7 +370,7 @@ def _s3_instance(one_instance):
     stripped = copy.deepcopy(one_instance)
     galaxies = list(
         fixed_light_system._light_stripped_tracer(
-            al.Tracer(galaxies=list(one_instance.galaxies))
+            al.Tracer(galaxies=list(one_instance.galaxies), fields=[one_instance.fields])
         ).galaxies
     )
     stripped.galaxies.lens = galaxies[0]

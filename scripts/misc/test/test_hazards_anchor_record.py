@@ -20,7 +20,12 @@ _misc = _profiling_root() / "scripts" / "misc"
 if str(_misc) not in sys.path:
     sys.path.insert(0, str(_misc))
 
-from hazards._anchor import CodeAnchor, normalized_tokens, token_fingerprint  # noqa: E402
+from hazards._anchor import (  # noqa: E402
+    CodeAnchor,
+    _repo_path,
+    normalized_tokens,
+    token_fingerprint,
+)
 from hazards._measure import reachability_measurement  # noqa: E402
 from hazards._record import (  # noqa: E402
     Finding,
@@ -101,3 +106,27 @@ def test_record_writer_rejects_non_standard_nan_json(tmp_path):
     finding = replace(_finding(), reproducer={"gradient": float("nan")})
     with pytest.raises(ValueError, match="Out of range float"):
         write_grouped_findings([finding], tmp_path)
+
+
+def test_source_anchor_checkout_path_in_grouped_and_flat_contexts(tmp_path):
+    brain = tmp_path / "PyAutoBrain" / "agents"
+    brain.mkdir(parents=True)
+    (brain / "_repo_paths.py").write_text(
+        "from pathlib import Path\n"
+        "def repo_path(root, name, required=False):\n"
+        "    flat = Path(root) / name\n"
+        "    return flat if flat.is_dir() else next(p for p in Path(root).glob('*/' + name) if p.is_dir())\n"
+    )
+    galaxy = tmp_path / "galaxy" / "PyAutoGalaxy"
+    galaxy.mkdir(parents=True)
+    (galaxy / ".git").touch()
+    assert _repo_path(tmp_path, "PyAutoGalaxy") == galaxy
+    galaxy.rename(tmp_path / "PyAutoGalaxy")
+    assert _repo_path(tmp_path, "PyAutoGalaxy") == tmp_path / "PyAutoGalaxy"
+
+
+def test_source_anchor_uses_standalone_flat_checkout(tmp_path):
+    galaxy = tmp_path / "PyAutoGalaxy"
+    galaxy.mkdir()
+    (galaxy / ".git").touch()
+    assert _repo_path(tmp_path, "PyAutoGalaxy") == galaxy

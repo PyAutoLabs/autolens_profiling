@@ -335,7 +335,8 @@ with timer.section("model_build"):
     shear.gamma_1 = af.GaussianPrior(mean=0.05, sigma=0.005)
     shear.gamma_2 = af.GaussianPrior(mean=0.05, sigma=0.005)
 
-    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass, shear=shear)
+    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass)
+    field = af.Model(al.MassField, redshift=0.5, shear=shear)
 
     # ``DelaunayNN`` is a ``Delaunay`` subclass with the identical
     # (pixels, zeroed_pixels, areas_factor) constructor, so this mesh is the
@@ -350,7 +351,7 @@ with timer.section("model_build"):
 
     source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
 
-    model = af.Collection(galaxies=af.Collection(lens=lens, source=source))
+    model = af.Collection(galaxies=af.Collection(lens=lens, source=source), fields=field)
 
 print(f"  Total free parameters: {model.total_free_parameters}")
 print(f"  DelaunayNN pixels: {n_mesh_vertices}")
@@ -375,7 +376,7 @@ params_tree = jax.tree_util.tree_map(jnp.asarray, instance)
 n_pytree_leaves = len(jax.tree_util.tree_leaves(params_tree))
 print(f"  Pytree JAX leaves: {n_pytree_leaves}")
 
-tracer = al.Tracer(galaxies=list(instance.galaxies))
+tracer = al.Tracer(galaxies=list(instance.galaxies), fields=[instance.fields])
 
 # AdaptImages tells FitImaging where mesh vertices live in image-plane, and
 # carries the source's adapt image — the per-pixel signal ``AdaptSplit`` weights

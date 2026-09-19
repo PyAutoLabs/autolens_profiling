@@ -1,0 +1,31 @@
+#!/bin/bash -l
+#SBATCH -J fixed_light_numba_s6
+#SBATCH --partition=gpu
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=64gb
+#SBATCH --time=4:00:00
+#SBATCH --array=0-4%1
+#SBATCH -o output/output.%A_%a.out
+#SBATCH -e error/error.%A_%a.err
+# CPUs only. Serialize sizes to reduce interference; one fresh process per N.
+# WALL-BASIS: 16 preparations, 192 clean + 192 diagnostic evaluations per N.
+# N=4000 has unmeasured superlinear cost: bounded at four hours, censor failures.
+set -euo pipefail
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+source "$AP_ROOT/activate.sh"
+export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 NUMBA_NUM_THREADS=1
+export NUMBA_CACHE_DIR="$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}"
+export MPLCONFIGDIR="/tmp/matplotlib_${SLURM_JOB_ID:-local}"
+mkdir -p "$NUMBA_CACHE_DIR" "$MPLCONFIGDIR"
+cd "$AP_ROOT"
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    git rev-parse HEAD
+else
+    test -f SOURCE_SHA256SUMS
+    sha256sum --check SOURCE_SHA256SUMS
+fi
+sizes=(500 1000 1500 2500 4000)
+python3 -u scripts/imaging/likelihood_breakdown/fixed_light_numba_scaling.py \
+    --source-pixels "${sizes[${SLURM_ARRAY_TASK_ID:-0}]}" --n-repeats 6 \
+    --config-name hpc_ral_cpu_fp64_fixed_light_numba_s6

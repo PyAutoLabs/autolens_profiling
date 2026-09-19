@@ -1,0 +1,116 @@
+#!/bin/bash
+
+# Lever 4b (#276): one-process A/B of production route b against the
+# permute-active-last fnnls kernel, followed by the pre-declared witness.
+#
+# WALL-BASIS:
+#   Job 343397 completed both rows and the eight-draw witness in 601 s,
+#   including slow shared-filesystem imports and cold setup. Each cell carries
+#   that WHOLE-JOB bound conservatively; the witness body alone took 22 s.
+#   The family retains its established four-hour scheduler request.
+#   cell: imaging/fixed_light_numba/hst  device: cpu  precision: fp64
+#   source: measured-wall  wall: 601  ref: RAL-job-343397  headroom: 1.5
+#   cell: imaging/fixed_light_numba_s4b_witness/hst  device: cpu  precision: fp64
+#   source: measured-wall  wall: 601  ref: RAL-job-343397  headroom: 1.5
+
+#SBATCH -J fl_numba_s4b
+#SBATCH --partition=gpu
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=32gb
+#SBATCH --time=4:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source "$AP_ROOT/activate.sh"
+
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export NUMBA_NUM_THREADS=1
+export MPLCONFIGDIR=/tmp/matplotlib_${SLURM_JOB_ID:-local}
+export NUMBA_CACHE_DIR=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}_s4b
+mkdir -p "$MPLCONFIGDIR" "$NUMBA_CACHE_DIR"
+
+echo "=========================================="
+date
+hostname
+lscpu | grep 'Model name' || true
+echo "cpus-per-task:  ${SLURM_CPUS_PER_TASK:-unset}"
+echo "loadavg:        $(cat /proc/loadavg)"
+echo "Cell:           likelihood_breakdown/imaging/fixed_light_numba (routes b,d_perm)"
+echo "Witness:        likelihood_breakdown/imaging/fixed_light_numba_s4b_witness"
+echo "A/B:            b production vs d_perm, one library and one process"
+echo "Verdict rule:   d_perm wins only at >=5% whole-call speedup and witness PASS"
+echo "Threads:        1 (numba + BLAS family)"
+
+echo "=== source revisions ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r" "$(git -C /mnt/ral/jnightin/PyAuto/$r rev-parse HEAD 2>&1)"
+done
+if git -C "$AP_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    echo "AP_ROOT rev:    $(git -C "$AP_ROOT" rev-parse HEAD)"
+    echo "AP_ROOT branch: $(git -C "$AP_ROOT" rev-parse --abbrev-ref HEAD)"
+else
+    echo "AP_ROOT is an isolated source snapshot; provenance follows."
+    test -f "$AP_ROOT/SOURCE_PROVENANCE.json"
+fi
+
+cd "$AP_ROOT"
+
+echo "=== staged source provenance ==="
+if [[ -f SOURCE_PROVENANCE.json ]]; then
+    cat SOURCE_PROVENANCE.json
+else
+    echo "SOURCE_PROVENANCE.json: absent"
+fi
+sha256sum \
+    scripts/imaging/likelihood_breakdown/fixed_light_numba.py \
+    scripts/imaging/likelihood_breakdown/fixed_light_numba_s4b_witness.py \
+    scripts/misc/likelihood_breakdown/fixed_light_numpy_solvers.py \
+    scripts/misc/likelihood_breakdown/fixed_light_s4b_checks.py
+
+KERNEL_PROVENANCE="$(cat <<'PYPROV'
+import inspect
+
+import autoarray
+from autoarray.util import fnnls
+
+print('  autoarray.__file__    =', autoarray.__file__)
+print('  autoarray.__version__ =', autoarray.__version__)
+print('  fnnls_cholesky signature =', inspect.signature(fnnls.fnnls_cholesky))
+PYPROV
+)"
+
+echo "--- kernel provenance ---"
+python3 -c "$KERNEL_PROVENANCE"
+
+echo "=========================================="
+echo "THE A/B: routes b,d_perm; sparse_numba; memo ON; 64 repeats"
+python3 -u scripts/imaging/likelihood_breakdown/fixed_light_numba.py \
+    --mesh delaunay \
+    --dataset hst \
+    --formalism sparse_numba \
+    --routes b,d_perm \
+    --threads 1 \
+    --n-repeats 64 \
+    --instances iid \
+    --nnls-warm-start on \
+    --config-name hpc_ral_cpu_fp64_fixed_light_numba_s4b_warm_t1
+
+echo "=========================================="
+echo "THE WITNESS: eight seeded draws against the permuted kernel"
+python3 -u scripts/imaging/likelihood_breakdown/fixed_light_numba_s4b_witness.py \
+    --mesh delaunay \
+    --dataset hst \
+    --threads 1 \
+    --kernel permuted \
+    --n-draws 8 \
+    --config-name hpc_ral_cpu_fp64_s4b
+
+echo "=========================================="
+echo "loadavg: $(cat /proc/loadavg)"
+echo "Finished."
+date

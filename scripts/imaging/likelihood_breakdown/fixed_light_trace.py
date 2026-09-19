@@ -269,7 +269,7 @@ _cell_parser.add_argument("--lanes", choices=("distinct", "identical"), default=
 _cell_parser.add_argument("--arms", choices=("vmap", "scalar", "both"), default="both")
 _cell_parser.add_argument("--draw-seed", type=int, default=0)
 _cell_parser.add_argument("--fallback", choices=("on", "off"), default="on")
-_cell_args, _ = _cell_parser.parse_known_args()
+_cell_args = _cli.parse_cell_args(_cell_parser)
 
 MESH = _cell_args.mesh
 BORDER_RELOCATOR_MODE = _cell_args.border_relocator

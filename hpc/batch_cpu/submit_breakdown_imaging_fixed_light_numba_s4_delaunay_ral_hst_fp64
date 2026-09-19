@@ -1,0 +1,295 @@
+#!/bin/bash -l
+#
+# 2026-09 fixed-lens-light numba PHASE 4, lever 4a (autolens_profiling#274).
+#
+# WHAT LEVER 4a IS, AND WHY IT IS A MEASUREMENT RATHER THAN A REWRITE.
+# `inversion_imaging_numba_util.curvature_matrix_via_sparse_operator_from` is a
+# DISPATCHER, not a kernel. It picks between two implementations that already
+# exist, with identical inputs, outputs and contracts, on one pixel-count cap:
+#
+#     if pix_pixels <= two_stage_max_pix_pixels:   # 4096
+#         return curvature_matrix_via_sparse_operator_two_stage_from(...)
+#     return curvature_matrix_via_sparse_operator_direct_from(...)
+#
+# At the 1500 source pixels this campaign measures, production therefore always
+# takes the TWO-STAGE branch. That cap was calibrated on the HST RECTANGULAR
+# fiducial -- bilinear mappings, u0 = 4, where two-stage wins 2.9x -- and the
+# two-stage kernel's own docstring says it can lose on barycentric Delaunay
+# (u0 ~ 1.55), because stage 2 does a dense pix_pixels-long AXPY per mapping of
+# every data pixel and then re-zeroes the whole accumulator regardless of how few
+# indices stage 1 actually touched. It has never been measured on this cell.
+# Phase 3 (#267) left `sparse_numba.curvature_matrix` at 87.8 ms of a 230.0 ms
+# call -- 38 %, the largest remaining site -- which is what makes the question
+# worth one job.
+#
+# WHAT THIS JOB RUNS. ONE ARM, three rows, one process:
+#
+#   b          route b un-patched. The production path, byte for byte, and the
+#              row the verdict is taken against. Two-stage, because the
+#              dispatcher says so.
+#   b_direct   route b with the library's own DIRECT quadruple loop injected.
+#   b_touched  route b with the candidate injected -- the two-stage body with
+#              stage 2 and the accumulator re-zero restricted to the indices
+#              stage 1 touched (an int64 index list behind an int8 seen flag).
+#              Bit-identical to two-stage by construction, asserted by the
+#              witness.
+#
+# All three are route b's dataset, route b's adapt images, route b's instances
+# and route b's settings (`_ROUTES_LIKE_B` in the cell). Only the curvature
+# kernel differs, which is the whole point -- any other difference would make the
+# b -> b_direct delta a comparison of two problems rather than of two kernels.
+#
+# THE VERDICT RULE, WRITTEN BEFORE THE RUN. A kernel is a lever if it beats route
+# `b` by >= 5 % on the WHOLE CALL with the ABBA gate PASS on every row. Below
+# that the answer is "two-stage is right on Delaunay too", which is a result, and
+# the PyAutoArray follow-up shrinks to the stale docstring at
+# `inversion_imaging_numba_util.py:781` (it names a
+# `CURVATURE_TWO_STAGE_COST_RATIO_THRESHOLD` that does not exist; the code
+# branches on `pix_pixels`). Site milliseconds do not decide this: a kernel that
+# wins `sparse_numba.curvature_matrix` and not the call has not won. Read
+# `rows.*.call_ms` first, then the site.
+#
+# WHY ONE PROCESS AND ONE LIBRARY, UNLIKE LEVERS 1-3. Those levers were a
+# PyAutoArray change, so their A/B had to be two arms against two checkouts.
+# Lever 4a changes no library code at all: both kernels are already in the
+# installed PyAutoArray and the third is prototyped in this repo behind the
+# injection seam, so all three rows run against ONE library in ONE process,
+# under the cell's own ABBA harness, on one host, at one load. That removes the
+# cross-arm host variance that levers 1-3 had to argue around, and it is why this
+# submit prints `autoarray.__file__` and the shared install's `rev-parse` once
+# rather than per arm. The library used is whatever `activate.sh` gives -- the
+# shared install at /mnt/ral/jnightin/PyAuto/PyAutoArray, untouched and never
+# written to by this job.
+#
+# WHY THE NAME AVOIDS `_numba_levers_`. `scripts/misc/test/`'s levers-submit test
+# family asserts that every submit carrying that infix has TWO library arms with
+# a control and a feature checkout. This job deliberately has one, for the reason
+# above, so it would fail a test that is correct about the family it describes.
+# It lives in `batch_cpu` because it is a CPU job and because that directory is
+# not globbed by the trace-cell test.
+#
+# THE OVERHEAD GATE IS NOW A MILLISECOND BUDGET, and this job is why it had to
+# be. `MAX_INSTRUMENTATION_OVERHEAD = 1.03` was a fixed ~6-8 ms instrumentation
+# cost read as a fraction of the call, so it tightened every time this campaign
+# made the call shorter. It killed job 343355's feature arm at 224 ms -- x1.0366,
+# i.e. 8.2 ms -- while job 343356's 413 ms row passed at x1.0147, i.e. 6.1 ms,
+# having cost LESS instrument in relative terms and MORE in absolute. The cell now
+# gates `MAX_INSTRUMENTATION_OVERHEAD_MS = 12.0` on
+# `(ABBA ratio - 1) * mean clean call ms` and RECORDS the ratio beside it, so the
+# rows of levers 1-3 stay readable. Check `instrumentation_overhead_ms` and
+# `instrumentation_overhead_status` on ALL THREE rows before quoting anything: a
+# row whose status is RECORDED rather than PASS has not been asserted.
+#
+# WHY --n-repeats 64. 32 counterbalanced blocks rather than the 8 that levers 1
+# and 2 ran at. Job 343355 showed 8 blocks cannot resolve this gate on this cell
+# against a clean-call spread of 16-29 %; 64 repeats shrinks the standard error
+# of the mean block ratio without touching the estimator, and it is applied to
+# every row so the three-way comparison stays symmetric. It does not bias the
+# whole-call figure -- it is the same mean over more samples of the same call.
+#
+# INSTANCES iid AND --nnls-warm-start on, unchanged from levers 1-3. `on` leaves
+# the cross-evaluation NNLS memo enabled AND skips the within-block memo clears,
+# so a block's calls warm-start from each other the way a sampler's successive
+# evaluations do -- which is what production pays. A row reporting
+# `seed_source: "dense"` is a silently cold run and a FAIL, not a number; check
+# it on all three rows before quoting anything.
+#
+# THE WITNESS. `fixed_light_numba_s4_witness.py` rebuilds the same HST Delaunay
+# N=1500 source-only AdaptSplit system and asserts, in one process:
+#   W1 each of the three kernels fires exactly ONCE per `fit.figure_of_merit`
+#      under its injection, recording the dotted name that actually ran;
+#   W2 the mapper block of `curvature_matrix` from all three kernels on the SAME
+#      seven arrays read off the fit's own mapper and sparse operator -- direct
+#      vs two-stage gated at 1e-9 relative with the value recorded, touched vs
+#      two-stage gated at `np.array_equal`, BIT-IDENTICAL, plus a check that the
+#      un-injected dispatcher reproduces the two-stage row exactly so the control
+#      really is the production path;
+#   W3 `figure_of_merit` under each injection against the un-injected library
+#      fit, in nats and relative, gate 1e-9 -- the phase's Witness pin;
+#   W4 medians of 20 single-thread calls of each kernel on those identical
+#      arrays, RECORDED and never gated.
+# It exits non-zero on a FAIL, which `activate.sh`'s in-job `set -e` turns into a
+# failed job rather than a COMPLETED one with a bad witness buried in the log.
+# W4 is a SITE measurement and is not the A/B row.
+#
+# SINGLE-THREAD SCOPE, unchanged from levers 1-3. Production for this path is
+# cpu_fast_modeling.py -- one single-threaded numba likelihood per process under
+# a multiprocessing pool, every core carrying its own worker -- so the row runs at
+# --threads 1 with NUMBA_NUM_THREADS=1 and the whole BLAS family pinned to 1. It
+# matters here: two-stage's cost is a dense AXPY that vectorises and would
+# thread, the direct loop's is an irregular scatter that does not, so the ratio
+# measured at one thread is the ratio a pool worker sees and NOT the ratio a
+# threaded likelihood would see. --cpus-per-task=4 is headroom for the one
+# process and its imports, not a thread budget.
+#
+# The cell's own contention gate (1-minute loadavg vs os.cpu_count()) is what
+# decides whether the numbers are quotable -- check `contention.load_average_*`
+# in the JSON and prefer a host at load ~0.
+#
+# This cell imports NO JAX of its own, but jax lands in sys.modules via the first
+# FitImaging regardless (recorded as jax_after_rows). There is no JAX_*/XLA_*
+# configuration here on purpose.
+#
+# parse_known_args IGNORES unknown flags, so a checkout WITHOUT this cell's
+# routes would run and silently produce the old three-row table -- check
+# `configuration.routes_selected`, `n_repeats`, `nnls_warm_start_env` and
+# `formalisms_selected` in the JSON, and `rows.*.injected_kernel.n_calls` on the
+# two injected rows, before quoting anything.
+#
+# THE PARTITION THIS DECLARES, AND WHY IT IS NOT `ral`. The #SBATCH block below
+# asks for `gpu` with FOUR CPUs and NO --gres -- the gpu partition's two 124-core
+# nodes used CPUs-only, leaving both A100s free. Levers 1-3 were all measured on
+# euclid-ral-gpu-1 (AMD EPYC 7702, os.cpu_count() 124) and the cumulative figure
+# this campaign reports is a chain of whole-call milliseconds that only multiplies
+# honestly if every link ran on the same silicon. `imp` remains unusable:
+# euclid-imp-compute-* do NOT mount /mnt/ral, so the repo, the venv, activate.sh
+# and the datasets are all absent and the job dies in 0 s with no output files.
+# Check `sinfo -p ral,gpu -N -o "%N %t %C %O"` before submitting.
+#
+# The -o/-e paths below are relative, so sbatch from INSIDE hpc/batch_cpu/.
+#
+# WALL-BASIS:
+#   One arm, three rows, then the witness, all in one job. Lever 3's job 343356
+#   ran the same cell TWICE (two library arms, one row each) plus its witness end
+#   to end in 2 h 41 m, so one arm of that shape is roughly 1 h 20 m and the bulk
+#   of it is the fixed prologue -- dataset, Hilbert mesh, MGE model, adapt image,
+#   the S0/S3 builds and the P2/P3 gates -- rather than the timed calls, which at
+#   --n-repeats 64 are 128 calls of ~230 ms per row. Three rows on one arm is
+#   therefore ~1.5x one arm, not 3x, and 7200 s is that estimate rounded up. The
+#   witness row below is its own cell and carries its own basis, as the gate
+#   requires; it rebuilds the same prologue and then takes 60 medians of a single
+#   kernel call, so 600 s is generous. --time=4:00:00 is what every job in this
+#   family carries and leaves 2x on the arm row.
+#   NOTE for anyone editing this block - check_submits parses any line here that
+#   looks like a keyword, a colon and a value as row data, and it takes only the
+#   first whitespace-delimited token as the value, so `ref:` is written as one
+#   token rather than as the words "RAL job 343356".
+#   cell: imaging/fixed_light_numba/hst  device: cpu  precision: fp64
+#   source: measured-wall  wall: 250  ref: RAL-job-343394  headroom: 1.5
+#   cell: imaging/fixed_light_numba_s4_witness/hst  device: cpu  precision: fp64
+#   source: measured-wall  wall: 600  ref: RAL-job-343356  headroom: 1.5
+
+#SBATCH -J fl_numba_s4
+#SBATCH --partition=gpu
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=32gb
+#SBATCH --time=4:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+# Derive the repo root from where this was submitted (hpc/batch_cpu/../..) rather
+# than hardcoding /mnt/ral/jnightin/autolens_profiling: the canonical RAL
+# checkout sits on main with a dirty tree, so this runs from a worktree of the
+# feature branch.
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+# One thread everywhere. NUMBA_NUM_THREADS must be in the environment BEFORE
+# numba is imported; the cell also sets it and records the resolved block.
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export NUMBA_NUM_THREADS=1
+export MPLCONFIGDIR=/tmp/matplotlib_${SLURM_JOB_ID:-local}
+mkdir -p "$MPLCONFIGDIR"
+# output/ is gitignored and ${SLURM_JOB_ID} keeps concurrent jobs on the same
+# shared node from fighting over one cache directory.
+export NUMBA_CACHE_DIR=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}_s4
+mkdir -p "$NUMBA_CACHE_DIR"
+
+echo "=========================================="
+date
+hostname
+lscpu | grep 'Model name' || true
+echo "cpus-per-task:  ${SLURM_CPUS_PER_TASK:-unset}"
+echo "loadavg:        $(cat /proc/loadavg)"
+echo "Cell:           likelihood_breakdown/imaging/fixed_light_numba (routes b, b_direct, b_touched)"
+echo "Witness:        likelihood_breakdown/imaging/fixed_light_numba_s4_witness"
+echo "Instrument:     hst"
+echo "Precision:      fp64"
+echo "Inversion path: numba sparse operator (InversionImagingSparseNumba), use_jax=False"
+echo "Source mesh:    Hilbert/Delaunay mesh, 1500 vertices"
+echo "Regularization: AdaptSplit(inner=0.1, outer=10.0, signal_scale=0.1)"
+echo "A/B:            ONE library, ONE process — b (production two-stage) vs b_direct vs b_touched"
+echo "Verdict rule:   a kernel is a lever only if it beats b by >= 5 % on the WHOLE CALL"
+echo "Overhead gate:  MAX_INSTRUMENTATION_OVERHEAD_MS = 12.0 (absolute, not a ratio)"
+echo "Threads:        1 (numba + BLAS family), production pool-worker scope"
+echo "Thread env:     OMP=$OMP_NUM_THREADS MKL=$MKL_NUM_THREADS OPENBLAS=$OPENBLAS_NUM_THREADS NUMBA=$NUMBA_NUM_THREADS"
+
+echo "=== source revisions (the shared install, untouched — there is no per-arm override) ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r" "$(git -C /mnt/ral/jnightin/PyAuto/$r rev-parse HEAD 2>&1)"
+done
+echo "AP_ROOT rev:    $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+echo "AP_ROOT branch: $(git -C $AP_ROOT rev-parse --abbrev-ref HEAD 2>&1)"
+
+cd $AP_ROOT
+
+# The in-job proof that the two library kernels this job A/Bs are both present,
+# and that the dispatcher still takes the keyword the injection seam supplies.
+# Read off the IMPORTED module rather than from a checkout path, which is the
+# cheapest possible proof. `$(cat <<'EOF' ...)` rather than `read -r -d '' ...`:
+# `read` with an empty delimiter returns non-zero at EOF, and activate.sh runs
+# the job under `set -e`, so the `read` form would kill the job here instead of
+# defining the snippet.
+KERNEL_PROVENANCE="$(cat <<'PYPROV'
+import inspect
+
+import autoarray
+from autoarray.inversion.inversion.imaging_numba import inversion_imaging_numba_util as u
+
+print('  autoarray.__file__    =', autoarray.__file__)
+print('  autoarray.__version__ =', autoarray.__version__)
+for name in (
+    'curvature_matrix_via_sparse_operator_from',
+    'curvature_matrix_via_sparse_operator_two_stage_from',
+    'curvature_matrix_via_sparse_operator_direct_from',
+):
+    print('  has', name, '=', hasattr(u, name))
+print('  CURVATURE_TWO_STAGE_MAX_PIX_PIXELS =', u.CURVATURE_TWO_STAGE_MAX_PIX_PIXELS)
+# The attribute holds either numba_util.jit's lazy placeholder (a functools.wraps
+# wrapper whose signature follows __wrapped__) or, once materialized, a Dispatcher
+# carrying py_func. Read whichever is there rather than assuming one.
+_dispatcher = u.curvature_matrix_via_sparse_operator_from
+_parameters = inspect.signature(getattr(_dispatcher, 'py_func', _dispatcher)).parameters
+print('  dispatcher takes two_stage_max_pix_pixels =', 'two_stage_max_pix_pixels' in _parameters)
+PYPROV
+)"
+
+echo "--- kernel provenance ---"
+python3 -c "$KERNEL_PROVENANCE"
+
+echo "=========================================="
+echo "THE A/B: routes b, b_direct, b_touched — one library, one process"
+echo "  sparse_numba, memo ON, threads 1, n-repeats 64, instances iid"
+date
+echo "loadavg: $(cat /proc/loadavg)"
+python3 -u scripts/imaging/likelihood_breakdown/fixed_light_numba.py \
+    --mesh delaunay \
+    --dataset hst \
+    --formalism sparse_numba \
+    --routes b,b_direct,b_touched \
+    --threads 1 \
+    --n-repeats 64 \
+    --instances iid \
+    --nnls-warm-start on \
+    --config-name hpc_ral_cpu_fp64_fixed_light_numba_s4_b_warm_t1
+
+echo "=========================================="
+echo "THE WITNESS: the three kernels compute the same matrix and the same evidence"
+date
+echo "loadavg: $(cat /proc/loadavg)"
+python3 -u scripts/imaging/likelihood_breakdown/fixed_light_numba_s4_witness.py \
+    --mesh delaunay \
+    --dataset hst \
+    --threads 1 \
+    --config-name hpc_ral_cpu_fp64_s4
+
+echo "=========================================="
+echo "loadavg: $(cat /proc/loadavg)"
+echo "Finished."
+date

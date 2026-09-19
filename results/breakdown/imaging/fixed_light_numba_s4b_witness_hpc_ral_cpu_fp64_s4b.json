@@ -1,0 +1,2495 @@
+{
+  "cell": "fixed_light_numba_s4b_witness",
+  "issue": "autolens_profiling#276",
+  "verdict": "PASS",
+  "draws": [
+    {
+      "draw": 0,
+      "identity": {
+        "verdict": "PASS",
+        "gates": {
+          "same_problem": true,
+          "W1_identity": true,
+          "W2_active_set": true,
+          "W3_evidence": true,
+          "W4_fallback": true,
+          "W6_factor": true
+        },
+        "active_set": {
+          "jaccard": 1.0,
+          "n_passive_a": 1485,
+          "n_passive_b": 1485,
+          "n_intersection": 1485,
+          "n_union": 1485,
+          "only_in_a": [],
+          "only_in_b": [],
+          "identical": true
+        },
+        "evidence": {
+          "log_evidence": 19705.717582263656,
+          "log_evidence_reference": 19705.717582263656,
+          "delta_nats": 0.0,
+          "relative_difference": 0.0,
+          "bit_identical": true,
+          "rtol": 1e-09,
+          "within_rtol": true
+        },
+        "max_abs_delta_reconstruction": 0.0,
+        "kkt": {
+          "library": {
+            "max_w_active": -1.336544609716384,
+            "min_x_passive": 0.002195025488810858,
+            "max_abs_w_passive": 2.1827872842550278e-10,
+            "solver_tolerance": 3.3306e-13,
+            "n": 1500
+          },
+          "candidate": {
+            "max_w_active": -1.336544609716384,
+            "min_x_passive": 0.002195025488810858,
+            "max_abs_w_passive": 2.1827872842550278e-10,
+            "solver_tolerance": 3.3306e-13,
+            "n": 1500
+          }
+        },
+        "iterations": {
+          "library": {
+            "outer_iterations": 0,
+            "inner_iterations": 1,
+            "n_passive": 1485,
+            "warm_start_errors": 5,
+            "seed_source": "dense",
+            "warm_start_fallback": false
+          },
+          "candidate": {
+            "outer_iterations": 0,
+            "inner_iterations": 1,
+            "n_passive": 1485,
+            "warm_start_errors": 5,
+            "seed_source": "dense",
+            "warm_start_fallback": false
+          }
+        },
+        "kernel_errors": {
+          "library": [],
+          "candidate": []
+        },
+        "kernel_calls": {
+          "library": 1,
+          "candidate": 1
+        },
+        "factor": {
+          "library": {
+            "factor_keys": [
+              "U_buffer",
+              "k_active",
+              "matrix_shape",
+              "passive_set"
+            ],
+            "missing_keys": [],
+            "expected_keys": [
+              "U_buffer",
+              "k_active",
+              "passive_set",
+              "matrix_shape"
+            ],
+            "atol_nats": 2e-12,
+            "matrix_shape": [
+              1500,
+              1500
+            ],
+            "k_active": 1485,
+            "factor_matrix_shape": [
+              1500,
+              1500
+            ],
+            "shape_agrees": true,
+            "structure_agrees": true,
+            "factor_relative_residual": 3.5494963418648364e-16,
+            "factor_rtol": 1e-12,
+            "log_det_from_factor": 8326.700171352591,
+            "log_det_slogdet": 8326.700171352586,
+            "slogdet_sign": 1.0,
+            "delta_nats": 5.4569682106375694e-12,
+            "original_within_atol": false,
+            "effective_atol_nats": 5.820766091346741e-11,
+            "allowed_spacings": 32,
+            "within_atol": true
+          },
+          "candidate": {
+            "factor_keys": [
+              "U_buffer",
+              "k_active",
+              "matrix_shape",
+              "passive_set"
+            ],
+            "missing_keys": [],
+            "expected_keys": [
+              "U_buffer",
+              "k_active",
+              "passive_set",
+              "matrix_shape"
+            ],
+            "atol_nats": 2e-12,
+            "matrix_shape": [
+              1500,
+              1500
+            ],
+            "k_active": 1485,
+            "factor_matrix_shape": [
+              1500,
+              1500
+            ],
+            "shape_agrees": true,
+            "structure_agrees": true,
+            "factor_relative_residual": 3.5494963418648364e-16,
+            "factor_rtol": 1e-12,
+            "log_det_from_factor": 8326.700171352591,
+            "log_det_slogdet": 8326.700171352586,
+            "slogdet_sign": 1.0,
+            "delta_nats": 5.4569682106375694e-12,
+            "original_within_atol": false,
+            "effective_atol_nats": 5.820766091346741e-11,
+            "allowed_spacings": 32,
+            "within_atol": true
+          }
+        }
+      },
+      "candidate": {
+        "verdict": "PASS",
+        "gates": {
+          "same_problem": true,
+          "W1_identity": true,
+          "W2_active_set": true,
+          "W3_evidence": true,
+          "W4_fallback": true,
+          "W6_factor": true
+        },
+        "active_set": {
+          "jaccard": 1.0,
+          "n_passive_a": 1485,
+          "n_passive_b": 1485,
+          "n_intersection": 1485,
+          "n_union": 1485,
+          "only_in_a": [],
+          "only_in_b": [],
+          "identical": true
+        },
+        "evidence": {
+          "log_evidence": 19705.717582263656,
+          "log_evidence_reference": 19705.717582263656,
+          "delta_nats": 0.0,
+          "relative_difference": 0.0,
+          "bit_identical": true,
+          "rtol": 1e-09,
+          "within_rtol": true
+        },
+        "max_abs_delta_reconstruction": 0.0,
+        "kkt": {
+          "library": {
+            "max_w_active": -1.336544609716384,
+            "min_x_passive": 0.002195025488810858,
+            "max_abs_w_passive": 2.1827872842550278e-10,
+            "solver_tolerance": 3.3306e-13,
+            "n": 1500
+          },
+          "candidate": {
+            "max_w_active": -1.336544609716384,
+            "min_x_passive": 0.002195025488810858,
+            "max_abs_w_passive": 2.1827872842550278e-10,
+            "solver_tolerance": 3.3306e-13,
+            "n": 1500
+          }
+        },
+        "iterations": {
+          "library": {
+            "outer_iterations": 0,
+            "inner_iterations": 1,
+            "n_passive": 1485,
+            "warm_start_errors": 5,
+            "seed_source": "dense",
+            "warm_start_fallback": false
+          },
+          "candidate": {
+            "outer_iterations": 0,
+            "inner_iterations": 1,
+            "n_passive": 1485,
+            "warm_start_errors": 5,
+            "seed_source": "dense",
+            "warm_start_fallback": false
+          }
+        },
+        "kernel_errors": {
+          "library": [],
+          "candidate": []
+        },
+        "kernel_calls": {
+          "library": 1,
+          "candidate": 1
+        },
+        "factor": {
+          "library": {
+            "factor_keys": [
+              "U_buffer",
+              "k_active",
+              "matrix_shape",
+              "passive_set"
+            ],
+            "missing_keys": [],
+            "expected_keys": [
+              "U_buffer",
+              "k_active",
+              "passive_set",
+              "matrix_shape"
+            ],
+            "atol_nats": 2e-12,
+            "matrix_shape": [
+              1500,
+              1500
+            ],
+            "k_active": 1485,
+            "factor_matrix_shape": [
+              1500,
+              1500
+            ],
+            "shape_agrees": true,
+            "structure_agrees": true,
+            "factor_relative_residual": 3.5494963418648364e-16,
+            "factor_rtol": 1e-12,
+            "log_det_from_factor": 8326.700171352591,
+            "log_det_slogdet": 8326.700171352586,
+            "slogdet_sign": 1.0,
+            "delta_nats": 5.4569682106375694e-12,
+            "original_within_atol": false,
+            "effective_atol_nats": 5.820766091346741e-11,
+            "allowed_spacings": 32,
+            "within_atol": true
+          },
+          "candidate": {
+            "factor_keys": [
+              "U_buffer",
+              "k_active",
+              "matrix_shape",
+              "passive_set"
+            ],
+            "missing_keys": [],
+            "expected_keys": [
+              "U_buffer",
+              "k_active",
+              "passive_set",
+              "matrix_shape"
+            ],
+            "atol_nats": 2e-12,
+            "matrix_shape": [
+              1500,
+              1500
+            ],
+            "k_active": 1485,
+            "factor_matrix_shape": [
+              1500,
+              1500
+            ],
+            "shape_agrees": true,
+            "structure_agrees": true,
+            "factor_relative_residual": 3.5494963418648364e-16,
+            "factor_rtol": 1e-12,
+            "log_det_from_factor": 8326.700171352591,
+            "log_det_slogdet": 8326.700171352586,
+            "slogdet_sign": 1.0,
+            "delta_nats": 5.4569682106375694e-12,
+            "original_within_atol": false,
+            "effective_atol_nats": 5.820766091346741e-11,
+            "allowed_spacings": 32,
+            "within_atol": true
+          }
+        }
+      }
+    },
+    {
+      "draw": 1,
+      "identity": {
+        "verdict": "PASS",
+        "gates": {
+          "same_problem": true,
+          "W1_identity": true,
+          "W2_active_set": true,
+          "W3_evidence": true,
+          "W4_fallback": true,
+          "W6_factor": true
+        },
+        "active_set": {
+          "jaccard": 1.0,
+          "n_passive_a": 1485,
+          "n_passive_b": 1485,
+          "n_intersection": 1485,
+          "n_union": 1485,
+          "only_in_a": [],
+          "only_in_b": [],
+          "identical": true
+        },
+        "evidence": {
+          "log_evidence": 18820.52884580235,
+          "log_evidence_reference": 18820.52884580235,
+          "delta_nats": 0.0,
+          "relative_difference": 0.0,
+          "bit_identical": true,
+          "rtol": 1e-09,
+          "within_rtol": true
+        },
+        "max_abs_delta_reconstruction": 0.0,
+        "kkt": {
+          "library": {
+            "max_w_active": -11.011995335258348,
+            "min_x_passive": 0.003960275246040797,
+            "max_abs_w_passive": 2.255546860396862e-10,
+            "solver_tolerance": 3.3306e-13,
+            "n": 1500
+          },
+          "candidate": {
+            "max_w_active": -11.011995335258348,
+            "min_x_passive": 0.003960275246040797,
+            "max_abs_w_passive": 2.255546860396862e-10,
+            "solver_tolerance": 3.3306e-13,
+            "n": 1500
+          }
+        },
+        "iterations": {
+          "library": {
+            "outer_iterations": 2,
+            "inner_iterations": 1,
+            "n_passive": 1485,
+            "warm_start_errors": 4,
+            "seed_source": "memo",
+            "warm_start_fallback": false
+          },
+          "candidate": {
+            "outer_iterations": 2,
+            "inner_iterations": 1,
+            "n_passive": 1485,
+            "warm_start_errors": 4,
+            "seed_source": "memo",
+            "warm_start_fallback": false
+          }
+        },
+        "kernel_errors": {
+          "library": [],
+          "candidate": []
+        },
+        "kernel_calls": {
+          "library": 1,
+          "candidate": 1
+        },
+        "factor": {
+          "library": {
+            "factor_keys": [
+              "U_buffer",
+              "k_active",
+              "matrix_shape",
+              "passive_set"
+            ],
+            "missing_keys": [],
+            "expected_keys": [
+              "U_buffer",
+              "k_active",
+              "passive_set",
+              "matrix_shape"
+            ],
+            "atol_nats": 2e-12,
+            "matrix_shape": [
+              1500,
+              1500
+            ],
+            "k_active": 1485,
+            "factor_matrix_shape": [
+              1500,
+              1500
+            ],
+            "shape_agrees": true,
+            "structure_agrees": true,
+            "factor_relative_residual": 1.7802946663534026e-16,
+            "factor_rtol": 1e-12,
+            "log_det_from_factor": 8576.577318074013,
+            "log_det_slogdet": 8576.577318074,
+            "slogdet_sign": 1.0,
+            "delta_nats": 1.2732925824820995e-11,
+            "original_within_atol": false,
+            "effective_atol_nats": 5.820766091346741e-11,
+            "allowed_spacings": 32,
+            "within_atol": true
+          },
+          "candidate": {
+            "factor_keys": [
+              "U_buffer",
+              "k_active",
+              "matrix_shape",
+              "passive_set"
+            ],
+            "missing_keys": [],
+            "expected_keys": [
+              "U_buffer",
+              "k_active",
+              "passive_set",
+              "matrix_shape"
+            ],
+            "atol_nats": 2e-12,
+            "matrix_shape": [
+              1500,
+              1500
+            ],
+            "k_active": 1485,
+            "factor_matrix_shape": [
+              1500,
+              1500
+            ],
+            "shape_agrees": true,
+            "structure_agrees": true,
+            "factor_relative_residual": 1.7802946663534026e-16,
+            "factor_rtol": 1e-12,
+            "log_det_from_factor": 8576.577318074013,
+            "log_det_slogdet": 8576.577318074,
+            "slogdet_sign": 1.0,
+            "delta_nats": 1.2732925824820995e-11,
+            "original_within_atol": false,
+            "effective_atol_nats": 5.820766091346741e-11,
+            "allowed_spacings": 32,
+            "within_atol": true
+          }
+        }
+      },
+      "candidate": {
+        "verdict": "PASS",
+        "gates": {
+          "same_problem": true,
+          "W1_identity": true,
+          "W2_active_set": true,
+          "W3_evidence": true,
+          "W4_fallback": true,
+          "W6_factor": true
+        },
+        "active_set": {
+          "jaccard": 1.0,
+          "n_passive_a": 1485,
+          "n_passive_b": 1485,
+          "n_intersection": 1485,
+          "n_union": 1485,
+          "only_in_a": [],
+          "only_in_b": [],
+          "identical": true
+        },
+        "evidence": {
+          "log_evidence": 18820.52884580235,
+          "log_evidence_reference": 18820.52884580235,
+          "delta_nats": 0.0,
+          "relative_difference": 0.0,
+          "bit_identical": true,
+          "rtol": 1e-09,
+          "within_rtol": true
+        },
+        "max_abs_delta_reconstruction": 0.0,
+        "kkt": {
+          "library": {
+            "max_w_active": -11.011995335258348,
+            "min_x_passive": 0.003960275246040797,
+            "max_abs_w_passive": 2.255546860396862e-10,
+            "solver_tolerance": 3.3306e-13,
+            "n": 1500
+          },
+          "candidate": {
+            "max_w_active": -11.011995335258348,
+            "min_x_passive": 0.003960275246040797,
+            "max_abs_w_passive": 2.255546860396862e-10,
+            "solver_tolerance": 3.3306e-13,
+            "n": 1500
+          }
+        },
+        "iterations": {
+          "library": {
+            "outer_iterations": 2,
+            "inner_iterations": 1,
+            "n_passive": 1485,
+            "warm_start_errors": 4,
+            "seed_source": "memo",
+            "warm_start_fallback": false
+          },
+          "candidate": {
+            "outer_iterations": 2,
+            "inner_iterations": 1,
+            "n_passive": 1485,
+            "warm_start_errors": 4,
+            "seed_source": "memo",
+            "warm_start_fallback": false
+          }
+        },
+        "kernel_errors": {
+          "library": [],
+          "candidate": []
+        },
+        "kernel_calls": {
+          "library": 1,
+          "candidate": 1
+        },
+        "factor": {
+          "library": {
+            "factor_keys": [
+              "U_buffer",
+              "k_active",
+              "matrix_shape",
+              "passive_set"
+            ],
+            "missing_keys": [],
+            "expected_keys": [
+              "U_buffer",
+              "k_active",
+              "passive_set",
+              "matrix_shape"
+            ],
+            "atol_nats": 2e-12,
+            "matrix_shape": [
+              1500,
+              1500
+            ],
+            "k_active": 1485,
+            "factor_matrix_shape": [
+              1500,
+              1500
+            ],
+            "shape_agrees": true,
+            "structure_agrees": true,
+            "factor_relative_residual": 1.7802946663534026e-16,
+            "factor_rtol": 1e-12,
+            "log_det_from_factor": 8576.577318074013,
+            "log_det_slogdet": 8576.577318074,
+            "slogdet_sign": 1.0,
+            "delta_nats": 1.2732925824820995e-11,
+            "original_within_atol": false,
+            "effective_atol_nats": 5.820766091346741e-11,
+            "allowed_spacings": 32,
+            "within_atol": true
+          },
+          "candidate": {
+            "factor_keys": [
+              "U_buffer",
+              "k_active",
+              "matrix_shape",
+              "passive_set"
+            ],
+            "missing_keys": [],
+            "expected_keys": [
+              "U_buffer",
+              "k_active",
+              "passive_set",
+              "matrix_shape"
+            ],
+            "atol_nats": 2e-12,
+            "matrix_shape": [
+              1500,
+              1500
+            ],
+            "k_active": 1485,
+            "factor_matrix_shape": [
+              1500,
+              1500
+            ],
+            "shape_agrees": true,
+            "structure_agrees": true,
+            "factor_relative_residual": 1.7802946663534026e-16,
+            "factor_rtol": 1e-12,
+            "log_det_from_factor": 8576.577318074013,
+            "log_det_slogdet": 8576.577318074,
+            "slogdet_sign": 1.0,
+            "delta_nats": 1.2732925824820995e-11,
+            "original_within_atol": false,
+            "effective_atol_nats": 5.820766091346741e-11,
+            "allowed_spacings": 32,
+            "within_atol": true
+          }
+        }
+      }
+    },
+    {
+      "draw": 2,
+      "identity": {
+        "verdict": "PASS",
+        "gates": {
+          "same_problem": true,
+          "W1_identity": true,
+          "W2_active_set": true,
+          "W3_evidence": true,
+          "W4_fallback": true,
+          "W6_factor": true
+        },
+        "active_set": {
+          "jaccard": 1.0,
+          "n_passive_a": 1485,
+          "n_passive_b": 1485,
+          "n_intersection": 1485,
+          "n_union": 1485,
+          "only_in_a": [],
+          "only_in_b": [],
+          "identical": true
+        },
+        "evidence": {
+          "log_evidence": 18656.216132147765,
+          "log_evidence_reference": 18656.216132147765,
+          "delta_nats": 0.0,
+          "relative_difference": 0.0,
+          "bit_identical": true,
+          "rtol": 1e-09,
+          "within_rtol": true
+        },
+        "max_abs_delta_reconstruction": 0.0,
+        "kkt": {
+          "library": {
+            "max_w_active": -1.2902588559926471,
+            "min_x_passive": 0.004322363561756278,
+            "max_abs_w_passive": 1.3642420526593924e-10,
+            "solver_tolerance": 3.3306e-13,
+            "n": 1500
+          },
+          "candidate": {
+            "max_w_active": -1.2902588559926471,
+            "min_x_passive": 0.004322363561756278,
+            "max_abs_w_passive": 1.3642420526593924e-10,
+            "solver_tolerance": 3.3306e-13,
+            "n": 1500
+          }
+        },
+        "iterations": {
+          "library": {
+            "outer_iterations": 0,
+            "inner_iterations": 0,
+            "n_passive": 1485,
+            "warm_start_errors": 0,
+            "seed_source": "memo",
+            "warm_start_fallback": false
+          },
+          "candidate": {
+            "outer_iterations": 0,
+            "inner_iterations": 0,
+            "n_passive": 1485,
+            "warm_start_errors": 0,
+            "seed_source": "memo",
+            "warm_start_fallback": false
+          }
+        },
+        "kernel_errors": {
+          "library": [],
+          "candidate": []
+        },
+        "kernel_calls": {
+          "library": 1,
+          "candidate": 1
+        },
+        "factor": {
+          "library": {
+            "factor_keys": [
+              "U_buffer",
+              "k_active",
+              "matrix_shape",
+              "passive_set"
+            ],
+            "missing_keys": [],
+            "expected_keys": [
+              "U_buffer",
+              "k_active",
+              "passive_set",
+              "matrix_shape"
+            ],
+            "atol_nats": 2e-12,
+            "matrix_shape": [
+              1500,
+              1500
+            ],
+            "k_active": 1485,
+            "factor_matrix_shape": [
+              1500,
+              1500
+            ],
+            "shape_agrees": true,
+            "structure_agrees": true,
+            "factor_relative_residual": 1.779770890263035e-16,
+            "factor_rtol": 1e-12,
+            "log_det_from_factor": 8797.640485795768,
+            "log_det_slogdet": 8797.64048579578,
+            "slogdet_sign": 1.0,
+            "delta_nats": -1.2732925824820995e-11,
+            "original_within_atol": false,
+            "effective_atol_nats": 5.820766091346741e-11,
+            "allowed_spacings": 32,
+            "within_atol": true
+          },
+          "candidate": {
+            "factor_keys": [
+              "U_buffer",
+              "k_active",
+              "matrix_shape",
+              "passive_set"
+            ],
+            "missing_keys": [],
+            "expected_keys": [
+              "U_buffer",
+              "k_active",
+              "passive_set",
+              "matrix_shape"
+            ],
+            "atol_nats": 2e-12,
+            "matrix_shape": [
+              1500,
+              1500
+            ],
+            "k_active": 1485,
+            "factor_matrix_shape": [
+              1500,
+              1500
+            ],
+            "shape_agrees": true,
+            "structure_agrees": true,
+            "factor_relative_residual": 1.779770890263035e-16,
+            "factor_rtol": 1e-12,
+            "log_det_from_factor": 8797.640485795768,
+            "log_det_slogdet": 8797.64048579578,
+            "slogdet_sign": 1.0,
+            "delta_nats": -1.2732925824820995e-11,
+            "original_within_atol": false,
+            "effective_atol_nats": 5.820766091346741e-11,
+            "allowed_spacings": 32,
+            "within_atol": true
+          }
+        }
+      },
+      "candidate": {
+        "verdict": "PASS",
+        "gates": {
+          "same_problem": true,
+          "W1_identity": true,
+          "W2_active_set": true,
+          "W3_evidence": true,
+          "W4_fallback": true,
+          "W6_factor": true
+        },
+        "active_set": {
+          "jaccard": 1.0,
+          "n_passive_a": 1485,
+          "n_passive_b": 1485,
+          "n_intersection": 1485,
+          "n_union": 1485,
+          "only_in_a": [],
+          "only_in_b": [],
+          "identical": true
+        },
+        "evidence": {
+          "log_evidence": 18656.216132147765,
+          "log_evidence_reference": 18656.216132147765,
+          "delta_nats": 0.0,
+          "relative_difference": 0.0,
+          "bit_identical": true,
+          "rtol": 1e-09,
+          "within_rtol": true
+        },
+        "max_abs_delta_reconstruction": 0.0,
+        "kkt": {
+          "library": {
+            "max_w_active": -1.2902588559926471,
+            "min_x_passive": 0.004322363561756278,
+            "max_abs_w_passive": 1.3642420526593924e-10,
+            "solver_tolerance": 3.3306e-13,
+            "n": 1500
+          },
+          "candidate": {
+            "max_w_active": -1.2902588559926471,
+            "min_x_passive": 0.004322363561756278,
+            "max_abs_w_passive": 1.3642420526593924e-10,
+            "solver_tolerance": 3.3306e-13,
+            "n": 1500
+          }
+        },
+        "iterations": {
+          "library": {
+            "outer_iterations": 0,
+            "inner_iterations": 0,
+            "n_passive": 1485,
+            "warm_start_errors": 0,
+            "seed_source": "memo",
+            "warm_start_fallback": false
+          },
+          "candidate": {
+            "outer_iterations": 0,
+            "inner_iterations": 0,
+            "n_passive": 1485,
+            "warm_start_errors": 0,
+            "seed_source": "memo",
+            "warm_start_fallback": false
+          }
+        },
+        "kernel_errors": {
+          "library": [],
+          "candidate": []
+        },
+        "kernel_calls": {
+          "library": 1,
+          "candidate": 1
+        },
+        "factor": {
+          "library": {
+            "factor_keys": [
+              "U_buffer",
+              "k_active",
+              "matrix_shape",
+              "passive_set"
+            ],
+            "missing_keys": [],
+            "expected_keys": [
+              "U_buffer",
+              "k_active",
+              "passive_set",
+              "matrix_shape"
+            ],
+            "atol_nats": 2e-12,
+            "matrix_shape": [
+              1500,
+              1500
+            ],
+            "k_active": 1485,
+            "factor_matrix_shape": [
+              1500,
+              1500
+            ],
+            "shape_agrees": true,
+            "structure_agrees": true,
+            "factor_relative_residual": 1.779770890263035e-16,
+            "factor_rtol": 1e-12,
+            "log_det_from_factor": 8797.640485795768,
+            "log_det_slogdet": 8797.64048579578,
+            "slogdet_sign": 1.0,
+            "delta_nats": -1.2732925824820995e-11,
+            "original_within_atol": false,
+            "effective_atol_nats": 5.820766091346741e-11,
+            "allowed_spacings": 32,
+            "within_atol": true
+          },
+          "candidate": {
+            "factor_keys": [
+              "U_buffer",
+              "k_active",
+              "matrix_shape",
+              "passive_set"
+            ],
+            "missing_keys": [],
+            "expected_keys": [
+              "U_buffer",
+              "k_active",
+              "passive_set",
+              "matrix_shape"
+            ],
+            "atol_nats": 2e-12,
+            "matrix_shape": [
+              1500,
+              1500
+            ],
+            "k_active": 1485,
+            "factor_matrix_shape": [
+              1500,
+              1500
+            ],
+            "shape_agrees": true,
+            "structure_agrees": true,
+            "factor_relative_residual": 1.779770890263035e-16,
+            "factor_rtol": 1e-12,
+            "log_det_from_factor": 8797.640485795768,
+            "log_det_slogdet": 8797.64048579578,
+            "slogdet_sign": 1.0,
+            "delta_nats": -1.2732925824820995e-11,
+            "original_within_atol": false,
+            "effective_atol_nats": 5.820766091346741e-11,
+            "allowed_spacings": 32,
+            "within_atol": true
+          }
+        }
+      }
+    },
+    {
+      "draw": 3,
+      "identity": {
+        "verdict": "PASS",
+        "gates": {
+          "same_problem": true,
+          "W1_identity": true,
+          "W2_active_set": true,
+          "W3_evidence": true,
+          "W4_fallback": true,
+          "W6_factor": true
+        },
+        "active_set": {
+          "jaccard": 1.0,
+          "n_passive_a": 1484,
+          "n_passive_b": 1484,
+          "n_intersection": 1484,
+          "n_union": 1484,
+          "only_in_a": [],
+          "only_in_b": [],
+          "identical": true
+        },
+        "evidence": {
+          "log_evidence": 19403.969803014632,
+          "log_evidence_reference": 19403.969803014632,
+          "delta_nats": 0.0,
+          "relative_difference": 0.0,
+          "bit_identical": true,
+          "rtol": 1e-09,
+          "within_rtol": true
+        },
+        "max_abs_delta_reconstruction": 0.0,
+        "kkt": {
+          "library": {
+            "max_w_active": -3.523852843557279,
+            "min_x_passive": 0.0026937902462508484,
+            "max_abs_w_passive": 1.7462298274040222e-10,
+            "solver_tolerance": 3.3306e-13,
+            "n": 1500
+          },
+          "candidate": {
+            "max_w_active": -3.523852843557279,
+            "min_x_passive": 0.0026937902462508484,
+            "max_abs_w_passive": 1.7462298274040222e-10,
+            "solver_tolerance": 3.3306e-13,
+            "n": 1500
+          }
+        },
+        "iterations": {
+          "library": {
+            "outer_iterations": 2,
+            "inner_iterations": 1,
+            "n_passive": 1484,
+            "warm_start_errors": 5,
+            "seed_source": "memo",
+            "warm_start_fallback": false
+          },
+          "candidate": {
+            "outer_iterations": 2,
+            "inner_iterations": 1,
+            "n_passive": 1484,
+            "warm_start_errors": 5,
+            "seed_source": "memo",
+            "warm_start_fallback": false
+          }
+        },
+        "kernel_errors": {
+          "library": [],
+          "candidate": []
+        },
+        "kernel_calls": {
+          "library": 1,
+          "candidate": 1
+        },
+        "factor": {
+          "library": {
+            "factor_keys": [
+              "U_buffer",
+              "k_active",
+              "matrix_shape",
+              "passive_set"
+            ],
+            "missing_keys": [],
+            "expected_keys": [
+              "U_buffer",
+              "k_active",
+              "passive_set",
+              "matrix_shape"
+            ],
+            "atol_nats": 2e-12,
+            "matrix_shape": [
+              1500,
+              1500
+            ],
+            "k_active": 1484,
+            "factor_matrix_shape": [
+              1500,
+              1500
+            ],
+            "shape_agrees": true,
+            "structure_agrees": true,
+            "factor_relative_residual": 3.4769550138018865e-16,
+            "factor_rtol": 1e-12,
+            "log_det_from_factor": 8548.774818056445,
+            "log_det_slogdet": 8548.774818056443,
+            "slogdet_sign": 1.0,
+            "delta_nats": 1.8189894035458565e-12,
+            "original_within_atol": true,
+            "effective_atol_nats": 5.820766091346741e-11,
+            "allowed_spacings": 32,
+            "within_atol": true
+          },
+          "candidate": {
+            "factor_keys": [
+              "U_buffer",
+              "k_active",
+              "matrix_shape",
+              "passive_set"
+            ],
+            "missing_keys": [],
+            "expected_keys": [
+              "U_buffer",
+              "k_active",
+              "passive_set",
+              "matrix_shape"
+            ],
+            "atol_nats": 2e-12,
+            "matrix_shape": [
+              1500,
+              1500
+            ],
+            "k_active": 1484,
+            "factor_matrix_shape": [
+              1500,
+              1500
+            ],
+            "shape_agrees": true,
+            "structure_agrees": true,
+            "factor_relative_residual": 3.4769550138018865e-16,
+            "factor_rtol": 1e-12,
+            "log_det_from_factor": 8548.774818056445,
+            "log_det_slogdet": 8548.774818056443,
+            "slogdet_sign": 1.0,
+            "delta_nats": 1.8189894035458565e-12,
+            "original_within_atol": true,
+            "effective_atol_nats": 5.820766091346741e-11,
+            "allowed_spacings": 32,
+            "within_atol": true
+          }
+        }
+      },
+      "candidate": {
+        "verdict": "PASS",
+        "gates": {
+          "same_problem": true,
+          "W1_identity": true,
+          "W2_active_set": true,
+          "W3_evidence": true,
+          "W4_fallback": true,
+          "W6_factor": true
+        },
+        "active_set": {
+          "jaccard": 1.0,
+          "n_passive_a": 1484,
+          "n_passive_b": 1484,
+          "n_intersection": 1484,
+          "n_union": 1484,
+          "only_in_a": [],
+          "only_in_b": [],
+          "identical": true
+        },
+        "evidence": {
+          "log_evidence": 19403.969803014632,
+          "log_evidence_reference": 19403.969803014632,
+          "delta_nats": 0.0,
+          "relative_difference": 0.0,
+          "bit_identical": true,
+          "rtol": 1e-09,
+          "within_rtol": true
+        },
+        "max_abs_delta_reconstruction": 0.0,
+        "kkt": {
+          "library": {
+            "max_w_active": -3.523852843557279,
+            "min_x_passive": 0.0026937902462508484,
+            "max_abs_w_passive": 1.7462298274040222e-10,
+            "solver_tolerance": 3.3306e-13,
+            "n": 1500
+          },
+          "candidate": {
+            "max_w_active": -3.523852843557279,
+            "min_x_passive": 0.0026937902462508484,
+            "max_abs_w_passive": 1.7462298274040222e-10,
+            "solver_tolerance": 3.3306e-13,
+            "n": 1500
+          }
+        },
+        "iterations": {
+          "library": {
+            "outer_iterations": 2,
+            "inner_iterations": 1,
+            "n_passive": 1484,
+            "warm_start_errors": 5,
+            "seed_source": "memo",
+            "warm_start_fallback": false
+          },
+          "candidate": {
+            "outer_iterations": 2,
+            "inner_iterations": 1,
+            "n_passive": 1484,
+            "warm_start_errors": 5,
+            "seed_source": "memo",
+            "warm_start_fallback": false
+          }
+        },
+        "kernel_errors": {
+          "library": [],
+          "candidate": []
+        },
+        "kernel_calls": {
+          "library": 1,
+          "candidate": 1
+        },
+        "factor": {
+          "library": {
+            "factor_keys": [
+              "U_buffer",
+              "k_active",
+              "matrix_shape",
+              "passive_set"
+            ],
+            "missing_keys": [],
+            "expected_keys": [
+              "U_buffer",
+              "k_active",
+              "passive_set",
+              "matrix_shape"
+            ],
+            "atol_nats": 2e-12,
+            "matrix_shape": [
+              1500,
+              1500
+            ],
+            "k_active": 1484,
+            "factor_matrix_shape": [
+              1500,
+              1500
+            ],
+            "shape_agrees": true,
+            "structure_agrees": true,
+            "factor_relative_residual": 3.4769550138018865e-16,
+            "factor_rtol": 1e-12,
+            "log_det_from_factor": 8548.774818056445,
+            "log_det_slogdet": 8548.774818056443,
+            "slogdet_sign": 1.0,
+            "delta_nats": 1.8189894035458565e-12,
+            "original_within_atol": true,
+            "effective_atol_nats": 5.820766091346741e-11,
+            "allowed_spacings": 32,
+            "within_atol": true
+          },
+          "candidate": {
+            "factor_keys": [
+              "U_buffer",
+              "k_active",
+              "matrix_shape",
+              "passive_set"
+            ],
+            "missing_keys": [],
+            "expected_keys": [
+              "U_buffer",
+              "k_active",
+              "passive_set",
+              "matrix_shape"
+            ],
+            "atol_nats": 2e-12,
+            "matrix_shape": [
+              1500,
+              1500
+            ],
+            "k_active": 1484,
+            "factor_matrix_shape": [
+              1500,
+              1500
+            ],
+            "shape_agrees": true,
+            "structure_agrees": true,
+            "factor_relative_residual": 3.4769550138018865e-16,
+            "factor_rtol": 1e-12,
+            "log_det_from_factor": 8548.774818056445,
+            "log_det_slogdet": 8548.774818056443,
+            "slogdet_sign": 1.0,
+            "delta_nats": 1.8189894035458565e-12,
+            "original_within_atol": true,
+            "effective_atol_nats": 5.820766091346741e-11,
+            "allowed_spacings": 32,
+            "within_atol": true
+          }
+        }
+      }
+    },
+    {
+      "draw": 4,
+      "identity": {
+        "verdict": "PASS",
+        "gates": {
+          "same_problem": true,
+          "W1_identity": true,
+          "W2_active_set": true,
+          "W3_evidence": true,
+          "W4_fallback": true,
+          "W6_factor": true
+        },
+        "active_set": {
+          "jaccard": 1.0,
+          "n_passive_a": 1485,
+          "n_passive_b": 1485,
+          "n_intersection": 1485,
+          "n_union": 1485,
+          "only_in_a": [],
+          "only_in_b": [],
+          "identical": true
+        },
+        "evidence": {
+          "log_evidence": 18665.014335043277,
+          "log_evidence_reference": 18665.014335043277,
+          "delta_nats": 0.0,
+          "relative_difference": 0.0,
+          "bit_identical": true,
+          "rtol": 1e-09,
+          "within_rtol": true
+        },
+        "max_abs_delta_reconstruction": 0.0,
+        "kkt": {
+          "library": {
+            "max_w_active": -5.217827141126747,
+            "min_x_passive": 0.006417614823099189,
+            "max_abs_w_passive": 1.7462298274040222e-10,
+            "solver_tolerance": 3.3306e-13,
+            "n": 1500
+          },
+          "candidate": {
+            "max_w_active": -5.217827141126747,
+            "min_x_passive": 0.006417614823099189,
+            "max_abs_w_passive": 1.7462298274040222e-10,
+            "solver_tolerance": 3.3306e-13,
+            "n": 1500
+          }
+        },
+        "iterations": {
+          "library": {
+            "outer_iterations": 2,
+            "inner_iterations": 1,
+            "n_passive": 1485,
+            "warm_start_errors": 3,
+            "seed_source": "memo",
+            "warm_start_fallback": false
+          },
+          "candidate": {
+            "outer_iterations": 2,
+            "inner_iterations": 1,
+            "n_passive": 1485,
+            "warm_start_errors": 3,
+            "seed_source": "memo",
+            "warm_start_fallback": false
+          }
+        },
+        "kernel_errors": {
+          "library": [],
+          "candidate": []
+        },
+        "kernel_calls": {
+          "library": 1,
+          "candidate": 1
+        },
+        "factor": {
+          "library": {
+            "factor_keys": [
+              "U_buffer",
+              "k_active",
+              "matrix_shape",
+              "passive_set"
+            ],
+            "missing_keys": [],
+            "expected_keys": [
+              "U_buffer",
+              "k_active",
+              "passive_set",
+              "matrix_shape"
+            ],
+            "atol_nats": 2e-12,
+            "matrix_shape": [
+              1500,
+              1500
+            ],
+            "k_active": 1485,
+            "factor_matrix_shape": [
+              1500,
+              1500
+            ],
+            "shape_agrees": true,
+            "structure_agrees": true,
+            "factor_relative_residual": 4.374396240493309e-17,
+            "factor_rtol": 1e-12,
+            "log_det_from_factor": 8696.85584291418,
+            "log_det_slogdet": 8696.855842914174,
+            "slogdet_sign": 1.0,
+            "delta_nats": 5.4569682106375694e-12,
+            "original_within_atol": false,
+            "effective_atol_nats": 5.820766091346741e-11,
+            "allowed_spacings": 32,
+            "within_atol": true
+          },
+          "candidate": {
+            "factor_keys": [
+              "U_buffer",
+              "k_active",
+              "matrix_shape",
+              "passive_set"
+            ],
+            "missing_keys": [],
+            "expected_keys": [
+              "U_buffer",
+              "k_active",
+              "passive_set",
+              "matrix_shape"
+            ],
+            "atol_nats": 2e-12,
+            "matrix_shape": [
+              1500,
+              1500
+            ],
+            "k_active": 1485,
+            "factor_matrix_shape": [
+              1500,
+              1500
+            ],
+            "shape_agrees": true,
+            "structure_agrees": true,
+            "factor_relative_residual": 4.374396240493309e-17,
+            "factor_rtol": 1e-12,
+            "log_det_from_factor": 8696.85584291418,
+            "log_det_slogdet": 8696.855842914174,
+            "slogdet_sign": 1.0,
+            "delta_nats": 5.4569682106375694e-12,
+            "original_within_atol": false,
+            "effective_atol_nats": 5.820766091346741e-11,
+            "allowed_spacings": 32,
+            "within_atol": true
+          }
+        }
+      },
+      "candidate": {
+        "verdict": "PASS",
+        "gates": {
+          "same_problem": true,
+          "W1_identity": true,
+          "W2_active_set": true,
+          "W3_evidence": true,
+          "W4_fallback": true,
+          "W6_factor": true
+        },
+        "active_set": {
+          "jaccard": 1.0,
+          "n_passive_a": 1485,
+          "n_passive_b": 1485,
+          "n_intersection": 1485,
+          "n_union": 1485,
+          "only_in_a": [],
+          "only_in_b": [],
+          "identical": true
+        },
+        "evidence": {
+          "log_evidence": 18665.014335043277,
+          "log_evidence_reference": 18665.014335043277,
+          "delta_nats": 0.0,
+          "relative_difference": 0.0,
+          "bit_identical": true,
+          "rtol": 1e-09,
+          "within_rtol": true
+        },
+        "max_abs_delta_reconstruction": 0.0,
+        "kkt": {
+          "library": {
+            "max_w_active": -5.217827141126747,
+            "min_x_passive": 0.006417614823099189,
+            "max_abs_w_passive": 1.7462298274040222e-10,
+            "solver_tolerance": 3.3306e-13,
+            "n": 1500
+          },
+          "candidate": {
+            "max_w_active": -5.217827141126747,
+            "min_x_passive": 0.006417614823099189,
+            "max_abs_w_passive": 1.7462298274040222e-10,
+            "solver_tolerance": 3.3306e-13,
+            "n": 1500
+          }
+        },
+        "iterations": {
+          "library": {
+            "outer_iterations": 2,
+            "inner_iterations": 1,
+            "n_passive": 1485,
+            "warm_start_errors": 3,
+            "seed_source": "memo",
+            "warm_start_fallback": false
+          },
+          "candidate": {
+            "outer_iterations": 2,
+            "inner_iterations": 1,
+            "n_passive": 1485,
+            "warm_start_errors": 3,
+            "seed_source": "memo",
+            "warm_start_fallback": false
+          }
+        },
+        "kernel_errors": {
+          "library": [],
+          "candidate": []
+        },
+        "kernel_calls": {
+          "library": 1,
+          "candidate": 1
+        },
+        "factor": {
+          "library": {
+            "factor_keys": [
+              "U_buffer",
+              "k_active",
+              "matrix_shape",
+              "passive_set"
+            ],
+            "missing_keys": [],
+            "expected_keys": [
+              "U_buffer",
+              "k_active",
+              "passive_set",
+              "matrix_shape"
+            ],
+            "atol_nats": 2e-12,
+            "matrix_shape": [
+              1500,
+              1500
+            ],
+            "k_active": 1485,
+            "factor_matrix_shape": [
+              1500,
+              1500
+            ],
+            "shape_agrees": true,
+            "structure_agrees": true,
+            "factor_relative_residual": 4.374396240493309e-17,
+            "factor_rtol": 1e-12,
+            "log_det_from_factor": 8696.85584291418,
+            "log_det_slogdet": 8696.855842914174,
+            "slogdet_sign": 1.0,
+            "delta_nats": 5.4569682106375694e-12,
+            "original_within_atol": false,
+            "effective_atol_nats": 5.820766091346741e-11,
+            "allowed_spacings": 32,
+            "within_atol": true
+          },
+          "candidate": {
+            "factor_keys": [
+              "U_buffer",
+              "k_active",
+              "matrix_shape",
+              "passive_set"
+            ],
+            "missing_keys": [],
+            "expected_keys": [
+              "U_buffer",
+              "k_active",
+              "passive_set",
+              "matrix_shape"
+            ],
+            "atol_nats": 2e-12,
+            "matrix_shape": [
+              1500,
+              1500
+            ],
+            "k_active": 1485,
+            "factor_matrix_shape": [
+              1500,
+              1500
+            ],
+            "shape_agrees": true,
+            "structure_agrees": true,
+            "factor_relative_residual": 4.374396240493309e-17,
+            "factor_rtol": 1e-12,
+            "log_det_from_factor": 8696.85584291418,
+            "log_det_slogdet": 8696.855842914174,
+            "slogdet_sign": 1.0,
+            "delta_nats": 5.4569682106375694e-12,
+            "original_within_atol": false,
+            "effective_atol_nats": 5.820766091346741e-11,
+            "allowed_spacings": 32,
+            "within_atol": true
+          }
+        }
+      }
+    },
+    {
+      "draw": 5,
+      "identity": {
+        "verdict": "PASS",
+        "gates": {
+          "same_problem": true,
+          "W1_identity": true,
+          "W2_active_set": true,
+          "W3_evidence": true,
+          "W4_fallback": true,
+          "W6_factor": true
+        },
+        "active_set": {
+          "jaccard": 1.0,
+          "n_passive_a": 1485,
+          "n_passive_b": 1485,
+          "n_intersection": 1485,
+          "n_union": 1485,
+          "only_in_a": [],
+          "only_in_b": [],
+          "identical": true
+        },
+        "evidence": {
+          "log_evidence": 19343.4137451704,
+          "log_evidence_reference": 19343.4137451704,
+          "delta_nats": 0.0,
+          "relative_difference": 0.0,
+          "bit_identical": true,
+          "rtol": 1e-09,
+          "within_rtol": true
+        },
+        "max_abs_delta_reconstruction": 0.0,
+        "kkt": {
+          "library": {
+            "max_w_active": -7.43891039612879,
+            "min_x_passive": 0.0027185173389646564,
+            "max_abs_w_passive": 1.0186340659856796e-10,
+            "solver_tolerance": 3.3306e-13,
+            "n": 1500
+          },
+          "candidate": {
+            "max_w_active": -7.43891039612879,
+            "min_x_passive": 0.0027185173389646564,
+            "max_abs_w_passive": 1.0186340659856796e-10,
+            "solver_tolerance": 3.3306e-13,
+            "n": 1500
+          }
+        },
+        "iterations": {
+          "library": {
+            "outer_iterations": 1,
+            "inner_iterations": 1,
+            "n_passive": 1485,
+            "warm_start_errors": 2,
+            "seed_source": "memo",
+            "warm_start_fallback": false
+          },
+          "candidate": {
+            "outer_iterations": 1,
+            "inner_iterations": 1,
+            "n_passive": 1485,
+            "warm_start_errors": 2,
+            "seed_source": "memo",
+            "warm_start_fallback": false
+          }
+        },
+        "kernel_errors": {
+          "library": [],
+          "candidate": []
+        },
+        "kernel_calls": {
+          "library": 1,
+          "candidate": 1
+        },
+        "factor": {
+          "library": {
+            "factor_keys": [
+              "U_buffer",
+              "k_active",
+              "matrix_shape",
+              "passive_set"
+            ],
+            "missing_keys": [],
+            "expected_keys": [
+              "U_buffer",
+              "k_active",
+              "passive_set",
+              "matrix_shape"
+            ],
+            "atol_nats": 2e-12,
+            "matrix_shape": [
+              1500,
+              1500
+            ],
+            "k_active": 1485,
+            "factor_matrix_shape": [
+              1500,
+              1500
+            ],
+            "shape_agrees": true,
+            "structure_agrees": true,
+            "factor_relative_residual": 1.7576590912390204e-16,
+            "factor_rtol": 1e-12,
+            "log_det_from_factor": 8631.092459792453,
+            "log_det_slogdet": 8631.092459792457,
+            "slogdet_sign": 1.0,
+            "delta_nats": -3.637978807091713e-12,
+            "original_within_atol": false,
+            "effective_atol_nats": 5.820766091346741e-11,
+            "allowed_spacings": 32,
+            "within_atol": true
+          },
+          "candidate": {
+            "factor_keys": [
+              "U_buffer",
+              "k_active",
+              "matrix_shape",
+              "passive_set"
+            ],
+            "missing_keys": [],
+            "expected_keys": [
+              "U_buffer",
+              "k_active",
+              "passive_set",
+              "matrix_shape"
+            ],
+            "atol_nats": 2e-12,
+            "matrix_shape": [
+              1500,
+              1500
+            ],
+            "k_active": 1485,
+            "factor_matrix_shape": [
+              1500,
+              1500
+            ],
+            "shape_agrees": true,
+            "structure_agrees": true,
+            "factor_relative_residual": 1.7576590912390204e-16,
+            "factor_rtol": 1e-12,
+            "log_det_from_factor": 8631.092459792453,
+            "log_det_slogdet": 8631.092459792457,
+            "slogdet_sign": 1.0,
+            "delta_nats": -3.637978807091713e-12,
+            "original_within_atol": false,
+            "effective_atol_nats": 5.820766091346741e-11,
+            "allowed_spacings": 32,
+            "within_atol": true
+          }
+        }
+      },
+      "candidate": {
+        "verdict": "PASS",
+        "gates": {
+          "same_problem": true,
+          "W1_identity": true,
+          "W2_active_set": true,
+          "W3_evidence": true,
+          "W4_fallback": true,
+          "W6_factor": true
+        },
+        "active_set": {
+          "jaccard": 1.0,
+          "n_passive_a": 1485,
+          "n_passive_b": 1485,
+          "n_intersection": 1485,
+          "n_union": 1485,
+          "only_in_a": [],
+          "only_in_b": [],
+          "identical": true
+        },
+        "evidence": {
+          "log_evidence": 19343.4137451704,
+          "log_evidence_reference": 19343.4137451704,
+          "delta_nats": 0.0,
+          "relative_difference": 0.0,
+          "bit_identical": true,
+          "rtol": 1e-09,
+          "within_rtol": true
+        },
+        "max_abs_delta_reconstruction": 0.0,
+        "kkt": {
+          "library": {
+            "max_w_active": -7.43891039612879,
+            "min_x_passive": 0.0027185173389646564,
+            "max_abs_w_passive": 1.0186340659856796e-10,
+            "solver_tolerance": 3.3306e-13,
+            "n": 1500
+          },
+          "candidate": {
+            "max_w_active": -7.43891039612879,
+            "min_x_passive": 0.0027185173389646564,
+            "max_abs_w_passive": 1.0186340659856796e-10,
+            "solver_tolerance": 3.3306e-13,
+            "n": 1500
+          }
+        },
+        "iterations": {
+          "library": {
+            "outer_iterations": 1,
+            "inner_iterations": 1,
+            "n_passive": 1485,
+            "warm_start_errors": 2,
+            "seed_source": "memo",
+            "warm_start_fallback": false
+          },
+          "candidate": {
+            "outer_iterations": 1,
+            "inner_iterations": 1,
+            "n_passive": 1485,
+            "warm_start_errors": 2,
+            "seed_source": "memo",
+            "warm_start_fallback": false
+          }
+        },
+        "kernel_errors": {
+          "library": [],
+          "candidate": []
+        },
+        "kernel_calls": {
+          "library": 1,
+          "candidate": 1
+        },
+        "factor": {
+          "library": {
+            "factor_keys": [
+              "U_buffer",
+              "k_active",
+              "matrix_shape",
+              "passive_set"
+            ],
+            "missing_keys": [],
+            "expected_keys": [
+              "U_buffer",
+              "k_active",
+              "passive_set",
+              "matrix_shape"
+            ],
+            "atol_nats": 2e-12,
+            "matrix_shape": [
+              1500,
+              1500
+            ],
+            "k_active": 1485,
+            "factor_matrix_shape": [
+              1500,
+              1500
+            ],
+            "shape_agrees": true,
+            "structure_agrees": true,
+            "factor_relative_residual": 1.7576590912390204e-16,
+            "factor_rtol": 1e-12,
+            "log_det_from_factor": 8631.092459792453,
+            "log_det_slogdet": 8631.092459792457,
+            "slogdet_sign": 1.0,
+            "delta_nats": -3.637978807091713e-12,
+            "original_within_atol": false,
+            "effective_atol_nats": 5.820766091346741e-11,
+            "allowed_spacings": 32,
+            "within_atol": true
+          },
+          "candidate": {
+            "factor_keys": [
+              "U_buffer",
+              "k_active",
+              "matrix_shape",
+              "passive_set"
+            ],
+            "missing_keys": [],
+            "expected_keys": [
+              "U_buffer",
+              "k_active",
+              "passive_set",
+              "matrix_shape"
+            ],
+            "atol_nats": 2e-12,
+            "matrix_shape": [
+              1500,
+              1500
+            ],
+            "k_active": 1485,
+            "factor_matrix_shape": [
+              1500,
+              1500
+            ],
+            "shape_agrees": true,
+            "structure_agrees": true,
+            "factor_relative_residual": 1.7576590912390204e-16,
+            "factor_rtol": 1e-12,
+            "log_det_from_factor": 8631.092459792453,
+            "log_det_slogdet": 8631.092459792457,
+            "slogdet_sign": 1.0,
+            "delta_nats": -3.637978807091713e-12,
+            "original_within_atol": false,
+            "effective_atol_nats": 5.820766091346741e-11,
+            "allowed_spacings": 32,
+            "within_atol": true
+          }
+        }
+      }
+    },
+    {
+      "draw": 6,
+      "identity": {
+        "verdict": "PASS",
+        "gates": {
+          "same_problem": true,
+          "W1_identity": true,
+          "W2_active_set": true,
+          "W3_evidence": true,
+          "W4_fallback": true,
+          "W6_factor": true
+        },
+        "active_set": {
+          "jaccard": 1.0,
+          "n_passive_a": 1484,
+          "n_passive_b": 1484,
+          "n_intersection": 1484,
+          "n_union": 1484,
+          "only_in_a": [],
+          "only_in_b": [],
+          "identical": true
+        },
+        "evidence": {
+          "log_evidence": 18791.303044153934,
+          "log_evidence_reference": 18791.303044153934,
+          "delta_nats": 0.0,
+          "relative_difference": 0.0,
+          "bit_identical": true,
+          "rtol": 1e-09,
+          "within_rtol": true
+        },
+        "max_abs_delta_reconstruction": 0.0,
+        "kkt": {
+          "library": {
+            "max_w_active": -6.134350443652011,
+            "min_x_passive": 0.004458384218892901,
+            "max_abs_w_passive": 2.191882231272757e-10,
+            "solver_tolerance": 3.3306e-13,
+            "n": 1500
+          },
+          "candidate": {
+            "max_w_active": -6.134350443652011,
+            "min_x_passive": 0.004458384218892901,
+            "max_abs_w_passive": 2.191882231272757e-10,
+            "solver_tolerance": 3.3306e-13,
+            "n": 1500
+          }
+        },
+        "iterations": {
+          "library": {
+            "outer_iterations": 2,
+            "inner_iterations": 1,
+            "n_passive": 1484,
+            "warm_start_errors": 5,
+            "seed_source": "memo",
+            "warm_start_fallback": false
+          },
+          "candidate": {
+            "outer_iterations": 2,
+            "inner_iterations": 1,
+            "n_passive": 1484,
+            "warm_start_errors": 5,
+            "seed_source": "memo",
+            "warm_start_fallback": false
+          }
+        },
+        "kernel_errors": {
+          "library": [],
+          "candidate": []
+        },
+        "kernel_calls": {
+          "library": 1,
+          "candidate": 1
+        },
+        "factor": {
+          "library": {
+            "factor_keys": [
+              "U_buffer",
+              "k_active",
+              "matrix_shape",
+              "passive_set"
+            ],
+            "missing_keys": [],
+            "expected_keys": [
+              "U_buffer",
+              "k_active",
+              "passive_set",
+              "matrix_shape"
+            ],
+            "atol_nats": 2e-12,
+            "matrix_shape": [
+              1500,
+              1500
+            ],
+            "k_active": 1484,
+            "factor_matrix_shape": [
+              1500,
+              1500
+            ],
+            "shape_agrees": true,
+            "structure_agrees": true,
+            "factor_relative_residual": 1.780713928084061e-16,
+            "factor_rtol": 1e-12,
+            "log_det_from_factor": 8573.513891157505,
+            "log_det_slogdet": 8573.513891157514,
+            "slogdet_sign": 1.0,
+            "delta_nats": -9.094947017729282e-12,
+            "original_within_atol": false,
+            "effective_atol_nats": 5.820766091346741e-11,
+            "allowed_spacings": 32,
+            "within_atol": true
+          },
+          "candidate": {
+            "factor_keys": [
+              "U_buffer",
+              "k_active",
+              "matrix_shape",
+              "passive_set"
+            ],
+            "missing_keys": [],
+            "expected_keys": [
+              "U_buffer",
+              "k_active",
+              "passive_set",
+              "matrix_shape"
+            ],
+            "atol_nats": 2e-12,
+            "matrix_shape": [
+              1500,
+              1500
+            ],
+            "k_active": 1484,
+            "factor_matrix_shape": [
+              1500,
+              1500
+            ],
+            "shape_agrees": true,
+            "structure_agrees": true,
+            "factor_relative_residual": 1.780713928084061e-16,
+            "factor_rtol": 1e-12,
+            "log_det_from_factor": 8573.513891157505,
+            "log_det_slogdet": 8573.513891157514,
+            "slogdet_sign": 1.0,
+            "delta_nats": -9.094947017729282e-12,
+            "original_within_atol": false,
+            "effective_atol_nats": 5.820766091346741e-11,
+            "allowed_spacings": 32,
+            "within_atol": true
+          }
+        }
+      },
+      "candidate": {
+        "verdict": "PASS",
+        "gates": {
+          "same_problem": true,
+          "W1_identity": true,
+          "W2_active_set": true,
+          "W3_evidence": true,
+          "W4_fallback": true,
+          "W6_factor": true
+        },
+        "active_set": {
+          "jaccard": 1.0,
+          "n_passive_a": 1484,
+          "n_passive_b": 1484,
+          "n_intersection": 1484,
+          "n_union": 1484,
+          "only_in_a": [],
+          "only_in_b": [],
+          "identical": true
+        },
+        "evidence": {
+          "log_evidence": 18791.303044153934,
+          "log_evidence_reference": 18791.303044153934,
+          "delta_nats": 0.0,
+          "relative_difference": 0.0,
+          "bit_identical": true,
+          "rtol": 1e-09,
+          "within_rtol": true
+        },
+        "max_abs_delta_reconstruction": 0.0,
+        "kkt": {
+          "library": {
+            "max_w_active": -6.134350443652011,
+            "min_x_passive": 0.004458384218892901,
+            "max_abs_w_passive": 2.191882231272757e-10,
+            "solver_tolerance": 3.3306e-13,
+            "n": 1500
+          },
+          "candidate": {
+            "max_w_active": -6.134350443652011,
+            "min_x_passive": 0.004458384218892901,
+            "max_abs_w_passive": 2.191882231272757e-10,
+            "solver_tolerance": 3.3306e-13,
+            "n": 1500
+          }
+        },
+        "iterations": {
+          "library": {
+            "outer_iterations": 2,
+            "inner_iterations": 1,
+            "n_passive": 1484,
+            "warm_start_errors": 5,
+            "seed_source": "memo",
+            "warm_start_fallback": false
+          },
+          "candidate": {
+            "outer_iterations": 2,
+            "inner_iterations": 1,
+            "n_passive": 1484,
+            "warm_start_errors": 5,
+            "seed_source": "memo",
+            "warm_start_fallback": false
+          }
+        },
+        "kernel_errors": {
+          "library": [],
+          "candidate": []
+        },
+        "kernel_calls": {
+          "library": 1,
+          "candidate": 1
+        },
+        "factor": {
+          "library": {
+            "factor_keys": [
+              "U_buffer",
+              "k_active",
+              "matrix_shape",
+              "passive_set"
+            ],
+            "missing_keys": [],
+            "expected_keys": [
+              "U_buffer",
+              "k_active",
+              "passive_set",
+              "matrix_shape"
+            ],
+            "atol_nats": 2e-12,
+            "matrix_shape": [
+              1500,
+              1500
+            ],
+            "k_active": 1484,
+            "factor_matrix_shape": [
+              1500,
+              1500
+            ],
+            "shape_agrees": true,
+            "structure_agrees": true,
+            "factor_relative_residual": 1.780713928084061e-16,
+            "factor_rtol": 1e-12,
+            "log_det_from_factor": 8573.513891157505,
+            "log_det_slogdet": 8573.513891157514,
+            "slogdet_sign": 1.0,
+            "delta_nats": -9.094947017729282e-12,
+            "original_within_atol": false,
+            "effective_atol_nats": 5.820766091346741e-11,
+            "allowed_spacings": 32,
+            "within_atol": true
+          },
+          "candidate": {
+            "factor_keys": [
+              "U_buffer",
+              "k_active",
+              "matrix_shape",
+              "passive_set"
+            ],
+            "missing_keys": [],
+            "expected_keys": [
+              "U_buffer",
+              "k_active",
+              "passive_set",
+              "matrix_shape"
+            ],
+            "atol_nats": 2e-12,
+            "matrix_shape": [
+              1500,
+              1500
+            ],
+            "k_active": 1484,
+            "factor_matrix_shape": [
+              1500,
+              1500
+            ],
+            "shape_agrees": true,
+            "structure_agrees": true,
+            "factor_relative_residual": 1.780713928084061e-16,
+            "factor_rtol": 1e-12,
+            "log_det_from_factor": 8573.513891157505,
+            "log_det_slogdet": 8573.513891157514,
+            "slogdet_sign": 1.0,
+            "delta_nats": -9.094947017729282e-12,
+            "original_within_atol": false,
+            "effective_atol_nats": 5.820766091346741e-11,
+            "allowed_spacings": 32,
+            "within_atol": true
+          }
+        }
+      }
+    },
+    {
+      "draw": 7,
+      "identity": {
+        "verdict": "PASS",
+        "gates": {
+          "same_problem": true,
+          "W1_identity": true,
+          "W2_active_set": true,
+          "W3_evidence": true,
+          "W4_fallback": true,
+          "W6_factor": true
+        },
+        "active_set": {
+          "jaccard": 1.0,
+          "n_passive_a": 1487,
+          "n_passive_b": 1487,
+          "n_intersection": 1487,
+          "n_union": 1487,
+          "only_in_a": [],
+          "only_in_b": [],
+          "identical": true
+        },
+        "evidence": {
+          "log_evidence": 19497.35174286123,
+          "log_evidence_reference": 19497.35174286123,
+          "delta_nats": 0.0,
+          "relative_difference": 0.0,
+          "bit_identical": true,
+          "rtol": 1e-09,
+          "within_rtol": true
+        },
+        "max_abs_delta_reconstruction": 0.0,
+        "kkt": {
+          "library": {
+            "max_w_active": -4.687011377125941,
+            "min_x_passive": 0.002782497822231162,
+            "max_abs_w_passive": 1.3096723705530167e-10,
+            "solver_tolerance": 3.3306e-13,
+            "n": 1500
+          },
+          "candidate": {
+            "max_w_active": -4.687011377125941,
+            "min_x_passive": 0.002782497822231162,
+            "max_abs_w_passive": 1.3096723705530167e-10,
+            "solver_tolerance": 3.3306e-13,
+            "n": 1500
+          }
+        },
+        "iterations": {
+          "library": {
+            "outer_iterations": 5,
+            "inner_iterations": 1,
+            "n_passive": 1487,
+            "warm_start_errors": 7,
+            "seed_source": "memo",
+            "warm_start_fallback": false
+          },
+          "candidate": {
+            "outer_iterations": 5,
+            "inner_iterations": 1,
+            "n_passive": 1487,
+            "warm_start_errors": 7,
+            "seed_source": "memo",
+            "warm_start_fallback": false
+          }
+        },
+        "kernel_errors": {
+          "library": [],
+          "candidate": []
+        },
+        "kernel_calls": {
+          "library": 1,
+          "candidate": 1
+        },
+        "factor": {
+          "library": {
+            "factor_keys": [
+              "U_buffer",
+              "k_active",
+              "matrix_shape",
+              "passive_set"
+            ],
+            "missing_keys": [],
+            "expected_keys": [
+              "U_buffer",
+              "k_active",
+              "passive_set",
+              "matrix_shape"
+            ],
+            "atol_nats": 2e-12,
+            "matrix_shape": [
+              1500,
+              1500
+            ],
+            "k_active": 1487,
+            "factor_matrix_shape": [
+              1500,
+              1500
+            ],
+            "shape_agrees": true,
+            "structure_agrees": true,
+            "factor_relative_residual": 3.551387128315776e-16,
+            "factor_rtol": 1e-12,
+            "log_det_from_factor": 8724.432894628959,
+            "log_det_slogdet": 8724.432894628946,
+            "slogdet_sign": 1.0,
+            "delta_nats": 1.2732925824820995e-11,
+            "original_within_atol": false,
+            "effective_atol_nats": 5.820766091346741e-11,
+            "allowed_spacings": 32,
+            "within_atol": true
+          },
+          "candidate": {
+            "factor_keys": [
+              "U_buffer",
+              "k_active",
+              "matrix_shape",
+              "passive_set"
+            ],
+            "missing_keys": [],
+            "expected_keys": [
+              "U_buffer",
+              "k_active",
+              "passive_set",
+              "matrix_shape"
+            ],
+            "atol_nats": 2e-12,
+            "matrix_shape": [
+              1500,
+              1500
+            ],
+            "k_active": 1487,
+            "factor_matrix_shape": [
+              1500,
+              1500
+            ],
+            "shape_agrees": true,
+            "structure_agrees": true,
+            "factor_relative_residual": 3.551387128315776e-16,
+            "factor_rtol": 1e-12,
+            "log_det_from_factor": 8724.432894628959,
+            "log_det_slogdet": 8724.432894628946,
+            "slogdet_sign": 1.0,
+            "delta_nats": 1.2732925824820995e-11,
+            "original_within_atol": false,
+            "effective_atol_nats": 5.820766091346741e-11,
+            "allowed_spacings": 32,
+            "within_atol": true
+          }
+        }
+      },
+      "candidate": {
+        "verdict": "PASS",
+        "gates": {
+          "same_problem": true,
+          "W1_identity": true,
+          "W2_active_set": true,
+          "W3_evidence": true,
+          "W4_fallback": true,
+          "W6_factor": true
+        },
+        "active_set": {
+          "jaccard": 1.0,
+          "n_passive_a": 1487,
+          "n_passive_b": 1487,
+          "n_intersection": 1487,
+          "n_union": 1487,
+          "only_in_a": [],
+          "only_in_b": [],
+          "identical": true
+        },
+        "evidence": {
+          "log_evidence": 19497.35174286123,
+          "log_evidence_reference": 19497.35174286123,
+          "delta_nats": 0.0,
+          "relative_difference": 0.0,
+          "bit_identical": true,
+          "rtol": 1e-09,
+          "within_rtol": true
+        },
+        "max_abs_delta_reconstruction": 0.0,
+        "kkt": {
+          "library": {
+            "max_w_active": -4.687011377125941,
+            "min_x_passive": 0.002782497822231162,
+            "max_abs_w_passive": 1.3096723705530167e-10,
+            "solver_tolerance": 3.3306e-13,
+            "n": 1500
+          },
+          "candidate": {
+            "max_w_active": -4.687011377125941,
+            "min_x_passive": 0.002782497822231162,
+            "max_abs_w_passive": 1.3096723705530167e-10,
+            "solver_tolerance": 3.3306e-13,
+            "n": 1500
+          }
+        },
+        "iterations": {
+          "library": {
+            "outer_iterations": 5,
+            "inner_iterations": 1,
+            "n_passive": 1487,
+            "warm_start_errors": 7,
+            "seed_source": "memo",
+            "warm_start_fallback": false
+          },
+          "candidate": {
+            "outer_iterations": 5,
+            "inner_iterations": 1,
+            "n_passive": 1487,
+            "warm_start_errors": 7,
+            "seed_source": "memo",
+            "warm_start_fallback": false
+          }
+        },
+        "kernel_errors": {
+          "library": [],
+          "candidate": []
+        },
+        "kernel_calls": {
+          "library": 1,
+          "candidate": 1
+        },
+        "factor": {
+          "library": {
+            "factor_keys": [
+              "U_buffer",
+              "k_active",
+              "matrix_shape",
+              "passive_set"
+            ],
+            "missing_keys": [],
+            "expected_keys": [
+              "U_buffer",
+              "k_active",
+              "passive_set",
+              "matrix_shape"
+            ],
+            "atol_nats": 2e-12,
+            "matrix_shape": [
+              1500,
+              1500
+            ],
+            "k_active": 1487,
+            "factor_matrix_shape": [
+              1500,
+              1500
+            ],
+            "shape_agrees": true,
+            "structure_agrees": true,
+            "factor_relative_residual": 3.551387128315776e-16,
+            "factor_rtol": 1e-12,
+            "log_det_from_factor": 8724.432894628959,
+            "log_det_slogdet": 8724.432894628946,
+            "slogdet_sign": 1.0,
+            "delta_nats": 1.2732925824820995e-11,
+            "original_within_atol": false,
+            "effective_atol_nats": 5.820766091346741e-11,
+            "allowed_spacings": 32,
+            "within_atol": true
+          },
+          "candidate": {
+            "factor_keys": [
+              "U_buffer",
+              "k_active",
+              "matrix_shape",
+              "passive_set"
+            ],
+            "missing_keys": [],
+            "expected_keys": [
+              "U_buffer",
+              "k_active",
+              "passive_set",
+              "matrix_shape"
+            ],
+            "atol_nats": 2e-12,
+            "matrix_shape": [
+              1500,
+              1500
+            ],
+            "k_active": 1487,
+            "factor_matrix_shape": [
+              1500,
+              1500
+            ],
+            "shape_agrees": true,
+            "structure_agrees": true,
+            "factor_relative_residual": 3.551387128315776e-16,
+            "factor_rtol": 1e-12,
+            "log_det_from_factor": 8724.432894628959,
+            "log_det_slogdet": 8724.432894628946,
+            "slogdet_sign": 1.0,
+            "delta_nats": 1.2732925824820995e-11,
+            "original_within_atol": false,
+            "effective_atol_nats": 5.820766091346741e-11,
+            "allowed_spacings": 32,
+            "within_atol": true
+          }
+        }
+      }
+    }
+  ],
+  "configuration": {
+    "config_name": "hpc_ral_cpu_fp64_s4b",
+    "mesh": "delaunay",
+    "dataset": "hst",
+    "source_pixels": 1500,
+    "kernel": "permuted",
+    "n_draws": 8,
+    "instance_seed": 263,
+    "instance_mode": "iid_central_20_percent",
+    "threads": 1,
+    "thread_env": {
+      "n_threads": 1,
+      "vars": [
+        "OPENBLAS_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OMP_NUM_THREADS",
+        "VECLIB_MAXIMUM_THREADS",
+        "NUMEXPR_NUM_THREADS"
+      ],
+      "set_to": "1",
+      "preexisting": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1"
+      },
+      "overridden": {},
+      "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+    },
+    "numba_thread_env": {
+      "NUMBA_NUM_THREADS": "1"
+    },
+    "nnls_warm_start_env": "1",
+    "regularization": {
+      "scheme": "adapt_split",
+      "inner_coefficient": 0.1,
+      "outer_coefficient": 10.0,
+      "signal_scale": 0.1
+    },
+    "use_jax": false,
+    "w2_jaccard_required": 1.0,
+    "w3_rtol": 1e-09,
+    "w6_atol_nats": 2e-12,
+    "w6_allowed_spacings": 32,
+    "w6_factor_rtol": 1e-12,
+    "fallback_policy": "same seed_source, memo guard flag, kernel errors and attempt count",
+    "pdip_fallback": "not applicable: numpy production entrypoint uses fnnls only",
+    "memo_policy": "independent identical-initial-state streams, never cross-seeded"
+  },
+  "provenance": {
+    "autoarray_file": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/__init__.py",
+    "autoarray_version": "2026.8.17.1",
+    "autolens_version": "2026.8.17.1",
+    "scipy_version": "1.17.1",
+    "hostname": "euclid-ral-gpu-1",
+    "slurm_job_id": "343397",
+    "wall_s": 22.072200298309326
+  },
+  "machine": {
+    "cpu_model": "AMD EPYC 7702 64-Core Processor",
+    "cpu_count_os": 124,
+    "nproc": 1,
+    "nproc_all": 124,
+    "nproc_note": "GNU nproc honours OMP_NUM_THREADS, so `nproc` can print 1 on a multi-core host; `nproc_all` is the core count.",
+    "ram_total": "928298232 kB",
+    "kernel": "5.14.0-687.39.1.el9_8.x86_64",
+    "platform": "Linux-5.14.0-687.39.1.el9_8.x86_64-x86_64-with-glibc2.34",
+    "python": "3.12.4",
+    "jax_thread_env": {
+      "NPROC": null
+    },
+    "blas_thread_env": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "VECLIB_MAXIMUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1"
+    },
+    "thread_env_note": "NPROC sizes XLA's CPU intra-op pool (the JAX rows); the BLAS knobs pin OpenBLAS/MKL/OpenMP (the numpy/scipy rows) and do not touch JAX. Two disjoint families; both are recorded on every CPU timing.",
+    "gpu": null
+  }
+}

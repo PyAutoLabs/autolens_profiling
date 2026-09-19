@@ -136,7 +136,9 @@ print(f"  real-space shape: {cfg['real_space_shape']}")
 # Model: Isothermal mass + shear + MGE source (no lens light)
 mass = af.Model(al.mp.Isothermal)
 shear = af.Model(al.mp.ExternalShear)
-lens = af.Model(al.Galaxy, redshift=0.5, mass=mass, shear=shear)
+lens = af.Model(al.Galaxy, redshift=0.5, mass=mass)
+field = af.Model(al.MassField, redshift=0.5, shear=shear)
+
 
 source_bulge = al.model_util.mge_model_from(
     mask_radius=cfg["mask_radius"],
@@ -145,7 +147,7 @@ source_bulge = al.model_util.mge_model_from(
 )
 source = af.Model(al.Galaxy, redshift=1.0, bulge=source_bulge)
 
-model = af.Collection(galaxies=af.Collection(lens=lens, source=source))
+model = af.Collection(galaxies=af.Collection(lens=lens, source=source), fields=field)
 print(f"  free parameters: {model.prior_count}")
 
 instance = model.instance_from_prior_medians()

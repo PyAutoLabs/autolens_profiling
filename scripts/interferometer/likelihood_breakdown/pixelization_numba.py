@@ -218,7 +218,9 @@ shear = af.Model(al.mp.ExternalShear)
 shear.gamma_1 = af.GaussianPrior(mean=0.05, sigma=0.005)
 shear.gamma_2 = af.GaussianPrior(mean=0.05, sigma=0.005)
 
-lens = af.Model(al.Galaxy, redshift=0.5, mass=mass, shear=shear)
+lens = af.Model(al.Galaxy, redshift=0.5, mass=mass)
+field = af.Model(al.MassField, redshift=0.5, shear=shear)
+
 
 pixelization = al.Pixelization(
     mesh=rect_mesh_classes(_cli)[1](shape=mesh_shape, weight_power=1.0, weight_floor=0.0),
@@ -227,7 +229,7 @@ pixelization = al.Pixelization(
 
 source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
 
-model = af.Collection(galaxies=af.Collection(lens=lens, source=source))
+model = af.Collection(galaxies=af.Collection(lens=lens, source=source), fields=field)
 
 instance = model.instance_from_vector(vector=model.physical_values_from_prior_medians)
 
@@ -487,7 +489,7 @@ def cholesky_control_s(matrix, repeats: int = 3) -> float:
 def _fit_from() -> al.FitInterferometer:
     return al.FitInterferometer(
         dataset=dataset,
-        tracer=al.Tracer(galaxies=list(instance.galaxies)),
+        tracer=al.Tracer(galaxies=list(instance.galaxies), fields=[instance.fields]),
         adapt_images=adapt_images,
         settings=settings,
         xp=np,

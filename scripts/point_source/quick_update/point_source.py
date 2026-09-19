@@ -111,9 +111,11 @@ tracer = from_dict(json.loads((dataset_path / "tracer.json").read_text()))
 # Build model
 mass = af.Model(al.mp.Isothermal)
 shear = af.Model(al.mp.ExternalShear)
-lens = af.Model(al.Galaxy, redshift=0.5, mass=mass, shear=shear)
+lens = af.Model(al.Galaxy, redshift=0.5, mass=mass)
+field = af.Model(al.MassField, redshift=0.5, shear=shear)
+
 source = af.Model(al.Galaxy, redshift=1.0, point_0=al.ps.Point())
-model = af.Collection(galaxies=af.Collection(lens=lens, source=source))
+model = af.Collection(galaxies=af.Collection(lens=lens, source=source), fields=field)
 
 print(f"  free parameters: {model.prior_count}")
 

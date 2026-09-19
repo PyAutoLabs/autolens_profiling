@@ -45,20 +45,50 @@ class ProfileCLI:
     sparse_batch_size: int
     source_pixels: int | None
 
+    def parse_cell_args(self, cell_parser: argparse.ArgumentParser, *, argv=None):
+        """Finish staged parsing, rejecting flags neither parser understands.
 
-def parse_profile_cli(default_config_name: str | None = None) -> ProfileCLI:
-    """Parse the sweep CLI flags accepted by every per-cell profile script.
+        Reparse the complete argv through the union so shared/local duplicates
+        such as --source-pixels retain their cell values. Legacy shared-only
+        callers remain permissive until they opt into this final boundary.
+        """
+        parser = argparse.ArgumentParser(
+            parents=[_profile_parser(), cell_parser],
+            add_help=False,
+            allow_abbrev=False,
+            conflict_handler="resolve",
+        )
+        args = parser.parse_args(argv)
+        for name in (
+            "source_pixels",
+            "threads",
+            "n_repeats",
+            "n_stream",
+            "trace_calls",
+            "safe_budget",
+            "pass_budget_max",
+            "n_draws",
+            "n_random",
+            "walk_max_evals",
+            "n_instances",
+            "cold_evals",
+            "sparse_batch_size",
+        ):
+            value = getattr(args, name, None)
+            if value is not None and value < 1:
+                parser.error(f"--{name.replace('_', '-')} must be positive")
+        if hasattr(args, "budgets"):
+            try:
+                budgets = [int(value) for value in args.budgets.split(",") if value.strip()]
+            except ValueError:
+                parser.error("--budgets must be a comma-separated list of positive integers")
+            if not budgets or any(value < 1 for value in budgets):
+                parser.error("--budgets must contain positive integers")
+        return args
 
-    Returns ``ProfileCLI(config_name, output_dir, use_mixed_precision,
-    instrument)``.
 
-    When ``--config-name`` is omitted, falls back to ``default_config_name``
-    (typically inferred from ``JAX_PLATFORM_NAME`` env var or left as ``None``
-    to preserve the existing single-config filename pattern).
-
-    ``--instrument`` is optional; when omitted (None) per-cell scripts keep
-    their module-level hardcoded default (typically ``"sma"`` or ``"hst"``).
-    """
+def _profile_parser() -> argparse.ArgumentParser:
+    """Build the shared parser; cells compose it at their final boundary."""
     parser = argparse.ArgumentParser(
         description="Multi-config likelihood profiling driver flags.",
         # Keep unknown args; per-script argparse is not exhaustive.
@@ -261,7 +291,24 @@ def parse_profile_cli(default_config_name: str | None = None) -> ProfileCLI:
         ),
     )
 
-    args, _unknown = parser.parse_known_args()
+    return parser
+
+
+def parse_profile_cli(default_config_name: str | None = None, *, argv=None) -> ProfileCLI:
+    """Parse the sweep CLI flags accepted by every per-cell profile script.
+
+    Returns ``ProfileCLI(config_name, output_dir, use_mixed_precision,
+    instrument)``.
+
+    When ``--config-name`` is omitted, falls back to ``default_config_name``
+    (typically inferred from ``JAX_PLATFORM_NAME`` env var or left as ``None``
+    to preserve the existing single-config filename pattern).
+
+    ``--instrument`` is optional; when omitted (None) per-cell scripts keep
+    their module-level hardcoded default (typically ``"sma"`` or ``"hst"``).
+    """
+    parser = _profile_parser()
+    args, _unknown = parser.parse_known_args(argv)
     config_name = args.config_name or default_config_name
     output_dir = Path(args.output_dir).resolve() if args.output_dir else None
     return ProfileCLI(
