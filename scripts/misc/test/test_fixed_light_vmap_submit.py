@@ -270,6 +270,19 @@ def test__submit_starts_from_a_fresh_compilation_cache_and_censuses_it(path):
 
 
 @pytest.mark.parametrize("path", _submits(), ids=lambda p: p.name)
+def test__submit_preserves_footer_when_the_numerical_gate_fails(path):
+    """The sourced activation ERR trap must not pre-empt census/provenance output."""
+    text = path.read_text()
+    executable = _executable(text)
+    python_pos = executable.index("python3 -u")
+    census_pos = executable.index("AUTOTUNE_ENTRIES count=")
+    assert "SAVED_ERR_TRAP=$(trap -p ERR)" in executable[:python_pos]
+    assert "trap - ERR" in executable[:python_pos]
+    assert 'eval "$SAVED_ERR_TRAP"' in executable[python_pos:census_pos]
+    assert "CELL_EXIT=$CELL_RC" in executable[census_pos:]
+
+
+@pytest.mark.parametrize("path", _submits(), ids=lambda p: p.name)
 def test__submit_guards_the_shared_dataset(path):
     """Five arms auto-simulating the same dataset dir would interleave FITS writes."""
     text = path.read_text()

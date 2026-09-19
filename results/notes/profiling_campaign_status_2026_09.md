@@ -42,7 +42,7 @@ and label it **control-only, incomplete A/B job**. Do not rerun it merely to fil
 the archive. For future headline support, version the supporting control along
 with the existing source/job sidecar, including incomplete-job status.
 
-## GPU: corrected baseline, batching verdict pending
+## GPU: corrected baseline, batching experiment inconclusive
 
 The [budget-7 single-call trace](hst_gpu_residue_phase1_2026_09.md) supersedes two
 claims inherited from the completed JAX fixed-light campaign:
@@ -58,11 +58,15 @@ claims inherited from the completed JAX fixed-light campaign:
 The older vmap scaling curve measured the solver only. Single-call timings do
 not determine production whole-likelihood batching policy. Issue
 [#273](https://github.com/PyAutoLabs/autolens_profiling/issues/273) is the matched
-vmap-versus-scalar-jit experiment. Its active record says A100 array **343376**
-was submitted on 2026-09-17; that timestamp does not establish current job status.
-The inspected phase-2 branch has RTX instrument proofs, but the A100 verdict
-still needs harvesting and review. Batch-aware callback development is conditional
-on those results, not already completed.
+vmap-versus-scalar-jit experiment. Array **343376** measured the retired
+`jax.vmap(jax.jit(fn))` composition and is retained as historical evidence only.
+The replacement array **344635** measured current production
+`jax.jit(jax.vmap(fn))`: fallback-on batching was slower per lane at B=4, 8 and
+16, while the faster fallback-off B16 row was diagnostic only. The required
+three-way `1e-9` numerical gate failed on one or more distinct lanes at B=8 and
+B=16, so the [phase-2 note](hst_gpu_residue_phase2_vmap_2026_09.md) records an
+explicit inconclusive policy verdict. No batching-policy or batch-aware callback
+change follows from this fixed-N grid.
 
 The [matrix-free verdict](matrix_free_pixelized_2026_09.md) remains a no-go on its
 measured grid; this summary does not reopen it or infer an unmeasured crossover.

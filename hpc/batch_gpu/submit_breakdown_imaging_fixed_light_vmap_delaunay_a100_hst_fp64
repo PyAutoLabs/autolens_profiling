@@ -204,7 +204,11 @@ python3 -c "import autoarray, autolens; print('autoarray.__file__ =', autoarray.
 # relative) lane pin and the autotune census below therefore never ran — the ERR trap
 # in activate.sh killed the job at the python line — so the one line that says whether
 # the kernels came from a seeded cache was missing from exactly the legs whose numbers
-# were under dispute. `set +e` around the call, census, THEN exit with the cell's code.
+# were under dispute. ``activate.sh`` installs an ERR trap which exits even while
+# ``errexit`` is disabled, so preserve and remove that trap around the expected
+# non-zero cell exit. Restore it before the census, then exit with the cell's code.
+SAVED_ERR_TRAP=$(trap -p ERR)
+trap - ERR
 set +e
 python3 -u scripts/imaging/likelihood_breakdown/fixed_light_trace.py \
     --mesh $MESH \
@@ -220,6 +224,7 @@ python3 -u scripts/imaging/likelihood_breakdown/fixed_light_trace.py \
     --config-name hpc_a100_fp64_fixed_light_trace
 CELL_RC=$?
 set -e
+eval "$SAVED_ERR_TRAP"
 
 # Autotune-cache census. Must be non-fatal: the directory only exists if XLA wrote
 # autotune results, and activate.sh's ERR trap fails the job on any non-zero exit
