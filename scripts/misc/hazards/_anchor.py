@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import re
 import subprocess
 from dataclasses import asdict, dataclass
@@ -13,6 +14,27 @@ _TOKEN_RE = re.compile(
     r"==|!=|<=|>=|:=|\*\*|//|[-+*/%@<>=()[\]{},.:]",
     re.IGNORECASE,
 )
+
+
+def _repo_path(workspace_root: Path, repo: str) -> Path:
+    """Find a source checkout in the active flat or family workspace."""
+    root = Path(workspace_root)
+    resolver = root / "PyAutoBrain" / "agents" / "_repo_paths.py"
+    if resolver.is_file():
+        spec = importlib.util.spec_from_file_location("_pyauto_repo_paths", resolver)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module.repo_path(root, repo, required=True)
+    flat = root / repo
+    if (flat / ".git").exists():
+        return flat
+    if any(
+        (family / repo).exists()
+        for family in root.iterdir()
+        if family.is_dir() and not (family / ".git").exists()
+    ):
+        raise RuntimeError(f"Grouped checkout {repo} needs PyAutoBrain repo resolver")
+    return flat
 
 
 def normalized_tokens(text: str) -> tuple[str, ...]:
@@ -64,7 +86,7 @@ class CodeAnchor:
 
 def repo_commit(workspace_root: Path, repo: str) -> str:
     return subprocess.run(
-        ["git", "-C", str(workspace_root / repo), "rev-parse", "HEAD"],
+        ["git", "-C", str(_repo_path(workspace_root, repo)), "rev-parse", "HEAD"],
         check=True,
         capture_output=True,
         text=True,
@@ -84,7 +106,7 @@ def anchor_from_pattern(
 ) -> CodeAnchor:
     """Capture a small expression/config anchor located by a unique pattern."""
 
-    source_path = workspace_root / repo / path
+    source_path = _repo_path(workspace_root, repo) / path
     lines = source_path.read_text().splitlines()
     matches = [index for index, line in enumerate(lines) if pattern in line]
     if len(matches) != 1:
