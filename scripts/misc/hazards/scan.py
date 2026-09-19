@@ -78,8 +78,10 @@ def _selected_backends(name: str) -> tuple[str, ...]:
 
 
 def _workspace_root(repo_root: Path) -> Path:
-    parent = repo_root.parent
-    return parent if (parent / "PyAutoGalaxy").exists() else repo_root.parent
+    return next(
+        (path for path in repo_root.parents if (path / ".pyauto-root").is_file()),
+        repo_root.parent,
+    )
 
 
 def run_scan(args: argparse.Namespace) -> list[Finding]:
