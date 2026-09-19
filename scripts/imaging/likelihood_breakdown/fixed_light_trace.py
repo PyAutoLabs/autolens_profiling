@@ -92,8 +92,9 @@ The batched mode (phase 2, autolens_profiling#273)
 experiment. Without it nothing below happens and the cell is phase 1 exactly,
 down to the output filename.
 
-Production does not run one likelihood at a time. ``Fitness._vmap``
-(``PyAutoFit/autofit/non_linear/fitness.py``) is ``jax.vmap(jax.jit(call))``,
+Production does not run one likelihood at a time. Current ``Fitness._vmap``
+(``PyAutoFit/autofit/non_linear/fitness.py``, PyAutoFit#1638) is
+``jax.jit(jax.vmap(call))``,
 and Nautilus drives it with ``use_jax_vmap=True``. The Delaunay qhull callback
 is ``vmap_method="sequential"`` (``PyAutoArray .../interpolator/delaunay.py``),
 so the host round trip phase 1 measured as a single 5.44 ms device-idle gap
@@ -104,9 +105,9 @@ So this mode builds ``B`` lane parameter trees and runs **two arms on the same
 lanes, in one process, under the same solver injection**:
 
 ``vmap``
-    ``jax.vmap(jax.jit(fn))`` — the production nesting, *not*
-    ``timing.vmap_profile``, which nests them the other way
-    (``jax.jit(jax.vmap(fn))``) and is therefore a different program.
+    ``jax.jit(jax.vmap(fn))`` — the current production nesting. Array 343376
+    measured the retired ``jax.vmap(jax.jit(fn))`` composition; those artifacts
+    retain their original filenames and provenance and are not relabelled.
 ``scalar``
     ``jax.jit(fn)`` called ``B`` times per batch, each blocked. This stands for
     ``Nautilus(use_jax_vmap=False, use_jax_jit=True)``; plain
@@ -124,16 +125,16 @@ this experiment is looking for.
 run, so that row is the certified solve *plus* PDIP. ``--fallback off`` is the
 cond-free program. Both are rows, never a footnote.
 
-Per lane the two arms' log likelihoods are pinned equal at 1e-9 relative, and
-the cell exits non-zero if any lane fails: an unequal lane means the two arms
-are not evaluating the same model and no timing comparison between them means
-anything.
+Per lane the two arms' log likelihoods are pinned equal at **1e-9 relative**,
+and each is checked against an independently compiled library-PDIP batch at the
+same tolerance. The cell exits non-zero if any required pin fails: agreement
+between two harness arms alone does not prove that either evaluates the library's
+positive solution.
 
 ``--arms {vmap,scalar,both}`` (default ``both``) and ``--draw-seed`` (default
 0) complete the set. Every one of these flags is recorded in
-``configuration``, because ``parse_known_args`` ignores unknown flags: a
-checkout without this mode would run the submit and silently write a phase-1
-table.
+``configuration``; strict shared CLI parsing also rejects an old checkout that
+does not define them.
 
 Output
 ------
@@ -177,6 +178,8 @@ if _misc_dir not in _sys.path:
 
 import argparse
 import copy
+import hashlib
+import json
 import math
 import sys
 import tempfile
@@ -288,9 +291,9 @@ DRAW_SEED = int(_cell_args.draw_seed)
 #: ``False`` is route d0, the cond-free program.
 FALLBACK_ON = _cell_args.fallback == "on"
 
-#: Relative tolerance on the per-lane ``vmap == scalar`` log-likelihood pin.
-#: The two arms are the same program on the same lane: anything above this is
-#: not precision, it is a different model.
+#: Relative tolerance for both per-lane numerical gates: current production
+#: ``jit(vmap)`` against B scalar ``jit`` calls, and each harness value against
+#: the independently compiled library-PDIP reference on the same lane.
 LANE_RTOL = 1.0e-9
 
 if VMAP_BATCH is not None and VMAP_BATCH < 1:
@@ -377,12 +380,26 @@ _workspace_root = _profiling_root()
 pixel_scale = INSTRUMENTS[DATASET]["pixel_scale"]
 dataset_path = Path("dataset") / "imaging" / DATASET
 
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as file_obj:
+        for chunk in iter(lambda: file_obj.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 auto_simulate_if_missing(
     dataset_path,
     dataset_type="imaging",
     instrument=DATASET,
     workspace_root=_workspace_root,
 )
+
+dataset_sha256 = {
+    name: _sha256(dataset_path / name) for name in ("data.fits", "noise_map.fits", "psf.fits")
+}
+cell_source_sha256 = _sha256(Path(__file__).resolve())
 
 with timer.section("dataset_load"):
     dataset = al.Imaging.from_fits(
@@ -937,6 +954,21 @@ else:
             flds.Draw(name="fiducial", kind="fiducial", offsets={}, mass_cls="Isothermal")
             for _ in range(VMAP_BATCH)
         ]
+    lane_draws_sha256 = hashlib.sha256(
+        json.dumps(
+            [
+                {
+                    "name": draw.name,
+                    "kind": draw.kind,
+                    "offsets": draw.offsets,
+                    "mass_cls": draw.mass_cls,
+                }
+                for draw in lane_draws
+            ],
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+    ).hexdigest()
 
     _lens_s3 = instance_s3.galaxies.lens
     # The Galaxy's profiles by the names it holds them under — the same rule
@@ -1066,31 +1098,25 @@ else:
     def _run_arm(arm: str, scalar_fn, vmap_fn) -> dict:
         """Compile, time and trace one arm on the B lanes.
 
-        *scalar_fn* is ``jax.jit(fn)`` and *vmap_fn* is ``jax.vmap(scalar_fn)``
-        — the SAME inner jit object, which is what makes the vmap arm the
-        production nesting rather than a look-alike, and what keeps the two arms
-        from compiling the scalar program twice.
+        *scalar_fn* is ``jax.jit(fn)`` and *vmap_fn* is
+        ``jax.jit(jax.vmap(fn))``: the current ``Fitness._vmap`` composition.
         """
         print(f"\n  --- arm {arm} ---")
 
         if arm == "vmap":
-            # The PRODUCTION nesting, Fitness._vmap: jax.vmap(jax.jit(call)).
-            # NOT timing.vmap_profile, which is jax.jit(jax.vmap(call)).
+            # The current production nesting (PyAutoFit#1638).
             _prod = vmap_fn
 
             def _invoke_prod():
                 return _prod(batched_tree)
 
-            # AOT handle for the HLO text/proto and for the command-buffer knob,
-            # which is a per-COMPILE option and so is unreachable through the
-            # eager production nesting. The two are pinned equal below by wall
-            # and by log likelihood; `hlo_source` records that they differ.
+            # The production wrapper is itself jitted, so its lowering is the
+            # exact current batched program and accepts the command-buffer knob.
             with timer.section("vmap_arm_lower"):
-                _lowered = jax.jit(_prod).lower(batched_tree)
+                _lowered = _prod.lower(batched_tree)
             _hlo_source = (
-                "jax.jit(jax.vmap(jax.jit(fn))).lower(batched_tree) — an outer jit is the only "
-                "handle that yields optimized HLO and a compiler_options knob; the TIMED "
-                "production number is wall_production_nesting_ms, from jax.vmap(jax.jit(fn))"
+                "jax.jit(jax.vmap(fn)).lower(batched_tree) — the exact current "
+                "Fitness._vmap composition (PyAutoFit#1638)"
             )
 
             def _invoke_ex(ex):
@@ -1182,7 +1208,7 @@ else:
         _row = {
             "arm": arm,
             "program": (
-                "jax.vmap(jax.jit(fn))" if arm == "vmap" else "jax.jit(fn), called B times"
+                "jax.jit(jax.vmap(fn))" if arm == "vmap" else "jax.jit(fn), called B times"
             ),
             "stands_for": (
                 "Nautilus(use_jax_vmap=True) — Fitness._vmap"
@@ -1219,7 +1245,14 @@ else:
             "device_idle_ms": _block["device_idle_ms"],
             "device_idle_ms_per_lane": _block["device_idle_ms"] / _per_lane_divisor,
             "trace": _block,
-            "hlo_census": xla_attribution.hlo_census(_index),
+            "hlo_census": {
+                "status": "excluded",
+                "reason": (
+                    "The legacy census anchors PyAutoArray source line numbers that moved after "
+                    "the phase-1 run. No batched attribution is published from unsupported "
+                    "anchors; the device-event table and wall reconciliation remain valid."
+                ),
+            },
             "trace_split": {
                 "expected_calls": _expected_calls,
                 "executions_per_invocation": _executions_per_invoke,
@@ -1240,6 +1273,19 @@ else:
         )
         return _row
 
+    # Compile the independent library-PDIP reference before installing either
+    # diagnostic monkeypatch. This is an untimed numerical gate over the exact
+    # same lane trees; agreement between the two harness arms is insufficient.
+    _fn_library_pdip = _likelihood_fn(system_s3.dataset, _settings)
+    _library_pdip_fn = jax.jit(jax.vmap(_fn_library_pdip))
+    with timer.section("vmap_lane_library_pdip_reference"):
+        _ll_library_pdip = np.asarray(block(_library_pdip_fn(batched_tree)), dtype=float)
+    if _ll_library_pdip.shape != (VMAP_BATCH,):
+        raise AssertionError(
+            f"the library-PDIP reference returned shape {_ll_library_pdip.shape}, not "
+            f"({VMAP_BATCH},)"
+        )
+
     # One probe and one injection over BOTH arms: the host wrapper and the
     # solver are identical for the pair, or the pair is not matched.
     with (
@@ -1248,11 +1294,11 @@ else:
             PASS_BUDGET, fallback=FALLBACK_ON, tau_rel=TAU_REL
         ) as _trace_counts,
     ):
-        # ONE pair of wrappers for the pins and both arms: a second
-        # jax.jit(_fn_v) would be a second compile of the same program.
+        # The wrappers reproduce current Fitness._vmap and the scalar-jit
+        # control. Both close over the same injected likelihood function.
         _fn_v = _likelihood_fn(system_s3.dataset, _settings)
         _scalar_pin_fn = jax.jit(_fn_v)
-        _vmap_pin_fn = jax.vmap(_scalar_pin_fn)
+        _vmap_pin_fn = jax.jit(jax.vmap(_fn_v))
 
         # --- the per-lane pin, un-timed ------------------------------------
         with timer.section("vmap_lane_log_likelihoods"):
@@ -1267,7 +1313,15 @@ else:
             )
 
         for _k, _draw in enumerate(lane_draws):
-            _rel = abs(_ll_vmap[_k] - _ll_scalar[_k]) / max(abs(_ll_scalar[_k]), 1e-300)
+            _abs = abs(_ll_vmap[_k] - _ll_scalar[_k])
+            _rel = _abs / max(abs(_ll_scalar[_k]), 1e-300)
+            _rel_vmap_pdip = abs(_ll_vmap[_k] - _ll_library_pdip[_k]) / max(
+                abs(_ll_library_pdip[_k]), 1e-300
+            )
+            _rel_scalar_pdip = abs(_ll_scalar[_k] - _ll_library_pdip[_k]) / max(
+                abs(_ll_library_pdip[_k]), 1e-300
+            )
+            _status = "PASS" if max(_rel, _rel_vmap_pdip, _rel_scalar_pdip) <= LANE_RTOL else "FAIL"
             lane_rows.append(
                 {
                     "lane": _k,
@@ -1276,30 +1330,63 @@ else:
                     "offsets": {_p: float(_o) for _p, _o in _draw.offsets.items()},
                     "log_likelihood_vmap": float(_ll_vmap[_k]),
                     "log_likelihood_scalar": float(_ll_scalar[_k]),
+                    "log_likelihood_library_pdip": float(_ll_library_pdip[_k]),
+                    "abs_diff_nats": float(_abs),
                     "rel_diff": float(_rel),
-                    "status": "PASS" if _rel <= LANE_RTOL else "FAIL",
+                    "rel_diff_vmap_vs_library_pdip": float(_rel_vmap_pdip),
+                    "rel_diff_scalar_vs_library_pdip": float(_rel_scalar_pdip),
+                    "status": _status,
                     # Filled by the reporting pass below when it runs.
                     "certified": None,
                     "pass_at_certification": None,
                     "pdip_iter": None,
                 }
             )
-        lane_pins = [
-            {
-                "pin": f"lane {_r['lane']}: vmap == scalar",
-                "rtol": LANE_RTOL,
-                "got": _r["log_likelihood_vmap"],
-                "reference_value": _r["log_likelihood_scalar"],
-                "rel_diff": _r["rel_diff"],
-                "status": _r["status"],
-            }
-            for _r in lane_rows
-        ]
+        lane_pins = []
+        for _r in lane_rows:
+            for _label, _got_key, _ref_key, _rel_key in (
+                (
+                    "current jit(vmap) == scalar jit",
+                    "log_likelihood_vmap",
+                    "log_likelihood_scalar",
+                    "rel_diff",
+                ),
+                (
+                    "current jit(vmap) == library PDIP",
+                    "log_likelihood_vmap",
+                    "log_likelihood_library_pdip",
+                    "rel_diff_vmap_vs_library_pdip",
+                ),
+                (
+                    "scalar jit == library PDIP",
+                    "log_likelihood_scalar",
+                    "log_likelihood_library_pdip",
+                    "rel_diff_scalar_vs_library_pdip",
+                ),
+            ):
+                lane_pins.append(
+                    {
+                        "pin": f"lane {_r['lane']}: {_label}",
+                        "rtol": LANE_RTOL,
+                        "got": _r[_got_key],
+                        "reference_value": _r[_ref_key],
+                        "rel_diff": _r[_rel_key],
+                        "status": "PASS" if _r[_rel_key] <= LANE_RTOL else "FAIL",
+                    }
+                )
         _n_failed = sum(1 for _r in lane_rows if _r["status"] == "FAIL")
+        _worst_rel = max(
+            max(
+                _r["rel_diff"],
+                _r["rel_diff_vmap_vs_library_pdip"],
+                _r["rel_diff_scalar_vs_library_pdip"],
+            )
+            for _r in lane_rows
+        )
         print(
-            f"\n  per-lane pin |ll_vmap - ll_scalar| / |ll| <= {LANE_RTOL:.0e}: "
+            f"\n  per-lane harness and library-PDIP pins <= {LANE_RTOL:.0e} relative: "
             f"{len(lane_rows) - _n_failed}/{len(lane_rows)} PASS  "
-            f"(worst rel {max(_r['rel_diff'] for _r in lane_rows):.3e})"
+            f"(worst rel {_worst_rel:.3e})"
         )
 
         # --- the arms ------------------------------------------------------
@@ -1329,7 +1416,7 @@ else:
         _fn_report = _likelihood_fn(system_s3.dataset, _settings)
         with timer.section("vmap_certification_report"):
             if _report_arm == "vmap":
-                block(jax.vmap(jax.jit(_fn_report))(batched_tree))
+                block(jax.jit(jax.vmap(_fn_report))(batched_tree))
             else:
                 _rep_fn = jax.jit(_fn_report)
                 for _t in lane_trees:
@@ -1375,6 +1462,11 @@ else:
         "arms": list(ARMS),
         "draw_seed": DRAW_SEED,
         "fallback": FALLBACK_ON,
+        "composition": "jax.jit(jax.vmap(fn))",
+        "composition_provenance": (
+            "Current Fitness._vmap after PyAutoFit#1638. Array 343376 used the retired "
+            "jax.vmap(jax.jit(fn)) composition and is historical evidence only."
+        ),
         "headline_arm": "scalar" if "scalar" in arm_blocks else "vmap",
         "lane_rtol": LANE_RTOL,
         "lanes": lane_rows,
@@ -1394,6 +1486,7 @@ else:
             ),
         },
         "lane_construction": {
+            "draws_sha256": lane_draws_sha256,
             "base_mass": {_k: float(_v) for _k, _v in BASE_MASS.items()},
             "sigma_scale": flds.RANDOM_SIGMA_SCALE,
             "parameters": list(flds.RANDOM_PARAMETERS),
@@ -1501,48 +1594,51 @@ if vmap_block is not None:
         print(f"    {_label:<34} {_cells[0]} {_cells[1]}")
 
 print("\n  --- HLO census ---")
-print(
-    f"    (n,n) add of F + lambda*H at abstract.py:371: "
-    f"{census_block['curvature_reg_add_nn']['count']}"
-    f"  -> {census_block['curvature_reg_add_nn']['verdict']}"
-)
-print(
-    f"    gathers at abstract.py:613 (edge subset):     "
-    f"{census_block['edge_subset_gathers_613']['count']}"
-)
-print(
-    f"    gathers at abstract.py:397 (reduced):         "
-    f"{census_block['curvature_reg_reduced_gathers_397']['count']}"
-)
-print(
-    f"    FFTs sourced at convolver.py:                 "
-    f"{census_block['fft_convolver_total']['count']}"
-    f"  (mapping matrix {census_block['fft_mapping_matrix']['count']}, "
-    f"image {census_block['fft_image']['count']})"
-)
-print(
-    f"    cholesky factorizations:                      {census_block['cholesky']['count']}"
-    f"  (triangular solves {census_block['triangular_solve']['count']})"
-)
-_where = census_block["curvature_reg_add_nn"]["where_the_sum_lives"]
-print(
-    f"    opcodes written at abstract.py:371:           {census_block['curvature_reg_add_nn']['opcodes_at_line_371']}"
-)
-print(
-    f"    producers shared by >1 consumer of F+lambda*H: {_where['producers_shared_by_more_than_one_consumer']}"
-)
-for _r in _where["consumers_of_F_plus_lambda_H"]:
+if VMAP_BATCH is not None:
+    print(f"    EXCLUDED: {census_block['reason']}")
+else:
     print(
-        f"        {_r['consumer']:26} <- {_r['producer']:30} {_r['producer_opcode']:12} "
-        f"{(_r['producer_source'] or '').split('/')[-1]}"
+        f"    (n,n) add of F + lambda*H at abstract.py:371: "
+        f"{census_block['curvature_reg_add_nn']['count']}"
+        f"  -> {census_block['curvature_reg_add_nn']['verdict']}"
     )
-print(f"    VERDICT: {census_block['curvature_reg_add_nn']['verdict']}")
+    print(
+        f"    gathers at abstract.py:613 (edge subset):     "
+        f"{census_block['edge_subset_gathers_613']['count']}"
+    )
+    print(
+        f"    gathers at abstract.py:397 (reduced):         "
+        f"{census_block['curvature_reg_reduced_gathers_397']['count']}"
+    )
+    print(
+        f"    FFTs sourced at convolver.py:                 "
+        f"{census_block['fft_convolver_total']['count']}"
+        f"  (mapping matrix {census_block['fft_mapping_matrix']['count']}, "
+        f"image {census_block['fft_image']['count']})"
+    )
+    print(
+        f"    cholesky factorizations:                      {census_block['cholesky']['count']}"
+        f"  (triangular solves {census_block['triangular_solve']['count']})"
+    )
+    _where = census_block["curvature_reg_add_nn"]["where_the_sum_lives"]
+    print(
+        f"    opcodes written at abstract.py:371:           "
+        f"{census_block['curvature_reg_add_nn']['opcodes_at_line_371']}"
+    )
+    print(
+        f"    producers shared by >1 consumer of F+lambda*H: "
+        f"{_where['producers_shared_by_more_than_one_consumer']}"
+    )
+    for _r in _where["consumers_of_F_plus_lambda_H"]:
+        print(
+            f"        {_r['consumer']:26} <- {_r['producer']:30} "
+            f"{_r['producer_opcode']:12} {(_r['producer_source'] or '').split('/')[-1]}"
+        )
+    print(f"    VERDICT: {census_block['curvature_reg_add_nn']['verdict']}")
 
 # ===================================================================
 # Summary + JSON + PNG
 # ===================================================================
-
-import json  # noqa: E402
 
 import matplotlib  # noqa: E402
 
@@ -1567,6 +1663,8 @@ trace_summary = {
             int(SOURCE_PIXELS_REQUESTED) if SOURCE_PIXELS_REQUESTED is not None else None
         ),
         "dataset": DATASET,
+        "dataset_sha256": dataset_sha256,
+        "cell_source_sha256": cell_source_sha256,
         "inversion_path": "dense",
         "pass_budget": PASS_BUDGET,
         "pass_budget_basis": (
@@ -1670,8 +1768,7 @@ trace_summary = {
 if vmap_block is not None:
     # The new flags go in ``configuration`` ONLY in this mode, so a phase-1 JSON
     # written by this checkout is key-for-key the JSON phase 1 wrote — while a
-    # batched JSON still carries every flag ``parse_known_args`` would otherwise
-    # have let an old checkout swallow in silence.
+    # batched JSON carries the exact current composition as provenance.
     trace_summary["configuration"].update(
         {
             "vmap_batch": int(VMAP_BATCH),
@@ -1679,12 +1776,12 @@ if vmap_block is not None:
             "arms": list(ARMS),
             "fallback": "on" if FALLBACK_ON else "off",
             "draw_seed": DRAW_SEED,
+            "vmap_composition": "jax.jit(jax.vmap(fn))",
             "lane_rtol": LANE_RTOL,
             "vmap_flags_note": (
-                "parse_known_args IGNORES unknown flags, so these five keys are the only "
-                "evidence that the checkout which produced this JSON understood --vmap-batch. "
-                "A JSON of a batched leg WITHOUT them was written by a phase-1 checkout that "
-                "silently swallowed the flags and measured a single call."
+                "Strict ProfileCLI.parse_cell_args rejects unknown flags. These keys record "
+                "the exact batching program and prevent historical vmap(jit) artifacts from "
+                "being mistaken for current jit(vmap) measurements."
             ),
         }
     )
@@ -1715,7 +1812,7 @@ if VMAP_BATCH is not None:
     # directory: batch size, lane family and fallback semantics are three
     # different programs and all three are in the name.
     _cell_name = (
-        f"{_cell_name}_vmap{int(VMAP_BATCH)}_{LANES_MODE}_fb{'on' if FALLBACK_ON else 'off'}"
+        f"{_cell_name}_jitvmap{int(VMAP_BATCH)}_{LANES_MODE}_fb{'on' if FALLBACK_ON else 'off'}"
     )
 
 dict_path, chart_path = resolve_output_paths(
@@ -1795,7 +1892,8 @@ if vmap_block is not None:
         f"({LANES_MODE} lanes, fallback {'on' if FALLBACK_ON else 'off'})\n"
         f"budget {PASS_BUDGET}, border relocator {BORDER_RELOCATOR_RESOLVED} | "
         f"qhull callbacks per batched call: {', '.join(_cb_ms)} | "
-        f"lanes pinned {len(lane_rows) - vmap_block['lanes_failed']}/{len(lane_rows)}",
+        f"lanes pinned (all relative checks <= {LANE_RTOL:.0e}) "
+        f"{len(lane_rows) - vmap_block['lanes_failed']}/{len(lane_rows)}",
         fontsize=10,
     )
     ax.legend(fontsize=8, loc="lower right")
@@ -1812,13 +1910,14 @@ if vmap_block is not None:
             print(
                 f"  [   FAIL] lane {_r['lane']} ({_r['draw_name']}): "
                 f"vmap {_r['log_likelihood_vmap']!r} vs scalar "
-                f"{_r['log_likelihood_scalar']!r}  rel {_r['rel_diff']:.3e}"
+                f"{_r['log_likelihood_scalar']!r}  "
+                f"abs {_r['abs_diff_nats']:.3e} nats (rel {_r['rel_diff']:.3e})"
             )
         raise AssertionError(
             f"{len(_failed)} of {len(lane_rows)} lanes disagree between the vmap and scalar "
-            f"arms by more than {LANE_RTOL:.0e} relative. The two arms are not evaluating the "
-            f"same models, so nothing in this table is a comparison. The JSON and PNG were "
-            f"written first and hold the evidence."
+            f"arms or against the library-PDIP reference by more than {LANE_RTOL:.0e} relative. "
+            f"The numerical gate failed, so nothing in this table supports a production "
+            f"recommendation. The JSON and PNG were written first and hold the evidence."
         )
 
     sys.exit(0)

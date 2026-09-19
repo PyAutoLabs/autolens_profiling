@@ -14,9 +14,7 @@ What a wrong submit would look like, and what catches it:
 
 - the three arm tables and the ``--array`` range disagree, so a task runs with
   an empty batch size — ``test__array_range_matches_the_arms``;
-- an arm passes a batch size, lane family or fallback the cell's argparse would
-  reject, which ``parse_known_args`` does **not** reject: it ignores unknown
-  flags, so the leg runs and quietly writes a table from different settings —
+- an arm passes a batch size, lane family or fallback the cell rejects —
   ``test__every_arm_is_a_setting_the_cell_accepts``;
 - the submit runs against a checkout from **before** #273, which would swallow
   every phase-2 flag, measure a single call and write it to the *phase-1*
@@ -93,7 +91,7 @@ def test__the_vmap_family_is_excluded_from_the_phase_0_glob():
 
 
 def test__the_cell_declares_every_phase_2_flag():
-    """``parse_known_args`` would ignore any of these, silently."""
+    """The submit and cell must keep the same bounded argument surface."""
     text = CELL.read_text()
     for flag in ("--vmap-batch", "--lanes", "--arms", "--draw-seed", "--fallback"):
         assert flag in text, f"cell does not declare {flag}"
@@ -112,7 +110,7 @@ def test__the_cell_records_every_phase_2_flag_in_the_results_json():
 def test__the_cell_suffixes_the_filename_with_the_batch_settings():
     """Or a B=4 leg overwrites the B=16 leg, or phase 1's file."""
     text = CELL.read_text()
-    assert "_vmap{int(VMAP_BATCH)}_{LANES_MODE}_fb" in text, (
+    assert "_jitvmap{int(VMAP_BATCH)}_{LANES_MODE}_fb" in text, (
         "the output filename no longer carries the batch size, lane family and "
         "fallback mode — legs of this array would clobber each other"
     )
@@ -135,7 +133,7 @@ def test__submit_runs_a_script_that_exists(path):
 
 @pytest.mark.parametrize("path", _submits(), ids=lambda p: p.name)
 def test__every_arm_is_a_setting_the_cell_accepts(path):
-    """``parse_known_args`` IGNORES an unknown flag value, so argparse will not catch this."""
+    """Every array-table value must belong to the cell's declared choices."""
     text = path.read_text()
     batches = _arm_table(text, "BATCHES")
     lanesets = _arm_table(text, "LANESETS")
@@ -211,12 +209,11 @@ def test__both_arms_are_run_so_every_leg_is_a_matched_pair(path):
 
 @pytest.mark.parametrize("path", _submits(), ids=lambda p: p.name)
 def test__submit_guards_against_a_checkout_without_the_flags(path):
-    """A pre-#273 checkout would swallow every flag and clobber the phase-1 file."""
+    """A pre-#273 checkout must fail before consuming an A100 allocation."""
     executable = _executable(path.read_text())
     assert 'grep -q -- "--vmap-batch"' in executable, (
         f"{path.name}: no guard that the checked-out cell defines --vmap-batch. "
-        f"parse_known_args would ignore every phase-2 flag, the cell would measure a "
-        f"single call, and it would write it to the PHASE 1 filename"
+        f"a stale checkout could run the wrong experiment"
     )
     assert "This checkout predates #273" in executable, (
         f"{path.name}: the guard does not say what went wrong"
@@ -236,9 +233,17 @@ def test__submit_does_not_pass_flags_the_cell_would_silently_swallow(path):
     executable = _executable(path.read_text())
     for flag in ("--pins", "--pass-budget", "--dataset", "--vmap_batch"):
         assert flag not in executable, (
-            f"{path.name}: passes {flag}, which this cell does not define — "
-            f"parse_known_args would ignore it silently"
+            f"{path.name}: passes {flag}, which this cell does not define"
         )
+
+
+def test__cell_measures_current_fitness_composition_and_library_reference():
+    text = CELL.read_text()
+    assert "jax.jit(jax.vmap(_fn_v))" in text
+    assert '"vmap_composition": "jax.jit(jax.vmap(fn))"' in text
+    assert "_ll_library_pdip" in text
+    assert '"rel_diff_vmap_vs_library_pdip"' in text
+    assert "LANE_RTOL = 1.0e-9" in text
 
 
 @pytest.mark.parametrize("path", _submits(), ids=lambda p: p.name)
