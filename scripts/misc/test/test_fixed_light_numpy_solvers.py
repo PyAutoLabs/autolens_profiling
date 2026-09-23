@@ -190,6 +190,72 @@ def test_library_nnls_solve_reports_the_two_factorisations_it_spends():
     assert stats["warm_start_fallback"] is False
 
 
+@pytest.mark.parametrize("new_signature", [True, False])
+def test_numpy_injection_installs_against_the_old_and_new_library_signature(
+    monkeypatch, new_signature
+):
+    """PyAutoArray #566 added ``solver``/``stats``; the injection must run on either side of it.
+
+    The library passes ``solver=`` by name, so the wrapper must accept it on the numpy
+    path (and still dispatch to the injected kernel), and on the delegated JAX path
+    forward it only to a library that declares it.
+    """
+    import types
+
+    from autoarray.inversion.inversion import inversion_util
+
+    calls = []
+    if new_signature:
+
+        def stub(
+            data_vector,
+            curvature_reg_matrix,
+            settings=None,
+            xp=np,
+            fingerprint=None,
+            factor=None,
+            solver="pdip",
+            stats=None,
+        ):
+            calls.append({"solver": solver, "stats": stats})
+            return data_vector
+
+    else:
+
+        def stub(
+            data_vector, curvature_reg_matrix, settings=None, xp=np, fingerprint=None, factor=None
+        ):
+            calls.append({})
+            return data_vector
+
+    monkeypatch.setattr(inversion_util, "reconstruction_positive_only_from", stub)
+
+    kernel_calls = []
+
+    def kernel(ZTZ, ZTx, *, stats):
+        kernel_calls.append(1)
+        return ZTx
+
+    fake_jax = types.SimpleNamespace(__name__="jax.numpy")
+    stats = {}
+    with flns.numpy_solver_injected(kernel, label="stub") as counts:
+        call = inversion_util.reconstruction_positive_only_from
+        call(data_vector=np.ones(3), curvature_reg_matrix=np.eye(3), xp=np, solver="certified")
+        call(
+            data_vector=np.ones(3),
+            curvature_reg_matrix=np.eye(3),
+            xp=fake_jax,
+            solver="certified",
+            stats=stats,
+        )
+    assert (counts["numpy"], counts["jax"], len(kernel_calls)) == (1, 1, 1)
+    if new_signature:
+        assert calls == [{"solver": "certified", "stats": stats}]
+    else:
+        assert calls == [{}], "the old library must not be handed solver/stats"
+    assert inversion_util.reconstruction_positive_only_from is stub
+
+
 # ---------------------------------------------------------------------------
 # 2. The jax-free contract
 # ---------------------------------------------------------------------------
