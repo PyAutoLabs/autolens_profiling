@@ -231,6 +231,18 @@ separately per likelihood × transform. Standing conclusions:
   `operated_mapping_matrix_list` accesses **compile to one PSF convolution**. The border
   relocator is production's default for lensing and costs 0.100 ms. No PyAutoArray change.
   Findings: [`results/notes/hst_gpu_residue_phase1_2026_09.md`](./results/notes/hst_gpu_residue_phase1_2026_09.md).
+- **HST GPU non-solver residue, phase 3 (2026-09)** — the PSF convolution of the mapping-matrix
+  cube, phase 1's largest *computation* (7.11 ms, 22 %), measured as seven harness-injected candidates
+  inside the same fused whole-call jit on the A100 (HST Delaunay N=1500, fp64, budget 7, array 350573).
+  Each fp64 row is gated at `1e-9` against the unmodified library on the fiducial and eight seeded
+  draws, and every trace reconciles within 0.5 % with zero unjoined time. **There is no fp64 lever**:
+  the library's FFT of the padded `(180, 180, 1500)` cube is the fastest fp64 implementation measured.
+  A source-first layout ties (31.79 vs 31.66 ms). A power-of-two frame is +4.52 ms at 2× peak memory.
+  Real-space convolution is 1.45× (batched cuDNN) and 3.82× (the library's `use_fft=False`) slower.
+  Only the fp32-cube and full-complex64 rows are faster (−2.14 / −3.98 ms, 7-13 %). They miss the pin
+  by ~1e-3 nats, so they are **diagnostic, not levers**; accepting them is a human policy decision.
+  No PyAutoArray change.
+  Findings: [`results/notes/hst_gpu_residue_phase3_psf_2026_09.md`](./results/notes/hst_gpu_residue_phase3_psf_2026_09.md).
 
 ## How to read this repo
 

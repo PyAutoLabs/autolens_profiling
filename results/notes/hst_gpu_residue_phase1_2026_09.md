@@ -2,6 +2,14 @@
 
 > **Status correction — 2026-09-18:** Phase 2 is in flight as issue #273. The active task record reports A100 array 343376 submitted on 2026-09-17; that is a submission record, not a current job-status assertion or a completed verdict. The inspected branch contains RTX instrument proofs. Do not choose GPU batching/callback changes until the matched A100 results are harvested and judged. See the [current campaign summary](profiling_campaign_status_2026_09.md).
 
+> **Erratum — 2026-09-23 (phase 3, #295):** (1) The PSF cube frame is `(180, 180, 1500)`
+> fp64 for the masked 141×141 dataset (fft_shape 180, source axis last). The ~389 MB quoted
+> below is consistent with this. It is not `(1500, 180, 180)` or `(200, 200, 1500)`, and
+> the convolver docstring's "even sizes incremented to odd" note is stale. (2) **PSF
+> convolution: phase 3 found no fp64 lever.** The shipped FFT path is the fastest fp64
+> implementation measured on the A100; see the
+> [phase-3 note](hst_gpu_residue_phase3_psf_2026_09.md). The tables below are unchanged.
+
 autolens_profiling issue [#268](https://github.com/PyAutoLabs/autolens_profiling/issues/268),
 branch `feature/hst-gpu-residue-p1`. **Phase 1 of the `hst-gpu-non-solver-residue` epic**, and
 the first measurement in it. The campaign map says ~21 of the 25.4 ms certified Delaunay A100
