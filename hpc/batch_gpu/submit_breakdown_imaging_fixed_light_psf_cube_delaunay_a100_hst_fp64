@@ -1,0 +1,231 @@
+#!/bin/bash -l
+#
+# 2026-09 hst-gpu-non-solver-residue PHASE 3 — PSF mapping-matrix cube convolution
+# candidates on the A100 (autolens_profiling#295).
+#
+# Phase 1 (#268, job 343350) traced the FUSED SINGLE-CALL production program on the
+# a100 (HST Delaunay N=1500, fp64, budget 7): 31.64 ms, whose largest computation is
+# the PSF convolution of the mapping-matrix cube — 7.12 ms (22 %), a 1.99 ms scatter
+# into the padded (180, 180, 1500) fp64 FFT frame plus 3.7 ms of fft kernels,
+# compiled once. Phase 2 (#273) left batching inconclusive at the numerical gate, so
+# the convolution is the next lever the campaign map ranks.
+#
+# This array swaps that convolution for a candidate INSIDE THE SAME FUSED WHOLE-CALL
+# JIT and changes nothing else. Route d (certified solver, budget 7, PDIP fallback)
+# and the traced program run under the candidate; route b (library PDIP + library
+# convolution) is the unmodified library answer every pin is taken against.
+#
+# Array tasks (one candidate each; the table below is indexed by SLURM_ARRAY_TASK_ID)
+# -----------------------------------------------------------------------------
+#   0  control             library FFT path as shipped (no patch) — the matched control
+#   1  frame_pow2          FFT frame at the next power of two per axis (180 -> 256)
+#   2  layout_src_first    cube (n_src, fy, fx), transforms over axes (1, 2)
+#   3  real_space_direct   library use_fft=False path (jax.scipy.signal.convolve, direct)
+#   4  conv_cudnn_batched  lax.conv_general_dilated, n_src as the batch axis (2-D conv)
+#   5  mp_cube_c64         DIAGNOSTIC fp32 cube + complex64 rfft2, complex128 multiply
+#   6  c64_full            DIAGNOSTIC complex64 end to end
+#
+# DIAGNOSTIC ROWS ARE NOT LEVERS. The campaign constraint is fp64 at a 1e-9 relative
+# pin; tasks 5 and 6 are measured for the milliseconds they would save and the nats
+# they cost, labelled DIAGNOSTIC in their JSON, and are never promoted.
+#
+# Every candidate is a HARNESS monkeypatch
+# ----------------------------------------
+# likelihood_breakdown.psf_cube_injection rebinds
+# autoarray.operators.convolver.Convolver.convolved_mapping_matrix_from for the duration
+# of a scoped context (restored on exit), nested inside the certified-solver injection
+# (likelihood_breakdown.library_solver_injection). Nothing in PyAutoArray was modified;
+# a winning candidate becomes a separate PyAutoArray prompt via /intake.
+#
+# The gate is ENFORCED by the cell: it writes its JSON and PNG first, then exits
+# non-zero if any GATED fp64 pin failed, if |reconciliation| > 5 % or if any device
+# time is unjoined. It never gates on speed. The exit code is captured so the footer
+# below still runs. The pins (8 seeded draws, seed 0), all at 1e-9 relative:
+#
+#   - the fiducial pin, route d (candidate) vs route b (unmodified library), is GATED
+#     for every fp64 candidate, control included;
+#   - a lever's draw pins are GATED against route d compiled WITHOUT the candidate
+#     (same certified solver, library convolution: the convolution-isolated pin); the
+#     draw vs route b is recorded, not gated;
+#   - control's draw pins are recorded vs route b, not gated (no d-control exists);
+#   - DIAGNOSTIC rows are never gated and never PASS.
+#
+# This gate was PRE-REGISTERED before any A100 data. Phase 2 (job 344635,
+# results/notes/hst_gpu_residue_phase2_vmap_2026_09.md) recorded a 2.0-2.6e-9
+# certified-vs-library-PDIP residual on seed-0 draw 7 on the A100; it belongs to the
+# SOLVER path (the RTX gives 2.7e-10 for the same draw), not the convolution. Gating
+# the draws vs route b would fail every task, control included, and measure nothing
+# about the convolution. Nothing was relaxed after seeing A100 data.
+#
+# Flags this cell owns (strict shared parsing rejects unknown ones):
+#
+#   mesh delaunay                               the Delaunay fixed-light model
+#   border-relocator cell                       use_border_relocator=True
+#   trace-calls 10                              steady calls taken inside the profiler
+#   routes b,d                                  b is the pin reference, the trace is on d
+#   psf-candidate NAME                          PHASE 3 — the convolution candidate
+#   pin-draws 8                                 PHASE 3 — seeded distinct draws pinned
+#   draw-seed 0                                 the phase-2 draw family
+#   config-name hpc_a100_fp64_fixed_light_trace
+#
+# The output filename gains _psf_<candidate>, so no leg collides with another, with
+# phase 1 or with phase 2 (and the config name sits outside build_readme.py's
+# CONFIG_TAGGED_RE, so nothing reaches the dashboard).
+#
+# Every leg starts from an EMPTY JAX compilation cache: a seeded XLA autotune cache
+# silently changes kernels (results/notes/xla_autotune_triton_gemm.md — F 4.8 vs
+# 25.6 ms on the same code). The AUTOTUNE_ENTRIES census at the end is the check.
+#
+# WALL-BASIS:
+#   Every task runs the one fixed_light_trace script in its single-call mode, the same
+#   program the phase-1 array of this script ran on this a100 and dataset in about 56 s
+#   per task end to end (job 343350, two compilations and 10 traced calls). A phase-3
+#   task adds 8 pinned draws through the two already-compiled routes and one extra
+#   compilation of route d without the candidate, so 300 s is offered with a headroom
+#   of two for the slowest candidate compile, which has never been measured.
+#   NOTE for anyone editing this block - check_submits reads any line here shaped like
+#   a keyword, a colon and a value as row data, so the prose must never contain that
+#   shape. Phase 1 lost a gate run to exactly that.
+#   cell: imaging/fixed_light_trace/hst  device: a100  precision: fp64
+#   source: measured-wall  ref: ral-343350  wall: 300  headroom: 2.0
+
+#SBATCH -J flt_psf_cube_delaunay_hst
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=00:30:00
+#SBATCH --array=0-6
+#SBATCH -o output/output.%A_%a.out
+#SBATCH -e error/error.%A_%a.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+# Derive the repo root from where this was submitted (hpc/batch_gpu/../..) rather
+# than hardcoding /mnt/ral/jnightin/autolens_profiling: the canonical RAL checkout
+# sits on main with a dirty tree, so this runs from a worktree of the feature
+# branch. The -o/-e paths above are relative, so sbatch from inside hpc/batch_gpu/.
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding"
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+CELL="$AP_ROOT/scripts/imaging/likelihood_breakdown/fixed_light_trace.py"
+
+# The cell rejects unknown flags, but retain an explicit source guard so a stale
+# checkout fails before allocating a GPU. The JSON records the candidate too.
+if ! grep -q -- "--psf-candidate" "$CELL"; then
+    echo "FATAL: $CELL does not define --psf-candidate. This checkout predates #295;" >&2
+    echo "       refusing to run a stale phase-1 cell." >&2
+    exit 1
+fi
+
+CANDIDATES=(control frame_pow2 layout_src_first real_space_direct conv_cudnn_batched mp_cube_c64 c64_full)
+CAND=${CANDIDATES[$SLURM_ARRAY_TASK_ID]}
+if [ -z "$CAND" ]; then
+    echo "FATAL: no PSF candidate for array task ${SLURM_ARRAY_TASK_ID} (expected 0-6)." >&2
+    exit 1
+fi
+
+MESH=delaunay
+BORDER=cell
+
+# The dataset is gitignored and auto-simulated on first use. Seven tasks racing to
+# write the same dataset/imaging/hst/ would interleave their FITS writes, so it is
+# simulated ONCE before submitting; this is the check that it was.
+if [ ! -f "$AP_ROOT/dataset/imaging/hst/data.fits" ]; then
+    echo "FATAL: dataset/imaging/hst/data.fits missing. Simulate it once before" >&2
+    echo "       submitting (concurrent tasks must not auto-simulate the same dir)." >&2
+    exit 1
+fi
+
+# Fresh per-task compilation cache. output/ is gitignored, so these never reach git;
+# ${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID} keeps concurrent tasks on the same node
+# from sharing one.
+export JAX_COMPILATION_CACHE_DIR="$AP_ROOT/output/jax_cache/fixed_light_psf_${CAND}_${SLURM_ARRAY_JOB_ID:-local}_${SLURM_ARRAY_TASK_ID:-0}"
+rm -rf "$JAX_COMPILATION_CACHE_DIR" && mkdir -p "$JAX_COMPILATION_CACHE_DIR"
+echo "JAX_COMPILATION_CACHE_DIR=$JAX_COMPILATION_CACHE_DIR (fresh)"
+
+# The profiler's xplane and the optimized HLO + module proto the cell dumps beside
+# it. Under output/ (gitignored) so a disputed row can be re-derived from the text
+# that produced it without a recompile, but nothing reaches git.
+TRACE_DIR="$AP_ROOT/output/trace/fixed_light_psf_${CAND}_${SLURM_ARRAY_JOB_ID:-local}_${SLURM_ARRAY_TASK_ID:-0}"
+rm -rf "$TRACE_DIR" && mkdir -p "$TRACE_DIR"
+echo "TRACE_DIR=$TRACE_DIR (fresh)"
+
+nvidia-smi
+
+echo "=========================================="
+date
+hostname
+echo "Task:           $SLURM_ARRAY_TASK_ID / 6"
+echo "Cell:           likelihood_breakdown/imaging/fixed_light_trace"
+echo "Dataset:        hst (0.05\"/px)"
+echo "Precision:      fp64"
+echo "Inversion path: dense (mapping matrices, InversionImagingMapping)"
+echo "Source mesh:    $MESH, 1500 vertices (cell fiducial; --source-pixels NOT passed)"
+echo "Border reloc:   --border-relocator $BORDER (the cell reports the RESOLVED boolean)"
+echo "Routes:         b,d   (b = the unmodified library, the pin reference)"
+echo "Pass budget:    7 (phase 3 zero-fallback budget for this mesh — the PRODUCTION budget)"
+echo "PSF candidate:  $CAND"
+echo "Pin draws:      8 (seed 0), 1e-9 relative; fiducial vs b gated, lever draws gated vs d-control"
+echo "Trace calls:    10"
+echo "Config name:    hpc_a100_fp64_fixed_light_trace"
+echo "PSF_LEG candidate=$CAND mesh=$MESH dataset=hst hardware=hpc_a100_fp64"
+echo "Flags:          --mesh $MESH --border-relocator $BORDER --psf-candidate $CAND --pin-draws 8 --draw-seed 0 --trace-calls 10 --routes b,d --config-name hpc_a100_fp64_fixed_light_trace"
+
+echo "=== source revisions (shared install, untouched) ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r" "$(git -C /mnt/ral/jnightin/PyAuto/$r rev-parse HEAD 2>&1)"
+done
+echo "AP_ROOT rev:   $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+
+cd $AP_ROOT
+
+echo "=== import provenance ==="
+python3 -c "import autoarray, autolens; print('autoarray.__file__ =', autoarray.__file__); print('autoarray.__version__ =', autoarray.__version__); print('autolens.__file__ =', autolens.__file__)"
+
+# The cell's exit code is CAPTURED, not inherited: it writes its JSON and PNG and
+# then raises if the phase-3 gate failed, so a failing leg is still a leg whose
+# provenance has to be recorded. ``activate.sh`` installs an ERR trap which exits
+# even while ``errexit`` is disabled (it ate phase 2's footers), so preserve and
+# remove that trap around the expected non-zero cell exit. Restore it before the
+# census, then exit with the cell's code.
+SAVED_ERR_TRAP=$(trap -p ERR)
+trap - ERR
+set +e
+python3 -u scripts/imaging/likelihood_breakdown/fixed_light_trace.py \
+    --mesh $MESH \
+    --border-relocator $BORDER \
+    --psf-candidate $CAND \
+    --pin-draws 8 \
+    --draw-seed 0 \
+    --trace-calls 10 \
+    --routes b,d \
+    --trace-dir "$TRACE_DIR" \
+    --config-name hpc_a100_fp64_fixed_light_trace
+CELL_RC=$?
+set -e
+eval "$SAVED_ERR_TRAP"
+
+# Autotune-cache census. Must be non-fatal: the directory only exists if XLA wrote
+# autotune results, and activate.sh's ERR trap fails the job on any non-zero exit
+# (the `ls` failure is swallowed by the pipe to `wc -l`). A non-zero count means this
+# leg's kernels were chosen by a cache, not by the library default.
+echo -n "AUTOTUNE_ENTRIES count="
+ls "$JAX_COMPILATION_CACHE_DIR/xla_gpu_per_fusion_autotune_cache_dir" 2>/dev/null | wc -l
+
+echo "CELL_EXIT=$CELL_RC"
+echo "Finished."
+date
+
+# Fail the SLURM job with the cell's own code, now that the census is on record.
+exit $CELL_RC

@@ -789,6 +789,147 @@ def test_census_reports_how_many_instructions_resolved_to_source(index):
 
 
 # ---------------------------------------------------------------------------
+# Phase 3 (#295): the harness PSF-cube candidates
+# ---------------------------------------------------------------------------
+
+_PSF_HARNESS = "/x/autolens_profiling/scripts/misc/likelihood_breakdown/psf_cube_injection.py"
+
+
+def _instr(name, opcode, frames):
+    return xa.Instruction(name=name, opcode=opcode, computation="main", frames=tuple(frames))
+
+
+def test_a_harness_psf_candidate_kernel_is_the_mapping_matrix_convolution():
+    """Without the rule a candidate's scatter / fft walks out to ``other`` or worse."""
+    frames = (
+        xa.Frame(file=_PSF_HARNESS, function="_layout_src_first", line=240),
+        xa.Frame(file=_IMAGING_ABSTRACT, function="operated_mapping_matrix_list", line=136),
+    )
+    assert xa.stage_for_frames(frames) == "psf_convolution_mapping_matrix"
+    # Innermost alone, with no library frame on the stack at all.
+    assert xa.stage_for_frames(frames[:1]) == "psf_convolution_mapping_matrix"
+
+
+def test_a_candidate_calling_back_into_the_real_space_path_is_the_mapping_convolution():
+    """``real_space_direct`` runs convolver.py:1348+, outside the 1086-1300 range."""
+    frames = (
+        xa.Frame(
+            file=_CONVOLVER, function="convolved_mapping_matrix_via_real_space_from", line=1419
+        ),
+        xa.Frame(file=_PSF_HARNESS, function="_real_space_direct", line=260),
+        xa.Frame(file=_IMAGING_ABSTRACT, function="operated_mapping_matrix_list", line=136),
+    )
+    assert xa.stage_for_frames(frames) == "psf_convolution_mapping_matrix"
+
+
+def test_the_harness_rule_sits_before_every_convolver_rule():
+    labels = [(r.label, r.path) for r in xa.STAGE_MAP]
+    harness = labels.index(("psf_convolution_mapping_matrix", xa._PSF_CUBE_HARNESS))
+    first_convolver = min(i for i, (_, path) in enumerate(labels) if path.endswith(_CONVOLVER))
+    assert harness < first_convolver
+
+
+def test_census_counts_a_harness_fft_as_a_mapping_matrix_fft():
+    index = {
+        "fft.h": _instr(
+            "fft.h",
+            "fft",
+            [
+                xa.Frame(file=_PSF_HARNESS, function="_frame_pow2", line=200),
+                xa.Frame(file=_IMAGING_ABSTRACT, function="operated_mapping_matrix_list", line=136),
+            ],
+        ),
+        "fft.lib": _instr(
+            "fft.lib",
+            "fft",
+            [
+                xa.Frame(file=_CONVOLVER, function="convolved_mapping_matrix_from", line=1228),
+                xa.Frame(file=_IMAGING_ABSTRACT, function="operated_mapping_matrix_list", line=136),
+            ],
+        ),
+        "fft.other": _instr(
+            "fft.other", "fft", [xa.Frame(file="/x/elsewhere.py", function="f", line=1)]
+        ),
+    }
+    census = xa.hlo_census(index)
+    assert census["fft_convolver_total"]["count"] == 2
+    assert [i["name"] for i in census["fft_mapping_matrix"]["instructions"]] == [
+        "fft.h",
+        "fft.lib",
+    ]
+    assert census["fft_image"]["count"] == 0
+    assert census["conv_mapping_matrix"]["count"] == 0
+
+
+def test_census_counts_a_real_space_convolution_and_a_cudnn_custom_call():
+    caller = xa.Frame(file=_IMAGING_ABSTRACT, function="operated_mapping_matrix_list", line=136)
+    index = {
+        "convolution.1": _instr(
+            "convolution.1",
+            "convolution",
+            [
+                xa.Frame(
+                    file=_CONVOLVER,
+                    function="convolved_mapping_matrix_via_real_space_from",
+                    line=1419,
+                ),
+                caller,
+            ],
+        ),
+        "cudnn-conv.2": _instr(
+            "cudnn-conv.2",
+            "custom-call",
+            [xa.Frame(file=_PSF_HARNESS, function="_conv_cudnn_batched", line=280), caller],
+        ),
+        "custom-call.3": _instr(
+            "custom-call.3",
+            "custom-call",
+            [xa.Frame(file=_PSF_HARNESS, function="_conv_cudnn_batched", line=281), caller],
+        ),
+    }
+    census = xa.hlo_census(index)
+    assert [i["name"] for i in census["conv_mapping_matrix"]["instructions"]] == [
+        "convolution.1",
+        "cudnn-conv.2",
+    ]
+    assert census["fft_convolver_total"]["count"] == 0
+
+
+def test_census_anchors_verify_against_the_installed_pyautoarray():
+    """The PSF anchors must hold on the installed library, or the census says why not."""
+    pytest.importorskip("autoarray")
+    status = xa.census_anchor_status()
+    psf = [a for a in status["anchors"] if "fft_mapping_matrix" in a["rows"]]
+    assert psf and all(a["ok"] for a in psf), [a["reason"] for a in psf]
+    assert status["status"] == "ok"
+    assert not set(status["rows_excluded"]) & {
+        "fft_convolver_total",
+        "fft_mapping_matrix",
+        "fft_image",
+        "conv_mapping_matrix",
+    }
+
+
+def test_a_moved_anchor_excludes_its_rows_with_a_reason(tmp_path):
+    root = tmp_path / "autoarray"
+    (root / "operators").mkdir(parents=True)
+    (root / "inversion/inversion/imaging").mkdir(parents=True)
+    (root / "operators/convolver.py").write_text(
+        "\n" * 2000 + "def convolved_mapping_matrix_from(self):\n    return 1\n"
+    )
+    (root / "inversion/inversion/imaging/abstract.py").write_text(
+        "\n" * 120 + "def operated_mapping_matrix_list(self):\n    return 1\n"
+    )
+    anchors = xa.CENSUS_ANCHORS[:1] + xa.CENSUS_ANCHORS[2:3]
+    status = xa.census_anchor_status(root, anchors=anchors)
+    assert status["status"] == "excluded"
+    assert "fft_mapping_matrix" in status["rows_excluded"]
+    moved = [a for a in status["anchors"] if not a["ok"]]
+    assert [a["function"] for a in moved] == ["convolved_mapping_matrix_from"]
+    assert "not enclosed" in moved[0]["reason"]
+
+
+# ---------------------------------------------------------------------------
 # End-to-end, on whatever backend is present (skipped when JAX is absent)
 # ---------------------------------------------------------------------------
 

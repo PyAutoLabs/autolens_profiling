@@ -607,6 +607,8 @@ _DELAUNAY_INTERP = "inversion/mesh/interpolator/delaunay.py"
 _CONVOLVER = "operators/convolver.py"
 _IMAGING_ABSTRACT = "inversion/inversion/imaging/abstract.py"
 _IMAGING_MAPPING = "inversion/inversion/imaging/mapping.py"
+#: The phase-3 candidate convolutions (autolens_profiling#295) — harness code.
+_PSF_CUBE_HARNESS = "likelihood_breakdown/psf_cube_injection.py"
 
 #: Ordered rules. **Order is the contract**: a stack is walked innermost frame
 #: first, and at each frame the rules are tried in this order, so the earliest
@@ -686,6 +688,13 @@ STAGE_MAP: tuple[StageRule, ...] = (
     # helpers (520-700, 1000-1085) convolve the 2D image. Both reach the same
     # rfft2/irfft2, so which one it is comes from the caller, exactly as the two
     # log determinants do.
+    # Phase 3 (#295): the candidate convolutions are HARNESS code
+    # (``psf_cube_injection`` rebinds ``Convolver.convolved_mapping_matrix_from``),
+    # so the scatter / FFT / conv kernels a candidate writes trace to this repo.
+    # Placed before the convolver rules; a candidate that calls back into
+    # convolver.py (``real_space_direct``, ``mp_cube_c64``) has its innermost frame
+    # in convolver.py and resolves there through the ``requires`` rules below.
+    StageRule("psf_convolution_mapping_matrix", _PSF_CUBE_HARNESS),
     StageRule("psf_convolution_mapping_matrix", _ARRAY + _CONVOLVER, (1086, 1300)),
     StageRule("psf_convolution_mapping_matrix", _ARRAY + _CONVOLVER, (632, 642)),
     StageRule("psf_convolution_mapping_matrix", _ARRAY + _CONVOLVER, (670, 691)),
@@ -1486,15 +1495,35 @@ def hlo_census(index: Mapping[str, Instruction]) -> dict:
         )
     )
 
-    fft_all = _hits(lambda i: i.opcode == "fft" and _written_at(i, _ARRAY + _CONVOLVER, (1, 10**6)))
-    fft_mapping = [
-        i
-        for i in fft_all
-        if _called_from(i, _ARRAY + _IMAGING_ABSTRACT, (119, 150))
-        or _called_from(i, _ARRAY + _CONVOLVER, (670, 691))
-        or _called_from(i, _ARRAY + _CONVOLVER, (1086, 1300))
-    ]
+    # An FFT or a convolution counts when it was WRITTEN at convolver.py or at the
+    # phase-3 harness (``psf_cube_injection``, #295): a candidate's own rfft2 /
+    # lax.conv has its innermost frame in the harness, not in the library.
+    def _written_at_convolution_source(i: Instruction) -> bool:
+        return _written_at(i, _ARRAY + _CONVOLVER, (1, 10**6)) or _written_at(
+            i, _PSF_CUBE_HARNESS, (1, 10**6)
+        )
+
+    def _is_mapping_convolution(i: Instruction) -> bool:
+        return (
+            _called_from(i, _ARRAY + _IMAGING_ABSTRACT, (119, 150))
+            or _called_from(i, _ARRAY + _CONVOLVER, (670, 691))
+            or _called_from(i, _ARRAY + _CONVOLVER, (1086, 1300))
+            or _called_from(i, _PSF_CUBE_HARNESS, (1, 10**6))
+        )
+
+    fft_all = _hits(lambda i: i.opcode == "fft" and _written_at_convolution_source(i))
+    fft_mapping = [i for i in fft_all if _is_mapping_convolution(i)]
     fft_image = [i for i in fft_all if i not in fft_mapping]
+    # A real-space candidate (``real_space_direct``, ``conv_cudnn_batched``) has no
+    # fft at all: its work is a ``convolution`` opcode, which the GPU backend
+    # rewrites into a cuDNN ``custom-call`` named ``cudnn-conv*``.
+    conv_mapping = _hits(
+        lambda i: (
+            (i.opcode == "convolution" or (i.opcode == "custom-call" and "conv" in i.name))
+            and _written_at_convolution_source(i)
+            and _is_mapping_convolution(i)
+        )
+    )
 
     # A factorization is either the ``cholesky`` opcode or, on the GPU backend,
     # a cuSOLVER ``custom-call`` that XLA names ``cholesky.N``. Matching
@@ -1579,6 +1608,14 @@ def hlo_census(index: Mapping[str, Instruction]) -> dict:
             ),
         },
         "fft_image": _describe(fft_image),
+        "conv_mapping_matrix": {
+            **_describe(conv_mapping),
+            "question": (
+                "How many real-space convolutions of the mapping-matrix cube survive XLA? "
+                "0 on the shipped FFT path; a phase-3 real-space candidate shows here instead "
+                "of in fft_mapping_matrix (a cuDNN conv is a custom-call on the GPU backend)."
+            ),
+        },
         "cholesky": {
             **_describe(cholesky),
             "callers": {i.name: [str(f) for f in i.frames[:5]] for i in cholesky},
@@ -1586,6 +1623,178 @@ def hlo_census(index: Mapping[str, Instruction]) -> dict:
         "triangular_solve": _describe(triangular_solves),
         "instructions_total": len(index),
         "instructions_with_frames": sum(1 for i in index.values() if i.frames),
+    }
+
+
+@dataclass(frozen=True)
+class CensusAnchor:
+    """A PyAutoArray source-line anchor the census reads, and the rows it backs.
+
+    ``mode="encloses"``: the census range must ENCLOSE the whole ``function``
+    (def line to last line), the shape of the convolver / imaging-abstract ranges.
+    ``mode="inside"``: the census range must lie INSIDE ``function``, and when
+    ``contains`` is given some line of the range must contain that text — the
+    shape of the single-line ``F + lambda*H`` anchor.
+    """
+
+    rows: tuple[str, ...]
+    path: str
+    function: str
+    lines: tuple[int, int]
+    mode: str = "encloses"
+    contains: str | None = None
+
+
+_PSF_CENSUS_ROWS = (
+    "fft_convolver_total",
+    "fft_mapping_matrix",
+    "fft_image",
+    "conv_mapping_matrix",
+)
+
+#: Every PyAutoArray line anchor ``hlo_census`` reads. The PSF anchors back the
+#: rows phase 3 reads; the ``abstract.py`` anchors back the phase-1 curvature and
+#: gather rows (which is why phase 2 excluded the whole census when they moved).
+CENSUS_ANCHORS: tuple[CensusAnchor, ...] = (
+    CensusAnchor(_PSF_CENSUS_ROWS, _CONVOLVER, "convolved_mapping_matrix_from", (1086, 1300)),
+    CensusAnchor(
+        _PSF_CENSUS_ROWS, _CONVOLVER, "_convolved_mapping_matrix_over_sampled_jax_from", (670, 691)
+    ),
+    CensusAnchor(_PSF_CENSUS_ROWS, _IMAGING_ABSTRACT, "operated_mapping_matrix_list", (119, 150)),
+    CensusAnchor(
+        ("curvature_reg_add_nn",),
+        _INVERSION_ABSTRACT,
+        "curvature_reg_matrix",
+        (371, 371),
+        mode="inside",
+        contains="add(",
+    ),
+    CensusAnchor(
+        ("curvature_reg_reduced_gathers_397",),
+        _INVERSION_ABSTRACT,
+        "curvature_reg_matrix_reduced",
+        (374, 398),
+        mode="inside",
+    ),
+    CensusAnchor(
+        ("edge_subset_gathers_613",),
+        _INVERSION_ABSTRACT,
+        "reconstruction",
+        (606, 614),
+        mode="inside",
+        contains="ids_to_keep]",
+    ),
+)
+
+
+def _function_spans(source: str) -> dict[str, list[tuple[int, int]]]:
+    """``{function name: [(def line, last line), ...]}`` for every def in *source*."""
+    import ast
+
+    spans: dict[str, list[tuple[int, int]]] = {}
+    for node in ast.walk(ast.parse(source)):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            spans.setdefault(node.name, []).append((node.lineno, node.end_lineno or node.lineno))
+    return spans
+
+
+def census_anchor_status(
+    package_root: str | os.PathLike | None = None,
+    anchors: Sequence[CensusAnchor] = CENSUS_ANCHORS,
+) -> dict:
+    """Check the census's line anchors against the INSTALLED PyAutoArray source.
+
+    Phase 2 had to mark the whole census ``excluded`` because the anchors had
+    moved and nothing noticed. This makes the check a measurement: each anchor
+    is resolved against the source file the running process imports (or the
+    ``autoarray`` package directory *package_root*), and the census status is
+    ``ok`` only when every anchor backing the PSF rows holds. Rows whose anchors
+    have moved are listed under ``rows_excluded`` with the reason — never
+    silently reported.
+    """
+    if package_root is None:
+        import importlib.util
+
+        spec = importlib.util.find_spec("autoarray")
+        if spec is None or spec.origin is None:
+            return {
+                "status": "excluded",
+                "reason": "autoarray is not importable; no anchor can be verified",
+                "anchors": [],
+                "rows_excluded": sorted({r for a in anchors for r in a.rows}),
+            }
+        package_root = os.path.dirname(spec.origin)
+
+    results = []
+    sources: dict[str, tuple[list[str], dict]] = {}
+    for anchor in anchors:
+        path = os.path.join(str(package_root), anchor.path)
+        if path not in sources:
+            try:
+                with open(path, encoding="utf-8") as handle:
+                    text = handle.read()
+                sources[path] = (text.splitlines(), _function_spans(text))
+            except OSError as error:
+                sources[path] = ([], {"__error__": str(error)})
+        lines, spans = sources[path]
+        found = spans.get(anchor.function, [])
+        first, last = anchor.lines
+        ok = False
+        reason = ""
+        if not found:
+            reason = f"def {anchor.function} not found in {anchor.path}"
+        elif anchor.mode == "encloses":
+            ok = any(first <= a <= b <= last for a, b in found)
+            if not ok:
+                reason = (
+                    f"def {anchor.function} spans {found}, not enclosed by the census range "
+                    f"{first}-{last}"
+                )
+        else:
+            ok = any(a <= first and last <= b for a, b in found)
+            if not ok:
+                reason = (
+                    f"the census range {first}-{last} is not inside def {anchor.function} "
+                    f"(spans {found})"
+                )
+            elif anchor.contains is not None:
+                window = lines[first - 1 : last]
+                ok = any(anchor.contains in line for line in window)
+                if not ok:
+                    reason = (
+                        f"no line in {first}-{last} of {anchor.path} contains "
+                        f"{anchor.contains!r}; the anchored instruction has moved"
+                    )
+        results.append(
+            {
+                "rows": list(anchor.rows),
+                "path": anchor.path,
+                "function": anchor.function,
+                "lines": [first, last],
+                "mode": anchor.mode,
+                "found_spans": [list(span) for span in found],
+                "ok": ok,
+                "reason": reason or "ok",
+            }
+        )
+
+    psf_ok = all(r["ok"] for r in results if set(r["rows"]) & set(_PSF_CENSUS_ROWS))
+    rows_excluded = sorted({row for r in results if not r["ok"] for row in r["rows"]})
+    return {
+        "status": "ok" if psf_ok else "excluded",
+        "status_scope": (
+            "the PSF rows (fft_convolver_total, fft_mapping_matrix, fft_image, "
+            "conv_mapping_matrix); any other row whose anchor moved is in rows_excluded"
+        ),
+        "reason": (
+            "every PSF census anchor verified against the installed PyAutoArray"
+            if psf_ok
+            else "a PSF census anchor moved in the installed PyAutoArray: "
+            + "; ".join(r["reason"] for r in results if not r["ok"])
+        ),
+        "package_root": str(package_root),
+        "anchors": results,
+        "rows_excluded": rows_excluded,
     }
 
 

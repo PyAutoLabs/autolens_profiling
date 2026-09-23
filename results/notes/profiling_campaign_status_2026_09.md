@@ -1,6 +1,7 @@
 # Fixed-light profiling: current findings and experiment contracts
 
-Status as recorded on **2026-09-18**. This page supersedes obsolete Next sections,
+Status as recorded on **2026-09-18**; the GPU section adds the phase-3 verdict on
+**2026-09-23**. This page supersedes obsolete Next sections,
 not the historical measurements themselves. No new timings were collected for it.
 
 ## CPU: complete
@@ -42,7 +43,7 @@ and label it **control-only, incomplete A/B job**. Do not rerun it merely to fil
 the archive. For future headline support, version the supporting control along
 with the existing source/job sidecar, including incomplete-job status.
 
-## GPU: corrected baseline, batching experiment inconclusive
+## GPU: corrected baseline, batching experiment inconclusive, PSF convolution has no fp64 lever
 
 The [budget-7 single-call trace](hst_gpu_residue_phase1_2026_09.md) supersedes two
 claims inherited from the completed JAX fixed-light campaign:
@@ -67,6 +68,19 @@ three-way `1e-9` numerical gate failed on one or more distinct lanes at B=8 and
 B=16, so the [phase-2 note](hst_gpu_residue_phase2_vmap_2026_09.md) records an
 explicit inconclusive policy verdict. No batching-policy or batch-aware callback
 change follows from this fixed-N grid.
+
+Phase 3 (issue [#295](https://github.com/PyAutoLabs/autolens_profiling/issues/295),
+A100 array **350573**) settles the PSF convolution of the mapping-matrix cube: **no
+fp64 lever**. The library's FFT convolution of the padded `(180, 180, 1500)` cube
+is the fastest fp64 implementation measured inside the fused whole-call jit. Every
+fp64 candidate passed the pre-registered `1e-9` gate. `layout_src_first` ties
+(+0.13 ms, inside the run-to-run spread). `frame_pow2` is +4.52 ms and doubles peak
+memory. The two real-space rows are 1.45× and 3.82× slower. The two faster rows,
+fp32-cube and full complex64 (−2.14 / −3.98 ms), are **DIAGNOSTIC**: they miss the pin
+by ~1e-3 nats on the draws. They may not be quoted as levers, and accepting them
+is a human policy decision, not an open profiling question. The
+[phase-3 note](hst_gpu_residue_phase3_psf_2026_09.md) has the matched table. The
+remaining listed GPU lever is the second Cholesky (0.89 ms, phase 4).
 
 The [matrix-free verdict](matrix_free_pixelized_2026_09.md) remains a no-go on its
 measured grid; this summary does not reopen it or infer an unmeasured crossover.
