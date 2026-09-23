@@ -1,0 +1,198 @@
+{
+  "env": {
+    "NPROC": "8",
+    "nproc_all": 8,
+    "affinity_n": 8,
+    "OMP_NUM_THREADS": "1",
+    "XLA_FLAGS": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "JAX_ENABLE_X64": "True",
+    "jax_version": "0.10.2",
+    "autolens_version": "2026.8.17.1",
+    "default_backend": "cpu",
+    "x64": true
+  },
+  "n_planes": 3,
+  "n_mass_profiles": 13,
+  "source_centres": [
+    [
+      -0.5487031588152802,
+      0.7669646560202734
+    ],
+    [
+      -0.8063387894798213,
+      1.1980517770085235
+    ]
+  ],
+  "group1_timing": {
+    "cluster_smallgrid_current": {
+      "median": 0.07220785000026808,
+      "p10": 0.05935069999941334,
+      "min": 0.053147200000239536,
+      "max": 0.30777519999992364,
+      "n": 20,
+      "compile_s": 9.72595339999998
+    },
+    "cluster_bare_defl": {
+      "median": 0.014140350000161561,
+      "p10": 0.010459300000547955,
+      "min": 0.008434800000031828,
+      "max": 0.035311199999341625,
+      "n": 20,
+      "compile_s": 0.7696479000001091
+    }
+  },
+  "group1_structural": {
+    "cluster_smallgrid_current": {
+      "flops": 41270500.0,
+      "temp_MB": 20.655906677246094,
+      "sort_shapes": 15,
+      "sort_sizes": [
+        69849,
+        720,
+        720,
+        720,
+        720,
+        720
+      ]
+    },
+    "cluster_bare_defl": {
+      "flops": 26360390.0,
+      "temp_MB": 18.02570343017578,
+      "sort_shapes": 0,
+      "sort_sizes": []
+    }
+  },
+  "group1_meta": {
+    "small_grid": {
+      "n_triangles": 23283,
+      "n_steps": 8
+    }
+  },
+  "group1b_timing": {
+    "cluster_smallgrid_current": {
+      "median": 0.06750045000035243,
+      "p10": 0.062219200000072306,
+      "min": 0.059284300000399526,
+      "max": 0.21977349999997386,
+      "n": 20,
+      "compile_s": 9.72595339999998
+    },
+    "cluster_bare_defl": {
+      "median": 0.013089550000131567,
+      "p10": 0.009920200000124169,
+      "min": 0.009230299999217095,
+      "max": 0.032735300000240386,
+      "n": 20,
+      "compile_s": 0.7696479000001091
+    },
+    "cluster_smallgrid_nodedup": {
+      "median": 0.031732999999803724,
+      "p10": 0.028124800000114192,
+      "min": 0.024738400000387628,
+      "max": 0.06970719999935682,
+      "n": 20,
+      "compile_s": 42.92864230000032
+    }
+  },
+  "cluster_small_identical": true,
+  "cluster_solver": {
+    "n_triangles": 92169,
+    "n_steps": 7,
+    "extent": [
+      -69.64999999999999,
+      69.64999999999999
+    ]
+  },
+  "group2_structural": {
+    "cluster_solve_z1.0": {
+      "flops": 153858672.0,
+      "temp_MB": 81.3387680053711,
+      "sort_shapes": 13,
+      "sort_sizes": [
+        276507,
+        720,
+        720,
+        720,
+        720,
+        720
+      ]
+    },
+    "cluster_solve_z2.0": {
+      "flops": 154346608.0,
+      "temp_MB": 81.33882904052734,
+      "sort_shapes": 13,
+      "sort_sizes": [
+        276507,
+        720,
+        720,
+        720,
+        720,
+        720
+      ]
+    },
+    "cluster_solve_z1.0_nodedup": {
+      "flops": 120533944.0,
+      "temp_MB": 80.4248275756836,
+      "sort_shapes": 6,
+      "sort_sizes": [
+        60,
+        60,
+        60,
+        60,
+        60,
+        60
+      ]
+    },
+    "cluster_solve_z2.0_nodedup": {
+      "flops": 121583528.0,
+      "temp_MB": 80.3623275756836,
+      "sort_shapes": 6,
+      "sort_sizes": [
+        60,
+        60,
+        60,
+        60,
+        60,
+        60
+      ]
+    }
+  },
+  "group2_timing": {
+    "cluster_solve_z1.0": {
+      "median": 0.11728050000010626,
+      "p10": 0.10181499999998778,
+      "min": 0.10181499999998778,
+      "max": 0.15310970000064117,
+      "n": 8,
+      "compile_s": 17.62370269999974
+    },
+    "cluster_solve_z2.0": {
+      "median": 0.12005580000004556,
+      "p10": 0.09708609999961482,
+      "min": 0.09708609999961482,
+      "max": 0.13192999999955646,
+      "n": 8,
+      "compile_s": 20.19981110000026
+    },
+    "cluster_solve_z1.0_nodedup": {
+      "median": 0.04795140000032916,
+      "p10": 0.0440734000003431,
+      "min": 0.0440734000003431,
+      "max": 0.07008789999963483,
+      "n": 8,
+      "compile_s": 11.72610749999967
+    },
+    "cluster_solve_z2.0_nodedup": {
+      "median": 0.04957079999985581,
+      "p10": 0.04630819999965752,
+      "min": 0.04630819999965752,
+      "max": 0.0612991999996666,
+      "n": 8,
+      "compile_s": 9.216827899999771
+    }
+  },
+  "group2_identical": {
+    "cluster_solve_z1.0": true,
+    "cluster_solve_z2.0": true
+  }
+}

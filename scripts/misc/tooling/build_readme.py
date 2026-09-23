@@ -91,7 +91,7 @@ ARTIFACT_RE = re.compile(
 #   pixelization_hpc_a100_mp_sparse.json
 CONFIG_TAGGED_RE = re.compile(
     r"^(?P<script>[a-z0-9_]+?)_(?P<config>local_cpu_fp64|local_cpu_mp|"
-    r"local_gpu_fp64|local_gpu_mp|hpc_a100_fp64|hpc_a100_mp)"
+    r"local_gpu_fp64|local_gpu_mp|hpc_ral_cpu_fp64|hpc_a100_fp64|hpc_a100_mp)"
     r"(?P<sparse>_sparse)?"
     r"\.json$"
 )
@@ -102,6 +102,8 @@ CONFIG_ORDER = (
     "local_cpu_mp",
     "local_gpu_fp64",
     "local_gpu_mp",
+    # RAL CPU-only rows (point-source CPU campaign, autolens_profiling#297).
+    "hpc_ral_cpu_fp64",
     "hpc_a100_fp64",
     "hpc_a100_mp",
 )

@@ -1,0 +1,65 @@
+{
+  "env": {
+    "NPROC": "8",
+    "nproc_all": 8,
+    "affinity_n": 8,
+    "OMP_NUM_THREADS": "1",
+    "XLA_FLAGS": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "JAX_ENABLE_X64": "True",
+    "jax_version": "0.10.2",
+    "autolens_version": "2026.8.17.1",
+    "default_backend": "cpu",
+    "x64": true
+  },
+  "ll_base": 7.743201200876812,
+  "ll_nodedup": 7.743201200876812,
+  "bit_identical": true,
+  "structural": {
+    "baseline": {
+      "flops": 15582802.0,
+      "temp_MB": 5.201072692871094,
+      "sort_shapes": 15,
+      "sort_sizes": [
+        69849,
+        720,
+        720,
+        720,
+        720,
+        720
+      ]
+    },
+    "nodedup": {
+      "flops": 6495109.0,
+      "temp_MB": 4.578025817871094,
+      "sort_shapes": 7,
+      "sort_sizes": [
+        60,
+        60,
+        60,
+        60,
+        60,
+        60
+      ]
+    }
+  },
+  "timing": {
+    "baseline": {
+      "median": 0.040029699999877266,
+      "p10": 0.03479560000005222,
+      "min": 0.03243400000019392,
+      "max": 0.09429469999986395,
+      "n": 40,
+      "compile_s": 0.0
+    },
+    "nodedup": {
+      "median": 0.00813930000003893,
+      "p10": 0.00641589999986536,
+      "min": 0.006169600000248465,
+      "max": 0.01822630000015124,
+      "n": 40,
+      "compile_s": 0.0
+    }
+  },
+  "speedup_median": 4.918076493025913,
+  "speedup_p10": 5.423338892561047
+}

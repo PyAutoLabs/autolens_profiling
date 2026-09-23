@@ -22,7 +22,6 @@ that the instrument does not silently conflate the two likelihood variants.
 """
 
 import os
-import subprocess
 import sys
 from pathlib import Path
 
@@ -53,6 +52,7 @@ if os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
     sys.exit(0)
 
+from likelihood_breakdown.provenance import source_revisions, thread_environment  # noqa: E402
 from likelihood_breakdown.timing import Timer, block, jit_profile  # noqa: E402
 
 from _profile_cli import (  # noqa: E402
@@ -84,10 +84,6 @@ PREFIX_STAGES = (
 
 timer = Timer()
 jit_records: dict[str, dict] = {}
-
-
-def _git_revision(path: Path) -> str:
-    return subprocess.check_output(["git", "-C", str(path), "rev-parse", "HEAD"], text=True).strip()
 
 
 def _mass_model():
@@ -369,23 +365,13 @@ config_name = _cli.config_name or (
 summary = {
     "autolens_version": al_version,
     "package_versions": {"jax": jax.__version__, "jaxlib": jaxlib.__version__},
-    "source_revisions": {
-        "autolens_profiling": _git_revision(_ROOT),
-        "PyAutoFit": _git_revision(_ROOT.parent / "PyAutoFit"),
-        "PyAutoArray": _git_revision(_ROOT.parent / "PyAutoArray"),
-        "PyAutoGalaxy": _git_revision(_ROOT.parent / "PyAutoGalaxy"),
-        "PyAutoLens": _git_revision(_ROOT.parent / "PyAutoLens"),
-        "PyAutoNerves": _git_revision(_ROOT.parent / "PyAutoNerves"),
-    },
+    # Resolved from the imported modules, not <root>/../PyAuto*: on RAL the
+    # libraries live under /mnt/ral/jnightin/PyAuto/ (#297).
+    "source_revisions": source_revisions(_ROOT),
     "instrument": INSTRUMENT,
     "config_name": config_name,
     "device": device_info_dict(),
-    "thread_environment": {
-        "NPROC": os.environ.get("NPROC"),
-        "OMP_NUM_THREADS": os.environ.get("OMP_NUM_THREADS"),
-        "OPENBLAS_NUM_THREADS": os.environ.get("OPENBLAS_NUM_THREADS"),
-        "MKL_NUM_THREADS": os.environ.get("MKL_NUM_THREADS"),
-    },
+    "thread_environment": thread_environment(),
     "precision": {
         "jax_enable_x64": bool(jax.config.jax_enable_x64),
         "mixed_precision_requested": bool(_cli.use_mixed_precision),

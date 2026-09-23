@@ -1,0 +1,672 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "package_versions": {
+    "jax": "0.10.2",
+    "jaxlib": "0.10.2"
+  },
+  "source_revisions": {
+    "autolens_profiling": "15ceb686ac93f9d5957910ed68f6ee33d7f81b60",
+    "PyAutoNerves": "1fa613aa8d89a79613009fb66f5b4e2d21deb57a",
+    "PyAutoFit": "a736840127be7a3c21e15a5c945e94d8f1082983",
+    "PyAutoArray": "22e6d6082e3365b10fb08d96e19ab02a5420e935",
+    "PyAutoGalaxy": "70a61e26cd715cefe7012a38285698091246a8a4",
+    "PyAutoLens": "2aaa1c1a8bb4a5923edf30a18451fcea330a6bd4"
+  },
+  "instrument": "simple",
+  "config_name": "hpc_ral_cpu_fp64",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "hostname": "euclid-ral-compute-10-2",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 236,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p1/output/jax_cache/point_source_350580",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true
+  },
+  "thread_environment": {
+    "NPROC": "8",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "precision": {
+    "jax_enable_x64": true,
+    "mixed_precision_requested": false,
+    "note": "PointSolver has no Settings mixed-precision switch; device task validates precision-specific execution."
+  },
+  "configuration": {
+    "likelihood": "image_plane_solved (FitPositionsImagePairAllSolved)",
+    "plain_control": "image_plane (FitPositionsImagePairAll)",
+    "observed_positions": 4,
+    "position_noise_sigma": 0.05,
+    "dataset_noise_seed": 1,
+    "lens_redshift": 0.5,
+    "source_redshift": 1.0,
+    "solver_grid_shape": [
+      100,
+      100
+    ],
+    "solver_grid_pixel_scale": 0.2,
+    "solver_pixel_scale_precision": 0.001,
+    "magnification_threshold": 0.1,
+    "neighbor_degree": 1,
+    "max_containing_size": 15,
+    "n_steps": 8,
+    "n_repeats": 5
+  },
+  "steps": {
+    "Solved source centre": 0.00017132144421339035,
+    "Step 0: ray trace": 0.022309400606900454,
+    "Step 0: containment": -0.00013698488473892073,
+    "Step 0: selection": -0.0004566155374050168,
+    "Step 0: neighbourhood": 0.00015422739088535517,
+    "Step 0: up sample": 0.00036960914731025765,
+    "Step 1: ray trace": 0.0001587093807756887,
+    "Step 1: containment": 0.00012705903500318666,
+    "Step 1: selection": -0.00034245578572154184,
+    "Step 1: neighbourhood": 0.00029367003589868615,
+    "Step 1: up sample": -0.000498875416815283,
+    "Step 2: ray trace": 0.0006257027387619046,
+    "Step 2: containment": 7.869144901632985e-05,
+    "Step 2: selection": 0.00012962138280272692,
+    "Step 2: neighbourhood": 5.193883553147177e-05,
+    "Step 2: up sample": -0.0002256092615425566,
+    "Step 3: ray trace": -0.0001976845785975484,
+    "Step 3: containment": 0.00023197242990136147,
+    "Step 3: selection": 0.0003508721478283419,
+    "Step 3: neighbourhood": -0.0004360675811767578,
+    "Step 3: up sample": -0.00015101358294487138,
+    "Step 4: ray trace": 0.0006448630243539831,
+    "Step 4: containment": -0.00011073173955082963,
+    "Step 4: selection": 1.4111120253800652e-05,
+    "Step 4: neighbourhood": -0.00030137840658426077,
+    "Step 4: up sample": 0.0005277373827993863,
+    "Step 5: ray trace": -0.0001054023392498514,
+    "Step 5: containment": 0.000409813225269319,
+    "Step 5: selection": -0.00044152624905109336,
+    "Step 5: neighbourhood": -5.989177152514527e-05,
+    "Step 5: up sample": -0.00011574598029255936,
+    "Step 6: ray trace": 0.0001917255111038678,
+    "Step 6: containment": 0.0007263435982167721,
+    "Step 6: selection": -0.00022593559697270393,
+    "Step 6: neighbourhood": -0.00020802803337573866,
+    "Step 6: up sample": 0.00023417379707097938,
+    "Step 7: ray trace": 0.000319629721343518,
+    "Step 7: containment": 0.0001452125608921058,
+    "Step 7: selection": -0.0007896013557910919,
+    "Step 7: neighbourhood": 9.838193655014107e-05,
+    "Step 7: up sample": 0.00014550359919666966,
+    "Magnification filter": 0.00038921404629945963,
+    "Pairing chi-squared / fused-wrapper residual": 0.0005935743451118448
+  },
+  "prefix_steady_per_call_s": {
+    "Solved source centre": 0.00017132144421339035,
+    "Step 0: ray trace": 0.022480722051113844,
+    "Step 0: containment": 0.022343737166374923,
+    "Step 0: selection": 0.021887121628969906,
+    "Step 0: neighbourhood": 0.02204134901985526,
+    "Step 0: up sample": 0.02241095816716552,
+    "Step 1: ray trace": 0.022569667547941208,
+    "Step 1: containment": 0.022696726582944395,
+    "Step 1: selection": 0.022354270797222853,
+    "Step 1: neighbourhood": 0.02264794083312154,
+    "Step 1: up sample": 0.022149065416306256,
+    "Step 2: ray trace": 0.02277476815506816,
+    "Step 2: containment": 0.02285345960408449,
+    "Step 2: selection": 0.022983080986887217,
+    "Step 2: neighbourhood": 0.02303501982241869,
+    "Step 2: up sample": 0.022809410560876132,
+    "Step 3: ray trace": 0.022611725982278584,
+    "Step 3: containment": 0.022843698412179946,
+    "Step 3: selection": 0.023194570560008287,
+    "Step 3: neighbourhood": 0.02275850297883153,
+    "Step 3: up sample": 0.022607489395886658,
+    "Step 4: ray trace": 0.02325235242024064,
+    "Step 4: containment": 0.02314162068068981,
+    "Step 4: selection": 0.023155731800943612,
+    "Step 4: neighbourhood": 0.02285435339435935,
+    "Step 4: up sample": 0.023382090777158738,
+    "Step 5: ray trace": 0.023276688437908886,
+    "Step 5: containment": 0.023686501663178205,
+    "Step 5: selection": 0.023244975414127112,
+    "Step 5: neighbourhood": 0.023185083642601967,
+    "Step 5: up sample": 0.023069337662309407,
+    "Step 6: ray trace": 0.023261063173413275,
+    "Step 6: containment": 0.023987406771630047,
+    "Step 6: selection": 0.023761471174657343,
+    "Step 6: neighbourhood": 0.023553443141281605,
+    "Step 6: up sample": 0.023787616938352584,
+    "Step 7: ray trace": 0.024107246659696102,
+    "Step 7: containment": 0.024252459220588208,
+    "Step 7: selection": 0.023462857864797116,
+    "Step 7: neighbourhood": 0.023561239801347257,
+    "Step 7: up sample": 0.023706743400543927,
+    "Magnification filter": 0.024095957446843386
+  },
+  "total_step_by_step": 0.02468953179195523,
+  "fused_full_solved_s": 0.02468953179195523,
+  "fused_full_plain_control_s": 0.024717738199979068,
+  "jit_phases": {
+    "full_solved": {
+      "lower_s": 2.3357008500024676,
+      "compile_s": 4.040354566182941,
+      "first_call_s": 0.027558003086596727,
+      "steady_per_call_s": 0.02468953179195523
+    },
+    "full_plain_control": {
+      "lower_s": 1.6935461037792265,
+      "compile_s": 3.8443000372499228,
+      "first_call_s": 0.025436552241444588,
+      "steady_per_call_s": 0.024717738199979068
+    },
+    "source_centre": {
+      "lower_s": 0.3093535411171615,
+      "compile_s": 0.25881442287936807,
+      "first_call_s": 0.0009276429191231728,
+      "steady_per_call_s": 0.00017132144421339035
+    },
+    "step_00_ray_trace": {
+      "lower_s": 0.29209405882284045,
+      "compile_s": 0.3526903921738267,
+      "first_call_s": 0.02488934202119708,
+      "steady_per_call_s": 0.022480722051113844
+    },
+    "step_00_containment": {
+      "lower_s": 0.33938156720250845,
+      "compile_s": 0.6026348741725087,
+      "first_call_s": 0.02231373405084014,
+      "steady_per_call_s": 0.022343737166374923
+    },
+    "step_00_selection": {
+      "lower_s": 0.46156926406547427,
+      "compile_s": 0.6426819250918925,
+      "first_call_s": 0.023311873897910118,
+      "steady_per_call_s": 0.021887121628969906
+    },
+    "step_00_neighbourhood": {
+      "lower_s": 0.3778389859944582,
+      "compile_s": 0.7366659808903933,
+      "first_call_s": 0.02257388597354293,
+      "steady_per_call_s": 0.02204134901985526
+    },
+    "step_00_up_sample": {
+      "lower_s": 0.37118855817243457,
+      "compile_s": 0.7257969342172146,
+      "first_call_s": 0.0225998992100358,
+      "steady_per_call_s": 0.02241095816716552
+    },
+    "step_01_ray_trace": {
+      "lower_s": 0.5574293578974903,
+      "compile_s": 0.9113857108168304,
+      "first_call_s": 0.02323149098083377,
+      "steady_per_call_s": 0.022569667547941208
+    },
+    "step_01_containment": {
+      "lower_s": 0.4352220091968775,
+      "compile_s": 0.942984745837748,
+      "first_call_s": 0.023757772985845804,
+      "steady_per_call_s": 0.022696726582944395
+    },
+    "step_01_selection": {
+      "lower_s": 0.5539311752654612,
+      "compile_s": 0.9886188632808626,
+      "first_call_s": 0.02299930714070797,
+      "steady_per_call_s": 0.022354270797222853
+    },
+    "step_01_neighbourhood": {
+      "lower_s": 0.4501509517431259,
+      "compile_s": 1.0975840804167092,
+      "first_call_s": 0.02317653503268957,
+      "steady_per_call_s": 0.02264794083312154
+    },
+    "step_01_up_sample": {
+      "lower_s": 0.5615311749279499,
+      "compile_s": 1.1348668620921671,
+      "first_call_s": 0.023242265917360783,
+      "steady_per_call_s": 0.022149065416306256
+    },
+    "step_02_ray_trace": {
+      "lower_s": 0.49711785605177283,
+      "compile_s": 1.2303265361115336,
+      "first_call_s": 0.023573736660182476,
+      "steady_per_call_s": 0.02277476815506816
+    },
+    "step_02_containment": {
+      "lower_s": 0.6064981990493834,
+      "compile_s": 1.2557737291790545,
+      "first_call_s": 0.022622953169047832,
+      "steady_per_call_s": 0.02285345960408449
+    },
+    "step_02_selection": {
+      "lower_s": 0.49801540514454246,
+      "compile_s": 1.2793800928629935,
+      "first_call_s": 0.0227928482927382,
+      "steady_per_call_s": 0.022983080986887217
+    },
+    "step_02_neighbourhood": {
+      "lower_s": 0.6133498749695718,
+      "compile_s": 1.30951395817101,
+      "first_call_s": 0.023544336203485727,
+      "steady_per_call_s": 0.02303501982241869
+    },
+    "step_02_up_sample": {
+      "lower_s": 0.5050602601841092,
+      "compile_s": 1.2806320707313716,
+      "first_call_s": 0.023637898731976748,
+      "steady_per_call_s": 0.022809410560876132
+    },
+    "step_03_ray_trace": {
+      "lower_s": 0.6561649022623897,
+      "compile_s": 1.4421257940120995,
+      "first_call_s": 0.02366483211517334,
+      "steady_per_call_s": 0.022611725982278584
+    },
+    "step_03_containment": {
+      "lower_s": 0.5496224761009216,
+      "compile_s": 1.4451134782284498,
+      "first_call_s": 0.02375037269666791,
+      "steady_per_call_s": 0.022843698412179946
+    },
+    "step_03_selection": {
+      "lower_s": 0.6682095644064248,
+      "compile_s": 1.4782549981027842,
+      "first_call_s": 0.023640562780201435,
+      "steady_per_call_s": 0.023194570560008287
+    },
+    "step_03_neighbourhood": {
+      "lower_s": 0.6750092920847237,
+      "compile_s": 1.4995747599750757,
+      "first_call_s": 0.023799485061317682,
+      "steady_per_call_s": 0.02275850297883153
+    },
+    "step_03_up_sample": {
+      "lower_s": 0.5656267260201275,
+      "compile_s": 1.481999674346298,
+      "first_call_s": 0.02329244976863265,
+      "steady_per_call_s": 0.022607489395886658
+    },
+    "step_04_ray_trace": {
+      "lower_s": 0.7129851961508393,
+      "compile_s": 1.6132157873362303,
+      "first_call_s": 0.023458886425942183,
+      "steady_per_call_s": 0.02325235242024064
+    },
+    "step_04_containment": {
+      "lower_s": 0.7250642217695713,
+      "compile_s": 1.6216204692609608,
+      "first_call_s": 0.024169423151761293,
+      "steady_per_call_s": 0.02314162068068981
+    },
+    "step_04_selection": {
+      "lower_s": 0.6149656381458044,
+      "compile_s": 1.6491167666390538,
+      "first_call_s": 0.02407268900424242,
+      "steady_per_call_s": 0.023155731800943612
+    },
+    "step_04_neighbourhood": {
+      "lower_s": 0.7276649782434106,
+      "compile_s": 1.6909703542478383,
+      "first_call_s": 0.023168325889855623,
+      "steady_per_call_s": 0.02285435339435935
+    },
+    "step_04_up_sample": {
+      "lower_s": 0.7306923931464553,
+      "compile_s": 1.6773191052488983,
+      "first_call_s": 0.023091583978384733,
+      "steady_per_call_s": 0.023382090777158738
+    },
+    "step_05_ray_trace": {
+      "lower_s": 0.776346726808697,
+      "compile_s": 1.8244083379395306,
+      "first_call_s": 0.02405358385294676,
+      "steady_per_call_s": 0.023276688437908886
+    },
+    "step_05_containment": {
+      "lower_s": 0.666746802162379,
+      "compile_s": 1.8274877066724002,
+      "first_call_s": 0.02419428899884224,
+      "steady_per_call_s": 0.023686501663178205
+    },
+    "step_05_selection": {
+      "lower_s": 0.787253431044519,
+      "compile_s": 1.856665249913931,
+      "first_call_s": 0.025290287099778652,
+      "steady_per_call_s": 0.023244975414127112
+    },
+    "step_05_neighbourhood": {
+      "lower_s": 0.793695081025362,
+      "compile_s": 1.8802589140832424,
+      "first_call_s": 0.02383517986163497,
+      "steady_per_call_s": 0.023185083642601967
+    },
+    "step_05_up_sample": {
+      "lower_s": 0.6783390380442142,
+      "compile_s": 1.8527037748135626,
+      "first_call_s": 0.02344408305361867,
+      "steady_per_call_s": 0.023069337662309407
+    },
+    "step_06_ray_trace": {
+      "lower_s": 0.8319128220900893,
+      "compile_s": 1.9926581396721303,
+      "first_call_s": 0.023814243264496326,
+      "steady_per_call_s": 0.023261063173413275
+    },
+    "step_06_containment": {
+      "lower_s": 0.8354728408157825,
+      "compile_s": 2.004122741986066,
+      "first_call_s": 0.0235417359508574,
+      "steady_per_call_s": 0.023987406771630047
+    },
+    "step_06_selection": {
+      "lower_s": 0.8422034997493029,
+      "compile_s": 2.0150535847060382,
+      "first_call_s": 0.024442826863378286,
+      "steady_per_call_s": 0.023761471174657343
+    },
+    "step_06_neighbourhood": {
+      "lower_s": 0.8495627050288022,
+      "compile_s": 2.0820748787373304,
+      "first_call_s": 0.023616138845682144,
+      "steady_per_call_s": 0.023553443141281605
+    },
+    "step_06_up_sample": {
+      "lower_s": 0.852612332906574,
+      "compile_s": 2.0649910368956625,
+      "first_call_s": 0.024593830108642578,
+      "steady_per_call_s": 0.023787616938352584
+    },
+    "step_07_ray_trace": {
+      "lower_s": 0.778400672134012,
+      "compile_s": 2.152664329390973,
+      "first_call_s": 0.024947271216660738,
+      "steady_per_call_s": 0.024107246659696102
+    },
+    "step_07_containment": {
+      "lower_s": 0.8886539828963578,
+      "compile_s": 2.1994712841697037,
+      "first_call_s": 0.024449279066175222,
+      "steady_per_call_s": 0.024252459220588208
+    },
+    "step_07_selection": {
+      "lower_s": 0.8975672009401023,
+      "compile_s": 2.1906428867951035,
+      "first_call_s": 0.02487906999886036,
+      "steady_per_call_s": 0.023462857864797116
+    },
+    "step_07_neighbourhood": {
+      "lower_s": 0.9037926467135549,
+      "compile_s": 2.2697703540325165,
+      "first_call_s": 0.023963688872754574,
+      "steady_per_call_s": 0.023561239801347257
+    },
+    "step_07_up_sample": {
+      "lower_s": 0.909047544002533,
+      "compile_s": 2.2584719751030207,
+      "first_call_s": 0.024577218107879162,
+      "steady_per_call_s": 0.023706743400543927
+    },
+    "magnification_filter": {
+      "lower_s": 1.0295405117794871,
+      "compile_s": 2.3445500801317394,
+      "first_call_s": 0.024085443001240492,
+      "steady_per_call_s": 0.024095957446843386
+    }
+  },
+  "likelihoods": {
+    "solved_eager": 7.743201200876817,
+    "solved_jit": 7.743201200876812,
+    "plain_eager": 7.196577317761017,
+    "plain_jit": 7.196577317761015
+  },
+  "numerical_controls": {
+    "vmap_batch": 2,
+    "vmap_values": [
+      7.743201200876812,
+      7.743201200876812
+    ],
+    "gradient_all_finite": true,
+    "gradient_l2": 1783.302107230914,
+    "filtered_finite_positions": 4
+  },
+  "step_metadata": [
+    {
+      "step": 0,
+      "initial_shape": [
+        23283,
+        3,
+        2
+      ],
+      "plane_shape": [
+        23283,
+        3,
+        2
+      ],
+      "filtered_shape": [
+        9,
+        3,
+        2
+      ],
+      "neighbourhood_shape": [
+        29,
+        3,
+        2
+      ],
+      "up_sampled_shape": [
+        116,
+        3,
+        2
+      ],
+      "filtered_finite_triangles": 9
+    },
+    {
+      "step": 1,
+      "initial_shape": [
+        116,
+        3,
+        2
+      ],
+      "plane_shape": [
+        116,
+        3,
+        2
+      ],
+      "filtered_shape": [
+        5,
+        3,
+        2
+      ],
+      "neighbourhood_shape": [
+        20,
+        3,
+        2
+      ],
+      "up_sampled_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_finite_triangles": 5
+    },
+    {
+      "step": 2,
+      "initial_shape": [
+        80,
+        3,
+        2
+      ],
+      "plane_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_shape": [
+        5,
+        3,
+        2
+      ],
+      "neighbourhood_shape": [
+        20,
+        3,
+        2
+      ],
+      "up_sampled_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_finite_triangles": 5
+    },
+    {
+      "step": 3,
+      "initial_shape": [
+        80,
+        3,
+        2
+      ],
+      "plane_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_shape": [
+        5,
+        3,
+        2
+      ],
+      "neighbourhood_shape": [
+        20,
+        3,
+        2
+      ],
+      "up_sampled_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_finite_triangles": 5
+    },
+    {
+      "step": 4,
+      "initial_shape": [
+        80,
+        3,
+        2
+      ],
+      "plane_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_shape": [
+        5,
+        3,
+        2
+      ],
+      "neighbourhood_shape": [
+        20,
+        3,
+        2
+      ],
+      "up_sampled_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_finite_triangles": 5
+    },
+    {
+      "step": 5,
+      "initial_shape": [
+        80,
+        3,
+        2
+      ],
+      "plane_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_shape": [
+        5,
+        3,
+        2
+      ],
+      "neighbourhood_shape": [
+        20,
+        3,
+        2
+      ],
+      "up_sampled_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_finite_triangles": 5
+    },
+    {
+      "step": 6,
+      "initial_shape": [
+        80,
+        3,
+        2
+      ],
+      "plane_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_shape": [
+        5,
+        3,
+        2
+      ],
+      "neighbourhood_shape": [
+        20,
+        3,
+        2
+      ],
+      "up_sampled_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_finite_triangles": 5
+    },
+    {
+      "step": 7,
+      "initial_shape": [
+        80,
+        3,
+        2
+      ],
+      "plane_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_shape": [
+        5,
+        3,
+        2
+      ],
+      "neighbourhood_shape": [
+        20,
+        3,
+        2
+      ],
+      "up_sampled_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_finite_triangles": 5
+    }
+  ],
+  "methodology": {
+    "prefix_rows": "successive differences of cumulative JIT prefixes",
+    "negative_rows": "retained; XLA fusion and timing noise can move work across boundaries",
+    "authoritative_runtime": "fused_full_solved_s"
+  }
+}

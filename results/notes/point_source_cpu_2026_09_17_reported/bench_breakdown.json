@@ -1,0 +1,56 @@
+{
+  "env": {
+    "NPROC": "8",
+    "nproc_all": 8,
+    "affinity_n": 8,
+    "OMP_NUM_THREADS": "1",
+    "XLA_FLAGS": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "JAX_ENABLE_X64": "True",
+    "jax_version": "0.10.2",
+    "autolens_version": "2026.8.17.1",
+    "default_backend": "cpu",
+    "x64": true
+  },
+  "full_pipeline": {
+    "median": 0.03420764999987114,
+    "min": 0.030120699999770295,
+    "max": 0.08438750000004802,
+    "n": 20,
+    "compile_s": 11.283746800000245
+  },
+  "solve_once": {
+    "median": 0.08163059999992583,
+    "min": 0.04514900000003763,
+    "max": 0.11346069999990505,
+    "n": 20,
+    "compile_s": 6.099086999999599
+  },
+  "beta_only_analytic_centre": {
+    "median": 0.0006129500000042754,
+    "min": 0.0005713000000469037,
+    "max": 0.0006905999998707557,
+    "n": 20,
+    "compile_s": 0.993243800000073
+  },
+  "bare_deflections_N720": {
+    "median": 0.0005422499998530839,
+    "min": 0.0005210999997871113,
+    "max": 0.0005935000003773894,
+    "n": 20,
+    "compile_s": 0.32215880000012476
+  },
+  "bare_deflections_N28665": {
+    "median": 0.0016339500000412954,
+    "min": 0.001549799999793322,
+    "max": 0.0018460999999660999,
+    "n": 20,
+    "compile_s": 0.4230992000002516
+  },
+  "bare_deflections_N69849": {
+    "median": 0.0036445499999899766,
+    "min": 0.0035275000000183354,
+    "max": 0.004927799999677518,
+    "n": 20,
+    "compile_s": 0.5112143999999716
+  }
+}

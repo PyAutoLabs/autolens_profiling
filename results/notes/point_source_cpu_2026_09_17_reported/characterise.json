@@ -1,0 +1,117 @@
+{
+  "records": [
+    {
+      "triangle_cls": "CoordinateArrayTriangles",
+      "n_triangles": 23283,
+      "n_vertices_traced": 69849,
+      "n_vertices_finite": 28665
+    },
+    {
+      "triangle_cls": "CoordinateArrayTriangles",
+      "n_triangles": 240,
+      "n_vertices_traced": 720,
+      "n_vertices_finite": 141
+    },
+    {
+      "triangle_cls": "CoordinateArrayTriangles",
+      "n_triangles": 240,
+      "n_vertices_traced": 720,
+      "n_vertices_finite": 136
+    },
+    {
+      "triangle_cls": "CoordinateArrayTriangles",
+      "n_triangles": 240,
+      "n_vertices_traced": 720,
+      "n_vertices_finite": 117
+    },
+    {
+      "triangle_cls": "CoordinateArrayTriangles",
+      "n_triangles": 240,
+      "n_vertices_traced": 720,
+      "n_vertices_finite": 128
+    },
+    {
+      "triangle_cls": "CoordinateArrayTriangles",
+      "n_triangles": 240,
+      "n_vertices_traced": 720,
+      "n_vertices_finite": 104
+    },
+    {
+      "triangle_cls": "CoordinateArrayTriangles",
+      "n_triangles": 240,
+      "n_vertices_traced": 720,
+      "n_vertices_finite": 152
+    },
+    {
+      "triangle_cls": "CoordinateArrayTriangles",
+      "n_triangles": 240,
+      "n_vertices_traced": 720,
+      "n_vertices_finite": 120
+    },
+    {
+      "triangle_cls": "CoordinateArrayTriangles",
+      "n_triangles": 23283,
+      "n_vertices_traced": 69849,
+      "n_vertices_finite": 28665
+    },
+    {
+      "triangle_cls": "CoordinateArrayTriangles",
+      "n_triangles": 240,
+      "n_vertices_traced": 720,
+      "n_vertices_finite": 141
+    },
+    {
+      "triangle_cls": "CoordinateArrayTriangles",
+      "n_triangles": 240,
+      "n_vertices_traced": 720,
+      "n_vertices_finite": 136
+    },
+    {
+      "triangle_cls": "CoordinateArrayTriangles",
+      "n_triangles": 240,
+      "n_vertices_traced": 720,
+      "n_vertices_finite": 117
+    },
+    {
+      "triangle_cls": "CoordinateArrayTriangles",
+      "n_triangles": 240,
+      "n_vertices_traced": 720,
+      "n_vertices_finite": 128
+    },
+    {
+      "triangle_cls": "CoordinateArrayTriangles",
+      "n_triangles": 240,
+      "n_vertices_traced": 720,
+      "n_vertices_finite": 104
+    },
+    {
+      "triangle_cls": "CoordinateArrayTriangles",
+      "n_triangles": 240,
+      "n_vertices_traced": 720,
+      "n_vertices_finite": 152
+    },
+    {
+      "triangle_cls": "CoordinateArrayTriangles",
+      "n_triangles": 240,
+      "n_vertices_traced": 720,
+      "n_vertices_finite": 120
+    }
+  ],
+  "n_steps": 8,
+  "MAX_CONTAINING_SIZE": 15,
+  "total_traced": 149778,
+  "total_finite": 59126,
+  "log_likelihood": 7.743201200876806,
+  "env": {
+    "NPROC": "8",
+    "nproc_all": 8,
+    "affinity_n": 8,
+    "OMP_NUM_THREADS": "1",
+    "XLA_FLAGS": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "JAX_ENABLE_X64": "True",
+    "jax_version": "0.10.2",
+    "autolens_version": "2026.8.17.1",
+    "default_backend": "cpu",
+    "x64": true
+  }
+}

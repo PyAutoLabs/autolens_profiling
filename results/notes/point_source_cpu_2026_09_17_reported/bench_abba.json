@@ -1,0 +1,408 @@
+{
+  "env": {
+    "NPROC": "8",
+    "nproc_all": 8,
+    "affinity_n": 8,
+    "OMP_NUM_THREADS": "1",
+    "XLA_FLAGS": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "JAX_ENABLE_X64": "True",
+    "jax_version": "0.10.2",
+    "autolens_version": "2026.8.17.1",
+    "default_backend": "cpu",
+    "x64": true
+  },
+  "structural": {
+    "full_pipeline": {
+      "flops": 15582802.0,
+      "bytes_accessed": 59031416.0,
+      "temp_MB": 5.201072692871094,
+      "hlo_lines": 28562,
+      "top_ops": [
+        [
+          "broadcast",
+          3078
+        ],
+        [
+          "parameter",
+          2777
+        ],
+        [
+          "constant",
+          2209
+        ],
+        [
+          "bitcast",
+          2149
+        ],
+        [
+          "compare",
+          1971
+        ],
+        [
+          "select",
+          1454
+        ],
+        [
+          "add",
+          1416
+        ],
+        [
+          "multiply",
+          1255
+        ],
+        [
+          "slice",
+          732
+        ],
+        [
+          "fusion",
+          703
+        ],
+        [
+          "subtract",
+          599
+        ],
+        [
+          "convert",
+          481
+        ],
+        [
+          "and",
+          459
+        ],
+        [
+          "iota",
+          175
+        ],
+        [
+          "copy",
+          149
+        ]
+      ],
+      "n_sort": 0,
+      "n_fusion": 703,
+      "compile_s": 8.55112889999964
+    },
+    "solve_once": {
+      "flops": 15529212.0,
+      "bytes_accessed": 58986104.0,
+      "temp_MB": 5.644920349121094,
+      "hlo_lines": 17461,
+      "top_ops": [
+        [
+          "parameter",
+          2080
+        ],
+        [
+          "broadcast",
+          1549
+        ],
+        [
+          "constant",
+          1157
+        ],
+        [
+          "compare",
+          1116
+        ],
+        [
+          "bitcast",
+          1036
+        ],
+        [
+          "select",
+          777
+        ],
+        [
+          "add",
+          733
+        ],
+        [
+          "fusion",
+          641
+        ],
+        [
+          "multiply",
+          522
+        ],
+        [
+          "slice",
+          507
+        ],
+        [
+          "convert",
+          295
+        ],
+        [
+          "and",
+          276
+        ],
+        [
+          "subtract",
+          235
+        ],
+        [
+          "copy",
+          149
+        ],
+        [
+          "iota",
+          114
+        ]
+      ],
+      "n_sort": 0,
+      "n_fusion": 641,
+      "compile_s": 4.044552600000316
+    },
+    "bare_defl_N69849": {
+      "flops": 2916501.0,
+      "bytes_accessed": 13381128.0,
+      "temp_MB": 2.2591018676757812,
+      "hlo_lines": 1150,
+      "top_ops": [
+        [
+          "parameter",
+          82
+        ],
+        [
+          "multiply",
+          67
+        ],
+        [
+          "constant",
+          59
+        ],
+        [
+          "add",
+          40
+        ],
+        [
+          "broadcast",
+          32
+        ],
+        [
+          "fusion",
+          25
+        ],
+        [
+          "slice",
+          18
+        ],
+        [
+          "subtract",
+          18
+        ],
+        [
+          "bitcast",
+          15
+        ],
+        [
+          "reduce",
+          6
+        ],
+        [
+          "transpose",
+          6
+        ],
+        [
+          "copy",
+          6
+        ],
+        [
+          "concatenate",
+          6
+        ],
+        [
+          "divide",
+          6
+        ],
+        [
+          "compare",
+          5
+        ]
+      ],
+      "n_sort": 0,
+      "n_fusion": 25,
+      "compile_s": 0.21622720000004847
+    },
+    "bare_defl_N28665": {
+      "flops": 1351509.0,
+      "bytes_accessed": 5803272.0,
+      "temp_MB": 1.0022659301757812,
+      "hlo_lines": 1150,
+      "top_ops": [
+        [
+          "parameter",
+          82
+        ],
+        [
+          "multiply",
+          67
+        ],
+        [
+          "constant",
+          59
+        ],
+        [
+          "add",
+          40
+        ],
+        [
+          "broadcast",
+          32
+        ],
+        [
+          "fusion",
+          25
+        ],
+        [
+          "slice",
+          18
+        ],
+        [
+          "subtract",
+          18
+        ],
+        [
+          "bitcast",
+          15
+        ],
+        [
+          "reduce",
+          6
+        ],
+        [
+          "transpose",
+          6
+        ],
+        [
+          "copy",
+          6
+        ],
+        [
+          "concatenate",
+          6
+        ],
+        [
+          "divide",
+          6
+        ],
+        [
+          "compare",
+          5
+        ]
+      ],
+      "n_sort": 0,
+      "n_fusion": 25,
+      "compile_s": 0.22251069999992978
+    },
+    "bare_defl_N720": {
+      "flops": 289599.0,
+      "bytes_accessed": 661392.0,
+      "temp_MB": 0.26221466064453125,
+      "hlo_lines": 1150,
+      "top_ops": [
+        [
+          "parameter",
+          82
+        ],
+        [
+          "multiply",
+          67
+        ],
+        [
+          "constant",
+          59
+        ],
+        [
+          "add",
+          40
+        ],
+        [
+          "broadcast",
+          32
+        ],
+        [
+          "fusion",
+          25
+        ],
+        [
+          "slice",
+          18
+        ],
+        [
+          "subtract",
+          18
+        ],
+        [
+          "bitcast",
+          15
+        ],
+        [
+          "reduce",
+          6
+        ],
+        [
+          "transpose",
+          6
+        ],
+        [
+          "copy",
+          6
+        ],
+        [
+          "concatenate",
+          6
+        ],
+        [
+          "divide",
+          6
+        ],
+        [
+          "compare",
+          5
+        ]
+      ],
+      "n_sort": 0,
+      "n_fusion": 25,
+      "compile_s": 0.20766889999958948
+    }
+  },
+  "timing": {
+    "full_pipeline": {
+      "median": 0.02587895000010576,
+      "p10": 0.023705300000074203,
+      "min": 0.022242399999868212,
+      "max": 0.03195959999993647,
+      "n": 30
+    },
+    "solve_once": {
+      "median": 0.02716959999975188,
+      "p10": 0.024143999999978405,
+      "min": 0.022878600000240112,
+      "max": 0.035739099999773316,
+      "n": 30
+    },
+    "bare_defl_N69849": {
+      "median": 0.002712049999900046,
+      "p10": 0.002303799999936018,
+      "min": 0.002091899999868474,
+      "max": 0.006092199999784498,
+      "n": 30
+    },
+    "bare_defl_N28665": {
+      "median": 0.0013130999998338666,
+      "p10": 0.0011276999998699466,
+      "min": 0.00108090000003358,
+      "max": 0.001960300000064308,
+      "n": 30
+    },
+    "bare_defl_N720": {
+      "median": 0.00046694999991814257,
+      "p10": 0.00039719999995213584,
+      "min": 0.00031430000035470584,
+      "max": 0.0010644999997566629,
+      "n": 30
+    }
+  }
+}
