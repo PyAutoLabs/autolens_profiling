@@ -115,6 +115,12 @@ export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_l
 export NUMBA_CACHE_DIR=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}
 export MPLCONFIGDIR=/tmp/matplotlib_${SLURM_JOB_ID:-local}
 mkdir -p "$NUMBA_CACHE_DIR" "$MPLCONFIGDIR"
+# Fresh JAX compile cache per job, as the GPU baseline submits do: a seeded
+# persistent cache changes compile times and kernels (results/notes/xla_autotune_triton_gemm.md),
+# and RAL $HOME is node-local, so an inherited cache would not be reproducible.
+export JAX_COMPILATION_CACHE_DIR="$AP_ROOT/output/jax_cache/point_source_${SLURM_JOB_ID:-local}"
+rm -rf "$JAX_COMPILATION_CACHE_DIR" && mkdir -p "$JAX_COMPILATION_CACHE_DIR"
+echo "JAX_COMPILATION_CACHE_DIR=$JAX_COMPILATION_CACHE_DIR (fresh)"
 
 echo "=========================================="
 date
