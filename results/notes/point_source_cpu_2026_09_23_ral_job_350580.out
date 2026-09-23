@@ -1,0 +1,682 @@
+AP_ROOT=/mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p1
+JAX_COMPILATION_CACHE_DIR=/mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p1/output/jax_cache/point_source_350580 (fresh)
+==========================================
+Wed 23 Sep 14:23:35 BST 2026
+euclid-ral-compute-10-2
+Model name:                              Intel(R) Xeon(R) Platinum 8490H
+partition:      ral
+cpus-per-task:  8
+loadavg:        0.00 0.00 0.00 1/2087 1627681
+Cells:          point_source/likelihood_breakdown/image_plane, cluster/likelihood_breakdown/image_plane
+Precision:      fp64 (JAX_ENABLE_X64=1)
+Backend:        JAX_PLATFORMS=cpu
+Thread env:     OMP=1 MKL=1 OPENBLAS=1 NPROC=8
+XLA_FLAGS:      --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false
+=== source revisions (shared install, untouched) ===
+PyAutoNerves   1fa613aa8d89a79613009fb66f5b4e2d21deb57a
+PyAutoFit      a736840127be7a3c21e15a5c945e94d8f1082983
+PyAutoArray    22e6d6082e3365b10fb08d96e19ab02a5420e935
+PyAutoGalaxy   70a61e26cd715cefe7012a38285698091246a8a4
+PyAutoLens     2aaa1c1a8bb4a5923edf30a18451fcea330a6bd4
+AP_ROOT rev:   15ceb686ac93f9d5957910ed68f6ee33d7f81b60
+AP_ROOT branch: feature/point-source-cpu-p1
+=== import provenance ===
+autoarray.__file__    = /mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/__init__.py
+autoarray.__version__ = 2026.8.17.1
+autolens.__file__     = /mnt/ral/jnightin/PyAuto/PyAutoLens/autolens/__init__.py
+autolens.__version__  = 2026.8.17.1
+autogalaxy.__file__   = /mnt/ral/jnightin/PyAuto/PyAutoGalaxy/autogalaxy/__init__.py
+autofit.__file__      = /mnt/ral/jnightin/PyAuto/PyAutoFit/autofit/__init__.py
+jax.__version__       = 0.10.2
+jax devices           = [CpuDevice(id=0)]
+==========================================
+LEG A: point-source image-plane breakdown (galaxy scale, solved + plain control)
+Wed 23 Sep 14:24:42 BST 2026
+loadavg: 0.69 0.21 0.08 1/2088 1627728
+2026-09-23 14:24:47,380 - matplotlib.font_manager - INFO - generated new fontManager
+
+--- Eager controls ---
+  solved likelihood: 7.743201200877
+  plain likelihood:  7.196577317761
+
+--- Full fused controls ---
+  [full_solved_lower] 2.3357 s
+  [full_solved_compile] 4.0404 s
+  [full_solved_first_call] 0.0276 s
+  [full_solved_steady_x5] 0.1234 s
+    -> per-call avg: 0.024690 s
+  [full_plain_control_lower] 1.6935 s
+  [full_plain_control_compile] 3.8443 s
+  [full_plain_control_first_call] 0.0254 s
+  [full_plain_control_steady_x5] 0.1236 s
+    -> per-call avg: 0.024718 s
+
+--- Solved-centre and solver prefixes ---
+  [source_centre_lower] 0.3094 s
+  [source_centre_compile] 0.2588 s
+  [source_centre_first_call] 0.0009 s
+  [source_centre_steady_x5] 0.0009 s
+    -> per-call avg: 0.000171 s
+  [step_00_ray_trace_lower] 0.2921 s
+  [step_00_ray_trace_compile] 0.3527 s
+  [step_00_ray_trace_first_call] 0.0249 s
+  [step_00_ray_trace_steady_x5] 0.1124 s
+    -> per-call avg: 0.022481 s
+  [step_00_containment_lower] 0.3394 s
+  [step_00_containment_compile] 0.6026 s
+  [step_00_containment_first_call] 0.0223 s
+  [step_00_containment_steady_x5] 0.1117 s
+    -> per-call avg: 0.022344 s
+  [step_00_selection_lower] 0.4616 s
+  [step_00_selection_compile] 0.6427 s
+  [step_00_selection_first_call] 0.0233 s
+  [step_00_selection_steady_x5] 0.1094 s
+    -> per-call avg: 0.021887 s
+  [step_00_neighbourhood_lower] 0.3778 s
+  [step_00_neighbourhood_compile] 0.7367 s
+  [step_00_neighbourhood_first_call] 0.0226 s
+  [step_00_neighbourhood_steady_x5] 0.1102 s
+    -> per-call avg: 0.022041 s
+  [step_00_up_sample_lower] 0.3712 s
+  [step_00_up_sample_compile] 0.7258 s
+  [step_00_up_sample_first_call] 0.0226 s
+  [step_00_up_sample_steady_x5] 0.1121 s
+    -> per-call avg: 0.022411 s
+  [step_01_ray_trace_lower] 0.5574 s
+  [step_01_ray_trace_compile] 0.9114 s
+  [step_01_ray_trace_first_call] 0.0232 s
+  [step_01_ray_trace_steady_x5] 0.1128 s
+    -> per-call avg: 0.022570 s
+  [step_01_containment_lower] 0.4352 s
+  [step_01_containment_compile] 0.9430 s
+  [step_01_containment_first_call] 0.0238 s
+  [step_01_containment_steady_x5] 0.1135 s
+    -> per-call avg: 0.022697 s
+  [step_01_selection_lower] 0.5539 s
+  [step_01_selection_compile] 0.9886 s
+  [step_01_selection_first_call] 0.0230 s
+  [step_01_selection_steady_x5] 0.1118 s
+    -> per-call avg: 0.022354 s
+  [step_01_neighbourhood_lower] 0.4502 s
+  [step_01_neighbourhood_compile] 1.0976 s
+  [step_01_neighbourhood_first_call] 0.0232 s
+  [step_01_neighbourhood_steady_x5] 0.1132 s
+    -> per-call avg: 0.022648 s
+  [step_01_up_sample_lower] 0.5615 s
+  [step_01_up_sample_compile] 1.1349 s
+  [step_01_up_sample_first_call] 0.0232 s
+  [step_01_up_sample_steady_x5] 0.1107 s
+    -> per-call avg: 0.022149 s
+  [step_02_ray_trace_lower] 0.4971 s
+  [step_02_ray_trace_compile] 1.2303 s
+  [step_02_ray_trace_first_call] 0.0236 s
+  [step_02_ray_trace_steady_x5] 0.1139 s
+    -> per-call avg: 0.022775 s
+  [step_02_containment_lower] 0.6065 s
+  [step_02_containment_compile] 1.2558 s
+  [step_02_containment_first_call] 0.0226 s
+  [step_02_containment_steady_x5] 0.1143 s
+    -> per-call avg: 0.022853 s
+  [step_02_selection_lower] 0.4980 s
+  [step_02_selection_compile] 1.2794 s
+  [step_02_selection_first_call] 0.0228 s
+  [step_02_selection_steady_x5] 0.1149 s
+    -> per-call avg: 0.022983 s
+  [step_02_neighbourhood_lower] 0.6133 s
+  [step_02_neighbourhood_compile] 1.3095 s
+  [step_02_neighbourhood_first_call] 0.0235 s
+  [step_02_neighbourhood_steady_x5] 0.1152 s
+    -> per-call avg: 0.023035 s
+  [step_02_up_sample_lower] 0.5051 s
+  [step_02_up_sample_compile] 1.2806 s
+  [step_02_up_sample_first_call] 0.0236 s
+  [step_02_up_sample_steady_x5] 0.1140 s
+    -> per-call avg: 0.022809 s
+  [step_03_ray_trace_lower] 0.6562 s
+  [step_03_ray_trace_compile] 1.4421 s
+  [step_03_ray_trace_first_call] 0.0237 s
+  [step_03_ray_trace_steady_x5] 0.1131 s
+    -> per-call avg: 0.022612 s
+  [step_03_containment_lower] 0.5496 s
+  [step_03_containment_compile] 1.4451 s
+  [step_03_containment_first_call] 0.0238 s
+  [step_03_containment_steady_x5] 0.1142 s
+    -> per-call avg: 0.022844 s
+  [step_03_selection_lower] 0.6682 s
+  [step_03_selection_compile] 1.4783 s
+  [step_03_selection_first_call] 0.0236 s
+  [step_03_selection_steady_x5] 0.1160 s
+    -> per-call avg: 0.023195 s
+  [step_03_neighbourhood_lower] 0.6750 s
+  [step_03_neighbourhood_compile] 1.4996 s
+  [step_03_neighbourhood_first_call] 0.0238 s
+  [step_03_neighbourhood_steady_x5] 0.1138 s
+    -> per-call avg: 0.022759 s
+  [step_03_up_sample_lower] 0.5656 s
+  [step_03_up_sample_compile] 1.4820 s
+  [step_03_up_sample_first_call] 0.0233 s
+  [step_03_up_sample_steady_x5] 0.1130 s
+    -> per-call avg: 0.022607 s
+  [step_04_ray_trace_lower] 0.7130 s
+  [step_04_ray_trace_compile] 1.6132 s
+  [step_04_ray_trace_first_call] 0.0235 s
+  [step_04_ray_trace_steady_x5] 0.1163 s
+    -> per-call avg: 0.023252 s
+  [step_04_containment_lower] 0.7251 s
+  [step_04_containment_compile] 1.6216 s
+  [step_04_containment_first_call] 0.0242 s
+  [step_04_containment_steady_x5] 0.1157 s
+    -> per-call avg: 0.023142 s
+  [step_04_selection_lower] 0.6150 s
+  [step_04_selection_compile] 1.6491 s
+  [step_04_selection_first_call] 0.0241 s
+  [step_04_selection_steady_x5] 0.1158 s
+    -> per-call avg: 0.023156 s
+  [step_04_neighbourhood_lower] 0.7277 s
+  [step_04_neighbourhood_compile] 1.6910 s
+  [step_04_neighbourhood_first_call] 0.0232 s
+  [step_04_neighbourhood_steady_x5] 0.1143 s
+    -> per-call avg: 0.022854 s
+  [step_04_up_sample_lower] 0.7307 s
+  [step_04_up_sample_compile] 1.6773 s
+  [step_04_up_sample_first_call] 0.0231 s
+  [step_04_up_sample_steady_x5] 0.1169 s
+    -> per-call avg: 0.023382 s
+  [step_05_ray_trace_lower] 0.7763 s
+  [step_05_ray_trace_compile] 1.8244 s
+  [step_05_ray_trace_first_call] 0.0241 s
+  [step_05_ray_trace_steady_x5] 0.1164 s
+    -> per-call avg: 0.023277 s
+  [step_05_containment_lower] 0.6667 s
+  [step_05_containment_compile] 1.8275 s
+  [step_05_containment_first_call] 0.0242 s
+  [step_05_containment_steady_x5] 0.1184 s
+    -> per-call avg: 0.023687 s
+  [step_05_selection_lower] 0.7873 s
+  [step_05_selection_compile] 1.8567 s
+  [step_05_selection_first_call] 0.0253 s
+  [step_05_selection_steady_x5] 0.1162 s
+    -> per-call avg: 0.023245 s
+  [step_05_neighbourhood_lower] 0.7937 s
+  [step_05_neighbourhood_compile] 1.8803 s
+  [step_05_neighbourhood_first_call] 0.0238 s
+  [step_05_neighbourhood_steady_x5] 0.1159 s
+    -> per-call avg: 0.023185 s
+  [step_05_up_sample_lower] 0.6783 s
+  [step_05_up_sample_compile] 1.8527 s
+  [step_05_up_sample_first_call] 0.0234 s
+  [step_05_up_sample_steady_x5] 0.1153 s
+    -> per-call avg: 0.023069 s
+  [step_06_ray_trace_lower] 0.8319 s
+  [step_06_ray_trace_compile] 1.9927 s
+  [step_06_ray_trace_first_call] 0.0238 s
+  [step_06_ray_trace_steady_x5] 0.1163 s
+    -> per-call avg: 0.023261 s
+  [step_06_containment_lower] 0.8355 s
+  [step_06_containment_compile] 2.0041 s
+  [step_06_containment_first_call] 0.0235 s
+  [step_06_containment_steady_x5] 0.1199 s
+    -> per-call avg: 0.023987 s
+  [step_06_selection_lower] 0.8422 s
+  [step_06_selection_compile] 2.0151 s
+  [step_06_selection_first_call] 0.0244 s
+  [step_06_selection_steady_x5] 0.1188 s
+    -> per-call avg: 0.023761 s
+  [step_06_neighbourhood_lower] 0.8496 s
+  [step_06_neighbourhood_compile] 2.0821 s
+  [step_06_neighbourhood_first_call] 0.0236 s
+  [step_06_neighbourhood_steady_x5] 0.1178 s
+    -> per-call avg: 0.023553 s
+  [step_06_up_sample_lower] 0.8526 s
+  [step_06_up_sample_compile] 2.0650 s
+  [step_06_up_sample_first_call] 0.0246 s
+  [step_06_up_sample_steady_x5] 0.1189 s
+    -> per-call avg: 0.023788 s
+  [step_07_ray_trace_lower] 0.7784 s
+  [step_07_ray_trace_compile] 2.1527 s
+  [step_07_ray_trace_first_call] 0.0249 s
+  [step_07_ray_trace_steady_x5] 0.1205 s
+    -> per-call avg: 0.024107 s
+  [step_07_containment_lower] 0.8887 s
+  [step_07_containment_compile] 2.1995 s
+  [step_07_containment_first_call] 0.0244 s
+  [step_07_containment_steady_x5] 0.1213 s
+    -> per-call avg: 0.024252 s
+  [step_07_selection_lower] 0.8976 s
+  [step_07_selection_compile] 2.1906 s
+  [step_07_selection_first_call] 0.0249 s
+  [step_07_selection_steady_x5] 0.1173 s
+    -> per-call avg: 0.023463 s
+  [step_07_neighbourhood_lower] 0.9038 s
+  [step_07_neighbourhood_compile] 2.2698 s
+  [step_07_neighbourhood_first_call] 0.0240 s
+  [step_07_neighbourhood_steady_x5] 0.1178 s
+    -> per-call avg: 0.023561 s
+  [step_07_up_sample_lower] 0.9090 s
+  [step_07_up_sample_compile] 2.2585 s
+  [step_07_up_sample_first_call] 0.0246 s
+  [step_07_up_sample_steady_x5] 0.1185 s
+    -> per-call avg: 0.023707 s
+  [magnification_filter_lower] 1.0295 s
+  [magnification_filter_compile] 2.3446 s
+  [magnification_filter_first_call] 0.0241 s
+  [magnification_filter_steady_x5] 0.1205 s
+    -> per-call avg: 0.024096 s
+
+--- Numerical controls ---
+
+========================================================================
+POINT-SOURCE IMAGE-PLANE BREAKDOWN
+========================================================================
+  Solved source centre                                        0.171 ms
+  Step 0: ray trace                                          22.309 ms
+  Step 0: containment                                        -0.137 ms
+  Step 0: selection                                          -0.457 ms
+  Step 0: neighbourhood                                       0.154 ms
+  Step 0: up sample                                           0.370 ms
+  Step 1: ray trace                                           0.159 ms
+  Step 1: containment                                         0.127 ms
+  Step 1: selection                                          -0.342 ms
+  Step 1: neighbourhood                                       0.294 ms
+  Step 1: up sample                                          -0.499 ms
+  Step 2: ray trace                                           0.626 ms
+  Step 2: containment                                         0.079 ms
+  Step 2: selection                                           0.130 ms
+  Step 2: neighbourhood                                       0.052 ms
+  Step 2: up sample                                          -0.226 ms
+  Step 3: ray trace                                          -0.198 ms
+  Step 3: containment                                         0.232 ms
+  Step 3: selection                                           0.351 ms
+  Step 3: neighbourhood                                      -0.436 ms
+  Step 3: up sample                                          -0.151 ms
+  Step 4: ray trace                                           0.645 ms
+  Step 4: containment                                        -0.111 ms
+  Step 4: selection                                           0.014 ms
+  Step 4: neighbourhood                                      -0.301 ms
+  Step 4: up sample                                           0.528 ms
+  Step 5: ray trace                                          -0.105 ms
+  Step 5: containment                                         0.410 ms
+  Step 5: selection                                          -0.442 ms
+  Step 5: neighbourhood                                      -0.060 ms
+  Step 5: up sample                                          -0.116 ms
+  Step 6: ray trace                                           0.192 ms
+  Step 6: containment                                         0.726 ms
+  Step 6: selection                                          -0.226 ms
+  Step 6: neighbourhood                                      -0.208 ms
+  Step 6: up sample                                           0.234 ms
+  Step 7: ray trace                                           0.320 ms
+  Step 7: containment                                         0.145 ms
+  Step 7: selection                                          -0.790 ms
+  Step 7: neighbourhood                                       0.098 ms
+  Step 7: up sample                                           0.146 ms
+  Magnification filter                                        0.389 ms
+  Pairing chi-squared / fused-wrapper residual                0.594 ms
+------------------------------------------------------------------------
+  Fused solved likelihood                                    24.690 ms
+  Fused plain control                                        24.718 ms
+  Results JSON: /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p1/results/breakdown/point_source/image_plane_hpc_ral_cpu_fp64.json
+  Results PNG:  /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p1/results/breakdown/point_source/image_plane_hpc_ral_cpu_fp64.png
+
+======================================================================
+PROFILING SUMMARY
+======================================================================
+  full_solved_lower                     2.3357 s
+  full_solved_compile                   4.0404 s
+  full_solved_first_call                0.0276 s
+  full_solved_steady_x5                 0.1234 s
+  full_plain_control_lower              1.6935 s
+  full_plain_control_compile            3.8443 s
+  full_plain_control_first_call         0.0254 s
+  full_plain_control_steady_x5          0.1236 s
+  source_centre_lower                   0.3094 s
+  source_centre_compile                 0.2588 s
+  source_centre_first_call              0.0009 s
+  source_centre_steady_x5               0.0009 s
+  step_00_ray_trace_lower               0.2921 s
+  step_00_ray_trace_compile             0.3527 s
+  step_00_ray_trace_first_call          0.0249 s
+  step_00_ray_trace_steady_x5           0.1124 s
+  step_00_containment_lower             0.3394 s
+  step_00_containment_compile           0.6026 s
+  step_00_containment_first_call        0.0223 s
+  step_00_containment_steady_x5         0.1117 s
+  step_00_selection_lower               0.4616 s
+  step_00_selection_compile             0.6427 s
+  step_00_selection_first_call          0.0233 s
+  step_00_selection_steady_x5           0.1094 s
+  step_00_neighbourhood_lower           0.3778 s
+  step_00_neighbourhood_compile         0.7367 s
+  step_00_neighbourhood_first_call      0.0226 s
+  step_00_neighbourhood_steady_x5       0.1102 s
+  step_00_up_sample_lower               0.3712 s
+  step_00_up_sample_compile             0.7258 s
+  step_00_up_sample_first_call          0.0226 s
+  step_00_up_sample_steady_x5           0.1121 s
+  step_01_ray_trace_lower               0.5574 s
+  step_01_ray_trace_compile             0.9114 s
+  step_01_ray_trace_first_call          0.0232 s
+  step_01_ray_trace_steady_x5           0.1128 s
+  step_01_containment_lower             0.4352 s
+  step_01_containment_compile           0.9430 s
+  step_01_containment_first_call        0.0238 s
+  step_01_containment_steady_x5         0.1135 s
+  step_01_selection_lower               0.5539 s
+  step_01_selection_compile             0.9886 s
+  step_01_selection_first_call          0.0230 s
+  step_01_selection_steady_x5           0.1118 s
+  step_01_neighbourhood_lower           0.4502 s
+  step_01_neighbourhood_compile         1.0976 s
+  step_01_neighbourhood_first_call      0.0232 s
+  step_01_neighbourhood_steady_x5       0.1132 s
+  step_01_up_sample_lower               0.5615 s
+  step_01_up_sample_compile             1.1349 s
+  step_01_up_sample_first_call          0.0232 s
+  step_01_up_sample_steady_x5           0.1107 s
+  step_02_ray_trace_lower               0.4971 s
+  step_02_ray_trace_compile             1.2303 s
+  step_02_ray_trace_first_call          0.0236 s
+  step_02_ray_trace_steady_x5           0.1139 s
+  step_02_containment_lower             0.6065 s
+  step_02_containment_compile           1.2558 s
+  step_02_containment_first_call        0.0226 s
+  step_02_containment_steady_x5         0.1143 s
+  step_02_selection_lower               0.4980 s
+  step_02_selection_compile             1.2794 s
+  step_02_selection_first_call          0.0228 s
+  step_02_selection_steady_x5           0.1149 s
+  step_02_neighbourhood_lower           0.6133 s
+  step_02_neighbourhood_compile         1.3095 s
+  step_02_neighbourhood_first_call      0.0235 s
+  step_02_neighbourhood_steady_x5       0.1152 s
+  step_02_up_sample_lower               0.5051 s
+  step_02_up_sample_compile             1.2806 s
+  step_02_up_sample_first_call          0.0236 s
+  step_02_up_sample_steady_x5           0.1140 s
+  step_03_ray_trace_lower               0.6562 s
+  step_03_ray_trace_compile             1.4421 s
+  step_03_ray_trace_first_call          0.0237 s
+  step_03_ray_trace_steady_x5           0.1131 s
+  step_03_containment_lower             0.5496 s
+  step_03_containment_compile           1.4451 s
+  step_03_containment_first_call        0.0238 s
+  step_03_containment_steady_x5         0.1142 s
+  step_03_selection_lower               0.6682 s
+  step_03_selection_compile             1.4783 s
+  step_03_selection_first_call          0.0236 s
+  step_03_selection_steady_x5           0.1160 s
+  step_03_neighbourhood_lower           0.6750 s
+  step_03_neighbourhood_compile         1.4996 s
+  step_03_neighbourhood_first_call      0.0238 s
+  step_03_neighbourhood_steady_x5       0.1138 s
+  step_03_up_sample_lower               0.5656 s
+  step_03_up_sample_compile             1.4820 s
+  step_03_up_sample_first_call          0.0233 s
+  step_03_up_sample_steady_x5           0.1130 s
+  step_04_ray_trace_lower               0.7130 s
+  step_04_ray_trace_compile             1.6132 s
+  step_04_ray_trace_first_call          0.0235 s
+  step_04_ray_trace_steady_x5           0.1163 s
+  step_04_containment_lower             0.7251 s
+  step_04_containment_compile           1.6216 s
+  step_04_containment_first_call        0.0242 s
+  step_04_containment_steady_x5         0.1157 s
+  step_04_selection_lower               0.6150 s
+  step_04_selection_compile             1.6491 s
+  step_04_selection_first_call          0.0241 s
+  step_04_selection_steady_x5           0.1158 s
+  step_04_neighbourhood_lower           0.7277 s
+  step_04_neighbourhood_compile         1.6910 s
+  step_04_neighbourhood_first_call      0.0232 s
+  step_04_neighbourhood_steady_x5       0.1143 s
+  step_04_up_sample_lower               0.7307 s
+  step_04_up_sample_compile             1.6773 s
+  step_04_up_sample_first_call          0.0231 s
+  step_04_up_sample_steady_x5           0.1169 s
+  step_05_ray_trace_lower               0.7763 s
+  step_05_ray_trace_compile             1.8244 s
+  step_05_ray_trace_first_call          0.0241 s
+  step_05_ray_trace_steady_x5           0.1164 s
+  step_05_containment_lower             0.6667 s
+  step_05_containment_compile           1.8275 s
+  step_05_containment_first_call        0.0242 s
+  step_05_containment_steady_x5         0.1184 s
+  step_05_selection_lower               0.7873 s
+  step_05_selection_compile             1.8567 s
+  step_05_selection_first_call          0.0253 s
+  step_05_selection_steady_x5           0.1162 s
+  step_05_neighbourhood_lower           0.7937 s
+  step_05_neighbourhood_compile         1.8803 s
+  step_05_neighbourhood_first_call      0.0238 s
+  step_05_neighbourhood_steady_x5       0.1159 s
+  step_05_up_sample_lower               0.6783 s
+  step_05_up_sample_compile             1.8527 s
+  step_05_up_sample_first_call          0.0234 s
+  step_05_up_sample_steady_x5           0.1153 s
+  step_06_ray_trace_lower               0.8319 s
+  step_06_ray_trace_compile             1.9927 s
+  step_06_ray_trace_first_call          0.0238 s
+  step_06_ray_trace_steady_x5           0.1163 s
+  step_06_containment_lower             0.8355 s
+  step_06_containment_compile           2.0041 s
+  step_06_containment_first_call        0.0235 s
+  step_06_containment_steady_x5         0.1199 s
+  step_06_selection_lower               0.8422 s
+  step_06_selection_compile             2.0151 s
+  step_06_selection_first_call          0.0244 s
+  step_06_selection_steady_x5           0.1188 s
+  step_06_neighbourhood_lower           0.8496 s
+  step_06_neighbourhood_compile         2.0821 s
+  step_06_neighbourhood_first_call      0.0236 s
+  step_06_neighbourhood_steady_x5       0.1178 s
+  step_06_up_sample_lower               0.8526 s
+  step_06_up_sample_compile             2.0650 s
+  step_06_up_sample_first_call          0.0246 s
+  step_06_up_sample_steady_x5           0.1189 s
+  step_07_ray_trace_lower               0.7784 s
+  step_07_ray_trace_compile             2.1527 s
+  step_07_ray_trace_first_call          0.0249 s
+  step_07_ray_trace_steady_x5           0.1205 s
+  step_07_containment_lower             0.8887 s
+  step_07_containment_compile           2.1995 s
+  step_07_containment_first_call        0.0244 s
+  step_07_containment_steady_x5         0.1213 s
+  step_07_selection_lower               0.8976 s
+  step_07_selection_compile             2.1906 s
+  step_07_selection_first_call          0.0249 s
+  step_07_selection_steady_x5           0.1173 s
+  step_07_neighbourhood_lower           0.9038 s
+  step_07_neighbourhood_compile         2.2698 s
+  step_07_neighbourhood_first_call      0.0240 s
+  step_07_neighbourhood_steady_x5       0.1178 s
+  step_07_up_sample_lower               0.9090 s
+  step_07_up_sample_compile             2.2585 s
+  step_07_up_sample_first_call          0.0246 s
+  step_07_up_sample_steady_x5           0.1185 s
+  magnification_filter_lower            1.0295 s
+  magnification_filter_compile          2.3446 s
+  magnification_filter_first_call       0.0241 s
+  magnification_filter_steady_x5        0.1205 s
+----------------------------------------------------------------------
+  TOTAL                               108.4596 s
+======================================================================
+==========================================
+LEG B: cluster image-plane breakdown (per-source solves + fused plain/solved)
+Wed 23 Sep 14:27:23 BST 2026
+loadavg: 1.84 1.09 0.45 1/2088 1627792
+  [auto-simulate] /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p1/dataset/cluster/simple missing; invoking scripts/misc/simulators/cluster.py --instrument simple
+
+--- PART 1: Setup ---
+  [setup_imaging_grid] 0.1451 s
+  [setup_galaxies] 0.0272 s
+  [setup_tracer] 0.0001 s
+
+--- PART 2: Pytree registration ---
+  [register_pytrees] 0.3705 s
+
+--- PART 3: PointSolver build ---
+  [solver_build] 0.0304 s
+
+--- PART 4: jitted_solve per source ---
+  [jitted_solve_src0_lower] 7.8668 s
+  [jitted_solve_src0_compile] 4.4830 s
+  [jitted_solve_src0_first_call] 2.1881 s
+  [jitted_solve_src0_steady_x3] 6.4433 s
+    -> per-call avg: 2.147775 s
+  src0: 3 image positions found
+  [jitted_solve_src1_lower] 7.6031 s
+  [jitted_solve_src1_compile] 4.7950 s
+  [jitted_solve_src1_first_call] 2.1836 s
+  [jitted_solve_src1_steady_x3] 6.3706 s
+    -> per-call avg: 2.123542 s
+  src1: 3 image positions found
+
+--- PART 5: simulator.via_tracer_from (1000×1000 over-sampled) ---
+  [setup_psf_simulator] 0.0006 s
+  [via_tracer_from] 9.0614 s
+
+--- PART 6: outputs ---
+  [output_fits] 0.1919 s
+  [output_scaling_galaxies_csv] 0.0007 s
+  [output_point_datasets] 0.0028 s
+  [output_json] 0.0105 s
+
+======================================================================
+CLUSTER DIAGNOSTIC: compile vs via_tracer_from
+======================================================================
+  solver_lower_total  (both sources):  15.4699 s
+  solver_compile_total (both sources): 9.2780 s
+  solver_steady_total  (both sources): 12.8140 s
+  via_tracer_from:                     9.0614 s
+  compile / via_tracer ratio:          1.02x
+======================================================================
+
+  Results saved to: /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p1/results/simulators/cluster_summary_v2026.8.17.1.json
+  Bar chart saved to: /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p1/results/simulators/cluster_summary_v2026.8.17.1.png
+
+======================================================================
+PROFILING SUMMARY
+======================================================================
+  setup_imaging_grid                0.1451 s
+  setup_galaxies                    0.0272 s
+  setup_tracer                      0.0001 s
+  register_pytrees                  0.3705 s
+  solver_build                      0.0304 s
+  jitted_solve_src0_lower           7.8668 s
+  jitted_solve_src0_compile         4.4830 s
+  jitted_solve_src0_first_call      2.1881 s
+  jitted_solve_src0_steady_x3       6.4433 s
+  jitted_solve_src1_lower           7.6031 s
+  jitted_solve_src1_compile         4.7950 s
+  jitted_solve_src1_first_call      2.1836 s
+  jitted_solve_src1_steady_x3       6.3706 s
+  setup_psf_simulator               0.0006 s
+  via_tracer_from                   9.0614 s
+  output_fits                       0.1919 s
+  output_scaling_galaxies_csv       0.0007 s
+  output_point_datasets             0.0028 s
+  output_json                       0.0105 s
+----------------------------------------------------------------------
+  TOTAL                            51.7748 s
+======================================================================
+Loaded 2 point-source systems from /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p1/dataset/cluster/simple.
+Tracer: 3 planes, 13 mass components.
+  [step1_source_centres] 0.0042 s
+  [step2_solve_point_0_lower] 2.4945 s
+  [step2_solve_point_0_compile] 3.3618 s
+  [step2_solve_point_0_first_call] 0.1201 s
+  [step2_solve_point_0_steady_x3] 0.3309 s
+    -> per-call avg: 0.110293 s
+  [step2_solve_point_1_lower] 2.1362 s
+  [step2_solve_point_1_compile] 3.6741 s
+  [step2_solve_point_1_first_call] 0.1159 s
+  [step2_solve_point_1_steady_x3] 0.3457 s
+    -> per-call avg: 0.115249 s
+  [step3_fit_total_point_0] 2.1586 s
+  [step3_fit_total_point_1] 2.1450 s
+
+  image-plane log likelihood (sum over systems): -4.319381e+07
+  [step4_fit_total_solved_point_0] 2.1344 s
+  [step4_fit_total_solved_point_1] 2.1249 s
+
+  image-plane log likelihood, solved (sum over systems): 2.556013e+01
+
+--- Solved vs plain: per-system fit-total runtime delta ---
+  point_0: plain=2.158571s  solved=2.134437s  delta=-0.024134s (-1.1%)  -- vs -2 free centre params/source if sampled
+  point_1: plain=2.144964s  solved=2.124853s  delta=-0.020111s (-0.9%)  -- vs -2 free centre params/source if sampled
+  TOTAL delta across 2 systems: -0.044245s
+
+--- Step 5: eager controls for the fused rows ---
+  [step5_eager_plain] 4.1209 s
+  plain eager likelihood: 2.396507508339e+01
+  [step5_eager_solved] 4.2135 s
+  solved eager likelihood: 2.556012716673e+01
+
+--- Step 5: fused full likelihoods (JIT, parameterised instance) ---
+  [fused_full_plain_lower] 25.7830 s
+  [fused_full_plain_compile] 20.1573 s
+  [fused_full_plain_first_call] 0.1292 s
+  [fused_full_plain_steady_x3] 0.3842 s
+    -> per-call avg: 0.128052 s
+  plain fused likelihood: 2.396507508339e+01
+  [fused_full_solved_lower] 33.8337 s
+  [fused_full_solved_compile] 28.3719 s
+  [fused_full_solved_first_call] 0.1305 s
+  [fused_full_solved_steady_x3] 0.4036 s
+    -> per-call avg: 0.134523 s
+  solved fused likelihood: 2.556012716673e+01
+  point_0: 3/3 finite solved positions
+  point_1: 3/3 finite solved positions
+
+======================================================================
+PROFILING SUMMARY
+======================================================================
+  step1_source_centres                0.0042 s
+  step2_solve_point_0_lower           2.4945 s
+  step2_solve_point_0_compile         3.3618 s
+  step2_solve_point_0_first_call      0.1201 s
+  step2_solve_point_0_steady_x3       0.3309 s
+  step2_solve_point_1_lower           2.1362 s
+  step2_solve_point_1_compile         3.6741 s
+  step2_solve_point_1_first_call      0.1159 s
+  step2_solve_point_1_steady_x3       0.3457 s
+  step3_fit_total_point_0             2.1586 s
+  step3_fit_total_point_1             2.1450 s
+  step4_fit_total_solved_point_0      2.1344 s
+  step4_fit_total_solved_point_1      2.1249 s
+  step5_eager_plain                   4.1209 s
+  step5_eager_solved                  4.2135 s
+  fused_full_plain_lower             25.7830 s
+  fused_full_plain_compile           20.1573 s
+  fused_full_plain_first_call         0.1292 s
+  fused_full_plain_steady_x3          0.3842 s
+  fused_full_solved_lower            33.8337 s
+  fused_full_solved_compile          28.3719 s
+  fused_full_solved_first_call        0.1305 s
+  fused_full_solved_steady_x3         0.4036 s
+----------------------------------------------------------------------
+  TOTAL                             138.6740 s
+======================================================================
+
+======================================================================
+PER-STEP BREAKDOWN SUMMARY — CLUSTER IMAGE-PLANE — v2026.8.17.1
+======================================================================
+   1. 1 source centres (back-trace)                                             0.004220 s
+   2. 2.point_0 PointSolver solve (z=1.0)                                       0.110293 s
+   3. 2.point_1 PointSolver solve (z=2.0)                                       0.115249 s
+   4. 3.point_0 FitPositionsImagePairRepeat (fit total)                         2.158571 s
+   5. 3.point_1 FitPositionsImagePairRepeat (fit total)                         2.144964 s
+   6. 4.point_0 FitPositionsImagePairRepeatSolved (fit total, analytic β*)      2.134437 s
+   7. 4.point_1 FitPositionsImagePairRepeatSolved (fit total, analytic β*)      2.124853 s
+----------------------------------------------------------------------
+      TOTAL (step-by-step, plain)                                               4.533297 s
+      TOTAL (solved, extra)                                                     4.259290 s
+      FUSED full likelihood, plain                                              0.128052 s
+      FUSED full likelihood, solved                                             0.134523 s
+======================================================================
+
+  Results dict saved to: /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p1/results/breakdown/cluster/image_plane_hpc_ral_cpu_fp64.json
+  Bar chart saved to:    /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p1/results/breakdown/cluster/image_plane_hpc_ral_cpu_fp64.png
+==========================================
+loadavg: 1.06 1.09 0.58 1/2091 1628234
+Finished.
+Wed 23 Sep 14:30:40 BST 2026

@@ -1,0 +1,150 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "package_versions": {
+    "jax": "0.10.2",
+    "jaxlib": "0.10.2"
+  },
+  "source_revisions": {
+    "autolens_profiling": "15ceb686ac93f9d5957910ed68f6ee33d7f81b60",
+    "PyAutoNerves": "1fa613aa8d89a79613009fb66f5b4e2d21deb57a",
+    "PyAutoFit": "a736840127be7a3c21e15a5c945e94d8f1082983",
+    "PyAutoArray": "22e6d6082e3365b10fb08d96e19ab02a5420e935",
+    "PyAutoGalaxy": "70a61e26cd715cefe7012a38285698091246a8a4",
+    "PyAutoLens": "2aaa1c1a8bb4a5923edf30a18451fcea330a6bd4"
+  },
+  "config_name": "hpc_ral_cpu_fp64",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "hostname": "euclid-ral-compute-10-2",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 236,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p1/output/jax_cache/point_source_350580",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true
+  },
+  "thread_environment": {
+    "NPROC": "8",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "n_repeats": 3,
+  "configuration": {
+    "n_systems": 2,
+    "n_images_total": 6,
+    "n_planes": 3,
+    "n_mass_profiles": 13,
+    "likelihood": "image_plane (FitPositionsImagePairRepeat)",
+    "solver_grid": "200x200 @ 0.7 arcsec",
+    "solver_pixel_scale_precision": 0.01,
+    "jax_enable_x64": true,
+    "n_repeats": 3,
+    "fused_model_free_parameters": {
+      "plain": 17,
+      "solved": 13
+    }
+  },
+  "steps": {
+    "1 source centres (back-trace)": 0.004219939932227135,
+    "2.point_0 PointSolver solve (z=1.0)": 0.11029290842513244,
+    "2.point_1 PointSolver solve (z=2.0)": 0.11524920056884487,
+    "3.point_0 FitPositionsImagePairRepeat (fit total)": 2.1585711580701172,
+    "3.point_1 FitPositionsImagePairRepeat (fit total)": 2.1449635168537498,
+    "4.point_0 FitPositionsImagePairRepeatSolved (fit total, analytic \u03b2*)": 2.134436887688935,
+    "4.point_1 FitPositionsImagePairRepeatSolved (fit total, analytic \u03b2*)": 2.124852967914194
+  },
+  "total_step_by_step": 4.533296723850071,
+  "fused_full_plain_s": 0.1280515699957808,
+  "fused_full_solved_s": 0.13452334267397723,
+  "fused_likelihoods": {
+    "plain_eager": 23.96507508339339,
+    "plain_jit": 23.965075083393216,
+    "solved_eager": 25.56012716672685,
+    "solved_jit": 25.56012716672745
+  },
+  "fused_solved_positions": {
+    "point_0": {
+      "observed_images": 3,
+      "paired_model_positions": [
+        [
+          -0.021874999999999995,
+          -0.2399612056319382
+        ],
+        [
+          -3.0789062499999997,
+          -7.858729484445976
+        ],
+        [
+          -0.9296874999999999,
+          10.716162262036818
+        ]
+      ],
+      "finite_rows": 3,
+      "all_finite": true
+    },
+    "point_1": {
+      "observed_images": 3,
+      "paired_model_positions": [
+        [
+          -15.96875,
+          19.00745339347721
+        ],
+        [
+          0.68359375,
+          -0.5146536383948147
+        ],
+        [
+          13.69375,
+          -14.309265577946627
+        ]
+      ],
+      "finite_rows": 3,
+      "all_finite": true
+    }
+  },
+  "jit_phases": {
+    "step2_solve_point_0": {
+      "lower_s": 2.494474356994033,
+      "compile_s": 3.361778520978987,
+      "first_call_s": 0.12010648008435965,
+      "steady_per_call_s": 0.11029290842513244,
+      "n_repeats": 3
+    },
+    "step2_solve_point_1": {
+      "lower_s": 2.1361974109895527,
+      "compile_s": 3.6741499011404812,
+      "first_call_s": 0.11587707279250026,
+      "steady_per_call_s": 0.11524920056884487,
+      "n_repeats": 3
+    },
+    "fused_full_plain": {
+      "lower_s": 25.783044807147235,
+      "compile_s": 20.15734848473221,
+      "first_call_s": 0.12916185380890965,
+      "steady_per_call_s": 0.1280515699957808,
+      "n_repeats": 3
+    },
+    "fused_full_solved": {
+      "lower_s": 33.833706381265074,
+      "compile_s": 28.37189341383055,
+      "first_call_s": 0.1304544429294765,
+      "steady_per_call_s": 0.13452334267397723,
+      "n_repeats": 3
+    }
+  },
+  "log_likelihood": -43193806.617607206,
+  "solved": {
+    "fit_positions_cls": "FitPositionsImagePairRepeatSolved",
+    "log_likelihood": 25.56012716672685,
+    "total_step_solved_extra": 4.259289855603129,
+    "delta_per_system_s": {
+      "point_0": -0.024134270381182432,
+      "point_1": -0.020110548939555883
+    },
+    "delta_total_s": -0.044244819320738316,
+    "free_centre_params_removed_per_point_source": 2,
+    "free_centre_params_removed_total": 4
+  }
+}
