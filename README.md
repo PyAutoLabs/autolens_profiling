@@ -245,6 +245,15 @@ separately per likelihood × transform. Standing conclusions:
   by ~1e-3 nats, so they are **diagnostic, not levers**; accepting them is a human policy decision.
   No PyAutoArray change.
   Findings: [`results/notes/hst_gpu_residue_phase3_psf_2026_09.md`](./results/notes/hst_gpu_residue_phase3_psf_2026_09.md).
+- **Point-source CPU speed-up, phase 1 (2026-09)** — the RAL CPU fp64 baseline for the
+  PointSolver image-plane likelihood on the unoptimized library revisions (PyAutoArray
+  `22e6d608`, PyAutoLens `2aaa1c1a`), job 350580 on an idle `ral` Xeon 8490H node at 8 CPUs.
+  Simple fused solved 24.69 ms and plain control 24.72 ms. Cluster (13 components, two sources)
+  fused plain 128.05 ms and solved 134.52 ms. Likelihoods and cluster positions are bit-identical
+  to the laptop. The laptop rows are load-inflated (2.5–3.0× slower on the simple cell) and are
+  not baselines. The reported September 4.9× / 2.4× gain from dropping the throwaway `jnp.unique`
+  is still a hypothesis for phase 2.
+  Findings: [`results/notes/point_source_cpu_campaign.md`](./results/notes/point_source_cpu_campaign.md).
 
 ## How to read this repo
 

@@ -79,6 +79,9 @@ before using device timelines to attribute GPU kernels. Mixed precision,
 batch-throughput, VRAM and kernel-trace conclusions remain GPU-task scope; this
 CPU result makes none of those claims.
 
+CPU campaign ledger: [point_source_cpu_campaign.md](point_source_cpu_campaign.md)
+(the frozen unoptimized revisions and the RAL CPU baseline, issue #297).
+
 Example A100 invocation after updating the RAL checkout and PyAuto stack:
 
 ```bash

@@ -7,8 +7,9 @@ baseline.** Nothing here was produced by a cell in this repository.
 
 Campaign: autolens_profiling issue #297
 (<https://github.com/PyAutoLabs/autolens_profiling/issues/297>). The campaign
-note that interprets these files will be `results/notes/point_source_cpu_campaign.md`
-(not yet written at the time this folder was committed).
+note that interprets these files is
+[`results/notes/point_source_cpu_campaign.md`](../point_source_cpu_campaign.md);
+its phase-1 section holds the RAL baseline these ratios must be reproduced against.
 
 ## How these numbers were made
 
