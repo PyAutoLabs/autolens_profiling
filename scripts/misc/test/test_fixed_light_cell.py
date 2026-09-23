@@ -62,7 +62,9 @@ def _submits() -> list[_Path]:
     # autolens_profiling#267) are a fourth, in
     # test_fixed_light_numba_levers_submits.py; and the phase-2 batched legs
     # (`..._fixed_light_vmap_*`, autolens_profiling#273) are a fifth, in
-    # test_fixed_light_vmap_submit.py. Excluding them here keeps each
+    # test_fixed_light_vmap_submit.py; the phase-3 PSF-cube legs
+    # (`..._fixed_light_psf_cube_*`, autolens_profiling#295) are a sixth, in
+    # test_fixed_light_psf_cube_submit.py. Excluding them here keeps each
     # file's assertions owned by the submits they were written for -- without it
     # this file's `--config-name hpc_a100_fp64_fixed_light` assertion would pass
     # on a library, trace or vmap leg only because
@@ -81,6 +83,7 @@ def _submits() -> list[_Path]:
         and "_fixed_light_trace_" not in p.name
         and "_fixed_light_numba_levers_" not in p.name
         and "_fixed_light_vmap_" not in p.name
+        and "_fixed_light_psf_cube_" not in p.name
     )
 
 

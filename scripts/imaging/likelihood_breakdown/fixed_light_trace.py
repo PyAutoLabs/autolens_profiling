@@ -136,10 +136,69 @@ positive solution.
 ``configuration``; strict shared CLI parsing also rejects an old checkout that
 does not define them.
 
+The PSF-cube mode (phase 3, autolens_profiling#295)
+---------------------------------------------------
+
+``--psf-candidate NAME`` turns this cell into the **PSF mapping-matrix cube**
+experiment. Without it nothing below happens and the cell is phase 1 exactly.
+It runs on the single-call path only and is rejected together with
+``--vmap-batch`` (one experiment per invocation).
+
+Phase 1 found the PSF convolution of the mapping-matrix cube to be the largest
+computation of the fused call (7.12 ms of 31.64 ms on the A100). This mode
+swaps that convolution for a candidate — a scoped harness rebinding of
+``Convolver.convolved_mapping_matrix_from``
+(``likelihood_breakdown.psf_cube_injection``) — **inside the same fused whole-call
+jit**, and changes nothing else:
+
+- route ``d`` (PART B) and the traced compile (PART C) run under the PSF
+  injection **nested inside** the certified-solver injection;
+- route ``b`` runs outside both — library PDIP and library convolution, the
+  unmodified library answer every pin is taken against (``--routes`` must
+  include ``b``);
+- the injected convolution must actually be taken on the JAX path
+  (``counts["jax"] > 0`` for every non-control candidate), or the row would be
+  the library's convolution wearing the candidate's label.
+
+The candidates (``psf_cube_injection.CANDIDATES``): ``control`` (no patch — the
+library FFT path as shipped), ``frame_pow2``, ``layout_src_first``,
+``real_space_direct``, ``conv_cudnn_batched``, and two DIAGNOSTIC precision rows,
+``mp_cube_c64`` and ``c64_full``. **Diagnostic rows may not be quoted as
+levers**: the campaign constraint is fp64 at a 1e-9 relative pin, and a
+``fp64_exact=False`` candidate is measured for the milliseconds it would save and
+the nats it costs, never promoted.
+
+Pins. The fiducial ``d == b`` pin, plus ``--pin-draws N`` (default 8) seeded
+distinct draws (``--draw-seed``, default 0 — the phase-2 lane family: the draw's
+lens mass swapped into S3) evaluated by the SAME compiled route ``d`` and route
+``b`` executables PART B timed. Each fp64 candidate is pinned at
+``EQUIVALENCE_RTOL`` (1e-9 relative, declared before the data and not relaxed);
+a diagnostic candidate's rows carry the relative error and the nats, labelled
+``DIAGNOSTIC``, never PASS. For a non-control candidate each draw is also
+evaluated by route ``d`` compiled WITHOUT the PSF injection (certified solver,
+library convolution) and ``rel_diff_vs_d_control`` is recorded: it isolates the
+convolution from the certified-vs-PDIP solver difference. It is recorded, not
+gated.
+
+**The exit gate is ENFORCED in this mode**: the JSON and PNG are written first,
+then the cell raises ``AssertionError`` if any fp64 pin failed (fiducial or
+draw), if ``|reconciliation_pct| > 5`` or if ``unjoined_ms > 0``. It never gates
+on speed. The census also gains ``status`` / ``anchors`` /
+``rows_excluded`` from ``xla_attribution.census_anchor_status()`` — the census
+line anchors checked against the INSTALLED PyAutoArray — and a
+``conv_mapping_matrix`` count for the real-space candidates.
+
+Erratum (phase 1 prose). The mapping-matrix cube is not ``(1500, 180, 180)``:
+``mapping_matrix_native_from`` scatters straight into the PADDED FFT frame, so
+for HST (180 grid, 21x21 PSF) the cube is ``(200, 200, 1500)`` fp64 with the
+source axis LAST (200 = ``next_fast_len(200, real=True)``). The
+``ConvolverState`` docstring's "even FFT sizes are incremented to odd sizes"
+note is STALE — the code does not do it.
+
 Output
 ------
 
-``results/breakdown/imaging/fixed_light_trace_<mesh>[_border_off][_n<N>][_vmap<B>_<lanes>_fb<on|off>]_<config>.{json,png}``.
+``results/breakdown/imaging/fixed_light_trace_<mesh>[_border_off][_n<N>][_jitvmap<B>_<lanes>_fb<on|off>][_psf_<candidate>]_<config>.{json,png}``.
 
 The ``--config-name`` used for the phase-1 legs
 (``local_rtx2060_fp64_fixed_light_trace``, ``hpc_a100_fp64_fixed_light_trace``)
@@ -177,6 +236,7 @@ if _misc_dir not in _sys.path:
 
 
 import argparse
+import contextlib
 import copy
 import hashlib
 import json
@@ -205,6 +265,7 @@ from likelihood_breakdown import (  # noqa: E402
     active_set_steps,
     host_callback_probe,
     library_solver_injection,
+    psf_cube_injection,
     timing,
     xla_attribution,
 )
@@ -272,6 +333,23 @@ _cell_parser.add_argument("--lanes", choices=("distinct", "identical"), default=
 _cell_parser.add_argument("--arms", choices=("vmap", "scalar", "both"), default="both")
 _cell_parser.add_argument("--draw-seed", type=int, default=0)
 _cell_parser.add_argument("--fallback", choices=("on", "off"), default="on")
+# --- phase 3 (#295): the PSF mapping-matrix cube candidates -----------------
+# The choices are a LITERAL (the contracts test execs these statements alone);
+# test_psf_cube_injection pins them to psf_cube_injection.CANDIDATES.
+_cell_parser.add_argument(
+    "--psf-candidate",
+    choices=(
+        "control",
+        "frame_pow2",
+        "layout_src_first",
+        "real_space_direct",
+        "conv_cudnn_batched",
+        "mp_cube_c64",
+        "c64_full",
+    ),
+    default=None,
+)
+_cell_parser.add_argument("--pin-draws", type=int, default=None)
 _cell_args = _cli.parse_cell_args(_cell_parser)
 
 MESH = _cell_args.mesh
@@ -304,6 +382,33 @@ if VMAP_BATCH is None and _cell_args.arms != "both":
         "phase-1 single-call trace and would silently ignore the flag"
     )
 
+#: ``None`` is phase 1. A name turns on the PSF-cube experiment (#295).
+PSF_CANDIDATE = _cell_args.psf_candidate
+#: Seeded distinct draws pinned beside the fiducial in PSF mode.
+PIN_DRAWS = (
+    None
+    if PSF_CANDIDATE is None
+    else int(_cell_args.pin_draws if _cell_args.pin_draws is not None else 8)
+)
+
+if PSF_CANDIDATE is not None and VMAP_BATCH is not None:
+    raise ValueError(
+        "--psf-candidate runs on the single-call path only; it cannot be combined with "
+        "--vmap-batch (one experiment per invocation)"
+    )
+if PSF_CANDIDATE is None and _cell_args.pin_draws is not None:
+    raise ValueError(
+        "--pin-draws only means anything with --psf-candidate; without it this cell runs "
+        "the phase-1 single-call trace and would silently ignore the flag"
+    )
+if PIN_DRAWS is not None and PIN_DRAWS < 1:
+    raise ValueError(f"--pin-draws must be >= 1 (got {PIN_DRAWS})")
+if PSF_CANDIDATE is not None and _cli.use_mixed_precision:
+    raise ValueError(
+        "--psf-candidate is an fp64 experiment (the precision candidates are the diagnostic "
+        "rows mp_cube_c64 and c64_full); do not combine it with --use-mixed-precision"
+    )
+
 PASS_BUDGET = int(
     _cell_args.safe_budget if _cell_args.safe_budget is not None else PHASE3_SAFE_BUDGET[MESH]
 )
@@ -314,6 +419,11 @@ if _unknown:
     raise ValueError(f"--routes accepts only b and d in this cell (got {sorted(_unknown)})")
 if "d" not in ROUTE_SELECTION:
     raise ValueError("--routes must include d: the trace is taken on route d")
+if PSF_CANDIDATE is not None and "b" not in ROUTE_SELECTION:
+    raise ValueError(
+        "--psf-candidate needs route b: it is the unmodified library answer every pin is "
+        "taken against"
+    )
 
 SOURCE_PIXELS_REQUESTED = (
     _cell_args.source_pixels if _cell_args.source_pixels is not None else _cli.source_pixels
@@ -574,6 +684,10 @@ print(f"  Pass budget (route d):   {PASS_BUDGET}  [phase 3 production budget]")
 print(f"  Border relocator:        {BORDER_RELOCATOR_MODE} -> {BORDER_RELOCATOR_RESOLVED}")
 print(f"  Trace calls:             {TRACE_CALLS}")
 print(f"  tau_rel:                 {TAU_REL:.6e}")
+if PSF_CANDIDATE is not None:
+    _psf_spec = psf_cube_injection.CANDIDATES[PSF_CANDIDATE]
+    print(f"  PSF candidate:           {PSF_CANDIDATE} ({_psf_spec.kind}) — {_psf_spec.label}")
+    print(f"  Pin draws:               {PIN_DRAWS} (seed {DRAW_SEED})")
 if VMAP_BATCH is None:
     print("  Batched mode:            off (phase-1 single-call trace)")
 else:
@@ -628,6 +742,63 @@ instance_s3.galaxies.lens = _source_only_galaxies[0]
 instance_s3.galaxies.source = _source_only_galaxies[1]
 params_tree_s3 = jax.tree_util.tree_map(jnp.asarray, instance_s3)
 
+# ---------------------------------------------------------------------------
+# Draw trees — shared by the phase-2 vmap lanes and the phase-3 draw pins
+# ---------------------------------------------------------------------------
+# A draw IS a seeded random draw of the phase-3 family applied to the lens
+# MASS, with the lens light fixed at S3 — the same construction
+# ``fixed_light_draws.py`` uses (``flds.mass_from(BASE_MASS, offsets)``). The S3
+# dataset is the FIDUCIAL light-subtracted one and is shared by every draw.
+BASE_MASS = flds.fiducial_mass_values(instance)
+
+_lens_s3 = instance_s3.galaxies.lens
+# The Galaxy's profiles by the names it holds them under — the same rule
+# ``fixed_light_system._profile_attrs`` uses, because af.Model paths and the
+# adapt-image dictionaries are keyed on those names.
+_LENS_ATTRS = {
+    _k: _v
+    for _k, _v in vars(_lens_s3).items()
+    if not _k.startswith("_") and _k not in {"id", "redshift"}
+}
+if "mass" not in _LENS_ATTRS:
+    raise AssertionError(
+        "the S3 source-only lens galaxy has no `mass` attribute — the lane "
+        "construction would swap a profile that is not there"
+    )
+
+
+def _lane_tree(draw):
+    """The params pytree of one lane: S3 with draw's mass swapped in.
+
+    SHALLOW copies, deliberately. ``copy.deepcopy(instance_s3)`` duplicates
+    the source galaxy's ``Pixelization`` and ``Regularization``, which sit in
+    the pytree's **static aux data** and compare by object identity — two
+    deepcopies of the same instance therefore have unequal treedefs and
+    cannot be stacked into a batch at all. Sharing those objects across every
+    lane is also the truth of the experiment: production batches one dataset
+    and one pixelization over B parameter vectors.
+    """
+    if not draw.offsets:
+        return params_tree_s3
+    _inst = copy.copy(instance_s3)
+    _inst.galaxies = copy.copy(instance_s3.galaxies)
+    _attrs = dict(_LENS_ATTRS)
+    _attrs["mass"] = flds.mass_from(BASE_MASS, draw.offsets, mass_cls=draw.mass_cls)
+    _inst.galaxies.lens = al.Galaxy(redshift=float(_lens_s3.redshift), **_attrs)
+    return jax.tree_util.tree_map(jnp.asarray, _inst)
+
+
+def _psf_context():
+    """The phase-3 PSF injection, or a no-op yielding zero counts in every other mode.
+
+    Always entered INSIDE the certified-solver injection, and always around a
+    fresh ``jax.jit``: the Convolver is a closed-over constant, so the patch
+    acts at trace time.
+    """
+    if PSF_CANDIDATE is None:
+        return contextlib.nullcontext({"jax": 0, "delegated": 0})
+    return psf_cube_injection.psf_convolution_injected(PSF_CANDIDATE)
+
 
 def _likelihood_fn(dataset_for_route, settings_for_route):
     """``params tree -> log likelihood`` through the library's analysis path."""
@@ -661,6 +832,10 @@ _ROUTE_SPECS: dict[str, tuple] = {
 }
 
 routes: dict[str, dict] = {}
+#: The compiled executable of each route, kept so the phase-3 draw pins evaluate
+#: the SAME programs PART B timed (a compiled executable accepts any tree with
+#: the fiducial's structure).
+_compiled_routes: dict = {}
 
 for _token in ROUTE_SELECTION:
     _key, _label, _injection = _ROUTE_SPECS[_token]
@@ -669,15 +844,30 @@ for _token in ROUTE_SELECTION:
     _entry: dict = {"label": _label, "status": "ok"}
 
     if _injection is None:
-        _, _value = jit_profile(_fn, f"{_key}_library_likelihood_jit", params_tree_s3)
+        _compiled, _value = jit_profile(_fn, f"{_key}_library_likelihood_jit", params_tree_s3)
         _entry["solver"] = "library"
     else:
         _budget, _fallback = _injection
-        with library_solver_injection.certified_solver_injected(
-            _budget, fallback=_fallback, tau_rel=TAU_REL
-        ) as _counts:
-            _, _value = jit_profile(_fn, f"{_key}_library_likelihood_jit", params_tree_s3)
+        # The PSF injection (phase 3) nests INSIDE the solver injection and is a
+        # no-op in every other mode; route b above never sees either.
+        with (
+            library_solver_injection.certified_solver_injected(
+                _budget, fallback=_fallback, tau_rel=TAU_REL
+            ) as _counts,
+            _psf_context() as _psf_counts,
+        ):
+            _compiled, _value = jit_profile(_fn, f"{_key}_library_likelihood_jit", params_tree_s3)
         _entry["solver"] = "harness-injected certified active set"
+        if PSF_CANDIDATE is not None:
+            _entry["psf_candidate"] = PSF_CANDIDATE
+            _entry["injected_psf_calls_jax"] = int(_psf_counts["jax"])
+            _entry["injected_psf_calls_delegated"] = int(_psf_counts["delegated"])
+            if PSF_CANDIDATE != "control" and int(_psf_counts["jax"]) == 0:
+                raise AssertionError(
+                    f"{_key}: the injected PSF candidate {PSF_CANDIDATE!r} was never called on "
+                    f"the JAX path — this row would be the library's convolution wearing the "
+                    f"wrong label."
+                )
         _entry["pass_budget"] = int(_budget)
         _entry["fallback"] = bool(_fallback)
         _entry["injected_solver_calls_jax"] = int(_counts["jax"])
@@ -692,6 +882,7 @@ for _token in ROUTE_SELECTION:
     _entry["log_likelihood"] = float(_value)
     print(f"  {_entry['ms']:.3f} ms  -> log likelihood {_entry['log_likelihood']:.6f}")
     routes[_key] = _entry
+    _compiled_routes[_key] = _compiled
 
 peak_after_routes = peak_bytes()
 
@@ -721,6 +912,107 @@ if "b" in ROUTE_SELECTION:
 else:
     print("\n  route b not selected — the d == b equivalence pin is SKIPPED, not passed.")
 
+# ---------------------------------------------------------------------------
+# Phase 3 (#295): the fiducial pin labelled per candidate, and the draw pins
+# ---------------------------------------------------------------------------
+# Route b (library PDIP + library convolution) is the unmodified library answer.
+# Every fp64 candidate must reproduce it at EQUIVALENCE_RTOL on the fiducial AND
+# on PIN_DRAWS seeded distinct draws; a diagnostic candidate is labelled
+# DIAGNOSTIC and never PASSes. The draws are evaluated by the SAME compiled
+# executables PART B timed.
+
+psf_pin_draw_rows: list[dict] = []
+psf_d_control_record: dict | None = None
+
+if PSF_CANDIDATE is not None:
+    _psf_fp64 = psf_cube_injection.CANDIDATES[PSF_CANDIDATE].fp64_exact
+
+    def _psf_status(rel: float) -> str:
+        if not _psf_fp64:
+            return "DIAGNOSTIC"
+        return "PASS" if rel <= EQUIVALENCE_RTOL else "FAIL"
+
+    for _pin in equivalence_pins:
+        _pin["pin"] = f"route d (certified, fallback, psf {PSF_CANDIDATE}) == route b (library)"
+        _pin["abs_diff_nats"] = abs(_pin["got"] - _pin["reference_value"])
+        _pin["status"] = _psf_status(_pin["rel_diff"])
+        _pin["gated"] = bool(_psf_fp64)
+        print(f"  [{_pin['status']:>10}] {_pin['pin']}  rel {_pin['rel_diff']:.3e}")
+
+    # For a non-control candidate, route d compiled WITHOUT the PSF injection
+    # (certified solver + library convolution) isolates the convolution from the
+    # certified-vs-PDIP solver difference. Recorded, never gated.
+    _compiled_d_control = None
+    if PSF_CANDIDATE != "control":
+        with library_solver_injection.certified_solver_injected(
+            PASS_BUDGET, fallback=True, tau_rel=TAU_REL
+        ) as _dc_counts:
+            _fn_dc = _likelihood_fn(system_s3.dataset, _settings)
+            with timer.section("psf_pin_d_control_compile"):
+                _compiled_d_control = jax.jit(_fn_dc).lower(params_tree_s3).compile()
+        if int(_dc_counts["jax"]) == 0:
+            raise AssertionError("the d-control reference never called the injected solver")
+        _dc_fiducial = float(block(_compiled_d_control(params_tree_s3)))
+        _d_fiducial = routes["d_s3_certified_fallback"]["log_likelihood"]
+        psf_d_control_record = {
+            "program": "route d (certified solver, budget and fallback as route d) with the "
+            "LIBRARY convolution — compiled without the PSF injection",
+            "compile_s": float(timer.records[-1][1]),
+            "fiducial_log_likelihood": _dc_fiducial,
+            "fiducial_rel_diff_candidate_vs_d_control": abs(_d_fiducial - _dc_fiducial)
+            / max(abs(_dc_fiducial), 1e-300),
+            "gated": False,
+            "note": (
+                "Isolates the convolution: the candidate and this program share the solver, "
+                "so their difference is the convolution alone. The gate is the pin against "
+                "route b (the unmodified library), as declared in #295."
+            ),
+        }
+
+    _pin_draws = flds.random_draws(DRAW_SEED, PIN_DRAWS)
+    _fiducial_structure = jax.tree_util.tree_structure(params_tree_s3)
+    with timer.section("psf_pin_draws"):
+        for _k, _draw in enumerate(_pin_draws):
+            _tree = _lane_tree(_draw)
+            if jax.tree_util.tree_structure(_tree) != _fiducial_structure:
+                raise AssertionError(
+                    f"pin draw {_k} has a different pytree structure from the fiducial S3 tree"
+                )
+            _ll_d = float(block(_compiled_routes["d_s3_certified_fallback"](_tree)))
+            _ll_b = float(block(_compiled_routes["b_s3_pdip"](_tree)))
+            _abs = abs(_ll_d - _ll_b)
+            _rel = _abs / max(abs(_ll_b), 1e-300)
+            _row = {
+                "draw": _k,
+                "draw_name": _draw.name,
+                "draw_kind": _draw.kind,
+                "offsets": {_p: float(_o) for _p, _o in _draw.offsets.items()},
+                "log_likelihood_d_candidate": _ll_d,
+                "log_likelihood_b_library": _ll_b,
+                "abs_diff_nats": _abs,
+                "rel_diff": _rel,
+                "rtol": EQUIVALENCE_RTOL,
+                "status": _psf_status(_rel),
+                "gated": bool(_psf_fp64),
+            }
+            if _compiled_d_control is not None:
+                _ll_dc = float(block(_compiled_d_control(_tree)))
+                _row["log_likelihood_d_control"] = _ll_dc
+                _row["rel_diff_vs_d_control"] = abs(_ll_d - _ll_dc) / max(abs(_ll_dc), 1e-300)
+                _row["rel_diff_d_control_vs_b_library"] = abs(_ll_dc - _ll_b) / max(
+                    abs(_ll_b), 1e-300
+                )
+            psf_pin_draw_rows.append(_row)
+            print(
+                f"  [{_row['status']:>10}] draw {_k} ({_draw.name}): d {_ll_d:.9f} vs b "
+                f"{_ll_b:.9f}  rel {_rel:.3e}  abs {_abs:.3e} nats"
+                + (
+                    f"  | vs d-control rel {_row['rel_diff_vs_d_control']:.3e}"
+                    if "rel_diff_vs_d_control" in _row
+                    else ""
+                )
+            )
+
 # ===================================================================
 # PART C — one lowering, two executables, one timeline
 # ===================================================================
@@ -743,9 +1035,14 @@ command_buffer_probe: dict = {}
 vmap_block: dict | None = None
 
 if VMAP_BATCH is None:
-    with library_solver_injection.certified_solver_injected(
-        PASS_BUDGET, fallback=True, tau_rel=TAU_REL
-    ) as _trace_counts:
+    # Phase 3: the PSF candidate nests INSIDE the solver injection around a
+    # fresh jax.jit; outside PSF mode ``_psf_context`` is a no-op.
+    with (
+        library_solver_injection.certified_solver_injected(
+            PASS_BUDGET, fallback=True, tau_rel=TAU_REL
+        ) as _trace_counts,
+        _psf_context() as _trace_psf_counts,
+    ):
         _fn = _likelihood_fn(system_s3.dataset, _settings)
 
         with timer.section("trace_lower"):
@@ -768,6 +1065,16 @@ if VMAP_BATCH is None:
             raise AssertionError(
                 "the injected solver was never called on the JAX path while compiling the "
                 "traced executable — the trace would decompose the library's own PDIP."
+            )
+        if (
+            PSF_CANDIDATE is not None
+            and PSF_CANDIDATE != "control"
+            and int(_trace_psf_counts["jax"]) == 0
+        ):
+            raise AssertionError(
+                f"the injected PSF candidate {PSF_CANDIDATE!r} was never called on the JAX path "
+                f"while compiling the traced executable — the trace would decompose the "
+                f"library's own convolution."
             )
 
         wall_on_ms = steady_wall_ms(_ex_on, params_tree_s3, TRACE_CALLS)
@@ -841,6 +1148,12 @@ if VMAP_BATCH is None:
             untraced_wall_ms=untraced_wall_ms,
         )
         census_block = xla_attribution.hlo_census(index)
+        if PSF_CANDIDATE is not None:
+            # Phase 3: the census anchors are CHECKED against the installed
+            # PyAutoArray rather than assumed (phase 2 had to exclude the whole
+            # census when they moved). ``status`` covers the PSF rows; any other
+            # row whose anchor moved is listed in ``rows_excluded``.
+            census_block.update(xla_attribution.census_anchor_status())
 
         # The qhull pure_callback is a host round-trip. Look for it by name on the
         # host planes; when the profiler does not name it, the device-idle gap it
@@ -945,8 +1258,6 @@ else:
     # ``fixed_light_draws.py`` uses (``flds.mass_from(BASE_MASS, offsets)``).
     # The S3 dataset is the FIDUCIAL light-subtracted one and is shared by every
     # lane, exactly as production shares one dataset across a batch.
-    BASE_MASS = flds.fiducial_mass_values(instance)
-
     if LANES_MODE == "distinct":
         lane_draws = flds.random_draws(DRAW_SEED, VMAP_BATCH)
     else:
@@ -970,40 +1281,8 @@ else:
         ).encode()
     ).hexdigest()
 
-    _lens_s3 = instance_s3.galaxies.lens
-    # The Galaxy's profiles by the names it holds them under — the same rule
-    # ``fixed_light_system._profile_attrs`` uses, because af.Model paths and the
-    # adapt-image dictionaries are keyed on those names.
-    _LENS_ATTRS = {
-        _k: _v
-        for _k, _v in vars(_lens_s3).items()
-        if not _k.startswith("_") and _k not in {"id", "redshift"}
-    }
-    if "mass" not in _LENS_ATTRS:
-        raise AssertionError(
-            "the S3 source-only lens galaxy has no `mass` attribute — the lane "
-            "construction would swap a profile that is not there"
-        )
-
-    def _lane_tree(draw):
-        """The params pytree of one lane: S3 with draw's mass swapped in.
-
-        SHALLOW copies, deliberately. ``copy.deepcopy(instance_s3)`` duplicates
-        the source galaxy's ``Pixelization`` and ``Regularization``, which sit in
-        the pytree's **static aux data** and compare by object identity — two
-        deepcopies of the same instance therefore have unequal treedefs and
-        cannot be stacked into a batch at all. Sharing those objects across every
-        lane is also the truth of the experiment: production batches one dataset
-        and one pixelization over B parameter vectors.
-        """
-        if not draw.offsets:
-            return params_tree_s3
-        _inst = copy.copy(instance_s3)
-        _inst.galaxies = copy.copy(instance_s3.galaxies)
-        _attrs = dict(_LENS_ATTRS)
-        _attrs["mass"] = flds.mass_from(BASE_MASS, draw.offsets, mass_cls=draw.mass_cls)
-        _inst.galaxies.lens = al.Galaxy(redshift=float(_lens_s3.redshift), **_attrs)
-        return jax.tree_util.tree_map(jnp.asarray, _inst)
+    # The lane trees come from ``_lane_tree`` (hoisted above PART B so the
+    # phase-3 draw pins build the SAME trees).
 
     with timer.section("vmap_lane_build"):
         lane_trees = [_lane_tree(_d) for _d in lane_draws]
@@ -1617,6 +1896,15 @@ else:
         f"image {census_block['fft_image']['count']})"
     )
     print(
+        f"    real-space convolutions of the cube:          "
+        f"{census_block['conv_mapping_matrix']['count']}"
+    )
+    if "status" in census_block:
+        print(
+            f"    census anchors: {census_block['status']}  "
+            f"(rows excluded: {', '.join(census_block['rows_excluded']) or 'none'})"
+        )
+    print(
         f"    cholesky factorizations:                      {census_block['cholesky']['count']}"
         f"  (triangular solves {census_block['triangular_solve']['count']})"
     )
@@ -1646,6 +1934,140 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
 al_version = al.__version__
+
+# ---------------------------------------------------------------------------
+# Phase 3 (#295): the PSF-candidate block and its ENFORCED gate
+# ---------------------------------------------------------------------------
+psf_block: dict | None = None
+if PSF_CANDIDATE is not None:
+    _spec = psf_cube_injection.CANDIDATES[PSF_CANDIDATE]
+    _psf_label = "psf_convolution_mapping_matrix"
+    _psf_stage_ms = trace_block["per_stage_ms"].get(_psf_label, {}).get("median_ms", 0.0)
+    _psf_mixed = {
+        _k: _v
+        for _k, _v in trace_block["mixed_fusion"]["constituent_stage_sets"].items()
+        if _psf_label in _k.split(" + ")
+    }
+
+    def _section_s(label: str):
+        _hits = [_t for _l, _t in timer.records if _l == label]
+        return float(_hits[-1]) if _hits else None
+
+    _fp64_pins = [_p for _p in equivalence_pins if _p.get("gated")] + [
+        _r for _r in psf_pin_draw_rows if _r["gated"]
+    ]
+    _pins_failed = [
+        _p.get("pin") or f"draw {_p['draw']} ({_p['draw_name']})"
+        for _p in _fp64_pins
+        if _p["status"] != "PASS"
+    ]
+    _recon = float(trace_block["reconciliation_pct"])
+    _unjoined = float(trace_block["unjoined_ms"])
+    _failures = []
+    if _pins_failed:
+        _failures.append(
+            f"{len(_pins_failed)} fp64 pin(s) above {EQUIVALENCE_RTOL:.0e} relative against "
+            f"route b (the unmodified library): {', '.join(_pins_failed)}"
+        )
+    if not abs(_recon) <= 5.0:
+        _failures.append(f"reconciliation {_recon:+.2f} % is outside +-5 %")
+    if _unjoined > 0.0:
+        _failures.append(f"unjoined_ms {_unjoined:.3f} > 0 — the join is incomplete")
+
+    _rels = [_r["rel_diff"] for _r in psf_pin_draw_rows] + [
+        _p["rel_diff"] for _p in equivalence_pins
+    ]
+    _nats = [_r["abs_diff_nats"] for _r in psf_pin_draw_rows] + [
+        _p["abs_diff_nats"] for _p in equivalence_pins
+    ]
+    psf_block = {
+        "candidate": PSF_CANDIDATE,
+        "kind": _spec.kind,
+        "fp64_exact": _spec.fp64_exact,
+        "row_label": (
+            "DIAGNOSTIC — may not be quoted as a lever (fp64 campaign constraint)"
+            if not _spec.fp64_exact
+            else ("CONTROL" if _spec.kind == "control" else "LEVER candidate")
+        ),
+        "provenance": psf_cube_injection.candidate_provenance(
+            PSF_CANDIDATE,
+            system_s3.dataset.psf,
+            system_s3.dataset.mask,
+            n_src=int(system_s3.n_mapper),
+        ),
+        "injection_counts": {
+            "route_d_jax": routes["d_s3_certified_fallback"].get("injected_psf_calls_jax"),
+            "route_d_delegated": routes["d_s3_certified_fallback"].get(
+                "injected_psf_calls_delegated"
+            ),
+            "traced_program_jax": int(_trace_psf_counts["jax"]),
+            "traced_program_delegated": int(_trace_psf_counts["delegated"]),
+        },
+        "whole_call_ms": {
+            "route_d_jit_profile_ms": routes["d_s3_certified_fallback"]["ms"],
+            "route_b_jit_profile_ms": routes["b_s3_pdip"]["ms"],
+            "traced_program_command_buffers_on_ms": wall_on_ms,
+            "traced_program_command_buffers_off_ms": wall_off_ms,
+            "note": (
+                "route_d_jit_profile_ms is the whole fused call of the candidate program (10 "
+                "steady calls, timing.jit_profile — the phase-1/2 basis). The traced program is "
+                "the same lowering compiled with command buffers on and off."
+            ),
+        },
+        "compile_s": {
+            "route_d": jit_records.get("d_s3_certified_fallback_library_likelihood_jit", {}).get(
+                "compile_s"
+            ),
+            "route_b": jit_records.get("b_s3_pdip_library_likelihood_jit", {}).get("compile_s"),
+            "traced_command_buffers_on": _section_s("trace_compile_command_buffers_on"),
+            "traced_command_buffers_off": _section_s("trace_compile_command_buffers_off"),
+        },
+        "psf_rows_ms": {
+            _psf_label: _psf_stage_ms,
+            "mixed_fusion_sets_containing_psf": _psf_mixed,
+            "mixed_fusion_note": (
+                "Fused kernels whose constituents span the PSF stage AND another stage are in "
+                "mixed_fusion, not in the PSF row; listed here for readability, never summed."
+            ),
+            "top_instructions": trace_block["stage_audit"].get(_psf_label, []),
+        },
+        "pins": {
+            "rtol": EQUIVALENCE_RTOL,
+            "reference": "route b — library PDIP + library convolution (the unmodified library)",
+            "fiducial": equivalence_pins,
+            "draws": psf_pin_draw_rows,
+            "draw_seed": DRAW_SEED,
+            "pin_draws": PIN_DRAWS,
+            "max_rel_diff": max(_rels) if _rels else None,
+            "max_abs_diff_nats": max(_nats) if _nats else None,
+            "d_control": psf_d_control_record,
+            "max_rel_diff_vs_d_control": max(
+                (
+                    _r["rel_diff_vs_d_control"]
+                    for _r in psf_pin_draw_rows
+                    if "rel_diff_vs_d_control" in _r
+                ),
+                default=None,
+            ),
+        },
+        "census_status": census_block.get("status"),
+        "gate": {
+            "enforced": True,
+            "fp64_pins_checked": len(_fp64_pins),
+            "fp64_pins_failed": _pins_failed,
+            "reconciliation_pct": _recon,
+            "reconciliation_ok": abs(_recon) <= 5.0,
+            "unjoined_ms": _unjoined,
+            "unjoined_ok": _unjoined <= 0.0,
+            "failures": _failures,
+            "passed": not _failures,
+            "note": (
+                "ENFORCED in PSF mode: the cell writes this JSON and its PNG, then raises if any "
+                "fp64 pin failed, |reconciliation_pct| > 5 or unjoined_ms > 0. Diagnostic "
+                "candidates' pins are recorded, never gated. Speed is never gated."
+            ),
+        },
+    }
 
 trace_summary = {
     "device": device_info_dict(),
@@ -1792,6 +2214,17 @@ if vmap_block is not None:
         f"blocks, the lane table and the matched comparison are under `vmap`."
     )
 
+if psf_block is not None:
+    # Only in PSF mode, so a phase-1 JSON written by this checkout is unchanged.
+    trace_summary["configuration"].update(
+        {
+            "psf_candidate": PSF_CANDIDATE,
+            "pin_draws": PIN_DRAWS,
+            "draw_seed": DRAW_SEED,
+        }
+    )
+    trace_summary["psf_candidate"] = psf_block
+
 # The suffix carries the MODE and the RESOLVED value. Keying it on the resolved
 # value alone let the ``cell`` and ``library`` legs write the same filename on a
 # workspace where the config default is already True — the second leg silently
@@ -1814,6 +2247,10 @@ if VMAP_BATCH is not None:
     _cell_name = (
         f"{_cell_name}_jitvmap{int(VMAP_BATCH)}_{LANES_MODE}_fb{'on' if FALLBACK_ON else 'off'}"
     )
+
+if PSF_CANDIDATE is not None:
+    # One file pair per candidate, never colliding with phase 1's own file.
+    _cell_name = f"{_cell_name}_psf_{PSF_CANDIDATE}"
 
 dict_path, chart_path = resolve_output_paths(
     _cli,
@@ -1959,8 +2396,14 @@ ax.set_yticks(_y)
 ax.set_yticklabels([label for label, _ in _rows], fontsize=9)
 ax.set_xlabel("device time per likelihood call (ms)")
 ax.set_xlim(0, _max_ms * 1.18)
+_psf_title = (
+    ""
+    if psf_block is None
+    else f" — PSF candidate {PSF_CANDIDATE} [{psf_block['row_label'].split(' ')[0]}]"
+)
 ax.set_title(
-    f"Fixed-light {MESH} N={n_source_pixels} — XLA device timeline of the production call\n"
+    f"Fixed-light {MESH} N={n_source_pixels} — XLA device timeline of the production call"
+    f"{_psf_title}\n"
     f"budget {PASS_BUDGET}, border relocator {BORDER_RELOCATOR_RESOLVED}, "
     f"command buffers {'ON' if TRACE_ON_COMMAND_BUFFERS else 'OFF'} | "
     f"wall {trace_block['wall_ms']:.2f} ms, sum {trace_block['sum_ms']:.2f} ms "
@@ -1973,3 +2416,20 @@ fig.savefig(chart_path, dpi=150)
 print(f"  Chart saved to:        {chart_path}")
 
 timer.summary()
+
+if psf_block is not None:
+    # The ENFORCED phase-3 gate, AFTER the evidence is on disk.
+    _gate = psf_block["gate"]
+    print(
+        f"\n  PSF GATE [{PSF_CANDIDATE}, {psf_block['row_label']}]: "
+        f"{'PASS' if _gate['passed'] else 'FAIL'}  "
+        f"(fp64 pins {_gate['fp64_pins_checked'] - len(_gate['fp64_pins_failed'])}/"
+        f"{_gate['fp64_pins_checked']}, reconciliation {_gate['reconciliation_pct']:+.2f} %, "
+        f"unjoined {_gate['unjoined_ms']:.3f} ms)"
+    )
+    if not _gate["passed"]:
+        raise AssertionError(
+            f"PSF candidate {PSF_CANDIDATE!r} failed the phase-3 gate: "
+            + "; ".join(_gate["failures"])
+            + ". The JSON and PNG were written first and hold the evidence."
+        )
