@@ -24,6 +24,19 @@ Steps profiled:
    separately so compile amortisation is explicit.
 3. ``FitPositionsImagePairRepeat`` log-likelihood per system (eager,
    nearest-pair chi-squared given the solved positions).
+4. ``FitPositionsImagePairRepeatSolved`` per system (eager; see the addendum
+   below).
+5. FUSED full likelihoods (autolens_profiling#297): the production
+   ``AnalysisPoint`` likelihood summed over every system, JIT-compiled end to
+   end from a parameterised model instance — ``fused_full_plain_s``
+   (``FitPositionsImagePairRepeat``, free ``Point`` centres) and
+   ``fused_full_solved_s`` (``FitPositionsImagePairRepeatSolved``,
+   ``PointSolved``). The model's free parameters enter the compiled function
+   as arguments, so constant folding cannot pre-evaluate the solve; each row
+   records its lower / compile / first-call / steady phases under
+   ``jit_phases``. These two rows — not the eager step totals — are what a
+   sampler pays per likelihood call. They are reported next to the steps, not
+   inside ``total_step_by_step``.
 
 The solver grid below (200x200 @ 0.7", precision 0.01") is the
 tutorial-scale configuration of the workspace cluster scripts, chosen so the
@@ -52,7 +65,10 @@ Output
 ------
 
 Results JSON and PNG are written to ``results/breakdown/cluster/`` using the
-basename ``image_plane_breakdown_v{al_version}``.
+basename ``image_plane_breakdown_v{al_version}``, or
+``image_plane_<config_name>`` under ``--config-name``. The JSON records
+``config_name``, ``thread_environment``, ``source_revisions`` and ``n_repeats``
+alongside the device block.
 """
 
 import sys as _sys
@@ -83,6 +99,7 @@ from pathlib import Path
 import autolens as al
 import jax
 import jax.numpy as jnp
+import jaxlib
 import numpy as np
 
 if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
@@ -90,6 +107,8 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     sys.exit(0)
 
 sys.path.insert(0, str(_profiling_root()))
+from likelihood_breakdown.provenance import source_revisions, thread_environment  # noqa: E402
+
 from _profile_cli import (  # noqa: E402
     auto_simulate_if_missing,
     device_info_dict,
@@ -145,13 +164,16 @@ def jit_profile(func, label, *args, n_repeats=10):
 
     with timer.section(f"{label}_lower"):
         lowered = jitted.lower(*args)
+    lower_s = timer.records[-1][1]
 
     with timer.section(f"{label}_compile"):
         compiled = lowered.compile()
+    compile_s = timer.records[-1][1]
 
     with timer.section(f"{label}_first_call"):
         result = compiled(*args)
         block(result)
+    first_call_s = timer.records[-1][1]
 
     with timer.section(f"{label}_steady_x{n_repeats}"):
         for _ in range(n_repeats):
@@ -160,11 +182,23 @@ def jit_profile(func, label, *args, n_repeats=10):
 
     per_call = timer.records[-1][1] / n_repeats
     print(f"    -> per-call avg: {per_call:.6f} s")
+    jit_records[label] = {
+        "lower_s": float(lower_s),
+        "compile_s": float(compile_s),
+        "first_call_s": float(first_call_s),
+        "steady_per_call_s": float(per_call),
+        "n_repeats": int(n_repeats),
+    }
     return compiled, result
 
 
 timer = Timer()
 likelihood_steps = []
+jit_records: dict[str, dict] = {}
+# Steady-state repeats for every JIT row. The fused rows re-run the whole
+# multi-plane forward solve per call, so 3 keeps the compile-dominated cell
+# inside minutes; it matches the step-2 solve rows.
+N_REPEATS = 3
 
 
 # ===================================================================
@@ -321,12 +355,14 @@ for dataset, centre in zip(dataset_list, source_centres):
             plane_redshift=_z,
         )
 
-    _, predicted = jit_profile(solve, f"step2_solve_{dataset.name}", jnp.array(centre), n_repeats=3)
+    _, predicted = jit_profile(
+        solve, f"step2_solve_{dataset.name}", jnp.array(centre), n_repeats=N_REPEATS
+    )
     predicted_per_system.append(predicted)
     likelihood_steps.append(
         (
             f"2.{dataset.name} PointSolver solve (z={float(dataset.redshift):.1f})",
-            timer.records[-1][1] / 3,
+            timer.records[-1][1] / N_REPEATS,
         )
     )
 
@@ -407,6 +443,154 @@ delta_total = sum(delta_per_system.values())
 print(f"  TOTAL delta across {len(dataset_list)} systems: {delta_total:+.6f}s")
 
 
+# ---------------------------------------------------------------------------
+# Step 5 — FUSED full likelihoods (autolens_profiling#297). The production
+# path: one `AnalysisPoint(use_jax=True)` per system, summed the way a
+# FactorGraphModel sums its factors, compiled end to end from a model
+# instance whose free parameters are JIT *arguments*. Mirrors
+# `scripts/point_source/likelihood_breakdown/image_plane.py`: priors are tight
+# Gaussians centred on this cell's fiducial values, so the prior-median
+# instance IS the step 1-4 lens model (main lenses fully free, one shared
+# scaling-relation normalisation, free NFW centre). The plain model's `Point`
+# centres sit on step 1's back-traced centroids, i.e. the centres step 2
+# solves for. Steps 1-4 are not touched by this block.
+# ---------------------------------------------------------------------------
+from autofit.jax import register_model as _register_fused_pytrees  # noqa: E402
+
+
+def _gaussian(mean, fraction=0.01, floor=0.01):
+    return af.GaussianPrior(mean=float(mean), sigma=max(abs(float(mean)) * fraction, floor))
+
+
+def _fused_model(*, solved: bool):
+    galaxies = {}
+    for i, (centre, ra, rs, b0) in enumerate(main_lens_params):
+        mass = af.Model(al.mp.dPIEMassB0Sph)
+        mass.centre.centre_0 = _gaussian(centre[0])
+        mass.centre.centre_1 = _gaussian(centre[1])
+        mass.ra = _gaussian(ra)
+        mass.rs = _gaussian(rs)
+        mass.b0 = _gaussian(b0)
+        galaxies[f"main_{i}"] = af.Model(al.Galaxy, redshift=redshift_lens, mass=mass)
+
+    scaling_b0_ref = _gaussian(SCALING_B0_REF, floor=0.001)
+    for i, (centre, lum) in enumerate(zip(scaling_table.centres, scaling_table.luminosities)):
+        ratio = (lum / _lum_ref) ** SCALING_EXPONENT
+        mass = af.Model(al.mp.dPIEMassB0Sph)
+        mass.centre = tuple(centre)
+        mass.ra = SCALING_RA
+        mass.rs = SCALING_RS_REF * ratio
+        mass.b0 = scaling_b0_ref * ratio
+        galaxies[f"scaling_{i}"] = af.Model(al.Galaxy, redshift=redshift_lens, mass=mass)
+
+    dark = af.Model(
+        al.mp.NFWMCRLudlowSph,
+        mass_at_200=10**15.3,
+        redshift_object=redshift_lens,
+        redshift_source=max(float(d.redshift) for d in dataset_list),
+    )
+    dark.centre.centre_0 = _gaussian(0.0)
+    dark.centre.centre_1 = _gaussian(0.0)
+    galaxies["host_halo"] = af.Model(al.Galaxy, redshift=redshift_lens, dark=dark)
+
+    for i, (d, centre) in enumerate(zip(dataset_list, source_centres)):
+        if solved:
+            point = af.Model(al.ps.PointSolved)
+        else:
+            point = af.Model(al.ps.Point)
+            point.centre.centre_0 = _gaussian(centre[0])
+            point.centre.centre_1 = _gaussian(centre[1])
+        galaxies[f"source_{i}"] = af.Model(al.Galaxy, redshift=float(d.redshift), **{d.name: point})
+
+    return af.Collection(galaxies=af.Collection(**galaxies))
+
+
+fused_models = {"plain": _fused_model(solved=False), "solved": _fused_model(solved=True)}
+fused_fit_cls = {
+    "plain": al.FitPositionsImagePairRepeat,
+    "solved": al.FitPositionsImagePairRepeatSolved,
+}
+fused_instances = {}
+fused_params = {}
+for variant, model in fused_models.items():
+    instance = model.instance_from_vector(vector=model.physical_values_from_prior_medians)
+    _register_fused_pytrees(model)
+    fused_instances[variant] = instance
+    fused_params[variant] = jax.tree_util.tree_map(jnp.asarray, instance)
+
+
+def _analyses(variant: str, *, use_jax: bool):
+    return [
+        al.AnalysisPoint(
+            dataset=d,
+            solver=solver,
+            fit_positions_cls=fused_fit_cls[variant],
+            use_jax=use_jax,
+        )
+        for d in dataset_list
+    ]
+
+
+fused_analyses = {variant: _analyses(variant, use_jax=True) for variant in fused_models}
+eager_analyses = {variant: _analyses(variant, use_jax=False) for variant in fused_models}
+
+
+def _fused_full(variant: str):
+    analyses = fused_analyses[variant]
+
+    def full(params):
+        return sum(analysis.log_likelihood_function(instance=params) for analysis in analyses)
+
+    return full
+
+
+print("\n--- Step 5: eager controls for the fused rows ---")
+fused_eager = {}
+for variant in fused_models:
+    with timer.section(f"step5_eager_{variant}"):
+        fused_eager[variant] = float(
+            sum(
+                a.log_likelihood_function(instance=fused_instances[variant])
+                for a in eager_analyses[variant]
+            )
+        )
+    print(f"  {variant} eager likelihood: {fused_eager[variant]:.12e}")
+
+print("\n--- Step 5: fused full likelihoods (JIT, parameterised instance) ---")
+fused_jit = {}
+fused_label = {"plain": "fused_full_plain", "solved": "fused_full_solved"}
+for variant in fused_models:
+    _, value = jit_profile(
+        _fused_full(variant), fused_label[variant], fused_params[variant], n_repeats=N_REPEATS
+    )
+    fused_jit[variant] = float(value)
+    print(f"  {variant} fused likelihood: {fused_jit[variant]:.12e}")
+    if not np.isfinite(fused_jit[variant]):
+        raise AssertionError(f"fused {variant} likelihood is not finite: {fused_jit[variant]}")
+    np.testing.assert_allclose(fused_eager[variant], fused_jit[variant], rtol=1.0e-4)
+
+# Solved-variant model positions per system (eager fit on the same instance):
+# the forward-solved image positions the nearest-pair chi-squared paired with
+# each observed image. A non-finite row would mean the solve lost an image.
+fused_solved_positions = {}
+for d, analysis in zip(dataset_list, eager_analyses["solved"]):
+    fit_positions = analysis.fit_from(instance=fused_instances["solved"]).positions
+    model_positions = np.asarray(fit_positions.model_data)
+    finite_rows = np.isfinite(model_positions).all(axis=-1)
+    fused_solved_positions[d.name] = {
+        "observed_images": int(np.atleast_2d(np.asarray(d.positions)).shape[0]),
+        "paired_model_positions": model_positions.tolist(),
+        "finite_rows": int(finite_rows.sum()),
+        "all_finite": bool(finite_rows.all()),
+    }
+    print(
+        f"  {d.name}: {int(finite_rows.sum())}/{model_positions.shape[0]} finite solved positions"
+    )
+
+fused_full_plain_s = jit_records["fused_full_plain"]["steady_per_call_s"]
+fused_full_solved_s = jit_records["fused_full_solved"]["steady_per_call_s"]
+
+
 # ===================================================================
 # PART B — Summary + artifacts
 # ===================================================================
@@ -442,11 +626,22 @@ for i, (label, per_call) in enumerate(likelihood_steps, 1):
 print("-" * 70)
 print(f"      {'TOTAL (step-by-step, plain)':<{max_label}}  {step_total:>12.6f} s")
 print(f"      {'TOTAL (solved, extra)':<{max_label}}  {step_total_solved_extra:>12.6f} s")
+print(f"      {'FUSED full likelihood, plain':<{max_label}}  {fused_full_plain_s:>12.6f} s")
+print(f"      {'FUSED full likelihood, solved':<{max_label}}  {fused_full_solved_s:>12.6f} s")
 print("=" * 70)
+
+config_name = _cli.config_name or (
+    "local_cpu_fp64" if jax.default_backend() == "cpu" else "unlabelled_device_fp64"
+)
 
 breakdown_summary = {
     "autolens_version": al_version,
+    "package_versions": {"jax": jax.__version__, "jaxlib": jaxlib.__version__},
+    "source_revisions": source_revisions(_workspace_root),
+    "config_name": config_name,
     "device": device_info_dict(),
+    "thread_environment": thread_environment(),
+    "n_repeats": N_REPEATS,
     "configuration": {
         "n_systems": len(dataset_list),
         "n_images_total": int(sum(len(p) for p in positions_list)),
@@ -455,9 +650,24 @@ breakdown_summary = {
         "likelihood": "image_plane (FitPositionsImagePairRepeat)",
         "solver_grid": "200x200 @ 0.7 arcsec",
         "solver_pixel_scale_precision": 0.01,
+        "jax_enable_x64": bool(jax.config.jax_enable_x64),
+        "n_repeats": N_REPEATS,
+        "fused_model_free_parameters": {
+            variant: int(model.prior_count) for variant, model in fused_models.items()
+        },
     },
     "steps": {label: per_call for label, per_call in likelihood_steps},
     "total_step_by_step": step_total,
+    "fused_full_plain_s": float(fused_full_plain_s),
+    "fused_full_solved_s": float(fused_full_solved_s),
+    "fused_likelihoods": {
+        "plain_eager": fused_eager["plain"],
+        "plain_jit": fused_jit["plain"],
+        "solved_eager": fused_eager["solved"],
+        "solved_jit": fused_jit["solved"],
+    },
+    "fused_solved_positions": fused_solved_positions,
+    "jit_phases": jit_records,
     "log_likelihood": log_likelihood_total,
     "solved": {
         "fit_positions_cls": "FitPositionsImagePairRepeatSolved",
@@ -474,15 +684,20 @@ dict_path, chart_path = resolve_output_paths(
     _cli,
     default_dir=_workspace_root / "results" / "breakdown" / "cluster",
     default_basename=f"image_plane_breakdown_v{al_version}",
+    cell="image_plane",
 )
 dict_path.write_text(json.dumps(breakdown_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")
 
-labels = [label for label, _ in likelihood_steps]
-times = [per_call for _, per_call in likelihood_steps]
-fig, ax = plt.subplots(figsize=(10, 5))
+labels = [label for label, _ in likelihood_steps] + [
+    "5. FUSED full likelihood, plain (JIT, all systems)",
+    "5. FUSED full likelihood, solved (JIT, all systems)",
+]
+times = [per_call for _, per_call in likelihood_steps] + [fused_full_plain_s, fused_full_solved_s]
+colours = ["#4C72B0"] * len(likelihood_steps) + ["#DD8452", "#DD8452"]
+fig, ax = plt.subplots(figsize=(11, 6))
 y_pos = range(len(labels))
-bars = ax.barh(y_pos, times, color="#4C72B0", edgecolor="white", height=0.6)
+bars = ax.barh(y_pos, times, color=colours, edgecolor="white", height=0.6)
 for bar, t in zip(bars, times):
     ax.text(
         bar.get_width() + max(times) * 0.01,
@@ -495,7 +710,9 @@ ax.set_yticks(y_pos)
 ax.set_yticklabels(labels, fontsize=10)
 ax.invert_yaxis()
 ax.set_xlabel("Time per call (s)", fontsize=11)
-fig.suptitle(f"Cluster image-plane likelihood breakdown — v{al_version}", fontsize=12)
+fig.suptitle(
+    f"Cluster image-plane likelihood breakdown ({config_name}) — v{al_version}", fontsize=12
+)
 fig.tight_layout()
 fig.savefig(chart_path, dpi=150)
 print(f"  Bar chart saved to:    {chart_path}")
