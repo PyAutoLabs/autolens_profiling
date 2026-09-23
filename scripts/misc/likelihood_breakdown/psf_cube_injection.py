@@ -7,7 +7,7 @@ Phase 1 of the ``hst-gpu-non-solver-residue`` epic (autolens_profiling#268)
 traced the fused single-call production jit on the A100 (HST Delaunay N=1500,
 fp64, budget 7): 31.64 ms, whose largest *computation* is the PSF convolution of
 the mapping-matrix cube — 7.12 ms (22 %): a 1.99 ms scatter into the padded
-``(200, 200, 1500)`` fp64 FFT frame plus 3.7 ms of ``fft`` kernels, compiled
+``(180, 180, 1500)`` fp64 FFT frame plus 3.7 ms of ``fft`` kernels, compiled
 once. Phase 3 (autolens_profiling#295) asks whether a different convolution of
 that cube is cheaper **inside the same fused program**, at the campaign's 1e-9
 relative pin against the unmodified library answer.
@@ -61,9 +61,9 @@ The candidates
     No patch at all — the library's FFT path as shipped. The context still
     yields a counts dict so the cell's code path is identical for every row.
 ``frame_pow2``
-    The FFT frame rebuilt at the next power of two per axis (200 -> 256 for
-    HST). Bounds the frame question: cuFFT is fastest on 2^n, but 200 = 2^3 5^2
-    is already cuFFT-friendly and the cube grows by 64 %.
+    The FFT frame rebuilt at the next power of two per axis (180 -> 256 for
+    the HST cell). Bounds the frame question: cuFFT is fastest on 2^n, but
+    180 = 2^2 3^2 5 is already cuFFT-friendly and the cube doubles.
 ``layout_src_first``
     The cube as ``(n_src, fy, fx)``: batch axis LEADING, contiguous planes, the
     transforms over ``axes=(1, 2)``, and the matching gather + transpose on the

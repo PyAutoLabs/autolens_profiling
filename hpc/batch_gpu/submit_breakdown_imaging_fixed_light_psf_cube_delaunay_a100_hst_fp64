@@ -6,7 +6,7 @@
 # Phase 1 (#268, job 343350) traced the FUSED SINGLE-CALL production program on the
 # a100 (HST Delaunay N=1500, fp64, budget 7): 31.64 ms, whose largest computation is
 # the PSF convolution of the mapping-matrix cube — 7.12 ms (22 %), a 1.99 ms scatter
-# into the padded (200, 200, 1500) fp64 FFT frame plus 3.7 ms of fft kernels,
+# into the padded (180, 180, 1500) fp64 FFT frame plus 3.7 ms of fft kernels,
 # compiled once. Phase 2 (#273) left batching inconclusive at the numerical gate, so
 # the convolution is the next lever the campaign map ranks.
 #
@@ -18,7 +18,7 @@
 # Array tasks (one candidate each; the table below is indexed by SLURM_ARRAY_TASK_ID)
 # -----------------------------------------------------------------------------
 #   0  control             library FFT path as shipped (no patch) — the matched control
-#   1  frame_pow2          FFT frame at the next power of two per axis (200 -> 256)
+#   1  frame_pow2          FFT frame at the next power of two per axis (180 -> 256)
 #   2  layout_src_first    cube (n_src, fy, fx), transforms over axes (1, 2)
 #   3  real_space_direct   library use_fft=False path (jax.scipy.signal.convolve, direct)
 #   4  conv_cudnn_batched  lax.conv_general_dilated, n_src as the batch axis (2-D conv)

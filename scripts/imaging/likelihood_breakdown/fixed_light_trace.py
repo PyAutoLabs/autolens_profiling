@@ -188,12 +188,14 @@ on speed. The census also gains ``status`` / ``anchors`` /
 line anchors checked against the INSTALLED PyAutoArray — and a
 ``conv_mapping_matrix`` count for the real-space candidates.
 
-Erratum (phase 1 prose). The mapping-matrix cube is not ``(1500, 180, 180)``:
-``mapping_matrix_native_from`` scatters straight into the PADDED FFT frame, so
-for HST (180 grid, 21x21 PSF) the cube is ``(200, 200, 1500)`` fp64 with the
-source axis LAST (200 = ``next_fast_len(200, real=True)``). The
-``ConvolverState`` docstring's "even FFT sizes are incremented to odd sizes"
-note is STALE — the code does not do it.
+Erratum (phase 1 prose and the phase-3 plan). ``mapping_matrix_native_from``
+scatters straight into the PADDED FFT frame, not the image grid, and the source
+axis is LAST: for this cell (masked dataset 141x141, 21x21 PSF) the frame
+``ConvolverState`` builds is ``fft_shape = (180, 180)``, so the cube is
+``(180, 180, 1500)`` fp64 (389 MB) — measured from ``psf_candidate.provenance``
+on the RTX legs. It is neither ``(1500, 180, 180)`` nor the ``(200, 200, 1500)``
+the phase-3 plan assumed. The ``ConvolverState`` docstring's "even FFT sizes are
+incremented to odd sizes" note is STALE — the code does not do it.
 
 Output
 ------
