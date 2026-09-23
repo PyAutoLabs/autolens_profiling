@@ -254,6 +254,14 @@ separately per likelihood × transform. Standing conclusions:
   not baselines. The reported September 4.9× / 2.4× gain from dropping the throwaway `jnp.unique`
   is still a hypothesis for phase 2.
   Findings: [`results/notes/point_source_cpu_campaign.md`](./results/notes/point_source_cpu_campaign.md).
+- **Point-source CPU speed-up, phase 2 (2026-09)** — removing the throwaway JAX-path `jnp.unique`
+  vertex dedup (static `size=3N` made it save zero deflections while sorting 3N fp64 rows every
+  refinement step; PyAutoArray #568). Interleaved in-process A/B, RAL job 350582 (`ral`, EPYC 7763,
+  8 CPUs): simple solved 24.00 → 5.38 ms (**4.47×**, 90 % CI 4.37–4.57), vmap-4 2.63×, two-source
+  cluster 155 → 78 ms (**1.98×**); HLO sorts 15 → 7 / 25 → 12, compile 11–21 % faster. Log-likelihoods,
+  positions and gradients bit-identical on every instance. Accepted; the post-fix call is
+  deflection-dominated (70 % of FLOPs), so phase 3 is the static initial-lattice precompute.
+  Findings: [`results/notes/point_source_cpu_campaign.md`](./results/notes/point_source_cpu_campaign.md).
 
 ## How to read this repo
 
