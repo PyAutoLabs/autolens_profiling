@@ -118,8 +118,10 @@ __all__ = [
     "CANDIDATES",
     "LIBRARY_CONVOLVED_MAPPING_MATRIX_DOTTED",
     "Candidate",
+    "PSF_GATE_NOTE",
     "candidate_provenance",
     "psf_convolution_injected",
+    "psf_gate_rows",
 ]
 
 #: The dotted name this module rebinds, recorded verbatim into the results JSON.
@@ -491,3 +493,79 @@ def candidate_provenance(candidate: str, convolver, mask, n_src: int | None = No
             "out of the mask is dropped and none is blurred in — identical for every candidate"
         ),
     }
+
+
+#: The pre-registered gate, verbatim into the results JSON (``gate.note``).
+PSF_GATE_NOTE = (
+    "Pre-registered before any A100 data (#295): (1) the fiducial pin, route d (candidate) "
+    "vs route b (unmodified library), is GATED at 1e-9 relative for every fp64 candidate "
+    "including control; (2) a non-control fp64 candidate's draw pins GATE "
+    "rel_diff_vs_d_control (route d vs route d compiled WITHOUT the candidate, same certified "
+    "solver: the convolution-isolated pin) at 1e-9 on every draw, while the draw's rel_diff "
+    "vs route b is recorded, not gated; (3) control's draw pins are recorded vs route b, not "
+    "gated (no d-control exists; the fiducial gate holds the library-answer constraint); "
+    "(4) diagnostic rows are DIAGNOSTIC, never gated, never PASS. Why: phase 2 (job 344635) "
+    "recorded a 2.0-2.6e-9 certified-vs-library-PDIP residual on seed-0 draw 7 on the A100 "
+    "that is a property of the SOLVER path (the RTX gives 2.7e-10 for the same draw), not "
+    "of the convolution; gating the draws vs route b would fail every task including control "
+    "and measure nothing about the convolution. Nothing was relaxed after seeing A100 data; "
+    "the rtol stays 1e-9 everywhere."
+)
+
+
+def psf_gate_rows(
+    candidate: str,
+    fiducial_pins: list[dict],
+    draw_rows: list[dict],
+    rtol: float,
+) -> tuple[list[dict], list[str]]:
+    """Apply the pre-registered phase-3 pin gate; return ``(gated_rows, failed)``.
+
+    Annotates every row IN PLACE with ``gated`` (bool), ``gated_on`` (the key
+    the gate reads, or ``None``) and ``status``:
+
+    - fiducial pin (``rel_diff``, route d vs route b): gated on ``rel_diff`` for
+      every fp64 candidate, control included;
+    - draw pin of a non-control fp64 candidate: gated on
+      ``rel_diff_vs_d_control`` (mandatory — a lever row without it raises);
+      its ``rel_diff`` vs route b is kept and flagged ``within_rtol_vs_b_library``;
+    - draw pin of ``control``: ``RECORDED`` vs route b, not gated;
+    - any row of a ``fp64_exact=False`` candidate: ``DIAGNOSTIC``, never gated.
+
+    ``failed`` names every gated row whose gated metric exceeds *rtol*.
+    """
+    spec = CANDIDATES[candidate]
+    gated_rows: list[dict] = []
+    failed: list[str] = []
+
+    def _apply(row: dict, key: str | None, label: str) -> None:
+        if not spec.fp64_exact:
+            row.update(gated=False, gated_on=None, status="DIAGNOSTIC")
+            return
+        if key is None:
+            row.update(gated=False, gated_on=None, status="RECORDED")
+            return
+        ok = row[key] <= rtol
+        row.update(gated=True, gated_on=key, status="PASS" if ok else "FAIL")
+        gated_rows.append(row)
+        if not ok:
+            failed.append(label)
+
+    for pin in fiducial_pins:
+        _apply(pin, "rel_diff", pin.get("pin") or "fiducial")
+
+    for row in draw_rows:
+        label = f"draw {row['draw']} ({row.get('draw_name', '?')})"
+        if spec.fp64_exact:
+            row["within_rtol_vs_b_library"] = bool(row["rel_diff"] <= rtol)
+        if spec.kind == "control" or not spec.fp64_exact:
+            _apply(row, None, label)
+            continue
+        if "rel_diff_vs_d_control" not in row:
+            raise AssertionError(
+                f"{label}: a non-control fp64 candidate's draw pin needs rel_diff_vs_d_control "
+                "(the convolution-isolated pin the gate reads)"
+            )
+        _apply(row, "rel_diff_vs_d_control", label + " vs d-control")
+
+    return gated_rows, failed

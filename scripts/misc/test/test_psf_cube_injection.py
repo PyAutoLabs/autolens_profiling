@@ -308,3 +308,91 @@ def test__provenance_records_the_shipped_and_used_frames():
         record = pci.candidate_provenance(name, convolver, mask, n_src=50)
         assert record["fp64_exact"] == pci.CANDIDATES[name].fp64_exact
         assert (record["patched"] is None) == (name == "control")
+
+
+# ---------------------------------------------------------------------------
+# The pre-registered phase-3 gate (psf_gate_rows): which rows carry gated=True
+# ---------------------------------------------------------------------------
+
+RTOL = 1.0e-9
+LEVERS = [n for n, c in pci.CANDIDATES.items() if c.kind == "lever"]
+
+
+def _fiducial(rel: float) -> list[dict]:
+    return [{"pin": "route d == route b", "rel_diff": rel}]
+
+
+def _draws(rel_b: float, rel_dc: float | None, n: int = 3) -> list[dict]:
+    rows = []
+    for k in range(n):
+        row = {"draw": k, "draw_name": f"d{k}", "rel_diff": rel_b}
+        if rel_dc is not None:
+            row["rel_diff_vs_d_control"] = rel_dc
+        rows.append(row)
+    return rows
+
+
+def test__gate__control_gates_the_fiducial_and_only_records_the_draws():
+    fid, draws = _fiducial(1e-12), _draws(2.6e-9, None)
+    gated, failed = pci.psf_gate_rows("control", fid, draws, RTOL)
+    assert gated == fid and failed == []
+    assert fid[0]["gated"] is True and fid[0]["gated_on"] == "rel_diff"
+    assert fid[0]["status"] == "PASS"
+    for row in draws:
+        assert row["gated"] is False and row["gated_on"] is None
+        assert row["status"] == "RECORDED"
+        assert row["within_rtol_vs_b_library"] is False
+
+
+def test__gate__control_fails_on_its_fiducial_pin():
+    gated, failed = pci.psf_gate_rows("control", _fiducial(5e-9), _draws(0.0, None), RTOL)
+    assert len(gated) == 1 and failed == ["route d == route b"]
+
+
+@pytest.mark.parametrize("name", LEVERS)
+def test__gate__a_lever_gates_the_draws_on_the_d_control_not_route_b(name):
+    """The A100 solver residual (2.6e-9 vs route b) must not fail a lever whose
+    convolution is exact against its d-control."""
+    fid, draws = _fiducial(1e-12), _draws(2.6e-9, 1e-13)
+    gated, failed = pci.psf_gate_rows(name, fid, draws, RTOL)
+    assert failed == []
+    assert len(gated) == 1 + len(draws)
+    for row in draws:
+        assert row["gated"] is True and row["gated_on"] == "rel_diff_vs_d_control"
+        assert row["status"] == "PASS"
+        assert row["within_rtol_vs_b_library"] is False
+
+
+@pytest.mark.parametrize("name", LEVERS)
+def test__gate__a_lever_fails_when_its_convolution_moves_the_answer(name):
+    draws = _draws(1e-12, 3e-9)
+    _, failed = pci.psf_gate_rows(name, _fiducial(1e-12), draws, RTOL)
+    assert failed == [f"draw {k} (d{k}) vs d-control" for k in range(3)]
+    assert all(r["status"] == "FAIL" for r in draws)
+
+
+@pytest.mark.parametrize("name", LEVERS)
+def test__gate__a_lever_still_gates_its_fiducial_against_route_b(name):
+    _, failed = pci.psf_gate_rows(name, _fiducial(2e-9), _draws(0.0, 0.0), RTOL)
+    assert failed == ["route d == route b"]
+
+
+@pytest.mark.parametrize("name", LEVERS)
+def test__gate__a_lever_draw_without_a_d_control_is_refused(name):
+    with pytest.raises(AssertionError, match="rel_diff_vs_d_control"):
+        pci.psf_gate_rows(name, _fiducial(0.0), _draws(0.0, None), RTOL)
+
+
+@pytest.mark.parametrize("name", DIAGNOSTIC)
+def test__gate__diagnostics_are_never_gated_and_never_pass(name):
+    fid, draws = _fiducial(1e-5), _draws(1e-5, 1e-5)
+    gated, failed = pci.psf_gate_rows(name, fid, draws, RTOL)
+    assert gated == [] and failed == []
+    for row in fid + draws:
+        assert row["gated"] is False and row["status"] == "DIAGNOSTIC"
+
+
+def test__gate__the_note_records_the_pre_registration():
+    assert "Pre-registered before any A100 data" in pci.PSF_GATE_NOTE
+    assert "344635" in pci.PSF_GATE_NOTE
+    assert "1e-9" in pci.PSF_GATE_NOTE

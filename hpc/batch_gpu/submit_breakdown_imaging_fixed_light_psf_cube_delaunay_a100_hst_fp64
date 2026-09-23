@@ -38,9 +38,24 @@
 # a winning candidate becomes a separate PyAutoArray prompt via /intake.
 #
 # The gate is ENFORCED by the cell: it writes its JSON and PNG first, then exits
-# non-zero if any fp64 pin (fiducial + 8 seeded draws, seed 0, 1e-9 relative against
-# route b) failed, if |reconciliation| > 5 % or if any device time is unjoined. It never
-# gates on speed. The exit code is captured so the footer below still runs.
+# non-zero if any GATED fp64 pin failed, if |reconciliation| > 5 % or if any device
+# time is unjoined. It never gates on speed. The exit code is captured so the footer
+# below still runs. The pins (8 seeded draws, seed 0), all at 1e-9 relative:
+#
+#   - the fiducial pin, route d (candidate) vs route b (unmodified library), is GATED
+#     for every fp64 candidate, control included;
+#   - a lever's draw pins are GATED against route d compiled WITHOUT the candidate
+#     (same certified solver, library convolution: the convolution-isolated pin); the
+#     draw vs route b is recorded, not gated;
+#   - control's draw pins are recorded vs route b, not gated (no d-control exists);
+#   - DIAGNOSTIC rows are never gated and never PASS.
+#
+# This gate was PRE-REGISTERED before any A100 data. Phase 2 (job 344635,
+# results/notes/hst_gpu_residue_phase2_vmap_2026_09.md) recorded a 2.0-2.6e-9
+# certified-vs-library-PDIP residual on seed-0 draw 7 on the A100; it belongs to the
+# SOLVER path (the RTX gives 2.7e-10 for the same draw), not the convolution. Gating
+# the draws vs route b would fail every task, control included, and measure nothing
+# about the convolution. Nothing was relaxed after seeing A100 data.
 #
 # Flags this cell owns (strict shared parsing rejects unknown ones):
 #
@@ -161,7 +176,7 @@ echo "Border reloc:   --border-relocator $BORDER (the cell reports the RESOLVED 
 echo "Routes:         b,d   (b = the unmodified library, the pin reference)"
 echo "Pass budget:    7 (phase 3 zero-fallback budget for this mesh — the PRODUCTION budget)"
 echo "PSF candidate:  $CAND"
-echo "Pin draws:      8 (seed 0), 1e-9 relative, ENFORCED for fp64 candidates"
+echo "Pin draws:      8 (seed 0), 1e-9 relative; fiducial vs b gated, lever draws gated vs d-control"
 echo "Trace calls:    10"
 echo "Config name:    hpc_a100_fp64_fixed_light_trace"
 echo "PSF_LEG candidate=$CAND mesh=$MESH dataset=hst hardware=hpc_a100_fp64"
