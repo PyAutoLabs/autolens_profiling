@@ -110,6 +110,22 @@ Two things this hook does *not* do, deliberately:
 An ordered callback is a host round trip and serialises the batch, so it is a
 **diagnostic pass**, never a timed one: the caller runs the reporting pass once
 and then times and traces with ``report=None``.
+
+``solver`` and ``stats`` (PyAutoArray #566)
+-------------------------------------------
+
+PyAutoArray #566 gave the library's entry point ``solver="pdip"`` (which
+positive-only solver to run) and ``stats=None`` (a dict it reports solver
+diagnostics into). The wrapper declares both, so :func:`_assert_signature_covers`
+passes, and forwards them only to a library that accepts them
+(:func:`_library_kwargs`) — the harness runs against the pre-#566 library too.
+
+On the NumPy path both are forwarded as given. On the JAX path the injected
+certified route *replaces* the library's solver, so ``solver`` does not reach
+the injected solve; and the route's PDIP **fallback** is defined as the
+library's PDIP, so it calls the library with ``solver="pdip"`` explicitly — a
+library config selecting its own certified solver must not change what route
+(d) falls back to — and ``stats=None``.
 """
 
 from __future__ import annotations
@@ -165,6 +181,16 @@ def _assert_signature_covers(original, patched) -> None:
             f"library's own. (Do NOT change the library — this module exists so nothing in "
             f"PyAutoArray has to move.)"
         )
+
+
+def _library_kwargs(original, **values) -> dict:
+    """The subset of ``values`` whose names ``original`` declares as parameters.
+
+    Used to forward the #566 ``solver``/``stats`` keywords only to a library
+    that has them, so the same wrapper calls the old and the new signature.
+    """
+    params = inspect.signature(original).parameters
+    return {name: value for name, value in values.items() if name in params}
 
 
 def certified_reconstruction_from(
@@ -224,6 +250,10 @@ def certified_reconstruction_from(
 
     certified = jnp.any(out["certified"])
 
+    # Route (d)'s fallback is the library's PDIP by definition: pin it, so a
+    # library config selecting another positive-only solver cannot change it.
+    fallback_kwargs = _library_kwargs(original, solver="pdip", stats=None)
+
     def _library_pdip():
         return original(
             data_vector=data_vector,
@@ -232,6 +262,7 @@ def certified_reconstruction_from(
             xp=xp,
             fingerprint=fingerprint,
             factor=factor,
+            **fallback_kwargs,
         )
 
     return jax.lax.cond(certified, lambda: x_active, _library_pdip)
@@ -273,6 +304,8 @@ def certified_solver_injected(
 
     original = inversion_util.reconstruction_positive_only_from
     counts = {"jax": 0, "numpy": 0}
+    # Read once: which of the #566 keywords the installed library accepts.
+    forwarded = frozenset(_library_kwargs(original, solver=None, stats=None))
 
     def patched(
         data_vector,
@@ -281,6 +314,8 @@ def certified_solver_injected(
         xp=np,
         fingerprint=None,
         factor=None,
+        solver="pdip",
+        stats=None,
     ):
         if not xp.__name__.startswith("jax"):
             counts["numpy"] += 1
@@ -291,6 +326,7 @@ def certified_solver_injected(
                 xp=xp,
                 fingerprint=fingerprint,
                 factor=factor,
+                **{k: v for k, v in (("solver", solver), ("stats", stats)) if k in forwarded},
             )
         counts["jax"] += 1
         return certified_reconstruction_from(

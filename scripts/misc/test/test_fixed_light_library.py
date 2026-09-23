@@ -29,6 +29,7 @@ Run::
 
 from __future__ import annotations
 
+import inspect
 import re
 import subprocess
 import sys as _sys
@@ -190,6 +191,95 @@ def test_numpy_path_is_delegated_untouched():
         )
     assert counts == {"jax": 0, "numpy": 1}
     assert np.allclose(np.asarray(got, dtype=float), np.asarray(expected, dtype=float))
+
+
+def _stub_new(calls):
+    def stub(
+        data_vector,
+        curvature_reg_matrix,
+        settings=None,
+        xp=np,
+        fingerprint=None,
+        factor=None,
+        solver="pdip",
+        stats=None,
+    ):
+        calls.append({"solver": solver, "stats": stats})
+        return data_vector
+
+    return stub
+
+
+def _stub_old(calls):
+    def stub(
+        data_vector, curvature_reg_matrix, settings=None, xp=np, fingerprint=None, factor=None
+    ):
+        calls.append({})
+        return data_vector
+
+    return stub
+
+
+@pytest.mark.parametrize("new_signature", [True, False])
+def test_injection_installs_against_the_old_and_new_library_signature(monkeypatch, new_signature):
+    """PyAutoArray #566 added ``solver``/``stats``; the harness must run on either side of it."""
+    from autoarray.inversion.inversion import inversion_util
+
+    calls = []
+    stub = (_stub_new if new_signature else _stub_old)(calls)
+    monkeypatch.setattr(inversion_util, "reconstruction_positive_only_from", stub)
+
+    q = np.ones(4)
+    stats = {}
+    with lsi.certified_solver_injected(3) as counts:
+        inversion_util.reconstruction_positive_only_from(
+            data_vector=q, curvature_reg_matrix=np.eye(4), xp=np, solver="certified", stats=stats
+        )
+    assert counts == {"jax": 0, "numpy": 1}
+    if new_signature:
+        assert calls == [{"solver": "certified", "stats": stats}]
+    else:
+        assert calls == [{}], "the old library must not be handed solver/stats"
+    assert inversion_util.reconstruction_positive_only_from is stub
+
+
+def test_fallback_pins_the_library_pdip_solver():
+    """Route (d)'s fallback is the library's PDIP, whatever solver the library config selects."""
+    original = _library_positive_only()
+    assert "solver" in inspect.signature(original).parameters, (
+        "this test needs the PyAutoArray #566 library on the path (source activate.sh)"
+    )
+    seen = []
+
+    def spy(
+        data_vector,
+        curvature_reg_matrix,
+        settings=None,
+        xp=np,
+        fingerprint=None,
+        factor=None,
+        solver="<absent>",
+        stats="<absent>",
+    ):
+        seen.append((solver, stats))
+        return original(
+            data_vector=data_vector,
+            curvature_reg_matrix=curvature_reg_matrix,
+            settings=settings,
+            xp=xp,
+            fingerprint=fingerprint,
+            factor=factor,
+            solver=solver,
+            stats=stats,
+        )
+
+    Q, q = _constrained_qp(60, seed=0)
+    jax.jit(
+        lambda Q_, q_: lsi.certified_reconstruction_from(
+            q_, Q_, n_passes=1, fallback=True, original=spy, xp=jnp
+        )
+    )(jnp.asarray(Q), jnp.asarray(q))
+    assert seen and all(s == ("pdip", None) for s in seen)
 
 
 # ---------------------------------------------------------------------------
