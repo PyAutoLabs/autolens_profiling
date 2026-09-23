@@ -611,6 +611,18 @@ def numpy_solver_injected(solver, *, label: str):
     # works against a pre-lever-3 library too — where the parameter does not exist
     # and forwarding it would be a `TypeError`.
     original_takes_factor = "factor" in inspect.signature(original).parameters
+    # Likewise PyAutoArray #566's `solver` / `stats`: declared by the wrapper (so the
+    # signature still covers the library's) and forwarded on the delegated JAX path
+    # only to a library that has them. This is `library_solver_injection._library_kwargs`
+    # inlined: that module imports JAX, which this module must never do (see
+    # `test_the_numpy_modules_import_no_jax_at_any_level`). On the numpy path the
+    # injected kernel *is* the solve, so the library's `solver` choice does not reach
+    # it. The wrapper's keyword must be spelled `solver` (the library passes it by
+    # name), so the injected kernel is held as `injected`.
+    original_forwarded = frozenset(
+        name for name in ("solver", "stats") if name in inspect.signature(original).parameters
+    )
+    injected = solver
 
     def patched(
         data_vector,
@@ -619,12 +631,17 @@ def numpy_solver_injected(solver, *, label: str):
         xp=np,
         fingerprint=None,
         factor=None,
+        solver="pdip",
+        stats=None,
     ):
         if xp.__name__.startswith("jax"):
             counts["jax"] += 1
             kwargs = {}
             if original_takes_factor:
                 kwargs["factor"] = factor
+            for name, value in (("solver", solver), ("stats", stats)):
+                if name in original_forwarded:
+                    kwargs[name] = value
             return original(
                 data_vector=data_vector,
                 curvature_reg_matrix=curvature_reg_matrix,
@@ -645,12 +662,12 @@ def numpy_solver_injected(solver, *, label: str):
             # which is correct, and is why the `d_np` rows stay comparable with the
             # library rows they are measured against.
             factor.clear()
-        stats: dict = {}
-        counts["last_stats"] = stats
-        return solver(
+        solve_stats: dict = {}
+        counts["last_stats"] = solve_stats
+        return injected(
             np.asarray(curvature_reg_matrix, dtype=float),
             np.asarray(data_vector, dtype=float),
-            stats=stats,
+            stats=solve_stats,
         )
 
     patched.__wrapped__ = original
