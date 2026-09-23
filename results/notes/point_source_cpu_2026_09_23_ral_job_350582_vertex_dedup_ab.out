@@ -1,0 +1,192 @@
+AP_ROOT=/mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p2
+JAX_COMPILATION_CACHE_DIR=/mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p2/output/jax_cache/vertex_dedup_ab_350582 (fresh)
+==========================================
+Wed 23 Sep 16:20:02 BST 2026
+euclid-ral-compute-1
+Model name:                              AMD EPYC 7763 64-Core Processor
+partition:      ral
+cpus-per-task:  8
+sched_affinity: 8
+loadavg:        0.00 0.00 0.00 1/2216 526558
+Cell:           point_source/likelihood_breakdown/vertex_dedup_ab
+Precision:      fp64 (JAX_ENABLE_X64=1)
+Backend:        JAX_PLATFORMS=cpu
+Thread env:     OMP=1 MKL=1 OPENBLAS=1 NPROC=8
+XLA_FLAGS:      --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false
+=== source revisions (shared install, untouched) ===
+PyAutoNerves   1fa613aa8d89a79613009fb66f5b4e2d21deb57a
+PyAutoFit      a736840127be7a3c21e15a5c945e94d8f1082983
+PyAutoArray    22e6d6082e3365b10fb08d96e19ab02a5420e935
+PyAutoGalaxy   70a61e26cd715cefe7012a38285698091246a8a4
+PyAutoLens     2aaa1c1a8bb4a5923edf30a18451fcea330a6bd4
+AP_ROOT rev:   d97556f8cdf62e63972964285615ca401aad37d0
+AP_ROOT branch: feature/point-source-cpu-p2
+=== import provenance ===
+autoarray.__file__    = /mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/__init__.py
+autoarray.__version__ = 2026.8.17.1
+autolens.__file__     = /mnt/ral/jnightin/PyAuto/PyAutoLens/autolens/__init__.py
+autolens.__version__  = 2026.8.17.1
+autogalaxy.__file__   = /mnt/ral/jnightin/PyAuto/PyAutoGalaxy/autogalaxy/__init__.py
+autofit.__file__      = /mnt/ral/jnightin/PyAuto/PyAutoFit/autofit/__init__.py
+jax.__version__       = 0.10.2
+jax devices           = [CpuDevice(id=0)]
+==========================================
+vertex-dedup A/B: control vs nodedup vs library (simple + cluster, full protocol)
+Wed 23 Sep 16:20:43 BST 2026
+loadavg: 0.49 0.13 0.04 1/2220 526608
+2026-09-23 16:20:46,265 - matplotlib.font_manager - INFO - generated new fontManager
+
+--- row simple_solved ---
+  [simple_solved/control] lower    2.9 s  compile    4.1 s  first    28.07 ms  trace_calls  32  sorts 15 (stablehlo 3)
+  [simple_solved/nodedup] lower    2.6 s  compile    3.2 s  first     5.40 ms  trace_calls  32  sorts 7 (stablehlo 1)
+  [simple_solved/library] lower    2.7 s  compile    0.5 s  first    25.79 ms  trace_calls  32  sorts 15 (stablehlo 3)
+  median ms  control    24.002  nodedup     5.375  library    23.921   control/nodedup 4.465 [4.370, 4.566]
+
+--- positions gate simple_solved ---
+  [simple_solved_positions/control] lower    1.6 s  compile    2.1 s  first    25.03 ms  trace_calls  16  sorts 15 (stablehlo 3)
+  [simple_solved_positions/nodedup] lower    1.4 s  compile    1.7 s  first     5.15 ms  trace_calls  16  sorts 7 (stablehlo 1)
+  [simple_solved_positions/library] lower    1.5 s  compile    0.3 s  first    23.68 ms  trace_calls  16  sorts 15 (stablehlo 3)
+
+--- gradient gate simple_solved ---
+  [simple_solved_grad/control] lower    4.6 s  compile    6.3 s  first    27.35 ms  trace_calls  32  sorts 30 (stablehlo 4)
+  [simple_solved_grad/nodedup] lower    4.2 s  compile    5.3 s  first     6.28 ms  trace_calls  32  sorts 15 (stablehlo 2)
+  [simple_solved_grad/library] lower    4.7 s  compile    1.1 s  first    27.36 ms  trace_calls  32  sorts 30 (stablehlo 4)
+
+--- row simple_solved_vmap4 ---
+  [simple_solved_vmap4/control] lower    3.7 s  compile    4.7 s  first    34.30 ms  trace_calls  32  sorts 15 (stablehlo 3)
+  [simple_solved_vmap4/nodedup] lower    3.4 s  compile    3.8 s  first    12.07 ms  trace_calls  32  sorts 7 (stablehlo 1)
+  [simple_solved_vmap4/library] lower    3.8 s  compile    0.5 s  first    33.29 ms  trace_calls  32  sorts 15 (stablehlo 3)
+  median ms  control    31.309  nodedup    11.908  library    30.872   control/nodedup 2.629 [2.534, 2.718]
+
+--- row simple_plain ---
+  [simple_plain/control] lower    2.2 s  compile    3.6 s  first    23.99 ms  trace_calls  32  sorts 15 (stablehlo 3)
+  [simple_plain/nodedup] lower    2.0 s  compile    2.8 s  first     5.62 ms  trace_calls  32  sorts 7 (stablehlo 1)
+  [simple_plain/library] lower    2.1 s  compile    0.4 s  first    24.18 ms  trace_calls  32  sorts 15 (stablehlo 3)
+  median ms  control    23.758  nodedup     5.394  library    23.740   control/nodedup 4.404 [4.300, 4.452]
+  [auto-simulate] /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p2/dataset/cluster/simple missing; invoking scripts/misc/simulators/cluster.py --instrument simple
+
+--- PART 1: Setup ---
+  [setup_imaging_grid] 0.1386 s
+  [setup_galaxies] 0.0142 s
+  [setup_tracer] 0.0001 s
+
+--- PART 2: Pytree registration ---
+  [register_pytrees] 0.3971 s
+
+--- PART 3: PointSolver build ---
+  [solver_build] 0.0263 s
+
+--- PART 4: jitted_solve per source ---
+  [jitted_solve_src0_lower] 8.6131 s
+  [jitted_solve_src0_compile] 4.3306 s
+  [jitted_solve_src0_first_call] 2.0135 s
+  [jitted_solve_src0_steady_x3] 5.7778 s
+    -> per-call avg: 1.925917 s
+  src0: 3 image positions found
+  [jitted_solve_src1_lower] 8.5025 s
+  [jitted_solve_src1_compile] 4.6456 s
+  [jitted_solve_src1_first_call] 1.9659 s
+  [jitted_solve_src1_steady_x3] 5.6618 s
+    -> per-call avg: 1.887259 s
+  src1: 3 image positions found
+
+--- PART 5: simulator.via_tracer_from (1000×1000 over-sampled) ---
+  [setup_psf_simulator] 0.0005 s
+  [via_tracer_from] 9.8419 s
+
+--- PART 6: outputs ---
+  [output_fits] 0.2713 s
+  [output_scaling_galaxies_csv] 0.0011 s
+  [output_point_datasets] 0.0037 s
+  [output_json] 0.0125 s
+
+======================================================================
+CLUSTER DIAGNOSTIC: compile vs via_tracer_from
+======================================================================
+  solver_lower_total  (both sources):  17.1157 s
+  solver_compile_total (both sources): 8.9762 s
+  solver_steady_total  (both sources): 11.4395 s
+  via_tracer_from:                     9.8419 s
+  compile / via_tracer ratio:          0.91x
+======================================================================
+
+  Results saved to: /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p2/results/simulators/cluster_summary_v2026.8.17.1.json
+  Bar chart saved to: /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p2/results/simulators/cluster_summary_v2026.8.17.1.png
+
+======================================================================
+PROFILING SUMMARY
+======================================================================
+  setup_imaging_grid                0.1386 s
+  setup_galaxies                    0.0142 s
+  setup_tracer                      0.0001 s
+  register_pytrees                  0.3971 s
+  solver_build                      0.0263 s
+  jitted_solve_src0_lower           8.6131 s
+  jitted_solve_src0_compile         4.3306 s
+  jitted_solve_src0_first_call      2.0135 s
+  jitted_solve_src0_steady_x3       5.7778 s
+  jitted_solve_src1_lower           8.5025 s
+  jitted_solve_src1_compile         4.6456 s
+  jitted_solve_src1_first_call      1.9659 s
+  jitted_solve_src1_steady_x3       5.6618 s
+  setup_psf_simulator               0.0005 s
+  via_tracer_from                   9.8419 s
+  output_fits                       0.2713 s
+  output_scaling_galaxies_csv       0.0011 s
+  output_point_datasets             0.0037 s
+  output_json                       0.0125 s
+----------------------------------------------------------------------
+  TOTAL                            52.2183 s
+======================================================================
+
+--- row cluster_solved ---
+  [cluster_solved/control] lower   43.1 s  compile   31.4 s  first   143.31 ms  trace_calls 168  sorts 25 (stablehlo 3)
+  [cluster_solved/nodedup] lower   42.0 s  compile   27.9 s  first    77.15 ms  trace_calls 168  sorts 12 (stablehlo 1)
+  [cluster_solved/library] lower   43.5 s  compile    1.9 s  first   159.51 ms  trace_calls 168  sorts 25 (stablehlo 3)
+  median ms  control   155.222  nodedup    78.320  library   154.502   control/nodedup 1.982 [1.928, 2.029]
+
+--- positions gate cluster_solved ---
+  [cluster_solved_positions/control] lower    7.3 s  compile    8.8 s  first   143.76 ms  trace_calls  28  sorts 25 (stablehlo 3)
+  [cluster_solved_positions/nodedup] lower    7.3 s  compile    7.8 s  first    64.37 ms  trace_calls  28  sorts 12 (stablehlo 1)
+  [cluster_solved_positions/library] lower    7.4 s  compile    1.1 s  first   164.60 ms  trace_calls  28  sorts 25 (stablehlo 3)
+
+--- row cluster_plain ---
+  [cluster_plain/control] lower   30.7 s  compile   23.5 s  first   157.16 ms  trace_calls 168  sorts 25 (stablehlo 3)
+  [cluster_plain/nodedup] lower   29.5 s  compile   20.4 s  first    76.94 ms  trace_calls 168  sorts 12 (stablehlo 1)
+  [cluster_plain/library] lower   30.1 s  compile    1.4 s  first   142.90 ms  trace_calls 168  sorts 25 (stablehlo 3)
+  median ms  control   153.852  nodedup    77.707  library   152.395   control/nodedup 1.980 [1.937, 2.024]
+
+====================================================================================================
+VERTEX-DEDUP A/B  (hpc_ral_cpu_fp64, rounds=20, calls/round=5)
+====================================================================================================
+  row                    route       median       p10       p90       min       max  sorts compile_s
+  simple_solved          control     24.002    23.426    24.586    23.048    25.167     15       4.1
+  simple_solved          nodedup      5.375     4.653     6.246     4.253     6.680      7       3.2
+  simple_solved          library     23.921    23.456    24.678    23.177    25.500     15       0.5
+                         control/nodedup 4.465 [90% 4.370, 4.566]  MDI 0.048
+  simple_solved_vmap4    control     31.309    29.689    32.555    28.652    33.232     15       4.7
+  simple_solved_vmap4    nodedup     11.908    10.768    13.090     9.854    14.002      7       3.8
+  simple_solved_vmap4    library     30.872    29.699    32.428    28.816    33.170     15       0.5
+                         control/nodedup 2.629 [90% 2.534, 2.718]  MDI 0.092
+  simple_plain           control     23.758    23.275    24.206    22.583    24.535     15       3.6
+  simple_plain           nodedup      5.394     4.906     6.250     4.494     6.585      7       2.8
+  simple_plain           library     23.740    23.109    24.205    22.831    24.652     15       0.4
+                         control/nodedup 4.404 [90% 4.300, 4.452]  MDI 0.039
+  cluster_solved         control    155.222   142.182   162.345   131.397   168.459     25      31.4
+  cluster_solved         nodedup     78.320    65.793    87.825    58.105    94.850     12      27.9
+  cluster_solved         library    154.502   141.891   161.977   130.552   169.227     25       1.9
+                         control/nodedup 1.982 [90% 1.928, 2.029]  MDI 0.130
+  cluster_plain          control    153.852   141.548   161.840   137.638   169.935     25      23.5
+  cluster_plain          nodedup     77.707    66.119    88.169    60.449    95.791     12      20.4
+  cluster_plain          library    152.395   141.862   160.329   136.211   171.775     25       1.4
+                         control/nodedup 1.980 [90% 1.937, 2.024]  MDI 0.132
+----------------------------------------------------------------------------------------------------
+  library_matches: control
+  bit_identical (log L, all rows, control vs nodedup/library): True
+  wall: 628 s
+  Results JSON: /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p2/results/breakdown/point_source/vertex_dedup_ab_hpc_ral_cpu_fp64.json
+  Results PNG:  /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p2/results/breakdown/point_source/vertex_dedup_ab_hpc_ral_cpu_fp64.png
+==========================================
+loadavg: 1.54 1.43 0.84 1/2220 527162
+Finished.
+Wed 23 Sep 16:31:12 BST 2026
