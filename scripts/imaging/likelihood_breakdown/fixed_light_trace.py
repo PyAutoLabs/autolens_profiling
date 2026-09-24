@@ -258,6 +258,62 @@ on speed. The census also gains ``status`` / ``anchors`` /
 line anchors checked against the INSTALLED PyAutoArray — and a
 ``conv_mapping_matrix`` count for the real-space candidates.
 
+The log-det mode (phase 4, autolens_profiling#303)
+--------------------------------------------------
+
+``--logdet-candidate {control,schur_k32,schur_k64}`` turns this cell into the
+**log det(F + lambda*H) factor-reuse** experiment. Without it nothing below
+happens and the cell is phase 1 exactly. It runs on the single-call path only
+(rejected with ``--vmap-batch`` / ``--psf-candidate``) and in fp64 only.
+
+Phase 1 found the evidence term's own cuSOLVER Cholesky of ``F + lambda*H`` at
+0.89 ms (2.8 %) of the A100 call, right after the solve factorised the same
+system. This mode rebinds (``likelihood_breakdown.logdet_reuse_injection``) the
+library's ``jax_active_set.solve_certified`` with a bit-identical wrapper that
+keeps its final masked Cholesky factor, and
+``AbstractInversion.log_det_curvature_reg_matrix_term`` with the
+block-determinant identity on that factor plus a static-size Schur complement
+over the fixed (and, on rectangular, edge-zeroed) set; ``control`` patches
+nothing. Unlike phases 1-3 there is **no harness solver**:
+
+- route ``d`` is the LIBRARY certified solver selected through ``al.Settings``
+  (``positive_only_solver="certified"``, ``certified_fallback="pdip"``, the
+  packaged ``certified_pass_budget`` — phase B's adopted scalar-jit program),
+  compiled under the candidate's rebind; the traced program (PART C) is the
+  same;
+- the **unmodified library route** — the same Settings and composition,
+  compiled WITHOUT the rebind in the same process (``r_s3_library_certified``)
+  — is the gate's reference and the lever's control;
+- route ``b`` (library PDIP) is recorded beside every pin, never gated;
+- an untimed, separately compiled reporting program returns |Z| and the
+  overflow flag per row and checks through ``library_solver_observed`` that the
+  library ran ``solvers_jax == ["certified"]``; a non-control candidate must be
+  taken on the JAX path (count >= 1) in every compiled program.
+
+**The phase-4 gate, PRE-REGISTERED before any A100 submission**
+(``logdet_reuse_injection.LOGDET_GATE_NOTE``, verbatim in ``gate.note``):
+
+1. GATED at ``EQUIVALENCE_RTOL`` (1e-9 relative): route ``d`` against the
+   unmodified library route on the fiducial and on ``--pin-draws`` (default 8)
+   seeded draws (``flds.random_draws(--draw-seed, 8)``), every candidate
+   including control (whose reference is a second compilation of its own
+   program);
+2. GATED: ``|reconciliation_pct| <= 5`` and ``unjoined_ms == 0`` on the traced
+   program;
+3. RECORDED, not gated: every row against route ``b`` (phases 2/3 placed a
+   2.0-2.6e-9 certified-vs-PDIP residual in the solver path on the A100, which
+   this phase does not touch).
+
+The JSON and PNG are written first; the cell then raises if the gate failed.
+**Lever threshold (never a gate):** a candidate is a lever when BOTH its
+``timing.jit_profile`` whole-call saving and its interleaved-median saving (7
+alternating blocks of 10 steady calls) against the unmodified library route in
+the SAME task are >= 0.5 ms (``LOGDET_LEVER_MS``). Rows are never compared
+across tasks (phase B saw ~3 % node-to-node differences). Clearing it means a
+PyAutoArray prompt via /intake (return the factor from ``solve_certified``,
+stash it on the inversion, a JAX fast path at ``abstract.py:1012``); missing it
+is a "no lever" verdict.
+
 Erratum (phase 1 prose and the phase-3 plan). ``mapping_matrix_native_from``
 scatters straight into the PADDED FFT frame, not the image grid, and the source
 axis is LAST: for this cell (masked dataset 141x141, 21x21 PSF) the frame
@@ -270,7 +326,7 @@ incremented to odd sizes" note is STALE — the code does not do it.
 Output
 ------
 
-``results/breakdown/imaging/fixed_light_trace_<mesh>[_border_off][_n<N>][_jitvmap<B>_<lanes>_fb<on|off>][_psf_<candidate>]_<config>.{json,png}``.
+``results/breakdown/imaging/fixed_light_trace_<mesh>[_border_off][_n<N>][_jitvmap<B>_<lanes>_fb<on|off>][_psf_<candidate>][_logdet_<candidate>]_<config>.{json,png}``.
 Library mode replaces the batched token with
 ``_jitvmap<B>_<lanes>_lib<solver>_fb<on|off>_b<budget>``.
 
@@ -339,6 +395,7 @@ from likelihood_breakdown import (  # noqa: E402
     active_set_steps,
     host_callback_probe,
     library_solver_injection,
+    logdet_reuse_injection,
     psf_cube_injection,
     timing,
     xla_attribution,
@@ -430,6 +487,14 @@ _cell_parser.add_argument(
     default=None,
 )
 _cell_parser.add_argument("--pin-draws", type=int, default=None)
+# --- phase 4 (#303): reuse the certified solve's factor for log det(F + lambda*H)
+# The choices are a LITERAL; test_logdet_reuse_injection pins them to
+# logdet_reuse_injection.CANDIDATES.
+_cell_parser.add_argument(
+    "--logdet-candidate",
+    choices=("control", "schur_k32", "schur_k64"),
+    default=None,
+)
 _cell_args = _cli.parse_cell_args(_cell_parser)
 
 MESH = _cell_args.mesh
@@ -497,10 +562,12 @@ if _cell_args.certified_budget is not None and _cell_args.certified_budget < 1:
 
 #: ``None`` is phase 1. A name turns on the PSF-cube experiment (#295).
 PSF_CANDIDATE = _cell_args.psf_candidate
-#: Seeded distinct draws pinned beside the fiducial in PSF mode.
+#: ``None`` is phase 1. A name turns on the log-det reuse experiment (#303).
+LOGDET_CANDIDATE = _cell_args.logdet_candidate
+#: Seeded distinct draws pinned beside the fiducial in PSF and log-det mode.
 PIN_DRAWS = (
     None
-    if PSF_CANDIDATE is None
+    if PSF_CANDIDATE is None and LOGDET_CANDIDATE is None
     else int(_cell_args.pin_draws if _cell_args.pin_draws is not None else 8)
 )
 
@@ -509,11 +576,21 @@ if PSF_CANDIDATE is not None and VMAP_BATCH is not None:
         "--psf-candidate runs on the single-call path only; it cannot be combined with "
         "--vmap-batch (one experiment per invocation)"
     )
-if PSF_CANDIDATE is None and _cell_args.pin_draws is not None:
+if PSF_CANDIDATE is None and LOGDET_CANDIDATE is None and _cell_args.pin_draws is not None:
     raise ValueError(
-        "--pin-draws only means anything with --psf-candidate; without it this cell runs "
-        "the phase-1 single-call trace and would silently ignore the flag"
+        "--pin-draws only means anything with --psf-candidate or --logdet-candidate; without "
+        "one this cell runs the phase-1 single-call trace and would silently ignore the flag"
     )
+if LOGDET_CANDIDATE is not None:
+    if VMAP_BATCH is not None or PSF_CANDIDATE is not None:
+        raise ValueError(
+            "--logdet-candidate runs on the single-call path only; it cannot be combined with "
+            "--vmap-batch or --psf-candidate (one experiment per invocation)"
+        )
+    if _cli.use_mixed_precision:
+        raise ValueError(
+            "--logdet-candidate is an fp64 experiment; do not combine it with --use-mixed-precision"
+        )
 if PIN_DRAWS is not None and PIN_DRAWS < 1:
     raise ValueError(f"--pin-draws must be >= 1 (got {PIN_DRAWS})")
 if PSF_CANDIDATE is not None and _cli.use_mixed_precision:
@@ -536,6 +613,11 @@ if PSF_CANDIDATE is not None and "b" not in ROUTE_SELECTION:
     raise ValueError(
         "--psf-candidate needs route b: it is the unmodified library answer every pin is "
         "taken against"
+    )
+if LOGDET_CANDIDATE is not None and "b" not in ROUTE_SELECTION:
+    raise ValueError(
+        "--logdet-candidate needs route b: the library-PDIP answer is recorded beside every "
+        "pin (the gate itself is against the unmodified library certified route)"
     )
 
 SOURCE_PIXELS_REQUESTED = (
@@ -811,6 +893,27 @@ if LIBRARY_SOLVER_MODE:
     if bool(_settings_library.use_border_relocator) != BORDER_RELOCATOR_RESOLVED:
         raise AssertionError("the library-solver Settings resolved a different border relocator")
 
+# ---------------------------------------------------------------------------
+# Phase 4 (#303): the LIBRARY certified solver the log-det candidates run under
+# ---------------------------------------------------------------------------
+# Phase B's builder, at the PACKAGED budget with the PDIP fallback: the scalar-jit
+# program phase B adopted. The candidate route and its unmodified-library control
+# (the gate's reference) are both built from ``_settings_logdet``; only the
+# log-det rebind differs between them.
+_settings_logdet = None
+if LOGDET_CANDIDATE is not None:
+    CERTIFIED_BUDGET = int(al.Settings().certified_pass_budget)
+    CERTIFIED_BUDGET_BASIS = "config default (Settings().certified_pass_budget)"
+    _settings_logdet = al.Settings(
+        use_border_relocator=_BORDER_RELOCATOR_SETTING,
+        use_mixed_precision=False,
+        positive_only_solver="certified",
+        certified_fallback="pdip",
+        certified_pass_budget=CERTIFIED_BUDGET,
+    )
+    if bool(_settings_logdet.use_border_relocator) != BORDER_RELOCATOR_RESOLVED:
+        raise AssertionError("the log-det Settings resolved a different border relocator")
+
 # MEASURED, not assumed: ``library`` resolved to **True** on this workspace
 # (autolens_profiling/config/general.yaml declares no ``inversion`` block, so
 # autoconf falls through to the packaged default, which is on). The premise
@@ -986,6 +1089,30 @@ _ROUTE_SPECS: dict[str, tuple] = {
     ),
 }
 
+if LOGDET_CANDIDATE is not None:
+    # Phase 4 (#303): route d is the LIBRARY certified solver (al.Settings, packaged
+    # budget, PDIP fallback) with the log-det candidate rebound — no harness solver.
+    _ROUTE_SPECS["d"] = (
+        "d_s3_library_certified_logdet",
+        f"S3 LIBRARY certified solver (Settings), budget {CERTIFIED_BUDGET}, PDIP fallback, "
+        f"log det {LOGDET_CANDIDATE}",
+        "logdet",
+    )
+#: The route-d key every pin reads (phase 4 renames it; every other mode keeps phase 1's).
+_D_KEY = _ROUTE_SPECS["d"][0]
+
+
+def _logdet_context():
+    """The phase-4 log-det injection, or a no-op yielding zero counts in every other mode.
+
+    Always entered around a FRESH ``jax.jit`` of a NEW likelihood closure: the patch
+    acts at trace time, and jax caches traces by function identity.
+    """
+    if LOGDET_CANDIDATE is None:
+        return contextlib.nullcontext({"jax": 0, "delegated": 0, "observed": []})
+    return logdet_reuse_injection.logdet_reuse_injected(LOGDET_CANDIDATE)
+
+
 routes: dict[str, dict] = {}
 #: The compiled executable of each route, kept so the phase-3 draw pins evaluate
 #: the SAME programs PART B timed (a compiled executable accepts any tree with
@@ -1001,6 +1128,23 @@ for _token in ROUTE_SELECTION:
     if _injection is None:
         _compiled, _value = jit_profile(_fn, f"{_key}_library_likelihood_jit", params_tree_s3)
         _entry["solver"] = "library"
+    elif _injection == "logdet":
+        _fn = _likelihood_fn(system_s3.dataset, _settings_logdet)
+        with _logdet_context() as _ld_counts:
+            _compiled, _value = jit_profile(_fn, f"{_key}_library_likelihood_jit", params_tree_s3)
+        _entry["solver"] = "library certified (al.Settings), PDIP fallback"
+        _entry["certified_pass_budget"] = int(CERTIFIED_BUDGET)
+        _entry["logdet_candidate"] = LOGDET_CANDIDATE
+        _entry["injected_logdet_calls_jax"] = int(_ld_counts["jax"])
+        _entry["injected_logdet_calls_delegated"] = int(_ld_counts["delegated"])
+        _entry["injected_logdet_delegated_reasons"] = dict(_ld_counts.get("delegated_reasons", {}))
+        _entry["injected_solves_stashed"] = int(_ld_counts.get("solves_stashed", 0))
+        if LOGDET_CANDIDATE != "control" and int(_ld_counts["jax"]) < 1:
+            raise AssertionError(
+                f"{_key}: the log-det candidate {LOGDET_CANDIDATE!r} was never taken on the JAX "
+                f"path (delegated: {_ld_counts.get('delegated_reasons')}) — this row would be "
+                f"the library's dense log det wearing the wrong label."
+            )
     else:
         _budget, _fallback = _injection
         # The PSF injection (phase 3) nests INSIDE the solver injection and is a
@@ -1048,12 +1192,12 @@ peak_after_routes = peak_bytes()
 equivalence_pins: list[dict] = []
 
 if "b" in ROUTE_SELECTION:
-    _got = routes["d_s3_certified_fallback"]["log_likelihood"]
+    _got = routes[_D_KEY]["log_likelihood"]
     _ref = routes["b_s3_pdip"]["log_likelihood"]
     _rel = abs(_got - _ref) / max(abs(_ref), 1e-300)
     _pin = {
         "pin": "route d (certified, fallback) == route b (library PDIP)",
-        "route": "d_s3_certified_fallback",
+        "route": _D_KEY,
         "reference": "b_s3_pdip",
         "expectation": "the certified active set returns the library's own positive solution",
         "rtol": EQUIVALENCE_RTOL,
@@ -1175,6 +1319,221 @@ if PSF_CANDIDATE is not None:
             )
         )
 
+# ---------------------------------------------------------------------------
+# Phase 4 (#303): the unmodified-library control, the pins, the |Z| report
+# ---------------------------------------------------------------------------
+# The gate's reference is the UNMODIFIED library route: the same _settings_logdet,
+# the same scalar-jit composition, compiled WITHOUT the log-det rebind in THIS
+# process (for control, a second compilation of its own program). Route b
+# (library PDIP) is recorded beside every pin, never gated. All three are
+# evaluated by the SAME compiled executables on the fiducial and on PIN_DRAWS
+# seeded draws.
+
+logdet_ref_record: dict | None = None
+logdet_fiducial_pin: dict | None = None
+logdet_pin_draw_rows: list[dict] = []
+logdet_gated_rows: list[dict] = []
+logdet_pins_failed: list[str] = []
+logdet_report: dict | None = None
+logdet_interleaved: dict | None = None
+
+if LOGDET_CANDIDATE is not None:
+    for _pin in equivalence_pins:
+        _pin["pin"] = (
+            f"route d (library certified, log det {LOGDET_CANDIDATE}) vs route b (library "
+            f"PDIP) — RECORDED, not gated in log-det mode"
+        )
+        _pin["abs_diff_nats"] = abs(_pin["got"] - _pin["reference_value"])
+        _pin["gated"] = False
+        _pin["status"] = "RECORDED"
+
+    print("\n--- r_s3_library_certified: the UNMODIFIED library route (gate reference) ---")
+    _fn_ref = _likelihood_fn(system_s3.dataset, _settings_logdet)
+    _compiled_ref, _value_ref = jit_profile(
+        _fn_ref, "r_s3_library_certified_likelihood_jit", params_tree_s3
+    )
+    logdet_ref_record = {
+        "label": (
+            f"S3 LIBRARY certified solver (Settings), budget {CERTIFIED_BUDGET}, PDIP fallback — "
+            f"no rebind (the unmodified library route)"
+        ),
+        "ms": timer.records[-1][1] / 10 * 1e3,
+        "log_likelihood": float(_value_ref),
+        "compile_s": jit_records["r_s3_library_certified_likelihood_jit"]["compile_s"],
+    }
+    print(
+        f"  {logdet_ref_record['ms']:.3f} ms  -> log likelihood "
+        f"{logdet_ref_record['log_likelihood']:.6f}"
+    )
+
+    _ll_d0 = routes[_D_KEY]["log_likelihood"]
+    _ll_r0 = logdet_ref_record["log_likelihood"]
+    _ll_b0 = routes["b_s3_pdip"]["log_likelihood"]
+    logdet_fiducial_pin = {
+        "pin": f"fiducial: route d (log det {LOGDET_CANDIDATE}) == unmodified library route",
+        "log_likelihood_d_candidate": _ll_d0,
+        "log_likelihood_library": _ll_r0,
+        "log_likelihood_b_pdip": _ll_b0,
+        "abs_diff_nats": abs(_ll_d0 - _ll_r0),
+        "rel_diff": abs(_ll_d0 - _ll_r0) / max(abs(_ll_r0), 1e-300),
+        "rel_diff_vs_b_pdip": abs(_ll_d0 - _ll_b0) / max(abs(_ll_b0), 1e-300),
+        "rtol": EQUIVALENCE_RTOL,
+    }
+
+    _pin_draws = flds.random_draws(DRAW_SEED, PIN_DRAWS)
+    _fiducial_structure = jax.tree_util.tree_structure(params_tree_s3)
+    _pin_trees = []
+    with timer.section("logdet_pin_draws"):
+        for _k, _draw in enumerate(_pin_draws):
+            _tree = _lane_tree(_draw)
+            if jax.tree_util.tree_structure(_tree) != _fiducial_structure:
+                raise AssertionError(
+                    f"pin draw {_k} has a different pytree structure from the fiducial S3 tree"
+                )
+            _pin_trees.append(_tree)
+            _ll_d = float(block(_compiled_routes[_D_KEY](_tree)))
+            _ll_r = float(block(_compiled_ref(_tree)))
+            _ll_b = float(block(_compiled_routes["b_s3_pdip"](_tree)))
+            logdet_pin_draw_rows.append(
+                {
+                    "draw": _k,
+                    "draw_name": _draw.name,
+                    "draw_kind": _draw.kind,
+                    "offsets": {_p: float(_o) for _p, _o in _draw.offsets.items()},
+                    "log_likelihood_d_candidate": _ll_d,
+                    "log_likelihood_library": _ll_r,
+                    "log_likelihood_b_pdip": _ll_b,
+                    "abs_diff_nats": abs(_ll_d - _ll_r),
+                    "rel_diff": abs(_ll_d - _ll_r) / max(abs(_ll_r), 1e-300),
+                    "rel_diff_vs_b_pdip": abs(_ll_d - _ll_b) / max(abs(_ll_b), 1e-300),
+                    "rtol": EQUIVALENCE_RTOL,
+                }
+            )
+
+    logdet_gated_rows, logdet_pins_failed = logdet_reuse_injection.logdet_gate_rows(
+        logdet_fiducial_pin, logdet_pin_draw_rows, EQUIVALENCE_RTOL
+    )
+    for _row in [logdet_fiducial_pin] + logdet_pin_draw_rows:
+        print(
+            f"  [{_row['status']:>7}] {_row.get('draw_name', 'fiducial'):<14} d "
+            f"{_row['log_likelihood_d_candidate']:.9f} vs library "
+            f"{_row['log_likelihood_library']:.9f}  rel {_row['rel_diff']:.3e}  "
+            f"| vs b-PDIP rel {_row['rel_diff_vs_b_pdip']:.3e} (recorded)"
+        )
+
+    # --- the UNTIMED reporting program: |Z|, overflow, solver used, certificate ---
+    # A separately compiled program under the SAME injection, observing the
+    # library's own solve (library_solver_observed forwards everything unchanged,
+    # adds an ordered debug callback for certified/passes) and returning the
+    # log-det candidate's traced |Z| and overflow flag as OUTPUTS.
+    _report_rows: list[tuple[int, bool]] = []
+
+    def _collect_logdet_report(passes, certified):
+        _report_rows.append((int(passes), bool(certified)))
+
+    with (
+        library_solver_injection.library_solver_observed(report=_collect_logdet_report) as _seen,
+        _logdet_context() as _rep_counts,
+    ):
+        _fn_rep = _likelihood_fn(system_s3.dataset, _settings_logdet)
+
+        def _logdet_report_fn(tree):
+            _rep_counts["observed"].clear()
+            _ll = _fn_rep(tree)
+            if _rep_counts["observed"]:
+                _obs = _rep_counts["observed"][-1]
+                return _ll, _obs["z_count"], _obs["overflow"]
+            return _ll, jnp.asarray(-1), jnp.asarray(False)
+
+        with timer.section("logdet_report_compile"):
+            _rep_ex = jax.jit(_logdet_report_fn).lower(params_tree_s3).compile()
+        _static_obs = (
+            {
+                _k: _v
+                for _k, _v in _rep_counts["observed"][-1].items()
+                if _k not in ("z_count", "overflow")
+            }
+            if _rep_counts["observed"]
+            else None
+        )
+    if list(_seen["solvers_jax"]) != ["certified"]:
+        raise AssertionError(
+            f"the log-det program's JAX solves ran {_seen['solvers_jax']!r}, not ['certified'] "
+            f"— al.Settings did not select the library certified solver on this system"
+        )
+    if LOGDET_CANDIDATE != "control" and int(_rep_counts["jax"]) < 1:
+        raise AssertionError("the reporting program never took the log-det candidate")
+
+    _rep_rows = []
+    for _k, _tree in enumerate([params_tree_s3] + _pin_trees):
+        _before = len(_report_rows)
+        _out = _rep_ex(_tree)
+        block(_out)
+        jax.effects_barrier()
+        _ll_rep, _z, _ovf = (float(_out[0]), int(_out[1]), bool(_out[2]))
+        _cert = _report_rows[_before:]
+        _rep_rows.append(
+            {
+                "row": "fiducial" if _k == 0 else f"draw {_k - 1}",
+                "z_count": _z if _z >= 0 else None,
+                "overflow": _ovf if _z >= 0 else None,
+                "passes": _cert[-1][0] if _cert else None,
+                "certified": _cert[-1][1] if _cert else None,
+                "log_likelihood_report_program": _ll_rep,
+            }
+        )
+    _zs = [_r["z_count"] for _r in _rep_rows if _r["z_count"] is not None]
+    logdet_report = {
+        "program": "UNTIMED, separately compiled: the candidate program + library_solver_observed",
+        "solvers_jax": list(_seen["solvers_jax"]),
+        "static": _static_obs,
+        "rows": _rep_rows,
+        "z_count_min": min(_zs) if _zs else None,
+        "z_count_max": max(_zs) if _zs else None,
+        "overflow_count": sum(1 for _r in _rep_rows if _r["overflow"]),
+        "uncertified_count": sum(1 for _r in _rep_rows if _r["certified"] is False),
+        "counts": {
+            "jax": int(_rep_counts["jax"]),
+            "delegated": int(_rep_counts["delegated"]),
+            "delegated_reasons": dict(_rep_counts.get("delegated_reasons", {})),
+        },
+        "note": (
+            "z_count = |Z| = the solve's fixed set plus the unsolved (edge) indices, per row; "
+            "overflow = |Z| > k_slots (the dense lax.cond branch ran). null for control (no "
+            "rebind). passes / certified are the library's own stats= out-dict through an "
+            "ordered debug callback, in this untimed program only."
+        ),
+    }
+    print(
+        f"  |Z| per row: {[_r['z_count'] for _r in _rep_rows]}  overflow "
+        f"{logdet_report['overflow_count']}  uncertified {logdet_report['uncertified_count']}  "
+        f"solvers {logdet_report['solvers_jax']}"
+    )
+
+    # --- interleaved same-process timing: control vs candidate, ABAB ---------
+    # Supplements the jit_profile basis: ROUNDS alternating blocks of 10 steady
+    # calls each, so a drift in clocks over the task cannot favour either row.
+    _rounds = 7
+    _ab = {"library": [], "candidate": []}
+    for _ in range(_rounds):
+        _ab["library"].append(steady_wall_ms(_compiled_ref, params_tree_s3, 10))
+        _ab["candidate"].append(steady_wall_ms(_compiled_routes[_D_KEY], params_tree_s3, 10))
+    logdet_interleaved = {
+        "rounds": _rounds,
+        "calls_per_block": 10,
+        "library_ms": _ab["library"],
+        "candidate_ms": _ab["candidate"],
+        "library_median_ms": float(np.median(_ab["library"])),
+        "candidate_median_ms": float(np.median(_ab["candidate"])),
+        "saving_median_ms": float(np.median(_ab["library"]) - np.median(_ab["candidate"])),
+    }
+    print(
+        f"  interleaved (median of {_rounds} x 10): library "
+        f"{logdet_interleaved['library_median_ms']:.3f} ms, candidate "
+        f"{logdet_interleaved['candidate_median_ms']:.3f} ms -> saving "
+        f"{logdet_interleaved['saving_median_ms']:+.3f} ms"
+    )
+
 # ===================================================================
 # PART C — one lowering, two executables, one timeline
 # ===================================================================
@@ -1199,13 +1558,22 @@ vmap_block: dict | None = None
 if VMAP_BATCH is None:
     # Phase 3: the PSF candidate nests INSIDE the solver injection around a
     # fresh jax.jit; outside PSF mode ``_psf_context`` is a no-op.
-    with (
-        library_solver_injection.certified_solver_injected(
+    # Phase 4: NO harness solver — the library certified solver via
+    # ``_settings_logdet``, with the log-det candidate rebound (a no-op elsewhere).
+    if LOGDET_CANDIDATE is None:
+        _trace_solver_context = library_solver_injection.certified_solver_injected(
             PASS_BUDGET, fallback=True, tau_rel=TAU_REL
-        ) as _trace_counts,
+        )
+        _trace_settings = _settings
+    else:
+        _trace_solver_context = contextlib.nullcontext({"jax": 0, "numpy": 0})
+        _trace_settings = _settings_logdet
+    with (
+        _trace_solver_context as _trace_counts,
         _psf_context() as _trace_psf_counts,
+        _logdet_context() as _trace_logdet_counts,
     ):
-        _fn = _likelihood_fn(system_s3.dataset, _settings)
+        _fn = _likelihood_fn(system_s3.dataset, _trace_settings)
 
         with timer.section("trace_lower"):
             _lowered = jax.jit(_fn).lower(params_tree_s3)
@@ -1223,10 +1591,20 @@ if VMAP_BATCH is None:
         _value_off = _ex_off(params_tree_s3)
         block(_value_off)
 
-        if int(_trace_counts["jax"]) == 0:
+        if LOGDET_CANDIDATE is None and int(_trace_counts["jax"]) == 0:
             raise AssertionError(
                 "the injected solver was never called on the JAX path while compiling the "
                 "traced executable — the trace would decompose the library's own PDIP."
+            )
+        if (
+            LOGDET_CANDIDATE is not None
+            and LOGDET_CANDIDATE != "control"
+            and int(_trace_logdet_counts["jax"]) < 1
+        ):
+            raise AssertionError(
+                f"the log-det candidate {LOGDET_CANDIDATE!r} was never taken on the JAX path "
+                f"while compiling the traced executable — the trace would decompose the "
+                f"library's own dense log det."
             )
         if (
             PSF_CANDIDATE is not None
@@ -1310,7 +1688,7 @@ if VMAP_BATCH is None:
             untraced_wall_ms=untraced_wall_ms,
         )
         census_block = xla_attribution.hlo_census(index)
-        if PSF_CANDIDATE is not None:
+        if PSF_CANDIDATE is not None or LOGDET_CANDIDATE is not None:
             # Phase 3: the census anchors are CHECKED against the installed
             # PyAutoArray rather than assumed (phase 2 had to exclude the whole
             # census when they moved). ``status`` covers the PSF rows; any other
@@ -2576,6 +2954,188 @@ if PSF_CANDIDATE is not None:
         },
     }
 
+# ---------------------------------------------------------------------------
+# Phase 4 (#303): the log-det block and its ENFORCED gate
+# ---------------------------------------------------------------------------
+logdet_block: dict | None = None
+if LOGDET_CANDIDATE is not None:
+    import subprocess as _ld_subprocess
+
+    import autoarray as _ld_autoarray
+    import autofit as _ld_autofit
+    import autogalaxy as _ld_autogalaxy
+    import autonerves as _ld_autonerves
+
+    def _ld_revision(module) -> dict:
+        _repo = Path(module.__file__).resolve().parents[1]
+
+        def _git(*args):
+            try:
+                return _ld_subprocess.run(
+                    ["git", "-C", str(_repo), *args], capture_output=True, text=True, check=True
+                ).stdout.strip()
+            except (OSError, _ld_subprocess.CalledProcessError):
+                return None
+
+        return {
+            "head": _git("rev-parse", "HEAD"),
+            "branch": _git("rev-parse", "--abbrev-ref", "HEAD"),
+            "dirty": (
+                None if _git("rev-parse", "HEAD") is None else bool(_git("status", "--porcelain"))
+            ),
+            "path": str(_repo),
+            "module_file": module.__file__,
+        }
+
+    _ld_spec = logdet_reuse_injection.CANDIDATES[LOGDET_CANDIDATE]
+    _ld_label = "log_det_curvature_reg"
+    _ld_row_ms = trace_block["per_stage_ms"].get(_ld_label, {}).get("median_ms", 0.0)
+    _ld_solve_ms = (
+        trace_block["per_stage_ms"].get("certified_active_set_solve", {}).get("median_ms", 0.0)
+    )
+    _ld_mixed = {
+        _k: _v
+        for _k, _v in trace_block["mixed_fusion"]["constituent_stage_sets"].items()
+        if _ld_label in _k.split(" + ")
+    }
+    _ld_recon = float(trace_block["reconciliation_pct"])
+    _ld_unjoined = float(trace_block["unjoined_ms"])
+    _ld_failures = []
+    if logdet_pins_failed:
+        _ld_failures.append(
+            f"{len(logdet_pins_failed)} gated pin(s) above {EQUIVALENCE_RTOL:.0e} relative vs the "
+            f"unmodified library route: {', '.join(logdet_pins_failed)}"
+        )
+    if not abs(_ld_recon) <= 5.0:
+        _ld_failures.append(f"reconciliation {_ld_recon:+.2f} % is outside +-5 %")
+    if _ld_unjoined > 0.0:
+        _ld_failures.append(f"unjoined_ms {_ld_unjoined:.3f} > 0 — the join is incomplete")
+    _ld_d_ms = routes[_D_KEY]["ms"]
+    _ld_r_ms = logdet_ref_record["ms"]
+    _ld_saving_jit = _ld_r_ms - _ld_d_ms
+    _ld_saving_ab = logdet_interleaved["saving_median_ms"]
+    _ld_static = (logdet_report or {}).get("static") or {}
+    logdet_block = {
+        "candidate": LOGDET_CANDIDATE,
+        "kind": _ld_spec.kind,
+        "row_label": "CONTROL" if _ld_spec.kind == "control" else "LEVER candidate",
+        "provenance": logdet_reuse_injection.candidate_provenance(
+            LOGDET_CANDIDATE,
+            n_total=_ld_static.get("n_total", int(system_s3.n_mapper)),
+            n_solved=_ld_static.get("n_solved"),
+        ),
+        "solver": {
+            "source": "library (al.Settings)",
+            "positive_only_solver": "certified",
+            "certified_fallback": "pdip",
+            "certified_pass_budget": CERTIFIED_BUDGET,
+            "certified_pass_budget_basis": CERTIFIED_BUDGET_BASIS,
+            "certified_tau_rel": float(_settings_logdet.certified_tau_rel),
+            "solvers_jax": (logdet_report or {}).get("solvers_jax"),
+        },
+        "injection_counts": {
+            "route_d_jax": routes[_D_KEY].get("injected_logdet_calls_jax"),
+            "route_d_delegated": routes[_D_KEY].get("injected_logdet_calls_delegated"),
+            "route_d_delegated_reasons": routes[_D_KEY].get("injected_logdet_delegated_reasons"),
+            "route_d_solves_stashed": routes[_D_KEY].get("injected_solves_stashed"),
+            "traced_program_jax": int(_trace_logdet_counts["jax"]),
+            "traced_program_delegated": int(_trace_logdet_counts["delegated"]),
+            "report_program": (logdet_report or {}).get("counts"),
+        },
+        "whole_call_ms": {
+            "route_d_candidate_jit_profile_ms": _ld_d_ms,
+            "library_control_jit_profile_ms": _ld_r_ms,
+            "route_b_pdip_jit_profile_ms": routes["b_s3_pdip"]["ms"],
+            "saving_jit_profile_ms": _ld_saving_jit,
+            "interleaved": logdet_interleaved,
+            "traced_program_command_buffers_on_ms": wall_on_ms,
+            "traced_program_command_buffers_off_ms": wall_off_ms,
+            "note": (
+                "Both whole-call rows are timing.jit_profile (10 steady calls) in THIS process; "
+                "'interleaved' alternates 10-call blocks of the two compiled programs. The "
+                "traced program is the candidate's lowering compiled with command buffers on "
+                "and off."
+            ),
+        },
+        "lever": {
+            "threshold_ms": logdet_reuse_injection.LOGDET_LEVER_MS,
+            "saving_jit_profile_ms": _ld_saving_jit,
+            "saving_interleaved_median_ms": _ld_saving_ab,
+            "clears_threshold": (
+                None
+                if _ld_spec.kind == "control"
+                else bool(
+                    _ld_saving_jit >= logdet_reuse_injection.LOGDET_LEVER_MS
+                    and _ld_saving_ab >= logdet_reuse_injection.LOGDET_LEVER_MS
+                )
+            ),
+            "rule": (
+                "PRE-REGISTERED: a lever clears when BOTH the jit_profile saving and the "
+                "interleaved-median saving vs the unmodified library route in the same task "
+                "are >= threshold_ms. Never a gate; never compared across tasks."
+            ),
+        },
+        "compile_s": {
+            "route_d": jit_records.get(f"{_D_KEY}_library_likelihood_jit", {}).get("compile_s"),
+            "library_control": logdet_ref_record["compile_s"],
+            "route_b": jit_records.get("b_s3_pdip_library_likelihood_jit", {}).get("compile_s"),
+        },
+        "trace_rows_ms": {
+            _ld_label: _ld_row_ms,
+            "certified_active_set_solve": _ld_solve_ms,
+            "mixed_fusion_sets_containing_log_det": _ld_mixed,
+            "top_instructions": trace_block["stage_audit"].get(_ld_label, []),
+            "note": (
+                "Rows of the traced (command buffers OFF) candidate program. Fused kernels "
+                "spanning the log det AND another stage are in mixed_fusion, listed here for "
+                "readability, never summed."
+            ),
+        },
+        "z_report": logdet_report,
+        "peak_bytes": {"after_routes": peak_after_routes},
+        "pins": {
+            "rtol": EQUIVALENCE_RTOL,
+            "reference": (
+                "the UNMODIFIED library route — same al.Settings (certified, PDIP fallback, "
+                "packaged budget) and scalar-jit composition, compiled without the rebind in "
+                "this process"
+            ),
+            "library_control": logdet_ref_record,
+            "fiducial": logdet_fiducial_pin,
+            "draws": logdet_pin_draw_rows,
+            "draw_seed": DRAW_SEED,
+            "pin_draws": PIN_DRAWS,
+            "max_rel_diff": max(_r["rel_diff"] for _r in logdet_gated_rows),
+            "max_abs_diff_nats": max(_r["abs_diff_nats"] for _r in logdet_gated_rows),
+            "max_rel_diff_vs_b_pdip": max(_r["rel_diff_vs_b_pdip"] for _r in logdet_gated_rows),
+        },
+        "census_status": census_block.get("status"),
+        "library_anchor_revision": xla_attribution.LIBRARY_ANCHOR_REVISION,
+        "library_revisions": {
+            "PyAutoNerves": _ld_revision(_ld_autonerves),
+            "PyAutoArray": _ld_revision(_ld_autoarray),
+            "PyAutoFit": _ld_revision(_ld_autofit),
+            "PyAutoGalaxy": _ld_revision(_ld_autogalaxy),
+            "PyAutoLens": _ld_revision(al),
+        },
+        "gate": {
+            "enforced": True,
+            "pins_checked": len(logdet_gated_rows),
+            "pins_failed": logdet_pins_failed,
+            "reconciliation_pct": _ld_recon,
+            "reconciliation_ok": abs(_ld_recon) <= 5.0,
+            "unjoined_ms": _ld_unjoined,
+            "unjoined_ok": _ld_unjoined <= 0.0,
+            "failures": _ld_failures,
+            "passed": not _ld_failures,
+            "note": (
+                "ENFORCED in log-det mode: the cell writes this JSON and its PNG, then raises "
+                "if any gated pin failed, |reconciliation_pct| > 5 or unjoined_ms > 0. Speed is "
+                "never gated. " + logdet_reuse_injection.LOGDET_GATE_NOTE
+            ),
+        },
+    }
+
 trace_summary = {
     "device": device_info_dict(),
     "machine": machine_info_dict(),
@@ -2748,6 +3308,29 @@ if vmap_block is not None:
         f"blocks, the lane table and the matched comparison are under `vmap`."
     )
 
+if logdet_block is not None:
+    # Only in log-det mode, so a phase-1 JSON written by this checkout is unchanged.
+    trace_summary["configuration"].update(
+        {
+            "logdet_candidate": LOGDET_CANDIDATE,
+            "pin_draws": PIN_DRAWS,
+            "draw_seed": DRAW_SEED,
+            "certified_pass_budget": CERTIFIED_BUDGET,
+        }
+    )
+    trace_summary["solver_injection"] = {
+        "patched": None,
+        "note": (
+            "Log-det mode (phase 4, #303): routes d, the unmodified-library control and the "
+            "traced program run the LIBRARY certified solver selected by al.Settings — no "
+            "harness solver. The only rebind is the log-det candidate's pair ("
+            + LOGDET_CANDIDATE
+            + "): jax_active_set.solve_certified (bit-identical, keeps its factor) and "
+            "AbstractInversion.log_det_curvature_reg_matrix_term; none for control."
+        ),
+    }
+    trace_summary["logdet_candidate"] = logdet_block
+
 if psf_block is not None:
     # Only in PSF mode, so a phase-1 JSON written by this checkout is unchanged.
     trace_summary["configuration"].update(
@@ -2794,6 +3377,10 @@ if VMAP_BATCH is not None:
 if PSF_CANDIDATE is not None:
     # One file pair per candidate, never colliding with phase 1's own file.
     _cell_name = f"{_cell_name}_psf_{PSF_CANDIDATE}"
+
+if LOGDET_CANDIDATE is not None:
+    # One file pair per log-det candidate (phase 4, #303).
+    _cell_name = f"{_cell_name}_logdet_{LOGDET_CANDIDATE}"
 
 dict_path, chart_path = resolve_output_paths(
     _cli,
@@ -2971,6 +3558,8 @@ _psf_title = (
     if psf_block is None
     else f" — PSF candidate {PSF_CANDIDATE} [{psf_block['row_label'].split(' ')[0]}]"
 )
+if logdet_block is not None:
+    _psf_title = f" — log det {LOGDET_CANDIDATE} [{logdet_block['row_label'].split(' ')[0]}]"
 ax.set_title(
     f"Fixed-light {MESH} N={n_source_pixels} — XLA device timeline of the production call"
     f"{_psf_title}\n"
@@ -3000,6 +3589,27 @@ if psf_block is not None:
     if not _gate["passed"]:
         raise AssertionError(
             f"PSF candidate {PSF_CANDIDATE!r} failed the phase-3 gate: "
+            + "; ".join(_gate["failures"])
+            + ". The JSON and PNG were written first and hold the evidence."
+        )
+
+if logdet_block is not None:
+    # The ENFORCED phase-4 gate, AFTER the evidence is on disk.
+    _gate = logdet_block["gate"]
+    _lever = logdet_block["lever"]
+    print(
+        f"\n  LOG-DET GATE [{LOGDET_CANDIDATE}, {logdet_block['row_label']}]: "
+        f"{'PASS' if _gate['passed'] else 'FAIL'}  "
+        f"(pins {_gate['pins_checked'] - len(_gate['pins_failed'])}/{_gate['pins_checked']}, "
+        f"reconciliation {_gate['reconciliation_pct']:+.2f} %, "
+        f"unjoined {_gate['unjoined_ms']:.3f} ms) | saving vs library "
+        f"{_lever['saving_jit_profile_ms']:+.3f} ms (jit_profile), "
+        f"{_lever['saving_interleaved_median_ms']:+.3f} ms (interleaved) -> lever "
+        f"{_lever['clears_threshold']}"
+    )
+    if not _gate["passed"]:
+        raise AssertionError(
+            f"log-det candidate {LOGDET_CANDIDATE!r} failed the phase-4 gate: "
             + "; ".join(_gate["failures"])
             + ". The JSON and PNG were written first and hold the evidence."
         )
