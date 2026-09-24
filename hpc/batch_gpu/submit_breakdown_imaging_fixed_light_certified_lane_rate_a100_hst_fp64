@@ -11,47 +11,58 @@
 # scalar certified+PDIP) is worth four repos of library work depends on how often a lane
 # fails its certificate on what a REAL search proposes. So:
 #
-#   1. CAPTURE (tasks 0-1): nautilus_batch_capture.py fits the phase-B S3 system with
-#      af.Nautilus at the production source_pix[1] settings (n_live=150, n_batch=20,
-#      use_jax_vmap=True, library PDIP) and records every batch reaching
-#      Fitness.call_wrap to results/breakdown/imaging/nautilus_batches_<mesh>.npz.
-#      Capped at --n-like-max 40000 and --capture-seconds 3600 (about an hour).
-#   2. RATE (tasks 2-3): fixed_light_trace.py --lanes captured --captured-pass rate
-#      replays EVERY captured lane under library certified + certified_fallback=none in
-#      jax.jit(jax.vmap(fn)) chunks of 20 (one chunk = one real Nautilus batch), untimed,
-#      and reports the uncertified-lane rate overall, by Nautilus phase and by call half,
-#      plus max passes against the packaged budget 16.
-#   3. TIME (tasks 4-27): the phase-B matched pair (--arms both) on B captured lanes
+#   1. CAPTURE (tasks 0-3): nautilus_batch_capture.py fits the phase-B S3 system with
+#      af.Nautilus at the production settings of BOTH pixelized stages, on both meshes,
+#      and records every batch reaching Fitness.call_wrap to
+#      results/breakdown/imaging/nautilus_batches_<mesh>_<stage>.npz:
+#        --stage pix1  source_pix_1: mass + shear + regularization free, n_live=150
+#        --stage pix2  source_pix_2: mass + shear fixed, regularization free, n_live=75
+#      n_batch=20, use_jax_vmap=True, library PDIP. The regularization is FREE with the
+#      production priors (AdaptSplit inner/outer LogUniform 1e-6..1e6, signal_scale
+#      Uniform 0..1 on Delaunay; the rectangular cell cannot build AdaptSplit and frees
+#      its Constant coefficient, LogUniform 1e-6..1e6). The rate plausibly depends on
+#      the regularization through how many pixels sit at the positivity bound, so a
+#      fixed-regularization capture would not answer the question. Capped at
+#      --n-like-max 40000 and --capture-seconds 3600 (about an hour).
+#   2. RATE (tasks 4-7): fixed_light_trace.py --lanes captured --captured-pass rate
+#      replays EVERY captured lane (its own mass, shear and regularization, through the
+#      Fitness instance_from_vector path) under library certified + certified_fallback=
+#      none in jax.jit(jax.vmap(fn)) chunks of 20 (one chunk = one real Nautilus batch),
+#      untimed, and reports the uncertified-lane rate overall, by Nautilus phase and by
+#      call half, plus max passes against the packaged budget 16, per mesh and stage.
+#   3. TIME (tasks 8-37): the phase-B matched pair (--arms both) on B captured lanes
 #      (nautilus_batches.timed_window: consecutive calls from the first post-prior
-#      batch; at B=20 exactly one real batch) for B in 16/20/50/100 and the three
-#      phase-B rows. Together the rows give the table the verdict needs: PDIP vmap and
+#      batch; at B=20 exactly one real batch) and the three phase-B rows: PDIP vmap and
 #      scalar PDIP (pdip/on), certified+PDIP vmap and SCALAR certified+PDIP
-#      (certified/on), certified+none vmap (certified/off).
+#      (certified/on), certified+none vmap (certified/off). pix1 gets the full
+#      B=16/20/50/100 grid; pix2 gets B=20 only. Why: the batch-size scaling is a
+#      property of the program's shapes, which pix2 shares with pix1; what pix2 can
+#      change is the per-lane pass count under vmap (the certified while_loop runs to
+#      the batch's max passes), and B=20 is the one production batch size where that
+#      enters the C2 verdict. Six tasks, cheap.
 #
-# TWO-STEP SUBMISSION — the replay tasks read the capture's npz, so they must start
-# after it. Submit from hpc/batch_gpu/ (the -o/-e paths are relative):
+# TWO-STEP SUBMISSION — the replay tasks read the captures' npz files, so they must start
+# after them. Submit from hpc/batch_gpu/ on RAL (the -o/-e paths are relative):
 #
-#   CAP=$(sbatch --parsable --array=0-1 submit_breakdown_imaging_fixed_light_certified_lane_rate_a100_hst_fp64)
-#   sbatch --array=2-27 --dependency=afterok:${CAP} submit_breakdown_imaging_fixed_light_certified_lane_rate_a100_hst_fp64
+#   CAP=$(sbatch --parsable --array=0-3 submit_breakdown_imaging_fixed_light_certified_lane_rate_a100_hst_fp64)
+#   sbatch --array=4-37 --dependency=afterok:${CAP} submit_breakdown_imaging_fixed_light_certified_lane_rate_a100_hst_fp64
 #
-# A plain `sbatch` (or `hpc/sync submit`) of this file runs all 28 tasks at once; every
+# A plain `sbatch` (or `hpc/sync submit`) of this file runs all 38 tasks at once; every
 # replay task then refuses to start (FATAL, no npz) — nothing is measured on a stale or
 # missing capture.
 #
-# Array tasks (index = 4 + 12*mesh + 3*batch + row for tasks 4-27)
-# ----------------------------------------------------------------
-#   task  mesh         pass     B    solver     fallback  row
-#    0    delaunay     capture  20   -          -         Nautilus capture (library PDIP)
-#    1    rectangular  capture  20   -          -         Nautilus capture (library PDIP)
-#    2    delaunay     rate     20   certified  off       uncertified-lane rate, all lanes
-#    3    rectangular  rate     20   certified  off       uncertified-lane rate, all lanes
-#    4    delaunay     time     16   pdip       on        library PDIP vmap + scalar PDIP
-#    5    delaunay     time     16   certified  on        certified+PDIP vmap + SCALAR
-#    6    delaunay     time     16   certified  off       certified, fallback none
-#    7-9  delaunay     time     20   (the three rows again)
-#   10-12 delaunay     time     50
-#   13-15 delaunay     time    100
-#   16-27 rectangular  time    16/20/50/100 x the same three rows
+# Array tasks
+# -----------
+#   task   mesh         stage  pass     B    solver     fallback
+#    0     delaunay     pix1   capture  20   -          -
+#    1     rectangular  pix1   capture  20   -          -
+#    2     delaunay     pix2   capture  20   -          -
+#    3     rectangular  pix2   capture  20   -          -
+#    4-7   (same mesh/stage order) rate 20   certified  off
+#    8-19  delaunay     pix1   time     16/20/50/100 x (pdip on, certified on, certified off)
+#   20-31  rectangular  pix1   time     16/20/50/100 x the same three rows
+#   32-34  delaunay     pix2   time     20 x the three rows
+#   35-37  rectangular  pix2   time     20 x the three rows
 #
 # The pass budget is NOT passed: every certified row runs the library's resolved
 # certified_pass_budget (16 as packaged), and the JSON records it and its basis.
@@ -78,8 +89,9 @@
 # AUTOTUNE_ENTRIES census at the end is the check.
 #
 # WALL-BASIS:
-#   Neither cell's wall has been measured on the A100 in these modes. The capture is
-#   capped by the cell itself at 3600 s of sampling plus setup and compiles; a rate task
+#   Neither cell's wall has been measured on the A100 in these modes. A capture is
+#   capped by the cell itself at 3600 s of sampling plus setup and compiles (pix2, with
+#   half the live points, is expected to converge sooner); a rate task
 #   replays up to 40000 lanes at roughly one second per 20-lane chunk; the B=100 timing
 #   tasks run 100 sequential scalar calls per invocation. The laptop CPU witness in the
 #   phase-C1 note is the probe. Both cells therefore declare unmeasured with the 3x
@@ -99,7 +111,7 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=64gb
 #SBATCH --time=12:00:00
-#SBATCH --array=0-27
+#SBATCH --array=0-37
 #SBATCH --export=ALL,PYAUTO_HPC_BASE=/mnt/ral/jnightin/PyAuto
 #SBATCH -o output/output.%A_%a.out
 #SBATCH -e error/error.%A_%a.err
@@ -133,24 +145,26 @@ if [ ! -f "$CAPTURE" ] || ! grep -q -- "--captured-pass" "$CELL"; then
     exit 1
 fi
 
-MESHES=(delaunay rectangular delaunay rectangular delaunay delaunay delaunay delaunay delaunay delaunay delaunay delaunay delaunay delaunay delaunay delaunay rectangular rectangular rectangular rectangular rectangular rectangular rectangular rectangular rectangular rectangular rectangular rectangular)
-PASSES=(capture capture rate rate time time time time time time time time time time time time time time time time time time time time time time time time)
-BATCHES=(20 20 20 20 16 16 16 20 20 20 50 50 50 100 100 100 16 16 16 20 20 20 50 50 50 100 100 100)
-SOLVERS=(- - certified certified pdip certified certified pdip certified certified pdip certified certified pdip certified certified pdip certified certified pdip certified certified pdip certified certified pdip certified certified)
-FALLBACKS=(- - off off on on off on on off on on off on on off on on off on on off on on off on on off)
+MESHES=(delaunay rectangular delaunay rectangular delaunay rectangular delaunay rectangular delaunay delaunay delaunay delaunay delaunay delaunay delaunay delaunay delaunay delaunay delaunay delaunay rectangular rectangular rectangular rectangular rectangular rectangular rectangular rectangular rectangular rectangular rectangular rectangular delaunay delaunay delaunay rectangular rectangular rectangular)
+STAGES=(pix1 pix1 pix2 pix2 pix1 pix1 pix2 pix2 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix2 pix2 pix2 pix2 pix2 pix2)
+PASSES=(capture capture capture capture rate rate rate rate time time time time time time time time time time time time time time time time time time time time time time time time time time time time time time)
+BATCHES=(20 20 20 20 20 20 20 20 16 16 16 20 20 20 50 50 50 100 100 100 16 16 16 20 20 20 50 50 50 100 100 100 20 20 20 20 20 20)
+SOLVERS=(- - - - certified certified certified certified pdip certified certified pdip certified certified pdip certified certified pdip certified certified pdip certified certified pdip certified certified pdip certified certified pdip certified certified pdip certified certified pdip certified certified)
+FALLBACKS=(- - - - off off off off on on off on on off on on off on on off on on off on on off on on off on on off on on off on on off)
 MESH=${MESHES[$SLURM_ARRAY_TASK_ID]}
+STAGE=${STAGES[$SLURM_ARRAY_TASK_ID]}
 PASS=${PASSES[$SLURM_ARRAY_TASK_ID]}
 BATCH=${BATCHES[$SLURM_ARRAY_TASK_ID]}
 SOLVER=${SOLVERS[$SLURM_ARRAY_TASK_ID]}
 FALLBACK=${FALLBACKS[$SLURM_ARRAY_TASK_ID]}
-if [ -z "$MESH" ] || [ -z "$PASS" ] || [ -z "$BATCH" ] || [ -z "$SOLVER" ] || [ -z "$FALLBACK" ]; then
-    echo "FATAL: no (mesh, pass, batch, solver, fallback) arm for array task ${SLURM_ARRAY_TASK_ID} (expected 0-27)." >&2
+if [ -z "$MESH" ] || [ -z "$STAGE" ] || [ -z "$PASS" ] || [ -z "$BATCH" ] || [ -z "$SOLVER" ] || [ -z "$FALLBACK" ]; then
+    echo "FATAL: no (mesh, stage, pass, batch, solver, fallback) arm for array task ${SLURM_ARRAY_TASK_ID} (expected 0-37)." >&2
     exit 1
 fi
 
 BORDER=cell
 CONFIG_NAME=hpc_a100_fp64_fixed_light_trace
-NPZ="$AP_ROOT/results/breakdown/imaging/nautilus_batches_${MESH}.npz"
+NPZ="$AP_ROOT/results/breakdown/imaging/nautilus_batches_${MESH}_${STAGE}.npz"
 
 # The dataset is tracked but its adapt image cache is not; concurrent tasks must not
 # auto-simulate the same dataset/imaging/hst/, so it is prepared once before submitting.
@@ -164,12 +178,12 @@ fi
 # an npz captured on a different S3 system (fingerprint check); that it is THIS run's
 # capture is what the two-step --dependency above guarantees.
 if [ "$PASS" != "capture" ] && [ ! -f "$NPZ" ]; then
-    echo "FATAL: $NPZ missing. The replay tasks (2-27) must be submitted with" >&2
-    echo "       --dependency=afterok:<capture job> after tasks 0-1 (see the header)." >&2
+    echo "FATAL: $NPZ missing. The replay tasks (4-37) must be submitted with" >&2
+    echo "       --dependency=afterok:<capture job> after tasks 0-3 (see the header)." >&2
     exit 1
 fi
 
-LEG="${MESH}_${PASS}_${BATCH}_${SOLVER}_${FALLBACK}"
+LEG="${MESH}_${STAGE}_${PASS}_${BATCH}_${SOLVER}_${FALLBACK}"
 
 # Fresh per-task compilation cache and trace dir, under output/ (gitignored).
 export JAX_COMPILATION_CACHE_DIR="$AP_ROOT/output/jax_cache/fixed_light_lanerate_${LEG}_${SLURM_ARRAY_JOB_ID:-local}_${SLURM_ARRAY_TASK_ID:-0}"
@@ -184,13 +198,14 @@ nvidia-smi
 echo "=========================================="
 date
 hostname
-echo "Task:           $SLURM_ARRAY_TASK_ID / 27"
+echo "Task:           $SLURM_ARRAY_TASK_ID / 37"
+echo "Stage:          $STAGE"
 echo "Pass:           $PASS"
 echo "Dataset:        hst (0.05\"/px)"
 echo "Precision:      fp64"
 echo "Source mesh:    $MESH (cell fiducial; --source-pixels NOT passed)"
 echo "Batches file:   $NPZ"
-echo "LANE_RATE_LEG mesh=$MESH pass=$PASS batch=$BATCH solver=$SOLVER fallback=$FALLBACK dataset=hst hardware=hpc_a100_fp64"
+echo "LANE_RATE_LEG mesh=$MESH stage=$STAGE pass=$PASS batch=$BATCH solver=$SOLVER fallback=$FALLBACK dataset=hst hardware=hpc_a100_fp64"
 
 echo "=== source revisions (shared install, untouched) ==="
 for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
@@ -221,7 +236,7 @@ if [ "$PASS" = "capture" ]; then
         --mesh $MESH \
         --n-like-max 40000 \
         --capture-seconds 3600 \
-        --n-live 150 \
+        --stage $STAGE \
         --n-batch 20 \
         --seed 1
 elif [ "$PASS" = "rate" ]; then

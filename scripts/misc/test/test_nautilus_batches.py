@@ -120,3 +120,39 @@ def test__rate_summary_and_groups():
 def test__early_late_split_is_the_median_replayed_call():
     labels = nb.early_late(np.array([0, 1, 2, 3]), np.array([0, 1, 2, 3]))
     assert labels.tolist() == ["early", "early", "late", "late"]
+
+
+@pytest.mark.parametrize(
+    "stage, mesh, n_free, n_reg",
+    [
+        ("pix1", "delaunay", 10, 3),
+        ("pix1", "rectangular", 8, 1),
+        ("pix2", "delaunay", 3, 3),
+        ("pix2", "rectangular", 1, 1),
+    ],
+)
+def test__capture_model_frees_the_regularization_at_production_priors(stage, mesh, n_free, n_reg):
+    al = pytest.importorskip("autolens")
+    mesh_obj = (
+        al.mesh.RectangularBilinearAdaptImage(shape=(10, 10))
+        if mesh == "rectangular"
+        else al.mesh.Delaunay(pixels=100, zeroed_pixels=0)
+    )
+    lens = al.Galaxy(redshift=0.5, mass=al.mp.Isothermal(), shear=al.mp.ExternalShear())
+    model = nb.capture_model_from(stage, mesh=mesh, mesh_obj=mesh_obj, lens_fixed=lens)
+    paths = [".".join(p) for p in model.paths]
+    assert model.total_free_parameters == n_free
+    reg = nb.regularization_paths(paths)
+    assert len(reg) == n_reg
+    expected_cls = "Constant" if mesh == "rectangular" else "AdaptSplit"
+    assert nb.regularization_class_for(mesh) == expected_cls
+    for path in reg:
+        attr = path.rsplit(".", 1)[1]
+        kind, lower, upper = nb.REGULARIZATION_PRIORS[expected_cls][attr]
+        prior = model.galaxies.source.pixelization.regularization
+        prior = getattr(prior, attr)
+        assert type(prior).__name__ == f"{kind}Prior"
+        assert (prior.lower_limit, prior.upper_limit) == (lower, upper)
+    # The same builder twice gives the same order: the replay's assertion holds.
+    again = nb.capture_model_from(stage, mesh=mesh, mesh_obj=mesh_obj, lens_fixed=lens)
+    assert [".".join(p) for p in again.paths] == paths

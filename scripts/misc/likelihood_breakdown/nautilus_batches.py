@@ -9,7 +9,7 @@ Certified-solver phase C1 (autolens_profiling#304). Two cells share this module:
   replays those lanes (:func:`load`, :func:`sample_calls`, :func:`timed_window`,
   :func:`chunked`, :func:`rate_summary`).
 
-Everything here except :func:`recording` is pure numpy, so the selection and
+Everything here except :func:`recording` and :func:`capture_model_from` is pure numpy, so the selection and
 summary rules are unit-tested without JAX (``scripts/misc/test/test_nautilus_batches.py``).
 
 The recorder
@@ -58,7 +58,7 @@ from pathlib import Path
 import numpy as np
 
 #: Bump when the npz key set changes; ``load`` refuses a file it does not know.
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 #: Phase labels, in run order.
 PHASES = ("prior", "exploration", "sampling")
@@ -172,6 +172,90 @@ def recording(recorder: BatchRecorder):
     finally:
         Fitness.call_wrap = original_call_wrap
         nautilus.Sampler.evaluate_likelihood = original_evaluate
+
+
+# ---------------------------------------------------------------------------
+# The captured model — ONE builder, used by the capture and by the replay
+# ---------------------------------------------------------------------------
+
+#: The capture stages (``--stage``), after the production pipeline's pixelized
+#: stages (euclid_strong_lens_modeling_pipeline/scripts/full_model.py).
+STAGES = ("pix1", "pix2")
+
+#: The production regularization priors. ``AdaptSplit``'s are the packaged
+#: PyAutoGalaxy ``config/priors/regularization/adapt_split.yaml``, byte-identical
+#: to the pipeline's own ``config/priors/regularization/adapt_split.yaml``;
+#: ``Constant``'s are the packaged ``constant.yaml``. Set EXPLICITLY on the model
+#: so the capture does not depend on which config directory is active.
+REGULARIZATION_PRIORS = {
+    "AdaptSplit": {
+        "inner_coefficient": ("LogUniform", 1.0e-6, 1.0e6),
+        "outer_coefficient": ("LogUniform", 1.0e-6, 1.0e6),
+        "signal_scale": ("Uniform", 0.0, 1.0),
+    },
+    "Constant": {"coefficient": ("LogUniform", 1.0e-6, 1.0e6)},
+}
+
+
+def regularization_class_for(mesh: str) -> str:
+    """The regularization class a stage frees on *mesh*.
+
+    Delaunay: ``AdaptSplit``, as production (and as the phase-B cell already
+    uses). Rectangular: ``Constant`` — the cell's class. ``AdaptSplit`` needs the
+    interpolator's split cross-points (``_mappings_sizes_weights_split``), which
+    only the Delaunay / KNN / Sibson interpolators define, and production has no
+    rectangular stage to copy.
+    """
+    return "Constant" if mesh == "rectangular" else "AdaptSplit"
+
+
+def capture_model_from(stage: str, *, mesh: str, mesh_obj, lens_fixed):
+    """The fixed-light model a capture fits and a replay re-instantiates.
+
+    ``pix1`` (production ``source_pix_1``): lens Isothermal + ExternalShear free
+    with the phase-B cell's Gaussian priors, AND the regularization free with the
+    production priors. ``pix2`` (production ``source_pix_2``): the lens is
+    *lens_fixed* (the S3 source-only lens — the cell's fiducial mass and shear) and
+    only the regularization is free. The mesh is the cell's (*mesh_obj*) in both.
+
+    Returns the ``af.Collection``; its ``paths`` order is the capture's
+    ``parameter_paths`` and the replay asserts it is unchanged.
+    """
+    import autofit as af
+    import autolens as al
+
+    if stage not in STAGES:
+        raise ValueError(f"unknown stage {stage!r} (want one of {STAGES})")
+
+    reg_name = regularization_class_for(mesh)
+    regularization = af.Model(getattr(al.reg, reg_name))
+    for attr, (kind, lower, upper) in REGULARIZATION_PRIORS[reg_name].items():
+        prior_cls = af.LogUniformPrior if kind == "LogUniform" else af.UniformPrior
+        setattr(regularization, attr, prior_cls(lower_limit=lower, upper_limit=upper))
+    pixelization = af.Model(al.Pixelization, mesh=mesh_obj, regularization=regularization)
+    source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
+
+    if stage == "pix1":
+        mass = af.Model(al.mp.Isothermal)
+        mass.centre.centre_0 = af.GaussianPrior(mean=0.0, sigma=0.005)
+        mass.centre.centre_1 = af.GaussianPrior(mean=0.0, sigma=0.005)
+        mass.einstein_radius = af.GaussianPrior(mean=1.6, sigma=0.05)
+        ell = al.convert.ell_comps_from(axis_ratio=0.9, angle=45.0)
+        mass.ell_comps.ell_comps_0 = af.GaussianPrior(mean=ell[0], sigma=0.01)
+        mass.ell_comps.ell_comps_1 = af.GaussianPrior(mean=ell[1], sigma=0.01)
+        shear = af.Model(al.mp.ExternalShear)
+        shear.gamma_1 = af.GaussianPrior(mean=0.05, sigma=0.005)
+        shear.gamma_2 = af.GaussianPrior(mean=0.05, sigma=0.005)
+        lens = af.Model(al.Galaxy, redshift=0.5, mass=mass, shear=shear)
+    else:
+        lens = lens_fixed
+
+    return af.Collection(galaxies=af.Collection(lens=lens, source=source))
+
+
+def regularization_paths(parameter_paths) -> list[str]:
+    """The regularization entries of a capture's ``parameter_paths``."""
+    return [p for p in parameter_paths if ".regularization." in p]
 
 
 # ---------------------------------------------------------------------------

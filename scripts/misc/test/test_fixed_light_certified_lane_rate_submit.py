@@ -2,8 +2,9 @@
 
 **No imaging, no JAX, no GPU** — these read the submit script and the two cells as text.
 
-The submit runs two cells: ``nautilus_batch_capture.py`` (tasks 0-1, the capture) and
-``fixed_light_trace.py --lanes captured`` (tasks 2-27, the rate and timing replays).
+The submit runs two cells: ``nautilus_batch_capture.py`` (tasks 0-3, the pix1 / pix2
+captures on both meshes) and ``fixed_light_trace.py --lanes captured`` (tasks 4-37,
+the rate and timing replays).
 It is a sixth ``fixed_light`` submit family with its own file-name prefix, excluded
 from ``test_fixed_light_cell.py``'s glob for the reason that file states; this file
 is the family's half of that bargain, mirroring
@@ -55,7 +56,7 @@ if str(_misc) not in _sys.path:
     _sys.path.insert(0, str(_misc))
 
 CONFIG_NAME = "hpc_a100_fp64_fixed_light_trace"
-TABLES = ("MESHES", "PASSES", "BATCHES", "SOLVERS", "FALLBACKS")
+TABLES = ("MESHES", "STAGES", "PASSES", "BATCHES", "SOLVERS", "FALLBACKS")
 
 
 def _arm_table(text: str, name: str) -> list[str]:
@@ -90,23 +91,27 @@ def test__array_range_matches_the_arms():
     array = re.search(r"^#SBATCH --array=(\d+)-(\d+)", text, re.M)
     assert array and int(array.group(1)) == 0
     assert int(array.group(2)) == lengths["MESHES"] - 1
-    assert "FATAL: no (mesh, pass, batch, solver, fallback) arm" in text
+    assert "FATAL: no (mesh, stage, pass, batch, solver, fallback) arm" in text
 
 
 def test__the_array_is_the_pre_registered_task_table():
-    """2 captures, 2 rate passes, then mesh x B x the three phase-B rows."""
-    expected = [
-        ("delaunay", "capture", "20", "-", "-"),
-        ("rectangular", "capture", "20", "-", "-"),
-        ("delaunay", "rate", "20", "certified", "off"),
-        ("rectangular", "rate", "20", "certified", "off"),
+    """4 captures, 4 rate passes, the pix1 B grid, then pix2 at B=20."""
+    both = [
+        (mesh, stage)
+        for stage, mesh in itertools.product(("pix1", "pix2"), ("delaunay", "rectangular"))
     ]
+    expected = [(mesh, stage, "capture", "20", "-", "-") for mesh, stage in both]
+    expected += [(mesh, stage, "rate", "20", "certified", "off") for mesh, stage in both]
     rows = [("pdip", "on"), ("certified", "on"), ("certified", "off")]
     expected += [
-        (mesh, "time", str(batch), solver, fallback)
+        (mesh, "pix1", "time", str(batch), solver, fallback)
         for mesh, batch, (solver, fallback) in itertools.product(
             ("delaunay", "rectangular"), (16, 20, 50, 100), rows
         )
+    ]
+    expected += [
+        (mesh, "pix2", "time", "20", solver, fallback)
+        for mesh, (solver, fallback) in itertools.product(("delaunay", "rectangular"), rows)
     ]
     assert _arms() == expected
 
@@ -115,17 +120,21 @@ def test__replay_refuses_a_missing_capture_and_documents_the_two_step():
     text = SUBMIT.read_text()
     executable = _executable(text)
     assert 'if [ "$PASS" != "capture" ] && [ ! -f "$NPZ" ]; then' in executable
-    assert "sbatch --parsable --array=0-1" in text
-    assert "--array=2-27 --dependency=afterok:${CAP}" in text
-    assert 'NPZ="$AP_ROOT/results/breakdown/imaging/nautilus_batches_${MESH}.npz"' in executable
+    assert "sbatch --parsable --array=0-3" in text
+    assert "--array=4-37 --dependency=afterok:${CAP}" in text
+    assert (
+        'NPZ="$AP_ROOT/results/breakdown/imaging/nautilus_batches_${MESH}_${STAGE}.npz"'
+        in executable
+    )
 
 
 def test__capture_runs_the_production_nautilus_settings():
     executable = _executable(SUBMIT.read_text())
-    for flag in ("--n-live 150", "--n-batch 20", "--n-like-max 40000", "--capture-seconds"):
+    for flag in ("--stage $STAGE", "--n-batch 20", "--n-like-max 40000", "--capture-seconds"):
         assert flag in executable, f"the capture does not pass {flag}"
+    assert "--n-live" not in executable, "n_live must come from the stage's production value"
     capture = CAPTURE.read_text()
-    assert "PRODUCTION_N_LIVE = 150" in capture
+    assert 'PRODUCTION_N_LIVE = {"pix1": 150, "pix2": 75}' in capture
     assert "PRODUCTION_N_BATCH = 20" in capture
     assert "use_jax_vmap=True" in capture
     if PIPELINE_FULL_MODEL.exists():
@@ -134,6 +143,12 @@ def test__capture_runs_the_production_nautilus_settings():
         source_pix_1 = pipeline.split("def source_pix_1(", 1)[1].split("\ndef ", 1)[0]
         assert "n_batch: int = 20" in source_pix_1
         assert "n_live=150" in source_pix_1
+        source_pix_2 = pipeline.split("def source_pix_2(", 1)[1].split("\ndef ", 1)[0]
+        assert "n_batch: int = 20" in source_pix_2
+        assert "n_live=75" in source_pix_2
+        # Both stages free the AdaptSplit regularization the capture frees.
+        assert "regularization_init=al.reg.AdaptSplit" in pipeline
+        assert "regularization=al.reg.AdaptSplit" in pipeline
 
 
 def test__replay_runs_the_library_mode_on_captured_lanes():

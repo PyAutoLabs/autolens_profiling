@@ -194,11 +194,18 @@ The captured-lane mode (certified-solver phase C1, autolens_profiling#304)
 seeded draw family with the lanes of a REAL Nautilus run, recorded by
 ``nautilus_batch_capture.py`` at the production ``source_pix[1]`` settings
 (``n_live=150``, ``n_batch=20``). A captured lane is the mass AND shear of one
-proposal (``_captured_lane_tree``), lens light fixed at S3 as in every lane of
-this cell. The file is refused unless its recorded S3 fingerprint — dataset
-sha256s, mesh, source pixels, regularization, border relocator, precision and
-the eager S3 figure of merit (``EQUIVALENCE_RTOL``) — matches the system built
-here. Without ``--lanes captured`` nothing below happens, and ``--batches``,
+proposal's physical parameter vector — mass, shear AND regularization for a
+``pix1`` capture, the regularization alone for ``pix2`` — evaluated the way
+``Fitness.call`` evaluates it (``_captured_likelihood_fn``: the capture's model,
+rebuilt by the same ``nautilus_batches.capture_model_from``, instantiated from the
+vector inside the trace), so every lane's own regularization reaches the
+likelihood in both passes; lens light fixed at S3 as in every lane of this cell.
+The file is refused unless its recorded S3 fingerprint — dataset sha256s, mesh,
+source pixels, the regularization CLASS and the S0 fiducial coefficients that
+built S3, border relocator, precision and the eager S3 figure of merit
+(``EQUIVALENCE_RTOL``) — matches the system built here, and unless the rebuilt
+model's parameter paths equal the capture's, in order. The per-lane
+regularization coefficients are NOT identity: they are what the lanes vary. Without ``--lanes captured`` nothing below happens, and ``--batches``,
 ``--batch-sample`` and ``--captured-pass`` are rejected.
 
 ``--captured-pass time`` (default) is the phase-B harness exactly — PART V, both
@@ -312,8 +319,8 @@ Output
 ``results/breakdown/imaging/fixed_light_trace_<mesh>[_border_off][_n<N>][_jitvmap<B>_<lanes>_fb<on|off>][_psf_<candidate>]_<config>.{json,png}``.
 Library mode replaces the batched token with
 ``_jitvmap<B>_<lanes>_lib<solver>_fb<on|off>_b<budget>`` (``<lanes>`` is
-``captured`` for a phase-C1 timed pass). The phase-C1 rate pass writes
-``fixed_light_trace_<mesh>_captured_rate_lib<solver>_fb<on|off>_b<budget>[_sample<K>]_<config>.json``
+``captured_<stage>`` for a phase-C1 timed pass). The phase-C1 rate pass writes
+``fixed_light_trace_<mesh>_captured_rate_lib<solver>_fb<on|off>_b<budget>_<stage>[_sample<K>]_<config>.json``
 and no PNG.
 
 The ``--config-name`` used for the phase-1 legs
@@ -992,7 +999,16 @@ if CAPTURED_LANES:
             ("mesh", _fp["mesh"], MESH),
             ("source_pixels", int(_fp["source_pixels"]), int(n_source_pixels)),
             ("dataset_sha256", _fp["dataset_sha256"], dataset_sha256),
-            ("regularization", _fp["regularization"], reg_provenance),
+            # The regularization COEFFICIENTS are free parameters of the capture (and
+            # of every replayed lane), so they are not the system's identity; its
+            # CLASS is, and so is the S0 fiducial the S3 subtraction was built with
+            # (that lives in log_evidence_s3_library below).
+            (
+                "regularization_class",
+                _fp["regularization_class"],
+                type(regularization).__name__,
+            ),
+            ("regularization_s0_fiducial", _fp["regularization_s0_fiducial"], reg_provenance),
             ("border_relocator", bool(_fp["border_relocator"]), BORDER_RELOCATOR_RESOLVED),
             (
                 "use_mixed_precision",
@@ -1015,20 +1031,24 @@ if CAPTURED_LANES:
             f"{_batches_path} was captured on a different S3 system: {_mismatch}. Its lanes "
             f"are parameter vectors of that system and are not this cell's lanes."
         )
-    _expected_paths = [
-        "galaxies.lens.mass.centre.centre_0",
-        "galaxies.lens.mass.centre.centre_1",
-        "galaxies.lens.mass.ell_comps.ell_comps_0",
-        "galaxies.lens.mass.ell_comps.ell_comps_1",
-        "galaxies.lens.mass.einstein_radius",
-        "galaxies.lens.shear.gamma_1",
-        "galaxies.lens.shear.gamma_2",
-    ]
-    if sorted(captured["meta"]["parameter_paths"]) != sorted(_expected_paths):
+    # The replay model: the SAME builder the capture used, so a lane vector means
+    # the same parameters here as it did to the sampler. Its order is asserted.
+    CAPTURED_STAGE = captured["meta"]["stage"]
+    _replay_model = nautilus_batches.capture_model_from(
+        CAPTURED_STAGE,
+        mesh=MESH,
+        mesh_obj=mesh_obj,
+        lens_fixed=list(system_s3.source_only_tracer.galaxies)[0],
+    )
+    _replay_paths = [".".join(_p) for _p in _replay_model.paths]
+    if _replay_paths != list(captured["meta"]["parameter_paths"]):
         raise AssertionError(
             f"{_batches_path} parameter paths {captured['meta']['parameter_paths']} are not "
-            f"the fixed-light mass + shear family {_expected_paths}"
+            f"this checkout's {CAPTURED_STAGE} model {_replay_paths} (order included)"
         )
+    _reg_cols = [
+        _replay_paths.index(_p) for _p in nautilus_batches.regularization_paths(_replay_paths)
+    ]
     captured_record = {
         "batches_path": str(_batches_path),
         "batches_sha256": _sha256(_batches_path),
@@ -1041,6 +1061,8 @@ if CAPTURED_LANES:
             for _p in dict.fromkeys(captured["call_phase"].tolist())
         },
         "parameter_paths": list(captured["meta"]["parameter_paths"]),
+        "stage": CAPTURED_STAGE,
+        "regularization": captured["meta"]["regularization"],
         "nautilus": captured["meta"]["nautilus"],
         "capture_fit_status": captured["meta"].get("fit_status"),
         "capture_library_revisions": captured["meta"].get("library_revisions"),
@@ -1049,11 +1071,15 @@ if CAPTURED_LANES:
                 "mesh",
                 "source_pixels",
                 "dataset_sha256",
-                "regularization",
+                "regularization_class",
+                "regularization_s0_fiducial",
                 "border_relocator",
                 "use_mixed_precision",
                 "log_evidence_s3_library",
             ],
+            "not_identity": (
+                "the regularization coefficients: free per lane since the capture frees them"
+            ),
             "log_evidence_s3_library_rel_diff": _s3_rel,
             "passed": True,
         },
@@ -1122,29 +1148,14 @@ def _lane_tree(draw):
     return jax.tree_util.tree_map(jnp.asarray, _inst)
 
 
-def _captured_lane_tree(values) -> object:
-    """The params pytree of one CAPTURED lane: S3 with the lane's mass AND shear.
-
-    *values* is one row of the capture's ``parameters`` in its
-    ``parameter_paths`` order. The same shallow-copy rule as ``_lane_tree``: the
-    Pixelization and Regularization stay shared (static aux data compares by
-    identity), exactly as Nautilus batches one pixelization over B vectors.
-    """
-    _v = dict(zip(captured["meta"]["parameter_paths"], (float(_x) for _x in values)))
-    _p = "galaxies.lens."
-    _inst = copy.copy(instance_s3)
-    _inst.galaxies = copy.copy(instance_s3.galaxies)
-    _attrs = dict(_LENS_ATTRS)
-    _attrs["mass"] = al.mp.Isothermal(
-        centre=(_v[_p + "mass.centre.centre_0"], _v[_p + "mass.centre.centre_1"]),
-        ell_comps=(_v[_p + "mass.ell_comps.ell_comps_0"], _v[_p + "mass.ell_comps.ell_comps_1"]),
-        einstein_radius=_v[_p + "mass.einstein_radius"],
-    )
-    _attrs["shear"] = al.mp.ExternalShear(
-        gamma_1=_v[_p + "shear.gamma_1"], gamma_2=_v[_p + "shear.gamma_2"]
-    )
-    _inst.galaxies.lens = al.Galaxy(redshift=float(_lens_s3.redshift), **_attrs)
-    return jax.tree_util.tree_map(jnp.asarray, _inst)
+def _regularization_range(rows) -> dict:
+    """Min / max of every free regularization parameter over the capture *rows*."""
+    _paths = captured["meta"]["parameter_paths"]
+    _vals = captured["parameters"][np.asarray(rows, dtype=int)]
+    return {
+        _paths[_c]: {"min": float(_vals[:, _c].min()), "max": float(_vals[:, _c].max())}
+        for _c in _reg_cols
+    }
 
 
 def _psf_context():
@@ -1157,6 +1168,30 @@ def _psf_context():
     if PSF_CANDIDATE is None:
         return contextlib.nullcontext({"jax": 0, "delegated": 0})
     return psf_cube_injection.psf_convolution_injected(PSF_CANDIDATE)
+
+
+def _captured_likelihood_fn(dataset_for_route, settings_for_route):
+    """``parameter vector -> log likelihood``, exactly as ``Fitness.call`` does it.
+
+    Phase C1 (#304): a captured lane is a physical parameter vector of the
+    capture's model (mass, shear AND regularization in pix1; regularization only
+    in pix2). ``_replay_model.instance_from_vector(..., xp=jnp)`` inside the trace
+    is the Fitness JAX path (``ignore_assertions=True``), so every lane's own
+    regularization coefficients reach the likelihood as traced values — which a
+    pytree of the S3 instance cannot do: its Pixelization sits in static aux data.
+    """
+    analysis = al.AnalysisImaging(
+        dataset=dataset_for_route,
+        adapt_images=adapt_images,
+        settings=settings_for_route,
+        use_jax=True,
+    )
+
+    def _likelihood(vector):
+        instance = _replay_model.instance_from_vector(vector=vector, ignore_assertions=True, xp=jnp)
+        return analysis.log_likelihood_function(instance=instance)
+
+    return _likelihood
 
 
 def _likelihood_fn(dataset_for_route, settings_for_route):
@@ -1173,6 +1208,11 @@ def _likelihood_fn(dataset_for_route, settings_for_route):
 
     return _likelihood
 
+
+#: The likelihood builder PART V and PART R use for their LANES: the S3 tree
+#: function in every phase-B/phase-2 mode, the Fitness-style vector function for
+#: captured lanes. PART B (the fiducial routes) always uses ``_likelihood_fn``.
+_lane_likelihood_fn = _captured_likelihood_fn if CAPTURED_LANES else _likelihood_fn
 
 print("\n" + "=" * 70)
 print("LIBRARY PATH — one full likelihood call per route")
@@ -1459,11 +1499,10 @@ if CAPTURED_PASS == "rate":
     _pos = 0
     _t_rate = time.perf_counter()
     with library_solver_injection.library_solver_observed(report=_collect_rate) as _observed:
-        _fn_rate = jax.jit(jax.vmap(_likelihood_fn(system_s3.dataset, _settings_library)))
+        _fn_rate = jax.jit(jax.vmap(_lane_likelihood_fn(system_s3.dataset, _settings_library)))
         with timer.section("captured_rate_pass"):
             for _ci, (_chunk, _n_real) in enumerate(_chunks):
-                _trees = [_captured_lane_tree(captured["parameters"][_k]) for _k in _chunk]
-                _batched = jax.tree_util.tree_map(lambda *xs: jnp.stack(xs), *_trees)
+                _batched = jnp.asarray(captured["parameters"][_chunk])
                 _before = len(_rate_rows)
                 _ll = np.asarray(block(_fn_rate(_batched)), dtype=float)
                 jax.effects_barrier()
@@ -1535,11 +1574,11 @@ if CAPTURED_PASS == "rate":
     _uncert_idx = np.flatnonzero(~_certified)
     _recheck_rows: list[dict] = []
     if _uncert_idx.size:
-        _pdip_scalar = jax.jit(_likelihood_fn(system_s3.dataset, _settings_pdip_reference))
+        _pdip_scalar = jax.jit(_lane_likelihood_fn(system_s3.dataset, _settings_pdip_reference))
         with timer.section("captured_rate_uncertified_pdip_recheck"):
             for _j in _uncert_idx[:RATE_PDIP_RECHECK_MAX]:
                 _k = int(_lanes[_j])
-                _ref = float(block(_pdip_scalar(_captured_lane_tree(captured["parameters"][_k]))))
+                _ref = float(block(_pdip_scalar(jnp.asarray(captured["parameters"][_k]))))
                 _recheck_rows.append(
                     {
                         "lane_row": _k,
@@ -1568,6 +1607,8 @@ if CAPTURED_PASS == "rate":
             "--vmap-batch == n_batch every chunk is exactly one captured Nautilus batch."
         ),
         "batch_sample": BATCH_SAMPLE,
+        "stage": CAPTURED_STAGE,
+        "regularization_range": _regularization_range(_lanes),
         "calls_replayed": int(_calls.shape[0]),
         "calls_rule": (
             "all captured calls"
@@ -1664,7 +1705,7 @@ if CAPTURED_PASS == "rate":
     }
     _rate_name = (
         f"fixed_light_trace_{MESH}_captured_rate_lib{LIBRARY_SOLVER}"
-        f"_fb{'on' if FALLBACK_ON else 'off'}_b{CERTIFIED_BUDGET}"
+        f"_fb{'on' if FALLBACK_ON else 'off'}_b{CERTIFIED_BUDGET}_{CAPTURED_STAGE}"
         + (f"_sample{int(BATCH_SAMPLE)}" if BATCH_SAMPLE is not None else "")
     )
     _rate_json, _ = resolve_output_paths(
@@ -1960,6 +2001,7 @@ else:
                     offsets={
                         _short: _vals[_long] - BASE_MASS[_short]
                         for _long, _short in _mass_keys.items()
+                        if _long in _vals
                     },
                     index=int(_k),
                     mass_cls="Isothermal",
@@ -1998,8 +2040,13 @@ else:
         if captured_window is None:
             lane_trees = [_lane_tree(_d) for _d in lane_draws]
         else:
-            lane_trees = [_captured_lane_tree(captured["parameters"][_k]) for _k in captured_window]
-        _fiducial_structure = jax.tree_util.tree_structure(params_tree_s3)
+            # Captured lanes are parameter VECTORS (see _captured_likelihood_fn).
+            lane_trees = [jnp.asarray(captured["parameters"][_k]) for _k in captured_window]
+        _fiducial_structure = (
+            jax.tree_util.tree_structure(params_tree_s3)
+            if captured_window is None
+            else jax.tree_util.tree_structure(lane_trees[0])
+        )
         for _i, _t in enumerate(lane_trees):
             if jax.tree_util.tree_structure(_t) != _fiducial_structure:
                 raise AssertionError(
@@ -2284,7 +2331,7 @@ else:
     # same lane trees; agreement between the two harness arms is insufficient.
     # (Library mode builds it from ``_settings_pdip_reference``, which names PDIP
     # explicitly; harness mode passes ``_settings`` exactly as phase 2 did.)
-    _fn_library_pdip = _likelihood_fn(system_s3.dataset, _settings_pdip_reference)
+    _fn_library_pdip = _lane_likelihood_fn(system_s3.dataset, _settings_pdip_reference)
     _library_pdip_fn = jax.jit(jax.vmap(_fn_library_pdip))
     with timer.section("vmap_lane_library_pdip_reference"):
         _ll_library_pdip = np.asarray(block(_library_pdip_fn(batched_tree)), dtype=float)
@@ -2365,7 +2412,7 @@ else:
     ):
         # The wrappers reproduce current Fitness._vmap and the scalar-jit
         # control. Both close over the same likelihood function.
-        _fn_v = _likelihood_fn(system_s3.dataset, _arm_settings)
+        _fn_v = _lane_likelihood_fn(system_s3.dataset, _arm_settings)
         _scalar_pin_fn = jax.jit(_fn_v)
         _vmap_pin_fn = jax.jit(jax.vmap(_fn_v))
 
@@ -2623,7 +2670,7 @@ else:
         # It changes nothing that is computed, and it runs on a separately
         # compiled program that is never timed.
         with library_solver_injection.library_solver_observed(report=_collect_report) as _observed:
-            _fn_report = _likelihood_fn(system_s3.dataset, _settings_library)
+            _fn_report = _lane_likelihood_fn(system_s3.dataset, _settings_library)
             with timer.section("vmap_certification_report"):
                 if _report_arm == "vmap":
                     _ll_report = np.asarray(
@@ -2747,6 +2794,8 @@ else:
             "draws_sha256": lane_draws_sha256,
             "lane_rows": captured_window.tolist(),
             "calls": sorted({int(_c) for _c in _win_calls}),
+            "stage": CAPTURED_STAGE,
+            "regularization_range": _regularization_range(captured_window),
             "phases": sorted({str(captured["call_phase"][_c]) for _c in _win_calls}),
             "window_rule": (
                 "nautilus_batches.timed_window: consecutive captured calls, in call order, from "
@@ -3391,7 +3440,8 @@ if VMAP_BATCH is not None:
         # token keeps these files disjoint from every harness-mode file.
         _cell_name = (
             f"{_cell_name}_jitvmap{int(VMAP_BATCH)}_{LANES_MODE}"
-            f"_lib{LIBRARY_SOLVER}_fb{'on' if FALLBACK_ON else 'off'}_b{CERTIFIED_BUDGET}"
+            + (f"_{CAPTURED_STAGE}" if CAPTURED_LANES else "")
+            + f"_lib{LIBRARY_SOLVER}_fb{'on' if FALLBACK_ON else 'off'}_b{CERTIFIED_BUDGET}"
         )
 
 if PSF_CANDIDATE is not None:

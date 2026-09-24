@@ -22,12 +22,14 @@ What it does
    line for line (the house rule of this family: "if a sibling cell's model
    changes, this cell must change with it"). The replay does not trust the copy:
    it re-derives the S3 fingerprint recorded here (dataset sha256s, mesh, source
-   pixels, regularization, border relocator, the eager S3 figure of merit) and
-   refuses a file that does not match.
+   pixels, the regularization CLASS, border relocator, the eager S3 figure of
+   merit) and refuses a file that does not match. The regularization
+   coefficients are free parameters of the capture and are no longer part of the
+   system's identity.
 2. Fits that S3 system with ``af.Nautilus`` at the settings of the production
    ``source_pix[1]`` stage of
    ``euclid_strong_lens_modeling_pipeline/scripts/full_model.py``:
-   ``n_live=150``, ``n_batch=20``, ``use_jax_vmap=True`` (the ``SettingsSearch``
+   ``n_live=150`` (``source_pix[2]``: 75), ``n_batch=20``, ``use_jax_vmap=True`` (the ``SettingsSearch``
    default), one core, every other Nautilus argument at its default. The
    likelihood is the library's own — ``AnalysisImaging(use_jax=True)`` with the
    packaged positive-only solver (library PDIP): the batches must be the ones
@@ -39,20 +41,34 @@ What it does
    ``nautilus.Sampler.evaluate_likelihood``, restored on exit — no library is
    edited).
 
-The model, and where it departs from ``source_pix[1]``
-------------------------------------------------------
+The model: ``--stage pix1|pix2``, and where it departs from production
+---------------------------------------------------------------------
 
-Free: the lens ``Isothermal`` (centre, ell_comps, einstein_radius) and the
-``ExternalShear`` — 7 parameters, with the phase-B cell's Gaussian priors (the
-same priors ``fixed_light_draws_steps.PRIOR_SIGMA`` scales the phase-B lanes
-from). Fixed: the lens light (subtracted, S3) and the source pixelization.
+The model is built by ``nautilus_batches.capture_model_from`` — ONE builder the
+replay re-instantiates, so the parameter order cannot drift between the two cells.
 
-``source_pix[1]`` also frees the regularization (``AdaptSplit``) and chains its
-priors from ``source_lp``; this cell keeps the regularization FIXED at the cell's
-coefficients, because the replay's lane trees carry the pixelization in their
-static aux data (``fixed_light_trace._lane_tree``) and every lane must share it.
-The captured batches therefore vary the mass and shear only — the same axes as
-the phase-B lanes, now proposed by the sampler instead of drawn by a seed.
+- ``pix1`` (default; production ``source_pix_1``): the lens ``Isothermal``
+  (centre, ell_comps, einstein_radius) and ``ExternalShear`` free with the
+  phase-B cell's Gaussian priors, AND the regularization free — 10 parameters
+  on Delaunay, 8 on rectangular.
+- ``pix2`` (production ``source_pix_2``): the mass and shear FIXED at the S3
+  lens (the cell's fiducial values) and only the regularization free.
+
+The regularization priors are production's: ``AdaptSplit`` inner and outer
+coefficient ``LogUniform(1e-6, 1e6)``, ``signal_scale`` ``Uniform(0, 1)`` — the
+packaged PyAutoGalaxy ``adapt_split.yaml``, identical to the pipeline's own
+config (``nautilus_batches.REGULARIZATION_PRIORS``, set explicitly). The
+Delaunay cell already uses ``AdaptSplit`` (its fixed coefficients 0.1 / 10 / 0.1
+are the S0 fit that defines S3, and nothing else). The RECTANGULAR cell uses
+``Constant`` and cannot build ``AdaptSplit`` (the rectangular interpolator has no
+split cross-points), and production has no rectangular stage, so rectangular
+frees the ``Constant`` coefficient with the packaged ``LogUniform(1e-6, 1e6)``
+prior — a recorded deviation.
+
+Remaining departures from production: mass and shear priors are the cell's, not
+chained from ``source_lp``; no positions likelihood; the mesh is the cell's
+(Hilbert 1500 vertices, ``weight_power=1``) in both stages, where ``source_pix_2``
+redraws a 500-vertex Hilbert grid at ``weight_power=3.5`` from the pix1 result.
 Nautilus is seeded (``--seed``, default 1) so a capture is reproducible;
 production passes no seed. Quick updates are disabled (they only render the
 current best fit and never change what Nautilus proposes), and the search's
@@ -64,20 +80,23 @@ Flags (beyond the shared ``_profile_cli`` set)
 ----------------------------------------------
 
 ``--mesh {delaunay,rectangular}`` (required) — the phase-B meshes.
+``--stage {pix1,pix2}`` (default ``pix1``) — which production stage's free
+parameters (above).
 ``--n-like-max N`` (default 40000) — Nautilus's own likelihood cap. On the A100
 this is roughly an hour of sampling (phase B: ~39 ms per Delaunay lane under
 library PDIP ``jit(vmap)``, plus Nautilus's CPU-side bound training); a laptop
 witness passes a few batches' worth.
 ``--capture-seconds S`` (default: no limit) — a hard wall-clock cap. The batch
 that crosses it is recorded, then Nautilus is unwound and the file written.
-``--n-live`` (default 150), ``--n-batch`` (default 20), ``--seed`` (default 1).
+``--n-live`` (default: the stage's production value, 150 for pix1 and 75 for
+pix2), ``--n-batch`` (default 20), ``--seed`` (default 1).
 
 Output
 ------
 
-``<output-dir>/nautilus_batches_<mesh>[_n<N>].npz`` and ``.json`` beside it
-(default output dir ``results/breakdown/imaging``). The npz keys are
-``nautilus_batches.SCHEMA_VERSION``'s: ``parameters`` ``(n_lanes, 7)`` physical
+``<output-dir>/nautilus_batches_<mesh>_<stage>[_n<N>].npz`` and ``.json`` beside
+it (default output dir ``results/breakdown/imaging``). The npz keys are
+``nautilus_batches.SCHEMA_VERSION``'s: ``parameters`` ``(n_lanes, n_dim)`` physical
 values in ``meta.parameter_paths`` order, ``figure_of_merit``, ``call_index``,
 ``lane_in_call``, and per call ``call_size``, ``call_phase``, ``call_n_bounds``,
 ``call_explored``, ``call_n_like_before``, ``call_wall_s``; ``meta_json`` repeats
@@ -159,8 +178,9 @@ from _profile_cli import (  # noqa: E402
 
 _cli = parse_profile_cli()
 
-#: ``source_pix[1]`` of euclid_strong_lens_modeling_pipeline/scripts/full_model.py.
-PRODUCTION_N_LIVE = 150
+#: euclid_strong_lens_modeling_pipeline/scripts/full_model.py: source_pix_1 runs
+#: n_live=150, source_pix_2 n_live=75; both default n_batch=20.
+PRODUCTION_N_LIVE = {"pix1": 150, "pix2": 75}
 PRODUCTION_N_BATCH = 20
 
 _cell_parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
@@ -168,17 +188,19 @@ _cell_parser.add_argument("--mesh", choices=("rectangular", "delaunay"), require
 _cell_parser.add_argument("--source-pixels", type=int, default=None)
 _cell_parser.add_argument("--n-like-max", type=int, default=40000)
 _cell_parser.add_argument("--capture-seconds", type=float, default=None)
-_cell_parser.add_argument("--n-live", type=int, default=PRODUCTION_N_LIVE)
+_cell_parser.add_argument("--n-live", type=int, default=None)
 _cell_parser.add_argument("--n-batch", type=int, default=PRODUCTION_N_BATCH)
 _cell_parser.add_argument("--seed", type=int, default=1)
+_cell_parser.add_argument("--stage", choices=nautilus_batches.STAGES, default="pix1")
 _cell_args = _cli.parse_cell_args(_cell_parser)
 
 MESH = _cell_args.mesh
 N_LIKE_MAX = int(_cell_args.n_like_max)
 CAPTURE_SECONDS = _cell_args.capture_seconds
-N_LIVE = int(_cell_args.n_live)
 N_BATCH = int(_cell_args.n_batch)
 SEED = int(_cell_args.seed)
+STAGE = _cell_args.stage
+N_LIVE = int(_cell_args.n_live if _cell_args.n_live is not None else PRODUCTION_N_LIVE[STAGE])
 for _flag, _value in (("--n-like-max", N_LIKE_MAX), ("--n-live", N_LIVE), ("--n-batch", N_BATCH)):
     if _value < 1:
         raise ValueError(f"{_flag} must be >= 1 (got {_value})")
@@ -200,7 +222,7 @@ timer = timing.Timer()
 # ===================================================================
 
 print("=" * 70)
-print(f"NAUTILUS BATCH CAPTURE — {MESH} — n_live {N_LIVE}, n_batch {N_BATCH}")
+print(f"NAUTILUS BATCH CAPTURE — {MESH} {STAGE} — n_live {N_LIVE}, n_batch {N_BATCH}")
 print("=" * 70)
 
 _workspace_root = _profiling_root()
@@ -374,8 +396,8 @@ print(f"  S3 figure_of_merit (library) = {log_evidence_s3_library}")
 # PART N — the Nautilus fit of the S3 system, recorded
 # ===================================================================
 # The fixed-light model: the S3 lens has no light (it was subtracted from the
-# dataset), so the lens is mass + shear with the cell's priors, and the source is
-# the SAME pixelization object the S3 instance carries.
+# dataset), so the lens is mass + shear (free in pix1, the S3 lens itself in pix2);
+# the source is the cell's mesh with the regularization FREE at production priors.
 
 _s3_lens, _s3_source = list(system_s3.source_only_tracer.galaxies)
 _s3_lens_attrs = sorted(
@@ -387,14 +409,15 @@ if _s3_lens_attrs != ["mass", "shear"]:
         f"captured lanes would not be the phase-B lane family"
     )
 
-capture_model = af.Collection(
-    galaxies=af.Collection(
-        lens=af.Model(al.Galaxy, redshift=0.5, mass=mass, shear=shear),
-        source=af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization),
-    )
+capture_model = nautilus_batches.capture_model_from(
+    STAGE, mesh=MESH, mesh_obj=mesh_obj, lens_fixed=_s3_lens
 )
+REGULARIZATION_CLASS = nautilus_batches.regularization_class_for(MESH)
 parameter_paths = [".".join(_p) for _p in capture_model.paths]
-print(f"\n  Capture model: {capture_model.total_free_parameters} free parameters")
+print(
+    f"\n  Capture model ({STAGE}): {capture_model.total_free_parameters} free parameters, "
+    f"regularization {REGULARIZATION_CLASS} free"
+)
 for _p in parameter_paths:
     print(f"    {_p}")
 _register_model_pytrees(capture_model)
@@ -406,18 +429,21 @@ analysis = al.AnalysisImaging(
     use_jax=True,
 )
 
-# The fiducial through the SAME analysis: the prior medians are the S3 fiducial,
-# so this is the S3 system's own likelihood (recorded, and a sanity print).
-_fiducial_instance = capture_model.instance_from_vector(
-    vector=capture_model.physical_values_from_prior_medians
-)
+# The prior-median vector through the SAME analysis and the Fitness path
+# (instance_from_vector under jit): the mass/shear medians are the S3 fiducial,
+# the regularization medians are the prior's (recorded, and a sanity print).
+_median_vector = jnp.asarray(capture_model.physical_values_from_prior_medians)
 with timer.section("fiducial_jit"):
     _fiducial_ll = float(
-        jax.jit(lambda _t: analysis.log_likelihood_function(instance=_t))(
-            jax.tree_util.tree_map(jnp.asarray, _fiducial_instance)
-        )
+        jax.jit(
+            lambda _v: analysis.log_likelihood_function(
+                instance=capture_model.instance_from_vector(
+                    vector=_v, ignore_assertions=True, xp=jnp
+                )
+            )
+        )(_median_vector)
     )
-print(f"  fiducial log likelihood (jit, library PDIP): {_fiducial_ll:.6f}")
+print(f"  prior-median log likelihood (jit, library PDIP): {_fiducial_ll:.6f}")
 
 search = af.Nautilus(
     n_live=N_LIVE,
@@ -498,13 +524,26 @@ import nautilus as _nautilus  # noqa: E402
 meta = {
     "schema_version": nautilus_batches.SCHEMA_VERSION,
     "mesh": MESH,
+    "stage": STAGE,
     "dataset": DATASET,
     "parameter_paths": parameter_paths,
+    "prior_median_vector": [float(_x) for _x in _median_vector],
+    "regularization": {
+        "class": REGULARIZATION_CLASS,
+        "free": True,
+        "priors": nautilus_batches.REGULARIZATION_PRIORS[REGULARIZATION_CLASS],
+        "priors_source": (
+            "PyAutoGalaxy packaged config/priors/regularization (adapt_split.yaml / "
+            "constant.yaml); adapt_split.yaml is identical to "
+            "euclid_strong_lens_modeling_pipeline/config/priors/regularization/adapt_split.yaml"
+        ),
+    },
     "s3_fingerprint": {
         "dataset_sha256": dataset_sha256,
         "mesh": MESH,
         "source_pixels": int(n_source_pixels),
-        "regularization": reg_provenance,
+        "regularization_class": REGULARIZATION_CLASS,
+        "regularization_s0_fiducial": reg_provenance,
         "border_relocator": BORDER_RELOCATOR_RESOLVED,
         "use_mixed_precision": bool(_cli.use_mixed_precision),
         "log_evidence_s3_library": log_evidence_s3_library,
@@ -519,13 +558,20 @@ meta = {
         "number_of_cores": 1,
         "version": getattr(_nautilus, "__version__", None),
         "production_reference": (
-            "euclid_strong_lens_modeling_pipeline/scripts/full_model.py source_pix_1: "
-            "af.Nautilus(n_live=150, n_batch=20, **SettingsSearch.search_dict) with "
-            "use_jax_vmap=True and number_of_cores=1 (SettingsSearch defaults)"
+            "euclid_strong_lens_modeling_pipeline/scripts/full_model.py source_pix_1 "
+            "(n_live=150) / source_pix_2 (n_live=75): af.Nautilus(n_batch=20, "
+            "**SettingsSearch.search_dict) with use_jax_vmap=True and number_of_cores=1 "
+            "(SettingsSearch defaults)"
         ),
+        "stage": STAGE,
+        "production_stage": "source_pix_1" if STAGE == "pix1" else "source_pix_2",
         "departures_from_production": [
-            "regularization fixed at the cell's coefficients (source_pix_1 frees AdaptSplit)",
-            "priors are the phase-B cell's Gaussians, not chained from source_lp",
+            "mass/shear priors are the phase-B cell's Gaussians, not chained from source_lp"
+            if STAGE == "pix1"
+            else "mass/shear fixed at the S3 fiducial, not at a source_pix_1 result",
+            "no positions likelihood",
+            "the cell's mesh (Hilbert 1500, weight_power 1) in both stages; source_pix_2 "
+            "redraws a 500-vertex Hilbert grid at weight_power 3.5",
             "seeded (production passes no seed)",
             "quick updates disabled (iterations_per_quick_update=1e12; render-only)",
             "NullPaths: no output directory, so no checkpoint and one Sampler.run call",
@@ -552,7 +598,7 @@ _output_dir = (
     if _cli.output_dir is not None
     else _workspace_root / "results" / "breakdown" / "imaging"
 )
-_stem = f"nautilus_batches_{MESH}"
+_stem = f"nautilus_batches_{MESH}_{STAGE}"
 if SOURCE_PIXELS_REQUESTED is not None:
     _stem = f"{_stem}_n{int(n_source_pixels)}"
 npz_path = Path(_output_dir) / f"{_stem}.npz"
