@@ -1,0 +1,267 @@
+#!/bin/bash -l
+#
+# 2026-09 certified-positive-solver PHASE B — the production vmap solver POLICY on the
+# A100 (autolens_profiling#300).
+#
+# PyAutoArray#567 (merged at 11b93476, unreleased) shipped the certified active-set
+# solver INTO THE LIBRARY behind Settings(positive_only_solver="certified",
+# certified_fallback=pdip|none, certified_pass_budget=16). Production Nautilus runs
+# jax.jit(jax.vmap(fn)) (Fitness._vmap, PyAutoFit#1638), where the lax.cond PDIP
+# fallback becomes a select and BOTH solvers run for every lane. Phase 2 (harness
+# injection) measured certified+fallback at 44.6 ms/lane against 31.1 ms scalar at
+# B=16, and 24.9 ms/lane with the fallback off. Library PDIP — today's default — has
+# never been measured under vmap. This array measures all three library rows, on both
+# meshes, against the library mains, with NO monkeypatch: the solver is chosen by
+# --solver-source library, i.e. through al.Settings.
+#
+# Every leg is a MATCHED PAIR, as in phase 2: the same B lanes, one process, one set of
+# library Settings, run both as jax.jit(jax.vmap(fn)) and as B sequential jax.jit(fn)
+# calls (--arms both), so the scalar jit x B row comes from inside every task.
+#
+# Array tasks (index = 9*mesh + 3*batch + row for tasks 0-17)
+# -----------------------------------------------------------
+#   task  mesh         B   lanes      solver     fallback  row
+#    0    delaunay     4   distinct   pdip       on        library PDIP (today's default)
+#    1    delaunay     4   distinct   certified  on        certified + PDIP fallback
+#    2    delaunay     4   distinct   certified  off       certified, fallback none
+#    3    delaunay     8   distinct   pdip       on        library PDIP
+#    4    delaunay     8   distinct   certified  on        certified + PDIP fallback
+#    5    delaunay     8   distinct   certified  off       certified, fallback none
+#    6    delaunay    16   distinct   pdip       on        library PDIP
+#    7    delaunay    16   distinct   certified  on        certified + PDIP fallback
+#    8    delaunay    16   distinct   certified  off       certified, fallback none
+#    9    rectangular  4   distinct   pdip       on        library PDIP
+#   10    rectangular  4   distinct   certified  on        certified + PDIP fallback
+#   11    rectangular  4   distinct   certified  off       certified, fallback none
+#   12    rectangular  8   distinct   pdip       on        library PDIP
+#   13    rectangular  8   distinct   certified  on        certified + PDIP fallback
+#   14    rectangular  8   distinct   certified  off       certified, fallback none
+#   15    rectangular 16   distinct   pdip       on        library PDIP
+#   16    rectangular 16   distinct   certified  on        certified + PDIP fallback
+#   17    rectangular 16   distinct   certified  off       certified, fallback none
+#   18    delaunay    16   IDENTICAL  certified  on        CONTROL (identical lanes)
+#   19    rectangular 16   IDENTICAL  certified  on        CONTROL (identical lanes)
+#
+# --fallback on|off maps to certified_fallback pdip|none; on a library-PDIP row it has
+# no effect and is recorded as on. The pass budget is NOT passed: every row runs the
+# library's resolved certified_pass_budget (16 as packaged), the value production would
+# take, and the JSON records it and its basis; the filename carries it as _b<budget>.
+# Distinct lanes are seeded random draws of the phase-3 family applied to the lens mass
+# (fixed_light_draws_steps.random_draws, seed 0), lens light fixed at S3. Tasks 18-19 are
+# the identical-lane CONTROL and are NOT results: identical lanes share one straggler.
+#
+# The numerical gate — PRE-REGISTERED before submission
+# -----------------------------------------------------
+# Phase 3 (results/notes/hst_gpu_residue_phase3_psf_2026_09.md) placed phase 2's ~2.5e-9
+# residual BETWEEN the jit(vmap) and scalar-jit compositions, not in the solver. So each
+# task compiles two library-PDIP references, one per composition, and per lane:
+#   GATED at 1e-9 relative:  the jit(vmap) arm vs the jit(vmap) library PDIP
+#   GATED at 1e-9 relative:  the scalar jit arm vs the scalar jit library PDIP
+#   RECORDED, NOT gated:     jit(vmap) vs scalar across compositions (relative + nats),
+#                            and the two references against each other
+#   RECORDED:                uncertified_lanes for the certified rows
+# A fallback-none row is policy-eligible only if every lane certifies AND passes the gate.
+# Timing is never gated. A failing task writes its JSON and PNG, then exits non-zero.
+# The cell also asserts the fiducial inversion's positive_only_solver_used equals the
+# requested solver, and that the rectangular mesh takes ZERO qhull callbacks.
+#
+# Flags this cell owns (strict shared parsing rejects unknown ones):
+#
+#   mesh                                        delaunay | rectangular
+#   border-relocator cell                       True, as every cell in this family
+#   trace-calls 10                              steady calls taken inside the profiler
+#   routes b,d                                  PART B fiducial context, unchanged
+#   vmap-batch B                                the batched experiment
+#   lanes distinct|identical                    the lane family
+#   arms both                                   vmap AND scalar, matched
+#   fallback on|off                             certified_fallback pdip | none
+#   solver-source library                       PHASE B — solver via al.Settings, no patch
+#   solver pdip|certified                       PHASE B — Settings.positive_only_solver
+#   config-name hpc_a100_fp64_fixed_light_trace
+#
+# The output filename gains _jitvmap<B>_<lanes>_lib<solver>_fb<on|off>_b<budget>, so no
+# phase-B leg can collide with a phase-2 harness leg or with another phase-B leg.
+#
+# Every leg starts from an EMPTY JAX compilation cache: a seeded XLA autotune cache
+# silently changes kernels (results/notes/xla_autotune_triton_gemm.md). The
+# AUTOTUNE_ENTRIES census at the end is the check. --cpus-per-task=4 is kept from
+# phases 1-2: qhull is serial host work and the Delaunay rows measure it.
+#
+# WALL-BASIS:
+#   All twenty array tasks run the one fixed_light_trace script, so no task's --time is
+#   justified by a rate measured on something else. The phase-1 array of this SAME
+#   script on this same a100 and dataset ran in about 56 s per task end to end (job
+#   343350). A phase-B task compiles the scalar program and the batched program three
+#   times each as phase 2 does, plus one scalar library-PDIP reference and one untimed
+#   batched reporting program, so the offered wall below is phase 2's (the phase-1 wall
+#   scaled by one plus B at the largest B, plus 600 s for the batched compilations),
+#   with the same twelve-hour allocation. The rectangular rows have no host callback and
+#   are cheaper per lane, so the Delaunay rows bound the wall.
+#   NOTE for anyone editing this block - check_submits reads any line here shaped like
+#   a keyword, a colon and a value as row data, so the prose must never contain that
+#   shape. Phase 1 lost a gate run to exactly that.
+#   cell: imaging/fixed_light_trace/hst  device: a100  precision: fp64
+#   source: measured-wall  ref: ral-343350  wall: 1600  headroom: 2.0
+
+#SBATCH -J flt_certpolicy_hst
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=12:00:00
+#SBATCH --array=0-19
+#SBATCH -o output/output.%A_%a.out
+#SBATCH -e error/error.%A_%a.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+# Derive the repo root from where this was submitted (hpc/batch_gpu/../..) rather
+# than hardcoding /mnt/ral/jnightin/autolens_profiling: the canonical RAL checkout
+# sits on main with a dirty tree, so this runs from a worktree of the feature
+# branch. The -o/-e paths above are relative, so sbatch from inside hpc/batch_gpu/.
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding"
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+CELL="$AP_ROOT/scripts/imaging/likelihood_breakdown/fixed_light_trace.py"
+
+# The cell rejects unknown flags, but keep an explicit source guard so a stale
+# checkout fails before allocating a GPU. The JSON records the exact program too.
+if ! grep -q -- "--vmap-batch" "$CELL" || ! grep -q -- "--solver-source" "$CELL"; then
+    echo "FATAL: $CELL does not define --vmap-batch and --solver-source. This checkout" >&2
+    echo "       predates #300; refusing to run a harness-only cell as a library row." >&2
+    exit 1
+fi
+
+MESHES=(delaunay delaunay delaunay delaunay delaunay delaunay delaunay delaunay delaunay rectangular rectangular rectangular rectangular rectangular rectangular rectangular rectangular rectangular delaunay rectangular)
+BATCHES=(4 4 4 8 8 8 16 16 16 4 4 4 8 8 8 16 16 16 16 16)
+LANESETS=(distinct distinct distinct distinct distinct distinct distinct distinct distinct distinct distinct distinct distinct distinct distinct distinct distinct distinct identical identical)
+SOLVERS=(pdip certified certified pdip certified certified pdip certified certified pdip certified certified pdip certified certified pdip certified certified certified certified)
+FALLBACKS=(on on off on on off on on off on on off on on off on on off on on)
+MESH=${MESHES[$SLURM_ARRAY_TASK_ID]}
+BATCH=${BATCHES[$SLURM_ARRAY_TASK_ID]}
+LANESET=${LANESETS[$SLURM_ARRAY_TASK_ID]}
+SOLVER=${SOLVERS[$SLURM_ARRAY_TASK_ID]}
+FALLBACK=${FALLBACKS[$SLURM_ARRAY_TASK_ID]}
+if [ -z "$MESH" ] || [ -z "$BATCH" ] || [ -z "$LANESET" ] || [ -z "$SOLVER" ] || [ -z "$FALLBACK" ]; then
+    echo "FATAL: no (mesh, batch, lanes, solver, fallback) arm for array task ${SLURM_ARRAY_TASK_ID} (expected 0-19)." >&2
+    exit 1
+fi
+
+BORDER=cell
+
+# The dataset is tracked but its adapt image cache is not; twenty arms racing to
+# write the same dataset/imaging/hst/ would interleave their FITS writes, so it is
+# prepared ONCE before submitting; this is the check that it was.
+if [ ! -f "$AP_ROOT/dataset/imaging/hst/data.fits" ]; then
+    echo "FATAL: dataset/imaging/hst/data.fits missing. Simulate it once before" >&2
+    echo "       submitting (concurrent arms must not auto-simulate the same dir)." >&2
+    exit 1
+fi
+
+LEG="${MESH}_${BATCH}_${LANESET}_${SOLVER}_${FALLBACK}"
+
+# Fresh per-task compilation cache. output/ is gitignored, so these never reach git;
+# ${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID} keeps concurrent arms on the same node
+# from sharing one.
+export JAX_COMPILATION_CACHE_DIR="$AP_ROOT/output/jax_cache/fixed_light_certpolicy_${LEG}_${SLURM_ARRAY_JOB_ID:-local}_${SLURM_ARRAY_TASK_ID:-0}"
+rm -rf "$JAX_COMPILATION_CACHE_DIR" && mkdir -p "$JAX_COMPILATION_CACHE_DIR"
+echo "JAX_COMPILATION_CACHE_DIR=$JAX_COMPILATION_CACHE_DIR (fresh)"
+
+# The profiler's xplanes (one per arm), and the optimized HLO + module proto the cell
+# dumps beside them. Under output/ (gitignored) so a disputed row can be re-derived
+# from the text that produced it without a recompile, but nothing reaches git.
+TRACE_DIR="$AP_ROOT/output/trace/fixed_light_certpolicy_${LEG}_${SLURM_ARRAY_JOB_ID:-local}_${SLURM_ARRAY_TASK_ID:-0}"
+rm -rf "$TRACE_DIR" && mkdir -p "$TRACE_DIR"
+echo "TRACE_DIR=$TRACE_DIR (fresh)"
+
+nvidia-smi
+
+echo "=========================================="
+date
+hostname
+echo "Task:           $SLURM_ARRAY_TASK_ID / 19"
+echo "Cell:           likelihood_breakdown/imaging/fixed_light_trace"
+echo "Dataset:        hst (0.05\"/px)"
+echo "Precision:      fp64"
+echo "Inversion path: dense (mapping matrices, InversionImagingMapping)"
+echo "Source mesh:    $MESH (cell fiducial; --source-pixels NOT passed)"
+echo "Border reloc:   --border-relocator $BORDER (the cell reports the RESOLVED boolean)"
+echo "Routes:         b,d   (PART B fiducial context, unchanged)"
+echo "Solver:         --solver-source library --solver $SOLVER --fallback $FALLBACK (certified_fallback $([ "$FALLBACK" = on ] && echo pdip || echo none)); budget = library config"
+echo "Batch:          --vmap-batch $BATCH  --lanes $LANESET"
+echo "Arms:           both (jax.jit(jax.vmap(fn)) and B x jax.jit(fn), matched)"
+echo "Draw seed:      0"
+echo "Trace calls:    10"
+echo "Config name:    hpc_a100_fp64_fixed_light_trace"
+echo "POLICY_LEG mesh=$MESH batch=$BATCH lanes=$LANESET solver=$SOLVER fallback=$FALLBACK dataset=hst hardware=hpc_a100_fp64"
+echo "Flags:          --mesh $MESH --border-relocator $BORDER --vmap-batch $BATCH --lanes $LANESET --arms both --fallback $FALLBACK --solver-source library --solver $SOLVER --draw-seed 0 --trace-calls 10 --routes b,d --config-name hpc_a100_fp64_fixed_light_trace"
+
+echo "=== source revisions (shared install, untouched) ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r" "$(git -C /mnt/ral/jnightin/PyAuto/$r rev-parse HEAD 2>&1)"
+done
+echo "AP_ROOT rev:   $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+# PyAutoArray#567 (the library certified solver) merged at 11b93476; a mirror behind it
+# has no Settings(positive_only_solver=...) and every library row would be meaningless.
+if git -C /mnt/ral/jnightin/PyAuto/PyAutoArray merge-base --is-ancestor 11b93476 HEAD 2>/dev/null; then
+    echo "PyAutoArray contains 11b93476 (#567): yes"
+else
+    echo "FATAL: /mnt/ral/jnightin/PyAuto/PyAutoArray does not contain 11b93476 (#567)." >&2
+    exit 1
+fi
+
+cd $AP_ROOT
+
+echo "=== import provenance ==="
+python3 -c "import autoarray, autolens; print('autoarray.__file__ =', autoarray.__file__); print('autoarray.__version__ =', autoarray.__version__); print('autolens.__file__ =', autolens.__file__); print('Settings().certified_pass_budget =', autolens.Settings().certified_pass_budget)"
+
+# The cell's exit code is CAPTURED, not inherited: it writes its JSON and PNG and
+# then raises if a gated lane pin failed, so a failing leg is still a leg whose
+# provenance has to be recorded. ``activate.sh`` installs an ERR trap which exits
+# even while ``errexit`` is disabled, so preserve and remove that trap around the
+# expected non-zero cell exit. Restore it before the census, then exit with the
+# cell's code.
+SAVED_ERR_TRAP=$(trap -p ERR)
+trap - ERR
+set +e
+python3 -u scripts/imaging/likelihood_breakdown/fixed_light_trace.py \
+    --mesh $MESH \
+    --border-relocator $BORDER \
+    --vmap-batch $BATCH \
+    --lanes $LANESET \
+    --arms both \
+    --fallback $FALLBACK \
+    --solver-source library \
+    --solver $SOLVER \
+    --draw-seed 0 \
+    --trace-calls 10 \
+    --routes b,d \
+    --trace-dir "$TRACE_DIR" \
+    --config-name hpc_a100_fp64_fixed_light_trace
+CELL_RC=$?
+set -e
+eval "$SAVED_ERR_TRAP"
+
+# Autotune-cache census. Must be non-fatal: the directory only exists if XLA wrote
+# autotune results, and activate.sh's ERR trap fails the job on any non-zero exit
+# (the `ls` failure is swallowed by the pipe to `wc -l`). A non-zero count means this
+# leg's kernels were chosen by a cache, not by the library default.
+echo -n "AUTOTUNE_ENTRIES count="
+ls "$JAX_COMPILATION_CACHE_DIR/xla_gpu_per_fusion_autotune_cache_dir" 2>/dev/null | wc -l
+
+echo "CELL_EXIT=$CELL_RC"
+echo "Finished."
+date
+
+# Fail the SLURM job with the cell's own code, now that the census is on record.
+exit $CELL_RC
