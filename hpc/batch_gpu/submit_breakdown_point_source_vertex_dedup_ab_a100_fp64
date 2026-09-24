@@ -1,0 +1,145 @@
+#!/bin/bash -l
+#
+# 2026-09 point-source CPU speed-up campaign, phase 2: the GPU regression check
+# for the vertex-dedup change (PyAutoArray#568).
+#
+# WHAT THIS MEASURES. The same interleaved, in-process A/B as the RAL CPU
+# submit (hpc/batch_cpu/submit_breakdown_point_source_vertex_dedup_ab_ral_cpu_fp64),
+# on ONE RAL A100:
+#
+#   scripts/point_source/likelihood_breakdown/vertex_dedup_ab.py
+#     control  = the PRE-fix jnp.unique(size=3N) body, carried verbatim in the
+#                cell (PyAutoArray main 11b93476);
+#     nodedup  = the POST-fix body (flat 3N vertex table + arange index map);
+#     library  = no substitution -- the PyAutoArray that is imported. HERE that
+#                is the FEATURE BRANCH clone (see LIBRARY below), so `library`
+#                is the shipped fix itself and must self-label
+#                library_matches = nodedup.
+#   Rows: simple solved + plain + vmap-4 of solved; cluster solved + plain.
+#   Protocol: 20 rounds x 20 calls (the #568 plan's >= 20 calls per round; the
+#   CPU run used 5), route order rotated each round, fixed-seed stream.
+#   Correctness gates (log L bit-identical, solved positions array_equal,
+#   simple-solved grad allclose 1e-10 + finite, vmap-vs-scalar parity) are
+#   recorded in the JSON's gate_summary.
+#
+# PRECISION. fp64 only. The PointSolver has no Settings mixed-precision switch
+# (image_plane.py records the same), so there is no "mp" leg to run.
+#
+# LIBRARY. The shared /mnt/ral/jnightin/PyAuto mirror is PyAutoArray main
+# (pre-fix). control/nodedup do not depend on it (the cell injects both), but
+# to exercise the real branch code on GPU this submit PREPENDS a git clone of
+# PyAutoArray feature/point-source-cpu-p2 to PYTHONPATH. Prepare it once:
+#
+#   git clone --shared /mnt/ral/jnightin/PyAuto/PyAutoArray $AA_BRANCH_SRC
+#   git -C $AA_BRANCH_SRC fetch https://github.com/PyAutoLabs/PyAutoArray.git \
+#       feature/point-source-cpu-p2 && git -C $AA_BRANCH_SRC checkout --detach FETCH_HEAD
+#
+# The job refuses to run if autoarray is not imported from that clone, and the
+# JSON's source_revisions.PyAutoArray records its HEAD.
+#
+# BACKEND. JAX_PLATFORMS=cuda (NOT "cuda,cpu": a list can silently fall back to
+# CPU) and JAX_PLATFORM_NAME=cuda; the job asserts jax.default_backend()=="gpu"
+# before running the cell. XLA_FLAGS are byte-identical to the CPU submit, so on
+# this backend --xla_gpu_autotune_level=0 and triton_gemm=false are LIVE (they
+# were inert on CPU); they apply identically to every route.
+
+# WALL-BASIS:
+#   RAL CPU job 350582 (EPYC 7763, 8 CPUs, 2026-09-23) ran this cell and
+#   protocol at 20 rounds x 5 calls in 628 s wall (the JSON's wall_s), almost all
+#   of it the 18 route compiles. 20 calls per round adds 4x the timed calls
+#   (sub-ms to tens of ms each on GPU) and GPU compiles of the ~70k-line cluster
+#   HLO may be slower than CPU; 3 h covers both with wide margin.
+#   cell: point_source/vertex_dedup_ab/simple  device: gpu  precision: fp64
+#   source: measured-wall  wall: 628  ref: ral-cpu-job-350582-vertex_dedup_ab_hpc_ral_cpu_fp64  headroom: 4.0
+
+#SBATCH -J vertex_dedup_ab_gpu
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=32gb
+#SBATCH --time=3:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+# Repo root from where this was submitted (hpc/batch_gpu/../..), so it runs
+# from a worktree of the feature branch. sbatch from inside hpc/batch_gpu/.
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+export AA_BRANCH_SRC="${AA_BRANCH_SRC:-/mnt/ral/jnightin/autolens_profiling_wt/PyAutoArray_point-source-cpu-p2}"
+if [ ! -f "$AA_BRANCH_SRC/autoarray/__init__.py" ]; then
+    echo "FATAL: AA_BRANCH_SRC=$AA_BRANCH_SRC is not a PyAutoArray checkout (see LIBRARY in the header)" >&2
+    exit 2
+fi
+export PYTHONPATH="$AA_BRANCH_SRC:$PYTHONPATH"
+
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export NPROC=${SLURM_CPUS_PER_TASK:-8}
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=1
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+export NUMBA_CACHE_DIR=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}
+export MPLCONFIGDIR=/tmp/matplotlib_${SLURM_JOB_ID:-local}
+mkdir -p "$NUMBA_CACHE_DIR" "$MPLCONFIGDIR"
+# Fresh per-job JAX compile cache (see the CPU submit). Note `library` lowers to
+# the nodedup program here, so it may hit nodedup's cache entry: its compile_s
+# is not comparable, as control's was on CPU.
+export JAX_COMPILATION_CACHE_DIR="$AP_ROOT/output/jax_cache/vertex_dedup_ab_gpu_${SLURM_JOB_ID:-local}"
+rm -rf "$JAX_COMPILATION_CACHE_DIR" && mkdir -p "$JAX_COMPILATION_CACHE_DIR"
+echo "JAX_COMPILATION_CACHE_DIR=$JAX_COMPILATION_CACHE_DIR (fresh)"
+
+echo "=========================================="
+date
+hostname
+lscpu | grep 'Model name' || true
+nvidia-smi --query-gpu=name,driver_version,memory.total,utilization.gpu --format=csv || true
+echo "partition:      ${SLURM_JOB_PARTITION:-unset}"
+echo "gpus:           ${CUDA_VISIBLE_DEVICES:-unset}"
+echo "cpus-per-task:  ${SLURM_CPUS_PER_TASK:-unset}"
+echo "loadavg:        $(cat /proc/loadavg)"
+echo "Cell:           point_source/likelihood_breakdown/vertex_dedup_ab"
+echo "Precision:      fp64 (JAX_ENABLE_X64=$JAX_ENABLE_X64)"
+echo "Backend:        JAX_PLATFORMS=$JAX_PLATFORMS JAX_PLATFORM_NAME=$JAX_PLATFORM_NAME"
+echo "XLA_FLAGS:      $XLA_FLAGS"
+
+echo "=== source revisions ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r (shared)" "$(git -C /mnt/ral/jnightin/PyAuto/$r rev-parse HEAD 2>&1)"
+done
+echo "PyAutoArray (branch clone, IMPORTED): $(git -C $AA_BRANCH_SRC rev-parse HEAD 2>&1)"
+echo "AP_ROOT rev:   $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+echo "AP_ROOT branch: $(git -C $AP_ROOT rev-parse --abbrev-ref HEAD 2>&1)"
+
+cd $AP_ROOT
+
+echo "=== import provenance + backend assertion ==="
+python3 -c "
+import os, autoarray, autolens, autofit, autogalaxy, jax
+print('autoarray.__file__    =', autoarray.__file__)
+print('autolens.__file__     =', autolens.__file__)
+print('autofit.__file__      =', autofit.__file__)
+print('jax.__version__       =', jax.__version__)
+print('jax devices           =', jax.devices())
+print('jax default backend   =', jax.default_backend())
+assert jax.default_backend() == 'gpu', 'JAX is not on the GPU'
+assert os.path.realpath(autoarray.__file__).startswith(os.path.realpath(os.environ['AA_BRANCH_SRC'])), 'autoarray not imported from the branch clone'
+print('ASSERT OK: GPU backend, autoarray from the branch clone')
+"
+
+echo "=========================================="
+echo "vertex-dedup A/B on A100: control vs nodedup vs library (simple + cluster, 20 x 20)"
+date
+python3 -u scripts/point_source/likelihood_breakdown/vertex_dedup_ab.py --config-name hpc_ral_a100_fp64 --rounds 20 --calls 20
+
+echo "=========================================="
+nvidia-smi --query-gpu=name,memory.used --format=csv || true
+echo "Finished."
+date
