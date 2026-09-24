@@ -1,0 +1,156 @@
+#!/bin/bash -l
+#
+# 2026-09 point-source CPU speed-up campaign, phase 2: the vertex-dedup A/B
+# (PyAutoArray#568).
+#
+# WHAT THIS MEASURES. One interleaved, in-process A/B of
+# CoordinateArrayTriangles._vertices_and_indices inside the production
+# point-source likelihoods, on a quiet RAL CPU node:
+#
+#   scripts/point_source/likelihood_breakdown/vertex_dedup_ab.py
+#     control  = the PRE-fix jnp.unique(size=3N) body, carried verbatim in the
+#                cell (copied from PyAutoArray main 11b93476);
+#     nodedup  = the POST-fix body (flat 3N vertex table + arange index map);
+#     library  = no substitution -- whatever the shared install runs. The cell
+#                self-labels it (library_matches = control | nodedup | neither)
+#                from the HLO sort count of each route's compiled program.
+#   Rows: simple (phase-1 galaxy-scale model, 100x100 @ 0.2", precision 0.001")
+#   solved + plain + vmap-4 of solved; cluster (2 dPIE + 10 scaling dPIE + NFW,
+#   two sources, 200x200 @ 0.7", precision 0.01") solved + plain. Each route is
+#   compiled once from a fresh closure after jax.clear_caches(), warmed, then
+#   the three routes are timed round-robin (20 rounds x 5 calls, the route order
+#   rotating each round) on the same fixed-seed parameter-vector stream.
+#   Correctness gates (log L ==, solved positions array_equal, simple-solved
+#   grad allclose 1e-10 and vmap parity) are RECORDED, never asserted.
+#
+# The shared PyAutoArray on RAL stays on main: the cell injects both variants
+# itself, so the control/nodedup comparison does not depend on which library is
+# installed. Only the `library` route (and its library_matches label) does --
+# before the #568 fix is merged and synced it should read `control`.
+#
+# Writes results/breakdown/point_source/vertex_dedup_ab_hpc_ral_cpu_fp64.{json,png}.
+# The laptop witness is vertex_dedup_ab_local_cpu_fp64 beside it; compare
+# ratios within a host, never a bare millisecond across hosts.
+#
+# THREADS. OMP/MKL/OPENBLAS are pinned to 1 -- that pins the BLAS family only.
+# The JAX CPU backend sizes its own intra-op (Eigen) thread pool from the CPUs
+# the process can see, i.e. the 8 CPUs of --cpus-per-task=8, so these are
+# 8-CPU JAX numbers, the same shape as the laptop's 8-core rows. The JSON
+# records thread_environment, sched_affinity (len(os.sched_getaffinity(0))),
+# os_cpu_count and loadavg at start and end.
+#
+# XLA_FLAGS are set IDENTICAL to the phase-1 submit and the laptop witness
+# (device.xla_flags). activate.sh sets no XLA_FLAGS / JAX_* of its own. The two
+# --xla_gpu_* flags are inert on CPU and are kept only so the recorded string
+# matches byte for byte; constant_folding is disabled so a constant-foldable
+# prefix cannot be pre-evaluated at compile time.
+
+# THE PARTITION THIS DECLARES, AND THE FALLBACK.
+#
+# `ral` (the CPU partition) is the partition meant for CPU work, so it is what
+# the #SBATCH block below asks for. It was saturated for days in 2026-09-15's
+# fixed-light work, so check before you submit:
+#
+#   sinfo -p ral,gpu -N -o "%N %t %C %O"
+#
+# If `ral` would queue, the fallback is the gpu partition used CPUs-only, with
+# NO --gres so both A100s stay free for the GPU cells:
+#
+#   sbatch --partition=gpu --cpus-per-task=8 <this script>
+#
+# `imp` is NOT an option: euclid-imp-compute-* do not mount /mnt/ral, so the
+# repo, the venv and activate.sh are absent and the job dies in 0 s.
+#
+# DECLARE THE PARTITION THAT ACTUALLY RAN. Whichever partition the job landed
+# on (the provenance block prints the hostname; `sacct -j <id> -o Partition`
+# confirms it) is what the campaign note must report, and if it was the gpu
+# fallback this header should be edited to say so -- a script that declares a
+# partition its numbers never used is a trap, not a record.
+
+# WALL-BASIS:
+#   Laptop (WSL2, 8 cores, loaded, 2026-09-23): the committed
+#   vertex_dedup_ab_local_cpu_fp64 witness run of this exact cell and protocol
+#   (20 rounds x 5 calls, simple + cluster) took 939 s wall end to end
+#   (the JSON's wall_s), almost all of it the 18 route compiles. The phase-1
+#   RAL rows compiled ~2x faster than the laptop; the 2.0 headroom and the
+#   3-hour request cover a slower or busier node regardless.
+#   cell: point_source/vertex_dedup_ab/simple  device: cpu  precision: fp64
+#   source: measured-wall  wall: 939  ref: laptop-point_source-vertex_dedup_ab_local_cpu_fp64  headroom: 2.0
+
+#SBATCH -J vertex_dedup_ab
+#SBATCH --partition=ral
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=32gb
+#SBATCH --time=3:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+# Derive the repo root from where this was submitted (hpc/batch_cpu/../..)
+# rather than hardcoding /mnt/ral/jnightin/autolens_profiling, so it runs from
+# a worktree of the feature branch. The -o/-e paths above are relative, so
+# sbatch from inside hpc/batch_cpu/.
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+# BLAS family only (see THREADS above); JAX's CPU pool sizes from the 8 CPUs.
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export NPROC=${SLURM_CPUS_PER_TASK:-8}
+export JAX_PLATFORMS=cpu
+export JAX_ENABLE_X64=1
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+# Per-job caches: output/ is gitignored and ${SLURM_JOB_ID} keeps concurrent
+# jobs on the same node from fighting over one cache directory.
+export NUMBA_CACHE_DIR=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}
+export MPLCONFIGDIR=/tmp/matplotlib_${SLURM_JOB_ID:-local}
+mkdir -p "$NUMBA_CACHE_DIR" "$MPLCONFIGDIR"
+# Fresh JAX compile cache per job, as the phase-1 submit does: a seeded
+# persistent cache changes compile times and kernels (results/notes/xla_autotune_triton_gemm.md),
+# and RAL $HOME is node-local, so an inherited cache would not be reproducible.
+# (Within the job, routes lower to different HLO, so the persistent cache cannot
+# serve one route's executable to another.)
+export JAX_COMPILATION_CACHE_DIR="$AP_ROOT/output/jax_cache/vertex_dedup_ab_${SLURM_JOB_ID:-local}"
+rm -rf "$JAX_COMPILATION_CACHE_DIR" && mkdir -p "$JAX_COMPILATION_CACHE_DIR"
+echo "JAX_COMPILATION_CACHE_DIR=$JAX_COMPILATION_CACHE_DIR (fresh)"
+
+echo "=========================================="
+date
+hostname
+lscpu | grep 'Model name' || true
+echo "partition:      ${SLURM_JOB_PARTITION:-unset}"
+echo "cpus-per-task:  ${SLURM_CPUS_PER_TASK:-unset}"
+echo "sched_affinity: $(python3 -c 'import os; print(len(os.sched_getaffinity(0)))')"
+echo "loadavg:        $(cat /proc/loadavg)"
+echo "Cell:           point_source/likelihood_breakdown/vertex_dedup_ab"
+echo "Precision:      fp64 (JAX_ENABLE_X64=$JAX_ENABLE_X64)"
+echo "Backend:        JAX_PLATFORMS=$JAX_PLATFORMS"
+echo "Thread env:     OMP=$OMP_NUM_THREADS MKL=$MKL_NUM_THREADS OPENBLAS=$OPENBLAS_NUM_THREADS NPROC=$NPROC"
+echo "XLA_FLAGS:      $XLA_FLAGS"
+
+echo "=== source revisions (shared install, untouched) ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r" "$(git -C /mnt/ral/jnightin/PyAuto/$r rev-parse HEAD 2>&1)"
+done
+echo "AP_ROOT rev:   $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+echo "AP_ROOT branch: $(git -C $AP_ROOT rev-parse --abbrev-ref HEAD 2>&1)"
+
+cd $AP_ROOT
+
+echo "=== import provenance ==="
+python3 -c "import autoarray, autolens, autofit, autogalaxy, jax; print('autoarray.__file__    =', autoarray.__file__); print('autoarray.__version__ =', autoarray.__version__); print('autolens.__file__     =', autolens.__file__); print('autolens.__version__  =', autolens.__version__); print('autogalaxy.__file__   =', autogalaxy.__file__); print('autofit.__file__      =', autofit.__file__); print('jax.__version__       =', jax.__version__); print('jax devices           =', jax.devices())"
+
+echo "=========================================="
+echo "vertex-dedup A/B: control vs nodedup vs library (simple + cluster, full protocol)"
+date
+echo "loadavg: $(cat /proc/loadavg)"
+python3 -u scripts/point_source/likelihood_breakdown/vertex_dedup_ab.py --config-name hpc_ral_cpu_fp64
+
+echo "=========================================="
+echo "loadavg: $(cat /proc/loadavg)"
+echo "Finished."
+date
