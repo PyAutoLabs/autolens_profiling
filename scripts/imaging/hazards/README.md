@@ -45,3 +45,12 @@ write semantic findings:
 python scripts/imaging/hazards/pixelization.py
 python scripts/misc/hazards/scan.py --subject likelihood
 ```
+
+`mge_nnls_capture.py` captures the positive-only linear systems the JAX
+likelihood hands to `reconstruction_positive_only_from` for the SLaM
+`source_lp[1]` MGE model (2 x 20 lens Gaussians + 20 source Gaussians, free
+Isothermal + ExternalShear) at 48 seeded near-truth vectors on the HST dataset,
+and records whether the Jacobi-preconditioned PDIP solve converges at caps 50
+and 200 against `fnnls_cholesky` (PyAutoArray#571). It writes
+`results/hazards/component/mge/nnls_capture_slam_hst_v<version>.json` plus an
+8-system `.npz` that PyAutoArray uses as a regression fixture.
