@@ -25,7 +25,7 @@ fallback-none row policy-eligible.** Measured on the library mains with no monke
   with the fallback on or off (a real `lax.cond`), versus 51–53 ms (Delaunay) and 40 ms
   (rectangular) for scalar library PDIP.
 
-Timing is never gated. The policy section below is **PROPOSED**, pending a human decision.
+Timing is never gated. The policy below was **ADOPTED by the human on 2026-09-24** ("This sounds good, follow the proposed plan."), as proposed, with no amendments.
 
 ## Experiment
 
@@ -137,10 +137,11 @@ Delaunay still pays one sequential qhull callback per lane (4.5–4.7 ms/lane ho
 Delaunay task); the rectangular mesh took zero callbacks on every task, as asserted. vmap device-idle
 per lane falls with B: 10.3 → 6.1 ms (Delaunay PDIP B4 → B16), 3.7 → 1.0 ms (rectangular).
 
-## PROPOSED policy — pending human decision
+## Policy — ADOPTED 2026-09-24
 
-Nothing below is adopted. It is the recommendation this grid supports, for the phase-B policy
-decision on #300.
+Proposed on #300 and adopted by the human on 2026-09-24 without amendment ("This sounds good,
+follow the proposed plan."). The item 1 default change is a PyAutoArray config PR that waits for
+the release that ships PyAutoArray#567. The item 4 follow-up is filed as its own PyAutoMind prompt.
 
 1. **Scalar JAX (`jax.jit(fn)`, `use_jax_vmap=False`)**: make `positive_only_solver="certified"`
    with `certified_fallback="pdip"` the default. The fallback is a genuine `lax.cond` here and costs
@@ -151,7 +152,7 @@ decision on #300.
    (a) keep library PDIP as the vmap default (no numerical risk, today's behaviour), or
    (b) certified with `certified_fallback="none"` (1.25–2.07x over PDIP vmap, gate-passing, 0
    uncertified lanes here) **only together with** a guard for the uncertified-lane case, because with
-   `none` an uncertified lane silently returns the last active-set iterate. Proposed: (a) now, (b)
+   `none` an uncertified lane silently returns the last active-set iterate. Adopted: (a) now, (b)
    once the guard in item 4 exists.
 3. **NumPy backend**: unchanged. The library dispatches the certified solver on the JAX mapper path
    only; this grid measured no NumPy row.
