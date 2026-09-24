@@ -2,7 +2,7 @@
 
 Issue: [autolens_profiling #297](https://github.com/PyAutoLabs/autolens_profiling/issues/297) (phase 1); [PyAutoArray #568](https://github.com/PyAutoLabs/PyAutoArray/issues/568) (phase 2)  
 Branch: `feature/point-source-cpu-p1` (phase 1); `feature/point-source-cpu-p2` (phase 2, PyAutoArray + autolens_profiling); `feature/point-source-cpu-p3` (phase 3, PyAutoArray + PyAutoLens + autolens_profiling)  
-Status: phase 1 **DONE** (RAL baseline, job 350580); phase 2 **DONE, ACCEPTED** (vertex-dedup A/B, RAL job 350582: 4.47× simple, 1.98× cluster, bit-identical; library change awaiting merge and release); phase 3 **DONE, ACCEPTED** (static step-0 lattice A/B, RAL jobs 350636 CPU / 350637 A100: CPU control → library 2.0–2.1× simple, 1.43× vmap-4, 5.2× cluster, compile +3–12 %, all 31 gates bit-identical; tie-case gate decision pending at ship); phase 4 not started  
+Status: phase 1 **DONE** (RAL baseline, job 350580); phase 2 **DONE, ACCEPTED** (vertex-dedup A/B, RAL job 350582: 4.47× simple, 1.98× cluster, bit-identical; library change awaiting merge and release); phase 3 **DONE, ACCEPTED** (static step-0 lattice A/B, RAL jobs 350636 CPU / 350637 A100: CPU control → library 2.0–2.1× simple, 1.43× vmap-4, 5.2× cluster, compile +3–12 %, all 31 gates bit-identical; source-on-vertex tie case PASSED by human decision 2026-09-24, pinned as PyAutoLens `test__source_on_a_step_0_vertex_returns_the_two_true_images`); phase 4 not started  
 Instrument: [`scripts/point_source/likelihood_breakdown/image_plane.py`](../../scripts/point_source/likelihood_breakdown/image_plane.py)
 (shipped in #293, see [point_source_shared_likelihood_breakdown.md](point_source_shared_likelihood_breakdown.md))
 and [`scripts/cluster/likelihood_breakdown/image_plane.py`](../../scripts/cluster/likelihood_breakdown/image_plane.py)
@@ -825,12 +825,12 @@ control / lattice:
 - Laptop, both runs: 31 / 31 gates pass and are **bit-identical** (log L on every streamed instance,
   solved positions and image counts, `jax.grad` finite and non-zero, vmap-4 vs scalar, simple-plain
   step-0 `containing_indices` sets).
-- PyAutoArray suite 1645 passed (+13 static-table tests); PyAutoLens suite 755 passed, 1 xfailed
-  (+15 JAX tests in `test_static_lattice_jax.py`, which skip without jax). The shape guard (first
+- PyAutoArray suite 1645 passed (+13 static-table tests); PyAutoLens suite 756 passed, 1 xfailed
+  (+16 JAX tests in `test_static_lattice_jax.py`, incl. the pinned tie case, which skip without jax). The shape guard (first
   traced deflection grid 11 859 rows) is red on main (69 849).
 - autolens_workspace_test `point_source/jax_likelihood/*.py` ×4 and `jax_grad/gradient.py`: rc 0 on
   the branch, output identical to main except timing lines; no rtol-1e-4 pin moved.
-- **Tie finding (human gate decision pending at ship; see below).** A source placed *bit-exactly* on a traced step-0
+- **Tie finding (PASSED by human decision 2026-09-24; see below).** A source placed *bit-exactly* on a traced step-0
   lattice vertex changes the step-0 kept set (16 / 50 constructed ties) and, in 1 / 13, the image
   count: control 3, lattice 2. The control's two positions at the tie vertex (|p − v| = 9.0e-4 each,
   μ ≈ 4.7) both Newton-converge to the same root, the vertex itself — a duplicate; the lattice path
@@ -946,7 +946,7 @@ All **31 / 31** gates in `gate_summary` pass in all three JSONs, with max |Δ| =
 
 The same holds on CPU with folding on and on the A100.
 
-### Tie finding — human gate decision pending at ship
+### Tie finding — PASSED by human decision 2026-09-24
 
 Not exercised by the RAL gates (stream sources are generic). From the laptop study above: a source
 placed **bit-exactly on a traced step-0 lattice vertex** can change the step-0 kept set (16 / 50
@@ -956,9 +956,17 @@ itself; the lattice path returns exactly the system's 2 true images. Main's own 
 self-consistent** at such ties: eager vs jit differ in image count on **22 / 25** (lattice vs flat under
 jit: 1 / 25). Nudging the source by 1e-9 gives 2 images on both paths. The plan's gate asks for
 "identical image counts" and so is formally failed on this constructed measure-zero case; accepting it
-(as a duplicate-removal, not a lost image) is a **human decision recorded at ship**.
+(as a duplicate-removal, not a lost image) was put to the human at ship.
 
-### Decision — ACCEPT (pending the tie-case sign-off)
+**Decision (human, 2026-09-24): PASS.** The case is accepted as the removal of a duplicate and pinned
+as a regression test, PyAutoLens `test_autolens/point/triangles/test_static_lattice_jax.py::test__source_on_a_step_0_vertex_returns_the_two_true_images`
+(branch `feature/point-source-cpu-p3` `972d454e`): the simple SIE of the cell, source on the image of
+step-0 vertex v = (−0.8, −1.99185843) (flat vertex 31 732), solved under `jit` with the source a traced
+input; the static-lattice solver must return exactly the 2 true images (v and the counter-image
+~(0.41013634, 0.89463539)) within 2 × `pixel_scale_precision`. With the source a closed-over constant
+instead, the flat path also returns 2 here — one more face of the flat path's instability at ties.
+
+### Decision — ACCEPT
 
 Stop rule (PyAutoArray #568): reject if the simple gain < max(5 %, 2× MDI) with no cluster gain; any
 gate fails; compile +20 %; memory or GPU regression.
@@ -967,12 +975,12 @@ gate fails; compile +20 %; memory or GPU regression.
   78 %. The cluster clause alone rules out rejection. (Read as a fractional time reduction instead —
   50 % simple vs 69 % — the simple row alone would not clear 2× MDI on this high-dispersion node, but the
   cluster's 81 % reduction does, and the paired per-round p10 is 1.79× simple / 4.91× cluster.)
-- **Gates.** 31 / 31 bit-identical on CPU (both folding modes) and A100; the tie case above is the only
-  open item.
+- **Gates.** 31 / 31 bit-identical on CPU (both folding modes) and A100; the tie case above PASSED by
+  human decision 2026-09-24 and is pinned as a PyAutoLens test.
 - **Compile.** Worst +12.2 % (folding off), +16.5 % (folding on), +13.2 % (A100): all < +20 %.
 - **Memory / GPU.** XLA temp memory −56 % to −88 %; A100 1.01–1.07× faster.
 
-Ship library-first (PyAutoArray `ad0bf97b` → PyAutoLens `b346b6a0` → autolens_profiling), on by default
+Ship library-first (PyAutoArray `ad0bf97b` → PyAutoLens `b346b6a0` + tie test `972d454e` → autolens_profiling), on by default
 for the JAX PointSolver as decided on 2026-09-24.
 
 ### Post-fix budget and phase-4 handoff
