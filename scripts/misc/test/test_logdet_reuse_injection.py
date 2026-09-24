@@ -414,9 +414,9 @@ def test__control_patches_nothing():
 
 
 def test__the_registry_is_control_then_the_two_slot_budgets():
-    assert list(lri.CANDIDATES) == ["control", "schur_k32", "schur_k64"]
+    assert list(lri.CANDIDATES) == ["control", "schur_k32", "schur_k64", "schur_k256"]
     assert lri.CANDIDATES["control"].k_max is None
-    assert [lri.CANDIDATES[n].k_max for n in LEVERS] == [32, 64]
+    assert [lri.CANDIDATES[n].k_max for n in LEVERS] == [32, 64, 256]
     for spec in lri.CANDIDATES.values():
         assert spec.library_change_if_wins
 

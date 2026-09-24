@@ -12,15 +12,24 @@
 # the fixed (and, on rectangular, edge-zeroed) set, exactly, for ANY split — so a lane
 # that fell back to PDIP is still covered.
 #
-# Array tasks (index = 3*mesh + candidate)
+# Array tasks (index = 4*mesh + candidate)
 # ----------------------------------------
-#   task  mesh         candidate   row
-#    0    delaunay     control     library dense Cholesky as shipped (no patch)
-#    1    delaunay     schur_k32   solve factor + Schur complement, k_max 32
-#    2    delaunay     schur_k64   solve factor + Schur complement, k_max 64
-#    3    rectangular  control     library dense Cholesky as shipped (no patch)
-#    4    rectangular  schur_k32   k_max 32 + n_edge slots (the 152 edge pixels join Z)
-#    5    rectangular  schur_k64   k_max 64 + n_edge slots
+#   task  mesh         candidate    row
+#    0    delaunay     control      library dense Cholesky as shipped (no patch)
+#    1    delaunay     schur_k32    solve factor + Schur complement, k_max 32
+#    2    delaunay     schur_k64    solve factor + Schur complement, k_max 64
+#    3    delaunay     schur_k256   solve factor + Schur complement, k_max 256 (AMENDMENT)
+#    4    rectangular  control      library dense Cholesky as shipped (no patch)
+#    5    rectangular  schur_k32    k_max 32 + n_edge slots (the 152 edge pixels join Z)
+#    6    rectangular  schur_k64    k_max 64 + n_edge slots
+#    7    rectangular  schur_k256   k_max 256 + n_edge slots (AMENDMENT)
+#
+# AMENDMENT, pre-registered before any A100 data: the RTX screen found |Z| = 4 on the
+# fiducial (the TIMED point) but 51-250 on the 8 draws, so k32 / k64 take the dense
+# lax.cond branch on 8 / 7 of 9 rows. schur_k256 is added; every row records the
+# fiducial's |Z| and the branch the TIMED call took (z_report.timed_point) separately
+# from the draws' |Z| distribution and overflow count (z_report.draws), and the verdict
+# must state the timed branch. The gate is unchanged.
 #
 # NO harness solver in this phase. Route d, its unmodified-library control and the traced
 # program all run the LIBRARY certified solver selected by al.Settings
@@ -91,7 +100,7 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=64gb
 #SBATCH --time=00:30:00
-#SBATCH --array=0-5
+#SBATCH --array=0-7
 #SBATCH -o output/output.%A_%a.out
 #SBATCH -e error/error.%A_%a.err
 #SBATCH --mail-type=END,FAIL
@@ -122,19 +131,19 @@ if ! grep -q -- "--logdet-candidate" "$CELL"; then
     exit 1
 fi
 
-MESHES=(delaunay delaunay delaunay rectangular rectangular rectangular)
-CANDIDATES=(control schur_k32 schur_k64 control schur_k32 schur_k64)
+MESHES=(delaunay delaunay delaunay delaunay rectangular rectangular rectangular rectangular)
+CANDIDATES=(control schur_k32 schur_k64 schur_k256 control schur_k32 schur_k64 schur_k256)
 MESH=${MESHES[$SLURM_ARRAY_TASK_ID]}
 CAND=${CANDIDATES[$SLURM_ARRAY_TASK_ID]}
 if [ -z "$MESH" ] || [ -z "$CAND" ]; then
-    echo "FATAL: no log-det candidate for array task ${SLURM_ARRAY_TASK_ID} (expected 0-5)." >&2
+    echo "FATAL: no log-det candidate for array task ${SLURM_ARRAY_TASK_ID} (expected 0-7)." >&2
     exit 1
 fi
 
 BORDER=cell
 LEG="${MESH}_${CAND}"
 
-# The dataset is gitignored and auto-simulated on first use. Six tasks racing to write the
+# The dataset is gitignored and auto-simulated on first use. Eight tasks racing to write the
 # same dataset/imaging/hst/ would interleave their FITS writes, so it is simulated ONCE
 # before submitting; this is the check that it was.
 if [ ! -f "$AP_ROOT/dataset/imaging/hst/data.fits" ]; then
@@ -158,7 +167,7 @@ nvidia-smi
 echo "=========================================="
 date
 hostname
-echo "Task:           $SLURM_ARRAY_TASK_ID / 5"
+echo "Task:           $SLURM_ARRAY_TASK_ID / 7"
 echo "Cell:           likelihood_breakdown/imaging/fixed_light_trace"
 echo "Dataset:        hst (0.05\"/px)"
 echo "Precision:      fp64"

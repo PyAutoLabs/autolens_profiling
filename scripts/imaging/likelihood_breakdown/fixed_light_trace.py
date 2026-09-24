@@ -261,7 +261,7 @@ line anchors checked against the INSTALLED PyAutoArray — and a
 The log-det mode (phase 4, autolens_profiling#303)
 --------------------------------------------------
 
-``--logdet-candidate {control,schur_k32,schur_k64}`` turns this cell into the
+``--logdet-candidate {control,schur_k32,schur_k64,schur_k256}`` turns this cell into the
 **log det(F + lambda*H) factor-reuse** experiment. Without it nothing below
 happens and the cell is phase 1 exactly. It runs on the single-call path only
 (rejected with ``--vmap-batch`` / ``--psf-candidate``) and in fp64 only.
@@ -313,6 +313,16 @@ across tasks (phase B saw ~3 % node-to-node differences). Clearing it means a
 PyAutoArray prompt via /intake (return the factor from ``solve_certified``,
 stash it on the inversion, a JAX fast path at ``abstract.py:1012``); missing it
 is a "no lever" verdict.
+
+**Amendment, pre-registered before any A100 data.** The RTX screen found |Z| = 4
+on the fiducial (the TIMED point) but 51-250 on the 8 draws, so k32 / k64 take
+the dense ``lax.cond`` branch on 8 / 7 of 9 rows. ``schur_k256`` is added, and
+every row records the fiducial's |Z| and branch (``z_report.timed_point``: the
+branch the TIMED call took) separately from the draws' |Z| distribution and
+overflow count (``z_report.draws``). The verdict must state the timed branch: a
+lever that clears only because the fiducial is in the Schur branch while the
+draws overflow is reported as such, not as a general saving. The gate is
+unchanged.
 
 Erratum (phase 1 prose and the phase-3 plan). ``mapping_matrix_native_from``
 scatters straight into the PADDED FFT frame, not the image grid, and the source
@@ -492,7 +502,7 @@ _cell_parser.add_argument("--pin-draws", type=int, default=None)
 # logdet_reuse_injection.CANDIDATES.
 _cell_parser.add_argument(
     "--logdet-candidate",
-    choices=("control", "schur_k32", "schur_k64"),
+    choices=("control", "schur_k32", "schur_k64", "schur_k256"),
     default=None,
 )
 _cell_args = _cli.parse_cell_args(_cell_parser)
@@ -1483,7 +1493,28 @@ if LOGDET_CANDIDATE is not None:
             }
         )
     _zs = [_r["z_count"] for _r in _rep_rows if _r["z_count"] is not None]
+    _draw_rows = _rep_rows[1:]
+    _draw_zs = [_r["z_count"] for _r in _draw_rows if _r["z_count"] is not None]
+    _fid = _rep_rows[0]
     logdet_report = {
+        "timed_point": {
+            "row": "fiducial",
+            "z_count": _fid["z_count"],
+            "overflow": _fid["overflow"],
+            "branch": (
+                None
+                if _fid["z_count"] is None
+                else ("dense (overflow)" if _fid["overflow"] else "schur")
+            ),
+            "note": "every whole-call ms and trace row of this task is the FIDUCIAL call",
+        },
+        "draws": {
+            "z_count": [_r["z_count"] for _r in _draw_rows],
+            "z_count_min": min(_draw_zs) if _draw_zs else None,
+            "z_count_max": max(_draw_zs) if _draw_zs else None,
+            "overflow_count": sum(1 for _r in _draw_rows if _r["overflow"]),
+            "rows": len(_draw_rows),
+        },
         "program": "UNTIMED, separately compiled: the candidate program + library_solver_observed",
         "solvers_jax": list(_seen["solvers_jax"]),
         "static": _static_obs,
@@ -3061,6 +3092,8 @@ if LOGDET_CANDIDATE is not None:
             "threshold_ms": logdet_reuse_injection.LOGDET_LEVER_MS,
             "saving_jit_profile_ms": _ld_saving_jit,
             "saving_interleaved_median_ms": _ld_saving_ab,
+            "timed_branch": ((logdet_report or {}).get("timed_point") or {}).get("branch"),
+            "draw_overflow_count": ((logdet_report or {}).get("draws") or {}).get("overflow_count"),
             "clears_threshold": (
                 None
                 if _ld_spec.kind == "control"

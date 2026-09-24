@@ -117,9 +117,12 @@ The candidates
     No patch at all — the library's dense ``_log_det_symmetric_from`` as
     shipped. The context still yields a counts dict so the cell's code path is
     identical for every row.
-``schur_k32`` / ``schur_k64``
-    The Schur-complement log det with ``k_max`` = 32 / 64 slots (plus
-    ``n_edge`` on an edge-zeroed system).
+``schur_k32`` / ``schur_k64`` / ``schur_k256``
+    The Schur-complement log det with ``k_max`` = 32 / 64 / 256 slots (plus
+    ``n_edge`` on an edge-zeroed system). ``schur_k256`` is a pre-registered
+    AMENDMENT added after the RTX screen found |Z| = 4 on the fiducial but
+    51-250 on the draws (k32 / k64 overflow to the dense branch on 8 / 7 of 9
+    rows), before any A100 data.
 
 JAX is imported inside functions, never at module level, like every
 ``likelihood_breakdown`` module that the CPU-only unit tests import.
@@ -202,6 +205,17 @@ CANDIDATES: dict[str, Candidate] = {
         label="certified-solve factor + Schur complement, k_max 64 (+ n_edge)",
         kind="lever",
         k_max=64,
+        library_change_if_wins=_LIBRARY_CHANGE,
+    ),
+    # AMENDMENT (pre-registered before any A100 data): the RTX screen measured |Z| = 4
+    # on the fiducial but 51-250 on the 8 draws, so k32 / k64 take the dense branch on
+    # 8 / 7 of 9 rows. k_max 256 covers every screened row; its extra cost is a
+    # 256-RHS triangular solve and a 256x256 Cholesky.
+    "schur_k256": Candidate(
+        name="schur_k256",
+        label="certified-solve factor + Schur complement, k_max 256 (+ n_edge)",
+        kind="lever",
+        k_max=256,
         library_change_if_wins=_LIBRARY_CHANGE,
     ),
 }
