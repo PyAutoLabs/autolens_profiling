@@ -136,6 +136,57 @@ positive solution.
 ``configuration``; strict shared CLI parsing also rejects an old checkout that
 does not define them.
 
+The library-solver mode (certified-solver phase B, autolens_profiling#300)
+--------------------------------------------------------------------------
+
+``--solver-source library`` (with ``--vmap-batch``) replaces phase 2's harness
+injection with the **library's own dispatch**: PyAutoArray #567 shipped the
+certified active-set solver behind ``Settings(positive_only_solver="certified",
+certified_fallback="pdip"|"none", certified_pass_budget=N)``, and this mode is
+what production would actually run under ``Fitness._vmap``. Without the flag
+(``--solver-source harness``, the default) nothing below happens and the batched
+mode is phase 2 exactly, down to the output filename and the JSON key set.
+
+- ``--solver {pdip,certified}`` (required in this mode) is
+  ``Settings.positive_only_solver`` for both arms; ``--fallback on|off`` maps to
+  ``certified_fallback`` ``pdip`` | ``none``; ``--certified-budget N`` is
+  ``certified_pass_budget`` (default: the resolved config value, 16 as packaged).
+  None of the three is accepted in harness mode, where they would be swallowed.
+- Nothing is monkeypatched in PART V. Instead the cell asserts that the fiducial
+  S3 inversion's ``positive_only_solver_used`` equals the requested solver, and
+  that every JAX-path solve traced in the reporting pass received that
+  ``solver``: a row that asked for ``certified`` and silently ran PDIP fails.
+- PART B (routes ``b`` and ``d``, the fiducial ``d == b`` pin) is unchanged: it
+  is phase-1 context in every mode, not a phase-B row.
+- Per-lane ``certified`` / ``passes`` come from the library's own ``stats=``
+  out-dict (#566), read in an UNTIMED, separately compiled reporting pass through
+  ``library_solver_injection.library_solver_observed`` — a forwarding wrapper
+  that changes nothing computed. ``uncertified_lanes`` counts the lanes whose
+  certificate failed (the lanes that fell back, or with ``none`` returned an
+  uncertified iterate).
+- Rectangular runs here as well as Delaunay. It has no qhull callback: the cell
+  asserts ZERO callbacks per arm and ``host_qhull_ms_per_lane`` is 0.
+
+**The phase-B gate, PRE-REGISTERED before any A100 submission.** Phase 3
+(``results/notes/hst_gpu_residue_phase3_psf_2026_09.md``) placed phase 2's
+~2.5e-9 certified-vs-PDIP residual *between the compositions* — ``jit(vmap)``
+against scalar ``jit`` — not in the solver. So library mode compiles two
+library-PDIP references, one per composition, and per lane:
+
+1. GATED at ``LANE_RTOL`` (1e-9 relative): the ``jit(vmap)`` arm against the
+   ``jit(vmap)`` library-PDIP reference;
+2. GATED at ``LANE_RTOL``: the scalar ``jit`` arm against the scalar ``jit``
+   library-PDIP reference;
+3. RECORDED, not gated: the ``jit(vmap)`` arm against the scalar arm, and the two
+   references against each other, as relative differences and absolute nats;
+4. RECORDED: ``uncertified_lanes`` for a certified row. A
+   ``certified_fallback=none`` row is ``policy_eligible`` only if every lane
+   certifies AND passes (1) and (2).
+
+Timing is never gated. As in phase 2 the JSON and PNG are written first and the
+cell then raises if any gated lane failed. Harness mode keeps phase 2's
+three-way gate unchanged.
+
 The PSF-cube mode (phase 3, autolens_profiling#295)
 ---------------------------------------------------
 
@@ -220,6 +271,8 @@ Output
 ------
 
 ``results/breakdown/imaging/fixed_light_trace_<mesh>[_border_off][_n<N>][_jitvmap<B>_<lanes>_fb<on|off>][_psf_<candidate>]_<config>.{json,png}``.
+Library mode replaces the batched token with
+``_jitvmap<B>_<lanes>_lib<solver>_fb<on|off>_b<budget>``.
 
 The ``--config-name`` used for the phase-1 legs
 (``local_rtx2060_fp64_fixed_light_trace``, ``hpc_a100_fp64_fixed_light_trace``)
@@ -354,6 +407,12 @@ _cell_parser.add_argument("--lanes", choices=("distinct", "identical"), default=
 _cell_parser.add_argument("--arms", choices=("vmap", "scalar", "both"), default="both")
 _cell_parser.add_argument("--draw-seed", type=int, default=0)
 _cell_parser.add_argument("--fallback", choices=("on", "off"), default="on")
+# --- certified-solver phase B (#300): the LIBRARY-driven solver rows ---------
+# ``harness`` (default) is phase 2 exactly. ``library`` selects the solver through
+# ``al.Settings`` with no monkeypatch; it is only meaningful with --vmap-batch.
+_cell_parser.add_argument("--solver-source", choices=("harness", "library"), default="harness")
+_cell_parser.add_argument("--solver", choices=("pdip", "certified"), default=None)
+_cell_parser.add_argument("--certified-budget", type=int, default=None)
 # --- phase 3 (#295): the PSF mapping-matrix cube candidates -----------------
 # The choices are a LITERAL (the contracts test execs these statements alone);
 # test_psf_cube_injection pins them to psf_cube_injection.CANDIDATES.
@@ -402,6 +461,39 @@ if VMAP_BATCH is None and _cell_args.arms != "both":
         "--arms only means anything with --vmap-batch; without it this cell runs the "
         "phase-1 single-call trace and would silently ignore the flag"
     )
+
+#: ``harness`` is phase 2 (the scoped monkeypatch). ``library`` is phase B
+#: (#300): the solver is chosen through ``al.Settings`` and nothing is patched.
+SOLVER_SOURCE = _cell_args.solver_source
+LIBRARY_SOLVER_MODE = SOLVER_SOURCE == "library"
+#: The library solver under test (library mode only).
+LIBRARY_SOLVER = _cell_args.solver
+#: ``Settings.certified_fallback``: ``--fallback on`` -> ``pdip``, ``off`` -> ``none``.
+LIBRARY_FALLBACK = "pdip" if FALLBACK_ON else "none"
+
+if LIBRARY_SOLVER_MODE:
+    if VMAP_BATCH is None:
+        raise ValueError(
+            "--solver-source library runs in the batched mode only; pass --vmap-batch B "
+            "(the single-call trace and the PSF mode keep the harness injection)"
+        )
+    if LIBRARY_SOLVER is None:
+        raise ValueError(
+            "--solver-source library needs --solver {pdip,certified}: the row must name the "
+            "library solver it measures"
+        )
+else:
+    for _flag, _value in (
+        ("--solver", _cell_args.solver),
+        ("--certified-budget", _cell_args.certified_budget),
+    ):
+        if _value is not None:
+            raise ValueError(
+                f"{_flag} only means anything with --solver-source library; the harness mode "
+                f"would silently ignore it"
+            )
+if _cell_args.certified_budget is not None and _cell_args.certified_budget < 1:
+    raise ValueError(f"--certified-budget must be >= 1 (got {_cell_args.certified_budget})")
 
 #: ``None`` is phase 1. A name turns on the PSF-cube experiment (#295).
 PSF_CANDIDATE = _cell_args.psf_candidate
@@ -683,6 +775,42 @@ _settings = al.Settings(
 )
 BORDER_RELOCATOR_RESOLVED = bool(_settings.use_border_relocator)
 
+# ---------------------------------------------------------------------------
+# Phase B (#300): the library solver settings, and the explicit-PDIP reference
+# ---------------------------------------------------------------------------
+# ``_settings`` is left exactly as phase 2 builds it, so PART B (routes b and d,
+# the fiducial pin) is unchanged in every mode. In library mode PART V's arms
+# are built from ``_settings_library`` — the solver named on the command line —
+# and its two references from ``_settings_pdip_reference``, which names PDIP
+# EXPLICITLY rather than trusting the config default to stay PDIP.
+_settings_library = None
+_settings_pdip_reference = _settings
+CERTIFIED_BUDGET = None
+CERTIFIED_BUDGET_BASIS = None
+if LIBRARY_SOLVER_MODE:
+    if _cell_args.certified_budget is not None:
+        CERTIFIED_BUDGET = int(_cell_args.certified_budget)
+        CERTIFIED_BUDGET_BASIS = "--certified-budget"
+    else:
+        # The resolved config value (the packaged general.yaml's inversion block,
+        # unless this workspace's config shadows it) — what production would run.
+        CERTIFIED_BUDGET = int(al.Settings().certified_pass_budget)
+        CERTIFIED_BUDGET_BASIS = "config default (Settings().certified_pass_budget)"
+    _settings_library = al.Settings(
+        use_border_relocator=_BORDER_RELOCATOR_SETTING,
+        use_mixed_precision=_cli.use_mixed_precision,
+        positive_only_solver=LIBRARY_SOLVER,
+        certified_fallback=LIBRARY_FALLBACK,
+        certified_pass_budget=CERTIFIED_BUDGET,
+    )
+    _settings_pdip_reference = al.Settings(
+        use_border_relocator=_BORDER_RELOCATOR_SETTING,
+        use_mixed_precision=_cli.use_mixed_precision,
+        positive_only_solver="pdip",
+    )
+    if bool(_settings_library.use_border_relocator) != BORDER_RELOCATOR_RESOLVED:
+        raise AssertionError("the library-solver Settings resolved a different border relocator")
+
 # MEASURED, not assumed: ``library`` resolved to **True** on this workspace
 # (autolens_profiling/config/general.yaml declares no ``inversion`` block, so
 # autoconf falls through to the packaged default, which is on). The premise
@@ -718,6 +846,12 @@ else:
     print(
         f"  Solver fallback:         {'on (route d, lax.cond -> select under vmap)' if FALLBACK_ON else 'off (route d0, cond-free)'}"
     )
+    print(f"  Solver source:           {SOLVER_SOURCE}")
+    if LIBRARY_SOLVER_MODE:
+        print(
+            f"  Library solver:          {LIBRARY_SOLVER}  certified_fallback {LIBRARY_FALLBACK}  "
+            f"certified_pass_budget {CERTIFIED_BUDGET} ({CERTIFIED_BUDGET_BASIS})"
+        )
 
 # ---------------------------------------------------------------------------
 # S3 — the source-only system every route in this cell fits
@@ -1277,6 +1411,11 @@ else:
     print(
         f"BATCHED MODE — B={VMAP_BATCH} {LANES_MODE} lanes, arms {','.join(ARMS)}, "
         f"fallback {'on' if FALLBACK_ON else 'off'}"
+        + (
+            f", LIBRARY solver {LIBRARY_SOLVER} (budget {CERTIFIED_BUDGET})"
+            if LIBRARY_SOLVER_MODE
+            else ""
+        )
     )
     print("-" * 70)
 
@@ -1490,6 +1629,13 @@ else:
         _callback_records = [_r.as_dict() for _r in probe.records]
         _probe_summary = probe.summary()
         _callbacks_per_call = probe.calls / TRACE_CALLS
+        if MESH == "rectangular" and probe.calls != 0:
+            # The rectangular mesh has no qhull host callback at all. A non-zero
+            # count means the program is not the one this row claims to be.
+            raise AssertionError(
+                f"arm {arm}: {probe.calls} qhull callbacks on the RECTANGULAR mesh, which has "
+                f"none — the traced program is not the rectangular likelihood"
+            )
         _untraced_batch_ms = _steady_invoke_ms(lambda: _invoke_ex(_ex_off), TRACE_CALLS)
 
         _events = xla_attribution.device_events(_arm_dir)
@@ -1539,9 +1685,13 @@ else:
             "callback_count_per_call": _callbacks_per_call,
             "callback_count_per_lane": _callbacks_per_call / VMAP_BATCH,
             "callback_expectation": (
-                "B per batched call — the qhull pure_callback is vmap_method='sequential'"
-                if arm == "vmap"
-                else "1 per likelihood evaluation, B per batch"
+                "0 — the rectangular mesh has no qhull host callback (asserted)"
+                if MESH == "rectangular"
+                else (
+                    "B per batched call — the qhull pure_callback is vmap_method='sequential'"
+                    if arm == "vmap"
+                    else "1 per likelihood evaluation, B per batch"
+                )
             ),
             "host_qhull_ms": _probe_summary["qhull_ms_total"] / TRACE_CALLS,
             "host_tables_ms": _probe_summary["tables_ms_total"] / TRACE_CALLS,
@@ -1583,7 +1733,9 @@ else:
     # Compile the independent library-PDIP reference before installing either
     # diagnostic monkeypatch. This is an untimed numerical gate over the exact
     # same lane trees; agreement between the two harness arms is insufficient.
-    _fn_library_pdip = _likelihood_fn(system_s3.dataset, _settings)
+    # (Library mode builds it from ``_settings_pdip_reference``, which names PDIP
+    # explicitly; harness mode passes ``_settings`` exactly as phase 2 did.)
+    _fn_library_pdip = _likelihood_fn(system_s3.dataset, _settings_pdip_reference)
     _library_pdip_fn = jax.jit(jax.vmap(_fn_library_pdip))
     with timer.section("vmap_lane_library_pdip_reference"):
         _ll_library_pdip = np.asarray(block(_library_pdip_fn(batched_tree)), dtype=float)
@@ -1593,17 +1745,78 @@ else:
             f"({VMAP_BATCH},)"
         )
 
-    # One probe and one injection over BOTH arms: the host wrapper and the
-    # solver are identical for the pair, or the pair is not matched.
+    # --- phase B (#300): the per-composition references and the solver check ---
+    # Phase 3 placed phase 2's ~2.5e-9 residual BETWEEN the jit(vmap) and scalar
+    # jit compositions, not in the solver. So library mode pins each arm against
+    # a library-PDIP reference of ITS OWN composition: the jit(vmap) reference
+    # above for the vmap arm, and this scalar-jit reference for the scalar arm.
+    _ll_library_pdip_scalar = None
+    library_solver_record: dict | None = None
+    if LIBRARY_SOLVER_MODE:
+        _library_pdip_scalar_fn = jax.jit(_fn_library_pdip)
+        with timer.section("vmap_lane_library_pdip_scalar_reference"):
+            _ll_library_pdip_scalar = np.asarray(
+                [float(block(_library_pdip_scalar_fn(_t))) for _t in lane_trees], dtype=float
+            )
+
+        # The dispatch the library itself reports on the fiducial inversion. This
+        # replaces the harness injection's call counter: a row that asked for the
+        # certified solver and silently ran PDIP fails here, loudly.
+        def _fiducial_solver_used(settings_for_check) -> str:
+            _analysis = al.AnalysisImaging(
+                dataset=system_s3.dataset,
+                adapt_images=adapt_images,
+                settings=settings_for_check,
+                use_jax=True,
+            )
+            _fit = _analysis.fit_from(instance=params_tree_s3)
+            return str(_fit.inversion.positive_only_solver_used)
+
+        _solver_used = _fiducial_solver_used(_settings_library)
+        _reference_solver_used = _fiducial_solver_used(_settings_pdip_reference)
+        if _solver_used != LIBRARY_SOLVER:
+            raise AssertionError(
+                f"--solver {LIBRARY_SOLVER} was requested, but the fiducial inversion's "
+                f"positive_only_solver_used is {_solver_used!r} — every row of this table "
+                f"would be the wrong solver wearing the requested label"
+            )
+        if _reference_solver_used != "pdip":
+            raise AssertionError(
+                f"the library-PDIP reference dispatches {_reference_solver_used!r}, not 'pdip'"
+            )
+        library_solver_record = {
+            "solver_used": _solver_used,
+            "solver_used_source": (
+                "AbstractInversion.positive_only_solver_used on the fiducial S3 inversion, "
+                "built eagerly on the JAX backend (AnalysisImaging(use_jax=True).fit_from) "
+                "with the arms' Settings"
+            ),
+            "reference_solver_used": _reference_solver_used,
+        }
+        print(
+            f"  library solver dispatch: {_solver_used} (requested {LIBRARY_SOLVER}); "
+            f"reference {_reference_solver_used}"
+        )
+
+    # One probe and one solver over BOTH arms: the host wrapper and the solver
+    # are identical for the pair, or the pair is not matched. Harness mode
+    # installs the scoped injection; library mode installs NOTHING — the solver
+    # is the library's own, selected by ``_settings_library``.
+    _solver_context = (
+        contextlib.nullcontext({"jax": 0, "numpy": 0})
+        if LIBRARY_SOLVER_MODE
+        else library_solver_injection.certified_solver_injected(
+            PASS_BUDGET, fallback=FALLBACK_ON, tau_rel=TAU_REL
+        )
+    )
+    _arm_settings = _settings_library if LIBRARY_SOLVER_MODE else _settings
     with (
         host_callback_probe.qhull_probe() as probe,
-        library_solver_injection.certified_solver_injected(
-            PASS_BUDGET, fallback=FALLBACK_ON, tau_rel=TAU_REL
-        ) as _trace_counts,
+        _solver_context as _trace_counts,
     ):
         # The wrappers reproduce current Fitness._vmap and the scalar-jit
-        # control. Both close over the same injected likelihood function.
-        _fn_v = _likelihood_fn(system_s3.dataset, _settings)
+        # control. Both close over the same likelihood function.
+        _fn_v = _likelihood_fn(system_s3.dataset, _arm_settings)
         _scalar_pin_fn = jax.jit(_fn_v)
         _vmap_pin_fn = jax.jit(jax.vmap(_fn_v))
 
@@ -1619,88 +1832,199 @@ else:
                 f"the batch axis is not the lane axis"
             )
 
-        for _k, _draw in enumerate(lane_draws):
-            _abs = abs(_ll_vmap[_k] - _ll_scalar[_k])
-            _rel = _abs / max(abs(_ll_scalar[_k]), 1e-300)
-            _rel_vmap_pdip = abs(_ll_vmap[_k] - _ll_library_pdip[_k]) / max(
-                abs(_ll_library_pdip[_k]), 1e-300
-            )
-            _rel_scalar_pdip = abs(_ll_scalar[_k] - _ll_library_pdip[_k]) / max(
-                abs(_ll_library_pdip[_k]), 1e-300
-            )
-            _status = "PASS" if max(_rel, _rel_vmap_pdip, _rel_scalar_pdip) <= LANE_RTOL else "FAIL"
-            lane_rows.append(
-                {
-                    "lane": _k,
-                    "draw_name": _draw.name,
-                    "draw_kind": _draw.kind,
-                    "offsets": {_p: float(_o) for _p, _o in _draw.offsets.items()},
-                    "log_likelihood_vmap": float(_ll_vmap[_k]),
-                    "log_likelihood_scalar": float(_ll_scalar[_k]),
-                    "log_likelihood_library_pdip": float(_ll_library_pdip[_k]),
-                    "abs_diff_nats": float(_abs),
-                    "rel_diff": float(_rel),
-                    "rel_diff_vmap_vs_library_pdip": float(_rel_vmap_pdip),
-                    "rel_diff_scalar_vs_library_pdip": float(_rel_scalar_pdip),
-                    "status": _status,
-                    # Filled by the reporting pass below when it runs.
-                    "certified": None,
-                    "pass_at_certification": None,
-                    "pdip_iter": None,
-                }
-            )
-        lane_pins = []
-        for _r in lane_rows:
-            for _label, _got_key, _ref_key, _rel_key in (
-                (
-                    "current jit(vmap) == scalar jit",
-                    "log_likelihood_vmap",
-                    "log_likelihood_scalar",
-                    "rel_diff",
-                ),
-                (
-                    "current jit(vmap) == library PDIP",
-                    "log_likelihood_vmap",
-                    "log_likelihood_library_pdip",
-                    "rel_diff_vmap_vs_library_pdip",
-                ),
-                (
-                    "scalar jit == library PDIP",
-                    "log_likelihood_scalar",
-                    "log_likelihood_library_pdip",
-                    "rel_diff_scalar_vs_library_pdip",
-                ),
-            ):
-                lane_pins.append(
+        if not LIBRARY_SOLVER_MODE:
+            for _k, _draw in enumerate(lane_draws):
+                _abs = abs(_ll_vmap[_k] - _ll_scalar[_k])
+                _rel = _abs / max(abs(_ll_scalar[_k]), 1e-300)
+                _rel_vmap_pdip = abs(_ll_vmap[_k] - _ll_library_pdip[_k]) / max(
+                    abs(_ll_library_pdip[_k]), 1e-300
+                )
+                _rel_scalar_pdip = abs(_ll_scalar[_k] - _ll_library_pdip[_k]) / max(
+                    abs(_ll_library_pdip[_k]), 1e-300
+                )
+                _status = (
+                    "PASS" if max(_rel, _rel_vmap_pdip, _rel_scalar_pdip) <= LANE_RTOL else "FAIL"
+                )
+                lane_rows.append(
                     {
-                        "pin": f"lane {_r['lane']}: {_label}",
-                        "rtol": LANE_RTOL,
-                        "got": _r[_got_key],
-                        "reference_value": _r[_ref_key],
-                        "rel_diff": _r[_rel_key],
-                        "status": "PASS" if _r[_rel_key] <= LANE_RTOL else "FAIL",
+                        "lane": _k,
+                        "draw_name": _draw.name,
+                        "draw_kind": _draw.kind,
+                        "offsets": {_p: float(_o) for _p, _o in _draw.offsets.items()},
+                        "log_likelihood_vmap": float(_ll_vmap[_k]),
+                        "log_likelihood_scalar": float(_ll_scalar[_k]),
+                        "log_likelihood_library_pdip": float(_ll_library_pdip[_k]),
+                        "abs_diff_nats": float(_abs),
+                        "rel_diff": float(_rel),
+                        "rel_diff_vmap_vs_library_pdip": float(_rel_vmap_pdip),
+                        "rel_diff_scalar_vs_library_pdip": float(_rel_scalar_pdip),
+                        "status": _status,
+                        # Filled by the reporting pass below when it runs.
+                        "certified": None,
+                        "pass_at_certification": None,
+                        "pdip_iter": None,
                     }
                 )
-        _n_failed = sum(1 for _r in lane_rows if _r["status"] == "FAIL")
-        _worst_rel = max(
-            max(
-                _r["rel_diff"],
-                _r["rel_diff_vmap_vs_library_pdip"],
-                _r["rel_diff_scalar_vs_library_pdip"],
+            lane_pins = []
+            for _r in lane_rows:
+                for _label, _got_key, _ref_key, _rel_key in (
+                    (
+                        "current jit(vmap) == scalar jit",
+                        "log_likelihood_vmap",
+                        "log_likelihood_scalar",
+                        "rel_diff",
+                    ),
+                    (
+                        "current jit(vmap) == library PDIP",
+                        "log_likelihood_vmap",
+                        "log_likelihood_library_pdip",
+                        "rel_diff_vmap_vs_library_pdip",
+                    ),
+                    (
+                        "scalar jit == library PDIP",
+                        "log_likelihood_scalar",
+                        "log_likelihood_library_pdip",
+                        "rel_diff_scalar_vs_library_pdip",
+                    ),
+                ):
+                    lane_pins.append(
+                        {
+                            "pin": f"lane {_r['lane']}: {_label}",
+                            "rtol": LANE_RTOL,
+                            "got": _r[_got_key],
+                            "reference_value": _r[_ref_key],
+                            "rel_diff": _r[_rel_key],
+                            "status": "PASS" if _r[_rel_key] <= LANE_RTOL else "FAIL",
+                        }
+                    )
+            _n_failed = sum(1 for _r in lane_rows if _r["status"] == "FAIL")
+            _worst_rel = max(
+                max(
+                    _r["rel_diff"],
+                    _r["rel_diff_vmap_vs_library_pdip"],
+                    _r["rel_diff_scalar_vs_library_pdip"],
+                )
+                for _r in lane_rows
             )
-            for _r in lane_rows
-        )
-        print(
-            f"\n  per-lane harness and library-PDIP pins <= {LANE_RTOL:.0e} relative: "
-            f"{len(lane_rows) - _n_failed}/{len(lane_rows)} PASS  "
-            f"(worst rel {_worst_rel:.3e})"
-        )
+            print(
+                f"\n  per-lane harness and library-PDIP pins <= {LANE_RTOL:.0e} relative: "
+                f"{len(lane_rows) - _n_failed}/{len(lane_rows)} PASS  "
+                f"(worst rel {_worst_rel:.3e})"
+            )
+        else:
+            # The PRE-REGISTERED phase-B gate (module docstring, and the submit
+            # header): per lane, each arm against the library-PDIP reference of
+            # its OWN composition, at LANE_RTOL relative — GATED. The two
+            # cross-composition differences (arm vs arm, reference vs reference)
+            # are RECORDED with their nats and are NOT gated.
+            def _rel_of(got, ref):
+                return abs(got - ref) / max(abs(ref), 1e-300)
+
+            for _k, _draw in enumerate(lane_draws):
+                _ref_v = float(_ll_library_pdip[_k])
+                _ref_s = float(_ll_library_pdip_scalar[_k])
+                _got_v = float(_ll_vmap[_k])
+                _got_s = float(_ll_scalar[_k])
+                _rel_vv = _rel_of(_got_v, _ref_v)
+                _rel_ss = _rel_of(_got_s, _ref_s)
+                lane_rows.append(
+                    {
+                        "lane": _k,
+                        "draw_name": _draw.name,
+                        "draw_kind": _draw.kind,
+                        "offsets": {_p: float(_o) for _p, _o in _draw.offsets.items()},
+                        "log_likelihood_vmap": _got_v,
+                        "log_likelihood_scalar": _got_s,
+                        "log_likelihood_library_pdip": _ref_v,
+                        "log_likelihood_library_pdip_scalar": _ref_s,
+                        # GATED — same composition.
+                        "rel_diff_vmap_vs_library_pdip": _rel_vv,
+                        "rel_diff_scalar_vs_library_pdip_scalar": _rel_ss,
+                        # RECORDED — across compositions.
+                        "abs_diff_nats": abs(_got_v - _got_s),
+                        "rel_diff": _rel_of(_got_v, _got_s),
+                        "rel_diff_scalar_vs_library_pdip": _rel_of(_got_s, _ref_v),
+                        "abs_diff_library_pdip_vmap_vs_scalar_nats": abs(_ref_v - _ref_s),
+                        "rel_diff_library_pdip_vmap_vs_scalar": _rel_of(_ref_v, _ref_s),
+                        "gated": [
+                            "rel_diff_vmap_vs_library_pdip",
+                            "rel_diff_scalar_vs_library_pdip_scalar",
+                        ],
+                        "status": "PASS" if max(_rel_vv, _rel_ss) <= LANE_RTOL else "FAIL",
+                        # Filled by the observed reporting pass below.
+                        "certified": None,
+                        "passes": None,
+                        "pdip_iter": None,
+                    }
+                )
+            lane_pins = []
+            for _r in lane_rows:
+                for _label, _got_key, _ref_key, _rel_key, _gated in (
+                    (
+                        "jit(vmap) arm == jit(vmap) library PDIP",
+                        "log_likelihood_vmap",
+                        "log_likelihood_library_pdip",
+                        "rel_diff_vmap_vs_library_pdip",
+                        True,
+                    ),
+                    (
+                        "scalar jit arm == scalar jit library PDIP",
+                        "log_likelihood_scalar",
+                        "log_likelihood_library_pdip_scalar",
+                        "rel_diff_scalar_vs_library_pdip_scalar",
+                        True,
+                    ),
+                    (
+                        "jit(vmap) arm vs scalar jit arm (cross-composition)",
+                        "log_likelihood_vmap",
+                        "log_likelihood_scalar",
+                        "rel_diff",
+                        False,
+                    ),
+                    (
+                        "jit(vmap) library PDIP vs scalar jit library PDIP (cross-composition)",
+                        "log_likelihood_library_pdip",
+                        "log_likelihood_library_pdip_scalar",
+                        "rel_diff_library_pdip_vmap_vs_scalar",
+                        False,
+                    ),
+                ):
+                    _within = _r[_rel_key] <= LANE_RTOL
+                    lane_pins.append(
+                        {
+                            "pin": f"lane {_r['lane']}: {_label}",
+                            "rtol": LANE_RTOL,
+                            "gated": _gated,
+                            "got": _r[_got_key],
+                            "reference_value": _r[_ref_key],
+                            "rel_diff": _r[_rel_key],
+                            "abs_diff_nats": abs(_r[_got_key] - _r[_ref_key]),
+                            "within_rtol": bool(_within),
+                            "status": ("PASS" if _within else "FAIL") if _gated else "RECORDED",
+                        }
+                    )
+            _n_failed = sum(1 for _r in lane_rows if _r["status"] == "FAIL")
+            _worst_gated = max(
+                max(
+                    _r["rel_diff_vmap_vs_library_pdip"],
+                    _r["rel_diff_scalar_vs_library_pdip_scalar"],
+                )
+                for _r in lane_rows
+            )
+            _worst_cross = max(_r["rel_diff"] for _r in lane_rows)
+            print(
+                f"\n  per-lane same-composition library-PDIP pins <= {LANE_RTOL:.0e} relative "
+                f"(GATED): {len(lane_rows) - _n_failed}/{len(lane_rows)} PASS  "
+                f"(worst rel {_worst_gated:.3e}); cross-composition vmap vs scalar (recorded): "
+                f"worst rel {_worst_cross:.3e}, "
+                f"worst {max(_r['abs_diff_nats'] for _r in lane_rows):.3e} nats"
+            )
 
         # --- the arms ------------------------------------------------------
         for _arm_name in ARMS:
             arm_blocks[_arm_name] = _run_arm(_arm_name, _scalar_pin_fn, _vmap_pin_fn)
 
-        if int(_trace_counts["jax"]) == 0:
+        if not LIBRARY_SOLVER_MODE and int(_trace_counts["jax"]) == 0:
             raise AssertionError(
                 "the injected solver was never called on the JAX path — every row of this "
                 "table would be the library's own PDIP wearing the certified label."
@@ -1717,31 +2041,88 @@ else:
     def _collect_report(pass_at, certified):
         report_rows.append((int(pass_at), bool(certified)))
 
-    with library_solver_injection.certified_solver_injected(
-        PASS_BUDGET, fallback=FALLBACK_ON, tau_rel=TAU_REL, report=_collect_report
-    ) as _report_counts:
-        _fn_report = _likelihood_fn(system_s3.dataset, _settings)
-        with timer.section("vmap_certification_report"):
-            if _report_arm == "vmap":
-                block(jax.jit(jax.vmap(_fn_report))(batched_tree))
-            else:
-                _rep_fn = jax.jit(_fn_report)
-                for _t in lane_trees:
-                    block(_rep_fn(_t))
-    report_source = (
-        f"{_report_arm} arm, jax.debug.callback(..., ordered=True) inside the injected "
-        f"certified solver; ordered because the unordered batching rule returns the lanes "
-        f"permuted"
-    )
+    if not LIBRARY_SOLVER_MODE:
+        with library_solver_injection.certified_solver_injected(
+            PASS_BUDGET, fallback=FALLBACK_ON, tau_rel=TAU_REL, report=_collect_report
+        ) as _report_counts:
+            _fn_report = _likelihood_fn(system_s3.dataset, _settings)
+            with timer.section("vmap_certification_report"):
+                if _report_arm == "vmap":
+                    block(jax.jit(jax.vmap(_fn_report))(batched_tree))
+                else:
+                    _rep_fn = jax.jit(_fn_report)
+                    for _t in lane_trees:
+                        block(_rep_fn(_t))
+        report_source = (
+            f"{_report_arm} arm, jax.debug.callback(..., ordered=True) inside the injected "
+            f"certified solver; ordered because the unordered batching rule returns the lanes "
+            f"permuted"
+        )
 
-    if len(report_rows) == len(lane_rows):
-        for _r, (_pass_at, _cert) in zip(lane_rows, report_rows):
-            _r["certified"] = bool(_cert)
-            _r["pass_at_certification"] = int(_pass_at) if _pass_at > 0 else None
-    print(
-        f"  certification report: {len(report_rows)} rows for {len(lane_rows)} lanes "
-        f"({sum(1 for _, _c in report_rows if _c)} certified within budget {PASS_BUDGET})"
-    )
+        if len(report_rows) == len(lane_rows):
+            for _r, (_pass_at, _cert) in zip(lane_rows, report_rows):
+                _r["certified"] = bool(_cert)
+                _r["pass_at_certification"] = int(_pass_at) if _pass_at > 0 else None
+        print(
+            f"  certification report: {len(report_rows)} rows for {len(lane_rows)} lanes "
+            f"({sum(1 for _, _c in report_rows if _c)} certified within budget {PASS_BUDGET})"
+        )
+    else:
+        # Library mode: the library's own solve, OBSERVED — a forwarding wrapper
+        # that hands the library a ``stats`` out-dict (PyAutoArray #566) and emits
+        # its traced ``passes``/``certified`` through an ordered debug callback.
+        # It changes nothing that is computed, and it runs on a separately
+        # compiled program that is never timed.
+        with library_solver_injection.library_solver_observed(report=_collect_report) as _observed:
+            _fn_report = _likelihood_fn(system_s3.dataset, _settings_library)
+            with timer.section("vmap_certification_report"):
+                if _report_arm == "vmap":
+                    _ll_report = np.asarray(
+                        block(jax.jit(jax.vmap(_fn_report))(batched_tree)), dtype=float
+                    )
+                else:
+                    _rep_fn = jax.jit(_fn_report)
+                    _ll_report = np.asarray(
+                        [float(block(_rep_fn(_t))) for _t in lane_trees], dtype=float
+                    )
+        _jax_solvers = sorted(set(_observed["solvers_jax"]))
+        if _jax_solvers != [LIBRARY_SOLVER]:
+            raise AssertionError(
+                f"the library's positive-only solve was traced with solver={_jax_solvers}, not "
+                f"[{LIBRARY_SOLVER!r}] — the dispatch the fiducial check reported is not the "
+                f"one the batched program ran"
+            )
+        _ll_arm = _ll_vmap if _report_arm == "vmap" else _ll_scalar
+        _report_rel = float(
+            np.max(np.abs(_ll_report - _ll_arm) / np.maximum(np.abs(_ll_arm), 1e-300))
+        )
+        report_source = (
+            f"{_report_arm} arm, library solve observed through its stats= out-dict "
+            f"(PyAutoArray #566) and jax.debug.callback(..., ordered=True); ordered because "
+            f"the unordered batching rule returns the lanes permuted. Untimed, separately "
+            f"compiled; max rel diff of its log likelihoods vs the timed arm's: "
+            f"{_report_rel:.3e}"
+        )
+        if LIBRARY_SOLVER == "certified" and len(report_rows) == len(lane_rows):
+            for _r, (_passes, _cert) in zip(lane_rows, report_rows):
+                _r["certified"] = bool(_cert)
+                _r["passes"] = int(_passes)
+        library_solver_record.update(
+            {
+                "traced_solver_kwargs_jax": _jax_solvers,
+                "observed_calls_jax": int(_observed["jax"]),
+                "report_rows": len(report_rows),
+                "report_vs_timed_arm_max_rel_diff": _report_rel,
+            }
+        )
+        if LIBRARY_SOLVER == "certified":
+            print(
+                f"  certification report: {len(report_rows)} rows for {len(lane_rows)} lanes "
+                f"({sum(1 for _, _c in report_rows if _c)} certified within budget "
+                f"{CERTIFIED_BUDGET}; fallback {LIBRARY_FALLBACK})"
+            )
+        else:
+            print("  certification report: not applicable (library PDIP row)")
 
     # --- what the phase-1 keys mean in this mode ---------------------------
     # The scalar arm IS the phase-1 program (jax.jit(fn)), so it fills the
@@ -1822,6 +2203,109 @@ else:
         print(
             f"\n  MATCHED: vmap {_v_ms:.3f} ms/lane vs scalar {_s_ms:.3f} ms/lane "
             f"-> {_s_ms / _v_ms:.3f}x"
+        )
+
+    if LIBRARY_SOLVER_MODE:
+        # Phase B (#300). These keys exist ONLY in library mode, so a harness-mode
+        # JSON written by this checkout is key-for-key the phase-2 JSON.
+        import subprocess as _subprocess
+
+        import autoarray as _autoarray
+        import autofit as _autofit
+        import autogalaxy as _autogalaxy
+
+        def _library_revision(module) -> dict:
+            _repo = Path(module.__file__).resolve().parents[1]
+            try:
+                _sha = _subprocess.run(
+                    ["git", "-C", str(_repo), "rev-parse", "HEAD"],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                ).stdout.strip()
+            except (OSError, _subprocess.CalledProcessError):
+                _sha = None
+            return {"head": _sha, "path": str(_repo), "module_file": module.__file__}
+
+        _certified_lanes = [_r["certified"] for _r in lane_rows]
+        _uncertified = (
+            sum(1 for _c in _certified_lanes if _c is False)
+            if LIBRARY_SOLVER == "certified" and None not in _certified_lanes
+            else None
+        )
+        vmap_block.update(
+            {
+                "solver_source": SOLVER_SOURCE,
+                "solver": LIBRARY_SOLVER,
+                "certified_fallback": LIBRARY_FALLBACK,
+                "certified_pass_budget": CERTIFIED_BUDGET,
+                "certified_pass_budget_basis": CERTIFIED_BUDGET_BASIS,
+                "certified_tau_rel": float(_settings_library.certified_tau_rel),
+                "solver_used": library_solver_record["solver_used"],
+                "solver_check": library_solver_record,
+                "lanes_certified": [_r["certified"] for _r in lane_rows],
+                "lanes_passes": [_r["passes"] for _r in lane_rows],
+                "uncertified_lanes": _uncertified,
+                "per_lane_certification_note": (
+                    "certified / passes come from the library's own solve through its stats= "
+                    "out-dict (PyAutoArray #566): passes is the number of restricted active-set "
+                    "passes the library ran (0 when the unconstrained solve was already "
+                    "non-negative), certified is its KKT certificate. With certified_fallback="
+                    "pdip a False lane returned the PDIP solution; with none it returned the "
+                    "last uncertified iterate. null for a library-PDIP row (no certificate)."
+                    if LIBRARY_SOLVER == "certified"
+                    else "Not applicable: a library-PDIP row has no certificate or pass count."
+                ),
+                "gate": {
+                    "pre_registered": True,
+                    "gated": [
+                        "per lane: jit(vmap) arm vs jit(vmap) library PDIP <= lane_rtol relative",
+                        "per lane: scalar jit arm vs scalar jit library PDIP <= lane_rtol relative",
+                    ],
+                    "recorded_not_gated": [
+                        "per lane: jit(vmap) arm vs scalar jit arm (rel_diff, abs_diff_nats)",
+                        "per lane: jit(vmap) library PDIP vs scalar jit library PDIP",
+                        "uncertified_lanes (certified_fallback=none rows)",
+                    ],
+                    "lanes_failed": sum(1 for _r in lane_rows if _r["status"] == "FAIL"),
+                    "passed": all(_r["status"] == "PASS" for _r in lane_rows),
+                    "policy_eligible": (
+                        all(_r["status"] == "PASS" for _r in lane_rows)
+                        and (LIBRARY_FALLBACK != "none" or _uncertified == 0)
+                    ),
+                    "note": (
+                        "Pre-registered before submission (module docstring; submit header). "
+                        "Phase 3 (results/notes/hst_gpu_residue_phase3_psf_2026_09.md) placed "
+                        "phase 2's ~2.5e-9 certified-vs-PDIP residual BETWEEN the jit(vmap) and "
+                        "scalar-jit compositions, not in the solver — so each arm is gated "
+                        "against the library-PDIP reference of its OWN composition, and the "
+                        "cross-composition difference is recorded with its nats. A "
+                        "certified_fallback=none row is policy-eligible only if every lane "
+                        "certifies AND passes the gate. Timing is never gated."
+                    ),
+                },
+                "library_revisions": {
+                    "PyAutoArray": _library_revision(_autoarray),
+                    "PyAutoFit": _library_revision(_autofit),
+                    "PyAutoGalaxy": _library_revision(_autogalaxy),
+                    "PyAutoLens": _library_revision(al),
+                    "autoarray_file": _autoarray.__file__,
+                },
+            }
+        )
+        vmap_block["certification_report"]["passes_semantics"] = (
+            "library `passes`: restricted active-set passes run (jax_active_set.solve_certified)"
+        )
+        if "matched" in vmap_block:
+            vmap_block["matched"]["note"] = (
+                "Both walls are the PRODUCTION nesting of their arm, measured in one process on "
+                "the same B lanes with the SAME library Settings (no injection). A speedup below "
+                "1 means the batch is slower per lane than B sequential jitted calls."
+            )
+        print(
+            f"  phase-B gate: {'PASS' if vmap_block['gate']['passed'] else 'FAIL'}  "
+            f"solver_used {vmap_block['solver_used']}  uncertified lanes {_uncertified}  "
+            f"policy-eligible {vmap_block['gate']['policy_eligible']}"
         )
 
 peak_after_all = peak_bytes()
@@ -2230,6 +2714,33 @@ if vmap_block is not None:
             ),
         }
     )
+    if LIBRARY_SOLVER_MODE:
+        trace_summary["configuration"].update(
+            {
+                "solver_source": SOLVER_SOURCE,
+                "solver": LIBRARY_SOLVER,
+                "certified_fallback": LIBRARY_FALLBACK,
+                "certified_pass_budget": CERTIFIED_BUDGET,
+            }
+        )
+        trace_summary["solver_injection"] = {
+            "patched": None,
+            "part_v": "none — library mode selects the solver through al.Settings",
+            "part_b_route_d": {
+                "patched": library_solver_injection.LIBRARY_POSITIVE_ONLY_DOTTED,
+                "pass_budget": PASS_BUDGET,
+                "fallback": True,
+            },
+            "note": (
+                "Library mode (phase B, #300): PART V's arms and references run the library's "
+                "own positive-only solve, selected by Settings(positive_only_solver, "
+                "certified_fallback, certified_pass_budget); nothing is injected. PART B's "
+                "single-call route d (the fiducial d == b pin) still uses the phase-1 harness "
+                "injection at the phase-3 budget and is not a phase-B row. The untimed "
+                "certification report observes the library solve (library_solver_observed) "
+                "without changing it."
+            ),
+        }
     trace_summary["vmap"] = vmap_block
     trace_summary["headline_arm_note"] = (
         f"`trace`, `hlo_census`, `command_buffers` and `trace_timing` above describe the "
@@ -2267,9 +2778,18 @@ if VMAP_BATCH is not None:
     # The batched legs never collide with the phase-1 files in the same
     # directory: batch size, lane family and fallback semantics are three
     # different programs and all three are in the name.
-    _cell_name = (
-        f"{_cell_name}_jitvmap{int(VMAP_BATCH)}_{LANES_MODE}_fb{'on' if FALLBACK_ON else 'off'}"
-    )
+    if not LIBRARY_SOLVER_MODE:
+        _cell_name = (
+            f"{_cell_name}_jitvmap{int(VMAP_BATCH)}_{LANES_MODE}_fb{'on' if FALLBACK_ON else 'off'}"
+        )
+    else:
+        # Phase B (#300): the library solver, its fallback and its budget are three
+        # more program choices, so all three are in the name — and the ``_lib``
+        # token keeps these files disjoint from every harness-mode file.
+        _cell_name = (
+            f"{_cell_name}_jitvmap{int(VMAP_BATCH)}_{LANES_MODE}"
+            f"_lib{LIBRARY_SOLVER}_fb{'on' if FALLBACK_ON else 'off'}_b{CERTIFIED_BUDGET}"
+        )
 
 if PSF_CANDIDATE is not None:
     # One file pair per candidate, never colliding with phase 1's own file.
@@ -2347,15 +2867,28 @@ if vmap_block is not None:
     _cb_ms = [
         f"{_a} {vmap_block['arm_rows'][_a]['callback_count_per_call']:.1f}" for _a in _arm_names
     ]
-    ax.set_title(
-        f"Fixed-light {MESH} N={n_source_pixels} — vmap vs scalar at B={VMAP_BATCH} "
-        f"({LANES_MODE} lanes, fallback {'on' if FALLBACK_ON else 'off'})\n"
-        f"budget {PASS_BUDGET}, border relocator {BORDER_RELOCATOR_RESOLVED} | "
-        f"qhull callbacks per batched call: {', '.join(_cb_ms)} | "
-        f"lanes pinned (all relative checks <= {LANE_RTOL:.0e}) "
-        f"{len(lane_rows) - vmap_block['lanes_failed']}/{len(lane_rows)}",
-        fontsize=10,
-    )
+    if not LIBRARY_SOLVER_MODE:
+        ax.set_title(
+            f"Fixed-light {MESH} N={n_source_pixels} — vmap vs scalar at B={VMAP_BATCH} "
+            f"({LANES_MODE} lanes, fallback {'on' if FALLBACK_ON else 'off'})\n"
+            f"budget {PASS_BUDGET}, border relocator {BORDER_RELOCATOR_RESOLVED} | "
+            f"qhull callbacks per batched call: {', '.join(_cb_ms)} | "
+            f"lanes pinned (all relative checks <= {LANE_RTOL:.0e}) "
+            f"{len(lane_rows) - vmap_block['lanes_failed']}/{len(lane_rows)}",
+            fontsize=10,
+        )
+    else:
+        ax.set_title(
+            f"Fixed-light {MESH} N={n_source_pixels} — LIBRARY {LIBRARY_SOLVER} "
+            f"(fallback {LIBRARY_FALLBACK}, budget {CERTIFIED_BUDGET}), vmap vs scalar at "
+            f"B={VMAP_BATCH} ({LANES_MODE} lanes)\n"
+            f"border relocator {BORDER_RELOCATOR_RESOLVED} | "
+            f"qhull callbacks per batched call: {', '.join(_cb_ms)} | "
+            f"same-composition pins (<= {LANE_RTOL:.0e}) "
+            f"{len(lane_rows) - vmap_block['lanes_failed']}/{len(lane_rows)} | "
+            f"uncertified lanes {vmap_block['uncertified_lanes']}",
+            fontsize=10,
+        )
     ax.legend(fontsize=8, loc="lower right")
     ax.grid(axis="x", alpha=0.3)
     fig.tight_layout()
@@ -2372,6 +2905,20 @@ if vmap_block is not None:
                 f"vmap {_r['log_likelihood_vmap']!r} vs scalar "
                 f"{_r['log_likelihood_scalar']!r}  "
                 f"abs {_r['abs_diff_nats']:.3e} nats (rel {_r['rel_diff']:.3e})"
+                + (
+                    f"  | GATED vmap-vs-ref {_r['rel_diff_vmap_vs_library_pdip']:.3e}, "
+                    f"scalar-vs-ref {_r['rel_diff_scalar_vs_library_pdip_scalar']:.3e}"
+                    if LIBRARY_SOLVER_MODE
+                    else ""
+                )
+            )
+        if LIBRARY_SOLVER_MODE:
+            raise AssertionError(
+                f"{len(_failed)} of {len(lane_rows)} lanes disagree with the library-PDIP "
+                f"reference of their own composition by more than {LANE_RTOL:.0e} relative "
+                f"(the pre-registered phase-B gate). Nothing in this table supports a "
+                f"production recommendation. The JSON and PNG were written first and hold "
+                f"the evidence."
             )
         raise AssertionError(
             f"{len(_failed)} of {len(lane_rows)} lanes disagree between the vmap and scalar "

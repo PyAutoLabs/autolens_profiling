@@ -141,6 +141,7 @@ __all__ = [
     "LIBRARY_POSITIVE_ONLY_DOTTED",
     "LIBRARY_POSITIVE_NEGATIVE_DOTTED",
     "certified_solver_injected",
+    "library_solver_observed",
     "positive_negative_probe",
 ]
 
@@ -347,6 +348,85 @@ def certified_solver_injected(
     inversion_util.reconstruction_positive_only_from = patched
     try:
         yield counts
+    finally:
+        inversion_util.reconstruction_positive_only_from = original
+
+
+@contextlib.contextmanager
+def library_solver_observed(*, report=None):
+    """Observe the library's OWN positive-only solve, changing nothing it computes.
+
+    Certified-solver phase B (autolens_profiling#300) selects the solver through
+    ``al.Settings`` — the library's dispatch, no injection. What it still needs
+    from a harness is the per-lane certification record, and PyAutoArray #566
+    already exposes it: ``reconstruction_positive_only_from(..., stats=dict)``
+    fills ``stats["certified"]`` and ``stats["passes"]`` as traced scalars on the
+    certified JAX path. This wrapper forwards **every** argument to the library
+    unchanged — including the ``solver`` the library's own dispatch chose — and
+    only adds a ``stats`` dict when the caller passed none, then emits
+    ``report(passes, certified)`` through ``jax.debug.callback(..., ordered=True)``
+    (ordered, because the unordered batching rule returns lanes permuted).
+
+    It is for an UNTIMED diagnostic pass on a separately compiled program: the
+    ordered callback is a host round trip that serialises the batch.
+
+    Yields ``{"jax": n, "numpy": n, "solvers_jax": [...]}`` — the ``solver``
+    keyword the library passed on every JAX-path call, recorded at trace time,
+    so the caller can assert the batched program ran the solver it asked for.
+
+    Requires a library with the #566 ``solver``/``stats`` keywords; an older one
+    raises here rather than reporting nothing.
+    """
+    from autoarray.inversion.inversion import inversion_util
+
+    original = inversion_util.reconstruction_positive_only_from
+    missing = sorted({"solver", "stats"} - set(inspect.signature(original).parameters))
+    if missing:
+        raise TypeError(
+            f"{LIBRARY_POSITIVE_ONLY_DOTTED} does not take {missing}: the installed "
+            f"PyAutoArray predates #566 and has no library certified solver to observe"
+        )
+    seen = {"jax": 0, "numpy": 0, "solvers_jax": []}
+
+    def observed(
+        data_vector,
+        curvature_reg_matrix,
+        settings=None,
+        xp=np,
+        fingerprint=None,
+        factor=None,
+        solver="pdip",
+        stats=None,
+    ):
+        is_jax = xp.__name__.startswith("jax")
+        local_stats = {} if stats is None else stats
+        out = original(
+            data_vector=data_vector,
+            curvature_reg_matrix=curvature_reg_matrix,
+            settings=settings,
+            xp=xp,
+            fingerprint=fingerprint,
+            factor=factor,
+            solver=solver,
+            stats=local_stats,
+        )
+        if not is_jax:
+            seen["numpy"] += 1
+            return out
+        seen["jax"] += 1
+        seen["solvers_jax"].append(solver)
+        if report is not None and "passes" in local_stats and "certified" in local_stats:
+            import jax
+
+            jax.debug.callback(
+                report, local_stats["passes"], local_stats["certified"], ordered=True
+            )
+        return out
+
+    _assert_signature_covers(original, observed)
+    inversion_util.reconstruction_positive_only_from = observed
+    try:
+        yield seen
     finally:
         inversion_util.reconstruction_positive_only_from = original
 
