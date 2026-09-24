@@ -1,0 +1,3500 @@
+{
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "hostname": "DESKTOP-H143S82",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 8,
+    "jax_compilation_cache_dir": "/home/jammy/.cache/pyauto_jax",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "nvidia_smi": "NVIDIA GeForce RTX 2060 with Max-Q Design, 2340 MiB, 6144 MiB"
+  },
+  "machine": {
+    "cpu_model": "Intel(R) Core(TM) i9-10885H CPU @ 2.40GHz",
+    "cpu_count_os": 8,
+    "nproc": 1,
+    "nproc_all": 8,
+    "nproc_note": "GNU nproc honours OMP_NUM_THREADS, so `nproc` can print 1 on a multi-core host; `nproc_all` is the core count.",
+    "ram_total": "16392692 kB",
+    "kernel": "5.10.16.3-microsoft-standard-WSL2",
+    "platform": "Linux-5.10.16.3-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+    "python": "3.12.10",
+    "jax_thread_env": {
+      "NPROC": "8"
+    },
+    "blas_thread_env": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "VECLIB_MAXIMUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1"
+    },
+    "thread_env_note": "NPROC sizes XLA's CPU intra-op pool (the JAX rows); the BLAS knobs pin OpenBLAS/MKL/OpenMP (the numpy/scipy rows) and do not touch JAX. Two disjoint families; both are recorded on every CPU timing.",
+    "gpu": "NVIDIA GeForce RTX 2060 with Max-Q Design, 6144 MiB, 580.97"
+  },
+  "precision": "fp64",
+  "configuration": {
+    "pixel_scale_arcsec": 0.05,
+    "mask_radius_arcsec": 3.5,
+    "image_pixels_masked": 15361,
+    "over_sampled_pixels": 62752,
+    "mesh": "delaunay",
+    "mesh_shape": null,
+    "source_pixels": 1500,
+    "source_pixels_requested": null,
+    "dataset": "hst",
+    "dataset_sha256": {
+      "data.fits": "e4e833a28e9c6f6fb023cd85c0d3dde74068720256bc77a240633500e5b04fac",
+      "noise_map.fits": "315c6266a0acd3ac9c8da82fcd2b45a08697362481fd7a35072bab1658530ba3",
+      "psf.fits": "8389ba0e8bf4a09b4a561cfc246181a2fb944ed396754cd0ff76fdd22910d303"
+    },
+    "cell_source_sha256": "e114c4df9e733c1cb331a0c7f2e984b2061aac9eeb47c7da027523b08dc707d5",
+    "inversion_path": "dense",
+    "pass_budget": 7,
+    "pass_budget_basis": "phase 3 (autolens_profiling#255): the smallest ZERO-fallback budget per mesh, the budget a production run fixes. NOT phase 0's certifying budget (2 for Delaunay), which falls back on 67.5 % of a graded draw set and is not a production cost.",
+    "border_relocator_mode": "cell",
+    "border_relocator": true,
+    "border_relocator_note": "'cell' is use_border_relocator=True, which every profiling cell in this family forces; 'library' passes None and takes the shipped config default, which is what production runs. The resolved boolean is what this leg actually ran.",
+    "routes_selected": [
+      "b",
+      "d"
+    ],
+    "trace_calls": 10,
+    "command_buffers_traced": "off",
+    "use_mixed_precision": false,
+    "tau_rel": 1e-09,
+    "regularization": {
+      "scheme": "adapt_split",
+      "inner_coefficient": 0.1,
+      "outer_coefficient": 10.0,
+      "signal_scale": 0.1
+    },
+    "thread_env": {
+      "n_threads": null,
+      "vars": [
+        "OPENBLAS_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OMP_NUM_THREADS",
+        "VECLIB_MAXIMUM_THREADS",
+        "NUMEXPR_NUM_THREADS"
+      ],
+      "set_to": null,
+      "preexisting": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "VECLIB_MAXIMUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1"
+      },
+      "overridden": {},
+      "note": "Not pinned (legacy variant): recorded as found."
+    },
+    "over_sample_size_lp_rule": {
+      "sub_size_list": [
+        4,
+        2,
+        2
+      ],
+      "radial_list": [
+        0.3,
+        0.6
+      ],
+      "centre": [
+        0.0,
+        0.0
+      ]
+    },
+    "logdet_candidate": "schur_k64",
+    "pin_draws": 8,
+    "draw_seed": 0,
+    "certified_pass_budget": 16
+  },
+  "solver_injection": {
+    "patched": null,
+    "note": "Log-det mode (phase 4, #303): routes d, the unmodified-library control and the traced program run the LIBRARY certified solver selected by al.Settings \u2014 no harness solver. The only rebind is the log-det candidate's pair (schur_k64): jax_active_set.solve_certified (bit-identical, keeps its factor) and AbstractInversion.log_det_curvature_reg_matrix_term; none for control."
+  },
+  "routes": {
+    "b_s3_pdip": {
+      "label": "S3 PDIP (source-only)",
+      "status": "ok",
+      "solver": "library",
+      "ms": 1476.166259999809,
+      "log_likelihood": 29155.0001629595
+    },
+    "d_s3_library_certified_logdet": {
+      "label": "S3 LIBRARY certified solver (Settings), budget 16, PDIP fallback, log det schur_k64",
+      "status": "ok",
+      "solver": "library certified (al.Settings), PDIP fallback",
+      "certified_pass_budget": 16,
+      "logdet_candidate": "schur_k64",
+      "injected_logdet_calls_jax": 1,
+      "injected_logdet_calls_delegated": 0,
+      "injected_logdet_delegated_reasons": {},
+      "injected_solves_stashed": 1,
+      "ms": 1225.7667000001675,
+      "log_likelihood": 29155.00016279849
+    }
+  },
+  "equivalence_pins": [
+    {
+      "pin": "route d (library certified, log det schur_k64) vs route b (library PDIP) \u2014 RECORDED, not gated in log-det mode",
+      "route": "d_s3_library_certified_logdet",
+      "reference": "b_s3_pdip",
+      "expectation": "the certified active set returns the library's own positive solution",
+      "rtol": 1e-09,
+      "got": 29155.00016279849,
+      "reference_value": 29155.0001629595,
+      "rel_diff": 5.522540392533514e-12,
+      "status": "RECORDED",
+      "abs_diff_nats": 1.6100966604426503e-07,
+      "gated": false
+    }
+  ],
+  "equivalence_rtol": 1e-09,
+  "reference": {
+    "log_evidence_s0_library": 29155.000174348803,
+    "log_evidence_s3_library": 29155.0001743487,
+    "s3": {
+      "n_params": 1500,
+      "n_mapper": 1500,
+      "n_funcs": 0,
+      "edge_zeroed_pixels": 0,
+      "subtracted_light_flux": 5105.448603818496
+    }
+  },
+  "command_buffers": {
+    "wall_on_ms": 1292.771989999892,
+    "wall_off_ms": 1253.4691400000156,
+    "command_buffer_delta_ms": -39.302849999876344,
+    "command_buffer_delta_pct": -3.0401996874854653,
+    "traced": "off",
+    "compiler_option": "xla_gpu_enable_command_buffer",
+    "probe": {
+      "probed_program": "command_buffers_on",
+      "events": 1551,
+      "kernel_names_present": true,
+      "distinct_hlo_op": 66,
+      "joined_duration_pct": 37.32768332814427,
+      "top_hlo_op_by_duration": [
+        [
+          "command_buffer_94",
+          1935.570042
+        ],
+        [
+          "fft.19.0",
+          325.20905
+        ],
+        [
+          "fft.15.0",
+          256.901019
+        ],
+        [
+          "fft.17.0",
+          181.321524
+        ],
+        [
+          "command_buffer_81",
+          124.220253
+        ],
+        [
+          "cholesky.60",
+          90.547507
+        ]
+      ],
+      "note": "CUPTI emits per-kernel events inside a CUDA graph, but their hlo_op stat is the graph node (command_buffer_N), not the instruction. joined_duration_pct is how much of the device time the name-based join recovers on that program."
+    },
+    "note": "ONE lowering, TWO compilations, one process. wall_on_ms is the PRODUCTION program (CUDA graphs as XLA ships them) and is the number comparable to phase 5's row; wall_off_ms is the graph-less program the stage rows attribute. The delta is the launch overhead the graphs remove \u2014 it lands in device_idle and host_outside_span, not in any stage. Reconciliation is computed against wall_off_ms."
+  },
+  "trace": {
+    "parser": "ProfileData.from_file(xplane) + as_text() + stack_frame_index(proto field 17)",
+    "stage_audit": {
+      "mixed_fusion": [
+        {
+          "instruction": "loop_divide_gather_fusion",
+          "ms": 21.092426200000002,
+          "opcode": "fusion",
+          "shape": "(f64[15361,1,1,1500]{3,2,1,0}, f64[15361,1,1,1500]{3,2,1,0})",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:133",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:133 (curvature_matrix_via_mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:93 (InversionImagingMapping.curvature_matrix)",
+            "/home/jammy/Code/PyAutoLabs/organs/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:389 (AbstractInversion.curvature_reg_matrix)",
+            "/home/jammy/Code/PyAutoLabs/organs/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)"
+          ]
+        },
+        {
+          "instruction": "loop_broadcast_fusion.4",
+          "ms": 13.520812000000001,
+          "opcode": "fusion",
+          "shape": "f64[1500,180,180]{2,1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/operators/convolver.py:1228",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/operators/convolver.py:1228 (Convolver.convolved_mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:197 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:829 (AbstractInversion.mapped_reconstructed_operated_data)",
+            "/home/jammy/Code/PyAutoLabs/lens/PyAutoLens/autolens/imaging/fit_imaging.py:199 (FitImaging.model_data)"
+          ]
+        },
+        {
+          "instruction": "loop_broadcast_fusion.6",
+          "ms": 6.380113,
+          "opcode": "fusion",
+          "shape": "f64[15361,1500]{1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mappers/mapper_util.py:342",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mappers/mapper_util.py:342 (mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mappers/abstract.py:283 (Mapper.mapping_matrix)",
+            "/home/jammy/Code/PyAutoLabs/organs/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:91 (AbstractInversionImaging._mapping_matrix_for_convolution_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:137 (AbstractInversionImaging.operated_mapping_matrix_list)"
+          ]
+        },
+        {
+          "instruction": "input_reduce_fusion.19",
+          "ms": 6.0326249,
+          "opcode": "fusion",
+          "shape": "f64[92,1500]{1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/inversion_imaging_util.py:123",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/inversion_imaging_util.py:123 (data_vector_via_blurred_mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:67 (InversionImagingMapping.data_vector)",
+            "/home/jammy/Code/PyAutoLabs/organs/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:674 (AbstractInversion.reconstruction)",
+            "/home/jammy/Code/PyAutoLabs/organs/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)"
+          ]
+        },
+        {
+          "instruction": "input_reduce_fusion.22",
+          "ms": 5.8512403,
+          "opcode": "fusion",
+          "shape": "f64[15361]{0}",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:163",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:163 (mapped_reconstructed_data_via_mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:120 (InversionImagingMapping._mapped_reconstructed_data_dict_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:196 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:829 (AbstractInversion.mapped_reconstructed_operated_data)",
+            "/home/jammy/Code/PyAutoLabs/lens/PyAutoLens/autolens/imaging/fit_imaging.py:199 (FitImaging.model_data)"
+          ]
+        },
+        {
+          "instruction": "input_multiply_transpose_fusion",
+          "ms": 2.5773282,
+          "opcode": "fusion",
+          "shape": "(f64[1500,1500]{1,0}, f64[1500,1500]{1,0})",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:153",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:153 (masked_solve)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:237 (active_set_search)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:266 (solve_certified_stashing)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:341 (solve_certified_with_fallback)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:274 (_certified_positive_only_from)"
+          ]
+        }
+      ],
+      "ray_trace_data_grid": [
+        {
+          "instruction": "wrapped_divide",
+          "ms": 0.0022079999999999995,
+          "opcode": "fusion",
+          "shape": "f64[]",
+          "source": "/home/jammy/Code/PyAutoLabs/galaxy/PyAutoGalaxy/autogalaxy/cosmology/model.py:380",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/galaxy/PyAutoGalaxy/autogalaxy/cosmology/model.py:380 (LensingCosmology.scaling_factor_between_redshifts_from)",
+            "/home/jammy/Code/PyAutoLabs/lens/PyAutoLens/autolens/lens/tracer_util.py:252 (traced_grid_2d_list_from)",
+            "/home/jammy/Code/PyAutoLabs/lens/PyAutoLens/autolens/lens/tracer.py:632 (Tracer.traced_grid_2d_list_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/structures/decorators/abstract.py:93 (AbstractMaker.evaluate_func)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/structures/decorators/abstract.py:110 (AbstractMaker.result)"
+          ]
+        }
+      ],
+      "grids_and_structures": [
+        {
+          "instruction": "wrapped_sine.1",
+          "ms": 0.0053219999999999995,
+          "opcode": "fusion",
+          "shape": "f64[]",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/geometry/geometry_util.py:527",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/geometry/geometry_util.py:527 (transform_grid_2d_to_reference_frame)",
+            "/home/jammy/Code/PyAutoLabs/galaxy/PyAutoGalaxy/autogalaxy/profiles/geometry_profiles.py:418 (EllProfile.transformed_to_reference_frame_grid_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/structures/decorators/abstract.py:93 (AbstractMaker.evaluate_func)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/structures/decorators/abstract.py:112 (AbstractMaker.result)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/structures/decorators/to_grid.py:70 (to_grid.<locals>.wrapper)"
+          ]
+        },
+        {
+          "instruction": "wrapped_sine",
+          "ms": 0.005261200000000001,
+          "opcode": "fusion",
+          "shape": "f64[]",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/geometry/geometry_util.py:527",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/geometry/geometry_util.py:527 (transform_grid_2d_to_reference_frame)",
+            "/home/jammy/Code/PyAutoLabs/galaxy/PyAutoGalaxy/autogalaxy/profiles/geometry_profiles.py:418 (EllProfile.transformed_to_reference_frame_grid_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/structures/decorators/abstract.py:93 (AbstractMaker.evaluate_func)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/structures/decorators/abstract.py:112 (AbstractMaker.result)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/structures/decorators/to_grid.py:70 (to_grid.<locals>.wrapper)"
+          ]
+        }
+      ],
+      "mass_profile_deflections": [
+        {
+          "instruction": "loop_sqrt_fusion.1",
+          "ms": 0.0021409,
+          "opcode": "fusion",
+          "shape": "f64[]",
+          "source": "/home/jammy/Code/PyAutoLabs/galaxy/PyAutoGalaxy/autogalaxy/convert.py:224",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/galaxy/PyAutoGalaxy/autogalaxy/convert.py:224 (shear_magnitude_and_angle_from)",
+            "/home/jammy/Code/PyAutoLabs/galaxy/PyAutoGalaxy/autogalaxy/convert.py:257 (shear_magnitude_from)",
+            "/home/jammy/Code/PyAutoLabs/galaxy/PyAutoGalaxy/autogalaxy/profiles/mass/sheets/external_shear.py:90 (ExternalShear.magnitude)",
+            "/home/jammy/Code/PyAutoLabs/galaxy/PyAutoGalaxy/autogalaxy/profiles/mass/sheets/external_shear.py:161 (ExternalShear.deflections_yx_2d_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/structures/decorators/transform.py:77 (transform.<locals>.decorator.<locals>.wrapper)"
+          ]
+        }
+      ],
+      "border_relocator": [
+        {
+          "instruction": "custom-call.4",
+          "ms": 0.6607185000000001,
+          "opcode": "custom-call",
+          "shape": "(f64[2,2]{1,0}, s8[4194304]{0})",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:242",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:242 (ellipse_params_via_border_pca_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:454 (BorderRelocator.relocated_mesh_grid_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/mesh/abstract.py:176 (AbstractMesh.relocated_mesh_grid_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/mesh/delaunay.py:214 (Delaunay.interpolator_from)",
+            "/home/jammy/Code/PyAutoLabs/galaxy/PyAutoGalaxy/autogalaxy/galaxy/to_inversion.py:489 (GalaxiesToInversion.mapper_from)"
+          ]
+        },
+        {
+          "instruction": "eigh.45",
+          "ms": 0.20608580000000007,
+          "opcode": "custom-call",
+          "shape": "(f64[2,2]{0,1}, f64[2]{0}, s32[])",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:245",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:245 (ellipse_params_via_border_pca_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:454 (BorderRelocator.relocated_mesh_grid_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/mesh/abstract.py:176 (AbstractMesh.relocated_mesh_grid_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/mesh/delaunay.py:214 (Delaunay.interpolator_from)",
+            "/home/jammy/Code/PyAutoLabs/galaxy/PyAutoGalaxy/autogalaxy/galaxy/to_inversion.py:489 (GalaxiesToInversion.mapper_from)"
+          ]
+        },
+        {
+          "instruction": "loop_add_rsqrt_fusion",
+          "ms": 0.012627999999999999,
+          "opcode": "fusion",
+          "shape": "(f64[15361]{0}, f64[15361]{0}, f64[15361,1]{1,0}, f64[15361,1]{1,0})",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:311",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:311 (relocated_grid_via_ellipse_border_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:423 (BorderRelocator.relocated_grid_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/mesh/abstract.py:83 (AbstractMesh.relocated_grid_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/mesh/delaunay.py:208 (Delaunay.interpolator_from)",
+            "/home/jammy/Code/PyAutoLabs/galaxy/PyAutoGalaxy/autogalaxy/galaxy/to_inversion.py:489 (GalaxiesToInversion.mapper_from)"
+          ]
+        },
+        {
+          "instruction": "loop_multiply_fusion.7",
+          "ms": 0.005869,
+          "opcode": "fusion",
+          "shape": "f64[2,2]{1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:245",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:245 (ellipse_params_via_border_pca_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:454 (BorderRelocator.relocated_mesh_grid_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/mesh/abstract.py:176 (AbstractMesh.relocated_mesh_grid_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/mesh/delaunay.py:214 (Delaunay.interpolator_from)",
+            "/home/jammy/Code/PyAutoLabs/galaxy/PyAutoGalaxy/autogalaxy/galaxy/to_inversion.py:489 (GalaxiesToInversion.mapper_from)"
+          ]
+        },
+        {
+          "instruction": "wrapped_sine.2",
+          "ms": 0.005360200000000001,
+          "opcode": "fusion",
+          "shape": "f64[]",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:301",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:301 (relocated_grid_via_ellipse_border_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:458 (BorderRelocator.relocated_mesh_grid_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/mesh/abstract.py:176 (AbstractMesh.relocated_mesh_grid_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/mesh/delaunay.py:214 (Delaunay.interpolator_from)",
+            "/home/jammy/Code/PyAutoLabs/galaxy/PyAutoGalaxy/autogalaxy/galaxy/to_inversion.py:489 (GalaxiesToInversion.mapper_from)"
+          ]
+        },
+        {
+          "instruction": "loop_add_fusion.12",
+          "ms": 0.005322099999999999,
+          "opcode": "fusion",
+          "shape": "f64[1500]{0}",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:308",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:308 (relocated_grid_via_ellipse_border_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:458 (BorderRelocator.relocated_mesh_grid_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/mesh/abstract.py:176 (AbstractMesh.relocated_mesh_grid_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/mesh/delaunay.py:214 (Delaunay.interpolator_from)",
+            "/home/jammy/Code/PyAutoLabs/galaxy/PyAutoGalaxy/autogalaxy/galaxy/to_inversion.py:489 (GalaxiesToInversion.mapper_from)"
+          ]
+        }
+      ],
+      "mesh_construction": [
+        {
+          "instruction": "loop_multiply_fusion.5",
+          "ms": 0.0024514,
+          "opcode": "fusion",
+          "shape": "f64[1500]{0}",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:412",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:412 (jax_delaunay)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:846 (InterpolatorDelaunay.delaunay)",
+            "/home/jammy/Code/PyAutoLabs/organs/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:957 (InterpolatorDelaunay._mappings_sizes_weights)",
+            "/home/jammy/Code/PyAutoLabs/organs/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)"
+          ]
+        },
+        {
+          "instruction": "input_concatenate_fusion.5",
+          "ms": 0.0019427,
+          "opcode": "fusion",
+          "shape": "f64[1500,2]{1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:820",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:820 (InterpolatorDelaunay.mesh_grid_xy)",
+            "/home/jammy/Code/PyAutoLabs/organs/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:847 (InterpolatorDelaunay.delaunay)",
+            "/home/jammy/Code/PyAutoLabs/organs/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:957 (InterpolatorDelaunay._mappings_sizes_weights)"
+          ]
+        }
+      ],
+      "mesh_qhull_callback": [
+        {
+          "instruction": "pure_callback.4",
+          "ms": 0.018654199999999996,
+          "opcode": "custom-call",
+          "shape": "(s32[3000,3]{1,0}, s32[3000,3]{1,0}, s32[1500]{0})",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:161",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:161 (_jax_delaunay_tables)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:405 (jax_delaunay)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:846 (InterpolatorDelaunay.delaunay)",
+            "/home/jammy/Code/PyAutoLabs/organs/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:957 (InterpolatorDelaunay._mappings_sizes_weights)"
+          ]
+        }
+      ],
+      "certified_active_set_solve": [
+        {
+          "instruction": "cholesky.60",
+          "ms": 29.06505410000001,
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1500]{0,1}, s32[])",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:153",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:153 (masked_solve)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:252 (active_set_search.<locals>.body_fun)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:262 (active_set_search)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:266 (solve_certified_stashing)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:341 (solve_certified_with_fallback)"
+          ]
+        },
+        {
+          "instruction": "cholesky.140",
+          "ms": 14.518518299999995,
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1500]{0,1}, s32[])",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:275",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:275 (solve_certified_stashing)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:341 (solve_certified_with_fallback)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:274 (_certified_positive_only_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:440 (reconstruction_positive_only_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:681 (AbstractInversion.reconstruction)"
+          ]
+        },
+        {
+          "instruction": "cholesky.130",
+          "ms": 13.940646700000002,
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1500]{0,1}, s32[])",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:153",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:153 (masked_solve)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:237 (active_set_search)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:266 (solve_certified_stashing)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:341 (solve_certified_with_fallback)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:274 (_certified_positive_only_from)"
+          ]
+        },
+        {
+          "instruction": "input_transpose_fusion.2",
+          "ms": 3.5507698999999997,
+          "opcode": "fusion",
+          "shape": "f64[1500,1500]{1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:153",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:153 (masked_solve)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:252 (active_set_search.<locals>.body_fun)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:262 (active_set_search)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:266 (solve_certified_stashing)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:341 (solve_certified_with_fallback)"
+          ]
+        },
+        {
+          "instruction": "input_transpose_fusion.3",
+          "ms": 2.6180355,
+          "opcode": "fusion",
+          "shape": "f64[1500,1500]{1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:153",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:153 (masked_solve)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:252 (active_set_search.<locals>.body_fun)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:262 (active_set_search)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:266 (solve_certified_stashing)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:341 (solve_certified_with_fallback)"
+          ]
+        },
+        {
+          "instruction": "input_transpose_fusion.10",
+          "ms": 1.31281,
+          "opcode": "fusion",
+          "shape": "f64[1500,1500]{1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:153",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:153 (masked_solve)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:237 (active_set_search)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:266 (solve_certified_stashing)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:341 (solve_certified_with_fallback)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:274 (_certified_positive_only_from)"
+          ]
+        }
+      ],
+      "regularization_H": [
+        {
+          "instruction": "input_concatenate_fusion.10",
+          "ms": 0.0028353,
+          "opcode": "fusion",
+          "shape": "pred[3]{0}",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/regularization/regularization_util.py:87",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/regularization/regularization_util.py:87 (split_points_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:410 (jax_delaunay)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:846 (InterpolatorDelaunay.delaunay)",
+            "/home/jammy/Code/PyAutoLabs/organs/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:957 (InterpolatorDelaunay._mappings_sizes_weights)"
+          ]
+        },
+        {
+          "instruction": "input_concatenate_fusion.8",
+          "ms": 0.0028001999999999997,
+          "opcode": "fusion",
+          "shape": "pred[3]{0}",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/regularization/regularization_util.py:90",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/regularization/regularization_util.py:90 (split_points_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:410 (jax_delaunay)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:846 (InterpolatorDelaunay.delaunay)",
+            "/home/jammy/Code/PyAutoLabs/organs/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:957 (InterpolatorDelaunay._mappings_sizes_weights)"
+          ]
+        },
+        {
+          "instruction": "input_concatenate_fusion.6",
+          "ms": 0.0027393999999999995,
+          "opcode": "fusion",
+          "shape": "pred[3]{0}",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/regularization/regularization_util.py:93",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/regularization/regularization_util.py:93 (split_points_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:410 (jax_delaunay)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:846 (InterpolatorDelaunay.delaunay)",
+            "/home/jammy/Code/PyAutoLabs/organs/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:957 (InterpolatorDelaunay._mappings_sizes_weights)"
+          ]
+        },
+        {
+          "instruction": "input_concatenate_fusion.7",
+          "ms": 0.0026786000000000006,
+          "opcode": "fusion",
+          "shape": "pred[3]{0}",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/regularization/regularization_util.py:91",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/regularization/regularization_util.py:91 (split_points_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:410 (jax_delaunay)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:846 (InterpolatorDelaunay.delaunay)",
+            "/home/jammy/Code/PyAutoLabs/organs/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:957 (InterpolatorDelaunay._mappings_sizes_weights)"
+          ]
+        },
+        {
+          "instruction": "input_scatter_fusion.13",
+          "ms": 0.0022465,
+          "opcode": "fusion",
+          "shape": "f64[1500,1500]{1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/regularization/regularization_util.py:615",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/regularization/regularization_util.py:615 (pixel_splitted_regularization_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/regularization/adapt_split.py:137 (AdaptSplit.regularization_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/linear_obj/linear_obj.py:171 (LinearObj.regularization_matrix)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:332 (AbstractInversion.regularization_matrix)",
+            "/home/jammy/Code/PyAutoLabs/organs/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)"
+          ]
+        },
+        {
+          "instruction": "input_concatenate_fusion.12",
+          "ms": 0.0019042999999999998,
+          "opcode": "fusion",
+          "shape": "pred[3]{0}",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/regularization/regularization_util.py:84",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/regularization/regularization_util.py:84 (split_points_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:410 (jax_delaunay)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:846 (InterpolatorDelaunay.delaunay)",
+            "/home/jammy/Code/PyAutoLabs/organs/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:957 (InterpolatorDelaunay._mappings_sizes_weights)"
+          ]
+        }
+      ],
+      "mesh_seed_argmin": [
+        {
+          "instruction": "input_reduce_fusion",
+          "ms": 5.178635400000002,
+          "opcode": "fusion",
+          "shape": "(f64[1024]{0}, s64[1024]{0})",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:191",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:191 (_nearest_vertex_seed_from.<locals>.argmin_chunk)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:204 (_nearest_vertex_seed_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:351 (pix_indexes_delaunay_walk_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:423 (jax_delaunay)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:846 (InterpolatorDelaunay.delaunay)"
+          ]
+        },
+        {
+          "instruction": "loop_dynamic_update_slice_fusion",
+          "ms": 0.12944020000000003,
+          "opcode": "fusion",
+          "shape": "s32[21,1024]{1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:204",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:204 (_nearest_vertex_seed_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:351 (pix_indexes_delaunay_walk_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:423 (jax_delaunay)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:846 (InterpolatorDelaunay.delaunay)",
+            "/home/jammy/Code/PyAutoLabs/organs/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)"
+          ]
+        },
+        {
+          "instruction": "loop_dynamic_slice_fusion",
+          "ms": 0.033575800000000065,
+          "opcode": "fusion",
+          "shape": "f64[1,1024,2]{2,1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:204",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:204 (_nearest_vertex_seed_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:351 (pix_indexes_delaunay_walk_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:423 (jax_delaunay)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:846 (InterpolatorDelaunay.delaunay)",
+            "/home/jammy/Code/PyAutoLabs/organs/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)"
+          ]
+        },
+        {
+          "instruction": "loop_add_fusion",
+          "ms": 0.03072190000000001,
+          "opcode": "fusion",
+          "shape": "s64[]",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:204",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:204 (_nearest_vertex_seed_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:351 (pix_indexes_delaunay_walk_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:423 (jax_delaunay)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:846 (InterpolatorDelaunay.delaunay)",
+            "/home/jammy/Code/PyAutoLabs/organs/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)"
+          ]
+        },
+        {
+          "instruction": "loop_broadcast_fusion.2",
+          "ms": 0.002,
+          "opcode": "fusion",
+          "shape": "s32[21,1024]{1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:204",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:204 (_nearest_vertex_seed_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:351 (pix_indexes_delaunay_walk_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:423 (jax_delaunay)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:846 (InterpolatorDelaunay.delaunay)",
+            "/home/jammy/Code/PyAutoLabs/organs/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)"
+          ]
+        }
+      ],
+      "other": [
+        {
+          "instruction": "wrapped_transpose.1",
+          "ms": 1.2724358,
+          "opcode": "fusion",
+          "shape": "f64[1500,1500]{1,0}",
+          "source": "",
+          "stack": []
+        },
+        {
+          "instruction": "copy.77",
+          "ms": 0.011095099999999995,
+          "opcode": "copy",
+          "shape": "s32[21361]{0}",
+          "source": "",
+          "stack": []
+        },
+        {
+          "instruction": "copy.113",
+          "ms": 0.0027777999999999995,
+          "opcode": "copy",
+          "shape": "s64[]",
+          "source": "",
+          "stack": []
+        },
+        {
+          "instruction": "copy.114",
+          "ms": 0.0023073,
+          "opcode": "copy",
+          "shape": "s32[]",
+          "source": "",
+          "stack": []
+        },
+        {
+          "instruction": "copy.68",
+          "ms": 0.0022306,
+          "opcode": "copy",
+          "shape": "s32[]",
+          "source": "",
+          "stack": []
+        },
+        {
+          "instruction": "copy.56",
+          "ms": 0.0020161,
+          "opcode": "copy",
+          "shape": "s64[64]{0}",
+          "source": "",
+          "stack": []
+        }
+      ],
+      "mesh_locate_walk": [
+        {
+          "instruction": "loop_reduce_fusion",
+          "ms": 0.12383890000000002,
+          "opcode": "fusion",
+          "shape": "(f64[21361]{0}, s64[21361]{0})",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:264",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:264 (_walk_from_seed.<locals>.walk_step)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:292 (_walk_from_seed.<locals>.body)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:264 (_walk_from_seed.<locals>.walk_step)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:292 (_walk_from_seed.<locals>.body)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:295 (_walk_from_seed)"
+          ]
+        },
+        {
+          "instruction": "loop_subtract_fusion",
+          "ms": 0.0365845,
+          "opcode": "fusion",
+          "shape": "f64[21361,1]{1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:236",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:236 (_walk_from_seed.<locals>.cross)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:245 (_walk_from_seed.<locals>.weights_of)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:262 (_walk_from_seed.<locals>.walk_step)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:292 (_walk_from_seed.<locals>.body)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:295 (_walk_from_seed)"
+          ]
+        },
+        {
+          "instruction": "loop_or_select_fusion",
+          "ms": 0.020113100000000005,
+          "opcode": "fusion",
+          "shape": "(s32[21361]{0}, pred[21361]{0}, pred[21361]{0})",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:270",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:270 (_walk_from_seed.<locals>.walk_step)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:292 (_walk_from_seed.<locals>.body)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:295 (_walk_from_seed)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:353 (pix_indexes_delaunay_walk_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:423 (jax_delaunay)"
+          ]
+        },
+        {
+          "instruction": "input_reduce_fusion.1",
+          "ms": 0.018238000000000004,
+          "opcode": "fusion",
+          "shape": "pred[196]{0}",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:288",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:288 (_walk_from_seed.<locals>.cond)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:295 (_walk_from_seed)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:353 (pix_indexes_delaunay_walk_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:423 (jax_delaunay)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:846 (InterpolatorDelaunay.delaunay)"
+          ]
+        },
+        {
+          "instruction": "loop_gather_fusion",
+          "ms": 0.0161293,
+          "opcode": "fusion",
+          "shape": "s32[21361,1,1]{2,1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:267",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:267 (_walk_from_seed.<locals>.walk_step)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:292 (_walk_from_seed.<locals>.body)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:295 (_walk_from_seed)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:353 (pix_indexes_delaunay_walk_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:423 (jax_delaunay)"
+          ]
+        },
+        {
+          "instruction": "input_reduce_fusion.2",
+          "ms": 0.014592999999999988,
+          "opcode": "fusion",
+          "shape": "pred[]",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:288",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:288 (_walk_from_seed.<locals>.cond)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:295 (_walk_from_seed)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:353 (pix_indexes_delaunay_walk_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:423 (jax_delaunay)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:846 (InterpolatorDelaunay.delaunay)"
+          ]
+        }
+      ],
+      "mesh_interpolation_weights": [
+        {
+          "instruction": "input_reduce_fusion.20",
+          "ms": 0.0038500000000000006,
+          "opcode": "fusion",
+          "shape": "pred[]",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:690",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:690 (pixel_weights_delaunay_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py:960 (InterpolatorDelaunay._mappings_sizes_weights)",
+            "/home/jammy/Code/PyAutoLabs/organs/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mesh/interpolator/abstract.py:36 (AbstractInterpolator.mappings)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mappers/abstract.py:167 (Mapper.pix_indexes_for_sub_slim_index)"
+          ]
+        }
+      ],
+      "psf_convolution_mapping_matrix": [
+        {
+          "instruction": "fft.19.0",
+          "ms": 107.76552029999998,
+          "opcode": "fft",
+          "shape": "f64[1500,180,180]{2,1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/operators/convolver.py:1232",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/operators/convolver.py:1232 (Convolver.convolved_mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:197 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:829 (AbstractInversion.mapped_reconstructed_operated_data)",
+            "/home/jammy/Code/PyAutoLabs/lens/PyAutoLens/autolens/imaging/fit_imaging.py:199 (FitImaging.model_data)"
+          ]
+        },
+        {
+          "instruction": "fft.15.0",
+          "ms": 86.10199880000002,
+          "opcode": "fft",
+          "shape": "c128[1500,180,91]{2,1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/operators/convolver.py:1228",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/operators/convolver.py:1228 (Convolver.convolved_mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:197 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:829 (AbstractInversion.mapped_reconstructed_operated_data)",
+            "/home/jammy/Code/PyAutoLabs/lens/PyAutoLens/autolens/imaging/fit_imaging.py:199 (FitImaging.model_data)"
+          ]
+        },
+        {
+          "instruction": "fft.17.0",
+          "ms": 60.2917713,
+          "opcode": "fft",
+          "shape": "c128[1500,91,180]{2,1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/operators/convolver.py:1232",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/operators/convolver.py:1232 (Convolver.convolved_mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:197 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:829 (AbstractInversion.mapped_reconstructed_operated_data)",
+            "/home/jammy/Code/PyAutoLabs/lens/PyAutoLens/autolens/imaging/fit_imaging.py:199 (FitImaging.model_data)"
+          ]
+        },
+        {
+          "instruction": "input_scatter_fusion.2",
+          "ms": 27.726968799999998,
+          "opcode": "fusion",
+          "shape": "f64[1500,180,180]{2,1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/operators/convolver.py:1228",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/operators/convolver.py:1228 (Convolver.convolved_mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:197 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:829 (AbstractInversion.mapped_reconstructed_operated_data)",
+            "/home/jammy/Code/PyAutoLabs/lens/PyAutoLens/autolens/imaging/fit_imaging.py:199 (FitImaging.model_data)"
+          ]
+        },
+        {
+          "instruction": "input_transpose_fusion.6",
+          "ms": 26.840867600000003,
+          "opcode": "fusion",
+          "shape": "c128[1500,91,180]{2,1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/operators/convolver.py:1232",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/operators/convolver.py:1232 (Convolver.convolved_mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:197 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:829 (AbstractInversion.mapped_reconstructed_operated_data)",
+            "/home/jammy/Code/PyAutoLabs/lens/PyAutoLens/autolens/imaging/fit_imaging.py:199 (FitImaging.model_data)"
+          ]
+        },
+        {
+          "instruction": "wrapped_transpose",
+          "ms": 26.680199099999996,
+          "opcode": "fusion",
+          "shape": "c128[1500,180,91]{2,1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/operators/convolver.py:1232",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/operators/convolver.py:1232 (Convolver.convolved_mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:197 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:829 (AbstractInversion.mapped_reconstructed_operated_data)",
+            "/home/jammy/Code/PyAutoLabs/lens/PyAutoLens/autolens/imaging/fit_imaging.py:199 (FitImaging.model_data)"
+          ]
+        }
+      ],
+      "mapping_matrix": [
+        {
+          "instruction": "input_reduce_fusion.38",
+          "ms": 0.0071847,
+          "opcode": "fusion",
+          "shape": "f64[]",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mappers/mapper_util.py:93",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mappers/mapper_util.py:93 (adaptive_pixel_signals_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/mappers/abstract.py:507 (Mapper.pixel_signals_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/regularization/adapt.py:339 (Adapt.regularization_weights_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/regularization/adapt_split.py:120 (AdaptSplit.regularization_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/linear_obj/linear_obj.py:171 (LinearObj.regularization_matrix)"
+          ]
+        }
+      ],
+      "curvature_matrix_F": [
+        {
+          "instruction": "cublas-lt-matmul.2",
+          "ms": 612.671996,
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1500]{1,0}, s8[4194304]{0})",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:134",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:134 (curvature_matrix_via_mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:93 (InversionImagingMapping.curvature_matrix)",
+            "/home/jammy/Code/PyAutoLabs/organs/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:389 (AbstractInversion.curvature_reg_matrix)",
+            "/home/jammy/Code/PyAutoLabs/organs/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)"
+          ]
+        }
+      ],
+      "inversion_other": [
+        {
+          "instruction": "loop_slice_fusion.1",
+          "ms": 0.0033347,
+          "opcode": "fusion",
+          "shape": "s64[94]{0}",
+          "source": "",
+          "stack": []
+        },
+        {
+          "instruction": "loop_reduce_window_fusion.1",
+          "ms": 0.0028355,
+          "opcode": "fusion",
+          "shape": "s64[94,16]{1,0}",
+          "source": "",
+          "stack": []
+        },
+        {
+          "instruction": "loop_broadcast_convert_fusion",
+          "ms": 0.0021985,
+          "opcode": "fusion",
+          "shape": "(s32[1500]{0}, s64[1500]{0})",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:527",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:527 (AbstractInversion.zeroed_ids_to_keep)",
+            "/home/jammy/Code/PyAutoLabs/organs/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:567 (AbstractInversion.solve_ids_to_keep)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:659 (AbstractInversion.reconstruction)",
+            "/home/jammy/Code/PyAutoLabs/organs/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)"
+          ]
+        },
+        {
+          "instruction": "loop_slice_fusion.2",
+          "ms": 0.0021953,
+          "opcode": "fusion",
+          "shape": "s64[6,1]{1,0}",
+          "source": "",
+          "stack": []
+        },
+        {
+          "instruction": "input_scatter_fusion.8",
+          "ms": 0.0019746,
+          "opcode": "fusion",
+          "shape": "s64[1500]{0}",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:527",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:527 (AbstractInversion.zeroed_ids_to_keep)",
+            "/home/jammy/Code/PyAutoLabs/organs/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:567 (AbstractInversion.solve_ids_to_keep)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:659 (AbstractInversion.reconstruction)",
+            "/home/jammy/Code/PyAutoLabs/organs/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)"
+          ]
+        },
+        {
+          "instruction": "loop_reduce_window_fusion.2",
+          "ms": 0.0018657,
+          "opcode": "fusion",
+          "shape": "s64[6,16]{1,0}",
+          "source": "",
+          "stack": []
+        }
+      ],
+      "chi_squared_evidence": [
+        {
+          "instruction": "loop_multiply_fusion.4",
+          "ms": 0.0164589,
+          "opcode": "fusion",
+          "shape": "f64[15361]{0}",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/abstract_ndarray.py:300",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/abstract_ndarray.py:300 (AbstractNDArray.__pow__)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/abstract_ndarray.py:60 (unwrap_array.<locals>.wrapper)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/abstract_ndarray.py:35 (to_new_array.<locals>.wrapper)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_util.py:78 (chi_squared_map_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:78 (AbstractFit.chi_squared_map)"
+          ]
+        }
+      ],
+      "log_det_curvature_reg": [
+        {
+          "instruction": "triangular-solve",
+          "ms": 8.207925499999995,
+          "opcode": "custom-call",
+          "shape": "(f64[1500,64]{0,1}, s8[0]{0})",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:352",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:352 (schur_log_det_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:438 (patched_log_det.<locals>.<lambda>)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:436 (patched_log_det)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)"
+          ]
+        },
+        {
+          "instruction": "custom-call.1",
+          "ms": 2.7686428000000003,
+          "opcode": "custom-call",
+          "shape": "(f64[64,64]{1,0}, s8[4194304]{0})",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:354",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:354 (schur_log_det_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:438 (patched_log_det.<locals>.<lambda>)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:436 (patched_log_det)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)"
+          ]
+        },
+        {
+          "instruction": "cholesky.120",
+          "ms": 0.1415027,
+          "opcode": "custom-call",
+          "shape": "(f64[64,64]{0,1}, s32[])",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:360",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:360 (schur_log_det_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:438 (patched_log_det.<locals>.<lambda>)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:436 (patched_log_det)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)"
+          ]
+        },
+        {
+          "instruction": "loop_add_fusion.1",
+          "ms": 0.0376605,
+          "opcode": "fusion",
+          "shape": "f64[64,64]{1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:355",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:355 (schur_log_det_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:438 (patched_log_det.<locals>.<lambda>)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:436 (patched_log_det)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)"
+          ]
+        },
+        {
+          "instruction": "loop_select_fusion",
+          "ms": 0.0314711,
+          "opcode": "fusion",
+          "shape": "f64[64,1500]{1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:351",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:351 (schur_log_det_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:438 (patched_log_det.<locals>.<lambda>)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:436 (patched_log_det)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)"
+          ]
+        },
+        {
+          "instruction": "loop_log_fusion.1",
+          "ms": 0.010132,
+          "opcode": "fusion",
+          "shape": "f64[1500,1,1]{2,1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:359",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:359 (schur_log_det_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:438 (patched_log_det.<locals>.<lambda>)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:436 (patched_log_det)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)"
+          ]
+        }
+      ],
+      "log_det_regularization": [
+        {
+          "instruction": "cholesky.150",
+          "ms": 13.799526300000005,
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1500]{0,1}, s32[])",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:959",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:959 (AbstractInversion._log_det_symmetric_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:1130 (AbstractInversion.log_det_regularization_matrix_term)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:348 (FitDataset.log_evidence)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)",
+            "/home/jammy/Code/PyAutoLabs/lens/PyAutoLens/autolens/imaging/model/analysis.py:135 (AnalysisImaging.log_likelihood_function)"
+          ]
+        }
+      ]
+    },
+    "stage_audit_note": "The HLO instructions that contributed most of each stage's milliseconds, with their full source stack. A stage row is only as good as the rules that built it; this is how a reader checks a row against the HLO instead of trusting it.",
+    "untraced_wall_ms": 1212.4331999999413,
+    "reconciliation_vs_untraced_pct": -1.753672532222187,
+    "wall_basis": "wall_ms is the TRACED run's wall, the run these kernel durations came from. untraced_wall_ms is the same executable without the profiler; the difference is the profiler's overhead and belongs in neither the stages nor the idle row.",
+    "calls": 10,
+    "call_split": "per-call (first-instruction recurrence)",
+    "call_blocks": 10,
+    "events": 5170,
+    "streams": [
+      "Stream #14(Memset,MemcpyD2H,Compute,MemcpyH2D,MemcpyD2D)"
+    ],
+    "per_stage_ms": {
+      "border_relocator": {
+        "median_ms": 0.9507454999999999,
+        "min_ms": 0.68632,
+        "max_ms": 0.9690409999999999
+      },
+      "certified_active_set_solve": {
+        "median_ms": 73.316214,
+        "min_ms": 71.771198,
+        "max_ms": 74.72261099999997
+      },
+      "chi_squared_evidence": {
+        "median_ms": 0.016545,
+        "min_ms": 0.016096,
+        "max_ms": 0.016674
+      },
+      "curvature_matrix_F": {
+        "median_ms": 612.107677,
+        "min_ms": 608.754755,
+        "max_ms": 618.966871
+      },
+      "grids_and_structures": {
+        "median_ms": 0.010752999999999999,
+        "min_ms": 0.009024,
+        "max_ms": 0.011105
+      },
+      "inversion_other": {
+        "median_ms": 0.014449,
+        "min_ms": 0.014112,
+        "max_ms": 0.014721000000000001
+      },
+      "log_det_curvature_reg": {
+        "median_ms": 11.338535500000003,
+        "min_ms": 10.643156,
+        "max_ms": 11.472677
+      },
+      "log_det_regularization": {
+        "median_ms": 13.8611835,
+        "min_ms": 12.387488,
+        "max_ms": 14.748884
+      },
+      "mapping_matrix": {
+        "median_ms": 0.0070245,
+        "min_ms": 0.006816,
+        "max_ms": 0.007872
+      },
+      "mass_profile_deflections": {
+        "median_ms": 0.002208,
+        "min_ms": 0.001728,
+        "max_ms": 0.00224
+      },
+      "memset": {
+        "median_ms": 0.015424999999999998,
+        "min_ms": 0.014400000000000001,
+        "max_ms": 0.017120999999999997
+      },
+      "mesh_construction": {
+        "median_ms": 0.004128,
+        "min_ms": 0.00381,
+        "max_ms": 0.006849
+      },
+      "mesh_interpolation_weights": {
+        "median_ms": 0.00328,
+        "min_ms": 0.003169,
+        "max_ms": 0.009057
+      },
+      "mesh_locate_walk": {
+        "median_ms": 0.21813349999999992,
+        "min_ms": 0.210673,
+        "max_ms": 0.6646849999999999
+      },
+      "mesh_qhull_callback": {
+        "median_ms": 0.0181615,
+        "min_ms": 0.016608,
+        "max_ms": 0.026689
+      },
+      "mesh_seed_argmin": {
+        "median_ms": 4.482418000000001,
+        "min_ms": 4.235774999999999,
+        "max_ms": 13.47751
+      },
+      "mixed_fusion": {
+        "median_ms": 58.888459,
+        "min_ms": 58.82973399999999,
+        "max_ms": 81.369876
+      },
+      "other": {
+        "median_ms": 1.2950814999999998,
+        "min_ms": 1.292754,
+        "max_ms": 1.322976
+      },
+      "psf_convolution_mapping_matrix": {
+        "median_ms": 330.52037299999995,
+        "min_ms": 327.54887600000006,
+        "max_ms": 383.59823600000004
+      },
+      "ray_trace_data_grid": {
+        "median_ms": 0.002272,
+        "min_ms": 0.001792,
+        "max_ms": 0.002304
+      },
+      "regularization_H": {
+        "median_ms": 0.0170405,
+        "min_ms": 0.016417,
+        "max_ms": 0.036481000000000006
+      }
+    },
+    "stage_order": [
+      "ray_trace_data_grid",
+      "mass_profile_deflections",
+      "border_relocator",
+      "mesh_qhull_callback",
+      "mesh_seed_argmin",
+      "mesh_locate_walk",
+      "mesh_interpolation_weights",
+      "mesh_construction",
+      "mapping_matrix",
+      "psf_convolution_mapping_matrix",
+      "curvature_matrix_F",
+      "regularization_H",
+      "certified_active_set_solve",
+      "log_det_curvature_reg",
+      "log_det_regularization",
+      "chi_squared_evidence",
+      "grids_and_structures",
+      "inversion_other",
+      "mixed_fusion",
+      "other",
+      "memset"
+    ],
+    "mixed_fusion": {
+      "ms": 58.888459,
+      "constituent_stage_sets": {
+        "curvature_matrix_F + psf_convolution_mapping_matrix": 21.092426200000002,
+        "certified_active_set_solve + psf_convolution_mapping_matrix": 13.520812000000001,
+        "certified_active_set_solve + mapping_matrix": 6.3851407999999985,
+        "certified_active_set_solve + data_vector_D": 6.0789678999999985,
+        "certified_active_set_solve + mapped_reconstruction": 5.8512403,
+        "certified_active_set_solve + edge_subset_gather + nnls_jacobi_preconditioning + reconstruction_scatter": 2.5773282,
+        "certified_active_set_solve + regularization_H": 2.3211285000000004,
+        "certified_active_set_solve + log_det_regularization + regularization_H": 1.8367272000000003,
+        "certified_active_set_solve + regularization_term": 0.5891963,
+        "certified_active_set_solve + inversion_other + mapping_matrix + mesh_construction + mesh_interpolation_weights + mesh_locate_walk + mesh_seed_argmin": 0.24531409999999998,
+        "certified_active_set_solve + inversion_other + mesh_construction + mesh_interpolation_weights + regularization_H": 0.17426039999999998,
+        "certified_active_set_solve + inversion_other + mesh_construction + mesh_dual_areas + mesh_interpolation_weights + mesh_locate_walk + mesh_seed_argmin + regularization_H": 0.0632788,
+        "certified_active_set_solve + ray_trace_data_grid": 0.04562260000000002,
+        "inversion_other + mapping_matrix + mesh_construction + mesh_interpolation_weights + mesh_locate_walk + mesh_seed_argmin": 0.0398656,
+        "certified_active_set_solve + grids_and_structures + mass_profile_deflections": 0.0382011,
+        "certified_active_set_solve + mesh_interpolation_weights + mesh_locate_walk + mesh_seed_argmin": 0.03605660000000001,
+        "grids_and_structures + mass_profile_deflections": 0.03504909999999999,
+        "certified_active_set_solve + chi_squared_evidence": 0.030236000000000006,
+        "border_relocator + certified_active_set_solve": 0.022366400000000005,
+        "certified_active_set_solve + grids_and_structures + mass_profile_deflections + ray_trace_data_grid": 0.0186575,
+        "certified_active_set_solve + mesh_construction + regularization_H": 0.014906899999999999,
+        "certified_active_set_solve + mapping_matrix + regularization_H": 0.011607200000000002,
+        "certified_active_set_solve + mesh_construction + mesh_seed_argmin + regularization_H": 0.0094694,
+        "mesh_construction + mesh_locate_walk + mesh_seed_argmin": 0.009030899999999998,
+        "inversion_other + mesh_construction + mesh_dual_areas + mesh_interpolation_weights + mesh_locate_walk + mesh_seed_argmin": 0.0089061,
+        "edge_subset_gather + inversion_other + nnls_jacobi_preconditioning + reconstruction_scatter + regularization_H": 0.0084166,
+        "certified_active_set_solve + grids_and_structures": 0.0079014,
+        "inversion_other + mesh_dual_areas + mesh_locate_walk": 0.007193999999999998,
+        "grids_and_structures + mass_profile_deflections + ray_trace_data_grid": 0.006822900000000001,
+        "nnls_jacobi_preconditioning + reconstruction_scatter": 0.006819799999999999,
+        "certified_active_set_solve + inversion_other + mesh_construction + mesh_interpolation_weights + mesh_locate_walk + mesh_seed_argmin + regularization_H": 0.006723600000000001,
+        "certified_active_set_solve + log_det_curvature_reg + reconstruction_scatter": 0.0058724,
+        "certified_active_set_solve + mass_profile_deflections": 0.0055686,
+        "certified_active_set_solve + inversion_other + ray_trace_data_grid": 0.004266,
+        "certified_active_set_solve + inversion_other + mesh_dual_areas + mesh_locate_walk": 0.0040387,
+        "certified_active_set_solve + log_det_regularization": 0.0034914999999999994,
+        "inversion_other + mesh_locate_walk + mesh_seed_argmin": 0.0030080000000000003,
+        "chi_squared_evidence + log_det_regularization": 0.0028163000000000003,
+        "inversion_other + log_det_curvature_reg": 0.0024707,
+        "inversion_other + regularization_H": 0.0020514
+      },
+      "example_kernels": {
+        "curvature_matrix_F + psf_convolution_mapping_matrix": [
+          "loop_divide_gather_fusion"
+        ],
+        "certified_active_set_solve + psf_convolution_mapping_matrix": [
+          "loop_broadcast_fusion.4"
+        ],
+        "certified_active_set_solve + mapping_matrix": [
+          "loop_broadcast_fusion.6",
+          "loop_divide_fusion"
+        ],
+        "certified_active_set_solve + data_vector_D": [
+          "input_reduce_fusion.19",
+          "input_reduce_fusion.36"
+        ],
+        "certified_active_set_solve + mapped_reconstruction": [
+          "input_reduce_fusion.22"
+        ],
+        "certified_active_set_solve + edge_subset_gather + nnls_jacobi_preconditioning + reconstruction_scatter": [
+          "input_multiply_transpose_fusion"
+        ],
+        "certified_active_set_solve + regularization_H": [
+          "loop_select_fusion.4",
+          "input_transpose_fusion.8"
+        ],
+        "certified_active_set_solve + log_det_regularization + regularization_H": [
+          "input_transpose_fusion.9",
+          "loop_log_fusion.2"
+        ],
+        "certified_active_set_solve + regularization_term": [
+          "input_reduce_fusion.26",
+          "input_reduce_fusion.34"
+        ],
+        "certified_active_set_solve + inversion_other + mapping_matrix + mesh_construction + mesh_interpolation_weights + mesh_locate_walk + mesh_seed_argmin": [
+          "input_scatter_fusion.9",
+          "input_scatter_fusion.6"
+        ]
+      },
+      "prorated_estimate_ms": {
+        "certified_active_set_solve": 18.808184665714286,
+        "psf_convolution_mapping_matrix": 17.306619100000002,
+        "curvature_matrix_F": 10.546213100000001,
+        "mapping_matrix": 3.2381286047619042,
+        "data_vector_D": 3.0394839499999993,
+        "mapped_reconstruction": 2.92562015,
+        "regularization_H": 1.830443497619048,
+        "reconstruction_scatter": 0.6513827366666667,
+        "nnls_jacobi_preconditioning": 0.64942527,
+        "edge_subset_gather": 0.6460153700000001,
+        "log_det_regularization": 0.6153963000000001,
+        "regularization_term": 0.29459815,
+        "mesh_construction": 0.09724254904761903,
+        "inversion_other": 0.09667264404761904,
+        "mesh_interpolation_weights": 0.09591008238095239,
+        "mesh_locate_walk": 0.06847864404761904,
+        "mesh_seed_argmin": 0.06743831904761904,
+        "grids_and_structures": 0.04114762499999999,
+        "mass_profile_deflections": 0.039981224999999995,
+        "ray_trace_data_grid": 0.03117197500000001,
+        "chi_squared_evidence": 0.016526150000000003,
+        "mesh_dual_areas": 0.012801874999999999,
+        "border_relocator": 0.011183200000000003,
+        "log_det_curvature_reg": 0.0031928166666666665
+      },
+      "prorated_note": "ESTIMATE ONLY \u2014 a mixed fusion's time split equally across the stages its constituents span. Never summed into the measured table, never reconciled."
+    },
+    "other_sources_ms": {
+      "wrapped_transpose.1": 1.2724358,
+      "copy.77": 0.011095099999999995,
+      "copy.113": 0.0027777999999999995,
+      "copy.114": 0.0023073,
+      "copy.68": 0.0022306,
+      "copy.56": 0.0020161,
+      "copy.87": 0.0019872999999999996,
+      "loop_broadcast_fusion": 0.0018274,
+      "loop_broadcast_fusion.7": 0.0018017999999999999
+    },
+    "device_span_ms": 1199.6831969999998,
+    "device_busy_ms": 1115.602212,
+    "device_idle_ms": 84.08098499999983,
+    "largest_idle_gaps": [
+      {
+        "gap_ms": 22.426912,
+        "after": "pure_callback.4",
+        "before": "pure_callback.4"
+      },
+      {
+        "gap_ms": 2.261975,
+        "after": "eigh.45",
+        "before": "eigh.45"
+      },
+      {
+        "gap_ms": 1.858381,
+        "after": "while.34",
+        "before": "loop_compare_fusion.4"
+      },
+      {
+        "gap_ms": 1.59111,
+        "after": "while.34",
+        "before": "loop_subtract_fusion"
+      },
+      {
+        "gap_ms": 1.581095,
+        "after": "cond.7.clone",
+        "before": "loop_broadcast_fusion"
+      },
+      {
+        "gap_ms": 1.539622,
+        "after": "while.34",
+        "before": "loop_subtract_fusion"
+      },
+      {
+        "gap_ms": 1.535398,
+        "after": "while.34",
+        "before": "loop_subtract_fusion"
+      },
+      {
+        "gap_ms": 1.531749,
+        "after": "while.40",
+        "before": "loop_select_fusion.6"
+      }
+    ],
+    "kernel_ms": 1107.090107,
+    "sum_ms": 1191.1710919999998,
+    "wall_ms": 1200.3570600001694,
+    "host_outside_span_ms": 0.6738630001696038,
+    "reconciliation_pct": -0.7652696273697367,
+    "unjoined_ms": 0.0,
+    "unjoined_pct": 0.0,
+    "other_ms": 1.2950814999999998,
+    "other_pct": 0.10789135526056029,
+    "note": "Stage rows attribute the command-buffers-OFF program (see the module docstring): kernel times are the same, the launch overhead the CUDA graphs remove is not. sum_ms = kernel rows + device_idle_ms; the residual against wall_ms is host_outside_span_ms (dispatch before the first kernel, teardown after the last).",
+    "host_callback_ms": 35.462199999999996,
+    "host_callback": {
+      "pure_callback_span_ms": 35.462199999999996,
+      "qhull_ms": 28.995930000000005,
+      "events_by_name": {
+        "pure_callback.4": {
+          "count": 10,
+          "ms": 35.462199999999996
+        },
+        "$callback.py:815 _wrapped_callback": {
+          "count": 10,
+          "ms": 31.423430000000003
+        },
+        "$callback.py:224 _callback": {
+          "count": 10,
+          "ms": 31.21154
+        },
+        "$callback.py:74 pure_callback_impl": {
+          "count": 10,
+          "ms": 31.095489999999998
+        },
+        "$callback.py:69 __call__": {
+          "count": 10,
+          "ms": 29.207379999999997
+        },
+        "$delaunay.py:162 <lambda>": {
+          "count": 10,
+          "ms": 29.128890000000002
+        },
+        "$delaunay.py:90 scipy_delaunay_tri_only": {
+          "count": 10,
+          "ms": 28.995930000000005
+        },
+        "ThenExecuteCallback:GetEventForComputeStreamSyncPoint": {
+          "count": 10,
+          "ms": 0.14551999999999998
+        },
+        "$callback.py:822 <genexpr>": {
+          "count": 40,
+          "ms": 0.12184000000000002
+        }
+      },
+      "note": "Host-plane events, aggregated BY NAME because they NEST: pure_callback.N contains _wrapped_callback contains pure_callback_impl contains scipy_delaunay_tri_only (the qhull call). pure_callback_span_ms is the outermost round trip; qhull_ms is the triangulation inside it. These are HOST milliseconds and are NOT a row of the device table \u2014 the device pays for them as the idle gap at pure_callback.N, which largest_idle_gaps names."
+    }
+  },
+  "hlo_census": {
+    "curvature_reg_add_nn": {
+      "count": 0,
+      "instructions": [],
+      "count_square_nn": 0,
+      "square_instructions": [],
+      "computations": [],
+      "callers": {},
+      "question": "How many (n,n) adds of F + lambda*H survive XLA? curvature_reg_matrix is a plain property reached twice per evaluation (abstract.py:613 and :397). 1 = CSE collapsed them; 2 = the matrix is built twice on the JAX path.",
+      "opcodes_at_line_371": {},
+      "instructions_at_line_371": [],
+      "where_the_sum_lives": {
+        "consumers_of_F_plus_lambda_H": [
+          {
+            "consumer": "gather.81.9.clone.1",
+            "consumer_opcode": "gather",
+            "consumer_source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:675",
+            "operand": "param_2.2688",
+            "producer": "cublas-lt-matmul.2",
+            "producer_opcode": "custom-call",
+            "producer_shape": "(f64[1500,1500]{1,0}, s8[4194304]{0})",
+            "producer_computation": "main.228",
+            "producer_calls": [],
+            "producer_source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:134"
+          },
+          {
+            "consumer": "gather.82.7.clone.1",
+            "consumer_opcode": "gather",
+            "consumer_source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:675",
+            "operand": "bitcast.204.7.clone.1",
+            "producer": "gather.81.9.clone.1",
+            "producer_opcode": "gather",
+            "producer_shape": "f64[1500,1,1500]{2,1,0}",
+            "producer_computation": "fused_multiply_rsqrt_select",
+            "producer_calls": [],
+            "producer_source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:675"
+          },
+          {
+            "consumer": "gather.81.7.clone.1",
+            "consumer_opcode": "gather",
+            "consumer_source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:675",
+            "operand": "param_1.3665",
+            "producer": "cublas-lt-matmul.2",
+            "producer_opcode": "custom-call",
+            "producer_shape": "(f64[1500,1500]{1,0}, s8[4194304]{0})",
+            "producer_computation": "main.228",
+            "producer_calls": [],
+            "producer_source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:134"
+          },
+          {
+            "consumer": "gather.82.5.clone.1",
+            "consumer_opcode": "gather",
+            "consumer_source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:675",
+            "operand": "bitcast.204.5.clone.1",
+            "producer": "gather.81.7.clone.1",
+            "producer_opcode": "gather",
+            "producer_shape": "f64[1500,1,1500]{2,1,0}",
+            "producer_computation": "fused_multiply_transpose",
+            "producer_calls": [],
+            "producer_source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:675"
+          }
+        ],
+        "producers": {
+          "cublas-lt-matmul.2": [
+            "gather.81.7.clone.1",
+            "gather.81.9.clone.1"
+          ],
+          "gather.81.9.clone.1": [
+            "gather.82.7.clone.1"
+          ],
+          "gather.81.7.clone.1": [
+            "gather.82.5.clone.1"
+          ]
+        },
+        "producers_shared_by_more_than_one_consumer": [
+          "cublas-lt-matmul.2"
+        ],
+        "note": "The F + lambda*H matrix is located by its consumers (the edge subset at abstract.py:606-614 and the log-det Cholesky reached from log_det_curvature_reg_matrix_term) and one step back along their operands, because XLA leaves no standalone add at abstract.py:371 to find. A producer listed under producers_shared_by_more_than_one_consumer is ONE materialisation serving both, which is the JAX-side answer to curvature_reg_matrix_rebuilt_every_access; distinct producers per consumer would be the sum being built more than once."
+      },
+      "verdict": "NO instruction of any opcode resolves to abstract.py:371 \u2014 the line number has moved in the installed PyAutoArray and this census is measuring nothing. Fix the line before reading anything into it."
+    },
+    "edge_subset_gathers_613": {
+      "count": 5,
+      "instructions": [
+        {
+          "name": "gather.81.9.clone.1",
+          "opcode": "gather",
+          "shape": "f64[1500,1,1500]{2,1,0}",
+          "computation": "fused_multiply_rsqrt_select",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:675",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:675 (AbstractInversion.reconstruction)",
+            "/home/jammy/Code/PyAutoLabs/organs/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:113 (InversionImagingMapping._mapped_reconstructed_data_dict_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:196 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)"
+          ]
+        },
+        {
+          "name": "gather.82.7.clone.1",
+          "opcode": "gather",
+          "shape": "f64[1500,1500,1]{2,0,1}",
+          "computation": "fused_multiply_rsqrt_select",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:675",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:675 (AbstractInversion.reconstruction)",
+            "/home/jammy/Code/PyAutoLabs/organs/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:113 (InversionImagingMapping._mapped_reconstructed_data_dict_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:196 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)"
+          ]
+        },
+        {
+          "name": "gather.84.3",
+          "opcode": "gather",
+          "shape": "f64[1500,1]{1,0}",
+          "computation": "fused_multiply_rsqrt_select",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:674",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:674 (AbstractInversion.reconstruction)",
+            "/home/jammy/Code/PyAutoLabs/organs/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:113 (InversionImagingMapping._mapped_reconstructed_data_dict_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:196 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)"
+          ]
+        },
+        {
+          "name": "gather.81.7.clone.1",
+          "opcode": "gather",
+          "shape": "f64[1500,1,1500]{2,1,0}",
+          "computation": "fused_multiply_transpose",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:675",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:675 (AbstractInversion.reconstruction)",
+            "/home/jammy/Code/PyAutoLabs/organs/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:113 (InversionImagingMapping._mapped_reconstructed_data_dict_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:196 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)"
+          ]
+        },
+        {
+          "name": "gather.82.5.clone.1",
+          "opcode": "gather",
+          "shape": "f64[1500,1500,1]{2,0,1}",
+          "computation": "fused_multiply_transpose",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:675",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:675 (AbstractInversion.reconstruction)",
+            "/home/jammy/Code/PyAutoLabs/organs/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:113 (InversionImagingMapping._mapped_reconstructed_data_dict_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:196 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)"
+          ]
+        }
+      ]
+    },
+    "curvature_reg_reduced_gathers_397": {
+      "count": 0,
+      "instructions": []
+    },
+    "fft_convolver_total": {
+      "count": 3,
+      "instructions": [
+        {
+          "name": "fft.15.0",
+          "opcode": "fft",
+          "shape": "c128[1500,180,91]{2,1,0}",
+          "computation": "main.228",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/operators/convolver.py:1228",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/operators/convolver.py:1228 (Convolver.convolved_mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:197 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:829 (AbstractInversion.mapped_reconstructed_operated_data)"
+          ]
+        },
+        {
+          "name": "fft.17.0",
+          "opcode": "fft",
+          "shape": "c128[1500,91,180]{2,1,0}",
+          "computation": "main.228",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/operators/convolver.py:1232",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/operators/convolver.py:1232 (Convolver.convolved_mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:197 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:829 (AbstractInversion.mapped_reconstructed_operated_data)"
+          ]
+        },
+        {
+          "name": "fft.19.0",
+          "opcode": "fft",
+          "shape": "f64[1500,180,180]{2,1,0}",
+          "computation": "main.228",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/operators/convolver.py:1232",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/operators/convolver.py:1232 (Convolver.convolved_mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:197 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:829 (AbstractInversion.mapped_reconstructed_operated_data)"
+          ]
+        }
+      ],
+      "callers": {
+        "fft.15.0": [
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/operators/convolver.py:1228 (Convolver.convolved_mapping_matrix_from)",
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:197 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:829 (AbstractInversion.mapped_reconstructed_operated_data)",
+          "/home/jammy/Code/PyAutoLabs/lens/PyAutoLens/autolens/imaging/fit_imaging.py:199 (FitImaging.model_data)"
+        ],
+        "fft.17.0": [
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/operators/convolver.py:1232 (Convolver.convolved_mapping_matrix_from)",
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:197 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:829 (AbstractInversion.mapped_reconstructed_operated_data)",
+          "/home/jammy/Code/PyAutoLabs/lens/PyAutoLens/autolens/imaging/fit_imaging.py:199 (FitImaging.model_data)"
+        ],
+        "fft.19.0": [
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/operators/convolver.py:1232 (Convolver.convolved_mapping_matrix_from)",
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:197 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:829 (AbstractInversion.mapped_reconstructed_operated_data)",
+          "/home/jammy/Code/PyAutoLabs/lens/PyAutoLens/autolens/imaging/fit_imaging.py:199 (FitImaging.model_data)"
+        ]
+      },
+      "question": "Each FFT convolution is one rfft2 + one irfft2, so a convolution costs TWO fft instructions. The caller chain of each is recorded because the same convolved_mapping_matrix_from is reached from more than one place (operated_mapping_matrix_list for F, and mapped_reconstructed_operated_data_dict for the mapped reconstruction) -- counting instructions without their callers cannot tell a doubled convolution from two different convolutions."
+    },
+    "fft_mapping_matrix": {
+      "count": 3,
+      "instructions": [
+        {
+          "name": "fft.15.0",
+          "opcode": "fft",
+          "shape": "c128[1500,180,91]{2,1,0}",
+          "computation": "main.228",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/operators/convolver.py:1228",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/operators/convolver.py:1228 (Convolver.convolved_mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:197 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:829 (AbstractInversion.mapped_reconstructed_operated_data)"
+          ]
+        },
+        {
+          "name": "fft.17.0",
+          "opcode": "fft",
+          "shape": "c128[1500,91,180]{2,1,0}",
+          "computation": "main.228",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/operators/convolver.py:1232",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/operators/convolver.py:1232 (Convolver.convolved_mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:197 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:829 (AbstractInversion.mapped_reconstructed_operated_data)"
+          ]
+        },
+        {
+          "name": "fft.19.0",
+          "opcode": "fft",
+          "shape": "f64[1500,180,180]{2,1,0}",
+          "computation": "main.228",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/operators/convolver.py:1232",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/operators/convolver.py:1232 (Convolver.convolved_mapping_matrix_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:197 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:829 (AbstractInversion.mapped_reconstructed_operated_data)"
+          ]
+        }
+      ],
+      "question": "Is the PSF convolution of the mapping-matrix cube compiled once or twice? operated_mapping_matrix_list is a plain property reached twice."
+    },
+    "fft_image": {
+      "count": 0,
+      "instructions": []
+    },
+    "conv_mapping_matrix": {
+      "count": 0,
+      "instructions": [],
+      "question": "How many real-space convolutions of the mapping-matrix cube survive XLA? 0 on the shipped FFT path; a phase-3 real-space candidate shows here instead of in fft_mapping_matrix (a cuDNN conv is a custom-call on the GPU backend)."
+    },
+    "cholesky": {
+      "count": 8,
+      "instructions": [
+        {
+          "name": "cholesky.130",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1500]{0,1}, s32[])",
+          "computation": "main.228",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:153",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:153 (masked_solve)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:237 (active_set_search)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:266 (solve_certified_stashing)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:341 (solve_certified_with_fallback)"
+          ]
+        },
+        {
+          "name": "cholesky.140",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1500]{0,1}, s32[])",
+          "computation": "main.228",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:275",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:275 (solve_certified_stashing)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:341 (solve_certified_with_fallback)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:274 (_certified_positive_only_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:440 (reconstruction_positive_only_from)"
+          ]
+        },
+        {
+          "name": "cholesky.150",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1500]{0,1}, s32[])",
+          "computation": "main.228",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:959",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:959 (AbstractInversion._log_det_symmetric_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:1130 (AbstractInversion.log_det_regularization_matrix_term)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:348 (FitDataset.log_evidence)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)"
+          ]
+        },
+        {
+          "name": "cholesky.110",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1500]{0,1}, s32[])",
+          "computation": "region_107.201",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:959",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:959 (AbstractInversion._log_det_symmetric_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:439 (patched_log_det.<locals>.<lambda>)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:436 (patched_log_det)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)"
+          ]
+        },
+        {
+          "name": "cholesky.120",
+          "opcode": "custom-call",
+          "shape": "(f64[64,64]{0,1}, s32[])",
+          "computation": "region_109.225",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:360",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:360 (schur_log_det_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:438 (patched_log_det.<locals>.<lambda>)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:436 (patched_log_det)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)"
+          ]
+        },
+        {
+          "name": "cholesky.60",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1500]{0,1}, s32[])",
+          "computation": "region_80.171",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:153",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:153 (masked_solve)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:252 (active_set_search.<locals>.body_fun)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:262 (active_set_search)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:266 (solve_certified_stashing)"
+          ]
+        },
+        {
+          "name": "cholesky.100",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1500]{0,1}, s32[])",
+          "computation": "region_86.194",
+          "source": "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:62",
+          "stack": [
+            "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:62 (initialize)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_nnls.py:63 (solve_nnls)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_nnls.py:91 (_solve_nnls_primal_with.<locals>.primal)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_nnls.py:120 (solve_nnls_primal)"
+          ]
+        },
+        {
+          "name": "cholesky.80",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1500]{0,1}, s32[])",
+          "computation": "region_89.192",
+          "source": "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:106",
+          "stack": [
+            "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:106 (factorize_kkt)",
+            "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:212 (pdip_pc_step)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_nnls.py:74 (solve_nnls)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_nnls.py:91 (_solve_nnls_primal_with.<locals>.primal)"
+          ]
+        }
+      ],
+      "callers": {
+        "cholesky.130": [
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:153 (masked_solve)",
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:237 (active_set_search)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:266 (solve_certified_stashing)",
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:341 (solve_certified_with_fallback)",
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:274 (_certified_positive_only_from)"
+        ],
+        "cholesky.140": [
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:275 (solve_certified_stashing)",
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:341 (solve_certified_with_fallback)",
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:274 (_certified_positive_only_from)",
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:440 (reconstruction_positive_only_from)",
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:681 (AbstractInversion.reconstruction)"
+        ],
+        "cholesky.150": [
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:959 (AbstractInversion._log_det_symmetric_from)",
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:1130 (AbstractInversion.log_det_regularization_matrix_term)",
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:348 (FitDataset.log_evidence)",
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)",
+          "/home/jammy/Code/PyAutoLabs/lens/PyAutoLens/autolens/imaging/model/analysis.py:135 (AnalysisImaging.log_likelihood_function)"
+        ],
+        "cholesky.110": [
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/abstract.py:959 (AbstractInversion._log_det_symmetric_from)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:439 (patched_log_det.<locals>.<lambda>)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:436 (patched_log_det)",
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)",
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)"
+        ],
+        "cholesky.120": [
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:360 (schur_log_det_from)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:438 (patched_log_det.<locals>.<lambda>)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:436 (patched_log_det)",
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)",
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)"
+        ],
+        "cholesky.60": [
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:153 (masked_solve)",
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:252 (active_set_search.<locals>.body_fun)",
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:262 (active_set_search)",
+          "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:266 (solve_certified_stashing)",
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:341 (solve_certified_with_fallback)"
+        ],
+        "cholesky.100": [
+          "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:62 (initialize)",
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_nnls.py:63 (solve_nnls)",
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_nnls.py:91 (_solve_nnls_primal_with.<locals>.primal)",
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_nnls.py:120 (solve_nnls_primal)",
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:266 (_certified_positive_only_from.<locals>.pdip_fn)"
+        ],
+        "cholesky.80": [
+          "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:106 (factorize_kkt)",
+          "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:212 (pdip_pc_step)",
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_nnls.py:74 (solve_nnls)",
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_nnls.py:91 (_solve_nnls_primal_with.<locals>.primal)",
+          "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_nnls.py:120 (solve_nnls_primal)"
+        ]
+      }
+    },
+    "triangular_solve": {
+      "count": 13,
+      "instructions": [
+        {
+          "name": "triangular-solve.10",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1]{0,1}, s8[0]{0})",
+          "computation": "main.228",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:154",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:154 (masked_solve)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:237 (active_set_search)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:266 (solve_certified_stashing)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:341 (solve_certified_with_fallback)"
+          ]
+        },
+        {
+          "name": "triangular-solve.11",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1]{0,1}, s8[0]{0})",
+          "computation": "main.228",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:276",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:276 (solve_certified_stashing)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:341 (solve_certified_with_fallback)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:274 (_certified_positive_only_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:440 (reconstruction_positive_only_from)"
+          ]
+        },
+        {
+          "name": "triangular-solve.12",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1]{0,1}, s8[0]{0})",
+          "computation": "main.228",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:276",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:276 (solve_certified_stashing)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:341 (solve_certified_with_fallback)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:274 (_certified_positive_only_from)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:440 (reconstruction_positive_only_from)"
+          ]
+        },
+        {
+          "name": "triangular-solve.9",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1]{0,1}, s8[0]{0})",
+          "computation": "main.228",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:154",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:154 (masked_solve)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:237 (active_set_search)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:266 (solve_certified_stashing)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:341 (solve_certified_with_fallback)"
+          ]
+        },
+        {
+          "name": "triangular-solve",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,64]{0,1}, s8[0]{0})",
+          "computation": "region_109.225",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:352",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:352 (schur_log_det_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:438 (patched_log_det.<locals>.<lambda>)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:436 (patched_log_det)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)"
+          ]
+        },
+        {
+          "name": "triangular-solve.1",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1]{0,1}, s8[0]{0})",
+          "computation": "region_80.171",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:154",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:154 (masked_solve)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:252 (active_set_search.<locals>.body_fun)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:262 (active_set_search)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:266 (solve_certified_stashing)"
+          ]
+        },
+        {
+          "name": "triangular-solve.2",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1]{0,1}, s8[0]{0})",
+          "computation": "region_80.171",
+          "source": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:154",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:154 (masked_solve)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:252 (active_set_search.<locals>.body_fun)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_active_set.py:262 (active_set_search)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:266 (solve_certified_stashing)"
+          ]
+        },
+        {
+          "name": "triangular-solve.7",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1]{0,1}, s8[0]{0})",
+          "computation": "region_86.194",
+          "source": "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:65",
+          "stack": [
+            "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:65 (initialize)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_nnls.py:63 (solve_nnls)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_nnls.py:91 (_solve_nnls_primal_with.<locals>.primal)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_nnls.py:120 (solve_nnls_primal)"
+          ]
+        },
+        {
+          "name": "triangular-solve.8",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1]{0,1}, s8[0]{0})",
+          "computation": "region_86.194",
+          "source": "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:65",
+          "stack": [
+            "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:65 (initialize)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_nnls.py:63 (solve_nnls)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_nnls.py:91 (_solve_nnls_primal_with.<locals>.primal)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_nnls.py:120 (solve_nnls_primal)"
+          ]
+        },
+        {
+          "name": "triangular-solve.3",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1]{0,1}, s8[0]{0})",
+          "computation": "region_89.192",
+          "source": "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:146",
+          "stack": [
+            "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:146 (solve_kkt_rhs)",
+            "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:213 (pdip_pc_step)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_nnls.py:74 (solve_nnls)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_nnls.py:91 (_solve_nnls_primal_with.<locals>.primal)"
+          ]
+        },
+        {
+          "name": "triangular-solve.4",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1]{0,1}, s8[0]{0})",
+          "computation": "region_89.192",
+          "source": "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:146",
+          "stack": [
+            "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:146 (solve_kkt_rhs)",
+            "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:213 (pdip_pc_step)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_nnls.py:74 (solve_nnls)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_nnls.py:91 (_solve_nnls_primal_with.<locals>.primal)"
+          ]
+        },
+        {
+          "name": "triangular-solve.5",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1]{0,1}, s8[0]{0})",
+          "computation": "region_89.192",
+          "source": "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:146",
+          "stack": [
+            "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:146 (solve_kkt_rhs)",
+            "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:217 (pdip_pc_step)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_nnls.py:74 (solve_nnls)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_nnls.py:91 (_solve_nnls_primal_with.<locals>.primal)"
+          ]
+        },
+        {
+          "name": "triangular-solve.6",
+          "opcode": "custom-call",
+          "shape": "(f64[1500,1]{0,1}, s8[0]{0})",
+          "computation": "region_89.192",
+          "source": "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:146",
+          "stack": [
+            "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:146 (solve_kkt_rhs)",
+            "/home/jammy/venv/PyAutoGPU/lib/python3.12/site-packages/jaxnnls/pdip.py:217 (pdip_pc_step)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_nnls.py:74 (solve_nnls)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/util/jax_nnls.py:91 (_solve_nnls_primal_with.<locals>.primal)"
+          ]
+        }
+      ]
+    },
+    "instructions_total": 4435,
+    "instructions_with_frames": 2954,
+    "status": "ok",
+    "status_scope": "the PSF rows (fft_convolver_total, fft_mapping_matrix, fft_image, conv_mapping_matrix); any other row whose anchor moved is in rows_excluded",
+    "reason": "every PSF census anchor verified against the installed PyAutoArray",
+    "package_root": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray",
+    "anchors": [
+      {
+        "rows": [
+          "fft_convolver_total",
+          "fft_mapping_matrix",
+          "fft_image",
+          "conv_mapping_matrix"
+        ],
+        "path": "operators/convolver.py",
+        "function": "convolved_mapping_matrix_from",
+        "lines": [
+          1086,
+          1300
+        ],
+        "mode": "encloses",
+        "found_spans": [
+          [
+            1092,
+            1269
+          ]
+        ],
+        "ok": true,
+        "reason": "ok"
+      },
+      {
+        "rows": [
+          "fft_convolver_total",
+          "fft_mapping_matrix",
+          "fft_image",
+          "conv_mapping_matrix"
+        ],
+        "path": "operators/convolver.py",
+        "function": "_convolved_mapping_matrix_over_sampled_jax_from",
+        "lines": [
+          670,
+          691
+        ],
+        "mode": "encloses",
+        "found_spans": [
+          [
+            670,
+            689
+          ]
+        ],
+        "ok": true,
+        "reason": "ok"
+      },
+      {
+        "rows": [
+          "fft_convolver_total",
+          "fft_mapping_matrix",
+          "fft_image",
+          "conv_mapping_matrix"
+        ],
+        "path": "inversion/inversion/imaging/abstract.py",
+        "function": "operated_mapping_matrix_list",
+        "lines": [
+          119,
+          150
+        ],
+        "mode": "encloses",
+        "found_spans": [
+          [
+            120,
+            148
+          ]
+        ],
+        "ok": true,
+        "reason": "ok"
+      },
+      {
+        "rows": [
+          "curvature_reg_add_nn"
+        ],
+        "path": "inversion/inversion/abstract.py",
+        "function": "curvature_reg_matrix",
+        "lines": [
+          389,
+          389
+        ],
+        "mode": "inside",
+        "found_spans": [
+          [
+            369,
+            389
+          ]
+        ],
+        "ok": true,
+        "reason": "ok"
+      },
+      {
+        "rows": [
+          "curvature_reg_reduced_gathers_397"
+        ],
+        "path": "inversion/inversion/abstract.py",
+        "function": "curvature_reg_matrix_reduced",
+        "lines": [
+          392,
+          415
+        ],
+        "mode": "inside",
+        "found_spans": [
+          [
+            392,
+            415
+          ]
+        ],
+        "ok": true,
+        "reason": "ok"
+      },
+      {
+        "rows": [
+          "edge_subset_gathers_613"
+        ],
+        "path": "inversion/inversion/abstract.py",
+        "function": "reconstruction",
+        "lines": [
+          671,
+          678
+        ],
+        "mode": "inside",
+        "found_spans": [
+          [
+            635,
+            731
+          ]
+        ],
+        "ok": true,
+        "reason": "ok"
+      }
+    ],
+    "rows_excluded": []
+  },
+  "stage_map_provenance": [
+    {
+      "label": "log_det_curvature_reg",
+      "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+      "lines": [
+        924,
+        968
+      ],
+      "requires": {
+        "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+        "lines": [
+          970,
+          1051
+        ]
+      },
+      "function": null
+    },
+    {
+      "label": "log_det_regularization",
+      "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+      "lines": [
+        924,
+        968
+      ],
+      "requires": {
+        "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+        "lines": [
+          1071,
+          1132
+        ]
+      },
+      "function": null
+    },
+    {
+      "label": "log_det_curvature_reg",
+      "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+      "lines": [
+        924,
+        968
+      ],
+      "requires": {
+        "path": "likelihood_breakdown/logdet_reuse_injection.py",
+        "lines": null
+      },
+      "function": null
+    },
+    {
+      "label": "certified_active_set_solve",
+      "path": "likelihood_breakdown/logdet_reuse_injection.py",
+      "lines": null,
+      "requires": null,
+      "function": "solve_certified_stashing"
+    },
+    {
+      "label": "log_det_curvature_reg",
+      "path": "likelihood_breakdown/logdet_reuse_injection.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "curvature_reg_add",
+      "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+      "lines": [
+        368,
+        389
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "curvature_reg_reduce_gather",
+      "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+      "lines": [
+        391,
+        415
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "edge_subset_gather",
+      "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+      "lines": [
+        671,
+        678
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "regularization_term",
+      "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+      "lines": [
+        858,
+        922
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mapped_reconstruction",
+      "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+      "lines": [
+        795,
+        857
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "reconstruction_scatter",
+      "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+      "lines": [
+        634,
+        670
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "reconstruction_scatter",
+      "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+      "lines": [
+        679,
+        793
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "certified_active_set_solve",
+      "path": "likelihood_breakdown/active_set_steps.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "certified_active_set_solve",
+      "path": "likelihood_breakdown/library_solver_injection.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "pdip_solve",
+      "path": "PyAutoArray/autoarray/util/jax_nnls.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "certified_active_set_solve",
+      "path": "PyAutoArray/autoarray/util/jax_active_set.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "pdip_solve",
+      "path": "PyAutoArray/autoarray/inversion/inversion/inversion_util.py",
+      "lines": [
+        265,
+        272
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "certified_active_set_solve",
+      "path": "PyAutoArray/autoarray/inversion/inversion/inversion_util.py",
+      "lines": [
+        251,
+        288
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "nnls_jacobi_preconditioning",
+      "path": "PyAutoArray/autoarray/inversion/inversion/inversion_util.py",
+      "lines": [
+        433,
+        450
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "nnls_jacobi_preconditioning",
+      "path": "PyAutoArray/autoarray/inversion/inversion/inversion_util.py",
+      "lines": [
+        455,
+        464
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "pdip_solve",
+      "path": "PyAutoArray/autoarray/inversion/inversion/inversion_util.py",
+      "lines": [
+        291,
+        593
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mapped_reconstruction",
+      "path": "PyAutoArray/autoarray/inversion/inversion/inversion_util.py",
+      "lines": [
+        151,
+        193
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "curvature_matrix_F",
+      "path": "PyAutoArray/autoarray/inversion/inversion/inversion_util.py",
+      "lines": [
+        12,
+        148
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "reconstruction_scatter",
+      "path": "PyAutoArray/autoarray/inversion/inversion/inversion_util.py",
+      "lines": [
+        196,
+        248
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "data_vector_D",
+      "path": "PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py",
+      "lines": [
+        54,
+        73
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "curvature_matrix_F",
+      "path": "PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py",
+      "lines": [
+        74,
+        110
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "data_vector_D",
+      "path": "PyAutoArray/autoarray/inversion/inversion/imaging/inversion_imaging_util.py",
+      "lines": null,
+      "requires": null,
+      "function": "data_vector_via_blurred_mapping_matrix_from"
+    },
+    {
+      "label": "curvature_matrix_F",
+      "path": "PyAutoArray/autoarray/inversion/inversion/imaging/inversion_imaging_util.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "psf_convolution_mapping_matrix",
+      "path": "likelihood_breakdown/psf_cube_injection.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "psf_convolution_mapping_matrix",
+      "path": "PyAutoArray/autoarray/operators/convolver.py",
+      "lines": [
+        1086,
+        1300
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "psf_convolution_mapping_matrix",
+      "path": "PyAutoArray/autoarray/operators/convolver.py",
+      "lines": [
+        632,
+        642
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "psf_convolution_mapping_matrix",
+      "path": "PyAutoArray/autoarray/operators/convolver.py",
+      "lines": [
+        670,
+        691
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "psf_convolution_mapping_matrix",
+      "path": "PyAutoArray/autoarray/operators/convolver.py",
+      "lines": null,
+      "requires": {
+        "path": "PyAutoArray/autoarray/operators/convolver.py",
+        "lines": [
+          1086,
+          1300
+        ]
+      },
+      "function": null
+    },
+    {
+      "label": "psf_convolution_mapping_matrix",
+      "path": "PyAutoArray/autoarray/operators/convolver.py",
+      "lines": null,
+      "requires": {
+        "path": "PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py",
+        "lines": [
+          119,
+          150
+        ]
+      },
+      "function": null
+    },
+    {
+      "label": "psf_convolution_image",
+      "path": "PyAutoArray/autoarray/operators/convolver.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "psf_convolution_mapping_matrix",
+      "path": "PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py",
+      "lines": [
+        119,
+        150
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mesh_qhull_callback",
+      "path": "PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py",
+      "lines": [
+        139,
+        172
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mesh_seed_argmin",
+      "path": "PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py",
+      "lines": [
+        173,
+        207
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mesh_locate_walk",
+      "path": "PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py",
+      "lines": [
+        208,
+        372
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mesh_dual_areas",
+      "path": "PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py",
+      "lines": [
+        373,
+        396
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mesh_dual_areas",
+      "path": "PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py",
+      "lines": [
+        437,
+        494
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mesh_dual_areas",
+      "path": "PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py",
+      "lines": [
+        605,
+        615
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mesh_interpolation_weights",
+      "path": "PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py",
+      "lines": [
+        616,
+        695
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mesh_interpolation_weights",
+      "path": "PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py",
+      "lines": [
+        896,
+        1000
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mesh_construction",
+      "path": "PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "border_relocator",
+      "path": "PyAutoArray/autoarray/inversion/mesh/border_relocator.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mesh_construction",
+      "path": "PyAutoArray/autoarray/inversion/mesh/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mapping_matrix",
+      "path": "PyAutoArray/autoarray/inversion/mappers/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mapping_matrix",
+      "path": "PyAutoArray/autoarray/inversion/mappings/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mapping_matrix",
+      "path": "PyAutoArray/autoarray/inversion/linear_obj/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "regularization_H",
+      "path": "PyAutoArray/autoarray/inversion/regularization/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "chi_squared_evidence",
+      "path": "PyAutoArray/autoarray/fit/fit_util.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "chi_squared_evidence",
+      "path": "PyAutoArray/autoarray/fit/fit_dataset.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "ray_trace_mesh_grid",
+      "path": "PyAutoLens/autolens/lens/to_inversion.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "ray_trace_mesh_grid",
+      "path": "PyAutoGalaxy/autogalaxy/galaxy/to_inversion.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mass_profile_deflections",
+      "path": "PyAutoGalaxy/autogalaxy/profiles/mass/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "light_profile_image",
+      "path": "PyAutoGalaxy/autogalaxy/profiles/light/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "light_profile_image",
+      "path": "PyAutoGalaxy/autogalaxy/operate/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "ray_trace_data_grid",
+      "path": "PyAutoLens/autolens/lens/tracer.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "ray_trace_data_grid",
+      "path": "PyAutoLens/autolens/lens/tracer_util.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "grids_and_structures",
+      "path": "PyAutoArray/autoarray/structures/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "grids_and_structures",
+      "path": "PyAutoArray/autoarray/operators/over_sampling/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "grids_and_structures",
+      "path": "PyAutoArray/autoarray/geometry/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "inversion_other",
+      "path": "PyAutoArray/autoarray/inversion/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "fit_imaging_other",
+      "path": "PyAutoLens/autolens/imaging/fit_imaging.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "fit_imaging_other",
+      "path": "PyAutoGalaxy/autogalaxy/imaging/fit_imaging.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "fit_imaging_other",
+      "path": "PyAutoArray/autoarray/fit/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "analysis_other",
+      "path": "PyAutoLens/autolens/analysis/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "analysis_other",
+      "path": "PyAutoGalaxy/autogalaxy/analysis/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    }
+  ],
+  "trace_timing": {
+    "traced_wall_ms": 1200.3570600001694,
+    "untraced_wall_ms": 1212.4331999999413,
+    "profiler_overhead_ms": -12.07613999977184,
+    "profiler_overhead_pct": -0.9960251830593574
+  },
+  "jit_phases": {
+    "b_s3_pdip_library_likelihood_jit": {
+      "lower_s": 3.878139200001897,
+      "compile_s": 8.236107799999445,
+      "first_call_s": 2.1010805999976583,
+      "steady_per_call_s": 1.4761662599998089
+    },
+    "d_s3_library_certified_logdet_library_likelihood_jit": {
+      "lower_s": 2.1391941999972914,
+      "compile_s": 11.709997699999803,
+      "first_call_s": 1.4067399999985355,
+      "steady_per_call_s": 1.2257667000001675
+    },
+    "r_s3_library_certified_likelihood_jit": {
+      "lower_s": 5.0171727999986615,
+      "compile_s": 19.845746999999392,
+      "first_call_s": 1.3639619999994466,
+      "steady_per_call_s": 1.1606250400000135
+    }
+  },
+  "peak_bytes": {
+    "after_setup": 85108992,
+    "after_routes": 1574810624,
+    "after_all": 1578009344,
+    "note": "jax.devices()[0].memory_stats()['peak_bytes_in_use']; None on a backend that does not report it (CPU). Process-wide high-water marks."
+  },
+  "note": "Every stage row is a MEASURED sum of GPU kernel durations joined to library source through the optimized HLO of ONE program \u2014 not arithmetic across compilations. The rows attribute the command-buffers-OFF program: kernel time is the same as production, the launch overhead the CUDA graphs remove is not, and command_buffers.* carries both walls and their delta. sum_ms = kernel rows + measured device_idle_ms; the residual against the wall is host_outside_span_ms and is reported, not absorbed. mixed_fusion.prorated_estimate_ms is an ESTIMATE and is never part of the table. No row may be quoted if reconciliation_pct is outside 5 % or unjoined_ms is non-zero.",
+  "logdet_candidate": {
+    "candidate": "schur_k64",
+    "kind": "lever",
+    "row_label": "LEVER candidate",
+    "provenance": {
+      "name": "schur_k64",
+      "label": "certified-solve factor + Schur complement, k_max 64 (+ n_edge)",
+      "kind": "lever",
+      "k_max": 64,
+      "n_total": 1500,
+      "n_solved": 1500,
+      "n_edge": 0,
+      "k_slots": 64,
+      "library_change_if_wins": "jax_active_set.solve_certified: return (or publish through an out-dict) the final masked Cholesky factor L and the fixed set; AbstractInversion.reconstruction: store them on the inversion (as _nnls_factor already is on the NumPy path); log_det_curvature_reg_matrix_term: a JAX fast path beside the NumPy one at abstract.py:1012 \u2014 2 sum log diag L + a static-size Schur complement over the fixed (and edge) set, lax.cond to the dense route when it overflows",
+      "patched": [
+        "autoarray.util.jax_active_set.solve_certified",
+        "autoarray.inversion.inversion.abstract.AbstractInversion.log_det_curvature_reg_matrix_term"
+      ],
+      "identity": "log det M = 2 sum log diag L + log det S + sum log diag M, S the Schur complement of the solved free block over Z = fixed set U unsolved (edge) indices, in the Jacobi-scaled space D M D with D = 1/sqrt(diag M) (inversion_util.py:433-436); exact for ANY split, so a PDIP-fallback lane is covered"
+    },
+    "solver": {
+      "source": "library (al.Settings)",
+      "positive_only_solver": "certified",
+      "certified_fallback": "pdip",
+      "certified_pass_budget": 16,
+      "certified_pass_budget_basis": "config default (Settings().certified_pass_budget)",
+      "certified_tau_rel": 1e-09,
+      "solvers_jax": [
+        "certified"
+      ]
+    },
+    "injection_counts": {
+      "route_d_jax": 1,
+      "route_d_delegated": 0,
+      "route_d_delegated_reasons": {},
+      "route_d_solves_stashed": 1,
+      "traced_program_jax": 1,
+      "traced_program_delegated": 0,
+      "report_program": {
+        "jax": 1,
+        "delegated": 0,
+        "delegated_reasons": {}
+      }
+    },
+    "whole_call_ms": {
+      "route_d_candidate_jit_profile_ms": 1225.7667000001675,
+      "library_control_jit_profile_ms": 1160.6250400000135,
+      "route_b_pdip_jit_profile_ms": 1476.166259999809,
+      "saving_jit_profile_ms": -65.14166000015393,
+      "interleaved": {
+        "rounds": 7,
+        "calls_per_block": 10,
+        "library_ms": [
+          1190.8545599999343,
+          1296.0828200000833,
+          1270.77649999992,
+          1253.6874000001262,
+          1253.1365300001198,
+          1321.3997500002733,
+          1330.687190000026
+        ],
+        "candidate_ms": [
+          1218.5256500000833,
+          1342.1230200001446,
+          1262.3704500001622,
+          1287.720089999857,
+          1345.2527599998575,
+          1332.9618499999924,
+          1261.976439999853
+        ],
+        "library_median_ms": 1270.77649999992,
+        "candidate_median_ms": 1287.720089999857,
+        "saving_median_ms": -16.943589999937103
+      },
+      "traced_program_command_buffers_on_ms": 1292.771989999892,
+      "traced_program_command_buffers_off_ms": 1253.4691400000156,
+      "note": "Both whole-call rows are timing.jit_profile (10 steady calls) in THIS process; 'interleaved' alternates 10-call blocks of the two compiled programs. The traced program is the candidate's lowering compiled with command buffers on and off."
+    },
+    "lever": {
+      "threshold_ms": 0.5,
+      "saving_jit_profile_ms": -65.14166000015393,
+      "saving_interleaved_median_ms": -16.943589999937103,
+      "clears_threshold": false,
+      "rule": "PRE-REGISTERED: a lever clears when BOTH the jit_profile saving and the interleaved-median saving vs the unmodified library route in the same task are >= threshold_ms. Never a gate; never compared across tasks."
+    },
+    "compile_s": {
+      "route_d": 11.709997699999803,
+      "library_control": 19.845746999999392,
+      "route_b": 8.236107799999445
+    },
+    "trace_rows_ms": {
+      "log_det_curvature_reg": 11.338535500000003,
+      "certified_active_set_solve": 73.316214,
+      "mixed_fusion_sets_containing_log_det": {
+        "certified_active_set_solve + log_det_curvature_reg + reconstruction_scatter": 0.0058724,
+        "inversion_other + log_det_curvature_reg": 0.0024707
+      },
+      "top_instructions": [
+        {
+          "instruction": "triangular-solve",
+          "ms": 8.207925499999995,
+          "opcode": "custom-call",
+          "shape": "(f64[1500,64]{0,1}, s8[0]{0})",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:352",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:352 (schur_log_det_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:438 (patched_log_det.<locals>.<lambda>)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:436 (patched_log_det)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)"
+          ]
+        },
+        {
+          "instruction": "custom-call.1",
+          "ms": 2.7686428000000003,
+          "opcode": "custom-call",
+          "shape": "(f64[64,64]{1,0}, s8[4194304]{0})",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:354",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:354 (schur_log_det_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:438 (patched_log_det.<locals>.<lambda>)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:436 (patched_log_det)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)"
+          ]
+        },
+        {
+          "instruction": "cholesky.120",
+          "ms": 0.1415027,
+          "opcode": "custom-call",
+          "shape": "(f64[64,64]{0,1}, s32[])",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:360",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:360 (schur_log_det_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:438 (patched_log_det.<locals>.<lambda>)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:436 (patched_log_det)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)"
+          ]
+        },
+        {
+          "instruction": "loop_add_fusion.1",
+          "ms": 0.0376605,
+          "opcode": "fusion",
+          "shape": "f64[64,64]{1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:355",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:355 (schur_log_det_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:438 (patched_log_det.<locals>.<lambda>)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:436 (patched_log_det)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)"
+          ]
+        },
+        {
+          "instruction": "loop_select_fusion",
+          "ms": 0.0314711,
+          "opcode": "fusion",
+          "shape": "f64[64,1500]{1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:351",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:351 (schur_log_det_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:438 (patched_log_det.<locals>.<lambda>)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:436 (patched_log_det)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)"
+          ]
+        },
+        {
+          "instruction": "loop_log_fusion.1",
+          "ms": 0.010132,
+          "opcode": "fusion",
+          "shape": "f64[1500,1,1]{2,1,0}",
+          "source": "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:359",
+          "stack": [
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:359 (schur_log_det_from)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:438 (patched_log_det.<locals>.<lambda>)",
+            "/home/jammy/Code/PyAutoLabs-wt/hst-gpu-residue-p4/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:436 (patched_log_det)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)",
+            "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)"
+          ]
+        }
+      ],
+      "note": "Rows of the traced (command buffers OFF) candidate program. Fused kernels spanning the log det AND another stage are in mixed_fusion, listed here for readability, never summed."
+    },
+    "z_report": {
+      "program": "UNTIMED, separately compiled: the candidate program + library_solver_observed",
+      "solvers_jax": [
+        "certified"
+      ],
+      "static": {
+        "k_slots": 64,
+        "n_edge": 0,
+        "n_total": 1500,
+        "n_solved": 1500,
+        "jacobi": true
+      },
+      "rows": [
+        {
+          "row": "fiducial",
+          "z_count": 4,
+          "overflow": false,
+          "passes": 2,
+          "certified": true,
+          "log_likelihood_report_program": 29155.00016216416
+        },
+        {
+          "row": "draw 0",
+          "z_count": 51,
+          "overflow": false,
+          "passes": 5,
+          "certified": true,
+          "log_likelihood_report_program": 21753.418318794975
+        },
+        {
+          "row": "draw 1",
+          "z_count": 199,
+          "overflow": true,
+          "passes": 7,
+          "certified": true,
+          "log_likelihood_report_program": -11606.621516460087
+        },
+        {
+          "row": "draw 2",
+          "z_count": 250,
+          "overflow": true,
+          "passes": 5,
+          "certified": true,
+          "log_likelihood_report_program": -16604.63576654083
+        },
+        {
+          "row": "draw 3",
+          "z_count": 244,
+          "overflow": true,
+          "passes": 4,
+          "certified": true,
+          "log_likelihood_report_program": -41158.42268747564
+        },
+        {
+          "row": "draw 4",
+          "z_count": 88,
+          "overflow": true,
+          "passes": 4,
+          "certified": true,
+          "log_likelihood_report_program": 15691.555563884824
+        },
+        {
+          "row": "draw 5",
+          "z_count": 67,
+          "overflow": true,
+          "passes": 3,
+          "certified": true,
+          "log_likelihood_report_program": 18484.241753945604
+        },
+        {
+          "row": "draw 6",
+          "z_count": 242,
+          "overflow": true,
+          "passes": 5,
+          "certified": true,
+          "log_likelihood_report_program": -52862.31313553144
+        },
+        {
+          "row": "draw 7",
+          "z_count": 205,
+          "overflow": true,
+          "passes": 5,
+          "certified": true,
+          "log_likelihood_report_program": -6381.749630726903
+        }
+      ],
+      "z_count_min": 4,
+      "z_count_max": 250,
+      "overflow_count": 7,
+      "uncertified_count": 0,
+      "counts": {
+        "jax": 1,
+        "delegated": 0,
+        "delegated_reasons": {}
+      },
+      "note": "z_count = |Z| = the solve's fixed set plus the unsolved (edge) indices, per row; overflow = |Z| > k_slots (the dense lax.cond branch ran). null for control (no rebind). passes / certified are the library's own stats= out-dict through an ordered debug callback, in this untimed program only."
+    },
+    "peak_bytes": {
+      "after_routes": 1574810624
+    },
+    "pins": {
+      "rtol": 1e-09,
+      "reference": "the UNMODIFIED library route \u2014 same al.Settings (certified, PDIP fallback, packaged budget) and scalar-jit composition, compiled without the rebind in this process",
+      "library_control": {
+        "label": "S3 LIBRARY certified solver (Settings), budget 16, PDIP fallback \u2014 no rebind (the unmodified library route)",
+        "ms": 1160.6250400000135,
+        "log_likelihood": 29155.000161197153,
+        "compile_s": 19.845746999999392
+      },
+      "fiducial": {
+        "pin": "fiducial: route d (log det schur_k64) == unmodified library route",
+        "log_likelihood_d_candidate": 29155.00016279849,
+        "log_likelihood_library": 29155.000161197153,
+        "log_likelihood_b_pdip": 29155.0001629595,
+        "abs_diff_nats": 1.6013364074751735e-06,
+        "rel_diff": 5.492493221133359e-11,
+        "rel_diff_vs_b_pdip": 5.522540392533514e-12,
+        "rtol": 1e-09,
+        "gated": true,
+        "gated_on": "rel_diff",
+        "status": "PASS",
+        "within_rtol_vs_b_pdip": true
+      },
+      "draws": [
+        {
+          "draw": 0,
+          "draw_name": "random_00",
+          "draw_kind": "random",
+          "offsets": {
+            "einstein_radius": 0.031432555273348324,
+            "ell_comps_0": -0.006605243164565094,
+            "ell_comps_1": 0.032021132522164104,
+            "centre_0": 0.0026225029288259928,
+            "centre_1": -0.013391734329027774
+          },
+          "log_likelihood_d_candidate": 21753.418318497923,
+          "log_likelihood_library": 21753.41831752841,
+          "log_likelihood_b_pdip": 21753.41831951253,
+          "abs_diff_nats": 9.695140761323273e-07,
+          "rel_diff": 4.456835528010395e-11,
+          "rel_diff_vs_b_pdip": 4.664125925147774e-11,
+          "rtol": 1e-09,
+          "gated": true,
+          "gated_on": "rel_diff",
+          "status": "PASS",
+          "within_rtol_vs_b_pdip": true
+        },
+        {
+          "draw": 1,
+          "draw_name": "random_01",
+          "draw_kind": "random",
+          "offsets": {
+            "einstein_radius": 0.09039876372737118,
+            "ell_comps_0": 0.06520000225650686,
+            "ell_comps_1": 0.04735404815646211,
+            "centre_0": -0.017593380895174815,
+            "centre_1": -0.031635536776151316
+          },
+          "log_likelihood_d_candidate": -11606.621517616535,
+          "log_likelihood_library": -11606.621518891501,
+          "log_likelihood_b_pdip": -11606.62151520358,
+          "abs_diff_nats": 1.2749660527333617e-06,
+          "rel_diff": 1.0984816302126894e-10,
+          "rel_diff_vs_b_pdip": 2.0789468531056713e-10,
+          "rtol": 1e-09,
+          "gated": true,
+          "gated_on": "rel_diff",
+          "status": "PASS",
+          "within_rtol_vs_b_pdip": true
+        },
+        {
+          "draw": 2,
+          "draw_name": "random_02",
+          "draw_kind": "random",
+          "offsets": {
+            "einstein_radius": -0.15581861563433805,
+            "ell_comps_0": 0.00206629896736218,
+            "ell_comps_1": -0.11625153873194172,
+            "centre_0": -0.005469791598313643,
+            "centre_1": -0.03114777368132663
+          },
+          "log_likelihood_d_candidate": -16604.63576432017,
+          "log_likelihood_library": -16604.63576574404,
+          "log_likelihood_b_pdip": -16604.63576630786,
+          "abs_diff_nats": 1.4238685253076255e-06,
+          "rel_diff": 8.575126521264125e-11,
+          "rel_diff_vs_b_pdip": 1.1970691707803044e-10,
+          "rtol": 1e-09,
+          "gated": true,
+          "gated_on": "rel_diff",
+          "status": "PASS",
+          "within_rtol_vs_b_pdip": true
+        },
+        {
+          "draw": 3,
+          "draw_name": "random_03",
+          "draw_kind": "random",
+          "offsets": {
+            "einstein_radius": -0.1830668386758629,
+            "ell_comps_0": -0.027212949142865497,
+            "ell_comps_1": -0.015815007818457728,
+            "centre_0": 0.010290763409353322,
+            "centre_1": 0.02606283423606694
+          },
+          "log_likelihood_d_candidate": -41158.42268902151,
+          "log_likelihood_library": -41158.422689221305,
+          "log_likelihood_b_pdip": -41158.42268844829,
+          "abs_diff_nats": 1.9979779608547688e-07,
+          "rel_diff": 4.854359886288853e-12,
+          "rel_diff_vs_b_pdip": 1.392702769733398e-11,
+          "rtol": 1e-09,
+          "gated": true,
+          "gated_on": "rel_diff",
+          "status": "PASS",
+          "within_rtol_vs_b_pdip": true
+        },
+        {
+          "draw": 4,
+          "draw_name": "random_04",
+          "draw_kind": "random",
+          "offsets": {
+            "einstein_radius": -0.032133665736008565,
+            "ell_comps_0": 0.0683231735274843,
+            "ell_comps_1": -0.03325973367433068,
+            "centre_0": 0.008787751752325493,
+            "centre_1": 0.022586754541295218
+          },
+          "log_likelihood_d_candidate": 15691.555564891944,
+          "log_likelihood_library": 15691.555564536211,
+          "log_likelihood_b_pdip": 15691.555564068469,
+          "abs_diff_nats": 3.5573248169384897e-07,
+          "rel_diff": 2.2670313356173823e-11,
+          "rel_diff_vs_b_pdip": 5.2478843765170734e-11,
+          "rtol": 1e-09,
+          "gated": true,
+          "gated_on": "rel_diff",
+          "status": "PASS",
+          "within_rtol_vs_b_pdip": true
+        },
+        {
+          "draw": 5,
+          "draw_name": "random_05",
+          "draw_kind": "random",
+          "offsets": {
+            "einstein_radius": 0.02350307444021864,
+            "ell_comps_0": -0.03717496246769042,
+            "ell_comps_1": -0.04608626881292097,
+            "centre_0": -0.011443145641683479,
+            "centre_1": 0.005504878086751236
+          },
+          "log_likelihood_d_candidate": 18484.241752631337,
+          "log_likelihood_library": 18484.241753081624,
+          "log_likelihood_b_pdip": 18484.241751623165,
+          "abs_diff_nats": 4.502871888689697e-07,
+          "rel_diff": 2.436059833473556e-11,
+          "rel_diff_vs_b_pdip": 5.4542201540290547e-11,
+          "rtol": 1e-09,
+          "gated": true,
+          "gated_on": "rel_diff",
+          "status": "PASS",
+          "within_rtol_vs_b_pdip": true
+        },
+        {
+          "draw": 6,
+          "draw_name": "random_06",
+          "draw_kind": "random",
+          "offsets": {
+            "einstein_radius": -0.252404545884684,
+            "ell_comps_0": -0.010458778743585653,
+            "ell_comps_1": -0.007961250495723887,
+            "centre_0": 0.013521139617145192,
+            "centre_1": 0.0053664780626585225
+          },
+          "log_likelihood_d_candidate": -52862.31313482061,
+          "log_likelihood_library": -52862.31313627896,
+          "log_likelihood_b_pdip": -52862.31313604186,
+          "abs_diff_nats": 1.4583492884412408e-06,
+          "rel_diff": 2.7587693423131497e-11,
+          "rel_diff_vs_b_pdip": 2.310256326624497e-11,
+          "rtol": 1e-09,
+          "gated": true,
+          "gated_on": "rel_diff",
+          "status": "PASS",
+          "within_rtol_vs_b_pdip": true
+        },
+        {
+          "draw": 7,
+          "draw_name": "random_07",
+          "draw_kind": "random",
+          "offsets": {
+            "einstein_radius": 0.08884317725998035,
+            "ell_comps_0": -0.03269143047091697,
+            "ell_comps_1": -0.006480681684638473,
+            "centre_0": 0.01959938675153324,
+            "centre_1": 0.03733577863051902
+          },
+          "log_likelihood_d_candidate": -6381.749632227693,
+          "log_likelihood_library": -6381.7496310398565,
+          "log_likelihood_b_pdip": -6381.749629696817,
+          "abs_diff_nats": 1.1878364603035152e-06,
+          "rel_diff": 1.8613021960718419e-10,
+          "rel_diff_vs_b_pdip": 3.965803297418632e-10,
+          "rtol": 1e-09,
+          "gated": true,
+          "gated_on": "rel_diff",
+          "status": "PASS",
+          "within_rtol_vs_b_pdip": true
+        }
+      ],
+      "draw_seed": 0,
+      "pin_draws": 8,
+      "max_rel_diff": 1.8613021960718419e-10,
+      "max_abs_diff_nats": 1.6013364074751735e-06,
+      "max_rel_diff_vs_b_pdip": 3.965803297418632e-10
+    },
+    "census_status": "ok",
+    "library_anchor_revision": "PyAutoArray main 681938ae (2026-09-24)",
+    "library_revisions": {
+      "PyAutoNerves": {
+        "head": "1fa613aa8d89a79613009fb66f5b4e2d21deb57a",
+        "branch": "main",
+        "dirty": false,
+        "path": "/home/jammy/Code/PyAutoLabs/organs/PyAutoNerves",
+        "module_file": "/home/jammy/Code/PyAutoLabs/organs/PyAutoNerves/autonerves/__init__.py"
+      },
+      "PyAutoArray": {
+        "head": "681938ae616f47e1fc4b3ef7812fb6c33c0d0443",
+        "branch": "main",
+        "dirty": false,
+        "path": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray",
+        "module_file": "/home/jammy/Code/PyAutoLabs/array/PyAutoArray/autoarray/__init__.py"
+      },
+      "PyAutoFit": {
+        "head": "a736840127be7a3c21e15a5c945e94d8f1082983",
+        "branch": "main",
+        "dirty": false,
+        "path": "/home/jammy/Code/PyAutoLabs/fit/PyAutoFit",
+        "module_file": "/home/jammy/Code/PyAutoLabs/fit/PyAutoFit/autofit/__init__.py"
+      },
+      "PyAutoGalaxy": {
+        "head": "70a61e26cd715cefe7012a38285698091246a8a4",
+        "branch": "main",
+        "dirty": false,
+        "path": "/home/jammy/Code/PyAutoLabs/galaxy/PyAutoGalaxy",
+        "module_file": "/home/jammy/Code/PyAutoLabs/galaxy/PyAutoGalaxy/autogalaxy/__init__.py"
+      },
+      "PyAutoLens": {
+        "head": "2aaa1c1a8bb4a5923edf30a18451fcea330a6bd4",
+        "branch": "main",
+        "dirty": false,
+        "path": "/home/jammy/Code/PyAutoLabs/lens/PyAutoLens",
+        "module_file": "/home/jammy/Code/PyAutoLabs/lens/PyAutoLens/autolens/__init__.py"
+      }
+    },
+    "gate": {
+      "enforced": true,
+      "pins_checked": 9,
+      "pins_failed": [],
+      "reconciliation_pct": -0.7652696273697367,
+      "reconciliation_ok": true,
+      "unjoined_ms": 0.0,
+      "unjoined_ok": true,
+      "failures": [],
+      "passed": true,
+      "note": "ENFORCED in log-det mode: the cell writes this JSON and its PNG, then raises if any gated pin failed, |reconciliation_pct| > 5 or unjoined_ms > 0. Speed is never gated. Pre-registered before any A100 data (#303): per task, the candidate route (library certified solver via al.Settings, PDIP fallback, packaged budget, scalar jit) is pinned against the UNMODIFIED library route (the same Settings and composition, compiled WITHOUT the log-det rebind, in the same process) at 1e-9 relative on the fiducial and on 8 seeded draws (flds.random_draws(draw_seed, 8)); every row is GATED, control included (control's reference is a second compilation of its own program). Route b (library PDIP) is recorded, not gated: phase 2/3 placed a 2.0-2.6e-9 certified-vs-PDIP residual in the SOLVER path on the A100, which this phase does not touch. Also gated: |reconciliation_pct| <= 5, unjoined_ms == 0, and a non-control candidate must be taken on the JAX path (calls >= 1) in every compiled program. The JSON is written before the gate raises. Lever threshold (never a gate): >= 0.5 ms whole-call saving vs the unmodified library route measured in the SAME task (phase B saw ~3 % node-to-node differences, so rows are compared within a task only)."
+    }
+  }
+}
