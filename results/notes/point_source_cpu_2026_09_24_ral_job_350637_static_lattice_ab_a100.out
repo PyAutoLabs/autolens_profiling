@@ -1,0 +1,166 @@
+AP_ROOT=/mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p3
+==========================================
+Thu 24 Sep 13:34:42 BST 2026
+euclid-ral-gpu-1
+Model name:                              AMD EPYC 7702 64-Core Processor
+name, driver_version, memory.total [MiB], utilization.gpu [%]
+NVIDIA A100 80GB PCIe, 610.57.04, 81920 MiB, 0 %
+partition:      gpu
+gpus:           0
+cpus-per-task:  8
+loadavg:        0.00 0.00 0.00 1/1246 2103922
+Cell:           point_source/likelihood_breakdown/static_lattice_ab
+Backend:        JAX_PLATFORMS=cuda JAX_PLATFORM_NAME=cuda
+XLA_FLAGS:      --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false
+=== source revisions ===
+PyAutoNerves (shared) 1fa613aa8d89a79613009fb66f5b4e2d21deb57a
+PyAutoFit (shared) a736840127be7a3c21e15a5c945e94d8f1082983
+PyAutoArray (shared) 11b93476b2c7d9d32e5467deedfe9594c637d736
+PyAutoGalaxy (shared) 70a61e26cd715cefe7012a38285698091246a8a4
+PyAutoLens (shared) 2aaa1c1a8bb4a5923edf30a18451fcea330a6bd4
+PyAutoArray (branch clone, IMPORTED): ad0bf97b45d572effa5d428a101d32ac4893b950
+PyAutoLens  (branch clone, IMPORTED): b346b6a0a092098f23964e274edb220ea9757ad0
+AP_ROOT rev:   3da2583d46b80f72793caf11a16433ca05f00d20
+AP_ROOT branch: feature/point-source-cpu-p3
+=== import provenance + backend assertion ===
+autoarray.__file__ = /mnt/ral/jnightin/autolens_profiling_wt/PyAutoArray_point-source-cpu-p3/autoarray/__init__.py
+autolens.__file__ = /mnt/ral/jnightin/autolens_profiling_wt/PyAutoLens_point-source-cpu-p3/autolens/__init__.py
+autofit.__file__ = /mnt/ral/jnightin/PyAuto/PyAutoFit/autofit/__init__.py
+autogalaxy.__file__ = /mnt/ral/jnightin/PyAuto/PyAutoGalaxy/autogalaxy/__init__.py
+jax 0.10.2 [CudaDevice(id=0)] gpu
+ASSERT OK: GPU backend, autoarray + autolens from the branch clones
+==========================================
+static-lattice A/B on A100 (20 x 20, simple + cluster)
+Thu 24 Sep 13:35:06 BST 2026
+2026-09-24 13:35:10,823 - matplotlib.font_manager - INFO - Failed to extract font properties from /usr/share/fonts/cantarell/Cantarell-VF.otf: In FT2Font: Can not load face (SFNT font table missing; error code 0x8e)
+2026-09-24 13:35:10,847 - matplotlib.font_manager - INFO - generated new fontManager
+constant folding: requested=disabled  probe folding_ran=False  XLA_FLAGS=--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false
+
+=== simple: step-0 rows {'control': 69849, 'exact': 28665, 'lattice': 11859}; tables {'cell_build_ms': 185.3060140274465, 'cell_cache_hit_us': 0.6495974957942963, 'exact_table_mb': 1.017432, 'lattice_table_mb': 0.748536, 'library_static_vertex_table': {'build_ms': 47.864540945738554, 'cache_hit_us': 1.9799917936325073, 'rows': 11859, 'mb': 0.748536, 'equals_cell_lattice_table': True}}
+
+--- row simple_solved ---
+  [simple_solved/control] lower    2.7 s  compile    5.3 s  first    11.40 ms  trace_calls   2  step0_rows [69849]
+  [simple_solved/exact] lower    2.5 s  compile    5.4 s  first    11.81 ms  trace_calls   2  step0_rows [28665]
+  [simple_solved/lattice] lower    2.5 s  compile    5.4 s  first    11.25 ms  trace_calls   2  step0_rows [11859]
+  [simple_solved/library] lower    2.6 s  compile    5.6 s  first    12.73 ms  trace_calls   2  step0_rows [11859]
+  median ms  control     0.846  exact     0.843  lattice     0.839  library     0.842   control/lattice 1.009 [1.006, 1.011]
+
+--- positions gate simple_solved ---
+  [simple_solved_positions/control] lower    1.4 s  compile    4.0 s  first    11.46 ms  trace_calls   1  step0_rows [69849]
+  [simple_solved_positions/exact] lower    1.4 s  compile    3.8 s  first    11.40 ms  trace_calls   1  step0_rows [28665]
+  [simple_solved_positions/lattice] lower    1.3 s  compile    3.9 s  first    10.34 ms  trace_calls   1  step0_rows [11859]
+  [simple_solved_positions/library] lower    1.4 s  compile    3.9 s  first    10.18 ms  trace_calls   1  step0_rows [11859]
+
+--- gradient gate simple_solved ---
+  [simple_solved_grad/control] lower    4.4 s  compile   16.7 s  first   234.88 ms  trace_calls   2  step0_rows [69849]
+  [simple_solved_grad/exact] lower    4.3 s  compile   16.7 s  first    21.71 ms  trace_calls   2  step0_rows [28665]
+  [simple_solved_grad/lattice] lower    4.3 s  compile   16.9 s  first    24.35 ms  trace_calls   2  step0_rows [11859]
+  [simple_solved_grad/library] lower    4.4 s  compile   16.6 s  first    23.68 ms  trace_calls   2  step0_rows [11859]
+
+--- row simple_solved_vmap4 ---
+  [simple_solved_vmap4/control] lower    3.6 s  compile    6.3 s  first    14.38 ms  trace_calls   2  step0_rows [69849]
+  [simple_solved_vmap4/exact] lower    3.4 s  compile    6.1 s  first    15.02 ms  trace_calls   2  step0_rows [28665]
+  [simple_solved_vmap4/lattice] lower    3.5 s  compile    6.2 s  first    15.88 ms  trace_calls   2  step0_rows [11859]
+  [simple_solved_vmap4/library] lower    3.6 s  compile    6.2 s  first    15.82 ms  trace_calls   2  step0_rows [11859]
+  median ms  control     0.942  exact     0.922  lattice     0.925  library     0.925   control/lattice 1.019 [1.017, 1.021]
+
+--- row simple_plain ---
+  [simple_plain/control] lower    2.0 s  compile    5.2 s  first    12.80 ms  trace_calls   2  step0_rows [69849]
+  [simple_plain/exact] lower    2.0 s  compile    5.2 s  first    13.45 ms  trace_calls   2  step0_rows [28665]
+  [simple_plain/lattice] lower    2.0 s  compile    5.2 s  first    12.03 ms  trace_calls   2  step0_rows [11859]
+  [simple_plain/library] lower    2.0 s  compile    5.1 s  first    13.01 ms  trace_calls   2  step0_rows [11859]
+  median ms  control     0.824  exact     0.821  lattice     0.818  library     0.818   control/lattice 1.008 [1.006, 1.011]
+
+--- step-0 containing_indices gate simple_plain ---
+  [simple_plain_step0/control] lower    0.3 s  compile    0.5 s  first     2.11 ms  trace_calls   1  step0_rows [69849]
+  [simple_plain_step0/exact] lower    0.2 s  compile    0.5 s  first     2.01 ms  trace_calls   1  step0_rows [28665]
+  [simple_plain_step0/lattice] lower    0.2 s  compile    0.5 s  first     1.80 ms  trace_calls   1  step0_rows [11859]
+  [simple_plain_step0/library] lower    0.2 s  compile    0.5 s  first     1.67 ms  trace_calls   1  step0_rows [11859]
+
+=== cluster: step-0 rows {'control': 276507, 'exact': 110085, 'lattice': 46516}; tables {'cell_build_ms': 561.3286113366485, 'cell_cache_hit_us': 0.6100162863731384, 'exact_table_mb': 3.973416, 'lattice_table_mb': 2.956312, 'library_static_vertex_table': {'build_ms': 277.69159572198987, 'cache_hit_us': 2.670101821422577, 'rows': 46516, 'mb': 2.956312, 'equals_cell_lattice_table': True}}
+
+--- row cluster_solved ---
+  [cluster_solved/control] lower   40.0 s  compile   43.1 s  first    44.82 ms  trace_calls  12  step0_rows [276507]
+  [cluster_solved/exact] lower   38.2 s  compile   46.3 s  first    50.88 ms  trace_calls  12  step0_rows [110085]
+  [cluster_solved/lattice] lower   38.8 s  compile   47.6 s  first    53.10 ms  trace_calls  12  step0_rows [46516]
+  [cluster_solved/library] lower   41.1 s  compile   48.8 s  first    56.93 ms  trace_calls  12  step0_rows [46516]
+  median ms  control     2.696  exact     2.566  lattice     2.516  library     2.515   control/lattice 1.072 [1.056, 1.085]
+
+--- positions gate cluster_solved ---
+  [cluster_solved_positions/control] lower    6.9 s  compile   22.6 s  first    30.84 ms  trace_calls   2  step0_rows [276507]
+  [cluster_solved_positions/exact] lower    7.0 s  compile   23.1 s  first    32.41 ms  trace_calls   2  step0_rows [110085]
+  [cluster_solved_positions/lattice] lower    7.0 s  compile   23.7 s  first    33.49 ms  trace_calls   2  step0_rows [46516]
+  [cluster_solved_positions/library] lower    7.4 s  compile   23.5 s  first    33.35 ms  trace_calls   2  step0_rows [46516]
+
+--- row cluster_plain ---
+  [cluster_plain/control] lower   28.9 s  compile   36.1 s  first    44.01 ms  trace_calls  12  step0_rows [276507]
+  [cluster_plain/exact] lower   26.5 s  compile   37.2 s  first    41.17 ms  trace_calls  12  step0_rows [110085]
+  [cluster_plain/lattice] lower   27.1 s  compile   37.4 s  first    43.30 ms  trace_calls  12  step0_rows [46516]
+  [cluster_plain/library] lower   28.7 s  compile   38.8 s  first    45.49 ms  trace_calls  12  step0_rows [46516]
+  median ms  control     2.073  exact     2.002  lattice     1.984  library     1.991   control/lattice 1.045 [1.042, 1.050]
+
+==============================================================================================================
+STATIC-LATTICE A/B  (hpc_ral_a100_fp64, rounds=20, calls/round=20, constant_folding=off)
+==============================================================================================================
+  row                    route       median       p10       p90       min  step0    MFLOP  temp_MB compile_s
+  simple_solved          control      0.846     0.836     0.881     0.826  69849     6.60     3.36       5.3
+  simple_solved          exact        0.843     0.833     0.879     0.823  28665     3.87     0.93       5.4
+  simple_solved          lattice      0.839     0.829     0.868     0.819  11859     3.07     0.39       5.4
+  simple_solved          library      0.842     0.832     0.869     0.826  11859     3.07     0.39       5.6
+                         control_over_lattice   1.009 [90% 1.006, 1.011]
+                         control_over_exact     1.004 [90% 1.001, 1.006]
+                         exact_over_lattice     1.005 [90% 1.003, 1.008]
+                         library_over_lattice   1.003 [90% 1.001, 1.006]
+                         control_over_library   1.005 [90% 1.003, 1.008]
+                         MDI 0.053
+  simple_solved_vmap4    control      0.942     0.932     0.974     0.921  69849    21.98     7.83       6.3
+  simple_solved_vmap4    exact        0.922     0.910     0.968     0.897  28665    13.64     3.68       6.1
+  simple_solved_vmap4    lattice      0.925     0.915     0.954     0.903  11859    10.82     1.53       6.2
+  simple_solved_vmap4    library      0.925     0.915     0.957     0.902  11859    10.82     1.53       6.2
+                         control_over_lattice   1.019 [90% 1.017, 1.021]
+                         control_over_exact     1.022 [90% 1.018, 1.024]
+                         exact_over_lattice     0.997 [90% 0.994, 1.001]
+                         library_over_lattice   1.001 [90% 0.999, 1.003]
+                         control_over_library   1.018 [90% 1.016, 1.020]
+                         MDI 0.045
+  simple_plain           control      0.824     0.813     0.871     0.804  69849     6.60     3.36       5.2
+  simple_plain           exact        0.821     0.810     0.872     0.802  28665     3.87     0.93       5.2
+  simple_plain           lattice      0.818     0.806     0.869     0.796  11859     3.07     0.39       5.2
+  simple_plain           library      0.818     0.806     0.868     0.796  11859     3.07     0.39       5.1
+                         control_over_lattice   1.008 [90% 1.006, 1.011]
+                         control_over_exact     1.004 [90% 1.001, 1.006]
+                         exact_over_lattice     1.005 [90% 1.002, 1.008]
+                         library_over_lattice   1.001 [90% 0.998, 1.004]
+                         control_over_library   1.007 [90% 1.005, 1.010]
+                         MDI 0.070
+  cluster_solved         control      2.696     2.601     2.850     2.557 276507   120.38    42.06      43.1
+  cluster_solved         exact        2.566     2.447     2.667     2.415 110085    56.77    15.00      46.3
+  cluster_solved         lattice      2.516     2.428     2.652     2.395  46516    34.59     6.35      47.6
+  cluster_solved         library      2.515     2.430     2.608     2.392  46516    34.59     6.35      48.8
+                         control_over_lattice   1.072 [90% 1.056, 1.085]
+                         control_over_exact     1.050 [90% 1.039, 1.062]
+                         exact_over_lattice     1.020 [90% 1.008, 1.028]
+                         library_over_lattice   1.000 [90% 0.988, 1.010]
+                         control_over_library   1.072 [90% 1.058, 1.085]
+                         MDI 0.092
+  cluster_plain          control      2.073     2.013     2.258     1.955 276507   120.37    42.05      36.1
+  cluster_plain          exact        2.002     1.951     2.102     1.908 110085    56.76    15.00      37.2
+  cluster_plain          lattice      1.984     1.937     2.091     1.895  46516    34.57     6.35      37.4
+  cluster_plain          library      1.991     1.942     2.108     1.887  46516    34.57     6.35      38.8
+                         control_over_lattice   1.045 [90% 1.042, 1.050]
+                         control_over_exact     1.035 [90% 1.032, 1.040]
+                         exact_over_lattice     1.009 [90% 1.007, 1.013]
+                         library_over_lattice   1.004 [90% 1.001, 1.008]
+                         control_over_library   1.041 [90% 1.037, 1.046]
+                         MDI 0.118
+--------------------------------------------------------------------------------------------------------------
+  library_matches: lattice
+  all_gates_pass: True
+  wall: 984 s
+  Results JSON: /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p3/results/breakdown/point_source/static_lattice_ab_hpc_ral_a100_fp64.json
+  Results PNG:  /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p3/results/breakdown/point_source/static_lattice_ab_hpc_ral_a100_fp64.png
+==========================================
+name, memory.used [MiB]
+NVIDIA A100 80GB PCIe, 0 MiB
+Finished.
+Thu 24 Sep 13:51:32 BST 2026
