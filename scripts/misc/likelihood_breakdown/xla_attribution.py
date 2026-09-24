@@ -62,9 +62,9 @@ strictly *more* information: resolving a ``stack_frame_id`` and walking its
 
 This matters because the stages are not separable by the innermost frame alone.
 Both Bayesian-evidence log determinants are the *same* three lines of
-``inversion/inversion/abstract.py`` (``_log_det_symmetric_from``, 850-882) and are
-told apart only by their caller — ``log_det_curvature_reg_matrix_term`` (894) or
-``log_det_regularization_matrix_term`` (941). So a :class:`StageRule` may declare
+``inversion/inversion/abstract.py`` (``_log_det_symmetric_from``, 924-968 at 681938ae) and are
+told apart only by their caller — ``log_det_curvature_reg_matrix_term`` (1051) or
+``log_det_regularization_matrix_term`` (1130). So a :class:`StageRule` may declare
 a ``requires`` frame that must also appear somewhere in the same stack.
 
 Fusions carry their constituents
@@ -609,6 +609,24 @@ _IMAGING_ABSTRACT = "inversion/inversion/imaging/abstract.py"
 _IMAGING_MAPPING = "inversion/inversion/imaging/mapping.py"
 #: The phase-3 candidate convolutions (autolens_profiling#295) — harness code.
 _PSF_CUBE_HARNESS = "likelihood_breakdown/psf_cube_injection.py"
+#: The phase-4 log-det candidate (autolens_profiling#303) — harness code.
+_LOGDET_HARNESS = "likelihood_breakdown/logdet_reuse_injection.py"
+
+#: The PyAutoArray ``main`` the ``abstract.py`` / ``inversion_util.py`` ranges
+#: below were read from (re-anchored 2026-09-24, phase 4, #303).
+LIBRARY_ANCHOR_REVISION = "PyAutoArray main 681938ae (2026-09-24)"
+#: ``_log_det_symmetric_from`` — the shared body of both log determinants.
+_ABSTRACT_LOG_DET_BODY = (924, 968)
+#: ``log_det_curvature_reg_matrix_term`` (decorator to last line).
+_ABSTRACT_LOG_DET_CURVATURE_CALLER = (970, 1051)
+#: ``log_det_regularization_matrix_term`` (decorator to last line).
+_ABSTRACT_LOG_DET_REGULARIZATION_CALLER = (1071, 1132)
+#: ``curvature_reg_matrix``'s single-line ``self._xp.add(F, H)``.
+_ABSTRACT_CURVATURE_ADD_LINE = 389
+#: ``curvature_reg_matrix_reduced`` (the ``mapper_indices`` gathers).
+_ABSTRACT_REDUCED_GATHER = (392, 415)
+#: ``reconstruction``'s edge-zeroed branch: the two ``[ids_to_keep]`` subsets.
+_ABSTRACT_EDGE_SUBSET = (671, 678)
 
 #: Ordered rules. **Order is the contract**: a stack is walked innermost frame
 #: first, and at each frame the rules are tried in this order, so the earliest
@@ -618,56 +636,105 @@ _PSF_CUBE_HARNESS = "likelihood_breakdown/psf_cube_injection.py"
 #: swallow the inner stages.
 #:
 #: Line numbers are read from the installed PyAutoArray / PyAutoLens ``main``
-#: (checked 2026-09-16) and are recorded in each leg's JSON under
-#: ``stage_map_provenance`` so a later library edit that moves them shows up as
-#: a growing ``other`` row rather than as a silently wrong table.
+#: and are recorded in each leg's JSON under ``stage_map_provenance`` so a later
+#: library edit that moves them shows up as a growing ``other`` row rather than
+#: as a silently wrong table. The ``abstract.py`` / ``inversion_util.py`` ranges
+#: were first read 2026-09-16 and RE-ANCHORED 2026-09-24 against PyAutoArray
+#: ``main`` 681938ae (phase 4, autolens_profiling#303): #566's certified solver
+#: and the 2026-09-16 factor-reuse edits had moved every range below
+#: ``curvature_reg_matrix`` by 17-81 lines, so the log-det rules pointed into
+#: ``regularization_term`` and ``reconstruction`` started 51 lines early.
+#: ``LIBRARY_ANCHOR_REVISION`` names that revision in the provenance.
 STAGE_MAP: tuple[StageRule, ...] = (
     # --- the two log determinants: same lines, told apart by their caller ----
+    # ``_log_det_symmetric_from`` 924-968; its callers
+    # ``log_det_curvature_reg_matrix_term`` 970-1051 and
+    # ``log_det_regularization_matrix_term`` 1071-1132.
     StageRule(
         "log_det_curvature_reg",
         _ARRAY + _INVERSION_ABSTRACT,
-        (850, 882),
-        requires=(_ARRAY + _INVERSION_ABSTRACT, (884, 896)),
+        _ABSTRACT_LOG_DET_BODY,
+        requires=(_ARRAY + _INVERSION_ABSTRACT, _ABSTRACT_LOG_DET_CURVATURE_CALLER),
     ),
     StageRule(
         "log_det_regularization",
         _ARRAY + _INVERSION_ABSTRACT,
-        (850, 882),
-        requires=(_ARRAY + _INVERSION_ABSTRACT, (897, 943)),
+        _ABSTRACT_LOG_DET_BODY,
+        requires=(_ARRAY + _INVERSION_ABSTRACT, _ABSTRACT_LOG_DET_REGULARIZATION_CALLER),
     ),
+    # Phase 4 (#303): the harness log-det candidate (``logdet_reuse_injection``)
+    # REPLACES ``log_det_curvature_reg_matrix_term``, so on its overflow branch the
+    # library's dense ``_log_det_symmetric_from`` is called from the harness and
+    # the library caller frame above is absent. Without this rule that body would
+    # fall through to ``inversion_other`` at its own (innermost) frame.
+    StageRule(
+        "log_det_curvature_reg",
+        _ARRAY + _INVERSION_ABSTRACT,
+        _ABSTRACT_LOG_DET_BODY,
+        requires=(_LOGDET_HARNESS, None),
+    ),
+    # The candidate's own kernels: the solver-side wrapper (search + the
+    # masked-matrix Cholesky it keeps) is the certified solve; everything else
+    # the module writes is the Schur-complement log det.
+    StageRule("certified_active_set_solve", _LOGDET_HARNESS, function="solve_certified_stashing"),
+    StageRule("log_det_curvature_reg", _LOGDET_HARNESS),
     # --- the F + lambda*H add, and the two [ids][:, ids] gathers -------------
-    StageRule("curvature_reg_add", _ARRAY + _INVERSION_ABSTRACT, (359, 372)),
-    StageRule("curvature_reg_reduce_gather", _ARRAY + _INVERSION_ABSTRACT, (374, 398)),
-    # ``reconstruction`` spans 583-659. 606-614 is the edge-zeroed branch
-    # (``ids_to_keep is not None``): the two ``[ids_to_keep]`` subsets. 615-640
-    # is the partial solve plus the scatter back to full shape; 641-659 is the
+    StageRule("curvature_reg_add", _ARRAY + _INVERSION_ABSTRACT, (368, 389)),
+    StageRule("curvature_reg_reduce_gather", _ARRAY + _INVERSION_ABSTRACT, (391, 415)),
+    # ``reconstruction`` spans 634-731. 671-678 is the edge-zeroed branch
+    # (``ids_to_keep is not None``): the two ``[ids_to_keep]`` subsets. 679-708
+    # is the partial solve plus the scatter back to full shape; 710-725 is the
     # else branch, which is what the Delaunay family runs (no edge zeroing).
-    StageRule("edge_subset_gather", _ARRAY + _INVERSION_ABSTRACT, (606, 614)),
-    StageRule("regularization_term", _ARRAY + _INVERSION_ABSTRACT, (786, 849)),
-    StageRule("mapped_reconstruction", _ARRAY + _INVERSION_ABSTRACT, (722, 785)),
-    StageRule("reconstruction_scatter", _ARRAY + _INVERSION_ABSTRACT, (583, 605)),
-    StageRule("reconstruction_scatter", _ARRAY + _INVERSION_ABSTRACT, (615, 721)),
+    # 679-793 runs on through ``reconstruction_reduced`` / ``_dict`` /
+    # ``source_quantity_dict_from``, as the 2026-09-16 map's 615-721 did.
+    StageRule("edge_subset_gather", _ARRAY + _INVERSION_ABSTRACT, _ABSTRACT_EDGE_SUBSET),
+    StageRule("regularization_term", _ARRAY + _INVERSION_ABSTRACT, (858, 922)),
+    StageRule("mapped_reconstruction", _ARRAY + _INVERSION_ABSTRACT, (795, 857)),
+    StageRule("reconstruction_scatter", _ARRAY + _INVERSION_ABSTRACT, (634, 670)),
+    StageRule("reconstruction_scatter", _ARRAY + _INVERSION_ABSTRACT, (679, 793)),
     # --- the PDIP / active-set solve ----------------------------------------
-    # ``inversion_util.py`` ranges, read from the installed PyAutoArray (2026-09-16):
-    # 12-95 curvature diag/added/mirrored helpers, 96-155 curvature_matrix_via_
-    # mapping_matrix_from (F), 156-200 mapped_reconstructed_data_* (the mapped
-    # reconstruction, NOT D), 201-255 reconstruction_positive_negative_from,
-    # 256-488 reconstruction_positive_only_from (PDIP).
-    # The certified active set is HARNESS code (``library_solver_injection``
-    # rebinds the library's positive-only entry point), so its kernels trace to
-    # this repo, not to PyAutoArray. Without these rules they walk outward to
-    # ``abstract.py:642`` (the call site) and land in ``reconstruction_scatter``
-    # — which is where the shakeout's 5.2 ms solve was hiding.
+    # ``inversion_util.py`` ranges (re-anchored 2026-09-24, 681938ae): 12-93
+    # curvature diag/added/mirrored helpers, 96-148 curvature_matrix_via_
+    # mapping_matrix_from (F), 151-193 mapped_reconstructed_data_* (the mapped
+    # reconstruction, NOT D), 196-248 reconstruction_positive_negative_from,
+    # 251-288 _certified_positive_only_from (the library certified solve, #566;
+    # its nested ``pdip_fn`` 265-272 is the PDIP fallback), 291-593
+    # reconstruction_positive_only_from, whose Jacobi preconditioning block is
+    # 433-464 (shared by BOTH solvers, so it is its own row).
+    # The harness certified active set (``library_solver_injection``) rebinds the
+    # library's positive-only entry point, so its kernels trace to this repo, not
+    # to PyAutoArray. Without these rules they walk outward to the
+    # ``reconstruction`` call site and land in ``reconstruction_scatter`` —
+    # which is where the shakeout's 5.2 ms solve was hiding.
     StageRule("certified_active_set_solve", "likelihood_breakdown/active_set_steps.py"),
     StageRule("certified_active_set_solve", "likelihood_breakdown/library_solver_injection.py"),
     StageRule("pdip_solve", _ARRAY + "util/jax_nnls.py"),
-    StageRule("pdip_solve", _ARRAY + "inversion/inversion/inversion_util.py", (256, 488)),
+    # The LIBRARY certified solve (#566, phase B's adopted scalar-jit default).
+    StageRule("certified_active_set_solve", _ARRAY + "util/jax_active_set.py"),
+    StageRule("pdip_solve", _ARRAY + "inversion/inversion/inversion_util.py", (265, 272)),
     StageRule(
-        "mapped_reconstruction", _ARRAY + "inversion/inversion/inversion_util.py", (156, 200)
+        "certified_active_set_solve", _ARRAY + "inversion/inversion/inversion_util.py", (251, 288)
     ),
-    StageRule("curvature_matrix_F", _ARRAY + "inversion/inversion/inversion_util.py", (12, 155)),
+    # 433-436 build D = 1/sqrt(diag M), Q_pc = D M D and q_pc = D q; 439-450 and
+    # 455-464 are the ``(...) * D`` that maps each solver's answer back. The
+    # solver calls inside them have deeper innermost frames and resolve above.
     StageRule(
-        "reconstruction_scatter", _ARRAY + "inversion/inversion/inversion_util.py", (201, 255)
+        "nnls_jacobi_preconditioning",
+        _ARRAY + "inversion/inversion/inversion_util.py",
+        (433, 450),
+    ),
+    StageRule(
+        "nnls_jacobi_preconditioning",
+        _ARRAY + "inversion/inversion/inversion_util.py",
+        (455, 464),
+    ),
+    StageRule("pdip_solve", _ARRAY + "inversion/inversion/inversion_util.py", (291, 593)),
+    StageRule(
+        "mapped_reconstruction", _ARRAY + "inversion/inversion/inversion_util.py", (151, 193)
+    ),
+    StageRule("curvature_matrix_F", _ARRAY + "inversion/inversion/inversion_util.py", (12, 148)),
+    StageRule(
+        "reconstruction_scatter", _ARRAY + "inversion/inversion/inversion_util.py", (196, 248)
     ),
     # --- D and F, at their library entry points ------------------------------
     StageRule("data_vector_D", _ARRAY + _IMAGING_MAPPING, (54, 73)),
@@ -779,6 +846,7 @@ STAGE_ORDER: tuple[str, ...] = (
     "curvature_reg_add",
     "curvature_reg_reduce_gather",
     "edge_subset_gather",
+    "nnls_jacobi_preconditioning",
     "pdip_solve",
     "certified_active_set_solve",
     "log_det_curvature_reg",
@@ -1295,14 +1363,14 @@ def _where_the_sum_lives(index: Mapping[str, Instruction], written_at, abstract:
     No standalone ``add`` survives at ``abstract.py:371`` on the GPU leg, so the
     matrix cannot be found by looking for the sum. It can be found by looking for
     the two things that consume it — the edge subset
-    (``abstract.py:606-614``) and the log-determinant Cholesky
+    (``_ABSTRACT_EDGE_SUBSET``) and the log-determinant Cholesky
     (``_log_det_symmetric_from`` called from ``log_det_curvature_reg_matrix_term``)
     — and walking one operand back. That names the fusion that actually
     materialises ``F + lambda*H``, and whether the two consumers share it.
     """
     consumers: list[Instruction] = []
     for instruction in index.values():
-        if written_at(instruction, abstract, (606, 614)) and instruction.opcode in (
+        if written_at(instruction, abstract, _ABSTRACT_EDGE_SUBSET) and instruction.opcode in (
             "gather",
             "fusion",
             "slice",
@@ -1314,7 +1382,9 @@ def _where_the_sum_lives(index: Mapping[str, Instruction], written_at, abstract:
             and instruction.name.split(".")[0] == "cholesky"
             and any(
                 "inversion/inversion/abstract.py" in f.file.replace("\\", "/")
-                and 884 <= f.line <= 896
+                and _ABSTRACT_LOG_DET_CURVATURE_CALLER[0]
+                <= f.line
+                <= _ABSTRACT_LOG_DET_CURVATURE_CALLER[1]
                 for f in instruction.frames
             )
         ):
@@ -1433,6 +1503,13 @@ def hlo_census(index: Mapping[str, Instruction]) -> dict:
 
     Every count carries the instruction names it counted, so the number can be
     checked against the HLO rather than trusted.
+
+    The line numbers in this docstring and in the row KEYS (``..._613``,
+    ``..._397``, ``opcodes_at_line_371``) are the 2026-09-16 names, kept so every
+    earlier JSON stays comparable key-for-key. The ranges actually matched are
+    the re-anchored ``_ABSTRACT_*`` constants (``LIBRARY_ANCHOR_REVISION``):
+    the add is now line 389, the reduced gathers 392-415, the edge subset
+    671-678.
     """
 
     def _hits(predicate) -> list[Instruction]:
@@ -1471,27 +1548,40 @@ def hlo_census(index: Mapping[str, Instruction]) -> dict:
     # constituent of the F + lambda*H sum can carry a tile shape rather than
     # (n,n); filtering on (n,n) first made the count 0 on a shakeout whose mixed
     # fusions plainly contained the add. The square ones are reported separately.
-    curvature_reg_adds = _hits(lambda i: i.opcode == "add" and _written_at(i, abstract, (371, 371)))
+    curvature_reg_adds = _hits(
+        lambda i: (
+            i.opcode == "add"
+            and _written_at(
+                i, abstract, (_ABSTRACT_CURVATURE_ADD_LINE, _ABSTRACT_CURVATURE_ADD_LINE)
+            )
+        )
+    )
     # Every opcode written at :371, so "no add survives" can be told apart from
     # "the line number has moved". They are different findings.
     opcodes_at_371: dict[str, int] = {}
     for _instruction in index.values():
-        if _written_at(_instruction, abstract, (371, 371)):
+        if _written_at(
+            _instruction, abstract, (_ABSTRACT_CURVATURE_ADD_LINE, _ABSTRACT_CURVATURE_ADD_LINE)
+        ):
             opcodes_at_371[_instruction.opcode] = opcodes_at_371.get(_instruction.opcode, 0) + 1
-    instructions_at_371 = _hits(lambda i: _written_at(i, abstract, (371, 371)))
+    instructions_at_371 = _hits(
+        lambda i: _written_at(
+            i, abstract, (_ABSTRACT_CURVATURE_ADD_LINE, _ABSTRACT_CURVATURE_ADD_LINE)
+        )
+    )
     curvature_reg_adds_square = [
         i for i in curvature_reg_adds if len(i.dims) == 2 and i.dims[0] == i.dims[1]
     ]
     edge_gathers = _hits(
         lambda i: (
             i.opcode in ("gather", "dynamic-slice", "slice", "concatenate")
-            and _written_at(i, abstract, (606, 614))
+            and _written_at(i, abstract, _ABSTRACT_EDGE_SUBSET)
         )
     )
     reduced_gathers = _hits(
         lambda i: (
             i.opcode in ("gather", "dynamic-slice", "slice", "concatenate")
-            and _written_at(i, abstract, (374, 398))
+            and _written_at(i, abstract, _ABSTRACT_REDUCED_GATHER)
         )
     )
 
@@ -1665,7 +1755,7 @@ CENSUS_ANCHORS: tuple[CensusAnchor, ...] = (
         ("curvature_reg_add_nn",),
         _INVERSION_ABSTRACT,
         "curvature_reg_matrix",
-        (371, 371),
+        (_ABSTRACT_CURVATURE_ADD_LINE, _ABSTRACT_CURVATURE_ADD_LINE),
         mode="inside",
         contains="add(",
     ),
@@ -1673,14 +1763,14 @@ CENSUS_ANCHORS: tuple[CensusAnchor, ...] = (
         ("curvature_reg_reduced_gathers_397",),
         _INVERSION_ABSTRACT,
         "curvature_reg_matrix_reduced",
-        (374, 398),
+        _ABSTRACT_REDUCED_GATHER,
         mode="inside",
     ),
     CensusAnchor(
         ("edge_subset_gathers_613",),
         _INVERSION_ABSTRACT,
         "reconstruction",
-        (606, 614),
+        _ABSTRACT_EDGE_SUBSET,
         mode="inside",
         contains="ids_to_keep]",
     ),

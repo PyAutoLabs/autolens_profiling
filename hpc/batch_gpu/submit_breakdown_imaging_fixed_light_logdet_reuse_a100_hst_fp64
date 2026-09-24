@@ -1,0 +1,230 @@
+#!/bin/bash -l
+#
+# 2026-09 hst-gpu-non-solver-residue PHASE 4 — reuse the certified solve's Cholesky factor
+# for log det(F + lambda*H) on the A100 (autolens_profiling#303).
+#
+# Phase 1 (#268, job 343350) traced the fused single-call program on the a100: the
+# evidence term log_det_curvature_reg_matrix_term runs its OWN cuSOLVER Cholesky of
+# F + lambda*H, 0.89 ms (2.8 %) of the HST Delaunay N=1500 fp64 call, right after the
+# positive-only solve factorised the same system. The library certified solver
+# (jax_active_set.solve_certified, PyAutoArray #566) throws that factor away. The
+# block-determinant identity recovers log det from it plus a small Schur complement over
+# the fixed (and, on rectangular, edge-zeroed) set, exactly, for ANY split — so a lane
+# that fell back to PDIP is still covered.
+#
+# Array tasks (index = 4*mesh + candidate)
+# ----------------------------------------
+#   task  mesh         candidate    row
+#    0    delaunay     control      library dense Cholesky as shipped (no patch)
+#    1    delaunay     schur_k32    solve factor + Schur complement, k_max 32
+#    2    delaunay     schur_k64    solve factor + Schur complement, k_max 64
+#    3    delaunay     schur_k256   solve factor + Schur complement, k_max 256 (AMENDMENT)
+#    4    rectangular  control      library dense Cholesky as shipped (no patch)
+#    5    rectangular  schur_k32    k_max 32 + n_edge slots (the 152 edge pixels join Z)
+#    6    rectangular  schur_k64    k_max 64 + n_edge slots
+#    7    rectangular  schur_k256   k_max 256 + n_edge slots (AMENDMENT)
+#
+# AMENDMENT, pre-registered before any A100 data: the RTX screen found |Z| = 4 on the
+# fiducial (the TIMED point) but 51-250 on the 8 draws, so k32 / k64 take the dense
+# lax.cond branch on 8 / 7 of 9 rows. schur_k256 is added; every row records the
+# fiducial's |Z| and the branch the TIMED call took (z_report.timed_point) separately
+# from the draws' |Z| distribution and overflow count (z_report.draws), and the verdict
+# must state the timed branch. The gate is unchanged.
+#
+# NO harness solver in this phase. Route d, its unmodified-library control and the traced
+# program all run the LIBRARY certified solver selected by al.Settings
+# (positive_only_solver=certified, certified_fallback=pdip, the packaged
+# certified_pass_budget = 16 — phase B's adopted scalar-jit program). The candidate is a
+# HARNESS rebind (likelihood_breakdown.logdet_reuse_injection) of two library entry points
+# for the duration of a scoped context: jax_active_set.solve_certified (a bit-identical
+# wrapper that keeps its final masked Cholesky factor) and
+# AbstractInversion.log_det_curvature_reg_matrix_term. Nothing in PyAutoArray was
+# modified; a winning candidate becomes a separate PyAutoArray prompt via /intake.
+#
+# The gate — PRE-REGISTERED before any A100 data, ENFORCED by the cell
+# ---------------------------------------------------------------------
+# The cell writes its JSON and PNG first, then exits non-zero if any gated row failed.
+#   GATED at 1e-9 relative:  route d (candidate) vs the UNMODIFIED library route (the same
+#                            Settings and scalar-jit composition, compiled WITHOUT the
+#                            rebind in the same task), on the fiducial and on 8 seeded draws
+#                            (flds.random_draws seed 0) — every task, control included
+#   GATED:                   |reconciliation| <= 5 % and zero unjoined device time on the
+#                            traced program; a non-control candidate must be taken on the
+#                            JAX path in every compiled program (counts >= 1)
+#   RECORDED, NOT gated:     every row vs route b (library PDIP) — phases 2/3 placed a
+#                            2.0-2.6e-9 certified-vs-PDIP residual in the SOLVER path on the
+#                            A100, which this phase does not touch
+# LEVER THRESHOLD (never a gate): a candidate is a lever when BOTH its jit_profile
+# whole-call saving and its interleaved-median saving (7 alternating blocks of 10 steady
+# calls) against the unmodified library route IN THE SAME TASK are >= 0.5 ms. Rows are
+# never compared across tasks (phase B saw ~3 % node-to-node differences). Clearing it
+# files a PyAutoArray prompt; missing it is a "no lever" verdict.
+#
+# Flags this cell owns (strict shared parsing rejects unknown ones):
+#
+#   mesh delaunay|rectangular                   the fixed-light model
+#   border-relocator cell                       use_border_relocator=True
+#   trace-calls 10                              steady calls taken inside the profiler
+#   routes b,d                                  b is recorded, the trace is on d
+#   logdet-candidate NAME                       PHASE 4 — the log-det candidate
+#   pin-draws 8                                 seeded distinct draws pinned
+#   draw-seed 0                                 the phase-2 draw family
+#   config-name hpc_a100_fp64_fixed_light_trace
+#
+# The output filename gains _logdet_<candidate>, so no leg collides with another or with
+# phases 1-3 (and the config name sits outside build_readme.py's CONFIG_TAGGED_RE, so
+# nothing reaches the dashboard).
+#
+# Every leg starts from an EMPTY JAX compilation cache: a seeded XLA autotune cache
+# silently changes kernels (results/notes/xla_autotune_triton_gemm.md). The
+# AUTOTUNE_ENTRIES census at the end is the check.
+#
+# WALL-BASIS:
+#   Every task runs the one fixed_light_trace script in its single-call mode. The phase-3
+#   array of that mode ran on this a100 and dataset at about 5 s per compilation and
+#   well under five minutes per task (job 350573). A phase-4 task compiles six programs
+#   (routes b and d, the unmodified-library control, the untimed report program and the
+#   traced lowering twice), pins 8 draws through three of them and times 140 interleaved
+#   calls, so 300 s is offered with a headroom of three for the rectangular mesh, whose
+#   trace mode has not been timed on this a100.
+#   NOTE for anyone editing this block - check_submits reads any line here shaped like
+#   a keyword, a colon and a value as row data, so the prose must never contain that
+#   shape. Phase 1 lost a gate run to exactly that.
+#   cell: imaging/fixed_light_trace/hst  device: a100  precision: fp64
+#   source: measured-wall  ref: ral-350573  wall: 300  headroom: 3.0
+
+#SBATCH -J flt_logdet_reuse_hst
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=00:30:00
+#SBATCH --array=0-7
+#SBATCH -o output/output.%A_%a.out
+#SBATCH -e error/error.%A_%a.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+# Derive the repo root from where this was submitted (hpc/batch_gpu/../..) rather than
+# hardcoding /mnt/ral/jnightin/autolens_profiling. The -o/-e paths above are relative, so
+# sbatch from inside hpc/batch_gpu/.
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding"
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+CELL="$AP_ROOT/scripts/imaging/likelihood_breakdown/fixed_light_trace.py"
+
+# The cell rejects unknown flags, but retain an explicit source guard so a stale checkout
+# fails before allocating a GPU. The JSON records the candidate too.
+if ! grep -q -- "--logdet-candidate" "$CELL"; then
+    echo "FATAL: $CELL does not define --logdet-candidate. This checkout predates #303;" >&2
+    echo "       refusing to run a stale phase-1 cell." >&2
+    exit 1
+fi
+
+MESHES=(delaunay delaunay delaunay delaunay rectangular rectangular rectangular rectangular)
+CANDIDATES=(control schur_k32 schur_k64 schur_k256 control schur_k32 schur_k64 schur_k256)
+MESH=${MESHES[$SLURM_ARRAY_TASK_ID]}
+CAND=${CANDIDATES[$SLURM_ARRAY_TASK_ID]}
+if [ -z "$MESH" ] || [ -z "$CAND" ]; then
+    echo "FATAL: no log-det candidate for array task ${SLURM_ARRAY_TASK_ID} (expected 0-7)." >&2
+    exit 1
+fi
+
+BORDER=cell
+LEG="${MESH}_${CAND}"
+
+# The dataset is gitignored and auto-simulated on first use. Eight tasks racing to write the
+# same dataset/imaging/hst/ would interleave their FITS writes, so it is simulated ONCE
+# before submitting; this is the check that it was.
+if [ ! -f "$AP_ROOT/dataset/imaging/hst/data.fits" ]; then
+    echo "FATAL: dataset/imaging/hst/data.fits missing. Simulate it once before" >&2
+    echo "       submitting (concurrent tasks must not auto-simulate the same dir)." >&2
+    exit 1
+fi
+
+# Fresh per-task compilation cache. output/ is gitignored, so these never reach git.
+export JAX_COMPILATION_CACHE_DIR="$AP_ROOT/output/jax_cache/fixed_light_logdet_${LEG}_${SLURM_ARRAY_JOB_ID:-local}_${SLURM_ARRAY_TASK_ID:-0}"
+rm -rf "$JAX_COMPILATION_CACHE_DIR" && mkdir -p "$JAX_COMPILATION_CACHE_DIR"
+echo "JAX_COMPILATION_CACHE_DIR=$JAX_COMPILATION_CACHE_DIR (fresh)"
+
+# The profiler's xplane and the optimized HLO + module proto the cell dumps beside it.
+TRACE_DIR="$AP_ROOT/output/trace/fixed_light_logdet_${LEG}_${SLURM_ARRAY_JOB_ID:-local}_${SLURM_ARRAY_TASK_ID:-0}"
+rm -rf "$TRACE_DIR" && mkdir -p "$TRACE_DIR"
+echo "TRACE_DIR=$TRACE_DIR (fresh)"
+
+nvidia-smi
+
+echo "=========================================="
+date
+hostname
+echo "Task:           $SLURM_ARRAY_TASK_ID / 7"
+echo "Cell:           likelihood_breakdown/imaging/fixed_light_trace"
+echo "Dataset:        hst (0.05\"/px)"
+echo "Precision:      fp64"
+echo "Inversion path: dense (mapping matrices, InversionImagingMapping)"
+echo "Source mesh:    $MESH (cell fiducial; --source-pixels NOT passed)"
+echo "Border reloc:   --border-relocator $BORDER (the cell reports the RESOLVED boolean)"
+echo "Routes:         b,d   (b = library PDIP, recorded; d = library certified + the candidate)"
+echo "Solver:         LIBRARY certified via al.Settings, PDIP fallback, packaged budget (16)"
+echo "Log-det cand.:  $CAND"
+echo "Pin draws:      8 (seed 0), 1e-9 relative, every row gated vs the unmodified library route"
+echo "Trace calls:    10"
+echo "Config name:    hpc_a100_fp64_fixed_light_trace"
+echo "LOGDET_LEG candidate=$CAND mesh=$MESH dataset=hst hardware=hpc_a100_fp64"
+echo "Flags:          --mesh $MESH --border-relocator $BORDER --logdet-candidate $CAND --pin-draws 8 --draw-seed 0 --trace-calls 10 --routes b,d --config-name hpc_a100_fp64_fixed_light_trace"
+
+echo "=== source revisions (shared install, untouched) ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r" "$(git -C /mnt/ral/jnightin/PyAuto/$r rev-parse HEAD 2>&1)"
+done
+echo "AP_ROOT rev:   $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+
+cd $AP_ROOT
+
+echo "=== import provenance ==="
+python3 -c "import autoarray, autolens; print('autoarray.__file__ =', autoarray.__file__); print('autoarray.__version__ =', autoarray.__version__); print('autolens.__file__ =', autolens.__file__)"
+
+# The cell's exit code is CAPTURED, not inherited: it writes its JSON and PNG and then
+# raises if the phase-4 gate failed, so a failing leg is still a leg whose provenance has
+# to be recorded. ``activate.sh`` installs an ERR trap which exits even while ``errexit``
+# is disabled, so preserve and remove that trap around the expected non-zero cell exit.
+# Restore it before the census, then exit with the cell's code.
+SAVED_ERR_TRAP=$(trap -p ERR)
+trap - ERR
+set +e
+python3 -u scripts/imaging/likelihood_breakdown/fixed_light_trace.py \
+    --mesh $MESH \
+    --border-relocator $BORDER \
+    --logdet-candidate $CAND \
+    --pin-draws 8 \
+    --draw-seed 0 \
+    --trace-calls 10 \
+    --routes b,d \
+    --trace-dir "$TRACE_DIR" \
+    --config-name hpc_a100_fp64_fixed_light_trace
+CELL_RC=$?
+set -e
+eval "$SAVED_ERR_TRAP"
+
+# Autotune-cache census. Must be non-fatal (activate.sh's ERR trap fails the job on any
+# non-zero exit; the `ls` failure is swallowed by the pipe to `wc -l`). A non-zero count
+# means this leg's kernels were chosen by a cache, not by the library default.
+echo -n "AUTOTUNE_ENTRIES count="
+ls "$JAX_COMPILATION_CACHE_DIR/xla_gpu_per_fusion_autotune_cache_dir" 2>/dev/null | wc -l
+
+echo "CELL_EXIT=$CELL_RC"
+echo "Finished."
+date
+
+# Fail the SLURM job with the cell's own code, now that the census is on record.
+exit $CELL_RC

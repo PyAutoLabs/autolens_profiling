@@ -1,0 +1,788 @@
+{
+  "status": "measured-no-lever",
+  "job": 350651,
+  "issue": "PyAutoLabs/autolens_profiling#303",
+  "submitted": "2026-09-24T14:46:22Z",
+  "submitted_note": "sacct Submit 2026-09-24T15:46:22 is RAL local time (BST, UTC+1); start/end columns below are also BST.",
+  "profiling_revision": "a6211602979775284ce169ab2616713ff865e39d",
+  "profiling_revision_note": "a621160 on feature/hst-gpu-residue-p4 is the AP_ROOT rev every .out prints; every JSON's configuration.cell_source_sha256 equals sha256 of scripts/imaging/likelihood_breakdown/fixed_light_trace.py at a621160.",
+  "cell_source_sha256": "8046c44ee1ca063c0bed87b89090afc6101bdf7208668f7137aa95bd26fdaf73",
+  "composition": "scalar jax.jit(fn) single call; route d = library certified solver (al.Settings, PDIP fallback, packaged budget 16) with the harness log-det rebind (logdet_reuse_injection); reference = the same route compiled WITHOUT the rebind in the same process; route b = library PDIP (recorded)",
+  "library_revisions": {
+    "PyAutoNerves": "1fa613aa8d89a79613009fb66f5b4e2d21deb57a",
+    "PyAutoArray": "7fa8d2714f7da43fec2b23c31bff580764831670",
+    "PyAutoFit": "a736840127be7a3c21e15a5c945e94d8f1082983",
+    "PyAutoGalaxy": "70a61e26cd715cefe7012a38285698091246a8a4",
+    "PyAutoLens": "86054bbc19baa2f710a12e04a94fa27ab37cc354"
+  },
+  "library_revisions_note": "every .out and JSON records these heads, equal to the local canonical mains and origin/main on 2026-09-24. JSON 'dirty: true' on PyAutoArray/PyAutoGalaxy/PyAutoLens is one untracked emacs autosave file each (#general.yaml#, #geometry_profiles.py#, #tracer_util.py#) in the RAL install, no tracked modification. The cell's stage anchors cite PyAutoArray 681938ae; 681938ae..7fa8d271 touches no file under autoarray/inversion, autoarray/fit or autoarray/util/jax_active_set.py.",
+  "dataset_sha256": {
+    "data.fits": "e4e833a28e9c6f6fb023cd85c0d3dde74068720256bc77a240633500e5b04fac",
+    "noise_map.fits": "315c6266a0acd3ac9c8da82fcd2b45a08697362481fd7a35072bab1658530ba3",
+    "psf.fits": "8389ba0e8bf4a09b4a561cfc246181a2fb944ed396754cd0ff76fdd22910d303"
+  },
+  "dataset_sha256_note": "identical to phases 2 and 3 (jobs 344635, 350573)",
+  "gate_decision": {
+    "pre_registered_at_commit": "71e3f21 (gate + 0.5 ms lever rule), 5f6f8c7 (schur_k256 amendment + timed-point |Z| record)",
+    "pre_registered_before_submission": true,
+    "decided": "gate 2026-09-24T14:20:27Z (71e3f21), amendment 14:22:49Z (5f6f8c7); RTX screen committed 14:41:43Z (a621160); A100 submission 14:46:22Z. No A100 data existed before the amendment.",
+    "rtol": 1e-09,
+    "gated": [
+      "route d (candidate) vs the unmodified library route, same Settings and composition, same task: fiducial + 8 seeded draws (seed 0), every task including control",
+      "|reconciliation| <= 5 %",
+      "unjoined device time == 0",
+      "non-control candidate taken on the JAX path in every compiled program"
+    ],
+    "recorded_not_gated": [
+      "every row vs route b (library PDIP)"
+    ],
+    "lever_rule": "never a gate: BOTH jit_profile and interleaved-median (7 alternating blocks x 10 calls) whole-call savings vs the unmodified library route in the SAME task >= 0.5 ms",
+    "outcome": "PASS 8/8 tasks (9/9 pins each, 72/72); lever 0/6 candidates"
+  },
+  "tasks": [
+    {
+      "task": 0,
+      "mesh": "delaunay",
+      "candidate": "control",
+      "kind": "control",
+      "slurm_state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:01:29",
+      "node": "euclid-ral-gpu-1",
+      "start_bst": "2026-09-24T15:46:22",
+      "end_bst": "2026-09-24T15:47:51",
+      "max_rss_kb": 2165728,
+      "footer": {
+        "autotune_entries": 0,
+        "cell_exit": 0,
+        "gate_line": "LOG-DET GATE [control, CONTROL]: PASS  (pins 9/9, reconciliation -0.53 %, unjoined 0.000 ms) | saving vs library +0.243 ms (jit_profile), +0.086 ms (interleaved) -> lever None"
+      },
+      "err_log": "one benign mask_2d_util.py:564 padding warning (141x141 -> 159x159), identical across all eight tasks",
+      "gate_passed": true,
+      "pins_checked": 9,
+      "pins_failed": 0,
+      "fiducial_rel_diff": 2.4591014616395922e-11,
+      "max_rel_diff": 2.0775511967166282e-10,
+      "max_abs_diff_nats": 3.840195859083906e-06,
+      "max_rel_diff_vs_b_pdip": 1.7994051088231191e-10,
+      "reconciliation_pct": -0.528,
+      "unjoined_ms": 0.0,
+      "library_control_jit_profile_ms": 26.935,
+      "candidate_jit_profile_ms": 26.692,
+      "saving_jit_profile_ms": 0.243,
+      "interleaved_library_median_ms": 26.569,
+      "interleaved_candidate_median_ms": 26.482,
+      "saving_interleaved_median_ms": 0.086,
+      "interleaved_block_saving_range_ms": [
+        -0.028,
+        0.42
+      ],
+      "route_b_pdip_jit_profile_ms": 50.642,
+      "lever_clears_threshold": null,
+      "timed_point": {
+        "z_count": null,
+        "branch": null
+      },
+      "k_slots": null,
+      "n_edge": null,
+      "draws_z_count": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "draws_overflow_count": 0,
+      "uncertified_count": 0,
+      "log_det_row_ms": 0.897,
+      "certified_solve_row_ms": 5.029,
+      "top_log_det_instructions": [
+        {
+          "instruction": "cholesky.120",
+          "ms": 0.896,
+          "shape": "(f64[1500,1500]{0,1}, s32[])"
+        }
+      ],
+      "compile_s": {
+        "route_d": 4.5,
+        "library_control": 4.73,
+        "route_b": 4.67
+      },
+      "peak_gb_after_all": 1.185,
+      "injection_counts": {
+        "route_d_jax": 0,
+        "traced_program_jax": 0,
+        "report_program_jax": 0,
+        "delegated": 0
+      },
+      "hlo_census": {
+        "status": "ok",
+        "cholesky": 7,
+        "triangular_solve": 12
+      },
+      "profiler_overhead_pct": 7.95,
+      "cell_source_sha256": "8046c44ee1ca063c0bed87b89090afc6101bdf7208668f7137aa95bd26fdaf73"
+    },
+    {
+      "task": 1,
+      "mesh": "delaunay",
+      "candidate": "schur_k32",
+      "kind": "lever",
+      "slurm_state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:01:29",
+      "node": "euclid-ral-gpu-1",
+      "start_bst": "2026-09-24T15:46:22",
+      "end_bst": "2026-09-24T15:47:51",
+      "max_rss_kb": 2263360,
+      "footer": {
+        "autotune_entries": 0,
+        "cell_exit": 0,
+        "gate_line": "LOG-DET GATE [schur_k32, LEVER candidate]: PASS  (pins 9/9, reconciliation -0.51 %, unjoined 0.000 ms) | saving vs library -0.083 ms (jit_profile), -0.269 ms (interleaved) -> lever False"
+      },
+      "err_log": "one benign mask_2d_util.py:564 padding warning (141x141 -> 159x159), identical across all eight tasks",
+      "gate_passed": true,
+      "pins_checked": 9,
+      "pins_failed": 0,
+      "fiducial_rel_diff": 6.886380017526493e-11,
+      "max_rel_diff": 1.595129885763249e-10,
+      "max_abs_diff_nats": 2.136417606379837e-06,
+      "max_rel_diff_vs_b_pdip": 1.2833413879948113e-10,
+      "reconciliation_pct": -0.507,
+      "unjoined_ms": 0.0,
+      "library_control_jit_profile_ms": 26.651,
+      "candidate_jit_profile_ms": 26.733,
+      "saving_jit_profile_ms": -0.083,
+      "interleaved_library_median_ms": 26.432,
+      "interleaved_candidate_median_ms": 26.701,
+      "saving_interleaved_median_ms": -0.269,
+      "interleaved_block_saving_range_ms": [
+        -0.322,
+        0.048
+      ],
+      "route_b_pdip_jit_profile_ms": 50.745,
+      "lever_clears_threshold": false,
+      "timed_point": {
+        "z_count": 4,
+        "branch": "schur"
+      },
+      "k_slots": 32,
+      "n_edge": 0,
+      "draws_z_count": [
+        51,
+        199,
+        250,
+        244,
+        88,
+        67,
+        242,
+        205
+      ],
+      "draws_overflow_count": 8,
+      "uncertified_count": 0,
+      "log_det_row_ms": 1.075,
+      "certified_solve_row_ms": 5.05,
+      "top_log_det_instructions": [
+        {
+          "instruction": "triangular-solve",
+          "ms": 0.968,
+          "shape": "(f64[1500,32]{0,1}, s8[0]{0})"
+        },
+        {
+          "instruction": "cholesky.120",
+          "ms": 0.04,
+          "shape": "(f64[32,32]{0,1}, s32[])"
+        }
+      ],
+      "compile_s": {
+        "route_d": 4.63,
+        "library_control": 4.57,
+        "route_b": 4.57
+      },
+      "peak_gb_after_all": 1.185,
+      "injection_counts": {
+        "route_d_jax": 1,
+        "traced_program_jax": 1,
+        "report_program_jax": 1,
+        "delegated": 0
+      },
+      "hlo_census": {
+        "status": "ok",
+        "cholesky": 8,
+        "triangular_solve": 13
+      },
+      "profiler_overhead_pct": 5.01,
+      "cell_source_sha256": "8046c44ee1ca063c0bed87b89090afc6101bdf7208668f7137aa95bd26fdaf73"
+    },
+    {
+      "task": 2,
+      "mesh": "delaunay",
+      "candidate": "schur_k64",
+      "kind": "lever",
+      "slurm_state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:01:29",
+      "node": "euclid-ral-gpu-1",
+      "start_bst": "2026-09-24T15:46:22",
+      "end_bst": "2026-09-24T15:47:51",
+      "max_rss_kb": 2250508,
+      "footer": {
+        "autotune_entries": 0,
+        "cell_exit": 0,
+        "gate_line": "LOG-DET GATE [schur_k64, LEVER candidate]: PASS  (pins 9/9, reconciliation -0.60 %, unjoined 0.000 ms) | saving vs library -0.274 ms (jit_profile), -0.313 ms (interleaved) -> lever False"
+      },
+      "err_log": "one benign mask_2d_util.py:564 padding warning (141x141 -> 159x159), identical across all eight tasks",
+      "gate_passed": true,
+      "pins_checked": 9,
+      "pins_failed": 0,
+      "fiducial_rel_diff": 8.22840799328539e-12,
+      "max_rel_diff": 3.65988642299604e-10,
+      "max_abs_diff_nats": 3.266897692810744e-06,
+      "max_rel_diff_vs_b_pdip": 3.971310083029989e-10,
+      "reconciliation_pct": -0.598,
+      "unjoined_ms": 0.0,
+      "library_control_jit_profile_ms": 26.593,
+      "candidate_jit_profile_ms": 26.867,
+      "saving_jit_profile_ms": -0.274,
+      "interleaved_library_median_ms": 26.541,
+      "interleaved_candidate_median_ms": 26.854,
+      "saving_interleaved_median_ms": -0.313,
+      "interleaved_block_saving_range_ms": [
+        -0.481,
+        -0.203
+      ],
+      "route_b_pdip_jit_profile_ms": 50.834,
+      "lever_clears_threshold": false,
+      "timed_point": {
+        "z_count": 4,
+        "branch": "schur"
+      },
+      "k_slots": 64,
+      "n_edge": 0,
+      "draws_z_count": [
+        51,
+        199,
+        250,
+        244,
+        88,
+        67,
+        242,
+        205
+      ],
+      "draws_overflow_count": 7,
+      "uncertified_count": 0,
+      "log_det_row_ms": 1.142,
+      "certified_solve_row_ms": 5.063,
+      "top_log_det_instructions": [
+        {
+          "instruction": "triangular-solve",
+          "ms": 1.029,
+          "shape": "(f64[1500,64]{0,1}, s8[0]{0})"
+        },
+        {
+          "instruction": "cholesky.120",
+          "ms": 0.043,
+          "shape": "(f64[64,64]{0,1}, s32[])"
+        }
+      ],
+      "compile_s": {
+        "route_d": 4.63,
+        "library_control": 4.71,
+        "route_b": 4.55
+      },
+      "peak_gb_after_all": 1.185,
+      "injection_counts": {
+        "route_d_jax": 1,
+        "traced_program_jax": 1,
+        "report_program_jax": 1,
+        "delegated": 0
+      },
+      "hlo_census": {
+        "status": "ok",
+        "cholesky": 8,
+        "triangular_solve": 13
+      },
+      "profiler_overhead_pct": 4.93,
+      "cell_source_sha256": "8046c44ee1ca063c0bed87b89090afc6101bdf7208668f7137aa95bd26fdaf73"
+    },
+    {
+      "task": 3,
+      "mesh": "delaunay",
+      "candidate": "schur_k256",
+      "kind": "lever",
+      "slurm_state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:01:29",
+      "node": "euclid-ral-gpu-1",
+      "start_bst": "2026-09-24T15:46:22",
+      "end_bst": "2026-09-24T15:47:51",
+      "max_rss_kb": 2271360,
+      "footer": {
+        "autotune_entries": 0,
+        "cell_exit": 0,
+        "gate_line": "LOG-DET GATE [schur_k256, LEVER candidate]: PASS  (pins 9/9, reconciliation -0.47 %, unjoined 0.000 ms) | saving vs library -0.480 ms (jit_profile), -0.446 ms (interleaved) -> lever False"
+      },
+      "err_log": "one benign mask_2d_util.py:564 padding warning (141x141 -> 159x159), identical across all eight tasks",
+      "gate_passed": true,
+      "pins_checked": 9,
+      "pins_failed": 0,
+      "fiducial_rel_diff": 7.70577687192151e-11,
+      "max_rel_diff": 2.4564951493314906e-10,
+      "max_abs_diff_nats": 4.54064502264373e-06,
+      "max_rel_diff_vs_b_pdip": 1.9385681030772938e-10,
+      "reconciliation_pct": -0.467,
+      "unjoined_ms": 0.0,
+      "library_control_jit_profile_ms": 26.421,
+      "candidate_jit_profile_ms": 26.901,
+      "saving_jit_profile_ms": -0.48,
+      "interleaved_library_median_ms": 26.346,
+      "interleaved_candidate_median_ms": 26.791,
+      "saving_interleaved_median_ms": -0.446,
+      "interleaved_block_saving_range_ms": [
+        -0.677,
+        -0.356
+      ],
+      "route_b_pdip_jit_profile_ms": 50.767,
+      "lever_clears_threshold": false,
+      "timed_point": {
+        "z_count": 4,
+        "branch": "schur"
+      },
+      "k_slots": 256,
+      "n_edge": 0,
+      "draws_z_count": [
+        51,
+        199,
+        250,
+        244,
+        88,
+        67,
+        242,
+        205
+      ],
+      "draws_overflow_count": 0,
+      "uncertified_count": 0,
+      "log_det_row_ms": 1.284,
+      "certified_solve_row_ms": 5.049,
+      "top_log_det_instructions": [
+        {
+          "instruction": "triangular-solve",
+          "ms": 1.049,
+          "shape": "(f64[1500,256]{0,1}, s8[0]{0})"
+        },
+        {
+          "instruction": "cholesky.120",
+          "ms": 0.153,
+          "shape": "(f64[256,256]{0,1}, s32[])"
+        }
+      ],
+      "compile_s": {
+        "route_d": 5.23,
+        "library_control": 4.62,
+        "route_b": 4.48
+      },
+      "peak_gb_after_all": 1.185,
+      "injection_counts": {
+        "route_d_jax": 1,
+        "traced_program_jax": 1,
+        "report_program_jax": 1,
+        "delegated": 0
+      },
+      "hlo_census": {
+        "status": "ok",
+        "cholesky": 8,
+        "triangular_solve": 13
+      },
+      "profiler_overhead_pct": 6.06,
+      "cell_source_sha256": "8046c44ee1ca063c0bed87b89090afc6101bdf7208668f7137aa95bd26fdaf73"
+    },
+    {
+      "task": 4,
+      "mesh": "rectangular",
+      "candidate": "control",
+      "kind": "control",
+      "slurm_state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:01:17",
+      "node": "euclid-ral-gpu-2",
+      "start_bst": "2026-09-24T15:46:22",
+      "end_bst": "2026-09-24T15:47:39",
+      "max_rss_kb": 1435580,
+      "footer": {
+        "autotune_entries": 0,
+        "cell_exit": 0,
+        "gate_line": "LOG-DET GATE [control, CONTROL]: PASS  (pins 9/9, reconciliation -0.49 %, unjoined 0.000 ms) | saving vs library -0.016 ms (jit_profile), -0.028 ms (interleaved) -> lever None"
+      },
+      "err_log": "one benign mask_2d_util.py:564 padding warning (141x141 -> 159x159), identical across all eight tasks",
+      "gate_passed": true,
+      "pins_checked": 9,
+      "pins_failed": 0,
+      "fiducial_rel_diff": 0.0,
+      "max_rel_diff": 0.0,
+      "max_abs_diff_nats": 0.0,
+      "max_rel_diff_vs_b_pdip": 4.732261051377819e-13,
+      "reconciliation_pct": -0.486,
+      "unjoined_ms": 0.0,
+      "library_control_jit_profile_ms": 26.918,
+      "candidate_jit_profile_ms": 26.934,
+      "saving_jit_profile_ms": -0.016,
+      "interleaved_library_median_ms": 26.936,
+      "interleaved_candidate_median_ms": 26.964,
+      "saving_interleaved_median_ms": -0.028,
+      "interleaved_block_saving_range_ms": [
+        -0.121,
+        0.121
+      ],
+      "route_b_pdip_jit_profile_ms": 39.076,
+      "lever_clears_threshold": null,
+      "timed_point": {
+        "z_count": null,
+        "branch": null
+      },
+      "k_slots": null,
+      "n_edge": null,
+      "draws_z_count": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "draws_overflow_count": 0,
+      "uncertified_count": 0,
+      "log_det_row_ms": 0.932,
+      "certified_solve_row_ms": 10.68,
+      "top_log_det_instructions": [
+        {
+          "instruction": "cholesky.120",
+          "ms": 0.932,
+          "shape": "(f64[1521,1521]{0,1}, s32[])"
+        }
+      ],
+      "compile_s": {
+        "route_d": 4.08,
+        "library_control": 0.19,
+        "route_b": 3.55
+      },
+      "peak_gb_after_all": 1.201,
+      "injection_counts": {
+        "route_d_jax": 0,
+        "traced_program_jax": 0,
+        "report_program_jax": 0,
+        "delegated": 0
+      },
+      "hlo_census": {
+        "status": "ok",
+        "cholesky": 7,
+        "triangular_solve": 12
+      },
+      "profiler_overhead_pct": 3.59,
+      "cell_source_sha256": "8046c44ee1ca063c0bed87b89090afc6101bdf7208668f7137aa95bd26fdaf73"
+    },
+    {
+      "task": 5,
+      "mesh": "rectangular",
+      "candidate": "schur_k32",
+      "kind": "lever",
+      "slurm_state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:01:18",
+      "node": "euclid-ral-gpu-2",
+      "start_bst": "2026-09-24T15:46:22",
+      "end_bst": "2026-09-24T15:47:40",
+      "max_rss_kb": 1397812,
+      "footer": {
+        "autotune_entries": 0,
+        "cell_exit": 0,
+        "gate_line": "LOG-DET GATE [schur_k32, LEVER candidate]: PASS  (pins 9/9, reconciliation -0.46 %, unjoined 0.000 ms) | saving vs library -0.137 ms (jit_profile), +0.087 ms (interleaved) -> lever False"
+      },
+      "err_log": "one benign mask_2d_util.py:564 padding warning (141x141 -> 159x159), identical across all eight tasks",
+      "gate_passed": true,
+      "pins_checked": 9,
+      "pins_failed": 0,
+      "fiducial_rel_diff": 0.0,
+      "max_rel_diff": 0.0,
+      "max_abs_diff_nats": 0.0,
+      "max_rel_diff_vs_b_pdip": 4.732261051377819e-13,
+      "reconciliation_pct": -0.462,
+      "unjoined_ms": 0.0,
+      "library_control_jit_profile_ms": 26.85,
+      "candidate_jit_profile_ms": 26.987,
+      "saving_jit_profile_ms": -0.137,
+      "interleaved_library_median_ms": 26.887,
+      "interleaved_candidate_median_ms": 26.8,
+      "saving_interleaved_median_ms": 0.087,
+      "interleaved_block_saving_range_ms": [
+        0.029,
+        0.167
+      ],
+      "route_b_pdip_jit_profile_ms": 39.067,
+      "lever_clears_threshold": false,
+      "timed_point": {
+        "z_count": 232,
+        "branch": "dense (overflow)"
+      },
+      "k_slots": 184,
+      "n_edge": 152,
+      "draws_z_count": [
+        366,
+        725,
+        767,
+        894,
+        517,
+        494,
+        943,
+        793
+      ],
+      "draws_overflow_count": 8,
+      "uncertified_count": 0,
+      "log_det_row_ms": 0.966,
+      "certified_solve_row_ms": 10.726,
+      "top_log_det_instructions": [
+        {
+          "instruction": "cholesky.100",
+          "ms": 0.93,
+          "shape": "(f64[1521,1521]{0,1}, s32[])"
+        },
+        {
+          "instruction": "input_transpose_fusion",
+          "ms": 0.026,
+          "shape": "f64[1521,1521]{1,0}"
+        }
+      ],
+      "compile_s": {
+        "route_d": 4.07,
+        "library_control": 4.54,
+        "route_b": 3.5
+      },
+      "peak_gb_after_all": 1.201,
+      "injection_counts": {
+        "route_d_jax": 1,
+        "traced_program_jax": 1,
+        "report_program_jax": 1,
+        "delegated": 0
+      },
+      "hlo_census": {
+        "status": "ok",
+        "cholesky": 8,
+        "triangular_solve": 13
+      },
+      "profiler_overhead_pct": 3.74,
+      "cell_source_sha256": "8046c44ee1ca063c0bed87b89090afc6101bdf7208668f7137aa95bd26fdaf73"
+    },
+    {
+      "task": 6,
+      "mesh": "rectangular",
+      "candidate": "schur_k64",
+      "kind": "lever",
+      "slurm_state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:01:17",
+      "node": "euclid-ral-gpu-2",
+      "start_bst": "2026-09-24T15:46:22",
+      "end_bst": "2026-09-24T15:47:39",
+      "max_rss_kb": 1431268,
+      "footer": {
+        "autotune_entries": 0,
+        "cell_exit": 0,
+        "gate_line": "LOG-DET GATE [schur_k64, LEVER candidate]: PASS  (pins 9/9, reconciliation -0.43 %, unjoined 0.000 ms) | saving vs library -0.051 ms (jit_profile), +0.089 ms (interleaved) -> lever False"
+      },
+      "err_log": "one benign mask_2d_util.py:564 padding warning (141x141 -> 159x159), identical across all eight tasks",
+      "gate_passed": true,
+      "pins_checked": 9,
+      "pins_failed": 0,
+      "fiducial_rel_diff": 0.0,
+      "max_rel_diff": 0.0,
+      "max_abs_diff_nats": 0.0,
+      "max_rel_diff_vs_b_pdip": 4.732261051377819e-13,
+      "reconciliation_pct": -0.429,
+      "unjoined_ms": 0.0,
+      "library_control_jit_profile_ms": 26.876,
+      "candidate_jit_profile_ms": 26.927,
+      "saving_jit_profile_ms": -0.051,
+      "interleaved_library_median_ms": 26.916,
+      "interleaved_candidate_median_ms": 26.828,
+      "saving_interleaved_median_ms": 0.089,
+      "interleaved_block_saving_range_ms": [
+        -0.029,
+        0.402
+      ],
+      "route_b_pdip_jit_profile_ms": 39.021,
+      "lever_clears_threshold": false,
+      "timed_point": {
+        "z_count": 232,
+        "branch": "dense (overflow)"
+      },
+      "k_slots": 216,
+      "n_edge": 152,
+      "draws_z_count": [
+        366,
+        725,
+        767,
+        894,
+        517,
+        494,
+        943,
+        793
+      ],
+      "draws_overflow_count": 8,
+      "uncertified_count": 0,
+      "log_det_row_ms": 0.97,
+      "certified_solve_row_ms": 10.734,
+      "top_log_det_instructions": [
+        {
+          "instruction": "cholesky.100",
+          "ms": 0.935,
+          "shape": "(f64[1521,1521]{0,1}, s32[])"
+        },
+        {
+          "instruction": "input_transpose_fusion",
+          "ms": 0.026,
+          "shape": "f64[1521,1521]{1,0}"
+        }
+      ],
+      "compile_s": {
+        "route_d": 4.02,
+        "library_control": 4.0,
+        "route_b": 3.45
+      },
+      "peak_gb_after_all": 1.201,
+      "injection_counts": {
+        "route_d_jax": 1,
+        "traced_program_jax": 1,
+        "report_program_jax": 1,
+        "delegated": 0
+      },
+      "hlo_census": {
+        "status": "ok",
+        "cholesky": 8,
+        "triangular_solve": 13
+      },
+      "profiler_overhead_pct": 3.79,
+      "cell_source_sha256": "8046c44ee1ca063c0bed87b89090afc6101bdf7208668f7137aa95bd26fdaf73"
+    },
+    {
+      "task": 7,
+      "mesh": "rectangular",
+      "candidate": "schur_k256",
+      "kind": "lever",
+      "slurm_state": "COMPLETED",
+      "exit_code": "0:0",
+      "elapsed": "00:01:18",
+      "node": "euclid-ral-gpu-2",
+      "start_bst": "2026-09-24T15:46:22",
+      "end_bst": "2026-09-24T15:47:40",
+      "max_rss_kb": 1431412,
+      "footer": {
+        "autotune_entries": 0,
+        "cell_exit": 0,
+        "gate_line": "LOG-DET GATE [schur_k256, LEVER candidate]: PASS  (pins 9/9, reconciliation -0.47 %, unjoined 0.000 ms) | saving vs library -0.566 ms (jit_profile), -0.382 ms (interleaved) -> lever False"
+      },
+      "err_log": "one benign mask_2d_util.py:564 padding warning (141x141 -> 159x159), identical across all eight tasks",
+      "gate_passed": true,
+      "pins_checked": 9,
+      "pins_failed": 0,
+      "fiducial_rel_diff": 0.0,
+      "max_rel_diff": 1.444399017500663e-16,
+      "max_abs_diff_nats": 3.637978807091713e-12,
+      "max_rel_diff_vs_b_pdip": 4.732261051377819e-13,
+      "reconciliation_pct": -0.471,
+      "unjoined_ms": 0.0,
+      "library_control_jit_profile_ms": 26.718,
+      "candidate_jit_profile_ms": 27.285,
+      "saving_jit_profile_ms": -0.566,
+      "interleaved_library_median_ms": 26.841,
+      "interleaved_candidate_median_ms": 27.223,
+      "saving_interleaved_median_ms": -0.382,
+      "interleaved_block_saving_range_ms": [
+        -0.593,
+        0.472
+      ],
+      "route_b_pdip_jit_profile_ms": 38.857,
+      "lever_clears_threshold": false,
+      "timed_point": {
+        "z_count": 232,
+        "branch": "schur"
+      },
+      "k_slots": 408,
+      "n_edge": 152,
+      "draws_z_count": [
+        366,
+        725,
+        767,
+        894,
+        517,
+        494,
+        943,
+        793
+      ],
+      "draws_overflow_count": 7,
+      "uncertified_count": 0,
+      "log_det_row_ms": 1.368,
+      "certified_solve_row_ms": 10.724,
+      "top_log_det_instructions": [
+        {
+          "instruction": "triangular-solve",
+          "ms": 0.994,
+          "shape": "(f64[1369,408]{0,1}, s8[0]{0})"
+        },
+        {
+          "instruction": "cholesky.120",
+          "ms": 0.259,
+          "shape": "(f64[408,408]{0,1}, s32[])"
+        }
+      ],
+      "compile_s": {
+        "route_d": 4.31,
+        "library_control": 4.05,
+        "route_b": 3.43
+      },
+      "peak_gb_after_all": 1.201,
+      "injection_counts": {
+        "route_d_jax": 1,
+        "traced_program_jax": 1,
+        "report_program_jax": 1,
+        "delegated": 0
+      },
+      "hlo_census": {
+        "status": "ok",
+        "cholesky": 8,
+        "triangular_solve": 13
+      },
+      "profiler_overhead_pct": 4.46,
+      "cell_source_sha256": "8046c44ee1ca063c0bed87b89090afc6101bdf7208668f7137aa95bd26fdaf73"
+    }
+  ],
+  "validation": {
+    "noise_floor": "control rows (identical program compiled twice): jit_profile saving +0.243 (Delaunay) / -0.016 ms (rectangular); interleaved median +0.086 / -0.028 ms; single-block spread up to 0.42 ms",
+    "autotune": "AUTOTUNE_ENTRIES count=0 in every footer; fresh JAX_COMPILATION_CACHE_DIR per task",
+    "tracebacks": "none in any .out or .err"
+  },
+  "rtx_screening": "RTX 2060 Delaunay rows (commit a621160) are screening only, never ranked",
+  "artifact_sha256": {
+    "fixed_light_trace_delaunay_logdet_control_hpc_a100_fp64_fixed_light_trace.json": "f69e876a3f347d3ee75a74c9b03e32f0c9c445c58964d86580a32a95913a4ada",
+    "fixed_light_trace_delaunay_logdet_control_hpc_a100_fp64_fixed_light_trace.png": "c69339acab89b2c7ad81b62962456cd8de368c68e229f188be8a576d125c5643",
+    "fixed_light_trace_delaunay_logdet_schur_k32_hpc_a100_fp64_fixed_light_trace.json": "2f40e2ded92929aecf17819e56b196fe4c009643d5712e4eadd86c1958e5e71d",
+    "fixed_light_trace_delaunay_logdet_schur_k32_hpc_a100_fp64_fixed_light_trace.png": "02a1864db21f8fdb229c15965f61d1889e4ee443e2d743eb8529a2f245a0d3f0",
+    "fixed_light_trace_delaunay_logdet_schur_k64_hpc_a100_fp64_fixed_light_trace.json": "5c0f4037e07e8a08698eb8f50b2120f6a34284c1de860e1a70be54ce2d6986c5",
+    "fixed_light_trace_delaunay_logdet_schur_k64_hpc_a100_fp64_fixed_light_trace.png": "37a14f3c8a2030d79227168e0e6eedf906df07477af883bedcbee55c69678313",
+    "fixed_light_trace_delaunay_logdet_schur_k256_hpc_a100_fp64_fixed_light_trace.json": "8ec0c47a11c3b1f078d257d06c3d4536c036a76bfde1bf6f2230ff409823abe5",
+    "fixed_light_trace_delaunay_logdet_schur_k256_hpc_a100_fp64_fixed_light_trace.png": "28feba9583c7ef5d260b3df16a5337cd408c65f10952ac907667c6397e063527",
+    "fixed_light_trace_rectangular_logdet_control_hpc_a100_fp64_fixed_light_trace.json": "2c0b2999725aca35dc6f1b817af06ceb5a2b07791d44ecc07bcdd3cdfeef3421",
+    "fixed_light_trace_rectangular_logdet_control_hpc_a100_fp64_fixed_light_trace.png": "2addfb4a703ee60f0e4964150f9394d9ba38a389ccbf2b5740c655ff0af18ffd",
+    "fixed_light_trace_rectangular_logdet_schur_k32_hpc_a100_fp64_fixed_light_trace.json": "8ab9e237594128aabea549066f52355418114d84d5d95e13bec38f98019f771d",
+    "fixed_light_trace_rectangular_logdet_schur_k32_hpc_a100_fp64_fixed_light_trace.png": "6d75fd3194c71dfed78a5ff7b6eb04566eefc1b72b66f26a8196fda75b442335",
+    "fixed_light_trace_rectangular_logdet_schur_k64_hpc_a100_fp64_fixed_light_trace.json": "87122d6c52f7fba4a556bb6719d8e97e8ec98bfe72b1dd9a9951bbdaab448417",
+    "fixed_light_trace_rectangular_logdet_schur_k64_hpc_a100_fp64_fixed_light_trace.png": "f1d0720b2cc95998a16cee50c976f02c9d9f9d2fb8f715190ea2028d5dd06103",
+    "fixed_light_trace_rectangular_logdet_schur_k256_hpc_a100_fp64_fixed_light_trace.json": "e127eb15cbea07222aff75b63d96f73a00a2d0e1881ef325ff6b6f0064f47c14",
+    "fixed_light_trace_rectangular_logdet_schur_k256_hpc_a100_fp64_fixed_light_trace.png": "a1353b89faf873844093ce5a5582d206314eca82f8f213333e1acaac380ddd9d"
+  },
+  "logs": "hpc/batch_gpu/output/output.350651_<i>.out and error/error.350651_<i>.err on RAL (/mnt/ral/jnightin/autolens_profiling); local copies in gitignored output/ral_job350651/",
+  "note": "results/notes/hst_gpu_residue_phase4_logdet_2026_09.md"
+}
