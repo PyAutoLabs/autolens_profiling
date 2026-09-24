@@ -31,11 +31,14 @@
 #
 # HOST PINNING. Phase 1 landed on euclid-ral-compute-10-2 (Xeon 8490H) and
 # phase 2 on euclid-ral-compute-1 (EPYC 7763); cluster control differed 15-20 %
-# between them (host, not drift). This job is pinned to the phase-2 host with
-# --nodelist so phase-2 and phase-3 numbers share a CPU; the control route is
-# measured in the same job regardless, and only in-job ratios are quoted.
-# If euclid-ral-compute-1 is down or saturated (sinfo -p ral -N -o "%N %t %C"),
-# edit --nodelist to another node and say so in the campaign note.
+# between them (host, not drift). The phase-2 host was the intended pin, but on
+# 2026-09-24 euclid-ral-compute-1..19 were all IDLE+NOT_RESPONDING in sinfo and
+# only the euclid-ral-compute-10-* (Xeon 8490H) nodes answered, so this job is
+# pinned with --nodelist to euclid-ral-compute-10-2 -- the PHASE-1 host. The
+# control route is measured in the same job regardless, and only in-job ratios
+# are quoted; phase-2 EPYC milliseconds are not comparable to these.
+# Check before submitting: sinfo -p ral -N -o "%N %t %C" (a trailing * = not
+# responding). If 10-2 is busy, pin another 10-* node and say so in the note.
 #
 # LIBRARY. The shared /mnt/ral/jnightin/PyAuto mirror is main. This submit
 # PREPENDS git clones of PyAutoArray and PyAutoLens feature/point-source-cpu-p3
@@ -70,7 +73,7 @@
 
 #SBATCH -J static_lattice_ab
 #SBATCH --partition=ral
-#SBATCH --nodelist=euclid-ral-compute-1
+#SBATCH --nodelist=euclid-ral-compute-10-2
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=32gb
