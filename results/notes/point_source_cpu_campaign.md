@@ -825,7 +825,7 @@ control / lattice:
 - Laptop, both runs: 31 / 31 gates pass and are **bit-identical** (log L on every streamed instance,
   solved positions and image counts, `jax.grad` finite and non-zero, vmap-4 vs scalar, simple-plain
   step-0 `containing_indices` sets).
-- PyAutoArray suite 1645 passed (+13 static-table tests); PyAutoLens suite 756 passed, 1 xfailed
+- PyAutoArray suite 1645 passed (+19 static-table test cases); PyAutoLens suite 756 passed, 1 xfailed
   (+16 JAX tests in `test_static_lattice_jax.py`, incl. the pinned tie case, which skip without jax). The shape guard (first
   traced deflection grid 11 859 rows) is red on main (69 849).
 - autolens_workspace_test `point_source/jax_likelihood/*.py` ×4 and `jax_grad/gradient.py`: rc 0 on
