@@ -187,6 +187,45 @@ Timing is never gated. As in phase 2 the JSON and PNG are written first and the
 cell then raises if any gated lane failed. Harness mode keeps phase 2's
 three-way gate unchanged.
 
+The captured-lane mode (certified-solver phase C1, autolens_profiling#304)
+-------------------------------------------------------------------------
+
+``--lanes captured --batches <npz>`` (library mode only) replaces phase B's
+seeded draw family with the lanes of a REAL Nautilus run, recorded by
+``nautilus_batch_capture.py`` at the production ``source_pix[1]`` settings
+(``n_live=150``, ``n_batch=20``). A captured lane is the mass AND shear of one
+proposal (``_captured_lane_tree``), lens light fixed at S3 as in every lane of
+this cell. The file is refused unless its recorded S3 fingerprint — dataset
+sha256s, mesh, source pixels, regularization, border relocator, precision and
+the eager S3 figure of merit (``EQUIVALENCE_RTOL``) — matches the system built
+here. Without ``--lanes captured`` nothing below happens, and ``--batches``,
+``--batch-sample`` and ``--captured-pass`` are rejected.
+
+``--captured-pass time`` (default) is the phase-B harness exactly — PART V, both
+arms, both per-composition references and the same PRE-REGISTERED gate at
+``LANE_RTOL`` (1e-9, no tighter: Delaunay has a ~2e-10 run-to-run floor and a
+~2.5e-9 cross-composition residual) — on ``B`` captured lanes chosen by
+``nautilus_batches.timed_window``: consecutive captured calls from the first
+post-prior batch, so at ``B == n_batch`` the batch IS one real Nautilus batch.
+The JSON gains ``vmap.captured`` (the file, its fingerprint check, and the
+window's library-PDIP values against the capture's own figures of merit —
+RECORDED, it proves the rebuilt trees are the models the sampler evaluated).
+
+``--captured-pass rate`` (needs ``--solver certified``) is PART R: UNTIMED, it
+runs every captured lane — or every lane of ``--batch-sample K`` calls evenly
+spaced over the run — through the library's certified solve under
+``jax.jit(jax.vmap(fn))`` in chunks of ``--vmap-batch`` (the last chunk padded
+by repeating its final lane, padded rows dropped), observed with
+``library_solver_observed``. It reports the uncertified-lane rate and the pass
+distribution against the budget, overall, by Nautilus phase and by call-index
+half (the split rules are stated in ``nautilus_batches``: phase = the sampler's
+bound count and ``explored`` flag when the batch was requested; early = call
+index below the median replayed call). RECORDED beside it: every lane's certified
+value against the capture's library-PDIP figure of merit, and every uncertified
+lane (up to ``RATE_PDIP_RECHECK_MAX``) re-run through scalar library PDIP — what
+a guard's second pass would return. It writes its own JSON after PART B and
+exits; PART C and PART V do not run.
+
 The PSF-cube mode (phase 3, autolens_profiling#295)
 ---------------------------------------------------
 
@@ -272,7 +311,10 @@ Output
 
 ``results/breakdown/imaging/fixed_light_trace_<mesh>[_border_off][_n<N>][_jitvmap<B>_<lanes>_fb<on|off>][_psf_<candidate>]_<config>.{json,png}``.
 Library mode replaces the batched token with
-``_jitvmap<B>_<lanes>_lib<solver>_fb<on|off>_b<budget>``.
+``_jitvmap<B>_<lanes>_lib<solver>_fb<on|off>_b<budget>`` (``<lanes>`` is
+``captured`` for a phase-C1 timed pass). The phase-C1 rate pass writes
+``fixed_light_trace_<mesh>_captured_rate_lib<solver>_fb<on|off>_b<budget>[_sample<K>]_<config>.json``
+and no PNG.
 
 The ``--config-name`` used for the phase-1 legs
 (``local_rtx2060_fp64_fixed_light_trace``, ``hpc_a100_fp64_fixed_light_trace``)
@@ -339,6 +381,7 @@ from likelihood_breakdown import (  # noqa: E402
     active_set_steps,
     host_callback_probe,
     library_solver_injection,
+    nautilus_batches,
     psf_cube_injection,
     timing,
     xla_attribution,
@@ -403,7 +446,9 @@ _cell_parser.add_argument("--safe-budget", type=int, default=None)
 # NONE of them appears there when it is off, so a phase-1 JSON written by this
 # checkout is key-for-key the JSON phase 1 wrote.
 _cell_parser.add_argument("--vmap-batch", type=int, default=None)
-_cell_parser.add_argument("--lanes", choices=("distinct", "identical"), default="distinct")
+_cell_parser.add_argument(
+    "--lanes", choices=("distinct", "identical", "captured"), default="distinct"
+)
 _cell_parser.add_argument("--arms", choices=("vmap", "scalar", "both"), default="both")
 _cell_parser.add_argument("--draw-seed", type=int, default=0)
 _cell_parser.add_argument("--fallback", choices=("on", "off"), default="on")
@@ -413,6 +458,11 @@ _cell_parser.add_argument("--fallback", choices=("on", "off"), default="on")
 _cell_parser.add_argument("--solver-source", choices=("harness", "library"), default="harness")
 _cell_parser.add_argument("--solver", choices=("pdip", "certified"), default=None)
 _cell_parser.add_argument("--certified-budget", type=int, default=None)
+# --- certified-solver phase C1 (#304): lanes replayed from a Nautilus capture --
+# Only meaningful with --lanes captured (library mode); rejected otherwise.
+_cell_parser.add_argument("--batches", default=None)
+_cell_parser.add_argument("--batch-sample", type=int, default=None)
+_cell_parser.add_argument("--captured-pass", choices=("time", "rate"), default=None)
 # --- phase 3 (#295): the PSF mapping-matrix cube candidates -----------------
 # The choices are a LITERAL (the contracts test execs these statements alone);
 # test_psf_cube_injection pins them to psf_cube_injection.CANDIDATES.
@@ -494,6 +544,44 @@ else:
             )
 if _cell_args.certified_budget is not None and _cell_args.certified_budget < 1:
     raise ValueError(f"--certified-budget must be >= 1 (got {_cell_args.certified_budget})")
+
+#: Phase C1 (#304): ``--lanes captured`` replays a nautilus_batch_capture.py file.
+CAPTURED_LANES = LANES_MODE == "captured"
+#: ``time`` is the phase-B harness on captured lanes; ``rate`` is the untimed
+#: per-lane certification pass over the whole capture (or --batch-sample calls).
+CAPTURED_PASS = (_cell_args.captured_pass or "time") if CAPTURED_LANES else None
+BATCH_SAMPLE = _cell_args.batch_sample
+if CAPTURED_LANES:
+    if not LIBRARY_SOLVER_MODE:
+        raise ValueError(
+            "--lanes captured runs in the library-solver mode only (--solver-source library): "
+            "the replay measures the library's own certified solve"
+        )
+    if _cell_args.batches is None:
+        raise ValueError("--lanes captured needs --batches <npz> from nautilus_batch_capture.py")
+    if CAPTURED_PASS == "rate" and LIBRARY_SOLVER != "certified":
+        raise ValueError(
+            "--captured-pass rate measures the certified solver's uncertified-lane rate; it "
+            "needs --solver certified"
+        )
+    if CAPTURED_PASS == "time" and BATCH_SAMPLE is not None:
+        raise ValueError(
+            "--batch-sample only means anything with --captured-pass rate; the timed pass "
+            "replays one fixed window of B lanes (nautilus_batches.timed_window)"
+        )
+    if BATCH_SAMPLE is not None and BATCH_SAMPLE < 1:
+        raise ValueError(f"--batch-sample must be >= 1 (got {BATCH_SAMPLE})")
+else:
+    for _flag, _value in (
+        ("--batches", _cell_args.batches),
+        ("--batch-sample", _cell_args.batch_sample),
+        ("--captured-pass", _cell_args.captured_pass),
+    ):
+        if _value is not None:
+            raise ValueError(
+                f"{_flag} only means anything with --lanes captured; this leg would silently "
+                f"ignore it"
+            )
 
 #: ``None`` is phase 1. A name turns on the PSF-cube experiment (#295).
 PSF_CANDIDATE = _cell_args.psf_candidate
@@ -885,6 +973,97 @@ print(
 log_evidence_s3_library = float(system_s3.fit.figure_of_merit)
 print(f"  S3 figure_of_merit (library) = {log_evidence_s3_library}")
 
+# ---------------------------------------------------------------------------
+# Phase C1 (#304): the captured batches, and the proof they fit THIS S3 system
+# ---------------------------------------------------------------------------
+# nautilus_batch_capture.py copies PART A and records the fingerprint of the S3
+# system it fitted. A lane is a parameter vector, which means nothing on a
+# different dataset, mesh, regularization or relocator — so every one of those is
+# re-derived here and a mismatch refuses the file.
+captured = None
+captured_record: dict | None = None
+if CAPTURED_LANES:
+    _batches_path = Path(_cell_args.batches)
+    captured = nautilus_batches.load(_batches_path)
+    _fp = captured["meta"]["s3_fingerprint"]
+    _mismatch = {
+        _key: (_want, _got)
+        for _key, _want, _got in (
+            ("mesh", _fp["mesh"], MESH),
+            ("source_pixels", int(_fp["source_pixels"]), int(n_source_pixels)),
+            ("dataset_sha256", _fp["dataset_sha256"], dataset_sha256),
+            ("regularization", _fp["regularization"], reg_provenance),
+            ("border_relocator", bool(_fp["border_relocator"]), BORDER_RELOCATOR_RESOLVED),
+            (
+                "use_mixed_precision",
+                bool(_fp["use_mixed_precision"]),
+                bool(_cli.use_mixed_precision),
+            ),
+        )
+        if _want != _got
+    }
+    _s3_rel = abs(float(_fp["log_evidence_s3_library"]) - log_evidence_s3_library) / max(
+        abs(log_evidence_s3_library), 1e-300
+    )
+    if _s3_rel > EQUIVALENCE_RTOL:
+        _mismatch["log_evidence_s3_library"] = (
+            float(_fp["log_evidence_s3_library"]),
+            log_evidence_s3_library,
+        )
+    if _mismatch:
+        raise AssertionError(
+            f"{_batches_path} was captured on a different S3 system: {_mismatch}. Its lanes "
+            f"are parameter vectors of that system and are not this cell's lanes."
+        )
+    _expected_paths = [
+        "galaxies.lens.mass.centre.centre_0",
+        "galaxies.lens.mass.centre.centre_1",
+        "galaxies.lens.mass.ell_comps.ell_comps_0",
+        "galaxies.lens.mass.ell_comps.ell_comps_1",
+        "galaxies.lens.mass.einstein_radius",
+        "galaxies.lens.shear.gamma_1",
+        "galaxies.lens.shear.gamma_2",
+    ]
+    if sorted(captured["meta"]["parameter_paths"]) != sorted(_expected_paths):
+        raise AssertionError(
+            f"{_batches_path} parameter paths {captured['meta']['parameter_paths']} are not "
+            f"the fixed-light mass + shear family {_expected_paths}"
+        )
+    captured_record = {
+        "batches_path": str(_batches_path),
+        "batches_sha256": _sha256(_batches_path),
+        "schema_version": int(captured["schema_version"]),
+        "n_calls": int(captured["call_size"].shape[0]),
+        "n_lanes": int(captured["parameters"].shape[0]),
+        "call_sizes_seen": sorted({int(_c) for _c in captured["call_size"]}),
+        "calls_by_phase": {
+            _p: int((captured["call_phase"] == _p).sum())
+            for _p in dict.fromkeys(captured["call_phase"].tolist())
+        },
+        "parameter_paths": list(captured["meta"]["parameter_paths"]),
+        "nautilus": captured["meta"]["nautilus"],
+        "capture_fit_status": captured["meta"].get("fit_status"),
+        "capture_library_revisions": captured["meta"].get("library_revisions"),
+        "fingerprint_check": {
+            "fields": [
+                "mesh",
+                "source_pixels",
+                "dataset_sha256",
+                "regularization",
+                "border_relocator",
+                "use_mixed_precision",
+                "log_evidence_s3_library",
+            ],
+            "log_evidence_s3_library_rel_diff": _s3_rel,
+            "passed": True,
+        },
+    }
+    print(
+        f"  captured batches: {captured_record['n_calls']} calls, "
+        f"{captured_record['n_lanes']} lanes ({captured_record['calls_by_phase']}); "
+        f"S3 fingerprint matches (rel {_s3_rel:.2e})"
+    )
+
 peak_after_setup = peak_bytes()
 
 # ===================================================================
@@ -939,6 +1118,31 @@ def _lane_tree(draw):
     _inst.galaxies = copy.copy(instance_s3.galaxies)
     _attrs = dict(_LENS_ATTRS)
     _attrs["mass"] = flds.mass_from(BASE_MASS, draw.offsets, mass_cls=draw.mass_cls)
+    _inst.galaxies.lens = al.Galaxy(redshift=float(_lens_s3.redshift), **_attrs)
+    return jax.tree_util.tree_map(jnp.asarray, _inst)
+
+
+def _captured_lane_tree(values) -> object:
+    """The params pytree of one CAPTURED lane: S3 with the lane's mass AND shear.
+
+    *values* is one row of the capture's ``parameters`` in its
+    ``parameter_paths`` order. The same shallow-copy rule as ``_lane_tree``: the
+    Pixelization and Regularization stay shared (static aux data compares by
+    identity), exactly as Nautilus batches one pixelization over B vectors.
+    """
+    _v = dict(zip(captured["meta"]["parameter_paths"], (float(_x) for _x in values)))
+    _p = "galaxies.lens."
+    _inst = copy.copy(instance_s3)
+    _inst.galaxies = copy.copy(instance_s3.galaxies)
+    _attrs = dict(_LENS_ATTRS)
+    _attrs["mass"] = al.mp.Isothermal(
+        centre=(_v[_p + "mass.centre.centre_0"], _v[_p + "mass.centre.centre_1"]),
+        ell_comps=(_v[_p + "mass.ell_comps.ell_comps_0"], _v[_p + "mass.ell_comps.ell_comps_1"]),
+        einstein_radius=_v[_p + "mass.einstein_radius"],
+    )
+    _attrs["shear"] = al.mp.ExternalShear(
+        gamma_1=_v[_p + "shear.gamma_1"], gamma_2=_v[_p + "shear.gamma_2"]
+    )
     _inst.galaxies.lens = al.Galaxy(redshift=float(_lens_s3.redshift), **_attrs)
     return jax.tree_util.tree_map(jnp.asarray, _inst)
 
@@ -1174,6 +1378,304 @@ if PSF_CANDIDATE is not None:
                 else ""
             )
         )
+
+# ===================================================================
+# PART R — the captured-lane RATE pass (phase C1, #304), untimed
+# ===================================================================
+# ``--lanes captured --captured-pass rate``: every captured lane (or every lane of
+# ``--batch-sample K`` evenly spaced calls) through the library's certified solve
+# under the production composition ``jax.jit(jax.vmap(fn))``, in chunks of
+# ``--vmap-batch`` lanes (at B = n_batch a chunk IS one real Nautilus batch), with
+# the solve OBSERVED (``library_solver_observed``: the library's own stats=
+# out-dict through an ordered debug callback, nothing computed changed). Nothing
+# here is timed; the cell writes its own JSON and exits before PART C / PART V.
+
+
+def _c1_library_revisions() -> dict:
+    """``git rev-parse HEAD`` of every PyAuto library this process imported."""
+    import subprocess as _subprocess
+
+    import autoarray as _autoarray
+    import autogalaxy as _autogalaxy
+    import autonerves as _autonerves
+
+    def _rev(module) -> dict:
+        _repo = Path(module.__file__).resolve().parents[1]
+        try:
+            _sha = _subprocess.run(
+                ["git", "-C", str(_repo), "rev-parse", "HEAD"],
+                capture_output=True,
+                text=True,
+                check=True,
+            ).stdout.strip()
+        except (OSError, _subprocess.CalledProcessError):
+            _sha = None
+        return {"head": _sha, "path": str(_repo), "module_file": module.__file__}
+
+    return {
+        "PyAutoNerves": _rev(_autonerves),
+        "PyAutoFit": _rev(af),
+        "PyAutoArray": _rev(_autoarray),
+        "PyAutoGalaxy": _rev(_autogalaxy),
+        "PyAutoLens": _rev(al),
+    }
+
+
+#: At most this many uncertified lanes get a scalar library-PDIP re-evaluation in
+#: the rate pass (RECORDED): the rare-event check must not become the pass.
+RATE_PDIP_RECHECK_MAX = 256
+
+if CAPTURED_LANES and "shear" not in _LENS_ATTRS:
+    raise AssertionError(
+        "the S3 source-only lens has no `shear` attribute — a captured lane's shear would "
+        "have nowhere to go"
+    )
+
+if CAPTURED_PASS == "rate":
+    print("\n" + "=" * 70)
+    print(
+        f"CAPTURED-LANE RATE PASS — library {LIBRARY_SOLVER}, certified_fallback "
+        f"{LIBRARY_FALLBACK}, budget {CERTIFIED_BUDGET}, chunks of {VMAP_BATCH}"
+    )
+    print("=" * 70)
+
+    _call_index = captured["call_index"]
+    _calls = nautilus_batches.sample_calls(int(captured["call_size"].shape[0]), BATCH_SAMPLE)
+    _lanes = nautilus_batches.lanes_of_calls(_call_index, _calls)
+    _chunks = nautilus_batches.chunked(_lanes, VMAP_BATCH)
+    print(
+        f"  replaying {_lanes.shape[0]} lanes from {_calls.shape[0]} of "
+        f"{captured_record['n_calls']} calls in {len(_chunks)} chunks"
+    )
+
+    _rate_rows: list[tuple[int, bool]] = []
+
+    def _collect_rate(passes, certified):
+        _rate_rows.append((int(passes), bool(certified)))
+
+    _ll_rate = np.empty(_lanes.shape[0], dtype=float)
+    _certified = np.empty(_lanes.shape[0], dtype=bool)
+    _passes = np.empty(_lanes.shape[0], dtype=int)
+    _pos = 0
+    _t_rate = time.perf_counter()
+    with library_solver_injection.library_solver_observed(report=_collect_rate) as _observed:
+        _fn_rate = jax.jit(jax.vmap(_likelihood_fn(system_s3.dataset, _settings_library)))
+        with timer.section("captured_rate_pass"):
+            for _ci, (_chunk, _n_real) in enumerate(_chunks):
+                _trees = [_captured_lane_tree(captured["parameters"][_k]) for _k in _chunk]
+                _batched = jax.tree_util.tree_map(lambda *xs: jnp.stack(xs), *_trees)
+                _before = len(_rate_rows)
+                _ll = np.asarray(block(_fn_rate(_batched)), dtype=float)
+                jax.effects_barrier()
+                _rows = _rate_rows[_before:]
+                if len(_rows) != VMAP_BATCH or _ll.shape != (VMAP_BATCH,):
+                    raise AssertionError(
+                        f"chunk {_ci}: {len(_rows)} certification rows and log likelihoods of "
+                        f"shape {_ll.shape} for a batch of {VMAP_BATCH} — the report is not "
+                        f"one row per lane"
+                    )
+                _ll_rate[_pos : _pos + _n_real] = _ll[:_n_real]
+                _passes[_pos : _pos + _n_real] = [_r[0] for _r in _rows[:_n_real]]
+                _certified[_pos : _pos + _n_real] = [_r[1] for _r in _rows[:_n_real]]
+                _pos += _n_real
+                if _ci % 50 == 0 or _ci == len(_chunks) - 1:
+                    print(
+                        f"    chunk {_ci + 1}/{len(_chunks)}: {_pos} lanes, "
+                        f"{int((~_certified[:_pos]).sum())} uncertified, "
+                        f"max passes {int(_passes[:_pos].max())}  "
+                        f"[{time.perf_counter() - _t_rate:.1f} s]"
+                    )
+    _jax_solvers = sorted(set(_observed["solvers_jax"]))
+    if _jax_solvers != [LIBRARY_SOLVER]:
+        raise AssertionError(
+            f"the rate pass traced the positive-only solve with solver={_jax_solvers}, not "
+            f"[{LIBRARY_SOLVER!r}] — the rate would be some other solver's"
+        )
+
+    # Per-lane labels: the Nautilus phase of the lane's call, and early / late.
+    _lane_calls = _call_index[_lanes]
+    _lane_phase = captured["call_phase"][_lane_calls]
+    _lane_half = nautilus_batches.early_late(_lane_calls, _calls)
+
+    # RECORDED, not gated: this pass's certified log likelihood against the value
+    # the capture's own library-PDIP Fitness returned for the same lane (the
+    # Fitness jit(vmap) composition over parameter vectors, not this cell's tree
+    # composition). Resampled lanes (-1e99 sentinel, non-finite) are excluded.
+    _fom = captured["figure_of_merit"][_lanes]
+    _valid = np.isfinite(_fom) & (_fom > -1.0e98) & np.isfinite(_ll_rate)
+    _rel_vs_capture = np.abs(_ll_rate - _fom) / np.maximum(np.abs(_fom), 1e-300)
+    _vs_capture = {
+        "reference": (
+            "the capture's own figure of merit for the lane: library PDIP through "
+            "Fitness.call_wrap's jax.jit(jax.vmap(call)) over parameter vectors"
+        ),
+        "n_compared": int(_valid.sum()),
+        "n_excluded_resampled_or_nonfinite": int((~_valid).sum()),
+        "max_rel_diff": float(_rel_vs_capture[_valid].max()) if _valid.any() else None,
+        "median_rel_diff": float(np.median(_rel_vs_capture[_valid])) if _valid.any() else None,
+        "max_abs_diff_nats": (
+            float(np.abs(_ll_rate - _fom)[_valid].max()) if _valid.any() else None
+        ),
+        "n_above_lane_rtol": int((_rel_vs_capture[_valid] > LANE_RTOL).sum()),
+        "n_above_lane_rtol_uncertified": int(
+            (_rel_vs_capture[_valid & ~_certified] > LANE_RTOL).sum()
+        ),
+        "lane_rtol": LANE_RTOL,
+        "gated": False,
+        "note": (
+            "RECORDED, NOT GATED: a cross-composition comparison (Fitness over vectors vs this "
+            "cell over trees) and, for certified lanes, certified vs PDIP. The gated 1e-9 pin is "
+            "the timed pass's (same composition, same lanes). It still shows whether a "
+            "certified_fallback=none lane that FAILED its certificate returned a wrong answer."
+        ),
+    }
+
+    # RECORDED: every uncertified lane (up to RATE_PDIP_RECHECK_MAX) re-run through
+    # scalar library PDIP — what a guard's host-side second pass would return.
+    _uncert_idx = np.flatnonzero(~_certified)
+    _recheck_rows: list[dict] = []
+    if _uncert_idx.size:
+        _pdip_scalar = jax.jit(_likelihood_fn(system_s3.dataset, _settings_pdip_reference))
+        with timer.section("captured_rate_uncertified_pdip_recheck"):
+            for _j in _uncert_idx[:RATE_PDIP_RECHECK_MAX]:
+                _k = int(_lanes[_j])
+                _ref = float(block(_pdip_scalar(_captured_lane_tree(captured["parameters"][_k]))))
+                _recheck_rows.append(
+                    {
+                        "lane_row": _k,
+                        "call_index": int(_call_index[_k]),
+                        "lane_in_call": int(captured["lane_in_call"][_k]),
+                        "phase": str(_lane_phase[_j]),
+                        "passes": int(_passes[_j]),
+                        "log_likelihood_certified_none": float(_ll_rate[_j]),
+                        "log_likelihood_scalar_library_pdip": _ref,
+                        "rel_diff": abs(float(_ll_rate[_j]) - _ref) / max(abs(_ref), 1e-300),
+                        "abs_diff_nats": abs(float(_ll_rate[_j]) - _ref),
+                    }
+                )
+
+    rate_block = {
+        "pass": "rate",
+        "solver": LIBRARY_SOLVER,
+        "certified_fallback": LIBRARY_FALLBACK,
+        "certified_pass_budget": CERTIFIED_BUDGET,
+        "certified_pass_budget_basis": CERTIFIED_BUDGET_BASIS,
+        "composition": "jax.jit(jax.vmap(fn)) — the current Fitness._vmap composition",
+        "chunk_size": int(VMAP_BATCH),
+        "chunk_rule": (
+            "the replayed lanes in capture order, split into chunks of --vmap-batch; the last "
+            "chunk is padded by repeating its final lane and the padded rows are dropped. At "
+            "--vmap-batch == n_batch every chunk is exactly one captured Nautilus batch."
+        ),
+        "batch_sample": BATCH_SAMPLE,
+        "calls_replayed": int(_calls.shape[0]),
+        "calls_rule": (
+            "all captured calls"
+            if BATCH_SAMPLE is None or BATCH_SAMPLE >= captured_record["n_calls"]
+            else f"{int(_calls.shape[0])} calls evenly spaced over the run "
+            f"(nautilus_batches.sample_calls: first and last call included)"
+        ),
+        "report_source": (
+            "library solve observed through its stats= out-dict (PyAutoArray #566) and "
+            "jax.debug.callback(..., ordered=True); untimed; one row per lane checked per chunk"
+        ),
+        "traced_solver_kwargs_jax": _jax_solvers,
+        "overall": nautilus_batches.rate_summary(_certified, _passes, CERTIFIED_BUDGET),
+        "by_nautilus_phase": nautilus_batches.grouped_rate_summaries(
+            _certified, _passes, CERTIFIED_BUDGET, _lane_phase
+        ),
+        "by_call_half": nautilus_batches.grouped_rate_summaries(
+            _certified, _passes, CERTIFIED_BUDGET, _lane_half
+        ),
+        "phase_rule": (
+            "by_nautilus_phase: the sampler state when the batch was requested "
+            "(nautilus_batches.phase_of) — prior = only the unit-cube bound (prior draws), "
+            "exploration = more bounds and Sampler.explored False, sampling = explored True. "
+            "by_call_half: early = call index below the median replayed call index, late = the "
+            "rest."
+        ),
+        "vs_capture_pdip": _vs_capture,
+        "uncertified_pdip_recheck": {
+            "n_uncertified": int(_uncert_idx.size),
+            "n_rechecked": len(_recheck_rows),
+            "cap": RATE_PDIP_RECHECK_MAX,
+            "max_rel_diff": max((_r["rel_diff"] for _r in _recheck_rows), default=None),
+            "rows": _recheck_rows,
+            "gated": False,
+        },
+        "lane_certified": _certified.astype(int).tolist(),
+        "lane_passes": _passes.tolist(),
+        "lane_rows": _lanes.tolist(),
+        "rate_pass_wall_s": time.perf_counter() - _t_rate,
+    }
+    _ov = rate_block["overall"]
+    print(
+        f"\n  RATE: {_ov['n_uncertified']}/{_ov['n_lanes']} uncertified "
+        f"(rate {_ov['uncertified_rate']:.3e}); max passes {_ov['max_passes']} vs budget "
+        f"{CERTIFIED_BUDGET}; {_ov['n_at_budget']} lanes at the budget"
+    )
+    for _label, _row in {**rate_block["by_nautilus_phase"], **rate_block["by_call_half"]}.items():
+        print(
+            f"    {_label:<12} {_row['n_uncertified']:>6}/{_row['n_lanes']:<7} "
+            f"max passes {_row['max_passes']}"
+        )
+    print(
+        f"  vs capture PDIP (recorded): max rel {_vs_capture['max_rel_diff']}, "
+        f"{_vs_capture['n_above_lane_rtol']} lanes above {LANE_RTOL:.0e}"
+    )
+
+    rate_summary_json = {
+        "device": device_info_dict(),
+        "machine": machine_info_dict(),
+        "precision": "mixed" if _cli.use_mixed_precision else "fp64",
+        "configuration": {
+            "mesh": MESH,
+            "source_pixels": int(n_source_pixels),
+            "dataset": DATASET,
+            "dataset_sha256": dataset_sha256,
+            "cell_source_sha256": cell_source_sha256,
+            "border_relocator_mode": BORDER_RELOCATOR_MODE,
+            "border_relocator": BORDER_RELOCATOR_RESOLVED,
+            "regularization": reg_provenance,
+            "vmap_batch": int(VMAP_BATCH),
+            "lanes": LANES_MODE,
+            "captured_pass": CAPTURED_PASS,
+            "batch_sample": BATCH_SAMPLE,
+            "solver_source": SOLVER_SOURCE,
+            "solver": LIBRARY_SOLVER,
+            "certified_fallback": LIBRARY_FALLBACK,
+            "certified_pass_budget": CERTIFIED_BUDGET,
+            "certified_tau_rel": float(_settings_library.certified_tau_rel),
+            "use_mixed_precision": bool(_cli.use_mixed_precision),
+            "thread_env": _observe_thread_env(),
+        },
+        "captured": captured_record,
+        "rate": rate_block,
+        "routes": routes,
+        "equivalence_pins": equivalence_pins,
+        "reference": {"log_evidence_s3_library": log_evidence_s3_library},
+        "library_revisions": _c1_library_revisions(),
+        "timer": {_label: _secs for _label, _secs in timer.records},
+        "note": (
+            "Phase C1 (#304) rate pass: untimed. No millisecond here is a result. The rate is "
+            "the fraction of captured lanes whose certificate failed under the named "
+            "certified_fallback; the phase-C2 verdict takes it together with the timed pass."
+        ),
+    }
+    _rate_name = (
+        f"fixed_light_trace_{MESH}_captured_rate_lib{LIBRARY_SOLVER}"
+        f"_fb{'on' if FALLBACK_ON else 'off'}_b{CERTIFIED_BUDGET}"
+        + (f"_sample{int(BATCH_SAMPLE)}" if BATCH_SAMPLE is not None else "")
+    )
+    _rate_json, _ = resolve_output_paths(
+        _cli,
+        default_dir=_workspace_root / "results" / "breakdown" / "imaging",
+        default_basename=f"{_rate_name}_trace_{DATASET}_v{al.__version__}",
+        cell=_rate_name,
+    )
+    _rate_json.write_text(json.dumps(rate_summary_json, indent=2, default=str))
+    print(f"\n  Rate JSON saved to: {_rate_json}")
+    sys.exit(0)
 
 # ===================================================================
 # PART C — one lowering, two executables, one timeline
@@ -1425,8 +1927,44 @@ else:
     # ``fixed_light_draws.py`` uses (``flds.mass_from(BASE_MASS, offsets)``).
     # The S3 dataset is the FIDUCIAL light-subtracted one and is shared by every
     # lane, exactly as production shares one dataset across a batch.
+    captured_window = None
     if LANES_MODE == "distinct":
         lane_draws = flds.random_draws(DRAW_SEED, VMAP_BATCH)
+    elif LANES_MODE == "captured":
+        # Phase C1 (#304): B lanes of REAL Nautilus proposal batches — the window
+        # rule is nautilus_batches.timed_window (consecutive calls from the first
+        # post-prior batch; at B == n_batch exactly one captured batch). The Draw
+        # records the mass offsets from the fiducial for the lane table; the lane
+        # TREE (mass and shear) is built from the captured vector itself.
+        captured_window = nautilus_batches.timed_window(
+            captured["call_index"], captured["call_phase"], VMAP_BATCH
+        )
+        _paths = captured["meta"]["parameter_paths"]
+        _mass_keys = {
+            "galaxies.lens.mass.centre.centre_0": "centre_0",
+            "galaxies.lens.mass.centre.centre_1": "centre_1",
+            "galaxies.lens.mass.ell_comps.ell_comps_0": "ell_comps_0",
+            "galaxies.lens.mass.ell_comps.ell_comps_1": "ell_comps_1",
+            "galaxies.lens.mass.einstein_radius": "einstein_radius",
+        }
+        lane_draws = []
+        for _k in captured_window:
+            _vals = dict(zip(_paths, (float(_x) for _x in captured["parameters"][_k])))
+            lane_draws.append(
+                flds.Draw(
+                    name=(
+                        f"call{int(captured['call_index'][_k]):05d}"
+                        f"_lane{int(captured['lane_in_call'][_k]):02d}"
+                    ),
+                    kind="captured",
+                    offsets={
+                        _short: _vals[_long] - BASE_MASS[_short]
+                        for _long, _short in _mass_keys.items()
+                    },
+                    index=int(_k),
+                    mass_cls="Isothermal",
+                )
+            )
     else:
         lane_draws = [
             flds.Draw(name="fiducial", kind="fiducial", offsets={}, mass_cls="Isothermal")
@@ -1447,12 +1985,20 @@ else:
             separators=(",", ":"),
         ).encode()
     ).hexdigest()
+    if captured_window is not None:
+        # The captured lanes carry the shear too, which the Draw offsets do not.
+        lane_draws_sha256 = hashlib.sha256(
+            np.ascontiguousarray(captured["parameters"][captured_window]).tobytes()
+        ).hexdigest()
 
     # The lane trees come from ``_lane_tree`` (hoisted above PART B so the
     # phase-3 draw pins build the SAME trees).
 
     with timer.section("vmap_lane_build"):
-        lane_trees = [_lane_tree(_d) for _d in lane_draws]
+        if captured_window is None:
+            lane_trees = [_lane_tree(_d) for _d in lane_draws]
+        else:
+            lane_trees = [_captured_lane_tree(captured["parameters"][_k]) for _k in captured_window]
         _fiducial_structure = jax.tree_util.tree_structure(params_tree_s3)
         for _i, _t in enumerate(lane_trees):
             if jax.tree_util.tree_structure(_t) != _fiducial_structure:
@@ -1464,7 +2010,10 @@ else:
                 )
         batched_tree = jax.tree_util.tree_map(lambda *xs: jnp.stack(xs), *lane_trees)
 
-    print(f"  lanes built: {len(lane_trees)} ({LANES_MODE}, seed {DRAW_SEED})")
+    print(
+        f"  lanes built: {len(lane_trees)} ({LANES_MODE}, "
+        + (f"seed {DRAW_SEED})" if captured_window is None else "captured window)")
+    )
     for _d in lane_draws[: min(4, len(lane_draws))]:
         _shown = {_p: round(float(_o), 5) for _p, _o in _d.offsets.items()}
         print(f"    {_d.name:<14} {_shown}")
@@ -2187,6 +2736,56 @@ else:
             ),
         },
     }
+    if captured_window is not None:
+        # Phase C1 (#304). Only in captured mode, so a phase-B JSON written by this
+        # checkout keeps its key set.
+        _win_calls = captured["call_index"][captured_window]
+        _fom = captured["figure_of_merit"][captured_window]
+        _valid = np.isfinite(_fom) & (_fom > -1.0e98)
+        _rel_capture = np.abs(_ll_library_pdip - _fom) / np.maximum(np.abs(_fom), 1e-300)
+        vmap_block["lane_construction"] = {
+            "draws_sha256": lane_draws_sha256,
+            "lane_rows": captured_window.tolist(),
+            "calls": sorted({int(_c) for _c in _win_calls}),
+            "phases": sorted({str(captured["call_phase"][_c]) for _c in _win_calls}),
+            "window_rule": (
+                "nautilus_batches.timed_window: consecutive captured calls, in call order, from "
+                "the FIRST call that is not a prior batch, concatenated and truncated to B; at B "
+                "== n_batch exactly one real Nautilus batch. Falls back to the latest B lanes if "
+                "the post-prior lanes run out; never repeats a lane."
+            ),
+            "note": (
+                "Lane k is captured lane lane_rows[k]: the mass AND shear of a real Nautilus "
+                "proposal (nautilus_batch_capture.py), lens light fixed at S3, the S3 "
+                "light-subtracted dataset shared by every lane. `offsets` in the lane table are "
+                "the mass offsets from the fiducial; the shear is in the capture file."
+            ),
+        }
+        vmap_block["captured"] = {
+            **captured_record,
+            "timed_window_vs_capture_pdip": {
+                "reference": (
+                    "the capture's own figure of merit (library PDIP, Fitness.call_wrap "
+                    "jax.jit(jax.vmap(call)) over parameter vectors) for the same lanes"
+                ),
+                "compared_against": "this cell's jit(vmap) library-PDIP reference",
+                "n_compared": int(_valid.sum()),
+                "max_rel_diff": float(_rel_capture[_valid].max()) if _valid.any() else None,
+                "max_abs_diff_nats": (
+                    float(np.abs(_ll_library_pdip - _fom)[_valid].max()) if _valid.any() else None
+                ),
+                "gated": False,
+                "note": (
+                    "RECORDED, NOT GATED: proves the lane trees rebuilt here are the models the "
+                    "sampler evaluated (a wrong parameter mapping shows up as nats, not 1e-10)."
+                ),
+            },
+        }
+        print(
+            f"  captured window vs capture PDIP (recorded): max rel "
+            f"{vmap_block['captured']['timed_window_vs_capture_pdip']['max_rel_diff']}"
+        )
+
     if "vmap" in arm_blocks and "scalar" in arm_blocks:
         _v_ms = arm_blocks["vmap"]["wall_per_lane_ms"]
         _s_ms = arm_blocks["scalar"]["wall_per_lane_ms"]
@@ -2723,6 +3322,10 @@ if vmap_block is not None:
                 "certified_pass_budget": CERTIFIED_BUDGET,
             }
         )
+        if CAPTURED_LANES:
+            trace_summary["configuration"].update(
+                {"captured_pass": CAPTURED_PASS, "batches": str(_cell_args.batches)}
+            )
         trace_summary["solver_injection"] = {
             "patched": None,
             "part_v": "none — library mode selects the solver through al.Settings",
