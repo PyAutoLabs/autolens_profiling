@@ -53,4 +53,9 @@ Isothermal + ExternalShear) at 48 seeded near-truth vectors on the HST dataset,
 and records whether the Jacobi-preconditioned PDIP solve converges at caps 50
 and 200 against `fnnls_cholesky` (PyAutoArray#571). It writes
 `results/hazards/component/mge/nnls_capture_slam_hst_v<version>.json` plus an
-8-system `.npz` that PyAutoArray uses as a regression fixture.
+8-system `.npz` that PyAutoArray uses as a regression fixture. The unlabelled
+JSON is the pre-fix capture (14/48 unconverged at cap 50, 5/48 at cap 200).
+`--label postfix` re-runs it against the fixed library (mapper-less inversions
+use the raw-forward PDIP mode) and writes
+`nnls_capture_slam_hst_v<version>_postfix.json`: 0/48 unconverged and a JAX vs
+NumPy log-likelihood difference of at most 6e-7 on all 48 vectors.

@@ -38,6 +38,12 @@ converging by 200, 1 healthy) as ``Q_<i>`` / ``q_<i>`` plus a ``meta`` JSON
 string. The ``.npz`` is the fixture copied to PyAutoArray
 ``test_autoarray/inversion/inversion/files/mge_slam_nnls_systems.npz``.
 
+Each row also records what the library's own JAX solve reported (``library_converged`` /
+``library_iterations``, ``-1`` before PyAutoArray#571 surfaced them) and the summary records the
+``library_preconditioning`` it used. ``--label postfix`` re-runs against a fixed library and writes
+``..._postfix.json`` only (the per-row ``converged_50`` / ``converged_200`` columns always score the
+Jacobi-preconditioned solve, i.e. the pre-fix behaviour).
+
 Run from the repo root on CPU fp64::
 
     python scripts/imaging/hazards/mge_nnls_capture.py
@@ -158,9 +164,22 @@ _ORIGINAL = inversion_util.reconstruction_positive_only_from
 
 def _recording_solver(data_vector, curvature_reg_matrix, *args, **kwargs):
     xp = kwargs.get("xp", args[1] if len(args) > 1 else np)
-    if xp.__name__.startswith("jax"):
-        _CAPTURED.append((curvature_reg_matrix, data_vector))
-    return _ORIGINAL(data_vector, curvature_reg_matrix, *args, **kwargs)
+    if not xp.__name__.startswith("jax"):
+        return _ORIGINAL(data_vector, curvature_reg_matrix, *args, **kwargs)
+    stats = kwargs.pop("stats", None)
+    stats = {} if stats is None else stats
+    x = _ORIGINAL(data_vector, curvature_reg_matrix, *args, stats=stats, **kwargs)
+    # `converged` / `iterations` exist from PyAutoArray#571's fix on; -1 = not reported.
+    _CAPTURED.append(
+        (
+            curvature_reg_matrix,
+            data_vector,
+            stats.get("converged", -1),
+            stats.get("iterations", -1),
+            stats.get("preconditioning", "jacobi"),
+        )
+    )
+    return x
 
 
 def _objective(Q, q, x):
@@ -180,7 +199,17 @@ def _git_sha(module) -> str:
 
 
 def main() -> int:
+    import argparse
+
     import autoarray as aa
+
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
+    parser.add_argument(
+        "--label",
+        default="",
+        help="Suffix for a re-run's summary JSON (e.g. 'postfix'); a labelled run writes no .npz.",
+    )
+    args = parser.parse_args()
     from autoarray.util.fnnls import fnnls_cholesky
     from autoarray.util.jax_nnls import solve_nnls
 
@@ -196,21 +225,29 @@ def main() -> int:
         instance = model.instance_from_vector(vector, xp=jnp)
         log_likelihood = analysis_jax.log_likelihood_function(instance=instance)
         calls = len(_CAPTURED)
-        Q, q = _CAPTURED[0]
-        return log_likelihood, jnp.asarray(Q), jnp.asarray(q), calls
+        Q, q, converged, iterations, _ = _CAPTURED[0]
+        return (
+            log_likelihood,
+            jnp.asarray(Q),
+            jnp.asarray(q),
+            jnp.asarray(converged),
+            jnp.asarray(iterations),
+            calls,
+        )
 
     inversion_util.reconstruction_positive_only_from = _recording_solver
     try:
-        traced = jax.jit(lambda v: likelihood_and_system(v)[:3])
+        traced = jax.jit(lambda v: likelihood_and_system(v)[:5])
         calls_per_trace = None
         rows, systems = [], []
         solvers = {
             cap: jax.jit(lambda Q, q, cap=cap: solve_nnls(Q, q, max_iter=cap)) for cap in CAPS
         }
         for i, vector in enumerate(vectors):
-            log_likelihood_jax, Q, q = traced(jnp.asarray(vector))
+            log_likelihood_jax, Q, q, lib_converged, lib_iterations = traced(jnp.asarray(vector))
             if calls_per_trace is None:
                 calls_per_trace = len(_CAPTURED)
+                library_preconditioning = _CAPTURED[0][4]
             log_likelihood_np = float(
                 analysis_np.log_likelihood_function(instance=model.instance_from_vector(vector))
             )
@@ -229,6 +266,8 @@ def main() -> int:
                 "log_likelihood_numpy": log_likelihood_np,
                 "objective_fnnls": _objective(Q, q, x_fnnls),
                 "fnnls_n_positive": int(np.sum(x_fnnls > 0)),
+                "library_converged": int(lib_converged),
+                "library_iterations": int(lib_iterations),
             }
             for cap, solver in solvers.items():
                 x, _, _, converged, iterations = solver(jnp.asarray(Q_pc), jnp.asarray(q_pc))
@@ -329,6 +368,7 @@ def main() -> int:
         "box_half_width": BOX / 2,
         "linear_columns": int(systems[0][0].shape[0]),
         "solver_calls_per_likelihood": calls_per_trace,
+        "library_preconditioning": library_preconditioning,
         "versions": versions,
         "device": npz_meta["device"],
         "x64": npz_meta["x64"],
@@ -341,6 +381,16 @@ def main() -> int:
                 if not np.isfinite(r["log_likelihood_jax"])
                 or abs(r["log_likelihood_jax"] - r["log_likelihood_numpy"]) > 0.1
             ),
+            "log_likelihood_mismatch_gt_1e-6": sum(
+                1
+                for r in rows
+                if not np.isfinite(r["log_likelihood_jax"])
+                or abs(r["log_likelihood_jax"] - r["log_likelihood_numpy"]) > 1.0e-6
+            ),
+            "library_unconverged": sum(1 for r in rows if r["library_converged"] == 0),
+            "max_abs_log_likelihood_diff": max(
+                abs(r["log_likelihood_jax"] - r["log_likelihood_numpy"]) for r in rows
+            ),
         },
         "fixture_systems": npz_meta["systems"],
         "rows": rows,
@@ -348,8 +398,13 @@ def main() -> int:
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     basename = f"nnls_capture_slam_hst_v{al.__version__}"
+    if args.label:
+        # A labelled re-run (e.g. against a fixed library) writes only its summary; the
+        # unlabelled capture owns the .npz fixture.
+        basename = f"{basename}_{args.label}"
     (OUT_DIR / f"{basename}.json").write_text(json.dumps(summary, indent=1) + "\n")
-    np.savez_compressed(OUT_DIR / f"{basename}.npz", **arrays)
+    if not args.label:
+        np.savez_compressed(OUT_DIR / f"{basename}.npz", **arrays)
     print(json.dumps(summary["counts"]), "fixture", [c for _, c in chosen])
     print("WROTE", OUT_DIR / f"{basename}.json")
     return 0
