@@ -754,11 +754,101 @@ and `25894d10` (tests), on `11b93476`.
 
 ---
 
-## Phase 3 — precompute static initial geometry — NOT STARTED
+## Phase 3 — precompute the static step-0 lattice (2026-09-24) — IN PROGRESS (laptop witness only; RAL pending)
 
-This phase runs only if deflections dominate after phase 2; they do (70 % of the post-fix FLOPs, see the phase-2 handoff). It would build the
-initial lattice's unique vertices and index map in NumPy at construction and
-reuse them as immutable JAX inputs, never caching model-dependent deflections.
+Plan: PyAutoArray#568 (re-titled, phase-3 plan comment). Human decisions (2026-09-24): tolerance
+gate, the geometric 11 859-vertex table, on by default for the JAX PointSolver if the A/B accepts.
+
+### Mechanism
+
+Step 0 of the JAX `PointSolver` deflects `triangles.vertices` of a lattice fixed by the solver
+geometry alone (static pytree aux data). After phase 2 that is the flat `(3N, 2)` table: 69 849 rows
+for the simple ±9.9″ / 0.2″ lattice (23 283 triangles), of which 28 665 are exact-float distinct and
+**11 859 geometrically distinct** — a lattice point computed from up to six triangle centres differs
+by ~1 ulp. Verified independently on canonical NumPy `CoordinateArrayTrianglesNp` (28 665 exact,
+11 859 at 1e-9 rounding). The cluster 200×200 @ 0.7″ lattice: 276 507 / 110 085 / 46 516.
+
+- PyAutoArray `feature/point-source-cpu-p3` `ad0bf97b`: `static_vertex_table(y_min, y_max, x_min,
+  x_max, scale)` — `lru_cache`d NumPy builder keyed on the integer lattice position
+  `(cy + f·dy, 2·cx + f·dx)`, first-occurrence floats (same arithmetic as `.triangles`), read-only;
+  `CoordinateArrayTriangles(vertex_table=None)`, `for_limits_and_scale(..., static_vertices=False)`.
+  Derived lattices and pytree round-trips drop the table. Build 0.13 s / 0.75 MB (simple), 0.35 s /
+  2.96 MB (cluster); cache hit ~2.5 µs.
+- PyAutoLens `feature/point-source-cpu-p3` `b346b6a0`: `AbstractSolver._initial_triangles` passes
+  `static_vertices=True` on the JAX path only.
+
+### Cell
+
+`scripts/point_source/likelihood_breakdown/static_lattice_ab.py` — four routes injected into
+`AbstractSolver._initial_triangles` for tracing only: `control` (flat, 69 849), `exact` (28 665,
+cell-built), `lattice` (11 859, cell-built), `library` (self-labels from the traced step-0 row
+count). Fresh closures + `jax.clear_caches()`; 20 rounds × 20 calls; records FLOPs, `memory_analysis`,
+RSS delta, compile / lower / first call, table build and cache-hit time, observed thread count.
+`--constant-folding` re-enables XLA folding in a separate process (dummy pass name
+`constant_folding_probe_disabled`, so PyAutoNerves does not re-add the real flag) and refuses on CPU
+unless an HLO probe shows folding ran. The first probe (`arange * 2 + 1`) could not discriminate —
+elementwise arithmetic on constants is folded in both modes — so the probe is a constant `c @ c`
+(live with the flag, a literal without it; verified in both modes).
+
+### Laptop witness (WSL2, 8 cores, loadavg 2–6 — load-inflated, NOT quotable)
+
+`results/breakdown/point_source/static_lattice_ab_laptop_cpu_fp64.json` (folding off) and
+`static_lattice_ab_constant_folding_laptop_cpu_fp64.json` (folding on), cell `3da2583`, library =
+the branch (`library_matches: lattice` in both). Median ms per call, bootstrap 90 % CI of
+control / lattice:
+
+| row | control | exact | lattice | library | control/lattice | control/exact |
+|---|---|---|---|---|---|---|
+| simple solved | 5.92 | 4.20 | 3.11 | 3.07 | 1.91 [1.88, 1.93] | 1.41 |
+| simple solved vmap-4 | 16.58 | 11.61 | 11.08 | 10.39 | 1.50 [1.39, 1.57] | 1.43 |
+| simple plain | 5.80 | 4.23 | 3.14 | 3.09 | 1.85 [1.83, 1.87] | 1.37 |
+| cluster solved | 76.58 | 38.70 | 28.61 | 27.82 | 2.68 [2.54, 2.78] | 1.98 |
+| cluster plain | 106.86 | 56.53 | 38.24 | 37.37 | 2.79 [2.73, 2.87] | 1.89 |
+| *folding on:* simple solved | 7.82 | 5.21 | 3.95 | 3.95 | 1.98 [1.88, 2.11] | 1.50 |
+| *folding on:* cluster solved | 72.66 | 43.11 | 34.22 | 33.39 | 2.12 [2.09, 2.17] | 1.69 |
+
+- FLOPs: simple 7.05 → 3.38 M (−52 %), cluster 139.4 → 39.5 M (−72 %). XLA temp buffer: simple
+  4.82 → 1.69 MB, cluster 91.6 → 22.6 MB. No memory regression.
+- MDI (control p90−p10 / median) 0.28–0.81 on this rerun: the laptop is not a timing host. An
+  earlier run of the same cell (loadavg ~2, JSON superseded) gave the same ratios (1.91 / 2.55).
+- **Compile time is the open stop-rule question.** Laptop compile seconds per route are single
+  samples under load and scatter both ways (simple solved 5.1 → 5.9 s, simple plain 4.7 → 5.8 s,
+  cluster solved 51.5 → 40.5 s, cluster plain 31.7 → 51.8 s; the earlier run: 3.0 → 4.1, 3.2 → 3.3,
+  32.6 → 34.2, 22.6 → 28.3 s). Several exceed +20 %. Judge the +20 % rule on the pinned RAL CPU job,
+  not on these.
+- Folding on does not change the verdict: control gains a little from folding, lattice keeps
+  ~2×. One earlier folding-on run spent 555 s compiling the cluster-plain control; the rerun took
+  34 s — a laptop outlier, recorded, not reproduced.
+
+### Correctness gates
+
+- Laptop, both runs: 31 / 31 gates pass and are **bit-identical** (log L on every streamed instance,
+  solved positions and image counts, `jax.grad` finite and non-zero, vmap-4 vs scalar, simple-plain
+  step-0 `containing_indices` sets).
+- PyAutoArray suite 1645 passed (+13 static-table tests); PyAutoLens suite 755 passed, 1 xfailed
+  (+15 JAX tests in `test_static_lattice_jax.py`, which skip without jax). The shape guard (first
+  traced deflection grid 11 859 rows) is red on main (69 849).
+- autolens_workspace_test `point_source/jax_likelihood/*.py` ×4 and `jax_grad/gradient.py`: rc 0 on
+  the branch, output identical to main except timing lines; no rtol-1e-4 pin moved.
+- **Tie finding (decision for the human at ship).** A source placed *bit-exactly* on a traced step-0
+  lattice vertex changes the step-0 kept set (16 / 50 constructed ties) and, in 1 / 13, the image
+  count: control 3, lattice 2. The control's two positions at the tie vertex (|p − v| = 9.0e-4 each,
+  μ ≈ 4.7) both Newton-converge to the same root, the vertex itself — a duplicate; the lattice path
+  returns exactly the system's 2 true images. NumPy returns 7 positions (the same 2 roots); a finer
+  precision changes the duplicate count on both paths; nudging the source by 1e-9 gives 2 = 2. Main's
+  own flat path is not self-consistent at these ties: eager vs jit differ in the step-0 set on 25 / 25
+  and in image count on 22 / 25 (lattice vs flat under jit: 6 / 25 and 1 / 25). Generic and
+  near-caustic sources are identical to the flat path.
+
+### Pending
+
+- RAL CPU job (`hpc/batch_cpu/submit_breakdown_point_source_static_lattice_ab_ral_cpu_fp64`, folding
+  off then on, pinned to `euclid-ral-compute-10-2` — the phase-1 Xeon 8490H host, because
+  `euclid-ral-compute-1..19` were not responding on 2026-09-24) and the A100 leg
+  (`hpc/batch_gpu/submit_breakdown_point_source_static_lattice_ab_a100_fp64`), both importing branch
+  clones of PyAutoArray `ad0bf97b` / PyAutoLens `b346b6a0`. Accept or reject by the stop rule on
+  those numbers: gain ≥ max(5 %, 2× MDI), compile ≤ +20 % (simple and cluster), no memory or GPU
+  regression, all gates.
 
 ## Phase 4 — profile the residue and iterate — NOT STARTED
 

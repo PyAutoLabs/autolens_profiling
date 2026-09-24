@@ -264,6 +264,12 @@ separately per likelihood × transform. Standing conclusions:
   (simple solved 1.70 → 0.84 ms, cluster 4.21 → 2.46 ms), every gate bit-identical. Accepted; the post-fix call is
   deflection-dominated (70 % of FLOPs), so phase 3 is the static initial-lattice precompute.
   Findings: [`results/notes/point_source_cpu_campaign.md`](./results/notes/point_source_cpu_campaign.md).
+- **Point-source CPU speed-up, phase 3 (2026-09, in progress)** — precompute the JAX PointSolver's
+  static step-0 lattice: deflect the 11 859 geometrically unique vertices instead of the 69 849 flat
+  slots (PyAutoArray #568). Four-route A/B cell `static_lattice_ab.py`. Laptop witness only
+  (load-inflated, not quotable): simple 1.9×, cluster 2.7×, FLOPs −52 % / −72 %, every gate
+  bit-identical; compile-time effect unresolved on the laptop. RAL CPU (pinned) and A100 legs pending.
+  Findings: [`results/notes/point_source_cpu_campaign.md`](./results/notes/point_source_cpu_campaign.md).
 
 ## How to read this repo
 
