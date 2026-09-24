@@ -1,8 +1,8 @@
 # Point-source CPU speed-up campaign — ledger
 
 Issue: [autolens_profiling #297](https://github.com/PyAutoLabs/autolens_profiling/issues/297) (phase 1); [PyAutoArray #568](https://github.com/PyAutoLabs/PyAutoArray/issues/568) (phase 2)  
-Branch: `feature/point-source-cpu-p1` (phase 1); `feature/point-source-cpu-p2` (phase 2, PyAutoArray + autolens_profiling)  
-Status: phase 1 **DONE** (RAL baseline, job 350580); phase 2 **DONE, ACCEPTED** (vertex-dedup A/B, RAL job 350582: 4.47× simple, 1.98× cluster, bit-identical; library change awaiting merge and release); phases 3–4 not started  
+Branch: `feature/point-source-cpu-p1` (phase 1); `feature/point-source-cpu-p2` (phase 2, PyAutoArray + autolens_profiling); `feature/point-source-cpu-p3` (phase 3, PyAutoArray + PyAutoLens + autolens_profiling)  
+Status: phase 1 **DONE** (RAL baseline, job 350580); phase 2 **DONE, ACCEPTED** (vertex-dedup A/B, RAL job 350582: 4.47× simple, 1.98× cluster, bit-identical; library change awaiting merge and release); phase 3 **DONE, ACCEPTED** (static step-0 lattice A/B, RAL jobs 350636 CPU / 350637 A100: CPU control → library 2.0–2.1× simple, 1.43× vmap-4, 5.2× cluster, compile +3–12 %, all 31 gates bit-identical; tie-case gate decision pending at ship); phase 4 not started  
 Instrument: [`scripts/point_source/likelihood_breakdown/image_plane.py`](../../scripts/point_source/likelihood_breakdown/image_plane.py)
 (shipped in #293, see [point_source_shared_likelihood_breakdown.md](point_source_shared_likelihood_breakdown.md))
 and [`scripts/cluster/likelihood_breakdown/image_plane.py`](../../scripts/cluster/likelihood_breakdown/image_plane.py)
@@ -754,7 +754,7 @@ and `25894d10` (tests), on `11b93476`.
 
 ---
 
-## Phase 3 — precompute the static step-0 lattice (2026-09-24) — IN PROGRESS (laptop witness only; RAL pending)
+## Phase 3 — precompute the static step-0 lattice (2026-09-24) — DONE, ACCEPTED (RAL jobs 350636 / 350637)
 
 Plan: PyAutoArray#568 (re-titled, phase-3 plan comment). Human decisions (2026-09-24): tolerance
 gate, the geometric 11 859-vertex table, on by default for the JAX PointSolver if the A/B accepts.
@@ -820,7 +820,7 @@ control / lattice:
   ~2×. One earlier folding-on run spent 555 s compiling the cluster-plain control; the rerun took
   34 s — a laptop outlier, recorded, not reproduced.
 
-### Correctness gates
+### Correctness gates (laptop and library suites)
 
 - Laptop, both runs: 31 / 31 gates pass and are **bit-identical** (log L on every streamed instance,
   solved positions and image counts, `jax.grad` finite and non-zero, vmap-4 vs scalar, simple-plain
@@ -830,7 +830,7 @@ control / lattice:
   traced deflection grid 11 859 rows) is red on main (69 849).
 - autolens_workspace_test `point_source/jax_likelihood/*.py` ×4 and `jax_grad/gradient.py`: rc 0 on
   the branch, output identical to main except timing lines; no rtol-1e-4 pin moved.
-- **Tie finding (decision for the human at ship).** A source placed *bit-exactly* on a traced step-0
+- **Tie finding (human gate decision pending at ship; see below).** A source placed *bit-exactly* on a traced step-0
   lattice vertex changes the step-0 kept set (16 / 50 constructed ties) and, in 1 / 13, the image
   count: control 3, lattice 2. The control's two positions at the tie vertex (|p − v| = 9.0e-4 each,
   μ ≈ 4.7) both Newton-converge to the same root, the vertex itself — a duplicate; the lattice path
@@ -840,18 +840,192 @@ control / lattice:
   and in image count on 22 / 25 (lattice vs flat under jit: 6 / 25 and 1 / 25). Generic and
   near-caustic sources are identical to the flat path.
 
-### Pending
+### RAL environment (quotable)
 
-- RAL CPU job (`hpc/batch_cpu/submit_breakdown_point_source_static_lattice_ab_ral_cpu_fp64`, folding
-  off then on, pinned to `euclid-ral-compute-10-2` — the phase-1 Xeon 8490H host, because
-  `euclid-ral-compute-1..19` were not responding on 2026-09-24) and the A100 leg
-  (`hpc/batch_gpu/submit_breakdown_point_source_static_lattice_ab_a100_fp64`), both importing branch
-  clones of PyAutoArray `ad0bf97b` / PyAutoLens `b346b6a0`. Accept or reject by the stop rule on
-  those numbers: gain ≥ max(5 %, 2× MDI), compile ≤ +20 % (simple and cluster), no memory or GPU
-  regression, all gates.
+- **CPU — job 350636**, partition `ral`, pinned `--nodelist=euclid-ral-compute-10-2` (Intel Xeon
+  Platinum 8490H, the phase-1 host; phase 2 ran on an EPYC 7763, so only in-job ratios compare across
+  phases). 8 CPUs (`sched_affinity` 8, `NPROC=8`, BLAS threads 1), fp64, JAX 0.10.2, loadavg 0.28 at
+  start. Two runs in one job: folding **off** (the PyAutoNerves default) then folding **on**
+  (`--constant-folding`; the HLO probe confirms folding ran, `agrees_with_request: true`). Walls 637 s
+  and 606 s. Empty stderr.
+- **A100 — job 350637**, `euclid-ral-gpu-1`, one NVIDIA A100 80GB PCIe, backend asserted `gpu`, fp64,
+  folding off, wall 984 s. Empty stderr.
+- **Provenance (all three JSONs):** `source_revisions` PyAutoArray `ad0bf97b`, PyAutoLens `b346b6a0`
+  (imported from the branch clones `/mnt/ral/jnightin/autolens_profiling_wt/{PyAutoArray,PyAutoLens}_point-source-cpu-p3`,
+  refused otherwise), autolens_profiling `3da2583`, PyAutoGalaxy `70a61e26`, PyAutoFit `a7368401`,
+  PyAutoNerves `1fa613aa`. `library_matches: lattice` on every row; on the simple rows the library's
+  optimised HLO is hash-identical to the cell's lattice route. `all_gates_pass: true`.
+- Protocol as the laptop: 20 rounds × 20 calls (400 samples per route), round-robin with rotated
+  start, 3 warm calls, 16-instance parameter stream. The library `static_vertex_table` equals the cell's
+  lattice table on both geometries; build 34 ms / 0.75 MB (simple) and 184 ms / 2.96 MB (cluster) on the
+  Xeon, cache hit 1.2–2.4 µs.
+
+Numbers below are read from the JSONs by script. Ratios are per-route medians with the JSON's bootstrap
+90 % CI; **MDI** = control (p90 − p10) / median; compile is `compile_s` of a **single cold compile per
+route** (not a median); temp = XLA `memory_analysis().temp_size_in_bytes`; FLOPs = `cost_analysis()`.
+
+**RAL CPU, constant folding off** (`static_lattice_ab_hpc_ral_cpu_fp64.json`)
+
+| Row | control median [p10, p90] ms | exact | lattice | library | control / library [90 % CI] | control / lattice [90 % CI] | paired per-round c/lat median [p10, p90] | MDI | compile s ctrl → lib | temp MB ctrl → lib | FLOPs ctrl → lib |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| `simple_solved` | 3.540 [3.067, 4.296] | 2.254 | 1.674 | 1.758 | **2.01×** [1.63, 2.09] | 2.11× [1.92, 2.16] | 1.94 [1.79, 2.13] | 34.7 % | 2.91 → 3.14 (+8.0 %) | 4.82 → 1.69 | 7.05M → 3.38M |
+| `simple_solved_vmap4` (per batch of 4) | 8.258 [7.128, 9.332] | 6.550 | 5.761 | 5.784 | **1.43×** [1.42, 1.44] | 1.43× [1.42, 1.46] | 1.44 [1.39, 1.63] | 26.7 % | 3.39 → 3.71 (+9.5 %) | 15.47 → 6.76 | 23.30M → 11.83M |
+| `simple_plain` | 3.479 [3.047, 4.298] | 2.267 | 1.673 | 1.669 | **2.08×** [1.91, 2.13] | 2.08× [1.89, 2.13] | 1.92 [1.72, 2.17] | 36.0 % | 2.58 → 2.67 (+3.3 %) | 4.82 → 1.69 | 7.05M → 3.38M |
+| `cluster_solved` | 47.36 [40.51, 59.02] | 18.82 | 9.211 | 9.085 | **5.21×** [5.10, 5.30] | 5.14× [5.05, 5.26] | 5.20 [4.91, 5.44] | 39.1 % | 22.77 → 24.66 (+8.3 %) | 91.55 → 22.64 | 139.44M → 39.47M |
+| `cluster_plain` | 47.60 [41.12, 53.95] | 17.70 | 9.243 | 9.225 | **5.16×** [5.04, 5.26] | 5.15× [5.04, 5.26] | 5.16 [4.85, 5.59] | 27.0 % | 16.69 → 18.72 (+12.2 %) | 91.54 → 22.63 | 139.43M → 39.46M |
+
+**RAL CPU, constant folding on** (`static_lattice_ab_constant_folding_hpc_ral_cpu_fp64.json`)
+
+| Row | control median [p10, p90] ms | exact | lattice | library | control / library [90 % CI] | control / lattice [90 % CI] | paired per-round c/lat median [p10, p90] | MDI | compile s ctrl → lib | temp MB ctrl → lib | FLOPs ctrl → lib |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| `simple_solved` | 4.093 [3.056, 4.811] | 2.194 | 1.785 | 1.722 | **2.38×** [2.08, 2.45] | 2.29× [1.89, 2.39] | 2.12 [1.72, 2.34] | 42.9 % | 2.85 → 2.91 (+1.9 %) | 4.69 → 1.69 | 6.79M → 3.10M |
+| `simple_solved_vmap4` (per batch of 4) | 7.632 [7.099, 10.500] | 5.675 | 4.982 | 5.499 | **1.39×** [1.31, 1.63] | 1.53× [1.34, 1.65] | 1.55 [1.29, 1.72] | 44.6 % | 3.22 → 3.43 (+6.4 %) | 15.34 → 6.76 | 23.02M → 11.53M |
+| `simple_plain` | 3.564 [3.035, 4.800] | 2.392 | 1.689 | 1.696 | **2.10×** [1.99, 2.25] | 2.11× [2.01, 2.31] | 2.03 [1.81, 2.40] | 49.5 % | 2.44 → 2.57 (+5.2 %) | 4.69 → 1.69 | 6.79M → 3.10M |
+| `cluster_solved` | 39.03 [30.66, 45.27] | 12.96 | 8.506 | 8.599 | **4.54×** [4.39, 4.64] | 4.59× [4.44, 4.70] | 4.58 [4.19, 4.94] | 37.4 % | 21.93 → 24.14 (+10.1 %) | 91.88 → 22.64 | 131.39M → 30.34M |
+| `cluster_plain` | 32.34 [27.91, 37.96] | 13.43 | 8.257 | 8.273 | **3.91×** [3.83, 3.99] | 3.92× [3.84, 3.98] | 3.91 [3.58, 4.22] | 31.1 % | 16.28 → 18.97 (+16.5 %) | 91.54 → 22.63 | 131.38M → 30.33M |
+
+**RAL A100, fp64** (`static_lattice_ab_hpc_ral_a100_fp64.json`)
+
+| Row | control median [p10, p90] ms | exact | lattice | library | control / library [90 % CI] | control / lattice [90 % CI] | MDI | compile s ctrl → lib | temp MB ctrl → lib | FLOPs ctrl → lib |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| `simple_solved` | 0.846 [0.836, 0.881] | 0.843 | 0.839 | 0.842 | **1.01×** [1.00, 1.01] | 1.01× [1.01, 1.01] | 5.3 % | 5.28 → 5.57 (+5.4 %) | 3.36 → 0.39 | 6.60M → 3.07M |
+| `simple_solved_vmap4` (per batch of 4) | 0.942 [0.932, 0.974] | 0.922 | 0.925 | 0.925 | **1.02×** [1.02, 1.02] | 1.02× [1.02, 1.02] | 4.5 % | 6.28 → 6.19 (−1.5 %) | 7.83 → 1.53 | 21.98M → 10.82M |
+| `simple_plain` | 0.824 [0.813, 0.871] | 0.821 | 0.818 | 0.818 | **1.01×** [1.00, 1.01] | 1.01× [1.01, 1.01] | 7.0 % | 5.19 → 5.10 (−1.6 %) | 3.36 → 0.39 | 6.60M → 3.07M |
+| `cluster_solved` | 2.696 [2.601, 2.850] | 2.566 | 2.516 | 2.515 | **1.07×** [1.06, 1.09] | 1.07× [1.06, 1.08] | 9.2 % | 43.13 → 48.84 (+13.2 %) | 42.06 → 6.35 | 120.38M → 34.59M |
+| `cluster_plain` | 2.073 [2.013, 2.258] | 2.002 | 1.984 | 1.991 | **1.04×** [1.04, 1.05] | 1.05× [1.04, 1.05] | 11.8 % | 36.11 → 38.76 (+7.4 %) | 42.05 → 6.35 | 120.37M → 34.57M |
+
+**Reading the rows.**
+
+- **CPU gain is material and far outside the noise.** Folding off, the library is 2.0–2.1× faster on the
+  simple likelihood (3.54 → 1.76 ms solved, 3.48 → 1.67 ms plain) and **5.2×** on the two-source cluster
+  (47.4 → 9.1 ms), with every CI and every paired per-round p10 above 1.6 (simple scalar rows) and 4.8 (cluster).
+  `library / lattice` is 0.99–1.05 (CIs straddle or touch 1): the shipped code reproduces the cell's
+  lattice route. The cluster gains more because its 276 507-row step-0 input shrinks 5.9× to 46 516
+  rows and its 13-component deflections dominate the call.
+- **`exact` (28 665 / 110 085 rows) captures about half the gain**; the geometric dedup to 11 859 /
+  46 516 rows is the other half (exact / lattice 1.35× simple, 2.0× cluster). The human decision to
+  ship the geometric table is borne out.
+- **`vmap`-4 gains less (1.43×)**, as in phase 2: the step-0 lattice is batch-invariant, so under `vmap`
+  the control already amortises its step-0 work across the batch. Per likelihood the library costs
+  1.45 ms at batch 4 against 1.76 ms scalar.
+- **Folding on does not change the verdict.** It speeds the control's cluster rows (47.4 → 39.0 /
+  32.3 ms) because the flat step-0 table becomes a folded constant; the library is barely affected
+  (9.1 → 8.6 / 8.3 ms). The library still wins 2.1–2.4× simple, 1.39× vmap-4 and 3.9–4.5× cluster.
+  Folding also trims FLOPs (library cluster 39.5M → 30.3M). Folding stays off by default (PyAutoNerves);
+  nothing here argues for flipping it.
+- **Compile (the open laptop question) — resolved on the quiet node.** Control → library `compile_s`
+  is **+3.3 % to +12.2 %** folding off and **+1.9 % to +16.5 %** folding on (worst: cluster plain 16.28 →
+  18.97 s); lowering is unchanged or faster (cluster solved 30.58 → 30.03 s) and first call falls
+  (cluster solved 49 → 11 ms). Every row is under the +20 % stop rule. The laptop's readings (+37 % and
+  +63 % on some rows, −21 % on another) did not reproduce: they were load noise on single samples. Caveat: each figure is one cold
+  compile per route, not a median, so differences of a few percent are not resolved.
+- **Memory — no regression, large reduction.** XLA temp 4.82 → 1.69 MB (simple), 91.6 → 22.6 MB
+  (cluster), 15.5 → 6.8 MB (vmap-4); on the A100 3.36 → 0.39 MB and 42.1 → 6.35 MB. RSS delta at compile
+  falls on every heavy row (cluster solved 861 → 82 MB CPU, 907 → 178 MB A100). The table itself is a
+  0.75 / 2.96 MB host constant, built once per geometry.
+- **A100 — no regression, a small gain.** The GPU call is launch/latency-bound, not FLOP-bound:
+  halving (simple) or cutting 3.5× (cluster) the FLOPs moves the call by only 1–7 % (0.846 → 0.842 ms,
+  2.70 → 2.52 ms). All CIs are ≥ 1.00. Compile is −1.6 % to +13.2 % (cluster solved 43.1 → 48.8 s), under
+  +20 %.
+- **MDI 27–50 % on the Xeon node is large**: it is per-call dispersion (p10–p90 across a 16-instance
+  parameter stream and 400 calls), not uncertainty of the median. The effects are 2–5×, and the
+  bootstrap CIs of the ratios are a few percent wide.
+
+### Correctness gates (RAL)
+
+All **31 / 31** gates in `gate_summary` pass in all three JSONs, with max |Δ| = 0 everywhere:
+
+- log L on all five rows, every route pair (control vs exact / lattice / library), all 16 stream
+  instances, **bit-identical** (NaN pattern equal), deterministic within each route; fiducial simple
+  solved `7.743201200876812` on every route (identical to phases 1–2);
+- solved positions and image counts: simple 4 finite per instance, cluster 3 + 3, three instances each,
+  padded arrays equal, max |Δ| = 0.0;
+- simple-solved `jax.grad`: finite, non-zero on every instance, identical between routes (Δ = 0);
+- vmap-4 against scalar within each route and across routes: bit-identical;
+- simple-plain step-0 `containing_indices` sets identical across routes.
+
+The same holds on CPU with folding on and on the A100.
+
+### Tie finding — human gate decision pending at ship
+
+Not exercised by the RAL gates (stream sources are generic). From the laptop study above: a source
+placed **bit-exactly on a traced step-0 lattice vertex** can change the step-0 kept set (16 / 50
+constructed ties) and, in 1 / 13, the image count — **control 3 vs lattice 2**. The control's third image
+is a **duplicate**: its two positions at the tie vertex both Newton-converge to the same root, the vertex
+itself; the lattice path returns exactly the system's 2 true images. Main's own flat path is **not
+self-consistent** at such ties: eager vs jit differ in image count on **22 / 25** (lattice vs flat under
+jit: 1 / 25). Nudging the source by 1e-9 gives 2 images on both paths. The plan's gate asks for
+"identical image counts" and so is formally failed on this constructed measure-zero case; accepting it
+(as a duplicate-removal, not a lost image) is a **human decision recorded at ship**.
+
+### Decision — ACCEPT (pending the tie-case sign-off)
+
+Stop rule (PyAutoArray #568): reject if the simple gain < max(5 %, 2× MDI) with no cluster gain; any
+gate fails; compile +20 %; memory or GPU regression.
+
+- **Gain.** Simple solved speed-up +101 % (2.01×) against 2× MDI = 69 %; cluster +421 % (5.21×) against
+  78 %. The cluster clause alone rules out rejection. (Read as a fractional time reduction instead —
+  50 % simple vs 69 % — the simple row alone would not clear 2× MDI on this high-dispersion node, but the
+  cluster's 81 % reduction does, and the paired per-round p10 is 1.79× simple / 4.91× cluster.)
+- **Gates.** 31 / 31 bit-identical on CPU (both folding modes) and A100; the tie case above is the only
+  open item.
+- **Compile.** Worst +12.2 % (folding off), +16.5 % (folding on), +13.2 % (A100): all < +20 %.
+- **Memory / GPU.** XLA temp memory −56 % to −88 %; A100 1.01–1.07× faster.
+
+Ship library-first (PyAutoArray `ad0bf97b` → PyAutoLens `b346b6a0` → autolens_profiling), on by default
+for the JAX PointSolver as decided on 2026-09-24.
+
+### Post-fix budget and phase-4 handoff
+
+After phase 3 the step-0 lattice is no longer the dominant cost on `simple`. FLOP accounting (folding
+off, hardware-independent; the step-0 share is an **estimate** from the marginal FLOP per removed step-0
+row between the control and lattice routes):
+
+- **Simple (3.38M FLOP).** The marginal step-0 cost is (7.05 − 3.38)M / (69 849 − 11 859) ≈ 63 FLOP per
+  row, so the 11 859-row step 0 is ≈ 0.75M (**≈ 22 %**). The seven refinement steps' deflections
+  (7 × 289 599 = 2.03M, phase 2) are now **≈ 60 %**; containment, the `f64[60]` neighbourhood sorts, β\*,
+  the magnification filter and χ² share the remaining ≈ 0.6M (≈ 18 %).
+- **Cluster (39.47M FLOP).** ≈ 435 FLOP per step-0 row → the 46 516-row step 0 is ≈ 20M (**≈ 51 %**);
+  the refinement steps and the rest are ≈ 19M. Deflections of the 13-component lens still dominate
+  both halves.
+- **GPU.** The A100 call barely moved with FLOPs, so FLOP levers will not show on GPU; any GPU
+  work is a launch-count/latency question, separately scoped.
+
+**Re-ranked phase-4 levers (proposed, none measured):**
+
+1. **Simple: initial scale versus refinement steps (old 4(b)).** The seven refinement steps now carry
+   ≈ 60 % of the simple call; fewer steps at a finer step 0 (or a coarser final precision where
+   admissible) is the largest remaining lever. It is a correctness knob: image completeness and
+   position precision across a prior must be shown.
+2. **Cluster: dPIE/NFW deflection cost (old 4(d)).** Deflections dominate every cluster step; this is
+   a separately scoped PyAutoGalaxy phase.
+3. **Grid-extent guidance (old 4(a)).** Now acts on the ≈ 22 % (simple) / ≈ 51 % (cluster) step-0
+   share only, plus containment; still needs image-completeness evidence. Stronger at cluster scale.
+4. **`MAX_CONTAINING_SIZE` / neighbourhood fan-out (old 4(c)).** Sets the 720-point refinement grids and
+   the `f64[60]` sorts, so it now scales the dominant simple share; correctness knob.
+
+Before ranking by wall time, run the phase-1 breakdown cells on the post-phase-3 code (after release)
+so the per-step time split, not only FLOPs, backs the choice.
+
+### Reproduce (RAL)
+
+```bash
+# RAL worktree of feature/point-source-cpu-p3, with the PyAutoArray / PyAutoLens branch clones beside it
+cd hpc/batch_cpu && sbatch submit_breakdown_point_source_static_lattice_ab_ral_cpu_fp64   # folding off, then on
+cd ../batch_gpu && sbatch submit_breakdown_point_source_static_lattice_ab_a100_fp64
+```
+
+JSONs and PNGs: [`static_lattice_ab_hpc_ral_cpu_fp64`](../breakdown/point_source/static_lattice_ab_hpc_ral_cpu_fp64.json)
+([png](../breakdown/point_source/static_lattice_ab_hpc_ral_cpu_fp64.png)),
+[`static_lattice_ab_constant_folding_hpc_ral_cpu_fp64`](../breakdown/point_source/static_lattice_ab_constant_folding_hpc_ral_cpu_fp64.json)
+([png](../breakdown/point_source/static_lattice_ab_constant_folding_hpc_ral_cpu_fp64.png)),
+[`static_lattice_ab_hpc_ral_a100_fp64`](../breakdown/point_source/static_lattice_ab_hpc_ral_a100_fp64.json)
+([png](../breakdown/point_source/static_lattice_ab_hpc_ral_a100_fp64.png)).
+Logs: [`point_source_cpu_2026_09_24_ral_job_350636_static_lattice_ab.out`](point_source_cpu_2026_09_24_ral_job_350636_static_lattice_ab.out),
+[`point_source_cpu_2026_09_24_ral_job_350637_static_lattice_ab_a100.out`](point_source_cpu_2026_09_24_ral_job_350637_static_lattice_ab_a100.out).
 
 ## Phase 4 — profile the residue and iterate — NOT STARTED
 
-Rank by new evidence: (a) grid-extent guidance, (b) initial scale versus
-refinement count, (c) `MAX_CONTAINING_SIZE` / neighbourhood fan-out and
-(d) cluster dPIE/NFW deflections. Any PyAutoGalaxy work is its own phase.
+Rank by new evidence; the phase-3 re-rank above puts (b) initial scale versus refinement count
+first for `simple` and (d) cluster dPIE/NFW deflections first at cluster scale, then (a) grid-extent
+guidance and (c) `MAX_CONTAINING_SIZE` / neighbourhood fan-out. Any PyAutoGalaxy work is its own phase.

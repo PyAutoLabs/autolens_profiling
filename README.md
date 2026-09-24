@@ -264,11 +264,15 @@ separately per likelihood × transform. Standing conclusions:
   (simple solved 1.70 → 0.84 ms, cluster 4.21 → 2.46 ms), every gate bit-identical. Accepted; the post-fix call is
   deflection-dominated (70 % of FLOPs), so phase 3 is the static initial-lattice precompute.
   Findings: [`results/notes/point_source_cpu_campaign.md`](./results/notes/point_source_cpu_campaign.md).
-- **Point-source CPU speed-up, phase 3 (2026-09, in progress)** — precompute the JAX PointSolver's
-  static step-0 lattice: deflect the 11 859 geometrically unique vertices instead of the 69 849 flat
-  slots (PyAutoArray #568). Four-route A/B cell `static_lattice_ab.py`. Laptop witness only
-  (load-inflated, not quotable): simple 1.9×, cluster 2.7×, FLOPs −52 % / −72 %, every gate
-  bit-identical; compile-time effect unresolved on the laptop. RAL CPU (pinned) and A100 legs pending.
+- **Point-source CPU speed-up, phase 3 (2026-09)** — precompute the JAX PointSolver's static step-0
+  lattice: deflect the 11 859 geometrically unique vertices instead of the 69 849 flat slots
+  (46 516 vs 276 507 on the cluster; PyAutoArray #568, PyAutoLens). Four-route in-process A/B
+  `static_lattice_ab.py`, RAL job 350636 (`ral`, pinned Xeon 8490H, 8 CPUs, folding off): simple solved
+  3.54 → 1.76 ms (**2.01×**), vmap-4 1.43×, two-source cluster 47.4 → 9.1 ms (**5.21×**); FLOPs −52 % /
+  −72 %, XLA temp 4.8 → 1.7 MB / 91.6 → 22.6 MB, compile +3–12 % (+17 % worst with constant folding on,
+  which gives 2.1–4.5× on the scalar rows). A100 (job 350637): no regression, 1.01–1.07× faster. All 31 gates bit-identical.
+  Accepted; a bit-exact source-on-vertex tie (control 3 images incl. a duplicate root vs lattice 2) is a
+  human gate decision at ship. Post-fix, the refinement-step deflections (≈ 60 % of simple FLOPs) lead phase 4.
   Findings: [`results/notes/point_source_cpu_campaign.md`](./results/notes/point_source_cpu_campaign.md).
 
 ## How to read this repo
