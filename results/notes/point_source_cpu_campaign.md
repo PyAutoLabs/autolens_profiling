@@ -240,7 +240,7 @@ are the fused solved value.
 - **GPU ordering:** take the A100 baseline on the frozen revisions above
   **before** the phase-2 library change merges. If that is no longer possible,
   check the listed SHAs out explicitly. Phase 2 also owes a GPU regression check
-  for the shared library change.
+  for the shared library change (done: RAL A100 job 350587, see phase 2, Decision).
 
 ### Reproduce
 
@@ -545,8 +545,49 @@ regression**.
   note measured XLA temp memory 5.20 → 4.58 MB (−12 %). Removing a 3N-row sort
   and its gather cannot add live buffers, so no regression is expected; this is
   not measured here.
-- **GPU.** The GPU regression check for the shared library change is **still
-  owed** (completion evidence). It was not run in phase 2.
+- **GPU — no regression; nodedup is 1.7–2.05× faster on an A100 (RAL job
+  350587, 2026-09-24).** Same cell and routes, fp64, **20 rounds × 20 calls**
+  (400 per-call samples per route, the #568 plan's protocol), one
+  NVIDIA A100 80GB PCIe on `euclid-ral-gpu-1`, `JAX_PLATFORMS=cuda`, with the
+  backend asserted `gpu` in the log. The imported PyAutoArray was a clone of
+  **`feature/point-source-cpu-p2` at `25894d10`** that the submit prepends to
+  `PYTHONPATH`. So `library` is the shipped fix: it self-labels
+  `library_matches: nodedup`, and its optimised HLO is hash-identical to
+  nodedup's on every row. There is no mixed-precision leg, because the
+  PointSolver has no mixed-precision switch.
+
+  | Row | control median [p10, p90] ms | nodedup median [p10, p90] ms | library median ms | control / nodedup [90 % CI] | paired per-round ratio median [p10, p90] | compile s ctrl → nodedup |
+  |---|---:|---:|---:|---:|---:|---:|
+  | `simple_solved` | 1.695 [1.672, 1.733] | 0.843 [0.825, 0.882] | 0.810 | **2.01×** [2.00, 2.02] | 2.01 [1.97, 2.04] | 9.7 → 5.6 |
+  | `simple_plain` | 1.684 [1.663, 1.736] | 0.822 [0.805, 0.854] | 0.799 | **2.05×** [2.05, 2.06] | 2.06 [2.01, 2.09] | 9.4 → 5.3 |
+  | `simple_solved_vmap4` (per batch of 4) | 1.865 [1.830, 1.951] | 0.958 [0.935, 1.000] | 0.926 | **1.95×** [1.94, 1.95] | 1.95 [1.93, 1.97] | 10.8 → 6.4 |
+  | `cluster_solved` | 4.206 [4.166, 4.373] | 2.457 [2.411, 2.661] | 2.364 | **1.71×** [1.71, 1.72] | 1.72 [1.69, 1.73] | 52.7 → 46.5 |
+  | `cluster_plain` | 3.860 [3.800, 4.062] | 2.105 [2.076, 2.169] | 2.039 | **1.83×** [1.83, 1.84] | 1.83 [1.82, 1.86] | 43.7 → 37.6 |
+
+  The **correctness gates are all bit-identical on GPU**, with max |Δ| = 0 for every pair:
+  log L on all five rows (control vs nodedup and control vs library), solved
+  positions (simple 4/4 finite, cluster 3+3, three instances each), the
+  simple-solved `jax.grad` (bit-identical, all finite, every component non-zero,
+  |g| from 2.80 to 2532) and vmap-4 against scalar within each route. Every route
+  is deterministic across repeated instances. Lowering is unchanged (for example
+  cluster solved 45.1 → 45.5 s). First call is 23 → 11 ms (simple solved) and
+  42 → 27 ms (cluster solved). `library`'s compile (0.5–3.6 s) is a cache hit on
+  nodedup's program and is not comparable. Wall time was 696 s.
+
+  One oddity: `library` runs **3–4 % faster than nodedup** on every row (the
+  library/nodedup CI is [0.956, 0.976]), even though the two optimised HLOs are
+  hash-identical. That is an effect of the second executable instance (its compile
+  was a cache hit and its buffers were placed differently), not a code difference.
+  It sets a ~4 % floor on what this protocol can resolve on GPU. The
+  control/nodedup effect is 20–25× that floor.
+
+  JSON [`vertex_dedup_ab_hpc_ral_a100_fp64.json`](../breakdown/point_source/vertex_dedup_ab_hpc_ral_a100_fp64.json)
+  and [`.png`](../breakdown/point_source/vertex_dedup_ab_hpc_ral_a100_fp64.png).
+  Log [`point_source_cpu_2026_09_24_ral_job_350587_vertex_dedup_ab_a100.out`](point_source_cpu_2026_09_24_ral_job_350587_vertex_dedup_ab_a100.out),
+  with an empty stderr. Submit
+  [`hpc/batch_gpu/submit_breakdown_point_source_vertex_dedup_ab_a100_fp64`](../../hpc/batch_gpu/submit_breakdown_point_source_vertex_dedup_ab_a100_fp64).
+  This JSON's `control_source.body` and `nodedup_body` are correct. The cell now
+  captures them at import, with a bytecode hash; see the follow-up below.
 
 ### Post-fix budget and phase-3 handoff
 
@@ -701,7 +742,15 @@ and `25894d10` (tests), on `11b93476`.
   which also applies to this submit; the `activate.sh` worktree-leak guard
   (this run swapped `PYTHONPATH` by hand again); and CI smoke coverage for the
   breakdown cells, which now includes `vertex_dedup_ab.py`.
-- **The GPU regression check** for the PyAutoArray change is still owed.
+- **The GPU regression check is DONE.** RAL A100 job 350587 found no
+  regression: nodedup is 1.71–2.05× faster than control, and every gate is
+  bit-identical (see Decision, "GPU"). The branch's PyAutoArray `25894d10` was
+  imported.
+- **Provenance-capture fix (done 2026-09-24).** `vertex_dedup_ab.py` now reads
+  `inspect.getsource` of the two bodies **at import**, together with a
+  `co_code`/`co_consts` SHA-256 (`bytecode_sha256`). It refuses text that does
+  not define the named function, so a mid-run edit can no longer misrecord the
+  bodies. The laptop JSON is still left as committed.
 
 ---
 

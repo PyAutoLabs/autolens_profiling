@@ -259,7 +259,9 @@ separately per likelihood × transform. Standing conclusions:
   refinement step; PyAutoArray #568). Interleaved in-process A/B, RAL job 350582 (`ral`, EPYC 7763,
   8 CPUs): simple solved 24.00 → 5.38 ms (**4.47×**, 90 % CI 4.37–4.57), vmap-4 2.63×, two-source
   cluster 155 → 78 ms (**1.98×**); HLO sorts 15 → 7 / 25 → 12, compile 11–21 % faster. Log-likelihoods,
-  positions and gradients bit-identical on every instance. Accepted; the post-fix call is
+  positions and gradients bit-identical on every instance. GPU regression check (RAL job 350587,
+  A100, 20 × 20 calls, branch PyAutoArray imported): no regression, nodedup 1.71–2.05× faster
+  (simple solved 1.70 → 0.84 ms, cluster 4.21 → 2.46 ms), every gate bit-identical. Accepted; the post-fix call is
   deflection-dominated (70 % of FLOPs), so phase 3 is the static initial-lattice precompute.
   Findings: [`results/notes/point_source_cpu_campaign.md`](./results/notes/point_source_cpu_campaign.md).
 
