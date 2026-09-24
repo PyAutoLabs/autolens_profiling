@@ -266,6 +266,36 @@ _ROUTE_BODIES = {
 }
 
 
+def _body_provenance(fn) -> dict:
+    """Source text + bytecode hash of *fn*, captured NOW (at import).
+
+    ``inspect.getsource`` reads the file through ``linecache`` using the code
+    object's line offsets. Called at the end of a long run, it reads whatever the
+    file holds *then*: the 2026-09-23 laptop witness, edited mid-run, recorded
+    ``_profiling_root`` and the control body under the wrong names. Capturing at
+    import pins the text to the file the interpreter compiled, and the
+    ``co_code`` / ``co_consts`` hash identifies the executed body independently
+    of any text.
+    """
+    code = fn.__code__
+    digest = hashlib.sha256(code.co_code + repr(code.co_consts).encode()).hexdigest()[:16]
+    source = inspect.getsource(fn)
+    if f"def {fn.__name__}(" not in source:
+        raise RuntimeError(f"getsource({fn.__name__}) returned another function's text")
+    return {
+        "name": fn.__name__,
+        "body": source,
+        "bytecode_sha256": digest,
+        "firstlineno": code.co_firstlineno,
+    }
+
+
+_BODY_PROVENANCE = {
+    "control": _body_provenance(_control_vertices_and_indices),
+    "nodedup": _body_provenance(_nodedup_vertices_and_indices),
+}
+
+
 @contextlib.contextmanager
 def route_injected(route: str):
     """Swap ``CoordinateArrayTriangles._vertices_and_indices`` for *route*.
@@ -1064,9 +1094,12 @@ summary = {
         "repo": "PyAutoArray",
         "sha": CONTROL_SOURCE_SHA,
         "path": "autoarray/structures/triangles/coordinate_array.py",
-        "body": inspect.getsource(_control_vertices_and_indices),
+        "body": _BODY_PROVENANCE["control"]["body"],
+        "bytecode_sha256": _BODY_PROVENANCE["control"]["bytecode_sha256"],
     },
-    "nodedup_body": inspect.getsource(_nodedup_vertices_and_indices),
+    "nodedup_body": _BODY_PROVENANCE["nodedup"]["body"],
+    "nodedup_bytecode_sha256": _BODY_PROVENANCE["nodedup"]["bytecode_sha256"],
+    "body_provenance_captured": "import time (see _body_provenance)",
     "device": device,
     "jax_devices": [str(d) for d in jax.devices()],
     "machine": machine_info_dict(),
