@@ -1,0 +1,52 @@
+{
+  "what": "RAL A100 diagnostics for autolens_profiling#308 phase B (interferometer MGE): nufftax GPU dispatch accuracy and the sma step-3 cost. Measurement-only sidecar; not a breakdown artifact.",
+  "date": "2026-09-25",
+  "host": "RAL euclid-ral-gpu (NVIDIA A100 80GB PCIe), jax/jaxlib 0.10.2, JAX_ENABLE_X64=True",
+  "nufftax_dispatch": {
+    "problem": "The RAL venv carried nufftax 0.4.0 (below the PyAutoArray floor nufftax>=0.6.1,<0.7; laptop 0.6.1). 0.4.0 auto-routes GPU type-1 spreading at M>=10,000 and type-2 interpolation at M>=1,000,000 visibilities to float32 Pallas/Triton kernels even for x64 inputs. 0.6.1 makes Pallas opt-in (NUFFTAX_PALLAS_BACKEND) and fp32-inputs-only.",
+    "probe": "alma uv (K=1,000,000), 800x800 grid, eps=1e-12, random fp64 inputs; reference = CPU pure-JAX at eps=1e-14; max |diff| / max |ref|",
+    "nufftax_0.4.0_job_351062": {
+      "gpu_default_dispatch": {
+        "type2_rel_err": 0.0001052,
+        "type2_s": 0.717,
+        "type1_rel_err": 6.853e-05,
+        "type1_s": 0.523,
+        "type1_run_to_run": 4.462e-07
+      },
+      "gpu_pure_jax_forced": {
+        "type2_rel_err": 2.904e-13,
+        "type2_s": 0.053,
+        "type1_rel_err": 1.863e-12,
+        "type1_s": 0.045
+      },
+      "cpu_eps_1e-12": {
+        "type2_rel_err": 2.904e-13,
+        "type1_rel_err": 1.863e-12
+      }
+    },
+    "nufftax_0.6.1_job_351063": {
+      "gpu_default_dispatch": {
+        "type2_rel_err": 2.904e-13,
+        "type2_s": 0.053,
+        "type1_rel_err": 1.863e-12,
+        "type1_s": 0.045,
+        "type1_run_to_run": 1.503e-15
+      }
+    },
+    "effect_on_the_0.4.0_breakdown_jobs_351055_351056_351057": "W~ F~ vs dense F max rel diff 2.5e-7 (alma) / 1.2e-6 (alma_high) vs 8e-14 on the laptop; W~ figure of merit off the Fit by 2.7e-3 nats (alma) / 0.25 nats (alma_high); GPU dense figure of merit off the laptop CPU by 2.2e-4 nats (alma). All in the chi-squared term (log-det and regularization structurally zero). Those JSONs were superseded by the 0.6.1 re-run (jobs 351078-351083) and are not committed; the human upgraded the RAL venv to nufftax 0.6.1 on 2026-09-25."
+  },
+  "sma_step3_cost": {
+    "observation": "sma (K=190) dense step 3 (transform_mapping_matrix) is ~0.85 s per call on the A100 vs 82 ms on the laptop CPU, and the same on nufftax 0.4.0 and 0.6.1 (K=190 is below every Pallas threshold).",
+    "probe_jobs": [
+      351070,
+      351077,
+      351084
+    ],
+    "nufft2d2_only_20_columns_800x800_ms": 6.0,
+    "scatter_complex128_20_columns_ms": 3422.0,
+    "scatter_complex128_one_column_ms": 224.0,
+    "scatter_float64_then_cast_ms": 0.57,
+    "scatter_complex128_unique_indices_sorted_ms": 3422.0,
+    "explanation": "The cost is the slim->native scatter TransformerNUFFT.transform_mapping_matrix does into a complex128 (20, N_y, N_x) image stack before the NUFFT, not the NUFFT itself: a complex128 scatter on the GPU runs ~6000x slower than scattering float64 and casting (0.57 ms); unique_indices/indices_are_sorted do not help. It is N_vis-independent, so it sets a ~0.85-3.5 s floor on step 3 at every instrument (absolute value varies with the surrounding fusion). Candidate lever: scatter the real mapping matrix, then cast."
+  }
+}
