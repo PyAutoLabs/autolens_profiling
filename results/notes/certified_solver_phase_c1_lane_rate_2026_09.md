@@ -294,3 +294,52 @@ jax.errors.JaxRuntimeError: RESOURCE_EXHAUSTED: Out of memory while trying to al
 5. **NaN on catastrophic lanes.** Some PDIP programs return NaN on lanes that another composition
    evaluates finitely (Delaunay 309, rectangular 304 and 314). Does production care, given that
    Fitness resamples non-finite values (rectangular 317 was captured as −1e99)?
+
+## Decisions (human, 2026-09-25)
+
+The human's reply to the open questions, verbatim: "I agree to all 3, proceed". The three
+proposals it approved were: file the B=50 `jit(vmap)` fault as its own bug, let phase C2 go ahead
+under a near-peak gate instead of the strict 1e-9 pin, and push and ship this note. This section
+records those decisions. It does not change the Verdict above. **The pre-registered C1 gate stays
+FAILED as recorded, and it is not re-registered retroactively.**
+
+- **Q3 (B=50 `jit(vmap)`) → filed as a separate bug:** PyAutoMind
+  `draft/bug/autoarray/batched_jit_vmap_b50_wrong_log_likelihood_a100.md`. Target PyAutoArray,
+  because the failing allocation is B x the PSF-convolved mapping cube of the batched inversion.
+  The bug may turn out to be in XLA.
+- **Q1 / Q2 (gate, and whether C2 is warranted) → C2 proceeds.** The strict own-composition 1e-9
+  pin stays recorded as FAILED here. C2 pre-registers a new gate before its run: a nats-based pin
+  on the lanes within some Δlog L of the batch maximum, plus gated cross-composition and capture
+  checks, so that a B=50-style fault fails the gate instead of passing it. Rationale: the C1
+  failures are on lanes that are irrelevant to the posterior or are the designed failure mode.
+  One group is the catastrophic lanes, at log L between −3e4 and −1.9e5 against a peak of about
+  +2.9e4, i.e. about 6e4 to 2.2e5 nats below the peak. On those lanes PDIP disagrees with itself
+  across compilations by at most 0.86 nats gated (up to 1.8 nats across programs). The other group
+  is the uncertified `none` iterates, which the fallback or guard exists to catch. Every
+  uncertified lane is in the early half of the run: the late half has 0 in all four cells.
+- **C2's pre-registered build rule, evaluated from this note's B=20 tables.** The rule is:
+  "projected guarded cost at production B=20 >= 15% below the best zero-code option,
+  uncertified-lane rate near zero". Guarded cost = certified+none `jit(vmap)` + overall rate x
+  scalar certified+PDIP (ms per lane). The best safe zero-code option is library PDIP
+  `jit(vmap)` in every row. Unguarded certified+none is not safe, so it is excluded.
+
+  | mesh | stage | certified+none vmap | overall rate | scalar certified+PDIP | guarded | library PDIP vmap | saving | >= 15%? |
+  |---|---|---:|---:|---:|---:|---:|---:|---|
+  | delaunay | pix1 | 30.5 | 1.97% | 44.3 | 31.4 | 43.0 | 27% | yes |
+  | delaunay | pix2 | 13.2 | 4.88% | 43.6 | 15.3 | 22.8 | 33% | yes |
+  | rectangular | pix1 | 26.5 | 1.88% | 44.7 | 27.3 | 30.6 | 11% | **no** |
+  | rectangular | pix2 | 11.5 | 2.46% | 35.7 | 12.4 | 17.0 | 27% | yes |
+
+  At the prior-phase rates (11.7–20.6%) the guard costs more on rectangular:
+
+  - rectangular pix1 guarded is 26.5 + 14.3% x 44.7 ≈ 32.9 ms against 30.6 for PDIP, i.e. slower;
+  - rectangular pix2 guarded is 11.5 + 20.0% x 35.7 ≈ 18.6 ms against 17.0, also slower;
+  - Delaunay pix2 roughly ties, 22.2 against 22.8;
+  - Delaunay pix1 still wins, 35.7 against 43.0.
+
+  Whether the rate is "near zero" is arguable: it is 1.9–4.9% overall and 0 in the late half.
+  **The human chose to proceed with 3/4 cells passing.** Rectangular pix1 may need to stay on
+  library PDIP. That per-mesh policy question is carried into C2.
+- **Q4 (PDIP `converged` / `iterations` per lane, #572) and Q5 (NaN on catastrophic lanes)** are
+  carried into C2's witness as open items. The C2 prompt is PyAutoMind
+  `draft/feature/autofit/certified_solver_batched_guard_c2.md`.
