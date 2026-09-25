@@ -18,9 +18,11 @@
 #        --stage pix1  source_pix_1: mass + shear + regularization free, n_live=150
 #        --stage pix2  source_pix_2: mass + shear fixed, regularization free, n_live=75
 #      n_batch=20, use_jax_vmap=True, library PDIP. The regularization is FREE with the
-#      production priors (AdaptSplit inner/outer LogUniform 1e-6..1e6, signal_scale
-#      Uniform 0..1 on Delaunay; the rectangular cell cannot build AdaptSplit and frees
-#      its Constant coefficient, LogUniform 1e-6..1e6). The rate plausibly depends on
+#      production priors (inner/outer LogUniform 1e-6..1e6, signal_scale Uniform 0..1)
+#      and the production class - AdaptSplit on Delaunay in both stages, Adapt on the
+#      rectangular pix2 stage as every SLaM source_pix_2 does; rectangular pix1 keeps
+#      the cell's Constant coefficient, LogUniform 1e-6..1e6, a recorded departure since
+#      production source_pix_1 frees Adapt there too. The rate plausibly depends on
 #      the regularization through how many pixels sit at the positivity bound, so a
 #      fixed-regularization capture would not answer the question. Capped at
 #      --n-like-max 40000 and --capture-seconds 3600 (about an hour).

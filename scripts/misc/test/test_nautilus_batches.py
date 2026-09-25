@@ -128,7 +128,7 @@ def test__early_late_split_is_the_median_replayed_call():
         ("pix1", "delaunay", 10, 3),
         ("pix1", "rectangular", 8, 1),
         ("pix2", "delaunay", 3, 3),
-        ("pix2", "rectangular", 1, 1),
+        ("pix2", "rectangular", 3, 3),
     ],
 )
 def test__capture_model_frees_the_regularization_at_production_priors(stage, mesh, n_free, n_reg):
@@ -144,8 +144,13 @@ def test__capture_model_frees_the_regularization_at_production_priors(stage, mes
     assert model.total_free_parameters == n_free
     reg = nb.regularization_paths(paths)
     assert len(reg) == n_reg
-    expected_cls = "Constant" if mesh == "rectangular" else "AdaptSplit"
-    assert nb.regularization_class_for(mesh) == expected_cls
+    expected_cls = {
+        ("pix1", "rectangular"): "Constant",
+        ("pix2", "rectangular"): "Adapt",
+    }.get((stage, mesh), "AdaptSplit")
+    assert nb.regularization_class_for(mesh, stage) == expected_cls
+    assert type(model.galaxies.source.pixelization.regularization).__name__ == "Model"
+    assert model.galaxies.source.pixelization.regularization.cls.__name__ == expected_cls
     for path in reg:
         attr = path.rsplit(".", 1)[1]
         kind, lower, upper = nb.REGULARIZATION_PRIORS[expected_cls][attr]

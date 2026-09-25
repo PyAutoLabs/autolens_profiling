@@ -201,8 +201,10 @@ rebuilt by the same ``nautilus_batches.capture_model_from``, instantiated from t
 vector inside the trace), so every lane's own regularization reaches the
 likelihood in both passes; lens light fixed at S3 as in every lane of this cell.
 The file is refused unless its recorded S3 fingerprint — dataset sha256s, mesh,
-source pixels, the regularization CLASS and the S0 fiducial coefficients that
-built S3, border relocator, precision and the eager S3 figure of merit
+source pixels, the regularization CLASS the capture freed
+(``nautilus_batches.regularization_class_for(mesh, stage)``: AdaptSplit on Delaunay,
+Constant / Adapt on rectangular pix1 / pix2) and the S0 fiducial scheme and
+coefficients that built S3, border relocator, precision and the eager S3 figure of merit
 (``EQUIVALENCE_RTOL``) — matches the system built here, and unless the rebuilt
 model's parameter paths equal the capture's, in order. The per-lane
 regularization coefficients are NOT identity: they are what the lanes vary. Without ``--lanes captured`` nothing below happens, and ``--batches``,
@@ -993,6 +995,7 @@ if CAPTURED_LANES:
     _batches_path = Path(_cell_args.batches)
     captured = nautilus_batches.load(_batches_path)
     _fp = captured["meta"]["s3_fingerprint"]
+    CAPTURED_STAGE = captured["meta"]["stage"]
     _mismatch = {
         _key: (_want, _got)
         for _key, _want, _got in (
@@ -1000,13 +1003,15 @@ if CAPTURED_LANES:
             ("source_pixels", int(_fp["source_pixels"]), int(n_source_pixels)),
             ("dataset_sha256", _fp["dataset_sha256"], dataset_sha256),
             # The regularization COEFFICIENTS are free parameters of the capture (and
-            # of every replayed lane), so they are not the system's identity; its
-            # CLASS is, and so is the S0 fiducial the S3 subtraction was built with
-            # (that lives in log_evidence_s3_library below).
+            # of every replayed lane), so they are not the system's identity. The
+            # CLASS the capture freed is — stage-dependent on rectangular (Constant in
+            # pix1, Adapt in pix2; nautilus_batches.regularization_class_for) — and so
+            # is the S0 fiducial the S3 subtraction was built with (its scheme and
+            # coefficients here, its figure of merit in log_evidence_s3_library below).
             (
                 "regularization_class",
                 _fp["regularization_class"],
-                type(regularization).__name__,
+                nautilus_batches.regularization_class_for(MESH, CAPTURED_STAGE),
             ),
             ("regularization_s0_fiducial", _fp["regularization_s0_fiducial"], reg_provenance),
             ("border_relocator", bool(_fp["border_relocator"]), BORDER_RELOCATOR_RESOLVED),
@@ -1033,7 +1038,6 @@ if CAPTURED_LANES:
         )
     # The replay model: the SAME builder the capture used, so a lane vector means
     # the same parameters here as it did to the sampler. Its order is asserted.
-    CAPTURED_STAGE = captured["meta"]["stage"]
     _replay_model = nautilus_batches.capture_model_from(
         CAPTURED_STAGE,
         mesh=MESH,
