@@ -185,9 +185,9 @@ STAGES = ("pix1", "pix2")
 #: The production regularization priors. ``AdaptSplit``'s are the packaged
 #: PyAutoGalaxy ``config/priors/regularization/adapt_split.yaml`` and ``Adapt``'s
 #: the packaged ``adapt.yaml``, each identical to the pipeline's own
-#: ``euclid_strong_lens_modeling_pipeline/config/priors/regularization/`` copy;
-#: ``Constant``'s are the packaged ``constant.yaml``. Set EXPLICITLY on the model
-#: so the capture does not depend on which config directory is active.
+#: ``euclid_strong_lens_modeling_pipeline/config/priors/regularization/`` copy.
+#: Set EXPLICITLY on the model so the capture does not depend on which config
+#: directory is active.
 REGULARIZATION_PRIORS = {
     "AdaptSplit": {
         "inner_coefficient": ("LogUniform", 1.0e-6, 1.0e6),
@@ -199,7 +199,6 @@ REGULARIZATION_PRIORS = {
         "outer_coefficient": ("LogUniform", 1.0e-6, 1.0e6),
         "signal_scale": ("Uniform", 0.0, 1.0),
     },
-    "Constant": {"coefficient": ("LogUniform", 1.0e-6, 1.0e6)},
 }
 
 
@@ -207,20 +206,19 @@ def regularization_class_for(mesh: str, stage: str) -> str:
     """The regularization class *stage* frees on *mesh*.
 
     Delaunay, both stages: ``AdaptSplit``, as production ``source_pix_1`` /
-    ``source_pix_2`` (and as the phase-B cell already uses). Rectangular ``pix2``:
-    ``Adapt``, as every SLaM ``source_pix_2`` on a rectangular mesh
+    ``source_pix_2`` (and as the phase-B cell already uses). Rectangular, both
+    stages: ``Adapt``, as every SLaM pixelized source stage on a rectangular mesh
     (``autolens_workspace/scripts/guides/modeling/slam_start_here.py``:
-    ``RectangularBilinearAdaptImage`` + ``al.reg.Adapt``); ``AdaptSplit`` is not an
-    option there, as it needs the interpolator's split cross-points
-    (``_mappings_sizes_weights_split``), which only the Delaunay / KNN / Sibson
-    interpolators define. Rectangular ``pix1``: ``Constant`` — the cell's class,
-    a recorded departure (production ``source_pix_1`` frees ``Adapt`` there too).
+    ``regularization_init=al.reg.Adapt`` for ``source_pix_1``,
+    ``RectangularBilinearAdaptImage`` + ``al.reg.Adapt`` for ``source_pix_2``);
+    ``AdaptSplit`` is not an option there, as it needs the interpolator's split
+    cross-points (``_mappings_sizes_weights_split``), which only the Delaunay /
+    KNN / Sibson interpolators define. Both stages free the same class today;
+    *stage* is kept so a stage-dependent choice has one place to live.
     """
     if stage not in STAGES:
         raise ValueError(f"unknown stage {stage!r} (want one of {STAGES})")
-    if mesh != "rectangular":
-        return "AdaptSplit"
-    return "Adapt" if stage == "pix2" else "Constant"
+    return "Adapt" if mesh == "rectangular" else "AdaptSplit"
 
 
 def capture_model_from(stage: str, *, mesh: str, mesh_obj, lens_fixed):
@@ -231,8 +229,7 @@ def capture_model_from(stage: str, *, mesh: str, mesh_obj, lens_fixed):
     production priors. ``pix2`` (production ``source_pix_2``): the lens is
     *lens_fixed* (the S3 source-only lens — the cell's fiducial mass and shear) and
     only the regularization is free. The regularization class is
-    :func:`regularization_class_for` (stage-dependent on the rectangular mesh). The
-    mesh is the cell's (*mesh_obj*) in both.
+    :func:`regularization_class_for`. The mesh is the cell's (*mesh_obj*) in both.
 
     Returns the ``af.Collection``; its ``paths`` order is the capture's
     ``parameter_paths`` and the replay asserts it is unchanged.

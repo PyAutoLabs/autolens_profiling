@@ -619,8 +619,11 @@ def numpy_solver_injected(solver, *, label: str):
     # injected kernel *is* the solve, so the library's `solver` choice does not reach
     # it. The wrapper's keyword must be spelled `solver` (the library passes it by
     # name), so the injected kernel is held as `injected`.
+    # PyAutoArray #572's `preconditioning` (the JAX PDIP scaling) is handled the same way.
     original_forwarded = frozenset(
-        name for name in ("solver", "stats") if name in inspect.signature(original).parameters
+        name
+        for name in ("solver", "stats", "preconditioning")
+        if name in inspect.signature(original).parameters
     )
     injected = solver
 
@@ -633,13 +636,18 @@ def numpy_solver_injected(solver, *, label: str):
         factor=None,
         solver="pdip",
         stats=None,
+        preconditioning="jacobi",
     ):
         if xp.__name__.startswith("jax"):
             counts["jax"] += 1
             kwargs = {}
             if original_takes_factor:
                 kwargs["factor"] = factor
-            for name, value in (("solver", solver), ("stats", stats)):
+            for name, value in (
+                ("solver", solver),
+                ("stats", stats),
+                ("preconditioning", preconditioning),
+            ):
                 if name in original_forwarded:
                     kwargs[name] = value
             return original(

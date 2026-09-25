@@ -207,6 +207,7 @@ def certified_reconstruction_from(
     fingerprint=None,
     factor=None,
     report=None,
+    preconditioning="jacobi",
 ):
     """The certified active-set solve of ``(curvature_reg_matrix, data_vector)``.
 
@@ -217,6 +218,11 @@ def certified_reconstruction_from(
     ``lax.cond``; with ``fallback=False`` the (possibly uncertified) active-set
     iterate is returned unconditionally, which is the shape a batched row must
     use (see the module docstring).
+
+    ``preconditioning`` is the library's PyAutoArray #571/#572 keyword, as the
+    library passed it. The active-set solve always runs on the Jacobi-scaled
+    system (as the library's own certified solver does); the keyword is only
+    forwarded to the PDIP fallback, so a fallback is the library's own call.
 
     ``report`` is an optional ``fn(pass_at_certification, certified)`` host
     callback (see the module docstring). It changes nothing that is computed;
@@ -253,7 +259,9 @@ def certified_reconstruction_from(
 
     # Route (d)'s fallback is the library's PDIP by definition: pin it, so a
     # library config selecting another positive-only solver cannot change it.
-    fallback_kwargs = _library_kwargs(original, solver="pdip", stats=None)
+    fallback_kwargs = _library_kwargs(
+        original, solver="pdip", stats=None, preconditioning=preconditioning
+    )
 
     def _library_pdip():
         return original(
@@ -305,8 +313,8 @@ def certified_solver_injected(
 
     original = inversion_util.reconstruction_positive_only_from
     counts = {"jax": 0, "numpy": 0}
-    # Read once: which of the #566 keywords the installed library accepts.
-    forwarded = frozenset(_library_kwargs(original, solver=None, stats=None))
+    # Read once: which of the #566 / #572 keywords the installed library accepts.
+    forwarded = frozenset(_library_kwargs(original, solver=None, stats=None, preconditioning=None))
 
     def patched(
         data_vector,
@@ -317,6 +325,7 @@ def certified_solver_injected(
         factor=None,
         solver="pdip",
         stats=None,
+        preconditioning="jacobi",
     ):
         if not xp.__name__.startswith("jax"):
             counts["numpy"] += 1
@@ -327,7 +336,15 @@ def certified_solver_injected(
                 xp=xp,
                 fingerprint=fingerprint,
                 factor=factor,
-                **{k: v for k, v in (("solver", solver), ("stats", stats)) if k in forwarded},
+                **{
+                    k: v
+                    for k, v in (
+                        ("solver", solver),
+                        ("stats", stats),
+                        ("preconditioning", preconditioning),
+                    )
+                    if k in forwarded
+                },
             )
         counts["jax"] += 1
         return certified_reconstruction_from(
@@ -342,6 +359,7 @@ def certified_solver_injected(
             fingerprint=fingerprint,
             factor=factor,
             report=report,
+            preconditioning=preconditioning,
         )
 
     _assert_signature_covers(original, patched)
@@ -397,6 +415,7 @@ def library_solver_observed(*, report=None):
         factor=None,
         solver="pdip",
         stats=None,
+        preconditioning="jacobi",
     ):
         is_jax = xp.__name__.startswith("jax")
         local_stats = {} if stats is None else stats
@@ -409,6 +428,7 @@ def library_solver_observed(*, report=None):
             factor=factor,
             solver=solver,
             stats=local_stats,
+            **_library_kwargs(original, preconditioning=preconditioning),
         )
         if not is_jax:
             seen["numpy"] += 1

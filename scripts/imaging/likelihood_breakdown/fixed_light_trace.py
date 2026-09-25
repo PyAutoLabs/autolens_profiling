@@ -203,7 +203,7 @@ likelihood in both passes; lens light fixed at S3 as in every lane of this cell.
 The file is refused unless its recorded S3 fingerprint — dataset sha256s, mesh,
 source pixels, the regularization CLASS the capture freed
 (``nautilus_batches.regularization_class_for(mesh, stage)``: AdaptSplit on Delaunay,
-Constant / Adapt on rectangular pix1 / pix2) and the S0 fiducial scheme and
+Adapt on rectangular, not the S0 class) and the S0 fiducial scheme and
 coefficients that built S3, border relocator, precision and the eager S3 figure of merit
 (``EQUIVALENCE_RTOL``) — matches the system built here, and unless the rebuilt
 model's parameter paths equal the capture's, in order. The per-lane
@@ -1004,9 +1004,8 @@ if CAPTURED_LANES:
             ("dataset_sha256", _fp["dataset_sha256"], dataset_sha256),
             # The regularization COEFFICIENTS are free parameters of the capture (and
             # of every replayed lane), so they are not the system's identity. The
-            # CLASS the capture freed is — stage-dependent on rectangular (Constant in
-            # pix1, Adapt in pix2; nautilus_batches.regularization_class_for) — and so
-            # is the S0 fiducial the S3 subtraction was built with (its scheme and
+            # CLASS the capture freed is (nautilus_batches.regularization_class_for;
+            # Adapt on rectangular, not the S0 Constant) — and so is the S0 fiducial the S3 subtraction was built with (its scheme and
             # coefficients here, its figure of merit in log_evidence_s3_library below).
             (
                 "regularization_class",

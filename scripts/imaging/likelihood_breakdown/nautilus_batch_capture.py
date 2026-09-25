@@ -18,8 +18,8 @@ What it does
 
 1. Builds the phase-B cell's S3 system — the HST dataset, the fixed-light
    subtraction, the Delaunay (Hilbert, N=1500, AdaptSplit) or rectangular
-   (39x39 ``RectangularBilinearAdaptImage``, Constant) source — with PART A of ``fixed_light_trace.py`` copied
-   line for line (the house rule of this family: "if a sibling cell's model
+   (39x39 ``RectangularBilinearAdaptImage``, S0 Constant) source — with PART A of
+   ``fixed_light_trace.py`` copied line for line (the house rule of this family: "if a sibling cell's model
    changes, this cell must change with it"). The replay does not trust the copy:
    it re-derives the S3 fingerprint recorded here (dataset sha256s, mesh, source
    pixels, the regularization CLASS, border relocator, the eager S3 figure of
@@ -50,11 +50,10 @@ replay re-instantiates, so the parameter order cannot drift between the two cell
 - ``pix1`` (default; production ``source_pix_1``): the lens ``Isothermal``
   (centre, ell_comps, einstein_radius) and ``ExternalShear`` free with the
   phase-B cell's Gaussian priors, AND the regularization free — 10 parameters
-  on Delaunay (``AdaptSplit``), 8 on rectangular (``Constant``).
+  on both meshes (``AdaptSplit`` on Delaunay, ``Adapt`` on rectangular).
 - ``pix2`` (production ``source_pix_2``): the mass and shear FIXED at the S3
   lens (the cell's fiducial values) and only the regularization free — 3
-  parameters on both meshes (``AdaptSplit`` on Delaunay, ``Adapt`` on
-  rectangular).
+  parameters on both meshes.
 
 The regularization class is ``nautilus_batches.regularization_class_for(mesh,
 stage)``, and its priors are production's (``nautilus_batches.REGULARIZATION_PRIORS``,
@@ -62,23 +61,25 @@ set explicitly): inner and outer coefficient ``LogUniform(1e-6, 1e6)``,
 ``signal_scale`` ``Uniform(0, 1)`` — the packaged PyAutoGalaxy ``adapt_split.yaml``
 / ``adapt.yaml``, each identical to the pipeline's own config. Delaunay frees
 ``AdaptSplit`` in both stages, as production (its fixed coefficients 0.1 / 10 /
-0.1 are the S0 fit that defines S3, and nothing else). Rectangular ``pix2`` frees
-``Adapt``, as every SLaM ``source_pix_2`` on a rectangular mesh does
-(``autolens_workspace/scripts/guides/modeling/slam_start_here.py``:
-``RectangularBilinearAdaptImage`` + ``al.reg.Adapt``; ``AdaptSplit`` needs split
-cross-points the rectangular interpolator does not have). Rectangular ``pix1``
-frees the cell's ``Constant`` coefficient at the packaged ``LogUniform(1e-6, 1e6)``
-— a recorded departure: production ``source_pix_1`` frees ``Adapt`` there too.
-The S3 system itself is built with the S0 ``Constant`` either way; ``Adapt``
-reads the same adapt image the cell already hands ``AdaptImages``.
+0.1 are the S0 fit that defines S3, and nothing else). Rectangular frees
+``Adapt`` in both stages, as every SLaM pixelized source stage on a rectangular
+mesh does (``autolens_workspace/scripts/guides/modeling/slam_start_here.py``:
+``regularization_init=al.reg.Adapt`` for ``source_pix_1``,
+``RectangularBilinearAdaptImage`` + ``al.reg.Adapt`` for ``source_pix_2``;
+``AdaptSplit`` needs split cross-points the rectangular interpolator does not
+have). The S3 system itself is built with the S0 ``Constant`` (coefficient 1.0)
+either way; ``Adapt`` reads the same adapt image the cell already hands
+``AdaptImages``.
 
 Remaining departures from production: mass and shear priors are the cell's, not
 chained from ``source_lp``; no positions likelihood; the mesh is the cell's
 (Hilbert 1500 vertices, ``weight_power=1``) in both stages, where ``source_pix_2``
 redraws a 500-vertex Hilbert grid at ``weight_power=3.5`` from the pix1 result; on
 rectangular the mesh is the cell's 39x39 ``RectangularBilinearAdaptImage`` at
-``weight_power=1``, ``weight_floor=0`` (the production class), fixed, where
-``source_pix_2`` also frees its ``weight_power`` / ``weight_floor``.
+``weight_power=1``, ``weight_floor=0`` (the production ``source_pix_2`` class),
+fixed, in both stages, where ``source_pix_1`` uses
+``RectangularBilinearAdaptDensity`` and ``source_pix_2`` frees ``weight_power`` /
+``weight_floor``.
 Nautilus is seeded (``--seed``, default 1) so a capture is reproducible;
 production passes no seed. Quick updates are disabled (they only render the
 current best fit and never change what Nautilus proposes), and the search's
@@ -584,13 +585,8 @@ meta = {
             "redraws a 500-vertex Hilbert grid at weight_power 3.5"
             if MESH != "rectangular"
             else "the cell's mesh (39x39 RectangularBilinearAdaptImage, weight_power 1, "
-            "weight_floor 0) fixed in both stages; source_pix_2 frees weight_power / "
-            "weight_floor",
-            *(
-                ["rectangular pix1 frees Constant; production source_pix_1 frees Adapt"]
-                if (MESH, STAGE) == ("rectangular", "pix1")
-                else []
-            ),
+            "weight_floor 0) fixed in both stages; source_pix_1 uses "
+            "RectangularBilinearAdaptDensity, source_pix_2 frees weight_power / weight_floor",
             "seeded (production passes no seed)",
             "quick updates disabled (iterations_per_quick_update=1e12; render-only)",
             "NullPaths: no output directory, so no checkpoint and one Sampler.run call",
