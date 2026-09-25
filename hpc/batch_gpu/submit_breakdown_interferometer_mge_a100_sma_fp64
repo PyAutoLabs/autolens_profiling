@@ -21,7 +21,12 @@
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=james.w.nightingale@durham.ac.uk
 
-export AP_ROOT=/mnt/ral/jnightin/autolens_profiling
+# Derive the repo root from where this was submitted (hpc/batch_gpu/../..): it runs from
+# a RAL worktree of the feature branch, not only the canonical RAL checkout.
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+export PROJECT_PATH="$AP_ROOT"
+export PYAUTO_HPC_BASE="${PYAUTO_HPC_BASE:-/mnt/ral/jnightin/PyAuto}"
+echo "AP_ROOT=$AP_ROOT"
 source $AP_ROOT/activate.sh
 
 export JAX_PLATFORM_NAME=cuda
