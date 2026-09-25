@@ -519,8 +519,11 @@ def test_the_s4_submit_runs_the_three_row_ab_at_the_settings_the_verdict_assumes
     ):
         assert variable in source, f"the submit does not pin {variable.split('=')[0]}"
 
-    assert "export NUMBA_CACHE_DIR=" in source
-    assert "export MPLCONFIGDIR=" in source
+    # The per-job numba cache under output/ is the submit's own; matplotlib's comes
+    # from activate.sh ($PYAUTO_HPC_CACHE), never /tmp -- on RAL /tmp and $HOME sit
+    # on the node's small root disk (RAL admin, 2026-09-25).
+    assert "export NUMBA_CACHE_DIR=$AP_ROOT/output/" in source
+    assert "/tmp/" not in source
 
     # CPUs-only on the gpu partition. Checked on the #SBATCH directives rather
     # than on the whole file, because the header explains the absence in prose

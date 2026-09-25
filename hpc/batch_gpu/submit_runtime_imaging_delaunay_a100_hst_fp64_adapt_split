@@ -51,8 +51,6 @@ export JAX_PLATFORM_NAME=cuda
 export JAX_PLATFORMS=cuda,cpu
 export XLA_PYTHON_CLIENT_PREALLOCATE=false
 export JAX_ENABLE_X64=True
-export NUMBA_CACHE_DIR=/tmp/numba_cache
-export MPLCONFIGDIR=/tmp/matplotlib
 
 # PYAUTO_SIBSON_QUERY_CHUNK is deliberately left UNSET on both legs (library
 # default 4096, what production uses); the script records the effective chunk

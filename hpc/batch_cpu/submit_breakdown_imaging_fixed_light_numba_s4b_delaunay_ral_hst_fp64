@@ -30,7 +30,6 @@ export OMP_NUM_THREADS=1
 export MKL_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
 export NUMBA_NUM_THREADS=1
-export MPLCONFIGDIR=/tmp/matplotlib_${SLURM_JOB_ID:-local}
 export NUMBA_CACHE_DIR=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}_s4b
 mkdir -p "$MPLCONFIGDIR" "$NUMBA_CACHE_DIR"
 

@@ -157,8 +157,6 @@ export JAX_PLATFORMS=cuda,cpu
 export XLA_PYTHON_CLIENT_PREALLOCATE=false
 export JAX_ENABLE_X64=True
 export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding"
-export NUMBA_CACHE_DIR=/tmp/numba_cache
-export MPLCONFIGDIR=/tmp/matplotlib
 
 # Fresh per-ARM compilation cache (see header). output/ is gitignored.
 export JAX_CACHE_CONTROL="$AP_ROOT/output/jax_cache/fixed_light_lever3_control_${SLURM_JOB_ID:-local}"
