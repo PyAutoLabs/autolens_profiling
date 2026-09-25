@@ -87,6 +87,7 @@ def _submits() -> list[_Path]:
         and "_fixed_light_vmap_" not in p.name
         and "_fixed_light_psf_cube_" not in p.name
         and "_fixed_light_certified_policy_" not in p.name
+        and "_fixed_light_certified_lane_rate_" not in p.name
         and "_fixed_light_logdet_reuse_" not in p.name
     )
 

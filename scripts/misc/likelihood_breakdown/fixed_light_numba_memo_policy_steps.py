@@ -7,6 +7,7 @@ only decides whether the existing memo entry may be returned to production.
 from __future__ import annotations
 
 import contextlib
+import inspect
 import math
 import os
 import time
@@ -260,6 +261,11 @@ def policy_scope(threshold: float, diagnostics: bool = False) -> Iterator[Policy
             record(score=score, reason=reason, accepted=accepted, elapsed_ns=elapsed_ns)
         return result
 
+    # The library's #566 `solver` / `stats` and #572 `preconditioning` keywords are
+    # accepted (the inversion passes them by name) and forwarded only to a library
+    # that declares them.
+    _outer_params = inspect.signature(original_outer).parameters
+
     def policy_outer(
         data_vector,
         curvature_reg_matrix,
@@ -267,6 +273,9 @@ def policy_scope(threshold: float, diagnostics: bool = False) -> Iterator[Policy
         xp=np,
         fingerprint=None,
         factor=None,
+        solver="pdip",
+        stats=None,
+        preconditioning="jacobi",
     ):
         nonlocal last_memo_snapshot
         use_policy = (
@@ -301,6 +310,15 @@ def policy_scope(threshold: float, diagnostics: bool = False) -> Iterator[Policy
                 xp=xp,
                 fingerprint=fingerprint,
                 factor=factor,
+                **{
+                    name: value
+                    for name, value in (
+                        ("solver", solver),
+                        ("stats", stats),
+                        ("preconditioning", preconditioning),
+                    )
+                    if name in _outer_params
+                },
             )
         finally:
             current.pop()

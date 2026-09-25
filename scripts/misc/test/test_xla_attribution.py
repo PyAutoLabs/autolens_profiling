@@ -135,7 +135,7 @@ _LOCATIONS = [
     (2, 5, 586, 21),  # 5  convolver.py:586  the shared rfft2
     (4, 6, 136, 20),  # 6  imaging/abstract.py:136 operated_mapping_matrix_list
     (3, 7, 295, 12),  # 7  delaunay.py:295   the visibility walk while_loop
-    (1, 8, 675, 40),  # 8  abstract.py:675   the edge-subset gather
+    (1, 8, 700, 40),  # 8  abstract.py:700   the edge-subset gather
     (2, 9, 660, 15),  # 9  convolver.py:660  _convolved_image_over_sampled_jax_from
     (3, 10, 659, 18),  # 10 delaunay.py:659  pixel_weights_delaunay_from
 ]
@@ -456,7 +456,7 @@ def test_the_library_certified_solver_is_the_certified_row_not_pdip():
     assert xa.stage_for_frames((caller,)) == "certified_active_set_solve"
     fallback = xa.Frame(file=_UTIL, function="pdip_fn", line=266)
     assert xa.stage_for_frames((fallback, caller)) == "pdip_solve"
-    jacobi = xa.Frame(file=_UTIL, function="reconstruction_positive_only_from", line=435)
+    jacobi = xa.Frame(file=_UTIL, function="reconstruction_positive_only_from", line=491)
     assert xa.stage_for_frames((jacobi,)) == "nnls_jacobi_preconditioning"
 
 

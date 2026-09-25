@@ -62,9 +62,9 @@ strictly *more* information: resolving a ``stack_frame_id`` and walking its
 
 This matters because the stages are not separable by the innermost frame alone.
 Both Bayesian-evidence log determinants are the *same* three lines of
-``inversion/inversion/abstract.py`` (``_log_det_symmetric_from``, 924-968 at 681938ae) and are
-told apart only by their caller — ``log_det_curvature_reg_matrix_term`` (1051) or
-``log_det_regularization_matrix_term`` (1130). So a :class:`StageRule` may declare
+``inversion/inversion/abstract.py`` (``_log_det_symmetric_from``, 951-995 at 5f8a8dee) and are
+told apart only by their caller — ``log_det_curvature_reg_matrix_term`` (1078) or
+``log_det_regularization_matrix_term`` (1157). So a :class:`StageRule` may declare
 a ``requires`` frame that must also appear somewhere in the same stack.
 
 Fusions carry their constituents
@@ -613,20 +613,21 @@ _PSF_CUBE_HARNESS = "likelihood_breakdown/psf_cube_injection.py"
 _LOGDET_HARNESS = "likelihood_breakdown/logdet_reuse_injection.py"
 
 #: The PyAutoArray ``main`` the ``abstract.py`` / ``inversion_util.py`` ranges
-#: below were read from (re-anchored 2026-09-24, phase 4, #303).
-LIBRARY_ANCHOR_REVISION = "PyAutoArray main 681938ae (2026-09-24)"
+#: below were read from (re-anchored 2026-09-24, phase 4, #303; re-pinned
+#: 2026-09-25 after PyAutoArray#571 moved everything below line 602).
+LIBRARY_ANCHOR_REVISION = "PyAutoArray main 5f8a8dee (2026-09-25)"
 #: ``_log_det_symmetric_from`` — the shared body of both log determinants.
-_ABSTRACT_LOG_DET_BODY = (924, 968)
+_ABSTRACT_LOG_DET_BODY = (951, 995)
 #: ``log_det_curvature_reg_matrix_term`` (decorator to last line).
-_ABSTRACT_LOG_DET_CURVATURE_CALLER = (970, 1051)
+_ABSTRACT_LOG_DET_CURVATURE_CALLER = (997, 1078)
 #: ``log_det_regularization_matrix_term`` (decorator to last line).
-_ABSTRACT_LOG_DET_REGULARIZATION_CALLER = (1071, 1132)
+_ABSTRACT_LOG_DET_REGULARIZATION_CALLER = (1098, 1159)
 #: ``curvature_reg_matrix``'s single-line ``self._xp.add(F, H)``.
 _ABSTRACT_CURVATURE_ADD_LINE = 389
 #: ``curvature_reg_matrix_reduced`` (the ``mapper_indices`` gathers).
 _ABSTRACT_REDUCED_GATHER = (392, 415)
 #: ``reconstruction``'s edge-zeroed branch: the two ``[ids_to_keep]`` subsets.
-_ABSTRACT_EDGE_SUBSET = (671, 678)
+_ABSTRACT_EDGE_SUBSET = (696, 703)
 
 #: Ordered rules. **Order is the contract**: a stack is walked innermost frame
 #: first, and at each frame the rules are tried in this order, so the earliest
@@ -644,12 +645,15 @@ _ABSTRACT_EDGE_SUBSET = (671, 678)
 #: and the 2026-09-16 factor-reuse edits had moved every range below
 #: ``curvature_reg_matrix`` by 17-81 lines, so the log-det rules pointed into
 #: ``regularization_term`` and ``reconstruction`` started 51 lines early.
+#: RE-PINNED 2026-09-25 against PyAutoArray ``main`` 5f8a8dee: #571 inserted
+#: ``positive_only_preconditioning_used`` (abstract.py +25..+27 from line 603)
+#: and the raw-forward PDIP branch (inversion_util.py Jacobi block +56).
 #: ``LIBRARY_ANCHOR_REVISION`` names that revision in the provenance.
 STAGE_MAP: tuple[StageRule, ...] = (
     # --- the two log determinants: same lines, told apart by their caller ----
-    # ``_log_det_symmetric_from`` 924-968; its callers
-    # ``log_det_curvature_reg_matrix_term`` 970-1051 and
-    # ``log_det_regularization_matrix_term`` 1071-1132.
+    # ``_log_det_symmetric_from`` 951-995; its callers
+    # ``log_det_curvature_reg_matrix_term`` 997-1078 and
+    # ``log_det_regularization_matrix_term`` 1098-1159.
     StageRule(
         "log_det_curvature_reg",
         _ARRAY + _INVERSION_ABSTRACT,
@@ -681,26 +685,27 @@ STAGE_MAP: tuple[StageRule, ...] = (
     # --- the F + lambda*H add, and the two [ids][:, ids] gathers -------------
     StageRule("curvature_reg_add", _ARRAY + _INVERSION_ABSTRACT, (368, 389)),
     StageRule("curvature_reg_reduce_gather", _ARRAY + _INVERSION_ABSTRACT, (391, 415)),
-    # ``reconstruction`` spans 634-731. 671-678 is the edge-zeroed branch
-    # (``ids_to_keep is not None``): the two ``[ids_to_keep]`` subsets. 679-708
-    # is the partial solve plus the scatter back to full shape; 710-725 is the
+    # ``reconstruction`` spans 659-758. 696-703 is the edge-zeroed branch
+    # (``ids_to_keep is not None``): the two ``[ids_to_keep]`` subsets. 704-734
+    # is the partial solve plus the scatter back to full shape; 736-752 is the
     # else branch, which is what the Delaunay family runs (no edge zeroing).
-    # 679-793 runs on through ``reconstruction_reduced`` / ``_dict`` /
+    # 704-820 runs on through ``reconstruction_reduced`` / ``_dict`` /
     # ``source_quantity_dict_from``, as the 2026-09-16 map's 615-721 did.
     StageRule("edge_subset_gather", _ARRAY + _INVERSION_ABSTRACT, _ABSTRACT_EDGE_SUBSET),
-    StageRule("regularization_term", _ARRAY + _INVERSION_ABSTRACT, (858, 922)),
-    StageRule("mapped_reconstruction", _ARRAY + _INVERSION_ABSTRACT, (795, 857)),
-    StageRule("reconstruction_scatter", _ARRAY + _INVERSION_ABSTRACT, (634, 670)),
-    StageRule("reconstruction_scatter", _ARRAY + _INVERSION_ABSTRACT, (679, 793)),
+    StageRule("regularization_term", _ARRAY + _INVERSION_ABSTRACT, (885, 949)),
+    StageRule("mapped_reconstruction", _ARRAY + _INVERSION_ABSTRACT, (822, 884)),
+    StageRule("reconstruction_scatter", _ARRAY + _INVERSION_ABSTRACT, (659, 695)),
+    StageRule("reconstruction_scatter", _ARRAY + _INVERSION_ABSTRACT, (704, 820)),
     # --- the PDIP / active-set solve ----------------------------------------
-    # ``inversion_util.py`` ranges (re-anchored 2026-09-24, 681938ae): 12-93
+    # ``inversion_util.py`` ranges (re-anchored 2026-09-24, 681938ae; re-pinned
+    # 2026-09-25, 5f8a8dee, after #571): 12-93
     # curvature diag/added/mirrored helpers, 96-148 curvature_matrix_via_
     # mapping_matrix_from (F), 151-193 mapped_reconstructed_data_* (the mapped
     # reconstruction, NOT D), 196-248 reconstruction_positive_negative_from,
     # 251-288 _certified_positive_only_from (the library certified solve, #566;
-    # its nested ``pdip_fn`` 265-272 is the PDIP fallback), 291-593
+    # its nested ``pdip_fn`` 265-272 is the PDIP fallback), 291-644
     # reconstruction_positive_only_from, whose Jacobi preconditioning block is
-    # 433-464 (shared by BOTH solvers, so it is its own row).
+    # 489-516 (shared by BOTH solvers, so it is its own row).
     # The harness certified active set (``library_solver_injection``) rebinds the
     # library's positive-only entry point, so its kernels trace to this repo, not
     # to PyAutoArray. Without these rules they walk outward to the
@@ -715,20 +720,20 @@ STAGE_MAP: tuple[StageRule, ...] = (
     StageRule(
         "certified_active_set_solve", _ARRAY + "inversion/inversion/inversion_util.py", (251, 288)
     ),
-    # 433-436 build D = 1/sqrt(diag M), Q_pc = D M D and q_pc = D q; 439-450 and
-    # 455-464 are the ``(...) * D`` that maps each solver's answer back. The
+    # 489-492 build D = 1/sqrt(diag M), Q_pc = D M D and q_pc = D q; 495-506 and
+    # 508-516 are the ``(...) * D`` that maps each solver's answer back. The
     # solver calls inside them have deeper innermost frames and resolve above.
     StageRule(
         "nnls_jacobi_preconditioning",
         _ARRAY + "inversion/inversion/inversion_util.py",
-        (433, 450),
+        (489, 506),
     ),
     StageRule(
         "nnls_jacobi_preconditioning",
         _ARRAY + "inversion/inversion/inversion_util.py",
-        (455, 464),
+        (508, 516),
     ),
-    StageRule("pdip_solve", _ARRAY + "inversion/inversion/inversion_util.py", (291, 593)),
+    StageRule("pdip_solve", _ARRAY + "inversion/inversion/inversion_util.py", (291, 644)),
     StageRule(
         "mapped_reconstruction", _ARRAY + "inversion/inversion/inversion_util.py", (151, 193)
     ),
@@ -1509,7 +1514,7 @@ def hlo_census(index: Mapping[str, Instruction]) -> dict:
     earlier JSON stays comparable key-for-key. The ranges actually matched are
     the re-anchored ``_ABSTRACT_*`` constants (``LIBRARY_ANCHOR_REVISION``):
     the add is now line 389, the reduced gathers 392-415, the edge subset
-    671-678.
+    696-703.
     """
 
     def _hits(predicate) -> list[Instruction]:
