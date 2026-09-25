@@ -1,0 +1,3113 @@
+{
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "hostname": "euclid-ral-gpu-2",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": null,
+    "cpu_count": 124,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/autolens_profiling/output/jax_cache/fixed_light_logdet_rectangular_schur_k64_350651_6",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 2681 MiB, 81920 MiB"
+  },
+  "machine": {
+    "cpu_model": "AMD EPYC 7702 64-Core Processor",
+    "cpu_count_os": 124,
+    "nproc": 4,
+    "nproc_all": 124,
+    "nproc_note": "GNU nproc honours OMP_NUM_THREADS, so `nproc` can print 1 on a multi-core host; `nproc_all` is the core count.",
+    "ram_total": "928298224 kB",
+    "kernel": "5.14.0-687.17.1.el9_8.x86_64",
+    "platform": "Linux-5.14.0-687.17.1.el9_8.x86_64-x86_64-with-glibc2.34",
+    "python": "3.12.4",
+    "jax_thread_env": {
+      "NPROC": null
+    },
+    "blas_thread_env": {
+      "OMP_NUM_THREADS": null,
+      "OPENBLAS_NUM_THREADS": null,
+      "MKL_NUM_THREADS": null,
+      "VECLIB_MAXIMUM_THREADS": null,
+      "NUMEXPR_NUM_THREADS": null
+    },
+    "thread_env_note": "NPROC sizes XLA's CPU intra-op pool (the JAX rows); the BLAS knobs pin OpenBLAS/MKL/OpenMP (the numpy/scipy rows) and do not touch JAX. Two disjoint families; both are recorded on every CPU timing.",
+    "gpu": "NVIDIA A100 80GB PCIe, 81920 MiB, 610.43.02"
+  },
+  "precision": "fp64",
+  "configuration": {
+    "pixel_scale_arcsec": 0.05,
+    "mask_radius_arcsec": 3.5,
+    "image_pixels_masked": 15361,
+    "over_sampled_pixels": 62752,
+    "mesh": "rectangular",
+    "mesh_shape": [
+      39,
+      39
+    ],
+    "source_pixels": 1521,
+    "source_pixels_requested": null,
+    "dataset": "hst",
+    "dataset_sha256": {
+      "data.fits": "e4e833a28e9c6f6fb023cd85c0d3dde74068720256bc77a240633500e5b04fac",
+      "noise_map.fits": "315c6266a0acd3ac9c8da82fcd2b45a08697362481fd7a35072bab1658530ba3",
+      "psf.fits": "8389ba0e8bf4a09b4a561cfc246181a2fb944ed396754cd0ff76fdd22910d303"
+    },
+    "cell_source_sha256": "8046c44ee1ca063c0bed87b89090afc6101bdf7208668f7137aa95bd26fdaf73",
+    "inversion_path": "dense",
+    "pass_budget": 11,
+    "pass_budget_basis": "phase 3 (autolens_profiling#255): the smallest ZERO-fallback budget per mesh, the budget a production run fixes. NOT phase 0's certifying budget (2 for Delaunay), which falls back on 67.5 % of a graded draw set and is not a production cost.",
+    "border_relocator_mode": "cell",
+    "border_relocator": true,
+    "border_relocator_note": "'cell' is use_border_relocator=True, which every profiling cell in this family forces; 'library' passes None and takes the shipped config default, which is what production runs. The resolved boolean is what this leg actually ran.",
+    "routes_selected": [
+      "b",
+      "d"
+    ],
+    "trace_calls": 10,
+    "command_buffers_traced": "off",
+    "use_mixed_precision": false,
+    "tau_rel": 1e-09,
+    "regularization": {
+      "scheme": "constant",
+      "coefficient": 1.0
+    },
+    "thread_env": {
+      "n_threads": null,
+      "vars": [
+        "OPENBLAS_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OMP_NUM_THREADS",
+        "VECLIB_MAXIMUM_THREADS",
+        "NUMEXPR_NUM_THREADS"
+      ],
+      "set_to": null,
+      "preexisting": {},
+      "overridden": {},
+      "note": "Not pinned (legacy variant): recorded as found."
+    },
+    "over_sample_size_lp_rule": {
+      "sub_size_list": [
+        4,
+        2,
+        2
+      ],
+      "radial_list": [
+        0.3,
+        0.6
+      ],
+      "centre": [
+        0.0,
+        0.0
+      ]
+    },
+    "logdet_candidate": "schur_k64",
+    "pin_draws": 8,
+    "draw_seed": 0,
+    "certified_pass_budget": 16
+  },
+  "solver_injection": {
+    "patched": null,
+    "note": "Log-det mode (phase 4, #303): routes d, the unmodified-library control and the traced program run the LIBRARY certified solver selected by al.Settings \u2014 no harness solver. The only rebind is the log-det candidate's pair (schur_k64): jax_active_set.solve_certified (bit-identical, keeps its factor) and AbstractInversion.log_det_curvature_reg_matrix_term; none for control."
+  },
+  "routes": {
+    "b_s3_pdip": {
+      "label": "S3 PDIP (source-only)",
+      "status": "ok",
+      "solver": "library",
+      "ms": 39.020641008391976,
+      "log_likelihood": 28622.39485118912
+    },
+    "d_s3_library_certified_logdet": {
+      "label": "S3 LIBRARY certified solver (Settings), budget 16, PDIP fallback, log det schur_k64",
+      "status": "ok",
+      "solver": "library certified (al.Settings), PDIP fallback",
+      "certified_pass_budget": 16,
+      "logdet_candidate": "schur_k64",
+      "injected_logdet_calls_jax": 1,
+      "injected_logdet_calls_delegated": 0,
+      "injected_logdet_delegated_reasons": {},
+      "injected_solves_stashed": 1,
+      "ms": 26.927448995411396,
+      "log_likelihood": 28622.394851189252
+    }
+  },
+  "equivalence_pins": [
+    {
+      "pin": "route d (library certified, log det schur_k64) vs route b (library PDIP) \u2014 RECORDED, not gated in log-det mode",
+      "route": "d_s3_library_certified_logdet",
+      "reference": "b_s3_pdip",
+      "expectation": "the certified active set returns the library's own positive solution",
+      "rtol": 1e-09,
+      "got": 28622.394851189252,
+      "reference_value": 28622.39485118912,
+      "rel_diff": 4.575691088611358e-15,
+      "status": "RECORDED",
+      "abs_diff_nats": 1.3096723705530167e-10,
+      "gated": false
+    }
+  ],
+  "equivalence_rtol": 1e-09,
+  "reference": {
+    "log_evidence_s0_library": 28622.394851199875,
+    "log_evidence_s3_library": 28622.39485119987,
+    "s3": {
+      "n_params": 1521,
+      "n_mapper": 1521,
+      "n_funcs": 0,
+      "edge_zeroed_pixels": 152,
+      "subtracted_light_flux": 5253.476646922047
+    }
+  },
+  "command_buffers": {
+    "wall_on_ms": 26.73159819096327,
+    "wall_off_ms": 27.02612141147256,
+    "command_buffer_delta_ms": 0.2945232205092907,
+    "command_buffer_delta_pct": 1.1017793190115193,
+    "traced": "off",
+    "compiler_option": "xla_gpu_enable_command_buffer",
+    "probe": {
+      "probed_program": "command_buffers_on",
+      "events": 1455,
+      "kernel_names_present": true,
+      "distinct_hlo_op": 62,
+      "joined_duration_pct": 69.9876923969314,
+      "top_hlo_op_by_duration": [
+        [
+          "cholesky.40",
+          17.768029
+        ],
+        [
+          "command_buffer_88",
+          15.802302
+        ],
+        [
+          "command_buffer_73",
+          5.505992
+        ],
+        [
+          "fft.19.0",
+          5.362607
+        ],
+        [
+          "fft.15.0",
+          4.15211
+        ],
+        [
+          "triangular-solve.8",
+          3.108833
+        ]
+      ],
+      "note": "CUPTI emits per-kernel events inside a CUDA graph, but their hlo_op stat is the graph node (command_buffer_N), not the instruction. joined_duration_pct is how much of the device time the name-based join recovers on that program."
+    },
+    "note": "ONE lowering, TWO compilations, one process. wall_on_ms is the PRODUCTION program (CUDA graphs as XLA ships them) and is the number comparable to phase 5's row; wall_off_ms is the graph-less program the stage rows attribute. The delta is the launch overhead the graphs remove \u2014 it lands in device_idle and host_outside_span, not in any stage. Reconciliation is computed against wall_off_ms."
+  },
+  "trace": {
+    "parser": "ProfileData.from_file(xplane) + as_text() + stack_frame_index(proto field 17)",
+    "stage_audit": {
+      "mesh_construction": [
+        {
+          "instruction": "fusion.2",
+          "ms": 0.14826990000000004,
+          "opcode": "fusion",
+          "shape": "(f64[15361,2]{1,0}, s64[15361,2]{1,0}, s32[15361,2]{1,0})",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/interpolator/rectangular.py:227",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/interpolator/rectangular.py:227 (create_transforms_rank)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/interpolator/rectangular.py:396 (_transforms_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/interpolator/rectangular.py:561 (adaptive_rectangular_mappings_weights_via_interpolation_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/interpolator/rectangular.py:693 (InterpolatorRectangular._mappings_sizes_weights)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)"
+          ]
+        },
+        {
+          "instruction": "loop_select_fusion",
+          "ms": 0.03984019999999998,
+          "opcode": "fusion",
+          "shape": "(u32[2,15361]{1,0}, u32[2,15361]{1,0})",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/interpolator/rectangular.py:69",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/interpolator/rectangular.py:69 (forward_interp)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/interpolator/rectangular.py:573 (adaptive_rectangular_mappings_weights_via_interpolation_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/interpolator/rectangular.py:693 (InterpolatorRectangular._mappings_sizes_weights)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/interpolator/abstract.py:36 (AbstractInterpolator.mappings)"
+          ]
+        },
+        {
+          "instruction": "loop_select_fusion.7",
+          "ms": 0.03475960000000003,
+          "opcode": "fusion",
+          "shape": "(u32[15361]{0}, u32[15361]{0})",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/interpolator/rectangular.py:245",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/interpolator/rectangular.py:245 (create_transforms_rank)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/interpolator/rectangular.py:396 (_transforms_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/interpolator/rectangular.py:561 (adaptive_rectangular_mappings_weights_via_interpolation_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/interpolator/rectangular.py:693 (InterpolatorRectangular._mappings_sizes_weights)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)"
+          ]
+        },
+        {
+          "instruction": "loop_select_fusion.1",
+          "ms": 0.0346284,
+          "opcode": "fusion",
+          "shape": "(u32[15361]{0}, u32[15361]{0})",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/interpolator/rectangular.py:245",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/interpolator/rectangular.py:245 (create_transforms_rank)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/interpolator/rectangular.py:396 (_transforms_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/interpolator/rectangular.py:561 (adaptive_rectangular_mappings_weights_via_interpolation_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/interpolator/rectangular.py:693 (InterpolatorRectangular._mappings_sizes_weights)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)"
+          ]
+        },
+        {
+          "instruction": "loop_add_fusion",
+          "ms": 0.021188899999999983,
+          "opcode": "fusion",
+          "shape": "s64[]",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/interpolator/rectangular.py:69",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/interpolator/rectangular.py:69 (forward_interp)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/interpolator/rectangular.py:573 (adaptive_rectangular_mappings_weights_via_interpolation_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/interpolator/rectangular.py:693 (InterpolatorRectangular._mappings_sizes_weights)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/interpolator/abstract.py:36 (AbstractInterpolator.mappings)"
+          ]
+        },
+        {
+          "instruction": "loop_add_fusion.9",
+          "ms": 0.020968499999999998,
+          "opcode": "fusion",
+          "shape": "s64[]",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/interpolator/rectangular.py:245",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/interpolator/rectangular.py:245 (create_transforms_rank)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/interpolator/rectangular.py:396 (_transforms_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/interpolator/rectangular.py:561 (adaptive_rectangular_mappings_weights_via_interpolation_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/interpolator/rectangular.py:693 (InterpolatorRectangular._mappings_sizes_weights)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)"
+          ]
+        }
+      ],
+      "mixed_fusion": [
+        {
+          "instruction": "loop_divide_gather_fusion",
+          "ms": 0.6972024000000001,
+          "opcode": "fusion",
+          "shape": "(f64[15361,1,1,1521]{3,2,1,0}, f64[15361,1,1,1521]{3,2,1,0})",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:133",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:133 (curvature_matrix_via_mapping_matrix_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:93 (InversionImagingMapping.curvature_matrix)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:389 (AbstractInversion.curvature_reg_matrix)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)"
+          ]
+        },
+        {
+          "instruction": "loop_broadcast_fusion.4",
+          "ms": 0.23357619999999996,
+          "opcode": "fusion",
+          "shape": "f64[1521,180,180]{2,1,0}",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/operators/convolver.py:1228",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/operators/convolver.py:1228 (Convolver.convolved_mapping_matrix_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:197 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:829 (AbstractInversion.mapped_reconstructed_operated_data)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoLens/autolens/imaging/fit_imaging.py:199 (FitImaging.model_data)"
+          ]
+        },
+        {
+          "instruction": "loop_broadcast_fusion.2",
+          "ms": 0.13627350000000002,
+          "opcode": "fusion",
+          "shape": "f64[15361,1521]{1,0}",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mappers/mapper_util.py:342",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mappers/mapper_util.py:342 (mapping_matrix_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mappers/abstract.py:283 (Mapper.mapping_matrix)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:91 (AbstractInversionImaging._mapping_matrix_for_convolution_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:137 (AbstractInversionImaging.operated_mapping_matrix_list)"
+          ]
+        },
+        {
+          "instruction": "input_reduce_fusion.16",
+          "ms": 0.11317390000000001,
+          "opcode": "fusion",
+          "shape": "f64[92,1521]{1,0}",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/inversion_imaging_util.py:123",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/inversion_imaging_util.py:123 (data_vector_via_blurred_mapping_matrix_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:67 (InversionImagingMapping.data_vector)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:674 (AbstractInversion.reconstruction)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)"
+          ]
+        },
+        {
+          "instruction": "input_reduce_fusion.18",
+          "ms": 0.11182700000000001,
+          "opcode": "fusion",
+          "shape": "f64[15361]{0}",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:163",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:163 (mapped_reconstructed_data_via_mapping_matrix_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:120 (InversionImagingMapping._mapped_reconstructed_data_dict_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:196 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:829 (AbstractInversion.mapped_reconstructed_operated_data)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoLens/autolens/imaging/fit_imaging.py:199 (FitImaging.model_data)"
+          ]
+        },
+        {
+          "instruction": "input_multiply_transpose_fusion",
+          "ms": 0.0408997,
+          "opcode": "fusion",
+          "shape": "(f64[1369,1369]{1,0}, f64[1369,1369]{1,0})",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:153",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:153 (masked_solve)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:237 (active_set_search)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:280 (solve_certified_stashing)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:341 (solve_certified_with_fallback)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:274 (_certified_positive_only_from)"
+          ]
+        }
+      ],
+      "mass_profile_deflections": [
+        {
+          "instruction": "loop_sqrt_fusion.1",
+          "ms": 0.0015967,
+          "opcode": "fusion",
+          "shape": "f64[]",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoGalaxy/autogalaxy/convert.py:224",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoGalaxy/autogalaxy/convert.py:224 (shear_magnitude_and_angle_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoGalaxy/autogalaxy/convert.py:257 (shear_magnitude_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoGalaxy/autogalaxy/profiles/mass/sheets/external_shear.py:90 (ExternalShear.magnitude)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoGalaxy/autogalaxy/profiles/mass/sheets/external_shear.py:161 (ExternalShear.deflections_yx_2d_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/structures/decorators/transform.py:77 (transform.<locals>.decorator.<locals>.wrapper)"
+          ]
+        }
+      ],
+      "border_relocator": [
+        {
+          "instruction": "eigh.0",
+          "ms": 0.07401759999999999,
+          "opcode": "custom-call",
+          "shape": "(f64[2,2]{0,1}, f64[2]{0}, s32[])",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:245",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:245 (ellipse_params_via_border_pca_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:415 (BorderRelocator.relocated_grid_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/mesh/abstract.py:83 (AbstractMesh.relocated_grid_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/mesh/rectangular_rtu_adapt_density.py:267 (RectangularRTUAdaptDensity.interpolator_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoGalaxy/autogalaxy/galaxy/to_inversion.py:489 (GalaxiesToInversion.mapper_from)"
+          ]
+        },
+        {
+          "instruction": "custom-call.4",
+          "ms": 0.0078874,
+          "opcode": "custom-call",
+          "shape": "(f64[2,2]{1,0}, s8[4194304]{0})",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:242",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:242 (ellipse_params_via_border_pca_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:415 (BorderRelocator.relocated_grid_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/mesh/abstract.py:83 (AbstractMesh.relocated_grid_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/mesh/rectangular_rtu_adapt_density.py:267 (RectangularRTUAdaptDensity.interpolator_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoGalaxy/autogalaxy/galaxy/to_inversion.py:489 (GalaxiesToInversion.mapper_from)"
+          ]
+        },
+        {
+          "instruction": "input_reduce_fusion.19",
+          "ms": 0.0054876,
+          "opcode": "fusion",
+          "shape": "(f64[], f64[])",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:270",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:270 (ellipse_params_via_border_pca_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:415 (BorderRelocator.relocated_grid_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/mesh/abstract.py:83 (AbstractMesh.relocated_grid_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/mesh/rectangular_rtu_adapt_density.py:267 (RectangularRTUAdaptDensity.interpolator_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoGalaxy/autogalaxy/galaxy/to_inversion.py:489 (GalaxiesToInversion.mapper_from)"
+          ]
+        },
+        {
+          "instruction": "loop_add_fusion.11",
+          "ms": 0.0037435999999999997,
+          "opcode": "fusion",
+          "shape": "f64[15361]{0}",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:308",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:308 (relocated_grid_via_ellipse_border_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:423 (BorderRelocator.relocated_grid_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/mesh/abstract.py:83 (AbstractMesh.relocated_grid_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/mesh/rectangular_rtu_adapt_density.py:267 (RectangularRTUAdaptDensity.interpolator_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoGalaxy/autogalaxy/galaxy/to_inversion.py:489 (GalaxiesToInversion.mapper_from)"
+          ]
+        },
+        {
+          "instruction": "input_concatenate_fusion.3",
+          "ms": 0.0023806999999999995,
+          "opcode": "fusion",
+          "shape": "f64[392,2]{1,0}",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:238",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:238 (ellipse_params_via_border_pca_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:415 (BorderRelocator.relocated_grid_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/mesh/abstract.py:83 (AbstractMesh.relocated_grid_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/mesh/rectangular_rtu_adapt_density.py:267 (RectangularRTUAdaptDensity.interpolator_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoGalaxy/autogalaxy/galaxy/to_inversion.py:489 (GalaxiesToInversion.mapper_from)"
+          ]
+        },
+        {
+          "instruction": "loop_multiply_fusion.4",
+          "ms": 0.0015615999999999996,
+          "opcode": "fusion",
+          "shape": "f64[2,2]{1,0}",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:245",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:245 (ellipse_params_via_border_pca_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/border_relocator.py:415 (BorderRelocator.relocated_grid_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/mesh/abstract.py:83 (AbstractMesh.relocated_grid_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/mesh/mesh/rectangular_rtu_adapt_density.py:267 (RectangularRTUAdaptDensity.interpolator_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoGalaxy/autogalaxy/galaxy/to_inversion.py:489 (GalaxiesToInversion.mapper_from)"
+          ]
+        }
+      ],
+      "other": [
+        {
+          "instruction": "copy.72",
+          "ms": 0.030305699999999956,
+          "opcode": "copy",
+          "shape": "u32[2,15361]{1,0}",
+          "source": "",
+          "stack": []
+        },
+        {
+          "instruction": "copy.73",
+          "ms": 0.030123499999999984,
+          "opcode": "copy",
+          "shape": "u32[2,15361]{1,0}",
+          "source": "",
+          "stack": []
+        },
+        {
+          "instruction": "copy.90",
+          "ms": 0.028682900000000056,
+          "opcode": "copy",
+          "shape": "u32[15361]{0}",
+          "source": "",
+          "stack": []
+        },
+        {
+          "instruction": "copy.82",
+          "ms": 0.02865180000000006,
+          "opcode": "copy",
+          "shape": "u32[15361]{0}",
+          "source": "",
+          "stack": []
+        },
+        {
+          "instruction": "copy.91",
+          "ms": 0.028545300000000055,
+          "opcode": "copy",
+          "shape": "u32[15361]{0}",
+          "source": "",
+          "stack": []
+        },
+        {
+          "instruction": "copy.81",
+          "ms": 0.02838830000000002,
+          "opcode": "copy",
+          "shape": "u32[15361]{0}",
+          "source": "",
+          "stack": []
+        }
+      ],
+      "certified_active_set_solve": [
+        {
+          "instruction": "cholesky.40",
+          "ms": 5.9200321,
+          "opcode": "custom-call",
+          "shape": "(f64[1369,1369]{0,1}, s32[])",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:153",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:153 (masked_solve)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:252 (active_set_search.<locals>.body_fun)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:262 (active_set_search)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:280 (solve_certified_stashing)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:341 (solve_certified_with_fallback)"
+          ]
+        },
+        {
+          "instruction": "triangular-solve.8",
+          "ms": 1.0327532000000006,
+          "opcode": "custom-call",
+          "shape": "(f64[1369,1]{0,1}, s8[0]{0})",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:154",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:154 (masked_solve)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:252 (active_set_search.<locals>.body_fun)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:262 (active_set_search)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:280 (solve_certified_stashing)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:341 (solve_certified_with_fallback)"
+          ]
+        },
+        {
+          "instruction": "triangular-solve.7",
+          "ms": 0.8662322999999996,
+          "opcode": "custom-call",
+          "shape": "(f64[1369,1]{0,1}, s8[0]{0})",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:154",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:154 (masked_solve)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:252 (active_set_search.<locals>.body_fun)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:262 (active_set_search)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:280 (solve_certified_stashing)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:341 (solve_certified_with_fallback)"
+          ]
+        },
+        {
+          "instruction": "cholesky.130",
+          "ms": 0.8505724000000003,
+          "opcode": "custom-call",
+          "shape": "(f64[1369,1369]{0,1}, s32[])",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:153",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:153 (masked_solve)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:237 (active_set_search)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:280 (solve_certified_stashing)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:341 (solve_certified_with_fallback)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:274 (_certified_positive_only_from)"
+          ]
+        },
+        {
+          "instruction": "cholesky.140",
+          "ms": 0.8466717999999999,
+          "opcode": "custom-call",
+          "shape": "(f64[1369,1369]{0,1}, s32[])",
+          "source": "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:289",
+          "stack": [
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:289 (solve_certified_stashing)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:341 (solve_certified_with_fallback)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:274 (_certified_positive_only_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:440 (reconstruction_positive_only_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:681 (AbstractInversion.reconstruction)"
+          ]
+        },
+        {
+          "instruction": "input_transpose_fusion.5",
+          "ms": 0.20665669999999997,
+          "opcode": "fusion",
+          "shape": "f64[1369,1369]{1,0}",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:153",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:153 (masked_solve)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:252 (active_set_search.<locals>.body_fun)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:262 (active_set_search)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:280 (solve_certified_stashing)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:341 (solve_certified_with_fallback)"
+          ]
+        }
+      ],
+      "psf_convolution_mapping_matrix": [
+        {
+          "instruction": "fft.19.0",
+          "ms": 1.7811852,
+          "opcode": "fft",
+          "shape": "f64[1521,180,180]{2,1,0}",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/operators/convolver.py:1232",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/operators/convolver.py:1232 (Convolver.convolved_mapping_matrix_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:197 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:829 (AbstractInversion.mapped_reconstructed_operated_data)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoLens/autolens/imaging/fit_imaging.py:199 (FitImaging.model_data)"
+          ]
+        },
+        {
+          "instruction": "input_scatter_fusion.2",
+          "ms": 1.4292415,
+          "opcode": "fusion",
+          "shape": "f64[1521,180,180]{2,1,0}",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/operators/convolver.py:1228",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/operators/convolver.py:1228 (Convolver.convolved_mapping_matrix_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:197 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:829 (AbstractInversion.mapped_reconstructed_operated_data)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoLens/autolens/imaging/fit_imaging.py:199 (FitImaging.model_data)"
+          ]
+        },
+        {
+          "instruction": "fft.15.0",
+          "ms": 1.3799356,
+          "opcode": "fft",
+          "shape": "c128[1521,180,91]{2,1,0}",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/operators/convolver.py:1228",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/operators/convolver.py:1228 (Convolver.convolved_mapping_matrix_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:197 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:829 (AbstractInversion.mapped_reconstructed_operated_data)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoLens/autolens/imaging/fit_imaging.py:199 (FitImaging.model_data)"
+          ]
+        },
+        {
+          "instruction": "fft.17.0",
+          "ms": 0.9928359000000001,
+          "opcode": "fft",
+          "shape": "c128[1521,91,180]{2,1,0}",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/operators/convolver.py:1232",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/operators/convolver.py:1232 (Convolver.convolved_mapping_matrix_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:197 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:829 (AbstractInversion.mapped_reconstructed_operated_data)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoLens/autolens/imaging/fit_imaging.py:199 (FitImaging.model_data)"
+          ]
+        },
+        {
+          "instruction": "input_transpose_fusion.6",
+          "ms": 0.5217701000000001,
+          "opcode": "fusion",
+          "shape": "c128[1521,91,180]{2,1,0}",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/operators/convolver.py:1232",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/operators/convolver.py:1232 (Convolver.convolved_mapping_matrix_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:197 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:829 (AbstractInversion.mapped_reconstructed_operated_data)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoLens/autolens/imaging/fit_imaging.py:199 (FitImaging.model_data)"
+          ]
+        },
+        {
+          "instruction": "wrapped_transpose.2",
+          "ms": 0.5075919,
+          "opcode": "fusion",
+          "shape": "c128[1521,180,91]{2,1,0}",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/operators/convolver.py:1232",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/operators/convolver.py:1232 (Convolver.convolved_mapping_matrix_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:197 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:829 (AbstractInversion.mapped_reconstructed_operated_data)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoLens/autolens/imaging/fit_imaging.py:199 (FitImaging.model_data)"
+          ]
+        }
+      ],
+      "curvature_matrix_F": [
+        {
+          "instruction": "cublas-lt-matmul.2",
+          "ms": 4.3389054,
+          "opcode": "custom-call",
+          "shape": "(f64[1521,1521]{1,0}, s8[4194304]{0})",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:134",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:134 (curvature_matrix_via_mapping_matrix_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:93 (InversionImagingMapping.curvature_matrix)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:389 (AbstractInversion.curvature_reg_matrix)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)"
+          ]
+        }
+      ],
+      "inversion_other": [
+        {
+          "instruction": "loop_reduce_window_fusion.5",
+          "ms": 0.0057949,
+          "opcode": "fusion",
+          "shape": "s64[6,16]{1,0}",
+          "source": "",
+          "stack": []
+        },
+        {
+          "instruction": "loop_reduce_window_fusion.4",
+          "ms": 0.003078,
+          "opcode": "fusion",
+          "shape": "s64[86,16]{1,0}",
+          "source": "",
+          "stack": []
+        },
+        {
+          "instruction": "input_scatter_fusion.5",
+          "ms": 0.0025600000000000006,
+          "opcode": "fusion",
+          "shape": "s64[1369]{0}",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:527",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:527 (AbstractInversion.zeroed_ids_to_keep)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:567 (AbstractInversion.solve_ids_to_keep)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:659 (AbstractInversion.reconstruction)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)"
+          ]
+        },
+        {
+          "instruction": "loop_slice_fusion.1",
+          "ms": 0.001792,
+          "opcode": "fusion",
+          "shape": "s64[6,1]{1,0}",
+          "source": "",
+          "stack": []
+        },
+        {
+          "instruction": "loop_broadcast_fusion.5",
+          "ms": 0.0017822,
+          "opcode": "fusion",
+          "shape": "(s64[1369]{0}, s64[1369]{0})",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:527",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:527 (AbstractInversion.zeroed_ids_to_keep)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:567 (AbstractInversion.solve_ids_to_keep)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:659 (AbstractInversion.reconstruction)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)"
+          ]
+        }
+      ],
+      "chi_squared_evidence": [
+        {
+          "instruction": "loop_multiply_fusion.3",
+          "ms": 0.002950200000000001,
+          "opcode": "fusion",
+          "shape": "f64[15361]{0}",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/abstract_ndarray.py:300",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/abstract_ndarray.py:300 (AbstractNDArray.__pow__)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/abstract_ndarray.py:60 (unwrap_array.<locals>.wrapper)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/abstract_ndarray.py:35 (to_new_array.<locals>.wrapper)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_util.py:78 (chi_squared_map_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:78 (AbstractFit.chi_squared_map)"
+          ]
+        }
+      ],
+      "log_det_curvature_reg": [
+        {
+          "instruction": "cholesky.100",
+          "ms": 0.9349191999999998,
+          "opcode": "custom-call",
+          "shape": "(f64[1521,1521]{0,1}, s32[])",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:959",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:959 (AbstractInversion._log_det_symmetric_from)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:453 (patched_log_det.<locals>.<lambda>)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:450 (patched_log_det)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)"
+          ]
+        },
+        {
+          "instruction": "input_transpose_fusion",
+          "ms": 0.025726600000000002,
+          "opcode": "fusion",
+          "shape": "f64[1521,1521]{1,0}",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:959",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:959 (AbstractInversion._log_det_symmetric_from)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:453 (patched_log_det.<locals>.<lambda>)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:450 (patched_log_det)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)"
+          ]
+        },
+        {
+          "instruction": "loop_log_fusion",
+          "ms": 0.002499,
+          "opcode": "fusion",
+          "shape": "f64[1521,1,1]{2,1,0}",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:959",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:959 (AbstractInversion._log_det_symmetric_from)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:453 (patched_log_det.<locals>.<lambda>)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:450 (patched_log_det)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)"
+          ]
+        },
+        {
+          "instruction": "input_reduce_fusion",
+          "ms": 0.0022878000000000004,
+          "opcode": "fusion",
+          "shape": "f64[]",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:958",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:958 (AbstractInversion._log_det_symmetric_from)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:453 (patched_log_det.<locals>.<lambda>)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:450 (patched_log_det)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)"
+          ]
+        },
+        {
+          "instruction": "cond.7.clone",
+          "ms": 0.0018016,
+          "opcode": "conditional",
+          "shape": "(f64[])",
+          "source": "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:450",
+          "stack": [
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:450 (patched_log_det)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoLens/autolens/imaging/model/analysis.py:135 (AnalysisImaging.log_likelihood_function)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/imaging/likelihood_breakdown/fixed_light_trace.py:1081 (_likelihood_fn.<locals>._likelihood)"
+          ]
+        },
+        {
+          "instruction": "loop_compare_fusion.3",
+          "ms": 0.0017567000000000004,
+          "opcode": "fusion",
+          "shape": "pred[]",
+          "source": "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:448",
+          "stack": [
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:448 (patched_log_det)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoLens/autolens/imaging/model/analysis.py:135 (AnalysisImaging.log_likelihood_function)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/imaging/likelihood_breakdown/fixed_light_trace.py:1081 (_likelihood_fn.<locals>._likelihood)"
+          ]
+        }
+      ],
+      "log_det_regularization": [
+        {
+          "instruction": "cholesky.150",
+          "ms": 0.9217652,
+          "opcode": "custom-call",
+          "shape": "(f64[1521,1521]{0,1}, s32[])",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:959",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:959 (AbstractInversion._log_det_symmetric_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:1130 (AbstractInversion.log_det_regularization_matrix_term)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:348 (FitDataset.log_evidence)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoLens/autolens/imaging/model/analysis.py:135 (AnalysisImaging.log_likelihood_function)"
+          ]
+        }
+      ]
+    },
+    "stage_audit_note": "The HLO instructions that contributed most of each stage's milliseconds, with their full source stack. A stage row is only as good as the rules that built it; this is how a reader checks a row against the HLO instead of trusting it.",
+    "untraced_wall_ms": 27.124339807778597,
+    "reconciliation_vs_untraced_pct": 3.343620521821211,
+    "wall_basis": "wall_ms is the TRACED run's wall, the run these kernel durations came from. untraced_wall_ms is the same executable without the profiler; the difference is the profiler's overhead and belongs in neither the stages nor the idle row.",
+    "calls": 10,
+    "call_split": "per-call (first-instruction recurrence)",
+    "call_blocks": 10,
+    "events": 4850,
+    "streams": [
+      "Stream #14(MemcpyD2D,MemcpyD2H,Compute,MemcpyH2D,Memset)"
+    ],
+    "per_stage_ms": {
+      "border_relocator": {
+        "median_ms": 0.096428,
+        "min_ms": 0.09608900000000001,
+        "max_ms": 0.09753200000000002
+      },
+      "certified_active_set_solve": {
+        "median_ms": 10.733639499999999,
+        "min_ms": 10.724058000000001,
+        "max_ms": 10.74584
+      },
+      "chi_squared_evidence": {
+        "median_ms": 0.0029435,
+        "min_ms": 0.002912,
+        "max_ms": 0.003104
+      },
+      "curvature_matrix_F": {
+        "median_ms": 4.3293219999999994,
+        "min_ms": 4.313435,
+        "max_ms": 4.386774
+      },
+      "inversion_other": {
+        "median_ms": 0.015023000000000002,
+        "min_ms": 0.014943,
+        "max_ms": 0.015071
+      },
+      "log_det_curvature_reg": {
+        "median_ms": 0.9700375,
+        "min_ms": 0.9665020000000001,
+        "max_ms": 0.9764839999999999
+      },
+      "log_det_regularization": {
+        "median_ms": 0.9222,
+        "min_ms": 0.918601,
+        "max_ms": 0.924808
+      },
+      "mass_profile_deflections": {
+        "median_ms": 0.0016,
+        "min_ms": 0.001568,
+        "max_ms": 0.0016
+      },
+      "memset": {
+        "median_ms": 0.027631000000000003,
+        "min_ms": 0.026079,
+        "max_ms": 0.029054
+      },
+      "mesh_construction": {
+        "median_ms": 0.345004,
+        "min_ms": 0.3424700000000001,
+        "max_ms": 0.345393
+      },
+      "mixed_fusion": {
+        "median_ms": 1.6264125000000003,
+        "min_ms": 1.6243190000000003,
+        "max_ms": 1.629598
+      },
+      "other": {
+        "median_ms": 0.18296299999999974,
+        "min_ms": 0.18277499999999972,
+        "max_ms": 0.1832199999999997
+      },
+      "psf_convolution_mapping_matrix": {
+        "median_ms": 6.610048000000001,
+        "min_ms": 6.59413,
+        "max_ms": 6.632942
+      }
+    },
+    "stage_order": [
+      "mass_profile_deflections",
+      "border_relocator",
+      "mesh_construction",
+      "psf_convolution_mapping_matrix",
+      "curvature_matrix_F",
+      "certified_active_set_solve",
+      "log_det_curvature_reg",
+      "log_det_regularization",
+      "chi_squared_evidence",
+      "inversion_other",
+      "mixed_fusion",
+      "other",
+      "memset"
+    ],
+    "mixed_fusion": {
+      "ms": 1.6264125000000003,
+      "constituent_stage_sets": {
+        "curvature_matrix_F + psf_convolution_mapping_matrix": 0.6972024000000001,
+        "certified_active_set_solve + psf_convolution_mapping_matrix": 0.23357619999999996,
+        "certified_active_set_solve + mapping_matrix": 0.13627350000000002,
+        "certified_active_set_solve + data_vector_D": 0.1169464,
+        "certified_active_set_solve + mapped_reconstruction": 0.11182700000000001,
+        "border_relocator + certified_active_set_solve": 0.05415340000000001,
+        "certified_active_set_solve + edge_subset_gather + nnls_jacobi_preconditioning + reconstruction_scatter": 0.0408997,
+        "certified_active_set_solve + mesh_construction": 0.03867920000000001,
+        "log_det_regularization + regularization_H": 0.0310732,
+        "border_relocator + certified_active_set_solve + mesh_construction": 0.0269518,
+        "certified_active_set_solve + regularization_term": 0.0217232,
+        "certified_active_set_solve + regularization_H": 0.0165974,
+        "certified_active_set_solve + ray_trace_data_grid": 0.0130327,
+        "edge_subset_gather + inversion_other + nnls_jacobi_preconditioning + reconstruction_scatter": 0.0095963,
+        "certified_active_set_solve + grids_and_structures + mass_profile_deflections": 0.009285500000000002,
+        "certified_active_set_solve + chi_squared_evidence": 0.007551699999999999,
+        "border_relocator + certified_active_set_solve + inversion_other + mapping_matrix + mesh_construction": 0.0068796,
+        "grids_and_structures + mass_profile_deflections + ray_trace_data_grid": 0.005276499999999999,
+        "certified_active_set_solve + inversion_other + ray_trace_data_grid": 0.004745,
+        "certified_active_set_solve + log_det_curvature_reg + reconstruction_scatter": 0.003932499999999999,
+        "certified_active_set_solve + inversion_other": 0.0037246000000000002,
+        "certified_active_set_solve + grids_and_structures": 0.003712000000000001,
+        "border_relocator + mesh_construction": 0.0037086,
+        "grids_and_structures + mass_profile_deflections": 0.0036607000000000007,
+        "nnls_jacobi_preconditioning + reconstruction_scatter": 0.0032733999999999997,
+        "inversion_other + regularization_H": 0.0032127,
+        "certified_active_set_solve + inversion_other + mesh_construction": 0.0031421,
+        "certified_active_set_solve + mass_profile_deflections": 0.0028351999999999995,
+        "border_relocator + certified_active_set_solve + inversion_other + mesh_construction": 0.0024478,
+        "border_relocator + certified_active_set_solve + log_det_regularization + regularization_H": 0.0024384,
+        "certified_active_set_solve + log_det_regularization": 0.0024062,
+        "inversion_other + log_det_curvature_reg": 0.0019805,
+        "chi_squared_evidence + log_det_regularization": 0.0019295,
+        "certified_active_set_solve + reconstruction_scatter": 0.0017631999999999997
+      },
+      "example_kernels": {
+        "curvature_matrix_F + psf_convolution_mapping_matrix": [
+          "loop_divide_gather_fusion"
+        ],
+        "certified_active_set_solve + psf_convolution_mapping_matrix": [
+          "loop_broadcast_fusion.4"
+        ],
+        "certified_active_set_solve + mapping_matrix": [
+          "loop_broadcast_fusion.2"
+        ],
+        "certified_active_set_solve + data_vector_D": [
+          "input_reduce_fusion.16",
+          "input_reduce_fusion.31"
+        ],
+        "certified_active_set_solve + mapped_reconstruction": [
+          "input_reduce_fusion.18"
+        ],
+        "border_relocator + certified_active_set_solve": [
+          "input_reduce_fusion.20",
+          "loop_select_sine_fusion",
+          "input_concatenate_fusion",
+          "input_transpose_fusion.10"
+        ],
+        "certified_active_set_solve + edge_subset_gather + nnls_jacobi_preconditioning + reconstruction_scatter": [
+          "input_multiply_transpose_fusion"
+        ],
+        "certified_active_set_solve + mesh_construction": [
+          "loop_multiply_fusion.5",
+          "loop_pad_fusion",
+          "loop_reduce_fusion",
+          "triton_softmax.1"
+        ],
+        "log_det_regularization + regularization_H": [
+          "input_transpose_fusion.9"
+        ],
+        "border_relocator + certified_active_set_solve + mesh_construction": [
+          "loop_reduce_fusion.1"
+        ]
+      },
+      "prorated_estimate_ms": {
+        "psf_convolution_mapping_matrix": 0.4653893,
+        "certified_active_set_solve": 0.41124231166666664,
+        "curvature_matrix_F": 0.34860120000000006,
+        "mapping_matrix": 0.06951267000000001,
+        "data_vector_D": 0.0584732,
+        "mapped_reconstruction": 0.055913500000000005,
+        "border_relocator": 0.04051240333333335,
+        "mesh_construction": 0.033213070000000004,
+        "regularization_H": 0.026051249999999995,
+        "log_det_regularization": 0.01831405,
+        "reconstruction_scatter": 0.01645313333333333,
+        "nnls_jacobi_preconditioning": 0.0142607,
+        "edge_subset_gather": 0.012624,
+        "inversion_other": 0.011474878333333334,
+        "regularization_term": 0.0108616,
+        "ray_trace_data_grid": 0.009856849999999999,
+        "grids_and_structures": 0.00854035,
+        "mass_profile_deflections": 0.00810195,
+        "chi_squared_evidence": 0.004740599999999999,
+        "log_det_curvature_reg": 0.002301083333333333
+      },
+      "prorated_note": "ESTIMATE ONLY \u2014 a mixed fusion's time split equally across the stages its constituents span. Never summed into the measured table, never reconciled."
+    },
+    "other_sources_ms": {
+      "copy.72": 0.030305699999999956,
+      "copy.73": 0.030123499999999984,
+      "copy.90": 0.028682900000000056,
+      "copy.82": 0.02865180000000006,
+      "copy.91": 0.028545300000000055,
+      "copy.81": 0.02838830000000002,
+      "loop_broadcast_fusion.6": 0.0019423,
+      "copy.122": 0.0017983,
+      "copy.123": 0.0016223,
+      "copy.65": 0.0014720000000000002,
+      "copy.83": 0.0014398000000000002
+    },
+    "device_span_ms": 28.0436374,
+    "device_busy_ms": 25.8756146,
+    "device_idle_ms": 2.168022800000003,
+    "largest_idle_gaps": [
+      {
+        "gap_ms": 0.057309,
+        "after": "loop_broadcast_fusion.7",
+        "before": "loop_broadcast_fusion.9"
+      },
+      {
+        "gap_ms": 0.048029,
+        "after": "input_concatenate_fusion.3",
+        "before": "custom-call.4"
+      },
+      {
+        "gap_ms": 0.034174,
+        "after": "loop_multiply_fusion.4",
+        "before": "eigh.0"
+      },
+      {
+        "gap_ms": 0.03203,
+        "after": "loop_subtract_fusion.1",
+        "before": "input_reduce_fusion.20"
+      },
+      {
+        "gap_ms": 0.031678,
+        "after": "copy.82",
+        "before": "loop_add_fusion.9"
+      },
+      {
+        "gap_ms": 0.023007,
+        "after": "eigh.0",
+        "before": "eigh.0"
+      },
+      {
+        "gap_ms": 0.022942,
+        "after": "eigh.0",
+        "before": "eigh.0"
+      },
+      {
+        "gap_ms": 0.022111,
+        "after": "loop_select_fusion",
+        "before": "copy.72"
+      }
+    ],
+    "kernel_ms": 25.863252,
+    "sum_ms": 28.031274800000002,
+    "wall_ms": 28.152186470106244,
+    "host_outside_span_ms": 0.1085490701062426,
+    "reconciliation_pct": -0.4294929995388942,
+    "unjoined_ms": 0.0,
+    "unjoined_pct": 0.0,
+    "other_ms": 0.18296299999999974,
+    "other_pct": 0.6499068915811612,
+    "note": "Stage rows attribute the command-buffers-OFF program (see the module docstring): kernel times are the same, the launch overhead the CUDA graphs remove is not. sum_ms = kernel rows + device_idle_ms; the residual against wall_ms is host_outside_span_ms (dispatch before the first kernel, teardown after the last).",
+    "host_callback_ms": 0,
+    "host_callback": {
+      "pure_callback_span_ms": 0,
+      "qhull_ms": 0,
+      "events_by_name": {
+        "ThenExecuteCallback:GetEventForComputeStreamSyncPoint": {
+          "count": 10,
+          "ms": 0.0188307
+        }
+      },
+      "note": "Host-plane events, aggregated BY NAME because they NEST: pure_callback.N contains _wrapped_callback contains pure_callback_impl contains scipy_delaunay_tri_only (the qhull call). pure_callback_span_ms is the outermost round trip; qhull_ms is the triangulation inside it. These are HOST milliseconds and are NOT a row of the device table \u2014 the device pays for them as the idle gap at pure_callback.N, which largest_idle_gaps names."
+    }
+  },
+  "hlo_census": {
+    "curvature_reg_add_nn": {
+      "count": 0,
+      "instructions": [],
+      "count_square_nn": 0,
+      "square_instructions": [],
+      "computations": [],
+      "callers": {},
+      "question": "How many (n,n) adds of F + lambda*H survive XLA? curvature_reg_matrix is a plain property reached twice per evaluation (abstract.py:613 and :397). 1 = CSE collapsed them; 2 = the matrix is built twice on the JAX path.",
+      "opcodes_at_line_371": {},
+      "instructions_at_line_371": [],
+      "where_the_sum_lives": {
+        "consumers_of_F_plus_lambda_H": [
+          {
+            "consumer": "gather.98.9.clone.1",
+            "consumer_opcode": "gather",
+            "consumer_source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:675",
+            "operand": "param_2.1632",
+            "producer": "cublas-lt-matmul.2",
+            "producer_opcode": "custom-call",
+            "producer_shape": "(f64[1521,1521]{1,0}, s8[4194304]{0})",
+            "producer_computation": "main.178",
+            "producer_calls": [],
+            "producer_source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:134"
+          },
+          {
+            "consumer": "gather.98.7.clone.1",
+            "consumer_opcode": "gather",
+            "consumer_source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:675",
+            "operand": "param_1.2389",
+            "producer": "cublas-lt-matmul.2",
+            "producer_opcode": "custom-call",
+            "producer_shape": "(f64[1521,1521]{1,0}, s8[4194304]{0})",
+            "producer_computation": "main.178",
+            "producer_calls": [],
+            "producer_source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:134"
+          }
+        ],
+        "producers": {
+          "cublas-lt-matmul.2": [
+            "gather.98.7.clone.1",
+            "gather.98.9.clone.1"
+          ]
+        },
+        "producers_shared_by_more_than_one_consumer": [
+          "cublas-lt-matmul.2"
+        ],
+        "note": "The F + lambda*H matrix is located by its consumers (the edge subset at abstract.py:606-614 and the log-det Cholesky reached from log_det_curvature_reg_matrix_term) and one step back along their operands, because XLA leaves no standalone add at abstract.py:371 to find. A producer listed under producers_shared_by_more_than_one_consumer is ONE materialisation serving both, which is the JAX-side answer to curvature_reg_matrix_rebuilt_every_access; distinct producers per consumer would be the sum being built more than once."
+      },
+      "verdict": "NO instruction of any opcode resolves to abstract.py:371 \u2014 the line number has moved in the installed PyAutoArray and this census is measuring nothing. Fix the line before reading anything into it."
+    },
+    "edge_subset_gathers_613": {
+      "count": 5,
+      "instructions": [
+        {
+          "name": "gather.101.3",
+          "opcode": "gather",
+          "shape": "f64[1369,1]{1,0}",
+          "computation": "fused_multiply_rsqrt_select",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:674",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:674 (AbstractInversion.reconstruction)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:113 (InversionImagingMapping._mapped_reconstructed_data_dict_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:196 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)"
+          ]
+        },
+        {
+          "name": "gather.98.9.clone.1",
+          "opcode": "gather",
+          "shape": "f64[1369,1,1521]{2,1,0}",
+          "computation": "fused_multiply_rsqrt_select",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:675",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:675 (AbstractInversion.reconstruction)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:113 (InversionImagingMapping._mapped_reconstructed_data_dict_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:196 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)"
+          ]
+        },
+        {
+          "name": "gather.99.7.clone.1",
+          "opcode": "gather",
+          "shape": "f64[1369,1369,1]{2,0,1}",
+          "computation": "fused_multiply_rsqrt_select",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:675",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:675 (AbstractInversion.reconstruction)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:113 (InversionImagingMapping._mapped_reconstructed_data_dict_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:196 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)"
+          ]
+        },
+        {
+          "name": "gather.98.7.clone.1",
+          "opcode": "gather",
+          "shape": "f64[1369,1,1521]{2,1,0}",
+          "computation": "fused_multiply_transpose",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:675",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:675 (AbstractInversion.reconstruction)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:113 (InversionImagingMapping._mapped_reconstructed_data_dict_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:196 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)"
+          ]
+        },
+        {
+          "name": "gather.99.5.clone.1",
+          "opcode": "gather",
+          "shape": "f64[1369,1369,1]{2,0,1}",
+          "computation": "fused_multiply_transpose",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:675",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:675 (AbstractInversion.reconstruction)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoNerves/autonerves/tools/decorators.py:22 (CachedProperty.__get__)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:113 (InversionImagingMapping._mapped_reconstructed_data_dict_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:196 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)"
+          ]
+        }
+      ]
+    },
+    "curvature_reg_reduced_gathers_397": {
+      "count": 0,
+      "instructions": []
+    },
+    "fft_convolver_total": {
+      "count": 3,
+      "instructions": [
+        {
+          "name": "fft.15.0",
+          "opcode": "fft",
+          "shape": "c128[1521,180,91]{2,1,0}",
+          "computation": "main.178",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/operators/convolver.py:1228",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/operators/convolver.py:1228 (Convolver.convolved_mapping_matrix_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:197 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:829 (AbstractInversion.mapped_reconstructed_operated_data)"
+          ]
+        },
+        {
+          "name": "fft.17.0",
+          "opcode": "fft",
+          "shape": "c128[1521,91,180]{2,1,0}",
+          "computation": "main.178",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/operators/convolver.py:1232",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/operators/convolver.py:1232 (Convolver.convolved_mapping_matrix_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:197 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:829 (AbstractInversion.mapped_reconstructed_operated_data)"
+          ]
+        },
+        {
+          "name": "fft.19.0",
+          "opcode": "fft",
+          "shape": "f64[1521,180,180]{2,1,0}",
+          "computation": "main.178",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/operators/convolver.py:1232",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/operators/convolver.py:1232 (Convolver.convolved_mapping_matrix_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:197 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:829 (AbstractInversion.mapped_reconstructed_operated_data)"
+          ]
+        }
+      ],
+      "callers": {
+        "fft.15.0": [
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/operators/convolver.py:1228 (Convolver.convolved_mapping_matrix_from)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:197 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:829 (AbstractInversion.mapped_reconstructed_operated_data)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoLens/autolens/imaging/fit_imaging.py:199 (FitImaging.model_data)"
+        ],
+        "fft.17.0": [
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/operators/convolver.py:1232 (Convolver.convolved_mapping_matrix_from)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:197 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:829 (AbstractInversion.mapped_reconstructed_operated_data)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoLens/autolens/imaging/fit_imaging.py:199 (FitImaging.model_data)"
+        ],
+        "fft.19.0": [
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/operators/convolver.py:1232 (Convolver.convolved_mapping_matrix_from)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:197 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:829 (AbstractInversion.mapped_reconstructed_operated_data)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoLens/autolens/imaging/fit_imaging.py:199 (FitImaging.model_data)"
+        ]
+      },
+      "question": "Each FFT convolution is one rfft2 + one irfft2, so a convolution costs TWO fft instructions. The caller chain of each is recorded because the same convolved_mapping_matrix_from is reached from more than one place (operated_mapping_matrix_list for F, and mapped_reconstructed_operated_data_dict for the mapped reconstruction) -- counting instructions without their callers cannot tell a doubled convolution from two different convolutions."
+    },
+    "fft_mapping_matrix": {
+      "count": 3,
+      "instructions": [
+        {
+          "name": "fft.15.0",
+          "opcode": "fft",
+          "shape": "c128[1521,180,91]{2,1,0}",
+          "computation": "main.178",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/operators/convolver.py:1228",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/operators/convolver.py:1228 (Convolver.convolved_mapping_matrix_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:197 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:829 (AbstractInversion.mapped_reconstructed_operated_data)"
+          ]
+        },
+        {
+          "name": "fft.17.0",
+          "opcode": "fft",
+          "shape": "c128[1521,91,180]{2,1,0}",
+          "computation": "main.178",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/operators/convolver.py:1232",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/operators/convolver.py:1232 (Convolver.convolved_mapping_matrix_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:197 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:829 (AbstractInversion.mapped_reconstructed_operated_data)"
+          ]
+        },
+        {
+          "name": "fft.19.0",
+          "opcode": "fft",
+          "shape": "f64[1521,180,180]{2,1,0}",
+          "computation": "main.178",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/operators/convolver.py:1232",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/operators/convolver.py:1232 (Convolver.convolved_mapping_matrix_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py:136 (AbstractInversionImaging.operated_mapping_matrix_list)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py:197 (InversionImagingMapping.mapped_reconstructed_operated_data_dict)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:829 (AbstractInversion.mapped_reconstructed_operated_data)"
+          ]
+        }
+      ],
+      "question": "Is the PSF convolution of the mapping-matrix cube compiled once or twice? operated_mapping_matrix_list is a plain property reached twice."
+    },
+    "fft_image": {
+      "count": 0,
+      "instructions": []
+    },
+    "conv_mapping_matrix": {
+      "count": 0,
+      "instructions": [],
+      "question": "How many real-space convolutions of the mapping-matrix cube survive XLA? 0 on the shipped FFT path; a phase-3 real-space candidate shows here instead of in fft_mapping_matrix (a cuDNN conv is a custom-call on the GPU backend)."
+    },
+    "cholesky": {
+      "count": 8,
+      "instructions": [
+        {
+          "name": "cholesky.130",
+          "opcode": "custom-call",
+          "shape": "(f64[1369,1369]{0,1}, s32[])",
+          "computation": "main.178",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:153",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:153 (masked_solve)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:237 (active_set_search)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:280 (solve_certified_stashing)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:341 (solve_certified_with_fallback)"
+          ]
+        },
+        {
+          "name": "cholesky.140",
+          "opcode": "custom-call",
+          "shape": "(f64[1369,1369]{0,1}, s32[])",
+          "computation": "main.178",
+          "source": "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:289",
+          "stack": [
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:289 (solve_certified_stashing)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:341 (solve_certified_with_fallback)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:274 (_certified_positive_only_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:440 (reconstruction_positive_only_from)"
+          ]
+        },
+        {
+          "name": "cholesky.150",
+          "opcode": "custom-call",
+          "shape": "(f64[1521,1521]{0,1}, s32[])",
+          "computation": "main.178",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:959",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:959 (AbstractInversion._log_det_symmetric_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:1130 (AbstractInversion.log_det_regularization_matrix_term)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:348 (FitDataset.log_evidence)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)"
+          ]
+        },
+        {
+          "name": "cholesky.40",
+          "opcode": "custom-call",
+          "shape": "(f64[1369,1369]{0,1}, s32[])",
+          "computation": "region_42.118",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:153",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:153 (masked_solve)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:252 (active_set_search.<locals>.body_fun)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:262 (active_set_search)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:280 (solve_certified_stashing)"
+          ]
+        },
+        {
+          "name": "cholesky.80",
+          "opcode": "custom-call",
+          "shape": "(f64[1369,1369]{0,1}, s32[])",
+          "computation": "region_48.141",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAuto/lib/python3.12/site-packages/jaxnnls/pdip.py:62",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAuto/lib/python3.12/site-packages/jaxnnls/pdip.py:62 (initialize)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_nnls.py:63 (solve_nnls)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_nnls.py:91 (_solve_nnls_primal_with.<locals>.primal)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_nnls.py:120 (solve_nnls_primal)"
+          ]
+        },
+        {
+          "name": "cholesky.60",
+          "opcode": "custom-call",
+          "shape": "(f64[1369,1369]{0,1}, s32[])",
+          "computation": "region_51.139",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAuto/lib/python3.12/site-packages/jaxnnls/pdip.py:106",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAuto/lib/python3.12/site-packages/jaxnnls/pdip.py:106 (factorize_kkt)",
+            "/mnt/ral/jnightin/PyAuto/PyAuto/lib/python3.12/site-packages/jaxnnls/pdip.py:212 (pdip_pc_step)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_nnls.py:74 (solve_nnls)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_nnls.py:91 (_solve_nnls_primal_with.<locals>.primal)"
+          ]
+        },
+        {
+          "name": "cholesky.100",
+          "opcode": "custom-call",
+          "shape": "(f64[1521,1521]{0,1}, s32[])",
+          "computation": "region_69.151",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:959",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:959 (AbstractInversion._log_det_symmetric_from)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:453 (patched_log_det.<locals>.<lambda>)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:450 (patched_log_det)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)"
+          ]
+        },
+        {
+          "name": "cholesky.120",
+          "opcode": "custom-call",
+          "shape": "(f64[216,216]{0,1}, s32[])",
+          "computation": "region_71.175",
+          "source": "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:374",
+          "stack": [
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:374 (schur_log_det_from)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:452 (patched_log_det.<locals>.<lambda>)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:450 (patched_log_det)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)"
+          ]
+        }
+      ],
+      "callers": {
+        "cholesky.130": [
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:153 (masked_solve)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:237 (active_set_search)",
+          "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:280 (solve_certified_stashing)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:341 (solve_certified_with_fallback)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:274 (_certified_positive_only_from)"
+        ],
+        "cholesky.140": [
+          "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:289 (solve_certified_stashing)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:341 (solve_certified_with_fallback)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:274 (_certified_positive_only_from)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:440 (reconstruction_positive_only_from)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:681 (AbstractInversion.reconstruction)"
+        ],
+        "cholesky.150": [
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:959 (AbstractInversion._log_det_symmetric_from)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:1130 (AbstractInversion.log_det_regularization_matrix_term)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:348 (FitDataset.log_evidence)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoLens/autolens/imaging/model/analysis.py:135 (AnalysisImaging.log_likelihood_function)"
+        ],
+        "cholesky.40": [
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:153 (masked_solve)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:252 (active_set_search.<locals>.body_fun)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:262 (active_set_search)",
+          "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:280 (solve_certified_stashing)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:341 (solve_certified_with_fallback)"
+        ],
+        "cholesky.80": [
+          "/mnt/ral/jnightin/PyAuto/PyAuto/lib/python3.12/site-packages/jaxnnls/pdip.py:62 (initialize)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_nnls.py:63 (solve_nnls)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_nnls.py:91 (_solve_nnls_primal_with.<locals>.primal)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_nnls.py:120 (solve_nnls_primal)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:266 (_certified_positive_only_from.<locals>.pdip_fn)"
+        ],
+        "cholesky.60": [
+          "/mnt/ral/jnightin/PyAuto/PyAuto/lib/python3.12/site-packages/jaxnnls/pdip.py:106 (factorize_kkt)",
+          "/mnt/ral/jnightin/PyAuto/PyAuto/lib/python3.12/site-packages/jaxnnls/pdip.py:212 (pdip_pc_step)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_nnls.py:74 (solve_nnls)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_nnls.py:91 (_solve_nnls_primal_with.<locals>.primal)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_nnls.py:120 (solve_nnls_primal)"
+        ],
+        "cholesky.100": [
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:959 (AbstractInversion._log_det_symmetric_from)",
+          "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:453 (patched_log_det.<locals>.<lambda>)",
+          "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:450 (patched_log_det)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)"
+        ],
+        "cholesky.120": [
+          "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:374 (schur_log_det_from)",
+          "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:452 (patched_log_det.<locals>.<lambda>)",
+          "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:450 (patched_log_det)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)",
+          "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)"
+        ]
+      }
+    },
+    "triangular_solve": {
+      "count": 13,
+      "instructions": [
+        {
+          "name": "triangular-solve.10",
+          "opcode": "custom-call",
+          "shape": "(f64[1369,1]{0,1}, s8[0]{0})",
+          "computation": "main.178",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:154",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:154 (masked_solve)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:237 (active_set_search)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:280 (solve_certified_stashing)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:341 (solve_certified_with_fallback)"
+          ]
+        },
+        {
+          "name": "triangular-solve.11",
+          "opcode": "custom-call",
+          "shape": "(f64[1369,1]{0,1}, s8[0]{0})",
+          "computation": "main.178",
+          "source": "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:290",
+          "stack": [
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:290 (solve_certified_stashing)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:341 (solve_certified_with_fallback)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:274 (_certified_positive_only_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:440 (reconstruction_positive_only_from)"
+          ]
+        },
+        {
+          "name": "triangular-solve.12",
+          "opcode": "custom-call",
+          "shape": "(f64[1369,1]{0,1}, s8[0]{0})",
+          "computation": "main.178",
+          "source": "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:290",
+          "stack": [
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:290 (solve_certified_stashing)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:341 (solve_certified_with_fallback)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:274 (_certified_positive_only_from)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/inversion_util.py:440 (reconstruction_positive_only_from)"
+          ]
+        },
+        {
+          "name": "triangular-solve.9",
+          "opcode": "custom-call",
+          "shape": "(f64[1369,1]{0,1}, s8[0]{0})",
+          "computation": "main.178",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:154",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:154 (masked_solve)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:237 (active_set_search)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:280 (solve_certified_stashing)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:341 (solve_certified_with_fallback)"
+          ]
+        },
+        {
+          "name": "triangular-solve.7",
+          "opcode": "custom-call",
+          "shape": "(f64[1369,1]{0,1}, s8[0]{0})",
+          "computation": "region_42.118",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:154",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:154 (masked_solve)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:252 (active_set_search.<locals>.body_fun)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:262 (active_set_search)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:280 (solve_certified_stashing)"
+          ]
+        },
+        {
+          "name": "triangular-solve.8",
+          "opcode": "custom-call",
+          "shape": "(f64[1369,1]{0,1}, s8[0]{0})",
+          "computation": "region_42.118",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:154",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:154 (masked_solve)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:252 (active_set_search.<locals>.body_fun)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_active_set.py:262 (active_set_search)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:280 (solve_certified_stashing)"
+          ]
+        },
+        {
+          "name": "triangular-solve.5",
+          "opcode": "custom-call",
+          "shape": "(f64[1369,1]{0,1}, s8[0]{0})",
+          "computation": "region_48.141",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAuto/lib/python3.12/site-packages/jaxnnls/pdip.py:65",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAuto/lib/python3.12/site-packages/jaxnnls/pdip.py:65 (initialize)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_nnls.py:63 (solve_nnls)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_nnls.py:91 (_solve_nnls_primal_with.<locals>.primal)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_nnls.py:120 (solve_nnls_primal)"
+          ]
+        },
+        {
+          "name": "triangular-solve.6",
+          "opcode": "custom-call",
+          "shape": "(f64[1369,1]{0,1}, s8[0]{0})",
+          "computation": "region_48.141",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAuto/lib/python3.12/site-packages/jaxnnls/pdip.py:65",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAuto/lib/python3.12/site-packages/jaxnnls/pdip.py:65 (initialize)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_nnls.py:63 (solve_nnls)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_nnls.py:91 (_solve_nnls_primal_with.<locals>.primal)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_nnls.py:120 (solve_nnls_primal)"
+          ]
+        },
+        {
+          "name": "triangular-solve.1",
+          "opcode": "custom-call",
+          "shape": "(f64[1369,1]{0,1}, s8[0]{0})",
+          "computation": "region_51.139",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAuto/lib/python3.12/site-packages/jaxnnls/pdip.py:146",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAuto/lib/python3.12/site-packages/jaxnnls/pdip.py:146 (solve_kkt_rhs)",
+            "/mnt/ral/jnightin/PyAuto/PyAuto/lib/python3.12/site-packages/jaxnnls/pdip.py:213 (pdip_pc_step)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_nnls.py:74 (solve_nnls)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_nnls.py:91 (_solve_nnls_primal_with.<locals>.primal)"
+          ]
+        },
+        {
+          "name": "triangular-solve.2",
+          "opcode": "custom-call",
+          "shape": "(f64[1369,1]{0,1}, s8[0]{0})",
+          "computation": "region_51.139",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAuto/lib/python3.12/site-packages/jaxnnls/pdip.py:146",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAuto/lib/python3.12/site-packages/jaxnnls/pdip.py:146 (solve_kkt_rhs)",
+            "/mnt/ral/jnightin/PyAuto/PyAuto/lib/python3.12/site-packages/jaxnnls/pdip.py:213 (pdip_pc_step)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_nnls.py:74 (solve_nnls)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_nnls.py:91 (_solve_nnls_primal_with.<locals>.primal)"
+          ]
+        },
+        {
+          "name": "triangular-solve.3",
+          "opcode": "custom-call",
+          "shape": "(f64[1369,1]{0,1}, s8[0]{0})",
+          "computation": "region_51.139",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAuto/lib/python3.12/site-packages/jaxnnls/pdip.py:146",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAuto/lib/python3.12/site-packages/jaxnnls/pdip.py:146 (solve_kkt_rhs)",
+            "/mnt/ral/jnightin/PyAuto/PyAuto/lib/python3.12/site-packages/jaxnnls/pdip.py:217 (pdip_pc_step)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_nnls.py:74 (solve_nnls)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_nnls.py:91 (_solve_nnls_primal_with.<locals>.primal)"
+          ]
+        },
+        {
+          "name": "triangular-solve.4",
+          "opcode": "custom-call",
+          "shape": "(f64[1369,1]{0,1}, s8[0]{0})",
+          "computation": "region_51.139",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAuto/lib/python3.12/site-packages/jaxnnls/pdip.py:146",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAuto/lib/python3.12/site-packages/jaxnnls/pdip.py:146 (solve_kkt_rhs)",
+            "/mnt/ral/jnightin/PyAuto/PyAuto/lib/python3.12/site-packages/jaxnnls/pdip.py:217 (pdip_pc_step)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_nnls.py:74 (solve_nnls)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/util/jax_nnls.py:91 (_solve_nnls_primal_with.<locals>.primal)"
+          ]
+        },
+        {
+          "name": "triangular-solve",
+          "opcode": "custom-call",
+          "shape": "(f64[1369,216]{0,1}, s8[0]{0})",
+          "computation": "region_71.175",
+          "source": "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:366",
+          "stack": [
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:366 (schur_log_det_from)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:452 (patched_log_det.<locals>.<lambda>)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:450 (patched_log_det)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)"
+          ]
+        }
+      ]
+    },
+    "instructions_total": 3050,
+    "instructions_with_frames": 1930,
+    "status": "ok",
+    "status_scope": "the PSF rows (fft_convolver_total, fft_mapping_matrix, fft_image, conv_mapping_matrix); any other row whose anchor moved is in rows_excluded",
+    "reason": "every PSF census anchor verified against the installed PyAutoArray",
+    "package_root": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray",
+    "anchors": [
+      {
+        "rows": [
+          "fft_convolver_total",
+          "fft_mapping_matrix",
+          "fft_image",
+          "conv_mapping_matrix"
+        ],
+        "path": "operators/convolver.py",
+        "function": "convolved_mapping_matrix_from",
+        "lines": [
+          1086,
+          1300
+        ],
+        "mode": "encloses",
+        "found_spans": [
+          [
+            1092,
+            1269
+          ]
+        ],
+        "ok": true,
+        "reason": "ok"
+      },
+      {
+        "rows": [
+          "fft_convolver_total",
+          "fft_mapping_matrix",
+          "fft_image",
+          "conv_mapping_matrix"
+        ],
+        "path": "operators/convolver.py",
+        "function": "_convolved_mapping_matrix_over_sampled_jax_from",
+        "lines": [
+          670,
+          691
+        ],
+        "mode": "encloses",
+        "found_spans": [
+          [
+            670,
+            689
+          ]
+        ],
+        "ok": true,
+        "reason": "ok"
+      },
+      {
+        "rows": [
+          "fft_convolver_total",
+          "fft_mapping_matrix",
+          "fft_image",
+          "conv_mapping_matrix"
+        ],
+        "path": "inversion/inversion/imaging/abstract.py",
+        "function": "operated_mapping_matrix_list",
+        "lines": [
+          119,
+          150
+        ],
+        "mode": "encloses",
+        "found_spans": [
+          [
+            120,
+            148
+          ]
+        ],
+        "ok": true,
+        "reason": "ok"
+      },
+      {
+        "rows": [
+          "curvature_reg_add_nn"
+        ],
+        "path": "inversion/inversion/abstract.py",
+        "function": "curvature_reg_matrix",
+        "lines": [
+          389,
+          389
+        ],
+        "mode": "inside",
+        "found_spans": [
+          [
+            369,
+            389
+          ]
+        ],
+        "ok": true,
+        "reason": "ok"
+      },
+      {
+        "rows": [
+          "curvature_reg_reduced_gathers_397"
+        ],
+        "path": "inversion/inversion/abstract.py",
+        "function": "curvature_reg_matrix_reduced",
+        "lines": [
+          392,
+          415
+        ],
+        "mode": "inside",
+        "found_spans": [
+          [
+            392,
+            415
+          ]
+        ],
+        "ok": true,
+        "reason": "ok"
+      },
+      {
+        "rows": [
+          "edge_subset_gathers_613"
+        ],
+        "path": "inversion/inversion/abstract.py",
+        "function": "reconstruction",
+        "lines": [
+          671,
+          678
+        ],
+        "mode": "inside",
+        "found_spans": [
+          [
+            635,
+            731
+          ]
+        ],
+        "ok": true,
+        "reason": "ok"
+      }
+    ],
+    "rows_excluded": []
+  },
+  "stage_map_provenance": [
+    {
+      "label": "log_det_curvature_reg",
+      "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+      "lines": [
+        924,
+        968
+      ],
+      "requires": {
+        "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+        "lines": [
+          970,
+          1051
+        ]
+      },
+      "function": null
+    },
+    {
+      "label": "log_det_regularization",
+      "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+      "lines": [
+        924,
+        968
+      ],
+      "requires": {
+        "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+        "lines": [
+          1071,
+          1132
+        ]
+      },
+      "function": null
+    },
+    {
+      "label": "log_det_curvature_reg",
+      "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+      "lines": [
+        924,
+        968
+      ],
+      "requires": {
+        "path": "likelihood_breakdown/logdet_reuse_injection.py",
+        "lines": null
+      },
+      "function": null
+    },
+    {
+      "label": "certified_active_set_solve",
+      "path": "likelihood_breakdown/logdet_reuse_injection.py",
+      "lines": null,
+      "requires": null,
+      "function": "solve_certified_stashing"
+    },
+    {
+      "label": "log_det_curvature_reg",
+      "path": "likelihood_breakdown/logdet_reuse_injection.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "curvature_reg_add",
+      "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+      "lines": [
+        368,
+        389
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "curvature_reg_reduce_gather",
+      "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+      "lines": [
+        391,
+        415
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "edge_subset_gather",
+      "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+      "lines": [
+        671,
+        678
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "regularization_term",
+      "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+      "lines": [
+        858,
+        922
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mapped_reconstruction",
+      "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+      "lines": [
+        795,
+        857
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "reconstruction_scatter",
+      "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+      "lines": [
+        634,
+        670
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "reconstruction_scatter",
+      "path": "PyAutoArray/autoarray/inversion/inversion/abstract.py",
+      "lines": [
+        679,
+        793
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "certified_active_set_solve",
+      "path": "likelihood_breakdown/active_set_steps.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "certified_active_set_solve",
+      "path": "likelihood_breakdown/library_solver_injection.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "pdip_solve",
+      "path": "PyAutoArray/autoarray/util/jax_nnls.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "certified_active_set_solve",
+      "path": "PyAutoArray/autoarray/util/jax_active_set.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "pdip_solve",
+      "path": "PyAutoArray/autoarray/inversion/inversion/inversion_util.py",
+      "lines": [
+        265,
+        272
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "certified_active_set_solve",
+      "path": "PyAutoArray/autoarray/inversion/inversion/inversion_util.py",
+      "lines": [
+        251,
+        288
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "nnls_jacobi_preconditioning",
+      "path": "PyAutoArray/autoarray/inversion/inversion/inversion_util.py",
+      "lines": [
+        433,
+        450
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "nnls_jacobi_preconditioning",
+      "path": "PyAutoArray/autoarray/inversion/inversion/inversion_util.py",
+      "lines": [
+        455,
+        464
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "pdip_solve",
+      "path": "PyAutoArray/autoarray/inversion/inversion/inversion_util.py",
+      "lines": [
+        291,
+        593
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mapped_reconstruction",
+      "path": "PyAutoArray/autoarray/inversion/inversion/inversion_util.py",
+      "lines": [
+        151,
+        193
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "curvature_matrix_F",
+      "path": "PyAutoArray/autoarray/inversion/inversion/inversion_util.py",
+      "lines": [
+        12,
+        148
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "reconstruction_scatter",
+      "path": "PyAutoArray/autoarray/inversion/inversion/inversion_util.py",
+      "lines": [
+        196,
+        248
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "data_vector_D",
+      "path": "PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py",
+      "lines": [
+        54,
+        73
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "curvature_matrix_F",
+      "path": "PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py",
+      "lines": [
+        74,
+        110
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "data_vector_D",
+      "path": "PyAutoArray/autoarray/inversion/inversion/imaging/inversion_imaging_util.py",
+      "lines": null,
+      "requires": null,
+      "function": "data_vector_via_blurred_mapping_matrix_from"
+    },
+    {
+      "label": "curvature_matrix_F",
+      "path": "PyAutoArray/autoarray/inversion/inversion/imaging/inversion_imaging_util.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "psf_convolution_mapping_matrix",
+      "path": "likelihood_breakdown/psf_cube_injection.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "psf_convolution_mapping_matrix",
+      "path": "PyAutoArray/autoarray/operators/convolver.py",
+      "lines": [
+        1086,
+        1300
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "psf_convolution_mapping_matrix",
+      "path": "PyAutoArray/autoarray/operators/convolver.py",
+      "lines": [
+        632,
+        642
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "psf_convolution_mapping_matrix",
+      "path": "PyAutoArray/autoarray/operators/convolver.py",
+      "lines": [
+        670,
+        691
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "psf_convolution_mapping_matrix",
+      "path": "PyAutoArray/autoarray/operators/convolver.py",
+      "lines": null,
+      "requires": {
+        "path": "PyAutoArray/autoarray/operators/convolver.py",
+        "lines": [
+          1086,
+          1300
+        ]
+      },
+      "function": null
+    },
+    {
+      "label": "psf_convolution_mapping_matrix",
+      "path": "PyAutoArray/autoarray/operators/convolver.py",
+      "lines": null,
+      "requires": {
+        "path": "PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py",
+        "lines": [
+          119,
+          150
+        ]
+      },
+      "function": null
+    },
+    {
+      "label": "psf_convolution_image",
+      "path": "PyAutoArray/autoarray/operators/convolver.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "psf_convolution_mapping_matrix",
+      "path": "PyAutoArray/autoarray/inversion/inversion/imaging/abstract.py",
+      "lines": [
+        119,
+        150
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mesh_qhull_callback",
+      "path": "PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py",
+      "lines": [
+        139,
+        172
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mesh_seed_argmin",
+      "path": "PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py",
+      "lines": [
+        173,
+        207
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mesh_locate_walk",
+      "path": "PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py",
+      "lines": [
+        208,
+        372
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mesh_dual_areas",
+      "path": "PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py",
+      "lines": [
+        373,
+        396
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mesh_dual_areas",
+      "path": "PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py",
+      "lines": [
+        437,
+        494
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mesh_dual_areas",
+      "path": "PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py",
+      "lines": [
+        605,
+        615
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mesh_interpolation_weights",
+      "path": "PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py",
+      "lines": [
+        616,
+        695
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mesh_interpolation_weights",
+      "path": "PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py",
+      "lines": [
+        896,
+        1000
+      ],
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mesh_construction",
+      "path": "PyAutoArray/autoarray/inversion/mesh/interpolator/delaunay.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "border_relocator",
+      "path": "PyAutoArray/autoarray/inversion/mesh/border_relocator.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mesh_construction",
+      "path": "PyAutoArray/autoarray/inversion/mesh/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mapping_matrix",
+      "path": "PyAutoArray/autoarray/inversion/mappers/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mapping_matrix",
+      "path": "PyAutoArray/autoarray/inversion/mappings/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mapping_matrix",
+      "path": "PyAutoArray/autoarray/inversion/linear_obj/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "regularization_H",
+      "path": "PyAutoArray/autoarray/inversion/regularization/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "chi_squared_evidence",
+      "path": "PyAutoArray/autoarray/fit/fit_util.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "chi_squared_evidence",
+      "path": "PyAutoArray/autoarray/fit/fit_dataset.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "ray_trace_mesh_grid",
+      "path": "PyAutoLens/autolens/lens/to_inversion.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "ray_trace_mesh_grid",
+      "path": "PyAutoGalaxy/autogalaxy/galaxy/to_inversion.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "mass_profile_deflections",
+      "path": "PyAutoGalaxy/autogalaxy/profiles/mass/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "light_profile_image",
+      "path": "PyAutoGalaxy/autogalaxy/profiles/light/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "light_profile_image",
+      "path": "PyAutoGalaxy/autogalaxy/operate/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "ray_trace_data_grid",
+      "path": "PyAutoLens/autolens/lens/tracer.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "ray_trace_data_grid",
+      "path": "PyAutoLens/autolens/lens/tracer_util.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "grids_and_structures",
+      "path": "PyAutoArray/autoarray/structures/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "grids_and_structures",
+      "path": "PyAutoArray/autoarray/operators/over_sampling/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "grids_and_structures",
+      "path": "PyAutoArray/autoarray/geometry/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "inversion_other",
+      "path": "PyAutoArray/autoarray/inversion/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "fit_imaging_other",
+      "path": "PyAutoLens/autolens/imaging/fit_imaging.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "fit_imaging_other",
+      "path": "PyAutoGalaxy/autogalaxy/imaging/fit_imaging.py",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "fit_imaging_other",
+      "path": "PyAutoArray/autoarray/fit/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "analysis_other",
+      "path": "PyAutoLens/autolens/analysis/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    },
+    {
+      "label": "analysis_other",
+      "path": "PyAutoGalaxy/autogalaxy/analysis/",
+      "lines": null,
+      "requires": null,
+      "function": null
+    }
+  ],
+  "trace_timing": {
+    "traced_wall_ms": 28.152186470106244,
+    "untraced_wall_ms": 27.124339807778597,
+    "profiler_overhead_ms": 1.0278466623276472,
+    "profiler_overhead_pct": 3.7893886804680346
+  },
+  "jit_phases": {
+    "b_s3_pdip_library_likelihood_jit": {
+      "lower_s": 1.3251806530170143,
+      "compile_s": 3.4484228370711207,
+      "first_call_s": 1.155110324267298,
+      "steady_per_call_s": 0.039020641008391976
+    },
+    "d_s3_library_certified_logdet_library_likelihood_jit": {
+      "lower_s": 0.5340209389105439,
+      "compile_s": 4.0212816167622805,
+      "first_call_s": 0.03693815367296338,
+      "steady_per_call_s": 0.026927448995411395
+    },
+    "r_s3_library_certified_likelihood_jit": {
+      "lower_s": 0.3601991543546319,
+      "compile_s": 4.002025295980275,
+      "first_call_s": 0.036082379054278135,
+      "steady_per_call_s": 0.0268764803186059
+    }
+  },
+  "peak_bytes": {
+    "after_setup": 85616640,
+    "after_routes": 1197481472,
+    "after_all": 1200680704,
+    "note": "jax.devices()[0].memory_stats()['peak_bytes_in_use']; None on a backend that does not report it (CPU). Process-wide high-water marks."
+  },
+  "note": "Every stage row is a MEASURED sum of GPU kernel durations joined to library source through the optimized HLO of ONE program \u2014 not arithmetic across compilations. The rows attribute the command-buffers-OFF program: kernel time is the same as production, the launch overhead the CUDA graphs remove is not, and command_buffers.* carries both walls and their delta. sum_ms = kernel rows + measured device_idle_ms; the residual against the wall is host_outside_span_ms and is reported, not absorbed. mixed_fusion.prorated_estimate_ms is an ESTIMATE and is never part of the table. No row may be quoted if reconciliation_pct is outside 5 % or unjoined_ms is non-zero.",
+  "logdet_candidate": {
+    "candidate": "schur_k64",
+    "kind": "lever",
+    "row_label": "LEVER candidate",
+    "provenance": {
+      "name": "schur_k64",
+      "label": "certified-solve factor + Schur complement, k_max 64 (+ n_edge)",
+      "kind": "lever",
+      "k_max": 64,
+      "n_total": 1521,
+      "n_solved": 1369,
+      "n_edge": 152,
+      "k_slots": 216,
+      "library_change_if_wins": "jax_active_set.solve_certified: return (or publish through an out-dict) the final masked Cholesky factor L and the fixed set; AbstractInversion.reconstruction: store them on the inversion (as _nnls_factor already is on the NumPy path); log_det_curvature_reg_matrix_term: a JAX fast path beside the NumPy one at abstract.py:1012 \u2014 2 sum log diag L + a static-size Schur complement over the fixed (and edge) set, lax.cond to the dense route when it overflows",
+      "patched": [
+        "autoarray.util.jax_active_set.solve_certified",
+        "autoarray.inversion.inversion.abstract.AbstractInversion.log_det_curvature_reg_matrix_term"
+      ],
+      "identity": "log det M = 2 sum log diag L + log det S + sum log diag M, S the Schur complement of the solved free block over Z = fixed set U unsolved (edge) indices, in the Jacobi-scaled space D M D with D = 1/sqrt(diag M) (inversion_util.py:433-436); exact for ANY split, so a PDIP-fallback lane is covered"
+    },
+    "solver": {
+      "source": "library (al.Settings)",
+      "positive_only_solver": "certified",
+      "certified_fallback": "pdip",
+      "certified_pass_budget": 16,
+      "certified_pass_budget_basis": "config default (Settings().certified_pass_budget)",
+      "certified_tau_rel": 1e-09,
+      "solvers_jax": [
+        "certified"
+      ]
+    },
+    "injection_counts": {
+      "route_d_jax": 1,
+      "route_d_delegated": 0,
+      "route_d_delegated_reasons": {},
+      "route_d_solves_stashed": 1,
+      "traced_program_jax": 1,
+      "traced_program_delegated": 0,
+      "report_program": {
+        "jax": 1,
+        "delegated": 0,
+        "delegated_reasons": {}
+      }
+    },
+    "whole_call_ms": {
+      "route_d_candidate_jit_profile_ms": 26.927448995411396,
+      "library_control_jit_profile_ms": 26.8764803186059,
+      "route_b_pdip_jit_profile_ms": 39.020641008391976,
+      "saving_jit_profile_ms": -0.050968676805496216,
+      "interleaved": {
+        "rounds": 7,
+        "calls_per_block": 10,
+        "library_ms": [
+          26.916399225592613,
+          27.189612481743097,
+          26.847539516165853,
+          26.954776933416724,
+          26.9329690374434,
+          26.870962418615818,
+          26.851880503818393
+        ],
+        "candidate_ms": [
+          26.827716687694192,
+          26.78770488128066,
+          26.876463275402784,
+          26.835264591500163,
+          26.82413263246417,
+          26.81394782848656,
+          26.855132495984435
+        ],
+        "library_median_ms": 26.916399225592613,
+        "candidate_median_ms": 26.827716687694192,
+        "saving_median_ms": 0.08868253789842129
+      },
+      "traced_program_command_buffers_on_ms": 26.73159819096327,
+      "traced_program_command_buffers_off_ms": 27.02612141147256,
+      "note": "Both whole-call rows are timing.jit_profile (10 steady calls) in THIS process; 'interleaved' alternates 10-call blocks of the two compiled programs. The traced program is the candidate's lowering compiled with command buffers on and off."
+    },
+    "lever": {
+      "threshold_ms": 0.5,
+      "saving_jit_profile_ms": -0.050968676805496216,
+      "saving_interleaved_median_ms": 0.08868253789842129,
+      "timed_branch": "dense (overflow)",
+      "draw_overflow_count": 8,
+      "clears_threshold": false,
+      "rule": "PRE-REGISTERED: a lever clears when BOTH the jit_profile saving and the interleaved-median saving vs the unmodified library route in the same task are >= threshold_ms. Never a gate; never compared across tasks."
+    },
+    "compile_s": {
+      "route_d": 4.0212816167622805,
+      "library_control": 4.002025295980275,
+      "route_b": 3.4484228370711207
+    },
+    "trace_rows_ms": {
+      "log_det_curvature_reg": 0.9700375,
+      "certified_active_set_solve": 10.733639499999999,
+      "mixed_fusion_sets_containing_log_det": {
+        "certified_active_set_solve + log_det_curvature_reg + reconstruction_scatter": 0.003932499999999999,
+        "inversion_other + log_det_curvature_reg": 0.0019805
+      },
+      "top_instructions": [
+        {
+          "instruction": "cholesky.100",
+          "ms": 0.9349191999999998,
+          "opcode": "custom-call",
+          "shape": "(f64[1521,1521]{0,1}, s32[])",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:959",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:959 (AbstractInversion._log_det_symmetric_from)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:453 (patched_log_det.<locals>.<lambda>)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:450 (patched_log_det)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)"
+          ]
+        },
+        {
+          "instruction": "input_transpose_fusion",
+          "ms": 0.025726600000000002,
+          "opcode": "fusion",
+          "shape": "f64[1521,1521]{1,0}",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:959",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:959 (AbstractInversion._log_det_symmetric_from)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:453 (patched_log_det.<locals>.<lambda>)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:450 (patched_log_det)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)"
+          ]
+        },
+        {
+          "instruction": "loop_log_fusion",
+          "ms": 0.002499,
+          "opcode": "fusion",
+          "shape": "f64[1521,1,1]{2,1,0}",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:959",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:959 (AbstractInversion._log_det_symmetric_from)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:453 (patched_log_det.<locals>.<lambda>)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:450 (patched_log_det)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)"
+          ]
+        },
+        {
+          "instruction": "input_reduce_fusion",
+          "ms": 0.0022878000000000004,
+          "opcode": "fusion",
+          "shape": "f64[]",
+          "source": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:958",
+          "stack": [
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/inversion/inversion/abstract.py:958 (AbstractInversion._log_det_symmetric_from)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:453 (patched_log_det.<locals>.<lambda>)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:450 (patched_log_det)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)"
+          ]
+        },
+        {
+          "instruction": "cond.7.clone",
+          "ms": 0.0018016,
+          "opcode": "conditional",
+          "shape": "(f64[])",
+          "source": "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:450",
+          "stack": [
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:450 (patched_log_det)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoLens/autolens/imaging/model/analysis.py:135 (AnalysisImaging.log_likelihood_function)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/imaging/likelihood_breakdown/fixed_light_trace.py:1081 (_likelihood_fn.<locals>._likelihood)"
+          ]
+        },
+        {
+          "instruction": "loop_compare_fusion.3",
+          "ms": 0.0017567000000000004,
+          "opcode": "fusion",
+          "shape": "pred[]",
+          "source": "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:448",
+          "stack": [
+            "/mnt/ral/jnightin/autolens_profiling/scripts/misc/likelihood_breakdown/logdet_reuse_injection.py:448 (patched_log_det)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:347 (FitDataset.log_evidence)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/fit/fit_dataset.py:360 (FitDataset.figure_of_merit)",
+            "/mnt/ral/jnightin/PyAuto/PyAutoLens/autolens/imaging/model/analysis.py:135 (AnalysisImaging.log_likelihood_function)",
+            "/mnt/ral/jnightin/autolens_profiling/scripts/imaging/likelihood_breakdown/fixed_light_trace.py:1081 (_likelihood_fn.<locals>._likelihood)"
+          ]
+        }
+      ],
+      "note": "Rows of the traced (command buffers OFF) candidate program. Fused kernels spanning the log det AND another stage are in mixed_fusion, listed here for readability, never summed."
+    },
+    "z_report": {
+      "timed_point": {
+        "row": "fiducial",
+        "z_count": 232,
+        "overflow": true,
+        "branch": "dense (overflow)",
+        "note": "every whole-call ms and trace row of this task is the FIDUCIAL call"
+      },
+      "draws": {
+        "z_count": [
+          366,
+          725,
+          767,
+          894,
+          517,
+          494,
+          943,
+          793
+        ],
+        "z_count_min": 366,
+        "z_count_max": 943,
+        "overflow_count": 8,
+        "rows": 8
+      },
+      "program": "UNTIMED, separately compiled: the candidate program + library_solver_observed",
+      "solvers_jax": [
+        "certified"
+      ],
+      "static": {
+        "k_slots": 216,
+        "n_edge": 152,
+        "n_total": 1521,
+        "n_solved": 1369,
+        "jacobi": true
+      },
+      "rows": [
+        {
+          "row": "fiducial",
+          "z_count": 232,
+          "overflow": true,
+          "passes": 7,
+          "certified": true,
+          "log_likelihood_report_program": 28622.394851189252
+        },
+        {
+          "row": "draw 0",
+          "z_count": 366,
+          "overflow": true,
+          "passes": 9,
+          "certified": true,
+          "log_likelihood_report_program": 25186.799236313127
+        },
+        {
+          "row": "draw 1",
+          "z_count": 725,
+          "overflow": true,
+          "passes": 11,
+          "certified": true,
+          "log_likelihood_report_program": 9077.23058081205
+        },
+        {
+          "row": "draw 2",
+          "z_count": 767,
+          "overflow": true,
+          "passes": 6,
+          "certified": true,
+          "log_likelihood_report_program": -584.2585316766053
+        },
+        {
+          "row": "draw 3",
+          "z_count": 894,
+          "overflow": true,
+          "passes": 7,
+          "certified": true,
+          "log_likelihood_report_program": -21028.10446899473
+        },
+        {
+          "row": "draw 4",
+          "z_count": 517,
+          "overflow": true,
+          "passes": 8,
+          "certified": true,
+          "log_likelihood_report_program": 23446.340278742544
+        },
+        {
+          "row": "draw 5",
+          "z_count": 494,
+          "overflow": true,
+          "passes": 6,
+          "certified": true,
+          "log_likelihood_report_program": 24578.89251407161
+        },
+        {
+          "row": "draw 6",
+          "z_count": 943,
+          "overflow": true,
+          "passes": 11,
+          "certified": true,
+          "log_likelihood_report_program": -39022.50374935851
+        },
+        {
+          "row": "draw 7",
+          "z_count": 793,
+          "overflow": true,
+          "passes": 9,
+          "certified": true,
+          "log_likelihood_report_program": 7893.462293968609
+        }
+      ],
+      "z_count_min": 232,
+      "z_count_max": 943,
+      "overflow_count": 9,
+      "uncertified_count": 0,
+      "counts": {
+        "jax": 1,
+        "delegated": 0,
+        "delegated_reasons": {}
+      },
+      "note": "z_count = |Z| = the solve's fixed set plus the unsolved (edge) indices, per row; overflow = |Z| > k_slots (the dense lax.cond branch ran). null for control (no rebind). passes / certified are the library's own stats= out-dict through an ordered debug callback, in this untimed program only."
+    },
+    "peak_bytes": {
+      "after_routes": 1197481472
+    },
+    "pins": {
+      "rtol": 1e-09,
+      "reference": "the UNMODIFIED library route \u2014 same al.Settings (certified, PDIP fallback, packaged budget) and scalar-jit composition, compiled without the rebind in this process",
+      "library_control": {
+        "label": "S3 LIBRARY certified solver (Settings), budget 16, PDIP fallback \u2014 no rebind (the unmodified library route)",
+        "ms": 26.8764803186059,
+        "log_likelihood": 28622.394851189252,
+        "compile_s": 4.002025295980275
+      },
+      "fiducial": {
+        "pin": "fiducial: route d (log det schur_k64) == unmodified library route",
+        "log_likelihood_d_candidate": 28622.394851189252,
+        "log_likelihood_library": 28622.394851189252,
+        "log_likelihood_b_pdip": 28622.39485118912,
+        "abs_diff_nats": 0.0,
+        "rel_diff": 0.0,
+        "rel_diff_vs_b_pdip": 4.575691088611358e-15,
+        "rtol": 1e-09,
+        "gated": true,
+        "gated_on": "rel_diff",
+        "status": "PASS",
+        "within_rtol_vs_b_pdip": true
+      },
+      "draws": [
+        {
+          "draw": 0,
+          "draw_name": "random_00",
+          "draw_kind": "random",
+          "offsets": {
+            "einstein_radius": 0.031432555273348324,
+            "ell_comps_0": -0.006605243164565094,
+            "ell_comps_1": 0.032021132522164104,
+            "centre_0": 0.0026225029288259928,
+            "centre_1": -0.013391734329027774
+          },
+          "log_likelihood_d_candidate": 25186.799236313127,
+          "log_likelihood_library": 25186.799236313127,
+          "log_likelihood_b_pdip": 25186.79923631264,
+          "abs_diff_nats": 0.0,
+          "rel_diff": 0.0,
+          "rel_diff_vs_b_pdip": 1.935494683450926e-14,
+          "rtol": 1e-09,
+          "gated": true,
+          "gated_on": "rel_diff",
+          "status": "PASS",
+          "within_rtol_vs_b_pdip": true
+        },
+        {
+          "draw": 1,
+          "draw_name": "random_01",
+          "draw_kind": "random",
+          "offsets": {
+            "einstein_radius": 0.09039876372737118,
+            "ell_comps_0": 0.06520000225650686,
+            "ell_comps_1": 0.04735404815646211,
+            "centre_0": -0.017593380895174815,
+            "centre_1": -0.031635536776151316
+          },
+          "log_likelihood_d_candidate": 9077.23058081205,
+          "log_likelihood_library": 9077.23058081205,
+          "log_likelihood_b_pdip": 9077.23058081168,
+          "abs_diff_nats": 0.0,
+          "rel_diff": 0.0,
+          "rel_diff_vs_b_pdip": 4.0879631184842456e-14,
+          "rtol": 1e-09,
+          "gated": true,
+          "gated_on": "rel_diff",
+          "status": "PASS",
+          "within_rtol_vs_b_pdip": true
+        },
+        {
+          "draw": 2,
+          "draw_name": "random_02",
+          "draw_kind": "random",
+          "offsets": {
+            "einstein_radius": -0.15581861563433805,
+            "ell_comps_0": 0.00206629896736218,
+            "ell_comps_1": -0.11625153873194172,
+            "centre_0": -0.005469791598313643,
+            "centre_1": -0.03114777368132663
+          },
+          "log_likelihood_d_candidate": -584.2585316766053,
+          "log_likelihood_library": -584.2585316766053,
+          "log_likelihood_b_pdip": -584.2585316768818,
+          "abs_diff_nats": 0.0,
+          "rel_diff": 0.0,
+          "rel_diff_vs_b_pdip": 4.732261051377819e-13,
+          "rtol": 1e-09,
+          "gated": true,
+          "gated_on": "rel_diff",
+          "status": "PASS",
+          "within_rtol_vs_b_pdip": true
+        },
+        {
+          "draw": 3,
+          "draw_name": "random_03",
+          "draw_kind": "random",
+          "offsets": {
+            "einstein_radius": -0.1830668386758629,
+            "ell_comps_0": -0.027212949142865497,
+            "ell_comps_1": -0.015815007818457728,
+            "centre_0": 0.010290763409353322,
+            "centre_1": 0.02606283423606694
+          },
+          "log_likelihood_d_candidate": -21028.10446899473,
+          "log_likelihood_library": -21028.10446899473,
+          "log_likelihood_b_pdip": -21028.104468994752,
+          "abs_diff_nats": 0.0,
+          "rel_diff": 0.0,
+          "rel_diff_vs_b_pdip": 1.038033307982408e-15,
+          "rtol": 1e-09,
+          "gated": true,
+          "gated_on": "rel_diff",
+          "status": "PASS",
+          "within_rtol_vs_b_pdip": true
+        },
+        {
+          "draw": 4,
+          "draw_name": "random_04",
+          "draw_kind": "random",
+          "offsets": {
+            "einstein_radius": -0.032133665736008565,
+            "ell_comps_0": 0.0683231735274843,
+            "ell_comps_1": -0.03325973367433068,
+            "centre_0": 0.008787751752325493,
+            "centre_1": 0.022586754541295218
+          },
+          "log_likelihood_d_candidate": 23446.340278742544,
+          "log_likelihood_library": 23446.340278742544,
+          "log_likelihood_b_pdip": 23446.340278742486,
+          "abs_diff_nats": 0.0,
+          "rel_diff": 0.0,
+          "rel_diff_vs_b_pdip": 2.4825904691932287e-15,
+          "rtol": 1e-09,
+          "gated": true,
+          "gated_on": "rel_diff",
+          "status": "PASS",
+          "within_rtol_vs_b_pdip": true
+        },
+        {
+          "draw": 5,
+          "draw_name": "random_05",
+          "draw_kind": "random",
+          "offsets": {
+            "einstein_radius": 0.02350307444021864,
+            "ell_comps_0": -0.03717496246769042,
+            "ell_comps_1": -0.04608626881292097,
+            "centre_0": -0.011443145641683479,
+            "centre_1": 0.005504878086751236
+          },
+          "log_likelihood_d_candidate": 24578.89251407161,
+          "log_likelihood_library": 24578.89251407161,
+          "log_likelihood_b_pdip": 24578.892514071573,
+          "abs_diff_nats": 0.0,
+          "rel_diff": 0.0,
+          "rel_diff_vs_b_pdip": 1.4801231605569481e-15,
+          "rtol": 1e-09,
+          "gated": true,
+          "gated_on": "rel_diff",
+          "status": "PASS",
+          "within_rtol_vs_b_pdip": true
+        },
+        {
+          "draw": 6,
+          "draw_name": "random_06",
+          "draw_kind": "random",
+          "offsets": {
+            "einstein_radius": -0.252404545884684,
+            "ell_comps_0": -0.010458778743585653,
+            "ell_comps_1": -0.007961250495723887,
+            "centre_0": 0.013521139617145192,
+            "centre_1": 0.0053664780626585225
+          },
+          "log_likelihood_d_candidate": -39022.50374935851,
+          "log_likelihood_library": -39022.50374935851,
+          "log_likelihood_b_pdip": -39022.50374935861,
+          "abs_diff_nats": 0.0,
+          "rel_diff": 0.0,
+          "rel_diff_vs_b_pdip": 2.6103759833770847e-15,
+          "rtol": 1e-09,
+          "gated": true,
+          "gated_on": "rel_diff",
+          "status": "PASS",
+          "within_rtol_vs_b_pdip": true
+        },
+        {
+          "draw": 7,
+          "draw_name": "random_07",
+          "draw_kind": "random",
+          "offsets": {
+            "einstein_radius": 0.08884317725998035,
+            "ell_comps_0": -0.03269143047091697,
+            "ell_comps_1": -0.006480681684638473,
+            "centre_0": 0.01959938675153324,
+            "centre_1": 0.03733577863051902
+          },
+          "log_likelihood_d_candidate": 7893.462293968609,
+          "log_likelihood_library": 7893.462293968609,
+          "log_likelihood_b_pdip": 7893.462293967808,
+          "abs_diff_nats": 0.0,
+          "rel_diff": 0.0,
+          "rel_diff_vs_b_pdip": 1.0139471220022286e-13,
+          "rtol": 1e-09,
+          "gated": true,
+          "gated_on": "rel_diff",
+          "status": "PASS",
+          "within_rtol_vs_b_pdip": true
+        }
+      ],
+      "draw_seed": 0,
+      "pin_draws": 8,
+      "max_rel_diff": 0.0,
+      "max_abs_diff_nats": 0.0,
+      "max_rel_diff_vs_b_pdip": 4.732261051377819e-13
+    },
+    "census_status": "ok",
+    "library_anchor_revision": "PyAutoArray main 681938ae (2026-09-24)",
+    "library_revisions": {
+      "PyAutoNerves": {
+        "head": "1fa613aa8d89a79613009fb66f5b4e2d21deb57a",
+        "branch": "main",
+        "dirty": false,
+        "path": "/mnt/ral/jnightin/PyAuto/PyAutoNerves",
+        "module_file": "/mnt/ral/jnightin/PyAuto/PyAutoNerves/autonerves/__init__.py"
+      },
+      "PyAutoArray": {
+        "head": "7fa8d2714f7da43fec2b23c31bff580764831670",
+        "branch": "main",
+        "dirty": true,
+        "path": "/mnt/ral/jnightin/PyAuto/PyAutoArray",
+        "module_file": "/mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/__init__.py"
+      },
+      "PyAutoFit": {
+        "head": "a736840127be7a3c21e15a5c945e94d8f1082983",
+        "branch": "main",
+        "dirty": false,
+        "path": "/mnt/ral/jnightin/PyAuto/PyAutoFit",
+        "module_file": "/mnt/ral/jnightin/PyAuto/PyAutoFit/autofit/__init__.py"
+      },
+      "PyAutoGalaxy": {
+        "head": "70a61e26cd715cefe7012a38285698091246a8a4",
+        "branch": "main",
+        "dirty": true,
+        "path": "/mnt/ral/jnightin/PyAuto/PyAutoGalaxy",
+        "module_file": "/mnt/ral/jnightin/PyAuto/PyAutoGalaxy/autogalaxy/__init__.py"
+      },
+      "PyAutoLens": {
+        "head": "86054bbc19baa2f710a12e04a94fa27ab37cc354",
+        "branch": "main",
+        "dirty": true,
+        "path": "/mnt/ral/jnightin/PyAuto/PyAutoLens",
+        "module_file": "/mnt/ral/jnightin/PyAuto/PyAutoLens/autolens/__init__.py"
+      }
+    },
+    "gate": {
+      "enforced": true,
+      "pins_checked": 9,
+      "pins_failed": [],
+      "reconciliation_pct": -0.4294929995388942,
+      "reconciliation_ok": true,
+      "unjoined_ms": 0.0,
+      "unjoined_ok": true,
+      "failures": [],
+      "passed": true,
+      "note": "ENFORCED in log-det mode: the cell writes this JSON and its PNG, then raises if any gated pin failed, |reconciliation_pct| > 5 or unjoined_ms > 0. Speed is never gated. Pre-registered before any A100 data (#303): per task, the candidate route (library certified solver via al.Settings, PDIP fallback, packaged budget, scalar jit) is pinned against the UNMODIFIED library route (the same Settings and composition, compiled WITHOUT the log-det rebind, in the same process) at 1e-9 relative on the fiducial and on 8 seeded draws (flds.random_draws(draw_seed, 8)); every row is GATED, control included (control's reference is a second compilation of its own program). Route b (library PDIP) is recorded, not gated: phase 2/3 placed a 2.0-2.6e-9 certified-vs-PDIP residual in the SOLVER path on the A100, which this phase does not touch. Also gated: |reconciliation_pct| <= 5, unjoined_ms == 0, and a non-control candidate must be taken on the JAX path (calls >= 1) in every compiled program. The JSON is written before the gate raises. Lever threshold (never a gate): >= 0.5 ms whole-call saving vs the unmodified library route measured in the SAME task (phase B saw ~3 % node-to-node differences, so rows are compared within a task only)."
+    }
+  }
+}

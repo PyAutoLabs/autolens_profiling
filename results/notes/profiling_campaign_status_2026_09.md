@@ -1,7 +1,7 @@
 # Fixed-light profiling: current findings and experiment contracts
 
 Status as recorded on **2026-09-18**; the GPU section adds the phase-3 verdict on
-**2026-09-23**. This page supersedes obsolete Next sections,
+**2026-09-23** and the phase-4 verdict on **2026-09-24**. This page supersedes obsolete Next sections,
 not the historical measurements themselves. No new timings were collected for it.
 
 ## CPU: complete
@@ -43,7 +43,7 @@ and label it **control-only, incomplete A/B job**. Do not rerun it merely to fil
 the archive. For future headline support, version the supporting control along
 with the existing source/job sidecar, including incomplete-job status.
 
-## GPU: corrected baseline, batching experiment inconclusive, PSF convolution has no fp64 lever
+## GPU: corrected baseline, batching experiment inconclusive, PSF convolution and log-det factor reuse have no fp64 lever
 
 The [budget-7 single-call trace](hst_gpu_residue_phase1_2026_09.md) supersedes two
 claims inherited from the completed JAX fixed-light campaign:
@@ -79,8 +79,18 @@ memory. The two real-space rows are 1.45× and 3.82× slower. The two faster row
 fp32-cube and full complex64 (−2.14 / −3.98 ms), are **DIAGNOSTIC**: they miss the pin
 by ~1e-3 nats on the draws. They may not be quoted as levers, and accepting them
 is a human policy decision, not an open profiling question. The
-[phase-3 note](hst_gpu_residue_phase3_psf_2026_09.md) has the matched table. The
-remaining listed GPU lever is the second Cholesky (0.89 ms, phase 4).
+[phase-3 note](hst_gpu_residue_phase3_psf_2026_09.md) has the matched table.
+
+Phase 4 (issue [#303](https://github.com/PyAutoLabs/autolens_profiling/issues/303),
+A100 array **350651**) closes the second Cholesky for log det(F + λH): **no lever**.
+Reusing the library certified solve's factor plus a Schur complement is exact (8/8
+rows pass the pre-registered `1e-9` gate) but the triangular solve against the full
+factor costs ~1 ms at every `k_max` (32-256), more than the 0.90 ms dense Cholesky it
+replaces. Interleaved savings are −0.27 to −0.45 ms on the Schur branch and +0.09 ms
+(noise) where rectangular rows overflow to the dense branch; the 0.5 ms threshold is
+not approached. The [phase-4 note](hst_gpu_residue_phase4_logdet_2026_09.md) has the
+matched table. **The fp64 levers in the campaign map are exhausted**; what remains is
+the human fp32 policy decision and batched/callback work tracked elsewhere.
 
 The [matrix-free verdict](matrix_free_pixelized_2026_09.md) remains a no-go on its
 measured grid; this summary does not reopen it or infer an unmeasured crossover.

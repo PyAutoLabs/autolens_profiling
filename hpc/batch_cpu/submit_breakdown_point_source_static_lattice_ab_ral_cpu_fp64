@@ -1,0 +1,168 @@
+#!/bin/bash -l
+#
+# 2026-09 point-source CPU speed-up campaign, phase 3: the static step-0
+# lattice A/B (PyAutoArray#568).
+#
+# WHAT THIS MEASURES. One interleaved, in-process A/B of the JAX PointSolver's
+# step-0 tiling (AbstractSolver._initial_triangles) inside the production
+# point-source likelihoods, on ONE pinned, quiet RAL CPU node:
+#
+#   scripts/point_source/likelihood_breakdown/static_lattice_ab.py
+#     control  = the flat (3N, 2) per-triangle table (phase-2 main path;
+#                69 849 step-0 rows for the simple lattice) -- the IN-JOB control;
+#     exact    = the 28 665 exact-float distinct rows + inverse map (cell-built);
+#     lattice  = the 11 859 geometric lattice vertices (cell-built, same
+#                arithmetic as the library's static_vertex_table);
+#     library  = no substitution -- the imported PyAutoLens/PyAutoArray. HERE
+#                those are the FEATURE BRANCH clones (see LIBRARY below), so it
+#                must self-label library_matches = lattice.
+#   Rows: simple solved + plain + vmap-4 of solved; cluster solved + plain.
+#   Protocol: 20 rounds x 20 calls, route order rotated each round.
+#   Gates (tolerance, recorded in gate_summary): log L rel <= 1e-12, image
+#   counts identical + positions <= 1e-10, simple-solved grad allclose 1e-10,
+#   finite and NON-zero, vmap-vs-scalar rtol 1e-12, simple-plain step-0
+#   containing_indices sets identical.
+#
+# TWO RUNS, TWO PROCESSES. (1) constant folding DISABLED (the flags every PyAuto
+# submit uses); (2) --constant-folding: the cell swaps the disable flag for the
+# dummy pass name constant_folding_probe_disabled before jax is imported
+# (PyAutoNerves re-adds the real flag only when the substring is missing), and
+# refuses to run unless its HLO probe shows that folding actually ran.
+#
+# HOST PINNING. Phase 1 landed on euclid-ral-compute-10-2 (Xeon 8490H) and
+# phase 2 on euclid-ral-compute-1 (EPYC 7763); cluster control differed 15-20 %
+# between them (host, not drift). The phase-2 host was the intended pin, but on
+# 2026-09-24 euclid-ral-compute-1..19 were all IDLE+NOT_RESPONDING in sinfo and
+# only the euclid-ral-compute-10-* (Xeon 8490H) nodes answered, so this job is
+# pinned with --nodelist to euclid-ral-compute-10-2 -- the PHASE-1 host. The
+# control route is measured in the same job regardless, and only in-job ratios
+# are quoted; phase-2 EPYC milliseconds are not comparable to these.
+# Check before submitting: sinfo -p ral -N -o "%N %t %C" (a trailing * = not
+# responding). If 10-2 is busy, pin another 10-* node and say so in the note.
+#
+# LIBRARY. The shared /mnt/ral/jnightin/PyAuto mirror is main. This submit
+# PREPENDS git clones of PyAutoArray and PyAutoLens feature/point-source-cpu-p3
+# to PYTHONPATH. Prepare them once:
+#
+#   for r in PyAutoArray PyAutoLens; do
+#     git clone --shared /mnt/ral/jnightin/PyAuto/$r /mnt/ral/jnightin/autolens_profiling_wt/${r}_point-source-cpu-p3
+#     git -C /mnt/ral/jnightin/autolens_profiling_wt/${r}_point-source-cpu-p3 fetch \
+#         https://github.com/PyAutoLabs/$r.git feature/point-source-cpu-p3
+#     git -C /mnt/ral/jnightin/autolens_profiling_wt/${r}_point-source-cpu-p3 checkout --detach FETCH_HEAD
+#   done
+#
+# The job refuses to run unless autoarray AND autolens import from those clones;
+# the JSON's source_revisions record their HEADs.
+#
+# THREADS. OMP/MKL/OPENBLAS pinned to 1 (BLAS family only); the JAX CPU pool
+# sizes from the 8 CPUs of --cpus-per-task=8. The JSON records thread_environment,
+# the observed process thread count after the first compile, sched_affinity,
+# os_cpu_count and loadavg at start and end.
+#
+# Writes results/breakdown/point_source/static_lattice_ab_hpc_ral_cpu_fp64.{json,png}
+# and static_lattice_ab_constant_folding_hpc_ral_cpu_fp64.{json,png}.
+#
+# WALL-BASIS:
+#   Laptop witness (WSL2, 8 cores, loaded, 2026-09-24), this cell at 20 x 20, simple +
+#   cluster: 975 s wall folding off (static_lattice_ab_laptop_cpu_fp64, first run) and
+#   1571 s folding on (static_lattice_ab_constant_folding_laptop_cpu_fp64; the cluster
+#   plain control compile alone took 555 s with folding on). This job runs both: 2546 s,
+#   x 2.0 headroom = 5092 s, inside the 3-hour request.
+#   cell: point_source/static_lattice_ab/simple  device: cpu  precision: fp64
+#   source: measured-wall  wall: 2546  ref: laptop-point_source-static_lattice_ab_laptop_cpu_fp64  headroom: 2.0
+
+#SBATCH -J static_lattice_ab
+#SBATCH --partition=ral
+#SBATCH --nodelist=euclid-ral-compute-10-2
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=32gb
+#SBATCH --time=3:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+# Repo root from where this was submitted (hpc/batch_cpu/../..), so it runs from
+# a worktree of the feature branch. sbatch from inside hpc/batch_cpu/.
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+export AA_BRANCH_SRC="${AA_BRANCH_SRC:-/mnt/ral/jnightin/autolens_profiling_wt/PyAutoArray_point-source-cpu-p3}"
+export AL_BRANCH_SRC="${AL_BRANCH_SRC:-/mnt/ral/jnightin/autolens_profiling_wt/PyAutoLens_point-source-cpu-p3}"
+for src in "$AA_BRANCH_SRC/autoarray" "$AL_BRANCH_SRC/autolens"; do
+    if [ ! -f "$src/__init__.py" ]; then
+        echo "FATAL: $src is not a library checkout (see LIBRARY in the header)" >&2
+        exit 2
+    fi
+done
+export PYTHONPATH="$AA_BRANCH_SRC:$AL_BRANCH_SRC:$PYTHONPATH"
+
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export NPROC=${SLURM_CPUS_PER_TASK:-8}
+export JAX_PLATFORMS=cpu
+export JAX_ENABLE_X64=1
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+export NUMBA_CACHE_DIR=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}
+export MPLCONFIGDIR=/tmp/matplotlib_${SLURM_JOB_ID:-local}
+mkdir -p "$NUMBA_CACHE_DIR" "$MPLCONFIGDIR"
+# NO persistent JAX compile cache: the two runs differ only in XLA_FLAGS, and
+# compile_s is a gate (+20 % stop rule), so every compile must be cold.
+unset JAX_COMPILATION_CACHE_DIR
+
+echo "=========================================="
+date
+hostname
+lscpu | grep 'Model name' || true
+echo "partition:      ${SLURM_JOB_PARTITION:-unset}"
+echo "nodelist:       ${SLURM_JOB_NODELIST:-unset}"
+echo "cpus-per-task:  ${SLURM_CPUS_PER_TASK:-unset}"
+echo "sched_affinity: $(python3 -c 'import os; print(len(os.sched_getaffinity(0)))')"
+echo "loadavg:        $(cat /proc/loadavg)"
+echo "Cell:           point_source/likelihood_breakdown/static_lattice_ab"
+echo "Precision:      fp64 (JAX_ENABLE_X64=$JAX_ENABLE_X64)"
+echo "Thread env:     OMP=$OMP_NUM_THREADS MKL=$MKL_NUM_THREADS OPENBLAS=$OPENBLAS_NUM_THREADS NPROC=$NPROC"
+echo "XLA_FLAGS:      $XLA_FLAGS"
+
+echo "=== source revisions ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r (shared)" "$(git -C /mnt/ral/jnightin/PyAuto/$r rev-parse HEAD 2>&1)"
+done
+echo "PyAutoArray (branch clone, IMPORTED): $(git -C $AA_BRANCH_SRC rev-parse HEAD 2>&1)"
+echo "PyAutoLens  (branch clone, IMPORTED): $(git -C $AL_BRANCH_SRC rev-parse HEAD 2>&1)"
+echo "AP_ROOT rev:   $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+echo "AP_ROOT branch: $(git -C $AP_ROOT rev-parse --abbrev-ref HEAD 2>&1)"
+
+cd $AP_ROOT
+
+echo "=== import provenance (refuses unless both libraries come from the branch clones) ==="
+python3 -c "
+import os, autoarray, autolens, autofit, autogalaxy, jax
+for m in (autoarray, autolens, autofit, autogalaxy):
+    print(f'{m.__name__}.__file__ =', m.__file__)
+print('jax', jax.__version__, jax.devices())
+assert os.path.realpath(autoarray.__file__).startswith(os.path.realpath(os.environ['AA_BRANCH_SRC'])), 'autoarray not imported from the branch clone'
+assert os.path.realpath(autolens.__file__).startswith(os.path.realpath(os.environ['AL_BRANCH_SRC'])), 'autolens not imported from the branch clone'
+from autoarray.structures.triangles.coordinate_array import static_vertex_table
+print('ASSERT OK: autoarray + autolens from the branch clones; static_vertex_table present')
+" || exit 3
+
+echo "=========================================="
+echo "run 1/2: constant folding DISABLED (20 x 20, simple + cluster)"
+date
+echo "loadavg: $(cat /proc/loadavg)"
+python3 -u scripts/point_source/likelihood_breakdown/static_lattice_ab.py --config-name hpc_ral_cpu_fp64 --rounds 20 --calls 20
+
+echo "=========================================="
+echo "run 2/2: constant folding ENABLED, separate process (20 x 20, simple + cluster)"
+date
+echo "loadavg: $(cat /proc/loadavg)"
+python3 -u scripts/point_source/likelihood_breakdown/static_lattice_ab.py --config-name hpc_ral_cpu_fp64 --rounds 20 --calls 20 --constant-folding
+
+echo "=========================================="
+echo "loadavg: $(cat /proc/loadavg)"
+echo "Finished."
+date
