@@ -132,6 +132,7 @@ if _misc_dir not in _sys.path:
 import argparse
 import json
 import os
+import re
 import resource
 import sys
 import traceback
@@ -205,10 +206,31 @@ _cell_parser.add_argument(
         "EAGER_REFERENCE_MAX_VIS visibilities (one NUFFT call is ~1 min there)."
     ),
 )
+_cell_parser.add_argument(
+    "--transform-chunk",
+    type=int,
+    default=None,
+    help=(
+        "Measurement-only chunked-transform arm: compute the transformed mapping matrix "
+        "column-by-column (jax.lax.map, this many columns per vmapped batch) through the "
+        "transformer's own visibility-chunked forward NUFFT, instead of the library's "
+        "one-shot transform_mapping_matrix. Steps 3-8 then run on it."
+    ),
+)
+_cell_parser.add_argument(
+    "--transform-vis-chunk",
+    type=int,
+    default=None,
+    help=(
+        "Visibility chunk for the --transform-chunk arm's per-column forward NUFFT. "
+        "Default: the instrument's transformer_chunk_size preset (None = one shot)."
+    ),
+)
 _cell_args = _cli.parse_cell_args(_cell_parser)
 
 USE_DFT = bool(_cell_args.use_dft)
 USE_W_TILDE = bool(_cell_args.w_tilde)
+TRANSFORM_COLUMN_BATCH = _cell_args.transform_chunk
 _vmap_batch = _cell_args.vmap_batch
 
 instrument = _cli.instrument or "sma"  # --instrument overrides (default sma)
@@ -411,72 +433,47 @@ def _nufftax_version():
         return None
 
 
-def _write_reference_oom(exc):
-    """Record a device OOM of the JIT FitInterferometer reference as the result.
-
-    The reference is the library's own dense MGE likelihood, whose
-    ``transform_mapping_matrix`` is one ``nufft2d2`` over every column and every
-    visibility (it ignores ``chunk_size``). Under pure-JAX fp64 nufftax (>= 0.6)
-    on GPU the interpolation materialises an O(N_vis x N_gauss x nspread^2)
-    intermediate, so at alma scale and above this allocation exceeds the device.
-    Every dense step 3 would hit the same allocation, so the run stops here and
-    writes this JSON (``stage='oom_reference'``, ``steps`` null) rather than a
-    traceback-only failure. A RESOURCE_EXHAUSTED is a result, not a failure.
-    """
+def _oom_record(exc, where):
+    """A device RESOURCE_EXHAUSTED recorded as a result: requested bytes + where."""
     msg = str(exc).splitlines()[0][:500]
-    print(f"\n  JIT reference OOM (recorded as the result): {msg}")
-    default_dir = _workspace_root / "results" / "breakdown" / "interferometer"
-    if _cli.config_name is not None and instrument != "alma":
-        default_dir = default_dir / instrument
-    cell_name = "mge_dft" if USE_DFT else "mge"
-    out_path, _ = resolve_output_paths(
-        _cli,
-        default_dir=default_dir,
-        default_basename=f"{cell_name}_breakdown_{instrument}_v{al.__version__}",
-        cell=cell_name,
-    )
-    summary = {
-        "stage": "oom_reference",
-        "autolens_version": al.__version__,
-        "device": device_info_dict(),
-        "instrument": instrument,
-        "model": "mge",
-        "transformer": transformer_name,
-        "use_mixed_precision": bool(_cli.use_mixed_precision),
-        "configuration": {
-            "pixel_scale_arcsec": pixel_scale,
-            "mask_radius_arcsec": mask_radius,
-            "real_space_shape": list(real_space_shape),
-            "image_pixels_masked": n_image_pixels,
-            "visibilities": n_visibilities,
-            "inversion_path": "dense",
-            "transformer": transformer_name,
-            "chunk_size": transformer_chunk_size,
-            "nufftax_version": _nufftax_version(),
-            "w_tilde_arm": USE_W_TILDE,
-        },
-        "reference_mode": reference_mode,
-        "oom": {
-            "where": "jax.jit(FitInterferometer) reference (dense transform_mapping_matrix)",
-            "error": msg,
-            "note": (
-                "TransformerNUFFT.transform_mapping_matrix runs one nufft2d2 over every "
-                "Gaussian column and every visibility; pure-JAX fp64 nufftax interpolation "
-                "on GPU materialises O(N_vis x N_gauss x nspread^2). No dense step and no W~ "
-                "row was measured (both compare against this reference)."
-            ),
-        },
-        "steps": None,
-        "total_step_by_step": None,
-        "full_pipeline_single_jit": None,
-        "peak_rss_mb": _peak_rss_mb(),
-    }
-    out_path.write_text(json.dumps(summary, indent=2))
-    print(f"  Results dict saved to: {out_path}")
+    requested = None
+    m = re.search(r"allocate ([0-9.]+)\s*(B|KiB|MiB|GiB|TiB)", msg)
+    if m:
+        scale = {"B": 1, "KiB": 2**10, "MiB": 2**20, "GiB": 2**30, "TiB": 2**40}[m.group(2)]
+        requested = int(float(m.group(1)) * scale)
+    print(f"  RESOURCE_EXHAUSTED in {where} (recorded as a result): {msg}")
+    return {"status": "oom", "requested_bytes": requested, "where": where, "error": msg}
+
+
+def _is_oom(exc) -> bool:
+    return "RESOURCE_EXHAUSTED" in str(exc)
+
+
+# Pinned reference values from one fp64 JAX-CPU run on the laptop (2026-09-25,
+# autolens_profiling#308): the figure of merit (what AnalysisInterferometer
+# returns) and the residual-form log likelihood, per (instrument, transformer).
+# They are recorded against, never asserted at the end; when the library's own
+# JIT reference cannot run on this device (the A100 OOM, see "library path"
+# below) they also stand in as the step-by-step reference
+# (``reference_mode = "cpu_pinned"``). ``None`` means "no pin yet".
+
+EXPECTED_FIGURE_OF_MERIT = {
+    ("sma", "TransformerNUFFT"): -3153.948230379729,
+    ("sma", "TransformerDFT"): -3153.948230379729,
+    ("alma", "TransformerNUFFT"): -12047193.68761333,
+    ("alma_high", "TransformerNUFFT"): -60242552.89876968,
+    ("jvla", "TransformerNUFFT"): None,
+}
+EXPECTED_LOG_LIKELIHOOD = {
+    ("sma", "TransformerNUFFT"): -3153.942384509246,
+    ("alma", "TransformerNUFFT"): -12047193.687220689,
+    ("alma_high", "TransformerNUFFT"): -60242552.89874968,
+}
 
 
 fit = al.FitInterferometer(dataset=dataset, tracer=tracer, settings=settings, xp=np)
 reference_mode = "eager_numpy" if n_visibilities <= EAGER_REFERENCE_MAX_VIS else "jit_jax"
+library_path = {"status": "ok", "where": "eager FitInterferometer reference"}
 
 if reference_mode == "eager_numpy":
     print("\n--- Full FitInterferometer (eager baseline) ---")
@@ -492,15 +489,31 @@ else:
         )
         return fit_jax.log_likelihood, fit_jax.figure_of_merit
 
+    # LIBRARY PATH as-is. TransformerNUFFT.transform_mapping_matrix is one
+    # nufft2d2 over every column and every visibility; under pure-JAX fp64
+    # nufftax (>= 0.6) on GPU its interpolation materialises
+    # O(N_vis x N_gauss x nspread^2) — 61 GiB at alma, 300 GiB at alma_high,
+    # 1.46 TiB at jvla on the A100 (#308 phase B). A device OOM here is the
+    # VRAM re-test result: it is recorded as ``library_path`` and the run
+    # continues on the --transform-chunk arm, with the laptop CPU pins as the
+    # reference.
     try:
         with timer.section("fit_interferometer_jit_reference"):
             _ll, _fom = jax.jit(_reference_fn)(params_tree)
             log_likelihood_ref, figure_of_merit_ref = float(_ll), float(_fom)
-    except Exception as exc:  # noqa: BLE001 — only a device OOM is recorded, see below
-        if "RESOURCE_EXHAUSTED" not in str(exc):
+        library_path = {"status": "ok", "where": "jax.jit(FitInterferometer) reference"}
+    except Exception as exc:  # noqa: BLE001 — only a device OOM is recorded
+        if not _is_oom(exc):
             raise
-        _write_reference_oom(exc)
-        sys.exit(0)
+        library_path = _oom_record(exc, "jax.jit(FitInterferometer) reference")
+        _pin_key = (instrument, transformer_name)
+        figure_of_merit_ref = EXPECTED_FIGURE_OF_MERIT.get(_pin_key)
+        log_likelihood_ref = EXPECTED_LOG_LIKELIHOOD.get(_pin_key)
+        reference_mode = "cpu_pinned" if figure_of_merit_ref is not None else "none"
+        if TRANSFORM_COLUMN_BATCH is None:
+            raise RuntimeError(
+                "library path OOMed and no --transform-chunk arm was requested"
+            ) from exc
 
 # Structural properties only (class, parameter count, solver, preconditioning,
 # no-regularization indices): none evaluates a mapping matrix. ``fit.inversion``
@@ -522,6 +535,12 @@ else:
         settings=settings,
         xp=np,
     ).inversion
+if reference_mode in ("eager_numpy", "jit_jax"):
+    pass
+elif reference_mode == "cpu_pinned":
+    print("  reference = laptop fp64 JAX-CPU pins (library path OOMed on this device)")
+else:
+    print("  reference = none (library path OOMed and no CPU pin for this instrument)")
 n_linear = int(inversion.total_params)
 preconditioning = inversion.positive_only_preconditioning_used
 solver = inversion.positive_only_solver_used
@@ -573,8 +592,58 @@ def _mapping_matrix_from(params):
     return jnp.hstack(matrices) if len(matrices) > 1 else matrices[0]
 
 
-def _transform(mapping_matrix):
+def _transform_library(mapping_matrix):
     return dataset.transformer.transform_mapping_matrix(mapping_matrix=mapping_matrix, xp=jnp)
+
+
+TRANSFORM_VIS_CHUNK = (
+    _cell_args.transform_vis_chunk
+    if _cell_args.transform_vis_chunk is not None
+    else transformer_chunk_size
+)
+if TRANSFORM_COLUMN_BATCH is not None:
+    if USE_DFT:
+        raise ValueError("--transform-chunk is a TransformerNUFFT arm")
+    # The arm's own transformer: same uv / mask, visibility-chunked forward NUFFT.
+    _chunk_transformer = al.TransformerNUFFT(
+        uv_wavelengths=np.asarray(dataset.uv_wavelengths),
+        real_space_mask=real_space_mask,
+        chunk_size=TRANSFORM_VIS_CHUNK,
+    )
+    _slim_rows, _slim_cols = real_space_mask.slim_to_native_tuple
+    _slim_rows = jnp.asarray(_slim_rows)
+    _slim_cols = jnp.asarray(_slim_cols)
+    _n_y, _n_x = real_space_mask.shape_native
+
+
+def _transform_script_chunked(mapping_matrix):
+    """Measurement-only prototype of a chunked ``transform_mapping_matrix``.
+
+    Same arithmetic as the library (scatter each column into the native image,
+    row-flip, ``nufft2d2``, phase shift — ``TransformerNUFFT._forward_native``
+    does the flip and shift), but over columns with ``jax.lax.map``
+    (``TRANSFORM_COLUMN_BATCH`` columns vmapped per step) and, inside each
+    column, over visibility chunks of ``TRANSFORM_VIS_CHUNK`` (the transformer's
+    own ``lax.scan``). Peak interpolation buffer ~ batch x chunk x nspread² x 16 B
+    instead of N_gauss x N_vis x nspread² x 16 B. No library edit.
+    """
+
+    def one_column(column):
+        image = jnp.zeros((_n_y, _n_x), dtype=jnp.complex128)
+        image = image.at[_slim_rows, _slim_cols].set(column.astype(jnp.complex128))
+        return _chunk_transformer._forward_native(image, xp=jnp)
+
+    vis = jax.lax.map(one_column, mapping_matrix.T, batch_size=TRANSFORM_COLUMN_BATCH)
+    return vis.T
+
+
+_transform = _transform_script_chunked if TRANSFORM_COLUMN_BATCH is not None else _transform_library
+transform_config = {
+    "transform": "script_chunked" if TRANSFORM_COLUMN_BATCH is not None else "library",
+    "transform_column_batch": TRANSFORM_COLUMN_BATCH,
+    "transform_vis_chunk": TRANSFORM_VIS_CHUNK if TRANSFORM_COLUMN_BATCH is not None else None,
+}
+print(f"  step-3 transform: {transform_config}")
 
 
 def setup_prefix_fn(upto: int):
@@ -652,6 +721,29 @@ mapping_matrix_jnp = jnp.asarray(mapping_matrix_jit)
 jit_profile(_transform, "transform_mapping_matrix_standalone", mapping_matrix_jnp)
 sub_rows["transform_mapping_matrix (standalone)"] = _per_call("transform_mapping_matrix_standalone")
 print(f"  peak RSS so far: {_peak_rss_mb():.0f} MB")
+
+# With the chunked arm on and the library path alive, the library's one-shot
+# transform is timed as a guarded sub-row too (the lever's before/after).
+transformed_mm_library_max_rel_diff = None
+if TRANSFORM_COLUMN_BATCH is not None and library_path["status"] == "ok":
+    try:
+        _, _tmm_lib = jit_profile(
+            _transform_library, "transform_mapping_matrix_library", mapping_matrix_jnp
+        )
+        sub_rows["transform_mapping_matrix (library one-shot)"] = _per_call(
+            "transform_mapping_matrix_library"
+        )
+        transformed_mm_library_max_rel_diff = float(
+            jnp.max(jnp.abs(_tmm_lib - transformed_mm_jit)) / jnp.max(jnp.abs(_tmm_lib))
+        )
+        print(
+            f"  chunked vs library transform max rel diff: {transformed_mm_library_max_rel_diff:.3e}"
+        )
+        del _tmm_lib
+    except Exception as exc:  # noqa: BLE001
+        if not _is_oom(exc):
+            raise
+        library_path["standalone_transform"] = _oom_record(exc, "library transform_mapping_matrix")
 
 transformed_mm_jnp = jnp.asarray(transformed_mm_jit)
 
@@ -829,33 +921,46 @@ log_likelihood_steps = float(log_likelihood_steps)
 # Correctness, in nats (an rtol on a log L whose noise normalisation grows with
 # N_vis says nothing at alma scale).
 LOG_L_ATOL_NATS = 1.0 if _cli.use_mixed_precision else 1e-3
-figure_of_merit_abs_diff = abs(figure_of_merit_steps - figure_of_merit_ref)
-log_likelihood_abs_diff = abs(log_likelihood_steps - log_likelihood_ref)
-floor_bias_nats = log_likelihood_ref - figure_of_merit_ref
+
+
+def _abs_diff(a, b):
+    return None if a is None or b is None else float(abs(a - b))
+
+
+figure_of_merit_abs_diff = _abs_diff(figure_of_merit_steps, figure_of_merit_ref)
+log_likelihood_abs_diff = _abs_diff(log_likelihood_steps, log_likelihood_ref)
+floor_bias_nats = (
+    log_likelihood_ref - figure_of_merit_ref
+    if log_likelihood_ref is not None and figure_of_merit_ref is not None
+    else log_likelihood_steps - figure_of_merit_steps
+)
 print(f"  figure_of_merit (step-by-step)     = {figure_of_merit_steps}")
 print(f"  figure_of_merit (FitInterferometer) = {figure_of_merit_ref}")
-print(f"  |diff| = {figure_of_merit_abs_diff:.3e} nats (atol {LOG_L_ATOL_NATS:g})")
-print(f"  log_likelihood (residual form) |diff vs Fit| = {log_likelihood_abs_diff:.3e} nats")
+print(f"  |diff| = {figure_of_merit_abs_diff} nats (atol {LOG_L_ATOL_NATS:g}; {reference_mode})")
+print(f"  log_likelihood (residual form) |diff vs reference| = {log_likelihood_abs_diff} nats")
 print(f"  log_likelihood - figure_of_merit (diagonal-floor bias) = {floor_bias_nats:.6e} nats")
-np.testing.assert_allclose(
-    figure_of_merit_steps,
-    figure_of_merit_ref,
-    rtol=0.0,
-    atol=LOG_L_ATOL_NATS,
-    err_msg="interferometer/mge: step-by-step figure of merit does not match FitInterferometer",
-)
-np.testing.assert_allclose(
-    log_likelihood_steps,
-    log_likelihood_ref,
-    rtol=0.0,
-    atol=LOG_L_ATOL_NATS,
-    err_msg="interferometer/mge: residual-form log L does not match FitInterferometer",
-)
-print("  Assertions PASSED: step-by-step figure of merit and log L match FitInterferometer")
+if figure_of_merit_ref is not None:
+    np.testing.assert_allclose(
+        figure_of_merit_steps,
+        figure_of_merit_ref,
+        rtol=0.0,
+        atol=LOG_L_ATOL_NATS,
+        err_msg="interferometer/mge: step-by-step figure of merit does not match the reference",
+    )
+if log_likelihood_ref is not None:
+    np.testing.assert_allclose(
+        log_likelihood_steps,
+        log_likelihood_ref,
+        rtol=0.0,
+        atol=LOG_L_ATOL_NATS,
+        err_msg="interferometer/mge: residual-form log L does not match the reference",
+    )
+print(f"  Assertions vs reference ({reference_mode}): PASSED or skipped where no reference exists")
 
 full_pipeline_per_call = None
 full_pipeline_logl = None
 full_pipeline_abs_diff = None
+full_pipeline_status: dict = {"status": "not_run"}
 
 w_tilde_steps: dict[str, float] | None = None
 w_tilde: dict | None = None
@@ -941,6 +1046,7 @@ def write_results(stage: str):
             "nnls_solver": solver,
             "nnls_preconditioning": preconditioning,
             "nufftax_version": _nufftax_version(),
+            **transform_config,
             "w_tilde_arm": USE_W_TILDE,
             "n_repeats": N_REPEATS,
             "thread_env": _observe_thread_env(),
@@ -948,16 +1054,19 @@ def write_results(stage: str):
             "host_load_avg_end": list(os.getloadavg()),
         },
         "reference_mode": reference_mode,
+        "library_path": library_path,
+        "full_pipeline_status": full_pipeline_status,
+        "transformed_mapping_matrix_chunked_vs_library_max_rel_diff": (
+            transformed_mm_library_max_rel_diff
+        ),
         "log_likelihood_reference": log_likelihood_ref,
         "figure_of_merit_reference": figure_of_merit_ref,
         "figure_of_merit_step_by_step": figure_of_merit_steps,
         "log_likelihood_step_by_step": log_likelihood_steps,
         "figure_of_merit_full_pipeline": full_pipeline_logl,
-        "figure_of_merit_abs_diff_nats": float(figure_of_merit_abs_diff),
-        "log_likelihood_abs_diff_nats": float(log_likelihood_abs_diff),
-        "full_pipeline_abs_diff_nats": (
-            float(full_pipeline_abs_diff) if full_pipeline_abs_diff is not None else None
-        ),
+        "figure_of_merit_abs_diff_nats": figure_of_merit_abs_diff,
+        "log_likelihood_abs_diff_nats": log_likelihood_abs_diff,
+        "full_pipeline_abs_diff_nats": full_pipeline_abs_diff,
         "log_likelihood_atol_nats": LOG_L_ATOL_NATS,
         "diagonal_floor_bias_nats": float(floor_bias_nats),
         "diagonal_floor_note": (
@@ -1109,21 +1218,33 @@ def full_pipeline(params):
     return analysis.log_likelihood_function(instance=params)
 
 
-_, full_pipeline_logl = jit_profile(full_pipeline, "full_pipeline", params_tree)
-full_pipeline_per_call = _per_call("full_pipeline")
-full_pipeline_logl = float(full_pipeline_logl)
-full_pipeline_abs_diff = abs(full_pipeline_logl - figure_of_merit_ref)
-print(
-    f"  full-pipeline value = {full_pipeline_logl} "
-    f"(|diff vs figure_of_merit| = {full_pipeline_abs_diff:.3e} nats)"
-)
-np.testing.assert_allclose(
-    full_pipeline_logl,
-    figure_of_merit_ref,
-    rtol=0.0,
-    atol=LOG_L_ATOL_NATS,
-    err_msg="interferometer/mge: full-pipeline JIT does not match FitInterferometer.figure_of_merit",
-)
+# The library's fused pipeline (it runs the library transform, never the arm's).
+if library_path["status"] == "ok":
+    try:
+        _, full_pipeline_logl = jit_profile(full_pipeline, "full_pipeline", params_tree)
+        full_pipeline_per_call = _per_call("full_pipeline")
+        full_pipeline_logl = float(full_pipeline_logl)
+        full_pipeline_status = {"status": "ok"}
+    except Exception as exc:  # noqa: BLE001
+        if not _is_oom(exc):
+            raise
+        full_pipeline_status = _oom_record(exc, "AnalysisInterferometer full pipeline")
+else:
+    full_pipeline_status = {"status": "skipped", "reason": "library path OOMed (same transform)"}
+if full_pipeline_logl is not None:
+    full_pipeline_abs_diff = _abs_diff(full_pipeline_logl, figure_of_merit_ref)
+    print(
+        f"  full-pipeline value = {full_pipeline_logl} "
+        f"(|diff vs figure_of_merit| = {full_pipeline_abs_diff} nats)"
+    )
+    if figure_of_merit_ref is not None:
+        np.testing.assert_allclose(
+            full_pipeline_logl,
+            figure_of_merit_ref,
+            rtol=0.0,
+            atol=LOG_L_ATOL_NATS,
+            err_msg="interferometer/mge: full-pipeline JIT does not match the reference",
+        )
 print(f"  peak RSS so far: {_peak_rss_mb():.0f} MB")
 
 write_results("dense")
@@ -1174,6 +1295,7 @@ if USE_W_TILDE:
                 use_jax=True, nufft_chunk_size=w_tilde_nufft_chunk_size
             )
         w_tilde_build_s = timer.records[-1][1]
+        w_tilde_build_peak_rss_mb = _peak_rss_mb()
         sparse_operator = dataset_w.sparse_operator
         extent_index = jnp.asarray(
             np.asarray(dataset.real_space_mask.extent_index_for_masked_pixel), dtype=jnp.int32
@@ -1266,9 +1388,15 @@ if USE_W_TILDE:
             "data_vector_max_rel_diff_vs_dense": d_max_rel_diff,
             "figure_of_merit": figure_of_merit_w,
             "figure_of_merit_chain": figure_of_merit_w_chain,
-            "figure_of_merit_abs_diff_vs_fit_nats": abs(figure_of_merit_w - figure_of_merit_ref),
+            "figure_of_merit_abs_diff_vs_fit_nats": _abs_diff(
+                figure_of_merit_w, figure_of_merit_ref
+            ),
+            "figure_of_merit_abs_diff_vs_step_by_step_nats": _abs_diff(
+                figure_of_merit_w, figure_of_merit_steps
+            ),
             "log_likelihood_unfloored": log_likelihood_w,
-            "log_likelihood_abs_diff_vs_fit_nats": abs(log_likelihood_w - log_likelihood_ref),
+            "log_likelihood_abs_diff_vs_fit_nats": _abs_diff(log_likelihood_w, log_likelihood_ref),
+            "operator_build_peak_rss_mb": float(w_tilde_build_peak_rss_mb),
             "total_step_by_step": float(sum(w_tilde_steps.values())),
             "chain_from_mapping_matrix_s": _per_call("w_tilde_chain_from_mapping_matrix"),
             "dense_chain_from_mapping_matrix_s": _per_call("dense_chain_from_mapping_matrix"),
@@ -1292,9 +1420,10 @@ if USE_W_TILDE:
         print(f"  D~ vs dense D: max rel diff {d_max_rel_diff:.3e}")
         print(
             f"  W~ figure of merit = {figure_of_merit_w} "
-            f"(|diff vs Fit| = {w_tilde['figure_of_merit_abs_diff_vs_fit_nats']:.3e} nats); "
-            f"unfloored log L |diff vs Fit| = "
-            f"{w_tilde['log_likelihood_abs_diff_vs_fit_nats']:.3e} nats"
+            f"(|diff vs reference| = {w_tilde['figure_of_merit_abs_diff_vs_fit_nats']} nats, "
+            f"vs step-by-step {w_tilde['figure_of_merit_abs_diff_vs_step_by_step_nats']:.3e}); "
+            f"unfloored log L |diff vs reference| = "
+            f"{w_tilde['log_likelihood_abs_diff_vs_fit_nats']} nats"
         )
         print(
             f"  W~ chain {w_tilde['chain_from_mapping_matrix_s'] * 1e3:.3f} ms vs dense chain "
@@ -1327,8 +1456,9 @@ if _vmap_batch is not None:
                 jit_records=jit_records,
             )
         vmap_split = timing.split_by_successive_differences(_vmap_prefix, prefix_labels)
-        vmap_steps = {
-            "Full pipeline": timing.vmap_profile(
+        vmap_steps = {}
+        if full_pipeline_status.get("status") == "ok":
+            vmap_steps["Full pipeline"] = timing.vmap_profile(
                 full_pipeline,
                 "full_pipeline",
                 _params_batched,
@@ -1337,7 +1467,6 @@ if _vmap_batch is not None:
                 timer=timer,
                 jit_records=jit_records,
             )
-        }
     except Exception:  # noqa: BLE001 — a vmap failure must not lose the unbatched run
         vmap_error = traceback.format_exc()
         print("  VMAP FAILED — unbatched results are unaffected. Traceback:")
@@ -1358,13 +1487,7 @@ write_results("complete")
 # ``None`` means "no pin yet". sma is the eager NumPy fit, alma the JIT
 # reference (the eager path does not fit in memory there).
 
-EXPECTED_FIGURE_OF_MERIT = {
-    ("sma", "TransformerNUFFT"): -3153.948230379729,
-    ("sma", "TransformerDFT"): -3153.948230379729,
-    ("alma", "TransformerNUFFT"): -12047193.68761333,
-    ("alma_high", "TransformerNUFFT"): -60242552.89876968,
-    ("jvla", "TransformerNUFFT"): None,
-}
+# (EXPECTED_FIGURE_OF_MERIT is defined next to the reference, above.)
 
 _pinned_expected = EXPECTED_FIGURE_OF_MERIT.get((instrument, transformer_name))
 _pinned_drift: list = []
@@ -1380,6 +1503,8 @@ else:
         ("step_by_step", figure_of_merit_steps),
         ("full_pipeline", full_pipeline_logl),
     ):
+        if _value is None or (_label == "reference" and reference_mode == "cpu_pinned"):
+            continue
         _rec = check_pinned(_value, _pinned_expected, label=_label, rtol=_rtol)
         if _rec is not None:
             _pinned_drift.append(_rec)

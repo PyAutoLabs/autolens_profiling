@@ -3,6 +3,9 @@
 # A100 likelihood-breakdown profile: interferometer/mge x jvla x fp64.
 # DENSE inversion path (an MGE-only fit never takes the sparse path), plus the
 # measurement-only func-list W~ arm (--w-tilde). autolens_profiling#308.
+# --transform-chunk 4: the library one-shot transform OOMs the A100 here on
+# nufftax 0.6.1 fp64 (recorded as library_path); steps 3-8 run on the
+# measurement-only column/visibility-chunked transform arm.
 # Compile-heavy: every pipeline step is JIT-compiled in isolation.
 # Output: results/breakdown/interferometer/jvla/mge_hpc_a100_fp64.json
 # (config-tagged names carry no instrument, so non-alma instruments write
@@ -51,7 +54,8 @@ cd $AP_ROOT
 python3 scripts/interferometer/likelihood_breakdown/mge.py \
     --config-name hpc_a100_fp64 \
     --instrument jvla \
-    --w-tilde
+    --w-tilde \
+    --transform-chunk 4
 
 echo "Finished."
 date
