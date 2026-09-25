@@ -50,6 +50,10 @@ For *how long the likelihood actually takes* on production hardware — i.e. a s
 | `interferometer/delaunay_numba_source_loop` | sma | local_cpu_fp64 | sparse (numba) | 461.7 ms | v2026.8.17.1 |
 | `interferometer/delaunay_numba_symmetric` | sma | local_cpu_fp64 | sparse (numba) | 443.1 ms | v2026.8.17.1 |
 | `interferometer/delaunay_numba_two_stage` | sma | local_cpu_fp64 | sparse (numba) | 388.7 ms | v2026.8.17.1 |
+| `interferometer/mge` | alma | local_cpu_fp64 | dense (mapping) | 41.19 s | v2026.8.17.1 |
+| `interferometer/mge` | alma_high | local_cpu_fp64 | dense (mapping) | 212.19 s | v2026.8.17.1 |
+| `interferometer/mge` | sma | local_cpu_fp64 | dense (mapping) | 84.0 ms | v2026.8.17.1 |
+| `interferometer/mge_dft` | sma | local_cpu_fp64 | dense (mapping) | 32.9 ms | v2026.8.17.1 |
 | `interferometer/pixelization_numba_direct_conv` | alma | local_cpu_fp64 | sparse (numba) | 1.76 s | v2026.8.17.1 |
 | `interferometer/pixelization_numba_direct_conv` | sma | local_cpu_fp64 | sparse (numba) | 184.5 ms | v2026.8.17.1 |
 | `interferometer/pixelization_numba_jax` | alma | local_cpu_fp64 | sparse (w-tilde) | 2.28 s | v2026.8.17.1 |

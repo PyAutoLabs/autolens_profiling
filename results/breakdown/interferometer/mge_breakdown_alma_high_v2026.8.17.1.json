@@ -1,0 +1,204 @@
+{
+  "stage": "dense",
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "hostname": "DESKTOP-H143S82",
+    "xla_flags": "--xla_cpu_multi_thread_eigen=false --xla_force_host_platform_device_count=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 8,
+    "jax_compilation_cache_dir": "/home/jammy/.cache/pyauto_jax",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true
+  },
+  "instrument": "alma_high",
+  "model": "mge",
+  "transformer": "TransformerNUFFT",
+  "use_mixed_precision": false,
+  "configuration": {
+    "pixel_scale_arcsec": 0.025,
+    "mask_radius_arcsec": 3.5,
+    "real_space_shape": [
+      800,
+      800
+    ],
+    "image_pixels_masked": 61572,
+    "visibilities": 5000000,
+    "linear_gaussians": 20,
+    "lens_light": null,
+    "inversion_path": "dense",
+    "inversion_class": "InversionInterferometerMapping",
+    "transformer": "TransformerNUFFT",
+    "chunk_size": 1000000,
+    "chunk_size_note": "TransformerNUFFT.transform_mapping_matrix ignores chunk_size: step 3 is one nufft2d2 over every column and every visibility.",
+    "nnls_solver": "pdip",
+    "nnls_preconditioning": "raw",
+    "w_tilde_arm": true,
+    "n_repeats": 1,
+    "thread_env": {
+      "n_threads": null,
+      "vars": [
+        "OPENBLAS_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OMP_NUM_THREADS",
+        "VECLIB_MAXIMUM_THREADS",
+        "NUMEXPR_NUM_THREADS"
+      ],
+      "set_to": null,
+      "preexisting": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "VECLIB_MAXIMUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1"
+      },
+      "overridden": {},
+      "note": "Not pinned (legacy variant): recorded as found."
+    },
+    "host_load_avg_start": [
+      1.8310546875,
+      4.65283203125,
+      6.34375
+    ],
+    "host_load_avg_end": [
+      6.93408203125,
+      7.50244140625,
+      7.5322265625
+    ]
+  },
+  "reference_mode": "jit_jax",
+  "log_likelihood_reference": -60242552.89874968,
+  "figure_of_merit_reference": -60242552.89876968,
+  "figure_of_merit_step_by_step": -60242552.89877041,
+  "log_likelihood_step_by_step": -60242552.89875041,
+  "figure_of_merit_full_pipeline": -60242552.89876968,
+  "figure_of_merit_abs_diff_nats": 7.301568984985352e-07,
+  "log_likelihood_abs_diff_nats": 7.301568984985352e-07,
+  "full_pipeline_abs_diff_nats": 0.0,
+  "log_likelihood_atol_nats": 0.001,
+  "diagonal_floor_bias_nats": 1.9997358322143555e-05,
+  "diagonal_floor_note": "log_likelihood - figure_of_merit: fast_chi_squared uses F with the no-regularization diagonal floor (0.001), so the figure of merit the sampler sees sits 0.5 * floor * |s|^2 below the residual-form log L.",
+  "setup_cross_check": {
+    "mapping_matrix_max_rel_diff_vs_eager": null,
+    "transformed_mapping_matrix_max_rel_diff_vs_eager": null
+  },
+  "log_det_terms": {
+    "value": 0.0,
+    "timed": false,
+    "note": "Structurally zero: an MGE-only inversion has no regularization."
+  },
+  "nnls": {
+    "iterations": 11,
+    "converged": true,
+    "max_iter": 50,
+    "solver": "pdip",
+    "preconditioning": "raw"
+  },
+  "steps": {
+    "Ray-trace grids": 0.002553000000261818,
+    "Mapping matrix (20 Gaussians)": 0.02992660000018077,
+    "Transformed mapping matrix (NUFFT)": 209.79974860000038,
+    "Data vector (D)": 0.5204851999988023,
+    "Curvature matrix (F)": 1.7372685999998794,
+    "Reconstruction (PDIP NNLS)": 0.0003531000002112705,
+    "Fast chi-squared + figure of merit": 0.09785279999960039
+  },
+  "total_step_by_step": 212.18818789999932,
+  "full_pipeline_single_jit": 144.5698579,
+  "steps_sub_rows": {
+    "Ray-trace (standalone, eager tracer)": 0.0022183000000950415,
+    "transform_mapping_matrix (standalone)": 235.27686240000003,
+    "Mapped visibilities + residual chi-squared (log_likelihood)": 0.5175061999998434,
+    "Dense chain from mapping matrix (steps 3-8 fused)": 114.55942929999947
+  },
+  "setup_split": {
+    "Ray-trace grids": 0.002553000000261818,
+    "Mapping matrix (20 Gaussians)": 0.02992660000018077,
+    "Transformed mapping matrix (NUFFT)": 209.79974860000038
+  },
+  "setup_prefix_per_call_s": {
+    "1": 0.002553000000261818,
+    "2": 0.03247960000044259,
+    "3": 209.83222820000083
+  },
+  "jit_phases": {
+    "setup_prefix_1": {
+      "lower_s": 0.14596980000169424,
+      "compile_s": 0.5296961000003648,
+      "first_call_s": 0.0043590999994194135,
+      "steady_per_call_s": 0.002553000000261818
+    },
+    "setup_prefix_2": {
+      "lower_s": 0.5346630999993067,
+      "compile_s": 0.10454460000073595,
+      "first_call_s": 0.030298399999082903,
+      "steady_per_call_s": 0.03247960000044259
+    },
+    "setup_prefix_3": {
+      "lower_s": 0.7494465999989188,
+      "compile_s": 2.497100099999443,
+      "first_call_s": 188.40355289999934,
+      "steady_per_call_s": 209.83222820000083
+    },
+    "ray_trace_standalone": {
+      "lower_s": 0.105693199999223,
+      "compile_s": 0.4761799999996583,
+      "first_call_s": 0.0030389999992621597,
+      "steady_per_call_s": 0.0022183000000950415
+    },
+    "transform_mapping_matrix_standalone": {
+      "lower_s": 0.09912860000076762,
+      "compile_s": 1.7996738999991067,
+      "first_call_s": 210.5585902999992,
+      "steady_per_call_s": 235.27686240000003
+    },
+    "data_vector": {
+      "lower_s": 0.00798429999849759,
+      "compile_s": 0.07771259999935864,
+      "first_call_s": 0.5173517000002903,
+      "steady_per_call_s": 0.5204851999988023
+    },
+    "curvature_matrix": {
+      "lower_s": 0.014350400000694208,
+      "compile_s": 0.1312488999992638,
+      "first_call_s": 1.3400612000004912,
+      "steady_per_call_s": 1.7372685999998794
+    },
+    "reconstruction": {
+      "lower_s": 0.06923149999965972,
+      "compile_s": 0.03461509999942791,
+      "first_call_s": 1.6187929000006989,
+      "steady_per_call_s": 0.0003531000002112705
+    },
+    "figure_of_merit": {
+      "lower_s": 0.018275899999935064,
+      "compile_s": 0.2772058000009565,
+      "first_call_s": 0.12493730000096548,
+      "steady_per_call_s": 0.09785279999960039
+    },
+    "log_likelihood_residual_visibilities": {
+      "lower_s": 0.011800500000390457,
+      "compile_s": 0.15088459999969928,
+      "first_call_s": 0.5004175000012765,
+      "steady_per_call_s": 0.5175061999998434
+    },
+    "dense_chain_from_mapping_matrix": {
+      "lower_s": 0.33104760000060196,
+      "compile_s": 4.449769100001504,
+      "first_call_s": 123.97891300000083,
+      "steady_per_call_s": 114.55942929999947
+    },
+    "full_pipeline": {
+      "lower_s": 1.1467991999998048,
+      "compile_s": 7.579548800000339,
+      "first_call_s": 150.78183630000058,
+      "steady_per_call_s": 144.5698579
+    }
+  },
+  "peak_rss_mb": 11658.48828125,
+  "w_tilde": {
+    "error": "Not measured on the laptop: the process was SIGKILLed by the kernel OOM killer (exit 137, no Python traceback) inside dataset.apply_sparse_operator (the eager precision-operator build + dirty image, chunked at 1,000,000 visibilities = the alma_high transformer chunk_size) with 11.5 GB peak RSS on a 16 GB host, after the dense steps above had completed. Annotated by hand from the run log on 2026-09-25; the A100 run (phase B) is the W~ measurement for alma_high.",
+    "annotated_by": "hand, from run log"
+  }
+}
