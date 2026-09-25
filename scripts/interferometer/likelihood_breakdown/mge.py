@@ -401,6 +401,80 @@ if _vmap_batch is not None and _large_on_cpu:
     print(f"  {vmap_skipped_reason}")
     _vmap_batch = None
 
+
+def _nufftax_version():
+    try:
+        from importlib.metadata import version
+
+        return version("nufftax")
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _write_reference_oom(exc):
+    """Record a device OOM of the JIT FitInterferometer reference as the result.
+
+    The reference is the library's own dense MGE likelihood, whose
+    ``transform_mapping_matrix`` is one ``nufft2d2`` over every column and every
+    visibility (it ignores ``chunk_size``). Under pure-JAX fp64 nufftax (>= 0.6)
+    on GPU the interpolation materialises an O(N_vis x N_gauss x nspread^2)
+    intermediate, so at alma scale and above this allocation exceeds the device.
+    Every dense step 3 would hit the same allocation, so the run stops here and
+    writes this JSON (``stage='oom_reference'``, ``steps`` null) rather than a
+    traceback-only failure. A RESOURCE_EXHAUSTED is a result, not a failure.
+    """
+    msg = str(exc).splitlines()[0][:500]
+    print(f"\n  JIT reference OOM (recorded as the result): {msg}")
+    default_dir = _workspace_root / "results" / "breakdown" / "interferometer"
+    if _cli.config_name is not None and instrument != "alma":
+        default_dir = default_dir / instrument
+    cell_name = "mge_dft" if USE_DFT else "mge"
+    out_path, _ = resolve_output_paths(
+        _cli,
+        default_dir=default_dir,
+        default_basename=f"{cell_name}_breakdown_{instrument}_v{al.__version__}",
+        cell=cell_name,
+    )
+    summary = {
+        "stage": "oom_reference",
+        "autolens_version": al.__version__,
+        "device": device_info_dict(),
+        "instrument": instrument,
+        "model": "mge",
+        "transformer": transformer_name,
+        "use_mixed_precision": bool(_cli.use_mixed_precision),
+        "configuration": {
+            "pixel_scale_arcsec": pixel_scale,
+            "mask_radius_arcsec": mask_radius,
+            "real_space_shape": list(real_space_shape),
+            "image_pixels_masked": n_image_pixels,
+            "visibilities": n_visibilities,
+            "inversion_path": "dense",
+            "transformer": transformer_name,
+            "chunk_size": transformer_chunk_size,
+            "nufftax_version": _nufftax_version(),
+            "w_tilde_arm": USE_W_TILDE,
+        },
+        "reference_mode": reference_mode,
+        "oom": {
+            "where": "jax.jit(FitInterferometer) reference (dense transform_mapping_matrix)",
+            "error": msg,
+            "note": (
+                "TransformerNUFFT.transform_mapping_matrix runs one nufft2d2 over every "
+                "Gaussian column and every visibility; pure-JAX fp64 nufftax interpolation "
+                "on GPU materialises O(N_vis x N_gauss x nspread^2). No dense step and no W~ "
+                "row was measured (both compare against this reference)."
+            ),
+        },
+        "steps": None,
+        "total_step_by_step": None,
+        "full_pipeline_single_jit": None,
+        "peak_rss_mb": _peak_rss_mb(),
+    }
+    out_path.write_text(json.dumps(summary, indent=2))
+    print(f"  Results dict saved to: {out_path}")
+
+
 fit = al.FitInterferometer(dataset=dataset, tracer=tracer, settings=settings, xp=np)
 reference_mode = "eager_numpy" if n_visibilities <= EAGER_REFERENCE_MAX_VIS else "jit_jax"
 
@@ -418,9 +492,15 @@ else:
         )
         return fit_jax.log_likelihood, fit_jax.figure_of_merit
 
-    with timer.section("fit_interferometer_jit_reference"):
-        _ll, _fom = jax.jit(_reference_fn)(params_tree)
-        log_likelihood_ref, figure_of_merit_ref = float(_ll), float(_fom)
+    try:
+        with timer.section("fit_interferometer_jit_reference"):
+            _ll, _fom = jax.jit(_reference_fn)(params_tree)
+            log_likelihood_ref, figure_of_merit_ref = float(_ll), float(_fom)
+    except Exception as exc:  # noqa: BLE001 — only a device OOM is recorded, see below
+        if "RESOURCE_EXHAUSTED" not in str(exc):
+            raise
+        _write_reference_oom(exc)
+        sys.exit(0)
 
 # Structural properties only (class, parameter count, solver, preconditioning,
 # no-regularization indices): none evaluates a mapping matrix. ``fit.inversion``
@@ -860,6 +940,7 @@ def write_results(stage: str):
             ),
             "nnls_solver": solver,
             "nnls_preconditioning": preconditioning,
+            "nufftax_version": _nufftax_version(),
             "w_tilde_arm": USE_W_TILDE,
             "n_repeats": N_REPEATS,
             "thread_env": _observe_thread_env(),
