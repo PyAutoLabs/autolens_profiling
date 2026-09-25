@@ -109,6 +109,12 @@ If `numba` or `matplotlib` cannot write to the default cache locations, point th
 NUMBA_CACHE_DIR=/tmp/numba_cache MPLCONFIGDIR=/tmp/matplotlib python3 scripts/imaging/likelihood_runtime/mge.py
 ```
 
+This is for local / sandboxed runs only. On RAL, never point caches at `/tmp` or `$HOME`
+(both are the node's small root disk): `activate.sh` already sends every cache variable under
+`/mnt/ral/jnightin/.cache` (`$PYAUTO_HPC_CACHE`), so submit scripts set none of them — except
+a per-task `JAX_COMPILATION_CACHE_DIR` / `NUMBA_CACHE_DIR` under `output/` where a measurement
+needs a fresh cache (those win over `activate.sh`).
+
 ## Bulk-edit safety
 
 When editing the same region across many scripts in one pass, only rewrite the targeted region.

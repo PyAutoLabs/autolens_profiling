@@ -121,7 +121,6 @@ export NUMBA_NUM_THREADS=1
 # Per-job caches: output/ is gitignored and ${SLURM_JOB_ID} keeps concurrent
 # legs on the same shared node from fighting over one cache directory.
 export NUMBA_CACHE_DIR=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}
-export MPLCONFIGDIR=/tmp/matplotlib_${SLURM_JOB_ID:-local}
 mkdir -p "$NUMBA_CACHE_DIR" "$MPLCONFIGDIR"
 
 echo "=========================================="

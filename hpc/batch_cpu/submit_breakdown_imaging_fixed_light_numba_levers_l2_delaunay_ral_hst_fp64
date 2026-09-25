@@ -204,7 +204,6 @@ export OMP_NUM_THREADS=1
 export MKL_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
 export NUMBA_NUM_THREADS=1
-export MPLCONFIGDIR=/tmp/matplotlib_${SLURM_JOB_ID:-local}
 mkdir -p "$MPLCONFIGDIR"
 # output/ is gitignored and ${SLURM_JOB_ID} keeps concurrent jobs on the same
 # shared node from fighting over one cache directory.
