@@ -1,0 +1,368 @@
+AP_ROOT=/mnt/ral/jnightin/autolens_profiling_wt/point-source-source-plane-p2a
+==========================================
+Sat 26 Sep 20:10:49 BST 2026
+euclid-ral-compute-10-2
+Model name:                              Intel(R) Xeon(R) Platinum 8490H
+partition:      ral
+nodelist:       euclid-ral-compute-10-2
+cpus-per-task:  8
+sched_affinity: 8
+loadavg:        0.08 0.02 0.01 1/2088 92171
+Cells:          point_source_source/likelihood_breakdown/{source_plane,pytree_input_ab}
+Precision:      fp64 (JAX_ENABLE_X64=1)
+Thread env:     OMP=1 MKL=1 OPENBLAS=1 NPROC=8
+XLA_FLAGS:      --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false
+=== source revisions ===
+PyAutoNerves (shared) 1fa613aa8d89a79613009fb66f5b4e2d21deb57a
+PyAutoFit (shared) dd9fbe0aab60c4a57702b1444ca031b317c91331
+PyAutoArray (shared) 3de624b5b91a4efa130dc3cb0a3a0f06f85025a3
+PyAutoGalaxy (shared) 70a61e26cd715cefe7012a38285698091246a8a4
+PyAutoLens (shared) 86054bbc19baa2f710a12e04a94fa27ab37cc354
+AP_ROOT rev:   ec29705a51ab108b14a4869056a7a1758c104c8c
+AP_ROOT branch: HEAD
+=== import provenance (refuses unless the libraries come from the shared stack) ===
+autoarray.__file__ = /mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/__init__.py
+autolens.__file__ = /mnt/ral/jnightin/PyAuto/PyAutoLens/autolens/__init__.py
+autofit.__file__ = /mnt/ral/jnightin/PyAuto/PyAutoFit/autofit/__init__.py
+autogalaxy.__file__ = /mnt/ral/jnightin/PyAuto/PyAutoGalaxy/autogalaxy/__init__.py
+jax 0.10.2 [CpuDevice(id=0)] cpu
+ASSERT OK: CPU backend, libraries from /mnt/ral/jnightin/PyAuto
+==========================================
+run 1/2: source_plane breakdown
+Sat 26 Sep 20:11:00 BST 2026
+loadavg: 0.22 0.05 0.02 1/2091 92218
+
+--- Eager controls ---
+  solved likelihood: 0.598650453944
+  plain likelihood:  -33788.355440181018
+
+--- Full fused controls ---
+  [full_solved_lower] 0.6958 s
+  [full_solved_compile] 0.3889 s
+  [full_solved_first_call] 0.0040 s
+  [full_solved_steady_x500] 0.0730 s
+    -> per-call avg: 0.000146 s
+    -> per-call median: 0.1465 ms
+  [full_plain_control_lower] 0.3227 s
+  [full_plain_control_compile] 0.2775 s
+  [full_plain_control_first_call] 0.0010 s
+  [full_plain_control_steady_x500] 0.0721 s
+    -> per-call avg: 0.000144 s
+    -> per-call median: 0.1450 ms
+  solved JIT: 0.598650455554
+  plain JIT:  -33788.355315606248
+
+--- Dispatch floor ---
+  [floor_params_pytree_solved_lower] 0.0054 s
+  [floor_params_pytree_solved_compile] 0.0208 s
+  [floor_params_pytree_solved_first_call] 0.0003 s
+  [floor_params_pytree_solved_steady_x500] 0.0164 s
+    -> per-call avg: 0.000033 s
+    -> per-call median: 0.0323 ms
+  [floor_params_pytree_plain_lower] 0.0052 s
+  [floor_params_pytree_plain_compile] 0.0215 s
+  [floor_params_pytree_plain_first_call] 0.0003 s
+  [floor_params_pytree_plain_steady_x500] 0.0184 s
+    -> per-call avg: 0.000037 s
+    -> per-call median: 0.0350 ms
+  [floor_scalar_array_lower] 0.0040 s
+  [floor_scalar_array_compile] 0.0184 s
+  [floor_scalar_array_first_call] 0.0002 s
+  [floor_scalar_array_steady_x500] 0.0038 s
+    -> per-call avg: 0.000008 s
+    -> per-call median: 0.0074 ms
+
+--- Solved-lane prefixes ---
+  [solved_beta_hat_lower] 0.0473 s
+  [solved_beta_hat_compile] 0.1285 s
+  [solved_beta_hat_first_call] 0.0008 s
+  [solved_beta_hat_steady_x500] 0.0720 s
+    -> per-call avg: 0.000144 s
+    -> per-call median: 0.1470 ms
+  [solved_precision_tensor_lower] 0.2493 s
+  [solved_precision_tensor_compile] 0.2307 s
+  [solved_precision_tensor_first_call] 0.0009 s
+  [solved_precision_tensor_steady_x500] 0.0753 s
+    -> per-call avg: 0.000151 s
+    -> per-call median: 0.1527 ms
+  [solved_source_plane_coordinate_lower] 0.3516 s
+  [solved_source_plane_coordinate_compile] 0.3234 s
+  [solved_source_plane_coordinate_first_call] 0.0009 s
+  [solved_source_plane_coordinate_steady_x500] 0.0751 s
+    -> per-call avg: 0.000150 s
+    -> per-call median: 0.1485 ms
+  [solved_chi_squared_lower] 0.7334 s
+  [solved_chi_squared_compile] 0.4912 s
+  [solved_chi_squared_first_call] 0.0011 s
+  [solved_chi_squared_steady_x500] 0.0748 s
+    -> per-call avg: 0.000150 s
+    -> per-call median: 0.1476 ms
+  [solved_marginalization_term_lower] 0.8837 s
+  [solved_marginalization_term_compile] 0.5584 s
+  [solved_marginalization_term_first_call] 0.0010 s
+  [solved_marginalization_term_steady_x500] 0.0741 s
+    -> per-call avg: 0.000148 s
+    -> per-call median: 0.1515 ms
+  [solved_log_likelihood_lower] 1.3388 s
+  [solved_log_likelihood_compile] 0.7948 s
+  [solved_log_likelihood_first_call] 0.0009 s
+  [solved_log_likelihood_steady_x500] 0.0749 s
+    -> per-call avg: 0.000150 s
+    -> per-call median: 0.1547 ms
+
+--- Plain-lane prefixes ---
+  [plain_model_data_lower] 0.0466 s
+  [plain_model_data_compile] 0.1346 s
+  [plain_model_data_first_call] 0.0009 s
+  [plain_model_data_steady_x500] 0.0723 s
+    -> per-call avg: 0.000145 s
+    -> per-call median: 0.1466 ms
+  [plain_magnifications_at_positions_lower] 0.1830 s
+  [plain_magnifications_at_positions_compile] 0.2086 s
+  [plain_magnifications_at_positions_first_call] 0.0008 s
+  [plain_magnifications_at_positions_steady_x500] 0.0729 s
+    -> per-call avg: 0.000146 s
+    -> per-call median: 0.1459 ms
+  [plain_chi_squared_map_lower] 0.3397 s
+  [plain_chi_squared_map_compile] 0.2888 s
+  [plain_chi_squared_map_first_call] 0.0009 s
+  [plain_chi_squared_map_steady_x500] 0.0744 s
+    -> per-call avg: 0.000149 s
+    -> per-call median: 0.1520 ms
+  [plain_log_likelihood_lower] 0.7025 s
+  [plain_log_likelihood_compile] 0.4336 s
+  [plain_log_likelihood_first_call] 0.0011 s
+  [plain_log_likelihood_steady_x500] 0.0745 s
+    -> per-call avg: 0.000149 s
+    -> per-call median: 0.1540 ms
+
+--- CSE probes ---
+  [cse_precision_once_lower] 0.1480 s
+  [cse_precision_once_compile] 0.1689 s
+  [cse_precision_once_first_call] 0.0009 s
+  [cse_precision_once_steady_x500] 0.0720 s
+    -> per-call avg: 0.000144 s
+    -> per-call median: 0.1506 ms
+  [cse_precision_thrice_lower] 0.4711 s
+  [cse_precision_thrice_compile] 0.2604 s
+  [cse_precision_thrice_first_call] 0.0009 s
+  [cse_precision_thrice_steady_x500] 0.0725 s
+    -> per-call avg: 0.000145 s
+    -> per-call median: 0.1495 ms
+  [cse_magnifications_once_lower] 0.1432 s
+  [cse_magnifications_once_compile] 0.1645 s
+  [cse_magnifications_once_first_call] 0.0009 s
+  [cse_magnifications_once_steady_x500] 0.0733 s
+    -> per-call avg: 0.000147 s
+    -> per-call median: 0.1468 ms
+  [cse_magnifications_twice_lower] 0.2642 s
+  [cse_magnifications_twice_compile] 0.1980 s
+  [cse_magnifications_twice_first_call] 0.0009 s
+  [cse_magnifications_twice_steady_x500] 0.0726 s
+    -> per-call avg: 0.000145 s
+    -> per-call median: 0.1473 ms
+
+--- Numerical controls ---
+  grad L2 = 3.376203e+02 over 5 leaves
+
+--- Gradient cost ---
+  [value_and_grad_solved_lower] 1.0780 s
+  [value_and_grad_solved_compile] 1.1418 s
+  [value_and_grad_solved_first_call] 0.0014 s
+  [value_and_grad_solved_steady_x500] 0.1696 s
+    -> per-call avg: 0.000339 s
+    -> per-call median: 0.3310 ms
+
+==============================================================================
+POINT-SOURCE SOURCE-PLANE BREAKDOWN (solved lane)
+==============================================================================
+  Ray trace: _beta_hat (deflections at observed positions)          0.1470 ms
+  Precision tensor W_i (jacfwd Hessian -> A^-T Theta A^-1)          0.0057 ms
+  Solved centre beta* (rebuilds W_i and _beta_hat)                 -0.0042 ms
+  Chi-squared (rebuilds W_i, beta*, _beta_hat)                     -0.0009 ms
+  Marginalisation term (rebuilds W_i)                               0.0039 ms
+  fit.log_likelihood (re-evaluates every term)                      0.0032 ms
+  Fused-wrapper residual (fused - last prefix)                     -0.0083 ms
+------------------------------------------------------------------------------
+  Fused solved likelihood                                           0.1465 ms
+
+Plain control lane
+  Ray trace: model_data (deflections at observed positions)         0.1466 ms
+  Magnifications (jacfwd Hessian)                                  -0.0007 ms
+  Chi-squared map (rebuilds model_data + magnifications)            0.0060 ms
+  fit.log_likelihood (noise norm re-evaluates magnifications)       0.0020 ms
+  Fused-wrapper residual (fused - last prefix)                     -0.0090 ms
+  Fused plain control                                               0.1450 ms
+
+  Dispatch floor: {"params_pytree_solved_s": 3.2262003514915705e-05, "params_pytree_plain_s": 3.5041506635025144e-05, "scalar_array_s": 7.408503734041005e-06}
+  CSE probe: {"precision_once_s": 0.00015056700794957578, "precision_thrice_s": 0.00014949300384614617, "precision_thrice_over_once": 0.9928669360037407, "magnifications_once_s": 0.00014682800974696875, "magnifications_twice_s": 0.00014731500414200127, "magnifications_twice_over_once": 1.0033167676649146}
+  value_and_grad / forward = 2.26
+  Results JSON: /mnt/ral/jnightin/autolens_profiling_wt/point-source-source-plane-p2a/results/breakdown/point_source_source/source_plane_hpc_ral_cpu_fp64.json
+  Results PNG:  /mnt/ral/jnightin/autolens_profiling_wt/point-source-source-plane-p2a/results/breakdown/point_source_source/source_plane_hpc_ral_cpu_fp64.png
+
+======================================================================
+PROFILING SUMMARY
+======================================================================
+  full_solved_lower                                  0.6958 s
+  full_solved_compile                                0.3889 s
+  full_solved_first_call                             0.0040 s
+  full_solved_steady_x500                            0.0730 s
+  full_plain_control_lower                           0.3227 s
+  full_plain_control_compile                         0.2775 s
+  full_plain_control_first_call                      0.0010 s
+  full_plain_control_steady_x500                     0.0721 s
+  floor_params_pytree_solved_lower                   0.0054 s
+  floor_params_pytree_solved_compile                 0.0208 s
+  floor_params_pytree_solved_first_call              0.0003 s
+  floor_params_pytree_solved_steady_x500             0.0164 s
+  floor_params_pytree_plain_lower                    0.0052 s
+  floor_params_pytree_plain_compile                  0.0215 s
+  floor_params_pytree_plain_first_call               0.0003 s
+  floor_params_pytree_plain_steady_x500              0.0184 s
+  floor_scalar_array_lower                           0.0040 s
+  floor_scalar_array_compile                         0.0184 s
+  floor_scalar_array_first_call                      0.0002 s
+  floor_scalar_array_steady_x500                     0.0038 s
+  solved_beta_hat_lower                              0.0473 s
+  solved_beta_hat_compile                            0.1285 s
+  solved_beta_hat_first_call                         0.0008 s
+  solved_beta_hat_steady_x500                        0.0720 s
+  solved_precision_tensor_lower                      0.2493 s
+  solved_precision_tensor_compile                    0.2307 s
+  solved_precision_tensor_first_call                 0.0009 s
+  solved_precision_tensor_steady_x500                0.0753 s
+  solved_source_plane_coordinate_lower               0.3516 s
+  solved_source_plane_coordinate_compile             0.3234 s
+  solved_source_plane_coordinate_first_call          0.0009 s
+  solved_source_plane_coordinate_steady_x500         0.0751 s
+  solved_chi_squared_lower                           0.7334 s
+  solved_chi_squared_compile                         0.4912 s
+  solved_chi_squared_first_call                      0.0011 s
+  solved_chi_squared_steady_x500                     0.0748 s
+  solved_marginalization_term_lower                  0.8837 s
+  solved_marginalization_term_compile                0.5584 s
+  solved_marginalization_term_first_call             0.0010 s
+  solved_marginalization_term_steady_x500            0.0741 s
+  solved_log_likelihood_lower                        1.3388 s
+  solved_log_likelihood_compile                      0.7948 s
+  solved_log_likelihood_first_call                   0.0009 s
+  solved_log_likelihood_steady_x500                  0.0749 s
+  plain_model_data_lower                             0.0466 s
+  plain_model_data_compile                           0.1346 s
+  plain_model_data_first_call                        0.0009 s
+  plain_model_data_steady_x500                       0.0723 s
+  plain_magnifications_at_positions_lower            0.1830 s
+  plain_magnifications_at_positions_compile          0.2086 s
+  plain_magnifications_at_positions_first_call       0.0008 s
+  plain_magnifications_at_positions_steady_x500      0.0729 s
+  plain_chi_squared_map_lower                        0.3397 s
+  plain_chi_squared_map_compile                      0.2888 s
+  plain_chi_squared_map_first_call                   0.0009 s
+  plain_chi_squared_map_steady_x500                  0.0744 s
+  plain_log_likelihood_lower                         0.7025 s
+  plain_log_likelihood_compile                       0.4336 s
+  plain_log_likelihood_first_call                    0.0011 s
+  plain_log_likelihood_steady_x500                   0.0745 s
+  cse_precision_once_lower                           0.1480 s
+  cse_precision_once_compile                         0.1689 s
+  cse_precision_once_first_call                      0.0009 s
+  cse_precision_once_steady_x500                     0.0720 s
+  cse_precision_thrice_lower                         0.4711 s
+  cse_precision_thrice_compile                       0.2604 s
+  cse_precision_thrice_first_call                    0.0009 s
+  cse_precision_thrice_steady_x500                   0.0725 s
+  cse_magnifications_once_lower                      0.1432 s
+  cse_magnifications_once_compile                    0.1645 s
+  cse_magnifications_once_first_call                 0.0009 s
+  cse_magnifications_once_steady_x500                0.0733 s
+  cse_magnifications_twice_lower                     0.2642 s
+  cse_magnifications_twice_compile                   0.1980 s
+  cse_magnifications_twice_first_call                0.0009 s
+  cse_magnifications_twice_steady_x500               0.0726 s
+  value_and_grad_solved_lower                        1.0780 s
+  value_and_grad_solved_compile                      1.1418 s
+  value_and_grad_solved_first_call                   0.0014 s
+  value_and_grad_solved_steady_x500                  0.1696 s
+----------------------------------------------------------------------
+  TOTAL                                             15.6710 s
+======================================================================
+==========================================
+run 2/2: pytree-input A/B (20 x 20)
+Sat 26 Sep 20:11:34 BST 2026
+loadavg: 0.59 0.16 0.05 1/2091 92280
+
+--- row solved_forward ---
+  [solved_forward/pytree] lower    740.7 ms  compile    383.9 ms  first    4.145 ms
+  [solved_forward/flat_vector] lower    652.0 ms  compile    374.0 ms  first    0.945 ms
+  [solved_forward/flat_leaves] lower    588.8 ms  compile    366.8 ms  first    0.879 ms
+  median ms  pytree   0.1451  flat_vector   0.1066  flat_leaves   0.1084   pytree/flat_vector 1.361 [1.343, 1.385]
+
+--- row solved_value_and_grad ---
+  [solved_value_and_grad/pytree] lower   1282.2 ms  compile   1130.9 ms  first    1.417 ms
+  [solved_value_and_grad/flat_vector] lower   1238.3 ms  compile   1366.3 ms  first    2.007 ms
+  [solved_value_and_grad/flat_leaves] lower   1280.3 ms  compile   1174.1 ms  first    1.393 ms
+  median ms  pytree   0.3154  flat_vector   0.2776  flat_leaves   0.2924   pytree/flat_vector 1.136 [1.128, 1.146]
+
+--- row solved_floor ---
+  [solved_floor/pytree] lower      6.7 ms  compile     22.5 ms  first    0.321 ms
+  [solved_floor/flat_vector] lower      4.2 ms  compile     17.2 ms  first    0.178 ms
+  [solved_floor/flat_leaves] lower      5.5 ms  compile     19.5 ms  first    0.226 ms
+  median ms  pytree   0.0337  flat_vector   0.0086  flat_leaves   0.0101   pytree/flat_vector 3.937 [3.913, 3.965]
+
+--- row plain_forward ---
+  [plain_forward/pytree] lower    411.0 ms  compile    264.9 ms  first    0.917 ms
+  [plain_forward/flat_vector] lower    471.0 ms  compile    262.5 ms  first    0.789 ms
+  [plain_forward/flat_leaves] lower    416.2 ms  compile    269.8 ms  first    0.818 ms
+  median ms  pytree   0.1472  flat_vector   0.1020  flat_leaves   0.1072   pytree/flat_vector 1.443 [1.425, 1.462]
+
+--- row plain_value_and_grad ---
+  [plain_value_and_grad/pytree] lower    865.0 ms  compile    798.7 ms  first    1.394 ms
+  [plain_value_and_grad/flat_vector] lower    875.1 ms  compile    881.3 ms  first    1.333 ms
+  [plain_value_and_grad/flat_leaves] lower    867.2 ms  compile    828.9 ms  first    1.148 ms
+  median ms  pytree   0.2669  flat_vector   0.2324  flat_leaves   0.2450   pytree/flat_vector 1.148 [1.134, 1.158]
+
+--- row plain_floor ---
+  [plain_floor/pytree] lower      7.2 ms  compile     23.5 ms  first    0.293 ms
+  [plain_floor/flat_vector] lower      4.1 ms  compile     17.2 ms  first    0.172 ms
+  [plain_floor/flat_leaves] lower      5.9 ms  compile     21.0 ms  first    0.224 ms
+  median ms  pytree   0.0360  flat_vector   0.0086  flat_leaves   0.0117   pytree/flat_vector 4.185 [4.161, 4.218]
+
+====================================================================================================
+PYTREE-INPUT A/B  (hpc_ral_cpu_fp64, rounds=20, calls/round=20)
+====================================================================================================
+  row                    route           median       p10       p90       min       max
+  solved_forward         pytree          0.1451    0.1293    0.1669    0.1192    0.2611
+  solved_forward         flat_vector     0.1066    0.0940    0.1260    0.0744    0.2042
+  solved_forward         flat_leaves     0.1084    0.0962    0.1197    0.0851    0.1847
+                         pytree/flat_vector 1.361 [90% 1.343, 1.385] saved 0.0385 ms; pytree/flat_leaves 1.339 [1.321, 1.365] saved 0.0367 ms; MDI 0.259
+  solved_value_and_grad  pytree          0.3154    0.2925    0.3406    0.2585    0.4261
+  solved_value_and_grad  flat_vector     0.2776    0.2490    0.3225    0.2051    0.8876
+  solved_value_and_grad  flat_leaves     0.2924    0.2709    0.3294    0.2241    0.3941
+                         pytree/flat_vector 1.136 [90% 1.128, 1.146] saved 0.0378 ms; pytree/flat_leaves 1.079 [1.068, 1.088] saved 0.0230 ms; MDI 0.153
+  solved_floor           pytree          0.0337    0.0329    0.0431    0.0318    0.1979
+  solved_floor           flat_vector     0.0086    0.0082    0.0104    0.0076    0.0231
+  solved_floor           flat_leaves     0.0101    0.0097    0.0114    0.0091    0.0227
+                         pytree/flat_vector 3.937 [90% 3.913, 3.965] saved 0.0252 ms; pytree/flat_leaves 3.344 [3.323, 3.369] saved 0.0237 ms; MDI 0.304
+  plain_forward          pytree          0.1472    0.1326    0.1689    0.1178    0.2866
+  plain_forward          flat_vector     0.1020    0.0923    0.1149    0.0788    0.1926
+  plain_forward          flat_leaves     0.1072    0.0971    0.1197    0.0806    0.2106
+                         pytree/flat_vector 1.443 [90% 1.425, 1.462] saved 0.0452 ms; pytree/flat_leaves 1.374 [1.360, 1.391] saved 0.0400 ms; MDI 0.247
+  plain_value_and_grad   pytree          0.2669    0.2489    0.2932    0.2243    0.3347
+  plain_value_and_grad   flat_vector     0.2324    0.1983    0.2650    0.1679    0.3073
+  plain_value_and_grad   flat_leaves     0.2450    0.2251    0.2691    0.1944    0.3228
+                         pytree/flat_vector 1.148 [90% 1.134, 1.158] saved 0.0345 ms; pytree/flat_leaves 1.089 [1.080, 1.099] saved 0.0219 ms; MDI 0.166
+  plain_floor            pytree          0.0360    0.0348    0.0455    0.0342    0.0585
+  plain_floor            flat_vector     0.0086    0.0083    0.0102    0.0075    0.0227
+  plain_floor            flat_leaves     0.0117    0.0112    0.0131    0.0108    0.0244
+                         pytree/flat_vector 4.185 [90% 4.161, 4.218] saved 0.0274 ms; pytree/flat_leaves 3.076 [3.055, 3.105] saved 0.0243 ms; MDI 0.298
+----------------------------------------------------------------------------------------------------
+  ALL ASSERTS PASSED (route agreement rtol 1e-10; grads finite and non-zero)
+  phase-2b rule [solved]: saved 0.0385 ms = 26.5% of 0.1451 ms -> no-go (hpc_ral_cpu_fp64; RAL CPU decides)
+  phase-2b rule [plain]: saved 0.0452 ms = 30.7% of 0.1472 ms -> no-go (hpc_ral_cpu_fp64; RAL CPU decides)
+  wall: 23 s
+  Results JSON: /mnt/ral/jnightin/autolens_profiling_wt/point-source-source-plane-p2a/results/breakdown/point_source_source/pytree_input_ab_hpc_ral_cpu_fp64.json
+  Results PNG:  /mnt/ral/jnightin/autolens_profiling_wt/point-source-source-plane-p2a/results/breakdown/point_source_source/pytree_input_ab_hpc_ral_cpu_fp64.png
+==========================================
+loadavg: 1.77 0.45 0.15 1/2091 92340
+Finished.
+Sat 26 Sep 20:11:58 BST 2026

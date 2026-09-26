@@ -34,12 +34,13 @@
 # regex does not match `python3 -u`.
 #
 # WALL-BASIS:
-#   Laptop witnesses (WSL2, 8 cores, load ~5, 2026-09-26): source_plane.py 71 s,
-#   pytree_input_ab.py at 20 x 20 64 s; x 2.0 headroom for GPU compiles.
+#   Measured on RAL job 356369 (2026-09-26, A100 80GB PCIe): source_plane.py
+#   50 s and pytree_input_ab.py at 20 x 20 51 s process wall (job 2:01 total).
+#   Laptop witnesses (WSL2, load ~5): 71 s / 64 s. x 2.0 headroom each, well inside 2 h.
 #   cell: point_source_source/source_plane/simple  device: gpu  precision: fp64
-#   source: measured-wall  wall: 71  ref: laptop-point_source_source-source_plane-2026-09-26  headroom: 2.0
+#   source: measured-wall  wall: 50  ref: ral-job-356369-source_plane_hpc_a100_fp64  headroom: 2.0
 #   cell: point_source_source/pytree_input_ab/simple  device: gpu  precision: fp64
-#   source: measured-wall  wall: 64  ref: laptop-point_source_source-pytree_input_ab-2026-09-26  headroom: 2.0
+#   source: measured-wall  wall: 51  ref: ral-job-356369-pytree_input_ab_hpc_a100_fp64  headroom: 2.0
 
 #SBATCH -J source_plane_p2a_gpu
 #SBATCH --partition=gpu
