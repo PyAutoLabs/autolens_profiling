@@ -1,0 +1,138 @@
+#!/bin/bash -l
+#
+# 2026-09 point-source CPU speed-up campaign, phase 4a step 2: the measured
+# PointSolver configuration sweep on the RELEASED library code
+# (autolens_profiling#314). Single-source only (human decision 2026-09-26).
+#
+# WHAT THIS MEASURES. scripts/point_source_image/likelihood_breakdown/
+# solver_config_sweep.py times ~25 PointSolver configurations of the
+# production FitPositionsImagePairAllSolved likelihood as their own
+# interleaved routes (extent x initial scale primary; finer step 0,
+# MAX_CONTAINING_SIZE, neighbor_degree and a labelled precision trade
+# secondary), with an image-completeness gate per configuration against a
+# fine reference solve on 200 seeded prior draws + 200 broad stress draws,
+# jax.grad gates, vmap 1/4/16 for control vs the best admissible
+# configuration, and a step-0 ray-trace vs containment split per geometry.
+# No library code changes: MAX_CONTAINING_SIZE is patched in-process for
+# tracing only.
+#
+# LIBRARY CODE. Only the shared mirror (/mnt/ral/jnightin/PyAuto, via
+# activate.sh) is on PYTHONPATH. The job refuses to run if autolens /
+# autoarray import from anywhere else, and after the run it asserts the
+# JSON's source_revisions equal the mirror HEADs. The mirror was NOT pulled
+# for this run (euclid_dr1 arrays are running on it); its point-source code
+# path is byte-identical to the 2026.9.26.1 tags (see the step-1 submit,
+# submit_breakdown_point_source_image_image_plane_p4_ral_cpu_fp64).
+#
+# THREADS. OMP/MKL/OPENBLAS pinned to 1 (BLAS family only); the JAX CPU
+# backend sizes its Eigen pool from the 8 CPUs of --cpus-per-task=8, as in
+# phases 1-3 and step 1. XLA_FLAGS are the phase-1 row's, byte for byte.
+#
+# NODE. Pinned to an Intel Xeon Platinum 8490H node of the ral partition
+# (euclid-ral-compute-10-4, the step-1 host, job 356365). Check
+# `sinfo -p ral -N -o "%N %T %C"` first: `idle*` nodes are unreachable.
+
+# WALL-BASIS:
+#   RAL job 356366 (this cell, 8490H euclid-ral-compute-10-4, 8 CPUs, the
+#   same 200 + 200 draws and 20 x 20 protocol) ran the cell in 761 s (job
+#   12:47 wall). This version adds a 4th step-0 prefix per geometry (~20 s)
+#   and the uncapped NumPy containing-triangle counts for <= 3 geometries on
+#   the 200 prior draws (~0.1-1 s per draw each, <= 600 s), so 1500 s is
+#   declared, headroom 2.
+#   cell: point_source_image/solver_config_sweep/simple  device: cpu  precision: fp64
+#   source: measured-wall  wall: 1500  ref: ral-job-356366-point_source_image-solver_config_sweep  headroom: 2.0
+
+#SBATCH -J point_source_config_sweep_p4a
+#SBATCH --partition=ral
+#SBATCH --nodelist=euclid-ral-compute-10-4
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=32gb
+#SBATCH --time=2:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+# Derive the repo root from where this was submitted (hpc/batch_cpu/../..), so
+# it runs from a worktree. The -o/-e paths are relative: sbatch from inside
+# hpc/batch_cpu/.
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export NPROC=${SLURM_CPUS_PER_TASK:-8}
+export JAX_PLATFORMS=cpu
+export JAX_ENABLE_X64=1
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+export NUMBA_CACHE_DIR=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}
+mkdir -p "$NUMBA_CACHE_DIR" "$MPLCONFIGDIR"
+
+CONFIG_NAME=hpc_ral_cpu_fp64
+RESULTS_DIR=$AP_ROOT/results/breakdown/point_source_image
+mkdir -p "$RESULTS_DIR"
+
+echo "=========================================="
+date
+hostname
+lscpu | grep 'Model name' || true
+echo "partition:      ${SLURM_JOB_PARTITION:-unset}"
+echo "cpus-per-task:  ${SLURM_CPUS_PER_TASK:-unset}"
+echo "sched_affinity: $(python3 -c 'import os; print(len(os.sched_getaffinity(0)))')"
+echo "loadavg:        $(cat /proc/loadavg)"
+echo "Cell:           point_source_image/likelihood_breakdown/solver_config_sweep"
+echo "Precision:      fp64 (JAX_ENABLE_X64=$JAX_ENABLE_X64)"
+echo "Backend:        JAX_PLATFORMS=$JAX_PLATFORMS"
+echo "Thread env:     OMP=$OMP_NUM_THREADS MKL=$MKL_NUM_THREADS OPENBLAS=$OPENBLAS_NUM_THREADS NPROC=$NPROC"
+echo "XLA_FLAGS:      $XLA_FLAGS"
+echo "PYTHONPATH:     $PYTHONPATH"
+
+echo "=== source revisions (shared mirror, untouched) ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r" "$(git -C /mnt/ral/jnightin/PyAuto/$r rev-parse HEAD 2>&1)"
+done
+echo "AP_ROOT rev:   $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+
+cd $AP_ROOT
+
+echo "=== import provenance (must be the shared mirror) ==="
+python3 - <<'EOF'
+import autoarray, autofit, autogalaxy, autolens, jax, jaxlib, numpy
+for m in (autoarray, autofit, autogalaxy, autolens):
+    print(f"{m.__name__:<11} {m.__version__:<12} {m.__file__}")
+    if not m.__file__.startswith("/mnt/ral/jnightin/PyAuto/"):
+        raise SystemExit(f"REFUSING: {m.__name__} imported from {m.__file__}, not the shared mirror")
+print("jax", jax.__version__, "jaxlib", jaxlib.__version__, "numpy", numpy.__version__, jax.devices())
+EOF
+
+export JAX_COMPILATION_CACHE_DIR="$AP_ROOT/output/jax_cache/point_source_config_sweep_${SLURM_JOB_ID:-local}"
+rm -rf "$JAX_COMPILATION_CACHE_DIR" && mkdir -p "$JAX_COMPILATION_CACHE_DIR"
+echo "=========================================="
+echo "RUN ${CONFIG_NAME} -> ${RESULTS_DIR}"
+date
+echo "loadavg: $(cat /proc/loadavg)"
+PYTHONUNBUFFERED=1 python3 scripts/point_source_image/likelihood_breakdown/solver_config_sweep.py \
+    --config-name "$CONFIG_NAME" --output-dir "$RESULTS_DIR" \
+    --n-draws 200 --n-stress 200 --rounds 20 --calls 20
+
+echo "=== source_revisions check (JSON vs mirror HEAD) ==="
+python3 - "$RESULTS_DIR/solver_config_sweep_${CONFIG_NAME}.json" <<'EOF'
+import json, subprocess, sys
+path = sys.argv[1]
+revs = json.load(open(path))["source_revisions"]
+for repo in ("PyAutoNerves", "PyAutoFit", "PyAutoArray", "PyAutoGalaxy", "PyAutoLens"):
+    head = subprocess.check_output(
+        ["git", "-C", f"/mnt/ral/jnightin/PyAuto/{repo}", "rev-parse", "HEAD"], text=True
+    ).strip()
+    if revs[repo] != head:
+        raise SystemExit(f"MISMATCH {path}: {repo} JSON {revs[repo]} != mirror {head}")
+print("OK", path)
+EOF
+
+echo "=========================================="
+echo "loadavg: $(cat /proc/loadavg)"
+echo "Finished."
+date

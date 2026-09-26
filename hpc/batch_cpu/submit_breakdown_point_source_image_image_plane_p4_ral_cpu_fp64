@@ -1,0 +1,153 @@
+#!/bin/bash -l
+#
+# 2026-09 point-source CPU speed-up campaign, phase 4a step 1: re-baseline the
+# single-source image-plane breakdown on the RELEASED library code
+# (autolens_profiling#314). Single-source only -- the cluster use case left
+# this campaign (human decision 2026-09-26), so there is no cluster leg.
+#
+# WHAT THIS MEASURES. The per-stage wall-time split of the production
+# FitPositionsImagePairAllSolved likelihood after phases 2 (vertex-dedup
+# removal) and 3 (static step-0 lattice), both released in 2026.9.26.1. The
+# phase-3 ledger ranked the phase-4 levers by a FLOP estimate (refinement
+# ~60 %, step 0 ~22 %, rest ~18 %); this row replaces that estimate with the
+# measured split. The authoritative runtime is fused_full_solved_s; the prefix
+# rows are successive differences and may go slightly negative under XLA
+# fusion.
+#
+# REPLICATES. The cell times each prefix as the mean of 5 steady calls. At the
+# post-phase-3 ~1.8 ms scale the per-stage differences are a fraction of a
+# millisecond, so one run cannot separate a stage from noise. The job runs the
+# cell once into the committed row (results/breakdown/point_source_image/
+# image_plane_hpc_ral_cpu_fp64_p4.json) and then REPLICATES more times into the
+# gitignored output/ tree, so the analysis can quote a per-stage median and
+# spread across independent runs on the same node.
+#
+# LIBRARY CODE. Only the shared mirror (/mnt/ral/jnightin/PyAuto, via
+# activate.sh) is on PYTHONPATH -- no branch clones, unlike phases 1-3. The
+# job refuses to run if autolens / autoarray import from anywhere else, and
+# after the run it asserts the JSON's source_revisions equal the mirror HEADs.
+# The mirror was NOT pulled to the 2026.9.26.1 tags for this run (other
+# sessions' RAL arrays were running on it); its point-source code path is
+# byte-identical to the tags (PyAutoLens differs only by a hooks commit,
+# PyAutoArray only in util/jax_nnls.py + config/general.yaml nnls keys).
+#
+# THREADS. OMP/MKL/OPENBLAS are pinned to 1 -- that pins the BLAS family only.
+# The JAX CPU backend sizes its own intra-op (Eigen) thread pool from the CPUs
+# the process can see, i.e. the 8 CPUs of --cpus-per-task=8, so these are
+# 8-CPU JAX numbers, identical in shape to the phase-1 row. XLA_FLAGS are the
+# phase-1 row's, byte for byte.
+#
+# NODE. Pinned to an Intel Xeon Platinum 8490H node of the ral partition
+# (the euclid-ral-compute-10-* hosts; phase 1 and 3 ran on 10-2). Check
+# `sinfo -p ral -N -o "%N %T %C"` first: `idle*` nodes are unreachable.
+
+# WALL-BASIS:
+#   RAL job 350580 (phase 1, 8490H, 8 CPUs) ran this cell's leg A in 161 s
+#   wall end to end, on pre-phase-2 code whose fused call was 14x slower.
+#   This job runs the cell 1 + 4 times: 5 x 161 = 805 s declared, headroom 2.
+#   cell: point_source_image/image_plane/simple  device: cpu  precision: fp64
+#   source: measured-wall  wall: 805  ref: ral-job-350580-point_source_image-image_plane-legA  headroom: 2.0
+
+#SBATCH -J point_source_breakdown_p4
+#SBATCH --partition=ral
+#SBATCH --nodelist=euclid-ral-compute-10-4
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=32gb
+#SBATCH --time=1:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+# Derive the repo root from where this was submitted (hpc/batch_cpu/../..), so
+# it runs from a worktree. The -o/-e paths are relative: sbatch from inside
+# hpc/batch_cpu/.
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export NPROC=${SLURM_CPUS_PER_TASK:-8}
+export JAX_PLATFORMS=cpu
+export JAX_ENABLE_X64=1
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+export NUMBA_CACHE_DIR=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}
+mkdir -p "$NUMBA_CACHE_DIR" "$MPLCONFIGDIR"
+
+REPLICATES=4
+RESULTS_DIR=$AP_ROOT/results/breakdown/point_source_image
+REPLICATE_DIR=$AP_ROOT/output/point_source_image_p4_replicates_${SLURM_JOB_ID:-local}
+mkdir -p "$RESULTS_DIR" "$REPLICATE_DIR"
+
+echo "=========================================="
+date
+hostname
+lscpu | grep 'Model name' || true
+echo "partition:      ${SLURM_JOB_PARTITION:-unset}"
+echo "cpus-per-task:  ${SLURM_CPUS_PER_TASK:-unset}"
+echo "sched_affinity: $(python3 -c 'import os; print(len(os.sched_getaffinity(0)))')"
+echo "loadavg:        $(cat /proc/loadavg)"
+echo "Cell:           point_source_image/likelihood_breakdown/image_plane (1 committed + ${REPLICATES} replicate runs)"
+echo "Precision:      fp64 (JAX_ENABLE_X64=$JAX_ENABLE_X64)"
+echo "Backend:        JAX_PLATFORMS=$JAX_PLATFORMS"
+echo "Thread env:     OMP=$OMP_NUM_THREADS MKL=$MKL_NUM_THREADS OPENBLAS=$OPENBLAS_NUM_THREADS NPROC=$NPROC"
+echo "XLA_FLAGS:      $XLA_FLAGS"
+echo "PYTHONPATH:     $PYTHONPATH"
+
+echo "=== source revisions (shared mirror, untouched) ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r" "$(git -C /mnt/ral/jnightin/PyAuto/$r rev-parse HEAD 2>&1)"
+done
+echo "AP_ROOT rev:   $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+
+cd $AP_ROOT
+
+echo "=== import provenance (must be the shared mirror) ==="
+python3 - <<'EOF'
+import autoarray, autofit, autogalaxy, autolens, jax, jaxlib, numpy
+for m in (autoarray, autofit, autogalaxy, autolens):
+    print(f"{m.__name__:<11} {m.__version__:<12} {m.__file__}")
+    if not m.__file__.startswith("/mnt/ral/jnightin/PyAuto/"):
+        raise SystemExit(f"REFUSING: {m.__name__} imported from {m.__file__}, not the shared mirror")
+print("jax", jax.__version__, "jaxlib", jaxlib.__version__, "numpy", numpy.__version__, jax.devices())
+EOF
+
+run_cell() {
+    local config_name=$1 out_dir=$2
+    echo "=========================================="
+    echo "RUN ${config_name} -> ${out_dir}"
+    date
+    echo "loadavg: $(cat /proc/loadavg)"
+    export JAX_COMPILATION_CACHE_DIR="$AP_ROOT/output/jax_cache/point_source_${SLURM_JOB_ID:-local}_${config_name}"
+    rm -rf "$JAX_COMPILATION_CACHE_DIR" && mkdir -p "$JAX_COMPILATION_CACHE_DIR"
+    python3 -u scripts/point_source_image/likelihood_breakdown/image_plane.py \
+        --config-name "$config_name" --output-dir "$out_dir"
+}
+
+run_cell hpc_ral_cpu_fp64_p4 "$RESULTS_DIR"
+for i in $(seq 1 $REPLICATES); do
+    run_cell "hpc_ral_cpu_fp64_p4_rep${i}" "$REPLICATE_DIR"
+done
+
+echo "=== source_revisions check (JSON vs mirror HEAD) ==="
+python3 - "$RESULTS_DIR/image_plane_hpc_ral_cpu_fp64_p4.json" "$REPLICATE_DIR" <<'EOF'
+import glob, json, subprocess, sys
+paths = [sys.argv[1]] + sorted(glob.glob(sys.argv[2] + "/image_plane_*.json"))
+for path in paths:
+    revs = json.load(open(path))["source_revisions"]
+    for repo in ("PyAutoNerves", "PyAutoFit", "PyAutoArray", "PyAutoGalaxy", "PyAutoLens"):
+        head = subprocess.check_output(
+            ["git", "-C", f"/mnt/ral/jnightin/PyAuto/{repo}", "rev-parse", "HEAD"], text=True
+        ).strip()
+        if revs[repo] != head:
+            raise SystemExit(f"MISMATCH {path}: {repo} JSON {revs[repo]} != mirror {head}")
+    print("OK", path)
+EOF
+
+echo "=========================================="
+echo "loadavg: $(cat /proc/loadavg)"
+echo "Finished."
+date
