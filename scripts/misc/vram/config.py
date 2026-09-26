@@ -155,13 +155,14 @@ VMAP_BATCH: dict[tuple[str, str, str], int | None] = {
 VMAP_BATCH_SPARSE: dict[tuple[str, str, str], int | None] = {
     # interferometer mge, library W~ route (PyAutoArray#575): the sparse full
     # pipeline under jax.vmap on the A100 (fp64, nufftax 0.6.1), largest batch
-    # first from 64/16/4 (--sparse-vmap-batch). RAL jobs 356359-356361,
+    # first from 64/16/4 (--sparse-vmap-batch). RAL jobs 356359-356363,
     # results/notes/interferometer_mge_breakdown_2026_09.md "Library W~ route
-    # (2026-09-26)". The per-replica cost that caps jvla is the fit's forward
-    # NUFFT of the (all-zero) standard-light image, not the W~ algebra.
-    ("interferometer", "mge", "alma"): 64,  # 0.48 ms / call amortised at 64
-    ("interferometer", "mge", "alma_high"): 64,  # 1.54 ms / call amortised at 64
-    ("interferometer", "mge", "jvla"): 16,  # 64 asked 41.1 GiB (OOM); 15.5 ms / call at 16
+    # (2026-09-26)". jvla batch 64 asks 41.1 GiB both before and after the
+    # zero-image NUFFT fix, so the cap is not that NUFFT; by size it matches the
+    # W~ curvature FFT of 20 columns on the padded 1400² grid (inferred).
+    ("interferometer", "mge", "alma"): 64,  # 0.38 ms / call amortised at 64
+    ("interferometer", "mge", "alma_high"): 64,  # 1.54 ms / call amortised at 64 (round 1)
+    ("interferometer", "mge", "jvla"): 16,  # 64 asks 41.1 GiB (OOM); 10.8 ms / call at 16
 }
 
 
@@ -174,7 +175,7 @@ PROVENANCE: dict[str, str] = {
     ),
     "VMAP_BATCH_SPARSE": (
         "interferometer mge alma/alma_high/jvla: RAL A100 80GB, 2026-09-26, "
-        "PyAutoArray#575 branch (library W~ route), jobs 356359-356361; "
+        "PyAutoArray#575 branch (library W~ route), jobs 356359-356363; "
         "every other cell unprobed — falls back to dense rows"
     ),
 }
