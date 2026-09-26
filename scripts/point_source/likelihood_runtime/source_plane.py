@@ -260,7 +260,7 @@ print(f"  eager per-call   = {eager_per_call:.6f} s")
 
 
 # ===================================================================
-# PART B — Full-pipeline JIT (expected to fail — see module docstring)
+# PART B — Full-pipeline JIT
 # ===================================================================
 
 print("\n" + "=" * 70)
@@ -279,27 +279,16 @@ def full_pipeline_from_params(params_tree):
     return analysis_jax.log_likelihood_function(instance=params_tree)
 
 
-full_pipeline_jits = False
-full_pipeline_per_call = None
-full_result = None
+# The end-to-end source-plane likelihood JITs on the live stack: the former
+# ``TracerArrayConversionError`` guard (``Grid2DIrregular`` dropping ``xp``)
+# was retired once ``grid_2d_via_deflection_grid_from`` propagated ``xp``
+# (autolens_profiling#315 witnessed it). ``full_pipeline_blocker`` stays in the
+# JSON as ``None`` for schema continuity.
 full_pipeline_blocker = None
-
-try:
-    _, full_result = jit_profile(full_pipeline_from_params, "full_pipeline", params_tree)
-    full_pipeline_per_call = timer.records[-1][1] / 10
-    full_pipeline_jits = True
-    print(f"  full log_likelihood = {full_result}")
-except jax.errors.TracerArrayConversionError:
-    full_pipeline_blocker = (
-        "Grid2DIrregular.grid_2d_via_deflection_grid_from does not propagate xp; "
-        "model_data ends up with _xp=np while holding JAX tracers, so "
-        "squared_distances_to_coordinate_from calls np.square on a tracer."
-    )
-    print(
-        "\n  >>> BLOCKER: full-pipeline source-plane likelihood does NOT JIT.\n"
-        f"  >>> Cause:   {full_pipeline_blocker}\n"
-        "  >>> See module docstring for the proposed library fix."
-    )
+_, full_result = jit_profile(full_pipeline_from_params, "full_pipeline", params_tree)
+full_pipeline_per_call = timer.records[-1][1] / 10
+full_pipeline_jits = True
+print(f"  full log_likelihood = {full_result}")
 
 # ===================================================================
 # PART B.5 — vmap-probe mode (early exit)
@@ -339,11 +328,9 @@ if _cli.vmap_probe:
 # PART C — JIT-able prefix: tracer ray-trace of observed positions
 # ===================================================================
 #
-# Even though the full pipeline is blocked, the dominant work in the
-# source-plane likelihood — ray-tracing the observed image positions to
-# the source plane via the tracer's deflection field — IS JIT-traceable
-# when the input/output stay as raw arrays.  We profile that prefix here
-# so the JIT-able portion of the source-plane path is still measured.
+# The dominant work in the source-plane likelihood — ray-tracing the
+# observed image positions to the source plane via the tracer's deflection
+# field — measured on its own as raw arrays, alongside the full pipeline.
 
 print("\n" + "=" * 70)
 print("JIT-ABLE PREFIX: ray-trace observed positions to source plane")
