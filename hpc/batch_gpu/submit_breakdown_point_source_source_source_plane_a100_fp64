@@ -1,0 +1,122 @@
+#!/bin/bash -l
+#
+# 2026-09 source-plane point-source campaign, phase 2a (autolens_profiling#322):
+# the A100 rows for the phase-1 breakdown cell + the pytree-input A/B.
+# Single-source only (the `simple` dataset); nothing under scripts/cluster/.
+#
+# WHAT THIS MEASURES. The same two cells as the RAL CPU submit
+# (hpc/batch_cpu/submit_breakdown_point_source_source_source_plane_ral_cpu_fp64),
+# two processes, on ONE RAL A100:
+#
+#   1. scripts/point_source_source/likelihood_breakdown/source_plane.py
+#      (fused solved/plain likelihoods, prefix rows, CSE probes, dispatch floors,
+#      value_and_grad cost; eager/vmap/literal/non-zero-gradient asserts).
+#   2. scripts/point_source_source/likelihood_breakdown/pytree_input_ab.py
+#      (pytree vs flat_vector vs flat_leaves, forward / value_and_grad / floor per
+#      lane, 20 x 20 interleaved; route agreement rtol 1e-10 + non-zero grads).
+#
+# CONFIG LABEL. --config-name hpc_a100_fp64 (NOT hpc_ral_a100_fp64: that label
+# does not render in the README tables).
+#
+# PRECISION. fp64 only (the source-plane fit has no mixed-precision switch).
+#
+# LIBRARY. The shared /mnt/ral/jnightin/PyAuto stack AS-IS (no branch prepend);
+# release-equivalent on the source-plane paths -- see the CPU submit's LIBRARY block.
+#
+# BACKEND. JAX_PLATFORMS=cuda (NOT "cuda,cpu": a list can silently fall back to
+# CPU) and JAX_PLATFORM_NAME=cuda; the job asserts jax.default_backend()=="gpu".
+# XLA_FLAGS are byte-identical to the CPU submit's.
+#
+# Writes results/breakdown/point_source_source/source_plane_hpc_a100_fp64.{json,png}
+# and pytree_input_ab_hpc_a100_fp64.{json,png}.
+#
+# Known gap (not fixed here): scripts/misc/wall/check_submits.py's _PYTHON_CALL
+# regex does not match `python3 -u`.
+#
+# WALL-BASIS:
+#   Laptop witnesses (WSL2, 8 cores, load ~5, 2026-09-26): source_plane.py 71 s,
+#   pytree_input_ab.py at 20 x 20 64 s; x 2.0 headroom for GPU compiles.
+#   cell: point_source_source/source_plane/simple  device: gpu  precision: fp64
+#   source: measured-wall  wall: 71  ref: laptop-point_source_source-source_plane-2026-09-26  headroom: 2.0
+#   cell: point_source_source/pytree_input_ab/simple  device: gpu  precision: fp64
+#   source: measured-wall  wall: 64  ref: laptop-point_source_source-pytree_input_ab-2026-09-26  headroom: 2.0
+
+#SBATCH -J source_plane_p2a_gpu
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=32gb
+#SBATCH --time=2:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+# Repo root from where this was submitted (hpc/batch_gpu/../..). sbatch from
+# inside hpc/batch_gpu/.
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export NPROC=${SLURM_CPUS_PER_TASK:-8}
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=1
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+export NUMBA_CACHE_DIR=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}
+mkdir -p "$NUMBA_CACHE_DIR" "$MPLCONFIGDIR"
+# No persistent compile cache: compile times are recorded and must be cold.
+unset JAX_COMPILATION_CACHE_DIR
+
+echo "=========================================="
+date
+hostname
+lscpu | grep 'Model name' || true
+nvidia-smi --query-gpu=name,driver_version,memory.total,utilization.gpu --format=csv || true
+echo "partition:      ${SLURM_JOB_PARTITION:-unset}"
+echo "gpus:           ${CUDA_VISIBLE_DEVICES:-unset}"
+echo "cpus-per-task:  ${SLURM_CPUS_PER_TASK:-unset}"
+echo "loadavg:        $(cat /proc/loadavg)"
+echo "Cells:          point_source_source/likelihood_breakdown/{source_plane,pytree_input_ab}"
+echo "Backend:        JAX_PLATFORMS=$JAX_PLATFORMS JAX_PLATFORM_NAME=$JAX_PLATFORM_NAME"
+echo "XLA_FLAGS:      $XLA_FLAGS"
+
+echo "=== source revisions ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r (shared)" "$(git -C /mnt/ral/jnightin/PyAuto/$r rev-parse HEAD 2>&1)"
+done
+echo "AP_ROOT rev:   $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+echo "AP_ROOT branch: $(git -C $AP_ROOT rev-parse --abbrev-ref HEAD 2>&1)"
+
+cd $AP_ROOT
+
+echo "=== import provenance + backend assertion ==="
+python3 -c "
+import os, autoarray, autolens, autofit, autogalaxy, jax
+for m in (autoarray, autolens, autofit, autogalaxy):
+    print(f'{m.__name__}.__file__ =', m.__file__)
+    assert os.path.realpath(m.__file__).startswith('/mnt/ral/jnightin/PyAuto/'), f'{m.__name__} not from the shared stack'
+print('jax', jax.__version__, jax.devices(), jax.default_backend())
+assert jax.default_backend() == 'gpu', 'JAX is not on the GPU'
+print('ASSERT OK: GPU backend, libraries from /mnt/ral/jnightin/PyAuto')
+" || exit 3
+
+echo "=========================================="
+echo "run 1/2: source_plane breakdown on A100"
+date
+python3 -u scripts/point_source_source/likelihood_breakdown/source_plane.py --config-name hpc_a100_fp64
+
+echo "=========================================="
+echo "run 2/2: pytree-input A/B on A100 (20 x 20)"
+date
+python3 -u scripts/point_source_source/likelihood_breakdown/pytree_input_ab.py --config-name hpc_a100_fp64 --rounds 20 --calls 20
+
+echo "=========================================="
+nvidia-smi --query-gpu=name,memory.used --format=csv || true
+echo "Finished."
+date
