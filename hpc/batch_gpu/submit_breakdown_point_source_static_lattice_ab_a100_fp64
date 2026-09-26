@@ -73,7 +73,6 @@ export XLA_PYTHON_CLIENT_PREALLOCATE=false
 export JAX_ENABLE_X64=1
 export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
 export NUMBA_CACHE_DIR=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}
-export MPLCONFIGDIR=/tmp/matplotlib_${SLURM_JOB_ID:-local}
 mkdir -p "$NUMBA_CACHE_DIR" "$MPLCONFIGDIR"
 # No persistent compile cache: compile_s is a gate and must be cold per route.
 unset JAX_COMPILATION_CACHE_DIR

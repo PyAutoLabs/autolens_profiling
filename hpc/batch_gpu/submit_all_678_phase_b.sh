@@ -17,7 +17,6 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 # shared dataset dirs. Simulators are seeded, so this is deterministic.
 AP_ROOT=${AP_ROOT:-/mnt/ral/jnightin/autolens_profiling}
 source "$AP_ROOT/activate.sh"
-export NUMBA_CACHE_DIR=/tmp/numba_cache MPLCONFIGDIR=/tmp/matplotlib
 for inst in simple simple_missing simple_extra near_caustic; do
     if [ ! -f "$AP_ROOT/dataset/point_source/$inst/point_dataset_positions_only.json" ]; then
         echo "Pre-generating point_source/$inst"

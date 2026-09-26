@@ -1,0 +1,291 @@
+#!/bin/bash -l
+#
+# 2026-09 certified-positive-solver PHASE C1 — the uncertified-lane RATE on real Nautilus
+# batches, and the matched timing table at the production batch size, on the A100
+# (autolens_profiling#304). Measurement only: no library edits, library mains incl. the
+# unreleased PyAutoArray#567 (release block overridden by the human on 2026-09-24).
+#
+# Phase B (#300, array 350588) found library certified + certified_fallback=none the
+# fastest jit(vmap) row with ZERO uncertified lanes, but its lanes were one seeded draw
+# family near the fiducial. Whether the phase-C2 guard (re-run uncertified lanes through
+# scalar certified+PDIP) is worth four repos of library work depends on how often a lane
+# fails its certificate on what a REAL search proposes. So:
+#
+#   1. CAPTURE (tasks 0-3): nautilus_batch_capture.py fits the phase-B S3 system with
+#      af.Nautilus at the production settings of BOTH pixelized stages, on both meshes,
+#      and records every batch reaching Fitness.call_wrap to
+#      results/breakdown/imaging/nautilus_batches_<mesh>_<stage>.npz:
+#        --stage pix1  source_pix_1: mass + shear + regularization free, n_live=150
+#        --stage pix2  source_pix_2: mass + shear fixed, regularization free, n_live=75
+#      n_batch=20, use_jax_vmap=True, library PDIP. The regularization is FREE with the
+#      production priors (inner/outer LogUniform 1e-6..1e6, signal_scale Uniform 0..1)
+#      and the production class - AdaptSplit on Delaunay, Adapt on rectangular, in both
+#      stages, as every SLaM source_pix_1 / source_pix_2 does. The rate plausibly depends on
+#      the regularization through how many pixels sit at the positivity bound, so a
+#      fixed-regularization capture would not answer the question. Capped at
+#      --n-like-max 40000 and --capture-seconds 3600 (about an hour).
+#   2. RATE (tasks 4-7): fixed_light_trace.py --lanes captured --captured-pass rate
+#      replays EVERY captured lane (its own mass, shear and regularization, through the
+#      Fitness instance_from_vector path) under library certified + certified_fallback=
+#      none in jax.jit(jax.vmap(fn)) chunks of 20 (one chunk = one real Nautilus batch),
+#      untimed, and reports the uncertified-lane rate overall, by Nautilus phase and by
+#      call half, plus max passes against the packaged budget 16, per mesh and stage.
+#   3. TIME (tasks 8-37): the phase-B matched pair (--arms both) on B captured lanes
+#      (nautilus_batches.timed_window: consecutive calls from the first post-prior
+#      batch; at B=20 exactly one real batch) and the three phase-B rows: PDIP vmap and
+#      scalar PDIP (pdip/on), certified+PDIP vmap and SCALAR certified+PDIP
+#      (certified/on), certified+none vmap (certified/off). pix1 gets the full
+#      B=16/20/50/100 grid; pix2 gets B=20 only. Why: the batch-size scaling is a
+#      property of the program's shapes, which pix2 shares with pix1; what pix2 can
+#      change is the per-lane pass count under vmap (the certified while_loop runs to
+#      the batch's max passes), and B=20 is the one production batch size where that
+#      enters the C2 verdict. Six tasks, cheap.
+#
+# TWO-STEP SUBMISSION — the replay tasks read the captures' npz files, so they must start
+# after them. Submit from hpc/batch_gpu/ on RAL (the -o/-e paths are relative):
+#
+#   CAP=$(sbatch --parsable --array=0-3 submit_breakdown_imaging_fixed_light_certified_lane_rate_a100_hst_fp64)
+#   sbatch --array=4-37 --dependency=afterok:${CAP} submit_breakdown_imaging_fixed_light_certified_lane_rate_a100_hst_fp64
+#
+# A plain `sbatch` (or `hpc/sync submit`) of this file runs all 38 tasks at once; every
+# replay task then refuses to start (FATAL, no npz) — nothing is measured on a stale or
+# missing capture.
+#
+# Rectangular captures written before the rectangular stages moved to Adapt (both pix1
+# and pix2 now free Adapt, as production does) recorded the Constant class, so the replay
+# fingerprint refuses them. Re-capture tasks 1 and 3 before any rectangular replay task
+# (5, 7, 20-31, 35-37); the Delaunay captures (tasks 0 and 2) are unaffected.
+#
+# Array tasks
+# -----------
+#   task   mesh         stage  pass     B    solver     fallback
+#    0     delaunay     pix1   capture  20   -          -
+#    1     rectangular  pix1   capture  20   -          -
+#    2     delaunay     pix2   capture  20   -          -
+#    3     rectangular  pix2   capture  20   -          -
+#    4-7   (same mesh/stage order) rate 20   certified  off
+#    8-19  delaunay     pix1   time     16/20/50/100 x (pdip on, certified on, certified off)
+#   20-31  rectangular  pix1   time     16/20/50/100 x the same three rows
+#   32-34  delaunay     pix2   time     20 x the three rows
+#   35-37  rectangular  pix2   time     20 x the three rows
+#
+# The pass budget is NOT passed: every certified row runs the library's resolved
+# certified_pass_budget (16 as packaged), and the JSON records it and its basis.
+#
+# The numerical gate — PRE-REGISTERED before submission (unchanged from phase B)
+# ------------------------------------------------------------------------------
+# Phase 3 (results/notes/hst_gpu_residue_phase3_psf_2026_09.md) placed the ~2.5e-9
+# residual BETWEEN the jit(vmap) and scalar-jit compositions, so per lane of a TIME task:
+#   GATED at 1e-9 relative:  the jit(vmap) arm vs the jit(vmap) library PDIP
+#   GATED at 1e-9 relative:  the scalar jit arm vs the scalar jit library PDIP
+#   RECORDED, NOT gated:     jit(vmap) vs scalar across compositions (relative + nats)
+#   RECORDED:                uncertified_lanes; the window vs the capture's own PDIP values
+# No pin is drawn tighter than 1e-9 (Delaunay's ~2e-10 run-to-run floor). A RATE task has
+# no gate: it records, per lane, certified / passes, the certified value against the
+# capture's library-PDIP figure of merit, and every uncertified lane re-run through scalar
+# library PDIP. Timing is never gated. A failing task writes its JSON, then exits non-zero.
+#
+# MEMORY. The PSF-convolved mapping-matrix cube is (180, 180, 1500) fp64 = 389 MB per
+# lane, so B=50 needs about 19 GB and B=100 about 39 GB for the cube alone. B=100 may
+# exceed the card; an OOM task is itself the memory-limit row, read from its .err.
+#
+# Every task starts from an EMPTY JAX compilation cache (a seeded XLA autotune cache
+# silently changes kernels, results/notes/xla_autotune_triton_gemm.md); the
+# AUTOTUNE_ENTRIES census at the end is the check.
+#
+# WALL-BASIS:
+#   Neither cell's wall has been measured on the A100 in these modes. A capture is
+#   capped by the cell itself at 3600 s of sampling plus setup and compiles (pix2, with
+#   half the live points, is expected to converge sooner); a rate task
+#   replays up to 40000 lanes at roughly one second per 20-lane chunk; the B=100 timing
+#   tasks run 100 sequential scalar calls per invocation. The laptop CPU witness in the
+#   phase-C1 note is the probe. Both cells therefore declare unmeasured with the 3x
+#   floor, which the twelve-hour allocation covers.
+#   NOTE for anyone editing this block - check_submits reads any line here shaped like
+#   a keyword, a colon and a value as row data, so the prose must never contain that
+#   shape.
+#   cell: imaging/nautilus_batch_capture/hst  device: a100  precision: fp64
+#   source: unmeasured  probe-first: yes  wall: 4800  headroom: 3.0
+#   cell: imaging/fixed_light_trace/hst  device: a100  precision: fp64
+#   source: unmeasured  probe-first: yes  wall: 5400  headroom: 3.0
+
+#SBATCH -J flt_lanerate_hst
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=12:00:00
+#SBATCH --array=0-37
+#SBATCH --export=ALL,PYAUTO_HPC_BASE=/mnt/ral/jnightin/PyAuto
+#SBATCH -o output/output.%A_%a.out
+#SBATCH -e error/error.%A_%a.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+# Derive the repo root from where this was submitted (hpc/batch_gpu/../..): it runs from
+# a worktree of the feature branch, not the canonical RAL checkout.
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+export PROJECT_PATH="$AP_ROOT"
+export PYAUTO_HPC_BASE="${PYAUTO_HPC_BASE:-/mnt/ral/jnightin/PyAuto}"
+echo "AP_ROOT=$AP_ROOT"
+echo "PYAUTO_HPC_BASE=$PYAUTO_HPC_BASE"
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding"
+
+CELL="$AP_ROOT/scripts/imaging/likelihood_breakdown/fixed_light_trace.py"
+CAPTURE="$AP_ROOT/scripts/imaging/likelihood_breakdown/nautilus_batch_capture.py"
+
+# A stale checkout fails before allocating a GPU.
+if [ ! -f "$CAPTURE" ] || ! grep -q -- "--captured-pass" "$CELL"; then
+    echo "FATAL: this checkout has no nautilus_batch_capture.py or no --captured-pass in" >&2
+    echo "       fixed_light_trace.py. It predates #304; refusing to run." >&2
+    exit 1
+fi
+
+MESHES=(delaunay rectangular delaunay rectangular delaunay rectangular delaunay rectangular delaunay delaunay delaunay delaunay delaunay delaunay delaunay delaunay delaunay delaunay delaunay delaunay rectangular rectangular rectangular rectangular rectangular rectangular rectangular rectangular rectangular rectangular rectangular rectangular delaunay delaunay delaunay rectangular rectangular rectangular)
+STAGES=(pix1 pix1 pix2 pix2 pix1 pix1 pix2 pix2 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix1 pix2 pix2 pix2 pix2 pix2 pix2)
+PASSES=(capture capture capture capture rate rate rate rate time time time time time time time time time time time time time time time time time time time time time time time time time time time time time time)
+BATCHES=(20 20 20 20 20 20 20 20 16 16 16 20 20 20 50 50 50 100 100 100 16 16 16 20 20 20 50 50 50 100 100 100 20 20 20 20 20 20)
+SOLVERS=(- - - - certified certified certified certified pdip certified certified pdip certified certified pdip certified certified pdip certified certified pdip certified certified pdip certified certified pdip certified certified pdip certified certified pdip certified certified pdip certified certified)
+FALLBACKS=(- - - - off off off off on on off on on off on on off on on off on on off on on off on on off on on off on on off on on off)
+MESH=${MESHES[$SLURM_ARRAY_TASK_ID]}
+STAGE=${STAGES[$SLURM_ARRAY_TASK_ID]}
+PASS=${PASSES[$SLURM_ARRAY_TASK_ID]}
+BATCH=${BATCHES[$SLURM_ARRAY_TASK_ID]}
+SOLVER=${SOLVERS[$SLURM_ARRAY_TASK_ID]}
+FALLBACK=${FALLBACKS[$SLURM_ARRAY_TASK_ID]}
+if [ -z "$MESH" ] || [ -z "$STAGE" ] || [ -z "$PASS" ] || [ -z "$BATCH" ] || [ -z "$SOLVER" ] || [ -z "$FALLBACK" ]; then
+    echo "FATAL: no (mesh, stage, pass, batch, solver, fallback) arm for array task ${SLURM_ARRAY_TASK_ID} (expected 0-37)." >&2
+    exit 1
+fi
+
+BORDER=cell
+CONFIG_NAME=hpc_a100_fp64_fixed_light_trace
+NPZ="$AP_ROOT/results/breakdown/imaging/nautilus_batches_${MESH}_${STAGE}.npz"
+
+# The dataset is tracked but its adapt image cache is not; concurrent tasks must not
+# auto-simulate the same dataset/imaging/hst/, so it is prepared once before submitting.
+if [ ! -f "$AP_ROOT/dataset/imaging/hst/data.fits" ]; then
+    echo "FATAL: dataset/imaging/hst/data.fits missing. Simulate it once before" >&2
+    echo "       submitting (concurrent tasks must not auto-simulate the same dir)." >&2
+    exit 1
+fi
+
+# A replay task measures the capture it reads, so the npz must exist. The cell refuses
+# an npz captured on a different S3 system (fingerprint check); that it is THIS run's
+# capture is what the two-step --dependency above guarantees.
+if [ "$PASS" != "capture" ] && [ ! -f "$NPZ" ]; then
+    echo "FATAL: $NPZ missing. The replay tasks (4-37) must be submitted with" >&2
+    echo "       --dependency=afterok:<capture job> after tasks 0-3 (see the header)." >&2
+    exit 1
+fi
+
+LEG="${MESH}_${STAGE}_${PASS}_${BATCH}_${SOLVER}_${FALLBACK}"
+
+# Fresh per-task compilation cache and trace dir, under output/ (gitignored).
+export JAX_COMPILATION_CACHE_DIR="$AP_ROOT/output/jax_cache/fixed_light_lanerate_${LEG}_${SLURM_ARRAY_JOB_ID:-local}_${SLURM_ARRAY_TASK_ID:-0}"
+rm -rf "$JAX_COMPILATION_CACHE_DIR" && mkdir -p "$JAX_COMPILATION_CACHE_DIR"
+echo "JAX_COMPILATION_CACHE_DIR=$JAX_COMPILATION_CACHE_DIR (fresh)"
+TRACE_DIR="$AP_ROOT/output/trace/fixed_light_lanerate_${LEG}_${SLURM_ARRAY_JOB_ID:-local}_${SLURM_ARRAY_TASK_ID:-0}"
+rm -rf "$TRACE_DIR" && mkdir -p "$TRACE_DIR"
+echo "TRACE_DIR=$TRACE_DIR (fresh)"
+
+nvidia-smi
+
+echo "=========================================="
+date
+hostname
+echo "Task:           $SLURM_ARRAY_TASK_ID / 37"
+echo "Stage:          $STAGE"
+echo "Pass:           $PASS"
+echo "Dataset:        hst (0.05\"/px)"
+echo "Precision:      fp64"
+echo "Source mesh:    $MESH (cell fiducial; --source-pixels NOT passed)"
+echo "Batches file:   $NPZ"
+echo "LANE_RATE_LEG mesh=$MESH stage=$STAGE pass=$PASS batch=$BATCH solver=$SOLVER fallback=$FALLBACK dataset=hst hardware=hpc_a100_fp64"
+
+echo "=== source revisions (shared install, untouched) ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r" "$(git -C $PYAUTO_HPC_BASE/$r rev-parse HEAD 2>&1)"
+done
+echo "AP_ROOT rev:   $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+# PyAutoArray#567 (the library certified solver) merged at 11b93476.
+if git -C $PYAUTO_HPC_BASE/PyAutoArray merge-base --is-ancestor 11b93476 HEAD 2>/dev/null; then
+    echo "PyAutoArray contains 11b93476 (#567): yes"
+else
+    echo "FATAL: $PYAUTO_HPC_BASE/PyAutoArray does not contain 11b93476 (#567)." >&2
+    exit 1
+fi
+
+cd $AP_ROOT
+
+echo "=== import provenance ==="
+python3 -c "import autoarray, autolens, nautilus; print('autoarray.__file__ =', autoarray.__file__); print('autolens.__file__ =', autolens.__file__); print('nautilus.__version__ =', nautilus.__version__); print('Settings().certified_pass_budget =', autolens.Settings().certified_pass_budget)"
+
+# The exit code is CAPTURED, not inherited: a failing leg still writes its JSON and has
+# its provenance recorded. activate.sh installs an ERR trap that exits even with errexit
+# off, so preserve and remove it around the python call and restore it after.
+SAVED_ERR_TRAP=$(trap -p ERR)
+trap - ERR
+set +e
+if [ "$PASS" = "capture" ]; then
+    python3 -u scripts/imaging/likelihood_breakdown/nautilus_batch_capture.py \
+        --mesh $MESH \
+        --n-like-max 40000 \
+        --capture-seconds 3600 \
+        --stage $STAGE \
+        --n-batch 20 \
+        --seed 1
+elif [ "$PASS" = "rate" ]; then
+    python3 -u scripts/imaging/likelihood_breakdown/fixed_light_trace.py \
+        --mesh $MESH \
+        --border-relocator $BORDER \
+        --vmap-batch $BATCH \
+        --lanes captured \
+        --batches "$NPZ" \
+        --captured-pass rate \
+        --fallback $FALLBACK \
+        --solver-source library \
+        --solver $SOLVER \
+        --routes b,d \
+        --trace-dir "$TRACE_DIR" \
+        --config-name $CONFIG_NAME
+else
+    python3 -u scripts/imaging/likelihood_breakdown/fixed_light_trace.py \
+        --mesh $MESH \
+        --border-relocator $BORDER \
+        --vmap-batch $BATCH \
+        --lanes captured \
+        --batches "$NPZ" \
+        --captured-pass time \
+        --arms both \
+        --fallback $FALLBACK \
+        --solver-source library \
+        --solver $SOLVER \
+        --trace-calls 10 \
+        --routes b,d \
+        --trace-dir "$TRACE_DIR" \
+        --config-name $CONFIG_NAME
+fi
+CELL_RC=$?
+set -e
+eval "$SAVED_ERR_TRAP"
+
+# Autotune-cache census (non-fatal: the directory exists only if XLA wrote entries).
+echo -n "AUTOTUNE_ENTRIES count="
+ls "$JAX_COMPILATION_CACHE_DIR/xla_gpu_per_fusion_autotune_cache_dir" 2>/dev/null | wc -l
+if [ "$PASS" = "capture" ] && [ -f "$NPZ" ]; then
+    echo "NPZ_SHA256 $(sha256sum "$NPZ" | cut -d' ' -f1)"
+fi
+
+echo "CELL_EXIT=$CELL_RC"
+echo "Finished."
+date
+
+exit $CELL_RC
