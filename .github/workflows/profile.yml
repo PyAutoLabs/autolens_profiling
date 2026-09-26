@@ -103,7 +103,7 @@ jobs:
         run: |
           set +e  # don't abort the whole step on one script's failure
           for script in scripts/imaging/likelihood_runtime/*.py scripts/interferometer/likelihood_runtime/*.py \
-                        scripts/point_source/likelihood_runtime/*.py \
+                        scripts/point_source_image/likelihood_runtime/*.py scripts/point_source_source/likelihood_runtime/*.py \
                         scripts/interferometer/likelihood_runtime/datacube/delaunay.py; do
             echo "::group::$script"
             python "$script" || echo "::warning::$script failed — see log; dashboard cell will show ERR"

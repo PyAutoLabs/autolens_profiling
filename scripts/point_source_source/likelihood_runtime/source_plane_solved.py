@@ -1,22 +1,65 @@
 """
-JAX Profiling: Point-Source Likelihood — Source-Plane Chi-Squared
-==================================================================
+JAX Profiling: Point-Source Likelihood — Source-Plane Chi-Squared (Solved)
+=============================================================================
 
 Profiles ``AnalysisPoint.log_likelihood_function`` for a lensed point-source
-``PointDataset`` using the **source-plane** chi-squared
-(``al.FitPositionsSource``).
+``PointDataset`` using the **analytically-solved source-plane** chi-squared
+(``al.FitPositionsSourceSolved``), the sibling of ``source_plane.py``
+introduced in issue #657 phase 3.
 
-Source-plane fitting traces each *observed* image-plane position back to the
-source plane via the lens model, then computes a chi-squared between the
-ray-traced positions and the model source position.  No image-plane solver
-is required.
+This is the paper's actual result (Lombardi 2024, arXiv:2406.15280 §5.1):
+rather than sampling the source-plane centre as 2 free parameters on a
+``al.ps.Point`` / ``al.ps.PointFlux`` profile, a zero-parameter
+``al.ps.PointSolved`` profile is paired with ``FitPositionsSourceSolved``,
+which analytically solves for the tensor-weighted-precision centre β* from
+the observed positions' back-traced source-plane locations, then computes
+the same magnification-weighted chi-squared ``source_plane.py`` profiles.
+
+Full pipeline now JITs cleanly (phase-2 fix)
+---------------------------------------------
+
+``source_plane.py``'s full-pipeline JIT is blocked because
+``Grid2DIrregular.grid_2d_via_deflection_grid_from`` does not propagate
+``xp``, so its ``model_data`` ends up holding JAX tracers under a NumPy
+``_xp`` and ``squared_distances_to_coordinate_from`` calls ``np.square`` on
+a tracer. That was fixed upstream in phase 2 (PyAutoArray#414), and
+``FitPositionsSourceSolved``'s analytic β* solve
+(``autolens/point/fit/solved.py``: ``SolvedCentre``) exercises the same
+ray-trace path cleanly under JAX — verified during authoring:
+``jax.jit(analysis_jax.log_likelihood_function)(params_tree)`` succeeds
+end-to-end and matches the eager NumPy value at ``rtol=1e-4``. This script
+therefore profiles the **full pipeline** directly (structurally mirroring
+``image_plane.py``, not ``source_plane.py``'s try/except + JIT-able-prefix
+fallback) — there is no blocked path here to work around.
+
+Parameter-count delta
+----------------------
+
+Swapping ``al.ps.PointFlux`` (used by ``source_plane.py``: 2 centre + 1
+flux = 3 params) for ``al.ps.PointSolved`` (0 params) drops the model from
+8 to 5 free parameters — a delta of 3. 2 of those are the analytically-
+solved source-plane centre (the paper's β*); the third is the flux
+parameter, which this positions-only harness never fits regardless of
+PointFlux vs PointSolved.
 
 Pytree-native parameter inputs
 ------------------------------
 
-This script uses ``af.ModelInstance`` as the JIT input via PyAutoFit's opt-in
-pytree registration (``autofit.jax.register_model``, PR #1220 / #1221 / #1222).
-The JIT'd closure consumes the registered instance directly.
+As in ``source_plane.py``, this script uses ``af.ModelInstance`` as the JIT
+input via PyAutoFit's opt-in pytree registration
+(``autofit.jax.register_model``, PR #1220 / #1221 / #1222).
+
+Three-tier numerical assertions
+-------------------------------
+
+1. **eager ≡ JIT**: numpy-path log-likelihood matches single-JIT result.
+2. **JIT ≡ vmap**: every entry of the batched vmap output matches the
+   single-JIT result.
+3. **regression constant**: hardcoded
+   ``EXPECTED_LOG_LIKELIHOOD_SOURCE_PLANE_SOLVED`` guards against silent
+   drift. Captured during authoring against the dataset already committed
+   in this worktree; refresh it the same way ``source_plane.py`` documents
+   if the dataset or priors change.
 """
 
 import sys as _sys
@@ -80,14 +123,13 @@ from _profile_cli import (
 _cli = parse_profile_cli()
 
 matplotlib.use("Agg")
-import autoarray as aa
 import autofit as af
 import autolens as al
 import matplotlib.pyplot as plt
 from autofit.jax import register_model as _register_model_pytrees
 
 # ---------------------------------------------------------------------------
-# Profiling helpers (mirrors imaging/mge.py)
+# Profiling helpers (mirrors imaging/mge.py and image_plane.py)
 # ---------------------------------------------------------------------------
 
 
@@ -185,22 +227,23 @@ with timer.section("solver_build"):
         magnification_threshold=0.1,
     )
 
-print("\n--- Model construction ---")
+print("\n--- Model construction (PointSolved — 0 source params) ---")
 
 with timer.section("model_build"):
     # GaussianPrior(mean=truth, sigma=small) centres prior-median at the
     # simulator truth while keeping params free so gradient vectors and
     # finite-difference diagnostics have dimensionality. Prior means MUST
-    # match the simulator's truth values exactly, otherwise the
-    # ray-traced source-plane positions cluster around the wrong centre
-    # and chi² explodes.
+    # match the simulator's truth values exactly, otherwise the ray-traced
+    # source-plane positions cluster around the wrong centre and chi²
+    # explodes.
     #
     # Simulator truth (see autolens_workspace_developer/jax_profiling/
     # dataset_setup/point_source.py):
     #   Isothermal at centre=(0, 0), einstein_radius=1.6,
     #   ell_comps = al.convert.ell_comps_from(axis_ratio=0.9, angle=45°)
     #            ≈ (0.0526316, 0.0)
-    #   source point_0.centre = (0.07, 0.07)
+    #   source point_0.centre = (0.07, 0.07) — NOT used here: `PointSolved`
+    #   has no `centre`, so nothing to prior-align on the source side.
     mass = af.Model(al.mp.Isothermal)
     mass.centre.centre_0 = af.GaussianPrior(mean=0.0, sigma=0.005)
     mass.centre.centre_1 = af.GaussianPrior(mean=0.0, sigma=0.005)
@@ -209,14 +252,19 @@ with timer.section("model_build"):
     mass.ell_comps.ell_comps_1 = af.GaussianPrior(mean=0.0, sigma=0.005)
     lens = af.Model(al.Galaxy, redshift=0.5, mass=mass)
 
-    point_0 = af.Model(al.ps.PointFlux)
-    point_0.centre.centre_0 = af.GaussianPrior(mean=0.07, sigma=0.005)
-    point_0.centre.centre_1 = af.GaussianPrior(mean=0.07, sigma=0.005)
+    # `PointSolved` has no `centre` / `flux` attributes, so no priors here.
+    point_0 = af.Model(al.ps.PointSolved)
     source = af.Model(al.Galaxy, redshift=1.0, point_0=point_0)
 
     model = af.Collection(galaxies=af.Collection(lens=lens, source=source))
 
 print(f"  Total free parameters: {model.total_free_parameters}")
+print(
+    "  (was 8 with al.ps.PointFlux in source_plane.py: 5 mass + 2 centre + 1 flux; "
+    f"PointSolved drops all 3 source params -> {model.total_free_parameters} mass-only. "
+    "2 of the 3 are the analytically-solved source centre (paper Sec 5.1 beta*); the "
+    "3rd is the flux param this positions-only dataset never fits either way.)"
+)
 
 print("\n--- Instantiate concrete model ---")
 
@@ -231,15 +279,15 @@ params_tree = jax.tree_util.tree_map(jnp.asarray, instance)
 
 
 # ---------------------------------------------------------------------------
-# Eager baseline — full FitPointDataset (source-plane chi-squared)
+# Eager baseline — full FitPointDataset (source-plane chi-squared, solved)
 # ---------------------------------------------------------------------------
 
-print("\n--- Eager FitPointDataset (source-plane) ---")
+print("\n--- Eager FitPointDataset (source-plane, solved) ---")
 
 analysis_eager = al.AnalysisPoint(
     dataset=dataset,
     solver=solver,
-    fit_positions_cls=al.FitPositionsSource,
+    fit_positions_cls=al.FitPositionsSourceSolved,
     use_jax=False,
 )
 
@@ -260,17 +308,22 @@ print(f"  eager per-call   = {eager_per_call:.6f} s")
 
 
 # ===================================================================
-# PART B — Full-pipeline JIT (expected to fail — see module docstring)
+# PART B — Full-pipeline JIT (FitPositionsSourceSolved — JITs cleanly)
 # ===================================================================
+#
+# Unlike source_plane.py's plain FitPositionsSource, the analytic β* solve
+# in FitPositionsSourceSolved does not hit the xp-propagation blocker (fixed
+# upstream in phase 2, PyAutoArray#414) — see module docstring. No
+# try/except, no JIT-able-prefix fallback needed: this IS the full pipeline.
 
 print("\n" + "=" * 70)
-print("FULL-PIPELINE JIT (source-plane)")
+print("FULL-PIPELINE JIT (source-plane, solved)")
 print("=" * 70)
 
 analysis_jax = al.AnalysisPoint(
     dataset=dataset,
     solver=solver,
-    fit_positions_cls=al.FitPositionsSource,
+    fit_positions_cls=al.FitPositionsSourceSolved,
     use_jax=True,
 )
 
@@ -279,27 +332,9 @@ def full_pipeline_from_params(params_tree):
     return analysis_jax.log_likelihood_function(instance=params_tree)
 
 
-full_pipeline_jits = False
-full_pipeline_per_call = None
-full_result = None
-full_pipeline_blocker = None
-
-try:
-    _, full_result = jit_profile(full_pipeline_from_params, "full_pipeline", params_tree)
-    full_pipeline_per_call = timer.records[-1][1] / 10
-    full_pipeline_jits = True
-    print(f"  full log_likelihood = {full_result}")
-except jax.errors.TracerArrayConversionError:
-    full_pipeline_blocker = (
-        "Grid2DIrregular.grid_2d_via_deflection_grid_from does not propagate xp; "
-        "model_data ends up with _xp=np while holding JAX tracers, so "
-        "squared_distances_to_coordinate_from calls np.square on a tracer."
-    )
-    print(
-        "\n  >>> BLOCKER: full-pipeline source-plane likelihood does NOT JIT.\n"
-        f"  >>> Cause:   {full_pipeline_blocker}\n"
-        "  >>> See module docstring for the proposed library fix."
-    )
+_, full_result = jit_profile(full_pipeline_from_params, "full_pipeline", params_tree)
+full_pipeline_per_call = timer.records[-1][1] / 10
+print(f"  full log_likelihood = {full_result}")
 
 # ===================================================================
 # PART B.5 — vmap-probe mode (early exit)
@@ -316,17 +351,17 @@ if _cli.vmap_probe:
         params_tree,
         batch_sizes=(1, 4, 16),
         dataset="point_source",
-        model="source_plane",
+        model="source_plane_solved",
         instrument=instrument,
     )
     recommended = recommend_batch_size(probe)
     probe_path = (
         _cli.output_dir
-        or (_workspace_root / "results" / "runtime" / "point_source" / "source_plane")
+        or (_workspace_root / "results" / "runtime" / "point_source_source" / "source_plane_solved")
     ) / (
-        "vmap_probe_source_plane_sparse.json"
+        "vmap_probe_source_plane_solved_sparse.json"
         if _cli.use_sparse_operator
-        else "vmap_probe_source_plane.json"
+        else "vmap_probe_source_plane_solved.json"
     )
     write_probe_json(probe, recommended, probe_path)
     print(f"\n  vmap_probe samples: {probe.samples}")
@@ -336,55 +371,17 @@ if _cli.vmap_probe:
     sys.exit(0)
 
 # ===================================================================
-# PART C — JIT-able prefix: tracer ray-trace of observed positions
-# ===================================================================
-#
-# Even though the full pipeline is blocked, the dominant work in the
-# source-plane likelihood — ray-tracing the observed image positions to
-# the source plane via the tracer's deflection field — IS JIT-traceable
-# when the input/output stay as raw arrays.  We profile that prefix here
-# so the JIT-able portion of the source-plane path is still measured.
-
-print("\n" + "=" * 70)
-print("JIT-ABLE PREFIX: ray-trace observed positions to source plane")
-print("=" * 70)
-
-observed_positions_raw = jnp.array(dataset.positions.array)
-
-
-def ray_trace_to_source_plane(params_tree, positions_raw):
-    """Ray-trace observed image positions to the source plane (raw arrays)."""
-    tracer = al.Tracer(galaxies=list(params_tree.galaxies))
-    grid_in = aa.Grid2DIrregular(values=positions_raw, xp=jnp)
-    deflections = tracer.deflections_yx_2d_from(grid=grid_in, xp=jnp)
-    # Source-plane positions = observed - deflections.
-    return positions_raw - deflections.array
-
-
-_, source_plane_positions = jit_profile(
-    ray_trace_to_source_plane,
-    "raytrace_prefix",
-    params_tree,
-    observed_positions_raw,
-)
-prefix_per_call = timer.records[-1][1] / 10
-
-print(f"  source-plane positions shape: {source_plane_positions.shape}")
-print(f"  source-plane positions value: {np.array(source_plane_positions)}")
-
-
-# ===================================================================
-# PART D — vmap over the JIT-able prefix
+# PART C — vmap over the full pipeline
 # ===================================================================
 
-print("\n--- vmap over ray-trace prefix ---")
+print("\n--- vmap batched evaluation ---")
 
 _batch_resolved, _batch_source = resolve_vmap_batch(
     "point_source",
-    "source_plane",
+    "source_plane_solved",
     instrument,
     output_dir=_cli.output_dir
-    or (_workspace_root / "results" / "runtime" / "point_source" / "source_plane"),
+    or (_workspace_root / "results" / "runtime" / "point_source_source" / "source_plane_solved"),
     path="sparse" if _cli.use_sparse_operator else "dense",
     backend=jax.default_backend(),
 )
@@ -395,60 +392,63 @@ batched_params = jax.tree_util.tree_map(
     lambda leaf: jnp.broadcast_to(leaf, (batch_size, *leaf.shape)),
     params_tree,
 )
-batched_positions = jnp.broadcast_to(
-    observed_positions_raw, (batch_size, *observed_positions_raw.shape)
-)
 
-vmapped_prefix = jax.jit(jax.vmap(ray_trace_to_source_plane))
+vmapped_full = jax.jit(jax.vmap(full_pipeline_from_params))
 
-with timer.section("vmap_prefix_first_call"):
-    result_vmap = vmapped_prefix(batched_params, batched_positions)
+with timer.section("vmap_first_call"):
+    result_vmap = vmapped_full(batched_params)
     block(result_vmap)
 
 n_vmap_repeats = 10
-with timer.section(f"vmap_prefix_steady_x{n_vmap_repeats}"):
+with timer.section(f"vmap_steady_x{n_vmap_repeats}"):
     for _ in range(n_vmap_repeats):
-        result_vmap = vmapped_prefix(batched_params, batched_positions)
+        result_vmap = vmapped_full(batched_params)
         block(result_vmap)
 
 vmap_batch_time = timer.records[-1][1] / n_vmap_repeats
 vmap_per_call = vmap_batch_time / batch_size
-vmap_speedup = prefix_per_call / vmap_per_call
+vmap_speedup = full_pipeline_per_call / vmap_per_call
 
-print(f"  vmap batch={batch_size}: {vmap_batch_time:.6f} s")
+print(f"  batch results = {result_vmap}")
+print(f"  vmap batch of {batch_size}:   {vmap_batch_time:.6f} s")
 print(f"  vmap per call:         {vmap_per_call:.6f} s")
-print(f"  single JIT per call:   {prefix_per_call:.6f} s")
-print(f"  vmap speedup:          {vmap_speedup:.1f}x faster per ray-trace")
+print(f"  single JIT per call:   {full_pipeline_per_call:.6f} s")
+print(f"  vmap speedup:          {vmap_speedup:.1f}x faster per likelihood")
 
-# Eager ray-trace truth — compare against vmap output to lock the prefix.
-eager_grid = aa.Grid2DIrregular(values=np.array(observed_positions_raw))
-eager_deflections = al.Tracer(galaxies=list(instance.galaxies)).deflections_yx_2d_from(
-    grid=eager_grid, xp=np
-)
-eager_source_positions = np.array(observed_positions_raw) - eager_deflections.array
+
+# ===================================================================
+# PART D — Three-tier numerical assertions
+# ===================================================================
+#
+# Tier 1: eager (NumPy path) ≡ single JIT
+# Tier 2: single JIT ≡ every entry of vmap output
+# Tier 3: hardcoded regression constant (deterministic via seeded simulator)
 
 np.testing.assert_allclose(
-    np.array(source_plane_positions),
-    eager_source_positions,
+    log_likelihood_ref,
+    float(full_result),
     rtol=1e-4,
-    err_msg="point_source/source_plane: JIT ray-trace prefix mismatch with eager NumPy",
+    err_msg=(
+        f"point_source/source_plane_solved: eager vs JIT mismatch — "
+        f"eager={log_likelihood_ref} vs JIT={float(full_result)}"
+    ),
 )
+
 np.testing.assert_allclose(
     np.array(result_vmap),
-    eager_source_positions[None, :, :].repeat(batch_size, axis=0),
+    float(full_result),
     rtol=1e-4,
-    err_msg="point_source/source_plane: vmap ray-trace prefix mismatch with eager NumPy",
+    err_msg="point_source/source_plane_solved: JIT vs vmap mismatch",
 )
-print("  Eager vs JIT vs vmap (prefix) assertion PASSED")
 
 
 # ===================================================================
-# PART E — Static memory analysis (JIT-able prefix)
+# PART E — Static memory analysis
 # ===================================================================
 
-print("\n--- Static memory analysis (JIT-able prefix) ---")
+print("\n--- Static memory analysis ---")
 
-lowered_batched = vmapped_prefix.lower(batched_params, batched_positions)
+lowered_batched = vmapped_full.lower(batched_params)
 compiled_batched = lowered_batched.compile()
 mem = compiled_batched.memory_analysis()
 print(f"  Output size:  {mem.output_size_in_bytes / 1024**2:.3f} MB")
@@ -463,54 +463,56 @@ print(f"  Total:        {(mem.output_size_in_bytes + mem.temp_size_in_bytes) / 1
 al_version = al.__version__
 
 print("\n" + "=" * 70)
-print(f"JAX LIKELIHOOD SUMMARY — POINT SOURCE SOURCE-PLANE — v{al_version}")
+print(f"JAX LIKELIHOOD SUMMARY — POINT SOURCE SOURCE-PLANE SOLVED — v{al_version}")
 print("=" * 70)
 print(f"  Dataset:                    {instrument}")
 print(f"  Observed image positions:   {n_observed_positions}")
 print(f"  Position noise sigma:       {positions_noise_sigma}")
-print(f"  Free parameters:            {model.total_free_parameters}")
-print("  fit_positions_cls:          FitPositionsSource (source-plane chi-squared)")
+print(
+    f"  Free parameters:            {model.total_free_parameters}  "
+    "(source_plane.py: 8; delta=-3 -> -2 solved centre, -1 unused flux)"
+)
+print(
+    "  fit_positions_cls:          FitPositionsSourceSolved (source-plane chi-squared, solved centre)"
+)
 print("-" * 70)
 print(f"  Eager full likelihood:      {eager_per_call:.6f} s/call  ({log_likelihood_ref:.6f})")
-if full_pipeline_jits:
-    print(f"  Full pipeline (JIT):        {full_pipeline_per_call:.6f} s/call")
-else:
-    print("  Full pipeline (JIT):        BLOCKED (see module docstring)")
-print(f"  JIT-able prefix (raytrace): {prefix_per_call:.6f} s/call")
-print(f"  vmap prefix per-call (b={batch_size}): {vmap_per_call:.6f} s")
-print(f"  vmap speedup vs single JIT prefix: {vmap_speedup:.1f}x")
+print(f"  Full pipeline (JIT):        {full_pipeline_per_call:.6f} s/call")
+print(f"  vmap per-call (batch={batch_size}):    {vmap_per_call:.6f} s")
+print(f"  vmap speedup vs single JIT:           {vmap_speedup:.1f}x")
 print("=" * 70)
 
 likelihood_summary = {
     "autolens_version": al_version,
     "dataset": instrument,
-    "fit_positions_cls": "FitPositionsSource",
+    "fit_positions_cls": "FitPositionsSourceSolved",
     "configuration": {
         "observed_image_positions": int(n_observed_positions),
         "positions_noise_sigma": positions_noise_sigma,
         "free_parameters": int(model.total_free_parameters),
+        "free_parameters_source_plane_plain": 8,
+        "free_parameters_delta": int(model.total_free_parameters) - 8,
+        "point_source_profile": "PointSolved",
     },
     "eager_per_call": eager_per_call,
     "eager_log_likelihood": log_likelihood_ref,
-    "full_pipeline_jits": full_pipeline_jits,
-    "full_pipeline_blocker": full_pipeline_blocker,
+    "full_pipeline_jits": True,
     "full_pipeline_single_jit": full_pipeline_per_call,
-    "jit_able_prefix": {
-        "name": "ray-trace observed positions to source plane",
-        "per_call": prefix_per_call,
-    },
-    "vmap_prefix": {
+    "full_pipeline_log_likelihood": float(full_result),
+    "vmap": {
         "batch_size": batch_size,
         "batch_time": vmap_batch_time,
         "per_call": vmap_per_call,
-        "speedup_vs_single_jit_prefix": round(vmap_speedup, 1),
+        "speedup_vs_single_jit": round(vmap_speedup, 1),
     },
 }
 
-results_dir = _workspace_root / "results" / "runtime" / "point_source" / "source_plane"
+results_dir = (
+    _workspace_root / "results" / "runtime" / "point_source_source" / "source_plane_solved"
+)
 results_dir.mkdir(parents=True, exist_ok=True)
 
-dict_path = results_dir / f"source_plane_summary_v{al_version}.json"
+dict_path = results_dir / f"source_plane_solved_summary_v{al_version}.json"
 dict_path.write_text(json.dumps(likelihood_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")
 
@@ -518,17 +520,13 @@ print(f"\n  Results dict saved to: {dict_path}")
 
 labels = [
     "Eager full likelihood",
-    "JIT-able prefix (raytrace)",
-    f"vmap prefix per-call (batch={batch_size})",
+    "Full pipeline (JIT)",
+    f"vmap per-call (batch={batch_size})",
 ]
-times = [eager_per_call, prefix_per_call, vmap_per_call]
-colors = ["#8172B3", "#4C72B0", "#55A868"]
-if full_pipeline_jits:
-    labels.insert(1, "Full pipeline (JIT)")
-    times.insert(1, full_pipeline_per_call)
-    colors.insert(1, "#C44E52")
+times = [eager_per_call, full_pipeline_per_call, vmap_per_call]
+colors = ["#8172B3", "#C44E52", "#55A868"]
 
-fig, ax = plt.subplots(figsize=(10, 4.5))
+fig, ax = plt.subplots(figsize=(10, 4.0))
 y_pos = range(len(labels))
 bars = ax.barh(y_pos, times, color=colors, edgecolor="white", height=0.6)
 
@@ -546,57 +544,51 @@ ax.set_yticklabels(labels, fontsize=10)
 ax.invert_yaxis()
 ax.set_xlabel("Time per call (s)", fontsize=11)
 fig.suptitle(
-    "Point-Source Likelihood — Source-Plane Chi-Squared",
+    "Point-Source Likelihood — Source-Plane Chi-Squared (Solved)",
     fontsize=12,
     fontweight="bold",
 )
-title_extra = " | full pipeline JIT BLOCKED" if not full_pipeline_jits else ""
 ax.set_title(
     f"AutoLens v{al_version}  |  {n_observed_positions} positions  |  "
-    f"{model.total_free_parameters} free params{title_extra}",
+    f"{model.total_free_parameters} free params (was 8)  |  "
+    f"vmap speedup: {vmap_speedup:.1f}x",
     fontsize=9,
 )
 ax.margins(x=0.20)
 fig.tight_layout()
 
-chart_path = results_dir / f"source_plane_summary_v{al_version}.png"
+chart_path = results_dir / f"source_plane_solved_summary_v{al_version}.png"
 fig.savefig(chart_path, dpi=150)
 plt.close(fig)
 print(f"  Bar chart saved to:    {chart_path}")
 
 
 # ===================================================================
-# Regression assertions (eager and full-pipeline JIT)
+# Regression assertion — deterministic via seeded simulator
 # ===================================================================
 #
-# Simulator truth parameters (einstein_radius=1.6, centre=(0.01,0.01),
-# ell_comps=(0.01,0.01), source centre=(0.07,0.07)) + seeded noise
-# (noise_seed=1 in simulators/point_source.py) make the log-likelihood
-# deterministic. Eager numpy and full-pipeline JIT agree to float64.
-# Constant refreshed 2026-05-16 alongside the prior-truth-alignment fix.
-# Previous value (-294.1401881258811) was set against an earlier
-# dataset+priors combination. The source-plane chi² is more sensitive to
-# small parameter changes than image-plane because the chi² formula
-# weights residuals by magnifications² at the data positions — for a
-# quad-image lens near a caustic configuration, magnifications can swing
-# by 10-100x with small lens-parameter perturbations, dominating the
-# log-likelihood. The refreshed value reflects the current truth-aligned
-# evaluation against the dataset committed in
-# autolens_workspace_developer@f8a5cef.
+# Simulator truth parameters + seeded noise (noise_seed=1 in
+# simulators/point_source.py) make the log-likelihood deterministic; the
+# analytic β* solve is itself a deterministic function of the tracer and
+# observed positions. Constant captured 2026-07-30 during authoring of this
+# script (issue #657 phase 3) against the dataset already committed in this
+# worktree (v2026.7.23.1); refresh it the same way source_plane.py
+# documents if the dataset or mass priors change.
 _pinned_drift: list = []
 _pinned_expected = None
 
-EXPECTED_LOG_LIKELIHOOD_SOURCE_PLANE = -33788.35731127962
-_pinned_expected = EXPECTED_LOG_LIKELIHOOD_SOURCE_PLANE
+EXPECTED_LOG_LIKELIHOOD_SOURCE_PLANE_SOLVED = 0.5986504555530896
+_pinned_expected = EXPECTED_LOG_LIKELIHOOD_SOURCE_PLANE_SOLVED
 
 _rec = check_pinned(log_likelihood_ref, _pinned_expected, label="eager", rtol=1e-4)
 if _rec is not None:
     _pinned_drift.append(_rec)
-
-if full_pipeline_jits:
-    _rec = check_pinned(float(full_result), _pinned_expected, label="JIT", rtol=1e-4)
-    if _rec is not None:
-        _pinned_drift.append(_rec)
+_rec = check_pinned(float(full_result), _pinned_expected, label="JIT", rtol=1e-4)
+if _rec is not None:
+    _pinned_drift.append(_rec)
+_rec = check_pinned(np.array(result_vmap), _pinned_expected, label="vmap", rtol=1e-4)
+if _rec is not None:
+    _pinned_drift.append(_rec)
 
 timer.summary()
 

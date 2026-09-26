@@ -75,7 +75,7 @@ The A/B protocol
 ----------------
 
 Rows (``--models``): ``simple`` = the phase-1 harness model, dataset and solver
-(``scripts/point_source/likelihood_breakdown/image_plane.py``: SIE lens,
+(``scripts/point_source_image/likelihood_breakdown/image_plane.py``: SIE lens,
 ``PointSolver.for_grid`` 100x100 @ 0.2", precision 0.001") with the fused
 ``FitPositionsImagePairAllSolved`` (``solved``) and ``FitPositionsImagePairAll``
 (``plain``) likelihoods, plus a ``vmap`` batch row of the solved likelihood
@@ -111,7 +111,7 @@ cluster gradient compile is minutes per route and phase 2 does not need it.
 Output
 ------
 
-``results/breakdown/point_source/vertex_dedup_ab_<config_name>.{json,png}``. The
+``results/breakdown/point_source_image/vertex_dedup_ab_<config_name>.{json,png}``. The
 JSON deliberately carries no top-level ``autolens_version`` (versions live under
 ``library_versions``): this is a note-backed A/B, and
 ``scripts/misc/tooling/build_readme.py`` only auto-tables config-tagged
@@ -1140,7 +1140,7 @@ summary = {
 
 dict_path, chart_path = resolve_output_paths(
     _cli,
-    default_dir=_ROOT / "results" / "breakdown" / "point_source",
+    default_dir=_ROOT / "results" / "breakdown" / "point_source_image",
     default_basename="vertex_dedup_ab_local",
     cell="vertex_dedup_ab",
 )

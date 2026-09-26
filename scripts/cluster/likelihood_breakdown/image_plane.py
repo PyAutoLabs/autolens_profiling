@@ -448,7 +448,7 @@ print(f"  TOTAL delta across {len(dataset_list)} systems: {delta_total:+.6f}s")
 # path: one `AnalysisPoint(use_jax=True)` per system, summed the way a
 # FactorGraphModel sums its factors, compiled end to end from a model
 # instance whose free parameters are JIT *arguments*. Mirrors
-# `scripts/point_source/likelihood_breakdown/image_plane.py`: priors are tight
+# `scripts/point_source_image/likelihood_breakdown/image_plane.py`: priors are tight
 # Gaussians centred on this cell's fiducial values, so the prior-median
 # instance IS the step 1-4 lens model (main lenses fully free, one shared
 # scaling-relation normalisation, free NFW centre). The plain model's `Point`

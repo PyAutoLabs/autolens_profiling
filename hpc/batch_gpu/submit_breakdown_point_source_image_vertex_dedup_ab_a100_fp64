@@ -7,7 +7,7 @@
 # submit (hpc/batch_cpu/submit_breakdown_point_source_vertex_dedup_ab_ral_cpu_fp64),
 # on ONE RAL A100:
 #
-#   scripts/point_source/likelihood_breakdown/vertex_dedup_ab.py
+#   scripts/point_source_image/likelihood_breakdown/vertex_dedup_ab.py
 #     control  = the PRE-fix jnp.unique(size=3N) body, carried verbatim in the
 #                cell (PyAutoArray main 11b93476);
 #     nodedup  = the POST-fix body (flat 3N vertex table + arange index map);
@@ -49,7 +49,7 @@
 #   of it the 18 route compiles. 20 calls per round adds 4x the timed calls
 #   (sub-ms to tens of ms each on GPU) and GPU compiles of the ~70k-line cluster
 #   HLO may be slower than CPU; 3 h covers both with wide margin.
-#   cell: point_source/vertex_dedup_ab/simple  device: gpu  precision: fp64
+#   cell: point_source_image/vertex_dedup_ab/simple  device: gpu  precision: fp64
 #   source: measured-wall  wall: 628  ref: ral-cpu-job-350582-vertex_dedup_ab_hpc_ral_cpu_fp64  headroom: 4.0
 
 #SBATCH -J vertex_dedup_ab_gpu
@@ -104,7 +104,7 @@ echo "partition:      ${SLURM_JOB_PARTITION:-unset}"
 echo "gpus:           ${CUDA_VISIBLE_DEVICES:-unset}"
 echo "cpus-per-task:  ${SLURM_CPUS_PER_TASK:-unset}"
 echo "loadavg:        $(cat /proc/loadavg)"
-echo "Cell:           point_source/likelihood_breakdown/vertex_dedup_ab"
+echo "Cell:           point_source_image/likelihood_breakdown/vertex_dedup_ab"
 echo "Precision:      fp64 (JAX_ENABLE_X64=$JAX_ENABLE_X64)"
 echo "Backend:        JAX_PLATFORMS=$JAX_PLATFORMS JAX_PLATFORM_NAME=$JAX_PLATFORM_NAME"
 echo "XLA_FLAGS:      $XLA_FLAGS"
@@ -136,7 +136,7 @@ print('ASSERT OK: GPU backend, autoarray from the branch clone')
 echo "=========================================="
 echo "vertex-dedup A/B on A100: control vs nodedup vs library (simple + cluster, 20 x 20)"
 date
-python3 -u scripts/point_source/likelihood_breakdown/vertex_dedup_ab.py --config-name hpc_ral_a100_fp64 --rounds 20 --calls 20
+python3 -u scripts/point_source_image/likelihood_breakdown/vertex_dedup_ab.py --config-name hpc_ral_a100_fp64 --rounds 20 --calls 20
 
 echo "=========================================="
 nvidia-smi --query-gpu=name,memory.used --format=csv || true

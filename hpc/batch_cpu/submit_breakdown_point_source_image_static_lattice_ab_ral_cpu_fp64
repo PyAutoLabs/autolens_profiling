@@ -7,7 +7,7 @@
 # step-0 tiling (AbstractSolver._initial_triangles) inside the production
 # point-source likelihoods, on ONE pinned, quiet RAL CPU node:
 #
-#   scripts/point_source/likelihood_breakdown/static_lattice_ab.py
+#   scripts/point_source_image/likelihood_breakdown/static_lattice_ab.py
 #     control  = the flat (3N, 2) per-triangle table (phase-2 main path;
 #                69 849 step-0 rows for the simple lattice) -- the IN-JOB control;
 #     exact    = the 28 665 exact-float distinct rows + inverse map (cell-built);
@@ -59,7 +59,7 @@
 # the observed process thread count after the first compile, sched_affinity,
 # os_cpu_count and loadavg at start and end.
 #
-# Writes results/breakdown/point_source/static_lattice_ab_hpc_ral_cpu_fp64.{json,png}
+# Writes results/breakdown/point_source_image/static_lattice_ab_hpc_ral_cpu_fp64.{json,png}
 # and static_lattice_ab_constant_folding_hpc_ral_cpu_fp64.{json,png}.
 #
 # WALL-BASIS:
@@ -68,8 +68,8 @@
 #   1571 s folding on (static_lattice_ab_constant_folding_laptop_cpu_fp64; the cluster
 #   plain control compile alone took 555 s with folding on). This job runs both: 2546 s,
 #   x 2.0 headroom = 5092 s, inside the 3-hour request.
-#   cell: point_source/static_lattice_ab/simple  device: cpu  precision: fp64
-#   source: measured-wall  wall: 2546  ref: laptop-point_source-static_lattice_ab_laptop_cpu_fp64  headroom: 2.0
+#   cell: point_source_image/static_lattice_ab/simple  device: cpu  precision: fp64
+#   source: measured-wall  wall: 2546  ref: laptop-point_source_image-static_lattice_ab_laptop_cpu_fp64  headroom: 2.0
 
 #SBATCH -J static_lattice_ab
 #SBATCH --partition=ral
@@ -121,7 +121,7 @@ echo "nodelist:       ${SLURM_JOB_NODELIST:-unset}"
 echo "cpus-per-task:  ${SLURM_CPUS_PER_TASK:-unset}"
 echo "sched_affinity: $(python3 -c 'import os; print(len(os.sched_getaffinity(0)))')"
 echo "loadavg:        $(cat /proc/loadavg)"
-echo "Cell:           point_source/likelihood_breakdown/static_lattice_ab"
+echo "Cell:           point_source_image/likelihood_breakdown/static_lattice_ab"
 echo "Precision:      fp64 (JAX_ENABLE_X64=$JAX_ENABLE_X64)"
 echo "Thread env:     OMP=$OMP_NUM_THREADS MKL=$MKL_NUM_THREADS OPENBLAS=$OPENBLAS_NUM_THREADS NPROC=$NPROC"
 echo "XLA_FLAGS:      $XLA_FLAGS"
@@ -153,13 +153,13 @@ echo "=========================================="
 echo "run 1/2: constant folding DISABLED (20 x 20, simple + cluster)"
 date
 echo "loadavg: $(cat /proc/loadavg)"
-python3 -u scripts/point_source/likelihood_breakdown/static_lattice_ab.py --config-name hpc_ral_cpu_fp64 --rounds 20 --calls 20
+python3 -u scripts/point_source_image/likelihood_breakdown/static_lattice_ab.py --config-name hpc_ral_cpu_fp64 --rounds 20 --calls 20
 
 echo "=========================================="
 echo "run 2/2: constant folding ENABLED, separate process (20 x 20, simple + cluster)"
 date
 echo "loadavg: $(cat /proc/loadavg)"
-python3 -u scripts/point_source/likelihood_breakdown/static_lattice_ab.py --config-name hpc_ral_cpu_fp64 --rounds 20 --calls 20 --constant-folding
+python3 -u scripts/point_source_image/likelihood_breakdown/static_lattice_ab.py --config-name hpc_ral_cpu_fp64 --rounds 20 --calls 20 --constant-folding
 
 echo "=========================================="
 echo "loadavg: $(cat /proc/loadavg)"

@@ -7,7 +7,7 @@
 # image-plane likelihoods the campaign is trying to make cheaper, on a quiet
 # RAL CPU node, so every later phase has a baseline that is not a WSL2 laptop:
 #
-#   Leg A  scripts/point_source/likelihood_breakdown/image_plane.py
+#   Leg A  scripts/point_source_image/likelihood_breakdown/image_plane.py
 #          Galaxy-scale: the production FitPositionsImagePairAllSolved
 #          likelihood decomposed into the solved source centre, every
 #          PointSolver refinement stage (ray trace / containment / selection /
@@ -26,7 +26,7 @@
 #          first-call / steady phases under jit_phases. Compile is minutes;
 #          the fused rows are what a sampler pays per call.
 #
-# Both legs write results/breakdown/{point_source,cluster}/
+# Both legs write results/breakdown/{point_source_image,cluster}/
 # image_plane_hpc_ral_cpu_fp64.{json,png}. Their laptop counterparts are the
 # *_local_cpu_fp64 rows beside them; compare within a host, never a bare
 # millisecond across hosts.
@@ -38,7 +38,7 @@
 # thread_environment and device.cpu_count blocks record what was actually seen.
 #
 # XLA_FLAGS are set IDENTICAL to the local baseline row
-# (results/breakdown/point_source/image_plane_local_cpu_fp64.json,
+# (results/breakdown/point_source_image/image_plane_local_cpu_fp64.json,
 # device.xla_flags). activate.sh sets no XLA_FLAGS / JAX_* of its own, so the
 # export below is the only one -- there is nothing to contradict. The two
 # --xla_gpu_* flags are inert on CPU and are kept only so the recorded string
@@ -78,8 +78,8 @@
 #   of this cell (the committed cluster image_plane_local_cpu_fp64 row) took
 #   285 s wall end to end, of which the two fused compiles were ~233 s. The
 #   headroom covers a slower RAL core; the family's 4-hour request is kept.
-#   cell: point_source/image_plane/simple  device: cpu  precision: fp64
-#   source: measured-wall  wall: 1200  ref: laptop-point_source-image_plane_local_cpu_fp64  headroom: 2.0
+#   cell: point_source_image/image_plane/simple  device: cpu  precision: fp64
+#   source: measured-wall  wall: 1200  ref: laptop-point_source_image-image_plane_local_cpu_fp64  headroom: 2.0
 #   cell: cluster/image_plane/simple  device: cpu  precision: fp64
 #   source: measured-wall  wall: 285  ref: laptop-cluster-image_plane_local_cpu_fp64  headroom: 2.0
 
@@ -128,7 +128,7 @@ lscpu | grep 'Model name' || true
 echo "partition:      ${SLURM_JOB_PARTITION:-unset}"
 echo "cpus-per-task:  ${SLURM_CPUS_PER_TASK:-unset}"
 echo "loadavg:        $(cat /proc/loadavg)"
-echo "Cells:          point_source/likelihood_breakdown/image_plane, cluster/likelihood_breakdown/image_plane"
+echo "Cells:          point_source_image/likelihood_breakdown/image_plane, cluster/likelihood_breakdown/image_plane"
 echo "Precision:      fp64 (JAX_ENABLE_X64=$JAX_ENABLE_X64)"
 echo "Backend:        JAX_PLATFORMS=$JAX_PLATFORMS"
 echo "Thread env:     OMP=$OMP_NUM_THREADS MKL=$MKL_NUM_THREADS OPENBLAS=$OPENBLAS_NUM_THREADS NPROC=$NPROC"
@@ -150,7 +150,7 @@ echo "=========================================="
 echo "LEG A: point-source image-plane breakdown (galaxy scale, solved + plain control)"
 date
 echo "loadavg: $(cat /proc/loadavg)"
-python3 -u scripts/point_source/likelihood_breakdown/image_plane.py --config-name hpc_ral_cpu_fp64
+python3 -u scripts/point_source_image/likelihood_breakdown/image_plane.py --config-name hpc_ral_cpu_fp64
 
 echo "=========================================="
 echo "LEG B: cluster image-plane breakdown (per-source solves + fused plain/solved)"

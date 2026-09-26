@@ -423,7 +423,7 @@ summary = {
 
 dict_path, chart_path = resolve_output_paths(
     _cli,
-    default_dir=_ROOT / "results" / "breakdown" / "point_source",
+    default_dir=_ROOT / "results" / "breakdown" / "point_source_image",
     default_basename=f"image_plane_breakdown_{INSTRUMENT}_v{al_version}",
     cell="image_plane",
 )

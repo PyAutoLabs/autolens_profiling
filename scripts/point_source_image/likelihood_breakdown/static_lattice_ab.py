@@ -112,7 +112,7 @@ arithmetic on constants is folded in both modes, so it is no probe.)
 Output
 ------
 
-``results/breakdown/point_source/static_lattice_ab_<config_name>.{json,png}``
+``results/breakdown/point_source_image/static_lattice_ab_<config_name>.{json,png}``
 (``..._constant_folding`` suffix for the folding run). As in the phase-2 cell the JSON
 carries no top-level ``autolens_version``, so ``build_readme.py`` does not auto-table
 it. A ``laptop_*`` config is load-inflated and is recorded ``quotable: false``.
@@ -1494,7 +1494,7 @@ summary = {
 
 dict_path, chart_path = resolve_output_paths(
     _cli,
-    default_dir=_ROOT / "results" / "breakdown" / "point_source",
+    default_dir=_ROOT / "results" / "breakdown" / "point_source_image",
     default_basename="static_lattice_ab_local",
     cell="static_lattice_ab" + ("_constant_folding" if CONSTANT_FOLDING else ""),
 )
