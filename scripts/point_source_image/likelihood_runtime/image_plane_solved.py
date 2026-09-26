@@ -1,28 +1,56 @@
 """
-JAX Profiling: Point-Source Likelihood — Image-Plane Chi-Squared
-=================================================================
+JAX Profiling: Point-Source Likelihood — Image-Plane Chi-Squared (Solved)
+===========================================================================
 
 Profiles ``AnalysisPoint.log_likelihood_function`` for a lensed point-source
-``PointDataset`` using the **image-plane** chi-squared
-(``al.FitPositionsImagePairAll``).
+``PointDataset`` using the **analytically-solved image-plane** chi-squared
+(``al.FitPositionsImagePairAllSolved``), the sibling of ``image_plane.py``
+introduced in issue #657 phase 3.
 
-Image-plane fitting solves for the model multiple-image positions in the
-image plane via the ``PointSolver`` (which JIT-traces a triangle-refinement
-loop), pairs each model image with the closest observed image, and computes
-a chi-squared in image-plane coordinates.
+Instead of sampling the source's centre as 2 free model parameters, this
+variant pairs a zero-parameter ``al.ps.PointSolved`` profile with a
+``*Solved`` fit class, which analytically solves for the source-plane centre
+β* (tensor-weighted precision, Lombardi 2024 arXiv:2406.15280 §5.1) from the
+current tracer before handing that centre to the same ``PointSolver``
+forward-solve used by the non-solved image-plane path. The image-plane
+pairing chi-squared itself is unchanged from ``image_plane.py`` — only the
+source of the centre driving the solve differs, and using a centre-free
+extension in the image plane at all is **not** from the paper: it mirrors
+glafic's source-position optimization convention, so attribute it as an
+extension, not a paper result (see ``autolens/point/fit/solved.py`` module
+docstring, which makes this attribution split explicit).
 
-Unlike the source-plane variant (see ``source_plane.py``), the full
-image-plane pipeline IS JIT-traceable end-to-end because ``PointSolver``
-threads ``xp=jnp`` through every step and ``FitPositionsImagePairAll``
-constructs its model-data via JAX-friendly operations.
+Parameter-count delta
+----------------------
+
+Swapping ``al.ps.PointFlux`` (used by ``image_plane.py``: 2 centre + 1 flux
+= 3 params) for ``al.ps.PointSolved`` (0 params) drops the model from 8 to 5
+free parameters here — a delta of 3, not the 2 you would expect from the
+paper's centre-only framing. 2 of those 3 are the analytically-solved
+source-plane centre; the third is the flux parameter, which this
+positions-only harness (``point_dataset_positions_only.json``, no flux
+data fitted) never actually used regardless of PointFlux vs PointSolved —
+dropping it is a side effect of PointSolved having no flux attribute at
+all, not part of the phase-3 analytic-solve story.
+
+Second steady-state entry
+--------------------------
+
+In addition to the primary ``FitPositionsImagePairAllSolved`` full-pipeline
+JIT/vmap timings (mirroring ``image_plane.py`` exactly), this script also
+times ``al.FitPositionsImagePairRepeatSolved`` at the same compiled-input
+shape (identical ``params_tree`` / dataset / solver) as a second
+steady-state entry — a modest addition since only ``fit_positions_cls``
+differs between the two ``AnalysisPoint`` instances. This second entry is
+timing-only: it is not part of the vmap / memory / regression-pin machinery
+below, which stays scoped to the primary AllSolved fit class.
 
 Pytree-native parameter inputs
 ------------------------------
 
-This script uses ``af.ModelInstance`` as the JIT input via PyAutoFit's
-opt-in pytree registration (``autofit.jax.register_model``, PRs #1220 /
-#1221 / #1222).  The JIT'd closure consumes the registered instance
-directly, mirroring the pattern in ``../imaging/mge.py``.
+As in ``image_plane.py``, this script uses ``af.ModelInstance`` as the JIT
+input via PyAutoFit's opt-in pytree registration
+(``autofit.jax.register_model``, PRs #1220 / #1221 / #1222).
 
 Three-tier numerical assertions
 -------------------------------
@@ -31,10 +59,12 @@ Three-tier numerical assertions
 2. **JIT ≡ vmap**: every entry of the batched vmap output matches the
    single-JIT result.
 3. **regression constant**: hardcoded
-   ``EXPECTED_LOG_LIKELIHOOD_IMAGE_PLANE`` guards against silent drift in
-   the underlying solver / chi-squared stack.  This depends on the seeded
-   simulator (``noise_seed=1`` in ``simulators/point_source.py``) staying
-   bit-stable.
+   ``EXPECTED_LOG_LIKELIHOOD_IMAGE_PLANE_SOLVED`` guards against silent
+   drift in the underlying solver / chi-squared / analytic-solve stack.
+   Captured during authoring against the dataset already committed in this
+   worktree (``noise_seed=1`` in ``simulators/point_source.py``); refresh it
+   the same way ``image_plane.py`` documents if the dataset or priors
+   change.
 """
 
 import sys as _sys
@@ -104,7 +134,7 @@ import matplotlib.pyplot as plt
 from autofit.jax import register_model as _register_model_pytrees
 
 # ---------------------------------------------------------------------------
-# Profiling helpers (mirrors imaging/mge.py and source_plane.py)
+# Profiling helpers (mirrors imaging/mge.py and image_plane.py)
 # ---------------------------------------------------------------------------
 
 
@@ -202,7 +232,7 @@ with timer.section("solver_build"):
         magnification_threshold=0.1,
     )
 
-print("\n--- Model construction ---")
+print("\n--- Model construction (PointSolved — 0 source params) ---")
 
 with timer.section("model_build"):
     # GaussianPrior(mean=truth, sigma=small) centres prior-median at the
@@ -216,7 +246,10 @@ with timer.section("model_build"):
     #   Isothermal at centre=(0, 0), einstein_radius=1.6,
     #   ell_comps = al.convert.ell_comps_from(axis_ratio=0.9, angle=45°)
     #            ≈ (0.0526316, 0.0)
-    #   source point_0.centre = (0.07, 0.07)
+    #   source point_0.centre = (0.07, 0.07) — NOT used here: `PointSolved`
+    #   has no `centre` at all, so there is nothing to prior-align on the
+    #   source side. The analytic solve (see module docstring) recovers the
+    #   source-plane centre from the tracer + observed positions instead.
     mass = af.Model(al.mp.Isothermal)
     mass.centre.centre_0 = af.GaussianPrior(mean=0.0, sigma=0.005)
     mass.centre.centre_1 = af.GaussianPrior(mean=0.0, sigma=0.005)
@@ -225,14 +258,20 @@ with timer.section("model_build"):
     mass.ell_comps.ell_comps_1 = af.GaussianPrior(mean=0.0, sigma=0.01)
     lens = af.Model(al.Galaxy, redshift=0.5, mass=mass)
 
-    point_0 = af.Model(al.ps.PointFlux)
-    point_0.centre.centre_0 = af.GaussianPrior(mean=0.07, sigma=0.005)
-    point_0.centre.centre_1 = af.GaussianPrior(mean=0.07, sigma=0.005)
+    # `PointSolved` has no `centre` / `flux` attributes, so no priors to set
+    # here — that is the whole point of the analytic solve.
+    point_0 = af.Model(al.ps.PointSolved)
     source = af.Model(al.Galaxy, redshift=1.0, point_0=point_0)
 
     model = af.Collection(galaxies=af.Collection(lens=lens, source=source))
 
 print(f"  Total free parameters: {model.total_free_parameters}")
+print(
+    "  (was 8 with al.ps.PointFlux in image_plane.py: 5 mass + 2 centre + 1 flux; "
+    f"PointSolved drops all 3 source params -> {model.total_free_parameters} mass-only. "
+    "2 of the 3 are the analytically-solved source centre (paper Sec 5.1 beta*); the "
+    "3rd is the flux param this positions-only dataset never fits either way.)"
+)
 
 print("\n--- Instantiate concrete model ---")
 
@@ -247,15 +286,15 @@ params_tree = jax.tree_util.tree_map(jnp.asarray, instance)
 
 
 # ---------------------------------------------------------------------------
-# Eager baseline — full FitPointDataset (image-plane chi-squared)
+# Eager baseline — full FitPointDataset (image-plane chi-squared, solved)
 # ---------------------------------------------------------------------------
 
-print("\n--- Eager FitPointDataset (image-plane) ---")
+print("\n--- Eager FitPointDataset (image-plane, solved) ---")
 
 analysis_eager = al.AnalysisPoint(
     dataset=dataset,
     solver=solver,
-    fit_positions_cls=al.FitPositionsImagePairAll,
+    fit_positions_cls=al.FitPositionsImagePairAllSolved,
     use_jax=False,
 )
 
@@ -276,17 +315,17 @@ print(f"  eager per-call   = {eager_per_call:.6f} s")
 
 
 # ===================================================================
-# PART B — Full-pipeline JIT
+# PART B — Full-pipeline JIT (FitPositionsImagePairAllSolved)
 # ===================================================================
 
 print("\n" + "=" * 70)
-print("FULL-PIPELINE JIT (image-plane)")
+print("FULL-PIPELINE JIT (image-plane, solved)")
 print("=" * 70)
 
 analysis_jax = al.AnalysisPoint(
     dataset=dataset,
     solver=solver,
-    fit_positions_cls=al.FitPositionsImagePairAll,
+    fit_positions_cls=al.FitPositionsImagePairAllSolved,
     use_jax=True,
 )
 
@@ -299,6 +338,37 @@ _, full_result = jit_profile(full_pipeline_from_params, "full_pipeline", params_
 full_pipeline_per_call = timer.records[-1][1] / 10
 print(f"  full log_likelihood = {full_result}")
 
+
+# ===================================================================
+# PART B.2 — Second steady-state entry: FitPositionsImagePairRepeatSolved
+# ===================================================================
+#
+# Same compiled-input shape as PART B (identical params_tree / dataset /
+# solver, only fit_positions_cls differs) — a modest addition on top of the
+# AllSolved profiling above, since the phase-3 economics question also cares
+# about the nearest-pair-with-repeats scheme, not just the all-pairs one.
+
+print("\n" + "=" * 70)
+print("SECOND STEADY-STATE (image-plane, solved): FitPositionsImagePairRepeatSolved")
+print("=" * 70)
+
+analysis_jax_repeat = al.AnalysisPoint(
+    dataset=dataset,
+    solver=solver,
+    fit_positions_cls=al.FitPositionsImagePairRepeatSolved,
+    use_jax=True,
+)
+
+
+def repeat_pipeline_from_params(params_tree):
+    return analysis_jax_repeat.log_likelihood_function(instance=params_tree)
+
+
+_, repeat_result = jit_profile(repeat_pipeline_from_params, "repeat_fit_class", params_tree)
+repeat_fit_class_per_call = timer.records[-1][1] / 10
+print(f"  FitPositionsImagePairRepeatSolved log_likelihood = {repeat_result}")
+
+
 # ===================================================================
 # PART B.5 — vmap-probe mode (early exit)
 # ===================================================================
@@ -307,6 +377,8 @@ print(f"  full log_likelihood = {full_result}")
 # configured batch sizes, reads ``compiled.memory_analysis()``, writes a
 # ``vmap_probe.json`` with the recommended A100 batch_size, and exits
 # before the full vmap timing loop. See ``vram/README.md`` for methodology.
+# Scoped to the primary AllSolved fit class only — the repeat-class timing
+# above is a bonus entry, not part of this machinery.
 
 if _cli.vmap_probe:
     probe = probe_vmap_memory(
@@ -314,17 +386,17 @@ if _cli.vmap_probe:
         params_tree,
         batch_sizes=(1, 4, 16),
         dataset="point_source",
-        model="image_plane",
+        model="image_plane_solved",
         instrument=instrument,
     )
     recommended = recommend_batch_size(probe)
     probe_path = (
         _cli.output_dir
-        or (_workspace_root / "results" / "runtime" / "point_source" / "image_plane")
+        or (_workspace_root / "results" / "runtime" / "point_source_image" / "image_plane_solved")
     ) / (
-        "vmap_probe_image_plane_sparse.json"
+        "vmap_probe_image_plane_solved_sparse.json"
         if _cli.use_sparse_operator
-        else "vmap_probe_image_plane.json"
+        else "vmap_probe_image_plane_solved.json"
     )
     write_probe_json(probe, recommended, probe_path)
     print(f"\n  vmap_probe samples: {probe.samples}")
@@ -341,10 +413,10 @@ print("\n--- vmap batched evaluation ---")
 
 _batch_resolved, _batch_source = resolve_vmap_batch(
     "point_source",
-    "image_plane",
+    "image_plane_solved",
     instrument,
     output_dir=_cli.output_dir
-    or (_workspace_root / "results" / "runtime" / "point_source" / "image_plane"),
+    or (_workspace_root / "results" / "runtime" / "point_source_image" / "image_plane_solved"),
     path="sparse" if _cli.use_sparse_operator else "dense",
     backend=jax.default_backend(),
 )
@@ -392,7 +464,7 @@ np.testing.assert_allclose(
     float(full_result),
     rtol=1e-4,
     err_msg=(
-        f"point_source/image_plane: eager vs JIT mismatch — "
+        f"point_source/image_plane_solved: eager vs JIT mismatch — "
         f"eager={log_likelihood_ref} vs JIT={float(full_result)}"
     ),
 )
@@ -401,7 +473,7 @@ np.testing.assert_allclose(
     np.array(result_vmap),
     float(full_result),
     rtol=1e-4,
-    err_msg="point_source/image_plane: JIT vs vmap mismatch",
+    err_msg="point_source/image_plane_solved: JIT vs vmap mismatch",
 )
 
 
@@ -426,16 +498,25 @@ print(f"  Total:        {(mem.output_size_in_bytes + mem.temp_size_in_bytes) / 1
 al_version = al.__version__
 
 print("\n" + "=" * 70)
-print(f"JAX LIKELIHOOD SUMMARY — POINT SOURCE IMAGE-PLANE — v{al_version}")
+print(f"JAX LIKELIHOOD SUMMARY — POINT SOURCE IMAGE-PLANE SOLVED — v{al_version}")
 print("=" * 70)
 print(f"  Dataset:                    {instrument}")
 print(f"  Observed image positions:   {n_observed_positions}")
 print(f"  Position noise sigma:       {positions_noise_sigma}")
-print(f"  Free parameters:            {model.total_free_parameters}")
-print("  fit_positions_cls:          FitPositionsImagePairAll (image-plane chi-squared)")
+print(
+    f"  Free parameters:            {model.total_free_parameters}  "
+    "(image_plane.py: 8; delta=-3 -> -2 solved centre, -1 unused flux)"
+)
+print(
+    "  fit_positions_cls:          FitPositionsImagePairAllSolved (image-plane chi-squared, solved centre)"
+)
 print("-" * 70)
 print(f"  Eager full likelihood:      {eager_per_call:.6f} s/call  ({log_likelihood_ref:.6f})")
 print(f"  Full pipeline (JIT):        {full_pipeline_per_call:.6f} s/call")
+print(
+    f"  Repeat fit class (JIT):     {repeat_fit_class_per_call:.6f} s/call  "
+    f"(FitPositionsImagePairRepeatSolved, {float(repeat_result):.6f})"
+)
 print(f"  vmap per-call (batch={batch_size}):    {vmap_per_call:.6f} s")
 print(f"  vmap speedup vs single JIT:           {vmap_speedup:.1f}x")
 print("=" * 70)
@@ -443,16 +524,24 @@ print("=" * 70)
 likelihood_summary = {
     "autolens_version": al_version,
     "dataset": instrument,
-    "fit_positions_cls": "FitPositionsImagePairAll",
+    "fit_positions_cls": "FitPositionsImagePairAllSolved",
     "configuration": {
         "observed_image_positions": int(n_observed_positions),
         "positions_noise_sigma": positions_noise_sigma,
         "free_parameters": int(model.total_free_parameters),
+        "free_parameters_image_plane_plain": 8,
+        "free_parameters_delta": int(model.total_free_parameters) - 8,
+        "point_source_profile": "PointSolved",
     },
     "eager_per_call": eager_per_call,
     "eager_log_likelihood": log_likelihood_ref,
     "full_pipeline_single_jit": full_pipeline_per_call,
     "full_pipeline_log_likelihood": float(full_result),
+    "repeat_fit_class_steady_state": {
+        "fit_positions_cls": "FitPositionsImagePairRepeatSolved",
+        "per_call": repeat_fit_class_per_call,
+        "log_likelihood": float(repeat_result),
+    },
     "vmap": {
         "batch_size": batch_size,
         "batch_time": vmap_batch_time,
@@ -461,10 +550,10 @@ likelihood_summary = {
     },
 }
 
-results_dir = _workspace_root / "results" / "runtime" / "point_source" / "image_plane"
+results_dir = _workspace_root / "results" / "runtime" / "point_source_image" / "image_plane_solved"
 results_dir.mkdir(parents=True, exist_ok=True)
 
-dict_path = results_dir / f"image_plane_summary_v{al_version}.json"
+dict_path = results_dir / f"image_plane_solved_summary_v{al_version}.json"
 dict_path.write_text(json.dumps(likelihood_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")
 
@@ -472,13 +561,14 @@ print(f"\n  Results dict saved to: {dict_path}")
 
 labels = [
     "Eager full likelihood",
-    "Full pipeline (JIT)",
+    "Full pipeline (JIT, AllSolved)",
+    "Repeat fit class (JIT, RepeatSolved)",
     f"vmap per-call (batch={batch_size})",
 ]
-times = [eager_per_call, full_pipeline_per_call, vmap_per_call]
-colors = ["#8172B3", "#C44E52", "#55A868"]
+times = [eager_per_call, full_pipeline_per_call, repeat_fit_class_per_call, vmap_per_call]
+colors = ["#8172B3", "#C44E52", "#DD8452", "#55A868"]
 
-fig, ax = plt.subplots(figsize=(10, 4.0))
+fig, ax = plt.subplots(figsize=(10, 4.5))
 y_pos = range(len(labels))
 bars = ax.barh(y_pos, times, color=colors, edgecolor="white", height=0.6)
 
@@ -496,20 +586,20 @@ ax.set_yticklabels(labels, fontsize=10)
 ax.invert_yaxis()
 ax.set_xlabel("Time per call (s)", fontsize=11)
 fig.suptitle(
-    "Point-Source Likelihood — Image-Plane Chi-Squared",
+    "Point-Source Likelihood — Image-Plane Chi-Squared (Solved)",
     fontsize=12,
     fontweight="bold",
 )
 ax.set_title(
     f"AutoLens v{al_version}  |  {n_observed_positions} positions  |  "
-    f"{model.total_free_parameters} free params  |  "
+    f"{model.total_free_parameters} free params (was 8)  |  "
     f"vmap speedup: {vmap_speedup:.1f}x",
     fontsize=9,
 )
 ax.margins(x=0.20)
 fig.tight_layout()
 
-chart_path = results_dir / f"image_plane_summary_v{al_version}.png"
+chart_path = results_dir / f"image_plane_solved_summary_v{al_version}.png"
 fig.savefig(chart_path, dpi=150)
 plt.close(fig)
 print(f"  Bar chart saved to:    {chart_path}")
@@ -521,18 +611,17 @@ print(f"  Bar chart saved to:    {chart_path}")
 #
 # Simulator truth parameters + seeded noise (noise_seed=1 in
 # simulators/point_source.py) make the image-plane log-likelihood
-# deterministic. Eager, JIT, and vmap all agree to float64.
-# Constant refreshed 2026-05-16 alongside the prior-truth-alignment fix
-# above. The previous value (0.07475703623045682) was set on 2026-04-24
-# against an earlier dataset+priors combination that has since been
-# regenerated; the new value reflects the current truth-aligned
-# evaluation against the dataset committed in
-# autolens_workspace_developer@f8a5cef.
+# deterministic; PointSolved's analytic centre solve is itself a
+# deterministic function of the tracer + observed positions, so eager, JIT,
+# and vmap all agree to float64. Constant captured 2026-07-30 during
+# authoring of this script (issue #657 phase 3) against the dataset already
+# committed in this worktree (v2026.7.23.1); refresh it the same way
+# image_plane.py documents if the dataset or mass priors change.
 _pinned_drift: list = []
 _pinned_expected = None
 
-EXPECTED_LOG_LIKELIHOOD_IMAGE_PLANE = 7.196577317761017
-_pinned_expected = EXPECTED_LOG_LIKELIHOOD_IMAGE_PLANE
+EXPECTED_LOG_LIKELIHOOD_IMAGE_PLANE_SOLVED = 7.743201200876817
+_pinned_expected = EXPECTED_LOG_LIKELIHOOD_IMAGE_PLANE_SOLVED
 
 _rec = check_pinned(log_likelihood_ref, _pinned_expected, label="eager", rtol=1e-4)
 if _rec is not None:

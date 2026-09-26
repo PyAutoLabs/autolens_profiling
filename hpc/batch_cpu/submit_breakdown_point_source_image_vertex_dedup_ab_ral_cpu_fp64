@@ -7,7 +7,7 @@
 # CoordinateArrayTriangles._vertices_and_indices inside the production
 # point-source likelihoods, on a quiet RAL CPU node:
 #
-#   scripts/point_source/likelihood_breakdown/vertex_dedup_ab.py
+#   scripts/point_source_image/likelihood_breakdown/vertex_dedup_ab.py
 #     control  = the PRE-fix jnp.unique(size=3N) body, carried verbatim in the
 #                cell (copied from PyAutoArray main 11b93476);
 #     nodedup  = the POST-fix body (flat 3N vertex table + arange index map);
@@ -28,7 +28,7 @@
 # installed. Only the `library` route (and its library_matches label) does --
 # before the #568 fix is merged and synced it should read `control`.
 #
-# Writes results/breakdown/point_source/vertex_dedup_ab_hpc_ral_cpu_fp64.{json,png}.
+# Writes results/breakdown/point_source_image/vertex_dedup_ab_hpc_ral_cpu_fp64.{json,png}.
 # The laptop witness is vertex_dedup_ab_local_cpu_fp64 beside it; compare
 # ratios within a host, never a bare millisecond across hosts.
 #
@@ -74,8 +74,8 @@
 #   (the JSON's wall_s), almost all of it the 18 route compiles. The phase-1
 #   RAL rows compiled ~2x faster than the laptop; the 2.0 headroom and the
 #   3-hour request cover a slower or busier node regardless.
-#   cell: point_source/vertex_dedup_ab/simple  device: cpu  precision: fp64
-#   source: measured-wall  wall: 939  ref: laptop-point_source-vertex_dedup_ab_local_cpu_fp64  headroom: 2.0
+#   cell: point_source_image/vertex_dedup_ab/simple  device: cpu  precision: fp64
+#   source: measured-wall  wall: 939  ref: laptop-point_source_image-vertex_dedup_ab_local_cpu_fp64  headroom: 2.0
 
 #SBATCH -J vertex_dedup_ab
 #SBATCH --partition=ral
@@ -125,7 +125,7 @@ echo "partition:      ${SLURM_JOB_PARTITION:-unset}"
 echo "cpus-per-task:  ${SLURM_CPUS_PER_TASK:-unset}"
 echo "sched_affinity: $(python3 -c 'import os; print(len(os.sched_getaffinity(0)))')"
 echo "loadavg:        $(cat /proc/loadavg)"
-echo "Cell:           point_source/likelihood_breakdown/vertex_dedup_ab"
+echo "Cell:           point_source_image/likelihood_breakdown/vertex_dedup_ab"
 echo "Precision:      fp64 (JAX_ENABLE_X64=$JAX_ENABLE_X64)"
 echo "Backend:        JAX_PLATFORMS=$JAX_PLATFORMS"
 echo "Thread env:     OMP=$OMP_NUM_THREADS MKL=$MKL_NUM_THREADS OPENBLAS=$OPENBLAS_NUM_THREADS NPROC=$NPROC"
@@ -147,7 +147,7 @@ echo "=========================================="
 echo "vertex-dedup A/B: control vs nodedup vs library (simple + cluster, full protocol)"
 date
 echo "loadavg: $(cat /proc/loadavg)"
-python3 -u scripts/point_source/likelihood_breakdown/vertex_dedup_ab.py --config-name hpc_ral_cpu_fp64
+python3 -u scripts/point_source_image/likelihood_breakdown/vertex_dedup_ab.py --config-name hpc_ral_cpu_fp64
 
 echo "=========================================="
 echo "loadavg: $(cat /proc/loadavg)"

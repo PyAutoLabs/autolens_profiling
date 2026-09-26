@@ -3,7 +3,7 @@
 Issue: [autolens_profiling #297](https://github.com/PyAutoLabs/autolens_profiling/issues/297) (phase 1); [PyAutoArray #568](https://github.com/PyAutoLabs/PyAutoArray/issues/568) (phase 2)  
 Branch: `feature/point-source-cpu-p1` (phase 1); `feature/point-source-cpu-p2` (phase 2, PyAutoArray + autolens_profiling); `feature/point-source-cpu-p3` (phase 3, PyAutoArray + PyAutoLens + autolens_profiling)  
 Status: phase 1 **DONE** (RAL baseline, job 350580); phase 2 **DONE, ACCEPTED** (vertex-dedup A/B, RAL job 350582: 4.47× simple, 1.98× cluster, bit-identical; library change awaiting merge and release); phase 3 **DONE, ACCEPTED** (static step-0 lattice A/B, RAL jobs 350636 CPU / 350637 A100: CPU control → library 2.0–2.1× simple, 1.43× vmap-4, 5.2× cluster, compile +3–12 %, all 31 gates bit-identical; source-on-vertex tie case PASSED by human decision 2026-09-24, pinned as PyAutoLens `test__source_on_a_step_0_vertex_returns_the_two_true_images`); phase 4 not started  
-Instrument: [`scripts/point_source/likelihood_breakdown/image_plane.py`](../../scripts/point_source/likelihood_breakdown/image_plane.py)
+Instrument: [`scripts/point_source_image/likelihood_breakdown/image_plane.py`](../../scripts/point_source_image/likelihood_breakdown/image_plane.py)
 (shipped in #293, see [point_source_shared_likelihood_breakdown.md](point_source_shared_likelihood_breakdown.md))
 and [`scripts/cluster/likelihood_breakdown/image_plane.py`](../../scripts/cluster/likelihood_breakdown/image_plane.py)
 
@@ -252,7 +252,7 @@ export OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 NPROC=8
 export JAX_PLATFORMS=cpu JAX_ENABLE_X64=1
 export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
 export NUMBA_CACHE_DIR=/tmp/numba_cache MPLCONFIGDIR=/tmp/matplotlib
-python scripts/point_source/likelihood_breakdown/image_plane.py --config-name local_cpu_fp64
+python scripts/point_source_image/likelihood_breakdown/image_plane.py --config-name local_cpu_fp64
 python scripts/cluster/likelihood_breakdown/image_plane.py --config-name local_cpu_fp64
 ```
 
@@ -272,13 +272,13 @@ The submit ([`hpc/batch_cpu/submit_breakdown_point_source_image_plane_ral_cpu_fp
 runs both legs with `python3 -u … --config-name hpc_ral_cpu_fp64`. Job 350580
 produced:
 
-- [`results/breakdown/point_source/image_plane_hpc_ral_cpu_fp64.json`](../breakdown/point_source/image_plane_hpc_ral_cpu_fp64.json) and [`.png`](../breakdown/point_source/image_plane_hpc_ral_cpu_fp64.png)
+- [`results/breakdown/point_source_image/image_plane_hpc_ral_cpu_fp64.json`](../breakdown/point_source_image/image_plane_hpc_ral_cpu_fp64.json) and [`.png`](../breakdown/point_source_image/image_plane_hpc_ral_cpu_fp64.png)
 - [`results/breakdown/cluster/image_plane_hpc_ral_cpu_fp64.json`](../breakdown/cluster/image_plane_hpc_ral_cpu_fp64.json) and [`.png`](../breakdown/cluster/image_plane_hpc_ral_cpu_fp64.png)
 - the job log [`point_source_cpu_2026_09_23_ral_job_350580.out`](point_source_cpu_2026_09_23_ral_job_350580.out)
 
 The auto-simulate step also wrote a `results/simulators/cluster_summary_v2026.8.17.1.*`
 on RAL; it was not harvested. The laptop counterparts are
-[`point_source/image_plane_local_cpu_fp64.json`](../breakdown/point_source/image_plane_local_cpu_fp64.json)
+[`point_source_image/image_plane_local_cpu_fp64.json`](../breakdown/point_source_image/image_plane_local_cpu_fp64.json)
 (#293) and [`cluster/image_plane_local_cpu_fp64.json`](../breakdown/cluster/image_plane_local_cpu_fp64.json).
 
 ### Follow-ups found in phase 1 (not fixed)
@@ -307,7 +307,7 @@ Library issue: [PyAutoArray #568](https://github.com/PyAutoLabs/PyAutoArray/issu
 Library branch: PyAutoArray `feature/point-source-cpu-p2` (on main `11b93476`), with
 commits `273e152e` (the fix) and `25894d10` (the tests). Profiling branch:
 `feature/point-source-cpu-p2`. Instrument:
-[`scripts/point_source/likelihood_breakdown/vertex_dedup_ab.py`](../../scripts/point_source/likelihood_breakdown/vertex_dedup_ab.py).
+[`scripts/point_source_image/likelihood_breakdown/vertex_dedup_ab.py`](../../scripts/point_source_image/likelihood_breakdown/vertex_dedup_ab.py).
 
 ### Mechanism (research note §3, now confirmed on current code)
 
@@ -375,7 +375,7 @@ came from `CoordinateArrayTriangles._vertices_and_indices`, which on main called
   the cell ran 5. The 100 samples per route still give bootstrap CIs of ±2 % on
   the ratio, so this does not change the decision.
 - **Provenance defect in the laptop JSON (not edited).** In the committed
-  [`vertex_dedup_ab_local_cpu_fp64.json`](../breakdown/point_source/vertex_dedup_ab_local_cpu_fp64.json),
+  [`vertex_dedup_ab_local_cpu_fp64.json`](../breakdown/point_source_image/vertex_dedup_ab_local_cpu_fp64.json),
   the provenance strings `control_source.body` and `nodedup_body` hold the
   **wrong function texts**: `_profiling_root` and the control body respectively.
   The script was edited during the run, and `inspect.getsource` then read stale
@@ -581,8 +581,8 @@ regression**.
   It sets a ~4 % floor on what this protocol can resolve on GPU. The
   control/nodedup effect is 20–25× that floor.
 
-  JSON [`vertex_dedup_ab_hpc_ral_a100_fp64.json`](../breakdown/point_source/vertex_dedup_ab_hpc_ral_a100_fp64.json)
-  and [`.png`](../breakdown/point_source/vertex_dedup_ab_hpc_ral_a100_fp64.png).
+  JSON [`vertex_dedup_ab_hpc_ral_a100_fp64.json`](../breakdown/point_source_image/vertex_dedup_ab_hpc_ral_a100_fp64.json)
+  and [`.png`](../breakdown/point_source_image/vertex_dedup_ab_hpc_ral_a100_fp64.png).
   Log [`point_source_cpu_2026_09_24_ral_job_350587_vertex_dedup_ab_a100.out`](point_source_cpu_2026_09_24_ral_job_350587_vertex_dedup_ab_a100.out),
   with an empty stderr. Submit
   [`hpc/batch_gpu/submit_breakdown_point_source_vertex_dedup_ab_a100_fp64`](../../hpc/batch_gpu/submit_breakdown_point_source_vertex_dedup_ab_a100_fp64).
@@ -684,7 +684,7 @@ export OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 NPROC=8
 export JAX_PLATFORMS=cpu JAX_ENABLE_X64=1
 export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
 export NUMBA_CACHE_DIR=/tmp/numba_cache MPLCONFIGDIR=/tmp/matplotlib
-python3 -u scripts/point_source/likelihood_breakdown/vertex_dedup_ab.py --config-name local_cpu_fp64
+python3 -u scripts/point_source_image/likelihood_breakdown/vertex_dedup_ab.py --config-name local_cpu_fp64
 ```
 
 The cell injects both `control` and `nodedup`. Which library is installed only
@@ -707,13 +707,13 @@ It uses `ral`, 8 CPUs, a fresh per-job JAX cache, and prints provenance and
 affinity. The absent `dataset/cluster/simple` is auto-simulated, as in phase 1.
 Job 350582 produced:
 
-- [`results/breakdown/point_source/vertex_dedup_ab_hpc_ral_cpu_fp64.json`](../breakdown/point_source/vertex_dedup_ab_hpc_ral_cpu_fp64.json) and [`.png`](../breakdown/point_source/vertex_dedup_ab_hpc_ral_cpu_fp64.png)
+- [`results/breakdown/point_source_image/vertex_dedup_ab_hpc_ral_cpu_fp64.json`](../breakdown/point_source_image/vertex_dedup_ab_hpc_ral_cpu_fp64.json) and [`.png`](../breakdown/point_source_image/vertex_dedup_ab_hpc_ral_cpu_fp64.png)
 - the job log [`point_source_cpu_2026_09_23_ral_job_350582_vertex_dedup_ab.out`](point_source_cpu_2026_09_23_ral_job_350582_vertex_dedup_ab.out)
   (stderr held only the benign `No blurring_image provided` warning)
 
 The laptop witness is
-[`vertex_dedup_ab_local_cpu_fp64.json`](../breakdown/point_source/vertex_dedup_ab_local_cpu_fp64.json)
-and [`.png`](../breakdown/point_source/vertex_dedup_ab_local_cpu_fp64.png).
+[`vertex_dedup_ab_local_cpu_fp64.json`](../breakdown/point_source_image/vertex_dedup_ab_local_cpu_fp64.json)
+and [`.png`](../breakdown/point_source_image/vertex_dedup_ab_local_cpu_fp64.png).
 Library: PyAutoArray `feature/point-source-cpu-p2`, commits `273e152e` (fix)
 and `25894d10` (tests), on `11b93476`.
 
@@ -1023,12 +1023,12 @@ cd hpc/batch_cpu && sbatch submit_breakdown_point_source_static_lattice_ab_ral_c
 cd ../batch_gpu && sbatch submit_breakdown_point_source_static_lattice_ab_a100_fp64
 ```
 
-JSONs and PNGs: [`static_lattice_ab_hpc_ral_cpu_fp64`](../breakdown/point_source/static_lattice_ab_hpc_ral_cpu_fp64.json)
-([png](../breakdown/point_source/static_lattice_ab_hpc_ral_cpu_fp64.png)),
-[`static_lattice_ab_constant_folding_hpc_ral_cpu_fp64`](../breakdown/point_source/static_lattice_ab_constant_folding_hpc_ral_cpu_fp64.json)
-([png](../breakdown/point_source/static_lattice_ab_constant_folding_hpc_ral_cpu_fp64.png)),
-[`static_lattice_ab_hpc_ral_a100_fp64`](../breakdown/point_source/static_lattice_ab_hpc_ral_a100_fp64.json)
-([png](../breakdown/point_source/static_lattice_ab_hpc_ral_a100_fp64.png)).
+JSONs and PNGs: [`static_lattice_ab_hpc_ral_cpu_fp64`](../breakdown/point_source_image/static_lattice_ab_hpc_ral_cpu_fp64.json)
+([png](../breakdown/point_source_image/static_lattice_ab_hpc_ral_cpu_fp64.png)),
+[`static_lattice_ab_constant_folding_hpc_ral_cpu_fp64`](../breakdown/point_source_image/static_lattice_ab_constant_folding_hpc_ral_cpu_fp64.json)
+([png](../breakdown/point_source_image/static_lattice_ab_constant_folding_hpc_ral_cpu_fp64.png)),
+[`static_lattice_ab_hpc_ral_a100_fp64`](../breakdown/point_source_image/static_lattice_ab_hpc_ral_a100_fp64.json)
+([png](../breakdown/point_source_image/static_lattice_ab_hpc_ral_a100_fp64.png)).
 Logs: [`point_source_cpu_2026_09_24_ral_job_350636_static_lattice_ab.out`](point_source_cpu_2026_09_24_ral_job_350636_static_lattice_ab.out),
 [`point_source_cpu_2026_09_24_ral_job_350637_static_lattice_ab_a100.out`](point_source_cpu_2026_09_24_ral_job_350637_static_lattice_ab_a100.out).
 
