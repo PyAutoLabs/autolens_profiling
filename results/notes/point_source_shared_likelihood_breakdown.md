@@ -85,7 +85,7 @@ CPU campaign ledger: [point_source_cpu_campaign.md](point_source_cpu_campaign.md
 Example A100 invocation after updating the RAL checkout and PyAuto stack:
 
 ```bash
-python scripts/point_source/likelihood_breakdown/image_plane.py \
+python scripts/point_source_image/likelihood_breakdown/image_plane.py \
   --config-name hpc_a100_fp64
 ```
 

@@ -115,8 +115,8 @@ Results are framed by **astronomy instrument** (HST, Euclid, JWST, …) rather t
 | `interferometer/preload` | alma | local_cpu_fp64 | sparse (numba) | — | v2026.8.17.1 |
 | `interferometer/preload` | alma_high | local_cpu_fp64 | sparse (numba) | — | v2026.8.17.1 |
 | `interferometer/preload` | sma | local_cpu_fp64 | sparse (numba) | — | v2026.8.17.1 |
-| `point_source/image_plane` | simple | local_cpu_fp64 | dense (mapping) | 62.7 ms | v2026.8.17.1 |
-| `point_source/image_plane` | simple | hpc_ral_cpu_fp64 | dense (mapping) | 24.7 ms | v2026.8.17.1 |
+| `point_source_image/image_plane` | simple | local_cpu_fp64 | dense (mapping) | 62.7 ms | v2026.8.17.1 |
+| `point_source_image/image_plane` | simple | hpc_ral_cpu_fp64 | dense (mapping) | 24.7 ms | v2026.8.17.1 |
 | `point_source_source/source_plane` | simple | local_cpu_fp64 | dense (mapping) | 438 μs | v2026.8.17.1 |
 <!-- END auto-table:headline -->
 
@@ -314,7 +314,7 @@ not versioned by filename.
 ## Section index
 
 Scripts are laid out **dataset-first, task-second**: `scripts/<dataset>/<task>/<model>.py`
-(`imaging` / `interferometer` / `point_source` / `multi_dataset` / `cluster`), mirroring the
+(`imaging` / `interferometer` / `point_source_image` / `point_source_source` / `multi_dataset` / `cluster`), mirroring the
 `autolens_workspace*` repos. Each task's shared drivers, framework and narrative README (with the
 auto-tables) live under `scripts/misc/<task>/`; dataset-agnostic tooling lives under `scripts/misc/`.
 
