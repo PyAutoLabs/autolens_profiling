@@ -13,11 +13,19 @@ A value of ``None`` means vmap is **intentionally skipped or blocked**
 for that cell:
 
 - Datacube cells: natural batching axis is "channels", not "parameters".
-- Interferometer mge at ALMA+ scale: inherently blocked. MGE's mapping
-  matrix is fully dense (every Gaussian maps to every pixel), so the
-  per-call NUFFT cost is O(N_vis × N_src) and can't use the
-  sparse-operator shortcut. ``transform_mapping_matrix`` chunking would
-  cap per-chunk memory but per-call time remains prohibitive at 1M+ vis.
+- Interferometer mge at ALMA+ scale: blocked on the LIBRARY path, not
+  inherently. An MGE-only fit always takes the dense route
+  (PyAutoArray ``inversion/factory.py`` switches the sparse operator off
+  when every linear object is a func-list), and
+  ``TransformerNUFFT.transform_mapping_matrix`` NUFFTs every column over
+  every visibility in one unchunked call, which OOMs the A100 above sma
+  (a single jit(FitInterferometer) asks for 65.9 GB at alma, 322 GB at
+  alma_high, 1.61 TB at jvla). A column/visibility-chunked transform runs
+  at every instrument (0.94 s alma → 23.6 s jvla per call), and the
+  func-list W~ route — N_vis-independent — runs every instrument in
+  1.9-13.5 ms per call on the A100. Re-tested 2026-09 (autolens_profiling#308);
+  see ``results/notes/interferometer_mge_breakdown_2026_09.md``. The
+  ``None`` rows stay until one of those routes lands in the library.
 - Interferometer pixelization at ALMA+ scale: blocked on
   ``transform_mapping_matrix`` not being chunked. Pixelization's mapping
   IS sparse (localized mesh) and could eventually use the
@@ -81,7 +89,7 @@ VMAP_BATCH: dict[tuple[str, str, str], int | None] = {
     # Interferometer cells — 4 instruments, 3 cells (mge/pix blocked at ALMA+).
     # Delaunay uses the W-Tilde sparse-operator path (per-call cost is
     # mask-FFT-dominated, NOT visibility-count-dominated). mge/pixelization
-    # use the full NUFFT mapping matrix (blocked at 1M+ vis — see note above).
+    # use the full NUFFT mapping matrix (library path blocked at 1M+ vis — see note above).
     # =========================================================================
     #
     # delaunay (1000-node Hilbert mesh, sparse-operator path)
@@ -94,13 +102,15 @@ VMAP_BATCH: dict[tuple[str, str, str], int | None] = {
     ): 16,  # 1,243 MB / replica — probe said 46, OOM at runtime
     ("interferometer", "delaunay", "jvla"): 3,  # 7,689 MB / replica — probe said 7, OOM at runtime
     #
-    # mge — sma only; alma+ INHERENTLY blocked (dense model, O(N_vis × N_src)).
+    # mge — sma only; alma+ blocked by the unchunked dense library transform on
+    # GPU (not inherent: chunked transform and the W~ route both run at every
+    # instrument — results/notes/interferometer_mge_breakdown_2026_09.md).
     ("interferometer", "mge", "sma"): 64,  # 160 MB / replica
     (
         "interferometer",
         "mge",
         "alma",
-    ): None,  # blocked: dense mapping → 62 GB gather buffer at 1M vis
+    ): None,  # blocked: library one-shot dense transform asks 65.9 GB at 1M vis (#308)
     ("interferometer", "mge", "alma_high"): None,
     ("interferometer", "mge", "jvla"): None,
     #

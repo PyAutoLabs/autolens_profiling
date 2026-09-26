@@ -1,0 +1,56 @@
+#!/bin/bash -l
+#
+# A100 likelihood-breakdown profile: interferometer/mge x sma x fp64.
+# DENSE inversion path (an MGE-only fit never takes the sparse path), plus the
+# measurement-only func-list W~ arm (--w-tilde). autolens_profiling#308.
+# Compile-heavy: every pipeline step is JIT-compiled in isolation.
+# Output: results/breakdown/interferometer/sma/mge_hpc_a100_fp64.json
+# (config-tagged names carry no instrument, so non-alma instruments write
+# into results/breakdown/interferometer/<instrument>/ — see the cell docstring).
+# A RESOURCE_EXHAUSTED / OOM here is a result, not a failure: record it.
+
+#SBATCH -J breakdown_interferometer_mge_sma_fp64
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=1:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+# Derive the repo root from where this was submitted (hpc/batch_gpu/../..): it runs from
+# a RAL worktree of the feature branch, not only the canonical RAL checkout.
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+export PROJECT_PATH="$AP_ROOT"
+export PYAUTO_HPC_BASE="${PYAUTO_HPC_BASE:-/mnt/ral/jnightin/PyAuto}"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding"
+
+nvidia-smi
+
+echo "=========================================="
+date
+echo "Cell:           likelihood_breakdown/interferometer/mge"
+echo "Instrument:     sma"
+echo "Precision:      fp64"
+echo "Inversion path: dense (mapping) + W~ arm"
+
+cd $AP_ROOT
+
+python3 scripts/interferometer/likelihood_breakdown/mge.py \
+    --config-name hpc_a100_fp64 \
+    --instrument sma \
+    --w-tilde \
+    --vmap-batch 4
+
+echo "Finished."
+date
