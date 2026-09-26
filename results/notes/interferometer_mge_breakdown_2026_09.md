@@ -355,3 +355,74 @@ These rows are now in `scripts/misc/vram/config.py` under `VMAP_BATCH_SPARSE`. T
   arms had finished. The partial JSON is not committed. The A100 alma_high leg covers the witness.
 - **CPU jvla** was not attempted.
 - **A100 alma_high** was not re-run in round 2; its JSON is round 1.
+
+## Lever 3: real scatter (2026-09-26)
+
+PyAutoArray#577 (branch `feature/interferometer-transform-real-scatter`, PyAutoArray `f9d3bc67`)
+changes `TransformerNUFFT.transform_mapping_matrix` in both its JAX and NumPy branches. It now
+scatters the mapping matrix into the `(n_src, N_y, N_x)` native stack in the matrix's own real
+dtype, flips it, and casts to complex128 just before `nufft2d2`. Before, it cast first and then
+scattered in complex128. A real-to-complex cast is exact, so the output is bit-identical. A new
+library test asserts `np.array_equal` against the old formula for NumPy and under `jax.jit` on a
+circular mask.
+
+### A100 sma, dense library path, fp64
+
+RAL job 356364 ran two legs on the same node (`euclid-ral-gpu-1`), using the arms of the #308
+submit (dense library path, `--w-tilde`, `--vmap-batch 4`):
+- Control: PyAutoArray `origin/main`, `1bf641e4`.
+- Branch: `f9d3bc67`.
+
+Both legs used the same private PyAutoGalaxy `0e4b89cf` and PyAutoLens `4487eb47` (origin/main)
+from `/mnt/ral/jnightin/PyAuto_branch/interferometer-transform-real-scatter/`, and the mirror's
+PyAutoFit `dd9fbe0a` and PyAutoNerves `1fa613aa`. The submit is
+`submit_breakdown_interferometer_mge_a100_sma_fp64_real_scatter`, and each leg asserts
+`__file__`. The JSONs are `sma/mge_hpc_a100_fp64_real_scatter{,_main_control}.json`. The dashboard
+regex does not read them, so the #308 `sma/mge_hpc_a100_fp64.json` row is unchanged.
+
+| Per call, A100 | #308 baseline (gpu-2) | control, main (gpu-1) | branch, real scatter (gpu-1) |
+|---|---:|---:|---:|
+| Step 3, transformed mapping matrix | 852.7 ms | 851.5 ms | **0.51 ms** |
+| Total, step by step | 856.2 ms | 855.0 ms | **4.04 ms** |
+| Full pipeline, single jit | 854.6 ms | 868.5 ms | **3.39 ms** |
+| Full pipeline, vmap batch 4 (per call) | 231.4 ms | 225.2 ms | **1.34 ms** |
+| log L (step by step) | -3153.942384509246 | -3153.942384509246 | -3153.942384509246 |
+
+The witness passes. Step 3 falls from 852.7 ms to 0.51 ms, a factor of about 1700, and log L is
+bit-identical: the difference is 0.0 nats against both the baseline and the control. The pinned
+check passed, and the `.err` has no float32 truncation.
+
+The whole A100 sma likelihood drops from about 0.85 s to about 4 ms. That flips the sma row of
+the GPU-vs-CPU verdict (lever 4) from "GPU ~10x slower" to "GPU ~20x faster" than the laptop
+CPU's ~84 ms. With the floor gone, the dense sma chain (4.0 ms) is now close to the W~ chain
+(2.9 ms in this job).
+
+### CPU, no regression
+
+These are laptop JAX CPU fp64 runs. The laptop was heavily shared during them (load average
+5-14), so each result is several runs in ABBA order.
+
+| CPU | main `1bf641e4` | branch `f9d3bc67` |
+|---|---|---|
+| `transform_mapping_matrix` micro (jit, min of 3), sma, 6 runs each | median 95.6 ms (80.7-100.7) | median 88.8 ms (75.0-124.1) |
+| `transform_mapping_matrix` micro (jit, min of 3), alma 1M vis, 5 runs each | 15.03, 14.33, 13.92, 15.33, 15.11 s | 18.65¹, 13.05, 13.77, 14.40, 14.07 s |
+| sma breakdown, full pipeline single jit, 3 runs | 100.2, 77.6, 81.1 ms | 85.1, 79.4, 75.8 ms |
+| sma breakdown, step 3, 3 runs | 85.9, 72.4, 82.4 ms | 106.5, 82.9, 169.8 ms |
+| log L | -3153.942384509247 | -3153.942384509247 |
+
+¹ The first run was taken while the laptop was under peak load (14). The four ABBA repeats that
+followed put the branch at or below main.
+
+The isolated step-3 timing on CPU is dominated by load noise; the 169.8 ms run is one such
+outlier. The single-jit full pipeline and the micro-timing medians show no CPU regression. The
+committed CPU row (`mge_breakdown_sma_v2026.8.17.1.json`, 82.0 ms at step 3) was not
+overwritten.
+
+### Not run
+
+- **A100 alma.** The alma dense library path still OOMs, so this change cannot show there. The
+  #308 alma step 3 of ~915 ms comes from the chunked-transform arm (`--transform-chunk`), and
+  that arm is the cell script's own per-column prototype (`_transform_script_chunked`). It still
+  scatters in complex128 itself and does not call `transform_mapping_matrix`, so a re-run would
+  measure unchanged code. Porting the real scatter into that prototype is a script change, left
+  for any future dense-alma work.
