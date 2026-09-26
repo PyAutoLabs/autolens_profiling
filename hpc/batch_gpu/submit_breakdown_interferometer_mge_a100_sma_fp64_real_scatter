@@ -1,0 +1,109 @@
+#!/bin/bash -l
+#
+# A100 likelihood-breakdown profile: interferometer/mge x sma x fp64, LEVER 3 (real scatter).
+# PyAutoArray#577 scatters the real mapping matrix into the native stack and casts to
+# complex128 afterwards in TransformerNUFFT.transform_mapping_matrix; the complex128
+# scatter was a fixed ~0.85 s on the A100 (autolens_profiling#308, step 3). Same arms
+# as submit_breakdown_interferometer_mge_a100_sma_fp64 (DENSE library path + W~ arm),
+# run twice in one job on one node:
+#   1. CONTROL: PyAutoArray origin/main (cast-then-scatter), $PYAUTO_BRANCH_LIBS/PyAutoArray_main
+#   2. BRANCH:  PyAutoArray feature/interferometer-transform-real-scatter, $PYAUTO_BRANCH_LIBS/PyAutoArray
+# Both legs use the same private PyAutoGalaxy / PyAutoLens (origin/main) copies.
+#
+# BRANCH LIBRARIES: a PRIVATE copy under $PYAUTO_BRANCH_LIBS (default below), prepended to
+# PYTHONPATH after activate.sh. The shared mirror /mnt/ral/jnightin/PyAuto is not touched.
+# Each leg fails unless autoarray/autogalaxy/autolens import from that copy.
+#
+# Output (distinct names, so the #308 mge_hpc_a100_fp64.json stays; the dashboard
+# regex does not read them):
+#   results/breakdown/interferometer/sma/mge_hpc_a100_fp64_real_scatter.{json,png}
+#   results/breakdown/interferometer/sma/mge_hpc_a100_fp64_real_scatter_main_control.{json,png}
+
+#SBATCH -J breakdown_interferometer_mge_sma_fp64_real_scatter
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=1:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+# Derive the repo root from where this was submitted (hpc/batch_gpu/../..): it runs from
+# a RAL worktree of the feature branch, not only the canonical RAL checkout.
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+export PROJECT_PATH="$AP_ROOT"
+export PYAUTO_HPC_BASE="${PYAUTO_HPC_BASE:-/mnt/ral/jnightin/PyAuto}"
+export PYAUTO_BRANCH_LIBS="${PYAUTO_BRANCH_LIBS:-/mnt/ral/jnightin/PyAuto_branch/interferometer-transform-real-scatter}"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+BASE_PYTHONPATH="$PYTHONPATH"
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding"
+
+nvidia-smi
+
+cd $AP_ROOT
+OUT_DIR=$AP_ROOT/results/breakdown/interferometer/sma
+STATUS=0
+
+run_leg() {
+    local array_dir="$1" suffix="$2"
+    export PYAUTO_ARRAY_DIR="$PYAUTO_BRANCH_LIBS/$array_dir"
+    export PYTHONPATH="$PYAUTO_ARRAY_DIR:$PYAUTO_BRANCH_LIBS/PyAutoGalaxy:$PYAUTO_BRANCH_LIBS/PyAutoLens:$BASE_PYTHONPATH"
+    local tmp_out="$AP_ROOT/hpc/batch_gpu/output/real_scatter_${SLURM_JOB_ID:-local}_${suffix}"
+    mkdir -p "$tmp_out"
+
+    echo "=========================================="
+    date
+    echo "Cell:           likelihood_breakdown/interferometer/mge"
+    echo "Instrument:     sma"
+    echo "Precision:      fp64"
+    echo "Inversion path: dense (mapping) + W~ arm"
+    echo "Leg:            $suffix ($array_dir)"
+
+    echo "=== source revisions ==="
+    printf '%-14s %s (branch copy)\n' PyAutoArray "$(git -C $PYAUTO_ARRAY_DIR rev-parse HEAD 2>&1)"
+    for r in PyAutoGalaxy PyAutoLens; do
+        printf '%-14s %s (branch copy)\n' "$r" "$(git -C $PYAUTO_BRANCH_LIBS/$r rev-parse HEAD 2>&1)"
+    done
+    for r in PyAutoNerves PyAutoFit; do
+        printf '%-14s %s (shared mirror)\n' "$r" "$(git -C $PYAUTO_HPC_BASE/$r rev-parse HEAD 2>&1)"
+    done
+    echo "AP_ROOT rev:   $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+
+    echo "=== import provenance (must be the branch copy) ==="
+    python3 -c "
+import os, autoarray, autogalaxy, autolens
+base = os.environ['PYAUTO_BRANCH_LIBS']
+assert autoarray.__file__.startswith(os.environ['PYAUTO_ARRAY_DIR'] + '/'), autoarray.__file__
+for m in (autoarray, autogalaxy, autolens):
+    print(m.__name__ + '.__file__ =', m.__file__)
+    assert m.__file__.startswith(base), f'{m.__name__} not imported from {base}'
+" || return 1
+
+    python3 -u scripts/interferometer/likelihood_breakdown/mge.py \
+        --config-name hpc_a100_fp64 \
+        --instrument sma \
+        --w-tilde \
+        --vmap-batch 4 \
+        --output-dir "$tmp_out" || return 1
+
+    for ext in json png; do
+        mv "$tmp_out/mge_hpc_a100_fp64.$ext" "$OUT_DIR/mge_hpc_a100_fp64_${suffix}.$ext" || return 1
+    done
+    rmdir "$tmp_out"
+}
+
+run_leg PyAutoArray_main real_scatter_main_control || STATUS=1
+run_leg PyAutoArray real_scatter || STATUS=1
+
+echo "Finished (status $STATUS)."
+date
+exit $STATUS
