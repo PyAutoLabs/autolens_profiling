@@ -1,0 +1,430 @@
+{
+  "stage": "complete",
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "hostname": "euclid-ral-gpu-2",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": null,
+    "cpu_count": 124,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/.cache/pyauto_jax",
+    "autotune_cache_entries_at_start": 204,
+    "cache_fresh": false,
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 61381 MiB, 81920 MiB"
+  },
+  "instrument": "jvla",
+  "model": "delaunay",
+  "transformer": "TransformerNUFFT",
+  "use_mixed_precision": false,
+  "configuration": {
+    "pixel_scale_arcsec": 0.01,
+    "mask_radius_arcsec": 3.5,
+    "real_space_shape": [
+      800,
+      800
+    ],
+    "image_pixels_masked": 384852,
+    "visibilities": 25000000,
+    "source_pixels": 1500,
+    "source_pixels_requested": null,
+    "mesh": "Delaunay",
+    "image_mesh": "Hilbert(weight_power=1.0, weight_floor=0.0)",
+    "hilbert_pixels": 1500,
+    "delaunay_vertices": 1500,
+    "edge_zeroed_pixels": 0,
+    "lens_light": null,
+    "lens_light_note": "simulators/interferometer.py puts no lens emission in the visibilities; mass fixed near truth (tight Gaussian priors), no lens light.",
+    "inversion_path": "sparse",
+    "inversion_class": "InversionInterferometerSparse",
+    "mapper_class": "Mapper",
+    "solve_subset_edge_zeroed": true,
+    "pixels_solved": 1500,
+    "positive_only_solver_requested": "pdip",
+    "positive_only_solver_used": "pdip",
+    "nnls_preconditioning": "jacobi",
+    "sparse_operator_method": "nufft",
+    "sparse_batch_size": 128,
+    "curvature_blocks": 12,
+    "operator_extent_shape": [
+      700,
+      700
+    ],
+    "operator_M": 490000,
+    "operator_fft_shape": [
+      1400,
+      1400
+    ],
+    "transformer_chunk_size": 1000000,
+    "transformer_chunk_size_preset": 1000000,
+    "nufftax_version": "0.6.1",
+    "n_repeats": 10,
+    "thread_env": {
+      "n_threads": null,
+      "vars": [
+        "OPENBLAS_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OMP_NUM_THREADS",
+        "VECLIB_MAXIMUM_THREADS",
+        "NUMEXPR_NUM_THREADS"
+      ],
+      "set_to": null,
+      "preexisting": {},
+      "overridden": {},
+      "note": "Not pinned (legacy variant): recorded as found."
+    },
+    "host_load_avg_start": [
+      1.14,
+      0.26,
+      0.09
+    ],
+    "host_load_avg_end": [
+      3.26,
+      3.35,
+      1.71
+    ]
+  },
+  "regularization": {
+    "scheme": "adapt_split",
+    "inner_coefficient": 0.1,
+    "outer_coefficient": 10.0,
+    "signal_scale": 0.1
+  },
+  "operator_build_s": 7.351081691987929,
+  "steps": {
+    "Ray-trace grids (data + mesh vertices)": 0.00039465349982492626,
+    "Border relocation + mesh interpolation (mapper)": 0.011861559499811847,
+    "Mapping matrix L": 0.0029722211009357118,
+    "Regularization matrix H": 0.0005627964987070296,
+    "Sparse triplets (extent grid)": 0.00017833789897849783,
+    "Data vector D = L\u1d40 d~": 0.0031054351988132113,
+    "Curvature matrix F = A\u1d40 W~ A (12 blocks of 128)": 0.5104464378004195,
+    "Reconstruction (pdip)": 0.01889693370030727,
+    "Log-det terms (2 Choleskys)": 0.0022829174995422363,
+    "Fast chi-squared + figure of merit": 0.000914814199495595
+  },
+  "total_step_by_step": 0.5516161068968358,
+  "setup_split": {
+    "Ray-trace grids (data + mesh vertices)": 0.00039465349982492626,
+    "Border relocation + mesh interpolation (mapper)": 0.011861559499811847,
+    "Mapping matrix L": 0.0029722211009357118,
+    "Regularization matrix H": 0.0005627964987070296
+  },
+  "setup_prefix_per_call_s": {
+    "1": 0.00039465349982492626,
+    "2": 0.012256212999636773,
+    "3": 0.015228434100572485,
+    "4": 0.015791230599279515
+  },
+  "steps_sub_rows": {
+    "FitInterferometer.figure_of_merit (library, single JIT)": 0.5638762586997472
+  },
+  "full_pipeline_single_jit": 0.563308475400845,
+  "full_pipeline": {
+    "status": "ok",
+    "per_call_s": 0.563308475400845,
+    "figure_of_merit": -301297000.28094375,
+    "abs_diff_vs_library_nats": 0.0,
+    "solver": "pdip",
+    "hlo_census": {
+      "full_pipeline": {
+        "fft": 3,
+        "while": 4,
+        "cholesky": 155,
+        "triangular_solve": 12,
+        "scatter": 12,
+        "custom_call": 13,
+        "status": "ok"
+      },
+      "library_fit_figure_of_merit": {
+        "fft": 3,
+        "while": 4,
+        "cholesky": 155,
+        "triangular_solve": 12,
+        "scatter": 12,
+        "custom_call": 13,
+        "status": "ok"
+      },
+      "standalone_curvature_F": {
+        "fft": 3,
+        "while": 1,
+        "cholesky": 0,
+        "triangular_solve": 0,
+        "scatter": 2,
+        "custom_call": 0,
+        "status": "ok"
+      },
+      "standalone_reconstruction": {
+        "fft": 0,
+        "while": 1,
+        "cholesky": 72,
+        "triangular_solve": 12,
+        "scatter": 1,
+        "custom_call": 8,
+        "status": "ok"
+      },
+      "standalone_log_dets": {
+        "fft": 0,
+        "while": 0,
+        "cholesky": 71,
+        "triangular_solve": 0,
+        "scatter": 0,
+        "custom_call": 2,
+        "status": "ok"
+      }
+    }
+  },
+  "step_sum_over_full_jit": 0.9792434003488247,
+  "figure_of_merit_reference": -301297000.28094375,
+  "figure_of_merit_step_by_step": -301297000.2809297,
+  "step_fidelity": {
+    "figure_of_merit_steps": -301297000.2809297,
+    "figure_of_merit_library": -301297000.28094375,
+    "abs_diff_nats": 1.4066696166992188e-05,
+    "data_vector_max_rel_diff": 0.0,
+    "curvature_matrix_max_rel_diff": 1.3090967051528035e-15,
+    "reconstruction_max_rel_diff": 4.751477858680984e-12,
+    "log_det_curvature_reg_abs_diff": 3.637978807091713e-12,
+    "log_det_regularization_abs_diff": 0.0,
+    "nnz_triplets": 1154556
+  },
+  "nnls": {
+    "solver": "pdip",
+    "converged": 1,
+    "iterations": 11
+  },
+  "dense_steps": null,
+  "dense_total_step_by_step": null,
+  "dense": {
+    "status": "skipped",
+    "reason": "N_vis 25000000 > --dense-max-vis 200000: T alone is 558.8 GiB complex128"
+  },
+  "solver_ab": {
+    "note": "standalone step-8 rows on the same (D, F + H); fom recomputed with the step-9/10 functions",
+    "pdip": {
+      "per_call_s": 0.01885342499881517,
+      "converged": 1,
+      "iterations": 11,
+      "figure_of_merit": -301297000.2809297,
+      "negative_pixels": 0,
+      "zero_pixels": 0
+    },
+    "certified": {
+      "per_call_s": 0.002868920800392516,
+      "certified": 1,
+      "passes": 0,
+      "figure_of_merit": -301297000.2809298,
+      "negative_pixels": 0,
+      "zero_pixels": 0
+    },
+    "certified_over_pdip": 0.15216974107212938,
+    "figure_of_merit_abs_diff_nats": 1.1920928955078125e-07,
+    "solve_share_of_full_pipeline": 0.03354633300494971,
+    "full_pipeline_certified": {
+      "per_call_s": 0.5268458715989255,
+      "figure_of_merit": -301297000.28094375,
+      "abs_diff_vs_library_nats": 0.0
+    }
+  },
+  "curvature_batch_size_sweep": [
+    {
+      "batch_size": 64,
+      "n_blocks": 24,
+      "per_call_s": 0.5343074630000046,
+      "max_rel_diff_vs_default": 1.6363708814410044e-15,
+      "status": "ok"
+    },
+    {
+      "batch_size": 256,
+      "n_blocks": 6,
+      "per_call_s": 0.518342516499979,
+      "max_rel_diff_vs_default": 2.225464398759766e-15,
+      "status": "ok"
+    }
+  ],
+  "curvature_kernel_split": {
+    "scatter_per_block_s": 0.0005780742998467758,
+    "fft_apply_per_block_s": 0.037392059099511245,
+    "gather_segment_sum_per_block_s": 0.0062654260997078385,
+    "n_blocks": 12,
+    "batch_size": 128,
+    "predicted_F_s": 0.5308267139887903,
+    "measured_F_s": 0.5104464378004195,
+    "fft_share_of_predicted": 0.8452941371816687,
+    "scatter_share_of_predicted": 0.013068090612914779,
+    "gather_share_of_predicted": 0.1416377722054165,
+    "note": "Each part jitted alone on one block (block 0) and scaled by n_blocks; the measured F runs them fused inside lax.fori_loop."
+  },
+  "fp32_fft_arm": {
+    "per_call_s": 3.66939742090035,
+    "fp64_per_call_s": 0.5104464378004195,
+    "speedup": 0.13910906321920635,
+    "curvature_max_rel_diff": 2.5767234452125524e-06,
+    "figure_of_merit_fp32_F": -301297009.6233374,
+    "figure_of_merit_fp64_F_pdip": -301297000.2809297,
+    "abs_diff_nats": 9.342407703399658,
+    "bar_nats": 0.5,
+    "holds_bar": false,
+    "note": "Script copy of curvature_matrix_diag_from in float32 (scatter, rfft2 / irfft2 with complex64 Khat, gather); solve / log-dets / chi-squared stay fp64 on the upcast F. The library hard-casts this path to float64, so use_mixed_precision never reaches it."
+  },
+  "mixed_precision": null,
+  "vmap": [
+    {
+      "batch": 16,
+      "status": "oom",
+      "requested_bytes": 74227772293,
+      "where": "vmap batch 16",
+      "error": "RESOURCE_EXHAUSTED: Out of memory while trying to allocate 69.13GiB. [tf-allocator-allocation-error=''] [executable_name='jit_fn']"
+    },
+    {
+      "batch": 4,
+      "status": "ok",
+      "per_call_s": 0.5633424989497143,
+      "batch_per_call_s": 2.2533699957988573
+    }
+  ],
+  "source_revisions": {
+    "autolens_profiling": "66e45e906ce77dc9a58fe2cf7870adc343c98929",
+    "PyAutoNerves": "2b3bc53388a15e1d51fb70b583061bc2ee3294f0",
+    "PyAutoFit": "cf83504e8c7f3cc196ffef4d8a4ff86dd456bb6b",
+    "PyAutoArray": "14d63360f341912b209f2045d7e388e264692f1d",
+    "PyAutoGalaxy": "0e4b89cff42882a6cf5bbed6c9686f7212d7e24c",
+    "PyAutoLens": "4487eb471baa35841e90d3db0911799239594bce"
+  },
+  "jit_phases": {
+    "setup_prefix_1": {
+      "lower_s": 0.16405789599230047,
+      "compile_s": 0.8365309370128671,
+      "first_call_s": 0.004345822002505884,
+      "steady_per_call_s": 0.00039465349982492626
+    },
+    "setup_prefix_2": {
+      "lower_s": 0.9069888679950964,
+      "compile_s": 2.4679349059879314,
+      "first_call_s": 0.017912755996803753,
+      "steady_per_call_s": 0.012256212999636773
+    },
+    "setup_prefix_3": {
+      "lower_s": 0.9236941230046796,
+      "compile_s": 2.5930679890007013,
+      "first_call_s": 0.02124442499189172,
+      "steady_per_call_s": 0.015228434100572485
+    },
+    "setup_prefix_4": {
+      "lower_s": 1.017218666995177,
+      "compile_s": 3.6323053759988397,
+      "first_call_s": 0.023428860993590206,
+      "steady_per_call_s": 0.015791230599279515
+    },
+    "sparse_triplets": {
+      "lower_s": 0.01818407500104513,
+      "compile_s": 0.1278777359984815,
+      "first_call_s": 0.001001743003143929,
+      "steady_per_call_s": 0.00017833789897849783
+    },
+    "data_vector_sparse": {
+      "lower_s": 0.006418348988518119,
+      "compile_s": 0.07614186500723008,
+      "first_call_s": 0.003603538003517315,
+      "steady_per_call_s": 0.0031054351988132113
+    },
+    "curvature_sparse": {
+      "lower_s": 0.04430135799339041,
+      "compile_s": 0.2903521520056529,
+      "first_call_s": 0.5521879159932723,
+      "steady_per_call_s": 0.5104464378004195
+    },
+    "reconstruction_pdip": {
+      "lower_s": 0.06055540499801282,
+      "compile_s": 0.48915460701391567,
+      "first_call_s": 0.02100938699732069,
+      "steady_per_call_s": 0.01889693370030727
+    },
+    "log_dets": {
+      "lower_s": 0.025711487003718503,
+      "compile_s": 0.15000786598830018,
+      "first_call_s": 0.0030384809942916036,
+      "steady_per_call_s": 0.0022829174995422363
+    },
+    "figure_of_merit": {
+      "lower_s": 0.014883374999044463,
+      "compile_s": 0.2599641159904422,
+      "first_call_s": 0.0018124089983757585,
+      "steady_per_call_s": 0.000914814199495595
+    },
+    "full_pipeline": {
+      "lower_s": 1.8067550730047515,
+      "compile_s": 6.305437304996303,
+      "first_call_s": 0.6131116799951997,
+      "steady_per_call_s": 0.563308475400845
+    },
+    "library_fit_figure_of_merit": {
+      "lower_s": 1.7174973410001257,
+      "compile_s": 6.380371658990043,
+      "first_call_s": 0.673354726008256,
+      "steady_per_call_s": 0.5638762586997472
+    },
+    "solver_ab_pdip": {
+      "lower_s": 0.06316604801395442,
+      "compile_s": 0.5355651410063729,
+      "first_call_s": 0.02092013700166717,
+      "steady_per_call_s": 0.01885342499881517
+    },
+    "solver_ab_certified": {
+      "lower_s": 0.0893572209897684,
+      "compile_s": 0.8323074739892036,
+      "first_call_s": 0.00557283399393782,
+      "steady_per_call_s": 0.002868920800392516
+    },
+    "full_pipeline_certified": {
+      "lower_s": 1.762416174999089,
+      "compile_s": 6.697549059987068,
+      "first_call_s": 0.6791878990043188,
+      "steady_per_call_s": 0.5268458715989255
+    },
+    "kernel_scatter": {
+      "lower_s": 0.01488583600439597,
+      "compile_s": 0.05576230600127019,
+      "first_call_s": 0.0011403920070733875,
+      "steady_per_call_s": 0.0005780742998467758
+    },
+    "kernel_fft_apply": {
+      "lower_s": 0.01569298999675084,
+      "compile_s": 0.20942091799224727,
+      "first_call_s": 0.17634475699742325,
+      "steady_per_call_s": 0.037392059099511245
+    },
+    "kernel_gather_segment_sum": {
+      "lower_s": 0.010829532009665854,
+      "compile_s": 0.04495941300410777,
+      "first_call_s": 0.006704497005557641,
+      "steady_per_call_s": 0.0062654260997078385
+    },
+    "curvature_sparse_b64": {
+      "lower_s": 0.19179056900611613,
+      "compile_s": 0.2766247090039542,
+      "first_call_s": 0.6506463700061431,
+      "steady_per_call_s": 0.5343074630000046
+    },
+    "curvature_sparse_b256": {
+      "lower_s": 0.155845589004457,
+      "compile_s": 0.2835859159968095,
+      "first_call_s": 0.5726046660129214,
+      "steady_per_call_s": 0.518342516499979
+    },
+    "curvature_sparse_fp32": {
+      "lower_s": 0.04814140401140321,
+      "compile_s": 0.27278342300269287,
+      "first_call_s": 3.681098914996255,
+      "steady_per_call_s": 3.66939742090035
+    },
+    "full_pipeline_vmap4": {
+      "first_call_s": 10.8982572889945,
+      "batch_per_call_s": 2.2533699957988573,
+      "steady_per_call_s": 0.5633424989497143
+    }
+  },
+  "peak_rss_mb": 9466.0,
+  "pinned_expected": null,
+  "pinned_drift": []
+}
