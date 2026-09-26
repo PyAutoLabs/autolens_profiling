@@ -1,0 +1,2383 @@
+AP_ROOT=/mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p4
+==========================================
+Sat 26 Sep 17:24:20 BST 2026
+euclid-ral-compute-10-4
+Model name:                              Intel(R) Xeon(R) Platinum 8490H
+partition:      ral
+cpus-per-task:  8
+sched_affinity: 8
+loadavg:        0.00 0.02 3.34 1/2087 91829
+Cell:           point_source/likelihood_breakdown/image_plane (1 committed + 4 replicate runs)
+Precision:      fp64 (JAX_ENABLE_X64=1)
+Backend:        JAX_PLATFORMS=cpu
+Thread env:     OMP=1 MKL=1 OPENBLAS=1 NPROC=8
+XLA_FLAGS:      --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false
+PYTHONPATH:     /mnt/ral/jnightin/PyAuto:/mnt/ral/jnightin/PyAuto/PyAutoNerves:/mnt/ral/jnightin/PyAuto/PyAutoFit:/mnt/ral/jnightin/PyAuto/PyAutoArray:/mnt/ral/jnightin/PyAuto/PyAutoGalaxy:/mnt/ral/jnightin/PyAuto/PyAutoLens
+=== source revisions (shared mirror, untouched) ===
+PyAutoNerves   1fa613aa8d89a79613009fb66f5b4e2d21deb57a
+PyAutoFit      dd9fbe0aab60c4a57702b1444ca031b317c91331
+PyAutoArray    3de624b5b91a4efa130dc3cb0a3a0f06f85025a3
+PyAutoGalaxy   70a61e26cd715cefe7012a38285698091246a8a4
+PyAutoLens     86054bbc19baa2f710a12e04a94fa27ab37cc354
+AP_ROOT rev:   6c45fecb4459d88bf490bbfe795c39f3596ebefb
+=== import provenance (must be the shared mirror) ===
+autoarray   2026.8.17.1  /mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/__init__.py
+autofit     2026.8.17.1  /mnt/ral/jnightin/PyAuto/PyAutoFit/autofit/__init__.py
+autogalaxy  2026.8.17.1  /mnt/ral/jnightin/PyAuto/PyAutoGalaxy/autogalaxy/__init__.py
+autolens    2026.8.17.1  /mnt/ral/jnightin/PyAuto/PyAutoLens/autolens/__init__.py
+jax 0.10.2 jaxlib 0.10.2 numpy 2.2.6 [CpuDevice(id=0)]
+==========================================
+RUN hpc_ral_cpu_fp64_p4 -> /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p4/results/breakdown/point_source_image
+Sat 26 Sep 17:24:29 BST 2026
+loadavg: 0.15 0.05 3.32 1/2088 91870
+
+--- Eager controls ---
+  solved likelihood: 7.743201200877
+  plain likelihood:  7.196577317761
+
+--- Full fused controls ---
+  [full_solved_lower] 2.0708 s
+  [full_solved_compile] 3.0476 s
+  [full_solved_first_call] 0.0068 s
+  [full_solved_steady_x5] 0.0110 s
+    -> per-call avg: 0.002198 s
+  [full_plain_control_lower] 1.3891 s
+  [full_plain_control_compile] 2.7617 s
+  [full_plain_control_first_call] 0.0031 s
+  [full_plain_control_steady_x5] 0.0099 s
+    -> per-call avg: 0.001976 s
+
+--- Solved-centre and solver prefixes ---
+  [source_centre_lower] 0.1841 s
+  [source_centre_compile] 0.2553 s
+  [source_centre_first_call] 0.0009 s
+  [source_centre_steady_x5] 0.0008 s
+    -> per-call avg: 0.000156 s
+  [step_00_ray_trace_lower] 0.1925 s
+  [step_00_ray_trace_compile] 0.1603 s
+  [step_00_ray_trace_first_call] 0.0024 s
+  [step_00_ray_trace_steady_x5] 0.0054 s
+    -> per-call avg: 0.001084 s
+  [step_00_containment_lower] 0.2397 s
+  [step_00_containment_compile] 0.4085 s
+  [step_00_containment_first_call] 0.0025 s
+  [step_00_containment_steady_x5] 0.0084 s
+    -> per-call avg: 0.001676 s
+  [step_00_selection_lower] 0.3586 s
+  [step_00_selection_compile] 0.4441 s
+  [step_00_selection_first_call] 0.0031 s
+  [step_00_selection_steady_x5] 0.0080 s
+    -> per-call avg: 0.001595 s
+  [step_00_neighbourhood_lower] 0.2719 s
+  [step_00_neighbourhood_compile] 0.5210 s
+  [step_00_neighbourhood_first_call] 0.0027 s
+  [step_00_neighbourhood_steady_x5] 0.0083 s
+    -> per-call avg: 0.001668 s
+  [step_00_up_sample_lower] 0.2728 s
+  [step_00_up_sample_compile] 0.5430 s
+  [step_00_up_sample_first_call] 0.0025 s
+  [step_00_up_sample_steady_x5] 0.0077 s
+    -> per-call avg: 0.001543 s
+  [step_01_ray_trace_lower] 0.4247 s
+  [step_01_ray_trace_compile] 0.6131 s
+  [step_01_ray_trace_first_call] 0.0025 s
+  [step_01_ray_trace_steady_x5] 0.0083 s
+    -> per-call avg: 0.001668 s
+  [step_01_containment_lower] 0.3250 s
+  [step_01_containment_compile] 0.6650 s
+  [step_01_containment_first_call] 0.0026 s
+  [step_01_containment_steady_x5] 0.0077 s
+    -> per-call avg: 0.001540 s
+  [step_01_selection_lower] 0.4379 s
+  [step_01_selection_compile] 0.6818 s
+  [step_01_selection_first_call] 0.0022 s
+  [step_01_selection_steady_x5] 0.0083 s
+    -> per-call avg: 0.001667 s
+  [step_01_neighbourhood_lower] 0.3348 s
+  [step_01_neighbourhood_compile] 0.7226 s
+  [step_01_neighbourhood_first_call] 0.0022 s
+  [step_01_neighbourhood_steady_x5] 0.0087 s
+    -> per-call avg: 0.001734 s
+  [step_01_up_sample_lower] 0.3353 s
+  [step_01_up_sample_compile] 0.7378 s
+  [step_01_up_sample_first_call] 0.0027 s
+  [step_01_up_sample_steady_x5] 0.0078 s
+    -> per-call avg: 0.001567 s
+  [step_02_ray_trace_lower] 0.4745 s
+  [step_02_ray_trace_compile] 0.7980 s
+  [step_02_ray_trace_first_call] 0.0022 s
+  [step_02_ray_trace_steady_x5] 0.0081 s
+    -> per-call avg: 0.001621 s
+  [step_02_containment_lower] 0.3718 s
+  [step_02_containment_compile] 0.8106 s
+  [step_02_containment_first_call] 0.0023 s
+  [step_02_containment_steady_x5] 0.0091 s
+    -> per-call avg: 0.001828 s
+  [step_02_selection_lower] 0.4798 s
+  [step_02_selection_compile] 0.8486 s
+  [step_02_selection_first_call] 0.0027 s
+  [step_02_selection_steady_x5] 0.0089 s
+    -> per-call avg: 0.001781 s
+  [step_02_neighbourhood_lower] 0.3823 s
+  [step_02_neighbourhood_compile] 0.8619 s
+  [step_02_neighbourhood_first_call] 0.0022 s
+  [step_02_neighbourhood_steady_x5] 0.0090 s
+    -> per-call avg: 0.001802 s
+  [step_02_up_sample_lower] 0.4855 s
+  [step_02_up_sample_compile] 0.8631 s
+  [step_02_up_sample_first_call] 0.0022 s
+  [step_02_up_sample_steady_x5] 0.0088 s
+    -> per-call avg: 0.001756 s
+  [step_03_ray_trace_lower] 0.4168 s
+  [step_03_ray_trace_compile] 0.9176 s
+  [step_03_ray_trace_first_call] 0.0028 s
+  [step_03_ray_trace_steady_x5] 0.0085 s
+    -> per-call avg: 0.001707 s
+  [step_03_containment_lower] 0.5313 s
+  [step_03_containment_compile] 0.9357 s
+  [step_03_containment_first_call] 0.0024 s
+  [step_03_containment_steady_x5] 0.0087 s
+    -> per-call avg: 0.001730 s
+  [step_03_selection_lower] 0.4275 s
+  [step_03_selection_compile] 0.9418 s
+  [step_03_selection_first_call] 0.0028 s
+  [step_03_selection_steady_x5] 0.0081 s
+    -> per-call avg: 0.001620 s
+  [step_03_neighbourhood_lower] 0.5302 s
+  [step_03_neighbourhood_compile] 0.9875 s
+  [step_03_neighbourhood_first_call] 0.0028 s
+  [step_03_neighbourhood_steady_x5] 0.0083 s
+    -> per-call avg: 0.001659 s
+  [step_03_up_sample_lower] 0.5292 s
+  [step_03_up_sample_compile] 0.9715 s
+  [step_03_up_sample_first_call] 0.0028 s
+  [step_03_up_sample_steady_x5] 0.0091 s
+    -> per-call avg: 0.001823 s
+  [step_04_ray_trace_lower] 0.4634 s
+  [step_04_ray_trace_compile] 1.0980 s
+  [step_04_ray_trace_first_call] 0.0028 s
+  [step_04_ray_trace_steady_x5] 0.0084 s
+    -> per-call avg: 0.001675 s
+  [step_04_containment_lower] 0.5739 s
+  [step_04_containment_compile] 1.1374 s
+  [step_04_containment_first_call] 0.0023 s
+  [step_04_containment_steady_x5] 0.0087 s
+    -> per-call avg: 0.001731 s
+  [step_04_selection_lower] 0.4743 s
+  [step_04_selection_compile] 1.1412 s
+  [step_04_selection_first_call] 0.0026 s
+  [step_04_selection_steady_x5] 0.0084 s
+    -> per-call avg: 0.001674 s
+  [step_04_neighbourhood_lower] 0.6020 s
+  [step_04_neighbourhood_compile] 1.1837 s
+  [step_04_neighbourhood_first_call] 0.0024 s
+  [step_04_neighbourhood_steady_x5] 0.0099 s
+    -> per-call avg: 0.001983 s
+  [step_04_up_sample_lower] 0.4776 s
+  [step_04_up_sample_compile] 1.1790 s
+  [step_04_up_sample_first_call] 0.0028 s
+  [step_04_up_sample_steady_x5] 0.0083 s
+    -> per-call avg: 0.001665 s
+  [step_05_ray_trace_lower] 0.6143 s
+  [step_05_ray_trace_compile] 1.2201 s
+  [step_05_ray_trace_first_call] 0.0029 s
+  [step_05_ray_trace_steady_x5] 0.0093 s
+    -> per-call avg: 0.001865 s
+  [step_05_containment_lower] 0.6235 s
+  [step_05_containment_compile] 1.2526 s
+  [step_05_containment_first_call] 0.0030 s
+  [step_05_containment_steady_x5] 0.0083 s
+    -> per-call avg: 0.001663 s
+  [step_05_selection_lower] 0.5280 s
+  [step_05_selection_compile] 1.2549 s
+  [step_05_selection_first_call] 0.0029 s
+  [step_05_selection_steady_x5] 0.0077 s
+    -> per-call avg: 0.001541 s
+  [step_05_neighbourhood_lower] 0.6326 s
+  [step_05_neighbourhood_compile] 1.3014 s
+  [step_05_neighbourhood_first_call] 0.0029 s
+  [step_05_neighbourhood_steady_x5] 0.0093 s
+    -> per-call avg: 0.001854 s
+  [step_05_up_sample_lower] 0.6346 s
+  [step_05_up_sample_compile] 1.2869 s
+  [step_05_up_sample_first_call] 0.0029 s
+  [step_05_up_sample_steady_x5] 0.0084 s
+    -> per-call avg: 0.001685 s
+  [step_06_ray_trace_lower] 0.5641 s
+  [step_06_ray_trace_compile] 1.3462 s
+  [step_06_ray_trace_first_call] 0.0028 s
+  [step_06_ray_trace_steady_x5] 0.0097 s
+    -> per-call avg: 0.001937 s
+  [step_06_containment_lower] 0.6636 s
+  [step_06_containment_compile] 1.3738 s
+  [step_06_containment_first_call] 0.0027 s
+  [step_06_containment_steady_x5] 0.0085 s
+    -> per-call avg: 0.001698 s
+  [step_06_selection_lower] 0.6703 s
+  [step_06_selection_compile] 1.4134 s
+  [step_06_selection_first_call] 0.0029 s
+  [step_06_selection_steady_x5] 0.0097 s
+    -> per-call avg: 0.001937 s
+  [step_06_neighbourhood_lower] 0.5755 s
+  [step_06_neighbourhood_compile] 1.4205 s
+  [step_06_neighbourhood_first_call] 0.0028 s
+  [step_06_neighbourhood_steady_x5] 0.0101 s
+    -> per-call avg: 0.002027 s
+  [step_06_up_sample_lower] 0.6719 s
+  [step_06_up_sample_compile] 1.4347 s
+  [step_06_up_sample_first_call] 0.0024 s
+  [step_06_up_sample_steady_x5] 0.0092 s
+    -> per-call avg: 0.001835 s
+  [step_07_ray_trace_lower] 0.7057 s
+  [step_07_ray_trace_compile] 1.4854 s
+  [step_07_ray_trace_first_call] 0.0028 s
+  [step_07_ray_trace_steady_x5] 0.0095 s
+    -> per-call avg: 0.001899 s
+  [step_07_containment_lower] 0.7189 s
+  [step_07_containment_compile] 1.4982 s
+  [step_07_containment_first_call] 0.0028 s
+  [step_07_containment_steady_x5] 0.0097 s
+    -> per-call avg: 0.001939 s
+  [step_07_selection_lower] 0.7257 s
+  [step_07_selection_compile] 1.5151 s
+  [step_07_selection_first_call] 0.0029 s
+  [step_07_selection_steady_x5] 0.0089 s
+    -> per-call avg: 0.001774 s
+  [step_07_neighbourhood_lower] 0.6258 s
+  [step_07_neighbourhood_compile] 1.5425 s
+  [step_07_neighbourhood_first_call] 0.0024 s
+  [step_07_neighbourhood_steady_x5] 0.0101 s
+    -> per-call avg: 0.002018 s
+  [step_07_up_sample_lower] 0.7305 s
+  [step_07_up_sample_compile] 1.5448 s
+  [step_07_up_sample_first_call] 0.0029 s
+  [step_07_up_sample_steady_x5] 0.0111 s
+    -> per-call avg: 0.002213 s
+  [magnification_filter_lower] 0.8534 s
+  [magnification_filter_compile] 1.6295 s
+  [magnification_filter_first_call] 0.0026 s
+  [magnification_filter_steady_x5] 0.0094 s
+    -> per-call avg: 0.001876 s
+
+--- Numerical controls ---
+
+========================================================================
+POINT-SOURCE IMAGE-PLANE BREAKDOWN
+========================================================================
+  Solved source centre                                        0.156 ms
+  Step 0: ray trace                                           0.927 ms
+  Step 0: containment                                         0.592 ms
+  Step 0: selection                                          -0.080 ms
+  Step 0: neighbourhood                                       0.073 ms
+  Step 0: up sample                                          -0.125 ms
+  Step 1: ray trace                                           0.125 ms
+  Step 1: containment                                        -0.127 ms
+  Step 1: selection                                           0.126 ms
+  Step 1: neighbourhood                                       0.067 ms
+  Step 1: up sample                                          -0.166 ms
+  Step 2: ray trace                                           0.053 ms
+  Step 2: containment                                         0.207 ms
+  Step 2: selection                                          -0.047 ms
+  Step 2: neighbourhood                                       0.021 ms
+  Step 2: up sample                                          -0.046 ms
+  Step 3: ray trace                                          -0.049 ms
+  Step 3: containment                                         0.023 ms
+  Step 3: selection                                          -0.110 ms
+  Step 3: neighbourhood                                       0.039 ms
+  Step 3: up sample                                           0.164 ms
+  Step 4: ray trace                                          -0.148 ms
+  Step 4: containment                                         0.056 ms
+  Step 4: selection                                          -0.057 ms
+  Step 4: neighbourhood                                       0.309 ms
+  Step 4: up sample                                          -0.318 ms
+  Step 5: ray trace                                           0.200 ms
+  Step 5: containment                                        -0.202 ms
+  Step 5: selection                                          -0.122 ms
+  Step 5: neighbourhood                                       0.313 ms
+  Step 5: up sample                                          -0.169 ms
+  Step 6: ray trace                                           0.252 ms
+  Step 6: containment                                        -0.239 ms
+  Step 6: selection                                           0.240 ms
+  Step 6: neighbourhood                                       0.090 ms
+  Step 6: up sample                                          -0.192 ms
+  Step 7: ray trace                                           0.064 ms
+  Step 7: containment                                         0.040 ms
+  Step 7: selection                                          -0.164 ms
+  Step 7: neighbourhood                                       0.243 ms
+  Step 7: up sample                                           0.196 ms
+  Magnification filter                                       -0.337 ms
+  Pairing chi-squared / fused-wrapper residual                0.322 ms
+------------------------------------------------------------------------
+  Fused solved likelihood                                     2.198 ms
+  Fused plain control                                         1.976 ms
+  Results JSON: /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p4/results/breakdown/point_source_image/image_plane_hpc_ral_cpu_fp64_p4.json
+  Results PNG:  /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p4/results/breakdown/point_source_image/image_plane_hpc_ral_cpu_fp64_p4.png
+
+======================================================================
+PROFILING SUMMARY
+======================================================================
+  full_solved_lower                     2.0708 s
+  full_solved_compile                   3.0476 s
+  full_solved_first_call                0.0068 s
+  full_solved_steady_x5                 0.0110 s
+  full_plain_control_lower              1.3891 s
+  full_plain_control_compile            2.7617 s
+  full_plain_control_first_call         0.0031 s
+  full_plain_control_steady_x5          0.0099 s
+  source_centre_lower                   0.1841 s
+  source_centre_compile                 0.2553 s
+  source_centre_first_call              0.0009 s
+  source_centre_steady_x5               0.0008 s
+  step_00_ray_trace_lower               0.1925 s
+  step_00_ray_trace_compile             0.1603 s
+  step_00_ray_trace_first_call          0.0024 s
+  step_00_ray_trace_steady_x5           0.0054 s
+  step_00_containment_lower             0.2397 s
+  step_00_containment_compile           0.4085 s
+  step_00_containment_first_call        0.0025 s
+  step_00_containment_steady_x5         0.0084 s
+  step_00_selection_lower               0.3586 s
+  step_00_selection_compile             0.4441 s
+  step_00_selection_first_call          0.0031 s
+  step_00_selection_steady_x5           0.0080 s
+  step_00_neighbourhood_lower           0.2719 s
+  step_00_neighbourhood_compile         0.5210 s
+  step_00_neighbourhood_first_call      0.0027 s
+  step_00_neighbourhood_steady_x5       0.0083 s
+  step_00_up_sample_lower               0.2728 s
+  step_00_up_sample_compile             0.5430 s
+  step_00_up_sample_first_call          0.0025 s
+  step_00_up_sample_steady_x5           0.0077 s
+  step_01_ray_trace_lower               0.4247 s
+  step_01_ray_trace_compile             0.6131 s
+  step_01_ray_trace_first_call          0.0025 s
+  step_01_ray_trace_steady_x5           0.0083 s
+  step_01_containment_lower             0.3250 s
+  step_01_containment_compile           0.6650 s
+  step_01_containment_first_call        0.0026 s
+  step_01_containment_steady_x5         0.0077 s
+  step_01_selection_lower               0.4379 s
+  step_01_selection_compile             0.6818 s
+  step_01_selection_first_call          0.0022 s
+  step_01_selection_steady_x5           0.0083 s
+  step_01_neighbourhood_lower           0.3348 s
+  step_01_neighbourhood_compile         0.7226 s
+  step_01_neighbourhood_first_call      0.0022 s
+  step_01_neighbourhood_steady_x5       0.0087 s
+  step_01_up_sample_lower               0.3353 s
+  step_01_up_sample_compile             0.7378 s
+  step_01_up_sample_first_call          0.0027 s
+  step_01_up_sample_steady_x5           0.0078 s
+  step_02_ray_trace_lower               0.4745 s
+  step_02_ray_trace_compile             0.7980 s
+  step_02_ray_trace_first_call          0.0022 s
+  step_02_ray_trace_steady_x5           0.0081 s
+  step_02_containment_lower             0.3718 s
+  step_02_containment_compile           0.8106 s
+  step_02_containment_first_call        0.0023 s
+  step_02_containment_steady_x5         0.0091 s
+  step_02_selection_lower               0.4798 s
+  step_02_selection_compile             0.8486 s
+  step_02_selection_first_call          0.0027 s
+  step_02_selection_steady_x5           0.0089 s
+  step_02_neighbourhood_lower           0.3823 s
+  step_02_neighbourhood_compile         0.8619 s
+  step_02_neighbourhood_first_call      0.0022 s
+  step_02_neighbourhood_steady_x5       0.0090 s
+  step_02_up_sample_lower               0.4855 s
+  step_02_up_sample_compile             0.8631 s
+  step_02_up_sample_first_call          0.0022 s
+  step_02_up_sample_steady_x5           0.0088 s
+  step_03_ray_trace_lower               0.4168 s
+  step_03_ray_trace_compile             0.9176 s
+  step_03_ray_trace_first_call          0.0028 s
+  step_03_ray_trace_steady_x5           0.0085 s
+  step_03_containment_lower             0.5313 s
+  step_03_containment_compile           0.9357 s
+  step_03_containment_first_call        0.0024 s
+  step_03_containment_steady_x5         0.0087 s
+  step_03_selection_lower               0.4275 s
+  step_03_selection_compile             0.9418 s
+  step_03_selection_first_call          0.0028 s
+  step_03_selection_steady_x5           0.0081 s
+  step_03_neighbourhood_lower           0.5302 s
+  step_03_neighbourhood_compile         0.9875 s
+  step_03_neighbourhood_first_call      0.0028 s
+  step_03_neighbourhood_steady_x5       0.0083 s
+  step_03_up_sample_lower               0.5292 s
+  step_03_up_sample_compile             0.9715 s
+  step_03_up_sample_first_call          0.0028 s
+  step_03_up_sample_steady_x5           0.0091 s
+  step_04_ray_trace_lower               0.4634 s
+  step_04_ray_trace_compile             1.0980 s
+  step_04_ray_trace_first_call          0.0028 s
+  step_04_ray_trace_steady_x5           0.0084 s
+  step_04_containment_lower             0.5739 s
+  step_04_containment_compile           1.1374 s
+  step_04_containment_first_call        0.0023 s
+  step_04_containment_steady_x5         0.0087 s
+  step_04_selection_lower               0.4743 s
+  step_04_selection_compile             1.1412 s
+  step_04_selection_first_call          0.0026 s
+  step_04_selection_steady_x5           0.0084 s
+  step_04_neighbourhood_lower           0.6020 s
+  step_04_neighbourhood_compile         1.1837 s
+  step_04_neighbourhood_first_call      0.0024 s
+  step_04_neighbourhood_steady_x5       0.0099 s
+  step_04_up_sample_lower               0.4776 s
+  step_04_up_sample_compile             1.1790 s
+  step_04_up_sample_first_call          0.0028 s
+  step_04_up_sample_steady_x5           0.0083 s
+  step_05_ray_trace_lower               0.6143 s
+  step_05_ray_trace_compile             1.2201 s
+  step_05_ray_trace_first_call          0.0029 s
+  step_05_ray_trace_steady_x5           0.0093 s
+  step_05_containment_lower             0.6235 s
+  step_05_containment_compile           1.2526 s
+  step_05_containment_first_call        0.0030 s
+  step_05_containment_steady_x5         0.0083 s
+  step_05_selection_lower               0.5280 s
+  step_05_selection_compile             1.2549 s
+  step_05_selection_first_call          0.0029 s
+  step_05_selection_steady_x5           0.0077 s
+  step_05_neighbourhood_lower           0.6326 s
+  step_05_neighbourhood_compile         1.3014 s
+  step_05_neighbourhood_first_call      0.0029 s
+  step_05_neighbourhood_steady_x5       0.0093 s
+  step_05_up_sample_lower               0.6346 s
+  step_05_up_sample_compile             1.2869 s
+  step_05_up_sample_first_call          0.0029 s
+  step_05_up_sample_steady_x5           0.0084 s
+  step_06_ray_trace_lower               0.5641 s
+  step_06_ray_trace_compile             1.3462 s
+  step_06_ray_trace_first_call          0.0028 s
+  step_06_ray_trace_steady_x5           0.0097 s
+  step_06_containment_lower             0.6636 s
+  step_06_containment_compile           1.3738 s
+  step_06_containment_first_call        0.0027 s
+  step_06_containment_steady_x5         0.0085 s
+  step_06_selection_lower               0.6703 s
+  step_06_selection_compile             1.4134 s
+  step_06_selection_first_call          0.0029 s
+  step_06_selection_steady_x5           0.0097 s
+  step_06_neighbourhood_lower           0.5755 s
+  step_06_neighbourhood_compile         1.4205 s
+  step_06_neighbourhood_first_call      0.0028 s
+  step_06_neighbourhood_steady_x5       0.0101 s
+  step_06_up_sample_lower               0.6719 s
+  step_06_up_sample_compile             1.4347 s
+  step_06_up_sample_first_call          0.0024 s
+  step_06_up_sample_steady_x5           0.0092 s
+  step_07_ray_trace_lower               0.7057 s
+  step_07_ray_trace_compile             1.4854 s
+  step_07_ray_trace_first_call          0.0028 s
+  step_07_ray_trace_steady_x5           0.0095 s
+  step_07_containment_lower             0.7189 s
+  step_07_containment_compile           1.4982 s
+  step_07_containment_first_call        0.0028 s
+  step_07_containment_steady_x5         0.0097 s
+  step_07_selection_lower               0.7257 s
+  step_07_selection_compile             1.5151 s
+  step_07_selection_first_call          0.0029 s
+  step_07_selection_steady_x5           0.0089 s
+  step_07_neighbourhood_lower           0.6258 s
+  step_07_neighbourhood_compile         1.5425 s
+  step_07_neighbourhood_first_call      0.0024 s
+  step_07_neighbourhood_steady_x5       0.0101 s
+  step_07_up_sample_lower               0.7305 s
+  step_07_up_sample_compile             1.5448 s
+  step_07_up_sample_first_call          0.0029 s
+  step_07_up_sample_steady_x5           0.0111 s
+  magnification_filter_lower            0.8534 s
+  magnification_filter_compile          1.6295 s
+  magnification_filter_first_call       0.0026 s
+  magnification_filter_steady_x5        0.0094 s
+----------------------------------------------------------------------
+  TOTAL                                73.8517 s
+======================================================================
+==========================================
+RUN hpc_ral_cpu_fp64_p4_rep1 -> /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p4/output/point_source_image_p4_replicates_356365
+Sat 26 Sep 17:26:28 BST 2026
+loadavg: 1.30 0.63 3.14 1/2090 91939
+
+--- Eager controls ---
+  solved likelihood: 7.743201200877
+  plain likelihood:  7.196577317761
+
+--- Full fused controls ---
+  [full_solved_lower] 2.0417 s
+  [full_solved_compile] 3.1709 s
+  [full_solved_first_call] 0.0062 s
+  [full_solved_steady_x5] 0.0105 s
+    -> per-call avg: 0.002095 s
+  [full_plain_control_lower] 1.3654 s
+  [full_plain_control_compile] 2.8551 s
+  [full_plain_control_first_call] 0.0034 s
+  [full_plain_control_steady_x5] 0.0096 s
+    -> per-call avg: 0.001922 s
+
+--- Solved-centre and solver prefixes ---
+  [source_centre_lower] 0.1847 s
+  [source_centre_compile] 0.2560 s
+  [source_centre_first_call] 0.0009 s
+  [source_centre_steady_x5] 0.0009 s
+    -> per-call avg: 0.000172 s
+  [step_00_ray_trace_lower] 0.1933 s
+  [step_00_ray_trace_compile] 0.1508 s
+  [step_00_ray_trace_first_call] 0.0016 s
+  [step_00_ray_trace_steady_x5] 0.0071 s
+    -> per-call avg: 0.001418 s
+  [step_00_containment_lower] 0.2392 s
+  [step_00_containment_compile] 0.4055 s
+  [step_00_containment_first_call] 0.0025 s
+  [step_00_containment_steady_x5] 0.0080 s
+    -> per-call avg: 0.001593 s
+  [step_00_selection_lower] 0.3582 s
+  [step_00_selection_compile] 0.4494 s
+  [step_00_selection_first_call] 0.0022 s
+  [step_00_selection_steady_x5] 0.0075 s
+    -> per-call avg: 0.001498 s
+  [step_00_neighbourhood_lower] 0.2682 s
+  [step_00_neighbourhood_compile] 0.5170 s
+  [step_00_neighbourhood_first_call] 0.0025 s
+  [step_00_neighbourhood_steady_x5] 0.0084 s
+    -> per-call avg: 0.001671 s
+  [step_00_up_sample_lower] 0.2729 s
+  [step_00_up_sample_compile] 0.5336 s
+  [step_00_up_sample_first_call] 0.0025 s
+  [step_00_up_sample_steady_x5] 0.0074 s
+    -> per-call avg: 0.001481 s
+  [step_01_ray_trace_lower] 0.4170 s
+  [step_01_ray_trace_compile] 0.6305 s
+  [step_01_ray_trace_first_call] 0.0028 s
+  [step_01_ray_trace_steady_x5] 0.0084 s
+    -> per-call avg: 0.001684 s
+  [step_01_containment_lower] 0.3209 s
+  [step_01_containment_compile] 0.6454 s
+  [step_01_containment_first_call] 0.0027 s
+  [step_01_containment_steady_x5] 0.0088 s
+    -> per-call avg: 0.001763 s
+  [step_01_selection_lower] 0.4423 s
+  [step_01_selection_compile] 0.7035 s
+  [step_01_selection_first_call] 0.0022 s
+  [step_01_selection_steady_x5] 0.0065 s
+    -> per-call avg: 0.001306 s
+  [step_01_neighbourhood_lower] 0.3359 s
+  [step_01_neighbourhood_compile] 0.7358 s
+  [step_01_neighbourhood_first_call] 0.0022 s
+  [step_01_neighbourhood_steady_x5] 0.0078 s
+    -> per-call avg: 0.001551 s
+  [step_01_up_sample_lower] 0.3330 s
+  [step_01_up_sample_compile] 0.7231 s
+  [step_01_up_sample_first_call] 0.0026 s
+  [step_01_up_sample_steady_x5] 0.0081 s
+    -> per-call avg: 0.001615 s
+  [step_02_ray_trace_lower] 0.4758 s
+  [step_02_ray_trace_compile] 0.7928 s
+  [step_02_ray_trace_first_call] 0.0026 s
+  [step_02_ray_trace_steady_x5] 0.0076 s
+    -> per-call avg: 0.001527 s
+  [step_02_containment_lower] 0.3701 s
+  [step_02_containment_compile] 0.8059 s
+  [step_02_containment_first_call] 0.0026 s
+  [step_02_containment_steady_x5] 0.0083 s
+    -> per-call avg: 0.001651 s
+  [step_02_selection_lower] 0.4768 s
+  [step_02_selection_compile] 0.8317 s
+  [step_02_selection_first_call] 0.0026 s
+  [step_02_selection_steady_x5] 0.0084 s
+    -> per-call avg: 0.001677 s
+  [step_02_neighbourhood_lower] 0.3820 s
+  [step_02_neighbourhood_compile] 0.8813 s
+  [step_02_neighbourhood_first_call] 0.0026 s
+  [step_02_neighbourhood_steady_x5] 0.0086 s
+    -> per-call avg: 0.001730 s
+  [step_02_up_sample_lower] 0.4832 s
+  [step_02_up_sample_compile] 0.8702 s
+  [step_02_up_sample_first_call] 0.0027 s
+  [step_02_up_sample_steady_x5] 0.0084 s
+    -> per-call avg: 0.001676 s
+  [step_03_ray_trace_lower] 0.4171 s
+  [step_03_ray_trace_compile] 0.9080 s
+  [step_03_ray_trace_first_call] 0.0023 s
+  [step_03_ray_trace_steady_x5] 0.0084 s
+    -> per-call avg: 0.001689 s
+  [step_03_containment_lower] 0.5227 s
+  [step_03_containment_compile] 0.9230 s
+  [step_03_containment_first_call] 0.0027 s
+  [step_03_containment_steady_x5] 0.0082 s
+    -> per-call avg: 0.001646 s
+  [step_03_selection_lower] 0.4252 s
+  [step_03_selection_compile] 0.9565 s
+  [step_03_selection_first_call] 0.0027 s
+  [step_03_selection_steady_x5] 0.0080 s
+    -> per-call avg: 0.001598 s
+  [step_03_neighbourhood_lower] 0.5287 s
+  [step_03_neighbourhood_compile] 0.9798 s
+  [step_03_neighbourhood_first_call] 0.0022 s
+  [step_03_neighbourhood_steady_x5] 0.0079 s
+    -> per-call avg: 0.001587 s
+  [step_03_up_sample_lower] 0.5333 s
+  [step_03_up_sample_compile] 0.9738 s
+  [step_03_up_sample_first_call] 0.0022 s
+  [step_03_up_sample_steady_x5] 0.0093 s
+    -> per-call avg: 0.001860 s
+  [step_04_ray_trace_lower] 0.4643 s
+  [step_04_ray_trace_compile] 1.1083 s
+  [step_04_ray_trace_first_call] 0.0028 s
+  [step_04_ray_trace_steady_x5] 0.0086 s
+    -> per-call avg: 0.001712 s
+  [step_04_containment_lower] 0.5720 s
+  [step_04_containment_compile] 1.1197 s
+  [step_04_containment_first_call] 0.0022 s
+  [step_04_containment_steady_x5] 0.0089 s
+    -> per-call avg: 0.001773 s
+  [step_04_selection_lower] 0.4736 s
+  [step_04_selection_compile] 1.1373 s
+  [step_04_selection_first_call] 0.0028 s
+  [step_04_selection_steady_x5] 0.0089 s
+    -> per-call avg: 0.001778 s
+  [step_04_neighbourhood_lower] 0.5796 s
+  [step_04_neighbourhood_compile] 1.1750 s
+  [step_04_neighbourhood_first_call] 0.0027 s
+  [step_04_neighbourhood_steady_x5] 0.0095 s
+    -> per-call avg: 0.001895 s
+  [step_04_up_sample_lower] 0.4800 s
+  [step_04_up_sample_compile] 1.1650 s
+  [step_04_up_sample_first_call] 0.0028 s
+  [step_04_up_sample_steady_x5] 0.0096 s
+    -> per-call avg: 0.001917 s
+  [step_05_ray_trace_lower] 0.6153 s
+  [step_05_ray_trace_compile] 1.2251 s
+  [step_05_ray_trace_first_call] 0.0024 s
+  [step_05_ray_trace_steady_x5] 0.0095 s
+    -> per-call avg: 0.001894 s
+  [step_05_containment_lower] 0.6234 s
+  [step_05_containment_compile] 1.2472 s
+  [step_05_containment_first_call] 0.0027 s
+  [step_05_containment_steady_x5] 0.0091 s
+    -> per-call avg: 0.001816 s
+  [step_05_selection_lower] 0.5245 s
+  [step_05_selection_compile] 1.2934 s
+  [step_05_selection_first_call] 0.0024 s
+  [step_05_selection_steady_x5] 0.0087 s
+    -> per-call avg: 0.001736 s
+  [step_05_neighbourhood_lower] 0.6369 s
+  [step_05_neighbourhood_compile] 1.3169 s
+  [step_05_neighbourhood_first_call] 0.0027 s
+  [step_05_neighbourhood_steady_x5] 0.0084 s
+    -> per-call avg: 0.001684 s
+  [step_05_up_sample_lower] 0.6309 s
+  [step_05_up_sample_compile] 1.2926 s
+  [step_05_up_sample_first_call] 0.0029 s
+  [step_05_up_sample_steady_x5] 0.0099 s
+    -> per-call avg: 0.001982 s
+  [step_06_ray_trace_lower] 0.5606 s
+  [step_06_ray_trace_compile] 1.3574 s
+  [step_06_ray_trace_first_call] 0.0029 s
+  [step_06_ray_trace_steady_x5] 0.0090 s
+    -> per-call avg: 0.001800 s
+  [step_06_containment_lower] 0.6681 s
+  [step_06_containment_compile] 1.3642 s
+  [step_06_containment_first_call] 0.0027 s
+  [step_06_containment_steady_x5] 0.0095 s
+    -> per-call avg: 0.001890 s
+  [step_06_selection_lower] 0.6764 s
+  [step_06_selection_compile] 1.3978 s
+  [step_06_selection_first_call] 0.0027 s
+  [step_06_selection_steady_x5] 0.0107 s
+    -> per-call avg: 0.002131 s
+  [step_06_neighbourhood_lower] 0.5750 s
+  [step_06_neighbourhood_compile] 1.4221 s
+  [step_06_neighbourhood_first_call] 0.0023 s
+  [step_06_neighbourhood_steady_x5] 0.0093 s
+    -> per-call avg: 0.001866 s
+  [step_06_up_sample_lower] 0.6783 s
+  [step_06_up_sample_compile] 1.4112 s
+  [step_06_up_sample_first_call] 0.0028 s
+  [step_06_up_sample_steady_x5] 0.0093 s
+    -> per-call avg: 0.001870 s
+  [step_07_ray_trace_lower] 0.7123 s
+  [step_07_ray_trace_compile] 1.4879 s
+  [step_07_ray_trace_first_call] 0.0028 s
+  [step_07_ray_trace_steady_x5] 0.0095 s
+    -> per-call avg: 0.001903 s
+  [step_07_containment_lower] 0.7115 s
+  [step_07_containment_compile] 1.5181 s
+  [step_07_containment_first_call] 0.0029 s
+  [step_07_containment_steady_x5] 0.0098 s
+    -> per-call avg: 0.001959 s
+  [step_07_selection_lower] 0.7185 s
+  [step_07_selection_compile] 1.5257 s
+  [step_07_selection_first_call] 0.0027 s
+  [step_07_selection_steady_x5] 0.0093 s
+    -> per-call avg: 0.001860 s
+  [step_07_neighbourhood_lower] 0.6208 s
+  [step_07_neighbourhood_compile] 1.5439 s
+  [step_07_neighbourhood_first_call] 0.0024 s
+  [step_07_neighbourhood_steady_x5] 0.0101 s
+    -> per-call avg: 0.002014 s
+  [step_07_up_sample_lower] 0.7218 s
+  [step_07_up_sample_compile] 1.5532 s
+  [step_07_up_sample_first_call] 0.0029 s
+  [step_07_up_sample_steady_x5] 0.0096 s
+    -> per-call avg: 0.001924 s
+  [magnification_filter_lower] 0.8479 s
+  [magnification_filter_compile] 1.6421 s
+  [magnification_filter_first_call] 0.0029 s
+  [magnification_filter_steady_x5] 0.0101 s
+    -> per-call avg: 0.002013 s
+
+--- Numerical controls ---
+
+========================================================================
+POINT-SOURCE IMAGE-PLANE BREAKDOWN
+========================================================================
+  Solved source centre                                        0.172 ms
+  Step 0: ray trace                                           1.246 ms
+  Step 0: containment                                         0.176 ms
+  Step 0: selection                                          -0.095 ms
+  Step 0: neighbourhood                                       0.173 ms
+  Step 0: up sample                                          -0.190 ms
+  Step 1: ray trace                                           0.203 ms
+  Step 1: containment                                         0.080 ms
+  Step 1: selection                                          -0.457 ms
+  Step 1: neighbourhood                                       0.244 ms
+  Step 1: up sample                                           0.064 ms
+  Step 2: ray trace                                          -0.088 ms
+  Step 2: containment                                         0.124 ms
+  Step 2: selection                                           0.026 ms
+  Step 2: neighbourhood                                       0.052 ms
+  Step 2: up sample                                          -0.054 ms
+  Step 3: ray trace                                           0.013 ms
+  Step 3: containment                                        -0.043 ms
+  Step 3: selection                                          -0.049 ms
+  Step 3: neighbourhood                                      -0.011 ms
+  Step 3: up sample                                           0.273 ms
+  Step 4: ray trace                                          -0.148 ms
+  Step 4: containment                                         0.061 ms
+  Step 4: selection                                           0.005 ms
+  Step 4: neighbourhood                                       0.117 ms
+  Step 4: up sample                                           0.023 ms
+  Step 5: ray trace                                          -0.023 ms
+  Step 5: containment                                        -0.079 ms
+  Step 5: selection                                          -0.080 ms
+  Step 5: neighbourhood                                      -0.052 ms
+  Step 5: up sample                                           0.298 ms
+  Step 6: ray trace                                          -0.181 ms
+  Step 6: containment                                         0.090 ms
+  Step 6: selection                                           0.241 ms
+  Step 6: neighbourhood                                      -0.265 ms
+  Step 6: up sample                                           0.004 ms
+  Step 7: ray trace                                           0.033 ms
+  Step 7: containment                                         0.057 ms
+  Step 7: selection                                          -0.100 ms
+  Step 7: neighbourhood                                       0.154 ms
+  Step 7: up sample                                          -0.090 ms
+  Magnification filter                                        0.089 ms
+  Pairing chi-squared / fused-wrapper residual                0.082 ms
+------------------------------------------------------------------------
+  Fused solved likelihood                                     2.095 ms
+  Fused plain control                                         1.922 ms
+  Results JSON: /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p4/output/point_source_image_p4_replicates_356365/image_plane_hpc_ral_cpu_fp64_p4_rep1.json
+  Results PNG:  /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p4/output/point_source_image_p4_replicates_356365/image_plane_hpc_ral_cpu_fp64_p4_rep1.png
+
+======================================================================
+PROFILING SUMMARY
+======================================================================
+  full_solved_lower                     2.0417 s
+  full_solved_compile                   3.1709 s
+  full_solved_first_call                0.0062 s
+  full_solved_steady_x5                 0.0105 s
+  full_plain_control_lower              1.3654 s
+  full_plain_control_compile            2.8551 s
+  full_plain_control_first_call         0.0034 s
+  full_plain_control_steady_x5          0.0096 s
+  source_centre_lower                   0.1847 s
+  source_centre_compile                 0.2560 s
+  source_centre_first_call              0.0009 s
+  source_centre_steady_x5               0.0009 s
+  step_00_ray_trace_lower               0.1933 s
+  step_00_ray_trace_compile             0.1508 s
+  step_00_ray_trace_first_call          0.0016 s
+  step_00_ray_trace_steady_x5           0.0071 s
+  step_00_containment_lower             0.2392 s
+  step_00_containment_compile           0.4055 s
+  step_00_containment_first_call        0.0025 s
+  step_00_containment_steady_x5         0.0080 s
+  step_00_selection_lower               0.3582 s
+  step_00_selection_compile             0.4494 s
+  step_00_selection_first_call          0.0022 s
+  step_00_selection_steady_x5           0.0075 s
+  step_00_neighbourhood_lower           0.2682 s
+  step_00_neighbourhood_compile         0.5170 s
+  step_00_neighbourhood_first_call      0.0025 s
+  step_00_neighbourhood_steady_x5       0.0084 s
+  step_00_up_sample_lower               0.2729 s
+  step_00_up_sample_compile             0.5336 s
+  step_00_up_sample_first_call          0.0025 s
+  step_00_up_sample_steady_x5           0.0074 s
+  step_01_ray_trace_lower               0.4170 s
+  step_01_ray_trace_compile             0.6305 s
+  step_01_ray_trace_first_call          0.0028 s
+  step_01_ray_trace_steady_x5           0.0084 s
+  step_01_containment_lower             0.3209 s
+  step_01_containment_compile           0.6454 s
+  step_01_containment_first_call        0.0027 s
+  step_01_containment_steady_x5         0.0088 s
+  step_01_selection_lower               0.4423 s
+  step_01_selection_compile             0.7035 s
+  step_01_selection_first_call          0.0022 s
+  step_01_selection_steady_x5           0.0065 s
+  step_01_neighbourhood_lower           0.3359 s
+  step_01_neighbourhood_compile         0.7358 s
+  step_01_neighbourhood_first_call      0.0022 s
+  step_01_neighbourhood_steady_x5       0.0078 s
+  step_01_up_sample_lower               0.3330 s
+  step_01_up_sample_compile             0.7231 s
+  step_01_up_sample_first_call          0.0026 s
+  step_01_up_sample_steady_x5           0.0081 s
+  step_02_ray_trace_lower               0.4758 s
+  step_02_ray_trace_compile             0.7928 s
+  step_02_ray_trace_first_call          0.0026 s
+  step_02_ray_trace_steady_x5           0.0076 s
+  step_02_containment_lower             0.3701 s
+  step_02_containment_compile           0.8059 s
+  step_02_containment_first_call        0.0026 s
+  step_02_containment_steady_x5         0.0083 s
+  step_02_selection_lower               0.4768 s
+  step_02_selection_compile             0.8317 s
+  step_02_selection_first_call          0.0026 s
+  step_02_selection_steady_x5           0.0084 s
+  step_02_neighbourhood_lower           0.3820 s
+  step_02_neighbourhood_compile         0.8813 s
+  step_02_neighbourhood_first_call      0.0026 s
+  step_02_neighbourhood_steady_x5       0.0086 s
+  step_02_up_sample_lower               0.4832 s
+  step_02_up_sample_compile             0.8702 s
+  step_02_up_sample_first_call          0.0027 s
+  step_02_up_sample_steady_x5           0.0084 s
+  step_03_ray_trace_lower               0.4171 s
+  step_03_ray_trace_compile             0.9080 s
+  step_03_ray_trace_first_call          0.0023 s
+  step_03_ray_trace_steady_x5           0.0084 s
+  step_03_containment_lower             0.5227 s
+  step_03_containment_compile           0.9230 s
+  step_03_containment_first_call        0.0027 s
+  step_03_containment_steady_x5         0.0082 s
+  step_03_selection_lower               0.4252 s
+  step_03_selection_compile             0.9565 s
+  step_03_selection_first_call          0.0027 s
+  step_03_selection_steady_x5           0.0080 s
+  step_03_neighbourhood_lower           0.5287 s
+  step_03_neighbourhood_compile         0.9798 s
+  step_03_neighbourhood_first_call      0.0022 s
+  step_03_neighbourhood_steady_x5       0.0079 s
+  step_03_up_sample_lower               0.5333 s
+  step_03_up_sample_compile             0.9738 s
+  step_03_up_sample_first_call          0.0022 s
+  step_03_up_sample_steady_x5           0.0093 s
+  step_04_ray_trace_lower               0.4643 s
+  step_04_ray_trace_compile             1.1083 s
+  step_04_ray_trace_first_call          0.0028 s
+  step_04_ray_trace_steady_x5           0.0086 s
+  step_04_containment_lower             0.5720 s
+  step_04_containment_compile           1.1197 s
+  step_04_containment_first_call        0.0022 s
+  step_04_containment_steady_x5         0.0089 s
+  step_04_selection_lower               0.4736 s
+  step_04_selection_compile             1.1373 s
+  step_04_selection_first_call          0.0028 s
+  step_04_selection_steady_x5           0.0089 s
+  step_04_neighbourhood_lower           0.5796 s
+  step_04_neighbourhood_compile         1.1750 s
+  step_04_neighbourhood_first_call      0.0027 s
+  step_04_neighbourhood_steady_x5       0.0095 s
+  step_04_up_sample_lower               0.4800 s
+  step_04_up_sample_compile             1.1650 s
+  step_04_up_sample_first_call          0.0028 s
+  step_04_up_sample_steady_x5           0.0096 s
+  step_05_ray_trace_lower               0.6153 s
+  step_05_ray_trace_compile             1.2251 s
+  step_05_ray_trace_first_call          0.0024 s
+  step_05_ray_trace_steady_x5           0.0095 s
+  step_05_containment_lower             0.6234 s
+  step_05_containment_compile           1.2472 s
+  step_05_containment_first_call        0.0027 s
+  step_05_containment_steady_x5         0.0091 s
+  step_05_selection_lower               0.5245 s
+  step_05_selection_compile             1.2934 s
+  step_05_selection_first_call          0.0024 s
+  step_05_selection_steady_x5           0.0087 s
+  step_05_neighbourhood_lower           0.6369 s
+  step_05_neighbourhood_compile         1.3169 s
+  step_05_neighbourhood_first_call      0.0027 s
+  step_05_neighbourhood_steady_x5       0.0084 s
+  step_05_up_sample_lower               0.6309 s
+  step_05_up_sample_compile             1.2926 s
+  step_05_up_sample_first_call          0.0029 s
+  step_05_up_sample_steady_x5           0.0099 s
+  step_06_ray_trace_lower               0.5606 s
+  step_06_ray_trace_compile             1.3574 s
+  step_06_ray_trace_first_call          0.0029 s
+  step_06_ray_trace_steady_x5           0.0090 s
+  step_06_containment_lower             0.6681 s
+  step_06_containment_compile           1.3642 s
+  step_06_containment_first_call        0.0027 s
+  step_06_containment_steady_x5         0.0095 s
+  step_06_selection_lower               0.6764 s
+  step_06_selection_compile             1.3978 s
+  step_06_selection_first_call          0.0027 s
+  step_06_selection_steady_x5           0.0107 s
+  step_06_neighbourhood_lower           0.5750 s
+  step_06_neighbourhood_compile         1.4221 s
+  step_06_neighbourhood_first_call      0.0023 s
+  step_06_neighbourhood_steady_x5       0.0093 s
+  step_06_up_sample_lower               0.6783 s
+  step_06_up_sample_compile             1.4112 s
+  step_06_up_sample_first_call          0.0028 s
+  step_06_up_sample_steady_x5           0.0093 s
+  step_07_ray_trace_lower               0.7123 s
+  step_07_ray_trace_compile             1.4879 s
+  step_07_ray_trace_first_call          0.0028 s
+  step_07_ray_trace_steady_x5           0.0095 s
+  step_07_containment_lower             0.7115 s
+  step_07_containment_compile           1.5181 s
+  step_07_containment_first_call        0.0029 s
+  step_07_containment_steady_x5         0.0098 s
+  step_07_selection_lower               0.7185 s
+  step_07_selection_compile             1.5257 s
+  step_07_selection_first_call          0.0027 s
+  step_07_selection_steady_x5           0.0093 s
+  step_07_neighbourhood_lower           0.6208 s
+  step_07_neighbourhood_compile         1.5439 s
+  step_07_neighbourhood_first_call      0.0024 s
+  step_07_neighbourhood_steady_x5       0.0101 s
+  step_07_up_sample_lower               0.7218 s
+  step_07_up_sample_compile             1.5532 s
+  step_07_up_sample_first_call          0.0029 s
+  step_07_up_sample_steady_x5           0.0096 s
+  magnification_filter_lower            0.8479 s
+  magnification_filter_compile          1.6421 s
+  magnification_filter_first_call       0.0029 s
+  magnification_filter_steady_x5        0.0101 s
+----------------------------------------------------------------------
+  TOTAL                                73.9776 s
+======================================================================
+==========================================
+RUN hpc_ral_cpu_fp64_p4_rep2 -> /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p4/output/point_source_image_p4_replicates_356365
+Sat 26 Sep 17:28:19 BST 2026
+loadavg: 1.72 1.04 3.00 1/2091 91995
+
+--- Eager controls ---
+  solved likelihood: 7.743201200877
+  plain likelihood:  7.196577317761
+
+--- Full fused controls ---
+  [full_solved_lower] 2.0464 s
+  [full_solved_compile] 3.0907 s
+  [full_solved_first_call] 0.0065 s
+  [full_solved_steady_x5] 0.0105 s
+    -> per-call avg: 0.002104 s
+  [full_plain_control_lower] 1.3967 s
+  [full_plain_control_compile] 2.8220 s
+  [full_plain_control_first_call] 0.0027 s
+  [full_plain_control_steady_x5] 0.0090 s
+    -> per-call avg: 0.001810 s
+
+--- Solved-centre and solver prefixes ---
+  [source_centre_lower] 0.1845 s
+  [source_centre_compile] 0.2526 s
+  [source_centre_first_call] 0.0009 s
+  [source_centre_steady_x5] 0.0007 s
+    -> per-call avg: 0.000149 s
+  [step_00_ray_trace_lower] 0.1942 s
+  [step_00_ray_trace_compile] 0.1633 s
+  [step_00_ray_trace_first_call] 0.0021 s
+  [step_00_ray_trace_steady_x5] 0.0055 s
+    -> per-call avg: 0.001092 s
+  [step_00_containment_lower] 0.2401 s
+  [step_00_containment_compile] 0.4030 s
+  [step_00_containment_first_call] 0.0025 s
+  [step_00_containment_steady_x5] 0.0068 s
+    -> per-call avg: 0.001361 s
+  [step_00_selection_lower] 0.3618 s
+  [step_00_selection_compile] 0.4391 s
+  [step_00_selection_first_call] 0.0021 s
+  [step_00_selection_steady_x5] 0.0076 s
+    -> per-call avg: 0.001515 s
+  [step_00_neighbourhood_lower] 0.2692 s
+  [step_00_neighbourhood_compile] 0.5249 s
+  [step_00_neighbourhood_first_call] 0.0025 s
+  [step_00_neighbourhood_steady_x5] 0.0079 s
+    -> per-call avg: 0.001580 s
+  [step_00_up_sample_lower] 0.2751 s
+  [step_00_up_sample_compile] 0.5305 s
+  [step_00_up_sample_first_call] 0.0025 s
+  [step_00_up_sample_steady_x5] 0.0078 s
+    -> per-call avg: 0.001550 s
+  [step_01_ray_trace_lower] 0.4221 s
+  [step_01_ray_trace_compile] 0.6117 s
+  [step_01_ray_trace_first_call] 0.0028 s
+  [step_01_ray_trace_steady_x5] 0.0075 s
+    -> per-call avg: 0.001506 s
+  [step_01_containment_lower] 0.3198 s
+  [step_01_containment_compile] 0.6417 s
+  [step_01_containment_first_call] 0.0025 s
+  [step_01_containment_steady_x5] 0.0079 s
+    -> per-call avg: 0.001590 s
+  [step_01_selection_lower] 0.4460 s
+  [step_01_selection_compile] 0.6930 s
+  [step_01_selection_first_call] 0.0021 s
+  [step_01_selection_steady_x5] 0.0084 s
+    -> per-call avg: 0.001684 s
+  [step_01_neighbourhood_lower] 0.3355 s
+  [step_01_neighbourhood_compile] 0.7175 s
+  [step_01_neighbourhood_first_call] 0.0022 s
+  [step_01_neighbourhood_steady_x5] 0.0087 s
+    -> per-call avg: 0.001746 s
+  [step_01_up_sample_lower] 0.3343 s
+  [step_01_up_sample_compile] 0.7299 s
+  [step_01_up_sample_first_call] 0.0022 s
+  [step_01_up_sample_steady_x5] 0.0076 s
+    -> per-call avg: 0.001510 s
+  [step_02_ray_trace_lower] 0.4758 s
+  [step_02_ray_trace_compile] 0.7883 s
+  [step_02_ray_trace_first_call] 0.0022 s
+  [step_02_ray_trace_steady_x5] 0.0075 s
+    -> per-call avg: 0.001499 s
+  [step_02_containment_lower] 0.3721 s
+  [step_02_containment_compile] 0.8209 s
+  [step_02_containment_first_call] 0.0021 s
+  [step_02_containment_steady_x5] 0.0069 s
+    -> per-call avg: 0.001384 s
+  [step_02_selection_lower] 0.4812 s
+  [step_02_selection_compile] 0.8300 s
+  [step_02_selection_first_call] 0.0026 s
+  [step_02_selection_steady_x5] 0.0089 s
+    -> per-call avg: 0.001776 s
+  [step_02_neighbourhood_lower] 0.3839 s
+  [step_02_neighbourhood_compile] 0.8627 s
+  [step_02_neighbourhood_first_call] 0.0023 s
+  [step_02_neighbourhood_steady_x5] 0.0083 s
+    -> per-call avg: 0.001665 s
+  [step_02_up_sample_lower] 0.4856 s
+  [step_02_up_sample_compile] 0.8658 s
+  [step_02_up_sample_first_call] 0.0022 s
+  [step_02_up_sample_steady_x5] 0.0094 s
+    -> per-call avg: 0.001880 s
+  [step_03_ray_trace_lower] 0.4182 s
+  [step_03_ray_trace_compile] 0.9138 s
+  [step_03_ray_trace_first_call] 0.0027 s
+  [step_03_ray_trace_steady_x5] 0.0087 s
+    -> per-call avg: 0.001731 s
+  [step_03_containment_lower] 0.5231 s
+  [step_03_containment_compile] 0.9153 s
+  [step_03_containment_first_call] 0.0023 s
+  [step_03_containment_steady_x5] 0.0082 s
+    -> per-call avg: 0.001646 s
+  [step_03_selection_lower] 0.4281 s
+  [step_03_selection_compile] 0.9465 s
+  [step_03_selection_first_call] 0.0022 s
+  [step_03_selection_steady_x5] 0.0082 s
+    -> per-call avg: 0.001648 s
+  [step_03_neighbourhood_lower] 0.5342 s
+  [step_03_neighbourhood_compile] 0.9800 s
+  [step_03_neighbourhood_first_call] 0.0023 s
+  [step_03_neighbourhood_steady_x5] 0.0085 s
+    -> per-call avg: 0.001708 s
+  [step_03_up_sample_lower] 0.5314 s
+  [step_03_up_sample_compile] 0.9695 s
+  [step_03_up_sample_first_call] 0.0028 s
+  [step_03_up_sample_steady_x5] 0.0091 s
+    -> per-call avg: 0.001828 s
+  [step_04_ray_trace_lower] 0.4628 s
+  [step_04_ray_trace_compile] 1.1008 s
+  [step_04_ray_trace_first_call] 0.0027 s
+  [step_04_ray_trace_steady_x5] 0.0084 s
+    -> per-call avg: 0.001685 s
+  [step_04_containment_lower] 0.5677 s
+  [step_04_containment_compile] 1.1342 s
+  [step_04_containment_first_call] 0.0028 s
+  [step_04_containment_steady_x5] 0.0089 s
+    -> per-call avg: 0.001777 s
+  [step_04_selection_lower] 0.4734 s
+  [step_04_selection_compile] 1.1436 s
+  [step_04_selection_first_call] 0.0022 s
+  [step_04_selection_steady_x5] 0.0093 s
+    -> per-call avg: 0.001860 s
+  [step_04_neighbourhood_lower] 0.5803 s
+  [step_04_neighbourhood_compile] 1.1861 s
+  [step_04_neighbourhood_first_call] 0.0024 s
+  [step_04_neighbourhood_steady_x5] 0.0076 s
+    -> per-call avg: 0.001518 s
+  [step_04_up_sample_lower] 0.4822 s
+  [step_04_up_sample_compile] 1.1603 s
+  [step_04_up_sample_first_call] 0.0027 s
+  [step_04_up_sample_steady_x5] 0.0089 s
+    -> per-call avg: 0.001773 s
+  [step_05_ray_trace_lower] 0.6138 s
+  [step_05_ray_trace_compile] 1.2534 s
+  [step_05_ray_trace_first_call] 0.0028 s
+  [step_05_ray_trace_steady_x5] 0.0088 s
+    -> per-call avg: 0.001761 s
+  [step_05_containment_lower] 0.6305 s
+  [step_05_containment_compile] 1.2643 s
+  [step_05_containment_first_call] 0.0023 s
+  [step_05_containment_steady_x5] 0.0094 s
+    -> per-call avg: 0.001883 s
+  [step_05_selection_lower] 0.5252 s
+  [step_05_selection_compile] 1.2773 s
+  [step_05_selection_first_call] 0.0024 s
+  [step_05_selection_steady_x5] 0.0092 s
+    -> per-call avg: 0.001843 s
+  [step_05_neighbourhood_lower] 0.6325 s
+  [step_05_neighbourhood_compile] 1.3056 s
+  [step_05_neighbourhood_first_call] 0.0027 s
+  [step_05_neighbourhood_steady_x5] 0.0100 s
+    -> per-call avg: 0.002010 s
+  [step_05_up_sample_lower] 0.6337 s
+  [step_05_up_sample_compile] 1.3152 s
+  [step_05_up_sample_first_call] 0.0028 s
+  [step_05_up_sample_steady_x5] 0.0112 s
+    -> per-call avg: 0.002237 s
+  [step_06_ray_trace_lower] 0.5632 s
+  [step_06_ray_trace_compile] 1.3604 s
+  [step_06_ray_trace_first_call] 0.0028 s
+  [step_06_ray_trace_steady_x5] 0.0095 s
+    -> per-call avg: 0.001907 s
+  [step_06_containment_lower] 0.6717 s
+  [step_06_containment_compile] 1.3816 s
+  [step_06_containment_first_call] 0.0029 s
+  [step_06_containment_steady_x5] 0.0096 s
+    -> per-call avg: 0.001913 s
+  [step_06_selection_lower] 0.6768 s
+  [step_06_selection_compile] 1.3968 s
+  [step_06_selection_first_call] 0.0030 s
+  [step_06_selection_steady_x5] 0.0095 s
+    -> per-call avg: 0.001902 s
+  [step_06_neighbourhood_lower] 0.5807 s
+  [step_06_neighbourhood_compile] 1.4369 s
+  [step_06_neighbourhood_first_call] 0.0028 s
+  [step_06_neighbourhood_steady_x5] 0.0095 s
+    -> per-call avg: 0.001907 s
+  [step_06_up_sample_lower] 0.6783 s
+  [step_06_up_sample_compile] 1.4281 s
+  [step_06_up_sample_first_call] 0.0024 s
+  [step_06_up_sample_steady_x5] 0.0105 s
+    -> per-call avg: 0.002105 s
+  [step_07_ray_trace_lower] 0.7051 s
+  [step_07_ray_trace_compile] 1.4920 s
+  [step_07_ray_trace_first_call] 0.0031 s
+  [step_07_ray_trace_steady_x5] 0.0098 s
+    -> per-call avg: 0.001955 s
+  [step_07_containment_lower] 0.7129 s
+  [step_07_containment_compile] 1.5060 s
+  [step_07_containment_first_call] 0.0030 s
+  [step_07_containment_steady_x5] 0.0090 s
+    -> per-call avg: 0.001805 s
+  [step_07_selection_lower] 0.7219 s
+  [step_07_selection_compile] 1.5264 s
+  [step_07_selection_first_call] 0.0029 s
+  [step_07_selection_steady_x5] 0.0102 s
+    -> per-call avg: 0.002032 s
+  [step_07_neighbourhood_lower] 0.6221 s
+  [step_07_neighbourhood_compile] 1.5514 s
+  [step_07_neighbourhood_first_call] 0.0031 s
+  [step_07_neighbourhood_steady_x5] 0.0094 s
+    -> per-call avg: 0.001886 s
+  [step_07_up_sample_lower] 0.7263 s
+  [step_07_up_sample_compile] 1.5566 s
+  [step_07_up_sample_first_call] 0.0026 s
+  [step_07_up_sample_steady_x5] 0.0095 s
+    -> per-call avg: 0.001901 s
+  [magnification_filter_lower] 0.8511 s
+  [magnification_filter_compile] 1.6384 s
+  [magnification_filter_first_call] 0.0031 s
+  [magnification_filter_steady_x5] 0.0101 s
+    -> per-call avg: 0.002018 s
+
+--- Numerical controls ---
+
+========================================================================
+POINT-SOURCE IMAGE-PLANE BREAKDOWN
+========================================================================
+  Solved source centre                                        0.149 ms
+  Step 0: ray trace                                           0.942 ms
+  Step 0: containment                                         0.270 ms
+  Step 0: selection                                           0.153 ms
+  Step 0: neighbourhood                                       0.065 ms
+  Step 0: up sample                                          -0.030 ms
+  Step 1: ray trace                                          -0.044 ms
+  Step 1: containment                                         0.083 ms
+  Step 1: selection                                           0.094 ms
+  Step 1: neighbourhood                                       0.062 ms
+  Step 1: up sample                                          -0.236 ms
+  Step 2: ray trace                                          -0.012 ms
+  Step 2: containment                                        -0.115 ms
+  Step 2: selection                                           0.392 ms
+  Step 2: neighbourhood                                      -0.111 ms
+  Step 2: up sample                                           0.215 ms
+  Step 3: ray trace                                          -0.149 ms
+  Step 3: containment                                        -0.084 ms
+  Step 3: selection                                           0.002 ms
+  Step 3: neighbourhood                                       0.060 ms
+  Step 3: up sample                                           0.120 ms
+  Step 4: ray trace                                          -0.143 ms
+  Step 4: containment                                         0.092 ms
+  Step 4: selection                                           0.083 ms
+  Step 4: neighbourhood                                      -0.342 ms
+  Step 4: up sample                                           0.255 ms
+  Step 5: ray trace                                          -0.012 ms
+  Step 5: containment                                         0.122 ms
+  Step 5: selection                                          -0.040 ms
+  Step 5: neighbourhood                                       0.167 ms
+  Step 5: up sample                                           0.227 ms
+  Step 6: ray trace                                          -0.330 ms
+  Step 6: containment                                         0.007 ms
+  Step 6: selection                                          -0.012 ms
+  Step 6: neighbourhood                                       0.005 ms
+  Step 6: up sample                                           0.198 ms
+  Step 7: ray trace                                          -0.150 ms
+  Step 7: containment                                        -0.150 ms
+  Step 7: selection                                           0.226 ms
+  Step 7: neighbourhood                                      -0.145 ms
+  Step 7: up sample                                           0.015 ms
+  Magnification filter                                        0.118 ms
+  Pairing chi-squared / fused-wrapper residual                0.085 ms
+------------------------------------------------------------------------
+  Fused solved likelihood                                     2.104 ms
+  Fused plain control                                         1.810 ms
+  Results JSON: /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p4/output/point_source_image_p4_replicates_356365/image_plane_hpc_ral_cpu_fp64_p4_rep2.json
+  Results PNG:  /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p4/output/point_source_image_p4_replicates_356365/image_plane_hpc_ral_cpu_fp64_p4_rep2.png
+
+======================================================================
+PROFILING SUMMARY
+======================================================================
+  full_solved_lower                     2.0464 s
+  full_solved_compile                   3.0907 s
+  full_solved_first_call                0.0065 s
+  full_solved_steady_x5                 0.0105 s
+  full_plain_control_lower              1.3967 s
+  full_plain_control_compile            2.8220 s
+  full_plain_control_first_call         0.0027 s
+  full_plain_control_steady_x5          0.0090 s
+  source_centre_lower                   0.1845 s
+  source_centre_compile                 0.2526 s
+  source_centre_first_call              0.0009 s
+  source_centre_steady_x5               0.0007 s
+  step_00_ray_trace_lower               0.1942 s
+  step_00_ray_trace_compile             0.1633 s
+  step_00_ray_trace_first_call          0.0021 s
+  step_00_ray_trace_steady_x5           0.0055 s
+  step_00_containment_lower             0.2401 s
+  step_00_containment_compile           0.4030 s
+  step_00_containment_first_call        0.0025 s
+  step_00_containment_steady_x5         0.0068 s
+  step_00_selection_lower               0.3618 s
+  step_00_selection_compile             0.4391 s
+  step_00_selection_first_call          0.0021 s
+  step_00_selection_steady_x5           0.0076 s
+  step_00_neighbourhood_lower           0.2692 s
+  step_00_neighbourhood_compile         0.5249 s
+  step_00_neighbourhood_first_call      0.0025 s
+  step_00_neighbourhood_steady_x5       0.0079 s
+  step_00_up_sample_lower               0.2751 s
+  step_00_up_sample_compile             0.5305 s
+  step_00_up_sample_first_call          0.0025 s
+  step_00_up_sample_steady_x5           0.0078 s
+  step_01_ray_trace_lower               0.4221 s
+  step_01_ray_trace_compile             0.6117 s
+  step_01_ray_trace_first_call          0.0028 s
+  step_01_ray_trace_steady_x5           0.0075 s
+  step_01_containment_lower             0.3198 s
+  step_01_containment_compile           0.6417 s
+  step_01_containment_first_call        0.0025 s
+  step_01_containment_steady_x5         0.0079 s
+  step_01_selection_lower               0.4460 s
+  step_01_selection_compile             0.6930 s
+  step_01_selection_first_call          0.0021 s
+  step_01_selection_steady_x5           0.0084 s
+  step_01_neighbourhood_lower           0.3355 s
+  step_01_neighbourhood_compile         0.7175 s
+  step_01_neighbourhood_first_call      0.0022 s
+  step_01_neighbourhood_steady_x5       0.0087 s
+  step_01_up_sample_lower               0.3343 s
+  step_01_up_sample_compile             0.7299 s
+  step_01_up_sample_first_call          0.0022 s
+  step_01_up_sample_steady_x5           0.0076 s
+  step_02_ray_trace_lower               0.4758 s
+  step_02_ray_trace_compile             0.7883 s
+  step_02_ray_trace_first_call          0.0022 s
+  step_02_ray_trace_steady_x5           0.0075 s
+  step_02_containment_lower             0.3721 s
+  step_02_containment_compile           0.8209 s
+  step_02_containment_first_call        0.0021 s
+  step_02_containment_steady_x5         0.0069 s
+  step_02_selection_lower               0.4812 s
+  step_02_selection_compile             0.8300 s
+  step_02_selection_first_call          0.0026 s
+  step_02_selection_steady_x5           0.0089 s
+  step_02_neighbourhood_lower           0.3839 s
+  step_02_neighbourhood_compile         0.8627 s
+  step_02_neighbourhood_first_call      0.0023 s
+  step_02_neighbourhood_steady_x5       0.0083 s
+  step_02_up_sample_lower               0.4856 s
+  step_02_up_sample_compile             0.8658 s
+  step_02_up_sample_first_call          0.0022 s
+  step_02_up_sample_steady_x5           0.0094 s
+  step_03_ray_trace_lower               0.4182 s
+  step_03_ray_trace_compile             0.9138 s
+  step_03_ray_trace_first_call          0.0027 s
+  step_03_ray_trace_steady_x5           0.0087 s
+  step_03_containment_lower             0.5231 s
+  step_03_containment_compile           0.9153 s
+  step_03_containment_first_call        0.0023 s
+  step_03_containment_steady_x5         0.0082 s
+  step_03_selection_lower               0.4281 s
+  step_03_selection_compile             0.9465 s
+  step_03_selection_first_call          0.0022 s
+  step_03_selection_steady_x5           0.0082 s
+  step_03_neighbourhood_lower           0.5342 s
+  step_03_neighbourhood_compile         0.9800 s
+  step_03_neighbourhood_first_call      0.0023 s
+  step_03_neighbourhood_steady_x5       0.0085 s
+  step_03_up_sample_lower               0.5314 s
+  step_03_up_sample_compile             0.9695 s
+  step_03_up_sample_first_call          0.0028 s
+  step_03_up_sample_steady_x5           0.0091 s
+  step_04_ray_trace_lower               0.4628 s
+  step_04_ray_trace_compile             1.1008 s
+  step_04_ray_trace_first_call          0.0027 s
+  step_04_ray_trace_steady_x5           0.0084 s
+  step_04_containment_lower             0.5677 s
+  step_04_containment_compile           1.1342 s
+  step_04_containment_first_call        0.0028 s
+  step_04_containment_steady_x5         0.0089 s
+  step_04_selection_lower               0.4734 s
+  step_04_selection_compile             1.1436 s
+  step_04_selection_first_call          0.0022 s
+  step_04_selection_steady_x5           0.0093 s
+  step_04_neighbourhood_lower           0.5803 s
+  step_04_neighbourhood_compile         1.1861 s
+  step_04_neighbourhood_first_call      0.0024 s
+  step_04_neighbourhood_steady_x5       0.0076 s
+  step_04_up_sample_lower               0.4822 s
+  step_04_up_sample_compile             1.1603 s
+  step_04_up_sample_first_call          0.0027 s
+  step_04_up_sample_steady_x5           0.0089 s
+  step_05_ray_trace_lower               0.6138 s
+  step_05_ray_trace_compile             1.2534 s
+  step_05_ray_trace_first_call          0.0028 s
+  step_05_ray_trace_steady_x5           0.0088 s
+  step_05_containment_lower             0.6305 s
+  step_05_containment_compile           1.2643 s
+  step_05_containment_first_call        0.0023 s
+  step_05_containment_steady_x5         0.0094 s
+  step_05_selection_lower               0.5252 s
+  step_05_selection_compile             1.2773 s
+  step_05_selection_first_call          0.0024 s
+  step_05_selection_steady_x5           0.0092 s
+  step_05_neighbourhood_lower           0.6325 s
+  step_05_neighbourhood_compile         1.3056 s
+  step_05_neighbourhood_first_call      0.0027 s
+  step_05_neighbourhood_steady_x5       0.0100 s
+  step_05_up_sample_lower               0.6337 s
+  step_05_up_sample_compile             1.3152 s
+  step_05_up_sample_first_call          0.0028 s
+  step_05_up_sample_steady_x5           0.0112 s
+  step_06_ray_trace_lower               0.5632 s
+  step_06_ray_trace_compile             1.3604 s
+  step_06_ray_trace_first_call          0.0028 s
+  step_06_ray_trace_steady_x5           0.0095 s
+  step_06_containment_lower             0.6717 s
+  step_06_containment_compile           1.3816 s
+  step_06_containment_first_call        0.0029 s
+  step_06_containment_steady_x5         0.0096 s
+  step_06_selection_lower               0.6768 s
+  step_06_selection_compile             1.3968 s
+  step_06_selection_first_call          0.0030 s
+  step_06_selection_steady_x5           0.0095 s
+  step_06_neighbourhood_lower           0.5807 s
+  step_06_neighbourhood_compile         1.4369 s
+  step_06_neighbourhood_first_call      0.0028 s
+  step_06_neighbourhood_steady_x5       0.0095 s
+  step_06_up_sample_lower               0.6783 s
+  step_06_up_sample_compile             1.4281 s
+  step_06_up_sample_first_call          0.0024 s
+  step_06_up_sample_steady_x5           0.0105 s
+  step_07_ray_trace_lower               0.7051 s
+  step_07_ray_trace_compile             1.4920 s
+  step_07_ray_trace_first_call          0.0031 s
+  step_07_ray_trace_steady_x5           0.0098 s
+  step_07_containment_lower             0.7129 s
+  step_07_containment_compile           1.5060 s
+  step_07_containment_first_call        0.0030 s
+  step_07_containment_steady_x5         0.0090 s
+  step_07_selection_lower               0.7219 s
+  step_07_selection_compile             1.5264 s
+  step_07_selection_first_call          0.0029 s
+  step_07_selection_steady_x5           0.0102 s
+  step_07_neighbourhood_lower           0.6221 s
+  step_07_neighbourhood_compile         1.5514 s
+  step_07_neighbourhood_first_call      0.0031 s
+  step_07_neighbourhood_steady_x5       0.0094 s
+  step_07_up_sample_lower               0.7263 s
+  step_07_up_sample_compile             1.5566 s
+  step_07_up_sample_first_call          0.0026 s
+  step_07_up_sample_steady_x5           0.0095 s
+  magnification_filter_lower            0.8511 s
+  magnification_filter_compile          1.6384 s
+  magnification_filter_first_call       0.0031 s
+  magnification_filter_steady_x5        0.0101 s
+----------------------------------------------------------------------
+  TOTAL                                73.9929 s
+======================================================================
+==========================================
+RUN hpc_ral_cpu_fp64_p4_rep3 -> /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p4/output/point_source_image_p4_replicates_356365
+Sat 26 Sep 17:30:10 BST 2026
+loadavg: 1.95 1.43 2.93 1/2089 92061
+
+--- Eager controls ---
+  solved likelihood: 7.743201200877
+  plain likelihood:  7.196577317761
+
+--- Full fused controls ---
+  [full_solved_lower] 2.0518 s
+  [full_solved_compile] 3.1271 s
+  [full_solved_first_call] 0.0061 s
+  [full_solved_steady_x5] 0.0104 s
+    -> per-call avg: 0.002082 s
+  [full_plain_control_lower] 1.3788 s
+  [full_plain_control_compile] 2.7866 s
+  [full_plain_control_first_call] 0.0031 s
+  [full_plain_control_steady_x5] 0.0091 s
+    -> per-call avg: 0.001817 s
+
+--- Solved-centre and solver prefixes ---
+  [source_centre_lower] 0.1867 s
+  [source_centre_compile] 0.2554 s
+  [source_centre_first_call] 0.0009 s
+  [source_centre_steady_x5] 0.0008 s
+    -> per-call avg: 0.000167 s
+  [step_00_ray_trace_lower] 0.1945 s
+  [step_00_ray_trace_compile] 0.1654 s
+  [step_00_ray_trace_first_call] 0.0024 s
+  [step_00_ray_trace_steady_x5] 0.0058 s
+    -> per-call avg: 0.001157 s
+  [step_00_containment_lower] 0.2402 s
+  [step_00_containment_compile] 0.4206 s
+  [step_00_containment_first_call] 0.0021 s
+  [step_00_containment_steady_x5] 0.0082 s
+    -> per-call avg: 0.001644 s
+  [step_00_selection_lower] 0.3666 s
+  [step_00_selection_compile] 0.4543 s
+  [step_00_selection_first_call] 0.0031 s
+  [step_00_selection_steady_x5] 0.0078 s
+    -> per-call avg: 0.001559 s
+  [step_00_neighbourhood_lower] 0.2739 s
+  [step_00_neighbourhood_compile] 0.5282 s
+  [step_00_neighbourhood_first_call] 0.0026 s
+  [step_00_neighbourhood_steady_x5] 0.0080 s
+    -> per-call avg: 0.001600 s
+  [step_00_up_sample_lower] 0.2759 s
+  [step_00_up_sample_compile] 0.5344 s
+  [step_00_up_sample_first_call] 0.0021 s
+  [step_00_up_sample_steady_x5] 0.0082 s
+    -> per-call avg: 0.001650 s
+  [step_01_ray_trace_lower] 0.4291 s
+  [step_01_ray_trace_compile] 0.6032 s
+  [step_01_ray_trace_first_call] 0.0021 s
+  [step_01_ray_trace_steady_x5] 0.0083 s
+    -> per-call avg: 0.001668 s
+  [step_01_containment_lower] 0.3280 s
+  [step_01_containment_compile] 0.6590 s
+  [step_01_containment_first_call] 0.0022 s
+  [step_01_containment_steady_x5] 0.0077 s
+    -> per-call avg: 0.001532 s
+  [step_01_selection_lower] 0.4429 s
+  [step_01_selection_compile] 0.6766 s
+  [step_01_selection_first_call] 0.0021 s
+  [step_01_selection_steady_x5] 0.0081 s
+    -> per-call avg: 0.001613 s
+  [step_01_neighbourhood_lower] 0.3381 s
+  [step_01_neighbourhood_compile] 0.7256 s
+  [step_01_neighbourhood_first_call] 0.0022 s
+  [step_01_neighbourhood_steady_x5] 0.0083 s
+    -> per-call avg: 0.001655 s
+  [step_01_up_sample_lower] 0.3385 s
+  [step_01_up_sample_compile] 0.7437 s
+  [step_01_up_sample_first_call] 0.0027 s
+  [step_01_up_sample_steady_x5] 0.0081 s
+    -> per-call avg: 0.001622 s
+  [step_02_ray_trace_lower] 0.4707 s
+  [step_02_ray_trace_compile] 0.7911 s
+  [step_02_ray_trace_first_call] 0.0022 s
+  [step_02_ray_trace_steady_x5] 0.0072 s
+    -> per-call avg: 0.001437 s
+  [step_02_containment_lower] 0.3748 s
+  [step_02_containment_compile] 0.8061 s
+  [step_02_containment_first_call] 0.0021 s
+  [step_02_containment_steady_x5] 0.0074 s
+    -> per-call avg: 0.001490 s
+  [step_02_selection_lower] 0.4809 s
+  [step_02_selection_compile] 0.8440 s
+  [step_02_selection_first_call] 0.0022 s
+  [step_02_selection_steady_x5] 0.0075 s
+    -> per-call avg: 0.001509 s
+  [step_02_neighbourhood_lower] 0.3872 s
+  [step_02_neighbourhood_compile] 0.8667 s
+  [step_02_neighbourhood_first_call] 0.0022 s
+  [step_02_neighbourhood_steady_x5] 0.0081 s
+    -> per-call avg: 0.001614 s
+  [step_02_up_sample_lower] 0.4875 s
+  [step_02_up_sample_compile] 0.8564 s
+  [step_02_up_sample_first_call] 0.0027 s
+  [step_02_up_sample_steady_x5] 0.0091 s
+    -> per-call avg: 0.001823 s
+  [step_03_ray_trace_lower] 0.4193 s
+  [step_03_ray_trace_compile] 0.9046 s
+  [step_03_ray_trace_first_call] 0.0022 s
+  [step_03_ray_trace_steady_x5] 0.0087 s
+    -> per-call avg: 0.001739 s
+  [step_03_containment_lower] 0.5242 s
+  [step_03_containment_compile] 0.9277 s
+  [step_03_containment_first_call] 0.0027 s
+  [step_03_containment_steady_x5] 0.0087 s
+    -> per-call avg: 0.001733 s
+  [step_03_selection_lower] 0.4316 s
+  [step_03_selection_compile] 0.9401 s
+  [step_03_selection_first_call] 0.0027 s
+  [step_03_selection_steady_x5] 0.0078 s
+    -> per-call avg: 0.001559 s
+  [step_03_neighbourhood_lower] 0.5364 s
+  [step_03_neighbourhood_compile] 0.9871 s
+  [step_03_neighbourhood_first_call] 0.0028 s
+  [step_03_neighbourhood_steady_x5] 0.0087 s
+    -> per-call avg: 0.001736 s
+  [step_03_up_sample_lower] 0.5423 s
+  [step_03_up_sample_compile] 0.9936 s
+  [step_03_up_sample_first_call] 0.0024 s
+  [step_03_up_sample_steady_x5] 0.0092 s
+    -> per-call avg: 0.001831 s
+  [step_04_ray_trace_lower] 0.4640 s
+  [step_04_ray_trace_compile] 1.1020 s
+  [step_04_ray_trace_first_call] 0.0028 s
+  [step_04_ray_trace_steady_x5] 0.0089 s
+    -> per-call avg: 0.001771 s
+  [step_04_containment_lower] 0.5675 s
+  [step_04_containment_compile] 1.1332 s
+  [step_04_containment_first_call] 0.0028 s
+  [step_04_containment_steady_x5] 0.0083 s
+    -> per-call avg: 0.001655 s
+  [step_04_selection_lower] 0.4841 s
+  [step_04_selection_compile] 1.1560 s
+  [step_04_selection_first_call] 0.0023 s
+  [step_04_selection_steady_x5] 0.0086 s
+    -> per-call avg: 0.001724 s
+  [step_04_neighbourhood_lower] 0.5917 s
+  [step_04_neighbourhood_compile] 1.1819 s
+  [step_04_neighbourhood_first_call] 0.0028 s
+  [step_04_neighbourhood_steady_x5] 0.0094 s
+    -> per-call avg: 0.001877 s
+  [step_04_up_sample_lower] 0.4811 s
+  [step_04_up_sample_compile] 1.1636 s
+  [step_04_up_sample_first_call] 0.0027 s
+  [step_04_up_sample_steady_x5] 0.0092 s
+    -> per-call avg: 0.001848 s
+  [step_05_ray_trace_lower] 0.6122 s
+  [step_05_ray_trace_compile] 1.2342 s
+  [step_05_ray_trace_first_call] 0.0027 s
+  [step_05_ray_trace_steady_x5] 0.0083 s
+    -> per-call avg: 0.001661 s
+  [step_05_containment_lower] 0.6254 s
+  [step_05_containment_compile] 1.2637 s
+  [step_05_containment_first_call] 0.0028 s
+  [step_05_containment_steady_x5] 0.0095 s
+    -> per-call avg: 0.001904 s
+  [step_05_selection_lower] 0.5250 s
+  [step_05_selection_compile] 1.2837 s
+  [step_05_selection_first_call] 0.0028 s
+  [step_05_selection_steady_x5] 0.0095 s
+    -> per-call avg: 0.001909 s
+  [step_05_neighbourhood_lower] 0.6336 s
+  [step_05_neighbourhood_compile] 1.3140 s
+  [step_05_neighbourhood_first_call] 0.0027 s
+  [step_05_neighbourhood_steady_x5] 0.0094 s
+    -> per-call avg: 0.001875 s
+  [step_05_up_sample_lower] 0.6369 s
+  [step_05_up_sample_compile] 1.3125 s
+  [step_05_up_sample_first_call] 0.0029 s
+  [step_05_up_sample_steady_x5] 0.0094 s
+    -> per-call avg: 0.001873 s
+  [step_06_ray_trace_lower] 0.5599 s
+  [step_06_ray_trace_compile] 1.3543 s
+  [step_06_ray_trace_first_call] 0.0027 s
+  [step_06_ray_trace_steady_x5] 0.0089 s
+    -> per-call avg: 0.001780 s
+  [step_06_containment_lower] 0.6655 s
+  [step_06_containment_compile] 1.3785 s
+  [step_06_containment_first_call] 0.0030 s
+  [step_06_containment_steady_x5] 0.0088 s
+    -> per-call avg: 0.001764 s
+  [step_06_selection_lower] 0.6770 s
+  [step_06_selection_compile] 1.4001 s
+  [step_06_selection_first_call] 0.0028 s
+  [step_06_selection_steady_x5] 0.0086 s
+    -> per-call avg: 0.001730 s
+  [step_06_neighbourhood_lower] 0.5769 s
+  [step_06_neighbourhood_compile] 1.4438 s
+  [step_06_neighbourhood_first_call] 0.0030 s
+  [step_06_neighbourhood_steady_x5] 0.0098 s
+    -> per-call avg: 0.001967 s
+  [step_06_up_sample_lower] 0.6872 s
+  [step_06_up_sample_compile] 1.4237 s
+  [step_06_up_sample_first_call] 0.0029 s
+  [step_06_up_sample_steady_x5] 0.0094 s
+    -> per-call avg: 0.001871 s
+  [step_07_ray_trace_lower] 0.7145 s
+  [step_07_ray_trace_compile] 1.4860 s
+  [step_07_ray_trace_first_call] 0.0029 s
+  [step_07_ray_trace_steady_x5] 0.0084 s
+    -> per-call avg: 0.001670 s
+  [step_07_containment_lower] 0.7208 s
+  [step_07_containment_compile] 1.5016 s
+  [step_07_containment_first_call] 0.0027 s
+  [step_07_containment_steady_x5] 0.0100 s
+    -> per-call avg: 0.002009 s
+  [step_07_selection_lower] 0.7263 s
+  [step_07_selection_compile] 1.5249 s
+  [step_07_selection_first_call] 0.0028 s
+  [step_07_selection_steady_x5] 0.0090 s
+    -> per-call avg: 0.001799 s
+  [step_07_neighbourhood_lower] 0.6254 s
+  [step_07_neighbourhood_compile] 1.5464 s
+  [step_07_neighbourhood_first_call] 0.0029 s
+  [step_07_neighbourhood_steady_x5] 0.0106 s
+    -> per-call avg: 0.002116 s
+  [step_07_up_sample_lower] 0.7341 s
+  [step_07_up_sample_compile] 1.5494 s
+  [step_07_up_sample_first_call] 0.0023 s
+  [step_07_up_sample_steady_x5] 0.0106 s
+    -> per-call avg: 0.002121 s
+  [magnification_filter_lower] 0.8720 s
+  [magnification_filter_compile] 1.6507 s
+  [magnification_filter_first_call] 0.0030 s
+  [magnification_filter_steady_x5] 0.0098 s
+    -> per-call avg: 0.001967 s
+
+--- Numerical controls ---
+
+========================================================================
+POINT-SOURCE IMAGE-PLANE BREAKDOWN
+========================================================================
+  Solved source centre                                        0.167 ms
+  Step 0: ray trace                                           0.990 ms
+  Step 0: containment                                         0.487 ms
+  Step 0: selection                                          -0.085 ms
+  Step 0: neighbourhood                                       0.041 ms
+  Step 0: up sample                                           0.050 ms
+  Step 1: ray trace                                           0.018 ms
+  Step 1: containment                                        -0.136 ms
+  Step 1: selection                                           0.081 ms
+  Step 1: neighbourhood                                       0.042 ms
+  Step 1: up sample                                          -0.033 ms
+  Step 2: ray trace                                          -0.185 ms
+  Step 2: containment                                         0.052 ms
+  Step 2: selection                                           0.019 ms
+  Step 2: neighbourhood                                       0.105 ms
+  Step 2: up sample                                           0.209 ms
+  Step 3: ray trace                                          -0.084 ms
+  Step 3: containment                                        -0.005 ms
+  Step 3: selection                                          -0.174 ms
+  Step 3: neighbourhood                                       0.176 ms
+  Step 3: up sample                                           0.095 ms
+  Step 4: ray trace                                          -0.059 ms
+  Step 4: containment                                        -0.117 ms
+  Step 4: selection                                           0.069 ms
+  Step 4: neighbourhood                                       0.153 ms
+  Step 4: up sample                                          -0.028 ms
+  Step 5: ray trace                                          -0.188 ms
+  Step 5: containment                                         0.243 ms
+  Step 5: selection                                           0.005 ms
+  Step 5: neighbourhood                                      -0.034 ms
+  Step 5: up sample                                          -0.002 ms
+  Step 6: ray trace                                          -0.093 ms
+  Step 6: containment                                        -0.016 ms
+  Step 6: selection                                          -0.034 ms
+  Step 6: neighbourhood                                       0.237 ms
+  Step 6: up sample                                          -0.096 ms
+  Step 7: ray trace                                          -0.201 ms
+  Step 7: containment                                         0.339 ms
+  Step 7: selection                                          -0.210 ms
+  Step 7: neighbourhood                                       0.316 ms
+  Step 7: up sample                                           0.006 ms
+  Magnification filter                                       -0.154 ms
+  Pairing chi-squared / fused-wrapper residual                0.114 ms
+------------------------------------------------------------------------
+  Fused solved likelihood                                     2.082 ms
+  Fused plain control                                         1.817 ms
+  Results JSON: /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p4/output/point_source_image_p4_replicates_356365/image_plane_hpc_ral_cpu_fp64_p4_rep3.json
+  Results PNG:  /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p4/output/point_source_image_p4_replicates_356365/image_plane_hpc_ral_cpu_fp64_p4_rep3.png
+
+======================================================================
+PROFILING SUMMARY
+======================================================================
+  full_solved_lower                     2.0518 s
+  full_solved_compile                   3.1271 s
+  full_solved_first_call                0.0061 s
+  full_solved_steady_x5                 0.0104 s
+  full_plain_control_lower              1.3788 s
+  full_plain_control_compile            2.7866 s
+  full_plain_control_first_call         0.0031 s
+  full_plain_control_steady_x5          0.0091 s
+  source_centre_lower                   0.1867 s
+  source_centre_compile                 0.2554 s
+  source_centre_first_call              0.0009 s
+  source_centre_steady_x5               0.0008 s
+  step_00_ray_trace_lower               0.1945 s
+  step_00_ray_trace_compile             0.1654 s
+  step_00_ray_trace_first_call          0.0024 s
+  step_00_ray_trace_steady_x5           0.0058 s
+  step_00_containment_lower             0.2402 s
+  step_00_containment_compile           0.4206 s
+  step_00_containment_first_call        0.0021 s
+  step_00_containment_steady_x5         0.0082 s
+  step_00_selection_lower               0.3666 s
+  step_00_selection_compile             0.4543 s
+  step_00_selection_first_call          0.0031 s
+  step_00_selection_steady_x5           0.0078 s
+  step_00_neighbourhood_lower           0.2739 s
+  step_00_neighbourhood_compile         0.5282 s
+  step_00_neighbourhood_first_call      0.0026 s
+  step_00_neighbourhood_steady_x5       0.0080 s
+  step_00_up_sample_lower               0.2759 s
+  step_00_up_sample_compile             0.5344 s
+  step_00_up_sample_first_call          0.0021 s
+  step_00_up_sample_steady_x5           0.0082 s
+  step_01_ray_trace_lower               0.4291 s
+  step_01_ray_trace_compile             0.6032 s
+  step_01_ray_trace_first_call          0.0021 s
+  step_01_ray_trace_steady_x5           0.0083 s
+  step_01_containment_lower             0.3280 s
+  step_01_containment_compile           0.6590 s
+  step_01_containment_first_call        0.0022 s
+  step_01_containment_steady_x5         0.0077 s
+  step_01_selection_lower               0.4429 s
+  step_01_selection_compile             0.6766 s
+  step_01_selection_first_call          0.0021 s
+  step_01_selection_steady_x5           0.0081 s
+  step_01_neighbourhood_lower           0.3381 s
+  step_01_neighbourhood_compile         0.7256 s
+  step_01_neighbourhood_first_call      0.0022 s
+  step_01_neighbourhood_steady_x5       0.0083 s
+  step_01_up_sample_lower               0.3385 s
+  step_01_up_sample_compile             0.7437 s
+  step_01_up_sample_first_call          0.0027 s
+  step_01_up_sample_steady_x5           0.0081 s
+  step_02_ray_trace_lower               0.4707 s
+  step_02_ray_trace_compile             0.7911 s
+  step_02_ray_trace_first_call          0.0022 s
+  step_02_ray_trace_steady_x5           0.0072 s
+  step_02_containment_lower             0.3748 s
+  step_02_containment_compile           0.8061 s
+  step_02_containment_first_call        0.0021 s
+  step_02_containment_steady_x5         0.0074 s
+  step_02_selection_lower               0.4809 s
+  step_02_selection_compile             0.8440 s
+  step_02_selection_first_call          0.0022 s
+  step_02_selection_steady_x5           0.0075 s
+  step_02_neighbourhood_lower           0.3872 s
+  step_02_neighbourhood_compile         0.8667 s
+  step_02_neighbourhood_first_call      0.0022 s
+  step_02_neighbourhood_steady_x5       0.0081 s
+  step_02_up_sample_lower               0.4875 s
+  step_02_up_sample_compile             0.8564 s
+  step_02_up_sample_first_call          0.0027 s
+  step_02_up_sample_steady_x5           0.0091 s
+  step_03_ray_trace_lower               0.4193 s
+  step_03_ray_trace_compile             0.9046 s
+  step_03_ray_trace_first_call          0.0022 s
+  step_03_ray_trace_steady_x5           0.0087 s
+  step_03_containment_lower             0.5242 s
+  step_03_containment_compile           0.9277 s
+  step_03_containment_first_call        0.0027 s
+  step_03_containment_steady_x5         0.0087 s
+  step_03_selection_lower               0.4316 s
+  step_03_selection_compile             0.9401 s
+  step_03_selection_first_call          0.0027 s
+  step_03_selection_steady_x5           0.0078 s
+  step_03_neighbourhood_lower           0.5364 s
+  step_03_neighbourhood_compile         0.9871 s
+  step_03_neighbourhood_first_call      0.0028 s
+  step_03_neighbourhood_steady_x5       0.0087 s
+  step_03_up_sample_lower               0.5423 s
+  step_03_up_sample_compile             0.9936 s
+  step_03_up_sample_first_call          0.0024 s
+  step_03_up_sample_steady_x5           0.0092 s
+  step_04_ray_trace_lower               0.4640 s
+  step_04_ray_trace_compile             1.1020 s
+  step_04_ray_trace_first_call          0.0028 s
+  step_04_ray_trace_steady_x5           0.0089 s
+  step_04_containment_lower             0.5675 s
+  step_04_containment_compile           1.1332 s
+  step_04_containment_first_call        0.0028 s
+  step_04_containment_steady_x5         0.0083 s
+  step_04_selection_lower               0.4841 s
+  step_04_selection_compile             1.1560 s
+  step_04_selection_first_call          0.0023 s
+  step_04_selection_steady_x5           0.0086 s
+  step_04_neighbourhood_lower           0.5917 s
+  step_04_neighbourhood_compile         1.1819 s
+  step_04_neighbourhood_first_call      0.0028 s
+  step_04_neighbourhood_steady_x5       0.0094 s
+  step_04_up_sample_lower               0.4811 s
+  step_04_up_sample_compile             1.1636 s
+  step_04_up_sample_first_call          0.0027 s
+  step_04_up_sample_steady_x5           0.0092 s
+  step_05_ray_trace_lower               0.6122 s
+  step_05_ray_trace_compile             1.2342 s
+  step_05_ray_trace_first_call          0.0027 s
+  step_05_ray_trace_steady_x5           0.0083 s
+  step_05_containment_lower             0.6254 s
+  step_05_containment_compile           1.2637 s
+  step_05_containment_first_call        0.0028 s
+  step_05_containment_steady_x5         0.0095 s
+  step_05_selection_lower               0.5250 s
+  step_05_selection_compile             1.2837 s
+  step_05_selection_first_call          0.0028 s
+  step_05_selection_steady_x5           0.0095 s
+  step_05_neighbourhood_lower           0.6336 s
+  step_05_neighbourhood_compile         1.3140 s
+  step_05_neighbourhood_first_call      0.0027 s
+  step_05_neighbourhood_steady_x5       0.0094 s
+  step_05_up_sample_lower               0.6369 s
+  step_05_up_sample_compile             1.3125 s
+  step_05_up_sample_first_call          0.0029 s
+  step_05_up_sample_steady_x5           0.0094 s
+  step_06_ray_trace_lower               0.5599 s
+  step_06_ray_trace_compile             1.3543 s
+  step_06_ray_trace_first_call          0.0027 s
+  step_06_ray_trace_steady_x5           0.0089 s
+  step_06_containment_lower             0.6655 s
+  step_06_containment_compile           1.3785 s
+  step_06_containment_first_call        0.0030 s
+  step_06_containment_steady_x5         0.0088 s
+  step_06_selection_lower               0.6770 s
+  step_06_selection_compile             1.4001 s
+  step_06_selection_first_call          0.0028 s
+  step_06_selection_steady_x5           0.0086 s
+  step_06_neighbourhood_lower           0.5769 s
+  step_06_neighbourhood_compile         1.4438 s
+  step_06_neighbourhood_first_call      0.0030 s
+  step_06_neighbourhood_steady_x5       0.0098 s
+  step_06_up_sample_lower               0.6872 s
+  step_06_up_sample_compile             1.4237 s
+  step_06_up_sample_first_call          0.0029 s
+  step_06_up_sample_steady_x5           0.0094 s
+  step_07_ray_trace_lower               0.7145 s
+  step_07_ray_trace_compile             1.4860 s
+  step_07_ray_trace_first_call          0.0029 s
+  step_07_ray_trace_steady_x5           0.0084 s
+  step_07_containment_lower             0.7208 s
+  step_07_containment_compile           1.5016 s
+  step_07_containment_first_call        0.0027 s
+  step_07_containment_steady_x5         0.0100 s
+  step_07_selection_lower               0.7263 s
+  step_07_selection_compile             1.5249 s
+  step_07_selection_first_call          0.0028 s
+  step_07_selection_steady_x5           0.0090 s
+  step_07_neighbourhood_lower           0.6254 s
+  step_07_neighbourhood_compile         1.5464 s
+  step_07_neighbourhood_first_call      0.0029 s
+  step_07_neighbourhood_steady_x5       0.0106 s
+  step_07_up_sample_lower               0.7341 s
+  step_07_up_sample_compile             1.5494 s
+  step_07_up_sample_first_call          0.0023 s
+  step_07_up_sample_steady_x5           0.0106 s
+  magnification_filter_lower            0.8720 s
+  magnification_filter_compile          1.6507 s
+  magnification_filter_first_call       0.0030 s
+  magnification_filter_steady_x5        0.0098 s
+----------------------------------------------------------------------
+  TOTAL                                74.1747 s
+======================================================================
+==========================================
+RUN hpc_ral_cpu_fp64_p4_rep4 -> /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p4/output/point_source_image_p4_replicates_356365
+Sat 26 Sep 17:32:01 BST 2026
+loadavg: 1.73 1.58 2.82 1/2089 92464
+
+--- Eager controls ---
+  solved likelihood: 7.743201200877
+  plain likelihood:  7.196577317761
+
+--- Full fused controls ---
+  [full_solved_lower] 2.0525 s
+  [full_solved_compile] 3.0594 s
+  [full_solved_first_call] 0.0066 s
+  [full_solved_steady_x5] 0.0099 s
+    -> per-call avg: 0.001988 s
+  [full_plain_control_lower] 1.3971 s
+  [full_plain_control_compile] 2.8092 s
+  [full_plain_control_first_call] 0.0031 s
+  [full_plain_control_steady_x5] 0.0093 s
+    -> per-call avg: 0.001857 s
+
+--- Solved-centre and solver prefixes ---
+  [source_centre_lower] 0.1907 s
+  [source_centre_compile] 0.2654 s
+  [source_centre_first_call] 0.0009 s
+  [source_centre_steady_x5] 0.0008 s
+    -> per-call avg: 0.000166 s
+  [step_00_ray_trace_lower] 0.1955 s
+  [step_00_ray_trace_compile] 0.1586 s
+  [step_00_ray_trace_first_call] 0.0018 s
+  [step_00_ray_trace_steady_x5] 0.0057 s
+    -> per-call avg: 0.001132 s
+  [step_00_containment_lower] 0.2431 s
+  [step_00_containment_compile] 0.4087 s
+  [step_00_containment_first_call] 0.0026 s
+  [step_00_containment_steady_x5] 0.0079 s
+    -> per-call avg: 0.001578 s
+  [step_00_selection_lower] 0.3647 s
+  [step_00_selection_compile] 0.4367 s
+  [step_00_selection_first_call] 0.0020 s
+  [step_00_selection_steady_x5] 0.0074 s
+    -> per-call avg: 0.001477 s
+  [step_00_neighbourhood_lower] 0.2702 s
+  [step_00_neighbourhood_compile] 0.5227 s
+  [step_00_neighbourhood_first_call] 0.0021 s
+  [step_00_neighbourhood_steady_x5] 0.0077 s
+    -> per-call avg: 0.001539 s
+  [step_00_up_sample_lower] 0.2756 s
+  [step_00_up_sample_compile] 0.5419 s
+  [step_00_up_sample_first_call] 0.0020 s
+  [step_00_up_sample_steady_x5] 0.0080 s
+    -> per-call avg: 0.001591 s
+  [step_01_ray_trace_lower] 0.4173 s
+  [step_01_ray_trace_compile] 0.6202 s
+  [step_01_ray_trace_first_call] 0.0029 s
+  [step_01_ray_trace_steady_x5] 0.0084 s
+    -> per-call avg: 0.001684 s
+  [step_01_containment_lower] 0.3225 s
+  [step_01_containment_compile] 0.6392 s
+  [step_01_containment_first_call] 0.0022 s
+  [step_01_containment_steady_x5] 0.0078 s
+    -> per-call avg: 0.001552 s
+  [step_01_selection_lower] 0.4446 s
+  [step_01_selection_compile] 0.6979 s
+  [step_01_selection_first_call] 0.0027 s
+  [step_01_selection_steady_x5] 0.0080 s
+    -> per-call avg: 0.001596 s
+  [step_01_neighbourhood_lower] 0.3387 s
+  [step_01_neighbourhood_compile] 0.7181 s
+  [step_01_neighbourhood_first_call] 0.0026 s
+  [step_01_neighbourhood_steady_x5] 0.0084 s
+    -> per-call avg: 0.001672 s
+  [step_01_up_sample_lower] 0.3363 s
+  [step_01_up_sample_compile] 0.7203 s
+  [step_01_up_sample_first_call] 0.0021 s
+  [step_01_up_sample_steady_x5] 0.0081 s
+    -> per-call avg: 0.001615 s
+  [step_02_ray_trace_lower] 0.4750 s
+  [step_02_ray_trace_compile] 0.8006 s
+  [step_02_ray_trace_first_call] 0.0023 s
+  [step_02_ray_trace_steady_x5] 0.0077 s
+    -> per-call avg: 0.001531 s
+  [step_02_containment_lower] 0.3746 s
+  [step_02_containment_compile] 0.8074 s
+  [step_02_containment_first_call] 0.0022 s
+  [step_02_containment_steady_x5] 0.0079 s
+    -> per-call avg: 0.001577 s
+  [step_02_selection_lower] 0.4810 s
+  [step_02_selection_compile] 0.8346 s
+  [step_02_selection_first_call] 0.0021 s
+  [step_02_selection_steady_x5] 0.0077 s
+    -> per-call avg: 0.001542 s
+  [step_02_neighbourhood_lower] 0.3851 s
+  [step_02_neighbourhood_compile] 0.8544 s
+  [step_02_neighbourhood_first_call] 0.0027 s
+  [step_02_neighbourhood_steady_x5] 0.0084 s
+    -> per-call avg: 0.001677 s
+  [step_02_up_sample_lower] 0.4899 s
+  [step_02_up_sample_compile] 0.8505 s
+  [step_02_up_sample_first_call] 0.0022 s
+  [step_02_up_sample_steady_x5] 0.0083 s
+    -> per-call avg: 0.001669 s
+  [step_03_ray_trace_lower] 0.4194 s
+  [step_03_ray_trace_compile] 0.9057 s
+  [step_03_ray_trace_first_call] 0.0022 s
+  [step_03_ray_trace_steady_x5] 0.0086 s
+    -> per-call avg: 0.001711 s
+  [step_03_containment_lower] 0.5230 s
+  [step_03_containment_compile] 0.9235 s
+  [step_03_containment_first_call] 0.0023 s
+  [step_03_containment_steady_x5] 0.0078 s
+    -> per-call avg: 0.001551 s
+  [step_03_selection_lower] 0.4283 s
+  [step_03_selection_compile] 0.9383 s
+  [step_03_selection_first_call] 0.0028 s
+  [step_03_selection_steady_x5] 0.0082 s
+    -> per-call avg: 0.001635 s
+  [step_03_neighbourhood_lower] 0.5321 s
+  [step_03_neighbourhood_compile] 0.9699 s
+  [step_03_neighbourhood_first_call] 0.0028 s
+  [step_03_neighbourhood_steady_x5] 0.0082 s
+    -> per-call avg: 0.001631 s
+  [step_03_up_sample_lower] 0.5369 s
+  [step_03_up_sample_compile] 0.9697 s
+  [step_03_up_sample_first_call] 0.0028 s
+  [step_03_up_sample_steady_x5] 0.0087 s
+    -> per-call avg: 0.001741 s
+  [step_04_ray_trace_lower] 0.4698 s
+  [step_04_ray_trace_compile] 1.0919 s
+  [step_04_ray_trace_first_call] 0.0024 s
+  [step_04_ray_trace_steady_x5] 0.0089 s
+    -> per-call avg: 0.001788 s
+  [step_04_containment_lower] 0.5742 s
+  [step_04_containment_compile] 1.1186 s
+  [step_04_containment_first_call] 0.0024 s
+  [step_04_containment_steady_x5] 0.0092 s
+    -> per-call avg: 0.001840 s
+  [step_04_selection_lower] 0.4789 s
+  [step_04_selection_compile] 1.1304 s
+  [step_04_selection_first_call] 0.0022 s
+  [step_04_selection_steady_x5] 0.0089 s
+    -> per-call avg: 0.001785 s
+  [step_04_neighbourhood_lower] 0.5948 s
+  [step_04_neighbourhood_compile] 1.1765 s
+  [step_04_neighbourhood_first_call] 0.0025 s
+  [step_04_neighbourhood_steady_x5] 0.0091 s
+    -> per-call avg: 0.001829 s
+  [step_04_up_sample_lower] 0.4845 s
+  [step_04_up_sample_compile] 1.1640 s
+  [step_04_up_sample_first_call] 0.0029 s
+  [step_04_up_sample_steady_x5] 0.0083 s
+    -> per-call avg: 0.001651 s
+  [step_05_ray_trace_lower] 0.6266 s
+  [step_05_ray_trace_compile] 1.2328 s
+  [step_05_ray_trace_first_call] 0.0029 s
+  [step_05_ray_trace_steady_x5] 0.0093 s
+    -> per-call avg: 0.001856 s
+  [step_05_containment_lower] 0.6248 s
+  [step_05_containment_compile] 1.2411 s
+  [step_05_containment_first_call] 0.0025 s
+  [step_05_containment_steady_x5] 0.0084 s
+    -> per-call avg: 0.001680 s
+  [step_05_selection_lower] 0.5311 s
+  [step_05_selection_compile] 1.2720 s
+  [step_05_selection_first_call] 0.0028 s
+  [step_05_selection_steady_x5] 0.0097 s
+    -> per-call avg: 0.001932 s
+  [step_05_neighbourhood_lower] 0.6302 s
+  [step_05_neighbourhood_compile] 1.3187 s
+  [step_05_neighbourhood_first_call] 0.0028 s
+  [step_05_neighbourhood_steady_x5] 0.0089 s
+    -> per-call avg: 0.001770 s
+  [step_05_up_sample_lower] 0.6367 s
+  [step_05_up_sample_compile] 1.3069 s
+  [step_05_up_sample_first_call] 0.0029 s
+  [step_05_up_sample_steady_x5] 0.0080 s
+    -> per-call avg: 0.001604 s
+  [step_06_ray_trace_lower] 0.5671 s
+  [step_06_ray_trace_compile] 1.3536 s
+  [step_06_ray_trace_first_call] 0.0028 s
+  [step_06_ray_trace_steady_x5] 0.0101 s
+    -> per-call avg: 0.002022 s
+  [step_06_containment_lower] 0.6728 s
+  [step_06_containment_compile] 1.3905 s
+  [step_06_containment_first_call] 0.0024 s
+  [step_06_containment_steady_x5] 0.0110 s
+    -> per-call avg: 0.002208 s
+  [step_06_selection_lower] 0.6810 s
+  [step_06_selection_compile] 1.4046 s
+  [step_06_selection_first_call] 0.0027 s
+  [step_06_selection_steady_x5] 0.0094 s
+    -> per-call avg: 0.001878 s
+  [step_06_neighbourhood_lower] 0.5823 s
+  [step_06_neighbourhood_compile] 1.4237 s
+  [step_06_neighbourhood_first_call] 0.0029 s
+  [step_06_neighbourhood_steady_x5] 0.0100 s
+    -> per-call avg: 0.001996 s
+  [step_06_up_sample_lower] 0.6812 s
+  [step_06_up_sample_compile] 1.4333 s
+  [step_06_up_sample_first_call] 0.0029 s
+  [step_06_up_sample_steady_x5] 0.0087 s
+    -> per-call avg: 0.001737 s
+  [step_07_ray_trace_lower] 0.7165 s
+  [step_07_ray_trace_compile] 1.5016 s
+  [step_07_ray_trace_first_call] 0.0028 s
+  [step_07_ray_trace_steady_x5] 0.0103 s
+    -> per-call avg: 0.002059 s
+  [step_07_containment_lower] 0.7251 s
+  [step_07_containment_compile] 1.5118 s
+  [step_07_containment_first_call] 0.0030 s
+  [step_07_containment_steady_x5] 0.0106 s
+    -> per-call avg: 0.002117 s
+  [step_07_selection_lower] 0.7307 s
+  [step_07_selection_compile] 1.5276 s
+  [step_07_selection_first_call] 0.0028 s
+  [step_07_selection_steady_x5] 0.0094 s
+    -> per-call avg: 0.001880 s
+  [step_07_neighbourhood_lower] 0.6346 s
+  [step_07_neighbourhood_compile] 1.5414 s
+  [step_07_neighbourhood_first_call] 0.0029 s
+  [step_07_neighbourhood_steady_x5] 0.0099 s
+    -> per-call avg: 0.001981 s
+  [step_07_up_sample_lower] 0.7379 s
+  [step_07_up_sample_compile] 1.5566 s
+  [step_07_up_sample_first_call] 0.0028 s
+  [step_07_up_sample_steady_x5] 0.0094 s
+    -> per-call avg: 0.001888 s
+  [magnification_filter_lower] 0.8577 s
+  [magnification_filter_compile] 1.6462 s
+  [magnification_filter_first_call] 0.0028 s
+  [magnification_filter_steady_x5] 0.0101 s
+    -> per-call avg: 0.002026 s
+
+--- Numerical controls ---
+
+========================================================================
+POINT-SOURCE IMAGE-PLANE BREAKDOWN
+========================================================================
+  Solved source centre                                        0.166 ms
+  Step 0: ray trace                                           0.965 ms
+  Step 0: containment                                         0.446 ms
+  Step 0: selection                                          -0.100 ms
+  Step 0: neighbourhood                                       0.062 ms
+  Step 0: up sample                                           0.051 ms
+  Step 1: ray trace                                           0.093 ms
+  Step 1: containment                                        -0.132 ms
+  Step 1: selection                                           0.044 ms
+  Step 1: neighbourhood                                       0.076 ms
+  Step 1: up sample                                          -0.058 ms
+  Step 2: ray trace                                          -0.084 ms
+  Step 2: containment                                         0.046 ms
+  Step 2: selection                                          -0.035 ms
+  Step 2: neighbourhood                                       0.135 ms
+  Step 2: up sample                                          -0.008 ms
+  Step 3: ray trace                                           0.042 ms
+  Step 3: containment                                        -0.160 ms
+  Step 3: selection                                           0.085 ms
+  Step 3: neighbourhood                                      -0.004 ms
+  Step 3: up sample                                           0.110 ms
+  Step 4: ray trace                                           0.048 ms
+  Step 4: containment                                         0.052 ms
+  Step 4: selection                                          -0.055 ms
+  Step 4: neighbourhood                                       0.043 ms
+  Step 4: up sample                                          -0.178 ms
+  Step 5: ray trace                                           0.205 ms
+  Step 5: containment                                        -0.176 ms
+  Step 5: selection                                           0.252 ms
+  Step 5: neighbourhood                                      -0.162 ms
+  Step 5: up sample                                          -0.166 ms
+  Step 6: ray trace                                           0.418 ms
+  Step 6: containment                                         0.186 ms
+  Step 6: selection                                          -0.330 ms
+  Step 6: neighbourhood                                       0.119 ms
+  Step 6: up sample                                          -0.260 ms
+  Step 7: ray trace                                           0.323 ms
+  Step 7: containment                                         0.058 ms
+  Step 7: selection                                          -0.237 ms
+  Step 7: neighbourhood                                       0.101 ms
+  Step 7: up sample                                          -0.093 ms
+  Magnification filter                                        0.138 ms
+  Pairing chi-squared / fused-wrapper residual               -0.038 ms
+------------------------------------------------------------------------
+  Fused solved likelihood                                     1.988 ms
+  Fused plain control                                         1.857 ms
+  Results JSON: /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p4/output/point_source_image_p4_replicates_356365/image_plane_hpc_ral_cpu_fp64_p4_rep4.json
+  Results PNG:  /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p4/output/point_source_image_p4_replicates_356365/image_plane_hpc_ral_cpu_fp64_p4_rep4.png
+
+======================================================================
+PROFILING SUMMARY
+======================================================================
+  full_solved_lower                     2.0525 s
+  full_solved_compile                   3.0594 s
+  full_solved_first_call                0.0066 s
+  full_solved_steady_x5                 0.0099 s
+  full_plain_control_lower              1.3971 s
+  full_plain_control_compile            2.8092 s
+  full_plain_control_first_call         0.0031 s
+  full_plain_control_steady_x5          0.0093 s
+  source_centre_lower                   0.1907 s
+  source_centre_compile                 0.2654 s
+  source_centre_first_call              0.0009 s
+  source_centre_steady_x5               0.0008 s
+  step_00_ray_trace_lower               0.1955 s
+  step_00_ray_trace_compile             0.1586 s
+  step_00_ray_trace_first_call          0.0018 s
+  step_00_ray_trace_steady_x5           0.0057 s
+  step_00_containment_lower             0.2431 s
+  step_00_containment_compile           0.4087 s
+  step_00_containment_first_call        0.0026 s
+  step_00_containment_steady_x5         0.0079 s
+  step_00_selection_lower               0.3647 s
+  step_00_selection_compile             0.4367 s
+  step_00_selection_first_call          0.0020 s
+  step_00_selection_steady_x5           0.0074 s
+  step_00_neighbourhood_lower           0.2702 s
+  step_00_neighbourhood_compile         0.5227 s
+  step_00_neighbourhood_first_call      0.0021 s
+  step_00_neighbourhood_steady_x5       0.0077 s
+  step_00_up_sample_lower               0.2756 s
+  step_00_up_sample_compile             0.5419 s
+  step_00_up_sample_first_call          0.0020 s
+  step_00_up_sample_steady_x5           0.0080 s
+  step_01_ray_trace_lower               0.4173 s
+  step_01_ray_trace_compile             0.6202 s
+  step_01_ray_trace_first_call          0.0029 s
+  step_01_ray_trace_steady_x5           0.0084 s
+  step_01_containment_lower             0.3225 s
+  step_01_containment_compile           0.6392 s
+  step_01_containment_first_call        0.0022 s
+  step_01_containment_steady_x5         0.0078 s
+  step_01_selection_lower               0.4446 s
+  step_01_selection_compile             0.6979 s
+  step_01_selection_first_call          0.0027 s
+  step_01_selection_steady_x5           0.0080 s
+  step_01_neighbourhood_lower           0.3387 s
+  step_01_neighbourhood_compile         0.7181 s
+  step_01_neighbourhood_first_call      0.0026 s
+  step_01_neighbourhood_steady_x5       0.0084 s
+  step_01_up_sample_lower               0.3363 s
+  step_01_up_sample_compile             0.7203 s
+  step_01_up_sample_first_call          0.0021 s
+  step_01_up_sample_steady_x5           0.0081 s
+  step_02_ray_trace_lower               0.4750 s
+  step_02_ray_trace_compile             0.8006 s
+  step_02_ray_trace_first_call          0.0023 s
+  step_02_ray_trace_steady_x5           0.0077 s
+  step_02_containment_lower             0.3746 s
+  step_02_containment_compile           0.8074 s
+  step_02_containment_first_call        0.0022 s
+  step_02_containment_steady_x5         0.0079 s
+  step_02_selection_lower               0.4810 s
+  step_02_selection_compile             0.8346 s
+  step_02_selection_first_call          0.0021 s
+  step_02_selection_steady_x5           0.0077 s
+  step_02_neighbourhood_lower           0.3851 s
+  step_02_neighbourhood_compile         0.8544 s
+  step_02_neighbourhood_first_call      0.0027 s
+  step_02_neighbourhood_steady_x5       0.0084 s
+  step_02_up_sample_lower               0.4899 s
+  step_02_up_sample_compile             0.8505 s
+  step_02_up_sample_first_call          0.0022 s
+  step_02_up_sample_steady_x5           0.0083 s
+  step_03_ray_trace_lower               0.4194 s
+  step_03_ray_trace_compile             0.9057 s
+  step_03_ray_trace_first_call          0.0022 s
+  step_03_ray_trace_steady_x5           0.0086 s
+  step_03_containment_lower             0.5230 s
+  step_03_containment_compile           0.9235 s
+  step_03_containment_first_call        0.0023 s
+  step_03_containment_steady_x5         0.0078 s
+  step_03_selection_lower               0.4283 s
+  step_03_selection_compile             0.9383 s
+  step_03_selection_first_call          0.0028 s
+  step_03_selection_steady_x5           0.0082 s
+  step_03_neighbourhood_lower           0.5321 s
+  step_03_neighbourhood_compile         0.9699 s
+  step_03_neighbourhood_first_call      0.0028 s
+  step_03_neighbourhood_steady_x5       0.0082 s
+  step_03_up_sample_lower               0.5369 s
+  step_03_up_sample_compile             0.9697 s
+  step_03_up_sample_first_call          0.0028 s
+  step_03_up_sample_steady_x5           0.0087 s
+  step_04_ray_trace_lower               0.4698 s
+  step_04_ray_trace_compile             1.0919 s
+  step_04_ray_trace_first_call          0.0024 s
+  step_04_ray_trace_steady_x5           0.0089 s
+  step_04_containment_lower             0.5742 s
+  step_04_containment_compile           1.1186 s
+  step_04_containment_first_call        0.0024 s
+  step_04_containment_steady_x5         0.0092 s
+  step_04_selection_lower               0.4789 s
+  step_04_selection_compile             1.1304 s
+  step_04_selection_first_call          0.0022 s
+  step_04_selection_steady_x5           0.0089 s
+  step_04_neighbourhood_lower           0.5948 s
+  step_04_neighbourhood_compile         1.1765 s
+  step_04_neighbourhood_first_call      0.0025 s
+  step_04_neighbourhood_steady_x5       0.0091 s
+  step_04_up_sample_lower               0.4845 s
+  step_04_up_sample_compile             1.1640 s
+  step_04_up_sample_first_call          0.0029 s
+  step_04_up_sample_steady_x5           0.0083 s
+  step_05_ray_trace_lower               0.6266 s
+  step_05_ray_trace_compile             1.2328 s
+  step_05_ray_trace_first_call          0.0029 s
+  step_05_ray_trace_steady_x5           0.0093 s
+  step_05_containment_lower             0.6248 s
+  step_05_containment_compile           1.2411 s
+  step_05_containment_first_call        0.0025 s
+  step_05_containment_steady_x5         0.0084 s
+  step_05_selection_lower               0.5311 s
+  step_05_selection_compile             1.2720 s
+  step_05_selection_first_call          0.0028 s
+  step_05_selection_steady_x5           0.0097 s
+  step_05_neighbourhood_lower           0.6302 s
+  step_05_neighbourhood_compile         1.3187 s
+  step_05_neighbourhood_first_call      0.0028 s
+  step_05_neighbourhood_steady_x5       0.0089 s
+  step_05_up_sample_lower               0.6367 s
+  step_05_up_sample_compile             1.3069 s
+  step_05_up_sample_first_call          0.0029 s
+  step_05_up_sample_steady_x5           0.0080 s
+  step_06_ray_trace_lower               0.5671 s
+  step_06_ray_trace_compile             1.3536 s
+  step_06_ray_trace_first_call          0.0028 s
+  step_06_ray_trace_steady_x5           0.0101 s
+  step_06_containment_lower             0.6728 s
+  step_06_containment_compile           1.3905 s
+  step_06_containment_first_call        0.0024 s
+  step_06_containment_steady_x5         0.0110 s
+  step_06_selection_lower               0.6810 s
+  step_06_selection_compile             1.4046 s
+  step_06_selection_first_call          0.0027 s
+  step_06_selection_steady_x5           0.0094 s
+  step_06_neighbourhood_lower           0.5823 s
+  step_06_neighbourhood_compile         1.4237 s
+  step_06_neighbourhood_first_call      0.0029 s
+  step_06_neighbourhood_steady_x5       0.0100 s
+  step_06_up_sample_lower               0.6812 s
+  step_06_up_sample_compile             1.4333 s
+  step_06_up_sample_first_call          0.0029 s
+  step_06_up_sample_steady_x5           0.0087 s
+  step_07_ray_trace_lower               0.7165 s
+  step_07_ray_trace_compile             1.5016 s
+  step_07_ray_trace_first_call          0.0028 s
+  step_07_ray_trace_steady_x5           0.0103 s
+  step_07_containment_lower             0.7251 s
+  step_07_containment_compile           1.5118 s
+  step_07_containment_first_call        0.0030 s
+  step_07_containment_steady_x5         0.0106 s
+  step_07_selection_lower               0.7307 s
+  step_07_selection_compile             1.5276 s
+  step_07_selection_first_call          0.0028 s
+  step_07_selection_steady_x5           0.0094 s
+  step_07_neighbourhood_lower           0.6346 s
+  step_07_neighbourhood_compile         1.5414 s
+  step_07_neighbourhood_first_call      0.0029 s
+  step_07_neighbourhood_steady_x5       0.0099 s
+  step_07_up_sample_lower               0.7379 s
+  step_07_up_sample_compile             1.5566 s
+  step_07_up_sample_first_call          0.0028 s
+  step_07_up_sample_steady_x5           0.0094 s
+  magnification_filter_lower            0.8577 s
+  magnification_filter_compile          1.6462 s
+  magnification_filter_first_call       0.0028 s
+  magnification_filter_steady_x5        0.0101 s
+----------------------------------------------------------------------
+  TOTAL                                74.0202 s
+======================================================================
+=== source_revisions check (JSON vs mirror HEAD) ===
+OK /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p4/results/breakdown/point_source_image/image_plane_hpc_ral_cpu_fp64_p4.json
+OK /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p4/output/point_source_image_p4_replicates_356365/image_plane_hpc_ral_cpu_fp64_p4_rep1.json
+OK /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p4/output/point_source_image_p4_replicates_356365/image_plane_hpc_ral_cpu_fp64_p4_rep2.json
+OK /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p4/output/point_source_image_p4_replicates_356365/image_plane_hpc_ral_cpu_fp64_p4_rep3.json
+OK /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p4/output/point_source_image_p4_replicates_356365/image_plane_hpc_ral_cpu_fp64_p4_rep4.json
+==========================================
+loadavg: 1.53 1.61 2.69 1/2089 92543
+Finished.
+Sat 26 Sep 17:33:51 BST 2026
