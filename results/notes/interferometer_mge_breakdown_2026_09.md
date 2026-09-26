@@ -217,3 +217,118 @@ Not filed: levers 5 (mp) and 6 (eps / batched NUFFT, shared eccentric radius, PD
 n=20 — revisit PDIP after lever 1). The `scripts/misc/test/` failures seen on this branch
 before merging `origin/main` (6 tests, PyAutoArray#572 `preconditioning`) are already fixed
 on main (912 passed after the merge).
+
+## Library W~ route (2026-09-26)
+
+Lever 1, landed as PyAutoArray#575 (PyAutoArray#576, PyAutoGalaxy#629, PyAutoLens#750 — branch
+`feature/interferometer-mge-w-tilde-route`, measured before merge). The inversion factory no longer
+turns the sparse operator off for an all-func-list inversion. An MGE-only `FitInterferometer` on a
+dataset with `apply_sparse_operator()` applied now takes `InversionInterferometerSparse`. Fits that
+also have ordinary light profiles use the dirty image of the profile-subtracted visibilities
+(`d~ - W~ i_p`).
+
+**Cell:** the same `mge.py` with `--sparse` (PART C2). It runs the library path in the dense schema:
+nested `params -> stage` prefixes, `jit_phases`, the jitted `FitInterferometer.log_likelihood`, and
+the `AnalysisInterferometer` full pipeline on the sparse dataset. The dense and `--w-tilde` arms
+still run in the same job, so each JSON holds before and after:
+- the library rows are in `steps` / `library_sparse`;
+- the dense rows are in `dense_steps`.
+
+Libraries were imported from the branch. On RAL that means a private copy at
+`/mnt/ral/jnightin/PyAuto_branch/interferometer-mge-w-tilde-route/`, whose `__file__` the submit
+asserts; the shared mirror was not touched. SHAs are in each JSON's `source_revisions`: PyAutoArray
+`b5ef2e89`, PyAutoGalaxy `068daa9d`, PyAutoLens `acb136cd`. RAL used the mirror's PyAutoFit `dd9fbe0a`
+and PyAutoNerves `1fa613aa`, with nufftax 0.6.1.
+
+| Leg | JSON |
+|---|---|
+| CPU sma / alma | `results/breakdown/interferometer/mge_breakdown_{sma,alma}_v2026.8.17.1_sparse.json` |
+| A100 alma / alma_high / jvla | `interferometer/mge_hpc_a100_fp64_sparse.json`, `interferometer/{alma_high,jvla}/mge_hpc_a100_fp64_sparse.json` (RAL jobs 356359, 356360, 356361) |
+
+### Before / after — per-call seconds, fp64
+
+`library full` is `library_sparse.full_pipeline_single_jit`, i.e. `AnalysisInterferometer` on the
+sparse dataset, which is what a sampler calls. `library log L` is the jitted
+`FitInterferometer.log_likelihood`, which also forms the mapped visibilities. `dense` is the same
+run's dense path: the library path where it runs, otherwise the chunked-transform arm (¹). `W~ arm` is
+the #308 measurement-only chain from the mapping matrix.
+
+| Instrument | Device | Inversion (library) | library full | library log L | dense | dense library path | W~ arm 3-8 |
+|---|---|---|---:|---:|---:|---|---:|
+| sma | CPU | InversionInterferometerSparse | 11.1 ms | 14.5 ms | 330.6 ms (full pipeline) | runs | 25.3 ms |
+| alma | CPU | InversionInterferometerSparse | 1.29 s | 3.33 s | 13.04 s (full pipeline) | runs | 61.2 ms |
+| alma | A100 | InversionInterferometerSparse | 8.92 ms | 15.0 ms | 944.5 ms¹ | OOM (asks 61.4 GiB) | 1.94 ms |
+| alma_high | A100 | InversionInterferometerSparse | 19.6 ms | 35.2 ms | 3.94 s¹ | OOM (asks 300.3 GiB) | 3.36 ms |
+| jvla | A100 | InversionInterferometerSparse | 92.2 ms | 168.6 ms | 24.45 s¹ | OOM (asks 1.46 TiB) | 13.5 ms |
+
+¹ Dense step total on the chunked-transform arm, because the dense library path OOMs.
+
+On the A100 the library W~ route is 106x (alma), 201x (alma_high) and 265x (jvla) faster than the
+chunked dense arm. It runs where the dense library path cannot run at all. On CPU it is 10.1x
+(alma) and 30x (sma) faster than the dense full pipeline.
+
+CPU caveat: the laptop was shared with other sessions (load average 1.3-6, recorded in
+`host_load_avg_*`). The dense alma rows in this run (13.0 s full pipeline, 11.2 s transform) are
+about 3.6x faster than #308's (41.1 s, 40.7 s) on the same host. Compare rows within one JSON, not
+across runs.
+
+### Witness
+
+- **Inversion class:** `InversionInterferometerSparse` on every leg. The cell raises otherwise.
+- **|Δ log L| ≤ 1e-6 nats** against the dense library reference, where it runs (CPU, fp64):
+  - sma: log L 0.0, figure of merit 4.5e-13;
+  - alma: log L 0.0, figure of merit 1.9e-9;
+  - `library_sparse.witness_pass = true` on both.
+- **A100**, where the dense reference OOMs, against the laptop fp64 pins:
+  - alma: log L 0.0, figure of merit 1.9e-9;
+  - alma_high: log L 0.0, figure of merit 5.2e-8.
+- **jvla:** no dense reference or pin. The library route agrees with the #308 W~ arm to 3.6e-5 nats
+  in log L (1.4e-5 in figure of merit), relative 1.2e-13 at log L = -3.0e8.
+- **Curvature and data vector:** library F~ vs dense F max rel diff 8.0e-14 (CPU alma); D~ 1.8e-15.
+- **No OOM:** the jitted library fit ran at alma, alma_high and jvla on the A100.
+- **MGE + lens Sersic** (`lens_sersic_variant`, the dirty-image correction): sparse matches dense to
+  0.0 nats in log L at sma and alma. The control with the correction switched off is 3.8e-3 nats off
+  (sma) and 779 nats off (alma), so the check discriminates. Not run on the A100, where the dense
+  reference OOMs.
+
+### What the route leaves on the table
+
+The library full pipeline is 4-7x slower than the #308 W~ arm chain (alma A100: 8.9 ms against
+1.9 ms; jvla: 92 ms against 13.5 ms). The step that grows is
+`Fast chi-squared + figure of merit (FitInterferometer)`: 6.2 ms at alma, 15.3 ms at alma_high and
+75.8 ms at jvla on the A100, and 2.37 s at alma on CPU.
+
+That step is O(N_vis). `FitInterferometer.profile_visibilities` NUFFTs the standard-light image
+whenever `tracer.has(LightProfile)`, and a linear MGE counts as a `LightProfile`. So every call does
+a forward NUFFT of an all-zero image, and `fast_chi_squared`'s `dᵀN⁻¹d` term then runs over the
+profile-subtracted visibilities.
+
+A laptop probe at alma (jit, 3 repeats) measured:
+- `profile_visibilities` alone: 3.2 s;
+- `inversion.fast_chi_squared`: 4.8 s;
+- `reconstruction`: 43 ms.
+
+This NUFFT is also what caps the jvla vmap: batch 64 asks 41.1 GiB and OOMs; batch 16 runs at
+15.5 ms per call.
+
+**Follow-up lever (not filed here):** skip the profile-visibility NUFFT when no ordinary light
+profile is present, the same structural check `sparse_dirty_image_from` already makes. Then hoist
+`dᵀN⁻¹d` as a dataset constant. That would bring the library route down to the W~ arm chain.
+
+### vmap (A100, sparse full pipeline) and VRAM rows
+
+| Instrument | batch 64 | batch 16 | `VMAP_BATCH_SPARSE` row |
+|---|---|---|---|
+| alma | 0.48 ms/call | — | 64 |
+| alma_high | 1.54 ms/call | — | 64 |
+| jvla | OOM (41.1 GiB) | 15.5 ms/call | 16 |
+
+These rows are now in `scripts/misc/vram/config.py` under `VMAP_BATCH_SPARSE`. The dense
+`VMAP_BATCH` rows stay `None`, because the dense library path still OOMs.
+
+### Not run
+
+- **CPU alma_high.** The laptop kernel OOM-killed it at 10.8 GB anon RSS inside `apply_sparse_operator()`
+  (the eager operator build, with a 1M-visibility NUFFT chunk from the instrument preset), after the dense
+  arms had finished. The partial JSON is not committed. The A100 alma_high leg covers the witness.
+- **CPU jvla** was not attempted.
