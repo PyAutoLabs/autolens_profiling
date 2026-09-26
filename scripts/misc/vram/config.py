@@ -24,8 +24,11 @@ for that cell:
   at every instrument (0.94 s alma → 23.6 s jvla per call), and the
   func-list W~ route — N_vis-independent — runs every instrument in
   1.9-13.5 ms per call on the A100. Re-tested 2026-09 (autolens_profiling#308);
-  see ``results/notes/interferometer_mge_breakdown_2026_09.md``. The
-  ``None`` rows stay until one of those routes lands in the library.
+  see ``results/notes/interferometer_mge_breakdown_2026_09.md``. The dense
+  ``None`` rows stay (the dense library path still OOMs there); since
+  PyAutoArray#575 an MGE-only fit with ``apply_sparse_operator()`` takes the
+  library W~ route instead, whose rows live in ``VMAP_BATCH_SPARSE`` below
+  (A100-measured 2026-09-26, same note, "Library W~ route (2026-09-26)").
 - Interferometer pixelization at ALMA+ scale: blocked on
   ``transform_mapping_matrix`` not being chunked. Pixelization's mapping
   IS sparse (localized mesh) and could eventually use the
@@ -102,9 +105,10 @@ VMAP_BATCH: dict[tuple[str, str, str], int | None] = {
     ): 16,  # 1,243 MB / replica — probe said 46, OOM at runtime
     ("interferometer", "delaunay", "jvla"): 3,  # 7,689 MB / replica — probe said 7, OOM at runtime
     #
-    # mge — sma only; alma+ blocked by the unchunked dense library transform on
-    # GPU (not inherent: chunked transform and the W~ route both run at every
-    # instrument — results/notes/interferometer_mge_breakdown_2026_09.md).
+    # mge — sma only on the DENSE path; alma+ blocked by the unchunked dense
+    # library transform on GPU. With apply_sparse_operator() (PyAutoArray#575)
+    # the library W~ route runs at every instrument — see VMAP_BATCH_SPARSE and
+    # results/notes/interferometer_mge_breakdown_2026_09.md.
     ("interferometer", "mge", "sma"): 64,  # 160 MB / replica
     (
         "interferometer",
@@ -148,7 +152,18 @@ VMAP_BATCH: dict[tuple[str, str, str], int | None] = {
 # conservative, since the sparse path's per-replica footprint is smaller for
 # every cell measured so far. Populated by the probe-only SLURM submits
 # (``hpc/batch_gpu/submit_probe_*``) as campaign probes come in.
-VMAP_BATCH_SPARSE: dict[tuple[str, str, str], int | None] = {}
+VMAP_BATCH_SPARSE: dict[tuple[str, str, str], int | None] = {
+    # interferometer mge, library W~ route (PyAutoArray#575): the sparse full
+    # pipeline under jax.vmap on the A100 (fp64, nufftax 0.6.1), largest batch
+    # first from 64/16/4 (--sparse-vmap-batch). RAL jobs 356359-356363,
+    # results/notes/interferometer_mge_breakdown_2026_09.md "Library W~ route
+    # (2026-09-26)". jvla batch 64 asks 41.1 GiB both before and after the
+    # zero-image NUFFT fix, so the cap is not that NUFFT; by size it matches the
+    # W~ curvature FFT of 20 columns on the padded 1400² grid (inferred).
+    ("interferometer", "mge", "alma"): 64,  # 0.38 ms / call amortised at 64
+    ("interferometer", "mge", "alma_high"): 64,  # 1.54 ms / call amortised at 64 (round 1)
+    ("interferometer", "mge", "jvla"): 16,  # 64 asks 41.1 GiB (OOM); 10.8 ms / call at 16
+}
 
 
 # Where each table's numbers came from — checked before a campaign trusts
@@ -158,7 +173,11 @@ PROVENANCE: dict[str, str] = {
         "probed 2026-05-24 on RAL A100 80GB PCIe (PyAutoLens ~2026.5.x); "
         "manual halvings for cuFFT scratch failures noted per row"
     ),
-    "VMAP_BATCH_SPARSE": "unprobed — falls back to dense rows",
+    "VMAP_BATCH_SPARSE": (
+        "interferometer mge alma/alma_high/jvla: RAL A100 80GB, 2026-09-26, "
+        "PyAutoArray#575 branch (library W~ route), jobs 356359-356363; "
+        "every other cell unprobed — falls back to dense rows"
+    ),
 }
 
 

@@ -61,9 +61,9 @@ visibilities, so a lens-light MGE would fit nothing.
 The W~ arm (``--w-tilde``)
 --------------------------
 
-An MGE-only fit always takes the dense path: ``inversion/factory.py`` switches
-the sparse operator off when every linear object is an
-``AbstractLinearObjFuncList``. The W~ curvature helpers that the mixed
+Before PyAutoArray#575 an MGE-only fit always took the dense path:
+``inversion/factory.py`` switched the sparse operator off when every linear
+object is an ``AbstractLinearObjFuncList``. The W~ curvature helpers that the mixed
 mapper + MGE inversion already uses (``InterferometerSparseOperator.
 curvature_matrix_func_list_from`` / ``operated_matrix_slim_from``,
 ``interferometer/sparse.py``) can nevertheless be driven directly on this
@@ -83,6 +83,39 @@ not grow with N_vis. The dense-vs-W~ gap is recorded per instrument as
 ``w_tilde_steps`` / ``w_tilde``. The one-off operator build (precision operator
 + dirty image, two eager type-1 NUFFTs) is chunked over visibilities above the
 eager threshold, and its wall time is recorded as ``w_tilde.operator_build_s``.
+
+The library W~ route (``--sparse``)
+-----------------------------------
+
+Since PyAutoArray#575 the factory keeps the sparse operator for an all-func-list
+interferometer inversion, so ``FitInterferometer`` on a dataset with
+``apply_sparse_operator()`` applied takes ``InversionInterferometerSparse``.
+The shared ``--sparse`` flag adds that arm (PART C2) after the dense arms, which
+still run, so one JSON holds before and after:
+
+- the inversion class the library picks (asserted to be the sparse class);
+- steps as nested ``params -> stage`` prefixes on the library path (ray-trace,
+  mapping matrix, ``D~`` + ``F~``, NNLS, ``FitInterferometer.figure_of_merit``),
+  attributed by successive differences, in ``steps`` / ``setup_split`` /
+  ``jit_phases`` — the dense rows move to ``dense_steps`` /
+  ``dense_total_step_by_step`` / ``dense_setup_split``, and
+  ``configuration.inversion_path`` becomes ``"sparse"``;
+- the jitted ``FitInterferometer.log_likelihood`` and the
+  ``AnalysisInterferometer`` full pipeline on the sparse dataset, checked
+  against the dense reference (``library_sparse.witness_pass``: ``|Δ| <= 1e-6``
+  nats where the dense reference runs on the device; against the laptop CPU pins
+  otherwise, recorded only);
+- where the dense reference runs, an MGE + lens Sersic variant, sparse vs dense,
+  with an uncorrected-dirty-image control (``library_sparse.lens_sersic_variant``)
+  that exercises the #575 ``d~ - W~ i_p`` correction;
+- ``--sparse-vmap-batch 64,16,4``: the sparse full pipeline under ``jax.vmap``,
+  largest batch first, stopping at the first that fits (the VRAM rows).
+
+The sparse dataset is the one the W~ arm builds (chunked transformer above the
+eager threshold), so ``library_sparse.fit_transformer_chunk_size`` records the
+visibility chunk the fit's own NUFFTs (mapped visibilities, profile
+visibilities) ran with. A library error, or a gap beyond ``LOG_L_ATOL_NATS``,
+exits non-zero after the JSON is written.
 
 Memory and repeats at alma scale
 --------------------------------
@@ -111,6 +144,9 @@ JSON + PNG under ``results/breakdown/interferometer/``:
   ``mge_hpc_a100_fp64.json``), every other instrument to
   ``interferometer/<instrument>/``. The dashboard reads the instrument from the
   payload either way.
+- ``--sparse`` appends ``_sparse`` (``_profile_cli.resolve_output_paths``):
+  ``mge_breakdown_{instrument}_v{al_version}_sparse`` /
+  ``mge_<config>_sparse.json``, so the #308 dense files are kept.
 """
 
 import sys as _sys
@@ -156,6 +192,7 @@ import sys as _smoke_sys
 # Shared breakdown harness. Imported *before* the smoke short-circuit so the CI
 # import smoke covers the package too.
 from likelihood_breakdown import timing  # noqa: E402
+from likelihood_breakdown.provenance import source_revisions  # noqa: E402
 
 if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
@@ -226,12 +263,38 @@ _cell_parser.add_argument(
         "Default: the instrument's transformer_chunk_size preset (None = one shot)."
     ),
 )
+_cell_parser.add_argument(
+    "--sparse-vmap-batch",
+    type=str,
+    default=None,
+    help=(
+        "Library W~ route arm (--sparse) only: comma-separated vmap batches to try for the "
+        "sparse full pipeline, largest first; the first that runs without a device OOM is "
+        "kept (a small VRAM probe). Default: --vmap-batch."
+    ),
+)
 _cell_args = _cli.parse_cell_args(_cell_parser)
 
 USE_DFT = bool(_cell_args.use_dft)
 USE_W_TILDE = bool(_cell_args.w_tilde)
+# The library W~ route (PyAutoArray#575): the shared ``--sparse`` flag applies
+# ``dataset.apply_sparse_operator()`` and fits through the library, which since
+# #575 routes an MGE-only inversion to ``InversionInterferometerSparse``.
+USE_LIBRARY_SPARSE = bool(_cli.use_sparse_operator)
 TRANSFORM_COLUMN_BATCH = _cell_args.transform_chunk
 _vmap_batch = _cell_args.vmap_batch
+
+# Import provenance: which library checkouts actually ran (a branch run on RAL
+# prepends a private copy to PYTHONPATH; the log and the JSON must show it).
+_source_revisions = source_revisions(_profiling_root())
+print("--- Import provenance ---")
+for _module in (aa, al, af):
+    print(f"  {_module.__name__}.__file__ = {_module.__file__}")
+import autogalaxy as _ag  # noqa: E402
+
+print(f"  autogalaxy.__file__ = {_ag.__file__}")
+for _repo, _rev in _source_revisions.items():
+    print(f"  {_repo:<18} {_rev}")
 
 instrument = _cli.instrument or "sma"  # --instrument overrides (default sma)
 total_gaussians = 20  # matches the imaging MGE-20 cell and likelihood_runtime/mge.py
@@ -968,6 +1031,10 @@ vmap_steps: dict[str, float] | None = None
 vmap_split: dict[str, float] | None = None
 vmap_error: str | None = None
 
+# Library W~ route arm (--sparse), filled in PART C2.
+library_sparse: dict | None = None
+library_sparse_steps: dict[str, float] | None = None
+
 
 # ===================================================================
 # Summary + JSON + PNG (written after the dense steps, then again at the end)
@@ -1016,6 +1083,10 @@ def write_results(stage: str):
         print("  W~ arm rows:")
         for label, per_call in w_tilde_steps.items():
             print(f"      {label:<{_w}}  {per_call * 1e3:12.3f} ms")
+    if library_sparse_steps:
+        print(f"  Library W~ route rows ({(library_sparse or {}).get('inversion_class')}):")
+        for label, per_call in library_sparse_steps.items():
+            print(f"      {label:<{_w}}  {per_call * 1e3:12.3f} ms")
     print(f"  Peak RSS: {peak_rss_mb:.0f} MB")
     print("=" * 70)
 
@@ -1035,8 +1106,15 @@ def write_results(stage: str):
             "visibilities": n_visibilities,
             "linear_gaussians": n_linear,
             "lens_light": None,
-            "inversion_path": "dense",
-            "inversion_class": type(inversion).__name__,
+            # With --sparse the top-level rows are the library W~ route; the dense
+            # rows of the same run move to ``dense_steps`` (before/after in one JSON).
+            "inversion_path": "sparse" if USE_LIBRARY_SPARSE else "dense",
+            "inversion_class": (
+                (library_sparse or {}).get("inversion_class")
+                if USE_LIBRARY_SPARSE
+                else type(inversion).__name__
+            ),
+            "dense_inversion_class": type(inversion).__name__,
             "transformer": transformer_name,
             "chunk_size": transformer_chunk_size,
             "chunk_size_note": (
@@ -1048,6 +1126,7 @@ def write_results(stage: str):
             "nufftax_version": _nufftax_version(),
             **transform_config,
             "w_tilde_arm": USE_W_TILDE,
+            "library_sparse_arm": USE_LIBRARY_SPARSE,
             "n_repeats": N_REPEATS,
             "thread_env": _observe_thread_env(),
             "host_load_avg_start": _load_avg_start,
@@ -1094,6 +1173,7 @@ def write_results(stage: str):
         },
         "steps": {label: float(per_call) for label, per_call in likelihood_steps},
         "total_step_by_step": step_total,
+        "source_revisions": _source_revisions,
         "full_pipeline_single_jit": (
             float(full_pipeline_per_call) if full_pipeline_per_call is not None else None
         ),
@@ -1108,6 +1188,20 @@ def write_results(stage: str):
         breakdown_summary["w_tilde"] = w_tilde
         if w_tilde_steps is not None:
             breakdown_summary["w_tilde_steps"] = {k: float(v) for k, v in w_tilde_steps.items()}
+
+    if USE_LIBRARY_SPARSE:
+        # The dashboard reads ``steps`` / ``total_step_by_step`` and labels the
+        # row by ``configuration.inversion_path``: they are the library W~ route
+        # here, and the dense rows of this same run are kept alongside.
+        breakdown_summary["dense_steps"] = breakdown_summary["steps"]
+        breakdown_summary["dense_total_step_by_step"] = step_total
+        breakdown_summary["dense_setup_split"] = breakdown_summary["setup_split"]
+        breakdown_summary["steps"] = {k: float(v) for k, v in (library_sparse_steps or {}).items()}
+        breakdown_summary["total_step_by_step"] = (
+            float(sum(library_sparse_steps.values())) if library_sparse_steps else None
+        )
+        breakdown_summary["setup_split"] = (library_sparse or {}).get("setup_split")
+        breakdown_summary["library_sparse"] = library_sparse
 
     if vmap_skipped_reason is not None:
         breakdown_summary["vmap_skipped_reason"] = vmap_skipped_reason
@@ -1144,6 +1238,10 @@ def write_results(stage: str):
     colors = ["#4C72B0"] * len(likelihood_steps) + ["#55A868"] * (
         len(labels) - len(likelihood_steps)
     )
+    if library_sparse_steps:
+        labels += [f"Library W~: {label}" for label in library_sparse_steps]
+        times += list(library_sparse_steps.values())
+        colors += ["#C44E52"] * len(library_sparse_steps)
 
     fig, ax = plt.subplots(figsize=(10, 0.45 * len(labels) + 2))
     y_pos = range(len(labels))
@@ -1260,22 +1358,26 @@ w_tilde_nufft_chunk_size = (
     else (100_000 if n_visibilities > EAGER_REFERENCE_MAX_VIS else None)
 )
 
-if USE_W_TILDE:
-    print("\n" + "=" * 70)
-    print("W~ ARM (func-list W~ curvature, measurement only)")
-    print("=" * 70)
-    try:
+_sparse_dataset_cache: dict = {}
+
+
+def sparse_dataset():
+    """``apply_sparse_operator()`` once, shared by the W~ arm and the library arm.
+
+    ``apply_sparse_operator`` runs two eager (op-by-op) type-1 NUFFTs: the
+    precision-operator build and the dirty image (``transformer.image_from``).
+    Both honour a visibility chunk size — the builder through
+    ``nufft_chunk_size``, the dirty image through the transformer's own
+    ``chunk_size`` — so above the eager threshold the operator is built from a
+    copy of the dataset whose transformer is chunked. Unchunked, the build was
+    killed at 9.2-9.6 GB RSS at alma on the laptop. The operator and dirty image
+    are the same quantities either way (chunking only bounds the spread buffer),
+    and the F~ / D~ checks and the library-vs-dense witness verify it.
+
+    Returns ``(dataset_w, build_s, build_peak_rss_mb)``.
+    """
+    if "dataset_w" not in _sparse_dataset_cache:
         with timer.section("w_tilde_apply_sparse_operator"):
-            # ``apply_sparse_operator`` runs two eager (op-by-op) type-1 NUFFTs:
-            # the precision-operator build and the dirty image
-            # (``transformer.image_from``). Both honour a visibility chunk size —
-            # the builder through ``nufft_chunk_size``, the dirty image through
-            # the transformer's own ``chunk_size`` — so above the eager threshold
-            # the operator is built from a copy of the dataset whose transformer
-            # is chunked. Unchunked, the build was killed at 9.2-9.6 GB RSS at
-            # alma on the laptop. The operator and dirty image are the same
-            # quantities either way (chunking only bounds the spread buffer), and
-            # the F~ / D~ checks below verify it against the dense path.
             if w_tilde_nufft_chunk_size is not None and not USE_DFT:
                 _chunk = w_tilde_nufft_chunk_size
                 dataset_for_operator = al.Interferometer(
@@ -1291,11 +1393,24 @@ if USE_W_TILDE:
                 )
             else:
                 dataset_for_operator = dataset
-            dataset_w = dataset_for_operator.apply_sparse_operator(
+            _sparse_dataset_cache["dataset_w"] = dataset_for_operator.apply_sparse_operator(
                 use_jax=True, nufft_chunk_size=w_tilde_nufft_chunk_size
             )
-        w_tilde_build_s = timer.records[-1][1]
-        w_tilde_build_peak_rss_mb = _peak_rss_mb()
+        _sparse_dataset_cache["build_s"] = timer.records[-1][1]
+        _sparse_dataset_cache["build_peak_rss_mb"] = _peak_rss_mb()
+    return (
+        _sparse_dataset_cache["dataset_w"],
+        _sparse_dataset_cache["build_s"],
+        _sparse_dataset_cache["build_peak_rss_mb"],
+    )
+
+
+if USE_W_TILDE:
+    print("\n" + "=" * 70)
+    print("W~ ARM (func-list W~ curvature, measurement only)")
+    print("=" * 70)
+    try:
+        dataset_w, w_tilde_build_s, w_tilde_build_peak_rss_mb = sparse_dataset()
         sparse_operator = dataset_w.sparse_operator
         extent_index = jnp.asarray(
             np.asarray(dataset.real_space_mask.extent_index_for_masked_pixel), dtype=jnp.int32
@@ -1435,6 +1550,319 @@ if USE_W_TILDE:
         print(w_tilde["error"])
 
 # ===================================================================
+# PART C2 — Library W~ route (--sparse): the MGE-only fit on the library path
+# ===================================================================
+#
+# Since PyAutoArray#575 the inversion factory no longer switches the sparse
+# operator off for an all-func-list inversion, so ``FitInterferometer`` on a
+# dataset with ``apply_sparse_operator()`` applied takes
+# ``InversionInterferometerSparse`` for this MGE-only model. This arm times that
+# library path in the dense arm's schema (nested ``params -> stage`` prefixes,
+# successive differences, ``jit_phases``) and checks its jitted
+# ``log_likelihood`` / ``figure_of_merit`` against the dense reference.
+#
+# Witness: ``|Δ log L| <= 1e-6`` nats against the dense library reference where
+# the dense reference runs on this device, and no device OOM.
+
+# Structural dense-vs-sparse witness threshold (fp64); mixed precision is recorded only.
+LIBRARY_SPARSE_WITNESS_NATS = 1e-6
+library_sparse_failed = False
+
+
+def _sparse_vmap_batches() -> list[int]:
+    if _cell_args.sparse_vmap_batch is not None:
+        return sorted({int(b) for b in _cell_args.sparse_vmap_batch.split(",")}, reverse=True)
+    return [int(_vmap_batch)] if _vmap_batch is not None else []
+
+
+def _tracer_with_lens_sersic(params):
+    """The cell's tracer plus an ordinary (non-linear) Sersic on the lens galaxy.
+
+    Exercises the sparse dirty-image correction (``d~ - W~ i_p``,
+    ``autogalaxy.interferometer.fit_interferometer.sparse_dirty_image_from``):
+    with a regular light profile the inversion fits the profile-subtracted
+    visibilities, and the cached dirty image alone would be the wrong D.
+    """
+    galaxies = list(params.galaxies)
+    lens_with_light = al.Galaxy(
+        redshift=0.5,
+        mass=galaxies[0].mass,
+        light=al.lp.Sersic(
+            centre=(0.0, 0.0),
+            ell_comps=(0.05, 0.0),
+            intensity=0.1,
+            effective_radius=0.6,
+            sersic_index=2.5,
+        ),
+    )
+    return al.Tracer(galaxies=[lens_with_light, *galaxies[1:]], fields=[params.fields])
+
+
+if USE_LIBRARY_SPARSE:
+    print("\n" + "=" * 70)
+    print("LIBRARY W~ ROUTE (--sparse: apply_sparse_operator + FitInterferometer)")
+    print("=" * 70)
+    library_sparse = {"status": "running"}
+    try:
+        dataset_sparse, _build_s, _build_rss = sparse_dataset()
+        library_sparse["operator_build_s"] = float(_build_s)
+        library_sparse["operator_build_peak_rss_mb"] = float(_build_rss)
+        library_sparse["operator_build_nufft_chunk_size"] = w_tilde_nufft_chunk_size
+        library_sparse["fit_transformer_chunk_size"] = getattr(
+            dataset_sparse.transformer, "chunk_size", None
+        )
+
+        # Structural: which inversion class the library picks (no mapping matrix evaluated).
+        _inversion_sparse = al.TracerToInversion(
+            dataset=aa.DatasetInterface(
+                data=dataset.data,
+                noise_map=dataset.noise_map,
+                grids=dataset.grids,
+                transformer=dataset_sparse.transformer,
+                sparse_operator=dataset_sparse.sparse_operator,
+            ),
+            tracer=tracer,
+            settings=settings,
+            xp=np,
+        ).inversion
+        library_sparse["inversion_class"] = type(_inversion_sparse).__name__
+        library_sparse["nnls_solver"] = _inversion_sparse.positive_only_solver_used
+        library_sparse["nnls_preconditioning"] = (
+            _inversion_sparse.positive_only_preconditioning_used
+        )
+        print(f"  inversion class = {library_sparse['inversion_class']}")
+        if library_sparse["inversion_class"] != "InversionInterferometerSparse":
+            raise RuntimeError(
+                "MGE-only fit on a sparse dataset did not take InversionInterferometerSparse "
+                f"(got {library_sparse['inversion_class']}): are the #575 libraries imported?"
+            )
+
+        def _fit_sparse(params):
+            return al.FitInterferometer(
+                dataset=dataset_sparse, tracer=_tracer_from(params), settings=settings, xp=jnp
+            )
+
+        def sparse_prefix_fn(upto: int):
+            """Nested ``params -> stage`` prefix on the library W~ route."""
+
+            def fn(params):
+                if upto <= 2:
+                    return setup_prefix_fn(upto)(params)
+                fit_w = _fit_sparse(params)
+                if upto == 3:
+                    return fit_w.inversion.data_vector, fit_w.inversion.curvature_reg_matrix
+                if upto == 4:
+                    return fit_w.inversion.reconstruction
+                return fit_w.figure_of_merit
+
+            return fn
+
+        sparse_prefix_labels = {
+            1: "Ray-trace grids",
+            2: f"Mapping matrix ({total_gaussians} Gaussians)",
+            3: "Data vector + curvature matrix (library W~: Bᵀ d~, Bᵀ W~ B)",
+            4: "Reconstruction (PDIP NNLS)",
+            5: "Fast chi-squared + figure of merit (FitInterferometer)",
+        }
+        sparse_prefix_per_call: dict[int, float] = {}
+        _sparse_prefix_outputs: dict[int, object] = {}
+        for _upto in sorted(sparse_prefix_labels):
+            print(f"\n--- Library W~ prefix 1..{_upto}: {sparse_prefix_labels[_upto]} ---")
+            _, _sparse_prefix_outputs[_upto] = jit_profile(
+                sparse_prefix_fn(_upto), f"library_sparse_prefix_{_upto}", params_tree
+            )
+            sparse_prefix_per_call[_upto] = _per_call(f"library_sparse_prefix_{_upto}")
+            print(f"  peak RSS so far: {_peak_rss_mb():.0f} MB")
+        library_sparse_setup_split = timing.split_by_successive_differences(
+            sparse_prefix_per_call, sparse_prefix_labels
+        )
+        library_sparse_steps = dict(library_sparse_setup_split)
+        figure_of_merit_sparse = float(_sparse_prefix_outputs[5])
+
+        _dv_w, _f_w = _sparse_prefix_outputs[3]
+        library_sparse["data_vector_max_rel_diff_vs_dense"] = float(
+            jnp.max(jnp.abs(_dv_w - data_vector)) / jnp.max(jnp.abs(data_vector))
+        )
+        library_sparse["curvature_reg_matrix_max_rel_diff_vs_dense"] = float(
+            jnp.max(jnp.abs(_f_w - curvature_matrix)) / jnp.max(jnp.abs(curvature_matrix))
+        )
+
+        print("\n--- Library W~: jax.jit(FitInterferometer.log_likelihood) ---")
+        _, _ll_sparse = jit_profile(
+            lambda params: _fit_sparse(params).log_likelihood,
+            "library_sparse_fit_log_likelihood",
+            params_tree,
+        )
+        log_likelihood_sparse = float(_ll_sparse)
+
+        print("\n--- Library W~: full pipeline (AnalysisInterferometer on the sparse dataset) ---")
+        analysis_sparse = al.AnalysisInterferometer(
+            dataset=dataset_sparse, settings=settings, use_jax=True
+        )
+
+        def full_pipeline_sparse(params):
+            return analysis_sparse.log_likelihood_function(instance=params)
+
+        _, _fp_sparse = jit_profile(
+            full_pipeline_sparse, "library_sparse_full_pipeline", params_tree
+        )
+        full_pipeline_sparse_logl = float(_fp_sparse)
+
+        _ll_diff = _abs_diff(log_likelihood_sparse, log_likelihood_ref)
+        _fom_diff = _abs_diff(figure_of_merit_sparse, figure_of_merit_ref)
+        _reference_is_dense_here = reference_mode in ("eager_numpy", "jit_jax")
+        library_sparse.update(
+            {
+                "status": "ok",
+                "setup_split": {k: float(v) for k, v in library_sparse_setup_split.items()},
+                "setup_prefix_per_call_s": {
+                    str(k): float(v) for k, v in sparse_prefix_per_call.items()
+                },
+                "total_step_by_step": float(sum(library_sparse_steps.values())),
+                "fit_log_likelihood_s": _per_call("library_sparse_fit_log_likelihood"),
+                "full_pipeline_single_jit": _per_call("library_sparse_full_pipeline"),
+                "log_likelihood": log_likelihood_sparse,
+                "figure_of_merit": figure_of_merit_sparse,
+                "figure_of_merit_full_pipeline": full_pipeline_sparse_logl,
+                "reference_mode": reference_mode,
+                "log_likelihood_abs_diff_vs_reference_nats": _ll_diff,
+                "figure_of_merit_abs_diff_vs_reference_nats": _fom_diff,
+                "full_pipeline_abs_diff_vs_reference_nats": _abs_diff(
+                    full_pipeline_sparse_logl, figure_of_merit_ref
+                ),
+                "witness_threshold_nats": LIBRARY_SPARSE_WITNESS_NATS,
+                "witness_pass": (
+                    bool(
+                        _ll_diff <= LIBRARY_SPARSE_WITNESS_NATS
+                        and _fom_diff <= LIBRARY_SPARSE_WITNESS_NATS
+                    )
+                    if _reference_is_dense_here and not _cli.use_mixed_precision
+                    else None
+                ),
+                "witness_note": (
+                    "dense library reference ran on this device"
+                    if _reference_is_dense_here
+                    else f"no dense reference on this device ({reference_mode}); diffs are "
+                    "against the laptop fp64 CPU pins where they exist"
+                ),
+                "dense_full_pipeline_single_jit": full_pipeline_per_call,
+                "dense_total_step_by_step": float(sum(t for _, t in likelihood_steps)),
+            }
+        )
+        if w_tilde is not None and "figure_of_merit" in w_tilde:
+            library_sparse["figure_of_merit_abs_diff_vs_w_tilde_arm_nats"] = _abs_diff(
+                figure_of_merit_sparse, w_tilde["figure_of_merit"]
+            )
+            library_sparse["log_likelihood_abs_diff_vs_w_tilde_arm_nats"] = _abs_diff(
+                log_likelihood_sparse, w_tilde["log_likelihood_unfloored"]
+            )
+        print(
+            f"  library W~ log_likelihood  = {log_likelihood_sparse} "
+            f"(|Δ vs {reference_mode}| = {_ll_diff} nats)"
+        )
+        print(
+            f"  library W~ figure_of_merit = {figure_of_merit_sparse} "
+            f"(|Δ vs {reference_mode}| = {_fom_diff} nats); witness_pass = "
+            f"{library_sparse['witness_pass']}"
+        )
+        write_results("library_sparse")
+
+        # MGE + lens Sersic: sparse vs dense, where the dense library fit runs here.
+        if _reference_is_dense_here:
+            print("\n--- Library W~: MGE + lens Sersic variant (dirty-image correction) ---")
+
+            def _sersic_values(ds):
+                def fn(params):
+                    fit_s = al.FitInterferometer(
+                        dataset=ds,
+                        tracer=_tracer_with_lens_sersic(params),
+                        settings=settings,
+                        xp=jnp,
+                    )
+                    return fit_s.log_likelihood, fit_s.figure_of_merit
+
+                return fn
+
+            with timer.section("lens_sersic_sparse"):
+                _ll_s, _fom_s = jax.jit(_sersic_values(dataset_sparse))(params_tree)
+                _ll_s, _fom_s = float(_ll_s), float(_fom_s)
+            with timer.section("lens_sersic_dense"):
+                _ll_d, _fom_d = jax.jit(_sersic_values(dataset))(params_tree)
+                _ll_d, _fom_d = float(_ll_d), float(_fom_d)
+            # Control: the same sparse fit with the dirty-image correction switched
+            # off (the pre-#575 behaviour), so the check is shown to discriminate.
+            import autolens.interferometer.fit_interferometer as _lens_fit_module
+
+            _correction = _lens_fit_module.sparse_dirty_image_from
+            _lens_fit_module.sparse_dirty_image_from = lambda **_kwargs: None
+            try:
+                with timer.section("lens_sersic_sparse_uncorrected"):
+                    _ll_u, _ = jax.jit(_sersic_values(dataset_sparse))(params_tree)
+                    _ll_u = float(_ll_u)
+            finally:
+                _lens_fit_module.sparse_dirty_image_from = _correction
+            library_sparse["lens_sersic_variant"] = {
+                "sparse_log_likelihood": _ll_s,
+                "dense_log_likelihood": _ll_d,
+                "sparse_figure_of_merit": _fom_s,
+                "dense_figure_of_merit": _fom_d,
+                "log_likelihood_abs_diff_nats": _abs_diff(_ll_s, _ll_d),
+                "figure_of_merit_abs_diff_nats": _abs_diff(_fom_s, _fom_d),
+                "control_sparse_uncorrected_log_likelihood": _ll_u,
+                "control_uncorrected_abs_diff_nats": _abs_diff(_ll_u, _ll_d),
+                "note": (
+                    "Lens Sersic(ell_comps=(0.05,0), I=0.1, R_eff=0.6, n=2.5) added to the "
+                    "cell's MGE-only model; single jitted calls (first call, compile included)."
+                ),
+            }
+            print(
+                f"  sparse vs dense: |Δ log L| = "
+                f"{library_sparse['lens_sersic_variant']['log_likelihood_abs_diff_nats']} nats, "
+                f"|Δ FoM| = {library_sparse['lens_sersic_variant']['figure_of_merit_abs_diff_nats']}"
+            )
+        else:
+            library_sparse["lens_sersic_variant"] = {
+                "status": "skipped",
+                "reason": f"no dense library reference on this device ({reference_mode})",
+            }
+
+        # vmap probe of the sparse full pipeline (VRAM rows): largest batch first.
+        library_sparse["vmap"] = []
+        for _batch in _sparse_vmap_batches():
+            print(f"\n--- Library W~ full pipeline under vmap, batch {_batch} ---")
+            _params_b = jax.tree_util.tree_map(
+                lambda leaf, n=_batch: jnp.broadcast_to(leaf, (n, *leaf.shape)), params_tree
+            )
+            try:
+                _per = timing.vmap_profile(
+                    full_pipeline_sparse,
+                    "library_sparse_full_pipeline",
+                    _params_b,
+                    _batch,
+                    n_repeats=N_REPEATS,
+                    timer=timer,
+                    jit_records=jit_records,
+                )
+                library_sparse["vmap"].append(
+                    {"batch": _batch, "status": "ok", "per_call_s": float(_per)}
+                )
+                break
+            except Exception as exc:  # noqa: BLE001 — only a device OOM is recorded
+                if not _is_oom(exc):
+                    raise
+                library_sparse["vmap"].append(
+                    {"batch": _batch, **_oom_record(exc, f"library W~ vmap batch {_batch}")}
+                )
+    except Exception as exc:  # noqa: BLE001 — recorded, then the run exits non-zero
+        if _is_oom(exc):
+            library_sparse.update(_oom_record(exc, "library W~ route"))
+        else:
+            library_sparse_failed = True
+            library_sparse.update({"status": "error", "error": traceback.format_exc()})
+            print("  LIBRARY W~ ROUTE FAILED. Traceback:")
+            print(library_sparse["error"])
+
+# ===================================================================
 # PART D — Optional batched re-timing (--vmap-batch N)
 # ===================================================================
 
@@ -1511,3 +1939,29 @@ else:
 record_pinned_check(dict_path, _pinned_expected, _pinned_drift)
 if _pinned_expected is not None and not _pinned_drift:
     print("  Pinned-value check PASSED (recorded in result JSON).")
+
+# ===================================================================
+# Library W~ route — fail loudly (after every result is on disk)
+# ===================================================================
+#
+# A library error, or a library-vs-reference gap beyond the cell's own
+# ``LOG_L_ATOL_NATS``, exits non-zero so a SLURM "COMPLETED" cannot hide it. A
+# device OOM is a recorded result (``library_sparse.status = "oom"``), as in the
+# dense arms.
+
+if USE_LIBRARY_SPARSE:
+    if library_sparse_failed:
+        raise SystemExit("interferometer/mge: library W~ route raised (see library_sparse.error)")
+    for _key in (
+        "log_likelihood_abs_diff_vs_reference_nats",
+        "figure_of_merit_abs_diff_vs_reference_nats",
+    ):
+        _gap = (library_sparse or {}).get(_key)
+        if _gap is not None and _gap > LOG_L_ATOL_NATS:
+            raise SystemExit(
+                f"interferometer/mge: library W~ route {_key} = {_gap} > {LOG_L_ATOL_NATS} nats"
+            )
+    print(
+        f"  Library W~ route: status={library_sparse.get('status')}, "
+        f"witness_pass={library_sparse.get('witness_pass')}"
+    )

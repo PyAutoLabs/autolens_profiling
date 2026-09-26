@@ -1,0 +1,87 @@
+#!/bin/bash -l
+#
+# A100 likelihood-breakdown profile: interferometer/mge x alma x fp64, LIBRARY W~ ROUTE.
+# PyAutoArray#575 routes an MGE-only interferometer fit through
+# InversionInterferometerSparse once dataset.apply_sparse_operator() is applied
+# (--sparse). The dense arms of the #308 submit (library dense path, recorded as
+# an OOM; --transform-chunk 4 chunked arm; --w-tilde measurement-only arm) run in
+# the same job, so before/after land in one JSON. --sparse-vmap-batch 64,16,4 is
+# a small VRAM probe of the sparse full pipeline for scripts/misc/vram/config.py.
+#
+# BRANCH LIBRARIES: until #575 merges and HPCPullPyAuto brings it to the shared
+# mirror, the three branch libraries are a PRIVATE copy under
+# $PYAUTO_BRANCH_LIBS (default below), prepended to PYTHONPATH after
+# activate.sh. The shared mirror /mnt/ral/jnightin/PyAuto is not touched. The job
+# fails unless autoarray/autogalaxy/autolens import from that copy.
+#
+# Output: results/breakdown/interferometer/mge_hpc_a100_fp64_sparse.json
+# A RESOURCE_EXHAUSTED / OOM here is a result, not a failure: record it.
+
+#SBATCH -J breakdown_interferometer_mge_alma_fp64_sparse
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=2:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+# Derive the repo root from where this was submitted (hpc/batch_gpu/../..): it runs from
+# a RAL worktree of the feature branch, not only the canonical RAL checkout.
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+export PROJECT_PATH="$AP_ROOT"
+export PYAUTO_HPC_BASE="${PYAUTO_HPC_BASE:-/mnt/ral/jnightin/PyAuto}"
+export PYAUTO_BRANCH_LIBS="${PYAUTO_BRANCH_LIBS:-/mnt/ral/jnightin/PyAuto_branch/interferometer-mge-w-tilde-route}"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+export PYTHONPATH="$PYAUTO_BRANCH_LIBS/PyAutoArray:$PYAUTO_BRANCH_LIBS/PyAutoGalaxy:$PYAUTO_BRANCH_LIBS/PyAutoLens:$PYTHONPATH"
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding"
+
+nvidia-smi
+
+echo "=========================================="
+date
+echo "Cell:           likelihood_breakdown/interferometer/mge"
+echo "Instrument:     alma"
+echo "Precision:      fp64"
+echo "Inversion path: library W~ route (--sparse) + dense arms + W~ arm"
+
+cd $AP_ROOT
+
+echo "=== source revisions ==="
+for r in PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s (branch copy)\n' "$r" "$(git -C $PYAUTO_BRANCH_LIBS/$r rev-parse HEAD 2>&1)"
+done
+for r in PyAutoNerves PyAutoFit; do
+    printf '%-14s %s (shared mirror)\n' "$r" "$(git -C $PYAUTO_HPC_BASE/$r rev-parse HEAD 2>&1)"
+done
+echo "AP_ROOT rev:   $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+
+echo "=== import provenance (must be the branch copy) ==="
+python3 -c "
+import os, autoarray, autogalaxy, autolens
+base = os.environ['PYAUTO_BRANCH_LIBS']
+for m in (autoarray, autogalaxy, autolens):
+    print(m.__name__ + '.__file__ =', m.__file__)
+    assert m.__file__.startswith(base), f'{m.__name__} not imported from {base}'
+"
+
+python3 -u scripts/interferometer/likelihood_breakdown/mge.py \
+    --config-name hpc_a100_fp64 \
+    --instrument alma \
+    --sparse \
+    --sparse-vmap-batch 64,16,4 \
+    --w-tilde \
+    --transform-chunk 4 \
+    --vmap-batch 4
+
+echo "Finished."
+date
