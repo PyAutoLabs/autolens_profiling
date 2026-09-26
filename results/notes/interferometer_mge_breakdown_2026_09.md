@@ -199,5 +199,21 @@ arm for interferometer MGE; not filed.
   multi_gaussian_expansion/modeling.py:322-324` says that with `apply_sparse_operator()` MGE
   memory depends on the real-space mask alone; the factory takes the dense path for MGE-only
   fits, so memory scales with N_vis (filed as a docs follow-up, not edited here).
-</content>
-</invoke>
+
+## Follow-ups
+
+Drafted as PyAutoMind prompts (`Status: draft`, epic `interferometer-likelihood-campaign`);
+not implemented here.
+
+| Slug | Lever | Target |
+|---|---|---|
+| `interferometer_mge_w_tilde_route_mge_only` | 1 — W~ route for MGE-only fits | PyAutoArray |
+| `interferometer_chunked_transform_mapping_matrix` | 2 — chunked `transform_mapping_matrix` | PyAutoArray |
+| `interferometer_transform_mapping_matrix_real_scatter` | 3 — float64 scatter then cast | PyAutoArray |
+| `ral_venv_dependency_floor_drift` | RAL venv below library floors (anesthetic, dynesty, psutil, tfp-nightly; nufftax found and fixed in phase B) | PyAutoHeart |
+| `workspace_interferometer_mge_sparse_operator_memory_docs` | workspace docs mismatch (`modeling.py:322-324`) | autolens_workspace |
+
+Not filed: levers 5 (mp) and 6 (eps / batched NUFFT, shared eccentric radius, PDIP at
+n=20 — revisit PDIP after lever 1). The `scripts/misc/test/` failures seen on this branch
+before merging `origin/main` (6 tests, PyAutoArray#572 `preconditioning`) are already fixed
+on main (912 passed after the merge).
