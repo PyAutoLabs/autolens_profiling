@@ -1,7 +1,7 @@
 #!/bin/bash -l
 #
-# A100 likelihood-breakdown profile: interferometer/delaunay x alma_high x mp, sparse (W~) path.
-# autolens_profiling#320 (interferometer likelihood campaign 2/3): the Hilbert-1500 Delaunay + AdaptSplit(0.1, 10, 0.1)
+# A100 likelihood-breakdown profile: interferometer/pixelization x jvla x mp, sparse (W~) path.
+# autolens_profiling#320 (interferometer likelihood campaign 2/3): the rectangular 39x39 (RectangularBilinearAdaptImage) + Constant(1.0)
 # cell on InversionInterferometerSparse, steps = the library's per-evaluation work (no
 # transformed-mapping-matrix row), dense InversionInterferometerMapping comparison arm under
 # dense_steps where it fits, and the lever sub-rows (solver A/B, F block-size sweep, F kernel
@@ -18,17 +18,17 @@
 # with x64 off. A RESOURCE_EXHAUSTED / OOM inside the cell is recorded in the JSON as a result.
 #
 # Output: 
-#   results/breakdown/interferometer/alma_high/delaunay_hpc_a100_mp.{json,png}
+#   results/breakdown/interferometer/jvla/pixelization_hpc_a100_mp.{json,png}
 #
 # Submit from hpc/batch_gpu/ (the -o/-e paths are relative).
 
-#SBATCH -J bd_intf_del_alma_high_mp
+#SBATCH -J bd_intf_pix_jvla_mp
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=64gb
-#SBATCH --time=2:00:00
+#SBATCH --time=3:00:00
 #SBATCH -o output/output.%A.out
 #SBATCH -e error/error.%A.err
 #SBATCH --mail-type=END,FAIL
@@ -67,12 +67,12 @@ assert tuple(int(x) for x in m.version('nufftax').split('.')[:2]) >= (0, 6), 'nu
 
 echo "=========================================="
 date
-echo "Cell:           likelihood_breakdown/interferometer/delaunay"
-echo "Instrument:     alma_high"
+echo "Cell:           likelihood_breakdown/interferometer/pixelization"
+echo "Instrument:     jvla"
 echo "Precision:      mp"
 echo "Leg:            hpc_a100_mp (sparse steps + levers)"
-python3 -u scripts/interferometer/likelihood_breakdown/delaunay.py \
-    --instrument alma_high \
+python3 -u scripts/interferometer/likelihood_breakdown/pixelization.py \
+    --instrument jvla \
     --config-name hpc_a100_mp \
     --use-mixed-precision \
     --fp32-fft-arm \

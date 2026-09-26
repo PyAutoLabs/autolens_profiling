@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #
-# A100 likelihood-breakdown profile: interferometer/delaunay x alma_high x mp, sparse (W~) path.
+# A100 likelihood-breakdown profile: interferometer/delaunay x jvla x fp64, sparse (W~) path.
 # autolens_profiling#320 (interferometer likelihood campaign 2/3): the Hilbert-1500 Delaunay + AdaptSplit(0.1, 10, 0.1)
 # cell on InversionInterferometerSparse, steps = the library's per-evaluation work (no
 # transformed-mapping-matrix row), dense InversionInterferometerMapping comparison arm under
@@ -8,9 +8,6 @@
 # split, fp32 FFT arm, vmap probe). Harness:
 # scripts/misc/likelihood_breakdown/interferometer_pixelized.py.
 #
-# mp arm: use_mixed_precision reaches the mapper / mapping matrix only (the W~ operator
-# hard-casts to float64); the cell records the in-run fp64 figure of merit so the mp
-# shift is read against the 0.5-nat bar, plus the measurement-only fp32 FFT arm.
 #
 # Libraries: the SHARED mirror /mnt/ral/jnightin/PyAuto (refreshed by HPCPullPyAuto to the
 # 2026-09-26 mains: lever 1 MGE W~ route #575, lever 3 real scatter #577), via activate.sh.
@@ -18,17 +15,17 @@
 # with x64 off. A RESOURCE_EXHAUSTED / OOM inside the cell is recorded in the JSON as a result.
 #
 # Output: 
-#   results/breakdown/interferometer/alma_high/delaunay_hpc_a100_mp.{json,png}
+#   results/breakdown/interferometer/jvla/delaunay_hpc_a100_fp64.{json,png}
 #
 # Submit from hpc/batch_gpu/ (the -o/-e paths are relative).
 
-#SBATCH -J bd_intf_del_alma_high_mp
+#SBATCH -J bd_intf_del_jvla_fp64
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=64gb
-#SBATCH --time=2:00:00
+#SBATCH --time=3:00:00
 #SBATCH -o output/output.%A.out
 #SBATCH -e error/error.%A.err
 #SBATCH --mail-type=END,FAIL
@@ -68,13 +65,14 @@ assert tuple(int(x) for x in m.version('nufftax').split('.')[:2]) >= (0, 6), 'nu
 echo "=========================================="
 date
 echo "Cell:           likelihood_breakdown/interferometer/delaunay"
-echo "Instrument:     alma_high"
-echo "Precision:      mp"
-echo "Leg:            hpc_a100_mp (sparse steps + levers)"
+echo "Instrument:     jvla"
+echo "Precision:      fp64"
+echo "Leg:            hpc_a100_fp64 (sparse steps + levers)"
 python3 -u scripts/interferometer/likelihood_breakdown/delaunay.py \
-    --instrument alma_high \
-    --config-name hpc_a100_mp \
-    --use-mixed-precision \
+    --instrument jvla \
+    --config-name hpc_a100_fp64 \
+    --solver-ab \
+    --batch-size-sweep 64,256 \
     --fp32-fft-arm \
     --vmap-batch 16,4
 
