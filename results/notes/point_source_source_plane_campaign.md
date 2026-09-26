@@ -10,7 +10,7 @@ and levers are out of scope; see "Carried to cluster epic".
 
 - `scripts/point_source_source/likelihood_breakdown/source_plane.py`: the shared
   CPU/GPU breakdown instrument for the source-plane point-source likelihood,
-  mirroring `scripts/point_source/likelihood_breakdown/image_plane.py`: same
+  mirroring `scripts/point_source_image/likelihood_breakdown/image_plane.py`: same
   helpers, JSON contract, `--config-name` rows, two-panel PNG and
   `AUTOLENS_PROFILING_SMOKE=1` exit.
   - Primary lane: `PointSolved` + `FitPositionsSourceSolved` (the adopted
@@ -28,7 +28,7 @@ and levers are out of scope; see "Carried to cluster epic".
     `jit(vmap)` with batch 2 matches single JIT; regression literals;
     `jax.grad` is finite and non-zero; `value_and_grad` cost; dispatch-floor
     probes; CSE probes; host load average.
-- `scripts/point_source/likelihood_runtime/source_plane.py`: the stale
+- `scripts/point_source_source/likelihood_runtime/source_plane.py`: the stale
   `TracerArrayConversionError` guard is gone. On the live stack
   (PyAutoArray `1bf641e4`, PyAutoLens `4487eb47`),
   `jax.jit(AnalysisPoint(FitPositionsSource).log_likelihood_function)` now
