@@ -4,6 +4,8 @@ Status: laptop-CPU fallback tier COMPLETE + A100 imaging tier COMPLETE
 (2026-07-10); A100 alma_high cells (interferometer + datacube) in flight
 after a nufftax venv install on RAL. Task: autolens_profiling#59.
 
+> **Correction — 2026-09-27:** the alma_high A100 cells are no longer in flight: the datacube fp64 + mp rows landed, and the interferometer Delaunay cell OOM'd (61.44 GB one-shot column NUFFT), classified `gpu_unusable_breakdown` on issue #59; its column-chunking follow-up was shelved 2026-08-11 (`PyAutoMind/complete/archive/shelved/nufft_mapping_matrix_column_chunking.md`).
+
 ## A100 canonical tier — imaging (jobs 330062–330070)
 
 > **Superseded for the `imaging/delaunay` rows (2026-09-05).** The Delaunay A100 rows

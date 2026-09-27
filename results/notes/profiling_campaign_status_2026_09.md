@@ -59,6 +59,8 @@ claims inherited from the completed JAX fixed-light campaign:
   targets. Trace overhead and command-buffer differences remain qualified in
   the note; scaled stage times assume uniform overhead.
 
+> **Correction — 2026-09-27:** "still a harness injection" holds for residue phases 1–3 only; phase 4 (#306, A100 array 350651) ran the library certified solver (PyAutoArray#567, released 2026.9.26.1) at the packaged budget 16, so its 26.3–26.9 ms library route is not comparable with the 31.6 ms phases 1–3 measured. Wiki: `wiki/campaigns/hst_gpu_residue.md`.
+
 The older vmap scaling curve measured the solver only. Single-call timings do
 not determine production whole-likelihood batching policy. Issue
 [#273](https://github.com/PyAutoLabs/autolens_profiling/issues/273) is the matched

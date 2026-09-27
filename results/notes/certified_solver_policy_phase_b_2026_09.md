@@ -172,3 +172,5 @@ the release that ships PyAutoArray#567. The item 4 follow-up is filed as its own
    ~5e-6 nats) and the 2.5e-9 Delaunay cross-composition residual are properties of the Delaunay
    program under both solvers; neither blocks the policy, but any tighter Delaunay pin would first
    need them localised.
+
+> **Correction — 2026-09-27:** the scalar config-flip PR proposed in policy item 1 was never opened: the prompt was retired unbuilt at planning on 2026-09-24 (`PyAutoMind/complete/2026/09/certified-solver-scalar-default-flip.md` — no production run takes the scalar path; the winning row is certified+none under `jit(vmap)`, which is phase C2). The packaged default stays `pdip`; scalar users opt in via config.

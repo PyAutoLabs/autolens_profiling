@@ -61,6 +61,8 @@ at every `k` from 32 to 256. The dense cuSOLVER Cholesky it replaces costs 0.90 
   Schur Cholesky is added, and the dense one is kept for the fallback branch.
 - Fresh JAX compilation cache per task, with zero autotune entries at start.
 
+> **Correction — 2026-09-27:** PyAutoArray#566 is the issue; the library certified solver shipped as PR PyAutoArray#567 (merge `11b93476`, released 2026.9.26.1).
+
 ## Numerical gate
 
 The gate and the 0.5 ms lever rule were **pre-registered** at `71e3f21` (2026-09-24 14:20:27

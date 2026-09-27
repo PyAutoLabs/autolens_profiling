@@ -1,4 +1,4 @@
-# Result JSONs written before the provenance block existed (2026-09-28).
+# Result JSONs written before the provenance block existed (2026-09-27).
 # check_results_layout.py --check exempts these paths from the `device.provenance`
 # requirement. This is a ratchet: remove a line when its file gains the block or is
 # deleted; never add one by hand. Regenerate only with --write-grandfather.

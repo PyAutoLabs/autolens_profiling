@@ -32,7 +32,7 @@ PyAutoArray #553–#555 were released in 2026.9.19.1.
 
 ## Artefact policy
 
-Decided 2026-09-28 (autolens_profiling#341), after `results/notes/` had grown to 74 files of
+Decided 2026-09-27 (autolens_profiling#341), after `results/notes/` had grown to 74 files of
 which 16 job logs and 10 JSON sidecars were 38 % of the tree, and measurement PRs had reached
 16k–26k lines of per-repeat JSON. `scripts/misc/tooling/check_results_layout.py --check`
 enforces the first and last rules in `lint.yml`.
