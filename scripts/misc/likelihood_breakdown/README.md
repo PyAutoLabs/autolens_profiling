@@ -54,10 +54,10 @@ For *how long the likelihood actually takes* on production hardware — i.e. a s
 | `interferometer/delaunay` | sma | hpc_ral_cpu_fp64 | sparse (w-tilde) | 1.12 s | v2026.8.17.1 |
 | `interferometer/delaunay` | sma | hpc_a100_fp64 | sparse (w-tilde) | 33.9 ms | v2026.8.17.1 |
 | `interferometer/delaunay` | sma | hpc_a100_mp | sparse (w-tilde) | 33.6 ms | v2026.8.17.1 |
-| `interferometer/delaunay_numba` | alma | hpc_ral_cpu_fp64 | sparse (numba) | 2.28 s | v2026.8.17.1 |
-| `interferometer/delaunay_numba` | alma_high | hpc_ral_cpu_fp64 | sparse (numba) | 27.23 s | v2026.8.17.1 |
+| `interferometer/delaunay_numba` | alma | hpc_ral_cpu_fp64 | sparse (numba) | 1.27 s | v2026.8.17.1 |
+| `interferometer/delaunay_numba` | alma_high | hpc_ral_cpu_fp64 | sparse (numba) | 13.82 s | v2026.8.17.1 |
 | `interferometer/delaunay_numba` | sma | local_cpu_fp64 | sparse (numba) | 472.0 ms | v2026.8.17.1 |
-| `interferometer/delaunay_numba` | sma | hpc_ral_cpu_fp64 | sparse (numba) | 359.1 ms | v2026.8.17.1 |
+| `interferometer/delaunay_numba` | sma | hpc_ral_cpu_fp64 | sparse (numba) | 278.9 ms | v2026.8.17.1 |
 | `interferometer/delaunay_numba_direct_conv` | alma | local_cpu_fp64 | sparse (numba) | 1.80 s | v2026.8.17.1 |
 | `interferometer/delaunay_numba_direct_conv` | sma | local_cpu_fp64 | sparse (numba) | 378.2 ms | v2026.8.17.1 |
 | `interferometer/delaunay_numba_jax` | alma | local_cpu_fp64 | sparse (w-tilde) | 3.28 s | v2026.8.17.1 |
@@ -95,10 +95,10 @@ For *how long the likelihood actually takes* on production hardware — i.e. a s
 | `interferometer/pixelization` | sma | hpc_ral_cpu_fp64 | sparse (w-tilde) | 980.1 ms | v2026.8.17.1 |
 | `interferometer/pixelization` | sma | hpc_a100_fp64 | sparse (w-tilde) | 29.2 ms | v2026.8.17.1 |
 | `interferometer/pixelization` | sma | hpc_a100_mp | sparse (w-tilde) | 29.4 ms | v2026.8.17.1 |
-| `interferometer/pixelization_numba` | alma | hpc_ral_cpu_fp64 | sparse (numba) | 3.17 s | v2026.8.17.1 |
-| `interferometer/pixelization_numba` | alma_high | hpc_ral_cpu_fp64 | sparse (numba) | 37.31 s | v2026.8.17.1 |
+| `interferometer/pixelization_numba` | alma | hpc_ral_cpu_fp64 | sparse (numba) | 1.83 s | v2026.8.17.1 |
+| `interferometer/pixelization_numba` | alma_high | hpc_ral_cpu_fp64 | sparse (numba) | 19.03 s | v2026.8.17.1 |
 | `interferometer/pixelization_numba` | sma | local_cpu_fp64 | sparse (numba) | 1.15 s | v2026.8.17.1 |
-| `interferometer/pixelization_numba` | sma | hpc_ral_cpu_fp64 | sparse (numba) | 933.1 ms | v2026.8.17.1 |
+| `interferometer/pixelization_numba` | sma | hpc_ral_cpu_fp64 | sparse (numba) | 824.1 ms | v2026.8.17.1 |
 | `interferometer/pixelization_numba_direct_conv` | alma | local_cpu_fp64 | sparse (numba) | 1.76 s | v2026.8.17.1 |
 | `interferometer/pixelization_numba_direct_conv` | sma | local_cpu_fp64 | sparse (numba) | 184.5 ms | v2026.8.17.1 |
 | `interferometer/pixelization_numba_jax` | alma | local_cpu_fp64 | sparse (w-tilde) | 2.28 s | v2026.8.17.1 |
