@@ -358,7 +358,8 @@ separately per likelihood × transform. Standing conclusions:
   gpu-node EPYC (job 358770) the solved single-call ratio *falls* 0.41 → 0.22 (n = 5 → 24), the batched ratio stays
   0.35–0.56; A100 (job 358771) 0.64 → 0.36. `rev` compile grows 3.4 → 80 s on the EPYC (`fwd` ≤ 9 s). Found:
   `jax.grad` through `ExternalShear` / multipole comps / `ell_comps` is NaN at exactly (0, 0); `PowerLawMultipole`
-  m=1 is singular at slope 2.
+  m=1 is singular at slope 2. Design memo: the win is structural (reverse-over-forward through the inner lensing
+  Hessian), so no `n_params` threshold — recommended an analysis-declared `gradient_mode` (AnalysisPoint → forward).
   Findings: [`results/notes/point_source_source_plane_campaign.md`](./results/notes/point_source_source_plane_campaign.md).
 - **Interferometer mesh likelihood on the A100 (2026-09)**: the sparse-operator (W~) Delaunay-1500
   and rectangular 39×39 breakdown at sma / alma / alma_high / jvla, in fp64 and mixed precision,

@@ -967,4 +967,58 @@ past n ≈ 280 on the reference host (≈ 50 on the loaded laptop).
 
 ### Design memo
 
-<!-- PLACEHOLDER: written by the main session (options for the PyAutoFit switch, call sites, threshold). -->
+Written by the main session, 2026-09-27.
+
+**What the curve says.** There is no crossover to design a threshold around. Forward mode wins
+through n = 24 (solved) / 27 (plain) on every host and call shape, and on the single call its lead
+*grows* with model size: 0.41 → 0.22 on the reference EPYC, 0.64 → 0.36 on the A100. This is the
+opposite of the textbook "forward mode loses as n grows". The reason is structural: this likelihood
+contains an inner forward-mode derivative (the lensing Hessian, via `jax.jacfwd` in
+`LensCalc._hessian_via_jax`). Reverse mode therefore runs reverse-over-forward through every mass
+profile, and its cost grows with the number of profiles (rev ×3.8 across the ladder vs fwd ×2.1).
+Forward-over-forward stays cheap, even with more flops than rev from L9 on. The only projected
+crossing is for vmapped batches on CPU, at n ≈ 280–320, far beyond any realistic
+single-source point-source model. The compile-time result is just as large: rev lower + compile
+reaches 80 s at L24 on the EPYC (117 s on the laptop), while fwd stays at 2.4–11 s.
+
+**Consequence for the design.** An automatic switch on `n_params < threshold` is the wrong shape.
+The win comes from the *likelihood's structure* (an inner jacfwd), not from the parameter count.
+The same switch would lose on a pixelized-source imaging likelihood with many parameters and no
+inner Hessian. The choice belongs to the analysis, which knows its structure, and the user should
+be able to override it.
+
+**Where a switch would live** (PyAutoFit gradient call sites):
+- `Fitness.grad`: `autofit/non_linear/fitness.py:933` (`jax.grad(self.call)`).
+- multi-start gradient: `autofit/non_linear/search/mle/multi_start_gradient/search.py:974` and
+  `:1072` (`jax.value_and_grad`), vmapped at `:1089`. This is the batched shape measured here.
+- blackjax NUTS / SMC: `autofit/non_linear/search/mcmc/blackjax/{nuts,smc}/search.py`. blackjax
+  differentiates the log-density itself, so forward mode there means supplying a custom
+  `value_and_grad`. That is a later step.
+
+**Options, for the human to choose:**
+1. **Analysis-declared default plus a search override (recommended).** Add a
+   `gradient_mode: "reverse" | "forward"` attribute. `af.Analysis` defaults to `"reverse"`, so there is
+   no behaviour change anywhere else. `AnalysisPoint` declares `"forward"`. A search keyword
+   overrides it. PyAutoFit builds the gradient through one helper that returns
+   `value_and_grad` for reverse, or `jacfwd(has_aux=True)` over the flat vector for forward, and the
+   three call sites above use that helper.
+2. **Opt-in only.** The same helper and keyword, default `"reverse"` everywhere, with point-source
+   users opting in. This is safest, but the 2–4.5× speed-up and the 8× compile saving stay hidden
+   unless people read the docs.
+3. **Self-calibrating `"auto"`.** Compile both modes once at search start and keep the faster one.
+   This is robust across likelihoods, but it pays the reverse compile (up to 80 s here) that forward
+   mode exists to avoid. It is only worth it as an explicit `"auto"` value on top of option 1 or 2.
+
+Either library phase should take the flat parameter vector, not the `ModelInstance` pytree. Linked
+priors give the pytree more leaves than free parameters (12 for 9 at L9), which would make jacfwd
+push one tangent per leaf. `Fitness.call` already works on the vector. The library phase also needs
+a GPU regression check and gradient parity tests (fwd ≡ rev) on a non-point-source analysis.
+
+**Carried findings (separate from the switch, for intake):**
+- `jax.grad` is NaN at exactly zero for `ExternalShear`, multipole `multipole_comps` and
+  `ell_comps` (the magnitude/angle parameterisation). A gradient search that starts at prior
+  medians of 0 would see NaN gradients. This is a PyAutoGalaxy robustness bug, independent of AD
+  mode.
+- `PowerLawMultipole` m=1 is singular at slope 2 (`-inf`/NaN deflections).
+- `Isothermal.convergence_2d_from` / `shear_yx_2d_from` cannot be jit-traced with traced
+  `ell_comps` (carried from phase 2b).
