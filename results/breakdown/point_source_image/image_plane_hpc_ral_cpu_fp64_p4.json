@@ -1,0 +1,672 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "package_versions": {
+    "jax": "0.10.2",
+    "jaxlib": "0.10.2"
+  },
+  "source_revisions": {
+    "autolens_profiling": "6c45fecb4459d88bf490bbfe795c39f3596ebefb",
+    "PyAutoNerves": "1fa613aa8d89a79613009fb66f5b4e2d21deb57a",
+    "PyAutoFit": "dd9fbe0aab60c4a57702b1444ca031b317c91331",
+    "PyAutoArray": "3de624b5b91a4efa130dc3cb0a3a0f06f85025a3",
+    "PyAutoGalaxy": "70a61e26cd715cefe7012a38285698091246a8a4",
+    "PyAutoLens": "86054bbc19baa2f710a12e04a94fa27ab37cc354"
+  },
+  "instrument": "simple",
+  "config_name": "hpc_ral_cpu_fp64_p4",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "hostname": "euclid-ral-compute-10-4",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 236,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p4/output/jax_cache/point_source_356365_hpc_ral_cpu_fp64_p4",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true
+  },
+  "thread_environment": {
+    "NPROC": "8",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "precision": {
+    "jax_enable_x64": true,
+    "mixed_precision_requested": false,
+    "note": "PointSolver has no Settings mixed-precision switch; device task validates precision-specific execution."
+  },
+  "configuration": {
+    "likelihood": "image_plane_solved (FitPositionsImagePairAllSolved)",
+    "plain_control": "image_plane (FitPositionsImagePairAll)",
+    "observed_positions": 4,
+    "position_noise_sigma": 0.05,
+    "dataset_noise_seed": 1,
+    "lens_redshift": 0.5,
+    "source_redshift": 1.0,
+    "solver_grid_shape": [
+      100,
+      100
+    ],
+    "solver_grid_pixel_scale": 0.2,
+    "solver_pixel_scale_precision": 0.001,
+    "magnification_threshold": 0.1,
+    "neighbor_degree": 1,
+    "max_containing_size": 15,
+    "n_steps": 8,
+    "n_repeats": 5
+  },
+  "steps": {
+    "Solved source centre": 0.00015630820125807078,
+    "Step 0: ray trace": 0.0009273949981434271,
+    "Step 0: containment": 0.0005917978007346392,
+    "Step 0: selection": -8.01457994384692e-05,
+    "Step 0: neighbourhood": 7.255800010170805e-05,
+    "Step 0: up sample": -0.00012493760150391621,
+    "Step 1: ray trace": 0.0001247100008185953,
+    "Step 1: containment": -0.00012739280064124605,
+    "Step 1: selection": 0.00012632019934244454,
+    "Step 1: neighbourhood": 6.714400078635654e-05,
+    "Step 1: up sample": -0.0001663415983784943,
+    "Step 2: ray trace": 5.325159872882068e-05,
+    "Step 2: containment": 0.00020692059770226483,
+    "Step 2: selection": -4.670419730246067e-05,
+    "Step 2: neighbourhood": 2.1271000150591135e-05,
+    "Step 2: up sample": -4.584819835145031e-05,
+    "Step 3: ray trace": -4.882720240857448e-05,
+    "Step 3: containment": 2.2530398564413016e-05,
+    "Step 3: selection": -0.0001103611983126029,
+    "Step 3: neighbourhood": 3.9232199196703775e-05,
+    "Step 3: up sample": 0.0001642850023927168,
+    "Step 4: ray trace": -0.00014776379975955933,
+    "Step 4: containment": 5.56093960767611e-05,
+    "Step 4: selection": -5.6630198378115806e-05,
+    "Step 4: neighbourhood": 0.00030852620257064683,
+    "Step 4: up sample": -0.0003182420012308284,
+    "Step 5: ray trace": 0.00020031159801874314,
+    "Step 5: containment": -0.00020199219870846723,
+    "Step 5: selection": -0.00012195739836897692,
+    "Step 5: neighbourhood": 0.00031271059997379775,
+    "Step 5: up sample": -0.00016855400172062214,
+    "Step 6: ray trace": 0.0002517246000934392,
+    "Step 6: containment": -0.00023922820109874006,
+    "Step 6: selection": 0.00023951719922479233,
+    "Step 6: neighbourhood": 8.971700153779225e-05,
+    "Step 6: up sample": -0.0001923808013088999,
+    "Step 7: ray trace": 6.446100305765854e-05,
+    "Step 7: containment": 3.957519948016852e-05,
+    "Step 7: selection": -0.00016430040122941128,
+    "Step 7: neighbourhood": 0.0002432658016914501,
+    "Step 7: up sample": 0.00019560519722290354,
+    "Magnification filter": -0.0003370033984538168,
+    "Pairing chi-squared / fused-wrapper residual": 0.00032184640003833924
+  },
+  "prefix_steady_per_call_s": {
+    "Solved source centre": 0.00015630820125807078,
+    "Step 0: ray trace": 0.0010837031994014978,
+    "Step 0: containment": 0.001675501000136137,
+    "Step 0: selection": 0.0015953552006976678,
+    "Step 0: neighbourhood": 0.0016679132007993759,
+    "Step 0: up sample": 0.0015429755992954596,
+    "Step 1: ray trace": 0.001667685600114055,
+    "Step 1: containment": 0.0015402927994728089,
+    "Step 1: selection": 0.0016666129988152534,
+    "Step 1: neighbourhood": 0.00173375699960161,
+    "Step 1: up sample": 0.0015674154012231157,
+    "Step 2: ray trace": 0.0016206669999519363,
+    "Step 2: containment": 0.0018275875976542012,
+    "Step 2: selection": 0.0017808834003517405,
+    "Step 2: neighbourhood": 0.0018021544005023316,
+    "Step 2: up sample": 0.0017563062021508813,
+    "Step 3: ray trace": 0.0017074789997423069,
+    "Step 3: containment": 0.0017300093983067199,
+    "Step 3: selection": 0.001619648199994117,
+    "Step 3: neighbourhood": 0.0016588803991908208,
+    "Step 3: up sample": 0.0018231654015835375,
+    "Step 4: ray trace": 0.0016754016018239782,
+    "Step 4: containment": 0.0017310109979007393,
+    "Step 4: selection": 0.0016743807995226235,
+    "Step 4: neighbourhood": 0.0019829070020932703,
+    "Step 4: up sample": 0.001664665000862442,
+    "Step 5: ray trace": 0.001864976598881185,
+    "Step 5: containment": 0.0016629844001727178,
+    "Step 5: selection": 0.001541027001803741,
+    "Step 5: neighbourhood": 0.0018537376017775387,
+    "Step 5: up sample": 0.0016851836000569165,
+    "Step 6: ray trace": 0.0019369082001503557,
+    "Step 6: containment": 0.0016976799990516156,
+    "Step 6: selection": 0.001937197198276408,
+    "Step 6: neighbourhood": 0.0020269141998142002,
+    "Step 6: up sample": 0.0018345333985053003,
+    "Step 7: ray trace": 0.0018989944015629589,
+    "Step 7: containment": 0.0019385696010431274,
+    "Step 7: selection": 0.0017742691998137161,
+    "Step 7: neighbourhood": 0.002017535001505166,
+    "Step 7: up sample": 0.0022131401987280697,
+    "Magnification filter": 0.001876136800274253
+  },
+  "total_step_by_step": 0.002197983200312592,
+  "fused_full_solved_s": 0.002197983200312592,
+  "fused_full_plain_control_s": 0.0019763239979511127,
+  "jit_phases": {
+    "full_solved": {
+      "lower_s": 2.0708056579896947,
+      "compile_s": 3.047625594990677,
+      "first_call_s": 0.006778569004382007,
+      "steady_per_call_s": 0.002197983200312592
+    },
+    "full_plain_control": {
+      "lower_s": 1.3891319179965649,
+      "compile_s": 2.7617210169992177,
+      "first_call_s": 0.003057139998418279,
+      "steady_per_call_s": 0.0019763239979511127
+    },
+    "source_centre": {
+      "lower_s": 0.18410366099851672,
+      "compile_s": 0.2552918639994459,
+      "first_call_s": 0.0009216200123773888,
+      "steady_per_call_s": 0.00015630820125807078
+    },
+    "step_00_ray_trace": {
+      "lower_s": 0.19246416600071825,
+      "compile_s": 0.16027957799087744,
+      "first_call_s": 0.0023651700030313805,
+      "steady_per_call_s": 0.0010837031994014978
+    },
+    "step_00_containment": {
+      "lower_s": 0.23972339900501538,
+      "compile_s": 0.4084669879957801,
+      "first_call_s": 0.002502613002434373,
+      "steady_per_call_s": 0.001675501000136137
+    },
+    "step_00_selection": {
+      "lower_s": 0.35861514799762517,
+      "compile_s": 0.44414786899869796,
+      "first_call_s": 0.0030501520086545497,
+      "steady_per_call_s": 0.0015953552006976678
+    },
+    "step_00_neighbourhood": {
+      "lower_s": 0.2718722319987137,
+      "compile_s": 0.5210078279924346,
+      "first_call_s": 0.0027114449912915006,
+      "steady_per_call_s": 0.0016679132007993759
+    },
+    "step_00_up_sample": {
+      "lower_s": 0.2727854130062042,
+      "compile_s": 0.5429500160098542,
+      "first_call_s": 0.0025404180050827563,
+      "steady_per_call_s": 0.0015429755992954596
+    },
+    "step_01_ray_trace": {
+      "lower_s": 0.4247230600012699,
+      "compile_s": 0.6131153809983516,
+      "first_call_s": 0.0025335059908684343,
+      "steady_per_call_s": 0.001667685600114055
+    },
+    "step_01_containment": {
+      "lower_s": 0.3250473699881695,
+      "compile_s": 0.6649715969979297,
+      "first_call_s": 0.0025652350013842806,
+      "steady_per_call_s": 0.0015402927994728089
+    },
+    "step_01_selection": {
+      "lower_s": 0.43785304500488564,
+      "compile_s": 0.6817675919883186,
+      "first_call_s": 0.0022097699984442443,
+      "steady_per_call_s": 0.0016666129988152534
+    },
+    "step_01_neighbourhood": {
+      "lower_s": 0.33483580499887466,
+      "compile_s": 0.7226037910004379,
+      "first_call_s": 0.002203637995989993,
+      "steady_per_call_s": 0.00173375699960161
+    },
+    "step_01_up_sample": {
+      "lower_s": 0.3353257400012808,
+      "compile_s": 0.7378318080009194,
+      "first_call_s": 0.0027249950071563944,
+      "steady_per_call_s": 0.0015674154012231157
+    },
+    "step_02_ray_trace": {
+      "lower_s": 0.47448741999687627,
+      "compile_s": 0.7980166839988669,
+      "first_call_s": 0.0022101670037955046,
+      "steady_per_call_s": 0.0016206669999519363
+    },
+    "step_02_containment": {
+      "lower_s": 0.37180434200854506,
+      "compile_s": 0.8105702479952015,
+      "first_call_s": 0.0022787449997849762,
+      "steady_per_call_s": 0.0018275875976542012
+    },
+    "step_02_selection": {
+      "lower_s": 0.47982026998943184,
+      "compile_s": 0.8486275759933051,
+      "first_call_s": 0.002651188988238573,
+      "steady_per_call_s": 0.0017808834003517405
+    },
+    "step_02_neighbourhood": {
+      "lower_s": 0.382303630001843,
+      "compile_s": 0.8618859379930655,
+      "first_call_s": 0.0022431160032283515,
+      "steady_per_call_s": 0.0018021544005023316
+    },
+    "step_02_up_sample": {
+      "lower_s": 0.4855380060034804,
+      "compile_s": 0.8631297669926425,
+      "first_call_s": 0.002207760000601411,
+      "steady_per_call_s": 0.0017563062021508813
+    },
+    "step_03_ray_trace": {
+      "lower_s": 0.41676883000764064,
+      "compile_s": 0.9175980779982638,
+      "first_call_s": 0.002818904002197087,
+      "steady_per_call_s": 0.0017074789997423069
+    },
+    "step_03_containment": {
+      "lower_s": 0.5313002420007251,
+      "compile_s": 0.935708220989909,
+      "first_call_s": 0.0023690849920967594,
+      "steady_per_call_s": 0.0017300093983067199
+    },
+    "step_03_selection": {
+      "lower_s": 0.4274742849956965,
+      "compile_s": 0.9417800179944606,
+      "first_call_s": 0.0028012809925712645,
+      "steady_per_call_s": 0.001619648199994117
+    },
+    "step_03_neighbourhood": {
+      "lower_s": 0.530243891000282,
+      "compile_s": 0.9875065669912146,
+      "first_call_s": 0.0027573500119615346,
+      "steady_per_call_s": 0.0016588803991908208
+    },
+    "step_03_up_sample": {
+      "lower_s": 0.5292420500045409,
+      "compile_s": 0.9714942129940027,
+      "first_call_s": 0.0028316590032773092,
+      "steady_per_call_s": 0.0018231654015835375
+    },
+    "step_04_ray_trace": {
+      "lower_s": 0.4633673490025103,
+      "compile_s": 1.0979641559970332,
+      "first_call_s": 0.002754358996753581,
+      "steady_per_call_s": 0.0016754016018239782
+    },
+    "step_04_containment": {
+      "lower_s": 0.5738711679878179,
+      "compile_s": 1.1374227160122246,
+      "first_call_s": 0.0022820529993623495,
+      "steady_per_call_s": 0.0017310109979007393
+    },
+    "step_04_selection": {
+      "lower_s": 0.4743415859993547,
+      "compile_s": 1.1411977230018238,
+      "first_call_s": 0.002579466992756352,
+      "steady_per_call_s": 0.0016743807995226235
+    },
+    "step_04_neighbourhood": {
+      "lower_s": 0.6020276939962059,
+      "compile_s": 1.1836992740136338,
+      "first_call_s": 0.0024324889964191243,
+      "steady_per_call_s": 0.0019829070020932703
+    },
+    "step_04_up_sample": {
+      "lower_s": 0.47761599298974033,
+      "compile_s": 1.179049345999374,
+      "first_call_s": 0.0027762509998865426,
+      "steady_per_call_s": 0.001664665000862442
+    },
+    "step_05_ray_trace": {
+      "lower_s": 0.6143018930015387,
+      "compile_s": 1.220126555999741,
+      "first_call_s": 0.0029327369993552566,
+      "steady_per_call_s": 0.001864976598881185
+    },
+    "step_05_containment": {
+      "lower_s": 0.6234676189924357,
+      "compile_s": 1.252645358996233,
+      "first_call_s": 0.002991330999066122,
+      "steady_per_call_s": 0.0016629844001727178
+    },
+    "step_05_selection": {
+      "lower_s": 0.5280274170072516,
+      "compile_s": 1.2549143090000143,
+      "first_call_s": 0.002895179990446195,
+      "steady_per_call_s": 0.001541027001803741
+    },
+    "step_05_neighbourhood": {
+      "lower_s": 0.6325616319954861,
+      "compile_s": 1.3014439460093854,
+      "first_call_s": 0.0028554659947985783,
+      "steady_per_call_s": 0.0018537376017775387
+    },
+    "step_05_up_sample": {
+      "lower_s": 0.6345977550081443,
+      "compile_s": 1.286936076998245,
+      "first_call_s": 0.0028737120010191575,
+      "steady_per_call_s": 0.0016851836000569165
+    },
+    "step_06_ray_trace": {
+      "lower_s": 0.5641350710066035,
+      "compile_s": 1.3461853329936275,
+      "first_call_s": 0.0028165149997221306,
+      "steady_per_call_s": 0.0019369082001503557
+    },
+    "step_06_containment": {
+      "lower_s": 0.6636093859997345,
+      "compile_s": 1.3737670450063888,
+      "first_call_s": 0.002677614989806898,
+      "steady_per_call_s": 0.0016976799990516156
+    },
+    "step_06_selection": {
+      "lower_s": 0.6703375720098848,
+      "compile_s": 1.4134156759973848,
+      "first_call_s": 0.0029309370002010837,
+      "steady_per_call_s": 0.001937197198276408
+    },
+    "step_06_neighbourhood": {
+      "lower_s": 0.5755189009942114,
+      "compile_s": 1.4204843280022033,
+      "first_call_s": 0.002801212001941167,
+      "steady_per_call_s": 0.0020269141998142002
+    },
+    "step_06_up_sample": {
+      "lower_s": 0.6718948880006792,
+      "compile_s": 1.434714219009038,
+      "first_call_s": 0.0023584629961987957,
+      "steady_per_call_s": 0.0018345333985053003
+    },
+    "step_07_ray_trace": {
+      "lower_s": 0.7057201849966077,
+      "compile_s": 1.4853899630106753,
+      "first_call_s": 0.0028179979999549687,
+      "steady_per_call_s": 0.0018989944015629589
+    },
+    "step_07_containment": {
+      "lower_s": 0.7188649040035671,
+      "compile_s": 1.4981656020099763,
+      "first_call_s": 0.0027993999974569306,
+      "steady_per_call_s": 0.0019385696010431274
+    },
+    "step_07_selection": {
+      "lower_s": 0.7256957740028156,
+      "compile_s": 1.5150798560061958,
+      "first_call_s": 0.0029394390003290027,
+      "steady_per_call_s": 0.0017742691998137161
+    },
+    "step_07_neighbourhood": {
+      "lower_s": 0.6258072610071395,
+      "compile_s": 1.5425075840030331,
+      "first_call_s": 0.002411751003819518,
+      "steady_per_call_s": 0.002017535001505166
+    },
+    "step_07_up_sample": {
+      "lower_s": 0.7305238349945284,
+      "compile_s": 1.5447716649941867,
+      "first_call_s": 0.002881809006794356,
+      "steady_per_call_s": 0.0022131401987280697
+    },
+    "magnification_filter": {
+      "lower_s": 0.8533951229910599,
+      "compile_s": 1.6295116560067981,
+      "first_call_s": 0.0026492159959161654,
+      "steady_per_call_s": 0.001876136800274253
+    }
+  },
+  "likelihoods": {
+    "solved_eager": 7.743201200876817,
+    "solved_jit": 7.743201200876812,
+    "plain_eager": 7.196577317761017,
+    "plain_jit": 7.196577317761015
+  },
+  "numerical_controls": {
+    "vmap_batch": 2,
+    "vmap_values": [
+      7.743201200876812,
+      7.743201200876812
+    ],
+    "gradient_all_finite": true,
+    "gradient_l2": 1783.302107230914,
+    "filtered_finite_positions": 4
+  },
+  "step_metadata": [
+    {
+      "step": 0,
+      "initial_shape": [
+        23283,
+        3,
+        2
+      ],
+      "plane_shape": [
+        23283,
+        3,
+        2
+      ],
+      "filtered_shape": [
+        9,
+        3,
+        2
+      ],
+      "neighbourhood_shape": [
+        29,
+        3,
+        2
+      ],
+      "up_sampled_shape": [
+        116,
+        3,
+        2
+      ],
+      "filtered_finite_triangles": 9
+    },
+    {
+      "step": 1,
+      "initial_shape": [
+        116,
+        3,
+        2
+      ],
+      "plane_shape": [
+        116,
+        3,
+        2
+      ],
+      "filtered_shape": [
+        5,
+        3,
+        2
+      ],
+      "neighbourhood_shape": [
+        20,
+        3,
+        2
+      ],
+      "up_sampled_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_finite_triangles": 5
+    },
+    {
+      "step": 2,
+      "initial_shape": [
+        80,
+        3,
+        2
+      ],
+      "plane_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_shape": [
+        5,
+        3,
+        2
+      ],
+      "neighbourhood_shape": [
+        20,
+        3,
+        2
+      ],
+      "up_sampled_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_finite_triangles": 5
+    },
+    {
+      "step": 3,
+      "initial_shape": [
+        80,
+        3,
+        2
+      ],
+      "plane_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_shape": [
+        5,
+        3,
+        2
+      ],
+      "neighbourhood_shape": [
+        20,
+        3,
+        2
+      ],
+      "up_sampled_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_finite_triangles": 5
+    },
+    {
+      "step": 4,
+      "initial_shape": [
+        80,
+        3,
+        2
+      ],
+      "plane_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_shape": [
+        5,
+        3,
+        2
+      ],
+      "neighbourhood_shape": [
+        20,
+        3,
+        2
+      ],
+      "up_sampled_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_finite_triangles": 5
+    },
+    {
+      "step": 5,
+      "initial_shape": [
+        80,
+        3,
+        2
+      ],
+      "plane_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_shape": [
+        5,
+        3,
+        2
+      ],
+      "neighbourhood_shape": [
+        20,
+        3,
+        2
+      ],
+      "up_sampled_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_finite_triangles": 5
+    },
+    {
+      "step": 6,
+      "initial_shape": [
+        80,
+        3,
+        2
+      ],
+      "plane_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_shape": [
+        5,
+        3,
+        2
+      ],
+      "neighbourhood_shape": [
+        20,
+        3,
+        2
+      ],
+      "up_sampled_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_finite_triangles": 5
+    },
+    {
+      "step": 7,
+      "initial_shape": [
+        80,
+        3,
+        2
+      ],
+      "plane_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_shape": [
+        5,
+        3,
+        2
+      ],
+      "neighbourhood_shape": [
+        20,
+        3,
+        2
+      ],
+      "up_sampled_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_finite_triangles": 5
+    }
+  ],
+  "methodology": {
+    "prefix_rows": "successive differences of cumulative JIT prefixes",
+    "negative_rows": "retained; XLA fusion and timing noise can move work across boundaries",
+    "authoritative_runtime": "fused_full_solved_s"
+  }
+}

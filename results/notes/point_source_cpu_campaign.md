@@ -1037,3 +1037,258 @@ Logs: [`point_source_cpu_2026_09_24_ral_job_350636_static_lattice_ab.out`](point
 Rank by new evidence; the phase-3 re-rank above puts (b) initial scale versus refinement count
 first for `simple` and (d) cluster dPIE/NFW deflections first at cluster scale, then (a) grid-extent
 guidance and (c) `MAX_CONTAINING_SIZE` / neighbourhood fan-out. Any PyAutoGalaxy work is its own phase.
+
+## Phase 4a — re-baseline + solver-config sweep (2026-09-26) — DONE
+
+Issue: [autolens_profiling #314](https://github.com/PyAutoLabs/autolens_profiling/issues/314). Profiling
+branch `feature/point-source-cpu-p4`. **Workspace-only research: no library code changed.** Phases 2
+and 3 are released in 2026.9.26.1, and 4a measures on that released code.
+
+### Scope decision
+
+Human decision (2026-09-26): this campaign is **single-source only**, the `scripts/point_source_image/`
+use case. The two-source cluster rows that phases 1–3 carried leave the campaign. They move to epic
+`cluster-pointsolver-speed`, prompt `organs/PyAutoMind/draft/research/autolens_profiling/cluster_pointsolver_speed.md`,
+which starts from its own data and a cluster `likelihood_breakdown` baseline. The cluster lever
+(d), dPIE/NFW deflections, went with it. 4a measures the three single-source levers: (a) grid
+extent, (b) initial scale versus refinement count, and (c) `MAX_CONTAINING_SIZE` / neighbourhood
+fan-out. All three are correctness knobs, so every configuration is gated on image completeness
+before it is timed.
+
+### Environment (quotable)
+
+- **RAL CPU**, partition `ral`, pinned `--nodelist=euclid-ral-compute-10-4`, Intel Xeon Platinum 8490H
+  (the phase-1/3 model; phases 1 and 3 ran on 10-2, so only in-job ratios compare across phases).
+  8 CPUs (`sched_affinity` 8, `NPROC=8`, BLAS threads 1), fp64, JAX 0.10.2. XLA_FLAGS are the phase-1
+  row's byte for byte (constant folding off).
+- **Library code:** only the shared RAL mirror `/mnt/ral/jnightin/PyAuto` was on `PYTHONPATH`, with no
+  branch clones. The job refuses to run otherwise and asserts the JSON `source_revisions` against the
+  mirror HEADs. `source_revisions` are PyAutoArray `3de624b5`, PyAutoLens `86054bbc`, PyAutoGalaxy
+  `70a61e26`, PyAutoFit `dd9fbe0a`, PyAutoNerves `1fa613aa` and autolens_profiling `6c45fec`. The mirror
+  was **not** pulled to the 2026.9.26.1 tags, because other sessions' RAL arrays were running on it.
+  Its point-source code path is byte-identical to the tags: PyAutoLens differs only by a hooks commit,
+  and PyAutoArray only in `util/jax_nnls.py` + nnls config keys.
+- **Step 1**, job **356365**: loadavg 0.00 at start, 1 committed run + 4 replicates.
+- **Step 2**, job **356367**: loadavg 0.00 → 1.23, wall 787 s, `all_gates_pass: true`.
+  - Job 356367 **supersedes 356366**. Job 356366 used the same draws and protocol, but its step-0
+    trace/containment split method was flawed, so its artefacts are kept out of the repo.
+  - The laptop witness JSON (`solver_config_sweep_laptop_cpu_fp64.json`) is **not quotable**.
+
+### Re-baseline — measured per-step split (job 356365)
+
+Cell: `scripts/point_source_image/likelihood_breakdown/image_plane.py`, `--config-name hpc_ral_cpu_fp64_p4`.
+At about 2 ms, one run cannot separate a stage from noise, so the job runs the cell 5 times on the
+same node. The committed row is
+[`image_plane_hpc_ral_cpu_fp64_p4.json`](../breakdown/point_source_image/image_plane_hpc_ral_cpu_fp64_p4.json)
+([png](../breakdown/point_source_image/image_plane_hpc_ral_cpu_fp64_p4.png)); the 4 replicates are in the
+gitignored `output/` tree.
+
+- **Fused solved: median 2.095 ms** across the 5 runs (1.988–2.198; the committed row 2.198). Plain: 1.857 ms.
+- Fiducial log L is **`7.743201200876812`** under jit, bit-identical to phases 1–3. Eager gives `…817`.
+- vmap-2 is bit-identical, and `jax.grad` is finite.
+
+The table differences the per-run median cumulative JIT prefixes against the median fused call.
+Rows can go negative under XLA fusion.
+
+| stage | ms | % of fused | per-run spread (ms) |
+|---|---:|---:|---|
+| source centre β\* | 0.166 | 7.9 | 0.149 … 0.172 |
+| **step 0** (11 859-row lattice) | **1.384** | **66.0** | 1.309 … 1.483 |
+| steps 1–7 (refinement, summed) | 0.310 | 14.8 | each step −0.16 … 0.46 |
+| magnification filter | 0.153 | 7.3 | −0.013 … 0.168 |
+| pairing χ² / residual | 0.082 | 3.9 | −0.038 … 0.322 |
+
+**This overturns the phase-3 FLOP ranking.** That ranking estimated the refinement steps at ≈ 60 %
+and step 0 at ≈ 22 %. In wall time, step 0 is two thirds of the call and refinement is ≈ 15 %: the
+seven 720-row steps are cheap per FLOP. Within refinement, the neighbourhood stage is the largest
+part (≈ 0.43 ms summed, ≈ 20 %).
+
+*Caveat, corrected below:* this cell also split step 0 into "ray trace" 0.965 ms and "containment"
+0.462 ms. That split is wrong. The cell's ray-trace prefix returns the materialised triangles, so it
+counts the `vertices[indices]` gather as trace. The sweep measures the corrected split.
+
+### Solver-config sweep (job 356367)
+
+- Cell: [`scripts/point_source_image/likelihood_breakdown/solver_config_sweep.py`](../../scripts/point_source_image/likelihood_breakdown/solver_config_sweep.py).
+- Submit: [`submit_breakdown_point_source_image_solver_config_sweep_ral_cpu_fp64`](../../hpc/batch_cpu/submit_breakdown_point_source_image_solver_config_sweep_ral_cpu_fp64).
+- JSON: [`solver_config_sweep_hpc_ral_cpu_fp64.json`](../breakdown/point_source_image/solver_config_sweep_hpc_ral_cpu_fp64.json)
+  ([png](../breakdown/point_source_image/solver_config_sweep_hpc_ral_cpu_fp64.png)).
+- Log: [`point_source_cpu_2026_09_26_ral_job_356367_solver_config_sweep.out`](point_source_cpu_2026_09_26_ral_job_356367_solver_config_sweep.out).
+
+**Protocol.**
+- 26 configurations of the production `FitPositionsImagePairAllSolved` likelihood. Each is its own
+  interleaved route, and no route's speed is ever substituted into another's.
+- Timing: 20 rounds × 20 calls, 3 warm calls and a 16-instance parameter stream. Routes run
+  round-robin with a rotated start. Each route gets a fresh closure and solver plus
+  `jax.clear_caches()`.
+- Statistics: medians with a 2000-sample bootstrap 90 % CI.
+- `MAX_CONTAINING_SIZE` is patched in-process for tracing only. It needed the module constant **and**
+  the `ArrayTriangles.__init__` / `for_limits_and_scale` `__defaults__`, because the default argument
+  binds at import. It is restored by value, and a gate checks both.
+
+**Completeness method.**
+- Reference: a fine solve at extent ±12″, scale 0.05, precision 1e-4 and MCS 60, on **200 seeded draws
+  from the full point_source prior** (the source is the solved β\*).
+- Stress set: **200 draws outside the prior** (θ_E U(1, 2), ell_comps U(−0.2, 0.2), source U(−0.4, 0.4)).
+- Reference floor: a second reference (±11″ / 0.07) agrees with the first on 200/200 + 200/200 draws,
+  with max position error 1.6e-4″.
+- **Admissible** means 100 % distinct-image multiplicity agreement on the prior draws (distinct at
+  0.005″) **and** a max position error of at most **0.002″**. The tolerance is set by the solver, not
+  by the data. The default's last-step triangle side is 0.0016″, and the default itself sits at
+  8.5e-4″ against the reference. 0.002″ is 0.04 σ of the σ = 0.05″ position noise.
+- **Precision-equivalent** means a last-step triangle side no larger than the default's, i.e. the same
+  or finer final precision.
+
+**The default is complete.** The default (±9.9″ / 0.2 / 1e-3 / MCS 15 / nd 1) matches the reference's
+image multiplicity on **200/200 prior and 200/200 stress** draws. Its max position error is 8.5e-4″
+(p99 7.9e-4″). Its |Δ log L| against the reference is at most 0.87 (p99 0.57): that is the default's own
+discretisation, and every precision-equivalent config below shares it exactly.
+
+| config | extent ″ | scale | steps | step-0 rows | median ms | speed-up [90 % CI] | admissible | prec.-equiv. | notes |
+|---|---:|---:|---:|---:|---:|---:|:-:|:-:|---|
+| control (default) | ±9.9 | 0.2 | 8 | 11 859 | 1.824 | 1.00 [0.91, 1.10] | ✓ | ✓ | 200/200 + 200/200 |
+| extent | ±6 | 0.2 | 8 | 4 428 | 1.203 | **1.52** [1.47, 1.66] | ✓ | ✓ | log L = control |
+| extent | ±4 | 0.2 | 8 | 2 075 | 1.025 | **1.78** [1.72, 1.96] | ✓ | ✓ | log L = control |
+| extent | ±3 | 0.2 | 8 | 1 197 | 0.888 | **2.05** [1.98, 2.24] | ✓ | ✓ | log L = control |
+| extent | ±2.5 | 0.2 | 8 | 848 | 0.814 | **2.24** [2.16, 2.45] | ✓ | ✓ | log L = control |
+| scale | ±9.9 | 0.3 | 9 | 5 400 | 1.337 | 1.36 [1.32, 1.49] | ✓ | ✓ (finer) | finer last side 0.0012″ |
+| scale | ±9.9 | 0.4 | 9 | 3 030 | 1.272 | **1.43** [1.39, 1.57] | ✓ | ✓ | log L = control on 200/200 |
+| scale | ±9.9 | 0.5 | 9 | 1 944 | 1.079 | 1.69 [1.63, 1.84] | ✓ | ✗ | coarser 0.0020″; stress 198/200 |
+| scale | ±9.9 | 0.8 | 10 | 816 | 0.979 | 1.86 | ✗ | ✓ | prior 195/200, stress 185/200 |
+| combo | ±4 | 0.4 | 9 | 559 | 0.849 | 2.15 [2.08, 2.35] | ✓ | ✓ | |
+| combo | ±3 | 0.4 | 9 | 330 | 0.819 | 2.23 [2.15, 2.43] | ✓ | ✓ | |
+| **combo (best)** | **±2.5** | **0.4** | 9 | 243 | **0.771** | **2.37** [2.28, 2.59] | ✓ | ✓ | vmap-16 5.55× |
+| combo | ±4 / ±3 | 0.5 | 9 | 385 / 216 | 0.798 / 0.792 | 2.29 / 2.30 | ✓ | ✗ | stress 198/200 |
+| combo | ±4 / ±3 | 0.8 | 10 | 161 / 102 | 0.861 / 0.838 | 2.12 / 2.18 | ✗ | ✓ | prior 195/200 |
+| finer step 0 | ±9.9 / ±4 | 0.1 | 7 | 46 284 / 7 824 | 5.712 / 1.416 | 0.32 / 1.29 | ✓ | ✓ | loses vs same extent at 0.2 |
+| MCS 8 / 10 | ±9.9 | 0.2 | 8 | 11 859 | 1.649 / 1.720 | 1.11 / 1.06 | ✗ | ✓ | prior 124/200, 173/200 |
+| nd 0 / nd 2 | ±9.9 | 0.2 | 8 | 11 859 | 1.363 / 2.803 | 1.34 / **0.65** | ✗ / ✓ | ✓ | nd 0: prior 18/200 |
+| precision 0.002 / 0.005 | ±9.9 | 0.2 | 7 / 6 | 11 859 | 1.951 / 1.845 | 0.94 / 0.99 | ✓ / ✗ | ✗ | no speed-up |
+
+Further results:
+
+- **vmap** (per likelihood, control → ±2.5/0.4):
+  - batch 1: 1.783 → 0.839 ms (2.13×);
+  - batch 4: 1.442 → 0.455 ms (3.17×);
+  - batch 16: 1.618 → 0.292 ms (**5.55×** [5.48, 5.73]).
+  - The step-0 saving grows under batching: the control's vmap gain stalls, and the small lattice's
+    gain keeps growing.
+- **Compile and memory:** `compile_s` is 3.13 s for the control and 3.63 s for ±2.5/0.4 (+16 %, one
+  cold compile each). FLOPs fall from 3.38M to 0.96M, and XLA temp memory from 1.69 MB to 0.29 MB.
+- **Images the solver needs:** the reference's images reach max |coord| 1.78″ and max radius 1.81″ on
+  the prior, and 2.30″ / 2.52″ on the stress set. That is why ±2.5″ still passes on these draws. It says
+  nothing about real galaxy-scale data with larger Einstein radii or offset centres; see the human
+  decision below.
+- **Gates:** all pass.
+  - The fiducial is bit-exact at `7.743201200876812`.
+  - The MCS patch takes effect (positions shape `(MCS, 2)`) and is restored.
+  - `jax.grad` is finite and non-zero on every instance for the control and the best config.
+
+### Step-0 cost anatomy — the triangle gather
+
+The sweep's step-0 split uses four prefixes: source centre, `jnp.sum(plane.vertices)`, the
+materialised plane triangles, and `containing_indices`.
+
+- On the default lattice (11 859 rows / 23 283 triangles), step 0 is **1.48 ms, 81 % of the 1.824 ms
+  likelihood**. It divides into:
+  - ray trace (deflecting the 11 859 vertices): **0.27 ms**;
+  - containment: **1.21 ms, 66 % of the likelihood**.
+- Containment includes the `vertices[indices]` gather, `Point.mask` and `jnp.where`. The gather alone,
+  materialising the `(23 283, 3, 2)` triangle array, is **≈ 0.90 ms, ≈ 49 % of the likelihood**.
+- **The step-0 cost is not deflection arithmetic.** Phase 3 cut the deflected rows to 11 859. What
+  remains is the memory-bound gather of 23 283 × 3 vertices and the containment test over every
+  triangle.
+- The 356365 split above (ray trace 0.965, containment 0.462 ms) is wrong for this reason: its
+  ray-trace prefix is the materialised array.
+- Under ±2.5/0.4 (243 rows), containment falls to **0.06 ms** and the whole of step 0 to 0.07 ms.
+- A code lever that removes the gather should therefore recover most of the extent/scale speed-up
+  **without** shrinking the default grid, and without any completeness risk.
+
+### Latent `MAX_CONTAINING_SIZE` overflow (17 > 15)
+
+The sweep also counted containing triangles **uncapped**, in NumPy on the 200 prior draws.
+
+- The default's step-0 count has median 9, p99 15 and **max 17, on prior draw 12**. That exceeds
+  `MAX_CONTAINING_SIZE = 15`.
+- 23 draws exceed 12, and 1 draw exceeds 15. Steps 1–7 peak at 13 / 11 / 9 / 7 / 5 / 5 / 5.
+- Draw 12 still passed completeness, because the truncated entries happened to be the spurious
+  fold-line candidates. That is luck, not a guarantee: the cap silently truncates, with no warning.
+- Under ±2.5/0.4, the max is exactly 15 at step 1 (p99 15), with no draw over the cap. The headroom is
+  zero there too.
+- MCS 8 and MCS 10 lose images outright (prior 62 % and 86.5 %). The cap is load-bearing, and 15 is at
+  the edge of the prior.
+
+### Disposition of the levers
+
+- **(a) Grid extent — real but a per-dataset choice, not a library default.** ±6″ to ±2.5″ are all
+  admissible and give 1.52–2.24× on these draws, and extent-only configs reproduce the control's log L
+  exactly. The admissible extent depends on the lens, so this is a **workspace and user setting**,
+  backed by a library sanity-check warning. See the human decision below.
+- **(b) Initial scale — a finding, within limits.** Scale 0.4 is precision-equivalent (the same 0.0016″
+  last side, one extra step), complete on every draw, log-L-identical to the control on 200/200, and
+  1.43× at full extent.
+  - Scale 0.3 is also admissible, but slower (1.36×).
+  - Scale 0.5 coarsens the final precision (0.0020″) and drops 2 stress draws' images.
+  - Scale 0.8 is **inadmissible** (prior 195/200).
+  - A finer step 0 (0.1) loses everywhere.
+  - Combined with extent, 0.4 gives the best row: ±2.5/0.4 at 2.37×.
+- **(c) `MAX_CONTAINING_SIZE` / neighbourhood — no speed lever, but a correctness fix.** Lowering MCS
+  (8 / 10) and `neighbor_degree` 0 lose images; `neighbor_degree` 2 is 0.65×. The actionable finding is
+  the other direction: add **headroom** above the 17 observed.
+- **Precision block — no speed-up.** 0.002 is 0.94× and 0.005 is 0.99×: removing one or two 720-row
+  steps saves nothing measurable, and both coarsen the positions.
+- **Neighbourhood block —** see (c). The refinement steps are ≈ 15 % of wall time, so they are not
+  where the time is.
+
+### Human decisions (2026-09-26, live)
+
+The human agreed all three recommendations:
+1. Phase 4b is the step-0 gather/containment **code** lever, first.
+2. Raise `MAX_CONTAINING_SIZE` headroom from 15 to about 20, measured.
+3. The starting-scale finding stands.
+
+On extent, the human said:
+
+> "I think +-3" is a bit small for galaxy scale lenses and I think we would need to update it in
+> workspace accordingly for each package. but +-10" still wont do clusters well so I think a
+> workspace level task is right. We probabbly need some sort of a sanity check that prints or alerts
+> the user? and warning based on the extent of the masked data (or the Point dataset)?"
+
+So there is **no library default change for the extent**. The extent is set per workspace package,
+and the library gains a construction-time sanity-check warning.
+
+### Next tasks (filed in PyAutoMind, epic `point-source-cpu-speed`)
+
+1. **Phase 4b**: `draft/feature/autoarray/pointsolver_step0_gather_containment.md`. Remove or cut the
+   ≈ 0.9 ms step-0 `vertices[indices]` gather, e.g. regular-lattice arithmetic or slicing, or a fused
+   containment. The result must stay bit-identical. Priority high.
+2. **Phase 4c**: `draft/feature/autoarray/pointsolver_max_containing_size_headroom.md`. Raise MCS 15 → ~20
+   (measure 18 / 20 / 24), consider an overflow counter, and mind the `__defaults__` binding trap.
+3. `draft/feature/autolens/pointsolver_extent_sanity_check.md`. A construction-time (non-JAX) warning
+   when `PointDataset` positions (or the mask) approach the solver grid edge, plus a softer perf hint
+   when the grid is far larger than needed.
+4. `draft/feature/autolens_workspace/pointsolver_grid_extent_per_package.md`. Set galaxy-scale
+   point-solver grids per workspace package, proposing ±4″ to ±6″ with a 0.4″ initial scale. It
+   depends on 3 (library first), and cluster scripts are left alone.
+
+### Reproduce (RAL)
+
+```bash
+# RAL worktree of feature/point-source-cpu-p4; library code = the shared mirror only
+cd hpc/batch_cpu && sbatch submit_breakdown_point_source_image_image_plane_p4_ral_cpu_fp64      # step 1 (1 + 4 replicates)
+sbatch submit_breakdown_point_source_image_solver_config_sweep_ral_cpu_fp64                     # step 2
+# or from the laptop: hpc/sync push, hpc/sync submit --cpu <submit_name>, then hpc/sync pull
+```
+
+Step-1 log: [`point_source_cpu_2026_09_26_ral_job_356365_image_plane_p4.out`](point_source_cpu_2026_09_26_ral_job_356365_image_plane_p4.out);
+submit [`submit_breakdown_point_source_image_image_plane_p4_ral_cpu_fp64`](../../hpc/batch_cpu/submit_breakdown_point_source_image_image_plane_p4_ral_cpu_fp64).
+
+### Follow-ups
+
+- Fix `image_plane.py`'s step-0 prefix split, so that "ray trace" stops at the deflected vertices,
+  not the materialised triangles. Otherwise its dashboard row keeps misattributing the gather.
+- There is no A100 row for 4a, because no config became a library default. Phase 4b carries an A100
+  no-regression row.
+- The completeness draws are the workspace prior plus one stress set. The per-package extents
+  (task 4) must be checked on each package's own lenses, which the sanity-check warning (task 3) makes
+  visible.
