@@ -84,7 +84,7 @@ Policy is the human's call. The open questions are at the end.
   budget is the packaged 16.
 
 Provenance, per-task sacct rows, OOM and allocator excerpts, and artifact checksums are in
-[certified_solver_phase_c1_job350768.json](certified_solver_phase_c1_job350768.json). The 28 JSON
+[certified_solver_phase_c1_job350768.json](../breakdown/imaging/certified_solver_phase_c1_job350768.json). The 28 JSON
 files and 24 PNG files are under `results/breakdown/imaging/`, suffixes
 `_jitvmap<B>_captured_<stage>_lib<solver>_fb<on|off>_b16_…` (time) and
 `_captured_rate_libcertified_fboff_b16_<stage>_…` (rate).

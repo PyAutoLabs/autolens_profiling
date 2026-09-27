@@ -226,7 +226,7 @@ question under the campaign's fp64 constraint:
 The eight A100 JSON/PNG pairs are
 `results/breakdown/imaging/fixed_light_trace_<mesh>_logdet_<candidate>_hpc_a100_fp64_fixed_light_trace.{json,png}`.
 Their sha256s, the SLURM per-task state (`sacct`, including MaxRSS), the footers and the gate
-decision are in [`hst_gpu_residue_phase4_job350651.json`](hst_gpu_residue_phase4_job350651.json).
+decision are in [`hst_gpu_residue_phase4_job350651.json`](../breakdown/imaging/hst_gpu_residue_phase4_job350651.json).
 The `.out` and `.err` files stay on RAL, with local copies in the gitignored
 `output/ral_job350651/`.
 

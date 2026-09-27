@@ -74,7 +74,7 @@ and `--logdet-candidate` modes) shipped in #270, #294, #296 and #306.
   threshold was not relaxed. Phase 3 placed the residual between compositions (`jit(vmap)` vs
   scalar jit), not in the solver. No batching or callback conclusion may be drawn from the grid.
 - **Array 343376 is the retired `vmap(jit)` composition** and is historical only
-  ([sidecar](../../results/notes/hst_gpu_residue_phase2_historical_job343376.json), status
+  ([sidecar](../../results/breakdown/imaging/hst_gpu_residue_phase2_historical_job343376.json), status
   `historical-only`); array 344635 is the current-composition measurement. Tasks 0–2 of 344635
   exited non-zero after writing artifacts, and their logs lack the footer (ERR trap).
 - **Phase-3 fp32-cube and complex64 rows are DIAGNOSTIC.** `mp_cube_c64` and `c64_full` miss the pin

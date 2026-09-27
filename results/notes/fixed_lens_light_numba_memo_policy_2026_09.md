@@ -181,4 +181,4 @@ on seed 1. These are research results, not a production runtime improvement.
 [Full JSON](../breakdown/imaging/fixed_light_numba_memo_policy_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s5b.json) ·
 [Timing plot](../breakdown/imaging/fixed_light_numba_memo_policy_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s5b.png) ·
 [Predeclared protocol](../breakdown/imaging/fixed_light_numba_memo_policy_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s5b.declaration.json) ·
-[Source/job sidecar](fixed_light_numba_s5b_source_job343413.json)
+[Source/job sidecar](../breakdown/imaging/fixed_light_numba_s5b_source_job343413.json)

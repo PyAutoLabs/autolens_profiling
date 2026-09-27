@@ -105,7 +105,7 @@ separately; an empty `threadpoolctl` result means runtime BLAS count unavailable
 No shared library refresh is part of this task.
 
 All five cells have been retrieved and the cross-N JSON/PNG regenerated with
-`--aggregate`. The [source and job record](fixed_light_numba_s6_source_jobs.json)
+`--aggregate`. The [source and job record](../breakdown/imaging/fixed_light_numba_s6_source_jobs.json)
 contains input hashes, library revisions, SLURM completion and resource records,
 and the lossless JSON-formatting manifest.
 

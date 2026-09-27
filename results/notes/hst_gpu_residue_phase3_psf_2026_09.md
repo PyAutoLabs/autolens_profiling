@@ -208,7 +208,7 @@ human policy decision, not a profiling question.
 The seven A100 JSON/PNG pairs are
 `results/breakdown/imaging/fixed_light_trace_delaunay_psf_<candidate>_hpc_a100_fp64_fixed_light_trace.{json,png}`.
 Their sha256s, SLURM per-task state, footers and the gate decision are in
-[`hst_gpu_residue_phase3_job350573.json`](hst_gpu_residue_phase3_job350573.json).
+[`hst_gpu_residue_phase3_job350573.json`](../breakdown/imaging/hst_gpu_residue_phase3_job350573.json).
 
 RTX 2060 rows were screening only: they checked the harness's pins, reconciliation, census and
 exit codes, and they are never ranked because of the GeForce fp64 rate. The artifacts are
