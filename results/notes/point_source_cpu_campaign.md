@@ -1292,3 +1292,157 @@ submit [`submit_breakdown_point_source_image_image_plane_p4_ral_cpu_fp64`](../..
 - The completeness draws are the workspace prior plus one stress set. The per-package extents
   (task 4) must be checked on each package's own lenses, which the sanity-check warning (task 3) makes
   visible.
+
+## Phase 4b — step-0 containment without the triangle gather (2026-09-27)
+
+Issue: [PyAutoArray #579](https://github.com/PyAutoLabs/PyAutoArray/issues/579). Library branch
+`feature/pointsolver-step0-gather` (PyAutoArray `c13b2d73`, unpushed at measurement time); profiling
+branch `feature/point-source-cpu-p4b`. **The solver geometry does not change** (±9.9″ / 0.2 / 1e-3,
+MCS 15); only the arithmetic path of the step-0 `Point` containment test does, and the result must be
+bit-identical.
+
+### What changed in the library
+
+`ArrayTriangles.containing_indices` has four step-0 routes behind the trace-time switch
+`autoarray.structures.triangles.array._STEP0_CONTAINMENT`. They apply only to the static initial
+lattice (a `Step0Layout` carried as pytree aux data) and only to exactly `Point` (`type(shape) is
+Point`; `Circle` etc. override `mask` and keep the general path):
+
+- `gather` — the pre-#579 general path: pad, `(N, 3, 2)` gather, no-op NaN `where`. **The "before".**
+- `nopad` — the same gather without pad / `where` (laptop only; no faster, dropped on RAL).
+- `components` — six `(N,)` 1-D gathers, one per vertex component; no `(N, 3, 2)` array.
+- `structured` — **the branch default**: strided slices of the traced vertex table reshaped to its
+  lattice rows, one sign test per parity class, interleaved back to triangle order. No gather at all.
+
+Every route feeds `_barycentric_contains` the same six values in the same operation order, so the
+mask and the kept indices are bit-identical. `control` in the tables is the branch's library default,
+i.e. `structured`.
+
+### Instrument fixes (commit `7725a6b`)
+
+- `solver_config_sweep.py` step-0 split: phase 4a's `triangle_materialisation_ms` came from a prefix
+  returning `plane.triangles`, which is the general gather **whatever the route**, so it read
+  ≈ 0.8–1.0 ms on every route. It is now two numbers:
+  - `route_input_materialisation_ms` — route-aware: the six barycentric input components the
+    *active* route feeds the sign test, captured at trace time by swapping `_barycentric_contains`,
+    returned as jit outputs, minus ray trace. An upper bound: returning them forces XLA to write
+    arrays the fused containment may never write. On the EPYC run it reads 1.79 ms for `gather`,
+    0.06 ms for `components` and 0.41 ms for `structured`, whose 24 strided slices are fused into the
+    sign test in the real call (its containment is no slower than `components`').
+  - `general_gather_reference_ms` — the old prefix, kept as a route-independent reference.
+  - **Containment (`containing_indices` minus ray trace) stays the headline before/after number.**
+- `image_plane.py`: each step's ray-trace prefix is now `jnp.sum(plane.vertices)`, so the gather is
+  counted in containment. The job-356365 per-step trace / containment split is marked not quotable in
+  the docstring; the JSON records the prefix method.
+
+### Environment and provenance
+
+- Protocol as phase 4a: fresh closure + `jax.clear_caches()` per route, 20 rounds × 20 calls,
+  round-robin with rotated start, 3 warm calls, 16-instance stream, bootstrap 90 % CI (2000
+  samples), 200 prior + 200 stress completeness draws against the fine reference, vmap 1 / 4 / 16,
+  no persistent compile cache (cold `compile_s`). Routes: `control,gather,components,structured`.
+- **Library code on RAL:** a `git clone --shared` of the mirror's PyAutoArray with the branch fetched
+  from a bundle, detached at `c13b2d73` (`/mnt/ral/jnightin/autolens_profiling_wt/PyAutoArray_pointsolver-step0-gather`),
+  first on `PYTHONPATH`; everything else from the shared mirror. Each job refuses to run unless
+  `autoarray` imports from the clone and the rest from the mirror, and asserts the JSON
+  `source_revisions` against the imported HEADs (and that PyAutoArray descends from `c13b2d73`).
+- The mirror was pulled to the 2026.9.27.1 release commits during the session: PyAutoLens `def4decf`,
+  PyAutoGalaxy `879a9308`, PyAutoFit `5468c6ce`, PyAutoNerves `eb27da24`. Their diffs from the
+  laptop run's `4487eb47` / `0e4b89cf` / `cf83504e` / `2b3bc533` are README / docs / Colab-tag / Nerves
+  board-script only; **the point-source code path is identical**.
+- RAL venv versus the dependency floors: jax / jaxlib 0.10.2 (= laptop), jax-cuda12 0.10.2,
+  nufftax 0.6.1 (floor 0.6.1), numpy 2.2.6, scipy 1.17.1 (cap 1.17.1). No floor violations.
+- autolens_profiling on RAL: a worktree of the RAL checkout at `311e690` (`f7edb9f` + the fallback
+  submit).
+
+### Quotable row: RAL CPU, Xeon Platinum 8490H — job 357321, NOT RUN (queued)
+
+Job **357321** (`submit_breakdown_point_source_image_solver_config_sweep_step0_ral_cpu_fp64`, pinned to
+`euclid-ral-compute-10-4`, the phase-4a host) was submitted at 11:59 and was still `PENDING (Priority)`
+at 14:00: the `ral` partition is saturated by euclid_dr1 arrays (10-4 had 974 848 / 976 000 MB
+allocated and load ≈ 150, with thousands of older equal-priority array tasks ahead). It is left
+queued; when it runs it writes `solver_config_sweep_step0_hpc_ral_cpu_fp64.json`, which is the
+quotable before/after row for this phase. **Until then there is no quotable 8490H number.**
+
+### Supplementary: RAL CPU, AMD EPYC 7702 — job 357335
+
+The known fallback: CPU-only on an idle `gpu`-partition node, no `--gres`, `euclid-ral-gpu-2`
+(8 CPUs, `sched_affinity` 8, fp64, NPROC 8, BLAS 1, phase-1 XLA_FLAGS; loadavg 0.29 → 1.48; wall
+417 s). **A different CPU from phase 4a's 8490H: the within-node ×gather ratios are valid, the
+absolute ms are not comparable to phase 4a.** JSON
+[`solver_config_sweep_step0_hpc_ral_cpu_epyc7702_fp64.json`](../breakdown/point_source_image/solver_config_sweep_step0_hpc_ral_cpu_epyc7702_fp64.json)
+(`quotable: "supplementary"`, `host_note` added post-run);
+log [`point_source_cpu_2026_09_27_ral_job_357335_step0_route_ab_epyc7702_cpu.out`](point_source_cpu_2026_09_27_ral_job_357335_step0_route_ab_epyc7702_cpu.out).
+
+| route | median ms | × gather [90 % CI] | containment ms | route inputs ms | ray trace ms | vmap-1 / 4 / 16 ms/L | compile s | XLA temp KB | FLOPs M |
+|---|---:|---:|---:|---:|---:|---|---:|---:|---:|
+| gather (before) | 3.184 | 1.000 [0.993, 1.008] | 1.906 | 1.793 | 0.489 | 3.255 / 2.494 / 2.121 | 4.00 | 1692 | 3.38 |
+| components | 1.979 | **1.608** [1.598, 1.621] | 0.594 | 0.056 | 0.492 | 2.020 / 1.380 / 1.166 | 4.12 | 1506 | 3.58 |
+| **structured** (default) | 1.971 | **1.615** [1.603, 1.628] | 0.647 | 0.406 | 0.481 | 2.023 / 1.446 / 1.133 | 4.19 | **902** | **2.80** |
+| control (= structured) | 1.981 | 1.607 [1.593, 1.624] | 0.641 | 0.375 | 0.495 | 1.998 / 1.442 / 1.139 | 4.06 | 902 | 2.80 |
+
+- Containment falls **1.906 → 0.65 ms (−66 %)**; the whole likelihood 3.18 → 1.97 ms. `structured`
+  and `components` are statistically tied on the scalar call (paired-round ratio vs control:
+  components 1.006, structured 1.007, both p10–p90 0.96–1.05).
+- vmap ×gather: structured 1.61 / 1.72 / **1.87**, components 1.61 / 1.81 / 1.82.
+- Compile: +2.9 % (components) / +4.8 % (structured) over gather, one cold compile each — inside the
+  +20 % gate. Memory: `structured` is the only route that cuts XLA temp memory (1692 → 902 KB, −47 %)
+  and FLOPs (3.38 → 2.80 M); `components` keeps 1506 KB and adds FLOPs.
+- The general-gather reference prefix reads 0.97–1.01 ms on every route, as it must.
+
+### A100 no-regression row — job 357322
+
+`euclid-ral-gpu-1`, NVIDIA A100 80 GB PCIe (driver 610.57.04), host CPU EPYC 7702, `JAX_PLATFORMS=cuda`
+and `JAX_PLATFORM_NAME=cuda`, the job asserted the `gpu` backend; wall 432 s. JSON
+[`solver_config_sweep_step0_hpc_ral_a100_fp64.json`](../breakdown/point_source_image/solver_config_sweep_step0_hpc_ral_a100_fp64.json);
+log [`point_source_cpu_2026_09_27_ral_job_357322_step0_route_ab_a100.out`](point_source_cpu_2026_09_27_ral_job_357322_step0_route_ab_a100.out).
+
+| route | median ms | × gather [90 % CI] | containment ms | vmap-1 / 4 / 16 ms/L | compile s | XLA temp KB |
+|---|---:|---:|---:|---|---:|---:|
+| gather | 0.837 | 1.000 [0.996, 1.004] | 0.085 | 0.830 / 0.228 / 0.069 | 5.55 | 390 |
+| components | 0.839 | 0.999 [0.995, 1.002] | 0.083 | 0.831 / 0.229 / 0.068 | 5.65 | 390 |
+| structured | 0.838 | 0.999 [0.995, 1.003] | 0.090 | 0.838 / 0.231 / 0.071 | 5.73 | 390 |
+
+**No regression, and no gain: ~1.00×**, as expected for the launch-bound A100 (phase 3). vmap-16
+structured is 0.97× gather (0.071 vs 0.069 ms/L, a 2 µs difference). Compile +3.2 % (structured).
+`all_gates_pass` is false **only** because `gates.fiducial_bit_exact` expects the CPU value `…812`:
+the A100 fiducial `7.743201200876806` equals the phase-2/3 A100 rows bit for bit, and every route is
+bit-identical to the control.
+
+### Laptop witness (not quotable)
+
+`solver_config_sweep_step0_laptop_cpu_fp64.json` (WSL2, commit `9f3fc61`; old instrument, so no
+route-inputs column): gather 2.221 ms, components 1.555 (1.43×), structured 1.613 (1.38×), nopad 2.249
+(0.99×). vmap-16 ms/L 1.50 / 1.00 / 0.78 (structured 1.91×, components 1.50×). Containment
+1.239 → 0.481 (components) / 0.600 (structured).
+
+### Gates (every run)
+
+- `gates.step0_route_bit_identity` passes for every route on laptop, EPYC and A100: stream, fiducial
+  and prior log L, prior and stress positions, image counts, `jax.grad` and the vmap values are
+  bit-identical to the control.
+- Fiducial `7.743201200876812` bit-exact on both CPUs (A100: `…806`, its established value).
+- Completeness: every route 200/200 prior + 200/200 stress, max position error 8.51e-4″ (unchanged
+  from phase 4a).
+- `jax.grad` finite and non-zero on every route; the MCS patch is restored.
+- Compile ≤ +5 % (gate +20 %); XLA temp memory ≤ gather's on every route (structured −47 % on CPU).
+
+### Verdict
+
+Removing the gather cuts the step-0 containment by about two thirds on CPU, with bit-identical
+output. On the EPYC CPU the likelihood is 1.61× faster (1.87× under vmap-16); on the laptop it is
+1.38–1.43×. It does not regress the A100. **Keep `structured` as the default:** it ties `components`
+on the scalar CPU call (the laptop's 4 % edge for `components` is within WSL2 noise and does not
+reproduce on RAL), wins under vmap-16 on both CPUs (1.87× / 1.91× vs 1.82× / 1.50×), and is the only
+route that also cuts XLA temp memory and FLOPs. `components` stays the fallback for a lattice whose
+vertex table does not follow the closed-form layout (`Step0Layout.grid is None`). The quotable 8490H
+row (job 357321) is still owed before this ships.
+
+### Reproduce (RAL)
+
+```bash
+# RAL worktree of feature/point-source-cpu-p4b + the PyAutoArray branch clone (see the submits' LIBRARY block)
+hpc/sync submit --cpu submit_breakdown_point_source_image_solver_config_sweep_step0_ral_cpu_fp64       # quotable, 8490H
+hpc/sync submit --cpu submit_breakdown_point_source_image_solver_config_sweep_step0_gpu_node_cpu_fp64  # EPYC fallback
+hpc/sync submit --gpu submit_breakdown_point_source_image_solver_config_sweep_step0_a100_fp64          # A100
+```
