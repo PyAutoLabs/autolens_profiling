@@ -15,6 +15,12 @@ resolution. XLA may fuse work across a prefix boundary, so a small negative row
 is retained as measurement noise. The fused end-to-end likelihood is the
 authoritative runtime control.
 
+Each step's ray-trace prefix is ``jnp.sum`` of the traced vertices, so the
+``vertices[indices]`` triangle gather is counted in containment. Rows committed
+before PyAutoArray#579 (e.g. RAL job 356365) returned the materialised triangles
+at that prefix, which put the gather in the ray-trace row; their per-step
+ray-trace / containment split is not quotable.
+
 The primary path uses ``PointSolved`` and
 ``FitPositionsImagePairAllSolved``. A separately labelled free-centre
 ``PointFlux`` / ``FitPositionsImagePairAll`` full-likelihood control confirms
@@ -189,7 +195,11 @@ def _solver_prefix(params, *, stop_step: int, stop_stage: str):
             plane_redshift=fit.plane_redshift,
         )
         if step_number == stop_step and stop_stage == "ray_trace":
-            return plane_triangles.triangles
+            # A scalar reduction forces every deflection of this step but writes no
+            # (N, 3, 2) output. Returning ``plane_triangles.triangles`` here (job 356365
+            # and earlier) counted the ``vertices[indices]`` gather as ray trace; the
+            # gather now lands in the containment row, where the solver pays for it.
+            return jnp.sum(plane_triangles.vertices)
 
         indexes = plane_triangles.containing_indices(shape=shape)
         if step_number == stop_step and stop_stage == "containment":
@@ -418,6 +428,10 @@ summary = {
         "prefix_rows": "successive differences of cumulative JIT prefixes",
         "negative_rows": "retained; XLA fusion and timing noise can move work across boundaries",
         "authoritative_runtime": "fused_full_solved_s",
+        "ray_trace_prefix": (
+            "jnp.sum(plane_triangles.vertices): deflections only; the vertices[indices] "
+            "gather is counted in containment (PyAutoArray#579 fix)"
+        ),
     },
 }
 
