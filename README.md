@@ -89,9 +89,10 @@ Results are framed by **astronomy instrument** (HST, Euclid, JWST, …) rather t
 | `interferometer/delaunay` | alma_high | hpc_a100_mp | sparse (w-tilde) | 99.6 ms | v2026.8.17.1 |
 | `interferometer/delaunay` | jvla | hpc_a100_fp64 | sparse (w-tilde) | 551.6 ms | v2026.8.17.1 |
 | `interferometer/delaunay` | jvla | hpc_a100_mp | sparse (w-tilde) | 548.8 ms | v2026.8.17.1 |
-| `interferometer/delaunay` | sma | local_cpu_fp64 | sparse (w-tilde) | 1.57 s | v2026.8.17.1 |
+| `interferometer/delaunay` | sma | local_cpu_fp64 | sparse (w-tilde) | 1.18 s | v2026.8.17.1 |
 | `interferometer/delaunay` | sma | hpc_a100_fp64 | sparse (w-tilde) | 33.9 ms | v2026.8.17.1 |
 | `interferometer/delaunay` | sma | hpc_a100_mp | sparse (w-tilde) | 33.6 ms | v2026.8.17.1 |
+| `interferometer/delaunay_numba` | sma | local_cpu_fp64 | sparse (numba) | 433.9 ms | v2026.8.17.1 |
 | `interferometer/delaunay_numba_direct_conv` | alma | local_cpu_fp64 | sparse (numba) | 1.80 s | v2026.8.17.1 |
 | `interferometer/delaunay_numba_direct_conv` | sma | local_cpu_fp64 | sparse (numba) | 378.2 ms | v2026.8.17.1 |
 | `interferometer/delaunay_numba_jax` | alma | local_cpu_fp64 | sparse (w-tilde) | 3.28 s | v2026.8.17.1 |
@@ -123,9 +124,10 @@ Results are framed by **astronomy instrument** (HST, Euclid, JWST, …) rather t
 | `interferometer/pixelization` | alma_high | hpc_a100_mp | sparse (w-tilde) | 95.2 ms | v2026.8.17.1 |
 | `interferometer/pixelization` | jvla | hpc_a100_fp64 | sparse (w-tilde) | 557.0 ms | v2026.8.17.1 |
 | `interferometer/pixelization` | jvla | hpc_a100_mp | sparse (w-tilde) | 552.9 ms | v2026.8.17.1 |
-| `interferometer/pixelization` | sma | local_cpu_fp64 | sparse (w-tilde) | 1.42 s | v2026.8.17.1 |
+| `interferometer/pixelization` | sma | local_cpu_fp64 | sparse (w-tilde) | 1.11 s | v2026.8.17.1 |
 | `interferometer/pixelization` | sma | hpc_a100_fp64 | sparse (w-tilde) | 29.2 ms | v2026.8.17.1 |
 | `interferometer/pixelization` | sma | hpc_a100_mp | sparse (w-tilde) | 29.4 ms | v2026.8.17.1 |
+| `interferometer/pixelization_numba` | sma | local_cpu_fp64 | sparse (numba) | 985.8 ms | v2026.8.17.1 |
 | `interferometer/pixelization_numba_direct_conv` | alma | local_cpu_fp64 | sparse (numba) | 1.76 s | v2026.8.17.1 |
 | `interferometer/pixelization_numba_direct_conv` | sma | local_cpu_fp64 | sparse (numba) | 184.5 ms | v2026.8.17.1 |
 | `interferometer/pixelization_numba_jax` | alma | local_cpu_fp64 | sparse (w-tilde) | 2.28 s | v2026.8.17.1 |
