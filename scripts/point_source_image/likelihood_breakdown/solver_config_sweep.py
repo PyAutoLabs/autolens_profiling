@@ -95,6 +95,21 @@ Gates
 - The ``MAX_CONTAINING_SIZE`` patch is proved per route from the traced shapes (the
   padded solution has ``MAX_CONTAINING_SIZE`` rows).
 
+Step-0 containment routes (phase 4b)
+------------------------------------
+
+``--step0-route`` (a comma list of ``control,gather,nopad,components,structured``)
+replaces the geometry sweep with a library-route A/B at the production geometry
+(PyAutoArray#579): each named route is a config ``step0_<route>`` beside
+``control`` that sets ``autoarray.structures.triangles.array._STEP0_CONTAINMENT``
+for the duration of **tracing** (the switch is read at trace time; see
+:func:`step0_containment`). ``control`` is the production default, unpatched.
+Every route is timed, completeness-checked, grad-checked and ``vmap``-ed at
+1 / 4 / 16, gets its own step-0 prefix split, and must be bit-identical to the
+control on the stream / fiducial log L, the prior + stress positions, the
+gradients and the ``vmap`` values (``gates["step0_route_bit_identity"]``). Output
+``solver_config_sweep_step0_<config_name>``.
+
 Output
 ------
 
@@ -167,6 +182,16 @@ _cell_parser.add_argument("--vmap-batches", default="1,4,16")
 _cell_parser.add_argument("--step0-rounds", type=int, default=None)
 _cell_parser.add_argument("--seed", type=int, default=314)
 _cell_parser.add_argument("--list-configs", action="store_true")
+STEP0_ROUTE_CHOICES = ("control", "gather", "nopad", "components", "structured")
+_cell_parser.add_argument(
+    "--step0-route",
+    default=None,
+    help=(
+        "comma list of step-0 containment library routes "
+        f"({','.join(STEP0_ROUTE_CHOICES)}): replaces the geometry sweep with a route A/B "
+        "at the production geometry (phase 4b, PyAutoArray#579)"
+    ),
+)
 _cell_parser.add_argument(
     "--quick",
     action="store_true",
@@ -223,6 +248,7 @@ def _cfg(
     precision=PRODUCTION_PRECISION,
     mcs=None,
     neighbor_degree=1,
+    step0_route=None,
 ):
     return {
         "name": name,
@@ -232,6 +258,7 @@ def _cfg(
         "precision": precision,
         "max_containing_size": PRODUCTION_MCS if mcs is None else mcs,
         "neighbor_degree": neighbor_degree,
+        "step0_route": step0_route,
     }
 
 
@@ -282,6 +309,24 @@ if _args.configs:
     if unknown:
         raise SystemExit(f"--configs: unknown {unknown}; see --list-configs")
     CONFIGS = [c for c in CONFIGS if c["name"] == "control" or c["name"] in wanted]
+STEP0_ROUTES = None
+if _args.step0_route:
+    if not hasattr(_triangles_array, "_STEP0_CONTAINMENT"):
+        raise SystemExit(
+            "--step0-route: the imported PyAutoArray has no _STEP0_CONTAINMENT switch "
+            f"({_triangles_array.__file__})"
+        )
+    STEP0_ROUTES = [r.strip() for r in _args.step0_route.split(",") if r.strip()]
+    unknown = [r for r in STEP0_ROUTES if r not in STEP0_ROUTE_CHOICES]
+    if unknown:
+        raise SystemExit(f"--step0-route: unknown {unknown}; choose from {STEP0_ROUTE_CHOICES}")
+    CONFIGS = [c for c in CONFIGS if c["name"] == "control"] + [
+        _cfg(f"step0_{r}", "step0_route", step0_route=r)
+        for r in dict.fromkeys(STEP0_ROUTES)
+        if r != "control"
+    ]
+STEP0_MODE = STEP0_ROUTES is not None
+LIBRARY_STEP0_DEFAULT = getattr(_triangles_array, "_STEP0_CONTAINMENT", None)
 CONFIG_NAMES = [c["name"] for c in CONFIGS]
 
 _GRID = al.Grid2D.uniform(shape_native=GRID_SHAPE, pixel_scales=GRID_PIXEL_SCALE)
@@ -335,6 +380,7 @@ def static_description(cfg) -> dict:
         "step0_rows": int(vertices.shape[0]),
         "max_containing_size": cfg["max_containing_size"],
         "neighbor_degree": cfg["neighbor_degree"],
+        "step0_route": cfg.get("step0_route") or f"library default ({LIBRARY_STEP0_DEFAULT})",
     }
 
 
@@ -356,13 +402,37 @@ def max_containing_size(mcs: int):
     init = _triangles_array.ArrayTriangles.__init__
     fls = _triangles_array.ArrayTriangles.for_limits_and_scale.__func__
     saved = (init.__defaults__, fls.__defaults__, _triangles_array.MAX_CONTAINING_SIZE)
-    init.__defaults__ = (int(mcs),)
-    fls.__defaults__ = (int(mcs),)
+    # max_containing_size is the FIRST defaulted parameter of both; keep any later defaults
+    # (e.g. ArrayTriangles.__init__'s step0_layout=None, PyAutoArray#579) in place.
+    init.__defaults__ = (int(mcs),) + tuple(saved[0][1:])
+    fls.__defaults__ = (int(mcs),) + tuple(saved[1][1:])
     _triangles_array.MAX_CONTAINING_SIZE = int(mcs)
     try:
         yield
     finally:
         init.__defaults__, fls.__defaults__, _triangles_array.MAX_CONTAINING_SIZE = saved
+
+
+_ORIGINAL_INIT_DEFAULTS = _triangles_array.ArrayTriangles.__init__.__defaults__
+
+
+@contextlib.contextmanager
+def step0_containment(route):
+    """Set the library's step-0 containment route for the duration of tracing.
+
+    ``route`` None (the control) leaves the library default untouched. The switch is
+    read at trace time, so patching the lowering is enough; ``compile_route`` already
+    uses a fresh closure and ``jax.clear_caches()`` per route.
+    """
+    if route is None:
+        yield
+        return
+    saved = _triangles_array._STEP0_CONTAINMENT
+    _triangles_array._STEP0_CONTAINMENT = route
+    try:
+        yield
+    finally:
+        _triangles_array._STEP0_CONTAINMENT = saved
 
 
 @contextlib.contextmanager
@@ -619,7 +689,11 @@ def compile_route(
     jax.clear_caches()
     fn = factory()
     rss0 = _rss_bytes()
-    with max_containing_size(cfg["max_containing_size"]), trace_recorder() as record:
+    with (
+        max_containing_size(cfg["max_containing_size"]),
+        step0_containment(cfg.get("step0_route")),
+        trace_recorder() as record,
+    ):
         t0 = time.perf_counter()
         lowered = jax.jit(fn).lower(example)
         lower_s = time.perf_counter() - t0
@@ -1048,8 +1122,11 @@ gates = {
     "patch_restored": {
         "module_constant": int(_triangles_array.MAX_CONTAINING_SIZE),
         "init_default": _triangles_array.ArrayTriangles.__init__.__defaults__,
+        "step0_containment": LIBRARY_STEP0_DEFAULT,
         "pass": int(_triangles_array.MAX_CONTAINING_SIZE) == PRODUCTION_MCS
-        and _triangles_array.ArrayTriangles.__init__.__defaults__ == (PRODUCTION_MCS,),
+        and _triangles_array.ArrayTriangles.__init__.__defaults__ == _ORIGINAL_INIT_DEFAULTS
+        and _ORIGINAL_INIT_DEFAULTS[0] == PRODUCTION_MCS
+        and getattr(_triangles_array, "_STEP0_CONTAINMENT", None) == LIBRARY_STEP0_DEFAULT,
     },
 }
 note(
@@ -1059,7 +1136,7 @@ note(
 grad_gate = {}
 for cfg in CONFIGS:
     name = cfg["name"]
-    if not (admissibility[name] or name == "control"):
+    if not (admissibility[name] or name == "control" or STEP0_MODE):
         continue
 
     def gfactory(cfg=cfg):
@@ -1105,8 +1182,10 @@ best_any_precision = _fastest(candidates_any)
 note(f"best admissible (precision-equivalent): {best}; any precision: {best_any_precision}")
 
 vmap_block = None
-if best is not None:
-    vroutes = [(n, b) for n in ("control", best) for b in VMAP_BATCHES]
+vvals = {}
+if best is not None or STEP0_MODE:
+    vmap_names = CONFIG_NAMES if STEP0_MODE else ["control", best]
+    vroutes = [(n, b) for n in vmap_names for b in VMAP_BATCHES]
     vexec, vcompile, vargs = {}, {}, {}
     for n, b in vroutes:
         cfg = next(c for c in CONFIGS if c["name"] == n)
@@ -1135,7 +1214,7 @@ if best is not None:
                 dt, out = _timed_call(vexec[key], vargs[key][k])
                 vtimes[key].append(dt)
                 vvals[key].setdefault(k, np.asarray(out, dtype=float).tolist())
-    vmap_block = {"best": best, "batches": list(VMAP_BATCHES), "rows": {}}
+    vmap_block = {"best": best, "routes": vmap_names, "batches": list(VMAP_BATCHES), "rows": {}}
     for i, (n, b) in enumerate(vroutes):
         st = _stats_ms(vtimes[(n, b)])
         vmap_block["rows"][f"{n}_vmap{b}"] = {
@@ -1146,12 +1225,15 @@ if best is not None:
             "compile": vcompile[(n, b)],
             "values_first_batch": vvals[(n, b)].get(0),
         }
-    for b in VMAP_BATCHES:
-        vmap_block["rows"][f"{best}_vmap{b}"]["speedup_vs_control_same_batch"] = _median_ratio(
-            vtimes[("control", b)], vtimes[(best, b)], BOOTSTRAP_SEED + 100 + b
-        )
-    # vmap vs scalar consistency (control, first batch)
-    for n in ("control", best):
+    for j, n in enumerate(vmap_names):
+        if n == "control":
+            continue
+        for b in VMAP_BATCHES:
+            vmap_block["rows"][f"{n}_vmap{b}"]["speedup_vs_control_same_batch"] = _median_ratio(
+                vtimes[("control", b)], vtimes[(n, b)], BOOTSTRAP_SEED + 100 + 17 * j + b
+            )
+    # vmap vs scalar consistency (first batch)
+    for n in vmap_names:
         for b in VMAP_BATCHES:
             first = vvals[(n, b)].get(0)
             scalar = [values[n].get(k) for k in range(b)]
@@ -1163,6 +1245,67 @@ if best is not None:
         + ", ".join(
             f"{k} {v['median_ms_per_likelihood']:.3f} ms/L" for k, v in vmap_block["rows"].items()
         )
+    )
+
+# --- 5b. step-0 route bit-identity gate (phase 4b) ------------------------------
+
+
+def _same(a, b) -> bool:
+    return bool(np.array_equal(np.asarray(a, float), np.asarray(b, float), equal_nan=True))
+
+
+if STEP0_MODE:
+    identity = {}
+    for name in CONFIG_NAMES:
+        if name == "control":
+            continue
+        counts = {
+            s: [
+                (int(finite_positions(a).shape[0]), int(finite_positions(b).shape[0]))
+                for a, b in zip(raw_positions[s]["control"], raw_positions[s][name])
+            ]
+            for s in raw_positions
+            if name in raw_positions[s]
+        }
+        checks = {
+            "stream_log_likelihood": [values[name].get(k) for k in sorted(values["control"])]
+            == [values["control"][k] for k in sorted(values["control"])],
+            "fiducial_log_likelihood": values[name].get(0) == values["control"].get(0),
+            "prior_log_likelihood": _same(config_logl[name], config_logl["control"]),
+            "prior_positions": all(
+                _same(a, b)
+                for a, b in zip(raw_positions["prior"]["control"], raw_positions["prior"][name])
+            ),
+            "stress_positions": all(
+                _same(a, b)
+                for a, b in zip(
+                    raw_positions["stress"].get("control", []),
+                    raw_positions["stress"].get(name, []),
+                )
+            ),
+            "image_counts": all(a == b for c in counts.values() for a, b in c),
+            "grad": name in grad_gate
+            and _same(grad_gate[name]["gradients"], grad_gate["control"]["gradients"]),
+            "vmap": all(
+                vvals.get((name, b)) == vvals.get(("control", b)) and vvals.get((name, b))
+                for b in VMAP_BATCHES
+            ),
+        }
+        identity[name] = {
+            "checks": checks,
+            "pass": all(checks.values()),
+            "image_count_histogram": {
+                s: {
+                    str(k): int(v)
+                    for k, v in zip(*np.unique([b for _, b in c], return_counts=True))
+                }
+                for s, c in counts.items()
+            },
+        }
+    gates["step0_route_bit_identity"] = identity
+    note(
+        "step-0 route bit-identity vs control: "
+        + ", ".join(f"{n}={v['pass']}" for n, v in identity.items())
     )
 
 # --- 6. step-0 ray trace vs containment split per geometry ---------------------
@@ -1201,7 +1344,7 @@ def step0_factory(cfg, stage):
 
 geoms = {}
 for cfg in CONFIGS:
-    key = (cfg["extent"], cfg["scale"])
+    key = (cfg["extent"], cfg["scale"], cfg.get("step0_route"))
     geoms.setdefault(key, cfg)
 s0_exec = {}
 stages = ("source_centre", "ray_trace", "ray_trace_materialised", "containment")
@@ -1237,6 +1380,7 @@ for key, cfg in geoms.items():
         "ray_trace_ms": trace,
         "containment_ms": contain,
         "triangle_materialisation_ms": med["ray_trace_materialised"] - med["ray_trace"],
+        "step0_route": descriptions[cfg["name"]]["step0_route"],
         "method": (
             "prefix medians; ray_trace = jnp.sum(plane.vertices) minus source_centre; "
             "containment = containing_indices minus ray_trace (includes the vertices[indices] "
@@ -1368,12 +1512,15 @@ all_gates_pass = bool(
     and gates["patch_restored"]["pass"]
     and all(g["pass"] for g in gates["max_containing_size_patch"].values() if g)
     and all(g["pass"] for g in grad_gate.values())
+    and all(g["pass"] for g in gates.get("step0_route_bit_identity", {}).values())
 )
 
 summary = {
-    "cell": "solver_config_sweep",
-    "issue": "PyAutoLabs/autolens_profiling#314",
-    "phase": "4a",
+    "cell": "solver_config_sweep_step0" if STEP0_MODE else "solver_config_sweep",
+    "issue": "PyAutoLabs/PyAutoArray#579" if STEP0_MODE else "PyAutoLabs/autolens_profiling#314",
+    "phase": "4b" if STEP0_MODE else "4a",
+    "step0_routes": STEP0_ROUTES,
+    "library_step0_default": LIBRARY_STEP0_DEFAULT,
     "config_name": config_name,
     "quotable": not config_name.startswith(("laptop", "local")),
     "host_note": (
@@ -1468,8 +1615,10 @@ summary = {
 dict_path, chart_path = resolve_output_paths(
     _cli,
     default_dir=_ROOT / "results" / "breakdown" / "point_source_image",
-    default_basename="solver_config_sweep_local",
-    cell="solver_config_sweep",
+    default_basename="solver_config_sweep_step0_local"
+    if STEP0_MODE
+    else "solver_config_sweep_local",
+    cell="solver_config_sweep_step0" if STEP0_MODE else "solver_config_sweep",
 )
 dict_path.write_text(json.dumps(_scrub(summary), indent=2, default=str))
 
