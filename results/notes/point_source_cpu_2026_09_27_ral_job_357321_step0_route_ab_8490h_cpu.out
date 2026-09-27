@@ -1,0 +1,80 @@
+AP_ROOT=/mnt/ral/jnightin/autolens_profiling_wt/pointsolver-step0-gather
+==========================================
+Sun 27 Sep 15:39:57 BST 2026
+euclid-ral-compute-10-4
+Model name:                              Intel(R) Xeon(R) Platinum 8490H
+partition:      ral
+cpus-per-task:  8
+sched_affinity: 8
+loadavg:        198.81 197.31 198.43 209/3235 148556
+Cell:           point_source_image/likelihood_breakdown/solver_config_sweep --step0-route
+Thread env:     OMP=1 MKL=1 OPENBLAS=1 NPROC=8
+XLA_FLAGS:      --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false
+PYTHONPATH:     /mnt/ral/jnightin/autolens_profiling_wt/PyAutoArray_pointsolver-step0-gather:/mnt/ral/jnightin/PyAuto:/mnt/ral/jnightin/PyAuto/PyAutoNerves:/mnt/ral/jnightin/PyAuto/PyAutoFit:/mnt/ral/jnightin/PyAuto/PyAutoArray:/mnt/ral/jnightin/PyAuto/PyAutoGalaxy:/mnt/ral/jnightin/PyAuto/PyAutoLens
+=== source revisions ===
+PyAutoNerves (mirror) eb27da2464e2f07e0ad67e7fb18ee84be76c479a
+PyAutoFit (mirror) 5468c6cefa0ae8bb08a449497cbd3c620f3720e2
+PyAutoArray (mirror) 14d63360f341912b209f2045d7e388e264692f1d
+PyAutoGalaxy (mirror) 879a9308b709b3705eb95904de6b349a5c034d61
+PyAutoLens (mirror) def4decf68a245a9c3dd1eb276ee0578897b220c
+PyAutoArray (branch clone, IMPORTED): c13b2d733538bec86cff3a15eccd9a0940a68463
+AP_ROOT rev:   311e690fd6c843fe38e5a228628b4417890694f2
+=== import provenance ===
+autoarray   2026.8.17.1  /mnt/ral/jnightin/autolens_profiling_wt/PyAutoArray_pointsolver-step0-gather/autoarray/__init__.py
+autofit     2026.8.17.1  /mnt/ral/jnightin/PyAuto/PyAutoFit/autofit/__init__.py
+autogalaxy  2026.8.17.1  /mnt/ral/jnightin/PyAuto/PyAutoGalaxy/autogalaxy/__init__.py
+autolens    2026.8.17.1  /mnt/ral/jnightin/PyAuto/PyAutoLens/autolens/__init__.py
+_STEP0_CONTAINMENT structured
+jax 0.10.2 jaxlib 0.10.2 numpy 2.2.6 [CpuDevice(id=0)]
+==========================================
+RUN hpc_ral_cpu_fp64 -> /mnt/ral/jnightin/autolens_profiling_wt/pointsolver-step0-gather/results/breakdown/point_source_image
+Sun 27 Sep 15:40:00 BST 2026
+loadavg: 199.87 197.55 198.50 212/3235 148598
+[    5.8 s] configs: control(n=8,rows=11859), step0_gather(n=8,rows=11859), step0_components(n=8,rows=11859), step0_structured(n=8,rows=11859), reference(n=9,rows=268677), reference_b(n=10,rows=115473)
+[   42.0 s] reference reference solved on 200 prior + 200 stress draws (compile 2.9 s)
+[   72.3 s] reference reference_b solved on 200 prior + 200 stress draws (compile 3.2 s)
+[   72.3 s] reference floor: {"prior": {"n_draws": 200, "multiplicity_agreement": 1.0, "raw_count_agreement": 1.0, "n_multiplicity_mismatch": 0, "max_position_error": 0.00015786921423151782, "p99_position_error": 0.0001280749711777913, "median_position_error": 5.9668954361473236e-05, "ref_distinct_histogram": {"2": 21, "4": 179}, "abs_delta_logl_vs_reference": {"max": 0.09204751533968647, "p99": 0.06845503627316121, "median": 0.004628222675307825, "n_nonfinite_mismatch": 0}}, "stress": {"n_draws": 200, "multiplicity_agreement": 1.0, "raw_count_agreement": 1.0, "n_multiplicity_mismatch": 0, "max_position_error": 0.00015786921423129578, "p99_position_error": 0.00014084184669768283, "median_position_error": 5.966895436132821e-05, "ref_distinct_histogram": {"2": 163, "4": 37}}}
+[  138.2 s] completeness control     prior mult 1.000 raw 1.000 maxerr 0.0008513474499103632 |dlogL|ref 0.8682473458375171  stress mult 1.0 maxerr 0.0007893460711579142
+[  138.2 s] completeness step0_gather prior mult 1.000 raw 1.000 maxerr 0.0008513474499103632 |dlogL|ref 0.8682473458375171  stress mult 1.0 maxerr 0.0007893460711579142
+[  138.2 s] completeness step0_components prior mult 1.000 raw 1.000 maxerr 0.0008513474499103632 |dlogL|ref 0.8682473458375171  stress mult 1.0 maxerr 0.0007893460711579142
+[  138.2 s] completeness step0_structured prior mult 1.000 raw 1.000 maxerr 0.0008513474499103632 |dlogL|ref 0.8682473458375171  stress mult 1.0 maxerr 0.0007893460711579142
+[  138.3 s] reference image extent: {'prior': {'max_abs_y': 1.77939453125, 'max_abs_x': 1.7773254429359933, 'max_abs_coord': 1.77939453125, 'p99_abs_coord': 1.7590830914129167, 'max_radius': 1.8116226317743076}, 'stress': {'max_abs_y': 2.2498046875, 'max_abs_x': 2.300267215077964, 'max_abs_coord': 2.300267215077964, 'p99_abs_coord': 2.2027852305644777, 'max_radius': 2.5191249773380773}}
+[  138.3 s] timing: compiling every route (fresh closure + clear_caches)
+[  176.2 s] timing: 20 rounds x 20 calls x 4 routes done
+[  176.6 s] fiducial gate: 7.743201200876812 == 7.743201200876812: True
+[  235.2 s] grad gate: control=True, step0_gather=True, step0_components=True, step0_structured=True
+[  235.2 s] best admissible (precision-equivalent): step0_components; any precision: step0_components
+[  409.7 s] vmap: control_vmap1 1.654 ms/L, control_vmap4 1.123 ms/L, control_vmap16 0.854 ms/L, step0_gather_vmap1 2.271 ms/L, step0_gather_vmap4 1.627 ms/L, step0_gather_vmap16 1.931 ms/L, step0_components_vmap1 1.564 ms/L, step0_components_vmap4 1.149 ms/L, step0_components_vmap16 1.108 ms/L, step0_structured_vmap1 1.601 ms/L, step0_structured_vmap4 1.100 ms/L, step0_structured_vmap16 0.851 ms/L
+[  409.7 s] step-0 route bit-identity vs control: step0_gather=True, step0_components=True, step0_structured=True
+[  409.7 s] step-0 split: ray trace vs ray trace + containment per geometry
+[  431.9 s] step-0 split: control trace 0.319 contain 0.491, step0_gather trace 0.307 contain 1.223, step0_components trace 0.320 contain 0.433, step0_structured trace 0.321 contain 0.494
+[  431.9 s] uncapped containing counts (NumPy path) on the prior draws
+[  456.3 s] uncapped control: max per step [17, 13, 11, 9, 7, 5, 5, 5]; draws exceeding cap 15: [12]
+[  479.8 s] uncapped step0_components: max per step [17, 13, 11, 9, 7, 5, 5, 5]; draws exceeding cap 15: [12]
+
+======================================================================================================================================================
+POINTSOLVER CONFIG SWEEP (hpc_ral_cpu_fp64, rounds=20, calls=20, prior draws=200, stress draws=200)
+======================================================================================================================================================
+  config      block                  ext scale   prec mcs nd  n   rows  med_ms       speedup [90% CI]  admp  mult   raw    maxerr    p99err dlogL_ref s_mult  s_maxerr
+  control     control               9.90  0.20 0.0010  15  1  8  11859   1.576  1.000 [0.989, 1.011]    TT 1.000 1.000  8.51e-04  7.89e-04  8.68e-01  1.000  7.89e-04
+  step0_gather step0_route           9.90  0.20 0.0010  15  1  8  11859   2.260  0.697 [0.683, 0.713]    TT 1.000 1.000  8.51e-04  7.89e-04  8.68e-01  1.000  7.89e-04
+  step0_components step0_route           9.90  0.20 0.0010  15  1  8  11859   1.550  1.017 [0.997, 1.030]    TT 1.000 1.000  8.51e-04  7.89e-04  8.68e-01  1.000  7.89e-04
+  step0_structured step0_route           9.90  0.20 0.0010  15  1  8  11859   1.570  1.004 [0.990, 1.020]    TT 1.000 1.000  8.51e-04  7.89e-04  8.68e-01  1.000  7.89e-04
+------------------------------------------------------------------------------------------------------------------------------------------------------
+  default agrees with reference on every prior draw: True
+  default agrees with reference on every stress draw: True
+  reference floor: {"prior": {"n_draws": 200, "multiplicity_agreement": 1.0, "raw_count_agreement": 1.0, "n_multiplicity_mismatch": 0, "max_position_error": 0.00015786921423151782, "p99_position_error": 0.0001280749711777913, "median_position_error": 5.9668954361473236e-05, "ref_distinct_histogram": {"2": 21, "4": 179}, "abs_delta_logl_vs_reference": {"max": 0.09204751533968647, "p99": 0.06845503627316121, "median": 0.004628222675307825, "n_nonfinite_mismatch": 0}}, "stress": {"n_draws": 200, "multiplicity_agreement": 1.0, "raw_count_agreement": 1.0, "n_multiplicity_mismatch": 0, "max_position_error": 0.00015786921423129578, "p99_position_error": 0.00014084184669768283, "median_position_error": 5.966895436132821e-05, "ref_distinct_histogram": {"2": 163, "4": 37}}}
+  best admissible (precision-equivalent): step0_components; any precision: step0_components
+  reference image extent: {'prior': {'max_abs_y': 1.77939453125, 'max_abs_x': 1.7773254429359933, 'max_abs_coord': 1.77939453125, 'p99_abs_coord': 1.7590830914129167, 'max_radius': 1.8116226317743076}, 'stress': {'max_abs_y': 2.2498046875, 'max_abs_x': 2.300267215077964, 'max_abs_coord': 2.300267215077964, 'p99_abs_coord': 2.2027852305644777, 'max_radius': 2.5191249773380773}}
+  fiducial gate: {'value': 7.743201200876812, 'expected': 7.743201200876812, 'repr': '7.743201200876812', 'pass': True}
+  all_gates_pass: True
+  wall: 480 s
+  Results JSON: /mnt/ral/jnightin/autolens_profiling_wt/pointsolver-step0-gather/results/breakdown/point_source_image/solver_config_sweep_step0_hpc_ral_cpu_fp64.json
+  Results PNG:  /mnt/ral/jnightin/autolens_profiling_wt/pointsolver-step0-gather/results/breakdown/point_source_image/solver_config_sweep_step0_hpc_ral_cpu_fp64.png
+=== source_revisions check (JSON vs imported HEADs) ===
+autoarray_imported_from /mnt/ral/jnightin/autolens_profiling_wt/PyAutoArray_pointsolver-step0-gather
+OK /mnt/ral/jnightin/autolens_profiling_wt/pointsolver-step0-gather/results/breakdown/point_source_image/solver_config_sweep_step0_hpc_ral_cpu_fp64.json all_gates_pass True
+==========================================
+loadavg: 189.92 196.72 198.44 189/3233 149081
+Finished.
+Sun 27 Sep 15:48:04 BST 2026

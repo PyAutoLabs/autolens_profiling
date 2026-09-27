@@ -1,0 +1,122 @@
+AP_ROOT=/mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p4
+==========================================
+Sat 26 Sep 18:33:58 BST 2026
+euclid-ral-compute-10-4
+Model name:                              Intel(R) Xeon(R) Platinum 8490H
+partition:      ral
+cpus-per-task:  8
+sched_affinity: 8
+loadavg:        0.00 0.41 0.67 1/2091 94375
+Cell:           point_source_image/likelihood_breakdown/solver_config_sweep
+Precision:      fp64 (JAX_ENABLE_X64=1)
+Backend:        JAX_PLATFORMS=cpu
+Thread env:     OMP=1 MKL=1 OPENBLAS=1 NPROC=8
+XLA_FLAGS:      --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false
+PYTHONPATH:     /mnt/ral/jnightin/PyAuto:/mnt/ral/jnightin/PyAuto/PyAutoNerves:/mnt/ral/jnightin/PyAuto/PyAutoFit:/mnt/ral/jnightin/PyAuto/PyAutoArray:/mnt/ral/jnightin/PyAuto/PyAutoGalaxy:/mnt/ral/jnightin/PyAuto/PyAutoLens
+=== source revisions (shared mirror, untouched) ===
+PyAutoNerves   1fa613aa8d89a79613009fb66f5b4e2d21deb57a
+PyAutoFit      dd9fbe0aab60c4a57702b1444ca031b317c91331
+PyAutoArray    3de624b5b91a4efa130dc3cb0a3a0f06f85025a3
+PyAutoGalaxy   70a61e26cd715cefe7012a38285698091246a8a4
+PyAutoLens     86054bbc19baa2f710a12e04a94fa27ab37cc354
+AP_ROOT rev:   6c45fecb4459d88bf490bbfe795c39f3596ebefb
+=== import provenance (must be the shared mirror) ===
+autoarray   2026.8.17.1  /mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/__init__.py
+autofit     2026.8.17.1  /mnt/ral/jnightin/PyAuto/PyAutoFit/autofit/__init__.py
+autogalaxy  2026.8.17.1  /mnt/ral/jnightin/PyAuto/PyAutoGalaxy/autogalaxy/__init__.py
+autolens    2026.8.17.1  /mnt/ral/jnightin/PyAuto/PyAutoLens/autolens/__init__.py
+jax 0.10.2 jaxlib 0.10.2 numpy 2.2.6 [CpuDevice(id=0)]
+==========================================
+RUN hpc_ral_cpu_fp64 -> /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p4/results/breakdown/point_source_image
+Sat 26 Sep 18:33:59 BST 2026
+loadavg: 0.00 0.41 0.67 1/2091 94417
+[    3.9 s] configs: control(n=8,rows=11859), e6_s0.2(n=8,rows=4428), e4_s0.2(n=8,rows=2075), e3_s0.2(n=8,rows=1197), e2.5_s0.2(n=8,rows=848), e9.9_s0.3(n=9,rows=5400), e9.9_s0.4(n=9,rows=3030), e9.9_s0.5(n=9,rows=1944), e9.9_s0.8(n=10,rows=816), e4_s0.3(n=9,rows=935), e4_s0.4(n=9,rows=559), e4_s0.5(n=9,rows=385), e4_s0.8(n=10,rows=161), e3_s0.3(n=9,rows=559), e3_s0.4(n=9,rows=330), e3_s0.5(n=9,rows=216), e3_s0.8(n=10,rows=102), e2.5_s0.4(n=9,rows=243), e9.9_s0.1(n=7,rows=46284), e4_s0.1(n=7,rows=7824), mcs8(n=8,rows=11859), mcs10(n=8,rows=11859), nd0(n=8,rows=11859), nd2(n=8,rows=11859), p0.002(n=7,rows=11859), p0.005(n=6,rows=11859), reference(n=9,rows=268677), reference_b(n=10,rows=115473)
+[   33.1 s] reference reference solved on 200 prior + 200 stress draws (compile 2.2 s)
+[   53.1 s] reference reference_b solved on 200 prior + 200 stress draws (compile 2.0 s)
+[   53.2 s] reference floor: {"prior": {"n_draws": 200, "multiplicity_agreement": 1.0, "raw_count_agreement": 1.0, "n_multiplicity_mismatch": 0, "max_position_error": 0.00015786921423151782, "p99_position_error": 0.0001280749711777913, "median_position_error": 5.9668954361473236e-05, "ref_distinct_histogram": {"2": 21, "4": 179}, "abs_delta_logl_vs_reference": {"max": 0.09204751533968647, "p99": 0.06845503627316121, "median": 0.004628222675307825, "n_nonfinite_mismatch": 0}}, "stress": {"n_draws": 200, "multiplicity_agreement": 1.0, "raw_count_agreement": 1.0, "n_multiplicity_mismatch": 0, "max_position_error": 0.00015786921423129578, "p99_position_error": 0.00014084184669768283, "median_position_error": 5.966895436132821e-05, "ref_distinct_histogram": {"2": 163, "4": 37}}}
+[  314.3 s] completeness control     prior mult 1.000 raw 1.000 maxerr 0.0008513474499103632 |dlogL|ref 0.8682473458375171  stress mult 1.0 maxerr 0.0007893460711579142
+[  314.3 s] completeness e6_s0.2     prior mult 1.000 raw 1.000 maxerr 0.0008513474499103632 |dlogL|ref 0.8682473458375171  stress mult 1.0 maxerr 0.0007893460711579142
+[  314.4 s] completeness e4_s0.2     prior mult 1.000 raw 1.000 maxerr 0.0008513474499103632 |dlogL|ref 0.8682473458375171  stress mult 1.0 maxerr 0.0007893460711579142
+[  314.4 s] completeness e3_s0.2     prior mult 1.000 raw 1.000 maxerr 0.0008513474499103632 |dlogL|ref 0.8682473458375171  stress mult 1.0 maxerr 0.0007893460711579142
+[  314.4 s] completeness e2.5_s0.2   prior mult 1.000 raw 1.000 maxerr 0.0008513474499103632 |dlogL|ref 0.8682473458375171  stress mult 1.0 maxerr 0.0007893460711579142
+[  314.5 s] completeness e9.9_s0.3   prior mult 1.000 raw 1.000 maxerr 0.000627841846418956 |dlogL|ref 0.424601077781972  stress mult 1.0 maxerr 0.0005638186222557202
+[  314.5 s] completeness e9.9_s0.4   prior mult 1.000 raw 1.000 maxerr 0.0008513474499103632 |dlogL|ref 0.8682473458375171  stress mult 1.0 maxerr 0.0007893460711579142
+[  314.5 s] completeness e9.9_s0.5   prior mult 1.000 raw 1.000 maxerr 0.0010148735200601333 |dlogL|ref 0.9659823277310124  stress mult 0.99 maxerr 0.0010148735200601333
+[  314.6 s] completeness e9.9_s0.8   prior mult 0.975 raw 0.975 maxerr 0.0008513474499103632 |dlogL|ref 714.3756372327326  stress mult 0.925 maxerr 0.0007893460711579142
+[  314.6 s] completeness e4_s0.3     prior mult 1.000 raw 1.000 maxerr 0.000627841846418956 |dlogL|ref 0.424601077781972  stress mult 1.0 maxerr 0.0005638186222557202
+[  314.6 s] completeness e4_s0.4     prior mult 1.000 raw 1.000 maxerr 0.0008513474499103632 |dlogL|ref 0.8682473458375171  stress mult 1.0 maxerr 0.0007893460711579142
+[  314.7 s] completeness e4_s0.5     prior mult 1.000 raw 1.000 maxerr 0.0010148735200601333 |dlogL|ref 0.9659823277310124  stress mult 0.99 maxerr 0.0010148735200601333
+[  314.7 s] completeness e4_s0.8     prior mult 0.975 raw 0.975 maxerr 0.0008513474499103632 |dlogL|ref 714.3756372327326  stress mult 0.925 maxerr 0.0007893460711579142
+[  314.7 s] completeness e3_s0.3     prior mult 1.000 raw 1.000 maxerr 0.000627841846418956 |dlogL|ref 0.424601077781972  stress mult 1.0 maxerr 0.0005638186222557202
+[  314.8 s] completeness e3_s0.4     prior mult 1.000 raw 1.000 maxerr 0.0008513474499103632 |dlogL|ref 0.8682473458375171  stress mult 1.0 maxerr 0.0007893460711579142
+[  314.8 s] completeness e3_s0.5     prior mult 1.000 raw 1.000 maxerr 0.0010148735200601333 |dlogL|ref 0.9659823277310124  stress mult 0.99 maxerr 0.0010148735200601333
+[  314.8 s] completeness e3_s0.8     prior mult 0.975 raw 0.975 maxerr 0.0008513474499103632 |dlogL|ref 714.3756372327326  stress mult 0.925 maxerr 0.0007893460711579142
+[  314.9 s] completeness e2.5_s0.4   prior mult 1.000 raw 1.000 maxerr 0.0008513474499103632 |dlogL|ref 0.8682473458375171  stress mult 1.0 maxerr 0.0007893460711579142
+[  314.9 s] completeness e9.9_s0.1   prior mult 1.000 raw 1.000 maxerr 0.0008513474499103632 |dlogL|ref 0.8682473458375171  stress mult 1.0 maxerr 0.0007893460711579142
+[  314.9 s] completeness e4_s0.1     prior mult 1.000 raw 1.000 maxerr 0.0008513474499103632 |dlogL|ref 0.8682473458375171  stress mult 1.0 maxerr 0.0007893460711579142
+[  315.0 s] completeness mcs8        prior mult 0.620 raw 0.620 maxerr 0.0008513474499102353 |dlogL|ref 5139.65765293273  stress mult 1.0 maxerr 0.0007893460711579142
+[  315.0 s] completeness mcs10       prior mult 0.865 raw 0.865 maxerr 0.0008513474499103632 |dlogL|ref 5139.65765293273  stress mult 1.0 maxerr 0.0007893460711579142
+[  315.0 s] completeness nd0         prior mult 0.090 raw 0.090 maxerr 0.0007893460711577219 |dlogL|ref 79999999984.6922  stress mult 0.71 maxerr 0.0007893460711579142
+[  315.1 s] completeness nd2         prior mult 1.000 raw 1.000 maxerr 0.0008513474499103632 |dlogL|ref 0.8682473458375171  stress mult 1.0 maxerr 0.0007893460711579142
+[  315.1 s] completeness p0.002      prior mult 1.000 raw 1.000 maxerr 0.0017505637577798206 |dlogL|ref 2.0558823443625442  stress mult 1.0 maxerr 0.001691455866766528
+[  315.1 s] completeness p0.005      prior mult 1.000 raw 1.000 maxerr 0.0035533994919256036 |dlogL|ref 3.521443037280278  stress mult 1.0 maxerr 0.003327962999774095
+[  315.2 s] reference image extent: {'prior': {'max_abs_y': 1.77939453125, 'max_abs_x': 1.7773254429359933, 'max_abs_coord': 1.77939453125, 'p99_abs_coord': 1.7590830914129167, 'max_radius': 1.8116226317743076}, 'stress': {'max_abs_y': 2.2498046875, 'max_abs_x': 2.300267215077964, 'max_abs_coord': 2.300267215077964, 'p99_abs_coord': 2.2027852305644777, 'max_radius': 2.5191249773380773}}
+[  315.2 s] timing: compiling every route (fresh closure + clear_caches)
+[  473.3 s] timing: 20 rounds x 20 calls x 26 routes done
+[  476.2 s] fiducial gate: 7.743201200876812 == 7.743201200876812: True
+[  653.6 s] grad gate: control=True, e6_s0.2=True, e4_s0.2=True, e3_s0.2=True, e2.5_s0.2=True, e9.9_s0.3=True, e9.9_s0.4=True, e9.9_s0.5=True, e4_s0.3=True, e4_s0.4=True, e4_s0.5=True, e3_s0.3=True, e3_s0.4=True, e3_s0.5=True, e2.5_s0.4=True, e9.9_s0.1=True, e4_s0.1=True, nd2=True, p0.002=True
+[  653.6 s] best admissible (precision-equivalent): e2.5_s0.4; any precision: e2.5_s0.4
+[  712.3 s] vmap: control_vmap1 1.783 ms/L, control_vmap4 1.442 ms/L, control_vmap16 1.618 ms/L, e2.5_s0.4_vmap1 0.839 ms/L, e2.5_s0.4_vmap4 0.455 ms/L, e2.5_s0.4_vmap16 0.292 ms/L
+[  712.3 s] step-0 split: ray trace vs ray trace + containment per geometry
+[  768.9 s] step-0 split: control trace 0.266 contain 1.210, e6_s0.2 trace 0.119 contain 0.425, e4_s0.2 trace 0.068 contain 0.309, e3_s0.2 trace 0.033 contain 0.185, e2.5_s0.2 trace 0.021 contain 0.140, e9.9_s0.3 trace 0.135 contain 0.440, e9.9_s0.4 trace 0.093 contain 0.447, e9.9_s0.5 trace 0.055 contain 0.294, e9.9_s0.8 trace 0.022 contain 0.130, e4_s0.3 trace 0.024 contain 0.155, e4_s0.4 trace 0.014 contain 0.103, e4_s0.5 trace 0.007 contain 0.089, e4_s0.8 trace -0.001 contain 0.043, e3_s0.3 trace 0.015 contain 0.102, e3_s0.4 trace 0.005 contain 0.081, e3_s0.5 trace -0.000 contain 0.056, e3_s0.8 trace 0.004 contain 0.026, e2.5_s0.4 trace 0.004 contain 0.062, e9.9_s0.1 trace 0.812 contain 2.947, e4_s0.1 trace 0.183 contain 0.608
+[  768.9 s] uncapped containing counts (NumPy path) on the prior draws
+[  784.9 s] uncapped control: max per step [17, 13, 11, 9, 7, 5, 5, 5]; draws exceeding cap 15: [12]
+[  786.9 s] uncapped e2.5_s0.4: max per step [15, 15, 13, 11, 9, 7, 5, 5, 5]; draws exceeding cap 15: []
+
+======================================================================================================================================================
+POINTSOLVER CONFIG SWEEP (hpc_ral_cpu_fp64, rounds=20, calls=20, prior draws=200, stress draws=200)
+======================================================================================================================================================
+  config      block                  ext scale   prec mcs nd  n   rows  med_ms       speedup [90% CI]  admp  mult   raw    maxerr    p99err dlogL_ref s_mult  s_maxerr
+  control     control               9.90  0.20 0.0010  15  1  8  11859   1.824  1.000 [0.907, 1.103]    TT 1.000 1.000  8.51e-04  7.89e-04  8.68e-01  1.000  7.89e-04
+  e6_s0.2     extent                6.00  0.20 0.0010  15  1  8   4428   1.203  1.516 [1.467, 1.655]    TT 1.000 1.000  8.51e-04  7.89e-04  8.68e-01  1.000  7.89e-04
+  e4_s0.2     extent                4.00  0.20 0.0010  15  1  8   2075   1.025  1.779 [1.722, 1.961]    TT 1.000 1.000  8.51e-04  7.89e-04  8.68e-01  1.000  7.89e-04
+  e3_s0.2     extent                3.00  0.20 0.0010  15  1  8   1197   0.888  2.055 [1.983, 2.237]    TT 1.000 1.000  8.51e-04  7.89e-04  8.68e-01  1.000  7.89e-04
+  e2.5_s0.2   extent                2.50  0.20 0.0010  15  1  8    848   0.814  2.241 [2.164, 2.448]    TT 1.000 1.000  8.51e-04  7.89e-04  8.68e-01  1.000  7.89e-04
+  e9.9_s0.3   scale                 9.90  0.30 0.0010  15  1  9   5400   1.337  1.365 [1.316, 1.489]    TT 1.000 1.000  6.28e-04  5.64e-04  4.25e-01  1.000  5.64e-04
+  e9.9_s0.4   scale                 9.90  0.40 0.0010  15  1  9   3030   1.272  1.435 [1.386, 1.566]    TT 1.000 1.000  8.51e-04  7.89e-04  8.68e-01  1.000  7.89e-04
+  e9.9_s0.5   scale                 9.90  0.50 0.0010  15  1  9   1944   1.079  1.691 [1.631, 1.843]    TF 1.000 1.000  1.01e-03  1.01e-03  9.66e-01  0.990  1.01e-03
+  e9.9_s0.8   scale                 9.90  0.80 0.0010  15  1 10    816   0.979  1.864 [1.800, 2.034]    FT 0.975 0.975  8.51e-04  7.89e-04  7.14e+02  0.925  7.89e-04
+  e4_s0.3     combo                 4.00  0.30 0.0010  15  1  9    935   0.910  2.004 [1.933, 2.188]    TT 1.000 1.000  6.28e-04  5.64e-04  4.25e-01  1.000  5.64e-04
+  e4_s0.4     combo                 4.00  0.40 0.0010  15  1  9    559   0.849  2.149 [2.078, 2.350]    TT 1.000 1.000  8.51e-04  7.89e-04  8.68e-01  1.000  7.89e-04
+  e4_s0.5     combo                 4.00  0.50 0.0010  15  1  9    385   0.798  2.286 [2.197, 2.501]    TF 1.000 1.000  1.01e-03  1.01e-03  9.66e-01  0.990  1.01e-03
+  e4_s0.8     combo                 4.00  0.80 0.0010  15  1 10    161   0.861  2.118 [2.047, 2.308]    FT 0.975 0.975  8.51e-04  7.89e-04  7.14e+02  0.925  7.89e-04
+  e3_s0.3     combo                 3.00  0.30 0.0010  15  1  9    559   0.847  2.154 [2.078, 2.356]    TT 1.000 1.000  6.28e-04  5.64e-04  4.25e-01  1.000  5.64e-04
+  e3_s0.4     combo                 3.00  0.40 0.0010  15  1  9    330   0.819  2.227 [2.151, 2.432]    TT 1.000 1.000  8.51e-04  7.89e-04  8.68e-01  1.000  7.89e-04
+  e3_s0.5     combo                 3.00  0.50 0.0010  15  1  9    216   0.792  2.304 [2.220, 2.517]    TF 1.000 1.000  1.01e-03  1.01e-03  9.66e-01  0.990  1.01e-03
+  e3_s0.8     combo                 3.00  0.80 0.0010  15  1 10    102   0.838  2.177 [2.104, 2.377]    FT 0.975 0.975  8.51e-04  7.89e-04  7.14e+02  0.925  7.89e-04
+  e2.5_s0.4   combo                 2.50  0.40 0.0010  15  1  9    243   0.771  2.367 [2.277, 2.594]    TT 1.000 1.000  8.51e-04  7.89e-04  8.68e-01  1.000  7.89e-04
+  e9.9_s0.1   finer_step0           9.90  0.10 0.0010  15  1  7  46284   5.712  0.319 [0.307, 0.449]    TT 1.000 1.000  8.51e-04  7.89e-04  8.68e-01  1.000  7.89e-04
+  e4_s0.1     finer_step0           4.00  0.10 0.0010  15  1  7   7824   1.416  1.288 [1.216, 1.415]    TT 1.000 1.000  8.51e-04  7.89e-04  8.68e-01  1.000  7.89e-04
+  mcs8        max_containing_size   9.90  0.20 0.0010   8  1  8  11859   1.649  1.107 [0.991, 1.239]    FT 0.620 0.620  8.51e-04  7.89e-04  5.14e+03  1.000  7.89e-04
+  mcs10       max_containing_size   9.90  0.20 0.0010  10  1  8  11859   1.720  1.061 [0.951, 1.170]    FT 0.865 0.865  8.51e-04  7.89e-04  5.14e+03  1.000  7.89e-04
+  nd0         neighbor_degree       9.90  0.20 0.0010  15  0  8  11859   1.363  1.338 [1.046, 1.461]    FT 0.090 0.090  7.89e-04  7.27e-04  8.00e+10  0.710  7.89e-04
+  nd2         neighbor_degree       9.90  0.20 0.0010  15  2  8  11859   2.803  0.651 [0.629, 0.711]    TT 1.000 1.000  8.51e-04  7.89e-04  8.68e-01  1.000  7.89e-04
+  p0.002      precision             9.90  0.20 0.0020  15  1  7  11859   1.951  0.935 [0.904, 1.021]    TF 1.000 1.000  1.75e-03  1.58e-03  2.06e+00  1.000  1.69e-03
+  p0.005      precision             9.90  0.20 0.0050  15  1  6  11859   1.845  0.989 [0.949, 1.182]    FF 1.000 1.000  3.55e-03  3.19e-03  3.52e+00  1.000  3.33e-03
+------------------------------------------------------------------------------------------------------------------------------------------------------
+  default agrees with reference on every prior draw: True
+  default agrees with reference on every stress draw: True
+  reference floor: {"prior": {"n_draws": 200, "multiplicity_agreement": 1.0, "raw_count_agreement": 1.0, "n_multiplicity_mismatch": 0, "max_position_error": 0.00015786921423151782, "p99_position_error": 0.0001280749711777913, "median_position_error": 5.9668954361473236e-05, "ref_distinct_histogram": {"2": 21, "4": 179}, "abs_delta_logl_vs_reference": {"max": 0.09204751533968647, "p99": 0.06845503627316121, "median": 0.004628222675307825, "n_nonfinite_mismatch": 0}}, "stress": {"n_draws": 200, "multiplicity_agreement": 1.0, "raw_count_agreement": 1.0, "n_multiplicity_mismatch": 0, "max_position_error": 0.00015786921423129578, "p99_position_error": 0.00014084184669768283, "median_position_error": 5.966895436132821e-05, "ref_distinct_histogram": {"2": 163, "4": 37}}}
+  best admissible (precision-equivalent): e2.5_s0.4; any precision: e2.5_s0.4
+  reference image extent: {'prior': {'max_abs_y': 1.77939453125, 'max_abs_x': 1.7773254429359933, 'max_abs_coord': 1.77939453125, 'p99_abs_coord': 1.7590830914129167, 'max_radius': 1.8116226317743076}, 'stress': {'max_abs_y': 2.2498046875, 'max_abs_x': 2.300267215077964, 'max_abs_coord': 2.300267215077964, 'p99_abs_coord': 2.2027852305644777, 'max_radius': 2.5191249773380773}}
+  fiducial gate: {'value': 7.743201200876812, 'expected': 7.743201200876812, 'repr': '7.743201200876812', 'pass': True}
+  all_gates_pass: True
+  wall: 787 s
+  Results JSON: /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p4/results/breakdown/point_source_image/solver_config_sweep_hpc_ral_cpu_fp64.json
+  Results PNG:  /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p4/results/breakdown/point_source_image/solver_config_sweep_hpc_ral_cpu_fp64.png
+=== source_revisions check (JSON vs mirror HEAD) ===
+OK /mnt/ral/jnightin/autolens_profiling_wt/point-source-cpu-p4/results/breakdown/point_source_image/solver_config_sweep_hpc_ral_cpu_fp64.json
+==========================================
+loadavg: 1.21 1.65 1.35 1/2090 94875
+Finished.
+Sat 26 Sep 18:47:10 BST 2026
