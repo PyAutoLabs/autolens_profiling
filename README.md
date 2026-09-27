@@ -349,6 +349,17 @@ separately per likelihood × transform. Standing conclusions:
   Verdict (decided on the quiet RAL gpu-node EPYC row; the 8490H job was cancelled): `fwd` GO → phase 2c measures the
   forward/reverse crossover in `n_params` before a PyAutoFit gradient entry-point change.
   Findings: [`results/notes/point_source_source_plane_campaign.md`](./results/notes/point_source_source_plane_campaign.md).
+- **Point-source source-plane, phase 2c (2026-09)** — gradient-mode crossover `gradient_mode_crossover.py` (#329):
+  `rev` (`value_and_grad`) vs `fwd` (`jax.jacfwd` over the flat parameter vector, instance built in the trace as
+  `Fitness.call` does) along a model ladder L5 → L24 (Isothermal, + shear, + m=4 / m=3 multipoles, + satellite
+  Isothermal, PowerLaw slope + satellite shear, + second satellite; plain lane +3), single call and `jit(vmap)` B=8.
+  Gate green on all 14 rung × lane cells and all hosts (log L ≤ 4.1e-12, gradients ≤ 3.5e-9 vs `rev`; eager ≡ JIT).
+  **No crossover within the ladder**: `fwd` wins at every rung, host, lane and shape; on the reference quiet RAL
+  gpu-node EPYC (job 358770) the solved single-call ratio *falls* 0.41 → 0.22 (n = 5 → 24), the batched ratio stays
+  0.35–0.56; A100 (job 358771) 0.64 → 0.36. `rev` compile grows 3.4 → 80 s on the EPYC (`fwd` ≤ 9 s). Found:
+  `jax.grad` through `ExternalShear` / multipole comps / `ell_comps` is NaN at exactly (0, 0); `PowerLawMultipole`
+  m=1 is singular at slope 2.
+  Findings: [`results/notes/point_source_source_plane_campaign.md`](./results/notes/point_source_source_plane_campaign.md).
 - **Interferometer mesh likelihood on the A100 (2026-09)**: the sparse-operator (W~) Delaunay-1500
   and rectangular 39×39 breakdown at sma / alma / alma_high / jvla, in fp64 and mixed precision,
   plus an alma N sweep. RAL jobs 356370-356387. The alma baseline is **49.5 ms (Delaunay) /

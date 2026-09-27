@@ -28,10 +28,11 @@
 # Writes results/breakdown/point_source_source/gradient_mode_crossover_hpc_a100_fp64.{json,png}.
 #
 # WALL-BASIS:
-#   Laptop witness (WSL2, 8 threads): provisional estimate from the 4-cell quick run (698 s) scaled to 14 cells; replaced by the measured full-run wall. A100 compiles run ~2-3x the CPU's
-#   (phase 2b), hence the wider headroom.
+#   Laptop witness (WSL2, 8 threads): gradient_mode_crossover.py at 20 x 20, 14 rung x lane
+#   cells, 1906 s process wall (compile-dominated: rev compiles grow to ~110-127 s at L24).
+#   A100 compiles run ~2-3x the CPU's (phase 2b), hence the wider headroom.
 #   cell: point_source_source/gradient_mode_crossover/simple  device: gpu  precision: fp64
-#   source: measured-wall  wall: 3000  ref: laptop-gradient_mode_crossover_local_cpu_fp64  headroom: 3.0
+#   source: measured-wall  wall: 1906  ref: laptop-gradient_mode_crossover_local_cpu_fp64  headroom: 3.0
 
 #SBATCH -J gradmode_p2c_gpu
 #SBATCH --partition=gpu
