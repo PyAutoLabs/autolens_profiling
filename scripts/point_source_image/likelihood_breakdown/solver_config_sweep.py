@@ -132,6 +132,10 @@ differ from the control (finite positions, log L, gradient, ``vmap`` value) only
 uncapped count exceeds the control cap (or the row's own) at some step -- the capped
 trajectory is a subset of the uncapped one, so a count within the cap at every step means
 the cap never bit. Every differing draw is listed with its per-step uncapped counts.
+One further class is explained explicitly: a gradient within ``GRAD_ROUNDING_RTOL``
+(1e-12 relative) of the control's while the log L is bit-identical -- the backward pass
+accumulates over the padded ``(mcs, ...)`` axis, so a different padded length changes
+XLA's reduction order (the first laptop witness saw 3e-15 on one stream instance).
 Output ``solver_config_sweep_mcs_<config_name>``.
 
 Output
@@ -268,6 +272,9 @@ PRODUCTION_PRECISION = 0.001
 PRODUCTION_MCS = int(_triangles_array.MAX_CONTAINING_SIZE)
 ADMISSIBLE_POSITION_TOL = 0.002
 DISTINCT_TOL = 0.005
+# A gradient that differs from the control by <= this relative amount, with the log L
+# bit-identical, is floating-point reduction order (phase 4c), not a solver change.
+GRAD_ROUNDING_RTOL = 1.0e-12
 BOOTSTRAP_SAMPLES = 2000
 BOOTSTRAP_SEED = 12345
 GRID_SHAPE = (100, 100)
@@ -1740,8 +1747,23 @@ if MCS_MODE:
         grad_changes = []
         if name in grad_gate:
             for k in range(len(grad_gate["control"]["gradients"])):
-                if not _same(grad_gate[name]["gradients"][k], grad_gate["control"]["gradients"][k]):
-                    grad_changes.append({"stream_index": int(k), **_explain("stream", k, cap)})
+                ga = np.asarray(grad_gate[name]["gradients"][k], dtype=float)
+                gc = np.asarray(grad_gate["control"]["gradients"][k], dtype=float)
+                if not _same(ga, gc):
+                    ex = _explain("stream", k, cap)
+                    rel = float(np.max(np.abs(ga - gc) / np.maximum(np.abs(gc), 1e-300)))
+                    ex["max_rel_delta_vs_control"] = rel
+                    if (
+                        not ex["explained"]
+                        and rel <= GRAD_ROUNDING_RTOL
+                        and _same(values[name].get(k), values["control"].get(k))
+                    ):
+                        # log L bit-identical, gradient off by a few ulp: the backward
+                        # pass accumulates cotangents over the padded (MCS, ...) axis,
+                        # and a different padded length changes XLA's reduction order.
+                        ex["explained"] = True
+                        ex["explanation"] = "padded-length reduction rounding (log L bit-identical)"
+                    grad_changes.append({"stream_index": int(k), **ex})
         vmap_changes = []
         for b in VMAP_BATCHES:
             for bk, vals in (vvals.get((name, b)) or {}).items():
