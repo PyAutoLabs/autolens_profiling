@@ -30,7 +30,8 @@ Setup
 - ``--numba-gate`` (default 1e9, i.e. forced to admit) is the numba arm's
   ``Settings.interferometer_numba_nnz_per_source_max``; the FFT arm runs at gate 0.
 - ``--mask-radius`` overrides the preset's 3.5"; ``--arms`` selects ``numba`` /
-  ``numpy_fft``.
+  ``numpy_fft``; ``--levers threads,memo,logdet,marshal`` adds the phase-2 lever arms
+  (#332; ``AUTOLENS_PROFILING_LEVER_NUMBA_THREADS`` sizes the numba pool for ``threads``).
 
 Output
 ------
@@ -67,7 +68,12 @@ from _profile_cli import parse_profile_cli  # noqa: E402
 _cli = parse_profile_cli()
 _thread_env = _pin_thread_env(1)
 _thread_env["NUMBA_NUM_THREADS_before"] = _os.environ.get("NUMBA_NUM_THREADS")
-_os.environ["NUMBA_NUM_THREADS"] = "1"
+# The numba pool is 1 thread (the #235 discipline) unless the `threads` lever asks for a
+# larger pool; the headline arms run the serial kernel on one thread either way (the harness
+# calls numba.set_num_threads(1) before them).
+_numba_pool = str(int(_os.environ.get("AUTOLENS_PROFILING_LEVER_NUMBA_THREADS", "1")))
+_thread_env["AUTOLENS_PROFILING_LEVER_NUMBA_THREADS"] = _numba_pool
+_os.environ["NUMBA_NUM_THREADS"] = _numba_pool
 
 import argparse  # noqa: E402
 

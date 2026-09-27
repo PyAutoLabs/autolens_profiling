@@ -178,3 +178,198 @@ def test__submit_is_a_quiet_single_thread_cpu_job(path):
     assert cells and cells == declared, (
         f"every cell run needs its own WALL-BASIS row: {cells} vs {declared}"
     )
+
+
+# --------------------------------------------------------------------------------------
+# Phase 2 (autolens_profiling#332): the cached_property-aware counter, the sub-row pops,
+# the adapt-image guard, the before/after record and the lever flags / submits.
+# --------------------------------------------------------------------------------------
+
+
+def _counted_class():
+    from autonerves import cached_property
+
+    class Inv:
+        calls = {"cached": 0, "plain": 0}
+
+        @cached_property
+        def cached(self):
+            Inv.calls["cached"] += 1
+            return object()
+
+        @property
+        def plain(self):
+            Inv.calls["plain"] += 1
+            return 1.0
+
+    return Inv
+
+
+def test__counter_counts_computations_of_a_cached_property_and_restores_it():
+    Inv = _counted_class()
+    originals = dict(Inv.__dict__)
+
+    def call():
+        inv = Inv()
+        first = inv.cached
+        # A cache hit must not reach the counter, and must return the cached object.
+        assert inv.cached is first
+        # The autonerves CachedProperty caches under func.__name__: the wrapper must keep it.
+        assert "cached" in inv.__dict__
+        _ = (inv.plain, inv.plain)
+        return 7
+
+    out, counts = harness.count_evaluations([(Inv, "cached"), (Inv, "plain")], call)
+    assert out == 7
+    assert counts == {"cached": 1, "plain": 2}
+    assert Inv.calls == {"cached": 1, "plain": 2}
+    # Originals restored, same descriptor objects.
+    assert Inv.__dict__["cached"] is originals["cached"]
+    assert Inv.__dict__["plain"] is originals["plain"]
+
+
+def test__counter_keeps_the_descriptor_type():
+    Inv = _counted_class()
+    counts = {"cached": 0, "plain": 0}
+    assert type(harness.counting_descriptor(Inv.__dict__["cached"], counts, "cached")) is type(
+        Inv.__dict__["cached"]
+    )
+    assert isinstance(harness.counting_descriptor(Inv.__dict__["plain"], counts, "plain"), property)
+
+
+def test__counter_restores_the_originals_when_the_call_raises():
+    Inv = _counted_class()
+    original = Inv.__dict__["cached"]
+
+    def boom():
+        raise RuntimeError("x")
+
+    with pytest.raises(RuntimeError):
+        harness.count_evaluations([(Inv, "cached")], boom)
+    assert Inv.__dict__["cached"] is original
+
+
+def test__library_sparse_classes_cache_f_and_d():
+    """PyAutoArray >= e281abf3 (#582): the counter targets are cached descriptors."""
+    from autoarray.inversion.inversion.interferometer.sparse import (
+        InversionInterferometerSparse,
+    )
+    from autoarray.inversion.inversion.interferometer_numba.sparse import (
+        InversionInterferometerSparseNumba,
+    )
+
+    for cls, name in (
+        (InversionInterferometerSparse, "curvature_matrix_diag"),
+        (InversionInterferometerSparseNumba, "curvature_matrix_diag"),
+        (InversionInterferometerSparse, "data_vector"),
+    ):
+        descriptor = cls.__dict__[name]
+        assert not isinstance(descriptor, property), f"{cls.__name__}.{name} is not cached"
+        assert descriptor.func.__name__ == name
+
+
+def test__recompute_drops_the_cached_value_every_time():
+    Inv = _counted_class()
+    inv = Inv()
+    _ = inv.cached
+    harness.recompute(inv, "cached")
+    harness.recompute(inv, "cached")
+    assert Inv.calls["cached"] == 3
+
+
+def test__adapt_image_guard(tmp_path):
+    # Missing at a non-preset radius: a hard error, never a silent regeneration.
+    with pytest.raises(SystemExit, match="lensed_source.fits is missing"):
+        harness.adapt_image_guard(tmp_path, 5.0, 3.5)
+    # Missing at the preset radius: the documented first-run regeneration, recorded.
+    rec = harness.adapt_image_guard(tmp_path, 3.5, 3.5)
+    assert rec["cache_existed"] is False and rec["md5_before"] is None
+    (tmp_path / "lensed_source.fits").write_bytes(b"abc")
+    rec = harness.adapt_image_guard(tmp_path, 5.0, 3.5)
+    assert rec["cache_existed"] is True
+    assert rec["md5_before"] == "900150983cd24fb0d6963f7d28e17f72"
+
+
+def test__previous_row_carries_the_replaced_rows_numbers(tmp_path):
+    import json
+
+    assert harness.previous_row(tmp_path / "missing.json") is None
+    path = tmp_path / "row.json"
+    path.write_text(
+        json.dumps(
+            {
+                "arms": {
+                    "numba": {"full_call": {"mean_s": 2.0}},
+                    "numpy_fft": {"full_call": {"mean_s": 4.0}},
+                    "jax_cpu_fft": {"path": "x"},
+                },
+                "evaluations_per_figure_of_merit": {"curvature_matrix_diag": 2, "data_vector": 2},
+                "figure_of_merit_reference": -1.0,
+                "configuration": {"nnz_per_source_column": 29.1},
+                "source_revisions": {"PyAutoArray": "abc"},
+                "agreement": {"numba_over_numpy_fft_full_call": 0.5},
+            }
+        )
+    )
+    prev = harness.previous_row(path)
+    assert prev["full_call_mean_s"] == {"numba": 2.0, "numpy_fft": 4.0}
+    assert prev["evaluations_per_figure_of_merit"]["curvature_matrix_diag"] == 2
+    assert prev["nnz_per_source_column"] == 29.1
+    assert prev["numba_over_numpy_fft_full_call"] == 0.5
+
+
+def test__lever_flags_parse():
+    parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
+    harness.add_cell_args(parser)
+    args = parser.parse_args([])
+    assert args.levers == "" and args.lever_threads == "1,2,4"
+    args = parser.parse_args(["--levers", "threads,memo", "--lever-threads", "1,2"])
+    assert (args.levers, args.lever_threads) == ("threads,memo", "1,2")
+    assert harness.LEVERS == ("threads", "memo", "logdet", "marshal")
+
+
+CROSSOVER_SUBMITS = sorted(
+    BATCH_CPU.glob("submit_breakdown_interferometer_*_numba_ral_crossover_*")
+)
+LEVER_SUBMITS = sorted(BATCH_CPU.glob("submit_breakdown_interferometer_numba_levers_ral_*"))
+
+
+def test__phase_2_submits_exist():
+    names = {p.name for p in CROSSOVER_SUBMITS}
+    for cell in ("delaunay", "pixelization"):
+        assert f"submit_breakdown_interferometer_{cell}_numba_ral_crossover_fp64" in names
+    assert LEVER_SUBMITS, "the lever submit is missing"
+
+
+@pytest.mark.parametrize("path", CROSSOVER_SUBMITS, ids=lambda p: p.name)
+def test__crossover_submit_sweeps_radii_at_the_default_names(path):
+    text = path.read_text()
+    # r3.5 re-runs keep the phase-1 names (the before/after record); other radii are suffixed.
+    radii = re.search(r"^RADII=\((.*?)\)", text, re.M).group(1).split()
+    instruments = re.search(r"^INSTRUMENTS=\((.*?)\)", text, re.M).group(1).split()
+    assert len(radii) == len(instruments)
+    array = re.search(r"^#SBATCH --array=0-(\d+)", text, re.M)
+    assert array and int(array.group(1)) == len(radii) - 1
+    pairs = set(zip(instruments, radii))
+    for pair in (("sma", "3.5"), ("alma", "2.0"), ("alma", "3.5"), ("alma", "5.0")):
+        assert pair in pairs
+    assert ("alma_high", "3.5") in pairs
+    assert "--levers" not in text
+
+
+@pytest.mark.parametrize("path", LEVER_SUBMITS, ids=lambda p: p.name)
+def test__lever_submit_is_a_cpu_job_whose_only_extra_thread_is_the_numba_pool(path):
+    text = path.read_text()
+    assert re.search(r"^#SBATCH --partition=gpu$", text, re.M)
+    assert not re.search(r"^#SBATCH --gres", text, re.M)
+    for var in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS"):
+        assert f"export {var}=1" in text
+    pool = int(re.search(r"export AUTOLENS_PROFILING_LEVER_NUMBA_THREADS=(\d+)", text).group(1))
+    cpus = int(re.search(r"^#SBATCH --cpus-per-task=(\d+)", text, re.M).group(1))
+    threads = [int(t) for t in re.search(r"--lever-threads (\S+)", text).group(1).split(",")]
+    assert max(threads) <= pool <= cpus, "the pool must fit the allocation"
+    configs = re.findall(r"--config-name (\S+)", text)
+    assert configs and all(c.startswith("hpc_ral_cpu_fp64_levers") for c in configs)
+    cells = set(re.findall(r"scripts/interferometer/likelihood_breakdown/(\w+)\.py", text))
+    declared = set(re.findall(r"cell: interferometer/(\w+)/", text))
+    assert cells and cells == declared

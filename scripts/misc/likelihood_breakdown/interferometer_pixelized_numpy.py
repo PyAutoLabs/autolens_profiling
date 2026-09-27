@@ -45,9 +45,10 @@ library's own dependency order, every access timed):
 5. ``F + H`` (``curvature_reg_matrix``): F by ``direct_conv``, or by the sparse triplets +
    NumPy ``rfft2`` column blocks;
 6. the reconstruction (``D = Lᵀ d~`` then fnnls; memo off);
-7. ``fast_chi_squared`` -- ``curvature_matrix`` and ``data_vector`` are plain properties on
-   the sparse classes, so on NumPy this row **re-evaluates F and D** (counted in
-   ``f_evaluations_per_figure_of_merit``; JAX's CSE merges the duplicate, NumPy cannot);
+7. ``fast_chi_squared`` -- on PyAutoArray main >= ``e281abf3`` (#582) ``curvature_matrix`` /
+   ``data_vector`` are ``cached_property``s on the sparse classes, so this row reuses F and D
+   (``evaluations_per_figure_of_merit`` reads ``{1, 1}``). Before #582 they were plain
+   properties and this row **re-evaluated F and D** (``{2, 2}``, the phase-1 rows);
 8. ``sᵀHs``; 9. log det(F + H) off the fnnls Cholesky factor; 10. log det H;
 11. noise normalisation + evidence assembly.
 
@@ -55,7 +56,34 @@ The sum of those rows is compared with the directly-timed library
 ``FitInterferometer.figure_of_merit`` on a fresh fit of the same instance
 (``step_sum_over_full_call``, expected in [0.9, 1.1]), and the assembled evidence must
 reproduce it. Standalone sub-rows (never summed): F alone, D alone and, for the FFT arm,
-the sparse triplets alone.
+the sparse triplets alone (the cached value is popped before every repeat, so each repeat
+times the computation, not a dict lookup).
+
+Phase 2 (autolens_profiling#332) additions
+------------------------------------------
+
+- ``adapt_image``: the ``lensed_source.fits`` cache's md5 and whether it existed. A missing
+  cache at a non-preset mask radius is a hard error: ``adapt_image_for_dataset`` would
+  otherwise regenerate it masked at *this* radius and overwrite the shared (May-18) copy
+  every other row reads.
+- ``previous_row``: when the output JSON already exists (e.g. a phase-1 row being re-run on
+  the cached library), its full calls, F / D counts, figure of merit and library revisions
+  are carried forward, with ``full_call_over_previous`` per arm -- the before/after delta.
+- ``--levers threads,memo,logdet,marshal`` (opt-in, own ``--config-name``) adds a ``levers``
+  block; the headline steps are unchanged:
+
+  - ``threads`` -- the ``prange`` kernel (``direct_conv_parallel_kernel``, what
+    ``general.yaml numba.parallel: true`` selects) timed F-alone at each ``--lever-threads``
+    count against the serial kernel on the same inputs, plus the implied full call. The
+    numba pool is sized by the cell wrapper from ``AUTOLENS_PROFILING_LEVER_NUMBA_THREADS``
+    (default 1); the headline arms run the serial kernel with the pool set to 1 thread;
+  - ``memo`` -- the fnnls cross-evaluation warm-start memo on vs off, the reconstruction
+    alone (F, D precomputed) over the iid stream and over a local random walk (a sampler's
+    late phase);
+  - ``logdet`` -- the log det (F + H) read off the fnnls Cholesky factor vs a fresh dense
+    Cholesky of the same matrix: time and agreement;
+  - ``marshal`` -- ``kernel_index_arrays`` split into its instance-independent part (the
+    extent-index gather, preloadable per mask) and the per-instance CSR / CSC build.
 
 Protocol (the #235 imaging numba discipline)
 --------------------------------------------
@@ -89,10 +117,13 @@ is the headline (``steps`` / ``total_step_by_step``), the FFT arm is under
 
 from __future__ import annotations
 
+import functools
 import gc
+import hashlib
 import json
 import os
 import resource
+import socket
 import time
 from pathlib import Path
 from typing import Any
@@ -132,6 +163,12 @@ LOCAL_AGREEMENT_NATS = 1e-6
 #: The step sum must cover the directly-timed library call to within this band.
 STEP_SUM_BAND = (0.9, 1.1)
 
+#: The opt-in lever arms (``--levers``).
+LEVERS = ("threads", "memo", "logdet", "marshal")
+
+#: Unit-vector step of the ``memo`` lever's local random walk (a sampler's late phase).
+LEVER_WALK_STEP = 0.002
+
 IID_SEED = 235
 IID_UNIT_RANGE = (0.4, 0.6)
 
@@ -144,7 +181,7 @@ L_CURVATURE = {
     "numpy_fft": "Curvature F + H: F by sparse triplets + NumPy rfft2 blocks",
 }
 L_SOLVE = "Reconstruction: D = Lᵀ d~ + fnnls"
-L_CHI2 = "Fast chi-squared (sᵀFs - 2sᵀD + dᵀN⁻¹d; F, D re-evaluated)"
+L_CHI2 = "Fast chi-squared (sᵀFs - 2sᵀD + dᵀN⁻¹d)"
 L_REG_TERM = "Regularization term sᵀHs"
 L_LOGDET_CREG = "Log-det (F + H) (fnnls Cholesky reuse)"
 L_LOGDET_REG = "Log-det H"
@@ -172,6 +209,24 @@ def add_cell_args(parser) -> None:
         type=int,
         default=None,
         help="Repeats of each standalone sub-row (default 5; 2 above 200k visibilities).",
+    )
+    parser.add_argument(
+        "--levers",
+        default="",
+        help="Comma-separated opt-in lever arms: threads, memo, logdet, marshal (default "
+        "none). Written under `levers`; run them under their own --config-name.",
+    )
+    parser.add_argument(
+        "--lever-threads",
+        default="1,2,4",
+        help="numba thread counts for the `threads` lever (the pool is sized by the cell "
+        "wrapper from AUTOLENS_PROFILING_LEVER_NUMBA_THREADS).",
+    )
+    parser.add_argument(
+        "--lever-memo-instances",
+        type=int,
+        default=12,
+        help="Instances per stream (iid, local walk) for the `memo` lever.",
     )
     parser.add_argument(
         "--preload-cache",
@@ -276,6 +331,109 @@ def _stats(values: list[float]) -> dict:
     }
 
 
+def counting_descriptor(original, counts: dict, name: str):
+    """A counting replacement for one class attribute, of the original descriptor's type.
+
+    ``original`` is a plain ``property`` (PyAutoArray before #582) or a ``cached_property``
+    (the autonerves ``CachedProperty`` / ``functools.cached_property``, main >= e281abf3),
+    which has ``.func`` and no ``.fget``. The wrapper keeps the function's ``__name__``
+    (``functools.wraps``) because ``CachedProperty`` caches under ``func.__name__`` -- a
+    renamed getter would cache under the wrong key and count every access. With a cached
+    descriptor the count is the number of *computations*: a cache hit never reaches it.
+    """
+    fn = original.fget if isinstance(original, property) else original.func
+
+    @functools.wraps(fn)
+    def getter(self, _fn=fn, _name=name):
+        counts[_name] += 1
+        return _fn(self)
+
+    return type(original)(getter)
+
+
+def count_evaluations(targets, call) -> tuple[Any, dict]:
+    """``(call(), counts)``: ``call`` run with every ``(cls, name)`` in ``targets`` counted.
+
+    The originals are restored whatever ``call`` does.
+    """
+    counts = {name: 0 for _, name in targets}
+    patched = []
+    try:
+        for cls, name in targets:
+            original = cls.__dict__[name]
+            patched.append((cls, name, original))
+            setattr(cls, name, counting_descriptor(original, counts, name))
+        return call(), counts
+    finally:
+        for cls, name, original in reversed(patched):
+            setattr(cls, name, original)
+
+
+def recompute(obj, name: str):
+    """``getattr(obj, name)`` with any cached value dropped first: times the computation."""
+    obj.__dict__.pop(name, None)
+    return getattr(obj, name)
+
+
+def file_md5(path: Path) -> str | None:
+    """The md5 of ``path``'s bytes, or None when it does not exist."""
+    path = Path(path)
+    if not path.exists():
+        return None
+    return hashlib.md5(path.read_bytes()).hexdigest()
+
+
+def adapt_image_guard(dataset_path: Path, mask_radius: float, mask_radius_default: float) -> dict:
+    """Provenance of the ``lensed_source.fits`` adapt-image cache, checked before it is read.
+
+    ``adapt_image_for_dataset`` regenerates a missing cache from the truth tracer on the
+    *masked* grid and writes it back beside the dataset -- at a non-preset radius that
+    silently replaces the shared copy every other row (and the pins) read with one masked
+    at this radius. So a missing cache is a hard error there; at the preset radius the
+    regeneration is the documented first-run behaviour and is recorded.
+    """
+    cache = Path(dataset_path) / "lensed_source.fits"
+    existed = cache.exists()
+    if not existed and float(mask_radius) != float(mask_radius_default):
+        raise SystemExit(
+            f"{cache} is missing and the mask radius is {mask_radius} (preset "
+            f"{mask_radius_default}): the adapt image would be regenerated masked at this "
+            "radius and overwrite the shared cache. Copy the preset-radius lensed_source.fits "
+            "in first (the May-18 caches, md5 recorded in every row's `adapt_image`)."
+        )
+    return {
+        "path": str(cache),
+        "cache_existed": existed,
+        "md5_before": file_md5(cache),
+        "mask_radius_arcsec": float(mask_radius),
+    }
+
+
+def previous_row(dict_path: Path) -> dict | None:
+    """What the row this run is about to overwrite measured (the before/after record)."""
+    if not Path(dict_path).exists():
+        return None
+    try:
+        old = json.loads(Path(dict_path).read_text())
+    except (OSError, json.JSONDecodeError) as exc:
+        return {"error": str(exc)}
+    arms = old.get("arms") or {}
+    return {
+        "full_call_mean_s": {
+            arm: (rec.get("full_call") or {}).get("mean_s")
+            for arm, rec in arms.items()
+            if isinstance(rec, dict) and "full_call" in rec
+        },
+        "evaluations_per_figure_of_merit": old.get("evaluations_per_figure_of_merit"),
+        "figure_of_merit_reference": old.get("figure_of_merit_reference"),
+        "nnz_per_source_column": (old.get("configuration") or {}).get("nnz_per_source_column"),
+        "source_revisions": old.get("source_revisions"),
+        "numba_over_numpy_fft_full_call": (old.get("agreement") or {}).get(
+            "numba_over_numpy_fft_full_call"
+        ),
+    }
+
+
 def run(
     spec: shared.CellSpec,
     cli,
@@ -308,6 +466,22 @@ def run(
     if unknown or not arms:
         raise SystemExit(f"--arms {cell_args.arms!r}: choose from {tuple(ARM_CLASSES)}")
     headline = "numba" if "numba" in arms else arms[0]
+    levers = [lv.strip() for lv in cell_args.levers.split(",") if lv.strip()]
+    bad_levers = [lv for lv in levers if lv not in LEVERS]
+    if bad_levers:
+        raise SystemExit(f"--levers {cell_args.levers!r}: choose from {LEVERS}")
+    if {"threads", "marshal"} & set(levers) and "numba" not in arms:
+        raise SystemExit("the threads / marshal levers need the numba arm")
+    lever_threads = [int(t) for t in cell_args.lever_threads.split(",") if t.strip()]
+    numba_pool = int(numba.config.NUMBA_NUM_THREADS)
+    if "threads" in levers and max(lever_threads) > numba_pool:
+        raise SystemExit(
+            f"--lever-threads {lever_threads} exceeds the numba pool ({numba_pool}); set "
+            "AUTOLENS_PROFILING_LEVER_NUMBA_THREADS before the cell starts"
+        )
+    # The headline arms are single-threaded whatever the pool: the serial kernel ignores
+    # it, and anything parallel the library might reach runs on one thread.
+    numba.set_num_threads(1)
 
     load_start = list(os.getloadavg())
     instrument = cli.instrument or "sma"
@@ -330,8 +504,15 @@ def run(
     print("\n--- Adapt image + mesh ---")
     from _adapt_image_util import adapt_image_for_dataset
 
+    adapt_record = adapt_image_guard(ds.dataset_path, ds.mask_radius, ds.mask_radius_default)
     with timer.section("adapt_image_build"):
         adapt_image = adapt_image_for_dataset(dataset_path=ds.dataset_path, dataset=ds.dataset)
+    adapt_record["md5_after"] = file_md5(Path(adapt_record["path"]))
+    adapt_record["regenerated"] = not adapt_record["cache_existed"]
+    print(
+        f"  adapt image {adapt_record['path']} md5 {adapt_record['md5_after']} "
+        f"({'cache' if adapt_record['cache_existed'] else 'REGENERATED'})"
+    )
     n_requested = cli.source_pixels
     mesh = spec.build_mesh(cli, ds.dataset, adapt_image, n_requested)
     n_src = int(mesh.n_source_pixels)
@@ -358,12 +539,19 @@ def run(
     for arm in arms:
         settings[arm], memo_provenance = memo_off_settings(gates[arm])
 
-    def fit_from(instance, arm):
+    def fit_from(instance, arm, memo: bool = False):
+        arm_settings = (
+            al.Settings(
+                nnls_warm_start_memo=True, interferometer_numba_nnz_per_source_max=gates[arm]
+            )
+            if memo
+            else settings[arm]
+        )
         return al.FitInterferometer(
             dataset=dataset_sparse,
             tracer=al.Tracer(galaxies=list(instance.galaxies), fields=[instance.fields]),
             adapt_images=adapt_images_for(instance.galaxies.source),
-            settings=settings[arm],
+            settings=arm_settings,
             xp=np,
         )
 
@@ -401,26 +589,15 @@ def run(
     # Call accounting: how often one figure_of_merit evaluates F and D
     # ------------------------------------------------------------------
     def counted_figure_of_merit(arm) -> tuple[float, dict]:
-        counts = {"curvature_matrix_diag": 0, "data_vector": 0}
-        patched = []
-        for cls, name in (
+        # curvature_matrix_diag is overridden by the numba class; data_vector is inherited.
+        targets = [
             (InversionInterferometerSparse, "curvature_matrix_diag"),
             (InversionInterferometerSparseNumba, "curvature_matrix_diag"),
             (InversionInterferometerSparse, "data_vector"),
-        ):
-            original = cls.__dict__[name]
-
-            def getter(self, _original=original, _name=name):
-                counts[_name] += 1
-                return _original.fget(self)
-
-            patched.append((cls, name, original))
-            setattr(cls, name, property(getter))
-        try:
-            fom = float(fit_from(median_instance, arm).figure_of_merit)
-        finally:
-            for cls, name, original in patched:
-                setattr(cls, name, original)
+        ]
+        fom, counts = count_evaluations(
+            targets, lambda: float(fit_from(median_instance, arm).figure_of_merit)
+        )
         return fom, counts
 
     print("\n--- Call accounting + prior-median evidence ---")
@@ -530,8 +707,12 @@ def run(
         inv = fit_from(median_instance, arm).inversion
         mapper = inv.cls_list_from(cls=Mapper)[0]
         rows_arm = {
-            "F alone (curvature_matrix_diag)": repeat_s(lambda inv=inv: inv.curvature_matrix_diag),
-            "D alone (data_vector = Lᵀ d~)": repeat_s(lambda inv=inv: inv.data_vector),
+            "F alone (curvature_matrix_diag)": repeat_s(
+                lambda inv=inv: recompute(inv, "curvature_matrix_diag")
+            ),
+            "D alone (data_vector = Lᵀ d~)": repeat_s(
+                lambda inv=inv: recompute(inv, "data_vector")
+            ),
         }
         if arm == "numpy_fft":
             rows_arm["Sparse triplets alone (extent grid)"] = repeat_s(
@@ -650,6 +831,31 @@ def run(
         except (OSError, json.JSONDecodeError) as exc:
             jax_arm["error"] = str(exc)
 
+    previous = previous_row(dict_path)
+    if previous and previous.get("full_call_mean_s"):
+        previous["full_call_over_previous"] = {
+            arm: arm_records[arm]["full_call"]["mean_s"] / float(prev)
+            for arm, prev in previous["full_call_mean_s"].items()
+            if arm in arm_records and prev
+        }
+
+    lever_records = (
+        run_levers(
+            levers,
+            lever_threads,
+            cell_args,
+            fit_from=fit_from,
+            model=model,
+            median_instance=median_instance,
+            instances=instances,
+            headline=headline,
+            arm_records=arm_records,
+            n_sub=n_sub,
+        )
+        if levers
+        else None
+    )
+
     summary = {
         "autolens_version": al_version,
         "device": device_info_dict(),
@@ -701,6 +907,10 @@ def run(
             "memo_provenance": memo_provenance,
             "thread_env": thread_env,
             "numba_num_threads_env": os.environ.get("NUMBA_NUM_THREADS"),
+            "numba_thread_pool": numba_pool,
+            "numba_threads_headline": 1,
+            "hostname": socket.gethostname(),
+            "cpu_count": os.cpu_count(),
             "host_load_avg_start": load_start,
             "host_load_avg_end": list(os.getloadavg()),
         },
@@ -716,10 +926,15 @@ def run(
         "figure_of_merit_reference": median_fom[headline],
         "log_evidence": median_fom[headline],
         "evaluations_per_figure_of_merit": head["evaluations_per_figure_of_merit"],
-        "evaluations_note": "Counted on one prior-median figure_of_merit by wrapping the "
-        "sparse classes' curvature_matrix_diag / data_vector properties: both are plain "
-        "properties on NumPy, so reconstruction and fast_chi_squared each evaluate them.",
+        "evaluations_note": "Computations of curvature_matrix_diag / data_vector in one "
+        "prior-median figure_of_merit, counted by wrapping the sparse classes' descriptors "
+        "in counters of the same type. {1, 1} on PyAutoArray >= e281abf3 (#582, "
+        "cached_property); the phase-1 rows' {2, 2} were plain properties, evaluated by "
+        "both the reconstruction and fast_chi_squared.",
         "arms": {**arm_records, "jax_cpu_fft": jax_arm},
+        "adapt_image": adapt_record,
+        "previous_row": previous,
+        "levers": lever_records,
         "agreement": agreement,
         "control_dgemm_head_s": control_head,
         "control_dgemm_tail_s": control_tail,
@@ -772,6 +987,263 @@ def run(
         raise SystemExit(
             f"numba vs NumPy FFT log evidence off by more than {AGREEMENT_BAR_NATS} nats"
         )
+
+
+def _repeat_s(fn, n: int) -> float:
+    """Mean seconds of ``n`` calls of ``fn`` after one untimed warm call."""
+    fn()
+    t0 = time.perf_counter()
+    for _ in range(n):
+        fn()
+    return (time.perf_counter() - t0) / n
+
+
+def local_walk_instances(model, n: int, seed: int = IID_SEED + 97) -> list:
+    """``n`` instances on a random walk from the prior median (unit step ``LEVER_WALK_STEP``).
+
+    The fnnls memo seeds each solve from the previous one's passive set, so its gain is set
+    by how close successive evaluations sit; a sampler's late phase is a walk like this, the
+    iid stream is its worst case.
+    """
+    rng = np.random.default_rng(seed)
+    u = np.full(model.prior_count, 0.5)
+    out = []
+    for _ in range(n):
+        out.append(model.instance_from_unit_vector(unit_vector=list(u)))
+        u = np.clip(u + rng.normal(0.0, LEVER_WALK_STEP, size=u.size), *IID_UNIT_RANGE)
+    return out
+
+
+def _lever_threads(fit_from, median_instance, thread_counts, arm_records, n_sub) -> dict:
+    """The ``prange`` direct_conv kernel at each thread count vs the serial kernel."""
+    import numba
+
+    inv = fit_from(median_instance, "numba").inversion
+    inputs = inv.kernel_index_arrays
+    preload = np.ascontiguousarray(
+        np.asarray(inv.dataset.sparse_operator.nufft_precision_operator, dtype=np.float64)
+    )
+    args = (
+        preload,
+        inputs["iy"],
+        inputs["ix"],
+        inputs["flat"],
+        inputs["indptr"],
+        inputs["col"],
+        inputs["val"],
+        inputs["cscptr"],
+        inputs["csc_row"],
+        inputs["csc_val"],
+        inputs["ny"],
+        inputs["nx"],
+        inputs["pix_pixels"],
+    )
+    serial = inversion_interferometer_numba_util.curvature_direct_conv
+    f_ref = serial(*args)
+    t_serial = _repeat_s(lambda: serial(*args), n_sub)
+
+    numba.set_num_threads(1)
+    t0 = time.perf_counter()
+    parallel = inversion_interferometer_numba_util.direct_conv_parallel_kernel()
+    parallel(*args)
+    compile_s = time.perf_counter() - t0
+
+    head = arm_records["numba"]
+    f_alone = head["sub_rows"]["F alone (curvature_matrix_diag)"]
+    full = head["full_call"]["mean_s"]
+    load_before = list(os.getloadavg())
+    rows = {}
+    try:
+        for n in thread_counts:
+            numba.set_num_threads(int(n))
+            f_par = parallel(*args)
+            t_n = _repeat_s(lambda: parallel(*args), n_sub)
+            rows[str(n)] = {
+                "f_alone_s": t_n,
+                "speedup_vs_serial_kernel": t_serial / t_n,
+                "max_abs_diff_vs_serial": float(np.max(np.abs(f_par - f_ref))),
+                "max_rel_diff_vs_serial": float(
+                    np.max(np.abs(f_par - f_ref)) / max(float(np.max(np.abs(f_ref))), 1e-300)
+                ),
+                "implied_full_call_s": full - f_alone + t_n,
+                "implied_full_call_speedup": full / (full - f_alone + t_n),
+            }
+            print(
+                f"  [lever threads] {n} thread(s): F {t_n * 1e3:.1f} ms "
+                f"(serial kernel {t_serial * 1e3:.1f} ms, x{t_serial / t_n:.2f})"
+            )
+    finally:
+        numba.set_num_threads(1)
+    return {
+        "serial_kernel_f_alone_s": t_serial,
+        "parallel_kernel_first_call_incl_compile_s": compile_s,
+        "threading_layer": numba.threading_layer(),
+        "numba_thread_pool": int(numba.config.NUMBA_NUM_THREADS),
+        "by_threads": rows,
+        "headline_full_call_s": full,
+        "headline_f_alone_s": f_alone,
+        "host_load_avg_before": load_before,
+        "host_load_avg_after": list(os.getloadavg()),
+        "note": "F alone by the prange kernel (general.yaml numba.parallel: true selects it) "
+        "on the prior-median instance's inputs; BLAS stays at 1 thread. implied_full_call "
+        "swaps the serial F-alone for the parallel one in the measured full call -- every "
+        "other step stays single-threaded.",
+    }
+
+
+def _lever_memo(fit_from, model, instances, arm, n) -> dict:
+    """The fnnls cross-evaluation warm-start memo on vs off: the reconstruction alone."""
+    from autoarray.inversion.inversion import nnls_memo
+
+    streams = {
+        "iid": instances[1 : 1 + n],
+        "local_walk": local_walk_instances(model, n),
+    }
+    out: dict[str, Any] = {}
+    env_before = os.environ.get("AUTOARRAY_NNLS_WARM_START")
+    for name, stream in streams.items():
+        res: dict[str, Any] = {}
+        foms = {}
+        for memo in (False, True):
+            os.environ["AUTOARRAY_NNLS_WARM_START"] = "1" if memo else "0"
+            nnls_memo._nnls_passive_set_memo.clear()
+            times, fom = [], []
+            try:
+                for instance in stream:
+                    fit = fit_from(instance, arm, memo=memo)
+                    inv = fit.inversion
+                    _ = (inv.curvature_reg_matrix, inv.data_vector)
+                    t0 = time.perf_counter()
+                    _ = inv.reconstruction
+                    times.append(time.perf_counter() - t0)
+                    fom.append(float(fit.figure_of_merit))
+            finally:
+                if env_before is None:
+                    os.environ.pop("AUTOARRAY_NNLS_WARM_START", None)
+                else:
+                    os.environ["AUTOARRAY_NNLS_WARM_START"] = env_before
+            key = "on" if memo else "off"
+            # The first solve of a pass has nothing to seed from: reported, not averaged.
+            res[key] = {**_stats(times[1:]), "first_s": times[0], "per_instance_s": times}
+            foms[key] = fom
+        res["on_over_off_mean"] = res["on"]["mean_s"] / res["off"]["mean_s"]
+        res["max_abs_figure_of_merit_diff_nats"] = float(
+            max(abs(a - b) for a, b in zip(foms["on"], foms["off"], strict=True))
+        )
+        res["n_instances"] = len(stream)
+        out[name] = res
+        print(
+            f"  [lever memo] {name}: solve off {res['off']['mean_s'] * 1e3:.2f} ms, "
+            f"on {res['on']['mean_s'] * 1e3:.2f} ms (x{res['on_over_off_mean']:.3f})"
+        )
+    out["walk_unit_step"] = LEVER_WALK_STEP
+    out["arm"] = arm
+    out["note"] = (
+        "Reconstruction (fnnls) alone, F and D precomputed per instance; memo cleared at "
+        "the head of each pass, the pass's first solve excluded from the mean."
+    )
+    return out
+
+
+def _lever_logdet(fit_from, median_instance, arm, n_sub) -> dict:
+    """log det (F + H) off the fnnls Cholesky factor vs a fresh dense Cholesky."""
+    inv = fit_from(median_instance, arm).inversion
+    _ = inv.reconstruction
+    matrix = inv.curvature_reg_matrix_reduced
+    factor = inv._nnls_factor or {}
+    reused = float(inv.log_det_curvature_reg_matrix_term)
+    dense = float(inv._log_det_symmetric_from(matrix))
+    t_reused = _repeat_s(lambda: inv.log_det_curvature_reg_matrix_term, n_sub)
+    t_dense = _repeat_s(lambda: inv._log_det_symmetric_from(matrix), n_sub)
+    passive = factor.get("passive_set")
+    rec = {
+        "arm": arm,
+        "reused_s": t_reused,
+        "dense_cholesky_s": t_dense,
+        "dense_over_reused": t_dense / t_reused if t_reused > 0 else None,
+        "reused_value": reused,
+        "dense_value": dense,
+        "abs_diff_nats": abs(reused - dense),
+        "factor_present": bool(factor.get("U_buffer") is not None and factor.get("k_active", 0)),
+        "k_active": int(factor.get("k_active", 0) or 0),
+        "passive_set_size": int(np.count_nonzero(passive)) if passive is not None else None,
+        "matrix_size": int(matrix.shape[0]),
+    }
+    print(
+        f"  [lever logdet] reused {t_reused * 1e3:.2f} ms vs dense {t_dense * 1e3:.2f} ms "
+        f"(diff {rec['abs_diff_nats']:.2e} nats, factor {rec['factor_present']})"
+    )
+    return rec
+
+
+def _lever_marshal(fit_from, median_instance, arm_records, n_sub) -> dict:
+    """kernel_index_arrays: the instance-independent extent gather vs the per-instance build."""
+    inv = fit_from(median_instance, "numba").inversion
+    mapper = inv.cls_list_from(cls=Mapper)[0]
+    mask = inv.mask
+    nx = int(mask.shape_native_masked_pixels[1])
+    slim = np.asarray(mapper.slim_index_for_sub_slim_index)
+
+    t0 = time.perf_counter()
+    recompute(mask, "extent_index_for_masked_pixel")
+    extent_index_cold_s = time.perf_counter() - t0
+
+    def static_part():
+        flat = np.asarray(mask.extent_index_for_masked_pixel, dtype=np.int64)[slim]
+        return flat // nx, flat % nx
+
+    t_static = _repeat_s(static_part, n_sub)
+    t_full = _repeat_s(lambda: recompute(inv, "kernel_index_arrays"), n_sub)
+    f_alone = arm_records["numba"]["sub_rows"]["F alone (curvature_matrix_diag)"]
+    full = arm_records["numba"]["full_call"]["mean_s"]
+    rec = {
+        "kernel_index_arrays_s": t_full,
+        "instance_independent_s": t_static,
+        "per_instance_s": t_full - t_static,
+        "extent_index_for_masked_pixel_cold_s": extent_index_cold_s,
+        "share_of_f_alone": t_full / f_alone,
+        "share_of_full_call": t_full / full,
+        "note": "instance_independent = the extent-index gather + iy / ix (fixed per mask, "
+        "preloadable); per_instance = the CSR / CSC build from the mapper's triplets "
+        "(changes every evaluation). extent_index_for_masked_pixel is already a cached "
+        "property of the mask.",
+    }
+    print(
+        f"  [lever marshal] kernel_index_arrays {t_full * 1e3:.2f} ms "
+        f"(static {t_static * 1e3:.2f} ms; {100 * rec['share_of_full_call']:.1f}% of the full call)"
+    )
+    return rec
+
+
+def run_levers(
+    levers,
+    lever_threads,
+    cell_args,
+    *,
+    fit_from,
+    model,
+    median_instance,
+    instances,
+    headline,
+    arm_records,
+    n_sub,
+) -> dict:
+    """The opt-in ``--levers`` block (see the module docstring)."""
+    print(f"\n--- Levers: {levers} ---")
+    out: dict[str, Any] = {"requested": list(levers)}
+    if "threads" in levers:
+        out["threads"] = _lever_threads(
+            fit_from, median_instance, lever_threads, arm_records, n_sub
+        )
+    if "memo" in levers:
+        out["memo"] = _lever_memo(
+            fit_from, model, instances, headline, int(cell_args.lever_memo_instances)
+        )
+    if "logdet" in levers:
+        out["logdet"] = _lever_logdet(fit_from, median_instance, headline, n_sub)
+    if "marshal" in levers:
+        out["marshal"] = _lever_marshal(fit_from, median_instance, arm_records, n_sub)
+    return out
 
 
 def _plot(summary: dict, chart_path: Path, spec, arm_records: dict) -> None:

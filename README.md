@@ -95,10 +95,10 @@ Results are framed by **astronomy instrument** (HST, Euclid, JWST, …) rather t
 | `interferometer/delaunay` | sma | hpc_ral_cpu_fp64 | sparse (w-tilde) | 1.12 s | v2026.8.17.1 |
 | `interferometer/delaunay` | sma | hpc_a100_fp64 | sparse (w-tilde) | 33.9 ms | v2026.8.17.1 |
 | `interferometer/delaunay` | sma | hpc_a100_mp | sparse (w-tilde) | 33.6 ms | v2026.8.17.1 |
-| `interferometer/delaunay_numba` | alma | hpc_ral_cpu_fp64 | sparse (numba) | 2.28 s | v2026.8.17.1 |
-| `interferometer/delaunay_numba` | alma_high | hpc_ral_cpu_fp64 | sparse (numba) | 27.23 s | v2026.8.17.1 |
+| `interferometer/delaunay_numba` | alma | hpc_ral_cpu_fp64 | sparse (numba) | 1.27 s | v2026.8.17.1 |
+| `interferometer/delaunay_numba` | alma_high | hpc_ral_cpu_fp64 | sparse (numba) | 13.82 s | v2026.8.17.1 |
 | `interferometer/delaunay_numba` | sma | local_cpu_fp64 | sparse (numba) | 472.0 ms | v2026.8.17.1 |
-| `interferometer/delaunay_numba` | sma | hpc_ral_cpu_fp64 | sparse (numba) | 359.1 ms | v2026.8.17.1 |
+| `interferometer/delaunay_numba` | sma | hpc_ral_cpu_fp64 | sparse (numba) | 278.9 ms | v2026.8.17.1 |
 | `interferometer/delaunay_numba_direct_conv` | alma | local_cpu_fp64 | sparse (numba) | 1.80 s | v2026.8.17.1 |
 | `interferometer/delaunay_numba_direct_conv` | sma | local_cpu_fp64 | sparse (numba) | 378.2 ms | v2026.8.17.1 |
 | `interferometer/delaunay_numba_jax` | alma | local_cpu_fp64 | sparse (w-tilde) | 3.28 s | v2026.8.17.1 |
@@ -136,10 +136,10 @@ Results are framed by **astronomy instrument** (HST, Euclid, JWST, …) rather t
 | `interferometer/pixelization` | sma | hpc_ral_cpu_fp64 | sparse (w-tilde) | 980.1 ms | v2026.8.17.1 |
 | `interferometer/pixelization` | sma | hpc_a100_fp64 | sparse (w-tilde) | 29.2 ms | v2026.8.17.1 |
 | `interferometer/pixelization` | sma | hpc_a100_mp | sparse (w-tilde) | 29.4 ms | v2026.8.17.1 |
-| `interferometer/pixelization_numba` | alma | hpc_ral_cpu_fp64 | sparse (numba) | 3.17 s | v2026.8.17.1 |
-| `interferometer/pixelization_numba` | alma_high | hpc_ral_cpu_fp64 | sparse (numba) | 37.31 s | v2026.8.17.1 |
+| `interferometer/pixelization_numba` | alma | hpc_ral_cpu_fp64 | sparse (numba) | 1.83 s | v2026.8.17.1 |
+| `interferometer/pixelization_numba` | alma_high | hpc_ral_cpu_fp64 | sparse (numba) | 19.03 s | v2026.8.17.1 |
 | `interferometer/pixelization_numba` | sma | local_cpu_fp64 | sparse (numba) | 1.15 s | v2026.8.17.1 |
-| `interferometer/pixelization_numba` | sma | hpc_ral_cpu_fp64 | sparse (numba) | 933.1 ms | v2026.8.17.1 |
+| `interferometer/pixelization_numba` | sma | hpc_ral_cpu_fp64 | sparse (numba) | 824.1 ms | v2026.8.17.1 |
 | `interferometer/pixelization_numba_direct_conv` | alma | local_cpu_fp64 | sparse (numba) | 1.76 s | v2026.8.17.1 |
 | `interferometer/pixelization_numba_direct_conv` | sma | local_cpu_fp64 | sparse (numba) | 184.5 ms | v2026.8.17.1 |
 | `interferometer/pixelization_numba_jax` | alma | local_cpu_fp64 | sparse (w-tilde) | 2.28 s | v2026.8.17.1 |
@@ -372,6 +372,26 @@ separately per likelihood × transform. Standing conclusions:
   slower and fails the bar at jvla. The ranked levers are the certified solver (a C2 amendment),
   F FFT size, and a fixed-mapper F preload.
   Findings: [`results/notes/interferometer_mesh_a100_breakdown_2026_09.md`](./results/notes/interferometer_mesh_a100_breakdown_2026_09.md).
+- **Interferometer mesh likelihood on the CPU: numba vs NumPy FFT crossover (2026-09)**: the
+  library-dispatch breakdown `{delaunay,pixelization}_numba.py` (#332). It times numba `direct_conv`
+  (`InversionInterferometerSparseNumba`) against the NumPy FFT route on identical inputs: RAL CPU,
+  one thread, memo off. Rows cover sma / alma / alma_high at r3.5 and an alma mask-radius sweep at
+  2.0 / 4.25 / 5.0 / 6.0″. Arrays 358985 / 358986 and lever job 359000.
+  - PyAutoArray#582 (cached F / D) cut every NumPy call to 0.51–0.88× of phase 1.
+  - The alma baseline is **1.26 s (Delaunay) / 1.83 s (rect)** on numba, against 2.59 / 2.94 s on
+    the FFT route. At alma_high the FFT (and JAX-CPU) route wins.
+  - Measured crossover: **nnz/col ≈ 66 (Delaunay) / ≈ 72 (rect)**, each bracketed by two alma
+    radii. The packaged gate 60 routes every measured cell correctly; one gate of ≈ 70 fits both
+    meshes best.
+  - Levers:
+    - the fnnls warm-start memo (local-walk solve 0.68× / 0.13×, but **2.17× slower on an iid
+      stream** for Delaunay);
+    - the gate retune;
+    - the `prange` load balance (Delaunay 1.02× at 2 threads, 1.92× at 4; rect 2.53×);
+    - Cholesky reuse missing on the edge-zeroed rect log det.
+
+    Marshalling is 0.4 % of the call and not a lever.
+  Findings: [`results/notes/interferometer_mesh_cpu_breakdown_2026_09.md`](./results/notes/interferometer_mesh_cpu_breakdown_2026_09.md).
 
 ## How to read this repo
 

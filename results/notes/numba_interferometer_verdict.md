@@ -463,6 +463,45 @@ Caveats the follow-up must carry:
   builds, 0.3162 for the assembling run that timed the NUFFT), which makes the reported
   ratio conservative rather than flattering.
 
+## 8. The crossover in situ, through the library dispatch (autolens_profiling#332, 2026-09)
+
+Sections 2 and 4 measured the crossover on the prototype pack at three fiducial geometries.
+The library now routes on it: PyAutoArray `inversion/inversion/factory.py:284` reads
+`Settings.interferometer_numba_nnz_per_source_max`, which `config/general.yaml:21` sets to
+60.0. The #326 harness `scripts/misc/likelihood_breakdown/interferometer_pixelized_numpy.py`
+times both routes the factory can build, on identical inputs in one process:
+`InversionInterferometerSparseNumba` (gate forced open) and `InversionInterferometerSparse(xp=np)`
+(gate 0).
+
+Campaign 3/3 phase 2 swept the alma mask radius (2.0 / 3.5 / 4.25 / 5.0 / 6.0″ at 0.05″) on
+both production meshes. The protocol is the #235 discipline: RAL CPU, one thread, memo off,
+20 iid instances, PyAutoArray `e281abf3`. The full breakdown and levers are in
+[`interferometer_mesh_cpu_breakdown_2026_09.md`](./interferometer_mesh_cpu_breakdown_2026_09.md).
+
+| Mesh | nnz/col → numba / FFT full call (alma radius sweep) | Crossover |
+|---|---|---|
+| Delaunay-1500 (AdaptSplit) | 7.3 → 0.41, 29.1 → 0.49, 42.6 → 0.56, **55.6 → 0.89, 81.4 → 1.17** | **nnz/col ≈ 66–67** |
+| rectangular 39×39 (edge-zeroed) | 13.2 → 0.56, 40.4 → 0.62, **59.7 → 0.75, 82.7 → 1.23**, 119.0 → 1.64 | **nnz/col ≈ 72–73** |
+
+The crossover is the linear interpolation of ln(ratio) against nnz/col between the two
+bracketing measured points. The F-alone sub-rows give 65.7 / 72.4.
+
+- **Section 2's ~60 / ~77 do not reproduce exactly.** In situ the meshes cross at ≈ 66 and
+  ≈ 72. Section 2's rectangular fiducials were a 28×28 mesh (S = 784) and its Delaunay points
+  sat far from the crossover (30.8 → 123.1), so its interpolation spanned a 4× gap. The in-situ
+  brackets are 1.4–1.5× wide.
+- **alma_high sits above the crossover on both meshes** (117.6 → 1.47, 161.9 → 1.99).
+  Extrapolating proportionally from those rows gives ≈ 80 at the 280² extent, so the crossover
+  drifts up slowly with the extent. That is not measured.
+- **Gate.** The packaged 60 routes every measured cell to its faster arm. A single default of
+  ≈ 70 is the data's best one number for both meshes:
+  - it costs ≤ 1.03× on Delaunay cells at nnz 66–70 and ≤ 1.07× on rect cells at 70–72;
+  - 60 costs ≤ 1.08× on Delaunay cells at 60–66 and ≤ 1.33× on rect cells at 60–72.
+
+  A retune prompt (gate 70, witness cells measured inside the band) is drafted as a small,
+  non-urgent follow-up. **Section 5's kill gate and section 6's reinstatement case stand**:
+  numba is 2–3× faster than the NumPy FFT route at sma and alma r ≤ 3.5.
+
 ## Reproducing
 
 ```bash

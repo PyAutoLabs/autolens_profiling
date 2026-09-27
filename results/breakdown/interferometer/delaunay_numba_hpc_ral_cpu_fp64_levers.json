@@ -1,0 +1,458 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "hostname": "euclid-ral-gpu-2",
+    "xla_flags": "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 124,
+    "jax_compilation_cache_dir": null,
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": false
+  },
+  "instrument": "alma",
+  "model": "delaunay_numba",
+  "transformer": "TransformerNUFFT",
+  "configuration": {
+    "pixel_scale_arcsec": 0.05,
+    "mask_radius_arcsec": 3.5,
+    "mask_radius_preset_arcsec": 3.5,
+    "real_space_shape": [
+      800,
+      800
+    ],
+    "image_pixels_masked": 15380,
+    "visibilities": 1000000,
+    "source_pixels": 1500,
+    "source_pixels_requested": null,
+    "mesh": "Delaunay",
+    "image_mesh": "Hilbert(weight_power=1.0, weight_floor=0.0)",
+    "hilbert_pixels": 1500,
+    "delaunay_vertices": 1500,
+    "edge_zeroed_pixels": 0,
+    "lens_light": null,
+    "inversion_path": "InversionInterferometerSparseNumba",
+    "inversion_class": "InversionInterferometerSparseNumba",
+    "mapper_class": "Mapper",
+    "headline_arm": "numba",
+    "arms": [
+      "numba"
+    ],
+    "xp": "numpy",
+    "numba_gate": 1000000000.0,
+    "numba_gate_library_default": 60.0,
+    "nnz_per_source_column": 29.072,
+    "would_route_numba_at_default_gate": true,
+    "numba_parallel_kernel": false,
+    "numba_version": "0.65.1",
+    "solve_subset_edge_zeroed": false,
+    "pixels_solved": 1500,
+    "positive_only_solver": "fnnls",
+    "sparse_operator_method": "nufft",
+    "sparse_batch_size": 128,
+    "curvature_blocks_fft": 12,
+    "operator_extent_shape": [
+      140,
+      140
+    ],
+    "operator_M": 19600,
+    "transformer_chunk_size": 100000,
+    "n_instances": 6,
+    "n_warm": 5,
+    "n_sub_repeats": 2,
+    "instance_stream": {
+      "kind": "iid",
+      "seed": 235,
+      "unit_low": 0.4,
+      "unit_high": 0.6,
+      "arm_order": "ABBA (alternates per instance)"
+    },
+    "memo_provenance": {
+      "requested": "off",
+      "settings_nnls_warm_start_memo": false,
+      "env_AUTOARRAY_NNLS_WARM_START": "0",
+      "env_before": null
+    },
+    "thread_env": {
+      "n_threads": 1,
+      "vars": [
+        "OPENBLAS_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OMP_NUM_THREADS",
+        "VECLIB_MAXIMUM_THREADS",
+        "NUMEXPR_NUM_THREADS"
+      ],
+      "set_to": "1",
+      "preexisting": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1"
+      },
+      "overridden": {},
+      "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts.",
+      "NUMBA_NUM_THREADS_before": "1",
+      "AUTOLENS_PROFILING_LEVER_NUMBA_THREADS": "4"
+    },
+    "numba_num_threads_env": "4",
+    "numba_thread_pool": 4,
+    "numba_threads_headline": 1,
+    "hostname": "euclid-ral-gpu-2",
+    "cpu_count": 124,
+    "host_load_avg_start": [
+      0.22,
+      0.05,
+      0.02
+    ],
+    "host_load_avg_end": [
+      0.97,
+      0.4,
+      0.15
+    ]
+  },
+  "regularization": {
+    "scheme": "adapt_split",
+    "inner_coefficient": 0.1,
+    "outer_coefficient": 10.0,
+    "signal_scale": 0.1
+  },
+  "operator_build_s": 4.551029459020356,
+  "preload": {
+    "cache": "on",
+    "cache_hit": true,
+    "cache_path": "dataset/interferometer/alma/nufft_precision_operator_nufft_800x800_r3.5.npy",
+    "operator_build_s": 4.551029459020356,
+    "note": "One-off per dataset + geometry (W~ preload + dirty image); not a per-evaluation step. A cache hit times only the dirty image and operator wrap."
+  },
+  "steps": {
+    "Inversion build: ray-trace + mesh + mapper (+ routing gate)": 0.03746343980310485,
+    "Mapping matrix L": 0.03244213220896199,
+    "Regularization matrix H": 0.008909009996568785,
+    "F marshalling: kernel_index_arrays (CSR / CSC / extent)": 0.006149996997555718,
+    "Curvature F + H: F by numba direct_conv": 0.9061420774029102,
+    "Reconstruction: D = L\u1d40 d~ + fnnls": 0.19407337199663743,
+    "Fast chi-squared (s\u1d40Fs - 2s\u1d40D + d\u1d40N\u207b\u00b9d)": 0.007046535599511117,
+    "Regularization term s\u1d40Hs": 0.0007834832067601383,
+    "Log-det (F + H) (fnnls Cholesky reuse)": 0.015668924601050092,
+    "Log-det H": 0.006610298401210457,
+    "Noise normalisation + evidence assembly": 0.013346337393159047
+  },
+  "steps_median": {
+    "Inversion build: ray-trace + mesh + mapper (+ routing gate)": 0.0373482650029473,
+    "Mapping matrix L": 0.032396144000813365,
+    "Regularization matrix H": 0.008918595995055512,
+    "F marshalling: kernel_index_arrays (CSR / CSC / extent)": 0.006121362996054813,
+    "Curvature F + H: F by numba direct_conv": 0.9058377300098073,
+    "Reconstruction: D = L\u1d40 d~ + fnnls": 0.18870679099927656,
+    "Fast chi-squared (s\u1d40Fs - 2s\u1d40D + d\u1d40N\u207b\u00b9d)": 0.007050397980492562,
+    "Regularization term s\u1d40Hs": 0.00079330601147376,
+    "Log-det (F + H) (fnnls Cholesky reuse)": 0.015808413008926436,
+    "Log-det H": 0.00651886998093687,
+    "Noise normalisation + evidence assembly": 0.013373738998780027
+  },
+  "total_step_by_step": 1.2286356076074298,
+  "full_call": {
+    "mean_s": 1.2285428082046566,
+    "median_s": 1.2286126500112005,
+    "min_s": 1.2172301489918027,
+    "max_s": 1.2421159780060407,
+    "n": 5,
+    "warmup_incl_numba_compile_s": 1.2341644369880669,
+    "cold_eval_s": [
+      1.2204815779987257,
+      1.2421159780060407,
+      1.2172301489918027
+    ],
+    "note": "FitInterferometer(..., xp=np).figure_of_merit on a fresh fit per instance; instance 0 (numba compile) excluded."
+  },
+  "step_sum_over_full_call": 1.00007553615727,
+  "step_sum_band": [
+    0.9,
+    1.1
+  ],
+  "figure_of_merit_reference": -12048213.711309161,
+  "log_evidence": -12048213.711309161,
+  "evaluations_per_figure_of_merit": {
+    "curvature_matrix_diag": 1,
+    "data_vector": 1
+  },
+  "evaluations_note": "Computations of curvature_matrix_diag / data_vector in one prior-median figure_of_merit, counted by wrapping the sparse classes' descriptors in counters of the same type. {1, 1} on PyAutoArray >= e281abf3 (#582, cached_property); the phase-1 rows' {2, 2} were plain properties, evaluated by both the reconstruction and fast_chi_squared.",
+  "arms": {
+    "numba": {
+      "inversion_path": "InversionInterferometerSparseNumba",
+      "inversion_class": "InversionInterferometerSparseNumba",
+      "mapper_class": "Mapper",
+      "nnz_per_source_column": 29.072,
+      "nnz_total": 43608,
+      "gate": 1000000000.0,
+      "solve_subset_edge_zeroed": false,
+      "pixels_solved": 1500,
+      "steps": {
+        "Inversion build: ray-trace + mesh + mapper (+ routing gate)": 0.03746343980310485,
+        "Mapping matrix L": 0.03244213220896199,
+        "Regularization matrix H": 0.008909009996568785,
+        "F marshalling: kernel_index_arrays (CSR / CSC / extent)": 0.006149996997555718,
+        "Curvature F + H: F by numba direct_conv": 0.9061420774029102,
+        "Reconstruction: D = L\u1d40 d~ + fnnls": 0.19407337199663743,
+        "Fast chi-squared (s\u1d40Fs - 2s\u1d40D + d\u1d40N\u207b\u00b9d)": 0.007046535599511117,
+        "Regularization term s\u1d40Hs": 0.0007834832067601383,
+        "Log-det (F + H) (fnnls Cholesky reuse)": 0.015668924601050092,
+        "Log-det H": 0.006610298401210457,
+        "Noise normalisation + evidence assembly": 0.013346337393159047
+      },
+      "steps_median": {
+        "Inversion build: ray-trace + mesh + mapper (+ routing gate)": 0.0373482650029473,
+        "Mapping matrix L": 0.032396144000813365,
+        "Regularization matrix H": 0.008918595995055512,
+        "F marshalling: kernel_index_arrays (CSR / CSC / extent)": 0.006121362996054813,
+        "Curvature F + H: F by numba direct_conv": 0.9058377300098073,
+        "Reconstruction: D = L\u1d40 d~ + fnnls": 0.18870679099927656,
+        "Fast chi-squared (s\u1d40Fs - 2s\u1d40D + d\u1d40N\u207b\u00b9d)": 0.007050397980492562,
+        "Regularization term s\u1d40Hs": 0.00079330601147376,
+        "Log-det (F + H) (fnnls Cholesky reuse)": 0.015808413008926436,
+        "Log-det H": 0.00651886998093687,
+        "Noise normalisation + evidence assembly": 0.013373738998780027
+      },
+      "total_step_by_step": 1.2286356076074298,
+      "full_call": {
+        "mean_s": 1.2285428082046566,
+        "median_s": 1.2286126500112005,
+        "min_s": 1.2172301489918027,
+        "max_s": 1.2421159780060407,
+        "n": 5,
+        "warmup_incl_numba_compile_s": 1.2341644369880669,
+        "cold_eval_s": [
+          1.2204815779987257,
+          1.2421159780060407,
+          1.2172301489918027
+        ],
+        "note": "FitInterferometer(..., xp=np).figure_of_merit on a fresh fit per instance; instance 0 (numba compile) excluded."
+      },
+      "step_sum_over_full_call": 1.00007553615727,
+      "step_sum_in_band": true,
+      "figure_of_merit_prior_median": -12048213.711309161,
+      "figure_of_merit_per_instance": [
+        -12048053.334201453,
+        -12048211.779145574,
+        -12048201.715313036,
+        -12048218.179172132,
+        -12048243.563341614,
+        -12048059.014055355
+      ],
+      "chain_vs_direct_max_abs_nats": 0.0,
+      "evaluations_per_figure_of_merit": {
+        "curvature_matrix_diag": 1,
+        "data_vector": 1
+      },
+      "sub_rows": {
+        "F alone (curvature_matrix_diag)": 0.8963730614923406,
+        "D alone (data_vector = L\u1d40 d~)": 0.02980237000156194
+      }
+    },
+    "jax_cpu_fft": {
+      "path": "results/breakdown/interferometer/delaunay_hpc_ral_cpu_fp64_levers.json",
+      "exists": false,
+      "xla_flags_env": "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+      "jax_platforms_env": "cpu",
+      "note": "The JAX-CPU FFT arm is the JAX harness (interferometer_pixelized.py) run on the same instrument / config / mask radius with JAX_PLATFORMS=cpu; its prior-median figure_of_merit (PDIP positive-only solve) is compared with this run's (fnnls)."
+    }
+  },
+  "adapt_image": {
+    "path": "dataset/interferometer/alma/lensed_source.fits",
+    "cache_existed": true,
+    "md5_before": "6bf5afdf64a9396dcf743e05c2693317",
+    "mask_radius_arcsec": 3.5,
+    "md5_after": "6bf5afdf64a9396dcf743e05c2693317",
+    "regenerated": false
+  },
+  "previous_row": null,
+  "levers": {
+    "requested": [
+      "threads",
+      "memo",
+      "logdet",
+      "marshal"
+    ],
+    "threads": {
+      "serial_kernel_f_alone_s": 0.8954211024974938,
+      "parallel_kernel_first_call_incl_compile_s": 2.240675098000793,
+      "threading_layer": "omp",
+      "numba_thread_pool": 4,
+      "by_threads": {
+        "1": {
+          "f_alone_s": 0.9134946130070603,
+          "speedup_vs_serial_kernel": 0.9802149785535443,
+          "max_abs_diff_vs_serial": 0.0,
+          "max_rel_diff_vs_serial": 0.0,
+          "implied_full_call_s": 1.2456643597193762,
+          "implied_full_call_speedup": 0.9862550843803729
+        },
+        "2": {
+          "f_alone_s": 0.8738772225042339,
+          "speedup_vs_serial_kernel": 1.0246532115020945,
+          "max_abs_diff_vs_serial": 0.0,
+          "max_rel_diff_vs_serial": 0.0,
+          "implied_full_call_s": 1.2060469692165499,
+          "implied_full_call_speedup": 1.0186525397122137
+        },
+        "4": {
+          "f_alone_s": 0.46629517400288023,
+          "speedup_vs_serial_kernel": 1.9202881617041205,
+          "max_abs_diff_vs_serial": 0.0,
+          "max_rel_diff_vs_serial": 0.0,
+          "implied_full_call_s": 0.7984649207151961,
+          "implied_full_call_speedup": 1.5386309108034872
+        }
+      },
+      "headline_full_call_s": 1.2285428082046566,
+      "headline_f_alone_s": 0.8963730614923406,
+      "host_load_avg_before": [
+        0.72,
+        0.22,
+        0.08
+      ],
+      "host_load_avg_after": [
+        0.92,
+        0.28,
+        0.1
+      ],
+      "note": "F alone by the prange kernel (general.yaml numba.parallel: true selects it) on the prior-median instance's inputs; BLAS stays at 1 thread. implied_full_call swaps the serial F-alone for the parallel one in the measured full call -- every other step stays single-threaded."
+    },
+    "memo": {
+      "iid": {
+        "off": {
+          "mean_s": 0.1640457170069567,
+          "median_s": 0.163515513020684,
+          "min_s": 0.15178440400632098,
+          "max_s": 0.17736743798013777,
+          "n": 4,
+          "first_s": 0.15809633600292727,
+          "per_instance_s": [
+            0.15809633600292727,
+            0.17736743798013777,
+            0.15178440400632098,
+            0.1695293770171702,
+            0.15750164902419783
+          ]
+        },
+        "on": {
+          "mean_s": 0.35598873524577357,
+          "median_s": 0.35092689099838026,
+          "min_s": 0.15426159798516892,
+          "max_s": 0.5678395610011648,
+          "n": 4,
+          "first_s": 0.15658546399208717,
+          "per_instance_s": [
+            0.15658546399208717,
+            0.5678395610011648,
+            0.15426159798516892,
+            0.5414850199886132,
+            0.16036876200814731
+          ]
+        },
+        "on_over_off_mean": 2.170058089542668,
+        "max_abs_figure_of_merit_diff_nats": 0.0,
+        "n_instances": 5
+      },
+      "local_walk": {
+        "off": {
+          "mean_s": 0.16321291827092257,
+          "median_s": 0.16403042001184076,
+          "min_s": 0.14574934999109246,
+          "max_s": 0.17805240402230993,
+          "n": 15,
+          "first_s": 0.17434055701596662,
+          "per_instance_s": [
+            0.17434055701596662,
+            0.15646087500499561,
+            0.17337554300320335,
+            0.1736751910066232,
+            0.1658538880001288,
+            0.17024454200873151,
+            0.17805240402230993,
+            0.1649943130032625,
+            0.17382974000065587,
+            0.15926630899775773,
+            0.15737092899507843,
+            0.16403042001184076,
+            0.15939787702518515,
+            0.15554055100074038,
+            0.14574934999109246,
+            0.15035184199223295
+          ]
+        },
+        "on": {
+          "mean_s": 0.11087058300036005,
+          "median_s": 0.08120827001403086,
+          "min_s": 0.05233877300634049,
+          "max_s": 0.5516462989908177,
+          "n": 15,
+          "first_s": 0.1727075559902005,
+          "per_instance_s": [
+            0.1727075559902005,
+            0.06857055600266904,
+            0.08984962798422202,
+            0.09744242098531686,
+            0.0626965909905266,
+            0.5516462989908177,
+            0.06959942899993621,
+            0.08381291400291957,
+            0.05233877300634049,
+            0.09883188299136236,
+            0.09540016300161369,
+            0.0749926469870843,
+            0.07419154301169328,
+            0.062241574021754786,
+            0.08120827001403086,
+            0.10023605401511304
+          ]
+        },
+        "on_over_off_mean": 0.6793002917595179,
+        "max_abs_figure_of_merit_diff_nats": 0.0,
+        "n_instances": 16
+      },
+      "walk_unit_step": 0.002,
+      "arm": "numba",
+      "note": "Reconstruction (fnnls) alone, F and D precomputed per instance; memo cleared at the head of each pass, the pass's first solve excluded from the mean."
+    },
+    "logdet": {
+      "arm": "numba",
+      "reused_s": 0.01519446300517302,
+      "dense_cholesky_s": 0.03834584800642915,
+      "dense_over_reused": 2.5236724715690277,
+      "reused_value": 9031.98435504584,
+      "dense_value": 9031.98435504584,
+      "abs_diff_nats": 0.0,
+      "factor_present": true,
+      "k_active": 1306,
+      "passive_set_size": 1306,
+      "matrix_size": 1500
+    },
+    "marshal": {
+      "kernel_index_arrays_s": 0.005807189998449758,
+      "instance_independent_s": 0.00014553900109604,
+      "per_instance_s": 0.005661650997353718,
+      "extent_index_for_masked_pixel_cold_s": 0.003626768011599779,
+      "share_of_f_alone": 0.006478541410851378,
+      "share_of_full_call": 0.004726892672902586,
+      "note": "instance_independent = the extent-index gather + iy / ix (fixed per mask, preloadable); per_instance = the CSR / CSC build from the mapper's triplets (changes every evaluation). extent_index_for_masked_pixel is already a cached property of the mask."
+    }
+  },
+  "agreement": {
+    "bar_nats": 0.5,
+    "local_bar_nats": 1e-06
+  },
+  "control_dgemm_head_s": 0.14159473500330932,
+  "control_dgemm_tail_s": 0.14206599533402672,
+  "source_revisions": {
+    "autolens_profiling": "92a20614c6c23faefae429e7b9ec4cfae7c9611c",
+    "PyAutoNerves": "bf104102312852537159b7fad2f998ab6677b4e4",
+    "PyAutoFit": "c156a9d8e8eb9f82b6da169b1d50b7e64580fe98",
+    "PyAutoArray": "e281abf3257e9efd4915f1daa9acc0498be250a5",
+    "PyAutoGalaxy": "ba8a08fabcb13d9472f2bd43ef4fea6039284d50",
+    "PyAutoLens": "dcbd4b711120641cc0ecc6490d868795ad717b07"
+  },
+  "peak_rss_mb": 2364.1953125,
+  "pinned_expected": null,
+  "pinned_drift": []
+}
