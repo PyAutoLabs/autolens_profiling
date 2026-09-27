@@ -1,0 +1,134 @@
+#!/bin/bash -l
+#
+# RAL CPU lever arms: interferometer numba CPU likelihood, alma, mask r3.5, both meshes
+# (autolens_profiling#332, interferometer likelihood campaign 3/3, phase 2).
+#
+# The headline numba / NumPy-FFT rows come from the crossover arrays
+# (submit_breakdown_interferometer_{delaunay,pixelization}_numba_ral_crossover_fp64); this job
+# runs the numba arm only (--arms numba, --n-instances 6) and adds the opt-in `levers` block
+# of scripts/misc/likelihood_breakdown/interferometer_pixelized_numpy.py, written to its own
+# JSON (--config-name hpc_ral_cpu_fp64_levers):
+#
+#   threads -- the prange direct_conv kernel (what general.yaml numba.parallel: true selects)
+#              F-alone at 1 / 2 / 4 numba threads vs the serial kernel, + the implied full call;
+#   memo    -- the fnnls warm-start memo on vs off (reconstruction alone) on the iid stream and
+#              a local random walk (16 instances each);
+#   logdet  -- log det (F + H) off the fnnls Cholesky factor vs a fresh dense Cholesky;
+#   marshal -- kernel_index_arrays: instance-independent extent gather vs per-instance CSR/CSC.
+#
+# THREADS: BLAS / OMP / MKL stay at 1 and NUMBA_NUM_THREADS is exported as 1 like every CPU
+# leg; the cell wrapper then sizes the numba pool from AUTOLENS_PROFILING_LEVER_NUMBA_THREADS
+# (4 here; --cpus-per-task=8 leaves the pool headroom on a shared node) and the harness runs the headline arm on one thread
+# (numba.set_num_threads(1)) -- only the `threads` lever uses the pool. A thread-scaling
+# measurement needs an otherwise quiet host: host_load_avg_* and the hostname are recorded
+# (configuration + levers.threads) and the scaling is judged against them.
+#
+# PARTITION: `gpu` with NO --gres (CPUs only; the imaging numba campaign's quiet-host
+# precedent, #265). `ral` runs saturated and `imp` does not mount /mnt/ral.
+#
+# WALL-BASIS:
+#   cell: interferometer/delaunay_numba/alma  device: ral_cpu  precision: fp64
+#   source: unmeasured  probe-first: yes  wall: 600  headroom: 3.0  ref: laptop_2026-09-27_#332_sma_lever_smoke_scaled_to_alma
+#   cell: interferometer/pixelization_numba/alma  device: ral_cpu  precision: fp64
+#   source: unmeasured  probe-first: yes  wall: 600  headroom: 3.0  ref: laptop_2026-09-27_#332_sma_lever_smoke_scaled_to_alma
+#
+# Output:
+#   results/breakdown/interferometer/delaunay_numba_hpc_ral_cpu_fp64_levers.{json,png}
+#   results/breakdown/interferometer/pixelization_numba_hpc_ral_cpu_fp64_levers.{json,png}
+#
+# Submit from hpc/batch_cpu/ (the -o/-e paths are relative).
+
+#SBATCH -J bd_intf_nb_levers
+#SBATCH --partition=gpu
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=32gb
+#SBATCH --time=1:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+export PROJECT_PATH="$AP_ROOT"
+export PYAUTO_HPC_BASE="${PYAUTO_HPC_BASE:-/mnt/ral/jnightin/PyAuto}"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export NUMBA_NUM_THREADS=1
+export AUTOLENS_PROFILING_LEVER_NUMBA_THREADS=4
+export JAX_PLATFORMS=cpu
+export JAX_PLATFORM_NAME=cpu
+export JAX_ENABLE_X64=True
+export XLA_FLAGS="--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 --xla_disable_hlo_passes=constant_folding"
+export NUMBA_CACHE_DIR=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}
+mkdir -p "$NUMBA_CACHE_DIR" "$MPLCONFIGDIR"
+unset JAX_COMPILATION_CACHE_DIR
+
+echo "=========================================="
+date
+hostname
+lscpu | grep 'Model name' || true
+echo "partition:      ${SLURM_JOB_PARTITION:-unset}"
+echo "nodelist:       ${SLURM_JOB_NODELIST:-unset}"
+echo "cpus-per-task:  ${SLURM_CPUS_PER_TASK:-unset}"
+echo "loadavg:        $(cat /proc/loadavg)"
+echo "Thread env:     OMP=$OMP_NUM_THREADS MKL=$MKL_NUM_THREADS OPENBLAS=$OPENBLAS_NUM_THREADS NUMBA=$NUMBA_NUM_THREADS lever pool=$AUTOLENS_PROFILING_LEVER_NUMBA_THREADS"
+
+echo "=== source revisions (shared mirror) ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r" "$(git -C $PYAUTO_HPC_BASE/$r rev-parse HEAD 2>&1)"
+done
+echo "AP_ROOT rev:    $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+echo "AP_ROOT branch: $(git -C $AP_ROOT rev-parse --abbrev-ref HEAD 2>&1)"
+
+cd $AP_ROOT
+
+echo "=== import provenance + dependency floors ==="
+python3 -c "
+import importlib.metadata as m, os, autoarray, autolens, numba
+for mod in (autoarray, autolens):
+    print(f'{mod.__name__}.__file__ =', mod.__file__)
+    assert os.path.realpath(mod.__file__).startswith(os.path.realpath(os.environ['PYAUTO_HPC_BASE'])), f'{mod.__name__} not from the shared mirror'
+print('numba', numba.__version__, 'nufftax', m.version('nufftax'))
+assert tuple(int(x) for x in m.version('nufftax').split('.')[:2]) >= (0, 6), 'nufftax below the 0.6.1 floor'
+from autoarray.inversion.inversion.interferometer.sparse import InversionInterferometerSparse as S
+assert not isinstance(S.__dict__['curvature_matrix_diag'], property), 'PyAutoArray predates e281abf3 (#582)'
+" || exit 3
+
+echo "=========================================="
+echo "LEVERS: delaunay_numba alma r3.5"
+date
+echo "loadavg: $(cat /proc/loadavg)"
+python3 -u scripts/interferometer/likelihood_breakdown/delaunay_numba.py \
+    --instrument alma \
+    --config-name hpc_ral_cpu_fp64_levers \
+    --arms numba \
+    --n-instances 6 \
+    --levers threads,memo,logdet,marshal \
+    --lever-threads 1,2,4 \
+    --lever-memo-instances 16 \
+    || echo "LEVERS delaunay_numba FAILED"
+
+echo "=========================================="
+echo "LEVERS: pixelization_numba alma r3.5"
+date
+echo "loadavg: $(cat /proc/loadavg)"
+python3 -u scripts/interferometer/likelihood_breakdown/pixelization_numba.py \
+    --instrument alma \
+    --config-name hpc_ral_cpu_fp64_levers \
+    --arms numba \
+    --n-instances 6 \
+    --levers threads,memo,logdet,marshal \
+    --lever-threads 1,2,4 \
+    --lever-memo-instances 16 \
+    || echo "LEVERS pixelization_numba FAILED"
+
+
+echo "=========================================="
+echo "loadavg: $(cat /proc/loadavg)"
+echo "Finished."
+date
