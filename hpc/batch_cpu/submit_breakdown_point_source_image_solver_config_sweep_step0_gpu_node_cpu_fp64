@@ -35,10 +35,10 @@
 # leg on gpu-1. Only in-job ratios compare with the 8490H rows of phase 4a.
 
 # WALL-BASIS:
-#   Laptop run of this cell (same 4 routes + nopad, 200 + 200 draws, 20 x 20):
-#   433 s. RAL job 356367 (26 configs) ran 787 s. 1500 s declared, headroom ~3.
-#   cell: point_source_image/solver_config_sweep_step0/simple  device: cpu  precision: fp64
-#   source: measured-wall  wall: 1500  ref: laptop-solver_config_sweep_step0  headroom: 3.0
+#   RAL job 357335 (this cell, same 4 routes, EPYC 7702 euclid-ral-gpu-2 CPU-only,
+#   8 CPUs, 200 + 200 draws, 20 x 20) ran 417 s (7:14 job wall).
+#   cell: point_source_image/solver_config_sweep/simple  device: cpu  precision: fp64
+#   source: measured-wall  wall: 417  ref: ral-job-357335-point_source_image-solver_config_sweep  headroom: 3.0
 
 #SBATCH -J point_source_step0_p4b_epyc
 #SBATCH --partition=gpu

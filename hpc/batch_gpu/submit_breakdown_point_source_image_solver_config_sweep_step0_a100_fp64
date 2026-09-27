@@ -29,11 +29,11 @@
 # XLA_FLAGS are byte-identical to the CPU submit's.
 
 # WALL-BASIS:
-#   No A100 run of this cell yet; the laptop CPU run took 433 s. The A100 is
-#   launch-bound (per-call ~1-2 ms, the completeness draws dominate), so 3600 s
-#   is declared as an estimate.
-#   cell: point_source_image/solver_config_sweep_step0/simple  device: gpu  precision: fp64
-#   source: estimate  wall: 3600  ref: laptop-solver_config_sweep_step0  headroom: 2.0
+#   RAL job 357322 (this cell, same 4 routes, A100 80 GB euclid-ral-gpu-1, 200 + 200
+#   draws, 20 x 20) ran 432 s (7:32 job wall); the A100 is launch-bound, so the
+#   completeness draws dominate.
+#   cell: point_source_image/solver_config_sweep/simple  device: gpu  precision: fp64
+#   source: measured-wall  wall: 432  ref: ral-job-357322-point_source_image-solver_config_sweep  headroom: 3.0
 
 #SBATCH -J point_source_step0_p4b_gpu
 #SBATCH --partition=gpu

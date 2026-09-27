@@ -32,10 +32,11 @@
 # nodes are unreachable.
 
 # WALL-BASIS:
-#   Laptop run of this cell (same 4 routes + nopad, 200 + 200 draws, 20 x 20):
-#   433 s. RAL job 356367 (26 configs) ran 787 s. 1500 s declared, headroom ~3.
-#   cell: point_source_image/solver_config_sweep_step0/simple  device: cpu  precision: fp64
-#   source: measured-wall  wall: 1500  ref: laptop-solver_config_sweep_step0  headroom: 3.0
+#   RAL job 357321 (this cell, --step0-route control,gather,components,structured,
+#   8490H euclid-ral-compute-10-4 under load ~200, 8 CPUs, 200 + 200 draws, 20 x 20)
+#   ran 480 s (8:08 job wall). Headroom 3 covers a quieter or busier node.
+#   cell: point_source_image/solver_config_sweep/simple  device: cpu  precision: fp64
+#   source: measured-wall  wall: 480  ref: ral-job-357321-point_source_image-solver_config_sweep  headroom: 3.0
 
 #SBATCH -J point_source_step0_p4b
 #SBATCH --partition=ral
