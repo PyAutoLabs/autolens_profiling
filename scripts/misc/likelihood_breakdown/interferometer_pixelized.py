@@ -73,6 +73,17 @@ Lever sub-rows (never summed)
 - ``mixed_precision``: with ``--use-mixed-precision``, the fp64 library figure of merit
   of the same run, so the mp shift is measured in-run.
 
+Shared setup
+------------
+
+The dataset / mask inputs, the mass + source model and the adapt images are built by the
+module-level helpers ``load_dataset``, ``build_model`` and ``adapt_images_builder``, and
+the output names by ``result_paths``, and the two meshes by ``build_delaunay_mesh`` /
+``build_rectangular_mesh``, so the NumPy / numba sibling
+``interferometer_pixelized_numpy.py`` (campaign 3/3, autolens_profiling#326) runs on
+exactly the same inputs. ``--mask-radius`` overrides the preset's real-space mask radius
+(3.5"); a non-default radius appends ``_r<radius>`` to the output names.
+
 Memory
 ------
 
@@ -87,6 +98,7 @@ from __future__ import annotations
 import dataclasses
 import gc
 import json
+import math
 import os
 import re
 import resource
@@ -122,8 +134,20 @@ WITNESS_NATS = 1e-6
 PRECISION_BAR_NATS = 0.5
 
 
+def add_mask_radius_arg(parser) -> None:
+    """``--mask-radius``: shared by this harness and the NumPy / numba sibling."""
+    parser.add_argument(
+        "--mask-radius",
+        type=float,
+        default=None,
+        help="Real-space circular mask radius in arcsec (default: the instrument preset's, "
+        "3.5). A non-default radius appends _r<radius> to the output names.",
+    )
+
+
 def add_cell_args(parser) -> None:
     """The cell-local flags both pixelized cells declare (on their ``_cell_parser``)."""
+    add_mask_radius_arg(parser)
     parser.add_argument("--solver", choices=("pdip", "certified"), default="pdip")
     parser.add_argument(
         "--solver-ab",
@@ -255,51 +279,50 @@ def hlo_census(func, *args) -> dict:
     return out
 
 
-def run(spec: CellSpec, cli, cell_args, script_file: str, profiling_root: Path) -> None:
-    """Run one pixelized interferometer breakdown cell end to end."""
+@dataclass
+class DatasetSetup:
+    """The loaded interferometer dataset and the geometry it was masked with."""
+
+    instrument: str
+    preset: dict
+    dataset_path: Path
+    pixel_scale: float
+    real_space_shape: tuple
+    mask_radius: float
+    mask_radius_default: float
+    real_space_mask: Any
+    transformer_chunk: int | None
+    preset_chunk: int | None
+    dataset: Any
+    n_vis: int
+    n_image_pixels: int
+
+    @property
+    def mask_suffix(self) -> str:
+        """``""`` at the preset radius, else ``_r<radius>`` (appended to output names)."""
+        return mask_radius_suffix(self.mask_radius, self.mask_radius_default)
+
+
+def mask_radius_suffix(mask_radius: float, mask_radius_default: float) -> str:
+    """``""`` at the preset radius, else ``_r<radius>``: r3.5 outputs keep their names."""
+    if float(mask_radius) == float(mask_radius_default):
+        return ""
+    return f"_r{float(mask_radius)}"
+
+
+def load_dataset(instrument: str, mask_radius, profiling_root: Path, timer) -> DatasetSetup:
+    """Auto-simulate if missing, mask at ``mask_radius`` (``None`` = preset) and load."""
     from simulators.interferometer import INSTRUMENTS
 
-    from _production_config import observe_thread_env
-    from _profile_cli import (
-        auto_simulate_if_missing,
-        check_pinned,
-        device_info_dict,
-        record_pinned_check,
-        resolve_output_paths,
-    )
+    from _profile_cli import auto_simulate_if_missing
     from instruments.interferometer import transformer_chunk_size_for
 
-    # ------------------------------------------------------------------
-    # Provenance
-    # ------------------------------------------------------------------
-    revisions = source_revisions(profiling_root)
-    print("--- Import provenance ---")
-    print(f"  cell __file__ = {script_file}")
-    import autogalaxy as ag
-
-    for module in (aa, ag, al, af):
-        print(f"  {module.__name__}.__file__ = {module.__file__}")
-    for repo, rev in revisions.items():
-        print(f"  {repo:<18} {rev}")
-    print(f"  jax {jax.__version__} backend={jax.default_backend()} x64={jax.config.x64_enabled}")
-    print(f"  nufftax {_nufftax_version()}")
-    if not jax.config.x64_enabled:
-        raise SystemExit("JAX x64 is off: export JAX_ENABLE_X64=True (fp32 truncation).")
-
-    load_start = list(os.getloadavg())
-    instrument = cli.instrument or "sma"
-    timer = timing.Timer()
-    jit_records: dict[str, dict] = {}
-    on_cpu = jax.default_backend() == "cpu"
-
-    # ------------------------------------------------------------------
-    # Dataset + sparse operator
-    # ------------------------------------------------------------------
     print(f"\n--- Dataset loading [{instrument}] ---")
     preset = INSTRUMENTS[instrument]
     pixel_scale = preset["pixel_scale"]
     real_space_shape = preset["real_space_shape"]
-    mask_radius = preset["mask_radius"]
+    mask_radius_default = preset["mask_radius"]
+    mask_radius = mask_radius_default if mask_radius is None else float(mask_radius)
     dataset_path = Path("dataset") / "interferometer" / instrument
     auto_simulate_if_missing(
         dataset_path,
@@ -338,7 +361,191 @@ def run(spec: CellSpec, cli, cell_args, script_file: str, profiling_root: Path) 
     n_vis = int(dataset.uv_wavelengths.shape[0])
     n_image_pixels = int(dataset.grids.pixelization.shape[0])
     print(f"  Visibilities: {n_vis}; masked pixels: {n_image_pixels}")
+    if mask_radius != mask_radius_default:
+        print(f"  mask radius {mask_radius} arcsec (preset {mask_radius_default})")
     print(f"  TransformerNUFFT chunk_size={transformer_chunk} (preset {preset_chunk})")
+    return DatasetSetup(
+        instrument=instrument,
+        preset=preset,
+        dataset_path=dataset_path,
+        pixel_scale=pixel_scale,
+        real_space_shape=real_space_shape,
+        mask_radius=mask_radius,
+        mask_radius_default=mask_radius_default,
+        real_space_mask=real_space_mask,
+        transformer_chunk=transformer_chunk,
+        preset_chunk=preset_chunk,
+        dataset=dataset,
+        n_vis=n_vis,
+        n_image_pixels=n_image_pixels,
+    )
+
+
+def build_model(mesh: MeshSetup):
+    """Isothermal + ExternalShear near the simulator truth, the pixelized source, no lens light."""
+    mass = af.Model(al.mp.Isothermal)
+    mass.centre.centre_0 = af.GaussianPrior(mean=0.0, sigma=0.005)
+    mass.centre.centre_1 = af.GaussianPrior(mean=0.0, sigma=0.005)
+    mass.einstein_radius = af.GaussianPrior(mean=1.6, sigma=0.05)
+    ell = al.convert.ell_comps_from(axis_ratio=0.9, angle=45.0)
+    mass.ell_comps.ell_comps_0 = af.GaussianPrior(mean=ell[0], sigma=0.01)
+    mass.ell_comps.ell_comps_1 = af.GaussianPrior(mean=ell[1], sigma=0.01)
+    shear = af.Model(al.mp.ExternalShear)
+    shear.gamma_1 = af.GaussianPrior(mean=0.05, sigma=0.005)
+    shear.gamma_2 = af.GaussianPrior(mean=0.05, sigma=0.005)
+    lens = af.Model(al.Galaxy, redshift=0.5, mass=mass)
+    field_model = af.Model(al.MassField, redshift=0.5, shear=shear)
+    source = af.Model(al.Galaxy, redshift=1.0, pixelization=mesh.pixelization)
+    return af.Collection(galaxies=af.Collection(lens=lens, source=source), fields=field_model)
+
+
+def adapt_images_builder(adapt_image, mesh: MeshSetup) -> Callable:
+    """``source_galaxy -> al.AdaptImages`` (the dicts are keyed on the galaxy object)."""
+
+    def adapt_images_for(source_galaxy):
+        kwargs = dict(
+            galaxy_image_dict={source_galaxy: adapt_image},
+            galaxy_name_image_dict={"('galaxies', 'source')": adapt_image},
+        )
+        if mesh.image_plane_mesh_grid is not None:
+            kwargs.update(
+                galaxy_image_plane_mesh_grid_dict={source_galaxy: mesh.image_plane_mesh_grid},
+                galaxy_name_image_plane_mesh_grid_dict={
+                    "('galaxies', 'source')": mesh.image_plane_mesh_grid
+                },
+            )
+        return al.AdaptImages(**kwargs)
+
+    return adapt_images_for
+
+
+def result_paths(
+    cli, profiling_root: Path, instrument: str, cell: str, al_version: str, mask_suffix: str = ""
+) -> tuple[Path, Path]:
+    """``(json, png)`` for one pixelized cell; ``cell`` is the output-name stem."""
+    from _profile_cli import resolve_output_paths
+
+    default_dir = profiling_root / "results" / "breakdown" / "interferometer"
+    if cli.config_name is not None and instrument != "alma":
+        default_dir = default_dir / instrument
+    basename = f"{cell}_breakdown_{instrument}_v{al_version}"
+    dict_path, chart_path = resolve_output_paths(
+        cli, default_dir=default_dir, default_basename=basename, cell=cell
+    )
+    if cli.config_name is None and cli.regularization == "constant_split":
+        dict_path = dict_path.with_name(dict_path.stem + "_constant_split.json")
+        chart_path = chart_path.with_name(chart_path.stem + "_constant_split.png")
+    if mask_suffix:
+        dict_path = dict_path.with_name(dict_path.stem + mask_suffix + ".json")
+        chart_path = chart_path.with_name(chart_path.stem + mask_suffix + ".png")
+    return dict_path, chart_path
+
+
+#: The Delaunay cells' fiducial Hilbert count and the rectangular cells' fiducial side.
+DELAUNAY_N_FIDUCIAL = 1500
+RECT_SIDE_FIDUCIAL = 39  # 39 x 39 = 1521, the imaging campaign's rectangular tier
+RECT_REGULARIZATION_COEFFICIENT = 1.0
+
+
+def build_delaunay_mesh(cli, dataset, adapt_image, n_requested) -> MeshSetup:
+    """Hilbert image mesh on the adapt image + ``al.mesh.Delaunay`` (``--regularization``)."""
+    from _profile_cli import delaunay_regularization
+
+    n = DELAUNAY_N_FIDUCIAL if n_requested is None else int(n_requested)
+    image_mesh = al.image_mesh.Hilbert(pixels=n, weight_power=1.0, weight_floor=0.0)
+    image_plane_mesh_grid = image_mesh.image_plane_mesh_grid_from(
+        mask=dataset.real_space_mask, adapt_data=adapt_image
+    )
+    n_vertices = int(image_plane_mesh_grid.shape[0])
+    scheme, regularization, provenance = delaunay_regularization(cli)
+    pixelization = al.Pixelization(
+        mesh=al.mesh.Delaunay(pixels=n_vertices, zeroed_pixels=0),
+        regularization=regularization,
+    )
+    return MeshSetup(
+        pixelization=pixelization,
+        n_source_pixels=n_vertices,
+        image_plane_mesh_grid=image_plane_mesh_grid,
+        regularization=provenance,
+        configuration={
+            "mesh": "Delaunay",
+            "image_mesh": "Hilbert(weight_power=1.0, weight_floor=0.0)",
+            "hilbert_pixels": n,
+            "delaunay_vertices": n_vertices,
+            "edge_zeroed_pixels": 0,
+        },
+    )
+
+
+def build_rectangular_mesh(cli, dataset, adapt_image, n_requested) -> MeshSetup:
+    """Adaptive rectangular ``side x side`` mesh (``--rect-mesh``), ``Constant(1.0)``."""
+    from _profile_cli import rect_mesh_classes
+
+    side = RECT_SIDE_FIDUCIAL if n_requested is None else int(round(math.sqrt(n_requested)))
+    mesh_cls = rect_mesh_classes(cli)[1]
+    pixelization = al.Pixelization(
+        mesh=mesh_cls(shape=(side, side), weight_power=1.0, weight_floor=0.0),
+        regularization=al.reg.Constant(coefficient=RECT_REGULARIZATION_COEFFICIENT),
+    )
+    return MeshSetup(
+        pixelization=pixelization,
+        n_source_pixels=side * side,
+        image_plane_mesh_grid=None,
+        regularization={"scheme": "constant", "coefficient": RECT_REGULARIZATION_COEFFICIENT},
+        configuration={
+            "mesh": mesh_cls.__name__,
+            "mesh_shape": [side, side],
+            "rect_mesh": cli.rect_mesh,
+        },
+    )
+
+
+def run(spec: CellSpec, cli, cell_args, script_file: str, profiling_root: Path) -> None:
+    """Run one pixelized interferometer breakdown cell end to end."""
+    from _production_config import observe_thread_env
+    from _profile_cli import (
+        check_pinned,
+        device_info_dict,
+        record_pinned_check,
+    )
+
+    # ------------------------------------------------------------------
+    # Provenance
+    # ------------------------------------------------------------------
+    revisions = source_revisions(profiling_root)
+    print("--- Import provenance ---")
+    print(f"  cell __file__ = {script_file}")
+    import autogalaxy as ag
+
+    for module in (aa, ag, al, af):
+        print(f"  {module.__name__}.__file__ = {module.__file__}")
+    for repo, rev in revisions.items():
+        print(f"  {repo:<18} {rev}")
+    print(f"  jax {jax.__version__} backend={jax.default_backend()} x64={jax.config.x64_enabled}")
+    print(f"  nufftax {_nufftax_version()}")
+    if not jax.config.x64_enabled:
+        raise SystemExit("JAX x64 is off: export JAX_ENABLE_X64=True (fp32 truncation).")
+
+    load_start = list(os.getloadavg())
+    instrument = cli.instrument or "sma"
+    timer = timing.Timer()
+    jit_records: dict[str, dict] = {}
+    on_cpu = jax.default_backend() == "cpu"
+
+    # ------------------------------------------------------------------
+    # Dataset + sparse operator
+    # ------------------------------------------------------------------
+    ds = load_dataset(instrument, cell_args.mask_radius, profiling_root, timer)
+    pixel_scale = ds.pixel_scale
+    real_space_shape = ds.real_space_shape
+    mask_radius = ds.mask_radius
+    dataset_path = ds.dataset_path
+    real_space_mask = ds.real_space_mask
+    preset_chunk = ds.preset_chunk
+    transformer_chunk = ds.transformer_chunk
+    dataset = ds.dataset
+    n_vis = ds.n_vis
+    n_image_pixels = ds.n_image_pixels
 
     with timer.section("apply_sparse_operator"):
         dataset_sparse = dataset.apply_sparse_operator(
@@ -386,20 +593,7 @@ def run(spec: CellSpec, cli, cell_args, script_file: str, profiling_root: Path) 
         f"  source pixels: {n_src} (requested {n_requested}); regularization {mesh.regularization}"
     )
 
-    mass = af.Model(al.mp.Isothermal)
-    mass.centre.centre_0 = af.GaussianPrior(mean=0.0, sigma=0.005)
-    mass.centre.centre_1 = af.GaussianPrior(mean=0.0, sigma=0.005)
-    mass.einstein_radius = af.GaussianPrior(mean=1.6, sigma=0.05)
-    ell = al.convert.ell_comps_from(axis_ratio=0.9, angle=45.0)
-    mass.ell_comps.ell_comps_0 = af.GaussianPrior(mean=ell[0], sigma=0.01)
-    mass.ell_comps.ell_comps_1 = af.GaussianPrior(mean=ell[1], sigma=0.01)
-    shear = af.Model(al.mp.ExternalShear)
-    shear.gamma_1 = af.GaussianPrior(mean=0.05, sigma=0.005)
-    shear.gamma_2 = af.GaussianPrior(mean=0.05, sigma=0.005)
-    lens = af.Model(al.Galaxy, redshift=0.5, mass=mass)
-    field_model = af.Model(al.MassField, redshift=0.5, shear=shear)
-    source = af.Model(al.Galaxy, redshift=1.0, pixelization=mesh.pixelization)
-    model = af.Collection(galaxies=af.Collection(lens=lens, source=source), fields=field_model)
+    model = build_model(mesh)
     instance = model.instance_from_vector(vector=model.physical_values_from_prior_medians)
     _register_model_pytrees(model)
     params_tree = jax.tree_util.tree_map(jnp.asarray, instance)
@@ -412,19 +606,7 @@ def run(spec: CellSpec, cli, cell_args, script_file: str, profiling_root: Path) 
 
     settings = settings_for()
 
-    def adapt_images_for(source_galaxy):
-        kwargs = dict(
-            galaxy_image_dict={source_galaxy: adapt_image},
-            galaxy_name_image_dict={"('galaxies', 'source')": adapt_image},
-        )
-        if mesh.image_plane_mesh_grid is not None:
-            kwargs.update(
-                galaxy_image_plane_mesh_grid_dict={source_galaxy: mesh.image_plane_mesh_grid},
-                galaxy_name_image_plane_mesh_grid_dict={
-                    "('galaxies', 'source')": mesh.image_plane_mesh_grid
-                },
-            )
-        return al.AdaptImages(**kwargs)
+    adapt_images_for = adapt_images_builder(adapt_image, mesh)
 
     adapt_images = adapt_images_for(instance.galaxies.source)
 
@@ -818,16 +1000,9 @@ def run(spec: CellSpec, cli, cell_args, script_file: str, profiling_root: Path) 
             "peak_rss_mb": float(_peak_rss_mb()),
         }
 
-        default_dir = profiling_root / "results" / "breakdown" / "interferometer"
-        if cli.config_name is not None and instrument != "alma":
-            default_dir = default_dir / instrument
-        basename = f"{spec.cell}_breakdown_{instrument}_v{al_version}"
-        dict_path, chart_path = resolve_output_paths(
-            cli, default_dir=default_dir, default_basename=basename, cell=spec.cell
+        dict_path, chart_path = result_paths(
+            cli, profiling_root, instrument, spec.cell, al_version, ds.mask_suffix
         )
-        if cli.config_name is None and cli.regularization == "constant_split":
-            dict_path = dict_path.with_name(dict_path.stem + "_constant_split.json")
-            chart_path = chart_path.with_name(chart_path.stem + "_constant_split.png")
         dict_path.write_text(json.dumps(summary, indent=2, default=float))
         paths["json"], paths["png"] = dict_path, chart_path
         _plot(summary, chart_path, spec)

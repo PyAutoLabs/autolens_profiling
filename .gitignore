@@ -82,6 +82,10 @@ dataset/datacube/sim_*/
 # that's purely an auto-cache.
 dataset/**/lensed_source.fits
 
+# W~ preload caches (numba / NumPy interferometer cells): one-off per dataset and
+# geometry, keyed by shape + mask radius, rebuilt on a miss (autolens_profiling#326).
+dataset/**/nufft_precision_operator_*.npy
+
 # Retired legacy results section (pre likelihood_runtime/breakdown split);
 # nothing writes here since the phase-2 output retarget. Kept ignored so old
 # local checkouts don't surface stale artifacts as untracked.

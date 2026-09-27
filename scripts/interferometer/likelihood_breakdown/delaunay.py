@@ -67,51 +67,19 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
     _sys.exit(0)
 
-import autolens as al  # noqa: E402
-
-from _profile_cli import delaunay_regularization, parse_profile_cli  # noqa: E402
+from _profile_cli import parse_profile_cli  # noqa: E402
 
 _cli = parse_profile_cli()
 _cell_parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
 harness.add_cell_args(_cell_parser)
 _cell_args = _cli.parse_cell_args(_cell_parser)
 
-N_FIDUCIAL = 1500
-
-
-def build_mesh(cli, dataset, adapt_image, n_requested):
-    n = N_FIDUCIAL if n_requested is None else int(n_requested)
-    image_mesh = al.image_mesh.Hilbert(pixels=n, weight_power=1.0, weight_floor=0.0)
-    image_plane_mesh_grid = image_mesh.image_plane_mesh_grid_from(
-        mask=dataset.real_space_mask, adapt_data=adapt_image
-    )
-    n_vertices = int(image_plane_mesh_grid.shape[0])
-    scheme, regularization, provenance = delaunay_regularization(cli)
-    pixelization = al.Pixelization(
-        mesh=al.mesh.Delaunay(pixels=n_vertices, zeroed_pixels=0),
-        regularization=regularization,
-    )
-    return harness.MeshSetup(
-        pixelization=pixelization,
-        n_source_pixels=n_vertices,
-        image_plane_mesh_grid=image_plane_mesh_grid,
-        regularization=provenance,
-        configuration={
-            "mesh": "Delaunay",
-            "image_mesh": "Hilbert(weight_power=1.0, weight_floor=0.0)",
-            "hilbert_pixels": n,
-            "delaunay_vertices": n_vertices,
-            "edge_zeroed_pixels": 0,
-        },
-    )
-
-
 harness.run(
     harness.CellSpec(
         cell="delaunay",
         title="Delaunay Interferometer Likelihood",
-        fiducial_source_pixels=N_FIDUCIAL,
-        build_mesh=build_mesh,
+        fiducial_source_pixels=harness.DELAUNAY_N_FIDUCIAL,
+        build_mesh=harness.build_delaunay_mesh,
         pinned={},
     ),
     _cli,

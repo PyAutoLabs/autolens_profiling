@@ -47,7 +47,6 @@ if _misc_dir not in _sys.path:
 _sys.path.insert(0, str(_profiling_root()))
 
 import argparse  # noqa: E402
-import math  # noqa: E402
 import os as _smoke_os  # noqa: E402
 
 from likelihood_breakdown import interferometer_pixelized as harness  # noqa: E402
@@ -56,45 +55,19 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
     _sys.exit(0)
 
-import autolens as al  # noqa: E402
-
-from _profile_cli import parse_profile_cli, rect_mesh_classes  # noqa: E402
+from _profile_cli import parse_profile_cli  # noqa: E402
 
 _cli = parse_profile_cli()
 _cell_parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
 harness.add_cell_args(_cell_parser)
 _cell_args = _cli.parse_cell_args(_cell_parser)
 
-MESH_SIDE_FIDUCIAL = 39  # 39 x 39 = 1521, the imaging campaign's rectangular tier
-REGULARIZATION_COEFFICIENT = 1.0
-
-
-def build_mesh(cli, dataset, adapt_image, n_requested):
-    side = MESH_SIDE_FIDUCIAL if n_requested is None else int(round(math.sqrt(n_requested)))
-    mesh_cls = rect_mesh_classes(cli)[1]
-    pixelization = al.Pixelization(
-        mesh=mesh_cls(shape=(side, side), weight_power=1.0, weight_floor=0.0),
-        regularization=al.reg.Constant(coefficient=REGULARIZATION_COEFFICIENT),
-    )
-    return harness.MeshSetup(
-        pixelization=pixelization,
-        n_source_pixels=side * side,
-        image_plane_mesh_grid=None,
-        regularization={"scheme": "constant", "coefficient": REGULARIZATION_COEFFICIENT},
-        configuration={
-            "mesh": mesh_cls.__name__,
-            "mesh_shape": [side, side],
-            "rect_mesh": cli.rect_mesh,
-        },
-    )
-
-
 harness.run(
     harness.CellSpec(
         cell="pixelization",
         title="Rectangular Interferometer Likelihood",
-        fiducial_source_pixels=MESH_SIDE_FIDUCIAL**2,
-        build_mesh=build_mesh,
+        fiducial_source_pixels=harness.RECT_SIDE_FIDUCIAL**2,
+        build_mesh=harness.build_rectangular_mesh,
         pinned={},
     ),
     _cli,

@@ -357,11 +357,14 @@ def _render_runtime_table(cells: list[RuntimeCell], baselines: dict[str, list[Ru
 
 def _inversion_path_label(data: dict, sparse: bool) -> str:
     """Inversion-path label from the payload's ``configuration.inversion_path``
-    when present (``sparse_numba`` = the numba CPU cells), else the filename
-    ``_sparse``-tag convention."""
+    when present (``sparse_numba`` = the numba CPU cells; the library-dispatch
+    interferometer cells record the inversion class name the factory built,
+    autolens_profiling#326), else the filename ``_sparse``-tag convention."""
     payload_path = (data.get("configuration") or {}).get("inversion_path")
-    if payload_path == "sparse_numba":
+    if payload_path in ("sparse_numba", "InversionInterferometerSparseNumba"):
         return "sparse (numba)"
+    if payload_path == "InversionInterferometerSparse":
+        return "sparse (w-tilde)"
     if payload_path == "sparse":
         return "sparse (w-tilde)"
     if payload_path == "dense":
