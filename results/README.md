@@ -4,12 +4,14 @@ Profiling artifacts written by the packages above. Layout mirrors the source
 packages; the dashboard tables in every README are rendered from this tree by
 `scripts/misc/tooling/build_readme.py`.
 
-## Fixed-light campaign findings
+## Campaign findings
 
-Read the [current CPU/GPU campaign summary](notes/profiling_campaign_status_2026_09.md)
-before reusing a headline or following a historical note's Next section. It records
-CPU closure, corrected GPU budgets/attribution, pending release obligations and
-the unversioned bridge-control limitation without changing historical artifacts.
+Read the [campaign index](../wiki/index.md) before reusing a headline or following a
+historical note's Next section. It links every campaign's ledger in `notes/` and records
+each result's library PRs and release. The fixed-light record stays in the
+[fixed-light CPU/GPU summary](notes/profiling_campaign_status_2026_09.md) (CPU closure,
+corrected GPU budgets/attribution, and the unversioned bridge-control limitation); its
+PyAutoArray #553–#555 were released in 2026.9.19.1.
 
 ## Sections
 

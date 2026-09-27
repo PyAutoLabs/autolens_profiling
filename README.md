@@ -8,6 +8,10 @@ Profiling and run-time tracking for [PyAutoLens](https://github.com/PyAutoLabs/P
 > `refs/heads/archive/condemned/autolens-profiling/inference-programme` @
 > `c8b605801068ec3de04314b47da8f7272a038ba1` — never cite it.
 
+**Where to read findings.** The [campaign index](wiki/index.md) lists every profiling campaign —
+why it was run, its headline number, verdict, library PRs and release, and a link to its ledger in
+`results/notes/`. Start there before reusing a headline.
+
 ## Vision
 
 This repository is the single home for PyAutoLens performance measurement. It exists so that the run-times that matter for science — evaluating a real lens likelihood, simulating an Euclid-resolution dataset — are visible, reproducible, and versioned across PyAutoLens releases.

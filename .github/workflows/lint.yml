@@ -91,6 +91,14 @@ jobs:
         working-directory: autolens_profiling
         run: python scripts/misc/tooling/build_readme.py --check
 
+      - name: check_wiki.py --check (research wiki drift)
+        working-directory: autolens_profiling
+        run: |
+          # Every results/notes ledger is linked from wiki/, every campaign page
+          # has an index row and the full header, every relative wiki link
+          # resolves. Pure stdlib -- no PyAuto* imports, no PYTHONPATH.
+          python scripts/misc/tooling/check_wiki.py --check
+
       - name: wall check_submits.py --check (per-cell --time basis)
         working-directory: autolens_profiling
         run: |
@@ -116,7 +124,7 @@ jobs:
       - name: lychee — markdown link-rot
         working-directory: autolens_profiling
         run: |
-          # Conservative scope: only README.md files in this repo, exclude
+          # Conservative scope: README.md files plus the wiki/ pages, exclude
           # GitHub UI links that lychee tends to false-positive on, and the
           # Slack invite (302 -> 403 to any non-browser client).
           lychee \
@@ -125,7 +133,8 @@ jobs:
             --no-progress \
             --accept '200..=299,429' \
             --max-redirects 5 \
-            $(find . -name 'README.md' -not -path './results/*' -not -path './dataset/*')
+            $(find . -name 'README.md' -not -path './results/*' -not -path './dataset/*') \
+            $(find ./wiki -name '*.md' -not -name 'README.md')
 
       - name: Smoke — one script per section
         working-directory: autolens_profiling

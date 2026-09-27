@@ -26,6 +26,9 @@ pending release. Research closure does not clear their release obligations or
 establish release readiness. The standalone operated-mapping-matrix cache issue
 and the ongoing GPU work are separate.
 
+**Correction — 2026-09-27:** #553–#555 shipped in PyAutoArray 2026.9.19.1 (the first release
+tag containing each merge commit), so their release obligation is cleared.
+
 ### Cumulative figure: provenance limit
 
 The per-lever A/B artifacts are committed. The lever-3 note additionally uses
