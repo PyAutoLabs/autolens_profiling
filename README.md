@@ -332,7 +332,8 @@ separately per likelihood × transform. Standing conclusions:
   (quiet RAL gpu-node CPUs, job 357381: solved 0.636 → 0.341 ms; A100, job 357382: 0.527 → 0.357 ms); `rev_jacrev`
   ≈ `rev`; the analytic Hessian helps only under `rev` and adds nothing on top of `fwd`. Found: the library
   `Isothermal.convergence_2d_from` is not JIT-traceable with traced `ell_comps` (`convergence_func` drops `xp`).
-  The deciding RAL 8490H row (job 357380) was still queued when the branch was committed.
+  Verdict (decided on the quiet RAL gpu-node EPYC row; the 8490H job was cancelled): `fwd` GO → phase 2c measures the
+  forward/reverse crossover in `n_params` before a PyAutoFit gradient entry-point change.
   Findings: [`results/notes/point_source_source_plane_campaign.md`](./results/notes/point_source_source_plane_campaign.md).
 - **Interferometer mesh likelihood on the A100 (2026-09)**: the sparse-operator (W~) Delaunay-1500
   and rectangular 39×39 breakdown at sma / alma / alma_high / jvla, in fp64 and mixed precision,

@@ -445,14 +445,13 @@ It never approximates.
 ### Hosts and revisions
 
 - **RAL CPU 8490H** — job 357380, `euclid-ral-compute-10-2`, pinned with
-  `--nodelist`. **PENDING: the job had not started when this note was written.**
-  It was submitted at 12:14 and was still `PD (Priority)` at 13:10. On
+  `--nodelist`. **Never ran: cancelled at the human's decision (see "Phase-2c
+  go/no-go").** It was submitted at 12:14 and was still `PD (Priority)` at 13:10. On
   2026-09-27 every 10-* node was `mix` and carried jnightin DR1 array tasks:
   10-2 had 18–20 of them, with 144–160 of 236 CPUs allocated, so it was not quiet
   the way it was for phase 2a. Thousands of same-priority DR1 array tasks were
-  queued ahead of the job, and `scontrol top` is not permitted for users. When
-  it runs, it writes `backward_pass_ab_hpc_ral_cpu_fp64.{json,png}` in the RAL
-  worktree `/mnt/ral/jnightin/autolens_profiling_wt/point-source-source-plane-p2b`.
+  queued ahead of the job, and `scontrol top` is not permitted for users. There
+  is therefore no `backward_pass_ab_hpc_ral_cpu_fp64` row.
 - **RAL gpu-partition host CPUs (quiet cross-check)** — job 357381,
   `euclid-ral-gpu-2` (AMD EPYC 7702), `--partition=gpu` with no `--gres`, 8 CPUs,
   `sched_affinity` 8, BLAS threads 1. The partition was idle, and load average
@@ -511,7 +510,7 @@ routes and hosts, so the model is registered and the gradients are not zero.
 The `grad` rows use `rev` as the control. The `forward` rows time the likelihood
 alone, with `jacfwd` as the control.
 
-**RAL CPU 8490H (`hpc_ral_cpu_fp64`): PENDING (job 357380).**
+**RAL CPU 8490H (`hpc_ral_cpu_fp64`): not run (job 357380 cancelled; see "Phase-2c go/no-go").**
 
 RAL gpu-partition host CPUs, AMD EPYC 7702, quiet (`backward_pass_ab_hpc_ral_gpunode_cpu_fp64.json`):
 
@@ -608,20 +607,16 @@ The rule from issue #325: a route is **GO** if, on RAL CPU (8490H), it saves
 call, with the 90 % CIs excluding the bar (saved-ms CI low ≥ 0.05; ratio CI
 high ≤ 0.85) and a green correctness gate.
 
-**RAL CPU 8490H (the deciding row): PENDING, job 357380.**
+**Deciding row, re-based by the human (2026-09-27): the quiet RAL gpu-partition
+host CPUs (EPYC 7702, job 357381).** The pre-registered 8490H row could not run in
+the session: job 357380 sat behind thousands of DR1 array tasks, and node 10-2
+carried 18–20 of them, so it would not have been quiet even if it had started.
+Every host that did run agrees on the direction and clears the bar for `fwd` by a
+wide margin. The human chose to decide on the EPYC row and cancel 357380. Its
+absolute milliseconds are higher than the 8490H's (forward 0.26 vs 0.146 ms), so
+the savings are quoted as ratios first.
 
-| Lane | Route | saved ms | fraction | ≥ 0.05 ms (CI low) | ≥ 15 % (CI high ≤ 0.85) | gate | rule |
-|---|---|---|---|---|---|---|---|
-| solved | `fwd` | TBD | TBD | TBD | TBD | green | TBD |
-| solved | `rev_jacrev` | TBD | TBD | TBD | TBD | green | TBD |
-| solved | `rev_analytic` | TBD | TBD | TBD | TBD | green | TBD |
-| solved | `fwd_analytic` | TBD | TBD | TBD | TBD | green | TBD |
-| plain | `fwd` | TBD | TBD | TBD | TBD | green | TBD |
-| plain | `rev_jacrev` | TBD | TBD | TBD | TBD | green | TBD |
-| plain | `rev_analytic` | TBD | TBD | TBD | TBD | green | TBD |
-| plain | `fwd_analytic` | TBD | TBD | TBD | TBD | green | TBD |
-
-The same mechanical evaluation on the rows that ran (not deciding):
+The mechanical evaluation on every row that ran (the EPYC table decides):
 
 RAL gpu-partition host CPUs (EPYC 7702, quiet):
 
@@ -662,5 +657,35 @@ Laptop (lead):
 | plain | `rev_analytic` | +0.1008 | 12.6% | yes (+0.0856) | no (0.892) | green | no-go |
 | plain | `fwd_analytic` | +0.2520 | 31.4% | yes (+0.2414) | yes (0.696) | green | GO |
 
-<!-- RECOMMENDATION: written by the main session, not by the phase-2b run. -->
-**Recommendation: _to be written by the main session._**
+**Verdict and recommendation (main session, 2026-09-27).**
+
+- **`fwd` is GO.** Forward-mode gradients cut the `value_and_grad`-equivalent call
+  by 46 % (solved) and 38 % (plain) on the deciding EPYC row, with CIs far from
+  the bar. They also cut it by 24–34 % on the A100 and 28–37 % on the laptop, and
+  roughly halve the A100 compile (4.1 → 1.8 s). The XLA flop count barely moves
+  (267–298 k), so the saving is reverse-mode tape and dispatch structure, not
+  arithmetic. With 5 free parameters, 5 JVPs beat one reverse sweep through the
+  jacfwd Hessian.
+- **`rev_analytic` passes on the CPU rows but is not pursued.** It fails the 15 %
+  bar on the A100, and it adds nothing on top of `fwd`: `fwd_analytic` is within
+  0.03 ms of `fwd` everywhere. The Hessian costs time only through reverse mode,
+  so switching the AD mode removes the reason for an analytic Hessian.
+- **`rev_jacrev` is NO-GO** on every host (≤ 3 %): the inner Hessian ordering does
+  not matter. This is a negative result.
+- **Phase 2c = the forward-mode gradient entry point, and it is sampler-facing.**
+  Forward mode costs one JVP per free parameter, whereas reverse mode costs a
+  roughly constant multiple of the forward call. So `fwd` wins only below a
+  crossover `n_params`, and a production switch must be conditional. Phase 2c
+  should first measure the crossover on this likelihood: add external shear,
+  multipoles and a second lens to take the model from 5 to about 20 free
+  parameters, in the same A/B harness. Only after that should it touch the
+  PyAutoFit gradient entry point (the `value_and_grad` / `grad` call the
+  gradient searches use), library-first with a GPU regression check. Where that
+  switch lives, and how the threshold is chosen, is a human design decision
+  before phase 2c is issued.
+- **Carried library bug (separate from phase 2c).** `Isothermal.convergence_2d_from`
+  and `shear_yx_2d_from` cannot be traced under `jax.jit` when `ell_comps` is
+  traced: `PowerLawCore.convergence_2d_from` calls `convergence_func` without
+  `xp`, and `einstein_radius_rescaled` runs NumPy on a tracer
+  (`autogalaxy/convert.py:80`). The cell works around it in-cell. File it through
+  intake as a PyAutoGalaxy bug.
