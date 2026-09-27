@@ -82,6 +82,16 @@ Results are framed by **astronomy instrument** (HST, Euclid, JWST, …) rather t
 | `imaging/pixelization` | hst | hpc_a100_mp | sparse (w-tilde) | 55.5 ms | v2026.7.6.649 |
 | `imaging/pixelization_numba` | euclid | local_cpu_fp64 | sparse (numba) | 611.9 ms | v2026.8.17.1 |
 | `imaging/pixelization_numba` | hst | local_cpu_fp64 | sparse (numba) | 1.30 s | v2026.8.17.1 |
+| `interferometer/delaunay` | alma | local_cpu_fp64 | sparse (w-tilde) | 4.18 s | v2026.8.17.1 |
+| `interferometer/delaunay` | alma | hpc_a100_fp64 | sparse (w-tilde) | 50.7 ms | v2026.8.17.1 |
+| `interferometer/delaunay` | alma | hpc_a100_mp | sparse (w-tilde) | 51.3 ms | v2026.8.17.1 |
+| `interferometer/delaunay` | alma_high | hpc_a100_fp64 | sparse (w-tilde) | 100.0 ms | v2026.8.17.1 |
+| `interferometer/delaunay` | alma_high | hpc_a100_mp | sparse (w-tilde) | 99.6 ms | v2026.8.17.1 |
+| `interferometer/delaunay` | jvla | hpc_a100_fp64 | sparse (w-tilde) | 551.6 ms | v2026.8.17.1 |
+| `interferometer/delaunay` | jvla | hpc_a100_mp | sparse (w-tilde) | 548.8 ms | v2026.8.17.1 |
+| `interferometer/delaunay` | sma | local_cpu_fp64 | sparse (w-tilde) | 1.57 s | v2026.8.17.1 |
+| `interferometer/delaunay` | sma | hpc_a100_fp64 | sparse (w-tilde) | 33.9 ms | v2026.8.17.1 |
+| `interferometer/delaunay` | sma | hpc_a100_mp | sparse (w-tilde) | 33.6 ms | v2026.8.17.1 |
 | `interferometer/delaunay_numba_direct_conv` | alma | local_cpu_fp64 | sparse (numba) | 1.80 s | v2026.8.17.1 |
 | `interferometer/delaunay_numba_direct_conv` | sma | local_cpu_fp64 | sparse (numba) | 378.2 ms | v2026.8.17.1 |
 | `interferometer/delaunay_numba_jax` | alma | local_cpu_fp64 | sparse (w-tilde) | 3.28 s | v2026.8.17.1 |
@@ -106,6 +116,16 @@ Results are framed by **astronomy instrument** (HST, Euclid, JWST, …) rather t
 | `interferometer/mge` | sma | local_cpu_fp64 | sparse (w-tilde) | 11.8 ms | v2026.8.17.1 |
 | `interferometer/mge` | sma | hpc_a100_fp64 | dense (mapping) | 856.2 ms | v2026.8.17.1 |
 | `interferometer/mge_dft` | sma | local_cpu_fp64 | dense (mapping) | 32.9 ms | v2026.8.17.1 |
+| `interferometer/pixelization` | alma | local_cpu_fp64 | sparse (w-tilde) | 3.69 s | v2026.8.17.1 |
+| `interferometer/pixelization` | alma | hpc_a100_fp64 | sparse (w-tilde) | 45.5 ms | v2026.8.17.1 |
+| `interferometer/pixelization` | alma | hpc_a100_mp | sparse (w-tilde) | 45.5 ms | v2026.8.17.1 |
+| `interferometer/pixelization` | alma_high | hpc_a100_fp64 | sparse (w-tilde) | 97.7 ms | v2026.8.17.1 |
+| `interferometer/pixelization` | alma_high | hpc_a100_mp | sparse (w-tilde) | 95.2 ms | v2026.8.17.1 |
+| `interferometer/pixelization` | jvla | hpc_a100_fp64 | sparse (w-tilde) | 557.0 ms | v2026.8.17.1 |
+| `interferometer/pixelization` | jvla | hpc_a100_mp | sparse (w-tilde) | 552.9 ms | v2026.8.17.1 |
+| `interferometer/pixelization` | sma | local_cpu_fp64 | sparse (w-tilde) | 1.42 s | v2026.8.17.1 |
+| `interferometer/pixelization` | sma | hpc_a100_fp64 | sparse (w-tilde) | 29.2 ms | v2026.8.17.1 |
+| `interferometer/pixelization` | sma | hpc_a100_mp | sparse (w-tilde) | 29.4 ms | v2026.8.17.1 |
 | `interferometer/pixelization_numba_direct_conv` | alma | local_cpu_fp64 | sparse (numba) | 1.76 s | v2026.8.17.1 |
 | `interferometer/pixelization_numba_direct_conv` | sma | local_cpu_fp64 | sparse (numba) | 184.5 ms | v2026.8.17.1 |
 | `interferometer/pixelization_numba_jax` | alma | local_cpu_fp64 | sparse (w-tilde) | 2.28 s | v2026.8.17.1 |
@@ -303,6 +323,17 @@ separately per likelihood × transform. Standing conclusions:
   agreement (rtol 1e-10) and non-zero-gradient asserts passed. Phase-2b rule (≥ 0.05 ms AND ≥ 15 % on RAL CPU):
   **no-go** (27–31 % but < 0.05 ms); the backward-pass lever (+0.185 ms) is promoted.
   Findings: [`results/notes/point_source_source_plane_campaign.md`](./results/notes/point_source_source_plane_campaign.md).
+- **Interferometer mesh likelihood on the A100 (2026-09)**: the sparse-operator (W~) Delaunay-1500
+  and rectangular 39×39 breakdown at sma / alma / alma_high / jvla, in fp64 and mixed precision,
+  plus an alma N sweep. RAL jobs 356370-356387. The alma baseline is **49.5 ms (Delaunay) /
+  44.5 ms (rect)**, against 67.5 / 60 ms for HST imaging. The dense mapping path OOMs the A100 at
+  alma, so the sparse path is the only one there. The PDIP solve is 47–49 % of the alma call. The
+  W~ curvature matrix is 36–42 % at alma and 91–92 % at jvla. It is FFT-bound on the mask extent,
+  not on N_vis, and its block size is flat. The certified solver cuts the scalar call by 33 %
+  (alma Delaunay) and by 36 % at N = 4000. Mixed precision and an fp32 FFT buy nothing; fp32 is
+  slower and fails the bar at jvla. The ranked levers are the certified solver (a C2 amendment),
+  F FFT size, and a fixed-mapper F preload.
+  Findings: [`results/notes/interferometer_mesh_a100_breakdown_2026_09.md`](./results/notes/interferometer_mesh_a100_breakdown_2026_09.md).
 
 ## How to read this repo
 

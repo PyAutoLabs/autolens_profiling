@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #
-# A100 likelihood-breakdown profile: interferometer/delaunay x alma_high x mp, sparse (W~) path.
+# A100 likelihood-breakdown profile: interferometer/delaunay x alma N-sweep x fp64, sparse (W~) path.
 # autolens_profiling#320 (interferometer likelihood campaign 2/3): the Hilbert-1500 Delaunay + AdaptSplit(0.1, 10, 0.1)
 # cell on InversionInterferometerSparse, steps = the library's per-evaluation work (no
 # transformed-mapping-matrix row), dense InversionInterferometerMapping comparison arm under
@@ -8,9 +8,10 @@
 # split, fp32 FFT arm, vmap probe). Harness:
 # scripts/misc/likelihood_breakdown/interferometer_pixelized.py.
 #
-# mp arm: use_mixed_precision reaches the mapper / mapping matrix only (the W~ operator
-# hard-casts to float64); the cell records the in-run fp64 figure of merit so the mp
-# shift is read against the 0.5-nat bar, plus the measurement-only fp32 FFT arm.
+# N sweep at alma (the GPU half of the epic's 3/3 decision matrix): --source-pixels
+# 1000, 2500, 4000 (N=1500/1521 is the fiducial alma fp64 job). Rectangular takes the nearest
+# square (round(sqrt(N)) per side: 1024 = 32^2, 2500 = 50^2, 4096 = 64^2). Every leg carries the
+# solver A/B (PDIP vs certified, standalone on the same system + the full pipeline with both).
 #
 # Libraries: the SHARED mirror /mnt/ral/jnightin/PyAuto (refreshed by HPCPullPyAuto to the
 # 2026-09-26 mains: lever 1 MGE W~ route #575, lever 3 real scatter #577), via activate.sh.
@@ -18,17 +19,19 @@
 # with x64 off. A RESOURCE_EXHAUSTED / OOM inside the cell is recorded in the JSON as a result.
 #
 # Output: 
-#   results/breakdown/interferometer/alma_high/delaunay_hpc_a100_mp.{json,png}
+#   results/breakdown/interferometer/n_sweep/delaunay_hpc_a100_fp64_n1000.{json,png}
+#   results/breakdown/interferometer/n_sweep/delaunay_hpc_a100_fp64_n2500.{json,png}
+#   results/breakdown/interferometer/n_sweep/delaunay_hpc_a100_fp64_n4000.{json,png}
 #
 # Submit from hpc/batch_gpu/ (the -o/-e paths are relative).
 
-#SBATCH -J bd_intf_del_alma_high_mp
+#SBATCH -J bd_intf_del_alma_nsweep
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=64gb
-#SBATCH --time=2:00:00
+#SBATCH --time=4:00:00
 #SBATCH -o output/output.%A.out
 #SBATCH -e error/error.%A.err
 #SBATCH --mail-type=END,FAIL
@@ -68,15 +71,50 @@ assert tuple(int(x) for x in m.version('nufftax').split('.')[:2]) >= (0, 6), 'nu
 echo "=========================================="
 date
 echo "Cell:           likelihood_breakdown/interferometer/delaunay"
-echo "Instrument:     alma_high"
-echo "Precision:      mp"
-echo "Leg:            hpc_a100_mp (sparse steps + levers)"
+echo "Instrument:     alma"
+echo "Precision:      fp64"
+echo "Leg:            N sweep, --source-pixels 1000"
 python3 -u scripts/interferometer/likelihood_breakdown/delaunay.py \
-    --instrument alma_high \
-    --config-name hpc_a100_mp \
-    --use-mixed-precision \
+    --instrument alma \
+    --config-name hpc_a100_fp64_n1000 \
+    --source-pixels 1000 \
+    --solver-ab \
     --fp32-fft-arm \
-    --vmap-batch 16,4
+    --batch-size-sweep 64,256 \
+    --vmap-batch 16,4 \
+    --output-dir $AP_ROOT/results/breakdown/interferometer/n_sweep
+
+echo "=========================================="
+date
+echo "Cell:           likelihood_breakdown/interferometer/delaunay"
+echo "Instrument:     alma"
+echo "Precision:      fp64"
+echo "Leg:            N sweep, --source-pixels 2500"
+python3 -u scripts/interferometer/likelihood_breakdown/delaunay.py \
+    --instrument alma \
+    --config-name hpc_a100_fp64_n2500 \
+    --source-pixels 2500 \
+    --solver-ab \
+    --fp32-fft-arm \
+    --batch-size-sweep 64,256 \
+    --vmap-batch 16,4 \
+    --output-dir $AP_ROOT/results/breakdown/interferometer/n_sweep
+
+echo "=========================================="
+date
+echo "Cell:           likelihood_breakdown/interferometer/delaunay"
+echo "Instrument:     alma"
+echo "Precision:      fp64"
+echo "Leg:            N sweep, --source-pixels 4000"
+python3 -u scripts/interferometer/likelihood_breakdown/delaunay.py \
+    --instrument alma \
+    --config-name hpc_a100_fp64_n4000 \
+    --source-pixels 4000 \
+    --solver-ab \
+    --fp32-fft-arm \
+    --batch-size-sweep 64,256 \
+    --vmap-batch 16,4 \
+    --output-dir $AP_ROOT/results/breakdown/interferometer/n_sweep
 
 echo "Finished."
 date
