@@ -28,10 +28,10 @@
 # Writes results/breakdown/point_source_source/backward_pass_ab_hpc_a100_fp64.{json,png}.
 #
 # WALL-BASIS:
-#   Laptop witness (WSL2, 8 threads): backward_pass_ab.py at 20 x 20 ~ 15 min process
+#   Laptop witness (WSL2, 8 threads): backward_pass_ab.py at 20 x 20 527 s process
 #   wall, most of it the eager Hessian gate. x 2.0 headroom, inside 1 h.
 #   cell: point_source_source/backward_pass_ab/simple  device: gpu  precision: fp64
-#   source: measured-wall  wall: 900  ref: laptop-witness-backward_pass_ab_local_cpu_fp64  headroom: 2.0
+#   source: measured-wall  wall: 527  ref: laptop-backward_pass_ab_local_cpu_fp64  headroom: 2.0
 
 #SBATCH -J backward_pass_p2b_gpu
 #SBATCH --partition=gpu
