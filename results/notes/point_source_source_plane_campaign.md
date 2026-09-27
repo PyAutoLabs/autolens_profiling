@@ -377,3 +377,290 @@ already located: `autofit/jax/pytrees.py` `_partition`/`flatten`, and
 `ModelInstance.tree_flatten` in `mapper/model.py`. `pytree_input_ab.py` is its
 ready red control. Revisiting the 0.05 ms bar is a policy call, not a
 measurement gap.
+
+## Phase 2b — backward-pass A/B (2026-09-27)
+
+Issue: [autolens_profiling #325](https://github.com/PyAutoLabs/autolens_profiling/issues/325).
+Branch `feature/point-source-source-plane-p2b`; the RAL jobs ran commit `eee7d5b`.
+Single-source only. Workspace-only: every lever is prototyped inside the cell,
+no library was edited.
+
+### What landed
+
+- `scripts/point_source_source/likelihood_breakdown/backward_pass_ab.py` is an
+  interleaved in-process A/B of how the gradient of the production likelihood
+  is computed. It copies the `pytree_input_ab.py` harness (flat-script
+  convention: model/analysis builders, `register_model`, the 16-instance
+  stream, `_stats_ms`, bootstrap ratios, fresh closure + fresh `AnalysisPoint`
+  per route after `jax.clear_caches()`, rotated route order). Every route takes
+  the same registered `ModelInstance` pytree argument and returns
+  `(log L, gradient)`:
+  - `rev`: production, `jax.value_and_grad(ll)`, Hessian by `jax.jacfwd`.
+  - `fwd`: `jax.jacfwd(ll, has_aux=True)` over the pytree's 5 (solved) / 7
+    (plain) scalar leaves, i.e. the flat parameter vector, value as aux.
+  - `rev_jacrev`: `rev` with the Hessian built by `jax.jacrev` over
+    `deflections_yx_scalar`.
+  - `rev_analytic`: `rev` with the closed-form SIE Hessian.
+  - `fwd_analytic`: `fwd` with the closed-form SIE Hessian.
+
+  A secondary `forward` row times the likelihood alone under the three Hessian
+  builders (`jacfwd` / `jacrev` / `analytic`), to split any saving into its
+  forward and backward parts.
+- Hessian swaps are a scoped monkeypatch of `LensCalc._hessian_via_jax`
+  (context manager; the restore is asserted). Each route is traced, lowered and
+  compiled inside its patch scope, and the timing loop calls those `Compiled`
+  executables. Every patched builder counts its trace-time calls (asserted
+  > 0; 3 per trace), and each row asserts the routes' StableHLO hashes are
+  pairwise distinct, so no route can be served another's trace.
+- Submits `hpc/batch_cpu/submit_backward_pass_ab_point_source_source_ral_cpu_fp64`
+  (pinned to `euclid-ral-compute-10-2`; a command-line override runs the same
+  file on the idle gpu-partition host CPUs as a quiet cross-check) and
+  `hpc/batch_gpu/submit_backward_pass_ab_point_source_source_a100_fp64`.
+- Rows `backward_pass_ab_{local_cpu_fp64,hpc_ral_cpu_fp64,hpc_ral_gpunode_cpu_fp64,hpc_a100_fp64}`
+  (JSON + PNG) under `results/breakdown/point_source_source/`.
+
+**Analytic Hessian: sign/order finding.** `Isothermal.shear_yx_2d_from`
+returns `[:, 0] = γ₂` and `[:, 1] = γ₁`, with autogalaxy's `γ₁ = (H_xx − H_yy)/2`
+and `γ₂ = H_xy`. So `H_xx = κ + γ₁`, `H_yy = κ − γ₁` and `H_xy = H_yx = γ₂`,
+returned in `_hessian_via_jax`'s `(yy, xy, yx, xx)` order, with **no sign
+flips**. This matches the `jacfwd` Hessian to ≤ 9.8e-16 (max component error
+over the largest |component| per point).
+
+**Library bug found (not fixed here).** The library `Isothermal.convergence_2d_from`
+and `shear_yx_2d_from` **cannot be traced under `jax.jit` with a traced
+`ell_comps`**. `PowerLawCore.convergence_2d_from` calls
+`self.convergence_func(grid_radius=grid_eta)` without `xp`, so
+`einstein_radius_rescaled` → `axis_ratio` runs `np.logical_and` on a tracer
+(`TracerArrayConversionError`, `autogalaxy/convert.py:80`). `shear_yx_2d_from`
+inherits it through its internal `convergence_2d_from` call. The cell therefore
+rebuilds the same formulas from the profile's own geometry helpers with
+`xp=jnp` threaded through (`_sie_kappa_gamma`). The gate checks that function
+against the library methods evaluated eagerly with NumPy: max relative error
+5.5e-16. A library-side analytic Hessian would need this `xp` fix first.
+
+The analytic builder **refuses** (raises at trace time) unless the tracer is two
+planes with exactly one mass profile, of type `Isothermal`, in the image plane.
+It never approximates.
+
+### Hosts and revisions
+
+- **RAL CPU 8490H** — job 357380, `euclid-ral-compute-10-2`, pinned with
+  `--nodelist`. **PENDING: the job had not started when this note was written.**
+  It was submitted at 12:14 and was still `PD (Priority)` at 13:10. On
+  2026-09-27 every 10-* node was `mix` and carried jnightin DR1 array tasks:
+  10-2 had 18–20 of them, with 144–160 of 236 CPUs allocated, so it was not quiet
+  the way it was for phase 2a. Thousands of same-priority DR1 array tasks were
+  queued ahead of the job, and `scontrol top` is not permitted for users. When
+  it runs, it writes `backward_pass_ab_hpc_ral_cpu_fp64.{json,png}` in the RAL
+  worktree `/mnt/ral/jnightin/autolens_profiling_wt/point-source-source-plane-p2b`.
+- **RAL gpu-partition host CPUs (quiet cross-check)** — job 357381,
+  `euclid-ral-gpu-2` (AMD EPYC 7702), `--partition=gpu` with no `--gres`, 8 CPUs,
+  `sched_affinity` 8, BLAS threads 1. The partition was idle, and load average
+  was 0.10 at start and 1.52 at end. Process wall was 358 s.
+- **A100** — job 357382, `euclid-ral-gpu-1` (A100, host AMD EPYC 7702),
+  `JAX_PLATFORMS=cuda`. The backend was asserted to be `gpu`, and the JSON
+  device is `cuda:0`. Process wall was 601 s.
+- **Laptop (lead only)** — i9-10885H, WSL2, 8 threads
+  (`OMP/OPENBLAS/MKL/NPROC=8`, matching the phase-1 laptop row). Load average
+  was 1.56 at start and 8.32 at end: another session started work mid-run.
+  Process wall was 527 s.
+- **Libraries.** Every JSON records PyAutoNerves `eb27da24`, PyAutoFit
+  `5468c6ce`, PyAutoArray `14d63360`, PyAutoGalaxy `879a9308`, PyAutoLens
+  `def4decf` and JAX 0.10.2. These are the library mains. Both the laptop
+  canonical mains (11:55:39, mid-run) and the RAL shared stack (before the jobs
+  started at 12:14) were fast-forwarded by other sessions from Fit `cf83504e` /
+  Galaxy `0e4b89cf` / Lens `4487eb47` to the `2026.9.27.1` release commits. Those
+  commits touch docs only (Colab URL tag bumps, `docs/`, `paper/`), so the code
+  that ran is identical on every host. PyAutoArray did not move.
+
+### Correctness gate (worst over laptop, gpu-node CPU and A100)
+
+The gate ran before any timing, and no route failed on any host. Its three parts:
+
+- **Hessian.** The analytic and jacrev Hessians are compared with jacfwd at
+  rtol 1e-10, at three point sets: the 4 dataset positions; a 28-point
+  near-critical set, made by moving each position along its ray from the lens
+  centre onto the tangential critical curve (bisection on `1 − κ − |γ|`, with a
+  residual ≤ 6e-16) and then ±1e-2 / 1e-4 / 1e-6 relative off it; and 17
+  models (the prior medians plus `PRNGKey` 0..15 draws).
+- **Route agreement.** Each route's log L is compared with `rev` at rtol 1e-10,
+  and its gradient at rtol 1e-8, over the same 17 draws. The gradient must be
+  finite and non-zero.
+- **Eager vs JIT.** Each route runs under `jax.disable_jit()` on the prior
+  medians and `PRNGKey` 0 and 1, and is compared with its JIT result.
+
+| Lane | Route | Hessian: worst rel err vs jacfwd | log L vs `rev` | gradient vs `rev` | eager vs JIT (log L / grad) | min ‖∇‖ | Result |
+|---|---|---|---|---|---|---|---|
+| solved | `rev` | — (jacfwd) | 0.0e+00 | 0.0e+00 | 1.5e-12 / 3.0e-11 | 103.4 | PASS |
+| solved | `fwd` | — (jacfwd) | 6.9e-13 | 5.5e-12 | 1.5e-12 / 2.3e-12 | 103.4 | PASS |
+| solved | `rev_jacrev` | 8.6e-16 | 1.7e-12 | 8.7e-12 | 7.5e-13 / 2.2e-11 | 103.4 | PASS |
+| solved | `rev_analytic` | 9.8e-16 | 1.5e-12 | 3.0e-11 | 6.8e-13 / 1.7e-11 | 103.4 | PASS |
+| solved | `fwd_analytic` | 9.8e-16 | 1.5e-12 | 1.8e-11 | 1.1e-12 / 2.0e-11 | 103.4 | PASS |
+| plain | `rev` | — (jacfwd) | 0.0e+00 | 0.0e+00 | 2.9e-14 / 1.0e-13 | 7.2e+04 | PASS |
+| plain | `fwd` | — (jacfwd) | 8.1e-14 | 1.5e-13 | 5.2e-14 / 1.0e-13 | 7.2e+04 | PASS |
+| plain | `rev_jacrev` | 8.6e-16 | 5.5e-13 | 9.6e-12 | 1.1e-13 / 2.0e-13 | 7.2e+04 | PASS |
+| plain | `rev_analytic` | 9.8e-16 | 2.6e-13 | 5.2e-12 | 1.0e-13 / 1.6e-13 | 7.2e+04 | PASS |
+| plain | `fwd_analytic` | 9.8e-16 | 2.6e-13 | 5.2e-12 | 1.4e-14 / 1.5e-13 | 7.2e+04 | PASS |
+
+The in-cell κ/γ matches the library `convergence_2d_from` / `shear_yx_2d_from`
+evaluated eagerly to ≤ 5.5e-16. The gradient L2 norms agree to 12+ digits across
+routes and hosts, so the model is registered and the gradients are not zero.
+
+### Backward-pass A/B (20 rounds × 20 calls, interleaved; median ms, ratio and saving vs control with bootstrap 90 % CI)
+
+The `grad` rows use `rev` as the control. The `forward` rows time the likelihood
+alone, with `jacfwd` as the control.
+
+**RAL CPU 8490H (`hpc_ral_cpu_fp64`): PENDING (job 357380).**
+
+RAL gpu-partition host CPUs, AMD EPYC 7702, quiet (`backward_pass_ab_hpc_ral_gpunode_cpu_fp64.json`):
+
+| Lane / row | Route | median ms (p10–p90) | ratio vs control [90 % CI] | saved ms [90 % CI] | lower + compile s |
+|---|---|---|---|---|---|
+| solved grad | `rev` | 0.6356 (0.537–0.742) | control | — | 1.51 + 1.33 |
+| solved grad | `fwd` | 0.3411 (0.309–0.371) | 0.537 [0.526, 0.544] | +0.2945 [+0.2856, +0.3064] | 1.27 + 1.11 |
+| solved grad | `rev_jacrev` | 0.6184 (0.529–0.704) | 0.973 [0.955, 0.993] | +0.0172 [+0.0051, +0.0290] | 1.67 + 1.37 |
+| solved grad | `rev_analytic` | 0.4754 (0.422–0.530) | 0.748 [0.735, 0.761] | +0.1602 [+0.1506, +0.1707] | 0.52 + 1.00 |
+| solved grad | `fwd_analytic` | 0.3584 (0.328–0.405) | 0.564 [0.554, 0.573] | +0.2771 [+0.2677, +0.2875] | 0.51 + 0.85 |
+| solved forward | `jacfwd` | 0.2624 (0.235–0.295) | control | — | 0.75 + 0.45 |
+| solved forward | `jacrev` | 0.2602 (0.233–0.294) | 0.992 [0.975, 1.006] | +0.0022 [-0.0016, +0.0067] | 0.76 + 0.48 |
+| solved forward | `analytic` | 0.2591 (0.234–0.293) | 0.987 [0.974, 1.002] | +0.0033 [-0.0005, +0.0070] | 0.18 + 0.30 |
+| plain grad | `rev` | 0.5066 (0.456–0.572) | control | — | 1.04 + 0.94 |
+| plain grad | `fwd` | 0.3145 (0.290–0.344) | 0.621 [0.612, 0.627] | +0.1921 [+0.1885, +0.1982] | 0.94 + 0.81 |
+| plain grad | `rev_jacrev` | 0.5007 (0.452–0.555) | 0.988 [0.978, 0.998] | +0.0060 [+0.0010, +0.0111] | 1.10 + 0.94 |
+| plain grad | `rev_analytic` | 0.4237 (0.384–0.470) | 0.836 [0.827, 0.844] | +0.0830 [+0.0788, +0.0878] | 0.34 + 0.65 |
+| plain grad | `fwd_analytic` | 0.3090 (0.286–0.341) | 0.610 [0.603, 0.618] | +0.1976 [+0.1932, +0.2027] | 0.38 + 0.65 |
+| plain forward | `jacfwd` | 0.2544 (0.230–0.287) | control | — | 0.61 + 0.32 |
+| plain forward | `jacrev` | 0.2566 (0.231–0.286) | 1.009 [0.995, 1.022] | -0.0022 [-0.0054, +0.0012] | 0.46 + 0.34 |
+| plain forward | `analytic` | 0.2547 (0.231–0.283) | 1.001 [0.985, 1.016] | -0.0004 [-0.0041, +0.0038] | 0.12 + 0.22 |
+
+A100 (`backward_pass_ab_hpc_a100_fp64.json`):
+
+| Lane / row | Route | median ms (p10–p90) | ratio vs control [90 % CI] | saved ms [90 % CI] | lower + compile s |
+|---|---|---|---|---|---|
+| solved grad | `rev` | 0.5272 (0.510–0.562) | control | — | 1.52 + 4.13 |
+| solved grad | `fwd` | 0.3571 (0.344–0.396) | 0.677 [0.675, 0.680] | +0.1702 [+0.1683, +0.1716] | 1.28 + 1.79 |
+| solved grad | `rev_jacrev` | 0.5259 (0.509–0.559) | 0.997 [0.995, 1.003] | +0.0013 [-0.0015, +0.0028] | 1.68 + 4.25 |
+| solved grad | `rev_analytic` | 0.4604 (0.441–0.494) | 0.873 [0.870, 0.879] | +0.0669 [+0.0638, +0.0688] | 0.52 + 2.65 |
+| solved grad | `fwd_analytic` | 0.3498 (0.337–0.390) | 0.664 [0.662, 0.667] | +0.1774 [+0.1753, +0.1786] | 0.52 + 1.31 |
+| solved forward | `jacfwd` | 0.2465 (0.238–0.267) | control | — | 0.79 + 0.68 |
+| solved forward | `jacrev` | 0.2472 (0.240–0.264) | 1.003 [0.996, 1.009] | -0.0007 [-0.0023, +0.0008] | 0.76 + 0.72 |
+| solved forward | `analytic` | 0.2384 (0.231–0.253) | 0.967 [0.960, 0.974] | +0.0082 [+0.0064, +0.0097] | 0.18 + 0.47 |
+| plain grad | `rev` | 0.4661 (0.452–0.491) | control | — | 1.05 + 2.45 |
+| plain grad | `fwd` | 0.3528 (0.340–0.385) | 0.757 [0.750, 0.766] | +0.1133 [+0.1090, +0.1165] | 0.95 + 1.47 |
+| plain grad | `rev_jacrev` | 0.4634 (0.449–0.488) | 0.994 [0.989, 0.999] | +0.0027 [+0.0003, +0.0054] | 1.12 + 2.52 |
+| plain grad | `rev_analytic` | 0.4426 (0.428–0.472) | 0.950 [0.944, 0.957] | +0.0235 [+0.0200, +0.0266] | 0.35 + 1.91 |
+| plain grad | `fwd_analytic` | 0.3556 (0.341–0.377) | 0.763 [0.757, 0.768] | +0.1105 [+0.1079, +0.1136] | 0.39 + 1.01 |
+| plain forward | `jacfwd` | 0.2413 (0.233–0.267) | control | — | 0.65 + 0.56 |
+| plain forward | `jacrev` | 0.2437 (0.236–0.266) | 1.010 [1.003, 1.017] | -0.0024 [-0.0042, -0.0009] | 0.47 + 0.57 |
+| plain forward | `analytic` | 0.2304 (0.208–0.251) | 0.955 [0.949, 0.961] | +0.0109 [+0.0096, +0.0123] | 0.12 + 0.37 |
+
+Laptop lead, i9-10885H, 8 threads, load 1.6 → 8.3 (`backward_pass_ab_local_cpu_fp64.json`):
+
+| Lane / row | Route | median ms (p10–p90) | ratio vs control [90 % CI] | saved ms [90 % CI] | lower + compile s |
+|---|---|---|---|---|---|
+| solved grad | `rev` | 0.7504 (0.652–0.950) | control | — | 1.64 + 1.38 |
+| solved grad | `fwd` | 0.4737 (0.410–0.582) | 0.631 [0.618, 0.645] | +0.2767 [+0.2634, +0.2907] | 1.78 + 1.25 |
+| solved grad | `rev_jacrev` | 0.7455 (0.653–0.918) | 0.994 [0.975, 1.014] | +0.0048 [-0.0101, +0.0182] | 1.98 + 1.78 |
+| solved grad | `rev_analytic` | 0.6214 (0.540–0.757) | 0.828 [0.810, 0.846] | +0.1290 [+0.1138, +0.1434] | 0.80 + 1.04 |
+| solved grad | `fwd_analytic` | 0.4928 (0.443–0.653) | 0.657 [0.644, 0.669] | +0.2576 [+0.2445, +0.2707] | 0.54 + 0.82 |
+| solved forward | `jacfwd` | 0.3380 (0.306–0.378) | control | — | 1.26 + 0.81 |
+| solved forward | `jacrev` | 0.3377 (0.304–0.385) | 0.999 [0.989, 1.012] | +0.0002 [-0.0038, +0.0037] | 1.37 + 0.60 |
+| solved forward | `analytic` | 0.3296 (0.299–0.369) | 0.975 [0.968, 0.986] | +0.0083 [+0.0046, +0.0108] | 0.41 + 0.47 |
+| plain grad | `rev` | 0.8020 (0.707–0.931) | control | — | 1.44 + 1.14 |
+| plain grad | `fwd` | 0.5799 (0.499–0.682) | 0.723 [0.709, 0.736] | +0.2221 [+0.2107, +0.2340] | 1.21 + 1.02 |
+| plain grad | `rev_jacrev` | 0.8054 (0.698–0.977) | 1.004 [0.986, 1.023] | -0.0034 [-0.0180, +0.0121] | 1.86 + 1.36 |
+| plain grad | `rev_analytic` | 0.7012 (0.623–0.857) | 0.874 [0.860, 0.892] | +0.1008 [+0.0856, +0.1132] | 0.53 + 0.91 |
+| plain grad | `fwd_analytic` | 0.5500 (0.487–0.672) | 0.686 [0.678, 0.696] | +0.2520 [+0.2414, +0.2607] | 0.50 + 0.86 |
+| plain forward | `jacfwd` | 0.4808 (0.420–0.605) | control | — | 0.81 + 0.38 |
+| plain forward | `jacrev` | 0.5043 (0.429–0.615) | 1.049 [1.030, 1.070] | -0.0235 [-0.0332, -0.0147] | 0.72 + 0.42 |
+| plain forward | `analytic` | 0.4927 (0.416–0.627) | 1.025 [0.999, 1.043] | -0.0119 [-0.0202, +0.0014] | 0.27 + 0.26 |
+
+What the A/B shows (all hosts that ran):
+- **`fwd` is the large lever.** Forward-mode over the 5 or 7 scalar leaves
+  saves 0.11–0.29 ms per `value_and_grad`-equivalent call: 24–46 % of `rev`,
+  with CIs well clear of zero on every host. It brings the gradient call from
+  about 2.4× the forward call to about 1.3× (gpu-node CPU solved:
+  0.636 → 0.341 ms, against a forward of 0.262 ms).
+- **The analytic Hessian helps only under `rev`.**
+  - `rev_analytic` saves 0.08–0.16 ms on the CPUs, but only 0.02–0.07 ms on
+    the A100.
+  - `fwd_analytic` ≈ `fwd` on every host (within 0.03 ms, in both directions). Once the gradient is forward-mode, differentiating
+    through the jacfwd Hessian is no longer the cost.
+  - In the `forward` rows the analytic Hessian saves ≤ 0.011 ms. The Hessian
+    is not a forward-pass cost; the reverse-over-forward tape is.
+- **`rev_jacrev` ≈ `rev`** everywhere: ratio 0.97–1.00, saving ≤ 0.017 ms.
+  Hessian ordering is not a lever.
+- **XLA FLOPs barely move** (267–298 k on every `grad` route, against
+  263–345 k for the forward rows). The saving is dispatch and tape structure, not arithmetic.
+- **Compile.** Both analytic routes lower 2–3× faster than the jacfwd routes
+  (0.5 vs 1.3–1.7 s on CPU). On the A100, `fwd`/`fwd_analytic` compile in
+  1.3–1.8 s against 4.1 s for `rev`. Compile is not part of the rule.
+- **The gpu-node host is not the 8490H.** Its forward call is 0.26 ms, against
+  phase 2a's 0.1465 ms on 10-2, so its absolute savings are not the reference.
+  They are interleaved in-process on a quiet host, though, so the ratios are
+  sound.
+
+### Phase-2c go/no-go
+
+The rule from issue #325: a route is **GO** if, on RAL CPU (8490H), it saves
+≥ 0.05 ms **AND** ≥ 15 % against `rev` on the `value_and_grad`-equivalent
+call, with the 90 % CIs excluding the bar (saved-ms CI low ≥ 0.05; ratio CI
+high ≤ 0.85) and a green correctness gate.
+
+**RAL CPU 8490H (the deciding row): PENDING, job 357380.**
+
+| Lane | Route | saved ms | fraction | ≥ 0.05 ms (CI low) | ≥ 15 % (CI high ≤ 0.85) | gate | rule |
+|---|---|---|---|---|---|---|---|
+| solved | `fwd` | TBD | TBD | TBD | TBD | green | TBD |
+| solved | `rev_jacrev` | TBD | TBD | TBD | TBD | green | TBD |
+| solved | `rev_analytic` | TBD | TBD | TBD | TBD | green | TBD |
+| solved | `fwd_analytic` | TBD | TBD | TBD | TBD | green | TBD |
+| plain | `fwd` | TBD | TBD | TBD | TBD | green | TBD |
+| plain | `rev_jacrev` | TBD | TBD | TBD | TBD | green | TBD |
+| plain | `rev_analytic` | TBD | TBD | TBD | TBD | green | TBD |
+| plain | `fwd_analytic` | TBD | TBD | TBD | TBD | green | TBD |
+
+The same mechanical evaluation on the rows that ran (not deciding):
+
+RAL gpu-partition host CPUs (EPYC 7702, quiet):
+
+| Lane | Route | saved ms | fraction | ≥ 0.05 ms (CI low) | ≥ 15 % (CI high ≤ 0.85) | gate | rule |
+|---|---|---|---|---|---|---|---|
+| solved | `fwd` | +0.2945 | 46.3% | yes (+0.2856) | yes (0.544) | green | GO |
+| solved | `rev_jacrev` | +0.0172 | 2.7% | no (+0.0051) | no (0.993) | green | no-go |
+| solved | `rev_analytic` | +0.1602 | 25.2% | yes (+0.1506) | yes (0.761) | green | GO |
+| solved | `fwd_analytic` | +0.2771 | 43.6% | yes (+0.2677) | yes (0.573) | green | GO |
+| plain | `fwd` | +0.1921 | 37.9% | yes (+0.1885) | yes (0.627) | green | GO |
+| plain | `rev_jacrev` | +0.0060 | 1.2% | no (+0.0010) | no (0.998) | green | no-go |
+| plain | `rev_analytic` | +0.0830 | 16.4% | yes (+0.0788) | yes (0.844) | green | GO |
+| plain | `fwd_analytic` | +0.1976 | 39.0% | yes (+0.1932) | yes (0.618) | green | GO |
+
+A100:
+
+| Lane | Route | saved ms | fraction | ≥ 0.05 ms (CI low) | ≥ 15 % (CI high ≤ 0.85) | gate | rule |
+|---|---|---|---|---|---|---|---|
+| solved | `fwd` | +0.1702 | 32.3% | yes (+0.1683) | yes (0.680) | green | GO |
+| solved | `rev_jacrev` | +0.0013 | 0.3% | no (-0.0015) | no (1.003) | green | no-go |
+| solved | `rev_analytic` | +0.0669 | 12.7% | yes (+0.0638) | no (0.879) | green | no-go |
+| solved | `fwd_analytic` | +0.1774 | 33.6% | yes (+0.1753) | yes (0.667) | green | GO |
+| plain | `fwd` | +0.1133 | 24.3% | yes (+0.1090) | yes (0.766) | green | GO |
+| plain | `rev_jacrev` | +0.0027 | 0.6% | no (+0.0003) | no (0.999) | green | no-go |
+| plain | `rev_analytic` | +0.0235 | 5.0% | no (+0.0200) | no (0.957) | green | no-go |
+| plain | `fwd_analytic` | +0.1105 | 23.7% | yes (+0.1079) | yes (0.768) | green | GO |
+
+Laptop (lead):
+
+| Lane | Route | saved ms | fraction | ≥ 0.05 ms (CI low) | ≥ 15 % (CI high ≤ 0.85) | gate | rule |
+|---|---|---|---|---|---|---|---|
+| solved | `fwd` | +0.2767 | 36.9% | yes (+0.2634) | yes (0.645) | green | GO |
+| solved | `rev_jacrev` | +0.0048 | 0.6% | no (-0.0101) | no (1.014) | green | no-go |
+| solved | `rev_analytic` | +0.1290 | 17.2% | yes (+0.1138) | yes (0.846) | green | GO |
+| solved | `fwd_analytic` | +0.2576 | 34.3% | yes (+0.2445) | yes (0.669) | green | GO |
+| plain | `fwd` | +0.2221 | 27.7% | yes (+0.2107) | yes (0.736) | green | GO |
+| plain | `rev_jacrev` | -0.0034 | -0.4% | no (-0.0180) | no (1.023) | green | no-go |
+| plain | `rev_analytic` | +0.1008 | 12.6% | yes (+0.0856) | no (0.892) | green | no-go |
+| plain | `fwd_analytic` | +0.2520 | 31.4% | yes (+0.2414) | yes (0.696) | green | GO |
+
+<!-- RECOMMENDATION: written by the main session, not by the phase-2b run. -->
+**Recommendation: _to be written by the main session._**
