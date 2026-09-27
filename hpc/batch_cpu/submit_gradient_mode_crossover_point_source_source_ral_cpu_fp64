@@ -1,0 +1,119 @@
+#!/bin/bash -l
+#
+# 2026-09 source-plane point-source campaign, phase 2c (autolens_profiling#329):
+# REFERENCE CPU row for the forward-vs-reverse gradient-mode crossover.
+# Single-source only (the `simple` dataset); nothing under scripts/cluster/.
+#
+# WHAT THIS MEASURES. One cell, one process:
+#
+#   scripts/point_source_source/likelihood_breakdown/gradient_mode_crossover.py
+#      A model ladder L5 / L7 / L9 / L11 / L16 / L19 (+ extension L24) of
+#      solved-lane free parameters (plain lane +3), each timed rev
+#      (jax.value_and_grad) vs fwd (jax.jacfwd over the flat parameter vector,
+#      value as aux), as a single call and as jit(vmap(...)) over B=8 vectors.
+#      Correctness gate before timing per rung x lane (fwd vs rev log L rtol
+#      1e-10, gradient rtol 1e-8, finite + non-zero, over prior medians +
+#      PRNGKey 0..15; batched == single; eager == JIT; StableHLO hashes
+#      distinct); a failing rung is reported, never timed. 20 rounds x 20 calls,
+#      4 executables interleaved. Output: ratio fwd/rev vs n_params and the
+#      interpolated crossover n* with a bootstrap interval.
+#
+# HOST. The quiet RAL gpu-partition host CPUs (AMD EPYC 7702) with NO --gres:
+# phase 2b's cross-check row (job 357381), re-based by the human as the
+# reference CPU host (the 8490H `ral` nodes are saturated by DR1 array tasks).
+# Pinned to euclid-ral-gpu-2; config label hpc_ral_gpunode_cpu_fp64. The job
+# records lscpu, loadavg start/end and the JSON cpu_model.
+#
+# LIBRARY. The shared /mnt/ral/jnightin/PyAuto stack AS-IS (no branch prepend).
+# On 2026-09-27 it matched the local mains exactly: PyAutoNerves eb27da24,
+# PyAutoFit 5468c6ce, PyAutoArray 14d63360, PyAutoGalaxy 879a9308, PyAutoLens
+# def4decf. The job echoes the HEADs and the JSON records source_revisions.
+#
+# THREADS. OMP/MKL/OPENBLAS pinned to 1 (BLAS family only); the JAX CPU pool
+# sizes from the 8 CPUs of --cpus-per-task=8.
+#
+# Writes results/breakdown/point_source_source/gradient_mode_crossover_hpc_ral_gpunode_cpu_fp64.{json,png}.
+# `hpc/sync pull` does not fetch batch_cpu logs: scp output/output.<id>.out to
+# results/notes/point_source_source_plane_2026_09_27_ral_job_<id>.out.
+#
+# WALL-BASIS:
+#   Laptop witness (WSL2, 8 threads): provisional estimate from the 4-cell quick run (698 s) scaled to 14 cells; replaced by the measured full-run wall.
+#   cell: point_source_source/gradient_mode_crossover/simple  device: cpu  precision: fp64
+#   source: measured-wall  wall: 3000  ref: laptop-gradient_mode_crossover_local_cpu_fp64  headroom: 2.0
+
+#SBATCH -J gradmode_p2c
+#SBATCH --partition=gpu
+#SBATCH --nodelist=euclid-ral-gpu-2
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=32gb
+#SBATCH --time=2:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+# Repo root from where this was submitted (hpc/batch_cpu/../..), so it runs from
+# a worktree of the feature branch. sbatch from inside hpc/batch_cpu/.
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export NPROC=${SLURM_CPUS_PER_TASK:-8}
+export JAX_PLATFORMS=cpu
+export JAX_ENABLE_X64=1
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+export NUMBA_CACHE_DIR=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}
+mkdir -p "$NUMBA_CACHE_DIR" "$MPLCONFIGDIR"
+# No persistent JAX compile cache: compile times are recorded and must be cold.
+unset JAX_COMPILATION_CACHE_DIR
+AB_CONFIG_NAME=${AB_CONFIG_NAME:-hpc_ral_gpunode_cpu_fp64}
+
+echo "=========================================="
+date
+hostname
+lscpu | grep 'Model name' || true
+echo "partition:      ${SLURM_JOB_PARTITION:-unset}"
+echo "nodelist:       ${SLURM_JOB_NODELIST:-unset}"
+echo "cpus-per-task:  ${SLURM_CPUS_PER_TASK:-unset}"
+echo "sched_affinity: $(python3 -c 'import os; print(len(os.sched_getaffinity(0)))')"
+echo "loadavg:        $(cat /proc/loadavg)"
+echo "config name:    $AB_CONFIG_NAME"
+echo "Cell:           point_source_source/likelihood_breakdown/gradient_mode_crossover"
+echo "Precision:      fp64 (JAX_ENABLE_X64=$JAX_ENABLE_X64)"
+echo "Thread env:     OMP=$OMP_NUM_THREADS MKL=$MKL_NUM_THREADS OPENBLAS=$OPENBLAS_NUM_THREADS NPROC=$NPROC"
+echo "XLA_FLAGS:      $XLA_FLAGS"
+
+echo "=== source revisions ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r (shared)" "$(git -C /mnt/ral/jnightin/PyAuto/$r rev-parse HEAD 2>&1)"
+done
+echo "AP_ROOT rev:   $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+echo "AP_ROOT branch: $(git -C $AP_ROOT rev-parse --abbrev-ref HEAD 2>&1)"
+
+cd $AP_ROOT
+
+echo "=== import provenance (refuses unless the libraries come from the shared stack) ==="
+python3 -c "
+import os, autoarray, autolens, autofit, autogalaxy, jax
+for m in (autoarray, autolens, autofit, autogalaxy):
+    print(f'{m.__name__}.__file__ =', m.__file__)
+    assert os.path.realpath(m.__file__).startswith('/mnt/ral/jnightin/PyAuto/'), f'{m.__name__} not from the shared stack'
+print('jax', jax.__version__, jax.devices(), jax.default_backend())
+assert jax.default_backend() == 'cpu', 'JAX is not on the CPU'
+print('ASSERT OK: CPU backend, libraries from /mnt/ral/jnightin/PyAuto')
+" || exit 3
+
+echo "=========================================="
+echo "gradient-mode crossover (20 x 20)"
+date
+echo "loadavg: $(cat /proc/loadavg)"
+python3 -u scripts/point_source_source/likelihood_breakdown/gradient_mode_crossover.py --config-name $AB_CONFIG_NAME --rounds 20 --calls 20
+
+echo "=========================================="
+echo "loadavg: $(cat /proc/loadavg)"
+echo "Finished."
+date
