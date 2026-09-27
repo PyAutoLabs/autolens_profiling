@@ -689,3 +689,336 @@ Laptop (lead):
   `xp`, and `einstein_radius_rescaled` runs NumPy on a tracer
   (`autogalaxy/convert.py:80`). The cell works around it in-cell. File it through
   intake as a PyAutoGalaxy bug.
+
+
+## Phase 2c — gradient-mode crossover (2026-09-27)
+
+Issue: [autolens_profiling #329](https://github.com/PyAutoLabs/autolens_profiling/issues/329).
+Branch `feature/point-source-source-plane-p2c`; the RAL jobs ran commit `94dcd1d`.
+Single-source only. Workspace-only: no library was edited.
+
+### What landed
+
+- `scripts/point_source_source/likelihood_breakdown/gradient_mode_crossover.py`
+  measures the forward/reverse gradient ratio along a model-complexity ladder
+  on the phase-2b `simple` dataset. It copies the `backward_pass_ab.py` harness
+  (flat-script convention: `register_model`, fixed-seed 16-vector stream,
+  fresh closure + fresh `AnalysisPoint` per executable after
+  `jax.clear_caches()`, rotated interleaving, bootstrap ratio CIs, StableHLO
+  hash guard, lower/compile/first-call timing). Per rung × lane it compiles four
+  executables and times them interleaved, 20 rounds × 20 calls:
+  - `rev_single`: `jax.value_and_grad(ll)`;
+  - `fwd_single`: `jax.jacfwd(ll, has_aux=True)`, value as aux, one tangent per
+    free parameter;
+  - `rev_batched` / `fwd_batched`: `jax.jit(jax.vmap(route))` over B = 8
+    vectors, the shape the multi-start gradient search uses
+    (`multi_start_gradient/search.py:1089`).
+- **Argument = the flat physical vector, not the pytree.** Every route builds
+  the instance inside the trace with `model.instance_from_vector(vector, xp=jnp)`,
+  as PyAutoFit's JAX `Fitness.call` does. From L9 on this is not a detail: the
+  linked multipole priors make the `ModelInstance` pytree carry more leaves than
+  free parameters (12 leaves for 9 parameters at L9, 30 for 24 at L24), so
+  `jacfwd` over the pytree (phase 2b's argument, where leaves = parameters)
+  would push one tangent per leaf. The L5 ratios are also lower than phase
+  2b's (EPYC solved 0.41 here vs 0.54 there): both calls are faster with the
+  flat vector (`rev` 0.60 vs 0.64 ms, `fwd` 0.24 vs 0.34 ms), `fwd` much more
+  so. The likely reason is that `jacfwd` over one vector argument is cheaper
+  than over five scalar pytree leaves, but this cell does not isolate it.
+- Submits `hpc/batch_cpu/submit_gradient_mode_crossover_point_source_source_ral_cpu_fp64`
+  (the **reference CPU row**: `--partition=gpu`, no `--gres`, pinned to
+  `euclid-ral-gpu-2`, label `hpc_ral_gpunode_cpu_fp64`) and
+  `hpc/batch_gpu/submit_gradient_mode_crossover_point_source_source_a100_fp64`
+  (pinned to `euclid-ral-gpu-1`). WALL-BASIS = the laptop's measured 1906 s.
+- Rows `gradient_mode_crossover_{local_cpu_fp64,hpc_ral_gpunode_cpu_fp64,hpc_a100_fp64}`
+  (JSON + PNG) under `results/breakdown/point_source_source/`; the CPU job log
+  is `results/notes/point_source_source_plane_2026_09_27_ral_job_358770.out`.
+
+### The ladder
+
+| Rung | Components (lens galaxy unless noted) | n_params solved / plain | `ModelInstance` pytree leaves solved / plain |
+|---|---|---|---|
+| L5 | Isothermal | 5 / 8 | 5 / 8 |
+| L7 | Isothermal + ExternalShear | 7 / 10 | 7 / 10 |
+| L9 | + PowerLawMultipole m=4 (comps free; centre/theta_E linked, slope 2) | 9 / 12 | 12 / 15 |
+| L11 | + PowerLawMultipole m=3 (comps free, linked) | 11 / 14 | 17 / 20 |
+| L16 | + satellite Isothermal at z=0.5 (centre (-1, 1), theta_E 0.1) | 16 / 19 | 22 / 25 |
+| L19 | main Isothermal -> PowerLaw (free slope, multipole slopes linked) + satellite shear | 19 / 22 | 25 / 28 |
+| L24 | + second satellite Isothermal at z=0.5 (centre (1, -1), theta_E 0.1) [extension] | 24 / 27 | 30 / 33 |
+
+Build notes (each checked against the installed stack):
+
+- The multipoles' centre and Einstein radius are linked to the main lens with af
+  prior linking; their slope is fixed at 2.0 (`PowerLawMultipole`'s default,
+  the SIE value) and linked to the main `PowerLaw` slope at L19/L24.
+- **Perturbation priors are centred on 1e-3, not 0.** `ExternalShear`,
+  `PowerLawMultipole` comps and the satellite `Isothermal`'s `ell_comps` are
+  parameterised by a magnitude `sqrt(c₀² + c₁²)` and an angle, and
+  `jax.grad` of their deflections is **NaN at exactly (0, 0)** (checked
+  directly; a first ladder with means of 0 had NaN gradients at the prior
+  medians from L7 up). With means of 1e-3 (σ 0.01) every draw is finite.
+- **`PowerLawMultipole` m=1 is singular at slope exactly 2**: its deflections
+  are `-inf` / NaN at the SIE prior median, so it cannot sit on an SIE-centred
+  slope prior. L19 therefore uses the plan's other option, a satellite
+  `ExternalShear` (exactly degenerate with the main shear in deflection, which is
+  harmless for timing and the gradient gate).
+- **The plain lane is +3, not +2.** `PointFlux` adds a flux parameter that the
+  positions-only likelihood never reads (its gradient entry is 0). The phase-2b
+  JSONs already recorded `plain: 8`; the phase-2b note's "7 (plain)" was a slip.
+- **L24 is an extension beyond the planned ladder**: a second satellite
+  `Isothermal` at (1.0, −1.0). It was added after the laptop lead run showed
+  `fwd` still winning at L19, so that a crossing, if any, would be bracketed
+  rather than extrapolated.
+- Satellite centres are 1.4″ from the lens and ≥ 1.49″ from every image, with
+  θ_E 0.1″, so the likelihood stays well-defined.
+
+### Hosts and revisions
+
+- **RAL gpu-partition host CPUs (reference)** — job 358770, `euclid-ral-gpu-2`
+  (AMD EPYC 7702), `--partition=gpu`, no `--gres`, 8 CPUs, `sched_affinity` 8,
+  BLAS threads 1. The node was otherwise idle: load average 0.28 at start and
+  1.26 at end. Process wall 1348 s; `COMPLETED` in 22:51.
+- **A100** — job 358771, `euclid-ral-gpu-1` (host EPYC 7702),
+  `JAX_PLATFORMS=cuda`, backend asserted `gpu`, JSON device `cuda:0`. Process
+  wall 1546 s; `COMPLETED` in 26:07.
+- **Laptop (lead)** — i9-10885H, WSL2, 8 threads (`OMP/OPENBLAS/MKL/NPROC=8`).
+  Load average 8.2 at start (other sessions) and 4.2 at end; process wall 1906 s.
+  The laptop's absolute times and its batched ratios are load-exposed.
+- **8490H (`ral`)** — not run: `sinfo` showed all 28 `ral` nodes allocated at
+  submit time (not quiet), so the optional extra row was skipped.
+- **Libraries.** PyAutoNerves `eb27da24`, PyAutoFit `5468c6ce`, PyAutoArray
+  `14d63360`, PyAutoGalaxy `879a9308`, PyAutoLens `def4decf`, JAX 0.10.2 on
+  every host: the library mains, and the RAL shared stack matched them before
+  submission. The laptop JSON's end-of-run `source_revisions` reads PyAutoArray
+  `4383ea81`, because another session fast-forwarded the canonical checkout at
+  17:12:46, after this process had imported the libraries (16:43). The two
+  commits touch only `autoarray/structures/triangles/` (PointSolver routes; this
+  cell runs `solver=None`). The JSON carries a `source_revisions_note` saying so.
+- The PYTHONPATH inherited by the session pointed at a stale
+  `interferometer-sparse-cache` library worktree. The laptop run used an
+  explicit PYTHONPATH of the five canonical mains instead.
+
+### Correctness gate (worst over all three hosts)
+
+Before any timing, per rung × lane, over the prior medians plus `PRNGKey` 0..15
+draws (17 vectors): `fwd_single`, `rev_batched` and `fwd_batched` must equal
+`rev_single` (log L rtol 1e-10, gradient rtol 1e-8 with atol 1e-12 × max|∇|),
+all finite with non-zero L2 gradient; eager (`jax.disable_jit()`) must equal JIT
+for both single routes on the prior medians and `PRNGKey` 0 and 1; and the four
+StableHLO hashes must be pairwise distinct. No rung failed on any host, so every
+rung was timed.
+
+| Rung | Lane | n | log L fwd/batched vs `rev` single | gradient vs `rev` single | eager vs JIT (log L / grad) | min ‖∇‖ | HLO distinct | Result (3 hosts) |
+|---|---|---|---|---|---|---|---|---|
+| L5 | solved | 5 | 1.1e-12 | 1.7e-11 | 1.5e-12 / 3.0e-11 | 103 | yes | PASS |
+| L5 | plain | 8 | 8.1e-14 | 2.7e-13 | 5.2e-14 / 1.0e-13 | 7.2e+04 | yes | PASS |
+| L7 | solved | 7 | 3.1e-13 | 2.6e-10 | 3.1e-13 / 4.5e-12 | 166 | yes | PASS |
+| L7 | plain | 10 | 4.7e-14 | 1.0e-12 | 3.3e-14 / 1.8e-13 | 2.39e+05 | yes | PASS |
+| L9 | solved | 9 | 1.4e-12 | 1.5e-11 | 2.5e-12 / 1.5e-11 | 423 | yes | PASS |
+| L9 | plain | 12 | 1.3e-13 | 7.7e-13 | 8.9e-14 / 1.8e-13 | 1.95e+05 | yes | PASS |
+| L11 | solved | 11 | 4.1e-12 | 4.5e-11 | 6.2e-12 / 2.4e-11 | 680 | yes | PASS |
+| L11 | plain | 14 | 5.2e-13 | 7.9e-13 | 3.5e-13 / 8.8e-13 | 1.65e+05 | yes | PASS |
+| L16 | solved | 16 | 3.5e-13 | 3.5e-09 | 1.8e-12 / 1.7e-10 | 809 | yes | PASS |
+| L16 | plain | 19 | 2.5e-13 | 2.4e-12 | 3.8e-14 / 1.3e-12 | 9.03e+05 | yes | PASS |
+| L19 | solved | 19 | 1.1e-12 | 2.6e-09 | 6.7e-14 / 2.6e-10 | 1.67e+03 | yes | PASS |
+| L19 | plain | 22 | 1.8e-13 | 4.0e-12 | 2.1e-14 / 5.7e-13 | 1.83e+06 | yes | PASS |
+| L24 | solved | 24 | 6.0e-13 | 1.7e-10 | 1.9e-14 / 1.9e-11 | 469 | yes | PASS |
+| L24 | plain | 27 | 1.4e-13 | 2.7e-12 | 6.4e-15 / 5.5e-12 | 4.31e+05 | yes | PASS |
+
+The largest gradient disagreement, 3.5e-09 (L16 solved), is below the
+1e-8 gradient rtol. The gradient norms agree across hosts to the printed
+digits, so every model is registered and no gradient is silently zero.
+
+### Ratio tables (20 rounds × 20 calls, interleaved; median ms per call; ratio fwd / rev with bootstrap 90 % CI)
+
+"B=8 ms/call" is the time of one vmapped call over 8 vectors (divide by 8 for
+per-vector cost). "compile s" is lower + compile.
+
+RAL gpu-partition host CPUs, AMD EPYC 7702, quiet (`gradient_mode_crossover_hpc_ral_gpunode_cpu_fp64.json`) — **reference**:
+
+| Rung | Lane | n | rev single ms | fwd single ms | fwd/rev single [90% CI] | rev B=8 ms/call | fwd B=8 ms/call | fwd/rev batched [90% CI] | compile s rev / fwd (single) | compile s rev / fwd (batched) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| L5 | solved | 5 | 0.5973 | 0.2449 | 0.410 [0.404, 0.418] | 0.6228 | 0.2790 | 0.448 [0.442, 0.453] | 3.4 / 2.4 | 3.6 / 2.7 |
+| L5 | plain | 8 | 0.4775 | 0.2331 | 0.488 [0.481, 0.497] | 0.5083 | 0.2760 | 0.543 [0.534, 0.548] | 2.1 / 1.7 | 2.4 / 1.9 |
+| L7 | solved | 7 | 0.7441 | 0.2816 | 0.379 [0.375, 0.384] | 0.7669 | 0.3247 | 0.423 [0.418, 0.429] | 4.8 / 3.0 | 5.5 / 3.5 |
+| L7 | plain | 10 | 0.5551 | 0.2589 | 0.466 [0.461, 0.473] | 0.5963 | 0.3318 | 0.556 [0.549, 0.563] | 3.0 / 2.1 | 3.2 / 2.5 |
+| L9 | solved | 9 | 0.9810 | 0.2847 | 0.290 [0.287, 0.293] | 1.0776 | 0.3741 | 0.347 [0.343, 0.353] | 8.1 / 4.0 | 9.1 / 4.7 |
+| L9 | plain | 12 | 0.7227 | 0.2862 | 0.396 [0.391, 0.400] | 0.8049 | 0.3935 | 0.489 [0.484, 0.497] | 4.4 / 2.8 | 5.1 / 3.4 |
+| L11 | solved | 11 | 1.1358 | 0.2987 | 0.263 [0.259, 0.266] | 1.3160 | 0.4987 | 0.379 [0.374, 0.383] | 11.2 / 5.0 | 12.8 / 5.5 |
+| L11 | plain | 14 | 0.8794 | 0.3183 | 0.362 [0.358, 0.366] | 0.9896 | 0.5294 | 0.535 [0.530, 0.540] | 5.8 / 3.5 | 6.5 / 3.9 |
+| L16 | solved | 16 | 1.3418 | 0.3370 | 0.251 [0.247, 0.255] | 1.5373 | 0.6077 | 0.395 [0.388, 0.399] | 21.4 / 6.1 | 23.7 / 6.9 |
+| L16 | plain | 19 | 1.0032 | 0.3289 | 0.328 [0.323, 0.334] | 1.1338 | 0.6276 | 0.554 [0.547, 0.560] | 9.0 / 4.2 | 10.1 / 4.9 |
+| L19 | solved | 19 | 2.0954 | 0.4979 | 0.238 [0.234, 0.240] | 2.4509 | 0.9016 | 0.368 [0.363, 0.373] | 47.2 / 7.9 | 53.9 / 9.1 |
+| L19 | plain | 22 | 1.4797 | 0.4809 | 0.325 [0.322, 0.328] | 1.6950 | 0.8520 | 0.503 [0.498, 0.508] | 16.3 / 5.5 | 19.1 / 6.5 |
+| L24 | solved | 24 | 2.2938 | 0.5078 | 0.221 [0.218, 0.225] | 2.5860 | 1.0510 | 0.406 [0.401, 0.412] | 79.6 / 9.1 | 91.7 / 10.5 |
+| L24 | plain | 27 | 1.6339 | 0.5339 | 0.327 [0.323, 0.331] | 1.9518 | 1.0918 | 0.559 [0.553, 0.565] | 26.1 / 6.4 | 29.7 / 7.5 |
+
+A100 (`gradient_mode_crossover_hpc_a100_fp64.json`):
+
+| Rung | Lane | n | rev single ms | fwd single ms | fwd/rev single [90% CI] | rev B=8 ms/call | fwd B=8 ms/call | fwd/rev batched [90% CI] | compile s rev / fwd (single) | compile s rev / fwd (batched) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| L5 | solved | 5 | 0.4469 | 0.2857 | 0.639 [0.635, 0.643] | 0.4291 | 0.2896 | 0.675 [0.669, 0.681] | 6.9 / 3.1 | 6.5 / 3.6 |
+| L5 | plain | 8 | 0.3368 | 0.2431 | 0.722 [0.719, 0.725] | 0.3421 | 0.2481 | 0.725 [0.721, 0.733] | 4.9 / 2.5 | 5.1 / 2.7 |
+| L7 | solved | 7 | 0.5320 | 0.2565 | 0.482 [0.477, 0.486] | 0.4510 | 0.2648 | 0.587 [0.583, 0.593] | 7.6 / 4.0 | 8.4 / 4.8 |
+| L7 | plain | 10 | 0.4039 | 0.2808 | 0.695 [0.693, 0.699] | 0.4052 | 0.2799 | 0.691 [0.687, 0.693] | 5.7 / 3.3 | 5.7 / 3.5 |
+| L9 | solved | 9 | 0.7699 | 0.3407 | 0.443 [0.440, 0.444] | 0.7481 | 0.3471 | 0.464 [0.460, 0.467] | 10.5 / 6.1 | 10.9 / 7.2 |
+| L9 | plain | 12 | 0.5871 | 0.3653 | 0.622 [0.618, 0.625] | 0.6176 | 0.3549 | 0.575 [0.572, 0.577] | 7.7 / 4.9 | 9.3 / 5.5 |
+| L11 | solved | 11 | 0.9459 | 0.3591 | 0.380 [0.377, 0.382] | 0.9687 | 0.3857 | 0.398 [0.396, 0.400] | 12.6 / 7.2 | 14.2 / 8.6 |
+| L11 | plain | 14 | 0.7031 | 0.3245 | 0.462 [0.457, 0.464] | 0.7303 | 0.3486 | 0.477 [0.474, 0.480] | 9.2 / 5.8 | 10.9 / 7.0 |
+| L16 | solved | 16 | 1.1792 | 0.4357 | 0.369 [0.367, 0.372] | 1.1484 | 0.4532 | 0.395 [0.390, 0.396] | 16.7 / 9.9 | 17.8 / 11.3 |
+| L16 | plain | 19 | 0.8413 | 0.4443 | 0.528 [0.524, 0.532] | 0.8671 | 0.4467 | 0.515 [0.512, 0.519] | 11.8 / 8.6 | 13.4 / 9.5 |
+| L19 | solved | 19 | 2.7198 | 0.9474 | 0.348 [0.347, 0.350] | 2.6776 | 1.0588 | 0.395 [0.395, 0.396] | 21.7 / 12.0 | 27.4 / 13.6 |
+| L19 | plain | 22 | 2.0495 | 0.9194 | 0.449 [0.447, 0.451] | 1.9939 | 0.9929 | 0.498 [0.497, 0.499] | 15.2 / 10.3 | 16.8 / 10.7 |
+| L24 | solved | 24 | 2.8550 | 1.0185 | 0.357 [0.356, 0.358] | 2.7137 | 1.0613 | 0.391 [0.389, 0.393] | 26.3 / 14.7 | 31.3 / 15.7 |
+| L24 | plain | 27 | 2.1697 | 0.9936 | 0.458 [0.457, 0.458] | 2.0454 | 1.0211 | 0.499 [0.498, 0.501] | 18.4 / 11.6 | 20.4 / 13.4 |
+
+Laptop lead, i9-10885H, 8 threads, load 8.2 → 4.2 (`gradient_mode_crossover_local_cpu_fp64.json`):
+
+| Rung | Lane | n | rev single ms | fwd single ms | fwd/rev single [90% CI] | rev B=8 ms/call | fwd B=8 ms/call | fwd/rev batched [90% CI] | compile s rev / fwd (single) | compile s rev / fwd (batched) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| L5 | solved | 5 | 0.6948 | 0.4086 | 0.588 [0.577, 0.597] | 0.7501 | 0.4657 | 0.621 [0.610, 0.635] | 7.5 / 6.3 | 7.6 / 7.5 |
+| L5 | plain | 8 | 0.4788 | 0.2699 | 0.564 [0.543, 0.624] | 0.5046 | 0.3430 | 0.680 [0.653, 0.706] | 3.4 / 4.7 | 4.4 / 3.6 |
+| L7 | solved | 7 | 1.0159 | 0.5271 | 0.519 [0.505, 0.528] | 1.0490 | 0.5543 | 0.528 [0.517, 0.539] | 12.6 / 5.7 | 7.8 / 4.9 |
+| L7 | plain | 10 | 0.6184 | 0.3909 | 0.632 [0.619, 0.640] | 0.6534 | 0.4347 | 0.665 [0.651, 0.673] | 5.0 / 3.7 | 5.5 / 4.7 |
+| L9 | solved | 9 | 0.8826 | 0.3714 | 0.421 [0.413, 0.427] | 0.9410 | 0.4791 | 0.509 [0.498, 0.519] | 12.0 / 5.8 | 13.7 / 8.1 |
+| L9 | plain | 12 | 0.7043 | 0.3949 | 0.561 [0.551, 0.571] | 0.7817 | 0.4778 | 0.611 [0.603, 0.625] | 5.4 / 3.4 | 6.0 / 3.9 |
+| L11 | solved | 11 | 1.2243 | 0.4736 | 0.387 [0.377, 0.395] | 1.4194 | 0.7015 | 0.494 [0.482, 0.500] | 13.0 / 5.7 | 14.9 / 6.5 |
+| L11 | plain | 14 | 0.7915 | 0.4184 | 0.529 [0.521, 0.538] | 0.8909 | 0.5888 | 0.661 [0.652, 0.670] | 6.9 / 4.4 | 7.7 / 4.3 |
+| L16 | solved | 16 | 1.3306 | 0.4621 | 0.347 [0.343, 0.352] | 1.5145 | 0.8003 | 0.528 [0.520, 0.537] | 26.3 / 6.8 | 31.1 / 8.8 |
+| L16 | plain | 19 | 0.9937 | 0.4540 | 0.457 [0.443, 0.472] | 1.1380 | 0.8598 | 0.756 [0.722, 0.783] | 12.7 / 6.1 | 17.1 / 9.7 |
+| L19 | solved | 19 | 2.5893 | 0.7846 | 0.303 [0.297, 0.308] | 3.0511 | 1.5530 | 0.509 [0.500, 0.520] | 64.2 / 9.5 | 69.3 / 10.4 |
+| L19 | plain | 22 | 1.3168 | 0.5944 | 0.451 [0.446, 0.457] | 1.5879 | 1.2689 | 0.799 [0.790, 0.808] | 23.5 / 7.7 | 27.9 / 9.0 |
+| L24 | solved | 24 | 2.2066 | 0.6817 | 0.309 [0.304, 0.314] | 2.5605 | 1.5810 | 0.617 [0.609, 0.626] | 117.2 / 11.0 | 134.1 / 17.2 |
+| L24 | plain | 27 | 1.5956 | 0.6817 | 0.427 [0.417, 0.433] | 2.0760 | 1.7122 | 0.825 [0.810, 0.837] | 38.5 / 8.5 | 51.7 / 10.5 |
+
+### Crossover n*
+
+The ratio `fwd / rev` never reaches 1 on any host, lane or call shape. In all
+2000 bootstrap curves of every host × lane × shape, not one crosses, so there is
+no interpolated `n*` inside the ladder:
+
+| Host | Lane | single call | batched (B=8) | batched: extrapolated n at ratio 1 |
+|---|---|---|---|---|
+| RAL gpu-node CPU (EPYC 7702) — reference | solved | fwd wins through n=24 (ratio 0.41 → 0.22; 0/2000 bootstrap curves cross) | fwd wins through n=24 (ratio 0.45 → 0.41; 0/2000 bootstrap curves cross) | ~319 |
+| RAL gpu-node CPU (EPYC 7702) — reference | plain | fwd wins through n=27 (ratio 0.49 → 0.33; 0/2000 bootstrap curves cross) | fwd wins through n=27 (ratio 0.54 → 0.56; 0/2000 bootstrap curves cross) | ~278 |
+| A100 | solved | fwd wins through n=24 (ratio 0.64 → 0.36; 0/2000 bootstrap curves cross) | fwd wins through n=24 (ratio 0.67 → 0.39; 0/2000 bootstrap curves cross) | none (ratio falling) |
+| A100 | plain | fwd wins through n=27 (ratio 0.72 → 0.46; 0/2000 bootstrap curves cross) | fwd wins through n=27 (ratio 0.73 → 0.50; 0/2000 bootstrap curves cross) | none (ratio falling) |
+| Laptop (lead) | solved | fwd wins through n=24 (ratio 0.59 → 0.31; 0/2000 bootstrap curves cross) | fwd wins through n=24 (ratio 0.62 → 0.62; 0/2000 bootstrap curves cross) | ~56 |
+| Laptop (lead) | plain | fwd wins through n=27 (ratio 0.56 → 0.43; 0/2000 bootstrap curves cross) | fwd wins through n=27 (ratio 0.68 → 0.82; 0/2000 bootstrap curves cross) | ~48 |
+
+The extrapolation column is a least-squares line through the last three rungs'
+point ratios. It is reported only for completeness and is not a crossover
+estimate: where the ratio is still falling, there is no crossing to extrapolate
+to. The only rising trends are in the batched shape on CPU, and they project
+past n ≈ 280 on the reference host (≈ 50 on the loaded laptop).
+
+### Compile times (lower + compile, single call)
+
+| Host | Rung (n solved) | `rev` s | `fwd` s |
+|---|---|---|---|
+| RAL gpu-node CPU (EPYC 7702) | L5 (5) | 3.4 | 2.4 |
+| RAL gpu-node CPU (EPYC 7702) | L7 (7) | 4.8 | 3.0 |
+| RAL gpu-node CPU (EPYC 7702) | L9 (9) | 8.1 | 4.0 |
+| RAL gpu-node CPU (EPYC 7702) | L11 (11) | 11.2 | 5.0 |
+| RAL gpu-node CPU (EPYC 7702) | L16 (16) | 21.4 | 6.1 |
+| RAL gpu-node CPU (EPYC 7702) | L19 (19) | 47.2 | 7.9 |
+| RAL gpu-node CPU (EPYC 7702) | L24 (24) | 79.6 | 9.1 |
+| A100 | L5 (5) | 6.9 | 3.1 |
+| A100 | L7 (7) | 7.6 | 4.0 |
+| A100 | L9 (9) | 10.5 | 6.1 |
+| A100 | L11 (11) | 12.6 | 7.2 |
+| A100 | L16 (16) | 16.7 | 9.9 |
+| A100 | L19 (19) | 21.7 | 12.0 |
+| A100 | L24 (24) | 26.3 | 14.7 |
+| Laptop (lead) | L5 (5) | 7.5 | 6.3 |
+| Laptop (lead) | L7 (7) | 12.6 | 5.7 |
+| Laptop (lead) | L9 (9) | 12.0 | 5.8 |
+| Laptop (lead) | L11 (11) | 13.0 | 5.7 |
+| Laptop (lead) | L16 (16) | 26.3 | 6.8 |
+| Laptop (lead) | L19 (19) | 64.2 | 9.5 |
+| Laptop (lead) | L24 (24) | 117.2 | 11.0 |
+
+### What the curve shows
+
+- **`fwd` wins at every rung, on every host, in both lanes and both call shapes.**
+  On the reference EPYC host, the single-call ratio *falls* from 0.41 (L5) to
+  0.22 (L24) in the solved lane and from 0.49 to 0.33 in the plain lane. On the
+  A100 it falls from 0.64 to 0.36 (solved) and from 0.72 to 0.46 (plain). The
+  reverse-mode call grows about 3.8× from L5 to L24 on the EPYC
+  (0.60 → 2.29 ms), while the forward-mode call grows about 2.1×
+  (0.24 → 0.51 ms).
+- **Why the naive crossover does not appear:** reverse mode here is reverse over
+  the forward-mode lensing Hessian (`LensCalc._hessian_via_jax` is a per-position
+  `jax.jacfwd`), and its cost grows with the number of mass-profile terms, not
+  only with `n_params`. XLA flops tell the same story from the other side:
+  `fwd` flops overtake `rev` from L9 on (EPYC solved L24: 528 k vs 340 k), yet
+  `fwd` stays 4.5× faster. The cost is tape and dispatch structure, not
+  arithmetic, as phase 2b found at L5.
+- **The batched shape narrows the gap on CPU.** Under `vmap` over 8 vectors,
+  `fwd` pushes 8 × n tangents. On the EPYC the solved-lane batched ratio is flat
+  at 0.35–0.45 across the ladder, and the plain lane stays at 0.49–0.56. On the
+  loaded laptop the plain batched ratio rises to 0.83 at n = 27. The A100
+  batched ratios track its single-call ones (0.39–0.73).
+- **Compile time is the other half of the result.** The `rev` compile grows
+  steeply with the model: on the EPYC it goes from 3.4 s (L5) to 47 s (L19) and
+  80 s (L24), and on the laptop to 117 s. `fwd` stays at 2.4–9 s. On the A100
+  it is 6.9 → 26 s for `rev` and 3.1 → 15 s for `fwd`. For a real model
+  (L16–L24 is a realistic galaxy-scale point-source model), the `rev` compile
+  alone is tens of seconds to minutes on CPU.
+
+### Design memo
+
+Written by the main session, 2026-09-27.
+
+**What the curve says.** There is no crossover to design a threshold around. Forward mode wins
+through n = 24 (solved) / 27 (plain) on every host and call shape, and on the single call its lead
+*grows* with model size: 0.41 → 0.22 on the reference EPYC, 0.64 → 0.36 on the A100. This is the
+opposite of the textbook "forward mode loses as n grows". The reason is structural: this likelihood
+contains an inner forward-mode derivative (the lensing Hessian, via `jax.jacfwd` in
+`LensCalc._hessian_via_jax`). Reverse mode therefore runs reverse-over-forward through every mass
+profile, and its cost grows with the number of profiles (rev ×3.8 across the ladder vs fwd ×2.1).
+Forward-over-forward stays cheap, even with more flops than rev from L9 on. The only projected
+crossing is for vmapped batches on CPU, at n ≈ 280–320, far beyond any realistic
+single-source point-source model. The compile-time result is just as large: rev lower + compile
+reaches 80 s at L24 on the EPYC (117 s on the laptop), while fwd stays at 2.4–11 s.
+
+**Consequence for the design.** An automatic switch on `n_params < threshold` is the wrong shape.
+The win comes from the *likelihood's structure* (an inner jacfwd), not from the parameter count.
+The same switch would lose on a pixelized-source imaging likelihood with many parameters and no
+inner Hessian. The choice belongs to the analysis, which knows its structure, and the user should
+be able to override it.
+
+**Where a switch would live** (PyAutoFit gradient call sites):
+- `Fitness.grad`: `autofit/non_linear/fitness.py:933` (`jax.grad(self.call)`).
+- multi-start gradient: `autofit/non_linear/search/mle/multi_start_gradient/search.py:974` and
+  `:1072` (`jax.value_and_grad`), vmapped at `:1089`. This is the batched shape measured here.
+- blackjax NUTS / SMC: `autofit/non_linear/search/mcmc/blackjax/{nuts,smc}/search.py`. blackjax
+  differentiates the log-density itself, so forward mode there means supplying a custom
+  `value_and_grad`. That is a later step.
+
+**Options, for the human to choose:**
+1. **Analysis-declared default plus a search override (recommended).** Add a
+   `gradient_mode: "reverse" | "forward"` attribute. `af.Analysis` defaults to `"reverse"`, so there is
+   no behaviour change anywhere else. `AnalysisPoint` declares `"forward"`. A search keyword
+   overrides it. PyAutoFit builds the gradient through one helper that returns
+   `value_and_grad` for reverse, or `jacfwd(has_aux=True)` over the flat vector for forward, and the
+   three call sites above use that helper.
+2. **Opt-in only.** The same helper and keyword, default `"reverse"` everywhere, with point-source
+   users opting in. This is safest, but the 2–4.5× speed-up and the 8× compile saving stay hidden
+   unless people read the docs.
+3. **Self-calibrating `"auto"`.** Compile both modes once at search start and keep the faster one.
+   This is robust across likelihoods, but it pays the reverse compile (up to 80 s here) that forward
+   mode exists to avoid. It is only worth it as an explicit `"auto"` value on top of option 1 or 2.
+
+Either library phase should take the flat parameter vector, not the `ModelInstance` pytree. Linked
+priors give the pytree more leaves than free parameters (12 for 9 at L9), which would make jacfwd
+push one tangent per leaf. `Fitness.call` already works on the vector. The library phase also needs
+a GPU regression check and gradient parity tests (fwd ≡ rev) on a non-point-source analysis.
+
+**Carried findings (separate from the switch, for intake):**
+- `jax.grad` is NaN at exactly zero for `ExternalShear`, multipole `multipole_comps` and
+  `ell_comps` (the magnitude/angle parameterisation). A gradient search that starts at prior
+  medians of 0 would see NaN gradients. This is a PyAutoGalaxy robustness bug, independent of AD
+  mode.
+- `PowerLawMultipole` m=1 is singular at slope 2 (`-inf`/NaN deflections).
+- `Isothermal.convergence_2d_from` / `shear_yx_2d_from` cannot be jit-traced with traced
+  `ell_comps` (carried from phase 2b).

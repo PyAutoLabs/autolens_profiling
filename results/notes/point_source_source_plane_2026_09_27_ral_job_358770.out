@@ -1,0 +1,219 @@
+AP_ROOT=/mnt/ral/jnightin/autolens_profiling_wt/point-source-source-plane-p2c
+==========================================
+Sun 27 Sep 17:00:51 BST 2026
+euclid-ral-gpu-2
+Model name:                              AMD EPYC 7702 64-Core Processor
+partition:      gpu
+nodelist:       euclid-ral-gpu-2
+cpus-per-task:  8
+sched_affinity: 8
+loadavg:        0.00 0.00 0.00 1/1245 148863
+config name:    hpc_ral_gpunode_cpu_fp64
+Cell:           point_source_source/likelihood_breakdown/gradient_mode_crossover
+Precision:      fp64 (JAX_ENABLE_X64=1)
+Thread env:     OMP=1 MKL=1 OPENBLAS=1 NPROC=8
+XLA_FLAGS:      --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false
+=== source revisions ===
+PyAutoNerves (shared) eb27da2464e2f07e0ad67e7fb18ee84be76c479a
+PyAutoFit (shared) 5468c6cefa0ae8bb08a449497cbd3c620f3720e2
+PyAutoArray (shared) 14d63360f341912b209f2045d7e388e264692f1d
+PyAutoGalaxy (shared) 879a9308b709b3705eb95904de6b349a5c034d61
+PyAutoLens (shared) def4decf68a245a9c3dd1eb276ee0578897b220c
+AP_ROOT rev:   94dcd1d57e88ce8db8262e6adbafbc4191bdead9
+AP_ROOT branch: feature/point-source-source-plane-p2c
+=== import provenance (refuses unless the libraries come from the shared stack) ===
+autoarray.__file__ = /mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/__init__.py
+autolens.__file__ = /mnt/ral/jnightin/PyAuto/PyAutoLens/autolens/__init__.py
+autofit.__file__ = /mnt/ral/jnightin/PyAuto/PyAutoFit/autofit/__init__.py
+autogalaxy.__file__ = /mnt/ral/jnightin/PyAuto/PyAutoGalaxy/autogalaxy/__init__.py
+jax 0.10.2 [CpuDevice(id=0)] cpu
+ASSERT OK: CPU backend, libraries from /mnt/ral/jnightin/PyAuto
+==========================================
+gradient-mode crossover (20 x 20)
+Sun 27 Sep 17:01:10 BST 2026
+loadavg: 0.22 0.05 0.02 1/1246 148918
+
+--- L5_solved: n_params 5 (instance pytree leaves 5) ---
+  [L5_solved/rev_single ] lower   1.84 s  compile   1.54 s  first     3.953 ms
+  [L5_solved/fwd_single ] lower   1.27 s  compile   1.09 s  first     1.091 ms
+  [L5_solved/rev_batched] lower   1.83 s  compile   1.76 s  first     1.447 ms
+  [L5_solved/fwd_batched] lower   1.53 s  compile   1.13 s  first     1.352 ms
+  gate rev_single  PASS  logL 0.0e+00  grad 0.0e+00  min|g| 103
+  gate fwd_single  PASS  logL 6.9e-13  grad 5.5e-12  min|g| 103
+  gate rev_batched PASS  logL 1.1e-12  grad 6.9e-12  min|g| 103
+  gate fwd_batched PASS  logL 1.1e-12  grad 1.7e-11  min|g| 103
+  median ms/call  rev_single 0.5973  fwd_single 0.2449  rev_batched 0.6228  fwd_batched 0.2790  | ratio fwd/rev single 0.410 [0.404, 0.418]  batched 0.448 [0.442, 0.453]
+
+--- L5_plain: n_params 8 (instance pytree leaves 8) ---
+  [L5_plain/rev_single ] lower   1.07 s  compile   1.05 s  first     2.169 ms
+  [L5_plain/fwd_single ] lower   0.95 s  compile   0.74 s  first     1.019 ms
+  [L5_plain/rev_batched] lower   1.25 s  compile   1.12 s  first     1.473 ms
+  [L5_plain/fwd_batched] lower   1.14 s  compile   0.78 s  first     1.148 ms
+  gate rev_single  PASS  logL 0.0e+00  grad 0.0e+00  min|g| 7.2e+04
+  gate fwd_single  PASS  logL 8.1e-14  grad 1.5e-13  min|g| 7.2e+04
+  gate rev_batched PASS  logL 1.9e-14  grad 2.7e-13  min|g| 7.2e+04
+  gate fwd_batched PASS  logL 8.1e-14  grad 2.4e-13  min|g| 7.2e+04
+  median ms/call  rev_single 0.4775  fwd_single 0.2331  rev_batched 0.5083  fwd_batched 0.2760  | ratio fwd/rev single 0.488 [0.481, 0.497]  batched 0.543 [0.534, 0.548]
+
+--- L7_solved: n_params 7 (instance pytree leaves 7) ---
+  [L7_solved/rev_single ] lower   2.09 s  compile   2.72 s  first     2.571 ms
+  [L7_solved/fwd_single ] lower   1.60 s  compile   1.36 s  first     1.230 ms
+  [L7_solved/rev_batched] lower   2.37 s  compile   3.09 s  first     2.013 ms
+  [L7_solved/fwd_batched] lower   2.04 s  compile   1.44 s  first     1.194 ms
+  gate rev_single  PASS  logL 0.0e+00  grad 0.0e+00  min|g| 166
+  gate fwd_single  PASS  logL 3.1e-13  grad 7.8e-11  min|g| 166
+  gate rev_batched PASS  logL 2.8e-13  grad 3.2e-12  min|g| 166
+  gate fwd_batched PASS  logL 2.8e-13  grad 1.0e-10  min|g| 166
+  median ms/call  rev_single 0.7441  fwd_single 0.2816  rev_batched 0.7669  fwd_batched 0.3247  | ratio fwd/rev single 0.379 [0.375, 0.384]  batched 0.423 [0.418, 0.429]
+
+--- L7_plain: n_params 10 (instance pytree leaves 10) ---
+  [L7_plain/rev_single ] lower   1.39 s  compile   1.57 s  first     2.672 ms
+  [L7_plain/fwd_single ] lower   1.16 s  compile   0.91 s  first     1.414 ms
+  [L7_plain/rev_batched] lower   1.60 s  compile   1.64 s  first     1.733 ms
+  [L7_plain/fwd_batched] lower   1.51 s  compile   1.03 s  first     1.177 ms
+  gate rev_single  PASS  logL 0.0e+00  grad 0.0e+00  min|g| 2.39e+05
+  gate fwd_single  PASS  logL 4.6e-14  grad 1.0e-12  min|g| 2.39e+05
+  gate rev_batched PASS  logL 3.2e-14  grad 6.8e-13  min|g| 2.39e+05
+  gate fwd_batched PASS  logL 4.7e-14  grad 4.7e-13  min|g| 2.39e+05
+  median ms/call  rev_single 0.5551  fwd_single 0.2589  rev_batched 0.5963  fwd_batched 0.3318  | ratio fwd/rev single 0.466 [0.461, 0.473]  batched 0.556 [0.549, 0.563]
+
+--- L9_solved: n_params 9 (instance pytree leaves 12) ---
+  [L9_solved/rev_single ] lower   2.55 s  compile   5.50 s  first     2.108 ms
+  [L9_solved/fwd_single ] lower   2.04 s  compile   1.98 s  first     1.122 ms
+  [L9_solved/rev_batched] lower   3.08 s  compile   6.02 s  first     2.460 ms
+  [L9_solved/fwd_batched] lower   2.63 s  compile   2.04 s  first     1.561 ms
+  gate rev_single  PASS  logL 0.0e+00  grad 0.0e+00  min|g| 423
+  gate fwd_single  PASS  logL 8.2e-13  grad 1.4e-11  min|g| 423
+  gate rev_batched PASS  logL 4.4e-13  grad 7.5e-12  min|g| 423
+  gate fwd_batched PASS  logL 1.4e-12  grad 1.5e-11  min|g| 423
+  median ms/call  rev_single 0.9810  fwd_single 0.2847  rev_batched 1.0776  fwd_batched 0.3741  | ratio fwd/rev single 0.290 [0.287, 0.293]  batched 0.347 [0.343, 0.353]
+
+--- L9_plain: n_params 12 (instance pytree leaves 15) ---
+  [L9_plain/rev_single ] lower   1.81 s  compile   2.60 s  first     2.949 ms
+  [L9_plain/fwd_single ] lower   1.42 s  compile   1.39 s  first     1.189 ms
+  [L9_plain/rev_batched] lower   2.09 s  compile   3.06 s  first     2.482 ms
+  [L9_plain/fwd_batched] lower   1.84 s  compile   1.54 s  first     1.543 ms
+  gate rev_single  PASS  logL 0.0e+00  grad 0.0e+00  min|g| 1.95e+05
+  gate fwd_single  PASS  logL 1.3e-13  grad 7.7e-13  min|g| 1.95e+05
+  gate rev_batched PASS  logL 4.0e-14  grad 4.4e-13  min|g| 1.95e+05
+  gate fwd_batched PASS  logL 1.3e-13  grad 3.3e-13  min|g| 1.95e+05
+  median ms/call  rev_single 0.7227  fwd_single 0.2862  rev_batched 0.8049  fwd_batched 0.3935  | ratio fwd/rev single 0.396 [0.391, 0.400]  batched 0.489 [0.484, 0.497]
+
+--- L11_solved: n_params 11 (instance pytree leaves 17) ---
+  [L11_solved/rev_single ] lower   2.97 s  compile   8.26 s  first     3.709 ms
+  [L11_solved/fwd_single ] lower   2.41 s  compile   2.57 s  first     1.359 ms
+  [L11_solved/rev_batched] lower   3.60 s  compile   9.21 s  first     2.661 ms
+  [L11_solved/fwd_batched] lower   2.86 s  compile   2.66 s  first     1.697 ms
+  gate rev_single  PASS  logL 0.0e+00  grad 0.0e+00  min|g| 680
+  gate fwd_single  PASS  logL 4.1e-12  grad 4.5e-11  min|g| 680
+  gate rev_batched PASS  logL 1.1e-12  grad 2.9e-11  min|g| 680
+  gate fwd_batched PASS  logL 3.4e-12  grad 2.2e-11  min|g| 680
+  median ms/call  rev_single 1.1358  fwd_single 0.2987  rev_batched 1.3160  fwd_batched 0.4987  | ratio fwd/rev single 0.263 [0.259, 0.266]  batched 0.379 [0.374, 0.383]
+
+--- L11_plain: n_params 14 (instance pytree leaves 20) ---
+  [L11_plain/rev_single ] lower   2.05 s  compile   3.78 s  first     2.179 ms
+  [L11_plain/fwd_single ] lower   1.70 s  compile   1.76 s  first     1.716 ms
+  [L11_plain/rev_batched] lower   2.40 s  compile   4.12 s  first     1.997 ms
+  [L11_plain/fwd_batched] lower   2.03 s  compile   1.91 s  first     1.965 ms
+  gate rev_single  PASS  logL 0.0e+00  grad 0.0e+00  min|g| 1.65e+05
+  gate fwd_single  PASS  logL 5.2e-13  grad 7.9e-13  min|g| 1.65e+05
+  gate rev_batched PASS  logL 2.6e-14  grad 1.8e-13  min|g| 1.65e+05
+  gate fwd_batched PASS  logL 5.2e-13  grad 7.9e-13  min|g| 1.65e+05
+  median ms/call  rev_single 0.8794  fwd_single 0.3183  rev_batched 0.9896  fwd_batched 0.5294  | ratio fwd/rev single 0.362 [0.358, 0.366]  batched 0.535 [0.530, 0.540]
+
+--- L16_solved: n_params 16 (instance pytree leaves 22) ---
+  [L16_solved/rev_single ] lower   3.82 s  compile  17.56 s  first     4.055 ms
+  [L16_solved/fwd_single ] lower   2.75 s  compile   3.33 s  first     1.612 ms
+  [L16_solved/rev_batched] lower   4.47 s  compile  19.20 s  first     2.215 ms
+  [L16_solved/fwd_batched] lower   3.51 s  compile   3.41 s  first     1.950 ms
+  gate rev_single  PASS  logL 0.0e+00  grad 0.0e+00  min|g| 809
+  gate fwd_single  PASS  logL 1.6e-13  grad 3.5e-09  min|g| 809
+  gate rev_batched PASS  logL 3.5e-13  grad 3.0e-11  min|g| 809
+  gate fwd_batched PASS  logL 3.5e-13  grad 3.0e-09  min|g| 809
+  median ms/call  rev_single 1.3418  fwd_single 0.3370  rev_batched 1.5373  fwd_batched 0.6077  | ratio fwd/rev single 0.251 [0.247, 0.255]  batched 0.395 [0.388, 0.399]
+
+--- L16_plain: n_params 19 (instance pytree leaves 25) ---
+  [L16_plain/rev_single ] lower   2.51 s  compile   6.48 s  first     3.546 ms
+  [L16_plain/fwd_single ] lower   1.98 s  compile   2.26 s  first     1.440 ms
+  [L16_plain/rev_batched] lower   2.96 s  compile   7.15 s  first     3.100 ms
+  [L16_plain/fwd_batched] lower   2.52 s  compile   2.38 s  first     2.001 ms
+  gate rev_single  PASS  logL 0.0e+00  grad 0.0e+00  min|g| 9.03e+05
+  gate fwd_single  PASS  logL 2.5e-13  grad 7.4e-13  min|g| 9.03e+05
+  gate rev_batched PASS  logL 4.5e-15  grad 7.7e-13  min|g| 9.03e+05
+  gate fwd_batched PASS  logL 2.5e-13  grad 9.1e-13  min|g| 9.03e+05
+  median ms/call  rev_single 1.0032  fwd_single 0.3289  rev_batched 1.1338  fwd_batched 0.6276  | ratio fwd/rev single 0.328 [0.323, 0.334]  batched 0.554 [0.547, 0.560]
+
+--- L19_solved: n_params 19 (instance pytree leaves 25) ---
+  [L19_solved/rev_single ] lower   4.69 s  compile  42.55 s  first     9.944 ms
+  [L19_solved/fwd_single ] lower   3.45 s  compile   4.41 s  first     2.360 ms
+  [L19_solved/rev_batched] lower   5.57 s  compile  48.36 s  first     7.025 ms
+  [L19_solved/fwd_batched] lower   4.30 s  compile   4.78 s  first     2.952 ms
+  gate rev_single  PASS  logL 0.0e+00  grad 0.0e+00  min|g| 1.67e+03
+  gate fwd_single  PASS  logL 1.1e-12  grad 2.4e-09  min|g| 1.67e+03
+  gate rev_batched PASS  logL 7.4e-15  grad 1.2e-12  min|g| 1.67e+03
+  gate fwd_batched PASS  logL 1.1e-12  grad 2.6e-09  min|g| 1.67e+03
+  median ms/call  rev_single 2.0954  fwd_single 0.4979  rev_batched 2.4509  fwd_batched 0.9016  | ratio fwd/rev single 0.238 [0.234, 0.240]  batched 0.368 [0.363, 0.373]
+
+--- L19_plain: n_params 22 (instance pytree leaves 28) ---
+  [L19_plain/rev_single ] lower   3.19 s  compile  13.16 s  first     6.692 ms
+  [L19_plain/fwd_single ] lower   2.39 s  compile   3.07 s  first     2.647 ms
+  [L19_plain/rev_batched] lower   3.81 s  compile  15.32 s  first     3.439 ms
+  [L19_plain/fwd_batched] lower   3.08 s  compile   3.38 s  first     2.433 ms
+  gate rev_single  PASS  logL 0.0e+00  grad 0.0e+00  min|g| 1.83e+06
+  gate fwd_single  PASS  logL 1.8e-13  grad 5.2e-13  min|g| 1.83e+06
+  gate rev_batched PASS  logL 1.5e-15  grad 5.8e-13  min|g| 1.83e+06
+  gate fwd_batched PASS  logL 1.8e-13  grad 2.3e-12  min|g| 1.83e+06
+  median ms/call  rev_single 1.4797  fwd_single 0.4809  rev_batched 1.6950  fwd_batched 0.8520  | ratio fwd/rev single 0.325 [0.322, 0.328]  batched 0.503 [0.498, 0.508]
+
+--- L24_solved: n_params 24 (instance pytree leaves 30) ---
+  [L24_solved/rev_single ] lower   5.39 s  compile  74.22 s  first     3.397 ms
+  [L24_solved/fwd_single ] lower   3.89 s  compile   5.17 s  first     2.513 ms
+  [L24_solved/rev_batched] lower   6.41 s  compile  85.32 s  first     4.375 ms
+  [L24_solved/fwd_batched] lower   5.01 s  compile   5.53 s  first     2.875 ms
+  gate rev_single  PASS  logL 0.0e+00  grad 0.0e+00  min|g| 469
+  gate fwd_single  PASS  logL 6.0e-13  grad 1.7e-10  min|g| 469
+  gate rev_batched PASS  logL 4.2e-14  grad 3.7e-11  min|g| 469
+  gate fwd_batched PASS  logL 5.9e-13  grad 1.3e-10  min|g| 469
+  median ms/call  rev_single 2.2938  fwd_single 0.5078  rev_batched 2.5860  fwd_batched 1.0510  | ratio fwd/rev single 0.221 [0.218, 0.225]  batched 0.406 [0.401, 0.412]
+
+--- L24_plain: n_params 27 (instance pytree leaves 33) ---
+  [L24_plain/rev_single ] lower   3.63 s  compile  22.51 s  first     3.446 ms
+  [L24_plain/fwd_single ] lower   2.77 s  compile   3.60 s  first     2.576 ms
+  [L24_plain/rev_batched] lower   4.24 s  compile  25.41 s  first     3.204 ms
+  [L24_plain/fwd_batched] lower   3.54 s  compile   3.96 s  first     2.067 ms
+  gate rev_single  PASS  logL 0.0e+00  grad 0.0e+00  min|g| 4.31e+05
+  gate fwd_single  PASS  logL 1.4e-13  grad 1.5e-12  min|g| 4.31e+05
+  gate rev_batched PASS  logL 1.0e-15  grad 2.3e-13  min|g| 4.31e+05
+  gate fwd_batched PASS  logL 1.4e-13  grad 2.7e-12  min|g| 4.31e+05
+  median ms/call  rev_single 1.6339  fwd_single 0.5339  rev_batched 1.9518  fwd_batched 1.0918  | ratio fwd/rev single 0.327 [0.323, 0.331]  batched 0.559 [0.553, 0.565]
+
+====================================================================================================
+GRADIENT-MODE CROSSOVER  (hpc_ral_gpunode_cpu_fp64, rounds=20, calls/round=20)
+====================================================================================================
+  cell           n  gate     rev_1     fwd_1  ratio_1     rev_B     fwd_B  ratio_B  cmp rev/fwd s
+  L5_solved      5    ok    0.5973    0.2449    0.410    0.6228    0.2790    0.448   1.54/1.09  
+  L5_plain       8    ok    0.4775    0.2331    0.488    0.5083    0.2760    0.543   1.05/0.74  
+  L7_solved      7    ok    0.7441    0.2816    0.379    0.7669    0.3247    0.423   2.72/1.36  
+  L7_plain      10    ok    0.5551    0.2589    0.466    0.5963    0.3318    0.556   1.57/0.91  
+  L9_solved      9    ok    0.9810    0.2847    0.290    1.0776    0.3741    0.347   5.50/1.98  
+  L9_plain      12    ok    0.7227    0.2862    0.396    0.8049    0.3935    0.489   2.60/1.39  
+  L11_solved    11    ok    1.1358    0.2987    0.263    1.3160    0.4987    0.379   8.26/2.57  
+  L11_plain     14    ok    0.8794    0.3183    0.362    0.9896    0.5294    0.535   3.78/1.76  
+  L16_solved    16    ok    1.3418    0.3370    0.251    1.5373    0.6077    0.395  17.56/3.33  
+  L16_plain     19    ok    1.0032    0.3289    0.328    1.1338    0.6276    0.554   6.48/2.26  
+  L19_solved    19    ok    2.0954    0.4979    0.238    2.4509    0.9016    0.368  42.55/4.41  
+  L19_plain     22    ok    1.4797    0.4809    0.325    1.6950    0.8520    0.503  13.16/3.07  
+  L24_solved    24    ok    2.2938    0.5078    0.221    2.5860    1.0510    0.406  74.22/5.17  
+  L24_plain     27    ok    1.6339    0.5339    0.327    1.9518    1.0918    0.559  22.51/3.60  
+----------------------------------------------------------------------------------------------------
+  crossover [solved/single]: fwd wins through n=24  ci90 None  boot {'cross': 0.0, 'rev_from_start': 0.0, 'none': 1.0}  extrap n@1 None
+  crossover [solved/batched]: fwd wins through n=24  ci90 None  boot {'cross': 0.0, 'rev_from_start': 0.0, 'none': 1.0}  extrap n@1 319.34232211584583
+  crossover [plain/single]: fwd wins through n=27  ci90 None  boot {'cross': 0.0, 'rev_from_start': 0.0, 'none': 1.0}  extrap n@1 None
+  crossover [plain/batched]: fwd wins through n=27  ci90 None  boot {'cross': 0.0, 'rev_from_start': 0.0, 'none': 1.0}  extrap n@1 277.5074877424199
+  wall: 1348 s
+  Results JSON: /mnt/ral/jnightin/autolens_profiling_wt/point-source-source-plane-p2c/results/breakdown/point_source_source/gradient_mode_crossover_hpc_ral_gpunode_cpu_fp64.json
+  Results PNG:  /mnt/ral/jnightin/autolens_profiling_wt/point-source-source-plane-p2c/results/breakdown/point_source_source/gradient_mode_crossover_hpc_ral_gpunode_cpu_fp64.png
+==========================================
+loadavg: 1.24 1.24 0.96 1/1237 149532
+Finished.
+Sun 27 Sep 17:23:41 BST 2026
