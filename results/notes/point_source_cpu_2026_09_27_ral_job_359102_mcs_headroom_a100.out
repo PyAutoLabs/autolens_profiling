@@ -1,0 +1,87 @@
+AP_ROOT=/mnt/ral/jnightin/autolens_profiling_wt/pointsolver-mcs-headroom
+==========================================
+Sun 27 Sep 19:18:39 BST 2026
+euclid-ral-gpu-1
+Model name:                              AMD EPYC 7702 64-Core Processor
+name, driver_version, memory.total [MiB], utilization.gpu [%]
+NVIDIA A100 80GB PCIe, 610.57.04, 81920 MiB, 0 %
+gpus:           0
+partition:      gpu
+cpus-per-task:  8
+sched_affinity: 8
+loadavg:        0.08 0.14 0.89 1/1244 190881
+Cell:           point_source_image/likelihood_breakdown/solver_config_sweep --mcs-headroom --configs control,mcs20
+Thread env:     OMP=1 MKL=1 OPENBLAS=1 NPROC=8
+XLA_FLAGS:      --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false
+PYTHONPATH:     /mnt/ral/jnightin/PyAuto:/mnt/ral/jnightin/PyAuto/PyAutoNerves:/mnt/ral/jnightin/PyAuto/PyAutoFit:/mnt/ral/jnightin/PyAuto/PyAutoArray:/mnt/ral/jnightin/PyAuto/PyAutoGalaxy:/mnt/ral/jnightin/PyAuto/PyAutoLens
+=== source revisions ===
+PyAutoNerves (mirror) bf104102312852537159b7fad2f998ab6677b4e4
+PyAutoFit (mirror) c156a9d8e8eb9f82b6da169b1d50b7e64580fe98
+PyAutoArray (mirror) e281abf3257e9efd4915f1daa9acc0498be250a5
+PyAutoGalaxy (mirror) ba8a08fabcb13d9472f2bd43ef4fea6039284d50
+PyAutoLens (mirror) dcbd4b711120641cc0ecc6490d868795ad717b07
+AP_ROOT rev:   add12a2ca57227c24a9544b9039b8c1c892f2baf
+=== import provenance ===
+autoarray   2026.8.17.1  /mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/__init__.py
+autofit     2026.8.17.1  /mnt/ral/jnightin/PyAuto/PyAutoFit/autofit/__init__.py
+autogalaxy  2026.8.17.1  /mnt/ral/jnightin/PyAuto/PyAutoGalaxy/autogalaxy/__init__.py
+autolens    2026.8.17.1  /mnt/ral/jnightin/PyAuto/PyAutoLens/autolens/__init__.py
+MAX_CONTAINING_SIZE 15 _STEP0_CONTAINMENT structured
+jax 0.10.2 jaxlib 0.10.2 numpy 2.2.6 [CudaDevice(id=0)]
+==========================================
+RUN hpc_ral_a100_fp64 -> /mnt/ral/jnightin/autolens_profiling_wt/pointsolver-mcs-headroom/results/breakdown/point_source_image
+Sun 27 Sep 19:18:41 BST 2026
+loadavg: 0.08 0.14 0.89 1/1244 190918
+[    5.3 s] configs: control(n=8,rows=11859), mcs20(n=8,rows=11859), reference(n=9,rows=268677), reference_b(n=10,rows=115473)
+[   31.5 s] reference reference solved on 200 prior + 200 stress draws (compile 4.4 s)
+[   56.5 s] reference reference_b solved on 200 prior + 200 stress draws (compile 5.0 s)
+[   56.5 s] reference floor: {"prior": {"n_draws": 200, "multiplicity_agreement": 1.0, "raw_count_agreement": 1.0, "n_multiplicity_mismatch": 0, "max_position_error": 0.0001578692142314068, "p99_position_error": 0.0001280749711778143, "median_position_error": 5.966895436149997e-05, "ref_distinct_histogram": {"2": 21, "4": 179}, "abs_delta_logl_vs_reference": {"max": 0.09204751533957278, "p99": 0.06845503627316349, "median": 0.004628222675297167, "n_nonfinite_mismatch": 0}}, "stress": {"n_draws": 200, "multiplicity_agreement": 1.0, "raw_count_agreement": 1.0, "n_multiplicity_mismatch": 0, "max_position_error": 0.00015786921423129578, "p99_position_error": 0.00014084184669768283, "median_position_error": 5.966895436134919e-05, "ref_distinct_histogram": {"2": 163, "4": 37}}}
+[   88.9 s] completeness control     prior mult 1.000 raw 1.000 maxerr 0.00085134744991033 |dlogL|ref 0.8682473458375171  stress mult 1.0 maxerr 0.0007893460711581035
+[   88.9 s] completeness mcs20       prior mult 1.000 raw 1.000 maxerr 0.00085134744991033 |dlogL|ref 0.8682473458375171  stress mult 1.0 maxerr 0.0007893460711581035
+[   88.9 s] reference image extent: {'prior': {'max_abs_y': 1.77939453125, 'max_abs_x': 1.7773254429359935, 'max_abs_coord': 1.77939453125, 'p99_abs_coord': 1.759083091412917, 'max_radius': 1.8116226317743076}, 'stress': {'max_abs_y': 2.2498046875, 'max_abs_x': 2.300267215077964, 'max_abs_coord': 2.300267215077964, 'p99_abs_coord': 2.2027852305644777, 'max_radius': 2.5191249773380773}}
+[   88.9 s] timing: compiling every route (fresh closure + clear_caches)
+[  106.8 s] timing: 20 rounds x 20 calls x 2 routes done
+[  107.1 s] fiducial gate: 7.743201200876806 == 7.743201200876806: True
+[  146.7 s] grad gate: control=True, mcs20=True
+[  146.7 s] best admissible (precision-equivalent): mcs20; any precision: mcs20
+[  212.4 s] vmap: control_vmap1 0.837 ms/L, control_vmap4 0.235 ms/L, control_vmap16 0.071 ms/L, mcs20_vmap1 0.838 ms/L, mcs20_vmap4 0.254 ms/L, mcs20_vmap16 0.071 ms/L
+[  212.4 s] step-0 split: ray trace vs ray trace + containment per geometry
+[  222.8 s] step-0 split: control trace -0.014 contain 0.091, mcs20 trace -0.013 contain 0.089
+[  222.8 s] uncapped containing counts (NumPy path) on the prior draws
+[  270.4 s] uncapped prior: max per step [17, 13, 11, 9, 7, 5, 5, 5]; control exceed/step [1, 0, 0, 0, 0, 0, 0, 0], mcs20 exceed/step [0, 0, 0, 0, 0, 0, 0, 0]
+[  270.4 s] uncapped stream: max per step [13, 9, 5, 5, 5, 5, 5, 5]; control exceed/step [0, 0, 0, 0, 0, 0, 0, 0], mcs20 exceed/step [0, 0, 0, 0, 0, 0, 0, 0]
+[  270.4 s] uncapped stress: max per step [7, 5, 5, 5, 5, 5, 5, 5]; control exceed/step [0, 0, 0, 0, 0, 0, 0, 0], mcs20 exceed/step [0, 0, 0, 0, 0, 0, 0, 0]
+[  270.4 s] mcs gate mcs20: 0 draw changes (0 image-set), stream 0, grad 1, vmap 0; unexplained 0; fiducial 7.743201200876806 bit-identical True
+
+======================================================================================================================================================
+POINTSOLVER CONFIG SWEEP (hpc_ral_a100_fp64, rounds=20, calls=20, prior draws=200, stress draws=200)
+======================================================================================================================================================
+  config      block                  ext scale   prec mcs nd  n   rows  med_ms       speedup [90% CI]  admp  mult   raw    maxerr    p99err dlogL_ref s_mult  s_maxerr
+  control     control               9.90  0.20 0.0010  15  1  8  11859   0.827  1.000 [0.997, 1.003]    TT 1.000 1.000  8.51e-04  7.89e-04  8.68e-01  1.000  7.89e-04
+  mcs20       max_containing_size_headroom  9.90  0.20 0.0010  20  1  8  11859   0.825  1.003 [0.999, 1.005]    TT 1.000 1.000  8.51e-04  7.89e-04  8.68e-01  1.000  7.89e-04
+------------------------------------------------------------------------------------------------------------------------------------------------------
+  default agrees with reference on every prior draw: True
+  default agrees with reference on every stress draw: True
+  reference floor: {"prior": {"n_draws": 200, "multiplicity_agreement": 1.0, "raw_count_agreement": 1.0, "n_multiplicity_mismatch": 0, "max_position_error": 0.0001578692142314068, "p99_position_error": 0.0001280749711778143, "median_position_error": 5.966895436149997e-05, "ref_distinct_histogram": {"2": 21, "4": 179}, "abs_delta_logl_vs_reference": {"max": 0.09204751533957278, "p99": 0.06845503627316349, "median": 0.004628222675297167, "n_nonfinite_mismatch": 0}}, "stress": {"n_draws": 200, "multiplicity_agreement": 1.0, "raw_count_agreement": 1.0, "n_multiplicity_mismatch": 0, "max_position_error": 0.00015786921423129578, "p99_position_error": 0.00014084184669768283, "median_position_error": 5.966895436134919e-05, "ref_distinct_histogram": {"2": 163, "4": 37}}}
+  best admissible (precision-equivalent): mcs20; any precision: mcs20
+  reference image extent: {'prior': {'max_abs_y': 1.77939453125, 'max_abs_x': 1.7773254429359935, 'max_abs_coord': 1.77939453125, 'p99_abs_coord': 1.759083091412917, 'max_radius': 1.8116226317743076}, 'stress': {'max_abs_y': 2.2498046875, 'max_abs_x': 2.300267215077964, 'max_abs_coord': 2.300267215077964, 'p99_abs_coord': 2.2027852305644777, 'max_radius': 2.5191249773380773}}
+  fiducial gate: {'value': 7.743201200876806, 'expected': 7.743201200876806, 'repr': '7.743201200876806', 'pass': True}
+------------------------------------------------------------------------------------------------------------------------------------------------------
+  config  mcs  med_ms row/ctrl      ctrl/row [90% CI] compile     temp_B      flops  v16ms/L  mult s_mult img-chg  ok  uncapped max/step (prior) | exceed/step (prior; stress)
+  control  15   0.827   1.0000 1.0000 [0.9971, 1.0029]    5.60     390472  2787435.0   0.0709 1.000  1.000       0   T  [17, 13, 11, 9, 7, 5, 5, 5] | [1, 0, 0, 0, 0, 0, 0, 0]; [0, 0, 0, 0, 0, 0, 0, 0]
+  mcs20    20   0.825   0.9969 1.0031 [0.9994, 1.0051]    5.78     389192  2949201.0   0.0707 1.000  1.000       0   T  [17, 13, 11, 9, 7, 5, 5, 5] | [0, 0, 0, 0, 0, 0, 0, 0]; [0, 0, 0, 0, 0, 0, 0, 0]
+  uncapped max over all samples and steps: 17
+  rule candidates: ['mcs20']
+  all_gates_pass: True
+  wall: 270 s
+  Results JSON: /mnt/ral/jnightin/autolens_profiling_wt/pointsolver-mcs-headroom/results/breakdown/point_source_image/solver_config_sweep_mcs_hpc_ral_a100_fp64.json
+  Results PNG:  /mnt/ral/jnightin/autolens_profiling_wt/pointsolver-mcs-headroom/results/breakdown/point_source_image/solver_config_sweep_mcs_hpc_ral_a100_fp64.png
+=== source_revisions check (JSON vs imported HEADs) ===
+autoarray_imported_from /mnt/ral/jnightin/PyAuto/PyAutoArray
+OK /mnt/ral/jnightin/autolens_profiling_wt/pointsolver-mcs-headroom/results/breakdown/point_source_image/solver_config_sweep_mcs_hpc_ral_a100_fp64.json all_gates_pass True
+==========================================
+loadavg: 1.50 1.24 1.19 1/1246 192647
+name, memory.used [MiB]
+NVIDIA A100 80GB PCIe, 0 MiB
+Finished.
+Sun 27 Sep 19:23:14 BST 2026
