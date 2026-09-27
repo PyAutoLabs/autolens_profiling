@@ -1355,14 +1355,39 @@ i.e. `structured`.
 - autolens_profiling on RAL: a worktree of the RAL checkout at `311e690` (`f7edb9f` + the fallback
   submit).
 
-### Quotable row: RAL CPU, Xeon Platinum 8490H — job 357321, NOT RUN (queued)
+### Quotable row: RAL CPU, Xeon Platinum 8490H — job 357321
 
-Job **357321** (`submit_breakdown_point_source_image_solver_config_sweep_step0_ral_cpu_fp64`, pinned to
-`euclid-ral-compute-10-4`, the phase-4a host) was submitted at 11:59 and was still `PENDING (Priority)`
-at 14:00: the `ral` partition is saturated by euclid_dr1 arrays (10-4 had 974 848 / 976 000 MB
-allocated and load ≈ 150, with thousands of older equal-priority array tasks ahead). It is left
-queued; when it runs it writes `solver_config_sweep_step0_hpc_ral_cpu_fp64.json`, which is the
-quotable before/after row for this phase. **Until then there is no quotable 8490H number.**
+This ran on `euclid-ral-compute-10-4`, the phase-4a host, from the `ral` partition. It was submitted
+at 11:59, pending until the queue cleared, and finished at 15:48 with a wall time of 480 s. The job
+had 8 CPUs (`sched_affinity` 8), fp64, NPROC 8 and BLAS 1, and it passes `all_gates_pass: true`, with
+provenance asserted: PyAutoArray `c13b2d73` from the branch clone, profiling `311e690`. JSON
+[`solver_config_sweep_step0_hpc_ral_cpu_fp64.json`](../breakdown/point_source_image/solver_config_sweep_step0_hpc_ral_cpu_fp64.json)
+(`quotable: true`); log [`point_source_cpu_2026_09_27_ral_job_357321_step0_route_ab_8490h_cpu.out`](point_source_cpu_2026_09_27_ral_job_357321_step0_route_ab_8490h_cpu.out).
+
+**The node was heavily loaded.** Its loadavg was 199.9 at the start and 189.9 at the end (236
+cores). Phase 4a's job 356367 ran on the same node at 0.00 → 1.23. The routes are interleaved round
+by round, so the ratios between routes stand. The absolute ms, and the gather spread (p10–p90
+1.85–2.66 ms), are inflated by contention and are **not comparable to phase 4a's 1.824 ms control**.
+
+| route | median ms | × gather | vs control [90 % CI] | containment ms | route inputs ms | ray trace ms | vmap-1 / 4 / 16 ms/L | compile s | XLA temp KB | FLOPs M |
+|---|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|
+| gather (before) | 2.260 | 1.000 | 0.697 [0.683, 0.713] | 1.223 | 1.107 | 0.307 | 2.271 / 1.627 / 1.931 | 5.37 | 1692 | 3.38 |
+| components | 1.550 | **1.458** | 1.017 [0.997, 1.030] | 0.433 | 0.071 | 0.320 | 1.564 / 1.149 / 1.108 | 5.68 | 1506 | 3.58 |
+| **structured** (default) | 1.570 | **1.440** | 1.005 [0.990, 1.020] | 0.494 | 0.197 | 0.321 | 1.601 / 1.100 / 0.851 | 5.83 | **902** | **2.80** |
+| control (= structured) | 1.576 | 1.434 | 1.000 [0.989, 1.011] | 0.491 | 0.188 | 0.319 | 1.654 / 1.123 / 0.854 | 5.81 | 902 | 2.80 |
+
+- The "× gather" column is a ratio of the medians. The bootstrap CI is against the control, which is
+  `structured`. Paired-round ratio against the control: gather 0.672 (p10–p90 0.61–0.80), components
+  0.992 (0.87–1.13), structured 0.992 (0.91–1.10).
+- Containment falls **1.223 → 0.494 ms (−60 %)**, and the whole likelihood goes from 2.26 to 1.57 ms
+  (**1.44×**). On the scalar call `structured` and `components` are statistically tied: components'
+  CI against the control, [0.997, 1.030], overlaps structured's.
+- vmap × gather: structured 1.42 / 1.48 / **2.27**, components 1.45 / 1.41 / 1.74. The gather row's
+  vmap-16 (1.931 ms/L, slower than its vmap-4) is the contention-inflated cell. Even so, structured
+  is best at vmap-16 (0.851 against components' 1.108 ms/L).
+- Compile is +5.7 % for components and +8.6 % for structured over gather, one cold compile each on a
+  loaded node. That is inside the +20 % gate. `structured` is again the only route that cuts XLA temp
+  memory (−47 %) and FLOPs.
 
 ### Supplementary: RAL CPU, AMD EPYC 7702 — job 357335
 
@@ -1418,25 +1443,28 @@ route-inputs column): gather 2.221 ms, components 1.555 (1.43×), structured 1.6
 
 ### Gates (every run)
 
-- `gates.step0_route_bit_identity` passes for every route on laptop, EPYC and A100: stream, fiducial
+- `gates.step0_route_bit_identity` passes for every route on the 8490H, EPYC, laptop and A100: stream, fiducial
   and prior log L, prior and stress positions, image counts, `jax.grad` and the vmap values are
   bit-identical to the control.
-- Fiducial `7.743201200876812` bit-exact on both CPUs (A100: `…806`, its established value).
+- Fiducial `7.743201200876812` bit-exact on all three CPUs: 8490H, EPYC and laptop (A100: `…806`, its established value).
 - Completeness: every route 200/200 prior + 200/200 stress, max position error 8.51e-4″ (unchanged
   from phase 4a).
 - `jax.grad` finite and non-zero on every route; the MCS patch is restored.
-- Compile ≤ +5 % (gate +20 %); XLA temp memory ≤ gather's on every route (structured −47 % on CPU).
+- Compile ≤ +9 % (8490H, loaded node; ≤ +5 % on EPYC; gate +20 %). XLA temp memory ≤ gather's on every route (structured −47 % on CPU).
 
 ### Verdict
 
-Removing the gather cuts the step-0 containment by about two thirds on CPU, with bit-identical
-output. On the EPYC CPU the likelihood is 1.61× faster (1.87× under vmap-16); on the laptop it is
+Removing the gather cuts the step-0 containment by 60–66 % on CPU, with bit-identical output. On
+the quotable 8490H row the likelihood is 1.44× faster (2.27× under vmap-16, on a loaded node); on the
+EPYC CPU it is 1.61× (1.87× under vmap-16); on the laptop it is
 1.38–1.43×. It does not regress the A100. **Keep `structured` as the default:** it ties `components`
 on the scalar CPU call (the laptop's 4 % edge for `components` is within WSL2 noise and does not
 reproduce on RAL), wins under vmap-16 on both CPUs (1.87× / 1.91× vs 1.82× / 1.50×), and is the only
 route that also cuts XLA temp memory and FLOPs. `components` stays the fallback for a lattice whose
 vertex table does not follow the closed-form layout (`Step0Layout.grid is None`). The quotable 8490H
-row (job 357321) is still owed before this ships.
+row (job 357321, on a loaded node) confirms it: **1.44×** on the scalar call, −60 % containment, and
+structured the best route at vmap-16 (2.27× gather). PyAutoArray PR #580 merged on 2026-09-27 as
+`4383ea81`.
 
 ### Reproduce (RAL)
 
