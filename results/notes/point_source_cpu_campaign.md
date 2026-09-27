@@ -1586,7 +1586,8 @@ show. The fiducial `7.743201200876806` (the established A100 value) is bit-ident
   step, a margin of 3.
 - **Draw 12 explained.** It is the only draw over 15, at step 0 only (17 containing triangles). At
   MCS 15 the two highest-index entries are dropped (`jnp.where(size=...)` keeps the first 15 in
-  index order). They are the spurious fold-line candidates of phase 4a. Its later steps (≤ 13) are
+  index order). Phase 4a identified them as spurious fold-line candidates; that was not
+  re-verified triangle by triangle here, and the bit-identical result below does not depend on it. Its later steps (≤ 13) are
   never truncated, and its positions and log L are **bit-identical at 15, 18, 20 and 24**. The old
   cap was truncating, but on this draw the truncation happened to be harmless. At 20 nothing is
   dropped. The gate records it as a draw the control's cap truncated, with no change.
