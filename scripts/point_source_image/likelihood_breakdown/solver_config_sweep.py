@@ -114,6 +114,26 @@ control on the stream / fiducial log L, the prior + stress positions, the
 gradients and the ``vmap`` values (``gates["step0_route_bit_identity"]``). Output
 ``solver_config_sweep_step0_<config_name>``.
 
+MAX_CONTAINING_SIZE headroom (phase 4c)
+---------------------------------------
+
+``--mcs-headroom`` replaces the geometry sweep with the production-geometry A/B of the
+cap ABOVE the library value (PyAutoArray#583): ``control`` (the library
+``MAX_CONTAINING_SIZE``, 15) beside ``mcs18`` / ``mcs20`` / ``mcs24`` (``--configs``
+narrows the set), each patched for tracing through :func:`max_containing_size` and proved
+from the traced ``(mcs, 2)`` shape; ``gates["patch_keeps_later_defaults"]`` re-proves the
+``__defaults__`` patch binds by name (``step0_layout=None`` kept). Every row is timed,
+completeness-checked, grad-checked and ``vmap``-ed at 1 / 4 / 16 and gets its own step-0
+prefix split (the containment pads to the cap). The NumPy uncapped containing counts are
+taken on the prior, stress and timing-stream draws, and each row reports, for EVERY
+refinement step, the max and the draws exceeding its cap. The gate is "no unexplained
+change" rather than bit-identity (``gates["mcs_no_unexplained_change"]``): a draw may
+differ from the control (finite positions, log L, gradient, ``vmap`` value) only when its
+uncapped count exceeds the control cap (or the row's own) at some step -- the capped
+trajectory is a subset of the uncapped one, so a count within the cap at every step means
+the cap never bit. Every differing draw is listed with its per-step uncapped counts.
+Output ``solver_config_sweep_mcs_<config_name>``.
+
 Output
 ------
 
@@ -194,6 +214,16 @@ _cell_parser.add_argument(
         "comma list of step-0 containment library routes "
         f"({','.join(STEP0_ROUTE_CHOICES)}): replaces the geometry sweep with a route A/B "
         "at the production geometry (phase 4b, PyAutoArray#579)"
+    ),
+)
+_cell_parser.add_argument(
+    "--mcs-headroom",
+    action="store_true",
+    help=(
+        "phase 4c (PyAutoArray#583): replace the geometry sweep with control (the library "
+        "MAX_CONTAINING_SIZE) + mcs18,mcs20,mcs24 at the production geometry; --configs "
+        "narrows that set. Adds the per-step uncapped counts, per-MCS draws exceeding the "
+        "cap and the no-unexplained-change gate"
     ),
 )
 _cell_parser.add_argument(
@@ -308,16 +338,35 @@ CONFIGS = [
 REFERENCE = _cfg("reference", "reference", extent=12.0, scale=0.05, precision=1.0e-4, mcs=60)
 REFERENCE_B = _cfg("reference_b", "reference", extent=11.0, scale=0.07, precision=1.0e-4, mcs=60)
 
+# (d) MAX_CONTAINING_SIZE headroom (phase 4c, PyAutoArray#583): ABOVE the production cap,
+# at the production geometry. Not in the default grid (selected by --mcs-headroom, or by
+# name through --configs), so the phase-4a default run is unchanged.
+MCS_HEADROOM_CONFIGS = [
+    _cfg("mcs18", "max_containing_size_headroom", mcs=18),
+    _cfg("mcs20", "max_containing_size_headroom", mcs=20),
+    _cfg("mcs24", "max_containing_size_headroom", mcs=24),
+]
+
 if _args.list_configs:
-    for c in CONFIGS:
+    for c in CONFIGS + MCS_HEADROOM_CONFIGS:
         print(c)
     sys.exit(0)
+MCS_MODE = bool(_args.mcs_headroom)
+if MCS_MODE and _args.step0_route:
+    raise SystemExit("--mcs-headroom and --step0-route are separate A/Bs; pass one")
+_POOL = (
+    [c for c in CONFIGS if c["name"] == "control"] + MCS_HEADROOM_CONFIGS
+    if MCS_MODE
+    else CONFIGS + MCS_HEADROOM_CONFIGS
+)
 if _args.configs:
     wanted = [c.strip() for c in _args.configs.split(",") if c.strip()]
-    unknown = [w for w in wanted if w not in {c["name"] for c in CONFIGS}]
+    unknown = [w for w in wanted if w not in {c["name"] for c in _POOL}]
     if unknown:
         raise SystemExit(f"--configs: unknown {unknown}; see --list-configs")
-    CONFIGS = [c for c in CONFIGS if c["name"] == "control" or c["name"] in wanted]
+    CONFIGS = [c for c in _POOL if c["name"] == "control" or c["name"] in wanted]
+elif MCS_MODE:
+    CONFIGS = _POOL
 STEP0_ROUTES = None
 if _args.step0_route:
     if not hasattr(_triangles_array, "_STEP0_CONTAINMENT"):
@@ -423,6 +472,42 @@ def max_containing_size(mcs: int):
 
 
 _ORIGINAL_INIT_DEFAULTS = _triangles_array.ArrayTriangles.__init__.__defaults__
+
+
+def patch_default_binding_probe(mcs: int) -> dict:
+    """Prove the ``__defaults__`` patch binds BY NAME: under the patch ``max_containing_size``
+    reads ``mcs`` and every later default (``step0_layout=None``, PyAutoArray#579) keeps its
+    original value, for both patched functions (phase 4b's fix, re-verified in 4c)."""
+    import inspect
+
+    out = {"mcs": int(mcs)}
+    ok = True
+    for label, fn in (
+        ("__init__", _triangles_array.ArrayTriangles.__init__),
+        ("for_limits_and_scale", _triangles_array.ArrayTriangles.for_limits_and_scale),
+    ):
+        before = {
+            k: v.default
+            for k, v in inspect.signature(fn).parameters.items()
+            if v.default is not inspect.Parameter.empty
+        }
+        with max_containing_size(mcs):
+            during = {
+                k: v.default
+                for k, v in inspect.signature(fn).parameters.items()
+                if v.default is not inspect.Parameter.empty
+            }
+        expected = {**before, "max_containing_size": int(mcs)}
+        out[label] = {"during": {k: repr(v) for k, v in during.items()}}
+        ok = ok and during == expected
+    with max_containing_size(mcs):
+        tri = _triangles_array.ArrayTriangles(
+            indices=np.zeros((1, 3), dtype=int), vertices=np.zeros((3, 2))
+        )
+    out["constructed_max_containing_size"] = int(tri.max_containing_size)
+    out["constructed_step0_layout"] = repr(tri.step0_layout)
+    out["pass"] = bool(ok and tri.max_containing_size == int(mcs) and tri.step0_layout is None)
+    return out
 
 
 @contextlib.contextmanager
@@ -1138,6 +1223,15 @@ gates = {
         and getattr(_triangles_array, "_STEP0_CONTAINMENT", None) == LIBRARY_STEP0_DEFAULT,
     },
 }
+_probes = {
+    c["name"]: patch_default_binding_probe(c["max_containing_size"])
+    for c in CONFIGS
+    if c["max_containing_size"] != PRODUCTION_MCS
+}
+gates["patch_keeps_later_defaults"] = {
+    "probes": _probes,
+    "pass": all(p["pass"] for p in _probes.values()),
+}
 note(
     f"fiducial gate: {repr(fid)} == {FIDUCIAL_SOLVED_LOG_L!r}: {gates['fiducial_bit_exact']['pass']}"
 )
@@ -1145,7 +1239,7 @@ note(
 grad_gate = {}
 for cfg in CONFIGS:
     name = cfg["name"]
-    if not (admissibility[name] or name == "control" or STEP0_MODE):
+    if not (admissibility[name] or name == "control" or STEP0_MODE or MCS_MODE):
         continue
 
     def gfactory(cfg=cfg):
@@ -1192,8 +1286,8 @@ note(f"best admissible (precision-equivalent): {best}; any precision: {best_any_
 
 vmap_block = None
 vvals = {}
-if best is not None or STEP0_MODE:
-    vmap_names = CONFIG_NAMES if STEP0_MODE else ["control", best]
+if best is not None or STEP0_MODE or MCS_MODE:
+    vmap_names = CONFIG_NAMES if (STEP0_MODE or MCS_MODE) else ["control", best]
     vroutes = [(n, b) for n in vmap_names for b in VMAP_BATCHES]
     vexec, vcompile, vargs = {}, {}, {}
     for n, b in vroutes:
@@ -1392,6 +1486,9 @@ def step0_factory(cfg, stage):
 geoms = {}
 for cfg in CONFIGS:
     key = (cfg["extent"], cfg["scale"], cfg.get("step0_route"))
+    if MCS_MODE:
+        # containing_indices pads to the route's MAX_CONTAINING_SIZE: time each cap.
+        key = key + (cfg["max_containing_size"],)
     geoms.setdefault(key, cfg)
 s0_exec = {}
 stages = ("source_centre", "ray_trace", "general_gather", "route_inputs", "containment")
@@ -1463,17 +1560,22 @@ note(
 note("uncapped containing counts (NumPy path) on the prior draws")
 
 
-def containing_counts(cfg, draws):
+def containing_count_matrix(cfg, draws, model=None, fit_cls=None):
+    """Per draw, the uncapped containing-triangle count of EVERY step (NumPy, no cap).
+
+    The NumPy path keeps every containing triangle, so its trajectory is the untruncated
+    one. A capped (JAX) trajectory keeps a subset at each step, so its later sets are
+    subsets too: an uncapped count <= the cap at every step means the cap never bit.
+    """
+    model = MODEL_SOLVED if model is None else model
+    fit_cls = al.FitPositionsImagePairAllSolved if fit_cls is None else fit_cls
     solver = make_solver(cfg)
     analysis = al.AnalysisPoint(
-        dataset=DATASET,
-        solver=solver,
-        fit_positions_cls=al.FitPositionsImagePairAllSolved,
-        use_jax=False,
+        dataset=DATASET, solver=solver, fit_positions_cls=fit_cls, use_jax=False
     )
     per_draw = []
     for v in draws:
-        fit = analysis.fit_from(instance=MODEL_SOLVED.instance_from_vector(vector=v)).positions
+        fit = analysis.fit_from(instance=model.instance_from_vector(vector=v)).positions
         shape = Point(*fit.source_plane_coordinate)
         counts = []
         for step in solver.steps(
@@ -1482,36 +1584,226 @@ def containing_counts(cfg, draws):
             t = np.asarray(step.filtered_triangles.triangles)
             counts.append(int(np.isfinite(t).all(axis=(1, 2)).sum()))
         per_draw.append(counts)
-    arr = np.asarray(per_draw)
+    return np.asarray(per_draw)
+
+
+def summarise_counts(arr, cap):
+    """Per-step and over-steps statistics of an uncapped count matrix against ``cap``."""
     worst = arr.max(axis=1)
     return {
         "n_draws": int(arr.shape[0]),
+        "cap": int(cap),
         "max_per_step": arr.max(axis=0).tolist(),
         "p99_per_step": np.percentile(arr, 99, axis=0).tolist(),
         "median_per_step": np.median(arr, axis=0).tolist(),
         "max_over_steps": int(arr.max()),
-        "draws_exceeding_cap": [int(i) for i in np.where(worst > cfg["max_containing_size"])[0]],
-        "n_draws_exceeding": {str(k): int((worst > k).sum()) for k in (6, 8, 10, 12, 15)},
+        "draws_exceeding_cap": [int(i) for i in np.where(worst > cap)[0]],
+        "draws_exceeding_cap_per_step": [
+            [int(i) for i in np.where(arr[:, s] > cap)[0]] for s in range(arr.shape[1])
+        ],
+        "n_draws_exceeding_cap_per_step": [
+            int((arr[:, s] > cap).sum()) for s in range(arr.shape[1])
+        ],
+        "headroom_over_steps": int(cap) - int(arr.max()),
+        "n_draws_exceeding": {
+            str(k): int((worst > k).sum()) for k in (6, 8, 10, 12, 15, 17, 18, 20, 24)
+        },
         "histogram_max_over_steps": {
             str(k): int(c) for k, c in zip(*np.unique(worst, return_counts=True))
         },
     }
 
 
+def containing_counts(cfg, draws):
+    return summarise_counts(containing_count_matrix(cfg, draws), cfg["max_containing_size"])
+
+
 uncapped_counts = {}
-for name in dict.fromkeys(n for n in ("control", best, best_any_precision) if n):
-    cfg = next(c for c in CONFIGS if c["name"] == name)
-    uncapped_counts[name] = containing_counts(cfg, prior_draws)
-    u = uncapped_counts[name]
-    note(
-        f"uncapped {name}: max per step {u['max_per_step']}; draws exceeding cap "
-        f"{cfg['max_containing_size']}: {u['draws_exceeding_cap']}"
-    )
+count_matrices = {}
+if MCS_MODE:
+    # Every MCS row shares the control geometry, so the uncapped trajectory is one matrix
+    # per sample; each MCS is summarised against its own cap.
+    _ctrl = next(c for c in CONFIGS if c["name"] == "control")
+    count_matrices["prior"] = containing_count_matrix(_ctrl, prior_draws)
+    count_matrices["stream"] = containing_count_matrix(_ctrl, stream)
+    if N_STRESS:
+        count_matrices["stress"] = containing_count_matrix(
+            _ctrl, stress_draws, model=MODEL_STRESS, fit_cls=al.FitPositionsImagePairAll
+        )
+    for cfg in CONFIGS:
+        uncapped_counts[cfg["name"]] = {
+            s: summarise_counts(m, cfg["max_containing_size"]) for s, m in count_matrices.items()
+        }
+    for s, m in count_matrices.items():
+        note(
+            f"uncapped {s}: max per step {m.max(axis=0).tolist()}; "
+            + ", ".join(
+                f"{c['name']} exceed/step "
+                f"{uncapped_counts[c['name']][s]['n_draws_exceeding_cap_per_step']}"
+                for c in CONFIGS
+            )
+        )
+else:
+    for name in dict.fromkeys(n for n in ("control", best, best_any_precision) if n):
+        cfg = next(c for c in CONFIGS if c["name"] == name)
+        uncapped_counts[name] = containing_counts(cfg, prior_draws)
+        u = uncapped_counts[name]
+        note(
+            f"uncapped {name}: max per step {u['max_per_step']}; draws exceeding cap "
+            f"{cfg['max_containing_size']}: {u['draws_exceeding_cap']}"
+        )
+
+# --- 8. MCS no-unexplained-change gate (phase 4c) --------------------------------
+# A row with a LARGER cap than the control may change the image set only where the
+# control's cap was truncating: an uncapped count > the control cap at some step of that
+# draw (or, for a cap still too small, > the row's own cap). Every other draw must be
+# bit-identical to the control (finite positions, log L, gradients, vmap values).
+
+
+def _explain(sample, i, cap):
+    counts = count_matrices[sample][i].tolist()
+    ctrl_steps = [s for s, n in enumerate(counts) if n > PRODUCTION_MCS]
+    own_steps = [s for s, n in enumerate(counts) if n > cap]
+    return {
+        "uncapped_counts_per_step": counts,
+        "control_truncated_steps": ctrl_steps,
+        "row_truncated_steps": own_steps,
+        "explained": bool(ctrl_steps or own_steps),
+    }
+
+
+def _position_change(sample, i, name):
+    a = finite_positions(raw_positions[sample]["control"][i])
+    b = finite_positions(raw_positions[sample][name][i])
+    if _same(a, b):
+        return None
+    ref = raw_positions[sample]["reference"][i]
+    cc, cr = compare_sets(ref, a), compare_sets(ref, b)
+    da, db = distinct(a), distinct(b)
+    if da.size and db.size:
+        d = np.hypot(da[:, None, 0] - db[None, :, 0], da[:, None, 1] - db[None, :, 1])
+        shift = float(max(d.min(axis=1).max(), d.min(axis=0).max()))
+    else:
+        shift = None
+    return {
+        "draw": int(i),
+        "control_raw": int(a.shape[0]),
+        "row_raw": int(b.shape[0]),
+        "control_distinct": int(da.shape[0]),
+        "row_distinct": int(db.shape[0]),
+        "reference_distinct": cc["ref_distinct"],
+        "control_matches_reference": cc["multiplicity_match"],
+        "row_matches_reference": cr["multiplicity_match"],
+        "control_max_err_vs_reference": max(cc["errors"]) if cc["errors"] else None,
+        "row_max_err_vs_reference": max(cr["errors"]) if cr["errors"] else None,
+        "distinct_set_hausdorff_vs_control": shift,
+        "image_set_changed": bool(cc["cfg_distinct"] != cr["cfg_distinct"])
+        or (shift is not None and shift > DISTINCT_TOL),
+    }
+
+
+mcs_change = {}
+if MCS_MODE:
+    ctrl_stream = [values["control"][k] for k in sorted(values["control"])]
+    for cfg in CONFIGS:
+        name = cfg["name"]
+        if name == "control":
+            continue
+        cap = cfg["max_containing_size"]
+        changes = []
+        for sample in [s for s in ("prior", "stress") if raw_positions[s].get(name)]:
+            for i in range(len(raw_positions[sample]["control"])):
+                ch = _position_change(sample, i, name)
+                logl_differs = sample == "prior" and not _same(
+                    config_logl[name][i], config_logl["control"][i]
+                )
+                if ch is None and not logl_differs:
+                    continue
+                ch = ch or {"draw": int(i), "positions_bit_identical": True}
+                ch["sample"] = sample
+                if sample == "prior":
+                    ch["log_l_control"] = config_logl["control"][i]
+                    ch["log_l_row"] = config_logl[name][i]
+                ch.update(_explain(sample, i, cap))
+                changes.append(ch)
+        stream_changes = []
+        for k in sorted(values["control"]):
+            if not _same(values[name].get(k), values["control"][k]):
+                stream_changes.append(
+                    {
+                        "stream_index": int(k),
+                        "log_l_control": values["control"][k],
+                        "log_l_row": values[name].get(k),
+                        **_explain("stream", k, cap),
+                    }
+                )
+        grad_changes = []
+        if name in grad_gate:
+            for k in range(len(grad_gate["control"]["gradients"])):
+                if not _same(grad_gate[name]["gradients"][k], grad_gate["control"]["gradients"][k]):
+                    grad_changes.append({"stream_index": int(k), **_explain("stream", k, cap)})
+        vmap_changes = []
+        for b in VMAP_BATCHES:
+            for bk, vals in (vvals.get((name, b)) or {}).items():
+                cvals = (vvals.get(("control", b)) or {}).get(bk)
+                for j, (x, y) in enumerate(zip(vals, cvals or [])):
+                    if not _same(x, y):
+                        k = (bk * b + j) % len(stream)
+                        vmap_changes.append(
+                            {
+                                "batch": b,
+                                "batch_index": int(bk),
+                                "stream_index": int(k),
+                                **_explain("stream", k, cap),
+                            }
+                        )
+        everything = changes + stream_changes + grad_changes + vmap_changes
+        unexplained = [c for c in everything if not c["explained"]]
+        fid_row = values[name].get(0)
+        mcs_change[name] = {
+            "max_containing_size": cap,
+            "fiducial_log_likelihood": fid_row,
+            "fiducial_repr": repr(fid_row),
+            "fiducial_bit_identical_to_expected": fid_row == FIDUCIAL_SOLVED_LOG_L,
+            "fiducial_bit_identical_to_control": fid_row == values["control"].get(0),
+            "fiducial_explanation": _explain("stream", 0, cap),
+            "stream_log_likelihood_bit_identical": [
+                values[name].get(k) for k in sorted(values["control"])
+            ]
+            == ctrl_stream,
+            "draw_changes": changes,
+            "n_image_set_changes": int(sum(bool(c.get("image_set_changed")) for c in changes)),
+            "stream_changes": stream_changes,
+            "grad_changes": grad_changes,
+            "vmap_changes": vmap_changes,
+            "n_unexplained": len(unexplained),
+            "unexplained": unexplained,
+            "pass": not unexplained,
+        }
+        note(
+            f"mcs gate {name}: {len(changes)} draw changes "
+            f"({mcs_change[name]['n_image_set_changes']} image-set), stream {len(stream_changes)}, "
+            f"grad {len(grad_changes)}, vmap {len(vmap_changes)}; unexplained {len(unexplained)}; "
+            f"fiducial {fid_row!r} bit-identical {fid_row == FIDUCIAL_SOLVED_LOG_L}"
+        )
+        for c in changes:
+            note(
+                f"  {name} {c['sample']} draw {c['draw']}: raw {c.get('control_raw')}->"
+                f"{c.get('row_raw')} distinct {c.get('control_distinct')}->{c.get('row_distinct')} "
+                f"(ref {c.get('reference_distinct')}); uncapped {c['uncapped_counts_per_step']}; "
+                f"explained {c['explained']}"
+            )
+    gates["mcs_no_unexplained_change"] = mcs_change
 
 # ===========================================================================
 # Summary
 # ===========================================================================
 
+CELL = (
+    "solver_config_sweep_step0"
+    if STEP0_MODE
+    else ("solver_config_sweep_mcs" if MCS_MODE else "solver_config_sweep")
+)
 config_name = _cli.config_name or (
     "local_cpu_fp64" if jax.default_backend() == "cpu" else "unlabelled_device_fp64"
 )
@@ -1563,18 +1855,80 @@ for name in CONFIG_NAMES:
         }
     )
 
+mcs_headroom = None
+if MCS_MODE:
+    _ctrl_compile = rows["control"]["compile"]["compile_s"]
+    mcs_headroom = {"control_max_containing_size": PRODUCTION_MCS, "rows": {}}
+    for t in table:
+        name = t["config"]
+        r = rows[name]
+        v16 = ((vmap_block or {}).get("rows") or {}).get(f"{name}_vmap16") or {}
+        u = uncapped_counts.get(name, {})
+        mcs_headroom["rows"][name] = {
+            "mcs": t["mcs"],
+            "median_ms": t["median_ms"],
+            "control_over_row": r["speedup_vs_control"],
+            "row_over_control_median": 1.0 / t["speedup"] if t["speedup"] else None,
+            "compile_s": t["compile_s"],
+            "compile_ratio_vs_control": t["compile_s"] / _ctrl_compile if _ctrl_compile else None,
+            "temp_bytes": t["temp_bytes"],
+            "flops": t["flops"],
+            "vmap16_ms_per_likelihood": v16.get("median_ms_per_likelihood"),
+            "vmap16_control_over_row": v16.get("speedup_vs_control_same_batch"),
+            "prior_multiplicity_agreement": t["prior_multiplicity_agreement"],
+            "stress_multiplicity_agreement": t["stress_multiplicity_agreement"],
+            "prior_max_err": t["prior_max_err"],
+            "uncapped_max_per_step": {s: v["max_per_step"] for s, v in u.items()},
+            "uncapped_max_over_steps": {s: v["max_over_steps"] for s, v in u.items()},
+            "draws_exceeding_cap_per_step": {
+                s: v["draws_exceeding_cap_per_step"] for s, v in u.items()
+            },
+            "n_draws_exceeding_cap": {s: len(v["draws_exceeding_cap"]) for s, v in u.items()},
+            "fiducial_log_likelihood": r["fiducial_log_likelihood"],
+            "fiducial_bit_identical": r["fiducial_log_likelihood"] == FIDUCIAL_SOLVED_LOG_L,
+            "no_unexplained_change": (mcs_change.get(name) or {}).get("pass", True),
+            "n_image_set_changes": (mcs_change.get(name) or {}).get("n_image_set_changes", 0),
+        }
+    _umax = max(
+        (max(v["max_over_steps"] for v in uncapped_counts["control"].values())),
+        0,
+    )
+    mcs_headroom["uncapped_max_over_all_samples_and_steps"] = int(_umax)
+    mcs_headroom["decision_rule"] = (
+        "smallest N >= 18 with uncapped max <= N - 3, no unexplained change, compile <= +20 %, "
+        "scalar median cost <= ~5 % (human picks N at the step-2 checkpoint)"
+    )
+    mcs_headroom["rule_candidates"] = [
+        n
+        for n, v in mcs_headroom["rows"].items()
+        if n != "control"
+        and v["mcs"] >= 18
+        and _umax <= v["mcs"] - 3
+        and v["no_unexplained_change"]
+        and (v["compile_ratio_vs_control"] or 0) <= 1.20
+        and (v["row_over_control_median"] or 0) <= 1.05
+    ]
+
 all_gates_pass = bool(
     gates["fiducial_bit_exact"]["pass"]
     and gates["patch_restored"]["pass"]
     and all(g["pass"] for g in gates["max_containing_size_patch"].values() if g)
     and all(g["pass"] for g in grad_gate.values())
     and all(g["pass"] for g in gates.get("step0_route_bit_identity", {}).values())
+    and all(g["pass"] for g in gates.get("mcs_no_unexplained_change", {}).values())
+    and gates["patch_keeps_later_defaults"]["pass"]
 )
 
 summary = {
-    "cell": "solver_config_sweep_step0" if STEP0_MODE else "solver_config_sweep",
-    "issue": "PyAutoLabs/PyAutoArray#579" if STEP0_MODE else "PyAutoLabs/autolens_profiling#314",
-    "phase": "4b" if STEP0_MODE else "4a",
+    "cell": CELL,
+    "issue": (
+        "PyAutoLabs/PyAutoArray#579"
+        if STEP0_MODE
+        else ("PyAutoLabs/PyAutoArray#583" if MCS_MODE else "PyAutoLabs/autolens_profiling#314")
+    ),
+    "phase": "4b" if STEP0_MODE else ("4c" if MCS_MODE else "4a"),
+    "mcs_headroom_mode": MCS_MODE,
+    "production_max_containing_size": PRODUCTION_MCS,
     "step0_routes": STEP0_ROUTES,
     "library_step0_default": LIBRARY_STEP0_DEFAULT,
     "config_name": config_name,
@@ -1659,6 +2013,7 @@ summary = {
     "vmap": vmap_block,
     "step0_split": step0_split,
     "uncapped_containing_counts": uncapped_counts,
+    "mcs_headroom": mcs_headroom,
     "gates": gates,
     "all_gates_pass": all_gates_pass,
     "completeness_compile": {
@@ -1671,10 +2026,8 @@ summary = {
 dict_path, chart_path = resolve_output_paths(
     _cli,
     default_dir=_ROOT / "results" / "breakdown" / "point_source_image",
-    default_basename="solver_config_sweep_step0_local"
-    if STEP0_MODE
-    else "solver_config_sweep_local",
-    cell="solver_config_sweep_step0" if STEP0_MODE else "solver_config_sweep",
+    default_basename=f"{CELL}_local",
+    cell=CELL,
 )
 dict_path.write_text(json.dumps(_scrub(summary), indent=2, default=str))
 
@@ -1749,6 +2102,30 @@ print(
 print(f"  best admissible (precision-equivalent): {best}; any precision: {best_any_precision}")
 print(f"  reference image extent: {reference_image_extent}")
 print(f"  fiducial gate: {gates['fiducial_bit_exact']}")
+if mcs_headroom:
+    print("-" * 150)
+    print(
+        f"  {'config':<7} {'mcs':>3} {'med_ms':>7} {'row/ctrl':>8} {'ctrl/row [90% CI]':>22} "
+        f"{'compile':>7} {'temp_B':>10} {'flops':>10} {'v16ms/L':>8} {'mult':>5} {'s_mult':>6} "
+        f"{'img-chg':>7} {'ok':>3}  uncapped max/step (prior) | exceed/step (prior; stress)"
+    )
+    for n, v in mcs_headroom["rows"].items():
+        c = v["control_over_row"]
+        print(
+            f"  {n:<7} {v['mcs']:3d} {v['median_ms']:7.3f} {v['row_over_control_median']:8.4f} "
+            f"{c['ratio']:6.4f} [{c['ci90_low']:.4f}, {c['ci90_high']:.4f}] "
+            f"{v['compile_s']:7.2f} {str(v['temp_bytes']):>10} {str(v['flops']):>10} "
+            f"{(v['vmap16_ms_per_likelihood'] or float('nan')):8.4f} "
+            f"{v['prior_multiplicity_agreement']:5.3f} {(v['stress_multiplicity_agreement'] or float('nan')):6.3f} "
+            f"{v['n_image_set_changes']:7d} {str(v['no_unexplained_change'])[0]:>3}  "
+            f"{v['uncapped_max_per_step'].get('prior')} | "
+            f"{[len(x) for x in v['draws_exceeding_cap_per_step'].get('prior', [])]}; "
+            f"{[len(x) for x in v['draws_exceeding_cap_per_step'].get('stress', [])]}"
+        )
+    print(
+        f"  uncapped max over all samples and steps: {mcs_headroom['uncapped_max_over_all_samples_and_steps']}"
+    )
+    print(f"  rule candidates: {mcs_headroom['rule_candidates']}")
 print(f"  all_gates_pass: {all_gates_pass}")
 print(f"  wall: {summary['wall_s']:.0f} s")
 print(f"  Results JSON: {dict_path}")
