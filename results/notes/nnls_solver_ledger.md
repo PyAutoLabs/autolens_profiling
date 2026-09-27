@@ -64,3 +64,5 @@ A100 rows (job 330046, `hpc/batch_gpu/submit_probe_nnls_a100`) — queued while
 `euclid-ral-gpu-[1-2]` are down; delivers the A100 per-step shares, the
 post-#368 Delaunay re-profile, and on-A100 PDIP probe numbers into
 `scratch/nnls_speedup/`.
+
+> **Correction — 2026-09-27:** A100 job 330046 completed on RAL (`output.330046.out` exists per the 2026-07-10 comment on autolens_profiling#59) but its output was never ingested here; the row stays "pending" as a record of that, not as an open queue item.

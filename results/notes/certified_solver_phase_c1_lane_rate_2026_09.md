@@ -297,6 +297,8 @@ jax.errors.JaxRuntimeError: RESOURCE_EXHAUSTED: Out of memory while trying to al
 
 ## Decisions (human, 2026-09-25)
 
+> **Correction — 2026-09-27:** the "some Δlog L" and "rectangular pix1 may need to stay on library PDIP" wording below was settled by the human on 2026-09-25 in the C2 prompt (`PyAutoMind/draft/feature/autofit/certified_solver_batched_guard_c2.md`): the near-peak gate is Δ = 100 nats from the batch maximum, pinned at 0.1 nats vs scalar PDIP, and rectangular pix1 stays on library PDIP. Wiki: `wiki/campaigns/certified_positive_solver.md`.
+
 The human's reply to the open questions, verbatim: "I agree to all 3, proceed". The three
 proposals it approved were: file the B=50 `jit(vmap)` fault as its own bug, let phase C2 go ahead
 under a near-peak gate instead of the strict 1e-9 pin, and push and ship this note. This section

@@ -16,6 +16,8 @@ speeding up. Worst case is ~3.5 min cold on a 1-core laptop (the deliberate
 worst-case tier — XLA compiles on host cores); on a 32-core node every cell is
 ≤ 75 s cold and ≤ 2 s warm.
 
+> **Correction — 2026-09-27:** "≤ 2 s warm" excludes the Delaunay family: finding 2 below and the `scripts/misc/jax_compile/README.md` table show `delaunay_matern` warm = cold (16.3 s `vag`, 21.2 s `laxmap_vag`, RAL job 331379) because the qhull `pure_callback` never hits the persistent cache (`PyAutoMind/draft/research/autoarray/delaunay_callback_persistent_cache_miss.md`).
+
 The one real defect this census found is that **the Delaunay family never hits
 the persistent compilation cache** — it pays full compile in every process,
 forever, on the mesh family that can least afford it.

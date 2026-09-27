@@ -118,6 +118,8 @@ before `[4, 2, 2]` over-sampling. The current canonical rows, all from one node 
 window, are in
 [`a100_pixelized_baseline_2026_09.md`](./a100_pixelized_baseline_2026_09.md):
 
+> **Correction — 2026-09-27:** the 2026-07-11 date of A100 jobs 323017–323022 is not verified — those job ids precede the 2026-07-10 PreOptimizationTimes A100 jobs (330062–330070), so the rows are older than the date says. Quote them as superseded rows only ([A100 pixelized baseline](../../wiki/campaigns/a100_pixelized_baseline.md)).
+
 | Cell | Phase | Dense | Sparse | Δ |
 |---|---|---:|---:|---|
 | Rectangular 1521 | single-JIT per-call | 50.63 ms | 57.63 ms | sparse +13.8 % |
