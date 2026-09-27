@@ -1474,3 +1474,172 @@ hpc/sync submit --cpu submit_breakdown_point_source_image_solver_config_sweep_st
 hpc/sync submit --cpu submit_breakdown_point_source_image_solver_config_sweep_step0_gpu_node_cpu_fp64  # EPYC fallback
 hpc/sync submit --gpu submit_breakdown_point_source_image_solver_config_sweep_step0_a100_fp64          # A100
 ```
+
+## Phase 4c — `MAX_CONTAINING_SIZE` headroom 15 → 20 (2026-09-27)
+
+Issue: [PyAutoArray #583](https://github.com/PyAutoLabs/PyAutoArray/issues/583). Branch
+`feature/pointsolver-mcs-headroom` in PyAutoArray, PyAutoLens and autolens_profiling. **A correctness
+fix, not a speed lever.** The JAX `PointSolver` keeps at most `MAX_CONTAINING_SIZE` containing triangles
+per refinement step and silently truncates the rest (`jnp.where(..., size=MAX_CONTAINING_SIZE)`).
+Phase 4a counted a step-0 maximum of 17 on the prior, so 15 was already truncating. The geometry is
+otherwise unchanged (±9.9″ / 0.2 / 1e-3).
+
+### What changed
+
+- **PyAutoArray** `autoarray/structures/triangles/array.py`: `MAX_CONTAINING_SIZE = 20` (was 15).
+  `ArrayTriangles.__init__` / `for_limits_and_scale` bind it as their default, and
+  `CoordinateArrayTriangles.with_vertices` inherits that default. No other 15 in
+  `structures/triangles/` is tied to the cap. New test
+  `test_coordinate_jax.py::test__containing_set_above_the_old_cap_is_not_truncated[16|17]`: the static
+  lattice traced through `z → z**k` gives a k-sheet fold. Under `jit` all 16 or 17 containing
+  triangles are kept at the default, padded to `(20,)`, and the old cap of 15, passed explicitly,
+  drops some. **Red at 15** (keeps 15 of 16 / 17), green at 20.
+- **PyAutoLens** `autolens/point/solver/shape_solver.py`: the `ShapeSolver` JAX rejection message is
+  built from `autoarray.structures.triangles.array.MAX_CONTAINING_SIZE`. That module is NumPy-only, so
+  the message is still a plain string, the same with or without JAX. The docstring names the constant
+  instead of "(15)", and `test_shape_solver.py` pins the rendered constant.
+- **Harness** (`solver_config_sweep.py --mcs-headroom`, commits `a40e140` / `d5a971e` / `d6757ad`):
+  `mcs18` / `mcs20` / `mcs24` rows against the library control (15), each patched for tracing only.
+  NumPy uncapped containing counts for **every** refinement step on the prior, stress and stream
+  draws. `gates.mcs_no_unexplained_change`: a row may differ from the control only on a draw whose
+  uncapped count exceeds the control's cap at some step. `--configs` narrows the set.
+
+### Decision rule and the human call
+
+Pre-registered rule: the smallest N ≥ 18 whose uncapped max over all steps and draws is ≤ N − 3, with
+no unexplained change, compile ≤ +20 % and at most about +5 % on the scalar median.
+- On the quotable 8490H row, mcs20 clears every leg except the cost leg: it costs **+6.2 %**.
+  mcs18 fails the margin leg (17 > 18 − 3) and costs +5.0 %. `rule_candidates` is therefore empty
+  on the 8490H and laptop rows.
+- **Human decision (2026-09-27, recorded on #583): N = 20, accepting the +6.2 % cost-leg miss.**
+  The fix is for correctness, and 20 is the smallest cap that clears the observed 17 with a
+  three-triangle margin.
+
+### Quotable row: RAL CPU, Xeon Platinum 8490H — job 358976
+
+`euclid-ral-compute-10-4`, 8 CPUs, fp64, NPROC 8, BLAS 1, phase-1 XLA_FLAGS. Wall 397 s,
+`all_gates_pass: true`. Every library came from the shared mirror, asserted: PyAutoArray `e281abf3`
+(includes #580), PyAutoLens `dcbd4b71`, PyAutoGalaxy `ba8a08fa`, PyAutoFit `c156a9d8`, PyAutoNerves
+`bf104102`; profiling `d6757ad`. JSON
+[`solver_config_sweep_mcs_hpc_ral_cpu_fp64.json`](../breakdown/point_source_image/solver_config_sweep_mcs_hpc_ral_cpu_fp64.json);
+log [`point_source_cpu_2026_09_27_ral_job_358976_mcs_headroom_8490h_cpu.out`](point_source_cpu_2026_09_27_ral_job_358976_mcs_headroom_8490h_cpu.out).
+
+**The node was loaded**, with loadavg ≈ 206–210 on 236 cores. The rows are interleaved round by
+round, so the ratios stand. The absolute ms are not comparable to phase 4a.
+
+| row | median ms | row / control | control / row [90 % CI] | paired-round | vmap-1 / 4 / 16 ms/L | compile s (vs ctrl) | XLA temp KB | FLOPs M |
+|---|---:|---:|---:|---:|---|---:|---:|---:|
+| control (15) | 1.466 | 1.000 | 1.000 [0.982, 1.019] | 1.000 | 1.450 / 0.991 / 0.821 | 4.29 | 881 | 2.80 |
+| mcs18 | 1.538 | 1.050 | 0.953 [0.934, 0.965] | 0.946 | 1.565 / 1.059 / 0.856 | 4.48 (+4.5 %) | 883 | 2.93 |
+| **mcs20** (chosen) | 1.557 | **1.062** | 0.941 [0.922, 0.953] | 0.925 | 1.548 / 1.076 / 0.892 | 4.59 (**+7.0 %**) | 884 | 3.02 |
+| mcs24 | 1.597 | 1.090 | 0.918 [0.900, 0.927] | 0.915 | 1.634 / 1.167 / 0.925 | 4.91 (+14.4 %) | 886 | 3.20 |
+
+- Cost grows roughly linearly with the cap: +1.0–1.7 % per extra slot on the scalar call and about
+  +1.5 % in FLOPs per slot. XLA temp memory is flat (+0.3 %).
+- mcs20 under vmap-16 costs +8.6 % (0.892 vs 0.821 ms/L).
+
+### Laptop witness (not quotable)
+
+`solver_config_sweep_mcs_laptop_cpu_fp64.json`: i9-10885H under WSL2, profiling `d6757ad`, loadavg ≈ 3.
+- Row / control: mcs18 1.036, **mcs20 1.055**, mcs24 1.112. Control 2.151 ms.
+- vmap-16: 1.107 / 1.199 / 1.226 / 1.281 ms/L.
+- Compile +18.3 / +36.3 / +10.4 %. One cold compile per row on WSL2 is noise: the ordering is not
+  monotonic, and the 8490H shows +4.5 / +7.0 / +14.4 %.
+- Otherwise the same verdict: `all_gates_pass: true` and zero image-set changes.
+
+### A100 no-regression row — job 359102
+
+- Hardware: `euclid-ral-gpu-1`, NVIDIA A100 80 GB PCIe (driver 610.57.04), host EPYC 7702, idle
+  (loadavg 0.08 → 1.54). Wall 270 s.
+- Run: `JAX_PLATFORMS=cuda` + `JAX_PLATFORM_NAME=cuda`, and the job asserted the `gpu` backend.
+  Configs `control,mcs20`, with the same mirror revisions as the 8490H row. Profiling `add12a2`.
+- Submit
+  `hpc/batch_gpu/submit_breakdown_point_source_image_solver_config_sweep_mcs_a100_fp64`.
+  `all_gates_pass: true`.
+- JSON
+  [`solver_config_sweep_mcs_hpc_ral_a100_fp64.json`](../breakdown/point_source_image/solver_config_sweep_mcs_hpc_ral_a100_fp64.json);
+  log [`point_source_cpu_2026_09_27_ral_job_359102_mcs_headroom_a100.out`](point_source_cpu_2026_09_27_ral_job_359102_mcs_headroom_a100.out).
+
+| row | median ms | row / control | control / row [90 % CI] | paired-round | vmap-1 / 4 / 16 ms/L | compile s (vs ctrl) | XLA temp KB |
+|---|---:|---:|---:|---:|---|---:|---:|
+| control (15) | 0.827 | 1.000 | 1.000 [0.997, 1.003] | 1.000 | 0.837 / 0.235 / 0.071 | 5.60 | 381 |
+| mcs20 | 0.825 | 0.997 | 1.003 [0.999, 1.005] | 1.001 | 0.838 / 0.254 / 0.071 | 5.78 (+3.2 %) | 380 |
+
+**No regression on the launch-bound A100:** the scalar call is ~1.00× and vmap-16 is flat. vmap-4
+reads +8 % (0.254 vs 0.235 ms/L), a 19 µs single-cell difference that vmap-1 and vmap-16 do not
+show. The fiducial `7.743201200876806` (the established A100 value) is bit-identical at both caps.
+
+### Completeness, truncation and draw 12
+
+- Every row on every run: 200/200 prior and 200/200 stress, multiplicity agreement 1.0, max position
+  error 8.51e-4″ (unchanged from phase 4a). **Zero image-set, position or log L changes** against the
+  control on 200 prior + 200 stress + 16 stream draws.
+- Uncapped containing counts per step (8490H; identical on the laptop and A100, NumPy path):
+
+  | sample | max per step 0–7 | p99 per step | median | draws > 15 per step |
+  |---|---|---|---|---|
+  | prior (200) | 17 / 13 / 11 / 9 / 7 / 5 / 5 / 5 | 15 / 11 / 9 / 7 / 5 / 5 / 5 / 5 | 9 / 5 / … / 5 | 1 / 0 / 0 / 0 / 0 / 0 / 0 / 0 |
+  | stress (200) | 7 / 5 / 5 / 5 / 5 / 5 / 5 / 5 | 5 | 3 | none |
+  | stream (16) | 13 / 9 / 5 / 5 / 5 / 5 / 5 / 5 | — | 9 / 5 / … | none |
+
+  The uncapped maximum over all samples and steps is **17**. With 20 no draw exceeds the cap at any
+  step, a margin of 3.
+- **Draw 12 explained.** It is the only draw over 15, at step 0 only (17 containing triangles). At
+  MCS 15 the two highest-index entries are dropped (`jnp.where(size=...)` keeps the first 15 in
+  index order). Phase 4a identified them as spurious fold-line candidates; that was not
+  re-verified triangle by triangle here, and the bit-identical result below does not depend on it. Its later steps (≤ 13) are
+  never truncated, and its positions and log L are **bit-identical at 15, 18, 20 and 24**. The old
+  cap was truncating, but on this draw the truncation happened to be harmless. At 20 nothing is
+  dropped. The gate records it as a draw the control's cap truncated, with no change.
+
+### Gradient allowance (scoped)
+
+A padded `(MCS, 2)` positions array changes the length of the backward pass's reductions, so XLA
+may reorder a sum.
+- `gates.mcs_no_unexplained_change` therefore allows a `jax.grad` difference against the control of
+  at most `GRAD_ROUNDING_RTOL = 1e-12` relative, and only under two conditions:
+  - the row is an MCS row; step-0 route rows and the control stay strictly bit-identical;
+  - the log L is bit-identical.
+- A log L difference is never tolerated. It is only ever an explained truncation change.
+- **Observed maximum:** 6.08e-14 on the 8490H (stream instances 0 and 2), 5.58e-15 on the laptop and
+  1.98e-14 on the A100, all "padded-length reduction rounding (log L bit-identical)".
+- `jax.grad` is finite and non-zero on every row. The patch is restored, and the traced positions
+  shape is `(mcs, 2)` on every row (`gates.max_containing_size_patch`).
+
+### Fiducial
+
+`7.743201200876812` (CPU: 8490H and laptop) and `7.743201200876806` (A100) are **bit-identical at
+every cap**. The padded rows are `inf` sentinels that contribute nothing, so no re-pin is needed.
+`FIDUCIAL_SOLVED_LOG_L_BY_BACKEND` is unchanged.
+
+### Library suites, pins and downstream (branch libraries, laptop)
+
+- Suites: PyAutoArray **1738 passed**; PyAutoLens **759 passed, 1 xfailed** (the deferred
+  `ShapeSolver` JAX parity xfail). Both ran with the branch PyAutoArray first on `PYTHONPATH`.
+- autolens_workspace_test pins: `scripts/point_source/jax_likelihood/{point,image_plane,source_plane,fluxes_time_delays}.py`
+  and `scripts/point_source/jax_grad/gradient.py` **all pass unchanged** against the branch PyAutoArray
+  + PyAutoLens (`MAX_CONTAINING_SIZE` 20 asserted at import). The exact `-83.38049777774609` point pin
+  holds and every gradient check passes, so **no pin changes** and no workspace_test PR. The scripts
+  ran in scratch detached worktrees of workspace main.
+- No workspace, workspace_test or HowToLens script assumes a `(15, 2)` positions shape. The grep for
+  `(15, 2)`, `MAX_CONTAINING_SIZE` and `max_containing_size` finds nothing.
+- Targeted smoke, the #580 selection of 31 point-source scripts, under each workspace's
+  `profile_smoke.yaml`: HowToLens **3/3**, autolens_workspace **19/19**, autolens_workspace_test
+  **9/9**: 31/31 pass.
+
+### Revisions
+
+| repo | revision |
+|---|---|
+| PyAutoArray (branch, local) | `462ad094` (on `e281abf3`) |
+| PyAutoLens (branch, local) | `ae95341d` (on `dcbd4b71`) |
+| RAL mirror (both jobs) | PyAutoArray `e281abf3`, PyAutoLens `dcbd4b71`, PyAutoGalaxy `ba8a08fa`, PyAutoFit `c156a9d8`, PyAutoNerves `bf104102` |
+| autolens_profiling | `d6757ad` (8490H job 358976, laptop), `add12a2` (A100 job 359102) |
+
+### Reproduce (RAL)
+
+```bash
+# RAL worktree of feature/pointsolver-mcs-headroom; libraries are the shared mirror (MCS 15 = control)
+hpc/sync submit --cpu submit_breakdown_point_source_image_solver_config_sweep_mcs_ral_cpu_fp64  # quotable, 8490H
+hpc/sync submit --gpu submit_breakdown_point_source_image_solver_config_sweep_mcs_a100_fp64     # A100
+```
