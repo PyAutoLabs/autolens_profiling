@@ -5,7 +5,7 @@
 **Pre-registered rule:** autolens_profiling#241 witness: fresh-cache, same-node A100 fp64 rows dated after PyAutoNerves#162 with `--xla_gpu_enable_triton_gemm=false` in `device.xla_flags`, dense "Curvature matrix (F)" under 6 ms on every dense row, w-tilde-native sparse breakdown rows, per-call-at-`vmap`-16 numbers for every mesh. Parent PyAutoNerves#161 witness: a fresh-cache Delaunay breakdown with F < 6 ms and `curvature_matrix_jit_compile` < 0.2 s.
 **Verdict:** every #241 clause met, on 12 legs rather than the 8 the witness named (DelaunayNN added); dense F 4.824–4.830 ms on all three meshes; sparse is the memory lever, not the speed lever (+6–14 % per call at `vmap` 16, ~7x less device memory); the ~37 ms reconstruction is the target, refined by #243 to 21–22 NNLS PDIP iterations at ~1.7 ms each. XLA cure: the human chose arm E (keep autotune level 0, add Triton GEMM off) over the prompt's proposed "drop level 0".
 **Headline:** dense per call at `vmap` 16: rectangular 32.08 / Delaunay 42.53 / DelaunayNN 46.44 ms, A100 `euclid-ral-gpu-2` jobs 342617 / 342618 / 342619 (fresh per-job cache, Triton GEMM off).
-**Library PRs:** PyAutoNerves#162 (merge `0e7163bc`, release not verified — PyAutoNerves not cloned); consumes PyAutoArray#531 / #533 / #537 (see [DelaunayNN A100 series](delaunay_nn_a100_series.md)).
+**Library PRs:** PyAutoNerves#162 (merge `0e7163bc`, released 2026.9.11.1); consumes PyAutoArray#531 / #533 / #537 (see [DelaunayNN A100 series](delaunay_nn_a100_series.md)).
 **Profiling PRs:** #230 (merge `fb532c01`), #242 (merge `c8b6058`), #244 (merge `2a4216a`).
 **Ledger:** [a100_pixelized_baseline_2026_09.md](../../results/notes/a100_pixelized_baseline_2026_09.md), [xla_autotune_triton_gemm.md](../../results/notes/xla_autotune_triton_gemm.md)
 **Mind contract:** epic not recorded; `complete/2026/09/xla-triton-gemm-off.md` (parent), `complete/2026/09/a100-pixelized-baseline.md`, `complete/2026/09/reconstruction-row-split.md`.
@@ -40,7 +40,7 @@ against.
 
 | PR | What | Merge | Release |
 |---|---|---|---|
-| PyAutoNerves#162 | `jax_wrapper` appends `--xla_gpu_enable_triton_gemm=false` to the level-0 default (issue PyAutoNerves#161) | `0e7163bc` | not verified (PyAutoNerves not cloned) |
+| PyAutoNerves#162 | `jax_wrapper` appends `--xla_gpu_enable_triton_gemm=false` to the level-0 default (issue PyAutoNerves#161) | `0e7163bc` | 2026.9.11.1 |
 
 The baseline and reconstruction split are profiling-only (#242, #244); no library PR.
 
@@ -75,5 +75,5 @@ Header filled from the ledger and the verified facts sheet; body pending backfil
 Page now records four phases: the 2026-09-05 autotune A/B that opened the question, the five-arm
 XLA probe and PyAutoNerves#162, the twelve-job baseline (#241 / #242) and the reconstruction
 split (#243 / #244), which lives in the same ledger. Resolved: the Mind contract (three records),
-the profiling PRs and merges, and the witness verdicts. Open: the PyAutoNerves#162 release tag is
-not verified (no clone of that library on the release sheet).
+the profiling PRs and merges, and the witness verdicts. PyAutoNerves#162 verified released 2026.9.11.1 (first tag containing `0e7163bc`).
+Nothing left open on this page.

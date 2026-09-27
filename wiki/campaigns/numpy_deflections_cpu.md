@@ -77,5 +77,5 @@ Header filled from the ledger and the verified facts sheet; body pending backfil
 Page now records the epic goal as the pre-registered rule, all three phases with their per-phase targets,
 and six library PRs with merge SHAs and releases (PyAutoGalaxy#597, PyAutoArray#519 and PyAutoGalaxy#599 were
 missing; all six released 2026.9.4.1). Verdict written from the phase records; the NFW 1.6× headline is
-located on the phase-3 web container, not RAL. Open: the JAX-path audit (#215, PyAutoGalaxy#603) has no page
-and its release is not on the release sheet; no RAL row exists for any phase.
+located on the phase-3 web container, not RAL. Open: the JAX-path audit (#215, PyAutoGalaxy#603, released 2026.9.4.1) is folded
+into this page as a follow-up rather than given its own page; no RAL row exists for any phase.
