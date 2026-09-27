@@ -1,0 +1,214 @@
+AP_ROOT=/mnt/ral/jnightin/autolens_profiling_wt/point-source-source-plane-p2e
+==========================================
+Sun 27 Sep 20:26:45 BST 2026
+euclid-ral-gpu-2
+Model name:                              AMD EPYC 7702 64-Core Processor
+partition:      gpu
+nodelist:       euclid-ral-gpu-2
+cpus-per-task:  8
+sched_affinity: 8
+loadavg:        0.00 0.00 0.00 1/1240 154963
+config name:    hpc_ral_gpunode_cpu_fp64
+Cell:           point_source_source/likelihood_breakdown/gradient_mode_library_ab
+Precision:      fp64 (JAX_ENABLE_X64=1)
+Thread env:     OMP=1 MKL=1 OPENBLAS=1 NPROC=8
+XLA_FLAGS:      --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false
+=== source revisions ===
+PyAutoNerves (shared)  bf104102312852537159b7fad2f998ab6677b4e4
+PyAutoArray (shared)   e281abf3257e9efd4915f1daa9acc0498be250a5
+PyAutoGalaxy (shared)  ba8a08fabcb13d9472f2bd43ef4fea6039284d50
+PyAutoFit (scratch clone) 867af1c6b917b326c732f092b0ea9858447f2a78
+PyAutoLens (scratch clone) b3c9b68e7ff5b0c2d5d4a42fcc8139ca777a66ce
+AP_ROOT rev:   2bf293aa778f32152527cbce244d79b6c868bf30
+AP_ROOT branch: feature/point-source-source-plane-p2e
+=== import provenance (refuses unless autofit/autolens are the merge-commit scratch clones) ===
+autoarray.__file__ = /mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/__init__.py
+autolens.__file__ = /mnt/ral/jnightin/p2d_check/PyAutoLens/autolens/__init__.py
+autofit.__file__ = /mnt/ral/jnightin/p2d_check/PyAutoFit/autofit/__init__.py
+autogalaxy.__file__ = /mnt/ral/jnightin/PyAuto/PyAutoGalaxy/autogalaxy/__init__.py
+AnalysisPoint.gradient_mode = forward
+jax 0.10.2 [CpuDevice(id=0)] cpu
+ASSERT OK: CPU backend, gradient_mode merge commits from the scratch clones
+==========================================
+gradient_mode library A/B (20 x 20)
+Sun 27 Sep 20:27:01 BST 2026
+loadavg: 0.22 0.05 0.02 1/1240 155008
+declared default: {'AnalysisPoint.gradient_mode': 'forward', 'resolve_gradient_mode(AnalysisPoint)': 'forward', 'MultiStartAdam()._resolved_gradient_mode': 'forward', "MultiStartAdam(gradient_mode='reverse')._resolved_gradient_mode": 'reverse', 'pass': True}
+
+--- L5_solved: n_params 5 ---
+2026-09-27 20:27:04,744 - autofit.non_linear.search.abstract_search - INFO - Starting non-linear search with JAX (CPU: cpu).
+2026-09-27 20:27:04,744 - autofit.non_linear.search.abstract_search - INFO - On-the-fly updates of the maximum likelihood model are disabled. Set `updates: iterations_per_quick_update` in config/general.yaml to a finite number of iterations to enable them.
+2026-09-27 20:27:04,807 - capture_L5_solved_forward - INFO - The output path of this fit is /tmp/gradient_mode_library_ab_zl4c4ljn/capture_L5_solved_forward/375b615bdfc5215a99caef0e267cf267
+2026-09-27 20:27:04,807 - capture_L5_solved_forward - INFO - Outputting pre-fit files (e.g. model.info, visualization).
+2026-09-27 20:27:05,450 - capture_L5_solved_forward - INFO - MultiStartGradient gradient mode: forward (declared by AnalysisPoint).
+2026-09-27 20:27:05,451 - autofit.non_linear.search.abstract_search - INFO - Starting non-linear search with JAX (CPU: cpu).
+2026-09-27 20:27:05,451 - autofit.non_linear.search.abstract_search - INFO - On-the-fly updates of the maximum likelihood model are disabled. Set `updates: iterations_per_quick_update` in config/general.yaml to a finite number of iterations to enable them.
+2026-09-27 20:27:05,480 - capture_L5_solved_reverse - INFO - The output path of this fit is /tmp/gradient_mode_library_ab_zl4c4ljn/capture_L5_solved_reverse/375b615bdfc5215a99caef0e267cf267
+2026-09-27 20:27:05,480 - capture_L5_solved_reverse - INFO - Outputting pre-fit files (e.g. model.info, visualization).
+2026-09-27 20:27:05,577 - capture_L5_solved_reverse - INFO - MultiStartGradient gradient mode: reverse (search override).
+  [L5_solved/forward] lower   1.56 s  compile    1.14 s  first     3.504 ms
+  [L5_solved/reverse] lower   1.89 s  compile    1.95 s  first     2.051 ms
+  gate PASS  obj 6.2e-12  grad 1.0e-10  min|g| 219
+  median ms/step  forward_exe 0.3120  reverse_exe 0.6856  forward_jit 0.3109  reverse_jit 0.6632  | fwd/rev exe 0.455 [0.450, 0.465]  jit 0.469 [0.461, 0.476]  | 2c batched 0.448
+
+--- L5_plain: n_params 8 ---
+2026-09-27 20:27:16,534 - autofit.non_linear.search.abstract_search - INFO - Starting non-linear search with JAX (CPU: cpu).
+2026-09-27 20:27:16,534 - autofit.non_linear.search.abstract_search - INFO - On-the-fly updates of the maximum likelihood model are disabled. Set `updates: iterations_per_quick_update` in config/general.yaml to a finite number of iterations to enable them.
+2026-09-27 20:27:16,562 - capture_L5_plain_forward - INFO - The output path of this fit is /tmp/gradient_mode_library_ab_zl4c4ljn/capture_L5_plain_forward/36c96208ab9fa7c593e1d0b6498d8ea3
+2026-09-27 20:27:16,562 - capture_L5_plain_forward - INFO - Outputting pre-fit files (e.g. model.info, visualization).
+2026-09-27 20:27:16,660 - capture_L5_plain_forward - INFO - MultiStartGradient gradient mode: forward (declared by AnalysisPoint).
+2026-09-27 20:27:16,661 - autofit.non_linear.search.abstract_search - INFO - Starting non-linear search with JAX (CPU: cpu).
+2026-09-27 20:27:16,662 - autofit.non_linear.search.abstract_search - INFO - On-the-fly updates of the maximum likelihood model are disabled. Set `updates: iterations_per_quick_update` in config/general.yaml to a finite number of iterations to enable them.
+2026-09-27 20:27:16,690 - capture_L5_plain_reverse - INFO - The output path of this fit is /tmp/gradient_mode_library_ab_zl4c4ljn/capture_L5_plain_reverse/36c96208ab9fa7c593e1d0b6498d8ea3
+2026-09-27 20:27:16,690 - capture_L5_plain_reverse - INFO - Outputting pre-fit files (e.g. model.info, visualization).
+2026-09-27 20:27:16,785 - capture_L5_plain_reverse - INFO - MultiStartGradient gradient mode: reverse (search override).
+  [L5_plain/forward] lower   1.19 s  compile    0.83 s  first     1.257 ms
+  [L5_plain/reverse] lower   1.29 s  compile    1.22 s  first     1.781 ms
+  gate PASS  obj 1.6e-13  grad 2.0e-12  min|g| 7.49e+04
+  median ms/step  forward_exe 0.3088  reverse_exe 0.5322  forward_jit 0.3063  reverse_jit 0.5345  | fwd/rev exe 0.580 [0.575, 0.588]  jit 0.573 [0.563, 0.581]  | 2c batched 0.543
+
+--- L24_solved: n_params 24 ---
+2026-09-27 20:27:24,816 - autofit.non_linear.search.abstract_search - INFO - Starting non-linear search with JAX (CPU: cpu).
+2026-09-27 20:27:24,817 - autofit.non_linear.search.abstract_search - INFO - On-the-fly updates of the maximum likelihood model are disabled. Set `updates: iterations_per_quick_update` in config/general.yaml to a finite number of iterations to enable them.
+2026-09-27 20:27:24,846 - capture_L24_solved_forward - INFO - The output path of this fit is /tmp/gradient_mode_library_ab_zl4c4ljn/capture_L24_solved_forward/f2e9a7b30fe8b4a27c382feee0983abc
+2026-09-27 20:27:24,846 - capture_L24_solved_forward - INFO - Outputting pre-fit files (e.g. model.info, visualization).
+2026-09-27 20:27:24,949 - capture_L24_solved_forward - INFO - MultiStartGradient gradient mode: forward (declared by AnalysisPoint).
+2026-09-27 20:27:24,952 - autofit.non_linear.search.abstract_search - INFO - Starting non-linear search with JAX (CPU: cpu).
+2026-09-27 20:27:24,952 - autofit.non_linear.search.abstract_search - INFO - On-the-fly updates of the maximum likelihood model are disabled. Set `updates: iterations_per_quick_update` in config/general.yaml to a finite number of iterations to enable them.
+2026-09-27 20:27:24,981 - capture_L24_solved_reverse - INFO - The output path of this fit is /tmp/gradient_mode_library_ab_zl4c4ljn/capture_L24_solved_reverse/f2e9a7b30fe8b4a27c382feee0983abc
+2026-09-27 20:27:24,981 - capture_L24_solved_reverse - INFO - Outputting pre-fit files (e.g. model.info, visualization).
+2026-09-27 20:27:25,181 - capture_L24_solved_reverse - INFO - MultiStartGradient gradient mode: reverse (search override).
+  [L24_solved/forward] lower   5.12 s  compile    6.06 s  first     2.302 ms
+  [L24_solved/reverse] lower   6.50 s  compile   89.42 s  first     4.216 ms
+  gate PASS  obj 4.8e-13  grad 7.7e-10  min|g| 786
+  median ms/step  forward_exe 1.0833  reverse_exe 2.9760  forward_jit 1.0875  reverse_jit 3.0254  | fwd/rev exe 0.364 [0.361, 0.368]  jit 0.359 [0.357, 0.362]  | 2c batched 0.406
+
+--- L24_plain: n_params 27 ---
+2026-09-27 20:29:28,814 - autofit.non_linear.search.abstract_search - INFO - Starting non-linear search with JAX (CPU: cpu).
+2026-09-27 20:29:28,814 - autofit.non_linear.search.abstract_search - INFO - On-the-fly updates of the maximum likelihood model are disabled. Set `updates: iterations_per_quick_update` in config/general.yaml to a finite number of iterations to enable them.
+2026-09-27 20:29:28,846 - capture_L24_plain_forward - INFO - The output path of this fit is /tmp/gradient_mode_library_ab_zl4c4ljn/capture_L24_plain_forward/84f8339972e38c7ff84cc43385601205
+2026-09-27 20:29:28,846 - capture_L24_plain_forward - INFO - Outputting pre-fit files (e.g. model.info, visualization).
+2026-09-27 20:29:28,947 - capture_L24_plain_forward - INFO - MultiStartGradient gradient mode: forward (declared by AnalysisPoint).
+2026-09-27 20:29:28,949 - autofit.non_linear.search.abstract_search - INFO - Starting non-linear search with JAX (CPU: cpu).
+2026-09-27 20:29:28,949 - autofit.non_linear.search.abstract_search - INFO - On-the-fly updates of the maximum likelihood model are disabled. Set `updates: iterations_per_quick_update` in config/general.yaml to a finite number of iterations to enable them.
+2026-09-27 20:29:28,978 - capture_L24_plain_reverse - INFO - The output path of this fit is /tmp/gradient_mode_library_ab_zl4c4ljn/capture_L24_plain_reverse/84f8339972e38c7ff84cc43385601205
+2026-09-27 20:29:28,978 - capture_L24_plain_reverse - INFO - Outputting pre-fit files (e.g. model.info, visualization).
+2026-09-27 20:29:29,077 - capture_L24_plain_reverse - INFO - MultiStartGradient gradient mode: reverse (search override).
+  [L24_plain/forward] lower   3.46 s  compile    4.27 s  first     2.147 ms
+  [L24_plain/reverse] lower   4.36 s  compile   30.43 s  first     3.099 ms
+  gate PASS  obj 1.1e-12  grad 7.4e-12  min|g| 6.89e+05
+  median ms/step  forward_exe 1.1095  reverse_exe 1.9752  forward_jit 1.1101  reverse_jit 2.0182  | fwd/rev exe 0.562 [0.552, 0.569]  jit 0.550 [0.542, 0.565]  | 2c batched 0.559
+2026-09-27 20:30:23,369 - autofit.non_linear.search.abstract_search - INFO - Starting non-linear search with JAX (CPU: cpu).
+2026-09-27 20:30:23,369 - autofit.non_linear.search.abstract_search - INFO - On-the-fly updates of the maximum likelihood model are disabled. Set `updates: iterations_per_quick_update` in config/general.yaml to a finite number of iterations to enable them.
+2026-09-27 20:30:23,401 - e2e_warmup - INFO - The output path of this fit is /tmp/gradient_mode_library_ab_zl4c4ljn/e2e_warmup/375b615bdfc5215a99caef0e267cf267
+2026-09-27 20:30:23,401 - e2e_warmup - INFO - Outputting pre-fit files (e.g. model.info, visualization).
+2026-09-27 20:30:23,497 - e2e_warmup - INFO - MultiStartGradient gradient mode: reverse (search override).
+2026-09-27 20:30:24,700 - e2e_warmup - INFO - JAX: jit compiling the single-point objective used to draw 8 broad starts, could take seconds or minutes...
+2026-09-27 20:30:28,142 - e2e_warmup - INFO - Starting new adam MultiStartGradient search (8 starts, no previous samples found).
+2026-09-27 20:30:28,142 - e2e_warmup - INFO - JAX: jit compiling the vmapped objective over all 8 starts at once, could take seconds or minutes...
+2026-09-27 20:30:31,918 - e2e_warmup - INFO - adam step 1/20 | best log_post 1.4153 | alive 8/8
+2026-09-27 20:30:32,645 - e2e_warmup - INFO - adam step 10/20 | best log_post 1.6708 | gained 0.2555 | alive 8/8
+2026-09-27 20:30:32,657 - e2e_warmup - INFO - adam step 20/20 | best log_post 1.8640 | gained 0.1932 | alive 8/8
+2026-09-27 20:30:32,659 - e2e_warmup - INFO - adam MultiStartGradient sampling complete.
+2026-09-27 20:30:32,727 - e2e_warmup - INFO - Fit Running: Updating results (see output folder).
+2026-09-27 20:30:32,729 - autofit.non_linear.samples.samples - INFO - Samples with weight less than 1e-10 removed from samples.csv.
+2026-09-27 20:30:32,730 - autofit.non_linear.search.updater - INFO - Creating latent samples by drawing 100 from the PDF.
+2026-09-27 20:30:32,730 - autofit.non_linear.search.updater - INFO - Drawing via PDF not available for this search, using all samples above the samples weight threshold instead.
+2026-09-27 20:30:43,070 - e2e_warmup - INFO - Removing search internal folder.
+2026-09-27 20:30:43,070 - e2e_warmup - INFO - Removing all files except for .zip file
+2026-09-27 20:30:43,295 - e2e_warmup - INFO - Search complete, returning result
+2026-09-27 20:30:43,297 - autofit.non_linear.search.abstract_search - INFO - Starting non-linear search with JAX (CPU: cpu).
+2026-09-27 20:30:43,297 - autofit.non_linear.search.abstract_search - INFO - On-the-fly updates of the maximum likelihood model are disabled. Set `updates: iterations_per_quick_update` in config/general.yaml to a finite number of iterations to enable them.
+2026-09-27 20:30:43,326 - e2e_L5_solved_forward - INFO - The output path of this fit is /tmp/gradient_mode_library_ab_zl4c4ljn/e2e_L5_solved_forward/375b615bdfc5215a99caef0e267cf267
+2026-09-27 20:30:43,326 - e2e_L5_solved_forward - INFO - Outputting pre-fit files (e.g. model.info, visualization).
+2026-09-27 20:30:43,423 - e2e_L5_solved_forward - INFO - MultiStartGradient gradient mode: forward (declared by AnalysisPoint).
+2026-09-27 20:30:43,424 - e2e_L5_solved_forward - INFO - JAX: jit compiling the single-point objective used to draw 8 broad starts, could take seconds or minutes...
+2026-09-27 20:30:45,599 - e2e_L5_solved_forward - INFO - Starting new adam MultiStartGradient search (8 starts, no previous samples found).
+2026-09-27 20:30:45,600 - e2e_L5_solved_forward - INFO - JAX: jit compiling the vmapped objective over all 8 starts at once, could take seconds or minutes...
+2026-09-27 20:30:48,340 - e2e_L5_solved_forward - INFO - adam step 1/20 | best log_post 1.4153 | alive 8/8
+2026-09-27 20:30:48,351 - e2e_L5_solved_forward - INFO - adam step 10/20 | best log_post 1.6708 | gained 0.2555 | alive 8/8
+2026-09-27 20:30:48,362 - e2e_L5_solved_forward - INFO - adam step 20/20 | best log_post 1.8640 | gained 0.1932 | alive 8/8
+2026-09-27 20:30:48,364 - e2e_L5_solved_forward - INFO - adam MultiStartGradient sampling complete.
+2026-09-27 20:30:48,403 - e2e_L5_solved_forward - INFO - Fit Running: Updating results (see output folder).
+2026-09-27 20:30:48,405 - autofit.non_linear.samples.samples - INFO - Samples with weight less than 1e-10 removed from samples.csv.
+2026-09-27 20:30:48,406 - autofit.non_linear.search.updater - INFO - Creating latent samples by drawing 100 from the PDF.
+2026-09-27 20:30:48,406 - autofit.non_linear.search.updater - INFO - Drawing via PDF not available for this search, using all samples above the samples weight threshold instead.
+2026-09-27 20:30:53,560 - e2e_L5_solved_forward - INFO - Removing search internal folder.
+2026-09-27 20:30:53,561 - e2e_L5_solved_forward - INFO - Removing all files except for .zip file
+2026-09-27 20:30:53,836 - e2e_L5_solved_forward - INFO - Search complete, returning result
+2026-09-27 20:30:53,837 - autofit.non_linear.search.abstract_search - INFO - Starting non-linear search with JAX (CPU: cpu).
+2026-09-27 20:30:53,838 - autofit.non_linear.search.abstract_search - INFO - On-the-fly updates of the maximum likelihood model are disabled. Set `updates: iterations_per_quick_update` in config/general.yaml to a finite number of iterations to enable them.
+2026-09-27 20:30:53,866 - e2e_L5_solved_reverse - INFO - The output path of this fit is /tmp/gradient_mode_library_ab_zl4c4ljn/e2e_L5_solved_reverse/375b615bdfc5215a99caef0e267cf267
+2026-09-27 20:30:53,867 - e2e_L5_solved_reverse - INFO - Outputting pre-fit files (e.g. model.info, visualization).
+2026-09-27 20:30:53,963 - e2e_L5_solved_reverse - INFO - MultiStartGradient gradient mode: reverse (search override).
+2026-09-27 20:30:53,964 - e2e_L5_solved_reverse - INFO - JAX: jit compiling the single-point objective used to draw 8 broad starts, could take seconds or minutes...
+2026-09-27 20:30:56,850 - e2e_L5_solved_reverse - INFO - Starting new adam MultiStartGradient search (8 starts, no previous samples found).
+2026-09-27 20:30:56,850 - e2e_L5_solved_reverse - INFO - JAX: jit compiling the vmapped objective over all 8 starts at once, could take seconds or minutes...
+2026-09-27 20:31:00,399 - e2e_L5_solved_reverse - INFO - adam step 1/20 | best log_post 1.4153 | alive 8/8
+2026-09-27 20:31:00,411 - e2e_L5_solved_reverse - INFO - adam step 10/20 | best log_post 1.6708 | gained 0.2555 | alive 8/8
+2026-09-27 20:31:00,424 - e2e_L5_solved_reverse - INFO - adam step 20/20 | best log_post 1.8640 | gained 0.1932 | alive 8/8
+2026-09-27 20:31:00,426 - e2e_L5_solved_reverse - INFO - adam MultiStartGradient sampling complete.
+2026-09-27 20:31:00,498 - e2e_L5_solved_reverse - INFO - Fit Running: Updating results (see output folder).
+2026-09-27 20:31:00,499 - autofit.non_linear.samples.samples - INFO - Samples with weight less than 1e-10 removed from samples.csv.
+2026-09-27 20:31:00,501 - autofit.non_linear.search.updater - INFO - Creating latent samples by drawing 100 from the PDF.
+2026-09-27 20:31:00,501 - autofit.non_linear.search.updater - INFO - Drawing via PDF not available for this search, using all samples above the samples weight threshold instead.
+2026-09-27 20:31:05,615 - e2e_L5_solved_reverse - INFO - Removing search internal folder.
+2026-09-27 20:31:05,616 - e2e_L5_solved_reverse - INFO - Removing all files except for .zip file
+2026-09-27 20:31:05,881 - e2e_L5_solved_reverse - INFO - Search complete, returning result
+  e2e L5_solved: PASS  vec rel 6.7e-13  logL rel 1.6e-14  _fit wall fwd 4.98 s  rev 6.54 s  (fit() 10.54 / 12.04 s)
+2026-09-27 20:31:05,883 - autofit.non_linear.search.abstract_search - INFO - Starting non-linear search with JAX (CPU: cpu).
+2026-09-27 20:31:05,883 - autofit.non_linear.search.abstract_search - INFO - On-the-fly updates of the maximum likelihood model are disabled. Set `updates: iterations_per_quick_update` in config/general.yaml to a finite number of iterations to enable them.
+2026-09-27 20:31:05,912 - e2e_L5_plain_forward - INFO - The output path of this fit is /tmp/gradient_mode_library_ab_zl4c4ljn/e2e_L5_plain_forward/36c96208ab9fa7c593e1d0b6498d8ea3
+2026-09-27 20:31:05,912 - e2e_L5_plain_forward - INFO - Outputting pre-fit files (e.g. model.info, visualization).
+2026-09-27 20:31:06,007 - e2e_L5_plain_forward - INFO - MultiStartGradient gradient mode: forward (declared by AnalysisPoint).
+2026-09-27 20:31:06,008 - e2e_L5_plain_forward - INFO - JAX: jit compiling the single-point objective used to draw 8 broad starts, could take seconds or minutes...
+2026-09-27 20:31:07,704 - e2e_L5_plain_forward - INFO - Starting new adam MultiStartGradient search (8 starts, no previous samples found).
+2026-09-27 20:31:07,704 - e2e_L5_plain_forward - INFO - JAX: jit compiling the vmapped objective over all 8 starts at once, could take seconds or minutes...
+2026-09-27 20:31:09,818 - e2e_L5_plain_forward - INFO - adam step 1/20 | best log_post -851.3815 | alive 8/8
+2026-09-27 20:31:10,288 - e2e_L5_plain_forward - INFO - adam step 10/20 | best log_post -529.9959 | gained 321.3856 | alive 5/8
+2026-09-27 20:31:10,297 - e2e_L5_plain_forward - INFO - adam step 20/20 | best log_post -529.9959 | gained 0.0000 | alive 5/8
+2026-09-27 20:31:10,300 - e2e_L5_plain_forward - INFO - adam MultiStartGradient sampling complete.
+2026-09-27 20:31:10,331 - e2e_L5_plain_forward - INFO - Fit Running: Updating results (see output folder).
+2026-09-27 20:31:10,334 - autofit.non_linear.samples.samples - INFO - Samples with weight less than 1e-10 removed from samples.csv.
+2026-09-27 20:31:10,335 - autofit.non_linear.search.updater - INFO - Creating latent samples by drawing 100 from the PDF.
+2026-09-27 20:31:10,335 - autofit.non_linear.search.updater - INFO - Drawing via PDF not available for this search, using all samples above the samples weight threshold instead.
+2026-09-27 20:31:16,602 - e2e_L5_plain_forward - INFO - Removing search internal folder.
+2026-09-27 20:31:16,603 - e2e_L5_plain_forward - INFO - Removing all files except for .zip file
+2026-09-27 20:31:16,918 - e2e_L5_plain_forward - INFO - Search complete, returning result
+2026-09-27 20:31:16,919 - autofit.non_linear.search.abstract_search - INFO - Starting non-linear search with JAX (CPU: cpu).
+2026-09-27 20:31:16,919 - autofit.non_linear.search.abstract_search - INFO - On-the-fly updates of the maximum likelihood model are disabled. Set `updates: iterations_per_quick_update` in config/general.yaml to a finite number of iterations to enable them.
+2026-09-27 20:31:16,948 - e2e_L5_plain_reverse - INFO - The output path of this fit is /tmp/gradient_mode_library_ab_zl4c4ljn/e2e_L5_plain_reverse/36c96208ab9fa7c593e1d0b6498d8ea3
+2026-09-27 20:31:16,948 - e2e_L5_plain_reverse - INFO - Outputting pre-fit files (e.g. model.info, visualization).
+2026-09-27 20:31:17,043 - e2e_L5_plain_reverse - INFO - MultiStartGradient gradient mode: reverse (search override).
+2026-09-27 20:31:17,044 - e2e_L5_plain_reverse - INFO - JAX: jit compiling the single-point objective used to draw 8 broad starts, could take seconds or minutes...
+2026-09-27 20:31:18,958 - e2e_L5_plain_reverse - INFO - Starting new adam MultiStartGradient search (8 starts, no previous samples found).
+2026-09-27 20:31:18,958 - e2e_L5_plain_reverse - INFO - JAX: jit compiling the vmapped objective over all 8 starts at once, could take seconds or minutes...
+2026-09-27 20:31:21,521 - e2e_L5_plain_reverse - INFO - adam step 1/20 | best log_post -851.3815 | alive 8/8
+2026-09-27 20:31:21,534 - e2e_L5_plain_reverse - INFO - adam step 10/20 | best log_post -529.9959 | gained 321.3856 | alive 5/8
+2026-09-27 20:31:21,543 - e2e_L5_plain_reverse - INFO - adam step 20/20 | best log_post -529.9959 | gained 0.0000 | alive 5/8
+2026-09-27 20:31:21,545 - e2e_L5_plain_reverse - INFO - adam MultiStartGradient sampling complete.
+2026-09-27 20:31:21,597 - e2e_L5_plain_reverse - INFO - Fit Running: Updating results (see output folder).
+2026-09-27 20:31:21,600 - autofit.non_linear.samples.samples - INFO - Samples with weight less than 1e-10 removed from samples.csv.
+2026-09-27 20:31:21,601 - autofit.non_linear.search.updater - INFO - Creating latent samples by drawing 100 from the PDF.
+2026-09-27 20:31:21,601 - autofit.non_linear.search.updater - INFO - Drawing via PDF not available for this search, using all samples above the samples weight threshold instead.
+2026-09-27 20:31:27,465 - e2e_L5_plain_reverse - INFO - Removing search internal folder.
+2026-09-27 20:31:27,465 - e2e_L5_plain_reverse - INFO - Removing all files except for .zip file
+2026-09-27 20:31:27,778 - e2e_L5_plain_reverse - INFO - Search complete, returning result
+  e2e L5_plain: PASS  vec rel 4.9e-14  logL rel 8.2e-16  _fit wall fwd 4.32 s  rev 4.55 s  (fit() 11.04 / 10.86 s)
+
+====================================================================================================
+GRADIENT_MODE LIBRARY A/B  (hpc_ral_gpunode_cpu_fp64, rounds=20, calls/round=20)
+====================================================================================================
+  cell           n  gate   fwd_exe   rev_exe   ratio   fwd_jit   rev_jit   ratio      2c  cmp fwd/rev s
+  L5_solved      5    ok    0.3120    0.6856   0.455    0.3109    0.6632   0.469   0.448   2.70/3.84  
+  L5_plain       8    ok    0.3088    0.5322   0.580    0.3063    0.5345   0.573   0.543   2.02/2.52  
+  L24_solved    24    ok    1.0833    2.9760   0.364    1.0875    3.0254   0.359   0.406  11.18/95.91 
+  L24_plain     27    ok    1.1095    1.9752   0.562    1.1101    2.0182   0.550   0.559   7.73/34.79 
+  declared default pass: True   all gates pass: True
+  wall: 266 s
+  Results JSON: /mnt/ral/jnightin/autolens_profiling_wt/point-source-source-plane-p2e/results/breakdown/point_source_source/gradient_mode_library_ab_hpc_ral_gpunode_cpu_fp64.json
+  Results PNG:  /mnt/ral/jnightin/autolens_profiling_wt/point-source-source-plane-p2e/results/breakdown/point_source_source/gradient_mode_library_ab_hpc_ral_gpunode_cpu_fp64.png
+==========================================
+loadavg: 1.34 0.89 0.39 1/1247 155462
+Finished.
+Sun 27 Sep 20:31:28 BST 2026

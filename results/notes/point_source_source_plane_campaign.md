@@ -1022,3 +1022,203 @@ a GPU regression check and gradient parity tests (fwd ≡ rev) on a non-point-so
 - `PowerLawMultipole` m=1 is singular at slope 2 (`-inf`/NaN deflections).
 - `Isothermal.convergence_2d_from` / `shear_yx_2d_from` cannot be jit-traced with traced
   `ell_comps` (carried from phase 2b).
+
+## Phase 2e — gradient_mode through the library (2026-09-27)
+
+Issue: [autolens_profiling #334](https://github.com/PyAutoLabs/autolens_profiling/issues/334).
+Branch `feature/point-source-source-plane-p2e`; the RAL jobs ran commit `2bf293a`.
+Single-source only. Workspace-only: no library was edited. The library side is phase 2d
+(PyAutoFit#1649, merge `867af1c`; PyAutoLens#752, merge `b3c9b68`): an analysis-declared
+`gradient_mode`, `al.AnalysisPoint.gradient_mode = "forward"`, and a
+`MultiStartGradient(gradient_mode=...)` override.
+
+### What landed
+
+- `scripts/point_source_source/likelihood_breakdown/gradient_mode_library_ab.py` asks whether the
+  phase-2b/2c forward-mode speed-up survives the real `af.MultiStartAdam` path. It uses phase 2c's
+  `L5` and `L24` rungs, both lanes, the same `simple` dataset, the same ladder builders and the same
+  per-rung seeds, so the timed start batches are the ones phase 2c timed.
+- **The real path, not a re-implementation.** `MultiStartGradient._fit` builds its objective
+  inline. The chain is `Fitness(fom_is_log_likelihood=False, convert_to_chi_squared=True)`, then
+  `value_and_grad_from(fitness.call, gradient_mode)`, then the local `_value_and_grad_finite`
+  wrapper (which adds `all(isfinite(grad))` and the constraint violation as outputs), then
+  `_vmapped = jax.jit(jax.vmap(_value_and_grad_finite))`. None of this is exposed, so the cell runs
+  `search.fit(model, analysis)` with `jax.jit` temporarily wrapped by a recorder. When the search
+  jits a function named `_value_and_grad_finite`, the recorder keeps the jitted object and aborts
+  the fit, before any compile or likelihood evaluation. The kept object *is* the search's
+  `_vmapped`, closing over the search's own `Fitness`. The timed objective is therefore
+  `-2 log posterior` (`Fitness.call`, with its value guards), not phase 2c's bare `log L`.
+- **Modes.** `forward` = `af.MultiStartAdam()` with no override, so the mode comes from
+  `AnalysisPoint`'s declaration. `reverse` = `af.MultiStartAdam(gradient_mode="reverse")`. Both use
+  B = `n_starts` = 8 with `batch_size=None`, one vmap over all starts, as in phase 2c's batched row.
+  The defaults are `ScalerNone`, `BijectorNone` and `ClipperNone`, so the stepped vector is the
+  physical one.
+- **Routes timed.** `<mode>_exe` is `_vmapped.lower(example).compile()`, the AOT executable,
+  comparable to phase 2c's `*_batched`. `<mode>_jit` is the captured jitted callable itself, called
+  the way the search's step loop calls it. Both modes are interleaved, 20 rounds × 20 calls with
+  the order rotated each round, and every call is `block_until_ready`'d. The ratio forward/reverse
+  comes with a bootstrap 90 % CI.
+- **End-to-end fits.** At `L5`, per lane, one complete `search.fit` per mode (`n_starts=8`,
+  `n_steps=20`, `seed=334`, no abort). A throwaway warm-up fit runs first. Two walls are recorded:
+  the whole `fit()`, and the `_fit` call alone (compiles + steps, no output I/O).
+- Submits `hpc/batch_cpu/submit_gradient_mode_library_ab_point_source_source_ral_cpu_fp64`
+  (reference CPU: `--partition=gpu`, no `--gres`, pinned to `euclid-ral-gpu-2`) and
+  `hpc/batch_gpu/submit_gradient_mode_library_ab_point_source_source_a100_fp64` (pinned to
+  `euclid-ral-gpu-1`). Both prepend the scratch library clones and refuse to run unless `autofit`
+  and `autolens` import from them at the merge commits. WALL-BASIS = the laptop's measured 315 s.
+- Rows `gradient_mode_library_ab_{local_cpu_fp64,hpc_ral_gpunode_cpu_fp64,hpc_a100_fp64}` (JSON +
+  PNG) under `results/breakdown/point_source_source/`. The CPU job log is
+  `results/notes/point_source_source_plane_2026_09_27_ral_job_359192.out`.
+
+### Hosts and revisions
+
+- **RAL gpu-partition host CPUs (reference)**: job 359192 on `euclid-ral-gpu-2` (AMD EPYC 7702),
+  `--partition=gpu`, no `--gres`, 8 CPUs, `sched_affinity` 8, BLAS threads 1. The node was quiet:
+  load average 0.22 at start and 1.37 at end. Process wall 266 s; `COMPLETED` in 4:45.
+- **A100**: job 359193 on `euclid-ral-gpu-1` (host EPYC 7702), `JAX_PLATFORMS=cuda`, backend
+  asserted `gpu`, JSON device `cuda:0`. Process wall 307 s; `COMPLETED` in 5:18. The host was
+  *not* quiet: another 8-CPU job (`vispix_cores_diag`) was running on the node, with load average
+  7.1 at start and 3.4 at end. It used no GPU, but host-side dispatch was shared (see the A100
+  L24 note below).
+- **Laptop (lead)**: i9-10885H, WSL2, 8 threads (`OMP/OPENBLAS/MKL/NPROC=8`). Load average 1.8 at
+  start (other sessions) and 2.4 at end; process wall 315 s.
+- **Libraries, laptop**: the canonical mains, imported through the task worktree's symlinks.
+  PyAutoNerves `bf10410`, PyAutoFit `867af1c`, PyAutoArray `e281abf3`, PyAutoGalaxy `152695e0`,
+  PyAutoLens `b3c9b68`; JAX 0.10.2. The worktree `activate.sh` put the task symlinks first on
+  PYTHONPATH, and they resolve to the canonical mains, so no stale library worktree was involved.
+- **Libraries, RAL (both jobs)**: the shared `/mnt/ral/jnightin/PyAuto` stack did not carry the
+  merged `gradient_mode` commits (PyAutoFit `c156a9d8`, PyAutoLens `dcbd4b71`). It was **not**
+  touched, because live DR1 array jobs use it. Instead the scratch clones
+  `/mnt/ral/jnightin/p2d_check/PyAutoFit` and `/mnt/ral/jnightin/p2d_check/PyAutoLens` were
+  fast-forwarded by git bundle from the phase-2d feature commits to the merge commits `867af1c6`
+  and `b3c9b68e` (the merge trees are identical to the feature trees), then prepended to
+  PYTHONPATH. PyAutoNerves `bf10410` and PyAutoArray `e281abf3` came from the shared stack, both
+  equal to the local mains. PyAutoGalaxy `ba8a08fa` also came from the shared stack. It is one PR
+  behind main `152695e0`, and that PR touches only `PowerLawCore`, which these models do not use.
+  JAX 0.10.2. The JSON `source_revisions` and `library_files` record exactly this.
+
+### Correctness gate (all three hosts)
+
+- **Declared default.** On every host, `AnalysisPoint.gradient_mode`,
+  `resolve_gradient_mode(AnalysisPoint)` and `af.MultiStartAdam()._resolved_gradient_mode(...)` all
+  resolve to `forward`, and the `gradient_mode="reverse"` override resolves to `reverse`. Every
+  captured and end-to-end search logged `MultiStartGradient gradient mode: forward (declared by
+  AnalysisPoint).` or `... reverse (search override).` as appropriate. PASS.
+- **Batched step, forward vs reverse.** One B = 8 start batch per `PRNGKey` 0..15
+  (`U(0.25, 0.75)` unit cube, 128 starts per rung × lane). Checks: objective rtol 1e-10,
+  gradient rtol 1e-8 (atol 1e-12 × max|∇|), all finite, the search's own `grad_finite` flag True,
+  no zero gradient row, and distinct StableHLO hashes:
+
+| Rung | Lane | n | objective fwd vs rev (worst host) | gradient fwd vs rev (worst host) | min ‖∇‖ | Result (3 hosts) |
+|---|---|---|---|---|---|---|
+| L5 | solved | 5 | 6.2e-12 | 1.0e-10 | 219 | PASS |
+| L5 | plain | 8 | 1.6e-13 | 2.0e-12 | 7.49e+04 | PASS |
+| L24 | solved | 24 | 4.8e-13 | 2.1e-09 (A100) | 786 | PASS |
+| L24 | plain | 27 | 1.1e-12 | 7.4e-12 | 6.89e+05 | PASS |
+
+  On the A100 the forward and reverse objectives were bit-identical (rel err 0).
+- **End-to-end `MultiStartAdam` fits (L5).** The forward and reverse fits reach the same best vector
+  (worst rel err 1.4e-12, tolerance 1e-6) and the same max log likelihood (worst 2.7e-14,
+  tolerance 1e-8) in both lanes. The max log likelihood is identical across all three hosts
+  (solved 2.107660, plain −485.923685). PASS.
+
+### Timing (20 rounds × 20 calls, interleaved; median ms per batched step, B = 8; ratio forward / reverse with bootstrap 90 % CI)
+
+"2c batched" is phase 2c's `fwd_batched / rev_batched` for the same host and rung × lane
+(`gradient_mode_crossover_<host>.json`), timed on bare `log L` with no library wrapper. The `jit`
+ratio (the search's own dispatch) matches the `exe` ratio everywhere within ~0.02 except A100
+L24 solved, so the table shows `exe`; both are in the JSONs.
+
+| Host | Rung | Lane | n | fwd ms (2c) | rev ms (2c) | **fwd/rev library** [90 % CI] | 2c batched [90 % CI] | jit fwd/rev | lower+compile s fwd / rev (2c batched) |
+|---|---|---|---|---|---|---|---|---|---|
+| RAL EPYC (reference) | L5 | solved | 5 | 0.312 (0.279) | 0.686 (0.623) | **0.455** [0.450, 0.465] | 0.448 [0.442, 0.453] | 0.469 | 2.7 / 3.8 (2.7 / 3.6) |
+| RAL EPYC (reference) | L5 | plain | 8 | 0.309 (0.276) | 0.532 (0.508) | **0.580** [0.575, 0.588] | 0.543 [0.534, 0.548] | 0.573 | 2.0 / 2.5 (1.9 / 2.4) |
+| RAL EPYC (reference) | L24 | solved | 24 | 1.083 (1.051) | 2.976 (2.586) | **0.364** [0.361, 0.368] | 0.406 [0.401, 0.412] | 0.359 | 11.2 / 95.9 (10.5 / 91.7) |
+| RAL EPYC (reference) | L24 | plain | 27 | 1.110 (1.092) | 1.975 (1.952) | **0.562** [0.552, 0.569] | 0.559 [0.553, 0.565] | 0.550 | 7.7 / 34.8 (7.5 / 29.7) |
+| A100 | L5 | solved | 5 | 0.287 (0.290) | 0.446 (0.429) | **0.643** [0.638, 0.647] | 0.675 [0.669, 0.681] | 0.642 | 3.8 / 6.5 (3.6 / 6.5) |
+| A100 | L5 | plain | 8 | 0.267 (0.248) | 0.379 (0.342) | **0.704** [0.699, 0.708] | 0.725 [0.721, 0.733] | 0.695 | 3.2 / 5.4 (2.7 / 5.1) |
+| A100 | L24 | solved | 24 | 1.264 (1.061) | 4.837 (2.714) | **0.261** [0.254, 0.267] | 0.391 [0.389, 0.393] | 0.286 | 15.3 / 33.5 (15.7 / 31.3) |
+| A100 | L24 | plain | 27 | 1.116 (1.021) | 2.264 (2.045) | **0.493** [0.490, 0.496] | 0.499 [0.498, 0.501] | 0.495 | 15.8 / 20.8 (13.4 / 20.4) |
+| Laptop (lead, loaded) | L5 | solved | 5 | 0.471 (0.466) | 0.726 (0.750) | **0.649** [0.640, 0.661] | 0.621 [0.610, 0.635] | 0.648 | 4.1 / 4.6 (7.5 / 7.6) |
+| Laptop (lead, loaded) | L5 | plain | 8 | 0.415 (0.343) | 0.526 (0.505) | **0.789** [0.780, 0.798] | 0.680 [0.653, 0.706] | 0.801 | 2.4 / 3.0 (3.6 / 4.4) |
+| Laptop (lead, loaded) | L24 | solved | 24 | 1.556 (1.581) | 3.063 (2.561) | **0.508** [0.502, 0.517] | 0.617 [0.609, 0.626] | 0.512 | 14.2 / 121.7 (17.2 / 134.1) |
+| Laptop (lead, loaded) | L24 | plain | 27 | 1.608 (1.712) | 2.058 (2.076) | **0.781** [0.776, 0.789] | 0.825 [0.810, 0.837] | 0.770 | 8.8 / 40.5 (10.5 / 51.7) |
+
+Reading it (reference host first):
+
+- **Forward mode wins through the library at every host, rung and lane.** The step is 1.7–2.7×
+  faster on the reference EPYC and 1.4–3.8× faster on the A100. No ratio's CI comes near 1.
+- **Reference EPYC vs phase 2c.** L5 solved (0.455 vs 0.448) and L24 plain (0.562 vs 0.559) match
+  within noise. L5 plain is slightly less favourable (0.580 vs 0.543), and L24 solved is *more*
+  favourable (0.364 vs 0.406). The library wrapper costs ~+0.02–0.06 ms per batched step at L5 in
+  both modes (fwd 0.312 vs 0.279 ms; rev 0.686 vs 0.623 ms). At L24 the forward step is within 3 %
+  of phase 2c, while the reverse step is 15 % slower in the solved lane (2.976 vs 2.586 ms). That
+  extra reverse cost, not a slower forward step, is why the library ratio beats phase 2c's there.
+  In short, the library path adds no overhead to forward mode beyond a fixed ~0.03 ms at L5, and
+  the phase-2c ratios carry over.
+- **A100 L24 solved is the outlier**: reverse is 4.84 ms through the library vs 2.71 ms in phase
+  2c (+78 %), and forward is 1.26 vs 1.06 ms (+19 %), giving a ratio of 0.26 vs 0.39. The other
+  three A100 cells match phase 2c to within 0.03. The A100 host was shared with an 8-CPU job
+  (load 7.1), and this is also the only cell where `jit` and `exe` differ (0.286 vs 0.261). So
+  part of this may be host-side contention rather than the wrapper, and a re-run on a quiet
+  node would separate the two. Either way, it moves the ratio in forward mode's favour.
+- **The laptop is load-exposed.** Its L5 plain (0.79 vs 0.68) and L24 solved (0.51 vs 0.62) differ
+  from phase 2c in opposite directions. The reference row decides.
+- **Compile.** Through the library, the reverse lower + compile at L24 solved is 95.9 s on the
+  reference EPYC (121.7 s on the laptop) against 11.2 s forward, 8.6×. On the A100 it is 33.5 vs
+  15.3 s. This matches phase 2c's batched compiles (91.7 / 10.5 s EPYC). Forward mode's compile
+  saving arrives through the library intact.
+
+### End-to-end `MultiStartAdam` fits at L5 (n_starts 8, n_steps 20, seed 334)
+
+`_fit` = the search's `_fit` call alone: the single-point compile for the broad starts, the batched
+compile and 20 steps, with no output I/O. `fit()` = the whole `search.fit`, including pre-fit
+output, samples, latent draw and zip. On the A100, `_fit` also includes the search's GPU
+batched-memory probe (two throwaway compiles), in both modes. Warm-up fit (discarded): 19.9 s
+EPYC, 41.9 s A100, 19.5 s laptop.
+
+| Host | Lane | `_fit` fwd s | `_fit` rev s | fwd/rev | `fit()` fwd s | `fit()` rev s | same best vector / max log L |
+|---|---|---|---|---|---|---|---|
+| RAL EPYC (reference) | solved | 4.98 | 6.54 | 0.76 | 10.54 | 12.04 | yes (6.7e-13 / 1.6e-14) |
+| RAL EPYC (reference) | plain | 4.32 | 4.55 | 0.95 | 11.04 | 10.86 | yes (4.9e-14 / 8.2e-16) |
+| A100 | solved | 19.43 | 25.05 | 0.78 | 25.57 | 31.19 | yes (1.4e-12 / 2.7e-14) |
+| A100 | plain | 15.53 | 18.93 | 0.82 | 22.69 | 25.81 | yes (3.3e-14 / 1.8e-15) |
+| Laptop (lead) | solved | 5.60 | 8.09 | 0.69 | 10.62 | 13.26 | yes (6.7e-13 / 1.6e-14) |
+| Laptop (lead) | plain | 5.07 | 5.02 | 1.01 | 12.00 | 10.95 | yes (4.9e-14 / 8.2e-16) |
+
+A 20-step L5 fit is compile-dominated: 20 × ~0.3–0.7 ms of stepping is ≤ 15 ms against several
+seconds of compile. These walls therefore mostly show the compile saving (solved lane −24 % on the
+EPYC). The plain lane's reverse compile is already small at L5, so there the saving is within
+run-to-run noise. The per-step saving is in the timing table. For a production-length fit
+(hundreds of steps at L16–L24), both savings add up: roughly 85 s less compile at L24 solved on
+the EPYC, plus ~1.9 ms per step.
+
+### Verdict
+
+Written by the main session, 2026-09-27.
+
+**The phase-2b/2c speed-up arrives through the library, unchanged.** `af.MultiStartAdam()` on an
+`AnalysisPoint` now resolves to forward mode by declaration (logged as "forward (declared by
+AnalysisPoint)"). Its own batched step, captured from `search.fit` rather than rebuilt, runs forward
+mode at 0.36–0.58× the reverse-mode step on the quiet RAL EPYC reference (L5 solved 0.455, L24 solved
+0.364). That matches the phase-2c batched ratios within noise. The library adds about 0.03 ms per
+step at L5 in both modes, and nothing measurable at L24. Forward and reverse agree to ≤ 2.1e-9 on
+gradients over PRNGKey 0..15, and the end-to-end fits reach the same best vector (≤ 1.4e-12) and the
+same max log L. Compile time is where users will notice it most: L24 solved lower + compile falls from
+95.9 s to 11.2 s on the EPYC (8.6×). That dominates short fits, and it is most of the wall saving
+in the end-to-end rows.
+
+The A100 L24 solved cell (ratio 0.26, reverse +78 % vs phase 2c) ran next to another 8-CPU job on the
+host and is not used for any claim. Every error it could carry is in forward mode's favour.
+
+**Campaign status.** Phases 1–2e are complete. The source-plane single-source likelihood's forward
+call sits at its dispatch floor on CPU (phase 2a), and its gradient now takes the cheaper AD mode by
+default, which ships with the next PyAutoFit/PyAutoLens release (PyAutoFit#1649, PyAutoLens#752,
+pending release). Remaining candidates, none started:
+- blackjax NUTS / SMC forward-mode `value_and_grad`;
+- A100 `vmap` throughput as its own row;
+- the carried library bugs, now filed through intake: `Galaxy` duplicate PyTreeDef registration,
+  and `PowerLawMultipole` m=1 at slope 2.
+
+The NaN-at-zero gradients and the `Isothermal` jit trace have tasks of their own
+(`jax-grad-nan-zero-components`, `isothermal-convergence-jit`).
