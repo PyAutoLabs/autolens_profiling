@@ -1,22 +1,71 @@
 # Point-source A100 breakdown
 
 **Status:** draft
-**Question:** Profile and optimise the image-plane point-source likelihood on the A100 with the shared breakdown.
-**Pre-registered rule:** not yet written (campaign contract 2026-09-19 in the prompt)
+**Question:** Where does the image-plane point-source `PointSolver` likelihood spend its time on the A100 (fp64 and mixed precision, primal and gradient, single call and `vmap`), and which measured changes cut it without changing the answer?
+**Pre-registered rule:** the 2026-09-19 campaign contract: per iteration, baseline → one hypothesis → bounded prototype → correctness gate → repeated interleaved full-likelihood A/B; keep a change only for a repeatable material gain above the stated minimum detectable improvement, with no correctness failure and no unacceptable compile or memory regression; stop when the remaining cost is explained and no worthwhile measured lever remains, or on a concrete external blocker.
 **Verdict:** not started
 **Headline:** none yet
 **Library PRs:** none
 **Profiling PRs:** none
 **Ledger:** none yet; instrument [point_source_shared_likelihood_breakdown.md](../../results/notes/point_source_shared_likelihood_breakdown.md)
-**Mind contract:** `draft/research/autolens_profiling/point_source_image_plane_gpu_breakdown.md`
+**Mind contract:** `draft/research/autolens_profiling/point_source_image_plane_gpu_breakdown.md` (filed 2026-09-17, contract 2026-09-19); prerequisite `complete/2026/09/point-source-shared-breakdown.md` (#293).
 **Next:** issue when scheduled
 
-Backfill pending (phase 2 of epic profiling-research-wiki).
+## Why this campaign
 
-- none yet; instrument [point_source_shared_likelihood_breakdown.md](../../results/notes/point_source_shared_likelihood_breakdown.md)
+On 2026-09-17 the human asked for the point-source image-plane chi-squared to get the same
+treatment as imaging and interferometer, "mostly using the A100s on RAL". The survey that day
+found a `likelihood_runtime/` tier but no point-source breakdown and no A100 row; the cluster
+breakdown timed `solver.solve` as one block. On 2026-09-19 a consolidation split the work into
+three tasks: a shared breakdown first, then a CPU campaign ([Point-source image-plane
+CPU](point_source_image_plane_cpu.md)) and this GPU campaign, each issued one bounded phase at a time.
+
+The shared instrument shipped as #293 (2026-09-20, `complete/2026/09/point-source-shared-breakdown.md`):
+eight solver iterations opened into cumulative prefixes, with the fused production likelihood as the
+authoritative control and a laptop CPU fp64 reference (solved fused 62.687 ms/call). The contract
+says this campaign must first run that instrument on the A100 against the preserved unoptimized
+library revisions, and never label CPU timing as A100 evidence. The September 17 hypotheses
+(launch-latency bound, sort-based `unique` dominant, unrolled-step compile, implicit-diff gradient
+cost) stay hypotheses until phase 1 measures them.
+
+## Phases
+
+Planned, from the draft's campaign contract; none has been issued.
+
+| Phase | Dates | Question | Pre-registered rule | Result | Jobs | PRs |
+|---|---|---|---|---|---|---|
+| 0 A100 baseline | not started | Does the shared harness run correctly on the A100; what are the fp64 and separately labelled mp reference rows on the preserved unoptimized revisions? | numerical agreement with the CPU reference and the production likelihood, precision-specific tolerances recorded; no optimization before this baseline | | | |
+| 1 A100 bottleneck map | not started | Fused device timeline attributed to source operations; `vmap` 1/4/16 (larger within memory headroom); fp64 vs mp; compile vs cold vs warm; simple and cluster configurations; primal vs `custom_jvp` gradient | gradient throughput usable only after finite-difference agreement at smooth points; distinct parameter inputs; synchronized timing | | | |
+| 2 Bounded optimization iterations | not started | Levers in contract order: redundant-sort removal on A100 (shared with CPU), `vmap` break-even if launch-bound, the measured sort/gather or static lattice, loop form for unrolled compile, implicit-gradient Jacobian, deflections | the iteration contract in the header; each lever published as accepted / rejected / deferred, re-profile after each acceptance | | | |
+| Completion | not started | Close with baseline/final artifact pairs, trace-derived map, batching/precision/compile/gradient tables and `results/notes/point_source_gpu_breakdown_2026_09.md` | stop rule in the header; if no A100 access, the campaign stays pending | | | |
+
+## What shipped and where it is
+
+Nothing yet for this campaign.
+
+## Open / parked / drafts
+
+- `draft/research/autolens_profiling/point_source_image_plane_gpu_breakdown.md` — this campaign, unstarted.
+- `draft/research/autolens_profiling/point_solver_profiling_cells.md` — more point-source cells for the cluster arc; the draft says not to merge scopes.
+
+## Caveats
+
+- **The CPU campaign has already touched the phase 2 levers.** Vertex dedup (PyAutoArray#569), the static step-0 lattice (PyAutoArray#570, PyAutoLens#749), the step-0 gather (PyAutoArray#580) and MCS 20 (PyAutoArray#584, PyAutoLens#753) shipped from [Point-source image-plane CPU](point_source_image_plane_cpu.md) with A100 rows (jobs 350587, 350637, 357322, 359102); the static lattice gave only 1.01–1.07× on the A100. Those are CPU-campaign gates, not this campaign's baseline or bottleneck map.
+- **Preserved revisions.** The unoptimized revisions phase 0 must reproduce were frozen by the CPU campaign's IP-1 (job 350580, #298); the library has moved on since, so phase 0 needs those checkouts on RAL.
+- **The CPU reference is loaded-host.** The shared breakdown's CPU row shared its host with a workspace smoke job; it defines that row only, not a comparison across processes or dates.
+- **Prefix rows are not additive.** Step rows are successive differences of independently compiled prefixes (the largest CPU prefix was 453.6 ms against a 62.7 ms fused call); only the fused likelihood is an end-to-end time.
+- **No mixed-precision switch exists** in the `PointSolver`; an `hpc_a100_mp` row must state which dtype or policy it changes.
 
 ## Journal
 
 ### 2026-09-27 — stub created
 
 Header filled from the ledger and the verified facts sheet; body pending backfill.
+
+### 2026-09-27 — backfilled (phase 2)
+
+Page now records the 2026-09-17 request, the 2026-09-19 three-task split and campaign contract
+(its iteration and stop rules as the pre-registered rule), and the four planned phases, with #293
+cited as the shared instrument. Noted that the CPU campaign has since shipped several of the
+contract's phase 2 levers with A100 rows. Open: the campaign is unissued and has no
+A100 baseline.
