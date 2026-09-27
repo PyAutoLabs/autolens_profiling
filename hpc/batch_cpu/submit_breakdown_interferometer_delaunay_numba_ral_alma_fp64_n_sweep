@@ -1,0 +1,148 @@
+#!/bin/bash -l
+#
+# RAL CPU likelihood breakdown: interferometer/delaunay x alma x fp64 through the
+# LIBRARY DISPATCH (autolens_profiling#326, interferometer likelihood campaign 3/3, phase 1).
+#
+# alma N sweep: the numba cell's two NumPy arms at --source-pixels 1000, 2500, 4000
+#  -- N = 1500 is the fiducial alma submit. No JAX-CPU leg here: the
+# decision matrix's CPU N sweep is the NumPy dispatch (the A100 N sweep is #320's).
+#
+# The numba cell (delaunay_numba.py, harness
+# scripts/misc/likelihood_breakdown/interferometer_pixelized_numpy.py) runs two NumPy arms in
+# one process on identical inputs, selected only through
+# Settings(interferometer_numba_nnz_per_source_max=...): numba direct_conv
+# (InversionInterferometerSparseNumba, gate forced open) and the NumPy FFT route
+# (InversionInterferometerSparse(xp=np), gate 0); each arm asserts the class it built. The
+# JAX-CPU FFT arm is the JAX cell (delaunay.py) on the same inputs; the numba JSON points at its
+# row (arms.jax_cpu_fft) and records the prior-median log-evidence gap.
+#
+# SINGLE-THREAD SCOPE (the #235 discipline): production CPU modelling runs one
+# single-threaded likelihood per pool worker, so every leg pins NUMBA_NUM_THREADS=1, the
+# BLAS family to 1 and XLA's CPU client to one intra-op thread. --cpus-per-task=4 is
+# headroom for the one process, not a thread budget.
+#
+# PARTITION: `gpu` with NO --gres -- the gpu nodes used CPUs-only, which is where the
+# imaging numba campaign's quiet timings came from (#265, job 343311): `ral` runs saturated
+# and `imp` does not mount /mnt/ral. Check `sinfo -p ral,gpu -N -o "%N %t %C %O"` first and
+# prefer a genuinely idle host; contention is recorded (host_load_avg_* in every JSON).
+#
+# Libraries: the SHARED mirror /mnt/ral/jnightin/PyAuto (HPCPullPyAuto'd to the 2026-09-27
+# mains before submission), via activate.sh. The import check below refuses any other stack
+# and asserts the numba / nufftax dependency floors.
+#
+# WALL-BASIS:
+#   cell: interferometer/delaunay_numba/alma  device: ral_cpu  precision: fp64
+#   source: unmeasured  probe-first: yes  wall: 6600  headroom: 3.0  ref: alma_probe_scaled;_fnnls_grows_~N^3_at_N=4000
+#
+# Output:
+#   results/breakdown/interferometer/n_sweep/delaunay_numba_hpc_ral_cpu_fp64_n1000.{json,png}
+#   results/breakdown/interferometer/n_sweep/delaunay_numba_hpc_ral_cpu_fp64_n2500.{json,png}
+#   results/breakdown/interferometer/n_sweep/delaunay_numba_hpc_ral_cpu_fp64_n4000.{json,png}
+#
+# Submit from hpc/batch_cpu/ (the -o/-e paths are relative).
+
+#SBATCH -J bd_intf_del_nb_alma_nsw
+#SBATCH --partition=gpu
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=32gb
+#SBATCH --time=6:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+# Derive the repo root from where this was submitted (hpc/batch_cpu/../..): it runs from a
+# RAL worktree of the feature branch, not only the canonical RAL checkout.
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+export PROJECT_PATH="$AP_ROOT"
+export PYAUTO_HPC_BASE="${PYAUTO_HPC_BASE:-/mnt/ral/jnightin/PyAuto}"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+# One thread everywhere. NUMBA_NUM_THREADS must be set BEFORE numba is imported; the numba
+# cell also pins it and records the resolved block under configuration.thread_env.
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export NUMBA_NUM_THREADS=1
+export JAX_PLATFORMS=cpu
+export JAX_PLATFORM_NAME=cpu
+export JAX_ENABLE_X64=True
+export XLA_FLAGS="--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 --xla_disable_hlo_passes=constant_folding"
+# Per-job numba cache: concurrent legs on one node must not share a cache directory.
+export NUMBA_CACHE_DIR=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}
+mkdir -p "$NUMBA_CACHE_DIR" "$MPLCONFIGDIR"
+unset JAX_COMPILATION_CACHE_DIR
+
+echo "=========================================="
+date
+hostname
+lscpu | grep 'Model name' || true
+echo "partition:      ${SLURM_JOB_PARTITION:-unset}"
+echo "nodelist:       ${SLURM_JOB_NODELIST:-unset}"
+echo "cpus-per-task:  ${SLURM_CPUS_PER_TASK:-unset}"
+echo "loadavg:        $(cat /proc/loadavg)"
+echo "Cells:          interferometer/likelihood_breakdown/delaunay_numba"
+echo "Instrument:     alma"
+echo "Precision:      fp64"
+echo "Thread env:     OMP=$OMP_NUM_THREADS MKL=$MKL_NUM_THREADS OPENBLAS=$OPENBLAS_NUM_THREADS NUMBA=$NUMBA_NUM_THREADS"
+echo "XLA_FLAGS:      $XLA_FLAGS"
+
+echo "=== source revisions (shared mirror) ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r" "$(git -C $PYAUTO_HPC_BASE/$r rev-parse HEAD 2>&1)"
+done
+echo "AP_ROOT rev:    $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+echo "AP_ROOT branch: $(git -C $AP_ROOT rev-parse --abbrev-ref HEAD 2>&1)"
+
+cd $AP_ROOT
+
+echo "=== import provenance + dependency floors ==="
+python3 -c "
+import importlib.metadata as m, os, autoarray, autolens, jax, numba
+for mod in (autoarray, autolens):
+    print(f'{mod.__name__}.__file__ =', mod.__file__)
+    assert os.path.realpath(mod.__file__).startswith(os.path.realpath(os.environ['PYAUTO_HPC_BASE'])), f'{mod.__name__} not from the shared mirror'
+print('numba', numba.__version__, 'nufftax', m.version('nufftax'), 'jax', jax.__version__, jax.default_backend(), 'x64', jax.config.x64_enabled)
+assert tuple(int(x) for x in m.version('nufftax').split('.')[:2]) >= (0, 6), 'nufftax below the 0.6.1 floor'
+assert jax.default_backend() == 'cpu', 'JAX is not on the CPU'
+" || exit 3
+
+echo "=========================================="
+echo "LEG 1: NumPy arms (numba direct_conv + NumPy FFT) -- delaunay_numba.py, --source-pixels 1000"
+date
+echo "loadavg: $(cat /proc/loadavg)"
+python3 -u scripts/interferometer/likelihood_breakdown/delaunay_numba.py \
+    --instrument alma \
+    --config-name hpc_ral_cpu_fp64_n1000 \
+    --n-instances 12 \
+    --source-pixels 1000 \
+    --output-dir $AP_ROOT/results/breakdown/interferometer/n_sweep
+
+echo "=========================================="
+echo "LEG 2: NumPy arms (numba direct_conv + NumPy FFT) -- delaunay_numba.py, --source-pixels 2500"
+date
+echo "loadavg: $(cat /proc/loadavg)"
+python3 -u scripts/interferometer/likelihood_breakdown/delaunay_numba.py \
+    --instrument alma \
+    --config-name hpc_ral_cpu_fp64_n2500 \
+    --n-instances 12 \
+    --source-pixels 2500 \
+    --output-dir $AP_ROOT/results/breakdown/interferometer/n_sweep
+
+echo "=========================================="
+echo "LEG 3: NumPy arms (numba direct_conv + NumPy FFT) -- delaunay_numba.py, --source-pixels 4000"
+date
+echo "loadavg: $(cat /proc/loadavg)"
+python3 -u scripts/interferometer/likelihood_breakdown/delaunay_numba.py \
+    --instrument alma \
+    --config-name hpc_ral_cpu_fp64_n4000 \
+    --n-instances 12 \
+    --source-pixels 4000 \
+    --output-dir $AP_ROOT/results/breakdown/interferometer/n_sweep
+
+echo "=========================================="
+echo "loadavg: $(cat /proc/loadavg)"
+echo "Finished."
+date
