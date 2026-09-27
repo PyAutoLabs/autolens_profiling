@@ -1797,6 +1797,14 @@ if MCS_MODE:
             "n_image_set_changes": int(sum(bool(c.get("image_set_changed")) for c in changes)),
             "stream_changes": stream_changes,
             "grad_changes": grad_changes,
+            # Observed max relative gradient difference vs the control over the grad
+            # instances. The GRAD_ROUNDING_RTOL allowance applies ONLY here (MCS rows,
+            # whose padded (mcs, 2) shape reorders the backward sum) and only with log L
+            # bit-identical; step-0 route rows and the control stay strictly bit-identical.
+            "grad_max_rel_delta_vs_control": (grad_gate.get(name) or {}).get(
+                "max_rel_delta_vs_control"
+            ),
+            "grad_rounding_rtol": GRAD_ROUNDING_RTOL,
             "vmap_changes": vmap_changes,
             "n_unexplained": len(unexplained),
             "unexplained": unexplained,
@@ -1910,6 +1918,9 @@ if MCS_MODE:
             "fiducial_bit_identical": r["fiducial_log_likelihood"] == FIDUCIAL_SOLVED_LOG_L,
             "no_unexplained_change": (mcs_change.get(name) or {}).get("pass", True),
             "n_image_set_changes": (mcs_change.get(name) or {}).get("n_image_set_changes", 0),
+            "grad_max_rel_delta_vs_control": (grad_gate.get(name) or {}).get(
+                "max_rel_delta_vs_control"
+            ),
         }
     _umax = max(
         (max(v["max_over_steps"] for v in uncapped_counts["control"].values())),
