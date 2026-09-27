@@ -1,0 +1,130 @@
+AP_ROOT=/mnt/ral/jnightin/autolens_profiling_wt/point-source-source-plane-p2b
+==========================================
+Sun 27 Sep 12:14:08 BST 2026
+euclid-ral-gpu-2
+Model name:                              AMD EPYC 7702 64-Core Processor
+partition:      gpu
+nodelist:       euclid-ral-gpu-2
+cpus-per-task:  8
+sched_affinity: 8
+loadavg:        0.10 0.77 0.55 1/1241 139684
+config name:    hpc_ral_gpunode_cpu_fp64
+Cell:           point_source_source/likelihood_breakdown/backward_pass_ab
+Precision:      fp64 (JAX_ENABLE_X64=1)
+Thread env:     OMP=1 MKL=1 OPENBLAS=1 NPROC=8
+XLA_FLAGS:      --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false
+=== source revisions ===
+PyAutoNerves (shared) eb27da2464e2f07e0ad67e7fb18ee84be76c479a
+PyAutoFit (shared) 5468c6cefa0ae8bb08a449497cbd3c620f3720e2
+PyAutoArray (shared) 14d63360f341912b209f2045d7e388e264692f1d
+PyAutoGalaxy (shared) 879a9308b709b3705eb95904de6b349a5c034d61
+PyAutoLens (shared) def4decf68a245a9c3dd1eb276ee0578897b220c
+AP_ROOT rev:   eee7d5b691c72fb1c645ea246fb1b73e415a450f
+AP_ROOT branch: feature/point-source-source-plane-p2b
+=== import provenance (refuses unless the libraries come from the shared stack) ===
+autoarray.__file__ = /mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/__init__.py
+autolens.__file__ = /mnt/ral/jnightin/PyAuto/PyAutoLens/autolens/__init__.py
+autofit.__file__ = /mnt/ral/jnightin/PyAuto/PyAutoFit/autofit/__init__.py
+autogalaxy.__file__ = /mnt/ral/jnightin/PyAuto/PyAutoGalaxy/autogalaxy/__init__.py
+jax 0.10.2 [CpuDevice(id=0)] cpu
+ASSERT OK: CPU backend, libraries from /mnt/ral/jnightin/PyAuto
+==========================================
+backward-pass A/B (20 x 20)
+Sun 27 Sep 12:14:11 BST 2026
+loadavg: 0.10 0.77 0.55 1/1241 139726
+=== gate 1: Hessian components (analytic / jacrev vs jacfwd) ===
+  analytic  PASS  max rel err 8.743e-16  worst {'instance': 'PRNGKey(2)', 'set': 'near_critical', 'component': 'xy', 'position': [1.206864539857574, 1.1860406413110665]}  error None
+  jacrev    PASS  max rel err 6.932e-16  worst {'instance': 'PRNGKey(7)', 'set': 'dataset', 'component': 'xx', 'position': [1.2452712382900812, 1.2238422712179249]}  error None
+
+--- row solved_grad ---
+  [solved_grad/rev] lower   1507.7 ms  compile   1328.1 ms  first    1.764 ms  (hessian=jacfwd, traced x3)
+  [solved_grad/fwd] lower   1273.0 ms  compile   1112.6 ms  first    1.396 ms  (hessian=jacfwd, traced x3)
+  [solved_grad/rev_jacrev] lower   1670.6 ms  compile   1369.9 ms  first    1.661 ms  (hessian=jacrev, traced x3)
+  [solved_grad/rev_analytic] lower    519.3 ms  compile   1004.2 ms  first    1.406 ms  (hessian=analytic, traced x3)
+  [solved_grad/fwd_analytic] lower    511.4 ms  compile    852.0 ms  first    1.328 ms  (hessian=analytic, traced x3)
+  gate rev           PASS
+  gate fwd           PASS
+  gate rev_jacrev    PASS
+  gate rev_analytic  PASS
+  gate fwd_analytic  PASS
+  median ms  rev 0.6356  fwd 0.3411  rev_jacrev 0.6184  rev_analytic 0.4754  fwd_analytic 0.3584
+    fwd           /rev 0.537 [0.526, 0.544]  saved +0.2945 ms [+0.2856, +0.3064]
+    rev_jacrev    /rev 0.973 [0.955, 0.993]  saved +0.0172 ms [+0.0051, +0.0290]
+    rev_analytic  /rev 0.748 [0.735, 0.761]  saved +0.1602 ms [+0.1506, +0.1707]
+    fwd_analytic  /rev 0.564 [0.554, 0.573]  saved +0.2771 ms [+0.2677, +0.2875]
+
+--- row solved_forward ---
+  [solved_forward/jacfwd] lower    750.2 ms  compile    449.9 ms  first    1.120 ms  (hessian=jacfwd, traced x3)
+  [solved_forward/jacrev] lower    755.6 ms  compile    482.2 ms  first    1.030 ms  (hessian=jacrev, traced x3)
+  [solved_forward/analytic] lower    180.1 ms  compile    302.1 ms  first    1.077 ms  (hessian=analytic, traced x3)
+  gate jacfwd        PASS
+  gate jacrev        PASS
+  gate analytic      PASS
+  median ms  jacfwd 0.2624  jacrev 0.2602  analytic 0.2591
+    jacrev        /jacfwd 0.992 [0.975, 1.006]  saved +0.0022 ms [-0.0016, +0.0067]
+    analytic      /jacfwd 0.987 [0.974, 1.002]  saved +0.0033 ms [-0.0005, +0.0070]
+
+--- row plain_grad ---
+  [plain_grad/rev] lower   1039.5 ms  compile    941.7 ms  first    1.557 ms  (hessian=jacfwd, traced x2)
+  [plain_grad/fwd] lower    938.1 ms  compile    809.1 ms  first    1.268 ms  (hessian=jacfwd, traced x2)
+  [plain_grad/rev_jacrev] lower   1096.1 ms  compile    937.2 ms  first    1.591 ms  (hessian=jacrev, traced x2)
+  [plain_grad/rev_analytic] lower    342.1 ms  compile    646.2 ms  first    1.409 ms  (hessian=analytic, traced x2)
+  [plain_grad/fwd_analytic] lower    381.0 ms  compile    648.6 ms  first    1.204 ms  (hessian=analytic, traced x2)
+  gate rev           PASS
+  gate fwd           PASS
+  gate rev_jacrev    PASS
+  gate rev_analytic  PASS
+  gate fwd_analytic  PASS
+  median ms  rev 0.5066  fwd 0.3145  rev_jacrev 0.5007  rev_analytic 0.4237  fwd_analytic 0.3090
+    fwd           /rev 0.621 [0.612, 0.627]  saved +0.1921 ms [+0.1885, +0.1982]
+    rev_jacrev    /rev 0.988 [0.978, 0.998]  saved +0.0060 ms [+0.0010, +0.0111]
+    rev_analytic  /rev 0.836 [0.827, 0.844]  saved +0.0830 ms [+0.0788, +0.0878]
+    fwd_analytic  /rev 0.610 [0.603, 0.618]  saved +0.1976 ms [+0.1932, +0.2027]
+
+--- row plain_forward ---
+  [plain_forward/jacfwd] lower    608.2 ms  compile    320.7 ms  first    1.288 ms  (hessian=jacfwd, traced x2)
+  [plain_forward/jacrev] lower    464.5 ms  compile    338.0 ms  first    1.117 ms  (hessian=jacrev, traced x2)
+  [plain_forward/analytic] lower    120.9 ms  compile    218.3 ms  first    1.099 ms  (hessian=analytic, traced x2)
+  gate jacfwd        PASS
+  gate jacrev        PASS
+  gate analytic      PASS
+  median ms  jacfwd 0.2544  jacrev 0.2566  analytic 0.2547
+    jacrev        /jacfwd 1.009 [0.995, 1.022]  saved -0.0022 ms [-0.0054, +0.0012]
+    analytic      /jacfwd 1.001 [0.985, 1.016]  saved -0.0004 ms [-0.0041, +0.0038]
+
+====================================================================================================
+BACKWARD-PASS A/B  (hpc_ral_gpunode_cpu_fp64, rounds=20, calls/round=20)
+====================================================================================================
+  row              route            median       p10       p90  compile s
+  solved_grad      rev              0.6356    0.5368    0.7422      1.328
+  solved_grad      fwd              0.3411    0.3091    0.3708      1.113
+  solved_grad      rev_jacrev       0.6184    0.5294    0.7044      1.370
+  solved_grad      rev_analytic     0.4754    0.4215    0.5301      1.004
+  solved_grad      fwd_analytic     0.3584    0.3279    0.4047      0.852
+  solved_forward   jacfwd           0.2624    0.2352    0.2951      0.450
+  solved_forward   jacrev           0.2602    0.2334    0.2938      0.482
+  solved_forward   analytic         0.2591    0.2340    0.2931      0.302
+  plain_grad       rev              0.5066    0.4564    0.5724      0.942
+  plain_grad       fwd              0.3145    0.2896    0.3440      0.809
+  plain_grad       rev_jacrev       0.5007    0.4515    0.5546      0.937
+  plain_grad       rev_analytic     0.4237    0.3837    0.4696      0.646
+  plain_grad       fwd_analytic     0.3090    0.2856    0.3414      0.649
+  plain_forward    jacfwd           0.2544    0.2296    0.2870      0.321
+  plain_forward    jacrev           0.2566    0.2311    0.2862      0.338
+  plain_forward    analytic         0.2547    0.2306    0.2834      0.218
+----------------------------------------------------------------------------------------------------
+  phase-2c rule [solved/fwd]: saved +0.2945 ms [+0.2856, +0.3064] = 46.3%; ratio 0.537 [0.526, 0.544] -> GO (hpc_ral_gpunode_cpu_fp64; RAL CPU decides)
+  phase-2c rule [solved/rev_jacrev]: saved +0.0172 ms [+0.0051, +0.0290] = 2.7%; ratio 0.973 [0.955, 0.993] -> no-go (hpc_ral_gpunode_cpu_fp64; RAL CPU decides)
+  phase-2c rule [solved/rev_analytic]: saved +0.1602 ms [+0.1506, +0.1707] = 25.2%; ratio 0.748 [0.735, 0.761] -> GO (hpc_ral_gpunode_cpu_fp64; RAL CPU decides)
+  phase-2c rule [solved/fwd_analytic]: saved +0.2771 ms [+0.2677, +0.2875] = 43.6%; ratio 0.564 [0.554, 0.573] -> GO (hpc_ral_gpunode_cpu_fp64; RAL CPU decides)
+  phase-2c rule [plain/fwd]: saved +0.1921 ms [+0.1885, +0.1982] = 37.9%; ratio 0.621 [0.612, 0.627] -> GO (hpc_ral_gpunode_cpu_fp64; RAL CPU decides)
+  phase-2c rule [plain/rev_jacrev]: saved +0.0060 ms [+0.0010, +0.0111] = 1.2%; ratio 0.988 [0.978, 0.998] -> no-go (hpc_ral_gpunode_cpu_fp64; RAL CPU decides)
+  phase-2c rule [plain/rev_analytic]: saved +0.0830 ms [+0.0788, +0.0878] = 16.4%; ratio 0.836 [0.827, 0.844] -> GO (hpc_ral_gpunode_cpu_fp64; RAL CPU decides)
+  phase-2c rule [plain/fwd_analytic]: saved +0.1976 ms [+0.1932, +0.2027] = 39.0%; ratio 0.610 [0.603, 0.618] -> GO (hpc_ral_gpunode_cpu_fp64; RAL CPU decides)
+  wall: 358 s
+  Results JSON: /mnt/ral/jnightin/autolens_profiling_wt/point-source-source-plane-p2b/results/breakdown/point_source_source/backward_pass_ab_hpc_ral_gpunode_cpu_fp64.json
+  Results PNG:  /mnt/ral/jnightin/autolens_profiling_wt/point-source-source-plane-p2b/results/breakdown/point_source_source/backward_pass_ab_hpc_ral_gpunode_cpu_fp64.png
+==========================================
+loadavg: 1.52 1.13 0.77 1/1246 140184
+Finished.
+Sun 27 Sep 12:20:11 BST 2026

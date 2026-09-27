@@ -323,6 +323,18 @@ separately per likelihood × transform. Standing conclusions:
   agreement (rtol 1e-10) and non-zero-gradient asserts passed. Phase-2b rule (≥ 0.05 ms AND ≥ 15 % on RAL CPU):
   **no-go** (27–31 % but < 0.05 ms); the backward-pass lever (+0.185 ms) is promoted.
   Findings: [`results/notes/point_source_source_plane_campaign.md`](./results/notes/point_source_source_plane_campaign.md).
+- **Point-source source-plane, phase 2b (2026-09)** — interleaved backward-pass A/B `backward_pass_ab.py`
+  (#325), levers prototyped in-cell by a scoped monkeypatch of `LensCalc._hessian_via_jax` (no library edit):
+  `rev` (`value_and_grad`, production) vs `fwd` (`jax.jacfwd` over the 5/7 scalar leaves) vs `rev_jacrev` vs
+  `rev_analytic` / `fwd_analytic` (closed-form SIE Hessian `H_xx = κ+γ₁`, `H_yy = κ−γ₁`, `H_xy = γ₂`, no sign flips).
+  Correctness gate green on every route and host (Hessian ≤ 9.8e-16 incl. near-critical points; log L ≤ 1.7e-12,
+  gradients ≤ 3e-11 vs `rev` over PRNGKey 0..15; eager ≡ JIT). `fwd` is the lever: 24–46 % / 0.11–0.29 ms saved
+  (quiet RAL gpu-node CPUs, job 357381: solved 0.636 → 0.341 ms; A100, job 357382: 0.527 → 0.357 ms); `rev_jacrev`
+  ≈ `rev`; the analytic Hessian helps only under `rev` and adds nothing on top of `fwd`. Found: the library
+  `Isothermal.convergence_2d_from` is not JIT-traceable with traced `ell_comps` (`convergence_func` drops `xp`).
+  Verdict (decided on the quiet RAL gpu-node EPYC row; the 8490H job was cancelled): `fwd` GO → phase 2c measures the
+  forward/reverse crossover in `n_params` before a PyAutoFit gradient entry-point change.
+  Findings: [`results/notes/point_source_source_plane_campaign.md`](./results/notes/point_source_source_plane_campaign.md).
 - **Interferometer mesh likelihood on the A100 (2026-09)**: the sparse-operator (W~) Delaunay-1500
   and rectangular 39×39 breakdown at sma / alma / alma_high / jvla, in fp64 and mixed precision,
   plus an alma N sweep. RAL jobs 356370-356387. The alma baseline is **49.5 ms (Delaunay) /
