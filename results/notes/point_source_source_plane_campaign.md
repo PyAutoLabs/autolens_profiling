@@ -163,7 +163,8 @@ and compile time, but would not change steady per-call time.
 
 ## Unmeasured / RAL handoff
 
-The RAL rows were not run in this session (they were not attempted). Run the
+The RAL rows were not run in phase 1 (they were not attempted); phase 2a
+ran them — see "Phase 2a" below. Run the
 committed instrument there after syncing the RAL checkout and PyAuto stack
 (`HPCPullPyAuto`). Record the CPU model, pin `--nodelist`, and use a quiet
 host:
@@ -191,3 +192,188 @@ taken here.
   deflection stack, and Hessian re-evaluation per plane. At cluster scale the
   arithmetic is large enough that the CSE and overhead conclusions above may
   not transfer.
+
+## Phase 2a — RAL rows + pytree-input A/B (2026-09-26)
+
+Issue: [autolens_profiling #322](https://github.com/PyAutoLabs/autolens_profiling/issues/322).
+Branch `feature/point-source-source-plane-p2a`; the RAL jobs ran commit `ec29705`.
+Single-source only.
+
+### What landed
+
+- `scripts/point_source_source/likelihood_breakdown/pytree_input_ab.py` is an
+  interleaved in-process A/B of how the parameters enter the likelihood. It copies
+  the protocol of `point_source_image/likelihood_breakdown/vertex_dedup_ab.py`:
+  a fresh closure and a fresh `AnalysisPoint` per route after
+  `jax.clear_caches()`, rotated route order, and a 16-instance fixed-seed
+  stream. The three routes are:
+  - `pytree`: production. The registered `ModelInstance` is the traced argument.
+  - `flat_vector`: the physical vector is the argument, and
+    `instance_from_vector(xp=jnp)` runs inside the trace.
+  - `flat_leaves`: the leaves tuple is the argument, and `tree_unflatten` runs
+    inside the trace.
+
+  Each lane (solved, plain) gets `forward`, `value_and_grad` and `floor` rows.
+  The hard asserts are: every route agrees on log L at rtol 1e-10, and every
+  route's gradient is finite and non-zero. All asserts passed in every run, and
+  the log-L deltas were exactly 0.
+- Two submits: `hpc/batch_cpu/submit_breakdown_point_source_source_source_plane_ral_cpu_fp64`
+  and `hpc/batch_gpu/submit_breakdown_point_source_source_source_plane_a100_fp64`.
+  Their WALL-BASIS rows are measured on the RAL jobs. Known gaps, carried and
+  not fixed here: `check_submits.py`'s `_PYTHON_CALL` misses `python3 -u`, and
+  `hpc/sync pull` does not fetch `batch_cpu` logs. The CPU log was copied by
+  hand to `results/notes/point_source_source_plane_2026_09_26_ral_job_356368.out`.
+- New rows: `source_plane_{hpc_ral_cpu_fp64,hpc_a100_fp64}` and
+  `pytree_input_ab_{hpc_ral_cpu_fp64,hpc_a100_fp64}` (JSON + PNG) under
+  `results/breakdown/point_source_source/`.
+
+### Hosts and revisions
+
+- **RAL CPU**, job 356368, finished in 1:10. It ran on `euclid-ral-compute-10-2`
+  (Intel Xeon Platinum 8490H), pinned with `--nodelist`. The node was idle, was
+  responding, and hosted no other jnightin job. Settings: 8 CPUs,
+  `sched_affinity` 8, BLAS threads 1, `JAX_PLATFORMS=cpu`, fp64. Load average
+  was 0.08 at job start and 0.62 → 1.77 across the A/B, which is quiet. The
+  process thread count after the first compile was 42.
+- **A100**, job 356369, finished in 2:01. It ran on `euclid-ral-gpu-1`
+  (A100 80GB PCIe, host AMD EPYC 7702) with `JAX_PLATFORMS=cuda` and
+  `JAX_PLATFORM_NAME=cuda`. The backend was asserted to be `gpu`, and the JSON
+  `device` field reads `cuda:0`.
+- **Libraries**: the shared RAL stack, used as-is. The revisions were PyAutoFit
+  `dd9fbe0a`, PyAutoArray `3de624b5`, PyAutoGalaxy `70a61e26`, PyAutoLens
+  `86054bbc` and PyAutoNerves `1fa613aa`, with JAX 0.10.2. Against the local
+  mains, the diff is the 2026.9.26.1 tag bumps plus interferometer/inversion
+  and MultiStart changes. None of it touches `autolens/point/`, `AnalysisPoint`,
+  `autofit/jax/pytrees.py` or `mapper/model.py`, so the stack is
+  release-equivalent for these cells. Both JSON `device` fields match their
+  labels. Every breakdown assert passed: eager vs JIT, `vmap`, the regression
+  literals (A100 solved `0.5986504555536865`, 9e-14 relative from the literal)
+  and the non-zero gradient (L2 337.62 on both devices).
+- **Laptop**: the 1-minute load average was 5.06 at run time, above the 2.0
+  bar, so the phase-1 `source_plane_local_cpu_fp64` row was **not** refreshed.
+  It was measured at load ~16. The A/B ran only as a `--quick` functional
+  check, and no local A/B JSON is committed. **RAL is the reference.**
+
+### Breakdown rows (median ms per call)
+
+| Quantity | local (phase 1, load ~16) | RAL CPU 8490H | A100 |
+|---|---|---|---|
+| Fused solved (`FitPositionsSourceSolved`) | 0.438 | **0.1465** (p10 0.130, p90 0.165) | **0.2217** (p10 0.202, p90 0.237) |
+| Fused plain (`FitPositionsSource`) | 0.457 | **0.1450** (p10 0.126, p90 0.162) | **0.2654** (p10 0.257, p90 0.279) |
+| `value_and_grad` solved | 1.065 (2.43×) | 0.331 (**2.26×**) | 0.412 (1.86×) |
+| Floor: jit(sum of `ModelInstance` leaves), solved / plain | 0.086 / 0.069 | 0.032 / 0.035 | 0.201 / 0.203 |
+| Floor: jit(x + 1) scalar | 0.019 | **0.0074** | **0.128** |
+| CSE: precision ×3/×1; magnifications ×2/×1 | 1.15; 0.98 | 0.99; 1.00 | 1.27; 1.28 |
+| Lower + compile, fused solved | 1.67 + 0.78 s | 0.70 s lower | 0.88 s lower |
+
+Cumulative prefixes, absolute median ms:
+
+| Solved prefix | RAL CPU | A100 |
+|---|---|---|
+| Ray trace `_beta_hat` | 0.147 | 0.187 |
+| + precision tensor | 0.153 | 0.248 |
+| + solved centre β* | 0.149 | 0.224 |
+| + chi-squared | 0.148 | 0.260 |
+| + marginalisation term | 0.152 | 0.238 |
+| + `fit.log_likelihood` | 0.155 | 0.236 |
+| Fused | 0.1465 | 0.2217 |
+
+On the plain lane, RAL CPU is flat at 0.146 → 0.146 → 0.152 → 0.154 ms. On the
+A100 it climbs from 0.160 → 0.227 → 0.222 → 0.257 ms.
+
+What this shows:
+- On a quiet host, the phase-1 picture holds and is sharper. On RAL CPU the
+  bare ray-trace prefix costs the whole fused call, 0.147 vs 0.1465 ms. The
+  CSE probes are 0.99 and 1.00, so XLA merges the repeated Hessian and
+  precision work on CPU.
+- The A100 is **slower than one RAL CPU core-group** on a single call:
+  0.22–0.27 ms against 0.146 ms. Its scalar dispatch floor alone is 0.128 ms,
+  and its CSE ratios of 1.27–1.28 show that the repeats cost extra launches
+  there. This is the launch-bound regime that phase 1 predicted.
+
+### Pytree-input A/B (20 rounds × 20 calls; median ms, ratio with bootstrap 90 % CI)
+
+RAL CPU (`pytree_input_ab_hpc_ral_cpu_fp64.json`):
+
+| Row | pytree | flat_vector | flat_leaves | pytree/flat_vector [CI] | saved ms | pytree/flat_leaves [CI] | saved ms |
+|---|---|---|---|---|---|---|---|
+| solved forward | 0.1451 | 0.1066 | 0.1084 | **1.361** [1.343, 1.385] | **0.0385** | 1.339 [1.321, 1.365] | 0.0367 |
+| solved value_and_grad | 0.3154 | 0.2776 | 0.2924 | 1.136 [1.128, 1.146] | 0.0378 | 1.079 [1.068, 1.088] | 0.0230 |
+| solved floor | 0.0337 | 0.0086 | 0.0101 | 3.937 [3.913, 3.965] | 0.0252 | 3.344 [3.323, 3.369] | 0.0237 |
+| plain forward | 0.1472 | 0.1020 | 0.1072 | **1.443** [1.425, 1.462] | **0.0452** | 1.374 [1.360, 1.391] | 0.0400 |
+| plain value_and_grad | 0.2669 | 0.2324 | 0.2450 | 1.148 [1.134, 1.158] | 0.0345 | 1.089 [1.080, 1.099] | 0.0219 |
+| plain floor | 0.0360 | 0.0086 | 0.0117 | 4.185 [4.161, 4.218] | 0.0274 | 3.076 [3.055, 3.105] | 0.0243 |
+
+A100 (`pytree_input_ab_hpc_a100_fp64.json`):
+
+| Row | pytree | flat_vector | flat_leaves | pytree/flat_vector [CI] | saved ms | pytree/flat_leaves [CI] | saved ms |
+|---|---|---|---|---|---|---|---|
+| solved forward | 0.2933 | 0.2344 | 0.2405 | 1.251 [1.243, 1.262] | 0.0588 | 1.219 [1.212, 1.230] | 0.0527 |
+| solved value_and_grad | 0.6850 | 0.5373 | 0.6371 | 1.275 [1.269, 1.280] | 0.1477 | 1.075 [1.071, 1.078] | 0.0479 |
+| solved floor | 0.2182 | 0.1605 | 0.1710 | 1.360 [1.352, 1.373] | 0.0577 | 1.276 [1.268, 1.288] | 0.0472 |
+| plain forward | 0.2635 | 0.2065 | 0.2149 | 1.276 [1.261, 1.291] | 0.0570 | 1.226 [1.216, 1.239] | 0.0486 |
+| plain value_and_grad | 0.5588 | 0.4408 | 0.5080 | 1.268 [1.262, 1.273] | 0.1180 | 1.100 [1.096, 1.104] | 0.0508 |
+| plain floor | 0.2218 | 0.1540 | 0.1735 | 1.440 [1.430, 1.450] | 0.0678 | 1.279 [1.268, 1.288] | 0.0484 |
+
+The minimum detectable improvement on the RAL CPU pytree forward rows is
+0.25–0.26. That is p10/p90 spread over the 16-instance stream, and every CI
+above is tight and excludes 1. The laptop `--quick` check ran at load 5, with
+5 × 5 calls. It gave solved forward 0.578 / 0.405 / 0.420 ms (1.43×, saving
+0.17 ms) and plain 0.491 / 0.322 / 0.366 ms (1.53×). That is the same
+direction, load-inflated about 4×.
+
+What the A/B shows:
+- The pytree cost is a **fixed per-call cost of 0.035–0.045 ms on RAL CPU**,
+  and it is the same in the forward and `value_and_grad` rows. It is **Python
+  flattening of the `ModelInstance`**, not the instance rebuild:
+  - `flat_leaves` is within 2–5 % of `flat_vector` (`flat_leaves/flat_vector`
+    is 1.017 for solved forward and 1.051 for plain).
+  - So passing the same leaves without the custom-node flatten recovers almost
+    all of the saving.
+  - `instance_from_vector` inside the trace costs nothing at run time.
+- In relative terms it is 26.5 % (solved) and 30.7 % (plain) of the fused
+  forward call. It is the largest single separable piece of the forward
+  call, because the compute itself sits at about 0.10 ms.
+
+### Corrected ranked residue (RAL CPU, fused solved 0.1465 ms)
+
+1. **Backward pass.** `value_and_grad` takes 0.331 ms, which is 2.26× forward
+   and **+0.185 ms** over the forward call. This is the largest absolute
+   residue, and the only one that scales with the math: forward-over-reverse
+   through the jacfwd Hessian. The pytree fix would remove only 0.038 ms of it
+   (1.14×).
+2. **`ModelInstance` pytree flatten.** 0.0385 ms solved and 0.0452 ms plain,
+   which is 27–31 % of the forward call. It is Python-side and fixed-cost.
+3. **Executable launch plus the remaining compute.** About 0.10 ms on the
+   flat routes, against a scalar floor of 0.0074 ms. It is not separable from
+   the ray trace: the ray-trace prefix already equals the fused call.
+4. **Hessian / precision-tensor repeats.** They are merged on CPU (0.99 /
+   1.00), so they are not a lever there. On the A100 they cost 1.27–1.28×, but
+   the A100 single call is launch-bound and slower than CPU in any case.
+5. **A100 single call.** 0.22–0.27 ms, above RAL CPU. The GPU number that
+   matters is `vmap` throughput, which is still unmeasured here.
+
+### Phase-2b go/no-go
+
+The rule from issue #322 is **go** if `pytree − flat_vector` ≥ 0.05 ms **AND**
+≥ 15 % of the fused call on RAL CPU.
+
+| Lane | saved ms | fraction of fused | ≥ 0.05 ms | ≥ 15 % | Verdict |
+|---|---|---|---|---|---|
+| solved | 0.0385 | 26.5 % | no | yes | no-go |
+| plain | 0.0452 | 30.7 % | no | yes | no-go |
+
+**Verdict: NO-GO for phase 2b as the PyAutoFit flatten fast path.** The
+fraction criterion passes comfortably, but the absolute criterion fails. On a
+quiet 8490H the whole call is only 0.146 ms, so a 27–31 % fixed cost is
+0.04 ms. Per the rule, the **backward-pass lever is promoted**: an analytic SIE
+Hessian, or a jacrev/jacfwd ordering study, attacking the +0.185 ms of
+`value_and_grad`.
+
+For the human reading this: the threshold was set against the load-inflated
+~0.44 ms laptop call. The A100 rows meet both criteria (0.057–0.059 ms,
+20–22 %), and so does the loaded laptop. The flatten fix is small and is
+already located: `autofit/jax/pytrees.py` `_partition`/`flatten`, and
+`ModelInstance.tree_flatten` in `mapper/model.py`. `pytree_input_ab.py` is its
+ready red control. Revisiting the 0.05 ms bar is a policy call, not a
+measurement gap.
