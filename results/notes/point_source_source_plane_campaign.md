@@ -1195,4 +1195,30 @@ the EPYC, plus ~1.9 ms per step.
 
 ### Verdict
 
-<!-- PLACEHOLDER: written by the main session. -->
+Written by the main session, 2026-09-27.
+
+**The phase-2b/2c speed-up arrives through the library, unchanged.** `af.MultiStartAdam()` on an
+`AnalysisPoint` now resolves to forward mode by declaration (logged as "forward (declared by
+AnalysisPoint)"). Its own batched step, captured from `search.fit` rather than rebuilt, runs forward
+mode at 0.36–0.58× the reverse-mode step on the quiet RAL EPYC reference (L5 solved 0.455, L24 solved
+0.364). That matches the phase-2c batched ratios within noise. The library adds about 0.03 ms per
+step at L5 in both modes, and nothing measurable at L24. Forward and reverse agree to ≤ 2.1e-9 on
+gradients over PRNGKey 0..15, and the end-to-end fits reach the same best vector (≤ 1.4e-12) and the
+same max log L. Compile time is where users will notice it most: L24 solved lower + compile falls from
+95.9 s to 11.2 s on the EPYC (8.6×). That dominates short fits, and it is most of the wall saving
+in the end-to-end rows.
+
+The A100 L24 solved cell (ratio 0.26, reverse +78 % vs phase 2c) ran next to another 8-CPU job on the
+host and is not used for any claim. Every error it could carry is in forward mode's favour.
+
+**Campaign status.** Phases 1–2e are complete. The source-plane single-source likelihood's forward
+call sits at its dispatch floor on CPU (phase 2a), and its gradient now takes the cheaper AD mode by
+default, which ships with the next PyAutoFit/PyAutoLens release (PyAutoFit#1649, PyAutoLens#752,
+pending release). Remaining candidates, none started:
+- blackjax NUTS / SMC forward-mode `value_and_grad`;
+- A100 `vmap` throughput as its own row;
+- the carried library bugs, now filed through intake: `Galaxy` duplicate PyTreeDef registration,
+  and `PowerLawMultipole` m=1 at slope 2.
+
+The NaN-at-zero gradients and the `Isothermal` jit trace have tasks of their own
+(`jax-grad-nan-zero-components`, `isothermal-convergence-jit`).
