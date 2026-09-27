@@ -377,21 +377,7 @@
     "PyAutoLens": "def4decf68a245a9c3dd1eb276ee0578897b220c"
   },
   "peak_rss_mb": 980.50390625,
-  "pinned_expected": -3168.2932146286034,
-  "pinned_drift": [
-    {
-      "label": "numba_prior_median",
-      "expected": -3168.2932146286034,
-      "got": -3168.595092417778,
-      "rel_diff": 9.528088744454422e-05,
-      "rtol": 1e-06
-    },
-    {
-      "label": "numpy_fft_prior_median",
-      "expected": -3168.2932146286034,
-      "got": -3168.595092417778,
-      "rel_diff": 9.528088744454422e-05,
-      "rtol": 1e-06
-    }
-  ]
+  "pinned_expected": -3168.595092417778,
+  "pinned_drift": [],
+  "pinned_check_recomputed": "2026-09-27: pinned_expected / pinned_drift recomputed offline from the stored arms.*.figure_of_merit_prior_median with _profile_cli.check_pinned (rtol 1e-6) after the sma pin was reset to the RAL/A100 value (May-18 lensed_source.fits adapt image); the run itself used the superseded laptop pin -3168.2932146286034."
 }

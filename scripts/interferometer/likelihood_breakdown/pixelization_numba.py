@@ -89,9 +89,11 @@ harness.run(
         fiducial_source_pixels=shared.RECT_SIDE_FIDUCIAL**2,
         build_mesh=shared.build_rectangular_mesh,
         # Prior-median log evidence, numba arm (the FFT arm is checked against the same
-        # value): pinned 2026-09-27 on the laptop (library mains of that date, fiducial
-        # mesh, preset mask radius). rtol 1e-6 covers the ~1e-8 Delaunay bistability.
-        pinned={"sma": -3168.2932146286034},
+        # value): pinned 2026-09-27 from the RAL CPU row (library mains of that date,
+        # fiducial mesh, preset mask radius, the May-18 sma lensed_source.fits adapt
+        # image shared with the #324 A100 rows). rtol 1e-6 covers the ~1e-8 Delaunay
+        # bistability.
+        pinned={"sma": -3168.595092417778},
     ),
     _cli,
     _cell_args,

@@ -80,54 +80,54 @@
       "note": "Not pinned (legacy variant): recorded as found."
     },
     "host_load_avg_start": [
-      2.45361328125,
-      3.30126953125,
-      4.888671875
+      4.68994140625,
+      3.42138671875,
+      2.13818359375
     ],
     "host_load_avg_end": [
-      1.92333984375,
-      2.39501953125,
-      4.1923828125
+      1.861328125,
+      2.59765625,
+      2.06005859375
     ]
   },
   "regularization": {
     "scheme": "constant",
     "coefficient": 1.0
   },
-  "operator_build_s": 3.471562200000335,
+  "operator_build_s": 2.563329700000395,
   "steps": {
-    "Ray-trace grids (data)": 0.0005632499998682761,
-    "Border relocation + mesh interpolation (mapper)": 0.003898280000248633,
-    "Mapping matrix L": 0.00949347999976453,
-    "Regularization matrix H": -0.0013159899999664049,
-    "Sparse triplets (extent grid)": 0.0001810400000977097,
-    "Data vector D = L\u1d40 d~": 0.010830209999949148,
-    "Curvature matrix F = A\u1d40 W~ A (12 blocks of 128)": 0.510148079999999,
-    "Reconstruction (pdip)": 0.5157056600000942,
-    "Log-det terms (2 Choleskys)": 0.06242588000004616,
-    "Fast chi-squared + figure of merit": 0.0023665799999434967
+    "Ray-trace grids (data)": 0.0005420699999376666,
+    "Border relocation + mesh interpolation (mapper)": 0.003491850000136765,
+    "Mapping matrix L": 0.00893445999990945,
+    "Regularization matrix H": 0.0002683400000023546,
+    "Sparse triplets (extent grid)": 0.00023242000006575835,
+    "Data vector D = L\u1d40 d~": 0.011211790000015754,
+    "Curvature matrix F = A\u1d40 W~ A (12 blocks of 128)": 0.5128599100000428,
+    "Reconstruction (pdip)": 0.6134459699998842,
+    "Log-det terms (2 Choleskys)": 0.08613586999999825,
+    "Fast chi-squared + figure of merit": 0.0019291399999929125
   },
-  "total_step_by_step": 1.1142964700000448,
+  "total_step_by_step": 1.239051819999986,
   "setup_split": {
-    "Ray-trace grids (data)": 0.0005632499998682761,
-    "Border relocation + mesh interpolation (mapper)": 0.003898280000248633,
-    "Mapping matrix L": 0.00949347999976453,
-    "Regularization matrix H": -0.0013159899999664049
+    "Ray-trace grids (data)": 0.0005420699999376666,
+    "Border relocation + mesh interpolation (mapper)": 0.003491850000136765,
+    "Mapping matrix L": 0.00893445999990945,
+    "Regularization matrix H": 0.0002683400000023546
   },
   "setup_prefix_per_call_s": {
-    "1": 0.0005632499998682761,
-    "2": 0.004461530000116909,
-    "3": 0.01395500999988144,
-    "4": 0.012639019999915036
+    "1": 0.0005420699999376666,
+    "2": 0.004033920000074432,
+    "3": 0.01296837999998388,
+    "4": 0.013236719999986235
   },
   "steps_sub_rows": {
-    "FitInterferometer.figure_of_merit (library, single JIT)": 1.0140135200001168
+    "FitInterferometer.figure_of_merit (library, single JIT)": 1.0745655499998974
   },
-  "full_pipeline_single_jit": 1.0494551100000535,
+  "full_pipeline_single_jit": 1.0613702799999374,
   "full_pipeline": {
     "status": "ok",
-    "per_call_s": 1.0494551100000535,
-    "figure_of_merit": -3168.2932146387957,
+    "per_call_s": 1.0613702799999374,
+    "figure_of_merit": -3168.595092427823,
     "abs_diff_vs_library_nats": 0.0,
     "solver": "pdip",
     "hlo_census": {
@@ -178,12 +178,12 @@
       }
     }
   },
-  "step_sum_over_full_jit": 1.06178573945863,
-  "figure_of_merit_reference": -3168.2932146387957,
-  "figure_of_merit_step_by_step": -3168.2932146387966,
+  "step_sum_over_full_jit": 1.167407683584337,
+  "figure_of_merit_reference": -3168.595092427823,
+  "figure_of_merit_step_by_step": -3168.595092427824,
   "step_fidelity": {
-    "figure_of_merit_steps": -3168.2932146387966,
-    "figure_of_merit_library": -3168.2932146387957,
+    "figure_of_merit_steps": -3168.595092427824,
+    "figure_of_merit_library": -3168.595092427823,
     "abs_diff_nats": 9.094947017729282e-13,
     "data_vector_max_rel_diff": 0.0,
     "curvature_matrix_max_rel_diff": 0.0,
@@ -198,30 +198,30 @@
     "iterations": 13
   },
   "dense_steps": {
-    "Ray-trace grids (data)": 0.0005632499998682761,
-    "Border relocation + mesh interpolation (mapper)": 0.003898280000248633,
-    "Mapping matrix L": 0.00949347999976453,
-    "Regularization matrix H": -0.0013159899999664049,
-    "Transformed mapping matrix T (NUFFT, 50-column chunks)": 4.990283049999926,
-    "Data vector D (dense, Re + Im)": 0.0008123400000840774,
-    "Curvature matrix F (dense T\u1d40 N\u207b\u00b9 T, Re + Im)": 0.019045849999929487,
-    "Reconstruction (pdip)": 0.5051048499999524,
-    "Log-det terms (2 Choleskys)": 0.06422301000002335,
-    "Fast chi-squared + figure of merit": 0.0016664500000842964
+    "Ray-trace grids (data)": 0.0005420699999376666,
+    "Border relocation + mesh interpolation (mapper)": 0.003491850000136765,
+    "Mapping matrix L": 0.00893445999990945,
+    "Regularization matrix H": 0.0002683400000023546,
+    "Transformed mapping matrix T (NUFFT, 50-column chunks)": 5.802423970000018,
+    "Data vector D (dense, Re + Im)": 0.0007875299999795971,
+    "Curvature matrix F (dense T\u1d40 N\u207b\u00b9 T, Re + Im)": 0.02010267000005115,
+    "Reconstruction (pdip)": 0.508972840000024,
+    "Log-det terms (2 Choleskys)": 0.06517105999992054,
+    "Fast chi-squared + figure of merit": 0.0014150799999697484
   },
-  "dense_total_step_by_step": 5.593774569999915,
+  "dense_total_step_by_step": 6.4121098699999495,
   "dense": {
     "status": "ok",
-    "total_step_by_step": 5.593774569999915,
+    "total_step_by_step": 6.4121098699999495,
     "transform": "script_chunked",
     "transform_column_batch": 50,
-    "figure_of_merit": -3168.293214638796,
-    "figure_of_merit_sparse": -3168.2932146387966,
-    "sparse_vs_dense_abs_diff_nats": 4.547473508864641e-13,
+    "figure_of_merit": -3168.595092427824,
+    "figure_of_merit_sparse": -3168.595092427824,
+    "sparse_vs_dense_abs_diff_nats": 0.0,
     "witness_threshold_nats": 1e-06,
     "witness_pass": true,
-    "curvature_sparse_vs_dense_max_rel_diff": 4.952687427823681e-14,
-    "data_vector_sparse_vs_dense_max_rel_diff": 2.910859593237512e-15,
+    "curvature_sparse_vs_dense_max_rel_diff": 5.749174228431622e-14,
+    "data_vector_sparse_vs_dense_max_rel_diff": 3.1221690291281625e-15,
     "nnls": {
       "converged": 1,
       "iterations": 13
@@ -231,74 +231,74 @@
   "solver_ab": {
     "note": "standalone step-8 rows on the same (D, F + H); fom recomputed with the step-9/10 functions",
     "pdip": {
-      "per_call_s": 0.49606160000003,
+      "per_call_s": 0.4757548899999165,
       "converged": 1,
       "iterations": 13,
-      "figure_of_merit": -3168.2932146387966,
+      "figure_of_merit": -3168.595092427824,
       "negative_pixels": 0,
       "zero_pixels": 152
     },
     "certified": {
-      "per_call_s": 0.500883629999953,
+      "per_call_s": 0.33272715999992214,
       "certified": 1,
-      "passes": 10,
-      "figure_of_merit": -3168.2932146386156,
+      "passes": 8,
+      "figure_of_merit": -3168.5950924277904,
       "negative_pixels": 0,
       "zero_pixels": 279
     },
-    "certified_over_pdip": 1.0097206274380492,
-    "figure_of_merit_abs_diff_nats": 1.8098944565281272e-10,
-    "solve_share_of_full_pipeline": 0.49140325782973976,
+    "certified_over_pdip": 0.6993667684634425,
+    "figure_of_merit_abs_diff_nats": 3.3651303965598345e-11,
+    "solve_share_of_full_pipeline": 0.577975454522733,
     "full_pipeline_certified": {
-      "per_call_s": 1.0719971599999554,
-      "figure_of_merit": -3168.2932146386147,
-      "abs_diff_vs_library_nats": 1.8098944565281272e-10
+      "per_call_s": 0.8840831400000753,
+      "figure_of_merit": -3168.5950924277895,
+      "abs_diff_vs_library_nats": 3.3651303965598345e-11
     }
   },
   "curvature_batch_size_sweep": [
     {
       "batch_size": 64,
       "n_blocks": 24,
-      "per_call_s": 0.46908481999998913,
+      "per_call_s": 0.4264953300000343,
       "max_rel_diff_vs_default": 0.0,
       "status": "ok"
     },
     {
       "batch_size": 256,
       "n_blocks": 6,
-      "per_call_s": 0.44473152000009575,
+      "per_call_s": 0.43864591000001385,
       "max_rel_diff_vs_default": 0.0,
       "status": "ok"
     },
     {
       "batch_size": 512,
       "n_blocks": 3,
-      "per_call_s": 0.4752328500000658,
+      "per_call_s": 0.47570879999984755,
       "max_rel_diff_vs_default": 0.0,
       "status": "ok"
     }
   ],
   "curvature_kernel_split": {
-    "scatter_per_block_s": 0.0005105399999592919,
-    "fft_apply_per_block_s": 0.034859839999990073,
-    "gather_segment_sum_per_block_s": 0.0025971700000809506,
+    "scatter_per_block_s": 0.0004952399998728651,
+    "fft_apply_per_block_s": 0.035202469999967435,
+    "gather_segment_sum_per_block_s": 0.002620790000037232,
     "n_blocks": 12,
     "batch_size": 128,
-    "predicted_F_s": 0.4556106000003638,
-    "measured_F_s": 0.510148079999999,
-    "fft_share_of_predicted": 0.9181482608164667,
-    "scatter_share_of_predicted": 0.013446745970147776,
-    "gather_share_of_predicted": 0.06840499321338556,
+    "predicted_F_s": 0.4598219999985304,
+    "measured_F_s": 0.5128599100000428,
+    "fft_share_of_predicted": 0.9186807938744979,
+    "scatter_share_of_predicted": 0.012924305488848674,
+    "gather_share_of_predicted": 0.06839490063665352,
     "note": "Each part jitted alone on one block (block 0) and scaled by n_blocks; the measured F runs them fused inside lax.fori_loop."
   },
   "fp32_fft_arm": {
-    "per_call_s": 0.29311311000001294,
-    "fp64_per_call_s": 0.510148079999999,
-    "speedup": 1.7404478428139105,
-    "curvature_max_rel_diff": 2.7348010884383943e-07,
-    "figure_of_merit_fp32_F": -3168.293214628793,
-    "figure_of_merit_fp64_F_pdip": -3168.2932146387966,
-    "abs_diff_nats": 1.0003532224800438e-08,
+    "per_call_s": 0.2974371100001008,
+    "fp64_per_call_s": 0.5128599100000428,
+    "speedup": 1.7242633577224744,
+    "curvature_max_rel_diff": 8.037516321821529e-08,
+    "figure_of_merit_fp32_F": -3168.595092376327,
+    "figure_of_merit_fp64_F_pdip": -3168.595092427824,
+    "abs_diff_nats": 5.1496954256435856e-08,
     "bar_nats": 0.5,
     "holds_bar": true,
     "note": "Script copy of curvature_matrix_diag_from in float32 (scatter, rfft2 / irfft2 with complex64 Khat, gather); solve / log-dets / chi-squared stay fp64 on the upcast F. The library hard-casts this path to float64, so use_mixed_precision never reaches it."
@@ -308,12 +308,12 @@
     {
       "batch": 4,
       "status": "ok",
-      "per_call_s": 0.793529179999996,
-      "batch_per_call_s": 3.174116719999984
+      "per_call_s": 0.8311642424999718,
+      "batch_per_call_s": 3.324656969999887
     }
   ],
   "source_revisions": {
-    "autolens_profiling": "aa47cadaa6f1eff596fecdf774b859d6ec1c475b",
+    "autolens_profiling": "bbcb9a289cf150aea52e474ba45eaa3f8aadeb94",
     "PyAutoNerves": "eb27da2464e2f07e0ad67e7fb18ee84be76c479a",
     "PyAutoFit": "5468c6cefa0ae8bb08a449497cbd3c620f3720e2",
     "PyAutoArray": "14d63360f341912b209f2045d7e388e264692f1d",
@@ -322,180 +322,180 @@
   },
   "jit_phases": {
     "setup_prefix_1": {
-      "lower_s": 0.15594730000157142,
-      "compile_s": 0.24728000000141037,
-      "first_call_s": 0.0015644000013708137,
-      "steady_per_call_s": 0.0005632499998682761
+      "lower_s": 0.13792569999895932,
+      "compile_s": 0.25367499999993015,
+      "first_call_s": 0.001452499998777057,
+      "steady_per_call_s": 0.0005420699999376666
     },
     "setup_prefix_2": {
-      "lower_s": 0.6929241999987426,
-      "compile_s": 0.6101041000001715,
-      "first_call_s": 0.006070600000384729,
-      "steady_per_call_s": 0.004461530000116909
+      "lower_s": 0.7673232999986794,
+      "compile_s": 0.0551089000000502,
+      "first_call_s": 0.007196000000476488,
+      "steady_per_call_s": 0.004033920000074432
     },
     "setup_prefix_3": {
-      "lower_s": 0.6709148999998433,
-      "compile_s": 0.6134363000001031,
-      "first_call_s": 0.024737699999604956,
-      "steady_per_call_s": 0.01395500999988144
+      "lower_s": 0.8823221000002377,
+      "compile_s": 0.8729280000006838,
+      "first_call_s": 0.022744800000509713,
+      "steady_per_call_s": 0.01296837999998388
     },
     "setup_prefix_4": {
-      "lower_s": 0.6876286000006075,
-      "compile_s": 0.04863470000054804,
-      "first_call_s": 0.013586899998699664,
-      "steady_per_call_s": 0.012639019999915036
+      "lower_s": 0.8026836000008188,
+      "compile_s": 0.06126419999964128,
+      "first_call_s": 0.013541500000428641,
+      "steady_per_call_s": 0.013236719999986235
     },
     "sparse_triplets": {
-      "lower_s": 0.012388699999064556,
-      "compile_s": 0.042530999999144115,
-      "first_call_s": 0.0004657000008592149,
-      "steady_per_call_s": 0.0001810400000977097
+      "lower_s": 0.01392180000038934,
+      "compile_s": 0.0441700999999739,
+      "first_call_s": 0.0005114999985380564,
+      "steady_per_call_s": 0.00023242000006575835
     },
     "data_vector_sparse": {
-      "lower_s": 0.0056198999991465826,
-      "compile_s": 0.059728100000938866,
-      "first_call_s": 0.009929900001225178,
-      "steady_per_call_s": 0.010830209999949148
+      "lower_s": 0.006018600000970764,
+      "compile_s": 0.06414630000108446,
+      "first_call_s": 0.012084100000720355,
+      "steady_per_call_s": 0.011211790000015754
     },
     "curvature_sparse": {
-      "lower_s": 0.047526799999104696,
-      "compile_s": 0.1339736999998422,
-      "first_call_s": 0.44638950000080513,
-      "steady_per_call_s": 0.510148079999999
+      "lower_s": 0.057524400001057074,
+      "compile_s": 0.16429729999981646,
+      "first_call_s": 0.5473523000000569,
+      "steady_per_call_s": 0.5128599100000428
     },
     "reconstruction_pdip": {
-      "lower_s": 0.08033529999920574,
-      "compile_s": 0.3270302000000811,
-      "first_call_s": 0.5773253000006662,
-      "steady_per_call_s": 0.5157056600000942
+      "lower_s": 0.07951959999991232,
+      "compile_s": 0.3408505999996123,
+      "first_call_s": 0.5654919999997219,
+      "steady_per_call_s": 0.6134459699998842
     },
     "log_dets": {
-      "lower_s": 0.024915399999372312,
-      "compile_s": 0.06452549999994517,
-      "first_call_s": 0.07690410000031989,
-      "steady_per_call_s": 0.06242588000004616
+      "lower_s": 0.03298999999969965,
+      "compile_s": 0.06866379999883065,
+      "first_call_s": 0.0761108000006061,
+      "steady_per_call_s": 0.08613586999999825
     },
     "figure_of_merit": {
-      "lower_s": 0.018222299999251845,
-      "compile_s": 0.09884790000069188,
-      "first_call_s": 0.002559699998528231,
-      "steady_per_call_s": 0.0023665799999434967
+      "lower_s": 0.020602799999323906,
+      "compile_s": 0.10396749999927124,
+      "first_call_s": 0.002726000000620843,
+      "steady_per_call_s": 0.0019291399999929125
     },
     "full_pipeline": {
-      "lower_s": 0.8650909000007232,
-      "compile_s": 0.08334410000134085,
-      "first_call_s": 1.0890717000002041,
-      "steady_per_call_s": 1.0494551100000535
+      "lower_s": 1.0338928999990458,
+      "compile_s": 0.10396939999918686,
+      "first_call_s": 1.1356878999995388,
+      "steady_per_call_s": 1.0613702799999374
     },
     "library_fit_figure_of_merit": {
-      "lower_s": 1.1025874999995722,
-      "compile_s": 0.22499830000015208,
-      "first_call_s": 1.2203327999995963,
-      "steady_per_call_s": 1.0140135200001168
+      "lower_s": 0.7630659000005835,
+      "compile_s": 0.07652869999947143,
+      "first_call_s": 1.007106400000339,
+      "steady_per_call_s": 1.0745655499998974
     },
     "solver_ab_pdip": {
-      "lower_s": 0.06869970000116155,
-      "compile_s": 0.2982436999991478,
-      "first_call_s": 0.5302984999998444,
-      "steady_per_call_s": 0.49606160000003
+      "lower_s": 0.07530940000106057,
+      "compile_s": 0.2860027999995509,
+      "first_call_s": 0.5505456999999296,
+      "steady_per_call_s": 0.4757548899999165
     },
     "solver_ab_certified": {
-      "lower_s": 0.10946599999988393,
-      "compile_s": 0.029422799998428673,
-      "first_call_s": 0.4365855999985797,
-      "steady_per_call_s": 0.500883629999953
+      "lower_s": 0.09999270000116667,
+      "compile_s": 0.030788599999141297,
+      "first_call_s": 0.3292323000005126,
+      "steady_per_call_s": 0.33272715999992214
     },
     "full_pipeline_certified": {
-      "lower_s": 0.9087244999991526,
-      "compile_s": 1.695921399999861,
-      "first_call_s": 1.1395445999987714,
-      "steady_per_call_s": 1.0719971599999554
+      "lower_s": 0.8187347000002774,
+      "compile_s": 0.0965042000007088,
+      "first_call_s": 0.8420865000007325,
+      "steady_per_call_s": 0.8840831400000753
     },
     "kernel_scatter": {
-      "lower_s": 0.015498199998546625,
-      "compile_s": 0.09336680000160413,
-      "first_call_s": 0.0009508000002824701,
-      "steady_per_call_s": 0.0005105399999592919
+      "lower_s": 0.014303199999631033,
+      "compile_s": 0.08140459999958694,
+      "first_call_s": 0.0011201999986951705,
+      "steady_per_call_s": 0.0004952399998728651
     },
     "kernel_fft_apply": {
-      "lower_s": 0.01702579999982845,
-      "compile_s": 0.06079110000064247,
-      "first_call_s": 0.0359150000003865,
-      "steady_per_call_s": 0.034859839999990073
+      "lower_s": 0.016519300001164083,
+      "compile_s": 0.056387000000540866,
+      "first_call_s": 0.0376274000009289,
+      "steady_per_call_s": 0.035202469999967435
     },
     "kernel_gather_segment_sum": {
-      "lower_s": 0.010196299999734038,
-      "compile_s": 0.03858599999875878,
-      "first_call_s": 0.002719099999012542,
-      "steady_per_call_s": 0.0025971700000809506
+      "lower_s": 0.010192499999902793,
+      "compile_s": 0.03938209999978426,
+      "first_call_s": 0.002893400000175461,
+      "steady_per_call_s": 0.002620790000037232
     },
     "curvature_sparse_b64": {
-      "lower_s": 0.12393169999995735,
-      "compile_s": 0.12678280000000086,
-      "first_call_s": 0.4846338999996078,
-      "steady_per_call_s": 0.46908481999998913
+      "lower_s": 0.13379840000015975,
+      "compile_s": 0.16621200000008685,
+      "first_call_s": 0.4802643999992142,
+      "steady_per_call_s": 0.4264953300000343
     },
     "curvature_sparse_b256": {
-      "lower_s": 0.1379945000007865,
-      "compile_s": 0.15759950000028766,
-      "first_call_s": 0.4833328000004258,
-      "steady_per_call_s": 0.44473152000009575
+      "lower_s": 0.11252699999931792,
+      "compile_s": 0.10988559999896097,
+      "first_call_s": 0.49919729999965057,
+      "steady_per_call_s": 0.43864591000001385
     },
     "curvature_sparse_b512": {
-      "lower_s": 0.1275934999994206,
-      "compile_s": 0.13295450000077835,
-      "first_call_s": 0.4865809000002628,
-      "steady_per_call_s": 0.4752328500000658
+      "lower_s": 0.12172319999990577,
+      "compile_s": 0.13748730000042997,
+      "first_call_s": 0.4843728999985615,
+      "steady_per_call_s": 0.47570879999984755
     },
     "curvature_sparse_fp32": {
-      "lower_s": 0.04805810000107158,
-      "compile_s": 0.16033529999913299,
-      "first_call_s": 0.2973908999993,
-      "steady_per_call_s": 0.29311311000001294
+      "lower_s": 0.060067599999456434,
+      "compile_s": 0.13244599999961792,
+      "first_call_s": 0.3030792999998084,
+      "steady_per_call_s": 0.2974371100001008
     },
     "dense_transformed_mapping_matrix": {
-      "lower_s": 0.14157520000117074,
-      "compile_s": 0.3730799000004481,
-      "first_call_s": 5.122207099999287,
-      "steady_per_call_s": 4.990283049999926
+      "lower_s": 0.16933749999952852,
+      "compile_s": 0.4425495999985287,
+      "first_call_s": 5.560101299999587,
+      "steady_per_call_s": 5.802423970000018
     },
     "dense_data_vector": {
-      "lower_s": 0.012361900000541937,
-      "compile_s": 0.044268399999054964,
-      "first_call_s": 0.003941000000850181,
-      "steady_per_call_s": 0.0008123400000840774
+      "lower_s": 0.011363400000846013,
+      "compile_s": 0.0422472000009293,
+      "first_call_s": 0.0038443000012193806,
+      "steady_per_call_s": 0.0007875299999795971
     },
     "dense_curvature_matrix": {
-      "lower_s": 0.009059599999091006,
-      "compile_s": 0.05006850000063423,
-      "first_call_s": 0.016141100000822917,
-      "steady_per_call_s": 0.019045849999929487
+      "lower_s": 0.009788699999262462,
+      "compile_s": 0.05274290000124893,
+      "first_call_s": 0.016405700000177603,
+      "steady_per_call_s": 0.02010267000005115
     },
     "dense_reconstruction": {
-      "lower_s": 0.08131799999864597,
-      "compile_s": 0.29789770000024873,
-      "first_call_s": 0.4817006000012043,
-      "steady_per_call_s": 0.5051048499999524
+      "lower_s": 0.08612420000099519,
+      "compile_s": 0.3953244000003906,
+      "first_call_s": 0.6370210999994015,
+      "steady_per_call_s": 0.508972840000024
     },
     "dense_log_dets": {
-      "lower_s": 0.026285800000550807,
-      "compile_s": 0.07005480000043462,
-      "first_call_s": 0.07029569999940577,
-      "steady_per_call_s": 0.06422301000002335
+      "lower_s": 0.029107700000167824,
+      "compile_s": 0.07547069999964151,
+      "first_call_s": 0.06065339999986463,
+      "steady_per_call_s": 0.06517105999992054
     },
     "dense_figure_of_merit": {
-      "lower_s": 0.016596600000411854,
-      "compile_s": 0.08879940000042552,
-      "first_call_s": 0.0026424999996379483,
-      "steady_per_call_s": 0.0016664500000842964
+      "lower_s": 0.015332799999669078,
+      "compile_s": 0.08006290000048466,
+      "first_call_s": 0.001968200000192155,
+      "steady_per_call_s": 0.0014150799999697484
     },
     "full_pipeline_vmap4": {
-      "first_call_s": 5.80855419999898,
-      "batch_per_call_s": 3.174116719999984,
-      "steady_per_call_s": 0.793529179999996
+      "first_call_s": 4.480186799999501,
+      "batch_per_call_s": 3.324656969999887,
+      "steady_per_call_s": 0.8311642424999718
     }
   },
-  "peak_rss_mb": 1563.140625,
+  "peak_rss_mb": 1566.2109375,
   "pinned_expected": null,
   "pinned_drift": []
 }
