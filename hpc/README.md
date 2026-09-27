@@ -66,6 +66,26 @@ half-matrix-free comparator, not a production GPU path (production GPU runs fit
 the plain dataset). Result JSONs are committed from the RAL worktree with plain
 `git` — this grid has no `hpc/sync` leg.
 
+## The release sweep: one pinned host, every release
+
+The run-time dashboard (`dashboard/`, autolens_profiling#345) plots one point per PyAutoLens
+release per likelihood cell. Those points are a trend only if every release's A100 rows come
+from the same quiet host, so the sweep is pinned:
+
+- `hpc/release_sweep.conf` names the reference node (`RELEASE_SWEEP_NODE`, today
+  `euclid-ral-gpu-2`) and the 1-minute load-average cap above which a row is refused as a trend
+  point (`RELEASE_SWEEP_LOADAVG_CAP`, 8.0). Both are read by
+  `scripts/misc/tooling/build_dashboard.py`.
+- `hpc/batch_gpu/submit_release_sweep.sh` submits the eight A100 runtime legs (mge, pixelization,
+  delaunay, delaunay_nn × dense, sparse) with `sbatch --nodelist=<reference node>`; `--node`
+  overrides the pin (say why in the release issue), `--dry-run` prints without submitting.
+
+Run it on the RAL checkout after `HPCPullPyAuto` has moved the libraries to the release tag.
+Each row's `device.provenance` block records the node, the load average at import and the
+SLURM job id; the dashboard plots a row solid when it is on the reference host under the cap,
+hollow when it is off the host or predates the block, and lists it under "refused" when the
+load average was above the cap.
+
 ## `hpc/sync` — driving RAL from the laptop, and getting runs back
 
 `hpc/sync` is the laptop-side driver. Copy the config first:

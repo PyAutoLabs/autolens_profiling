@@ -1,0 +1,59 @@
+name: Pages Dashboard
+
+# Serves the run-time-over-time dashboard (`dashboard/index.html`, its data
+# `series.json` and the organ cockpit feed `state.json`) at this repo's GitHub
+# Pages URL. The files are rendered by `scripts/misc/tooling/build_dashboard.py`
+# — on release tags by `profile.yml`, by hand after a sweep is committed — and
+# this workflow only publishes them (autolens_profiling#345). Only the uploaded
+# files reach Pages: nothing else in the repo.
+#
+# The cockpit-feed contract lives with the Brain (board/_state.py); a feed that
+# has drifted from it fails here, before Pages publishes something the cockpit
+# would reject — the same guard PyAutoCortex's pages_dashboard.yml runs.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "dashboard/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: PyAutoLabs/PyAutoBrain
+          path: PyAutoBrain
+      # enablement: true creates the Pages site on first run, so no manual
+      # Settings -> Pages step is needed.
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - name: Stage the dashboard as the site
+        run: |
+          mkdir -p _site
+          cp dashboard/index.html _site/index.html
+          cp dashboard/series.json _site/series.json
+          cp dashboard/state.json _site/state.json
+      - name: Validate the cockpit feed against the Brain contract
+        run: python3 PyAutoBrain/board/_state.py _site/state.json
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -99,6 +99,14 @@ jobs:
           # resolves. Pure stdlib -- no PyAuto* imports, no PYTHONPATH.
           python scripts/misc/tooling/check_wiki.py --check
 
+      - name: build_dashboard.py --check (run-time dashboard idempotence)
+        working-directory: autolens_profiling
+        run: |
+          # dashboard/{series,state}.json + index.html are rendered from results/;
+          # a PR that adds rows without re-rendering leaves the published page
+          # stale. Pure stdlib.
+          python scripts/misc/tooling/build_dashboard.py --check
+
       - name: check_results_layout.py --check (artefact policy)
         working-directory: autolens_profiling
         run: |
