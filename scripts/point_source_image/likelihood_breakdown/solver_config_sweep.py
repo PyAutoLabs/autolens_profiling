@@ -79,7 +79,11 @@ start rotated each round, per-call medians, bootstrap 90 % CI of control / confi
 ``compile_s``, FLOPs (``cost_analysis``), XLA ``memory_analysis`` and ``vmap``
 batches 1 / 4 / 16 for the control and the best admissible configuration. For each
 distinct step-0 geometry the step-0 ray trace and ray trace + containment are timed
-as their own jitted prefixes, so the containment share is recorded.
+as their own jitted prefixes, so the containment share is recorded. Two further
+prefixes size the materialisation: ``route_inputs`` returns the six barycentric
+input components the ACTIVE step-0 route feeds the sign test (route-aware), and
+``general_gather`` returns ``plane.triangles`` (the general ``(N, 3, 2)`` gather,
+route-independent reference). Containment is the headline before/after number.
 Finally, the NumPy solver (dynamic shapes, no ``MAX_CONTAINING_SIZE`` cap) counts how
 many triangles contain β* at every step on the prior draws, for the control and the
 best admissible geometries: the margin the production cap of 15 actually has.
@@ -1311,6 +1315,36 @@ if STEP0_MODE:
 # --- 6. step-0 ray trace vs containment split per geometry ---------------------
 note("step-0 split: ray trace vs ray trace + containment per geometry")
 
+from autoarray.structures.triangles import shape as _triangles_shape  # noqa: E402
+
+
+@contextlib.contextmanager
+def capture_barycentric_inputs():
+    """Capture, at trace time, what the ACTIVE step-0 route feeds the sign test.
+
+    Every containment route -- the general ``Point.mask(self.triangles)`` path and the
+    PyAutoArray#579 routes -- ends in ``_barycentric_contains(x0, y0, x1, y1, x2, y2, px,
+    py)``. While this is active that helper is swapped (in both modules that bind it) for
+    one that records its six vertex-component arguments and returns an all-False mask of
+    the right shape, so the downstream ``jnp.where`` still traces. The step-0 prefix
+    returns the recorded components: the route's own input materialisation (the
+    ``(N, 3, 2)`` gather for ``gather``, six 1-D gathers for ``components``, strided
+    slices for ``structured``), not a fixed ``plane.triangles`` gather.
+    """
+    captured = []
+
+    def recording(x0, y0, x1, y1, x2, y2, px, py):
+        captured.extend((x0, y0, x1, y1, x2, y2))
+        return jnp.zeros(jnp.shape(x0), dtype=bool)
+
+    saved = (_triangles_array._barycentric_contains, _triangles_shape._barycentric_contains)
+    _triangles_array._barycentric_contains = recording
+    _triangles_shape._barycentric_contains = recording
+    try:
+        yield captured
+    finally:
+        _triangles_array._barycentric_contains, _triangles_shape._barycentric_contains = saved
+
 
 def step0_factory(cfg, stage):
     def factory():
@@ -1331,10 +1365,18 @@ def step0_factory(cfg, stage):
                 # A scalar reduction forces every step-0 deflection but writes no
                 # (N, 3, 2) output, so containment is measured against it.
                 return jnp.sum(plane.vertices)
-            if stage == "ray_trace_materialised":
-                # image_plane.py's ray-trace prefix (job 356365): returns the
-                # gathered (N, 3, 2) triangles, i.e. includes their materialisation.
+            if stage == "general_gather":
+                # The general path's (N, 3, 2) gather (image_plane.py's pre-#579
+                # ray-trace prefix, job 356365). Route-INDEPENDENT: every route reads the
+                # same ~0.9 ms here, so it is a reference, not the route's cost.
                 return plane.triangles
+            if stage == "route_inputs":
+                # What THIS route materialises for the sign test (route-aware).
+                with capture_barycentric_inputs() as captured:
+                    plane.containing_indices(shape=shape)
+                if len(captured) % 6 or not captured:
+                    raise RuntimeError(f"route_inputs: captured {len(captured)} components")
+                return tuple(captured)
             return plane.containing_indices(shape=shape)
 
         return fn
@@ -1347,7 +1389,7 @@ for cfg in CONFIGS:
     key = (cfg["extent"], cfg["scale"], cfg.get("step0_route"))
     geoms.setdefault(key, cfg)
 s0_exec = {}
-stages = ("source_centre", "ray_trace", "ray_trace_materialised", "containment")
+stages = ("source_centre", "ray_trace", "general_gather", "route_inputs", "containment")
 for key, cfg in geoms.items():
     for stage in stages:
         s0_exec[(key, stage)], _ = compile_route(
@@ -1379,12 +1421,21 @@ for key, cfg in geoms.items():
         "prefix_median_ms": med,
         "ray_trace_ms": trace,
         "containment_ms": contain,
-        "triangle_materialisation_ms": med["ray_trace_materialised"] - med["ray_trace"],
+        # Route-aware: the route's own barycentric inputs written out as jit outputs,
+        # minus ray trace. An upper bound on what the fused containment pays for them
+        # (XLA may fuse the inputs into the sign test and never write them).
+        "route_input_materialisation_ms": med["route_inputs"] - med["ray_trace"],
+        # Route-independent reference: the general (N, 3, 2) gather, whatever the route.
+        # Phase 4a's "triangle_materialisation_ms" (job 356367) is this quantity.
+        "general_gather_reference_ms": med["general_gather"] - med["ray_trace"],
         "step0_route": descriptions[cfg["name"]]["step0_route"],
         "method": (
             "prefix medians; ray_trace = jnp.sum(plane.vertices) minus source_centre; "
             "containment = containing_indices minus ray_trace (includes the vertices[indices] "
-            "gather + Point.mask + jnp.where); ray_trace_materialised = image_plane.py's prefix"
+            "gather + Point.mask + jnp.where) and is the headline before/after number; "
+            "route_input_materialisation = the route's six barycentric input components "
+            "returned as outputs (captured at trace time) minus ray_trace; "
+            "general_gather_reference = plane.triangles minus ray_trace, route-independent"
         ),
         "step0_ms": trace + contain,
         "containment_share_of_step0": contain / (trace + contain) if trace + contain > 0 else None,
