@@ -1407,7 +1407,7 @@ log [`point_source_cpu_2026_09_27_ral_job_357322_step0_route_ab_a100.out`](point
 structured is 0.97× gather (0.071 vs 0.069 ms/L, a 2 µs difference). Compile +3.2 % (structured).
 `all_gates_pass` is false **only** because `gates.fiducial_bit_exact` expects the CPU value `…812`:
 the A100 fiducial `7.743201200876806` equals the phase-2/3 A100 rows bit for bit, and every route is
-bit-identical to the control.
+bit-identical to the control. The harness now expects the backend's own fiducial (`FIDUCIAL_SOLVED_LOG_L_BY_BACKEND`: CPU `…812`, GPU `…806`), so a re-run of this row reports `all_gates_pass: true`; the committed JSON predates that fix.
 
 ### Laptop witness (not quotable)
 

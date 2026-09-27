@@ -92,7 +92,7 @@ Gates
 -----
 
 - The control's solved log L on the prior-median vector equals the fiducial
-  ``7.743201200876812`` bit-exactly.
+  ``7.743201200876812`` bit-exactly on CPU (``7.743201200876806`` on the A100).
 - ``jax.grad`` of the likelihood is finite and non-zero for every admissible
   configuration. ``autofit.jax.register_model(model)`` is load-bearing: without it
   the gradient is silently all-zero.
@@ -228,7 +228,12 @@ from autoarray.structures.triangles.shape import Point  # noqa: E402
 from autofit.jax import register_model as register_model_pytrees  # noqa: E402
 from autolens.point.solver import shape_solver as _shape_solver  # noqa: E402
 
-FIDUCIAL_SOLVED_LOG_L = 7.743201200876812
+# The fiducial is bit-exact per backend: the CPU value, and the value every RAL A100 fp64 row
+# has reproduced (static_lattice_ab / vertex_dedup_ab / this sweep's step-0 A100 row).
+FIDUCIAL_SOLVED_LOG_L_BY_BACKEND = {"cpu": 7.743201200876812, "gpu": 7.743201200876806}
+FIDUCIAL_SOLVED_LOG_L = FIDUCIAL_SOLVED_LOG_L_BY_BACKEND.get(
+    jax.default_backend(), FIDUCIAL_SOLVED_LOG_L_BY_BACKEND["cpu"]
+)
 PRODUCTION_PRECISION = 0.001
 PRODUCTION_MCS = int(_triangles_array.MAX_CONTAINING_SIZE)
 ADMISSIBLE_POSITION_TOL = 0.002
