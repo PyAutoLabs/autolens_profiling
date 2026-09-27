@@ -274,7 +274,7 @@ produced:
 
 - [`results/breakdown/point_source_image/image_plane_hpc_ral_cpu_fp64.json`](../breakdown/point_source_image/image_plane_hpc_ral_cpu_fp64.json) and [`.png`](../breakdown/point_source_image/image_plane_hpc_ral_cpu_fp64.png)
 - [`results/breakdown/cluster/image_plane_hpc_ral_cpu_fp64.json`](../breakdown/cluster/image_plane_hpc_ral_cpu_fp64.json) and [`.png`](../breakdown/cluster/image_plane_hpc_ral_cpu_fp64.png)
-- the job log [`point_source_cpu_2026_09_23_ral_job_350580.out`](point_source_cpu_2026_09_23_ral_job_350580.out)
+- the job log [`point_source_cpu_2026_09_23_ral_job_350580.out`](../logs/point_source_image/point_source_cpu_2026_09_23_ral_job_350580.out)
 
 The auto-simulate step also wrote a `results/simulators/cluster_summary_v2026.8.17.1.*`
 on RAL; it was not harvested. The laptop counterparts are
@@ -583,7 +583,7 @@ regression**.
 
   JSON [`vertex_dedup_ab_hpc_ral_a100_fp64.json`](../breakdown/point_source_image/vertex_dedup_ab_hpc_ral_a100_fp64.json)
   and [`.png`](../breakdown/point_source_image/vertex_dedup_ab_hpc_ral_a100_fp64.png).
-  Log [`point_source_cpu_2026_09_24_ral_job_350587_vertex_dedup_ab_a100.out`](point_source_cpu_2026_09_24_ral_job_350587_vertex_dedup_ab_a100.out),
+  Log [`point_source_cpu_2026_09_24_ral_job_350587_vertex_dedup_ab_a100.out`](../logs/point_source_image/point_source_cpu_2026_09_24_ral_job_350587_vertex_dedup_ab_a100.out),
   with an empty stderr. Submit
   [`hpc/batch_gpu/submit_breakdown_point_source_vertex_dedup_ab_a100_fp64`](../../hpc/batch_gpu/submit_breakdown_point_source_vertex_dedup_ab_a100_fp64).
   This JSON's `control_source.body` and `nodedup_body` are correct. The cell now
@@ -708,7 +708,7 @@ affinity. The absent `dataset/cluster/simple` is auto-simulated, as in phase 1.
 Job 350582 produced:
 
 - [`results/breakdown/point_source_image/vertex_dedup_ab_hpc_ral_cpu_fp64.json`](../breakdown/point_source_image/vertex_dedup_ab_hpc_ral_cpu_fp64.json) and [`.png`](../breakdown/point_source_image/vertex_dedup_ab_hpc_ral_cpu_fp64.png)
-- the job log [`point_source_cpu_2026_09_23_ral_job_350582_vertex_dedup_ab.out`](point_source_cpu_2026_09_23_ral_job_350582_vertex_dedup_ab.out)
+- the job log [`point_source_cpu_2026_09_23_ral_job_350582_vertex_dedup_ab.out`](../logs/point_source_image/point_source_cpu_2026_09_23_ral_job_350582_vertex_dedup_ab.out)
   (stderr held only the benign `No blurring_image provided` warning)
 
 The laptop witness is
@@ -1029,8 +1029,8 @@ JSONs and PNGs: [`static_lattice_ab_hpc_ral_cpu_fp64`](../breakdown/point_source
 ([png](../breakdown/point_source_image/static_lattice_ab_constant_folding_hpc_ral_cpu_fp64.png)),
 [`static_lattice_ab_hpc_ral_a100_fp64`](../breakdown/point_source_image/static_lattice_ab_hpc_ral_a100_fp64.json)
 ([png](../breakdown/point_source_image/static_lattice_ab_hpc_ral_a100_fp64.png)).
-Logs: [`point_source_cpu_2026_09_24_ral_job_350636_static_lattice_ab.out`](point_source_cpu_2026_09_24_ral_job_350636_static_lattice_ab.out),
-[`point_source_cpu_2026_09_24_ral_job_350637_static_lattice_ab_a100.out`](point_source_cpu_2026_09_24_ral_job_350637_static_lattice_ab_a100.out).
+Logs: [`point_source_cpu_2026_09_24_ral_job_350636_static_lattice_ab.out`](../logs/point_source_image/point_source_cpu_2026_09_24_ral_job_350636_static_lattice_ab.out),
+[`point_source_cpu_2026_09_24_ral_job_350637_static_lattice_ab_a100.out`](../logs/point_source_image/point_source_cpu_2026_09_24_ral_job_350637_static_lattice_ab_a100.out).
 
 ## Phase 4 — profile the residue and iterate — NOT STARTED
 
@@ -1113,7 +1113,7 @@ counts the `vertices[indices]` gather as trace. The sweep measures the corrected
 - Submit: [`submit_breakdown_point_source_image_solver_config_sweep_ral_cpu_fp64`](../../hpc/batch_cpu/submit_breakdown_point_source_image_solver_config_sweep_ral_cpu_fp64).
 - JSON: [`solver_config_sweep_hpc_ral_cpu_fp64.json`](../breakdown/point_source_image/solver_config_sweep_hpc_ral_cpu_fp64.json)
   ([png](../breakdown/point_source_image/solver_config_sweep_hpc_ral_cpu_fp64.png)).
-- Log: [`point_source_cpu_2026_09_26_ral_job_356367_solver_config_sweep.out`](point_source_cpu_2026_09_26_ral_job_356367_solver_config_sweep.out).
+- Log: [`point_source_cpu_2026_09_26_ral_job_356367_solver_config_sweep.out`](../logs/point_source_image/point_source_cpu_2026_09_26_ral_job_356367_solver_config_sweep.out).
 
 **Protocol.**
 - 26 configurations of the production `FitPositionsImagePairAllSolved` likelihood. Each is its own
@@ -1280,7 +1280,7 @@ sbatch submit_breakdown_point_source_image_solver_config_sweep_ral_cpu_fp64     
 # or from the laptop: hpc/sync push, hpc/sync submit --cpu <submit_name>, then hpc/sync pull
 ```
 
-Step-1 log: [`point_source_cpu_2026_09_26_ral_job_356365_image_plane_p4.out`](point_source_cpu_2026_09_26_ral_job_356365_image_plane_p4.out);
+Step-1 log: [`point_source_cpu_2026_09_26_ral_job_356365_image_plane_p4.out`](../logs/point_source_image/point_source_cpu_2026_09_26_ral_job_356365_image_plane_p4.out);
 submit [`submit_breakdown_point_source_image_image_plane_p4_ral_cpu_fp64`](../../hpc/batch_cpu/submit_breakdown_point_source_image_image_plane_p4_ral_cpu_fp64).
 
 ### Follow-ups
@@ -1362,7 +1362,7 @@ at 11:59, pending until the queue cleared, and finished at 15:48 with a wall tim
 had 8 CPUs (`sched_affinity` 8), fp64, NPROC 8 and BLAS 1, and it passes `all_gates_pass: true`, with
 provenance asserted: PyAutoArray `c13b2d73` from the branch clone, profiling `311e690`. JSON
 [`solver_config_sweep_step0_hpc_ral_cpu_fp64.json`](../breakdown/point_source_image/solver_config_sweep_step0_hpc_ral_cpu_fp64.json)
-(`quotable: true`); log [`point_source_cpu_2026_09_27_ral_job_357321_step0_route_ab_8490h_cpu.out`](point_source_cpu_2026_09_27_ral_job_357321_step0_route_ab_8490h_cpu.out).
+(`quotable: true`); log [`point_source_cpu_2026_09_27_ral_job_357321_step0_route_ab_8490h_cpu.out`](../logs/point_source_image/point_source_cpu_2026_09_27_ral_job_357321_step0_route_ab_8490h_cpu.out).
 
 **The node was heavily loaded.** Its loadavg was 199.9 at the start and 189.9 at the end (236
 cores). Phase 4a's job 356367 ran on the same node at 0.00 → 1.23. The routes are interleaved round
@@ -1397,7 +1397,7 @@ The known fallback: CPU-only on an idle `gpu`-partition node, no `--gres`, `eucl
 absolute ms are not comparable to phase 4a.** JSON
 [`solver_config_sweep_step0_hpc_ral_cpu_epyc7702_fp64.json`](../breakdown/point_source_image/solver_config_sweep_step0_hpc_ral_cpu_epyc7702_fp64.json)
 (`quotable: "supplementary"`, `host_note` added post-run);
-log [`point_source_cpu_2026_09_27_ral_job_357335_step0_route_ab_epyc7702_cpu.out`](point_source_cpu_2026_09_27_ral_job_357335_step0_route_ab_epyc7702_cpu.out).
+log [`point_source_cpu_2026_09_27_ral_job_357335_step0_route_ab_epyc7702_cpu.out`](../logs/point_source_image/point_source_cpu_2026_09_27_ral_job_357335_step0_route_ab_epyc7702_cpu.out).
 
 | route | median ms | × gather [90 % CI] | containment ms | route inputs ms | ray trace ms | vmap-1 / 4 / 16 ms/L | compile s | XLA temp KB | FLOPs M |
 |---|---:|---:|---:|---:|---:|---|---:|---:|---:|
@@ -1420,7 +1420,7 @@ log [`point_source_cpu_2026_09_27_ral_job_357335_step0_route_ab_epyc7702_cpu.out
 `euclid-ral-gpu-1`, NVIDIA A100 80 GB PCIe (driver 610.57.04), host CPU EPYC 7702, `JAX_PLATFORMS=cuda`
 and `JAX_PLATFORM_NAME=cuda`, the job asserted the `gpu` backend; wall 432 s. JSON
 [`solver_config_sweep_step0_hpc_ral_a100_fp64.json`](../breakdown/point_source_image/solver_config_sweep_step0_hpc_ral_a100_fp64.json);
-log [`point_source_cpu_2026_09_27_ral_job_357322_step0_route_ab_a100.out`](point_source_cpu_2026_09_27_ral_job_357322_step0_route_ab_a100.out).
+log [`point_source_cpu_2026_09_27_ral_job_357322_step0_route_ab_a100.out`](../logs/point_source_image/point_source_cpu_2026_09_27_ral_job_357322_step0_route_ab_a100.out).
 
 | route | median ms | × gather [90 % CI] | containment ms | vmap-1 / 4 / 16 ms/L | compile s | XLA temp KB |
 |---|---:|---:|---:|---|---:|---:|
@@ -1522,7 +1522,7 @@ no unexplained change, compile ≤ +20 % and at most about +5 % on the scalar me
 (includes #580), PyAutoLens `dcbd4b71`, PyAutoGalaxy `ba8a08fa`, PyAutoFit `c156a9d8`, PyAutoNerves
 `bf104102`; profiling `d6757ad`. JSON
 [`solver_config_sweep_mcs_hpc_ral_cpu_fp64.json`](../breakdown/point_source_image/solver_config_sweep_mcs_hpc_ral_cpu_fp64.json);
-log [`point_source_cpu_2026_09_27_ral_job_358976_mcs_headroom_8490h_cpu.out`](point_source_cpu_2026_09_27_ral_job_358976_mcs_headroom_8490h_cpu.out).
+log [`point_source_cpu_2026_09_27_ral_job_358976_mcs_headroom_8490h_cpu.out`](../logs/point_source_image/point_source_cpu_2026_09_27_ral_job_358976_mcs_headroom_8490h_cpu.out).
 
 **The node was loaded**, with loadavg ≈ 206–210 on 236 cores. The rows are interleaved round by
 round, so the ratios stand. The absolute ms are not comparable to phase 4a.
@@ -1558,7 +1558,7 @@ round, so the ratios stand. The absolute ms are not comparable to phase 4a.
   `all_gates_pass: true`.
 - JSON
   [`solver_config_sweep_mcs_hpc_ral_a100_fp64.json`](../breakdown/point_source_image/solver_config_sweep_mcs_hpc_ral_a100_fp64.json);
-  log [`point_source_cpu_2026_09_27_ral_job_359102_mcs_headroom_a100.out`](point_source_cpu_2026_09_27_ral_job_359102_mcs_headroom_a100.out).
+  log [`point_source_cpu_2026_09_27_ral_job_359102_mcs_headroom_a100.out`](../logs/point_source_image/point_source_cpu_2026_09_27_ral_job_359102_mcs_headroom_a100.out).
 
 | row | median ms | row / control | control / row [90 % CI] | paired-round | vmap-1 / 4 / 16 ms/L | compile s (vs ctrl) | XLA temp KB |
 |---|---:|---:|---:|---:|---|---:|---:|

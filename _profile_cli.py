@@ -429,6 +429,129 @@ _CACHE_DIR_AT_IMPORT = os.environ.get("JAX_COMPILATION_CACHE_DIR") or None
 _AUTOTUNE_ENTRIES_AT_IMPORT = _autotune_cache_entries(_CACHE_DIR_AT_IMPORT)
 
 
+def _loadavg() -> list[float] | None:
+    try:
+        return [round(x, 3) for x in os.getloadavg()]
+    except Exception:  # noqa: BLE001 — no load average (Windows, sandbox) is a fact, not an error
+        return None
+
+
+#: Host load average as found at **import** time — the "start" of the run, before
+#: this process's own compile and timing work moves it. ``provenance_dict`` pairs it
+#: with the load average at write time.
+LOADAVG_AT_IMPORT = _loadavg()
+
+#: The provenance block's keys, in order. ``scripts/misc/tooling/check_results_layout.py``
+#: requires every one of them on each device-recording result JSON (its
+#: ``REQUIRED_PROVENANCE_KEYS`` mirrors this tuple).
+PROVENANCE_KEYS = (
+    "provenance_schema",
+    "captured_at",
+    "host",
+    "slurm",
+    "loadavg_at_import",
+    "loadavg_at_write",
+    "profiling_revision",
+    "library_revisions",
+    "library_versions",
+    "dependency_versions",
+)
+
+#: Library repo -> importable package, for ``library_versions``.
+_LIBRARY_PACKAGES = (
+    ("PyAutoNerves", "autonerves"),
+    ("PyAutoFit", "autofit"),
+    ("PyAutoArray", "autoarray"),
+    ("PyAutoGalaxy", "autogalaxy"),
+    ("PyAutoLens", "autolens"),
+)
+
+#: Third-party packages whose version rescales or re-routes a measurement (a JAX bump
+#: changes XLA, a nufftax below its floor routed x64 GPU NUFFTs to fp32 Pallas —
+#: interferometer MGE round 1, RAL jobs 351055-351057).
+_DEPENDENCY_PACKAGES = ("jax", "jaxlib", "numpy", "scipy", "numba", "nufftax")
+
+
+def _source_revisions() -> dict[str, str]:
+    """``likelihood_breakdown.provenance.source_revisions`` for this checkout + libraries."""
+    import importlib
+    import sys
+
+    misc = str(Path(__file__).resolve().parent / "scripts" / "misc")
+    if misc not in sys.path:
+        sys.path.append(misc)
+    provenance = importlib.import_module("likelihood_breakdown.provenance")
+    return provenance.source_revisions(Path(__file__).resolve().parent)
+
+
+def _package_versions(packages) -> dict[str, str | None]:
+    from importlib import metadata
+
+    out = {}
+    for name in packages:
+        try:
+            out[name] = metadata.version(name)
+        except metadata.PackageNotFoundError:
+            out[name] = None
+    return out
+
+
+def _library_versions() -> dict[str, str | None]:
+    """``__version__`` of every importable PyAuto* library (source checkouts, not pip)."""
+    import importlib
+
+    out = {}
+    for repo, package in _LIBRARY_PACKAGES:
+        try:
+            out[repo] = getattr(importlib.import_module(package), "__version__", None)
+        except Exception:  # noqa: BLE001 — an unimportable library is a fact to record
+            out[repo] = None
+    return out
+
+
+def provenance_dict() -> dict:
+    """The provenance block every result JSON carries (``device.provenance``).
+
+    The fields the wiki index and the run-time dashboard read off a result: which
+    host ran it and how loaded it was at start and at write, which SLURM job, which
+    revision of this repo and of every PyAuto* library, and which versions of the
+    dependencies that can silently re-route a measurement. Attached by
+    :func:`device_info_dict`, so every cell that records its device gets it without
+    a per-script edit; ``check_results_layout.py --check`` refuses a new
+    device-recording JSON without it.
+
+    Never raises: a helper that fails degrades its field to ``None`` or an
+    ``unavailable: ...`` string, because a provenance failure must not lose the
+    measurement it describes (autolens_profiling#297 lost a job's JSONs that way).
+    """
+    import datetime as _dt
+    import socket
+
+    try:
+        revisions = _source_revisions()
+    except Exception as exc:  # noqa: BLE001 — see the docstring
+        revisions = f"unavailable: {type(exc).__name__}"
+    profiling_revision = (
+        revisions.get("autolens_profiling") if isinstance(revisions, dict) else revisions
+    )
+    return {
+        "provenance_schema": 1,
+        "captured_at": _dt.datetime.now(_dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "host": socket.gethostname(),
+        "slurm": {
+            "job_id": os.environ.get("SLURM_JOB_ID") or None,
+            "array_job_id": os.environ.get("SLURM_ARRAY_JOB_ID") or None,
+            "array_task_id": os.environ.get("SLURM_ARRAY_TASK_ID") or None,
+        },
+        "loadavg_at_import": LOADAVG_AT_IMPORT,
+        "loadavg_at_write": _loadavg(),
+        "profiling_revision": profiling_revision,
+        "library_revisions": revisions,
+        "library_versions": _library_versions(),
+        "dependency_versions": _package_versions(_DEPENDENCY_PACKAGES),
+    }
+
+
 def device_info_dict() -> dict:
     """Capture backend / device / nvidia-smi summary for the current JAX process.
 
@@ -459,6 +582,9 @@ def device_info_dict() -> dict:
         "jax_compilation_cache_dir": _CACHE_DIR_AT_IMPORT,
         "autotune_cache_entries_at_start": _AUTOTUNE_ENTRIES_AT_IMPORT,
         "cache_fresh": bool(_CACHE_DIR_AT_IMPORT) and _AUTOTUNE_ENTRIES_AT_IMPORT == 0,
+        # The mandatory provenance block (results/README.md "Artefact policy"):
+        # host + load, SLURM job, library revisions, dependency versions.
+        "provenance": provenance_dict(),
     }
     if info["backend"] == "gpu":
         try:

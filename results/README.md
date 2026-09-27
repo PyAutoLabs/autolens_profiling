@@ -26,8 +26,42 @@ PyAutoArray #553–#555 were released in 2026.9.19.1.
 | `nnls_warm_start/` | [`nnls_warm_start/`](../scripts/misc/nnls_warm_start/README.md) | The NNLS cross-evaluation warm-start memo A/B experiment — per-model JSON/PNG pairs plus its two notes ([`nnls_warm_start_memo.md`](./nnls_warm_start/nnls_warm_start_memo.md), [`nnls_warm_start_memo_matrix.md`](./nnls_warm_start/nnls_warm_start_memo_matrix.md)). A diagnostic, **not** a production baseline. |
 | `hazards/` | [`hazards/`](../scripts/misc/hazards/README.md) | Semantic finding records, reproducer plots, generated seed summary, and consumer index |
 | `lens/` | [`scripts/lens/`](../scripts/lens/README.md) | Versioned **library-component** summaries (dataset-free axis) — today `lens/deflections/`, per-mass-profile deflection cost with pinned deflection values |
-| `notes/` | humans + agents | Narrative findings and design notes (e.g. [`design_lock_in.md`](./notes/design_lock_in.md), [`production_representative_cells.md`](./notes/production_representative_cells.md), [`nnls_solver_ledger.md`](./notes/nnls_solver_ledger.md), [`numpy_deflections_cpu.md`](./notes/numpy_deflections_cpu.md)) |
+| `notes/` | humans + agents | Narrative findings and design notes — **markdown only** (e.g. [`design_lock_in.md`](./notes/design_lock_in.md), [`production_representative_cells.md`](./notes/production_representative_cells.md), [`nnls_solver_ledger.md`](./notes/nnls_solver_ledger.md), [`numpy_deflections_cpu.md`](./notes/numpy_deflections_cpu.md)); see the artefact policy below |
+| `logs/` | RAL submits | Committed SLURM job logs, one folder per campaign ([`logs/README.md`](./logs/README.md)); provenance a ledger cites, never a result |
 | `baselines/` | campaign snapshots | Named, frozen baselines (e.g. `PreOptimizationTimes/`) — see below |
+
+## Artefact policy
+
+Decided 2026-09-28 (autolens_profiling#341), after `results/notes/` had grown to 74 files of
+which 16 job logs and 10 JSON sidecars were 38 % of the tree, and measurement PRs had reached
+16k–26k lines of per-repeat JSON. `scripts/misc/tooling/check_results_layout.py --check`
+enforces the first and last rules in `lint.yml`.
+
+1. **`notes/` holds ledgers only.** Its top level is `*.md`. The two folders
+   `clipper_campaign/` and `point_source_cpu_2026_09_17_reported/` are frozen evidence packs
+   with their own READMEs, allowlisted by name in the check; nothing new goes beside them.
+2. **Job logs go to `logs/<campaign>/`** (`<campaign>_<YYYY_MM_DD>_ral_job_<jobid>[_<what>].out`),
+   or stay on RAL and are cited by job id. Commit a log only when it carries something the
+   result JSON does not (the node, the load line, a failed arm's stderr).
+3. **JSON sidecars go beside the result JSONs they describe** — a job's source-hash or
+   status sidecar for a `breakdown/imaging/` measurement lives in `breakdown/imaging/`,
+   named `<campaign>_<phase>_job<jobid>.json`. A ledger links it relatively.
+4. **Committed result JSON is summarised, not dumped.** A new measurement commits per-row
+   medians, the bootstrap CI, the pins and the provenance block; per-repeat samples stay in
+   `output/` (gitignored) or on RAL. The existing per-repeat files are history and stay.
+5. **Every result JSON carries a provenance block** at `device.provenance`, written by
+   `_profile_cli.device_info_dict()` (so any cell that records its JAX device gets it with no
+   per-script code): `provenance_schema`, `captured_at` (UTC), `host`, `slurm`
+   (`job_id`, `array_job_id`, `array_task_id`), `loadavg_at_import` (the run's start),
+   `loadavg_at_write` (its end, when the JSON is assembled), `profiling_revision`,
+   `library_revisions` (git HEAD of this checkout and every imported PyAuto* library, via
+   `scripts/misc/likelihood_breakdown/provenance.py`), `library_versions`, and
+   `dependency_versions` (`jax`, `jaxlib`, `numpy`, `scipy`, `numba`, `nufftax`). These are
+   the fields the [wiki index](../wiki/index.md) and the run-time dashboard read. A
+   device-recording JSON without the block fails the check unless it is listed in
+   [`provenance_grandfathered.txt`](./provenance_grandfathered.txt) — the result JSONs
+   written before the block existed. That manifest is a ratchet: lines are removed as files
+   gain the block or are deleted, never added by hand.
 
 ## Performance artifact shapes
 

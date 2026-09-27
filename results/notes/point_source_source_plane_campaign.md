@@ -222,7 +222,7 @@ Single-source only.
   Their WALL-BASIS rows are measured on the RAL jobs. Known gaps, carried and
   not fixed here: `check_submits.py`'s `_PYTHON_CALL` misses `python3 -u`, and
   `hpc/sync pull` does not fetch `batch_cpu` logs. The CPU log was copied by
-  hand to `results/notes/point_source_source_plane_2026_09_26_ral_job_356368.out`.
+  hand to `results/logs/point_source_source/point_source_source_plane_2026_09_26_ral_job_356368.out`.
 - New rows: `source_plane_{hpc_ral_cpu_fp64,hpc_a100_fp64}` and
   `pytree_input_ab_{hpc_ral_cpu_fp64,hpc_a100_fp64}` (JSON + PNG) under
   `results/breakdown/point_source_source/`.
@@ -731,7 +731,7 @@ Single-source only. Workspace-only: no library was edited.
   (pinned to `euclid-ral-gpu-1`). WALL-BASIS = the laptop's measured 1906 s.
 - Rows `gradient_mode_crossover_{local_cpu_fp64,hpc_ral_gpunode_cpu_fp64,hpc_a100_fp64}`
   (JSON + PNG) under `results/breakdown/point_source_source/`; the CPU job log
-  is `results/notes/point_source_source_plane_2026_09_27_ral_job_358770.out`.
+  is `results/logs/point_source_source/point_source_source_plane_2026_09_27_ral_job_358770.out`.
 
 ### The ladder
 
@@ -1068,7 +1068,7 @@ Single-source only. Workspace-only: no library was edited. The library side is p
   and `autolens` import from them at the merge commits. WALL-BASIS = the laptop's measured 315 s.
 - Rows `gradient_mode_library_ab_{local_cpu_fp64,hpc_ral_gpunode_cpu_fp64,hpc_a100_fp64}` (JSON +
   PNG) under `results/breakdown/point_source_source/`. The CPU job log is
-  `results/notes/point_source_source_plane_2026_09_27_ral_job_359192.out`.
+  `results/logs/point_source_source/point_source_source_plane_2026_09_27_ral_job_359192.out`.
 
 ### Hosts and revisions
 

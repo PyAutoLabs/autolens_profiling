@@ -115,7 +115,7 @@ Ratios below use each model's median clean-call time. `dense` marks a cold seed 
 - Independent final review: CLEAN on the staged code and artifacts. The reviewer independently recomputed the timing ratios, numerical maxima, iteration/event totals and sample counts, and verified all 45 snapshot input hashes. The note records the runtime BLAS-inspection limitation explicitly.
 - [Full result](../breakdown/imaging/fixed_light_numba_draws_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s5.json)
 - [Figure](../breakdown/imaging/fixed_light_numba_draws_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s5.png)
-- [Source and job record](fixed_light_numba_s5_source_job343398.json)
+- [Source and job record](../breakdown/imaging/fixed_light_numba_s5_source_job343398.json)
 
 ## Next phase
 

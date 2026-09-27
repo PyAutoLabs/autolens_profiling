@@ -99,6 +99,14 @@ jobs:
           # resolves. Pure stdlib -- no PyAuto* imports, no PYTHONPATH.
           python scripts/misc/tooling/check_wiki.py --check
 
+      - name: check_results_layout.py --check (artefact policy)
+        working-directory: autolens_profiling
+        run: |
+          # results/notes/ holds ledgers only (logs -> results/logs/, sidecars
+          # beside their result JSON), and every device-recording result JSON
+          # carries device.provenance unless grandfathered. Pure stdlib.
+          python scripts/misc/tooling/check_results_layout.py --check
+
       - name: wall check_submits.py --check (per-cell --time basis)
         working-directory: autolens_profiling
         run: |

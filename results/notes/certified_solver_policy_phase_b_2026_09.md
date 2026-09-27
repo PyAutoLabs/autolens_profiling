@@ -52,7 +52,7 @@ Timing is never gated. The policy below was **ADOPTED by the human on 2026-09-24
   below the differences reported.
 
 Provenance, per-task sacct rows, footers and artifact checksums:
-[certified_solver_policy_phase_b_job350588.json](certified_solver_policy_phase_b_job350588.json).
+[certified_solver_policy_phase_b_job350588.json](../breakdown/imaging/certified_solver_policy_phase_b_job350588.json).
 The 20 JSON/PNG pairs are under `results/breakdown/imaging/` with suffix
 `_jitvmap<B>_<lanes>_lib<solver>_fb<on|off>_b16_hpc_a100_fp64_fixed_light_trace`.
 
