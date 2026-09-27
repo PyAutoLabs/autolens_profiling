@@ -361,6 +361,18 @@ separately per likelihood × transform. Standing conclusions:
   m=1 is singular at slope 2. Design memo: the win is structural (reverse-over-forward through the inner lensing
   Hessian), so no `n_params` threshold — recommended an analysis-declared `gradient_mode` (AnalysisPoint → forward).
   Findings: [`results/notes/point_source_source_plane_campaign.md`](./results/notes/point_source_source_plane_campaign.md).
+- **Point-source source-plane, phase 2e (2026-09)** — `gradient_mode` through the library
+  `gradient_mode_library_ab.py` (#334), on PyAutoFit `867af1c` / PyAutoLens `b3c9b68` (phase 2d merges; RAL via
+  scratch clones, shared stack untouched). The cell times `af.MultiStartAdam`'s own batched objective, captured from
+  `search.fit` (`jit(vmap(_value_and_grad_finite))` over `value_and_grad_from(Fitness.call, mode)`, B = 8), in forward
+  (`AnalysisPoint`'s declared default, no override) vs reverse (`gradient_mode="reverse"`), at phase 2c's L5 / L24 ×
+  solved / plain. Gate green on every host: default resolves and logs `forward`; fwd ≡ rev over PRNGKey 0..15 start
+  batches (objective ≤ 6.2e-12, gradient ≤ 2.1e-9); end-to-end L5 fits reach the same best vector (≤ 1.4e-12) in
+  both modes. Reference quiet RAL gpu-node EPYC (job 359192): fwd/rev **0.455 / 0.580 / 0.364 / 0.562** (L5 solved /
+  plain, L24 solved / plain), against phase 2c's batched 0.448 / 0.543 / 0.406 / 0.559. The library adds ~0.03 ms at
+  L5 and no forward-mode overhead at L24. L24 solved compile 11 s fwd vs 96 s rev. A100 (job 359193, shared host)
+  0.26–0.70.
+  Findings: [`results/notes/point_source_source_plane_campaign.md`](./results/notes/point_source_source_plane_campaign.md).
 - **Interferometer mesh likelihood on the A100 (2026-09)**: the sparse-operator (W~) Delaunay-1500
   and rectangular 39×39 breakdown at sma / alma / alma_high / jvla, in fp64 and mixed precision,
   plus an alma N sweep. RAL jobs 356370-356387. The alma baseline is **49.5 ms (Delaunay) /
