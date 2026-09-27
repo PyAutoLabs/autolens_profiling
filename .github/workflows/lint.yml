@@ -143,9 +143,14 @@ jobs:
           # Conservative scope: README.md files plus the wiki/ pages, exclude
           # GitHub UI links that lychee tends to false-positive on, and the
           # Slack invite (302 -> 403 to any non-browser client).
+          # The run-time dashboard's Pages site exists only once
+          # pages_dashboard.yml has published from main; until that first run
+          # the README's link to it is a 404 (autolens_profiling#346). Drop
+          # this exclude once the site is live.
           lychee \
             --exclude '^https://github\.com/.*/(issues|pull|commit|releases)/' \
             --exclude '^https://join\.slack\.com/' \
+            --exclude '^https://pyautolabs\.github\.io/autolens_profiling/' \
             --no-progress \
             --accept '200..=299,429' \
             --max-redirects 5 \
