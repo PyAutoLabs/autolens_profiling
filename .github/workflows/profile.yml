@@ -135,6 +135,14 @@ jobs:
         working-directory: autolens_profiling
         run: python scripts/misc/tooling/build_readme.py
 
+      - name: Build the run-time dashboard
+        working-directory: autolens_profiling
+        run: |
+          # dashboard/{series,state}.json + index.html: one point per release per
+          # cell x config, from the rows the steps above just refreshed. The commit
+          # below carries them; pages_dashboard.yml publishes them on push to main.
+          python scripts/misc/tooling/build_dashboard.py
+
       - name: Commit and push refreshed artifacts + READMEs
         working-directory: autolens_profiling
         run: |
@@ -149,7 +157,7 @@ jobs:
           # gitignored; future hardware-tier work may flip a subset to
           # tracked, in which case this `add -f` becomes redundant but
           # harmless.
-          git add -f results/ scripts/misc/likelihood_runtime/README.md \
+          git add -f results/ dashboard/ scripts/misc/likelihood_runtime/README.md \
                      scripts/misc/likelihood_breakdown/README.md \
                      scripts/misc/simulators/README.md \
                      README.md

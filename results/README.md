@@ -11,7 +11,11 @@ historical note's Next section. It links every campaign's ledger in `notes/` and
 each result's library PRs and release. The fixed-light record stays in the
 [fixed-light CPU/GPU summary](notes/profiling_campaign_status_2026_09.md) (CPU closure,
 corrected GPU budgets/attribution, and the unversioned bridge-control limitation); its
-PyAutoArray #553–#555 were released in 2026.9.19.1.
+PyAutoArray #553–#555 were released in 2026.9.19.1. The run-time-over-time view of this tree is
+[`../dashboard/`](../dashboard/index.html) (published at
+<https://pyautolabs.github.io/autolens_profiling/>), rendered by
+`scripts/misc/tooling/build_dashboard.py`: one point per release per cell × config, qualified on
+the provenance block against `hpc/release_sweep.conf`.
 
 ## Sections
 

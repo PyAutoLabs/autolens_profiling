@@ -99,6 +99,14 @@ jobs:
           # resolves. Pure stdlib -- no PyAuto* imports, no PYTHONPATH.
           python scripts/misc/tooling/check_wiki.py --check
 
+      - name: build_dashboard.py --check (run-time dashboard idempotence)
+        working-directory: autolens_profiling
+        run: |
+          # dashboard/{series,state}.json + index.html are rendered from results/;
+          # a PR that adds rows without re-rendering leaves the published page
+          # stale. Pure stdlib.
+          python scripts/misc/tooling/build_dashboard.py --check
+
       - name: check_results_layout.py --check (artefact policy)
         working-directory: autolens_profiling
         run: |
@@ -135,9 +143,14 @@ jobs:
           # Conservative scope: README.md files plus the wiki/ pages, exclude
           # GitHub UI links that lychee tends to false-positive on, and the
           # Slack invite (302 -> 403 to any non-browser client).
+          # The run-time dashboard's Pages site exists only once
+          # pages_dashboard.yml has published from main; until that first run
+          # the README's link to it is a 404 (autolens_profiling#346). Drop
+          # this exclude once the site is live.
           lychee \
             --exclude '^https://github\.com/.*/(issues|pull|commit|releases)/' \
             --exclude '^https://join\.slack\.com/' \
+            --exclude '^https://pyautolabs\.github\.io/autolens_profiling/' \
             --no-progress \
             --accept '200..=299,429' \
             --max-redirects 5 \

@@ -1,0 +1,1918 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PyAutoLens run time over time</title>
+<style>
+:root { color-scheme: light dark;
+  --surface: #fcfcfb; --surface-2: #f0efec; --ink: #0b0b0b; --ink-2: #52514e; --ink-3: #8a8985; --line: #d9d8d3;
+  --good: #008300; --warn: #b26a00; --bad: #c42b2b; --accent: #2a78d6;
+  --series-1: #2a78d6; --series-2: #eb6834; --series-3: #1baf7a; --series-4: #eda100; --series-5: #e87ba4; --series-6: #008300; --series-7: #4a3aa7; --series-8: #e34948; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --surface: #1a1a19; --surface-2: #262625; --ink: #ffffff; --ink-2: #c3c2b7; --ink-3: #8f8e88; --line: #3a3a37;
+  --good: #34c759; --warn: #e0a030; --bad: #ff6b6b; --accent: #3987e5; --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500; --series-5: #d55181; --series-6: #008300; --series-7: #9085e9; --series-8: #e66767; } }
+:root[data-theme="dark"] {
+  --surface: #1a1a19; --surface-2: #262625; --ink: #ffffff; --ink-2: #c3c2b7; --ink-3: #8f8e88; --line: #3a3a37;
+  --good: #34c759; --warn: #e0a030; --bad: #ff6b6b; --accent: #3987e5; --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500; --series-5: #d55181; --series-6: #008300; --series-7: #9085e9; --series-8: #e66767; }
+* { box-sizing: border-box; }
+body { margin: 0; padding: 0 16px 48px; background: var(--surface); color: var(--ink);
+  font: 15px/1.45 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; overflow-wrap: anywhere; }
+header { padding: 20px 0 8px; border-bottom: 1px solid var(--line); }
+h1 { font-size: 22px; margin: 0 0 4px; }
+h1 span { color: var(--accent); }
+h2 { font-size: 17px; margin: 28px 0 8px; color: var(--accent); }
+.meta { color: var(--ink-2); font-size: 13px; }
+.badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12px; font-weight: 600;
+  border: 1px solid var(--line); color: var(--ink-2); vertical-align: middle; }
+.badge.drifted { color: var(--bad); border-color: var(--bad); }
+.badge.improved, .badge.green { color: var(--good); border-color: var(--good); }
+.badge.yellow { color: var(--warn); border-color: var(--warn); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.panel { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: var(--surface); }
+.panel h3 { font-size: 14px; margin: 0 0 6px; font-weight: 600; }
+.panel h3 code { color: var(--accent); font-size: 13px; }
+svg { width: 100%; height: auto; display: block; }
+.axis text { fill: var(--ink-3); font-size: 10px; }
+.axis line, .axis path { stroke: var(--line); }
+.grid-line { stroke: var(--line); stroke-dasharray: 2 3; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 6px 0 0; padding: 0; list-style: none; font-size: 12px; color: var(--ink-2); }
+.legend i { display: inline-block; width: 14px; height: 3px; vertical-align: middle; margin-right: 5px; border-radius: 2px; }
+details { margin-top: 6px; font-size: 12px; }
+details summary { cursor: pointer; color: var(--ink-2); }
+table { border-collapse: collapse; width: 100%; margin-top: 4px; }
+th, td { text-align: left; padding: 2px 6px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+th { color: var(--ink-2); font-weight: 600; }
+.muted { color: var(--ink-3); }
+.hollow { fill: var(--surface); }
+.refused td { color: var(--ink-3); }
+footer { margin-top: 32px; color: var(--ink-3); font-size: 12px; border-top: 1px solid var(--line); padding-top: 10px; }
+</style></head><body>
+<header>
+<h1>PyAuto <span>Profiling</span> — run time over time</h1>
+<p class="meta">Per-call likelihood cost per PyAutoLens release, one panel per cell, one line per sweep config. <span class="badge green">green</span> 143 series across 61 cells and 4 releases; no drift. Rendered 2026-09-27T22:40:10Z from <code>results/</code> by <code>build_dashboard.py</code>; reference host <code>euclid-ral-gpu-2</code>, load-average cap 8.0. Hollow markers are rows without a provenance block or off the reference host; refused rows are listed at the foot. This page renders and holds timing history; it judges no lever (<a href="https://github.com/PyAutoLabs/autolens_profiling/blob/main/wiki/index.md">campaign index</a>).</p>
+</header>
+<h2>runtime</h2><div class="grid">
+<div class="panel"><h3><code>imaging/delaunay/hst</code> <span class="badge improved">improved</span></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">10 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="107.0" y2="107.0"/>
+<text x="46" y="110.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="74.0" y2="74.0"/>
+<text x="46" y="77.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="41.0" y2="41.0"/>
+<text x="46" y="44.0" text-anchor="end">10 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">100 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<path d="M148.2,33.6 L279.2,52.4" fill="none" stroke="var(--series-1)" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="148.2" cy="33.6" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.7.6.649: 16.73 s per call, vmap 12.66 s — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="52.4" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 4.52 s per call, vmap 3.77 s — no provenance block (pre-#342 row)</title></circle>
+<circle cx="148.2" cy="53.6" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 sparse @ 2026.7.6.649: 4.14 s per call, vmap 5.22 s — no provenance block (pre-#342 row)</title></circle>
+<circle cx="148.2" cy="32.7" r="4.5" fill="var(--series-2)" stroke="var(--series-2)" stroke-width="2" class="hollow"><title>local_cpu_mp @ 2026.7.6.649: 17.84 s per call, vmap 16.03 s — no provenance block (pre-#342 row)</title></circle>
+<circle cx="148.2" cy="52.5" r="4.5" fill="var(--series-2)" stroke="var(--series-2)" stroke-width="2" class="hollow"><title>local_cpu_mp sparse @ 2026.7.6.649: 4.49 s per call, vmap 4.95 s — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="113.2" r="4.5" fill="var(--series-6)" stroke="var(--series-6)" stroke-width="2" class="hollow"><title>hpc_a100_fp64 @ 2026.8.17.1: 64.95 ms per call, vmap 42.53 ms — euclid-ral-gpu-2 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="112.0" r="4.5" fill="var(--series-6)" stroke="var(--series-6)" stroke-width="2" class="hollow"><title>hpc_a100_fp64 sparse @ 2026.8.17.1: 70.75 ms per call, vmap 48.04 ms — euclid-ral-gpu-2 — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64 (sparse, dashed)</li>
+<li><i style="background: var(--series-2)"></i>local_cpu_mp</li>
+<li><i style="background: var(--series-2)"></i>local_cpu_mp (sparse, dashed)</li>
+<li><i style="background: var(--series-6)"></i>hpc_a100_fp64</li>
+<li><i style="background: var(--series-6)"></i>hpc_a100_fp64 (sparse, dashed)</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.7.6.649</td><td>16.73 s</td><td>12.66 s</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>4.52 s</td><td>3.77 s</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td>improved 0.27x</td></tr>
+<tr><td>local_cpu_fp64 sparse</td><td>2026.7.6.649</td><td>4.14 s</td><td>5.22 s</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_mp</td><td>2026.7.6.649</td><td>17.84 s</td><td>16.03 s</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_mp sparse</td><td>2026.7.6.649</td><td>4.49 s</td><td>4.95 s</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_fp64</td><td>2026.8.17.1</td><td>64.95 ms</td><td>42.53 ms</td><td>euclid-ral-gpu-2 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_fp64 sparse</td><td>2026.8.17.1</td><td>70.75 ms</td><td>48.04 ms</td><td>euclid-ral-gpu-2 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>imaging/delaunay/jwst</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">10 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">100 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="148.2" cy="49.1" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.7.6.649: 48.81 s per call, vmap 26.23 s — no provenance block (pre-#342 row)</title></circle>
+<circle cx="148.2" cy="137.6" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 sparse @ 2026.7.6.649: 10.42 s per call, vmap 12.30 s — no provenance block (pre-#342 row)</title></circle>
+<circle cx="148.2" cy="93.7" r="4.5" fill="var(--series-2)" stroke="var(--series-2)" stroke-width="2" class="hollow"><title>local_cpu_mp @ 2026.7.6.649: 22.43 s per call, vmap 19.51 s — no provenance block (pre-#342 row)</title></circle>
+<circle cx="148.2" cy="120.5" r="4.5" fill="var(--series-2)" stroke="var(--series-2)" stroke-width="2" class="hollow"><title>local_cpu_mp sparse @ 2026.7.6.649: 14.05 s per call, vmap 12.85 s — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64 (sparse, dashed)</li>
+<li><i style="background: var(--series-2)"></i>local_cpu_mp</li>
+<li><i style="background: var(--series-2)"></i>local_cpu_mp (sparse, dashed)</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.7.6.649</td><td>48.81 s</td><td>26.23 s</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_fp64 sparse</td><td>2026.7.6.649</td><td>10.42 s</td><td>12.30 s</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_mp</td><td>2026.7.6.649</td><td>22.43 s</td><td>19.51 s</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_mp sparse</td><td>2026.7.6.649</td><td>14.05 s</td><td>12.85 s</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>imaging/delaunay_nn/hst</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">10 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="96.0" y2="96.0"/>
+<text x="46" y="99.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="52.0" y2="52.0"/>
+<text x="46" y="55.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">10 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="20.5" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 5.21 s per call, vmap 4.25 s — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="101.9" r="4.5" fill="var(--series-6)" stroke="var(--series-6)" stroke-width="2" class="hollow"><title>hpc_a100_fp64 @ 2026.8.17.1: 73.41 ms per call, vmap 46.44 ms — euclid-ral-gpu-2 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="100.2" r="4.5" fill="var(--series-6)" stroke="var(--series-6)" stroke-width="2" class="hollow"><title>hpc_a100_fp64 sparse @ 2026.8.17.1: 80.09 ms per call, vmap 49.25 ms — euclid-ral-gpu-2 — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+<li><i style="background: var(--series-6)"></i>hpc_a100_fp64</li>
+<li><i style="background: var(--series-6)"></i>hpc_a100_fp64 (sparse, dashed)</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>5.21 s</td><td>4.25 s</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_fp64</td><td>2026.8.17.1</td><td>73.41 ms</td><td>46.44 ms</td><td>euclid-ral-gpu-2 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_fp64 sparse</td><td>2026.8.17.1</td><td>80.09 ms</td><td>49.25 ms</td><td>euclid-ral-gpu-2 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>imaging/delaunay_numba/euclid</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">1 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="89.0" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 243.40 ms per call — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>243.40 ms</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>imaging/delaunay_numba/hst</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">10 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="101.2" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 1.97 s per call — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>1.97 s</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>imaging/mge/ao</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">10 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="148.2" cy="75.0" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.7.6.649: 3.11 s per call, vmap 4.92 s — no provenance block (pre-#342 row)</title></circle>
+<circle cx="148.2" cy="40.1" r="4.5" fill="var(--series-2)" stroke="var(--series-2)" stroke-width="2" class="hollow"><title>local_cpu_mp @ 2026.7.6.649: 5.71 s per call, vmap 4.02 s — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+<li><i style="background: var(--series-2)"></i>local_cpu_mp</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.7.6.649</td><td>3.11 s</td><td>4.92 s</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_mp</td><td>2026.7.6.649</td><td>5.71 s</td><td>4.02 s</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>imaging/mge/hst</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">10 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="74.0" y2="74.0"/>
+<text x="46" y="77.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">1 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<path d="M148.2,69.3 L279.2,80.7" fill="none" stroke="var(--series-1)" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="148.2" cy="69.3" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.7.6.649: 117.71 ms per call, vmap 165.13 ms — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="80.7" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 79.04 ms per call, vmap 115.96 ms — DESKTOP-H143S82 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="148.2" cy="47.0" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 sparse @ 2026.7.6.649: 256.11 ms per call, vmap 187.07 ms — no provenance block (pre-#342 row)</title></circle>
+<circle cx="148.2" cy="59.8" r="4.5" fill="var(--series-2)" stroke="var(--series-2)" stroke-width="2" class="hollow"><title>local_cpu_mp @ 2026.7.6.649: 164.34 ms per call, vmap 178.93 ms — no provenance block (pre-#342 row)</title></circle>
+<circle cx="148.2" cy="64.3" r="4.5" fill="var(--series-2)" stroke="var(--series-2)" stroke-width="2" class="hollow"><title>local_cpu_mp sparse @ 2026.7.6.649: 140.46 ms per call, vmap 222.79 ms — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64 (sparse, dashed)</li>
+<li><i style="background: var(--series-2)"></i>local_cpu_mp</li>
+<li><i style="background: var(--series-2)"></i>local_cpu_mp (sparse, dashed)</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.7.6.649</td><td>117.71 ms</td><td>165.13 ms</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>79.04 ms</td><td>115.96 ms</td><td>DESKTOP-H143S82 <span class="muted">(no provenance block (pre-#342 row))</span></td><td>steady 0.671x</td></tr>
+<tr><td>local_cpu_fp64 sparse</td><td>2026.7.6.649</td><td>256.11 ms</td><td>187.07 ms</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_mp</td><td>2026.7.6.649</td><td>164.34 ms</td><td>178.93 ms</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_mp sparse</td><td>2026.7.6.649</td><td>140.46 ms</td><td>222.79 ms</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>imaging/mge/jwst</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">1 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="148.2" cy="27.1" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.7.6.649: 716.20 ms per call, vmap 574.78 ms — no provenance block (pre-#342 row)</title></circle>
+<circle cx="148.2" cy="62.4" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 sparse @ 2026.7.6.649: 387.26 ms per call, vmap 381.75 ms — no provenance block (pre-#342 row)</title></circle>
+<circle cx="148.2" cy="30.2" r="4.5" fill="var(--series-2)" stroke="var(--series-2)" stroke-width="2" class="hollow"><title>local_cpu_mp @ 2026.7.6.649: 678.45 ms per call, vmap 527.08 ms — no provenance block (pre-#342 row)</title></circle>
+<circle cx="148.2" cy="49.0" r="4.5" fill="var(--series-2)" stroke="var(--series-2)" stroke-width="2" class="hollow"><title>local_cpu_mp sparse @ 2026.7.6.649: 488.69 ms per call, vmap 380.65 ms — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64 (sparse, dashed)</li>
+<li><i style="background: var(--series-2)"></i>local_cpu_mp</li>
+<li><i style="background: var(--series-2)"></i>local_cpu_mp (sparse, dashed)</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.7.6.649</td><td>716.20 ms</td><td>574.78 ms</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_fp64 sparse</td><td>2026.7.6.649</td><td>387.26 ms</td><td>381.75 ms</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_mp</td><td>2026.7.6.649</td><td>678.45 ms</td><td>527.08 ms</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_mp sparse</td><td>2026.7.6.649</td><td>488.69 ms</td><td>380.65 ms</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>imaging/mge_mass_jax/hst</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">10 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="70.7" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 3.35 s per call — DESKTOP-H143S82 — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>3.35 s</td><td>—</td><td>DESKTOP-H143S82 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>imaging/pixelization/hst</code> <span class="badge improved">improved</span></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">10 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="107.0" y2="107.0"/>
+<text x="46" y="110.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="74.0" y2="74.0"/>
+<text x="46" y="77.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="41.0" y2="41.0"/>
+<text x="46" y="44.0" text-anchor="end">10 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">100 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<path d="M148.2,36.5 L279.2,57.4" fill="none" stroke="var(--series-1)" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="148.2" cy="36.5" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.7.6.649: 13.72 s per call, vmap 12.50 s — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="57.4" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 3.19 s per call, vmap 4.62 s — no provenance block (pre-#342 row)</title></circle>
+<circle cx="148.2" cy="48.8" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 sparse @ 2026.7.6.649: 5.79 s per call, vmap 5.16 s — no provenance block (pre-#342 row)</title></circle>
+<circle cx="148.2" cy="35.4" r="4.5" fill="var(--series-2)" stroke="var(--series-2)" stroke-width="2" class="hollow"><title>local_cpu_mp @ 2026.7.6.649: 14.78 s per call, vmap 13.05 s — no provenance block (pre-#342 row)</title></circle>
+<circle cx="148.2" cy="50.2" r="4.5" fill="var(--series-2)" stroke="var(--series-2)" stroke-width="2" class="hollow"><title>local_cpu_mp sparse @ 2026.7.6.649: 5.25 s per call, vmap 6.42 s — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="116.8" r="4.5" fill="var(--series-6)" stroke="var(--series-6)" stroke-width="2" class="hollow"><title>hpc_a100_fp64 @ 2026.8.17.1: 50.63 ms per call, vmap 32.08 ms — euclid-ral-gpu-2 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="114.9" r="4.5" fill="var(--series-6)" stroke="var(--series-6)" stroke-width="2" class="hollow"><title>hpc_a100_fp64 sparse @ 2026.8.17.1: 57.63 ms per call, vmap 36.65 ms — euclid-ral-gpu-2 — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64 (sparse, dashed)</li>
+<li><i style="background: var(--series-2)"></i>local_cpu_mp</li>
+<li><i style="background: var(--series-2)"></i>local_cpu_mp (sparse, dashed)</li>
+<li><i style="background: var(--series-6)"></i>hpc_a100_fp64</li>
+<li><i style="background: var(--series-6)"></i>hpc_a100_fp64 (sparse, dashed)</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.7.6.649</td><td>13.72 s</td><td>12.50 s</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>3.19 s</td><td>4.62 s</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td>improved 0.232x</td></tr>
+<tr><td>local_cpu_fp64 sparse</td><td>2026.7.6.649</td><td>5.79 s</td><td>5.16 s</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_mp</td><td>2026.7.6.649</td><td>14.78 s</td><td>13.05 s</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_mp sparse</td><td>2026.7.6.649</td><td>5.25 s</td><td>6.42 s</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_fp64</td><td>2026.8.17.1</td><td>50.63 ms</td><td>32.08 ms</td><td>euclid-ral-gpu-2 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_fp64 sparse</td><td>2026.8.17.1</td><td>57.63 ms</td><td>36.65 ms</td><td>euclid-ral-gpu-2 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>imaging/pixelization/jwst</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="74.0" y2="74.0"/>
+<text x="46" y="77.0" text-anchor="end">10 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">100 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="148.2" cy="51.7" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.7.6.649: 21.78 s per call, vmap 28.32 s — no provenance block (pre-#342 row)</title></circle>
+<circle cx="148.2" cy="75.3" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 sparse @ 2026.7.6.649: 9.57 s per call, vmap 9.69 s — no provenance block (pre-#342 row)</title></circle>
+<circle cx="148.2" cy="31.8" r="4.5" fill="var(--series-2)" stroke="var(--series-2)" stroke-width="2" class="hollow"><title>local_cpu_mp @ 2026.7.6.649: 43.58 s per call, vmap 29.39 s — no provenance block (pre-#342 row)</title></circle>
+<circle cx="148.2" cy="75.7" r="4.5" fill="var(--series-2)" stroke="var(--series-2)" stroke-width="2" class="hollow"><title>local_cpu_mp sparse @ 2026.7.6.649: 9.42 s per call, vmap 9.47 s — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64 (sparse, dashed)</li>
+<li><i style="background: var(--series-2)"></i>local_cpu_mp</li>
+<li><i style="background: var(--series-2)"></i>local_cpu_mp (sparse, dashed)</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.7.6.649</td><td>21.78 s</td><td>28.32 s</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_fp64 sparse</td><td>2026.7.6.649</td><td>9.57 s</td><td>9.69 s</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_mp</td><td>2026.7.6.649</td><td>43.58 s</td><td>29.39 s</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_mp sparse</td><td>2026.7.6.649</td><td>9.42 s</td><td>9.47 s</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>imaging/pixelization_numba/euclid</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">1 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="38.7" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 585.36 ms per call — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>585.36 ms</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>imaging/pixelization_numba/hst</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">10 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="120.0" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 1.42 s per call — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>1.42 s</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>imaging/pixelization_numba_mge_mass/hst</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">1 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="76.6" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 302.25 ms per call — DESKTOP-H143S82 — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>302.25 ms</td><td>—</td><td>DESKTOP-H143S82 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/delaunay/alma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">10 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="148.2" cy="32.7" r="4.5" fill="var(--series-2)" stroke="var(--series-2)" stroke-width="2" class="hollow"><title>local_cpu_mp @ 2026.7.6.649: 6.51 s per call, vmap 7.77 s — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-2)"></i>local_cpu_mp</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_mp</td><td>2026.7.6.649</td><td>6.51 s</td><td>7.77 s</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/delaunay/sma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">10 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="148.2" cy="85.7" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.7.6.649: 2.58 s per call, vmap 2.36 s — no provenance block (pre-#342 row)</title></circle>
+<circle cx="148.2" cy="70.8" r="4.5" fill="var(--series-2)" stroke="var(--series-2)" stroke-width="2" class="hollow"><title>local_cpu_mp @ 2026.7.6.649: 3.34 s per call, vmap 2.60 s — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+<li><i style="background: var(--series-2)"></i>local_cpu_mp</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.7.6.649</td><td>2.58 s</td><td>2.36 s</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_mp</td><td>2026.7.6.649</td><td>3.34 s</td><td>2.60 s</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/mge/sma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">1 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="148.2" cy="92.1" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.7.6.649: 230.72 ms per call, vmap 237.09 ms — no provenance block (pre-#342 row)</title></circle>
+<circle cx="148.2" cy="91.9" r="4.5" fill="var(--series-2)" stroke="var(--series-2)" stroke-width="2" class="hollow"><title>local_cpu_mp @ 2026.7.6.649: 231.50 ms per call, vmap 254.60 ms — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+<li><i style="background: var(--series-2)"></i>local_cpu_mp</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.7.6.649</td><td>230.72 ms</td><td>237.09 ms</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_mp</td><td>2026.7.6.649</td><td>231.50 ms</td><td>254.60 ms</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/pixelization/sma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">10 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="148.2" cy="99.1" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.7.6.649: 2.04 s per call, vmap 2.03 s — no provenance block (pre-#342 row)</title></circle>
+<circle cx="148.2" cy="90.1" r="4.5" fill="var(--series-2)" stroke="var(--series-2)" stroke-width="2" class="hollow"><title>local_cpu_mp @ 2026.7.6.649: 2.39 s per call, vmap 2.48 s — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+<li><i style="background: var(--series-2)"></i>local_cpu_mp</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.7.6.649</td><td>2.04 s</td><td>2.03 s</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_mp</td><td>2026.7.6.649</td><td>2.39 s</td><td>2.48 s</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>point_source_image/image_plane_solved</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">10 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">100 ms</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="213.8" cy="62.6" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.7.23.1: 38.60 ms per call, vmap 28.13 ms — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.7.23.1</td><td>38.60 ms</td><td>28.13 ms</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>point_source_source/source_plane_solved</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">0.1 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">1 ms</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="213.8" cy="70.1" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.7.23.1: 0.34 ms per call, vmap 0.12 ms — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.7.23.1</td><td>0.34 ms</td><td>0.12 ms</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+</div>
+<h2>breakdown</h2><div class="grid">
+<div class="panel"><h3><code>cluster/image_plane</code> <span class="badge improved">improved</span></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="74.0" y2="74.0"/>
+<text x="46" y="77.0" text-anchor="end">10 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">100 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<path d="M148.2,93.9 L213.8,73.3 L279.2,95.0" fill="none" stroke="var(--series-1)" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="148.2" cy="93.9" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.7.6.649: 4.99 s per call — no provenance block (pre-#342 row)</title></circle>
+<circle cx="213.8" cy="73.3" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.7.23.1: 10.25 s per call — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="95.0" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 4.81 s per call — DESKTOP-H143S82 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="96.7" r="4.5" fill="var(--series-5)" stroke="var(--series-5)" stroke-width="2" class="hollow"><title>hpc_ral_cpu_fp64 @ 2026.8.17.1: 4.53 s per call — euclid-ral-compute-10-2 — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+<li><i style="background: var(--series-5)"></i>hpc_ral_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.7.6.649</td><td>4.99 s</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_fp64</td><td>2026.7.23.1</td><td>10.25 s</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>4.81 s</td><td>—</td><td>DESKTOP-H143S82 <span class="muted">(no provenance block (pre-#342 row))</span></td><td>improved 0.469x</td></tr>
+<tr><td>hpc_ral_cpu_fp64</td><td>2026.8.17.1</td><td>4.53 s</td><td>—</td><td>euclid-ral-compute-10-2 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>cluster/source_plane</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">1 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">10 ms</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<path d="M148.2,75.3 L213.8,53.2" fill="none" stroke="var(--series-1)" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="148.2" cy="75.3" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.7.6.649: 3.09 ms per call — no provenance block (pre-#342 row)</title></circle>
+<circle cx="213.8" cy="53.2" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.7.23.1: 4.54 ms per call — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.7.6.649</td><td>3.09 ms</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_fp64</td><td>2026.7.23.1</td><td>4.54 ms</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td>steady 1.469x</td></tr>
+</table></details></div>
+<div class="panel"><h3><code>datacube/delaunay/alma_high</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">10 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="148.2" cy="28.2" r="4.5" fill="var(--series-6)" stroke="var(--series-6)" stroke-width="2" class="hollow"><title>hpc_a100_fp64 @ 2026.7.6.649: 7.03 s per call — no provenance block (pre-#342 row)</title></circle>
+<circle cx="148.2" cy="27.5" r="4.5" fill="var(--series-7)" stroke="var(--series-7)" stroke-width="2" class="hollow"><title>hpc_a100_mp @ 2026.7.6.649: 7.11 s per call — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-6)"></i>hpc_a100_fp64</li>
+<li><i style="background: var(--series-7)"></i>hpc_a100_mp</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>hpc_a100_fp64</td><td>2026.7.6.649</td><td>7.03 s</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_mp</td><td>2026.7.6.649</td><td>7.11 s</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>imaging/delaunay/hst</code> <span class="badge improved">improved</span></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">10 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="107.0" y2="107.0"/>
+<text x="46" y="110.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="74.0" y2="74.0"/>
+<text x="46" y="77.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="41.0" y2="41.0"/>
+<text x="46" y="44.0" text-anchor="end">10 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">100 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<path d="M82.8,39.3 L148.2,40.9 L279.2,56.7" fill="none" stroke="var(--series-1)" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="82.8" cy="39.3" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.5.29.4: 11.29 s per call — no provenance block (pre-#342 row)</title></circle>
+<circle cx="148.2" cy="40.9" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.7.6.649: 10.07 s per call — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="56.7" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 3.34 s per call — no provenance block (pre-#342 row)</title></circle>
+<path d="M82.8,44.3 L148.2,42.8" fill="none" stroke="var(--series-1)" stroke-width="2" stroke-linejoin="round" stroke-dasharray="4 3"/>
+<circle cx="82.8" cy="44.3" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 sparse @ 2026.5.29.4: 7.96 s per call — no provenance block (pre-#342 row)</title></circle>
+<circle cx="148.2" cy="42.8" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 sparse @ 2026.7.6.649: 8.81 s per call — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="112.6" r="4.5" fill="var(--series-6)" stroke="var(--series-6)" stroke-width="2" class="hollow"><title>hpc_a100_fp64 @ 2026.8.17.1: 67.47 ms per call — euclid-ral-gpu-2 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="111.4" r="4.5" fill="var(--series-6)" stroke="var(--series-6)" stroke-width="2" class="hollow"><title>hpc_a100_fp64 sparse @ 2026.8.17.1: 73.74 ms per call — euclid-ral-gpu-2 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="148.2" cy="107.5" r="4.5" fill="var(--series-7)" stroke="var(--series-7)" stroke-width="2" class="hollow"><title>hpc_a100_mp @ 2026.7.6.649: 96.85 ms per call — no provenance block (pre-#342 row)</title></circle>
+<circle cx="148.2" cy="107.7" r="4.5" fill="var(--series-7)" stroke="var(--series-7)" stroke-width="2" class="hollow"><title>hpc_a100_mp sparse @ 2026.7.6.649: 95.50 ms per call — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64 (sparse, dashed)</li>
+<li><i style="background: var(--series-6)"></i>hpc_a100_fp64</li>
+<li><i style="background: var(--series-6)"></i>hpc_a100_fp64 (sparse, dashed)</li>
+<li><i style="background: var(--series-7)"></i>hpc_a100_mp</li>
+<li><i style="background: var(--series-7)"></i>hpc_a100_mp (sparse, dashed)</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.5.29.4</td><td>11.29 s</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_fp64</td><td>2026.7.6.649</td><td>10.07 s</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>3.34 s</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td>improved 0.331x</td></tr>
+<tr><td>local_cpu_fp64 sparse</td><td>2026.5.29.4</td><td>7.96 s</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_fp64 sparse</td><td>2026.7.6.649</td><td>8.81 s</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td>steady 1.108x</td></tr>
+<tr><td>hpc_a100_fp64</td><td>2026.8.17.1</td><td>67.47 ms</td><td>—</td><td>euclid-ral-gpu-2 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_fp64 sparse</td><td>2026.8.17.1</td><td>73.74 ms</td><td>—</td><td>euclid-ral-gpu-2 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_mp</td><td>2026.7.6.649</td><td>96.85 ms</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_mp sparse</td><td>2026.7.6.649</td><td>95.50 ms</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>imaging/delaunay_nn/hst</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">10 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="96.0" y2="96.0"/>
+<text x="46" y="99.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="52.0" y2="52.0"/>
+<text x="46" y="55.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">10 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="23.3" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 4.49 s per call — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="101.5" r="4.5" fill="var(--series-6)" stroke="var(--series-6)" stroke-width="2" class="hollow"><title>hpc_a100_fp64 @ 2026.8.17.1: 74.90 ms per call — euclid-ral-gpu-2 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="99.2" r="4.5" fill="var(--series-6)" stroke="var(--series-6)" stroke-width="2" class="hollow"><title>hpc_a100_fp64 sparse @ 2026.8.17.1: 84.73 ms per call — euclid-ral-gpu-2 — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+<li><i style="background: var(--series-6)"></i>hpc_a100_fp64</li>
+<li><i style="background: var(--series-6)"></i>hpc_a100_fp64 (sparse, dashed)</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>4.49 s</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_fp64</td><td>2026.8.17.1</td><td>74.90 ms</td><td>—</td><td>euclid-ral-gpu-2 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_fp64 sparse</td><td>2026.8.17.1</td><td>84.73 ms</td><td>—</td><td>euclid-ral-gpu-2 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>imaging/delaunay_numba/euclid</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">1 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="88.4" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 245.89 ms per call — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>245.89 ms</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>imaging/delaunay_numba/hst</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">10 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="92.9" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 2.27 s per call — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>2.27 s</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>imaging/mge/hst</code> <span class="badge improved">improved</span></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">1 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="96.0" y2="96.0"/>
+<text x="46" y="99.0" text-anchor="end">10 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="52.0" y2="52.0"/>
+<text x="46" y="55.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">1 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<path d="M82.8,41.0 L148.2,40.8 L279.2,69.4" fill="none" stroke="var(--series-1)" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="82.8" cy="41.0" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.5.29.4: 178.20 ms per call — no provenance block (pre-#342 row)</title></circle>
+<circle cx="148.2" cy="40.8" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.7.6.649: 179.48 ms per call — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="69.4" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 40.29 ms per call — no provenance block (pre-#342 row)</title></circle>
+<circle cx="148.2" cy="100.8" r="4.5" fill="var(--series-6)" stroke="var(--series-6)" stroke-width="2" class="hollow"><title>hpc_a100_fp64 @ 2026.7.6.649: 7.76 ms per call — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+<li><i style="background: var(--series-6)"></i>hpc_a100_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.5.29.4</td><td>178.20 ms</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_fp64</td><td>2026.7.6.649</td><td>179.48 ms</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>40.29 ms</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td>improved 0.225x</td></tr>
+<tr><td>hpc_a100_fp64</td><td>2026.7.6.649</td><td>7.76 ms</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>imaging/pixelization/hst</code> <span class="badge improved">improved</span></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">10 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="107.0" y2="107.0"/>
+<text x="46" y="110.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="74.0" y2="74.0"/>
+<text x="46" y="77.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="41.0" y2="41.0"/>
+<text x="46" y="44.0" text-anchor="end">10 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">100 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<path d="M82.8,44.6 L148.2,43.1 L279.2,56.5" fill="none" stroke="var(--series-1)" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="82.8" cy="44.6" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.5.29.4: 7.79 s per call — no provenance block (pre-#342 row)</title></circle>
+<circle cx="148.2" cy="43.1" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.7.6.649: 8.65 s per call — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="56.5" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 3.40 s per call — no provenance block (pre-#342 row)</title></circle>
+<path d="M82.8,42.6 L148.2,40.8" fill="none" stroke="var(--series-1)" stroke-width="2" stroke-linejoin="round" stroke-dasharray="4 3"/>
+<circle cx="82.8" cy="42.6" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 sparse @ 2026.5.29.4: 8.94 s per call — no provenance block (pre-#342 row)</title></circle>
+<circle cx="148.2" cy="40.8" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 sparse @ 2026.7.6.649: 10.17 s per call — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="114.3" r="4.5" fill="var(--series-6)" stroke="var(--series-6)" stroke-width="2" class="hollow"><title>hpc_a100_fp64 @ 2026.8.17.1: 60.02 ms per call — euclid-ral-gpu-2 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="111.9" r="4.5" fill="var(--series-6)" stroke="var(--series-6)" stroke-width="2" class="hollow"><title>hpc_a100_fp64 sparse @ 2026.8.17.1: 70.81 ms per call — euclid-ral-gpu-2 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="148.2" cy="115.2" r="4.5" fill="var(--series-7)" stroke="var(--series-7)" stroke-width="2" class="hollow"><title>hpc_a100_mp @ 2026.7.6.649: 56.42 ms per call — no provenance block (pre-#342 row)</title></circle>
+<circle cx="148.2" cy="115.4" r="4.5" fill="var(--series-7)" stroke="var(--series-7)" stroke-width="2" class="hollow"><title>hpc_a100_mp sparse @ 2026.7.6.649: 55.52 ms per call — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64 (sparse, dashed)</li>
+<li><i style="background: var(--series-6)"></i>hpc_a100_fp64</li>
+<li><i style="background: var(--series-6)"></i>hpc_a100_fp64 (sparse, dashed)</li>
+<li><i style="background: var(--series-7)"></i>hpc_a100_mp</li>
+<li><i style="background: var(--series-7)"></i>hpc_a100_mp (sparse, dashed)</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.5.29.4</td><td>7.79 s</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_fp64</td><td>2026.7.6.649</td><td>8.65 s</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>3.40 s</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td>improved 0.393x</td></tr>
+<tr><td>local_cpu_fp64 sparse</td><td>2026.5.29.4</td><td>8.94 s</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_fp64 sparse</td><td>2026.7.6.649</td><td>10.17 s</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td>steady 1.139x</td></tr>
+<tr><td>hpc_a100_fp64</td><td>2026.8.17.1</td><td>60.02 ms</td><td>—</td><td>euclid-ral-gpu-2 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_fp64 sparse</td><td>2026.8.17.1</td><td>70.81 ms</td><td>—</td><td>euclid-ral-gpu-2 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_mp</td><td>2026.7.6.649</td><td>56.42 ms</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_mp sparse</td><td>2026.7.6.649</td><td>55.52 ms</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>imaging/pixelization_numba/euclid</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">1 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="43.5" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 538.57 ms per call — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>538.57 ms</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>imaging/pixelization_numba/hst</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">10 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="136.7" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 1.06 s per call — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>1.06 s</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/alma_high/delaunay/alma_high</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="74.0" y2="74.0"/>
+<text x="46" y="77.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">10 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="13.2" r="4.5" fill="var(--series-5)" stroke="var(--series-5)" stroke-width="2" class="hollow"><title>hpc_ral_cpu_fp64 @ 2026.8.17.1: 8.33 s per call — euclid-ral-gpu-1 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="139.6" r="4.5" fill="var(--series-6)" stroke="var(--series-6)" stroke-width="2" class="hollow"><title>hpc_a100_fp64 @ 2026.8.17.1: 101.45 ms per call — euclid-ral-gpu-2 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="139.9" r="4.5" fill="var(--series-7)" stroke="var(--series-7)" stroke-width="2" class="hollow"><title>hpc_a100_mp @ 2026.8.17.1: 100.26 ms per call — euclid-ral-gpu-2 — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-5)"></i>hpc_ral_cpu_fp64</li>
+<li><i style="background: var(--series-6)"></i>hpc_a100_fp64</li>
+<li><i style="background: var(--series-7)"></i>hpc_a100_mp</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>hpc_ral_cpu_fp64</td><td>2026.8.17.1</td><td>8.33 s</td><td>—</td><td>euclid-ral-gpu-1 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_fp64</td><td>2026.8.17.1</td><td>101.45 ms</td><td>—</td><td>euclid-ral-gpu-2 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_mp</td><td>2026.8.17.1</td><td>100.26 ms</td><td>—</td><td>euclid-ral-gpu-2 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/alma_high/delaunay_numba/alma_high</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">10 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">100 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="121.4" r="4.5" fill="var(--series-5)" stroke="var(--series-5)" stroke-width="2" class="hollow"><title>hpc_ral_cpu_fp64 @ 2026.8.17.1: 13.82 s per call — euclid-ral-gpu-1 — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-5)"></i>hpc_ral_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>hpc_ral_cpu_fp64</td><td>2026.8.17.1</td><td>13.82 s</td><td>—</td><td>euclid-ral-gpu-1 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/alma_high/mge/alma_high</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">10 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="96.0" y2="96.0"/>
+<text x="46" y="99.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="52.0" y2="52.0"/>
+<text x="46" y="55.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">10 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="26.1" r="4.5" fill="var(--series-6)" stroke="var(--series-6)" stroke-width="2" class="hollow"><title>hpc_a100_fp64 @ 2026.8.17.1: 3.88 s per call — euclid-ral-gpu-1 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="127.1" r="4.5" fill="var(--series-6)" stroke="var(--series-6)" stroke-width="2" class="hollow"><title>hpc_a100_fp64 sparse @ 2026.8.17.1: 19.61 ms per call — euclid-ral-gpu-1 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="25.8" r="4.5" fill="var(--series-7)" stroke="var(--series-7)" stroke-width="2" class="hollow"><title>hpc_a100_mp @ 2026.8.17.1: 3.93 s per call — euclid-ral-gpu-1 — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-6)"></i>hpc_a100_fp64</li>
+<li><i style="background: var(--series-6)"></i>hpc_a100_fp64 (sparse, dashed)</li>
+<li><i style="background: var(--series-7)"></i>hpc_a100_mp</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>hpc_a100_fp64</td><td>2026.8.17.1</td><td>3.88 s</td><td>—</td><td>euclid-ral-gpu-1 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_fp64 sparse</td><td>2026.8.17.1</td><td>19.61 ms</td><td>—</td><td>euclid-ral-gpu-1 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_mp</td><td>2026.8.17.1</td><td>3.93 s</td><td>—</td><td>euclid-ral-gpu-1 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/alma_high/pixelization/alma_high</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">10 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="96.0" y2="96.0"/>
+<text x="46" y="99.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="52.0" y2="52.0"/>
+<text x="46" y="55.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">10 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="13.2" r="4.5" fill="var(--series-5)" stroke="var(--series-5)" stroke-width="2" class="hollow"><title>hpc_ral_cpu_fp64 @ 2026.8.17.1: 7.60 s per call — euclid-ral-gpu-1 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="96.8" r="4.5" fill="var(--series-6)" stroke="var(--series-6)" stroke-width="2" class="hollow"><title>hpc_a100_fp64 @ 2026.8.17.1: 95.88 ms per call — euclid-ral-gpu-2 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="97.1" r="4.5" fill="var(--series-7)" stroke="var(--series-7)" stroke-width="2" class="hollow"><title>hpc_a100_mp @ 2026.8.17.1: 94.29 ms per call — euclid-ral-gpu-1 — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-5)"></i>hpc_ral_cpu_fp64</li>
+<li><i style="background: var(--series-6)"></i>hpc_a100_fp64</li>
+<li><i style="background: var(--series-7)"></i>hpc_a100_mp</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>hpc_ral_cpu_fp64</td><td>2026.8.17.1</td><td>7.60 s</td><td>—</td><td>euclid-ral-gpu-1 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_fp64</td><td>2026.8.17.1</td><td>95.88 ms</td><td>—</td><td>euclid-ral-gpu-2 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_mp</td><td>2026.8.17.1</td><td>94.29 ms</td><td>—</td><td>euclid-ral-gpu-1 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/alma_high/pixelization_numba/alma_high</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">10 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">100 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="103.1" r="4.5" fill="var(--series-5)" stroke="var(--series-5)" stroke-width="2" class="hollow"><title>hpc_ral_cpu_fp64 @ 2026.8.17.1: 19.03 s per call — euclid-ral-gpu-1 — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-5)"></i>hpc_ral_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>hpc_ral_cpu_fp64</td><td>2026.8.17.1</td><td>19.03 s</td><td>—</td><td>euclid-ral-gpu-1 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/delaunay/alma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">10 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="96.0" y2="96.0"/>
+<text x="46" y="99.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="52.0" y2="52.0"/>
+<text x="46" y="55.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">10 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="24.4" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 4.25 s per call — DESKTOP-H143S82 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="33.0" r="4.5" fill="var(--series-5)" stroke="var(--series-5)" stroke-width="2" class="hollow"><title>hpc_ral_cpu_fp64 @ 2026.8.17.1: 2.70 s per call — euclid-ral-gpu-1 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="109.4" r="4.5" fill="var(--series-6)" stroke="var(--series-6)" stroke-width="2" class="hollow"><title>hpc_a100_fp64 @ 2026.8.17.1: 49.51 ms per call — euclid-ral-gpu-1 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="109.5" r="4.5" fill="var(--series-7)" stroke="var(--series-7)" stroke-width="2" class="hollow"><title>hpc_a100_mp @ 2026.8.17.1: 49.33 ms per call — euclid-ral-gpu-1 — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+<li><i style="background: var(--series-5)"></i>hpc_ral_cpu_fp64</li>
+<li><i style="background: var(--series-6)"></i>hpc_a100_fp64</li>
+<li><i style="background: var(--series-7)"></i>hpc_a100_mp</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>4.25 s</td><td>—</td><td>DESKTOP-H143S82 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_ral_cpu_fp64</td><td>2026.8.17.1</td><td>2.70 s</td><td>—</td><td>euclid-ral-gpu-1 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_fp64</td><td>2026.8.17.1</td><td>49.51 ms</td><td>—</td><td>euclid-ral-gpu-1 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_mp</td><td>2026.8.17.1</td><td>49.33 ms</td><td>—</td><td>euclid-ral-gpu-1 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/delaunay/sma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">10 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="115.6" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 1.53 s per call — DESKTOP-H143S82 — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>1.53 s</td><td>—</td><td>DESKTOP-H143S82 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/delaunay_numba/alma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">10 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="126.5" r="4.5" fill="var(--series-5)" stroke="var(--series-5)" stroke-width="2" class="hollow"><title>hpc_ral_cpu_fp64 @ 2026.8.17.1: 1.27 s per call — euclid-ral-gpu-1 — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-5)"></i>hpc_ral_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>hpc_ral_cpu_fp64</td><td>2026.8.17.1</td><td>1.27 s</td><td>—</td><td>euclid-ral-gpu-1 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/delaunay_numba/sma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">1 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="51.0" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 471.96 ms per call — DESKTOP-H143S82 — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>471.96 ms</td><td>—</td><td>DESKTOP-H143S82 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/delaunay_numba_direct_conv/alma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">10 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="119.4" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 1.43 s per call — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>1.43 s</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/delaunay_numba_direct_conv/sma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">1 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="65.9" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 364.17 ms per call — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>364.17 ms</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/delaunay_numba_jax/alma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">10 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="20.0" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 8.10 s per call — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>8.10 s</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/delaunay_numba_jax/sma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">10 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="94.7" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 2.20 s per call — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>2.20 s</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/delaunay_numba_reference/alma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">10 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="54.8" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 4.42 s per call — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>4.42 s</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/delaunay_numba_reference/sma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">1 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="45.9" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 516.66 ms per call — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>516.66 ms</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/delaunay_numba_source_loop/sma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">1 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="54.8" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 442.36 ms per call — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>442.36 ms</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/delaunay_numba_symmetric/sma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">1 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="54.2" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 446.31 ms per call — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>446.31 ms</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/delaunay_numba_two_stage/sma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">1 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="63.4" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 380.61 ms per call — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>380.61 ms</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/jvla/delaunay/jvla</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">1 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="40.9" r="4.5" fill="var(--series-6)" stroke="var(--series-6)" stroke-width="2" class="hollow"><title>hpc_a100_fp64 @ 2026.8.17.1: 563.31 ms per call — euclid-ral-gpu-2 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="43.0" r="4.5" fill="var(--series-7)" stroke="var(--series-7)" stroke-width="2" class="hollow"><title>hpc_a100_mp @ 2026.8.17.1: 542.74 ms per call — euclid-ral-gpu-2 — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-6)"></i>hpc_a100_fp64</li>
+<li><i style="background: var(--series-7)"></i>hpc_a100_mp</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>hpc_a100_fp64</td><td>2026.8.17.1</td><td>563.31 ms</td><td>—</td><td>euclid-ral-gpu-2 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_mp</td><td>2026.8.17.1</td><td>542.74 ms</td><td>—</td><td>euclid-ral-gpu-2 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/jvla/mge/jvla</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">10 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="107.0" y2="107.0"/>
+<text x="46" y="110.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="74.0" y2="74.0"/>
+<text x="46" y="77.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="41.0" y2="41.0"/>
+<text x="46" y="44.0" text-anchor="end">10 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">100 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="28.6" r="4.5" fill="var(--series-6)" stroke="var(--series-6)" stroke-width="2" class="hollow"><title>hpc_a100_fp64 @ 2026.8.17.1: 23.81 s per call — euclid-ral-gpu-1 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="132.6" r="4.5" fill="var(--series-6)" stroke="var(--series-6)" stroke-width="2" class="hollow"><title>hpc_a100_fp64 sparse @ 2026.8.17.1: 16.72 ms per call — euclid-ral-gpu-1 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="28.6" r="4.5" fill="var(--series-7)" stroke="var(--series-7)" stroke-width="2" class="hollow"><title>hpc_a100_mp @ 2026.8.17.1: 23.72 s per call — euclid-ral-gpu-1 — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-6)"></i>hpc_a100_fp64</li>
+<li><i style="background: var(--series-6)"></i>hpc_a100_fp64 (sparse, dashed)</li>
+<li><i style="background: var(--series-7)"></i>hpc_a100_mp</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>hpc_a100_fp64</td><td>2026.8.17.1</td><td>23.81 s</td><td>—</td><td>euclid-ral-gpu-1 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_fp64 sparse</td><td>2026.8.17.1</td><td>16.72 ms</td><td>—</td><td>euclid-ral-gpu-1 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_mp</td><td>2026.8.17.1</td><td>23.72 s</td><td>—</td><td>euclid-ral-gpu-1 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/jvla/pixelization/jvla</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">1 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="40.8" r="4.5" fill="var(--series-6)" stroke="var(--series-6)" stroke-width="2" class="hollow"><title>hpc_a100_fp64 @ 2026.8.17.1: 564.36 ms per call — euclid-ral-gpu-1 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="42.3" r="4.5" fill="var(--series-7)" stroke="var(--series-7)" stroke-width="2" class="hollow"><title>hpc_a100_mp @ 2026.8.17.1: 550.09 ms per call — euclid-ral-gpu-1 — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-6)"></i>hpc_a100_fp64</li>
+<li><i style="background: var(--series-7)"></i>hpc_a100_mp</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>hpc_a100_fp64</td><td>2026.8.17.1</td><td>564.36 ms</td><td>—</td><td>euclid-ral-gpu-1 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_mp</td><td>2026.8.17.1</td><td>550.09 ms</td><td>—</td><td>euclid-ral-gpu-1 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/mge/alma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">1 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="113.6" y2="113.6"/>
+<text x="46" y="116.6" text-anchor="end">10 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="87.2" y2="87.2"/>
+<text x="46" y="90.2" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="60.8" y2="60.8"/>
+<text x="46" y="63.8" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="34.4" y2="34.4"/>
+<text x="46" y="37.4" text-anchor="end">10 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">100 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="18.2" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 41.08 s per call — DESKTOP-H143S82 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="31.3" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 sparse @ 2026.8.17.1: 13.10 s per call — DESKTOP-H143S82 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="61.5" r="4.5" fill="var(--series-6)" stroke="var(--series-6)" stroke-width="2" class="hollow"><title>hpc_a100_fp64 @ 2026.8.17.1: 943.23 ms per call — euclid-ral-gpu-1 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="128.7" r="4.5" fill="var(--series-6)" stroke="var(--series-6)" stroke-width="2" class="hollow"><title>hpc_a100_fp64 sparse @ 2026.8.17.1: 2.67 ms per call — euclid-ral-gpu-1 — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64 (sparse, dashed)</li>
+<li><i style="background: var(--series-6)"></i>hpc_a100_fp64</li>
+<li><i style="background: var(--series-6)"></i>hpc_a100_fp64 (sparse, dashed)</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>41.08 s</td><td>—</td><td>DESKTOP-H143S82 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_fp64 sparse</td><td>2026.8.17.1</td><td>13.10 s</td><td>—</td><td>DESKTOP-H143S82 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_fp64</td><td>2026.8.17.1</td><td>943.23 ms</td><td>—</td><td>euclid-ral-gpu-1 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_fp64 sparse</td><td>2026.8.17.1</td><td>2.67 ms</td><td>—</td><td>euclid-ral-gpu-1 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/mge/alma_high</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">100 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">1000 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="118.9" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 144.57 s per call — DESKTOP-H143S82 — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>144.57 s</td><td>—</td><td>DESKTOP-H143S82 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/mge/sma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">10 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">100 ms</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="16.1" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 86.87 ms per call — DESKTOP-H143S82 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="19.3" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 sparse @ 2026.8.17.1: 82.06 ms per call — DESKTOP-H143S82 — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64 (sparse, dashed)</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>86.87 ms</td><td>—</td><td>DESKTOP-H143S82 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>local_cpu_fp64 sparse</td><td>2026.8.17.1</td><td>82.06 ms</td><td>—</td><td>DESKTOP-H143S82 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/mge_dft/sma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">10 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">100 ms</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="35.7" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 61.63 ms per call — DESKTOP-H143S82 — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>61.63 ms</td><td>—</td><td>DESKTOP-H143S82 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/pixelization/alma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">10 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="96.0" y2="96.0"/>
+<text x="46" y="99.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="52.0" y2="52.0"/>
+<text x="46" y="55.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">10 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="24.5" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 4.22 s per call — DESKTOP-H143S82 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="31.6" r="4.5" fill="var(--series-5)" stroke="var(--series-5)" stroke-width="2" class="hollow"><title>hpc_ral_cpu_fp64 @ 2026.8.17.1: 2.91 s per call — euclid-ral-gpu-1 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="111.5" r="4.5" fill="var(--series-6)" stroke="var(--series-6)" stroke-width="2" class="hollow"><title>hpc_a100_fp64 @ 2026.8.17.1: 44.46 ms per call — euclid-ral-gpu-1 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="111.7" r="4.5" fill="var(--series-7)" stroke="var(--series-7)" stroke-width="2" class="hollow"><title>hpc_a100_mp @ 2026.8.17.1: 44.02 ms per call — euclid-ral-gpu-2 — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+<li><i style="background: var(--series-5)"></i>hpc_ral_cpu_fp64</li>
+<li><i style="background: var(--series-6)"></i>hpc_a100_fp64</li>
+<li><i style="background: var(--series-7)"></i>hpc_a100_mp</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>4.22 s</td><td>—</td><td>DESKTOP-H143S82 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_ral_cpu_fp64</td><td>2026.8.17.1</td><td>2.91 s</td><td>—</td><td>euclid-ral-gpu-1 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_fp64</td><td>2026.8.17.1</td><td>44.46 ms</td><td>—</td><td>euclid-ral-gpu-1 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_mp</td><td>2026.8.17.1</td><td>44.02 ms</td><td>—</td><td>euclid-ral-gpu-2 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/pixelization/sma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">10 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="136.6" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 1.06 s per call — DESKTOP-H143S82 — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>1.06 s</td><td>—</td><td>DESKTOP-H143S82 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/pixelization_numba/alma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">10 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="105.2" r="4.5" fill="var(--series-5)" stroke="var(--series-5)" stroke-width="2" class="hollow"><title>hpc_ral_cpu_fp64 @ 2026.8.17.1: 1.83 s per call — euclid-ral-gpu-1 — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-5)"></i>hpc_ral_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>hpc_ral_cpu_fp64</td><td>2026.8.17.1</td><td>1.83 s</td><td>—</td><td>euclid-ral-gpu-1 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/pixelization_numba/sma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">10 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="132.1" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 1.15 s per call — DESKTOP-H143S82 — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>1.15 s</td><td>—</td><td>DESKTOP-H143S82 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/pixelization_numba_direct_conv/alma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">10 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="105.1" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 1.84 s per call — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>1.84 s</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/pixelization_numba_direct_conv/sma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">1 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="108.4" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 173.65 ms per call — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>173.65 ms</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/pixelization_numba_jax/alma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">10 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="32.0" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 6.57 s per call — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>6.57 s</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/pixelization_numba_jax/sma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">10 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="106.3" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 1.80 s per call — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>1.80 s</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/pixelization_numba_reference/alma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">10 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="32.5" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 6.52 s per call — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>6.52 s</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/pixelization_numba_reference/sma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">1 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="51.0" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 472.72 ms per call — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>472.72 ms</td><td>—</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/sma/delaunay/sma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">10 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="96.0" y2="96.0"/>
+<text x="46" y="99.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="52.0" y2="52.0"/>
+<text x="46" y="55.0" text-anchor="end">1 s</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">10 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="48.3" r="4.5" fill="var(--series-5)" stroke="var(--series-5)" stroke-width="2" class="hollow"><title>hpc_ral_cpu_fp64 @ 2026.8.17.1: 1.21 s per call — euclid-ral-gpu-1 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="117.4" r="4.5" fill="var(--series-6)" stroke="var(--series-6)" stroke-width="2" class="hollow"><title>hpc_a100_fp64 @ 2026.8.17.1: 32.61 ms per call — euclid-ral-gpu-1 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="117.7" r="4.5" fill="var(--series-7)" stroke="var(--series-7)" stroke-width="2" class="hollow"><title>hpc_a100_mp @ 2026.8.17.1: 32.11 ms per call — euclid-ral-gpu-1 — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-5)"></i>hpc_ral_cpu_fp64</li>
+<li><i style="background: var(--series-6)"></i>hpc_a100_fp64</li>
+<li><i style="background: var(--series-7)"></i>hpc_a100_mp</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>hpc_ral_cpu_fp64</td><td>2026.8.17.1</td><td>1.21 s</td><td>—</td><td>euclid-ral-gpu-1 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_fp64</td><td>2026.8.17.1</td><td>32.61 ms</td><td>—</td><td>euclid-ral-gpu-1 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_mp</td><td>2026.8.17.1</td><td>32.11 ms</td><td>—</td><td>euclid-ral-gpu-1 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/sma/delaunay_numba/sma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">1 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="81.2" r="4.5" fill="var(--series-5)" stroke="var(--series-5)" stroke-width="2" class="hollow"><title>hpc_ral_cpu_fp64 @ 2026.8.17.1: 278.88 ms per call — euclid-ral-gpu-1 — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-5)"></i>hpc_ral_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>hpc_ral_cpu_fp64</td><td>2026.8.17.1</td><td>278.88 ms</td><td>—</td><td>euclid-ral-gpu-1 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/sma/mge/sma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">1 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="17.0" r="4.5" fill="var(--series-6)" stroke="var(--series-6)" stroke-width="2" class="hollow"><title>hpc_a100_fp64 @ 2026.8.17.1: 854.58 ms per call — euclid-ral-gpu-2 — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-6)"></i>hpc_a100_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>hpc_a100_fp64</td><td>2026.8.17.1</td><td>854.58 ms</td><td>—</td><td>euclid-ral-gpu-2 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/sma/pixelization/sma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">10 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="74.0" y2="74.0"/>
+<text x="46" y="77.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">1 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="8.5" r="4.5" fill="var(--series-5)" stroke="var(--series-5)" stroke-width="2" class="hollow"><title>hpc_ral_cpu_fp64 @ 2026.8.17.1: 982.88 ms per call — euclid-ral-gpu-1 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="110.4" r="4.5" fill="var(--series-6)" stroke="var(--series-6)" stroke-width="2" class="hollow"><title>hpc_a100_fp64 @ 2026.8.17.1: 28.08 ms per call — euclid-ral-gpu-1 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="109.9" r="4.5" fill="var(--series-7)" stroke="var(--series-7)" stroke-width="2" class="hollow"><title>hpc_a100_mp @ 2026.8.17.1: 28.55 ms per call — euclid-ral-gpu-1 — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-5)"></i>hpc_ral_cpu_fp64</li>
+<li><i style="background: var(--series-6)"></i>hpc_a100_fp64</li>
+<li><i style="background: var(--series-7)"></i>hpc_a100_mp</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>hpc_ral_cpu_fp64</td><td>2026.8.17.1</td><td>982.88 ms</td><td>—</td><td>euclid-ral-gpu-1 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_fp64</td><td>2026.8.17.1</td><td>28.08 ms</td><td>—</td><td>euclid-ral-gpu-1 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_mp</td><td>2026.8.17.1</td><td>28.55 ms</td><td>—</td><td>euclid-ral-gpu-1 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>interferometer/sma/pixelization_numba/sma</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">100 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">1 s</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="19.1" r="4.5" fill="var(--series-5)" stroke="var(--series-5)" stroke-width="2" class="hollow"><title>hpc_ral_cpu_fp64 @ 2026.8.17.1: 824.09 ms per call — euclid-ral-gpu-1 — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-5)"></i>hpc_ral_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>hpc_ral_cpu_fp64</td><td>2026.8.17.1</td><td>824.09 ms</td><td>—</td><td>euclid-ral-gpu-1 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>point_source_image/image_plane/simple</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">10 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">100 ms</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="34.8" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 62.69 ms per call — DESKTOP-H143S82 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="88.2" r="4.5" fill="var(--series-5)" stroke="var(--series-5)" stroke-width="2" class="hollow"><title>hpc_ral_cpu_fp64 @ 2026.8.17.1: 24.69 ms per call — euclid-ral-compute-10-2 — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+<li><i style="background: var(--series-5)"></i>hpc_ral_cpu_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>62.69 ms</td><td>—</td><td>DESKTOP-H143S82 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_ral_cpu_fp64</td><td>2026.8.17.1</td><td>24.69 ms</td><td>—</td><td>euclid-ral-compute-10-2 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+<div class="panel"><h3><code>point_source_source/source_plane/simple</code></h3>
+<svg viewBox="0 0 320 170" role="img" aria-label="per-call run time per release">
+<g class="axis">
+<line class="grid-line" x1="50" x2="312" y1="140.0" y2="140.0"/>
+<text x="46" y="143.0" text-anchor="end">0.1 ms</text>
+<line class="grid-line" x1="50" x2="312" y1="8.0" y2="8.0"/>
+<text x="46" y="11.0" text-anchor="end">1 ms</text>
+<text x="82.8" y="156" text-anchor="middle" transform="rotate(0)">5.29.4</text>
+<text x="148.2" y="156" text-anchor="middle" transform="rotate(0)">7.6.649</text>
+<text x="213.8" y="156" text-anchor="middle" transform="rotate(0)">7.23.1</text>
+<text x="279.2" y="156" text-anchor="middle" transform="rotate(0)">8.17.1</text>
+<line x1="50" x2="312" y1="140" y2="140"/>
+</g>
+<circle cx="279.2" cy="55.4" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.8.17.1: 0.44 ms per call — DESKTOP-H143S82 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="118.1" r="4.5" fill="var(--series-5)" stroke="var(--series-5)" stroke-width="2" class="hollow"><title>hpc_ral_cpu_fp64 @ 2026.8.17.1: 0.15 ms per call — euclid-ral-compute-10-2 — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="94.4" r="4.5" fill="var(--series-6)" stroke="var(--series-6)" stroke-width="2" class="hollow"><title>hpc_a100_fp64 @ 2026.8.17.1: 0.22 ms per call — euclid-ral-gpu-1 — no provenance block (pre-#342 row)</title></circle>
+</svg>
+<ul class="legend">
+<li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+<li><i style="background: var(--series-5)"></i>hpc_ral_cpu_fp64</li>
+<li><i style="background: var(--series-6)"></i>hpc_a100_fp64</li>
+</ul>
+<details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
+<tr><td>local_cpu_fp64</td><td>2026.8.17.1</td><td>0.44 ms</td><td>—</td><td>DESKTOP-H143S82 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_ral_cpu_fp64</td><td>2026.8.17.1</td><td>0.15 ms</td><td>—</td><td>euclid-ral-compute-10-2 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_a100_fp64</td><td>2026.8.17.1</td><td>0.22 ms</td><td>—</td><td>euclid-ral-gpu-1 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+</table></details></div>
+</div>
+<footer>Data: the versioned summaries, config-tagged rows and sweep comparisons under <a href="https://github.com/PyAutoLabs/autolens_profiling/tree/main/results">results/</a>; the run-time drift badge uses the profiling conductor's 2x ratio with a 1 ms floor. Refresh: <code>profile.yml</code> on release tags. Feed: <a href="state.json">state.json</a> · data: <a href="series.json">series.json</a>.</footer>
+</body></html>

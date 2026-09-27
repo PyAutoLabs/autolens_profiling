@@ -10,7 +10,11 @@ Profiling and run-time tracking for [PyAutoLens](https://github.com/PyAutoLabs/P
 
 **Where to read findings.** The [campaign index](wiki/index.md) lists every profiling campaign —
 why it was run, its headline number, verdict, library PRs and release, and a link to its ledger in
-`results/notes/`. Start there before reusing a headline.
+`results/notes/`. Start there before reusing a headline. **Run time over time** is the
+[dashboard](https://pyautolabs.github.io/autolens_profiling/) (`dashboard/index.html`, rendered by
+`scripts/misc/tooling/build_dashboard.py` from `results/` on every release sweep): one panel per
+likelihood cell, one line per sweep config, one point per PyAutoLens release, with the pinned
+reference host and the provenance of every point. It renders and holds; it judges no lever.
 
 ## Vision
 
