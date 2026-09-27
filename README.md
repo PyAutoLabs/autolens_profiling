@@ -310,6 +310,17 @@ separately per likelihood × transform. Standing conclusions:
   Accepted; a bit-exact source-on-vertex tie (control 3 images incl. a duplicate root vs lattice 2) PASSED by
   human decision 2026-09-24 and is pinned as a PyAutoLens test. Post-fix, the refinement-step deflections (≈ 60 % of simple FLOPs) lead phase 4.
   Findings: [`results/notes/point_source_cpu_campaign.md`](./results/notes/point_source_cpu_campaign.md).
+- **Interferometer mesh likelihood on the A100 (2026-09)**: the sparse-operator (W~) Delaunay-1500
+  and rectangular 39×39 breakdown at sma / alma / alma_high / jvla, in fp64 and mixed precision,
+  plus an alma N sweep. RAL jobs 356370-356387. The alma baseline is **49.5 ms (Delaunay) /
+  44.5 ms (rect)**, against 67.5 / 60 ms for HST imaging. The dense mapping path OOMs the A100 at
+  alma, so the sparse path is the only one there. The PDIP solve is 47–49 % of the alma call. The
+  W~ curvature matrix is 36–42 % at alma and 91–92 % at jvla. It is FFT-bound on the mask extent,
+  not on N_vis, and its block size is flat. The certified solver cuts the scalar call by 33 %
+  (alma Delaunay) and by 36 % at N = 4000. Mixed precision and an fp32 FFT buy nothing; fp32 is
+  slower and fails the bar at jvla. The ranked levers are the certified solver (a C2 amendment),
+  F FFT size, and a fixed-mapper F preload.
+  Findings: [`results/notes/interferometer_mesh_a100_breakdown_2026_09.md`](./results/notes/interferometer_mesh_a100_breakdown_2026_09.md).
 
 ## How to read this repo
 
