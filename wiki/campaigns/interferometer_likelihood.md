@@ -6,10 +6,10 @@
 **Verdict:** MGE: the W~ route (lever 1) and the real-valued scatter (lever 3) shipped; mixed precision gives no gain. Mesh A100: certified solver −33 % at alma is opt-in only. Mesh CPU: `cached_property` F/D shipped; crossover nnz/col ≈ 66 Delaunay / ≈ 72 rectangular; the packaged gate stays 60 (retune to ~70 drafted, not urgent).
 **Headline:** A100 alma MGE 939.6 ms (chunked; dense path OOMs asking 61.4 GiB) → 2.69 ms on the W~ route; jvla 24.2 s → 16.7 ms.
 **Library PRs:** PyAutoArray#576 (+ PyAutoGalaxy#629, PyAutoLens#750), PyAutoArray#578 (released 2026.9.27.1); PyAutoArray#540, PyAutoArray#541, PyAutoArray#544, PyAutoArray#545 (released 2026.9.11.1; library speed-ups with no profiling note, see the 2026-09-27 journal entry); PyAutoArray#582 (merged, UNRELEASED).
-**Profiling PRs:** #312, #313, #319, #324, #328, #333.
+**Profiling PRs:** #312, #313, #319, #324, #328, #333; phase 3 under issue #348 (PR not yet opened).
 **Ledger:** [interferometer_mge_breakdown_2026_09.md](../../results/notes/interferometer_mge_breakdown_2026_09.md), [interferometer_mesh_a100_breakdown_2026_09.md](../../results/notes/interferometer_mesh_a100_breakdown_2026_09.md), [interferometer_mesh_cpu_breakdown_2026_09.md](../../results/notes/interferometer_mesh_cpu_breakdown_2026_09.md); older context [numba_interferometer_verdict.md](../../results/notes/numba_interferometer_verdict.md).
 **Mind contract:** epic `interferometer-likelihood-campaign` (named in the records; not in `epics.md`); phase map `draft/research/autolens_profiling/interferometer_mesh_breakdown_numba_cpu_decision_matrix.md`.
-**Next:** mesh CPU phase 3 (A100 radius sweep) and phase 4 (decision matrix).
+**Next:** mesh phase 4 (numba-vs-FFT decision matrix). It first needs the missing RAL CPU radius rows for sma and alma_high at r2.0 / r5.0; only alma has CPU radius rows.
 
 ## Why this campaign
 
@@ -34,7 +34,7 @@ has routed numba vs FFT by nnz/col since PyAutoArray #544/#545.
 | 2/3 mesh A100 | 2026-09-26/27 | Delaunay-1500 + rectangular on the sparse path on the A100 | not recorded (ranked levers; mp bar 0.5 nats) | certified solver −33 % at alma Delaunay (opt-in); F is FFT-bound; fixed-mapper curvature preload | 18 A100 jobs 356370–356387 | #324 |
 | 3/3 p1 mesh CPU | 2026-09-27 | numba `direct_conv` vs NumPy FFT through the library dispatch | not recorded | RAL CPU r3.5 numba/FFT ratios 0.25 (sma) … 2.05 (alma_high rect) | not recorded here (see ledger) | #328 |
 | 3/3 p2 crossover | 2026-09-27 | In-situ crossover on the cached library; gate verdict | gate evaluated against the interpolated crossover | crossover nnz/col ≈ 66 Delaunay / ≈ 72 rect; gate stays 60, retune to ~70 drafted | 358985, 358986, 359000 | #333 (library: PyAutoArray#582) |
-| 3/3 p3 radius sweep | — | A100 radius sweep | — | not started | — | — |
+| 3/3 p3 radius sweep | 2026-09-28 | A100 fp64 rows at mask r2.0 / r5.0 beside the r3.5 baseline | not recorded (witness: sparse class, step sum within 10 %) | F follows the extent, ~0.8–1.2 µs per extent pixel; alma_high r5.0 190.87 / 198.55 ms, no sparse OOM | 366895, 366896 (tasks 2–5), 366907, 366908 | issue #348 (PR pending) |
 | 3/3 p4 decision matrix | — | numba vs FFT decision matrix | — | not started | — | — |
 
 ## What shipped and where it is
@@ -58,7 +58,7 @@ config) and green at 1, 1. Both counts are right; see Caveats.
 
 ## Open / parked / drafts
 
-- Mesh CPU phase 3 (A100 radius sweep) and phase 4 (decision matrix): `draft/research/autolens_profiling/interferometer_mesh_breakdown_numba_cpu_decision_matrix.md`.
+- Mesh phase 4 (decision matrix; needs sma / alma_high CPU radius rows first): `draft/research/autolens_profiling/interferometer_mesh_breakdown_numba_cpu_decision_matrix.md`.
 - `draft/research/autolens_profiling/interferometer_nnls_memo_scattered_stream_guard.md` — fnnls warm-start memo guard.
 - `draft/research/autolens_profiling/interferometer_w_tilde_fft_size_levers.md` — F extent / FFT size.
 - `draft/research/autolens_profiling/interferometer_fixed_mapper_curvature_preload.md` — fixed-mapper curvature preload.
@@ -94,3 +94,12 @@ Interferometer library changes that shipped with a Mind record but no results/no
 ### 2026-09-27 — PyAutoArray#582 evaluation counts settled
 
 The ledger's "F twice, D four times" and the Mind record's "red at F=2, D=2" describe different runs: the full `figure_of_merit` under the packaged positive-only + edge-zeroed solver (profiling rows) versus the #582 unit tests under the test config's positive-negative solver. Read from the pre-fix source at PyAutoArray `879b2be1` and the test diff of `e281abf3`; both counts reconcile, and both are 1 / 1 after the fix. Also filled: PyAutoGalaxy#629 and PyAutoLens#750 released 2026.9.27.1 (merges `da84468a`, `e58715e9`).
+
+### 2026-09-28 — phase 3: A100 mask-radius sweep
+
+Issue #348. There are 12 new A100 fp64 rows (sma / alma / alma_high × Delaunay-1500 / rect 39² × mask r2.0 / r5.0), on RAL jobs 366895 and 366896 (tasks 2–5) plus the sma resubmits 366907 and 366908. The r3.5 column is the committed #324 baseline on the older mirror revisions; the ledger states the mix. The full record is in [the ledger section](../../results/notes/interferometer_mesh_a100_breakdown_2026_09.md#mask-radius-sweep--a100-fp64-phase-3-348).
+
+- The radius moves the cost through F alone. From r2.0 to r5.0 (6.25× the extent area), F grows 4.9–7.8× while the solve stays at 17.6–26.6 ms. The full JIT goes alma Delaunay 39.05 → 70.24 ms and alma_high Delaunay 54.10 → 190.87 ms (rect 48.87 → 198.55 ms).
+- F costs ~0.8–1.2 µs per extent pixel at every instrument. alma r5.0 (200², 1M visibilities, F 37.68 ms) costs more than alma_high r2.0 (160², 5M visibilities, F 20.74 ms).
+- No sparse leg OOMs, including alma_high r5.0 at vmap b16. alma dense OOMs at every radius, because T is set by N_vis × S. Step sum / full JIT is 1.002–1.051.
+- For phase 4: only alma has RAL CPU radius rows (r2.0 / 4.25 / 5.0 / 6.0). sma and alma_high CPU rows at r2.0 / r5.0 must be added before the CPU-vs-A100 witness.
