@@ -1,0 +1,148 @@
+AP_ROOT=/mnt/ral/jnightin/autolens_profiling_wt/point-source-gpu-p01
+==========================================
+Mon 28 Sep 21:12:39 BST 2026
+euclid-ral-gpu-1
+Model name:                              AMD EPYC 7702 64-Core Processor
+name, driver_version, memory.total [MiB], utilization.gpu [%]
+NVIDIA A100 80GB PCIe, 610.57.04, 81920 MiB, 0 %
+NVIDIA A100 80GB PCIe, 610.57.04, 81920 MiB, 0 %
+NVIDIA A100 80GB PCIe, 610.57.04, 81920 MiB, 0 %
+NVIDIA A100 80GB PCIe, 610.57.04, 81920 MiB, 0 %
+gpus:           0,1,2,3
+partition:      gpu
+cpus-per-task:  8
+sched_affinity: 124
+loadavg:        0.00 0.17 0.39 1/1243 259755
+Cell:           point_source_image/likelihood_breakdown/gpu_bottleneck_map (fp64, then fp32 what-if)
+Thread env:     OMP=1 MKL=1 OPENBLAS=1 NPROC=8
+XLA_FLAGS:      --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false
+PYTHONPATH:     /mnt/ral/jnightin/PyAuto:/mnt/ral/jnightin/PyAuto/PyAutoNerves:/mnt/ral/jnightin/PyAuto/PyAutoFit:/mnt/ral/jnightin/PyAuto/PyAutoArray:/mnt/ral/jnightin/PyAuto/PyAutoGalaxy:/mnt/ral/jnightin/PyAuto/PyAutoLens
+=== source revisions ===
+PyAutoNerves (mirror) bf104102312852537159b7fad2f998ab6677b4e4
+PyAutoFit (mirror) 404b3e5f7760d26f4bb41c7b1535ae5be3d113a0
+PyAutoArray (mirror) 9428eca24a02b528edde68550dbcf82e609a652a
+PyAutoGalaxy (mirror) c9609825660f5ee8d6b3254b5ee90971216dd272
+PyAutoLens (mirror) 21b520be4d0dd103aaaaba800e42c5092fedeb29
+AP_ROOT rev:   75833a953dd0a59045752a06cfd772dbe7484cce
+=== import provenance ===
+autoarray   2026.8.17.1  /mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/__init__.py
+autofit     2026.8.17.1  /mnt/ral/jnightin/PyAuto/PyAutoFit/autofit/__init__.py
+autogalaxy  2026.8.17.1  /mnt/ral/jnightin/PyAuto/PyAutoGalaxy/autogalaxy/__init__.py
+autolens    2026.8.17.1  /mnt/ral/jnightin/PyAuto/PyAutoLens/autolens/__init__.py
+MAX_CONTAINING_SIZE 20 _STEP0_CONTAINMENT structured
+jax 0.10.2 jaxlib 0.10.2 numpy 2.2.6 [CudaDevice(id=0), CudaDevice(id=1), CudaDevice(id=2), CudaDevice(id=3)]
+==========================================
+RUN hpc_ral_a100_fp64 -> /mnt/ral/jnightin/autolens_profiling_wt/point-source-gpu-p01/results/breakdown/point_source_image
+Mon 28 Sep 21:12:42 BST 2026
+loadavg: 0.08 0.18 0.39 1/1243 259821
+[    2.6 s] backend gpu, precision fp64, legs ['baseline', 'vmap', 'trace', 'grad']; MAX_CONTAINING_SIZE 20, step-0 route structured, n_steps 8
+[   19.1 s] baseline compile: lower 3.31 s, compile ON 6.42 s, OFF 6.670773190038744
+[   20.3 s] baseline: command_buffers_on 0.9098 ms, command_buffers_off 1.0970 ms
+[   32.9 s] fiducial 7.743201200876806 (expected 7.743201200876806); gates {'fiducial_bit_exact': {'value': 7.743201200876806, 'repr': '7.743201200876806', 'expected': 7.743201200876806, 'pass': True}, 'command_buffers_off_bit_identical': {'n_points': 64, 'n_differ': 0, 'pass': True}, 'stream_finite': {'n_points': 64, 'n_non_finite': 0, 'pass': True}}
+[   55.5 s] vmap1: 0.9698 ms/batch = 0.96983 ms/L, compile 7.6 s, delta 0.00e+00
+[   67.8 s] vmap4: 1.0976 ms/batch = 0.27439 ms/L, compile 7.8 s, delta 0.00e+00
+[   80.5 s] vmap16: 1.2260 ms/batch = 0.07662 ms/L, compile 8.1 s, delta 0.00e+00
+[   92.9 s] vmap64: 1.6212 ms/batch = 0.02533 ms/L, compile 7.9 s, delta 0.00e+00
+[  105.4 s] vmap256: 3.0679 ms/batch = 0.01198 ms/L, compile 7.8 s, delta 0.00e+00
+[  126.5 s] trace scalar: 173.0 kernels/call, busy 0.6160 ms vs wall OFF 1.1532 / ON 0.9373 ms; top stages mixed_fusion 0.4123, neighbourhood_active 0.1149, containment_active 0.0611, magnification_filter 0.0174
+[  150.0 s] trace vmap16: 179.0 kernels/call, busy 0.8616 ms vs wall OFF 1.3625 / ON 1.5154 ms; top stages mixed_fusion 0.5742, neighbourhood_active 0.1194, containment_active 0.0850, containment_lattice 0.0372
+[  266.5 s] grad scalar: primal 0.9367 ms, reverse 1.8007 ms, forward 1.2098 ms; vmap16: primal 0.08028 ms/L, reverse 0.14103 ms/L, forward 0.14429 ms/L
+[  343.5 s] FD point 0: max rel err 7.47e-02 strict pass False (vector rel 2.03e-04; fine fwd finite False) transition False; production-vs-fine AD max rel 3.19e-02
+[  343.6 s] FD point 1: max rel err 4.69e-04 strict pass True (vector rel 2.76e-04; fine fwd finite False) transition False; production-vs-fine AD max rel 5.08e-02
+[  343.8 s] FD point 2: max rel err 7.36e-03 strict pass True (vector rel 1.35e-04; fine fwd finite False) transition False; production-vs-fine AD max rel 1.94e-02
+[  343.9 s] FD point 3: max rel err 6.21e-01 strict pass False (vector rel 5.90e-04; fine fwd finite False) transition False; production-vs-fine AD max rel 1.59e+00
+[  344.0 s] FD point 4: max rel err 2.26e-02 strict pass False (vector rel 3.17e-04; fine fwd finite False) transition False; production-vs-fine AD max rel 1.87e-02
+[  344.2 s] FD point 5: max rel err 6.29e-03 strict pass True (vector rel 1.04e-03; fine fwd finite False) transition False; production-vs-fine AD max rel 1.16e-01
+[  344.3 s] FD point 6: max rel err 2.10e-03 strict pass True (vector rel 3.31e-04; fine fwd finite False) transition False; production-vs-fine AD max rel 1.27e-02
+
+==============================================================================================================
+POINTSOLVER BOTTLENECK MAP (hpc_ral_a100_fp64, fp64, legs ['baseline', 'vmap', 'trace', 'grad'])
+==============================================================================================================
+{
+  "scalar_command_buffers_on_ms": 0.9098494774661958,
+  "scalar_command_buffers_off_ms": 1.0969660070259124,
+  "mdi_same_program": 0.05450703437730198,
+  "vmap_ms_per_likelihood": {
+    "1": 0.9698279900476336,
+    "4": 0.27439425321063027,
+    "16": 0.07662406096642371,
+    "64": 0.02533163296902785,
+    "256": 0.01198387906242715
+  },
+  "largest_batch_fitting": 256,
+  "trace_scalar": {
+    "kernels_per_call": 173.0,
+    "device_busy_ms": 0.6160202,
+    "untraced_wall_off_ms": 1.1532019393052906,
+    "wall_on_ms": 0.9373209392651916,
+    "device_busy_over_wall_off_pct": 53.41824176701451,
+    "on_program_busy_over_wall_pct": 57.29832520556224
+  },
+  "trace_vmap16": {
+    "kernels_per_call": 179.0,
+    "device_busy_ms": 0.8616453999999999,
+    "untraced_wall_off_ms": 1.3625186204444617,
+    "wall_on_ms": 1.5153728006407619,
+    "device_busy_over_wall_off_pct": 63.23916510725747,
+    "on_program_busy_over_wall_pct": 52.052214456170084
+  },
+  "grad_scalar_ms": {
+    "primal": 0.936708995141089,
+    "reverse": 1.8006880127359182,
+    "forward": 1.2097699800506234
+  }
+}
+  gates: {"fiducial_bit_exact": true, "command_buffers_off_bit_identical": true, "stream_finite": true, "vmap_matches_scalar": true, "trace_join": true, "grad_reverse_finite": true, "grad_forward_finite": false, "grad_finite_nonzero": true, "grad_fd_agreement": false, "backend_gpu": true}
+  all_gates_pass: False
+  wall: 344 s
+  Results JSON: /mnt/ral/jnightin/autolens_profiling_wt/point-source-gpu-p01/results/breakdown/point_source_image/gpu_bottleneck_map_hpc_ral_a100_fp64.json
+  Results PNG:  /mnt/ral/jnightin/autolens_profiling_wt/point-source-gpu-p01/results/breakdown/point_source_image/gpu_bottleneck_map_hpc_ral_a100_fp64.png
+==========================================
+RUN hpc_ral_a100_fp32_whatif (JAX_ENABLE_X64=0 what-if) -> /mnt/ral/jnightin/autolens_profiling_wt/point-source-gpu-p01/results/breakdown/point_source_image
+Mon 28 Sep 21:18:30 BST 2026
+[    2.6 s] backend gpu, precision fp32, legs ['baseline', 'vmap']; MAX_CONTAINING_SIZE 20, step-0 route structured, n_steps 8
+[   18.2 s] baseline compile: lower 3.22 s, compile ON 5.98 s, OFF 6.3059510219609365
+[   19.3 s] baseline: command_buffers_on 0.7189 ms, command_buffers_off 0.9841 ms
+[   31.4 s] fiducial 7.743197441101074 (expected 7.743201200876806); gates {'command_buffers_off_bit_identical': {'n_points': 64, 'n_differ': 0, 'pass': True}, 'stream_finite': {'n_points': 64, 'n_non_finite': 0, 'pass': True}}
+[   52.7 s] vmap1: 0.8049 ms/batch = 0.80494 ms/L, compile 6.9 s, delta 0.00e+00
+[   64.7 s] vmap16: 1.1574 ms/batch = 0.07233 ms/L, compile 7.3 s, delta 0.00e+00
+[   77.3 s] vmap256: 3.5623 ms/batch = 0.01392 ms/L, compile 7.7 s, delta 0.00e+00
+[   77.5 s] fp32 what-if: max |dlogL| 1.609e-05, image-count agreement 1.000, max pos delta 2.22924513471583e-07, fp64/fp32 1.266
+
+==============================================================================================================
+POINTSOLVER BOTTLENECK MAP (hpc_ral_a100_fp32_whatif, fp32, legs ['baseline', 'vmap'])
+==============================================================================================================
+{
+  "scalar_command_buffers_on_ms": 0.7189165044110268,
+  "scalar_command_buffers_off_ms": 0.9841235005296767,
+  "mdi_same_program": 0.06519721355405217,
+  "vmap_ms_per_likelihood": {
+    "1": 0.8049354946706444,
+    "16": 0.07233446922327857,
+    "256": 0.013915318277213373
+  },
+  "largest_batch_fitting": 256,
+  "fp32_whatif": {
+    "max_abs_dlogl": 1.609055864193465e-05,
+    "fp64_over_fp32": 1.2655843507329005
+  }
+}
+  gates: {"command_buffers_off_bit_identical": true, "stream_finite": true, "vmap_matches_scalar": true, "backend_gpu": true}
+  all_gates_pass: True
+  wall: 78 s
+  Results JSON: /mnt/ral/jnightin/autolens_profiling_wt/point-source-gpu-p01/results/breakdown/point_source_image/gpu_bottleneck_map_hpc_ral_a100_fp32_whatif.json
+  Results PNG:  /mnt/ral/jnightin/autolens_profiling_wt/point-source-gpu-p01/results/breakdown/point_source_image/gpu_bottleneck_map_hpc_ral_a100_fp32_whatif.png
+=== source_revisions check (JSON vs imported HEADs) ===
+autoarray_imported_from /mnt/ral/jnightin/PyAuto/PyAutoArray
+OK /mnt/ral/jnightin/autolens_profiling_wt/point-source-gpu-p01/results/breakdown/point_source_image/gpu_bottleneck_map_hpc_ral_a100_fp64.json all_gates_pass False
+autoarray_imported_from /mnt/ral/jnightin/PyAuto/PyAutoArray
+OK /mnt/ral/jnightin/autolens_profiling_wt/point-source-gpu-p01/results/breakdown/point_source_image/gpu_bottleneck_map_hpc_ral_a100_fp32_whatif.json all_gates_pass True
+==========================================
+loadavg: 1.86 1.44 0.94 1/1244 264222
+name, memory.used [MiB]
+NVIDIA A100 80GB PCIe, 0 MiB
+NVIDIA A100 80GB PCIe, 0 MiB
+NVIDIA A100 80GB PCIe, 0 MiB
+NVIDIA A100 80GB PCIe, 0 MiB
+Finished.
+Mon 28 Sep 21:19:50 BST 2026

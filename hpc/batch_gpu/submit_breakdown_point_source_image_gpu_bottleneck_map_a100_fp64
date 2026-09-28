@@ -32,12 +32,11 @@
 # 359102), so the scalar baseline is comparable with those rows.
 
 # WALL-BASIS:
-#   No wall for this cell yet. Laptop witness (--quick, CPU, 2026-09-28): 330 s fp64
-#   + 70 s fp32, dominated by ~20 cold compiles (grad compiles ~60 s on CPU). The A100
-#   compiles this likelihood in ~6-16 s (jobs 357322 / 359102), ~22 compiles + the
-#   fp32 process ~10: estimate 900 s for both invocations.
+#   RAL job 366916 (this submit, final code, euclid-ral-gpu-1 --exclusive) ran 432 s
+#   (7:12 job wall: fp64 process 344 s + fp32 what-if 78 s); jobs 366913 / 366915 ran
+#   6:36 / 6:46. Compiles dominate (~25 cold compiles, 6-21 s each).
 #   cell: point_source_image/gpu_bottleneck_map/simple  device: gpu  precision: fp64
-#   source: unmeasured  probe-first: yes  wall: 900  headroom: 3.0  ref: laptop_2026-09-28_quick_witness_330s_plus_70s
+#   source: measured-wall  wall: 432  ref: ral-job-366916-point_source_image-gpu_bottleneck_map  headroom: 3.0
 
 #SBATCH -J point_source_gpu_p01
 #SBATCH --partition=gpu
