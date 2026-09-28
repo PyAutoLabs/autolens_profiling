@@ -1,0 +1,176 @@
+AP_ROOT=/mnt/ral/jnightin/autolens_profiling_wt/source-plane-runtime-refresh
+Mon Sep 28 20:46:23 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 610.57.04              KMD Version: 610.57.04     CUDA UMD Version: 13.3     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA A100 80GB PCIe          On  |   00000000:06:00.0 Off |                    0 |
+| N/A   42C    P0             49W /  300W |       0MiB /  81920MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+==========================================
+Mon 28 Sep 20:46:24 BST 2026
+euclid-ral-gpu-2
+nodelist:       euclid-ral-gpu-2
+loadavg:        0.44 0.21 0.36 2/1295 205793
+Cell:           point_source_source/likelihood_runtime/source_plane_solved
+Dataset:        simple
+Precision:      fp64
+Lib override:   /mnt/ral/jnightin/sp_refresh_libs
+autonerves  2026.8.17.1  /mnt/ral/jnightin/PyAuto/PyAutoNerves/autonerves/__init__.py
+autoarray   2026.8.17.1  /mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/__init__.py
+autofit     2026.8.17.1  /mnt/ral/jnightin/sp_refresh_libs/PyAutoFit/autofit/__init__.py
+autogalaxy  2026.8.17.1  /mnt/ral/jnightin/sp_refresh_libs/PyAutoGalaxy/autogalaxy/__init__.py
+autolens    2026.8.17.1  /mnt/ral/jnightin/sp_refresh_libs/PyAutoLens/autolens/__init__.py
+jax 0.10.2 [CudaDevice(id=0)] gpu
+--- vmap-probe ---
+
+--- Dataset loading [simple] ---
+  [dataset_load] 0.0003 s
+
+--- Point solver ---
+  [solver_build] 0.0007 s
+
+--- Model construction (PointSolved — 0 source params) ---
+  [model_build] 0.5168 s
+  Total free parameters: 5
+  (was 8 with al.ps.PointFlux in source_plane.py: 5 mass + 2 centre + 1 flux; PointSolved drops all 3 source params -> 5 mass-only. 2 of the 3 are the analytically-solved source centre (paper Sec 5.1 beta*); the 3rd is the flux param this positions-only dataset never fits either way.)
+
+--- Instantiate concrete model ---
+  [instance_from_vector] 0.0011 s
+  [register_pytrees] 0.0002 s
+
+--- Eager FitPointDataset (source-plane, solved) ---
+  [fit_eager] 0.0188 s
+  [eager_log_likelihood_x100] 0.6835 s
+  log_likelihood   = 0.598650453950647
+  figure_of_merit  = 0.598650453950647
+  eager per-call   = 0.006835 s
+
+======================================================================
+FULL-PIPELINE JIT (source-plane, solved)
+======================================================================
+  [full_pipeline_lower] 1.0607 s
+  [full_pipeline_compile] 1.0564 s
+  [full_pipeline_first_call] 0.0057 s
+  [full_pipeline_steady_x10] 0.0032 s
+    -> per-call avg: 0.000321 s
+  full log_likelihood = 0.5986504555536865
+
+  vmap_probe samples: [ProbeSample(batch_size=1, peak_bytes=131672, output_bytes=8, temp_bytes=134984), ProbeSample(batch_size=4, peak_bytes=131808, output_bytes=32, temp_bytes=133960), ProbeSample(batch_size=16, peak_bytes=135384, output_bytes=128, temp_bytes=137288)]
+  per_replica:        0.0 MB / replica
+  recommended batch:  64
+  written to:         /mnt/ral/jnightin/autolens_profiling_wt/source-plane-runtime-refresh/results/runtime/point_source_source/source_plane_solved/vmap_probe_source_plane_solved.json
+--- full timing ---
+loadavg: 1.16 0.38 0.42 3/1285 206052
+
+--- Dataset loading [simple] ---
+  [dataset_load] 0.0003 s
+
+--- Point solver ---
+  [solver_build] 0.0010 s
+
+--- Model construction (PointSolved — 0 source params) ---
+  [model_build] 0.5038 s
+  Total free parameters: 5
+  (was 8 with al.ps.PointFlux in source_plane.py: 5 mass + 2 centre + 1 flux; PointSolved drops all 3 source params -> 5 mass-only. 2 of the 3 are the analytically-solved source centre (paper Sec 5.1 beta*); the 3rd is the flux param this positions-only dataset never fits either way.)
+
+--- Instantiate concrete model ---
+  [instance_from_vector] 0.0011 s
+  [register_pytrees] 0.0002 s
+
+--- Eager FitPointDataset (source-plane, solved) ---
+  [fit_eager] 0.0188 s
+  [eager_log_likelihood_x100] 0.6717 s
+  log_likelihood   = 0.598650453950647
+  figure_of_merit  = 0.598650453950647
+  eager per-call   = 0.006717 s
+
+======================================================================
+FULL-PIPELINE JIT (source-plane, solved)
+======================================================================
+  [full_pipeline_lower] 1.0549 s
+  [full_pipeline_compile] 0.0973 s
+  [full_pipeline_first_call] 0.0024 s
+  [full_pipeline_steady_x10] 0.0064 s
+    -> per-call avg: 0.000642 s
+  full log_likelihood = 0.5986504555536865
+
+--- vmap batched evaluation ---
+  vmap batch_size: 64 (source: probe (vmap_probe_source_plane_solved.json))
+  [vmap_first_call] 2.2516 s
+  [vmap_steady_x10] 0.0036 s
+  batch results = [0.59865046 0.59865046 0.59865046 0.59865046 0.59865046 0.59865046
+ 0.59865046 0.59865046 0.59865046 0.59865046 0.59865046 0.59865046
+ 0.59865046 0.59865046 0.59865046 0.59865046 0.59865046 0.59865046
+ 0.59865046 0.59865046 0.59865046 0.59865046 0.59865046 0.59865046
+ 0.59865046 0.59865046 0.59865046 0.59865046 0.59865046 0.59865046
+ 0.59865046 0.59865046 0.59865046 0.59865046 0.59865046 0.59865046
+ 0.59865046 0.59865046 0.59865046 0.59865046 0.59865046 0.59865046
+ 0.59865046 0.59865046 0.59865046 0.59865046 0.59865046 0.59865046
+ 0.59865046 0.59865046 0.59865046 0.59865046 0.59865046 0.59865046
+ 0.59865046 0.59865046 0.59865046 0.59865046 0.59865046 0.59865046
+ 0.59865046 0.59865046 0.59865046 0.59865046]
+  vmap batch of 64:   0.000361 s
+  vmap per call:         0.000006 s
+  single JIT per call:   0.000642 s
+  vmap speedup:          113.8x faster per likelihood
+
+--- Static memory analysis ---
+  Output size:  0.000 MB
+  Temp size:    0.140 MB
+  Total:        0.140 MB
+
+======================================================================
+JAX LIKELIHOOD SUMMARY — POINT SOURCE SOURCE-PLANE SOLVED — v2026.8.17.1
+======================================================================
+  Dataset:                    simple
+  Observed image positions:   4
+  Position noise sigma:       0.05
+  Free parameters:            5  (source_plane.py: 8; delta=-3 -> -2 solved centre, -1 unused flux)
+  fit_positions_cls:          FitPositionsSourceSolved (source-plane chi-squared, solved centre)
+----------------------------------------------------------------------
+  Eager full likelihood:      0.006717 s/call  (0.598650)
+  Full pipeline (JIT):        0.000642 s/call
+  vmap per-call (batch=64):    0.000006 s
+  vmap speedup vs single JIT:           113.8x
+======================================================================
+
+  Results dict saved to: /mnt/ral/jnightin/autolens_profiling_wt/source-plane-runtime-refresh/results/runtime/point_source_source/source_plane_solved/source_plane_solved_hpc_a100_fp64.json
+  Bar chart saved to:    /mnt/ral/jnightin/autolens_profiling_wt/source-plane-runtime-refresh/results/runtime/point_source_source/source_plane_solved/source_plane_solved_hpc_a100_fp64.png
+
+======================================================================
+PROFILING SUMMARY
+======================================================================
+  dataset_load                   0.0003 s
+  solver_build                   0.0010 s
+  model_build                    0.5038 s
+  instance_from_vector           0.0011 s
+  register_pytrees               0.0002 s
+  fit_eager                      0.0188 s
+  eager_log_likelihood_x100      0.6717 s
+  full_pipeline_lower            1.0549 s
+  full_pipeline_compile          0.0973 s
+  full_pipeline_first_call       0.0024 s
+  full_pipeline_steady_x10       0.0064 s
+  vmap_first_call                2.2516 s
+  vmap_steady_x10                0.0036 s
+----------------------------------------------------------------------
+  TOTAL                          4.6132 s
+======================================================================
+  Pinned-value check PASSED (recorded in result JSON).
+loadavg: 1.45 0.46 0.44 2/1285 206203
+AUTOTUNE_ENTRIES count=5
+Finished.
+Mon 28 Sep 20:46:46 BST 2026

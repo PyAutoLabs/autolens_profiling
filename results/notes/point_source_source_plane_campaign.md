@@ -1222,3 +1222,105 @@ pending release). Remaining candidates, none started:
 
 The NaN-at-zero gradients and the `Isothermal` jit trace have tasks of their own
 (`jax-grad-nan-zero-components`, `isothermal-convergence-jit`).
+
+## Runtime refresh on 2026.9.27.2 + the A100 vmap throughput row (2026-09-28)
+
+Issue: [autolens_profiling #349](https://github.com/PyAutoLabs/autolens_profiling/issues/349).
+Branch `feature/source-plane-runtime-refresh`; the RAL jobs ran commit `464f948`. Single-source
+only, workspace-only. PyAutoFit#1649 (`867af1c`) and PyAutoLens#752 (`b3c9b68`) are **released in
+2026.9.27.2** (`git tag --contains`: first tag 2026.9.27.2 in both repos).
+
+### What landed
+
+- `scripts/point_source_source/likelihood_runtime/source_plane_solved.py` now records
+  `device_info_dict()` (with the #342 `device.provenance` block) and, under `--config-name`, writes
+  `source_plane_solved_<config>.{json,png}` through `resolve_output_paths(cell="source_plane_solved")`.
+  Its only earlier row was the local, provenance-less `source_plane_solved_summary_v2026.7.23.1.json`.
+- Submits `hpc/batch_cpu/submit_runtime_point_source_source_source_plane_solved_ral_cpu_fp64`
+  (gpu partition, no `--gres`, `JAX_PLATFORMS=cpu`, 8 CPUs) and
+  `hpc/batch_gpu/submit_runtime_point_source_source_source_plane_solved_a100_fp64` (`--vmap-probe`,
+  then timing), each with a fresh `JAX_COMPILATION_CACHE_DIR` and an optional
+  `PYAUTO_LIB_OVERRIDE` library directory. The A100 submit is now the ninth leg of
+  `hpc/batch_gpu/submit_release_sweep.sh`.
+- `scripts/misc/likelihood_runtime/aggregate.py` orders `hpc_ral_cpu_fp64` (the dashboard and
+  `build_readme.py` already did), so the cell's `comparison.json` carries both rows.
+
+### Libraries
+
+The shared `/mnt/ral/jnightin/PyAuto` stack sat on the library mains, not the tag (PyAutoFit
+`c156a9d8` with 9 uncommitted files, PyAutoGalaxy and PyAutoLens at main), and live jobs use it,
+so it was not moved. PyAutoFit, PyAutoGalaxy and PyAutoLens came from scratch clones at the
+2026.9.27.2 commits (`867af1c6`, `c7fc595b`, `897c2f76`) via `PYAUTO_LIB_OVERRIDE`; PyAutoArray
+(`9428eca2`) and PyAutoNerves (`bf104102`) were already at the tag. Both JSONs'
+`library_revisions` equal the tag commits exactly. JAX 0.10.2 on RAL. The point-source path does
+not use nufftax, so its floor does not bear on these rows.
+
+**Version label.** Both rows read `autolens_version: 2026.8.17.1`: the source checkout's
+`__version__` is only stamped at build time, so it is 2026.8.17.1 at the 2026.9.27.2 tag too. The
+same holds for 322 existing HPC result JSONs. The dashboard versions points by that field, so
+source-checkout rows do not separate by release; the `library_revisions` block is the true
+identity. This is a pre-existing dashboard/release-sweep limitation, flagged in the PR.
+
+### Rows (`euclid-ral-gpu-2`, both qualified: on the reference host, load under the 8.0 cap)
+
+| Config | Job | loadavg at import (1/5/15 min) | Eager | Single JIT (mean of 10) | vmap per call | vmap batch | vmap / single |
+|---|---|---|---|---|---|---|---|
+| `hpc_ral_cpu_fp64` (EPYC 7702, 8 CPUs) | 366911 | 0.16 / 0.14 / 0.34 | 6.74 ms | **0.258 ms** | 0.097 ms | 3 | 2.7× |
+| `hpc_a100_fp64` (A100) | 366912 | 1.16 / 0.38 / 0.42 | 6.72 ms | 0.642 ms (see below) | **5.6 µs** | 64 (probe) | 114× |
+
+Logs: [366911](../logs/point_source_source/point_source_source_plane_2026_09_28_ral_job_366911.out),
+[366912](../logs/point_source_source/point_source_source_plane_2026_09_28_ral_job_366912.out).
+Pinned-value checks passed on both (eager, JIT and every vmap entry = `0.5986504555530896`,
+rtol 1e-4). The A100 probe (`vmap_probe_source_plane_solved.json`) recommended the 64 cap: the
+compiled vmap graph holds 0.14 MB of temporaries.
+
+**CPU.** 0.258 ms agrees with this host's forward call in phase 2b (0.26 ms, job 357381). The
+phase-2a 0.1465 ms was the 8490H, a different host.
+
+**A100 single call: 0.642 ms is a warm-up artefact, not a regression.** The cell times one block of
+10 calls straight after the first call, and phase 2a's A100 fused solved call was 0.2217 ms (median,
+`euclid-ral-gpu-1`, job 356369). A diagnostic job on the same node, 366914
+([log](../logs/point_source_source/point_source_source_plane_2026_09_28_ral_job_366914_timing_diag.out)),
+built the same analysis and warmed the compiled executable with 5 calls before timing. It then
+measured the cell's own statistic (mean of 10 consecutive calls) 40 times, and 400 individually
+timed calls. Result: **median 0.272 ms** (p10 0.250, p90 0.285) for the cell statistic and
+**0.267 ms** (p10 0.260, p90 0.279) per single call, with the scalar `jit(x + 1)` floor at 0.132 ms
+(phase 2a: 0.128). So the steady-state single call is ~0.27 ms, 1.2× phase 2a's figure. The call shape is the
+same (the fused `FitPositionsSourceSolved` `log_likelihood_function` on the `ModelInstance` pytree,
+an AOT `Compiled` executable, `block_until_ready` per call); the host differs (phase 2a ran on
+`euclid-ral-gpu-1`, this on `euclid-ral-gpu-2`), as do the statistic (median of many vs mean of 10)
+and the library stack, so the 1.2× is not attributed. The rest of the 0.642 ms comes from the cell's single short block landing in the
+post-compile transient. Job 366914 used the shared stack (PyAutoFit `404b3e5`, PyAutoGalaxy `c9609825`, PyAutoLens
+`21b520be`), whose committed `autolens/`, `autogalaxy/` and `autofit/` code matches the tag (only
+PyAutoGalaxy docs differ); any uncommitted files in the shared PyAutoFit checkout were not inspected. **Do not read the A100 `single_jit` of this cell as a trend** until the cell
+warms more than one call; its `vmap.per_call` is steady. The timing method is deliberately left
+unchanged here (dashboard comparability); the four imaging release-sweep cells use the same
+`jit_profile` (one warm call, mean of 10), so the question is filed for all of them as Mind
+`draft/bug/autolens_profiling/runtime_cell_single_jit_gpu_warmup.md`.
+
+**The A100 vmap throughput row (the parked candidate, now measured).** At the probed batch 64:
+**5.6 µs per call ≈ 114× the single call** (113.8× in the JSON) (batch 0.361 ms, ~177 k evaluations/s). The batch wall is
+flat with batch size, so the A100 is still launch-bound at 64. Diagnostic 366914, batch medians
+over 50 calls:
+
+| batch | batch wall | per call | evaluations / s |
+|---|---|---|---|
+| 64 | 0.316 ms | 4.9 µs | 0.20 M |
+| 256 | 0.319 ms | 1.25 µs | 0.80 M |
+| 1024 | 0.298 ms | 0.29 µs | 3.4 M |
+
+The source-plane likelihood is so light that throughput scales ~linearly with batch through at
+least 1024. A sampler that can fill a wide batch (multi-start, SMC particles, nested-sampling live
+points) gets that throughput; a sequential one gets the 0.27 ms launch-bound single call, slower
+than one EPYC core-group. The runtime cell's batch is capped at 64 by `recommend_batch_size`; the
+1024 row is the diagnostic's, not a trend row.
+
+### Still parked
+
+- **blackjax NUTS / SMC forward-mode `value_and_grad`.** Its admission bar is the likelihood's
+  share of a real fit and that fit's evaluation count. Measuring those needs a point-source search
+  leaf in `lens/autolens_inference/scripts/point_source/searches/`, which holds only a README today.
+  Until that leaf exists, this stays parked.
+
+**Campaign status.** Phases 1–2e complete; the A100 vmap throughput row is done (this section).
+The only remaining candidate is blackjax forward mode, gated on the autolens_inference leaf.

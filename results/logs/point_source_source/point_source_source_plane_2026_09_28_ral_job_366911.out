@@ -1,0 +1,110 @@
+AP_ROOT=/mnt/ral/jnightin/autolens_profiling_wt/source-plane-runtime-refresh
+==========================================
+Mon 28 Sep 20:46:06 BST 2026
+euclid-ral-gpu-2
+Model name:                              AMD EPYC 7702 64-Core Processor
+partition:      gpu
+nodelist:       euclid-ral-gpu-2
+cpus-per-task:  8
+sched_affinity: 8
+loadavg:        0.00 0.11 0.33 1/1249 205354
+Cell:           point_source_source/likelihood_runtime/source_plane_solved
+Dataset:        simple
+Precision:      fp64 (JAX_ENABLE_X64=1)
+Thread env:     OMP=1 MKL=1 OPENBLAS=1 NPROC=8
+Lib override:   /mnt/ral/jnightin/sp_refresh_libs
+autonerves  2026.8.17.1  /mnt/ral/jnightin/PyAuto/PyAutoNerves/autonerves/__init__.py
+autoarray   2026.8.17.1  /mnt/ral/jnightin/PyAuto/PyAutoArray/autoarray/__init__.py
+autofit     2026.8.17.1  /mnt/ral/jnightin/sp_refresh_libs/PyAutoFit/autofit/__init__.py
+autogalaxy  2026.8.17.1  /mnt/ral/jnightin/sp_refresh_libs/PyAutoGalaxy/autogalaxy/__init__.py
+autolens    2026.8.17.1  /mnt/ral/jnightin/sp_refresh_libs/PyAutoLens/autolens/__init__.py
+jax 0.10.2 [CpuDevice(id=0)] cpu
+
+--- Dataset loading [simple] ---
+  [dataset_load] 0.0095 s
+
+--- Point solver ---
+  [solver_build] 0.0007 s
+
+--- Model construction (PointSolved — 0 source params) ---
+  [model_build] 0.9072 s
+  Total free parameters: 5
+  (was 8 with al.ps.PointFlux in source_plane.py: 5 mass + 2 centre + 1 flux; PointSolved drops all 3 source params -> 5 mass-only. 2 of the 3 are the analytically-solved source centre (paper Sec 5.1 beta*); the 3rd is the flux param this positions-only dataset never fits either way.)
+
+--- Instantiate concrete model ---
+  [instance_from_vector] 0.0010 s
+  [register_pytrees] 0.0001 s
+
+--- Eager FitPointDataset (source-plane, solved) ---
+  [fit_eager] 0.0181 s
+  [eager_log_likelihood_x100] 0.6744 s
+  log_likelihood   = 0.598650453950647
+  figure_of_merit  = 0.598650453950647
+  eager per-call   = 0.006744 s
+
+======================================================================
+FULL-PIPELINE JIT (source-plane, solved)
+======================================================================
+  [full_pipeline_lower] 1.0921 s
+  [full_pipeline_compile] 0.5749 s
+  [full_pipeline_first_call] 0.0034 s
+  [full_pipeline_steady_x10] 0.0026 s
+    -> per-call avg: 0.000258 s
+  full log_likelihood = 0.5986504555536349
+
+--- vmap batched evaluation ---
+  vmap batch_size: None (source: table)
+  [vmap_first_call] 1.6597 s
+  [vmap_steady_x10] 0.0029 s
+  batch results = [0.59865046 0.59865046 0.59865046]
+  vmap batch of 3:   0.000290 s
+  vmap per call:         0.000097 s
+  single JIT per call:   0.000258 s
+  vmap speedup:          2.7x faster per likelihood
+
+--- Static memory analysis ---
+  Output size:  0.000 MB
+  Temp size:    0.253 MB
+  Total:        0.253 MB
+
+======================================================================
+JAX LIKELIHOOD SUMMARY — POINT SOURCE SOURCE-PLANE SOLVED — v2026.8.17.1
+======================================================================
+  Dataset:                    simple
+  Observed image positions:   4
+  Position noise sigma:       0.05
+  Free parameters:            5  (source_plane.py: 8; delta=-3 -> -2 solved centre, -1 unused flux)
+  fit_positions_cls:          FitPositionsSourceSolved (source-plane chi-squared, solved centre)
+----------------------------------------------------------------------
+  Eager full likelihood:      0.006744 s/call  (0.598650)
+  Full pipeline (JIT):        0.000258 s/call
+  vmap per-call (batch=3):    0.000097 s
+  vmap speedup vs single JIT:           2.7x
+======================================================================
+
+  Results dict saved to: /mnt/ral/jnightin/autolens_profiling_wt/source-plane-runtime-refresh/results/runtime/point_source_source/source_plane_solved/source_plane_solved_hpc_ral_cpu_fp64.json
+  Bar chart saved to:    /mnt/ral/jnightin/autolens_profiling_wt/source-plane-runtime-refresh/results/runtime/point_source_source/source_plane_solved/source_plane_solved_hpc_ral_cpu_fp64.png
+
+======================================================================
+PROFILING SUMMARY
+======================================================================
+  dataset_load                   0.0095 s
+  solver_build                   0.0007 s
+  model_build                    0.9072 s
+  instance_from_vector           0.0010 s
+  register_pytrees               0.0001 s
+  fit_eager                      0.0181 s
+  eager_log_likelihood_x100      0.6744 s
+  full_pipeline_lower            1.0921 s
+  full_pipeline_compile          0.5749 s
+  full_pipeline_first_call       0.0034 s
+  full_pipeline_steady_x10       0.0026 s
+  vmap_first_call                1.6597 s
+  vmap_steady_x10                0.0029 s
+----------------------------------------------------------------------
+  TOTAL                          4.9466 s
+======================================================================
+  Pinned-value check PASSED (recorded in result JSON).
+loadavg: 0.44 0.21 0.36 2/1284 205586
+Finished.
+Mon 28 Sep 20:46:20 BST 2026

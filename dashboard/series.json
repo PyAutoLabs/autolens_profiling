@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "generated": "2026-09-27T22:40:10Z",
+ "generated": "2026-09-28T19:52:59Z",
  "reference_host": "euclid-ral-gpu-2",
  "loadavg_cap": 8.0,
  "drift_ratio": 2.0,
@@ -1380,6 +1380,62 @@
      "source": "results/runtime/point_source_source/source_plane_solved/source_plane_solved_summary_v2026.7.23.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "runtime:point_source_source/source_plane_solved:hpc_ral_cpu_fp64",
+   "section": "runtime",
+   "cell": "point_source_source/source_plane_solved",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": false,
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 0.00025833239778876304,
+     "vmap_per_call_s": 9.664240060374141e-05,
+     "host": "euclid-ral-gpu-2",
+     "backend": "cpu",
+     "job": "366911",
+     "loadavg": 0.16,
+     "has_provenance": true,
+     "source": "results/runtime/point_source_source/source_plane_solved/comparison.json#hpc_ral_cpu_fp64",
+     "qualified": true,
+     "reason": null
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "runtime:point_source_source/source_plane_solved:hpc_a100_fp64",
+   "section": "runtime",
+   "cell": "point_source_source/source_plane_solved",
+   "config": "hpc_a100_fp64",
+   "sparse": false,
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 0.0006424111023079603,
+     "vmap_per_call_s": 5.645434339385247e-06,
+     "host": "euclid-ral-gpu-2",
+     "backend": "gpu",
+     "job": "366912",
+     "loadavg": 1.16,
+     "has_provenance": true,
+     "source": "results/runtime/point_source_source/source_plane_solved/comparison.json#hpc_a100_fp64",
+     "qualified": true,
+     "reason": null
     }
    ],
    "drift": {
