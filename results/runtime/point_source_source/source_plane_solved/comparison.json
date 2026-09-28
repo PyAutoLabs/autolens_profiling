@@ -1,0 +1,172 @@
+{
+  "configs": {
+    "hpc_ral_cpu_fp64": {
+      "autolens_version": "2026.8.17.1",
+      "device": {
+        "backend": "cpu",
+        "device": "cpu:0",
+        "hostname": "euclid-ral-gpu-2",
+        "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+        "omp_num_threads": "1",
+        "cpu_count": 124,
+        "jax_compilation_cache_dir": "/mnt/ral/jnightin/autolens_profiling_wt/source-plane-runtime-refresh/output/jax_cache/runtime_ps_source_plane_solved_cpu_366911",
+        "autotune_cache_entries_at_start": 0,
+        "cache_fresh": true,
+        "provenance": {
+          "provenance_schema": 1,
+          "captured_at": "2026-09-28T19:46:20Z",
+          "host": "euclid-ral-gpu-2",
+          "slurm": {
+            "job_id": "366911",
+            "array_job_id": null,
+            "array_task_id": null
+          },
+          "loadavg_at_import": [
+            0.16,
+            0.14,
+            0.34
+          ],
+          "loadavg_at_write": [
+            0.31,
+            0.18,
+            0.35
+          ],
+          "profiling_revision": "464f94836f9bb79f471dfab671d0e182e9d8ef97",
+          "library_revisions": {
+            "autolens_profiling": "464f94836f9bb79f471dfab671d0e182e9d8ef97",
+            "PyAutoNerves": "bf104102312852537159b7fad2f998ab6677b4e4",
+            "PyAutoFit": "867af1c6b917b326c732f092b0ea9858447f2a78",
+            "PyAutoArray": "9428eca24a02b528edde68550dbcf82e609a652a",
+            "PyAutoGalaxy": "c7fc595ba0a96702989bb2e5282f3cc874b32494",
+            "PyAutoLens": "897c2f761e5c16f48eab784279e7e2ed0bf73a0f"
+          },
+          "library_versions": {
+            "PyAutoNerves": "2026.8.17.1",
+            "PyAutoFit": "2026.8.17.1",
+            "PyAutoArray": "2026.8.17.1",
+            "PyAutoGalaxy": "2026.8.17.1",
+            "PyAutoLens": "2026.8.17.1"
+          },
+          "dependency_versions": {
+            "jax": "0.10.2",
+            "jaxlib": "0.10.2",
+            "numpy": "2.2.6",
+            "scipy": "1.17.1",
+            "numba": "0.65.1",
+            "nufftax": "0.6.1"
+          }
+        }
+      },
+      "dataset": "simple",
+      "fit_positions_cls": "FitPositionsSourceSolved",
+      "configuration": {
+        "observed_image_positions": 4,
+        "positions_noise_sigma": 0.05,
+        "free_parameters": 5,
+        "free_parameters_source_plane_plain": 8,
+        "free_parameters_delta": -3,
+        "point_source_profile": "PointSolved"
+      },
+      "eager_per_call": 0.006744315220275894,
+      "eager_log_likelihood": 0.598650453950647,
+      "full_pipeline_jits": true,
+      "full_pipeline_single_jit": 0.00025833239778876304,
+      "full_pipeline_log_likelihood": 0.5986504555536349,
+      "vmap": {
+        "batch_size": 3,
+        "batch_time": 0.00028992720181122424,
+        "per_call": 9.664240060374141e-05,
+        "speedup_vs_single_jit": 2.7
+      },
+      "pinned_expected": 0.5986504555530896,
+      "pinned_drift": [],
+      "full_pipeline_per_call": 0.00025833239778876304,
+      "config_name": "hpc_ral_cpu_fp64"
+    },
+    "hpc_a100_fp64": {
+      "autolens_version": "2026.8.17.1",
+      "device": {
+        "backend": "gpu",
+        "device": "cuda:0",
+        "hostname": "euclid-ral-gpu-2",
+        "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+        "omp_num_threads": null,
+        "cpu_count": 124,
+        "jax_compilation_cache_dir": "/mnt/ral/jnightin/autolens_profiling_wt/source-plane-runtime-refresh/output/jax_cache/runtime_ps_source_plane_solved_366912",
+        "autotune_cache_entries_at_start": 0,
+        "cache_fresh": true,
+        "provenance": {
+          "provenance_schema": 1,
+          "captured_at": "2026-09-28T19:46:46Z",
+          "host": "euclid-ral-gpu-2",
+          "slurm": {
+            "job_id": "366912",
+            "array_job_id": null,
+            "array_task_id": null
+          },
+          "loadavg_at_import": [
+            1.16,
+            0.38,
+            0.42
+          ],
+          "loadavg_at_write": [
+            1.45,
+            0.46,
+            0.44
+          ],
+          "profiling_revision": "464f94836f9bb79f471dfab671d0e182e9d8ef97",
+          "library_revisions": {
+            "autolens_profiling": "464f94836f9bb79f471dfab671d0e182e9d8ef97",
+            "PyAutoNerves": "bf104102312852537159b7fad2f998ab6677b4e4",
+            "PyAutoFit": "867af1c6b917b326c732f092b0ea9858447f2a78",
+            "PyAutoArray": "9428eca24a02b528edde68550dbcf82e609a652a",
+            "PyAutoGalaxy": "c7fc595ba0a96702989bb2e5282f3cc874b32494",
+            "PyAutoLens": "897c2f761e5c16f48eab784279e7e2ed0bf73a0f"
+          },
+          "library_versions": {
+            "PyAutoNerves": "2026.8.17.1",
+            "PyAutoFit": "2026.8.17.1",
+            "PyAutoArray": "2026.8.17.1",
+            "PyAutoGalaxy": "2026.8.17.1",
+            "PyAutoLens": "2026.8.17.1"
+          },
+          "dependency_versions": {
+            "jax": "0.10.2",
+            "jaxlib": "0.10.2",
+            "numpy": "2.2.6",
+            "scipy": "1.17.1",
+            "numba": "0.65.1",
+            "nufftax": "0.6.1"
+          }
+        },
+        "nvidia_smi": "NVIDIA A100 80GB PCIe, 441 MiB, 81920 MiB"
+      },
+      "dataset": "simple",
+      "fit_positions_cls": "FitPositionsSourceSolved",
+      "configuration": {
+        "observed_image_positions": 4,
+        "positions_noise_sigma": 0.05,
+        "free_parameters": 5,
+        "free_parameters_source_plane_plain": 8,
+        "free_parameters_delta": -3,
+        "point_source_profile": "PointSolved"
+      },
+      "eager_per_call": 0.006717079679947347,
+      "eager_log_likelihood": 0.598650453950647,
+      "full_pipeline_jits": true,
+      "full_pipeline_single_jit": 0.0006424111023079603,
+      "full_pipeline_log_likelihood": 0.5986504555536865,
+      "vmap": {
+        "batch_size": 64,
+        "batch_time": 0.0003613077977206558,
+        "per_call": 5.645434339385247e-06,
+        "speedup_vs_single_jit": 113.8
+      },
+      "pinned_expected": 0.5986504555530896,
+      "pinned_drift": [],
+      "full_pipeline_per_call": 0.0006424111023079603,
+      "config_name": "hpc_a100_fp64"
+    }
+  },
+  "hazard_findings": []
+}

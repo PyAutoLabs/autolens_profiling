@@ -1,0 +1,102 @@
+#!/bin/bash -l
+#
+# RAL CPU likelihood-runtime profile: point_source_source/source_plane_solved x simple x fp64
+# (autolens_profiling#349). The source-plane chi-squared point-source cell
+# (FitPositionsSourceSolved, PointSolved, 5 free parameters) -- single-source only.
+#
+# HOST. The quiet RAL gpu-partition host CPUs (AMD EPYC 7702) with NO --gres -- the
+# campaign's reference CPU host since phase 2b (jobs 357381, 358770, 359192). Pin the node:
+#     sbatch --nodelist=euclid-ral-gpu-2 <this>
+# Config label hpc_ral_cpu_fp64 (the run-time dashboard's RAL CPU series); the host is in
+# device.provenance. No --vmap-probe: the probe budget is A100-oriented and a CPU batch is
+# clamped anyway; the cell's table batch applies.
+#
+# LIBRARIES. The shared /mnt/ral/jnightin/PyAuto stack by default. PYAUTO_LIB_OVERRIDE=<dir>
+# prepends <dir>/{PyAutoFit,PyAutoGalaxy,PyAutoLens,PyAutoArray,PyAutoNerves} (whichever
+# exist) to PYTHONPATH, for a run at a tag the shared stack does not sit on:
+#     sbatch --nodelist=euclid-ral-gpu-2 --export=ALL,PYAUTO_LIB_OVERRIDE=/mnt/ral/jnightin/<dir> <this>
+#
+# THREADS. OMP/MKL/OPENBLAS pinned to 1 (BLAS family only); the JAX CPU pool sizes from
+# the 8 CPUs of --cpus-per-task=8 (NPROC).
+#
+# `hpc/sync pull` does not fetch batch_cpu logs: scp output/output.<id>.out to results/logs/.
+#
+# WALL-BASIS:
+#   Laptop witness (WSL2, 8 threads): 10.7 s of profiled sections, ~20 s process wall.
+#   cell: point_source_source/source_plane_solved/simple  device: cpu  precision: fp64
+#   source: measured-wall  wall: 20  ref: laptop-source_plane_solved_local_cpu_fp64  headroom: 10.0
+
+#SBATCH -J runtime_ps_source_plane_solved_cpu
+#SBATCH --partition=gpu
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=16gb
+#SBATCH --time=0:20:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+# Repo root from where this was submitted (hpc/batch_cpu/../..), so it runs from the
+# canonical checkout or a worktree of a feature branch. sbatch from inside hpc/batch_cpu/.
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+if [ -n "${PYAUTO_LIB_OVERRIDE:-}" ]; then
+    for r in PyAutoNerves PyAutoArray PyAutoGalaxy PyAutoLens PyAutoFit; do
+        if [ -d "$PYAUTO_LIB_OVERRIDE/$r" ]; then
+            export PYTHONPATH="$PYAUTO_LIB_OVERRIDE/$r:$PYTHONPATH"
+        fi
+    done
+fi
+
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export NPROC=${SLURM_CPUS_PER_TASK:-8}
+export JAX_PLATFORMS=cpu
+export JAX_ENABLE_X64=1
+export PYAUTO_SKIP_WORKSPACE_VERSION_CHECK=1
+export NUMBA_CACHE_DIR=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}
+# A fresh, empty compilation cache per leg (compile times are recorded and must be cold).
+export JAX_COMPILATION_CACHE_DIR=$AP_ROOT/output/jax_cache/runtime_ps_source_plane_solved_cpu_${SLURM_JOB_ID:-local}
+rm -rf "$JAX_COMPILATION_CACHE_DIR"
+mkdir -p "$JAX_COMPILATION_CACHE_DIR" "$NUMBA_CACHE_DIR"
+
+echo "=========================================="
+date
+hostname
+lscpu | grep 'Model name' || true
+echo "partition:      ${SLURM_JOB_PARTITION:-unset}"
+echo "nodelist:       ${SLURM_JOB_NODELIST:-unset}"
+echo "cpus-per-task:  ${SLURM_CPUS_PER_TASK:-unset}"
+echo "sched_affinity: $(python3 -c 'import os; print(len(os.sched_getaffinity(0)))')"
+echo "loadavg:        $(cat /proc/loadavg)"
+echo "Cell:           point_source_source/likelihood_runtime/source_plane_solved"
+echo "Dataset:        simple"
+echo "Precision:      fp64 (JAX_ENABLE_X64=$JAX_ENABLE_X64)"
+echo "Thread env:     OMP=$OMP_NUM_THREADS MKL=$MKL_NUM_THREADS OPENBLAS=$OPENBLAS_NUM_THREADS NPROC=$NPROC"
+echo "Lib override:   ${PYAUTO_LIB_OVERRIDE:-none (shared stack)}"
+
+cd $AP_ROOT
+
+python3 -c "
+import os, autonerves, autoarray, autofit, autogalaxy, autolens, jax
+for m in (autonerves, autoarray, autofit, autogalaxy, autolens):
+    print(f'{m.__name__:<11} {getattr(m, \"__version__\", \"?\"):<12} {m.__file__}')
+override = os.environ.get('PYAUTO_LIB_OVERRIDE')
+if override:
+    for m, repo in ((autofit, 'PyAutoFit'), (autogalaxy, 'PyAutoGalaxy'), (autolens, 'PyAutoLens')):
+        if os.path.isdir(os.path.join(override, repo)):
+            assert os.path.realpath(m.__file__).startswith(os.path.realpath(os.path.join(override, repo)) + '/'), f'{m.__name__} not from {override}'
+print('jax', jax.__version__, jax.devices(), jax.default_backend())
+assert jax.default_backend() == 'cpu', 'JAX is not on the CPU'
+"
+
+python3 scripts/point_source_source/likelihood_runtime/source_plane_solved.py \
+    --config-name hpc_ral_cpu_fp64
+
+echo "loadavg: $(cat /proc/loadavg)"
+echo "Finished."
+date
