@@ -47,7 +47,7 @@ footer { margin-top: 32px; color: var(--ink-3); font-size: 12px; border-top: 1px
 </style></head><body>
 <header>
 <h1>PyAuto <span>Profiling</span> — run time over time</h1>
-<p class="meta">Per-call likelihood cost per PyAutoLens release, one panel per cell, one line per sweep config. <span class="badge green">green</span> 143 series across 61 cells and 4 releases; no drift. Rendered 2026-09-27T22:40:10Z from <code>results/</code> by <code>build_dashboard.py</code>; reference host <code>euclid-ral-gpu-2</code>, load-average cap 8.0. Hollow markers are rows without a provenance block or off the reference host; refused rows are listed at the foot. This page renders and holds timing history; it judges no lever (<a href="https://github.com/PyAutoLabs/autolens_profiling/blob/main/wiki/index.md">campaign index</a>).</p>
+<p class="meta">Per-call likelihood cost per PyAutoLens release, one panel per cell, one line per sweep config. <span class="badge green">green</span> 145 series across 61 cells and 4 releases; no drift. Rendered 2026-09-28T19:52:59Z from <code>results/</code> by <code>build_dashboard.py</code>; reference host <code>euclid-ral-gpu-2</code>, load-average cap 8.0. Hollow markers are rows without a provenance block or off the reference host; refused rows are listed at the foot. This page renders and holds timing history; it judges no lever (<a href="https://github.com/PyAutoLabs/autolens_profiling/blob/main/wiki/index.md">campaign index</a>).</p>
 </header>
 <h2>runtime</h2><div class="grid">
 <div class="panel"><h3><code>imaging/delaunay/hst</code> <span class="badge improved">improved</span></h3>
@@ -576,12 +576,18 @@ footer { margin-top: 32px; color: var(--ink-3); font-size: 12px; border-top: 1px
 <line x1="50" x2="312" y1="140" y2="140"/>
 </g>
 <circle cx="213.8" cy="70.1" r="4.5" fill="var(--series-1)" stroke="var(--series-1)" stroke-width="2" class="hollow"><title>local_cpu_fp64 @ 2026.7.23.1: 0.34 ms per call, vmap 0.12 ms — no provenance block (pre-#342 row)</title></circle>
+<circle cx="279.2" cy="85.6" r="4.5" fill="var(--series-5)" stroke="var(--series-5)" stroke-width="2"><title>hpc_ral_cpu_fp64 @ 2026.8.17.1: 0.26 ms per call, vmap 0.10 ms — euclid-ral-gpu-2, job 366911, load 0.2</title></circle>
+<circle cx="279.2" cy="33.4" r="4.5" fill="var(--series-6)" stroke="var(--series-6)" stroke-width="2"><title>hpc_a100_fp64 @ 2026.8.17.1: 0.64 ms per call, vmap 0.01 ms — euclid-ral-gpu-2, job 366912, load 1.2</title></circle>
 </svg>
 <ul class="legend">
 <li><i style="background: var(--series-1)"></i>local_cpu_fp64</li>
+<li><i style="background: var(--series-5)"></i>hpc_ral_cpu_fp64</li>
+<li><i style="background: var(--series-6)"></i>hpc_a100_fp64</li>
 </ul>
 <details><summary>table</summary><table><tr><th>config</th><th>release</th><th>per call</th><th>vmap</th><th>host / job / load</th><th>drift</th></tr>
 <tr><td>local_cpu_fp64</td><td>2026.7.23.1</td><td>0.34 ms</td><td>0.12 ms</td><td>— <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
+<tr><td>hpc_ral_cpu_fp64</td><td>2026.8.17.1</td><td>0.26 ms</td><td>0.10 ms</td><td>euclid-ral-gpu-2 / 366911 / 0.2</td><td></td></tr>
+<tr><td>hpc_a100_fp64</td><td>2026.8.17.1</td><td>0.64 ms</td><td>0.01 ms</td><td>euclid-ral-gpu-2 / 366912 / 1.2</td><td></td></tr>
 </table></details></div>
 </div>
 <h2>breakdown</h2><div class="grid">

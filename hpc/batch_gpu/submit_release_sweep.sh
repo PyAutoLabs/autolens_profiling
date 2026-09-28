@@ -77,7 +77,8 @@ fi
 
 cd "$HERE"
 
-# The dashboard's trend rows: every per-cell A100 runtime submit (dense, then sparse).
+# The dashboard's trend rows: every per-cell A100 runtime submit (dense, then sparse), then
+# the point-source source-plane cell (autolens_profiling#349; single-source, no sparse path).
 LEGS="
 submit_runtime_imaging_mge_a100_hst_fp64
 submit_runtime_imaging_pixelization_a100_hst_fp64
@@ -87,6 +88,7 @@ submit_runtime_imaging_mge_a100_hst_fp64_sparse
 submit_runtime_imaging_pixelization_a100_hst_fp64_sparse
 submit_runtime_imaging_delaunay_a100_hst_fp64_sparse
 submit_runtime_imaging_delaunay_nn_a100_hst_fp64_sparse
+submit_runtime_point_source_source_source_plane_solved_a100_fp64
 "
 
 SBATCH_CMD="sbatch --nodelist=$NODE"
