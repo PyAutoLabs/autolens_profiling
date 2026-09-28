@@ -133,7 +133,7 @@ headroom is ~21 % scalar and none once batched.
 **Forward mode is NaN.** `jax.jacfwd` of this likelihood returns NaN in all five components at
 all 16 stream points on the A100 (and on the laptop CPU, production and 1e-5 fine solvers
 alike); reverse mode is finite everywhere. `AnalysisPoint.gradient_mode = "forward"`
-(PyAutoLens#752, unreleased) makes forward mode the default for gradient searches on every
+(PyAutoLens#752 with PyAutoFit#1649, released in 2026.9.27.2) makes forward mode the default for gradient searches on every
 point-source analysis, on the strength of source-plane measurements (#327/#331). The forward
 timing row is a cost measurement of a program that returns NaN, not a usable gradient.
 
@@ -208,8 +208,12 @@ busy (0.537 ms scalar, 0.789 ms vmap-16).
   eval count, batched vs serial.
 - **Blocking finding for any gradient work:** forward-mode `jacfwd` of the image-plane solved
   likelihood is NaN everywhere, while `AnalysisPoint` now defaults gradient searches to forward
-  mode (PyAutoLens#752, unreleased). That is a library defect to route through intake before
-  any gradient lever, and before #752 ships in a release.
+  mode (PyAutoLens#752 with PyAutoFit#1649, released in 2026.9.27.2, so live for users). That is a
+  library defect, routed as a bug ahead of any gradient lever: reproduced through the library's
+  own search path (`Fitness.grad`, `value_and_grad_from`) and localised to `inf·0` tangents on the
+  padded model positions in the all-pairs χ² (`square_distance`, `pair_all.py`), not to the solver's
+  JVP; filed as Mind `draft/bug/autolens/point_image_pair_all_forward_grad_nan.md`. Workaround:
+  `gradient_mode="reverse"`.
 - Open follow-ups: the +8.6 % scalar vs job 359102 (candidate PyAutoGalaxy#634 / PyAutoLens#754,
   not bisected); points 3/4 need a finer FD reference to decide.
 
