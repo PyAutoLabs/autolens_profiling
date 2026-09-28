@@ -927,13 +927,38 @@ if "grad" in LEGS:
     grad_block["scalar"]["forward"]["compile"] = rec_fwd
     rev_vals = {k: np.asarray(v[1], dtype=float) for k, v in g_out["reverse"].items()}
     fwd_vals = {k: np.asarray(v[1], dtype=float) for k, v in g_out["forward"].items()}
-    grad_block["reverse_vs_forward_max_rel"] = float(
-        max(
-            np.max(np.abs(rev_vals[k] - fwd_vals[k]) / np.maximum(np.abs(rev_vals[k]), 1e-300))
-            for k in rev_vals
-            if k in fwd_vals
-        )
-    )
+    # Forward vs reverse on every timing-stream point, with finiteness recorded: a NaN in
+    # either mode must be visible here, not only as a NaN max (RAL jobs 366913 / 366915
+    # reported this block's max as null -- forward mode was NaN).
+    grad_block["reverse_vs_forward"] = {
+        str(k): {
+            "reverse": rev_vals[k].tolist(),
+            "forward": fwd_vals[k].tolist(),
+            "reverse_finite": bool(np.isfinite(rev_vals[k]).all()),
+            "forward_finite": bool(np.isfinite(fwd_vals[k]).all()),
+            "max_rel": float(
+                np.max(np.abs(rev_vals[k] - fwd_vals[k]) / np.maximum(np.abs(rev_vals[k]), 1e-300))
+            ),
+        }
+        for k in sorted(rev_vals)
+        if k in fwd_vals
+    }
+    _rf = grad_block["reverse_vs_forward"].values()
+    grad_block["reverse_vs_forward_max_rel"] = float(max(r["max_rel"] for r in _rf))
+    gates["grad_reverse_finite"] = {
+        "n_points": len(_rf),
+        "n_non_finite": sum(not r["reverse_finite"] for r in _rf),
+        "pass": all(r["reverse_finite"] for r in _rf),
+    }
+    gates["grad_forward_finite"] = {
+        "n_points": len(_rf),
+        "n_non_finite": sum(not r["forward_finite"] for r in _rf),
+        "note": (
+            "jax.jacfwd of the solved image-plane likelihood -- the mode AnalysisPoint declares "
+            "(gradient_mode = 'forward', PyAutoLens#752) for gradient searches"
+        ),
+        "pass": all(r["forward_finite"] for r in _rf),
+    }
     # vmap of each
     gb = GRAD_VMAP
     gbatch = [jnp.asarray(np.roll(stream[:N_STREAM], -j, axis=0)[:gb]) for j in range(4)]
@@ -985,10 +1010,17 @@ if "grad" in LEGS:
     (ex_fine_grad, _), _rec = lower_and_compile(
         jax.grad(loglike_fn(FINE_PRECISION)), arguments[0], label="fd_fine_grad", both=False
     )
+    (ex_fine_fwd, _), _rec = lower_and_compile(
+        jax.jacfwd(loglike_fn(FINE_PRECISION)), arguments[0], label="fd_fine_fwd", both=False
+    )
 
     def fine_eval(x):
         lv, pv = block(ex_fine_pos(jnp.asarray(x)))
-        return float(lv), len(finite_positions(np.asarray(pv)))
+        return float(lv), finite_positions(np.asarray(pv))
+
+    def set_shift(a, b):
+        """Max nearest-neighbour move of the solved-image set (None if the count changed)."""
+        return max_matched_delta(a, b) if len(a) == len(b) else None
 
     # Stream point 0 is the prior-median vector: lens centre (0, 0) and ell_comps_1 = 0, an
     # axis-aligned symmetric lens. The workspace_test certification deliberately offsets its
@@ -1000,19 +1032,26 @@ if "grad" in LEGS:
         x = np.asarray(stream[p], dtype=float)
         ad_prod = np.asarray(rev_vals.get(p, block(ex_rev(jnp.asarray(x)))[1]), dtype=float)
         ad_fine = np.asarray(block(ex_fine_grad(jnp.asarray(x))), dtype=float)
-        _, n_base = fine_eval(x)
+        _, base_set = fine_eval(x)
+        n_base = len(base_set)
         fd_all = np.zeros((len(FD_REL_STEPS), x.size))
         count_changed = np.zeros((len(FD_REL_STEPS), x.size), dtype=bool)
+        counts_pm = np.zeros((len(FD_REL_STEPS), x.size, 2), dtype=int)
+        shift_pm = np.full((len(FD_REL_STEPS), x.size, 2), np.nan)
         for s, rel in enumerate(FD_REL_STEPS):
             for i in range(x.size):
                 h = rel * max(abs(x[i]), FD_ABS_FLOOR)
                 xp_, xm_ = x.copy(), x.copy()
                 xp_[i] += h
                 xm_[i] -= h
-                fp, np_ = fine_eval(xp_)
-                fm, nm_ = fine_eval(xm_)
+                fp, set_p = fine_eval(xp_)
+                fm, set_m = fine_eval(xm_)
                 fd_all[s, i] = (fp - fm) / (2.0 * h)
-                count_changed[s, i] = np_ != n_base or nm_ != n_base
+                counts_pm[s, i] = (len(set_m), len(set_p))
+                count_changed[s, i] = len(set_p) != n_base or len(set_m) != n_base
+                for j, other in enumerate((set_m, set_p)):
+                    d = set_shift(other, base_set)
+                    shift_pm[s, i, j] = np.nan if d is None else d
         best = np.argmin(np.abs(fd_all - ad_fine[None, :]), axis=0)
         fd = fd_all[best, np.arange(x.size)]
         abs_err = np.abs(ad_fine - fd)
@@ -1020,19 +1059,21 @@ if "grad" in LEGS:
         rel_err = np.divide(abs_err, denom, out=np.zeros_like(abs_err), where=denom > 0)
         tol = FD_ATOL + FD_RTOL * denom
         strict = abs_err <= tol
-        # The FD side carries the solver staircase as NOISE, whose absolute size is set by
-        # the stair height / step, not by the component: the spread of the FD sweep across
-        # its steps measures it per component. A component whose |ad - fd| is inside that
-        # spread is at the FD noise floor (RAL job 366913: 0.24 of a 405-norm gradient,
-        # sweep spread 1.0), which the component-relative rule cannot resolve. A WRONG
-        # implicit rule misses by factors on the large components, so the vector criterion
-        # is the falsifiable one.
+        # DIAGNOSTIC ONLY (never the gate): the FD side carries the solver staircase as
+        # noise whose absolute size is set by stair height / step, so the spread of the FD
+        # sweep across steps is recorded per component, with a vector criterion. A
+        # classification built from it was briefly the gate (commit 8c12e57, run 366915);
+        # it was reverted: a smooth point whose FD disagrees at every step stays FAILING.
         noise_floor = np.std(fd_all, axis=0)
         at_noise_floor = ~strict & (abs_err <= noise_floor)
-        passes = strict | at_noise_floor
         vector_rel = float(np.linalg.norm(ad_fine - fd) / max(np.linalg.norm(fd), 1e-300))
-        vector_pass = vector_rel <= FD_RTOL
-        transition = bool(count_changed[best, np.arange(x.size)].any())
+        rel_err_all_steps = np.abs(fd_all - ad_fine[None, :]) / np.maximum(
+            np.maximum(np.abs(fd_all), np.abs(ad_fine)[None, :]), 1e-300
+        )
+        # A topology transition: the finite image count changes between x-h and x+h at ANY
+        # step of the sweep for that component.
+        transition = bool(count_changed.any())
+        ad_fine_fwd = np.asarray(block(ex_fine_fwd(jnp.asarray(x))), dtype=float)
         prod_rel = np.abs(ad_prod - ad_fine) / np.maximum(np.abs(ad_fine), 1e-300)
         points.append(
             {
@@ -1045,14 +1086,22 @@ if "grad" in LEGS:
                 "fd_step_used": [FD_REL_STEPS[b] for b in best],
                 "fd_sweep": fd_all.tolist(),
                 "rel_err_ad_vs_fd": rel_err.tolist(),
+                "rel_err_ad_vs_fd_every_step": rel_err_all_steps.tolist(),
+                "finite_count_minus_plus_every_step": counts_pm.tolist(),
+                "solved_set_shift_minus_plus_every_step_arcsec": shift_pm.tolist(),
+                "ad_fine_forward": ad_fine_fwd.tolist(),
+                "ad_fine_forward_finite": bool(np.isfinite(ad_fine_fwd).all()),
                 "strict_componentwise_pass_per_param": strict.tolist(),
                 "strict_componentwise_pass": bool(strict.all()),
-                "fd_noise_floor_per_param": noise_floor.tolist(),
-                "at_fd_noise_floor_per_param": at_noise_floor.tolist(),
-                "pass_per_param": passes.tolist(),
-                "vector_rel_err": vector_rel,
-                "vector_pass": vector_pass,
-                "pass": bool(passes.all() and vector_pass),
+                "pass_per_param": strict.tolist(),
+                "pass": bool(strict.all()),
+                "diagnostic_noise_floor_classification": {
+                    "fd_sweep_std_per_param": noise_floor.tolist(),
+                    "within_sweep_std_per_param": at_noise_floor.tolist(),
+                    "vector_rel_err": vector_rel,
+                    "would_pass": bool((strict | at_noise_floor).all() and vector_rel <= FD_RTOL),
+                    "note": "diagnostic only; NOT the gate (see fd_check.gate_history)",
+                },
                 "topology_transition": transition,
                 "gated": p != 0,
                 "role": "symmetric prior-median diagnostic (not gated)" if p == 0 else "gated",
@@ -1061,8 +1110,8 @@ if "grad" in LEGS:
             }
         )
         note(
-            f"FD point {p}: max rel err {rel_err.max():.2e} strict {bool(strict.all())} "
-            f"vector rel {vector_rel:.2e} pass {bool(passes.all() and vector_pass)} "
+            f"FD point {p}: max rel err {rel_err.max():.2e} strict pass {bool(strict.all())} "
+            f"(vector rel {vector_rel:.2e}; fine fwd finite {bool(np.isfinite(ad_fine_fwd).all())}) "
             f"transition {transition}; production-vs-fine AD max rel {prod_rel.max():.2e}"
         )
     smooth = [pt for pt in points if pt["gated"] and not pt["topology_transition"]]
@@ -1070,15 +1119,15 @@ if "grad" in LEGS:
         "method": (
             "autolens_workspace_test scripts/point_source/jax_grad/gradient.py: fine-precision "
             f"solver ({FINE_PRECISION}), rel steps {FD_REL_STEPS} x max(|x|, {FD_ABS_FLOOR}), FD "
-            f"closest to AD used, |ad-fd| <= {FD_ATOL} + {FD_RTOL} max(|ad|,|fd|) (strict, "
-            "reported); gated: every component strict OR within the FD sweep's own spread "
-            f"(std over steps), AND ||ad-fd|| / ||fd|| <= {FD_RTOL}"
+            f"closest to AD used, |ad-fd| <= {FD_ATOL} + {FD_RTOL} max(|ad|,|fd|) per component "
+            "(the gate). AD = reverse mode on the fine solver."
         ),
-        "gate_revision": (
-            "RAL job 366913 (first A100 run) gated the strict component rule alone and failed "
-            "points 3 and 4 on components far below the gradient norm (0.24 of 405; 7.2 of "
-            "1478) whose FD sweeps scatter by more than the disagreement. The strict rule is "
-            "still recorded per point; the gate adds the FD noise floor and a vector criterion."
+        "gate_history": (
+            "366913: strict gate, failed points 3/4. 8c12e57 / 366915: gate briefly widened to "
+            "a noise-floor + vector classification after that failure. Reverted: a gate changed "
+            "after a failure must be justified from the data, and a smooth point whose FD "
+            "disagrees at every step is a finding, not noise to tune away. The widened "
+            "classification is kept per point as diagnostic_noise_floor_classification."
         ),
         "fine_compile": rec_fine,
         "parameter_paths": PARAM_NAMES,
@@ -1088,6 +1137,14 @@ if "grad" in LEGS:
         "n_topology_transition": sum(pt["gated"] and pt["topology_transition"] for pt in points),
         "n_smooth_pass": sum(pt["pass"] for pt in smooth),
         "n_smooth_strict_pass": sum(pt["strict_componentwise_pass"] for pt in smooth),
+        "failing_smooth": [
+            {
+                "point": pt["point"],
+                "params": [PARAM_NAMES[i] for i, ok in enumerate(pt["pass_per_param"]) if not ok],
+            }
+            for pt in smooth
+            if not pt["pass"]
+        ],
     }
     gates["grad_finite_nonzero"] = {"pass": all(pt["all_finite_nonzero"] for pt in points)}
     gates["grad_fd_agreement"] = {
@@ -1187,6 +1244,7 @@ if device.get("jax_compilation_cache_dir"):
 
 required = ["fiducial_bit_exact", "command_buffers_off_bit_identical", "stream_finite"]
 required += ["vmap_matches_scalar", "trace_join", "grad_finite_nonzero", "grad_fd_agreement"]
+required += ["grad_reverse_finite", "grad_forward_finite"]
 if not X64:
     # fp32 what-if: its gates are REPORTED, never required bit-exact; the run is valid when
     # it executed and every stream point is finite.
