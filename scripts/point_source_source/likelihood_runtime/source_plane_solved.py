@@ -484,6 +484,10 @@ print("=" * 70)
 
 likelihood_summary = {
     "autolens_version": al_version,
+    # Backend / host / cache state + the #342 provenance block (node, load
+    # average at import, SLURM job id, library revisions) the run-time
+    # dashboard qualifies a row on.
+    "device": device_info_dict(),
     "dataset": instrument,
     "fit_positions_cls": "FitPositionsSourceSolved",
     "configuration": {
@@ -507,12 +511,17 @@ likelihood_summary = {
     },
 }
 
-results_dir = (
-    _workspace_root / "results" / "runtime" / "point_source_source" / "source_plane_solved"
+# ``--config-name`` (a sweep / HPC leg) writes ``source_plane_solved_<config>.json``
+# beside the versioned local rows; no config name keeps the versioned filename.
+# ``cell=`` is explicit because the cell name contains an underscore.
+dict_path, chart_path = resolve_output_paths(
+    _cli,
+    default_dir=(
+        _workspace_root / "results" / "runtime" / "point_source_source" / "source_plane_solved"
+    ),
+    default_basename=f"source_plane_solved_summary_v{al_version}",
+    cell="source_plane_solved",
 )
-results_dir.mkdir(parents=True, exist_ok=True)
-
-dict_path = results_dir / f"source_plane_solved_summary_v{al_version}.json"
 dict_path.write_text(json.dumps(likelihood_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")
 
@@ -557,7 +566,6 @@ ax.set_title(
 ax.margins(x=0.20)
 fig.tight_layout()
 
-chart_path = results_dir / f"source_plane_solved_summary_v{al_version}.png"
 fig.savefig(chart_path, dpi=150)
 plt.close(fig)
 print(f"  Bar chart saved to:    {chart_path}")

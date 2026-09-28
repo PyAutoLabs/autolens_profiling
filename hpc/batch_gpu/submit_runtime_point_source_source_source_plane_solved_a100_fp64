@@ -1,0 +1,109 @@
+#!/bin/bash -l
+#
+# A100 likelihood-runtime profile: point_source_source/source_plane_solved x simple x fp64
+# (autolens_profiling#349). The source-plane chi-squared point-source cell
+# (FitPositionsSourceSolved, PointSolved, 5 free parameters) -- single-source only.
+#
+# Phase A runs --vmap-probe (memory_analysis at batch 1/4/16 -> recommended A100 batch,
+# written to vmap_probe_source_plane_solved.json beside the results); Phase B times the
+# single JIT and the vmap batch at that batch. The single call is launch-bound on the
+# A100, so vmap.per_call at the probed batch is the GPU number that matters (the
+# campaign's "A100 vmap throughput row").
+#
+# A release-sweep leg (hpc/batch_gpu/submit_release_sweep.sh): the row is versioned by the
+# PyAutoLens release the process imports and carries device.provenance (node, loadavg at
+# import, SLURM job id). Pin the node: sbatch --nodelist=euclid-ral-gpu-2.
+#
+# LIBRARIES. The shared /mnt/ral/jnightin/PyAuto stack by default (HPCPullPyAuto it to the
+# release tag first). PYAUTO_LIB_OVERRIDE=<dir> prepends <dir>/{PyAutoFit,PyAutoGalaxy,
+# PyAutoLens,PyAutoArray,PyAutoNerves} (whichever exist) to PYTHONPATH, for a run at a tag
+# the shared stack does not sit on without moving it under live jobs:
+#     sbatch --nodelist=euclid-ral-gpu-2 --export=ALL,PYAUTO_LIB_OVERRIDE=/mnt/ral/jnightin/<dir> <this>
+#
+# WALL-BASIS:
+#   Laptop witness (WSL2, 8 threads, CPU): the timing phase is 10.7 s of profiled sections
+#   (compile-dominated: lower 2.0 s + compile 1.7 s + vmap first call 5.0 s); the probe phase
+#   compiles three more vmap batches. Budget 20 min for imports + 2 phases on the A100.
+#   cell: point_source_source/source_plane_solved/simple  device: a100  precision: fp64
+#   source: measured-wall  wall: 60  ref: laptop-source_plane_solved_local_cpu_fp64  headroom: 10.0
+
+#SBATCH -J runtime_ps_source_plane_solved_fp64
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=32gb
+#SBATCH --time=0:20:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+# Repo root from where this was submitted (hpc/batch_gpu/../..), so it runs from the
+# canonical checkout or a worktree of a feature branch. sbatch from inside hpc/batch_gpu/.
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+if [ -n "${PYAUTO_LIB_OVERRIDE:-}" ]; then
+    for r in PyAutoNerves PyAutoArray PyAutoGalaxy PyAutoLens PyAutoFit; do
+        if [ -d "$PYAUTO_LIB_OVERRIDE/$r" ]; then
+            export PYTHONPATH="$PYAUTO_LIB_OVERRIDE/$r:$PYTHONPATH"
+        fi
+    done
+fi
+
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export PYAUTO_SKIP_WORKSPACE_VERSION_CHECK=1
+export NUMBA_CACHE_DIR=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}
+# A fresh, empty compilation cache per leg: a seeded autotune cache changes kernels
+# (results/notes/xla_autotune_triton_gemm.md) and RAL $HOME is node-local.
+export JAX_COMPILATION_CACHE_DIR=$AP_ROOT/output/jax_cache/runtime_ps_source_plane_solved_${SLURM_JOB_ID:-local}
+rm -rf "$JAX_COMPILATION_CACHE_DIR"
+mkdir -p "$JAX_COMPILATION_CACHE_DIR" "$NUMBA_CACHE_DIR"
+
+nvidia-smi
+
+echo "=========================================="
+date
+hostname
+echo "nodelist:       ${SLURM_JOB_NODELIST:-unset}"
+echo "loadavg:        $(cat /proc/loadavg)"
+echo "Cell:           point_source_source/likelihood_runtime/source_plane_solved"
+echo "Dataset:        simple"
+echo "Precision:      fp64"
+echo "Lib override:   ${PYAUTO_LIB_OVERRIDE:-none (shared stack)}"
+
+cd $AP_ROOT
+
+python3 -c "
+import os, autonerves, autoarray, autofit, autogalaxy, autolens, jax
+for m in (autonerves, autoarray, autofit, autogalaxy, autolens):
+    print(f'{m.__name__:<11} {getattr(m, \"__version__\", \"?\"):<12} {m.__file__}')
+override = os.environ.get('PYAUTO_LIB_OVERRIDE')
+if override:
+    for m, repo in ((autofit, 'PyAutoFit'), (autogalaxy, 'PyAutoGalaxy'), (autolens, 'PyAutoLens')):
+        if os.path.isdir(os.path.join(override, repo)):
+            assert os.path.realpath(m.__file__).startswith(os.path.realpath(os.path.join(override, repo)) + '/'), f'{m.__name__} not from {override}'
+print('jax', jax.__version__, jax.devices(), jax.default_backend())
+assert jax.default_backend() == 'gpu', 'JAX is not on the GPU'
+"
+
+# Phase A -- vmap-probe (early exit with memory_analysis + batch recommendation)
+echo "--- vmap-probe ---"
+python3 scripts/point_source_source/likelihood_runtime/source_plane_solved.py \
+    --vmap-probe
+
+# Phase B -- full single-JIT + vmap timing at the probed batch
+echo "--- full timing ---"
+echo "loadavg: $(cat /proc/loadavg)"
+python3 scripts/point_source_source/likelihood_runtime/source_plane_solved.py \
+    --config-name hpc_a100_fp64
+
+echo "loadavg: $(cat /proc/loadavg)"
+echo "AUTOTUNE_ENTRIES count=$(find "$JAX_COMPILATION_CACHE_DIR" -type f 2>/dev/null | wc -l)"
+echo "Finished."
+date
