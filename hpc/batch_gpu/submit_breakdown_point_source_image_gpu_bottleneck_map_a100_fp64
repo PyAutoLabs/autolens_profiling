@@ -1,0 +1,162 @@
+#!/bin/bash -l
+#
+# 2026-09 point-source A100 campaign, phase 0+1 combined (lean): the launch-bound
+# bottleneck map of the production image-plane likelihood on current main
+# (autolens_profiling#350). The human skipped the preserved-revision reproduction
+# (2026-09-28): the CPU campaign's A100 rows (jobs 350587 / 350637 / 357322 / 359102)
+# already cover it, so this is ONE job measuring what is still unknown.
+#
+# WHAT THIS MEASURES. scripts/point_source_image/likelihood_breakdown/
+# gpu_bottleneck_map.py: FitPositionsImagePairAllSolved through PointSolver.for_grid
+# (100x100 @ 0.2", precision 1e-3, MCS 20, structured step-0 route), unpatched.
+#   1. baseline: command buffers (CUDA graphs) ON vs OFF, 20 rounds x 20 calls,
+#      fiducial bit-exact gate (A100 7.743201200876806);
+#   2. vmap 1/4/16/64/256 (stops at the first OOM): ms/L, throughput, compile, memory;
+#   3. jax.profiler trace of the OFF program (scalar + vmap-16) through
+#      xla_attribution.py + the point-solver stage map: kernels/call, device busy vs
+#      wall, inter-kernel gaps, per-stage kernel ms (lattice / active split);
+#   4. fp32 WHAT-IF: a second process with JAX_ENABLE_X64=0 (the PointSolver has no
+#      mixed-precision switch) compared against the fp64 JSON over the same stream;
+#   5. reverse (value_and_grad) + forward (jacfwd) gradients, scalar + vmap-16, with
+#      the workspace_test central-FD certification on a 1e-5 fine solver.
+#
+# LIBRARY. Unchanged: every library is the shared mirror (/mnt/ral/jnightin/PyAuto,
+# via activate.sh). The job refuses to run unless every library imports from the
+# mirror, the mirror carries PyAutoArray #580 (4383ea81) + #584 (9428eca2) and
+# PyAutoLens #753 (e92bde012), MAX_CONTAINING_SIZE is 20 and the step-0 route is
+# "structured"; it asserts the JSON source_revisions afterwards.
+#
+# BACKEND. JAX_PLATFORMS=cuda (NOT "cuda,cpu": a list can silently fall back to
+# CPU) and JAX_PLATFORM_NAME=cuda; the job asserts jax.default_backend()=="gpu".
+# XLA_FLAGS are byte-identical to the phase-4b / 4c A100 submits (jobs 357322 /
+# 359102), so the scalar baseline is comparable with those rows.
+
+# WALL-BASIS:
+#   No wall for this cell yet. Laptop witness (--quick, CPU, 2026-09-28): 330 s fp64
+#   + 70 s fp32, dominated by ~20 cold compiles (grad compiles ~60 s on CPU). The A100
+#   compiles this likelihood in ~6-16 s (jobs 357322 / 359102), ~22 compiles + the
+#   fp32 process ~10: estimate 900 s for both invocations.
+#   cell: point_source_image/gpu_bottleneck_map/simple  device: gpu  precision: fp64
+#   source: unmeasured  probe-first: yes  wall: 900  headroom: 3.0  ref: laptop_2026-09-28_quick_witness_330s_plus_70s
+
+#SBATCH -J point_source_gpu_p01
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=32gb
+#SBATCH --time=1:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export NPROC=${SLURM_CPUS_PER_TASK:-8}
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=1
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+export NUMBA_CACHE_DIR=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}
+mkdir -p "$NUMBA_CACHE_DIR" "$MPLCONFIGDIR"
+# No persistent compile cache: compile_s is recorded and must be cold per program.
+unset JAX_COMPILATION_CACHE_DIR
+
+CONFIG_NAME=hpc_ral_a100_fp64
+CONFIG_NAME_FP32=hpc_ral_a100_fp32_whatif
+RESULTS_DIR=$AP_ROOT/results/breakdown/point_source_image
+TRACE_DIR=$AP_ROOT/output/gpu_bottleneck_map_trace_${SLURM_JOB_ID:-local}
+mkdir -p "$RESULTS_DIR" "$TRACE_DIR"
+
+echo "=========================================="
+date
+hostname
+lscpu | grep 'Model name' || true
+nvidia-smi --query-gpu=name,driver_version,memory.total,utilization.gpu --format=csv || true
+echo "gpus:           ${CUDA_VISIBLE_DEVICES:-unset}"
+echo "partition:      ${SLURM_JOB_PARTITION:-unset}"
+echo "cpus-per-task:  ${SLURM_CPUS_PER_TASK:-unset}"
+echo "sched_affinity: $(python3 -c 'import os; print(len(os.sched_getaffinity(0)))')"
+echo "loadavg:        $(cat /proc/loadavg)"
+echo "Cell:           point_source_image/likelihood_breakdown/gpu_bottleneck_map (fp64, then fp32 what-if)"
+echo "Thread env:     OMP=$OMP_NUM_THREADS MKL=$MKL_NUM_THREADS OPENBLAS=$OPENBLAS_NUM_THREADS NPROC=$NPROC"
+echo "XLA_FLAGS:      $XLA_FLAGS"
+echo "PYTHONPATH:     $PYTHONPATH"
+
+echo "=== source revisions ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r (mirror)" "$(git -C /mnt/ral/jnightin/PyAuto/$r rev-parse HEAD 2>&1)"
+done
+echo "AP_ROOT rev:   $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+for pin in "PyAutoArray 4383ea81 #580" "PyAutoArray 9428eca2 #584" "PyAutoLens e92bde012 #753"; do
+    set -- $pin
+    git -C /mnt/ral/jnightin/PyAuto/$1 merge-base --is-ancestor $2 HEAD \
+        || { echo "FATAL: mirror $1 lacks $3 ($2); HPCPullPyAuto first" >&2; exit 2; }
+done
+
+cd $AP_ROOT
+
+echo "=== import provenance ==="
+python3 - <<'PYEOF' || exit 3
+import autoarray, autofit, autogalaxy, autolens, jax, jaxlib, numpy
+for m in (autoarray, autofit, autogalaxy, autolens):
+    print(f"{m.__name__:<11} {m.__version__:<12} {m.__file__}")
+    if not m.__file__.startswith("/mnt/ral/jnightin/PyAuto/"):
+        raise SystemExit(f"REFUSING: {m.__name__} from {m.__file__}, not the shared mirror")
+from autoarray.structures.triangles import array as a
+print("MAX_CONTAINING_SIZE", a.MAX_CONTAINING_SIZE, "_STEP0_CONTAINMENT", a._STEP0_CONTAINMENT)
+if a.MAX_CONTAINING_SIZE != 20 or a._STEP0_CONTAINMENT != "structured":
+    raise SystemExit("REFUSING: current main is MCS 20 + structured step-0 route")
+print("jax", jax.__version__, "jaxlib", jaxlib.__version__, "numpy", numpy.__version__, jax.devices())
+if jax.default_backend() != "gpu":
+    raise SystemExit(f"REFUSING: JAX backend is {jax.default_backend()}, not gpu")
+PYEOF
+
+echo "=========================================="
+echo "RUN ${CONFIG_NAME} -> ${RESULTS_DIR}"
+date
+echo "loadavg: $(cat /proc/loadavg)"
+PYTHONUNBUFFERED=1 python3 scripts/point_source_image/likelihood_breakdown/gpu_bottleneck_map.py \
+    --config-name "$CONFIG_NAME" --output-dir "$RESULTS_DIR" --trace-dir "$TRACE_DIR/fp64" \
+    --rounds 20 --calls 20 --vmap-batches 1,4,16,64,256 --trace-vmap 16 --grad-vmap 16
+
+echo "=========================================="
+echo "RUN ${CONFIG_NAME_FP32} (JAX_ENABLE_X64=0 what-if) -> ${RESULTS_DIR}"
+date
+JAX_ENABLE_X64=0 PYTHONUNBUFFERED=1 python3 \
+    scripts/point_source_image/likelihood_breakdown/gpu_bottleneck_map.py \
+    --config-name "$CONFIG_NAME_FP32" --output-dir "$RESULTS_DIR" \
+    --fp64-reference "$RESULTS_DIR/gpu_bottleneck_map_${CONFIG_NAME}.json" \
+    --rounds 20 --calls 20 --vmap-batches 1,16,256
+
+echo "=== source_revisions check (JSON vs imported HEADs) ==="
+python3 - "$RESULTS_DIR/gpu_bottleneck_map_${CONFIG_NAME}.json" \
+    "$RESULTS_DIR/gpu_bottleneck_map_${CONFIG_NAME_FP32}.json" <<'PYEOF'
+import json, subprocess, sys
+def head(p):
+    return subprocess.check_output(["git", "-C", p, "rev-parse", "HEAD"], text=True).strip()
+for path in sys.argv[1:]:
+    d = json.load(open(path))
+    revs = d["source_revisions"]
+    for r in ("PyAutoNerves", "PyAutoFit", "PyAutoArray", "PyAutoGalaxy", "PyAutoLens"):
+        h = head(f"/mnt/ral/jnightin/PyAuto/{r}")
+        if revs[r] != h:
+            raise SystemExit(f"MISMATCH {path}: {r} JSON {revs[r]} != {h}")
+    if d["device"]["backend"] != "gpu":
+        raise SystemExit(f"{path}: backend {d['device']['backend']}")
+    print("autoarray_imported_from", d.get("autoarray_imported_from"))
+    print("OK", path, "all_gates_pass", d.get("all_gates_pass"))
+PYEOF
+
+echo "=========================================="
+echo "loadavg: $(cat /proc/loadavg)"
+nvidia-smi --query-gpu=name,memory.used --format=csv || true
+echo "Finished."
+date
