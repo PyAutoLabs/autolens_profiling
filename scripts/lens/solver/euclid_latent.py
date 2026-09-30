@@ -23,8 +23,11 @@ key. The stub checks the shape and counts its calls; the linear-profile tracer t
 injected amplitudes into the source image summed on the uniform over-sample-4 grid.
 
 Validation (gates publication): injecting the stored fnnls ``x_ref`` must reproduce the corpus
-``latent_reference.eager_numpy`` and injecting ``pdip_raw``'s ``x`` its ``jit`` value, both to
-rel 1e-6. If either fails the cell writes nothing and exits 1.
+``latent_reference.eager_numpy`` and injecting ``pdip_raw``'s ``x`` the jitted latent of the
+library it runs against (``PDIP_RAW_JIT_EXPECTED``), both to rel 1e-6. If either fails the cell
+writes nothing and exits 1. Phase 2 (PyAutoArray#595) re-based the second leg: the corpus
+``latent_reference.jit`` (3.511093374, +5.76 %) is the capture-time *released* library's value
+and stays in the manifest as a record; library main now returns the polished iterate.
 
 Run from the repo root (needs the euclid pipeline checkout beside this repo, and its dataset)::
 
@@ -77,6 +80,20 @@ GROUP = "euclid_vis_lp"
 SYSTEM = "euclid_vis_lp_k0"
 VALIDATION_RTOL = 1.0e-6
 TEST_RTOL = 1.0e-3
+
+# The jitted ``total_source_flux`` the ``pdip_raw -> jit`` validation leg must reproduce.
+# Re-based in phase 2 for PyAutoArray#595 (merged 2026-09-30, merge 7a89e19a0): the jit path
+# (``solve_nnls_primal_raw_forward``) now returns the #573 polished iterate instead of the raw
+# forward stop, so injecting ``pdip_raw``'s ``x`` no longer reproduces the capture-time value
+# ``latent_reference.jit`` = 3.511093374207152 (+5.76e-2 vs eager, the released library before
+# #595), which this constant replaces. Value: the euclid test's own jitted
+# ``LatentEuclid.variables`` on library main 7a89e19a0, euclid pipeline 26e4385b, measured
+# 2026-09-30 (+7.47e-5 vs eager). The manifest keeps the old value as the capture record.
+PDIP_RAW_JIT_EXPECTED = 3.320127603567922
+PDIP_RAW_JIT_SOURCE = (
+    "jitted LatentEuclid.variables on PyAutoArray main 7a89e19a0 (post-#595), "
+    "euclid pipeline 26e4385b, 2026-09-30; replaces the pre-#595 released jit 3.511093374207152"
+)
 
 
 def _euclid_fit_factory():
@@ -137,11 +154,12 @@ def main() -> int:
     (system,) = [s for s in _corpus.load_corpus([GROUP]) if s.name == SYSTEM]
     group = next(g for g in _corpus.read_manifest()["groups"] if g["name"] == GROUP)
     ref = group["source"]["latent_reference"]
-    eager, jit = float(ref["eager_numpy"]), float(ref["jit"])
+    eager, jit_released = float(ref["eager_numpy"]), float(ref["jit"])
+    jit = PDIP_RAW_JIT_EXPECTED
 
     total_source_flux, info = _euclid_fit_factory()
 
-    # --- validation: x_ref -> eager, pdip_raw -> jit --------------------------------------
+    # --- validation: x_ref -> eager, pdip_raw -> jit (library main, post-#595) -------------
     flux_ref, n_ref = total_source_flux(system.x_ref)
     x_raw, _ = _solvers.CANDIDATES["pdip_raw"].fn(system.Q, system.q, system.meta)
     flux_raw, n_raw = total_source_flux(x_raw)
@@ -157,6 +175,7 @@ def main() -> int:
             "expected": jit,
             "rel": (flux_raw - jit) / jit,
             "stub_calls": n_raw,
+            "expected_source": PDIP_RAW_JIT_SOURCE,
         },
         "rtol": VALIDATION_RTOL,
     }
@@ -207,7 +226,11 @@ def main() -> int:
         "posthoc": "POST-HOC, NOT PRE-REGISTERED: an input to the phase-2 fix, not a verdict.",
         "system": f"{GROUP}/{SYSTEM}",
         "latent_key": "total_source_flux",
-        "latent_reference": {"eager_numpy": eager, "jit_released": jit},
+        "latent_reference": {
+            "eager_numpy": eager,
+            "jit_released": jit_released,
+            "jit_library_main": jit,
+        },
         "method": "reconstruction injected through inversion_util.reconstruction_positive_only_from "
         "into the eager NumPy fit; total_source_flux from "
         "LatentEuclid._source_flux_latents_on_uniform_grid",
