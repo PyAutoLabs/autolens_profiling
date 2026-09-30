@@ -320,9 +320,57 @@ def _row_wall(row: dict[str, str], where: str, problems: list[Problem]) -> float
     return None
 
 
+# RAL partition rule (2026-09-30): CPU-only jobs on the `gpu` partition must not
+# starve the A100s. euclid_dr1 CPU arrays once filled both A100 nodes' 124 CPUs and
+# left all 8 GPUs idle with GPU jobs pending. Only small CPU timing legs may run
+# there: <= GPU_PARTITION_CPU_MAX CPUs per task and, for an array, a throttle of
+# at most %GPU_PARTITION_ARRAY_THROTTLE_MAX. (The third leg of the rule — no GPU
+# job pending at submit time — is a submit-time check for the human; see
+# hpc/README.md "RAL partition rule".)
+GPU_PARTITION_CPU_MAX = 8
+GPU_PARTITION_ARRAY_THROTTLE_MAX = 2
+
+_PARTITION = re.compile(r"^#SBATCH\s+(?:--partition=|-p\s*)(\S+)", re.M)
+_GRES_GPU = re.compile(r"^#SBATCH\s+--gres=\S*gpu", re.M)
+_CPUS = re.compile(r"^#SBATCH\s+(?:--cpus-per-task=|-c\s*)(\d+)", re.M)
+_ARRAY = re.compile(r"^#SBATCH\s+(?:--array=|-a\s*)(\S+)", re.M)
+
+
+def check_gpu_partition_cpu_job(text: str) -> list[Problem]:
+    """A CPU-only (no ``--gres=gpu``) submit on the ``gpu`` partition must be a small leg."""
+    problems: list[Problem] = []
+    part = _PARTITION.search(text)
+    if not part or "gpu" not in part.group(1).split(","):
+        return problems
+    if _GRES_GPU.search(text):
+        return problems
+    cpus = _CPUS.search(text)
+    if cpus and int(cpus.group(1)) > GPU_PARTITION_CPU_MAX:
+        problems.append(
+            Problem(
+                f"CPU-only job on the gpu partition asks --cpus-per-task={cpus.group(1)} "
+                f"(> {GPU_PARTITION_CPU_MAX}): it starves the A100 nodes' CPUs. Use `ral`, "
+                f"or bound it (hpc/README.md, RAL partition rule)."
+            )
+        )
+    array = _ARRAY.search(text)
+    if array:
+        spec = array.group(1)
+        throttle = re.search(r"%(\d+)$", spec)
+        if not throttle or int(throttle.group(1)) > GPU_PARTITION_ARRAY_THROTTLE_MAX:
+            problems.append(
+                Problem(
+                    f"CPU-only array on the gpu partition (--array={spec}) needs a throttle "
+                    f"of at most %{GPU_PARTITION_ARRAY_THROTTLE_MAX} so it cannot fill the "
+                    f"A100 nodes' CPUs (hpc/README.md, RAL partition rule)."
+                )
+            )
+    return problems
+
+
 def check_text(text: str) -> list[Problem]:
     """Every violation in one submit script."""
-    problems: list[Problem] = []
+    problems: list[Problem] = check_gpu_partition_cpu_job(text)
     rows = parse_basis_rows(text)
 
     if not rows:

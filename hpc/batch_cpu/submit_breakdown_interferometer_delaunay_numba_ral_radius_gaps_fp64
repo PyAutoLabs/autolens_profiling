@@ -19,7 +19,8 @@
 # SINGLE-THREAD SCOPE (the #235 discipline): NUMBA_NUM_THREADS=1, BLAS family 1, memo off;
 # --cpus-per-task=4 is headroom for the one process, not a thread budget.
 #
-# PARTITION: `gpu` with NO --gres (CPUs only; #265 quiet-host precedent). Host name and
+# PARTITION: `gpu` with NO --gres (CPUs only; #265 quiet-host precedent), <= 8 CPUs and the
+# array throttled to %2 (RAL partition rule, hpc/README.md). Host name and
 # host_load_avg_* are recorded per task; tasks may share a node.
 #
 # WALL-BASIS:
@@ -39,7 +40,7 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32gb
 #SBATCH --time=4:00:00
-#SBATCH --array=0-3
+#SBATCH --array=0-3%2
 #SBATCH -o output/output.%A_%a.out
 #SBATCH -e error/error.%A_%a.err
 #SBATCH --mail-type=END,FAIL
