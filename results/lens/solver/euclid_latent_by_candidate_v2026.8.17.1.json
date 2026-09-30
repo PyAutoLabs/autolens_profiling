@@ -12,7 +12,7 @@
   "cache_fresh": true,
   "provenance": {
    "provenance_schema": 1,
-   "captured_at": "2026-09-30T10:37:56Z",
+   "captured_at": "2026-09-30T16:56:40Z",
    "host": "DESKTOP-H143S82",
    "slurm": {
     "job_id": null,
@@ -20,23 +20,23 @@
     "array_task_id": null
    },
    "loadavg_at_import": [
-    2.117,
-    1.92,
-    1.733
+    6.957,
+    3.171,
+    1.665
    ],
    "loadavg_at_write": [
-    2.117,
-    1.92,
-    1.733
+    6.957,
+    3.171,
+    1.665
    ],
-   "profiling_revision": "8adb629d658a143498ae2555ab1601dc72dca032",
+   "profiling_revision": "44381ec8d25d2f877f9853224bb8dc75b426ecff",
    "library_revisions": {
-    "autolens_profiling": "8adb629d658a143498ae2555ab1601dc72dca032",
+    "autolens_profiling": "44381ec8d25d2f877f9853224bb8dc75b426ecff",
     "PyAutoNerves": "1ec1c829acec0ce85a7eddf791eb66574d507884",
-    "PyAutoFit": "3fa8cf7f26dd51c9d00199f37176cc68ffb48356",
-    "PyAutoArray": "d4298445e8fc2c93be4b9312b480808b05047805",
-    "PyAutoGalaxy": "4900e6809101aa9e40ce40dc1bfa0c89874939ee",
-    "PyAutoLens": "092897e48adaed46c00574032bbdb59d340d57e0"
+    "PyAutoFit": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+    "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+    "PyAutoGalaxy": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+    "PyAutoLens": "efd13c4cdfb7ab0d4a37549468998e06e31f27d7"
    },
    "library_versions": {
     "PyAutoNerves": "2026.8.17.1",
@@ -61,7 +61,8 @@
  "latent_key": "total_source_flux",
  "latent_reference": {
   "eager_numpy": 3.3198794874035915,
-  "jit_released": 3.511093374207152
+  "jit_released": 3.511093374207152,
+  "jit_library_main": 3.320127603567922
  },
  "method": "reconstruction injected through inversion_util.reconstruction_positive_only_from into the eager NumPy fit; total_source_flux from LatentEuclid._source_flux_latents_on_uniform_grid",
  "euclid": {
@@ -78,10 +79,11 @@
    "stub_calls": 1
   },
   "pdip_raw_to_jit": {
-   "value": 3.5110933039799486,
-   "expected": 3.511093374207152,
-   "rel": -2.0001519789772115e-08,
-   "stub_calls": 1
+   "value": 3.320127537168044,
+   "expected": 3.320127603567922,
+   "rel": -1.999919459993099e-08,
+   "stub_calls": 1,
+   "expected_source": "jitted LatentEuclid.variables on PyAutoArray main 7a89e19a0 (post-#595), euclid pipeline 26e4385b, 2026-09-30; replaces the pre-#595 released jit 3.511093374207152"
   },
   "rtol": 1e-06,
   "passed": true
@@ -108,9 +110,9 @@
   {
    "candidate": "pdip_raw",
    "posthoc": false,
-   "total_source_flux": 3.5110933039799486,
-   "rel_vs_eager": 0.0575966137632006,
-   "passes_test_rtol": false,
+   "total_source_flux": 3.320127537168044,
+   "rel_vs_eager": 7.471649660589918e-05,
+   "passes_test_rtol": true,
    "converged": true,
    "iterations": 24
   },

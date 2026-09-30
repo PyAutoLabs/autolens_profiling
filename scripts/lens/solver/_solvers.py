@@ -356,9 +356,12 @@ def _build_registry() -> dict[str, Candidate]:
     add(
         _jax_candidate(
             "pdip_raw",
-            "Released default for linear-object-only (MGE) inversions: forward PDIP on the raw "
-            "(Q, q) at data_scaled_solver_tol(q), cap 50; the library returns y = x / D and the "
-            "reconstruction y * D, reproduced exactly. Extras: the backward-pass polish / "
+            "Library default for linear-object-only (MGE) inversions: forward PDIP on the raw "
+            "(Q, q) at data_scaled_solver_tol(q), cap 50; the library maps the iterate to "
+            "y = x / D and, since PyAutoArray#595, returns the #573 polish of it (at most "
+            "RAW_POLISH_MAX_ITER tight PDIP iterations on (Q_pc, q_pc), kept iff converged and "
+            "interior) — reconstruction y * D, reproduced exactly. converged / iterations are "
+            "the raw forward solve's (the polish is not counted). Extras: the polish / "
             "relaxed-KKT status from raw_forward_backward_status (not timed).",
             "autoarray.util.jax_nnls.solve_nnls_primal_raw_forward (+ raw_forward_backward_status)",
             _build_pdip_raw(50),
@@ -372,7 +375,8 @@ def _build_registry() -> dict[str, Candidate]:
                 f"Raw forward PDIP with the data-scaled tolerance at factor {label} in place of "
                 f"DATA_SCALED_TOL_FACTOR (tol = {label} * n * eps * max(1, max|q|), i.e. "
                 "data_scaled_solver_tol(q) * factor / DATA_SCALED_TOL_FACTOR), cap 50. The "
-                "1e-2 row reproduces the released tolerance through solve_nnls directly.",
+                "1e-2 row reproduces the released tolerance through solve_nnls directly, with "
+                "no polish (so, since PyAutoArray#595, not pdip_raw's value).",
                 "autoarray.util.jax_nnls.solve_nnls + data_scaled_solver_tol",
                 _build_pdip_raw_tol(factor),
             )

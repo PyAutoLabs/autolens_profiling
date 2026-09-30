@@ -814,7 +814,13 @@ def _render_solver_euclid_latent_table() -> str:
     rtol = data.get("test_rtol")
     rows = [
         f"_System `{data.get('system')}`; eager NumPy `total_source_flux` "
-        f"{ref.get('eager_numpy')}, released jit {ref.get('jit_released')}; validation "
+        f"{ref.get('eager_numpy')}, released jit {ref.get('jit_released')}"
+        + (
+            f", library-main jit {ref['jit_library_main']}"
+            if ref.get("jit_library_main") is not None
+            else ""
+        )
+        + "; validation "
         f"{'passed' if val.get('passed') else 'FAILED'} (x_ref rel "
         f"{_sci((val.get('x_ref_to_eager') or {}).get('rel'))}, pdip_raw rel "
         f"{_sci((val.get('pdip_raw_to_jit') or {}).get('rel'))}); the euclid test's rtol is "

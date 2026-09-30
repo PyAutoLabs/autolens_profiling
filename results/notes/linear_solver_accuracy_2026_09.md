@@ -1,4 +1,4 @@
-# Linear-solver accuracy study — ledger (phase 1, 2026-09)
+# Linear-solver accuracy study — ledger (phases 1–2, 2026-09)
 
 Campaign page: `wiki/campaigns/linear_solver_accuracy.md`. Package: `scripts/lens/solver/`.
 
@@ -84,7 +84,10 @@ deterministic on this host; only wall times move.
 | `pdip_raw_polish` | 0/81 | 0.219 | 4.96e-2 | 8.2e-16 | 3.2e-16 | 23 | 30 | 1.72 |
 | `certified` | 48/81 | 119 | 7.5e-2 | 2.6e-4 | 1.8e-2 | 16 | 16 | 1.12 |
 
-(`pdip_raw_tol_1e-2` reproduces `pdip_raw` exactly through `solve_nnls` directly, as designed.)
+(`pdip_raw_tol_1e-2` reproduces `pdip_raw` exactly through `solve_nnls` directly, as designed.
+(phase 1; no longer true after #595 — see [Phase 2](#phase-2-2026-09-30--library-fix-shipped-pyautoarray595):
+`pdip_raw` is now polished, the `tol_1e-2` row is not, and the row now reproduces the *pre-fix*
+`pdip_raw`.))
 
 ## Admissibility (the rule as written)
 
@@ -219,7 +222,8 @@ captured JAX one.
 | `pdip_raw_tol_1e-5` (post-hoc) | 3.3215684 | +5.1e-4 | yes | yes | 28 |
 | `pdip_raw_tol_1e-6` (post-hoc) | 3.3198794 | -3.3e-8 | yes | no | 50 |
 
-(`pdip_raw_tol_1e-2` is identical to `pdip_raw`.) Which candidates would turn the euclid test
+(`pdip_raw_tol_1e-2` is identical to `pdip_raw`. (phase 1; no longer true after #595 — see Phase 2:
+it still gives 3.5110933, the pre-fix value.)) Which candidates would turn the euclid test
 green, taken on their own: the forward polish (+7.5e-5, 30 iterations), the tolerance at 1e-5
 (+5.1e-4, 28), and jaxnnls's tolerance with a cap above 50 (exact, 51). The intensity-sum proxy of
 criterion 3 is much stricter than the latent: the polish's source-flux proxy error is 4.96e-2 but
@@ -288,3 +292,112 @@ one the numbers support.
 - Corpus: [`corpus/manifest.json`](../lens/solver/corpus/manifest.json).
 - Package and how to re-run: [`scripts/lens/solver/README.md`](../../scripts/lens/solver/README.md).
 - Campaign page: [`wiki/campaigns/linear_solver_accuracy.md`](../../wiki/campaigns/linear_solver_accuracy.md).
+
+## Phase 2 (2026-09-30) — library fix shipped: PyAutoArray#595
+
+**What changed in the library.** PyAutoArray#573 had added a *backward-pass* polish to the raw
+mode: after the raw forward PDIP stop, at most `RAW_POLISH_MAX_ITER` (10) PDIP iterations on the
+Jacobi-scaled system `(Q_pc, q_pc)` at jaxnnls's tight tolerance, warm-started from the mapped
+iterate `(y, s/D, z·D)` and kept only if it converges to a finite, strictly interior point — but
+used that point only for the gradient. The forward value stayed the raw stop, which is the value
+phase 1 found blind to flux on reference-inactive columns. PyAutoArray#595 (issue #594; merged
+2026-09-30 as merge `7a89e19a0`: red regression `7e62fa4d`, fix `31b1c2d7`, test-tolerance
+follow-up `42c52358`) returns the polished iterate as the forward value too, via one shared
+`_raw_forward_polished` that the custom-vjp primal and the forward rule both call, so plain,
+jitted and differentiated calls return the same `y`. This is option 2 of "What phase 2 should
+implement" (the forward polish), not option 1 (a solution-based stop). `converged` and the
+returned iteration count are still the raw forward solve's; the polish is not counted.
+
+**Re-run.** All five cells were re-run on 2026-09-30 16:54–16:57 UTC against the merged library
+(PyAutoArray `7a89e19a09760a0daf22f40e8b111b5388767f73`, recorded in every JSON's
+`device.provenance.library_revisions`; PyAutoFit `b13169e2`, PyAutoGalaxy `4c834ced`, PyAutoLens
+`efd13c4c`, PyAutoNerves `1ec1c829`; profiling `44381ec`; same host, jax 0.10.2). Walls: `accuracy.py`
+16 s, `--groups slam_fixture_571` 12 s, `--posthoc` 42 s, `early_stopping.py` 25 s,
+`--groups slam_fixture_571` 19 s, `euclid_latent.py` 33 s. The numbers reproduce the verifier's
+run on the pre-merge branch head to every quoted digit (the only library commit in between,
+`42c52358`, is a test-file change). Every candidate other than `pdip_raw` (and the
+`pdip_raw_cap_*` sweep, which calls the same library entry) is unchanged except wall time.
+
+**`pdip_raw` before and after** (81 systems, CPU fp64):
+
+| | Unconverged | Median / max iters | Worst abs(flux_inactive_rel) | Median flux_inactive_rel | Worst abs(flux_rel_all) | Worst abs(flux_rel_source) | Worst objective gap | Worst amp_rel_max_sig | Worst KKT |
+|---|---|---|---|---|---|---|---|---|---|
+| pre-#595 (phase 1, `d4298445`) | 0/81 | 18 / 24 | 0.115 | 3.2e-5 | 0.115 | 16.4 | 2.6e-12 | 27.0 | 2.7e-14 |
+| post-#595 (`7a89e19a0`) | 0/81 (48/48 `slam48_hst`) | 18 / 24 † | 3.31e-4 | 1.7e-7 | 3.31e-4 | 4.96e-2 (euclid only) | 8.2e-16 | 0.219 | 3.2e-16 |
+
+† Forward iterations only. The polish adds 1–7 more (5 on 46/81 systems, 6 on 21) and is
+accepted on 81/81 (`backward_polish_converged` = 1 everywhere); counting them, as the phase-1
+`pdip_raw_polish` candidate does, gives median 23 / max 30. Every metric field of every
+`pdip_raw` row is **identical** to the phase-1 `pdip_raw_polish` row on the same system (81/81),
+so the library now ships exactly the candidate phase 1 measured. On the 8 `slam_fixture_571`
+systems the worst source-flux error is 4.9e-5 and the worst significant-column error 5.0e-6. The
+0.219 `amp_rel_max_sig` is `slam_spread_hst/noise_x3_v32`, the flat-direction system every
+accurate candidate shares (see the admissibility notes); its source-flux error is 1.5e-5.
+Median warm wall 1.16 ms (pre-fix 0.99–1.36 ms across runs; indicative only).
+
+**The pre-registered rule on the fixed `pdip_raw`.** Still **not admissible as written**, for the
+rule weaknesses phase 1 already recorded; the library shipped on the flux-metric and latent
+evidence, not on this rule (which is not re-based here).
+
+| Criterion | Verdict | Why |
+|---|---|---|
+| 1. converged 100 % | **pass** | 81/81, all 48 `slam48_hst` included |
+| 2. sig ≤ 1e-3 and abs(flux_rel_source) ≤ 1e-4 | FAIL on 2 systems | `euclid_vis_lp_k0` flux_rel_source 4.96e-2 (its sig is 5e-13); `slam_spread_hst/noise_x3_v32` sig 0.219 (the flat direction; flux 1.5e-5) |
+| 3. euclid abs(flux_rel_source) ≤ 1e-4 | FAIL | 4.96e-2 — but the euclid latent itself is +7.47e-5 (below). The intensity-sum proxy is far stricter than the witness it stands for: euclid's single active source column carries ~0.4 % of the reference flux, so a small spurious amplitude on inactive source columns is a large fraction of the *source* sum, while those compact Gaussians contribute only 7.5e-5 to `total_source_flux` |
+| 4. KKT ≤ 10x `pdip_jacobi` | FAIL 5/52 | all at the floating-point floor: residuals 1.1e-16 – 3.2e-16 against jacobi's 3.4e-18 – 2.7e-17 (worst 32x). Pre-fix 8/52, worst 971x |
+
+**Euclid latent by candidate** (`euclid_latent.py`, euclid pipeline `26e4385b`). The validation
+leg `pdip_raw -> jit` was re-based from the capture-time released jit 3.511093374 to the jitted
+`LatentEuclid.variables` on library main, 3.320127604 (measured 2026-09-30 through the euclid
+test's own code; `euclid_latent.py`'s `PDIP_RAW_JIT_EXPECTED`); the manifest keeps the old value as
+the capture record. **Validation passed:** `x_ref` -> eager rel -3.26e-8, `pdip_raw` -> main jit
+rel -2.0e-8 (the same -2e-8 eager-vs-JAX system offset as phase 1).
+
+| Candidate | total_source_flux | rel vs eager 3.3198795 | Within the test's 1e-3 | Converged | Iterations |
+|---|---|---|---|---|---|
+| `fnnls` | 3.3198794 | -3.26e-8 | yes | yes | 8 |
+| `pdip_raw` (post-#595) | 3.3201275 | +7.47e-5 | **yes** | yes | 24 (forward) |
+| `pdip_raw` (pre-#595, phase 1) | 3.5110933 | +5.76e-2 | no | yes | 24 |
+| `pdip_raw_polish` | 3.3201275 | +7.47e-5 | yes | yes | 30 |
+| `pdip_jacobi` | 3.3202250 | +1.04e-4 | yes | yes | 19 |
+| `pdip_raw_tol_1e-2` | 3.5110933 | +5.76e-2 | no | yes | 24 |
+| `pdip_raw_tol_jaxnnls` | 3.3198794 | -3.26e-8 | yes | no | 50 |
+| `certified` | 3.3198794 | -3.26e-8 | yes | yes | 8 |
+
+The euclid pipeline's `tests/test_compute_latent_variable.py` passes 19/19 on library main
+(`JIT_VS_EAGER_REL` 1e-3), measured by the phase-2 verifier; the jitted latent above is +7.47e-5.
+
+**Correction: `pdip_raw_tol_1e-2` no longer reproduces `pdip_raw`.** It calls `solve_nnls`
+directly at the released tolerance with no polish, so since #595 it reproduces the *pre-fix*
+`pdip_raw` (worst source-flux 16.4, euclid latent +5.76e-2) rather than the current one. The
+phase-1 sentences saying otherwise are annotated above; the candidate descriptions in
+`_solvers.py` and the package README say so.
+
+**Early stopping after the fix.** The cap sweep calls the library entry, so the polish now
+follows every capped solve. From cap 24 up every row equals the fixed `pdip_raw` above (worst
+`flux_inactive_rel` 3.31e-4, source-flux 4.96e-2). Below it the converged counts are unchanged
+(0 / 1 / 15 of 81 at caps 8 / 12 / 16) and the worst-case errors are unchanged; only the cap-16 median `flux_inactive_rel` moves,
+1.2e-4 -> 2.0e-7. Caps below 24 remain unsafe.
+
+**Artefacts were overwritten in place.** The cells stamp `al.__version__`, which is `2026.8.17.1`
+on a source checkout, so the re-run rewrote every `results/lens/solver/*_v2026.8.17.1.{json,png}`
+(both `all` and `slam_fixture_571` summaries, the post-hoc summary and the euclid latent JSON).
+That is deliberate: the artefacts are "current library main" by contract. The pre-fix versions
+are at profiling commit **`3ad68af`** (git history), and their numbers are in the phase-1 tables
+above.
+
+**What phase 3 inherits.**
+
+- The shipped forward value is the polished iterate: 0/81 unconverged, `flux_inactive_rel` ≤
+  3.31e-4, euclid latent +7.47e-5 (inside the pipeline's 1e-3 with ~13x headroom), at 1–7 extra
+  PDIP iterations that the reported count hides — a GPU/vmap campaign should time the call, not
+  read the counter.
+- Option 1 (a solution-based stop / active-set certificate) is still unbuilt; the polish's own
+  stop is jaxnnls's absolute KKT tolerance, which on euclid leaves 3.3e-4 on inactive columns.
+  Anything that needs better than that on euclid-like systems still needs option 1.
+- The pre-registered rule needs re-basing before it can admit anything accurate: criterion 3
+  should gate on the latent (or on `flux_inactive_rel`), not the intensity-sum proxy; criterion 4
+  needs an absolute floor; criterion 2's significance floor admits the `noise_x3_v32` flat
+  direction.
+- The euclid cell's validation expectation is pinned to the library-main jit value; a future
+  solver change must re-measure and re-base it the same way.
