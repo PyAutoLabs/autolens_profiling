@@ -56,6 +56,13 @@ export PROJECT_PATH="$AP_ROOT"
 export PYAUTO_HPC_BASE="${PYAUTO_HPC_BASE:-/mnt/ral/jnightin/PyAuto}"
 echo "AP_ROOT=$AP_ROOT"
 source $AP_ROOT/activate.sh
+# LIBRARY BASE: $PYAUTO_LIB_BASE (default: the shared mirror, i.e. exactly the copied submit).
+# #356 ran with a PRIVATE clone of the library mains (sbatch --export=ALL,PYAUTO_LIB_BASE=...)
+# because the shared mirror was behind main while a production campaign ran on it, so it
+# was not pulled. The five libraries are prepended to PYTHONPATH and provenance is checked
+# against that base.
+export PYAUTO_LIB_BASE="${PYAUTO_LIB_BASE:-$PYAUTO_HPC_BASE}"
+export PYTHONPATH="$PYAUTO_LIB_BASE/PyAutoNerves:$PYAUTO_LIB_BASE/PyAutoFit:$PYAUTO_LIB_BASE/PyAutoArray:$PYAUTO_LIB_BASE/PyAutoGalaxy:$PYAUTO_LIB_BASE/PyAutoLens:$PYTHONPATH"
 
 export OMP_NUM_THREADS=1
 export MKL_NUM_THREADS=1
@@ -80,9 +87,9 @@ echo "loadavg:        $(cat /proc/loadavg)"
 echo "Task:           $TASK -> $INSTRUMENT r$RADIUS"
 echo "Thread env:     OMP=$OMP_NUM_THREADS MKL=$MKL_NUM_THREADS OPENBLAS=$OPENBLAS_NUM_THREADS NUMBA=$NUMBA_NUM_THREADS"
 
-echo "=== source revisions (shared mirror) ==="
+echo "=== source revisions (PYAUTO_LIB_BASE=$PYAUTO_LIB_BASE) ==="
 for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
-    printf '%-14s %s\n' "$r" "$(git -C $PYAUTO_HPC_BASE/$r rev-parse HEAD 2>&1)"
+    printf '%-14s %s\n' "$r" "$(git -C $PYAUTO_LIB_BASE/$r rev-parse HEAD 2>&1)"
 done
 echo "AP_ROOT rev:    $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
 echo "AP_ROOT branch: $(git -C $AP_ROOT rev-parse --abbrev-ref HEAD 2>&1)"
@@ -94,7 +101,7 @@ python3 -c "
 import importlib.metadata as m, os, autoarray, autolens, numba
 for mod in (autoarray, autolens):
     print(f'{mod.__name__}.__file__ =', mod.__file__)
-    assert os.path.realpath(mod.__file__).startswith(os.path.realpath(os.environ['PYAUTO_HPC_BASE'])), f'{mod.__name__} not from the shared mirror'
+    assert os.path.realpath(mod.__file__).startswith(os.path.realpath(os.environ['PYAUTO_LIB_BASE'])), f'{mod.__name__} not from PYAUTO_LIB_BASE'
 print('numba', numba.__version__, 'nufftax', m.version('nufftax'))
 assert tuple(int(x) for x in m.version('nufftax').split('.')[:2]) >= (0, 6), 'nufftax below the 0.6.1 floor'
 from autoarray.inversion.inversion.interferometer.sparse import InversionInterferometerSparse as S

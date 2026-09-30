@@ -31,6 +31,13 @@ export PROJECT_PATH="$AP_ROOT"
 export PYAUTO_HPC_BASE="${PYAUTO_HPC_BASE:-/mnt/ral/jnightin/PyAuto}"
 echo "AP_ROOT=$AP_ROOT"
 source $AP_ROOT/activate.sh
+# LIBRARY BASE: $PYAUTO_LIB_BASE (default: the shared mirror, i.e. exactly the copied submit).
+# #356 ran with a PRIVATE clone of the library mains (sbatch --export=ALL,PYAUTO_LIB_BASE=...)
+# because the shared mirror was behind main while a production campaign ran on it, so it
+# was not pulled. The five libraries are prepended to PYTHONPATH and provenance is checked
+# against that base.
+export PYAUTO_LIB_BASE="${PYAUTO_LIB_BASE:-$PYAUTO_HPC_BASE}"
+export PYTHONPATH="$PYAUTO_LIB_BASE/PyAutoNerves:$PYAUTO_LIB_BASE/PyAutoFit:$PYAUTO_LIB_BASE/PyAutoArray:$PYAUTO_LIB_BASE/PyAutoGalaxy:$PYAUTO_LIB_BASE/PyAutoLens:$PYTHONPATH"
 
 export JAX_PLATFORM_NAME=cuda
 export JAX_PLATFORMS=cuda,cpu
@@ -49,16 +56,16 @@ echo "Inversion path: library W~ route (--sparse) + dense arms + W~ arm"
 
 cd $AP_ROOT
 
-echo "=== source revisions (shared mirror) ==="
+echo "=== source revisions (PYAUTO_LIB_BASE=$PYAUTO_LIB_BASE) ==="
 for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
-    printf '%-14s %s\n' "$r" "$(git -C $PYAUTO_HPC_BASE/$r rev-parse HEAD 2>&1)"
+    printf '%-14s %s\n' "$r" "$(git -C $PYAUTO_LIB_BASE/$r rev-parse HEAD 2>&1)"
 done
 echo "AP_ROOT rev:   $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
 python3 -c "
 import importlib.metadata as m, os, autoarray, autolens, jax
 for mod in (autoarray, autolens):
     print(mod.__name__ + '.__file__ =', mod.__file__)
-    assert os.path.realpath(mod.__file__).startswith(os.path.realpath(os.environ['PYAUTO_HPC_BASE'])), f'{mod.__name__} not from the shared mirror'
+    assert os.path.realpath(mod.__file__).startswith(os.path.realpath(os.environ['PYAUTO_LIB_BASE'])), f'{mod.__name__} not from PYAUTO_LIB_BASE'
 print('nufftax', m.version('nufftax'), 'jax', jax.__version__, 'x64', jax.config.x64_enabled)
 assert tuple(int(x) for x in m.version('nufftax').split('.')[:2]) >= (0, 6), 'nufftax below the 0.6.1 floor'
 " || exit 3
