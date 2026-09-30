@@ -7,9 +7,9 @@
 **Headline:** A100 alma MGE 939.6 ms (chunked; dense path OOMs asking 61.4 GiB) → 2.69 ms on the W~ route; jvla 24.2 s → 16.7 ms.
 **Library PRs:** PyAutoArray#576 (+ PyAutoGalaxy#629, PyAutoLens#750), PyAutoArray#578 (released 2026.9.27.1); PyAutoArray#540, PyAutoArray#541, PyAutoArray#544, PyAutoArray#545 (released 2026.9.11.1; library speed-ups with no profiling note, see the 2026-09-27 journal entry); PyAutoArray#582 (merged, UNRELEASED).
 **Profiling PRs:** #312, #313, #319, #324, #328, #333; phase 3 under issue #348 (PR not yet opened).
-**Ledger:** [interferometer_mge_breakdown_2026_09.md](../../results/notes/interferometer_mge_breakdown_2026_09.md), [interferometer_mesh_a100_breakdown_2026_09.md](../../results/notes/interferometer_mesh_a100_breakdown_2026_09.md), [interferometer_mesh_cpu_breakdown_2026_09.md](../../results/notes/interferometer_mesh_cpu_breakdown_2026_09.md); older context [numba_interferometer_verdict.md](../../results/notes/numba_interferometer_verdict.md).
+**Ledger:** [interferometer_likelihood_decision_matrix_2026_09.md](../../results/notes/interferometer_likelihood_decision_matrix_2026_09.md) (phase 4, the user-facing matrix), [interferometer_mge_breakdown_2026_09.md](../../results/notes/interferometer_mge_breakdown_2026_09.md), [interferometer_mesh_a100_breakdown_2026_09.md](../../results/notes/interferometer_mesh_a100_breakdown_2026_09.md), [interferometer_mesh_cpu_breakdown_2026_09.md](../../results/notes/interferometer_mesh_cpu_breakdown_2026_09.md); older context [numba_interferometer_verdict.md](../../results/notes/numba_interferometer_verdict.md).
 **Mind contract:** epic `interferometer-likelihood-campaign` (named in the records; not in `epics.md`); phase map `draft/research/autolens_profiling/interferometer_mesh_breakdown_numba_cpu_decision_matrix.md`.
-**Next:** mesh phase 4 (numba-vs-FFT decision matrix). It first needs the missing RAL CPU radius rows for sma and alma_high at r2.0 / r5.0; only alma has CPU radius rows.
+**Next:** phase 4 (decision matrix, issue #356) is written; ship it, then close the campaign. Any cells still marked pending in the matrix note are listed there with their RAL job ids.
 
 ## Why this campaign
 
@@ -35,7 +35,7 @@ has routed numba vs FFT by nnz/col since PyAutoArray #544/#545.
 | 3/3 p1 mesh CPU | 2026-09-27 | numba `direct_conv` vs NumPy FFT through the library dispatch | not recorded | RAL CPU r3.5 numba/FFT ratios 0.25 (sma) … 2.05 (alma_high rect) | not recorded here (see ledger) | #328 |
 | 3/3 p2 crossover | 2026-09-27 | In-situ crossover on the cached library; gate verdict | gate evaluated against the interpolated crossover | crossover nnz/col ≈ 66 Delaunay / ≈ 72 rect; gate stays 60, retune to ~70 drafted | 358985, 358986, 359000 | #333 (library: PyAutoArray#582) |
 | 3/3 p3 radius sweep | 2026-09-28 | A100 fp64 rows at mask r2.0 / r5.0 beside the r3.5 baseline | not recorded (witness: sparse class, step sum within 10 %) | F follows the extent, ~0.8–1.2 µs per extent pixel; alma_high r5.0 190.87 / 198.55 ms, no sparse OOM | 366895, 366896 (tasks 2–5), 366907, 366908 | issue #348 (PR pending) |
-| 3/3 p4 decision matrix | — | numba vs FFT decision matrix | — | not started | — | — |
+| 3/3 p4 decision matrix | 2026-09-30 | Which interferometer likelihood path and device, by N_vis × mask × source? | witness: numba arm on `InversionInterferometerSparseNumba`, numba vs FFT ≤ 0.5 nats, step sum within 10 %, CPU vs A100 ≤ 1e-3 nats | matrix + 5-rule draft; per-call cost follows masked pixels, not N_vis; A100 W~ wins 8–100× on meshes; MGE always W~ (see note for cells still pending) | 375977–375984 | issue #356 (PR pending) |
 
 ## What shipped and where it is
 
@@ -58,7 +58,7 @@ config) and green at 1, 1. Both counts are right; see Caveats.
 
 ## Open / parked / drafts
 
-- Mesh phase 4 (decision matrix; needs sma / alma_high CPU radius rows first): `draft/research/autolens_profiling/interferometer_mesh_breakdown_numba_cpu_decision_matrix.md`.
+- Mesh phase 4 (decision matrix, issue #356): in flight on `feature/interferometer-decision-matrix`; prompt `draft/research/autolens_profiling/interferometer_mesh_breakdown_numba_cpu_decision_matrix.md`.
 - `draft/research/autolens_profiling/interferometer_nnls_memo_scattered_stream_guard.md` — fnnls warm-start memo guard.
 - `draft/research/autolens_profiling/interferometer_w_tilde_fft_size_levers.md` — F extent / FFT size.
 - `draft/research/autolens_profiling/interferometer_fixed_mapper_curvature_preload.md` — fixed-mapper curvature preload.
@@ -103,3 +103,13 @@ Issue #348. There are 12 new A100 fp64 rows (sma / alma / alma_high × Delaunay-
 - F costs ~0.8–1.2 µs per extent pixel at every instrument. alma r5.0 (200², 1M visibilities, F 37.68 ms) costs more than alma_high r2.0 (160², 5M visibilities, F 20.74 ms).
 - No sparse leg OOMs, including alma_high r5.0 at vmap b16. alma dense OOMs at every radius, because T is set by N_vis × S. Step sum / full JIT is 1.002–1.051.
 - For phase 4: only alma has RAL CPU radius rows (r2.0 / 4.25 / 5.0 / 6.0). sma and alma_high CPU rows at r2.0 / r5.0 must be added before the CPU-vs-A100 witness.
+
+### 2026-09-30 — phase 4: the decision matrix
+
+Issue #356. The [decision-matrix note](../../results/notes/interferometer_likelihood_decision_matrix_2026_09.md) puts every committed interferometer row on one grid: N_vis (sma 190 / sdp81 1.08e5 / alma 1e6 / alma_high 5e6 / jvla 2.5e7) × mask r2.0 / 3.5 / 5.0 × source (MGE-20, Delaunay-1500, rect 39²) × path (CPU numba, CPU NumPy FFT, CPU JAX, A100 W~ sparse, A100 dense). Every cell is filled or listed as blocked / not measured with a citation.
+
+- New: RAL CPU radius-gap cells at sma and alma_high × r2.0 / r5.0 (arrays 375977 Delaunay, 375978 rect) and an **sdp81** preset — the real SDP.81 uv coverage (108,384 visibilities) on the alma grid with the simulated lens — with CPU (375979 / 375980) and A100 (375981–375984: Delaunay, rect, MGE dense, MGE W~) rows.
+- The new cells ran on the library mains from a private RAL clone (`PYAUTO_LIB_BASE`), because the shared mirror was behind main and in use by another campaign.
+- Headline: per-call cost follows the masked-pixel count, not N_vis (alma r5.0 at 1M visibilities costs more than alma_high r2.0 at 5M, on CPU and A100); the packaged numba gate of 60 routes the measured CPU cells to the faster arm; the A100 W~ path is 8–100× faster than the best single-thread CPU arm on meshes.
+- One pre-existing cell misses the new CPU-vs-A100 1e-3-nat bar: alma_high r3.5 rect, 1.5e-3 nats (PDIP vs fnnls on the edge-zeroed subset; 330× inside the 0.5-nat evidence bar).
+

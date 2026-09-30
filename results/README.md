@@ -15,7 +15,10 @@ PyAutoArray #553–#555 were released in 2026.9.19.1. The run-time-over-time vie
 [`../dashboard/`](../dashboard/index.html) (published at
 <https://pyautolabs.github.io/autolens_profiling/>), rendered by
 `scripts/misc/tooling/build_dashboard.py`: one point per release per cell × config, qualified on
-the provenance block against `hpc/release_sweep.conf`.
+the provenance block against `hpc/release_sweep.conf`. For interferometer fits, the
+[decision matrix](notes/interferometer_likelihood_decision_matrix_2026_09.md) says which
+likelihood path and device to use by N_vis × mask × source (MGE-20, Delaunay-1500, rectangular),
+with per-call ms, setup cost, host memory and an indicative time per fit.
 
 ## Sections
 

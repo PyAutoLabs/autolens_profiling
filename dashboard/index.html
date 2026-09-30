@@ -47,7 +47,7 @@ footer { margin-top: 32px; color: var(--ink-3); font-size: 12px; border-top: 1px
 </style></head><body>
 <header>
 <h1>PyAuto <span>Profiling</span> — run time over time</h1>
-<p class="meta">Per-call likelihood cost per PyAutoLens release, one panel per cell, one line per sweep config. <span class="badge green">green</span> 145 series across 61 cells and 4 releases; no drift. Rendered 2026-09-28T19:52:59Z from <code>results/</code> by <code>build_dashboard.py</code>; reference host <code>euclid-ral-gpu-2</code>, load-average cap 8.0. Hollow markers are rows without a provenance block or off the reference host; refused rows are listed at the foot. This page renders and holds timing history; it judges no lever (<a href="https://github.com/PyAutoLabs/autolens_profiling/blob/main/wiki/index.md">campaign index</a>).</p>
+<p class="meta">Per-call likelihood cost per PyAutoLens release, one panel per cell, one line per sweep config. <span class="badge green">green</span> 145 series across 61 cells and 4 releases; no drift. Rendered 2026-09-30T19:43:00Z from <code>results/</code> by <code>build_dashboard.py</code>; reference host <code>euclid-ral-gpu-2</code>, load-average cap 8.0. Hollow markers are rows without a provenance block or off the reference host; refused rows are listed at the foot. This page renders and holds timing history; it judges no lever (<a href="https://github.com/PyAutoLabs/autolens_profiling/blob/main/wiki/index.md">campaign index</a>).</p>
 </header>
 <h2>runtime</h2><div class="grid">
 <div class="panel"><h3><code>imaging/delaunay/hst</code> <span class="badge improved">improved</span></h3>
@@ -1920,5 +1920,14 @@ footer { margin-top: 32px; color: var(--ink-3); font-size: 12px; border-top: 1px
 <tr><td>hpc_a100_fp64</td><td>2026.8.17.1</td><td>0.22 ms</td><td>—</td><td>euclid-ral-gpu-1 <span class="muted">(no provenance block (pre-#342 row))</span></td><td></td></tr>
 </table></details></div>
 </div>
+<h2>refused rows</h2><p class="meta">Above the load-average cap; kept in the tree, not a trend point.</p>
+<table><tr><th>cell</th><th>config</th><th>release</th><th>per call</th><th>host / job / load</th><th>source</th></tr>
+<tr class="refused"><td>breakdown/interferometer/sdp81/delaunay/sdp81</td><td>hpc_a100_fp64</td><td>2026.8.17.1</td><td>53.71 ms</td><td>euclid-ral-gpu-1 / 375981 / 65.7</td><td><code>results/breakdown/interferometer/sdp81/delaunay_hpc_a100_fp64.json</code></td></tr>
+<tr class="refused"><td>breakdown/interferometer/sdp81/delaunay_numba/sdp81</td><td>hpc_ral_cpu_fp64</td><td>2026.8.17.1</td><td>1.49 s</td><td>euclid-ral-gpu-2 / 375979 / 68.3</td><td><code>results/breakdown/interferometer/sdp81/delaunay_numba_hpc_ral_cpu_fp64.json</code></td></tr>
+<tr class="refused"><td>breakdown/interferometer/sdp81/mge/sdp81</td><td>hpc_a100_fp64</td><td>2026.8.17.1</td><td>28.29 ms</td><td>euclid-ral-gpu-2 / 375983 / 55.7</td><td><code>results/breakdown/interferometer/sdp81/mge_hpc_a100_fp64.json</code></td></tr>
+<tr class="refused"><td>breakdown/interferometer/sdp81/mge/sdp81</td><td>hpc_a100_fp64 sparse</td><td>2026.8.17.1</td><td>27.91 ms</td><td>euclid-ral-gpu-2 / 375984 / 55.7</td><td><code>results/breakdown/interferometer/sdp81/mge_hpc_a100_fp64_sparse.json</code></td></tr>
+<tr class="refused"><td>breakdown/interferometer/sdp81/pixelization/sdp81</td><td>hpc_a100_fp64</td><td>2026.8.17.1</td><td>45.24 ms</td><td>euclid-ral-gpu-1 / 375982 / 65.7</td><td><code>results/breakdown/interferometer/sdp81/pixelization_hpc_a100_fp64.json</code></td></tr>
+<tr class="refused"><td>breakdown/interferometer/sdp81/pixelization_numba/sdp81</td><td>hpc_ral_cpu_fp64</td><td>2026.8.17.1</td><td>1.85 s</td><td>euclid-ral-gpu-2 / 375980 / 68.3</td><td><code>results/breakdown/interferometer/sdp81/pixelization_numba_hpc_ral_cpu_fp64.json</code></td></tr>
+</table>
 <footer>Data: the versioned summaries, config-tagged rows and sweep comparisons under <a href="https://github.com/PyAutoLabs/autolens_profiling/tree/main/results">results/</a>; the run-time drift badge uses the profiling conductor's 2x ratio with a 1 ms floor. Refresh: <code>profile.yml</code> on release tags. Feed: <a href="state.json">state.json</a> · data: <a href="series.json">series.json</a>.</footer>
 </body></html>
