@@ -1,15 +1,15 @@
 # Linear-solver accuracy
 
-**Status:** open
+**Status:** open (phase 2 shipped)
 **Question:** On the positive-only systems real models produce, does each solver return the fnnls reference amplitudes, does its convergence flag tell the truth, and what does each digit of accuracy cost in iterations?
 **Pre-registered rule:** a candidate is admissible only if it reports converged on 100 % of the 81 systems, has significant-column error ≤ 1e-3 and source-flux error ≤ 1e-4 everywhere (≤ 1e-4 on the euclid system), and has a KKT residual within 10x `pdip_jacobi`'s; lowest median iterations wins ([ledger, pre-registered rule](../../results/notes/linear_solver_accuracy_2026_09.md#pre-registered-decision-rule); committed at `327f571` before the deciding run).
-**Verdict:** phase 1: no drop-in candidate; phase 2 needs a solution-based stop. No candidate is admissible. The released raw stop is blind to the flux on reference-inactive columns.
+**Verdict:** phase 1: no drop-in candidate; phase 2 needs a solution-based stop. No candidate is admissible. The released raw stop is blind to the flux on reference-inactive columns. Phase 2: PyAutoArray#595 shipped the forward polish (the phase-1 `pdip_raw_polish`, bit-for-bit on 81/81): `flux_inactive_rel` 0.115 -> 3.31e-4, euclid latent +5.76e-2 -> +7.47e-5 (test green); still not admissible under the rule as written (criteria 2–4, for the recorded rule weaknesses).
 **Headline:** the released raw PDIP solve reports converged on 81/81 systems, yet on the euclid system it leaves 11.5 % of the reference's total amplitude on columns the reference holds at zero (`total_source_flux` +5.76 %); laptop WSL CPU, no RAL job.
-**Library PRs:** none yet (phase 2: `draft/bug/autoarray/raw_pdip_forward_amplitude_bias_fix.md`).
-**Profiling PRs:** #354 (this study; PR number pending).
+**Library PRs:** PyAutoArray#595 (merged 2026-09-30, merge `7a89e19a0`; not yet released).
+**Profiling PRs:** #354 (phase 1); phase 2 record (PR pending).
 **Ledger:** [linear_solver_accuracy_2026_09.md](../../results/notes/linear_solver_accuracy_2026_09.md)
 **Mind contract:** epic `linear-solver-programme`; `active/raw_forward_pdip_nnls_early_stopping.md`
-**Next:** phase 2: a solution-based stop (an active-set certificate on the PDIP iterate) in PyAutoArray, gated on `flux_inactive_rel` and the euclid latent directly.
+**Next:** phase 3 (GPU / vmap / A100 timing of the polished call); a solution-based stop (option 1) remains unbuilt; re-base the rule (latent-based criterion 3, absolute KKT floor) before its next use.
 
 ## Why this campaign
 
@@ -45,7 +45,7 @@ Prior art: the [NNLS solver ledger](../../results/notes/nnls_solver_ledger.md), 
 | Phase | Dates | Question | Pre-registered rule | Result | Jobs | PRs |
 |---|---|---|---|---|---|---|
 | 1 accuracy study | 2026-09-30 | Is any existing solver or constant change a drop-in fix, on 81 captured systems? | admissibility on flag, significant-column and source-flux accuracy, euclid proxy, KKT; `327f571` | no candidate admissible; the released stop is blind to flux on reference-inactive columns | none (laptop) | #354 |
-| 2 PyAutoArray fix | not started | A solution-based stop for the raw forward PDIP | to be written before its deciding run | — | — | `draft/bug/autoarray/raw_pdip_forward_amplitude_bias_fix.md` |
+| 2 PyAutoArray fix | 2026-09-30 | Fix the raw forward PDIP's amplitude bias | phase-1 rule re-applied, not re-based | forward polish shipped: `flux_inactive_rel` ≤ 3.31e-4, euclid latent +7.47e-5, 0/81 unconverged; rule still FAILs 2–4 ([ledger](../../results/notes/linear_solver_accuracy_2026_09.md#phase-2-2026-09-30--library-fix-shipped-pyautoarray595)) | none (laptop) | PyAutoArray#595 |
 | 3 GPU / vmap / A100 | not started | The same cells under `jit(vmap)` on the A100 | — | — | — | `draft/research/autoarray/mge_nnls_fix_pyautoarray_571_slam_60.md` |
 | standing | every release | Re-run `accuracy.py` (and `early_stopping.py`) over the whole corpus | no drift in the tables without a solver change | — | — | — |
 
@@ -53,18 +53,16 @@ Prior art: the [NNLS solver ledger](../../results/notes/nnls_solver_ledger.md), 
 
 | PR | What | Merge | Release |
 |---|---|---|---|
-| none yet | — | — | — |
+| PyAutoArray#595 | forward value of the raw PDIP mode = the #573 polished iterate | 2026-09-30 (`7a89e19a0`) | pending |
 
-The package itself (`scripts/lens/solver/`) is profiling-repo code in #354; no library change has
-come out of the campaign yet.
+The package itself (`scripts/lens/solver/`) is profiling-repo code in #354. PyAutoArray#595 is the
+campaign's first library change.
 
 ## Open / parked / drafts
 
-- `draft/bug/autoarray/raw_pdip_forward_amplitude_bias_fix.md` — phase 2. The ledger's
-  "What phase 2 should implement" ranks the options with measured iteration costs: a
-  solution-based stop (the only one supported on every system; its cost is not yet measured),
-  the forward polish as a stop-gap (euclid latent +7.5e-5, median 23 iterations), a tighter
-  tolerance or larger cap (does not fix the flag).
+- Option 1 of the ledger's "What phase 2 should implement" — a solution-based stop (active-set
+  certificate) — is still unbuilt; #595 shipped option 2 (the forward polish). Needed only if
+  better than `flux_inactive_rel` 3.3e-4 is required on euclid-like systems.
 - `draft/research/autoarray/mge_nnls_fix_pyautoarray_571_slam_60.md` — GPU / vmap / A100 rows.
 - A phase-2 rule should give the KKT criterion an absolute floor (as written, the reference fnnls
   fails it on 9/52 systems at residuals ≤ 4.3e-16).
@@ -109,3 +107,19 @@ tolerance and jaxnnls's tolerance above cap 50 (51 iterations). Next: phase 2 in
 
 Also in #354: `xla_attribution.py`'s PyAutoArray line anchors were re-pinned to `d4298445`
 after PyAutoArray#591 moved `inversion/inversion/abstract.py` by +1 / +9.
+
+### 2026-09-30 — phase 2: PyAutoArray#595 shipped the forward polish
+
+PyAutoArray#595 (issue #594, merge `7a89e19a0`) makes the raw mode return the #573 polished
+iterate as its forward value. All cells were re-run against the merged library (provenance
+PyAutoArray `7a89e19a0` in every JSON): `pdip_raw` is now identical to phase 1's `pdip_raw_polish`
+on 81/81 systems — 0/81 unconverged, forward iterations median 18 / max 24 (the polish's 1–7 are
+not counted), worst `flux_inactive_rel` 3.31e-4 (was 0.115), worst source-flux 4.96e-2 (was 16.4,
+euclid only), KKT ≤ 3.2e-16. Euclid `total_source_flux` +7.47e-5 (was +5.76e-2), so the pipeline
+test is green (19/19). The rule as written still rejects it (criterion 2 on euclid and the
+`noise_x3_v32` flat direction, criterion 3's proxy at 4.96e-2 against a latent of 7.5e-5,
+criterion 4 at the 3e-16 floor on 5/52). `euclid_latent.py`'s `pdip_raw -> jit` validation leg
+was re-based to the library-main jit value 3.320127604; `pdip_raw_tol_1e-2` (no polish) now
+reproduces the *pre-fix* `pdip_raw`, and the phase-1 sentences saying otherwise are annotated.
+The `_v2026.8.17.1` artefacts were overwritten in place (source-checkout version stamp); the
+pre-fix ones are at profiling `3ad68af`. [Ledger, phase 2](../../results/notes/linear_solver_accuracy_2026_09.md#phase-2-2026-09-30--library-fix-shipped-pyautoarray595).
