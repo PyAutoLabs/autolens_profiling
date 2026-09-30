@@ -5,7 +5,7 @@ Simulator + Profiler: Instrument-Based Interferometer Datasets
 Single dual-purpose module:
 
 1. **Simulates** an interferometer dataset for one of the ``INSTRUMENTS``
-   presets (``sma`` / ``alma`` / ``alma_high``). Writes ``data.fits``,
+   presets (``sma`` / ``alma`` / ``alma_high`` / ``sdp81`` / ``jvla``). Writes ``data.fits``,
    ``noise_map.fits``, ``uv_wavelengths.fits``, ``lensed_source.fits``,
    ``positions.json`` and ``tracer.json`` into
    ``dataset/interferometer/<instrument>/``.
@@ -183,10 +183,21 @@ def simulate(instrument: str = "sma", output_root: Path | None = None) -> Path:
         # Synthetic baselines drawn from a 2D isotropic Gaussian whose 3-sigma
         # envelope matches ``uv_scale``. Crude vs real instrument coverage but
         # sufficient for profiling. Seeded for reproducibility.
-        rng = np.random.default_rng(seed)
-        uv_wavelengths = rng.normal(loc=0.0, scale=uv_scale / 3.0, size=(n_visibilities, 2)).astype(
-            np.float64
-        )
+        # A preset with ``uv_wavelengths_file`` (sdp81) uses real coverage instead.
+        uv_file = config.get("uv_wavelengths_file")
+        if uv_file is not None:
+            from astropy.io import fits
+
+            uv_wavelengths = np.asarray(fits.getdata(_REPO_ROOT / uv_file), dtype=np.float64)
+            if uv_wavelengths.shape != (n_visibilities, 2):
+                raise ValueError(
+                    f"{uv_file}: shape {uv_wavelengths.shape} != ({n_visibilities}, 2)"
+                )
+        else:
+            rng = np.random.default_rng(seed)
+            uv_wavelengths = rng.normal(
+                loc=0.0, scale=uv_scale / 3.0, size=(n_visibilities, 2)
+            ).astype(np.float64)
 
     with timer.section("setup_simulator"):
         simulator = al.SimulatorInterferometer(
@@ -315,6 +326,7 @@ def simulate(instrument: str = "sma", output_root: Path | None = None) -> Path:
             "pixel_scales": pixel_scale,
             "n_visibilities": n_visibilities,
             "uv_scale": uv_scale,
+            "uv_wavelengths_file": config.get("uv_wavelengths_file"),
             "noise_sigma": noise_sigma,
             "transformer": _TRANSFORMER_CLASS[transformer_choice],
             "transformer_chunk_size": transformer_chunk_size,

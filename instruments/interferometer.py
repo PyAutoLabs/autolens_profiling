@@ -25,6 +25,10 @@ Each preset's fields:
 - ``transformer_chunk_size``  — ``None`` for one-shot NUFFT, or a positive
   integer to cap the nufftax gather buffer (PyAutoArray#330). Required at
   alma_high / jvla scale.
+- ``uv_wavelengths_file``     — optional, repo-relative path to a FITS file of
+  real (u, v) coverage (shape ``(n_visibilities, 2)``). When set, the simulator
+  uses it in place of the ``uv_scale`` Gaussian draw (``uv_scale`` is then
+  ``None``); the lens + source truth and the noise model are unchanged.
 """
 
 from __future__ import annotations
@@ -64,6 +68,22 @@ INSTRUMENTS: dict[str, dict] = {
         "seed": 1,
         "transformer": "nufft",  # 5M vis × 800² grid; needs chunking via PyAutoArray#330
         "transformer_chunk_size": 1_000_000,  # caps gather buffer ~3 GB / chunk
+    },
+    "sdp81": {
+        # Real ALMA SDP.81 uv coverage (autolens_workspace/dataset/interferometer/sdp81,
+        # the public Science Verification continuum export, 108,384 vis) on the alma
+        # grid, with the standard simulated lens + source: N_vis is the only thing
+        # that changes between the sdp81 and alma rows (autolens_profiling#356).
+        "pixel_scale": 0.05,
+        "real_space_shape": (800, 800),
+        "mask_radius": 3.5,
+        "n_visibilities": 108_384,
+        "uv_scale": None,  # real coverage, see uv_wavelengths_file
+        "uv_wavelengths_file": "instruments/uv_coverage/sdp81_uv_wavelengths.fits",
+        "noise_sigma": 100.0,
+        "seed": 1,
+        "transformer": "nufft",  # 1e5 vis × 800² grid; nufftax as at alma
+        "transformer_chunk_size": None,  # one-shot
     },
     "jvla": {
         "pixel_scale": 0.01,

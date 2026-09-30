@@ -1,25 +1,20 @@
 #!/bin/bash -l
 #
-# RAL CPU in-situ crossover: interferometer/pixelization_numba, numba direct_conv vs NumPy FFT
-# through the LIBRARY DISPATCH across mask radius (autolens_profiling#332, interferometer
-# likelihood campaign 3/3, phase 2). One array task per (instrument, mask radius):
+# RAL CPU radius gaps: interferometer/pixelization_numba, numba direct_conv vs NumPy FFT through
+# the LIBRARY DISPATCH at sma and alma_high x mask radius r2.0 / r5.0 (autolens_profiling#356,
+# interferometer likelihood campaign 3/3, phase 4 decision matrix). Copied from the phase-2
+# crossover array (submit_breakdown_interferometer_pixelization_numba_ral_crossover_fp64); only the
+# (instrument, radius) grid changes. One array task per cell:
 #
-#   0 sma r3.5 | 1 alma r2.0 | 2 alma r3.5 | 3 alma r4.25 | 4 alma r5.0 | 5 alma r6.0 | 6 alma_high r3.5
+#   0 sma r2.0 | 1 sma r5.0 | 2 alma_high r2.0 | 3 alma_high r5.0
 #
-# nnz/col grows with the mask radius at a fixed pixel scale (~10 at alma r2.0 -> ~120 at
-# alma_high r3.5), so the numba / FFT full-call ratio sweeps through 1. Radii chosen from
-# the 2026-09-27 laptop calibration probe on the cached library (alma r5.0: Delaunay
-# nnz/col 55.6 ratio 1.04, rectangular 82.7 ratio 1.08, laptop at load ~4.4) scaled by the
-# phase-1 RAL/laptop F-alone ratio, so that every crossover in r3.5-6.0 is bracketed by two
-# measured radii for both meshes.
-#
-# The r3.5 tasks (0, 2, 6) re-run the phase-1 rows under their original names on PyAutoArray
-# main >= e281abf3 (#582, cached F / D; the folded-in sparse-cache after-measurement): the
-# harness carries the replaced row's full calls into previous_row (the before/after delta)
-# and the witness is evaluations_per_figure_of_merit {1, 1} + the sma pins. Other radii write
-# _r<radius> names. The adapt image is the May-18 lensed_source.fits cache (md5 recorded in
-# adapt_image; a missing cache at a non-preset radius is a hard error). The W~ preload is
-# cached per (shape, radius) beside the dataset, written atomically (concurrent tasks safe).
+# Phase 2 measured CPU radius rows only at alma; the A100 radius rows (phase 3) exist at all
+# three instruments, so these four fill the CPU side of the decision-matrix grid. Outputs are
+# _r<radius> names (non-preset radius). The adapt image is the lensed_source.fits cache
+# (md5 recorded in adapt_image; a missing cache at a non-preset radius is a hard error), so
+# pre-seed dataset/interferometer/{sma,alma_high}/lensed_source.fits in the RAL worktree
+# from a sibling phase-2/3 worktree before submitting. The W~ preload is cached per
+# (shape, radius) beside the dataset, written atomically (concurrent tasks safe).
 #
 # SINGLE-THREAD SCOPE (the #235 discipline): NUMBA_NUM_THREADS=1, BLAS family 1, memo off;
 # --cpus-per-task=4 is headroom for the one process, not a thread budget.
@@ -30,31 +25,29 @@
 #
 # WALL-BASIS:
 #   cell: interferometer/pixelization_numba/sma  device: ral_cpu  precision: fp64
-#   source: measured-wall  wall: 270  headroom: 1.25  ref: RAL_job_357561_#326_phase1_sma_incl_JAX_leg_pre_cache
-#   cell: interferometer/pixelization_numba/alma  device: ral_cpu  precision: fp64
-#   source: unmeasured  probe-first: yes  wall: 2000  headroom: 3.0  ref: laptop_2026-09-27_#332_alma_r5.0_probe_3_instances_scaled_to_20_at_r6.0
+#   source: unmeasured  probe-first: yes  wall: 600  headroom: 3.0  ref: RAL_job_358986_0_#332_sma_r3.5_139s_x6_for_r5.0_area
 #   cell: interferometer/pixelization_numba/alma_high  device: ral_cpu  precision: fp64
-#   source: measured-wall  wall: 1518  headroom: 1.25  ref: RAL_job_357560_#326_phase1_alma_high_incl_JAX_leg_pre_cache
+#   source: unmeasured  probe-first: yes  wall: 4500  headroom: 3.0  ref: RAL_job_358986_6_#332_alma_high_r3.5_1347s_x4_for_r5.0_nnz_per_col
 #
 # Output (per task):
-#   results/breakdown/interferometer/[<instrument>/]pixelization_numba_hpc_ral_cpu_fp64[_r<radius>].{json,png}
+#   results/breakdown/interferometer/<instrument>/pixelization_numba_hpc_ral_cpu_fp64_r<radius>.{json,png}
 #
 # Submit from hpc/batch_cpu/ (the -o/-e paths are relative).
 
-#SBATCH -J bd_intf_pix_nb_xo
+#SBATCH -J bd_intf_pix_nb_gap
 #SBATCH --partition=gpu
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32gb
-#SBATCH --time=2:00:00
-#SBATCH --array=0-6%2
+#SBATCH --time=4:00:00
+#SBATCH --array=0-3%2
 #SBATCH -o output/output.%A_%a.out
 #SBATCH -e error/error.%A_%a.err
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=james.w.nightingale@durham.ac.uk
 
-INSTRUMENTS=(sma alma alma alma alma alma alma_high)
-RADII=(3.5 2.0 3.5 4.25 5.0 6.0 3.5)
+INSTRUMENTS=(sma sma alma_high alma_high)
+RADII=(2.0 5.0 2.0 5.0)
 TASK=${SLURM_ARRAY_TASK_ID:-0}
 INSTRUMENT=${INSTRUMENTS[$TASK]}
 RADIUS=${RADII[$TASK]}
@@ -64,6 +57,13 @@ export PROJECT_PATH="$AP_ROOT"
 export PYAUTO_HPC_BASE="${PYAUTO_HPC_BASE:-/mnt/ral/jnightin/PyAuto}"
 echo "AP_ROOT=$AP_ROOT"
 source $AP_ROOT/activate.sh
+# LIBRARY BASE: $PYAUTO_LIB_BASE (default: the shared mirror, i.e. exactly the copied submit).
+# #356 ran with a PRIVATE clone of the library mains (sbatch --export=ALL,PYAUTO_LIB_BASE=...)
+# because the shared mirror was behind main while a production campaign ran on it, so it
+# was not pulled. The five libraries are prepended to PYTHONPATH and provenance is checked
+# against that base.
+export PYAUTO_LIB_BASE="${PYAUTO_LIB_BASE:-$PYAUTO_HPC_BASE}"
+export PYTHONPATH="$PYAUTO_LIB_BASE/PyAutoNerves:$PYAUTO_LIB_BASE/PyAutoFit:$PYAUTO_LIB_BASE/PyAutoArray:$PYAUTO_LIB_BASE/PyAutoGalaxy:$PYAUTO_LIB_BASE/PyAutoLens:$PYTHONPATH"
 
 export OMP_NUM_THREADS=1
 export MKL_NUM_THREADS=1
@@ -88,9 +88,9 @@ echo "loadavg:        $(cat /proc/loadavg)"
 echo "Task:           $TASK -> $INSTRUMENT r$RADIUS"
 echo "Thread env:     OMP=$OMP_NUM_THREADS MKL=$MKL_NUM_THREADS OPENBLAS=$OPENBLAS_NUM_THREADS NUMBA=$NUMBA_NUM_THREADS"
 
-echo "=== source revisions (shared mirror) ==="
+echo "=== source revisions (PYAUTO_LIB_BASE=$PYAUTO_LIB_BASE) ==="
 for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
-    printf '%-14s %s\n' "$r" "$(git -C $PYAUTO_HPC_BASE/$r rev-parse HEAD 2>&1)"
+    printf '%-14s %s\n' "$r" "$(git -C $PYAUTO_LIB_BASE/$r rev-parse HEAD 2>&1)"
 done
 echo "AP_ROOT rev:    $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
 echo "AP_ROOT branch: $(git -C $AP_ROOT rev-parse --abbrev-ref HEAD 2>&1)"
@@ -102,7 +102,7 @@ python3 -c "
 import importlib.metadata as m, os, autoarray, autolens, numba
 for mod in (autoarray, autolens):
     print(f'{mod.__name__}.__file__ =', mod.__file__)
-    assert os.path.realpath(mod.__file__).startswith(os.path.realpath(os.environ['PYAUTO_HPC_BASE'])), f'{mod.__name__} not from the shared mirror'
+    assert os.path.realpath(mod.__file__).startswith(os.path.realpath(os.environ['PYAUTO_LIB_BASE'])), f'{mod.__name__} not from PYAUTO_LIB_BASE'
 print('numba', numba.__version__, 'nufftax', m.version('nufftax'))
 assert tuple(int(x) for x in m.version('nufftax').split('.')[:2]) >= (0, 6), 'nufftax below the 0.6.1 floor'
 from autoarray.inversion.inversion.interferometer.sparse import InversionInterferometerSparse as S

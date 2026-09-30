@@ -88,6 +88,24 @@ SLURM job id; the dashboard plots a row solid when it is on the reference host u
 hollow when it is off the host or predates the block, and lists it under "refused" when the
 load average was above the cap.
 
+## RAL partition rule: never starve the A100s (2026-09-30)
+
+**Never submit bulk CPU-only arrays to the RAL `gpu` partition** — not as `-p gpu`, `ral,gpu` or
+`gpu,ral`. On 2026-09-30 the euclid_dr1 CPU arrays (4–8 CPUs a task, no `--gres`) filled both
+A100 nodes' 124 CPUs, and all 8 A100s sat idle while GPU jobs pended on `(Priority)`. Bulk CPU
+work goes to `ral`.
+
+The one exemption is a **small CPU timing leg** that needs the quiet-host precedent (#235 / #265)
+of the gpu nodes, and it must meet all three conditions:
+
+1. `--cpus-per-task` ≤ 8;
+2. an array is throttled to at most two concurrent tasks (`--array=0-6%2`);
+3. no GPU job is pending on the partition at submit time — check
+   `squeue -p gpu -t PENDING -o "%i %b"` for any `gres/gpu` request before you submit.
+
+`scripts/misc/wall/check_submits.py --check` (the `lint` workflow) enforces 1 and 2 on every
+`submit_*` that asks for the `gpu` partition without `--gres=gpu`; 3 is on the submitter.
+
 ## `hpc/sync` — driving RAL from the laptop, and getting runs back
 
 `hpc/sync` is the laptop-side driver. Copy the config first:

@@ -35,6 +35,7 @@ if _misc_dir not in _sys.path:
 import pytest  # noqa: E402
 from wall.check_submits import (  # noqa: E402
     cells_run,
+    check_gpu_partition_cpu_job,
     check_text,
     main,
     parse_basis_rows,
@@ -60,6 +61,7 @@ PHASE8B_AS_SHIPPED = """#!/bin/bash -l
 #   compile: 150  headroom: 1.5
 
 #SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
 #SBATCH --time=0:30:00
 #SBATCH --array=0-38
 
@@ -81,6 +83,7 @@ def _submit(basis: str, time: str = "7:00:00", cell: str = "knn") -> str:
 {basis}
 
 #SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
 #SBATCH --time={time}
 
 export JAX_ENABLE_X64=True
@@ -293,6 +296,59 @@ def test__the_41x_spread_that_caused_the_loss():
     assert round(delaunay / mge) == 41
     # The 0:30:00 budget against the delaunay arm's real 3000-step cost.
     assert wall_estimate(delaunay, 3000) / 1800 > 8
+
+
+# ---------------------------------------------------------------------------
+# RAL partition rule: CPU-only jobs on `gpu` must not starve the A100s
+# ---------------------------------------------------------------------------
+
+
+def _cpu_job(partition="gpu", cpus=4, array=None, gres=False):
+    lines = [
+        "#!/bin/bash -l",
+        f"#SBATCH --partition={partition}",
+        f"#SBATCH --cpus-per-task={cpus}",
+    ]
+    if array:
+        lines.append(f"#SBATCH --array={array}")
+    if gres:
+        lines.append("#SBATCH --gres=gpu:1")
+    return "\n".join(lines + ["python3 -u scripts/x.py"]) + "\n"
+
+
+def test__gpu_partition_cpu_array_without_throttle_is_rejected():
+    problems = check_gpu_partition_cpu_job(_cpu_job(array="0-3"))
+    assert len(problems) == 1 and "throttle" in problems[0]
+
+
+def test__gpu_partition_cpu_array_throttle_above_2_is_rejected():
+    assert check_gpu_partition_cpu_job(_cpu_job(array="0-6%4"))
+
+
+def test__gpu_partition_cpu_array_throttled_to_2_passes():
+    assert check_gpu_partition_cpu_job(_cpu_job(array="0-6%2")) == []
+    assert check_gpu_partition_cpu_job(_cpu_job(array="0-4%1")) == []
+
+
+def test__gpu_partition_cpu_job_above_8_cpus_is_rejected():
+    problems = check_gpu_partition_cpu_job(_cpu_job(cpus=16))
+    assert len(problems) == 1 and "cpus-per-task=16" in problems[0]
+    assert check_gpu_partition_cpu_job(_cpu_job(cpus=8)) == []
+
+
+def test__gpu_partition_rule_ignores_gpu_jobs_and_other_partitions():
+    assert check_gpu_partition_cpu_job(_cpu_job(cpus=32, array="0-9", gres=True)) == []
+    assert check_gpu_partition_cpu_job(_cpu_job(partition="ral", cpus=32, array="0-9")) == []
+
+
+def test__gpu_partition_rule_catches_a_partition_list():
+    assert check_gpu_partition_cpu_job(_cpu_job(partition="ral,gpu", array="0-9"))
+    assert check_gpu_partition_cpu_job(_cpu_job(partition="gpu,ral", cpus=12))
+
+
+def test__gpu_partition_rule_runs_without_a_wall_basis_block():
+    # check_text reports it even for a submit that carries no WALL-BASIS block.
+    assert check_text(_cpu_job(array="0-3"))
 
 
 # ---------------------------------------------------------------------------
