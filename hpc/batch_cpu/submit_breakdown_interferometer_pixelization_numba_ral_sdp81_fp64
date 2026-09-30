@@ -1,0 +1,101 @@
+#!/bin/bash -l
+#
+# RAL CPU: interferometer/pixelization_numba at sdp81 (real SDP.81 uv coverage, 108,384 vis, on the
+# alma 800x800 @ 0.05" grid, simulated lens + source; instruments/interferometer.py "sdp81"),
+# numba direct_conv vs NumPy FFT through the LIBRARY DISPATCH at the preset mask radius r3.5
+# (autolens_profiling#356, interferometer likelihood campaign 3/3, phase 4 decision matrix).
+# Same protocol as the phase-2 crossover array it is copied from. The dataset is tracked
+# (dataset/interferometer/sdp81/); the adapt image lensed_source.fits is regenerated from
+# tracer.json on a miss (pre-seed it in the RAL worktree so concurrent jobs do not race).
+#
+# SINGLE-THREAD SCOPE (the #235 discipline): NUMBA_NUM_THREADS=1, BLAS family 1, memo off;
+# --cpus-per-task=4 is headroom for the one process, not a thread budget.
+#
+# PARTITION: `gpu` with NO --gres (CPUs only; #265 quiet-host precedent).
+#
+# WALL-BASIS:
+#   cell: interferometer/pixelization_numba/sdp81  device: ral_cpu  precision: fp64
+#   source: unmeasured  probe-first: yes  wall: 900  headroom: 3.0  ref: laptop_2026-09-30_#356_sdp81_delaunay_2_instances_153s
+#
+# Output: results/breakdown/interferometer/sdp81/pixelization_numba_hpc_ral_cpu_fp64.{json,png}
+#
+# Submit from hpc/batch_cpu/ (the -o/-e paths are relative).
+
+#SBATCH -J bd_intf_pix_nb_sdp81
+#SBATCH --partition=gpu
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=32gb
+#SBATCH --time=1:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+INSTRUMENT=sdp81
+RADIUS=3.5
+
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+export PROJECT_PATH="$AP_ROOT"
+export PYAUTO_HPC_BASE="${PYAUTO_HPC_BASE:-/mnt/ral/jnightin/PyAuto}"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export NUMBA_NUM_THREADS=1
+export JAX_PLATFORMS=cpu
+export JAX_PLATFORM_NAME=cpu
+export JAX_ENABLE_X64=True
+export XLA_FLAGS="--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 --xla_disable_hlo_passes=constant_folding"
+export NUMBA_CACHE_DIR=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}
+mkdir -p "$NUMBA_CACHE_DIR" "$MPLCONFIGDIR"
+unset JAX_COMPILATION_CACHE_DIR
+
+echo "=========================================="
+date
+hostname
+lscpu | grep 'Model name' || true
+echo "partition:      ${SLURM_JOB_PARTITION:-unset}"
+echo "nodelist:       ${SLURM_JOB_NODELIST:-unset}"
+echo "cpus-per-task:  ${SLURM_CPUS_PER_TASK:-unset}"
+echo "loadavg:        $(cat /proc/loadavg)"
+echo "Cell:           $INSTRUMENT r$RADIUS"
+echo "Thread env:     OMP=$OMP_NUM_THREADS MKL=$MKL_NUM_THREADS OPENBLAS=$OPENBLAS_NUM_THREADS NUMBA=$NUMBA_NUM_THREADS"
+
+echo "=== source revisions (shared mirror) ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r" "$(git -C $PYAUTO_HPC_BASE/$r rev-parse HEAD 2>&1)"
+done
+echo "AP_ROOT rev:    $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+echo "AP_ROOT branch: $(git -C $AP_ROOT rev-parse --abbrev-ref HEAD 2>&1)"
+
+cd $AP_ROOT
+
+echo "=== import provenance + dependency floors ==="
+python3 -c "
+import importlib.metadata as m, os, autoarray, autolens, numba
+for mod in (autoarray, autolens):
+    print(f'{mod.__name__}.__file__ =', mod.__file__)
+    assert os.path.realpath(mod.__file__).startswith(os.path.realpath(os.environ['PYAUTO_HPC_BASE'])), f'{mod.__name__} not from the shared mirror'
+print('numba', numba.__version__, 'nufftax', m.version('nufftax'))
+assert tuple(int(x) for x in m.version('nufftax').split('.')[:2]) >= (0, 6), 'nufftax below the 0.6.1 floor'
+from autoarray.inversion.inversion.interferometer.sparse import InversionInterferometerSparse as S
+assert not isinstance(S.__dict__['curvature_matrix_diag'], property), 'PyAutoArray predates e281abf3 (#582)'
+" || exit 3
+
+echo "=========================================="
+echo "NumPy arms (numba direct_conv + NumPy FFT) -- pixelization_numba.py $INSTRUMENT r$RADIUS"
+date
+echo "loadavg: $(cat /proc/loadavg)"
+python3 -u scripts/interferometer/likelihood_breakdown/pixelization_numba.py \
+    --instrument $INSTRUMENT \
+    --mask-radius $RADIUS \
+    --config-name hpc_ral_cpu_fp64 \
+    --n-instances 20
+
+echo "=========================================="
+echo "loadavg: $(cat /proc/loadavg)"
+echo "Finished."
+date
