@@ -22,10 +22,17 @@ Run from the repo root::
 
     python scripts/lens/solver/accuracy.py                      # all groups, default candidates
     python scripts/lens/solver/accuracy.py --groups slam_fixture_571 --candidates pdip_raw fnnls
+    python scripts/lens/solver/accuracy.py --posthoc            # exploratory set, separate artefact
+
+``--posthoc`` runs ``_solvers.POSTHOC_DEFAULT`` — the post-hoc candidates added after the phase-1
+deciding run (NOT pre-registered; inputs to the phase-2 fix, not a verdict) plus the released
+default and the pre-registered anchors for reference — into ``accuracy_posthoc_summary_*``, so
+the pre-registered ``accuracy_summary_*`` table never mixes with them.
 
 Output
 ------
 ``results/lens/solver/accuracy_summary_<corpus>[_gpu]_v<version>.{json,png}``
+(``accuracy_posthoc_summary_...`` with ``--posthoc``)
 """
 
 import sys as _sys
@@ -110,7 +117,12 @@ def _plot(chart_path, rows, aggregates, title):
 
 
 def main() -> int:
-    args = _driver.parse_cli(__doc__.splitlines()[1], _solvers.ACCURACY_DEFAULT)
+    args = _driver.parse_cli(
+        __doc__.splitlines()[1],
+        _solvers.ACCURACY_DEFAULT,
+        posthoc_candidates=_solvers.POSTHOC_DEFAULT,
+    )
+    cell = "accuracy_posthoc" if args.posthoc else "accuracy"
     unknown = [c for c in args.candidates if c not in _solvers.CANDIDATES]
     if unknown:
         raise SystemExit(f"unknown candidate(s) {unknown}; known: {list(_solvers.CANDIDATES)}")
@@ -136,7 +148,14 @@ def main() -> int:
         for name in args.candidates
     }
 
-    summary = _driver.summary_header("accuracy", args, systems, label)
+    summary = _driver.summary_header(cell, args, systems, label)
+    if args.posthoc:
+        summary["posthoc"] = (
+            "POST-HOC, NOT PRE-REGISTERED: exploratory candidates added after the phase-1 "
+            "deciding run (results/notes/linear_solver_accuracy_2026_09.md); inputs to the "
+            "phase-2 fix, not a verdict. Anchors: "
+            + ", ".join(n for n in args.candidates if n not in _solvers.POSTHOC_CANDIDATES)
+        )
     summary["candidates"] = {
         name: {
             "description": _solvers.CANDIDATES[name].description,
@@ -149,14 +168,15 @@ def main() -> int:
     summary["rows"] = rows
 
     json_path, png_path = _driver.output_paths(
-        "accuracy", label, summary["autolens_version"], args.device, args.output_dir
+        cell, label, summary["autolens_version"], args.device, args.output_dir
     )
     _driver.write_json(json_path, summary)
     _plot(
         png_path,
         rows,
         aggregates,
-        f"linear-solver accuracy — {label} — v{summary['autolens_version']}",
+        f"linear-solver accuracy{' (POST-HOC)' if args.posthoc else ''} — {label} — "
+        f"v{summary['autolens_version']}",
     )
     print(f"  wrote {png_path.name}")
     return 0

@@ -62,9 +62,9 @@ strictly *more* information: resolving a ``stack_frame_id`` and walking its
 
 This matters because the stages are not separable by the innermost frame alone.
 Both Bayesian-evidence log determinants are the *same* three lines of
-``inversion/inversion/abstract.py`` (``_log_det_symmetric_from``, 960-1004 at 1b0cc5f0) and are
-told apart only by their caller — ``log_det_curvature_reg_matrix_term`` (1087) or
-``log_det_regularization_matrix_term`` (1166). So a :class:`StageRule` may declare
+``inversion/inversion/abstract.py`` (``_log_det_symmetric_from``, 969-1013 at d4298445) and are
+told apart only by their caller — ``log_det_curvature_reg_matrix_term`` (1096) or
+``log_det_regularization_matrix_term`` (1175). So a :class:`StageRule` may declare
 a ``requires`` frame that must also appear somewhere in the same stack.
 
 Fusions carry their constituents
@@ -615,20 +615,22 @@ _LOGDET_HARNESS = "likelihood_breakdown/logdet_reuse_injection.py"
 #: The PyAutoArray ``main`` the ``abstract.py`` / ``inversion_util.py`` ranges
 #: below were read from (re-anchored 2026-09-24, phase 4, #303; re-pinned
 #: 2026-09-25 after PyAutoArray#571 moved everything below line 602; re-pinned
-#: 2026-09-30 after PyAutoArray#586 moved everything below line 305 by +9).
-LIBRARY_ANCHOR_REVISION = "PyAutoArray main 1b0cc5f0 (2026-09-30)"
+#: 2026-09-30 after PyAutoArray#586 moved everything below line 305 by +9; re-pinned
+#: 2026-09-30 again after PyAutoArray#591 inserted one import line at 10 (+1 below it)
+#: and eight lines in ``data_subtracted_dict`` at old 880 (+9 below it)).
+LIBRARY_ANCHOR_REVISION = "PyAutoArray main d4298445 (2026-09-30)"
 #: ``_log_det_symmetric_from`` — the shared body of both log determinants.
-_ABSTRACT_LOG_DET_BODY = (960, 1004)
+_ABSTRACT_LOG_DET_BODY = (969, 1013)
 #: ``log_det_curvature_reg_matrix_term`` (decorator to last line).
-_ABSTRACT_LOG_DET_CURVATURE_CALLER = (1006, 1087)
+_ABSTRACT_LOG_DET_CURVATURE_CALLER = (1015, 1096)
 #: ``log_det_regularization_matrix_term`` (decorator to last line).
-_ABSTRACT_LOG_DET_REGULARIZATION_CALLER = (1107, 1168)
+_ABSTRACT_LOG_DET_REGULARIZATION_CALLER = (1116, 1177)
 #: ``curvature_reg_matrix``'s single-line ``self._xp.add(F, H)``.
-_ABSTRACT_CURVATURE_ADD_LINE = 398
+_ABSTRACT_CURVATURE_ADD_LINE = 399
 #: ``curvature_reg_matrix_reduced`` (the ``mapper_indices`` gathers).
-_ABSTRACT_REDUCED_GATHER = (401, 424)
+_ABSTRACT_REDUCED_GATHER = (402, 425)
 #: ``reconstruction``'s edge-zeroed branch: the two ``[ids_to_keep]`` subsets.
-_ABSTRACT_EDGE_SUBSET = (705, 712)
+_ABSTRACT_EDGE_SUBSET = (706, 713)
 
 #: Ordered rules. **Order is the contract**: a stack is walked innermost frame
 #: first, and at each frame the rules are tried in this order, so the earliest
@@ -652,12 +654,17 @@ _ABSTRACT_EDGE_SUBSET = (705, 712)
 #: RE-PINNED 2026-09-30 against PyAutoArray ``main`` 1b0cc5f0: #586 grew
 #: ``operated_mapping_matrix`` (abstract.py +9 from line 305); every abstract.py
 #: range below shifted +9, content identical.
+#: RE-PINNED 2026-09-30 against PyAutoArray ``main`` d4298445: #591 added one import
+#: line at abstract.py:10 (every range +1) and an eight-line ``data=None`` guard in
+#: ``data_subtracted_dict`` at old line 880 (every range below it a further +8, so
+#: +9; ``mapped_reconstruction``'s 831-893, which ends in that function, became
+#: 832-902). Every span re-derived from the AST of both revisions; content identical.
 #: ``LIBRARY_ANCHOR_REVISION`` names that revision in the provenance.
 STAGE_MAP: tuple[StageRule, ...] = (
     # --- the two log determinants: same lines, told apart by their caller ----
-    # ``_log_det_symmetric_from`` 960-1004; its callers
-    # ``log_det_curvature_reg_matrix_term`` 1006-1087 and
-    # ``log_det_regularization_matrix_term`` 1107-1168.
+    # ``_log_det_symmetric_from`` 969-1013; its callers
+    # ``log_det_curvature_reg_matrix_term`` 1015-1096 and
+    # ``log_det_regularization_matrix_term`` 1116-1177.
     StageRule(
         "log_det_curvature_reg",
         _ARRAY + _INVERSION_ABSTRACT,
@@ -687,19 +694,19 @@ STAGE_MAP: tuple[StageRule, ...] = (
     StageRule("certified_active_set_solve", _LOGDET_HARNESS, function="solve_certified_stashing"),
     StageRule("log_det_curvature_reg", _LOGDET_HARNESS),
     # --- the F + lambda*H add, and the two [ids][:, ids] gathers -------------
-    StageRule("curvature_reg_add", _ARRAY + _INVERSION_ABSTRACT, (377, 398)),
-    StageRule("curvature_reg_reduce_gather", _ARRAY + _INVERSION_ABSTRACT, (400, 424)),
-    # ``reconstruction`` spans 668-767. 705-712 is the edge-zeroed branch
-    # (``ids_to_keep is not None``): the two ``[ids_to_keep]`` subsets. 713-743
-    # is the partial solve plus the scatter back to full shape; 745-761 is the
+    StageRule("curvature_reg_add", _ARRAY + _INVERSION_ABSTRACT, (378, 399)),
+    StageRule("curvature_reg_reduce_gather", _ARRAY + _INVERSION_ABSTRACT, (401, 425)),
+    # ``reconstruction`` spans 669-768. 706-713 is the edge-zeroed branch
+    # (``ids_to_keep is not None``): the two ``[ids_to_keep]`` subsets. 714-744
+    # is the partial solve plus the scatter back to full shape; 746-762 is the
     # else branch, which is what the Delaunay family runs (no edge zeroing).
-    # 713-829 runs on through ``reconstruction_reduced`` / ``_dict`` /
+    # 714-830 runs on through ``reconstruction_reduced`` / ``_dict`` /
     # ``source_quantity_dict_from``, as the 2026-09-16 map's 615-721 did.
     StageRule("edge_subset_gather", _ARRAY + _INVERSION_ABSTRACT, _ABSTRACT_EDGE_SUBSET),
-    StageRule("regularization_term", _ARRAY + _INVERSION_ABSTRACT, (894, 958)),
-    StageRule("mapped_reconstruction", _ARRAY + _INVERSION_ABSTRACT, (831, 893)),
-    StageRule("reconstruction_scatter", _ARRAY + _INVERSION_ABSTRACT, (668, 704)),
-    StageRule("reconstruction_scatter", _ARRAY + _INVERSION_ABSTRACT, (713, 829)),
+    StageRule("regularization_term", _ARRAY + _INVERSION_ABSTRACT, (903, 967)),
+    StageRule("mapped_reconstruction", _ARRAY + _INVERSION_ABSTRACT, (832, 902)),
+    StageRule("reconstruction_scatter", _ARRAY + _INVERSION_ABSTRACT, (669, 705)),
+    StageRule("reconstruction_scatter", _ARRAY + _INVERSION_ABSTRACT, (714, 830)),
     # --- the PDIP / active-set solve ----------------------------------------
     # ``inversion_util.py`` ranges (re-anchored 2026-09-24, 681938ae; re-pinned
     # 2026-09-25, 5f8a8dee, after #571): 12-93
@@ -1517,8 +1524,8 @@ def hlo_census(index: Mapping[str, Instruction]) -> dict:
     ``..._397``, ``opcodes_at_line_371``) are the 2026-09-16 names, kept so every
     earlier JSON stays comparable key-for-key. The ranges actually matched are
     the re-anchored ``_ABSTRACT_*`` constants (``LIBRARY_ANCHOR_REVISION``):
-    the add is now line 398, the reduced gathers 401-424, the edge subset
-    705-712.
+    the add is now line 399, the reduced gathers 402-425, the edge subset
+    706-713.
     """
 
     def _hits(predicate) -> list[Instruction]:

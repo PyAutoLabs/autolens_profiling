@@ -44,7 +44,11 @@ def select_device_from_argv(argv=None) -> str:
     return known.device
 
 
-def parse_cli(description: str, default_candidates: list[str], argv=None) -> argparse.Namespace:
+def parse_cli(
+    description: str, default_candidates: list[str], argv=None, posthoc_candidates=None
+) -> argparse.Namespace:
+    """The shared CLI. ``posthoc_candidates`` (given) adds ``--posthoc``: run that exploratory,
+    not-pre-registered set into a separate ``<cell>_posthoc`` artefact."""
     parser = argparse.ArgumentParser(description=description, allow_abbrev=False)
     parser.add_argument(
         "--groups", nargs="+", default=None, help="Corpus groups to run (default: all)."
@@ -64,9 +68,17 @@ def parse_cli(description: str, default_candidates: list[str], argv=None) -> arg
         default=1.0e-11,
         help="Relaxed-KKT target (library general.inversion.nnls_target_kappa).",
     )
+    if posthoc_candidates is not None:
+        parser.add_argument(
+            "--posthoc",
+            action="store_true",
+            help="Run the post-hoc (exploratory, NOT pre-registered) candidate set into a "
+            "separate <cell>_posthoc_summary artefact.",
+        )
     args = parser.parse_args(argv)
+    args.posthoc = bool(getattr(args, "posthoc", False))
     if args.candidates is None:
-        args.candidates = list(default_candidates)
+        args.candidates = list(posthoc_candidates if args.posthoc else default_candidates)
     return args
 
 
@@ -124,6 +136,14 @@ def aggregate(rows: list[dict]) -> dict:
         "worst_amp_rel_l2": _metrics.worst_abs(r["amp_rel_l2"] for r in rows),
         "worst_flux_rel_all": _metrics.worst_abs(r["flux_rel_all"] for r in rows),
         "worst_flux_rel_source": _metrics.worst_abs(r["flux_rel_source"] for r in rows),
+        "worst_flux_inactive_rel": _metrics.worst_abs(r.get("flux_inactive_rel") for r in rows),
+        "median_flux_inactive_rel": _metrics.median_or_none(
+            r.get("flux_inactive_rel") for r in rows
+        ),
+        "worst_active_set_mismatch": max(
+            (r["active_set_mismatch"] for r in rows if r.get("active_set_mismatch") is not None),
+            default=None,
+        ),
         "worst_objective_gap": _metrics.worst_abs(r["objective_gap"] for r in rows),
         "worst_kkt_residual_scaled": _metrics.worst_abs(r["kkt_residual_scaled"] for r in rows),
         "median_iterations": _metrics.median_or_none(r["iterations"] for r in rows),

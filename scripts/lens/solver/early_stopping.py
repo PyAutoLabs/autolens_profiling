@@ -11,7 +11,8 @@ iterate; this cell measures how wrong that iterate is — the evidence for choos
 while-loop runs until the slowest lane stops).
 
 Per-(system, cap) rows plus per-cap aggregates (converged count, worst / median
-``amp_rel_max``, worst KKT residual, worst ``|flux_rel_source|``, median wall). The PNG draws
+``amp_rel_max``, worst KKT residual, worst ``|flux_rel_source|``, worst ``|flux_inactive_rel|``,
+median wall). The PNG draws
 error-vs-cap curves, one line per system.
 
 Run from the repo root::
@@ -73,8 +74,9 @@ def _plot(chart_path, rows, caps, title):
         ("amp_rel_max", "amp_rel_max vs fnnls"),
         ("kkt_residual_scaled", "kkt_residual_scaled"),
         ("flux_rel_source", "|flux_rel_source|"),
+        ("flux_inactive_rel", "|flux_inactive_rel| (mass on reference-inactive columns)"),
     )
-    fig, axes = plt.subplots(1, 3, figsize=(16, 5))
+    fig, axes = plt.subplots(1, 4, figsize=(21, 5))
     cmap = plt.get_cmap("tab10")
     for ax, (key, ylabel) in zip(axes, panels):
         for i, system in enumerate(systems):

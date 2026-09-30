@@ -20,6 +20,15 @@ All metrics compare a candidate's raw-coordinate reconstruction ``x`` with the f
 ``flux_rel_source``
     The same over ``meta["source_column_index_list"]``; ``None`` when the system's source
     columns are unknown (or the reference source sum is zero).
+``flux_inactive_rel``
+    ``sum(x_j over reference-inactive columns) / sum(x_ref)``, where a column is
+    reference-inactive iff ``x_ref_j <= SIG_FRACTION * max(x_ref)`` — the spurious mass a solver
+    puts on columns the reference leaves (numerically) at zero. ``amp_rel_max`` and
+    ``amp_rel_max_sig`` score only reference-*active* columns, so they cannot see it; this is the
+    metric the released raw stop is blind to (added 2026-09-30, post-hoc to the phase-1 rule).
+``active_set_mismatch``
+    The number of columns whose activity differs between ``x`` and ``x_ref``, activity being
+    ``v_j > SIG_FRACTION * max(v)`` for each vector on its own scale.
 ``objective_gap``
     ``(f(x) - f(x_ref)) / |f(x_ref)|`` with ``f(x) = 0.5 x^T Q x - q^T x``; positive means worse
     than the reference.
@@ -64,6 +73,8 @@ METRIC_KEYS = (
     "amp_rel_max_sig",
     "flux_rel_all",
     "flux_rel_source",
+    "flux_inactive_rel",
+    "active_set_mismatch",
     "objective_gap",
     "kkt_residual_scaled",
     "primal_violation",
@@ -78,6 +89,24 @@ def _objective(Q, q, x) -> float:
 
 def _rel(a: float, b: float) -> float | None:
     return None if b == 0.0 else float((a - b) / abs(b))
+
+
+def _inactive_flux_rel(x, x_ref) -> float | None:
+    """Spurious mass on reference-inactive columns, relative to the reference total."""
+    total = float(np.sum(x_ref))
+    if x_ref.size == 0 or total == 0.0:
+        return None
+    inactive = x_ref <= SIG_FRACTION * float(np.max(x_ref))
+    return float(np.sum(x[inactive]) / total)
+
+
+def _active_set_mismatch(x, x_ref) -> int | None:
+    """Columns whose activity (``v > SIG_FRACTION * max v``) differs between ``x`` and ``x_ref``."""
+    if x_ref.size == 0:
+        return None
+    act = x > SIG_FRACTION * float(np.max(x))
+    act_ref = x_ref > SIG_FRACTION * float(np.max(x_ref))
+    return int(np.sum(act != act_ref))
 
 
 def metrics(x, system) -> dict:
@@ -110,6 +139,8 @@ def metrics(x, system) -> dict:
         ),
         "flux_rel_all": _rel(float(np.sum(x)), float(np.sum(x_ref))),
         "flux_rel_source": None,
+        "flux_inactive_rel": _inactive_flux_rel(x, x_ref),
+        "active_set_mismatch": _active_set_mismatch(x, x_ref),
         "objective_gap": _rel(_objective(Q, q, x), _objective(Q, q, x_ref)),
     }
     cols = (system.meta or {}).get("source_column_index_list")

@@ -1,0 +1,235 @@
+{
+ "autolens_version": "2026.8.17.1",
+ "device": {
+  "backend": "cpu",
+  "device": "cpu:0",
+  "hostname": "DESKTOP-H143S82",
+  "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+  "omp_num_threads": "8",
+  "cpu_count": 8,
+  "jax_compilation_cache_dir": "/home/jammy/.cache/pyauto_jax",
+  "autotune_cache_entries_at_start": 0,
+  "cache_fresh": true,
+  "provenance": {
+   "provenance_schema": 1,
+   "captured_at": "2026-09-30T10:37:56Z",
+   "host": "DESKTOP-H143S82",
+   "slurm": {
+    "job_id": null,
+    "array_job_id": null,
+    "array_task_id": null
+   },
+   "loadavg_at_import": [
+    2.117,
+    1.92,
+    1.733
+   ],
+   "loadavg_at_write": [
+    2.117,
+    1.92,
+    1.733
+   ],
+   "profiling_revision": "8adb629d658a143498ae2555ab1601dc72dca032",
+   "library_revisions": {
+    "autolens_profiling": "8adb629d658a143498ae2555ab1601dc72dca032",
+    "PyAutoNerves": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+    "PyAutoFit": "3fa8cf7f26dd51c9d00199f37176cc68ffb48356",
+    "PyAutoArray": "d4298445e8fc2c93be4b9312b480808b05047805",
+    "PyAutoGalaxy": "4900e6809101aa9e40ce40dc1bfa0c89874939ee",
+    "PyAutoLens": "092897e48adaed46c00574032bbdb59d340d57e0"
+   },
+   "library_versions": {
+    "PyAutoNerves": "2026.8.17.1",
+    "PyAutoFit": "2026.8.17.1",
+    "PyAutoArray": "2026.8.17.1",
+    "PyAutoGalaxy": "2026.8.17.1",
+    "PyAutoLens": "2026.8.17.1"
+   },
+   "dependency_versions": {
+    "jax": "0.10.2",
+    "jaxlib": "0.10.2",
+    "numpy": "2.2.6",
+    "scipy": "1.17.1",
+    "numba": "0.62.1",
+    "nufftax": "0.6.1"
+   }
+  }
+ },
+ "cell": "euclid_latent",
+ "posthoc": "POST-HOC, NOT PRE-REGISTERED: an input to the phase-2 fix, not a verdict.",
+ "system": "euclid_vis_lp/euclid_vis_lp_k0",
+ "latent_key": "total_source_flux",
+ "latent_reference": {
+  "eager_numpy": 3.3198794874035915,
+  "jit_released": 3.511093374207152
+ },
+ "method": "reconstruction injected through inversion_util.reconstruction_positive_only_from into the eager NumPy fit; total_source_flux from LatentEuclid._source_flux_latents_on_uniform_grid",
+ "euclid": {
+  "euclid_pipeline_git_sha": "26e4385bf9e03c76a17e752c149b15beaa519a36",
+  "dataset": "euclid_strong_lens_modeling_pipeline/dataset/simulated/euclid_dr1_like",
+  "test": "tests/test_compute_latent_variable.py::test_latent_euclid_variables_traces_under_jax_jit (rel 1e-3)"
+ },
+ "test_rtol": 0.001,
+ "validation": {
+  "x_ref_to_eager": {
+   "value": 3.319879379332958,
+   "expected": 3.3198794874035915,
+   "rel": -3.255257720686142e-08,
+   "stub_calls": 1
+  },
+  "pdip_raw_to_jit": {
+   "value": 3.5110933039799486,
+   "expected": 3.511093374207152,
+   "rel": -2.0001519789772115e-08,
+   "stub_calls": 1
+  },
+  "rtol": 1e-06,
+  "passed": true
+ },
+ "rows": [
+  {
+   "candidate": "fnnls",
+   "posthoc": false,
+   "total_source_flux": 3.319879379332958,
+   "rel_vs_eager": -3.255257720686142e-08,
+   "passes_test_rtol": true,
+   "converged": true,
+   "iterations": 8
+  },
+  {
+   "candidate": "pdip_jacobi",
+   "posthoc": false,
+   "total_source_flux": 3.320224990702741,
+   "rel_vs_eager": 0.00010407103645183717,
+   "passes_test_rtol": true,
+   "converged": true,
+   "iterations": 19
+  },
+  {
+   "candidate": "pdip_raw",
+   "posthoc": false,
+   "total_source_flux": 3.5110933039799486,
+   "rel_vs_eager": 0.0575966137632006,
+   "passes_test_rtol": false,
+   "converged": true,
+   "iterations": 24
+  },
+  {
+   "candidate": "pdip_raw_tol_1e-1",
+   "posthoc": false,
+   "total_source_flux": 3.8766845406419526,
+   "rel_vs_eager": 0.1677184534411599,
+   "passes_test_rtol": false,
+   "converged": true,
+   "iterations": 23
+  },
+  {
+   "candidate": "pdip_raw_tol_1e-2",
+   "posthoc": false,
+   "total_source_flux": 3.5110933039799486,
+   "rel_vs_eager": 0.0575966137632006,
+   "passes_test_rtol": false,
+   "converged": true,
+   "iterations": 24
+  },
+  {
+   "candidate": "pdip_raw_tol_1e-3",
+   "posthoc": false,
+   "total_source_flux": 3.37567246600837,
+   "rel_vs_eager": 0.016805724068138662,
+   "passes_test_rtol": false,
+   "converged": true,
+   "iterations": 25
+  },
+  {
+   "candidate": "pdip_raw_tol_jaxnnls",
+   "posthoc": false,
+   "total_source_flux": 3.319879379332953,
+   "rel_vs_eager": -3.255257881206142e-08,
+   "passes_test_rtol": true,
+   "converged": false,
+   "iterations": 50
+  },
+  {
+   "candidate": "pdip_raw_polish",
+   "posthoc": false,
+   "total_source_flux": 3.320127537168044,
+   "rel_vs_eager": 7.471649660589918e-05,
+   "passes_test_rtol": true,
+   "converged": true,
+   "iterations": 30
+  },
+  {
+   "candidate": "certified",
+   "posthoc": false,
+   "total_source_flux": 3.3198793793329475,
+   "rel_vs_eager": -3.2552580417261405e-08,
+   "passes_test_rtol": true,
+   "converged": true,
+   "iterations": 8
+  },
+  {
+   "candidate": "pdip_raw_polish_cap20",
+   "posthoc": true,
+   "total_source_flux": 3.320127537168044,
+   "rel_vs_eager": 7.471649660589918e-05,
+   "passes_test_rtol": true,
+   "converged": true,
+   "iterations": 30
+  },
+  {
+   "candidate": "pdip_raw_polish_cap50",
+   "posthoc": true,
+   "total_source_flux": 3.320127537168044,
+   "rel_vs_eager": 7.471649660589918e-05,
+   "passes_test_rtol": true,
+   "converged": true,
+   "iterations": 30
+  },
+  {
+   "candidate": "pdip_raw_tol_jaxnnls_cap100",
+   "posthoc": true,
+   "total_source_flux": 3.319879379332953,
+   "rel_vs_eager": -3.255257881206142e-08,
+   "passes_test_rtol": true,
+   "converged": true,
+   "iterations": 51
+  },
+  {
+   "candidate": "pdip_raw_tol_jaxnnls_cap200",
+   "posthoc": true,
+   "total_source_flux": 3.319879379332953,
+   "rel_vs_eager": -3.255257881206142e-08,
+   "passes_test_rtol": true,
+   "converged": true,
+   "iterations": 51
+  },
+  {
+   "candidate": "pdip_raw_tol_1e-4",
+   "posthoc": true,
+   "total_source_flux": 3.3333942029448593,
+   "rel_vs_eager": 0.004070845219697235,
+   "passes_test_rtol": false,
+   "converged": true,
+   "iterations": 26
+  },
+  {
+   "candidate": "pdip_raw_tol_1e-5",
+   "posthoc": true,
+   "total_source_flux": 3.32156844744829,
+   "rel_vs_eager": 0.0005087413718199272,
+   "passes_test_rtol": true,
+   "converged": true,
+   "iterations": 28
+  },
+  {
+   "candidate": "pdip_raw_tol_1e-6",
+   "posthoc": true,
+   "total_source_flux": 3.319879379332953,
+   "rel_vs_eager": -3.255257881206142e-08,
+   "passes_test_rtol": true,
+   "converged": false,
+   "iterations": 50
+  }
+ ]
+}

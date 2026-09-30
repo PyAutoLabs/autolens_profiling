@@ -128,14 +128,14 @@ _FUNCTIONS = [
     "pixel_weights_delaunay_from",  # 10
 ]
 _LOCATIONS = [
-    (1, 1, 398, 15),  # 1  abstract.py:398   curvature_reg_matrix (F + lambda*H)
-    (1, 2, 968, 20),  # 2  abstract.py:968   _log_det_symmetric_from (the cholesky)
-    (1, 3, 1060, 15),  # 3  abstract.py:1060  log_det_curvature_reg_matrix_term
-    (1, 4, 1139, 15),  # 4  abstract.py:1139  log_det_regularization_matrix_term
+    (1, 1, 399, 15),  # 1  abstract.py:399   curvature_reg_matrix (F + lambda*H)
+    (1, 2, 977, 20),  # 2  abstract.py:977   _log_det_symmetric_from (the cholesky)
+    (1, 3, 1069, 15),  # 3  abstract.py:1069  log_det_curvature_reg_matrix_term
+    (1, 4, 1148, 15),  # 4  abstract.py:1148  log_det_regularization_matrix_term
     (2, 5, 586, 21),  # 5  convolver.py:586  the shared rfft2
     (4, 6, 136, 20),  # 6  imaging/abstract.py:136 operated_mapping_matrix_list
     (3, 7, 295, 12),  # 7  delaunay.py:295   the visibility walk while_loop
-    (1, 8, 709, 40),  # 8  abstract.py:709   the edge-subset gather
+    (1, 8, 710, 40),  # 8  abstract.py:710   the edge-subset gather
     (2, 9, 660, 15),  # 9  convolver.py:660  _convolved_image_over_sampled_jax_from
     (3, 10, 659, 18),  # 10 delaunay.py:659  pixel_weights_delaunay_from
 ]
@@ -225,9 +225,9 @@ def test_frames_are_innermost_first_and_walk_the_parent_chain(stack_index):
     """Frame 4 is the Cholesky *called by* log_det_curvature_reg_matrix_term."""
     frames = stack_index.frames_for(4)
     assert len(frames) == 2
-    assert frames[0].line == 968
+    assert frames[0].line == 977
     assert frames[0].function == "_log_det_symmetric_from"
-    assert frames[1].line == 1060
+    assert frames[1].line == 1069
     assert frames[1].function == "log_det_curvature_reg_matrix_term"
 
 
@@ -270,7 +270,7 @@ def test_opcode_shape_and_metadata_are_read_off_each_instruction(index):
     assert add.dims == (1500, 1500)
     assert add.op_name == "jit(fn)/add"
     assert add.stack_frame_id == 1
-    assert add.source == f"{_ABSTRACT}:398"
+    assert add.source == f"{_ABSTRACT}:399"
 
     fft = index["fft.0"]
     assert fft.opcode == "fft"
@@ -470,7 +470,7 @@ def test_the_harness_logdet_candidate_splits_into_solver_and_log_det_rows():
     dense_body = xa.Frame(
         file=_LIB + "inversion/inversion/abstract.py",
         function="_log_det_symmetric_from",
-        line=968,
+        line=977,
     )
     patched = xa.Frame(file=_HARNESS_LOGDET, function="patched_log_det", line=400)
     assert xa.stage_for_frames((dense_body, patched)) == "log_det_curvature_reg"
@@ -745,7 +745,7 @@ def test_an_add_merely_CALLED_from_line_371_is_not_counted_as_the_sum(index):
     """
     assert index["add.11"].frames[0].file.endswith("delaunay.py")
     assert index["add.11"].frames[0].line == 659
-    assert any(f.line == 398 for f in index["add.11"].frames), "fixture lost the outer frame"
+    assert any(f.line == 399 for f in index["add.11"].frames), "fixture lost the outer frame"
 
     counted = {i["name"] for i in xa.hlo_census(index)["curvature_reg_add_nn"]["instructions"]}
     assert "add.11" not in counted

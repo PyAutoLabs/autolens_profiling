@@ -36,7 +36,8 @@ Regions covered today:
   - simulators/README.md            | simulators
   - hazards/README.md               | hazards
   - lens/deflections/README.md      | deflections
-  - lens/solver/README.md           | solver-corpus, solver-accuracy, solver-early-stopping
+  - lens/solver/README.md           | solver-corpus, solver-accuracy, solver-early-stopping,
+                                    | solver-accuracy-posthoc, solver-euclid-latent
 
 Artifact-shape reference: `results/notes/design_lock_in.md`.
 """
@@ -700,11 +701,11 @@ def _render_solver_accuracy_table(artifacts: list[Artifact]) -> str:
         return _no_data_block("run `python scripts/lens/solver/accuracy.py` to populate.")
     rows = [
         "| Corpus | Candidate | Unconverged | Non-finite | Worst amp_rel_max | "
-        "Worst amp_rel_max (sig) | Worst abs(flux_rel_source) | Worst objective gap | "
-        "Worst KKT | Median iters | Median wall ms | Version |",
+        "Worst amp_rel_max (sig) | Worst abs(flux_rel_source) | Worst abs(flux_inactive_rel) | "
+        "Worst objective gap | Worst KKT | Median iters | Median wall ms | Version |",
         "|--------|-----------|-------------|------------|-------------------|"
-        "-------------------------|----------------------------|---------------------|"
-        "-----------|--------------|----------------|---------|",
+        "-------------------------|----------------------------|------------------------------|"
+        "---------------------|-----------|--------------|----------------|---------|",
     ]
     for (label,), art in sorted(latest.items(), key=lambda kv: kv[0][0] or ""):
         for name, agg in (art.data.get("aggregates") or {}).items():
@@ -715,6 +716,7 @@ def _render_solver_accuracy_table(artifacts: list[Artifact]) -> str:
                 f"{agg.get('n_nonfinite')} | {_sci(agg.get('worst_amp_rel_max'))} | "
                 f"{_sci(agg.get('worst_amp_rel_max_sig'))} | "
                 f"{_sci(agg.get('worst_flux_rel_source'))} | "
+                f"{_sci(agg.get('worst_flux_inactive_rel'))} | "
                 f"{_sci(agg.get('worst_objective_gap'))} | "
                 f"{_sci(agg.get('worst_kkt_residual_scaled'))} | "
                 f"{agg.get('median_iterations') if agg.get('median_iterations') is not None else '—'} | "
@@ -730,9 +732,11 @@ def _render_solver_early_stopping_table(artifacts: list[Artifact]) -> str:
         return _no_data_block("run `python scripts/lens/solver/early_stopping.py` to populate.")
     rows = [
         "| Corpus | Cap | Converged | Worst amp_rel_max | Worst amp_rel_max (sig) | "
-        "Median amp_rel_max | Worst abs(flux_rel_source) | Worst KKT | Median wall ms | Version |",
+        "Median amp_rel_max | Worst abs(flux_rel_source) | Worst abs(flux_inactive_rel) | "
+        "Worst KKT | Median wall ms | Version |",
         "|--------|-----|-----------|-------------------|-------------------------|"
-        "--------------------|----------------------------|-----------|----------------|---------|",
+        "--------------------|----------------------------|------------------------------|"
+        "-----------|----------------|---------|",
     ]
     for (label,), art in sorted(latest.items(), key=lambda kv: kv[0][0] or ""):
         aggs = art.data.get("aggregates") or {}
@@ -746,9 +750,92 @@ def _render_solver_early_stopping_table(artifacts: list[Artifact]) -> str:
                 f"{_sci(agg.get('worst_amp_rel_max_sig'))} | "
                 f"{_sci(agg.get('median_amp_rel_max'))} | "
                 f"{_sci(agg.get('worst_flux_rel_source'))} | "
+                f"{_sci(agg.get('worst_flux_inactive_rel'))} | "
                 f"{_sci(agg.get('worst_kkt_residual_scaled'))} | "
                 f"{'—' if wall is None else f'{wall:.3f}'} | v{art.raw_version} |"
             )
+    return "\n" + "\n".join(rows) + "\n"
+
+
+def _render_solver_accuracy_posthoc_table(artifacts: list[Artifact]) -> str:
+    """Per-candidate aggregates of the latest ``accuracy_posthoc`` artifact per corpus label.
+
+    POST-HOC (exploratory, not pre-registered) candidates, kept out of the pre-registered
+    ``solver-accuracy`` table on purpose.
+    """
+    latest = _solver_latest(artifacts, "accuracy_posthoc")
+    if not latest:
+        return _no_data_block("run `python scripts/lens/solver/accuracy.py --posthoc` to populate.")
+    rows = [
+        "| Corpus | Candidate | Unconverged | Worst abs(flux_inactive_rel) | "
+        "Worst abs(flux_rel_source) | Worst amp_rel_max (sig) | Max active-set mismatch | "
+        "Median iters | Max iters | Median wall ms | Version |",
+        "|--------|-----------|-------------|------------------------------|"
+        "----------------------------|-------------------------|-------------------------|"
+        "--------------|-----------|----------------|---------|",
+    ]
+    for (label,), art in sorted(latest.items(), key=lambda kv: kv[0][0] or ""):
+        for name, agg in (art.data.get("aggregates") or {}).items():
+            n = agg.get("n_systems")
+            wall = agg.get("median_wall_ms")
+            mism = agg.get("worst_active_set_mismatch")
+            rows.append(
+                f"| `{label or '—'}` | `{name}` | {agg.get('n_unconverged')}/{n} | "
+                f"{_sci(agg.get('worst_flux_inactive_rel'))} | "
+                f"{_sci(agg.get('worst_flux_rel_source'))} | "
+                f"{_sci(agg.get('worst_amp_rel_max_sig'))} | "
+                f"{'—' if mism is None else mism} | "
+                f"{agg.get('median_iterations') if agg.get('median_iterations') is not None else '—'} | "
+                f"{agg.get('max_iterations') if agg.get('max_iterations') is not None else '—'} | "
+                f"{'—' if wall is None else f'{wall:.3f}'} | v{art.raw_version} |"
+            )
+    return "\n" + "\n".join(rows) + "\n"
+
+
+def _render_solver_euclid_latent_table() -> str:
+    """The latest ``euclid_latent_by_candidate_v<version>.json``: candidate -> latent."""
+    folder = RESULTS_ROOT / "lens" / "solver"
+    found = []
+    for p in folder.glob("euclid_latent_by_candidate_v*.json"):
+        raw = p.stem.rsplit("_v", 1)[1]
+        try:
+            found.append((_parse_version(raw), raw, p))
+        except ValueError:
+            continue
+    if not found:
+        return _no_data_block("run `python scripts/lens/solver/euclid_latent.py` to populate.")
+    _, raw, path = max(found)
+    try:
+        data = json.loads(path.read_text())
+    except (OSError, ValueError):
+        return "\n_euclid latent JSON unreadable._\n"
+    ref = data.get("latent_reference") or {}
+    val = data.get("validation") or {}
+    rtol = data.get("test_rtol")
+    rows = [
+        f"_System `{data.get('system')}`; eager NumPy `total_source_flux` "
+        f"{ref.get('eager_numpy')}, released jit {ref.get('jit_released')}; validation "
+        f"{'passed' if val.get('passed') else 'FAILED'} (x_ref rel "
+        f"{_sci((val.get('x_ref_to_eager') or {}).get('rel'))}, pdip_raw rel "
+        f"{_sci((val.get('pdip_raw_to_jit') or {}).get('rel'))}); the euclid test's rtol is "
+        f"{rtol}._",
+        "",
+        "| Candidate | Post-hoc | total_source_flux | rel vs eager | Within test rtol | "
+        "Converged | Iterations | Version |",
+        "|-----------|----------|-------------------|--------------|------------------|"
+        "-----------|------------|---------|",
+    ]
+    for r in data.get("rows") or []:
+        flux = r.get("total_source_flux")
+        rel = r.get("rel_vs_eager")
+        ok = r.get("passes_test_rtol")
+        rows.append(
+            f"| `{r.get('candidate')}` | {'yes' if r.get('posthoc') else 'no'} | "
+            f"{'—' if flux is None else f'{flux:.7f}'} | "
+            f"{'—' if rel is None else f'{rel:+.2e}'} | "
+            f"{'—' if ok is None else ('yes' if ok else 'no')} | {r.get('converged')} | "
+            f"{r.get('iterations')} | v{raw} |"
+        )
     return "\n" + "\n".join(rows) + "\n"
 
 
@@ -768,6 +855,8 @@ def _build_renderers():
         "solver-corpus": _render_solver_corpus_table,
         "solver-accuracy": lambda: _render_solver_accuracy_table(artifacts),
         "solver-early-stopping": lambda: _render_solver_early_stopping_table(artifacts),
+        "solver-accuracy-posthoc": lambda: _render_solver_accuracy_posthoc_table(artifacts),
+        "solver-euclid-latent": _render_solver_euclid_latent_table,
     }
 
 
