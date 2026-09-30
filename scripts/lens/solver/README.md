@@ -55,8 +55,8 @@ its registry entry. All return the reconstruction in raw coordinates exactly as
 |-----------|------------|----------------------|
 | `fnnls` | **Reference.** NumPy fnnls with incremental Cholesky from the dense-sign start — the NumPy production path (memo off). Defines `x_ref`; its row is a self-check. | `autoarray.util.fnnls.fnnls_cholesky` |
 | `pdip_jacobi` | Jacobi-preconditioned PDIP at jaxnnls's own tolerance, cap 50 — the library `"jacobi"` mode (default with a Mapper; the MGE default before PyAutoArray#571). | `jax_nnls.solve_nnls_primal_with_status` |
-| `pdip_raw` | **Released default for MGE (linear-object-only) inversions**: forward PDIP on the raw system at `data_scaled_solver_tol(q)`, cap 50, returned as `y * D`. Extras record the backward-pass polish / relaxed-KKT status. | `jax_nnls.solve_nnls_primal_raw_forward` (+ `raw_forward_backward_status`) |
-| `pdip_raw_tol_1e-1` / `_1e-2` / `_1e-3` | Raw forward PDIP with the data-scaled tolerance's factor set to 1e-1 / 1e-2 / 1e-3 in place of `DATA_SCALED_TOL_FACTOR` (1e-2 = released). | `jax_nnls.solve_nnls` + `data_scaled_solver_tol` |
+| `pdip_raw` | **Library default for MGE (linear-object-only) inversions**: forward PDIP on the raw system at `data_scaled_solver_tol(q)`, cap 50, mapped to the Jacobi system and — since PyAutoArray#595 — polished there by the #573 rule before being returned as `y * D`. `converged` / `iterations` are the forward solve's (the 1–7 polish iterations are not counted). Extras record the polish / relaxed-KKT status. | `jax_nnls.solve_nnls_primal_raw_forward` (+ `raw_forward_backward_status`) |
+| `pdip_raw_tol_1e-1` / `_1e-2` / `_1e-3` | Raw forward PDIP with the data-scaled tolerance's factor set to 1e-1 / 1e-2 / 1e-3 in place of `DATA_SCALED_TOL_FACTOR` (1e-2 = released), no polish — so since PyAutoArray#595 the 1e-2 row is the *pre-#595* `pdip_raw`, not the current one. | `jax_nnls.solve_nnls` + `data_scaled_solver_tol` |
 | `pdip_raw_tol_jaxnnls` | Raw forward PDIP at jaxnnls's absolute tolerance `min(n·eps·5e3, 1e-2)` — unreachable on an unscaled system, so it runs to the cap. | `jax_nnls.solve_nnls(solver_tol=None)` |
 | `pdip_raw_polish` | Raw forward, then ≤ `RAW_BACKWARD_POLISH_MAX_ITER` tight PDIP iterations on the Jacobi system warm-started from the mapped iterate, kept iff converged, finite and `s, z > 0` — PyAutoArray#573's backward rule applied to the *forward* value. | `jax_nnls.solve_nnls` (the `_raw_forward_backward_point` rule) |
 | `pdip_raw_cap_{8,12,16,24,32,50,100,200}` | `pdip_raw` at that `max_iter` (the `early_stopping.py` sweep). | `jax_nnls.solve_nnls_primal_raw_forward` |
@@ -94,24 +94,24 @@ and the median warm wall-clock (`wall_ms`, 5 repeats after one compile call).
 <!-- BEGIN auto-table:solver-accuracy -->
 | Corpus | Candidate | Unconverged | Non-finite | Worst amp_rel_max | Worst amp_rel_max (sig) | Worst abs(flux_rel_source) | Worst abs(flux_inactive_rel) | Worst objective gap | Worst KKT | Median iters | Median wall ms | Version |
 |--------|-----------|-------------|------------|-------------------|-------------------------|----------------------------|------------------------------|---------------------|-----------|--------------|----------------|---------|
-| `all` | `fnnls` | 0/81 | 0 | 0.00e+00 | 0.00e+00 | 0.00e+00 | 8.05e-08 | 0.00e+00 | 8.63e-16 | 9.0 | 1.632 | v2026.8.17.1 |
-| `all` | `pdip_jacobi` | 29/81 | 0 | 2.73e+68 | 1.03e+68 | 3.36e+70 | 4.50e+68 | 1.56e+134 | 8.25e+61 | 19.0 | 1.323 | v2026.8.17.1 |
-| `all` | `pdip_raw` | 0/81 | 0 | 6.23e+10 | 2.70e+01 | 1.64e+01 | 1.15e-01 | 2.61e-12 | 2.66e-14 | 18.0 | 1.262 | v2026.8.17.1 |
-| `all` | `pdip_raw_tol_1e-1` | 0/81 | 0 | 4.28e+11 | 7.15e+01 | 4.30e+01 | 3.02e-01 | 1.75e-11 | 1.80e-13 | 16.0 | 1.287 | v2026.8.17.1 |
-| `all` | `pdip_raw_tol_1e-2` | 0/81 | 0 | 6.23e+10 | 2.70e+01 | 1.64e+01 | 1.15e-01 | 2.61e-12 | 2.66e-14 | 18.0 | 1.329 | v2026.8.17.1 |
-| `all` | `pdip_raw_tol_1e-3` | 0/81 | 0 | 2.38e+10 | 1.00e+01 | 6.15e+00 | 4.37e-02 | 3.87e-13 | 3.93e-15 | 19.0 | 1.410 | v2026.8.17.1 |
-| `all` | `pdip_raw_tol_jaxnnls` | 75/81 | 0 | 4.30e+04 | 2.19e-01 | 7.40e-05 | 6.24e-07 | 8.18e-16 | 2.43e-16 | 50.0 | 3.073 | v2026.8.17.1 |
-| `all` | `pdip_raw_polish` | 0/81 | 0 | 5.03e+08 | 2.19e-01 | 4.96e-02 | 3.31e-04 | 8.18e-16 | 3.24e-16 | 23.0 | 1.713 | v2026.8.17.1 |
-| `all` | `certified` | 48/81 | 0 | 1.19e+02 | 1.19e+02 | 7.47e-02 | 1.49e-02 | 2.57e-04 | 1.81e-02 | 16.0 | 1.147 | v2026.8.17.1 |
-| `slam_fixture_571` | `fnnls` | 0/8 | 0 | 0.00e+00 | 0.00e+00 | 0.00e+00 | — | 0.00e+00 | 3.24e-16 | 7.0 | 0.932 | v2026.8.17.1 |
-| `slam_fixture_571` | `pdip_jacobi` | 7/8 | 0 | 2.73e+68 | 1.03e+68 | 3.36e+70 | — | 1.56e+134 | 8.25e+61 | 50.0 | 2.490 | v2026.8.17.1 |
-| `slam_fixture_571` | `pdip_raw` | 0/8 | 0 | 2.24e+07 | 3.18e+00 | 6.44e-03 | — | 4.14e-13 | 5.24e-16 | 18.0 | 1.205 | v2026.8.17.1 |
-| `slam_fixture_571` | `pdip_raw_tol_1e-1` | 0/8 | 0 | 5.87e+07 | 9.08e+00 | 1.69e-02 | — | 2.73e-12 | 3.60e-15 | 17.0 | 1.275 | v2026.8.17.1 |
-| `slam_fixture_571` | `pdip_raw_tol_1e-2` | 0/8 | 0 | 2.24e+07 | 3.18e+00 | 6.44e-03 | — | 4.14e-13 | 5.24e-16 | 18.0 | 1.445 | v2026.8.17.1 |
-| `slam_fixture_571` | `pdip_raw_tol_1e-3` | 0/8 | 0 | 3.26e+06 | 9.54e-01 | 2.46e-03 | — | 3.55e-14 | 4.20e-17 | 19.0 | 1.314 | v2026.8.17.1 |
-| `slam_fixture_571` | `pdip_raw_tol_jaxnnls` | 8/8 | 0 | 2.09e-11 | 2.09e-11 | 3.05e-13 | — | 6.01e-16 | 1.08e-16 | 50.0 | 2.593 | v2026.8.17.1 |
-| `slam_fixture_571` | `pdip_raw_polish` | 0/8 | 0 | 6.91e+04 | 4.95e-06 | 4.93e-05 | — | 3.60e-16 | 2.16e-16 | 23.0 | 1.376 | v2026.8.17.1 |
-| `slam_fixture_571` | `certified` | 5/8 | 0 | 8.76e+01 | 8.76e+01 | 1.12e-02 | — | 1.61e-05 | 1.81e-02 | 16.0 | 0.909 | v2026.8.17.1 |
+| `all` | `fnnls` | 0/81 | 0 | 0.00e+00 | 0.00e+00 | 0.00e+00 | 8.05e-08 | 0.00e+00 | 8.63e-16 | 9.0 | 1.141 | v2026.8.17.1 |
+| `all` | `pdip_jacobi` | 29/81 | 0 | 2.73e+68 | 1.03e+68 | 3.36e+70 | 4.50e+68 | 1.56e+134 | 8.25e+61 | 19.0 | 1.219 | v2026.8.17.1 |
+| `all` | `pdip_raw` | 0/81 | 0 | 5.03e+08 | 2.19e-01 | 4.96e-02 | 3.31e-04 | 8.18e-16 | 3.24e-16 | 18.0 | 1.159 | v2026.8.17.1 |
+| `all` | `pdip_raw_tol_1e-1` | 0/81 | 0 | 4.28e+11 | 7.15e+01 | 4.30e+01 | 3.02e-01 | 1.75e-11 | 1.80e-13 | 16.0 | 0.868 | v2026.8.17.1 |
+| `all` | `pdip_raw_tol_1e-2` | 0/81 | 0 | 6.23e+10 | 2.70e+01 | 1.64e+01 | 1.15e-01 | 2.61e-12 | 2.66e-14 | 18.0 | 0.908 | v2026.8.17.1 |
+| `all` | `pdip_raw_tol_1e-3` | 0/81 | 0 | 2.38e+10 | 1.00e+01 | 6.15e+00 | 4.37e-02 | 3.87e-13 | 3.93e-15 | 19.0 | 0.930 | v2026.8.17.1 |
+| `all` | `pdip_raw_tol_jaxnnls` | 75/81 | 0 | 4.30e+04 | 2.19e-01 | 7.40e-05 | 6.24e-07 | 8.18e-16 | 2.43e-16 | 50.0 | 2.119 | v2026.8.17.1 |
+| `all` | `pdip_raw_polish` | 0/81 | 0 | 5.03e+08 | 2.19e-01 | 4.96e-02 | 3.31e-04 | 8.18e-16 | 3.24e-16 | 23.0 | 1.223 | v2026.8.17.1 |
+| `all` | `certified` | 48/81 | 0 | 1.19e+02 | 1.19e+02 | 7.47e-02 | 1.49e-02 | 2.57e-04 | 1.81e-02 | 16.0 | 0.777 | v2026.8.17.1 |
+| `slam_fixture_571` | `fnnls` | 0/8 | 0 | 0.00e+00 | 0.00e+00 | 0.00e+00 | 7.68e-08 | 0.00e+00 | 3.24e-16 | 7.0 | 1.066 | v2026.8.17.1 |
+| `slam_fixture_571` | `pdip_jacobi` | 7/8 | 0 | 2.73e+68 | 1.03e+68 | 3.36e+70 | 4.50e+68 | 1.56e+134 | 8.25e+61 | 50.0 | 2.482 | v2026.8.17.1 |
+| `slam_fixture_571` | `pdip_raw` | 0/8 | 0 | 6.91e+04 | 4.95e-06 | 4.93e-05 | 3.44e-07 | 3.60e-16 | 2.16e-16 | 18.0 | 1.366 | v2026.8.17.1 |
+| `slam_fixture_571` | `pdip_raw_tol_1e-1` | 0/8 | 0 | 5.87e+07 | 9.08e+00 | 1.69e-02 | 1.45e-04 | 2.73e-12 | 3.60e-15 | 17.0 | 2.374 | v2026.8.17.1 |
+| `slam_fixture_571` | `pdip_raw_tol_1e-2` | 0/8 | 0 | 2.24e+07 | 3.18e+00 | 6.44e-03 | 5.36e-05 | 4.14e-13 | 5.24e-16 | 18.0 | 1.378 | v2026.8.17.1 |
+| `slam_fixture_571` | `pdip_raw_tol_1e-3` | 0/8 | 0 | 3.26e+06 | 9.54e-01 | 2.46e-03 | 1.52e-05 | 3.55e-14 | 4.20e-17 | 19.0 | 1.324 | v2026.8.17.1 |
+| `slam_fixture_571` | `pdip_raw_tol_jaxnnls` | 8/8 | 0 | 2.09e-11 | 2.09e-11 | 3.05e-13 | 7.68e-08 | 6.01e-16 | 1.08e-16 | 50.0 | 2.471 | v2026.8.17.1 |
+| `slam_fixture_571` | `pdip_raw_polish` | 0/8 | 0 | 6.91e+04 | 4.95e-06 | 4.93e-05 | 3.44e-07 | 3.60e-16 | 2.16e-16 | 23.0 | 2.693 | v2026.8.17.1 |
+| `slam_fixture_571` | `certified` | 5/8 | 0 | 8.76e+01 | 8.76e+01 | 1.12e-02 | 3.53e-03 | 1.61e-05 | 1.81e-02 | 16.0 | 1.008 | v2026.8.17.1 |
 <!-- END auto-table:solver-accuracy -->
 
 ## Early stopping (latest run per corpus)
@@ -119,22 +119,22 @@ and the median warm wall-clock (`wall_ms`, 5 repeats after one compile call).
 <!-- BEGIN auto-table:solver-early-stopping -->
 | Corpus | Cap | Converged | Worst amp_rel_max | Worst amp_rel_max (sig) | Median amp_rel_max | Worst abs(flux_rel_source) | Worst abs(flux_inactive_rel) | Worst KKT | Median wall ms | Version |
 |--------|-----|-----------|-------------------|-------------------------|--------------------|----------------------------|------------------------------|-----------|----------------|---------|
-| `all` | 8 | 0/81 | 2.02e+14 | 3.43e+04 | 2.89e+01 | 6.18e+04 | 4.47e+02 | 3.19e-03 | 0.641 | v2026.8.17.1 |
-| `all` | 12 | 1/81 | 3.48e+13 | 8.96e+03 | 6.79e-01 | 3.14e+04 | 2.23e+02 | 5.71e-04 | 0.883 | v2026.8.17.1 |
-| `all` | 16 | 15/81 | 2.97e+13 | 1.49e+03 | 5.66e-06 | 2.69e+04 | 1.90e+02 | 2.47e-05 | 1.041 | v2026.8.17.1 |
-| `all` | 24 | 81/81 | 6.23e+10 | 2.70e+01 | 8.91e-08 | 1.64e+01 | 1.15e-01 | 2.66e-14 | 1.061 | v2026.8.17.1 |
-| `all` | 32 | 81/81 | 6.23e+10 | 2.70e+01 | 8.91e-08 | 1.64e+01 | 1.15e-01 | 2.66e-14 | 1.046 | v2026.8.17.1 |
-| `all` | 50 | 81/81 | 6.23e+10 | 2.70e+01 | 8.91e-08 | 1.64e+01 | 1.15e-01 | 2.66e-14 | 1.064 | v2026.8.17.1 |
-| `all` | 100 | 81/81 | 6.23e+10 | 2.70e+01 | 8.91e-08 | 1.64e+01 | 1.15e-01 | 2.66e-14 | 1.020 | v2026.8.17.1 |
-| `all` | 200 | 81/81 | 6.23e+10 | 2.70e+01 | 8.91e-08 | 1.64e+01 | 1.15e-01 | 2.66e-14 | 1.004 | v2026.8.17.1 |
-| `slam_fixture_571` | 8 | 0/8 | 3.00e+10 | 5.85e+03 | 5.14e+05 | 2.56e+01 | — | 3.02e-04 | 0.726 | v2026.8.17.1 |
-| `slam_fixture_571` | 12 | 0/8 | 2.76e+09 | 1.18e+03 | 1.24e+05 | 6.71e+00 | — | 4.14e-07 | 0.940 | v2026.8.17.1 |
-| `slam_fixture_571` | 16 | 1/8 | 5.87e+07 | 2.46e+01 | 2.67e+03 | 1.25e-01 | — | 6.11e-14 | 1.046 | v2026.8.17.1 |
-| `slam_fixture_571` | 24 | 8/8 | 2.24e+07 | 3.18e+00 | 1.82e+02 | 6.44e-03 | — | 5.24e-16 | 1.162 | v2026.8.17.1 |
-| `slam_fixture_571` | 32 | 8/8 | 2.24e+07 | 3.18e+00 | 1.82e+02 | 6.44e-03 | — | 5.24e-16 | 1.124 | v2026.8.17.1 |
-| `slam_fixture_571` | 50 | 8/8 | 2.24e+07 | 3.18e+00 | 1.82e+02 | 6.44e-03 | — | 5.24e-16 | 1.207 | v2026.8.17.1 |
-| `slam_fixture_571` | 100 | 8/8 | 2.24e+07 | 3.18e+00 | 1.82e+02 | 6.44e-03 | — | 5.24e-16 | 1.157 | v2026.8.17.1 |
-| `slam_fixture_571` | 200 | 8/8 | 2.24e+07 | 3.18e+00 | 1.82e+02 | 6.44e-03 | — | 5.24e-16 | 1.238 | v2026.8.17.1 |
+| `all` | 8 | 0/81 | 2.02e+14 | 3.43e+04 | 2.89e+01 | 6.18e+04 | 4.47e+02 | 3.19e-03 | 1.309 | v2026.8.17.1 |
+| `all` | 12 | 1/81 | 3.48e+13 | 8.96e+03 | 2.82e-01 | 3.14e+04 | 2.23e+02 | 5.71e-04 | 1.603 | v2026.8.17.1 |
+| `all` | 16 | 15/81 | 2.97e+13 | 1.49e+03 | 6.65e-11 | 2.69e+04 | 1.90e+02 | 2.47e-05 | 1.890 | v2026.8.17.1 |
+| `all` | 24 | 81/81 | 5.03e+08 | 2.19e-01 | 5.29e-11 | 4.96e-02 | 3.31e-04 | 3.24e-16 | 2.044 | v2026.8.17.1 |
+| `all` | 32 | 81/81 | 5.03e+08 | 2.19e-01 | 5.29e-11 | 4.96e-02 | 3.31e-04 | 3.24e-16 | 2.249 | v2026.8.17.1 |
+| `all` | 50 | 81/81 | 5.03e+08 | 2.19e-01 | 5.29e-11 | 4.96e-02 | 3.31e-04 | 3.24e-16 | 3.875 | v2026.8.17.1 |
+| `all` | 100 | 81/81 | 5.03e+08 | 2.19e-01 | 5.29e-11 | 4.96e-02 | 3.31e-04 | 3.24e-16 | 1.975 | v2026.8.17.1 |
+| `all` | 200 | 81/81 | 5.03e+08 | 2.19e-01 | 5.29e-11 | 4.96e-02 | 3.31e-04 | 3.24e-16 | 1.776 | v2026.8.17.1 |
+| `slam_fixture_571` | 8 | 0/8 | 3.00e+10 | 5.85e+03 | 5.14e+05 | 2.56e+01 | 1.51e-01 | 3.02e-04 | 1.951 | v2026.8.17.1 |
+| `slam_fixture_571` | 12 | 0/8 | 2.76e+09 | 1.18e+03 | 1.24e+05 | 6.71e+00 | 3.39e-02 | 4.14e-07 | 2.409 | v2026.8.17.1 |
+| `slam_fixture_571` | 16 | 1/8 | 6.91e+04 | 4.95e-06 | 1.04e+00 | 4.93e-05 | 3.44e-07 | 1.08e-16 | 2.490 | v2026.8.17.1 |
+| `slam_fixture_571` | 24 | 8/8 | 6.91e+04 | 4.95e-06 | 1.04e+00 | 4.93e-05 | 3.44e-07 | 2.16e-16 | 2.251 | v2026.8.17.1 |
+| `slam_fixture_571` | 32 | 8/8 | 6.91e+04 | 4.95e-06 | 1.04e+00 | 4.93e-05 | 3.44e-07 | 2.16e-16 | 2.040 | v2026.8.17.1 |
+| `slam_fixture_571` | 50 | 8/8 | 6.91e+04 | 4.95e-06 | 1.04e+00 | 4.93e-05 | 3.44e-07 | 2.16e-16 | 2.162 | v2026.8.17.1 |
+| `slam_fixture_571` | 100 | 8/8 | 6.91e+04 | 4.95e-06 | 1.04e+00 | 4.93e-05 | 3.44e-07 | 2.16e-16 | 2.238 | v2026.8.17.1 |
+| `slam_fixture_571` | 200 | 8/8 | 6.91e+04 | 4.95e-06 | 1.04e+00 | 4.93e-05 | 3.44e-07 | 2.16e-16 | 2.562 | v2026.8.17.1 |
 <!-- END auto-table:solver-early-stopping -->
 
 ## Post-hoc exploration (latest run per corpus)
@@ -146,17 +146,17 @@ table is "Accuracy" above; the verdict it gave is in the
 <!-- BEGIN auto-table:solver-accuracy-posthoc -->
 | Corpus | Candidate | Unconverged | Worst abs(flux_inactive_rel) | Worst abs(flux_rel_source) | Worst amp_rel_max (sig) | Max active-set mismatch | Median iters | Max iters | Median wall ms | Version |
 |--------|-----------|-------------|------------------------------|----------------------------|-------------------------|-------------------------|--------------|-----------|----------------|---------|
-| `all` | `fnnls` | 0/81 | 8.05e-08 | 0.00e+00 | 0.00e+00 | 0 | 9.0 | 20 | 1.092 | v2026.8.17.1 |
-| `all` | `pdip_raw` | 0/81 | 1.15e-01 | 1.64e+01 | 2.70e+01 | 26 | 18.0 | 24 | 0.991 | v2026.8.17.1 |
-| `all` | `pdip_raw_polish` | 0/81 | 3.31e-04 | 4.96e-02 | 2.19e-01 | 23 | 23.0 | 30 | 1.203 | v2026.8.17.1 |
-| `all` | `pdip_raw_tol_jaxnnls` | 75/81 | 6.24e-07 | 7.40e-05 | 2.19e-01 | 4 | 50.0 | 50 | 2.201 | v2026.8.17.1 |
-| `all` | `pdip_raw_polish_cap20` | 0/81 | 3.31e-04 | 4.96e-02 | 2.19e-01 | 23 | 23.0 | 30 | 1.385 | v2026.8.17.1 |
-| `all` | `pdip_raw_polish_cap50` | 0/81 | 3.31e-04 | 4.96e-02 | 2.19e-01 | 23 | 23.0 | 30 | 1.259 | v2026.8.17.1 |
-| `all` | `pdip_raw_tol_jaxnnls_cap100` | 74/81 | 6.24e-07 | 7.40e-05 | 2.19e-01 | 4 | 100.0 | 100 | 5.014 | v2026.8.17.1 |
-| `all` | `pdip_raw_tol_jaxnnls_cap200` | 74/81 | 6.24e-07 | 7.40e-05 | 2.19e-01 | 4 | 200.0 | 200 | 7.541 | v2026.8.17.1 |
-| `all` | `pdip_raw_tol_1e-4` | 0/81 | 1.65e-02 | 2.30e+00 | 3.52e+00 | 26 | 20.0 | 26 | 1.180 | v2026.8.17.1 |
-| `all` | `pdip_raw_tol_1e-5` | 0/81 | 2.36e-03 | 3.37e-01 | 2.27e-01 | 25 | 21.0 | 28 | 1.187 | v2026.8.17.1 |
-| `all` | `pdip_raw_tol_1e-6` | 78/81 | 8.05e-08 | 7.49e-10 | 1.25e-10 | 0 | 50.0 | 50 | 2.355 | v2026.8.17.1 |
+| `all` | `fnnls` | 0/81 | 8.05e-08 | 0.00e+00 | 0.00e+00 | 0 | 9.0 | 20 | 2.616 | v2026.8.17.1 |
+| `all` | `pdip_raw` | 0/81 | 3.31e-04 | 4.96e-02 | 2.19e-01 | 23 | 18.0 | 24 | 1.542 | v2026.8.17.1 |
+| `all` | `pdip_raw_polish` | 0/81 | 3.31e-04 | 4.96e-02 | 2.19e-01 | 23 | 23.0 | 30 | 1.860 | v2026.8.17.1 |
+| `all` | `pdip_raw_tol_jaxnnls` | 75/81 | 6.24e-07 | 7.40e-05 | 2.19e-01 | 4 | 50.0 | 50 | 3.176 | v2026.8.17.1 |
+| `all` | `pdip_raw_polish_cap20` | 0/81 | 3.31e-04 | 4.96e-02 | 2.19e-01 | 23 | 23.0 | 30 | 2.199 | v2026.8.17.1 |
+| `all` | `pdip_raw_polish_cap50` | 0/81 | 3.31e-04 | 4.96e-02 | 2.19e-01 | 23 | 23.0 | 30 | 2.038 | v2026.8.17.1 |
+| `all` | `pdip_raw_tol_jaxnnls_cap100` | 74/81 | 6.24e-07 | 7.40e-05 | 2.19e-01 | 4 | 100.0 | 100 | 5.826 | v2026.8.17.1 |
+| `all` | `pdip_raw_tol_jaxnnls_cap200` | 74/81 | 6.24e-07 | 7.40e-05 | 2.19e-01 | 4 | 200.0 | 200 | 11.559 | v2026.8.17.1 |
+| `all` | `pdip_raw_tol_1e-4` | 0/81 | 1.65e-02 | 2.30e+00 | 3.52e+00 | 26 | 20.0 | 26 | 1.889 | v2026.8.17.1 |
+| `all` | `pdip_raw_tol_1e-5` | 0/81 | 2.36e-03 | 3.37e-01 | 2.27e-01 | 25 | 21.0 | 28 | 1.605 | v2026.8.17.1 |
+| `all` | `pdip_raw_tol_1e-6` | 78/81 | 8.05e-08 | 7.49e-10 | 1.25e-10 | 0 | 50.0 | 50 | 3.681 | v2026.8.17.1 |
 <!-- END auto-table:solver-accuracy-posthoc -->
 
 ## Euclid latent by candidate (post-hoc)
@@ -166,13 +166,13 @@ computed by the euclid pipeline's own latent code ([`euclid_latent.py`](./euclid
 test passes at rel 1e-3 against the eager NumPy value.
 
 <!-- BEGIN auto-table:solver-euclid-latent -->
-_System `euclid_vis_lp/euclid_vis_lp_k0`; eager NumPy `total_source_flux` 3.3198794874035915, released jit 3.511093374207152; validation passed (x_ref rel -3.26e-08, pdip_raw rel -2.00e-08); the euclid test's rtol is 0.001._
+_System `euclid_vis_lp/euclid_vis_lp_k0`; eager NumPy `total_source_flux` 3.3198794874035915, released jit 3.511093374207152, library-main jit 3.320127603567922; validation passed (x_ref rel -3.26e-08, pdip_raw rel -2.00e-08); the euclid test's rtol is 0.001._
 
 | Candidate | Post-hoc | total_source_flux | rel vs eager | Within test rtol | Converged | Iterations | Version |
 |-----------|----------|-------------------|--------------|------------------|-----------|------------|---------|
 | `fnnls` | no | 3.3198794 | -3.26e-08 | yes | True | 8 | v2026.8.17.1 |
 | `pdip_jacobi` | no | 3.3202250 | +1.04e-04 | yes | True | 19 | v2026.8.17.1 |
-| `pdip_raw` | no | 3.5110933 | +5.76e-02 | no | True | 24 | v2026.8.17.1 |
+| `pdip_raw` | no | 3.3201275 | +7.47e-05 | yes | True | 24 | v2026.8.17.1 |
 | `pdip_raw_tol_1e-1` | no | 3.8766845 | +1.68e-01 | no | True | 23 | v2026.8.17.1 |
 | `pdip_raw_tol_1e-2` | no | 3.5110933 | +5.76e-02 | no | True | 24 | v2026.8.17.1 |
 | `pdip_raw_tol_1e-3` | no | 3.3756725 | +1.68e-02 | no | True | 25 | v2026.8.17.1 |
