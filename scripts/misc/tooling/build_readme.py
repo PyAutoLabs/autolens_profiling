@@ -36,6 +36,8 @@ Regions covered today:
   - simulators/README.md            | simulators
   - hazards/README.md               | hazards
   - lens/deflections/README.md      | deflections
+  - lens/solver/README.md           | solver-corpus, solver-accuracy, solver-early-stopping,
+                                    | solver-accuracy-posthoc, solver-euclid-latent
 
 Artifact-shape reference: `results/notes/design_lock_in.md`.
 """
@@ -642,6 +644,201 @@ def _render_deflections_table(artifacts: list[Artifact]) -> str:
     return "\n" + "\n".join(rows) + "\n"
 
 
+def _sci(value) -> str:
+    """Compact scientific formatting for the solver tables (``—`` for missing)."""
+    if value is None or not isinstance(value, (int, float)) or math.isnan(value):
+        return "—"
+    return f"{value:.2e}"
+
+
+def _render_solver_corpus_table() -> str:
+    """One row per corpus group of ``results/lens/solver/corpus/manifest.json``."""
+    manifest_path = RESULTS_ROOT / "lens" / "solver" / "corpus" / "manifest.json"
+    if not manifest_path.is_file():
+        return _no_data_block("run `python scripts/lens/solver/_corpus.py` to build the corpus.")
+    try:
+        groups = json.loads(manifest_path.read_text()).get("groups") or []
+    except (OSError, ValueError):
+        return "\n_Corpus manifest unreadable._\n"
+    if not groups:
+        return _no_data_block("the corpus manifest has no groups yet.")
+    rows = [
+        "| Group | Systems | n | cond(Q) | max abs(q) | Source columns | Captured by | Model |",
+        "|-------|---------|---|---------|------------|----------------|-------------|-------|",
+    ]
+    for group in groups:
+        systems = group.get("systems") or []
+        ns = sorted({s.get("n") for s in systems if s.get("n") is not None})
+        conds = [s["cond_Q"] for s in systems if s.get("cond_Q") is not None]
+        qs = [s["max_abs_q"] for s in systems if s.get("max_abs_q") is not None]
+        n_src = sorted({s.get("n_source_columns") for s in systems}, key=lambda v: (v is None, v))
+        models = sorted({s.get("model") or "—" for s in systems})
+        script = (group.get("source") or {}).get("script") or "—"
+        rows.append(
+            f"| `{group.get('name')}` | {len(systems)} | "
+            f"{', '.join(str(n) for n in ns) or '—'} | "
+            f"{_sci(min(conds)) if conds else '—'} – {_sci(max(conds)) if conds else '—'} | "
+            f"{_sci(min(qs)) if qs else '—'} – {_sci(max(qs)) if qs else '—'} | "
+            f"{', '.join('—' if v is None else str(v) for v in n_src)} | "
+            f"`{script}` | {'; '.join(models)} |"
+        )
+    return "\n" + "\n".join(rows) + "\n"
+
+
+def _solver_latest(artifacts: list[Artifact], script: str) -> dict[tuple, Artifact]:
+    relevant = [
+        a
+        for a in artifacts
+        if a.section == "lens" and a.subfolder == "solver" and a.script == script
+    ]
+    return _latest_per_group(relevant, key=lambda a: (a.instrument,))
+
+
+def _render_solver_accuracy_table(artifacts: list[Artifact]) -> str:
+    """Per-candidate aggregates of the latest ``accuracy`` artifact per corpus label."""
+    latest = _solver_latest(artifacts, "accuracy")
+    if not latest:
+        return _no_data_block("run `python scripts/lens/solver/accuracy.py` to populate.")
+    rows = [
+        "| Corpus | Candidate | Unconverged | Non-finite | Worst amp_rel_max | "
+        "Worst amp_rel_max (sig) | Worst abs(flux_rel_source) | Worst abs(flux_inactive_rel) | "
+        "Worst objective gap | Worst KKT | Median iters | Median wall ms | Version |",
+        "|--------|-----------|-------------|------------|-------------------|"
+        "-------------------------|----------------------------|------------------------------|"
+        "---------------------|-----------|--------------|----------------|---------|",
+    ]
+    for (label,), art in sorted(latest.items(), key=lambda kv: kv[0][0] or ""):
+        for name, agg in (art.data.get("aggregates") or {}).items():
+            n = agg.get("n_systems")
+            wall = agg.get("median_wall_ms")
+            rows.append(
+                f"| `{label or '—'}` | `{name}` | {agg.get('n_unconverged')}/{n} | "
+                f"{agg.get('n_nonfinite')} | {_sci(agg.get('worst_amp_rel_max'))} | "
+                f"{_sci(agg.get('worst_amp_rel_max_sig'))} | "
+                f"{_sci(agg.get('worst_flux_rel_source'))} | "
+                f"{_sci(agg.get('worst_flux_inactive_rel'))} | "
+                f"{_sci(agg.get('worst_objective_gap'))} | "
+                f"{_sci(agg.get('worst_kkt_residual_scaled'))} | "
+                f"{agg.get('median_iterations') if agg.get('median_iterations') is not None else '—'} | "
+                f"{'—' if wall is None else f'{wall:.3f}'} | v{art.raw_version} |"
+            )
+    return "\n" + "\n".join(rows) + "\n"
+
+
+def _render_solver_early_stopping_table(artifacts: list[Artifact]) -> str:
+    """Per-cap aggregates of the latest ``early_stopping`` artifact per corpus label."""
+    latest = _solver_latest(artifacts, "early_stopping")
+    if not latest:
+        return _no_data_block("run `python scripts/lens/solver/early_stopping.py` to populate.")
+    rows = [
+        "| Corpus | Cap | Converged | Worst amp_rel_max | Worst amp_rel_max (sig) | "
+        "Median amp_rel_max | Worst abs(flux_rel_source) | Worst abs(flux_inactive_rel) | "
+        "Worst KKT | Median wall ms | Version |",
+        "|--------|-----|-----------|-------------------|-------------------------|"
+        "--------------------|----------------------------|------------------------------|"
+        "-----------|----------------|---------|",
+    ]
+    for (label,), art in sorted(latest.items(), key=lambda kv: kv[0][0] or ""):
+        aggs = art.data.get("aggregates") or {}
+        for cap in sorted(aggs, key=lambda c: int(c)):
+            agg = aggs[cap]
+            n = agg.get("n_systems") or 0
+            wall = agg.get("median_wall_ms")
+            rows.append(
+                f"| `{label or '—'}` | {cap} | {n - (agg.get('n_unconverged') or 0)}/{n} | "
+                f"{_sci(agg.get('worst_amp_rel_max'))} | "
+                f"{_sci(agg.get('worst_amp_rel_max_sig'))} | "
+                f"{_sci(agg.get('median_amp_rel_max'))} | "
+                f"{_sci(agg.get('worst_flux_rel_source'))} | "
+                f"{_sci(agg.get('worst_flux_inactive_rel'))} | "
+                f"{_sci(agg.get('worst_kkt_residual_scaled'))} | "
+                f"{'—' if wall is None else f'{wall:.3f}'} | v{art.raw_version} |"
+            )
+    return "\n" + "\n".join(rows) + "\n"
+
+
+def _render_solver_accuracy_posthoc_table(artifacts: list[Artifact]) -> str:
+    """Per-candidate aggregates of the latest ``accuracy_posthoc`` artifact per corpus label.
+
+    POST-HOC (exploratory, not pre-registered) candidates, kept out of the pre-registered
+    ``solver-accuracy`` table on purpose.
+    """
+    latest = _solver_latest(artifacts, "accuracy_posthoc")
+    if not latest:
+        return _no_data_block("run `python scripts/lens/solver/accuracy.py --posthoc` to populate.")
+    rows = [
+        "| Corpus | Candidate | Unconverged | Worst abs(flux_inactive_rel) | "
+        "Worst abs(flux_rel_source) | Worst amp_rel_max (sig) | Max active-set mismatch | "
+        "Median iters | Max iters | Median wall ms | Version |",
+        "|--------|-----------|-------------|------------------------------|"
+        "----------------------------|-------------------------|-------------------------|"
+        "--------------|-----------|----------------|---------|",
+    ]
+    for (label,), art in sorted(latest.items(), key=lambda kv: kv[0][0] or ""):
+        for name, agg in (art.data.get("aggregates") or {}).items():
+            n = agg.get("n_systems")
+            wall = agg.get("median_wall_ms")
+            mism = agg.get("worst_active_set_mismatch")
+            rows.append(
+                f"| `{label or '—'}` | `{name}` | {agg.get('n_unconverged')}/{n} | "
+                f"{_sci(agg.get('worst_flux_inactive_rel'))} | "
+                f"{_sci(agg.get('worst_flux_rel_source'))} | "
+                f"{_sci(agg.get('worst_amp_rel_max_sig'))} | "
+                f"{'—' if mism is None else mism} | "
+                f"{agg.get('median_iterations') if agg.get('median_iterations') is not None else '—'} | "
+                f"{agg.get('max_iterations') if agg.get('max_iterations') is not None else '—'} | "
+                f"{'—' if wall is None else f'{wall:.3f}'} | v{art.raw_version} |"
+            )
+    return "\n" + "\n".join(rows) + "\n"
+
+
+def _render_solver_euclid_latent_table() -> str:
+    """The latest ``euclid_latent_by_candidate_v<version>.json``: candidate -> latent."""
+    folder = RESULTS_ROOT / "lens" / "solver"
+    found = []
+    for p in folder.glob("euclid_latent_by_candidate_v*.json"):
+        raw = p.stem.rsplit("_v", 1)[1]
+        try:
+            found.append((_parse_version(raw), raw, p))
+        except ValueError:
+            continue
+    if not found:
+        return _no_data_block("run `python scripts/lens/solver/euclid_latent.py` to populate.")
+    _, raw, path = max(found)
+    try:
+        data = json.loads(path.read_text())
+    except (OSError, ValueError):
+        return "\n_euclid latent JSON unreadable._\n"
+    ref = data.get("latent_reference") or {}
+    val = data.get("validation") or {}
+    rtol = data.get("test_rtol")
+    rows = [
+        f"_System `{data.get('system')}`; eager NumPy `total_source_flux` "
+        f"{ref.get('eager_numpy')}, released jit {ref.get('jit_released')}; validation "
+        f"{'passed' if val.get('passed') else 'FAILED'} (x_ref rel "
+        f"{_sci((val.get('x_ref_to_eager') or {}).get('rel'))}, pdip_raw rel "
+        f"{_sci((val.get('pdip_raw_to_jit') or {}).get('rel'))}); the euclid test's rtol is "
+        f"{rtol}._",
+        "",
+        "| Candidate | Post-hoc | total_source_flux | rel vs eager | Within test rtol | "
+        "Converged | Iterations | Version |",
+        "|-----------|----------|-------------------|--------------|------------------|"
+        "-----------|------------|---------|",
+    ]
+    for r in data.get("rows") or []:
+        flux = r.get("total_source_flux")
+        rel = r.get("rel_vs_eager")
+        ok = r.get("passes_test_rtol")
+        rows.append(
+            f"| `{r.get('candidate')}` | {'yes' if r.get('posthoc') else 'no'} | "
+            f"{'—' if flux is None else f'{flux:.7f}'} | "
+            f"{'—' if rel is None else f'{rel:+.2e}'} | "
+            f"{'—' if ok is None else ('yes' if ok else 'no')} | {r.get('converged')} | "
+            f"{r.get('iterations')} | v{raw} |"
+        )
+    return "\n" + "\n".join(rows) + "\n"
+
+
 def _build_renderers():
     artifacts = _scan_artifacts()
     cells = _scan_runtime_cells(RUNTIME_ROOT)
@@ -655,6 +852,11 @@ def _build_renderers():
         "jax-compile-warm": _render_jax_compile_warm_table,
         "hazards": _render_hazards_table,
         "deflections": lambda: _render_deflections_table(artifacts),
+        "solver-corpus": _render_solver_corpus_table,
+        "solver-accuracy": lambda: _render_solver_accuracy_table(artifacts),
+        "solver-early-stopping": lambda: _render_solver_early_stopping_table(artifacts),
+        "solver-accuracy-posthoc": lambda: _render_solver_accuracy_posthoc_table(artifacts),
+        "solver-euclid-latent": _render_solver_euclid_latent_table,
     }
 
 
@@ -672,6 +874,7 @@ TARGET_READMES = [
     _MISC / "jax_compile" / "README.md",
     _MISC / "hazards" / "README.md",
     REPO_ROOT / "scripts" / "lens" / "deflections" / "README.md",
+    REPO_ROOT / "scripts" / "lens" / "solver" / "README.md",
 ]
 
 
