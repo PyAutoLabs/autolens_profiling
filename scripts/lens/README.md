@@ -35,6 +35,7 @@ cannot pass as a win.
 | Section | Component | Question |
 |---------|-----------|----------|
 | [`deflections/`](./deflections/README.md) | `MassProfile.deflections_yx_2d_from` | What does one deflection-angle evaluation cost, per mass profile, on the numpy CPU path? |
+| [`solver/`](./solver/README.md) | `reconstruction_positive_only_from` (positive-only NNLS solvers) | On a frozen corpus of captured `(Q, q)` systems, how accurate is each positive-only solver against fnnls, and what does it cost in iterations? |
 
 Planned siblings follow the same shape, one component per folder:
 `convergence/`, `potential/`, `shear/`.
