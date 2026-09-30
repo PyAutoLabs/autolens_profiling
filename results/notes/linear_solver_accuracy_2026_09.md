@@ -6,7 +6,7 @@ Campaign page: `wiki/campaigns/linear_solver_accuracy.md`. Package: `scripts/len
 
 Pre-registered decision rule — linear-solver accuracy study, phase 1 (written 2026-09-30, after the
 8-system `slam_fixture_571` smoke run and BEFORE the deciding run on `slam48_hst` + `slam_spread_hst` +
-`euclid_vis_lp`; committed at autolens_profiling commit `<sha filled at commit>`).
+`euclid_vis_lp`; committed at autolens_profiling commit `327f571`).
 
 A candidate is **admissible** iff, on every system of every corpus group (CPU fp64, released library
 2026.8.17.1 source checkouts as recorded in the summary provenance):
