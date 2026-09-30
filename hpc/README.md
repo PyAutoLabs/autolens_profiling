@@ -76,9 +76,11 @@ from the same quiet host, so the sweep is pinned:
   `euclid-ral-gpu-2`) and the 1-minute load-average cap above which a row is refused as a trend
   point (`RELEASE_SWEEP_LOADAVG_CAP`, 8.0). Both are read by
   `scripts/misc/tooling/build_dashboard.py`.
-- `hpc/batch_gpu/submit_release_sweep.sh` submits the eight A100 runtime legs (mge, pixelization,
-  delaunay, delaunay_nn × dense, sparse) with `sbatch --nodelist=<reference node>`; `--node`
-  overrides the pin (say why in the release issue), `--dry-run` prints without submitting.
+- `hpc/batch_gpu/submit_release_sweep.sh` submits the nine A100 runtime legs (mge, pixelization,
+  delaunay, delaunay_nn × dense, sparse, plus the single-source point-source source-plane cell
+  `submit_runtime_point_source_source_source_plane_solved_a100_fp64`, autolens_profiling#349)
+  with `sbatch --nodelist=<reference node>`; `--node` overrides the pin (say why in the release
+  issue), `--dry-run` prints without submitting.
 
 Run it on the RAL checkout after `HPCPullPyAuto` has moved the libraries to the release tag.
 Each row's `device.provenance` block records the node, the load average at import and the

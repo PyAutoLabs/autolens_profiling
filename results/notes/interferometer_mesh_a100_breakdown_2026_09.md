@@ -25,6 +25,7 @@ plus the two `..._alma_fp64_n_sweep` arrays. Every number below is read from the
 | A100 alma ConstantSplit bridge | `delaunay_hpc_a100_fp64_constant_split.json` |
 | A100 sma / alma_high / jvla | `{sma,alma_high,jvla}/{delaunay,pixelization}_hpc_a100_{fp64,mp}.json` |
 | A100 alma N sweep | `n_sweep/delaunay_hpc_a100_fp64_n{1000,2500,4000}.json`, `n_sweep/pixelization_hpc_a100_fp64_n{1024,2500,4096}.json` |
+| A100 mask-radius sweep (#348) | `{,sma/,alma_high/}{delaunay,pixelization}_hpc_a100_fp64_r{2.0,5.0}.json` |
 | CPU sma / alma (laptop) | `{delaunay,pixelization}_breakdown_{sma,alma}_v2026.8.17.1.json` |
 
 ## Scope — read this before quoting a number
@@ -43,7 +44,7 @@ plus the two `..._alma_fp64_n_sweep` arrays. Every number below is read from the
   the sparse-path steps: triplets, `D = Lᵀ d~`, blocked-rfft2 F, H, solve, log-dets,
   fast chi-squared. There is no transformed-mapping-matrix row in the sparse arm. The dense
   (`InversionInterferometerMapping`) arm is a separate comparison block.
-- **Mask.** 3.5″ radius at every instrument. The W~ operator lives on the mask's bounding-box
+- **Mask.** 3.5″ radius at every instrument (except the mask-radius sweep section, r2.0 / r5.0). The W~ operator lives on the mask's bounding-box
   extent (`Mask2D.extent_index_for_masked_pixel`, PyAutoArray `mask/mask_2d.py:746-776`). That
   extent is 70² / 140² / 280² / 700² at sma / alma / alma_high / jvla (pixel scale 0.1 / 0.05
   / 0.025 / 0.01″), and the FFT grid is (2y, 2x): 140² → 1400².
@@ -190,6 +191,108 @@ it.
   **penalty** over single-JIT, matching the imaging fixed-light N ceiling.
 - Every N up to 4000 fits the A100 single-call. On time alone, alma Delaunay at N = 4000 is
   ~92 ms with certified, below the imaging HST 1500-pixel baseline.
+
+## Mask-radius sweep — A100 fp64 (phase 3, #348)
+
+autolens_profiling issue [#348](https://github.com/PyAutoLabs/autolens_profiling/issues/348),
+branch `feature/interferometer-mesh-breakdown-jax`, epic `interferometer-likelihood-campaign`
+3/3 phase 3. These are the A100 rows for the phase-4 decision matrix. Each instrument keeps its
+own pixel scale (0.1 / 0.05 / 0.025″) and the mask radius moves 2.0 → 3.5 → 5.0″. The model,
+meshes, solver (PDIP) and sparse path are the ones in Scope. The r3.5 rows are the committed
+#324 baseline rows, not a re-run. Per-call ms; "step sum / full" is the step sum over the
+single-JIT full pipeline. JSONs:
+`{,sma/,alma_high/}{delaunay,pixelization}_hpc_a100_fp64_r{2.0,5.0}.json` (r3.5: the baseline
+files without a suffix).
+
+| Instrument | Mesh | r (″) | M (masked) | Extent (FFT) | nnz/col | full JIT | step sum | F (W~) | F share | solve | step sum / full | vmap per call | figure of merit |
+|---|---|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| sma | Delaunay | 2.0 | 1,264 | 40² (80²) | 2.53 | 31.42 | 32.80 | 1.86 | 6 % | 21.72 | 1.044 | 19.6 (b16) | −3160.717 |
+| sma | Delaunay | 3.5 | 3,852 | 70² (140²) | 7.70 | 32.61 | 33.91 | 4.29 | 13 % | 20.57 | 1.040 | 15.3 (b64) | −3162.627 |
+| sma | Delaunay | 5.0 | 7,860 | 100² (200²) | 15.72 | 35.76 | 36.95 | 9.13 | 25 % | 18.71 | 1.033 | 24.4 (b16) | −3163.021 |
+| sma | rect | 2.0 | 1,264 | 40² (80²) | 3.32 | 22.43 | 23.44 | 1.97 | 8 % | 17.56 | 1.045 | 11.5 (b16) | −3163.230 |
+| sma | rect | 3.5 | 3,852 | 70² (140²) | 10.13 | 28.08 | 29.20 | 4.66 | 16 % | 20.33 | 1.040 | 10.1 (b64) | −3168.595 |
+| sma | rect | 5.0 | 7,860 | 100² (200²) | 20.67 | 33.76 | 35.46 | 10.50 | 30 % | 20.36 | 1.051 | 20.9 (b16) | −3173.581 |
+| alma | Delaunay | 2.0 | 5,024 | 80² (160²) | 10.05 | 39.05 | 40.84 | 5.17 | 13 % | 26.64 | 1.046 | 25.5 (b16) | −12048548.19 |
+| alma | Delaunay | 3.5 | 15,380 | 140² (280²) | 30.76 | 49.51 | 50.73 | 17.80 | 35 % | 23.46 | 1.025 | 29.4 (b64) | −12048213.71 |
+| alma | Delaunay | 5.0 | 31,428 | 200² (400²) | 62.86 | 70.24 | 71.29 | 37.68 | 53 % | 23.51 | 1.015 | 57.0 (b16) | −12048333.34 |
+| alma | rect | 2.0 | 5,024 | 80² (160²) | 13.21 | 30.59 | 31.73 | 5.48 | 17 % | 21.91 | 1.037 | 17.4 (b16) | −12049295.19 |
+| alma | rect | 3.5 | 15,380 | 140² (280²) | 40.45 | 44.46 | 45.46 | 18.71 | 41 % | 21.99 | 1.022 | 24.1 (b64) | −12049654.84 |
+| alma | rect | 5.0 | 31,428 | 200² (400²) | 82.65 | 67.19 | 67.30 | 40.47 | 60 % | 21.87 | 1.002 | 52.6 (b16) | −12049886.26 |
+| alma_high | Delaunay | 2.0 | 20,108 | 160² (320²) | 40.22 | 54.10 | 56.87 | 20.74 | 36 % | 25.32 | 1.051 | 40.1 (b16) | −60284522.56 |
+| alma_high | Delaunay | 3.5 | 61,572 | 280² (560²) | 123.14 | 101.45 | 100.00 | 67.00 | 67 % | 21.94 | 0.986 | 86.6 (b16) | −60242657.15 |
+| alma_high | Delaunay | 5.0 | 125,676 | 400² (800²) | 251.35 | 190.87 | 193.73 | 158.20 | 82 % | 21.92 | 1.015 | 179.1 (b16) | −60242434.95 |
+| alma_high | rect | 2.0 | 20,108 | 160² (320²) | 52.88 | 48.87 | 50.36 | 21.90 | 43 % | 23.71 | 1.031 | 34.6 (b16) | −60289872.60 |
+| alma_high | rect | 3.5 | 61,572 | 280² (560²) | 161.93 | 95.88 | 97.69 | 69.84 | 71 % | 22.05 | 1.019 | 83.4 (b16) | −60244457.26 |
+| alma_high | rect | 5.0 | 125,676 | 400² (800²) | 330.51 | 198.55 | 202.10 | 171.14 | 85 % | 23.46 | 1.018 | 187.3 (b16) | −60244101.50 |
+
+- **nnz/col** here is `step_fidelity.nnz_triplets` ÷ source pixels (1500 / 1521). That is 3·M
+  (Delaunay) or 4·M (rect) triplets, because the A100 JSONs do not record the in-situ
+  `mapper.pix_sizes_for_sub_slim_index` count the phase-2 CPU rows use. On rect the two agree
+  (alma 13.21 / 40.45 / 82.65 here, 13.2 / 40.4 / 82.7 in-situ). On Delaunay the triplet count is
+  an upper bound: alma is 10.05 / 30.76 / 62.86 here and 7.3 / 29.1 / 55.6 in-situ
+  ([mesh CPU ledger](./interferometer_mesh_cpu_breakdown_2026_09.md)). Quote the in-situ value
+  against the numba gate.
+- The figure of merit is not comparable across radii, because each radius masks different data.
+  It is listed as the row's fit value. Within a row the standalone steps reproduce the library
+  `FitInterferometer.figure_of_merit` to ≤ 7.6e-7 nats. At sma sparse = dense to 4.5e-12 nats
+  (Delaunay r2.0) and 0.0 on the other new sma rows.
+- The r3.5 vmap column is b64 at sma / alma (the baseline submits). The new rows are b16.
+
+**Reading.**
+
+- **The radius sets the cost through F alone.** Going r2.0 → r5.0 multiplies the extent area by
+  6.25. F grows 4.9× / 7.3× / 7.6× on Delaunay (sma / alma / alma_high) and 5.3× / 7.4× / 7.8×
+  on rect. The solve stays flat at 17.6–26.6 ms on all 18 rows. The mapper (Delaunay 5.3–7.8 ms,
+  rect 0.8–1.6 ms), D (0.14–1.17 ms) and the log-dets (2.1–2.4 ms) barely move. So the full JIT
+  grows 1.14× / 1.80× / 3.53× (Delaunay) and 1.51× / 2.20× / 4.06× (rect), and F's share goes
+  from 6–43 % at r2.0 to 25–85 % at r5.0.
+- **F costs ~0.8–1.2 µs per extent pixel on every row**, whatever the instrument or N_vis: 1600
+  to 160,000 extent pixels, 190 to 5M visibilities. The cross-instrument witness is alma r5.0
+  (200², 1M visibilities, F 37.68 ms), which costs more than alma_high r2.0 (160², 5M
+  visibilities, F 20.74 ms). This confirms at fixed N_vis what the baseline found across
+  instruments: F follows the mask extent, not the visibility count.
+- **Nothing OOMs on the sparse path**, including alma_high r5.0 (400² extent, 800² FFT, 125,676
+  masked pixels) at single-JIT and at vmap b16. The dense arm behaves as in the baseline. alma
+  OOMs at every radius, requesting 25.4 GB (rect) / 27.4–27.8 GB (Delaunay), because T is set by
+  N_vis × S and not by the radius. alma_high dense is skipped, and sma dense runs.
+- **Batching stops paying once F dominates.** alma_high r5.0 vmap b16 is 179.1 / 187.3 ms against
+  190.87 / 198.55 ms single-JIT (6 % off). At r5.0, rect is dearer than Delaunay at alma_high
+  (198.55 vs 190.87 ms, F 171.14 vs 158.20 ms). At r2.0, rect is the cheaper mesh everywhere.
+
+**Provenance and witness.** RAL `euclid-ral-gpu-{1,2}`, A100 80 GB PCIe. Jobs: Delaunay array
+**366895** tasks 2–5 (alma, alma_high), rect array **366896** tasks 2–5. The sma tasks 0–1 of
+both arrays were cancelled because the sma dataset was missing in the RAL worktree, and were
+resubmitted as **366907** (Delaunay) / **366908** (rect) tasks 0–1. The profiling revision is
+`fe0d4b51`. Library revisions (every new JSON's `source_revisions`): PyAutoNerves `bf104102`,
+PyAutoFit `404b3e5f`, PyAutoArray `9428eca2`, PyAutoGalaxy `c9609825`, PyAutoLens `21b520be`,
+with nufftax 0.6.1 and jax 0.10.2.
+
+**Witness — PASS.** All 12 new JSONs are `stage: complete` with
+`configuration.mask_radius_arcsec` equal to the requested radius. Each records its inversion
+path as `sparse`, i.e. `InversionInterferometerSparse` (`configuration.inversion_class`, the same
+as the #324 rows). Step sum / full JIT is 1.002–1.051 (within 10 %). PDIP converged on every
+row. The HLO census is 3 fft ops per fused pipeline, as in the baseline. The `.err` files have 0
+Tracebacks and 0 `truncated to dtype float32`. Their only allocator warnings are the alma dense
+arm OOM, which is recorded in the JSON.
+
+**Mixed revisions.** The r3.5 column comes from the older mirror (jobs 356370–356387; PyAutoArray
+`14d63360`, PyAutoLens `4487eb47`, profiling `66e45e90`). Between the two mirrors, the only
+PyAutoArray change on the interferometer path is PyAutoArray#582 (`cached_property` F / D). On
+JAX, XLA's CSE had already merged the duplicate F / D (3 fft ops in both generations). The other
+library commits are PyAutoGalaxy `a2175896` (grad guards at zero shear / multipole /
+ell_comps, on the ray-trace prefix), PyAutoGalaxy `b88fc6b8` (`Delaunay.areas_factor` config),
+point-source and gradient-mode changes, and release bumps. Their effect on these rows was not
+measured. r3.5 was not re-run on the new revisions, so the column mixes generations. The JAX
+compilation cache was shared and not fresh (`autotune_cache_entries_at_start = 204`), as in the
+baseline.
+
+**Peak VRAM is not recorded.** `device.nvidia_smi` is a `memory.used` snapshot taken at JSON
+write (17,639–61,379 MiB across rows), not a peak, so it is not quoted. Host peak RSS is 1.6–4.2 GB.
+
+- **For phase 4.** The phase-2 CPU radius rows exist only at alma
+  (`{delaunay,pixelization}_numba_hpc_ral_cpu_fp64_r{2.0,4.25,5.0,6.0}.json`). CPU rows for sma
+  and alma_high at r2.0 / r5.0 are missing. Phase 4 must add them before the CPU-vs-A100 witness
+  can pair every A100 cell above with a CPU cell on the same geometry.
 
 ## Mixed precision vs fp64 — log-evidence shift (in-run fp64 reference; bar 0.5 nats)
 
