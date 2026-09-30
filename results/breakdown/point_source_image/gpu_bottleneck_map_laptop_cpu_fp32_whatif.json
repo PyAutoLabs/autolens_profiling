@@ -1,0 +1,667 @@
+{
+  "cell": "gpu_bottleneck_map",
+  "issue": "PyAutoLabs/autolens_profiling#350",
+  "phase": "0+1 combined (lean)",
+  "config_name": "laptop_cpu_fp32_whatif",
+  "precision": "fp32",
+  "quotable": false,
+  "host_note": "laptop witness: WSL2, interactive load, tiny counts, NOT quotable",
+  "quick": true,
+  "legs": [
+    "baseline",
+    "vmap"
+  ],
+  "library_versions": {
+    "autolens": "2026.8.17.1",
+    "autoarray": "2026.8.17.1",
+    "autofit": "2026.8.17.1"
+  },
+  "package_versions": {
+    "jax": "0.10.2",
+    "jaxlib": "0.10.2"
+  },
+  "source_revisions": {
+    "autolens_profiling": "75833a953dd0a59045752a06cfd772dbe7484cce",
+    "PyAutoNerves": "e72ac85f9fe7ccb3f1f068710741d9d4f8e567f9",
+    "PyAutoFit": "404b3e5f7760d26f4bb41c7b1535ae5be3d113a0",
+    "PyAutoArray": "9428eca24a02b528edde68550dbcf82e609a652a",
+    "PyAutoGalaxy": "c9609825660f5ee8d6b3254b5ee90971216dd272",
+    "PyAutoLens": "21b520be4d0dd103aaaaba800e42c5092fedeb29"
+  },
+  "autoarray_imported_from": "~/Code/PyAutoLabs/array/PyAutoArray",
+  "autolens_imported_from": "~/Code/PyAutoLabs/lens/PyAutoLens",
+  "solver": {
+    "construction": "al.PointSolver.for_grid(100x100 @ 0.2, precision 1e-3, mag 0.1, nd 1)",
+    "n_steps": 8,
+    "max_containing_size": 20,
+    "step0_containment": "structured"
+  },
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "hostname": "DESKTOP-H143S82",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 8,
+    "jax_compilation_cache_dir": null,
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": false,
+    "provenance": {
+      "provenance_schema": 1,
+      "captured_at": "2026-09-28T20:19:34Z",
+      "host": "DESKTOP-H143S82",
+      "slurm": {
+        "job_id": null,
+        "array_job_id": null,
+        "array_task_id": null
+      },
+      "loadavg_at_import": [
+        3.357,
+        2.629,
+        1.72
+      ],
+      "loadavg_at_write": [
+        3.321,
+        2.75,
+        1.834
+      ],
+      "profiling_revision": "75833a953dd0a59045752a06cfd772dbe7484cce",
+      "library_revisions": {
+        "autolens_profiling": "75833a953dd0a59045752a06cfd772dbe7484cce",
+        "PyAutoNerves": "e72ac85f9fe7ccb3f1f068710741d9d4f8e567f9",
+        "PyAutoFit": "404b3e5f7760d26f4bb41c7b1535ae5be3d113a0",
+        "PyAutoArray": "9428eca24a02b528edde68550dbcf82e609a652a",
+        "PyAutoGalaxy": "c9609825660f5ee8d6b3254b5ee90971216dd272",
+        "PyAutoLens": "21b520be4d0dd103aaaaba800e42c5092fedeb29"
+      },
+      "library_versions": {
+        "PyAutoNerves": "2026.8.17.1",
+        "PyAutoFit": "2026.8.17.1",
+        "PyAutoArray": "2026.8.17.1",
+        "PyAutoGalaxy": "2026.8.17.1",
+        "PyAutoLens": "2026.8.17.1"
+      },
+      "dependency_versions": {
+        "jax": "0.10.2",
+        "jaxlib": "0.10.2",
+        "numpy": "2.2.6",
+        "scipy": "1.17.1",
+        "numba": "0.62.1",
+        "nufftax": "0.6.1"
+      }
+    }
+  },
+  "jax_devices": [
+    "cpu:0"
+  ],
+  "machine": {
+    "cpu_model": "Intel(R) Core(TM) i9-10885H CPU @ 2.40GHz",
+    "cpu_count_os": 8,
+    "nproc": 1,
+    "nproc_all": 8,
+    "nproc_note": "GNU nproc honours OMP_NUM_THREADS, so `nproc` can print 1 on a multi-core host; `nproc_all` is the core count.",
+    "ram_total": "16392692 kB",
+    "kernel": "5.10.16.3-microsoft-standard-WSL2",
+    "platform": "Linux-5.10.16.3-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+    "python": "3.12.10",
+    "jax_thread_env": {
+      "NPROC": "8"
+    },
+    "blas_thread_env": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "VECLIB_MAXIMUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1"
+    },
+    "thread_env_note": "NPROC sizes XLA's CPU intra-op pool (the JAX rows); the BLAS knobs pin OpenBLAS/MKL/OpenMP (the numpy/scipy rows) and do not touch JAX. Two disjoint families; both are recorded on every CPU timing.",
+    "gpu": "NVIDIA GeForce RTX 2060 with Max-Q Design, 6144 MiB, 580.97"
+  },
+  "thread_environment": {
+    "NPROC": "8",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+  "jax_platforms": "cpu",
+  "jax_enable_x64": false,
+  "loadavg_start": [
+    3.35693359375,
+    2.62890625,
+    1.72021484375
+  ],
+  "loadavg_end": [
+    3.29541015625,
+    2.75390625,
+    1.84033203125
+  ],
+  "protocol": {
+    "rounds": 3,
+    "calls": 3,
+    "warm": 3,
+    "n_stream": 16,
+    "n_eval": 8,
+    "seed": 314,
+    "vmap_batches": [
+      1,
+      4
+    ],
+    "vmap_rounds": 2,
+    "vmap_calls": 2,
+    "trace_calls": 3,
+    "trace_vmap": 4,
+    "steady_calls": 5,
+    "grad_points": 2,
+    "grad_rounds": 2,
+    "grad_calls": 2,
+    "grad_vmap": 4,
+    "vmap_delta_tol": 1e-09,
+    "cache_trap_guard": "fresh closure + jax.clear_caches() per compiled program",
+    "command_buffers_off": "compiler_options={\"xla_gpu_enable_command_buffer\": \"\"}",
+    "mdi": "90% CI half-width of a split-half bootstrap of the scalar ON per-call samples"
+  },
+  "headline": {
+    "scalar_command_buffers_on_ms": 2.695099999982631,
+    "scalar_command_buffers_off_ms": 2.777100002276711,
+    "mdi_same_program": 0.052718659007139346,
+    "vmap_ms_per_likelihood": {
+      "1": 2.207450001151301,
+      "4": 1.5042124996398343
+    },
+    "largest_batch_fitting": 4,
+    "fp32_whatif": {
+      "max_abs_dlogl": 4.438877372336947e-06,
+      "fp64_over_fp32": 0.8245705174069632
+    }
+  },
+  "baseline": {
+    "compile": {
+      "label": "scalar_log_likelihood",
+      "lower_s": 5.066750099998899,
+      "compile_s": 6.651500799998757,
+      "first_call_s": 0.005824799998663366,
+      "flops": 3404059.0,
+      "memory_analysis": {
+        "argument_size_in_bytes": 20,
+        "output_size_in_bytes": 4,
+        "temp_size_in_bytes": 549464,
+        "generated_code_size_in_bytes": 0
+      },
+      "device_memory_after_first_call": null,
+      "compile_off_s": 7.682493899999827,
+      "first_call_off_s": 0.004071100000146544
+    },
+    "rows": {
+      "command_buffers_on": {
+        "stats": {
+          "n": 9,
+          "median_ms": 2.695099999982631,
+          "p10_ms": 2.6057800023409072,
+          "p90_ms": 2.77262000090559,
+          "min_ms": 2.5681000006443355,
+          "max_ms": 2.8754999984812457,
+          "mean_ms": 2.6927444442763875
+        },
+        "per_call_ms": [
+          2.623299998958828,
+          2.61520000276505,
+          2.8754999984812457,
+          2.723699999478413,
+          2.7469000015116762,
+          2.6593999973556492,
+          2.695099999982631,
+          2.727499999309657,
+          2.5681000006443355
+        ]
+      },
+      "command_buffers_off": {
+        "stats": {
+          "n": 9,
+          "median_ms": 2.777100002276711,
+          "p10_ms": 2.6345199985371437,
+          "p90_ms": 2.94972000119742,
+          "min_ms": 2.551800000219373,
+          "max_ms": 2.9642000008607283,
+          "mean_ms": 2.791100000144474
+        },
+        "per_call_ms": [
+          2.814100000250619,
+          2.6551999981165864,
+          2.9642000008607283,
+          2.9291999999259133,
+          2.72910000057891,
+          2.777100002276711,
+          2.753099997789832,
+          2.946100001281593,
+          2.551800000219373
+        ]
+      }
+    },
+    "mdi_same_program": 0.052718659007139346,
+    "off_over_on": {
+      "ratio": 1.0304255880281283,
+      "ci90_low": 1.0019825976067598,
+      "ci90_high": 1.0999280515851848,
+      "bootstrap_samples": 2000
+    },
+    "command_buffer_saving_ms": 0.08200000229408033
+  },
+  "stream_eval": {
+    "seed": 314,
+    "vectors": [
+      [
+        0.0,
+        0.0,
+        1.6,
+        0.05263158,
+        0.0
+      ],
+      [
+        0.002785509379021335,
+        0.0013487526377525562,
+        1.6160668823462656,
+        0.05351103791811089,
+        -0.0048184253577669344
+      ],
+      [
+        -0.0014810632271608038,
+        -0.0015414420227492956,
+        1.5866130756111796,
+        0.057905263273748196,
+        0.0003416977112924583
+      ],
+      [
+        -0.0009187567952606985,
+        0.0012117324659718283,
+        1.6154545306524328,
+        0.05653343302381473,
+        0.0013468493974032997
+      ],
+      [
+        0.0025547012334068597,
+        0.0002370092421116626,
+        1.6220295145110102,
+        0.05586304506487185,
+        -0.0010056268617099657
+      ],
+      [
+        -0.0026068134192456824,
+        -9.989947095892552e-05,
+        1.6201513609563176,
+        0.053374757656871254,
+        0.0008508462790825427
+      ],
+      [
+        -0.0027155338494997657,
+        0.00055137465403141,
+        1.5884340623354574,
+        0.054119081297693,
+        -0.002421850386572779
+      ],
+      [
+        -0.0003578370314709936,
+        0.0013361040712938557,
+        1.5718114525416462,
+        0.04857616603647422,
+        -0.006558724038692084
+      ]
+    ],
+    "parameter_paths": [
+      "galaxies.lens.mass.centre.centre_0",
+      "galaxies.lens.mass.centre.centre_1",
+      "galaxies.lens.mass.einstein_radius",
+      "galaxies.lens.mass.ell_comps.ell_comps_0",
+      "galaxies.lens.mass.ell_comps.ell_comps_1"
+    ],
+    "log_likelihood": [
+      7.743196964263916,
+      -4.160950660705566,
+      7.657977104187012,
+      9.364553451538086,
+      7.051558971405029,
+      9.219328880310059,
+      0.8907036781311035,
+      -34.37791061401367
+    ],
+    "log_likelihood_positions_program": [
+      7.743196964263916,
+      -4.160950660705566,
+      7.657977104187012,
+      9.364553451538086,
+      7.051558971405029,
+      9.219328880310059,
+      0.8907036781311035,
+      -34.37791061401367
+    ],
+    "finite_positions": [
+      [
+        [
+          -1.03515625,
+          -1.0450942516326904
+        ],
+        [
+          0.35546875,
+          1.6296613216400146
+        ],
+        [
+          1.243749976158142,
+          1.1086928844451904
+        ],
+        [
+          1.6062501668930054,
+          0.44293591380119324
+        ]
+      ],
+      [
+        [
+          -1.083593726158142,
+          -1.0099118947982788
+        ],
+        [
+          0.375,
+          1.6445462703704834
+        ],
+        [
+          1.3500001430511475,
+          1.0076568126678467
+        ],
+        [
+          1.6429688930511475,
+          0.37843507528305054
+        ]
+      ],
+      [
+        [
+          -1.0164062976837158,
+          -1.0315625667572021
+        ],
+        [
+          0.35234376788139343,
+          1.6206402778625488
+        ],
+        [
+          1.2265625,
+          1.113203525543213
+        ],
+        [
+          1.59765625,
+          0.4406806230545044
+        ]
+      ],
+      [
+        [
+          -1.028906226158142,
+          -1.0577237606048584
+        ],
+        [
+          0.35625001788139343,
+          1.6517629623413086
+        ],
+        [
+          1.21484375,
+          1.1695854663848877
+        ],
+        [
+          1.626562476158142,
+          0.44744643568992615
+        ]
+      ],
+      [
+        [
+          -1.05078125,
+          -1.0441920757293701
+        ],
+        [
+          0.36093753576278687,
+          1.6553714275360107
+        ],
+        [
+          1.2687500715255737,
+          1.1222245693206787
+        ],
+        [
+          1.64453125,
+          0.4082046449184418
+        ]
+      ],
+      [
+        [
+          -1.04296875,
+          -1.0640385150909424
+        ],
+        [
+          0.35703128576278687,
+          1.6504099369049072
+        ],
+        [
+          1.2265625,
+          1.1565048694610596
+        ],
+        [
+          1.626562476158142,
+          0.44564223289489746
+        ]
+      ],
+      [
+        [
+          -1.0476562976837158,
+          -1.015324592590332
+        ],
+        [
+          0.35859379172325134,
+          1.6188359260559082
+        ],
+        [
+          1.3000000715255737,
+          1.0211882591247559
+        ],
+        [
+          1.59375,
+          0.4393274784088135
+        ]
+      ],
+      [
+        [
+          -1.079687476158142,
+          -0.9760828018188477
+        ],
+        [
+          0.3382812440395355,
+          1.5998916625976562
+        ],
+        [
+          1.4203126430511475,
+          0.8001713752746582
+        ],
+        [
+          1.5710939168930054,
+          0.43526798486709595
+        ]
+      ]
+    ],
+    "finite_image_count": [
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4
+    ],
+    "distinct_image_count": [
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4
+    ],
+    "positions_compile": {
+      "label": "scalar_positions",
+      "lower_s": 5.74938850000035,
+      "compile_s": 8.488616000002366,
+      "first_call_s": 0.003205699998943601,
+      "flops": 3404059.0,
+      "memory_analysis": {
+        "argument_size_in_bytes": 20,
+        "output_size_in_bytes": 180,
+        "temp_size_in_bytes": 549464,
+        "generated_code_size_in_bytes": 0
+      },
+      "device_memory_after_first_call": null
+    }
+  },
+  "vmap": {
+    "batches": [
+      1,
+      4
+    ],
+    "rows": {
+      "1": {
+        "batch": 1,
+        "stats_per_batch": {
+          "n": 4,
+          "median_ms": 2.207450001151301,
+          "p10_ms": 2.147589999731281,
+          "p90_ms": 2.239800001916592,
+          "min_ms": 2.1249999990686774,
+          "max_ms": 2.2506000022985972,
+          "mean_ms": 2.197625000917469
+        },
+        "median_ms_per_likelihood": 2.207450001151301,
+        "throughput_likelihoods_per_s": 453.0113930002707,
+        "compile": {
+          "label": "vmap1",
+          "lower_s": 5.468802300001698,
+          "compile_s": 8.548543000000791,
+          "first_call_s": 0.0032509000011486933,
+          "flops": 3425380.0,
+          "memory_analysis": {
+            "argument_size_in_bytes": 20,
+            "output_size_in_bytes": 4,
+            "temp_size_in_bytes": 549528,
+            "generated_code_size_in_bytes": 0
+          },
+          "device_memory_after_first_call": null
+        },
+        "device_memory_after_timing": null,
+        "max_abs_delta_vs_scalar": 0.0,
+        "speedup_per_likelihood_vs_vmap1": 1.0
+      },
+      "4": {
+        "batch": 4,
+        "stats_per_batch": {
+          "n": 4,
+          "median_ms": 6.016849998559337,
+          "p10_ms": 5.967789998976514,
+          "p90_ms": 6.074169999919832,
+          "min_ms": 5.965899999864632,
+          "max_ms": 6.079599999793572,
+          "mean_ms": 6.01979999919422
+        },
+        "median_ms_per_likelihood": 1.5042124996398343,
+        "throughput_likelihoods_per_s": 664.7996877033252,
+        "compile": {
+          "label": "vmap4",
+          "lower_s": 5.354551599997649,
+          "compile_s": 8.07590960000016,
+          "first_call_s": 0.00780779999695369,
+          "flops": 12765332.0,
+          "memory_analysis": {
+            "argument_size_in_bytes": 80,
+            "output_size_in_bytes": 16,
+            "temp_size_in_bytes": 1988824,
+            "generated_code_size_in_bytes": 0
+          },
+          "device_memory_after_first_call": null
+        },
+        "device_memory_after_timing": null,
+        "max_abs_delta_vs_scalar": 0.0,
+        "speedup_per_likelihood_vs_vmap1": 1.4675120713860896
+      }
+    },
+    "stopped_at": null,
+    "largest_batch_fitting": 4
+  },
+  "trace": null,
+  "grad": null,
+  "fp32_whatif": {
+    "label": "WHAT-IF: whole-program JAX_ENABLE_X64=0 in a separate process. The PointSolver has no mixed-precision switch; this is headroom evidence, not a supported mode.",
+    "fp64_reference": "results/breakdown/point_source_image/gpu_bottleneck_map_laptop_cpu_fp64.json",
+    "n_points": 8,
+    "same_stream_vectors": true,
+    "abs_delta_log_likelihood": {
+      "max": 4.438877372336947e-06,
+      "median": 2.4442524853007797e-06,
+      "per_point": [
+        4.236612896058034e-06,
+        2.0906852000734943e-06,
+        4.438877372336947e-06,
+        2.5024808358864448e-06,
+        2.3860241347151145e-06,
+        1.3818874950999316e-06,
+        9.035444428207029e-07,
+        3.5972967609154693e-06
+      ]
+    },
+    "finite_image_count_agreement": 1.0,
+    "n_image_count_mismatch": 0,
+    "max_position_delta_arcsec": 2.22924513471583e-07,
+    "median_position_delta_arcsec": 1.1393434085071874e-07,
+    "fp64_over_fp32_scalar_on": {
+      "ratio": 0.8245705174069632,
+      "ci90_low": 0.8060494955239796,
+      "ci90_high": 0.8714704463180956,
+      "bootstrap_samples": 2000
+    },
+    "fp64_scalar_on_median_ms": 2.2223000014491845,
+    "fp32_scalar_on_median_ms": 2.695099999982631,
+    "fp64_reference_job": {
+      "job_id": null,
+      "array_job_id": null,
+      "array_task_id": null
+    },
+    "vmap_fp64_over_fp32_ms_per_likelihood": {
+      "1": 0.9334752763359226,
+      "4": 0.9731337830182333
+    }
+  },
+  "gates": {
+    "command_buffers_off_bit_identical": {
+      "n_points": 8,
+      "n_differ": 0,
+      "pass": true
+    },
+    "stream_finite": {
+      "n_points": 8,
+      "n_non_finite": 0,
+      "pass": true
+    },
+    "vmap_matches_scalar": {
+      "tol": 1e-09,
+      "max_abs_delta": {
+        "1": 0.0,
+        "4": 0.0
+      },
+      "pass": true
+    }
+  },
+  "gates_required": [
+    "stream_finite"
+  ],
+  "all_gates_pass": true,
+  "progress": [
+    "[    2.1 s] backend cpu, precision fp32, legs ['baseline', 'vmap']; MAX_CONTAINING_SIZE 20, step-0 route structured, n_steps 8",
+    "[   21.6 s] baseline compile: lower 5.07 s, compile ON 6.65 s, OFF 7.682493899999827",
+    "[   22.2 s] baseline: command_buffers_on 2.6951 ms, command_buffers_off 2.7771 ms",
+    "[   36.6 s] fiducial 7.743196964263916 (expected 7.743201200876812); gates {'command_buffers_off_bit_identical': {'n_points': 8, 'n_differ': 0, 'pass': True}, 'stream_finite': {'n_points': 8, 'n_non_finite': 0, 'pass': True}}",
+    "[   62.0 s] vmap1: 2.2075 ms/batch = 2.20745 ms/L, compile 8.5 s, delta 0.00e+00",
+    "[   75.7 s] vmap4: 6.0168 ms/batch = 1.50421 ms/L, compile 8.1 s, delta 0.00e+00",
+    "[   76.0 s] fp32 what-if: max |dlogL| 4.439e-06, image-count agreement 1.000, max pos delta 2.22924513471583e-07, fp64/fp32 0.825"
+  ],
+  "wall_s": 77.6748148000006
+}

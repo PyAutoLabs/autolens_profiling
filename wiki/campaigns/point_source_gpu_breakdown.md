@@ -1,15 +1,15 @@
 # Point-source A100 breakdown
 
-**Status:** draft
+**Status:** open
 **Question:** Where does the image-plane point-source `PointSolver` likelihood spend its time on the A100 (fp64 and mixed precision, primal and gradient, single call and `vmap`), and which measured changes cut it without changing the answer?
 **Pre-registered rule:** the 2026-09-19 campaign contract: per iteration, baseline → one hypothesis → bounded prototype → correctness gate → repeated interleaved full-likelihood A/B; keep a change only for a repeatable material gain above the stated minimum detectable improvement, with no correctness failure and no unacceptable compile or memory regression; stop when the remaining cost is explained and no worthwhile measured lever remains, or on a concrete external blocker.
-**Verdict:** not started
-**Headline:** none yet
+**Verdict:** phase 0+1 (lean) measured; launch-bound confirmed; go/no-go pending the human (no image-plane fit timed yet)
+**Headline:** scalar 0.910 ms (CUDA graphs on; 1.097 off), 173 kernels/call, device busy 57 % of wall, vmap-256 0.0120 ms/L (81x); A100 job 366916 (euclid-ral-gpu-1, exclusive); forward-mode gradient NaN
 **Library PRs:** none
-**Profiling PRs:** none
-**Ledger:** none yet; instrument [point_source_shared_likelihood_breakdown.md](../../results/notes/point_source_shared_likelihood_breakdown.md)
+**Profiling PRs:** branch `feature/point-source-gpu-p01` (#350)
+**Ledger:** [point_source_gpu_breakdown_2026_09.md](../../results/notes/point_source_gpu_breakdown_2026_09.md); instrument [point_source_shared_likelihood_breakdown.md](../../results/notes/point_source_shared_likelihood_breakdown.md)
 **Mind contract:** `draft/research/autolens_profiling/point_source_image_plane_gpu_breakdown.md` (filed 2026-09-17, contract 2026-09-19); prerequisite `complete/2026/09/point-source-shared-breakdown.md` (#293).
-**Next:** issue when scheduled
+**Next:** human go/no-go against the admission bar; prerequisite one autolens_inference image-plane fit measurement; route the forward-mode NaN through intake
 
 ## Why this campaign
 
@@ -30,18 +30,19 @@ cost) stay hypotheses until phase 1 measures them.
 
 ## Phases
 
-Planned, from the draft's campaign contract; none has been issued.
+From the draft's campaign contract. Phases 0 and 1 ran as one lean job (human, 2026-09-28).
 
 | Phase | Dates | Question | Pre-registered rule | Result | Jobs | PRs |
 |---|---|---|---|---|---|---|
-| 0 A100 baseline | not started | Does the shared harness run correctly on the A100; what are the fp64 and separately labelled mp reference rows on the preserved unoptimized revisions? | numerical agreement with the CPU reference and the production likelihood, precision-specific tolerances recorded; no optimization before this baseline | | | |
+| 0+1 combined (lean) | 2026-09-28 | Current-main A100 baseline (CUDA graphs on/off), vmap 1–256, trace-attributed bottleneck map, fp32 what-if, reverse/forward gradient with FD check | fiducial bit-exact; vmap lanes equal scalar; trace join complete; FD agreement at smooth points (strict) | launch-bound: 173 kernels, busy 57 % of 0.910 ms; FLOP levers below MDI; forward jacfwd NaN; FD strict fails 2/6 smooth points (finding) | 366913 (contended, caveat), 366915 (superseded), **366916** | #350 |
+| 0 A100 baseline | skipped (human 2026-09-28) | Does the shared harness run correctly on the A100; what are the fp64 and separately labelled mp reference rows on the preserved unoptimized revisions? | numerical agreement with the CPU reference and the production likelihood, precision-specific tolerances recorded; no optimization before this baseline | | | |
 | 1 A100 bottleneck map | not started | Fused device timeline attributed to source operations; `vmap` 1/4/16 (larger within memory headroom); fp64 vs mp; compile vs cold vs warm; simple and cluster configurations; primal vs `custom_jvp` gradient | gradient throughput usable only after finite-difference agreement at smooth points; distinct parameter inputs; synchronized timing | | | |
 | 2 Bounded optimization iterations | not started | Levers in contract order: redundant-sort removal on A100 (shared with CPU), `vmap` break-even if launch-bound, the measured sort/gather or static lattice, loop form for unrolled compile, implicit-gradient Jacobian, deflections | the iteration contract in the header; each lever published as accepted / rejected / deferred, re-profile after each acceptance | | | |
 | Completion | not started | Close with baseline/final artifact pairs, trace-derived map, batching/precision/compile/gradient tables and `results/notes/point_source_gpu_breakdown_2026_09.md` | stop rule in the header; if no A100 access, the campaign stays pending | | | |
 
 ## What shipped and where it is
 
-Nothing yet for this campaign.
+The bottleneck-map cell `scripts/point_source_image/likelihood_breakdown/gpu_bottleneck_map.py`, its stage map `_point_solver_stage_map.py`, the submit `hpc/batch_gpu/submit_breakdown_point_source_image_gpu_bottleneck_map_a100_fp64` and the job-366916 results (branch `feature/point-source-gpu-p01`). No library change.
 
 ## Open / parked / drafts
 
@@ -69,3 +70,18 @@ Page now records the 2026-09-17 request, the 2026-09-19 three-task split and cam
 cited as the shared instrument. Noted that the CPU campaign has since shipped several of the
 contract's phase 2 levers with A100 rows. Open: the campaign is unissued and has no
 A100 baseline.
+
+### 2026-09-28 — phase 0+1 combined (lean), A100 job 366916
+
+The human skipped the contract's phase-0 reproduction of the preserved unoptimized revisions
+(the CPU campaign's A100 rows 350587 / 350637 / 357322 / 359102 already cover it) and asked for
+one job on current main. Result: launch-bound confirmed — 173 kernels per call, device busy
+57 % of the 0.910 ms production wall, CUDA graphs already worth 0.187 ms, vmap-256 81x per
+likelihood with no OOM. Deflections and the step-0 lattice are below the 5.45 % MDI even at a
+100 % saving; launch count (≤ 1.69x), the neighbourhood sort (≤ 1.24x) and the reverse
+gradient's implicit Jacobian (≤ 1.92x per gradient) have room. fp32 what-if 1.27x scalar,
+none batched. Findings: `jax.jacfwd` is NaN on this likelihood while `AnalysisPoint` defaults
+to forward mode (PyAutoLens#752); two smooth points fail the strict FD rule (kept failing
+after a briefly widened gate was reverted); scalar +8.6 % vs job 359102, not bisected. First
+run 366913 shared its node and is a caveat only. No image-plane fit has been timed, so the
+go/no-go against the admission bar needs one autolens_inference measurement first.
