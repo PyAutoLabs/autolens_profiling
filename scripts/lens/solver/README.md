@@ -24,6 +24,7 @@ as groups, old groups are never rewritten — and every release re-runs the cell
 | [`_solvers.py`](./_solvers.py) | The candidate registry `CANDIDATES` — each a composition of library primitives only, `jax.jit`-compiled once per candidate. |
 | [`_metrics.py`](./_metrics.py) | `metrics(x, system)` against the stored fnnls reference, and `timing()` (median warm wall). |
 | [`_driver.py`](./_driver.py) | Shared CLI, per-(system, candidate) evaluation, artefact naming and JSON write. |
+| [`capture.py`](./capture.py) | Adds a captured group to the corpus: `--source slam48` (group `slam48_hst`, all 48 #571 SLaM vectors, fixture reproduction recorded), `--source slam_spread` (`slam_spread_hst`, sigma_min x0.5/x2 and noise x0.3/x3 at 6 vectors) and `--source euclid_vis_lp` (`euclid_vis_lp`, the euclid latent jit test's system plus its eager/jitted `total_source_flux` as `latent_reference`). |
 | [`accuracy.py`](./accuracy.py) | Every candidate on every system → `results/lens/solver/accuracy_summary_<corpus>_v<version>.{json,png}`. |
 | [`early_stopping.py`](./early_stopping.py) | Released raw PDIP at each iteration cap → `results/lens/solver/early_stopping_summary_<corpus>_v<version>.{json,png}`. |
 
@@ -38,6 +39,9 @@ re-derives its truth.
 | Group | Systems | n | cond(Q) | max abs(q) | Source columns | Captured by | Model |
 |-------|---------|---|---------|------------|----------------|-------------|-------|
 | `slam_fixture_571` | 8 | 60 | 9.69e+10 – 9.73e+10 | 2.16e+06 – 2.16e+06 | 20 | `scripts/imaging/hazards/mge_nnls_capture.py` | SLaM source_lp[1]: lens 2x20 MGE (sigma_min=pixel_scale/10) + source 20 MGE, free Isothermal + ExternalShear |
+| `slam48_hst` | 48 | 60 | 9.64e+10 – 9.75e+10 | 2.16e+06 – 2.16e+06 | 20 | `scripts/lens/solver/capture.py` | SLaM source_lp[1]: lens 2x20 MGE (sigma_min=pixel_scale/10) + source 20 MGE, free Isothermal + ExternalShear |
+| `slam_spread_hst` | 24 | 60 | 1.08e+10 – 1.08e+12 | 2.40e+05 – 2.40e+07 | 20 | `scripts/lens/solver/capture.py` | SLaM source_lp[1]: lens 2x20 MGE (sigma_min=pixel_scale/10) + source 20 MGE, free Isothermal + ExternalShear |
+| `euclid_vis_lp` | 1 | 60 | 5.56e+11 – 5.56e+11 | 8.49e+06 – 8.49e+06 | 20 | `scripts/lens/solver/capture.py` | euclid vis_lp (initial_lens_model.vis_lp_model_from) at _ordered_median_vector, dataset simulated/euclid_dr1_like |
 <!-- END auto-table:solver-corpus -->
 
 ## Candidates
@@ -74,6 +78,15 @@ and the median warm wall-clock (`wall_ms`, 5 repeats after one compile call).
 <!-- BEGIN auto-table:solver-accuracy -->
 | Corpus | Candidate | Unconverged | Non-finite | Worst amp_rel_max | Worst amp_rel_max (sig) | Worst abs(flux_rel_source) | Worst objective gap | Worst KKT | Median iters | Median wall ms | Version |
 |--------|-----------|-------------|------------|-------------------|-------------------------|----------------------------|---------------------|-----------|--------------|----------------|---------|
+| `all` | `fnnls` | 0/81 | 0 | 0.00e+00 | 0.00e+00 | 0.00e+00 | 0.00e+00 | 8.63e-16 | 9.0 | 1.142 | v2026.8.17.1 |
+| `all` | `pdip_jacobi` | 29/81 | 0 | 2.73e+68 | 1.03e+68 | 3.36e+70 | 1.56e+134 | 8.25e+61 | 19.0 | 1.104 | v2026.8.17.1 |
+| `all` | `pdip_raw` | 0/81 | 0 | 6.23e+10 | 2.70e+01 | 1.64e+01 | 2.61e-12 | 2.66e-14 | 18.0 | 1.020 | v2026.8.17.1 |
+| `all` | `pdip_raw_tol_1e-1` | 0/81 | 0 | 4.28e+11 | 7.15e+01 | 4.30e+01 | 1.75e-11 | 1.80e-13 | 16.0 | 0.954 | v2026.8.17.1 |
+| `all` | `pdip_raw_tol_1e-2` | 0/81 | 0 | 6.23e+10 | 2.70e+01 | 1.64e+01 | 2.61e-12 | 2.66e-14 | 18.0 | 1.215 | v2026.8.17.1 |
+| `all` | `pdip_raw_tol_1e-3` | 0/81 | 0 | 2.38e+10 | 1.00e+01 | 6.15e+00 | 3.87e-13 | 3.93e-15 | 19.0 | 1.206 | v2026.8.17.1 |
+| `all` | `pdip_raw_tol_jaxnnls` | 75/81 | 0 | 4.30e+04 | 2.19e-01 | 7.40e-05 | 8.18e-16 | 2.43e-16 | 50.0 | 2.487 | v2026.8.17.1 |
+| `all` | `pdip_raw_polish` | 0/81 | 0 | 5.03e+08 | 2.19e-01 | 4.96e-02 | 8.18e-16 | 3.24e-16 | 23.0 | 1.342 | v2026.8.17.1 |
+| `all` | `certified` | 48/81 | 0 | 1.19e+02 | 1.19e+02 | 7.47e-02 | 2.57e-04 | 1.81e-02 | 16.0 | 1.032 | v2026.8.17.1 |
 | `slam_fixture_571` | `fnnls` | 0/8 | 0 | 0.00e+00 | 0.00e+00 | 0.00e+00 | 0.00e+00 | 3.24e-16 | 7.0 | 0.932 | v2026.8.17.1 |
 | `slam_fixture_571` | `pdip_jacobi` | 7/8 | 0 | 2.73e+68 | 1.03e+68 | 3.36e+70 | 1.56e+134 | 8.25e+61 | 50.0 | 2.490 | v2026.8.17.1 |
 | `slam_fixture_571` | `pdip_raw` | 0/8 | 0 | 2.24e+07 | 3.18e+00 | 6.44e-03 | 4.14e-13 | 5.24e-16 | 18.0 | 1.205 | v2026.8.17.1 |
@@ -90,6 +103,14 @@ and the median warm wall-clock (`wall_ms`, 5 repeats after one compile call).
 <!-- BEGIN auto-table:solver-early-stopping -->
 | Corpus | Cap | Converged | Worst amp_rel_max | Worst amp_rel_max (sig) | Median amp_rel_max | Worst abs(flux_rel_source) | Worst KKT | Median wall ms | Version |
 |--------|-----|-----------|-------------------|-------------------------|--------------------|----------------------------|-----------|----------------|---------|
+| `all` | 8 | 0/81 | 2.02e+14 | 3.43e+04 | 2.89e+01 | 6.18e+04 | 3.19e-03 | 0.742 | v2026.8.17.1 |
+| `all` | 12 | 1/81 | 3.48e+13 | 8.96e+03 | 6.79e-01 | 3.14e+04 | 5.71e-04 | 0.933 | v2026.8.17.1 |
+| `all` | 16 | 15/81 | 2.97e+13 | 1.49e+03 | 5.66e-06 | 2.69e+04 | 2.47e-05 | 1.159 | v2026.8.17.1 |
+| `all` | 24 | 81/81 | 6.23e+10 | 2.70e+01 | 8.91e-08 | 1.64e+01 | 2.66e-14 | 1.211 | v2026.8.17.1 |
+| `all` | 32 | 81/81 | 6.23e+10 | 2.70e+01 | 8.91e-08 | 1.64e+01 | 2.66e-14 | 1.245 | v2026.8.17.1 |
+| `all` | 50 | 81/81 | 6.23e+10 | 2.70e+01 | 8.91e-08 | 1.64e+01 | 2.66e-14 | 1.149 | v2026.8.17.1 |
+| `all` | 100 | 81/81 | 6.23e+10 | 2.70e+01 | 8.91e-08 | 1.64e+01 | 2.66e-14 | 1.203 | v2026.8.17.1 |
+| `all` | 200 | 81/81 | 6.23e+10 | 2.70e+01 | 8.91e-08 | 1.64e+01 | 2.66e-14 | 1.348 | v2026.8.17.1 |
 | `slam_fixture_571` | 8 | 0/8 | 3.00e+10 | 5.85e+03 | 5.14e+05 | 2.56e+01 | 3.02e-04 | 0.726 | v2026.8.17.1 |
 | `slam_fixture_571` | 12 | 0/8 | 2.76e+09 | 1.18e+03 | 1.24e+05 | 6.71e+00 | 4.14e-07 | 0.940 | v2026.8.17.1 |
 | `slam_fixture_571` | 16 | 1/8 | 5.87e+07 | 2.46e+01 | 2.67e+03 | 1.25e-01 | 6.11e-14 | 1.046 | v2026.8.17.1 |
@@ -102,7 +123,7 @@ and the median warm wall-clock (`wall_ms`, 5 repeats after one compile call).
 
 ## How to add a system
 
-1. Capture `(curvature_reg_matrix, data_vector)` as the JAX likelihood hands them to
+1. Add a `--source` runner to [`capture.py`](./capture.py), or capture `(curvature_reg_matrix, data_vector)` as the JAX likelihood hands them to
    `reconstruction_positive_only_from` — wrap that function the way
    [`mge_nnls_capture.py`](../../imaging/hazards/mge_nnls_capture.py) does (`_recording_solver`).
 2. Call `_corpus.add_group(name, systems, source)` with one dict per system (`name`, `Q`, `q`,
