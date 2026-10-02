@@ -5,7 +5,7 @@
 **Pre-registered rule:** per phase (see the table); the common contract is repeated, interleaved in-process A/B medians with bootstrap CIs on a quiet RAL CPU node, a gain above 2× the minimum detectable improvement, bit-identical correctness gates, compile ≤ +20 % and no A100 regression.
 **Verdict:** IP-2 (vertex dedup), IP-3 (static lattice) and IP-4b (step-0 gather) accepted and shipped; IP-4a found the extent/scale lever (2.37x) but the human ruled it a per-workspace setting, not a library default; IP-4c raised `MAX_CONTAINING_SIZE` 15 → 20 accepting a +6.2 % scalar slowdown for correctness headroom (human decision).
 **Headline:** IP-4b 1.44x per call (2.27x under vmap-16), RAL Xeon 8490H job 357321 — node loadavg ~200, ratios stand, absolute ms do not; quiet EPYC 7702 supplementary row 1.61x (job 357335).
-**Library PRs:** PyAutoArray#569, PyAutoArray#570, PyAutoLens#749 (released 2026.9.26.1); PyAutoArray#580, PyAutoArray#584, PyAutoLens#753 (merged, UNRELEASED).
+**Library PRs:** PyAutoArray#569, PyAutoArray#570, PyAutoLens#749 (released 2026.9.26.1); PyAutoArray#580, PyAutoArray#584, PyAutoLens#753 (released 2026.9.27.2).
 **Profiling PRs:** #293, #298, #301, #305, #318 (folder split), #321, #330, #335.
 **Ledger:** [point_source_cpu_campaign.md](../../results/notes/point_source_cpu_campaign.md); instrument note [point_source_shared_likelihood_breakdown.md](../../results/notes/point_source_shared_likelihood_breakdown.md).
 **Mind contract:** epic `point-source-cpu-speed`; campaign contract in the `## Original prompt` of `complete/2026/09/point-source-cpu-p4.md`; phase records `complete/2026/09/point-source-cpu-p{1,2,3,4}.md`, `pointsolver-step0-gather.md`, `pointsolver-mcs-headroom.md`.
@@ -42,9 +42,9 @@ carried through phases 1–3 moved to [Cluster PointSolver](cluster_pointsolver.
 | PyAutoArray#569 | remove throwaway vertex dedup | `681938ae` | 2026.9.26.1 |
 | PyAutoArray#570 | static step-0 lattice precompute | `7fa8d271` | 2026.9.26.1 |
 | PyAutoLens#749 | static lattice (PointSolver side) + tie test | `86054bbc` | 2026.9.26.1 |
-| PyAutoArray#580 | step-0 structured containment (issue PyAutoArray#579) | `4383ea81` | UNRELEASED |
-| PyAutoArray#584 | `MAX_CONTAINING_SIZE` 15 → 20 | `9428eca2` | UNRELEASED |
-| PyAutoLens#753 | MCS 20 (PyAutoLens side) | `e92bde01` | UNRELEASED |
+| PyAutoArray#580 | step-0 structured containment (issue PyAutoArray#579) | `4383ea81` | 2026.9.27.2 |
+| PyAutoArray#584 | `MAX_CONTAINING_SIZE` 15 → 20 | `9428eca2` | 2026.9.27.2 |
+| PyAutoLens#753 | MCS 20 (PyAutoLens side) | `e92bde01` | 2026.9.27.2 |
 
 Cumulative per call: IP-1 24.69 ms → IP-4a 2.095 ms (~11.8x) on the same cell but different
 nodes — indicative only, not a quotable A/B.
@@ -70,3 +70,25 @@ nodes — indicative only, not a quotable A/B.
 ### 2026-09-27 — page created from the ledger
 
 Page created from the ledger; see the ledger for the full record.
+
+### 2026-10-02 — epic reconciliation and the existing inference phase
+
+Image-plane phases through **IP-4c are merged**; no extent default was changed.
+The next unissued image-plane member is the construction-time extent sanity check,
+followed by per-package settings. The cluster campaign remains separate.
+
+The epic already has one issued member: [autolens_inference#15](https://github.com/PyAutoLabs/autolens_inference/issues/15),
+the approved single-source Nautilus source-plane search leaf. On resumption, RAL
+array 367140 seeds 1–4 were all COMPLETED (0:0); together with probe 366937 they
+recover all five truth parameters within 0.74σ across seeds 0–4. Search walls are
+50.38–58.51 s for 4,700–4,850 evaluations. Warmed batch timing estimates
+0.0405–0.0447% of search wall in steady likelihood evaluation (4.59–5.01 µs/eval).
+This is source-plane evidence, **not an image-plane PointSolver end-to-end timing**.
+The inference branch is being prepared for review; no second phase was issued.
+See the [inference journal](https://github.com/PyAutoLabs/autolens_inference/blob/feature/point-source-search-nautilus-leaf/wiki/project/state.md#2026-10-02--point-source-nautilus-admission-bar-five-seeds-recovered)
+for all rows and limitations. The estimate uses one prior-median vector and fixed
+batch size, not an instrumented fit decomposition; it does not establish the
+wall-share of a gradient sampler. blackjax forward mode still needs its own
+admission measurement. The A100 throughput row already landed on 2026-09-28.
+
+Release reconciliation: local release tags contain PyAutoArray `9428eca2` and PyAutoLens `e92bde01` in **2026.9.27.2**, including the earlier step-0 gather change.

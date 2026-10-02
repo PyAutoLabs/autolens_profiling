@@ -1324,3 +1324,23 @@ than one EPYC core-group. The runtime cell's batch is capped at 64 by `recommend
 
 **Campaign status.** Phases 1–2e complete; the A100 vmap throughput row is done (this section).
 The only remaining candidate is blackjax forward mode, gated on the autolens_inference leaf.
+
+## 2026-10-02 — epic reconciliation and the existing inference phase
+
+Image-plane phases through **IP-4c are merged**; no extent default was changed.
+The next unissued image-plane member is the construction-time extent sanity check,
+followed by per-package settings. The cluster campaign remains separate.
+
+The epic already has one issued member: [autolens_inference#15](https://github.com/PyAutoLabs/autolens_inference/issues/15),
+the approved single-source Nautilus source-plane search leaf. On resumption, RAL
+array 367140 seeds 1–4 were all COMPLETED (0:0); together with probe 366937 they
+recover all five truth parameters within 0.74σ across seeds 0–4. Search walls are
+50.38–58.51 s for 4,700–4,850 evaluations. Warmed batch timing estimates
+0.0405–0.0447% of search wall in steady likelihood evaluation (4.59–5.01 µs/eval).
+This is source-plane evidence, **not an image-plane PointSolver end-to-end timing**.
+The inference branch is being prepared for review; no second phase was issued.
+See the [inference journal](https://github.com/PyAutoLabs/autolens_inference/blob/feature/point-source-search-nautilus-leaf/wiki/project/state.md#2026-10-02--point-source-nautilus-admission-bar-five-seeds-recovered)
+for all rows and limitations. The estimate uses one prior-median vector and fixed
+batch size, not an instrumented fit decomposition; it does not establish the
+wall-share of a gradient sampler. blackjax forward mode still needs its own
+admission measurement. The A100 throughput row already landed on 2026-09-28.
