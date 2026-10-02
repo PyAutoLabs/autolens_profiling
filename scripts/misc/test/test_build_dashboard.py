@@ -224,3 +224,161 @@ def test_real_tree_renders():
     assert doc["reference_host"] == "euclid-ral-gpu-2"
     assert len(doc["series"]) > 20
     assert json.loads(outputs["state.json"])["organ"] == "profiling"
+
+
+# --- profiling-summary v1 (the PyAutoPulse read contract) -------------------
+
+
+def _summary(tmp_path, revision="a" * 40):
+    root = _tree(tmp_path)
+    series, refused = bd.build_series(root, bd.read_release_sweep_conf(root))
+    conf = bd.read_release_sweep_conf(root)
+    return bd.build_summary(series, refused, conf, "2026-09-27T00:00:00Z", revision)
+
+
+def test_summary_envelope_and_records(tmp_path):
+    s = _summary(tmp_path)
+    assert bd.validate_summary(s) == []
+    assert (s["schema"], s["version"]) == ("profiling-summary", 1)
+    assert (s["project"], s["scope"]) == ("autolens_profiling", "release-runtime")
+    assert s["generated_at"] == "2026-09-27T00:00:00Z"
+    assert s["evidence_updated_at"] == "2026-09-27T00:00:00Z"  # newest release date in the tree
+    assert s["valid_until"] is None and s["producer_revision"] == "a" * 40
+    assert s["comparison_policy"]["id"] == "runtime-drift-2x-1ms"
+    assert s["comparison_policy"]["ratio"] == 2.0 and s["comparison_policy"]["floor_s"] == 0.001
+    ids = [r["id"] for r in s["records"]]
+    assert len(ids) == len(set(ids)) == s["coverage"]["observed"]["points"]
+    a100 = next(r for r in s["records"] if r["id"].endswith(":hpc_a100_fp64@2026.9.27.1"))
+    assert a100["axis"] == "runtime" and a100["unit"] == "s"
+    assert a100["measurement"] == {"single_jit_s": 0.143, "vmap_per_call_s": 0.09}
+    assert a100["identity"]["tier"] == "hpc" and a100["identity"]["device"] == "a100"
+    assert a100["identity"]["precision"] == "float64"
+    assert a100["identity"]["release_date"] == "2026-09-27"
+    assert a100["provenance"]["qualified"] is True and a100["provenance"]["job"] == "360001"
+    assert a100["evidence"] == {
+        "path": "results/runtime/imaging/delaunay/hst/comparison.json",
+        "fragment": "hpc_a100_fp64",
+    }
+    old = next(r for r in s["records"] if r["id"].endswith(":hpc_a100_fp64@2026.8.17.1"))
+    # unknown provenance stays null + reason, never a default (the host is the row's hostname)
+    assert old["provenance"]["job"] is None and old["provenance"]["loadavg"] is None
+    assert old["provenance"]["has_provenance"] is False and old["provenance"]["qualified"] is False
+    assert "no provenance" in old["provenance"]["reason"]
+    assert old["evidence"]["fragment"] is None
+
+
+def test_summary_comparisons_are_the_producers_verdict(tmp_path):
+    s = _summary(tmp_path)
+    by_key = {c["comparison_key"]: c for c in s["comparisons"]}
+    drifted = by_key["runtime:imaging/delaunay/hst:hpc_a100_fp64"]
+    assert drifted["status"] == "drifted" and drifted["ratio"] == 2.2
+    assert (drifted["baseline"], drifted["candidate"]) == ("2026.8.17.1", "2026.9.27.1")
+    # the baseline row has no provenance: a drift flag, not regression evidence
+    assert drifted["qualified"] is False and any("baseline" in r for r in drifted["reasons"])
+    assert (
+        by_key["runtime:imaging/delaunay/hst:local_cpu_fd64".replace("fd", "fp")]["status"]
+        == "flat"
+    )
+    assert by_key["breakdown:imaging/pixelization/hst:local_cpu_fp64"]["status"] == "improved"
+    single = by_key["breakdown:imaging/mge/hst:hpc_a100_mp"]
+    assert single["status"] == "insufficient" and "one release only" in single["reasons"]
+    assert all(c["policy"] == "runtime-drift-2x-1ms" for c in s["comparisons"])
+
+
+def test_summary_refused_rows_are_excluded_not_recorded(tmp_path):
+    s = _summary(tmp_path)
+    excluded = s["coverage"]["excluded"]
+    assert len(excluded) == 1 and "above the cap" in excluded[0]["reason"]
+    assert excluded[0]["id"] == "breakdown:imaging/mge/hst:hpc_a100_fp64@2026.9.27.1"
+    assert not any(r["id"] == excluded[0]["id"] for r in s["records"])
+    assert any("coverage.excluded" in line for line in s["limitations"])
+
+
+def test_summary_valid_empty_producer(tmp_path):
+    s = bd.build_summary([], [], {"node": None, "loadavg_cap": None}, "2026-09-27T00:00:00Z", None)
+    assert bd.validate_summary(s) == []
+    assert s["records"] == [] and s["comparisons"] == []
+    assert s["coverage"]["observed"] == {"series": 0, "points": 0, "releases": 0, "cells": 0}
+    assert s["evidence_updated_at"] is None
+    assert s["evidence_updated_at_reason"] == "no included measurement"
+    assert any("producer_revision is null" in line for line in s["limitations"])
+
+
+def test_summary_validator_rejections(tmp_path):
+    import copy
+
+    good = _summary(tmp_path)
+    assert bd.validate_summary(good) == []
+
+    dup = copy.deepcopy(good)
+    dup["records"][1]["id"] = dup["records"][0]["id"]
+    assert any("duplicate record id" in f for f in bd.validate_summary(dup))
+
+    nan = copy.deepcopy(good)
+    nan["records"][0]["measurement"]["single_jit_s"] = float("nan")
+    assert any("non-finite measurement" in f for f in bd.validate_summary(nan))
+
+    inf = copy.deepcopy(good)
+    inf["comparisons"][0]["ratio"] = float("inf")
+    assert any("non-finite ratio" in f for f in bd.validate_summary(inf))
+
+    unsafe = copy.deepcopy(good)
+    unsafe["records"][0]["evidence"]["path"] = "../../etc/passwd"
+    assert any("not a safe repo-relative path" in f for f in bd.validate_summary(unsafe))
+    unsafe["records"][0]["evidence"]["path"] = "/mnt/ral/jnightin/results/x.json"
+    assert any("not a safe repo-relative path" in f for f in bd.validate_summary(unsafe))
+
+    empty = copy.deepcopy(good)
+    empty["records"][0]["measurement"] = {"single_jit_s": None, "vmap_per_call_s": None}
+    assert any("carries no measurement" in f for f in bd.validate_summary(empty))
+
+    version = copy.deepcopy(good)
+    version["version"] = 2
+    assert any("version" in f for f in bd.validate_summary(version))
+
+    missing = copy.deepcopy(good)
+    del missing["coverage"]
+    assert any("missing required field 'coverage'" in f for f in bd.validate_summary(missing))
+
+    date = copy.deepcopy(good)
+    date["generated_at"] = "2026-09-27 00:00:00"
+    assert any("ISO-8601" in f for f in bd.validate_summary(date))
+    date["generated_at"] = "2026-09-27T00:00:00Z"
+    date["valid_until"] = "2026-09-26T00:00:00Z"
+    assert any("precedes generated_at" in f for f in bd.validate_summary(date))
+
+    status = copy.deepcopy(good)
+    status["comparisons"][0]["status"] = "regressed"
+    assert any("not in the contract" in f for f in bd.validate_summary(status))
+
+
+def test_summary_is_written_checked_and_the_other_outputs_are_untouched(tmp_path):
+    root = _tree(tmp_path)
+    before = bd.build(root, generated="2026-09-27T00:00:00Z", revision="b" * 40)
+    assert set(before) == {"series.json", "state.json", "summary.json", "index.html"}
+    assert bd.main(["--root", str(root)]) == 0
+    out = root / "dashboard"
+    summary = json.loads((out / "summary.json").read_text())
+    assert bd.validate_summary(summary) == []
+    # not a git checkout: null revision + a limitation line, and --check is still idempotent
+    assert summary["producer_revision"] is None
+    assert bd.main(["--root", str(root), "--check"]) == 0
+    # the organ-facing file never alters the page, the trend data or the cockpit feed
+    stamp = bd._existing_stamp(out)
+    again = bd.build(root, generated=stamp, revision=None)
+    for name in ("series.json", "state.json", "index.html"):
+        assert again[name] == (out / name).read_text()
+    assert "summary.json" not in (out / "series.json").read_text()
+    assert json.loads((out / "state.json").read_text())["organ"] == "profiling"
+
+
+def test_real_tree_summary_is_valid():
+    root = _TOOLING.parents[2]
+    outputs = bd.build(root, generated="2026-09-27T00:00:00Z", revision="c" * 40)
+    summary = json.loads(outputs["summary.json"])
+    assert bd.validate_summary(summary) == []
+    assert summary["coverage"]["observed"]["points"] == len(summary["records"]) > 20
+    assert summary["coverage"]["observed"]["series"] == len(summary["comparisons"])
+    assert len(summary["coverage"]["excluded"]) == len(
+        json.loads(outputs["series.json"])["refused"]
+    )

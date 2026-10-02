@@ -1,7 +1,8 @@
 name: Pages Dashboard
 
 # Serves the run-time-over-time dashboard (`dashboard/index.html`, its data
-# `series.json` and the organ cockpit feed `state.json`) at this repo's GitHub
+# `series.json`, the organ cockpit feed `state.json` and the PyAutoPulse read
+# contract `summary.json`) at this repo's GitHub
 # Pages URL. The files are rendered by `scripts/misc/tooling/build_dashboard.py`
 # — on release tags by `profile.yml`, by hand after a sweep is committed — and
 # this workflow only publishes them (autolens_profiling#345). Only the uploaded
@@ -50,6 +51,7 @@ jobs:
           cp dashboard/index.html _site/index.html
           cp dashboard/series.json _site/series.json
           cp dashboard/state.json _site/state.json
+          cp dashboard/summary.json _site/summary.json
       - name: Validate the cockpit feed against the Brain contract
         run: python3 PyAutoBrain/board/_state.py _site/state.json
       - uses: actions/upload-pages-artifact@v3
