@@ -9,7 +9,7 @@
 **Profiling PRs:** #317, #318 (folder split), #323, #327, #331, #336; runtime refresh #349 (issue).
 **Ledger:** [point_source_source_plane_campaign.md](../../results/notes/point_source_source_plane_campaign.md)
 **Mind contract:** epic `point-source-cpu-speed`; `draft/research/autolens_profiling/point_source_source_plane_chi_squared_speed.md`; records `complete/2026/09/point-source-source-plane-{breakdown,p2a,p2b,p2c,p2e}.md`, `point-source-gradient-mode.md`.
-**Next:** parked — blackjax NUTS/SMC forward-mode `value_and_grad`, gated on a point-source search leaf in `autolens_inference/scripts/point_source/searches/` (README only today). A100 `vmap` throughput row done 2026-09-28.
+**Next:** parked — blackjax NUTS/SMC forward-mode `value_and_grad`, requires an admission measurement for a gradient sampler. The Nautilus leaf has five recovered seeds and is in open PR autolens_inference#17 under issue #15; its estimated steady likelihood share is 0.0405–0.0447%. A100 `vmap` throughput row done 2026-09-28.
 
 ## Why this campaign
 
@@ -81,3 +81,23 @@ call shape, different node: gpu-1), and batch walls flat from 64 to 1024 (0.29 �
 sweep. Caveat: source-checkout rows are labelled `autolens_version` 2026.8.17.1 (the build-time
 stamp), so the dashboard cannot yet separate releases for them. blackjax forward mode stays parked
 until autolens_inference has a point-source search leaf. Ledger: "Runtime refresh on 2026.9.27.2".
+
+## 2026-10-02 — epic reconciliation and the existing inference phase
+
+Image-plane phases through **IP-4c are merged**; no extent default was changed.
+The next unissued image-plane member is the construction-time extent sanity check,
+followed by per-package settings. The cluster campaign remains separate.
+
+The epic already has one issued member: [autolens_inference#15](https://github.com/PyAutoLabs/autolens_inference/issues/15),
+the approved single-source Nautilus source-plane search leaf. On resumption, RAL
+array 367140 seeds 1–4 were all COMPLETED (0:0); together with probe 366937 they
+recover all five truth parameters within 0.74σ across seeds 0–4. Search walls are
+50.38–58.51 s for 4,700–4,850 evaluations. Warmed batch timing estimates
+0.0405–0.0447% of search wall in steady likelihood evaluation (4.59–5.01 µs/eval).
+This is source-plane evidence, **not an image-plane PointSolver end-to-end timing**.
+Review: [inference PR #17](https://github.com/PyAutoLabs/autolens_inference/pull/17) and [ledger PR #361](https://github.com/PyAutoLabs/autolens_profiling/pull/361); both open, no second phase issued.
+See the [inference journal](https://github.com/PyAutoLabs/autolens_inference/blob/feature/point-source-search-nautilus-leaf/wiki/project/state.md#2026-10-02--point-source-nautilus-admission-bar-five-seeds-recovered)
+for all rows and limitations. The estimate uses one prior-median vector and fixed
+batch size, not an instrumented fit decomposition; it does not establish the
+wall-share of a gradient sampler. blackjax forward mode still needs its own
+admission measurement. The A100 throughput row already landed on 2026-09-28.

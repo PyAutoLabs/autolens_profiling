@@ -2,14 +2,15 @@
 
 Issue: [autolens_profiling #297](https://github.com/PyAutoLabs/autolens_profiling/issues/297) (phase 1); [PyAutoArray #568](https://github.com/PyAutoLabs/PyAutoArray/issues/568) (phase 2)  
 Branch: `feature/point-source-cpu-p1` (phase 1); `feature/point-source-cpu-p2` (phase 2, PyAutoArray + autolens_profiling); `feature/point-source-cpu-p3` (phase 3, PyAutoArray + PyAutoLens + autolens_profiling)  
-Status: phase 1 **DONE** (RAL baseline, job 350580); phase 2 **DONE, ACCEPTED** (vertex-dedup A/B, RAL job 350582: 4.47× simple, 1.98× cluster, bit-identical; library change awaiting merge and release); phase 3 **DONE, ACCEPTED** (static step-0 lattice A/B, RAL jobs 350636 CPU / 350637 A100: CPU control → library 2.0–2.1× simple, 1.43× vmap-4, 5.2× cluster, compile +3–12 %, all 31 gates bit-identical; source-on-vertex tie case PASSED by human decision 2026-09-24, pinned as PyAutoLens `test__source_on_a_step_0_vertex_returns_the_two_true_images`); phase 4 not started  
+Status: phases 1–4c **DONE / MERGED**; phase 4c chose MCS 20 for correctness headroom. Single-source only since the human decision of 2026-09-26; historical cluster measurements below belong to `cluster-pointsolver-speed`. Extent sanity check and per-package settings remain unissued. The epic's issued source-plane inference member is autolens_inference#15 (five seeds recovered, PR #17 open on 2026-10-02). See the [campaign page](../../wiki/campaigns/point_source_image_plane_cpu.md) for current phase status.
 Instrument: [`scripts/point_source_image/likelihood_breakdown/image_plane.py`](../../scripts/point_source_image/likelihood_breakdown/image_plane.py)
 (shipped in #293, see [point_source_shared_likelihood_breakdown.md](point_source_shared_likelihood_breakdown.md))
 and [`scripts/cluster/likelihood_breakdown/image_plane.py`](../../scripts/cluster/likelihood_breakdown/image_plane.py)
 
-This campaign aims to make the JAX-CPU PointSolver image-plane likelihood cheaper
-for both the galaxy-scale `simple` case and the 13-component, two-source cluster
-case that cluster modelling depends on. It runs as one bounded phase at a time.
+This campaign aims to make the single-source JAX-CPU PointSolver image-plane
+likelihood cheaper. Earlier phases also measured the 13-component, two-source
+cluster; those historical rows are retained below, with further cluster work
+owned by `cluster-pointsolver-speed`. It runs as one bounded phase at a time.
 Phase 1 (first section) produces a quotable CPU baseline on a quiet
 RAL node and records the unoptimized library revisions. Phase 2 tests the single
 reported lever, the JAX-only throwaway `jnp.unique` vertex deduplication. Phases
@@ -1643,3 +1644,24 @@ every cap**. The padded rows are `inf` sentinels that contribute nothing, so no 
 hpc/sync submit --cpu submit_breakdown_point_source_image_solver_config_sweep_mcs_ral_cpu_fp64  # quotable, 8490H
 hpc/sync submit --gpu submit_breakdown_point_source_image_solver_config_sweep_mcs_a100_fp64     # A100
 ```
+
+
+## 2026-10-02 — epic reconciliation and the existing inference phase
+
+Image-plane phases through **IP-4c are merged**; no extent default was changed.
+The next unissued image-plane member is the construction-time extent sanity check,
+followed by per-package settings. The cluster campaign remains separate.
+
+The epic already has one issued member: [autolens_inference#15](https://github.com/PyAutoLabs/autolens_inference/issues/15),
+the approved single-source Nautilus source-plane search leaf. On resumption, RAL
+array 367140 seeds 1–4 were all COMPLETED (0:0); together with probe 366937 they
+recover all five truth parameters within 0.74σ across seeds 0–4. Search walls are
+50.38–58.51 s for 4,700–4,850 evaluations. Warmed batch timing estimates
+0.0405–0.0447% of search wall in steady likelihood evaluation (4.59–5.01 µs/eval).
+This is source-plane evidence, **not an image-plane PointSolver end-to-end timing**.
+Review: [inference PR #17](https://github.com/PyAutoLabs/autolens_inference/pull/17) and [ledger PR #361](https://github.com/PyAutoLabs/autolens_profiling/pull/361); both open, no second phase issued.
+See the [inference journal](https://github.com/PyAutoLabs/autolens_inference/blob/feature/point-source-search-nautilus-leaf/wiki/project/state.md#2026-10-02--point-source-nautilus-admission-bar-five-seeds-recovered)
+for all rows and limitations. The estimate uses one prior-median vector and fixed
+batch size, not an instrumented fit decomposition; it does not establish the
+wall-share of a gradient sampler. blackjax forward mode still needs its own
+admission measurement. The A100 throughput row already landed on 2026-09-28.
