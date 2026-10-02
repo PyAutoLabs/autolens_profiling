@@ -2,7 +2,7 @@
 
 Issue: [autolens_profiling #297](https://github.com/PyAutoLabs/autolens_profiling/issues/297) (phase 1); [PyAutoArray #568](https://github.com/PyAutoLabs/PyAutoArray/issues/568) (phase 2)  
 Branch: `feature/point-source-cpu-p1` (phase 1); `feature/point-source-cpu-p2` (phase 2, PyAutoArray + autolens_profiling); `feature/point-source-cpu-p3` (phase 3, PyAutoArray + PyAutoLens + autolens_profiling)  
-Status: phases 1–4c **DONE / MERGED**; phase 4c chose MCS 20 for correctness headroom. Single-source only since the human decision of 2026-09-26; historical cluster measurements below belong to `cluster-pointsolver-speed`. Extent sanity check and per-package settings remain unissued. The epic's issued source-plane inference member is autolens_inference#15 (five seeds recovered, preparing review on 2026-10-02). See the [campaign page](../../wiki/campaigns/point_source_image_plane_cpu.md) for current phase status.
+Status: phases 1–4c **DONE / MERGED**; phase 4c chose MCS 20 for correctness headroom. Single-source only since the human decision of 2026-09-26; historical cluster measurements below belong to `cluster-pointsolver-speed`. Extent sanity check and per-package settings remain unissued. The epic's issued source-plane inference member is autolens_inference#15 (five seeds recovered, PR #17 open on 2026-10-02). See the [campaign page](../../wiki/campaigns/point_source_image_plane_cpu.md) for current phase status.
 Instrument: [`scripts/point_source_image/likelihood_breakdown/image_plane.py`](../../scripts/point_source_image/likelihood_breakdown/image_plane.py)
 (shipped in #293, see [point_source_shared_likelihood_breakdown.md](point_source_shared_likelihood_breakdown.md))
 and [`scripts/cluster/likelihood_breakdown/image_plane.py`](../../scripts/cluster/likelihood_breakdown/image_plane.py)
@@ -1659,7 +1659,7 @@ recover all five truth parameters within 0.74σ across seeds 0–4. Search walls
 50.38–58.51 s for 4,700–4,850 evaluations. Warmed batch timing estimates
 0.0405–0.0447% of search wall in steady likelihood evaluation (4.59–5.01 µs/eval).
 This is source-plane evidence, **not an image-plane PointSolver end-to-end timing**.
-The inference branch is being prepared for review; no second phase was issued.
+Review: [inference PR #17](https://github.com/PyAutoLabs/autolens_inference/pull/17) and [ledger PR #361](https://github.com/PyAutoLabs/autolens_profiling/pull/361); both open, no second phase issued.
 See the [inference journal](https://github.com/PyAutoLabs/autolens_inference/blob/feature/point-source-search-nautilus-leaf/wiki/project/state.md#2026-10-02--point-source-nautilus-admission-bar-five-seeds-recovered)
 for all rows and limitations. The estimate uses one prior-median vector and fixed
 batch size, not an instrumented fit decomposition; it does not establish the
