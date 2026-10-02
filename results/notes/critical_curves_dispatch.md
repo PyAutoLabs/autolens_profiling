@@ -253,3 +253,46 @@ Heart YELLOW manifest warning (the separate PyAutoPulse registration task).
 No release is authorized. The canonical PyAutoLens checkout was fast-forwarded
 to merged point-solver PR #764 after smoke; the audit's historical source hashes
 remain authoritative. PR CI validates against its installed dependency stack.
+
+
+## Phase 3b — Preserve the capped evaluation field (2026-10-02)
+
+Phase 3a merged in [profiling #364](https://github.com/PyAutoLabs/autolens_profiling/pull/364)
+and [workspace #341](https://github.com/PyAutoLabs/autolens_workspace_test/pull/341).
+The next single task is [PyAutoGalaxy #645](https://github.com/PyAutoLabs/PyAutoGalaxy/issues/645).
+Its library fix is [PR #646](https://github.com/PyAutoLabs/PyAutoGalaxy/pull/646)
+(commit `f19a3377`), awaiting merge/release; the broader engine-selection
+NO-GO remains in force because seed coverage and path completion are unresolved.
+
+The existing `dispatch.py` real-decorator `cap_probe()` was run unchanged against
+the phase-3b library worktree, with CPU/source imports. This is a geometric probe,
+not a new timing matrix; no million-point Hessian was evaluated.
+
+| Same input: 120×120, 0.5 arcsec/pixel; request 0.05; cap 1000 | Phase 3a | Fixed branch |
+|---|---:|---:|
+| Output shape | 1000×1000 | 1000×1000 |
+| Output spacing (arcsec/pixel) | 8.333333333 | 0.06 |
+| Physical field width (arcsec) | 8333.333333 | 60.0 |
+| Pixel-centre limits (arcsec, both axes) | ±4162.5 | ±29.97 |
+
+Measured `autogalaxy/operate/lens_calc.py` SHA256:
+`581ce30864e11e4b2ab22f01774c87a56863d460aa7807ceda1a4f5f47394607`.
+The original phase-3a JSON/PNG and measured-source archive remain unchanged.
+
+The capped scale now comes from physical extent divided by the axis limit;
+both dimensions are bounded. Integer ceiling on the shorter axis preserves
+coverage with less than one pixel total padding. The existing effective Zoom2D
+centre and square-padding mask policy remain unchanged, as do below-cap
+integer rounding and the already-evaluation-grid path. This is not a fix for
+the independent masked-caustic ellipticity/origin investigation.
+
+Validation: six new geometry cases failed before the patch, while two
+compatibility controls passed. Afterward the focused suite passed 49 tests and
+the full Galaxy suite passed 1315 tests (169.29s). The exact witness is also
+added to the small required workspace example alongside its analytic per-plane
+curves/caustics. Library-first shipping and merge/release gates still apply.
+
+Full companion Heart-owned smoke passed 33/33 (501.91s); the changed
+cluster example passed in 2.2s against the patched library. Galaxy PR #646 CI
+is green on Python 3.12/3.13, no-JAX and docs. The linked workspace regression
+remains dependent on a library version containing this fix; no release occurred.
