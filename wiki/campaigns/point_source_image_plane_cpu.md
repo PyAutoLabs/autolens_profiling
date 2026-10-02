@@ -9,7 +9,7 @@
 **Profiling PRs:** #293, #298, #301, #305, #318 (folder split), #321, #330, #335.
 **Ledger:** [point_source_cpu_campaign.md](../../results/notes/point_source_cpu_campaign.md); instrument note [point_source_shared_likelihood_breakdown.md](../../results/notes/point_source_shared_likelihood_breakdown.md).
 **Mind contract:** epic `point-source-cpu-speed`; campaign contract in the `## Original prompt` of `complete/2026/09/point-source-cpu-p4.md`; phase records `complete/2026/09/point-source-cpu-p{1,2,3,4}.md`, `pointsolver-step0-gather.md`, `pointsolver-mcs-headroom.md`.
-**Next:** the extent/scale lever via `draft/feature/autolens/pointsolver_extent_sanity_check.md` and `draft/feature/autolens_workspace/pointsolver_grid_extent_per_package.md`; carried leftovers in `draft/research/autolens_profiling/pointsolver_cpu_speed_campaign_remainder.md`.
+**In flight:** construction-time extent sanity check, [PyAutoLens#763](https://github.com/PyAutoLabs/PyAutoLens/issues/763), prompt `active/pointsolver_extent_sanity_check.md`. **Next:** the per-package extent/scale lever via `draft/feature/autolens_workspace/pointsolver_grid_extent_per_package.md`; carried leftovers in `draft/research/autolens_profiling/pointsolver_cpu_speed_campaign_remainder.md`.
 
 ## Why this campaign
 
@@ -51,7 +51,7 @@ nodes — indicative only, not a quotable A/B.
 
 ## Open / parked / drafts
 
-- `draft/feature/autolens/pointsolver_extent_sanity_check.md` — library construction-time warning on grid extent.
+- `active/pointsolver_extent_sanity_check.md` — [PyAutoLens#763](https://github.com/PyAutoLabs/PyAutoLens/issues/763), approved and in development; library construction-time warning on grid extent.
 - `draft/feature/autolens_workspace/pointsolver_grid_extent_per_package.md` — per-package extent in the workspaces.
 - `draft/research/autolens_profiling/pointsolver_cpu_speed_campaign_remainder.md` — carried phase 1–3 leftovers.
 - `draft/research/autolens_profiling/point_source_image_plane_gpu_breakdown.md` — the GPU sibling ([page](point_source_gpu_breakdown.md)).
@@ -92,3 +92,20 @@ wall-share of a gradient sampler. blackjax forward mode still needs its own
 admission measurement. The A100 throughput row already landed on 2026-09-28.
 
 Release reconciliation: local release tags contain PyAutoArray `9428eca2` and PyAutoLens `e92bde01` in **2026.9.27.2**, including the earlier step-0 gather change.
+
+### 2026-10-02 — extent diagnostic issued after inference close-out
+
+The source-plane Nautilus member is complete: inference PR #17 and profiling PR #361
+merged; Mind record `complete/2026/10/point-source-search-nautilus-leaf.md`.
+The approved next bounded phase is PyAutoLens#763: one NumPy construction-time
+warning using a margin of `2 * scale + 3 * position sigma`, plus an oversized-grid
+INFO hint suppressed in test/small-dataset mode. No solver defaults change.
+The 27 focused unit tests and standalone JAX likelihood regression pass. Full
+PyAutoLens suite: 820 passed, 1 expected failure. All 33 workspace smoke scripts have passing evidence after correcting the new
+script's environment heading and recovering an interrupted validation run (full
+details in the ledger). New-script final run: 56.2 s under the unchanged 300 s
+cap. The human acknowledged Heart YELLOW via “prm and continue”.
+Review: [PyAutoLens#764](https://github.com/PyAutoLabs/PyAutoLens/pull/764) and
+[workspace-test#338](https://github.com/PyAutoLabs/autolens_workspace_test/pull/338);
+CI, library-first merge and the workspace release gate remain in force. The broad timing-noise
+audit remains separate in [profiling#362](https://github.com/PyAutoLabs/autolens_profiling/issues/362).

@@ -1665,3 +1665,58 @@ for all rows and limitations. The estimate uses one prior-median vector and fixe
 batch size, not an instrumented fit decomposition; it does not establish the
 wall-share of a gradient sampler. blackjax forward mode still needs its own
 admission measurement. The A100 throughput row already landed on 2026-09-28.
+
+
+## 2026-10-02 — inference close-out and extent diagnostic implementation
+
+The preceding source-plane member is now closed: autolens_inference#17 merged at
+`b0e49501`, autolens_profiling#361 merged at `6ee2b30a`, and inference#15 closed.
+Mind record: `complete/2026/10/point-source-search-nautilus-leaf.md`. The human
+requested retention of its inference worktree and local fit/dataset products.
+The timing-test repair is shipped in #361; the broader audit of timing tests and
+production noise handling is filed separately as autolens_profiling#362.
+
+The next single issued phase is [PyAutoLens#763](https://github.com/PyAutoLabs/PyAutoLens/issues/763),
+`active/pointsolver_extent_sanity_check.md`. Human approved the plan and disjoint
+workspace-test edits. The private `AnalysisPoint` construction diagnostic compares
+observed positions with all four solver bounds using `2 * scale + 3 * sigma`.
+The INFO hint requires both half-widths to exceed three times the observed
+envelope about the solver midpoint, including that margin; test/small-dataset
+mode suppresses the hint. Observed-position coverage is explicitly not proof of
+image completeness across the model prior. No extent, scale, MCS, solve or
+likelihood defaults change, and no cluster phase is issued.
+
+Initial validation: 27 NumPy unit tests pass, including all four edges, offset
+bounds, per-position noise and once-per-analysis behavior. The new workspace
+`point_source/jax_likelihood/solver_extent.py` regression passes the existing
+`-83.38049778` likelihood pin (rtol 1e-4), JIT/NumPy parity, one undersized-grid
+warning and no logs on repeated JIT/vmap calls. Full PyAutoLens suite: **820 passed, 1 expected failure**, 44 warnings,
+1413.88 s locally. The first workspace smoke new-script
+run failed the full-data guard because the declaration lacked the required
+`__Env__` heading; the heading was corrected and the exact smoke-profile
+regression passed. No likelihood pin or guard was relaxed. Heart refreshed to YELLOW (85), with manifest drift
+and absent release rehearsal; development PR opening initially awaited human acknowledgment.
+
+Validation incident: the first smoke run finished with 11 passes and 22 failures.
+One was the corrected declaration-heading error; 21 later scripts lost access to
+NumPy when a diagnostic preparation with a different Python executable rebuilt
+the shared Heart smoke cache concurrently. This was an agent orchestration error,
+not evidence of library regressions. The first report is retained at
+`../smoke-first-report.json` in the task root; the 22 affected scripts were
+rerun after environment restoration. The 11 unaffected passes remain valid.
+
+Final local validation: **820 library tests passed, 1 expected failure**;
+**33 distinct workspace smoke scripts have passing evidence** across the retained
+reports. The new extent script passed in **56.2 s** with the original 300 s cap.
+Its preceding timeout coincided with a host-wide scheduling/suspension delay
+(tool wait requested 30 s, returned after 428 s; JAX heartbeat jumped 30 → 438 s).
+That interrupted result is retained, not counted as a correctness failure or
+used to raise the cap. The other 21 recovered scripts all passed. Task-local
+`smoke-combined-summary.json` links each final outcome to its original report.
+
+Human then instructed **“prm and continue”**, acknowledging the reported Heart
+YELLOW development checkpoint and authorizing merge when the normal gates pass.
+Library [PyAutoLens#764](https://github.com/PyAutoLabs/PyAutoLens/pull/764) and
+companion [workspace-test#338](https://github.com/PyAutoLabs/autolens_workspace_test/pull/338)
+are open. CI and library-first merge gates remain in force; the workspace
+companion retains its PyAutoLens release gate. No second phase has been issued.
