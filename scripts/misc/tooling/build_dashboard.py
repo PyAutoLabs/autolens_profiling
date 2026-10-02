@@ -35,8 +35,10 @@ Outputs
 -------
 
 ``dashboard/series.json`` (the trend data), ``dashboard/state.json`` (the organ cockpit feed,
-``PyAutoBrain/board/state_schema.json`` v1) and ``dashboard/index.html`` (static, no assets).
-Pure stdlib -- no PyAuto* imports, no PYTHONPATH; ``lint.yml`` runs ``--check``.
+``PyAutoBrain/board/state_schema.json`` v1), ``dashboard/summary.json`` (the ``profiling-summary``
+v1 read contract the PyAutoPulse organ ingests -- ``dashboard/README.md``) and
+``dashboard/index.html`` (static, no assets). Pure stdlib -- no PyAuto* imports, no PYTHONPATH;
+``lint.yml`` runs ``--check``.
 """
 
 from __future__ import annotations
@@ -47,6 +49,7 @@ import html
 import json
 import math
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -60,6 +63,19 @@ DRIFT_RATIO = 2.0
 #: Absolute floor for run-time drift, seconds per call: sub-millisecond wobble on a 0.4 ms
 #: cell is not a 2x regression worth a badge.
 DRIFT_FLOOR_S = 0.001
+
+#: The ``profiling-summary`` read contract this project publishes for the PyAutoPulse organ
+#: (``dashboard/README.md``; design: PyAutoBrain/docs/research/profiling_inference_organs.md).
+#: The envelope and record grammar are the exchange contract the organ validates; the series
+#: semantics, qualification and drift policy above stay this project's and are only described.
+SUMMARY_SCHEMA = "profiling-summary"
+SUMMARY_VERSION = 1
+SUMMARY_PROJECT = "autolens_profiling"
+SUMMARY_SCOPE = "release-runtime"
+#: Identifier of the drift verdict the comparisons carry -- the 2x ratio + 1 ms floor above.
+DRIFT_POLICY = "runtime-drift-2x-1ms"
+_ISO_UTC_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
+_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 
 # Same filename grammar as build_readme.py (kept in step by test_build_dashboard.py).
 ARTIFACT_RE = re.compile(
@@ -430,6 +446,362 @@ def build_state(series: list[dict], generated: str) -> dict:
     }
 
 
+# --- profiling-summary v1 (the PyAutoPulse read contract) -------------------
+
+
+def _producer_revision(root: Path) -> tuple[str | None, str | None]:
+    """HEAD of this checkout at render time, or (None, why).
+
+    This is the revision of the producer code that generated the file -- deliberately NOT
+    the commit that will first contain the file (which cannot know its own hash). ``--check``
+    reuses the committed value, so only the data can make the page stale.
+    """
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None, "git unavailable at render"
+    sha = proc.stdout.strip()
+    if proc.returncode != 0 or not _SHA_RE.match(sha):
+        return None, "not a git checkout at render"
+    return sha, None
+
+
+def _release_date(version: str) -> str | None:
+    """``2026.9.27.1`` -> ``2026-09-27`` (PyAutoLens release versions encode their date)."""
+    parts = version.split(".")
+    if len(parts) < 3:
+        return None
+    try:
+        return _dt.date(int(parts[0]), int(parts[1]), int(parts[2])).isoformat()
+    except ValueError:
+        return None
+
+
+def _config_identity(config: str) -> dict:
+    """``hpc_a100_mp`` -> tier / device / precision; an unknown grammar stays null + reason."""
+    parts = config.split("_")
+    out = {"tier": None, "device": None, "precision": None, "reason": None}
+    if len(parts) >= 3 and parts[-1] in ("fp64", "mp") and parts[0] in ("local", "hpc"):
+        out["tier"] = parts[0]
+        out["device"] = "_".join(parts[1:-1])
+        out["precision"] = "float64" if parts[-1] == "fp64" else "mixed"
+    else:
+        out["reason"] = f"config label {config!r} is outside the sweep grammar"
+    return out
+
+
+def _evidence(source: str) -> dict:
+    """A point's ``source`` -> repo-relative path + the in-file fragment (a comparison config)."""
+    path, _, fragment = source.partition("#")
+    return {"path": path, "fragment": fragment or None}
+
+
+def _summary_record(s: dict, p: dict) -> dict:
+    ident = _config_identity(s["config"])
+    return {
+        "id": f"{s['key']}@{p['version']}",
+        "axis": "runtime",
+        "unit": "s",
+        "measurement": {
+            "single_jit_s": p["single_jit_s"],
+            "vmap_per_call_s": p["vmap_per_call_s"],
+        },
+        "identity": {
+            "section": s["section"],
+            "cell": s["cell"],
+            "config": s["config"],
+            "sparse": s["sparse"],
+            "tier": ident["tier"],
+            "device": ident["device"],
+            "backend": p["backend"],
+            "precision": ident["precision"],
+            "library": "PyAutoLens",
+            "library_version": p["version"],
+            "release_date": _release_date(p["version"]),
+            "reason": ident["reason"],
+        },
+        "provenance": {
+            "host": p["host"],
+            "job": p["job"],
+            "loadavg": p["loadavg"],
+            "has_provenance": p["has_provenance"],
+            "qualified": p["qualified"],
+            "reason": p["reason"],
+        },
+        "evidence": _evidence(p["source"]),
+    }
+
+
+_COMPARISON_STATUS = {
+    "drifted": "drifted",
+    "improved": "improved",
+    "steady": "flat",
+    "single-release": "insufficient",
+    "no-data": "insufficient",
+}
+
+
+def _summary_comparison(s: dict) -> dict:
+    """The producer's own drift verdict for one series -- displayed by the organ, never redone."""
+    d = s["drift"]
+    status = _COMPARISON_STATUS[d["status"]]
+    reasons: list[str] = []
+    if d["status"] == "single-release":
+        reasons.append("one release only")
+    elif d["status"] == "no-data":
+        reasons.append("no single-jit headline in the last two releases")
+    by_version = {p["version"]: p for p in s["points"]}
+    endpoints = [by_version.get(v) for v in (d["from"], d["to"]) if v is not None]
+    for role, p in zip(("baseline", "candidate"), endpoints):
+        if p is not None and not p["qualified"]:
+            reasons.append(f"{role} row unqualified: {p['reason']}")
+    return {
+        "comparison_key": s["key"],
+        "policy": DRIFT_POLICY,
+        "axis": "runtime",
+        "metric": "single_jit_s",
+        "baseline": d["from"],
+        "candidate": d["to"],
+        "ratio": d["ratio"],
+        "status": status,
+        "qualified": bool(endpoints)
+        and len(endpoints) == 2
+        and all(p["qualified"] for p in endpoints),
+        "reasons": reasons,
+    }
+
+
+def build_summary(
+    series: list[dict],
+    refused: list[dict],
+    conf: dict,
+    generated: str,
+    revision: str | None,
+) -> dict:
+    """The ``profiling-summary`` v1 feed (``dashboard/README.md``)."""
+    records = [_summary_record(s, p) for s in series for p in s["points"]]
+    comparisons = [_summary_comparison(s) for s in series]
+    excluded = [
+        {
+            "id": f"{r['section']}:{r['cell']}:{r['config']}{'_sparse' if r['sparse'] else ''}@{r['version']}",
+            "reason": r["reason"],
+            "evidence": _evidence(r["source"]),
+        }
+        for r in refused
+    ]
+    release_dates = sorted(
+        {d for d in (_release_date(r["identity"]["library_version"]) for r in records) if d}
+    )
+    if release_dates:
+        evidence_updated_at = f"{release_dates[-1]}T00:00:00Z"
+        evidence_reason = None
+    else:
+        evidence_updated_at = None
+        evidence_reason = "no included measurement" if not records else "no parseable release date"
+    limitations = [
+        "runtime axis only: compile times, VRAM and per-step component timings are not in this feed",
+        "evidence_updated_at is the newest release date encoded in a measured library version; "
+        "result rows do not record measurement wall-clock time",
+        "valid_until is null: this project declares no freshness policy for release trends",
+        "vmap_per_call_s is null where a row carries no vmap block",
+    ]
+    if any(not r["provenance"]["has_provenance"] for r in records):
+        limitations.append(
+            "rows without a device.provenance block (pre-autolens_profiling#342) are unqualified"
+        )
+    if conf.get("node") and any(
+        r["provenance"]["reason"] and "off the reference host" in r["provenance"]["reason"]
+        for r in records
+    ):
+        limitations.append(
+            f"HPC rows measured off the reference host {conf['node']} are unqualified"
+        )
+    if excluded:
+        limitations.append(
+            f"{len(excluded)} row(s) above the load-average cap {conf.get('loadavg_cap'):g} are "
+            "listed under coverage.excluded and never enter records"
+        )
+    if revision is None:
+        limitations.append(
+            "producer_revision is null: not a git checkout, or git unavailable, at render"
+        )
+    return {
+        "schema": SUMMARY_SCHEMA,
+        "version": SUMMARY_VERSION,
+        "project": SUMMARY_PROJECT,
+        "scope": SUMMARY_SCOPE,
+        "generated_at": generated,
+        "evidence_updated_at": evidence_updated_at,
+        "evidence_updated_at_reason": evidence_reason,
+        "valid_until": None,
+        "producer_revision": revision,
+        "comparison_policy": {
+            "id": DRIFT_POLICY,
+            "ratio": DRIFT_RATIO,
+            "floor_s": DRIFT_FLOOR_S,
+            "reference_host": conf.get("node"),
+            "loadavg_cap": conf.get("loadavg_cap"),
+        },
+        "coverage": {
+            "expected": {
+                "sections": list(SECTIONS),
+                "cells": None,
+                "reason": "no declared cell matrix; the results/ scan is the inventory",
+            },
+            "observed": {
+                "series": len(series),
+                "points": len(records),
+                "releases": len({r["identity"]["library_version"] for r in records}),
+                "cells": len({s["cell"] for s in series}),
+            },
+            "excluded": excluded,
+        },
+        "records": records,
+        "comparisons": comparisons,
+        "limitations": limitations,
+    }
+
+
+def _safe_relative_path(path) -> bool:
+    if not isinstance(path, str) or not path or "\\" in path:
+        return False
+    if path.startswith("/") or re.match(r"^[A-Za-z]:", path):
+        return False
+    return ".." not in path.split("/")
+
+
+def _finite_or_null(v) -> bool:
+    return v is None or (
+        isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
+    )
+
+
+def validate_summary(payload: dict) -> list[str]:
+    """Exchange-contract findings for a ``profiling-summary`` payload (empty = valid).
+
+    This is the producer's own guard: it refuses to publish what the organ would reject --
+    unknown schema/version, missing fields, duplicate ids, non-finite numbers, bad dates,
+    unsafe evidence paths. Domain meaning (what a series is, when it drifted) is not judged
+    here; that stays in build_series/drift.
+    """
+    out: list[str] = []
+    if not isinstance(payload, dict):
+        return ["payload is not an object"]
+    if payload.get("schema") != SUMMARY_SCHEMA:
+        out.append(f"schema {payload.get('schema')!r} != {SUMMARY_SCHEMA!r}")
+    if payload.get("version") != SUMMARY_VERSION:
+        out.append(f"version {payload.get('version')!r} != {SUMMARY_VERSION}")
+    for key in (
+        "project",
+        "scope",
+        "generated_at",
+        "evidence_updated_at",
+        "valid_until",
+        "producer_revision",
+        "coverage",
+        "records",
+        "comparisons",
+        "limitations",
+    ):
+        if key not in payload:
+            out.append(f"missing required field {key!r}")
+    for key in ("generated_at", "evidence_updated_at", "valid_until"):
+        v = payload.get(key)
+        if v is not None and not (isinstance(v, str) and _ISO_UTC_RE.match(v)):
+            out.append(f"{key} is not an ISO-8601 UTC timestamp: {v!r}")
+    if not isinstance(payload.get("generated_at"), str):
+        out.append("generated_at must be a timestamp, not null")
+    vu, ga = payload.get("valid_until"), payload.get("generated_at")
+    if isinstance(vu, str) and isinstance(ga, str) and vu < ga:
+        out.append("valid_until precedes generated_at")
+    rev = payload.get("producer_revision")
+    if rev is not None and not (isinstance(rev, str) and _SHA_RE.match(rev)):
+        out.append(f"producer_revision is not a 40-hex commit or null: {rev!r}")
+    records = payload.get("records")
+    if not isinstance(records, list):
+        out.append("records is not a list")
+        records = []
+    seen: set[str] = set()
+    for i, r in enumerate(records):
+        if not isinstance(r, dict):
+            out.append(f"records[{i}] is not an object")
+            continue
+        rid = r.get("id")
+        if not isinstance(rid, str) or not rid:
+            out.append(f"records[{i}] has no id")
+        elif rid in seen:
+            out.append(f"duplicate record id {rid!r}")
+        else:
+            seen.add(rid)
+        meas = r.get("measurement") if isinstance(r.get("measurement"), dict) else {}
+        values = [meas.get("single_jit_s"), meas.get("vmap_per_call_s")]
+        if not all(_finite_or_null(v) for v in values):
+            out.append(f"records[{i}] carries a non-finite measurement")
+        if all(v is None for v in values):
+            out.append(f"records[{i}] carries no measurement")
+        ev = r.get("evidence") if isinstance(r.get("evidence"), dict) else {}
+        if not _safe_relative_path(ev.get("path")):
+            out.append(
+                f"records[{i}] evidence path is not a safe repo-relative path: {ev.get('path')!r}"
+            )
+        prov = r.get("provenance") if isinstance(r.get("provenance"), dict) else {}
+        if not _finite_or_null(prov.get("loadavg")):
+            out.append(f"records[{i}] carries a non-finite loadavg")
+    comparisons = payload.get("comparisons")
+    if not isinstance(comparisons, list):
+        out.append("comparisons is not a list")
+        comparisons = []
+    seen_cmp: set[str] = set()
+    for i, c in enumerate(comparisons):
+        if not isinstance(c, dict):
+            out.append(f"comparisons[{i}] is not an object")
+            continue
+        key = c.get("comparison_key")
+        if not isinstance(key, str) or not key:
+            out.append(f"comparisons[{i}] has no comparison_key")
+        elif key in seen_cmp:
+            out.append(f"duplicate comparison_key {key!r}")
+        else:
+            seen_cmp.add(key)
+        if c.get("status") not in set(_COMPARISON_STATUS.values()):
+            out.append(f"comparisons[{i}] status {c.get('status')!r} is not in the contract")
+        if not _finite_or_null(c.get("ratio")):
+            out.append(f"comparisons[{i}] carries a non-finite ratio")
+        if c.get("policy") != DRIFT_POLICY:
+            out.append(f"comparisons[{i}] names an unknown policy {c.get('policy')!r}")
+    cov = payload.get("coverage")
+    if isinstance(cov, dict):
+        obs = cov.get("observed") if isinstance(cov.get("observed"), dict) else None
+        if obs is None:
+            out.append("coverage.observed missing")
+        else:
+            for k, v in obs.items():
+                if not (isinstance(v, int) and not isinstance(v, bool) and v >= 0):
+                    out.append(f"coverage.observed.{k} is not a non-negative integer")
+        for i, x in enumerate(cov.get("excluded") or []):
+            ev = (
+                x.get("evidence")
+                if isinstance(x, dict) and isinstance(x.get("evidence"), dict)
+                else {}
+            )
+            if not _safe_relative_path(ev.get("path")):
+                out.append(f"coverage.excluded[{i}] evidence path is not safe: {ev.get('path')!r}")
+    elif "coverage" in payload:
+        out.append("coverage is not an object")
+    if "limitations" in payload and not (
+        isinstance(payload["limitations"], list)
+        and all(isinstance(x, str) and x for x in payload["limitations"])
+    ):
+        out.append("limitations must be a list of non-empty strings")
+    return out
+
+
 # --- HTML -------------------------------------------------------------------
 
 # Categorical slots from the dataviz reference palette, fixed order, one per sweep config.
@@ -693,13 +1065,25 @@ def render_html(
     return "\n".join(parts) + "\n"
 
 
-def build(root: Path, generated: str | None = None) -> dict[str, str]:
-    """Render every output as text, keyed by filename under dashboard/."""
+def build(
+    root: Path, generated: str | None = None, revision: str | None | object = ...
+) -> dict[str, str]:
+    """Render every output as text, keyed by filename under dashboard/.
+
+    ``revision`` is the producer revision the summary records: ``...`` (default) reads HEAD,
+    ``None`` records null, a string is taken as given (``--check`` passes the committed one).
+    """
     root = root.resolve()
     conf = read_release_sweep_conf(root)
     generated = generated or _dt.datetime.now(_dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     series, refused = build_series(root, conf)
     state = build_state(series, generated)
+    if revision is ...:
+        revision, _why = _producer_revision(root)
+    summary = build_summary(series, refused, conf, generated, revision)
+    findings = validate_summary(summary)
+    if findings:
+        raise ValueError("profiling-summary would be invalid: " + "; ".join(findings))
     series_doc = {
         "schema_version": SCHEMA_VERSION,
         "generated": generated,
@@ -713,6 +1097,7 @@ def build(root: Path, generated: str | None = None) -> dict[str, str]:
     return {
         "series.json": json.dumps(series_doc, indent=1) + "\n",
         "state.json": json.dumps(state, indent=2) + "\n",
+        "summary.json": json.dumps(summary, indent=1) + "\n",
         "index.html": render_html(series, refused, conf, generated, state),
     }
 
@@ -721,6 +1106,12 @@ def _existing_stamp(out_dir: Path) -> str | None:
     doc = _load(out_dir / "series.json")
     stamp = doc.get("generated") if doc else None
     return stamp if isinstance(stamp, str) else None
+
+
+def _existing_revision(out_dir: Path) -> str | None:
+    doc = _load(out_dir / "summary.json")
+    rev = doc.get("producer_revision") if doc else None
+    return rev if isinstance(rev, str) else None
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -733,8 +1124,14 @@ def main(argv: list[str] | None = None) -> int:
     root = (args.root or _profiling_root()).resolve()
     out_dir = root / "dashboard"
 
-    # --check re-renders with the committed stamp so only the data can differ.
-    outputs = build(root, generated=_existing_stamp(out_dir) if args.check else None)
+    # --check re-renders with the committed stamp and producer revision so only the data can
+    # differ (HEAD moves with every commit; the summary records the revision that rendered it).
+    if args.check:
+        outputs = build(
+            root, generated=_existing_stamp(out_dir), revision=_existing_revision(out_dir)
+        )
+    else:
+        outputs = build(root)
     stale = [
         name
         for name, text in outputs.items()
@@ -753,7 +1150,8 @@ def main(argv: list[str] | None = None) -> int:
     for name, text in outputs.items():
         (out_dir / name).write_text(text, encoding="utf-8")
     print(
-        f"build_dashboard: wrote dashboard/series.json + state.json + index.html ({len(n_series)} series)"
+        "build_dashboard: wrote dashboard/series.json + state.json + summary.json + index.html "
+        f"({len(n_series)} series)"
     )
     return 0
 
