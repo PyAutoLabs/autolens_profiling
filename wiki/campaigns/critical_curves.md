@@ -5,11 +5,11 @@
 **Pre-registered rule:** Match every reference component within two fine-grid pixels (0.1 arcsec control, 0.25 arcsec cluster); analytic control and coarse/fine convergence; errors/timeouts never pass.
 **Verdict:** NO-GO for blindly routing cluster plots to default zero-contour; retain marching squares pending grid-cap, seed-coverage and path-completion contracts.
 **Headline:** CPU fp64 pinned witness: fixed ±3 arcsec auto seeds miss both cluster tangential curves; explicit far-source curve has a 20.65 arcsec closing chord.
-**Library PRs:** None; no production change in phase 3a.
-**Profiling PRs:** Phase-3a shipping resumed; task: autolens_workspace_test#337.
+**Library PRs:** [Galaxy #646](https://github.com/PyAutoLabs/PyAutoGalaxy/pull/646), phase 3b cap fix; awaiting merge/release.
+**Profiling PRs:** [#364](https://github.com/PyAutoLabs/autolens_profiling/pull/364) merged (phase 3a); phase-3b ledger update pending.
 **Ledger:** [critical_curves_dispatch.md](../../results/notes/critical_curves_dispatch.md)
-**Mind contract:** epic `cluster-strong-lensing`; `active/critical_curves_dispatch_audit.md`
-**Next:** Ship/review phase 3a; then issue one bounded grid-cap fix. Full workspace smoke now passes 33/33.
+**Mind contract:** epic `cluster-strong-lensing`; phase 3a complete; `active/evaluation_grid_cap_preserves_field.md` (3b)
+**Next:** Ship the bounded phase-3b cap fix, then investigate seed coverage/path completion before cluster engine selection.
 
 ## Why this campaign
 
@@ -25,11 +25,12 @@ in workspace/library CI; this wiki accumulates research and robust-settings advi
 
 | Phase | Dates | Question | Pre-registered rule | Result | Jobs | PRs |
 |---|---|---|---|---|---|---|
-| Source & Cluster 3a | 2026-10-02 | Is existing dispatch safe at cluster scale? | Full component match and two-pixel distance bound | Seed and path-completion failures; grid-cap field distortion; outer-JIT unsupported | local CPU, no HPC | pending |
+| Source & Cluster 3a | 2026-10-02 | Is existing dispatch safe at cluster scale? | Full component match and two-pixel distance bound | Seed and path-completion failures; grid-cap field distortion; outer-JIT unsupported | local CPU, no HPC | [profiling #364](https://github.com/PyAutoLabs/autolens_profiling/pull/364), [CI #341](https://github.com/PyAutoLabs/autolens_workspace_test/pull/341), merged |
+| Source & Cluster 3b | 2026-10-02 | Does the cap preserve the effective physical field? | Bound both axes, no cropping, less than one pixel total padding | 60 arcsec field retained at 0.06 arcsec/pixel; 1315 library tests pass | local grid recorder, no Hessian/HPC | [Galaxy #646](https://github.com/PyAutoLabs/PyAutoGalaxy/pull/646), open |
 
 ## What shipped and where it is
 
-No production fix has shipped from this campaign. Earlier zero-contour work is
+Phase 3a research and CI are merged. No production fix has yet shipped from this campaign. Earlier zero-contour work is
 an input, not evidence that cluster plots are safe. Keep PR/merge/release records
 here as the subsequent bounded phases ship.
 
@@ -76,3 +77,16 @@ Resumption: all 33 workspace smoke scripts passed; the human acknowledged the
 remaining unrelated manifest YELLOW and authorized `/prm and continue`. The
 previous incomplete-smoke checkpoint is superseded; historical evidence remains
 unchanged.
+
+
+### 2026-10-02 — Phase 3a merged; first cap fix validated
+
+The two phase-3a PRs merged after all CI legs passed; issue #337 is closed.
+Human approved one successor, Galaxy #645, with separate-scope concurrency.
+The same cap probe on its fixed branch retains the 60 arcsec field: 1000×1000
+at 0.06 arcsec, pixel centres ±29.97. Library validation passes 1315 tests;
+the ledger records before/after geometry and the measured source hash.
+This fixes the dimensional cap formula and both-axis limit, preserving existing
+Zoom2D centre/mask support and conservative subpixel rounding. It does not
+establish seed completeness or repair truncated zero-contour paths. Original
+phase-3a evidence remains immutable. Library and linked workspace shipping pending.
