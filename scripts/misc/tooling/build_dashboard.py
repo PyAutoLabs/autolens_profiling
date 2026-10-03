@@ -34,7 +34,7 @@ badge is a flag for the conductor's ``triage``, never a verdict.
 Outputs
 -------
 
-``dashboard/series.json`` (the trend data), ``dashboard/state.json`` (the organ cockpit feed,
+``dashboard/series.json`` (the trend data), ``dashboard/state.json`` (the project badge feed,
 ``PyAutoBrain/board/state_schema.json`` v1), ``dashboard/summary.json`` (the ``profiling-summary``
 v1 read contract the PyAutoPulse organ ingests -- ``dashboard/README.md``) and
 ``dashboard/index.html`` (static, no assets). Pure stdlib -- no PyAuto* imports, no PYTHONPATH;
@@ -408,7 +408,7 @@ def _config_rank(config: str) -> int:
 
 
 def build_state(series: list[dict], generated: str) -> dict:
-    """The organ cockpit feed (PyAutoBrain/board/state_schema.json, v1)."""
+    """The project badge feed (PyAutoBrain/board/state_schema.json, v1)."""
     cells = {s["cell"] for s in series}
     versions = {p["version"] for s in series for p in s["points"]}
     drifted = [s for s in series if s["drift"]["status"] == "drifted"]
@@ -436,7 +436,7 @@ def build_state(series: list[dict], generated: str) -> dict:
         )
     return {
         "schema_version": 1,
-        "organ": "profiling",
+        "organ": "autolens_profiling",
         "repo": "autolens_profiling",
         "status": status,
         "headline": headline,

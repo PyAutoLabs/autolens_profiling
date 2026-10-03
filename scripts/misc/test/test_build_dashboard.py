@@ -167,6 +167,7 @@ def test_state_feed_contract(tmp_path):
     root = _tree(tmp_path)
     series, _ = bd.build_series(root, bd.read_release_sweep_conf(root))
     state = bd.build_state(series, "2026-09-27T00:00:00Z")
+    assert state["organ"] == "autolens_profiling"
     for key in (
         "schema_version",
         "organ",
@@ -223,7 +224,7 @@ def test_real_tree_renders():
     doc = json.loads(outputs["series.json"])
     assert doc["reference_host"] == "euclid-ral-gpu-2"
     assert len(doc["series"]) > 20
-    assert json.loads(outputs["state.json"])["organ"] == "profiling"
+    assert json.loads(outputs["state.json"])["organ"] == "autolens_profiling"
 
 
 # --- profiling-summary v1 (the PyAutoPulse read contract) -------------------
@@ -369,7 +370,7 @@ def test_summary_is_written_checked_and_the_other_outputs_are_untouched(tmp_path
     for name in ("series.json", "state.json", "index.html"):
         assert again[name] == (out / name).read_text()
     assert "summary.json" not in (out / "series.json").read_text()
-    assert json.loads((out / "state.json").read_text())["organ"] == "profiling"
+    assert json.loads((out / "state.json").read_text())["organ"] == "autolens_profiling"
 
 
 def test_real_tree_summary_is_valid():
