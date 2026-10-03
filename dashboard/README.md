@@ -10,8 +10,11 @@ re-renders on release. `pages_dashboard.yml` publishes the folder as-is at
 |---|---|---|
 | `index.html` | a human | the run-time-over-time page (static, no assets) |
 | `series.json` | `index.html` | the trend data, `schema_version` 1 — this project's own shape |
-| `state.json` | the Brain board cockpit | `PyAutoBrain/board/state_schema.json` v1 |
+| `state.json` | this project's own Pages badge | `PyAutoBrain/board/state_schema.json` v1; project label `autolens_profiling` |
 | `summary.json` | the **PyAutoPulse** organ | **`profiling-summary` v1** — below |
+
+The Brain board and cockpit read the **PyAutoPulse** organ feed (`PyAutoPulse/state.json`);
+this project's feed retains its drift items, triage prompts and Pages link.
 
 ## `summary.json` — the `profiling-summary` v1 read contract
 

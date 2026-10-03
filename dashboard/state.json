@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "organ": "profiling",
+  "organ": "autolens_profiling",
   "repo": "autolens_profiling",
   "status": "green",
   "headline": "145 series across 61 cells and 4 releases; no drift",

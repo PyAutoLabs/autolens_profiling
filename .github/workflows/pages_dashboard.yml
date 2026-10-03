@@ -1,16 +1,16 @@
 name: Pages Dashboard
 
 # Serves the run-time-over-time dashboard (`dashboard/index.html`, its data
-# `series.json`, the organ cockpit feed `state.json` and the PyAutoPulse read
+# `series.json`, the project badge feed `state.json` and the PyAutoPulse read
 # contract `summary.json`) at this repo's GitHub
 # Pages URL. The files are rendered by `scripts/misc/tooling/build_dashboard.py`
 # — on release tags by `profile.yml`, by hand after a sweep is committed — and
 # this workflow only publishes them (autolens_profiling#345). Only the uploaded
 # files reach Pages: nothing else in the repo.
 #
-# The cockpit-feed contract lives with the Brain (board/_state.py); a feed that
-# has drifted from it fails here, before Pages publishes something the cockpit
-# would reject — the same guard PyAutoCortex's pages_dashboard.yml runs.
+# The badge uses the Brain feed contract (board/_state.py); a feed that has
+# drifted from it fails before Pages publishes. The Brain cockpit reads the
+# PyAutoPulse organ feed, not this project's badge.
 
 on:
   push:
@@ -52,10 +52,25 @@ jobs:
           cp dashboard/series.json _site/series.json
           cp dashboard/state.json _site/state.json
           cp dashboard/summary.json _site/summary.json
-      - name: Validate the cockpit feed against the Brain contract
+      - name: Validate the project badge feed against the Brain contract
         run: python3 PyAutoBrain/board/_state.py _site/state.json
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
       - id: deployment
         uses: actions/deploy-pages@v4
+      - name: Tell the PyAutoPulse dashboard to refresh (repository_dispatch pulse-refresh)
+        env:
+          GH_TOKEN: ${{ secrets.PAT_PYAUTOLABS }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::warning::PAT_PYAUTOLABS is not available to this repo — skipping the pulse-refresh dispatch to PyAutoLabs/PyAutoPulse."
+            exit 0
+          fi
+          sha=$(git rev-parse HEAD)
+          gh api repos/PyAutoLabs/PyAutoPulse/dispatches \
+            -f event_type=pulse-refresh \
+            -f "client_payload[repo]=${{ github.repository }}" \
+            -f "client_payload[sha]=${sha}" \
+            -f "client_payload[summary]=dashboard/summary.json"
+          echo "Dispatched pulse-refresh to PyAutoLabs/PyAutoPulse (${{ github.repository }}@${sha})."
