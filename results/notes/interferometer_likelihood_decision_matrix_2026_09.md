@@ -14,7 +14,16 @@ what does one fit cost?** It assembles the committed rows of the three campaign 
 - **An sdp81 row:** the real ALMA SDP.81 uv coverage (108,384 visibilities) at r3.5, for
   Delaunay-1500, rect 39² (CPU + A100) and MGE-20 (A100 dense and W~ sparse).
 
-**Status at this commit (2026-09-30).** Of the 14 new cells (8 CPU radius gaps + 6 sdp81), **13 are measured and pass their witness gates**. One is still running: CPU rect 39² at alma_high r5.0 (RAL 375978_3, ~65 min at 20 instances; it will write `alma_high/pixelization_numba_hpc_ral_cpu_fp64_r5.0.json`). Its row reads "pending" below; fill it by pulling the JSON and re-reading the rect table (the A100 row, 198.6 ms, is already in).
+**Status (2026-10-04): all 14 new cells are measured** (8 CPU radius gaps + 6 sdp81). 13 shipped on 2026-09-30 in #358 and pass their witness gates.
+
+The last cell is CPU rect 39² at alma_high r5.0. It was filled on 2026-10-04 (issue #369) from RAL 375978_3 (COMPLETED, 01:11:36) into `alma_high/pixelization_numba_hpc_ral_cpu_fp64_r5.0.json`. It passes every gate except CPU vs A100:
+- **CPU vs A100: 1.59e-3 nats.** CPU log-evidence −60244101.501766354 (fnnls); A100 `full_pipeline.figure_of_merit` −60244101.503356226 (PDIP, on PyAutoArray `9428eca2`). That misses the 1e-3 bar.
+- **Accepted by the human on 2026-10-04.** The reasons:
+  - It is the same failure mode as the alma_high r3.5 rect cell, which missed at 1.5e-3.
+  - The A100 row is PDIP on revisions from before PyAutoArray#595, while the CPU row is fnnls. This is a solver/revision mismatch on the edge-zeroed subset, not a precision loss.
+  - It is a relative 2.6e-11, and 310× inside the 0.5-nat evidence bar.
+- The A100 row's own `solver_ab` puts its certified active-set solve within 0.0 nats of its PDIP solve.
+- The gap is recorded as a miss, not rounded away. An A100 re-run on post-#595 revisions would close the question; it was not run.
 
 ## Rules (draft)
 
@@ -35,7 +44,7 @@ A draft rule set for the architect to review; each rule cites the rows it rests 
    (8.3 / 7.6 s vs FFT 9.4 / 9.6 s).
 4. **The A100 wins every mesh cell, and the margin grows with the mask.** Best-CPU ÷ A100 is
    8–33× at sma, 28–41× at sdp81, 11–69× at alma and 43–114× at alma_high (single thread vs one
-   JIT). The CPU is
+   JIT; rechecked 2026-10-04 with the last cell: rect alma_high r5.0 is 89×, inside the range). The CPU is
    still viable where the per-call cost is about a second or less (sma at any radius, alma
    r2.0 on both meshes, alma r3.5 Delaunay at 1.26 s): hours per fit on one core, minutes over a node's cores (Indicative time per fit).
    Above ~20,000 masked pixels a CPU fit is days per core; use the A100.
@@ -106,7 +115,7 @@ cell the gate routes to the slower arm. A100 speed-up = best CPU arm ÷ A100 W~.
 | 1e6 | alma | 5.0 | 31,428 | 82.7 | 5,699 | **4,653** | FFT | — | 67.2 | OOM (23.7 GiB) | 69× |
 | 5e6 | alma_high | 2.0 | 20,108 | 52.9 | **3,739** | 4,447 | numba | — | 48.9 | skipped (T > VRAM) | 77× |
 | 5e6 | alma_high | 3.5 | 61,572 | 161.9 | 19,044 | **9,587** | FFT | 7,600 | 95.9 | skipped (T > VRAM) | 100× |
-| 5e6 | alma_high | 5.0 | 125,676 | — | pending (RAL 375978_3) | pending (RAL 375978_3) | — | — | 198.6 | skipped (T > VRAM) | — |
+| 5e6 | alma_high | 5.0 | 125,676 | 330.5 | 75,321 | **17,649** | FFT | — | 198.6 | skipped (T > VRAM) | 89× |
 | 2.5e7 | jvla | 3.5 | 384,852 | — | not measured | not measured | — | — | 564.4 | skipped (T > VRAM) | — |
 
 ## Main matrix — MGE-20, per-likelihood ms (r3.5 only)
@@ -161,7 +170,7 @@ on the A100 the operator build. Cache hits time only the dirty image and the wra
 | rect 39² | alma | 5.0 | 13.8 | 2.3 | 3.0 | 2.7 |
 | rect 39² | alma_high | 2.0 | 16.5 | 8.6 | 3.6 | 3.6 |
 | rect 39² | alma_high | 3.5 | 17.8 | 8.6 | 3.7 | 3.7 |
-| rect 39² | alma_high | 5.0 | — | — | 3.1 | 4.0 |
+| rect 39² | alma_high | 5.0 | 16.7 | 8.6 | 3.1 | 4.0 |
 | rect 39² | jvla | 3.5 | — | — | 7.5 | 10.1 |
 
 ## Verification
@@ -192,6 +201,7 @@ within 1e-3 nats of the matching A100 row (same instrument, radius, mesh).
 | rect 39² | alma | 5.0 | `InversionInterferometerSparseNumba` | 1.9e-09 | 0.996, 1.000 | 9.3e-04 | `e281abf3` / `9428eca2` |
 | rect 39² | alma_high | 2.0 | `InversionInterferometerSparseNumba` | 0.0e+00 | 0.998, 1.003 | 1.5e-08 | `7a89e19a` / `9428eca2` |
 | rect 39² | alma_high | 3.5 | `InversionInterferometerSparseNumba` | 7.5e-09 | 0.999, 0.999 | 1.5e-03 | `e281abf3` / `14d63360` |
+| rect 39² | alma_high | 5.0 | `InversionInterferometerSparseNumba` | 7.5e-09 | 1.002, 1.008 | 1.6e-03 (accepted, see Status) | `7a89e19a` / `9428eca2` |
 
 - **Every measured CPU cell runs the numba arm on `InversionInterferometerSparseNumba`** (the
   harness forces the gate open on that arm) and the FFT arm on `InversionInterferometerSparse`.
@@ -201,8 +211,9 @@ within 1e-3 nats of the matching A100 row (same instrument, radius, mesh).
   same instance. Every Delaunay cell agrees to ≤ 2.4e-5 nats. The rectangular cells, which solve
   on the edge-zeroed subset (`solve_subset_edge_zeroed`), are looser: sma, alma r2.0 / r3.5 and alma_high
   r2.0 agree to ≤ 2.6e-5, **sdp81 r3.5 to 7.8e-4 and alma r5.0 to 9.3e-4** (inside the 1e-3 bar),
-  and **alma_high r3.5 to 1.5e-3 nats, which misses the 1e-3 bar**. alma_high r3.5 and alma r5.0
-  are phase-2/3 rows; sdp81 is new and passes. On the edge-zeroed subset the A100's PDIP
+  and **alma_high r3.5 to 1.5e-3 nats and alma_high r5.0 to 1.59e-3 nats, which both miss the 1e-3 bar**. alma_high r3.5 and alma r5.0
+  are phase-2/3 rows; sdp81 is new and passes. alma_high r5.0 is new and misses. The human accepted that miss on
+  2026-10-04 on the r3.5 precedent: the A100 is PDIP on pre-#595 PyAutoArray `9428eca2` and the CPU is fnnls on `7a89e19a`. On the edge-zeroed subset the A100's PDIP
   (converged, 14–15 iterations) and the CPU's fnnls stop at slightly different iterates;
   1.5e-3 nats on log L = −6.0e7 is a relative 2.5e-11 and 330× inside the 0.5-nat evidence bar,
   so it changes no decision here, but it is recorded as a miss, not rounded away.
@@ -250,7 +261,7 @@ batching (vmap) and parallel lanes:
 | rect 39² | alma | 5.0 | 4,653 | 3.9 d | 67.2 | 1.4 h |
 | rect 39² | alma_high | 2.0 | 3,739 | 3.2 d | 48.9 | 60 min |
 | rect 39² | alma_high | 3.5 | 9,587 | 8.1 d | 95.9 | 1.9 h |
-| rect 39² | alma_high | 5.0 | pending (RAL 375978_3) | — | 198.6 | 4.0 h |
+| rect 39² | alma_high | 5.0 | 17,649 | 15.0 d | 198.6 | 4.0 h |
 | rect 39² | jvla | 3.5 | not measured | — | 564.4 | 11.5 h |
 
 - The CPU column is **one core**. Nautilus evaluates a batch of points per iteration; spread
@@ -278,7 +289,6 @@ it; "blocked" means a run was attempted and could not complete.
 | Delaunay / rect, A100 dense, alma_high / jvla | skipped | `T` alone 112 / 559 GiB > 80 GB (`--dense-max-vis`) | A100 ledger |
 | Delaunay / rect, CPU JAX, r2.0 / r5.0 and sdp81 | not measured | the JAX-CPU FFT route was measured in phase 1 at r3.5 only; the NumPy FFT arm is the CPU FFT column | CPU ledger, RAL CPU baseline |
 | Delaunay / rect, sdp81 r2.0 / r5.0 | not measured | the sdp81 row is r3.5 only by plan (#356) | this note |
-| rect 39², CPU, alma_high r5.0 | pending at this commit | RAL 375978_3 (rect) still running when the note was committed; the harness writes `alma_high/pixelization_numba_hpc_ral_cpu_fp64_r5.0.json` | Status |
 
 ## Caveats
 
@@ -322,7 +332,7 @@ it; "blocked" means a run was attempted and could not complete.
   and `hpc/batch_gpu/submit_breakdown_interferometer_{delaunay,pixelization,mge}_a100_sdp81_fp64` +
   `..._mge_a100_sdp81_fp64_sparse` (copied from the alma A100 submits; the Delaunay one drops the
   ConstantSplit bridge leg, the MGE sparse one drops the #575 branch-library copy).
-- **RAL jobs:** CPU arrays **375977** (Delaunay gaps, tasks 0–3: 1:06 / 1:50 / 6:25 / 1:02:23) and **375978** (rect gaps, tasks 0–2: 0:48 / 2:40 / 7:04; task 3 running), CPU **375979** / **375980** (sdp81 Delaunay / rect, 4:02 / 4:03), A100 **375981** / **375982** / **375983** / **375984** (sdp81 Delaunay / rect / MGE dense / MGE W~, 2:33 / 1:59 / 1:46 / 2:23). All `COMPLETED` except 375978_3; every `.err` has 0 Tracebacks, 0 `RESOURCE_EXHAUSTED` and 0 float32 truncations. The CPU tasks ran on `euclid-ral-gpu-2` with the node's CPUs fully allocated by other jobs (load ≈ 48–74). The A100 jobs pended ~70 min because other jobs' CPU-only tasks held every CPU on both gpu nodes (see the RAL partition rule in `hpc/README.md`).
+- **RAL jobs:** CPU arrays **375977** (Delaunay gaps, tasks 0–3: 1:06 / 1:50 / 6:25 / 1:02:23) and **375978** (rect gaps, tasks 0–3: 0:48 / 2:40 / 7:04 / 1:11:36), CPU **375979** / **375980** (sdp81 Delaunay / rect, 4:02 / 4:03), A100 **375981** / **375982** / **375983** / **375984** (sdp81 Delaunay / rect / MGE dense / MGE W~, 2:33 / 1:59 / 1:46 / 2:23). All `COMPLETED` (375978_3 confirmed by `sacct` on 2026-10-04); every `.err` has 0 Tracebacks, 0 `RESOURCE_EXHAUSTED` and 0 float32 truncations. The CPU tasks ran on `euclid-ral-gpu-2` with the node's CPUs fully allocated by other jobs (load ≈ 48–74). The exception is 375978_3, which ran on `euclid-ral-gpu-1` (load 65–75 at import, 2.7 at write). The A100 jobs pended ~70 min because other jobs' CPU-only tasks held every CPU on both gpu nodes (see the RAL partition rule in `hpc/README.md`).
 - **Libraries.** The shared RAL mirror `/mnt/ral/jnightin/PyAuto` was 7–16 commits behind the
   library mains and in use by another campaign's running jobs, so it was **not** pulled. The
   phase-4 submits take `PYAUTO_LIB_BASE` (default: the shared mirror, i.e. exactly the copied
