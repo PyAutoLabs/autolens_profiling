@@ -6,10 +6,10 @@
 **Verdict:** phase 0+1 (lean) measured; launch-bound confirmed; go/no-go pending the human (no image-plane fit timed yet)
 **Headline:** scalar 0.910 ms (CUDA graphs on; 1.097 off), 173 kernels/call, device busy 57 % of wall, vmap-256 0.0120 ms/L (81x); A100 job 366916 (euclid-ral-gpu-1, exclusive); forward-mode gradient NaN
 **Library PRs:** none
-**Profiling PRs:** branch `feature/point-source-gpu-p01` (#350)
+**Profiling PRs:** [#353](https://github.com/PyAutoLabs/autolens_profiling/pull/353), merged 2026-09-30 (issue #350, phase 0+1)
 **Ledger:** [point_source_gpu_breakdown_2026_09.md](../../results/notes/point_source_gpu_breakdown_2026_09.md); instrument [point_source_shared_likelihood_breakdown.md](../../results/notes/point_source_shared_likelihood_breakdown.md)
-**Mind contract:** `draft/research/autolens_profiling/point_source_image_plane_gpu_breakdown.md` (filed 2026-09-17, contract 2026-09-19); prerequisite `complete/2026/09/point-source-shared-breakdown.md` (#293).
-**Next:** human go/no-go against the admission bar; prerequisite one autolens_inference image-plane fit measurement; route the forward-mode NaN through intake
+**Mind contract:** PyAutoPulse task [point_source_image_plane_gpu_breakdown](https://github.com/PyAutoLabs/PyAutoPulse/blob/main/tasks/point_source_image_plane_gpu_breakdown.md), migrated from the Mind draft on 2026-10-03 (filed 2026-09-17, contract 2026-09-19); prerequisite `complete/2026/09/point-source-shared-breakdown.md` (#293).
+**Next:** human go/no-go against the admission bar; prerequisite one autolens_inference image-plane fit measurement; the forward-mode NaN is issued as [PyAutoLens#767](https://github.com/PyAutoLabs/PyAutoLens/issues/767) (2026-10-04)
 
 ## Why this campaign
 
@@ -42,12 +42,12 @@ From the draft's campaign contract. Phases 0 and 1 ran as one lean job (human, 2
 
 ## What shipped and where it is
 
-The bottleneck-map cell `scripts/point_source_image/likelihood_breakdown/gpu_bottleneck_map.py`, its stage map `_point_solver_stage_map.py`, the submit `hpc/batch_gpu/submit_breakdown_point_source_image_gpu_bottleneck_map_a100_fp64` and the job-366916 results (branch `feature/point-source-gpu-p01`). No library change.
+The bottleneck-map cell `scripts/point_source_image/likelihood_breakdown/gpu_bottleneck_map.py`, its stage map `_point_solver_stage_map.py`, the submit `hpc/batch_gpu/submit_breakdown_point_source_image_gpu_bottleneck_map_a100_fp64` and the job-366916 results, merged in #353 on 2026-09-30. No library change.
 
 ## Open / parked / drafts
 
-- `draft/research/autolens_profiling/point_source_image_plane_gpu_breakdown.md` — this campaign, unstarted.
-- `draft/research/autolens_profiling/point_solver_profiling_cells.md` — more point-source cells for the cluster arc; the draft says not to merge scopes.
+- PyAutoPulse task [point_source_image_plane_gpu_breakdown](https://github.com/PyAutoLabs/PyAutoPulse/blob/main/tasks/point_source_image_plane_gpu_breakdown.md) — this campaign. Phase 0+1 shipped (#353). Phase 2 awaits the human go/no-go.
+- PyAutoPulse task [point_solver_profiling_cells](https://github.com/PyAutoLabs/PyAutoPulse/blob/main/tasks/point_solver_profiling_cells.md) — more point-source cells for the cluster arc; the draft says not to merge scopes.
 
 ## Caveats
 

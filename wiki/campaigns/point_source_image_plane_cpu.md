@@ -9,7 +9,7 @@
 **Profiling PRs:** #293, #298, #301, #305, #318 (folder split), #321, #330, #335.
 **Ledger:** [point_source_cpu_campaign.md](../../results/notes/point_source_cpu_campaign.md); instrument note [point_source_shared_likelihood_breakdown.md](../../results/notes/point_source_shared_likelihood_breakdown.md).
 **Mind contract:** epic `point-source-cpu-speed`; campaign contract in the `## Original prompt` of `complete/2026/09/point-source-cpu-p4.md`; phase records `complete/2026/09/point-source-cpu-p{1,2,3,4}.md`, `pointsolver-step0-gather.md`, `pointsolver-mcs-headroom.md`.
-**In flight:** construction-time extent sanity check, [PyAutoLens#763](https://github.com/PyAutoLabs/PyAutoLens/issues/763), prompt `active/pointsolver_extent_sanity_check.md`. **Next:** the per-package extent/scale lever via `draft/feature/autolens_workspace/pointsolver_grid_extent_per_package.md`; carried leftovers in `draft/research/autolens_profiling/pointsolver_cpu_speed_campaign_remainder.md`.
+**Shipped since:** the construction-time extent sanity check. Issue PyAutoLens#763 was closed by [PyAutoLens#764](https://github.com/PyAutoLabs/PyAutoLens/pull/764), merged 2026-10-02 as `0dd42087` and released in 2026.10.4.1. Companion: workspace_test#338, merged 2026-10-02. Record: `complete/2026/10/pointsolver-extent-sanity-check.md`. **Next:** the per-package extent/scale lever via `draft/feature/autolens_workspace/pointsolver_grid_extent_per_package.md`. The carried leftovers are in the PyAutoPulse task [pointsolver_cpu_speed_campaign_remainder](https://github.com/PyAutoLabs/PyAutoPulse/blob/main/tasks/pointsolver_cpu_speed_campaign_remainder.md). Completion evidence is in the [ledger](../../results/notes/point_source_cpu_campaign.md#campaign-completion-evidence-2026-10-04); the epic close is still the human's call.
 
 ## Why this campaign
 
@@ -51,10 +51,10 @@ nodes — indicative only, not a quotable A/B.
 
 ## Open / parked / drafts
 
-- `active/pointsolver_extent_sanity_check.md` — [PyAutoLens#763](https://github.com/PyAutoLabs/PyAutoLens/issues/763), approved and in development; library construction-time warning on grid extent.
+- Shipped: the construction-time extent warning, PyAutoLens#764 (released 2026.10.4.1). Record `complete/2026/10/pointsolver-extent-sanity-check.md`.
 - `draft/feature/autolens_workspace/pointsolver_grid_extent_per_package.md` — per-package extent in the workspaces.
-- `draft/research/autolens_profiling/pointsolver_cpu_speed_campaign_remainder.md` — carried phase 1–3 leftovers.
-- `draft/research/autolens_profiling/point_source_image_plane_gpu_breakdown.md` — the GPU sibling ([page](point_source_gpu_breakdown.md)).
+- PyAutoPulse task [pointsolver_cpu_speed_campaign_remainder](https://github.com/PyAutoLabs/PyAutoPulse/blob/main/tasks/pointsolver_cpu_speed_campaign_remainder.md) holds the carried phase 1–3 leftovers. Its completion-evidence item is filled (ledger, 2026-10-04). The rest is still owed (journal 2026-10-04).
+- PyAutoPulse task [point_source_image_plane_gpu_breakdown](https://github.com/PyAutoLabs/PyAutoPulse/blob/main/tasks/point_source_image_plane_gpu_breakdown.md) is the GPU sibling ([page](point_source_gpu_breakdown.md)). Phase 0+1 shipped in #353.
 - No end-to-end search fit has ever been timed for the image-plane likelihood.
 
 ## Caveats
@@ -109,3 +109,25 @@ Review: [PyAutoLens#764](https://github.com/PyAutoLabs/PyAutoLens/pull/764) and
 [workspace-test#338](https://github.com/PyAutoLabs/autolens_workspace_test/pull/338);
 CI, library-first merge and the workspace release gate remain in force. The broad timing-noise
 audit remains separate in [profiling#362](https://github.com/PyAutoLabs/autolens_profiling/issues/362).
+
+### 2026-10-04 — wiki reconcile and completion evidence
+
+This entry is for issue #370. Every claim below was checked with `gh` and `git tag --contains` (version-sorted) on 2026-10-04.
+
+**Status.** PyAutoLens#764 merged at 10:41Z on 2026-10-02 as `0dd42087`; its first tag is 2026.10.4.1. workspace_test#338 merged at 12:11Z, and issue #763 closed at 12:12Z. PyAutoArray#580/#584 and PyAutoLens#753 are first tagged in 2026.9.27.2, so the index row's "(unreleased)" was stale.
+
+**Completion evidence** is written into the [ledger](../../results/notes/point_source_cpu_campaign.md#campaign-completion-evidence-2026-10-04) from committed rows only; no new compute. It records:
+- the baseline/final comparison;
+- every candidate's disposition;
+- the A100 check for each shared library change.
+
+There is no single-node end-to-end row on the final released code. The 11.8× IP-1 → IP-4a figure still crosses nodes.
+
+**Still owed** (Pulse task):
+- the RAL cleanup. On 2026-10-04 `ls` shows `PyAutoArray_point-source-cpu-p{2,3}`, `PyAutoLens_point-source-cpu-p3`, `point-source-cpu-p{3,4}`, `_p2_untracked_backup_20260924`, `pointsolver-step0-gather`, `PyAutoArray_pointsolver-step0-gather` and `pointsolver-mcs-headroom` still present (`PyAutoLens_point-source-cpu-p2` is already gone). The shared-mirror sync to 2026.10.4.1 is **unverified**, and removal is human-gated.
+- moving `test_static_lattice_jax.py`. It is still in PyAutoLens.
+- the `jax.grad`-is-zero-without-`register_model` bug. No dedicated bug prompt covers it; the related Mind draft `stale_enable_pytrees_register_model_advice_in` is about stale advice, not the silent zero.
+- CI smoke coverage for `vertex_dedup_ab.py`, `static_lattice_ab.py` and `solver_config_sweep.py`. They are not in lint.yml's smoke list.
+- the post-4b `constant_folding` A/B.
+- deleting `nopad` from PyAutoArray `_STEP0_CONTAINMENT`. It is still on main.
+- the quiet re-runs of job 357321 and the vmap-4 cell of job 359102.

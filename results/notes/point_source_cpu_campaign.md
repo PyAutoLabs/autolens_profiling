@@ -2,7 +2,7 @@
 
 Issue: [autolens_profiling #297](https://github.com/PyAutoLabs/autolens_profiling/issues/297) (phase 1); [PyAutoArray #568](https://github.com/PyAutoLabs/PyAutoArray/issues/568) (phase 2)  
 Branch: `feature/point-source-cpu-p1` (phase 1); `feature/point-source-cpu-p2` (phase 2, PyAutoArray + autolens_profiling); `feature/point-source-cpu-p3` (phase 3, PyAutoArray + PyAutoLens + autolens_profiling)  
-Status: phases 1–4c **DONE / MERGED**; phase 4c chose MCS 20 for correctness headroom. Single-source only since the human decision of 2026-09-26; historical cluster measurements below belong to `cluster-pointsolver-speed`. Extent sanity check and per-package settings remain unissued. The epic's issued source-plane inference member is autolens_inference#15 (five seeds recovered, PR #17 open on 2026-10-02). See the [campaign page](../../wiki/campaigns/point_source_image_plane_cpu.md) for current phase status.
+Status: phases 1–4c **DONE / MERGED**; phase 4c chose MCS 20 for correctness headroom. Single-source only since the human decision of 2026-09-26; historical cluster measurements below belong to `cluster-pointsolver-speed`. The extent sanity check shipped as PyAutoLens#764 (released 2026.10.4.1); per-package settings remain unissued. The source-plane inference member autolens_inference#15 closed on 2026-10-02 (#17 merged). The completion evidence is at the end of this ledger (2026-10-04). See the [campaign page](../../wiki/campaigns/point_source_image_plane_cpu.md) for current phase status.
 Instrument: [`scripts/point_source_image/likelihood_breakdown/image_plane.py`](../../scripts/point_source_image/likelihood_breakdown/image_plane.py)
 (shipped in #293, see [point_source_shared_likelihood_breakdown.md](point_source_shared_likelihood_breakdown.md))
 and [`scripts/cluster/likelihood_breakdown/image_plane.py`](../../scripts/cluster/likelihood_breakdown/image_plane.py)
@@ -1720,3 +1720,67 @@ Library [PyAutoLens#764](https://github.com/PyAutoLabs/PyAutoLens/pull/764) and
 companion [workspace-test#338](https://github.com/PyAutoLabs/autolens_workspace_test/pull/338)
 are open. CI and library-first merge gates remain in force; the workspace
 companion retains its PyAutoLens release gate. No second phase has been issued.
+
+## Campaign completion evidence (2026-10-04)
+
+This section follows the contract in the PyAutoPulse task [pointsolver_cpu_speed_campaign_remainder](https://github.com/PyAutoLabs/PyAutoPulse/blob/main/tasks/pointsolver_cpu_speed_campaign_remainder.md) (issue #370). It records three things: the baseline/final comparison, the disposition of every candidate, and a GPU regression check for each shared library change. It is assembled from rows already committed above. **No new compute was run.** PR merge states and first-release tags were checked on 2026-10-04 with `gh` and `git tag --contains | sort -V`.
+
+Late status updates:
+- The extent warning (PyAutoLens#764, `0dd42087`) merged on 2026-10-02 and is first tagged in 2026.10.4.1.
+- Its companion, autolens_workspace_test#338, merged on 2026-10-02.
+
+### Baseline vs final (single-source `simple`, fused solved, JAX CPU fp64, 8 CPUs)
+
+| Stage | Code | Host | Per-call | Source |
+|---|---|---|---:|---|
+| IP-1 baseline | frozen unoptimized revisions | RAL 8490H `euclid-ral-compute-10-2`, quiet | **24.69 ms** (mean of 5) | job 350580 |
+| IP-4a re-baseline | released 2026.9.26.1 (IP-2 + IP-3 in) | RAL 8490H `euclid-ral-compute-10-4`, quiet | **2.095 ms** (median of 5 runs) | job 356365 |
+| IP-4b | + step-0 structured containment (#580) | 8490H 10-4, **loaded** (loadavg ~200) | ×1.44 faster than the gather route (in-job) | job 357321 |
+| IP-4b | same | EPYC 7702, quiet | ×1.61 faster than the gather route (in-job) | job 357335 |
+| IP-4c | + MCS 15 → 20 (#584, #753) | 8490H 10-4, loaded | ×1.062 **slower** than MCS 15 (in-job, accepted) | job 358976 |
+
+The IP-1 → IP-4a figure is 11.8×. It is on the same cell and the same CPU model, but on different nodes and with mean-vs-median statistics. It is **indicative, not a quotable A/B**. The IP-4b and IP-4c steps are in-job ratios only.
+
+**No single-node row exists for the final released code** (2026.9.27.2 or later) against the frozen baseline. That end-to-end number is an unmeasured control: a quiet 8490H re-run of `image_plane.py` on 2026.10.4.1 beside a frozen-revision run would supply it.
+
+The fiducial log L `7.743201200876812` (CPU, jit) is bit-identical across phases 1–4c. The A100 value is `…806`.
+
+### Disposition of every candidate
+
+| Candidate | Disposition | Where |
+|---|---|---|
+| Throwaway `jnp.unique` vertex dedup | **Accepted, shipped.** 4.47× simple / 1.98× cluster on RAL EPYC 7763 | IP-2, PyAutoArray#569 (2026.9.26.1) |
+| Static step-0 lattice precompute | **Accepted, shipped.** 2.0–2.1× simple / 5.2× cluster on 8490H; tie case passed by human decision | IP-3, PyAutoArray#570 + PyAutoLens#749 (2026.9.26.1) |
+| Step-0 containment without the `(N,3,2)` gather | **Accepted, shipped.** 1.44× / 1.61× with `structured` as the default | IP-4b, PyAutoArray#580 (2026.9.27.2) |
+| `MAX_CONTAINING_SIZE` / neighbourhood fan-out | **No speed lever.** Lowering it loses images. Raised 15 → 20 for correctness headroom at +6.2 % (human decision) | IP-4a(c), IP-4c, PyAutoArray#584 + PyAutoLens#753 (2026.9.27.2) |
+| Solver grid extent | **Real (up to 2.24×) but a per-dataset setting**, not a library default (human decision). The library's construction-time warning shipped; per-package settings remain a draft | IP-4a(a); PyAutoLens#764 (2026.10.4.1); `draft/feature/autolens_workspace/pointsolver_grid_extent_per_package.md` |
+| Initial scale / step count | **A finding, not shipped.** Scale 0.4 is precision-equivalent at 1.43× (±2.5″/0.4 = 2.37× combined with extent). It goes with the per-package extent setting | IP-4a(b) |
+| Precision block (0.002 / 0.005) | **No speed-up** (0.94× / 0.99×) and the positions coarsen | IP-4a |
+| Duplicate `model_data` solve | **No action.** XLA CSE is confirmed; the difference is 0.34 % of FLOPs | IP-2 reprofile |
+| Fit / χ² / β\* / magnification-filter share | **No lever.** It is part of the ~0.6M FLOP residue after IP-3 | IP-2/IP-3 budget |
+| Numba / sparse rewrite | **Not pursued.** No unexplained bottleneck remained after IP-3 | phase-1 disposition |
+| Warm starts / cross-call solver state | **Rejected.** The likelihood stays pure for sampler order, vmap and custom_jvp | phase 1 |
+| Cluster dPIE/NFW deflections | **Moved out** to `cluster-pointsolver-speed` (human, 2026-09-26) | [Cluster PointSolver](../../wiki/campaigns/cluster_pointsolver.md) |
+| Unmeasured controls | vmap 1/4/16 measured in IP-4b/4c. Still unmeasured: the post-4b `constant_folding` A/B, repeated (median) compile timings, and cluster direct deflections | Pulse task |
+
+### GPU regression check for every shared library change
+
+| Change | A100 row | Result |
+|---|---|---|
+| PyAutoArray#569 (vertex dedup) | job 350587 | no regression; 1.7–2.05× faster |
+| PyAutoArray#570 + PyAutoLens#749 (static lattice) | job 350637 | no regression; 1.01–1.07× faster; 31/31 bit-identical; compile +13.2 % (< +20 %) |
+| PyAutoArray#580 (step-0 gather) | job 357322 | ~1.00×; bit-identical; compile +3.2 % |
+| PyAutoArray#584 + PyAutoLens#753 (MCS 20) | job 359102 | ~1.00× scalar, vmap-16 flat; fiducial bit-identical. vmap-4 reads +8 % on one cell (likely noise; re-run before quoting) |
+| PyAutoLens#764 (extent warning) | none | NumPy construction-time diagnostic only. No solver, likelihood or default changes (2026-10-02 entry), so there is no A100 row |
+
+### Epic status
+
+The campaign's levers are resolved. The completion evidence above is recorded. **Closing the epic is the human's call** at `/prm`.
+
+The carried leftovers stay in the Pulse task:
+- the RAL cleanup (folders still present on 2026-10-04; mirror sync unverified);
+- the test move;
+- the `register_model` zero-gradient bug, which no prompt covers yet;
+- breakdown-cell CI smoke;
+- the `nopad` deletion;
+- the quiet re-runs.
