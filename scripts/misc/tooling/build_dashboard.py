@@ -162,12 +162,49 @@ def _finite(v) -> float | None:
     return float(v)
 
 
-def headline_seconds(payload: dict) -> float | None:
+def headline_key(payload: dict) -> str | None:
+    """The ``HEADLINE_KEYS`` entry the per-call headline is read from (None: no headline)."""
     for key in HEADLINE_KEYS:
-        v = _finite(payload.get(key))
-        if v is not None:
-            return v
+        if _finite(payload.get(key)) is not None:
+            return key
     return None
+
+
+def headline_seconds(payload: dict) -> float | None:
+    key = headline_key(payload)
+    return None if key is None else _finite(payload.get(key))
+
+
+#: The label for a GPU row whose headline is ``full_pipeline_single_jit``. That statistic is the
+#: mean of one 10-call block right after the first call, which on the A100 can land in the
+#: post-compile transient: the source-plane cell read 0.642 ms against a steady 0.267 ms median
+#: (jobs 366912 / 366914; autolens_profiling#371). The value is kept for continuity and labelled,
+#: not re-based.
+FIRST_BLOCK_NOTE = "first block after compile"
+
+
+def headline_is_single_jit(payload: dict) -> bool:
+    """True when the headline is the ``full_pipeline_single_jit`` statistic.
+
+    That is either the key itself, or the sweep aggregator's ``full_pipeline_per_call`` alias of
+    it. ``aggregate.py`` copies ``full_pipeline_single_jit`` into ``full_pipeline_per_call`` in
+    every ``comparison.json`` entry.
+    """
+    key = headline_key(payload)
+    if key == "full_pipeline_single_jit":
+        return True
+    single = _finite(payload.get("full_pipeline_single_jit"))
+    return (
+        key == "full_pipeline_per_call"
+        and single is not None
+        and single == headline_seconds(payload)
+    )
+
+
+def single_jit_median_seconds(payload: dict) -> float | None:
+    """The steady median written beside ``full_pipeline_single_jit`` (#371), in seconds."""
+    v = _finite(payload.get("full_pipeline_single_jit_median_ms"))
+    return None if v is None else v / 1000.0
 
 
 def vmap_seconds(payload: dict) -> float | None:
@@ -215,7 +252,7 @@ def _point(payload: dict, version: str, source: str) -> dict | None:
     if single is None and vmap is None:
         return None
     prov = _provenance(payload)
-    return {
+    point = {
         "version": version,
         "single_jit_s": single,
         "vmap_per_call_s": vmap,
@@ -226,6 +263,23 @@ def _point(payload: dict, version: str, source: str) -> dict | None:
         "has_provenance": prov["has_provenance"],
         "source": source,
     }
+    # Added only where they apply, so every other point is unchanged.
+    if prov["backend"] == "gpu" and headline_is_single_jit(payload):
+        point["headline_note"] = FIRST_BLOCK_NOTE
+    median = single_jit_median_seconds(payload)
+    if median is not None:
+        point["single_jit_median_s"] = median
+    return point
+
+
+def _per_call_html(p: dict) -> str:
+    """The table's per-call cell: the headline, its label and the steady median when present."""
+    out = html.escape(_fmt_s(p["single_jit_s"]))
+    if p.get("headline_note"):
+        out += f' <span class="muted">({html.escape(p["headline_note"])})</span>'
+    if p.get("single_jit_median_s") is not None:
+        out += f'<br><span class="muted">steady median {html.escape(_fmt_s(p["single_jit_median_s"]))}</span>'
+    return out
 
 
 def scan(root: Path) -> dict[tuple, list[dict]]:
@@ -937,6 +991,12 @@ def _svg_panel(cell_series: list[dict], versions: list[str], slots: dict[str, in
         for x, y, p in pts:
             tip = html.escape(
                 f"{s['config']}{' sparse' if s['sparse'] else ''} @ {p['version']}: {_fmt_s(p['single_jit_s'])} per call"
+                + (f" ({p['headline_note']})" if p.get("headline_note") else "")
+                + (
+                    f", steady median {_fmt_s(p['single_jit_median_s'])}"
+                    if p.get("single_jit_median_s") is not None
+                    else ""
+                )
                 + (f", vmap {_fmt_s(p['vmap_per_call_s'])}" if p["vmap_per_call_s"] else "")
                 + (f" — {p['host']}" if p["host"] else "")
                 + (f", job {p['job']}" if p["job"] else "")
@@ -973,6 +1033,10 @@ def render_html(
         f"Rendered {html.escape(generated)} from <code>results/</code> by <code>build_dashboard.py</code>; "
         f"reference host <code>{html.escape(conf.get('node') or 'unset')}</code>, load-average cap {conf.get('loadavg_cap') or '—'}. "
         "Hollow markers are rows without a provenance block or off the reference host; refused rows are listed at the foot. "
+        f"A GPU per-call value headlined by <code>full_pipeline_single_jit</code> is labelled <em>{FIRST_BLOCK_NOTE}</em>: "
+        "it is the mean of the 10-call block right after the first call, which on the A100 can sit in the post-compile transient. "
+        "Rows that carry it also show the steady median (&ge; 5 warm calls, median of individually timed calls). "
+        "Committed rows are not re-based. "
         "This page renders and holds timing history; it judges no lever "
         '(<a href="' + REPO_URL + '/blob/main/wiki/index.md">campaign index</a>).</p>',
         "</header>",
@@ -1037,7 +1101,7 @@ def render_html(
                     )
                     parts.append(
                         f"<tr><td>{html.escape(s['config'])}{' sparse' if s['sparse'] else ''}</td><td>{html.escape(p['version'])}</td>"
-                        f"<td>{_fmt_s(p['single_jit_s'])}</td><td>{_fmt_s(p['vmap_per_call_s'])}</td><td>{html.escape(prov)}{note}</td><td>{html.escape(dtxt)}</td></tr>"
+                        f"<td>{_per_call_html(p)}</td><td>{_fmt_s(p['vmap_per_call_s'])}</td><td>{html.escape(prov)}{note}</td><td>{html.escape(dtxt)}</td></tr>"
                     )
             parts.append("</table></details></div>")
         parts.append("</div>")

@@ -7,6 +7,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 _TOOLING = Path(__file__).resolve().parents[1] / "tooling"
 
 
@@ -382,4 +384,38 @@ def test_real_tree_summary_is_valid():
     assert summary["coverage"]["observed"]["series"] == len(summary["comparisons"])
     assert len(summary["coverage"]["excluded"]) == len(
         json.loads(outputs["series.json"])["refused"]
+    )
+
+
+def test_gpu_single_jit_headline_is_labelled_first_block_after_compile():
+    """#371 option (a): label the A100 single-JIT block; do not re-base the value."""
+    gpu = bd._point(_row("2026.9.27.2", 0.000642, vmap=5.6e-6), "2026.9.27.2", "x.json")
+    assert gpu["single_jit_s"] == 0.000642  # value unchanged
+    assert gpu["headline_note"] == bd.FIRST_BLOCK_NOTE == "first block after compile"
+    assert "single_jit_median_s" not in gpu
+
+    cpu = bd._point(_row("2026.9.27.2", 0.000258, backend="cpu"), "2026.9.27.2", "x.json")
+    assert "headline_note" not in cpu and "single_jit_median_s" not in cpu
+
+    # The sweep aggregator's ``full_pipeline_per_call`` alias of the same statistic is labelled too.
+    alias = _row("2026.9.27.2", 0.000642)
+    alias["full_pipeline_per_call"] = 0.000642
+    assert bd._point(alias, "2026.9.27.2", "c.json#hpc_a100_fp64")["headline_note"]
+
+    # A GPU row headlined by a different statistic is not.
+    other = {"autolens_version": "1", "device": {"backend": "gpu"}, "total_step_by_step": 0.2}
+    assert "headline_note" not in bd._point(other, "1", "b.json")
+
+
+def test_steady_median_field_rides_beside_the_headline():
+    row = _row("2026.10.4.1", 0.000642)
+    row["full_pipeline_single_jit_median_ms"] = 0.267
+    p = bd._point(row, "2026.10.4.1", "x.json")
+    assert p["single_jit_s"] == 0.000642
+    assert p["single_jit_median_s"] == pytest.approx(0.000267)
+    cell = bd._per_call_html(p)
+    assert (
+        "0.64 ms" in cell
+        and "first block after compile" in cell
+        and "steady median 0.27 ms" in cell
     )
