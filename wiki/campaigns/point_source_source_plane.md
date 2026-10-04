@@ -52,7 +52,12 @@ the solved likelihood contains an inner forward-mode lensing Hessian, so reverse
 - **SP-2b host swap**: pre-registered on the 8490H; decided on the quiet EPYC 7702 (job 357381) by human re-base on 2026-09-27; job 357380 cancelled. EPYC absolute ms are higher (forward 0.26 vs 0.146 ms), so savings are quoted as ratios first.
 - **SP-2a threshold** was set against the load-inflated ~0.44 ms laptop call; revisiting the 0.05 ms bar is a policy call.
 - **SP-2e A100 job 359193** ran beside another 8-CPU job; the A100 L24 solved cell is not used for any claim.
-- **Runtime cell A100 `single_jit` is warm-up-contaminated**: 0.642 ms committed (job 366912, one warm call then mean of 10) vs a steady 0.267 ms median (diagnostic job 366914, same node); quote `vmap.per_call`, not `single_jit`, for the A100 row. Method unchanged for dashboard comparability; filed as Mind `draft/bug/autolens_profiling/runtime_cell_single_jit_gpu_warmup.md` (the imaging release-sweep cells share the method).
+- **Runtime cell A100 `single_jit` is warm-up-contaminated**: 0.642 ms committed (job 366912, one warm call then mean of 10) vs a steady 0.267 ms median (diagnostic job 366914, same node); quote `vmap.per_call`, not `single_jit`, for the A100 row. The method is unchanged for dashboard comparability. Option (a) was chosen by the human on 2026-10-04 (issue #371):
+  - the cell now also writes `full_pipeline_single_jit_median_ms` (with p10/p90; ≥ 5 warm calls, 200 timed calls) beside the unchanged `single_jit`;
+  - the dashboard labels GPU `single_jit` headlines "first block after compile";
+  - committed rows are not re-based, and the new field first appears at the next release sweep.
+
+  Contract: PyAutoPulse task [runtime_cell_single_jit_gpu_warmup](https://github.com/PyAutoLabs/PyAutoPulse/blob/main/tasks/runtime_cell_single_jit_gpu_warmup.md). The imaging release-sweep cells share the old method and are not yet wired.
 - **End-to-end walls are compile-dominated** at L5 / 20 steps; the plain lane's `fit()` is slightly slower in forward mode (within noise).
 
 ## Journal

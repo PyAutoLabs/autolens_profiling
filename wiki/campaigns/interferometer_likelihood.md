@@ -5,11 +5,11 @@
 **Pre-registered rule:** not recorded as a single campaign rule; each breakdown ranks levers from committed JSONs, library changes must be bit-identical (or pinned to the Fit) with no CPU regression, and the mesh CPU phase evaluates the `interferometer_numba_nnz_per_source_max` gate against the measured numba/FFT crossover.
 **Verdict:** MGE: the W~ route (lever 1) and the real-valued scatter (lever 3) shipped; mixed precision gives no gain. Mesh A100: certified solver −33 % at alma is opt-in only. Mesh CPU: `cached_property` F/D shipped; crossover nnz/col ≈ 66 Delaunay / ≈ 72 rectangular; the packaged gate stays 60 (retune to ~70 drafted, not urgent).
 **Headline:** A100 alma MGE 939.6 ms (chunked; dense path OOMs asking 61.4 GiB) → 2.69 ms on the W~ route; jvla 24.2 s → 16.7 ms.
-**Library PRs:** PyAutoArray#576 (+ PyAutoGalaxy#629, PyAutoLens#750), PyAutoArray#578 (released 2026.9.27.1); PyAutoArray#540, PyAutoArray#541, PyAutoArray#544, PyAutoArray#545 (released 2026.9.11.1; library speed-ups with no profiling note, see the 2026-09-27 journal entry); PyAutoArray#582 (merged, UNRELEASED).
-**Profiling PRs:** #312, #313, #319, #324, #328, #333; phase 3 under issue #348 (PR not yet opened).
+**Library PRs:** PyAutoArray#576 (+ PyAutoGalaxy#629, PyAutoLens#750), PyAutoArray#578 (released 2026.9.27.1); PyAutoArray#540, PyAutoArray#541, PyAutoArray#544, PyAutoArray#545 (released 2026.9.11.1; library speed-ups with no profiling note, see the 2026-09-27 journal entry); PyAutoArray#582 (released 2026.9.27.2).
+**Profiling PRs:** #312, #313, #319, #324, #328, #333; phase 3 #352 (merged 2026-09-28); phase 4 #358 (merged 2026-09-30); last decision-matrix cell under issue #369.
 **Ledger:** [interferometer_likelihood_decision_matrix_2026_09.md](../../results/notes/interferometer_likelihood_decision_matrix_2026_09.md) (phase 4, the user-facing matrix), [interferometer_mge_breakdown_2026_09.md](../../results/notes/interferometer_mge_breakdown_2026_09.md), [interferometer_mesh_a100_breakdown_2026_09.md](../../results/notes/interferometer_mesh_a100_breakdown_2026_09.md), [interferometer_mesh_cpu_breakdown_2026_09.md](../../results/notes/interferometer_mesh_cpu_breakdown_2026_09.md); older context [numba_interferometer_verdict.md](../../results/notes/numba_interferometer_verdict.md).
 **Mind contract:** epic `interferometer-likelihood-campaign` (named in the records; not in `epics.md`); phase map `draft/research/autolens_profiling/interferometer_mesh_breakdown_numba_cpu_decision_matrix.md`.
-**Next:** phase 4 (decision matrix, issue #356) is written; ship it, then close the campaign. Any cells still marked pending in the matrix note are listed there with their RAL job ids.
+**Next:** phase 4 has shipped: #358 merged, and the last cell (CPU rect alma_high r5.0, RAL 375978_3) was filled under issue #369. Every decision-matrix cell is now measured, blocked or not measured, with a citation; none is pending. Remaining follow-ups are separate PyAutoPulse tasks: streaming scaling, the fixed-mapper curvature preload, the nnls memo guard and the W~ FFT-size levers.
 
 ## Why this campaign
 
@@ -34,8 +34,8 @@ has routed numba vs FFT by nnz/col since PyAutoArray #544/#545.
 | 2/3 mesh A100 | 2026-09-26/27 | Delaunay-1500 + rectangular on the sparse path on the A100 | not recorded (ranked levers; mp bar 0.5 nats) | certified solver −33 % at alma Delaunay (opt-in); F is FFT-bound; fixed-mapper curvature preload | 18 A100 jobs 356370–356387 | #324 |
 | 3/3 p1 mesh CPU | 2026-09-27 | numba `direct_conv` vs NumPy FFT through the library dispatch | not recorded | RAL CPU r3.5 numba/FFT ratios 0.25 (sma) … 2.05 (alma_high rect) | not recorded here (see ledger) | #328 |
 | 3/3 p2 crossover | 2026-09-27 | In-situ crossover on the cached library; gate verdict | gate evaluated against the interpolated crossover | crossover nnz/col ≈ 66 Delaunay / ≈ 72 rect; gate stays 60, retune to ~70 drafted | 358985, 358986, 359000 | #333 (library: PyAutoArray#582) |
-| 3/3 p3 radius sweep | 2026-09-28 | A100 fp64 rows at mask r2.0 / r5.0 beside the r3.5 baseline | not recorded (witness: sparse class, step sum within 10 %) | F follows the extent, ~0.8–1.2 µs per extent pixel; alma_high r5.0 190.87 / 198.55 ms, no sparse OOM | 366895, 366896 (tasks 2–5), 366907, 366908 | issue #348 (PR pending) |
-| 3/3 p4 decision matrix | 2026-09-30 | Which interferometer likelihood path and device, by N_vis × mask × source? | witness: numba arm on `InversionInterferometerSparseNumba`, numba vs FFT ≤ 0.5 nats, step sum within 10 %, CPU vs A100 ≤ 1e-3 nats | matrix + 5-rule draft; per-call cost follows masked pixels, not N_vis; A100 W~ wins 8–100× on meshes; MGE always W~ (see note for cells still pending) | 375977–375984 | issue #356 (PR pending) |
+| 3/3 p3 radius sweep | 2026-09-28 | A100 fp64 rows at mask r2.0 / r5.0 beside the r3.5 baseline | not recorded (witness: sparse class, step sum within 10 %) | F follows the extent, ~0.8–1.2 µs per extent pixel; alma_high r5.0 190.87 / 198.55 ms, no sparse OOM | 366895, 366896 (tasks 2–5), 366907, 366908 | #352 (issue #348) |
+| 3/3 p4 decision matrix | 2026-09-30 | Which interferometer likelihood path and device, by N_vis × mask × source? | witness: numba arm on `InversionInterferometerSparseNumba`, numba vs FFT ≤ 0.5 nats, step sum within 10 %, CPU vs A100 ≤ 1e-3 nats | matrix + 5-rule draft; per-call cost follows masked pixels, not N_vis; A100 W~ wins 8–100× on meshes; MGE always W~; last cell rect alma_high r5.0 filled 2026-10-04: CPU vs A100 1.59e-3 nats, accepted | 375977–375984 | #358 (issue #356); last cell issue #369 |
 
 ## What shipped and where it is
 
@@ -45,7 +45,7 @@ has routed numba vs FFT by nnz/col since PyAutoArray #544/#545.
 | PyAutoGalaxy#629 | W~ route plumbing (PyAutoGalaxy side) | `da84468a` | 2026.9.27.1 |
 | PyAutoLens#750 | W~ route plumbing (PyAutoLens side) | `e58715e9` | 2026.9.27.1 |
 | PyAutoArray#578 | real scatter in `transform_mapping_matrix` (closes issue PyAutoArray#577) | `14d63360` | 2026.9.27.1 |
-| PyAutoArray#582 | `cached_property` F / D on the interferometer sparse inversions (issue PyAutoArray#581) | `e281abf3` | UNRELEASED |
+| PyAutoArray#582 | `cached_property` F / D on the interferometer sparse inversions (issue PyAutoArray#581) | `e281abf3` | 2026.9.27.2 |
 | PyAutoArray#540 | `apply_operator` via exact `rfft2`/`irfft2` (issue PyAutoArray#538) | `7a4cb700` | 2026.9.11.1 |
 | PyAutoArray#541 | preload built as a type-1 NUFFT (issue PyAutoArray#539) | `9bd76799` | 2026.9.11.1 |
 | PyAutoArray#544 | NumPy/scipy sparse-operator path, no JAX on `xp=np` (issue PyAutoArray#542) | `39d3024c` | 2026.9.11.1 |
@@ -58,7 +58,7 @@ config) and green at 1, 1. Both counts are right; see Caveats.
 
 ## Open / parked / drafts
 
-- Mesh phase 4 (decision matrix, issue #356): in flight on `feature/interferometer-decision-matrix`; prompt `draft/research/autolens_profiling/interferometer_mesh_breakdown_numba_cpu_decision_matrix.md`.
+- Mesh phase 4 (decision matrix, issue #356): shipped in #358 (2026-09-30). Its last cell was filled under issue #369 (2026-10-04).
 - `draft/research/autolens_profiling/interferometer_nnls_memo_scattered_stream_guard.md` — fnnls warm-start memo guard.
 - `draft/research/autolens_profiling/interferometer_w_tilde_fft_size_levers.md` — F extent / FFT size.
 - `draft/research/autolens_profiling/interferometer_fixed_mapper_curvature_preload.md` — fixed-mapper curvature preload.
@@ -89,7 +89,7 @@ Interferometer library changes that shipped with a Mind record but no results/no
 - **Profiling-side origin of #541**: autolens_profiling#229 / PR #234 (phase 3 of the numba revisit) is a profiling task, not a library PR; it measured the builders and filed the #541 prompt. Its write-up is section 7 of [numba_interferometer_verdict.md](../../results/notes/numba_interferometer_verdict.md). `complete/2026/09/interferometer-preload-cpu.md`.
 - **PyAutoArray#544** (issue #542): `InterferometerSparseOperator` takes `xp`; a NumPy fit uses `scipy.fft` / `scipy.sparse` and never imports JAX. Gain 3.8x over the JAX-CPU route on a 40x40 / S=400 probe, host not recorded. Merge `39d3024c`, released 2026.9.11.1. `complete/2026/09/interferometer-sparse-operator-numpy-cpu-path.md`.
 - **PyAutoArray#545** (issue #543): new `interferometer_numba/` package, `InversionInterferometerSparseNumba` on the `direct_conv` kernel, routed when mean nnz/col ≤ `interferometer_numba_nnz_per_source_max` (60); changed the default `xp=np` route. No measurement recorded for the library PR (it cites the prototype's 2–7x); the in-situ check is this page's mesh CPU phases 1–2. Merge `35aa681f`, released 2026.9.11.1. `complete/2026/09/interferometer-numba-cpu-direct-conv.md`.
-- **PyAutoArray#582** (issue #581): `data_vector`, `curvature_matrix`, `curvature_matrix_diag` `@cached_property` on the sparse, numba and mapping interferometer inversions. Gain laptop sma Delaunay numba 492 → 343 ms, NumPy FFT 1783 → 923 ms (host not recorded); the RAL after-measurement (0.51–0.88x) is in the mesh CPU ledger. Merge `e281abf3`, UNRELEASED. `complete/2026/09/interferometer-sparse-cache.md`.
+- **PyAutoArray#582** (issue #581): `data_vector`, `curvature_matrix`, `curvature_matrix_diag` `@cached_property` on the sparse, numba and mapping interferometer inversions. Gain laptop sma Delaunay numba 492 → 343 ms, NumPy FFT 1783 → 923 ms (host not recorded); the RAL after-measurement (0.51–0.88x) is in the mesh CPU ledger. Merge `e281abf3`, released 2026.9.27.2. `complete/2026/09/interferometer-sparse-cache.md`.
 
 ### 2026-09-27 — PyAutoArray#582 evaluation counts settled
 
@@ -112,4 +112,16 @@ Issue #356. The [decision-matrix note](../../results/notes/interferometer_likeli
 - The new cells ran on the library mains from a private RAL clone (`PYAUTO_LIB_BASE`), because the shared mirror was behind main and in use by another campaign.
 - Headline: per-call cost follows the masked-pixel count, not N_vis (alma r5.0 at 1M visibilities costs more than alma_high r2.0 at 5M, on CPU and A100); the packaged numba gate of 60 routes the measured CPU cells to the faster arm; the A100 W~ path is 8–100× faster than the best single-thread CPU arm on meshes.
 - One pre-existing cell misses the new CPU-vs-A100 1e-3-nat bar: alma_high r3.5 rect, 1.5e-3 nats (PDIP vs fnnls on the edge-zeroed subset; 330× inside the 0.5-nat evidence bar).
+
+### 2026-10-04 — phase 4: the last cell
+
+This entry is for issue #369. RAL 375978_3, the CPU rect 39² cell at alma_high r5.0, finished as `COMPLETED` in 01:11:36 on `euclid-ral-gpu-1`. Its `.err` has 0 Tracebacks, 0 `RESOURCE_EXHAUSTED` and 0 float32 lines. Its JSON is committed as `alma_high/pixelization_numba_hpc_ral_cpu_fp64_r5.0.json`.
+- The numba arm runs on `InversionInterferometerSparseNumba`.
+- numba and FFT agree to 7.5e-9 nats.
+- `source_revisions` match the private clone: Nerves `1ec1c82`, Fit `b13169e2`, Array `7a89e19a`, Galaxy `4c834ced`, Lens `efd13c4c`.
+- Per call, numba takes 75.3 s and NumPy FFT 17.6 s. nnz/col is 330.5, so the gate routes to FFT. The A100 takes 198.6 ms, which is 89×. Rule 4's 43–114× alma_high range holds.
+- **CPU vs A100 is 1.59e-3 nats, which misses the 1e-3 bar.** The CPU value is −60244101.501766354 (fnnls, `7a89e19a`). The A100 value is −60244101.503356226 (PDIP, pre-#595 `9428eca2`).
+- **The human accepted the gap on 2026-10-04.** It matches the r3.5 precedent: a solver/revision mismatch, not precision. It is 310× inside the 0.5-nat bar.
+
+Every decision-matrix cell is now filled.
 
