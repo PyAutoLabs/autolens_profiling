@@ -15,6 +15,17 @@ go:
 Neither ``Timer`` nor ``jit_profile`` is a module-level singleton: each cell
 owns its ``Timer`` and its ``jit_records`` dict and passes them in, so a cell
 can still keep its own section names.
+
+``steady_median_profile`` (autolens_profiling#371) is the steady-state
+statistic. It runs at least five warm calls and then times N calls one by one,
+returning the median with p10 / p90.
+
+``jit_profile``'s ``steady_per_call_s`` is the mean of one block of
+``n_repeats`` calls taken right after the first call. On the A100 that block
+can land in the post-compile transient: the source-plane cell read 0.642 ms
+against a steady 0.267 ms median (jobs 366912 / 366914). It is kept unchanged
+for continuity with every committed row. The median is an opt-in addition
+beside it, never a replacement.
 """
 
 from __future__ import annotations
@@ -77,6 +88,8 @@ def jit_profile(
     n_repeats: int = 10,
     timer: Timer,
     jit_records: MutableMapping[str, dict] | None = None,
+    median_n_warm: int = 0,
+    median_n_timed: int = 0,
 ):
     """JIT-compile *func*, time lower / compile / first call / steady state.
 
@@ -85,6 +98,12 @@ def jit_profile(
     *jit_records* is given, stores the same four numbers under *label* as
     ``{lower_s, compile_s, first_call_s, steady_per_call_s}`` so the cell can
     write compile time into its result JSON.
+
+    ``median_n_timed > 0`` opts in to the steady median
+    (:func:`steady_median_profile`, with ``median_n_warm`` of at least 5). It
+    runs *after* the block above and adds no ``timer`` section, so
+    ``steady_per_call_s`` and ``timer.records[-1]`` are exactly what they are
+    without it. The result is stored as ``jit_records[label]["steady_median"]``.
 
     Returns ``(compiled, result)``.
     """
@@ -111,6 +130,17 @@ def jit_profile(
     per_call = timer.records[-1][1] / n_repeats
     print(f"    -> per-call avg: {per_call:.6f} s")
 
+    steady_median = None
+    if median_n_timed > 0:
+        steady_median = steady_median_profile(
+            compiled, *args, n_warm=median_n_warm, n_timed=median_n_timed
+        )
+        print(
+            f"    -> steady median: {steady_median['median_s']:.6f} s "
+            f"(p10 {steady_median['p10_s']:.6f}, p90 {steady_median['p90_s']:.6f}; "
+            f"{steady_median['n_warm']} warm, {steady_median['n_timed']} timed)"
+        )
+
     if jit_records is not None:
         jit_records[label] = {
             "lower_s": float(lower_s),
@@ -118,8 +148,69 @@ def jit_profile(
             "first_call_s": float(first_call_s),
             "steady_per_call_s": float(per_call),
         }
+        if steady_median is not None:
+            jit_records[label]["steady_median"] = steady_median
 
     return compiled, result
+
+
+#: Minimum warm calls before the steady median is timed. The diagnostic that
+#: found the A100 transient (job 366914) warmed with 5.
+MIN_STEADY_WARM = 5
+
+
+def _quantile(sorted_values: Sequence[float], q: float) -> float:
+    """Linear-interpolated quantile of an already sorted sequence (numpy's default)."""
+    n = len(sorted_values)
+    if n == 1:
+        return float(sorted_values[0])
+    pos = q * (n - 1)
+    lo = int(pos)
+    hi = min(lo + 1, n - 1)
+    frac = pos - lo
+    return float(sorted_values[lo] + (sorted_values[hi] - sorted_values[lo]) * frac)
+
+
+def steady_median_profile(
+    compiled: Callable,
+    *args,
+    n_warm: int = MIN_STEADY_WARM,
+    n_timed: int = 200,
+    clock: Callable[[], float] = time.perf_counter,
+) -> dict:
+    """Steady-state per-call statistic of an already compiled callable.
+
+    The callable runs ``n_warm`` (at least :data:`MIN_STEADY_WARM`) untimed warm
+    calls. It then runs ``n_timed`` calls, each timed on its own with ``block``
+    inside the timed interval. Returns ``{n_warm, n_timed, median_s, p10_s,
+    p90_s, mean_s, statistic}``.
+
+    This is the statistic of the 2026-09-28 diagnostic (job 366914: 5 warm,
+    400 timed; median 0.267 ms, p10 0.260, p90 0.279). It records no ``Timer``
+    section, so it can follow ``jit_profile`` without moving
+    ``timer.records[-1]``.
+    """
+    if n_warm < MIN_STEADY_WARM:
+        raise ValueError(f"n_warm must be >= {MIN_STEADY_WARM}, got {n_warm}")
+    if n_timed < 1:
+        raise ValueError(f"n_timed must be >= 1, got {n_timed}")
+    for _ in range(n_warm):
+        block(compiled(*args))
+    samples = []
+    for _ in range(n_timed):
+        start = clock()
+        block(compiled(*args))
+        samples.append(clock() - start)
+    ordered = sorted(samples)
+    return {
+        "n_warm": int(n_warm),
+        "n_timed": int(n_timed),
+        "median_s": _quantile(ordered, 0.5),
+        "p10_s": _quantile(ordered, 0.1),
+        "p90_s": _quantile(ordered, 0.9),
+        "mean_s": float(sum(samples) / len(samples)),
+        "statistic": "median of individually timed calls after warm calls",
+    }
 
 
 def vmap_profile(

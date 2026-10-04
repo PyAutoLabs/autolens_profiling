@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "generated": "2026-09-30T19:43:00Z",
+ "generated": "2026-10-04T18:28:06Z",
  "reference_host": "euclid-ral-gpu-2",
  "loadavg_cap": 8.0,
  "drift_ratio": 2.0,
@@ -148,6 +148,7 @@
      "loadavg": null,
      "has_provenance": false,
      "source": "results/runtime/imaging/delaunay/delaunay_hpc_a100_fp64.json",
+     "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -176,6 +177,7 @@
      "loadavg": null,
      "has_provenance": false,
      "source": "results/runtime/imaging/delaunay/delaunay_hpc_a100_fp64_sparse.json",
+     "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -344,6 +346,7 @@
      "loadavg": null,
      "has_provenance": false,
      "source": "results/runtime/imaging/delaunay_nn/delaunay_nn_hpc_a100_fp64.json",
+     "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -372,6 +375,7 @@
      "loadavg": null,
      "has_provenance": false,
      "source": "results/runtime/imaging/delaunay_nn/delaunay_nn_hpc_a100_fp64_sparse.json",
+     "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -902,6 +906,7 @@
      "loadavg": null,
      "has_provenance": false,
      "source": "results/runtime/imaging/pixelization/pixelization_hpc_a100_fp64.json",
+     "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -930,6 +935,7 @@
      "loadavg": null,
      "has_provenance": false,
      "source": "results/runtime/imaging/pixelization/pixelization_hpc_a100_fp64_sparse.json",
+     "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -1434,6 +1440,7 @@
      "loadavg": 1.16,
      "has_provenance": true,
      "source": "results/runtime/point_source_source/source_plane_solved/comparison.json#hpc_a100_fp64",
+     "headline_note": "first block after compile",
      "qualified": true,
      "reason": null
     }
@@ -2361,6 +2368,7 @@
      "loadavg": null,
      "has_provenance": false,
      "source": "results/breakdown/interferometer/alma_high/delaunay_hpc_a100_fp64.json",
+     "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2389,6 +2397,7 @@
      "loadavg": null,
      "has_provenance": false,
      "source": "results/breakdown/interferometer/alma_high/delaunay_hpc_a100_mp.json",
+     "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2557,6 +2566,7 @@
      "loadavg": null,
      "has_provenance": false,
      "source": "results/breakdown/interferometer/alma_high/pixelization_hpc_a100_fp64.json",
+     "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2585,6 +2595,7 @@
      "loadavg": null,
      "has_provenance": false,
      "source": "results/breakdown/interferometer/alma_high/pixelization_hpc_a100_mp.json",
+     "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2697,6 +2708,7 @@
      "loadavg": null,
      "has_provenance": false,
      "source": "results/breakdown/interferometer/delaunay_hpc_a100_fp64.json",
+     "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2725,6 +2737,7 @@
      "loadavg": null,
      "has_provenance": false,
      "source": "results/breakdown/interferometer/delaunay_hpc_a100_mp.json",
+     "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3089,6 +3102,7 @@
      "loadavg": null,
      "has_provenance": false,
      "source": "results/breakdown/interferometer/jvla/delaunay_hpc_a100_fp64.json",
+     "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3117,6 +3131,7 @@
      "loadavg": null,
      "has_provenance": false,
      "source": "results/breakdown/interferometer/jvla/delaunay_hpc_a100_mp.json",
+     "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3229,6 +3244,7 @@
      "loadavg": null,
      "has_provenance": false,
      "source": "results/breakdown/interferometer/jvla/pixelization_hpc_a100_fp64.json",
+     "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3257,6 +3273,7 @@
      "loadavg": null,
      "has_provenance": false,
      "source": "results/breakdown/interferometer/jvla/pixelization_hpc_a100_mp.json",
+     "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3565,6 +3582,7 @@
      "loadavg": null,
      "has_provenance": false,
      "source": "results/breakdown/interferometer/pixelization_hpc_a100_fp64.json",
+     "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3593,6 +3611,7 @@
      "loadavg": null,
      "has_provenance": false,
      "source": "results/breakdown/interferometer/pixelization_hpc_a100_mp.json",
+     "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3901,6 +3920,7 @@
      "loadavg": null,
      "has_provenance": false,
      "source": "results/breakdown/interferometer/sma/delaunay_hpc_a100_fp64.json",
+     "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3929,6 +3949,7 @@
      "loadavg": null,
      "has_provenance": false,
      "source": "results/breakdown/interferometer/sma/delaunay_hpc_a100_mp.json",
+     "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3985,6 +4006,7 @@
      "loadavg": null,
      "has_provenance": false,
      "source": "results/breakdown/interferometer/sma/mge_hpc_a100_fp64.json",
+     "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -4041,6 +4063,7 @@
      "loadavg": null,
      "has_provenance": false,
      "source": "results/breakdown/interferometer/sma/pixelization_hpc_a100_fp64.json",
+     "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -4069,6 +4092,7 @@
      "loadavg": null,
      "has_provenance": false,
      "source": "results/breakdown/interferometer/sma/pixelization_hpc_a100_mp.json",
+     "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -4260,6 +4284,7 @@
    "loadavg": 65.7,
    "has_provenance": true,
    "source": "results/breakdown/interferometer/sdp81/delaunay_hpc_a100_fp64.json",
+   "headline_note": "first block after compile",
    "qualified": false,
    "reason": "loadavg 65.7 above the cap 8",
    "section": "breakdown",
@@ -4294,6 +4319,7 @@
    "loadavg": 55.74,
    "has_provenance": true,
    "source": "results/breakdown/interferometer/sdp81/mge_hpc_a100_fp64.json",
+   "headline_note": "first block after compile",
    "qualified": false,
    "reason": "loadavg 55.7 above the cap 8",
    "section": "breakdown",
@@ -4311,6 +4337,7 @@
    "loadavg": 55.74,
    "has_provenance": true,
    "source": "results/breakdown/interferometer/sdp81/mge_hpc_a100_fp64_sparse.json",
+   "headline_note": "first block after compile",
    "qualified": false,
    "reason": "loadavg 55.7 above the cap 8",
    "section": "breakdown",
@@ -4328,6 +4355,7 @@
    "loadavg": 65.7,
    "has_provenance": true,
    "source": "results/breakdown/interferometer/sdp81/pixelization_hpc_a100_fp64.json",
+   "headline_note": "first block after compile",
    "qualified": false,
    "reason": "loadavg 65.7 above the cap 8",
    "section": "breakdown",
