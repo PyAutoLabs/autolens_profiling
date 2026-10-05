@@ -16,6 +16,11 @@ why it was run, its headline number, verdict, library PRs and release, and a lin
 likelihood cell, one line per sweep config, one point per PyAutoLens release, with the pinned
 reference host and the provenance of every point. It renders and holds; it judges no lever.
 
+**Setup catalogue (browser migration in progress).** The [catalogue guide](catalogue/README.md)
+describes the new dataset/model/instrument index, exact evidence links, configuration metadata
+and explicit missing baseline coverage. Historical evidence remains unreviewed; this export
+does not establish a trustworthy current baseline or change the published page yet.
+
 ## Vision
 
 This repository is the single home for PyAutoLens performance measurement. It exists so that the run-times that matter for science — evaluating a real lens likelihood, simulating an Euclid-resolution dataset — are visible, reproducible, and versioned across PyAutoLens releases.

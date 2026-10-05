@@ -1,7 +1,8 @@
 # dashboard/ — generated, never hand-edited
 
 Every file here is rendered by `scripts/misc/tooling/build_dashboard.py` from the result JSONs
-under `results/{runtime,breakdown,simulators,lens}` (autolens_profiling#345). `lint.yml` runs
+under `results/{runtime,breakdown,simulators,lens}` (autolens_profiling#345), plus the
+[declared catalogue sources](../catalogue/registry.json) for the companion v2 export. `lint.yml` runs
 `build_dashboard.py --check`, so a PR that adds rows without re-rendering fails; `profile.yml`
 re-renders on release. `pages_dashboard.yml` publishes the folder as-is at
 <https://pyautolabs.github.io/autolens_profiling/>.
@@ -11,6 +12,7 @@ re-renders on release. `pages_dashboard.yml` publishes the folder as-is at
 | `index.html` | a human | the run-time-over-time page (static, no assets) |
 | `series.json` | `index.html` | the trend data, `schema_version` 1 — this project's own shape |
 | `state.json` | this project's own Pages badge | `PyAutoBrain/board/state_schema.json` v1; project label `autolens_profiling` |
+| `catalogue.json` + `catalogue/shards/*.json` | setup browser / assistant foundation | companion **v2**, [catalogue documentation](../catalogue/README.md) |
 | `summary.json` | the **PyAutoPulse** organ | **`profiling-summary` v1** — below |
 
 The Brain board and cockpit read the **PyAutoPulse** organ feed (`PyAutoPulse/state.json`);

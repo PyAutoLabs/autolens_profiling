@@ -52,6 +52,8 @@ jobs:
           cp dashboard/series.json _site/series.json
           cp dashboard/state.json _site/state.json
           cp dashboard/summary.json _site/summary.json
+          cp dashboard/catalogue.json _site/catalogue.json
+          cp -r dashboard/catalogue _site/catalogue
       - name: Validate the project badge feed against the Brain contract
         run: python3 PyAutoBrain/board/_state.py _site/state.json
       - uses: actions/upload-pages-artifact@v3
