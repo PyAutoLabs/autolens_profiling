@@ -1158,12 +1158,20 @@ def build(
         "series": series,
         "refused": refused,
     }
-    return {
+    outputs = {
         "series.json": json.dumps(series_doc, indent=1) + "\n",
         "state.json": json.dumps(state, indent=2) + "\n",
         "summary.json": json.dumps(summary, indent=1) + "\n",
         "index.html": render_html(series, refused, conf, generated, state),
     }
+    if (root / "catalogue/registry.json").is_file():
+        # The companion v2 catalogue has its own declared scientific matrix.
+        # Keep v1 bytes and consumers intact until the browser migration.
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from build_catalogue import render_outputs
+
+        outputs.update(render_outputs(root, generated, revision))
+    return outputs
 
 
 def _existing_stamp(out_dir: Path) -> str | None:
@@ -1201,6 +1209,12 @@ def main(argv: list[str] | None = None) -> int:
         for name, text in outputs.items()
         if not (out_dir / name).is_file() or (out_dir / name).read_text(encoding="utf-8") != text
     ]
+    obsolete = []
+    if "catalogue.json" in outputs:
+        from build_catalogue import obsolete_shards
+
+        obsolete = obsolete_shards(out_dir, outputs)
+        stale.extend(p.relative_to(out_dir).as_posix() for p in obsolete)
     n_series = json.loads(outputs["series.json"])["series"]
     if args.check:
         if stale:
@@ -1212,9 +1226,12 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     out_dir.mkdir(parents=True, exist_ok=True)
     for name, text in outputs.items():
+        (out_dir / name).parent.mkdir(parents=True, exist_ok=True)
         (out_dir / name).write_text(text, encoding="utf-8")
+    for path in obsolete:
+        path.unlink()
     print(
-        "build_dashboard: wrote dashboard/series.json + state.json + summary.json + index.html "
+        "build_dashboard: wrote dashboard artifacts (including catalogue when registered) "
         f"({len(n_series)} series)"
     )
     return 0

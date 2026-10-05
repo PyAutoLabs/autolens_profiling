@@ -53,6 +53,12 @@ jobs:
           repository: PyAutoLabs/PyAutoLens
           path: PyAutoLens
 
+      - name: Checkout PyAutoPulse (independent v2 contract reader)
+        uses: actions/checkout@v4
+        with:
+          repository: PyAutoLabs/PyAutoPulse
+          path: PyAutoPulse
+
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
@@ -90,6 +96,10 @@ jobs:
       - name: build_readme.py --check (dashboard idempotence)
         working-directory: autolens_profiling
         run: python scripts/misc/tooling/build_readme.py --check
+
+      - name: Setup catalogue and independent Pulse contract validation
+        working-directory: autolens_profiling
+        run: python scripts/misc/tooling/build_catalogue.py --check --validate-with ../PyAutoPulse
 
       - name: check_wiki.py --check (research wiki drift)
         working-directory: autolens_profiling

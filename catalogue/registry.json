@@ -1,0 +1,290 @@
+{
+  "schema": "profiling-catalogue-registry",
+  "version": 1,
+  "families": {
+    "imaging": "Imaging",
+    "interferometer": "Interferometer",
+    "datacube": "Interferometer datacube",
+    "point_source_image": "Point source: image plane",
+    "point_source_source": "Point source: source plane",
+    "cluster": "Cluster",
+    "multi_dataset": "Multiple datasets",
+    "lens": "Library components",
+    "experiments": "Other experiments"
+  },
+  "model_aliases": {
+    "pixelization": "rectangular",
+    "pixelization_numba": "rectangular",
+    "delaunay_numba": "delaunay",
+    "datacube_img": "multi_dataset"
+  },
+  "model_patterns": [
+    "delaunay_nn",
+    "delaunay",
+    "rectangular",
+    "pixelization",
+    "mge",
+    "image_plane",
+    "source_plane",
+    "fixed_light"
+  ],
+  "sources": [
+    {
+      "glob": "results/**/*.json",
+      "adapter": "profile"
+    },
+    {
+      "glob": "scripts/misc/jax_compile/results/**/*.json",
+      "adapter": "compile"
+    }
+  ],
+  "overrides": [
+    {
+      "prefix": "results/streaming_scaling/",
+      "adapter": "streaming",
+      "dataset": "interferometer",
+      "model": "streaming"
+    },
+    {
+      "prefix": "results/hazards/",
+      "adapter": "hazards",
+      "dataset": "lens",
+      "model": "hazards"
+    },
+    {
+      "prefix": "results/baselines/",
+      "adapter": "inventory"
+    },
+    {
+      "prefix": "results/notes/",
+      "adapter": "inventory"
+    }
+  ],
+  "cells": [
+    {
+      "id": "imaging/mge/hst",
+      "dataset": "imaging",
+      "model": "mge",
+      "instrument": "hst"
+    },
+    {
+      "id": "imaging/mge/jwst",
+      "dataset": "imaging",
+      "model": "mge",
+      "instrument": "jwst"
+    },
+    {
+      "id": "imaging/mge/ao",
+      "dataset": "imaging",
+      "model": "mge",
+      "instrument": "ao"
+    },
+    {
+      "id": "imaging/pixelization/hst",
+      "dataset": "imaging",
+      "model": "rectangular",
+      "instrument": "hst"
+    },
+    {
+      "id": "imaging/pixelization/jwst",
+      "dataset": "imaging",
+      "model": "rectangular",
+      "instrument": "jwst"
+    },
+    {
+      "id": "imaging/pixelization/ao",
+      "dataset": "imaging",
+      "model": "rectangular",
+      "instrument": "ao"
+    },
+    {
+      "id": "imaging/delaunay/hst",
+      "dataset": "imaging",
+      "model": "delaunay",
+      "instrument": "hst"
+    },
+    {
+      "id": "imaging/delaunay/jwst",
+      "dataset": "imaging",
+      "model": "delaunay",
+      "instrument": "jwst"
+    },
+    {
+      "id": "imaging/delaunay/ao",
+      "dataset": "imaging",
+      "model": "delaunay",
+      "instrument": "ao"
+    },
+    {
+      "id": "imaging/delaunay_nn/hst",
+      "dataset": "imaging",
+      "model": "delaunay_nn",
+      "instrument": "hst"
+    },
+    {
+      "id": "interferometer/mge/sma",
+      "dataset": "interferometer",
+      "model": "mge",
+      "instrument": "sma"
+    },
+    {
+      "id": "interferometer/pixelization/sma",
+      "dataset": "interferometer",
+      "model": "rectangular",
+      "instrument": "sma"
+    },
+    {
+      "id": "interferometer/pixelization/alma",
+      "dataset": "interferometer",
+      "model": "rectangular",
+      "instrument": "alma"
+    },
+    {
+      "id": "interferometer/pixelization/alma_high",
+      "dataset": "interferometer",
+      "model": "rectangular",
+      "instrument": "alma_high"
+    },
+    {
+      "id": "interferometer/pixelization/jvla",
+      "dataset": "interferometer",
+      "model": "rectangular",
+      "instrument": "jvla"
+    },
+    {
+      "id": "interferometer/delaunay/sma",
+      "dataset": "interferometer",
+      "model": "delaunay",
+      "instrument": "sma"
+    },
+    {
+      "id": "interferometer/delaunay/alma",
+      "dataset": "interferometer",
+      "model": "delaunay",
+      "instrument": "alma"
+    },
+    {
+      "id": "interferometer/delaunay/alma_high",
+      "dataset": "interferometer",
+      "model": "delaunay",
+      "instrument": "alma_high"
+    },
+    {
+      "id": "interferometer/delaunay/jvla",
+      "dataset": "interferometer",
+      "model": "delaunay",
+      "instrument": "jvla"
+    },
+    {
+      "id": "datacube/delaunay/sma",
+      "dataset": "datacube",
+      "model": "delaunay",
+      "instrument": "sma"
+    },
+    {
+      "id": "datacube/delaunay/alma",
+      "dataset": "datacube",
+      "model": "delaunay",
+      "instrument": "alma"
+    },
+    {
+      "id": "datacube/delaunay/alma_high",
+      "dataset": "datacube",
+      "model": "delaunay",
+      "instrument": "alma_high"
+    },
+    {
+      "id": "imaging/delaunay/euclid",
+      "dataset": "imaging",
+      "model": "delaunay",
+      "instrument": "euclid"
+    },
+    {
+      "id": "imaging/rectangular/euclid",
+      "dataset": "imaging",
+      "model": "rectangular",
+      "instrument": "euclid"
+    },
+    {
+      "id": "imaging/mge/euclid",
+      "dataset": "imaging",
+      "model": "mge",
+      "instrument": "euclid"
+    },
+    {
+      "id": "point_source_image/image_plane/unspecified",
+      "dataset": "point_source_image",
+      "model": "image_plane",
+      "instrument": null
+    },
+    {
+      "id": "point_source_source/source_plane/unspecified",
+      "dataset": "point_source_source",
+      "model": "source_plane",
+      "instrument": null
+    },
+    {
+      "id": "cluster/image_plane/unspecified",
+      "dataset": "cluster",
+      "model": "image_plane",
+      "instrument": null
+    },
+    {
+      "id": "multi_dataset/delaunay/unspecified",
+      "dataset": "multi_dataset",
+      "model": "delaunay",
+      "instrument": null
+    }
+  ],
+  "devices": [
+    "cpu",
+    "gpu",
+    "a100"
+  ],
+  "slots": [
+    {
+      "axis": "runtime",
+      "metric": "single_call",
+      "unit": "s"
+    },
+    {
+      "axis": "breakdown",
+      "metric": "components",
+      "unit": "s"
+    },
+    {
+      "axis": "compile",
+      "metric": "compile",
+      "unit": "s"
+    },
+    {
+      "axis": "memory",
+      "metric": "host_peak_rss",
+      "unit": "MiB"
+    },
+    {
+      "axis": "memory",
+      "metric": "device_peak_allocated",
+      "unit": "B"
+    }
+  ],
+  "references": [
+    {
+      "path": "results/runtime/imaging/delaunay/delaunay_hpc_a100_fp64.json",
+      "pointer": "",
+      "reason": "Explicit existing production-named artifact; unreviewed pending the new baseline."
+    },
+    {
+      "path": "results/breakdown/imaging/delaunay_hpc_a100_fp64.json",
+      "pointer": "",
+      "reason": "Explicit production-named breakdown artifact; do not join to a different configuration."
+    },
+    {
+      "path": "results/streaming_scaling/accumulate_local_cpu_v2026.10.4.1+2.json",
+      "pointer": "/rows/0",
+      "reason": "Explicit first streaming measurement; illustrative unreviewed evidence, not a baseline acceptance."
+    }
+  ],
+  "hazard_bindings": [],
+  "recommendations": []
+}
