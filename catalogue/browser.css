@@ -1,0 +1,218 @@
+/* Layout additions to Brain's shared Pulse/Heart-family theme. */
+.skip {
+  position: absolute;
+  left: -9999px;
+}
+.skip:focus {
+  position: static;
+}
+.intro h2 {
+  margin-bottom: 0.5rem;
+}
+.intro p {
+  margin: 0.5rem 0;
+}
+.qualification {
+  font-weight: 650;
+  color: var(--warn);
+}
+.quick-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.2rem;
+  margin: 1.2rem 0 1.6rem;
+  font-size: 0.85rem;
+}
+#navigation details {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.6rem 0.85rem;
+  margin: 0.5rem 0;
+}
+#navigation details details {
+  margin: 0.5rem 0 0.3rem 1rem;
+}
+#navigation summary {
+  cursor: pointer;
+  font-weight: 650;
+  padding: 0.35rem 0;
+}
+.model-choice {
+  display: block;
+  text-align: left;
+  padding: 0.55rem 0.75rem;
+  margin: 0.3rem 0;
+  width: 100%;
+  font: inherit;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--bg);
+  color: var(--fg);
+}
+.model-choice[aria-current="true"] {
+  border-color: var(--accent);
+  font-weight: 700;
+}
+#results {
+  scroll-margin-top: 1rem;
+  margin-top: 1.6rem;
+  border-top: 2px solid var(--line);
+  padding-top: 0.4rem;
+}
+#results h2 {
+  font-size: 1.25rem;
+}
+.selectors {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 0.8rem;
+  margin: 1rem 0;
+}
+.selectors label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+.selectors select {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  margin-top: 0.35rem;
+  padding: 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+}
+.context {
+  padding: 0.75rem;
+  border-left: 3px solid var(--accent);
+  background: var(--btn);
+  margin: 1rem 0;
+}
+.context p {
+  margin: 0.2rem 0;
+}
+#results details {
+  margin: 1rem 0;
+}
+#results summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.metric-panel {
+  margin: 1.5rem 0;
+}
+.metric-panel h3 {
+  font-size: 1.05rem;
+}
+.metric-list {
+  list-style: none;
+  padding: 0;
+}
+.metric-row {
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.metric-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: baseline;
+}
+.metric-title span {
+  overflow-wrap: anywhere;
+}
+.metric-value {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+.bar-track {
+  height: 0.45rem;
+  margin: 0.45rem 0;
+  border-radius: 4px;
+  background: var(--line);
+  overflow: hidden;
+}
+.bar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 4px;
+}
+.metric-meta {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.empty {
+  padding: 0.8rem;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+}
+.config {
+  display: grid;
+  grid-template-columns: minmax(9rem, 1fr) minmax(0, 2fr);
+  gap: 0.3rem 1rem;
+  margin: 1rem 0;
+}
+.config dt {
+  font-weight: 600;
+}
+.config dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.config code {
+  white-space: pre-wrap;
+  font-size: 0.8rem;
+}
+.evidence-list {
+  padding-left: 1.2rem;
+}
+.evidence-list li {
+  overflow-wrap: anywhere;
+  margin: 0.5rem 0;
+}
+.status-error {
+  color: var(--bad);
+}
+button.retry {
+  font: inherit;
+  cursor: pointer;
+  padding: 0.5rem 0.75rem;
+}
+#load-status:empty {
+  display: none;
+}
+.axis-note {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+@media (max-width: 40rem) {
+  .selectors {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .config {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .config dd {
+    margin-bottom: 0.5rem;
+  }
+  .metric-title {
+    align-items: start;
+  }
+  #navigation details details {
+    margin-left: 0.3rem;
+  }
+}
+
+.metric-panel > summary {
+  font-size: 1.05rem;
+}
+.metric-panel {
+  border-top: 1px solid var(--line);
+  padding-top: 0.8rem;
+}

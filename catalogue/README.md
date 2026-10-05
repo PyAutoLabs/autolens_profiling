@@ -1,9 +1,9 @@
 # Setup evidence catalogue
 
 The companion [v2 catalogue](../dashboard/catalogue.json) organizes committed evidence by
-**dataset → model → instrument → exact configuration**. It is the data foundation for the
-setup browser and assistant, not a new benchmark or an accepted baseline. The existing
-v1 feed and temporal page stay live until the browser migration. No scientific script is
+**dataset → model → instrument → exact configuration**. It powers the project setup browser and provides the data foundation for the assistant;
+it is not a new benchmark or an accepted baseline. The existing v1 JSON feed remains
+available while Pulse migrates to the setup browser. No scientific script is
 moved or run by this phase.
 
 ## Regenerate and validate
@@ -16,7 +16,8 @@ python scripts/misc/tooling/build_catalogue.py --check
 python scripts/misc/tooling/build_catalogue.py --check --validate-with ../PyAutoPulse
 ```
 
-`build_dashboard.py` also builds/checks the catalogue. The separate command reuses the
+`build_dashboard.py` also builds/checks the catalogue and the page bound to its hash.
+After changing catalogue inputs, run that combined builder before publication. The separate command reuses the
 committed v1 render timestamp and producer revision for reproducibility. These identify
 publication, **not measurement freshness**. The optional Pulse checkout runs the independently
 maintained v2 validator against the index and every shard; CI requires this check.
@@ -47,7 +48,9 @@ and an explicit interpretation of units, scope, failure status and source pointe
 `dashboard/catalogue.json` is an independently valid `profiling-summary` v2 document with
 all setups, selected reference records, baseline plans, source inventory and extensions.
 `evidence_shards` maps each measured setup ID to a relative `catalogue/shards/<id>.json`
-path, SHA-256 of its exact UTF-8 bytes and record count. Resolve paths relative to the
+path, SHA-256 of its exact UTF-8 bytes and record count. Additive `axes`, `devices`
+and `precisions` lists summarize the actual shard records for selector labels; unknowns
+remain explicit and no hardware is inferred from filenames. Resolve paths relative to the
 catalogue URL (or `dashboard/` in git). Each shard is itself a valid v2 document containing
 that setup and all its measurements. Load only the selected setup's shard. Advice lives in
 the root index; shards do not duplicate it. Root records are a subset of shard records;
@@ -102,5 +105,5 @@ supporting record IDs, evidence and validation. Accepted recommendations require
 supporting records; the legacy exporter produces none. An assistant must therefore report
 unknown coverage and limitations, not present candidates as validated settings or estimates.
 
-The next browser phase consumes this transport. The later baseline campaign defines and
+The project browser consumes this transport; the Pulse front-page migration follows. The later baseline campaign defines and
 measures trustworthy current setups before any records are promoted for recommendations.

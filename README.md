@@ -10,16 +10,15 @@ Profiling and run-time tracking for [PyAutoLens](https://github.com/PyAutoLabs/P
 
 **Where to read findings.** The [campaign index](wiki/index.md) lists every profiling campaign —
 why it was run, its headline number, verdict, library PRs and release, and a link to its ledger in
-`results/notes/`. Start there before reusing a headline. **Run time over time** is the
-[dashboard](https://pyautolabs.github.io/autolens_profiling/) (`dashboard/index.html`, rendered by
-`scripts/misc/tooling/build_dashboard.py` from `results/` on every release sweep): one panel per
-likelihood cell, one line per sweep config, one point per PyAutoLens release, with the pinned
-reference host and the provenance of every point. It renders and holds; it judges no lever.
+`results/notes/`. Start there before reusing a headline. The
+[setup browser](https://pyautolabs.github.io/autolens_profiling/) opens by dataset,
+model and instrument, then loads the selected configuration's runtime, breakdown,
+compilation, memory and evidence. It uses the shared board style and linear bars.
 
-**Setup catalogue (browser migration in progress).** The [catalogue guide](catalogue/README.md)
-describes the new dataset/model/instrument index, exact evidence links, configuration metadata
-and explicit missing baseline coverage. Historical evidence remains unreviewed; this export
-does not establish a trustworthy current baseline or change the published page yet.
+The [catalogue guide](catalogue/README.md) explains exact evidence links,
+configuration identities and missing baseline coverage. Historical evidence remains
+unreviewed. Changing instruments does not make different historical configurations
+comparable; a future baseline campaign will establish trustworthy current results.
 
 ## Vision
 

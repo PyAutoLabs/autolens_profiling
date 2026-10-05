@@ -20,7 +20,7 @@ permissions:
 jobs:
   lint:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Checkout autolens_profiling
         uses: actions/checkout@v4
@@ -58,6 +58,12 @@ jobs:
         with:
           repository: PyAutoLabs/PyAutoPulse
           path: PyAutoPulse
+
+      - name: Checkout PyAutoBrain (shared board theme)
+        uses: actions/checkout@v4
+        with:
+          repository: PyAutoLabs/PyAutoBrain
+          path: PyAutoBrain
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -146,6 +152,21 @@ jobs:
           # dependency chain this job already installs -- aggregate.py imports
           # matplotlib at module scope, so a bare checkout cannot run them.
           pytest scripts/misc/test/ -q
+
+      - name: Set up Node for browser checks
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup browser interactions and responsive layout
+        working-directory: autolens_profiling
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/profiling-browsers
+          NODE_PATH: ${{ runner.temp }}/profiling-browser/node_modules
+        run: |
+          npm install --prefix "$RUNNER_TEMP/profiling-browser" playwright@1.63.0
+          "$RUNNER_TEMP/profiling-browser/node_modules/.bin/playwright" install --with-deps chromium
+          node scripts/misc/test/browser_setup_page.cjs
 
       - name: lychee — markdown link-rot
         working-directory: autolens_profiling

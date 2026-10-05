@@ -802,6 +802,13 @@ def render_outputs(root, generated, revision):
                 "setup_id": setup["id"],
                 "path": path,
                 "records": len(records),
+                "axes": sorted({r["axis"] for r in records}),
+                "devices": sorted(
+                    {r["identity"]["device"] or "device not recorded" for r in records}
+                ),
+                "precisions": sorted(
+                    {r["identity"]["precision"] or "precision not recorded" for r in records}
+                ),
                 "sha256": hashlib.sha256(content.encode()).hexdigest(),
             }
         )

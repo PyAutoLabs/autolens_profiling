@@ -80,6 +80,12 @@ jobs:
           repository: PyAutoLabs/PyAutoLens
           path: PyAutoLens
 
+      - name: Checkout PyAutoBrain (shared board theme)
+        uses: actions/checkout@v4
+        with:
+          repository: PyAutoLabs/PyAutoBrain
+          path: PyAutoBrain
+
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:

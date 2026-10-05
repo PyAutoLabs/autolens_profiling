@@ -250,6 +250,9 @@ def test_shards_are_deterministic_complete_and_content_addressed(tree):
     index = json.loads(first["catalogue.json"])
     assert not index["records"]  # no declared reference
     manifest = index["evidence_shards"][0]
+    assert manifest["axes"] == ["runtime"]
+    assert manifest["devices"] == ["cpu"]
+    assert manifest["precisions"] == ["precision not recorded"]
     assert hashlib.sha256(first[manifest["path"]].encode()).hexdigest() == manifest["sha256"]
     shard = json.loads(first[manifest["path"]])
     assert len(shard["records"]) == manifest["records"] == index["archive_record_count"] == 1
