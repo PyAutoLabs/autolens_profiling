@@ -1,12 +1,12 @@
-"""Build the run-time-over-time dashboard: ``results/**`` -> ``dashboard/``.
+"""Build the setup browser and retained historical feeds: ``results/**`` -> ``dashboard/``.
 
 Run from the repo root::
 
     python scripts/misc/tooling/build_dashboard.py           # write dashboard/{series,state}.json + index.html
     python scripts/misc/tooling/build_dashboard.py --check   # exit 1 if the committed pages are stale
 
-What it renders
----------------
+Historical transport retained during browser migration
+-----------------------------------------------------
 
 One point per PyAutoLens release per **series** — a likelihood cell x instrument x sweep
 config (device + precision) x dense/sparse — read from the result JSONs this repo already
@@ -37,7 +37,8 @@ Outputs
 ``dashboard/series.json`` (the trend data), ``dashboard/state.json`` (the project badge feed,
 ``PyAutoBrain/board/state_schema.json`` v1), ``dashboard/summary.json`` (the ``profiling-summary``
 v1 read contract the PyAutoPulse organ ingests -- ``dashboard/README.md``) and
-``dashboard/index.html`` (static, no assets). Pure stdlib -- no PyAuto* imports, no PYTHONPATH;
+``dashboard/index.html`` (setup browser when a catalogue is registered, historical page otherwise).
+The browser uses Brain's shared theme and the versioned setup catalogue; no scientific imports.
 ``lint.yml`` runs ``--check``.
 """
 
@@ -1171,6 +1172,9 @@ def build(
         from build_catalogue import render_outputs
 
         outputs.update(render_outputs(root, generated, revision))
+        from setup_page import render as render_setup_page
+
+        outputs["index.html"] = render_setup_page(json.loads(outputs["catalogue.json"]))
     return outputs
 
 
