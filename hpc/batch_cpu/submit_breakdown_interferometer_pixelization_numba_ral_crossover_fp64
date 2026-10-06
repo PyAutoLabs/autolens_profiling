@@ -113,7 +113,7 @@ echo "=========================================="
 echo "NumPy arms (numba direct_conv + NumPy FFT) -- pixelization_numba.py $INSTRUMENT r$RADIUS"
 date
 echo "loadavg: $(cat /proc/loadavg)"
-python3 -u scripts/interferometer/likelihood_breakdown/pixelization_numba.py \
+python3 -u scripts/interferometer/rectangular/likelihood_breakdown_numba.py \
     --instrument $INSTRUMENT \
     --mask-radius $RADIUS \
     --config-name hpc_ral_cpu_fp64 \

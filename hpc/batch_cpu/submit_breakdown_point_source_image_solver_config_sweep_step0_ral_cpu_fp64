@@ -119,7 +119,7 @@ echo "=========================================="
 echo "RUN ${CONFIG_NAME} -> ${RESULTS_DIR}"
 date
 echo "loadavg: $(cat /proc/loadavg)"
-PYTHONUNBUFFERED=1 python3 scripts/point_source_image/likelihood_breakdown/solver_config_sweep.py \
+PYTHONUNBUFFERED=1 python3 scripts/point_source_image/image_plane/solver_config_sweep.py \
     --config-name "$CONFIG_NAME" --output-dir "$RESULTS_DIR" \
     --step0-route control,gather,components,structured \
     --n-draws 200 --n-stress 200 --rounds 20 --calls 20

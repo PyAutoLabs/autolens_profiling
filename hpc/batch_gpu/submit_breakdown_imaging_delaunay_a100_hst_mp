@@ -38,7 +38,7 @@ echo "Inversion path: dense (mapping)"
 
 cd $AP_ROOT
 
-python3 scripts/imaging/likelihood_breakdown/delaunay.py \
+python3 scripts/imaging/delaunay/likelihood_breakdown.py \
     --config-name hpc_a100_mp \
     --use-mixed-precision
 

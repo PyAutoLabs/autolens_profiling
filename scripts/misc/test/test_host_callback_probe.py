@@ -176,9 +176,7 @@ def test__the_probe_declares_the_host_event_names_it_substitutes():
 
 def test__the_cell_matches_the_probes_host_event_names():
     """Or every batched leg reports `host_callback.qhull_ms: 0.0` in silence."""
-    cell = (
-        _profiling_root() / "scripts" / "imaging" / "likelihood_breakdown" / "fixed_light_trace.py"
-    ).read_text()
+    cell = (_profiling_root() / "scripts/imaging/pixelized/fixed_light_trace.py").read_text()
     assert "host_callback_probe.PROBE_HOST_EVENT_FRAGMENTS" in cell, (
         "fixed_light_trace.py no longer folds the probe's host-event names into its "
         "qhull matcher, so its xplane qhull row would read 0.0 ms under the probe"

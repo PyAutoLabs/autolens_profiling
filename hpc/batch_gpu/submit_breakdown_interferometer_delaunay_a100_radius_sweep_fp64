@@ -89,7 +89,7 @@ echo "Array task:     ${SLURM_ARRAY_JOB_ID}_${TASK_ID}"
 echo "Instrument:     $INSTRUMENT"
 echo "Mask radius:    $RADIUS"
 echo "Precision:      fp64"
-python3 -u scripts/interferometer/likelihood_breakdown/delaunay.py \
+python3 -u scripts/interferometer/delaunay/likelihood_breakdown.py \
     --instrument $INSTRUMENT \
     --mask-radius $RADIUS \
     --config-name hpc_a100_fp64 \

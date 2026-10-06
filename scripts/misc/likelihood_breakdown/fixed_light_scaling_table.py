@@ -1,7 +1,7 @@
 """Aggregator for the fixed-lens-light SOURCE-PIXEL SCALING sweep — #257, phase 4.
 
 Folds the per-leg result JSONs written by
-``scripts/imaging/likelihood_breakdown/fixed_light.py`` into, per hardware:
+``scripts/imaging/pixelized/fixed_light.py`` into, per hardware:
 
 * an **ms-vs-N** table per mesh (certified at its certifying budget, certified at
   phase 3's safe budget, unconstrained Cholesky, PDIP, the two log determinants,

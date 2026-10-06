@@ -70,7 +70,7 @@ print('nufftax', m.version('nufftax'), 'jax', jax.__version__, 'x64', jax.config
 assert tuple(int(x) for x in m.version('nufftax').split('.')[:2]) >= (0, 6), 'nufftax below the 0.6.1 floor'
 " || exit 3
 
-python3 scripts/interferometer/likelihood_breakdown/mge.py \
+python3 scripts/interferometer/mge/likelihood_breakdown.py \
     --config-name hpc_a100_fp64 \
     --instrument sdp81 \
     --w-tilde \

@@ -1106,7 +1106,7 @@ def memo_warm_row(
 # ===================================================================
 #
 # These four functions ARE the witness's gates. They live here rather than in
-# `scripts/imaging/likelihood_breakdown/fixed_light_numba_s4b_witness.py`
+# `scripts/imaging/pixelized/fixed_light_numba_s4b_witness.py`
 # because that cell — like every cell in this repo — is a top-to-bottom script
 # with no `__main__` guard: importing it to test one metric would build an HST
 # Delaunay N=1500 system and run the whole witness. A metric that cannot be

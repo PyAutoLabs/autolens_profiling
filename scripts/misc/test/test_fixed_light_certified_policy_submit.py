@@ -3,7 +3,7 @@
 **No imaging, no JAX, no GPU** — these read the submit script and the cell as text.
 
 The legs run the phase-2 batched cell
-(``scripts/imaging/likelihood_breakdown/fixed_light_trace.py --vmap-batch``) in
+(``scripts/imaging/pixelized/fixed_light_trace.py --vmap-batch``) in
 its ``--solver-source library`` mode: the solver is chosen through
 ``al.Settings`` and nothing is monkeypatched. They are a fifth ``fixed_light``
 submit family with their own file-name prefix, excluded from
@@ -47,7 +47,7 @@ SUBMIT = (
     / "batch_gpu"
     / "submit_breakdown_imaging_fixed_light_certified_policy_a100_hst_fp64"
 )
-CELL = ROOT / "scripts" / "imaging" / "likelihood_breakdown" / "fixed_light_trace.py"
+CELL = ROOT / "scripts/imaging/pixelized/fixed_light_trace.py"
 
 _misc = ROOT / "scripts" / "misc"
 if str(_misc) not in _sys.path:

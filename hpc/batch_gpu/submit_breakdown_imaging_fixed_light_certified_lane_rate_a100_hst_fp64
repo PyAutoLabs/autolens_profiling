@@ -138,8 +138,8 @@ export XLA_PYTHON_CLIENT_PREALLOCATE=false
 export JAX_ENABLE_X64=True
 export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding"
 
-CELL="$AP_ROOT/scripts/imaging/likelihood_breakdown/fixed_light_trace.py"
-CAPTURE="$AP_ROOT/scripts/imaging/likelihood_breakdown/nautilus_batch_capture.py"
+CELL="$AP_ROOT/scripts/imaging/pixelized/fixed_light_trace.py"
+CAPTURE="$AP_ROOT/scripts/imaging/pixelized/nautilus_batch_capture.py"
 
 # A stale checkout fails before allocating a GPU.
 if [ ! -f "$CAPTURE" ] || ! grep -q -- "--captured-pass" "$CELL"; then
@@ -235,7 +235,7 @@ SAVED_ERR_TRAP=$(trap -p ERR)
 trap - ERR
 set +e
 if [ "$PASS" = "capture" ]; then
-    python3 -u scripts/imaging/likelihood_breakdown/nautilus_batch_capture.py \
+    python3 -u scripts/imaging/pixelized/nautilus_batch_capture.py \
         --mesh $MESH \
         --n-like-max 40000 \
         --capture-seconds 3600 \
@@ -243,7 +243,7 @@ if [ "$PASS" = "capture" ]; then
         --n-batch 20 \
         --seed 1
 elif [ "$PASS" = "rate" ]; then
-    python3 -u scripts/imaging/likelihood_breakdown/fixed_light_trace.py \
+    python3 -u scripts/imaging/pixelized/fixed_light_trace.py \
         --mesh $MESH \
         --border-relocator $BORDER \
         --vmap-batch $BATCH \
@@ -257,7 +257,7 @@ elif [ "$PASS" = "rate" ]; then
         --trace-dir "$TRACE_DIR" \
         --config-name $CONFIG_NAME
 else
-    python3 -u scripts/imaging/likelihood_breakdown/fixed_light_trace.py \
+    python3 -u scripts/imaging/pixelized/fixed_light_trace.py \
         --mesh $MESH \
         --border-relocator $BORDER \
         --vmap-batch $BATCH \

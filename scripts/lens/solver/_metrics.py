@@ -35,7 +35,7 @@ All metrics compare a candidate's raw-coordinate reconstruction ``x`` with the f
 ``kkt_residual_scaled``
     ``max(primal_violation, dual_violation, complementarity)`` of
     ``hazards._likelihood.nnls_optimality_metrics`` — the scale-normalised KKT residual the
-    ``scripts/imaging/hazards/pixelization.py`` solver-diagnostic leg reports (its three
+    ``scripts/imaging/rectangular/hazards.py`` solver-diagnostic leg reports (its three
     components are kept alongside).
 
 A non-finite ``x`` scores every metric ``None`` and ``finite: False``.

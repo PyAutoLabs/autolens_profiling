@@ -86,9 +86,7 @@ from test_fixed_light_numba import tiny_s3_pair as _tiny_s3_pair_fixture  # noqa
 tiny = _tiny_fixture
 tiny_s3_pair = _tiny_s3_pair_fixture
 
-WITNESS_PATH = (
-    ROOT / "scripts" / "imaging" / "likelihood_breakdown" / "fixed_light_numba_s4_witness.py"
-)
+WITNESS_PATH = ROOT / "scripts/imaging/pixelized/fixed_light_numba_s4_witness.py"
 SUBMIT_PATH = (
     ROOT
     / "hpc"
@@ -478,8 +476,8 @@ def test_the_s4_submit_parses_and_runs_only_scripts_that_exist():
             f"the submit runs {relative}, which does not exist in this checkout"
         )
 
-    assert "scripts/imaging/likelihood_breakdown/fixed_light_numba.py" in invoked
-    assert "scripts/imaging/likelihood_breakdown/fixed_light_numba_s4_witness.py" in invoked
+    assert "scripts/imaging/pixelized/fixed_light_numba.py" in invoked
+    assert "scripts/imaging/pixelized/fixed_light_numba_s4_witness.py" in invoked
 
 
 def test_the_s4_submit_runs_the_three_row_ab_at_the_settings_the_verdict_assumes():

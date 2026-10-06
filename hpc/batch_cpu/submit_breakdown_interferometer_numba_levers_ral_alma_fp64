@@ -103,7 +103,7 @@ echo "=========================================="
 echo "LEVERS: delaunay_numba alma r3.5"
 date
 echo "loadavg: $(cat /proc/loadavg)"
-python3 -u scripts/interferometer/likelihood_breakdown/delaunay_numba.py \
+python3 -u scripts/interferometer/delaunay/likelihood_breakdown_numba.py \
     --instrument alma \
     --config-name hpc_ral_cpu_fp64_levers \
     --arms numba \
@@ -117,7 +117,7 @@ echo "=========================================="
 echo "LEVERS: pixelization_numba alma r3.5"
 date
 echo "loadavg: $(cat /proc/loadavg)"
-python3 -u scripts/interferometer/likelihood_breakdown/pixelization_numba.py \
+python3 -u scripts/interferometer/rectangular/likelihood_breakdown_numba.py \
     --instrument alma \
     --config-name hpc_ral_cpu_fp64_levers \
     --arms numba \

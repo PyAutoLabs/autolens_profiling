@@ -3,8 +3,7 @@
 The companion [v2 catalogue](../dashboard/catalogue.json) organizes committed evidence by
 **dataset → model → instrument → exact configuration**. It powers the project setup browser and provides the data foundation for the assistant;
 it is not a new benchmark or an accepted baseline. The existing v1 JSON feed remains
-available while Pulse migrates to the setup browser. No scientific script is
-moved or run by this phase.
+available while Pulse migrates to the setup browser. The catalogue exporter does not run scientific scripts.
 
 ## Regenerate and validate
 
@@ -107,3 +106,13 @@ unknown coverage and limitations, not present candidates as validated settings o
 
 The project browser consumes this transport; the Pulse front-page migration follows. The later baseline campaign defines and
 measures trustworthy current setups before any records are promoted for recommendations.
+
+## Scientific script routes
+
+[script_routes.json](script_routes.json) maps legacy entry points to canonical
+`scripts/<dataset>/<model>/<measurement>.py` paths. Datacube is a top-level
+dataset family; `imaging/pixelized/` holds shared CLI mesh experiments and
+latent cells live under `sersic/`. Shared tooling stays in `scripts/misc/` and
+library component measurements stay in `scripts/lens/`. Legacy wrappers remain
+until an explicitly approved removal after Brain and assistant migration;
+there is no automatic expiry. Historical result paths remain unchanged.

@@ -113,7 +113,7 @@ echo "=========================================="
 echo "LEG 1: NumPy arms (numba direct_conv + NumPy FFT) -- pixelization_numba.py, --source-pixels 1024"
 date
 echo "loadavg: $(cat /proc/loadavg)"
-python3 -u scripts/interferometer/likelihood_breakdown/pixelization_numba.py \
+python3 -u scripts/interferometer/rectangular/likelihood_breakdown_numba.py \
     --instrument alma \
     --config-name hpc_ral_cpu_fp64_n1024 \
     --n-instances 12 \
@@ -124,7 +124,7 @@ echo "=========================================="
 echo "LEG 2: NumPy arms (numba direct_conv + NumPy FFT) -- pixelization_numba.py, --source-pixels 2500"
 date
 echo "loadavg: $(cat /proc/loadavg)"
-python3 -u scripts/interferometer/likelihood_breakdown/pixelization_numba.py \
+python3 -u scripts/interferometer/rectangular/likelihood_breakdown_numba.py \
     --instrument alma \
     --config-name hpc_ral_cpu_fp64_n2500 \
     --n-instances 12 \
@@ -135,7 +135,7 @@ echo "=========================================="
 echo "LEG 3: NumPy arms (numba direct_conv + NumPy FFT) -- pixelization_numba.py, --source-pixels 4096"
 date
 echo "loadavg: $(cat /proc/loadavg)"
-python3 -u scripts/interferometer/likelihood_breakdown/pixelization_numba.py \
+python3 -u scripts/interferometer/rectangular/likelihood_breakdown_numba.py \
     --instrument alma \
     --config-name hpc_ral_cpu_fp64_n4096 \
     --n-instances 12 \

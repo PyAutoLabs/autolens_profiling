@@ -256,7 +256,7 @@ def import_571_fixture(corpus_dir: Path = CORPUS_DIR, npz_path: Path = FIXTURE_5
     summary = json.loads(sibling.read_text()) if sibling.is_file() else {}
 
     source = {
-        "script": "scripts/imaging/hazards/mge_nnls_capture.py",
+        "script": "scripts/imaging/mge/hazards_nnls_capture.py",
         "args": [],
         "git_sha": None,
         "fixture": str(npz_path.relative_to(REPO_ROOT)),

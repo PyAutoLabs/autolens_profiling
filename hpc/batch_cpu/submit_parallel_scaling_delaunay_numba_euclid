@@ -37,7 +37,7 @@ echo "Cores:      1,2,4,8,16,32"
 
 cd $AP_ROOT
 
-python3 scripts/imaging/parallel_scaling/pixelization_numba.py \
+python3 scripts/imaging/rectangular/parallel_scaling_numba.py \
     --instrument euclid \
     --mesh delaunay \
     --cores 1,2,4,8,16,32 \

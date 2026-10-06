@@ -7,7 +7,7 @@
 # CoordinateArrayTriangles._vertices_and_indices inside the production
 # point-source likelihoods, on a quiet RAL CPU node:
 #
-#   scripts/point_source_image/likelihood_breakdown/vertex_dedup_ab.py
+#   scripts/point_source_image/image_plane/vertex_dedup_ab.py
 #     control  = the PRE-fix jnp.unique(size=3N) body, carried verbatim in the
 #                cell (copied from PyAutoArray main 11b93476);
 #     nodedup  = the POST-fix body (flat 3N vertex table + arange index map);
@@ -147,7 +147,7 @@ echo "=========================================="
 echo "vertex-dedup A/B: control vs nodedup vs library (simple + cluster, full protocol)"
 date
 echo "loadavg: $(cat /proc/loadavg)"
-python3 -u scripts/point_source_image/likelihood_breakdown/vertex_dedup_ab.py --config-name hpc_ral_cpu_fp64
+python3 -u scripts/point_source_image/image_plane/vertex_dedup_ab.py --config-name hpc_ral_cpu_fp64
 
 echo "=========================================="
 echo "loadavg: $(cat /proc/loadavg)"

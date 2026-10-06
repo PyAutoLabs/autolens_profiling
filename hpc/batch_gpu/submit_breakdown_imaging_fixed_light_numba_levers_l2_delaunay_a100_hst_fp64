@@ -192,7 +192,7 @@ print('  autolens.__file__     =', autolens.__file__)
 print('  has SPARSE_LOG_DET_MIN_PIXELS      =', hasattr(inversion_util, 'SPARSE_LOG_DET_MIN_PIXELS'))
 print('  has log_det_sparse_spd_from        =', hasattr(inversion_util, 'log_det_sparse_spd_from'))
 "
-    python3 -u scripts/imaging/likelihood_breakdown/fixed_light.py \
+    python3 -u scripts/imaging/pixelized/fixed_light.py \
         --mesh delaunay \
         --config-name hpc_a100_fp64_fixed_light_lever2_control \
         --regularization adapt_split \
@@ -221,7 +221,7 @@ print('  has log_det_sparse_spd_from        =', hasattr(inversion_util, 'log_det
 print('  SPARSE_LOG_DET_MIN_PIXELS      =', getattr(inversion_util, 'SPARSE_LOG_DET_MIN_PIXELS', None))
 print('  SPARSE_LOG_DET_MAX_NNZ_PER_ROW =', getattr(inversion_util, 'SPARSE_LOG_DET_MAX_NNZ_PER_ROW', None))
 "
-    python3 -u scripts/imaging/likelihood_breakdown/fixed_light.py \
+    python3 -u scripts/imaging/pixelized/fixed_light.py \
         --mesh delaunay \
         --config-name hpc_a100_fp64_fixed_light_lever2 \
         --regularization adapt_split \

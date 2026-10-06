@@ -74,7 +74,7 @@ echo "Cell:           likelihood_breakdown/interferometer/delaunay"
 echo "Instrument:     alma"
 echo "Precision:      fp64"
 echo "Leg:            N sweep, --source-pixels 1000"
-python3 -u scripts/interferometer/likelihood_breakdown/delaunay.py \
+python3 -u scripts/interferometer/delaunay/likelihood_breakdown.py \
     --instrument alma \
     --config-name hpc_a100_fp64_n1000 \
     --source-pixels 1000 \
@@ -90,7 +90,7 @@ echo "Cell:           likelihood_breakdown/interferometer/delaunay"
 echo "Instrument:     alma"
 echo "Precision:      fp64"
 echo "Leg:            N sweep, --source-pixels 2500"
-python3 -u scripts/interferometer/likelihood_breakdown/delaunay.py \
+python3 -u scripts/interferometer/delaunay/likelihood_breakdown.py \
     --instrument alma \
     --config-name hpc_a100_fp64_n2500 \
     --source-pixels 2500 \
@@ -106,7 +106,7 @@ echo "Cell:           likelihood_breakdown/interferometer/delaunay"
 echo "Instrument:     alma"
 echo "Precision:      fp64"
 echo "Leg:            N sweep, --source-pixels 4000"
-python3 -u scripts/interferometer/likelihood_breakdown/delaunay.py \
+python3 -u scripts/interferometer/delaunay/likelihood_breakdown.py \
     --instrument alma \
     --config-name hpc_a100_fp64_n4000 \
     --source-pixels 4000 \

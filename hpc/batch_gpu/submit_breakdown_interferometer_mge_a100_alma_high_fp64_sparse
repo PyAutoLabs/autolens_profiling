@@ -74,7 +74,7 @@ for m in (autoarray, autogalaxy, autolens):
     assert m.__file__.startswith(base), f'{m.__name__} not imported from {base}'
 "
 
-python3 -u scripts/interferometer/likelihood_breakdown/mge.py \
+python3 -u scripts/interferometer/mge/likelihood_breakdown.py \
     --config-name hpc_a100_fp64 \
     --instrument alma_high \
     --sparse \

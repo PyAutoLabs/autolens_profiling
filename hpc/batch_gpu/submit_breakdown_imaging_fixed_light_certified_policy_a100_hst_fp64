@@ -130,7 +130,7 @@ export XLA_PYTHON_CLIENT_PREALLOCATE=false
 export JAX_ENABLE_X64=True
 export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding"
 
-CELL="$AP_ROOT/scripts/imaging/likelihood_breakdown/fixed_light_trace.py"
+CELL="$AP_ROOT/scripts/imaging/pixelized/fixed_light_trace.py"
 
 # The cell rejects unknown flags, but keep an explicit source guard so a stale
 # checkout fails before allocating a GPU. The JSON records the exact program too.
@@ -232,7 +232,7 @@ python3 -c "import autoarray, autolens; print('autoarray.__file__ =', autoarray.
 SAVED_ERR_TRAP=$(trap -p ERR)
 trap - ERR
 set +e
-python3 -u scripts/imaging/likelihood_breakdown/fixed_light_trace.py \
+python3 -u scripts/imaging/pixelized/fixed_light_trace.py \
     --mesh $MESH \
     --border-relocator $BORDER \
     --vmap-batch $BATCH \

@@ -1,6 +1,6 @@
 """Shared harness for the interferometer pixelized (W~ / sparse) breakdown cells.
 
-``scripts/interferometer/likelihood_breakdown/delaunay.py`` (Hilbert-1500 Delaunay)
+``scripts/interferometer/delaunay/likelihood_breakdown.py`` (Hilbert-1500 Delaunay)
 and ``.../pixelization.py`` (rectangular 39x39) differ only in their mesh; everything
 else — dataset, sparse operator, the timed steps, the dense comparison arm, the lever
 sub-rows and the JSON schema — lives here, so the two cells cannot drift

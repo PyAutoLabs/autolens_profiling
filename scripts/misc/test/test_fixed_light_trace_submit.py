@@ -49,7 +49,7 @@ def _profiling_root() -> _Path:
 
 ROOT = _profiling_root()
 BATCH_GPU = ROOT / "hpc" / "batch_gpu"
-CELL = ROOT / "scripts" / "imaging" / "likelihood_breakdown" / "fixed_light_trace.py"
+CELL = ROOT / "scripts/imaging/pixelized/fixed_light_trace.py"
 
 _misc = ROOT / "scripts" / "misc"
 if str(_misc) not in _sys.path:

@@ -2,10 +2,10 @@
 
 Certified-solver phase C1 (autolens_profiling#304). Two cells share this module:
 
-- ``scripts/imaging/likelihood_breakdown/nautilus_batch_capture.py`` runs a real
+- ``scripts/imaging/pixelized/nautilus_batch_capture.py`` runs a real
   ``af.Nautilus`` fit and records every batched parameter array that reaches
   ``Fitness.call_wrap`` (:class:`BatchRecorder`, :func:`recording`, :func:`save`);
-- ``scripts/imaging/likelihood_breakdown/fixed_light_trace.py --lanes captured``
+- ``scripts/imaging/pixelized/fixed_light_trace.py --lanes captured``
   replays those lanes (:func:`load`, :func:`sample_calls`, :func:`timed_window`,
   :func:`chunked`, :func:`rate_summary`).
 

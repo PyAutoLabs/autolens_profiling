@@ -112,7 +112,7 @@ nvidia-smi --query-gpu=memory.used --format=csv -l 2 &
 VRAM_SAMPLER_PID=$!
 trap 'kill "$VRAM_SAMPLER_PID" 2>/dev/null' EXIT
 
-python3 -u scripts/imaging/likelihood_breakdown/delaunay_nn.py \
+python3 -u scripts/imaging/delaunay_nn/likelihood_breakdown.py \
     --config-name $CONFIG_NAME \
     --split-setup \
     --vmap-batch 16

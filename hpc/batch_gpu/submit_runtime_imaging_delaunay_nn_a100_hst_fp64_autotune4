@@ -62,7 +62,7 @@ cd $AP_ROOT
 # resolve_vmap_batch falls back to the VMAP_BATCH table (16). The failed probe
 # is kept as vmap_probe_delaunay_nn_batch64_cufft_failed.json.
 echo "--- full timing ---"
-python3 -u scripts/imaging/likelihood_runtime/delaunay_nn.py \
+python3 -u scripts/imaging/delaunay_nn/likelihood_runtime.py \
     --instrument hst \
     --config-name hpc_a100_fp64_autotune4
 

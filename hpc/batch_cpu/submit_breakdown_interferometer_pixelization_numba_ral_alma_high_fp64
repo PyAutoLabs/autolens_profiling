@@ -113,7 +113,7 @@ echo "=========================================="
 echo "LEG 1: JAX-CPU FFT arm -- pixelization.py (the pointer target of the numba JSON)"
 date
 echo "loadavg: $(cat /proc/loadavg)"
-python3 -u scripts/interferometer/likelihood_breakdown/pixelization.py \
+python3 -u scripts/interferometer/rectangular/likelihood_breakdown.py \
     --instrument alma_high \
     --config-name hpc_ral_cpu_fp64 \
     || echo "LEG 1 FAILED: the JAX-CPU arm is recorded as missing; the numba leg still runs"
@@ -122,7 +122,7 @@ echo "=========================================="
 echo "LEG 2: NumPy arms (numba direct_conv + NumPy FFT) -- pixelization_numba.py"
 date
 echo "loadavg: $(cat /proc/loadavg)"
-python3 -u scripts/interferometer/likelihood_breakdown/pixelization_numba.py \
+python3 -u scripts/interferometer/rectangular/likelihood_breakdown_numba.py \
     --instrument alma_high \
     --config-name hpc_ral_cpu_fp64 \
     --n-instances 10

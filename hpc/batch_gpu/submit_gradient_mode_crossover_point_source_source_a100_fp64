@@ -8,7 +8,7 @@
 # (hpc/batch_cpu/submit_gradient_mode_crossover_point_source_source_ral_cpu_fp64),
 # one process, on ONE RAL A100:
 #
-#   scripts/point_source_source/likelihood_breakdown/gradient_mode_crossover.py
+#   scripts/point_source_source/source_plane/gradient_mode_crossover.py
 #      (ladder L5..L19 + L24 x solved/plain lanes; rev vs fwd, single and
 #      jit(vmap) B=8; correctness gate before timing; 20 x 20 interleaved;
 #      crossover n* per lane x call shape).
@@ -103,7 +103,7 @@ print('ASSERT OK: GPU backend, libraries from /mnt/ral/jnightin/PyAuto')
 echo "=========================================="
 echo "gradient-mode crossover on A100 (20 x 20)"
 date
-python3 -u scripts/point_source_source/likelihood_breakdown/gradient_mode_crossover.py --config-name hpc_a100_fp64 --rounds 20 --calls 20
+python3 -u scripts/point_source_source/source_plane/gradient_mode_crossover.py --config-name hpc_a100_fp64 --rounds 20 --calls 20
 
 echo "=========================================="
 nvidia-smi --query-gpu=name,memory.used --format=csv || true

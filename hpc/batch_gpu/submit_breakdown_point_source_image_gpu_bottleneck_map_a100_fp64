@@ -122,7 +122,7 @@ echo "=========================================="
 echo "RUN ${CONFIG_NAME} -> ${RESULTS_DIR}"
 date
 echo "loadavg: $(cat /proc/loadavg)"
-PYTHONUNBUFFERED=1 python3 scripts/point_source_image/likelihood_breakdown/gpu_bottleneck_map.py \
+PYTHONUNBUFFERED=1 python3 scripts/point_source_image/image_plane/gpu_bottleneck_map.py \
     --config-name "$CONFIG_NAME" --output-dir "$RESULTS_DIR" --trace-dir "$TRACE_DIR/fp64" \
     --rounds 20 --calls 20 --vmap-batches 1,4,16,64,256 --trace-vmap 16 --grad-vmap 16
 
@@ -130,7 +130,7 @@ echo "=========================================="
 echo "RUN ${CONFIG_NAME_FP32} (JAX_ENABLE_X64=0 what-if) -> ${RESULTS_DIR}"
 date
 JAX_ENABLE_X64=0 PYTHONUNBUFFERED=1 python3 \
-    scripts/point_source_image/likelihood_breakdown/gpu_bottleneck_map.py \
+    scripts/point_source_image/image_plane/gpu_bottleneck_map.py \
     --config-name "$CONFIG_NAME_FP32" --output-dir "$RESULTS_DIR" \
     --fp64-reference "$RESULTS_DIR/gpu_bottleneck_map_${CONFIG_NAME}.json" \
     --rounds 20 --calls 20 --vmap-batches 1,16,256

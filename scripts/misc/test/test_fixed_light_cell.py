@@ -41,7 +41,7 @@ if _misc_dir not in _sys.path:
 
 import pytest  # noqa: E402
 
-CELL = ROOT / "scripts" / "imaging" / "likelihood_breakdown" / "fixed_light.py"
+CELL = ROOT / "scripts/imaging/pixelized/fixed_light.py"
 BATCH_GPU = ROOT / "hpc" / "batch_gpu"
 LAUNCHER = BATCH_GPU / "submit_fixed_light.sh"
 

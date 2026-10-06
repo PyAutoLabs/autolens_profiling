@@ -63,7 +63,7 @@ from likelihood_breakdown import call_accounting as ca  # noqa: E402
 from likelihood_breakdown import fixed_light_numpy_solvers as flns  # noqa: E402
 from likelihood_breakdown import fixed_light_system as fls  # noqa: E402
 
-CELL_PATH = ROOT / "scripts" / "imaging" / "likelihood_breakdown" / "fixed_light_numba.py"
+CELL_PATH = ROOT / "scripts/imaging/pixelized/fixed_light_numba.py"
 
 P2_RTOL = 1.0e-9
 P3_RTOL = 1.0e-6

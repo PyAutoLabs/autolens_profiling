@@ -1,6 +1,6 @@
 """JIT / vmap timing harness shared by the ``likelihood_breakdown`` cells.
 
-Lifted verbatim from ``scripts/imaging/likelihood_breakdown/delaunay.py`` (the
+Lifted verbatim from ``scripts/imaging/delaunay/likelihood_breakdown.py`` (the
 most-evolved copy) on 2026-09-10 so the three imaging cells stop carrying
 divergent copies of the same four functions. Two behaviours from that copy are
 load-bearing and are the reason the rectangular cell's older local copy had to

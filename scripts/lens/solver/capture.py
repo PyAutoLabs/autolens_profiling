@@ -10,7 +10,7 @@ computes and stores the fnnls reference. One ``--source`` per group:
 
 ``slam48`` -> group ``slam48_hst``
     All 48 SLaM ``source_lp[1]`` near-truth systems of the PyAutoArray#571 capture
-    (``scripts/imaging/hazards/mge_nnls_capture.py``, which keeps only 8). The dataset, model and
+    (``scripts/imaging/mge/hazards_nnls_capture.py``, which keeps only 8). The dataset, model and
     the 48 vectors come from that script's own functions (``_dataset``,
     ``_slam_source_lp_model``, ``_vectors``) so they are the same 48; the 8 fixture systems
     (group ``slam_fixture_571``) are compared against their matching vectors and the result is

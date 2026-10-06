@@ -59,7 +59,7 @@ if str(_misc) not in _sys.path:
 
 from likelihood_breakdown import library_solver_injection as lsi  # noqa: E402
 
-CELL = ROOT / "scripts" / "imaging" / "likelihood_breakdown" / "fixed_light_library.py"
+CELL = ROOT / "scripts/imaging/pixelized/fixed_light_library.py"
 BATCH_GPU = ROOT / "hpc" / "batch_gpu"
 LAUNCHER = BATCH_GPU / "submit_fixed_light_library.sh"
 

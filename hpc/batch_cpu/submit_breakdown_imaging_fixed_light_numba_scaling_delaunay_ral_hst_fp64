@@ -25,6 +25,6 @@ else
     sha256sum --check SOURCE_SHA256SUMS
 fi
 sizes=(500 1000 1500 2500 4000)
-python3 -u scripts/imaging/likelihood_breakdown/fixed_light_numba_scaling.py \
+python3 -u scripts/imaging/pixelized/fixed_light_numba_scaling.py \
     --source-pixels "${sizes[${SLURM_ARRAY_TASK_ID:-0}]}" --n-repeats 6 \
     --config-name hpc_ral_cpu_fp64_fixed_light_numba_s6

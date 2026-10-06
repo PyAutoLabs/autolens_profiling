@@ -3,7 +3,7 @@
 **No imaging, no JAX, no GPU** — these read the submit script and the cell as text.
 
 These legs run the *same* cell as the phase-1 trace family
-(``scripts/imaging/likelihood_breakdown/fixed_light_trace.py``) but in its
+(``scripts/imaging/pixelized/fixed_light_trace.py``) but in its
 ``--vmap-batch`` mode, so they are a fourth ``fixed_light`` submit family with
 their own file-name prefix (``..._fixed_light_vmap_*``). They are excluded from
 ``test_fixed_light_cell.py``'s glob for the reason that file states: the config
@@ -43,7 +43,7 @@ def _profiling_root() -> _Path:
 
 ROOT = _profiling_root()
 BATCH_GPU = ROOT / "hpc" / "batch_gpu"
-CELL = ROOT / "scripts" / "imaging" / "likelihood_breakdown" / "fixed_light_trace.py"
+CELL = ROOT / "scripts/imaging/pixelized/fixed_light_trace.py"
 
 _misc = ROOT / "scripts" / "misc"
 if str(_misc) not in _sys.path:

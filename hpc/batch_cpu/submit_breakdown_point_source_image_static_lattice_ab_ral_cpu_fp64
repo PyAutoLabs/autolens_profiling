@@ -7,7 +7,7 @@
 # step-0 tiling (AbstractSolver._initial_triangles) inside the production
 # point-source likelihoods, on ONE pinned, quiet RAL CPU node:
 #
-#   scripts/point_source_image/likelihood_breakdown/static_lattice_ab.py
+#   scripts/point_source_image/image_plane/static_lattice_ab.py
 #     control  = the flat (3N, 2) per-triangle table (phase-2 main path;
 #                69 849 step-0 rows for the simple lattice) -- the IN-JOB control;
 #     exact    = the 28 665 exact-float distinct rows + inverse map (cell-built);
@@ -153,13 +153,13 @@ echo "=========================================="
 echo "run 1/2: constant folding DISABLED (20 x 20, simple + cluster)"
 date
 echo "loadavg: $(cat /proc/loadavg)"
-python3 -u scripts/point_source_image/likelihood_breakdown/static_lattice_ab.py --config-name hpc_ral_cpu_fp64 --rounds 20 --calls 20
+python3 -u scripts/point_source_image/image_plane/static_lattice_ab.py --config-name hpc_ral_cpu_fp64 --rounds 20 --calls 20
 
 echo "=========================================="
 echo "run 2/2: constant folding ENABLED, separate process (20 x 20, simple + cluster)"
 date
 echo "loadavg: $(cat /proc/loadavg)"
-python3 -u scripts/point_source_image/likelihood_breakdown/static_lattice_ab.py --config-name hpc_ral_cpu_fp64 --rounds 20 --calls 20 --constant-folding
+python3 -u scripts/point_source_image/image_plane/static_lattice_ab.py --config-name hpc_ral_cpu_fp64 --rounds 20 --calls 20 --constant-folding
 
 echo "=========================================="
 echo "loadavg: $(cat /proc/loadavg)"

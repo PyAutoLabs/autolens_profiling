@@ -1,7 +1,7 @@
 # `scripts/lens/` — library-component profiling
 
 Every other script tree in this repo is laid out **dataset-first**
-(`scripts/<dataset>/<task>/<model>.py`): pick a dataset family, pick a task, get
+(`scripts/<dataset>/<model>/<measurement>.py`): pick a dataset family, pick a model, get
 the cost of a *pipeline*. That axis answers *"how long does this fit take?"*.
 
 `scripts/lens/` is the second axis, and it is deliberately **dataset-free**. Its

@@ -40,7 +40,7 @@ printf 'PyAutoArray(AB) %s\n' "$(git -C $AA_ROOT rev-parse HEAD 2>&1)"
 cd $AP_ROOT
 python3 -c "import autoarray; print('autoarray.__file__ =', autoarray.__file__)"
 
-python3 -u scripts/imaging/likelihood_runtime/delaunay.py \
+python3 -u scripts/imaging/delaunay/likelihood_runtime.py \
     --instrument hst \
     --config-name hpc_a100_fp64_control_2026_09_07
 

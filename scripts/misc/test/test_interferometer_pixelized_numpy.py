@@ -173,7 +173,12 @@ def test__submit_is_a_quiet_single_thread_cpu_job(path):
     assert "intra_op_parallelism_threads=1" in text
     configs = re.findall(r"--config-name (\S+)", text)
     assert configs and all(c.startswith("hpc_ral_cpu_fp64") for c in configs)
-    cells = set(re.findall(r"scripts/interferometer/likelihood_breakdown/(\w+)\.py", text))
+    cells = {
+        ("pixelization" if model == "rectangular" else model) + suffix
+        for model, suffix in re.findall(
+            r"scripts/interferometer/(\w+)/likelihood_breakdown(_numba)?\.py", text
+        )
+    }
     declared = set(re.findall(r"cell: interferometer/(\w+)/", text))
     assert cells and cells == declared, (
         f"every cell run needs its own WALL-BASIS row: {cells} vs {declared}"
@@ -370,6 +375,11 @@ def test__lever_submit_is_a_cpu_job_whose_only_extra_thread_is_the_numba_pool(pa
     assert max(threads) <= pool <= cpus, "the pool must fit the allocation"
     configs = re.findall(r"--config-name (\S+)", text)
     assert configs and all(c.startswith("hpc_ral_cpu_fp64_levers") for c in configs)
-    cells = set(re.findall(r"scripts/interferometer/likelihood_breakdown/(\w+)\.py", text))
+    cells = {
+        ("pixelization" if model == "rectangular" else model) + suffix
+        for model, suffix in re.findall(
+            r"scripts/interferometer/(\w+)/likelihood_breakdown(_numba)?\.py", text
+        )
+    }
     declared = set(re.findall(r"cell: interferometer/(\w+)/", text))
     assert cells and cells == declared

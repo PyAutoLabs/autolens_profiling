@@ -26,6 +26,6 @@ else
 fi
 hostname
 date
-python3 -u scripts/imaging/likelihood_breakdown/fixed_light_numba_memo_policy.py \
+python3 -u scripts/imaging/pixelized/fixed_light_numba_memo_policy.py \
     --n-repeats 6 --source-pixels 1500 \
     --config-name hpc_ral_cpu_fp64_fixed_light_numba_s5b

@@ -71,7 +71,7 @@ echo "Cell:           likelihood_breakdown/interferometer/pixelization"
 echo "Instrument:     jvla"
 echo "Precision:      mp"
 echo "Leg:            hpc_a100_mp (sparse steps + levers)"
-python3 -u scripts/interferometer/likelihood_breakdown/pixelization.py \
+python3 -u scripts/interferometer/rectangular/likelihood_breakdown.py \
     --instrument jvla \
     --config-name hpc_a100_mp \
     --use-mixed-precision \
