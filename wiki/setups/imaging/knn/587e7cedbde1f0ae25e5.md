@@ -1,0 +1,126 @@
+<!-- generated: build_setup_wiki.py; do not edit -->
+# knn · hst
+
+[Model index](index.md)
+
+Exact setup ID: `imaging/knn/hst/102080f52c7664cec1c3`.
+
+Imported support is unreviewed; this page grants no baseline acceptance. Timing axes remain separate; no total fit-time prediction is made.
+
+## Configuration
+
+Identity limitations: Isolated to source row: legacy metadata is insufficient for cross-file joins.
+
+| Setting | Recorded value | Unit | Unknown reason |
+|---|---|---|---|
+| batch_size | 4 | recorded |  |
+| image_pixels_masked | null | count | Not recorded in this legacy evidence; no current default substituted. |
+| image_shape | null | pixel | Not recorded in this legacy evidence; no current default substituted. |
+| mixed_precision | false | recorded |  |
+| n_batch | 16 | recorded |  |
+| n_vis | null | count | Not recorded in this legacy evidence; no current default substituted. |
+| ndim | 13 | recorded |  |
+| oversampling | null | dimensionless | Not recorded in this legacy evidence; no current default substituted. |
+| preloads | null | name | Not recorded in this legacy evidence; no current default substituted. |
+| psf_shape | null | pixel | Not recorded in this legacy evidence; no current default substituted. |
+| regularization | null | name | Not recorded in this legacy evidence; no current default substituted. |
+| solver | null | name | Not recorded in this legacy evidence; no current default substituted. |
+| source_pixels | null | count | Not recorded in this legacy evidence; no current default substituted. |
+| transform | "laxmap_vag" | recorded |  |
+| transformer | null | name | Not recorded in this legacy evidence; no current default substituted. |
+
+## Evidence
+
+[Original setup artifact](../../../../scripts/misc/jax_compile/results/local_cpu/knn.json); JSON pointer: `/8`.
+
+### Selected references
+
+No selected reference for this exact setup; archive evidence is available below.
+
+### breakdown
+
+<details><summary>1 recorded breakdown measurements</summary>
+
+| Record | Metric | Value | Unit | Device / precision | Selection | Evidence pointer |
+|---|---|---|---|---|---|---|
+| `measurement/370a291f659bffe706b6` | steady_call | {"steady_call": 255.4451} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../scripts/misc/jax_compile/results/local_cpu/knn.json) `/8/steady_s` |
+
+</details>
+
+### compile
+
+<details><summary>3 recorded compile measurements</summary>
+
+| Record | Metric | Value | Unit | Device / precision | Selection | Evidence pointer |
+|---|---|---|---|---|---|---|
+| `measurement/04d2064adecdb2627dda` | first_call | {"first_call": 286.08} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../scripts/misc/jax_compile/results/local_cpu/knn.json) `/8/first_s` |
+| `measurement/a0c60fdba6fe99746cc4` | compile | {"compile": 1.786} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../scripts/misc/jax_compile/results/local_cpu/knn.json) `/8/compile_s` |
+| `measurement/a485d552bfa3e38658f4` | trace | {"trace": 12.283} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../scripts/misc/jax_compile/results/local_cpu/knn.json) `/8/trace_s` |
+
+</details>
+
+<details><summary>Recorded hardware, software, method and limitations</summary>
+
+```json
+{
+  "identity": {
+    "backend": "cpu",
+    "device": "cpu",
+    "hardware_details": {},
+    "library_version": null,
+    "precision": "float64",
+    "software": {
+      "jax": "0.10.2"
+    },
+    "unknowns": {
+      "library_version": "Not recorded in this legacy evidence; no current default substituted."
+    }
+  },
+  "method": {
+    "cache_state": "warm",
+    "repetitions": null,
+    "statistic": null,
+    "synchronization": null,
+    "unknowns": {
+      "repetitions": "Not recorded in this legacy evidence; no current default substituted.",
+      "statistic": "Not recorded in this legacy evidence; no current default substituted.",
+      "synchronization": "Not recorded in this legacy evidence; no current default substituted.",
+      "warmup": "Not recorded in this legacy evidence; no current default substituted."
+    },
+    "warmup": null
+  },
+  "provenance": {
+    "has_provenance": false,
+    "host": "DESKTOP-H143S82",
+    "measured_at": null,
+    "qualified": false,
+    "unknowns": {
+      "measured_at": "Not recorded in this legacy evidence; no current default substituted."
+    }
+  },
+  "validation": {
+    "reason": "Legacy evidence transcribed without scientific baseline acceptance.",
+    "status": "unreviewed"
+  }
+}
+```
+
+</details>
+
+## Hazards
+
+No explicitly bound applicable evidence; this does not establish absence of hazards or validate a setting.
+
+## Recommendations
+
+No explicitly bound applicable evidence; this does not establish absence of hazards or validate a setting.
+
+## Scripts
+
+Navigation links identify the model family; they do not reconstruct historical settings or promise an executable replay.
+
+No canonical script explicitly registered for this model.
+
+## Campaigns
+
+No campaign explicitly bound; campaign applicability is unknown.

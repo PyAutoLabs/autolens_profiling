@@ -752,6 +752,11 @@ def validate_local(root, doc):
         for ev in item["evidence"]:
             if not source_path(root, ev["path"]).is_file():
                 raise ValueError("Missing finding evidence")
+            if ev["path"].endswith(".json"):
+                try:
+                    resolve_pointer(load_json(source_path(root, ev["path"])), ev.get("fragment"))
+                except (KeyError, IndexError, TypeError, ValueError) as exc:
+                    raise ValueError("Invalid finding evidence pointer") from exc
 
     for rec in doc["recommendations"]:
         validation = rec.get("validation", {})

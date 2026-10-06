@@ -1175,6 +1175,20 @@ def build(
         from setup_page import render as render_setup_page
 
         outputs["index.html"] = render_setup_page(json.loads(outputs["catalogue.json"]))
+        if (root / "catalogue/wiki_bindings.json").is_file():
+            from build_setup_wiki import render_outputs as render_wiki
+
+            catalogue = json.loads(outputs["catalogue.json"])
+            shards = {
+                ref["setup_id"]: json.loads(outputs[ref["path"]])
+                for ref in catalogue["evidence_shards"]
+            }
+            outputs.update(
+                {
+                    "../" + name: content
+                    for name, content in render_wiki(root, catalogue, shards).items()
+                }
+            )
     return outputs
 
 
@@ -1219,6 +1233,19 @@ def main(argv: list[str] | None = None) -> int:
 
         obsolete = obsolete_shards(out_dir, outputs)
         stale.extend(p.relative_to(out_dir).as_posix() for p in obsolete)
+        if (root / "catalogue/wiki_bindings.json").is_file():
+            from build_setup_wiki import obsolete_pages
+
+            old_pages = obsolete_pages(
+                root,
+                {
+                    name[3:]: content
+                    for name, content in outputs.items()
+                    if name.startswith("../wiki/")
+                },
+            )
+            stale.extend(str(p.relative_to(root)) for p in old_pages)
+            obsolete.extend(old_pages)
     n_series = json.loads(outputs["series.json"])["series"]
     if args.check:
         if stale:

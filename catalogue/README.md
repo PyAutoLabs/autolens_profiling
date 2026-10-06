@@ -33,7 +33,7 @@ maintained v2 validator against the index and every shard; CI requires this chec
 - `references`: exact source path and row JSON pointer plus a reason for choosing it. These
   select supported metrics in that row as **unreviewed candidates**, never accepted results.
   A missing/unsupported reference fails generation; no latest/fastest fallback exists.
-- `hazard_bindings`, `recommendations`: explicit applicability and support, empty initially.
+- `hazard_bindings`, `recommendations`: explicit applicability and support.
   No prose headline or static batch-size estimate becomes assistant advice automatically.
 
 The exporter reads all declared JSON files and inventories all scientific script entry points,
@@ -116,3 +116,19 @@ latent cells live under `sersic/`. Shared tooling stays in `scripts/misc/` and
 library component measurements stay in `scripts/lens/`. Legacy wrappers remain
 until an explicitly approved removal after Brain and assistant migration;
 there is no automatic expiry. Historical result paths remain unchanged.
+
+## Wiki and historical recommendations
+
+The [setup wiki](../wiki/setups/index.md) is generated from this export and verified
+shards, with compact dataset/model indexes and exact configuration pages. Run
+`python scripts/misc/tooling/build_setup_wiki.py [--check]` after standalone catalogue
+regeneration; the combined dashboard builder handles both. Campaign links are exact
+setup-ID bindings in [wiki_bindings.json](wiki_bindings.json), never guessed from labels.
+
+Five historical interferometer decision-matrix rules are transcribed as **unreviewed**
+observations, narrowed to supporting SDP.81 configurations (the mask-extent observation
+also cites recorded alma r3.5 analogues). Each carries exact supporting record IDs,
+measured software and hardware by record, explicit bounds and historical acceptance
+caveats. They do not grant baseline acceptance or extrapolate a NUFFT choice to
+unmeasured setups. The journal's broader draft rules remain historical prose;
+its solver/revision mismatch waiver is recorded, not promoted to catalogue acceptance.

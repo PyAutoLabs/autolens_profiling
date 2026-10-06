@@ -14,7 +14,8 @@ Checks
     ``wiki/index.md`` (matched by link target) and carries all ten header labels
     of the page contract (see ``wiki/README.md``);
 (c) every relative markdown link under ``wiki/`` resolves to an existing path
-    (``#anchors`` and ``?queries`` are stripped; external URLs are skipped).
+    (``#anchors`` and ``?queries`` are stripped; external URLs are skipped);
+(d) catalogue-backed setup pages are current and their evidence shards verify.
 
 Pure stdlib -- no PyAuto* imports, no PYTHONPATH.
 """
@@ -119,6 +120,14 @@ def check(root: Path) -> list[str]:
         missing = [lab for lab in HEADER_LABELS if f"**{lab}:**" not in text]
         if missing:
             failures.append(f"(b) {rel} missing header label(s): {', '.join(missing)}")
+
+    if (root / "catalogue/registry.json").is_file():
+        import sys
+
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from build_setup_wiki import check as check_setups
+
+        failures.extend(check_setups(root))
 
     return failures
 
