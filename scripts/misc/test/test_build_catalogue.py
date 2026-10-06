@@ -28,6 +28,7 @@ def write(root, path, value):
 def tree(tmp_path):
     reg = json.loads((TOOLING.parents[2] / "catalogue/registry.json").read_text())
     reg["references"] = []
+    reg["recommendations"] = []
     reg["cells"] = [reg["cells"][0]]
     write(tmp_path, cat.REGISTRY, reg)
     write(tmp_path, "dashboard/summary.json", {"generated_at": STAMP, "producer_revision": "abc"})
@@ -356,3 +357,30 @@ def test_runtime_compile_phases_and_batched_breakdown_remain_distinct(tree):
     setup = next(s for s in doc["setups"] if s["role"] != "planned_baseline")
     assert setup["configuration"]["vmap_batch"]["value"] == 16
     assert setup["configuration"]["psf_shape"]["value"] == [31, 31]
+
+
+def test_recommendation_rejects_invalid_exact_evidence_pointer(tree):
+    path = "results/runtime/imaging/delaunay/example.json"
+    write(tree, path, row())
+    doc = build(tree)
+    record = doc["records"][0]
+    doc["recommendations"] = [
+        {
+            "id": "test/pointer",
+            "title": "Historical candidate",
+            "description": "Exact support required",
+            "applies_to": {
+                "setup_ids": [record["setup_id"]],
+                "library_versions": [record["identity"]["library_version"]],
+                "constraints": {},
+                "limitations": "Unreviewed historical fixture",
+            },
+            "record_ids": [record["id"]],
+            "evidence": [{"path": path, "fragment": "/not-recorded"}],
+            "validation": {"status": "unreviewed", "reason": "fixture"},
+        }
+    ]
+    with pytest.raises(ValueError, match="Invalid finding evidence pointer"):
+        cat.validate_local(tree, doc)
+    doc["recommendations"][0]["evidence"][0] = record["evidence"]
+    cat.validate_local(tree, doc)

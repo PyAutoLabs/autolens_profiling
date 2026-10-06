@@ -1,0 +1,21 @@
+{
+  "schema": "profiling-wiki-bindings",
+  "version": 1,
+  "campaigns": [
+    {
+      "path": "wiki/campaigns/interferometer_likelihood.md",
+      "setup_ids": [
+        "interferometer/delaunay/alma/00e86a7de323cb7098eb",
+        "interferometer/delaunay/alma/c00199cd0663a6f29c96",
+        "interferometer/delaunay/sdp81/5eb412356335dad23303",
+        "interferometer/delaunay/sdp81/e72d63bebe8acf2cb84c",
+        "interferometer/mge/sdp81/24e7d46221f7dca168bf",
+        "interferometer/mge/sdp81/61c6dccf97c81d66fc1e",
+        "interferometer/rectangular/alma/5e3423306e47ff2283ff",
+        "interferometer/rectangular/alma/c6ff0b2db1b9b636c14c",
+        "interferometer/rectangular/sdp81/0058ef5f0b6c03fd1580",
+        "interferometer/rectangular/sdp81/f81557c6f4f9324e5beb"
+      ]
+    }
+  ]
+}

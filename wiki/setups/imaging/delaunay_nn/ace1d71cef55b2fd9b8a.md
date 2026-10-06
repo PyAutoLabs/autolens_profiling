@@ -1,0 +1,126 @@
+<!-- generated: build_setup_wiki.py; do not edit -->
+# delaunay_nn · hst
+
+[Model index](index.md)
+
+Exact setup ID: `imaging/delaunay_nn/hst/d491cfb3d639ea6787a7`.
+
+Imported support is unreviewed; this page grants no baseline acceptance. Timing axes remain separate; no total fit-time prediction is made.
+
+## Configuration
+
+Identity limitations: Isolated to source row: legacy metadata is insufficient for cross-file joins.
+
+| Setting | Recorded value | Unit | Unknown reason |
+|---|---|---|---|
+| delaunay_vertices | 1500 | recorded |  |
+| edge_zeroed_pixels | 0 | recorded |  |
+| image_pixels_masked | 15361 | count |  |
+| image_shape | null | pixel | Not recorded in this legacy evidence; no current default substituted. |
+| mask_radius_arcsec | 3.5 | recorded |  |
+| n_vis | null | count | Not recorded in this legacy evidence; no current default substituted. |
+| over_sampled_pixels | 17980 | recorded |  |
+| oversampled_pixels | 17980 | recorded |  |
+| oversampling | null | dimensionless | Not recorded in this legacy evidence; no current default substituted. |
+| pixel_scale_arcsec | 0.05 | recorded |  |
+| preloads | null | name | Not recorded in this legacy evidence; no current default substituted. |
+| psf_shape | null | pixel | Not recorded in this legacy evidence; no current default substituted. |
+| regularization | null | name | Not recorded in this legacy evidence; no current default substituted. |
+| solver | null | name | Not recorded in this legacy evidence; no current default substituted. |
+| source_pixels | 1500 | count |  |
+| transformer | null | name | Not recorded in this legacy evidence; no current default substituted. |
+| vmap_batch_size | 16 | recorded |  |
+
+## Evidence
+
+[Original setup artifact](../../../../results/runtime/imaging/delaunay_nn/delaunay_nn_hpc_a100_fp64_assembly.json); JSON pointer: `(document root)`.
+
+### Selected references
+
+No selected reference for this exact setup; archive evidence is available below.
+
+### runtime
+
+<details><summary>3 recorded runtime measurements</summary>
+
+| Record | Metric | Value | Unit | Device / precision | Selection | Evidence pointer |
+|---|---|---|---|---|---|---|
+| `measurement/a02c763d5651f9c66c3b` | vmap.per_call | {"vmap.per_call": 0.040857585475896484} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/runtime/imaging/delaunay_nn/delaunay_nn_hpc_a100_fp64_assembly.json) `/vmap/per_call` |
+| `measurement/a34c2e1e4da2850893b7` | vmap.batch_time | {"vmap.batch_time": 0.6537213676143437} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/runtime/imaging/delaunay_nn/delaunay_nn_hpc_a100_fp64_assembly.json) `/vmap/batch_time` |
+| `measurement/fd672af2e340f50b8707` | single_jit_block | {"single_jit_block": 0.06611713680904359} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/runtime/imaging/delaunay_nn/delaunay_nn_hpc_a100_fp64_assembly.json) `/full_pipeline_single_jit` |
+
+</details>
+
+<details><summary>Recorded hardware, software, method and limitations</summary>
+
+```json
+{
+  "identity": {
+    "backend": "gpu",
+    "device": "a100",
+    "hardware_details": {
+      "backend": "gpu",
+      "cpu_count": 124,
+      "device": "cuda:0",
+      "nvidia_smi": "NVIDIA A100 80GB PCIe, 35333 MiB, 81920 MiB",
+      "omp_num_threads": null,
+      "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0"
+    },
+    "library_version": "2026.8.17.1",
+    "precision": "float64",
+    "software": {
+      "PyAutoLens": "2026.8.17.1"
+    },
+    "unknowns": {}
+  },
+  "method": {
+    "cache_state": null,
+    "repetitions": null,
+    "statistic": null,
+    "synchronization": null,
+    "unknowns": {
+      "cache_state": "Not recorded in this legacy evidence; no current default substituted.",
+      "repetitions": "Not recorded in this legacy evidence; no current default substituted.",
+      "statistic": "Not recorded in this legacy evidence; no current default substituted.",
+      "synchronization": "Not recorded in this legacy evidence; no current default substituted.",
+      "warmup": "Not recorded in this legacy evidence; no current default substituted."
+    },
+    "warmup": null
+  },
+  "provenance": {
+    "has_provenance": false,
+    "host": null,
+    "measured_at": null,
+    "qualified": false,
+    "unknowns": {
+      "host": "Not recorded in this legacy evidence; no current default substituted.",
+      "measured_at": "Not recorded in this legacy evidence; no current default substituted."
+    }
+  },
+  "validation": {
+    "reason": "Legacy evidence transcribed without scientific baseline acceptance.",
+    "status": "unreviewed"
+  }
+}
+```
+
+</details>
+
+## Hazards
+
+No explicitly bound applicable evidence; this does not establish absence of hazards or validate a setting.
+
+## Recommendations
+
+No explicitly bound applicable evidence; this does not establish absence of hazards or validate a setting.
+
+## Scripts
+
+Navigation links identify the model family; they do not reconstruct historical settings or promise an executable replay.
+
+- [likelihood_breakdown](../../../../scripts/imaging/delaunay_nn/likelihood_breakdown.py)
+- [likelihood_runtime](../../../../scripts/imaging/delaunay_nn/likelihood_runtime.py)
+
+## Campaigns
+
+No campaign explicitly bound; campaign applicability is unknown.

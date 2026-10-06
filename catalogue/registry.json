@@ -286,5 +286,1392 @@
     }
   ],
   "hazard_bindings": [],
-  "recommendations": []
+  "recommendations": [
+    {
+      "id": "historical/interferometer-matrix/extent",
+      "title": "Mask extent is a cost axis in the measured SDP.81 / alma analogue",
+      "description": "Historical rule 1: similar masked-pixel extents with different visibility counts had similar per-call costs in these rows; inspect masked pixels alongside visibility count. This is an observation, not a calibrated size predictor.",
+      "applies_to": {
+        "setup_ids": [
+          "interferometer/delaunay/alma/00e86a7de323cb7098eb",
+          "interferometer/delaunay/alma/c00199cd0663a6f29c96",
+          "interferometer/delaunay/sdp81/5eb412356335dad23303",
+          "interferometer/delaunay/sdp81/e72d63bebe8acf2cb84c",
+          "interferometer/rectangular/alma/5e3423306e47ff2283ff",
+          "interferometer/rectangular/alma/c6ff0b2db1b9b636c14c",
+          "interferometer/rectangular/sdp81/0058ef5f0b6c03fd1580",
+          "interferometer/rectangular/sdp81/f81557c6f4f9324e5beb"
+        ],
+        "library_versions": [
+          "2026.8.17.1"
+        ],
+        "constraints": {
+          "historical_rule": "extent",
+          "dataset": "interferometer",
+          "models": [
+            "delaunay",
+            "rectangular"
+          ],
+          "instruments": [
+            "alma",
+            "sdp81"
+          ],
+          "precision": "float64",
+          "configuration_scope": "Only the enumerated setup IDs and recorded configurations; never extrapolate by model label.",
+          "measured_software_by_record": {
+            "measurement/07d39632cb9e060387dd": {
+              "PyAutoArray": "14d63360f341912b209f2045d7e388e264692f1d",
+              "PyAutoFit": "cf83504e8c7f3cc196ffef4d8a4ff86dd456bb6b",
+              "PyAutoGalaxy": "0e4b89cff42882a6cf5bbed6c9686f7212d7e24c",
+              "PyAutoLens": "2026.8.17.1",
+              "PyAutoNerves": "2b3bc53388a15e1d51fb70b583061bc2ee3294f0",
+              "autolens_profiling": "66e45e906ce77dc9a58fe2cf7870adc343c98929"
+            },
+            "measurement/5ad8678aaa5a1fc47227": {
+              "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_versions": "2026.8.17.1",
+              "PyAutoFit": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_revisions": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_versions": "2026.8.17.1",
+              "PyAutoGalaxy": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_revisions": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_versions": "2026.8.17.1",
+              "PyAutoLens": "2026.8.17.1",
+              "PyAutoLens.library_revisions": "efd13c4cdfb7ab0d4a37549468998e06e31f27d7",
+              "PyAutoLens.library_versions": "2026.8.17.1",
+              "PyAutoNerves": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_revisions": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_versions": "2026.8.17.1",
+              "autolens_profiling": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "autolens_profiling.library_revisions": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "jax.dependency_versions": "0.10.2",
+              "jaxlib.dependency_versions": "0.10.2",
+              "nufftax.dependency_versions": "0.6.1",
+              "numba.dependency_versions": "0.65.1",
+              "numpy.dependency_versions": "2.2.6",
+              "scipy.dependency_versions": "1.17.1"
+            },
+            "measurement/5cf324f959cbd96df392": {
+              "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_versions": "2026.8.17.1",
+              "PyAutoFit": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_revisions": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_versions": "2026.8.17.1",
+              "PyAutoGalaxy": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_revisions": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_versions": "2026.8.17.1",
+              "PyAutoLens": "2026.8.17.1",
+              "PyAutoLens.library_revisions": "efd13c4cdfb7ab0d4a37549468998e06e31f27d7",
+              "PyAutoLens.library_versions": "2026.8.17.1",
+              "PyAutoNerves": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_revisions": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_versions": "2026.8.17.1",
+              "autolens_profiling": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "autolens_profiling.library_revisions": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "jax.dependency_versions": "0.10.2",
+              "jaxlib.dependency_versions": "0.10.2",
+              "nufftax.dependency_versions": "0.6.1",
+              "numba.dependency_versions": "0.65.1",
+              "numpy.dependency_versions": "2.2.6",
+              "scipy.dependency_versions": "1.17.1"
+            },
+            "measurement/78267b21742073b7bb03": {
+              "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_versions": "2026.8.17.1",
+              "PyAutoFit": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_revisions": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_versions": "2026.8.17.1",
+              "PyAutoGalaxy": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_revisions": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_versions": "2026.8.17.1",
+              "PyAutoLens": "2026.8.17.1",
+              "PyAutoLens.library_revisions": "efd13c4cdfb7ab0d4a37549468998e06e31f27d7",
+              "PyAutoLens.library_versions": "2026.8.17.1",
+              "PyAutoNerves": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_revisions": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_versions": "2026.8.17.1",
+              "autolens_profiling": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "autolens_profiling.library_revisions": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "jax.dependency_versions": "0.10.2",
+              "jaxlib.dependency_versions": "0.10.2",
+              "nufftax.dependency_versions": "0.6.1",
+              "numba.dependency_versions": "0.65.1",
+              "numpy.dependency_versions": "2.2.6",
+              "scipy.dependency_versions": "1.17.1"
+            },
+            "measurement/b280b41456ac0659bccc": {
+              "PyAutoArray": "e281abf3257e9efd4915f1daa9acc0498be250a5",
+              "PyAutoFit": "c156a9d8e8eb9f82b6da169b1d50b7e64580fe98",
+              "PyAutoGalaxy": "ba8a08fabcb13d9472f2bd43ef4fea6039284d50",
+              "PyAutoLens": "2026.8.17.1",
+              "PyAutoNerves": "bf104102312852537159b7fad2f998ab6677b4e4",
+              "autolens_profiling": "92a20614c6c23faefae429e7b9ec4cfae7c9611c"
+            },
+            "measurement/b568267428fbab523465": {
+              "PyAutoArray": "14d63360f341912b209f2045d7e388e264692f1d",
+              "PyAutoFit": "cf83504e8c7f3cc196ffef4d8a4ff86dd456bb6b",
+              "PyAutoGalaxy": "0e4b89cff42882a6cf5bbed6c9686f7212d7e24c",
+              "PyAutoLens": "2026.8.17.1",
+              "PyAutoNerves": "2b3bc53388a15e1d51fb70b583061bc2ee3294f0",
+              "autolens_profiling": "66e45e906ce77dc9a58fe2cf7870adc343c98929"
+            },
+            "measurement/cb842f1c629a33b90314": {
+              "PyAutoArray": "e281abf3257e9efd4915f1daa9acc0498be250a5",
+              "PyAutoFit": "c156a9d8e8eb9f82b6da169b1d50b7e64580fe98",
+              "PyAutoGalaxy": "ba8a08fabcb13d9472f2bd43ef4fea6039284d50",
+              "PyAutoLens": "2026.8.17.1",
+              "PyAutoNerves": "bf104102312852537159b7fad2f998ab6677b4e4",
+              "autolens_profiling": "92a20614c6c23faefae429e7b9ec4cfae7c9611c"
+            },
+            "measurement/ee5b21bd78ba2a34a850": {
+              "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_versions": "2026.8.17.1",
+              "PyAutoFit": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_revisions": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_versions": "2026.8.17.1",
+              "PyAutoGalaxy": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_revisions": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_versions": "2026.8.17.1",
+              "PyAutoLens": "2026.8.17.1",
+              "PyAutoLens.library_revisions": "efd13c4cdfb7ab0d4a37549468998e06e31f27d7",
+              "PyAutoLens.library_versions": "2026.8.17.1",
+              "PyAutoNerves": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_revisions": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_versions": "2026.8.17.1",
+              "autolens_profiling": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "autolens_profiling.library_revisions": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "jax.dependency_versions": "0.10.2",
+              "jaxlib.dependency_versions": "0.10.2",
+              "nufftax.dependency_versions": "0.6.1",
+              "numba.dependency_versions": "0.65.1",
+              "numpy.dependency_versions": "2.2.6",
+              "scipy.dependency_versions": "1.17.1"
+            }
+          },
+          "hardware_by_record": {
+            "measurement/07d39632cb9e060387dd": {
+              "device": "a100",
+              "backend": "gpu",
+              "hardware_details": {
+                "autotune_cache_entries_at_start": 204,
+                "backend": "gpu",
+                "cache_fresh": false,
+                "cpu_count": 124,
+                "device": "cuda:0",
+                "hostname": "euclid-ral-gpu-1",
+                "nvidia_smi": "NVIDIA A100 80GB PCIe, 61379 MiB, 81920 MiB",
+                "omp_num_threads": null,
+                "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+              }
+            },
+            "measurement/5ad8678aaa5a1fc47227": {
+              "device": "a100",
+              "backend": "gpu",
+              "hardware_details": {
+                "autotune_cache_entries_at_start": 204,
+                "backend": "gpu",
+                "cache_fresh": false,
+                "cpu_count": 124,
+                "device": "cuda:0",
+                "hostname": "euclid-ral-gpu-1",
+                "nvidia_smi": "NVIDIA A100 80GB PCIe, 41455 MiB, 81920 MiB",
+                "omp_num_threads": null,
+                "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+              }
+            },
+            "measurement/5cf324f959cbd96df392": {
+              "device": "a100",
+              "backend": "gpu",
+              "hardware_details": {
+                "autotune_cache_entries_at_start": 204,
+                "backend": "gpu",
+                "cache_fresh": false,
+                "cpu_count": 124,
+                "device": "cuda:0",
+                "hostname": "euclid-ral-gpu-1",
+                "nvidia_smi": "NVIDIA A100 80GB PCIe, 33263 MiB, 81920 MiB",
+                "omp_num_threads": null,
+                "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+              }
+            },
+            "measurement/78267b21742073b7bb03": {
+              "device": "cpu",
+              "backend": "cpu",
+              "hardware_details": {
+                "autotune_cache_entries_at_start": 0,
+                "backend": "cpu",
+                "cache_fresh": false,
+                "cpu_count": 124,
+                "device": "cpu:0",
+                "hostname": "euclid-ral-gpu-2",
+                "omp_num_threads": "1",
+                "xla_flags": "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+              }
+            },
+            "measurement/b280b41456ac0659bccc": {
+              "device": "cpu",
+              "backend": "cpu",
+              "hardware_details": {
+                "autotune_cache_entries_at_start": 0,
+                "backend": "cpu",
+                "cache_fresh": false,
+                "cpu_count": 124,
+                "device": "cpu:0",
+                "hostname": "euclid-ral-gpu-1",
+                "omp_num_threads": "1",
+                "xla_flags": "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+              }
+            },
+            "measurement/b568267428fbab523465": {
+              "device": "a100",
+              "backend": "gpu",
+              "hardware_details": {
+                "autotune_cache_entries_at_start": 204,
+                "backend": "gpu",
+                "cache_fresh": false,
+                "cpu_count": 124,
+                "device": "cuda:0",
+                "hostname": "euclid-ral-gpu-1",
+                "nvidia_smi": "NVIDIA A100 80GB PCIe, 61379 MiB, 81920 MiB",
+                "omp_num_threads": null,
+                "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+              }
+            },
+            "measurement/cb842f1c629a33b90314": {
+              "device": "cpu",
+              "backend": "cpu",
+              "hardware_details": {
+                "autotune_cache_entries_at_start": 0,
+                "backend": "cpu",
+                "cache_fresh": false,
+                "cpu_count": 124,
+                "device": "cpu:0",
+                "hostname": "euclid-ral-gpu-1",
+                "omp_num_threads": "1",
+                "xla_flags": "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+              }
+            },
+            "measurement/ee5b21bd78ba2a34a850": {
+              "device": "cpu",
+              "backend": "cpu",
+              "hardware_details": {
+                "autotune_cache_entries_at_start": 0,
+                "backend": "cpu",
+                "cache_fresh": false,
+                "cpu_count": 124,
+                "device": "cpu:0",
+                "hostname": "euclid-ral-gpu-2",
+                "omp_num_threads": "1",
+                "xla_flags": "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+              }
+            }
+          },
+          "acceptance_caveats": "Decision-matrix rules were draft. Historical CPU/A100 rectangular alma_high r3.5 and r5.0 exceeded the 1e-3-nat witness; human accepted the r5.0 solver/revision mismatch on 2026-10-04, without a post-#595 A100 rerun. That historical waiver grants no catalogue/baseline acceptance. Columns mixed revisions; CPU host load and solver branches differ. See scope and caveats in the matrix ledger.",
+          "excluded_analogues": "Only the four default-source alma r3.5 matrix counterparts; exclude N-sweeps, uncached phase-1 CPU, constant-split and lever variants."
+        },
+        "limitations": "Unreviewed historical observations, confined to the supporting exact setups and measured revisions. Simulated source with real SDP.81 uv coverage; not a fit to observed SDP.81 visibilities. Unknown metadata prevents cross-file scientific equivalence or current-performance claims."
+      },
+      "record_ids": [
+        "measurement/07d39632cb9e060387dd",
+        "measurement/5ad8678aaa5a1fc47227",
+        "measurement/5cf324f959cbd96df392",
+        "measurement/78267b21742073b7bb03",
+        "measurement/b280b41456ac0659bccc",
+        "measurement/b568267428fbab523465",
+        "measurement/cb842f1c629a33b90314",
+        "measurement/ee5b21bd78ba2a34a850"
+      ],
+      "evidence": [
+        {
+          "path": "results/notes/interferometer_likelihood_decision_matrix_2026_09.md",
+          "fragment": null
+        },
+        {
+          "fragment": "/full_pipeline_single_jit",
+          "path": "results/breakdown/interferometer/delaunay_hpc_a100_fp64.json"
+        },
+        {
+          "fragment": "/full_pipeline_single_jit",
+          "path": "results/breakdown/interferometer/sdp81/pixelization_hpc_a100_fp64.json"
+        },
+        {
+          "fragment": "/full_pipeline_single_jit",
+          "path": "results/breakdown/interferometer/sdp81/delaunay_hpc_a100_fp64.json"
+        },
+        {
+          "fragment": "/full_call/mean_s",
+          "path": "results/breakdown/interferometer/sdp81/delaunay_numba_hpc_ral_cpu_fp64.json"
+        },
+        {
+          "fragment": "/full_call/mean_s",
+          "path": "results/breakdown/interferometer/delaunay_numba_hpc_ral_cpu_fp64.json"
+        },
+        {
+          "fragment": "/full_pipeline_single_jit",
+          "path": "results/breakdown/interferometer/pixelization_hpc_a100_fp64.json"
+        },
+        {
+          "fragment": "/full_call/mean_s",
+          "path": "results/breakdown/interferometer/pixelization_numba_hpc_ral_cpu_fp64.json"
+        },
+        {
+          "fragment": "/full_call/mean_s",
+          "path": "results/breakdown/interferometer/sdp81/pixelization_numba_hpc_ral_cpu_fp64.json"
+        }
+      ],
+      "validation": {
+        "status": "unreviewed",
+        "reason": "Historical draft matrix transcribed with exact support, not scientific baseline acceptance."
+      }
+    },
+    {
+      "id": "historical/interferometer-matrix/mesh-sparse",
+      "title": "Prefer investigating the measured A100 sparse mesh route",
+      "description": "Historical rule 2: at simulated SDP.81 the sparse mesh route was faster than the dense comparison arm. The original broader rule is narrowed here to this measured configuration.",
+      "applies_to": {
+        "setup_ids": [
+          "interferometer/delaunay/sdp81/e72d63bebe8acf2cb84c",
+          "interferometer/rectangular/sdp81/0058ef5f0b6c03fd1580"
+        ],
+        "library_versions": [
+          "2026.8.17.1"
+        ],
+        "constraints": {
+          "historical_rule": "mesh-sparse",
+          "dataset": "interferometer",
+          "models": [
+            "delaunay",
+            "rectangular"
+          ],
+          "instruments": [
+            "sdp81"
+          ],
+          "precision": "float64",
+          "configuration_scope": "Only the enumerated setup IDs and recorded configurations; never extrapolate by model label.",
+          "measured_software_by_record": {
+            "measurement/5ad8678aaa5a1fc47227": {
+              "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_versions": "2026.8.17.1",
+              "PyAutoFit": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_revisions": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_versions": "2026.8.17.1",
+              "PyAutoGalaxy": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_revisions": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_versions": "2026.8.17.1",
+              "PyAutoLens": "2026.8.17.1",
+              "PyAutoLens.library_revisions": "efd13c4cdfb7ab0d4a37549468998e06e31f27d7",
+              "PyAutoLens.library_versions": "2026.8.17.1",
+              "PyAutoNerves": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_revisions": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_versions": "2026.8.17.1",
+              "autolens_profiling": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "autolens_profiling.library_revisions": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "jax.dependency_versions": "0.10.2",
+              "jaxlib.dependency_versions": "0.10.2",
+              "nufftax.dependency_versions": "0.6.1",
+              "numba.dependency_versions": "0.65.1",
+              "numpy.dependency_versions": "2.2.6",
+              "scipy.dependency_versions": "1.17.1"
+            },
+            "measurement/5cf324f959cbd96df392": {
+              "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_versions": "2026.8.17.1",
+              "PyAutoFit": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_revisions": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_versions": "2026.8.17.1",
+              "PyAutoGalaxy": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_revisions": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_versions": "2026.8.17.1",
+              "PyAutoLens": "2026.8.17.1",
+              "PyAutoLens.library_revisions": "efd13c4cdfb7ab0d4a37549468998e06e31f27d7",
+              "PyAutoLens.library_versions": "2026.8.17.1",
+              "PyAutoNerves": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_revisions": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_versions": "2026.8.17.1",
+              "autolens_profiling": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "autolens_profiling.library_revisions": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "jax.dependency_versions": "0.10.2",
+              "jaxlib.dependency_versions": "0.10.2",
+              "nufftax.dependency_versions": "0.6.1",
+              "numba.dependency_versions": "0.65.1",
+              "numpy.dependency_versions": "2.2.6",
+              "scipy.dependency_versions": "1.17.1"
+            },
+            "measurement/9b5f9f7c8125a7bf4355": {
+              "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_versions": "2026.8.17.1",
+              "PyAutoFit": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_revisions": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_versions": "2026.8.17.1",
+              "PyAutoGalaxy": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_revisions": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_versions": "2026.8.17.1",
+              "PyAutoLens": "2026.8.17.1",
+              "PyAutoLens.library_revisions": "efd13c4cdfb7ab0d4a37549468998e06e31f27d7",
+              "PyAutoLens.library_versions": "2026.8.17.1",
+              "PyAutoNerves": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_revisions": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_versions": "2026.8.17.1",
+              "autolens_profiling": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "autolens_profiling.library_revisions": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "jax.dependency_versions": "0.10.2",
+              "jaxlib.dependency_versions": "0.10.2",
+              "nufftax.dependency_versions": "0.6.1",
+              "numba.dependency_versions": "0.65.1",
+              "numpy.dependency_versions": "2.2.6",
+              "scipy.dependency_versions": "1.17.1"
+            },
+            "measurement/9cec0cdf85d8d9bae253": {
+              "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_versions": "2026.8.17.1",
+              "PyAutoFit": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_revisions": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_versions": "2026.8.17.1",
+              "PyAutoGalaxy": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_revisions": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_versions": "2026.8.17.1",
+              "PyAutoLens": "2026.8.17.1",
+              "PyAutoLens.library_revisions": "efd13c4cdfb7ab0d4a37549468998e06e31f27d7",
+              "PyAutoLens.library_versions": "2026.8.17.1",
+              "PyAutoNerves": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_revisions": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_versions": "2026.8.17.1",
+              "autolens_profiling": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "autolens_profiling.library_revisions": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "jax.dependency_versions": "0.10.2",
+              "jaxlib.dependency_versions": "0.10.2",
+              "nufftax.dependency_versions": "0.6.1",
+              "numba.dependency_versions": "0.65.1",
+              "numpy.dependency_versions": "2.2.6",
+              "scipy.dependency_versions": "1.17.1"
+            }
+          },
+          "hardware_by_record": {
+            "measurement/5ad8678aaa5a1fc47227": {
+              "device": "a100",
+              "backend": "gpu",
+              "hardware_details": {
+                "autotune_cache_entries_at_start": 204,
+                "backend": "gpu",
+                "cache_fresh": false,
+                "cpu_count": 124,
+                "device": "cuda:0",
+                "hostname": "euclid-ral-gpu-1",
+                "nvidia_smi": "NVIDIA A100 80GB PCIe, 41455 MiB, 81920 MiB",
+                "omp_num_threads": null,
+                "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+              }
+            },
+            "measurement/5cf324f959cbd96df392": {
+              "device": "a100",
+              "backend": "gpu",
+              "hardware_details": {
+                "autotune_cache_entries_at_start": 204,
+                "backend": "gpu",
+                "cache_fresh": false,
+                "cpu_count": 124,
+                "device": "cuda:0",
+                "hostname": "euclid-ral-gpu-1",
+                "nvidia_smi": "NVIDIA A100 80GB PCIe, 33263 MiB, 81920 MiB",
+                "omp_num_threads": null,
+                "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+              }
+            },
+            "measurement/9b5f9f7c8125a7bf4355": {
+              "device": "a100",
+              "backend": "gpu",
+              "hardware_details": {
+                "autotune_cache_entries_at_start": 204,
+                "backend": "gpu",
+                "cache_fresh": false,
+                "cpu_count": 124,
+                "device": "cuda:0",
+                "hostname": "euclid-ral-gpu-1",
+                "nvidia_smi": "NVIDIA A100 80GB PCIe, 33263 MiB, 81920 MiB",
+                "omp_num_threads": null,
+                "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+              }
+            },
+            "measurement/9cec0cdf85d8d9bae253": {
+              "device": "a100",
+              "backend": "gpu",
+              "hardware_details": {
+                "autotune_cache_entries_at_start": 204,
+                "backend": "gpu",
+                "cache_fresh": false,
+                "cpu_count": 124,
+                "device": "cuda:0",
+                "hostname": "euclid-ral-gpu-1",
+                "nvidia_smi": "NVIDIA A100 80GB PCIe, 41455 MiB, 81920 MiB",
+                "omp_num_threads": null,
+                "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+              }
+            }
+          },
+          "acceptance_caveats": "Decision-matrix rules were draft. Historical CPU/A100 rectangular alma_high r3.5 and r5.0 exceeded the 1e-3-nat witness; human accepted the r5.0 solver/revision mismatch on 2026-10-04, without a post-#595 A100 rerun. That historical waiver grants no catalogue/baseline acceptance. Columns mixed revisions; CPU host load and solver branches differ. See scope and caveats in the matrix ledger."
+        },
+        "limitations": "Unreviewed historical observations, confined to the supporting exact setups and measured revisions. Simulated source with real SDP.81 uv coverage; not a fit to observed SDP.81 visibilities. Unknown metadata prevents cross-file scientific equivalence or current-performance claims."
+      },
+      "record_ids": [
+        "measurement/5ad8678aaa5a1fc47227",
+        "measurement/5cf324f959cbd96df392",
+        "measurement/9b5f9f7c8125a7bf4355",
+        "measurement/9cec0cdf85d8d9bae253"
+      ],
+      "evidence": [
+        {
+          "path": "results/notes/interferometer_likelihood_decision_matrix_2026_09.md",
+          "fragment": null
+        },
+        {
+          "fragment": "/full_pipeline_single_jit",
+          "path": "results/breakdown/interferometer/sdp81/pixelization_hpc_a100_fp64.json"
+        },
+        {
+          "fragment": "/full_pipeline_single_jit",
+          "path": "results/breakdown/interferometer/sdp81/delaunay_hpc_a100_fp64.json"
+        },
+        {
+          "fragment": "/total_step_by_step",
+          "path": "results/breakdown/interferometer/sdp81/delaunay_hpc_a100_fp64.json"
+        },
+        {
+          "fragment": "/total_step_by_step",
+          "path": "results/breakdown/interferometer/sdp81/pixelization_hpc_a100_fp64.json"
+        },
+        {
+          "path": "results/breakdown/interferometer/sdp81/delaunay_hpc_a100_fp64.json",
+          "fragment": "/dense_total_step_by_step"
+        },
+        {
+          "path": "results/breakdown/interferometer/sdp81/pixelization_hpc_a100_fp64.json",
+          "fragment": "/dense_total_step_by_step"
+        }
+      ],
+      "validation": {
+        "status": "unreviewed",
+        "reason": "Historical draft matrix transcribed with exact support, not scientific baseline acceptance."
+      }
+    },
+    {
+      "id": "historical/interferometer-matrix/cpu-gate",
+      "title": "Historical CPU gate observation at SDP.81",
+      "description": "Historical rule 3: the packaged gate of 60 chose numba in the measured SDP.81 mesh cells, where it beat the NumPy FFT arm. Forced-arm profiling used a gate of 1e9; this is not a recommendation to set that profiling override.",
+      "applies_to": {
+        "setup_ids": [
+          "interferometer/delaunay/sdp81/5eb412356335dad23303",
+          "interferometer/rectangular/sdp81/f81557c6f4f9324e5beb"
+        ],
+        "library_versions": [
+          "2026.8.17.1"
+        ],
+        "constraints": {
+          "historical_rule": "cpu-gate",
+          "dataset": "interferometer",
+          "models": [
+            "delaunay",
+            "rectangular"
+          ],
+          "instruments": [
+            "sdp81"
+          ],
+          "precision": "float64",
+          "configuration_scope": "Only the enumerated setup IDs and recorded configurations; never extrapolate by model label.",
+          "measured_software_by_record": {
+            "measurement/78267b21742073b7bb03": {
+              "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_versions": "2026.8.17.1",
+              "PyAutoFit": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_revisions": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_versions": "2026.8.17.1",
+              "PyAutoGalaxy": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_revisions": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_versions": "2026.8.17.1",
+              "PyAutoLens": "2026.8.17.1",
+              "PyAutoLens.library_revisions": "efd13c4cdfb7ab0d4a37549468998e06e31f27d7",
+              "PyAutoLens.library_versions": "2026.8.17.1",
+              "PyAutoNerves": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_revisions": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_versions": "2026.8.17.1",
+              "autolens_profiling": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "autolens_profiling.library_revisions": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "jax.dependency_versions": "0.10.2",
+              "jaxlib.dependency_versions": "0.10.2",
+              "nufftax.dependency_versions": "0.6.1",
+              "numba.dependency_versions": "0.65.1",
+              "numpy.dependency_versions": "2.2.6",
+              "scipy.dependency_versions": "1.17.1"
+            },
+            "measurement/852231607cc656355c6e": {
+              "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_versions": "2026.8.17.1",
+              "PyAutoFit": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_revisions": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_versions": "2026.8.17.1",
+              "PyAutoGalaxy": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_revisions": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_versions": "2026.8.17.1",
+              "PyAutoLens": "2026.8.17.1",
+              "PyAutoLens.library_revisions": "efd13c4cdfb7ab0d4a37549468998e06e31f27d7",
+              "PyAutoLens.library_versions": "2026.8.17.1",
+              "PyAutoNerves": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_revisions": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_versions": "2026.8.17.1",
+              "autolens_profiling": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "autolens_profiling.library_revisions": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "jax.dependency_versions": "0.10.2",
+              "jaxlib.dependency_versions": "0.10.2",
+              "nufftax.dependency_versions": "0.6.1",
+              "numba.dependency_versions": "0.65.1",
+              "numpy.dependency_versions": "2.2.6",
+              "scipy.dependency_versions": "1.17.1"
+            },
+            "measurement/c5f82ab6f77ed1b15595": {
+              "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_versions": "2026.8.17.1",
+              "PyAutoFit": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_revisions": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_versions": "2026.8.17.1",
+              "PyAutoGalaxy": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_revisions": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_versions": "2026.8.17.1",
+              "PyAutoLens": "2026.8.17.1",
+              "PyAutoLens.library_revisions": "efd13c4cdfb7ab0d4a37549468998e06e31f27d7",
+              "PyAutoLens.library_versions": "2026.8.17.1",
+              "PyAutoNerves": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_revisions": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_versions": "2026.8.17.1",
+              "autolens_profiling": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "autolens_profiling.library_revisions": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "jax.dependency_versions": "0.10.2",
+              "jaxlib.dependency_versions": "0.10.2",
+              "nufftax.dependency_versions": "0.6.1",
+              "numba.dependency_versions": "0.65.1",
+              "numpy.dependency_versions": "2.2.6",
+              "scipy.dependency_versions": "1.17.1"
+            },
+            "measurement/ee5b21bd78ba2a34a850": {
+              "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_versions": "2026.8.17.1",
+              "PyAutoFit": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_revisions": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_versions": "2026.8.17.1",
+              "PyAutoGalaxy": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_revisions": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_versions": "2026.8.17.1",
+              "PyAutoLens": "2026.8.17.1",
+              "PyAutoLens.library_revisions": "efd13c4cdfb7ab0d4a37549468998e06e31f27d7",
+              "PyAutoLens.library_versions": "2026.8.17.1",
+              "PyAutoNerves": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_revisions": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_versions": "2026.8.17.1",
+              "autolens_profiling": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "autolens_profiling.library_revisions": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "jax.dependency_versions": "0.10.2",
+              "jaxlib.dependency_versions": "0.10.2",
+              "nufftax.dependency_versions": "0.6.1",
+              "numba.dependency_versions": "0.65.1",
+              "numpy.dependency_versions": "2.2.6",
+              "scipy.dependency_versions": "1.17.1"
+            }
+          },
+          "hardware_by_record": {
+            "measurement/78267b21742073b7bb03": {
+              "device": "cpu",
+              "backend": "cpu",
+              "hardware_details": {
+                "autotune_cache_entries_at_start": 0,
+                "backend": "cpu",
+                "cache_fresh": false,
+                "cpu_count": 124,
+                "device": "cpu:0",
+                "hostname": "euclid-ral-gpu-2",
+                "omp_num_threads": "1",
+                "xla_flags": "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+              }
+            },
+            "measurement/852231607cc656355c6e": {
+              "device": "cpu",
+              "backend": "cpu",
+              "hardware_details": {
+                "autotune_cache_entries_at_start": 0,
+                "backend": "cpu",
+                "cache_fresh": false,
+                "cpu_count": 124,
+                "device": "cpu:0",
+                "hostname": "euclid-ral-gpu-2",
+                "omp_num_threads": "1",
+                "xla_flags": "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+              }
+            },
+            "measurement/c5f82ab6f77ed1b15595": {
+              "device": "cpu",
+              "backend": "cpu",
+              "hardware_details": {
+                "autotune_cache_entries_at_start": 0,
+                "backend": "cpu",
+                "cache_fresh": false,
+                "cpu_count": 124,
+                "device": "cpu:0",
+                "hostname": "euclid-ral-gpu-2",
+                "omp_num_threads": "1",
+                "xla_flags": "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+              }
+            },
+            "measurement/ee5b21bd78ba2a34a850": {
+              "device": "cpu",
+              "backend": "cpu",
+              "hardware_details": {
+                "autotune_cache_entries_at_start": 0,
+                "backend": "cpu",
+                "cache_fresh": false,
+                "cpu_count": 124,
+                "device": "cpu:0",
+                "hostname": "euclid-ral-gpu-2",
+                "omp_num_threads": "1",
+                "xla_flags": "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+              }
+            }
+          },
+          "acceptance_caveats": "Decision-matrix rules were draft. Historical CPU/A100 rectangular alma_high r3.5 and r5.0 exceeded the 1e-3-nat witness; human accepted the r5.0 solver/revision mismatch on 2026-10-04, without a post-#595 A100 rerun. That historical waiver grants no catalogue/baseline acceptance. Columns mixed revisions; CPU host load and solver branches differ. See scope and caveats in the matrix ledger."
+        },
+        "limitations": "Unreviewed historical observations, confined to the supporting exact setups and measured revisions. Simulated source with real SDP.81 uv coverage; not a fit to observed SDP.81 visibilities. Unknown metadata prevents cross-file scientific equivalence or current-performance claims."
+      },
+      "record_ids": [
+        "measurement/78267b21742073b7bb03",
+        "measurement/852231607cc656355c6e",
+        "measurement/c5f82ab6f77ed1b15595",
+        "measurement/ee5b21bd78ba2a34a850"
+      ],
+      "evidence": [
+        {
+          "path": "results/notes/interferometer_likelihood_decision_matrix_2026_09.md",
+          "fragment": null
+        },
+        {
+          "fragment": "/full_call/mean_s",
+          "path": "results/breakdown/interferometer/sdp81/delaunay_numba_hpc_ral_cpu_fp64.json"
+        },
+        {
+          "fragment": "/total_step_by_step",
+          "path": "results/breakdown/interferometer/sdp81/pixelization_numba_hpc_ral_cpu_fp64.json"
+        },
+        {
+          "fragment": "/total_step_by_step",
+          "path": "results/breakdown/interferometer/sdp81/delaunay_numba_hpc_ral_cpu_fp64.json"
+        },
+        {
+          "fragment": "/full_call/mean_s",
+          "path": "results/breakdown/interferometer/sdp81/pixelization_numba_hpc_ral_cpu_fp64.json"
+        },
+        {
+          "path": "results/breakdown/interferometer/sdp81/delaunay_numba_hpc_ral_cpu_fp64.json",
+          "fragment": "/arms/numpy_fft/full_call/mean_s"
+        },
+        {
+          "path": "results/breakdown/interferometer/sdp81/delaunay_numba_hpc_ral_cpu_fp64.json",
+          "fragment": "/arms/numba/full_call/mean_s"
+        },
+        {
+          "path": "results/breakdown/interferometer/sdp81/delaunay_numba_hpc_ral_cpu_fp64.json",
+          "fragment": "/configuration/nnz_per_source_column"
+        },
+        {
+          "path": "results/breakdown/interferometer/sdp81/delaunay_numba_hpc_ral_cpu_fp64.json",
+          "fragment": "/configuration/numba_gate_library_default"
+        },
+        {
+          "path": "results/breakdown/interferometer/sdp81/delaunay_numba_hpc_ral_cpu_fp64.json",
+          "fragment": "/configuration/would_route_numba_at_default_gate"
+        },
+        {
+          "path": "results/breakdown/interferometer/sdp81/delaunay_numba_hpc_ral_cpu_fp64.json",
+          "fragment": "/agreement"
+        },
+        {
+          "path": "results/breakdown/interferometer/sdp81/pixelization_numba_hpc_ral_cpu_fp64.json",
+          "fragment": "/arms/numpy_fft/full_call/mean_s"
+        },
+        {
+          "path": "results/breakdown/interferometer/sdp81/pixelization_numba_hpc_ral_cpu_fp64.json",
+          "fragment": "/arms/numba/full_call/mean_s"
+        },
+        {
+          "path": "results/breakdown/interferometer/sdp81/pixelization_numba_hpc_ral_cpu_fp64.json",
+          "fragment": "/configuration/nnz_per_source_column"
+        },
+        {
+          "path": "results/breakdown/interferometer/sdp81/pixelization_numba_hpc_ral_cpu_fp64.json",
+          "fragment": "/configuration/numba_gate_library_default"
+        },
+        {
+          "path": "results/breakdown/interferometer/sdp81/pixelization_numba_hpc_ral_cpu_fp64.json",
+          "fragment": "/configuration/would_route_numba_at_default_gate"
+        },
+        {
+          "path": "results/breakdown/interferometer/sdp81/pixelization_numba_hpc_ral_cpu_fp64.json",
+          "fragment": "/agreement"
+        }
+      ],
+      "validation": {
+        "status": "unreviewed",
+        "reason": "Historical draft matrix transcribed with exact support, not scientific baseline acceptance."
+      }
+    },
+    {
+      "id": "historical/interferometer-matrix/device",
+      "title": "Measured SDP.81 mesh device comparison",
+      "description": "Historical rule 4: these A100 sparse mesh calls were faster than the single-thread CPU calls. Device choice outside these exact models and hardware is unmeasured; no total fit-time estimate is provided.",
+      "applies_to": {
+        "setup_ids": [
+          "interferometer/delaunay/sdp81/5eb412356335dad23303",
+          "interferometer/delaunay/sdp81/e72d63bebe8acf2cb84c",
+          "interferometer/rectangular/sdp81/0058ef5f0b6c03fd1580",
+          "interferometer/rectangular/sdp81/f81557c6f4f9324e5beb"
+        ],
+        "library_versions": [
+          "2026.8.17.1"
+        ],
+        "constraints": {
+          "historical_rule": "device",
+          "dataset": "interferometer",
+          "models": [
+            "delaunay",
+            "rectangular"
+          ],
+          "instruments": [
+            "sdp81"
+          ],
+          "precision": "float64",
+          "configuration_scope": "Only the enumerated setup IDs and recorded configurations; never extrapolate by model label.",
+          "measured_software_by_record": {
+            "measurement/5ad8678aaa5a1fc47227": {
+              "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_versions": "2026.8.17.1",
+              "PyAutoFit": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_revisions": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_versions": "2026.8.17.1",
+              "PyAutoGalaxy": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_revisions": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_versions": "2026.8.17.1",
+              "PyAutoLens": "2026.8.17.1",
+              "PyAutoLens.library_revisions": "efd13c4cdfb7ab0d4a37549468998e06e31f27d7",
+              "PyAutoLens.library_versions": "2026.8.17.1",
+              "PyAutoNerves": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_revisions": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_versions": "2026.8.17.1",
+              "autolens_profiling": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "autolens_profiling.library_revisions": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "jax.dependency_versions": "0.10.2",
+              "jaxlib.dependency_versions": "0.10.2",
+              "nufftax.dependency_versions": "0.6.1",
+              "numba.dependency_versions": "0.65.1",
+              "numpy.dependency_versions": "2.2.6",
+              "scipy.dependency_versions": "1.17.1"
+            },
+            "measurement/5cf324f959cbd96df392": {
+              "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_versions": "2026.8.17.1",
+              "PyAutoFit": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_revisions": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_versions": "2026.8.17.1",
+              "PyAutoGalaxy": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_revisions": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_versions": "2026.8.17.1",
+              "PyAutoLens": "2026.8.17.1",
+              "PyAutoLens.library_revisions": "efd13c4cdfb7ab0d4a37549468998e06e31f27d7",
+              "PyAutoLens.library_versions": "2026.8.17.1",
+              "PyAutoNerves": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_revisions": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_versions": "2026.8.17.1",
+              "autolens_profiling": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "autolens_profiling.library_revisions": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "jax.dependency_versions": "0.10.2",
+              "jaxlib.dependency_versions": "0.10.2",
+              "nufftax.dependency_versions": "0.6.1",
+              "numba.dependency_versions": "0.65.1",
+              "numpy.dependency_versions": "2.2.6",
+              "scipy.dependency_versions": "1.17.1"
+            },
+            "measurement/78267b21742073b7bb03": {
+              "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_versions": "2026.8.17.1",
+              "PyAutoFit": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_revisions": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_versions": "2026.8.17.1",
+              "PyAutoGalaxy": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_revisions": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_versions": "2026.8.17.1",
+              "PyAutoLens": "2026.8.17.1",
+              "PyAutoLens.library_revisions": "efd13c4cdfb7ab0d4a37549468998e06e31f27d7",
+              "PyAutoLens.library_versions": "2026.8.17.1",
+              "PyAutoNerves": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_revisions": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_versions": "2026.8.17.1",
+              "autolens_profiling": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "autolens_profiling.library_revisions": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "jax.dependency_versions": "0.10.2",
+              "jaxlib.dependency_versions": "0.10.2",
+              "nufftax.dependency_versions": "0.6.1",
+              "numba.dependency_versions": "0.65.1",
+              "numpy.dependency_versions": "2.2.6",
+              "scipy.dependency_versions": "1.17.1"
+            },
+            "measurement/852231607cc656355c6e": {
+              "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_versions": "2026.8.17.1",
+              "PyAutoFit": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_revisions": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_versions": "2026.8.17.1",
+              "PyAutoGalaxy": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_revisions": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_versions": "2026.8.17.1",
+              "PyAutoLens": "2026.8.17.1",
+              "PyAutoLens.library_revisions": "efd13c4cdfb7ab0d4a37549468998e06e31f27d7",
+              "PyAutoLens.library_versions": "2026.8.17.1",
+              "PyAutoNerves": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_revisions": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_versions": "2026.8.17.1",
+              "autolens_profiling": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "autolens_profiling.library_revisions": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "jax.dependency_versions": "0.10.2",
+              "jaxlib.dependency_versions": "0.10.2",
+              "nufftax.dependency_versions": "0.6.1",
+              "numba.dependency_versions": "0.65.1",
+              "numpy.dependency_versions": "2.2.6",
+              "scipy.dependency_versions": "1.17.1"
+            },
+            "measurement/9b5f9f7c8125a7bf4355": {
+              "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_versions": "2026.8.17.1",
+              "PyAutoFit": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_revisions": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_versions": "2026.8.17.1",
+              "PyAutoGalaxy": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_revisions": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_versions": "2026.8.17.1",
+              "PyAutoLens": "2026.8.17.1",
+              "PyAutoLens.library_revisions": "efd13c4cdfb7ab0d4a37549468998e06e31f27d7",
+              "PyAutoLens.library_versions": "2026.8.17.1",
+              "PyAutoNerves": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_revisions": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_versions": "2026.8.17.1",
+              "autolens_profiling": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "autolens_profiling.library_revisions": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "jax.dependency_versions": "0.10.2",
+              "jaxlib.dependency_versions": "0.10.2",
+              "nufftax.dependency_versions": "0.6.1",
+              "numba.dependency_versions": "0.65.1",
+              "numpy.dependency_versions": "2.2.6",
+              "scipy.dependency_versions": "1.17.1"
+            },
+            "measurement/9cec0cdf85d8d9bae253": {
+              "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_versions": "2026.8.17.1",
+              "PyAutoFit": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_revisions": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_versions": "2026.8.17.1",
+              "PyAutoGalaxy": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_revisions": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_versions": "2026.8.17.1",
+              "PyAutoLens": "2026.8.17.1",
+              "PyAutoLens.library_revisions": "efd13c4cdfb7ab0d4a37549468998e06e31f27d7",
+              "PyAutoLens.library_versions": "2026.8.17.1",
+              "PyAutoNerves": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_revisions": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_versions": "2026.8.17.1",
+              "autolens_profiling": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "autolens_profiling.library_revisions": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "jax.dependency_versions": "0.10.2",
+              "jaxlib.dependency_versions": "0.10.2",
+              "nufftax.dependency_versions": "0.6.1",
+              "numba.dependency_versions": "0.65.1",
+              "numpy.dependency_versions": "2.2.6",
+              "scipy.dependency_versions": "1.17.1"
+            },
+            "measurement/c5f82ab6f77ed1b15595": {
+              "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_versions": "2026.8.17.1",
+              "PyAutoFit": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_revisions": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_versions": "2026.8.17.1",
+              "PyAutoGalaxy": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_revisions": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_versions": "2026.8.17.1",
+              "PyAutoLens": "2026.8.17.1",
+              "PyAutoLens.library_revisions": "efd13c4cdfb7ab0d4a37549468998e06e31f27d7",
+              "PyAutoLens.library_versions": "2026.8.17.1",
+              "PyAutoNerves": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_revisions": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_versions": "2026.8.17.1",
+              "autolens_profiling": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "autolens_profiling.library_revisions": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "jax.dependency_versions": "0.10.2",
+              "jaxlib.dependency_versions": "0.10.2",
+              "nufftax.dependency_versions": "0.6.1",
+              "numba.dependency_versions": "0.65.1",
+              "numpy.dependency_versions": "2.2.6",
+              "scipy.dependency_versions": "1.17.1"
+            },
+            "measurement/ee5b21bd78ba2a34a850": {
+              "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_versions": "2026.8.17.1",
+              "PyAutoFit": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_revisions": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_versions": "2026.8.17.1",
+              "PyAutoGalaxy": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_revisions": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_versions": "2026.8.17.1",
+              "PyAutoLens": "2026.8.17.1",
+              "PyAutoLens.library_revisions": "efd13c4cdfb7ab0d4a37549468998e06e31f27d7",
+              "PyAutoLens.library_versions": "2026.8.17.1",
+              "PyAutoNerves": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_revisions": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_versions": "2026.8.17.1",
+              "autolens_profiling": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "autolens_profiling.library_revisions": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "jax.dependency_versions": "0.10.2",
+              "jaxlib.dependency_versions": "0.10.2",
+              "nufftax.dependency_versions": "0.6.1",
+              "numba.dependency_versions": "0.65.1",
+              "numpy.dependency_versions": "2.2.6",
+              "scipy.dependency_versions": "1.17.1"
+            }
+          },
+          "hardware_by_record": {
+            "measurement/5ad8678aaa5a1fc47227": {
+              "device": "a100",
+              "backend": "gpu",
+              "hardware_details": {
+                "autotune_cache_entries_at_start": 204,
+                "backend": "gpu",
+                "cache_fresh": false,
+                "cpu_count": 124,
+                "device": "cuda:0",
+                "hostname": "euclid-ral-gpu-1",
+                "nvidia_smi": "NVIDIA A100 80GB PCIe, 41455 MiB, 81920 MiB",
+                "omp_num_threads": null,
+                "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+              }
+            },
+            "measurement/5cf324f959cbd96df392": {
+              "device": "a100",
+              "backend": "gpu",
+              "hardware_details": {
+                "autotune_cache_entries_at_start": 204,
+                "backend": "gpu",
+                "cache_fresh": false,
+                "cpu_count": 124,
+                "device": "cuda:0",
+                "hostname": "euclid-ral-gpu-1",
+                "nvidia_smi": "NVIDIA A100 80GB PCIe, 33263 MiB, 81920 MiB",
+                "omp_num_threads": null,
+                "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+              }
+            },
+            "measurement/78267b21742073b7bb03": {
+              "device": "cpu",
+              "backend": "cpu",
+              "hardware_details": {
+                "autotune_cache_entries_at_start": 0,
+                "backend": "cpu",
+                "cache_fresh": false,
+                "cpu_count": 124,
+                "device": "cpu:0",
+                "hostname": "euclid-ral-gpu-2",
+                "omp_num_threads": "1",
+                "xla_flags": "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+              }
+            },
+            "measurement/852231607cc656355c6e": {
+              "device": "cpu",
+              "backend": "cpu",
+              "hardware_details": {
+                "autotune_cache_entries_at_start": 0,
+                "backend": "cpu",
+                "cache_fresh": false,
+                "cpu_count": 124,
+                "device": "cpu:0",
+                "hostname": "euclid-ral-gpu-2",
+                "omp_num_threads": "1",
+                "xla_flags": "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+              }
+            },
+            "measurement/9b5f9f7c8125a7bf4355": {
+              "device": "a100",
+              "backend": "gpu",
+              "hardware_details": {
+                "autotune_cache_entries_at_start": 204,
+                "backend": "gpu",
+                "cache_fresh": false,
+                "cpu_count": 124,
+                "device": "cuda:0",
+                "hostname": "euclid-ral-gpu-1",
+                "nvidia_smi": "NVIDIA A100 80GB PCIe, 33263 MiB, 81920 MiB",
+                "omp_num_threads": null,
+                "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+              }
+            },
+            "measurement/9cec0cdf85d8d9bae253": {
+              "device": "a100",
+              "backend": "gpu",
+              "hardware_details": {
+                "autotune_cache_entries_at_start": 204,
+                "backend": "gpu",
+                "cache_fresh": false,
+                "cpu_count": 124,
+                "device": "cuda:0",
+                "hostname": "euclid-ral-gpu-1",
+                "nvidia_smi": "NVIDIA A100 80GB PCIe, 41455 MiB, 81920 MiB",
+                "omp_num_threads": null,
+                "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+              }
+            },
+            "measurement/c5f82ab6f77ed1b15595": {
+              "device": "cpu",
+              "backend": "cpu",
+              "hardware_details": {
+                "autotune_cache_entries_at_start": 0,
+                "backend": "cpu",
+                "cache_fresh": false,
+                "cpu_count": 124,
+                "device": "cpu:0",
+                "hostname": "euclid-ral-gpu-2",
+                "omp_num_threads": "1",
+                "xla_flags": "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+              }
+            },
+            "measurement/ee5b21bd78ba2a34a850": {
+              "device": "cpu",
+              "backend": "cpu",
+              "hardware_details": {
+                "autotune_cache_entries_at_start": 0,
+                "backend": "cpu",
+                "cache_fresh": false,
+                "cpu_count": 124,
+                "device": "cpu:0",
+                "hostname": "euclid-ral-gpu-2",
+                "omp_num_threads": "1",
+                "xla_flags": "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+              }
+            }
+          },
+          "acceptance_caveats": "Decision-matrix rules were draft. Historical CPU/A100 rectangular alma_high r3.5 and r5.0 exceeded the 1e-3-nat witness; human accepted the r5.0 solver/revision mismatch on 2026-10-04, without a post-#595 A100 rerun. That historical waiver grants no catalogue/baseline acceptance. Columns mixed revisions; CPU host load and solver branches differ. See scope and caveats in the matrix ledger."
+        },
+        "limitations": "Unreviewed historical observations, confined to the supporting exact setups and measured revisions. Simulated source with real SDP.81 uv coverage; not a fit to observed SDP.81 visibilities. Unknown metadata prevents cross-file scientific equivalence or current-performance claims."
+      },
+      "record_ids": [
+        "measurement/5ad8678aaa5a1fc47227",
+        "measurement/5cf324f959cbd96df392",
+        "measurement/78267b21742073b7bb03",
+        "measurement/852231607cc656355c6e",
+        "measurement/9b5f9f7c8125a7bf4355",
+        "measurement/9cec0cdf85d8d9bae253",
+        "measurement/c5f82ab6f77ed1b15595",
+        "measurement/ee5b21bd78ba2a34a850"
+      ],
+      "evidence": [
+        {
+          "path": "results/notes/interferometer_likelihood_decision_matrix_2026_09.md",
+          "fragment": null
+        },
+        {
+          "fragment": "/full_pipeline_single_jit",
+          "path": "results/breakdown/interferometer/sdp81/pixelization_hpc_a100_fp64.json"
+        },
+        {
+          "fragment": "/full_pipeline_single_jit",
+          "path": "results/breakdown/interferometer/sdp81/delaunay_hpc_a100_fp64.json"
+        },
+        {
+          "fragment": "/full_call/mean_s",
+          "path": "results/breakdown/interferometer/sdp81/delaunay_numba_hpc_ral_cpu_fp64.json"
+        },
+        {
+          "fragment": "/total_step_by_step",
+          "path": "results/breakdown/interferometer/sdp81/pixelization_numba_hpc_ral_cpu_fp64.json"
+        },
+        {
+          "fragment": "/total_step_by_step",
+          "path": "results/breakdown/interferometer/sdp81/delaunay_hpc_a100_fp64.json"
+        },
+        {
+          "fragment": "/total_step_by_step",
+          "path": "results/breakdown/interferometer/sdp81/pixelization_hpc_a100_fp64.json"
+        },
+        {
+          "fragment": "/total_step_by_step",
+          "path": "results/breakdown/interferometer/sdp81/delaunay_numba_hpc_ral_cpu_fp64.json"
+        },
+        {
+          "fragment": "/full_call/mean_s",
+          "path": "results/breakdown/interferometer/sdp81/pixelization_numba_hpc_ral_cpu_fp64.json"
+        }
+      ],
+      "validation": {
+        "status": "unreviewed",
+        "reason": "Historical draft matrix transcribed with exact support, not scientific baseline acceptance."
+      }
+    },
+    {
+      "id": "historical/interferometer-matrix/mge-sparse",
+      "title": "Investigate the measured SDP.81 MGE W~ route",
+      "description": "Historical rule 5: the SDP.81 MGE-20 A100 library W~ steady full-pipeline call (3.786 ms, jit-phase record) was faster than the dense single-JIT full-pipeline call (28.292 ms). The sparse-enabled artifact also contains a dense /full_pipeline_single_jit measurement; that field is not sparse support. No accepted NUFFT selection for other configurations follows.",
+      "applies_to": {
+        "setup_ids": [
+          "interferometer/mge/sdp81/24e7d46221f7dca168bf",
+          "interferometer/mge/sdp81/61c6dccf97c81d66fc1e"
+        ],
+        "library_versions": [
+          "2026.8.17.1"
+        ],
+        "constraints": {
+          "historical_rule": "mge-sparse",
+          "dataset": "interferometer",
+          "models": [
+            "mge"
+          ],
+          "instruments": [
+            "sdp81"
+          ],
+          "precision": "float64",
+          "configuration_scope": "Only the enumerated setup IDs and recorded configurations; never extrapolate by model label.",
+          "measured_software_by_record": {
+            "measurement/3b9e72ef5d8791a738a9": {
+              "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_versions": "2026.8.17.1",
+              "PyAutoFit": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_revisions": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_versions": "2026.8.17.1",
+              "PyAutoGalaxy": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_revisions": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_versions": "2026.8.17.1",
+              "PyAutoLens": "2026.8.17.1",
+              "PyAutoLens.library_revisions": "efd13c4cdfb7ab0d4a37549468998e06e31f27d7",
+              "PyAutoLens.library_versions": "2026.8.17.1",
+              "PyAutoNerves": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_revisions": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_versions": "2026.8.17.1",
+              "autolens_profiling": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "autolens_profiling.library_revisions": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "jax.dependency_versions": "0.10.2",
+              "jaxlib.dependency_versions": "0.10.2",
+              "nufftax.dependency_versions": "0.6.1",
+              "numba.dependency_versions": "0.65.1",
+              "numpy.dependency_versions": "2.2.6",
+              "scipy.dependency_versions": "1.17.1"
+            },
+            "measurement/d399e1ba20dcdf9665e0": {
+              "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
+              "PyAutoArray.library_versions": "2026.8.17.1",
+              "PyAutoFit": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_revisions": "b13169e2ced2c44ed2b4a43f3a6ef1c92df989d4",
+              "PyAutoFit.library_versions": "2026.8.17.1",
+              "PyAutoGalaxy": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_revisions": "4c834cedee64a6fe530c7ac66d77de21cca346e8",
+              "PyAutoGalaxy.library_versions": "2026.8.17.1",
+              "PyAutoLens": "2026.8.17.1",
+              "PyAutoLens.library_revisions": "efd13c4cdfb7ab0d4a37549468998e06e31f27d7",
+              "PyAutoLens.library_versions": "2026.8.17.1",
+              "PyAutoNerves": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_revisions": "1ec1c829acec0ce85a7eddf791eb66574d507884",
+              "PyAutoNerves.library_versions": "2026.8.17.1",
+              "autolens_profiling": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "autolens_profiling.library_revisions": "e9a7ade6f7ff07b4a8e9e2009d1e0ef645404307",
+              "jax.dependency_versions": "0.10.2",
+              "jaxlib.dependency_versions": "0.10.2",
+              "nufftax.dependency_versions": "0.6.1",
+              "numba.dependency_versions": "0.65.1",
+              "numpy.dependency_versions": "2.2.6",
+              "scipy.dependency_versions": "1.17.1"
+            }
+          },
+          "hardware_by_record": {
+            "measurement/3b9e72ef5d8791a738a9": {
+              "device": "a100",
+              "backend": "gpu",
+              "hardware_details": {
+                "autotune_cache_entries_at_start": 204,
+                "backend": "gpu",
+                "cache_fresh": false,
+                "cpu_count": 124,
+                "device": "cuda:0",
+                "hostname": "euclid-ral-gpu-2",
+                "nvidia_smi": "NVIDIA A100 80GB PCIe, 21511 MiB, 81920 MiB",
+                "omp_num_threads": null,
+                "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+              }
+            },
+            "measurement/d399e1ba20dcdf9665e0": {
+              "device": "a100",
+              "backend": "gpu",
+              "hardware_details": {
+                "autotune_cache_entries_at_start": 204,
+                "backend": "gpu",
+                "cache_fresh": false,
+                "cpu_count": 124,
+                "device": "cuda:0",
+                "hostname": "euclid-ral-gpu-2",
+                "nvidia_smi": "NVIDIA A100 80GB PCIe, 21509 MiB, 81920 MiB",
+                "omp_num_threads": null,
+                "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+              }
+            }
+          },
+          "acceptance_caveats": "Decision-matrix rules were draft. Historical CPU/A100 rectangular alma_high r3.5 and r5.0 exceeded the 1e-3-nat witness; human accepted the r5.0 solver/revision mismatch on 2026-10-04, without a post-#595 A100 rerun. That historical waiver grants no catalogue/baseline acceptance. Columns mixed revisions; CPU host load and solver branches differ. See scope and caveats in the matrix ledger.",
+          "measurement_arms": {
+            "sparse": "/jit_phases/library_sparse_full_pipeline/steady_per_call_s",
+            "dense": "/full_pipeline_single_jit",
+            "batching": "Single call; exclude library_sparse_full_pipeline_vmap64.",
+            "catalogue_axis": "Sparse jit-phase steady measurement remains breakdown in the imported taxonomy; no axis reclassification."
+          }
+        },
+        "limitations": "Unreviewed historical observations, confined to the supporting exact setups and measured revisions. Simulated source with real SDP.81 uv coverage; not a fit to observed SDP.81 visibilities. Unknown metadata prevents cross-file scientific equivalence or current-performance claims."
+      },
+      "record_ids": [
+        "measurement/3b9e72ef5d8791a738a9",
+        "measurement/d399e1ba20dcdf9665e0"
+      ],
+      "evidence": [
+        {
+          "path": "results/notes/interferometer_likelihood_decision_matrix_2026_09.md",
+          "fragment": null
+        },
+        {
+          "fragment": "/jit_phases/library_sparse_full_pipeline/steady_per_call_s",
+          "path": "results/breakdown/interferometer/sdp81/mge_hpc_a100_fp64_sparse.json"
+        },
+        {
+          "fragment": "/full_pipeline_single_jit",
+          "path": "results/breakdown/interferometer/sdp81/mge_hpc_a100_fp64.json"
+        }
+      ],
+      "validation": {
+        "status": "unreviewed",
+        "reason": "Historical draft matrix transcribed with exact support, not scientific baseline acceptance."
+      }
+    }
+  ]
 }

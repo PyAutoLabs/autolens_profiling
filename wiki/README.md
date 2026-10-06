@@ -45,6 +45,28 @@ the merge commit). When unsure, write "not recorded" or "not verified" — never
 - A new campaign page needs a row in `index.md` and all ten header labels.
 - Links inside the wiki are repo-relative; no absolute machine paths.
 
-`scripts/misc/tooling/check_wiki.py --check` enforces the three structural rules (every ledger
-linked, every page indexed with the full header, every relative link resolves) and runs in
+`scripts/misc/tooling/check_wiki.py --check` enforces campaign structure (every ledger
+linked, every campaign indexed with the full header), relative links, and generated setup freshness and runs in
 `lint.yml` on every PR.
+
+## Exact setup navigation
+
+[Setup index](setups/index.md) provides dataset → model → instrument → exact
+configuration navigation generated from the exported catalogue. Each exact page
+preserves recorded settings and unknowns, separates measurement axes, distinguishes
+selected references from archive support, and shows hardware/software/method metadata.
+Advice and hazards appear only for explicitly bound setup IDs. No bound finding means
+unknown coverage, never proof that a setup is safe. All imported support is unreviewed.
+
+Run `python scripts/misc/tooling/build_setup_wiki.py` after exporting the catalogue;
+`--check` rejects stale/missing/obsolete generated pages and invalid shard checksums or
+identities. `build_dashboard.py` regenerates the same pages alongside its catalogue;
+its `--check` and the existing `check_wiki.py --check` CI gate enforce freshness.
+Generated pages carry a marker; cleanup removes only marked generated filenames.
+Campaign journals remain authoritative and are never generated or rewritten.
+
+[`catalogue/wiki_bindings.json`](../catalogue/wiki_bindings.json) explicitly maps
+campaign pages to setup IDs; there is no family-name or prose inference. Add bindings
+only with supporting evidence. Unbound setups say campaign applicability is unknown.
+Historical JSON evidence links open the artifact; the separately printed RFC 6901
+pointer identifies the precise measurement (it is not a Markdown/GitHub anchor).

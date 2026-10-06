@@ -1,5 +1,7 @@
 # Campaign index
 
+Choose exact configuration evidence via the [setup index](setups/index.md).
+
 One row per profiling campaign. Cells are short on purpose — the campaign page carries the
 detail and the ledger carries the full record. Status vocabulary: `open` / `complete` /
 `parked` / `no-go` / `draft` (see [README](README.md)). Release states were verified against
