@@ -7,7 +7,7 @@
 # CPU submit (hpc/batch_cpu/submit_breakdown_point_source_static_lattice_ab_ral_cpu_fp64)
 # on ONE RAL A100, constant folding disabled only (the production flags):
 #
-#   scripts/point_source_image/likelihood_breakdown/static_lattice_ab.py
+#   scripts/point_source_image/image_plane/static_lattice_ab.py
 #     control = flat 69 849-row step-0 table (phase-2 main path, in-job control);
 #     exact   = 28 665 exact-float rows;  lattice = 11 859 geometric vertices;
 #     library = the FEATURE BRANCH clones (LIBRARY below) -- must self-label
@@ -116,7 +116,7 @@ print('ASSERT OK: GPU backend, autoarray + autolens from the branch clones')
 echo "=========================================="
 echo "static-lattice A/B on A100 (20 x 20, simple + cluster)"
 date
-python3 -u scripts/point_source_image/likelihood_breakdown/static_lattice_ab.py --config-name hpc_ral_a100_fp64 --rounds 20 --calls 20
+python3 -u scripts/point_source_image/image_plane/static_lattice_ab.py --config-name hpc_ral_a100_fp64 --rounds 20 --calls 20
 
 echo "=========================================="
 nvidia-smi --query-gpu=name,memory.used --format=csv || true

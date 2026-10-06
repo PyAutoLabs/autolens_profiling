@@ -66,8 +66,8 @@ else
     echo "SOURCE_PROVENANCE.json: absent"
 fi
 sha256sum \
-    scripts/imaging/likelihood_breakdown/fixed_light_numba.py \
-    scripts/imaging/likelihood_breakdown/fixed_light_numba_s4b_witness.py \
+    scripts/imaging/pixelized/fixed_light_numba.py \
+    scripts/imaging/pixelized/fixed_light_numba_s4b_witness.py \
     scripts/misc/likelihood_breakdown/fixed_light_numpy_solvers.py \
     scripts/misc/likelihood_breakdown/fixed_light_s4b_checks.py
 
@@ -88,7 +88,7 @@ python3 -c "$KERNEL_PROVENANCE"
 
 echo "=========================================="
 echo "THE A/B: routes b,d_perm; sparse_numba; memo ON; 64 repeats"
-python3 -u scripts/imaging/likelihood_breakdown/fixed_light_numba.py \
+python3 -u scripts/imaging/pixelized/fixed_light_numba.py \
     --mesh delaunay \
     --dataset hst \
     --formalism sparse_numba \
@@ -101,7 +101,7 @@ python3 -u scripts/imaging/likelihood_breakdown/fixed_light_numba.py \
 
 echo "=========================================="
 echo "THE WITNESS: eight seeded draws against the permuted kernel"
-python3 -u scripts/imaging/likelihood_breakdown/fixed_light_numba_s4b_witness.py \
+python3 -u scripts/imaging/pixelized/fixed_light_numba_s4b_witness.py \
     --mesh delaunay \
     --dataset hst \
     --threads 1 \

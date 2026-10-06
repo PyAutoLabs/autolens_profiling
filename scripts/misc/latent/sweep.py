@@ -57,6 +57,9 @@ from pathlib import Path
 
 _REPO_ROOT = _profiling_root()  # autolens_profiling/
 _DEFAULT_OUTPUT_ROOT = _REPO_ROOT / "results" / "latent"
+sys.path.insert(0, str(_REPO_ROOT))
+from _script_routes import canonical_path
+
 _DEFAULT_PYTHON = "/home/jammy/venv/PyAutoGPU/bin/python"
 
 
@@ -252,7 +255,7 @@ def main() -> int:
     overall_t0 = time.time()
 
     for cls, latent in cells:
-        script_path = _REPO_ROOT / "scripts" / cls / "latent" / f"{latent}.py"
+        script_path = canonical_path(f"scripts/{cls}/latent/{latent}.py", _REPO_ROOT)
         if not script_path.exists():
             print(f"\n!!! missing script: {script_path}")
             for cfg in configs:

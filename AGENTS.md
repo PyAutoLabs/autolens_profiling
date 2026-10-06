@@ -9,20 +9,17 @@ overview (vision, latest run-times, roadmap); this file is the operational guide
 
 ## Repository Structure
 
-Scripts are laid out **dataset-first, task-second** (`scripts/<dataset>/<task>/<model>.py`),
-mirroring the `autolens_workspace*` taxonomy:
+Scripts use **dataset → model → measurement** (`scripts/<dataset>/<model>/<measurement>.py`).
+The route registry in `catalogue/script_routes.json` records legacy entry points.
 
 ```
 scripts/
-  <dataset>/            imaging/ interferometer/ point_source_image/ point_source_source/ multi_dataset/ cluster/ — one folder per
-                        PyAutoLens dataset family; point source splits by likelihood function
-                        (point_source_image/ = image-plane χ², point_source_source/ = source-plane
-                        χ²; both read the one point_source dataset). Group-scale cells live under cluster/; the
-                        interferometer datacube cells nest under interferometer/<task>/datacube/.
-    likelihood_runtime/   Full-pipeline JIT runtime per cell (<model>.py; driven by the sweep driver)
-    likelihood_breakdown/ Per-step JIT decomposition of a single likelihood config
-    latent/               Latent-variable profiling
-    quick_update/         Fast incremental re-profiling helpers (unversioned scratch tier)
+  <dataset>/            imaging/ interferometer/ datacube/ point_source_image/
+                        point_source_source/ multi_dataset/ cluster/
+    <model>/            mge/ rectangular/ delaunay/ delaunay_nn/ sersic/ …
+      <measurement>.py  likelihood_runtime.py, likelihood_breakdown.py and experiments
+                        Datacube is its own top-level dataset family. Imaging/pixelized/
+                        holds shared CLI mesh experiments; latent cells live under sersic/.
   lens/                 Second, DATASET-FREE axis: library-component profiling (one function, one
                         grid, fiducial parameters) rather than a pipeline. lens/deflections/ =
                         per-mass-profile deflection cost, pinned on the values computed. Shared
@@ -66,7 +63,7 @@ under `results/` whose version string matches the PyAutoLens release that produc
 trends stay inspectable across releases. A script auto-simulates its dataset if missing.
 
 ```bash
-python3 scripts/imaging/likelihood_runtime/mge.py --config-name hst --use-mixed-precision
+python3 scripts/imaging/mge/likelihood_runtime.py --config-name hst --use-mixed-precision
 ```
 
 `_profile_cli.py` is the **shared helper module** imported by the likelihood scripts (not a runnable
@@ -119,7 +116,7 @@ and is noisy; releases are the natural cadence).
 If `numba` or `matplotlib` cannot write to the default cache locations, point them at writable dirs:
 
 ```bash
-NUMBA_CACHE_DIR=/tmp/numba_cache MPLCONFIGDIR=/tmp/matplotlib python3 scripts/imaging/likelihood_runtime/mge.py
+NUMBA_CACHE_DIR=/tmp/numba_cache MPLCONFIGDIR=/tmp/matplotlib python3 scripts/imaging/mge/likelihood_runtime.py
 ```
 
 This is for local / sandboxed runs only. On RAL, never point caches at `/tmp` or `$HOME`

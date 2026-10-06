@@ -1,7 +1,7 @@
 """Unit tests for the point-solver stage map (``_point_solver_stage_map.py``).
 
 The stage map is the instrument the point-source A100 bottleneck map
-(``scripts/point_source_image/likelihood_breakdown/gpu_bottleneck_map.py``,
+(``scripts/point_source_image/image_plane/gpu_bottleneck_map.py``,
 autolens_profiling#350) is read through. These tests pin it on hand-built frames and
 instructions whose right answer is known by construction:
 
@@ -36,7 +36,7 @@ def _profiling_root() -> _Path:
 _ROOT = _profiling_root()
 for _d in (
     _ROOT / "scripts" / "misc",
-    _ROOT / "scripts" / "point_source_image" / "likelihood_breakdown",
+    _ROOT / "scripts" / "point_source_image" / "image_plane",
 ):
     if str(_d) not in _sys.path:
         _sys.path.insert(0, str(_d))

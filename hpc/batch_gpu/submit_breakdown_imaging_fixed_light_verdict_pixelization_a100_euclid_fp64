@@ -149,7 +149,7 @@ nvidia-smi --query-gpu=memory.used --format=csv -l 5 &
 VRAM_SAMPLER_PID=$!
 trap 'kill "$VRAM_SAMPLER_PID" 2>/dev/null' EXIT
 
-python3 -u scripts/imaging/likelihood_breakdown/fixed_light_library.py \
+python3 -u scripts/imaging/pixelized/fixed_light_library.py \
     --mesh rectangular \
     --dataset euclid \
     --source-pixels $N_SRC \

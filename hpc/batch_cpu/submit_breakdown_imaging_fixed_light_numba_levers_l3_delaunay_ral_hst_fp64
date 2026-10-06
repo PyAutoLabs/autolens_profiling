@@ -416,7 +416,7 @@ echo "loadavg: $(cat /proc/loadavg)"
     echo "  checkout HEAD: $(git -C $PYAUTOARRAY_CONTROL rev-parse HEAD)"
     python3 -c "$ARM_PROVENANCE"
 
-    python3 -u scripts/imaging/likelihood_breakdown/fixed_light_numba.py \
+    python3 -u scripts/imaging/pixelized/fixed_light_numba.py \
         --mesh delaunay \
         --dataset hst \
         --formalism sparse_numba \
@@ -440,7 +440,7 @@ echo "loadavg: $(cat /proc/loadavg)"
     echo "  checkout HEAD: $(git -C $PYAUTOARRAY_FEATURE rev-parse HEAD)"
     python3 -c "$ARM_PROVENANCE"
 
-    python3 -u scripts/imaging/likelihood_breakdown/fixed_light_numba.py \
+    python3 -u scripts/imaging/pixelized/fixed_light_numba.py \
         --mesh delaunay \
         --dataset hst \
         --formalism sparse_numba \
@@ -453,7 +453,7 @@ echo "loadavg: $(cat /proc/loadavg)"
 
     echo "--- feature arm witness: lever 3 shared Cholesky factor (W1..W5) ---"
     date
-    python3 -u scripts/imaging/likelihood_breakdown/fixed_light_numba_levers_l3_witness.py \
+    python3 -u scripts/imaging/pixelized/fixed_light_numba_levers_l3_witness.py \
         --mesh delaunay \
         --dataset hst \
         --threads 1 \

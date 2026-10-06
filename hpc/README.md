@@ -2,7 +2,7 @@
 
 SLURM submit scripts for the RAL HPC — the `hpc_a100_fp64` / `hpc_a100_mp`
 rows of the sweep matrix (and HPC-CPU rows) that the local
-`likelihood_runtime/sweep.py` driver cannot run itself.
+`scripts/misc/likelihood_runtime/sweep.py` driver cannot run itself.
 
 ## Layout
 
@@ -18,7 +18,7 @@ sync.conf.example                                                     # template
 ```
 
 Submit names follow the same `<class>/<model>` cell grid as the rest of the
-repo; `runtime_` prefixed submits drive `likelihood_runtime/` cells.
+repo; `runtime_` prefixed submits drive `<dataset>/<model>/likelihood_runtime.py` cells.
 
 ## Running
 
@@ -30,7 +30,7 @@ sbatch hpc/batch_gpu/submit_runtime_imaging_mge_a100_hst_fp64
 ```
 
 Each job writes its per-config JSON into the same `results/` layout as a local
-sweep (`--config-name hpc_a100_fp64` etc.), so `likelihood_runtime/aggregate.py`
+sweep (`--config-name hpc_a100_fp64` etc.), so `scripts/misc/likelihood_runtime/aggregate.py`
 merges local and A100 rows into one `comparison.json`. Copy/commit the result
 JSONs from the HPC checkout back via the normal git flow. The PyAuto*
 libraries resolve from sibling source checkouts on `PYTHONPATH` — never
@@ -299,3 +299,10 @@ Every arm must land in its own results file **and** its own autofit output
 directory: `--config-name` carries the tier and seed, which makes the results
 filename distinct, and an arm whose output directory is not distinct silently
 returns a sibling arm's completed fit.
+
+Scientific entry points use `scripts/<dataset>/<model>/<measurement>.py`,
+including the top-level `datacube/` family. Shared CLI mesh experiments use
+`imaging/pixelized/`; shared drivers remain under `scripts/misc/`. Submit names,
+SLURM resources, measurement arguments and result destinations retain their
+existing contracts. Legacy entry-point wrappers remain until explicitly approved
+removal after Brain and assistant migration (see `catalogue/script_routes.json`).

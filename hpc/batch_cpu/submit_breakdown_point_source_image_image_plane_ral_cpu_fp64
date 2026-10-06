@@ -7,7 +7,7 @@
 # image-plane likelihoods the campaign is trying to make cheaper, on a quiet
 # RAL CPU node, so every later phase has a baseline that is not a WSL2 laptop:
 #
-#   Leg A  scripts/point_source_image/likelihood_breakdown/image_plane.py
+#   Leg A  scripts/point_source_image/image_plane/likelihood_breakdown.py
 #          Galaxy-scale: the production FitPositionsImagePairAllSolved
 #          likelihood decomposed into the solved source centre, every
 #          PointSolver refinement stage (ray trace / containment / selection /
@@ -16,7 +16,7 @@
 #          fused_full_plain_control_s; the prefix rows are successive
 #          differences and may go slightly negative under XLA fusion.
 #
-#   Leg B  scripts/cluster/likelihood_breakdown/image_plane.py
+#   Leg B  scripts/cluster/image_plane/likelihood_breakdown.py
 #          Cluster-scale: 2 dPIE + 10 scaling dPIE + NFW at z=0.5, sources at
 #          z=1.0/2.0, solver grid 200x200 @ 0.7" (precision 0.01"). Per-source
 #          JIT PointSolver solves (steps 2.x), eager fit totals (steps 3-4) and
@@ -150,13 +150,13 @@ echo "=========================================="
 echo "LEG A: point-source image-plane breakdown (galaxy scale, solved + plain control)"
 date
 echo "loadavg: $(cat /proc/loadavg)"
-python3 -u scripts/point_source_image/likelihood_breakdown/image_plane.py --config-name hpc_ral_cpu_fp64
+python3 -u scripts/point_source_image/image_plane/likelihood_breakdown.py --config-name hpc_ral_cpu_fp64
 
 echo "=========================================="
 echo "LEG B: cluster image-plane breakdown (per-source solves + fused plain/solved)"
 date
 echo "loadavg: $(cat /proc/loadavg)"
-python3 -u scripts/cluster/likelihood_breakdown/image_plane.py --config-name hpc_ral_cpu_fp64
+python3 -u scripts/cluster/image_plane/likelihood_breakdown.py --config-name hpc_ral_cpu_fp64
 
 echo "=========================================="
 echo "loadavg: $(cat /proc/loadavg)"

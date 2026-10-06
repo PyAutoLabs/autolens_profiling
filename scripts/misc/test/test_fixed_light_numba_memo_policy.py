@@ -54,7 +54,7 @@ def test_build_rows_are_deterministic_disjoint_and_nearby_starts_nonzero():
 def test_actual_cell_smoke_import_uses_canonical_package_path():
     environment = dict(os.environ, AUTOLENS_PROFILING_SMOKE="1")
     result = subprocess.run(
-        [sys.executable, "scripts/imaging/likelihood_breakdown/fixed_light_numba_memo_policy.py"],
+        [sys.executable, "scripts/imaging/pixelized/fixed_light_numba_memo_policy.py"],
         cwd=ROOT,
         env=environment,
         capture_output=True,

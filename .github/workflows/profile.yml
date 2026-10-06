@@ -108,9 +108,23 @@ jobs:
           PYTHONPATH: ${{ github.workspace }}/PyAutoNerves:${{ github.workspace }}/PyAutoFit:${{ github.workspace }}/PyAutoArray:${{ github.workspace }}/PyAutoGalaxy:${{ github.workspace }}/PyAutoLens
         run: |
           set +e  # don't abort the whole step on one script's failure
-          for script in scripts/imaging/likelihood_runtime/*.py scripts/interferometer/likelihood_runtime/*.py \
-                        scripts/point_source_image/likelihood_runtime/*.py scripts/point_source_source/likelihood_runtime/*.py \
-                        scripts/interferometer/likelihood_runtime/datacube/delaunay.py; do
+          for script in \
+                        scripts/imaging/delaunay/likelihood_runtime.py \
+                        scripts/imaging/delaunay_nn/likelihood_runtime.py \
+                        scripts/imaging/delaunay/likelihood_runtime_numba.py \
+                        scripts/imaging/mge/likelihood_runtime.py \
+                        scripts/imaging/mge_mass/likelihood_runtime_jax.py \
+                        scripts/imaging/rectangular/likelihood_runtime.py \
+                        scripts/imaging/rectangular/likelihood_runtime_numba.py \
+                        scripts/imaging/rectangular/likelihood_runtime_numba_mge_mass.py \
+                        scripts/interferometer/delaunay/likelihood_runtime.py \
+                        scripts/interferometer/mge/likelihood_runtime.py \
+                        scripts/interferometer/rectangular/likelihood_runtime.py \
+                        scripts/point_source_image/image_plane/likelihood_runtime.py \
+                        scripts/point_source_image/image_plane/likelihood_runtime_solved.py \
+                        scripts/point_source_source/source_plane/likelihood_runtime.py \
+                        scripts/point_source_source/source_plane/likelihood_runtime_solved.py \
+                        scripts/datacube/delaunay/likelihood_runtime.py ; do
             echo "::group::$script"
             python "$script" || echo "::warning::$script failed — see log; dashboard cell will show ERR"
             echo "::endgroup::"

@@ -260,7 +260,7 @@ print('  has SPARSE_LOG_DET_MIN_PIXELS      =', hasattr(inversion_util, 'SPARSE_
 print('  has SPARSE_LOG_DET_MAX_NNZ_PER_ROW =', hasattr(inversion_util, 'SPARSE_LOG_DET_MAX_NNZ_PER_ROW'))
 print('  has log_det_sparse_spd_from        =', hasattr(inversion_util, 'log_det_sparse_spd_from'))
 "
-    python3 -u scripts/imaging/likelihood_breakdown/fixed_light_numba.py \
+    python3 -u scripts/imaging/pixelized/fixed_light_numba.py \
         --mesh delaunay \
         --dataset hst \
         --formalism sparse_numba \
@@ -293,7 +293,7 @@ print('  has log_det_sparse_spd_from        =', hasattr(inversion_util, 'log_det
 print('  SPARSE_LOG_DET_MIN_PIXELS      =', getattr(inversion_util, 'SPARSE_LOG_DET_MIN_PIXELS', None))
 print('  SPARSE_LOG_DET_MAX_NNZ_PER_ROW =', getattr(inversion_util, 'SPARSE_LOG_DET_MAX_NNZ_PER_ROW', None))
 "
-    python3 -u scripts/imaging/likelihood_breakdown/fixed_light_numba.py \
+    python3 -u scripts/imaging/pixelized/fixed_light_numba.py \
         --mesh delaunay \
         --dataset hst \
         --formalism sparse_numba \
@@ -306,7 +306,7 @@ print('  SPARSE_LOG_DET_MAX_NNZ_PER_ROW =', getattr(inversion_util, 'SPARSE_LOG_
 
     echo "--- feature arm witness: lever 2 sparse log det (W1..W5) ---"
     date
-    python3 -u scripts/imaging/likelihood_breakdown/fixed_light_numba_levers_l2_witness.py \
+    python3 -u scripts/imaging/pixelized/fixed_light_numba_levers_l2_witness.py \
         --mesh delaunay \
         --dataset hst \
         --threads 1 \

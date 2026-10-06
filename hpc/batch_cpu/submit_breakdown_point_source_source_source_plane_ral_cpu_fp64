@@ -6,13 +6,13 @@
 #
 # WHAT THIS MEASURES. Two cells, two processes, on ONE pinned, quiet RAL CPU node:
 #
-#   1. scripts/point_source_source/likelihood_breakdown/source_plane.py
+#   1. scripts/point_source_source/source_plane/likelihood_breakdown.py
 #      The phase-1 instrument: fused FitPositionsSourceSolved (solved lane) and
 #      FitPositionsSource (plain lane) likelihoods, cumulative-prefix rows, CSE
 #      probes, dispatch floors, value_and_grad cost; asserts eager-vs-JIT (rtol
 #      1e-4), vmap (rtol 1e-10), the regression literals (rtol 1e-8) and a finite,
 #      NON-zero gradient.
-#   2. scripts/point_source_source/likelihood_breakdown/pytree_input_ab.py
+#   2. scripts/point_source_source/source_plane/pytree_input_ab.py
 #      Interleaved A/B of how the parameters enter the likelihood: pytree
 #      (production ModelInstance argument) vs flat_vector (instance_from_vector
 #      inside the trace) vs flat_leaves (tree_unflatten inside the trace), rows
@@ -131,13 +131,13 @@ echo "=========================================="
 echo "run 1/2: source_plane breakdown"
 date
 echo "loadavg: $(cat /proc/loadavg)"
-python3 -u scripts/point_source_source/likelihood_breakdown/source_plane.py --config-name hpc_ral_cpu_fp64
+python3 -u scripts/point_source_source/source_plane/likelihood_breakdown.py --config-name hpc_ral_cpu_fp64
 
 echo "=========================================="
 echo "run 2/2: pytree-input A/B (20 x 20)"
 date
 echo "loadavg: $(cat /proc/loadavg)"
-python3 -u scripts/point_source_source/likelihood_breakdown/pytree_input_ab.py --config-name hpc_ral_cpu_fp64 --rounds 20 --calls 20
+python3 -u scripts/point_source_source/source_plane/pytree_input_ab.py --config-name hpc_ral_cpu_fp64 --rounds 20 --calls 20
 
 echo "=========================================="
 echo "loadavg: $(cat /proc/loadavg)"

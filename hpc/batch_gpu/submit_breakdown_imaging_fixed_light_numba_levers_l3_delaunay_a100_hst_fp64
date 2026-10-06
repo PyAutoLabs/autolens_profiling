@@ -242,7 +242,7 @@ date
     echo "  checkout HEAD: $(git -C $PYAUTOARRAY_CONTROL rev-parse HEAD)"
     python3 -c "$ARM_PROVENANCE"
 
-    python3 -u scripts/imaging/likelihood_breakdown/fixed_light.py \
+    python3 -u scripts/imaging/pixelized/fixed_light.py \
         --mesh delaunay \
         --config-name hpc_a100_fp64_fixed_light_lever3_control \
         --regularization adapt_split \
@@ -262,7 +262,7 @@ date
     echo "  checkout HEAD: $(git -C $PYAUTOARRAY_FEATURE rev-parse HEAD)"
     python3 -c "$ARM_PROVENANCE"
 
-    python3 -u scripts/imaging/likelihood_breakdown/fixed_light.py \
+    python3 -u scripts/imaging/pixelized/fixed_light.py \
         --mesh delaunay \
         --config-name hpc_a100_fp64_fixed_light_lever3 \
         --regularization adapt_split \

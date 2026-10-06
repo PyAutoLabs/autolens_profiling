@@ -424,9 +424,7 @@ def test__the_registry_is_control_then_the_two_slot_budgets():
 def test__the_cell_offers_exactly_the_registry():
     import ast
 
-    tree = ast.parse(
-        (ROOT / "scripts/imaging/likelihood_breakdown/fixed_light_trace.py").read_text()
-    )
+    tree = ast.parse((ROOT / "scripts/imaging/pixelized/fixed_light_trace.py").read_text())
     choices = None
     for node in ast.walk(tree):
         if (

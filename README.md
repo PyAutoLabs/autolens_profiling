@@ -446,10 +446,15 @@ not versioned by filename.
 
 ## Section index
 
-Scripts are laid out **dataset-first, task-second**: `scripts/<dataset>/<task>/<model>.py`
-(`imaging` / `interferometer` / `point_source_image` / `point_source_source` / `multi_dataset` / `cluster`), mirroring the
+Scripts are laid out **dataset-first, model-second**: `scripts/<dataset>/<model>/<measurement>.py`
+(`imaging` / `interferometer` / `datacube` / `point_source_image` / `point_source_source` / `multi_dataset` / `cluster`), mirroring the
 `autolens_workspace*` repos. Each task's shared drivers, framework and narrative README (with the
 auto-tables) live under `scripts/misc/<task>/`; dataset-agnostic tooling lives under `scripts/misc/`.
+
+Datacube is a top-level dataset family. Shared CLI mesh experiments live under
+`scripts/imaging/pixelized/`; latent cells live under the relevant `sersic/` model.
+Legacy wrappers are recorded in [`catalogue/script_routes.json`](./catalogue/script_routes.json)
+and remain until explicit removal after Brain and assistant migration, with no automatic expiry.
 
 Beside those dataset-first families sits a second, **dataset-free** axis:
 [`scripts/lens/`](./scripts/lens/README.md) profiles a single **library component** — one function,
@@ -460,7 +465,7 @@ library-level optimisation work needs and a pipeline breakdown cannot give. Toda
 [`lens/deflections/`](./scripts/lens/deflections/README.md) (deflection angles per mass profile);
 `convergence/`, `potential/` and `shear/` follow the same shape.
 
-| Task (`scripts/<dataset>/<task>/` + shared home) | Contents |
+| Measurement (`scripts/<dataset>/<model>/<measurement>.py` + shared home) | Contents |
 |--------|----------|
 | `likelihood_runtime/` · [README](./scripts/misc/likelihood_runtime/README.md) | Full-pipeline JIT only, driven by `scripts/misc/likelihood_runtime/sweep.py` across CPU/GPU/A100 × fp64/mp. *How long will this likelihood take on this hardware?* |
 | `likelihood_breakdown/` · [README](./scripts/misc/likelihood_breakdown/README.md) | Per-step JIT decomposition. Single config. *Where does time go inside the likelihood?* |

@@ -267,7 +267,7 @@ echo "THE A/B: routes b, b_direct, b_touched — one library, one process"
 echo "  sparse_numba, memo ON, threads 1, n-repeats 64, instances iid"
 date
 echo "loadavg: $(cat /proc/loadavg)"
-python3 -u scripts/imaging/likelihood_breakdown/fixed_light_numba.py \
+python3 -u scripts/imaging/pixelized/fixed_light_numba.py \
     --mesh delaunay \
     --dataset hst \
     --formalism sparse_numba \
@@ -282,7 +282,7 @@ echo "=========================================="
 echo "THE WITNESS: the three kernels compute the same matrix and the same evidence"
 date
 echo "loadavg: $(cat /proc/loadavg)"
-python3 -u scripts/imaging/likelihood_breakdown/fixed_light_numba_s4_witness.py \
+python3 -u scripts/imaging/pixelized/fixed_light_numba_s4_witness.py \
     --mesh delaunay \
     --dataset hst \
     --threads 1 \

@@ -43,7 +43,7 @@ fst = importlib.util.module_from_spec(_spec)
 _sys.modules[_spec.name] = fst
 _spec.loader.exec_module(fst)
 
-CELL_PATH = ROOT / "scripts" / "imaging" / "likelihood_breakdown" / "fixed_light.py"
+CELL_PATH = ROOT / "scripts/imaging/pixelized/fixed_light.py"
 
 
 # ---------------------------------------------------------------------------

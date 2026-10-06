@@ -12,7 +12,7 @@ ROOT = next(p for p in Path(__file__).resolve().parents if (p / "ruff.toml").exi
 sys.path.insert(0, str(ROOT))
 from _profile_cli import parse_profile_cli
 
-CELLS = ROOT / "scripts/imaging/likelihood_breakdown"
+CELLS = ROOT / "scripts/imaging/pixelized"
 
 
 def cell_parser(name):

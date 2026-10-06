@@ -25,6 +25,6 @@ else
 fi
 hostname
 date
-python3 -u scripts/imaging/likelihood_breakdown/fixed_light_numba_draws.py \
+python3 -u scripts/imaging/pixelized/fixed_light_numba_draws.py \
     --n-repeats 5 --source-pixels 1500 \
     --config-name hpc_ral_cpu_fp64_fixed_light_numba_s5

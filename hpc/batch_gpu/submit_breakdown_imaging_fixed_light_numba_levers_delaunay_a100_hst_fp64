@@ -147,7 +147,7 @@ date
     echo "--- control arm import provenance ---"
     echo "  checkout HEAD: $(git -C $PYAUTOARRAY_CONTROL rev-parse HEAD)"
     python3 -c "import autoarray, autolens; print('  autoarray.__file__    =', autoarray.__file__); print('  autoarray.__version__ =', autoarray.__version__); print('  autolens.__file__     =', autolens.__file__)"
-    python3 -u scripts/imaging/likelihood_breakdown/delaunay.py \
+    python3 -u scripts/imaging/delaunay/likelihood_breakdown.py \
         --regularization adapt_split \
         --config-name hpc_a100_fp64_lever1_control \
         --split-setup \
@@ -162,7 +162,7 @@ date
     echo "--- feature arm import provenance ---"
     echo "  checkout HEAD: $(git -C $PYAUTOARRAY_FEATURE rev-parse HEAD)"
     python3 -c "import autoarray, autolens; print('  autoarray.__file__    =', autoarray.__file__); print('  autoarray.__version__ =', autoarray.__version__); print('  autolens.__file__     =', autolens.__file__)"
-    python3 -u scripts/imaging/likelihood_breakdown/delaunay.py \
+    python3 -u scripts/imaging/delaunay/likelihood_breakdown.py \
         --regularization adapt_split \
         --config-name hpc_a100_fp64_lever1 \
         --split-setup \

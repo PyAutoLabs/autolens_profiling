@@ -102,6 +102,12 @@ DEFAULT_HEADROOM = HEADROOM_FLOOR["rates"]
 _KV = re.compile(r"([A-Za-z][\w-]*):\s*(\S+)")
 _PYTHON_CALL = re.compile(r"python3?\s+(scripts/[\w./${}\[\]-]+\.py)")
 _INSTRUMENT = re.compile(r"--instrument\s+(\S+)")
+# New source names must still match historical WALL-BASIS cell IDs.
+sys.path.insert(0, str(ROOT))
+from _script_routes import load_routes
+
+_ROUTE_LEGACY = {row["path"]: row["legacy"] for row in load_routes(ROOT)["routes"]}
+
 _VAR_REF = re.compile(r"^\$\{?(\w+)(?:\[[^\]]*\])?\}?$")
 
 
@@ -199,13 +205,19 @@ def cells_run(text: str) -> tuple[set[tuple[str, str]], set[str]]:
     cells: set[tuple[str, str]] = set()
     for match in _PYTHON_CALL.finditer(text):
         parts = match.group(1).split("/")
-        if len(parts) < 3:
-            continue
-        dataset = parts[1]
-        stem = parts[-1][: -len(".py")]
-        for cell in _expand(text, stem) or {stem}:
-            if not _VAR_REF.match(cell):
-                cells.add((dataset, cell))
+        # Expand variables in every path segment, not only the old filename.
+        from itertools import product
+
+        expanded = []
+        for part in parts:
+            suffix = ".py" if part.endswith(".py") else ""
+            token = part[:-3] if suffix else part
+            expanded.append({value + suffix for value in _expand(text, token) or {token}})
+        for candidate in product(*expanded):
+            path = _ROUTE_LEGACY.get("/".join(candidate), "/".join(candidate))
+            legacy = path.split("/")
+            if len(legacy) >= 3 and not any("$" in part for part in legacy):
+                cells.add((legacy[1], legacy[-1][:-3]))
 
     instruments: set[str] = set()
     for match in _INSTRUMENT.finditer(text):

@@ -8,7 +8,7 @@
 #
 # WHAT THIS MEASURES. One cell, one process:
 #
-#   scripts/point_source_source/likelihood_breakdown/gradient_mode_library_ab.py
+#   scripts/point_source_source/source_plane/gradient_mode_library_ab.py
 #      Rungs L5 / L24 (phase 2c's ladder) x solved / plain lanes. Per rung x
 #      lane, search.fit is run until MultiStartGradient._fit jits its
 #      _value_and_grad_finite objective (jax.jit wrapped by a recorder, fit
@@ -140,7 +140,7 @@ echo "=========================================="
 echo "gradient_mode library A/B (20 x 20)"
 date
 echo "loadavg: $(cat /proc/loadavg)"
-python3 -u scripts/point_source_source/likelihood_breakdown/gradient_mode_library_ab.py --config-name $AB_CONFIG_NAME --rounds 20 --calls 20
+python3 -u scripts/point_source_source/source_plane/gradient_mode_library_ab.py --config-name $AB_CONFIG_NAME --rounds 20 --calls 20
 
 echo "=========================================="
 echo "loadavg: $(cat /proc/loadavg)"

@@ -24,7 +24,7 @@
 #                InversionImagingSparse). The half-matrix-free comparator: it
 #                replaces the mapping matrix, not the solve, so it still forms a
 #                dense F+lambda*H for the reconstruction sub-rows.
-#   matrix_free  scripts/imaging/likelihood_breakdown/matrix_free.py — PCG on
+#   matrix_free  scripts/imaging/pixelized/matrix_free.py — PCG on
 #                operator products plus SLQ for both log determinants, with the
 #                dense comparators measured in the same process (and wrapped, so
 #                a leg whose comparators OOM still emits every matrix-free row).
@@ -141,7 +141,7 @@ nvidia-smi
 # the fiducial submits so a sweep row is comparable to its n=1500 row.
 case "$SWEEP_MESH" in
     rectangular)
-        SWEEP_CELL=pixelization
+        SWEEP_CELL=rectangular
         REG_ARGS=()
         MESH_DESC="rectangular bilinear adapt mesh, nearest square to N"
         ;;
@@ -210,7 +210,7 @@ python3 -c "import autoarray, autolens; print('autoarray.__file__ =', autoarray.
 
 case "$SWEEP_PATH" in
     dense)
-        python3 -u scripts/imaging/likelihood_breakdown/${SWEEP_CELL}.py \
+        python3 -u scripts/imaging/${SWEEP_CELL}/likelihood_breakdown.py \
             --config-name "$SWEEP_CONFIG_NAME" \
             --source-pixels "$SWEEP_N" \
             "${REG_ARGS[@]}" \
@@ -218,7 +218,7 @@ case "$SWEEP_PATH" in
             --vmap-batch 16
         ;;
     sparse)
-        python3 -u scripts/imaging/likelihood_breakdown/${SWEEP_CELL}.py \
+        python3 -u scripts/imaging/${SWEEP_CELL}/likelihood_breakdown.py \
             --config-name "$SWEEP_CONFIG_NAME" \
             --source-pixels "$SWEEP_N" \
             "${REG_ARGS[@]}" \
@@ -227,7 +227,7 @@ case "$SWEEP_PATH" in
             --sparse
         ;;
     matrix_free)
-        python3 -u scripts/imaging/likelihood_breakdown/matrix_free.py \
+        python3 -u scripts/imaging/pixelized/matrix_free.py \
             --mesh "$SWEEP_MESH" \
             --source-pixels "$SWEEP_N" \
             --config-name "$SWEEP_CONFIG_NAME" \

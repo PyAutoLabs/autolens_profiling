@@ -68,7 +68,7 @@ echo "Cell:           likelihood_breakdown/interferometer/delaunay"
 echo "Instrument:     alma_high"
 echo "Precision:      fp64"
 echo "Leg:            hpc_a100_fp64 (sparse steps + levers)"
-python3 -u scripts/interferometer/likelihood_breakdown/delaunay.py \
+python3 -u scripts/interferometer/delaunay/likelihood_breakdown.py \
     --instrument alma_high \
     --config-name hpc_a100_fp64 \
     --solver-ab \

@@ -49,7 +49,7 @@ echo "Inversion path: dense (mapping) + W~ arm"
 
 cd $AP_ROOT
 
-python3 scripts/interferometer/likelihood_breakdown/mge.py \
+python3 scripts/interferometer/mge/likelihood_breakdown.py \
     --config-name hpc_a100_fp64 \
     --instrument alma \
     --w-tilde \

@@ -67,7 +67,7 @@ done
 
 cd $AP_ROOT
 
-python3 -u scripts/imaging/likelihood_breakdown/delaunay_nn.py \
+python3 -u scripts/imaging/delaunay_nn/likelihood_breakdown.py \
     --config-name hpc_a100_fp64_vmap64 \
     --split-setup \
     --vmap-batch 64

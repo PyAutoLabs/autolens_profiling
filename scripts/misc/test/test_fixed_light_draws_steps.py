@@ -48,7 +48,7 @@ if str(_misc) not in _sys.path:
 
 from likelihood_breakdown import fixed_light_draws_steps as flds  # noqa: E402
 
-CELL = ROOT / "scripts" / "imaging" / "likelihood_breakdown" / "fixed_light_draws.py"
+CELL = ROOT / "scripts/imaging/pixelized/fixed_light_draws.py"
 
 
 # ---------------------------------------------------------------------------

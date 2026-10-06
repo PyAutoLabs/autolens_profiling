@@ -1,6 +1,6 @@
 """Extract the real source-plane DelaunayNN mesh grid from the HST breakdown cell.
 
-Reuses the minimum of scripts/imaging/likelihood_breakdown/delaunay_nn.py needed
+Reuses the minimum of scripts/imaging/delaunay_nn/likelihood_breakdown.py needed
 to reach ``relocated_mesh_grid`` (1500 Hilbert vertices traced to the source
 plane and border-relocated). Writes it to --out as .npy.
 

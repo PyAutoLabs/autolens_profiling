@@ -52,8 +52,8 @@ if str(_misc) not in _sys.path:
 from likelihood_breakdown import active_set_steps as ass  # noqa: E402
 from likelihood_breakdown import fixed_light_cpu_kernels as flck  # noqa: E402
 
-KERNEL_CELL = ROOT / "scripts" / "imaging" / "likelihood_breakdown" / "fixed_light_cpu_kernels.py"
-LIBRARY_CELL = ROOT / "scripts" / "imaging" / "likelihood_breakdown" / "fixed_light_library.py"
+KERNEL_CELL = ROOT / "scripts/imaging/pixelized/fixed_light_cpu_kernels.py"
+LIBRARY_CELL = ROOT / "scripts/imaging/pixelized/fixed_light_library.py"
 
 
 # ---------------------------------------------------------------------------

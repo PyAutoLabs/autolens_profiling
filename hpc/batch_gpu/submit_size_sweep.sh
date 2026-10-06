@@ -191,19 +191,19 @@ while read -r leg_path leg_mesh leg_n; do
         # What the leg will actually run, so a dry run says the cell and the
         # flags without opening the submit.
         case "$leg_mesh" in
-            rectangular) cell=pixelization; reg="" ;;
+            rectangular) cell=rectangular; reg="" ;;
             delaunay)    cell=delaunay;     reg=" --regularization adapt_split" ;;
             delaunay_nn) cell=delaunay_nn;  reg=" --regularization adapt_split" ;;
         esac
         case "$leg_path" in
             dense)
-                echo "      python3 -u scripts/imaging/likelihood_breakdown/${cell}.py --config-name hpc_a100_fp64_n${leg_n} --source-pixels ${leg_n}${reg} --split-setup --vmap-batch 16"
+                echo "      python3 -u scripts/imaging/${cell}/likelihood_breakdown.py --config-name hpc_a100_fp64_n${leg_n} --source-pixels ${leg_n}${reg} --split-setup --vmap-batch 16"
                 ;;
             sparse)
-                echo "      python3 -u scripts/imaging/likelihood_breakdown/${cell}.py --config-name hpc_a100_fp64_n${leg_n} --source-pixels ${leg_n}${reg} --split-setup --vmap-batch 16 --sparse"
+                echo "      python3 -u scripts/imaging/${cell}/likelihood_breakdown.py --config-name hpc_a100_fp64_n${leg_n} --source-pixels ${leg_n}${reg} --split-setup --vmap-batch 16 --sparse"
                 ;;
             matrix_free)
-                echo "      python3 -u scripts/imaging/likelihood_breakdown/matrix_free.py --mesh ${leg_mesh} --source-pixels ${leg_n} --config-name hpc_a100_fp64_matrix_free_n${leg_n}${reg} --no-pdip --slq-probes 16 --slq-steps 20,80,320 --vmap-batch 16"
+                echo "      python3 -u scripts/imaging/pixelized/matrix_free.py --mesh ${leg_mesh} --source-pixels ${leg_n} --config-name hpc_a100_fp64_matrix_free_n${leg_n}${reg} --no-pdip --slq-probes 16 --slq-steps 20,80,320 --vmap-batch 16"
                 ;;
         esac
         continue

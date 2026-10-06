@@ -588,6 +588,8 @@ def build(root, generated, revision):
         "unbound_findings": dedupe_findings(findings),
         "navigation": script_inventory(root, reg),
     }
+    if (root / "catalogue/script_routes.json").exists():
+        result["script_routes"] = source_routes(root)
     apply_bindings(root, reg, result)
     validate_local(root, result)
     return result
@@ -621,12 +623,25 @@ def dedupe_findings(items):
     return list(sorted(result.values(), key=lambda x: x["id"]))
 
 
+def source_routes(root):
+    # The stdlib reader validates routes without importing any scientific leaf.
+    sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+    from _script_routes import load_routes
+
+    return load_routes(root)
+
+
 def script_inventory(root, reg):
     result = []
+    declared = (
+        source_routes(root)["routes"] if (root / "catalogue/script_routes.json").exists() else []
+    )
+    canonical = {row["path"]: row for row in declared}
+    legacy = {row["legacy"] for row in declared}
     for path in sorted((root / "scripts").rglob("*.py")):
         rel = path.relative_to(root).as_posix()
         parts = path.relative_to(root / "scripts").parts
-        if "__pycache__" in parts or path.name == "__init__.py":
+        if "__pycache__" in parts or path.name == "__init__.py" or rel in legacy:
             continue
         if parts[0] == "misc":
             if parts[1] in ("test", "tooling"):
@@ -634,8 +649,21 @@ def script_inventory(root, reg):
             category = "shared_measurement_tools"
         else:
             category = "scientific_entrypoint"
-        dataset, model, _instrument = route(rel, {}, reg)
-        result.append({"path": rel, "dataset": dataset, "model": model, "category": category})
+        if rel in canonical:
+            row = canonical[rel]
+            result.append(
+                {
+                    "path": rel,
+                    "dataset": row["dataset"],
+                    "model": row["model"],
+                    "measurement": row["measurement"],
+                    "legacy_paths": [row["legacy"]],
+                    "category": "scientific_helper" if path.name.startswith("_") else category,
+                }
+            )
+        else:
+            dataset, model, _instrument = route(rel, {}, reg)
+            result.append({"path": rel, "dataset": dataset, "model": model, "category": category})
     return result
 
 

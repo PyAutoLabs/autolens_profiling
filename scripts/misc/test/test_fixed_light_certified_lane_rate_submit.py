@@ -45,8 +45,8 @@ SUBMIT = (
     / "batch_gpu"
     / "submit_breakdown_imaging_fixed_light_certified_lane_rate_a100_hst_fp64"
 )
-CELL = ROOT / "scripts" / "imaging" / "likelihood_breakdown" / "fixed_light_trace.py"
-CAPTURE = ROOT / "scripts" / "imaging" / "likelihood_breakdown" / "nautilus_batch_capture.py"
+CELL = ROOT / "scripts/imaging/pixelized/fixed_light_trace.py"
+CAPTURE = ROOT / "scripts/imaging/pixelized/nautilus_batch_capture.py"
 PIPELINE_FULL_MODEL = (
     ROOT.parent / "euclid_strong_lens_modeling_pipeline" / "scripts" / "full_model.py"
 )

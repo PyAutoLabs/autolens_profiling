@@ -1,6 +1,6 @@
 """NumPy / numba harness for the interferometer pixelized breakdown cells (library dispatch).
 
-``scripts/interferometer/likelihood_breakdown/delaunay_numba.py`` (Hilbert-1500 Delaunay)
+``scripts/interferometer/delaunay/likelihood_breakdown_numba.py`` (Hilbert-1500 Delaunay)
 and ``.../pixelization_numba.py`` (rectangular 39x39) are thin CLI wrappers over this
 module (autolens_profiling#326, interferometer likelihood campaign 3/3, phase 1). It is the
 CPU sibling of the JAX harness ``interferometer_pixelized.py`` and builds its inputs with

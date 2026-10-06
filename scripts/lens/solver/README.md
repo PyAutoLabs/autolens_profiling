@@ -85,7 +85,7 @@ divided by Σ x_ref — spurious mass on reference-*inactive* columns, which `am
 see because they score reference-active columns only; added 2026-09-30) and
 `active_set_mismatch` (columns whose activity `v > 1e-6·max v` differs from the reference);
 `objective_gap` (relative to the reference objective); `kkt_residual_scaled` (the
-`scripts/imaging/hazards/pixelization.py` scale-normalised KKT residual: max of primal violation,
+`scripts/imaging/rectangular/hazards.py` scale-normalised KKT residual: max of primal violation,
 dual violation and complementarity). Rows also carry the solver's own `converged` / `iterations`
 and the median warm wall-clock (`wall_ms`, 5 repeats after one compile call).
 
@@ -192,7 +192,7 @@ _System `euclid_vis_lp/euclid_vis_lp_k0`; eager NumPy `total_source_flux` 3.3198
 
 1. Add a `--source` runner to [`capture.py`](./capture.py), or capture `(curvature_reg_matrix, data_vector)` as the JAX likelihood hands them to
    `reconstruction_positive_only_from` — wrap that function the way
-   [`mge_nnls_capture.py`](../../imaging/hazards/mge_nnls_capture.py) does (`_recording_solver`).
+   [`mge_nnls_capture.py`](../../imaging/mge/hazards_nnls_capture.py) does (`_recording_solver`).
 2. Call `_corpus.add_group(name, systems, source)` with one dict per system (`name`, `Q`, `q`,
    and whatever of `model`, `source_column_index_list`, `no_regularization_index_list`,
    `library_versions` you actually know — unknown fields stay `null`, never a guess) and

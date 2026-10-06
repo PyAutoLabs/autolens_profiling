@@ -149,7 +149,7 @@ def test__phase8b_as_fixed_passes():
 
 def test__a_submit_without_a_block_is_not_checked():
     """No block, nothing to validate — the gate only judges declared bases."""
-    bare = "#!/bin/bash -l\n#SBATCH --time=1:00:00\npython3 scripts/imaging/likelihood_runtime/mge.py\n"
+    bare = "#!/bin/bash -l\n#SBATCH --time=1:00:00\npython3 scripts/imaging/mge/likelihood_runtime.py\n"
     assert check_text(bare) == []
 
 
@@ -266,7 +266,7 @@ def test__cells_run_ignores_commented_invocations():
     text = """#!/bin/bash -l
 # Score with:
 #   python3 scripts/misc/tooling/build_readme.py
-python3 scripts/imaging/likelihood_runtime/mge.py --instrument hst
+python3 scripts/imaging/mge/likelihood_runtime.py --instrument hst
 """
     cells, _ = cells_run(text)
     assert cells == {("imaging", "mge")}

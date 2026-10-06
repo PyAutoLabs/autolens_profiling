@@ -62,6 +62,9 @@ from pathlib import Path
 
 _REPO_ROOT = _profiling_root()  # autolens_profiling/
 _DEFAULT_OUTPUT_ROOT = _REPO_ROOT / "results" / "runtime"
+sys.path.insert(0, str(_REPO_ROOT))
+from _script_routes import legacy_stem, runtime_path
+
 _DEFAULT_PYTHON = sys.executable
 
 
@@ -304,7 +307,10 @@ def _run_one(
                 )
         except subprocess.TimeoutExpired:
             elapsed = time.time() - t0
-            marker = out_dir / f"{script_path.stem}_{config.name}{log_suffix}.unusable.json"
+            marker = (
+                out_dir
+                / f"{legacy_stem(script_path, _REPO_ROOT)}_{config.name}{log_suffix}.unusable.json"
+            )
             import json
 
             marker.write_text(
@@ -373,18 +379,7 @@ def main() -> int:
     overall_t0 = time.time()
 
     for cls, model, inst in cells:
-        # Dataset-first leaf layout: datacube nests under interferometer/.
-        if cls == "datacube":
-            script_path = (
-                _REPO_ROOT
-                / "scripts"
-                / "interferometer"
-                / "likelihood_runtime"
-                / "datacube"
-                / f"{model}.py"
-            )
-        else:
-            script_path = _REPO_ROOT / "scripts" / cls / "likelihood_runtime" / f"{model}.py"
+        script_path = runtime_path(cls, model, _REPO_ROOT)
         cell_id = _cell_id(cls, model, inst)
         if not script_path.exists():
             print(f"\n!!! missing script: {script_path}")

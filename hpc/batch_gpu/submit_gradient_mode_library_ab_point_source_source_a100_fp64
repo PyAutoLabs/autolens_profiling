@@ -9,7 +9,7 @@
 # (hpc/batch_cpu/submit_gradient_mode_library_ab_point_source_source_ral_cpu_fp64),
 # one process, on ONE RAL A100:
 #
-#   scripts/point_source_source/likelihood_breakdown/gradient_mode_library_ab.py
+#   scripts/point_source_source/source_plane/gradient_mode_library_ab.py
 #      (L5 / L24 x solved / plain; the search's own captured _vmapped per mode,
 #      gated then timed 20 x 20 interleaved; end-to-end L5 fits per mode).
 #      On a GPU the end-to-end fits' _fit wall also includes the search's
@@ -122,7 +122,7 @@ print('ASSERT OK: GPU backend, gradient_mode merge commits from the scratch clon
 echo "=========================================="
 echo "gradient_mode library A/B on A100 (20 x 20)"
 date
-python3 -u scripts/point_source_source/likelihood_breakdown/gradient_mode_library_ab.py --config-name hpc_a100_fp64 --rounds 20 --calls 20
+python3 -u scripts/point_source_source/source_plane/gradient_mode_library_ab.py --config-name hpc_a100_fp64 --rounds 20 --calls 20
 
 echo "=========================================="
 nvidia-smi --query-gpu=name,memory.used --format=csv || true

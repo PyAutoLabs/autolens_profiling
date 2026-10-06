@@ -8,7 +8,7 @@
 # (hpc/batch_cpu/submit_backward_pass_ab_point_source_source_ral_cpu_fp64), one
 # process, on ONE RAL A100:
 #
-#   scripts/point_source_source/likelihood_breakdown/backward_pass_ab.py
+#   scripts/point_source_source/source_plane/backward_pass_ab.py
 #      (rev / fwd / rev_jacrev / rev_analytic / fwd_analytic per lane, plus the
 #      forward jacfwd / jacrev / analytic context row; correctness gate before
 #      timing; 20 x 20 interleaved). The phase-2c rule is decided on RAL CPU;
@@ -101,7 +101,7 @@ print('ASSERT OK: GPU backend, libraries from /mnt/ral/jnightin/PyAuto')
 echo "=========================================="
 echo "backward-pass A/B on A100 (20 x 20)"
 date
-python3 -u scripts/point_source_source/likelihood_breakdown/backward_pass_ab.py --config-name hpc_a100_fp64 --rounds 20 --calls 20
+python3 -u scripts/point_source_source/source_plane/backward_pass_ab.py --config-name hpc_a100_fp64 --rounds 20 --calls 20
 
 echo "=========================================="
 nvidia-smi --query-gpu=name,memory.used --format=csv || true

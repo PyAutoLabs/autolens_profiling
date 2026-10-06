@@ -33,10 +33,10 @@ uniform in ±1e5 wavelengths, a 400×400 circular mask at 0.05″/pix (125 676 p
 
 ```bash
 export OMP_NUM_THREADS=8 OPENBLAS_NUM_THREADS=8 MKL_NUM_THREADS=8 JAX_PLATFORMS=cpu
-python scripts/interferometer/streaming_scaling/in_memory.py
-python scripts/interferometer/streaming_scaling/accumulate.py --n-vis 1e6,4e6,1.6e7 --chunks 65536,4096 --extra 5e7:65536,1e8:65536
-python scripts/interferometer/streaming_scaling/parity.py --n-vis 4e6,5e5
-python scripts/interferometer/streaming_scaling/plot_scaling.py
+python scripts/interferometer/delaunay/streaming_in_memory.py
+python scripts/interferometer/delaunay/streaming_accumulate.py --n-vis 1e6,4e6,1.6e7 --chunks 65536,4096 --extra 5e7:65536,1e8:65536
+python scripts/interferometer/delaunay/streaming_parity.py --n-vis 4e6,5e5
+python scripts/interferometer/delaunay/streaming_plot_scaling.py
 ```
 
 Results are written to `results/streaming_scaling/` as

@@ -88,7 +88,7 @@ cd $AP_ROOT
 echo "=== import provenance ==="
 python3 -c "import autoarray, autolens; print('autoarray.__file__ =', autoarray.__file__); print('autoarray.__version__ =', autoarray.__version__); print('autolens.__file__ =', autolens.__file__)"
 
-python3 -u scripts/imaging/likelihood_breakdown/delaunay_nn.py \
+python3 -u scripts/imaging/delaunay_nn/likelihood_breakdown.py \
     --config-name hpc_a100_fp64_recon_split \
     --regularization adapt_split \
     --split-setup \

@@ -6,7 +6,7 @@
 #
 # WHAT THIS MEASURES. One cell, one process, on ONE pinned RAL CPU node:
 #
-#   scripts/point_source_source/likelihood_breakdown/backward_pass_ab.py
+#   scripts/point_source_source/source_plane/backward_pass_ab.py
 #      Interleaved A/B of how the gradient of the fused FitPositionsSourceSolved
 #      (solved lane) and FitPositionsSource (plain lane) likelihoods is computed:
 #      rev (jax.value_and_grad, production) vs fwd (jax.jacfwd over the 5/7
@@ -127,7 +127,7 @@ echo "=========================================="
 echo "backward-pass A/B (20 x 20)"
 date
 echo "loadavg: $(cat /proc/loadavg)"
-python3 -u scripts/point_source_source/likelihood_breakdown/backward_pass_ab.py --config-name $AB_CONFIG_NAME --rounds 20 --calls 20
+python3 -u scripts/point_source_source/source_plane/backward_pass_ab.py --config-name $AB_CONFIG_NAME --rounds 20 --calls 20
 
 echo "=========================================="
 echo "loadavg: $(cat /proc/loadavg)"

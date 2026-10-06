@@ -8,10 +8,10 @@
 # (hpc/batch_cpu/submit_breakdown_point_source_source_source_plane_ral_cpu_fp64),
 # two processes, on ONE RAL A100:
 #
-#   1. scripts/point_source_source/likelihood_breakdown/source_plane.py
+#   1. scripts/point_source_source/source_plane/likelihood_breakdown.py
 #      (fused solved/plain likelihoods, prefix rows, CSE probes, dispatch floors,
 #      value_and_grad cost; eager/vmap/literal/non-zero-gradient asserts).
-#   2. scripts/point_source_source/likelihood_breakdown/pytree_input_ab.py
+#   2. scripts/point_source_source/source_plane/pytree_input_ab.py
 #      (pytree vs flat_vector vs flat_leaves, forward / value_and_grad / floor per
 #      lane, 20 x 20 interleaved; route agreement rtol 1e-10 + non-zero grads).
 #
@@ -110,12 +110,12 @@ print('ASSERT OK: GPU backend, libraries from /mnt/ral/jnightin/PyAuto')
 echo "=========================================="
 echo "run 1/2: source_plane breakdown on A100"
 date
-python3 -u scripts/point_source_source/likelihood_breakdown/source_plane.py --config-name hpc_a100_fp64
+python3 -u scripts/point_source_source/source_plane/likelihood_breakdown.py --config-name hpc_a100_fp64
 
 echo "=========================================="
 echo "run 2/2: pytree-input A/B on A100 (20 x 20)"
 date
-python3 -u scripts/point_source_source/likelihood_breakdown/pytree_input_ab.py --config-name hpc_a100_fp64 --rounds 20 --calls 20
+python3 -u scripts/point_source_source/source_plane/pytree_input_ab.py --config-name hpc_a100_fp64 --rounds 20 --calls 20
 
 echo "=========================================="
 nvidia-smi --query-gpu=name,memory.used --format=csv || true

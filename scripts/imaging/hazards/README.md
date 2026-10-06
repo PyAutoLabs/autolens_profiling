@@ -42,7 +42,7 @@ Run the cell directly to write its raw probe, or run the shared scanner to
 write semantic findings:
 
 ```bash
-python scripts/imaging/hazards/pixelization.py
+python scripts/imaging/rectangular/hazards.py
 python scripts/misc/hazards/scan.py --subject likelihood
 ```
 

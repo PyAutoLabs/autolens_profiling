@@ -455,7 +455,7 @@ def imaging_pixelization_probe(context) -> dict[str, list[LikelihoodProbeRow]]:
     key = "imaging_pixelization_probe"
     cached = context.cache.get(key)
     if cached is None:
-        path = context.repo_root / "scripts" / "imaging" / "hazards" / "pixelization.py"
+        path = context.repo_root / "scripts/imaging/rectangular/hazards.py"
         cached = _load_cell(path).run_probe(backends=context.backends)
         context.cache[key] = cached
     return cached

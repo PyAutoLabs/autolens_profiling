@@ -98,7 +98,7 @@ Each is one warm-up call followed by the **median** of `--n-repeats` (default
 always divisible by the work it did.
 
 The grid construction mirrors the `--variant legacy` configuration of
-[`scripts/imaging/likelihood_breakdown/pixelization_numba.py`](../../misc/likelihood_breakdown/README.md)
+[`scripts/imaging/rectangular/likelihood_breakdown_numba.py`](../../misc/likelihood_breakdown/README.md)
 exactly — circular 3.5" mask, `over_sample_size_via_radial_bins_from` with
 `sub_size_list=[4, 2, 2]` at `radial_list=[0.3, 0.6]`,
 `over_sample_size_pixelization=1` — so a number here is directly comparable to
@@ -131,7 +131,7 @@ than the deflection (measured: `gNFW`/hst 282 ms → 1.1 ms, `tracer_over_raw` 0
 
 The memo's own effect is measured deliberately, and only, in `basis.py` — which reports
 memo-off against memo-on for the same basis — and at the likelihood level in
-[`scripts/imaging/likelihood_runtime/pixelization_numba_mge_mass.py`](../../imaging/likelihood_runtime/pixelization_numba_mge_mass.py).
+[`scripts/imaging/rectangular/likelihood_runtime_numba_mge_mass.py`](../../imaging/rectangular/likelihood_runtime_numba_mge_mass.py).
 
 ### cProfile: attribution, not timing
 

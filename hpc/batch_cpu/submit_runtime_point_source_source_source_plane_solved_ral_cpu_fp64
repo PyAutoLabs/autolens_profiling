@@ -94,7 +94,7 @@ print('jax', jax.__version__, jax.devices(), jax.default_backend())
 assert jax.default_backend() == 'cpu', 'JAX is not on the CPU'
 "
 
-python3 scripts/point_source_source/likelihood_runtime/source_plane_solved.py \
+python3 scripts/point_source_source/source_plane/likelihood_runtime_solved.py \
     --config-name hpc_ral_cpu_fp64
 
 echo "loadavg: $(cat /proc/loadavg)"

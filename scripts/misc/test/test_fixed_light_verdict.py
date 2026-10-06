@@ -2,7 +2,7 @@
 
 Phase 5 is the epic's verdict: the whole library likelihood call on HST **and
 Euclid**, at three source-pixel counts, on four hardware legs. Three switches on
-``scripts/imaging/likelihood_breakdown/fixed_light_library.py`` make that grid
+``scripts/imaging/pixelized/fixed_light_library.py`` make that grid
 runnable, and each one can silently produce a *different* table than the one the
 note claims:
 
@@ -42,7 +42,7 @@ def _profiling_root() -> _Path:
 
 
 ROOT = _profiling_root()
-CELL_PATH = ROOT / "scripts" / "imaging" / "likelihood_breakdown" / "fixed_light_library.py"
+CELL_PATH = ROOT / "scripts/imaging/pixelized/fixed_light_library.py"
 
 #: Names lifted from the cell's module body and executed in one namespace: the
 #: three helpers plus the constants they close over.

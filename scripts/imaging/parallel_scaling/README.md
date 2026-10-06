@@ -14,8 +14,8 @@ modeling on CPU-abundant hardware. Companion cells:
 | `pixelization_numba.py` | Likelihood throughput vs `--cores` under (a) serial in-process, (b) the Pool-object design `af.Nautilus(number_of_cores=P)` uses today, (c) an initializer-cached worker pool; plus the pickle payload each design pays. |
 
 ```bash
-python scripts/imaging/parallel_scaling/pixelization_numba.py --instrument euclid
-python scripts/imaging/parallel_scaling/pixelization_numba.py --cores 1,2,4,8,16,32 --n-points 100   # HPC CPU node
+python scripts/imaging/rectangular/parallel_scaling_numba.py --instrument euclid
+python scripts/imaging/rectangular/parallel_scaling_numba.py --cores 1,2,4,8,16,32 --n-points 100   # HPC CPU node
 ```
 
 Results land in `results/parallel_scaling/imaging/` as versioned

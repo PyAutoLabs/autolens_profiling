@@ -94,13 +94,13 @@ assert jax.default_backend() == 'gpu', 'JAX is not on the GPU'
 
 # Phase A -- vmap-probe (early exit with memory_analysis + batch recommendation)
 echo "--- vmap-probe ---"
-python3 scripts/point_source_source/likelihood_runtime/source_plane_solved.py \
+python3 scripts/point_source_source/source_plane/likelihood_runtime_solved.py \
     --vmap-probe
 
 # Phase B -- full single-JIT + vmap timing at the probed batch
 echo "--- full timing ---"
 echo "loadavg: $(cat /proc/loadavg)"
-python3 scripts/point_source_source/likelihood_runtime/source_plane_solved.py \
+python3 scripts/point_source_source/source_plane/likelihood_runtime_solved.py \
     --config-name hpc_a100_fp64
 
 echo "loadavg: $(cat /proc/loadavg)"

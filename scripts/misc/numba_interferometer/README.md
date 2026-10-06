@@ -158,8 +158,8 @@ python -m pytest scripts/misc/numba_interferometer/test_parity.py -q
 # --kernel selects the curvature kernel and lands in the output basename, so arms
 # never overwrite each other. --kernel jax runs InversionInterferometerSparse
 # instead, on the same fit — that is the comparator arm.
-OMP_NUM_THREADS=1 python scripts/interferometer/likelihood_breakdown/delaunay_numba.py --kernel direct_conv
-OMP_NUM_THREADS=1 python scripts/interferometer/likelihood_breakdown/pixelization_numba.py --kernel jax
+OMP_NUM_THREADS=1 python scripts/interferometer/delaunay/likelihood_breakdown_numba.py --kernel direct_conv
+OMP_NUM_THREADS=1 python scripts/interferometer/rectangular/likelihood_breakdown_numba.py --kernel jax
 
 # The synthetic bake-off (no PyAutoLens stack; sma / alma / alma_high x delaunay / rect).
 OMP_NUM_THREADS=1 NUMBA_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 \
@@ -171,7 +171,7 @@ OMP_NUM_THREADS=8 NUMBA_NUM_THREADS=8 MKL_NUM_THREADS=8 OPENBLAS_NUM_THREADS=8 \
   python scripts/misc/numba_interferometer/bakeoff.py --mode threads --threads 8
 
 # The JAX/FFT comparator whose rows phase 2 ingests.
-python scripts/interferometer/likelihood_breakdown/delaunay.py --instrument sma
+python scripts/interferometer/delaunay/likelihood_breakdown.py --instrument sma
 ```
 
 The `W~` preload is `O(N_pix · K)` — seconds at `sma`, 10-15 minutes at `alma`'s

@@ -74,7 +74,7 @@ echo "Cell:           likelihood_breakdown/interferometer/pixelization"
 echo "Instrument:     alma"
 echo "Precision:      fp64"
 echo "Leg:            N sweep, --source-pixels 1024"
-python3 -u scripts/interferometer/likelihood_breakdown/pixelization.py \
+python3 -u scripts/interferometer/rectangular/likelihood_breakdown.py \
     --instrument alma \
     --config-name hpc_a100_fp64_n1024 \
     --source-pixels 1024 \
@@ -90,7 +90,7 @@ echo "Cell:           likelihood_breakdown/interferometer/pixelization"
 echo "Instrument:     alma"
 echo "Precision:      fp64"
 echo "Leg:            N sweep, --source-pixels 2500"
-python3 -u scripts/interferometer/likelihood_breakdown/pixelization.py \
+python3 -u scripts/interferometer/rectangular/likelihood_breakdown.py \
     --instrument alma \
     --config-name hpc_a100_fp64_n2500 \
     --source-pixels 2500 \
@@ -106,7 +106,7 @@ echo "Cell:           likelihood_breakdown/interferometer/pixelization"
 echo "Instrument:     alma"
 echo "Precision:      fp64"
 echo "Leg:            N sweep, --source-pixels 4096"
-python3 -u scripts/interferometer/likelihood_breakdown/pixelization.py \
+python3 -u scripts/interferometer/rectangular/likelihood_breakdown.py \
     --instrument alma \
     --config-name hpc_a100_fp64_n4096 \
     --source-pixels 4096 \

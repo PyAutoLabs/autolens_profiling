@@ -6,7 +6,7 @@
 #
 # WHAT THIS MEASURES. One cell, one process:
 #
-#   scripts/point_source_source/likelihood_breakdown/gradient_mode_crossover.py
+#   scripts/point_source_source/source_plane/gradient_mode_crossover.py
 #      A model ladder L5 / L7 / L9 / L11 / L16 / L19 (+ extension L24) of
 #      solved-lane free parameters (plain lane +3), each timed rev
 #      (jax.value_and_grad) vs fwd (jax.jacfwd over the flat parameter vector,
@@ -112,7 +112,7 @@ echo "=========================================="
 echo "gradient-mode crossover (20 x 20)"
 date
 echo "loadavg: $(cat /proc/loadavg)"
-python3 -u scripts/point_source_source/likelihood_breakdown/gradient_mode_crossover.py --config-name $AB_CONFIG_NAME --rounds 20 --calls 20
+python3 -u scripts/point_source_source/source_plane/gradient_mode_crossover.py --config-name $AB_CONFIG_NAME --rounds 20 --calls 20
 
 echo "=========================================="
 echo "loadavg: $(cat /proc/loadavg)"
