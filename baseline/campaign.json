@@ -1,0 +1,560 @@
+{
+  "schema": "profiling-baseline-campaign",
+  "version": 1,
+  "campaign_id": "setup-baseline-v1",
+  "status": "draft",
+  "purpose": "Proposed fresh setup baseline; no measurements or acceptance authorized.",
+  "inventory": {
+    "catalogue/registry.json": "840262dd18a5cdb1fe1200a381d2ca618a8d66dad56a8bcbf33c9a4aaf4af8e0",
+    "catalogue/script_routes.json": "f9fea1de9fbc431cbd70bb36d90bd7a731d2cc5d21bcbd335cba3448068ee088"
+  },
+  "software": {
+    "revisions": {
+      "autolens_profiling": null,
+      "PyAutoNerves": null,
+      "PyAutoFit": null,
+      "PyAutoArray": null,
+      "PyAutoGalaxy": null,
+      "PyAutoLens": null
+    },
+    "environment_lock_sha256": null
+  },
+  "collection": {
+    "not_before_utc": null,
+    "not_after_utc": null,
+    "authorization_reference": null
+  },
+  "devices": {
+    "cpu": {
+      "host": null,
+      "processor": null,
+      "accelerator": "none",
+      "ram_bytes": null,
+      "device_memory_bytes": 0,
+      "driver": "none",
+      "backend": "cpu",
+      "threads": 1,
+      "cpu_affinity": null,
+      "partition": "ral",
+      "max_load_per_allocated_cpu": 0.1,
+      "max_other_gpu_processes": 0,
+      "environment_sha256": null
+    },
+    "gpu": {
+      "host": null,
+      "processor": null,
+      "accelerator": null,
+      "ram_bytes": null,
+      "device_memory_bytes": null,
+      "driver": null,
+      "backend": "cuda",
+      "threads": 1,
+      "cpu_affinity": null,
+      "partition": "gpu",
+      "max_load_per_allocated_cpu": 0.1,
+      "max_other_gpu_processes": 0,
+      "environment_sha256": null
+    },
+    "a100": {
+      "host": null,
+      "processor": null,
+      "accelerator": null,
+      "ram_bytes": null,
+      "device_memory_bytes": null,
+      "driver": null,
+      "backend": "cuda",
+      "threads": 1,
+      "cpu_affinity": null,
+      "partition": "gpu",
+      "max_load_per_allocated_cpu": 0.1,
+      "max_other_gpu_processes": 0,
+      "environment_sha256": null
+    }
+  },
+  "precisions": [
+    "fp64",
+    "mixed"
+  ],
+  "protocol": {
+    "warmup_calls": 3,
+    "repetitions": 10,
+    "batch_size": 1,
+    "cpu_timeout_seconds": 1800,
+    "sync": "all_output_leaves_before_and_after",
+    "aggregation": "median_with_raw_samples",
+    "scope": "single_call; no vmap batching",
+    "cpu_exclusion_policy": "Only a fresh CPU timeout at the frozen limit is an exclusion candidate. It never measures runtime or proves GPU usability; human review required."
+  },
+  "measurements": [
+    {
+      "id": "runtime",
+      "axis": "runtime",
+      "metric": "single_call",
+      "unit": "s",
+      "cache_state": "warm",
+      "method": "synchronized_single_call",
+      "description": "Fresh process; compile outside measurement; block_until_ready on every output before timer start and after each call; perf_counter seconds; retain each repetition."
+    },
+    {
+      "id": "breakdown",
+      "axis": "breakdown",
+      "metric": "components",
+      "unit": "s",
+      "cache_state": "warm",
+      "method": "synchronized_components",
+      "description": "Same setup as runtime. Synchronize each named component, retain independent component samples and declare cumulative versus exclusive accounting; never substitute summed components for a full call."
+    },
+    {
+      "id": "compile_cold",
+      "axis": "compile",
+      "metric": "compile",
+      "unit": "s",
+      "cache_state": "cold",
+      "method": "fresh_process_compile",
+      "description": "Fresh process per repetition, fixed jit transform only. Cold: empty isolated persistent cache. Warm: separately seeded persistent cache at identical signature/revisions, record cache hit evidence. Retain tracing/lowering/compilation boundaries; no runtime substitution."
+    },
+    {
+      "id": "compile_warm",
+      "axis": "compile",
+      "metric": "compile",
+      "unit": "s",
+      "cache_state": "warm",
+      "method": "fresh_process_compile",
+      "description": "Fresh process per repetition, fixed jit transform only. Cold: empty isolated persistent cache. Warm: separately seeded persistent cache at identical signature/revisions, record cache hit evidence. Retain tracing/lowering/compilation boundaries; no runtime substitution."
+    },
+    {
+      "id": "host_peak_rss",
+      "axis": "memory",
+      "metric": "host_peak_rss",
+      "unit": "MiB",
+      "cache_state": "warm",
+      "method": "isolated_process_peak_rss",
+      "description": "Fresh isolated process per repetition; collect OS peak resident set size across the declared full workload, normalize platform ru_maxrss units to MiB. Includes setup/compile; record starting RSS separately. Not device memory."
+    },
+    {
+      "id": "device_peak_allocated",
+      "axis": "memory",
+      "metric": "device_peak_allocated",
+      "unit": "B",
+      "cache_state": "warm",
+      "method": "allocator_peak_allocated",
+      "description": "Reset verified allocator high-water counter after warmup, synchronize full measured workload and retain peak allocated bytes. Require backend support; preallocation reservation, static memory analysis or one snapshot is not peak allocation."
+    }
+  ],
+  "setups": [
+    {
+      "id": "imaging/mge/hst",
+      "dataset": "imaging",
+      "model": "mge",
+      "instrument": "hst",
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "imaging/mge/jwst",
+      "dataset": "imaging",
+      "model": "mge",
+      "instrument": "jwst",
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "imaging/mge/ao",
+      "dataset": "imaging",
+      "model": "mge",
+      "instrument": "ao",
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "imaging/pixelization/hst",
+      "dataset": "imaging",
+      "model": "rectangular",
+      "instrument": "hst",
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "imaging/pixelization/jwst",
+      "dataset": "imaging",
+      "model": "rectangular",
+      "instrument": "jwst",
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "imaging/pixelization/ao",
+      "dataset": "imaging",
+      "model": "rectangular",
+      "instrument": "ao",
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "imaging/delaunay/hst",
+      "dataset": "imaging",
+      "model": "delaunay",
+      "instrument": "hst",
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "imaging/delaunay/jwst",
+      "dataset": "imaging",
+      "model": "delaunay",
+      "instrument": "jwst",
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "imaging/delaunay/ao",
+      "dataset": "imaging",
+      "model": "delaunay",
+      "instrument": "ao",
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "imaging/delaunay_nn/hst",
+      "dataset": "imaging",
+      "model": "delaunay_nn",
+      "instrument": "hst",
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "interferometer/mge/sma",
+      "dataset": "interferometer",
+      "model": "mge",
+      "instrument": "sma",
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "interferometer/pixelization/sma",
+      "dataset": "interferometer",
+      "model": "rectangular",
+      "instrument": "sma",
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "interferometer/pixelization/alma",
+      "dataset": "interferometer",
+      "model": "rectangular",
+      "instrument": "alma",
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "interferometer/pixelization/alma_high",
+      "dataset": "interferometer",
+      "model": "rectangular",
+      "instrument": "alma_high",
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "interferometer/pixelization/jvla",
+      "dataset": "interferometer",
+      "model": "rectangular",
+      "instrument": "jvla",
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "interferometer/delaunay/sma",
+      "dataset": "interferometer",
+      "model": "delaunay",
+      "instrument": "sma",
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "interferometer/delaunay/alma",
+      "dataset": "interferometer",
+      "model": "delaunay",
+      "instrument": "alma",
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "interferometer/delaunay/alma_high",
+      "dataset": "interferometer",
+      "model": "delaunay",
+      "instrument": "alma_high",
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "interferometer/delaunay/jvla",
+      "dataset": "interferometer",
+      "model": "delaunay",
+      "instrument": "jvla",
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "datacube/delaunay/sma",
+      "dataset": "datacube",
+      "model": "delaunay",
+      "instrument": "sma",
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "datacube/delaunay/alma",
+      "dataset": "datacube",
+      "model": "delaunay",
+      "instrument": "alma",
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "datacube/delaunay/alma_high",
+      "dataset": "datacube",
+      "model": "delaunay",
+      "instrument": "alma_high",
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "imaging/delaunay/euclid",
+      "dataset": "imaging",
+      "model": "delaunay",
+      "instrument": "euclid",
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "imaging/rectangular/euclid",
+      "dataset": "imaging",
+      "model": "rectangular",
+      "instrument": "euclid",
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "imaging/mge/euclid",
+      "dataset": "imaging",
+      "model": "mge",
+      "instrument": "euclid",
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "point_source_image/image_plane/unspecified",
+      "dataset": "point_source_image",
+      "model": "image_plane",
+      "instrument": null,
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "point_source_source/source_plane/unspecified",
+      "dataset": "point_source_source",
+      "model": "source_plane",
+      "instrument": null,
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "cluster/image_plane/unspecified",
+      "dataset": "cluster",
+      "model": "image_plane",
+      "instrument": null,
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "multi_dataset/delaunay/unspecified",
+      "dataset": "multi_dataset",
+      "model": "delaunay",
+      "instrument": null,
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    }
+  ],
+  "unknowns": [
+    "No frozen project/library revisions or environment lock chosen.",
+    "No collection authorization or time window.",
+    "Hardware/affinity/environment identity unselected; thread/load/method limits are proposals.",
+    "Each cell requires explicit complete settings and input hashes plus correctness witness and tolerances.",
+    "Compile per-cell builder unavailable; memory/breakdown instrumentation must demonstrate this protocol before collection.",
+    "Proposed fp64/mixed coverage is not evidence of support; enumerate exposes unsupported and unverified cells."
+  ]
+}
