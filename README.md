@@ -526,9 +526,14 @@ Scripts follow the JIT conventions documented in `autolens_workspace_developer/C
 - Extract `.array` from autoarray types before crossing the `jax.jit` boundary (autoarray types are not JAX pytrees as inputs).
 - Pass `xp=jnp` through PyAutoLens / PyAutoGalaxy / PyAutoArray functions to select the JAX backend.
 
-## Community & support
+## Community & Contributing
 
-- **Slack** — [PyAutoLens workspace](https://join.slack.com/t/pyautolens/shared_invite/zt-2cufp4eyf-fXfgMxRGuvg~bMrI3uOAxg) for questions.
-- **Issues** — file profiling bugs and feature requests on this repo's [issue tracker](https://github.com/PyAutoLabs/autolens_profiling/issues).
+**PyAutoLens** is built in the open by its users: everyone is welcome to ask questions,
+share what they have made with it, and contribute.
+
+Questions, ideas and bug reports: the [PyAutoLabs Discussions](https://github.com/orgs/PyAutoLabs/discussions).
+Chat with us on [Slack](https://join.slack.com/t/pyautolens/shared_invite/zt-2cufp4eyf-fXfgMxRGuvg~bMrI3uOAxg).
+
+Community-built tools and tutorials, and how to contribute: the [**PyAutoLens** community page](https://pyautolens.readthedocs.io/en/latest/general/community.html).
 
 <sub><i><a href="https://open.spotify.com/track/7c584s9RZQzkJDoC08VDJB">i just know that it get better with time</a></i></sub>
