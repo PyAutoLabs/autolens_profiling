@@ -1,4 +1,4 @@
-# Source migration inventory (Phase 4)
+# Source migration inventory and wrapper retirement
 
 The routing contract is [script_routes.json](script_routes.json), version 1.
 It inventories 80 moved scientific leaves/helpers. Scripts under `scripts/lens/`
@@ -13,9 +13,19 @@ image-plane/source-plane distinction. Imaging `pixelized/` holds experimental
 measurements with several CLI-selectable meshes, not a new mesh family. Sersic
 latent measurements and MGE-mass runtime variants are explicitly distinguished.
 
-Compatibility wrappers execute the canonical body with unchanged arguments and
-normal import/main semantics. They remain until an explicit removal decision
-following Brain and assistant migration; no time-based deletion is scheduled.
+The 80 compatibility wrappers were retired in the approved layout-completion
+phase after auditing project scripts, HPC submissions, CI, tests, Brain profiling
+and assistant lookup. These consumers use canonical paths; the remaining test
+loader was migrated. `_script_routes.load_routes` validates alias syntax and
+canonical file existence without requiring legacy files. `run_legacy` was removed.
+Old shell commands and Python imports must use the canonical paths below;
+`canonical_path`, `runtime_path` and `legacy_stem` retain historical lookup and
+output naming. Shared framework packages under `scripts/misc/` remain importable.
+
+Likelihood hazard documentation now lives beside the MGE and rectangular
+imaging cells. Parallel and streaming guides also live beside their canonical
+models. Historical note/campaign text and captured source strings remain intact;
+the generated solver corpus table still reports the original capturing script.
 New executions identify the canonical source in provenance. Archived source paths,
 measurements, pins and evidence qualifications are not rewritten.
 

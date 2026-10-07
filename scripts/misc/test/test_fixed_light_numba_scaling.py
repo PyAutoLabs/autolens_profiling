@@ -22,10 +22,7 @@ _FUNCTIONS = SimpleNamespace(solve=_solve)
 
 def _driver():
     os.environ["AUTOLENS_PROFILING_SMOKE"] = "1"
-    path = (
-        Path(__file__).resolve().parents[2]
-        / "imaging/likelihood_breakdown/fixed_light_numba_scaling.py"
-    )
+    path = Path(__file__).resolve().parents[2] / "imaging/pixelized/fixed_light_numba_scaling.py"
     spec = importlib.util.spec_from_file_location("fixed_light_numba_scaling_under_test", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)

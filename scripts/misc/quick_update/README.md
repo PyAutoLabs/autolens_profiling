@@ -17,6 +17,6 @@ These are the **scratch tier** of the repo:
 ## Running
 
 ```bash
-python quick_update/imaging.py
-python quick_update/interferometer_delaunay.py
+python scripts/imaging/mge/quick_update.py
+python scripts/interferometer/delaunay/quick_update.py
 ```

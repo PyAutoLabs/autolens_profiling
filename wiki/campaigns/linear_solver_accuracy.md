@@ -38,7 +38,7 @@ from library primitives, and cells that re-run on every release. This page is it
 Prior art: the [NNLS solver ledger](../../results/notes/nnls_solver_ledger.md), the
 [certified positive solver](certified_positive_solver.md) campaign, the
 [NNLS warm-start memo](../../results/nnls_warm_start/nnls_warm_start_memo.md) and the
-[hazards README](../../scripts/imaging/hazards/README.md) (where the #571 capture lives).
+[hazards README](../../scripts/imaging/mge/hazards.md) (where the #571 capture lives).
 
 ## Phases
 

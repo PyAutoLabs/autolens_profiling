@@ -12,8 +12,7 @@ sweep on A100 80 GB. Two responsibilities:
 
 ## Why a separate subpackage?
 
-The runtime cell scripts (`likelihood_runtime/{imaging,interferometer,
-datacube}/*.py`) used to hard-code `batch_size = 3` everywhere. Production
+The runtime cell scripts (`scripts/<dataset>/<model>/likelihood_runtime.py`) used to hard-code `batch_size = 3` everywhere. Production
 sampling uses much larger batches (≥ 10), and the right batch size varies
 with model/instrument (a 700-px mask AO dataset needs a smaller batch
 than a 70-px Euclid one). Splitting the logic out:

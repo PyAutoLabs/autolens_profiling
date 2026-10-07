@@ -3,7 +3,7 @@
 # 2026-09 point-source CPU speed-up campaign, phase 4b: the step-0 containment
 # route A/B (PyAutoArray#579) on RAL CPU.
 #
-# WHAT THIS MEASURES. scripts/point_source_image/likelihood_breakdown/
+# WHAT THIS MEASURES. scripts/point_source_image/image_plane/
 # solver_config_sweep.py --step0-route control,gather,components,structured:
 # the production FitPositionsImagePairAllSolved likelihood at the production
 # geometry (+-9.9" / 0.2 / 1e-3 / MCS 15) with autoarray's _STEP0_CONTAINMENT
@@ -87,7 +87,7 @@ echo "partition:      ${SLURM_JOB_PARTITION:-unset}"
 echo "cpus-per-task:  ${SLURM_CPUS_PER_TASK:-unset}"
 echo "sched_affinity: $(python3 -c 'import os; print(len(os.sched_getaffinity(0)))')"
 echo "loadavg:        $(cat /proc/loadavg)"
-echo "Cell:           point_source_image/likelihood_breakdown/solver_config_sweep --step0-route"
+echo "Cell:           point_source_image/image_plane/solver_config_sweep --step0-route"
 echo "Thread env:     OMP=$OMP_NUM_THREADS MKL=$MKL_NUM_THREADS OPENBLAS=$OPENBLAS_NUM_THREADS NPROC=$NPROC"
 echo "XLA_FLAGS:      $XLA_FLAGS"
 echo "PYTHONPATH:     $PYTHONPATH"

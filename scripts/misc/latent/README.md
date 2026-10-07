@@ -47,32 +47,32 @@ Expect: mp helps the flux latents in proportion to the underlying fit cost (~5-2
 
 | Script | Latent | Cost class | Notes |
 |--------|--------|-----------|-------|
-| `imaging/total_lens_flux_mujy.py` | `total_lens_flux_mujy` | trivial | Sum over `fit.galaxy_image_dict[fit.galaxies[0]].array` + magzero conversion. ~µs scale once JIT'd. |
-| `imaging/total_lensed_source_flux_mujy.py` | `total_lensed_source_flux_mujy` | trivial | Same shape as above, source index `[-1]`. |
-| `imaging/total_source_flux_mujy.py` | `total_source_flux_mujy` | low | Evaluates `tracer_linear_light_profiles_to_light_profiles.galaxies[-1].image_2d_from(grid=...)` — heavier than the dict-lookup latents because it computes a fresh source-plane image. ~10x the dict-lookup variants. |
-| `imaging/magnification.py` | `magnification` | low | Composes the lensed and intrinsic source fluxes; cost is dominated by the `total_source_flux_mujy` recompute. |
-| `imaging/effective_einstein_radius.py` | `effective_einstein_radius` | high | The marquee — JIT path through `LensCalc.einstein_radius_jit_from` → `ZeroSolver.zero_contour_finder` → `jnp.roll` shoelace. First-call dominated by JAX trace + ZeroSolver compile. Closure cache hit on second call removes the `_make_eigen_fn` rebuild. |
+| `scripts/imaging/sersic/latent_total_lens_flux_mujy.py` | `total_lens_flux_mujy` | trivial | Sum over `fit.galaxy_image_dict[fit.galaxies[0]].array` + magzero conversion. ~µs scale once JIT'd. |
+| `scripts/imaging/sersic/latent_total_lensed_source_flux_mujy.py` | `total_lensed_source_flux_mujy` | trivial | Same shape as above, source index `[-1]`. |
+| `scripts/imaging/sersic/latent_total_source_flux_mujy.py` | `total_source_flux_mujy` | low | Evaluates `tracer_linear_light_profiles_to_light_profiles.galaxies[-1].image_2d_from(grid=...)` — heavier than the dict-lookup latents because it computes a fresh source-plane image. ~10x the dict-lookup variants. |
+| `scripts/imaging/sersic/latent_magnification.py` | `magnification` | low | Composes the lensed and intrinsic source fluxes; cost is dominated by the `total_source_flux_mujy` recompute. |
+| `scripts/imaging/sersic/latent_effective_einstein_radius.py` | `effective_einstein_radius` | high | The marquee — JIT path through `LensCalc.einstein_radius_jit_from` → `ZeroSolver.zero_contour_finder` → `jnp.roll` shoelace. First-call dominated by JAX trace + ZeroSolver compile. Closure cache hit on second call removes the `_make_eigen_fn` rebuild. |
 
 ## Driving the matrix — `sweep.py` and `aggregate.py`
 
 ```bash
 # All 5 latents, local CPU + GPU x fp64 + mp (8 configs total per latent)
-python latent/sweep.py
+python scripts/misc/latent/sweep.py
 
 # Restrict to one latent during iteration
-python latent/sweep.py --only imaging/effective_einstein_radius
+python scripts/misc/latent/sweep.py --only imaging/effective_einstein_radius
 
 # Skip a backend
-python latent/sweep.py --skip-gpu       # CPU only
-python latent/sweep.py --skip-cpu       # GPU only
+python scripts/misc/latent/sweep.py --skip-gpu       # CPU only
+python scripts/misc/latent/sweep.py --skip-cpu       # GPU only
 
 # Aggregate per-config JSONs into a single comparison artefact
-python latent/aggregate.py
+python scripts/misc/latent/aggregate.py
 ```
 
 Per-config JSONs land at `<output_root>/imaging/<latent_name>/<config_name>.json`. The aggregator produces `<output_root>/imaging/<latent_name>/comparison.json` + `.png` with one row per config and the production cost (steady-state JIT for N-draws mode; eager numpy for the every-sample fallback).
 
-Default output root: `<wt_root>/autolens_workspace_developer/jax_profiling/results/latent/`. Mirrors the `likelihood_runtime/` precedent.
+Default output root: `results/latent/`. Mirrors the `likelihood_runtime/` precedent.
 
 ## GPU practicalities
 

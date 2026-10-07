@@ -4,7 +4,7 @@
 # PointSolver configuration sweep on the RELEASED library code
 # (autolens_profiling#314). Single-source only (human decision 2026-09-26).
 #
-# WHAT THIS MEASURES. scripts/point_source_image/likelihood_breakdown/
+# WHAT THIS MEASURES. scripts/point_source_image/image_plane/
 # solver_config_sweep.py times ~25 PointSolver configurations of the
 # production FitPositionsImagePairAllSolved likelihood as their own
 # interleaved routes (extent x initial scale primary; finer step 0,
@@ -83,7 +83,7 @@ echo "partition:      ${SLURM_JOB_PARTITION:-unset}"
 echo "cpus-per-task:  ${SLURM_CPUS_PER_TASK:-unset}"
 echo "sched_affinity: $(python3 -c 'import os; print(len(os.sched_getaffinity(0)))')"
 echo "loadavg:        $(cat /proc/loadavg)"
-echo "Cell:           point_source_image/likelihood_breakdown/solver_config_sweep"
+echo "Cell:           point_source_image/image_plane/solver_config_sweep"
 echo "Precision:      fp64 (JAX_ENABLE_X64=$JAX_ENABLE_X64)"
 echo "Backend:        JAX_PLATFORMS=$JAX_PLATFORMS"
 echo "Thread env:     OMP=$OMP_NUM_THREADS MKL=$MKL_NUM_THREADS OPENBLAS=$OPENBLAS_NUM_THREADS NPROC=$NPROC"

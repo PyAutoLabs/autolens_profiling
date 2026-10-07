@@ -139,9 +139,10 @@ measures trustworthy current setups before any records are promoted for recommen
 `scripts/<dataset>/<model>/<measurement>.py` paths. Datacube is a top-level
 dataset family; `imaging/pixelized/` holds shared CLI mesh experiments and
 latent cells live under `sersic/`. Shared tooling stays in `scripts/misc/` and
-library component measurements stay in `scripts/lens/`. Legacy wrappers remain
-until an explicitly approved removal after Brain and assistant migration;
-there is no automatic expiry. Historical result paths remain unchanged.
+library component measurements stay in `scripts/lens/`. Compatibility wrappers were
+retired after the caller audit in [migration.md](migration.md). Legacy paths remain
+lookup aliases, not executable files; canonical targets must exist. Historical
+result paths and cell IDs remain unchanged.
 
 ## Wiki and historical recommendations
 

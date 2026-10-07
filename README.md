@@ -453,8 +453,10 @@ auto-tables) live under `scripts/misc/<task>/`; dataset-agnostic tooling lives u
 
 Datacube is a top-level dataset family. Shared CLI mesh experiments live under
 `scripts/imaging/pixelized/`; latent cells live under the relevant `sersic/` model.
-Legacy wrappers are recorded in [`catalogue/script_routes.json`](./catalogue/script_routes.json)
-and remain until explicit removal after Brain and assistant migration, with no automatic expiry.
+Historical aliases are retained in [`catalogue/script_routes.json`](./catalogue/script_routes.json);
+the compatibility wrapper files have been retired. Use canonical model paths for execution.
+Likelihood hazard guides live beside [MGE](./scripts/imaging/mge/hazards.md) and
+[rectangular](./scripts/imaging/rectangular/hazards.md) imaging cells.
 
 Beside those dataset-first families sits a second, **dataset-free** axis:
 [`scripts/lens/`](./scripts/lens/README.md) profiles a single **library component** — one function,

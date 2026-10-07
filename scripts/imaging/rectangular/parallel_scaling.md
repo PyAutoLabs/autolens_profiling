@@ -4,14 +4,14 @@ Multiprocessing-scaling profiling for the **numba CPU** likelihood path
 (`apply_sparse_operator_cpu()` + `AnalysisImaging(use_jax=False)`) — the
 workspace `cpu_fast_modeling.py` production route for pixelized-source
 modeling on CPU-abundant hardware. Companion cells:
-`../likelihood_runtime/pixelization_numba.py` (per-eval cost) and
-`../likelihood_breakdown/pixelization_numba.py` (per-step decomposition).
+`likelihood_runtime_numba.py` (per-eval cost) and
+`likelihood_breakdown_numba.py` (per-step decomposition).
 
 ## Scripts
 
 | Script | What it measures |
 |--------|------------------|
-| `pixelization_numba.py` | Likelihood throughput vs `--cores` under (a) serial in-process, (b) the Pool-object design `af.Nautilus(number_of_cores=P)` uses today, (c) an initializer-cached worker pool; plus the pickle payload each design pays. |
+| `parallel_scaling_numba.py` | Likelihood throughput vs `--cores` under (a) serial in-process, (b) the Pool-object design `af.Nautilus(number_of_cores=P)` uses today, (c) an initializer-cached worker pool; plus the pickle payload each design pays. |
 
 ```bash
 python scripts/imaging/rectangular/parallel_scaling_numba.py --instrument euclid

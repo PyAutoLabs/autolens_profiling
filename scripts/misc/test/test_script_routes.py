@@ -1,6 +1,5 @@
 """Migration contracts: no compute on lookup/dry-run and stable legacy outputs."""
 
-import ast
 import importlib.util
 import json
 import subprocess
@@ -24,15 +23,16 @@ def load_sweep():
     return module
 
 
-def test_every_source_and_compatibility_path_compiles_without_execution():
+def test_canonical_sources_compile_and_retired_aliases_resolve_without_execution():
     manifest = routes.load_routes()
     for row in manifest["routes"]:
-        for key in ("path", "legacy"):
-            path = ROOT / row[key]
-            compile(path.read_bytes(), str(path), "exec")
-        wrapper = ast.parse((ROOT / row["legacy"]).read_text())
-        assert len(wrapper.body) < 12  # no duplicate scientific body
-        assert routes.canonical_path(row["legacy"]) == ROOT / row["path"]
+        path = ROOT / row["path"]
+        compile(path.read_bytes(), str(path), "exec")
+        assert not (ROOT / row["legacy"]).exists()
+        assert not list((ROOT / row["legacy"]).parent.rglob("*.py"))
+        assert routes.canonical_path(row["legacy"]) == path
+        assert routes.canonical_path(path) == path
+        assert routes.legacy_stem(path) == Path(row["legacy"]).stem
     assert {row["dataset"] for row in manifest["routes"]} == {
         "imaging",
         "interferometer",
@@ -91,29 +91,27 @@ def test_timeout_marker_keeps_historical_model_name(monkeypatch, tmp_path, model
     assert not list(tmp_path.glob("likelihood_runtime_*.json"))
 
 
-def test_legacy_forwards_arguments_globals_and_actual_source(monkeypatch, tmp_path):
-    target = tmp_path / "scripts/imaging/mge/likelihood_runtime.py"
+def test_alias_lookup_does_not_require_legacy_file_but_requires_canonical(tmp_path):
+    legacy = "scripts/imaging/likelihood_runtime/mge.py"
+    canonical = "scripts/imaging/mge/likelihood_runtime.py"
+    target = tmp_path / canonical
     target.parent.mkdir(parents=True)
-    target.write_text(
-        "import sys\nseen = list(sys.argv)\nsource = __file__\n"
-        "_private = 12\ndef helper():\n    return _private\n"
-        "if __name__ == '__main__':\n    invoked = True\n"
+    target.write_text("raise RuntimeError('lookup must not execute')")
+    (tmp_path / "catalogue").mkdir()
+    (tmp_path / "catalogue/script_routes.json").write_text(
+        json.dumps(
+            {
+                "schema": "profiling-script-routes",
+                "version": 1,
+                "routes": [{"legacy": legacy, "path": canonical}],
+            }
+        )
     )
-    monkeypatch.setattr(routes, "ROOT", tmp_path)
-    monkeypatch.setattr(routes, "canonical_path", lambda path: target)
-    monkeypatch.setattr(sys, "argv", ["old.py", "--source-pixels", "123"])
-    # Isolate the compatibility path's deliberate sys.path insertion.
-    monkeypatch.setattr(sys, "path", list(sys.path))
-    namespace = {"__name__": "__main__"}
-    routes.run_legacy("old.py", namespace)
-    assert namespace["seen"] == ["old.py", "--source-pixels", "123"]
-    assert namespace["source"] == str(target)
-    assert namespace["invoked"] is True
-    namespace["_private"] = 42
-    assert namespace["helper"]() == 42
-    imported = {"__name__": "legacy_import"}
-    routes.run_legacy("old.py", imported)
-    assert "invoked" not in imported
+    assert routes.canonical_path(legacy, tmp_path) == target
+    assert routes.legacy_stem(target, tmp_path) == "mge"
+    target.unlink()
+    with pytest.raises(ValueError, match="Missing script route"):
+        routes.load_routes(tmp_path)
 
 
 def test_unknown_route_fails_without_guessing():
