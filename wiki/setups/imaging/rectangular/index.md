@@ -5,6 +5,15 @@
 
 Each row is an isolated exact configuration, not a combined run. Select the instrument, then the recorded configuration and evidence source.
 
+## Related hazard evidence
+
+Discovery links are not exact setup/version applicability or evidence that a model is hazard-free.
+
+- [Absolute inversion floors move with dataset scale](../../../../results/hazards/hazards_index.json): The reproducer is the imaging rectangular-source likelihood fixture. This is related model evidence; it does not establish applicability to other configurations or measured versions. JSON pointer: `/findings/likelihood.imaging-pixelization.absolute-conditioning-floors`.
+- [NNLS support changes create likelihood kinks](../../../../results/hazards/hazards_index.json): The reproducer is the imaging rectangular-source likelihood fixture. This is related model evidence; it does not establish applicability to other configurations or measured versions. JSON pointer: `/findings/likelihood.imaging-pixelization.nnls-active-set-kinks`.
+
+[Shared and uncategorized findings](../../findings.md)
+
 ## ao
 
 | Exact configuration | Evidence source | Records |

@@ -3,6 +3,8 @@
 
 [Campaign journals](../index.md)
 
+[Shared and uncategorized hazard findings](findings.md)
+
 Choose dataset → model → instrument → exact configuration. Imported evidence is unreviewed. Missing metadata stays unknown; archive rows do not fill baseline plans.
 
 - [cluster](cluster/index.md)

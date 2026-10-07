@@ -241,6 +241,26 @@ def render_outputs(root, index=None, shards=None):
             "Each row is an isolated exact configuration, not a combined run. Select the instrument, then the recorded configuration and evidence source.",
             "",
         ]
+        related = [
+            f
+            for f in index.get("unbound_findings", [])
+            if {"dataset": dataset, "model": model} in f.get("discovery", {}).get("models", [])
+        ]
+        lines += [
+            "## Related hazard evidence",
+            "",
+            "Discovery links are not exact setup/version applicability or evidence that a model is hazard-free.",
+            "",
+        ]
+        for finding in related:
+            lines += [
+                f"- {link(page, finding['evidence']['path'], finding['title'])}: {cell(finding['discovery']['reason'])} JSON pointer: `{finding['evidence']['fragment']}`.",
+            ]
+        lines += [
+            "",
+            link(page, "wiki/setups/findings.md", "Shared and uncategorized findings"),
+            "",
+        ]
         for instrument in sorted({s.get("instrument") or "unspecified" for s in setups}):
             lines += [
                 f"## {instrument}",
@@ -276,6 +296,8 @@ def render_outputs(root, index=None, shards=None):
                 "",
                 link(page, "wiki/index.md", "Campaign journals"),
                 "",
+                link(page, "wiki/setups/findings.md", "Shared and uncategorized hazard findings"),
+                "",
                 "Choose dataset → model → instrument → exact configuration. Imported evidence is unreviewed. Missing metadata stays unknown; archive rows do not fill baseline plans.",
                 "",
             ]
@@ -283,6 +305,30 @@ def render_outputs(root, index=None, shards=None):
         )
         + "\n"
     )
+    page = "wiki/setups/findings.md"
+    lines = [
+        MARKER,
+        "# Shared and uncategorized hazard findings",
+        "",
+        link(page, "wiki/setups/index.md", "Setup index"),
+        "",
+        "Shared component or method evidence is not automatically applicable to any model. Exact setup and version applicability remains unknown. Model-specific discovery links live on the model indexes.",
+        "",
+    ]
+    for finding in index.get("unbound_findings", []):
+        discovery = finding.get("discovery", {})
+        if discovery and not discovery.get("shared"):
+            continue
+        lines += [
+            f"## {cell(finding['title'])}",
+            "",
+            cell(discovery.get("reason", "Model association has not been established.")),
+            "",
+            link(page, finding["evidence"]["path"], "Original finding")
+            + f"; JSON pointer: `{finding['evidence']['fragment']}`.",
+            "",
+        ]
+    outputs[page] = "\n".join(lines) + "\n"
     allowed = root.resolve() / "wiki/setups"
     for name in outputs:
         target = root / name
