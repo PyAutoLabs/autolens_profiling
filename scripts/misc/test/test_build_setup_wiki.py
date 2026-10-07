@@ -73,6 +73,35 @@ def test_checksum_missing_shard_and_wrong_identity_fail(tree):
     assert "invalid setup wiki" in wiki.check(tree)[0]
 
 
+def test_discovery_appears_on_model_index_without_exact_applicability(tree):
+    index, shards = wiki.load_catalogue(tree)
+    setup = index["setups"][0]
+    index["unbound_findings"] = [
+        {
+            "id": "fixture-risk",
+            "title": "Related fixture risk",
+            "evidence": {"path": "results/hazards/hazards_index.json", "fragment": "/findings/f"},
+            "discovery": {
+                "models": [{"dataset": setup["dataset"], "model": setup["model"]}],
+                "shared": False,
+                "reason": "Fixture association only",
+            },
+        },
+        {
+            "id": "shared-risk",
+            "title": "Shared component risk",
+            "evidence": {"path": "results/hazards/hazards_index.json", "fragment": "/findings/g"},
+            "discovery": {"models": [], "shared": True, "reason": "Not a model binding"},
+        },
+    ]
+    outputs = wiki.render_outputs(tree, index, shards)
+    model_page = f"wiki/setups/{setup['dataset']}/{setup['model']}/index.md"
+    assert "Related fixture risk" in outputs[model_page]
+    assert "Related fixture risk" not in outputs[wiki.page_path(setup)]
+    assert "Shared component risk" in outputs["wiki/setups/findings.md"]
+    assert "Related fixture risk" not in outputs["wiki/setups/findings.md"]
+
+
 def test_recommendation_only_on_bound_exact_setup_and_no_campaign_inference(tree):
     index, shards = wiki.load_catalogue(tree)
     first, second = index["setups"][:2]

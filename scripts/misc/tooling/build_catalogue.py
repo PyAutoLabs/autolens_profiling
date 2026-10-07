@@ -671,6 +671,40 @@ def apply_bindings(root, reg, result):
     # No global hazard or recommendation applicability is guessed. A maintainer
     # can bind source findings to exact exported setup IDs and measured versions.
     by_finding = {f["id"]: f for f in result["unbound_findings"]}
+    # Discovery is editorial navigation, not scientific applicability. Keep it
+    # on unbound findings and never turn it into a version-qualified hazard.
+    discovery = reg.get("hazard_discovery", [])
+    if not isinstance(discovery, list):
+        raise ValueError("registry.hazard_discovery must be a list")
+    known_models = {(s["dataset"], s["model"]) for s in result["setups"]}
+    seen = set()
+    for item in discovery:
+        fid = item.get("finding_id")
+        models = item.get("models")
+        shared = item.get("shared")
+        if (
+            fid not in by_finding
+            or fid in seen
+            or not isinstance(models, list)
+            or not isinstance(shared, bool)
+            or shared == bool(models)
+            or not text(item.get("reason"))
+        ):
+            raise ValueError("Invalid/duplicate hazard discovery entry")
+        scopes = set()
+        for model in models:
+            if not isinstance(model, dict):
+                raise ValueError("Invalid hazard discovery model")
+            scope = (model.get("dataset"), model.get("model"))
+            if scope not in known_models or scope in scopes:
+                raise ValueError("Unknown/duplicate hazard discovery model")
+            scopes.add(scope)
+        seen.add(fid)
+        by_finding[fid]["discovery"] = {
+            "models": models,
+            "shared": shared,
+            "reason": item["reason"],
+        }
     for binding in reg["hazard_bindings"]:
         if binding.get("finding_id") not in by_finding:
             raise ValueError("Unknown hazard binding finding")
@@ -836,6 +870,16 @@ def render_outputs(root, generated, revision):
                 "path": path,
                 "records": len(records),
                 "axes": sorted({r["axis"] for r in records}),
+                "axis_devices": {
+                    axis: sorted(
+                        {
+                            r["identity"]["device"] or "device not recorded"
+                            for r in records
+                            if r["axis"] == axis
+                        }
+                    )
+                    for axis in sorted({r["axis"] for r in records})
+                },
                 "devices": sorted(
                     {r["identity"]["device"] or "device not recorded" for r in records}
                 ),

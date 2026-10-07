@@ -181,7 +181,9 @@ const root = path.resolve(__dirname, "../../../dashboard");
     assert.equal(await broken.locator(".metric-value").count(), 0);
     await broken.unroute("**/catalogue/shards/*.json");
     await broken.getByText("Retry evidence", { exact: true }).click();
-    await broken.waitForFunction(() => document.querySelector(".metric-value"));
+    await broken.waitForFunction(() =>
+      document.querySelector(".metric-value"),
+    );
     // Late responses cannot overwrite a newer instrument selection.
     const delayed = await browser.newPage();
     await delayed.route("**/catalogue/shards/*.json", async (r) => {
@@ -233,6 +235,219 @@ const root = path.resolve(__dirname, "../../../dashboard");
     const fallback = await nojs.newPage();
     await fallback.goto(base);
     assert.ok((await fallback.locator("noscript a").count()) > 0);
+    // Regression: no reference candidate, but runtime evidence exists. Never
+    // greet users with an empty runtime panel and collapsed measured breakdown.
+    const journey = await browser.newPage();
+    journey.on("pageerror", (e) => errors.push(e.message));
+    const ready = async () =>
+      journey.waitForFunction(
+        () =>
+          document.querySelector("#configuration") &&
+          !document.querySelector("#results").hasAttribute("aria-busy"),
+      );
+    for (const model of ["mge", "rectangular"]) {
+      await journey.goto(
+        base + "#dataset=imaging&model=" + model + "&instrument=hst",
+      );
+      await ready();
+      assert.ok(
+        await journey
+          .locator('.metric-panel[data-axis="runtime"][open] .metric-value')
+          .count(),
+      );
+      const active = await journey.locator("#configuration").inputValue();
+      assert.ok(
+        doc.evidence_shards
+          .find((s) => s.setup_id === active)
+          .axes.includes("runtime"),
+      );
+      assert.equal(
+        await journey.locator(".measurement-choice button").count(),
+        4,
+      );
+      for (const axis of ["breakdown", "compile", "memory", "runtime"]) {
+        await journey
+          .locator('.measurement-choice button[data-axis="' + axis + '"]')
+          .click();
+        await ready();
+        assert.equal(
+          new URL(journey.url()).hash.includes("axis=" + axis),
+          true,
+        );
+        const refs = doc.evidence_shards.filter(
+          (s) =>
+            s.setup_id.startsWith("imaging/" + model + "/hst/") &&
+            s.axes.includes(axis),
+        );
+        if (refs.length) {
+          assert.ok(
+            await journey
+              .locator(
+                '.metric-panel[data-axis="' + axis + '"][open] .metric-value',
+              )
+              .count(),
+            model + "/" + axis,
+          );
+          const options = await journey
+            .locator("#device option")
+            .evaluateAll((els) => els.map((e) => e.value).filter(Boolean));
+          if (options.length) {
+            await journey.locator("#device").selectOption(options[0]);
+            await ready();
+            const selected = doc.evidence_shards.find(
+              (s) =>
+                s.setup_id ===
+                new URLSearchParams(new URL(journey.url()).hash.slice(1)).get(
+                  "setup",
+                ),
+            );
+            assert.ok(selected.axis_devices[axis].includes(options[0]));
+            const runOptions = await journey
+              .locator("#configuration option")
+              .evaluateAll((els) => els.map((e) => e.value));
+            const another = runOptions.find(
+              (id) =>
+                id !== selected.setup_id &&
+                doc.evidence_shards.some((s) => s.setup_id === id),
+            );
+            if (another) {
+              await journey.locator("#configuration").selectOption(another);
+              await ready();
+              assert.equal(
+                await journey.locator("#device").inputValue(),
+                options[0],
+              );
+              assert.equal(
+                new URLSearchParams(new URL(journey.url()).hash.slice(1)).get(
+                  "device",
+                ),
+                options[0],
+              );
+            }
+          }
+        } else {
+          assert.equal(await journey.locator(".metric-value").count(), 0);
+          assert.match(
+            await journey.locator(".measurement-overview").innerText(),
+            /No recorded measurements/,
+          );
+        }
+      }
+      // Use keyboard activation for a named measurement, then check history.
+      const beforeAxis = journey.url();
+      await journey
+        .locator('.measurement-choice button[data-axis="breakdown"]')
+        .focus();
+      await journey.keyboard.press("Enter");
+      await ready();
+      await journey.goBack();
+      await ready();
+      assert.equal(journey.url(), beforeAxis);
+      assert.equal(
+        await journey.locator(".related-hazards").count(),
+        model === "rectangular" ? 1 : 0,
+      );
+      await journey
+        .getByText("Hazards and setup guidance", { exact: true })
+        .click();
+      await journey.locator(".shared-hazards > summary").click();
+      assert.match(
+        await journey.locator(".shared-hazards").innerText(),
+        /does not establish/,
+      );
+      if (model === "rectangular") {
+        await journey.locator(".related-hazards > summary").click();
+        assert.match(
+          await journey.locator(".related-hazards").innerText(),
+          /Absolute inversion floors/,
+        );
+      }
+      for (const width of [320, 390, 768, 1280]) {
+        await journey.setViewportSize({ width, height: 900 });
+        assert.ok(
+          await journey.evaluate(
+            () => document.documentElement.scrollWidth <= innerWidth + 1,
+          ),
+        );
+      }
+    }
+    // Exact breakdown-only links still open their data rather than switching run.
+    const breakdown = doc.evidence_shards.find(
+      (s) =>
+        s.setup_id.startsWith("imaging/mge/hst/") &&
+        s.axes.length === 1 &&
+        s.axes[0] === "breakdown",
+    );
+    await journey.goto(
+      base +
+        "#" +
+        new URLSearchParams({
+          dataset: "imaging",
+          model: "mge",
+          instrument: "hst",
+          setup: breakdown.setup_id,
+        }),
+    );
+    await ready();
+    assert.equal(
+      await journey.locator("#configuration").inputValue(),
+      breakdown.setup_id,
+    );
+    assert.ok(
+      await journey
+        .locator('.metric-panel[data-axis="breakdown"][open] .metric-value')
+        .count(),
+    );
+    await journey
+      .locator('.metric-panel[data-axis="runtime"] > summary')
+      .click();
+    assert.match(
+      await journey.locator('.metric-panel[data-axis="runtime"]').innerText(),
+      /other runs contain/,
+    );
+    await journey
+      .getByRole("button", { name: "Browse runtime runs", exact: true })
+      .click();
+    await ready();
+    assert.ok(
+      await journey
+        .locator('.metric-panel[data-axis="runtime"][open] .metric-value')
+        .count(),
+    );
+    const cpuRun = doc.evidence_shards.find(
+      (s) =>
+        s.setup_id.startsWith("imaging/delaunay/hst/") &&
+        s.axis_devices.runtime?.includes("cpu") &&
+        !s.axis_devices.runtime.includes("a100"),
+    );
+    await journey.goto(
+      base +
+        "#" +
+        new URLSearchParams({
+          dataset: "imaging",
+          model: "delaunay",
+          instrument: "hst",
+          axis: "runtime",
+          device: "a100",
+          setup: cpuRun.setup_id,
+        }),
+    );
+    await journey
+      .getByText("Open the exact run without the device filter", {
+        exact: true,
+      })
+      .waitFor();
+    assert.equal(await journey.locator(".metric-value").count(), 0);
+    await journey
+      .getByText("Open the exact run without the device filter", {
+        exact: true,
+      })
+      .click();
+    await ready();
+    assert.equal(
+      await journey.locator("#configuration").inputValue(),
+      cpuRun.setup_id,
+    );
     assert.deepEqual(errors, []);
     console.log(
       "Browser checks passed: navigation, values, history, deep links, keyboard, 4 widths, dark mode, corrupt/retry, delayed response, unavailable catalogue and no-JS fallback.",

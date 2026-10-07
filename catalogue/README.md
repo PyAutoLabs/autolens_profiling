@@ -35,6 +35,10 @@ maintained v2 validator against the index and every shard; CI requires this chec
   A missing/unsupported reference fails generation; no latest/fastest fallback exists.
 - `hazard_bindings`, `recommendations`: explicit applicability and support.
   No prose headline or static batch-size estimate becomes assistant advice automatically.
+- `hazard_discovery`: explicit editorial categories for unbound findings. A finding
+  names model families or the shared component/method collection, with a rationale.
+  These are discovery links, never exact setup/version applicability. Unlisted
+  findings remain uncategorized; filename spelling does not determine relevance.
 
 The exporter reads all declared JSON files and inventories all scientific script entry points,
 including shared measurement tools. Unrecognized experiment formats remain `indexed_only`
@@ -96,6 +100,28 @@ record. It is an extension because v2 selections require measured software ident
 the baseline stack has not been chosen. `coverage.expected.cells` therefore counts v2
 selections only; `planned_slots` counts these future slots. No dummy version is invented.
 Missing baseline slots are not evidence of failure, and archive rows do not fill them by age.
+
+## Browsing measurements
+
+The model/instrument overview lists recorded runs by runtime, breakdown,
+compilation and memory before selecting an individual evidence run. Its optional
+`axis_devices` shard metadata maps each axis to devices actually recorded for that
+axis, keeping unknown device identity explicit. This is availability, not a
+comparison or a merged scientific setup.
+
+Initial selection prefers runtime evidence (an explicit reference candidate within
+that axis first), then other measured axes. Ties use labels and stable IDs, never
+speed or recency. Named axis buttons and the device selector narrow the run list;
+explicit setup deep links are preserved. A populated panel opens even for
+breakdown-only runs. Empty panels distinguish absence in the selected run from
+absence throughout the model/instrument archive and link to other recorded runs.
+
+Unbound findings carry optional `discovery` metadata (`models`, `shared`, `reason`).
+The imaging rectangular fixture has model-specific discovery links; component,
+matrix and shared-method studies have their own clearly qualified collection.
+MGE mass-profile deflection findings are shared component evidence, not automatically
+hazards of the imaging MGE light-model likelihood. No exact bindings are added
+without evidence of matching configurations and measured versions.
 
 `unbound_findings` retains deduplicated hazards with exact source pointers and an explicit
 unknown-applicability reason. Versioned setup bindings can expose them as v2 `hazards`.

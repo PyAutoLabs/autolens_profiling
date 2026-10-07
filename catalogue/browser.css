@@ -70,6 +70,7 @@
   margin: 1rem 0;
 }
 .selectors label {
+  min-width: 0;
   display: block;
   font-weight: 600;
   font-size: 0.85rem;
@@ -190,6 +191,34 @@ button.retry {
 .axis-note {
   font-size: 0.85rem;
   color: var(--muted);
+}
+.measurement-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.65rem;
+}
+.measurement-choice {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.65rem;
+}
+.measurement-choice p {
+  margin: 0.4rem 0 0;
+}
+.measurement-choice button {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.45rem;
+  font: inherit;
+  cursor: pointer;
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.measurement-choice button[aria-pressed="true"] {
+  border-color: var(--accent);
+  font-weight: 700;
 }
 @media (max-width: 40rem) {
   .selectors {

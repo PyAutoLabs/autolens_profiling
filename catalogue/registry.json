@@ -286,6 +286,90 @@
     }
   ],
   "hazard_bindings": [],
+  "hazard_discovery": [
+    {
+      "finding_id": "component.ell_comps.magnitude-saturation",
+      "models": [],
+      "shared": true,
+      "reason": "Shared component or matrix study. Model usage and exact setup/version applicability have not been established."
+    },
+    {
+      "finding_id": "component.isothermal.near-spherical-saturation",
+      "models": [],
+      "shared": true,
+      "reason": "Shared component or matrix study. Model usage and exact setup/version applicability have not been established."
+    },
+    {
+      "finding_id": "component.mge.faddeeva-seam-gradient",
+      "models": [],
+      "shared": true,
+      "reason": "Shared MGE mass-profile deflection component study, not specifically the imaging MGE light-model likelihood. Consult the recorded component and revision before applying this finding."
+    },
+    {
+      "finding_id": "component.mge.spherical-clamp-bias",
+      "models": [],
+      "shared": true,
+      "reason": "Shared MGE mass-profile deflection component study, not specifically the imaging MGE light-model likelihood. Consult the recorded component and revision before applying this finding."
+    },
+    {
+      "finding_id": "component.power-law.series-vs-hyp2f1-divergence",
+      "models": [],
+      "shared": true,
+      "reason": "Shared component or matrix study. Model usage and exact setup/version applicability have not been established."
+    },
+    {
+      "finding_id": "component.spherical-geometry.radial-sqrt-gradient-at-zero",
+      "models": [],
+      "shared": true,
+      "reason": "Shared component or matrix study. Model usage and exact setup/version applicability have not been established."
+    },
+    {
+      "finding_id": "likelihood.imaging-pixelization.absolute-conditioning-floors",
+      "models": [
+        {
+          "dataset": "imaging",
+          "model": "rectangular"
+        }
+      ],
+      "shared": false,
+      "reason": "The reproducer is the imaging rectangular-source likelihood fixture. This is related model evidence; it does not establish applicability to other configurations or measured versions."
+    },
+    {
+      "finding_id": "likelihood.imaging-pixelization.nnls-active-set-kinks",
+      "models": [
+        {
+          "dataset": "imaging",
+          "model": "rectangular"
+        }
+      ],
+      "shared": false,
+      "reason": "The reproducer is the imaging rectangular-source likelihood fixture. This is related model evidence; it does not establish applicability to other configurations or measured versions."
+    },
+    {
+      "finding_id": "likelihood.positions-penalty.argmax-switch",
+      "models": [],
+      "shared": true,
+      "reason": "Shared positions-penalty method study. Whether a particular likelihood uses this penalty and is affected is not established."
+    },
+    {
+      "finding_id": "likelihood.positions-penalty.interior-plateau",
+      "models": [],
+      "shared": true,
+      "reason": "Shared positions-penalty method study. Whether a particular likelihood uses this penalty and is affected is not established."
+    },
+    {
+      "finding_id": "likelihood.positions-penalty.threshold-hinge",
+      "models": [],
+      "shared": true,
+      "reason": "Shared positions-penalty method study. Whether a particular likelihood uses this penalty and is affected is not established."
+    },
+    {
+      "finding_id": "matrix.curvature.absolute-diagonal-floor",
+      "models": [],
+      "shared": true,
+      "reason": "Shared component or matrix study. Model usage and exact setup/version applicability have not been established."
+    }
+  ],
   "recommendations": [
     {
       "id": "historical/interferometer-matrix/extent",

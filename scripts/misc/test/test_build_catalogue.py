@@ -29,6 +29,7 @@ def tree(tmp_path):
     reg = json.loads((TOOLING.parents[2] / "catalogue/registry.json").read_text())
     reg["references"] = []
     reg["recommendations"] = []
+    reg["hazard_discovery"] = []
     reg["cells"] = [reg["cells"][0]]
     write(tmp_path, cat.REGISTRY, reg)
     write(tmp_path, "dashboard/summary.json", {"generated_at": STAMP, "producer_revision": "abc"})
@@ -230,6 +231,52 @@ def test_hazard_remains_unbound_and_has_exact_finding_anchor(tree):
     )
 
 
+def test_discovery_is_explicit_and_does_not_bind_applicability(tree):
+    path = "results/hazards/hazards_index.json"
+    write(tree, path, {"findings": {"key": {"finding_id": "f1", "title": "Finding"}}})
+    model = cat.registry(tree)["cells"][0]
+    discovery = {
+        "finding_id": "f1",
+        "models": [{"dataset": model["dataset"], "model": model["model"]}],
+        "shared": False,
+        "reason": "Related fixture; exact applicability unknown.",
+    }
+    update_registry(tree, hazard_discovery=[discovery])
+    doc = build(tree)
+    assert not doc["hazards"]
+    finding = doc["unbound_findings"][0]
+    assert finding["status"] == "applicability_unknown"
+    assert finding["discovery"]["models"] == discovery["models"]
+    assert finding["evidence"]["path"] == path
+    update_registry(tree, hazard_discovery=[{**discovery, "models": [], "shared": True}])
+    assert build(tree)["unbound_findings"][0]["discovery"]["shared"] is True
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"finding_id": "missing"},
+        {"models": [{"dataset": "imaging", "model": "not-a-model"}]},
+        {"models": []},
+        {"shared": True},
+        {"reason": ""},
+    ],
+)
+def test_invalid_hazard_discovery_fails_closed(tree, change):
+    write(tree, "results/hazards/hazards_index.json", {"findings": [{"finding_id": "f1"}]})
+    model = cat.registry(tree)["cells"][0]
+    item = {
+        "finding_id": "f1",
+        "models": [{"dataset": model["dataset"], "model": model["model"]}],
+        "shared": False,
+        "reason": "Related fixture only",
+        **change,
+    }
+    update_registry(tree, hazard_discovery=[item])
+    with pytest.raises(ValueError, match="hazard discovery"):
+        build(tree)
+
+
 @pytest.mark.parametrize("path", ["../escape", "/absolute", "C:/bad", "a//b", "a/./b", "a\\b"])
 def test_paths_cannot_escape_checkout(tree, path):
     with pytest.raises(ValueError, match="Unsafe"):
@@ -253,6 +300,7 @@ def test_shards_are_deterministic_complete_and_content_addressed(tree):
     manifest = index["evidence_shards"][0]
     assert manifest["axes"] == ["runtime"]
     assert manifest["devices"] == ["cpu"]
+    assert manifest["axis_devices"] == {"runtime": ["cpu"]}
     assert manifest["precisions"] == ["precision not recorded"]
     assert hashlib.sha256(first[manifest["path"]].encode()).hexdigest() == manifest["sha256"]
     shard = json.loads(first[manifest["path"]])
