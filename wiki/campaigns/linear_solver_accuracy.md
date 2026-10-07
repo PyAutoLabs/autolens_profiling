@@ -1,15 +1,15 @@
 # Linear-solver accuracy
 
-**Status:** open (phase 2 shipped)
+**Status:** open (phase 3a: A100 parity recorded)
 **Question:** On the positive-only systems real models produce, does each solver return the fnnls reference amplitudes, does its convergence flag tell the truth, and what does each digit of accuracy cost in iterations?
 **Pre-registered rule:** a candidate is admissible only if it reports converged on 100 % of the 81 systems, has significant-column error ≤ 1e-3 and source-flux error ≤ 1e-4 everywhere (≤ 1e-4 on the euclid system), and has a KKT residual within 10x `pdip_jacobi`'s; lowest median iterations wins ([ledger, pre-registered rule](../../results/notes/linear_solver_accuracy_2026_09.md#pre-registered-decision-rule); committed at `327f571` before the deciding run).
-**Verdict:** phase 1: no drop-in candidate; phase 2 needs a solution-based stop. No candidate is admissible. The released raw stop is blind to the flux on reference-inactive columns. Phase 2: PyAutoArray#595 shipped the forward polish (the phase-1 `pdip_raw_polish`, bit-for-bit on 81/81): `flux_inactive_rel` 0.115 -> 3.31e-4, euclid latent +5.76e-2 -> +7.47e-5 (test green); still not admissible under the rule as written (criteria 2–4, for the recorded rule weaknesses).
+**Verdict:** phase 1: no drop-in candidate; phase 2 needs a solution-based stop. No candidate is admissible. The released raw stop is blind to the flux on reference-inactive columns. Phase 2: PyAutoArray#595 shipped the forward polish (the phase-1 `pdip_raw_polish`, bit-for-bit on 81/81): `flux_inactive_rel` 0.115 -> 3.31e-4, euclid latent +5.76e-2 -> +7.47e-5 (test green); still not admissible under the rule as written (criteria 2–4, for the recorded rule weaknesses). Phase 3a: on the A100 the released `pdip_raw` (tag 2026.10.7.1) reproduces its CPU row on 81/81 systems (identical iterations, per-system abs(Δ `flux_inactive_rel`) ≤ 5.4e-14); same rule outcome on both devices.
 **Headline:** the released raw PDIP solve reports converged on 81/81 systems, yet on the euclid system it leaves 11.5 % of the reference's total amplitude on columns the reference holds at zero (`total_source_flux` +5.76 %); laptop WSL CPU, no RAL job.
-**Library PRs:** PyAutoArray#595 (merged 2026-09-30, merge `7a89e19a0`; not yet released).
-**Profiling PRs:** #354 (phase 1); phase 2 record (PR pending).
+**Library PRs:** PyAutoArray#595 (merged 2026-09-30, merge `7a89e19a0`; released in 2026.10.2.1).
+**Profiling PRs:** #354 (phase 1); phase 2 record; phase 3a #393 (PR pending).
 **Ledger:** [linear_solver_accuracy_2026_09.md](../../results/notes/linear_solver_accuracy_2026_09.md)
 **Mind contract:** epic `linear-solver-programme`; `active/raw_forward_pdip_nnls_early_stopping.md`
-**Next:** phase 3 (GPU / vmap / A100 timing of the polished call); a solution-based stop (option 1) remains unbuilt; re-base the rule (latent-based criterion 3, absolute KKT floor) before its next use.
+**Next:** phase 3b — the GPU / `jit(vmap)` timing cell of the polished call (Mind draft `draft/research/autolens_profiling/linear_solver_phase3b_gpu_timing_cell.md`); a solution-based stop (option 1) remains unbuilt; re-base the rule (latent-based criterion 3, absolute KKT floor) before its next use.
 
 ## Why this campaign
 
@@ -46,14 +46,14 @@ Prior art: the [NNLS solver ledger](../../results/notes/nnls_solver_ledger.md), 
 |---|---|---|---|---|---|---|
 | 1 accuracy study | 2026-09-30 | Is any existing solver or constant change a drop-in fix, on 81 captured systems? | admissibility on flag, significant-column and source-flux accuracy, euclid proxy, KKT; `327f571` | no candidate admissible; the released stop is blind to flux on reference-inactive columns | none (laptop) | #354 |
 | 2 PyAutoArray fix | 2026-09-30 | Fix the raw forward PDIP's amplitude bias | phase-1 rule re-applied, not re-based | forward polish shipped: `flux_inactive_rel` ≤ 3.31e-4, euclid latent +7.47e-5, 0/81 unconverged; rule still FAILs 2–4 ([ledger](../../results/notes/linear_solver_accuracy_2026_09.md#phase-2-2026-09-30--library-fix-shipped-pyautoarray595)) | none (laptop) | PyAutoArray#595 |
-| 3 GPU / vmap / A100 | not started | The same cells under `jit(vmap)` on the A100 | — | — | — | `draft/research/autoarray/mge_nnls_fix_pyautoarray_571_slam_60.md` |
+| 3 GPU / vmap / A100 | 3a 2026-10-07; 3b not started | 3a: does the released solver on the A100 reproduce the stored fnnls references (parity)? 3b: the same cells under `jit(vmap)` (timing) | 3a: the phase-1 rule and the standing no-drift rule, applied per device | 3a: parity holds for `pdip_raw` at 2026.10.7.1 (0/81 unconverged, worst `flux_inactive_rel` 3.31e-4 on both devices, iterations identical 81/81); `pdip_jacobi` diverges on a different system set (29/81 CPU, 19/81 A100) and `pdip_raw_tol_jaxnnls` flips its flag on euclid ([ledger](../../results/notes/linear_solver_accuracy_2026_09.md#phase-3a-2026-10-07--a100-parity-of-the-corpus-on-the-released-20261071)) | RAL 397475 (euclid-ral-gpu-1, 1:04) + laptop CPU | #393; 3b: `draft/research/autolens_profiling/linear_solver_phase3b_gpu_timing_cell.md` |
 | standing | every release | Re-run `accuracy.py` (and `early_stopping.py`) over the whole corpus | no drift in the tables without a solver change | — | — | — |
 
 ## What shipped and where it is
 
 | PR | What | Merge | Release |
 |---|---|---|---|
-| PyAutoArray#595 | forward value of the raw PDIP mode = the #573 polished iterate | 2026-09-30 (`7a89e19a0`) | pending |
+| PyAutoArray#595 | forward value of the raw PDIP mode = the #573 polished iterate | 2026-09-30 (`7a89e19a0`) | 2026.10.2.1 |
 
 The package itself (`scripts/lens/solver/`) is profiling-repo code in #354. PyAutoArray#595 is the
 campaign's first library change.
@@ -63,7 +63,7 @@ campaign's first library change.
 - Option 1 of the ledger's "What phase 2 should implement" — a solution-based stop (active-set
   certificate) — is still unbuilt; #595 shipped option 2 (the forward polish). Needed only if
   better than `flux_inactive_rel` 3.3e-4 is required on euclid-like systems.
-- `draft/research/autoarray/mge_nnls_fix_pyautoarray_571_slam_60.md` — GPU / vmap / A100 rows.
+- `draft/research/autolens_profiling/linear_solver_phase3b_gpu_timing_cell.md` — phase 3b, the GPU / `jit(vmap)` timing cell (phase 3a parity is done).
 - A phase-2 rule should give the KKT criterion an absolute floor (as written, the reference fnnls
   fails it on 9/52 systems at residuals ≤ 4.3e-16).
 
@@ -123,3 +123,20 @@ was re-based to the library-main jit value 3.320127604; `pdip_raw_tol_1e-2` (no 
 reproduces the *pre-fix* `pdip_raw`, and the phase-1 sentences saying otherwise are annotated.
 The `_v2026.8.17.1` artefacts were overwritten in place (source-checkout version stamp); the
 pre-fix ones are at profiling `3ad68af`. [Ledger, phase 2](../../results/notes/linear_solver_accuracy_2026_09.md#phase-2-2026-09-30--library-fix-shipped-pyautoarray595).
+
+### 2026-10-07 — phase 3a: A100 parity from a private 2026.10.7.1 checkout
+
+The shared RAL mirror is not synced (euclid_dr1 depends on it), so the five libraries were cloned
+at tag 2026.10.7.1 into `/mnt/ral/jnightin/PyAuto_wt/linear-solver-p3/` and a new submit,
+`hpc/batch_gpu/submit_lens_solver_accuracy_a100_fp64`, ran `accuracy.py --device gpu` from a
+feature-branch worktree beside it: RAL job 397475, `euclid-ral-gpu-1`, COMPLETED in 1:04, import
+guard green, 0 tracebacks. A same-tag CPU row was run on the laptop; it is bit-for-bit identical
+to the phase-2 artefact except wall time. On the A100 the released `pdip_raw` reproduces its CPU
+row on every system: 0/81 unconverged, iterations identical on 81/81, worst `flux_inactive_rel`
+3.31e-4 (euclid) and median 1.69e-7 on both, per-system differences ≤ 5.4e-14. Two disagreements
+are reported in the ledger: `pdip_jacobi` diverges on 19/81 on the A100 against 29/81 on CPU
+(14 systems change flag), and `pdip_raw_tol_jaxnnls` reports converged on euclid at the 50 cap on
+the A100 only. The rule as written gives the same "not admissible" for `pdip_raw` on both devices.
+Walls (0.88 ms CPU, 3.96 ms A100 per unbatched n = 60 solve, compile excluded) are context only;
+batched timing is phase 3b. Artefacts are the `_v2026.10.7.1` pairs (renamed from the source
+checkouts' 2026.8.17.1 stamp). [Ledger, phase 3a](../../results/notes/linear_solver_accuracy_2026_09.md#phase-3a-2026-10-07--a100-parity-of-the-corpus-on-the-released-20261071).

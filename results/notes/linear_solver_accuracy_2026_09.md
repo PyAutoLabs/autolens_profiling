@@ -1,4 +1,4 @@
-# Linear-solver accuracy study — ledger (phases 1–2, 2026-09)
+# Linear-solver accuracy study — ledger (phases 1–3a, 2026-09 – 2026-10)
 
 Campaign page: `wiki/campaigns/linear_solver_accuracy.md`. Package: `scripts/lens/solver/`.
 
@@ -289,6 +289,9 @@ one the numbers support.
   [`euclid_latent_by_candidate_v2026.8.17.1.json`](../lens/solver/euclid_latent_by_candidate_v2026.8.17.1.json).
 - Fixture smoke baseline: [`accuracy_summary_slam_fixture_571_v2026.8.17.1.json`](../lens/solver/accuracy_summary_slam_fixture_571_v2026.8.17.1.json),
   [`early_stopping_summary_slam_fixture_571_v2026.8.17.1.json`](../lens/solver/early_stopping_summary_slam_fixture_571_v2026.8.17.1.json).
+- Phase 3a (released 2026.10.7.1, tag checkouts): CPU [`accuracy_summary_all_v2026.10.7.1.json`](../lens/solver/accuracy_summary_all_v2026.10.7.1.json)
+  ([png](../lens/solver/accuracy_summary_all_v2026.10.7.1.png)), A100 [`accuracy_summary_all_gpu_v2026.10.7.1.json`](../lens/solver/accuracy_summary_all_gpu_v2026.10.7.1.json)
+  ([png](../lens/solver/accuracy_summary_all_gpu_v2026.10.7.1.png)).
 - Corpus: [`corpus/manifest.json`](../lens/solver/corpus/manifest.json).
 - Package and how to re-run: [`scripts/lens/solver/README.md`](../../scripts/lens/solver/README.md).
 - Campaign page: [`wiki/campaigns/linear_solver_accuracy.md`](../../wiki/campaigns/linear_solver_accuracy.md).
@@ -401,3 +404,102 @@ above.
   direction.
 - The euclid cell's validation expectation is pinned to the library-main jit value; a future
   solver change must re-measure and re-base it the same way.
+
+## Phase 3a (2026-10-07) — A100 parity of the corpus on the released 2026.10.7.1
+
+**Question.** Does the released solver on the A100 reproduce the stored CPU fnnls references over
+the 81-system corpus, as it does on CPU? Parity only; the GPU / `jit(vmap)` timing cell is phase
+3b. Issue autolens_profiling#393.
+
+**Provenance.** Both rows run the five libraries at tag **2026.10.7.1** (contains PyAutoArray#595):
+PyAutoNerves `c5ade605`, PyAutoFit `710f4b34`, PyAutoArray `ccddfba6`, PyAutoGalaxy `b4946b8a`,
+PyAutoLens `b6bf543c` (full SHAs in each JSON's `device.provenance.library_revisions`).
+
+- **A100:** RAL job **397475** on `euclid-ral-gpu-1` (NVIDIA A100 80GB PCIe, driver 610.57.04),
+  `--partition=gpu --gres=gpu:1`, COMPLETED 0:0 in 1:04 (21:36:11 – 21:37:15 BST). The libraries
+  are a private clone at `/mnt/ral/jnightin/PyAuto_wt/linear-solver-p3/` (the shared mirror
+  `/mnt/ral/jnightin/PyAuto` was not touched; only its venv was reused); the job's import guard
+  confirmed all five `auto*` packages imported from there. jax / jaxlib 0.10.2, numpy 2.2.6,
+  scipy 1.17.1, numba 0.65.1; fp64 (`JAX_ENABLE_X64=1`, backend `gpu`, `cuda:0`). Submit:
+  `hpc/batch_gpu/submit_lens_solver_accuracy_a100_fp64` at profiling `10438ff`. Logs: 0
+  tracebacks, 0 `RESOURCE_EXHAUSTED`, no float32 lines; the `.err` holds only four
+  `SyntaxWarning`s from PyAutoGalaxy docstrings.
+- **CPU:** the laptop (WSL2, i9-10885H), local `git worktree` checkouts of the same five tags,
+  `autolens.__file__` confirmed in those checkouts; jax / jaxlib 0.10.2, numba 0.62.1.
+- **Artefact names.** A source checkout at a release tag still stamps `al.__version__ =
+  2026.8.17.1` (the release workflow writes the real version only into the built package), so
+  both runs wrote to a scratch / `output/` directory and the pairs were copied to the tag's name:
+  `accuracy_summary_all_v2026.10.7.1` (CPU) and `accuracy_summary_all_gpu_v2026.10.7.1` (A100).
+  The `autolens_version` field inside each JSON reads 2026.8.17.1; the SHAs above are the
+  provenance.
+- **The candidate backends.** `fnnls` is NumPy/numba and runs on the host CPU inside the GPU job;
+  every other candidate is a JAX solve on the A100.
+
+**CPU at the tag reproduces phase 2.** Every per-row field except `wall_ms` of the 729-row CPU
+run at 2026.10.7.1 is bit-for-bit identical to the phase-2 artefact (library main `7a89e19a0`,
+2026-09-30). No solver change has landed between the two, and the table has not drifted.
+
+**Parity table** (81 systems, fp64; scored against the stored CPU fnnls `x_ref`):
+
+| Candidate | Device | Unconverged | Worst flux_inactive_rel | Median flux_inactive_rel | Worst amp_rel_max_sig | Worst abs(flux_rel_source) | Median / max iters |
+|---|---|---|---|---|---|---|---|
+| `pdip_raw` (released) | CPU | 0/81 | 3.31e-4 | 1.69e-7 | 0.219 | 4.96e-2 | 18 / 24 |
+| `pdip_raw` (released) | A100 | 0/81 | 3.31e-4 | 1.69e-7 | 0.219 | 4.96e-2 | 18 / 24 |
+| `pdip_raw_polish` | CPU | 0/81 | 3.31e-4 | 1.69e-7 | 0.219 | 4.96e-2 | 23 / 30 |
+| `pdip_raw_polish` | A100 | 0/81 | 3.31e-4 | 1.69e-7 | 0.219 | 4.96e-2 | 23 / 30 |
+| `pdip_raw_tol_1e-1` | CPU / A100 | 0/81 / 0/81 | 0.302 / 0.302 | 9.68e-5 / 9.68e-5 | 71.5 / 71.5 | 43.0 / 43.0 | 16 / 23 both |
+| `pdip_raw_tol_1e-2` | CPU / A100 | 0/81 / 0/81 | 0.115 / 0.115 | 3.16e-5 / 3.16e-5 | 27.0 / 27.0 | 16.4 / 16.4 | 18 / 24 both |
+| `pdip_raw_tol_1e-3` | CPU / A100 | 0/81 / 0/81 | 4.37e-2 / 4.37e-2 | 7.96e-6 / 7.96e-6 | 10.0 / 10.0 | 6.15 / 6.15 | 19 / 25 both |
+| `pdip_raw_tol_jaxnnls` | CPU | 75/81 | 6.24e-7 | 4.5e-18 | 0.219 | 7.4e-5 | 50 / 50 |
+| `pdip_raw_tol_jaxnnls` | A100 | **74/81** | 6.24e-7 | 4.5e-18 | 0.219 | 7.4e-5 | 50 / 50 |
+| `pdip_jacobi` | CPU | 29/81 | 4.5e68 | 3.0e-7 | 1.0e68 | 3.4e70 | 19 / 50 |
+| `pdip_jacobi` | A100 | **19/81** | 4.9e68 | 2.7e-7 | 7.2e73 | 1.8e70 | 19 / 50 |
+| `certified` | CPU / A100 | 48/81 / 48/81 | 1.49e-2 / 1.49e-2 | 0 / 0 | 119 / 119 | 7.5e-2 / 7.5e-2 | 16 / 16 both |
+| `fnnls` (reference, host CPU) | CPU / A100 job | 0/81 / 0/81 | 8.1e-8 / 8.1e-8 | 0 / 0 | 0 / 0 | 0 / 0 | 9 / 20 both |
+
+**Per-system agreement, CPU vs A100** (max over the 81 systems):
+
+| Candidate | max abs(Δ flux_inactive_rel) | max abs(Δ amp_rel_max_sig) | Systems whose iterations differ | Systems whose flag differs |
+|---|---|---|---|---|
+| `pdip_raw` / `pdip_raw_polish` | 5.4e-14 | 4.0e-10 | 0 | 0 |
+| `pdip_raw_tol_1e-1` / `1e-2` / `1e-3` | 1.5e-10 / 2.3e-11 / 7.4e-12 | 2.1e-7 / 7.9e-8 / 2.9e-8 | 0 | 0 |
+| `pdip_raw_tol_jaxnnls` | 1.7e-7 | 6.1e-11 | 1 | 1 |
+| `certified` | 3.3e-13 | 1.1e-7 | 0 | 0 |
+| `pdip_jacobi` | 4.9e68 (diverging) | 7.2e73 (diverging) | 17 | 14 |
+| `fnnls` | 0 | 0 | 0 | 0 |
+
+Context only (the cell records no logL): the largest per-system change in the NNLS objective
+½xᵀQx − qᵀx between devices is 5.6e-9 absolute (relative 5.2e-16 for `pdip_raw`) against
+objective magnitudes 1.1e5 – 1.1e7, i.e. at the fp64 floor.
+
+**Where the devices disagree** (reported, not explained away):
+
+- **`pdip_jacobi`** — the candidate already known to diverge (PyAutoArray#571). Unconverged on
+  29/81 on CPU, 19/81 on the A100: 12 systems diverge on CPU only (`slam_fixture_571/k0`, `k3`,
+  `k5`; `slam48_hst/v08`, `v28`, `v32`, `v37`, `v42`, `v47`; `slam_spread_hst/noise_x3_v08`,
+  `sigma_min_x0p5_v08`, `sigma_min_x0p5_v32`) and 2 on the A100 only (`slam48_hst/v19`,
+  `slam_spread_hst/noise_x0p3_v32`). On the systems both devices converge, `flux_inactive_rel`
+  agrees to 8.9e-8. Which systems Jacobi diverges on is device-dependent; that it diverges is not.
+- **`pdip_raw_tol_jaxnnls`** — on `euclid_vis_lp_k0` it reports converged at iteration 50 on the
+  A100 and unconverged at the 50 cap on CPU (74/81 vs 75/81 unconverged); on
+  `slam_spread_hst/noise_x3_v40` it takes 21 iterations on the A100 and 20 on CPU. Its accuracy
+  metrics agree to 1.7e-7.
+
+**Walls are context, not a result.** Median warm wall per call: `pdip_raw` 0.88 ms CPU and
+3.96 ms A100; `fnnls` 0.82 / 0.90 ms (host CPU both times). These are single unbatched n = 60
+solves, five warm calls each, after one compile (excluded); a single small solve is
+launch-bound on the A100, so this says nothing about batched throughput, which is phase 3b's
+`jit(vmap)` cell. The A100 run used the shared RAL JAX compile cache (`cache_fresh: false`,
+204 autotune entries at start), which affects compile time only, not the solved values.
+
+**Verdict against the pre-registered rule.** Parity holds for the released solver: on the A100,
+`pdip_raw` at 2026.10.7.1 reproduces its CPU row on every system — 0/81 unconverged, identical
+iteration counts on 81/81, worst `flux_inactive_rel` 3.31e-4 (euclid), median 1.69e-7, per-system
+differences ≤ 5.4e-14 in `flux_inactive_rel` and ≤ 4.0e-10 in `amp_rel_max_sig`. The rule as
+written gives the same answer on both devices: **not admissible**, failing criterion 2 on the
+same two systems (`euclid_vis_lp_k0` source flux 4.96e-2, `slam_spread_hst/noise_x3_v32` sig
+0.219), criterion 3 (4.96e-2) and criterion 4 at the floating-point floor (CPU 5/52, worst 32x;
+A100 6/62, worst 64x — the A100 yardstick set is larger because Jacobi converges on 62 systems
+there; the reference `fnnls` itself fails it on 9/52 and 7/62). The standing rule ("no drift in
+the tables without a solver change") holds for the released solver and for every candidate
+except the two flagged above. No baseline pin moves; no regression routes to /intake.
