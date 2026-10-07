@@ -7,12 +7,18 @@ the runtime profiles; a fast evaluation is not sampler-friendly if its surface
 contains a NaN gradient or a broad plateau.
 
 Reusable detectors live here, independent of what they inspect. Dataset-specific
-fixtures and cells belong under `scripts/<dataset>/hazards/`. A finding carries
+fixtures and cells belong under `scripts/<dataset>/<model>/`. A finding carries
 its tier as metadata and declares one subject scope:
 
 - `component` — a profile or lensing calculation, with no dataset;
 - `matrix` — synthetic linear-algebra inputs, with no dataset;
 - `likelihood` — a real dataset and complete likelihood (phase 2).
+
+The model-specific guides are [rectangular imaging](../../imaging/rectangular/hazards.md)
+and [MGE imaging](../../imaging/mge/hazards.md). Component and synthetic-matrix
+probes here are dataset-free; their model names do not establish applicability
+to an imaging likelihood. Shared positions-penalty probes likewise retain their
+method scope until an exact setup binding is justified.
 
 Risk is typed. The schema uses `prior_mass`, `epsilon_neighbourhood`,
 `reachability`, or `error_curve`; it never forces measure-zero and continuous
@@ -96,7 +102,7 @@ threshold; both gates still fire against the pre-phase-B library. The records an
 kept - they remain true of the released library until the change ships - and the after-state
 numbers are the "After phase B" section of the note.
 
-Tier 2 adds a full [`FitImaging` cell](../../imaging/hazards/README.md) around a
+Tier 2 adds a full [`FitImaging` cell](../../imaging/rectangular/hazards.md) around a
 rectangular source inversion. The generated
 `component/profile_registry_coverage.json` records public classes from `al.lp`,
 `al.lp_linear`, `al.lmp`, and `al.mp`, de-duplicating aliases without running a

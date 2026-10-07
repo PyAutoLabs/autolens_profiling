@@ -10,7 +10,10 @@ overview (vision, latest run-times, roadmap); this file is the operational guide
 ## Repository Structure
 
 Scripts use **dataset → model → measurement** (`scripts/<dataset>/<model>/<measurement>.py`).
-The route registry in `catalogue/script_routes.json` records legacy entry points.
+The route registry in `catalogue/script_routes.json` retains legacy aliases for lookup
+and historical output names; compatibility files have been retired. Execute canonical paths.
+Model-specific hazard guides live beside `imaging/mge/` and `imaging/rectangular/`;
+shared detectors and dataset-free probes remain under `misc/hazards/`.
 
 ```
 scripts/

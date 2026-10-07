@@ -86,7 +86,7 @@ echo "partition:      ${SLURM_JOB_PARTITION:-unset}"
 echo "gpus:           ${CUDA_VISIBLE_DEVICES:-unset}"
 echo "cpus-per-task:  ${SLURM_CPUS_PER_TASK:-unset}"
 echo "loadavg:        $(cat /proc/loadavg)"
-echo "Cell:           point_source_image/likelihood_breakdown/static_lattice_ab"
+echo "Cell:           point_source_image/image_plane/static_lattice_ab"
 echo "Backend:        JAX_PLATFORMS=$JAX_PLATFORMS JAX_PLATFORM_NAME=$JAX_PLATFORM_NAME"
 echo "XLA_FLAGS:      $XLA_FLAGS"
 

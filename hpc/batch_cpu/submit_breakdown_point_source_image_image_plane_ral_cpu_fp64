@@ -128,7 +128,7 @@ lscpu | grep 'Model name' || true
 echo "partition:      ${SLURM_JOB_PARTITION:-unset}"
 echo "cpus-per-task:  ${SLURM_CPUS_PER_TASK:-unset}"
 echo "loadavg:        $(cat /proc/loadavg)"
-echo "Cells:          point_source_image/likelihood_breakdown/image_plane, cluster/likelihood_breakdown/image_plane"
+echo "Cells:          point_source_image/image_plane/likelihood_breakdown, cluster/image_plane/likelihood_breakdown"
 echo "Precision:      fp64 (JAX_ENABLE_X64=$JAX_ENABLE_X64)"
 echo "Backend:        JAX_PLATFORMS=$JAX_PLATFORMS"
 echo "Thread env:     OMP=$OMP_NUM_THREADS MKL=$MKL_NUM_THREADS OPENBLAS=$OPENBLAS_NUM_THREADS NPROC=$NPROC"

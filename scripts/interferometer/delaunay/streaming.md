@@ -16,10 +16,10 @@ ALMA cube. The campaign page is
 
 | Script | What it measures |
 |--------|------------------|
-| `accumulate.py` | `from_stream` wall time and peak RSS vs N_vis × chunk. Gives s per 1e6 vis, a linear fit `wall = a + b·N` per chunk, and a cProfile top-10 when a rate exceeds 5 s per 1e6 vis. `--extra` rows run only within `--budget-s`. |
-| `in_memory.py` | `apply_sparse_operator()` peak RSS and wall vs N_vis, ascending and stopping at the first failure. One arm uses library defaults and one uses `nufft_chunk_size`. |
-| `parity.py` | `log_evidence` of a 20×20 `RectangularUniform` sparse inversion, streamed vs in memory, as \|Δ\| in nats. |
-| `plot_scaling.py` | Both paths on one figure, from the two JSONs. It runs no measurement. |
+| `streaming_accumulate.py` | `from_stream` wall time and peak RSS vs N_vis × chunk. Gives s per 1e6 vis, a linear fit `wall = a + b·N` per chunk, and a cProfile top-10 when a rate exceeds 5 s per 1e6 vis. `--extra` rows run only within `--budget-s`. |
+| `streaming_in_memory.py` | `apply_sparse_operator()` peak RSS and wall vs N_vis, ascending and stopping at the first failure. One arm uses library defaults and one uses `nufft_chunk_size`. |
+| `streaming_parity.py` | `log_evidence` of a 20×20 `RectangularUniform` sparse inversion, streamed vs in memory, as \|Δ\| in nats. |
+| `streaming_plot_scaling.py` | Both paths on one figure, from the two JSONs. It runs no measurement. |
 | `_streaming.py` | Shared harness: seeded synthetic chunks, the builders, the fresh-child runner (`RLIMIT_AS` cap and timeout), and provenance. |
 
 Every measurement runs in a **fresh child process** with a 10 GB `RLIMIT_AS` cap and a

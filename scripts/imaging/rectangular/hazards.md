@@ -1,10 +1,10 @@
-# Imaging likelihood hazards
+# Rectangular imaging likelihood hazards
 
-This directory contains imaging-specific fixtures and cells that wrap
+The `hazards.py` fixture wraps
 the reusable detectors in [`scripts/misc/hazards/`](../../misc/hazards/README.md)
-around a complete likelihood.
+around a complete rectangular-source likelihood.
 
-`pixelization.py` is the first tier-2 cell. It uses an in-memory 7x7 imaging
+`hazards.py` is the first tier-2 cell. It uses an in-memory 7x7 imaging
 dataset, an Isothermal lens and a 3x3 rectangular source with constant
 regularization. The bounded scan measures active-set support transitions,
 matrix-floor scale, NumPy/JAX backend divergence, and the circular-profile
@@ -46,16 +46,3 @@ python scripts/imaging/rectangular/hazards.py
 python scripts/misc/hazards/scan.py --subject likelihood
 ```
 
-`mge_nnls_capture.py` captures the positive-only linear systems the JAX
-likelihood hands to `reconstruction_positive_only_from` for the SLaM
-`source_lp[1]` MGE model (2 x 20 lens Gaussians + 20 source Gaussians, free
-Isothermal + ExternalShear) at 48 seeded near-truth vectors on the HST dataset,
-and records whether the Jacobi-preconditioned PDIP solve converges at caps 50
-and 200 against `fnnls_cholesky` (PyAutoArray#571). It writes
-`results/hazards/component/mge/nnls_capture_slam_hst_v<version>.json` plus an
-8-system `.npz` that PyAutoArray uses as a regression fixture. The unlabelled
-JSON is the pre-fix capture (14/48 unconverged at cap 50, 5/48 at cap 200).
-`--label postfix` re-runs it against the fixed library (mapper-less inversions
-use the raw-forward PDIP mode) and writes
-`nnls_capture_slam_hst_v<version>_postfix.json`: 0/48 unconverged and a JAX vs
-NumPy log-likelihood difference of at most 6e-7 on all 48 vectors.

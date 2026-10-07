@@ -6,7 +6,7 @@
 # (2026-09-28): the CPU campaign's A100 rows (jobs 350587 / 350637 / 357322 / 359102)
 # already cover it, so this is ONE job measuring what is still unknown.
 #
-# WHAT THIS MEASURES. scripts/point_source_image/likelihood_breakdown/
+# WHAT THIS MEASURES. scripts/point_source_image/image_plane/
 # gpu_bottleneck_map.py: FitPositionsImagePairAllSolved through PointSolver.for_grid
 # (100x100 @ 0.2", precision 1e-3, MCS 20, structured step-0 route), unpatched.
 #   1. baseline: command buffers (CUDA graphs) ON vs OFF, 20 rounds x 20 calls,
@@ -84,7 +84,7 @@ echo "partition:      ${SLURM_JOB_PARTITION:-unset}"
 echo "cpus-per-task:  ${SLURM_CPUS_PER_TASK:-unset}"
 echo "sched_affinity: $(python3 -c 'import os; print(len(os.sched_getaffinity(0)))')"
 echo "loadavg:        $(cat /proc/loadavg)"
-echo "Cell:           point_source_image/likelihood_breakdown/gpu_bottleneck_map (fp64, then fp32 what-if)"
+echo "Cell:           point_source_image/image_plane/gpu_bottleneck_map (fp64, then fp32 what-if)"
 echo "Thread env:     OMP=$OMP_NUM_THREADS MKL=$MKL_NUM_THREADS OPENBLAS=$OPENBLAS_NUM_THREADS NPROC=$NPROC"
 echo "XLA_FLAGS:      $XLA_FLAGS"
 echo "PYTHONPATH:     $PYTHONPATH"

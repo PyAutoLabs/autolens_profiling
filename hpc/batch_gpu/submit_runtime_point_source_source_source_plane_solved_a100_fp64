@@ -72,7 +72,7 @@ date
 hostname
 echo "nodelist:       ${SLURM_JOB_NODELIST:-unset}"
 echo "loadavg:        $(cat /proc/loadavg)"
-echo "Cell:           point_source_source/likelihood_runtime/source_plane_solved"
+echo "Cell:           point_source_source/source_plane/likelihood_runtime_solved"
 echo "Dataset:        simple"
 echo "Precision:      fp64"
 echo "Lib override:   ${PYAUTO_LIB_OVERRIDE:-none (shared stack)}"
