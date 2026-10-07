@@ -155,8 +155,21 @@ h2.prompt-heading:after{display:none}
 .orchestration-panel :focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 .orchestration-status{margin:.5rem 0 0;color:var(--muted)}
 .orchestration-status:empty{display:none}
+.orchestration-footer{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.5rem 1rem;font-size:.8rem}
+.orchestration-footer>[data-orchestration-preview]{grid-column:1/-1;grid-row:1;margin:0}
+.orchestration-footer>[data-orchestration-preview]>summary{width:max-content;max-width:100%}
+.orchestration-freshness{grid-column:2;grid-row:1;align-self:start;display:flex;flex-wrap:wrap;gap:.35rem .75rem;align-items:baseline}
+.orchestration-freshness details{margin:0;padding:0;border:0;background:none}
+.orchestration-freshness summary{font:inherit;color:inherit;cursor:pointer}
+.orchestration-freshness time{display:block;font-size:.75rem}
+.orchestration-freshness[data-freshness="green"]{color:var(--ok)}
+.orchestration-freshness[data-freshness="yellow"]{color:var(--warn)}
+.orchestration-freshness[data-freshness="red"]{color:var(--bad)}
+.orchestration-freshness[data-freshness="grey"]{color:var(--muted)}
+.orchestration-freshness a{font:inherit}
 @media(max-width:46rem){.orchestration-panel{padding:1rem}.orchestration-head{display:block}
- .orchestration-copy{width:100%}.orchestration-links{margin-bottom:1rem}}
+ .orchestration-copy{width:100%}.orchestration-links{margin-bottom:1rem}
+ .orchestration-footer{display:block}.orchestration-freshness{margin-top:.5rem}}
 
 /* A copy button with a WORDED face is a chip, not an icon. The rule above is
    a fixed 2.6rem square — right for a bare clipboard glyph, a trap for a
