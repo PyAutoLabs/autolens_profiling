@@ -17,7 +17,7 @@ with a single-sample endpoint is published `insufficient`, not `flat`. See "Fix 
 shipped" under (b), which also corrects this note's original claim that P6 flows into
 PyAutoPulse.
 
-**Fix phase 3 shipped (phase 4 of #362, PR #PRNUM, 2026-10-08):** the pre-registered A/B rules
+**Fix phase 3 shipped (phase 4 of #362, PR #406, 2026-10-08):** the pre-registered A/B rules
 of rows C6, C7 and P2 and the argmax of C10 share one verdict,
 `scripts/misc/likelihood_breakdown/ab_verdict.py` (`ab_rule_verdict`, `tie_set`): GO only when
 the whole interval clears the bar, NO_GO / NO_LEVER only when it is wholly on the bad side,
@@ -722,7 +722,7 @@ correctness or gross-regression guard.
      - a clear 0 % → FAIL / no-go;
      - a 15 % point estimate with a CI straddling the bar → INCONCLUSIVE;
      - two configurations with overlapping CIs → tie set, no single "best".
-   - **Shipped (phase 4 of #362, PR #PRNUM, 2026-10-08), C6 / C7 / C10 / P2; C1 / C3 / C4 / C5
+   - **Shipped (phase 4 of #362, PR #406, 2026-10-08), C6 / C7 / C10 / P2; C1 / C3 / C4 / C5
      deferred to phase 3b.** As implemented:
      - **the rule** (`scripts/misc/likelihood_breakdown/ab_verdict.py::ab_rule_verdict`), in
        order: a red correctness gate → NO_GO; invalid input (non-finite point or bound, lower >
