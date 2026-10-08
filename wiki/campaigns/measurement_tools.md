@@ -31,6 +31,7 @@ inconclusive never qualifies a result.
 | PR | What | Merge | Release |
 |---|---|---|---|
 | #361 | one-sided Student-t verdict for the CI overhead test | 2026-10-02 | n/a (profiling repo) |
+| #404 | one shared `abba_overhead_verdict` (ms excess, one-sided t bounds, PASS / FAIL / FAIL_GROSS / INCONCLUSIVE) for the CI test and the fixed-light numba cell; T1 and P1 now SOUND-with-caveats; the 413.301 ms row's own blocks re-judge INCONCLUSIVE | pending | n/a (profiling repo) |
 
 ## Open / parked / drafts
 

@@ -51,10 +51,12 @@ Three protocol facts follow from instrumenting the real call:
   The counterbalanced estimator on the same configuration returns 1.0085
   (median 1.0071, blocks 0.956-1.059): the instrumentation costs under 1 %, and
   every one of those six numbers was the host's own scatter. The threshold was
-  never the problem; the estimator was. The ratio is therefore **asserted only
-  from three counterbalanced blocks or more** (``--n-repeats 6``); below that it
-  is RECORDED beside the observed clean-call spread, because one block cannot
-  resolve a 3 % effect against a +-15 % noise floor.
+  never the problem; the estimator was. The overhead is judged by the shared
+  ``likelihood_breakdown.overhead_verdict`` (#362): one-sided Student-t bounds of
+  the excess in ms against the budget, PASS / FAIL / FAIL_GROSS / INCONCLUSIVE.
+  Below three counterbalanced blocks (``--n-repeats 6``) it is INCONCLUSIVE
+  beside the observed clean-call spread, because one block cannot resolve a 3 %
+  effect against a +-15 % noise floor.
 - The cross-evaluation NNLS warm-start memo is **off by default** and the memo
   dict is cleared between rows *and between every call of a block*. Dense and
   sparse-numba S3 key identically (``_nnls_warm_start_fingerprint`` is built
@@ -189,8 +191,9 @@ Plus, per row: the structural dispatch assert, ``fit._xp is np``,
 ``"jax" not in sys.modules``, ``n_calls == 1`` on every site declared cached, the
 ABBA ``instrumentation_overhead_ms <= 12.0`` — the ABBA ratio converted into the
 absolute milliseconds it stands for, because the instrument's cost is fixed and
-a ratio gate tightens every time the campaign makes the call shorter (asserted at
-three blocks or more, RECORDED below that) — and coverage
+a ratio gate tightens every time the campaign makes the call shorter; judged by the
+shared ``abba_overhead_verdict`` on its one-sided t bounds, raising only on FAIL or
+FAIL_GROSS, INCONCLUSIVE below three blocks or when unresolved) — and coverage
 ``unattributed / call <= 5 %``. And once per leg: S3's mapper-block log
 determinants equal S0's to ``rtol=1e-6`` with the same ``n_edge_zeroed``.
 
@@ -381,6 +384,13 @@ import autofit as af  # noqa: E402
 import autolens as al  # noqa: E402
 import numpy as np  # noqa: E402
 
+# The ONE overhead verdict, shared with the CI test (#362 fix phase 1). Imported
+# above the smoke exit so the CI import smoke covers it; it is numpy + scipy only.
+from likelihood_breakdown.overhead_verdict import (  # noqa: E402
+    FAILING_VERDICTS,
+    abba_overhead_verdict,
+)
+
 if os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
     sys.exit(0)
@@ -481,12 +491,13 @@ MAX_INSTRUMENTATION_OVERHEAD_MS = 12.0
 #: 0.956-1.059). That fix is kept; only the units of the threshold change here.
 REFERENCE_OVERHEAD_RATIO = 1.03
 
-#: Blocks needed before the overhead ratio is ASSERTED rather than RECORDED.
+#: Blocks needed before the overhead can be anything but INCONCLUSIVE.
 #: One block resolves nothing against a call-to-call scatter of +-15 %; three
 #: blocks (six clean calls, six instrumented) put the standard error of the mean
 #: block ratio near 1 %, which is the scale the threshold discriminates at. Below
 #: this the comparison is still computed and written, with its observed spread,
-#: and its status is ``RECORDED``.
+#: and its status is ``INCONCLUSIVE`` (it was ``RECORDED`` before #362 phase 2).
+#: Passed to ``abba_overhead_verdict`` as ``min_blocks``.
 MIN_BLOCKS_FOR_OVERHEAD_ASSERT = 3
 
 #: At most 5 % of the call may be unattributed.
@@ -2102,13 +2113,21 @@ for _route, _formalism in _row_plan():
         # The gated quantity, in absolute milliseconds: the ratio's excess over 1
         # applied to THIS row's own measured clean mean. `_clean_mean` is in
         # seconds and is the same mean the row publishes as `call_ms`.
-        _overhead_ms = (_overhead_ratio - 1.0) * _clean_mean * 1e3
-        _overhead_assertable = _abba["n_blocks"] >= MIN_BLOCKS_FOR_OVERHEAD_ASSERT
-        _overhead_status = (
-            ("PASS" if _overhead_ms <= MAX_INSTRUMENTATION_OVERHEAD_MS else "FAIL")
-            if _overhead_assertable
-            else "RECORDED"
+        # The verdict is the SHARED one (`likelihood_breakdown.overhead_verdict`,
+        # #362): the one-sided Student-t bounds of that excess over the block
+        # ratios against the budget. PASS needs the upper bound inside the budget,
+        # FAIL the lower bound outside it; anything unresolved — too few blocks, an
+        # interval straddling the budget, or a mean ratio resolved below 1 — is
+        # INCONCLUSIVE, which keeps the row and never promotes.
+        _overhead_verdict = abba_overhead_verdict(
+            _block_ratios,
+            _clean_mean,
+            MAX_INSTRUMENTATION_OVERHEAD_MS,
+            min_blocks=MIN_BLOCKS_FOR_OVERHEAD_ASSERT,
         )
+        _overhead_ms = _overhead_verdict.overhead_ms
+        _overhead_assertable = _abba["n_blocks"] >= MIN_BLOCKS_FOR_OVERHEAD_ASSERT
+        _overhead_status = _overhead_verdict.verdict
 
         # Per-call exclusive time, then the honest remainder.
         _per_call_excl = {
@@ -2176,6 +2195,10 @@ for _route, _formalism in _row_plan():
                 "instrumentation_overhead_ratio": _overhead_ratio,
                 "instrumentation_overhead_ms": _overhead_ms,
                 "instrumentation_overhead_status": _overhead_status,
+                "instrumentation_overhead_lower_ms": _overhead_verdict.lower_ms,
+                "instrumentation_overhead_upper_ms": _overhead_verdict.upper_ms,
+                "instrumentation_overhead_confidence": _overhead_verdict.confidence,
+                "instrumentation_overhead_verdict_reason": _overhead_verdict.reason,
                 "instrumentation_overhead_assertable": _overhead_assertable,
                 "instrumentation_overhead_threshold_ms": MAX_INSTRUMENTATION_OVERHEAD_MS,
                 "instrumentation_overhead_reference_ratio": REFERENCE_OVERHEAD_RATIO,
@@ -2208,10 +2231,17 @@ for _route, _formalism in _row_plan():
 
         print(
             f"  instrumented x{_n_instrumented}: {_inst_mean * 1e3:.3f} ms; "
-            f"ABBA overhead {_overhead_ms:+.2f} ms (x{_overhead_ratio:.4f}) "
+            f"ABBA overhead {_overhead_ms:+.2f} ms (x{_overhead_ratio:.4f}), one-sided "
+            f"{_overhead_verdict.confidence:.0%} bounds [{_overhead_verdict.lower_ms:+.2f}, "
+            f"{_overhead_verdict.upper_ms:+.2f}] ms "
             f"[{_overhead_status}] of a {MAX_INSTRUMENTATION_OVERHEAD_MS:.1f} ms budget "
             f"(blocks {[round(r, 4) for r in _block_ratios]})"
         )
+        if _overhead_status not in ("PASS", *FAILING_VERDICTS):
+            print(
+                f"  overhead {_overhead_status}: {_overhead_verdict.reason}. The row is "
+                f"kept; it is not a measured pass and cannot promote."
+            )
         print(
             f"  attributed {_attributed * 1e3:.3f} ms, unattributed "
             f"{_unattributed * 1e3:.3f} ms ({_unattributed_fraction * 100:.2f} %) "
@@ -2219,13 +2249,13 @@ for _route, _formalism in _row_plan():
         )
         if not _overhead_assertable:
             print(
-                f"  overhead RECORDED, not asserted: {_abba['n_blocks']} block(s) < "
+                f"  overhead not resolvable: {_abba['n_blocks']} block(s) < "
                 f"{MIN_BLOCKS_FOR_OVERHEAD_ASSERT}; clean-call spread "
                 f"{_clean_spread * 100:.1f} % ({_clean_spread * _clean_mean * 1e3:.2f} ms) "
                 f"is the noise floor the "
                 f"{MAX_INSTRUMENTATION_OVERHEAD_MS:.1f} ms budget would have to beat. "
                 f"Re-run with --n-repeats "
-                f"{2 * MIN_BLOCKS_FOR_OVERHEAD_ASSERT} or more to assert it."
+                f"{2 * MIN_BLOCKS_FOR_OVERHEAD_ASSERT} or more to judge it."
             )
 
         if _cache_violations:
@@ -2234,10 +2264,11 @@ for _route, _formalism in _row_plan():
                 f"times than once per call: {_cache_violations}. The decomposition's "
                 f"meaning has changed and the spec must be updated on purpose."
             )
-        if _overhead_status == "FAIL":
+        if _overhead_status in FAILING_VERDICTS:
             raise AssertionError(
-                f"row {_key}: ABBA instrumentation overhead {_overhead_ms:.2f} ms > "
-                f"{MAX_INSTRUMENTATION_OVERHEAD_MS} ms (ratio {_overhead_ratio:.4f} on a "
+                f"row {_key}: ABBA instrumentation overhead {_overhead_status} — "
+                f"{_overhead_verdict.reason}; {_overhead_ms:.2f} ms against the "
+                f"{MAX_INSTRUMENTATION_OVERHEAD_MS} ms budget (ratio {_overhead_ratio:.4f} on a "
                 f"{_clean_mean * 1e3:.3f} ms clean call) over {_abba['n_blocks']} "
                 f"counterbalanced blocks {[round(r, 4) for r in _block_ratios]} — the "
                 f"harness is changing the number it is measuring. The budget is absolute "
@@ -2348,8 +2379,39 @@ if _promotion_pair is not None:
         row.get("instrumentation_overhead_status") == "PASS" for row in (_b_row, _d_row)
     )
     _timing_candidate = _whole_call_speedup >= 0.05 and _abba_pass
+    # An arm whose ABBA overhead is INCONCLUSIVE has an unresolved instrument cost;
+    # a speedup that clears the bar on such a row is INCONCLUSIVE, never a
+    # timing_candidate and never a measured NO_LEVER.
+    _abba_unresolved = [
+        key
+        for key, row in ((_b_key, _b_row), (_d_key, _d_row))
+        if row.get("instrumentation_overhead_status") != "PASS"
+    ]
+    _speedup_clears = _whole_call_speedup >= 0.05
+    if _timing_candidate:
+        _promotion_status = "timing_candidate"
+        _promotion_reason = (
+            "Timing qualifies for witness review; promotion still requires the separate "
+            "s4b witness to PASS every draw."
+        )
+    elif _speedup_clears:
+        _promotion_status = "INCONCLUSIVE"
+        _promotion_reason = (
+            f"The candidate cleared the >=5% whole-call timing rule, but the ABBA overhead "
+            f"of {_abba_unresolved} is not PASS (status "
+            f"{[rows[key].get('instrumentation_overhead_status') for key in _abba_unresolved]})"
+            f": the instrument's cost on that row is unresolved, so the result is "
+            f"INCONCLUSIVE — it neither promotes nor counts as a measured NO_LEVER. Re-run "
+            f"with more blocks (--n-repeats) to resolve it."
+        )
+    else:
+        _promotion_status = "NO_LEVER"
+        _promotion_reason = (
+            "Candidate did not meet the >=5% whole-call timing rule. This is a valid "
+            "measured NO_LEVER result, not a failed job."
+        )
     _promotion_decision = {
-        "status": "timing_candidate" if _timing_candidate else "NO_LEVER",
+        "status": _promotion_status,
         "reference_row": _b_key,
         "candidate_row": _d_key,
         "whole_call_speedup_fraction": _whole_call_speedup,
@@ -2357,17 +2419,12 @@ if _promotion_pair is not None:
         "reference_abba_status": _b_row.get("instrumentation_overhead_status"),
         "candidate_abba_status": _d_row.get("instrumentation_overhead_status"),
         "both_abba_gates_pass": _abba_pass,
+        "abba_unresolved_rows": _abba_unresolved,
         "timing_gate_pass": _timing_candidate,
         "requires_separate_witness_pass": True,
         "witness_evaluated_here": False,
         "promotion_ready": False,
-        "reason": (
-            "Timing qualifies for witness review; promotion still requires the separate "
-            "s4b witness to PASS every draw."
-            if _timing_candidate
-            else "Candidate did not meet the >=5% whole-call timing rule with both ABBA "
-            "gates PASS. This is a valid measured NO_LEVER result, not a failed job."
-        ),
+        "reason": _promotion_reason,
     }
 
 
@@ -2566,6 +2623,13 @@ breakdown_summary = {
         "max_instrumentation_overhead_ms": MAX_INSTRUMENTATION_OVERHEAD_MS,
         "reference_overhead_ratio": REFERENCE_OVERHEAD_RATIO,
         "min_blocks_for_overhead_assert": MIN_BLOCKS_FOR_OVERHEAD_ASSERT,
+        "overhead_verdict_rule": (
+            "likelihood_breakdown.overhead_verdict.abba_overhead_verdict: one-sided 95% "
+            "Student-t bounds of the excess ms over the ABBA block ratios; PASS when the "
+            "upper bound <= budget, FAIL when the lower bound > budget, FAIL_GROSS when "
+            "the mean ratio > 1.5, INCONCLUSIVE otherwise (incl. fewer than "
+            "min_blocks_for_overhead_assert blocks and a mean ratio resolved below 1)"
+        ),
         "max_unattributed_fraction": MAX_UNATTRIBUTED_FRACTION,
         "warmup_window": WARMUP_WINDOW,
         "warmup_tolerance": WARMUP_TOLERANCE,

@@ -5,7 +5,12 @@ Issue: [autolens_profiling#362](https://github.com/PyAutoLabs/autolens_profiling
 Pulse task: `tasks/timing_noise_audit.md` (campaign `measurement-tools`). Campaign page:
 [Measurement tools](../../wiki/campaigns/measurement_tools.md).
 
-**This phase is an audit. Nothing was changed:** no gate, budget, tolerance, cutoff, estimator,
+**Fix phase 1 shipped (phase 2 of #362, PR #404, 2026-10-08):** rows T1 and P1 now share one verdict,
+`scripts/misc/likelihood_breakdown/overhead_verdict.py::abba_overhead_verdict`, and are
+SOUND-with-caveats; see "Fix phase 1 — shipped" under (b). The rest of this note is the phase 1
+audit as written, with the T1 / P1 / P2 / T3 rows and the counts updated.
+
+**Phase 1 was an audit. Nothing was changed in it:** no gate, budget, tolerance, cutoff, estimator,
 repeat count or production instrument was edited. The only code added is the read-only lister
 `scripts/misc/tooling/list_timing_assertions.py`, which keeps this inventory in step with the code.
 No compute job was run.
@@ -60,20 +65,21 @@ work that would be too expensive. *Estimator* is a setting that produces a numbe
 
 **Key.** Each lister key is written in backticks. The format is `<path>::<function>` for a
 comparison (`<module>` for module-level code) and `<path>::<CONSTANT>` for a constant. The lister
-keys on these, not on line numbers. Line numbers are as of `origin/main` `766f820`.
+keys on these, not on line numbers. Line numbers are as of `origin/main` `766f820`, except rows
+T1, T3, P1 and P2, which are as of the fix phase 1 branch.
 
 ## Summary
 
 | ID | Kind | Location (file:line) | What is gated | Cutoff | Verdict |
 |---|---|---|---|---|---|
-| T1 | CI test | `scripts/misc/test/test_fixed_light_numba.py::_ci_overhead_verdict` (466), test at 530 | ABBA instrumentation-overhead ratio on a real tiny fit | `scripts/misc/test/test_fixed_light_numba.py::CI_OVERHEAD_RATIO` = 1.031; FAIL_GROSS > 1.5 | FRAGILE |
+| T1 | CI test | `scripts/misc/test/test_fixed_light_numba.py::test_call_accounting_covers_a_real_likelihood_call` (667) via `scripts/misc/likelihood_breakdown/overhead_verdict.py::abba_overhead_verdict` (102) | ABBA instrumentation overhead in ms of excess on a real tiny fit | the cell's `MAX_INSTRUMENTATION_OVERHEAD_MS` 12.0 through the fixture's own clean mean; FAIL_GROSS > 1.5; witnesses at `scripts/misc/test/test_fixed_light_numba.py::BUDGET_MS` 12.0 (asserted equal to the cell's) | SOUND-with-caveats |
 | T2 | CI test | `scripts/misc/test/test_call_accounting.py` (94–330) | exclusive/inclusive additivity, > 0 timings, re-entrancy | 1e-9 identities, `> 0` | SOUND |
-| T3 | CI test | `scripts/misc/test/test_fixed_light_numba.py` 911–1182 (overhead-gate and warm-up unit tests) | the cell's gate arithmetic on synthetic inputs | pins 12.0 ms, 3 blocks, 1.03, warm-up 3/0.10/12 | SOUND |
+| T3 | CI test | `scripts/misc/test/test_fixed_light_numba.py` 489–665 (shared-verdict witnesses) and 1059–1391 (overhead-gate, promotion and warm-up unit tests) | the shared verdict and the cell's gate statements on synthetic inputs | pins 12.0 ms, 3 blocks, 1.03, warm-up 3/0.10/12 | SOUND |
 | T4 | CI test | `scripts/misc/test/test_timing_steady_median.py` | `steady_median_profile` on an injected clock | exact | SOUND |
 | T5 | CI test | `scripts/misc/test/test_wall_check_submits.py::test__the_41x_spread_that_caused_the_loss` (298) | wall estimate arithmetic from the rates table | `> 8` | SOUND |
 | T6 | CI test | `scripts/misc/test/test_build_dashboard.py` (132, 260–285) | qualification and drift on synthetic rows | exact | SOUND (pins P6/P7 semantics) |
-| P1 | production qualification | `scripts/imaging/pixelized/fixed_light_numba.py::<module>` (2101–2112; raise at 2237) | ABBA overhead in ms; FAIL raises and loses the row | `scripts/imaging/pixelized/fixed_light_numba.py::MAX_INSTRUMENTATION_OVERHEAD_MS` 12.0; `scripts/imaging/pixelized/fixed_light_numba.py::MIN_BLOCKS_FOR_OVERHEAD_ASSERT` 3; `scripts/imaging/pixelized/fixed_light_numba.py::REFERENCE_OVERHEAD_RATIO` 1.03 (recorded) | UNSAFE-SILENT |
-| P2 | campaign gate | `scripts/imaging/pixelized/fixed_light_numba.py::<module>` (2332–2375) | promotion `timing_candidate` / `NO_LEVER` | whole-call speedup ≥ 0.05 and both P1 PASS | UNSAFE-SILENT |
+| P1 | production qualification | `scripts/imaging/pixelized/fixed_light_numba.py::<module>` (2122–2130; raise at 2267) via `scripts/misc/likelihood_breakdown/overhead_verdict.py::abba_overhead_verdict` | ABBA overhead in ms: one-sided t bounds vs budget; raises only on FAIL / FAIL_GROSS, INCONCLUSIVE keeps the row | `scripts/imaging/pixelized/fixed_light_numba.py::MAX_INSTRUMENTATION_OVERHEAD_MS` 12.0; `scripts/imaging/pixelized/fixed_light_numba.py::MIN_BLOCKS_FOR_OVERHEAD_ASSERT` 3; `scripts/imaging/pixelized/fixed_light_numba.py::REFERENCE_OVERHEAD_RATIO` 1.03 (recorded) | SOUND-with-caveats |
+| P2 | campaign gate | `scripts/imaging/pixelized/fixed_light_numba.py::<module>` (2374–2430) | promotion `timing_candidate` / `INCONCLUSIVE` / `NO_LEVER` | whole-call speedup ≥ 0.05 and both P1 PASS; a P1 INCONCLUSIVE gives INCONCLUSIVE | UNSAFE-SILENT |
 | P3 | production protocol | `scripts/imaging/pixelized/fixed_light_numba.py::_warm_to_steady_state` (1745) | warm-up "steady" flag | `scripts/imaging/pixelized/fixed_light_numba.py::WARMUP_WINDOW` 3, `scripts/imaging/pixelized/fixed_light_numba.py::WARMUP_TOLERANCE` 0.10, `scripts/imaging/pixelized/fixed_light_numba.py::WARMUP_MAX_CALLS` 12 | FRAGILE |
 | P4 | production qualification | `scripts/imaging/pixelized/fixed_light_numba.py` 2247 | unattributed fraction of the instrumented call | `MAX_UNATTRIBUTED_FRACTION` 0.05 | SOUND |
 | P5 | production qualification | `_production_config.py::witness_verdict` (869); `_production_config.py::timing_summary` (792) | production-representative cold-eval witness | `WITNESS_FACTOR` 1.5 × the production cold-eval range | FRAGILE |
@@ -102,17 +108,18 @@ keys on these, not on line numbers. Line numbers are as of `origin/main` `766f82
 
 | Kind | Rows | SOUND | FRAGILE | UNSAFE-SILENT |
 |---|---|---|---|---|
-| CI test | 6 | 5 | 1 | 0 |
-| Production qualification / protocol / estimator | 9 | 2 | 4 | 3 |
+| CI test | 6 | 6 | 0 | 0 |
+| Production qualification / protocol / estimator | 9 | 3 | 4 | 2 |
 | Campaign gate (incl. P2 promotion) | 13 | 1 | 5 | 7 |
 | Submit basis | 1 | 1 | 0 | 0 |
 | Resource guard | 2 | 2 | 0 | 0 |
-| **Total** | **31** | **11** | **10** | **10** |
+| **Total** | **31** | **13** | **9** | **9** |
 
-The production row group is P1 and P3–P10, nine rows. P2 is a promotion rule, so it is counted
-with the campaign gates. Ten rows can label a result from a point estimate or without looking at the
-measurement: P1, P2, P6, P9, C1, C3, C4, C5, C7 and C10. None of the ten CI-test, submit or
-resource-guard rows is UNSAFE-SILENT.
+Counts after fix phase 1. T1 and P1 are SOUND-with-caveats and counted as SOUND; at phase 1 the
+totals were 11 / 10 / 10 (T1 FRAGILE, P1 UNSAFE-SILENT). The production row group is P1 and P3–P10,
+nine rows. P2 is a promotion rule, so it is counted with the campaign gates. Nine rows can label a
+result from a point estimate or without looking at the measurement: P2, P6, P9, C1, C3, C4, C5, C7
+and C10. None of the ten CI-test, submit or resource-guard rows is UNSAFE-SILENT.
 
 ## Per-row detail
 
@@ -123,6 +130,7 @@ regression passes, or a real lever is reported as NO_LEVER); owner; and the verd
 
 ### T1 — `test_call_accounting_covers_a_real_likelihood_call` (CI test)
 
+- **Role after phase 2 (human decision 2026-10-08):** coverage, cached-site-count and gross-breakage guard. On this ~15–17 ms fixture the shared 12 ms budget can only fail through the 1.5 gross guard; the ms budget is resolved on the cell's 225–415 ms production rows by the same function. Documented in the test's docstring.
 - **Measured:** ABBA ratio of instrumented to clean `FitImaging.figure_of_merit` wall time on the
   30×30, 67-parameter tiny fixture, sparse-numba S3 system.
 - **Estimator:** mean of 3 block ratios, each `mean(B1, B2) / mean(A1, A2)`. One-sided 95 %
@@ -158,11 +166,23 @@ regression passes, or a real lever is reported as NO_LEVER); owner; and the verd
   The run used `-x` and the message was not captured, so the failing verdict is unverified. A
   rerun of the whole suite passed (1140 passed, 6 skipped). On this host the test is flaky in both
   directions.
-- **Verdict:** FRAGILE. It qualifies no result, but:
+- **Verdict (phase 1):** FRAGILE. It qualifies no result, but:
   - it has almost no power against the budget it names;
   - its INCONCLUSIVE is invisible in CI;
   - it can PASS on physically impossible ratios below 1;
   - its budget unit diverges from the instrument's.
+- **After fix phase 1: SOUND-with-caveats.** The test calls the cell's own
+  `abba_overhead_verdict` (identity asserted) with the cell's 12 ms budget, converted through the
+  fixture's own clean mean. FAIL / FAIL_GROSS fail the test; INCONCLUSIVE (including a mean ratio
+  resolved below 1) raises a visible `OverheadInconclusiveWarning` in the pytest summary.
+  `CI_OVERHEAD_RATIO` and `_ci_overhead_verdict` are gone. Caveats:
+  - the fixture's clean call is ~15–17 ms (laptop, 2026-10-08), so the 12 ms budget is ~75 % of
+    the call. A ms FAIL needs a lower bound above 12 ms, which means a mean ratio above ~1.8; the
+    1.5 gross guard fires first. On this fixture the test therefore fails only on FAIL_GROSS. That
+    is the cost of judging the instrument in its own unit: the instrument costs ~1.4–3.4 ms here,
+    a large ratio of a short call, and a 3.1 % ratio budget would fail it on every quiet host
+    (one laptop run resolved x1.22, bounds [+2.4, +4.4] ms);
+  - three blocks, so the interval assumes iid normal block ratios it cannot check.
 
 ### T2–T6 (CI tests, SOUND)
 
@@ -200,8 +220,17 @@ regression passes, or a real lever is reported as NO_LEVER); owner; and the verd
 - **FN risk:** moderate. A real 13–15 ms overhead can PASS on a low draw, and nothing records that
   the PASS was unresolved.
 - **Owner:** production instrument. It diverges from T1.
-- **Verdict:** UNSAFE-SILENT. A PASS from a point estimate is written as
+- **Verdict (phase 1):** UNSAFE-SILENT. A PASS from a point estimate is written as
   `instrumentation_overhead_status: PASS`, and P2 reads it as a qualification.
+- **After fix phase 1: SOUND-with-caveats.** The status is the shared verdict's PASS / FAIL /
+  FAIL_GROSS / INCONCLUSIVE, with `instrumentation_overhead_lower_ms`, `_upper_ms`,
+  `_confidence` and `_verdict_reason` beside it. The cell raises only on FAIL or FAIL_GROSS;
+  INCONCLUSIVE (fewer than 3 blocks, a straddling interval, or a mean ratio resolved below 1)
+  keeps the row and its JSON. `RECORDED` is retired for this field (no reader consumed it).
+  Caveats: the interval assumes iid normal block ratios; at the 8-block legs of levers 1–3 the
+  interval is ~±13 ms wide, so those rows would now read INCONCLUSIVE (see the re-judged rows
+  under fix phase 1); the gross guard (mean ratio > 1.5) now applies to the cell too and fires
+  even below 3 blocks.
 
 ### P2 — fixed-light numba promotion decision (campaign gate)
 
@@ -209,7 +238,9 @@ regression passes, or a real lever is reported as NO_LEVER); owner; and the verd
 - **Estimator:** difference of two point means, with no interval.
 - **Pairing:** none. The rows are measured one after the other, in separate passes.
 - **Cutoff:** speedup ≥ 0.05 and both P1 statuses PASS. Justification: "the ≥ 5 % whole-call
-  timing rule".
+  timing rule". Since fix phase 1, a speedup ≥ 0.05 with either P1 INCONCLUSIVE is written as
+  status `INCONCLUSIVE` (with `abba_unresolved_rows`), never `timing_candidate` and never a
+  measured NO_LEVER. The speedup itself is still a point difference (fix phase 3).
 - **FP risk:** reduced by `requires_separate_witness_pass`; `promotion_ready` stays false.
 - **FN risk:** high. Drift between rows can hide a 5–10 % lever, and the result is then written as
   "a valid **measured** NO_LEVER result, not a failed job".
@@ -547,6 +578,36 @@ correctness or gross-regression guard.
        PASS.
 
      The witness also asserts that the test and the cell import the same function object.
+   - **Shipped (phase 2 of #362, PR #404, 2026-10-08).** As implemented:
+     - verdict rule, in order: invalid input → `ValueError`; mean ratio > 1.5 → FAIL_GROSS;
+       n < 3 → INCONCLUSIVE; upper bound of the excess < 0 ms (mean ratio *resolved* below 1) →
+       INCONCLUSIVE, "host-noise signature"; upper ≤ budget → PASS; lower > budget → FAIL;
+       else INCONCLUSIVE. Bounds are one-sided 95 % Student-t on the block ratios, df = n − 1,
+       converted to ms by the row's clean mean. A mean below 1 whose upper bound is still ≥ 0
+       is judged on its bounds (it is consistent with a near-zero cost).
+     - witness results (budget 12 ms; ratio-only sets read at the 400 ms calibration call):
+       clear pass PASS; clear fail FAIL; #361 blocks INCONCLUSIVE (bounds [3.05, 21.8] ms);
+       `[1.031] × 3` PASS at a budget equal to its point and FAIL one ulp below; `[1.0, 1.02]`
+       and `[1.01]` INCONCLUSIVE; `[1.6]` and `[0.8, 1.6, 2.4]` FAIL_GROSS; `[0.711, 0.923,
+       0.738]` INCONCLUSIVE (host-noise signature); invalid input ValueError.
+     - the three pinned RAL rows, as point estimates (32 zero-spread blocks): 1.0366 at
+       224.330 ms = 8.21 ms PASS; 1.037 at 400 ms = 14.8 ms FAIL; 1.01467 at 413.301 ms =
+       6.06 ms PASS — unchanged.
+     - **verdict change, recorded as a fact:** the 413.301 ms row judged on its own eight
+       recorded blocks (0.944–1.087) has bounds [−7.30, +19.42] ms and is **INCONCLUSIVE**, not
+       the PASS it was published with. Re-judging every committed decomposed RAL row the same
+       way (`results/breakdown/imaging/fixed_light_numba_*hpc_ral*.json`, 17 decomposed rows):
+       INCONCLUSIVE are the 8-block rows at 299.7, 413.3, 267.4, 302.7 and 407.9 ms (levers 1–2,
+       their controls and `sparse_b_warm`) and route a of `sparse_t1` at 926 ms; PASS are the
+       32-block rows (lever 3 and its control, s4 ×3, s4b ×2), both `sparse_dnp` rows and routes
+       b and c of the 8-block `sparse_t1` (upper bounds 3.3 and 1.0 ms). 11 PASS, 6
+       INCONCLUSIVE, no FAIL; all 17 were published PASS. The three 12-block laptop rows
+       (`local_cpu ... sparse_t1`, mean ratios 0.957–0.986) are INCONCLUSIVE; the smoke rows
+       (1 block) were RECORDED and are now INCONCLUSIVE. No committed JSON was rewritten; their timing numbers are unaffected,
+       only the claim that the instrument cost was resolved inside 12 ms.
+     - the 224.330 ms row's blocks were lost with its JSON (job 343355), so its interval
+       verdict cannot be computed.
+
 2. **Dashboard qualification and drift wording (P6 + P7); the organ-facing fix.**
    - **Change:** a row is qualified only if its host class is declared as a reference host (laptop
      rows never qualify as trend points), and a missing load average or host makes it unqualified
