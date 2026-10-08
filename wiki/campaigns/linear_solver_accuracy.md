@@ -1,15 +1,15 @@
 # Linear-solver accuracy
 
-**Status:** open (phase 3a: A100 parity recorded)
+**Status:** open (phase 3b: batched GPU/CPU timing recorded)
 **Question:** On the positive-only systems real models produce, does each solver return the fnnls reference amplitudes, does its convergence flag tell the truth, and what does each digit of accuracy cost in iterations?
 **Pre-registered rule:** a candidate is admissible only if it reports converged on 100 % of the 81 systems, has significant-column error ≤ 1e-3 and source-flux error ≤ 1e-4 everywhere (≤ 1e-4 on the euclid system), and has a KKT residual within 10x `pdip_jacobi`'s; lowest median iterations wins ([ledger, pre-registered rule](../../results/notes/linear_solver_accuracy_2026_09.md#pre-registered-decision-rule); committed at `327f571` before the deciding run).
-**Verdict:** phase 1: no drop-in candidate; phase 2 needs a solution-based stop. No candidate is admissible. The released raw stop is blind to the flux on reference-inactive columns. Phase 2: PyAutoArray#595 shipped the forward polish (the phase-1 `pdip_raw_polish`, bit-for-bit on 81/81): `flux_inactive_rel` 0.115 -> 3.31e-4, euclid latent +5.76e-2 -> +7.47e-5 (test green); still not admissible under the rule as written (criteria 2–4, for the recorded rule weaknesses). Phase 3a: on the A100 the released `pdip_raw` (tag 2026.10.7.1) reproduces its CPU row on 81/81 systems (identical iterations, per-system abs(Δ `flux_inactive_rel`) ≤ 5.4e-14); same rule outcome on both devices.
+**Verdict:** phase 1: no drop-in candidate; phase 2 needs a solution-based stop. No candidate is admissible. The released raw stop is blind to the flux on reference-inactive columns. Phase 2: PyAutoArray#595 shipped the forward polish (the phase-1 `pdip_raw_polish`, bit-for-bit on 81/81): `flux_inactive_rel` 0.115 -> 3.31e-4, euclid latent +5.76e-2 -> +7.47e-5 (test green); still not admissible under the rule as written (criteria 2–4, for the recorded rule weaknesses). Phase 3a: on the A100 the released `pdip_raw` (tag 2026.10.7.1) reproduces its CPU row on 81/81 systems (identical iterations, per-system abs(Δ `flux_inactive_rel`) ≤ 5.4e-14); same rule outcome on both devices. Phase 3b (timing, not admissibility): batched `jit(vmap)` on the A100 the released `pdip_raw` costs 0.190 ms per evaluation at B = 50 on distinct SLaM systems (laptop CPU 0.682 ms; A100 B = 1 3.95 ms), its lanes stop within one iteration of each other and the batched path reproduces the unbatched solve on every lane; `pdip_jacobi` costs 1.9x because one diverging lane pins the batch at the 50 cap. No pin moves.
 **Headline:** the released raw PDIP solve reports converged on 81/81 systems, yet on the euclid system it leaves 11.5 % of the reference's total amplitude on columns the reference holds at zero (`total_source_flux` +5.76 %); laptop WSL CPU, no RAL job.
 **Library PRs:** PyAutoArray#595 (merged 2026-09-30, merge `7a89e19a0`; released in 2026.10.2.1).
-**Profiling PRs:** #354 (phase 1); phase 2 record; phase 3a #393 (PR pending).
+**Profiling PRs:** #354 (phase 1); phase 2 record; phase 3a #394; phase 3b #395 (PR pending).
 **Ledger:** [linear_solver_accuracy_2026_09.md](../../results/notes/linear_solver_accuracy_2026_09.md)
 **Mind contract:** epic `linear-solver-programme`; `active/raw_forward_pdip_nnls_early_stopping.md`
-**Next:** phase 3b — the GPU / `jit(vmap)` timing cell of the polished call (Mind draft `draft/research/autolens_profiling/linear_solver_phase3b_gpu_timing_cell.md`); a solution-based stop (option 1) remains unbuilt; re-base the rule (latent-based criterion 3, absolute KKT floor) before its next use.
+**Next:** re-run `timing.py` (CPU and A100) on each release beside `accuracy.py`; investigate whether `pdip_jacobi`'s batch-dependent divergence on the A100 matters anywhere the library still routes Jacobi (Mapper inversions); a solution-based stop (option 1) remains unbuilt; re-base the rule (latent-based criterion 3, absolute KKT floor) before its next use.
 
 ## Why this campaign
 
@@ -46,7 +46,7 @@ Prior art: the [NNLS solver ledger](../../results/notes/nnls_solver_ledger.md), 
 |---|---|---|---|---|---|---|
 | 1 accuracy study | 2026-09-30 | Is any existing solver or constant change a drop-in fix, on 81 captured systems? | admissibility on flag, significant-column and source-flux accuracy, euclid proxy, KKT; `327f571` | no candidate admissible; the released stop is blind to flux on reference-inactive columns | none (laptop) | #354 |
 | 2 PyAutoArray fix | 2026-09-30 | Fix the raw forward PDIP's amplitude bias | phase-1 rule re-applied, not re-based | forward polish shipped: `flux_inactive_rel` ≤ 3.31e-4, euclid latent +7.47e-5, 0/81 unconverged; rule still FAILs 2–4 ([ledger](../../results/notes/linear_solver_accuracy_2026_09.md#phase-2-2026-09-30--library-fix-shipped-pyautoarray595)) | none (laptop) | PyAutoArray#595 |
-| 3 GPU / vmap / A100 | 3a 2026-10-07; 3b not started | 3a: does the released solver on the A100 reproduce the stored fnnls references (parity)? 3b: the same cells under `jit(vmap)` (timing) | 3a: the phase-1 rule and the standing no-drift rule, applied per device | 3a: parity holds for `pdip_raw` at 2026.10.7.1 (0/81 unconverged, worst `flux_inactive_rel` 3.31e-4 on both devices, iterations identical 81/81); `pdip_jacobi` diverges on a different system set (29/81 CPU, 19/81 A100) and `pdip_raw_tol_jaxnnls` flips its flag on euclid ([ledger](../../results/notes/linear_solver_accuracy_2026_09.md#phase-3a-2026-10-07--a100-parity-of-the-corpus-on-the-released-20261071)) | RAL 397475 (euclid-ral-gpu-1, 1:04) + laptop CPU | #393; 3b: `draft/research/autolens_profiling/linear_solver_phase3b_gpu_timing_cell.md` |
+| 3 GPU / vmap / A100 | 3a 2026-10-07; 3b 2026-10-08 | 3a: does the released solver on the A100 reproduce the stored fnnls references (parity)? 3b: the same cells under `jit(vmap)` (timing) | 3a: the phase-1 rule and the standing no-drift rule, applied per device | 3a: parity holds for `pdip_raw` at 2026.10.7.1 (0/81 unconverged, worst `flux_inactive_rel` 3.31e-4 on both devices, iterations identical 81/81); `pdip_jacobi` diverges on a different system set (29/81 CPU, 19/81 A100) and `pdip_raw_tol_jaxnnls` flips its flag on euclid ([ledger](../../results/notes/linear_solver_accuracy_2026_09.md#phase-3a-2026-10-07--a100-parity-of-the-corpus-on-the-released-20261071)). 3b (timing, not admissibility): `pdip_raw` per-eval 0.190 ms A100 / 0.682 ms CPU at B = 50 SLaM, batch max 19 vs median 17.5 iterations, batched = unbatched on every lane; `pdip_jacobi` 0.369 ms A100, batch pinned at the 50 cap, batched A100 trajectories differ from unbatched on 19/50 lanes ([ledger](../../results/notes/linear_solver_accuracy_2026_09.md#phase-3b-2026-10-08--gpuvmap-timing-of-the-solver-corpus)) | 3a: RAL 397475 (euclid-ral-gpu-1, 1:04) + laptop CPU; 3b: RAL 398249 (euclid-ral-gpu-2, 0:38) + laptop CPU | #393/#394; #395 |
 | standing | every release | Re-run `accuracy.py` (and `early_stopping.py`) over the whole corpus | no drift in the tables without a solver change | — | — | — |
 
 ## What shipped and where it is
@@ -63,7 +63,7 @@ campaign's first library change.
 - Option 1 of the ledger's "What phase 2 should implement" — a solution-based stop (active-set
   certificate) — is still unbuilt; #595 shipped option 2 (the forward polish). Needed only if
   better than `flux_inactive_rel` 3.3e-4 is required on euclid-like systems.
-- `draft/research/autolens_profiling/linear_solver_phase3b_gpu_timing_cell.md` — phase 3b, the GPU / `jit(vmap)` timing cell (phase 3a parity is done).
+- `pdip_jacobi` under `vmap` on the A100 converges on a batch-dependent set of SLaM systems (phase 3b guard); not followed up, since MGE systems route to the raw solver.
 - A phase-2 rule should give the KKT criterion an absolute floor (as written, the reference fnnls
   fails it on 9/52 systems at residuals ≤ 4.3e-16).
 
@@ -140,3 +140,18 @@ the A100 only. The rule as written gives the same "not admissible" for `pdip_raw
 Walls (0.88 ms CPU, 3.96 ms A100 per unbatched n = 60 solve, compile excluded) are context only;
 batched timing is phase 3b. Artefacts are the `_v2026.10.7.1` pairs (renamed from the source
 checkouts' 2026.8.17.1 stamp). [Ledger, phase 3a](../../results/notes/linear_solver_accuracy_2026_09.md#phase-3a-2026-10-07--a100-parity-of-the-corpus-on-the-released-20261071).
+
+### 2026-10-08 — phase 3b: batched `jit(vmap)` timing on CPU and the A100
+
+New cell `scripts/lens/solver/timing.py` (with `_solvers.batched_kernel`, the existing jitted
+bodies under `vmap`) timed `pdip_raw` against `pdip_jacobi` at B = 1 / 16 / 50, fp64, with compile
+recorded apart from 7 interleaved steady rounds, on 56 distinct SLaM systems and the tiled euclid
+system. A100: RAL job 398249 (`euclid-ral-gpu-2`, 0:38) from the phase-3a private 2026.10.7.1
+clone, run from a sibling RAL worktree because the 3a one held untracked 3a artefacts; CPU: the
+laptop on local tag worktrees. Per evaluation at B = 50 on SLaM the released raw solve costs
+0.190 ms on the A100 and 0.682 ms on the laptop (A100 B = 1: 3.95 ms, matching phase 3a's 3.96 ms
+unbatched); its batch maximum is 19 iterations against a median of 17.5, and every batched lane
+reproduces its unbatched solve (A100 |Δ `flux_inactive_rel`| ≤ 1.4e-14). Jacobi costs 0.369 ms
+because a diverging lane holds the batch at the 50 cap, and on the A100 its batched trajectories
+differ from the unbatched ones on 19/50 lanes. Compile is 0.3–1.2 s per batch shape. A timing is
+not admissibility; no pin moves. [Ledger, phase 3b](../../results/notes/linear_solver_accuracy_2026_09.md#phase-3b-2026-10-08--gpuvmap-timing-of-the-solver-corpus).

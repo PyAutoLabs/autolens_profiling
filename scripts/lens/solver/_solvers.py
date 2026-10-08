@@ -71,6 +71,9 @@ class Candidate:
     backend: str  # "jax" | "numpy"
     fn: Callable
     kernel: Callable
+    #: JAX candidates only: ``build(target_kappa)`` -> the pure ``(Q, q) -> dict`` body that
+    #: ``kernel`` jits; :func:`batched_kernel` vmaps it. ``None`` for NumPy candidates.
+    build: Callable | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -137,7 +140,7 @@ def _jax_candidate(name, description, library_function, build, extras=None) -> C
             stats.update(extras(Q, q, float(target_kappa)))
         return x, stats
 
-    return Candidate(name, description, library_function, "jax", fn, kernel)
+    return Candidate(name, description, library_function, "jax", fn, kernel, build)
 
 
 # ---------------------------------------------------------------------------
@@ -481,6 +484,30 @@ POSTHOC_DEFAULT = ["fnnls", "pdip_raw", "pdip_raw_polish", "pdip_raw_tol_jaxnnls
 )
 #: The early-stopping sweep, in cap order.
 CAP_CANDIDATES = [f"pdip_raw_cap_{cap}" for cap in RAW_CAPS]
+
+
+@cache
+def batched_kernel(candidate: Candidate, target_kappa: float = DEFAULT_TARGET_KAPPA):
+    """``jax.jit(jax.vmap(body))`` of a JAX candidate's solve, ``target_kappa`` closed over.
+
+    Takes stacked ``(B, n, n)`` / ``(B, n)`` device arrays and returns per-lane
+    ``(x, converged, iterations)`` with leading axis ``B`` (``x`` in raw coordinates). The body
+    is the same ``build(target_kappa)`` function :attr:`Candidate.kernel` jits unbatched, so a
+    lane solves exactly what the unbatched cells solve; ``fn`` / ``kernel`` are unchanged. Under
+    ``vmap`` a ``while_loop`` runs until its slowest lane stops, so every lane pays the batch's
+    maximum iteration count in wall time (the per-lane ``iterations`` are still each lane's own).
+    jit caches one compile per batch shape.
+    """
+    if candidate.build is None:
+        raise ValueError(f"{candidate.name} is not a JAX candidate; it has no batched kernel")
+    jax = _jax()
+    body = candidate.build(float(target_kappa))
+
+    def lane(Q, q):
+        out = body(Q, q)
+        return out["x"], out["converged"], out["iterations"]
+
+    return jax.jit(jax.vmap(lane))
 
 
 def warm_up(candidate: Candidate, Q, q, *, target_kappa=DEFAULT_TARGET_KAPPA) -> float:

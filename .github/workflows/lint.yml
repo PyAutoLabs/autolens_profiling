@@ -200,4 +200,5 @@ jobs:
           python scripts/misc/simulators/imaging.py
           python scripts/lens/deflections/total.py
           python scripts/lens/solver/accuracy.py
+          python scripts/lens/solver/timing.py
           python scripts/lens/solver/capture.py --source slam48

@@ -27,6 +27,7 @@ as groups, old groups are never rewritten — and every release re-runs the cell
 | [`capture.py`](./capture.py) | Adds a captured group to the corpus: `--source slam48` (group `slam48_hst`, all 48 #571 SLaM vectors, fixture reproduction recorded), `--source slam_spread` (`slam_spread_hst`, sigma_min x0.5/x2 and noise x0.3/x3 at 6 vectors) and `--source euclid_vis_lp` (`euclid_vis_lp`, the euclid latent jit test's system plus its eager/jitted `total_source_flux` as `latent_reference`). |
 | [`accuracy.py`](./accuracy.py) | Every candidate on every system → `results/lens/solver/accuracy_summary_<corpus>_v<version>.{json,png}`. |
 | [`early_stopping.py`](./early_stopping.py) | Released raw PDIP at each iteration cap → `results/lens/solver/early_stopping_summary_<corpus>_v<version>.{json,png}`. |
+| [`timing.py`](./timing.py) | Batched cost: `jax.jit(jax.vmap(solve))` per-evaluation wall at B = 1 / 16 / 50 (`pdip_raw`, `pdip_jacobi`; `fnnls` as a host loop), compile wall kept separate, per-lane iterations and an unbatched-guard → `results/lens/solver/timing_summary_<corpus>[_gpu]_v<version>.{json,png}`. |
 | [`euclid_latent.py`](./euclid_latent.py) | **Post-hoc.** Every candidate's reconstruction of `euclid_vis_lp_k0` pushed through the euclid pipeline's own `total_source_flux` latent code (validated against the stored eager / jit values) → `results/lens/solver/euclid_latent_by_candidate_v<version>.json`. |
 
 The corpus itself lives in `results/lens/solver/corpus/`: `manifest.json` (per-system metadata)
@@ -168,6 +169,60 @@ table is "Accuracy" above; the verdict it gave is in the
 | `all` | `pdip_raw_tol_1e-6` | 78/81 | 8.05e-08 | 7.49e-10 | 1.25e-10 | 0 | 50.0 | 50 | 3.681 | v2026.8.17.1 |
 <!-- END auto-table:solver-accuracy-posthoc -->
 
+## Timing (latest run per corpus)
+
+Batched per-evaluation cost from [`timing.py`](./timing.py) (phase 3b). The SLaM family pools
+`slam_fixture_571` + `slam48_hst` (56 distinct systems; a batch of B takes the first B in
+manifest order, so lanes diverge); `euclid_vis_lp` has one system and is **tiled** B times, so
+its lanes are identical. Per-eval = batched-call wall / B: min and median over 7 interleaved
+rounds, inputs already on the device. *Compile s* is the first call of that config (trace +
+compile + one run), never part of a steady figure; `(cached)` marks a config whose batch shape
+an earlier family already compiled. A vmapped `while_loop` runs to the batch's slowest lane, so
+the wall follows *max iters*, not the median. `fnnls` has no batched form: its rows are a host
+Python loop over the lanes (context only). A timing is not an admissibility result — see the
+[ledger](../../../results/notes/linear_solver_accuracy_2026_09.md).
+
+<!-- BEGIN auto-table:solver-timing -->
+| Corpus | Candidate | Batch family | B | Per-eval min ms | Per-eval median ms | Batch wall min ms | Compile s | Median / max iters | Unconverged | Worst abs(flux_inactive_rel) | Version |
+|--------|-----------|--------------|---|-----------------|--------------------|-------------------|-----------|--------------------|-------------|------------------------------|---------|
+| `all` | `pdip_raw` | slam_fixture_571+slam48_hst | 1 | 1.3532 | 1.4973 | 1.353 | 1.07 | 18 / 18 | 0/1 | 2.28e-07 | v2026.10.7.1 |
+| `all` | `pdip_raw` | slam_fixture_571+slam48_hst | 16 | 0.8809 | 0.9604 | 14.094 | 1.07 | 18 / 19 | 0/16 | 3.44e-07 | v2026.10.7.1 |
+| `all` | `pdip_raw` | slam_fixture_571+slam48_hst | 50 | 0.6821 | 0.7832 | 34.106 | 0.97 | 17.5 / 19 | 0/50 | 4.32e-07 | v2026.10.7.1 |
+| `all` | `pdip_raw` | euclid_vis_lp (tiled) | 1 | 1.6109 | 1.7856 | 1.611 | 0.00 (cached) | 24 / 24 | 0/1 | 3.31e-04 | v2026.10.7.1 |
+| `all` | `pdip_raw` | euclid_vis_lp (tiled) | 16 | 0.9688 | 1.1692 | 15.500 | 0.02 (cached) | 24 / 24 | 0/16 | 3.31e-04 | v2026.10.7.1 |
+| `all` | `pdip_raw` | euclid_vis_lp (tiled) | 50 | 0.7980 | 0.9195 | 39.899 | 0.05 (cached) | 24 / 24 | 0/50 | 3.31e-04 | v2026.10.7.1 |
+| `all` | `pdip_jacobi` | slam_fixture_571+slam48_hst | 1 | 2.4881 | 2.5993 | 2.488 | 0.50 | 50 / 50 | 1/1 | 1.85e+01 | v2026.10.7.1 |
+| `all` | `pdip_jacobi` | slam_fixture_571+slam48_hst | 16 | 1.6299 | 1.8678 | 26.079 | 0.69 | 50 / 50 | 9/16 | 4.50e+68 | v2026.10.7.1 |
+| `all` | `pdip_jacobi` | slam_fixture_571+slam48_hst | 50 | 1.3960 | 1.5136 | 69.801 | 0.67 | 19 / 50 | 19/50 | 4.50e+68 | v2026.10.7.1 |
+| `all` | `pdip_jacobi` | euclid_vis_lp (tiled) | 1 | 1.1509 | 1.1850 | 1.151 | 0.00 (cached) | 19 / 19 | 0/1 | 4.62e-04 | v2026.10.7.1 |
+| `all` | `pdip_jacobi` | euclid_vis_lp (tiled) | 16 | 0.6991 | 0.7358 | 11.185 | 0.01 (cached) | 19 / 19 | 0/16 | 4.62e-04 | v2026.10.7.1 |
+| `all` | `pdip_jacobi` | euclid_vis_lp (tiled) | 50 | 0.5307 | 0.5598 | 26.537 | 0.03 (cached) | 19 / 19 | 0/50 | 4.62e-04 | v2026.10.7.1 |
+| `all` | `fnnls` | slam_fixture_571+slam48_hst (host loop) | 1 | 1.6969 | 1.8096 | 1.697 | 0.43 | 11 / 11 | 0/1 | 4.17e-12 | v2026.10.7.1 |
+| `all` | `fnnls` | slam_fixture_571+slam48_hst (host loop) | 16 | 1.3121 | 1.4275 | 20.994 | 0.03 | 8.5 / 13 | 0/16 | 8.05e-08 | v2026.10.7.1 |
+| `all` | `fnnls` | slam_fixture_571+slam48_hst (host loop) | 50 | 1.3057 | 1.4503 | 65.284 | 0.07 | 8.5 / 20 | 0/50 | 8.05e-08 | v2026.10.7.1 |
+| `all` | `fnnls` | euclid_vis_lp (tiled) (host loop) | 1 | 1.3956 | 1.5349 | 1.396 | 0.00 | 8 / 8 | 0/1 | 1.26e-09 | v2026.10.7.1 |
+| `all` | `fnnls` | euclid_vis_lp (tiled) (host loop) | 16 | 1.3869 | 1.5370 | 22.191 | 0.02 | 8 / 8 | 0/16 | 1.26e-09 | v2026.10.7.1 |
+| `all` | `fnnls` | euclid_vis_lp (tiled) (host loop) | 50 | 1.3791 | 1.5259 | 68.953 | 0.10 | 8 / 8 | 0/50 | 1.26e-09 | v2026.10.7.1 |
+| `all_gpu` | `pdip_raw` | slam_fixture_571+slam48_hst | 1 | 3.9475 | 4.0301 | 3.947 | 1.17 | 18 / 18 | 0/1 | 2.28e-07 | v2026.10.7.1 |
+| `all_gpu` | `pdip_raw` | slam_fixture_571+slam48_hst | 16 | 0.5813 | 0.5858 | 9.301 | 0.75 | 18 / 19 | 0/16 | 3.44e-07 | v2026.10.7.1 |
+| `all_gpu` | `pdip_raw` | slam_fixture_571+slam48_hst | 50 | 0.1900 | 0.1919 | 9.501 | 0.59 | 17.5 / 19 | 0/50 | 4.32e-07 | v2026.10.7.1 |
+| `all_gpu` | `pdip_raw` | euclid_vis_lp (tiled) | 1 | 4.9423 | 4.9585 | 4.942 | 0.01 (cached) | 24 / 24 | 0/1 | 3.31e-04 | v2026.10.7.1 |
+| `all_gpu` | `pdip_raw` | euclid_vis_lp (tiled) | 16 | 0.6885 | 0.6924 | 11.016 | 0.01 (cached) | 24 / 24 | 0/16 | 3.31e-04 | v2026.10.7.1 |
+| `all_gpu` | `pdip_raw` | euclid_vis_lp (tiled) | 50 | 0.2259 | 0.2269 | 11.297 | 0.01 (cached) | 24 / 24 | 0/50 | 3.31e-04 | v2026.10.7.1 |
+| `all_gpu` | `pdip_jacobi` | slam_fixture_571+slam48_hst | 1 | 6.7147 | 6.7954 | 6.715 | 0.32 | 41 / 41 | 0/1 | 1.60e-07 | v2026.10.7.1 |
+| `all_gpu` | `pdip_jacobi` | slam_fixture_571+slam48_hst | 16 | 1.1494 | 1.1540 | 18.390 | 0.36 | 19 / 50 | 1/16 | 2.90e+01 | v2026.10.7.1 |
+| `all_gpu` | `pdip_jacobi` | slam_fixture_571+slam48_hst | 50 | 0.3690 | 0.3705 | 18.452 | 0.38 | 19 / 50 | 4/50 | 2.90e+01 | v2026.10.7.1 |
+| `all_gpu` | `pdip_jacobi` | euclid_vis_lp (tiled) | 1 | 3.3114 | 3.3627 | 3.311 | 0.00 (cached) | 19 / 19 | 0/1 | 4.62e-04 | v2026.10.7.1 |
+| `all_gpu` | `pdip_jacobi` | euclid_vis_lp (tiled) | 16 | 0.4587 | 0.4604 | 7.339 | 0.01 (cached) | 19 / 19 | 0/16 | 4.62e-04 | v2026.10.7.1 |
+| `all_gpu` | `pdip_jacobi` | euclid_vis_lp (tiled) | 50 | 0.1470 | 0.1475 | 7.352 | 0.01 (cached) | 19 / 19 | 0/50 | 4.62e-04 | v2026.10.7.1 |
+| `all_gpu` | `fnnls` | slam_fixture_571+slam48_hst (host loop) | 1 | 1.0209 | 1.0395 | 1.021 | 5.02 | 11 / 11 | 0/1 | 4.17e-12 | v2026.10.7.1 |
+| `all_gpu` | `fnnls` | slam_fixture_571+slam48_hst (host loop) | 16 | 0.8667 | 0.8774 | 13.868 | 0.47 | 8.5 / 13 | 0/16 | 8.05e-08 | v2026.10.7.1 |
+| `all_gpu` | `fnnls` | slam_fixture_571+slam48_hst (host loop) | 50 | 0.8781 | 0.8848 | 43.904 | 0.05 | 8.5 / 20 | 0/50 | 8.05e-08 | v2026.10.7.1 |
+| `all_gpu` | `fnnls` | euclid_vis_lp (tiled) (host loop) | 1 | 0.9701 | 0.9784 | 0.970 | 0.00 | 8 / 8 | 0/1 | 1.26e-09 | v2026.10.7.1 |
+| `all_gpu` | `fnnls` | euclid_vis_lp (tiled) (host loop) | 16 | 0.9605 | 0.9668 | 15.367 | 0.02 | 8 / 8 | 0/16 | 1.26e-09 | v2026.10.7.1 |
+| `all_gpu` | `fnnls` | euclid_vis_lp (tiled) (host loop) | 50 | 0.9612 | 0.9656 | 48.060 | 0.05 | 8 / 8 | 0/50 | 1.26e-09 | v2026.10.7.1 |
+<!-- END auto-table:solver-timing -->
+
 ## Euclid latent by candidate (post-hoc)
 
 `total_source_flux` of the euclid latent jit test's system from each candidate's reconstruction,
@@ -226,12 +281,13 @@ python scripts/lens/solver/accuracy.py
 python scripts/lens/solver/early_stopping.py
 python scripts/lens/solver/accuracy.py --posthoc      # exploratory set (separate artefact)
 python scripts/lens/solver/euclid_latent.py           # needs the euclid pipeline checkout
+python scripts/lens/solver/timing.py                  # batched timing (add --device gpu on an A100)
 python scripts/misc/tooling/build_readme.py
 ```
 
 Each writes a new `_v<version>` artefact pair beside the previous release's, so the trend is
 the file list. `--groups`, `--candidates`, `--device gpu` (writes a `_gpu` artefact) and
-`--output-dir` are available on both cells.
+`--output-dir` are available on every cell; `timing.py` adds `--batch-sizes` and `--rounds`.
 
 ## Related
 
