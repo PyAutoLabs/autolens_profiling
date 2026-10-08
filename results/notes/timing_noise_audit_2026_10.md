@@ -836,7 +836,7 @@ correctness or gross-regression guard.
        mixed layouts), recorded as a remainder.
      - **witness** (`test_round_bootstrap.py`, T8): 20 rounds × 20 calls with a per-(round, arm)
        lognormal offset (s.d. 0.08) over call noise (0.02), true ratio 0.8. The iid interval is
-       ~0.2–0.36 × the round interval's width; on the pinned seed the round interval covers 0.8
+       ~0.14–0.39 × (median 0.23) the round interval's width over the 40 witness seeds; on the pinned seed the round interval covers 0.8
        and the iid one misses it; over 40 seeded datasets round coverage is 0.85 and iid 0.33 at a
        nominal 0.90. A shared round effect cancels under pairing (width < 0.05). Each cell's
        lifted helper returns exactly the shared result.

@@ -648,7 +648,7 @@ def _phase2b_rule() -> dict:
         "the bar; NO_GO only when an interval is wholly below its bar; INCONCLUSIVE "
         f"otherwise or below {MIN_AB_ROUNDS} rounds (shared ab_rule_verdict, #362)",
         "decides_on": "hpc_ral_cpu_fp64 only",
-        "effective_n": "n_rounds (the interval is still an iid call bootstrap; #362 fix phase 4)",
+        "effective_n": "n_rounds (paired whole-round bootstrap, #362 fix phase 4)",
         "per_lane": per_lane,
     }
 

@@ -29,7 +29,7 @@ inconclusive never qualifies a result.
 | 3 — fix phase 2 (P6 + P7) | 2026-10-08 | Does the dashboard qualify only reference-host trend points and stop publishing in-band single samples as a null? | laptop / no-loadavg / no-host rows unqualified; in-band with a single-sample endpoint → `insufficient` | qualified records 2 → 2; `flat` 4 → 0 (→ `insufficient`); 6 `improved` keep status with a caveat | none | #405 |
 | 4 — fix phase 3 (C6, C7, C10, P2) | 2026-10-08 | Do the pre-registered A/B go / lever rules read their intervals, and does argmax refuse to name a tied winner? | GO only when the whole interval clears the bar, NO_GO / NO_LEVER only when it is wholly on the bad side, else INCONCLUSIVE (≥ 5 rounds); tie set when the leaders' intervals overlap | no go / no-go / NO_LEVER call changed (C7 4, C6 24, P2 1 rows all resolve); 7 of 9 committed solver-sweep "best" are tie sets; C1 / C3 / C4 / C5 deferred to phase 3b | none | #406 |
 | #PRNUM | paired whole-round bootstrap `round_bootstrap.round_median_ratio` / `round_median_saving` (`effective_n` = rounds) for every point-source A/B cell's reported interval (C6, C7, C8, C9 / C10, gradient-mode library, static lattice, vertex dedup); `tie_set` names no best below 5 rounds; C6, C7, C10 SOUND-with-caveats | pending | n/a (profiling repo) |
-| 5 — fix phase 4 (C6, C8, C9 and the reported CIs) | 2026-10-08 | Do the A/B intervals respect the round structure and the pairing of routes? | resample whole rounds, the same indices for every route; `effective_n` = rounds; no `best` below 5 rounds | witness: iid CI 0.2–0.36× the round CI's width, coverage 0.33 vs 0.85 at nominal 0.90; committed RAL calls unchanged; one laptop C6 GO → INCONCLUSIVE; laptop 3-round sweep names no best | none | #PRNUM |
+| 5 — fix phase 4 (C6, C8, C9 and the reported CIs) | 2026-10-08 | Do the A/B intervals respect the round structure and the pairing of routes? | resample whole rounds, the same indices for every route; `effective_n` = rounds; no `best` below 5 rounds | witness: iid CI 0.14–0.39× (median 0.23) the round CI's width, coverage 0.33 vs 0.85 at nominal 0.90; committed RAL calls unchanged; one laptop C6 GO → INCONCLUSIVE; laptop 3-round sweep names no best | none | #PRNUM |
 
 ## What shipped and where it is
 
@@ -91,6 +91,6 @@ leader is one of five). C1 / C3 / C4 / C5 need new intervals and are phase 3b. N
 
 The point-source A/B cells' iid, unpaired call bootstraps are replaced by one paired whole-round
 bootstrap (`round_bootstrap.py`), recording `effective_n` = rounds. Witness: with a per-round
-offset, the iid 90 % interval is a fifth to a third of the round interval's width and covers the
+offset, the iid 90 % interval is 0.14–0.39× (median 0.23) the round interval's width and covers the
 true ratio a third of the time (round: 0.85). Re-judged on round intervals, no RAL call changed;
 one laptop C6 GO became INCONCLUSIVE and the 3-round laptop sweep names no best. Next: phase 3b.

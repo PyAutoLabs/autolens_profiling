@@ -1065,7 +1065,7 @@ def _phase2c_rule() -> dict:
         f"{GO_MIN_SAVED_MS} ms, ratio CI high <= {1 - GO_MIN_FRACTION:.2f}), correctness gate green; "
         "NO_GO only when an interval is wholly on the wrong side or the gate is red; INCONCLUSIVE "
         f"otherwise or below {MIN_AB_ROUNDS} rounds (shared ab_rule_verdict, #362)",
-        "effective_n": "n_rounds (the interval is still an iid call bootstrap; #362 fix phase 4)",
+        "effective_n": "n_rounds (paired whole-round bootstrap, #362 fix phase 4)",
         "decides_on": "hpc_ral_cpu_fp64 only",
         "per_lane": per_lane,
     }
