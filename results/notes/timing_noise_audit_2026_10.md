@@ -10,6 +10,13 @@ Pulse task: `tasks/timing_noise_audit.md` (campaign `measurement-tools`). Campai
 SOUND-with-caveats; see "Fix phase 1 — shipped" under (b). The rest of this note is the phase 1
 audit as written, with the T1 / P1 / P2 / T3 rows and the counts updated.
 
+**Fix phase 2 shipped (phase 3 of #362, PR #PRNUM, 2026-10-08):** rows P6 and P7 are
+SOUND-with-caveats. `build_dashboard.qualify` no longer qualifies laptop rows, rows whose
+provenance lacks a load average, or `hpc_*` rows with no host; a comparison inside the 2× band
+with a single-sample endpoint is published `insufficient`, not `flat`. See "Fix phase 2 —
+shipped" under (b), which also corrects this note's original claim that P6 flows into
+PyAutoPulse.
+
 **Phase 1 was an audit. Nothing was changed in it:** no gate, budget, tolerance, cutoff, estimator,
 repeat count or production instrument was edited. The only code added is the read-only lister
 `scripts/misc/tooling/list_timing_assertions.py`, which keeps this inventory in step with the code.
@@ -83,8 +90,8 @@ T1, T3, P1 and P2, which are as of the fix phase 1 branch.
 | P3 | production protocol | `scripts/imaging/pixelized/fixed_light_numba.py::_warm_to_steady_state` (1745) | warm-up "steady" flag | `scripts/imaging/pixelized/fixed_light_numba.py::WARMUP_WINDOW` 3, `scripts/imaging/pixelized/fixed_light_numba.py::WARMUP_TOLERANCE` 0.10, `scripts/imaging/pixelized/fixed_light_numba.py::WARMUP_MAX_CALLS` 12 | FRAGILE |
 | P4 | production qualification | `scripts/imaging/pixelized/fixed_light_numba.py` 2247 | unattributed fraction of the instrumented call | `MAX_UNATTRIBUTED_FRACTION` 0.05 | SOUND |
 | P5 | production qualification | `_production_config.py::witness_verdict` (869); `_production_config.py::timing_summary` (792) | production-representative cold-eval witness | `WITNESS_FACTOR` 1.5 × the production cold-eval range | FRAGILE |
-| P6 | production qualification | `scripts/misc/tooling/build_dashboard.py::qualify` (377) | `qualified` flag on every dashboard / `profiling-summary` point (Pulse requires it for accepted evidence) | `RELEASE_SWEEP_LOADAVG_CAP` 8.0, `RELEASE_SWEEP_NODE` (hpc rows only) | UNSAFE-SILENT |
-| P7 | production qualification | `scripts/misc/tooling/build_dashboard.py::drift` (390) | release-to-release drift badge (drifted / improved / flat) | `scripts/misc/tooling/build_dashboard.py::DRIFT_RATIO` 2.0 and `scripts/misc/tooling/build_dashboard.py::DRIFT_FLOOR_S` 1 ms | FRAGILE |
+| P6 | production qualification | `scripts/misc/tooling/build_dashboard.py::qualify` (408) via `scripts/misc/tooling/build_dashboard.py::is_reference_host_class` (397) | `qualified` flag on every dashboard / v1 `profiling-summary` point (the project dashboard and badge; the live Pulse registry reads the v2 catalogue) | `RELEASE_SWEEP_LOADAVG_CAP` 8.0, `RELEASE_SWEEP_NODE`, `REFERENCE_HOST_CLASS_PREFIXES` (`hpc_`) | SOUND-with-caveats |
+| P7 | production qualification | `scripts/misc/tooling/build_dashboard.py::drift` (436) and `scripts/misc/tooling/build_dashboard.py::_summary_comparison` (652) | release-to-release drift badge (drifted / improved / flat / insufficient) | `scripts/misc/tooling/build_dashboard.py::DRIFT_RATIO` 2.0 and `scripts/misc/tooling/build_dashboard.py::DRIFT_FLOOR_S` 1 ms; `flat` only with repeat-summary endpoints | SOUND-with-caveats |
 | P8 | estimator | `scripts/misc/likelihood_breakdown/timing.py` `jit_profile` (84), per-cell copies (e.g. `scripts/imaging/delaunay/likelihood_runtime.py` 161/436) | `full_pipeline_single_jit`, the headline P7 compares | mean of one block of 10 right after the first call; `scripts/misc/likelihood_breakdown/timing.py::MIN_STEADY_WARM` 5 for the opt-in median | FRAGILE |
 | P9 | production qualification | `scripts/misc/likelihood_runtime/sweep.py` (160, 306–325) | `--per-run-timeout` writes an `.unusable.json` "GPU-only" marker | the timeout | UNSAFE-SILENT |
 | P10 | production qualification | `scripts/misc/tooling/baseline_readiness.py` `check_observation` (351) | structural screening of fresh baseline observations | load cap per allocated CPU, repetitions ≥ 2, warm-up, median aggregation | SOUND |
@@ -109,17 +116,17 @@ T1, T3, P1 and P2, which are as of the fix phase 1 branch.
 | Kind | Rows | SOUND | FRAGILE | UNSAFE-SILENT |
 |---|---|---|---|---|
 | CI test | 6 | 6 | 0 | 0 |
-| Production qualification / protocol / estimator | 9 | 3 | 4 | 2 |
+| Production qualification / protocol / estimator | 9 | 5 | 3 | 1 |
 | Campaign gate (incl. P2 promotion) | 13 | 1 | 5 | 7 |
 | Submit basis | 1 | 1 | 0 | 0 |
 | Resource guard | 2 | 2 | 0 | 0 |
-| **Total** | **31** | **13** | **9** | **9** |
+| **Total** | **31** | **15** | **8** | **8** |
 
-Counts after fix phase 1. T1 and P1 are SOUND-with-caveats and counted as SOUND; at phase 1 the
-totals were 11 / 10 / 10 (T1 FRAGILE, P1 UNSAFE-SILENT). The production row group is P1 and P3–P10,
-nine rows. P2 is a promotion rule, so it is counted with the campaign gates. Nine rows can label a
-result from a point estimate or without looking at the measurement: P2, P6, P9, C1, C3, C4, C5, C7
-and C10. None of the ten CI-test, submit or resource-guard rows is UNSAFE-SILENT.
+Counts after fix phase 2. T1, P1, P6 and P7 are SOUND-with-caveats and counted as SOUND; after
+fix phase 1 the totals were 13 / 9 / 9 (P6 UNSAFE-SILENT, P7 FRAGILE), and at phase 1 they were
+11 / 10 / 10 (T1 FRAGILE, P1 UNSAFE-SILENT). The production row group is P1 and P3–P10, nine rows.
+P2 is a promotion rule, so it is counted with the campaign gates. Eight rows can label a result
+from a point estimate or without looking at the measurement: P2, P9, C1, C3, C4, C5, C7 and C10. None of the ten CI-test, submit or resource-guard rows is UNSAFE-SILENT.
 
 ## Per-row detail
 
@@ -195,8 +202,8 @@ regression passes, or a real lever is reported as NO_LEVER); owner; and the verd
 - **T4** `test_timing_steady_median.py` uses an injected clock. It is deterministic and includes
   the "median robust to a transient, block mean not" witness for P8.
 - **T5** `test_wall_check_submits.py` is deterministic arithmetic on `wall/rates.py`.
-- **T6** `test_build_dashboard.py` uses synthetic rows. It is deterministic. It pins today's P6/P7
-  semantics, so the P6/P7 fixes below must update it on purpose.
+- **T6** `test_build_dashboard.py` uses synthetic rows. It is deterministic. It pinned the phase 1
+  P6/P7 semantics; fix phase 2 updated it on purpose and added the fix phase 2 witnesses.
 
 ### P1 — fixed-light numba ABBA overhead gate (production qualification)
 
@@ -287,12 +294,22 @@ first order. The cutoff is a design budget for the site spec, not a noise budget
   3. an `hpc_*` row with `host: None` passes the host pin.
 - **Measurement content:** none. Qualification never looks at sample count, spread or estimator.
   It is a provenance check.
-- **Downstream:** PyAutoPulse `pulse/catalogue.py` requires `qualified: true` for accepted
-  evidence (read-only observation; Pulse not edited).
+- **Downstream (corrected after fix phase 2):** the v1 `dashboard/summary.json` feeds the project
+  dashboard and badge. The live PyAutoPulse registry has read `dashboard/catalogue.json`
+  (`profiling-summary@2`) since the registry switch of 2026-10-05 (PyAutoPulse `3c7bed2`), and its
+  producer `scripts/misc/tooling/build_catalogue.py` hard-codes `qualified: False`. So P6's gap did
+  not flow into Pulse live, and fixing it is not a Pulse contract change. The phase 1 text
+  ("Pulse requires `qualified: true` … so P6's gaps flow into the organ") described the v1 path.
 - **Today:** 0 of 97 local records and 2 of 62 hpc records in `dashboard/summary.json` are
   qualified, so the gap is latent. It applies to the first laptop row written with a provenance
   block.
-- **Verdict:** UNSAFE-SILENT.
+- **Verdict (phase 1):** UNSAFE-SILENT.
+- **After fix phase 2: SOUND-with-caveats.** `qualify` checks, in order: above the cap → refused;
+  no provenance; not a reference host class (`is_reference_host_class`, `hpc_*` only: "laptop
+  rows never qualify as trend points"); no load average; no host; off the pinned node. Each is
+  unqualified with that reason. The caveat: qualification is still a provenance property and
+  never looks at sample count or spread. A future v2 (`catalogue.json`) qualification must reuse
+  the same host-class rule rather than a second copy.
 
 ### P7 — release drift badge (`build_dashboard.drift`)
 
@@ -306,8 +323,15 @@ first order. The cutoff is a design budget for the site spec, not a noise budget
   against a steady median of 0.267 ms, 2.4×) on its own exceeds the 2× band.
 - **Comparison qualification:** the `qualified` on a comparison is the conjunction of its two
   endpoints' P6 flags, and nothing more.
-- **Verdict:** FRAGILE. The band is declared and generous, but `flat` names a policy band, not a
-  measured null, and the estimator underneath can produce 2× by itself.
+- **Verdict (phase 1):** FRAGILE. The band is declared and generous, but `flat` names a policy
+  band, not a measured null, and the estimator underneath can produce 2× by itself.
+- **After fix phase 2: SOUND-with-caveats.** Inside the band is `flat` ("within the 2x policy
+  band; not a measured null") only when both endpoints carry a repeat summary of the compared
+  metric; otherwise `insufficient` ("single-sample endpoint(s): within the 2x policy band is not a
+  measured null"). No producer writes a repeat summary yet, so every in-band comparison is
+  `insufficient` today. `drifted` / `improved` keep their status as gross-band flags with the
+  reason "single-sample endpoint(s)" (human decision 2026-10-08). The caveat: the estimator (P8)
+  can still produce a 2× flag by itself until fix phase 5.
 
 ### P8 — single-jit headline estimator
 
@@ -492,8 +516,10 @@ new gate of that shape needs a hand-added row.
   warm row), and an observation is one record. The comparability key includes the hostname. P7
   borrows the 2× ratio. This is a shared timing gate living outside this repo, and the same
   point-vs-point limitation applies.
-- **PyAutoPulse** (`pulse/catalogue.py`) requires `qualified: true` for accepted evidence, so
-  P6's qualification gaps flow into the organ.
+- **PyAutoPulse** (`pulse/catalogue.py`) requires `qualified: true` for accepted evidence.
+  Corrected after fix phase 2: the live registry reads this repo's v2 `dashboard/catalogue.json`
+  (since 2026-10-05, PyAutoPulse `3c7bed2`), whose producer hard-codes `qualified: False`, so P6's
+  gaps did not reach the organ live; the v1 `summary.json` feeds the project dashboard and badge.
 - **PyAutoHeart** unit-test timing (`heart/checks/script_timing.py`, Heart #276/#277) is not
   imported or read by this repo. There is no shared mechanism, so it is out of scope.
 - The README roadmap item "Regression-watch indicator … regressed (>5%)" is an unbuilt gate. If it
@@ -613,10 +639,39 @@ correctness or gross-regression guard.
      rows never qualify as trend points), and a missing load average or host makes it unqualified
      with a reason. The `flat` label gains an explicit meaning ("within the 2× policy band") or
      becomes `insufficient` when either endpoint lacks a repeat summary. This is a
-     `profiling-summary` contract change, coordinated with Pulse.
+     `profiling-summary` contract change, coordinated with Pulse. (Corrected when shipped: it is
+     not; see below.)
    - **Witness:** synthetic points for laptop + provenance → unqualified; `loadavg: None` →
      unqualified; `hpc` + `host: None` → unqualified; 1.9× qualified → not `flat`-as-null;
      single-sample endpoints → `insufficient`.
+   - **Shipped (phase 3 of #362, PR #PRNUM, 2026-10-08).** As implemented:
+     - `qualify` order: above the cap → refused; no provenance; not a reference host class
+       (`is_reference_host_class(config)`, `REFERENCE_HOST_CLASS_PREFIXES = ("hpc_",)`) →
+       "not a reference host class; laptop rows never qualify as trend points"; no load average →
+       "provenance carries no load average"; no host → "provenance carries no host"; off the
+       pinned node. All unqualified, none refused.
+     - repeat summary: the point field `REPEAT_SUMMARY_FIELD` (`single_jit_repeats`, ≥ 2). No
+       producer writes it, so every current endpoint is single-sample (P8). The opt-in
+       `single_jit_median_s` does not count: it summarises a different estimator from the one
+       compared.
+     - `_summary_comparison`: `steady` → `insufficient` with a single-sample endpoint, else `flat`
+       with "within the 2x policy band; not a measured null". **Human decision (2026-10-08, "Ill
+       go with your recomendation"):** `drifted` / `improved` keep their status (gross-band
+       signals, like FAIL_GROSS) and gain "single-sample endpoint(s)". Not taken: mapping them to
+       `insufficient` too. Status vocabulary and the v1 grammar are unchanged; PyAutoPulse's v1
+       validator (`pulse/summary.py`) returns no errors on the regenerated file.
+     - the badge headline reads "none drifted >= 2x (single-sample endpoints: not a measured
+       null)" instead of "no drift"; the page's table says "within 2x band" instead of "steady".
+     - measured effect on the committed tree (`dashboard/summary.json` before → after): 159
+       records, qualified 2 → 2 (both `point_source_source/source_plane_solved` @2026.8.17.1,
+       `hpc_ral_cpu_fp64` and `hpc_a100_fp64`, host `euclid-ral-gpu-2`, load 0.16 / 1.16); no
+       record's qualification or reason changed; comparisons `flat` 4 → 0, `insufficient`
+       135 → 139, `improved` 6 → 6 (each now with the caveat), `drifted` 0 → 0.
+     - correction: the live PyAutoPulse registry reads `dashboard/catalogue.json`
+       (`profiling-summary@2`, since PyAutoPulse `3c7bed2`, 2026-10-05), whose producer
+       `build_catalogue.py` hard-codes `qualified: False`. P6's gap therefore never flowed into
+       Pulse live, and this phase is not a Pulse contract change. A future v2 qualification must
+       reuse `is_reference_host_class`.
 3. **A/B rule semantics (C7, C10, then C1/C3/C4/C5, P2).**
    - **Change:** every pre-registered go / lever / NO_LEVER rule gains an INCONCLUSIVE state using
      its already-computed CIs (C7, C10) or block-level intervals (C1, C3, C4, C5, P2). Argmax

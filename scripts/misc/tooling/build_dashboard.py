@@ -21,10 +21,11 @@ commits (autolens_profiling#345):
 
 The per-call headline is the ladder ``build_readme.py`` uses (``full_pipeline_per_call`` ->
 ``full_pipeline_single_jit`` -> ...), extended for breakdown cells; ``vmap.per_call`` rides
-beside it. A point is **qualified** when its provenance block (``device.provenance``,
-autolens_profiling#342) shows the pinned reference host under the load-average cap in
-``hpc/release_sweep.conf``; a row above the cap is **refused** (listed, not plotted); a row
-with no provenance block, or an HPC row off the reference host, is plotted hollow.
+beside it. A point is **qualified** when it is on a reference host class (``hpc_*``; laptop rows
+never qualify as trend points) and its provenance block (``device.provenance``,
+autolens_profiling#342) shows a host and a load average, the pinned reference host, under the
+load-average cap in ``hpc/release_sweep.conf``; a row above the cap is **refused** (listed, not
+plotted); every other unqualified row is plotted hollow with its reason.
 
 The drift badge compares a series' last two releases with the profiling conductor's ratio
 (``>= 2.0x``, ``PyAutoBrain/agents/conductors/profiling``); the absolute floor here is 1 ms
@@ -64,6 +65,25 @@ DRIFT_RATIO = 2.0
 #: Absolute floor for run-time drift, seconds per call: sub-millisecond wobble on a 0.4 ms
 #: cell is not a 2x regression worth a badge.
 DRIFT_FLOOR_S = 0.001
+
+#: Config-label prefixes measured on a declared reference host class. Only these rows can be
+#: trend points: laptop ``local_*`` rows never qualify, provenance or not
+#: (``hpc/release_sweep.conf``: "the laptop drifts 2.5x between runs"). One rule, reused by any
+#: future ``profiling-summary`` v2 / ``catalogue.json`` qualification (timing-noise audit P6).
+REFERENCE_HOST_CLASS_PREFIXES = ("hpc_",)
+
+#: The point field that would carry a repeat summary of the compared metric (the number of
+#: independent repeats behind ``single_jit_s``). No producer writes it today: every headline is
+#: one 10-call block mean (timing-noise audit P8), so every endpoint is single-sample.
+#: ``single_jit_median_s`` does not count -- it summarises a different estimator from the one
+#: the drift ratio compares.
+REPEAT_SUMMARY_FIELD = "single_jit_repeats"
+#: Reasons the comparisons carry for the 2x band (timing-noise audit P7).
+SINGLE_SAMPLE_NULL_REASON = (
+    "single-sample endpoint(s): within the 2x policy band is not a measured null"
+)
+FLAT_BAND_REASON = "within the 2x policy band; not a measured null"
+SINGLE_SAMPLE_REASON = "single-sample endpoint(s)"
 
 #: The ``profiling-summary`` read contract this project publishes for the PyAutoPulse organ
 #: (``dashboard/README.md``; design: PyAutoBrain/docs/research/profiling_inference_organs.md).
@@ -374,15 +394,41 @@ def scan(root: Path) -> dict[tuple, list[dict]]:
 # ---------------------------------------------------------------------------
 
 
+def is_reference_host_class(config: str) -> bool:
+    """True when ``config`` is measured on a declared reference host class (``hpc_*``)."""
+    return config.startswith(REFERENCE_HOST_CLASS_PREFIXES)
+
+
+def has_repeat_summary(point: dict) -> bool:
+    """True when the compared metric carries a summary of >= 2 independent repeats."""
+    n = point.get(REPEAT_SUMMARY_FIELD)
+    return isinstance(n, int) and not isinstance(n, bool) and n >= 2
+
+
 def qualify(point: dict, config: str, conf: dict) -> tuple[bool, str | None, bool]:
-    """(qualified, reason, refused) for one point under the release-sweep pin."""
+    """(qualified, reason, refused) for one point under the release-sweep pin.
+
+    Refused above the load-average cap. Otherwise unqualified, with the first failing reason, when
+    the row has no provenance block, is not on a reference host class (laptop rows never qualify
+    as trend points), carries no load average or no host, or is an HPC row off the pinned node.
+    """
     cap = conf.get("loadavg_cap")
     node = conf.get("node")
     if cap is not None and point["loadavg"] is not None and point["loadavg"] > cap:
         return False, f"loadavg {point['loadavg']:.1f} above the cap {cap:g}", True
     if not point["has_provenance"]:
         return False, "no provenance block (pre-#342 row)", False
-    if config.startswith("hpc_") and node and point["host"] and point["host"] != node:
+    if not is_reference_host_class(config):
+        return (
+            False,
+            "not a reference host class; laptop rows never qualify as trend points",
+            False,
+        )
+    if point["loadavg"] is None:
+        return False, "provenance carries no load average", False
+    if point["host"] is None:
+        return False, "provenance carries no host", False
+    if node and point["host"] != node:
         return False, f"off the reference host ({point['host']} != {node})", False
     return True, None, False
 
@@ -475,7 +521,8 @@ def build_state(series: list[dict], generated: str) -> dict:
     else:
         status = "green"
         headline = (
-            f"{len(series)} series across {len(cells)} cells and {len(versions)} releases; no drift"
+            f"{len(series)} series across {len(cells)} cells and {len(versions)} releases; "
+            f"none drifted >= {DRIFT_RATIO:g}x (single-sample endpoints: not a measured null)"
         )
     items = []
     for s in drifted:
@@ -603,7 +650,13 @@ _COMPARISON_STATUS = {
 
 
 def _summary_comparison(s: dict) -> dict:
-    """The producer's own drift verdict for one series -- displayed by the organ, never redone."""
+    """The producer's own drift verdict for one series -- displayed by the organ, never redone.
+
+    Inside the 2x band (``steady``) is published as ``flat`` only when both endpoints carry a
+    repeat summary; with a single-sample endpoint it is ``insufficient``. ``drifted`` /
+    ``improved`` keep their status (gross-band signals) with a single-sample caveat (human
+    decision 2026-10-08, autolens_profiling#362).
+    """
     d = s["drift"]
     status = _COMPARISON_STATUS[d["status"]]
     reasons: list[str] = []
@@ -613,6 +666,18 @@ def _summary_comparison(s: dict) -> dict:
         reasons.append("no single-jit headline in the last two releases")
     by_version = {p["version"]: p for p in s["points"]}
     endpoints = [by_version.get(v) for v in (d["from"], d["to"]) if v is not None]
+    if d["status"] in ("steady", "drifted", "improved"):
+        single = len(endpoints) < 2 or not all(
+            p is not None and has_repeat_summary(p) for p in endpoints
+        )
+        if d["status"] == "steady":
+            if single:
+                status = "insufficient"
+                reasons.append(SINGLE_SAMPLE_NULL_REASON)
+            else:
+                reasons.append(FLAT_BAND_REASON)
+        elif single:
+            reasons.append(SINGLE_SAMPLE_REASON)
     for role, p in zip(("baseline", "candidate"), endpoints):
         if p is not None and not p["qualified"]:
             reasons.append(f"{role} row unqualified: {p['reason']}")
@@ -666,6 +731,20 @@ def build_summary(
         "valid_until is null: this project declares no freshness policy for release trends",
         "vmap_per_call_s is null where a row carries no vmap block",
     ]
+    limitations.append(
+        "only reference-host-class rows (hpc_*) can be qualified: laptop rows never qualify as "
+        "trend points, and a provenance block without a load average or host is unqualified"
+    )
+    if any(
+        reason in (SINGLE_SAMPLE_NULL_REASON, SINGLE_SAMPLE_REASON)
+        for c in comparisons
+        for reason in c["reasons"]
+    ):
+        limitations.append(
+            "comparison endpoints without a repeat summary are single samples (one 10-call block "
+            "mean): a ratio inside the 2x band is insufficient, not flat; drifted / improved are "
+            "gross-band flags with a single-sample caveat"
+        )
     if any(not r["provenance"]["has_provenance"] for r in records):
         limitations.append(
             "rows without a device.provenance block (pre-autolens_profiling#342) are unqualified"
@@ -1096,7 +1175,7 @@ def render_html(
                     )
                     d = s["drift"]
                     dtxt = (
-                        f"{d['status']} {d['ratio']}x"
+                        f"{'within 2x band' if d['status'] == 'steady' else d['status']} {d['ratio']}x"
                         if d["ratio"] and p is s["points"][-1]
                         else ""
                     )
