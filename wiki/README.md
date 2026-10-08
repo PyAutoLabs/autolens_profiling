@@ -10,6 +10,10 @@ record of every measurement stays in the campaign's note under
   ledger, Mind epic/contract, next step.
 - [`campaigns/`](campaigns/) — one page per campaign, built from
   [`campaigns/_template.md`](campaigns/_template.md).
+- [`research/`](research/) — focused research notes that a campaign phase produced for a later
+  decision (question, method, evidence, supported explanation, decision table), linked from their
+  campaign page: [Jacobi PDIP batched vs unbatched on the A100](research/jacobi_a100_batched_divergence.md)
+  (linear-solver phase 4a).
 
 ## Header contract
 
