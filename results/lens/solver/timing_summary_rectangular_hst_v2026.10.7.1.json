@@ -1,0 +1,567 @@
+{
+ "autolens_version": "2026.8.17.1",
+ "device": {
+  "backend": "cpu",
+  "device": "cpu:0",
+  "hostname": "DESKTOP-H143S82",
+  "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+  "omp_num_threads": "1",
+  "cpu_count": 8,
+  "jax_compilation_cache_dir": "/home/jammy/.cache/pyauto_jax",
+  "autotune_cache_entries_at_start": 0,
+  "cache_fresh": true,
+  "provenance": {
+   "provenance_schema": 1,
+   "captured_at": "2026-10-08T10:58:29Z",
+   "host": "DESKTOP-H143S82",
+   "slurm": {
+    "job_id": null,
+    "array_job_id": null,
+    "array_task_id": null
+   },
+   "loadavg_at_import": [
+    25.178,
+    23.225,
+    16.275
+   ],
+   "loadavg_at_write": [
+    25.178,
+    23.225,
+    16.275
+   ],
+   "profiling_revision": "32737262bda4c009647ceea2aaba8d8e8067daf9",
+   "library_revisions": {
+    "autolens_profiling": "32737262bda4c009647ceea2aaba8d8e8067daf9",
+    "PyAutoNerves": "c5ade6050cb919e46586e04d851867d6d252a11b",
+    "PyAutoFit": "710f4b3436a1e5681a0b633ee09013e786942857",
+    "PyAutoArray": "ccddfba6744d612092ef3723361689b09bf65648",
+    "PyAutoGalaxy": "b4946b8a648abe08cc76cd7c7692672f560891b2",
+    "PyAutoLens": "b6bf543c7c9b71c7cc467588aefced838164049f"
+   },
+   "library_versions": {
+    "PyAutoNerves": "2026.8.17.1",
+    "PyAutoFit": "2026.8.17.1",
+    "PyAutoArray": "2026.8.17.1",
+    "PyAutoGalaxy": "2026.8.17.1",
+    "PyAutoLens": "2026.8.17.1"
+   },
+   "dependency_versions": {
+    "jax": "0.10.2",
+    "jaxlib": "0.10.2",
+    "numpy": "2.2.6",
+    "scipy": "1.17.1",
+    "numba": "0.62.1",
+    "nufftax": "0.6.1"
+   }
+  }
+ },
+ "cell": "timing",
+ "corpus": {
+  "label": "rectangular_hst",
+  "groups": [
+   "rectangular_hst"
+  ],
+  "systems": [
+   "rectangular_hst/v00",
+   "rectangular_hst/v08",
+   "rectangular_hst/v16",
+   "rectangular_hst/v24",
+   "rectangular_hst/noise_x0p3_v00",
+   "rectangular_hst/noise_x0p3_v16",
+   "rectangular_hst/noise_x3_v00",
+   "rectangular_hst/noise_x3_v16"
+  ],
+  "n_systems": 8,
+  "manifest": "results/lens/solver/corpus/manifest.json"
+ },
+ "configuration": {
+  "candidates": [
+   "pdip_raw",
+   "pdip_jacobi"
+  ],
+  "target_kappa": 1e-11,
+  "requested_device": "cpu",
+  "x64": true,
+  "reference": "autoarray.util.fnnls.fnnls_cholesky (dense-sign start), stored in the corpus",
+  "batch_sizes": [
+   1,
+   8,
+   16
+  ],
+  "rounds": 3,
+  "batched_kernel": "jax.jit(jax.vmap(candidate body)) via _solvers.batched_kernel",
+  "batch_families": {
+   "rectangular_hst": [
+    "rectangular_hst/v00",
+    "rectangular_hst/v08",
+    "rectangular_hst/v16",
+    "rectangular_hst/v24",
+    "rectangular_hst/noise_x0p3_v00",
+    "rectangular_hst/noise_x0p3_v16",
+    "rectangular_hst/noise_x3_v00",
+    "rectangular_hst/noise_x3_v16"
+   ]
+  },
+  "timing_method": "inputs device-resident before timing; compile_s = first call per config (separate); steady = `rounds` interleaved rounds, every config once per round in a fixed order, blocking; per_eval = wall / batch_size"
+ },
+ "candidates": {
+  "pdip_raw": {
+   "description": "Library default for linear-object-only (MGE) inversions: forward PDIP on the raw (Q, q) at data_scaled_solver_tol(q), cap 50; the library maps the iterate to y = x / D and, since PyAutoArray#595, returns the #573 polish of it (at most RAW_POLISH_MAX_ITER tight PDIP iterations on (Q_pc, q_pc), kept iff converged and interior) \u2014 reconstruction y * D, reproduced exactly. converged / iterations are the raw forward solve's (the polish is not counted). Extras: the polish / relaxed-KKT status from raw_forward_backward_status (not timed).",
+   "library_function": "autoarray.util.jax_nnls.solve_nnls_primal_raw_forward (+ raw_forward_backward_status)",
+   "backend": "jax"
+  },
+  "pdip_jacobi": {
+   "description": "Jacobi-preconditioned PDIP: solve (D Q D) y = D q at jaxnnls's own tolerance min(n eps 5e3, 1e-2), cap 50, return y * D \u2014 the library 'jacobi' mode (the default for inversions with a Mapper; the MGE default before PyAutoArray#571).",
+   "library_function": "autoarray.util.jax_nnls.solve_nnls_primal_with_status",
+   "backend": "jax"
+  }
+ },
+ "rows": [
+  {
+   "candidate": "pdip_raw",
+   "backend": "jax",
+   "looped": false,
+   "batch_family": "rectangular_hst",
+   "batch_size": 1,
+   "tiled": false,
+   "pool_size": 8,
+   "lanes": [
+    "rectangular_hst/v00"
+   ],
+   "n_distinct_lanes": 1,
+   "compile_s": 5.310045900001569,
+   "compiled_here": true,
+   "walls_ms": [
+    3120.134099999632,
+    2800.310599999648,
+    2251.0810000003403
+   ],
+   "wall_min_ms": 2251.0810000003403,
+   "wall_median_ms": 2800.310599999648,
+   "per_eval_min_ms": 2251.0810000003403,
+   "per_eval_median_ms": 2800.310599999648,
+   "iterations": [
+    18
+   ],
+   "median_iterations": 18.0,
+   "max_iterations": 18,
+   "converged": [
+    true
+   ],
+   "n_unconverged": 0,
+   "flux_inactive_rel": [
+    9.968228519882032e-08
+   ],
+   "worst_flux_inactive_rel": 9.968228519882032e-08,
+   "median_flux_inactive_rel": 9.968228519882032e-08,
+   "worst_amp_rel_max_sig": 0.09166872065262645,
+   "guard": {
+    "against": "the same lane solved unbatched by candidate.fn (the accuracy.py path)",
+    "max_abs_delta_flux_inactive_rel": 0.0,
+    "n_lanes_iterations_differ": 0,
+    "n_lanes_converged_differ": 0
+   }
+  },
+  {
+   "candidate": "pdip_raw",
+   "backend": "jax",
+   "looped": false,
+   "batch_family": "rectangular_hst",
+   "batch_size": 8,
+   "tiled": false,
+   "pool_size": 8,
+   "lanes": [
+    "rectangular_hst/v00",
+    "rectangular_hst/v08",
+    "rectangular_hst/v16",
+    "rectangular_hst/v24",
+    "rectangular_hst/noise_x0p3_v00",
+    "rectangular_hst/noise_x0p3_v16",
+    "rectangular_hst/noise_x3_v00",
+    "rectangular_hst/noise_x3_v16"
+   ],
+   "n_distinct_lanes": 8,
+   "compile_s": 19.756216499999937,
+   "compiled_here": true,
+   "walls_ms": [
+    17493.613700000424,
+    15379.56579999991,
+    13074.740300000485
+   ],
+   "wall_min_ms": 13074.740300000485,
+   "wall_median_ms": 15379.56579999991,
+   "per_eval_min_ms": 1634.3425375000606,
+   "per_eval_median_ms": 1922.4457249999887,
+   "iterations": [
+    18,
+    18,
+    18,
+    18,
+    23,
+    24,
+    15,
+    16
+   ],
+   "median_iterations": 18.0,
+   "max_iterations": 24,
+   "converged": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   "n_unconverged": 0,
+   "flux_inactive_rel": [
+    9.968228519879946e-08,
+    1.0846624481197217e-07,
+    8.123581109363527e-08,
+    9.685167205602917e-08,
+    1.0288066961358466e-07,
+    7.260273161541951e-08,
+    7.840030428299476e-08,
+    1.1505635612304481e-07
+   ],
+   "worst_flux_inactive_rel": 1.1505635612304481e-07,
+   "median_flux_inactive_rel": 9.826697862741431e-08,
+   "worst_amp_rel_max_sig": 0.956483340404315,
+   "guard": {
+    "against": "the same lane solved unbatched by candidate.fn (the accuracy.py path)",
+    "max_abs_delta_flux_inactive_rel": 1.1551941213772555e-18,
+    "n_lanes_iterations_differ": 0,
+    "n_lanes_converged_differ": 0
+   }
+  },
+  {
+   "candidate": "pdip_raw",
+   "backend": "jax",
+   "looped": false,
+   "batch_family": "rectangular_hst",
+   "batch_size": 16,
+   "tiled": true,
+   "pool_size": 8,
+   "lanes": [
+    "rectangular_hst/v00",
+    "rectangular_hst/v08",
+    "rectangular_hst/v16",
+    "rectangular_hst/v24",
+    "rectangular_hst/noise_x0p3_v00",
+    "rectangular_hst/noise_x0p3_v16",
+    "rectangular_hst/noise_x3_v00",
+    "rectangular_hst/noise_x3_v16",
+    "rectangular_hst/v00",
+    "rectangular_hst/v08",
+    "rectangular_hst/v16",
+    "rectangular_hst/v24",
+    "rectangular_hst/noise_x0p3_v00",
+    "rectangular_hst/noise_x0p3_v16",
+    "rectangular_hst/noise_x3_v00",
+    "rectangular_hst/noise_x3_v16"
+   ],
+   "n_distinct_lanes": 8,
+   "compile_s": 43.19092300000011,
+   "compiled_here": true,
+   "walls_ms": [
+    30047.803100000237,
+    27351.18319999856,
+    29716.049499998917
+   ],
+   "wall_min_ms": 27351.18319999856,
+   "wall_median_ms": 29716.049499998917,
+   "per_eval_min_ms": 1709.44894999991,
+   "per_eval_median_ms": 1857.2530937499323,
+   "iterations": [
+    18,
+    18,
+    18,
+    18,
+    23,
+    24,
+    15,
+    16,
+    18,
+    18,
+    18,
+    18,
+    23,
+    24,
+    15,
+    16
+   ],
+   "median_iterations": 18.0,
+   "max_iterations": 24,
+   "converged": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   "n_unconverged": 0,
+   "flux_inactive_rel": [
+    9.968228519879946e-08,
+    1.0846624481197217e-07,
+    8.123581109363527e-08,
+    9.685167205602917e-08,
+    1.0288066961358466e-07,
+    7.260273161541951e-08,
+    7.840030428299476e-08,
+    1.1505635612304481e-07,
+    9.968228519879946e-08,
+    1.0846624481197217e-07,
+    8.123581109363527e-08,
+    9.685167205602917e-08,
+    1.0288066961358466e-07,
+    7.260273161541951e-08,
+    7.840030428299476e-08,
+    1.1505635612304481e-07
+   ],
+   "worst_flux_inactive_rel": 1.1505635612304481e-07,
+   "median_flux_inactive_rel": 9.826697862741431e-08,
+   "worst_amp_rel_max_sig": 0.956483340404315,
+   "guard": {
+    "against": "the same lane solved unbatched by candidate.fn (the accuracy.py path)",
+    "max_abs_delta_flux_inactive_rel": 1.1551941213772555e-18,
+    "n_lanes_iterations_differ": 0,
+    "n_lanes_converged_differ": 0
+   }
+  },
+  {
+   "candidate": "pdip_jacobi",
+   "backend": "jax",
+   "looped": false,
+   "batch_family": "rectangular_hst",
+   "batch_size": 1,
+   "tiled": false,
+   "pool_size": 8,
+   "lanes": [
+    "rectangular_hst/v00"
+   ],
+   "n_distinct_lanes": 1,
+   "compile_s": 3.816360099999656,
+   "compiled_here": true,
+   "walls_ms": [
+    1594.0597999997408,
+    1777.9394000008324,
+    2116.996200000358
+   ],
+   "wall_min_ms": 1594.0597999997408,
+   "wall_median_ms": 1777.9394000008324,
+   "per_eval_min_ms": 1594.0597999997408,
+   "per_eval_median_ms": 1777.9394000008324,
+   "iterations": [
+    15
+   ],
+   "median_iterations": 15.0,
+   "max_iterations": 15,
+   "converged": [
+    true
+   ],
+   "n_unconverged": 0,
+   "flux_inactive_rel": [
+    1.2221302232860594e-07
+   ],
+   "worst_flux_inactive_rel": 1.2221302232860594e-07,
+   "median_flux_inactive_rel": 1.2221302232860594e-07,
+   "worst_amp_rel_max_sig": 0.13737451555111113,
+   "guard": {
+    "against": "the same lane solved unbatched by candidate.fn (the accuracy.py path)",
+    "max_abs_delta_flux_inactive_rel": 0.0,
+    "n_lanes_iterations_differ": 0,
+    "n_lanes_converged_differ": 0
+   }
+  },
+  {
+   "candidate": "pdip_jacobi",
+   "backend": "jax",
+   "looped": false,
+   "batch_family": "rectangular_hst",
+   "batch_size": 8,
+   "tiled": false,
+   "pool_size": 8,
+   "lanes": [
+    "rectangular_hst/v00",
+    "rectangular_hst/v08",
+    "rectangular_hst/v16",
+    "rectangular_hst/v24",
+    "rectangular_hst/noise_x0p3_v00",
+    "rectangular_hst/noise_x0p3_v16",
+    "rectangular_hst/noise_x3_v00",
+    "rectangular_hst/noise_x3_v16"
+   ],
+   "n_distinct_lanes": 8,
+   "compile_s": 12.905297900000733,
+   "compiled_here": true,
+   "walls_ms": [
+    12905.188900000212,
+    7372.559000001274,
+    10547.270000000935
+   ],
+   "wall_min_ms": 7372.559000001274,
+   "wall_median_ms": 10547.270000000935,
+   "per_eval_min_ms": 921.5698750001593,
+   "per_eval_median_ms": 1318.408750000117,
+   "iterations": [
+    15,
+    15,
+    15,
+    15,
+    17,
+    17,
+    14,
+    14
+   ],
+   "median_iterations": 15.0,
+   "max_iterations": 17,
+   "converged": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   "n_unconverged": 0,
+   "flux_inactive_rel": [
+    1.2221302232860605e-07,
+    1.2648560846926043e-07,
+    1.07231735894153e-07,
+    1.1866474319229386e-07,
+    6.069528963071205e-08,
+    6.917337682678749e-08,
+    1.4287095204529704e-07,
+    1.2307238310093535e-07
+   ],
+   "worst_flux_inactive_rel": 1.4287095204529704e-07,
+   "median_flux_inactive_rel": 1.2043888276044996e-07,
+   "worst_amp_rel_max_sig": 1.046632871345201,
+   "guard": {
+    "against": "the same lane solved unbatched by candidate.fn (the accuracy.py path)",
+    "max_abs_delta_flux_inactive_rel": 1.9481757786848908e-20,
+    "n_lanes_iterations_differ": 0,
+    "n_lanes_converged_differ": 0
+   }
+  },
+  {
+   "candidate": "pdip_jacobi",
+   "backend": "jax",
+   "looped": false,
+   "batch_family": "rectangular_hst",
+   "batch_size": 16,
+   "tiled": true,
+   "pool_size": 8,
+   "lanes": [
+    "rectangular_hst/v00",
+    "rectangular_hst/v08",
+    "rectangular_hst/v16",
+    "rectangular_hst/v24",
+    "rectangular_hst/noise_x0p3_v00",
+    "rectangular_hst/noise_x0p3_v16",
+    "rectangular_hst/noise_x3_v00",
+    "rectangular_hst/noise_x3_v16",
+    "rectangular_hst/v00",
+    "rectangular_hst/v08",
+    "rectangular_hst/v16",
+    "rectangular_hst/v24",
+    "rectangular_hst/noise_x0p3_v00",
+    "rectangular_hst/noise_x0p3_v16",
+    "rectangular_hst/noise_x3_v00",
+    "rectangular_hst/noise_x3_v16"
+   ],
+   "n_distinct_lanes": 8,
+   "compile_s": 28.27791889999935,
+   "compiled_here": true,
+   "walls_ms": [
+    19362.594599999284,
+    15940.00380000034,
+    24539.938800000527
+   ],
+   "wall_min_ms": 15940.00380000034,
+   "wall_median_ms": 19362.594599999284,
+   "per_eval_min_ms": 996.2502375000213,
+   "per_eval_median_ms": 1210.1621624999552,
+   "iterations": [
+    15,
+    15,
+    15,
+    15,
+    17,
+    17,
+    14,
+    14,
+    15,
+    15,
+    15,
+    15,
+    17,
+    17,
+    14,
+    14
+   ],
+   "median_iterations": 15.0,
+   "max_iterations": 17,
+   "converged": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   "n_unconverged": 0,
+   "flux_inactive_rel": [
+    1.2221302232860605e-07,
+    1.2648560846926043e-07,
+    1.07231735894153e-07,
+    1.1866474319229386e-07,
+    6.069528963071205e-08,
+    6.917337682678749e-08,
+    1.4287095204529704e-07,
+    1.2307238310093535e-07,
+    1.2221302232860605e-07,
+    1.2648560846926043e-07,
+    1.07231735894153e-07,
+    1.1866474319229386e-07,
+    6.069528963071205e-08,
+    6.917337682678749e-08,
+    1.4287095204529704e-07,
+    1.2307238310093535e-07
+   ],
+   "worst_flux_inactive_rel": 1.4287095204529704e-07,
+   "median_flux_inactive_rel": 1.2043888276044996e-07,
+   "worst_amp_rel_max_sig": 1.046632871345201,
+   "guard": {
+    "against": "the same lane solved unbatched by candidate.fn (the accuracy.py path)",
+    "max_abs_delta_flux_inactive_rel": 1.9481757786848908e-20,
+    "n_lanes_iterations_differ": 0,
+    "n_lanes_converged_differ": 0
+   }
+  }
+ ]
+}
