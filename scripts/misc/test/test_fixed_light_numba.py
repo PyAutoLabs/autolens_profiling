@@ -13,7 +13,9 @@ than of the fixture.
    dataset's data rather than a baked weight map — the *positive* statement that
    makes a sparse S3 row legitimate, which no amount of prose can substitute
    for. And ``call_accounting`` over a real likelihood call really does cover
-   95 % of it at no more than 3.1 % overhead, which is the whole premise of the
+   95 % of it, with its ABBA overhead judged by the SAME
+   ``likelihood_breakdown.overhead_verdict.abba_overhead_verdict`` and 12 ms
+   budget the cell uses (#362) — which is the whole premise of the
    decomposition.
 
    ``curvature_reg_matrix`` is pinned at ``n_calls >= 2`` deliberately. It is a
@@ -41,6 +43,7 @@ from __future__ import annotations
 
 import ast
 import sys as _sys
+import warnings
 from pathlib import Path as _Path
 
 import numpy as np
@@ -62,13 +65,22 @@ if str(_misc) not in _sys.path:
 from likelihood_breakdown import call_accounting as ca  # noqa: E402
 from likelihood_breakdown import fixed_light_numpy_solvers as flns  # noqa: E402
 from likelihood_breakdown import fixed_light_system as fls  # noqa: E402
+from likelihood_breakdown import overhead_verdict as ov  # noqa: E402
+from likelihood_breakdown.overhead_verdict import abba_overhead_verdict  # noqa: E402
 
 CELL_PATH = ROOT / "scripts/imaging/pixelized/fixed_light_numba.py"
 
 P2_RTOL = 1.0e-9
 P3_RTOL = 1.0e-6
 P4_RTOL = 1.0e-9
-CI_OVERHEAD_RATIO = 1.031
+
+
+class OverheadInconclusiveWarning(UserWarning):
+    """The ABBA overhead could not be resolved against the budget on this host.
+
+    Raised as a warning, not printed, so it lands in the pytest warnings summary
+    (``pytest -q`` captures stdout). It is never a pass of the budget (#362).
+    """
 
 
 # ---------------------------------------------------------------------------
@@ -398,6 +410,10 @@ _LIFTED_CONSTANTS = (
 )
 
 
+#: Modules whose top-level ``from ... import`` statements the namespace executes.
+_LIFTED_IMPORT_MODULES = ("likelihood_breakdown.overhead_verdict",)
+
+
 def _cell_namespace() -> dict:
     """Execute the cell's helpers + constants, and nothing else, in a fresh dict.
 
@@ -449,6 +465,10 @@ def _cell_namespace() -> dict:
     for node in tree.body:
         if isinstance(node, ast.FunctionDef) and node.name in _LIFTED_FUNCTIONS:
             wanted.append(node)
+        elif isinstance(node, ast.ImportFrom) and node.module in _LIFTED_IMPORT_MODULES:
+            # Executed as the cell's own import statement, so the name bound here is
+            # whatever the cell binds — through `sys.modules`, the one module object.
+            wanted.append(node)
         elif isinstance(node, ast.Assign):
             targets = [t.id for t in node.targets if isinstance(t, ast.Name)]
             if any(name in _LIFTED_CONSTANTS for name in targets):
@@ -463,76 +483,198 @@ def cell_ns():
     return _cell_namespace()
 
 
-def _ci_overhead_verdict(block_ratios):
-    """Return verdict and one-sided 95% bounds on mean ABBA overhead.
+# ---------------------------------------------------------------------------
+# The shared ABBA overhead verdict (#362 fix phase 1), on synthetic block sets
+# ---------------------------------------------------------------------------
 
-    This small-sample Student-t rule assumes independent, approximately normal
-    block ratios. It expresses uncertainty near the budget; it does not qualify
-    a scientific timing result on an uncontrolled CI host. The production/test
-    protocol audit is tracked in autolens_profiling#362.
-    """
-    from scipy.stats import t
+#: The budget the cell judges every decomposed row against.
+BUDGET_MS = 12.0
+#: The call length the 12 ms budget was calibrated on (1.03 x ~400 ms). The
+#: ratio-only witnesses of the audit note are read at this length.
+CALIBRATION_CALL_S = 0.400
 
-    ratios = np.asarray(block_ratios, dtype=float)
-    if ratios.ndim != 1 or ratios.size == 0 or not np.all(np.isfinite(ratios)):
-        raise ValueError("overhead ratios must be a nonempty finite vector")
-    if np.any(ratios <= 0):
-        raise ValueError("overhead ratios must be positive")
-    mean = float(np.mean(ratios))
-    # Never let noisy observations mask a catastrophic mean regression.
-    if mean > 1.5:
-        return "FAIL_GROSS", float("nan"), float("nan")
-    if ratios.size < 3:
-        return "INCONCLUSIVE", float("nan"), float("nan")
-    se = float(np.std(ratios, ddof=1) / np.sqrt(ratios.size))
-    margin = float(t.ppf(0.95, df=ratios.size - 1)) * se
-    lower, upper = mean - margin, mean + margin
-    if lower > CI_OVERHEAD_RATIO:
-        return "FAIL", lower, upper
-    if upper <= CI_OVERHEAD_RATIO:
-        return "PASS", lower, upper
-    return "INCONCLUSIVE", lower, upper
+#: The #361 CI blocks: mean 1.031074 against the old 1.031 ratio budget.
+PR361_BLOCKS = [1.0218478812434695, 1.0243047139025747, 1.0470684004725312]
+
+#: RAL job 343356's lever-1 control row (the "1.0147 at 413.301 ms" row the cell's
+#: comments quote), its eight recorded ABBA blocks. Committed in
+#: results/breakdown/imaging/fixed_light_numba_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_lever1_control_b_warm_t1.json.
+RAL_413_CALL_S = 0.41330131035647355
+RAL_413_BLOCKS = [1.086518, 1.002714, 1.081554, 1.021062, 1.003249, 0.994092, 0.943878, 0.984267]
+
+#: The s4b b_sparse_numba row, 32 recorded blocks at 226.772 ms: the interval
+#: rule resolves a PASS from a production-length block count.
+RAL_S4B_CALL_S = 0.22677222167840227
+RAL_S4B_BLOCKS = [
+    0.983179, 1.047691, 1.015668, 0.973392, 0.890679, 1.131432, 1.005908, 0.998987,
+    0.986286, 1.033494, 0.986952, 1.016879, 1.040374, 0.987451, 1.112356, 1.026064,
+    1.008764, 0.997819, 0.981028, 1.040423, 1.127809, 1.186428, 0.971974, 1.008906,
+    1.011003, 0.969252, 1.009512, 0.983338, 0.971508, 1.007618, 0.942171, 1.014294,
+]  # fmt: skip
 
 
 @pytest.mark.parametrize(
-    "ratios, expected",
+    "blocks, clean_s, expected",
     [
-        ([1.009, 1.010, 1.011], "PASS"),
-        ([1.049, 1.050, 1.051], "FAIL"),
-        ([1.0218478812434695, 1.0243047139025747, 1.0470684004725312], "INCONCLUSIVE"),
-        ([1.02, 1.04, 1.06], "INCONCLUSIVE"),
-        ([1.031, 1.031, 1.031], "PASS"),
-        ([1.032, 1.032, 1.032], "FAIL"),
-        ([1.0, 1.02], "INCONCLUSIVE"),
-        ([0.8, 1.6, 2.4], "FAIL_GROSS"),
-        ([1.6], "FAIL_GROSS"),
+        # Clear pass / clear fail at the calibration call: 4 ms and 20 ms of excess.
+        ([1.009, 1.010, 1.011], CALIBRATION_CALL_S, "PASS"),
+        ([1.049, 1.050, 1.051], CALIBRATION_CALL_S, "FAIL"),
+        # The #361 blocks: bounds [3.05, 21.8] ms straddle 12 ms.
+        (PR361_BLOCKS, CALIBRATION_CALL_S, "INCONCLUSIVE"),
+        # n < 3 is never resolved, however tight.
+        ([1.0, 1.02], CALIBRATION_CALL_S, "INCONCLUSIVE"),
+        ([1.01], CALIBRATION_CALL_S, "INCONCLUSIVE"),
+        # Gross: the mean alone decides, whatever n or the spread.
+        ([1.6], CALIBRATION_CALL_S, "FAIL_GROSS"),
+        ([0.8, 1.6, 2.4], CALIBRATION_CALL_S, "FAIL_GROSS"),
+        # The audit's laptop blocks: a mean ratio of 0.79 resolved below 1. The old
+        # ratio rule PASSed this; it is a host-noise signature, never a pass.
+        ([0.711, 0.923, 0.738], CALIBRATION_CALL_S, "INCONCLUSIVE"),
+        # A mean below 1 whose interval still reaches 0 is judged on its bounds.
+        ([0.995, 1.004, 0.999], CALIBRATION_CALL_S, "PASS"),
     ],
 )
-def test_ci_overhead_verdict(ratios, expected):
-    assert _ci_overhead_verdict(ratios)[0] == expected
+def test_abba_overhead_verdict_witness(blocks, clean_s, expected):
+    result = abba_overhead_verdict(blocks, clean_s, BUDGET_MS)
+    assert result.verdict == expected, result.reason
+    assert result.n_blocks == len(blocks)
+    assert result.budget_ms == BUDGET_MS
 
 
-def test_ci_overhead_bounds_use_small_sample_uncertainty():
-    # df=2 one-sided 95% critical value, not the asymptotic normal value.
-    verdict, lower, upper = _ci_overhead_verdict([1.02, 1.03, 1.04])
+def test_the_host_noise_signature_is_named():
+    result = abba_overhead_verdict([0.711, 0.923, 0.738], CALIBRATION_CALL_S, BUDGET_MS)
+    assert result.upper_ms < 0.0
+    assert "host-noise signature" in result.reason
+
+
+def test_the_boundary_is_inclusive_at_zero_variance():
+    """``[1.031] x 3`` has no spread, so its bounds collapse onto the point.
+
+    PASS is ``upper <= budget``: a budget equal to the point passes, and one ulp
+    below it fails. No tolerance is applied on either side.
+    """
+    blocks = [1.031, 1.031, 1.031]
+    point = abba_overhead_verdict(blocks, CALIBRATION_CALL_S, BUDGET_MS)
+    assert point.lower_ms == point.upper_ms == pytest.approx(point.overhead_ms, abs=1e-12)
+    at_budget = abba_overhead_verdict(blocks, CALIBRATION_CALL_S, point.upper_ms)
+    assert at_budget.verdict == "PASS"
+    below = abba_overhead_verdict(
+        blocks, CALIBRATION_CALL_S, float(np.nextafter(point.lower_ms, -np.inf))
+    )
+    assert below.verdict == "FAIL"
+
+
+def test_the_bounds_are_small_sample_student_t_in_milliseconds():
+    # df=2 one-sided 95% critical value, not the asymptotic normal 1.645.
+    result = abba_overhead_verdict([1.02, 1.03, 1.04], CALIBRATION_CALL_S, BUDGET_MS)
     margin = 2.919985580355516 * 0.01 / np.sqrt(3)
-    assert verdict == "INCONCLUSIVE"
-    assert lower == pytest.approx(1.03 - margin)
-    assert upper == pytest.approx(1.03 + margin)
+    assert result.mean_ratio == pytest.approx(1.03)
+    assert result.overhead_ms == pytest.approx(0.03 * 400.0)
+    assert result.lower_ms == pytest.approx((0.03 - margin) * 400.0)
+    assert result.upper_ms == pytest.approx((0.03 + margin) * 400.0)
+    assert result.verdict == "INCONCLUSIVE"
+    assert set(result.as_dict()) >= {"verdict", "lower_ms", "upper_ms", "reason"}
 
 
-@pytest.mark.parametrize("ratios", [[], [1.0, np.nan], [np.inf], [0.0], [-1.0], [[1.0]]])
-def test_ci_overhead_rejects_invalid_measurements(ratios):
+@pytest.mark.parametrize(
+    "blocks, clean_s, budget",
+    [
+        ([], CALIBRATION_CALL_S, BUDGET_MS),
+        ([1.0, np.nan], CALIBRATION_CALL_S, BUDGET_MS),
+        ([np.inf], CALIBRATION_CALL_S, BUDGET_MS),
+        ([0.0], CALIBRATION_CALL_S, BUDGET_MS),
+        ([-1.0], CALIBRATION_CALL_S, BUDGET_MS),
+        ([[1.0]], CALIBRATION_CALL_S, BUDGET_MS),
+        ([1.0, 1.0, 1.0], 0.0, BUDGET_MS),
+        ([1.0, 1.0, 1.0], -0.4, BUDGET_MS),
+        ([1.0, 1.0, 1.0], np.nan, BUDGET_MS),
+        ([1.0, 1.0, 1.0], CALIBRATION_CALL_S, np.inf),
+        ([1.0, 1.0, 1.0], CALIBRATION_CALL_S, 0.0),
+    ],
+)
+def test_abba_overhead_verdict_rejects_invalid_measurements(blocks, clean_s, budget):
     with pytest.raises(ValueError):
-        _ci_overhead_verdict(ratios)
+        abba_overhead_verdict(blocks, clean_s, budget)
+
+
+@pytest.mark.parametrize(
+    "ratio, clean_s, overhead_ms, expected",
+    [
+        # Job 343355's feature arm: 1.0366 at 224.330 ms, the row the 1.03 RATIO
+        # gate killed. 8.21 ms of instrument is inside the 12 ms budget.
+        (1.0366, 0.224330, 8.21048, "PASS"),
+        # The counterfactual: the same ratio on the ~400 ms call the 1.03 was
+        # calibrated on is 14.8 ms — over budget, and must still fail.
+        (1.037, 0.400, 14.8, "FAIL"),
+        # Job 343356's 413.301 ms row at its recorded mean ratio: 6.06 ms.
+        (1.0146666699919864, RAL_413_CALL_S, 6.06175, "PASS"),
+    ],
+)
+def test_the_pinned_ral_rows_keep_their_point_verdicts(ratio, clean_s, overhead_ms, expected):
+    """The three RAL rows the old ms gate pinned, as point estimates (zero spread).
+
+    The pinned rows carry a ratio and a call length, not their block spread
+    (job 343355's JSON was lost with the row), so they are witnessed here as 32
+    identical blocks: the interval collapses onto the point and today's
+    PASS / FAIL / PASS is unchanged. That pins the millisecond conversion and the
+    budget. What their real spread does to the verdict is the next test.
+    """
+    result = abba_overhead_verdict([ratio] * 32, clean_s, BUDGET_MS)
+    assert result.overhead_ms == pytest.approx(overhead_ms, rel=1e-5)
+    assert result.verdict == expected, result.reason
+
+
+def test_the_real_413_ms_blocks_are_inconclusive_not_pass():
+    """The 413.301 ms row's own eight blocks do NOT resolve the 12 ms budget.
+
+    Its point estimate is 6.06 ms (the old gate's PASS), but the eight blocks
+    scatter 0.944-1.087, so the one-sided 95 % bounds are about [-7.3, +19.4] ms.
+    Under the interval rule that row is INCONCLUSIVE: a verdict CHANGE from the
+    point-estimate PASS it was published with, recorded here as a fact (#362
+    phase 2). Its timing numbers are unaffected; only the claim that the
+    instrument was resolved inside the budget is withdrawn.
+    """
+    result = abba_overhead_verdict(RAL_413_BLOCKS, RAL_413_CALL_S, BUDGET_MS)
+    assert result.overhead_ms == pytest.approx(6.06, abs=0.01)
+    assert result.lower_ms == pytest.approx(-7.30, abs=0.01)
+    assert result.upper_ms == pytest.approx(19.42, abs=0.01)
+    assert result.verdict == "INCONCLUSIVE"
+
+
+def test_a_32_block_ral_row_resolves_a_pass():
+    """At production block counts the rule has power: s4b's row, bounds [-0.6, 7.2] ms."""
+    result = abba_overhead_verdict(RAL_S4B_BLOCKS, RAL_S4B_CALL_S, BUDGET_MS)
+    assert result.upper_ms == pytest.approx(7.23, abs=0.01)
+    assert result.verdict == "PASS"
+
+
+def test_the_cell_and_the_test_use_the_same_verdict_object(cell_ns):
+    """One function, not two copies that can drift (the T1/P1 finding of #362)."""
+    assert cell_ns["abba_overhead_verdict"] is abba_overhead_verdict
+    # The witnesses' budget is the cell's, not a second number that can drift from it.
+    assert BUDGET_MS == cell_ns["MAX_INSTRUMENTATION_OVERHEAD_MS"]
+    assert abba_overhead_verdict is ov.abba_overhead_verdict
+    assert cell_ns["FAILING_VERDICTS"] is ov.FAILING_VERDICTS
+    tree = ast.parse(CELL_PATH.read_text())
+    defined = {
+        node.name
+        for node in ast.walk(tree)
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef)
+    }
+    assert "abba_overhead_verdict" not in defined, "the cell must not define its own copy"
+    assert "_ci_overhead_verdict" not in globals(), "the test's private copy of the rule is back"
+    assert "CI_OVERHEAD_RATIO" not in globals(), "the ratio budget beside the ms budget is back"
 
 
 def test_call_accounting_covers_a_real_likelihood_call(tiny_s3_pair, cell_ns):
-    """The cell's own spec, over a real fit: >= 95 % attributed at <= 3.1 % overhead.
+    """The cell's own spec, over a real fit: >= 95 % attributed, overhead within budget.
 
     Both halves matter. Coverage below 95 % means the spec does not describe the
-    call graph and the decomposition is mostly remainder; a statistically resolved overhead above 3.1 %
-    fails the instrumentation budget. An overlapping bound is inconclusive.
+    call graph and the decomposition is mostly remainder. The overhead is judged
+    by the cell's own ``abba_overhead_verdict`` against the cell's own 12 ms
+    budget, converted through THIS fixture's measured clean mean: FAIL or
+    FAIL_GROSS fails the test; INCONCLUSIVE passes it with a visible
+    ``OverheadInconclusiveWarning`` and is never a claim that the budget held.
 
     The overhead is measured **counterbalanced** (A B B A per block, three
     blocks), exactly as the cell measures it. A single clean call against a
@@ -561,6 +703,7 @@ def test_call_accounting_covers_a_real_likelihood_call(tiny_s3_pair, cell_ns):
     one_call()  # warm-up: numba compiles here
 
     block_ratios = []
+    clean_calls_s = []
     values = []
     snapshot = None
     instrumented_s = None
@@ -575,6 +718,7 @@ def test_call_accounting_covers_a_real_likelihood_call(tiny_s3_pair, cell_ns):
             ca.uninstall()
         a2, value_a2 = one_call()
         block_ratios.append(((b1 + b2) / 2.0) / ((a1 + a2) / 2.0))
+        clean_calls_s.extend([a1, a2])
         instrumented_s = (b1 + b2) / 2.0
         values.extend([value_a1, value_b1, value_b2, value_a2])
 
@@ -585,25 +729,31 @@ def test_call_accounting_covers_a_real_likelihood_call(tiny_s3_pair, cell_ns):
     # Two instrumented calls per block, so the snapshot covers two calls.
     attributed = sum(entry["excl_s"] for entry in snapshot.values()) / 2.0
     coverage = attributed / instrumented_s
-    overhead = float(np.mean(block_ratios))
-    print(f"  coverage {coverage * 100:.2f} %, ABBA overhead x{overhead:.4f} {block_ratios}")
+    clean_mean_s = float(np.mean(clean_calls_s))
 
     assert coverage >= 0.95, (
         f"call_accounting attributed only {coverage * 100:.2f} % of the call "
         f"({attributed * 1e3:.3f} ms of {instrumented_s * 1e3:.3f} ms); the site spec "
         f"does not describe this call graph."
     )
-    # Fail only a resolved exceedance. Comparing the observed range with the
-    # entire 3.1% budget cannot resolve a mean only 0.007 percentage points over
-    # that budget (the failing CI observation in PR #361).
-    verdict, lower, upper = _ci_overhead_verdict(block_ratios)
-    print(f"  overhead verdict {verdict}; one-sided 95% bounds [{lower:.6f}, {upper:.6f}]")
-    assert verdict not in ("FAIL", "FAIL_GROSS"), (
-        f"ABBA instrumentation overhead {verdict}: mean x{overhead:.6f}, "
-        f"lower bound {lower:.6f}, budget {CI_OVERHEAD_RATIO}; blocks {block_ratios}"
+    # Fail only a resolved exceedance, with the cell's own function and budget
+    # (#362): the budget is milliseconds of instrument, converted through this
+    # fixture's own clean mean, exactly as the cell converts each row's.
+    result = cell_ns["abba_overhead_verdict"](
+        block_ratios,
+        clean_mean_s,
+        cell_ns["MAX_INSTRUMENTATION_OVERHEAD_MS"],
+        min_blocks=cell_ns["MIN_BLOCKS_FOR_OVERHEAD_ASSERT"],
     )
-    if verdict == "INCONCLUSIVE":
-        print("  overhead INCONCLUSIVE: recorded, not a measured pass of the 3.1% budget.")
+    summary = (
+        f"ABBA instrumentation overhead {result.verdict}: {result.overhead_ms:+.3f} ms "
+        f"(x{result.mean_ratio:.4f} on a {clean_mean_s * 1e3:.3f} ms clean call), one-sided "
+        f"{result.confidence:.0%} bounds [{result.lower_ms:+.3f}, {result.upper_ms:+.3f}] ms, "
+        f"budget {result.budget_ms} ms; blocks {block_ratios}; {result.reason}"
+    )
+    assert result.verdict not in ov.FAILING_VERDICTS, summary
+    if result.verdict == ov.INCONCLUSIVE:
+        warnings.warn(summary, category=OverheadInconclusiveWarning, stacklevel=1)
 
     # Every site declared cached was reached at most once per call.
     for label in ca.declared_cached_labels():
@@ -943,19 +1093,21 @@ def test_the_overhead_ratio_comes_from_counterbalanced_blocks(cell_ns):
 
 
 def test_the_overhead_gate_is_repeat_conditional(cell_ns):
-    """Below the block threshold the ratio is RECORDED with its spread, not asserted.
+    """Below the block threshold the overhead is INCONCLUSIVE with its spread, not asserted.
 
-    Asserting a 3 % threshold off one block is asserting noise. Recording it —
+    Asserting a 3 % threshold off one block is asserting noise. Writing it —
     with the observed clean-call spread beside it — keeps the comparison in the
-    artifact without turning the host's scatter into a verdict.
+    artifact without turning the host's scatter into a verdict. Before #362
+    phase 2 the status was ``RECORDED``; it is now the shared verdict's
+    INCONCLUSIVE, which keeps the row and never promotes.
     """
     source = CELL_PATH.read_text()
 
     assert cell_ns["MIN_BLOCKS_FOR_OVERHEAD_ASSERT"] == 3
-    assert '_overhead_status == "FAIL"' in source, (
-        "the assert must fire on the recorded status, not on a bare ratio comparison"
+    assert "if _overhead_status in FAILING_VERDICTS:" in source, (
+        "the assert must fire on the shared verdict's FAIL / FAIL_GROSS, not on a bare comparison"
     )
-    assert '"RECORDED"' in source
+    assert "min_blocks=MIN_BLOCKS_FOR_OVERHEAD_ASSERT" in source
     assert "instrumentation_overhead_status" in source
     assert "clean_relative_spread" in source, (
         "the observed spread must be recorded beside the ratio it has to beat"
@@ -966,38 +1118,33 @@ def test_the_overhead_gate_is_repeat_conditional(cell_ns):
     assert cell_ns["REFERENCE_OVERHEAD_RATIO"] == 1.03
 
 
-def _overhead_gate(cell_ns, *, ratio, clean_call_ms, n_blocks):
+def _overhead_gate(cell_ns, *, blocks, clean_call_ms):
     """Run the cell's OWN overhead-gate statements, lifted from its AST.
 
-    ``_overhead_ms`` and ``_overhead_status`` are assigned inside the row loop,
-    which is module-level code this test cannot import. The two assignments are
-    therefore lifted by name and executed against a prepared namespace, so what
-    is exercised below is the cell's arithmetic and the cell's branch, not a
+    ``_overhead_verdict``, ``_overhead_ms`` and ``_overhead_status`` are assigned
+    inside the row loop, which is module-level code this test cannot import. The
+    three assignments are therefore lifted by name and executed against a
+    prepared namespace holding the cell's own imported ``abba_overhead_verdict``,
+    so what is exercised below is the cell's call and the cell's arguments, not a
     re-implementation of them that could drift from it.
     """
     tree = ast.parse(CELL_PATH.read_text())
+    names = ("_overhead_verdict", "_overhead_ms", "_overhead_status")
     wanted = [
         node
         for node in ast.walk(tree)
         if isinstance(node, ast.Assign)
-        and any(
-            isinstance(t, ast.Name) and t.id in ("_overhead_ms", "_overhead_status")
-            for t in node.targets
-        )
+        and any(isinstance(t, ast.Name) and t.id in names for t in node.targets)
     ]
-    assert len(wanted) == 2, (
-        f"expected exactly one _overhead_ms and one _overhead_status assignment, "
-        f"found {len(wanted)}"
-    )
+    assert len(wanted) == 3, f"expected exactly one assignment each of {names}, found {len(wanted)}"
     wanted.sort(key=lambda node: node.lineno)
 
     namespace = {
-        "_overhead_ratio": ratio,
+        "_block_ratios": list(blocks),
         "_clean_mean": clean_call_ms / 1e3,
-        "_abba": {"n_blocks": n_blocks},
+        "abba_overhead_verdict": cell_ns["abba_overhead_verdict"],
         "MIN_BLOCKS_FOR_OVERHEAD_ASSERT": cell_ns["MIN_BLOCKS_FOR_OVERHEAD_ASSERT"],
         "MAX_INSTRUMENTATION_OVERHEAD_MS": cell_ns["MAX_INSTRUMENTATION_OVERHEAD_MS"],
-        "_overhead_assertable": n_blocks >= cell_ns["MIN_BLOCKS_FOR_OVERHEAD_ASSERT"],
     }
     exec(
         compile(ast.Module(body=wanted, type_ignores=[]), str(CELL_PATH), "exec"),
@@ -1017,24 +1164,26 @@ def test_the_overhead_gate_is_a_millisecond_budget(cell_ns):
     passed: x1.0147 at 413 ms is 6.1 ms and cleared 1.03; x1.0366 at 224 ms is
     8.2 ms and did not.
 
-    The three rows below are those measurements. The middle one is the
-    counterfactual: the SAME 1.037 ratio on a 400 ms call really is 14.8 ms of
-    instrument, and must still fail.
+    The three rows below are those measurements, run through the cell's own
+    gate statements as 32 zero-spread blocks (the pinned rows carry no spread;
+    see ``test_the_real_413_ms_blocks_are_inconclusive_not_pass`` for what the
+    413 ms row's real spread does). The middle one is the counterfactual: the
+    SAME 1.037 ratio on a 400 ms call really is 14.8 ms of instrument, and must
+    still fail.
     """
     budget = cell_ns["MAX_INSTRUMENTATION_OVERHEAD_MS"]
     assert budget == 12.0
 
     # Job 343355, feature arm: the row the ratio gate killed.
-    overhead_ms, status = _overhead_gate(cell_ns, ratio=1.037, clean_call_ms=224.0, n_blocks=32)
+    overhead_ms, status = _overhead_gate(cell_ns, blocks=[1.037] * 32, clean_call_ms=224.0)
     assert overhead_ms == pytest.approx(8.288, rel=1e-6)
-    assert overhead_ms <= budget
     assert status == "PASS", (
         f"1.037 at a 224 ms call is {overhead_ms:.2f} ms of instrument — inside the "
         f"{budget} ms budget, and the row the old ratio gate destroyed"
     )
 
     # The counterfactual: the same ratio on the call the 1.03 was calibrated on.
-    overhead_ms, status = _overhead_gate(cell_ns, ratio=1.037, clean_call_ms=400.0, n_blocks=32)
+    overhead_ms, status = _overhead_gate(cell_ns, blocks=[1.037] * 32, clean_call_ms=400.0)
     assert overhead_ms == pytest.approx(14.8, rel=1e-6)
     assert status == "FAIL", (
         f"1.037 at a 400 ms call is {overhead_ms:.2f} ms — over the {budget} ms budget. "
@@ -1042,16 +1191,58 @@ def test_the_overhead_gate_is_a_millisecond_budget(cell_ns):
     )
 
     # Job 343356, the 413 ms row that passed the ratio gate. It must still pass.
-    overhead_ms, status = _overhead_gate(cell_ns, ratio=1.0147, clean_call_ms=413.0, n_blocks=32)
+    overhead_ms, status = _overhead_gate(cell_ns, blocks=[1.0147] * 32, clean_call_ms=413.0)
     assert overhead_ms == pytest.approx(6.0711, rel=1e-6)
     assert status == "PASS"
 
-    # And the block threshold still overrides the verdict, in milliseconds too.
-    overhead_ms, status = _overhead_gate(cell_ns, ratio=1.037, clean_call_ms=400.0, n_blocks=1)
+    # And the block threshold still overrides the verdict, in milliseconds too —
+    # now as the shared verdict's INCONCLUSIVE (it was RECORDED before #362).
+    overhead_ms, status = _overhead_gate(cell_ns, blocks=[1.037], clean_call_ms=400.0)
     assert overhead_ms == pytest.approx(14.8, rel=1e-6)
-    assert status == "RECORDED", (
+    assert status == "INCONCLUSIVE", (
         "one block cannot resolve the budget any better than it could resolve the ratio"
     )
+
+    # An unresolved interval keeps the row: INCONCLUSIVE, which the cell does not raise on.
+    overhead_ms, status = _overhead_gate(cell_ns, blocks=PR361_BLOCKS, clean_call_ms=400.0)
+    assert status == "INCONCLUSIVE"
+
+
+def _promotion_decision(b_ms, d_ms, b_status, d_status):
+    """Run the cell's OWN promotion block (lifted from its AST) on two synthetic rows."""
+    tree = ast.parse(CELL_PATH.read_text())
+    block = next(
+        node
+        for node in tree.body
+        if isinstance(node, ast.If) and ast.unparse(node.test) == "_promotion_pair is not None"
+    )
+    rows = {
+        "b_sparse_numba": {"call_ms": b_ms, "instrumentation_overhead_status": b_status},
+        "d_perm_sparse_numba": {"call_ms": d_ms, "instrumentation_overhead_status": d_status},
+    }
+    namespace = {"rows": rows, "_promotion_pair": ("b_sparse_numba", "d_perm_sparse_numba")}
+    exec(compile(ast.Module(body=[block], type_ignores=[]), str(CELL_PATH), "exec"), namespace)
+    return namespace["_promotion_decision"]
+
+
+@pytest.mark.parametrize(
+    "b_status, d_status, d_ms, expected",
+    [
+        ("PASS", "PASS", 200.0, "timing_candidate"),
+        ("PASS", "INCONCLUSIVE", 200.0, "INCONCLUSIVE"),
+        ("INCONCLUSIVE", "PASS", 200.0, "INCONCLUSIVE"),
+        ("INCONCLUSIVE", "INCONCLUSIVE", 200.0, "INCONCLUSIVE"),
+        ("PASS", "PASS", 230.0, "NO_LEVER"),
+    ],
+)
+def test_promotion_requires_pass_on_both_arms(b_status, d_status, d_ms, expected):
+    """P2: an INCONCLUSIVE overhead never promotes and is never a measured NO_LEVER (#362)."""
+    decision = _promotion_decision(236.0, d_ms, b_status, d_status)
+    assert decision["status"] == expected, decision["reason"]
+    assert decision["promotion_ready"] is False
+    if expected == "INCONCLUSIVE":
+        assert "INCONCLUSIVE" in decision["reason"]
+        assert decision["abba_unresolved_rows"]
 
 
 def test_the_overhead_gate_records_both_the_ms_and_the_ratio(cell_ns):
@@ -1070,15 +1261,35 @@ def test_the_overhead_gate_records_both_the_ms_and_the_ratio(cell_ns):
     assert '"max_instrumentation_overhead_ms": MAX_INSTRUMENTATION_OVERHEAD_MS,' in source
     assert '"min_blocks_for_overhead_assert": MIN_BLOCKS_FOR_OVERHEAD_ASSERT,' in source
 
-    # The gate compares milliseconds, not the ratio. A ratio comparison left in
-    # the status expression would be the old gate wearing the new name.
-    assert "_overhead_ms <= MAX_INSTRUMENTATION_OVERHEAD_MS" in source
+    # The bounds and the reason of the shared verdict are written beside the status.
+    assert '"instrumentation_overhead_lower_ms": _overhead_verdict.lower_ms,' in source
+    assert '"instrumentation_overhead_upper_ms": _overhead_verdict.upper_ms,' in source
+    assert '"instrumentation_overhead_verdict_reason": _overhead_verdict.reason,' in source
+
+    # The gate compares milliseconds, not the ratio, and only through the shared
+    # verdict. A ratio comparison left in the status expression would be the old
+    # gate wearing the new name; a bare ms comparison would be a second copy.
     assert "_overhead_ratio <= " not in source, (
         "the status must be decided on the millisecond budget, not on the ratio"
     )
-    assert "_overhead_ms = (_overhead_ratio - 1.0) * _clean_mean * 1e3" in source, (
-        "the overhead milliseconds must come from the row's own measured clean mean"
+    assert "_overhead_ms <= MAX_INSTRUMENTATION_OVERHEAD_MS" not in source, (
+        "the point-estimate gate is back beside the shared verdict"
     )
+    assert "_overhead_status = _overhead_verdict.verdict" in source
+    assert "_overhead_ms = _overhead_verdict.overhead_ms" in source
+    # The overhead milliseconds come from the row's own measured clean mean.
+    call = next(
+        node
+        for node in ast.walk(ast.parse(source))
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "abba_overhead_verdict"
+    )
+    assert [ast.unparse(arg) for arg in call.args] == [
+        "_block_ratios",
+        "_clean_mean",
+        "MAX_INSTRUMENTATION_OVERHEAD_MS",
+    ]
 
 
 def test_the_warmup_runs_to_steady_state_and_records_every_call(cell_ns):
