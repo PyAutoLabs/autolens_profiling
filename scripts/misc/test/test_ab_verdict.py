@@ -269,6 +269,18 @@ def test_each_cell_imports_the_shared_function_objects(cell):
     assert not defined & {"ab_rule_verdict", "tie_set", "criterion_verdict"}, cell.name
 
 
+def _module_imports(cell: Path, module: str) -> dict:
+    """The names a cell's ``from <module> import ...`` statements bind (may be none)."""
+    nodes = [
+        node
+        for node in ast.parse(cell.read_text()).body
+        if isinstance(node, ast.ImportFrom) and node.module == module
+    ]
+    namespace: dict = {}
+    exec(compile(ast.Module(body=nodes, type_ignores=[]), str(cell), "exec"), namespace)
+    return {k: v for k, v in namespace.items() if not k.startswith("__")}
+
+
 def _lift(cell: Path, names: tuple[str, ...], namespace: dict) -> dict:
     """Execute the named top-level functions / assignments of a cell in ``namespace``."""
     tree = ast.parse(cell.read_text())
@@ -282,6 +294,7 @@ def _lift(cell: Path, names: tuple[str, ...], namespace: dict) -> dict:
             body.append(node)
     assert body, f"{cell.name}: none of {names} found"
     namespace.update(_imports_of(cell))
+    namespace.update(_module_imports(cell, "likelihood_breakdown.round_bootstrap"))
     exec(compile(ast.Module(body=body, type_ignores=[]), str(cell), "exec"), namespace)
     return namespace
 
@@ -291,11 +304,17 @@ def _lift(cell: Path, names: tuple[str, ...], namespace: dict) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def _pytree_namespace(rows: dict) -> dict:
+def _pytree_namespace(rows: dict, n_rounds: int = 20) -> dict:
     return _lift(
         PYTREE_CELL,
         ("GO_MIN_SAVED_MS", "GO_MIN_FRACTION", "_median_saving_ms", "_phase2b_rule"),
-        {"np": np, "rows": rows, "LANES": ("solved", "plain"), "BOOTSTRAP_SAMPLES": N_BOOT},
+        {
+            "np": np,
+            "rows": rows,
+            "LANES": ("solved", "plain"),
+            "BOOTSTRAP_SAMPLES": N_BOOT,
+            "N_ROUNDS": n_rounds,
+        },
     )
 
 
@@ -356,9 +375,11 @@ def test_the_pytree_cell_rule_reads_intervals():
 def test_the_committed_pytree_rows_are_rejudged_unchanged(config, expected):
     """Re-judged as facts (#362 fix phase 3): the committed go / no-go calls all resolve.
 
-    The deciding RAL CPU lanes save 0.0385 / 0.0452 ms with 90 % intervals
-    [0.0367, 0.0408] / [0.0439, 0.0469] ms, wholly below the 0.05 ms bar: the
-    recorded no-go is a measured NO_GO. The A100 lanes' GO resolves too.
+    The deciding RAL CPU lanes save 0.0385 / 0.0452 ms with paired round-bootstrap
+    90 % intervals [0.0360, 0.0414] / [0.0438, 0.0470] ms (fix phase 4; the iid
+    intervals of fix phase 3 were [0.0367, 0.0408] / [0.0439, 0.0469]), wholly
+    below the 0.05 ms bar: the recorded no-go is a measured NO_GO. The A100 lanes'
+    GO resolves too.
     """
     data = json.loads(
         (ROOT / f"results/breakdown/point_source_source/pytree_input_ab_{config}.json").read_text()
@@ -418,7 +439,8 @@ _SWEEP_TIE_SETS = {
         "e2.5_s0.4",
         {"e2.5_s0.4", "e2.5_s0.2", "e3_s0.4", "e3_s0.3", "e4_s0.4"},
     ),
-    "solver_config_sweep_laptop_cpu_fp64": ("e3_s0.4", {"e3_s0.4", "e2.5_s0.4", "e3_s0.3"}),
+    # 3 rounds < MIN_AB_ROUNDS: nothing can be excluded (fix phase 4).
+    "solver_config_sweep_laptop_cpu_fp64": ("e3_s0.4", None),
     "solver_config_sweep_mcs_hpc_ral_a100_fp64": ("mcs20", {"mcs20"}),
     "solver_config_sweep_mcs_hpc_ral_cpu_fp64": ("mcs18", {"mcs18", "mcs20"}),
     "solver_config_sweep_mcs_laptop_cpu_fp64": ("mcs18", {"mcs18", "mcs20"}),
@@ -440,7 +462,11 @@ _SWEEP_TIE_SETS = {
 
 @pytest.mark.parametrize("stem", sorted(_SWEEP_TIE_SETS))
 def test_the_committed_sweep_best_is_rejudged_as_a_tie_set(stem):
-    """The cell's own ``_fastest`` on the committed rows: 7 of 9 "best" are tie sets."""
+    """The cell's own ``_fastest`` on the committed rows: 7 of 9 "best" are tie sets.
+
+    These read the committed (iid) intervals; ``test_round_bootstrap.py``
+    re-judges the same rows on the paired round bootstrap (same tie sets).
+    """
     data = json.loads((ROOT / f"results/breakdown/point_source_image/{stem}.json").read_text())
     rows = data["rows"]
     candidates = [
@@ -451,9 +477,13 @@ def test_the_committed_sweep_best_is_rejudged_as_a_tie_set(stem):
         and rows[n]["config"]["block"] != "precision"
         and data["precision_equivalent"][n]
     ]
-    fastest = _lift(SWEEP_CELL, ("_fastest",), {"rows": rows})["_fastest"]
+    fastest = _lift(
+        SWEEP_CELL, ("_fastest",), {"rows": rows, "N_ROUNDS": data["protocol"]["n_rounds"]}
+    )["_fastest"]
     result = fastest(candidates)
     leader, members = _SWEEP_TIE_SETS[stem]
+    if members is None:
+        members = set(candidates)
     assert result.leader == leader == data["best_admissible"]
     assert set(result.members) == members
     assert result.best == (leader if members == {leader} else None)

@@ -27,6 +27,15 @@ unpaired in time; fix phase 4). Re-judging the committed rows changed no go / no
 committed solver-sweep "best" configurations are tie sets. C1 / C3 / C4 / C5 are deferred to
 **phase 3b**. See "Fix phase 3 — shipped" under (b).
 
+**Fix phase 4 shipped (phase 5 of #362, PR #407, 2026-10-08):** every point-source A/B cell's
+reported interval (C6, C7, C8, C9 / C10 and the CIs of `gradient_mode_library_ab`,
+`static_lattice_ab`, `vertex_dedup_ab`) is now a **paired whole-round bootstrap**,
+`scripts/misc/likelihood_breakdown/round_bootstrap.py` (`round_median_ratio`,
+`round_median_saving`), with the number of rounds recorded as `effective_n`; a tie set over
+fewer than 5 rounds names no `best`. C6, C7 and C10 become SOUND-with-caveats. Re-judging the
+committed rows on round intervals changed one non-deciding laptop C6 call (GO → INCONCLUSIVE) and
+nothing on RAL. See "Fix phase 4 — shipped" under (b).
+
 **Phase 1 was an audit. Nothing was changed in it:** no gate, budget, tolerance, cutoff, estimator,
 repeat count or production instrument was edited. The only code added is the read-only lister
 `scripts/misc/tooling/list_timing_assertions.py`, which keeps this inventory in step with the code.
@@ -96,6 +105,7 @@ T1, T3, P1 and P2, which are as of the fix phase 1 branch.
 | T5 | CI test | `scripts/misc/test/test_wall_check_submits.py::test__the_41x_spread_that_caused_the_loss` (298) | wall estimate arithmetic from the rates table | `> 8` | SOUND |
 | T6 | CI test | `scripts/misc/test/test_build_dashboard.py` (132, 260–285) | qualification and drift on synthetic rows | exact | SOUND (pins P6/P7 semantics) |
 | T7 | CI test | `scripts/misc/test/test_ab_verdict.py` (shared A/B verdict witnesses; `scripts/misc/test/test_ab_verdict.py::test_a_15_percent_point_estimate_straddling_the_bar_is_inconclusive` and the bars `scripts/misc/test/test_ab_verdict.py::GO_MIN_SAVED_MS`, `scripts/misc/test/test_ab_verdict.py::GO_MIN_FRACTION`) | `ab_rule_verdict` / `tie_set` on seeded synthetic samples, the cells' own lifted rules, and the committed C6 / C7 / C10 rows | exact, seeded | SOUND (pins the fix phase 3 semantics) |
+| T8 | CI test | `scripts/misc/test/test_round_bootstrap.py` (round-bootstrap witnesses: `scripts/misc/test/test_round_bootstrap.py::test_the_round_interval_covers_the_true_ratio_under_a_fixed_seed`, `scripts/misc/test/test_round_bootstrap.py::test_round_coverage_is_near_nominal_and_iid_coverage_is_not`, `scripts/misc/test/test_round_bootstrap.py::test_rounds_are_paired_across_arms`, `scripts/misc/test/test_round_bootstrap.py::test_the_committed_pytree_ral_cpu_saving_stays_below_the_bar`) | `round_median_ratio` / `round_median_saving` on seeded correlated rounds, each cell's lifted helper, and the committed C6 / C7 / C10 rows | exact, seeded | SOUND (pins the fix phase 4 semantics) |
 | P1 | production qualification | `scripts/imaging/pixelized/fixed_light_numba.py::<module>` (2122–2130; raise at 2267) via `scripts/misc/likelihood_breakdown/overhead_verdict.py::abba_overhead_verdict` | ABBA overhead in ms: one-sided t bounds vs budget; raises only on FAIL / FAIL_GROSS, INCONCLUSIVE keeps the row | `scripts/imaging/pixelized/fixed_light_numba.py::MAX_INSTRUMENTATION_OVERHEAD_MS` 12.0; `scripts/imaging/pixelized/fixed_light_numba.py::MIN_BLOCKS_FOR_OVERHEAD_ASSERT` 3; `scripts/imaging/pixelized/fixed_light_numba.py::REFERENCE_OVERHEAD_RATIO` 1.03 (recorded) | SOUND-with-caveats |
 | P2 | campaign gate | `scripts/imaging/pixelized/fixed_light_numba.py::<module>` (2386–2496) via `scripts/misc/likelihood_breakdown/ab_verdict.py::ab_rule_verdict` | promotion `timing_candidate` / `INCONCLUSIVE` / `NO_LEVER` | whole-call speedup ≥ 0.05 on a 90 % paired-block interval (≥ 5 blocks) and both P1 PASS; a P1 INCONCLUSIVE gives INCONCLUSIVE | FRAGILE |
 | P3 | production protocol | `scripts/imaging/pixelized/fixed_light_numba.py::_warm_to_steady_state` (1745) | warm-up "steady" flag | `scripts/imaging/pixelized/fixed_light_numba.py::WARMUP_WINDOW` 3, `scripts/imaging/pixelized/fixed_light_numba.py::WARMUP_TOLERANCE` 0.10, `scripts/imaging/pixelized/fixed_light_numba.py::WARMUP_MAX_CALLS` 12 | FRAGILE |
@@ -111,11 +121,11 @@ T1, T3, P1 and P2, which are as of the fix phase 1 branch.
 | C3 | campaign gate | `scripts/imaging/pixelized/fixed_light_numba_memo_policy.py::main` (479–490) | memo-policy verdict GO / NO_LEVER | six conjunctive targets: ≤ 0.95 vs memo and ≤ 1.03 vs cold | UNSAFE-SILENT |
 | C4 | campaign gate | `scripts/imaging/pixelized/fixed_light_numba_scaling.py::evaluate_group` (163) | `breakdown_reconciles`, which feeds status PASS | \|observed median / clean median − 1\| ≤ 0.05 | UNSAFE-SILENT |
 | C5 | campaign gate | `scripts/imaging/pixelized/fixed_light_trace.py::<module>` (3741–3760) | logdet lever `clears_threshold` | `scripts/misc/likelihood_breakdown/logdet_reuse_injection.py::LOGDET_LEVER_MS` 0.5 ms, on both estimators | UNSAFE-SILENT |
-| C6 | campaign gate | `scripts/point_source_source/source_plane/backward_pass_ab.py::_phase2c_rule` (981) | phase-2c GO | `scripts/point_source_source/source_plane/backward_pass_ab.py::GO_MIN_SAVED_MS` 0.05 ms and `scripts/point_source_source/source_plane/backward_pass_ab.py::GO_MIN_FRACTION` 0.15, point estimate and 90 % CI; GO / NO_GO / INCONCLUSIVE via `ab_rule_verdict` since fix phase 3 | FRAGILE |
-| C7 | campaign gate | `scripts/point_source_source/source_plane/pytree_input_ab.py::_phase2b_rule` via `scripts/misc/likelihood_breakdown/ab_verdict.py::ab_rule_verdict` | phase-2b GO / NO_GO / INCONCLUSIVE | `scripts/point_source_source/source_plane/pytree_input_ab.py::GO_MIN_SAVED_MS` 0.05 ms and `scripts/point_source_source/source_plane/pytree_input_ab.py::GO_MIN_FRACTION` 0.15, on 90 % bootstrap intervals (≥ 5 rounds) | FRAGILE |
-| C8 | campaign gate | `scripts/point_source_source/source_plane/gradient_mode_crossover.py` `_crossover` (763) | crossover summary ("rev wins from…", "n* = …") | ratio = 1 crossing of point medians | FRAGILE |
-| C9 | campaign gate | `scripts/point_source_image/image_plane/solver_config_sweep.py::<module>` (1934–1943) | MCS `rule_candidates` | compile ≤ 1.20, median ≤ 1.05 vs control (point) | FRAGILE |
-| C10 | campaign gate | `scripts/point_source_image/image_plane/solver_config_sweep.py` `_fastest` via `scripts/misc/likelihood_breakdown/ab_verdict.py::tie_set` | `best_admissible` (a resolved leader, else `None`) and `best_admissible_tie_set` | tie set: every candidate whose 90 % speed-up interval overlaps the point leader's | FRAGILE |
+| C6 | campaign gate | `scripts/point_source_source/source_plane/backward_pass_ab.py::_phase2c_rule` (981) | phase-2c GO | `scripts/point_source_source/source_plane/backward_pass_ab.py::GO_MIN_SAVED_MS` 0.05 ms and `scripts/point_source_source/source_plane/backward_pass_ab.py::GO_MIN_FRACTION` 0.15, point estimate and 90 % CI; GO / NO_GO / INCONCLUSIVE via `ab_rule_verdict` since fix phase 3, on paired round-bootstrap intervals since fix phase 4 | SOUND-with-caveats |
+| C7 | campaign gate | `scripts/point_source_source/source_plane/pytree_input_ab.py::_phase2b_rule` via `scripts/misc/likelihood_breakdown/ab_verdict.py::ab_rule_verdict` | phase-2b GO / NO_GO / INCONCLUSIVE | `scripts/point_source_source/source_plane/pytree_input_ab.py::GO_MIN_SAVED_MS` 0.05 ms and `scripts/point_source_source/source_plane/pytree_input_ab.py::GO_MIN_FRACTION` 0.15, on 90 % paired round-bootstrap intervals (≥ 5 rounds) | SOUND-with-caveats |
+| C8 | campaign gate | `scripts/point_source_source/source_plane/gradient_mode_crossover.py` `_crossover` (763) | crossover summary ("rev wins from…", "n* = …") | ratio = 1 crossing of point medians; bootstrap fractions and `n*` CI from paired round bootstraps since fix phase 4 | FRAGILE |
+| C9 | campaign gate | `scripts/point_source_image/image_plane/solver_config_sweep.py::<module>` (1934–1943) | MCS `rule_candidates` | compile ≤ 1.20, median ≤ 1.05 vs control (point; its round-bootstrap interval `row_over_control_median_ci90` recorded beside it since fix phase 4) | FRAGILE |
+| C10 | campaign gate | `scripts/point_source_image/image_plane/solver_config_sweep.py` `_fastest` via `scripts/misc/likelihood_breakdown/ab_verdict.py::tie_set` | `best_admissible` (a resolved leader, else `None`) and `best_admissible_tie_set` | tie set: every candidate whose 90 % paired round-bootstrap speed-up interval overlaps the point leader's; no `best` below 5 rounds | SOUND-with-caveats |
 | C11 | campaign gate | `scripts/misc/numba_interferometer/bakeoff.py::main` (847–875) | numba-vs-rfft2 kill gate | ratio > 1.3 on medians | FRAGILE |
 | C12 | campaign gate | `scripts/point_source_image/image_plane/gpu_bottleneck_map.py` `_mdi` (380) | minimum detectable improvement (split-half noise floor) for a human go/no-go | 90 % CI half-width | SOUND |
 | S1 | submit basis | `scripts/misc/wall/check_submits.py::RATE_TOLERANCE` (91), `HEADROOM_FLOOR` (95), `budget < needed` (437) | `--time` ≥ estimated wall × headroom | 5 % rate match; headroom 1.25 / 1.5 / 3.0 | SOUND |
@@ -126,20 +136,21 @@ T1, T3, P1 and P2, which are as of the fix phase 1 branch.
 
 | Kind | Rows | SOUND | FRAGILE | UNSAFE-SILENT |
 |---|---|---|---|---|
-| CI test | 7 | 7 | 0 | 0 |
+| CI test | 8 | 8 | 0 | 0 |
 | Production qualification / protocol / estimator | 9 | 5 | 3 | 1 |
-| Campaign gate (incl. P2 promotion) | 13 | 1 | 8 | 4 |
+| Campaign gate (incl. P2 promotion) | 13 | 4 | 5 | 4 |
 | Submit basis | 1 | 1 | 0 | 0 |
 | Resource guard | 2 | 2 | 0 | 0 |
-| **Total** | **32** | **16** | **11** | **5** |
+| **Total** | **33** | **20** | **8** | **5** |
 
-Counts after fix phase 3, which added the CI-test row T7 and moved C7, C10 and P2 from
-UNSAFE-SILENT to FRAGILE. T1, P1, P6 and P7 are SOUND-with-caveats and counted as SOUND. After fix
+Counts after fix phase 4, which added the CI-test row T8 and moved C6, C7 and C10 from FRAGILE to
+SOUND-with-caveats (counted as SOUND, like T1, P1, P6 and P7). After fix phase 3 the totals were
+16 / 11 / 5 over 32 rows (T7 added; C7, C10 and P2 UNSAFE-SILENT → FRAGILE). After fix
 phase 2 the totals were 15 / 8 / 8 over 31 rows; after fix phase 1, 13 / 9 / 9 (P6 UNSAFE-SILENT,
 P7 FRAGILE); at phase 1, 11 / 10 / 10 (T1 FRAGILE, P1 UNSAFE-SILENT). The production row group is
 P1 and P3–P10, nine rows. P2 is a promotion rule, so it is counted with the campaign gates. Five
 rows can still label a result from a point estimate or without looking at the measurement: P9,
-C1, C3, C4 and C5 (at phase 1 there were eight, with P2, C7 and C10). None of the eleven CI-test,
+C1, C3, C4 and C5 (at phase 1 there were eight, with P2, C7 and C10). None of the twelve CI-test,
 submit or resource-guard rows is UNSAFE-SILENT.
 
 ## Per-row detail
@@ -437,16 +448,28 @@ fraction saved (`1 − 1/ratio`). `_phase2b_rule` is the shared `ab_rule_verdict
 `verdict_reason` and `resolvable_effect`; `go` is true only for GO. Still FRAGILE: the
 bootstrap resamples calls iid (fix phase 4).
 
+**After fix phase 4: SOUND-with-caveats.** Both intervals are the paired whole-round bootstrap
+(`round_median_ratio`, `round_median_saving`; `effective_n` = 20 rounds). Caveats: the two lanes
+and two criteria are judged at 90 % each with no family-wise adjustment, and only the RAL CPU row
+decides.
+
 ### C8 — gradient-mode crossover (FRAGILE)
 
 The summary string comes from the point-median ratio curve. The bootstrap fraction of each outcome
 and an `n*` 90 % CI are recorded beside it, so the uncertainty is published, but the headline
 string does not carry it.
 
+**After fix phase 4:** the per-rung bootstrap curves are paired whole-round bootstraps
+(`round_median_ratio(..., return_boots=True)`), so the bootstrap fractions and the `n*` interval
+no longer assume iid calls. Still FRAGILE: the headline string reads the point curve.
+
 ### C9, C10 — point-source solver sweep (`solver_config_sweep.py`)
 
 - **C9:** `rule_candidates` uses point thresholds (compile ≤ 1.20, median ≤ 1.05 against control).
-  The decision rule says "human picks N at the step-2 checkpoint". **FRAGILE.**
+  The decision rule says "human picks N at the step-2 checkpoint". **FRAGILE.** Since fix phase 4
+  the row records `row_over_control_median_ci90` (the round-bootstrap interval) beside the point
+  the rule reads; the rule itself is unchanged (the human picks; IP-4c chose MCS 20 at +6.2 %,
+  outside the 5 % point bar, for correctness headroom).
 - **C10:** `best_admissible = argmax(point speedup)` over many admissible configurations. Their
   bootstrap CIs are computed but ignored, so statistically tied configurations still produce one
   named "best", which is a winner's-curse effect. Downstream vmap rows are measured for it.
@@ -458,6 +481,10 @@ string does not carry it.
   counts are measured for the point leader, labelled `point_leader` beside the `tie_set`. Still
   FRAGILE: the intervals are iid bootstraps (fix phase 4), and the tie set applies no
   multiple-comparison adjustment.
+- **C10 after fix phase 4: SOUND-with-caveats.** The speed-up intervals are paired whole-round
+  bootstraps and `_fastest` passes `n = N_ROUNDS`: below 5 rounds every candidate is in the tie
+  set and no `best` is named. Caveat: no family-wise adjustment over the configurations, which
+  makes the tie set narrower than an adjusted family would.
 
 ### C11 — interferometer numba bake-off kill gate (FRAGILE)
 
@@ -514,7 +541,10 @@ a ledger.
 | `scripts/point_source_source/source_plane/pytree_input_ab.py::BOOTSTRAP_SAMPLES` | 2000 | C7 (its intervals decide since fix phase 3) |
 
 Every bootstrap above uses a fixed seed (12345). That makes the CI reproducible. It does not
-make it valid for dependent samples.
+make it valid for dependent samples. Since fix phase 4 the point-source A/B cells above resample
+paired whole rounds through `scripts/misc/likelihood_breakdown/round_bootstrap.py::ROUND_BOOTSTRAP_SAMPLES`
+(2000) rather than iid calls; `gpu_bottleneck_map` keeps its iid `_median_ratio` (C12's
+split-half MDI and its other reported ratios use other layouts; a recorded remainder).
 
 ## Lister hits that are not timing gates
 
@@ -790,6 +820,49 @@ correctness or gross-regression guard.
    - **Witness:** synthetic rounds with injected within-round correlation, where the iid
      bootstrap's 90 % CI is visibly narrower than the round bootstrap's. Assert the round
      bootstrap covers the known true ratio, under a fixed seed.
+   - **Shipped (phase 5 of #362, PR #407, 2026-10-08).** As implemented:
+     - **the bootstrap** (`scripts/misc/likelihood_breakdown/round_bootstrap.py`): calls are
+       reshaped to `(n_rounds, n_calls)` in round order; each of 2000 draws resamples round
+       indices with replacement, **the same indices for both arms**, and takes the median of the
+       pooled calls of the drawn rounds; 90 % percentile interval; fixed seeds (the cells' own).
+       Every result carries `resampling: "paired whole rounds"` and `effective_n = n_rounds`.
+       Keys and seeds are unchanged, so fix phase 3's verdicts read the new intervals unchanged.
+     - **wired:** `_median_ratio` / `_median_saving_ms` / `_ratio_boots` are thin wrappers over the
+       shared functions in `backward_pass_ab` (C6), `pytree_input_ab` (C7),
+       `gradient_mode_crossover` (C8), `gradient_mode_library_ab`, `solver_config_sweep` (C9 /
+       C10, including the vmap ratios), `static_lattice_ab` and `vertex_dedup_ab`. `tie_set`
+       gains `n` / `min_n`: below 5 rounds nothing is excluded and no `best` is named. C9 records
+       `row_over_control_median_ci90`. Not changed: `gpu_bottleneck_map` (C12's split-half MDI and
+       mixed layouts), recorded as a remainder.
+     - **witness** (`test_round_bootstrap.py`, T8): 20 rounds × 20 calls with a per-(round, arm)
+       lognormal offset (s.d. 0.08) over call noise (0.02), true ratio 0.8. The iid interval is
+       ~0.14–0.39 × (median 0.23) the round interval's width over the 40 witness seeds; on the pinned seed the round interval covers 0.8
+       and the iid one misses it; over 40 seeded datasets round coverage is 0.85 and iid 0.33 at a
+       nominal 0.90. A shared round effect cancels under pairing (width < 0.05). Each cell's
+       lifted helper returns exactly the shared result.
+     - **re-judged committed rows on round intervals (facts; no JSON rewritten, no decision
+       reversed):**
+
+       | Rule | Rows | Fix phase 3 (iid) | Fix phase 4 (round) | Changed |
+       |---|---|---|---|---|
+       | C7 RAL CPU (decides) | solved / plain saved ms | [0.0367, 0.0408] / [0.0439, 0.0469], NO_GO | [0.0360, 0.0414] / [0.0438, 0.0470], NO_GO | no |
+       | C7 A100 | solved / plain | GO / GO | GO / GO | no |
+       | C6 `hpc_ral_gpunode_cpu_fp64` (decides) | 8 lane × route rows | 6 GO, 2 NO_GO | 6 GO, 2 NO_GO (intervals ~1.3× wider) | no |
+       | C6 `hpc_a100_fp64` | 8 rows | 4 GO, 4 NO_GO | 4 GO, 4 NO_GO | no |
+       | C6 `local_cpu_fp64` | solved `rev_analytic` | GO, ratio [0.810, 0.846] | **INCONCLUSIVE**, ratio [0.805, 0.854] straddles 0.85 | **yes** |
+       | C6 `local_cpu_fp64` | the other 7 rows | 4 GO, 3 NO_GO | unchanged | no |
+       | C8 crossover | 3 configs × 2 lanes × 2 shapes | "fwd wins through n=24 / 27", fraction `none` 1.0 | identical | no |
+       | C10 RAL CPU | tie set | {e2.5_s0.4, e2.5_s0.2, e3_s0.4, e3_s0.3, e4_s0.4} | identical | no |
+       | C10 laptop (3 rounds) | tie set | {e3_s0.4, e2.5_s0.4, e3_s0.3} | every candidate (3 < 5 rounds) | **yes** |
+       | C10 other 7 sweeps | tie set / best | as fix phase 3 | identical | no |
+
+       Widths of the committed C10 speed-up intervals, round / iid (median per file): RAL CPU
+       1.04, MCS RAL CPU 1.12, MCS laptop 1.36, step-0 EPYC 1.47, step-0 RAL CPU 1.84, step-0
+       laptop 2.29, A100 ≈ 1. The one changed C6 call is a laptop row; phase 2c is decided by
+       the RAL CPU row, which is unchanged, so no recorded decision rests on it.
+     - **limits:** a percentile bootstrap over 20 clusters is approximate (coverage 0.85 in the
+       witness at a nominal 0.90); rounds are treated as exchangeable, so a slow drift across
+       rounds is absorbed as scatter, not modelled.
 5. **Headline estimator and GPU-only marker (P8, P9).**
    - **Change:** opt every runtime cell into `steady_median_profile` beside the legacy block mean,
      with the dashboard reading the median where present. A timeout records INCONCLUSIVE /

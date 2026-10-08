@@ -192,6 +192,7 @@ if os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 
 from likelihood_breakdown.ab_verdict import tie_set  # noqa: E402
 from likelihood_breakdown.provenance import source_revisions, thread_environment  # noqa: E402
+from likelihood_breakdown.round_bootstrap import round_median_ratio  # noqa: E402
 from likelihood_breakdown.timing import block  # noqa: E402
 
 from _profile_cli import (  # noqa: E402
@@ -629,18 +630,15 @@ def _stats_ms(seconds) -> dict:
 
 
 def _median_ratio(numerator, denominator, seed: int) -> dict:
-    num = np.asarray(numerator, dtype=float)
-    den = np.asarray(denominator, dtype=float)
-    rng = np.random.default_rng(seed)
-    boots = np.empty(BOOTSTRAP_SAMPLES)
-    for i in range(BOOTSTRAP_SAMPLES):
-        boots[i] = np.median(rng.choice(num, num.size)) / np.median(rng.choice(den, den.size))
-    return {
-        "ratio": float(np.median(num) / np.median(den)),
-        "ci90_low": float(np.percentile(boots, 5)),
-        "ci90_high": float(np.percentile(boots, 95)),
-        "bootstrap_samples": BOOTSTRAP_SAMPLES,
-    }
+    """median(numerator) / median(denominator), with a paired whole-round bootstrap 90 % interval.
+
+    Resamples whole rounds with the same indices for both arms (#362 fix phase 4,
+    the shared ``likelihood_breakdown.round_bootstrap``); ``effective_n`` is
+    ``N_ROUNDS``. It replaced an iid, unpaired resampling of individual calls.
+    """
+    return round_median_ratio(
+        numerator, denominator, n_rounds=N_ROUNDS, seed=seed, samples=BOOTSTRAP_SAMPLES
+    )
 
 
 def _timed_call(executable, argument):
@@ -1296,7 +1294,9 @@ def _fastest(names):
     """The shared tie set over the candidates' 90 % speed-up intervals (#362 fix phase 3).
 
     Never an argmax of point estimates: ``.best`` is ``None`` when the point
-    leader's interval overlaps another candidate's.
+    leader's interval overlaps another candidate's, or when fewer than
+    ``MIN_AB_ROUNDS`` rounds were timed (the intervals are paired round
+    bootstraps since #362 fix phase 4, so ``N_ROUNDS`` is their effective n).
     """
     return tie_set(
         {
@@ -1308,6 +1308,7 @@ def _fastest(names):
             for n in names
         },
         higher_is_better=True,
+        n=N_ROUNDS,
     )
 
 
@@ -1937,6 +1938,12 @@ if MCS_MODE:
             "median_ms": t["median_ms"],
             "control_over_row": r["speedup_vs_control"],
             "row_over_control_median": 1.0 / t["speedup"] if t["speedup"] else None,
+            # The C9 rule still reads the point (the human picks N); its paired
+            # round-bootstrap 90 % interval is recorded beside it (#362 fix phase 4).
+            "row_over_control_median_ci90": [
+                1.0 / r["speedup_vs_control"]["ci90_high"],
+                1.0 / r["speedup_vs_control"]["ci90_low"],
+            ],
             "compile_s": t["compile_s"],
             "compile_ratio_vs_control": t["compile_s"] / _ctrl_compile if _ctrl_compile else None,
             "temp_bytes": t["temp_bytes"],
