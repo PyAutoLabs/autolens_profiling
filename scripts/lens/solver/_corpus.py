@@ -17,7 +17,13 @@ Layout (``results/lens/solver/corpus/``)
     ``no_regularization_index_list``, ``cond_Q``, ``max_abs_q``, ``library_versions`` and any
     group-specific extras. A field that is genuinely unknown is ``null`` — never a guess.
 ``<group>.npz``
-    Compressed; ``Q_<name>``, ``q_<name>`` and ``x_ref_<name>`` per system. ``x_ref`` is the
+    Compressed; ``Q_<name>``, ``q_<name>`` and ``x_ref_<name>`` per system. A group whose manifest
+    entry carries ``"encoding": "sym_tri_xor"`` (the n ~ 1500 Mapper groups, whose dense ``Q``
+    would put one group past GitHub's 100 MB file limit) stores ``Q`` losslessly as
+    ``Qtri_<name>`` — the upper triangle, diagonal included, in ``numpy.triu_indices`` order — and
+    ``Qxor_<name>``, the bitwise XOR (``uint64``) of the transposed lower triangle with it, which is
+    zero wherever ``Q`` is bitwise symmetric and so compresses to almost nothing;
+    :func:`iter_systems` rebuilds ``Q`` bit for bit (checked when the group is written). ``x_ref`` is the
     NumPy ``fnnls_cholesky`` solution (the production NumPy path's solver, started from the sign
     of the dense solve exactly as ``reconstruction_positive_only_from`` does without the memo),
     computed once when the group is added and stored, so a study never re-derives its truth.
@@ -94,13 +100,14 @@ def iter_systems(groups=None, corpus_dir: Path = CORPUS_DIR) -> Iterator[System]
     for group in manifest["groups"]:
         if groups is not None and group["name"] not in groups:
             continue
+        encoding = group.get("encoding", "dense")
         with np.load(corpus_dir / group["npz"]) as arrays:
             for meta in group["systems"]:
                 name = meta["name"]
                 yield System(
                     name=name,
                     group=group["name"],
-                    Q=np.asarray(arrays[f"Q_{name}"], dtype=np.float64),
+                    Q=_decode_Q(arrays, name, encoding, int(meta["n"])),
                     q=np.asarray(arrays[f"q_{name}"], dtype=np.float64),
                     x_ref=np.asarray(arrays[f"x_ref_{name}"], dtype=np.float64),
                     meta=dict(meta),
@@ -110,6 +117,46 @@ def iter_systems(groups=None, corpus_dir: Path = CORPUS_DIR) -> Iterator[System]
 def load_corpus(groups=None, corpus_dir: Path = CORPUS_DIR) -> list[System]:
     """Every :class:`System` of the named groups (all groups when ``None``)."""
     return list(iter_systems(groups, corpus_dir=corpus_dir))
+
+
+# ---------------------------------------------------------------------------
+# Q encodings
+# ---------------------------------------------------------------------------
+
+ENCODINGS = ("dense", "sym_tri_xor")
+
+
+def _encode_Q(Q: np.ndarray, name: str, encoding: str) -> dict:
+    if encoding == "dense":
+        return {f"Q_{name}": Q}
+    if encoding != "sym_tri_xor":
+        raise ValueError(f"unknown Q encoding {encoding!r}; known: {ENCODINGS}")
+    iu = np.triu_indices(Q.shape[0])
+    upper = np.ascontiguousarray(Q[iu])
+    lower_t = np.ascontiguousarray(Q.T[iu])
+    arrays = {
+        f"Qtri_{name}": upper,
+        f"Qxor_{name}": upper.view(np.uint64) ^ lower_t.view(np.uint64),
+    }
+    if not np.array_equal(
+        _decode_Q(arrays, name, encoding, Q.shape[0]).view(np.uint64), Q.view(np.uint64)
+    ):
+        raise RuntimeError(f"system {name!r}: sym_tri_xor round trip is not bit-exact")
+    return arrays
+
+
+def _decode_Q(arrays, name: str, encoding: str, n: int) -> np.ndarray:
+    if encoding == "dense":
+        return np.asarray(arrays[f"Q_{name}"], dtype=np.float64)
+    if encoding != "sym_tri_xor":
+        raise ValueError(f"unknown Q encoding {encoding!r}; known: {ENCODINGS}")
+    upper = np.ascontiguousarray(arrays[f"Qtri_{name}"], dtype=np.float64)
+    xor = np.ascontiguousarray(arrays[f"Qxor_{name}"], dtype=np.uint64)
+    iu = np.triu_indices(n)
+    Q = np.empty((n, n), dtype=np.float64)
+    Q[iu[1], iu[0]] = (upper.view(np.uint64) ^ xor).view(np.float64)
+    Q[iu] = upper
+    return Q
 
 
 # ---------------------------------------------------------------------------
@@ -130,7 +177,9 @@ def reference_solution(Q: np.ndarray, q: np.ndarray) -> np.ndarray:
     return np.asarray(fnnls_cholesky(Q, q, P_initial=np.linalg.solve(Q, q) > 0), dtype=np.float64)
 
 
-def _system_entry(group: str, spec: dict, source: dict) -> tuple[dict, dict]:
+def _system_entry(
+    group: str, spec: dict, source: dict, encoding: str = "dense"
+) -> tuple[dict, dict]:
     Q = np.asarray(spec["Q"], dtype=np.float64)
     q = np.asarray(spec["q"], dtype=np.float64)
     n = int(q.shape[0])
@@ -158,11 +207,21 @@ def _system_entry(group: str, spec: dict, source: dict) -> tuple[dict, dict]:
     }
     reserved = {"name", "Q", "q", "x_ref", *entry}
     entry.update({k: v for k, v in spec.items() if k not in reserved})
-    arrays = {f"Q_{spec['name']}": Q, f"q_{spec['name']}": q, f"x_ref_{spec['name']}": x_ref}
+    arrays = {
+        **_encode_Q(Q, spec["name"], encoding),
+        f"q_{spec['name']}": q,
+        f"x_ref_{spec['name']}": x_ref,
+    }
     return entry, arrays
 
 
-def add_group(name: str, systems: list[dict], source: dict, corpus_dir: Path = CORPUS_DIR) -> dict:
+def add_group(
+    name: str,
+    systems: list[dict],
+    source: dict,
+    corpus_dir: Path = CORPUS_DIR,
+    encoding: str = "dense",
+) -> dict:
     """Add (or replace) corpus group ``name`` and return its manifest entry.
 
     ``systems`` is a list of dicts with at least ``name``, ``Q`` and ``q``; optional keys are
@@ -171,7 +230,12 @@ def add_group(name: str, systems: list[dict], source: dict, corpus_dir: Path = C
     extra JSON-serialisable metadata, which is kept verbatim on the system's manifest entry.
     ``source`` is ``{"script", "args", "git_sha"}`` (plus extras) and is copied onto every
     system. System names must be unique within the group and match ``[A-Za-z0-9_]+``.
+    ``encoding`` is how ``Q`` is stored (``"dense"``, or the lossless ``"sym_tri_xor"`` for large
+    systems — see the module docstring); it is recorded on the group only when not dense, so the
+    existing groups' manifest entries are unchanged.
     """
+    if encoding not in ENCODINGS:
+        raise ValueError(f"unknown Q encoding {encoding!r}; known: {ENCODINGS}")
     corpus_dir = Path(corpus_dir)
     corpus_dir.mkdir(parents=True, exist_ok=True)
     names = [s["name"] for s in systems]
@@ -183,13 +247,15 @@ def add_group(name: str, systems: list[dict], source: dict, corpus_dir: Path = C
 
     entries, arrays = [], {}
     for spec in systems:
-        entry, arr = _system_entry(name, spec, source)
+        entry, arr = _system_entry(name, spec, source, encoding)
         entries.append(entry)
         arrays.update(arr)
     npz_name = f"{name}.npz"
     np.savez_compressed(corpus_dir / npz_name, **arrays)
 
     group = {"name": name, "npz": npz_name, "source": dict(source), "systems": entries}
+    if encoding != "dense":
+        group["encoding"] = encoding
     manifest = read_manifest(corpus_dir)
     manifest["schema"] = SCHEMA
     manifest["groups"] = [g for g in manifest["groups"] if g["name"] != name] + [group]
