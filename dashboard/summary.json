@@ -3,11 +3,11 @@
  "version": 1,
  "project": "autolens_profiling",
  "scope": "release-runtime",
- "generated_at": "2026-10-08T13:59:51Z",
+ "generated_at": "2026-10-08T19:28:04Z",
  "evidence_updated_at": "2026-08-17T00:00:00Z",
  "evidence_updated_at_reason": null,
  "valid_until": null,
- "producer_revision": "766f82029b2a10984f3f15e4be2f82a40b099c0e",
+ "producer_revision": "10f110a36e922b7ef17083e99b5535e37cc19c67",
  "comparison_policy": {
   "id": "runtime-drift-2x-1ms",
   "ratio": 2.0,
@@ -5662,6 +5662,7 @@
    "status": "improved",
    "qualified": false,
    "reasons": [
+    "single-sample endpoint(s)",
     "baseline row unqualified: no provenance block (pre-#342 row)",
     "candidate row unqualified: no provenance block (pre-#342 row)"
    ]
@@ -5898,9 +5899,10 @@
    "baseline": "2026.7.6.649",
    "candidate": "2026.8.17.1",
    "ratio": 0.671,
-   "status": "flat",
+   "status": "insufficient",
    "qualified": false,
    "reasons": [
+    "single-sample endpoint(s): within the 2x policy band is not a measured null",
     "baseline row unqualified: no provenance block (pre-#342 row)",
     "candidate row unqualified: no provenance block (pre-#342 row)"
    ]
@@ -6028,6 +6030,7 @@
    "status": "improved",
    "qualified": false,
    "reasons": [
+    "single-sample endpoint(s)",
     "baseline row unqualified: no provenance block (pre-#342 row)",
     "candidate row unqualified: no provenance block (pre-#342 row)"
    ]
@@ -6365,6 +6368,7 @@
    "status": "improved",
    "qualified": false,
    "reasons": [
+    "single-sample endpoint(s)",
     "baseline row unqualified: no provenance block (pre-#342 row)",
     "candidate row unqualified: no provenance block (pre-#342 row)"
    ]
@@ -6391,9 +6395,10 @@
    "baseline": "2026.7.6.649",
    "candidate": "2026.7.23.1",
    "ratio": 1.469,
-   "status": "flat",
+   "status": "insufficient",
    "qualified": false,
    "reasons": [
+    "single-sample endpoint(s): within the 2x policy band is not a measured null",
     "baseline row unqualified: no provenance block (pre-#342 row)",
     "candidate row unqualified: no provenance block (pre-#342 row)"
    ]
@@ -6437,6 +6442,7 @@
    "status": "improved",
    "qualified": false,
    "reasons": [
+    "single-sample endpoint(s)",
     "baseline row unqualified: no provenance block (pre-#342 row)",
     "candidate row unqualified: no provenance block (pre-#342 row)"
    ]
@@ -6449,9 +6455,10 @@
    "baseline": "2026.5.29.4",
    "candidate": "2026.7.6.649",
    "ratio": 1.108,
-   "status": "flat",
+   "status": "insufficient",
    "qualified": false,
    "reasons": [
+    "single-sample endpoint(s): within the 2x policy band is not a measured null",
     "baseline row unqualified: no provenance block (pre-#342 row)",
     "candidate row unqualified: no provenance block (pre-#342 row)"
    ]
@@ -6593,6 +6600,7 @@
    "status": "improved",
    "qualified": false,
    "reasons": [
+    "single-sample endpoint(s)",
     "baseline row unqualified: no provenance block (pre-#342 row)",
     "candidate row unqualified: no provenance block (pre-#342 row)"
    ]
@@ -6622,6 +6630,7 @@
    "status": "improved",
    "qualified": false,
    "reasons": [
+    "single-sample endpoint(s)",
     "baseline row unqualified: no provenance block (pre-#342 row)",
     "candidate row unqualified: no provenance block (pre-#342 row)"
    ]
@@ -6634,9 +6643,10 @@
    "baseline": "2026.5.29.4",
    "candidate": "2026.7.6.649",
    "ratio": 1.139,
-   "status": "flat",
+   "status": "insufficient",
    "qualified": false,
    "reasons": [
+    "single-sample endpoint(s): within the 2x policy band is not a measured null",
     "baseline row unqualified: no provenance block (pre-#342 row)",
     "candidate row unqualified: no provenance block (pre-#342 row)"
    ]
@@ -7697,6 +7707,8 @@
   "evidence_updated_at is the newest release date encoded in a measured library version; result rows do not record measurement wall-clock time",
   "valid_until is null: this project declares no freshness policy for release trends",
   "vmap_per_call_s is null where a row carries no vmap block",
+  "only reference-host-class rows (hpc_*) can be qualified: laptop rows never qualify as trend points, and a provenance block without a load average or host is unqualified",
+  "comparison endpoints without a repeat summary are single samples (one 10-call block mean): a ratio inside the 2x band is insufficient, not flat; drifted / improved are gross-band flags with a single-sample caveat",
   "rows without a device.provenance block (pre-autolens_profiling#342) are unqualified",
   "6 row(s) above the load-average cap 8 are listed under coverage.excluded and never enter records"
  ]

@@ -57,7 +57,8 @@ unique within the file. Each record has:
   the sweep config label (`null` + `reason` outside the grammar), `backend` as the row recorded it,
   `library: "PyAutoLens"`, `library_version`, `release_date`;
 - `provenance`: `host`, `job`, `loadavg`, `has_provenance`, `qualified`, `reason` — exactly what the
-  page plots hollow or solid, and why;
+  page plots hollow or solid, and why. Only a reference-host-class row (`hpc_*`) with a host and a
+  load average, on the pinned node, can be qualified; laptop rows never qualify as trend points;
 - `evidence`: `path` (repo-relative, resolve it against the commit the organ captured) and
   `fragment` (the config key inside a `comparison.json`, else `null`).
 
@@ -67,9 +68,12 @@ The producer's own drift badge for each series, so the organ **displays** drift 
 than computing them: `comparison_key` (= series key), `policy`, `axis`, `metric`, `baseline` and
 `candidate` (the two newest releases), `ratio`, `status` ∈ `drifted | improved | flat |
 insufficient`, `qualified` (both endpoints qualified under the release-sweep pin) and `reasons`
-(one release only; no headline; an unqualified endpoint and why). A `drifted` row with
-`qualified: false` is a contextual flag, not evidence of regression — the distinction the organ
-must keep visible.
+(one release only; no headline; an unqualified endpoint and why). A ratio inside the 2x band is
+`flat` ("within the 2x policy band; not a measured null") only when both endpoints carry a repeat
+summary; with a single-sample endpoint — every endpoint today, one 10-call block mean — it is
+`insufficient`. `drifted` / `improved` keep their status as gross-band flags and carry the reason
+"single-sample endpoint(s)". A `drifted` row with `qualified: false` is a contextual flag, not
+evidence of regression — the distinction the organ must keep visible.
 
 ### What the producer refuses to publish
 

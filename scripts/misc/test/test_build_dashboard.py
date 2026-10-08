@@ -278,11 +278,11 @@ def test_summary_comparisons_are_the_producers_verdict(tmp_path):
     assert (drifted["baseline"], drifted["candidate"]) == ("2026.8.17.1", "2026.9.27.1")
     # the baseline row has no provenance: a drift flag, not regression evidence
     assert drifted["qualified"] is False and any("baseline" in r for r in drifted["reasons"])
-    assert (
-        by_key["runtime:imaging/delaunay/hst:local_cpu_fd64".replace("fd", "fp")]["status"]
-        == "flat"
-    )
-    assert by_key["breakdown:imaging/pixelization/hst:local_cpu_fp64"]["status"] == "improved"
+    # inside the 2x band with single-sample endpoints: insufficient, never a bare flat null
+    local = by_key["runtime:imaging/delaunay/hst:local_cpu_fp64"]
+    assert local["status"] == "insufficient" and bd.SINGLE_SAMPLE_NULL_REASON in local["reasons"]
+    improved = by_key["breakdown:imaging/pixelization/hst:local_cpu_fp64"]
+    assert improved["status"] == "improved" and bd.SINGLE_SAMPLE_REASON in improved["reasons"]
     single = by_key["breakdown:imaging/mge/hst:hpc_a100_mp"]
     assert single["status"] == "insufficient" and "one release only" in single["reasons"]
     assert all(c["policy"] == "runtime-drift-2x-1ms" for c in s["comparisons"])
@@ -419,3 +419,128 @@ def test_steady_median_field_rides_beside_the_headline():
         and "first block after compile" in cell
         and "steady median 0.27 ms" in cell
     )
+
+
+# --- timing-noise audit fix phase 2 (P6 qualification, P7 drift wording; #362) -------------
+
+_CONF = {"node": "euclid-ral-gpu-2", "loadavg_cap": 8.0}
+
+
+def _pt(version="1", single=0.1, host="euclid-ral-gpu-2", loadavg=0.5, prov=True, **extra):
+    return dict(
+        {
+            "version": version,
+            "single_jit_s": single,
+            "vmap_per_call_s": None,
+            "host": host,
+            "backend": "cpu",
+            "job": "1",
+            "loadavg": loadavg,
+            "has_provenance": prov,
+            "source": "results/x.json",
+        },
+        **extra,
+    )
+
+
+def test_reference_host_class_rule():
+    assert bd.is_reference_host_class("hpc_ral_cpu_fp64")
+    assert bd.is_reference_host_class("hpc_a100_mp")
+    for config in ("local_cpu_fp64", "local_cpu_mp", "local_gpu_fp64", "local_gpu_mp"):
+        assert not bd.is_reference_host_class(config)
+
+
+def test_laptop_row_with_provenance_is_unqualified_not_refused():
+    ok, reason, refused = bd.qualify(_pt(host="laptop", loadavg=0.3), "local_cpu_fp64", _CONF)
+    assert (ok, refused) == (False, False)
+    assert reason == "not a reference host class; laptop rows never qualify as trend points"
+
+
+def test_provenance_without_loadavg_is_unqualified():
+    ok, reason, refused = bd.qualify(_pt(loadavg=None), "hpc_a100_fp64", _CONF)
+    assert (ok, refused) == (False, False) and reason == "provenance carries no load average"
+
+
+def test_hpc_row_without_host_is_unqualified():
+    ok, reason, refused = bd.qualify(_pt(host=None), "hpc_ral_cpu_fp64", _CONF)
+    assert (ok, refused) == (False, False) and reason == "provenance carries no host"
+    # also with no pinned node
+    ok, reason, _ = bd.qualify(_pt(host=None), "hpc_ral_cpu_fp64", {"node": None})
+    assert ok is False and reason == "provenance carries no host"
+
+
+def test_existing_refusal_and_no_provenance_rules_kept():
+    ok, reason, refused = bd.qualify(_pt(loadavg=190.0), "hpc_a100_fp64", _CONF)
+    assert (ok, refused) == (False, True) and "above the cap" in reason
+    ok, reason, refused = bd.qualify(_pt(prov=False, loadavg=None), "local_cpu_fp64", _CONF)
+    assert (ok, refused) == (False, False) and "no provenance" in reason
+    ok, reason, _ = bd.qualify(_pt(host="euclid-ral-gpu-1"), "hpc_a100_mp", _CONF)
+    assert ok is False and "off the reference host" in reason
+
+
+def test_ral_reference_rows_stay_qualified():
+    # the two qualified rows on main: point_source_source/source_plane_solved @2026.8.17.1
+    for config, load in (("hpc_ral_cpu_fp64", 0.16), ("hpc_a100_fp64", 1.16)):
+        assert bd.qualify(_pt(loadavg=load), config, _CONF) == (True, None, False)
+
+
+def _series(config, points):
+    return {"key": f"runtime:c:{config}", "points": points, "drift": bd.drift(points)}
+
+
+def _qualified(points, config="hpc_a100_fp64"):
+    out = []
+    for p in points:
+        ok, reason, _ = bd.qualify(p, config, _CONF)
+        out.append(dict(p, qualified=ok, reason=reason))
+    return out
+
+
+def test_qualified_1p9x_is_not_published_as_flat_null():
+    pts = _qualified([_pt("1", 0.010), _pt("2", 0.019)])
+    assert bd.drift(pts)["status"] == "steady"
+    c = bd._summary_comparison(_series("hpc_a100_fp64", pts))
+    assert c["qualified"] is True and c["ratio"] == 1.9
+    assert c["status"] == "insufficient" and c["reasons"] == [bd.SINGLE_SAMPLE_NULL_REASON]
+
+
+def test_flat_only_when_both_endpoints_carry_a_repeat_summary():
+    rep = {bd.REPEAT_SUMMARY_FIELD: 5}
+    both = _qualified([_pt("1", 0.010, **rep), _pt("2", 0.011, **rep)])
+    c = bd._summary_comparison(_series("hpc_a100_fp64", both))
+    assert c["status"] == "flat" and c["reasons"] == [bd.FLAT_BAND_REASON]
+    one = _qualified([_pt("1", 0.010, **rep), _pt("2", 0.011)])
+    c = bd._summary_comparison(_series("hpc_a100_fp64", one))
+    assert c["status"] == "insufficient" and bd.SINGLE_SAMPLE_NULL_REASON in c["reasons"]
+    # a steady median (a different estimator) is not a repeat summary of the compared metric
+    med = _qualified([_pt("1", 0.010, single_jit_median_s=0.009), _pt("2", 0.011)])
+    assert bd._summary_comparison(_series("hpc_a100_fp64", med))["status"] == "insufficient"
+    assert not bd.has_repeat_summary({bd.REPEAT_SUMMARY_FIELD: 1})
+    assert not bd.has_repeat_summary({bd.REPEAT_SUMMARY_FIELD: True})
+
+
+def test_drifted_and_improved_keep_status_with_single_sample_caveat():
+    up = _qualified([_pt("1", 0.010), _pt("2", 0.030)])
+    c = bd._summary_comparison(_series("hpc_a100_fp64", up))
+    assert c["status"] == "drifted" and c["reasons"] == [bd.SINGLE_SAMPLE_REASON]
+    down = _qualified([_pt("1", 0.030), _pt("2", 0.010)])
+    c = bd._summary_comparison(_series("hpc_a100_fp64", down))
+    assert c["status"] == "improved" and c["reasons"] == [bd.SINGLE_SAMPLE_REASON]
+    rep = {bd.REPEAT_SUMMARY_FIELD: 5}
+    both = _qualified([_pt("1", 0.010, **rep), _pt("2", 0.030, **rep)])
+    c = bd._summary_comparison(_series("hpc_a100_fp64", both))
+    assert c["status"] == "drifted" and c["reasons"] == []
+
+
+def test_status_vocabulary_unchanged():
+    assert set(bd._COMPARISON_STATUS.values()) == {"drifted", "improved", "flat", "insufficient"}
+
+
+def test_real_tree_qualified_records_are_the_ral_reference_rows():
+    root = _TOOLING.parents[2]
+    summary = json.loads(bd.build(root, generated="2026-09-27T00:00:00Z")["summary.json"])
+    for r in summary["records"]:
+        if r["provenance"]["qualified"]:
+            assert r["identity"]["tier"] == "hpc"
+            assert r["provenance"]["host"] == "euclid-ral-gpu-2"
+            assert r["provenance"]["loadavg"] is not None
