@@ -3,10 +3,10 @@
 **Status:** open
 **Question:** Do this repo's timing tests and profiling gates treat measurement noise correctly, so that an uncertain measurement never qualifies a result silently?
 **Pre-registered rule:** PASS only when the interval clears the budget, FAIL only when it clears the other way, otherwise INCONCLUSIVE (never silent, never a measured pass); proposed in phase 1 and not yet applied to any gate
-**Verdict:** phase 1 (audit): 31 timing assertions/gates — 11 SOUND, 10 FRAGILE, 10 UNSAFE-SILENT; after fix phases 1–2 (#404, #PRNUM): 15 / 8 / 8 (T1, P1, P6, P7 SOUND-with-caveats)
+**Verdict:** phase 1 (audit): 31 timing assertions/gates — 11 SOUND, 10 FRAGILE, 10 UNSAFE-SILENT; after fix phases 1–2 (#404, #405): 15 / 8 / 8 (T1, P1, P6, P7 SOUND-with-caveats)
 **Headline:** the #361 CI overhead guard returns INCONCLUSIVE for any true overhead from ~0.8 % to ~5.4 % at CI scatter (3 blocks, s.d. 0.014); GitHub runner, Actions run 36985476995 (no RAL job)
 **Library PRs:** none
-**Profiling PRs:** #361 (t-bound CI guard, merged); #402 (phase 1 audit, merged); #404 (fix phase 1, merged); #PRNUM (fix phase 2, open)
+**Profiling PRs:** #361 (t-bound CI guard, merged); #402 (phase 1 audit, merged); #404 (fix phase 1, merged); #405 (fix phase 2, open)
 **Ledger:** [timing_noise_audit_2026_10.md](../../results/notes/timing_noise_audit_2026_10.md)
 **Mind contract:** Pulse campaign `measurement-tools`, task `tasks/timing_noise_audit.md`; Mind `active/timing_noise_audit_phase3_qualify_drift.md`; issue #362
 **Next:** fix phase 3 of the ledger — INCONCLUSIVE states for the A/B rules (C7, C10, then C1/C3/C4/C5, P2)
@@ -26,7 +26,7 @@ inconclusive never qualifies a result.
 |---|---|---|---|---|---|---|
 | 1 — inventory | 2026-10-08 | What timing assertions and gates exist, and which can qualify a result on noise? | audit only; no gate changes | 31 rows: 11 SOUND, 10 FRAGILE, 10 UNSAFE-SILENT; six ranked fix phases | none | #402 |
 | 2 — fix phase 1 (T1 + P1) | 2026-10-08 | Can the CI test and the numba cell share one interval verdict for the ABBA overhead? | PASS / FAIL only when the one-sided t bound clears the 12 ms budget, else INCONCLUSIVE | one `abba_overhead_verdict`; 6 of 17 RAL rows re-judge INCONCLUSIVE | none | #404 |
-| 3 — fix phase 2 (P6 + P7) | 2026-10-08 | Does the dashboard qualify only reference-host trend points and stop publishing in-band single samples as a null? | laptop / no-loadavg / no-host rows unqualified; in-band with a single-sample endpoint → `insufficient` | qualified records 2 → 2; `flat` 4 → 0 (→ `insufficient`); 6 `improved` keep status with a caveat | none | #PRNUM |
+| 3 — fix phase 2 (P6 + P7) | 2026-10-08 | Does the dashboard qualify only reference-host trend points and stop publishing in-band single samples as a null? | laptop / no-loadavg / no-host rows unqualified; in-band with a single-sample endpoint → `insufficient` | qualified records 2 → 2; `flat` 4 → 0 (→ `insufficient`); 6 `improved` keep status with a caveat | none | #405 |
 
 ## What shipped and where it is
 
@@ -34,7 +34,7 @@ inconclusive never qualifies a result.
 |---|---|---|---|
 | #361 | one-sided Student-t verdict for the CI overhead test | 2026-10-02 | n/a (profiling repo) |
 | #404 | one shared `abba_overhead_verdict` (ms excess, one-sided t bounds, PASS / FAIL / FAIL_GROSS / INCONCLUSIVE) for the CI test and the fixed-light numba cell; T1 and P1 now SOUND-with-caveats; the 413.301 ms row's own blocks re-judge INCONCLUSIVE | 2026-10-08 | n/a (profiling repo) |
-| #PRNUM | dashboard qualification (`is_reference_host_class`: laptop, no-loadavg and no-host rows unqualified) and drift wording (in-band + single-sample → `insufficient`; `drifted` / `improved` keep status with a single-sample caveat, human decision 2026-10-08); P6 and P7 SOUND-with-caveats | pending | n/a (profiling repo) |
+| #405 | dashboard qualification (`is_reference_host_class`: laptop, no-loadavg and no-host rows unqualified) and drift wording (in-band + single-sample → `insufficient`; `drifted` / `improved` keep status with a single-sample caveat, human decision 2026-10-08); P6 and P7 SOUND-with-caveats | pending | n/a (profiling repo) |
 
 ## Open / parked / drafts
 

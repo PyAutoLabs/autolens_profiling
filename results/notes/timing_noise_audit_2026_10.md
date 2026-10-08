@@ -10,7 +10,7 @@ Pulse task: `tasks/timing_noise_audit.md` (campaign `measurement-tools`). Campai
 SOUND-with-caveats; see "Fix phase 1 — shipped" under (b). The rest of this note is the phase 1
 audit as written, with the T1 / P1 / P2 / T3 rows and the counts updated.
 
-**Fix phase 2 shipped (phase 3 of #362, PR #PRNUM, 2026-10-08):** rows P6 and P7 are
+**Fix phase 2 shipped (phase 3 of #362, PR #405, 2026-10-08):** rows P6 and P7 are
 SOUND-with-caveats. `build_dashboard.qualify` no longer qualifies laptop rows, rows whose
 provenance lacks a load average, or `hpc_*` rows with no host; a comparison inside the 2× band
 with a single-sample endpoint is published `insufficient`, not `flat`. See "Fix phase 2 —
@@ -644,7 +644,7 @@ correctness or gross-regression guard.
    - **Witness:** synthetic points for laptop + provenance → unqualified; `loadavg: None` →
      unqualified; `hpc` + `host: None` → unqualified; 1.9× qualified → not `flat`-as-null;
      single-sample endpoints → `insufficient`.
-   - **Shipped (phase 3 of #362, PR #PRNUM, 2026-10-08).** As implemented:
+   - **Shipped (phase 3 of #362, PR #405, 2026-10-08).** As implemented:
      - `qualify` order: above the cap → refused; no provenance; not a reference host class
        (`is_reference_host_class(config)`, `REFERENCE_HOST_CLASS_PREFIXES = ("hpc_",)`) →
        "not a reference host class; laptop rows never qualify as trend points"; no load average →
