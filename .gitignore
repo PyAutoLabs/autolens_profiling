@@ -108,3 +108,11 @@ dataset/interferometer/*/nufft_precision_operator_*.npy
 dataset/interferometer/*/preload_*_*.npy
 dataset/interferometer/*/preload_*_*.json
 dataset/interferometer/*/preload_inputs_*.npz
+
+# Linear-solver Mapper corpus groups too large for git (50-60 MB each; autolens_profiling#399,
+# human decision 2026-10-08). Stored externally — hashes, sizes and the regenerate command are
+# in results/lens/solver/corpus/manifest.json; copies on RAL /mnt/ral/jnightin/autolens_profiling_corpus/
+# and the laptop canonical checkout. Listed by name so future small groups stay tracked.
+results/lens/solver/corpus/delaunay_hst.npz
+results/lens/solver/corpus/rectangular_hst.npz
+results/lens/solver/corpus/slam_mixed_hst.npz

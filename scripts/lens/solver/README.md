@@ -45,6 +45,9 @@ re-derives its truth.
 | `slam48_hst` | 48 | 60 | 9.64e+10 – 9.75e+10 | 2.16e+06 – 2.16e+06 | 20 | `scripts/lens/solver/capture.py` | SLaM source_lp[1]: lens 2x20 MGE (sigma_min=pixel_scale/10) + source 20 MGE, free Isothermal + ExternalShear |
 | `slam_spread_hst` | 24 | 60 | 1.08e+10 – 1.08e+12 | 2.40e+05 – 2.40e+07 | 20 | `scripts/lens/solver/capture.py` | SLaM source_lp[1]: lens 2x20 MGE (sigma_min=pixel_scale/10) + source 20 MGE, free Isothermal + ExternalShear |
 | `euclid_vis_lp` | 1 | 60 | 5.56e+11 – 5.56e+11 | 8.49e+06 – 8.49e+06 | 20 | `scripts/lens/solver/capture.py` | euclid vis_lp (initial_lens_model.vis_lp_model_from) at _ordered_median_vector, dataset simulated/euclid_dr1_like |
+| `delaunay_hst` | 8 | 1500 | 6.07e+05 – 2.42e+07 | 1.91e+03 – 1.92e+05 | 1500 | `scripts/lens/solver/capture.py` | Mapper only: fixed truth Sersic lens light (no columns) + free Isothermal + ExternalShear; source Delaunay (Hilbert 1500, AdaptSplit), the HST Delaunay preset's source |
+| `rectangular_hst` | 8 | 1369 | 1.30e+06 – 5.42e+07 | 1.74e+03 – 1.75e+05 | 1369 | `scripts/lens/solver/capture.py` | Mapper only: fixed truth Sersic lens light (no columns) + free Isothermal + ExternalShear; source RectangularBilinearAdaptImage 39x39 + Constant(1.0), the HST rectangular preset's source |
+| `slam_mixed_hst` | 8 | 1540 | 5.54e+09 – 5.56e+11 | 2.11e+05 – 2.11e+07 | 1500 | `scripts/lens/solver/capture.py` | Mixed (SLaM source_pix): lens 2x20 MGE (sigma_min=pixel_scale/10, linear) + free Isothermal + ExternalShear; source Delaunay (Hilbert 1500, AdaptSplit) |
 <!-- END auto-table:solver-corpus -->
 
 ## Candidates
