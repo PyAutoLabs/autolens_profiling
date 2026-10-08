@@ -42,6 +42,7 @@ Run::
 from __future__ import annotations
 
 import ast
+import json
 import sys as _sys
 import warnings
 from pathlib import Path as _Path
@@ -1216,7 +1217,48 @@ def test_the_overhead_gate_is_a_millisecond_budget(cell_ns):
     assert status == "INCONCLUSIVE"
 
 
-def _promotion_decision(b_ms, d_ms, b_status, d_status):
+#: A deterministic +-1 % per-block pattern shared by both arms (paired by instance).
+_PROMOTION_PATTERN = np.array([1.00, 1.01, 0.99, 1.005, 0.995, 1.0, 1.01, 0.99] * 2)
+
+
+def _promotion_rows(b_ms, d_ms, b_status, d_status, *, n_blocks=16, d_jitter=0.0):
+    """Two decomposed rows with paired clean blocks (two clean calls per block)."""
+    pattern = _PROMOTION_PATTERN[:n_blocks]
+    jitter = d_jitter * np.where(np.arange(n_blocks) % 2 == 0, 1.0, -1.0)
+
+    def _sequence(ms, extra):
+        blocks = ms * pattern * (1.0 + extra)
+        return np.repeat(blocks, 2).tolist()
+
+    return {
+        "b_sparse_numba": {
+            "call_ms": b_ms,
+            "call_ms_sequence": _sequence(b_ms, 0.0),
+            "decomposed": True,
+            "instrumentation_overhead_status": b_status,
+        },
+        "d_perm_sparse_numba": {
+            "call_ms": d_ms,
+            "call_ms_sequence": _sequence(d_ms, jitter),
+            "decomposed": True,
+            "instrumentation_overhead_status": d_status,
+        },
+    }
+
+
+def _cell_import_namespace(module: str) -> dict:
+    """Execute only the cell's own ``from <module> import ...`` statements."""
+    tree = ast.parse(CELL_PATH.read_text())
+    nodes = [
+        node for node in tree.body if isinstance(node, ast.ImportFrom) and node.module == module
+    ]
+    assert nodes, f"the cell does not import {module}"
+    namespace: dict = {}
+    exec(compile(ast.Module(body=nodes, type_ignores=[]), str(CELL_PATH), "exec"), namespace)
+    return namespace
+
+
+def _promotion_decision(b_ms, d_ms, b_status, d_status, *, rows=None):
     """Run the cell's OWN promotion block (lifted from its AST) on two synthetic rows."""
     tree = ast.parse(CELL_PATH.read_text())
     block = next(
@@ -1224,11 +1266,12 @@ def _promotion_decision(b_ms, d_ms, b_status, d_status):
         for node in tree.body
         if isinstance(node, ast.If) and ast.unparse(node.test) == "_promotion_pair is not None"
     )
-    rows = {
-        "b_sparse_numba": {"call_ms": b_ms, "instrumentation_overhead_status": b_status},
-        "d_perm_sparse_numba": {"call_ms": d_ms, "instrumentation_overhead_status": d_status},
-    }
-    namespace = {"rows": rows, "_promotion_pair": ("b_sparse_numba", "d_perm_sparse_numba")}
+    if rows is None:
+        rows = _promotion_rows(b_ms, d_ms, b_status, d_status)
+    namespace = _cell_import_namespace("likelihood_breakdown.ab_verdict")
+    namespace.update(
+        {"np": np, "rows": rows, "_promotion_pair": ("b_sparse_numba", "d_perm_sparse_numba")}
+    )
     exec(compile(ast.Module(body=[block], type_ignores=[]), str(CELL_PATH), "exec"), namespace)
     return namespace["_promotion_decision"]
 
@@ -1251,6 +1294,68 @@ def test_promotion_requires_pass_on_both_arms(b_status, d_status, d_ms, expected
     if expected == "INCONCLUSIVE":
         assert "INCONCLUSIVE" in decision["reason"]
         assert decision["abba_unresolved_rows"]
+
+
+def test_promotion_speedup_is_judged_on_its_paired_block_interval():
+    """P2 (#362 fix phase 3): the >=5% rule reads an interval, not a point difference.
+
+    A 6 % point speedup whose paired blocks scatter +-4 % straddles the bar: the
+    promotion is INCONCLUSIVE with the resolvable effect recorded, never a
+    timing_candidate and never a measured NO_LEVER.
+    """
+    rows = _promotion_rows(236.0, 236.0 * 0.94, "PASS", "PASS", d_jitter=0.04)
+    decision = _promotion_decision(None, None, None, None, rows=rows)
+    assert decision["speedup_verdict"] == "INCONCLUSIVE", decision["speedup_verdict_reason"]
+    assert decision["status"] == "INCONCLUSIVE"
+    assert "not" in decision["reason"] and "NO_LEVER" in decision["reason"]
+    interval = decision["whole_call_speedup_paired_blocks"]
+    assert interval["lower"] < 0.05 < interval["upper"]
+    assert decision["resolvable_effect"]["whole_call_speedup_fraction"] > 0.0
+
+
+def test_promotion_below_the_minimum_block_count_is_inconclusive():
+    """Four paired blocks cannot resolve the rule, even a clear 15 % speedup."""
+    rows = _promotion_rows(236.0, 200.0, "PASS", "PASS", n_blocks=4)
+    decision = _promotion_decision(None, None, None, None, rows=rows)
+    assert decision["whole_call_speedup_paired_blocks"]["n_blocks"] == 4
+    assert decision["status"] == "INCONCLUSIVE"
+    assert "4 < 5" in decision["speedup_verdict_reason"]
+
+
+def test_promotion_rejudges_the_committed_s4b_row_as_a_measured_no_lever():
+    """The one committed promotion (s4b, published NO_LEVER at -0.80 %) stays NO_LEVER.
+
+    Its 32 paired blocks put the speedup at [-1.31 %, -0.32 %]: wholly below the
+    5 % bar, so the NO_LEVER is a measured negative under the interval rule too.
+    """
+    path = (
+        ROOT
+        / "results/breakdown/imaging"
+        / "fixed_light_numba_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s4b_warm_t1.json"
+    )
+    committed = json.loads(path.read_text())
+    assert committed["promotion_decision"]["status"] == "NO_LEVER"
+    decision = _promotion_decision(None, None, None, None, rows=committed["rows"])
+    interval = decision["whole_call_speedup_paired_blocks"]
+    assert interval["n_blocks"] == 32
+    assert interval["lower"] == pytest.approx(-0.013056, abs=1e-5)
+    assert interval["upper"] == pytest.approx(-0.003192, abs=1e-5)
+    assert decision["status"] == "NO_LEVER"
+
+
+def test_the_promotion_block_uses_the_shared_ab_verdict():
+    """The cell imports the shared function objects; it defines no copy of the rule."""
+    from likelihood_breakdown import ab_verdict
+
+    namespace = _cell_import_namespace("likelihood_breakdown.ab_verdict")
+    assert namespace["ab_rule_verdict"] is ab_verdict.ab_rule_verdict
+    assert namespace["paired_block_ratio_interval"] is ab_verdict.paired_block_ratio_interval
+    defined = {
+        node.name
+        for node in ast.walk(ast.parse(CELL_PATH.read_text()))
+        if isinstance(node, ast.FunctionDef)
+    }
+    assert not defined & {"ab_rule_verdict", "paired_block_ratio_interval", "tie_set"}
 
 
 def test_the_overhead_gate_records_both_the_ms_and_the_ratio(cell_ns):

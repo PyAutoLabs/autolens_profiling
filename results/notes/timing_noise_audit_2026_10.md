@@ -17,6 +17,16 @@ with a single-sample endpoint is published `insufficient`, not `flat`. See "Fix 
 shipped" under (b), which also corrects this note's original claim that P6 flows into
 PyAutoPulse.
 
+**Fix phase 3 shipped (phase 4 of #362, PR #PRNUM, 2026-10-08):** the pre-registered A/B rules
+of rows C6, C7 and P2 and the argmax of C10 share one verdict,
+`scripts/misc/likelihood_breakdown/ab_verdict.py` (`ab_rule_verdict`, `tie_set`): GO only when
+the whole interval clears the bar, NO_GO / NO_LEVER only when it is wholly on the bad side,
+INCONCLUSIVE otherwise, and a tie set instead of a single "best" when the leaders' intervals
+overlap. C7, C10 and P2 move from UNSAFE-SILENT to FRAGILE (their intervals are still iid or
+unpaired in time; fix phase 4). Re-judging the committed rows changed no go / no-go call; 7 of 9
+committed solver-sweep "best" configurations are tie sets. C1 / C3 / C4 / C5 are deferred to
+**phase 3b**. See "Fix phase 3 — shipped" under (b).
+
 **Phase 1 was an audit. Nothing was changed in it:** no gate, budget, tolerance, cutoff, estimator,
 repeat count or production instrument was edited. The only code added is the read-only lister
 `scripts/misc/tooling/list_timing_assertions.py`, which keeps this inventory in step with the code.
@@ -85,8 +95,9 @@ T1, T3, P1 and P2, which are as of the fix phase 1 branch.
 | T4 | CI test | `scripts/misc/test/test_timing_steady_median.py` | `steady_median_profile` on an injected clock | exact | SOUND |
 | T5 | CI test | `scripts/misc/test/test_wall_check_submits.py::test__the_41x_spread_that_caused_the_loss` (298) | wall estimate arithmetic from the rates table | `> 8` | SOUND |
 | T6 | CI test | `scripts/misc/test/test_build_dashboard.py` (132, 260–285) | qualification and drift on synthetic rows | exact | SOUND (pins P6/P7 semantics) |
+| T7 | CI test | `scripts/misc/test/test_ab_verdict.py` (shared A/B verdict witnesses; `scripts/misc/test/test_ab_verdict.py::test_a_15_percent_point_estimate_straddling_the_bar_is_inconclusive` and the bars `scripts/misc/test/test_ab_verdict.py::GO_MIN_SAVED_MS`, `scripts/misc/test/test_ab_verdict.py::GO_MIN_FRACTION`) | `ab_rule_verdict` / `tie_set` on seeded synthetic samples, the cells' own lifted rules, and the committed C6 / C7 / C10 rows | exact, seeded | SOUND (pins the fix phase 3 semantics) |
 | P1 | production qualification | `scripts/imaging/pixelized/fixed_light_numba.py::<module>` (2122–2130; raise at 2267) via `scripts/misc/likelihood_breakdown/overhead_verdict.py::abba_overhead_verdict` | ABBA overhead in ms: one-sided t bounds vs budget; raises only on FAIL / FAIL_GROSS, INCONCLUSIVE keeps the row | `scripts/imaging/pixelized/fixed_light_numba.py::MAX_INSTRUMENTATION_OVERHEAD_MS` 12.0; `scripts/imaging/pixelized/fixed_light_numba.py::MIN_BLOCKS_FOR_OVERHEAD_ASSERT` 3; `scripts/imaging/pixelized/fixed_light_numba.py::REFERENCE_OVERHEAD_RATIO` 1.03 (recorded) | SOUND-with-caveats |
-| P2 | campaign gate | `scripts/imaging/pixelized/fixed_light_numba.py::<module>` (2374–2430) | promotion `timing_candidate` / `INCONCLUSIVE` / `NO_LEVER` | whole-call speedup ≥ 0.05 and both P1 PASS; a P1 INCONCLUSIVE gives INCONCLUSIVE | UNSAFE-SILENT |
+| P2 | campaign gate | `scripts/imaging/pixelized/fixed_light_numba.py::<module>` (2386–2496) via `scripts/misc/likelihood_breakdown/ab_verdict.py::ab_rule_verdict` | promotion `timing_candidate` / `INCONCLUSIVE` / `NO_LEVER` | whole-call speedup ≥ 0.05 on a 90 % paired-block interval (≥ 5 blocks) and both P1 PASS; a P1 INCONCLUSIVE gives INCONCLUSIVE | FRAGILE |
 | P3 | production protocol | `scripts/imaging/pixelized/fixed_light_numba.py::_warm_to_steady_state` (1745) | warm-up "steady" flag | `scripts/imaging/pixelized/fixed_light_numba.py::WARMUP_WINDOW` 3, `scripts/imaging/pixelized/fixed_light_numba.py::WARMUP_TOLERANCE` 0.10, `scripts/imaging/pixelized/fixed_light_numba.py::WARMUP_MAX_CALLS` 12 | FRAGILE |
 | P4 | production qualification | `scripts/imaging/pixelized/fixed_light_numba.py` 2247 | unattributed fraction of the instrumented call | `MAX_UNATTRIBUTED_FRACTION` 0.05 | SOUND |
 | P5 | production qualification | `_production_config.py::witness_verdict` (869); `_production_config.py::timing_summary` (792) | production-representative cold-eval witness | `WITNESS_FACTOR` 1.5 × the production cold-eval range | FRAGILE |
@@ -100,11 +111,11 @@ T1, T3, P1 and P2, which are as of the fix phase 1 branch.
 | C3 | campaign gate | `scripts/imaging/pixelized/fixed_light_numba_memo_policy.py::main` (479–490) | memo-policy verdict GO / NO_LEVER | six conjunctive targets: ≤ 0.95 vs memo and ≤ 1.03 vs cold | UNSAFE-SILENT |
 | C4 | campaign gate | `scripts/imaging/pixelized/fixed_light_numba_scaling.py::evaluate_group` (163) | `breakdown_reconciles`, which feeds status PASS | \|observed median / clean median − 1\| ≤ 0.05 | UNSAFE-SILENT |
 | C5 | campaign gate | `scripts/imaging/pixelized/fixed_light_trace.py::<module>` (3741–3760) | logdet lever `clears_threshold` | `scripts/misc/likelihood_breakdown/logdet_reuse_injection.py::LOGDET_LEVER_MS` 0.5 ms, on both estimators | UNSAFE-SILENT |
-| C6 | campaign gate | `scripts/point_source_source/source_plane/backward_pass_ab.py::_phase2c_rule` (981) | phase-2c GO | `scripts/point_source_source/source_plane/backward_pass_ab.py::GO_MIN_SAVED_MS` 0.05 ms and `scripts/point_source_source/source_plane/backward_pass_ab.py::GO_MIN_FRACTION` 0.15, point estimate and 90 % CI | FRAGILE |
-| C7 | campaign gate | `scripts/point_source_source/source_plane/pytree_input_ab.py::_phase2b_rule` (563) | phase-2b go | `scripts/point_source_source/source_plane/pytree_input_ab.py::GO_MIN_SAVED_MS` 0.05 ms and `scripts/point_source_source/source_plane/pytree_input_ab.py::GO_MIN_FRACTION` 0.15, point estimate only | UNSAFE-SILENT |
+| C6 | campaign gate | `scripts/point_source_source/source_plane/backward_pass_ab.py::_phase2c_rule` (981) | phase-2c GO | `scripts/point_source_source/source_plane/backward_pass_ab.py::GO_MIN_SAVED_MS` 0.05 ms and `scripts/point_source_source/source_plane/backward_pass_ab.py::GO_MIN_FRACTION` 0.15, point estimate and 90 % CI; GO / NO_GO / INCONCLUSIVE via `ab_rule_verdict` since fix phase 3 | FRAGILE |
+| C7 | campaign gate | `scripts/point_source_source/source_plane/pytree_input_ab.py::_phase2b_rule` via `scripts/misc/likelihood_breakdown/ab_verdict.py::ab_rule_verdict` | phase-2b GO / NO_GO / INCONCLUSIVE | `scripts/point_source_source/source_plane/pytree_input_ab.py::GO_MIN_SAVED_MS` 0.05 ms and `scripts/point_source_source/source_plane/pytree_input_ab.py::GO_MIN_FRACTION` 0.15, on 90 % bootstrap intervals (≥ 5 rounds) | FRAGILE |
 | C8 | campaign gate | `scripts/point_source_source/source_plane/gradient_mode_crossover.py` `_crossover` (763) | crossover summary ("rev wins from…", "n* = …") | ratio = 1 crossing of point medians | FRAGILE |
 | C9 | campaign gate | `scripts/point_source_image/image_plane/solver_config_sweep.py::<module>` (1934–1943) | MCS `rule_candidates` | compile ≤ 1.20, median ≤ 1.05 vs control (point) | FRAGILE |
-| C10 | campaign gate | `scripts/point_source_image/image_plane/solver_config_sweep.py` `_fastest` (1286) | `best_admissible`, the argmax of the point speedup | none (argmax) | UNSAFE-SILENT |
+| C10 | campaign gate | `scripts/point_source_image/image_plane/solver_config_sweep.py` `_fastest` via `scripts/misc/likelihood_breakdown/ab_verdict.py::tie_set` | `best_admissible` (a resolved leader, else `None`) and `best_admissible_tie_set` | tie set: every candidate whose 90 % speed-up interval overlaps the point leader's | FRAGILE |
 | C11 | campaign gate | `scripts/misc/numba_interferometer/bakeoff.py::main` (847–875) | numba-vs-rfft2 kill gate | ratio > 1.3 on medians | FRAGILE |
 | C12 | campaign gate | `scripts/point_source_image/image_plane/gpu_bottleneck_map.py` `_mdi` (380) | minimum detectable improvement (split-half noise floor) for a human go/no-go | 90 % CI half-width | SOUND |
 | S1 | submit basis | `scripts/misc/wall/check_submits.py::RATE_TOLERANCE` (91), `HEADROOM_FLOOR` (95), `budget < needed` (437) | `--time` ≥ estimated wall × headroom | 5 % rate match; headroom 1.25 / 1.5 / 3.0 | SOUND |
@@ -115,18 +126,21 @@ T1, T3, P1 and P2, which are as of the fix phase 1 branch.
 
 | Kind | Rows | SOUND | FRAGILE | UNSAFE-SILENT |
 |---|---|---|---|---|
-| CI test | 6 | 6 | 0 | 0 |
+| CI test | 7 | 7 | 0 | 0 |
 | Production qualification / protocol / estimator | 9 | 5 | 3 | 1 |
-| Campaign gate (incl. P2 promotion) | 13 | 1 | 5 | 7 |
+| Campaign gate (incl. P2 promotion) | 13 | 1 | 8 | 4 |
 | Submit basis | 1 | 1 | 0 | 0 |
 | Resource guard | 2 | 2 | 0 | 0 |
-| **Total** | **31** | **15** | **8** | **8** |
+| **Total** | **32** | **16** | **11** | **5** |
 
-Counts after fix phase 2. T1, P1, P6 and P7 are SOUND-with-caveats and counted as SOUND; after
-fix phase 1 the totals were 13 / 9 / 9 (P6 UNSAFE-SILENT, P7 FRAGILE), and at phase 1 they were
-11 / 10 / 10 (T1 FRAGILE, P1 UNSAFE-SILENT). The production row group is P1 and P3–P10, nine rows.
-P2 is a promotion rule, so it is counted with the campaign gates. Eight rows can label a result
-from a point estimate or without looking at the measurement: P2, P9, C1, C3, C4, C5, C7 and C10. None of the ten CI-test, submit or resource-guard rows is UNSAFE-SILENT.
+Counts after fix phase 3, which added the CI-test row T7 and moved C7, C10 and P2 from
+UNSAFE-SILENT to FRAGILE. T1, P1, P6 and P7 are SOUND-with-caveats and counted as SOUND. After fix
+phase 2 the totals were 15 / 8 / 8 over 31 rows; after fix phase 1, 13 / 9 / 9 (P6 UNSAFE-SILENT,
+P7 FRAGILE); at phase 1, 11 / 10 / 10 (T1 FRAGILE, P1 UNSAFE-SILENT). The production row group is
+P1 and P3–P10, nine rows. P2 is a promotion rule, so it is counted with the campaign gates. Five
+rows can still label a result from a point estimate or without looking at the measurement: P9,
+C1, C3, C4 and C5 (at phase 1 there were eight, with P2, C7 and C10). None of the eleven CI-test,
+submit or resource-guard rows is UNSAFE-SILENT.
 
 ## Per-row detail
 
@@ -251,8 +265,17 @@ regression passes, or a real lever is reported as NO_LEVER); owner; and the verd
 - **FP risk:** reduced by `requires_separate_witness_pass`; `promotion_ready` stays false.
 - **FN risk:** high. Drift between rows can hide a 5–10 % lever, and the result is then written as
   "a valid **measured** NO_LEVER result, not a failed job".
-- **Verdict:** UNSAFE-SILENT, because an unresolved difference is published as a measured
+- **Verdict (phase 1):** UNSAFE-SILENT, because an unresolved difference is published as a measured
   NO_LEVER.
+- **After fix phase 3: FRAGILE.** The ≥ 5 % rule reads a 90 % two-sided Student-t interval on the
+  per-block speedup, `1 − mean_j(d_perm block j / b block j)`, through the shared
+  `ab_rule_verdict` (≥ `MIN_AB_ROUNDS` = 5 blocks). The rows walk the same validated instance
+  stream, so block j of each row evaluates the same instances and the blocks are paired by
+  instance (a decomposed row has two clean calls per block). NO_LEVER now requires the whole
+  interval below 5 %; a straddling interval or fewer than 5 blocks is INCONCLUSIVE with the
+  resolvable effect recorded (`whole_call_speedup_paired_blocks`, `speedup_verdict`,
+  `resolvable_effect`); the P1 conjunction is unchanged. Still FRAGILE: the two rows are separate
+  passes in time, so drift between them is not cancelled and the interval does not cover it.
 
 ### P3 — warm-up to steady state (protocol)
 
@@ -397,11 +420,22 @@ prompt". **UNSAFE-SILENT.**
   2. the resampling is unpaired although rounds pair the routes;
   3. there is no INCONCLUSIVE state, so an overlapping CI reads `go: false`;
   4. several routes and lanes are tested without correction.
+- **After fix phase 3:** weakness 3 is fixed. The rule is the shared `ab_rule_verdict` on the same
+  two criteria and bars (saved ≥ 0.05 ms, ratio ≤ 0.85) with the correctness gate as a gate: a red
+  gate is NO_GO; an overlapping CI is INCONCLUSIVE with its resolvable effect, not `go: false`
+  as a measured negative. Weaknesses 1, 2 (fix phase 4) and 4 remain, so it stays FRAGILE.
 
 ### C7 — pytree phase-2b rule (UNSAFE-SILENT)
 
 GO is decided on the point estimate only (`saved ≥ 0.05 ms and ≥ 15 %`). The 90 % CIs are
 computed and printed beside it but are not part of the rule.
+
+**After fix phase 3: FRAGILE.** The cell now bootstraps the saved milliseconds as well
+(`saved_ms_pytree_minus_flat_vector_ci90`, the C6 estimator) and maps the ratio's interval to the
+fraction saved (`1 − 1/ratio`). `_phase2b_rule` is the shared `ab_rule_verdict` on both criteria
+(bars unchanged; ≥ 5 rounds), written per lane as `verdict` (GO / NO_GO / INCONCLUSIVE),
+`verdict_reason` and `resolvable_effect`; `go` is true only for GO. Still FRAGILE: the
+bootstrap resamples calls iid (fix phase 4).
 
 ### C8 — gradient-mode crossover (FRAGILE)
 
@@ -416,7 +450,14 @@ string does not carry it.
 - **C10:** `best_admissible = argmax(point speedup)` over many admissible configurations. Their
   bootstrap CIs are computed but ignored, so statistically tied configurations still produce one
   named "best", which is a winner's-curse effect. Downstream vmap rows are measured for it.
-  **UNSAFE-SILENT.**
+  **UNSAFE-SILENT** (phase 1).
+- **C10 after fix phase 3: FRAGILE.** `_fastest` is the shared `tie_set` over the candidates'
+  90 % speed-up intervals. `best_admissible` names a configuration only when its interval is clear
+  of every other candidate's and is `None` otherwise; `best_admissible_tie_set` (and the
+  any-precision twin) records the point leader and its tie set. The vmap rows and the uncapped
+  counts are measured for the point leader, labelled `point_leader` beside the `tie_set`. Still
+  FRAGILE: the intervals are iid bootstraps (fix phase 4), and the tie set applies no
+  multiple-comparison adjustment.
 
 ### C11 — interferometer numba bake-off kill gate (FRAGILE)
 
@@ -470,7 +511,7 @@ a ledger.
 | `scripts/point_source_source/source_plane/backward_pass_ab.py::BOOTSTRAP_SAMPLES` | 2000 | C6 |
 | `scripts/point_source_source/source_plane/gradient_mode_crossover.py::BOOTSTRAP_SAMPLES` | 2000 | C8 |
 | `scripts/point_source_source/source_plane/gradient_mode_library_ab.py::BOOTSTRAP_SAMPLES` | 2000 | reported CI |
-| `scripts/point_source_source/source_plane/pytree_input_ab.py::BOOTSTRAP_SAMPLES` | 2000 | printed CI, unused by C7 |
+| `scripts/point_source_source/source_plane/pytree_input_ab.py::BOOTSTRAP_SAMPLES` | 2000 | C7 (its intervals decide since fix phase 3) |
 
 Every bootstrap above uses a fixed seed (12345). That makes the CI reproducible. It does not
 make it valid for dependent samples.
@@ -681,6 +722,68 @@ correctness or gross-regression guard.
      - a clear 0 % → FAIL / no-go;
      - a 15 % point estimate with a CI straddling the bar → INCONCLUSIVE;
      - two configurations with overlapping CIs → tie set, no single "best".
+   - **Shipped (phase 4 of #362, PR #PRNUM, 2026-10-08), C6 / C7 / C10 / P2; C1 / C3 / C4 / C5
+     deferred to phase 3b.** As implemented:
+     - **the rule** (`scripts/misc/likelihood_breakdown/ab_verdict.py::ab_rule_verdict`), in
+       order: a red correctness gate → NO_GO; invalid input (non-finite point or bound, lower >
+       upper, a bad sample count) → INCONCLUSIVE; n < `MIN_AB_ROUNDS` (5, the minimum in (a)) →
+       INCONCLUSIVE; per criterion GO when the whole interval and the point clear the bar, NO_GO
+       when the whole interval is on the bad side, else INCONCLUSIVE; the conjunction is NO_GO if
+       any criterion is NO_GO, GO if all are GO, INCONCLUSIVE otherwise. INCONCLUSIVE carries
+       each criterion's resolvable effect (`mdi`, the interval half-width, the C12 idea). Bars are
+       the cells' pre-registered values; none was raised.
+     - **tie sets** (`scripts/misc/likelihood_breakdown/ab_verdict.py::tie_set`): the point
+       leader plus every candidate whose interval overlaps the leader's (a non-finite interval
+       cannot be excluded); a single `best` only when the tie set is the leader alone.
+     - **wired:** C7 (`_phase2b_rule`, with a new saved-ms bootstrap), C6 (`_phase2c_rule`, the
+       correctness gate as a gate), P2 (paired-block t interval,
+       `scripts/misc/likelihood_breakdown/ab_verdict.py::paired_block_ratio_interval`) and C10
+       (`_fastest` → `tie_set`). Each cell's `from likelihood_breakdown.ab_verdict import ...` is
+       asserted to bind the same function objects (`test_ab_verdict.py`, T7).
+     - **witness results** (seeded lognormal calls, seeded 2000-sample bootstraps): a clear 30 %
+       saving → GO; a clear 0 % → NO_GO; a 15 % point with ratio interval straddling 0.85 (6 rounds,
+       12 % scatter) → INCONCLUSIVE, "not a measured negative", MDI recorded; two configurations at
+       0.50 / 0.51 ms → a tie set with no `best`, a clear leader → named; n = 4 → INCONCLUSIVE;
+       NaN / inverted bounds / bad n → INCONCLUSIVE; a red gate → NO_GO. P2 on the cell's own lifted
+       block: a 6 % point with ±4 % paired scatter → INCONCLUSIVE; 4 blocks → INCONCLUSIVE.
+     - **re-judged committed rows (recorded as facts; no JSON rewritten, no decision reversed):**
+
+       | Rule | Committed rows | Published | Re-judged | Changed |
+       |---|---|---|---|---|
+       | C7 phase 2b | `pytree_input_ab_hpc_ral_cpu_fp64` solved / plain (decides) | no-go / no-go | NO_GO / NO_GO: saved [0.0367, 0.0408] / [0.0439, 0.0469] ms, wholly < 0.05 ms | no |
+       | C7 phase 2b | `pytree_input_ab_hpc_a100_fp64` solved / plain | go / go | GO / GO: saved [0.0572, 0.0613] / [0.0546, 0.0596] ms, fraction ≥ 0.195 | no |
+       | C6 phase 2c | `backward_pass_ab_{hpc_ral_gpunode_cpu,hpc_a100,local_cpu}_fp64`, 24 timed lane × route rows | 15 go, 9 no-go | 15 GO, 9 NO_GO; every interval resolves | no |
+       | P2 promotion | `fixed_light_numba_..._s4b_warm_t1` (the one committed b / d_perm pair) | NO_LEVER, −0.80 % | NO_LEVER: 32 paired blocks, speedup [−1.31 %, −0.32 %], wholly < 5 % | no |
+       | C10 best | `solver_config_sweep_hpc_ral_cpu_fp64` | `e2.5_s0.4` | tie set {e2.5_s0.4, e2.5_s0.2, e3_s0.4, e3_s0.3, e4_s0.4}; any-precision adds e3_s0.5, e4_s0.5 | **yes** |
+       | C10 best | `solver_config_sweep_laptop_cpu_fp64` | `e3_s0.4` | tie set {e3_s0.4, e2.5_s0.4, e3_s0.3} | **yes** |
+       | C10 best | `solver_config_sweep_mcs_{hpc_ral_cpu,laptop_cpu}_fp64` | `mcs18` | tie set {mcs18, mcs20} | **yes** |
+       | C10 best | `solver_config_sweep_step0_hpc_ral_a100_fp64` | `step0_gather` | tie set {step0_gather, step0_structured, step0_components} | **yes** |
+       | C10 best | `solver_config_sweep_step0_hpc_ral_cpu_epyc7702_fp64` | `step0_structured` | tie set {step0_structured, step0_components} | **yes** |
+       | C10 best | `solver_config_sweep_step0_hpc_ral_cpu_fp64` | `step0_components` | tie set {step0_components, step0_structured} | **yes** |
+       | C10 best | `solver_config_sweep_mcs_hpc_ral_a100_fp64`, `solver_config_sweep_step0_laptop_cpu_fp64` | `mcs20`, `step0_components` | resolved: same | no |
+
+       No go / no-go / NO_LEVER call changed; every one resolves on its own interval. Seven of
+       nine committed "best admissible" names are tie sets. The recorded human decisions stand
+       and none rested on the C10 name: IP-4a's "extent/scale ±2.5″/0.4 = 2.37x" (not shipped,
+       per-workspace setting, human decision) is the point leader of a five-member tie set, so
+       its "best" is now INCONCLUSIVE among {e2.5_s0.4, e2.5_s0.2, e3_s0.4, e3_s0.3, e4_s0.4};
+       IP-4c chose MCS 20 for correctness headroom, not speed; IP-4b shipped `structured` as the
+       step-0 default on its ratios against the gather route (1.44× / 1.61×, which resolve), but
+       its RAL CPU step-0 sweeps cannot separate `structured` from `components` (tie sets on both
+       nodes), so the choice between those two is not a measured speed difference.
+     - **decision taken (flagged in the PR):** C10's vmap rows and uncapped counts are measured
+       for the tie set's **point leader** (labelled `point_leader`, never "best"), not every
+       member. This keeps the job's protocol and the `check_submits` wall basis unchanged;
+       measuring every tie member is the reversible alternative.
+     - **multiple comparisons:** only tie sets (the phase-3 text). No Holm / Bonferroni
+       adjustment of the per-criterion confidence is applied; C6's routes × lanes, C10's
+       configurations and C3's six targets are judged at 90 % each. A family-wise policy is a
+       follow-up.
+     - **phase 3b (not shipped here):** C1 (`matched_counterfactual`'s 3 % flags on 4 repeats), C3
+       (the six-target memo-policy GO / NO_LEVER), C4 (`breakdown_reconciles` ±5 %) and C5 (the
+       logdet lever `clears_threshold`) have no interval at all; each needs its own block-level
+       interval over a different data layout. They keep their phase 1 verdicts (UNSAFE-SILENT) and
+       are the next A/B fix, through the same `ab_rule_verdict`.
 4. **Bootstrap structure (C6, C8, C9 and the reported CIs).**
    - **Change:** resample whole rounds, paired across routes, instead of iid calls. Record the
      number of rounds as the effective n.

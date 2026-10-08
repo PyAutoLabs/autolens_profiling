@@ -2,14 +2,14 @@
 
 **Status:** open
 **Question:** Do this repo's timing tests and profiling gates treat measurement noise correctly, so that an uncertain measurement never qualifies a result silently?
-**Pre-registered rule:** PASS only when the interval clears the budget, FAIL only when it clears the other way, otherwise INCONCLUSIVE (never silent, never a measured pass); proposed in phase 1 and not yet applied to any gate
-**Verdict:** phase 1 (audit): 31 timing assertions/gates — 11 SOUND, 10 FRAGILE, 10 UNSAFE-SILENT; after fix phases 1–2 (#404, #405): 15 / 8 / 8 (T1, P1, P6, P7 SOUND-with-caveats)
+**Pre-registered rule:** PASS only when the interval clears the budget, FAIL only when it clears the other way, otherwise INCONCLUSIVE (never silent, never a measured pass); applied so far to the ABBA overhead (T1, P1), the dashboard drift (P7) and the A/B go / lever rules C6, C7, P2 plus C10's tie sets
+**Verdict:** phase 1 (audit): 31 timing assertions/gates — 11 SOUND, 10 FRAGILE, 10 UNSAFE-SILENT; after fix phases 1–2 (#404, #405): 15 / 8 / 8 (T1, P1, P6, P7 SOUND-with-caveats); after fix phase 3 (#PRNUM): 32 rows, 16 / 11 / 5 (C7, C10, P2 UNSAFE-SILENT → FRAGILE; new witness row T7)
 **Headline:** the #361 CI overhead guard returns INCONCLUSIVE for any true overhead from ~0.8 % to ~5.4 % at CI scatter (3 blocks, s.d. 0.014); GitHub runner, Actions run 36985476995 (no RAL job)
 **Library PRs:** none
-**Profiling PRs:** #361 (t-bound CI guard, merged); #402 (phase 1 audit, merged); #404 (fix phase 1, merged); #405 (fix phase 2, open)
+**Profiling PRs:** #361 (t-bound CI guard, merged); #402 (phase 1 audit, merged); #404 (fix phase 1, merged); #405 (fix phase 2, merged); #PRNUM (fix phase 3, open)
 **Ledger:** [timing_noise_audit_2026_10.md](../../results/notes/timing_noise_audit_2026_10.md)
-**Mind contract:** Pulse campaign `measurement-tools`, task `tasks/timing_noise_audit.md`; Mind `active/timing_noise_audit_phase3_qualify_drift.md`; issue #362
-**Next:** fix phase 3 of the ledger — INCONCLUSIVE states for the A/B rules (C7, C10, then C1/C3/C4/C5, P2)
+**Mind contract:** Pulse campaign `measurement-tools`, task `tasks/timing_noise_audit.md`; Mind `active/timing_noise_audit_phase4_ab_rule_semantics.md`; issue #362
+**Next:** fix phase 4 of the ledger — round-level paired bootstraps (C6, C8, C9 and the reported CIs); then phase 3b (C1 / C3 / C4 / C5 intervals)
 
 ## Why this campaign
 
@@ -27,6 +27,7 @@ inconclusive never qualifies a result.
 | 1 — inventory | 2026-10-08 | What timing assertions and gates exist, and which can qualify a result on noise? | audit only; no gate changes | 31 rows: 11 SOUND, 10 FRAGILE, 10 UNSAFE-SILENT; six ranked fix phases | none | #402 |
 | 2 — fix phase 1 (T1 + P1) | 2026-10-08 | Can the CI test and the numba cell share one interval verdict for the ABBA overhead? | PASS / FAIL only when the one-sided t bound clears the 12 ms budget, else INCONCLUSIVE | one `abba_overhead_verdict`; 6 of 17 RAL rows re-judge INCONCLUSIVE | none | #404 |
 | 3 — fix phase 2 (P6 + P7) | 2026-10-08 | Does the dashboard qualify only reference-host trend points and stop publishing in-band single samples as a null? | laptop / no-loadavg / no-host rows unqualified; in-band with a single-sample endpoint → `insufficient` | qualified records 2 → 2; `flat` 4 → 0 (→ `insufficient`); 6 `improved` keep status with a caveat | none | #405 |
+| 4 — fix phase 3 (C6, C7, C10, P2) | 2026-10-08 | Do the pre-registered A/B go / lever rules read their intervals, and does argmax refuse to name a tied winner? | GO only when the whole interval clears the bar, NO_GO / NO_LEVER only when it is wholly on the bad side, else INCONCLUSIVE (≥ 5 rounds); tie set when the leaders' intervals overlap | no go / no-go / NO_LEVER call changed (C7 4, C6 24, P2 1 rows all resolve); 7 of 9 committed solver-sweep "best" are tie sets; C1 / C3 / C4 / C5 deferred to phase 3b | none | #PRNUM |
 
 ## What shipped and where it is
 
@@ -34,12 +35,14 @@ inconclusive never qualifies a result.
 |---|---|---|---|
 | #361 | one-sided Student-t verdict for the CI overhead test | 2026-10-02 | n/a (profiling repo) |
 | #404 | one shared `abba_overhead_verdict` (ms excess, one-sided t bounds, PASS / FAIL / FAIL_GROSS / INCONCLUSIVE) for the CI test and the fixed-light numba cell; T1 and P1 now SOUND-with-caveats; the 413.301 ms row's own blocks re-judge INCONCLUSIVE | 2026-10-08 | n/a (profiling repo) |
-| #405 | dashboard qualification (`is_reference_host_class`: laptop, no-loadavg and no-host rows unqualified) and drift wording (in-band + single-sample → `insufficient`; `drifted` / `improved` keep status with a single-sample caveat, human decision 2026-10-08); P6 and P7 SOUND-with-caveats | pending | n/a (profiling repo) |
+| #405 | dashboard qualification (`is_reference_host_class`: laptop, no-loadavg and no-host rows unqualified) and drift wording (in-band + single-sample → `insufficient`; `drifted` / `improved` keep status with a single-sample caveat, human decision 2026-10-08); P6 and P7 SOUND-with-caveats | 2026-10-08 | n/a (profiling repo) |
+| #PRNUM | one shared A/B verdict `ab_verdict.ab_rule_verdict` (GO / NO_GO / INCONCLUSIVE on intervals, ≥ 5 rounds, correctness gates first) and `tie_set` for C6, C7, C10 and P2; P2 gains a paired-block interval; C7 a saved-ms bootstrap; C7, C10, P2 FRAGILE | pending | n/a (profiling repo) |
 
 ## Open / parked / drafts
 
 - Fix phases 1–6 in the [ledger](../../results/notes/timing_noise_audit_2026_10.md), each one PR
-  with a deterministic synthetic witness.
+  with a deterministic synthetic witness. Phase 3b (C1 / C3 / C4 / C5 intervals) was split off
+  fix phase 3; a family-wise (Holm / Bonferroni) policy for multi-route rules is a follow-up.
 - Mind draft `draft/bug/autolens_profiling/call_accounting_ci_timing_threshold.md` (raise the
   threshold) is superseded by fix phase 1: the audit rejects raising the budget.
 
@@ -71,3 +74,13 @@ comparison inside the 2× band publishes `flat` only when both endpoints carry a
 none does today, so the 4 laptop `flat` comparisons became `insufficient`. `drifted` / `improved`
 keep their status with a "single-sample endpoint(s)" reason (human decision 2026-10-08). Qualified
 records unchanged (2). Pulse's v1 validator passes. Next: fix phase 3 (A/B rule INCONCLUSIVE).
+
+### 2026-10-08 — fix phase 3 (C6, C7, C10, P2), phase 4 of #362
+
+One shared `ab_verdict.ab_rule_verdict` now judges the pytree phase-2b rule (C7, with a new
+saved-ms bootstrap), the backward-pass phase-2c rule (C6) and the fixed-light numba promotion (P2,
+on a paired-block t interval); `tie_set` replaces the solver sweep's argmax (C10), whose vmap rows
+follow the labelled point leader (flagged decision). Re-judging the committed rows changed no go /
+no-go / NO_LEVER call; 7 of 9 committed "best admissible" names are tie sets (IP-4a's 2.37x
+leader is one of five). C1 / C3 / C4 / C5 need new intervals and are phase 3b. Next: fix phase 4
+(round bootstrap).
