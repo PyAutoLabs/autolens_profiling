@@ -73,6 +73,44 @@ def test_corpus_round_trip(tmp_path):
         _corpus.load_corpus(["missing"], corpus_dir=tmp_path)
 
 
+def test_corpus_external_storage(tmp_path):
+    """An external group records sha256/bytes, fails loudly when absent, and is hash-checked."""
+    Q, q = _tiny_system()
+    source = {"script": "tests", "args": ["--x"], "git_sha": None}
+    entry = _corpus.add_group(
+        "ext",
+        [{"name": "a", "Q": Q, "q": q}],
+        source,
+        corpus_dir=tmp_path,
+        storage="external",
+        regenerate={"command": "python capture.py --source ext", "library_tag": "T"},
+    )
+    npz = tmp_path / "ext.npz"
+    assert entry["storage"] == "external" and entry["encoding"] == "dense"
+    assert entry["sha256"] == _corpus.sha256_of(npz) and entry["bytes"] == npz.stat().st_size
+    assert entry["copies"] and all("ext.npz" in c for c in entry["copies"])
+    assert [s.name for s in _corpus.load_corpus(corpus_dir=tmp_path)] == ["a"]
+
+    data = npz.read_bytes()
+    npz.unlink()
+    with pytest.raises(_corpus.ExternalCorpusMissing) as missing:
+        _corpus.load_corpus(corpus_dir=tmp_path)
+    message = str(missing.value)
+    assert "ext.npz" in message and entry["sha256"] in message
+    assert "python capture.py --source ext" in message and "/mnt/ral/" in message
+
+    npz.write_bytes(data + b"\0")
+    with pytest.raises(_corpus.CorpusHashMismatch):
+        _corpus.load_corpus(corpus_dir=tmp_path)
+
+    # A git group is never hash-checked on read (git tracks it); defaults are recorded.
+    git_entry = _corpus.add_group("in_git", [{"name": "b", "Q": Q, "q": q}], source, tmp_path)
+    assert git_entry["storage"] == "git"
+    assert git_entry["regenerate"] == {"command": "python tests --x"}
+    with pytest.raises(ValueError):
+        _corpus.add_group("bad", [{"name": "c", "Q": Q, "q": q}], source, tmp_path, storage="s3")
+
+
 def test_corpus_rejects_bad_names(tmp_path):
     Q, q = _tiny_system()
     with pytest.raises(ValueError):

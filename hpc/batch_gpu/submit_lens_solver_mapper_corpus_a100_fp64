@@ -1,0 +1,156 @@
+#!/bin/bash -l
+#
+# 2026 linear-solver programme, phase 5 (autolens_profiling#399): the Mapper corpus. Runs the three
+# dataset-free solver cells over the new pixelized groups on one A100, fp64, in this ONE job, one
+# group at a time (each group is its own artefact label, so nothing overwrites the phase-3/4 `all`
+# artefacts, and timing.py never pools systems of different n):
+#   accuracy.py            --groups G --device gpu --repeats 1              (default candidates)
+#   timing.py              --groups G --device gpu --batch-sizes 1 8 16 --rounds 3
+#   batched_divergence.py  --groups G --device gpu --batch-size 8 --tile-sizes 2 8
+# for G in delaunay_hst rectangular_hst slam_mixed_hst (n = 1500 / 1369 / 1540, 8 systems each).
+# The CPU rows were run on the laptop with the SAME arguments, so the rows are comparable.
+#
+# LIBRARY. The PRIVATE checkout of the five libraries at tag 2026.10.7.1 under
+# /mnt/ral/jnightin/PyAuto_wt/linear-solver-p3/ (the phase-3a/3b/4a base). The shared mirror
+# /mnt/ral/jnightin/PyAuto is NOT synced for this (euclid_dr1 depends on it); only its venv is
+# reused via activate.sh. The private checkouts are prepended to PYTHONPATH after activate.sh,
+# and the job refuses to run unless every auto* module imports from $PYAUTO_HPC_BASE.
+#
+# BACKEND. --device gpu pins JAX_PLATFORMS=cuda before jax is imported; the exports below say the
+# same, the import guard asserts jax.default_backend()=="gpu", and every summary JSON is checked
+# for device.backend == "gpu" before it is copied.
+
+# WALL-BASIS:
+#   None of these cells has been run at n ~ 1500. The closest measured job is phase 4a's
+#   batched_divergence probe (RAL job 399050, euclid-ral-gpu-2): 2:30 in total for two runs of
+#   the 50-lane n = 60 probe. Here each cell runs three times (one per group) on 8 systems of
+#   n ~ 1500, whose A100 fp64 Cholesky is far costlier per solve than n = 60 (unmeasured). The
+#   author's estimate is ~5-20 min for the whole job; --time=1:00:00 is the one-job budget the
+#   plan authorised. Honestly unmeasured, per cell:
+#   cell: lens/accuracy/corpus  device: gpu  precision: fp64
+#   source: unmeasured  probe-first: yes
+#   cell: lens/timing/corpus  device: gpu  precision: fp64
+#   source: unmeasured  probe-first: yes
+#   cell: lens/batched_divergence/corpus  device: gpu  precision: fp64
+#   source: unmeasured  probe-first: yes
+
+#SBATCH -J lens_solver_mapper_gpu
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=32gb
+#SBATCH --time=1:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+SOLVER_GROUPS="delaunay_hst rectangular_hst slam_mixed_hst"
+
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+export PYAUTO_HPC_BASE=/mnt/ral/jnightin/PyAuto_wt/linear-solver-p3
+source $AP_ROOT/activate.sh
+export PYTHONPATH=$PYAUTO_HPC_BASE/PyAutoNerves:$PYAUTO_HPC_BASE/PyAutoFit:$PYAUTO_HPC_BASE/PyAutoArray:$PYAUTO_HPC_BASE/PyAutoGalaxy:$PYAUTO_HPC_BASE/PyAutoLens:$PYTHONPATH
+
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export NPROC=${SLURM_CPUS_PER_TASK:-8}
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=1
+export NUMBA_CACHE_DIR=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}
+mkdir -p "$NUMBA_CACHE_DIR" "$MPLCONFIGDIR"
+
+RESULTS_DIR=$AP_ROOT/results/lens/solver
+# A source checkout at a release tag still stamps al.__version__ = 2026.8.17.1 (the release
+# workflow writes the real version only into the built package), so the cell's own artefact
+# name would overwrite the committed _v2026.8.17.1 rows. Write to a per-job directory under the
+# gitignored output/ and copy the pair to the tag's name; the JSON's
+# device.provenance.library_revisions carries the tag SHAs.
+TAG=2026.10.7.1
+RUN_DIR=$AP_ROOT/output/lens_solver_mapper_corpus_${SLURM_JOB_ID:-local}
+mkdir -p "$RUN_DIR" "$RESULTS_DIR"
+
+echo "=========================================="
+date
+hostname
+lscpu | grep 'Model name' || true
+nvidia-smi -L || true
+nvidia-smi --query-gpu=name,driver_version,memory.total,utilization.gpu --format=csv || true
+echo "gpus:           ${CUDA_VISIBLE_DEVICES:-unset}"
+echo "partition:      ${SLURM_JOB_PARTITION:-unset}"
+echo "cpus-per-task:  ${SLURM_CPUS_PER_TASK:-unset}"
+echo "loadavg:        $(cat /proc/loadavg)"
+echo "Cells:          lens/solver/{accuracy,timing,batched_divergence}.py --device gpu over $SOLVER_GROUPS"
+echo "XLA_FLAGS:      ${XLA_FLAGS:-unset}"
+echo "PYAUTO_HPC_BASE: $PYAUTO_HPC_BASE"
+echo "PYTHONPATH:     $PYTHONPATH"
+
+echo "=== source revisions (private base) ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s  %s\n' "$r" "$(git -C $PYAUTO_HPC_BASE/$r rev-parse HEAD 2>&1)" \
+        "$(git -C $PYAUTO_HPC_BASE/$r describe --tags 2>&1)"
+done
+echo "AP_ROOT rev:   $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+python3 -c 'import jax, jaxlib; print("jax", jax.__version__, "jaxlib", jaxlib.__version__)'
+
+cd $AP_ROOT
+
+echo "=== import provenance ==="
+python3 - <<'PYEOF' || exit 3
+import os
+import autonerves, autofit, autoarray, autogalaxy, autolens, jax, jaxlib, numpy
+base = os.environ["PYAUTO_HPC_BASE"].rstrip("/") + "/"
+for m in (autonerves, autofit, autoarray, autogalaxy, autolens):
+    print(f"{m.__name__:<11} {getattr(m, '__version__', '?'):<12} {m.__file__}")
+    if not m.__file__.startswith(base):
+        raise SystemExit(f"REFUSING: {m.__name__} from {m.__file__}, not {base}")
+print("jax", jax.__version__, "jaxlib", jaxlib.__version__, "numpy", numpy.__version__, jax.devices())
+if jax.default_backend() != "gpu":
+    raise SystemExit(f"REFUSING: JAX backend is {jax.default_backend()}, not gpu")
+PYEOF
+
+STAMP=$(python3 -c 'import autolens as al; print(al.__version__)')
+
+check_gpu() {
+    python3 - "$1" <<'PYEOF' || exit 3
+import json, sys
+d = json.load(open(sys.argv[1]))
+if d["device"].get("backend") != "gpu":
+    raise SystemExit(f"REFUSING: {sys.argv[1]} device.backend={d['device'].get('backend')}")
+print("ok gpu:", sys.argv[1].rsplit("/", 1)[-1], d["corpus"]["groups"], d["device"].get("device"))
+PYEOF
+}
+
+run_cell() {  # run_cell <cell> <group> <args...>
+    local CELL=$1 G=$2
+    shift 2
+    echo "=========================================="
+    echo "RUN $CELL.py --groups $G --device gpu $* -> ${RUN_DIR}"
+    date
+    python3 scripts/lens/solver/$CELL.py --groups $G --device gpu "$@" --output-dir "$RUN_DIR" \
+        || exit 2
+    date
+    local BASE=${CELL}_summary_${G}_gpu
+    check_gpu "$RUN_DIR/${BASE}_v${STAMP}.json"
+    for ext in json png; do
+        cp "$RUN_DIR/${BASE}_v${STAMP}.${ext}" "$RESULTS_DIR/${BASE}_v${TAG}.${ext}"
+    done
+}
+
+for G in $SOLVER_GROUPS; do
+    run_cell accuracy $G --repeats 1
+    run_cell timing $G --batch-sizes 1 8 16 --rounds 3
+    run_cell batched_divergence $G --batch-size 8 --tile-sizes 2 8
+done
+ls -l "$RESULTS_DIR"/*_gpu_v${TAG}.* | grep -E "$(echo $SOLVER_GROUPS | tr ' ' '|')"
+
+echo "=========================================="
+echo "loadavg: $(cat /proc/loadavg)"
+nvidia-smi --query-gpu=name,memory.used --format=csv || true
+echo "Finished."
+date

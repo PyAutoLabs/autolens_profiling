@@ -749,3 +749,196 @@ The decision (keep Jacobi and document it, a determinism flag, a tolerance or ca
 moving the Mapper default) is laid out with costs in the
 [research note](../../wiki/research/jacobi_a100_batched_divergence.md#decision-table-for-the-human-nothing-here-is-decided).
 The determinism flag is ruled out by this evidence.
+
+## Phase 5 (2026-10-08) — Mapper corpus
+
+**Question.** Phases 1–4a ran only on SLaM MGE systems (n = 60). On the systems pixelized
+likelihoods actually produce, is the released raw PDIP + polish (`pdip_raw`) admissible, is the
+Jacobi PDIP (`pdip_jacobi`, the library's Mapper default) stable — no divergence and no A100
+batched/unbatched sensitivity — and what does each cost? Research only; issue
+autolens_profiling#399. No library, default, pin or tolerance change. The decision table is in
+the [research note](../../wiki/research/jacobi_a100_batched_divergence.md#mapper-corpus-phase-5).
+
+**Corpus** (new groups; existing groups untouched). `capture.py --source <group>`, laptop CPU,
+libraries at tag 2026.10.7.1 (tag worktrees, `autolens.__file__` confirmed), profiling `ff1e43e`;
+every system records the tag SHAs in `source.library_revisions`. Dataset `dataset/imaging/hst`
+(mask 3.5″, light-profile over-sampling 4/2/2, pixelization over-sampling 1, adapt image = the
+truth tracer's lensed source). Each group: 4 near-truth vectors (0, 8, 16, 24 of the #571 seeded
+box around the prior medians of the group's own model) plus vectors 0 and 16 at noise map ×0.3
+and ×3 (the `slam_spread` noise variants) = 8 systems. Free Isothermal + ExternalShear.
+
+| Group | Systems | n | cond(Q) | max abs(q) | Inversion |
+|---|---|---|---|---|---|
+| `delaunay_hst` | 8 | 1500 | 6.1e5 – 2.4e7 | 1.9e3 – 1.9e5 | Mapper only: Delaunay (Hilbert image-mesh 1500, `AdaptSplit` 0.1/10/0.1, `InterpolatorDelaunay`); lens light fixed at the truth Sersic (no columns) |
+| `rectangular_hst` | 8 | 1369 | 1.3e6 – 5.4e7 | 1.7e3 – 1.8e5 | Mapper only: `RectangularBilinearAdaptImage` 39×39 + `Constant(1.0)`; 152 edge-zeroed columns removed before the solve (1521 → 1369) |
+| `slam_mixed_hst` | 8 | 1540 | 5.5e9 – 5.6e11 | 2.1e5 – 2.1e7 | Mixed, the SLaM `source_pix` configuration: lens 2×20 MGE (`sigma_min = pixel_scale/10`, 40 linear columns) + the Delaunay source (1500) |
+
+Every capture asserted that the captured solve is the positive-only one
+(`use_positive_only_solver` true), that the inversion contains a `Mapper`, that the NumPy
+inversion's `positive_only_preconditioning_used` is `"jacobi"` and the solver `"pdip"`, and that
+the JAX `stats["preconditioning"]` the library wrote is `"jacobi"` on every captured call — so
+these are the systems the Mapper (jacobi-mode) path solves. `n` and the column lists are in the
+solve space (after `solve_ids_to_keep`). The presets' own MGE-60 lens light was **not** used for
+the two Mapper-only groups; the plan's "Overlay image-mesh" is now Hilbert in the repo's preset,
+which is what was captured. The dense `Q` of one group is 105–118 MB (over GitHub's 100 MB file
+limit), so these groups store `Q` with a new lossless encoding (`sym_tri_xor` in `_corpus.py`:
+upper triangle + bitwise XOR of the lower, round trip checked bit-exact at write): 53–59 MB per
+`.npz`. The fnnls reference coped at n ~ 1500: whole-group capture walls 98–139 s including the
+8 references; one reference took 0.9 s (rectangular, mixed) to 8.8 s (Delaunay, first call,
+numba compile included); the `accuracy.py` `fnnls` row's median warm wall is 375 / 733 / 591 ms
+on the laptop and 124 / 358 / 285 ms on the RAL host CPU (Delaunay / rectangular / mixed).
+
+**Storage.** The three group `.npz` files are **not in git** (human decision 2026-10-08; the
+first PR, #400, committed them and was superseded): `.gitignore` names exactly these files and the
+manifest marks each group `storage: "external"` with its `sha256`, `bytes`, `encoding`
+(`sym_tri_xor`) and `regenerate` (`python scripts/lens/solver/capture.py --source <group>`,
+libraries at tag 2026.10.7.1, profiling `ff1e43e`). Copies, sha256-verified on 2026-10-08: RAL
+`/mnt/ral/jnightin/autolens_profiling_corpus/` and the laptop canonical checkout's
+`results/lens/solver/corpus/`. `delaunay_hst` 56329900 B `fb51e2ab…1fdd`; `rectangular_hst`
+52530977 B `fbd0f944…9648`; `slam_mixed_hst` 59110199 B `e5be3913…3ac5` (full hashes in the
+manifest and the solver README). Loading a group whose file is absent fails with the file, hash,
+copies and regenerate command; a present file is hash-checked before use.
+
+Two capture-side fixes went in first: `capture.py` still imported the #571 capture module from
+its pre-migration path (`scripts/imaging/hazards/mge_nnls_capture.py`; the smoke exit hid it),
+and putting `scripts/imaging/mge/` on `sys.path` let that directory's `likelihood_breakdown.py`
+shadow the provenance package (the first capture recorded `library_revisions: unavailable`; it
+was discarded and re-captured at `ff1e43e`).
+
+**Method.** The three existing cells, one group at a time (so each group is its own artefact
+label and `timing.py` never pools systems of different n), with the **same arguments on both
+devices**: `accuracy.py --repeats 1` (default candidates), `timing.py --batch-sizes 1 8 16
+--rounds 3` (`pdip_raw`, `pdip_jacobi`), `batched_divergence.py --batch-size 8 --tile-sizes 2 8`.
+B = 1 is the group's first system; B = 8 is all 8 distinct systems; B = 16 cycles the 8 twice
+(`tiled: true`), so its lanes are not distinct. `--repeats 1` makes `accuracy.py`'s `wall_ms` a
+single warm call: context, not a timing.
+
+**Provenance.**
+
+- **A100:** RAL job **399225** on `euclid-ral-gpu-2` (NVIDIA A100 80GB PCIe, driver 610.57.04,
+  host AMD EPYC 7702), `--partition=gpu --gres=gpu:1`, COMPLETED 0:0 in **6:20** (11:31:22 –
+  11:37:42 BST), all nine runs in the one job. Submit
+  `hpc/batch_gpu/submit_lens_solver_mapper_corpus_a100_fp64` at profiling `3273726`; libraries
+  from the private clone `/mnt/ral/jnightin/PyAuto_wt/linear-solver-p3/` at the tag SHAs above
+  (import guard green; the shared mirror was not touched). The phase-4a RAL worktree held its
+  untracked 4a artefacts, so the job ran from a new sibling worktree
+  `/mnt/ral/jnightin/autolens_profiling_wt/linear-solver-p5`. jax / jaxlib 0.10.2, numpy 2.2.6;
+  every JSON `device.backend == "gpu"`, `cuda:0` (checked in-job before each copy); `.err`
+  empty, 0 tracebacks. Shared JAX compile cache warm (`cache_fresh: false`).
+- **CPU:** the laptop (WSL2, i9-10885H, `OMP_NUM_THREADS=1`), tag worktrees; load average 5–25
+  from other sessions throughout (recorded per JSON), so CPU walls are noisy; compile cache
+  fresh.
+- **Artefact names.** Source checkouts stamp 2026.8.17.1, so both devices wrote to scratch and
+  the files were copied to `<cell>_summary_<group>[_gpu]_v2026.10.7.1.{json,png}`.
+
+**Accuracy and the phase-1 rule, EXTENDED to this corpus.** The rule was pre-registered for the
+MGE corpus; applying it here is an extension, not the pre-registration. Criterion 3 (the euclid
+system) has no system in these groups and is not applicable. Criterion 4 compares with
+`pdip_jacobi` on the systems where it converges — all 8 in every group, both devices. CPU and
+A100 give the same verdict for every candidate; numbers are CPU / A100 where they differ.
+
+| Group | Candidate | 1. converged | 2. sig ≤ 1e-3 and abs(flux_rel_source) ≤ 1e-4 | 4. KKT ≤ 10x jacobi | Admissible (extended) |
+|---|---|---|---|---|---|
+| `delaunay_hst` | `pdip_raw` | 8/8 | pass (sig 2.4e-8; flux 1.0e-13 / 5.9e-14) | pass 0/8 (worst 1.4x / 1.5x) | **yes** |
+| `delaunay_hst` | `pdip_jacobi` | 8/8 | pass (sig 6.2e-8; flux 1.1e-13 / 5.6e-14) | yardstick | yes |
+| `delaunay_hst` | `certified` | 8/8 | pass (sig 8.1e-11 / 9.3e-11) | pass 0/8 | yes |
+| `rectangular_hst` | `pdip_raw` | 8/8 | **FAIL sig 0.956** (flux 1.18e-7 passes) | pass 0/8 (worst 1.4x / 1.1x) | **no** (criterion 2) |
+| `rectangular_hst` | `pdip_jacobi` | 8/8 | **FAIL sig 1.05** (flux 1.45e-7 passes) | yardstick | no (criterion 2) |
+| `rectangular_hst` | `certified` | 8/8 | pass (sig 3.7e-4, flux 3.1e-10) | FAIL 6/8 (KKT 4.1e-11) | no (criterion 4) |
+| `slam_mixed_hst` | `pdip_raw` | 8/8 | pass (sig 6.7e-8; flux 4.7e-13 / 4.0e-13) | pass 0/8 (worst 5.3x / 2.0x) | **yes** |
+| `slam_mixed_hst` | `pdip_jacobi` | 8/8 | pass (sig 7.3e-8; flux 1.0e-13 / 1.2e-13) | yardstick | yes |
+| `slam_mixed_hst` | `certified` | **7/8** uncertified on `noise_x3_v16` | FAIL sig 30.7, flux 7.8e-3 | FAIL 1/8 | no |
+
+The other pre-registered candidates: `pdip_raw_polish` is identical to `pdip_raw` on every
+system (as since #595); the no-polish tolerance family `pdip_raw_tol_1e-1/-2/-3` converges 24/24
+but fails criterion 4 at 1e-1 / 1e-2 in every group and criterion 2 on rectangular (sig 12.7 –
+91.9) and on mixed at 1e-1 / 1e-2; `pdip_raw_tol_jaxnnls` reaches its 50 cap unconverged on
+mixed `noise_x0p3_v00` on both devices and also on `noise_x0p3_v16` on CPU only (2/8 CPU, 1/8
+A100; 4 systems' iteration counts differ between devices) — the only CPU-vs-A100 disagreement in
+the accuracy rows. Every other candidate's iterations and flags agree between devices on all 24
+systems, `flux_inactive_rel` within 7e-18 (`pdip_raw`) and 2e-17 (`pdip_jacobi`).
+
+On `rectangular_hst` the criterion-2 failure is shared bit-for-bit in kind by both PDIPs and is
+the significance floor, not flux: worst system `noise_x3_v16`, `amp_rel_max_sig` 0.956 (raw) /
+1.05 (jacobi) with `amp_rel_l2` 6.4e-7 / 6.9e-7, objective gap 7.5e-14 / 8.6e-14, source flux
+1.2e-7 / 1.3e-7, 26 columns whose activity differs from fnnls. Worst `flux_inactive_rel` is
+1.15e-7 (raw) and 1.43e-7 (jacobi) against 6.25e-9 for `fnnls`' own re-solve. This is the
+phase-1 note "criterion 2's significance floor admits flat directions" seen on a pixelized
+system; recorded, not re-based.
+
+**Jacobi stability.** `pdip_jacobi` converged on **24/24** systems on CPU and A100, unbatched
+and batched, iterations 14–20 (median 18 / 15 / 18 per group). `batched_divergence.py`
+(B = 8 distinct lanes, pdip_jacobi / pdip_raw / certified):
+
+| Group | Device | Reruns / fresh jit | B=1 vmap vs jit | batched vs unbatched x / iterations / flag (jacobi) | max ‖Δx‖/‖x‖ jacobi (raw, certified) | Sensitive lanes (‖Δx‖/‖x‖ > 1e-6 at any k) | First differing k | cho_factor / cho_solve differ |
+|---|---|---|---|---|---|---|---|---|
+| `delaunay_hst` | CPU | 0 | 0 | 8 / 0 / 0 | 1.5e-13 (1.0e-13, 0) | 0/8 | k = 1 (6), 2 (2) | 0 / 0 |
+| `delaunay_hst` | A100 | 0 | 0 | 8 / 0 / 0 | 1.1e-13 (9.7e-14, 9.7e-13) | 0/8 | k = 0 (8) | 8 / 8 |
+| `rectangular_hst` | CPU | 0 | 0 | 8 / 0 / 0 | 2.8e-14 (2.9e-14, 0) | 0/8 | k = 1 (6), 2, 3 | 0 / 0 |
+| `rectangular_hst` | A100 | 0 | 0 | 8 / 0 / 0 | 1.7e-14 (1.8e-14, 8.0e-14) | 0/8 | k = 0 (8) | 8 / 8 |
+| `slam_mixed_hst` | CPU | 0 | 0 | 8 / 0 / 0 | 4.2e-13 (1.6e-13, 0) | 0/8 | k = 1 (7), 3 (1) | 0 / 0 |
+| `slam_mixed_hst` | A100 | 0 | 0 | 8 / 0 / 0 | 2.7e-13 (2.4e-13, 2.4e-13) | 0/8 | k = 0 (8) | 8 / 8 |
+
+The A100 shows the phase-4a mechanism — batched Cholesky rounds differently from the single
+solve from `initialize` (k = 0) on every lane — but no lane amplifies it: the largest
+trajectory difference over k = 0..50 is 1.5e-12 (Delaunay), 1.9e-14 (rectangular) and 2.7e-13
+(mixed), iterations and flags are identical, and the trajectory's k = 50 consistency check
+reproduces the candidate's `x` bit for bit on 8/8 lanes everywhere. The timing guard agrees
+(batched vs unbatched iterations and flags identical for both PDIPs on both devices).
+
+**A disagreement with phase 4a, reported.** On the laptop CPU, phase 4a found batched and
+unbatched solves bit-identical at n = 60. Here, at n = 1369–1540, `pdip_jacobi` and `pdip_raw`
+batched `x` differs from unbatched on 8/8 lanes in every group, at ≤ 4.2e-13 relative, with
+identical iterations and flags; the first difference is at k = 1–3, not k = 0, and the
+primitives probe (`cho_factor`, `cho_solve`, matvec on `initialize`'s inputs) is bit-identical.
+Tiled B = 2 lanes equal the unbatched solve; tiled B = 8 lanes do not. `certified` stays
+bit-identical on CPU. Which CPU operation differs is not established (the probe's primitive set
+does not cover it).
+
+**Cost** (per-evaluation steady wall, ms, min over 3 interleaved rounds of batched-call wall / B;
+compile = first call per config, s; same batch shapes on both devices):
+
+| Group | Candidate | Median / max iters (B = 8) | A100 B=1 | A100 B=8 | A100 B=16 † | A100 compile B=1/8/16 | CPU B=1 | CPU B=8 | CPU B=16 † | CPU compile B=1/8/16 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `delaunay_hst` | `pdip_raw` | 13 / 18 ‡ | 23.7 | 30.9 | 18.8 | 0.77 / 1.07 / 0.92 | 969 | 659 | 752 | 1.9 / 5.5 / 12.9 |
+| `delaunay_hst` | `pdip_jacobi` | 18 / 19 | 29.8 | 29.4 | 17.9 | 0.37 / 0.59 / 0.65 | 1235 | 653 | 701 | 1.9 / 6.1 / 11.4 |
+| `rectangular_hst` | `pdip_raw` | 18 / 24 ‡ | 32.4 | 37.8 | 22.8 | 0.82 / 1.01 / 1.00 | 2251 | 1634 | 1709 | 5.3 / 19.8 / 43.2 |
+| `rectangular_hst` | `pdip_jacobi` | 15 / 17 | 23.7 | 23.4 | 14.1 | 0.38 / 0.61 / 0.61 | 1594 | 922 | 996 | 3.8 / 12.9 / 28.3 |
+| `slam_mixed_hst` | `pdip_raw` | 16.5 / 19 ‡ | 31.1 | 37.1 | 22.7 | 0.80 / 0.99 / 0.99 | 2240 | 1331 | 1304 | 3.9 / 12.0 / 20.3 |
+| `slam_mixed_hst` | `pdip_jacobi` | 18 / 20 | 32.5 | 32.4 | 19.8 | 0.41 / 0.69 / 0.68 | 1996 | 1123 | 1176 | 2.6 / 8.6 / 18.8 |
+
+† B = 16 cycles the 8 systems twice (not distinct lanes). ‡ Forward iterations; the polish's
+extra iterations are not counted but are in the wall. B = 1 is one system (`v00`), so B = 1 and
+B = 8 rows are not the same lanes; the like-for-like comparison is the two candidates at the
+same B. On the A100 at B = 8 (same 8 lanes) `pdip_raw` costs 1.05x (Delaunay), 1.62x
+(rectangular) and 1.15x (mixed) what `pdip_jacobi` costs; on the laptop CPU 1.01x, 1.77x and
+1.19x (noisy, loaded host). At n ~ 1500 batching buys little on the A100 (B = 8 per-eval is no
+lower than B = 1; the B = 16 tiled rows are ~0.6x), unlike n = 60 (phase 3b: 21x from B = 1 to
+B = 50); per-eval cost is 18–38 ms on the A100 against 0.19 – 0.37 ms for the n = 60 SLaM
+systems. One compile (0.4–1.1 s on the A100) costs ~15–60 steady evaluations at these sizes.
+
+**Not established.**
+
+- Systems far from the truth: all 24 vectors are near-truth (the #571 box) with two noise
+  rescalings. An early non-linear search samples much wider; whether Jacobi diverges there on
+  Mapper or mixed systems is not measured.
+- Other datasets and configurations: Euclid-like, JWST, interferometer (skipped: there is no
+  importable interferometer capture harness — `scripts/interferometer/delaunay/likelihood_runtime.py`
+  is a module-level script and the `sma` dataset is not present, so capturing it would need a
+  new loader, an auto-simulation and `AnalysisInterferometer` plumbing), other mesh sizes, the
+  presets' MGE-60 lens light, `ConstantSplit`, Delaunay NN interpolation.
+- Why the mixed systems — cond(Q) up to 5.6e11 with 40 signal-free-floor MGE columns, the
+  setting that triggered Jacobi divergence on n = 60 MGE systems — did not diverge here.
+- Which CPU operation makes the n ~ 1500 batched solve differ at rounding level.
+
+**Verdict (research; nothing decided, no pin moves).**
+
+- *Admissibility (extended rule):* `pdip_raw` is admissible on `delaunay_hst` and
+  `slam_mixed_hst` and fails criterion 2 on `rectangular_hst` (significant-column error 0.956;
+  flux passes at 1.2e-7) — exactly where `pdip_jacobi` also fails it (1.05). `certified` fails on
+  mixed (1/8 uncertified, source flux 7.8e-3) and on rectangular (criterion 4).
+- *Stability:* Jacobi converged on 24/24 systems on both devices, batched and unbatched, with no
+  A100 batched/unbatched sensitivity (0/24 sensitive lanes, ≤ 1.5e-12).
+- *Cost:* on these systems Jacobi is the cheaper PDIP (raw costs 1.05–1.62x on the A100 at
+  B = 8), the opposite of the n = 60 SLaM result where diverging lanes pinned Jacobi batches at
+  the cap.
