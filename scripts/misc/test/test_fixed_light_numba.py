@@ -676,6 +676,14 @@ def test_call_accounting_covers_a_real_likelihood_call(tiny_s3_pair, cell_ns):
     FAIL_GROSS fails the test; INCONCLUSIVE passes it with a visible
     ``OverheadInconclusiveWarning`` and is never a claim that the budget held.
 
+    What this test can and cannot resolve (human decision, 2026-10-08, #362
+    phase 2): this fixture's clean call is ~15-17 ms, so the 12 ms budget is
+    ~75 % of it and a ms-budget FAIL would need a mean ratio near 1.8 -- the
+    1.5 gross guard fires first. The test is therefore the **coverage, cached-
+    site-count and gross-breakage guard** for the harness. The 12 ms overhead
+    budget is judged where it is meaningful: on the cell's 225-415 ms
+    production rows, by the same function.
+
     The overhead is measured **counterbalanced** (A B B A per block, three
     blocks), exactly as the cell measures it. A single clean call against a
     single instrumented call is the estimator that produced 0.71 to 1.37 on the

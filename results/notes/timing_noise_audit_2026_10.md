@@ -130,6 +130,7 @@ regression passes, or a real lever is reported as NO_LEVER); owner; and the verd
 
 ### T1 — `test_call_accounting_covers_a_real_likelihood_call` (CI test)
 
+- **Role after phase 2 (human decision 2026-10-08):** coverage, cached-site-count and gross-breakage guard. On this ~15–17 ms fixture the shared 12 ms budget can only fail through the 1.5 gross guard; the ms budget is resolved on the cell's 225–415 ms production rows by the same function. Documented in the test's docstring.
 - **Measured:** ABBA ratio of instrumented to clean `FitImaging.figure_of_merit` wall time on the
   30×30, 67-parameter tiny fixture, sparse-numba S3 system.
 - **Estimator:** mean of 3 block ratios, each `mean(B1, B2) / mean(A1, A2)`. One-sided 95 %
