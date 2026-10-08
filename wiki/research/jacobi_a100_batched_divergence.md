@@ -156,3 +156,59 @@ are close to chance (0.5).
 
 **This research favours** gathering the evidence for A or D next: capture a Mapper corpus and
 measure how often its systems are sensitive. B is excluded, and C is not expected to help.
+
+## Mapper corpus (phase 5)
+
+Phase 5 (autolens_profiling#399, 2026-10-08) gathered the evidence the decision table above asked
+for: a Mapper corpus run through the same three cells on the laptop CPU and one A100 job (RAL
+job 399225, 6:20). Full provenance and tables:
+[ledger, phase 5](../../results/notes/linear_solver_accuracy_2026_09.md#phase-5-2026-10-08--mapper-corpus).
+
+**Corpus.** 24 systems captured from the JAX likelihood on `dataset/imaging/hst` at tag
+2026.10.7.1, each asserted to be the positive-only Mapper solve in `"jacobi"` mode:
+`delaunay_hst` (Delaunay, Hilbert 1500, `AdaptSplit`; n = 1500), `rectangular_hst`
+(`RectangularBilinearAdaptImage` 39×39; n = 1369 after edge zeroing) — both Mapper only, lens
+light fixed — and `slam_mixed_hst` (the SLaM `source_pix` case: lens 2×20 MGE + Delaunay;
+n = 1540, cond(Q) up to 5.6e11). 4 near-truth vectors and 2 at each of noise ×0.3 and ×3 per
+group.
+
+**What it shows** (accuracy, stability and cost are separate statements):
+
+| Group | `pdip_raw` admissible (phase-1 rule, *extended*) | `pdip_jacobi` unconverged (CPU / A100) | A100 batched-vs-unbatched sensitive lanes | A100 per-eval ms at B = 8, raw / jacobi | CPU per-eval ms at B = 8, raw / jacobi |
+|---|---|---|---|---|---|
+| `delaunay_hst` | **yes** | 0/8 / 0/8 | 0/8 (max ‖Δx‖/‖x‖ 1.5e-12) | 30.9 / 29.4 | 659 / 653 |
+| `rectangular_hst` | **no** — criterion 2: significant-column error 0.956 (source flux 1.2e-7 passes); `pdip_jacobi` fails it too (1.05) | 0/8 / 0/8 | 0/8 (1.9e-14) | 37.8 / 23.4 | 1634 / 922 |
+| `slam_mixed_hst` | **yes** | 0/8 / 0/8 | 0/8 (2.7e-13) | 37.1 / 32.4 | 1331 / 1123 |
+
+Compile is separate: 0.4–1.1 s per batch shape on the A100, 2–43 s on the laptop. On the A100
+the batched Cholesky still rounds differently from the single solve at k = 0 on every lane (the
+phase-4a mechanism), but no Mapper or mixed lane amplifies it; iterations and flags are
+identical batched and unbatched. `certified` is not a candidate for the mixed case (1/8
+uncertified, source flux 7.8e-3 off), consistent with the library routing it to Mapper-only
+inversions.
+
+One new disagreement: on the laptop CPU at n ~ 1500 the batched PDIP `x` differs from the
+unbatched one at ≤ 4.2e-13 from k = 1–3 (bit-identical at n = 60 in phase 4a); the Cholesky
+primitives at `initialize` are identical there. Iterations and flags do not change. Not
+localised.
+
+### Recommendation table, with the Mapper evidence (for the human; nothing here is decided)
+
+| Option | Mapper evidence now | Cost now measured | Verdict this evidence supports |
+|---|---|---|---|
+| A. Keep Jacobi as the Mapper GPU default and document | 24/24 Mapper and mixed systems converge on both devices; 0/24 A100-sensitive lanes; accuracy equal to raw except where both fail the same significance floor | none (no change) | **Supported for the systems measured.** Document that batched and single GPU solves agree to ~1e-12 on these systems and that the batch-dependence is confined to systems where Jacobi is unstable — none of which appeared here. |
+| B. XLA deterministic flag | — | — | Ruled out (phase 4a). |
+| C. Tolerance or cap change for Jacobi | Jacobi converges in 14–20 iterations here; nothing to fix | — | Not indicated. |
+| D. Move the Mapper default to `pdip_raw` + polish (or `certified`) | Raw is admissible on Delaunay and mixed, fails criterion 2 only where Jacobi also fails it, and is equally stable batched; `certified` fails on mixed | Raw costs 1.05x / 1.62x / 1.15x Jacobi per evaluation on the A100 at B = 8 (Delaunay / rectangular / mixed); 1.01x / 1.77x / 1.19x on CPU | **Not supported on this evidence**: it buys no stability these systems need and costs 5–62 % more per Mapper evaluation. It is the option that gives one solver for all likelihoods, at that measured price. |
+| E. One lowering for batched and single solves | Batched vs unbatched already agree to ≤ 1.5e-12 here | Engineering | Only if bit-parity becomes a requirement (and the CPU n ~ 1500 difference says it would need doing on CPU too). |
+
+**Still not established.** Wide-prior systems: every vector here is near-truth, while the early
+phase of a non-linear search samples far from it; that is where a Mapper or mixed system could
+still turn Jacobi-unstable, and it is the cheapest next capture (same runners, wider vectors).
+Other instruments and configurations (Euclid-like, JWST, interferometer — skipped, no
+importable capture harness), other mesh sizes and regularizations, and the presets' MGE-60 lens
+light. Why the mixed systems, which carry the n = 60 trigger (signal-free-floor MGE columns),
+stay Jacobi-stable at n = 1540. So the honest answer to "fast and stable for all likelihood
+functions" today is: raw+polish for MGE (shipped) and Jacobi for Mapper are each stable and the
+faster (or, on Delaunay, equal) choice on every system measured; the stability of Jacobi on Mapper systems far from the
+truth is the one open gap.

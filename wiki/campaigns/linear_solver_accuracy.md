@@ -1,15 +1,15 @@
 # Linear-solver accuracy
 
-**Status:** open (phase 4a: Jacobi batched-vs-unbatched divergence on the A100 localised; decision pending)
+**Status:** open (phase 5: Mapper corpus measured — Jacobi stable and no slower than raw on 24/24 near-truth pixelized/mixed systems; decision pending)
 **Question:** On the positive-only systems real models produce, does each solver return the fnnls reference amplitudes, does its convergence flag tell the truth, and what does each digit of accuracy cost in iterations?
 **Pre-registered rule:** a candidate is admissible only if it reports converged on 100 % of the 81 systems, has significant-column error ≤ 1e-3 and source-flux error ≤ 1e-4 everywhere (≤ 1e-4 on the euclid system), and has a KKT residual within 10x `pdip_jacobi`'s; lowest median iterations wins ([ledger, pre-registered rule](../../results/notes/linear_solver_accuracy_2026_09.md#pre-registered-decision-rule); committed at `327f571` before the deciding run).
 **Verdict:** phase 1: no drop-in candidate; phase 2 needs a solution-based stop. No candidate is admissible. The released raw stop is blind to the flux on reference-inactive columns. Phase 2: PyAutoArray#595 shipped the forward polish (the phase-1 `pdip_raw_polish`, bit-for-bit on 81/81): `flux_inactive_rel` 0.115 -> 3.31e-4, euclid latent +5.76e-2 -> +7.47e-5 (test green); still not admissible under the rule as written (criteria 2–4, for the recorded rule weaknesses). Phase 3a: on the A100 the released `pdip_raw` (tag 2026.10.7.1) reproduces its CPU row on 81/81 systems (identical iterations, per-system abs(Δ `flux_inactive_rel`) ≤ 5.4e-14); same rule outcome on both devices. Phase 3b (timing, not admissibility): batched `jit(vmap)` on the A100 the released `pdip_raw` costs 0.190 ms per evaluation at B = 50 on distinct SLaM systems (laptop CPU 0.682 ms; A100 B = 1 3.95 ms), its lanes stop within one iteration of each other and the batched path reproduces the unbatched solve on every lane; `pdip_jacobi` costs 1.9x because one diverging lane pins the batch at the 50 cap. No pin moves. Phase 4a (research): the A100 batched-vs-unbatched Jacobi difference is deterministic, batch-shape-dependent Cholesky rounding (B ≥ 2 vs single, ~1e-15 at PDIP iteration 0), amplified to order one within 2 iterations on exactly the systems where Jacobi diverges somewhere; the XLA deterministic-ops flag changes nothing; no default changed ([research note](../research/jacobi_a100_batched_divergence.md)).
 **Headline:** the released raw PDIP solve reports converged on 81/81 systems, yet on the euclid system it leaves 11.5 % of the reference's total amplitude on columns the reference holds at zero (`total_source_flux` +5.76 %); laptop WSL CPU, no RAL job.
 **Library PRs:** PyAutoArray#595 (merged 2026-09-30, merge `7a89e19a0`; released in 2026.10.2.1).
-**Profiling PRs:** #354 (phase 1); phase 2 record; phase 3a #394; phase 3b #396; phase 4a #397 (PR pending).
+**Profiling PRs:** #354 (phase 1); phase 2 record; phase 3a #394; phase 3b #396; phase 4a #397 (PR pending). Phase 5 #399 (PR pending).
 **Ledger:** [linear_solver_accuracy_2026_09.md](../../results/notes/linear_solver_accuracy_2026_09.md)
 **Mind contract:** epic `linear-solver-programme`; `active/raw_forward_pdip_nnls_early_stopping.md`
-**Next:** human decision on the Mapper default from the [phase-4a decision table](../research/jacobi_a100_batched_divergence.md#decision-table-for-the-human-nothing-here-is-decided) — the evidence it needs first is a Mapper (pixelized) corpus measuring how often Mapper systems fall in the rounding-sensitive group; re-run `timing.py` (CPU and A100) on each release beside `accuracy.py`; a solution-based stop (option 1) remains unbuilt; re-base the rule (latent-based criterion 3, absolute KKT floor) before its next use.
+**Next:** human decision on the Mapper default from the [phase-5 recommendation table](../research/jacobi_a100_batched_divergence.md#recommendation-table-with-the-mapper-evidence-for-the-human-nothing-here-is-decided) — the evidence supports A (keep Jacobi, document) on near-truth systems; the open gap is wide-prior Mapper/mixed systems (a wider-vector capture with the phase-5 runners)
 
 ## Why this campaign
 
@@ -48,6 +48,7 @@ Prior art: the [NNLS solver ledger](../../results/notes/nnls_solver_ledger.md), 
 | 2 PyAutoArray fix | 2026-09-30 | Fix the raw forward PDIP's amplitude bias | phase-1 rule re-applied, not re-based | forward polish shipped: `flux_inactive_rel` ≤ 3.31e-4, euclid latent +7.47e-5, 0/81 unconverged; rule still FAILs 2–4 ([ledger](../../results/notes/linear_solver_accuracy_2026_09.md#phase-2-2026-09-30--library-fix-shipped-pyautoarray595)) | none (laptop) | PyAutoArray#595 |
 | 3 GPU / vmap / A100 | 3a 2026-10-07; 3b 2026-10-08 | 3a: does the released solver on the A100 reproduce the stored fnnls references (parity)? 3b: the same cells under `jit(vmap)` (timing) | 3a: the phase-1 rule and the standing no-drift rule, applied per device | 3a: parity holds for `pdip_raw` at 2026.10.7.1 (0/81 unconverged, worst `flux_inactive_rel` 3.31e-4 on both devices, iterations identical 81/81); `pdip_jacobi` diverges on a different system set (29/81 CPU, 19/81 A100) and `pdip_raw_tol_jaxnnls` flips its flag on euclid ([ledger](../../results/notes/linear_solver_accuracy_2026_09.md#phase-3a-2026-10-07--a100-parity-of-the-corpus-on-the-released-20261071)). 3b (timing, not admissibility): `pdip_raw` per-eval 0.190 ms A100 / 0.682 ms CPU at B = 50 SLaM, batch max 19 vs median 17.5 iterations, batched = unbatched on every lane; `pdip_jacobi` 0.369 ms A100, batch pinned at the 50 cap, batched A100 trajectories differ from unbatched on 19/50 lanes ([ledger](../../results/notes/linear_solver_accuracy_2026_09.md#phase-3b-2026-10-08--gpuvmap-timing-of-the-solver-corpus)) | 3a: RAL 397475 (euclid-ral-gpu-1, 1:04) + laptop CPU; 3b: RAL 398249 (euclid-ral-gpu-2, 0:38) + laptop CPU | #393/#394; #395 |
 | 4a Jacobi batched divergence (research) | 2026-10-08 | Why does `pdip_jacobi` under `jit(vmap)` differ from the unbatched solve on the A100 only? | none (research; no rule) | deterministic (fresh-jit reruns and `--xla_gpu_deterministic_ops` bit-identical); B = 1 vmap = jit; tiled lanes identical to each other but not to unbatched; the batched `cho_factor` / `cho_solve` differ from unbatched on 50/50 lanes (matvec identical), so the PDIP state differs at k = 0 by ~1e-15; 24/50 lanes (every lane Jacobi diverges on, on any device, + 4) amplify that to order one within 2 iterations, 26 stay ≤ 8.2e-13; cond(Q) does not separate them; `pdip_raw` / `certified` stay ≤ 1.3e-13 / 3.4e-12 ([research note](../research/jacobi_a100_batched_divergence.md), [ledger](../../results/notes/linear_solver_accuracy_2026_09.md#phase-4a-2026-10-08--jacobi-batched-vs-unbatched-on-the-a100)) | RAL 399050 (euclid-ral-gpu-2, 2:30) + laptop CPU | #397 |
+| 5 Mapper corpus (research) | 2026-10-08 | On pixelized (Delaunay, rectangular) and mixed (2×20 MGE + Delaunay) systems, is `pdip_raw` admissible, is `pdip_jacobi` stable on the A100 batched and unbatched, and what does each cost? | the phase-1 rule, explicitly *extended* to this corpus | `pdip_raw` admissible on Delaunay and mixed, fails criterion 2 (sig 0.956) on rectangular where Jacobi also fails it (1.05); Jacobi 0/24 unconverged and 0/24 A100-sensitive lanes; raw costs 1.05–1.62x Jacobi per A100 evaluation at B = 8 ([ledger](../../results/notes/linear_solver_accuracy_2026_09.md#phase-5-2026-10-08--mapper-corpus)) | RAL 399225 | #399 |
 | standing | every release | Re-run `accuracy.py` (and `early_stopping.py`) over the whole corpus | no drift in the tables without a solver change | — | — | — |
 
 ## What shipped and where it is
@@ -173,3 +174,22 @@ that to order one within 2 iterations; the other 26 stay ≤ 8.2e-13 for 50 iter
 (9.64e10–9.75e10 here) does not separate them. Research only; no default, pin or tolerance moved.
 [Research note and decision table](../research/jacobi_a100_batched_divergence.md);
 [ledger, phase 4a](../../results/notes/linear_solver_accuracy_2026_09.md#phase-4a-2026-10-08--jacobi-batched-vs-unbatched-on-the-a100).
+
+### 2026-10-08 — phase 5: the Mapper corpus
+
+Three new `capture.py` runners added 24 systems captured at tag 2026.10.7.1 and asserted to be
+the positive-only Mapper solve in `"jacobi"` mode: `delaunay_hst` (n = 1500), `rectangular_hst`
+(n = 1369) and `slam_mixed_hst` (lens 2×20 MGE + Delaunay, n = 1540, cond(Q) up to 5.6e11),
+stored with a new lossless symmetric `Q` encoding (dense groups would exceed GitHub's 100 MB
+limit). `accuracy.py`, `timing.py` (B = 1 / 8 / 16) and `batched_divergence.py` ran per group on
+the laptop and in one A100 job (RAL 399225, `euclid-ral-gpu-2`, 6:20, private 2026.10.7.1 clone,
+new sibling RAL worktree `linear-solver-p5`). Under the phase-1 rule extended to this corpus,
+`pdip_raw` is admissible on Delaunay and mixed and fails criterion 2 on rectangular (significant
+columns 0.956, source flux 1.2e-7), where `pdip_jacobi` fails it too (1.05). Jacobi converged on
+24/24 on both devices; the A100 batched Cholesky still rounds differently at k = 0, but no lane
+amplifies it (≤ 1.5e-12; iterations and flags identical). Raw costs 1.05x / 1.62x / 1.15x Jacobi
+per A100 evaluation at B = 8 (18–38 ms per evaluation at these sizes; compile 0.4–1.1 s). New
+disagreement: CPU batched vs unbatched now differs at ≤ 4.2e-13 at n ~ 1500 (bit-identical at
+n = 60). Research only; nothing moved.
+[Research note, Mapper section](../research/jacobi_a100_batched_divergence.md#mapper-corpus-phase-5);
+[ledger, phase 5](../../results/notes/linear_solver_accuracy_2026_09.md#phase-5-2026-10-08--mapper-corpus).
