@@ -170,7 +170,8 @@ job 399225, 6:20). Full provenance and tables:
 (`RectangularBilinearAdaptImage` 39×39; n = 1369 after edge zeroing) — both Mapper only, lens
 light fixed — and `slam_mixed_hst` (the SLaM `source_pix` case: lens 2×20 MGE + Delaunay;
 n = 1540, cond(Q) up to 5.6e11). 4 near-truth vectors and 2 at each of noise ×0.3 and ×3 per
-group.
+group. The group files are stored outside git (sha256 in the corpus manifest; copies on RAL
+`/mnt/ral/jnightin/autolens_profiling_corpus/` and the laptop canonical checkout).
 
 **What it shows** (accuracy, stability and cost are separate statements):
 

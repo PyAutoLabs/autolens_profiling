@@ -181,7 +181,10 @@ Three new `capture.py` runners added 24 systems captured at tag 2026.10.7.1 and 
 the positive-only Mapper solve in `"jacobi"` mode: `delaunay_hst` (n = 1500), `rectangular_hst`
 (n = 1369) and `slam_mixed_hst` (lens 2×20 MGE + Delaunay, n = 1540, cond(Q) up to 5.6e11),
 stored with a new lossless symmetric `Q` encoding (dense groups would exceed GitHub's 100 MB
-limit). `accuracy.py`, `timing.py` (B = 1 / 8 / 16) and `batched_divergence.py` ran per group on
+limit). Even encoded they are 53–59 MB, so they stay **out of git** (human decision 2026-10-08):
+manifest `storage: "external"` with sha256 and the regenerate command, copies on RAL
+`/mnt/ral/jnightin/autolens_profiling_corpus/` and the laptop canonical checkout (hashes in the
+[solver README](../../scripts/lens/solver/README.md#corpus)). `accuracy.py`, `timing.py` (B = 1 / 8 / 16) and `batched_divergence.py` ran per group on
 the laptop and in one A100 job (RAL 399225, `euclid-ral-gpu-2`, 6:20, private 2026.10.7.1 clone,
 new sibling RAL worktree `linear-solver-p5`). Under the phase-1 rule extended to this corpus,
 `pdip_raw` is admissible on Delaunay and mixed and fails criterion 2 on rectangular (significant

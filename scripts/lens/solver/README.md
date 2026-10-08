@@ -43,6 +43,26 @@ multi-group run is labelled `all`, which would overwrite the phase-3/4 `all` art
 
 ## Corpus
 
+**Storage.** Each manifest group records `storage`, `encoding`, `sha256`, `bytes` and
+`regenerate`. The four small groups are `storage: "git"` (committed). The three Mapper groups
+are `storage: "external"` — even `sym_tri_xor`-encoded (lossless; round trip verified bit-exact
+at write) they are 53–59 MB each, so they are **not in git** (#399, human decision 2026-10-08):
+`.gitignore` lists exactly these three files, and the copies live on RAL at
+`/mnt/ral/jnightin/autolens_profiling_corpus/` and on the laptop in the canonical checkout's
+`results/lens/solver/corpus/`. Copy the file into `results/lens/solver/corpus/` to use a group;
+`load_corpus()` / `iter_systems()` check it against the manifest sha256 and, when it is absent,
+raise `ExternalCorpusMissing` naming the file, its hash, the copies and the regenerate command
+(so a run without `--groups` needs all three present). Regenerating — `python
+scripts/lens/solver/capture.py --source <group>` with PyAutoNerves / Fit / Array / Galaxy / Lens
+at tag 2026.10.7.1 and this repo at `ff1e43e` — reproduces the systems but not necessarily the
+stored bytes (zip timestamps), so a regenerated file gets a fresh manifest hash.
+
+| Group | Storage | Bytes | sha256 |
+|-------|---------|-------|--------|
+| `delaunay_hst` | external | 56329900 | `fb51e2ab8e4c11dd59de2da997b3cb2f44db7ee88ed1b18b64abe681fc9c1fdd` |
+| `rectangular_hst` | external | 52530977 | `fbd0f9440b6ca74ec9fbb4e572e9afc5aec956f0bff3ba81af2920611dddfb1b` |
+| `slam_mixed_hst` | external | 59110199 | `e5be3913f6f1e8340bb954f27069dc8f9fed67495833db76c083a3a2f9664b93` |
+
 <!-- BEGIN auto-table:solver-corpus -->
 | Group | Systems | n | cond(Q) | max abs(q) | Source columns | Captured by | Model |
 |-------|---------|---|---------|------------|----------------|-------------|-------|
@@ -360,7 +380,9 @@ _System `euclid_vis_lp/euclid_vis_lp_k0`; eager NumPy `total_source_flux` 3.3198
    and whatever of `model`, `source_column_index_list`, `no_regularization_index_list`,
    `library_versions` you actually know — unknown fields stay `null`, never a guess) and
    `source = {"script", "args", "git_sha"}`. The fnnls reference is computed and stored for you.
-3. New captures go in a **new group**; never rewrite an existing group's systems.
+3. New captures go in a **new group**; never rewrite an existing group's systems. A group whose
+   `.npz` would be more than a few MB goes in with `storage="external"`: list the file by name
+   in `.gitignore`, copy it to the RAL corpus directory, and keep the manifest's sha256.
 4. Re-run both cells and `python scripts/misc/tooling/build_readme.py`.
 
 ## How to add a candidate

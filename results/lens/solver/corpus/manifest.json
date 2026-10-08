@@ -4,6 +4,15 @@
   {
    "name": "slam_fixture_571",
    "npz": "slam_fixture_571.npz",
+   "encoding": "dense",
+   "storage": "git",
+   "sha256": "9b85d4308c4fcbb886ac1f98d9b62d275069b0c383863c4d7c78fc85fe9db89b",
+   "bytes": 160459,
+   "regenerate": {
+    "command": "python scripts/lens/solver/_corpus.py",
+    "input": "results/hazards/component/mge/nnls_capture_slam_hst_v2026.8.17.1.npz",
+    "note": "verbatim copy of the PyAutoArray#571 capture fixture"
+   },
    "source": {
     "script": "scripts/imaging/hazards/mge_nnls_capture.py",
     "args": [],
@@ -1031,6 +1040,15 @@
   {
    "name": "slam48_hst",
    "npz": "slam48_hst.npz",
+   "encoding": "dense",
+   "storage": "git",
+   "sha256": "06ec26b7c784072cfa9a3cdf835674b795b4c47856a31f7efcaa91ba35f83ac5",
+   "bytes": 960811,
+   "regenerate": {
+    "command": "python scripts/lens/solver/capture.py --source slam48",
+    "autolens_profiling": "373da5b6117c4c2a09efb7da4a1a4d3926c38f7e",
+    "libraries": "the revisions in source.library_revisions"
+   },
    "source": {
     "script": "scripts/lens/solver/capture.py",
     "args": [
@@ -8387,6 +8405,15 @@
   {
    "name": "slam_spread_hst",
    "npz": "slam_spread_hst.npz",
+   "encoding": "dense",
+   "storage": "git",
+   "sha256": "5d3c51842c80ea37f28d987d2830d41e8de2d8d2bae2a2ba8584ddb223b7296c",
+   "bytes": 480673,
+   "regenerate": {
+    "command": "python scripts/lens/solver/capture.py --source slam_spread",
+    "autolens_profiling": "373da5b6117c4c2a09efb7da4a1a4d3926c38f7e",
+    "libraries": "the revisions in source.library_revisions"
+   },
    "source": {
     "script": "scripts/lens/solver/capture.py",
     "args": [
@@ -13969,6 +13996,15 @@
   {
    "name": "euclid_vis_lp",
    "npz": "euclid_vis_lp.npz",
+   "encoding": "dense",
+   "storage": "git",
+   "sha256": "4921ab21712cdb902c2457a09856c4480877bf4ec06c55def6b41cda73399648",
+   "bytes": 17881,
+   "regenerate": {
+    "command": "python scripts/lens/solver/capture.py --source euclid_vis_lp",
+    "autolens_profiling": "373da5b6117c4c2a09efb7da4a1a4d3926c38f7e",
+    "libraries": "the revisions in source.library_revisions"
+   },
    "source": {
     "script": "scripts/lens/solver/capture.py",
     "args": [
@@ -14335,6 +14371,20 @@
   {
    "name": "delaunay_hst",
    "npz": "delaunay_hst.npz",
+   "encoding": "sym_tri_xor",
+   "storage": "external",
+   "sha256": "fb51e2ab8e4c11dd59de2da997b3cb2f44db7ee88ed1b18b64abe681fc9c1fdd",
+   "bytes": 56329900,
+   "regenerate": {
+    "command": "python scripts/lens/solver/capture.py --source delaunay_hst",
+    "autolens_profiling": "ff1e43ef1ddffe8231de54fc5df06f72d37fc00c",
+    "library_tag": "2026.10.7.1",
+    "libraries": "PyAutoNerves, PyAutoFit, PyAutoArray, PyAutoGalaxy, PyAutoLens at tag 2026.10.7.1 (SHAs in source.library_revisions)"
+   },
+   "copies": [
+    "RAL: /mnt/ral/jnightin/autolens_profiling_corpus/delaunay_hst.npz",
+    "laptop: the canonical autolens_profiling checkout's results/lens/solver/corpus/delaunay_hst.npz (gitignored)"
+   ],
    "source": {
     "script": "scripts/lens/solver/capture.py",
     "args": [
@@ -68357,12 +68407,25 @@
      "log_likelihood_jax": 20843.59220221737,
      "solve_space_n_removed_edge_columns": 0
     }
-   ],
-   "encoding": "sym_tri_xor"
+   ]
   },
   {
    "name": "rectangular_hst",
    "npz": "rectangular_hst.npz",
+   "encoding": "sym_tri_xor",
+   "storage": "external",
+   "sha256": "fbd0f9440b6ca74ec9fbb4e572e9afc5aec956f0bff3ba81af2920611dddfb1b",
+   "bytes": 52530977,
+   "regenerate": {
+    "command": "python scripts/lens/solver/capture.py --source rectangular_hst",
+    "autolens_profiling": "ff1e43ef1ddffe8231de54fc5df06f72d37fc00c",
+    "library_tag": "2026.10.7.1",
+    "libraries": "PyAutoNerves, PyAutoFit, PyAutoArray, PyAutoGalaxy, PyAutoLens at tag 2026.10.7.1 (SHAs in source.library_revisions)"
+   },
+   "copies": [
+    "RAL: /mnt/ral/jnightin/autolens_profiling_corpus/rectangular_hst.npz",
+    "laptop: the canonical autolens_profiling checkout's results/lens/solver/corpus/rectangular_hst.npz (gitignored)"
+   ],
    "source": {
     "script": "scripts/lens/solver/capture.py",
     "args": [
@@ -117764,12 +117827,25 @@
      "log_likelihood_jax": 20930.30494081066,
      "solve_space_n_removed_edge_columns": 152
     }
-   ],
-   "encoding": "sym_tri_xor"
+   ]
   },
   {
    "name": "slam_mixed_hst",
    "npz": "slam_mixed_hst.npz",
+   "encoding": "sym_tri_xor",
+   "storage": "external",
+   "sha256": "e5be3913f6f1e8340bb954f27069dc8f9fed67495833db76c083a3a2f9664b93",
+   "bytes": 59110199,
+   "regenerate": {
+    "command": "python scripts/lens/solver/capture.py --source slam_mixed_hst",
+    "autolens_profiling": "ff1e43ef1ddffe8231de54fc5df06f72d37fc00c",
+    "library_tag": "2026.10.7.1",
+    "libraries": "PyAutoNerves, PyAutoFit, PyAutoArray, PyAutoGalaxy, PyAutoLens at tag 2026.10.7.1 (SHAs in source.library_revisions)"
+   },
+   "copies": [
+    "RAL: /mnt/ral/jnightin/autolens_profiling_corpus/slam_mixed_hst.npz",
+    "laptop: the canonical autolens_profiling checkout's results/lens/solver/corpus/slam_mixed_hst.npz (gitignored)"
+   ],
    "source": {
     "script": "scripts/lens/solver/capture.py",
     "args": [
@@ -173443,8 +173519,7 @@
      "log_likelihood_jax": 20869.602856301975,
      "solve_space_n_removed_edge_columns": 0
     }
-   ],
-   "encoding": "sym_tri_xor"
+   ]
   }
  ]
 }

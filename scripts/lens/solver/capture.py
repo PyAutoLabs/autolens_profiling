@@ -867,7 +867,21 @@ def main() -> int:
     # n ~ 1500 Mapper systems: dense Q would put one 8-system group past GitHub's 100 MB file
     # limit, so they are stored with the lossless symmetric encoding (_corpus module docstring).
     encoding = "sym_tri_xor" if args.source in MAPPER_SOURCES else "dense"
-    entry = _corpus.add_group(group, systems, source, encoding=encoding)
+    # Even encoded they are 53-59 MB, so they stay out of git (#399, human decision 2026-10-08):
+    # gitignored by name, sha256 + regenerate recorded in the manifest (_corpus "Storage").
+    storage = "external" if args.source in MAPPER_SOURCES else "git"
+    regenerate = {
+        "command": " ".join(["python", "scripts/lens/solver/capture.py", *source["args"]]),
+        "libraries": "the revisions in source.library_revisions",
+    }
+    entry = _corpus.add_group(
+        group, systems, source, encoding=encoding, storage=storage, regenerate=regenerate
+    )
+    if storage == "external":
+        print(
+            f"group {group!r} is external storage: keep {entry['npz']} out of git (.gitignore "
+            f"lists the phase-5 groups by name) and copy it to {_corpus.EXTERNAL_COPIES[0]}"
+        )
     for s in entry["systems"]:
         print(f"{group}/{s['name']}: n={s['n']} cond={s['cond_Q']:.3e} max|q|={s['max_abs_q']:.3e}")
     size = (_corpus.CORPUS_DIR / entry["npz"]).stat().st_size

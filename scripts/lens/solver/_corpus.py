@@ -28,12 +28,27 @@ Layout (``results/lens/solver/corpus/``)
     of the dense solve exactly as ``reconstruction_positive_only_from`` does without the memo),
     computed once when the group is added and stored, so a study never re-derives its truth.
 
+Storage (``"storage"`` on each group)
+-------------------------------------
+
+``"git"`` groups (the small ones) are committed beside the manifest. ``"external"`` groups — the
+n ~ 1500 Mapper groups ``delaunay_hst``, ``rectangular_hst``, ``slam_mixed_hst``, 53–59 MB each —
+are **not** in git (autolens_profiling#399, human decision 2026-10-08): their ``.npz`` is
+gitignored by name and kept as copies at :data:`EXTERNAL_COPIES`. Every group's manifest entry
+records ``sha256`` and ``bytes`` of its ``.npz``, its ``encoding`` and ``regenerate`` (the exact
+capture command plus the library tag / profiling revision it ran at). Reading an external group
+whose file is absent raises :class:`ExternalCorpusMissing` naming the file, its sha256, where the
+copies live and the regenerate command; a present external file is checked against its sha256
+before use. A regenerated file reproduces the systems, not necessarily the stored bytes (the
+``.npz`` zip members carry write timestamps), so a fresh capture records its own sha256.
+
 API: :func:`load_corpus`, :func:`iter_systems`, :func:`add_group`, and the first ingest
 :func:`import_571_fixture` (``python scripts/lens/solver/_corpus.py`` runs it).
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import subprocess
 from collections.abc import Iterator
@@ -54,6 +69,30 @@ REPO_ROOT = _profiling_root()
 CORPUS_DIR = REPO_ROOT / "results" / "lens" / "solver" / "corpus"
 MANIFEST_NAME = "manifest.json"
 SCHEMA = 1
+
+STORAGES = ("git", "external")
+# Where the external groups' .npz copies live (also written into each external group's manifest
+# entry as ``copies``). A copy is placed into CORPUS_DIR of the checkout that needs it.
+EXTERNAL_COPIES = (
+    "RAL: /mnt/ral/jnightin/autolens_profiling_corpus/<npz>",
+    "laptop: the canonical autolens_profiling checkout's results/lens/solver/corpus/<npz> (gitignored)",
+)
+
+
+class ExternalCorpusMissing(FileNotFoundError):
+    """An ``"external"`` corpus group's ``.npz`` is not present in the corpus directory."""
+
+
+class CorpusHashMismatch(ValueError):
+    """An external corpus group's ``.npz`` does not match the sha256 in the manifest."""
+
+
+def sha256_of(path: Path) -> str:
+    digest = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 @dataclass
@@ -101,7 +140,7 @@ def iter_systems(groups=None, corpus_dir: Path = CORPUS_DIR) -> Iterator[System]
         if groups is not None and group["name"] not in groups:
             continue
         encoding = group.get("encoding", "dense")
-        with np.load(corpus_dir / group["npz"]) as arrays:
+        with np.load(_group_npz_path(group, corpus_dir)) as arrays:
             for meta in group["systems"]:
                 name = meta["name"]
                 yield System(
@@ -112,6 +151,40 @@ def iter_systems(groups=None, corpus_dir: Path = CORPUS_DIR) -> Iterator[System]
                     x_ref=np.asarray(arrays[f"x_ref_{name}"], dtype=np.float64),
                     meta=dict(meta),
                 )
+
+
+def _regenerate_text(group: dict) -> str:
+    regen = group.get("regenerate")
+    if isinstance(regen, dict):
+        extras = ", ".join(f"{k} {v}" for k, v in regen.items() if k != "command")
+        return f"{regen.get('command')}" + (f"  ({extras})" if extras else "")
+    return str(regen) if regen else "unknown"
+
+
+def _group_npz_path(group: dict, corpus_dir: Path) -> Path:
+    """The group's ``.npz`` path; for an external group, checked present and sha256-verified."""
+    path = Path(corpus_dir) / group["npz"]
+    if group.get("storage", "git") != "external":
+        return path
+    if not path.is_file():
+        copies = group.get("copies") or [c.replace("<npz>", group["npz"]) for c in EXTERNAL_COPIES]
+        raise ExternalCorpusMissing(
+            f"corpus group {group['name']!r} is stored outside git and its file is missing: "
+            f"{path}\n  sha256 {group.get('sha256')}  ({group.get('bytes')} bytes)\n"
+            f"  copy it into {Path(corpus_dir)}/ from one of:\n    "
+            + "\n    ".join(copies)
+            + f"\n  or regenerate it: {_regenerate_text(group)}"
+        )
+    expected = group.get("sha256")
+    if expected:
+        actual = sha256_of(path)
+        if actual != expected:
+            raise CorpusHashMismatch(
+                f"corpus group {group['name']!r}: {path} has sha256 {actual}, the manifest "
+                f"records {expected}; fetch the recorded copy (see EXTERNAL_COPIES) or, after a "
+                f"deliberate re-capture, let add_group rewrite the manifest entry."
+            )
+    return path
 
 
 def load_corpus(groups=None, corpus_dir: Path = CORPUS_DIR) -> list[System]:
@@ -221,6 +294,8 @@ def add_group(
     source: dict,
     corpus_dir: Path = CORPUS_DIR,
     encoding: str = "dense",
+    storage: str = "git",
+    regenerate: dict | None = None,
 ) -> dict:
     """Add (or replace) corpus group ``name`` and return its manifest entry.
 
@@ -231,11 +306,15 @@ def add_group(
     ``source`` is ``{"script", "args", "git_sha"}`` (plus extras) and is copied onto every
     system. System names must be unique within the group and match ``[A-Za-z0-9_]+``.
     ``encoding`` is how ``Q`` is stored (``"dense"``, or the lossless ``"sym_tri_xor"`` for large
-    systems — see the module docstring); it is recorded on the group only when not dense, so the
-    existing groups' manifest entries are unchanged.
+    systems — see the module docstring). ``storage`` is ``"git"`` (the ``.npz`` is committed) or
+    ``"external"`` (gitignored, kept at :data:`EXTERNAL_COPIES`); ``regenerate`` is
+    ``{"command", ...}`` (default: ``python <source.script> <source.args>``). The group entry
+    records ``encoding``, ``storage``, ``sha256``, ``bytes`` and ``regenerate``.
     """
     if encoding not in ENCODINGS:
         raise ValueError(f"unknown Q encoding {encoding!r}; known: {ENCODINGS}")
+    if storage not in STORAGES:
+        raise ValueError(f"unknown corpus storage {storage!r}; known: {STORAGES}")
     corpus_dir = Path(corpus_dir)
     corpus_dir.mkdir(parents=True, exist_ok=True)
     names = [s["name"] for s in systems]
@@ -251,11 +330,27 @@ def add_group(
         entries.append(entry)
         arrays.update(arr)
     npz_name = f"{name}.npz"
-    np.savez_compressed(corpus_dir / npz_name, **arrays)
+    npz_path = corpus_dir / npz_name
+    np.savez_compressed(npz_path, **arrays)
 
-    group = {"name": name, "npz": npz_name, "source": dict(source), "systems": entries}
-    if encoding != "dense":
-        group["encoding"] = encoding
+    if regenerate is None:
+        regenerate = {
+            "command": " ".join(
+                ["python", str(source.get("script") or "?"), *map(str, source.get("args") or [])]
+            )
+        }
+    group = {
+        "name": name,
+        "npz": npz_name,
+        "encoding": encoding,
+        "storage": storage,
+        "sha256": sha256_of(npz_path),
+        "bytes": npz_path.stat().st_size,
+        "regenerate": dict(regenerate),
+    }
+    if storage == "external":
+        group["copies"] = [c.replace("<npz>", npz_name) for c in EXTERNAL_COPIES]
+    group.update({"source": dict(source), "systems": entries})
     manifest = read_manifest(corpus_dir)
     manifest["schema"] = SCHEMA
     manifest["groups"] = [g for g in manifest["groups"] if g["name"] != name] + [group]
@@ -357,7 +452,14 @@ def import_571_fixture(corpus_dir: Path = CORPUS_DIR, npz_path: Path = FIXTURE_5
                 "capture_objective_fnnls": entry.get("objective_fnnls"),
             }
         )
-    return add_group(FIXTURE_571_GROUP, systems, source, corpus_dir=corpus_dir)
+    regenerate = {
+        "command": "python scripts/lens/solver/_corpus.py",
+        "input": source["fixture"],
+        "note": "verbatim copy of the PyAutoArray#571 capture fixture",
+    }
+    return add_group(
+        FIXTURE_571_GROUP, systems, source, corpus_dir=corpus_dir, regenerate=regenerate
+    )
 
 
 if __name__ == "__main__":

@@ -788,6 +788,17 @@ upper triangle + bitwise XOR of the lower, round trip checked bit-exact at write
 numba compile included); the `accuracy.py` `fnnls` row's median warm wall is 375 / 733 / 591 ms
 on the laptop and 124 / 358 / 285 ms on the RAL host CPU (Delaunay / rectangular / mixed).
 
+**Storage.** The three group `.npz` files are **not in git** (human decision 2026-10-08; the
+first PR, #400, committed them and was superseded): `.gitignore` names exactly these files and the
+manifest marks each group `storage: "external"` with its `sha256`, `bytes`, `encoding`
+(`sym_tri_xor`) and `regenerate` (`python scripts/lens/solver/capture.py --source <group>`,
+libraries at tag 2026.10.7.1, profiling `ff1e43e`). Copies, sha256-verified on 2026-10-08: RAL
+`/mnt/ral/jnightin/autolens_profiling_corpus/` and the laptop canonical checkout's
+`results/lens/solver/corpus/`. `delaunay_hst` 56329900 B `fb51e2ab…1fdd`; `rectangular_hst`
+52530977 B `fbd0f944…9648`; `slam_mixed_hst` 59110199 B `e5be3913…3ac5` (full hashes in the
+manifest and the solver README). Loading a group whose file is absent fails with the file, hash,
+copies and regenerate command; a present file is hash-checked before use.
+
 Two capture-side fixes went in first: `capture.py` still imported the #571 capture module from
 its pre-migration path (`scripts/imaging/hazards/mge_nnls_capture.py`; the smoke exit hid it),
 and putting `scripts/imaging/mge/` on `sys.path` let that directory's `likelihood_breakdown.py`
