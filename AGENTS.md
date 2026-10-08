@@ -110,6 +110,12 @@ markdown link-rot check over the `README.md` files, and a per-section **smoke** 
 script from each area under `AUTOLENS_PROFILING_SMOKE=1` (catches import-graph breakage without
 running a full profile). None of these produce result artifacts.
 
+**Timing assertions and gates.** Every place a measured time is compared to a cutoff (CI tests,
+production qualification, campaign go/no-go rules) is inventoried with its noise model and verdict
+in `results/notes/timing_noise_audit_2026_10.md` (#362). `lint.yml` runs
+`scripts/misc/tooling/list_timing_assertions.py --check`, so a new timing gate needs a row there.
+Never raise a timing budget to get CI green; an unresolved measurement is INCONCLUSIVE, never a pass.
+
 `profile.yml` runs the actual profile sweeps + dashboard refresh, but it is **manual / on-release
 only** (`workflow_dispatch` + release tag) — it is **not** a per-PR gate (profiling burns CI minutes
 and is noisy; releases are the natural cadence).

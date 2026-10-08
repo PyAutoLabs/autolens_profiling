@@ -140,6 +140,15 @@ jobs:
           # (RAL job 340576). Pure stdlib -- no PyAuto* imports, no PYTHONPATH.
           python scripts/misc/wall/check_submits.py --check
 
+      - name: list_timing_assertions.py --check (timing-noise inventory drift)
+        working-directory: autolens_profiling
+        run: |
+          # Every timing assertion / gate constant the AST lister finds must
+          # appear in results/notes/timing_noise_audit_2026_10.md (#362), so
+          # a new timing gate is inventoried with its noise model in the PR
+          # that adds it. Pure stdlib, read-only, deterministic (~3 s).
+          python scripts/misc/tooling/list_timing_assertions.py --check
+
       - name: pytest — scripts/misc/test/
         working-directory: autolens_profiling
         env:
