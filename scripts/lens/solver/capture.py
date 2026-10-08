@@ -116,10 +116,19 @@ if os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 
 # The #571 capture moved to scripts/imaging/mge/hazards_nnls_capture.py in the dataset/model
 # layout migration (4dedf1a); this import followed it (it still named the retired
-# scripts/imaging/hazards/mge_nnls_capture.py, which the smoke exit above never reached).
-sys.path.insert(0, str(REPO_ROOT / "scripts" / "imaging" / "mge"))
+# scripts/imaging/hazards/mge_nnls_capture.py, which the smoke exit above never reached). It is
+# loaded from its file rather than by putting scripts/imaging/mge/ on sys.path: that directory's
+# likelihood_breakdown.py would shadow the scripts/misc/likelihood_breakdown package the
+# provenance block (_profile_cli._source_revisions) imports.
+import importlib.util  # noqa: E402
+
 import _corpus  # noqa: E402
-import hazards_nnls_capture as mnc  # noqa: E402
+
+_spec = importlib.util.spec_from_file_location(
+    "hazards_nnls_capture", REPO_ROOT / "scripts" / "imaging" / "mge" / "hazards_nnls_capture.py"
+)
+mnc = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(mnc)
 
 SCRIPT = "scripts/lens/solver/capture.py"
 SLAM_MODEL = (
