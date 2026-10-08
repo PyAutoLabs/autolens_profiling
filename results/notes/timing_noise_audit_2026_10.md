@@ -755,7 +755,7 @@ correctness or gross-regression guard.
        | C6 phase 2c | `backward_pass_ab_{hpc_ral_gpunode_cpu,hpc_a100,local_cpu}_fp64`, 24 timed lane × route rows | 15 go, 9 no-go | 15 GO, 9 NO_GO; every interval resolves | no |
        | P2 promotion | `fixed_light_numba_..._s4b_warm_t1` (the one committed b / d_perm pair) | NO_LEVER, −0.80 % | NO_LEVER: 32 paired blocks, speedup [−1.31 %, −0.32 %], wholly < 5 % | no |
        | C10 best | `solver_config_sweep_hpc_ral_cpu_fp64` | `e2.5_s0.4` | tie set {e2.5_s0.4, e2.5_s0.2, e3_s0.4, e3_s0.3, e4_s0.4}; any-precision adds e3_s0.5, e4_s0.5 | **yes** |
-       | C10 best | `solver_config_sweep_laptop_cpu_fp64` | `e3_s0.4` | tie set {e3_s0.4, e2.5_s0.4, e3_s0.3} | **yes** |
+       | C10 best | `solver_config_sweep_laptop_cpu_fp64` | `e3_s0.4` | tie set {e3_s0.4, e2.5_s0.4, e3_s0.3}; any-precision adds e4_s0.5, e3_s0.5 | **yes** |
        | C10 best | `solver_config_sweep_mcs_{hpc_ral_cpu,laptop_cpu}_fp64` | `mcs18` | tie set {mcs18, mcs20} | **yes** |
        | C10 best | `solver_config_sweep_step0_hpc_ral_a100_fp64` | `step0_gather` | tie set {step0_gather, step0_structured, step0_components} | **yes** |
        | C10 best | `solver_config_sweep_step0_hpc_ral_cpu_epyc7702_fp64` | `step0_structured` | tie set {step0_structured, step0_components} | **yes** |

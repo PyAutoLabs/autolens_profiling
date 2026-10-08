@@ -187,6 +187,7 @@ def test_n_below_the_minimum_is_inconclusive_even_on_a_clear_effect():
         (Criterion("f", 0.30, 0.28, 0.32, 0.15), None),
         (Criterion("f", 0.30, 0.28, 0.32, 0.15), -1),
         (Criterion("f", 0.30, 0.28, 0.32, 0.15), 5.5),
+        (Criterion("f", 0.30, 0.28, 0.32, 0.15), float("inf")),
     ],
 )
 def test_invalid_inputs_are_inconclusive(criterion, n):

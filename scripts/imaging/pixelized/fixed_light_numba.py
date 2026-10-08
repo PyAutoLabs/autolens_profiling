@@ -2401,7 +2401,10 @@ if _promotion_pair is not None:
         return sequence
 
     _b_blocks, _d_blocks = _clean_blocks(_b_row), _clean_blocks(_d_row)
-    if _b_blocks.size != _d_blocks.size:
+    _block_count_mismatch = _b_blocks.size != _d_blocks.size
+    if _block_count_mismatch:
+        # Unpaired rows cannot be paired by instance: the interval is invalid and
+        # the verdict INCONCLUSIVE (the stream check above should prevent this).
         _b_blocks = _d_blocks = np.asarray([], dtype=float)
     _ratio, _ratio_lo, _ratio_hi, _n_paired_blocks = paired_block_ratio_interval(
         _b_blocks, _d_blocks, confidence=AB_CONFIDENCE
@@ -2482,7 +2485,11 @@ if _promotion_pair is not None:
             "min_blocks": MIN_AB_ROUNDS,
         },
         "speedup_verdict": _speedup_verdict.verdict,
-        "speedup_verdict_reason": _speedup_verdict.reason,
+        "speedup_verdict_reason": (
+            "reference and candidate rows have different block counts; " + _speedup_verdict.reason
+            if _block_count_mismatch
+            else _speedup_verdict.reason
+        ),
         "resolvable_effect": {c.name: c.mdi for c in _speedup_verdict.criteria},
         "reference_abba_status": _b_row.get("instrumentation_overhead_status"),
         "candidate_abba_status": _d_row.get("instrumentation_overhead_status"),

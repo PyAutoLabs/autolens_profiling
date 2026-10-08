@@ -235,7 +235,7 @@ def ab_rule_verdict(
     try:
         n_int = int(n)
         n_valid = n_int == n and n_int >= 0
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         n_int, n_valid = None, False
 
     def _out(verdict: str, reason: str) -> ABVerdict:
