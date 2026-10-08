@@ -24,7 +24,7 @@ as groups, old groups are never rewritten — and every release re-runs the cell
 | [`_solvers.py`](./_solvers.py) | The candidate registry `CANDIDATES` — each a composition of library primitives only, `jax.jit`-compiled once per candidate. |
 | [`_metrics.py`](./_metrics.py) | `metrics(x, system)` against the stored fnnls reference, and `timing()` (median warm wall). |
 | [`_driver.py`](./_driver.py) | Shared CLI, per-(system, candidate) evaluation, artefact naming and JSON write. |
-| [`capture.py`](./capture.py) | Adds a captured group to the corpus: `--source slam48` (group `slam48_hst`, all 48 #571 SLaM vectors, fixture reproduction recorded), `--source slam_spread` (`slam_spread_hst`, sigma_min x0.5/x2 and noise x0.3/x3 at 6 vectors) and `--source euclid_vis_lp` (`euclid_vis_lp`, the euclid latent jit test's system plus its eager/jitted `total_source_flux` as `latent_reference`). |
+| [`capture.py`](./capture.py) | Adds a captured group to the corpus: `--source slam48` (group `slam48_hst`, all 48 #571 SLaM vectors, fixture reproduction recorded), `--source slam_spread` (`slam_spread_hst`, sigma_min x0.5/x2 and noise x0.3/x3 at 6 vectors) and `--source euclid_vis_lp` (`euclid_vis_lp`, the euclid latent jit test's system plus its eager/jitted `total_source_flux` as `latent_reference`). Phase 5 (Mapper corpus, #399): `--source delaunay_hst` / `rectangular_hst` (Mapper-only inversions with the HST presets' Delaunay / rectangular sources, lens light fixed) and `--source slam_mixed_hst` (lens 2x20 MGE + Delaunay, the SLaM `source_pix` case), 8 systems each, every capture asserted to be the positive-only Mapper solve in `"jacobi"` mode. |
 | [`accuracy.py`](./accuracy.py) | Every candidate on every system → `results/lens/solver/accuracy_summary_<corpus>_v<version>.{json,png}`. |
 | [`early_stopping.py`](./early_stopping.py) | Released raw PDIP at each iteration cap → `results/lens/solver/early_stopping_summary_<corpus>_v<version>.{json,png}`. |
 | [`timing.py`](./timing.py) | Batched cost: `jax.jit(jax.vmap(solve))` per-evaluation wall at B = 1 / 16 / 50 (`pdip_raw`, `pdip_jacobi`; `fnnls` as a host loop), compile wall kept separate, per-lane iterations and an unbatched-guard → `results/lens/solver/timing_summary_<corpus>[_gpu]_v<version>.{json,png}`. |
@@ -34,7 +34,12 @@ as groups, old groups are never rewritten — and every release re-runs the cell
 The corpus itself lives in `results/lens/solver/corpus/`: `manifest.json` (per-system metadata)
 plus one compressed `<group>.npz` per group holding `Q_<name>`, `q_<name>` and `x_ref_<name>` —
 the fnnls reference, computed once when the group is added and stored, so a study never
-re-derives its truth.
+re-derives its truth. The n ~ 1500 Mapper groups store `Q` with the lossless `sym_tri_xor`
+encoding (upper triangle + bitwise XOR of the lower; the group's manifest entry says
+`"encoding"`), because a dense 8-system group exceeds GitHub's 100 MB file limit;
+`load_corpus()` rebuilds `Q` bit for bit. Cells over the Mapper groups run one group at a time:
+`timing.py` pools a run's multi-system groups into one batch, which needs equal n, and a
+multi-group run is labelled `all`, which would overwrite the phase-3/4 `all` artefacts.
 
 ## Corpus
 
@@ -117,6 +122,42 @@ and the median warm wall-clock (`wall_ms`, 5 repeats after one compile call).
 | `all_gpu` | `pdip_raw_tol_jaxnnls` | 74/81 | 0 | 4.30e+04 | 2.19e-01 | 7.40e-05 | 6.24e-07 | 6.03e-16 | 2.16e-16 | 50.0 | 10.242 | v2026.10.7.1 |
 | `all_gpu` | `pdip_raw_polish` | 0/81 | 0 | 5.03e+08 | 2.19e-01 | 4.96e-02 | 3.31e-04 | 6.04e-16 | 3.24e-16 | 23.0 | 3.994 | v2026.10.7.1 |
 | `all_gpu` | `certified` | 48/81 | 0 | 1.19e+02 | 1.19e+02 | 7.47e-02 | 1.49e-02 | 2.57e-04 | 1.81e-02 | 16.0 | 2.111 | v2026.10.7.1 |
+| `delaunay_hst` | `fnnls` | 0/8 | 0 | 0.00e+00 | 0.00e+00 | 0.00e+00 | 0.00e+00 | 0.00e+00 | 4.60e-14 | 2.5 | 375.083 | v2026.10.7.1 |
+| `delaunay_hst` | `pdip_jacobi` | 0/8 | 0 | 6.20e-08 | 6.20e-08 | 1.05e-13 | 1.01e-14 | 5.47e-15 | 4.98e-14 | 18.0 | 1509.681 | v2026.10.7.1 |
+| `delaunay_hst` | `pdip_raw` | 0/8 | 0 | 2.36e-08 | 2.36e-08 | 9.97e-14 | 1.17e-14 | 6.13e-15 | 4.22e-14 | 13.0 | 1014.056 | v2026.10.7.1 |
+| `delaunay_hst` | `pdip_raw_tol_1e-1` | 0/8 | 0 | 2.36e-04 | 2.36e-04 | 2.90e-09 | 3.55e-09 | 7.00e-13 | 6.71e-13 | 12.5 | 853.400 | v2026.10.7.1 |
+| `delaunay_hst` | `pdip_raw_tol_1e-2` | 0/8 | 0 | 2.36e-06 | 2.36e-06 | 3.27e-11 | 4.04e-11 | 3.99e-14 | 1.96e-14 | 13.0 | 850.130 | v2026.10.7.1 |
+| `delaunay_hst` | `pdip_raw_tol_1e-3` | 0/8 | 0 | 2.36e-06 | 2.36e-06 | 5.33e-13 | 4.04e-13 | 7.90e-15 | 1.51e-14 | 13.5 | 943.698 | v2026.10.7.1 |
+| `delaunay_hst` | `pdip_raw_tol_jaxnnls` | 0/8 | 0 | 2.36e-08 | 2.36e-08 | 9.23e-14 | 1.17e-14 | 7.90e-15 | 1.51e-14 | 14.0 | 886.766 | v2026.10.7.1 |
+| `delaunay_hst` | `pdip_raw_polish` | 0/8 | 0 | 2.36e-08 | 2.36e-08 | 9.97e-14 | 1.17e-14 | 6.13e-15 | 4.22e-14 | 14.0 | 999.805 | v2026.10.7.1 |
+| `delaunay_hst` | `certified` | 0/8 | 0 | 8.10e-11 | 8.10e-11 | 3.61e-14 | 0.00e+00 | 7.20e-15 | 5.34e-14 | 2.0 | 266.887 | v2026.10.7.1 |
+| `delaunay_hst_gpu` | `fnnls` | 0/8 | 0 | 0.00e+00 | 0.00e+00 | 0.00e+00 | 0.00e+00 | 0.00e+00 | 4.60e-14 | 2.5 | 124.239 | v2026.10.7.1 |
+| `delaunay_hst_gpu` | `pdip_jacobi` | 0/8 | 0 | 6.20e-08 | 6.20e-08 | 5.58e-14 | 1.01e-14 | 8.81e-15 | 3.07e-14 | 18.0 | 29.896 | v2026.10.7.1 |
+| `delaunay_hst_gpu` | `pdip_raw` | 0/8 | 0 | 2.36e-08 | 2.36e-08 | 5.88e-14 | 1.17e-14 | 1.20e-14 | 3.51e-14 | 13.0 | 23.581 | v2026.10.7.1 |
+| `delaunay_hst_gpu` | `pdip_raw_tol_1e-1` | 0/8 | 0 | 2.36e-04 | 2.36e-04 | 2.90e-09 | 3.55e-09 | 7.00e-13 | 6.71e-13 | 12.5 | 21.203 | v2026.10.7.1 |
+| `delaunay_hst_gpu` | `pdip_raw_tol_1e-2` | 0/8 | 0 | 2.36e-06 | 2.36e-06 | 3.27e-11 | 4.04e-11 | 3.77e-14 | 3.45e-14 | 13.0 | 21.972 | v2026.10.7.1 |
+| `delaunay_hst_gpu` | `pdip_raw_tol_1e-3` | 0/8 | 0 | 2.36e-06 | 2.36e-06 | 5.23e-13 | 4.04e-13 | 5.36e-15 | 3.45e-14 | 13.5 | 22.769 | v2026.10.7.1 |
+| `delaunay_hst_gpu` | `pdip_raw_tol_jaxnnls` | 0/8 | 0 | 2.36e-08 | 2.36e-08 | 3.00e-14 | 1.17e-14 | 5.36e-15 | 3.45e-14 | 14.0 | 23.600 | v2026.10.7.1 |
+| `delaunay_hst_gpu` | `pdip_raw_polish` | 0/8 | 0 | 2.36e-08 | 2.36e-08 | 5.88e-14 | 1.17e-14 | 1.20e-14 | 3.51e-14 | 14.0 | 23.630 | v2026.10.7.1 |
+| `delaunay_hst_gpu` | `certified` | 0/8 | 0 | 9.33e-11 | 9.33e-11 | 1.43e-13 | 0.00e+00 | 7.51e-15 | 7.64e-14 | 2.0 | 5.740 | v2026.10.7.1 |
+| `rectangular_hst` | `fnnls` | 0/8 | 0 | 0.00e+00 | 0.00e+00 | 0.00e+00 | 6.25e-09 | 0.00e+00 | 4.33e-16 | 45.0 | 733.105 | v2026.10.7.1 |
+| `rectangular_hst` | `pdip_jacobi` | 0/8 | 0 | 2.30e+07 | 1.05e+00 | 1.45e-07 | 1.43e-07 | 1.11e-13 | 2.75e-14 | 15.0 | 1410.434 | v2026.10.7.1 |
+| `rectangular_hst` | `pdip_raw` | 0/8 | 0 | 2.20e+07 | 9.56e-01 | 1.18e-07 | 1.15e-07 | 7.47e-14 | 1.78e-14 | 18.0 | 2297.569 | v2026.10.7.1 |
+| `rectangular_hst` | `pdip_raw_tol_1e-1` | 0/8 | 0 | 2.72e+09 | 9.19e+01 | 1.54e-05 | 1.26e-05 | 1.35e-11 | 2.51e-12 | 17.0 | 2089.161 | v2026.10.7.1 |
+| `rectangular_hst` | `pdip_raw_tol_1e-2` | 0/8 | 0 | 1.04e+09 | 3.46e+01 | 5.78e-06 | 4.81e-06 | 1.84e-12 | 3.65e-13 | 18.0 | 1827.932 | v2026.10.7.1 |
+| `rectangular_hst` | `pdip_raw_tol_1e-3` | 0/8 | 0 | 3.96e+08 | 1.27e+01 | 2.14e-06 | 1.83e-06 | 2.58e-13 | 4.24e-14 | 19.0 | 2293.357 | v2026.10.7.1 |
+| `rectangular_hst` | `pdip_raw_tol_jaxnnls` | 0/8 | 0 | 2.20e+07 | 9.56e-01 | 1.18e-07 | 1.15e-07 | 7.47e-14 | 1.78e-14 | 21.0 | 1883.948 | v2026.10.7.1 |
+| `rectangular_hst` | `pdip_raw_polish` | 0/8 | 0 | 2.20e+07 | 9.56e-01 | 1.18e-07 | 1.15e-07 | 7.47e-14 | 1.78e-14 | 21.0 | 1875.534 | v2026.10.7.1 |
+| `rectangular_hst` | `certified` | 0/8 | 0 | 1.00e+00 | 3.70e-04 | 3.06e-10 | 6.20e-09 | 5.24e-16 | 4.08e-11 | 8.5 | 1183.011 | v2026.10.7.1 |
+| `rectangular_hst_gpu` | `fnnls` | 0/8 | 0 | 0.00e+00 | 0.00e+00 | 0.00e+00 | 6.25e-09 | 0.00e+00 | 4.33e-16 | 45.0 | 357.934 | v2026.10.7.1 |
+| `rectangular_hst_gpu` | `pdip_jacobi` | 0/8 | 0 | 2.30e+07 | 1.05e+00 | 1.45e-07 | 1.43e-07 | 1.11e-13 | 2.75e-14 | 15.0 | 23.537 | v2026.10.7.1 |
+| `rectangular_hst_gpu` | `pdip_raw` | 0/8 | 0 | 2.20e+07 | 9.56e-01 | 1.18e-07 | 1.15e-07 | 7.47e-14 | 1.78e-14 | 18.0 | 32.527 | v2026.10.7.1 |
+| `rectangular_hst_gpu` | `pdip_raw_tol_1e-1` | 0/8 | 0 | 2.72e+09 | 9.19e+01 | 1.54e-05 | 1.26e-05 | 1.35e-11 | 2.51e-12 | 17.0 | 26.331 | v2026.10.7.1 |
+| `rectangular_hst_gpu` | `pdip_raw_tol_1e-2` | 0/8 | 0 | 1.04e+09 | 3.46e+01 | 5.78e-06 | 4.81e-06 | 1.84e-12 | 3.65e-13 | 18.0 | 27.813 | v2026.10.7.1 |
+| `rectangular_hst_gpu` | `pdip_raw_tol_1e-3` | 0/8 | 0 | 3.96e+08 | 1.27e+01 | 2.14e-06 | 1.83e-06 | 2.58e-13 | 4.24e-14 | 19.0 | 29.277 | v2026.10.7.1 |
+| `rectangular_hst_gpu` | `pdip_raw_tol_jaxnnls` | 0/8 | 0 | 2.20e+07 | 9.56e-01 | 1.18e-07 | 1.15e-07 | 7.47e-14 | 1.78e-14 | 21.0 | 32.143 | v2026.10.7.1 |
+| `rectangular_hst_gpu` | `pdip_raw_polish` | 0/8 | 0 | 2.20e+07 | 9.56e-01 | 1.18e-07 | 1.15e-07 | 7.47e-14 | 1.78e-14 | 21.0 | 32.376 | v2026.10.7.1 |
+| `rectangular_hst_gpu` | `certified` | 0/8 | 0 | 1.00e+00 | 3.70e-04 | 3.06e-10 | 6.20e-09 | 8.98e-16 | 4.08e-11 | 8.5 | 13.187 | v2026.10.7.1 |
 | `slam_fixture_571` | `fnnls` | 0/8 | 0 | 0.00e+00 | 0.00e+00 | 0.00e+00 | 7.68e-08 | 0.00e+00 | 3.24e-16 | 7.0 | 1.066 | v2026.8.17.1 |
 | `slam_fixture_571` | `pdip_jacobi` | 7/8 | 0 | 2.73e+68 | 1.03e+68 | 3.36e+70 | 4.50e+68 | 1.56e+134 | 8.25e+61 | 50.0 | 2.482 | v2026.8.17.1 |
 | `slam_fixture_571` | `pdip_raw` | 0/8 | 0 | 6.91e+04 | 4.95e-06 | 4.93e-05 | 3.44e-07 | 3.60e-16 | 2.16e-16 | 18.0 | 1.366 | v2026.8.17.1 |
@@ -126,6 +167,24 @@ and the median warm wall-clock (`wall_ms`, 5 repeats after one compile call).
 | `slam_fixture_571` | `pdip_raw_tol_jaxnnls` | 8/8 | 0 | 2.09e-11 | 2.09e-11 | 3.05e-13 | 7.68e-08 | 6.01e-16 | 1.08e-16 | 50.0 | 2.471 | v2026.8.17.1 |
 | `slam_fixture_571` | `pdip_raw_polish` | 0/8 | 0 | 6.91e+04 | 4.95e-06 | 4.93e-05 | 3.44e-07 | 3.60e-16 | 2.16e-16 | 23.0 | 2.693 | v2026.8.17.1 |
 | `slam_fixture_571` | `certified` | 5/8 | 0 | 8.76e+01 | 8.76e+01 | 1.12e-02 | 3.53e-03 | 1.61e-05 | 1.81e-02 | 16.0 | 1.008 | v2026.8.17.1 |
+| `slam_mixed_hst` | `fnnls` | 0/8 | 0 | 0.00e+00 | 0.00e+00 | 0.00e+00 | 6.82e-08 | 0.00e+00 | 8.59e-16 | 18.0 | 591.318 | v2026.10.7.1 |
+| `slam_mixed_hst` | `pdip_jacobi` | 0/8 | 0 | 7.34e-08 | 7.34e-08 | 1.01e-13 | 6.82e-08 | 7.18e-16 | 4.91e-16 | 18.0 | 1632.813 | v2026.10.7.1 |
+| `slam_mixed_hst` | `pdip_raw` | 0/8 | 0 | 6.69e-08 | 6.69e-08 | 4.69e-13 | 6.82e-08 | 1.76e-15 | 9.82e-16 | 16.5 | 2124.239 | v2026.10.7.1 |
+| `slam_mixed_hst` | `pdip_raw_tol_1e-1` | 0/8 | 0 | 4.50e-01 | 4.50e-01 | 7.47e-07 | 7.55e-08 | 4.42e-11 | 6.16e-13 | 15.5 | 1904.345 | v2026.10.7.1 |
+| `slam_mixed_hst` | `pdip_raw_tol_1e-2` | 0/8 | 0 | 4.86e-02 | 4.86e-02 | 3.98e-08 | 6.83e-08 | 3.28e-12 | 5.73e-15 | 16.5 | 2331.484 | v2026.10.7.1 |
+| `slam_mixed_hst` | `pdip_raw_tol_1e-3` | 0/8 | 0 | 6.71e-04 | 6.71e-04 | 4.39e-10 | 6.82e-08 | 3.24e-14 | 4.30e-16 | 17.5 | 2241.597 | v2026.10.7.1 |
+| `slam_mixed_hst` | `pdip_raw_tol_jaxnnls` | 2/8 | 0 | 6.68e-08 | 6.68e-08 | 4.86e-13 | 6.82e-08 | 2.70e-15 | 4.91e-16 | 19.0 | 1919.127 | v2026.10.7.1 |
+| `slam_mixed_hst` | `pdip_raw_polish` | 0/8 | 0 | 6.69e-08 | 6.69e-08 | 4.69e-13 | 6.82e-08 | 1.76e-15 | 9.82e-16 | 18.5 | 2401.458 | v2026.10.7.1 |
+| `slam_mixed_hst` | `certified` | 1/8 | 0 | 3.07e+01 | 3.07e+01 | 7.83e-03 | 2.49e-04 | 7.06e-05 | 3.26e-02 | 13.0 | 1647.016 | v2026.10.7.1 |
+| `slam_mixed_hst_gpu` | `fnnls` | 0/8 | 0 | 0.00e+00 | 0.00e+00 | 0.00e+00 | 6.82e-08 | 0.00e+00 | 8.59e-16 | 18.0 | 284.574 | v2026.10.7.1 |
+| `slam_mixed_hst_gpu` | `pdip_jacobi` | 0/8 | 0 | 7.32e-08 | 7.32e-08 | 1.20e-13 | 6.82e-08 | 1.35e-15 | 4.91e-16 | 18.0 | 30.967 | v2026.10.7.1 |
+| `slam_mixed_hst_gpu` | `pdip_raw` | 0/8 | 0 | 6.70e-08 | 6.70e-08 | 3.99e-13 | 6.82e-08 | 2.43e-15 | 4.91e-16 | 16.5 | 31.961 | v2026.10.7.1 |
+| `slam_mixed_hst_gpu` | `pdip_raw_tol_1e-1` | 0/8 | 0 | 4.50e-01 | 4.50e-01 | 7.47e-07 | 7.55e-08 | 4.42e-11 | 6.16e-13 | 15.5 | 26.928 | v2026.10.7.1 |
+| `slam_mixed_hst_gpu` | `pdip_raw_tol_1e-2` | 0/8 | 0 | 4.86e-02 | 4.86e-02 | 3.98e-08 | 6.83e-08 | 3.28e-12 | 5.73e-15 | 16.5 | 28.529 | v2026.10.7.1 |
+| `slam_mixed_hst_gpu` | `pdip_raw_tol_1e-3` | 0/8 | 0 | 6.71e-04 | 6.71e-04 | 4.39e-10 | 6.82e-08 | 3.26e-14 | 2.15e-16 | 17.5 | 30.067 | v2026.10.7.1 |
+| `slam_mixed_hst_gpu` | `pdip_raw_tol_jaxnnls` | 1/8 | 0 | 6.69e-08 | 6.69e-08 | 3.97e-13 | 6.82e-08 | 8.60e-16 | 4.30e-16 | 18.5 | 31.793 | v2026.10.7.1 |
+| `slam_mixed_hst_gpu` | `pdip_raw_polish` | 0/8 | 0 | 6.70e-08 | 6.70e-08 | 3.99e-13 | 6.82e-08 | 2.43e-15 | 4.91e-16 | 18.5 | 32.071 | v2026.10.7.1 |
+| `slam_mixed_hst_gpu` | `certified` | 1/8 | 0 | 3.07e+01 | 3.07e+01 | 7.83e-03 | 2.49e-04 | 7.06e-05 | 3.26e-02 | 13.0 | 20.735 | v2026.10.7.1 |
 <!-- END auto-table:solver-accuracy -->
 
 ## Early stopping (latest run per corpus)
@@ -225,6 +284,42 @@ Python loop over the lanes (context only). A timing is not an admissibility resu
 | `all_gpu` | `fnnls` | euclid_vis_lp (tiled) (host loop) | 1 | 0.9701 | 0.9784 | 0.970 | 0.00 | 8 / 8 | 0/1 | 1.26e-09 | v2026.10.7.1 |
 | `all_gpu` | `fnnls` | euclid_vis_lp (tiled) (host loop) | 16 | 0.9605 | 0.9668 | 15.367 | 0.02 | 8 / 8 | 0/16 | 1.26e-09 | v2026.10.7.1 |
 | `all_gpu` | `fnnls` | euclid_vis_lp (tiled) (host loop) | 50 | 0.9612 | 0.9656 | 48.060 | 0.05 | 8 / 8 | 0/50 | 1.26e-09 | v2026.10.7.1 |
+| `delaunay_hst` | `pdip_raw` | delaunay_hst | 1 | 969.1200 | 1034.9559 | 969.120 | 1.85 | 13 / 13 | 0/1 | 1.17e-14 | v2026.10.7.1 |
+| `delaunay_hst` | `pdip_raw` | delaunay_hst | 8 | 659.1268 | 708.7968 | 5273.014 | 5.54 | 13 / 18 | 0/8 | 1.17e-14 | v2026.10.7.1 |
+| `delaunay_hst` | `pdip_raw` | delaunay_hst (tiled) | 16 | 752.3292 | 788.1731 | 12037.267 | 12.90 | 13 / 18 | 0/16 | 1.17e-14 | v2026.10.7.1 |
+| `delaunay_hst` | `pdip_jacobi` | delaunay_hst | 1 | 1235.0293 | 1497.9067 | 1235.029 | 1.90 | 18 / 18 | 0/1 | 1.02e-15 | v2026.10.7.1 |
+| `delaunay_hst` | `pdip_jacobi` | delaunay_hst | 8 | 652.5491 | 753.8698 | 5220.393 | 6.09 | 18 / 19 | 0/8 | 1.01e-14 | v2026.10.7.1 |
+| `delaunay_hst` | `pdip_jacobi` | delaunay_hst (tiled) | 16 | 701.3433 | 703.2906 | 11221.493 | 11.40 | 18 / 19 | 0/16 | 1.01e-14 | v2026.10.7.1 |
+| `delaunay_hst_gpu` | `pdip_raw` | delaunay_hst | 1 | 23.7149 | 23.8151 | 23.715 | 0.77 | 13 / 13 | 0/1 | 1.17e-14 | v2026.10.7.1 |
+| `delaunay_hst_gpu` | `pdip_raw` | delaunay_hst | 8 | 30.8918 | 30.9001 | 247.134 | 1.07 | 13 / 18 | 0/8 | 1.17e-14 | v2026.10.7.1 |
+| `delaunay_hst_gpu` | `pdip_raw` | delaunay_hst (tiled) | 16 | 18.8253 | 18.8375 | 301.205 | 0.92 | 13 / 18 | 0/16 | 1.17e-14 | v2026.10.7.1 |
+| `delaunay_hst_gpu` | `pdip_jacobi` | delaunay_hst | 1 | 29.7595 | 29.9257 | 29.759 | 0.37 | 18 / 18 | 0/1 | 1.02e-15 | v2026.10.7.1 |
+| `delaunay_hst_gpu` | `pdip_jacobi` | delaunay_hst | 8 | 29.4329 | 29.4356 | 235.463 | 0.59 | 18 / 19 | 0/8 | 1.01e-14 | v2026.10.7.1 |
+| `delaunay_hst_gpu` | `pdip_jacobi` | delaunay_hst (tiled) | 16 | 17.9334 | 17.9438 | 286.935 | 0.65 | 18 / 19 | 0/16 | 1.01e-14 | v2026.10.7.1 |
+| `rectangular_hst` | `pdip_raw` | rectangular_hst | 1 | 2251.0810 | 2800.3106 | 2251.081 | 5.31 | 18 / 18 | 0/1 | 9.97e-08 | v2026.10.7.1 |
+| `rectangular_hst` | `pdip_raw` | rectangular_hst | 8 | 1634.3425 | 1922.4457 | 13074.740 | 19.76 | 18 / 24 | 0/8 | 1.15e-07 | v2026.10.7.1 |
+| `rectangular_hst` | `pdip_raw` | rectangular_hst (tiled) | 16 | 1709.4489 | 1857.2531 | 27351.183 | 43.19 | 18 / 24 | 0/16 | 1.15e-07 | v2026.10.7.1 |
+| `rectangular_hst` | `pdip_jacobi` | rectangular_hst | 1 | 1594.0598 | 1777.9394 | 1594.060 | 3.82 | 15 / 15 | 0/1 | 1.22e-07 | v2026.10.7.1 |
+| `rectangular_hst` | `pdip_jacobi` | rectangular_hst | 8 | 921.5699 | 1318.4088 | 7372.559 | 12.91 | 15 / 17 | 0/8 | 1.43e-07 | v2026.10.7.1 |
+| `rectangular_hst` | `pdip_jacobi` | rectangular_hst (tiled) | 16 | 996.2502 | 1210.1622 | 15940.004 | 28.28 | 15 / 17 | 0/16 | 1.43e-07 | v2026.10.7.1 |
+| `rectangular_hst_gpu` | `pdip_raw` | rectangular_hst | 1 | 32.4293 | 32.5622 | 32.429 | 0.82 | 18 / 18 | 0/1 | 9.97e-08 | v2026.10.7.1 |
+| `rectangular_hst_gpu` | `pdip_raw` | rectangular_hst | 8 | 37.8297 | 37.8418 | 302.638 | 1.01 | 18 / 24 | 0/8 | 1.15e-07 | v2026.10.7.1 |
+| `rectangular_hst_gpu` | `pdip_raw` | rectangular_hst (tiled) | 16 | 22.8381 | 22.8495 | 365.410 | 1.00 | 18 / 24 | 0/16 | 1.15e-07 | v2026.10.7.1 |
+| `rectangular_hst_gpu` | `pdip_jacobi` | rectangular_hst | 1 | 23.6531 | 23.6719 | 23.653 | 0.38 | 15 / 15 | 0/1 | 1.22e-07 | v2026.10.7.1 |
+| `rectangular_hst_gpu` | `pdip_jacobi` | rectangular_hst | 8 | 23.3749 | 23.3774 | 186.999 | 0.61 | 15 / 17 | 0/8 | 1.43e-07 | v2026.10.7.1 |
+| `rectangular_hst_gpu` | `pdip_jacobi` | rectangular_hst (tiled) | 16 | 14.0895 | 14.0917 | 225.431 | 0.61 | 15 / 17 | 0/16 | 1.43e-07 | v2026.10.7.1 |
+| `slam_mixed_hst` | `pdip_raw` | slam_mixed_hst | 1 | 2240.2285 | 2401.4493 | 2240.228 | 3.85 | 16 / 16 | 0/1 | 3.70e-16 | v2026.10.7.1 |
+| `slam_mixed_hst` | `pdip_raw` | slam_mixed_hst | 8 | 1330.6747 | 1330.9647 | 10645.398 | 11.95 | 16.5 / 19 | 0/8 | 6.82e-08 | v2026.10.7.1 |
+| `slam_mixed_hst` | `pdip_raw` | slam_mixed_hst (tiled) | 16 | 1303.6391 | 1465.4892 | 20858.225 | 20.29 | 16.5 / 19 | 0/16 | 6.82e-08 | v2026.10.7.1 |
+| `slam_mixed_hst` | `pdip_jacobi` | slam_mixed_hst | 1 | 1995.7634 | 2154.0752 | 1995.763 | 2.57 | 19 / 19 | 0/1 | 6.25e-17 | v2026.10.7.1 |
+| `slam_mixed_hst` | `pdip_jacobi` | slam_mixed_hst | 8 | 1122.8004 | 1159.2826 | 8982.403 | 8.59 | 18 / 20 | 0/8 | 6.82e-08 | v2026.10.7.1 |
+| `slam_mixed_hst` | `pdip_jacobi` | slam_mixed_hst (tiled) | 16 | 1175.5738 | 1209.2472 | 18809.181 | 18.76 | 18 / 20 | 0/16 | 6.82e-08 | v2026.10.7.1 |
+| `slam_mixed_hst_gpu` | `pdip_raw` | slam_mixed_hst | 1 | 31.1473 | 31.3423 | 31.147 | 0.80 | 16 / 16 | 0/1 | 3.70e-16 | v2026.10.7.1 |
+| `slam_mixed_hst_gpu` | `pdip_raw` | slam_mixed_hst | 8 | 37.1343 | 37.1490 | 297.074 | 0.99 | 16.5 / 19 | 0/8 | 6.82e-08 | v2026.10.7.1 |
+| `slam_mixed_hst_gpu` | `pdip_raw` | slam_mixed_hst (tiled) | 16 | 22.7089 | 22.7140 | 363.342 | 0.99 | 16.5 / 19 | 0/16 | 6.82e-08 | v2026.10.7.1 |
+| `slam_mixed_hst_gpu` | `pdip_jacobi` | slam_mixed_hst | 1 | 32.5388 | 32.6974 | 32.539 | 0.41 | 19 / 19 | 0/1 | 6.25e-17 | v2026.10.7.1 |
+| `slam_mixed_hst_gpu` | `pdip_jacobi` | slam_mixed_hst | 8 | 32.4284 | 32.4373 | 259.427 | 0.69 | 18 / 20 | 0/8 | 6.82e-08 | v2026.10.7.1 |
+| `slam_mixed_hst_gpu` | `pdip_jacobi` | slam_mixed_hst (tiled) | 16 | 19.8463 | 19.8541 | 317.541 | 0.68 | 18 / 20 | 0/16 | 6.82e-08 | v2026.10.7.1 |
 <!-- END auto-table:solver-timing -->
 
 ## Euclid latent by candidate (post-hoc)
