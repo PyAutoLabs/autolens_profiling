@@ -503,3 +503,128 @@ A100 6/62, worst 64x — the A100 yardstick set is larger because Jacobi converg
 there; the reference `fnnls` itself fails it on 9/52 and 7/62). The standing rule ("no drift in
 the tables without a solver change") holds for the released solver and for every candidate
 except the two flagged above. No baseline pin moves; no regression routes to /intake.
+
+## Phase 3b (2026-10-08) — GPU/vmap timing of the solver corpus
+
+**Question.** What does one positive-only solve cost per likelihood evaluation when a sampler
+batches it, `jax.jit(jax.vmap(solve))` at B = 1 / 16 / 50, for the released raw PDIP
+(`pdip_raw`, PyAutoArray#595) against the Jacobi PDIP (`pdip_jacobi`), fp64, on the laptop CPU and
+an A100? Phase 3a's 3.96 ms A100 wall was one unbatched, launch-bound solve and said nothing about
+batched throughput. Issue autolens_profiling#395. This is a timing; it is not an admissibility
+result.
+
+**Method.** New cell [`scripts/lens/solver/timing.py`](../../scripts/lens/solver/timing.py);
+`_solvers.batched_kernel` vmaps each candidate's existing jitted body (`fn` / `kernel`, and so
+`accuracy.py` / `early_stopping.py`, are unchanged). SLaM batches pool `slam_fixture_571` +
+`slam48_hst` (56 distinct systems) and take the first B in manifest order, so lanes diverge;
+`euclid_vis_lp` has one system, so its batches are B **tiled** copies (identical lanes). Stacked
+inputs are placed on the device before timing. The first call of each (candidate, B) config is
+recorded as `compile_s` (trace + compile + one run) and never enters a steady figure; steady cost
+is 7 interleaved rounds (every config once per round, fixed order, blocking), reported as the
+minimum and median batched-call wall divided by B. jit compiles once per (candidate, batch
+shape): the euclid family has the SLaM shapes (n = 60), so its first calls are flagged
+`compiled_here: false` and are not compiles. `fnnls` has no batched form; its rows are a host
+Python loop over the B lanes, as context. Every lane is also solved unbatched in the same process
+(the `accuracy.py` path) as a guard.
+
+**Provenance.** Both rows run the five libraries at tag **2026.10.7.1**: PyAutoNerves `c5ade605`,
+PyAutoFit `710f4b34`, PyAutoArray `ccddfba6`, PyAutoGalaxy `b4946b8a`, PyAutoLens `b6bf543c` (the
+phase-3a SHAs; full SHAs in each JSON's `device.provenance.library_revisions`). Cell at profiling
+`b8911d8`.
+
+- **A100:** RAL job **398249** on `euclid-ral-gpu-2` (NVIDIA A100 80GB PCIe, driver 610.57.04,
+  host AMD EPYC 7702), `--partition=gpu --gres=gpu:1`, COMPLETED 0:0 in 0:38 (09:16:04 – 09:16:42
+  BST). Submit `hpc/batch_gpu/submit_lens_solver_timing_a100_fp64`; libraries from the phase-3a
+  private clone `/mnt/ral/jnightin/PyAuto_wt/linear-solver-p3/` (import guard green, all five from
+  there; the shared mirror was not touched). The phase-3a RAL worktree held its untracked 3a
+  artefacts (byte-identical to the committed ones), which blocked a branch checkout, so the job ran
+  from a sibling worktree `/mnt/ral/jnightin/autolens_profiling_wt/linear-solver-p3b`. jax / jaxlib
+  0.10.2, numpy 2.2.6, numba 0.65.1; backend `gpu`, `cuda:0`. `.err` empty; post-check green.
+  The shared RAL JAX compile cache was warm (`cache_fresh: false`, 204 autotune entries at start),
+  so A100 compile walls are cache-assisted.
+- **CPU:** the laptop (WSL2, i9-10885H, `OMP_NUM_THREADS=1`), local `git worktree` checkouts of
+  the same five tags (`autolens.__file__` confirmed there); jax / jaxlib 0.10.2. Load average 1.9
+  at import, with other sessions' test suites running beside it; interleaved minima absorb most of
+  that, medians less. Laptop compile cache recorded `cache_fresh: true`.
+- **Artefact names.** As in phase 3a, the source checkouts stamp `al.__version__ = 2026.8.17.1`,
+  so both runs wrote to scratch / `output/` and the pairs were copied to
+  `timing_summary_all_v2026.10.7.1` (CPU) and `timing_summary_all_gpu_v2026.10.7.1` (A100). The
+  label is `all` because more than one group ran; the groups are the three above
+  (`slam_spread_hst` is not in this cell's default set).
+
+**Steady per-evaluation cost** (ms, min over 7 interleaved rounds of batched-call wall / B;
+median in the JSON):
+
+| Candidate | Family | CPU B=1 | CPU B=16 | CPU B=50 | A100 B=1 | A100 B=16 | A100 B=50 |
+|---|---|---|---|---|---|---|---|
+| `pdip_raw` (released) | SLaM (56 distinct) | 1.353 | 0.881 | 0.682 | 3.948 | 0.581 | **0.190** |
+| `pdip_raw` (released) | euclid (tiled) | 1.611 | 0.969 | 0.798 | 4.942 | 0.689 | 0.226 |
+| `pdip_jacobi` | SLaM (56 distinct) | 2.488 | 1.630 | 1.396 | 6.715 | 1.149 | 0.369 |
+| `pdip_jacobi` | euclid (tiled) | 1.151 | 0.699 | 0.531 | 3.311 | 0.459 | 0.147 |
+| `fnnls` (host loop) | SLaM | 1.697 | 1.312 | 1.306 | 1.021 | 0.867 | 0.878 |
+| `fnnls` (host loop) | euclid (tiled) | 1.396 | 1.387 | 1.379 | 0.970 | 0.961 | 0.961 |
+
+The A100 `fnnls` rows are the RAL host CPU (EPYC), not the GPU.
+
+**Compile, kept separate** (s, first call per config, SLaM family; the euclid configs reuse these
+executables):
+
+| Candidate | CPU B=1 / 16 / 50 | A100 B=1 / 16 / 50 (warm persistent cache) |
+|---|---|---|
+| `pdip_raw` | 1.07 / 1.07 / 0.97 | 1.17 / 0.75 / 0.59 |
+| `pdip_jacobi` | 0.50 / 0.70 / 0.67 | 0.32 / 0.36 / 0.38 |
+
+At these walls one compile costs what 1–6 thousand steady A100 evaluations at B = 50 cost; it is
+paid once per batch shape per process.
+
+**Slowest lane.** A vmapped `while_loop` runs every lane until the slowest stops. Iterations per
+lane (median / batch max):
+
+| Candidate | Family | CPU B=1 | CPU B=16 | CPU B=50 | A100 B=1 | A100 B=16 | A100 B=50 |
+|---|---|---|---|---|---|---|---|
+| `pdip_raw` | SLaM | 18 / 18 | 18 / 19 | 17.5 / 19 | 18 / 18 | 18 / 19 | 17.5 / 19 |
+| `pdip_raw` | euclid (tiled) | 24 / 24 | 24 / 24 | 24 / 24 | 24 / 24 | 24 / 24 | 24 / 24 |
+| `pdip_jacobi` | SLaM | 50 / 50 | 50 / 50 | 19 / 50 | 41 / 41 | 19 / 50 | 19 / 50 |
+| `pdip_jacobi` | euclid (tiled) | 19 / 19 | 19 / 19 | 19 / 19 | 19 / 19 | 19 / 19 | 19 / 19 |
+
+The released raw solve's batch maximum is within one iteration of its median (19 vs 17.5 at
+B = 50), so batching costs it at most ~9 % in idle lanes. The Jacobi batch pays its 50-iteration
+cap whenever any lane diverges (median 19, max 50 at B = 16 and 50 on both devices): ~2.6x the
+median lane's work, which is the pre-#595 mechanism the task asked to see. On the A100 at B = 50
+SLaM, `pdip_jacobi` costs 1.94x `pdip_raw` per evaluation (0.369 / 0.190 ms) on the same 50 lanes.
+
+**Guard: does the batched path solve what the unbatched cells solve?**
+
+- `pdip_raw`: yes, on both devices. CPU: every lane's iterations and flag identical to the
+  unbatched solve, max |Δ `flux_inactive_rel`| = 0. A100: iterations and flags identical on all
+  lanes, max |Δ `flux_inactive_rel`| 1.4e-14 (euclid), 1.2e-15 (SLaM). Worst batched
+  `flux_inactive_rel` 3.31e-4 (euclid) on both devices, the phase-3a value; 0 unconverged lanes.
+- `pdip_jacobi` on CPU: identical (0 lanes differ).
+- `pdip_jacobi` on the A100: **the batched trajectories differ** from the unbatched ones on 19 of
+  the 50 SLaM lanes (iterations) and on 13 in the convergence flag: 4/50 unconverged batched
+  against 13/50 for the unbatched A100 solve on the same lanes (the phase-3a A100 rows give the
+  same 13; CPU, batched and unbatched alike: 19/50). On the lanes where Jacobi diverges somewhere, the difference reaches 4.9e68 in
+  `flux_inactive_rel`. Phase 3a already found that which systems Jacobi diverges on depends on
+  the device; under `vmap` on the A100 it depends on the batching too. Reported, not explained
+  away; the released solver shows nothing of the kind.
+
+**Caveats.**
+
+- The euclid batches are tiled copies of one system: identical lanes cannot show lane divergence,
+  and their B = 16 / 50 rows measure throughput only.
+- Laptop walls are WSL2 under background load; the interleaved minimum is the figure to read.
+  The A100 B = 1 `pdip_raw` wall (3.95 ms) agrees with phase 3a's unbatched 3.96 ms.
+- Compile walls depend on cache state (A100 warm shared cache; laptop fresh) and are not
+  comparable across devices as a compiler measurement.
+- Per-eval figures are batched-call wall / B with inputs already on the device; host-to-device
+  transfer of `(Q, q)` and anything else in a likelihood are outside them.
+- The CPU runs batched JAX linear algebra on jax 0.10.2, the version Nerves at 2026.10.7.1
+  excludes at install time for a CPU batched-LAPACK deadlock (Heart#274); none occurred here.
+
+**Verdict.** A timing is not admissibility; no pin moves. Batched on the A100, the released raw
+PDIP costs 0.190 ms per evaluation at B = 50 on distinct SLaM systems (0.226 ms on the tiled
+euclid system), 21x below its own B = 1 wall and 3.6x below the laptop CPU's 0.682 ms at the
+same batch; its lanes stop within one iteration of each other, and the batched path reproduces
+its unbatched solve on every lane. Jacobi costs 1.9x as much at B = 50 on SLaM because a single
+diverging lane pins the batch at the 50 cap. The phase-1/2 rule outcome for `pdip_raw` (not
+admissible as written) is unchanged; nothing routes to /intake.

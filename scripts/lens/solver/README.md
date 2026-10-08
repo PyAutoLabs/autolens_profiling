@@ -203,6 +203,24 @@ Python loop over the lanes (context only). A timing is not an admissibility resu
 | `all` | `fnnls` | euclid_vis_lp (tiled) (host loop) | 1 | 1.3956 | 1.5349 | 1.396 | 0.00 | 8 / 8 | 0/1 | 1.26e-09 | v2026.10.7.1 |
 | `all` | `fnnls` | euclid_vis_lp (tiled) (host loop) | 16 | 1.3869 | 1.5370 | 22.191 | 0.02 | 8 / 8 | 0/16 | 1.26e-09 | v2026.10.7.1 |
 | `all` | `fnnls` | euclid_vis_lp (tiled) (host loop) | 50 | 1.3791 | 1.5259 | 68.953 | 0.10 | 8 / 8 | 0/50 | 1.26e-09 | v2026.10.7.1 |
+| `all_gpu` | `pdip_raw` | slam_fixture_571+slam48_hst | 1 | 3.9475 | 4.0301 | 3.947 | 1.17 | 18 / 18 | 0/1 | 2.28e-07 | v2026.10.7.1 |
+| `all_gpu` | `pdip_raw` | slam_fixture_571+slam48_hst | 16 | 0.5813 | 0.5858 | 9.301 | 0.75 | 18 / 19 | 0/16 | 3.44e-07 | v2026.10.7.1 |
+| `all_gpu` | `pdip_raw` | slam_fixture_571+slam48_hst | 50 | 0.1900 | 0.1919 | 9.501 | 0.59 | 17.5 / 19 | 0/50 | 4.32e-07 | v2026.10.7.1 |
+| `all_gpu` | `pdip_raw` | euclid_vis_lp (tiled) | 1 | 4.9423 | 4.9585 | 4.942 | 0.01 (cached) | 24 / 24 | 0/1 | 3.31e-04 | v2026.10.7.1 |
+| `all_gpu` | `pdip_raw` | euclid_vis_lp (tiled) | 16 | 0.6885 | 0.6924 | 11.016 | 0.01 (cached) | 24 / 24 | 0/16 | 3.31e-04 | v2026.10.7.1 |
+| `all_gpu` | `pdip_raw` | euclid_vis_lp (tiled) | 50 | 0.2259 | 0.2269 | 11.297 | 0.01 (cached) | 24 / 24 | 0/50 | 3.31e-04 | v2026.10.7.1 |
+| `all_gpu` | `pdip_jacobi` | slam_fixture_571+slam48_hst | 1 | 6.7147 | 6.7954 | 6.715 | 0.32 | 41 / 41 | 0/1 | 1.60e-07 | v2026.10.7.1 |
+| `all_gpu` | `pdip_jacobi` | slam_fixture_571+slam48_hst | 16 | 1.1494 | 1.1540 | 18.390 | 0.36 | 19 / 50 | 1/16 | 2.90e+01 | v2026.10.7.1 |
+| `all_gpu` | `pdip_jacobi` | slam_fixture_571+slam48_hst | 50 | 0.3690 | 0.3705 | 18.452 | 0.38 | 19 / 50 | 4/50 | 2.90e+01 | v2026.10.7.1 |
+| `all_gpu` | `pdip_jacobi` | euclid_vis_lp (tiled) | 1 | 3.3114 | 3.3627 | 3.311 | 0.00 (cached) | 19 / 19 | 0/1 | 4.62e-04 | v2026.10.7.1 |
+| `all_gpu` | `pdip_jacobi` | euclid_vis_lp (tiled) | 16 | 0.4587 | 0.4604 | 7.339 | 0.01 (cached) | 19 / 19 | 0/16 | 4.62e-04 | v2026.10.7.1 |
+| `all_gpu` | `pdip_jacobi` | euclid_vis_lp (tiled) | 50 | 0.1470 | 0.1475 | 7.352 | 0.01 (cached) | 19 / 19 | 0/50 | 4.62e-04 | v2026.10.7.1 |
+| `all_gpu` | `fnnls` | slam_fixture_571+slam48_hst (host loop) | 1 | 1.0209 | 1.0395 | 1.021 | 5.02 | 11 / 11 | 0/1 | 4.17e-12 | v2026.10.7.1 |
+| `all_gpu` | `fnnls` | slam_fixture_571+slam48_hst (host loop) | 16 | 0.8667 | 0.8774 | 13.868 | 0.47 | 8.5 / 13 | 0/16 | 8.05e-08 | v2026.10.7.1 |
+| `all_gpu` | `fnnls` | slam_fixture_571+slam48_hst (host loop) | 50 | 0.8781 | 0.8848 | 43.904 | 0.05 | 8.5 / 20 | 0/50 | 8.05e-08 | v2026.10.7.1 |
+| `all_gpu` | `fnnls` | euclid_vis_lp (tiled) (host loop) | 1 | 0.9701 | 0.9784 | 0.970 | 0.00 | 8 / 8 | 0/1 | 1.26e-09 | v2026.10.7.1 |
+| `all_gpu` | `fnnls` | euclid_vis_lp (tiled) (host loop) | 16 | 0.9605 | 0.9668 | 15.367 | 0.02 | 8 / 8 | 0/16 | 1.26e-09 | v2026.10.7.1 |
+| `all_gpu` | `fnnls` | euclid_vis_lp (tiled) (host loop) | 50 | 0.9612 | 0.9656 | 48.060 | 0.05 | 8 / 8 | 0/50 | 1.26e-09 | v2026.10.7.1 |
 <!-- END auto-table:solver-timing -->
 
 ## Euclid latent by candidate (post-hoc)
