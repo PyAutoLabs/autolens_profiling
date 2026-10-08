@@ -177,8 +177,11 @@ def _max_ulp(a, b):
     a, b = np.asarray(a, dtype=np.float64), np.asarray(b, dtype=np.float64)
     if not (np.all(np.isfinite(a)) and np.all(np.isfinite(b))):
         return None
-    d = np.abs(_ordered(a).astype(np.float64) - _ordered(b).astype(np.float64))
-    return float(np.max(d)) if d.size else 0.0
+    # Exact integer differences: the ordered ints reach ~2**62, beyond float64's 53-bit
+    # mantissa, so subtracting them as floats quantises the distance to ~512-1024 ulp (the
+    # A100 artefacts at profiling 6fb885e carry that quantisation; see the ledger).
+    oa, ob = _ordered(a).ravel().tolist(), _ordered(b).ravel().tolist()
+    return float(max((abs(u - v) for u, v in zip(oa, ob)), default=0))
 
 
 def _fin(v):
