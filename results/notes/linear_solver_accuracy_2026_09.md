@@ -628,3 +628,124 @@ same batch; its lanes stop within one iteration of each other, and the batched p
 its unbatched solve on every lane. Jacobi costs 1.9x as much at B = 50 on SLaM because a single
 diverging lane pins the batch at the 50 cap. The phase-1/2 rule outcome for `pdip_raw` (not
 admissible as written) is unchanged; nothing routes to /intake.
+
+## Phase 4a (2026-10-08) — Jacobi batched vs unbatched on the A100
+
+**Question.** Phase 3b found that on the A100 the Jacobi PDIP (`pdip_jacobi`, the library
+`"jacobi"` mode and the Mapper default) gives different results inside `jit(vmap)` over 50
+distinct SLaM systems than when each system is solved alone: 19/50 lanes differ in iterations
+and 13/50 in the flag. CPU batched and unbatched are bit-identical, and `pdip_raw` matches
+everywhere. Where does the difference come from? This phase is research only; issue
+autolens_profiling#397. The write-up and decision table are in the
+[research note](../../wiki/research/jacobi_a100_batched_divergence.md).
+
+**Method.** A new probe,
+[`scripts/lens/solver/batched_divergence.py`](../../scripts/lens/solver/batched_divergence.py),
+calls only the library's solver entry points, composed the way `_solvers` composes them. It
+tests `pdip_jacobi`, with `pdip_raw` and `certified` as controls, on the phase-3b batch (the
+first 50 systems of `slam_fixture_571` + `slam48_hst`, n = 60, fp64). The probes are:
+
+- determinism: the batched solve twice through a fresh `jit(vmap)` plus a repeat call, and the
+  unbatched solve twice through a fresh `jit`;
+- `jit(vmap)` at B = 1 vs `jit`;
+- one system tiled at B = 2 / 8 / 50 (`euclid_vis_lp_k0` and `slam_fixture_571/k0`);
+- the k = 0..50 trajectory, using the library `solve_nnls(Q_pc, q_pc, solver_tol=None,
+  max_iter=k)` batched and unbatched, with a consistency check that k = 50 reproduces the
+  candidate's `x` bit for bit (50/50 lanes on both devices, batched and unbatched);
+- jit vs jit(vmap) of the primitives jaxnnls's PDIP is built from (`cho_factor`, `cho_solve`,
+  matvec) on each lane's Jacobi system;
+- a per-lane join with cond(Q), cond(Q_pc) and the phase-3a and phase-3b flags.
+
+No timings are recorded.
+
+**Provenance.** Both devices run the five libraries at tag **2026.10.7.1**: PyAutoNerves
+`c5ade605`, PyAutoFit `710f4b34`, PyAutoArray `ccddfba6`, PyAutoGalaxy `b4946b8a`, PyAutoLens
+`b6bf543c`. Full SHAs are in each JSON's `device.provenance.library_revisions`. The probe is at
+profiling `6fb885e` on both devices.
+
+- **A100:** RAL job **399050** on `euclid-ral-gpu-2` (NVIDIA A100 80GB PCIe, driver 610.57.04,
+  host AMD EPYC 7702), `--partition=gpu --gres=gpu:1`. It COMPLETED 0:0 in 2:30 (10:14:11 –
+  10:16:40 BST) and ran the probe twice: with the stack's XLA flags (`--xla_disable_hlo_passes=
+  constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false`, set by
+  PyAutoNerves at import), then with `--xla_gpu_deterministic_ops=true` added before jax was
+  imported. Submit script: `hpc/batch_gpu/submit_lens_solver_batched_divergence_a100_fp64`. The
+  libraries came from the phase-3a private clone `/mnt/ral/jnightin/PyAuto_wt/linear-solver-p3/`;
+  the import guard was green and the shared mirror was not touched. jax / jaxlib 0.10.2, numpy
+  2.2.6; backend `gpu`, `cuda:0`; the shared JAX compile cache was warm (`cache_fresh: false`).
+  The `.err` was empty and the post-check green. The phase-3b RAL worktree held untracked 3b
+  artefacts, which blocked a branch checkout, so the job ran from a new sibling worktree,
+  `/mnt/ral/jnightin/autolens_profiling_wt/linear-solver-p4a`. Creating it took ~27 min on the
+  RAL filesystem.
+- **CPU:** the laptop (WSL2, i9-10885H, `OMP_NUM_THREADS=1`, load average 3–5 from other
+  sessions; no timings are taken, so load does not affect the result), using local `git
+  worktree` checkouts of the five tags with `autolens.__file__` confirmed there. jax / jaxlib
+  0.10.2, numba 0.62.1.
+- **Artefact names.** As in phases 3a and 3b, the source checkouts stamp `2026.8.17.1`, so the
+  runs wrote to scratch and were copied to `batched_divergence_summary_all_v2026.10.7.1` (CPU),
+  `_all_gpu_v2026.10.7.1` (A100) and `_all_gpu_det_v2026.10.7.1` (A100 with deterministic ops).
+- **Known defect in the committed A100 JSONs.** Their per-element `max_ulp_*` fields were taken
+  as a float64 difference of ~2^62-sized ordered integers, so they are rounded to multiples of
+  ~512–1024 ulp, and values below ~512 read as 0. This was fixed after the run (exact integer
+  difference). The relative norms (`rel_d*`, `rel_dx_by_k`) and every bitwise comparison are
+  exact, and every number quoted below is one of those.
+
+**Results** (number of lanes out of 50 that differ):
+
+| Probe | CPU | A100 | A100, deterministic ops |
+|---|---|---|---|
+| batched run 1 vs run 2 / repeat call, unbatched run 1 vs run 2 (all candidates) | 0 | 0 | 0 |
+| `jit(vmap)` B = 1 vs `jit` (all candidates) | 0 | 0 | 0 |
+| tiled B = 2 / 8 / 50: lanes vs each other; lane vs unbatched | 0; 0 | 0; **differs at every B** | as A100 |
+| batched vs unbatched `x` bits: `pdip_jacobi` / `pdip_raw` / `certified` | 0 / 0 / 0 | 50 / 50 / 50 | as A100 |
+| batched vs unbatched iterations; flag: `pdip_jacobi` | 0; 0 | **19; 13** (4 vs 13 unconverged) | as A100 |
+| batched vs unbatched iterations; flag: `pdip_raw`, `certified` | 0; 0 | 0; 0 | as A100 |
+| primitives `cho_factor` / `cho_solve` / matvec / Jacobi `Q_pc` | 0 / 0 / 0 / 0 | **50 / 50** / 0 / 0 | as A100 |
+
+The deterministic-ops run is identical to the default run in every per-lane comparison and every
+trajectory difference. On the A100, the largest batched-vs-unbatched ‖Δx‖/‖x‖ is 1.3e-13 for
+`pdip_raw`, 3.4e-12 for `certified` and 61 for `pdip_jacobi`. Lane by lane, both devices
+reproduce the phase-3a unbatched flags and the phase-3b batched flags.
+
+**Trajectory** (`pdip_jacobi`, A100). On every lane the first difference is at **k = 0**
+(jaxnnls `initialize`), in all of x, s and z, on 55–60 of the 60 components, with
+‖Δy‖/‖y‖ = 1.1e-15 – 2.1e-15. The lanes then split into two groups:
+
+- **26 quiet lanes.** ‖Δx‖/‖x‖ stays ≤ 8.2e-13 for all 50 iterations, iterations are identical,
+  and every one converges on CPU, A100 unbatched and A100 batched.
+- **24 sensitive lanes.** These include every lane Jacobi fails to converge on anywhere: all 7
+  CPU-only, all 12 both-device and the 1 A100-only member of the phase-3a set, plus 4 lanes that
+  converge everywhere. Unconverged counts in this group are 19 on CPU, 13 on the A100 unbatched
+  and 4 on the A100 batched. The difference reaches order one within one or two iterations (in
+  the 19 lanes whose iterations differ, ‖Δx‖/‖x‖ > 1e-3 at k = 1 on 8 lanes and at k = 2 on 11).
+
+cond(Q) does not separate the groups. It spans only 9.64e10 – 9.75e10 over the 50 lanes, and
+cond(Q_pc) spans 1.44e11 – 1.55e11. The AUC for predicting "iterations differ" is 0.61 for
+cond(Q) and 0.56 for cond(Q_pc); for "sensitive" it is 0.62 and 0.54. These AUCs and the
+sensitive split (‖Δx‖/‖x‖ > 1e-6 at any k) were computed from the A100 JSON's per-lane `join`
+and `trajectory` rows. The probe's own `join.statistics` AUC fields use "x differs", which is
+true on all 50 A100 lanes, so they are `null` there.
+
+**Supported explanation.** The difference is not run-to-run nondeterminism; it is bit-stable,
+and the deterministic-ops flag changes nothing. It is batch-shape-dependent arithmetic in the
+A100 Cholesky factorisation. The batched (B ≥ 2) `cho_factor` and `cho_solve` round differently
+from the unbatched ones, while B = 1 through `vmap` lowers identically to `jit`. The PDIP state
+therefore differs at rounding level from `initialize` onward. On CPU, batched and unbatched
+Cholesky are bit-identical. Jacobi's unstable systems, the same ones that fail to converge on
+some device, amplify the rounding-level difference to order one within two iterations, so their
+convergence outcome follows the rounding. The released `pdip_raw` and `certified` see the same
+Cholesky difference and stay at ≤ 3.4e-12 with identical iterations and flags.
+
+**Not established.**
+
+- Which GPU kernel each lowering uses (4b kernel-selection probe). The stack's autotune and
+  Triton flags were not varied.
+- Whether the phase-3a CPU-vs-A100 set difference has the same cause.
+- Whether Mapper (pixelized) systems fall in the sensitive group. The corpus here is SLaM MGE
+  systems.
+- Why 4 always-convergent lanes are sensitive.
+
+**Verdict.** Research only. No default, pin or tolerance changed, and nothing routes to /intake.
+The decision (keep Jacobi and document it, a determinism flag, a tolerance or cap change, or
+moving the Mapper default) is laid out with costs in the
+[research note](../../wiki/research/jacobi_a100_batched_divergence.md#decision-table-for-the-human-nothing-here-is-decided).
+The determinism flag is ruled out by this evidence.

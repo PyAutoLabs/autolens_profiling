@@ -201,4 +201,5 @@ jobs:
           python scripts/lens/deflections/total.py
           python scripts/lens/solver/accuracy.py
           python scripts/lens/solver/timing.py
+          python scripts/lens/solver/batched_divergence.py
           python scripts/lens/solver/capture.py --source slam48

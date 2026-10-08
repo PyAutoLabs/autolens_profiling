@@ -28,6 +28,7 @@ as groups, old groups are never rewritten — and every release re-runs the cell
 | [`accuracy.py`](./accuracy.py) | Every candidate on every system → `results/lens/solver/accuracy_summary_<corpus>_v<version>.{json,png}`. |
 | [`early_stopping.py`](./early_stopping.py) | Released raw PDIP at each iteration cap → `results/lens/solver/early_stopping_summary_<corpus>_v<version>.{json,png}`. |
 | [`timing.py`](./timing.py) | Batched cost: `jax.jit(jax.vmap(solve))` per-evaluation wall at B = 1 / 16 / 50 (`pdip_raw`, `pdip_jacobi`; `fnnls` as a host loop), compile wall kept separate, per-lane iterations and an unbatched-guard → `results/lens/solver/timing_summary_<corpus>[_gpu]_v<version>.{json,png}`. |
+| [`batched_divergence.py`](./batched_divergence.py) | **Research (phase 4a).** Does `jit(vmap)` solve what `jit` solves, lane by lane? Determinism (fresh-jit reruns; `--deterministic` sets `--xla_gpu_deterministic_ops=true`), `jit(vmap)` at B = 1 vs `jit`, tiled batches, the k = 0..50 first-difference PDIP trajectory of `pdip_jacobi` via the library `solve_nnls`, jit vs jit(vmap) of the Cholesky / matvec primitives, joined per lane with cond(Q) and the phase-3a/3b flags; no timings → `results/lens/solver/batched_divergence_summary_<corpus>[_gpu][_det]_v<version>.{json,png}`. Write-up: [`wiki/research/jacobi_a100_batched_divergence.md`](../../../wiki/research/jacobi_a100_batched_divergence.md). |
 | [`euclid_latent.py`](./euclid_latent.py) | **Post-hoc.** Every candidate's reconstruction of `euclid_vis_lp_k0` pushed through the euclid pipeline's own `total_source_flux` latent code (validated against the stored eager / jit values) → `results/lens/solver/euclid_latent_by_candidate_v<version>.json`. |
 
 The corpus itself lives in `results/lens/solver/corpus/`: `manifest.json` (per-system metadata)
@@ -282,6 +283,7 @@ python scripts/lens/solver/early_stopping.py
 python scripts/lens/solver/accuracy.py --posthoc      # exploratory set (separate artefact)
 python scripts/lens/solver/euclid_latent.py           # needs the euclid pipeline checkout
 python scripts/lens/solver/timing.py                  # batched timing (add --device gpu on an A100)
+python scripts/lens/solver/batched_divergence.py      # batched-vs-unbatched probe (--device gpu [--deterministic])
 python scripts/misc/tooling/build_readme.py
 ```
 
