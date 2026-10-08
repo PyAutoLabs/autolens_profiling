@@ -297,13 +297,24 @@ class TieSet:
         return out
 
 
-def tie_set(candidates: Mapping[str, Sequence[float]], *, higher_is_better: bool = True) -> TieSet:
+def tie_set(
+    candidates: Mapping[str, Sequence[float]],
+    *,
+    higher_is_better: bool = True,
+    n=None,
+    min_n: int = MIN_AB_ROUNDS,
+) -> TieSet:
     """The leader by point estimate and every candidate its interval cannot separate.
 
     ``candidates`` maps a name to ``(point, lower, upper)``. A candidate whose
     interval overlaps the leader's is in the tie set; a candidate with a
     non-finite point or bound cannot be excluded and is in it too. ``best`` is
     the leader only when the tie set is the leader alone.
+
+    ``n`` is the number of independent units (rounds) the intervals were computed
+    over. Below ``min_n`` no interval can exclude anything (#362 fix phase 4: a
+    round bootstrap over 3 rounds has 10 distinct resamples), so every candidate
+    is in the tie set and ``best`` is ``None``.
     """
     items = {str(name): tuple(v) for name, v in candidates.items()}
     for name, v in items.items():
@@ -311,12 +322,31 @@ def tie_set(candidates: Mapping[str, Sequence[float]], *, higher_is_better: bool
             raise ValueError(f"candidate {name!r}: expected (point, lower, upper), got {v!r}")
     if not items:
         return TieSet(None, (), None, "no candidates", higher_is_better)
-    finite = {n: tuple(float(x) for x in v) for n, v in items.items() if _finite(*v)}
+    finite = {k: tuple(float(x) for x in v) for k, v in items.items() if _finite(*v)}
     if not finite:
         members = tuple(items)
         return TieSet(None, members, None, "no candidate has a finite interval", higher_is_better)
     sign = 1.0 if higher_is_better else -1.0
-    leader = max(finite, key=lambda n: (sign * finite[n][0], n))
+    leader = max(finite, key=lambda name: (sign * finite[name][0], name))
+    if n is not None:
+        try:
+            n_ok = int(n) == n and int(n) >= int(min_n)
+        except (TypeError, ValueError, OverflowError):
+            n_ok = False
+        if not n_ok:
+            return TieSet(
+                leader,
+                tuple(
+                    sorted(
+                        items,
+                        key=lambda k: (-(sign * finite[k][0]) if k in finite else math.inf, k),
+                    )
+                ),
+                None,
+                f"n = {n!r} < {min_n} independent units: no interval can separate the "
+                f"candidates, so every one is in the tie set",
+                higher_is_better,
+            )
     _, lead_lo, lead_hi = finite[leader]
 
     def _overlaps(name: str) -> bool:
@@ -327,8 +357,8 @@ def tie_set(candidates: Mapping[str, Sequence[float]], *, higher_is_better: bool
 
     members = tuple(
         sorted(
-            (n for n in items if n == leader or _overlaps(n)),
-            key=lambda n: (-(sign * finite[n][0]) if n in finite else math.inf, n),
+            (k for k in items if k == leader or _overlaps(k)),
+            key=lambda k: (-(sign * finite[k][0]) if k in finite else math.inf, k),
         )
     )
     if members == (leader,):

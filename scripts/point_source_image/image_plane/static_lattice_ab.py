@@ -166,6 +166,7 @@ if os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     sys.exit(0)
 
 from likelihood_breakdown.provenance import source_revisions, thread_environment  # noqa: E402
+from likelihood_breakdown.round_bootstrap import round_median_ratio  # noqa: E402
 from likelihood_breakdown.timing import block  # noqa: E402
 
 from _profile_cli import (  # noqa: E402
@@ -604,18 +605,15 @@ def _stats_ms(seconds) -> dict:
 
 
 def _median_ratio(numerator, denominator, seed: int) -> dict:
-    num = np.asarray(numerator, dtype=float)
-    den = np.asarray(denominator, dtype=float)
-    rng = np.random.default_rng(seed)
-    boots = np.empty(BOOTSTRAP_SAMPLES)
-    for i in range(BOOTSTRAP_SAMPLES):
-        boots[i] = np.median(rng.choice(num, num.size)) / np.median(rng.choice(den, den.size))
-    return {
-        "ratio": float(np.median(num) / np.median(den)),
-        "ci90_low": float(np.percentile(boots, 5)),
-        "ci90_high": float(np.percentile(boots, 95)),
-        "bootstrap_samples": BOOTSTRAP_SAMPLES,
-    }
+    """median(numerator) / median(denominator), with a paired whole-round bootstrap 90 % interval.
+
+    Resamples whole rounds with the same indices for both arms (#362 fix phase 4,
+    the shared ``likelihood_breakdown.round_bootstrap``); ``effective_n`` is
+    ``N_ROUNDS``. It replaced an iid, unpaired resampling of individual calls.
+    """
+    return round_median_ratio(
+        numerator, denominator, n_rounds=N_ROUNDS, seed=seed, samples=BOOTSTRAP_SAMPLES
+    )
 
 
 def _array_delta(a, b) -> dict:

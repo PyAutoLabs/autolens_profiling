@@ -2,14 +2,14 @@
 
 **Status:** open
 **Question:** Do this repo's timing tests and profiling gates treat measurement noise correctly, so that an uncertain measurement never qualifies a result silently?
-**Pre-registered rule:** PASS only when the interval clears the budget, FAIL only when it clears the other way, otherwise INCONCLUSIVE (never silent, never a measured pass); applied so far to the ABBA overhead (T1, P1), the dashboard drift (P7) and the A/B go / lever rules C6, C7, P2 plus C10's tie sets
-**Verdict:** phase 1 (audit): 31 timing assertions/gates — 11 SOUND, 10 FRAGILE, 10 UNSAFE-SILENT; after fix phases 1–2 (#404, #405): 15 / 8 / 8 (T1, P1, P6, P7 SOUND-with-caveats); after fix phase 3 (#406): 32 rows, 16 / 11 / 5 (C7, C10, P2 UNSAFE-SILENT → FRAGILE; new witness row T7)
+**Pre-registered rule:** PASS only when the interval clears the budget, FAIL only when it clears the other way, otherwise INCONCLUSIVE (never silent, never a measured pass); applied so far to the ABBA overhead (T1, P1), the dashboard drift (P7) and the A/B go / lever rules C6, C7, P2 plus C10's tie sets, on paired whole-round bootstrap intervals (fix phase 4)
+**Verdict:** phase 1 (audit): 31 timing assertions/gates — 11 SOUND, 10 FRAGILE, 10 UNSAFE-SILENT; after fix phases 1–2 (#404, #405): 15 / 8 / 8 (T1, P1, P6, P7 SOUND-with-caveats); after fix phase 3 (#406): 32 rows, 16 / 11 / 5 (C7, C10, P2 UNSAFE-SILENT → FRAGILE; new witness row T7); after fix phase 4 (#PRNUM): 33 rows, 20 / 8 / 5 (C6, C7, C10 SOUND-with-caveats; new witness row T8)
 **Headline:** the #361 CI overhead guard returns INCONCLUSIVE for any true overhead from ~0.8 % to ~5.4 % at CI scatter (3 blocks, s.d. 0.014); GitHub runner, Actions run 36985476995 (no RAL job)
 **Library PRs:** none
-**Profiling PRs:** #361 (t-bound CI guard, merged); #402 (phase 1 audit, merged); #404 (fix phase 1, merged); #405 (fix phase 2, merged); #406 (fix phase 3, open)
+**Profiling PRs:** #361 (t-bound CI guard, merged); #402 (phase 1 audit, merged); #404 (fix phase 1, merged); #405 (fix phase 2, merged); #406 (fix phase 3, merged); #PRNUM (fix phase 4, open)
 **Ledger:** [timing_noise_audit_2026_10.md](../../results/notes/timing_noise_audit_2026_10.md)
-**Mind contract:** Pulse campaign `measurement-tools`, task `tasks/timing_noise_audit.md`; Mind `active/timing_noise_audit_phase4_ab_rule_semantics.md`; issue #362
-**Next:** fix phase 4 of the ledger — round-level paired bootstraps (C6, C8, C9 and the reported CIs); then phase 3b (C1 / C3 / C4 / C5 intervals)
+**Mind contract:** Pulse campaign `measurement-tools`, task `tasks/timing_noise_audit.md`; Mind `active/timing_noise_audit_phase5_round_bootstrap.md`; issue #362
+**Next:** phase 3b (C1 / C3 / C4 / C5 intervals), then fix phase 5 (P8 headline estimator, P9 GPU-only marker)
 
 ## Why this campaign
 
@@ -28,6 +28,8 @@ inconclusive never qualifies a result.
 | 2 — fix phase 1 (T1 + P1) | 2026-10-08 | Can the CI test and the numba cell share one interval verdict for the ABBA overhead? | PASS / FAIL only when the one-sided t bound clears the 12 ms budget, else INCONCLUSIVE | one `abba_overhead_verdict`; 6 of 17 RAL rows re-judge INCONCLUSIVE | none | #404 |
 | 3 — fix phase 2 (P6 + P7) | 2026-10-08 | Does the dashboard qualify only reference-host trend points and stop publishing in-band single samples as a null? | laptop / no-loadavg / no-host rows unqualified; in-band with a single-sample endpoint → `insufficient` | qualified records 2 → 2; `flat` 4 → 0 (→ `insufficient`); 6 `improved` keep status with a caveat | none | #405 |
 | 4 — fix phase 3 (C6, C7, C10, P2) | 2026-10-08 | Do the pre-registered A/B go / lever rules read their intervals, and does argmax refuse to name a tied winner? | GO only when the whole interval clears the bar, NO_GO / NO_LEVER only when it is wholly on the bad side, else INCONCLUSIVE (≥ 5 rounds); tie set when the leaders' intervals overlap | no go / no-go / NO_LEVER call changed (C7 4, C6 24, P2 1 rows all resolve); 7 of 9 committed solver-sweep "best" are tie sets; C1 / C3 / C4 / C5 deferred to phase 3b | none | #406 |
+| #PRNUM | paired whole-round bootstrap `round_bootstrap.round_median_ratio` / `round_median_saving` (`effective_n` = rounds) for every point-source A/B cell's reported interval (C6, C7, C8, C9 / C10, gradient-mode library, static lattice, vertex dedup); `tie_set` names no best below 5 rounds; C6, C7, C10 SOUND-with-caveats | pending | n/a (profiling repo) |
+| 5 — fix phase 4 (C6, C8, C9 and the reported CIs) | 2026-10-08 | Do the A/B intervals respect the round structure and the pairing of routes? | resample whole rounds, the same indices for every route; `effective_n` = rounds; no `best` below 5 rounds | witness: iid CI 0.2–0.36× the round CI's width, coverage 0.33 vs 0.85 at nominal 0.90; committed RAL calls unchanged; one laptop C6 GO → INCONCLUSIVE; laptop 3-round sweep names no best | none | #PRNUM |
 
 ## What shipped and where it is
 
@@ -84,3 +86,11 @@ follow the labelled point leader (flagged decision). Re-judging the committed ro
 no-go / NO_LEVER call; 7 of 9 committed "best admissible" names are tie sets (IP-4a's 2.37x
 leader is one of five). C1 / C3 / C4 / C5 need new intervals and are phase 3b. Next: fix phase 4
 (round bootstrap).
+
+### 2026-10-08 — fix phase 4 (C6, C8, C9 and the reported CIs), phase 5 of #362
+
+The point-source A/B cells' iid, unpaired call bootstraps are replaced by one paired whole-round
+bootstrap (`round_bootstrap.py`), recording `effective_n` = rounds. Witness: with a per-round
+offset, the iid 90 % interval is a fifth to a third of the round interval's width and covers the
+true ratio a third of the time (round: 0.85). Re-judged on round intervals, no RAL call changed;
+one laptop C6 GO became INCONCLUSIVE and the 3-round laptop sweep names no best. Next: phase 3b.
