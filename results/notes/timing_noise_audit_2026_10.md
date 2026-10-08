@@ -27,7 +27,7 @@ unpaired in time; fix phase 4). Re-judging the committed rows changed no go / no
 committed solver-sweep "best" configurations are tie sets. C1 / C3 / C4 / C5 are deferred to
 **phase 3b**. See "Fix phase 3 — shipped" under (b).
 
-**Fix phase 4 shipped (phase 5 of #362, PR #PRNUM, 2026-10-08):** every point-source A/B cell's
+**Fix phase 4 shipped (phase 5 of #362, PR #407, 2026-10-08):** every point-source A/B cell's
 reported interval (C6, C7, C8, C9 / C10 and the CIs of `gradient_mode_library_ab`,
 `static_lattice_ab`, `vertex_dedup_ab`) is now a **paired whole-round bootstrap**,
 `scripts/misc/likelihood_breakdown/round_bootstrap.py` (`round_median_ratio`,
@@ -820,7 +820,7 @@ correctness or gross-regression guard.
    - **Witness:** synthetic rounds with injected within-round correlation, where the iid
      bootstrap's 90 % CI is visibly narrower than the round bootstrap's. Assert the round
      bootstrap covers the known true ratio, under a fixed seed.
-   - **Shipped (phase 5 of #362, PR #PRNUM, 2026-10-08).** As implemented:
+   - **Shipped (phase 5 of #362, PR #407, 2026-10-08).** As implemented:
      - **the bootstrap** (`scripts/misc/likelihood_breakdown/round_bootstrap.py`): calls are
        reshaped to `(n_rounds, n_calls)` in round order; each of 2000 draws resamples round
        indices with replacement, **the same indices for both arms**, and takes the median of the
