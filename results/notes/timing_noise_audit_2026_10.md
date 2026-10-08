@@ -5,7 +5,7 @@ Issue: [autolens_profiling#362](https://github.com/PyAutoLabs/autolens_profiling
 Pulse task: `tasks/timing_noise_audit.md` (campaign `measurement-tools`). Campaign page:
 [Measurement tools](../../wiki/campaigns/measurement_tools.md).
 
-**Fix phase 1 shipped (phase 2 of #362, 2026-10-08):** rows T1 and P1 now share one verdict,
+**Fix phase 1 shipped (phase 2 of #362, PR #404, 2026-10-08):** rows T1 and P1 now share one verdict,
 `scripts/misc/likelihood_breakdown/overhead_verdict.py::abba_overhead_verdict`, and are
 SOUND-with-caveats; see "Fix phase 1 — shipped" under (b). The rest of this note is the phase 1
 audit as written, with the T1 / P1 / P2 / T3 rows and the counts updated.
@@ -577,7 +577,7 @@ correctness or gross-regression guard.
        PASS.
 
      The witness also asserts that the test and the cell import the same function object.
-   - **Shipped (phase 2 of #362, 2026-10-08).** As implemented:
+   - **Shipped (phase 2 of #362, PR #404, 2026-10-08).** As implemented:
      - verdict rule, in order: invalid input → `ValueError`; mean ratio > 1.5 → FAIL_GROSS;
        n < 3 → INCONCLUSIVE; upper bound of the excess < 0 ms (mean ratio *resolved* below 1) →
        INCONCLUSIVE, "host-noise signature"; upper ≤ budget → PASS; lower > budget → FAIL;
