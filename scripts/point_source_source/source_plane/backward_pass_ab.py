@@ -95,6 +95,12 @@ the 90 % CIs excluding the bar (saved-ms CI low >= 0.05 and ratio CI high
 part of the rule. The JSON evaluates it for every config; only
 ``hpc_ral_cpu_fp64`` decides.
 
+Since #362 fix phase 3 the rule is the shared
+``likelihood_breakdown.ab_verdict.ab_rule_verdict`` (bars unchanged): a red
+correctness gate is NO_GO; GO when both intervals clear their bars; NO_GO only
+when an interval is wholly on the wrong side; INCONCLUSIVE otherwise or below
+``MIN_AB_ROUNDS`` rounds — an overlapping CI is no longer written as no-go.
+
 Output
 ------
 
@@ -138,6 +144,15 @@ if os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
     sys.exit(0)
 
+from likelihood_breakdown.ab_verdict import (  # noqa: E402
+    AB_CONFIDENCE,
+    AT_LEAST,
+    AT_MOST,
+    MIN_AB_ROUNDS,
+    NO_GO,
+    Criterion,
+    ab_rule_verdict,
+)
 from likelihood_breakdown.provenance import source_revisions, thread_environment  # noqa: E402
 from likelihood_breakdown.timing import block  # noqa: E402
 
@@ -989,7 +1004,13 @@ def _phase2c_rule() -> dict:
                 continue
             gate_green = bool(row["gate"][route]["pass"])
             if route not in row["vs_control"]:
-                per_route[route] = {"gate_green": gate_green, "go": False, "timed": False}
+                per_route[route] = {
+                    "gate_green": gate_green,
+                    "go": False,
+                    "timed": False,
+                    "verdict": NO_GO,
+                    "verdict_reason": "not timed: its correctness gate is red",
+                }
                 continue
             v = row["vs_control"][route]
             saved, ratio = v["saved_ms"], v["ratio_route_over_control"]
@@ -997,6 +1018,31 @@ def _phase2c_rule() -> dict:
             point = bool(saved["saved_ms"] >= GO_MIN_SAVED_MS and fraction >= GO_MIN_FRACTION)
             ci = bool(
                 saved["ci90_low"] >= GO_MIN_SAVED_MS and ratio["ci90_high"] <= 1.0 - GO_MIN_FRACTION
+            )
+            verdict = ab_rule_verdict(
+                [
+                    Criterion(
+                        "saved_ms",
+                        saved["saved_ms"],
+                        saved["ci90_low"],
+                        saved["ci90_high"],
+                        GO_MIN_SAVED_MS,
+                        AT_LEAST,
+                        "ms",
+                    ),
+                    Criterion(
+                        "ratio_route_over_rev",
+                        ratio["ratio"],
+                        ratio["ci90_low"],
+                        ratio["ci90_high"],
+                        1.0 - GO_MIN_FRACTION,
+                        AT_MOST,
+                    ),
+                ],
+                n=row["n_rounds"],
+                min_n=MIN_AB_ROUNDS,
+                confidence=AB_CONFIDENCE,
+                gates={"correctness": gate_green},
             )
             per_route[route] = {
                 "timed": True,
@@ -1010,13 +1056,19 @@ def _phase2c_rule() -> dict:
                 "point_estimate_clears_bar": point,
                 "ci_excludes_bar": ci,
                 "gate_green": gate_green,
-                "go": bool(point and ci and gate_green),
+                "verdict": verdict.verdict,
+                "verdict_reason": verdict.reason,
+                "resolvable_effect": {c.name: c.mdi for c in verdict.criteria},
+                "go": verdict.go,
             }
         per_lane[lane] = per_route
     return {
         "rule": f"GO iff saved >= {GO_MIN_SAVED_MS} ms AND >= {GO_MIN_FRACTION:.0%} vs rev on "
         "the value_and_grad-equivalent call, 90% CIs excluding the bar (saved CI low >= "
-        f"{GO_MIN_SAVED_MS} ms, ratio CI high <= {1 - GO_MIN_FRACTION:.2f}), correctness gate green",
+        f"{GO_MIN_SAVED_MS} ms, ratio CI high <= {1 - GO_MIN_FRACTION:.2f}), correctness gate green; "
+        "NO_GO only when an interval is wholly on the wrong side or the gate is red; INCONCLUSIVE "
+        f"otherwise or below {MIN_AB_ROUNDS} rounds (shared ab_rule_verdict, #362)",
+        "effective_n": "n_rounds (the interval is still an iid call bootstrap; #362 fix phase 4)",
         "decides_on": "hpc_ral_cpu_fp64 only",
         "per_lane": per_lane,
     }
@@ -1184,14 +1236,14 @@ print("-" * 100)
 for lane, per_route in phase2c_rule["per_lane"].items():
     for route, verdict in per_route.items():
         if not verdict.get("timed"):
-            print(f"  phase-2c rule [{lane}/{route}]: NOT TIMED (gate failed) -> no-go")
+            print(f"  phase-2c rule [{lane}/{route}]: NOT TIMED (gate failed) -> NO_GO")
             continue
         print(
             f"  phase-2c rule [{lane}/{route}]: saved {verdict['saved_ms']:+.4f} ms "
             f"[{verdict['saved_ms_ci90'][0]:+.4f}, {verdict['saved_ms_ci90'][1]:+.4f}] = "
             f"{verdict['fraction_saved']:.1%}; ratio {verdict['ratio']:.3f} "
             f"[{verdict['ratio_ci90'][0]:.3f}, {verdict['ratio_ci90'][1]:.3f}] -> "
-            f"{'GO' if verdict['go'] else 'no-go'} ({config_name}; RAL CPU decides)"
+            f"{verdict['verdict']} ({config_name}; RAL CPU decides)"
         )
 print(f"  wall: {summary['wall_s']:.0f} s")
 print(f"  Results JSON: {dict_path}")

@@ -59,8 +59,12 @@ finite AND non-zero (an unregistered model makes ``jax.grad`` silently zero).
 
 Phase-2b rule (issue #322; applies to the RAL CPU row): **go** if
 ``pytree - flat_vector`` >= 0.05 ms AND >= 15 % of the fused (``pytree``)
-forward call; else no-go. The JSON evaluates it per lane for every config;
-only ``hpc_ral_cpu_fp64`` decides.
+forward call. Since #362 fix phase 3 the rule is the shared
+``likelihood_breakdown.ab_verdict.ab_rule_verdict`` on the 90 % intervals:
+GO only when both intervals clear their bars, NO_GO only when one is wholly
+below its bar, INCONCLUSIVE otherwise (or below ``MIN_AB_ROUNDS`` rounds) —
+never a measured no-go. The bars are unchanged. The JSON evaluates it per lane
+for every config; only ``hpc_ral_cpu_fp64`` decides.
 
 Output
 ------
@@ -104,6 +108,13 @@ if os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
     sys.exit(0)
 
+from likelihood_breakdown.ab_verdict import (  # noqa: E402
+    AB_CONFIDENCE,
+    AT_LEAST,
+    MIN_AB_ROUNDS,
+    Criterion,
+    ab_rule_verdict,
+)
 from likelihood_breakdown.provenance import source_revisions, thread_environment  # noqa: E402
 from likelihood_breakdown.timing import block  # noqa: E402
 
@@ -246,6 +257,26 @@ def _median_ratio(numerator, denominator, seed: int) -> dict:
         boots[i] = np.median(rng.choice(num, num.size)) / np.median(rng.choice(den, den.size))
     return {
         "ratio": float(np.median(num) / np.median(den)),
+        "ci90_low": float(np.percentile(boots, 5)),
+        "ci90_high": float(np.percentile(boots, 95)),
+        "bootstrap_samples": BOOTSTRAP_SAMPLES,
+    }
+
+
+def _median_saving_ms(slower, faster, seed: int) -> dict:
+    """median(slower) - median(faster) in ms, with a bootstrap 90 % interval.
+
+    The same estimator as ``backward_pass_ab._median_saving_ms``; it gives the
+    phase-2b rule's ms criterion the interval it lacked before #362 fix phase 3.
+    """
+    slow = np.asarray(slower, dtype=float) * 1.0e3
+    fast = np.asarray(faster, dtype=float) * 1.0e3
+    rng = np.random.default_rng(seed)
+    boots = np.empty(BOOTSTRAP_SAMPLES)
+    for i in range(BOOTSTRAP_SAMPLES):
+        boots[i] = np.median(rng.choice(slow, slow.size)) - np.median(rng.choice(fast, fast.size))
+    return {
+        "saved_ms": float(np.median(slow) - np.median(fast)),
         "ci90_low": float(np.percentile(boots, 5)),
         "ci90_high": float(np.percentile(boots, 95)),
         "bootstrap_samples": BOOTSTRAP_SAMPLES,
@@ -505,6 +536,9 @@ def _run_row(lane: str, kind: str, arguments: dict, treedef) -> dict:
         "saved_ms_pytree_minus_flat_vector": float(
             pytree_stats["median_ms"] - stats["flat_vector"]["median_ms"]
         ),
+        "saved_ms_pytree_minus_flat_vector_ci90": _median_saving_ms(
+            times["pytree"], times["flat_vector"], BOOTSTRAP_SEED + 3
+        ),
         "saved_ms_pytree_minus_flat_leaves": float(
             pytree_stats["median_ms"] - stats["flat_leaves"]["median_ms"]
         ),
@@ -561,22 +595,67 @@ for lane_index, lane in enumerate(LANES):
 
 
 def _phase2b_rule() -> dict:
+    """The pre-registered phase-2b rule, judged on intervals (#362 fix phase 3).
+
+    The fraction saved is ``1 - flat_vector / pytree = 1 - 1 / ratio``, so its
+    interval is the ratio's bootstrap interval mapped through that monotone
+    function. ``go`` is True only for a GO verdict; an INCONCLUSIVE lane is
+    ``go: false`` with ``verdict: INCONCLUSIVE`` — not a measured no-go.
+    """
     per_lane = {}
     for lane in LANES:
         row = rows[f"{lane}_forward"]
         saved = row["saved_ms_pytree_minus_flat_vector"]
+        saved_ci = row["saved_ms_pytree_minus_flat_vector_ci90"]
         fused = row["stats"]["pytree"]["median_ms"]
         fraction = saved / fused
+        ratio = row["ratio_pytree_over_flat_vector"]
+        fraction_ci = [1.0 - 1.0 / ratio["ci90_low"], 1.0 - 1.0 / ratio["ci90_high"]]
+        verdict = ab_rule_verdict(
+            [
+                Criterion(
+                    "saved_ms",
+                    saved,
+                    saved_ci["ci90_low"],
+                    saved_ci["ci90_high"],
+                    GO_MIN_SAVED_MS,
+                    AT_LEAST,
+                    "ms",
+                ),
+                Criterion(
+                    "fraction_of_fused",
+                    1.0 - 1.0 / ratio["ratio"],
+                    fraction_ci[0],
+                    fraction_ci[1],
+                    GO_MIN_FRACTION,
+                    AT_LEAST,
+                ),
+            ],
+            n=row["n_rounds"],
+            min_n=MIN_AB_ROUNDS,
+            confidence=AB_CONFIDENCE,
+        )
         per_lane[lane] = {
             "saved_ms": saved,
+            "saved_ms_ci90": [saved_ci["ci90_low"], saved_ci["ci90_high"]],
             "fused_pytree_ms": fused,
             "fraction_of_fused": fraction,
-            "go": bool(saved >= GO_MIN_SAVED_MS and fraction >= GO_MIN_FRACTION),
+            "fraction_of_fused_ci90": fraction_ci,
+            "point_estimate_clears_bar": bool(
+                saved >= GO_MIN_SAVED_MS and fraction >= GO_MIN_FRACTION
+            ),
+            "verdict": verdict.verdict,
+            "verdict_reason": verdict.reason,
+            "resolvable_effect": {c.name: c.mdi for c in verdict.criteria},
+            "go": verdict.go,
         }
     return {
-        "rule": f"go if pytree - flat_vector >= {GO_MIN_SAVED_MS} ms AND >= "
-        f"{GO_MIN_FRACTION:.0%} of the fused forward call",
+        "rule": f"GO iff pytree - flat_vector >= {GO_MIN_SAVED_MS} ms AND >= "
+        f"{GO_MIN_FRACTION:.0%} of the fused forward call, with both 90% intervals clearing "
+        "the bar; NO_GO only when an interval is wholly below its bar; INCONCLUSIVE "
+        f"otherwise or below {MIN_AB_ROUNDS} rounds (shared ab_rule_verdict, #362)",
         "decides_on": "hpc_ral_cpu_fp64 only",
+        "effective_n": "n_rounds (the interval is still an iid call bootstrap; #362 fix phase 4)",
         "per_lane": per_lane,
     }
 
@@ -735,9 +814,10 @@ print("-" * 100)
 print("  ALL ASSERTS PASSED (route agreement rtol 1e-10; grads finite and non-zero)")
 for lane, verdict in phase2b_rule["per_lane"].items():
     print(
-        f"  phase-2b rule [{lane}]: saved {verdict['saved_ms']:.4f} ms = "
+        f"  phase-2b rule [{lane}]: saved {verdict['saved_ms']:.4f} ms "
+        f"[{verdict['saved_ms_ci90'][0]:.4f}, {verdict['saved_ms_ci90'][1]:.4f}] = "
         f"{verdict['fraction_of_fused']:.1%} of {verdict['fused_pytree_ms']:.4f} ms -> "
-        f"{'GO' if verdict['go'] else 'no-go'} ({config_name}; RAL CPU decides)"
+        f"{verdict['verdict']} ({config_name}; RAL CPU decides)"
     )
 print(f"  wall: {summary['wall_s']:.0f} s")
 print(f"  Results JSON: {dict_path}")

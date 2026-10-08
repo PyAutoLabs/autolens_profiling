@@ -69,6 +69,14 @@ Completeness gate
   coarser initial scale changes ``n_steps`` by the ceiling, so e.g. 0.5" / 0.001"
   ends on 0.00195" triangles, 25 % coarser than the control. ``best_admissible``
   requires both flags; ``best_admissible_any_precision`` only the first.
+- **Best = a resolved leader, else a tie set** (#362 fix phase 3). The selection
+  is the shared ``likelihood_breakdown.ab_verdict.tie_set`` over the candidates'
+  bootstrap 90 % speed-up intervals: ``best_admissible`` names a configuration
+  only when its interval is clear of every other candidate's, and is ``None``
+  otherwise; ``best_admissible_tie_set`` records the point leader and every
+  candidate it cannot be separated from. The vmap rows and the uncapped counts
+  are measured for the **point leader** (labelled ``point_leader``, never
+  "best"), which keeps the job's protocol and wall unchanged.
 
 Timing
 ------
@@ -77,7 +85,7 @@ Phase-3 protocol: fresh closures and ``jax.clear_caches()`` per route, the
 production default as the in-job control, interleaved round-robin rounds with the
 start rotated each round, per-call medians, bootstrap 90 % CI of control / config,
 ``compile_s``, FLOPs (``cost_analysis``), XLA ``memory_analysis`` and ``vmap``
-batches 1 / 4 / 16 for the control and the best admissible configuration. For each
+batches 1 / 4 / 16 for the control and the admissible point leader. For each
 distinct step-0 geometry the step-0 ray trace and ray trace + containment are timed
 as their own jitted prefixes, so the containment share is recorded. Two further
 prefixes size the materialisation: ``route_inputs`` returns the six barycentric
@@ -86,7 +94,7 @@ input components the ACTIVE step-0 route feeds the sign test (route-aware), and
 route-independent reference). Containment is the headline before/after number.
 Finally, the NumPy solver (dynamic shapes, no ``MAX_CONTAINING_SIZE`` cap) counts how
 many triangles contain β* at every step on the prior draws, for the control and the
-best admissible geometries: the margin the production cap of 15 actually has.
+admissible point-leader geometries: the margin the production cap of 15 actually has.
 
 Gates
 -----
@@ -182,6 +190,7 @@ if os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
     sys.exit(0)
 
+from likelihood_breakdown.ab_verdict import tie_set  # noqa: E402
 from likelihood_breakdown.provenance import source_revisions, thread_environment  # noqa: E402
 from likelihood_breakdown.timing import block  # noqa: E402
 
@@ -1284,17 +1293,39 @@ candidates = [n for n in candidates_any if precision_equivalent[n]]
 
 
 def _fastest(names):
-    return max(names, key=lambda n: rows[n]["speedup_vs_control"]["ratio"]) if names else None
+    """The shared tie set over the candidates' 90 % speed-up intervals (#362 fix phase 3).
+
+    Never an argmax of point estimates: ``.best`` is ``None`` when the point
+    leader's interval overlaps another candidate's.
+    """
+    return tie_set(
+        {
+            n: (
+                rows[n]["speedup_vs_control"]["ratio"],
+                rows[n]["speedup_vs_control"]["ci90_low"],
+                rows[n]["speedup_vs_control"]["ci90_high"],
+            )
+            for n in names
+        },
+        higher_is_better=True,
+    )
 
 
-best = _fastest(candidates)
-best_any_precision = _fastest(candidates_any)
-note(f"best admissible (precision-equivalent): {best}; any precision: {best_any_precision}")
+best_tie = _fastest(candidates)
+best_any_precision_tie = _fastest(candidates_any)
+best = best_tie.best
+best_any_precision = best_any_precision_tie.best
+leader = best_tie.leader
+leader_any_precision = best_any_precision_tie.leader
+note(
+    f"best admissible (precision-equivalent): {best} (tie set {list(best_tie.members)}); "
+    f"any precision: {best_any_precision} (tie set {list(best_any_precision_tie.members)})"
+)
 
 vmap_block = None
 vvals = {}
-if best is not None or STEP0_MODE or MCS_MODE:
-    vmap_names = CONFIG_NAMES if (STEP0_MODE or MCS_MODE) else ["control", best]
+if leader is not None or STEP0_MODE or MCS_MODE:
+    vmap_names = CONFIG_NAMES if (STEP0_MODE or MCS_MODE) else ["control", leader]
     vroutes = [(n, b) for n in vmap_names for b in VMAP_BATCHES]
     vexec, vcompile, vargs = {}, {}, {}
     for n, b in vroutes:
@@ -1324,7 +1355,14 @@ if best is not None or STEP0_MODE or MCS_MODE:
                 dt, out = _timed_call(vexec[key], vargs[key][k])
                 vtimes[key].append(dt)
                 vvals[key].setdefault(k, np.asarray(out, dtype=float).tolist())
-    vmap_block = {"best": best, "routes": vmap_names, "batches": list(VMAP_BATCHES), "rows": {}}
+    vmap_block = {
+        "best": best,
+        "point_leader": leader,
+        "tie_set": list(best_tie.members),
+        "routes": vmap_names,
+        "batches": list(VMAP_BATCHES),
+        "rows": {},
+    }
     for i, (n, b) in enumerate(vroutes):
         st = _stats_ms(vtimes[(n, b)])
         vmap_block["rows"][f"{n}_vmap{b}"] = {
@@ -1651,7 +1689,7 @@ if MCS_MODE:
             )
         )
 else:
-    for name in dict.fromkeys(n for n in ("control", best, best_any_precision) if n):
+    for name in dict.fromkeys(n for n in ("control", leader, leader_any_precision) if n):
         cfg = next(c for c in CONFIGS if c["name"] == name)
         uncapped_counts[name] = containing_counts(cfg, prior_draws)
         u = uncapped_counts[name]
@@ -2041,6 +2079,8 @@ summary = {
     ),
     "best_admissible": best,
     "best_admissible_any_precision": best_any_precision,
+    "best_admissible_tie_set": best_tie.as_dict(),
+    "best_admissible_any_precision_tie_set": best_any_precision_tie.as_dict(),
     "table": table,
     "rows": rows,
     "vmap": vmap_block,
@@ -2090,7 +2130,7 @@ ax2.set_xlabel("max position error vs reference on prior draws [arcsec]")
 ax2.set_ylabel("speed-up vs control")
 fig.suptitle(
     f"PointSolver config sweep ({config_name}); control {control_stats['median_ms']:.3f} ms; "
-    f"best admissible={best}; all_gates_pass={all_gates_pass}",
+    f"best admissible={best} (tie set {list(best_tie.members)}); all_gates_pass={all_gates_pass}",
     fontsize=10,
 )
 fig.savefig(chart_path, dpi=150)
@@ -2132,7 +2172,10 @@ print(
 print(
     f"  reference floor: {json.dumps({s: {k: v for k, v in fl.items() if 'example' not in k} for s, fl in reference_floor.items()})}"
 )
-print(f"  best admissible (precision-equivalent): {best}; any precision: {best_any_precision}")
+print(
+    f"  best admissible (precision-equivalent): {best} (tie set {list(best_tie.members)}); "
+    f"any precision: {best_any_precision} (tie set {list(best_any_precision_tie.members)})"
+)
 print(f"  reference image extent: {reference_image_extent}")
 print(f"  fiducial gate: {gates['fiducial_bit_exact']}")
 if mcs_headroom:

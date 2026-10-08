@@ -384,6 +384,18 @@ import autofit as af  # noqa: E402
 import autolens as al  # noqa: E402
 import numpy as np  # noqa: E402
 
+# The ONE A/B go / lever verdict (#362 fix phase 3), for the P2 promotion rule.
+from likelihood_breakdown.ab_verdict import (  # noqa: E402
+    AB_CONFIDENCE,
+    AT_LEAST,
+    GO,
+    MIN_AB_ROUNDS,
+    NO_GO,
+    Criterion,
+    ab_rule_verdict,
+    paired_block_ratio_interval,
+)
+
 # The ONE overhead verdict, shared with the CI test (#362 fix phase 1). Imported
 # above the smoke exit so the CI import smoke covers it; it is numpy + scipy only.
 from likelihood_breakdown.overhead_verdict import (  # noqa: E402
@@ -2375,10 +2387,47 @@ if _promotion_pair is not None:
     _b_key, _d_key = _promotion_pair
     _b_row, _d_row = rows[_b_key], rows[_d_key]
     _whole_call_speedup = (_b_row["call_ms"] - _d_row["call_ms"]) / max(_b_row["call_ms"], 1e-300)
+
+    # The >=5% rule on an interval (#362 fix phase 3). Both rows walk the same
+    # validated timed instance stream, so block j of b and block j of d_perm
+    # evaluate the same instances: the per-block clean means are paired by
+    # instance. A decomposed (ABBA) row has two clean calls per block; a clean-only
+    # row is one call per block. The rows are separate passes in time, so drift
+    # between them is NOT cancelled; the interval covers block-to-block scatter.
+    def _clean_blocks(row):
+        sequence = np.asarray(row.get("call_ms_sequence", []), dtype=float)
+        if row.get("decomposed") and sequence.size % 2 == 0:
+            return sequence.reshape(-1, 2).mean(axis=1)
+        return sequence
+
+    _b_blocks, _d_blocks = _clean_blocks(_b_row), _clean_blocks(_d_row)
+    _block_count_mismatch = _b_blocks.size != _d_blocks.size
+    if _block_count_mismatch:
+        # Unpaired rows cannot be paired by instance: the interval is invalid and
+        # the verdict INCONCLUSIVE (the stream check above should prevent this).
+        _b_blocks = _d_blocks = np.asarray([], dtype=float)
+    _ratio, _ratio_lo, _ratio_hi, _n_paired_blocks = paired_block_ratio_interval(
+        _b_blocks, _d_blocks, confidence=AB_CONFIDENCE
+    )
+    _speedup_verdict = ab_rule_verdict(
+        [
+            Criterion(
+                "whole_call_speedup_fraction",
+                1.0 - _ratio,
+                1.0 - _ratio_hi,
+                1.0 - _ratio_lo,
+                0.05,
+                AT_LEAST,
+            )
+        ],
+        n=_n_paired_blocks,
+        min_n=MIN_AB_ROUNDS,
+        confidence=AB_CONFIDENCE,
+    )
     _abba_pass = all(
         row.get("instrumentation_overhead_status") == "PASS" for row in (_b_row, _d_row)
     )
-    _timing_candidate = _whole_call_speedup >= 0.05 and _abba_pass
+    _timing_candidate = _speedup_verdict.verdict == GO and _abba_pass
     # An arm whose ABBA overhead is INCONCLUSIVE has an unresolved instrument cost;
     # a speedup that clears the bar on such a row is INCONCLUSIVE, never a
     # timing_candidate and never a measured NO_LEVER.
@@ -2387,14 +2436,14 @@ if _promotion_pair is not None:
         for key, row in ((_b_key, _b_row), (_d_key, _d_row))
         if row.get("instrumentation_overhead_status") != "PASS"
     ]
-    _speedup_clears = _whole_call_speedup >= 0.05
     if _timing_candidate:
         _promotion_status = "timing_candidate"
         _promotion_reason = (
-            "Timing qualifies for witness review; promotion still requires the separate "
-            "s4b witness to PASS every draw."
+            f"The whole-call speedup interval clears the >=5% rule "
+            f"({_speedup_verdict.reason}). Timing qualifies for witness review; promotion "
+            f"still requires the separate s4b witness to PASS every draw."
         )
-    elif _speedup_clears:
+    elif _speedup_verdict.verdict == GO:
         _promotion_status = "INCONCLUSIVE"
         _promotion_reason = (
             f"The candidate cleared the >=5% whole-call timing rule, but the ABBA overhead "
@@ -2404,11 +2453,19 @@ if _promotion_pair is not None:
             f"INCONCLUSIVE — it neither promotes nor counts as a measured NO_LEVER. Re-run "
             f"with more blocks (--n-repeats) to resolve it."
         )
-    else:
+    elif _speedup_verdict.verdict == NO_GO:
         _promotion_status = "NO_LEVER"
         _promotion_reason = (
-            "Candidate did not meet the >=5% whole-call timing rule. This is a valid "
-            "measured NO_LEVER result, not a failed job."
+            f"The whole-call speedup interval is wholly below the >=5% rule "
+            f"({_speedup_verdict.reason}). This is a valid measured NO_LEVER result, not a "
+            f"failed job."
+        )
+    else:
+        _promotion_status = "INCONCLUSIVE"
+        _promotion_reason = (
+            f"The whole-call speedup is unresolved against the >=5% rule "
+            f"({_speedup_verdict.reason}). INCONCLUSIVE — it neither promotes nor counts as "
+            f"a measured NO_LEVER. Re-run with more blocks (--n-repeats) to resolve it."
         )
     _promotion_decision = {
         "status": _promotion_status,
@@ -2416,6 +2473,24 @@ if _promotion_pair is not None:
         "candidate_row": _d_key,
         "whole_call_speedup_fraction": _whole_call_speedup,
         "minimum_speedup_fraction": 0.05,
+        "whole_call_speedup_paired_blocks": {
+            "estimator": "1 - mean over blocks of (candidate block clean mean / reference "
+            "block clean mean), blocks paired by instance",
+            "point": 1.0 - _ratio,
+            "lower": 1.0 - _ratio_hi,
+            "upper": 1.0 - _ratio_lo,
+            "confidence": AB_CONFIDENCE,
+            "interval": "two-sided Student-t on the per-block ratios",
+            "n_blocks": _n_paired_blocks,
+            "min_blocks": MIN_AB_ROUNDS,
+        },
+        "speedup_verdict": _speedup_verdict.verdict,
+        "speedup_verdict_reason": (
+            "reference and candidate rows have different block counts; " + _speedup_verdict.reason
+            if _block_count_mismatch
+            else _speedup_verdict.reason
+        ),
+        "resolvable_effect": {c.name: c.mdi for c in _speedup_verdict.criteria},
         "reference_abba_status": _b_row.get("instrumentation_overhead_status"),
         "candidate_abba_status": _d_row.get("instrumentation_overhead_status"),
         "both_abba_gates_pass": _abba_pass,
