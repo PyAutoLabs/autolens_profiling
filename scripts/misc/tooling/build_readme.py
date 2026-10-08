@@ -37,7 +37,8 @@ Regions covered today:
   - hazards/README.md               | hazards
   - lens/deflections/README.md      | deflections
   - lens/solver/README.md           | solver-corpus, solver-accuracy, solver-early-stopping,
-                                    | solver-accuracy-posthoc, solver-euclid-latent
+                                    | solver-accuracy-posthoc, solver-euclid-latent,
+                                    | solver-timing
 
 Artifact-shape reference: `results/notes/design_lock_in.md`.
 """
@@ -757,6 +758,48 @@ def _render_solver_early_stopping_table(artifacts: list[Artifact]) -> str:
     return "\n" + "\n".join(rows) + "\n"
 
 
+def _render_solver_timing_table(artifacts: list[Artifact]) -> str:
+    """Per-(candidate, batch family, batch size) rows of the latest ``timing`` artifact per label.
+
+    Steady per-evaluation cost (min / median over interleaved rounds, wall / B) and the
+    first-call compile wall are separate columns; a compile wall whose shape was already
+    compiled by an earlier family is marked ``(cached)``.
+    """
+    latest = _solver_latest(artifacts, "timing")
+    if not latest:
+        return _no_data_block("run `python scripts/lens/solver/timing.py` to populate.")
+    rows = [
+        "| Corpus | Candidate | Batch family | B | Per-eval min ms | Per-eval median ms | "
+        "Batch wall min ms | Compile s | Median / max iters | Unconverged | "
+        "Worst abs(flux_inactive_rel) | Version |",
+        "|--------|-----------|--------------|---|-----------------|--------------------|"
+        "-------------------|-----------|--------------------|-------------|"
+        "------------------------------|---------|",
+    ]
+    for (label,), art in sorted(latest.items(), key=lambda kv: kv[0][0] or ""):
+        for r in art.data.get("rows") or []:
+            fam = r.get("batch_family") or "—"
+            if r.get("tiled"):
+                fam += " (tiled)"
+            if r.get("looped"):
+                fam += " (host loop)"
+            compile_s = r.get("compile_s")
+            compile_txt = "—" if compile_s is None else f"{compile_s:.2f}"
+            if r.get("compiled_here") is False:
+                compile_txt += " (cached)"
+            med = r.get("median_iterations")
+            rows.append(
+                f"| `{label or '—'}` | `{r.get('candidate')}` | {fam} | {r.get('batch_size')} | "
+                f"{r.get('per_eval_min_ms', float('nan')):.4f} | "
+                f"{r.get('per_eval_median_ms', float('nan')):.4f} | "
+                f"{r.get('wall_min_ms', float('nan')):.3f} | {compile_txt} | "
+                f"{'—' if med is None else f'{med:g}'} / {r.get('max_iterations')} | "
+                f"{r.get('n_unconverged')}/{r.get('batch_size')} | "
+                f"{_sci(r.get('worst_flux_inactive_rel'))} | v{art.raw_version} |"
+            )
+    return "\n" + "\n".join(rows) + "\n"
+
+
 def _render_solver_accuracy_posthoc_table(artifacts: list[Artifact]) -> str:
     """Per-candidate aggregates of the latest ``accuracy_posthoc`` artifact per corpus label.
 
@@ -863,6 +906,7 @@ def _build_renderers():
         "solver-early-stopping": lambda: _render_solver_early_stopping_table(artifacts),
         "solver-accuracy-posthoc": lambda: _render_solver_accuracy_posthoc_table(artifacts),
         "solver-euclid-latent": _render_solver_euclid_latent_table,
+        "solver-timing": lambda: _render_solver_timing_table(artifacts),
     }
 
 

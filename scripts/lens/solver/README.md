@@ -27,6 +27,7 @@ as groups, old groups are never rewritten — and every release re-runs the cell
 | [`capture.py`](./capture.py) | Adds a captured group to the corpus: `--source slam48` (group `slam48_hst`, all 48 #571 SLaM vectors, fixture reproduction recorded), `--source slam_spread` (`slam_spread_hst`, sigma_min x0.5/x2 and noise x0.3/x3 at 6 vectors) and `--source euclid_vis_lp` (`euclid_vis_lp`, the euclid latent jit test's system plus its eager/jitted `total_source_flux` as `latent_reference`). |
 | [`accuracy.py`](./accuracy.py) | Every candidate on every system → `results/lens/solver/accuracy_summary_<corpus>_v<version>.{json,png}`. |
 | [`early_stopping.py`](./early_stopping.py) | Released raw PDIP at each iteration cap → `results/lens/solver/early_stopping_summary_<corpus>_v<version>.{json,png}`. |
+| [`timing.py`](./timing.py) | Batched cost: `jax.jit(jax.vmap(solve))` per-evaluation wall at B = 1 / 16 / 50 (`pdip_raw`, `pdip_jacobi`; `fnnls` as a host loop), compile wall kept separate, per-lane iterations and an unbatched-guard → `results/lens/solver/timing_summary_<corpus>[_gpu]_v<version>.{json,png}`. |
 | [`euclid_latent.py`](./euclid_latent.py) | **Post-hoc.** Every candidate's reconstruction of `euclid_vis_lp_k0` pushed through the euclid pipeline's own `total_source_flux` latent code (validated against the stored eager / jit values) → `results/lens/solver/euclid_latent_by_candidate_v<version>.json`. |
 
 The corpus itself lives in `results/lens/solver/corpus/`: `manifest.json` (per-system metadata)
@@ -168,6 +169,23 @@ table is "Accuracy" above; the verdict it gave is in the
 | `all` | `pdip_raw_tol_1e-6` | 78/81 | 8.05e-08 | 7.49e-10 | 1.25e-10 | 0 | 50.0 | 50 | 3.681 | v2026.8.17.1 |
 <!-- END auto-table:solver-accuracy-posthoc -->
 
+## Timing (latest run per corpus)
+
+Batched per-evaluation cost from [`timing.py`](./timing.py) (phase 3b). The SLaM family pools
+`slam_fixture_571` + `slam48_hst` (56 distinct systems; a batch of B takes the first B in
+manifest order, so lanes diverge); `euclid_vis_lp` has one system and is **tiled** B times, so
+its lanes are identical. Per-eval = batched-call wall / B: min and median over 7 interleaved
+rounds, inputs already on the device. *Compile s* is the first call of that config (trace +
+compile + one run), never part of a steady figure; `(cached)` marks a config whose batch shape
+an earlier family already compiled. A vmapped `while_loop` runs to the batch's slowest lane, so
+the wall follows *max iters*, not the median. `fnnls` has no batched form: its rows are a host
+Python loop over the lanes (context only). A timing is not an admissibility result — see the
+[ledger](../../../results/notes/linear_solver_accuracy_2026_09.md).
+
+<!-- BEGIN auto-table:solver-timing -->
+_No data yet — run `python scripts/lens/solver/timing.py` to populate._
+<!-- END auto-table:solver-timing -->
+
 ## Euclid latent by candidate (post-hoc)
 
 `total_source_flux` of the euclid latent jit test's system from each candidate's reconstruction,
@@ -226,12 +244,13 @@ python scripts/lens/solver/accuracy.py
 python scripts/lens/solver/early_stopping.py
 python scripts/lens/solver/accuracy.py --posthoc      # exploratory set (separate artefact)
 python scripts/lens/solver/euclid_latent.py           # needs the euclid pipeline checkout
+python scripts/lens/solver/timing.py                  # batched timing (add --device gpu on an A100)
 python scripts/misc/tooling/build_readme.py
 ```
 
 Each writes a new `_v<version>` artefact pair beside the previous release's, so the trend is
 the file list. `--groups`, `--candidates`, `--device gpu` (writes a `_gpu` artefact) and
-`--output-dir` are available on both cells.
+`--output-dir` are available on every cell; `timing.py` adds `--batch-sizes` and `--rounds`.
 
 ## Related
 
