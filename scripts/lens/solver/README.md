@@ -183,7 +183,26 @@ Python loop over the lanes (context only). A timing is not an admissibility resu
 [ledger](../../../results/notes/linear_solver_accuracy_2026_09.md).
 
 <!-- BEGIN auto-table:solver-timing -->
-_No data yet — run `python scripts/lens/solver/timing.py` to populate._
+| Corpus | Candidate | Batch family | B | Per-eval min ms | Per-eval median ms | Batch wall min ms | Compile s | Median / max iters | Unconverged | Worst abs(flux_inactive_rel) | Version |
+|--------|-----------|--------------|---|-----------------|--------------------|-------------------|-----------|--------------------|-------------|------------------------------|---------|
+| `all` | `pdip_raw` | slam_fixture_571+slam48_hst | 1 | 1.3532 | 1.4973 | 1.353 | 1.07 | 18 / 18 | 0/1 | 2.28e-07 | v2026.10.7.1 |
+| `all` | `pdip_raw` | slam_fixture_571+slam48_hst | 16 | 0.8809 | 0.9604 | 14.094 | 1.07 | 18 / 19 | 0/16 | 3.44e-07 | v2026.10.7.1 |
+| `all` | `pdip_raw` | slam_fixture_571+slam48_hst | 50 | 0.6821 | 0.7832 | 34.106 | 0.97 | 17.5 / 19 | 0/50 | 4.32e-07 | v2026.10.7.1 |
+| `all` | `pdip_raw` | euclid_vis_lp (tiled) | 1 | 1.6109 | 1.7856 | 1.611 | 0.00 (cached) | 24 / 24 | 0/1 | 3.31e-04 | v2026.10.7.1 |
+| `all` | `pdip_raw` | euclid_vis_lp (tiled) | 16 | 0.9688 | 1.1692 | 15.500 | 0.02 (cached) | 24 / 24 | 0/16 | 3.31e-04 | v2026.10.7.1 |
+| `all` | `pdip_raw` | euclid_vis_lp (tiled) | 50 | 0.7980 | 0.9195 | 39.899 | 0.05 (cached) | 24 / 24 | 0/50 | 3.31e-04 | v2026.10.7.1 |
+| `all` | `pdip_jacobi` | slam_fixture_571+slam48_hst | 1 | 2.4881 | 2.5993 | 2.488 | 0.50 | 50 / 50 | 1/1 | 1.85e+01 | v2026.10.7.1 |
+| `all` | `pdip_jacobi` | slam_fixture_571+slam48_hst | 16 | 1.6299 | 1.8678 | 26.079 | 0.69 | 50 / 50 | 9/16 | 4.50e+68 | v2026.10.7.1 |
+| `all` | `pdip_jacobi` | slam_fixture_571+slam48_hst | 50 | 1.3960 | 1.5136 | 69.801 | 0.67 | 19 / 50 | 19/50 | 4.50e+68 | v2026.10.7.1 |
+| `all` | `pdip_jacobi` | euclid_vis_lp (tiled) | 1 | 1.1509 | 1.1850 | 1.151 | 0.00 (cached) | 19 / 19 | 0/1 | 4.62e-04 | v2026.10.7.1 |
+| `all` | `pdip_jacobi` | euclid_vis_lp (tiled) | 16 | 0.6991 | 0.7358 | 11.185 | 0.01 (cached) | 19 / 19 | 0/16 | 4.62e-04 | v2026.10.7.1 |
+| `all` | `pdip_jacobi` | euclid_vis_lp (tiled) | 50 | 0.5307 | 0.5598 | 26.537 | 0.03 (cached) | 19 / 19 | 0/50 | 4.62e-04 | v2026.10.7.1 |
+| `all` | `fnnls` | slam_fixture_571+slam48_hst (host loop) | 1 | 1.6969 | 1.8096 | 1.697 | 0.43 | 11 / 11 | 0/1 | 4.17e-12 | v2026.10.7.1 |
+| `all` | `fnnls` | slam_fixture_571+slam48_hst (host loop) | 16 | 1.3121 | 1.4275 | 20.994 | 0.03 | 8.5 / 13 | 0/16 | 8.05e-08 | v2026.10.7.1 |
+| `all` | `fnnls` | slam_fixture_571+slam48_hst (host loop) | 50 | 1.3057 | 1.4503 | 65.284 | 0.07 | 8.5 / 20 | 0/50 | 8.05e-08 | v2026.10.7.1 |
+| `all` | `fnnls` | euclid_vis_lp (tiled) (host loop) | 1 | 1.3956 | 1.5349 | 1.396 | 0.00 | 8 / 8 | 0/1 | 1.26e-09 | v2026.10.7.1 |
+| `all` | `fnnls` | euclid_vis_lp (tiled) (host loop) | 16 | 1.3869 | 1.5370 | 22.191 | 0.02 | 8 / 8 | 0/16 | 1.26e-09 | v2026.10.7.1 |
+| `all` | `fnnls` | euclid_vis_lp (tiled) (host loop) | 50 | 1.3791 | 1.5259 | 68.953 | 0.10 | 8 / 8 | 0/50 | 1.26e-09 | v2026.10.7.1 |
 <!-- END auto-table:solver-timing -->
 
 ## Euclid latent by candidate (post-hoc)
