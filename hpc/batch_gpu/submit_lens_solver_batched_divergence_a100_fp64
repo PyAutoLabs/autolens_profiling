@@ -1,0 +1,155 @@
+#!/bin/bash -l
+#
+# 2026 linear-solver programme, phase 4a (autolens_profiling#397): why the Jacobi PDIP's batched
+# (jit(vmap)) and unbatched trajectories differ on the A100. Runs the dataset-free probe
+# scripts/lens/solver/batched_divergence.py --device gpu on one A100, fp64, TWICE in this one job,
+# each in its own process: (1) default XLA flags -> _gpu artefacts; (2) --deterministic, which sets
+# XLA_FLAGS=--xla_gpu_deterministic_ops=true before jax is imported -> _gpu_det artefacts.
+# Probes: determinism (batched twice with fresh jit, unbatched twice), jit(vmap) at B=1 vs jit,
+# tiled batches, the k = 0..50 first-difference trajectory of pdip_jacobi, and jit vs jit(vmap) of
+# the linear-algebra primitives on each lane's Jacobi system. No timing is recorded.
+#
+# LIBRARY. The PRIVATE checkout of the five libraries at tag 2026.10.7.1 under
+# /mnt/ral/jnightin/PyAuto_wt/linear-solver-p3/ (the phase-3a/3b base). The shared mirror
+# /mnt/ral/jnightin/PyAuto is NOT synced for this (euclid_dr1 depends on it); only its venv is
+# reused via activate.sh. The private checkouts are prepended to PYTHONPATH after activate.sh,
+# and the job refuses to run unless every auto* module imports from $PYAUTO_HPC_BASE.
+#
+# BACKEND. --device gpu pins JAX_PLATFORMS=cuda before jax is imported; the exports below say the
+# same and the provenance block asserts jax.default_backend()=="gpu".
+
+# WALL-BASIS:
+#   No run of this probe has been timed. The closest measured job is the phase-3b timing cell
+#   (RAL job 398249, euclid-ral-gpu-2), 0:38 in total for 6 batched compiles, 7 interleaved
+#   rounds and 114 unbatched guard solves. This probe compiles ~51 batched + ~51 unbatched
+#   trajectory executables plus ~25 probe executables per run and executes ~2.6k unbatched
+#   n = 60 solves (~4-7 ms each on the A100, phase 3a/3b), twice (default + deterministic).
+#   Estimated <= 10 min; 0:30:00 is the 3x floor on a 600 s estimate. Honestly unmeasured.
+#   cell: lens/batched_divergence/corpus  device: gpu  precision: fp64
+#   source: unmeasured  probe-first: yes  wall: 600
+
+#SBATCH -J lens_solver_divergence_gpu
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=32gb
+#SBATCH --time=0:30:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+export PYAUTO_HPC_BASE=/mnt/ral/jnightin/PyAuto_wt/linear-solver-p3
+source $AP_ROOT/activate.sh
+export PYTHONPATH=$PYAUTO_HPC_BASE/PyAutoNerves:$PYAUTO_HPC_BASE/PyAutoFit:$PYAUTO_HPC_BASE/PyAutoArray:$PYAUTO_HPC_BASE/PyAutoGalaxy:$PYAUTO_HPC_BASE/PyAutoLens:$PYTHONPATH
+
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export NPROC=${SLURM_CPUS_PER_TASK:-8}
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=1
+export NUMBA_CACHE_DIR=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}
+mkdir -p "$NUMBA_CACHE_DIR" "$MPLCONFIGDIR"
+
+RESULTS_DIR=$AP_ROOT/results/lens/solver
+# A source checkout at a release tag still stamps al.__version__ = 2026.8.17.1 (the release
+# workflow writes the real version only into the built package), so the cell's own artefact
+# name would overwrite the committed _v2026.8.17.1 rows. Write to a per-job directory under the
+# gitignored output/ and copy the pair to the tag's name; the JSON's
+# device.provenance.library_revisions carries the tag SHAs.
+TAG=2026.10.7.1
+RUN_DIR=$AP_ROOT/output/lens_solver_batched_divergence_${SLURM_JOB_ID:-local}
+mkdir -p "$RUN_DIR" "$RESULTS_DIR"
+
+echo "=========================================="
+date
+hostname
+lscpu | grep 'Model name' || true
+nvidia-smi -L || true
+nvidia-smi --query-gpu=name,driver_version,memory.total,utilization.gpu --format=csv || true
+echo "gpus:           ${CUDA_VISIBLE_DEVICES:-unset}"
+echo "partition:      ${SLURM_JOB_PARTITION:-unset}"
+echo "cpus-per-task:  ${SLURM_CPUS_PER_TASK:-unset}"
+echo "loadavg:        $(cat /proc/loadavg)"
+echo "Cell:           lens/solver/batched_divergence.py --device gpu [--deterministic]"
+echo "XLA_FLAGS:      ${XLA_FLAGS:-unset}"
+echo "PYAUTO_HPC_BASE: $PYAUTO_HPC_BASE"
+echo "PYTHONPATH:     $PYTHONPATH"
+
+echo "=== source revisions (private base) ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s  %s\n' "$r" "$(git -C $PYAUTO_HPC_BASE/$r rev-parse HEAD 2>&1)" \
+        "$(git -C $PYAUTO_HPC_BASE/$r describe --tags 2>&1)"
+done
+echo "AP_ROOT rev:   $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+python3 -c 'import jax, jaxlib; print("jax", jax.__version__, "jaxlib", jaxlib.__version__)'
+
+cd $AP_ROOT
+
+echo "=== import provenance ==="
+python3 - <<'PYEOF' || exit 3
+import os
+import autonerves, autofit, autoarray, autogalaxy, autolens, jax, jaxlib, numpy
+base = os.environ["PYAUTO_HPC_BASE"].rstrip("/") + "/"
+for m in (autonerves, autofit, autoarray, autogalaxy, autolens):
+    print(f"{m.__name__:<11} {getattr(m, '__version__', '?'):<12} {m.__file__}")
+    if not m.__file__.startswith(base):
+        raise SystemExit(f"REFUSING: {m.__name__} from {m.__file__}, not {base}")
+print("jax", jax.__version__, "jaxlib", jaxlib.__version__, "numpy", numpy.__version__, jax.devices())
+if jax.default_backend() != "gpu":
+    raise SystemExit(f"REFUSING: JAX backend is {jax.default_backend()}, not gpu")
+PYEOF
+
+STAMP=$(python3 -c 'import autolens as al; print(al.__version__)')
+
+for MODE in default deterministic; do
+    if [ "$MODE" = deterministic ]; then FLAG=--deterministic; SFX=_gpu_det; else FLAG=; SFX=_gpu; fi
+    echo "=========================================="
+    echo "RUN batched_divergence.py --device gpu $FLAG -> ${RUN_DIR}"
+    date
+    python3 scripts/lens/solver/batched_divergence.py --device gpu $FLAG \
+        --output-dir "$RUN_DIR" || exit 2
+    date
+
+    echo "=== summary JSON post-check ($MODE: gpu backend, xla flag, probes present) ==="
+    python3 - "$RUN_DIR/batched_divergence_summary_all${SFX}_v${STAMP}.json" "$MODE" <<'PYEOF' || exit 3
+import json, sys
+d = json.load(open(sys.argv[1]))
+if d["device"].get("backend") != "gpu":
+    raise SystemExit(f"REFUSING: device.backend={d['device'].get('backend')}")
+det = sys.argv[2] == "deterministic"
+flags = d["configuration"]["xla_flags_env"]
+if det != ("--xla_gpu_deterministic_ops=true" in flags):
+    raise SystemExit(f"REFUSING: mode {sys.argv[2]} but XLA_FLAGS={flags!r}")
+for name, p in d["probes"].items():
+    s = p["determinism"]["summary"]
+    print(f"{name:<12s} run1/run2 x-diff {s['batched_run1_vs_run2']['n_lanes_x_differ']}"
+          f"  batched-vs-unbatched x/it/flag {s['batched_vs_unbatched']['n_lanes_x_differ']}/"
+          f"{s['batched_vs_unbatched']['n_lanes_iterations_differ']}/"
+          f"{s['batched_vs_unbatched']['n_lanes_converged_differ']}"
+          f"  B=1 vmap-vs-jit x-diff {p['lowering']['summary']['n_lanes_x_differ']}")
+t = d["trajectory"]["summary"]
+print("trajectory", t["n_lanes_state_ever_differs"], "lanes differ; first-k",
+      t["first_k_state_differs_histogram"], "consistency", t["consistency"])
+print("primitives", d["primitives"]["summary"])
+print("device:", d["device"].get("backend"), d["device"].get("device"), "xla_flags", flags)
+PYEOF
+
+    for ext in json png; do
+        cp "$RUN_DIR/batched_divergence_summary_all${SFX}_v${STAMP}.${ext}" \
+            "$RESULTS_DIR/batched_divergence_summary_all${SFX}_v${TAG}.${ext}"
+    done
+done
+ls -l "$RESULTS_DIR"/batched_divergence_summary_all_gpu*_v${TAG}.*
+
+echo "=========================================="
+echo "loadavg: $(cat /proc/loadavg)"
+nvidia-smi --query-gpu=name,memory.used --format=csv || true
+echo "Finished."
+date
