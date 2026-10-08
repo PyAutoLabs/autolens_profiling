@@ -76,7 +76,8 @@ REFERENCE_HOST_CLASS_PREFIXES = ("hpc_",)
 #: independent repeats behind ``single_jit_s``). No producer writes it today: every headline is
 #: one 10-call block mean (timing-noise audit P8), so every endpoint is single-sample.
 #: ``single_jit_median_s`` does not count -- it summarises a different estimator from the one
-#: the drift ratio compares.
+#: the drift ratio compares. ``_point`` does not copy it from a result JSON yet: the producer
+#: change that starts writing it (fix phase 5) must add it there too, until then this fails safe.
 REPEAT_SUMMARY_FIELD = "single_jit_repeats"
 #: Reasons the comparisons carry for the 2x band (timing-noise audit P7).
 SINGLE_SAMPLE_NULL_REASON = (
