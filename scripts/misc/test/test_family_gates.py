@@ -317,6 +317,16 @@ def test_c11_clear_cases():
     )
 
 
+def test_c11_an_unpaired_measured_kernel_blocks_tripped():
+    """A measured kernel whose rounds do not pair with rfft2's is unjudged: no kill."""
+    cells = _bakeoff_cells(0.8, 0)
+    record = cells["sma/rect"]["kernels"]["direct_conv"]
+    record["all_rounds_s"] = record["all_rounds_s"][:-1]
+    gate = kill_gate_family(cells, numba_kernels=NUMBA_KERNELS)
+    assert "sma/rect/direct_conv" in gate["not_members"]
+    assert gate["kill_gate"] == INCONCLUSIVE and "unpaired" in gate["reason"]
+
+
 def test_c11_four_timed_rounds_are_inconclusive_by_construction():
     """The default ``--reps 5`` discards round 0 and times 4: below the 5-round minimum."""
     gate = kill_gate_family(_bakeoff_cells(3.0, 0, n_rounds=5), numba_kernels=NUMBA_KERNELS)

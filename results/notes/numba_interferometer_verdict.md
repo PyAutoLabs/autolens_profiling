@@ -269,7 +269,7 @@ ratios (inputs prebuilt) are the pure-kernel ones.
 > (`--reps 5`, round 0 discarded), below the audit's 5-round minimum, so the gate re-judges
 > **INCONCLUSIVE by construction** for this file and for `bakeoff_machine_drift_sma_v2026.8.17.1.json`;
 > the "Passed" below is a point reading. For context, not as a verdict: with a 4-round minimum the
-> family-wise gate reads passed (sma / Delaunay `direct_conv` 5.93×, interval [5.46, 6.11]), and the
+> family-wise gate reads passed (sma / Delaunay `direct_conv` 5.93×, interval [5.18, 6.11] at its Holm level), and the
 > in-situ rows of section 4 point the same way. Whether a 4-round family may decide, or the
 > bake-off is re-run with `--reps` ≥ 6, is a human decision (flagged in the phase-9 PR).
 

@@ -160,7 +160,7 @@ T1, T3, P1 and P2, which are as of the fix phase 1 branch.
 | C3 | campaign gate | `scripts/imaging/pixelized/fixed_light_numba_memo_policy.py::main` (486–493) via `scripts/misc/likelihood_breakdown/interval_gates.py::memo_policy_family` (200) and `scripts/misc/likelihood_breakdown/ab_verdict.py::holm_family_verdict` (509) | memo-policy verdict GO / NO_LEVER / INCONCLUSIVE | six targets (≤ 0.95 vs memo, ≤ 1.03 vs cold / memo), each a 90 % paired round-bootstrap interval over the repeats, one Holm family at family-wise 90 %: GO only if all six resolve in favour, NO_LEVER only if one resolves against | SOUND-with-caveats |
 | C4 | campaign gate | `scripts/imaging/pixelized/fixed_light_numba_scaling.py::evaluate_group` (160) via `scripts/misc/likelihood_breakdown/interval_gates.py::breakdown_reconciliation` (257) and `scripts/misc/likelihood_breakdown/interval_gates.py::conjoin_reconciliations` (300); status by `scripts/imaging/pixelized/fixed_light_numba_scaling.py::run_status` (192) | `breakdown_reconciles` PASS / FAIL / INCONCLUSIVE; status PASS only on a resolved PASS in every lane, INCONCLUSIVE when only the reconciliation is unresolved | observed / clean median − 1 within ±0.05 on a 90 % paired round-bootstrap interval over the repeats (≥ 5) | SOUND-with-caveats |
 | C5 | campaign gate | `scripts/imaging/pixelized/fixed_light_trace.py::<module>` (3708, 3758–3761) via `scripts/misc/likelihood_breakdown/interval_gates.py::logdet_lever_verdict` (316) | logdet lever `clears_threshold` True / False only when resolved, else `"INCONCLUSIVE"` | `scripts/misc/likelihood_breakdown/logdet_reuse_injection.py::LOGDET_LEVER_MS` 0.5 ms on both estimators: the interleaved saving on a 90 % paired round-bootstrap interval (7 rounds); the one-block `jit_profile` saving has no interval, so a lever resolves only as False or INCONCLUSIVE | SOUND-with-caveats |
-| C6 | campaign gate | `scripts/point_source_source/source_plane/backward_pass_ab.py::_phase2c_rule` (981) | phase-2c GO | `scripts/point_source_source/source_plane/backward_pass_ab.py::GO_MIN_SAVED_MS` 0.05 ms and `scripts/point_source_source/source_plane/backward_pass_ab.py::GO_MIN_FRACTION` 0.15, point estimate and 90 % CI; GO / NO_GO / INCONCLUSIVE via `ab_rule_verdict` since fix phase 3, on paired round-bootstrap intervals since fix phase 4; since fix phase 9 judged family-wise via `scripts/misc/likelihood_breakdown/family_gates.py` `phase2c_family` (113): the host's timed routes × lanes × both criteria are one Holm family at family-wise 90 %, a route GO only when GO in every lane | SOUND-with-caveats |
+| C6 | campaign gate | `scripts/point_source_source/source_plane/backward_pass_ab.py::_phase2c_rule` (1003) | phase-2c GO | `scripts/point_source_source/source_plane/backward_pass_ab.py::GO_MIN_SAVED_MS` 0.05 ms and `scripts/point_source_source/source_plane/backward_pass_ab.py::GO_MIN_FRACTION` 0.15, point estimate and 90 % CI; GO / NO_GO / INCONCLUSIVE via `ab_rule_verdict` since fix phase 3, on paired round-bootstrap intervals since fix phase 4; since fix phase 9 judged family-wise via `scripts/misc/likelihood_breakdown/family_gates.py` `phase2c_family` (113): the host's timed routes × lanes × both criteria are one Holm family at family-wise 90 %, a route GO only when GO in every lane | SOUND-with-caveats |
 | C7 | campaign gate | `scripts/point_source_source/source_plane/pytree_input_ab.py::_phase2b_rule` via `scripts/misc/likelihood_breakdown/ab_verdict.py::ab_rule_verdict` | phase-2b GO / NO_GO / INCONCLUSIVE | `scripts/point_source_source/source_plane/pytree_input_ab.py::GO_MIN_SAVED_MS` 0.05 ms and `scripts/point_source_source/source_plane/pytree_input_ab.py::GO_MIN_FRACTION` 0.15, on 90 % paired round-bootstrap intervals (≥ 5 rounds) | SOUND-with-caveats |
 | C8 | campaign gate | `scripts/point_source_source/source_plane/gradient_mode_crossover.py` `_crossover` (763) | crossover summary ("rev wins from…", "n* = …") | ratio = 1 crossing of point medians; bootstrap fractions and `n*` CI from paired round bootstraps since fix phase 4 | FRAGILE |
 | C9 | campaign gate | `scripts/point_source_image/image_plane/solver_config_sweep.py::<module>` (1934–1943) | MCS `rule_candidates` | compile ≤ 1.20, median ≤ 1.05 vs control (point; its round-bootstrap interval `row_over_control_median_ci90` recorded beside it since fix phase 4) | FRAGILE |
@@ -564,8 +564,9 @@ this protocol it can never be `True`. **SOUND-with-caveats** (that limit is the 
   as a measured negative. Weaknesses 1, 2 (fix phase 4) and 4 remain, so it stays FRAGILE.
 - **After fix phase 9:** weakness 4 is fixed. The phase-2c decision picks the GO routes, so one
   host's run is one family: every timed (route, lane) × {saved ms, ratio} criterion (16 on a full
-  run) under Holm at family-wise 90 %, read from the same paired round draws as the recorded 90 %
-  intervals (seeds unchanged). A (route, lane) is GO when both its criteria resolve in favour at
+  run) under Holm at family-wise 90 %, read from paired round draws with the cell's seeds (equal to the
+  recorded 90 % intervals for rows written since fix phase 4; the older committed rows store iid
+  intervals, so their re-judgement recomputes the round draws). A (route, lane) is GO when both its criteria resolve in favour at
   their Holm levels; a route is GO for the host only when GO in every lane (`per_route`,
   `go_routes`); `verdict_unadjusted` keeps the per-criterion 90 % reading. Caveat: only one host
   decides; other hosts are separate families, recorded, not pooled.
@@ -1125,8 +1126,8 @@ correctness or gross-regression guard.
        `bootstrap_interval` / `FamilyTieSet`, `round_median_ratio`, and `round_median_saving`, which
        gains `return_boots`). Bars, margins, repeat counts, seeds and protocols are unchanged.
        - **C6** `phase2c_family`: one host's timed (route, lane) × {saved ms, ratio} criteria (16)
-         as one Holm family on the cell's own draws (`seed + i`, `seed + 100 + i`, so the 90 %
-         intervals equal the recorded ones); `_phase2c_rule` writes `verdict` (family-wise),
+         as one Holm family on the cell's own draws (`seed + i`, `seed + 100 + i`; the 90 % intervals equal
+         those recorded by rows written since fix phase 4); `_phase2c_rule` writes `verdict` (family-wise),
          `verdict_unadjusted`, `family_member_confidence`, `family_criteria`, and at the top
          `per_route` (GO only when GO in every lane), `go_routes`, `go_routes_unadjusted`, `family`.
        - **C10** `sweep_tie_set` → `holm_tie_set`: the leader vs each other candidate, one family;
@@ -1170,10 +1171,10 @@ correctness or gross-regression guard.
        | C10 RAL CPU (IP-4a) | precision-equivalent / any precision | tie sets of 5 / 7 | 7 / 9: adds `e3_s0.2`, `e4_s0.3` | **yes** (no best named before or after) |
        | C10 MCS RAL CPU, MCS laptop | | {mcs18, mcs20} | {mcs18, mcs20, mcs24} | **yes** (no best before or after) |
        | C10 other 5 sweeps | | as phase 4 (laptop 3 rounds: every candidate; MCS A100 `mcs20` and step-0 laptop `step0_components` resolved; step-0 RAL / EPYC / A100 tie sets) | identical | no |
-       | C11 kill gate | `bakeoff_v2026.8.17.1.json` (4 cells), `bakeoff_machine_drift_sma_v2026.8.17.1.json` (2 cells), 4 timed rounds each | **passed** (point: `direct_conv` 5.93× / 2.83× / 1.54× / 0.99×) | **INCONCLUSIVE** by construction (4 < 5 rounds); context, not a verdict: at a 4-round minimum the family-wise gate reads passed (sma Delaunay `direct_conv` [5.46, 6.11]) | **yes** |
+       | C11 kill gate | `bakeoff_v2026.8.17.1.json` (4 cells), `bakeoff_machine_drift_sma_v2026.8.17.1.json` (2 cells), 4 timed rounds each | **passed** (point: `direct_conv` 5.93× / 2.83× / 1.54× / 0.99×) | **INCONCLUSIVE** by construction (4 < 5 rounds); context, not a verdict: at a 4-round minimum the family-wise gate reads passed (sma Delaunay `direct_conv` [5.18, 6.11] at its Holm level, 99.58 %) | **yes** |
        | C12 MDI | A100 fp64 (job 366916) / fp32 what-if | 5.45 % / 6.52 % | 0.94 % ([0.9906, 1.0048]) / 1.00 % | **yes** |
        | C12 MDI | laptop `--quick` fp64 / fp32 (3 rounds × 3 calls) | 10.6 % / 5.3 % | NaN (3 < 5 rounds) | **yes** (not quotable rows) |
-       | C12 OFF / ON | A100 fp64 / fp32; laptop fp64 / fp32 | [1.197, 1.211] / [1.355, 1.376]; [0.955, 1.067] / [1.002, 1.100] | [1.194, 1.211] / [1.352, 1.378]; [0.995, 1.056] / [1.020, 1.073] | widths only |
+       | C12 OFF / ON | A100 fp64 / fp32; laptop fp64 / fp32 | [1.197, 1.211] / [1.355, 1.376]; [0.955, 1.067] / [1.002, 1.100] | [1.194, 1.211] / [1.352, 1.378]; [0.995, 1.055] / [1.020, 1.073] | widths only |
        | C12 gradient / primal | A100 fp64, laptop | iid intervals | not re-judgeable: the grad legs store stats, not per-call samples | — |
        | P2 promotion | `..._s4b_warm_t1` (the one b / d_perm pair) | NO_LEVER | NO_LEVER; not drifted (within-row −1.08 % / +1.00 %, load 1.0 → 1.0) | no |
 

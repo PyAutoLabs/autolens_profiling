@@ -127,7 +127,9 @@ def phase2c_family(
     (``per_call_ms`` in ms per route, ``timed_routes``, ``control``,
     ``n_rounds``). The draws are the cell's own: the ratio of the route at
     position ``i`` of ``timed_routes`` uses ``seed + i`` and its saving
-    ``seed + 100 + i``, so every 90 % interval equals the one the row records.
+    ``seed + 100 + i``, so every 90 % interval equals the one a row written
+    since #362 fix phase 4 records (older rows store iid intervals; for them
+    the round draws are recomputed here).
     A route that was not timed (its correctness gate is red) is NO_GO before
     timing and is not a member.
 
@@ -286,7 +288,8 @@ def sweep_tie_set(
     ``rows`` is the sweep's ``rows`` (``per_call_ms`` per configuration, in the
     order the configurations were timed); the draws are the cell's own (seed
     ``seed + position of the configuration in rows``), so every 90 % interval
-    equals the recorded ``speedup_vs_control``. Returns a
+    equals the ``speedup_vs_control`` a row written since #362 fix phase 4
+    records (older rows store iid intervals; the round draws are recomputed). Returns a
     :class:`~likelihood_breakdown.ab_verdict.FamilyTieSet`.
     """
     order = list(rows)
@@ -369,9 +372,11 @@ def kill_gate_family(
     is "passed" (numba survives) when any member resolves GO at its Holm level,
     "tripped" (kill) when every member resolves NO_GO, INCONCLUSIVE otherwise or
     below ``min_n`` timed rounds. Unpinned, skipped and unmeasured kernels are
-    not members (they have no rounds), and are listed.
+    not members (they have no rounds), and are listed. A measured kernel whose
+    rounds do not pair with rfft2's cannot be judged, so it blocks "tripped"
+    (the kill needs every measured kernel resolved below the margin).
     """
-    members, units, records, excluded = {}, [], {}, {}
+    members, units, records, excluded, unpaired = {}, [], {}, {}, []
     j = 0
     for key, cell in cells.items():
         if key.split("/")[0] not in KILL_GATE_INSTRUMENTS:
@@ -391,6 +396,7 @@ def kill_gate_family(
                     f"{len(timed)} timed rounds vs {len(reference)} for {KILL_GATE_REFERENCE}: "
                     "not paired by round"
                 )
+                unpaired.append(member)
                 continue
             ratio, boots = round_median_ratio(
                 reference,
@@ -439,6 +445,9 @@ def kill_gate_family(
     flat = {c.name: c for c in family.unadjusted.criteria}
     adjusted = _any_claim([c.verdict for c in final.values()], n, min_n)
     unadjusted = _any_claim([c.verdict for c in flat.values()], n, min_n)
+    if unpaired:  # an unjudged measured kernel cannot be counted as resolved below
+        adjusted = INCONCLUSIVE if adjusted == NO_GO else adjusted
+        unadjusted = INCONCLUSIVE if unadjusted == NO_GO else unadjusted
     for name, rec in records.items():
         rec["verdict"] = final[name].verdict
         rec["verdict_unadjusted"] = flat[name].verdict
@@ -454,6 +463,8 @@ def kill_gate_family(
         reason = f"{sorted(k for k, c in final.items() if c.verdict == GO)} resolve > {threshold}x"
     elif adjusted == NO_GO:
         reason = f"every member resolves <= {threshold}x"
+    elif unpaired:
+        reason = f"no member resolves > the margin and {unpaired} could not be judged (unpaired)"
     else:
         reason = "no member resolves > the margin and not every member resolves below it"
     out.update(
