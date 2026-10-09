@@ -351,7 +351,7 @@ def vmapped_from():
     return jax.jit(jax.vmap(full_pipeline_from_params)), full_pipeline_from_params
 
 
-def measure(label: str, memo_on: bool, params=parameters) -> dict:
+def measure(label: str, memo_on: bool, params=parameters, keep: list | None = None) -> dict:
     """
     One leg: ``N_REPEATS`` (fresh trace + compile, then ``N_STEADY`` steady calls), with
     the ``_wofz`` witness and the memo counters read from the first repeat.
@@ -387,6 +387,8 @@ def measure(label: str, memo_on: bool, params=parameters) -> dict:
 
         if repeat == 0:
             witness_steady = _wofz_snapshot()
+        if keep is not None and repeat == N_REPEATS - 1:
+            keep.append(vmapped)  # the last repeat's compiled program (headline median, P8)
 
         print(
             f"  [{label}] repeat {repeat + 1}: first_call {first_calls[-1]:.3f} s, "
@@ -431,13 +433,14 @@ with _memo.memo_disabled():
 print("\n--- Leg 2: memo ON ---")
 
 _memo.memo_clear()
-on = measure("memo on", memo_on=True)
+_on_compiled: list = []
+on = measure("memo on", memo_on=True, keep=_on_compiled)
 
-# The shared headline steady median of the memo-on pipeline, beside the legacy key (P8). A fresh
-# jitted vmap with a cleared memo, as each repeat above starts; its compile falls in the untimed
-# warm calls. Same unit as ``full_pipeline_single_jit``: seconds per vmapped call of BATCH_SIZE.
-_memo.memo_clear()
-_headline_vmapped, _ = vmapped_from()
+# The shared headline steady median of the memo-on pipeline, beside the legacy key (P8), on the
+# already compiled program of the memo-on leg's last repeat (the memo's folds are baked into it),
+# so no trace or compile lands in its warm calls. Same unit as ``full_pipeline_single_jit``:
+# seconds per vmapped call of BATCH_SIZE.
+_headline_vmapped = _on_compiled.pop()
 full_pipeline_median = headline_steady_median(
     _headline_vmapped,
     parameters,

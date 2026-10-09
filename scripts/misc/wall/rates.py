@@ -190,7 +190,7 @@ PROVENANCE: dict[str, str] = {
 # HEADLINE_MEDIAN_MAX_BLOCK_MEAN_S per call. Those calls are wall clock a measured wall taken
 # before the median existed does not contain. The constants are mirrored here (this module is
 # pure stdlib; ``timing.py`` imports jax) and pinned equal by
-# ``scripts/misc/test/test_wall_check_submits.py``.
+# ``scripts/misc/test/test_headline_completion.py::test_the_wall_constants_mirror_the_producer``.
 HEADLINE_MEDIAN_MIN_STEADY_WARM = 5
 HEADLINE_MEDIAN_BUDGET_S = 30.0
 HEADLINE_MEDIAN_MIN_TIMED = 20
@@ -230,7 +230,8 @@ def headline_median_extra_wall_s(block_mean_s: float | None = None) -> float:
     one (a submit does not know its per-call time): the worst case over all block means, which
     is a call just under the cut-off taking the minimum 20 timed calls, (5 + 20) x 2 s = 50 s.
     Over the budget-limited range the timed calls cost at most ~30 s plus the 5 warm calls, so
-    50 s bounds every case.
+    50 s bounds every case. Every caller passes an already compiled callable, so no compile lands
+    in the warm calls.
     """
     if block_mean_s is not None:
         if not block_mean_s > 0 or block_mean_s > HEADLINE_MEDIAN_MAX_BLOCK_MEAN_S:

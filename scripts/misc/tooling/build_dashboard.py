@@ -285,6 +285,29 @@ def headline_median_seconds(payload: dict) -> float | None:
     return None if v is None else v / 1000.0
 
 
+#: How the legacy value beside a median headline is labelled when the writing cell's protocol
+#: says it is not a block mean (the ``mge_mass`` cells, fix phase 10).
+LEGACY_VALUE_LABEL = "legacy value"
+
+
+def legacy_is_block_mean(payload: dict) -> bool:
+    """False when the median's protocol says the legacy key is not a block mean (``<key>_is``)."""
+    key = single_jit_headline_key(payload)
+    if key is None:
+        return True
+    protocol = payload.get(f"{key}_median_protocol")
+    what = protocol.get(f"{key}_is") if isinstance(protocol, dict) else None
+    return not isinstance(what, str) or what.startswith("mean of")
+
+
+def _legacy_html(p: dict) -> str:
+    """The legacy value beside a median headline, labelled by what it is."""
+    label = p.get("single_jit_legacy_label")
+    if label:
+        return f"{label} {_fmt_s(p['single_jit_block_mean_s'])}"
+    return f"block mean {_fmt_s(p['single_jit_block_mean_s'])} ({FIRST_BLOCK_NOTE})"
+
+
 def headline_reading(payload: dict) -> tuple[float | None, str, float | None]:
     """``(headline seconds, estimator, legacy seconds)`` of one run's payload.
 
@@ -300,17 +323,24 @@ def headline_reading(payload: dict) -> tuple[float | None, str, float | None]:
     return legacy, ESTIMATOR_LEGACY, legacy
 
 
-def _run_identity(run: dict) -> tuple:
-    """What makes two runs independent: (host, SLURM job, source file)."""
+def _run_identity(run: dict, value: float | None) -> tuple:
+    """What makes two runs one: the same host and SLURM job with the same headline value.
+
+    A file copied from another run (any name) carries that run's job id and headline, so it is
+    one run, not two; two processes inside one job differ in their headline. Without a job id
+    (a laptop row) the file name is all there is.
+    """
     prov = _provenance(run)
-    return (prov["host"], prov["job"], run.get("source"))
+    if prov["job"] is not None:
+        return (prov["host"], prov["job"], value)
+    return (prov["host"], None, run.get("source"))
 
 
 def repeat_summary(payload: dict) -> dict | None:
     """A repeat summary of the compared metric from the payload's :data:`REPEAT_RUNS_FIELD`.
 
     Each run is read with :func:`headline_reading`. Runs are kept only when they share the row's
-    own (first) run's estimator and host and are distinct by (host, job, source); duplicates of
+    own (first) run's estimator and host and are distinct runs (:func:`_run_identity`); copies of
     one run are dropped. Returns ``{n, median_s, min_s, max_s, loadavg_max, estimator}`` when at
     least :data:`MIN_REPEAT_RUNS` independent runs remain, else None (the point stays
     single-sample). ``loadavg_max`` is the worst recorded load across the runs, so qualification
@@ -330,7 +360,7 @@ def repeat_summary(payload: dict) -> dict | None:
     for run in runs:
         value, run_estimator, _ = headline_reading(run)
         prov = _provenance(run)
-        identity = _run_identity(run)
+        identity = _run_identity(run, value)
         if value is None or run_estimator != estimator or prov["host"] != host or identity in seen:
             continue
         seen.add(identity)
@@ -451,6 +481,9 @@ def _point(payload: dict, version: str, source: str) -> dict | None:
     if use_median:
         point["headline_estimator"] = ESTIMATOR_MEDIAN
         point["single_jit_block_mean_s"] = legacy
+        if not legacy_is_block_mean(payload):
+            # The mge_mass cells' legacy key is itself a median (fix phase 10): say so.
+            point["single_jit_legacy_label"] = LEGACY_VALUE_LABEL
     elif prov["backend"] == "gpu" and headline_is_single_jit(payload):
         point["headline_note"] = FIRST_BLOCK_NOTE
     if median is not None:
@@ -479,10 +512,7 @@ def _per_call_html(p: dict) -> str:
     if headline_estimator(p) == ESTIMATOR_MEDIAN:
         out += f' <span class="muted">({html.escape(ESTIMATOR_MEDIAN)})</span>'
         if p.get("single_jit_block_mean_s") is not None:
-            out += (
-                f'<br><span class="muted">block mean {html.escape(_fmt_s(p["single_jit_block_mean_s"]))}'
-                f" ({html.escape(FIRST_BLOCK_NOTE)})</span>"
-            )
+            out += f'<br><span class="muted">{html.escape(_legacy_html(p))}</span>'
         return out
     if p.get("headline_note"):
         out += f' <span class="muted">({html.escape(p["headline_note"])})</span>'
@@ -720,8 +750,19 @@ def build_series(root: Path, conf: dict) -> tuple[list[dict], list[dict]]:
                 )
                 continue
             cur = by_version.get(point["version"])
-            # One point per release: prefer a provenance-carrying row, then the first seen.
-            if cur is None or (point["has_provenance"] and not cur["has_provenance"]):
+            # One point per release: prefer a provenance-carrying row, then one carrying a repeat
+            # summary (fix phase 10: a sweep row is scanned both as its comparison.json entry,
+            # which lists the repeat runs, and as its raw config-tagged file, which does not),
+            # then the first seen.
+            if (
+                cur is None
+                or (point["has_provenance"] and not cur["has_provenance"])
+                or (
+                    point["has_provenance"] == cur["has_provenance"]
+                    and has_repeat_summary(point)
+                    and not has_repeat_summary(cur)
+                )
+            ):
                 by_version[point["version"]] = point
         if not by_version:
             continue
@@ -1345,7 +1386,7 @@ def _svg_panel(cell_series: list[dict], versions: list[str], slots: dict[str, in
                 + (f" ({repeat_label(p)})" if has_repeat_summary(p) else "")
                 + (f" ({p['headline_note']})" if p.get("headline_note") else "")
                 + (
-                    f" ({ESTIMATOR_MEDIAN}; block mean {_fmt_s(p['single_jit_block_mean_s'])})"
+                    f" ({ESTIMATOR_MEDIAN}; {_legacy_html(p)})"
                     if headline_estimator(p) == ESTIMATOR_MEDIAN
                     and p.get("single_jit_block_mean_s") is not None
                     else ""

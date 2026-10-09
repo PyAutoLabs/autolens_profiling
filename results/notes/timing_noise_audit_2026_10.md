@@ -163,10 +163,10 @@ T1, T3, P1 and P2, which are as of the fix phase 1 branch.
 | P3 | production protocol | `scripts/imaging/pixelized/fixed_light_numba.py::_warm_to_steady_state` (1745); read since fix phase 6 by `scripts/misc/likelihood_breakdown/warmup_gate.py` `warmup_unsettled_reason`, called by `abba_overhead_verdict` (P1), the promotion block (P2) and `build_dashboard.qualify` (P6) | warm-up "steady" flag; an unsettled row is INCONCLUSIVE for every timing verdict that reads it | `scripts/imaging/pixelized/fixed_light_numba.py::WARMUP_WINDOW` 3, `scripts/imaging/pixelized/fixed_light_numba.py::WARMUP_TOLERANCE` 0.10, `scripts/imaging/pixelized/fixed_light_numba.py::WARMUP_MAX_CALLS` 12 | SOUND-with-caveats |
 | P4 | production qualification | `scripts/imaging/pixelized/fixed_light_numba.py` 2247 | unattributed fraction of the instrumented call | `MAX_UNATTRIBUTED_FRACTION` 0.05 | SOUND |
 | P5 | production qualification | `_production_config.py::witness_verdict` (869; 886 since fix phase 6); `_production_config.py::timing_summary` (792) | production-representative cold-eval witness; PASS / FAIL only on a reference host class (`is_reference_host_class`), else INCONCLUSIVE (fix phase 6) | `WITNESS_FACTOR` 1.5 × the production cold-eval range | SOUND-with-caveats |
-| P6 | production qualification | `scripts/misc/tooling/build_dashboard.py::qualify` (448) via `scripts/misc/tooling/build_dashboard.py::is_reference_host_class` (437) | `qualified` flag on every dashboard / v1 `profiling-summary` point (the project dashboard and badge; the live Pulse registry reads the v2 catalogue) | `RELEASE_SWEEP_LOADAVG_CAP` 8.0, `RELEASE_SWEEP_NODE`, `REFERENCE_HOST_CLASS_PREFIXES` (`hpc_`) | SOUND-with-caveats |
-| P7 | production qualification | `scripts/misc/tooling/build_dashboard.py::drift` (512) and `scripts/misc/tooling/build_dashboard.py::_summary_comparison` (742) | release-to-release drift badge (drifted / improved / flat / insufficient) | `scripts/misc/tooling/build_dashboard.py::DRIFT_RATIO` 2.0 and `scripts/misc/tooling/build_dashboard.py::DRIFT_FLOOR_S` 1 ms; `flat` only with repeat-summary endpoints (since fix phase 10 built by `scripts/misc/tooling/build_dashboard.py::repeat_summary` from ≥ `MIN_REPEAT_RUNS` 2 independent runs on one host and estimator); endpoints on different headline estimators → `insufficient` (fix phase 5) | SOUND-with-caveats |
-| P8 | estimator | `scripts/misc/likelihood_breakdown/timing.py` `jit_profile` (92) and `headline_steady_median` (269), called by the 11 runtime cells' local `jit_profile` blocks (e.g. `scripts/imaging/delaunay/likelihood_runtime.py`) and since fix phase 10 by the interferometer breakdown cells, the datacube cell and the two `mge_mass` cells; read by `scripts/misc/tooling/build_dashboard.py::headline_reading`, which `_point` and the README runtime tables (`scripts/misc/tooling/build_readme.py::_config_headline`) share | `full_pipeline_single_jit` (legacy block mean, kept) and `full_pipeline_single_jit_median*` beside it; the dashboard headline P7 compares | block mean of 10 after the first call; median of `n_timed` individually timed calls after `scripts/misc/likelihood_breakdown/timing.py::MIN_STEADY_WARM` 5 warm calls, `n_timed` = `scripts/misc/likelihood_breakdown/timing.py::HEADLINE_MEDIAN_BUDGET_S` 30 s / block mean in [20, 200]; no median above `scripts/misc/likelihood_breakdown/timing.py::HEADLINE_MEDIAN_MAX_BLOCK_MEAN_S` 2 s per call | SOUND-with-caveats |
-| P9 | production qualification | `scripts/misc/likelihood_runtime/sweep.py` `timeout_marker` (271), `--skip-existing` (462); `scripts/misc/tooling/build_dashboard.py::marker_verdict` (476); `scripts/misc/tooling/build_readme.py` | `--per-run-timeout` writes an INCONCLUSIVE `.unusable.json` marker; "GPU-only" only for a qualified marker | the timeout; `qualify` on the marker's host and max(load at start, load at timeout) | SOUND-with-caveats |
+| P6 | production qualification | `scripts/misc/tooling/build_dashboard.py::qualify` (633) via `scripts/misc/tooling/build_dashboard.py::is_reference_host_class` (615) | `qualified` flag on every dashboard / v1 `profiling-summary` point (the project dashboard and badge; the live Pulse registry reads the v2 catalogue) | `RELEASE_SWEEP_LOADAVG_CAP` 8.0, `RELEASE_SWEEP_NODE`, `REFERENCE_HOST_CLASS_PREFIXES` (`hpc_`) | SOUND-with-caveats |
+| P7 | production qualification | `scripts/misc/tooling/build_dashboard.py::drift` (700) and `scripts/misc/tooling/build_dashboard.py::_summary_comparison` (950) | release-to-release drift badge (drifted / improved / flat / insufficient) | `scripts/misc/tooling/build_dashboard.py::DRIFT_RATIO` 2.0 and `scripts/misc/tooling/build_dashboard.py::DRIFT_FLOOR_S` 1 ms; `flat` only with repeat-summary endpoints (since fix phase 10 built by `scripts/misc/tooling/build_dashboard.py::repeat_summary` from ≥ `MIN_REPEAT_RUNS` 2 independent runs on one host and estimator); endpoints on different headline estimators → `insufficient` (fix phase 5) | SOUND-with-caveats |
+| P8 | estimator | `scripts/misc/likelihood_breakdown/timing.py` `jit_profile` (92) and `headline_steady_median` (287), called by the 11 runtime cells' local `jit_profile` blocks (e.g. `scripts/imaging/delaunay/likelihood_runtime.py`) and since fix phase 10 by the interferometer breakdown cells, the datacube cell and the two `mge_mass` cells; read by `scripts/misc/tooling/build_dashboard.py::headline_reading`, which `_point` and the README runtime tables (`scripts/misc/tooling/build_readme.py::_config_headline`) share | `full_pipeline_single_jit` (legacy block mean, kept) and `full_pipeline_single_jit_median*` beside it; the dashboard headline P7 compares | block mean of 10 after the first call; median of `n_timed` individually timed calls after `scripts/misc/likelihood_breakdown/timing.py::MIN_STEADY_WARM` 5 warm calls, `n_timed` = `scripts/misc/likelihood_breakdown/timing.py::HEADLINE_MEDIAN_BUDGET_S` 30 s / block mean in [20, 200]; no median above `scripts/misc/likelihood_breakdown/timing.py::HEADLINE_MEDIAN_MAX_BLOCK_MEAN_S` 2 s per call | SOUND-with-caveats |
+| P9 | production qualification | `scripts/misc/likelihood_runtime/sweep.py` `timeout_marker` (271), `--skip-existing` (462); `scripts/misc/tooling/build_dashboard.py::marker_verdict` (664); `scripts/misc/tooling/build_readme.py` | `--per-run-timeout` writes an INCONCLUSIVE `.unusable.json` marker; "GPU-only" only for a qualified marker | the timeout; `qualify` on the marker's host and max(load at start, load at timeout) | SOUND-with-caveats |
 | P10 | production qualification | `scripts/misc/tooling/baseline_readiness.py` `check_observation` (351) | structural screening of fresh baseline observations | load cap per allocated CPU, repetitions ≥ 2, warm-up, median aggregation | SOUND |
 | C1 | campaign gate | `scripts/imaging/pixelized/fixed_light_numba_memo_policy.py::matched_counterfactual` (101) via `scripts/misc/likelihood_breakdown/interval_gates.py::matched_classification` (90) and `scripts/misc/likelihood_breakdown/interval_gates.py::matched_decision_counts` (149) | `classification` beneficial / harmful / neutral / INCONCLUSIVE (`warm_beneficial_3pct` / `warm_harmful_3pct` only when resolved), counted as resolved classifications plus an INCONCLUSIVE count, never as false-accept / false-reject rates | 0.97 / 1.03 on a 90 % paired round-bootstrap interval of the memo / cold median ratio, ≥ 5 repeats; the cell records `scripts/imaging/pixelized/fixed_light_numba_memo_policy.py::MATCHED_REPEATS` 4, so every classification is INCONCLUSIVE by construction | SOUND-with-caveats |
 | C2 | campaign gate | `scripts/imaging/pixelized/fixed_light_numba_memo_policy.py::evaluate` (241, 248) | descriptive cross-lane 3 % classifications | 1.03 / 0.97 on medians | FRAGILE |
@@ -180,7 +180,7 @@ T1, T3, P1 and P2, which are as of the fix phase 1 branch.
 | C10 | campaign gate | `scripts/point_source_image/image_plane/solver_config_sweep.py` `_fastest` via `scripts/misc/likelihood_breakdown/ab_verdict.py::tie_set` | `best_admissible` (a resolved leader, else `None`) and `best_admissible_tie_set` | tie set at the family-wise level since fix phase 9 (`scripts/misc/likelihood_breakdown/family_gates.py` `sweep_tie_set` (273) → `scripts/misc/likelihood_breakdown/ab_verdict.py` `holm_tie_set` (702)): a `best` only when the leader's paired round-bootstrap speed-up interval separates from every other candidate's at the Holm-adjusted level; the unadjusted 90 % tie set recorded beside it; no `best` below 5 rounds | SOUND-with-caveats |
 | C11 | campaign gate | `scripts/misc/numba_interferometer/bakeoff.py::main` (858) via `scripts/misc/likelihood_breakdown/family_gates.py` `kill_gate_family` (354); the old point rule kept as `scripts/misc/likelihood_breakdown/family_gates.py::kill_gate_point` (330) | numba-vs-rfft2 kill gate `passed` / `tripped` / INCONCLUSIVE | rfft2 / kernel > 1.3 on a paired round-bootstrap interval per pinned kernel × sma / alma cell, one Holm family at family-wise 90 %: `passed` if any member resolves above, `tripped` only if every member resolves below; ≥ 5 timed rounds (the default `--reps 5` times 4, so INCONCLUSIVE by construction) | SOUND-with-caveats |
 | C12 | campaign gate | `scripts/point_source_image/image_plane/gpu_bottleneck_map.py` `_mdi` (396) via `scripts/misc/likelihood_breakdown/family_gates.py` `round_split_half_mdi` (483) | minimum detectable improvement (split-half noise floor) for a human go/no-go | 90 % CI half-width; since fix phase 9 of a paired round bootstrap of each round's first half of calls over its last half (NaN below 5 rounds) | SOUND |
-| S1 | submit basis | `scripts/misc/wall/check_submits.py::RATE_TOLERANCE` (91), `HEADROOM_FLOOR` (95), `budget < needed` (437); since fix phase 10 `scripts/misc/wall/check_submits.py::median_runs` with `scripts/misc/wall/rates.py::headline_median_extra_wall_s` (mirrors `scripts/misc/wall/rates.py::HEADLINE_MEDIAN_MIN_STEADY_WARM`, `scripts/misc/wall/rates.py::HEADLINE_MEDIAN_BUDGET_S`) | `--time` ≥ estimated wall × headroom; the wall of a headline-median cell gains 50 s per invocation unless the row says `median: included` | 5 % rate match; headroom 1.25 / 1.5 / 3.0 | SOUND |
+| S1 | submit basis | `scripts/misc/wall/check_submits.py::RATE_TOLERANCE` (109), `HEADROOM_FLOOR` (113), `budget < needed` (494); since fix phase 10 `scripts/misc/wall/check_submits.py::median_runs` with `scripts/misc/wall/rates.py::headline_median_extra_wall_s` (mirrors `scripts/misc/wall/rates.py::HEADLINE_MEDIAN_MIN_STEADY_WARM`, `scripts/misc/wall/rates.py::HEADLINE_MEDIAN_BUDGET_S`) | `--time` ≥ estimated wall × headroom; the wall of a headline-median cell gains 50 s per invocation unless the row says `median: included` | 5 % rate match; headroom 1.25 / 1.5 / 3.0 | SOUND |
 | R1 | resource guard | `scripts/imaging/pixelized/fixed_light.py::measure_system` (773), `scripts/imaging/pixelized/fixed_light.py::COND_BUDGET_S` 5 s | skip the second `cond()` | 5 s | SOUND |
 | R2 | resource guard | `scripts/misc/numba_interferometer/bakeoff.py::run_cell` (430), `scripts/misc/numba_interferometer/bakeoff.py::ALMA_HIGH_PAIR_LOOP_BUDGET_S` 180 s | skip an extrapolated alma_high kernel | 180 s | SOUND |
 
@@ -693,9 +693,11 @@ resampling of calls, labelled `resampling: "iid calls, unpaired …"` (reported,
   One limit: most rate rows are single-job observations. The headroom absorbs that, and the cost
   of a miss is lost compute, not a mis-qualified result. Since fix phase 10 a row whose cell takes
   the headline median (`wall.rates.HEADLINE_MEDIAN_SCRIPTS`) gains
-  `headline_median_extra_wall_s()` = (5 warm + 20 timed) × 2 s = 50 s per invocation, the worst
-  case over every block mean (T13 sweeps them), unless it declares `median: included`; a loop
-  declares `median-runs: k`. Submits with no WALL-BASIS block are not checked.
+  `headline_median_extra_wall_s()` = (5 warm + 20 timed) × 2 s = 50 s per invocation (a
+  `python3 [flags] scripts/...` call; since phase 10 the call pattern also sees interpreter flags
+  such as `-u`), the worst case over every block mean of an already compiled callable (T13 sweeps
+  them), unless it declares `median: included`; a loop declares `median-runs: k`. Submits with no
+  WALL-BASIS block are not checked.
 - **R1 and R2:** resource guards. A skipped measurement is recorded as skipped, never as a result.
 
 ## Estimator settings found by the lister (no automated verdict)
@@ -1398,9 +1400,9 @@ correctness or gross-regression guard.
        call. **The old key keeps that value** (continuity with the two committed rows), and each
        cell now states it in `SINGLE_JIT_KEY_IS`, written as the protocol's
        `full_pipeline_single_jit_is`. The shared steady median (≥ 5 warm calls, 20–200 timed) is
-       added beside it as `full_pipeline_single_jit_median*`; the JAX cell times a fresh jitted
-       vmap with a cleared memo (its compile falls in the untimed warm calls), the numba cell the
-       memo-on likelihood. Mapping: `full_pipeline_single_jit` = the cell's own median (legacy
+       added beside it as `full_pipeline_single_jit_median*`; the JAX cell times the compiled
+       program of the memo-on leg's last repeat (no trace or compile in its warm calls), the numba
+       cell the memo-on likelihood. Mapping: `full_pipeline_single_jit` = the cell's own median (legacy
        headline), `full_pipeline_single_jit_median` = the shared steady median (the headline once
        a row carries it); drift between them is `estimator-mismatch` → `insufficient`, as for
        every cell.
@@ -1409,7 +1411,8 @@ correctness or gross-regression guard.
        one median at (5 + 20) × 2 s = 50 s, the worst case over every block mean (T13 sweeps
        1e-5 s – 2 s). `HEADLINE_MEDIAN_SCRIPTS` lists the 17 scripts that take one (T13 pins the
        set against the source). `check_submits.median_runs` counts a submit's invocations of
-       them and adds 50 s per invocation to the matching row's wall unless the row says
+       them (the call pattern now also matches `python3 -u scripts/...`, which hid 6 WALL-BASIS
+       submits and 45 others from `cells_run` and `median_runs` alike) and adds 50 s per invocation to the matching row's wall unless the row says
        `median: included` (a loop declares `median-runs: k`), so an estimate only grows.
        `source_plane_solved` keeps its #371 `n_timed=200`: 205 calls at its slowest committed
        block (0.64 ms) are 0.13 s, inside the bound (T13).
@@ -1426,13 +1429,17 @@ correctness or gross-regression guard.
      - **witness** (`test_headline_completion.py`, T13): the same per-run numbers 1.17× apart are
        `flat` ("within the 2x policy band; not a measured null") between two 3-run endpoints and
        `insufficient` between single runs or a 3-run and a single-run endpoint; a 3× move between
-       repeat endpoints is `drifted` without the single-sample caveat; a duplicate run (same job
-       and file), another host, another estimator or a run with no headline never counts; a 9.5
-       load on one repeat run refuses the point; `aggregate.py` on files in a temp dir lists runs
+       repeat endpoints is `drifted` without the single-sample caveat; an unedited copy of the row
+       under another file name, another host, another estimator or a run with no headline never
+       counts, while two processes in one job or two laptop files do; the repeat point wins the
+       per-release dedup in either scan order; a 9.5 load on one repeat run refuses the point; `aggregate.py` on files in a temp dir lists runs
        2 and 3, skips another release and leaves a lone row unchanged. README: legacy, median
        and alias rows, the label and footnote on a rendered table. Wall: 125 s was enough for
        1.25 × 100 s before and is not now (150 s estimated); `median: included` and
-       `median-runs: 3` behave as stated; the A100 solved submit counts its 2 invocations.
+       `median-runs: 3` behave as stated; a `python3 -u` call is counted; the A100 solved submit
+       counts its 2 invocations. Labels: an `mge_mass` legacy value beside a median renders
+       "legacy value", not "block mean" (`build_dashboard.legacy_is_block_mean` reads the
+       protocol's `_is`).
      - **contract:** `profiling-summary@2` gains one latent metric name, `runtime` /
        `cube_single_jit_median` (statistic `median`), emitted only by a datacube row measured
        after this phase; no field, metric or meaning in the committed catalogue changes
@@ -1446,12 +1453,13 @@ correctness or gross-regression guard.
        | README runtime cells | 0 `comparison.json` entries carry a median or repeat runs | legacy headline | legacy headline, unlabelled, no footnote (`build_readme.py --check` unchanged) | no |
        | dashboard series | 145; 0 points with a cube median or repeats | as phase 9 | identical (`build_dashboard.py --check` current) | no |
        | `mge_mass` rows | 2 (`v2026.8.17.1`, laptop) | `full_pipeline_single_jit` = the cell's median | the same value under the same key | no |
-       | WALL-BASIS submits running a median cell | 2 (`source_plane_solved` A100, RAL CPU) | pass | A100 needs 10 × 160 s = 1600 s > 1200 s: `--time` 0:20:00 → **0:27:00**; RAL CPU 10 × 70 s = 700 s ≤ 1200 s | **yes** (one budget grows) |
-       | submits running a median cell with no WALL-BASIS block | 9 (interferometer `mge` breakdown and imaging `mge` runtime on the A100) | not checked | not checked; their budgets are 1–6 h, against ≤ 50 s per run | no |
+       | WALL-BASIS submits running a median cell | 8: `source_plane_solved` A100 and RAL CPU, and the 6 RAL `interferometer/{delaunay,pixelization}_numba` breakdown submits (`-u` calls of the opted-in breakdown cells) | pass | A100 `source_plane_solved` needs 10 × 160 s = 1600 s > 1200 s: `--time` 0:20:00 → **0:27:00**; the other 7 still pass with 50 s added | **yes** (one budget grows) |
+       | submits running a median cell with no WALL-BASIS block | 54 (A100 / RAL interferometer and imaging runtime and breakdown submits) | not checked | not checked; every budget is ≥ 1 h, against ≤ 3 runs × 50 s | no |
 
        No recorded decision rests on any of these.
-     - **limits:** independence of repeat runs is judged by (host, job, file) only, so two
-       repeat files copied from one run with the job id edited would count; a repeat summary of
+     - **limits:** a repeat run is one run per (host, SLURM job, headline value) — an unedited
+       copy of a run's file is the same run whatever its name — and, without a job id, per file;
+       a copy with its job id or value edited would count; a repeat summary of
        2 runs is still a small sample (it makes `flat` reachable, it does not make it strong);
        `median_runs` cannot see a loop and relies on `median-runs:`.
 6. **Warm-up flag and witness band (P3, P5).**

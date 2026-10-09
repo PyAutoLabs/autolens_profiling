@@ -301,7 +301,8 @@ def _config_legacy_seconds(cfg: dict) -> float | None:
 MEDIAN_LABEL = "median"
 HEADLINE_FOOTNOTE = (
     "_(median)_: the steady median (>= 5 warm calls, median of individually timed calls) the "
-    "row records beside its single-jit block mean, the same headline the dashboard uses; "
+    "row records beside its legacy single-jit value (a block mean in most cells), the same "
+    "headline the dashboard uses; "
     "_(median of N runs)_: the median of N independent runs' headlines. Unlabelled values are "
     "the legacy headline (the single-jit block mean, or the step-sum where no single-jit value "
     "exists)."

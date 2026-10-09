@@ -118,7 +118,7 @@ HEADROOM_FLOOR = {
 DEFAULT_HEADROOM = HEADROOM_FLOOR["rates"]
 
 _KV = re.compile(r"([A-Za-z][\w-]*):\s*(\S+)")
-_PYTHON_CALL = re.compile(r"python3?\s+(scripts/[\w./${}\[\]-]+\.py)")
+_PYTHON_CALL = re.compile(r"python3?\s+(?:-\S+\s+)*(scripts/[\w./${}\[\]-]+\.py)")
 _INSTRUMENT = re.compile(r"--instrument\s+(\S+)")
 # New source names must still match historical WALL-BASIS cell IDs.
 sys.path.insert(0, str(ROOT))

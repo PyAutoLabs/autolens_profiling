@@ -311,7 +311,7 @@ def test_a_gross_move_between_repeat_endpoints_keeps_its_status_without_the_cave
 @pytest.mark.parametrize(
     "second, why",
     [
-        (_run(0.011, "100"), "the same job and source is one run, not two"),
+        (_run(0.010, "100"), "an unedited copy of the row (same job, same value) is one run"),
         (_run(0.011, "101", host="euclid-ral-gpu-1"), "another host is not a repeat on this one"),
         (_run(0.011, "101", median_ms=10.5), "another estimator is not the compared metric"),
         (_run(None, "101"), "a run with no headline"),
@@ -319,12 +319,46 @@ def test_a_gross_move_between_repeat_endpoints_keeps_its_status_without_the_cave
 )
 def test_runs_that_are_not_independent_repeats_of_the_metric_do_not_count(second, why):
     first = _run(0.010, "100")
-    listed = [dict(first, source="row.json"), dict(second, source="row.json")]
-    if "101" in json.dumps(second):
-        listed[1]["source"] = "row.repeat2.json"
+    # Distinct file names, as aggregate.py always writes them.
+    listed = [dict(first, source="row.json"), dict(second, source="row.repeat2.json")]
     payload = dict(first, **{bd.REPEAT_RUNS_FIELD: listed})
     assert bd.repeat_summary(payload) is None, why
     assert bd.REPEAT_SUMMARY_FIELD not in bd._point(payload, "1", "x"), why
+
+
+def test_two_processes_in_one_job_and_laptop_runs_by_file_are_repeats():
+    same_job = [_run(0.010, "100"), _run(0.011, "100")]
+    assert bd.repeat_summary(_with_repeats(same_job))["n"] == 2
+    laptop = [_run(0.010, None), _run(0.011, None)]
+    assert bd.repeat_summary(_with_repeats(laptop))["n"] == 2
+
+
+def test_the_repeat_point_wins_the_per_release_dedup_whatever_the_scan_order(tmp_path, monkeypatch):
+    runs = [_run(v, str(i)) for i, v in enumerate([0.010, 0.012, 0.011])]
+    with_repeats = bd._point(_with_repeats(runs), "1", "a/comparison.json#hpc_a100_fp64")
+    raw = bd._point(runs[0], "1", "a/x_hpc_a100_fp64.json")
+    for order in ([raw, with_repeats], [with_repeats, raw]):
+        monkeypatch.setattr(
+            bd, "scan", lambda root, _o=order: {("runtime", "c", "hpc_a100_fp64", False): list(_o)}
+        )
+        series, _ = bd.build_series(tmp_path, _CONF)
+        (point,) = series[0]["points"]
+        assert point[bd.REPEAT_SUMMARY_FIELD] == 3, order
+
+
+def test_a_legacy_value_that_is_not_a_block_mean_is_not_labelled_one():
+    jax_is = "median over 3 fresh-compile repeats of each repeat's 10-call steady block mean"
+    row = _run(3.35, "1", median_ms=3300.0)
+    row["full_pipeline_single_jit_median_protocol"] = {"full_pipeline_single_jit_is": jax_is}
+    p = bd._point(row, "1", "x")
+    assert p["single_jit_legacy_label"] == bd.LEGACY_VALUE_LABEL
+    assert "block mean" not in bd._per_call_html(p) and "legacy value" in bd._per_call_html(p)
+    std = _run(0.00642, "1", median_ms=0.267)
+    std["full_pipeline_single_jit_median_protocol"] = {
+        "full_pipeline_single_jit_is": timing.SINGLE_JIT_BLOCK_MEAN_IS
+    }
+    q = bd._point(std, "1", "x")
+    assert "single_jit_legacy_label" not in q and "block mean" in bd._per_call_html(q)
 
 
 def test_qualification_judges_the_noisiest_repeat_run():
@@ -444,6 +478,17 @@ def test_a_median_cell_needs_the_extra_wall_and_a_plain_cell_does_not():
     assert _check(median, cell_m, "0:02:05", extra="  median: included") == []
     # A loop that runs the cell k times declares it.
     assert "estimated 250 s" in _check(median, cell_m, "0:02:05", extra="  median-runs: 3")[0]
+
+
+def test_an_interpreter_flag_does_not_hide_an_invocation():
+    text = _SUBMIT.format(
+        script="-u scripts/point_source_source/source_plane/likelihood_runtime.py",
+        cell="point_source_source/source_plane/simple",
+        time="0:02:05",
+        extra="",
+    )
+    assert check_submits.median_runs(text) == {("point_source_source", "source_plane"): 1}
+    assert "estimated 150 s wall" in check_submits.check_text(text)[0]
 
 
 def test_the_a100_solved_submit_counts_both_invocations():
