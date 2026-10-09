@@ -169,7 +169,9 @@ def _read_config(json_path: Path) -> dict:
 def _aggregate_cell(cell_dir: Path) -> dict:
     configs: dict[str, dict] = {}
     # CPU-unusable markers (written by sweep.py --per-run-timeout, or by hand
-    # for OOM-killed cells) become comparison rows: {"cpu_unusable": true}.
+    # for OOM-killed cells) become comparison rows: {"cpu_unusable": true, ...}.
+    # Since timing-noise audit P9 the marker's verdict / host / loads / timeout
+    # ride along so build_readme can judge whether it may render as GPU-only.
     for marker_path in sorted(cell_dir.glob("*.unusable.json")):
         try:
             marker = json.loads(marker_path.read_text())
@@ -177,7 +179,22 @@ def _aggregate_cell(cell_dir: Path) -> dict:
             continue
         cname = marker.get("config_name")
         if cname:
-            configs[cname] = {"cpu_unusable": True, "reason": marker.get("reason")}
+            configs[cname] = {
+                "cpu_unusable": True,
+                "reason": marker.get("reason"),
+                **{
+                    k: marker[k]
+                    for k in (
+                        "verdict",
+                        "outcome",
+                        "timeout_seconds",
+                        "host",
+                        "loadavg_at_start",
+                        "loadavg_at_timeout",
+                    )
+                    if k in marker
+                },
+            }
     for json_path in sorted(cell_dir.glob("*.json")):
         if json_path.name.endswith(".unusable.json") or not _is_config_stem(json_path.stem):
             continue

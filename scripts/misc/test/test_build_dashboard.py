@@ -407,17 +407,21 @@ def test_gpu_single_jit_headline_is_labelled_first_block_after_compile():
     assert "headline_note" not in bd._point(other, "1", "b.json")
 
 
-def test_steady_median_field_rides_beside_the_headline():
+def test_steady_median_is_the_headline_with_the_block_mean_beside_it():
+    """Fix phase 5 (P8): where a row records the median, it is the labelled headline."""
     row = _row("2026.10.4.1", 0.000642)
     row["full_pipeline_single_jit_median_ms"] = 0.267
     p = bd._point(row, "2026.10.4.1", "x.json")
-    assert p["single_jit_s"] == 0.000642
+    assert p["single_jit_s"] == pytest.approx(0.000267)
     assert p["single_jit_median_s"] == pytest.approx(0.000267)
+    assert p["single_jit_block_mean_s"] == 0.000642
+    assert p["headline_estimator"] == bd.ESTIMATOR_MEDIAN and "headline_note" not in p
     cell = bd._per_call_html(p)
     assert (
-        "0.64 ms" in cell
+        "0.27 ms" in cell
+        and "(steady median)" in cell
+        and "block mean 0.64 ms" in cell
         and "first block after compile" in cell
-        and "steady median 0.27 ms" in cell
     )
 
 

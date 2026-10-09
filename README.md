@@ -57,7 +57,7 @@ Results are framed by **astronomy instrument** (HST, Euclid, JWST, …) rather t
 | `imaging/mge/jwst` | 716.2 ms | 678.5 ms | — | — | 387.3 ms | 488.7 ms | 488.7 ms |
 | `imaging/pixelization/hst` | 13.72 s | 14.78 s | — | — | 5.79 s | 5.25 s | 5.25 s |
 | `imaging/pixelization/jwst` | 21.78 s | 43.58 s | — | — | 9.57 s | 9.42 s | 9.42 s |
-| `interferometer/delaunay/alma` | **GPU-only** | 6.51 s | — | — | — | — | 6.51 s |
+| `interferometer/delaunay/alma` | _did not finish (inconclusive)_ | 6.51 s | — | — | — | — | 6.51 s |
 | `interferometer/delaunay/sma` | 2.58 s | 3.34 s | — | — | — | — | 3.34 s |
 | `interferometer/mge/sma` | 230.7 ms | 231.5 ms | — | — | — | — | 231.5 ms |
 | `interferometer/pixelization/sma` | 2.04 s | 2.39 s | — | — | — | — | 2.39 s |

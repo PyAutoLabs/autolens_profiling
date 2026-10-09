@@ -24,8 +24,16 @@ returning the median with p10 / p90.
 ``n_repeats`` calls taken right after the first call. On the A100 that block
 can land in the post-compile transient: the source-plane cell read 0.642 ms
 against a steady 0.267 ms median (jobs 366912 / 366914). It is kept unchanged
-for continuity with every committed row. The median is an opt-in addition
-beside it, never a replacement.
+for continuity with every committed row. The median is an addition beside it,
+never a replacement.
+
+``headline_steady_median`` (timing-noise audit P8, autolens_profiling#362) is
+the one call every runtime cell makes after its ``full_pipeline`` block: it
+takes the steady median of the already compiled pipeline and returns the
+``full_pipeline_single_jit_median*`` fields written beside the legacy
+``full_pipeline_single_jit``. Compile time stays in ``jit_profile``'s
+``lower`` / ``compile`` / ``first_call`` sections; the median only times warm
+calls of the compiled callable.
 """
 
 from __future__ import annotations
@@ -211,6 +219,95 @@ def steady_median_profile(
         "mean_s": float(sum(samples) / len(samples)),
         "statistic": "median of individually timed calls after warm calls",
     }
+
+
+#: Timed-call budget of the headline steady median, seconds. ``n_timed`` is the
+#: budget over the block mean, clamped to [HEADLINE_MEDIAN_MIN_TIMED,
+#: HEADLINE_MEDIAN_MAX_TIMED]: a 0.3 ms A100 call gets the 200 of job 366914, a
+#: 4 s CPU call gets 20 (about 100 s with its 5 warm calls).
+HEADLINE_MEDIAN_BUDGET_S = 30.0
+HEADLINE_MEDIAN_MAX_TIMED = 200
+HEADLINE_MEDIAN_MIN_TIMED = 20
+#: Above this block mean (s per call) no headline median is taken: its 5 warm + 20 timed calls
+#: would cost more than ~50 s (a 48.8 s laptop call would add ~20 min and could push a run past
+#: ``--per-run-timeout`` or an HPC wall). The post-compile transient the median guards against is
+#: a sub-millisecond-to-millisecond effect; the row keeps the legacy headline, labelled as such.
+HEADLINE_MEDIAN_MAX_BLOCK_MEAN_S = 2.0
+
+#: What the legacy ``full_pipeline_single_jit`` is, written into every protocol block.
+SINGLE_JIT_BLOCK_MEAN_IS = (
+    "mean of one 10-call block after one first call (first block after compile)"
+)
+
+
+def headline_median_n_timed(block_mean_s: float | None) -> int:
+    """Timed calls for the headline median, sized from the block mean (see the budget above)."""
+    if block_mean_s is None or not block_mean_s > 0 or block_mean_s != block_mean_s:
+        return HEADLINE_MEDIAN_MAX_TIMED
+    n = int(HEADLINE_MEDIAN_BUDGET_S // block_mean_s)
+    return max(HEADLINE_MEDIAN_MIN_TIMED, min(HEADLINE_MEDIAN_MAX_TIMED, n))
+
+
+def single_jit_median_fields(steady: Mapping, prefix: str = "full_pipeline_single_jit") -> dict:
+    """The result-JSON fields of a steady median written beside the legacy block mean.
+
+    ``<prefix>_median`` (seconds) is the key ``catalogue_adapters.DIRECT`` already maps to the
+    ``runtime`` / ``single_jit_median`` metric. ``<prefix>_median_ms`` / ``_p10_ms`` / ``_p90_ms``
+    / ``_median_protocol`` are the keys the source-plane solved cell has written since #371 and
+    that ``build_dashboard`` reads. ``<prefix>`` itself is never written here.
+    """
+    return {
+        f"{prefix}_median": float(steady["median_s"]),
+        f"{prefix}_median_ms": float(steady["median_s"]) * 1000.0,
+        f"{prefix}_p10_ms": float(steady["p10_s"]) * 1000.0,
+        f"{prefix}_p90_ms": float(steady["p90_s"]) * 1000.0,
+        f"{prefix}_median_protocol": {
+            "n_warm": int(steady["n_warm"]),
+            "n_timed": int(steady["n_timed"]),
+            "statistic": steady["statistic"],
+            f"{prefix}_is": SINGLE_JIT_BLOCK_MEAN_IS,
+            "issue": "autolens_profiling#371; timing-noise audit P8 (#362)",
+        },
+    }
+
+
+def headline_steady_median(
+    compiled: Callable,
+    *args,
+    block_mean_s: float | None = None,
+    n_warm: int = MIN_STEADY_WARM,
+    n_timed: int | None = None,
+    clock: Callable[[], float] = time.perf_counter,
+) -> dict:
+    """Steady median of a cell's compiled ``full_pipeline``, as result-JSON fields.
+
+    Call it right after the cell has read ``full_pipeline_per_call`` off the
+    ``jit_profile`` block, with that block mean as *block_mean_s*: it adds no
+    ``Timer`` section, so the legacy statistic is untouched. Returns
+    :func:`single_jit_median_fields` of :func:`steady_median_profile`, or ``{}`` (no median; the
+    legacy headline stands) when *block_mean_s* exceeds :data:`HEADLINE_MEDIAN_MAX_BLOCK_MEAN_S`
+    and *n_timed* is not given.
+    """
+    if (
+        n_timed is None
+        and block_mean_s is not None
+        and block_mean_s > HEADLINE_MEDIAN_MAX_BLOCK_MEAN_S
+    ):
+        print(
+            f"  steady median skipped: block mean {block_mean_s:.3f} s > "
+            f"{HEADLINE_MEDIAN_MAX_BLOCK_MEAN_S:g} s per call (legacy headline stands)"
+        )
+        return {}
+    if n_timed is None:
+        n_timed = headline_median_n_timed(block_mean_s)
+    steady = steady_median_profile(compiled, *args, n_warm=n_warm, n_timed=n_timed, clock=clock)
+    print(
+        f"  steady median = {steady['median_s']:.6f} s "
+        f"(p10 {steady['p10_s']:.6f}, p90 {steady['p90_s']:.6f}; "
+        f"{steady['n_warm']} warm, {steady['n_timed']} timed)"
+        + (f"; block mean {block_mean_s:.6f} s" if block_mean_s is not None else "")
+    )
+    return single_jit_median_fields(steady)
 
 
 def vmap_profile(

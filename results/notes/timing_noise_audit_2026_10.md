@@ -36,6 +36,17 @@ fewer than 5 rounds names no `best`. C6, C7 and C10 become SOUND-with-caveats. R
 committed rows on round intervals changed one non-deciding laptop C6 call (GO → INCONCLUSIVE) and
 nothing on RAL. See "Fix phase 4 — shipped" under (b).
 
+**Fix phase 5 shipped (phase 6 of #362, PR #408, 2026-10-09):** every runtime cell that headlines
+`jit_profile`'s 10-call block mean also writes the steady median beside it through one helper,
+`scripts/misc/likelihood_breakdown/timing.py::headline_steady_median`; the dashboard headlines the
+median where a row records it, labels the estimator, and drift never compares a median with a
+block mean (P8). A `--per-run-timeout` timeout writes an INCONCLUSIVE marker with host, loads and
+timeout; a marker renders "GPU-only", and `--skip-existing` honours it, only when it qualifies
+under `qualify`; otherwise it renders inconclusive and is re-measured (P9). P8 and P9 become
+SOUND-with-caveats. No committed row carries a median, so no dashboard headline or drift badge
+changed; the one rendered "GPU-only" cell (a hand-written laptop OOM marker) now reads "did not
+finish (inconclusive)". See "Fix phase 5 — shipped" under (b).
+
 **Phase 1 was an audit. Nothing was changed in it:** no gate, budget, tolerance, cutoff, estimator,
 repeat count or production instrument was edited. The only code added is the read-only lister
 `scripts/misc/tooling/list_timing_assertions.py`, which keeps this inventory in step with the code.
@@ -105,16 +116,17 @@ T1, T3, P1 and P2, which are as of the fix phase 1 branch.
 | T5 | CI test | `scripts/misc/test/test_wall_check_submits.py::test__the_41x_spread_that_caused_the_loss` (298) | wall estimate arithmetic from the rates table | `> 8` | SOUND |
 | T6 | CI test | `scripts/misc/test/test_build_dashboard.py` (132, 260–285) | qualification and drift on synthetic rows | exact | SOUND (pins P6/P7 semantics) |
 | T7 | CI test | `scripts/misc/test/test_ab_verdict.py` (shared A/B verdict witnesses; `scripts/misc/test/test_ab_verdict.py::test_a_15_percent_point_estimate_straddling_the_bar_is_inconclusive` and the bars `scripts/misc/test/test_ab_verdict.py::GO_MIN_SAVED_MS`, `scripts/misc/test/test_ab_verdict.py::GO_MIN_FRACTION`) | `ab_rule_verdict` / `tie_set` on seeded synthetic samples, the cells' own lifted rules, and the committed C6 / C7 / C10 rows | exact, seeded | SOUND (pins the fix phase 3 semantics) |
+| T9 | CI test | `scripts/misc/test/test_headline_estimator_and_marker.py` (P8 / P9 witnesses: `scripts/misc/test/test_headline_estimator_and_marker.py::test_injected_transient_moves_the_block_mean_2p4x_and_not_the_median`, `scripts/misc/test/test_headline_estimator_and_marker.py::test_drift_never_compares_a_median_with_a_block_mean`, `scripts/misc/test/test_headline_estimator_and_marker.py::test_an_unqualified_marker_is_never_rendered_gpu_only`, `scripts/misc/test/test_headline_estimator_and_marker.py::test_skip_existing_re_measures_an_unqualified_marker`) | the headline median on an injected clock, the dashboard estimator / drift rule, `marker_verdict` on synthetic and the 4 committed markers, `sweep.py --skip-existing` with a stubbed subprocess | exact | SOUND (pins the fix phase 5 semantics) |
 | T8 | CI test | `scripts/misc/test/test_round_bootstrap.py` (round-bootstrap witnesses: `scripts/misc/test/test_round_bootstrap.py::test_the_round_interval_covers_the_true_ratio_under_a_fixed_seed`, `scripts/misc/test/test_round_bootstrap.py::test_round_coverage_is_near_nominal_and_iid_coverage_is_not`, `scripts/misc/test/test_round_bootstrap.py::test_rounds_are_paired_across_arms`, `scripts/misc/test/test_round_bootstrap.py::test_the_committed_pytree_ral_cpu_saving_stays_below_the_bar`) | `round_median_ratio` / `round_median_saving` on seeded correlated rounds, each cell's lifted helper, and the committed C6 / C7 / C10 rows | exact, seeded | SOUND (pins the fix phase 4 semantics) |
 | P1 | production qualification | `scripts/imaging/pixelized/fixed_light_numba.py::<module>` (2122–2130; raise at 2267) via `scripts/misc/likelihood_breakdown/overhead_verdict.py::abba_overhead_verdict` | ABBA overhead in ms: one-sided t bounds vs budget; raises only on FAIL / FAIL_GROSS, INCONCLUSIVE keeps the row | `scripts/imaging/pixelized/fixed_light_numba.py::MAX_INSTRUMENTATION_OVERHEAD_MS` 12.0; `scripts/imaging/pixelized/fixed_light_numba.py::MIN_BLOCKS_FOR_OVERHEAD_ASSERT` 3; `scripts/imaging/pixelized/fixed_light_numba.py::REFERENCE_OVERHEAD_RATIO` 1.03 (recorded) | SOUND-with-caveats |
 | P2 | campaign gate | `scripts/imaging/pixelized/fixed_light_numba.py::<module>` (2386–2496) via `scripts/misc/likelihood_breakdown/ab_verdict.py::ab_rule_verdict` | promotion `timing_candidate` / `INCONCLUSIVE` / `NO_LEVER` | whole-call speedup ≥ 0.05 on a 90 % paired-block interval (≥ 5 blocks) and both P1 PASS; a P1 INCONCLUSIVE gives INCONCLUSIVE | FRAGILE |
 | P3 | production protocol | `scripts/imaging/pixelized/fixed_light_numba.py::_warm_to_steady_state` (1745) | warm-up "steady" flag | `scripts/imaging/pixelized/fixed_light_numba.py::WARMUP_WINDOW` 3, `scripts/imaging/pixelized/fixed_light_numba.py::WARMUP_TOLERANCE` 0.10, `scripts/imaging/pixelized/fixed_light_numba.py::WARMUP_MAX_CALLS` 12 | FRAGILE |
 | P4 | production qualification | `scripts/imaging/pixelized/fixed_light_numba.py` 2247 | unattributed fraction of the instrumented call | `MAX_UNATTRIBUTED_FRACTION` 0.05 | SOUND |
 | P5 | production qualification | `_production_config.py::witness_verdict` (869); `_production_config.py::timing_summary` (792) | production-representative cold-eval witness | `WITNESS_FACTOR` 1.5 × the production cold-eval range | FRAGILE |
-| P6 | production qualification | `scripts/misc/tooling/build_dashboard.py::qualify` (408) via `scripts/misc/tooling/build_dashboard.py::is_reference_host_class` (397) | `qualified` flag on every dashboard / v1 `profiling-summary` point (the project dashboard and badge; the live Pulse registry reads the v2 catalogue) | `RELEASE_SWEEP_LOADAVG_CAP` 8.0, `RELEASE_SWEEP_NODE`, `REFERENCE_HOST_CLASS_PREFIXES` (`hpc_`) | SOUND-with-caveats |
-| P7 | production qualification | `scripts/misc/tooling/build_dashboard.py::drift` (436) and `scripts/misc/tooling/build_dashboard.py::_summary_comparison` (652) | release-to-release drift badge (drifted / improved / flat / insufficient) | `scripts/misc/tooling/build_dashboard.py::DRIFT_RATIO` 2.0 and `scripts/misc/tooling/build_dashboard.py::DRIFT_FLOOR_S` 1 ms; `flat` only with repeat-summary endpoints | SOUND-with-caveats |
-| P8 | estimator | `scripts/misc/likelihood_breakdown/timing.py` `jit_profile` (84), per-cell copies (e.g. `scripts/imaging/delaunay/likelihood_runtime.py` 161/436) | `full_pipeline_single_jit`, the headline P7 compares | mean of one block of 10 right after the first call; `scripts/misc/likelihood_breakdown/timing.py::MIN_STEADY_WARM` 5 for the opt-in median | FRAGILE |
-| P9 | production qualification | `scripts/misc/likelihood_runtime/sweep.py` (160, 306–325) | `--per-run-timeout` writes an `.unusable.json` "GPU-only" marker | the timeout | UNSAFE-SILENT |
+| P6 | production qualification | `scripts/misc/tooling/build_dashboard.py::qualify` (448) via `scripts/misc/tooling/build_dashboard.py::is_reference_host_class` (437) | `qualified` flag on every dashboard / v1 `profiling-summary` point (the project dashboard and badge; the live Pulse registry reads the v2 catalogue) | `RELEASE_SWEEP_LOADAVG_CAP` 8.0, `RELEASE_SWEEP_NODE`, `REFERENCE_HOST_CLASS_PREFIXES` (`hpc_`) | SOUND-with-caveats |
+| P7 | production qualification | `scripts/misc/tooling/build_dashboard.py::drift` (512) and `scripts/misc/tooling/build_dashboard.py::_summary_comparison` (742) | release-to-release drift badge (drifted / improved / flat / insufficient) | `scripts/misc/tooling/build_dashboard.py::DRIFT_RATIO` 2.0 and `scripts/misc/tooling/build_dashboard.py::DRIFT_FLOOR_S` 1 ms; `flat` only with repeat-summary endpoints; endpoints on different headline estimators → `insufficient` (fix phase 5) | SOUND-with-caveats |
+| P8 | estimator | `scripts/misc/likelihood_breakdown/timing.py` `jit_profile` (92) and `headline_steady_median` (269), called by the 11 runtime cells' local `jit_profile` blocks (e.g. `scripts/imaging/delaunay/likelihood_runtime.py`); read by `scripts/misc/tooling/build_dashboard.py::_point` (296) | `full_pipeline_single_jit` (legacy block mean, kept) and `full_pipeline_single_jit_median*` beside it; the dashboard headline P7 compares | block mean of 10 after the first call; median of `n_timed` individually timed calls after `scripts/misc/likelihood_breakdown/timing.py::MIN_STEADY_WARM` 5 warm calls, `n_timed` = `scripts/misc/likelihood_breakdown/timing.py::HEADLINE_MEDIAN_BUDGET_S` 30 s / block mean in [20, 200]; no median above `scripts/misc/likelihood_breakdown/timing.py::HEADLINE_MEDIAN_MAX_BLOCK_MEAN_S` 2 s per call | SOUND-with-caveats |
+| P9 | production qualification | `scripts/misc/likelihood_runtime/sweep.py` `timeout_marker` (271), `--skip-existing` (462); `scripts/misc/tooling/build_dashboard.py::marker_verdict` (476); `scripts/misc/tooling/build_readme.py` | `--per-run-timeout` writes an INCONCLUSIVE `.unusable.json` marker; "GPU-only" only for a qualified marker | the timeout; `qualify` on the marker's host and max(load at start, load at timeout) | SOUND-with-caveats |
 | P10 | production qualification | `scripts/misc/tooling/baseline_readiness.py` `check_observation` (351) | structural screening of fresh baseline observations | load cap per allocated CPU, repetitions ≥ 2, warm-up, median aggregation | SOUND |
 | C1 | campaign gate | `scripts/imaging/pixelized/fixed_light_numba_memo_policy.py::matched_counterfactual` (105–106) | `warm_beneficial_3pct` / `warm_harmful_3pct`, which become false-accept / false-reject counts | 0.97 / 1.03 on a median ratio of 4 paired repeats | UNSAFE-SILENT |
 | C2 | campaign gate | `scripts/imaging/pixelized/fixed_light_numba_memo_policy.py::evaluate` (241, 248) | descriptive cross-lane 3 % classifications | 1.03 / 0.97 on medians | FRAGILE |
@@ -136,22 +148,24 @@ T1, T3, P1 and P2, which are as of the fix phase 1 branch.
 
 | Kind | Rows | SOUND | FRAGILE | UNSAFE-SILENT |
 |---|---|---|---|---|
-| CI test | 8 | 8 | 0 | 0 |
-| Production qualification / protocol / estimator | 9 | 5 | 3 | 1 |
+| CI test | 9 | 9 | 0 | 0 |
+| Production qualification / protocol / estimator | 9 | 7 | 2 | 0 |
 | Campaign gate (incl. P2 promotion) | 13 | 4 | 5 | 4 |
 | Submit basis | 1 | 1 | 0 | 0 |
 | Resource guard | 2 | 2 | 0 | 0 |
-| **Total** | **33** | **20** | **8** | **5** |
+| **Total** | **34** | **23** | **7** | **4** |
 
-Counts after fix phase 4, which added the CI-test row T8 and moved C6, C7 and C10 from FRAGILE to
-SOUND-with-caveats (counted as SOUND, like T1, P1, P6 and P7). After fix phase 3 the totals were
+Counts after fix phase 5, which added the CI-test row T9 and moved P8 from FRAGILE and P9 from
+UNSAFE-SILENT to SOUND-with-caveats (counted as SOUND, like T1, P1, P6, P7, C6, C7 and C10). After
+fix phase 4 the totals were 20 / 8 / 5 over 33 rows (T8 added; C6, C7, C10 FRAGILE →
+SOUND-with-caveats). After fix phase 3 the totals were
 16 / 11 / 5 over 32 rows (T7 added; C7, C10 and P2 UNSAFE-SILENT → FRAGILE). After fix
 phase 2 the totals were 15 / 8 / 8 over 31 rows; after fix phase 1, 13 / 9 / 9 (P6 UNSAFE-SILENT,
 P7 FRAGILE); at phase 1, 11 / 10 / 10 (T1 FRAGILE, P1 UNSAFE-SILENT). The production row group is
-P1 and P3–P10, nine rows. P2 is a promotion rule, so it is counted with the campaign gates. Five
-rows can still label a result from a point estimate or without looking at the measurement: P9,
-C1, C3, C4 and C5 (at phase 1 there were eight, with P2, C7 and C10). None of the twelve CI-test,
-submit or resource-guard rows is UNSAFE-SILENT.
+P1 and P3–P10, nine rows. P2 is a promotion rule, so it is counted with the campaign gates. Four
+rows can still label a result from a point estimate or without looking at the measurement: C1,
+C3, C4 and C5, all phase 3b (at phase 1 there were ten; P9 left with fix phase 5). None of the
+thirteen CI-test, submit or resource-guard rows is UNSAFE-SILENT.
 
 ## Per-row detail
 
@@ -365,7 +379,10 @@ first order. The cutoff is a design budget for the site spec, not a noise budget
   measured null"). No producer writes a repeat summary yet, so every in-band comparison is
   `insufficient` today. `drifted` / `improved` keep their status as gross-band flags with the
   reason "single-sample endpoint(s)" (human decision 2026-10-08). The caveat: the estimator (P8)
-  can still produce a 2× flag by itself until fix phase 5.
+  can still produce a 2× flag by itself until fix phase 5. Since fix phase 5 a series headlined by
+  the steady median compares medians only; a median against a block-mean endpoint is
+  `insufficient` ("endpoints use different headline estimators"). Legacy-only series keep the
+  block-mean caveat until their cells are re-run.
 
 ### P8 — single-jit headline estimator
 
@@ -374,14 +391,36 @@ first call. That makes it a single sample of a block mean, with no repeats. The 
 in `timing.py`'s own docstring and is "kept unchanged for continuity". The opt-in
 `steady_median_profile` (≥ 5 warm and N timed calls, median with p10/p90) is the noise-aware
 alternative. Several cells keep local copies of `jit_profile`, for example
-`scripts/imaging/delaunay/likelihood_runtime.py`. **FRAGILE.**
+`scripts/imaging/delaunay/likelihood_runtime.py`. **FRAGILE** (phase 1).
+
+**After fix phase 5: SOUND-with-caveats.** The 11 runtime cells whose headline is the
+`jit_profile` block call `headline_steady_median` on the compiled pipeline right after reading
+the block, and write `full_pipeline_single_jit_median` (s), `_median_ms`, `_p10_ms`, `_p90_ms` and
+`_median_protocol` beside the unchanged `full_pipeline_single_jit`. The dashboard headline is the
+median where present, labelled "steady median", with the block mean beside it; drift never
+compares a median with a block mean. Caveats: one median is still one run's summary, so a
+comparison is still single-sample (P7); no committed row carries a median yet; a call slower than
+2 s keeps the legacy headline (the median's 25 extra calls would cost minutes); the breakdown cells
+(`interferometer/mge/likelihood_breakdown.py`, `misc/likelihood_breakdown/interferometer_pixelized.py`),
+the datacube cell (`scripts/datacube/delaunay/likelihood_runtime.py`, a 3-call cube block,
+`full_pipeline_cube_single_jit`) and the two `mge_mass` cells (which already write a median *under*
+the legacy key) are not opted in. See (b) item 5.
 
 ### P9 — sweep `--per-run-timeout` → "GPU-only"
 
 A single wall-clock run that exceeds the timeout writes `.unusable.json`. The dashboard renders it
 as "GPU-only", and `--skip-existing` honours it, so the cell is never re-measured. It is one
-sample on an unqualified host (the laptop is documented at 7× load error). **UNSAFE-SILENT.** A
-categorical scientific label comes from one noisy observation and persists.
+sample on an unqualified host (the laptop is documented at 7× load error). **UNSAFE-SILENT**
+(phase 1). A categorical scientific label comes from one noisy observation and persists.
+
+**After fix phase 5: SOUND-with-caveats.** A timeout writes `verdict: INCONCLUSIVE` with the host,
+the load average at the start of the run and at the timeout, the timeout and the elapsed time.
+`build_dashboard.marker_verdict` renders "GPU-only" only when the marker passes `qualify` (so
+`is_reference_host_class`, a recorded host and load, the higher load ≤ the cap, the pinned node);
+anything else renders "timed out (inconclusive)" or "did not finish (inconclusive)", and
+`sweep.py --skip-existing` re-measures it. Caveat: a qualified marker is still one observation on
+a qualified host (qualification is provenance, not statistics, as for P6), and `sweep.py` runs
+only `local_*` configs, so no marker it writes can qualify today. See (b) item 5.
 
 ### P10 — baseline readiness screening (SOUND)
 
@@ -530,7 +569,8 @@ a ledger.
 | `scripts/imaging/pixelized/fixed_light_numba_s4_witness.py::W4_N_REPEATS` | 20 | W4 kernel timing (reported) |
 | `scripts/lens/deflections/basis.py::WITNESS_REPEATS` | 20 | memo on/off medians (printed) |
 | `scripts/misc/hazards/mge_faddeeva.py::COST_REPEATS` | 5 | hazard cost table |
-| `scripts/misc/likelihood_breakdown/timing.py::MIN_STEADY_WARM` | 5 | P8 opt-in median |
+| `scripts/misc/likelihood_breakdown/timing.py::MIN_STEADY_WARM` | 5 | P8 median (the headline where present since fix phase 5) |
+| `scripts/misc/likelihood_breakdown/timing.py::HEADLINE_MEDIAN_BUDGET_S` | 30.0 | P8: timed-call budget of the headline median (`n_timed` in [20, 200]) |
 | `scripts/point_source_image/image_plane/gpu_bottleneck_map.py::BOOTSTRAP_SAMPLES` | 2000 | C12 |
 | `scripts/point_source_image/image_plane/solver_config_sweep.py::BOOTSTRAP_SAMPLES` | 2000 | C9/C10 (recorded CI) |
 | `scripts/point_source_image/image_plane/static_lattice_ab.py::BOOTSTRAP_SAMPLES` | 2000 | reported CI (gates are correctness) |
@@ -869,6 +909,74 @@ correctness or gross-regression guard.
      "timed out on host X at load Y" and is re-measured before being rendered as GPU-only.
    - **Witness:** an injected-clock transient (the existing T4 pattern) where the block mean moves
      2.4× and the median does not. A marker with a load above the cap is not rendered as GPU-only.
+   - **Shipped (phase 6 of #362, PR #408, 2026-10-09).** As implemented:
+     - **P8, the producer:** one helper, `scripts/misc/likelihood_breakdown/timing.py::headline_steady_median`,
+       runs `steady_median_profile` on the cell's compiled `full_pipeline` after the legacy block
+       (no `Timer` section, so `full_pipeline_single_jit` and compile / first-call sections are
+       byte-for-byte what they were) and returns `full_pipeline_single_jit_median` (s, the key
+       `catalogue_adapters.DIRECT` already maps to `single_jit_median`), `_median_ms`, `_p10_ms`,
+       `_p90_ms` and `_median_protocol` (n_warm, n_timed, statistic, what the block mean is).
+       `n_timed` is 30 s over the block mean, clamped to [20, 200]: an A100 call keeps the 200 of
+       job 366914, a 1.5 s CPU call takes 20 (~38 s with its warm calls). Above a 2 s block mean
+       (`HEADLINE_MEDIAN_MAX_BLOCK_MEAN_S`) no median is taken and the legacy headline stands, so a
+       48.8 s laptop call is not extended by ~20 min past `--per-run-timeout` or an HPC wall
+       (review finding). Wired into the 11 runtime
+       cells that headline the block: imaging delaunay / delaunay_nn / mge / rectangular,
+       interferometer delaunay / mge / rectangular, point-source image-plane plain / solved,
+       source-plane plain / solved (the last moved off its own #371 copy onto the helper).
+     - **P8, the reader:** `build_dashboard._point` headlines the median where a row records one
+       beside a single-jit headline (`headline_estimator: "steady median"`,
+       `single_jit_block_mean_s` beside it; both only on such points, so every other point is
+       unchanged); the table and tooltip label the estimator. `drift` returns
+       `estimator-mismatch` when the two endpoints use different estimators, published
+       `insufficient` with "endpoints use different headline estimators … not compared"; the
+       status vocabulary is unchanged. A median is not a repeat summary: one run's median is one
+       summary, so in-band comparisons stay `insufficient` (P7). The v1 record carries
+       `single_jit_block_mean_s` in `measurement` and a limitation line only where the median is
+       the headline.
+     - **P9:** `sweep.py` writes `{cpu_unusable, verdict: "INCONCLUSIVE", outcome: "timeout",
+       reason: "timed out after Ns on host X at load a/b …", timeout_seconds, elapsed_s, host,
+       loadavg_at_start, loadavg_at_timeout, marker_schema: 2}` (`cpu_unusable` kept for the
+       readers that key on it). `build_dashboard.marker_verdict` builds a point from the marker
+       and calls `qualify`; only a qualified marker is "GPU-only". `--skip-existing` skips a
+       result JSON or a qualified marker and re-measures anything else. `aggregate.py` carries the
+       marker's verdict / host / loads / timeout into `comparison.json`; `build_readme.py` renders
+       a qualified marker **GPU-only** and any other in italics as "timed out (inconclusive)" or
+       "did not finish (inconclusive)" (no timeout recorded, e.g. an OOM).
+     - **witness** (`test_headline_estimator_and_marker.py`, T9): a transient-laden first block
+       (one call +37.5 ms over a 2.67 ms steady state) moves the block mean 2.40× while the median
+       of 40 timed calls (one 10× spike) stays 1.00×; legacy rows flag that as `drifted`, median rows
+       do not; drift between a median and a block-mean endpoint is `estimator-mismatch` →
+       `insufficient`; markers above the cap (at start or at timeout), with no load, no host, on a
+       laptop, off the pinned node, or written before this phase are never GPU-only; a timeout
+       marker records INCONCLUSIVE with host and load; `--skip-existing` runs a cell whose only
+       evidence is an unqualified marker.
+     - **contract:** no `profiling-summary@2` field or metric changes. `build_catalogue.py` is not
+       edited; it indexes the markers as `indexed_only` (no measured fields, before and after).
+       The median reaches v2 only on rows measured after this phase, as the existing
+       `runtime` / `single_jit_median` metric (statistic `median`) the adapter already declared.
+       v1 (`dashboard/summary.json`, read by the project badge, not by Pulse live) gains the
+       conditional `single_jit_block_mean_s` measurement and limitation described above; neither
+       is present today.
+     - **re-judged committed rows (facts; no JSON rewritten, no compute run):**
+
+       | What | Committed | Before | After | Changed |
+       |---|---|---|---|---|
+       | rows carrying `full_pipeline_single_jit_median*` | 0 | — | — | no headline, drift badge or comparison changed; `dashboard/` re-renders identical (`--check` current, 145 series) |
+       | `.unusable.json` markers | 4, all `local_cpu_*`, written 2026-07-11 (#62), none with host or load | "GPU-only" | inconclusive (not a reference host class; no host / load) | **yes** |
+       | `results/runtime/interferometer/delaunay/alma/delaunay_local_cpu_fp64` (laptop OOM, 2858 s) | the only marker in a committed `comparison.json` (also the `PreOptimizationTimes` baseline copy) | README **GPU-only** | _did not finish (inconclusive)_ in `README.md` and `scripts/misc/likelihood_runtime/README.md` | **yes** |
+       | `datacube/delaunay/alma` fp64 (3600 s timeout), `interferometer/delaunay/alma_high` fp64 (~1 h kill) / mp (killed, sibling > 1 h) | not aggregated into any committed `comparison.json` | not rendered | timed out / timed out / did not finish (inconclusive) if aggregated | no rendered change |
+
+       No recorded decision rests on the alma OOM label: its `local_cpu_mp` sibling has a measured
+       6.51 s row, and the GPU-first campaign doctrine did not depend on it.
+     - **not changed (remainders):** the README runtime table still reads the legacy headline
+       (`full_pipeline_per_call`, the aggregator's alias of the block mean); the breakdown cells,
+       the datacube cell (`scripts/datacube/delaunay/likelihood_runtime.py`, whose
+       `full_pipeline_cube_single_jit` is a 3-call block after compile) and the two `mge_mass`
+       cells are not opted in; calls slower than 2 s get no median; `single_jit_repeats` (≥ 2
+       independent runs per release) is still written by no producer; the wall basis in
+       `wall/rates.py` does not include the median's extra calls (at most 25 calls of ≤ 2 s,
+       ~50 s, per cell).
 6. **Warm-up flag and witness band (P3, P5).**
    - **Change:** rows after an unsettled warm-up are INCONCLUSIVE for any timing verdict. P5 gains
      host class and an INCONCLUSIVE state off the reference host class.

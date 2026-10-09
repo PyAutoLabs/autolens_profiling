@@ -53,7 +53,9 @@ if _misc_dir not in _sys.path:
 
 
 import argparse
+import json
 import os
+import socket
 import subprocess
 import sys
 import time
@@ -64,6 +66,9 @@ _REPO_ROOT = _profiling_root()  # autolens_profiling/
 _DEFAULT_OUTPUT_ROOT = _REPO_ROOT / "results" / "runtime"
 sys.path.insert(0, str(_REPO_ROOT))
 from _script_routes import legacy_stem, runtime_path
+
+sys.path.insert(0, str(_REPO_ROOT / "scripts" / "misc" / "tooling"))
+from build_dashboard import marker_verdict, read_release_sweep_conf  # noqa: E402
 
 _DEFAULT_PYTHON = sys.executable
 
@@ -163,11 +168,13 @@ def _parse_args() -> argparse.Namespace:
         metavar="SECONDS",
         help=(
             "Kill any single run exceeding this wall-clock and record an "
-            "`.unusable.json` marker instead of a result — campaign policy: "
-            "a likelihood whose profiling run cannot finish inside the cap "
-            "is not a CPU-viable configuration, it is GPU-only. The marker "
-            "is honoured by --skip-existing and rendered as 'GPU-only' by "
-            "the dashboard."
+            "`.unusable.json` marker instead of a result. One timeout is one "
+            "observation, so the marker records verdict INCONCLUSIVE with the "
+            "host, the load average at the start and at the timeout, and the "
+            "timeout (timing-noise audit P9). It renders as 'GPU-only' and is "
+            "honoured by --skip-existing only when it qualifies under "
+            "build_dashboard.marker_verdict; otherwise it renders as 'timed "
+            "out (inconclusive)' and --skip-existing re-measures the cell."
         ),
     )
     p.add_argument(
@@ -177,7 +184,8 @@ def _parse_args() -> argparse.Namespace:
             "Skip any (cell, config) whose result JSON already exists in the "
             "output dir — resume an interrupted campaign without redoing "
             "completed runs (the in-flight run at interruption left no JSON, "
-            "so it re-runs)."
+            "so it re-runs). A `.unusable.json` marker is honoured only when "
+            "it qualifies as GPU-only; an inconclusive marker is re-measured."
         ),
     )
     p.add_argument(
@@ -253,6 +261,60 @@ def _resolve_configs(args: argparse.Namespace) -> list[SweepConfig]:
     return configs
 
 
+def _loadavg_1min() -> float | None:
+    try:
+        return float(os.getloadavg()[0])
+    except (AttributeError, OSError):
+        return None
+
+
+def timeout_marker(
+    config_name: str,
+    per_run_timeout: float,
+    elapsed: float,
+    loadavg_at_start: float | None,
+    loadavg_at_timeout: float | None,
+    host: str | None,
+) -> dict:
+    """The ``.unusable.json`` payload for one timed-out run (timing-noise audit P9).
+
+    ``cpu_unusable`` is kept for the readers that key on it (``aggregate.py``); the verdict is
+    INCONCLUSIVE. Whether the marker may render as GPU-only is decided by
+    ``build_dashboard.marker_verdict`` from the host and loads recorded here.
+    """
+    load_txt = "/".join(
+        "unknown" if v is None else f"{v:.1f}" for v in (loadavg_at_start, loadavg_at_timeout)
+    )
+    return {
+        "cpu_unusable": True,
+        "verdict": "INCONCLUSIVE",
+        "outcome": "timeout",
+        "reason": (
+            f"timed out after {per_run_timeout:.0f}s on host {host or 'unknown'} at load "
+            f"{load_txt} (start/timeout): one observation, inconclusive until re-measured on a "
+            "qualified host"
+        ),
+        "config_name": config_name,
+        "timeout_seconds": per_run_timeout,
+        "elapsed_s": round(elapsed, 3),
+        "host": host,
+        "loadavg_at_start": loadavg_at_start,
+        "loadavg_at_timeout": loadavg_at_timeout,
+        "marker_schema": 2,
+    }
+
+
+def existing_marker_verdict(marker_path: Path, config_name: str, conf: dict) -> dict:
+    """``marker_verdict`` of a marker file; an unreadable marker is inconclusive."""
+    try:
+        marker = json.loads(marker_path.read_text())
+    except (OSError, ValueError):
+        marker = None
+    if not isinstance(marker, dict):
+        return {"gpu_only": False, "label": "unreadable marker", "reason": "not a JSON object"}
+    return marker_verdict(marker, config_name, conf)
+
+
 def _run_one(
     python: str,
     script_path: Path,
@@ -294,6 +356,7 @@ def _run_one(
         return True, 0.0, ""
 
     t0 = time.time()
+    load_start = _loadavg_1min()
     try:
         try:
             with open(log_path, "w") as log:
@@ -311,23 +374,20 @@ def _run_one(
                 out_dir
                 / f"{legacy_stem(script_path, _REPO_ROOT)}_{config.name}{log_suffix}.unusable.json"
             )
-            import json
-
-            marker.write_text(
-                json.dumps(
-                    {
-                        "cpu_unusable": True,
-                        "reason": f"wall-clock timeout after {per_run_timeout:.0f}s — GPU-only",
-                        "config_name": f"{config.name}{log_suffix}",
-                        "timeout_seconds": per_run_timeout,
-                    },
-                    indent=2,
-                )
+            payload = timeout_marker(
+                f"{config.name}{log_suffix}",
+                per_run_timeout,
+                elapsed,
+                load_start,
+                _loadavg_1min(),
+                socket.gethostname() or None,
             )
+            marker.write_text(json.dumps(payload, indent=2))
             print(
-                f"    TIMEOUT ({elapsed:.1f}s > {per_run_timeout:.0f}s) — marked CPU-unusable "
-                f"-> {marker.name}"
+                f"    TIMEOUT ({elapsed:.1f}s > {per_run_timeout:.0f}s) — INCONCLUSIVE "
+                f"marker -> {marker.name} ({payload['reason']})"
             )
+            # A terminal outcome for this sweep, not a failure; never a GPU-only verdict by itself.
             return True, elapsed, str(log_path)
         elapsed = time.time() - t0
         ok = proc.returncode == 0
@@ -337,8 +397,6 @@ def _run_one(
 
         # Verify the device.backend in the JSON matches expectations.
         if ok:
-            import json
-
             json_path = out_dir / f"{config.name}{log_suffix}.json"
             if json_path.exists():
                 try:
@@ -377,6 +435,7 @@ def main() -> int:
 
     summary: list[tuple[str, str, bool, float]] = []
     overall_t0 = time.time()
+    conf = read_release_sweep_conf(_REPO_ROOT)
 
     for cls, model, inst in cells:
         script_path = runtime_path(cls, model, _REPO_ROOT)
@@ -396,11 +455,21 @@ def main() -> int:
                 suffix = "_sparse" if args.sparse else ""
                 existing = out_dir / f"{model}_{cfg.name}{suffix}.json"
                 marker = out_dir / f"{model}_{cfg.name}{suffix}.unusable.json"
-                if existing.exists() or marker.exists():
-                    label = "result exists" if existing.exists() else "marked CPU-unusable"
-                    print(f"--- [{cfg.name}] {cell_id}: SKIP ({label})")
+                if existing.exists():
+                    print(f"--- [{cfg.name}] {cell_id}: SKIP (result exists)")
                     summary.append((cell_id, cfg.name, True, 0.0))
                     continue
+                if marker.exists():
+                    verdict = existing_marker_verdict(marker, cfg.name, conf)
+                    if verdict["gpu_only"]:
+                        print(f"--- [{cfg.name}] {cell_id}: SKIP (qualified GPU-only marker)")
+                        summary.append((cell_id, cfg.name, True, 0.0))
+                        continue
+                    # P9: an unqualified marker is one inconclusive observation; re-measure it.
+                    print(
+                        f"--- [{cfg.name}] {cell_id}: re-measuring — marker is "
+                        f"{verdict['label']} ({verdict['reason']})"
+                    )
             try:
                 ok, elapsed, _log = _run_one(
                     args.python,

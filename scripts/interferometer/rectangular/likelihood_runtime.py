@@ -91,6 +91,7 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 
 # Sweep-driver CLI args (--config-name / --output-dir / --use-mixed-precision).
 # Tolerates extra/unknown args via parse_known_args inside the helper.
+from likelihood_breakdown.timing import headline_steady_median  # noqa: E402
 from simulators.interferometer import INSTRUMENTS  # noqa: E402
 from vram import (  # noqa: E402
     probe_vmap_memory,
@@ -372,8 +373,13 @@ def full_pipeline_from_params(params_tree):
     return analysis.log_likelihood_function(instance=params_tree)
 
 
-_, full_result = jit_profile(full_pipeline_from_params, "full_pipeline", params_tree)
+full_compiled, full_result = jit_profile(full_pipeline_from_params, "full_pipeline", params_tree)
 full_pipeline_per_call = timer.records[-1][1] / 10
+# Timing-noise audit P8 (#362): ``full_pipeline_single_jit`` above stays the legacy block mean;
+# the steady median of the same compiled pipeline is written beside it (no timer section).
+full_pipeline_median = headline_steady_median(
+    full_compiled, params_tree, block_mean_s=full_pipeline_per_call
+)
 
 print(f"  full log_likelihood = {full_result}")
 
@@ -571,6 +577,7 @@ likelihood_summary = {
     "figure_of_merit_eager": float(figure_of_merit_ref),
     "log_evidence_jit": float(full_result),
     "full_pipeline_single_jit": full_pipeline_per_call,
+    **full_pipeline_median,
     "vmap": "SKIPPED — model has 0 free parameters (all fixed to truth)"
     if vmap_per_call is None
     else {

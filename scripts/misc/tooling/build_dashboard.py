@@ -73,11 +73,12 @@ DRIFT_FLOOR_S = 0.001
 REFERENCE_HOST_CLASS_PREFIXES = ("hpc_",)
 
 #: The point field that would carry a repeat summary of the compared metric (the number of
-#: independent repeats behind ``single_jit_s``). No producer writes it today: every headline is
-#: one 10-call block mean (timing-noise audit P8), so every endpoint is single-sample.
-#: ``single_jit_median_s`` does not count -- it summarises a different estimator from the one
-#: the drift ratio compares. ``_point`` does not copy it from a result JSON yet: the producer
-#: change that starts writing it (fix phase 5) must add it there too, until then this fails safe.
+#: independent repeats -- separate runs -- behind ``single_jit_s``). No producer writes it: a
+#: headline is one 10-call block mean or, since fix phase 5 (timing-noise audit P8), one steady
+#: median of one process's individually timed calls. Either is one summary from one run, so every
+#: endpoint is still single-sample; the timed calls inside one run are not independent repeats.
+#: ``_point`` does not copy it from a result JSON: a producer that runs >= 2 independent repeats per
+#: release must add it there too. Until then this fails safe.
 REPEAT_SUMMARY_FIELD = "single_jit_repeats"
 #: Reasons the comparisons carry for the 2x band (timing-noise audit P7).
 SINGLE_SAMPLE_NULL_REASON = (
@@ -85,6 +86,25 @@ SINGLE_SAMPLE_NULL_REASON = (
 )
 FLAT_BAND_REASON = "within the 2x policy band; not a measured null"
 SINGLE_SAMPLE_REASON = "single-sample endpoint(s)"
+
+#: Headline estimators (timing-noise audit P8). A point's ``single_jit_s`` is the steady median
+#: (``full_pipeline_single_jit_median_ms``: >= 5 warm calls, median of individually timed calls)
+#: where its row records one beside a ``full_pipeline_single_jit`` headline, else the legacy
+#: ``HEADLINE_KEYS`` value. Points carry ``headline_estimator`` only when it is the median, so a
+#: missing field means the legacy headline. Drift compares like with like only.
+ESTIMATOR_MEDIAN = "steady median"
+ESTIMATOR_LEGACY = "legacy headline"
+ESTIMATOR_MISMATCH_REASON = (
+    "endpoints use different headline estimators (steady median vs legacy block mean): not compared"
+)
+
+#: How a CPU ``.unusable.json`` marker renders (timing-noise audit P9). ``GPU-only`` only when the
+#: marker itself qualifies under ``qualify`` (reference host class, host and load recorded, load
+#: under the cap, the pinned node); every other marker is inconclusive and is re-measured by
+#: ``sweep.py --skip-existing``.
+MARKER_GPU_ONLY = "GPU-only"
+MARKER_TIMED_OUT = "timed out (inconclusive)"
+MARKER_NOT_FINISHED = "did not finish (inconclusive)"
 
 #: The ``profiling-summary`` read contract this project publishes for the PyAutoPulse organ
 #: (``dashboard/README.md``; design: PyAutoBrain/docs/research/profiling_inference_organs.md).
@@ -229,6 +249,11 @@ def single_jit_median_seconds(payload: dict) -> float | None:
     return None if v is None else v / 1000.0
 
 
+def headline_estimator(point: dict) -> str:
+    """The estimator behind a point's ``single_jit_s`` (absent field: the legacy headline)."""
+    return point.get("headline_estimator", ESTIMATOR_LEGACY)
+
+
 def vmap_seconds(payload: dict) -> float | None:
     vmap = payload.get("vmap")
     if isinstance(vmap, dict):
@@ -269,7 +294,11 @@ def _load(path: Path) -> dict | None:
 
 
 def _point(payload: dict, version: str, source: str) -> dict | None:
-    single = headline_seconds(payload)
+    legacy = headline_seconds(payload)
+    median = single_jit_median_seconds(payload)
+    # The median is the headline only beside a single-jit headline it summarises (P8).
+    use_median = median is not None and headline_is_single_jit(payload)
+    single = median if use_median else legacy
     vmap = vmap_seconds(payload)
     if single is None and vmap is None:
         return None
@@ -286,17 +315,27 @@ def _point(payload: dict, version: str, source: str) -> dict | None:
         "source": source,
     }
     # Added only where they apply, so every other point is unchanged.
-    if prov["backend"] == "gpu" and headline_is_single_jit(payload):
+    if use_median:
+        point["headline_estimator"] = ESTIMATOR_MEDIAN
+        point["single_jit_block_mean_s"] = legacy
+    elif prov["backend"] == "gpu" and headline_is_single_jit(payload):
         point["headline_note"] = FIRST_BLOCK_NOTE
-    median = single_jit_median_seconds(payload)
     if median is not None:
         point["single_jit_median_s"] = median
     return point
 
 
 def _per_call_html(p: dict) -> str:
-    """The table's per-call cell: the headline, its label and the steady median when present."""
+    """The table's per-call cell: the headline, which estimator it is, and the other estimator."""
     out = html.escape(_fmt_s(p["single_jit_s"]))
+    if headline_estimator(p) == ESTIMATOR_MEDIAN:
+        out += f' <span class="muted">({html.escape(ESTIMATOR_MEDIAN)})</span>'
+        if p.get("single_jit_block_mean_s") is not None:
+            out += (
+                f'<br><span class="muted">block mean {html.escape(_fmt_s(p["single_jit_block_mean_s"]))}'
+                f" ({html.escape(FIRST_BLOCK_NOTE)})</span>"
+            )
+        return out
     if p.get("headline_note"):
         out += f' <span class="muted">({html.escape(p["headline_note"])})</span>'
     if p.get("single_jit_median_s") is not None:
@@ -434,8 +473,44 @@ def qualify(point: dict, config: str, conf: dict) -> tuple[bool, str | None, boo
     return True, None, False
 
 
+def marker_verdict(marker: dict, config: str, conf: dict) -> dict:
+    """How one CPU ``.unusable.json`` marker renders: ``{gpu_only, label, reason}`` (P9).
+
+    A marker is one wall-clock observation. It renders ``GPU-only`` only when it qualifies under
+    the same rules as a trend point (:func:`qualify`, so :func:`is_reference_host_class`, a
+    recorded host and load average, the load cap and the pinned node). The load judged is the
+    larger of the loads recorded at the start of the run and at the timeout. A marker written
+    before fix phase 5 records neither host nor load, so it is inconclusive.
+    """
+    reason_text = str(marker.get("reason") or "")
+    timed_out = (
+        marker.get("outcome") == "timeout"
+        or _finite(marker.get("timeout_seconds")) is not None
+        or "timeout" in reason_text
+        or "wall-clock" in reason_text
+    )
+    label = MARKER_TIMED_OUT if timed_out else MARKER_NOT_FINISHED
+    host = marker.get("host") if isinstance(marker.get("host"), str) and marker["host"] else None
+    loads = [
+        v
+        for v in (_finite(marker.get(k)) for k in ("loadavg_at_start", "loadavg_at_timeout"))
+        if v is not None
+    ]
+    if host is None and not loads:
+        return {
+            "gpu_only": False,
+            "label": label,
+            "reason": "marker records no host or load average (written before fix phase 5)",
+        }
+    point = {"loadavg": max(loads) if loads else None, "host": host, "has_provenance": True}
+    ok, why, _refused = qualify(point, config, conf)
+    if not ok:
+        return {"gpu_only": False, "label": label, "reason": why}
+    return {"gpu_only": True, "label": MARKER_GPU_ONLY, "reason": None}
+
+
 def drift(points: list[dict]) -> dict:
-    """Compare the last two releases' single-jit per call."""
+    """Compare the last two releases' single-jit per call, on the same estimator only."""
     usable = [p for p in points if p["single_jit_s"] is not None]
     if len(usable) < 2:
         return {
@@ -445,6 +520,13 @@ def drift(points: list[dict]) -> dict:
             "to": None,
         }
     prev, last = usable[-2], usable[-1]
+    if headline_estimator(prev) != headline_estimator(last):
+        return {
+            "status": "estimator-mismatch",
+            "ratio": None,
+            "from": prev["version"],
+            "to": last["version"],
+        }
     ratio = last["single_jit_s"] / prev["single_jit_s"] if prev["single_jit_s"] > 0 else None
     delta = abs(last["single_jit_s"] - prev["single_jit_s"])
     if ratio is None:
@@ -614,6 +696,12 @@ def _summary_record(s: dict, p: dict) -> dict:
         "measurement": {
             "single_jit_s": p["single_jit_s"],
             "vmap_per_call_s": p["vmap_per_call_s"],
+            # Only where the headline is the steady median (P8): the legacy block mean beside it.
+            **(
+                {"single_jit_block_mean_s": p.get("single_jit_block_mean_s")}
+                if headline_estimator(p) == ESTIMATOR_MEDIAN
+                else {}
+            ),
         },
         "identity": {
             "section": s["section"],
@@ -647,6 +735,7 @@ _COMPARISON_STATUS = {
     "steady": "flat",
     "single-release": "insufficient",
     "no-data": "insufficient",
+    "estimator-mismatch": "insufficient",
 }
 
 
@@ -665,6 +754,8 @@ def _summary_comparison(s: dict) -> dict:
         reasons.append("one release only")
     elif d["status"] == "no-data":
         reasons.append("no single-jit headline in the last two releases")
+    elif d["status"] == "estimator-mismatch":
+        reasons.append(ESTIMATOR_MISMATCH_REASON)
     by_version = {p["version"]: p for p in s["points"]}
     endpoints = [by_version.get(v) for v in (d["from"], d["to"]) if v is not None]
     if d["status"] in ("steady", "drifted", "improved"):
@@ -745,6 +836,12 @@ def build_summary(
             "comparison endpoints without a repeat summary are single samples (one 10-call block "
             "mean): a ratio inside the 2x band is insufficient, not flat; drifted / improved are "
             "gross-band flags with a single-sample caveat"
+        )
+    if any("single_jit_block_mean_s" in r["measurement"] for r in records):
+        limitations.append(
+            "single_jit_s is the steady median (>= 5 warm calls, median of individually timed "
+            "calls) where a record also carries single_jit_block_mean_s, else the legacy "
+            "headline; a comparison whose endpoints use different estimators is insufficient"
         )
     if any(not r["provenance"]["has_provenance"] for r in records):
         limitations.append(
@@ -1074,8 +1171,15 @@ def _svg_panel(cell_series: list[dict], versions: list[str], slots: dict[str, in
                 f"{s['config']}{' sparse' if s['sparse'] else ''} @ {p['version']}: {_fmt_s(p['single_jit_s'])} per call"
                 + (f" ({p['headline_note']})" if p.get("headline_note") else "")
                 + (
+                    f" ({ESTIMATOR_MEDIAN}; block mean {_fmt_s(p['single_jit_block_mean_s'])})"
+                    if headline_estimator(p) == ESTIMATOR_MEDIAN
+                    and p.get("single_jit_block_mean_s") is not None
+                    else ""
+                )
+                + (
                     f", steady median {_fmt_s(p['single_jit_median_s'])}"
                     if p.get("single_jit_median_s") is not None
+                    and headline_estimator(p) != ESTIMATOR_MEDIAN
                     else ""
                 )
                 + (f", vmap {_fmt_s(p['vmap_per_call_s'])}" if p["vmap_per_call_s"] else "")
@@ -1117,6 +1221,8 @@ def render_html(
         f"A GPU per-call value headlined by <code>full_pipeline_single_jit</code> is labelled <em>{FIRST_BLOCK_NOTE}</em>: "
         "it is the mean of the 10-call block right after the first call, which on the A100 can sit in the post-compile transient. "
         "Rows that carry it also show the steady median (&ge; 5 warm calls, median of individually timed calls). "
+        f"Where a row records that median it is the headline, labelled <em>{ESTIMATOR_MEDIAN}</em>, with the block mean beside it; "
+        "drift never compares a median with a block mean. "
         "Committed rows are not re-based. "
         "This page renders and holds timing history; it judges no lever "
         '(<a href="' + REPO_URL + '/blob/main/wiki/index.md">campaign index</a>).</p>',
