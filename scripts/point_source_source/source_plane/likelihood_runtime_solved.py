@@ -103,7 +103,7 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 # Sweep-driver CLI args (--config-name / --output-dir / --use-mixed-precision).
 # Tolerates extra/unknown args via parse_known_args inside the helper.
 sys.path.insert(0, str(_profiling_root()))
-from likelihood_breakdown.timing import steady_median_profile  # noqa: E402
+from likelihood_breakdown.timing import headline_steady_median  # noqa: E402
 from simulators.point_source import INSTRUMENTS  # noqa: E402
 from vram import (  # noqa: E402
     probe_vmap_memory,
@@ -338,15 +338,13 @@ full_compiled, full_result = jit_profile(full_pipeline_from_params, "full_pipeli
 # mean of the one 10-call block right after the first call. On the A100 that block lands in the
 # post-compile transient: 0.642 ms committed (job 366912) vs a steady 0.267 ms median (job 366914).
 full_pipeline_per_call = timer.records[-1][1] / 10
-# The steady median (autolens_profiling#371, option (a)) is taken *after* that block and adds no
-# timer section: >= 5 warm calls, then 200 individually timed calls. It is written beside the old
-# statistic and never replaces it.
-full_pipeline_steady = steady_median_profile(full_compiled, params_tree, n_warm=5, n_timed=200)
-print(f"  full log_likelihood = {full_result}")
-print(
-    f"  steady median = {full_pipeline_steady['median_s']:.6f} s "
-    f"(p10 {full_pipeline_steady['p10_s']:.6f}, p90 {full_pipeline_steady['p90_s']:.6f})"
+# The steady median (autolens_profiling#371, option (a); shared since timing-noise audit P8, #362)
+# is taken *after* that block and adds no timer section: >= 5 warm calls, then 200 individually
+# timed calls. It is written beside the old statistic and never replaces it.
+full_pipeline_median = headline_steady_median(
+    full_compiled, params_tree, block_mean_s=full_pipeline_per_call, n_timed=200
 )
+print(f"  full log_likelihood = {full_result}")
 
 # ===================================================================
 # PART B.5 — vmap-probe mode (early exit)
@@ -493,8 +491,9 @@ print(
     f"  Full pipeline (JIT):        {full_pipeline_per_call:.6f} s/call  (first block after compile)"
 )
 print(
-    f"  Full pipeline steady median: {full_pipeline_steady['median_s']:.6f} s/call  "
-    f"(p10 {full_pipeline_steady['p10_s']:.6f}, p90 {full_pipeline_steady['p90_s']:.6f})"
+    f"  Full pipeline steady median: {full_pipeline_median['full_pipeline_single_jit_median']:.6f} s/call  "
+    f"(p10 {full_pipeline_median['full_pipeline_single_jit_p10_ms'] / 1000.0:.6f}, "
+    f"p90 {full_pipeline_median['full_pipeline_single_jit_p90_ms'] / 1000.0:.6f})"
 )
 print(f"  vmap per-call (batch={batch_size}):    {vmap_per_call:.6f} s")
 print(f"  vmap speedup vs single JIT:           {vmap_speedup:.1f}x")
@@ -520,16 +519,7 @@ likelihood_summary = {
     "eager_log_likelihood": log_likelihood_ref,
     "full_pipeline_jits": True,
     "full_pipeline_single_jit": full_pipeline_per_call,
-    "full_pipeline_single_jit_median_ms": full_pipeline_steady["median_s"] * 1000.0,
-    "full_pipeline_single_jit_p10_ms": full_pipeline_steady["p10_s"] * 1000.0,
-    "full_pipeline_single_jit_p90_ms": full_pipeline_steady["p90_s"] * 1000.0,
-    "full_pipeline_single_jit_median_protocol": {
-        "n_warm": full_pipeline_steady["n_warm"],
-        "n_timed": full_pipeline_steady["n_timed"],
-        "statistic": full_pipeline_steady["statistic"],
-        "full_pipeline_single_jit_is": "mean of one 10-call block after one first call (first block after compile)",
-        "issue": "autolens_profiling#371",
-    },
+    **full_pipeline_median,
     "full_pipeline_log_likelihood": float(full_result),
     "vmap": {
         "batch_size": batch_size,

@@ -51,8 +51,10 @@ moves a pin, merges unmatched timings or issues a verdict. Everything in the fil
 unique within the file. Each record has:
 
 - `axis: "runtime"`, `unit: "s"` — a memory value or a compile time can never enter this feed;
-- `measurement`: `single_jit_s` (the per-call headline, `build_readme.py`'s ladder) and
-  `vmap_per_call_s` (`null` where the row has no vmap block);
+- `measurement`: `single_jit_s` (the per-call headline, `build_readme.py`'s ladder; the steady
+  median where the row records `full_pipeline_single_jit_median_ms` beside a single-jit headline,
+  timing-noise audit P8) and `vmap_per_call_s` (`null` where the row has no vmap block); a record
+  whose headline is the median also carries `single_jit_block_mean_s`, the legacy block mean;
 - `identity`: `section`, `cell`, `config`, `sparse`, `tier` / `device` / `precision` parsed from
   the sweep config label (`null` + `reason` outside the grammar), `backend` as the row recorded it,
   `library: "PyAutoLens"`, `library_version`, `release_date`;
@@ -68,9 +70,11 @@ The producer's own drift badge for each series, so the organ **displays** drift 
 than computing them: `comparison_key` (= series key), `policy`, `axis`, `metric`, `baseline` and
 `candidate` (the two newest releases), `ratio`, `status` ∈ `drifted | improved | flat |
 insufficient`, `qualified` (both endpoints qualified under the release-sweep pin) and `reasons`
-(one release only; no headline; an unqualified endpoint and why). A ratio inside the 2x band is
+(one release only; no headline; endpoints on different headline estimators, which are never
+compared and publish `insufficient`; an unqualified endpoint and why). A ratio inside the 2x band is
 `flat` ("within the 2x policy band; not a measured null") only when both endpoints carry a repeat
-summary; with a single-sample endpoint — every endpoint today, one 10-call block mean — it is
+summary; with a single-sample endpoint — every endpoint today, one 10-call block mean or one
+run's steady median — it is
 `insufficient`. `drifted` / `improved` keep their status as gross-band flags and carry the reason
 "single-sample endpoint(s)". A `drifted` row with `qualified: false` is a contextual flag, not
 evidence of regression — the distinction the organ must keep visible.

@@ -96,6 +96,7 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 # Sweep-driver CLI args (--config-name / --output-dir / --use-mixed-precision).
 # Tolerates extra/unknown args via parse_known_args inside the helper.
 sys.path.insert(0, str(_profiling_root()))
+from likelihood_breakdown.timing import headline_steady_median  # noqa: E402
 from simulators.imaging import INSTRUMENTS  # noqa: E402
 from vram import (  # noqa: E402
     probe_vmap_memory,
@@ -384,8 +385,13 @@ def full_pipeline_from_params(params_tree):
     return analysis.log_likelihood_function(instance=params_tree)
 
 
-_, full_result = jit_profile(full_pipeline_from_params, "full_pipeline", params_tree)
+full_compiled, full_result = jit_profile(full_pipeline_from_params, "full_pipeline", params_tree)
 full_pipeline_per_call = timer.records[-1][1] / 10
+# Timing-noise audit P8 (#362): ``full_pipeline_single_jit`` above stays the legacy block mean;
+# the steady median of the same compiled pipeline is written beside it (no timer section).
+full_pipeline_median = headline_steady_median(
+    full_compiled, params_tree, block_mean_s=full_pipeline_per_call
+)
 
 print(f"  full log_likelihood = {full_result}")
 
@@ -406,6 +412,7 @@ _early_summary = {
         "inversion_path": "sparse" if _cli.use_sparse_operator else "dense",
     },
     "full_pipeline_single_jit": full_pipeline_per_call,
+    **full_pipeline_median,
     "vmap": "PENDING — vmap phase has not run yet (or was killed)",
 }
 _early_dict_path, _ = resolve_output_paths(
@@ -567,6 +574,7 @@ likelihood_summary = {
         "inversion_path": "sparse" if _cli.use_sparse_operator else "dense",
     },
     "full_pipeline_single_jit": full_pipeline_per_call,
+    **full_pipeline_median,
     "vmap": {
         "batch_size": batch_size,
         "batch_time": vmap_batch_time,

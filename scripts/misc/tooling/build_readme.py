@@ -57,6 +57,11 @@ from typing import Optional
 
 REPO_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "ruff.toml").exists())
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from build_dashboard import marker_verdict, read_release_sweep_conf  # noqa: E402
+
+_RELEASE_SWEEP_CONF = read_release_sweep_conf(REPO_ROOT)
+
 RESULTS_ROOT = REPO_ROOT / "results"
 RUNTIME_ROOT = RESULTS_ROOT / "runtime"
 BASELINES_ROOT = RESULTS_ROOT / "baselines"
@@ -339,10 +344,14 @@ def _render_runtime_table(cells: list[RuntimeCell], baselines: dict[str, list[Ru
         for cname in config_names:
             cfg = cfgs.get(cname, {})
             if cfg.get("cpu_unusable"):
-                # Campaign policy (#56): a run that cannot finish inside the
-                # wall-clock cap has no CPU-viable configuration — the
-                # classification IS the result.
-                line.append("**GPU-only**")
+                # Campaign policy (#56) read a run that cannot finish inside the
+                # wall-clock cap as GPU-only. Timing-noise audit P9: one such run
+                # is one observation, so the label needs a qualified marker
+                # (build_dashboard.marker_verdict); otherwise it is inconclusive.
+                verdict = marker_verdict(cfg, cname, _RELEASE_SWEEP_CONF)
+                line.append(
+                    f"**{verdict['label']}**" if verdict["gpu_only"] else f"_{verdict['label']}_"
+                )
                 continue
             seconds = _config_headline_seconds(cfg)
             cell_text = _format_time(seconds)

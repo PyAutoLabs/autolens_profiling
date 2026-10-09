@@ -60,6 +60,7 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 # Sweep-driver CLI args (--config-name / --output-dir / --use-mixed-precision).
 # Tolerates extra/unknown args via parse_known_args inside the helper.
 sys.path.insert(0, str(_profiling_root()))
+from likelihood_breakdown.timing import headline_steady_median  # noqa: E402
 from simulators.point_source import INSTRUMENTS  # noqa: E402
 from vram import (  # noqa: E402
     probe_vmap_memory,
@@ -285,8 +286,13 @@ def full_pipeline_from_params(params_tree):
 # (autolens_profiling#315 witnessed it). ``full_pipeline_blocker`` stays in the
 # JSON as ``None`` for schema continuity.
 full_pipeline_blocker = None
-_, full_result = jit_profile(full_pipeline_from_params, "full_pipeline", params_tree)
+full_compiled, full_result = jit_profile(full_pipeline_from_params, "full_pipeline", params_tree)
 full_pipeline_per_call = timer.records[-1][1] / 10
+# Timing-noise audit P8 (#362): ``full_pipeline_single_jit`` above stays the legacy block mean;
+# the steady median of the same compiled pipeline is written beside it (no timer section).
+full_pipeline_median = headline_steady_median(
+    full_compiled, params_tree, block_mean_s=full_pipeline_per_call
+)
 full_pipeline_jits = True
 print(f"  full log_likelihood = {full_result}")
 
@@ -482,6 +488,7 @@ likelihood_summary = {
     "full_pipeline_jits": full_pipeline_jits,
     "full_pipeline_blocker": full_pipeline_blocker,
     "full_pipeline_single_jit": full_pipeline_per_call,
+    **full_pipeline_median,
     "jit_able_prefix": {
         "name": "ray-trace observed positions to source plane",
         "per_call": prefix_per_call,
