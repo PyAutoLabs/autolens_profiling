@@ -52,11 +52,35 @@ Limits (stated in the audit note, section (a))
 
 - The verdict is only as good as the interval it is given. An iid bootstrap over
   autocorrelated calls is too narrow (fix phase 4 resamples whole rounds).
-- No multiple-comparison adjustment is applied to the per-criterion
-  confidence. A conjunction of k criteria at 90 % each is conservative for GO
-  (every interval must clear) but each NO_GO is a 90 % statement, and a tie set
-  over many configurations is wider, not narrower, than any adjusted family
-  would make it. Holm / Bonferroni is a recorded follow-up, not applied here.
+- :func:`ab_rule_verdict` applies no multiple-comparison adjustment to the
+  per-criterion confidence. A conjunction of k criteria at 90 % each is
+  conservative for GO (every interval must clear) but each NO_GO is a 90 %
+  statement, and a tie set over many configurations is wider, not narrower,
+  than any adjusted family would make it.
+
+Family-wise verdicts (#362, fix phase 3b)
+-----------------------------------------
+
+When one verdict reads k separately measured targets (C3's six memo-policy
+targets; phase 9 reuses it for C6 / C10 / C11), the family is judged by
+:func:`holm_family_verdict`: Holm's step-down procedure on the targets'
+two-sided intervals, family-wise confidence :data:`AB_CONFIDENCE`.
+
+1. ``m`` = k unresolved targets; judge each at confidence ``1 - alpha / m``
+   (:func:`holm_levels`), ``alpha = 1 - confidence``;
+2. every target whose interval resolves (GO or NO_GO, step 4 above) at that
+   level is final; ``m`` drops by their number and step 1 repeats at the wider
+   level; if none resolves, the rest stay INCONCLUSIVE and the procedure stops;
+3. the family verdict is the conjunction of the final per-target verdicts
+   (:func:`ab_rule_verdict`): GO only if all k resolve in favour, NO_GO if at
+   least one resolves against, else INCONCLUSIVE.
+
+Rejecting every target resolved at a step together is Holm's one-at-a-time
+order (each would also resolve at the next, wider level). Holm is applied to
+both directions: for GO alone an intersection-union conjunction is already a
+level-alpha test unadjusted, so the adjustment makes a family GO conservative;
+it is kept for one policy, stated, rather than a per-direction rule. The
+unadjusted verdict is recorded beside the family one.
 
 The functions are pure and deterministic: they do no timing and read no clock.
 """
@@ -410,3 +434,176 @@ def paired_block_ratio_interval(reference, candidate, *, confidence: float = AB_
     se = float(np.std(ratios, ddof=1)) / math.sqrt(n)
     margin = float(t.ppf(0.5 + confidence / 2.0, df=n - 1)) * se
     return point, point - margin, point + margin, n
+
+
+def conjoin_verdicts(verdicts: Sequence[str]) -> str:
+    """The conjunction of already-judged verdicts (step 5 of the rule).
+
+    ``NO_GO`` if any is ``NO_GO`` (the conjunction cannot hold), ``GO`` if every
+    one is ``GO``, ``INCONCLUSIVE`` otherwise. Use it when the parts were judged
+    on different sample counts (one :func:`ab_rule_verdict` each), so a resolved
+    ``NO_GO`` is not hidden by another part's too-small ``n``.
+    """
+    verdicts = tuple(verdicts)
+    if not verdicts:
+        raise ValueError("a conjunction needs at least one verdict")
+    unknown = [v for v in verdicts if v not in VERDICTS]
+    if unknown:
+        raise ValueError(f"unknown verdict(s) {unknown}; expected one of {VERDICTS}")
+    if NO_GO in verdicts:
+        return NO_GO
+    if all(v == GO for v in verdicts):
+        return GO
+    return INCONCLUSIVE
+
+
+def holm_levels(k: int, confidence: float = AB_CONFIDENCE) -> tuple[float, ...]:
+    """Holm's step-down confidences for a family of ``k``: ``1 - alpha / m``, m = k … 1.
+
+    ``alpha = 1 - confidence`` is the family-wise error rate. The first level is
+    Bonferroni's; the last is the unadjusted ``confidence``.
+    """
+    if int(k) != k or int(k) < 1:
+        raise ValueError(f"k must be a positive integer, got {k!r}")
+    if not 0.0 < float(confidence) < 1.0:
+        raise ValueError(f"confidence must be in (0, 1), got {confidence!r}")
+    alpha = 1.0 - float(confidence)
+    return tuple(1.0 - alpha / m for m in range(int(k), 0, -1))
+
+
+@dataclass(frozen=True)
+class FamilyVerdict:
+    """A family-wise verdict over k targets (Holm), and the numbers behind it."""
+
+    verdict: str
+    reason: str
+    method: str
+    family_confidence: float
+    levels: tuple[float, ...]
+    #: Each target's confidence at which its final verdict was read.
+    member_confidence: dict
+    #: The conjunction of the final per-target verdicts (the family verdict).
+    adjusted: ABVerdict
+    #: The same targets each at ``family_confidence``, no adjustment: recorded only.
+    unadjusted: ABVerdict
+    steps: tuple = ()
+
+    @property
+    def go(self) -> bool:
+        return self.verdict == GO
+
+    def as_dict(self) -> dict:
+        return {
+            "verdict": self.verdict,
+            "reason": self.reason,
+            "method": self.method,
+            "family_confidence": self.family_confidence,
+            "levels": list(self.levels),
+            "member_confidence": dict(self.member_confidence),
+            "adjusted": self.adjusted.as_dict(),
+            "unadjusted": self.unadjusted.as_dict(),
+            "steps": [dict(s) for s in self.steps],
+        }
+
+
+def holm_family_verdict(
+    members,
+    *,
+    n,
+    min_n: int = MIN_AB_ROUNDS,
+    confidence: float = AB_CONFIDENCE,
+    gates: Mapping[str, bool] | None = None,
+) -> FamilyVerdict:
+    """Judge k targets as one family under Holm (the module docstring's procedure).
+
+    Parameters
+    ----------
+    members
+        Maps each target's name to a callable ``confidence -> Criterion``: the
+        target's two-sided interval at that confidence (for a bootstrap, the
+        percentiles of the same draws). The criterion's ``name`` is the key.
+    n, min_n, gates
+        As :func:`ab_rule_verdict`; one ``n`` for the family.
+    confidence
+        The family-wise confidence (``1 - alpha``).
+    """
+    members = dict(members)
+    if not members:
+        raise ValueError("a family needs at least one member")
+    levels = holm_levels(len(members), confidence)
+
+    def _at(name: str, level: float) -> Criterion:
+        c = members[name](level)
+        if c.name != name:
+            raise ValueError(f"member {name!r} returned a criterion named {c.name!r}")
+        return c
+
+    final: dict[str, Criterion] = {}
+    member_confidence: dict[str, float] = {}
+    steps = []
+    remaining = list(members)
+    while remaining:
+        level = 1.0 - (1.0 - float(confidence)) / len(remaining)
+        at_level = {name: _at(name, level) for name in remaining}
+        judged = {name: criterion_verdict(c) for name, c in at_level.items()}
+        resolved = [name for name, v in judged.items() if v.verdict != INCONCLUSIVE]
+        steps.append(
+            {
+                "m": len(remaining),
+                "confidence": level,
+                "resolved": {name: judged[name].verdict for name in resolved},
+            }
+        )
+        for name in resolved if resolved else remaining:
+            final[name] = at_level[name]
+            member_confidence[name] = level
+        if not resolved:
+            break
+        remaining = [name for name in remaining if name not in resolved]
+
+    ordered = [final[name] for name in members]
+    adjusted = ab_rule_verdict(ordered, n=n, min_n=min_n, confidence=confidence, gates=gates)
+    unadjusted = ab_rule_verdict(
+        [_at(name, float(confidence)) for name in members],
+        n=n,
+        min_n=min_n,
+        confidence=confidence,
+        gates=gates,
+    )
+    reason = f"Holm over {len(members)} targets at family-wise {confidence:.0%}: {adjusted.reason}"
+    if unadjusted.verdict != adjusted.verdict:
+        reason += (
+            f" (unadjusted per-target {confidence:.0%} would read {unadjusted.verdict}; "
+            "the family-wise rule governs)"
+        )
+    return FamilyVerdict(
+        verdict=adjusted.verdict,
+        reason=reason,
+        method="holm",
+        family_confidence=float(confidence),
+        levels=levels,
+        member_confidence=member_confidence,
+        adjusted=adjusted,
+        unadjusted=unadjusted,
+        steps=tuple(steps),
+    )
+
+
+def bootstrap_criterion(name, point, boots, bar, direction=AT_LEAST, unit=""):
+    """A ``confidence -> Criterion`` reading two-sided percentiles of fixed draws.
+
+    For :func:`holm_family_verdict`: every level reads the same bootstrap draws
+    ``boots``, so the intervals are nested.
+    """
+    draws = np.asarray(boots, dtype=float)
+    pt = float(point)
+
+    def at(level: float) -> Criterion:
+        tail = 50.0 * (1.0 - float(level))
+        if draws.size == 0 or not np.all(np.isfinite(draws)):
+            lo = hi = float("nan")
+        else:
+            lo, hi = (float(x) for x in np.percentile(draws, [tail, 100.0 - tail]))
+        return Criterion(name, pt, lo, hi, float(bar), direction, unit)
+
+    return at

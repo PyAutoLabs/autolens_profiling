@@ -2,14 +2,14 @@
 
 **Status:** open
 **Question:** Do this repo's timing tests and profiling gates treat measurement noise correctly, so that an uncertain measurement never qualifies a result silently?
-**Pre-registered rule:** PASS only when the interval clears the budget, FAIL only when it clears the other way, otherwise INCONCLUSIVE (never silent, never a measured pass); applied so far to the ABBA overhead (T1, P1), the dashboard drift (P7) and the A/B go / lever rules C6, C7, P2 plus C10's tie sets, on paired whole-round bootstrap intervals (fix phase 4); the runtime headline is the steady median where recorded and a timeout marker is INCONCLUSIVE until it qualifies (fix phase 5); a row whose warm-up never settled is INCONCLUSIVE for every timing verdict, and the production witness judges PASS / FAIL only on a reference host class (fix phase 6)
-**Verdict:** phase 1 (audit): 31 timing assertions/gates — 11 SOUND, 10 FRAGILE, 10 UNSAFE-SILENT; after fix phases 1–2 (#404, #405): 15 / 8 / 8 (T1, P1, P6, P7 SOUND-with-caveats); after fix phase 3 (#406): 32 rows, 16 / 11 / 5 (C7, C10, P2 UNSAFE-SILENT → FRAGILE; new witness row T7); after fix phase 4 (#407): 33 rows, 20 / 8 / 5 (C6, C7, C10 SOUND-with-caveats; new witness row T8); after fix phase 5 (#408): 34 rows, 23 / 7 / 4 (P8, P9 SOUND-with-caveats; new witness row T9); after fix phase 6 (#409): 35 rows, 26 / 5 / 4 (P3, P5 SOUND-with-caveats; new witness row T10)
+**Pre-registered rule:** PASS only when the interval clears the budget, FAIL only when it clears the other way, otherwise INCONCLUSIVE (never silent, never a measured pass); applied so far to the ABBA overhead (T1, P1), the dashboard drift (P7) and the A/B go / lever rules C6, C7, P2 plus C10's tie sets, on paired whole-round bootstrap intervals (fix phase 4); the runtime headline is the steady median where recorded and a timeout marker is INCONCLUSIVE until it qualifies (fix phase 5); a row whose warm-up never settled is INCONCLUSIVE for every timing verdict, and the production witness judges PASS / FAIL only on a reference host class (fix phase 6); the memo-policy, scaling and log-det gates (C1, C3, C4, C5) read paired round-bootstrap intervals, and C3's six targets are one Holm family at family-wise 90 % (fix phase 3b)
+**Verdict:** phase 1 (audit): 31 timing assertions/gates — 11 SOUND, 10 FRAGILE, 10 UNSAFE-SILENT; after fix phases 1–2 (#404, #405): 15 / 8 / 8 (T1, P1, P6, P7 SOUND-with-caveats); after fix phase 3 (#406): 32 rows, 16 / 11 / 5 (C7, C10, P2 UNSAFE-SILENT → FRAGILE; new witness row T7); after fix phase 4 (#407): 33 rows, 20 / 8 / 5 (C6, C7, C10 SOUND-with-caveats; new witness row T8); after fix phase 5 (#408): 34 rows, 23 / 7 / 4 (P8, P9 SOUND-with-caveats; new witness row T9); after fix phase 6 (#409): 35 rows, 26 / 5 / 4 (P3, P5 SOUND-with-caveats; new witness row T10); after fix phase 3b (#410): 36 rows, 31 / 5 / 0 (C1, C3, C4, C5 SOUND-with-caveats; new witness row T11) — no row is UNSAFE-SILENT
 **Headline:** the #361 CI overhead guard returns INCONCLUSIVE for any true overhead from ~0.8 % to ~5.4 % at CI scatter (3 blocks, s.d. 0.014); GitHub runner, Actions run 36985476995 (no RAL job)
 **Library PRs:** none
-**Profiling PRs:** #361 (t-bound CI guard, merged); #402 (phase 1 audit, merged); #404 (fix phase 1, merged); #405 (fix phase 2, merged); #406 (fix phase 3, merged); #407 (fix phase 4, merged); #408 (fix phase 5, open); #409 (fix phase 6, open, stacked on #408)
+**Profiling PRs:** #361 (t-bound CI guard, merged); #402 (phase 1 audit, merged); #404 (fix phase 1, merged); #405 (fix phase 2, merged); #406 (fix phase 3, merged); #407 (fix phase 4, merged); #408 (fix phase 5, merged); #409 (fix phase 6, merged); #410 (fix phase 3b, open)
 **Ledger:** [timing_noise_audit_2026_10.md](../../results/notes/timing_noise_audit_2026_10.md)
-**Mind contract:** Pulse campaign `measurement-tools`, task `tasks/timing_noise_audit.md`; Mind `active/timing_noise_audit_phase7_warmup_witness_band.md`; issue #362
-**Next:** phase 3b (C1 / C3 / C4 / C5 intervals), then the remainders (family-wise policy for multi-route rules; runtime README and breakdown / datacube / mge_mass cells off the legacy headline; `single_jit_repeats`; P2's between-row drift)
+**Mind contract:** Pulse campaign `measurement-tools`, task `tasks/timing_noise_audit.md`; Mind `active/timing_noise_audit_phase8_phase3b_intervals.md`; issue #362
+**Next:** phase 9 — the family-wise policy (`ab_verdict.holm_family_verdict`) applied to C6, C10 and C11 (C11's ratio > 1.3 given an interval), C12 on the round bootstrap where its layout allows, P2's between-row drift; then phase 10 — headline completion (runtime README on the median, breakdown / datacube / mge_mass cells, `wall/rates.py`, `single_jit_repeats` support). Open human questions from phase 3b: C1's 5-round minimum on 4 recorded repeats; C5's one-block `jit_profile` estimator
 
 ## Why this campaign
 
@@ -31,6 +31,7 @@ inconclusive never qualifies a result.
 | 5 — fix phase 4 (C6, C8, C9 and the reported CIs) | 2026-10-08 | Do the A/B intervals respect the round structure and the pairing of routes? | resample whole rounds, the same indices for every route; `effective_n` = rounds; no `best` below 5 rounds | witness: iid CI 0.14–0.39× (median 0.23) the round CI's width, coverage 0.33 vs 0.85 at nominal 0.90; committed RAL calls unchanged; one laptop C6 GO → INCONCLUSIVE; laptop 3-round sweep names no best | none | #407 |
 | 6 — fix phase 5 (P8 + P9) | 2026-10-09 | Does the runtime headline survive a post-compile transient, and can one timeout on a noisy host still label a cell GPU-only? | median beside the block mean, headline where present, drift on like estimators only; GPU-only only for a marker that passes `qualify`, else inconclusive and re-measured | witness: block mean 2.40× vs median 1.00× on one injected transient; 0 committed rows carry a median (no badge changed); 4 / 4 committed markers re-judge inconclusive; the one rendered "GPU-only" cell (laptop OOM) → "did not finish (inconclusive)" | none | #408 |
 | 7 — fix phase 6 (P3 + P5) | 2026-10-09 | Does any timing verdict read a row whose warm-up never settled, and does the production witness judge a laptop row against an 8-core RAL range? | unsettled warm-up → INCONCLUSIVE for P1, P2 and dashboard qualification (FAIL_GROSS kept); witness PASS / FAIL only on `is_reference_host_class`, else INCONCLUSIVE "off reference host class (<class>)"; band unchanged | witness: flat / recorded-flat / step settle, recorded queueing ramp / geometric / 5 %-per-call ramps never settle and turn a PASS, a FAIL, a GO and a NO_LEVER INCONCLUSIVE; 0 of 28 committed warm-ups unsettled (no verdict moved); 8 / 8 committed witness verdicts (4 PASS, 4 FAIL, all laptop) → INCONCLUSIVE | none | #409 |
+| 8 — fix phase 3b (C1, C3, C4, C5) | 2026-10-09 | Do the memo-policy, scaling and log-det gates read an interval, and is C3's six-target conjunction judged family-wise? | each gate's paired round-bootstrap 90 % interval on its own pairing unit (≥ 5 rounds); GO / PASS / NO_LEVER / FAIL only when resolved, else INCONCLUSIVE; C3 as one Holm family; C5 needs both estimators resolved | memo-policy NO_LEVER, scaling PASS ×5 and A100 "no lever" ×6 all resolve unchanged; 128 / 128 committed C1 classifications → INCONCLUSIVE (4 < 5 repeats; a df = 3 t would resolve all as published); 2 laptop log-det rows → INCONCLUSIVE | none | #410 |
 
 ## What shipped and where it is
 
@@ -41,14 +42,19 @@ inconclusive never qualifies a result.
 | #405 | dashboard qualification (`is_reference_host_class`: laptop, no-loadavg and no-host rows unqualified) and drift wording (in-band + single-sample → `insufficient`; `drifted` / `improved` keep status with a single-sample caveat, human decision 2026-10-08); P6 and P7 SOUND-with-caveats | 2026-10-08 | n/a (profiling repo) |
 | #406 | one shared A/B verdict `ab_verdict.ab_rule_verdict` (GO / NO_GO / INCONCLUSIVE on intervals, ≥ 5 rounds, correctness gates first) and `tie_set` for C6, C7, C10 and P2; P2 gains a paired-block interval; C7 a saved-ms bootstrap; C7, C10, P2 FRAGILE | 2026-10-08 | n/a (profiling repo) |
 | #407 | paired whole-round bootstrap `round_bootstrap.round_median_ratio` / `round_median_saving` (`effective_n` = rounds) for every point-source A/B cell's reported interval (C6, C7, C8, C9 / C10, gradient-mode library, static lattice, vertex dedup); `tie_set` names no best below 5 rounds; C6, C7, C10 SOUND-with-caveats | 2026-10-08 | n/a (profiling repo) |
-| #408 | `timing.headline_steady_median` in the 11 block-mean runtime cells (median beside the legacy key); dashboard headline = median where recorded, estimator labelled, drift like-with-like (`estimator-mismatch` → `insufficient`); INCONCLUSIVE timeout markers with host / loads, `build_dashboard.marker_verdict` (GPU-only only when `qualify` passes), `--skip-existing` re-measures unqualified markers; P8, P9 SOUND-with-caveats | pending | n/a (profiling repo) |
-| #409 | shared `warmup_gate.warmup_unsettled_reason`: an unsettled warm-up makes `abba_overhead_verdict` (P1), the promotion decision (P2) and `build_dashboard.qualify` INCONCLUSIVE / unqualified; `witness_verdict(..., host_class)` PASS / FAIL only on a reference host class (P5); P3, P5 SOUND-with-caveats | pending (stacked on #408) | n/a (profiling repo) |
+| #408 | `timing.headline_steady_median` in the 11 block-mean runtime cells (median beside the legacy key); dashboard headline = median where recorded, estimator labelled, drift like-with-like (`estimator-mismatch` → `insufficient`); INCONCLUSIVE timeout markers with host / loads, `build_dashboard.marker_verdict` (GPU-only only when `qualify` passes), `--skip-existing` re-measures unqualified markers; P8, P9 SOUND-with-caveats | 2026-10-09 | n/a (profiling repo) |
+| #409 | shared `warmup_gate.warmup_unsettled_reason`: an unsettled warm-up makes `abba_overhead_verdict` (P1), the promotion decision (P2) and `build_dashboard.qualify` INCONCLUSIVE / unqualified; `witness_verdict(..., host_class)` PASS / FAIL only on a reference host class (P5); P3, P5 SOUND-with-caveats | 2026-10-09 | n/a (profiling repo) |
+| #410 | `interval_gates` (C1 `matched_classification` / `matched_decision_counts`, C3 `memo_policy_family`, C4 `breakdown_reconciliation`, C5 `logdet_lever_verdict`) on the shared round bootstrap and verdict; `ab_verdict.holm_levels` / `holm_family_verdict` / `bootstrap_criterion` (the family-wise policy) and `conjoin_verdicts`; C1, C3, C4, C5 SOUND-with-caveats | pending | n/a (profiling repo) |
 
 ## Open / parked / drafts
 
-- Fix phases 1–6 in the [ledger](../../results/notes/timing_noise_audit_2026_10.md), each one PR
-  with a deterministic synthetic witness. Phase 3b (C1 / C3 / C4 / C5 intervals) was split off
-  fix phase 3; a family-wise (Holm / Bonferroni) policy for multi-route rules is a follow-up.
+- Fix phases 1–6 and 3b in the [ledger](../../results/notes/timing_noise_audit_2026_10.md), each
+  one PR with a deterministic synthetic witness. The family-wise policy exists since 3b
+  (`ab_verdict.holm_family_verdict`, used by C3); phase 9 applies it to C6 / C10 / C11.
+- Human questions from 3b (flagged in #410): keep C1's 5-round minimum on its 4 recorded repeats
+  (every classification INCONCLUSIVE) or allow a 4-repeat paired t / re-run with ≥ 5 repeats; and
+  C5's one-block `jit_profile` estimator, which keeps a lever from ever resolving `True` under the
+  pre-registered "both estimators" rule.
 - Mind draft `draft/bug/autolens_profiling/call_accounting_ci_timing_threshold.md` (raise the
   threshold) is superseded by fix phase 1: the audit rejects raising the budget.
 
@@ -121,3 +127,16 @@ and judges PASS / FAIL only on `is_reference_host_class`. Re-judged: 0 of 28 com
 unsettled; all 8 committed witness verdicts (laptop, untagged) → INCONCLUSIVE, so the
 "rectangular rows pass, so the protocol is sound" reading in `production_representative_cells.md`
 no longer has a timing witness behind it. Next: phase 3b.
+
+### 2026-10-09 — fix phase 3b (C1, C3, C4, C5), phase 8 of #362
+
+The last four UNSAFE-SILENT gates read intervals through one module, `interval_gates.py`, on the
+shared paired round bootstrap and `ab_rule_verdict`: C1's memo / cold classification over its
+repeats, C3's six memo-policy targets as one Holm family (new `ab_verdict.holm_family_verdict`,
+for phase 9), C4's ±5 % reconciliation (status PASS needs a resolved PASS) and C5's log-det lever
+(`clears_threshold` True / False only when resolved). Re-judged: the memo-policy NO_LEVER, the 5
+scaling PASSes and the 6 A100 "no lever" rows all resolve unchanged; all 128 committed C1
+classifications are INCONCLUSIVE (4 repeats < 5), so the memo-policy note's false accept / reject
+counts and the "residual is not a reliable proxy" reading lose interval support (a dated note sits
+there; no human decision rests on them); 2 laptop log-det rows become INCONCLUSIVE. No row is
+UNSAFE-SILENT. Next: phase 9.

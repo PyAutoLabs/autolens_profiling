@@ -29,6 +29,7 @@ os.environ["NUMBA_NUM_THREADS"] = "1"
 import numpy as np  # noqa: E402
 from likelihood_breakdown import fixed_light_numba_draws_steps as replay  # noqa: E402
 from likelihood_breakdown import fixed_light_numba_memo_policy_steps as policy  # noqa: E402
+from likelihood_breakdown import interval_gates  # noqa: E402
 
 spec = importlib.util.spec_from_file_location(
     "phase5", ROOT / "scripts/imaging/pixelized/fixed_light_numba_draws.py"
@@ -36,6 +37,8 @@ spec = importlib.util.spec_from_file_location(
 phase5 = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(phase5)
 LANES = ("cold", "memo", "guarded")
+#: Paired cold/memo solver repeats per matched transition (unchanged; C1).
+MATCHED_REPEATS = 4
 SCHEDULE = [
     ("cold", "memo", "guarded"),
     ("memo", "guarded", "cold"),
@@ -74,7 +77,7 @@ def matched_counterfactual(state):
     samples = {"cold": [], "memo": []}
     reconstructions = {}
     solvers = {}
-    for repeat in range(4):
+    for repeat in range(MATCHED_REPEATS):
         for enabled in (False, True) if repeat % 2 == 0 else (True, False):
             lane = "memo" if enabled else "cold"
             # Observe separately from clean timings to avoid counting logging costs.
@@ -93,7 +96,10 @@ def matched_counterfactual(state):
                 *state.last_solve_args, **state.last_solve_kwargs
             )
             solvers[lane] = calls[-1]
-    ratio = float(np.median(samples["memo"]) / np.median(samples["cold"]))
+    # C1 (#362 fix phase 3b): classified only when the paired-repeat interval
+    # resolves against the 3 % band; 4 repeats < the 5-round minimum, so INCONCLUSIVE.
+    classification = interval_gates.matched_classification(samples)
+    ratio = classification["memo_over_cold"]
     active_equal = sorted(solvers["memo"]["passive_set"]) == sorted(solvers["cold"]["passive_set"])
     delta = np.max(np.abs(reconstructions["memo"] - reconstructions["cold"]))
     scale = max(float(np.max(np.abs(reconstructions["cold"]))), 1e-300)
@@ -102,8 +108,9 @@ def matched_counterfactual(state):
         "scope": "production solver only; identical pre-decision system and memo; excludes precheck cost",
         "samples_ms": samples,
         "memo_over_cold": ratio,
-        "warm_beneficial_3pct": ratio < 0.97,
-        "warm_harmful_3pct": ratio > 1.03,
+        "classification": classification,
+        "warm_beneficial_3pct": classification["classification"] == interval_gates.BENEFICIAL,
+        "warm_harmful_3pct": classification["classification"] == interval_gates.HARMFUL,
         "active_set_equal": active_equal,
         "reconstruction_max_relative_difference": float(delta / scale),
         "solvers": solvers,
@@ -218,16 +225,12 @@ def evaluate(cells, indices, threshold, repeats, counterfactual=False):
         if observed["guarded"][i].get("matched_counterfactual", {}).get("eligible")
     ]
     matched_decisions = {
-        "scope": "solver-only matched pre-decision system and memo; four paired repeats; 3% neutral band; excludes eligibility overhead",
-        "eligible_transitions": len(matched),
-        "accepted": sum(r["precheck"]["accepted"] for r in matched),
-        "rejected": sum(not r["precheck"]["accepted"] for r in matched),
-        "false_accepts": sum(
-            r["precheck"]["accepted"] and r["matched_counterfactual"]["warm_harmful_3pct"]
-            for r in matched
-        ),
-        "false_rejects": sum(
-            not r["precheck"]["accepted"] and r["matched_counterfactual"]["warm_beneficial_3pct"]
+        "scope": "solver-only matched pre-decision system and memo; four paired repeats; 3% neutral band on a paired round-bootstrap interval; excludes eligibility overhead",
+        **interval_gates.matched_decision_counts(
+            (
+                r["precheck"]["accepted"],
+                r["matched_counterfactual"]["classification"]["classification"],
+            )
             for r in matched
         ),
         "active_sets_equal": all(r["matched_counterfactual"]["active_set_equal"] for r in matched),
@@ -431,6 +434,7 @@ def main(argv=None):
                 for p in (
                     Path(__file__),
                     Path(policy.__file__),
+                    Path(interval_gates.__file__),
                     Path(replay.__file__),
                     Path(phase5.__file__),
                 )
@@ -476,19 +480,17 @@ def main(argv=None):
         and all(p["num_threads"] == 1 for p in pools),
         "complete": not args.smoke and args.source_pixels == 1500 and args.n_repeats >= 5,
     }
-    result["performance_targets"] = {
-        "graded_5pct_vs_memo": runs["graded"]["guarded_over_memo"] <= 0.95,
-        "permuted_5pct_vs_memo": runs["permuted"]["guarded_over_memo"] <= 0.95,
-        "graded_3pct_vs_cold": runs["graded"]["guarded_over_cold"] <= 1.03,
-        "permuted_3pct_vs_cold": runs["permuted"]["guarded_over_cold"] <= 1.03,
-        "broad_holdout_3pct_vs_cold": runs["broad_holdout"]["guarded_over_cold"] <= 1.03,
-        "nearby_holdout_3pct_vs_memo": runs["nearby_holdout"]["guarded_over_memo"] <= 1.03,
+    # C3 (#362 fix phase 3b): the six pre-registered targets, each a paired
+    # round-bootstrap interval over the repeats, judged as one Holm family. GO only
+    # if all six resolve in favour, NO_LEVER only if one resolves against.
+    family = interval_gates.memo_policy_family(runs)
+    result["performance_family"] = family
+    result["performance_targets"] = family["target_verdicts"]
+    result["performance_targets_point"] = {
+        name: runs[run][f"guarded_over_{reference}"] <= bar
+        for name, (run, reference, bar) in interval_gates.MEMO_POLICY_TARGETS.items()
     }
-    result["verdict"] = (
-        ("GO" if all(result["performance_targets"].values()) else "NO_LEVER")
-        if all(result["gates"].values())
-        else "INCOMPLETE_OR_FAIL"
-    )
+    result["verdict"] = family["verdict"] if all(result["gates"].values()) else "INCOMPLETE_OR_FAIL"
     result["wall_seconds"] = time.perf_counter() - started
     result["load_average_after"] = list(os.getloadavg())
     write_json(stem.with_suffix(".json"), result)

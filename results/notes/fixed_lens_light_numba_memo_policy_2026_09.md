@@ -117,6 +117,22 @@ scatter. These ranges are descriptive, not confidence intervals.
 
 ## Decisions and design implications
 
+> **Re-judgement, 2026-10-09 (timing-noise audit #362, fix phase 3b, PR #410; facts, nothing
+> rewritten).** The verdict NO_LEVER stands on intervals: each of the six targets is a paired
+> round-bootstrap interval over the 6 repeats, judged as one Holm family at family-wise 90 %, and
+> all six resolve at the first level (98.33 %) the way their points did (broad holdout
+> [1.052, 1.056] vs ≤ 1.03 cold; nearby holdout [1.114, 1.117] vs ≤ 1.03 memo). The matched
+> counts below do not: with 4 repeats per transition (below the audit's 5-round minimum) all 128
+> matched classifications are INCONCLUSIVE, so the "False accept" / "False reject" columns are
+> point classifications, not resolved ones, and the cell now writes them as
+> `resolved_harmful_accepted` / `resolved_beneficial_rejected` plus an `inconclusive` count. For
+> context only: a 90 % paired Student-t on the 4 per-repeat ratios (df = 3) would resolve all 128
+> as published (nearest bound 0.35 from the 3 % band; `seed1_broad_03` [2.511, 2.525]). The first
+> design conclusion below ("not a reliable proxy … can reject useful sets and accept costly ones")
+> therefore rests on point classifications until a human accepts a 4-repeat interval or the
+> replays are re-run with ≥ 5 repeats. See
+> [timing_noise_audit_2026_10.md](timing_noise_audit_2026_10.md), fix phase 3b.
+
 All 128 eligible matched transitions agree on final active sets. Missing memo
 entries are excluded from the false-decision denominator. The final column is
 diagnostic precheck time per model, including empty lookups; headline timing
