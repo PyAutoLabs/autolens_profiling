@@ -360,7 +360,12 @@ the SAME task are >= 0.5 ms (``LOGDET_LEVER_MS``). Rows are never compared
 across tasks (phase B saw ~3 % node-to-node differences). Clearing it means a
 PyAutoArray prompt via /intake (return the factor from ``solve_certified``,
 stash it on the inversion, a JAX fast path at ``abstract.py:1012``); missing it
-is a "no lever" verdict.
+is a "no lever" verdict. Since #362 fix phase 3b the rule reads intervals
+(``interval_gates.logdet_lever_verdict``): ``clears_threshold`` is ``True`` /
+``False`` only when resolved, else ``"INCONCLUSIVE"``. The interleaved saving has
+a paired round-bootstrap interval over its 7 rounds; the ``jit_profile`` saving is
+one block per arm and has none, so with this protocol a lever can resolve
+``False`` but never ``True``.
 
 **Amendment, pre-registered before any A100 data.** The RTX screen found |Z| = 4
 on the fiducial (the TIMED point) but 51-250 on the 8 draws, so k32 / k64 take
@@ -455,6 +460,7 @@ import sys as _smoke_sys
 from likelihood_breakdown import (  # noqa: E402
     active_set_steps,
     host_callback_probe,
+    interval_gates,
     library_solver_injection,
     logdet_reuse_injection,
     nautilus_batches,
@@ -3696,6 +3702,10 @@ if LOGDET_CANDIDATE is not None:
     _ld_r_ms = logdet_ref_record["ms"]
     _ld_saving_jit = _ld_r_ms - _ld_d_ms
     _ld_saving_ab = logdet_interleaved["saving_median_ms"]
+    # C5 (#362 fix phase 3b): the pre-registered rule on intervals. The interleaved
+    # saving gets a paired round-bootstrap interval; the jit_profile saving is one
+    # block per arm (no interval), so a lever resolves only as NO_GO or INCONCLUSIVE.
+    _ld_interval = interval_gates.logdet_lever_verdict(logdet_interleaved, _ld_saving_jit)
     _ld_static = (logdet_report or {}).get("static") or {}
     logdet_block = {
         "candidate": LOGDET_CANDIDATE,
@@ -3746,17 +3756,15 @@ if LOGDET_CANDIDATE is not None:
             "timed_branch": ((logdet_report or {}).get("timed_point") or {}).get("branch"),
             "draw_overflow_count": ((logdet_report or {}).get("draws") or {}).get("overflow_count"),
             "clears_threshold": (
-                None
-                if _ld_spec.kind == "control"
-                else bool(
-                    _ld_saving_jit >= logdet_reuse_injection.LOGDET_LEVER_MS
-                    and _ld_saving_ab >= logdet_reuse_injection.LOGDET_LEVER_MS
-                )
+                None if _ld_spec.kind == "control" else _ld_interval["clears_threshold"]
             ),
+            "interval_verdict": _ld_interval,
             "rule": (
                 "PRE-REGISTERED: a lever clears when BOTH the jit_profile saving and the "
                 "interleaved-median saving vs the unmodified library route in the same task "
-                "are >= threshold_ms. Never a gate; never compared across tasks."
+                "are >= threshold_ms. Never a gate; never compared across tasks. Since #362 "
+                "fix phase 3b judged on intervals: True / False only when resolved, else "
+                "INCONCLUSIVE; the one-block jit_profile saving has no interval."
             ),
         },
         "compile_s": {
@@ -4293,8 +4301,10 @@ if logdet_block is not None:
         f"reconciliation {_gate['reconciliation_pct']:+.2f} %, "
         f"unjoined {_gate['unjoined_ms']:.3f} ms) | saving vs library "
         f"{_lever['saving_jit_profile_ms']:+.3f} ms (jit_profile), "
-        f"{_lever['saving_interleaved_median_ms']:+.3f} ms (interleaved) -> lever "
-        f"{_lever['clears_threshold']}"
+        f"{_lever['saving_interleaved_median_ms']:+.3f} ms (interleaved, 90 % "
+        f"[{_lever['interval_verdict']['interleaved']['ci90_low']:+.3f}, "
+        f"{_lever['interval_verdict']['interleaved']['ci90_high']:+.3f}]) -> lever "
+        f"{_lever['clears_threshold']} ({_lever['interval_verdict']['reason']})"
     )
     if not _gate["passed"]:
         raise AssertionError(
