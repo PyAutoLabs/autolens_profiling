@@ -285,6 +285,36 @@ def _provenance(payload: dict) -> dict:
     return out
 
 
+def warmup_unsettled(payload: dict) -> str | None:
+    """Why a payload's recorded warm-up never settled, or None (timing-noise audit P3).
+
+    A warm-up *record* is a dict: either ``payload["warmup"]`` or any ``payload["rows"][*]["warmup"]``
+    (where ``fixed_light_numba.py`` writes one per row). A scalar warm-up time or no field at all is
+    not a record. The first unsettled record found decides; the rule is the shared
+    ``likelihood_breakdown.warmup_gate``, the one the overhead verdict and the promotion block apply.
+    No payload the dashboard scans today carries a record (fixed-light payloads produce no point).
+    """
+    records = [payload.get("warmup")]
+    rows = payload.get("rows")
+    if isinstance(rows, dict):
+        rows = list(rows.values())
+    if isinstance(rows, list):
+        records += [row.get("warmup") for row in rows if isinstance(row, dict)]
+    records = [r for r in records if isinstance(r, dict)]
+    if not records:
+        return None
+    misc = str(Path(__file__).resolve().parents[1])
+    if misc not in sys.path:
+        sys.path.insert(0, misc)
+    from likelihood_breakdown.warmup_gate import warmup_unsettled_reason
+
+    for record in records:
+        reason = warmup_unsettled_reason(record)
+        if reason is not None:
+            return reason
+    return None
+
+
 def _load(path: Path) -> dict | None:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
@@ -322,6 +352,9 @@ def _point(payload: dict, version: str, source: str) -> dict | None:
         point["headline_note"] = FIRST_BLOCK_NOTE
     if median is not None:
         point["single_jit_median_s"] = median
+    unsettled = warmup_unsettled(payload)
+    if unsettled is not None:
+        point["warmup_unsettled"] = unsettled
     return point
 
 
@@ -450,7 +483,8 @@ def qualify(point: dict, config: str, conf: dict) -> tuple[bool, str | None, boo
 
     Refused above the load-average cap. Otherwise unqualified, with the first failing reason, when
     the row has no provenance block, is not on a reference host class (laptop rows never qualify
-    as trend points), carries no load average or no host, or is an HPC row off the pinned node.
+    as trend points), carries no load average or no host, is an HPC row off the pinned node, or
+    records a warm-up that never settled (P3, fix phase 6).
     """
     cap = conf.get("loadavg_cap")
     node = conf.get("node")
@@ -470,6 +504,8 @@ def qualify(point: dict, config: str, conf: dict) -> tuple[bool, str | None, boo
         return False, "provenance carries no host", False
     if node and point["host"] != node:
         return False, f"off the reference host ({point['host']} != {node})", False
+    if point.get("warmup_unsettled"):
+        return False, point["warmup_unsettled"], False
     return True, None, False
 
 
