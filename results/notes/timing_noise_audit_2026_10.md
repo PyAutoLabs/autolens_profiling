@@ -36,7 +36,7 @@ fewer than 5 rounds names no `best`. C6, C7 and C10 become SOUND-with-caveats. R
 committed rows on round intervals changed one non-deciding laptop C6 call (GO → INCONCLUSIVE) and
 nothing on RAL. See "Fix phase 4 — shipped" under (b).
 
-**Fix phase 5 shipped (phase 6 of #362, PR #PRNUM, 2026-10-09):** every runtime cell that headlines
+**Fix phase 5 shipped (phase 6 of #362, PR #408, 2026-10-09):** every runtime cell that headlines
 `jit_profile`'s 10-call block mean also writes the steady median beside it through one helper,
 `scripts/misc/likelihood_breakdown/timing.py::headline_steady_median`; the dashboard headlines the
 median where a row records it, labels the estimator, and drift never compares a median with a
@@ -909,7 +909,7 @@ correctness or gross-regression guard.
      "timed out on host X at load Y" and is re-measured before being rendered as GPU-only.
    - **Witness:** an injected-clock transient (the existing T4 pattern) where the block mean moves
      2.4× and the median does not. A marker with a load above the cap is not rendered as GPU-only.
-   - **Shipped (phase 6 of #362, PR #PRNUM, 2026-10-09).** As implemented:
+   - **Shipped (phase 6 of #362, PR #408, 2026-10-09).** As implemented:
      - **P8, the producer:** one helper, `scripts/misc/likelihood_breakdown/timing.py::headline_steady_median`,
        runs `steady_median_profile` on the cell's compiled `full_pipeline` after the legacy block
        (no `Timer` section, so `full_pipeline_single_jit` and compile / first-call sections are
