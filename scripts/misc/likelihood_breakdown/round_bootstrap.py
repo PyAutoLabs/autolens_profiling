@@ -118,18 +118,22 @@ def round_median_saving(
     scale: float = 1.0e3,
     samples: int = ROUND_BOOTSTRAP_SAMPLES,
     confidence: float = ROUND_BOOTSTRAP_CONFIDENCE,
-) -> dict:
+    return_boots: bool = False,
+):
     """``(median(slower) - median(faster)) * scale`` with a paired round-bootstrap interval.
 
     ``scale`` converts seconds to the cells' milliseconds by default. Returns the
     cells' dict (``saved_ms``, ``ci90_low``, ``ci90_high``,
-    ``bootstrap_samples``) plus ``resampling`` and ``effective_n``.
+    ``bootstrap_samples``) plus ``resampling`` and ``effective_n``; with
+    ``return_boots`` also the bootstrap savings (#362 fix phase 9: the family-wise
+    verdicts read other percentiles of the same draws).
     """
     slow = as_rounds(slower, n_rounds) * scale
     fast = as_rounds(faster, n_rounds) * scale
     med_slow, med_fast = _draws(slow, fast, seed, samples)
-    low, high = _percentiles(med_slow - med_fast, confidence)
-    return {
+    boots = med_slow - med_fast
+    low, high = _percentiles(boots, confidence)
+    out = {
         "saved_ms": float(np.median(slow) - np.median(fast)),
         "ci90_low": low,
         "ci90_high": high,
@@ -137,3 +141,4 @@ def round_median_saving(
         "resampling": RESAMPLING,
         "effective_n": int(slow.shape[0]),
     }
+    return (out, boots) if return_boots else out

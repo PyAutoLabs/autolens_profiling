@@ -38,7 +38,11 @@ Three protocol facts follow from instrumenting the real call:
   under ``rows[*].warmup`` — a warm-up that never settles is evidence about the
   host, not something to discard. Since #362 fix phase 6 (row P3) such a row is
   INCONCLUSIVE for every timing verdict that reads it: the ABBA overhead gate and
-  the promotion decision (``likelihood_breakdown.warmup_gate``).
+  the promotion decision (``likelihood_breakdown.warmup_gate``). The promotion's
+  two rows are separate passes, so since #362 fix phase 9 (row P2) it also records
+  the host's drift across them (``likelihood_breakdown.family_gates.between_row_drift``:
+  each row's clean median between its halves, the 1-minute load at the run's and
+  each row's start and end) and is INCONCLUSIVE when the rows drift.
 - The quoted ``call_ms`` is a **clean, uninstrumented** call, and the clean and
   instrumented calls are **counterbalanced**: each block runs **A B B A** (clean,
   instrumented, instrumented, clean) and its overhead ratio is
@@ -398,6 +402,10 @@ from likelihood_breakdown.ab_verdict import (  # noqa: E402
     ab_rule_verdict,
     paired_block_ratio_interval,
 )
+
+# The between-row drift record (#362 fix phase 9, row P2): the promotion's two rows
+# are separate passes, so a drifting host makes the promotion INCONCLUSIVE. numpy only.
+from likelihood_breakdown.family_gates import between_row_drift  # noqa: E402
 
 # The ONE overhead verdict, shared with the CI test (#362 fix phase 1). Imported
 # above the smoke exit so the CI import smoke covers it; it is numpy + scipy only.
@@ -2063,6 +2071,8 @@ for _route, _formalism in _row_plan():
         "nnls_warm_start_env": os.environ.get("AUTOARRAY_NNLS_WARM_START"),
         "operated_mapping_matrix_memo_entries_before": _memo_before,
         "decomposed": False,
+        # Read either side of this row's timed calls (#362 fix phase 9, P2's drift record).
+        "load_average_at_row_start": _load_average(),
     }
 
     if _route == "c":
@@ -2383,6 +2393,7 @@ for _route, _formalism in _row_plan():
             )
 
     _validate_timed_stream(_timed_stream, _call_index["next"], rows)
+    _entry["load_average_at_row_end"] = _load_average()
     rows[_key] = _entry
 
 _clear_memos()
@@ -2409,7 +2420,8 @@ if _promotion_pair is not None:
     # evaluate the same instances: the per-block clean means are paired by
     # instance. A decomposed (ABBA) row has two clean calls per block; a clean-only
     # row is one call per block. The rows are separate passes in time, so drift
-    # between them is NOT cancelled; the interval covers block-to-block scatter.
+    # between them is NOT cancelled; the interval covers block-to-block scatter, and
+    # `between_row_drift` below records the drift it cannot see (fix phase 9).
     def _clean_blocks(row):
         sequence = np.asarray(row.get("call_ms_sequence", []), dtype=float)
         if row.get("decomposed") and sequence.size % 2 == 0:
@@ -2451,7 +2463,22 @@ if _promotion_pair is not None:
         for key, row in ((_b_key, _b_row), (_d_key, _d_row))
         if (reason := warmup_unsettled_reason(row.get("warmup"))) is not None
     }
-    _timing_candidate = _speedup_verdict.verdict == GO and _abba_pass and not _warmup_unsettled
+    # The rows are separate passes (#362 fix phase 9, P2): drift between them is not
+    # cancelled by the paired-block interval. A drifting host (a row's own clean median
+    # moving > 2.5 % between its halves, or the 1-minute load moving > 2.0 across the
+    # rows) makes the comparison INCONCLUSIVE — never a timing_candidate and never a
+    # measured NO_LEVER.
+    _drift = between_row_drift(
+        {_b_key: _b_row, _d_key: _d_row},
+        load_average_at_start=load_average_at_start,
+        load_average_at_end=load_average_at_end,
+    )
+    _timing_candidate = (
+        _speedup_verdict.verdict == GO
+        and _abba_pass
+        and not _warmup_unsettled
+        and not _drift["drifted"]
+    )
     # An arm whose ABBA overhead is INCONCLUSIVE has an unresolved instrument cost;
     # a speedup that clears the bar on such a row is INCONCLUSIVE, never a
     # timing_candidate and never a measured NO_LEVER.
@@ -2468,6 +2495,15 @@ if _promotion_pair is not None:
             f"it neither promotes nor counts as a measured NO_LEVER, whatever the speedup "
             f"interval ({_speedup_verdict.verdict}: {_speedup_verdict.reason}). Re-run on a "
             f"settled host."
+        )
+    elif _drift["drifted"]:
+        _promotion_status = "INCONCLUSIVE"
+        _promotion_reason = (
+            f"The host drifted across the two rows ({'; '.join(_drift['reasons'])}). The rows "
+            f"are separate passes, so the drift is not cancelled by the paired-block interval: "
+            f"the comparison is INCONCLUSIVE — it neither promotes nor counts as a measured "
+            f"NO_LEVER, whatever the speedup interval ({_speedup_verdict.verdict}: "
+            f"{_speedup_verdict.reason}). Re-run on a quiet host."
         )
     elif _timing_candidate:
         _promotion_status = "timing_candidate"
@@ -2529,6 +2565,7 @@ if _promotion_pair is not None:
         "both_abba_gates_pass": _abba_pass,
         "abba_unresolved_rows": _abba_unresolved,
         "warmup_unsettled_rows": sorted(_warmup_unsettled),
+        "between_row_drift": _drift,
         "timing_gate_pass": _timing_candidate,
         "requires_separate_witness_pass": True,
         "witness_evaluated_here": False,

@@ -78,7 +78,9 @@ The human skipped the contract's phase-0 reproduction of the preserved unoptimiz
 one job on current main. Result: launch-bound confirmed — 173 kernels per call, device busy
 57 % of the 0.910 ms production wall, CUDA graphs already worth 0.187 ms, vmap-256 81x per
 likelihood with no OOM. Deflections and the step-0 lattice are below the 5.45 % MDI even at a
-100 % saving; launch count (≤ 1.69x), the neighbourhood sort (≤ 1.24x) and the reverse
+100 % saving (re-judged 2026-10-09, timing-noise audit #362 fix phase 9: that MDI was an iid
+split-half inflated by drift across the run; on paired rounds it is 0.94 %, so those ≤ 2–4.4 %
+ceilings are small but resolvable — see the ledger's dated note); launch count (≤ 1.69x), the neighbourhood sort (≤ 1.24x) and the reverse
 gradient's implicit Jacobian (≤ 1.92x per gradient) have room. fp32 what-if 1.27x scalar,
 none batched. Findings: `jax.jacfwd` is NaN on this likelihood while `AnalysisPoint` defaults
 to forward mode (PyAutoLens#752); two smooth points fail the strict FD rule (kept failing

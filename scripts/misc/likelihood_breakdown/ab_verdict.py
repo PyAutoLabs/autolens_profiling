@@ -55,8 +55,9 @@ Limits (stated in the audit note, section (a))
 - :func:`ab_rule_verdict` applies no multiple-comparison adjustment to the
   per-criterion confidence. A conjunction of k criteria at 90 % each is
   conservative for GO (every interval must clear) but each NO_GO is a 90 %
-  statement, and a tie set over many configurations is wider, not narrower,
-  than any adjusted family would make it.
+  statement, and :func:`tie_set` at 90 % is narrower than a family-wise tie
+  set. Gates whose verdict reads several comparisons use the family-wise
+  policy below (:func:`holm_family_verdict`, :func:`holm_tie_set`).
 
 Family-wise verdicts (#362, fix phase 3b)
 -----------------------------------------
@@ -82,13 +83,50 @@ level-alpha test unadjusted, so the adjustment makes a family GO conservative;
 it is kept for one policy, stated, rather than a per-direction rule. The
 unadjusted verdict is recorded beside the family one.
 
+The family-wise policy (#362 fix phase 9)
+-----------------------------------------
+
+One policy for every gate whose verdict or claim reads more than one
+comparison (audit note, section (a), "Multiple comparisons"):
+
+- **the family** is the set of comparisons one verdict or one claim rests on —
+  every comparison that, if it came out the other way, would change that
+  verdict or claim. Comparisons that feed separate, independently acted-on
+  verdicts are separate families; a "deciding row" is its own family (one
+  host's run is one family; other hosts are recorded, not pooled);
+- **the procedure** is Holm's step-down at family-wise :data:`AB_CONFIDENCE`
+  (90 %) on two-sided intervals read from the same bootstrap draws at every
+  level (:func:`bootstrap_criterion` / :func:`bootstrap_interval`), so the
+  intervals are nested: :func:`holm_family_verdict` for a verdict over
+  criteria, :func:`holm_tie_set` for a "best of k";
+- **the verdict shape** is the caller's: a conjunction ("all must hold") is
+  :func:`holm_family_verdict`'s own verdict; an "any" claim ("some member
+  clears") reads the final per-member verdicts — GO if any member resolves GO
+  at its Holm level, NO_GO only if every member resolves NO_GO, else
+  INCONCLUSIVE; a "best" is named only when the leader's interval separates
+  from every other candidate's at the Holm-adjusted level;
+- **the unadjusted reading** (every comparison at 90 %) is always recorded
+  beside the family-wise one, never used for the verdict; below ``min_n``
+  units the verdict is INCONCLUSIVE whatever the intervals say.
+
+The families as wired (audit note rows): C3 the six memo-policy targets; C6
+one host's routes x lanes x both criteria (the phase-2c decision is which
+routes are GO); C10 the leader against every other candidate of one sweep (the
+"best admissible" claim); C11 every pinned numba kernel x the sma / alma cells
+(the kill gate is "any cell has a kernel beating rfft2 by > 1.3x"). A
+conjunction of a few criteria inside one target (C4's lanes, C5's two
+estimators) is an intersection-union test and is not adjusted (conservative
+for PASS / GO). Holm controls the family-wise error of the comparisons given
+the family; it does not undo a family chosen after seeing the data (a point
+leader picked by argmax is a data-chosen reference — stated, not modelled).
+
 The functions are pure and deterministic: they do no timing and read no clock.
 """
 
 from __future__ import annotations
 
 import math
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 
 import numpy as np
@@ -607,3 +645,165 @@ def bootstrap_criterion(name, point, boots, bar, direction=AT_LEAST, unit=""):
         return Criterion(name, pt, lo, hi, float(bar), direction, unit)
 
     return at
+
+
+def bootstrap_interval(point, boots):
+    """A ``confidence -> (point, lower, upper)`` reading two-sided percentiles of fixed draws.
+
+    For :func:`holm_tie_set`: every level reads the same draws, so the intervals
+    are nested (the tie-set twin of :func:`bootstrap_criterion`).
+    """
+    draws = np.asarray(boots, dtype=float)
+    pt = float(point)
+
+    def at(level: float) -> tuple[float, float, float]:
+        tail = 50.0 * (1.0 - float(level))
+        if draws.size == 0 or not np.all(np.isfinite(draws)):
+            return pt, float("nan"), float("nan")
+        lo, hi = (float(x) for x in np.percentile(draws, [tail, 100.0 - tail]))
+        return pt, lo, hi
+
+    return at
+
+
+@dataclass(frozen=True)
+class FamilyTieSet(TieSet):
+    """A tie set built at the family-wise level (Holm), with the unadjusted one beside it.
+
+    ``leader`` / ``members`` / ``best`` / ``reason`` are the family-wise result
+    (read exactly as a :class:`TieSet`); ``unadjusted`` is :func:`tie_set` with
+    every interval at the family confidence, recorded only.
+    """
+
+    method: str = "holm"
+    family_confidence: float = AB_CONFIDENCE
+    #: The level at which each excluded candidate separated from the leader.
+    excluded_at: dict = field(default_factory=dict)
+    steps: tuple = ()
+    unadjusted: TieSet | None = None
+
+    def as_dict(self) -> dict:
+        out = {
+            "leader": self.leader,
+            "members": list(self.members),
+            "best": self.best,
+            "reason": self.reason,
+            "higher_is_better": self.higher_is_better,
+            "resolved": self.resolved,
+            "method": self.method,
+            "family_confidence": self.family_confidence,
+            "excluded_at": dict(self.excluded_at),
+            "steps": [dict(s) for s in self.steps],
+        }
+        out["unadjusted"] = self.unadjusted.as_dict() if self.unadjusted is not None else None
+        return out
+
+
+def holm_tie_set(
+    candidates: Mapping[str, Callable[[float], Sequence[float]]],
+    *,
+    higher_is_better: bool = True,
+    n=None,
+    min_n: int = MIN_AB_ROUNDS,
+    confidence: float = AB_CONFIDENCE,
+) -> FamilyTieSet:
+    """A tie set at the family-wise level: Holm over the leader-vs-candidate comparisons.
+
+    ``candidates`` maps a name to a callable ``confidence -> (point, lower,
+    upper)`` (:func:`bootstrap_interval`). The leader is the best point
+    estimate, as in :func:`tie_set`. The claim "the leader is best" rests on
+    the k - 1 comparisons of the leader with every other candidate, so they are
+    one family (the module docstring's policy):
+
+    1. ``m`` = candidates not yet separated from the leader; read every interval
+       (the leader's too) at ``1 - alpha / m``;
+    2. every candidate whose interval does not overlap the leader's at that
+       level is separated (excluded from the tie set); ``m`` drops and step 1
+       repeats; if none separates, the procedure stops;
+    3. ``best`` is the leader only when every other candidate separated.
+
+    A candidate with a non-finite point or bound is never separated and counts
+    in ``m``. Intervals at a Holm level contain the 90 % ones (nested draws), so
+    the family-wise tie set always contains :func:`tie_set`'s. Below ``min_n``
+    units nothing is separated, as in :func:`tie_set`.
+    """
+    items = {str(name): fn for name, fn in candidates.items()}
+    unadjusted = tie_set(
+        {name: tuple(fn(float(confidence))) for name, fn in items.items()},
+        higher_is_better=higher_is_better,
+        n=n,
+        min_n=min_n,
+    )
+
+    def _wrap(members, best, reason, excluded_at, steps):
+        return FamilyTieSet(
+            leader=unadjusted.leader,
+            members=tuple(members),
+            best=best,
+            reason=reason,
+            higher_is_better=higher_is_better,
+            method="holm",
+            family_confidence=float(confidence),
+            excluded_at=dict(excluded_at),
+            steps=tuple(steps),
+            unadjusted=unadjusted,
+        )
+
+    leader = unadjusted.leader
+    n_ok = True
+    if n is not None:
+        try:
+            n_ok = int(n) == n and int(n) >= int(min_n)
+        except (TypeError, ValueError, OverflowError):
+            n_ok = False
+    # No leader, too few units, or one candidate: nothing to adjust.
+    if leader is None or len(items) == 1 or not n_ok:
+        return _wrap(unadjusted.members, unadjusted.best, unadjusted.reason, {}, ())
+
+    sign = 1.0 if higher_is_better else -1.0
+    alpha = 1.0 - float(confidence)
+
+    def _point(name: str) -> float:
+        v = tuple(items[name](float(confidence)))
+        return float(v[0]) if _finite(*v) else math.nan
+
+    remaining = [name for name in items if name != leader]
+    excluded_at: dict[str, float] = {}
+    steps = []
+    while remaining:
+        level = 1.0 - alpha / len(remaining)
+        _, lead_lo, lead_hi = (float(x) for x in items[leader](level))
+        separated = []
+        for name in remaining:
+            v = tuple(items[name](level))
+            if not _finite(*v):
+                continue
+            _, lo, hi = (float(x) for x in v)
+            overlaps = hi >= lead_lo if higher_is_better else lo <= lead_hi
+            if not overlaps:
+                separated.append(name)
+        steps.append({"m": len(remaining), "confidence": level, "separated": list(separated)})
+        if not separated:
+            break
+        for name in separated:
+            excluded_at[name] = level
+        remaining = [name for name in remaining if name not in separated]
+
+    members = sorted(
+        [leader, *remaining],
+        key=lambda k: (-(sign * _point(k)) if math.isfinite(_point(k)) else math.inf, k),
+    )
+    if members == [leader]:
+        reason = (
+            f"{leader}'s interval separates from every other candidate's at the Holm-adjusted "
+            f"level (family-wise {confidence:.0%} over {len(items) - 1} comparisons)"
+        )
+        return _wrap(members, leader, reason, excluded_at, steps)
+    reason = (
+        f"at the Holm-adjusted level (family-wise {confidence:.0%} over {len(items) - 1} "
+        f"comparisons) the intervals of {members} overlap the point leader {leader}'s: a tie "
+        f"set, not a single best"
+    )
+    if unadjusted.best is not None:
+        reason += f" (unadjusted 90 % would name {unadjusted.best}; the family-wise rule governs)"
+    return _wrap(members, None, reason, excluded_at, steps)

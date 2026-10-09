@@ -57,6 +57,20 @@ but every one of the 128 committed C1 matched classifications is now INCONCLUSIV
 5-round minimum), so the memo-policy note's "false accept / false reject" counts and the design
 conclusion drawn from them lose their interval support. See "Fix phase 3b — shipped" under (b).
 
+**Fix phase 9 shipped (phase 9 of #362, stacked on #410, 2026-10-09):** one documented
+family-wise policy (Holm at family-wise 90 %, family = the comparisons one verdict or claim rests
+on; section (a)) now judges C6 (one host's routes × lanes × criteria), C10 (the leader against
+every other configuration, `ab_verdict.holm_tie_set`) and C11 (pinned numba kernels × sma / alma
+cells; its ratio > 1.3 gets a paired round-bootstrap interval), through
+`scripts/misc/likelihood_breakdown/family_gates.py`. C12's split-half MDI and the cell's in-process
+ratios move onto the paired round bootstrap; P2 records between-row drift and is INCONCLUSIVE when
+the rows drift. P2 and C11 become SOUND-with-caveats (34 / 3 / 0 over 37 rows). Re-judging the
+committed rows: the phase-2c GO routes on the deciding EPYC row are unchanged; IP-4a's tie set grows
+from 5 to 7; **the numba-interferometer kill gate ("passed") is INCONCLUSIVE by construction**
+(4 timed rounds < 5) and **the A100 MDI the GPU go / no-go memo quotes (5.45 %) is 0.94 % on paired
+rounds**, so that memo's "below MDI" readings lose their support. See "Fix phase 9 — shipped"
+under (b).
+
 **Phase 1 was an audit. Nothing was changed in it:** no gate, budget, tolerance, cutoff, estimator,
 repeat count or production instrument was edited. The only code added is the read-only lister
 `scripts/misc/tooling/list_timing_assertions.py`, which keeps this inventory in step with the code.
@@ -130,8 +144,9 @@ T1, T3, P1 and P2, which are as of the fix phase 1 branch.
 | T8 | CI test | `scripts/misc/test/test_round_bootstrap.py` (round-bootstrap witnesses: `scripts/misc/test/test_round_bootstrap.py::test_the_round_interval_covers_the_true_ratio_under_a_fixed_seed`, `scripts/misc/test/test_round_bootstrap.py::test_round_coverage_is_near_nominal_and_iid_coverage_is_not`, `scripts/misc/test/test_round_bootstrap.py::test_rounds_are_paired_across_arms`, `scripts/misc/test/test_round_bootstrap.py::test_the_committed_pytree_ral_cpu_saving_stays_below_the_bar`) | `round_median_ratio` / `round_median_saving` on seeded correlated rounds, each cell's lifted helper, and the committed C6 / C7 / C10 rows | exact, seeded | SOUND (pins the fix phase 4 semantics) |
 | T10 | CI test | `scripts/misc/test/test_warmup_and_witness_band.py` (P5 / P3-dashboard witnesses: `scripts/misc/test/test_warmup_and_witness_band.py::test_a_reference_host_class_row_keeps_its_pass_or_fail`, `scripts/misc/test/test_warmup_and_witness_band.py::test_a_laptop_row_is_inconclusive_whatever_the_band_says`, `scripts/misc/test/test_warmup_and_witness_band.py::test_the_committed_witness_rows_rejudge_as_inconclusive`, `scripts/misc/test/test_warmup_and_witness_band.py::test_a_point_whose_warmup_never_settled_is_unqualified`) | `witness_verdict` on reference-class and laptop host classes, the 8 committed witness rows, `qualify` on points carrying a warm-up record | exact | SOUND (pins the fix phase 6 semantics) |
 | T11 | CI test | `scripts/misc/test/test_interval_gates.py` (C1 / C3 / C4 / C5 and Holm witnesses: `scripts/misc/test/test_interval_gates.py::test_c5_a_point_saving_above_threshold_with_a_straddling_interval_is_inconclusive`, `scripts/misc/test/test_interval_gates.py::test_c3_holm_witness_unadjusted_go_but_family_wise_inconclusive`, `scripts/misc/test/test_interval_gates.py::test_c1_a_point_below_097_with_a_straddling_interval_is_inconclusive`, `scripts/misc/test/test_interval_gates.py::test_c4_status_pass_requires_a_resolved_pass`) | `interval_gates` and `holm_family_verdict` on fixed synthetic repeats with fixed seeds, the cells' wiring, and the committed C1 / C3 / C4 / C5 rows | exact, seeded | SOUND (pins the fix phase 3b semantics) |
+| T12 | CI test | `scripts/misc/test/test_family_gates.py` (family-wise and remainder witnesses: `scripts/misc/test/test_family_gates.py::test_holm_witness_unadjusted_names_a_best_and_the_family_does_not`, `scripts/misc/test/test_family_gates.py::test_c6_holm_witness_unadjusted_go_but_family_wise_not`, `scripts/misc/test/test_family_gates.py::test_c11_holm_witness_unadjusted_passed_but_family_wise_inconclusive`, `scripts/misc/test/test_family_gates.py::test_c12_slow_drift_inflates_the_iid_floor_and_not_the_paired_one`, `scripts/misc/test/test_family_gates.py::test_p2_a_load_change_across_the_rows_drifts`) | `holm_tie_set`, `phase2c_family`, `kill_gate_family`, `round_split_half_mdi`, `between_row_drift` on fixed synthetic inputs and seeds, the cells' wiring, and the committed C6 / C10 / C11 / C12 / P2 rows | exact, seeded | SOUND (pins the fix phase 9 semantics) |
 | P1 | production qualification | `scripts/imaging/pixelized/fixed_light_numba.py::<module>` (2122–2130; raise at 2267) via `scripts/misc/likelihood_breakdown/overhead_verdict.py::abba_overhead_verdict` | ABBA overhead in ms: one-sided t bounds vs budget; raises only on FAIL / FAIL_GROSS, INCONCLUSIVE keeps the row | `scripts/imaging/pixelized/fixed_light_numba.py::MAX_INSTRUMENTATION_OVERHEAD_MS` 12.0; `scripts/imaging/pixelized/fixed_light_numba.py::MIN_BLOCKS_FOR_OVERHEAD_ASSERT` 3; `scripts/imaging/pixelized/fixed_light_numba.py::REFERENCE_OVERHEAD_RATIO` 1.03 (recorded) | SOUND-with-caveats |
-| P2 | campaign gate | `scripts/imaging/pixelized/fixed_light_numba.py::<module>` (2386–2496) via `scripts/misc/likelihood_breakdown/ab_verdict.py::ab_rule_verdict` | promotion `timing_candidate` / `INCONCLUSIVE` / `NO_LEVER` | whole-call speedup ≥ 0.05 on a 90 % paired-block interval (≥ 5 blocks) and both P1 PASS; a P1 INCONCLUSIVE gives INCONCLUSIVE | FRAGILE |
+| P2 | campaign gate | `scripts/imaging/pixelized/fixed_light_numba.py::<module>` (2402–2560) via `scripts/misc/likelihood_breakdown/ab_verdict.py::ab_rule_verdict` and `scripts/misc/likelihood_breakdown/family_gates.py::between_row_drift` (559) | promotion `timing_candidate` / `INCONCLUSIVE` / `NO_LEVER` | whole-call speedup ≥ 0.05 on a 90 % paired-block interval (≥ 5 blocks) and both P1 PASS; a P1 INCONCLUSIVE gives INCONCLUSIVE; since fix phase 9 INCONCLUSIVE when the rows drift (a row's clean median moving > `scripts/misc/likelihood_breakdown/family_gates.py::ROW_DRIFT_TOLERANCE` 0.025 between its halves, or the 1-minute load moving > `LOAD_CHANGE_TOLERANCE` 2.0 across the rows) | SOUND-with-caveats |
 | P3 | production protocol | `scripts/imaging/pixelized/fixed_light_numba.py::_warm_to_steady_state` (1745); read since fix phase 6 by `scripts/misc/likelihood_breakdown/warmup_gate.py` `warmup_unsettled_reason`, called by `abba_overhead_verdict` (P1), the promotion block (P2) and `build_dashboard.qualify` (P6) | warm-up "steady" flag; an unsettled row is INCONCLUSIVE for every timing verdict that reads it | `scripts/imaging/pixelized/fixed_light_numba.py::WARMUP_WINDOW` 3, `scripts/imaging/pixelized/fixed_light_numba.py::WARMUP_TOLERANCE` 0.10, `scripts/imaging/pixelized/fixed_light_numba.py::WARMUP_MAX_CALLS` 12 | SOUND-with-caveats |
 | P4 | production qualification | `scripts/imaging/pixelized/fixed_light_numba.py` 2247 | unattributed fraction of the instrumented call | `MAX_UNATTRIBUTED_FRACTION` 0.05 | SOUND |
 | P5 | production qualification | `_production_config.py::witness_verdict` (869; 886 since fix phase 6); `_production_config.py::timing_summary` (792) | production-representative cold-eval witness; PASS / FAIL only on a reference host class (`is_reference_host_class`), else INCONCLUSIVE (fix phase 6) | `WITNESS_FACTOR` 1.5 × the production cold-eval range | SOUND-with-caveats |
@@ -145,13 +160,13 @@ T1, T3, P1 and P2, which are as of the fix phase 1 branch.
 | C3 | campaign gate | `scripts/imaging/pixelized/fixed_light_numba_memo_policy.py::main` (486–493) via `scripts/misc/likelihood_breakdown/interval_gates.py::memo_policy_family` (200) and `scripts/misc/likelihood_breakdown/ab_verdict.py::holm_family_verdict` (509) | memo-policy verdict GO / NO_LEVER / INCONCLUSIVE | six targets (≤ 0.95 vs memo, ≤ 1.03 vs cold / memo), each a 90 % paired round-bootstrap interval over the repeats, one Holm family at family-wise 90 %: GO only if all six resolve in favour, NO_LEVER only if one resolves against | SOUND-with-caveats |
 | C4 | campaign gate | `scripts/imaging/pixelized/fixed_light_numba_scaling.py::evaluate_group` (160) via `scripts/misc/likelihood_breakdown/interval_gates.py::breakdown_reconciliation` (257) and `scripts/misc/likelihood_breakdown/interval_gates.py::conjoin_reconciliations` (300); status by `scripts/imaging/pixelized/fixed_light_numba_scaling.py::run_status` (192) | `breakdown_reconciles` PASS / FAIL / INCONCLUSIVE; status PASS only on a resolved PASS in every lane, INCONCLUSIVE when only the reconciliation is unresolved | observed / clean median − 1 within ±0.05 on a 90 % paired round-bootstrap interval over the repeats (≥ 5) | SOUND-with-caveats |
 | C5 | campaign gate | `scripts/imaging/pixelized/fixed_light_trace.py::<module>` (3708, 3758–3761) via `scripts/misc/likelihood_breakdown/interval_gates.py::logdet_lever_verdict` (316) | logdet lever `clears_threshold` True / False only when resolved, else `"INCONCLUSIVE"` | `scripts/misc/likelihood_breakdown/logdet_reuse_injection.py::LOGDET_LEVER_MS` 0.5 ms on both estimators: the interleaved saving on a 90 % paired round-bootstrap interval (7 rounds); the one-block `jit_profile` saving has no interval, so a lever resolves only as False or INCONCLUSIVE | SOUND-with-caveats |
-| C6 | campaign gate | `scripts/point_source_source/source_plane/backward_pass_ab.py::_phase2c_rule` (981) | phase-2c GO | `scripts/point_source_source/source_plane/backward_pass_ab.py::GO_MIN_SAVED_MS` 0.05 ms and `scripts/point_source_source/source_plane/backward_pass_ab.py::GO_MIN_FRACTION` 0.15, point estimate and 90 % CI; GO / NO_GO / INCONCLUSIVE via `ab_rule_verdict` since fix phase 3, on paired round-bootstrap intervals since fix phase 4 | SOUND-with-caveats |
+| C6 | campaign gate | `scripts/point_source_source/source_plane/backward_pass_ab.py::_phase2c_rule` (981) | phase-2c GO | `scripts/point_source_source/source_plane/backward_pass_ab.py::GO_MIN_SAVED_MS` 0.05 ms and `scripts/point_source_source/source_plane/backward_pass_ab.py::GO_MIN_FRACTION` 0.15, point estimate and 90 % CI; GO / NO_GO / INCONCLUSIVE via `ab_rule_verdict` since fix phase 3, on paired round-bootstrap intervals since fix phase 4; since fix phase 9 judged family-wise via `scripts/misc/likelihood_breakdown/family_gates.py` `phase2c_family` (113): the host's timed routes × lanes × both criteria are one Holm family at family-wise 90 %, a route GO only when GO in every lane | SOUND-with-caveats |
 | C7 | campaign gate | `scripts/point_source_source/source_plane/pytree_input_ab.py::_phase2b_rule` via `scripts/misc/likelihood_breakdown/ab_verdict.py::ab_rule_verdict` | phase-2b GO / NO_GO / INCONCLUSIVE | `scripts/point_source_source/source_plane/pytree_input_ab.py::GO_MIN_SAVED_MS` 0.05 ms and `scripts/point_source_source/source_plane/pytree_input_ab.py::GO_MIN_FRACTION` 0.15, on 90 % paired round-bootstrap intervals (≥ 5 rounds) | SOUND-with-caveats |
 | C8 | campaign gate | `scripts/point_source_source/source_plane/gradient_mode_crossover.py` `_crossover` (763) | crossover summary ("rev wins from…", "n* = …") | ratio = 1 crossing of point medians; bootstrap fractions and `n*` CI from paired round bootstraps since fix phase 4 | FRAGILE |
 | C9 | campaign gate | `scripts/point_source_image/image_plane/solver_config_sweep.py::<module>` (1934–1943) | MCS `rule_candidates` | compile ≤ 1.20, median ≤ 1.05 vs control (point; its round-bootstrap interval `row_over_control_median_ci90` recorded beside it since fix phase 4) | FRAGILE |
-| C10 | campaign gate | `scripts/point_source_image/image_plane/solver_config_sweep.py` `_fastest` via `scripts/misc/likelihood_breakdown/ab_verdict.py::tie_set` | `best_admissible` (a resolved leader, else `None`) and `best_admissible_tie_set` | tie set: every candidate whose 90 % paired round-bootstrap speed-up interval overlaps the point leader's; no `best` below 5 rounds | SOUND-with-caveats |
-| C11 | campaign gate | `scripts/misc/numba_interferometer/bakeoff.py::main` (847–875) | numba-vs-rfft2 kill gate | ratio > 1.3 on medians | FRAGILE |
-| C12 | campaign gate | `scripts/point_source_image/image_plane/gpu_bottleneck_map.py` `_mdi` (380) | minimum detectable improvement (split-half noise floor) for a human go/no-go | 90 % CI half-width | SOUND |
+| C10 | campaign gate | `scripts/point_source_image/image_plane/solver_config_sweep.py` `_fastest` via `scripts/misc/likelihood_breakdown/ab_verdict.py::tie_set` | `best_admissible` (a resolved leader, else `None`) and `best_admissible_tie_set` | tie set at the family-wise level since fix phase 9 (`scripts/misc/likelihood_breakdown/family_gates.py` `sweep_tie_set` (273) → `scripts/misc/likelihood_breakdown/ab_verdict.py` `holm_tie_set` (702)): a `best` only when the leader's paired round-bootstrap speed-up interval separates from every other candidate's at the Holm-adjusted level; the unadjusted 90 % tie set recorded beside it; no `best` below 5 rounds | SOUND-with-caveats |
+| C11 | campaign gate | `scripts/misc/numba_interferometer/bakeoff.py::main` (858) via `scripts/misc/likelihood_breakdown/family_gates.py` `kill_gate_family` (354); the old point rule kept as `scripts/misc/likelihood_breakdown/family_gates.py::kill_gate_point` (330) | numba-vs-rfft2 kill gate `passed` / `tripped` / INCONCLUSIVE | rfft2 / kernel > 1.3 on a paired round-bootstrap interval per pinned kernel × sma / alma cell, one Holm family at family-wise 90 %: `passed` if any member resolves above, `tripped` only if every member resolves below; ≥ 5 timed rounds (the default `--reps 5` times 4, so INCONCLUSIVE by construction) | SOUND-with-caveats |
+| C12 | campaign gate | `scripts/point_source_image/image_plane/gpu_bottleneck_map.py` `_mdi` (396) via `scripts/misc/likelihood_breakdown/family_gates.py` `round_split_half_mdi` (483) | minimum detectable improvement (split-half noise floor) for a human go/no-go | 90 % CI half-width; since fix phase 9 of a paired round bootstrap of each round's first half of calls over its last half (NaN below 5 rounds) | SOUND |
 | S1 | submit basis | `scripts/misc/wall/check_submits.py::RATE_TOLERANCE` (91), `HEADROOM_FLOOR` (95), `budget < needed` (437) | `--time` ≥ estimated wall × headroom | 5 % rate match; headroom 1.25 / 1.5 / 3.0 | SOUND |
 | R1 | resource guard | `scripts/imaging/pixelized/fixed_light.py::measure_system` (773), `scripts/imaging/pixelized/fixed_light.py::COND_BUDGET_S` 5 s | skip the second `cond()` | 5 s | SOUND |
 | R2 | resource guard | `scripts/misc/numba_interferometer/bakeoff.py::run_cell` (430), `scripts/misc/numba_interferometer/bakeoff.py::ALMA_HIGH_PAIR_LOOP_BUDGET_S` 180 s | skip an extrapolated alma_high kernel | 180 s | SOUND |
@@ -160,16 +175,17 @@ T1, T3, P1 and P2, which are as of the fix phase 1 branch.
 
 | Kind | Rows | SOUND | FRAGILE | UNSAFE-SILENT |
 |---|---|---|---|---|
-| CI test | 11 | 11 | 0 | 0 |
+| CI test | 12 | 12 | 0 | 0 |
 | Production qualification / protocol / estimator | 9 | 9 | 0 | 0 |
-| Campaign gate (incl. P2 promotion) | 13 | 8 | 5 | 0 |
+| Campaign gate (incl. P2 promotion) | 13 | 10 | 3 | 0 |
 | Submit basis | 1 | 1 | 0 | 0 |
 | Resource guard | 2 | 2 | 0 | 0 |
-| **Total** | **36** | **31** | **5** | **0** |
+| **Total** | **37** | **34** | **3** | **0** |
 
-Counts after fix phase 3b, which added the CI-test row T11 and moved C1, C3, C4 and C5 from
-UNSAFE-SILENT to SOUND-with-caveats (counted as SOUND, like T1, P1, P3, P5–P9, C6, C7 and C10).
-After fix phase 6 the totals were 26 / 5 / 4 over 35 rows (T10 added; P3 and P5 FRAGILE →
+Counts after fix phase 9, which added the CI-test row T12 and moved P2 and C11 from FRAGILE to
+SOUND-with-caveats (counted as SOUND, like T1, P1, P3, P5–P9, C1, C3–C7 and C10). After fix phase
+3b the totals were 31 / 5 / 0 over 36 rows (T11 added; C1, C3, C4, C5 UNSAFE-SILENT →
+SOUND-with-caveats). After fix phase 6 the totals were 26 / 5 / 4 over 35 rows (T10 added; P3 and P5 FRAGILE →
 SOUND-with-caveats). After fix phase 5 the
 totals were 23 / 7 / 4 over 34 rows (T9 added; P8 FRAGILE and P9 UNSAFE-SILENT →
 SOUND-with-caveats). After fix phase 4 the totals were 20 / 8 / 5 over 33 rows (T8 added; C6, C7, C10 FRAGILE →
@@ -179,9 +195,9 @@ phase 2 the totals were 15 / 8 / 8 over 31 rows; after fix phase 1, 13 / 9 / 9 (
 P7 FRAGILE); at phase 1, 11 / 10 / 10 (T1 FRAGILE, P1 UNSAFE-SILENT). The production row group is
 P1 and P3–P10, nine rows. P2 is a promotion rule, so it is counted with the campaign gates. No
 row can still label a result from a point estimate or without looking at the measurement (at
-phase 1 there were ten; C1, C3, C4 and C5 left with fix phase 3b). The five FRAGILE rows (P2, C2,
-C8, C9, C11) have an interval or a descriptive label but an unpaired or unadjusted design: phase 9
-(family-wise C6 / C10 / C11) and the C11 / C12 / P2-drift remainders.
+phase 1 there were ten; C1, C3, C4 and C5 left with fix phase 3b). The three FRAGILE rows (C2, C8,
+C9) are descriptive labels or human-picked candidates whose intervals are recorded beside a point
+headline; none qualifies a result by itself, and none is in the phase 9 / 10 plan.
 
 ## Per-row detail
 
@@ -317,6 +333,14 @@ regression passes, or a real lever is reported as NO_LEVER); owner; and the verd
   resolvable effect recorded (`whole_call_speedup_paired_blocks`, `speedup_verdict`,
   `resolvable_effect`); the P1 conjunction is unchanged. Still FRAGILE: the two rows are separate
   passes in time, so drift between them is not cancelled and the interval does not cover it.
+- **After fix phase 9: SOUND-with-caveats.** The block records `between_row_drift`
+  (`family_gates.between_row_drift`): each row's clean-call median of its last half over its first
+  half (drift if beyond ±2.5 %, half the 5 % bar) and the range of every recorded 1-minute load
+  (the run's start / end and, from now on, each row's `load_average_at_row_start` / `_end`; drift
+  if > 2.0). A drifting host makes the promotion INCONCLUSIVE before the timing-candidate /
+  NO_LEVER branches. Caveats: a step change between the rows that leaves both rows internally flat
+  and the load unchanged is still invisible (only an interleaved design cancels it), and a missing
+  load is recorded as unassessed, not as drift.
 
 ### P3 — warm-up to steady state (protocol)
 
@@ -538,6 +562,13 @@ this protocol it can never be `True`. **SOUND-with-caveats** (that limit is the 
   two criteria and bars (saved ≥ 0.05 ms, ratio ≤ 0.85) with the correctness gate as a gate: a red
   gate is NO_GO; an overlapping CI is INCONCLUSIVE with its resolvable effect, not `go: false`
   as a measured negative. Weaknesses 1, 2 (fix phase 4) and 4 remain, so it stays FRAGILE.
+- **After fix phase 9:** weakness 4 is fixed. The phase-2c decision picks the GO routes, so one
+  host's run is one family: every timed (route, lane) × {saved ms, ratio} criterion (16 on a full
+  run) under Holm at family-wise 90 %, read from the same paired round draws as the recorded 90 %
+  intervals (seeds unchanged). A (route, lane) is GO when both its criteria resolve in favour at
+  their Holm levels; a route is GO for the host only when GO in every lane (`per_route`,
+  `go_routes`); `verdict_unadjusted` keeps the per-criterion 90 % reading. Caveat: only one host
+  decides; other hosts are separate families, recorded, not pooled.
 
 ### C7 — pytree phase-2b rule (UNSAFE-SILENT)
 
@@ -588,6 +619,13 @@ no longer assume iid calls. Still FRAGILE: the headline string reads the point c
   bootstraps and `_fastest` passes `n = N_ROUNDS`: below 5 rounds every candidate is in the tie
   set and no `best` is named. Caveat: no family-wise adjustment over the configurations, which
   makes the tie set narrower than an adjusted family would.
+- **C10 after fix phase 9:** the caveat is removed. The claim "the leader is best" rests on the
+  k − 1 leader-vs-candidate comparisons, so they are one family: `holm_tie_set` reads every
+  interval at `1 − α/m` (m = candidates not yet separated), excludes those that no longer overlap
+  the leader's and steps down; a `best` only when all separate. The family-wise tie set always
+  contains the 90 % one (nested draws). Caveat: the leader is chosen by argmax first (a
+  data-chosen reference), and separation is judged by overlap of two vs-control intervals rather
+  than a paired leader-vs-candidate ratio, which is conservative.
 
 ### C11 — interferometer numba bake-off kill gate (FRAGILE)
 
@@ -596,12 +634,31 @@ rounds) at sma or alma. The 30 % margin is large against typical scatter, but th
 interval, the "best" kernel is chosen by argmin among several, and the result is a binary
 tripped / passed.
 
+**After fix phase 9: SOUND-with-caveats.** `kill_gate_family`: every pinned numba kernel × sma /
+alma cell is a member `median(rfft2) / median(kernel)` over the cell's timed rounds (each kernel
+runs once per round, round-robin, so rounds pair the arms; round 0 discarded as before) with a
+paired round-bootstrap interval against > 1.3; the members are one Holm family. "passed" (numba
+survives) is an "any" claim — some member resolves above the margin at its Holm level; "tripped"
+(kill) needs every member resolved below; anything else, or fewer than 5 timed rounds, is
+INCONCLUSIVE. The point rule is kept as `kill_gate_point`. Caveat: the cell's default `--reps 5`
+times 4 rounds, so every bake-off at the default is INCONCLUSIVE by construction until it is run
+with `--reps` ≥ 6 (a human decision; not changed here).
+
 ### C12 — GPU bottleneck map minimum detectable improvement (SOUND)
 
 `_mdi` bootstraps a split-half null A/B of one route against itself. It publishes the effect size
 the run can resolve, which is the right quantity for a human go/no-go. One caveat: the two halves
 are adjacent in time, so slow drift inflates the reported floor, which is the conservative
 direction.
+
+**After fix phase 9 (still SOUND):** the null A/B is each round's first half of calls against its
+last half, bootstrapped over whole rounds with the same indices for both halves
+(`round_split_half_mdi`): the two adjacent slots a real interleaved A/B occupies. Drift across the
+run cancels, so the floor is the one a paired A/B of this size can resolve; it is NaN below 5
+rounds or 2 calls per round (the `--quick` laptop witnesses). The in-process interleaved ratios
+(OFF / ON, gradient / primal, scalar and vmap) use the paired round bootstrap; the fp32 what-if
+ratio compares two separate processes, which share no rounds, so it stays an unpaired iid
+resampling of calls, labelled `resampling: "iid calls, unpaired …"` (reported, never gated).
 
 ### S1, R1, R2 (SOUND)
 
@@ -647,8 +704,9 @@ a ledger.
 Every bootstrap above uses a fixed seed (12345). That makes the CI reproducible. It does not
 make it valid for dependent samples. Since fix phase 4 the point-source A/B cells above resample
 paired whole rounds through `scripts/misc/likelihood_breakdown/round_bootstrap.py::ROUND_BOOTSTRAP_SAMPLES`
-(2000) rather than iid calls; `gpu_bottleneck_map` keeps its iid `_median_ratio` (C12's
-split-half MDI and its other reported ratios use other layouts; a recorded remainder).
+(2000) rather than iid calls; since fix phase 9 `gpu_bottleneck_map` does too for every
+in-process interleaved ratio and its MDI, keeping an iid `_median_ratio` only for the fp32
+what-if ratio across two separate processes (no shared rounds to pair; labelled).
 
 ## Lister hits that are not timing gates
 
@@ -751,6 +809,26 @@ Limits that must be stated beside any interval:
   Either pre-register a single primary comparison or adjust (for example, Bonferroni or Holm on
   the per-comparison confidence), and never name a "best" when the leaders' intervals overlap.
   (Since fix phase 3b, C3 is judged by Holm, `ab_verdict.holm_family_verdict`.)
+
+  **The family-wise policy (fix phase 9; stated once, in `ab_verdict`'s module docstring).** The
+  *family* is the set of comparisons one verdict or one claim rests on — every comparison that, if
+  it came out the other way, would change that verdict or claim; comparisons feeding separate,
+  independently acted-on verdicts are separate families, and one host's run is one family (other
+  hosts are recorded, not pooled). The *procedure* is Holm's step-down at family-wise 90 % on
+  two-sided intervals read from the same bootstrap draws at every level (nested). The *verdict
+  shape* is the claim's: a conjunction reads `holm_family_verdict`'s verdict; an "any" claim is GO
+  if any member resolves GO at its Holm level and NO_GO only if every member resolves NO_GO; a
+  "best" is named only when the leader separates from every other candidate at the Holm-adjusted
+  level (`holm_tie_set`). The unadjusted 90 % reading is always recorded beside, never used.
+  A conjunction of a few criteria inside one target (C4's lanes, C5's two estimators) is an
+  intersection-union test and is not adjusted (conservative for PASS / GO).
+
+  | Rule | Family | Members | Claim shape |
+  |---|---|---|---|
+  | C3 memo policy | one evaluation run | the six targets | conjunction (GO iff all six) |
+  | C6 phase 2c | one host's run | timed routes × lanes × {saved ms, ratio} (16) | per route: GO iff GO in every lane; the decision = the GO routes |
+  | C10 best admissible | one sweep, one candidate list | the leader vs each other candidate (k − 1) | best iff every comparison separates |
+  | C11 kill gate | one bake-off | pinned numba kernels × sma / alma cells (≤ 24) | "passed" iff any member > 1.3×; "tripped" iff all ≤ 1.3× |
 - **Host qualification is not statistics.** No interval turns a laptop row into a reference-host
   row. P6 must stay a separate gate from the measurement verdict.
 
@@ -1036,6 +1114,105 @@ correctness or gross-regression guard.
        and `mge_mass` cells opted in; `wall/rates.py` counting the median's calls;
        `single_jit_repeats` support). Not in this audit's PRs: a v2 qualification (waits on the
        reference-host decision) and measuring `single_jit_repeats` (needs compute).
+   - **Shipped (phase 9 of #362, stacked on PR #410, 2026-10-09), the family-wise policy for C6 /
+     C10 / C11, C12 on paired rounds, P2's between-row drift — "phase 9".** As implemented:
+     - **the policy** (section (a); stated once in `ab_verdict`'s module docstring): family = the
+       comparisons one verdict or claim rests on; Holm step-down at family-wise 90 % on nested
+       intervals from the same bootstrap draws; the claim's own shape (conjunction, "any", "best");
+       the unadjusted 90 % reading recorded beside, never used; below 5 units INCONCLUSIVE.
+     - **one module** (`scripts/misc/likelihood_breakdown/family_gates.py`) on the shared tools
+       (`holm_family_verdict`, `bootstrap_criterion`, the new `ab_verdict.holm_tie_set` /
+       `bootstrap_interval` / `FamilyTieSet`, `round_median_ratio`, and `round_median_saving`, which
+       gains `return_boots`). Bars, margins, repeat counts, seeds and protocols are unchanged.
+       - **C6** `phase2c_family`: one host's timed (route, lane) × {saved ms, ratio} criteria (16)
+         as one Holm family on the cell's own draws (`seed + i`, `seed + 100 + i`, so the 90 %
+         intervals equal the recorded ones); `_phase2c_rule` writes `verdict` (family-wise),
+         `verdict_unadjusted`, `family_member_confidence`, `family_criteria`, and at the top
+         `per_route` (GO only when GO in every lane), `go_routes`, `go_routes_unadjusted`, `family`.
+       - **C10** `sweep_tie_set` → `holm_tie_set`: the leader vs each other candidate, one family;
+         read every interval at `1 − α/m`, exclude the candidates that no longer overlap, step
+         down; `best_admissible` only when all separate. `best_admissible_tie_set` carries the
+         family-wise members, `excluded_at`, `steps` and the `unadjusted` 90 % tie set.
+       - **C11** `kill_gate_family`: pinned numba kernel × sma / alma cell members, paired round
+         bootstrap of rfft2 / kernel over the timed rounds, one Holm family; "passed" if any
+         resolves > 1.3, "tripped" if all resolve ≤ 1.3, else INCONCLUSIVE; `kill_gate_point`
+         records the old rule. `kill_gate` becomes `passed` / `tripped` / `INCONCLUSIVE`.
+       - **C12** `round_split_half_mdi`: each round's first `n_calls // 2` calls vs its last
+         `n_calls // 2`, paired round bootstrap (`mdi_same_program` is its `mdi`;
+         `mdi_same_program_detail` the record). `_median_ratio(..., n_rounds=)` is the paired round
+         bootstrap for OFF / ON and the scalar / vmap gradient-over-primal ratios; the fp32
+         what-if ratio (two processes) stays unpaired iid, labelled.
+       - **P2** `between_row_drift`: within-row drift (last-half / first-half clean median − 1,
+         tolerance ±0.025) and the 1-minute load range (run start / end, plus the new per-row
+         `load_average_at_row_start` / `_end`; tolerance 2.0); `drifted` → promotion INCONCLUSIVE
+         before the candidate / NO_LEVER branches; the record is `between_row_drift`.
+     - **witnesses** (`test_family_gates.py`, T12; fixed inputs and seeds): a leader at 1.10 and five
+       rivals at 1.02 (s.e. 0.02, exact normal intervals) — unadjusted names the leader, Holm at 98 %
+       keeps all six; a clear leader separates; a step-down (far rival out at 95 %, near one at 90 %);
+       non-finite candidates never separate; family ⊇ unadjusted; n = 4 keeps every candidate. C6 on
+       synthetic rounds (two routes at a true 0.83 ratio, ±3 % round noise): unadjusted names `fwd`
+       GO, family-wise none (8 members); 0.60 → both GO; 1.00 → NO_GO; 4 rounds → INCONCLUSIVE. C11 on
+       24 kernels at a true 1.30× over 7 timed rounds: point and unadjusted "passed", family-wise
+       INCONCLUSIVE; 2.0× → passed; 0.8× → tripped; 4 timed rounds → INCONCLUSIVE by construction.
+       C12 with a 10 % linear drift across 20 × 20 calls: old iid split-half MDI > 4 %, paired
+       < 1 %; NaN below 5 rounds or 2 calls. P2: stationary rows do not drift; an 8 % within-row
+       trend, a 1.0 → 4.5 load change drift (and through the cell's own block a timing candidate
+       and a NO_LEVER both become INCONCLUSIVE, T3); missing records are unassessed. Every cell
+       imports the shared function objects; the bake-off holds no point comparison.
+     - **re-judged committed rows (facts; no JSON rewritten, no compute run, no decision
+       reversed):**
+
+       | Rule | Committed rows | Before (phase 4 / point) | Family-wise (phase 9) | Changed |
+       |---|---|---|---|---|
+       | C6 EPYC (`hpc_ral_gpunode_cpu_fp64`, decides) | 8 lane × route rows, 16 criteria | GO routes `fwd`, `fwd_analytic`, `rev_analytic` | the same: 15 criteria resolve at 99.375 %; plain `rev_analytic`'s ratio straddles 0.85 there (upper 0.855) and resolves at the last step (90 %, [0.821, 0.847]) | no |
+       | C6 A100 | 8 rows | GO `fwd`, `fwd_analytic` | the same (all 16 at the first level) | no |
+       | C6 laptop | 8 rows | solved `rev_analytic` INCONCLUSIVE (since phase 4), plain `rev_analytic` NO_GO | both INCONCLUSIVE (plain ratio [0.850, 0.913] at 95 %) | **yes** (plain `rev_analytic`, non-deciding) |
+       | C10 RAL CPU (IP-4a) | precision-equivalent / any precision | tie sets of 5 / 7 | 7 / 9: adds `e3_s0.2`, `e4_s0.3` | **yes** (no best named before or after) |
+       | C10 MCS RAL CPU, MCS laptop | | {mcs18, mcs20} | {mcs18, mcs20, mcs24} | **yes** (no best before or after) |
+       | C10 other 5 sweeps | | as phase 4 (laptop 3 rounds: every candidate; MCS A100 `mcs20` and step-0 laptop `step0_components` resolved; step-0 RAL / EPYC / A100 tie sets) | identical | no |
+       | C11 kill gate | `bakeoff_v2026.8.17.1.json` (4 cells), `bakeoff_machine_drift_sma_v2026.8.17.1.json` (2 cells), 4 timed rounds each | **passed** (point: `direct_conv` 5.93× / 2.83× / 1.54× / 0.99×) | **INCONCLUSIVE** by construction (4 < 5 rounds); context, not a verdict: at a 4-round minimum the family-wise gate reads passed (sma Delaunay `direct_conv` [5.46, 6.11]) | **yes** |
+       | C12 MDI | A100 fp64 (job 366916) / fp32 what-if | 5.45 % / 6.52 % | 0.94 % ([0.9906, 1.0048]) / 1.00 % | **yes** |
+       | C12 MDI | laptop `--quick` fp64 / fp32 (3 rounds × 3 calls) | 10.6 % / 5.3 % | NaN (3 < 5 rounds) | **yes** (not quotable rows) |
+       | C12 OFF / ON | A100 fp64 / fp32; laptop fp64 / fp32 | [1.197, 1.211] / [1.355, 1.376]; [0.955, 1.067] / [1.002, 1.100] | [1.194, 1.211] / [1.352, 1.378]; [0.995, 1.056] / [1.020, 1.073] | widths only |
+       | C12 gradient / primal | A100 fp64, laptop | iid intervals | not re-judgeable: the grad legs store stats, not per-call samples | — |
+       | P2 promotion | `..._s4b_warm_t1` (the one b / d_perm pair) | NO_LEVER | NO_LEVER; not drifted (within-row −1.08 % / +1.00 %, load 1.0 → 1.0) | no |
+
+       **Decisions whose support changes (flagged; nothing reversed; dated notes in the ledgers):**
+       (1) **the numba-interferometer kill gate** (`numba_interferometer_verdict.md` section 5,
+       "Passed"; the epic continued to the in-situ step and reinstated a numba path on
+       `direct_conv`) is INCONCLUSIVE by the 5-round minimum; the effect is large and the in-situ
+       rows corroborate it, so whether a 4-round family may decide, or `--reps` ≥ 6 is re-run, is a
+       human decision. (2) **The GPU go / no-go memo's "below MDI"** (`point_source_gpu_breakdown_2026_09.md`:
+       static lattice ≤ 2 %, deflections ≤ 2.9 % / 4.4 % "below MDI even at a 100 % saving") read an
+       MDI inflated by drift across the run; on paired rounds the MDI is 0.94 %, so those ceilings
+       are small but resolvable by an interleaved A/B of that size; the memo's ranking of levers
+       (launch / fusion, sort, implicit Jacobian first) is unchanged. (3) **IP-4a's "2.37×"** was
+       already the point leader of a tie set (phase 3); the tie set grows to seven. The phase-2c
+       decision (`fwd` GO on the deciding row) and the s4b NO_LEVER stand.
+     - **decisions taken (flagged in the PR):** (1) C6's family is one host's 16 criteria (routes
+       × lanes × both criteria) and a route is GO only in every lane, the shape the 2026-09-27
+       decision was taken in; (2) Holm on both directions everywhere (conservative for a
+       conjunction GO, as in 3b); (3) C10 separation stays "intervals vs control do not overlap",
+       now at Holm levels, rather than a new paired leader-vs-candidate ratio (conservative; the
+       tie set can only grow); (4) C11 keeps the 5-round minimum, so the default `--reps 5` is
+       INCONCLUSIVE by construction (the reversible alternative: `--reps 6` or a 4-round rule);
+       (5) P2's tolerances (±2.5 % within-row, 2.0 load) are new, stated constants, and a missing
+       load is unassessed rather than drift; (6) C12's paired MDI uses within-round halves (the
+       slots a real A/B occupies), and the cross-process fp32 ratio stays iid.
+     - **contract:** no `profiling-summary@2` field, metric or meaning change; `build_catalogue.py`
+       is not edited (its catalogue is re-rendered for the source hash only). None of the five
+       cells produces a dashboard point.
+     - **limits:** the leader in C10 is chosen by argmax before the family is formed; Holm over 16 –
+       24 members reads 99.4–99.6 % percentiles of 2000 draws (~6–8 draws in a tail); P2's
+       within-row check misses a step change exactly between the rows when both rows are flat and
+       the load is unchanged.
+     - **not changed (remainders):** phase 10 — headline completion (the runtime README on the
+       median headline; the breakdown, datacube and `mge_mass` cells opted in; `wall/rates.py`
+       counting the median's calls; `single_jit_repeats` support). Not in this audit's PRs: a v2
+       qualification (waits on the setup-baseline / reference-host decision) and the Brain
+       `COMPILE_DRIFT_RATIO` rule (draft `draft/bug/pyautobrain/profiling_compile_drift_point_vs_point.md`
+       in Mind; Brain is not edited here). The FRAGILE rows C2, C8 and C9 are descriptive or
+       human-picked and are not planned.
 4. **Bootstrap structure (C6, C8, C9 and the reported CIs).**
    - **Change:** resample whole rounds, paired across routes, instead of iid calls. Record the
      number of rounds as the effective n.

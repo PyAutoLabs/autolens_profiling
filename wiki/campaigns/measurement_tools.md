@@ -2,14 +2,14 @@
 
 **Status:** open
 **Question:** Do this repo's timing tests and profiling gates treat measurement noise correctly, so that an uncertain measurement never qualifies a result silently?
-**Pre-registered rule:** PASS only when the interval clears the budget, FAIL only when it clears the other way, otherwise INCONCLUSIVE (never silent, never a measured pass); applied so far to the ABBA overhead (T1, P1), the dashboard drift (P7) and the A/B go / lever rules C6, C7, P2 plus C10's tie sets, on paired whole-round bootstrap intervals (fix phase 4); the runtime headline is the steady median where recorded and a timeout marker is INCONCLUSIVE until it qualifies (fix phase 5); a row whose warm-up never settled is INCONCLUSIVE for every timing verdict, and the production witness judges PASS / FAIL only on a reference host class (fix phase 6); the memo-policy, scaling and log-det gates (C1, C3, C4, C5) read paired round-bootstrap intervals, and C3's six targets are one Holm family at family-wise 90 % (fix phase 3b)
-**Verdict:** phase 1 (audit): 31 timing assertions/gates — 11 SOUND, 10 FRAGILE, 10 UNSAFE-SILENT; after fix phases 1–2 (#404, #405): 15 / 8 / 8 (T1, P1, P6, P7 SOUND-with-caveats); after fix phase 3 (#406): 32 rows, 16 / 11 / 5 (C7, C10, P2 UNSAFE-SILENT → FRAGILE; new witness row T7); after fix phase 4 (#407): 33 rows, 20 / 8 / 5 (C6, C7, C10 SOUND-with-caveats; new witness row T8); after fix phase 5 (#408): 34 rows, 23 / 7 / 4 (P8, P9 SOUND-with-caveats; new witness row T9); after fix phase 6 (#409): 35 rows, 26 / 5 / 4 (P3, P5 SOUND-with-caveats; new witness row T10); after fix phase 3b (#410): 36 rows, 31 / 5 / 0 (C1, C3, C4, C5 SOUND-with-caveats; new witness row T11) — no row is UNSAFE-SILENT
+**Pre-registered rule:** PASS only when the interval clears the budget, FAIL only when it clears the other way, otherwise INCONCLUSIVE (never silent, never a measured pass); applied so far to the ABBA overhead (T1, P1), the dashboard drift (P7) and the A/B go / lever rules C6, C7, P2 plus C10's tie sets, on paired whole-round bootstrap intervals (fix phase 4); the runtime headline is the steady median where recorded and a timeout marker is INCONCLUSIVE until it qualifies (fix phase 5); a row whose warm-up never settled is INCONCLUSIVE for every timing verdict, and the production witness judges PASS / FAIL only on a reference host class (fix phase 6); the memo-policy, scaling and log-det gates (C1, C3, C4, C5) read paired round-bootstrap intervals, and C3's six targets are one Holm family at family-wise 90 % (fix phase 3b); one family-wise policy (Holm at family-wise 90 %, family = the comparisons one verdict or claim rests on) judges C6, C10's tie sets and C11's kill gate, C12's MDI is a paired round bootstrap, and P2 is INCONCLUSIVE when its two rows drift (fix phase 9)
+**Verdict:** phase 1 (audit): 31 timing assertions/gates — 11 SOUND, 10 FRAGILE, 10 UNSAFE-SILENT; after fix phases 1–2 (#404, #405): 15 / 8 / 8 (T1, P1, P6, P7 SOUND-with-caveats); after fix phase 3 (#406): 32 rows, 16 / 11 / 5 (C7, C10, P2 UNSAFE-SILENT → FRAGILE; new witness row T7); after fix phase 4 (#407): 33 rows, 20 / 8 / 5 (C6, C7, C10 SOUND-with-caveats; new witness row T8); after fix phase 5 (#408): 34 rows, 23 / 7 / 4 (P8, P9 SOUND-with-caveats; new witness row T9); after fix phase 6 (#409): 35 rows, 26 / 5 / 4 (P3, P5 SOUND-with-caveats; new witness row T10); after fix phase 3b (#410): 36 rows, 31 / 5 / 0 (C1, C3, C4, C5 SOUND-with-caveats; new witness row T11) — no row is UNSAFE-SILENT; after fix phase 9 (stacked on #410): 37 rows, 34 / 3 / 0 (P2, C11 SOUND-with-caveats; new witness row T12)
 **Headline:** the #361 CI overhead guard returns INCONCLUSIVE for any true overhead from ~0.8 % to ~5.4 % at CI scatter (3 blocks, s.d. 0.014); GitHub runner, Actions run 36985476995 (no RAL job)
 **Library PRs:** none
-**Profiling PRs:** #361 (t-bound CI guard, merged); #402 (phase 1 audit, merged); #404 (fix phase 1, merged); #405 (fix phase 2, merged); #406 (fix phase 3, merged); #407 (fix phase 4, merged); #408 (fix phase 5, merged); #409 (fix phase 6, merged); #410 (fix phase 3b, open)
+**Profiling PRs:** #361 (t-bound CI guard, merged); #402 (phase 1 audit, merged); #404 (fix phase 1, merged); #405 (fix phase 2, merged); #406 (fix phase 3, merged); #407 (fix phase 4, merged); #408 (fix phase 5, merged); #409 (fix phase 6, merged); #410 (fix phase 3b, open); fix phase 9 (open, stacked on #410)
 **Ledger:** [timing_noise_audit_2026_10.md](../../results/notes/timing_noise_audit_2026_10.md)
-**Mind contract:** Pulse campaign `measurement-tools`, task `tasks/timing_noise_audit.md`; Mind `active/timing_noise_audit_phase8_phase3b_intervals.md`; issue #362
-**Next:** phase 9 — the family-wise policy (`ab_verdict.holm_family_verdict`) applied to C6, C10 and C11 (C11's ratio > 1.3 given an interval), C12 on the round bootstrap where its layout allows, P2's between-row drift; then phase 10 — headline completion (runtime README on the median, breakdown / datacube / mge_mass cells, `wall/rates.py`, `single_jit_repeats` support). Open human questions from phase 3b: C1's 5-round minimum on 4 recorded repeats; C5's one-block `jit_profile` estimator
+**Mind contract:** Pulse campaign `measurement-tools`, task `tasks/timing_noise_audit.md`; Mind `active/timing_noise_audit_phase8_phase3b_intervals.md`, `active/timing_noise_audit_phase9_familywise_policy.md`; issue #362
+**Next:** phase 10 — headline completion (runtime README on the median, breakdown / datacube / mge_mass cells, `wall/rates.py`, `single_jit_repeats` support); outside this audit's PRs, a v2 qualification (waits on the setup-baseline / reference-host decision) and the Brain `COMPILE_DRIFT_RATIO` draft (Mind `draft/bug/pyautobrain/profiling_compile_drift_point_vs_point.md`). Open human questions: C1's 5-round minimum on 4 recorded repeats and C5's one-block `jit_profile` estimator (phase 3b); the numba-interferometer kill gate's 4 timed rounds (`--reps` ≥ 6 or a 4-round rule) and the GPU memo's "below MDI" readings at a 0.94 % paired MDI (phase 9)
 
 ## Why this campaign
 
@@ -32,6 +32,7 @@ inconclusive never qualifies a result.
 | 6 — fix phase 5 (P8 + P9) | 2026-10-09 | Does the runtime headline survive a post-compile transient, and can one timeout on a noisy host still label a cell GPU-only? | median beside the block mean, headline where present, drift on like estimators only; GPU-only only for a marker that passes `qualify`, else inconclusive and re-measured | witness: block mean 2.40× vs median 1.00× on one injected transient; 0 committed rows carry a median (no badge changed); 4 / 4 committed markers re-judge inconclusive; the one rendered "GPU-only" cell (laptop OOM) → "did not finish (inconclusive)" | none | #408 |
 | 7 — fix phase 6 (P3 + P5) | 2026-10-09 | Does any timing verdict read a row whose warm-up never settled, and does the production witness judge a laptop row against an 8-core RAL range? | unsettled warm-up → INCONCLUSIVE for P1, P2 and dashboard qualification (FAIL_GROSS kept); witness PASS / FAIL only on `is_reference_host_class`, else INCONCLUSIVE "off reference host class (<class>)"; band unchanged | witness: flat / recorded-flat / step settle, recorded queueing ramp / geometric / 5 %-per-call ramps never settle and turn a PASS, a FAIL, a GO and a NO_LEVER INCONCLUSIVE; 0 of 28 committed warm-ups unsettled (no verdict moved); 8 / 8 committed witness verdicts (4 PASS, 4 FAIL, all laptop) → INCONCLUSIVE | none | #409 |
 | 8 — fix phase 3b (C1, C3, C4, C5) | 2026-10-09 | Do the memo-policy, scaling and log-det gates read an interval, and is C3's six-target conjunction judged family-wise? | each gate's paired round-bootstrap 90 % interval on its own pairing unit (≥ 5 rounds); GO / PASS / NO_LEVER / FAIL only when resolved, else INCONCLUSIVE; C3 as one Holm family; C5 needs both estimators resolved | memo-policy NO_LEVER, scaling PASS ×5 and A100 "no lever" ×6 all resolve unchanged; 128 / 128 committed C1 classifications → INCONCLUSIVE (4 < 5 repeats; a df = 3 t would resolve all as published); 2 laptop log-det rows → INCONCLUSIVE | none | #410 |
+| 9 — family-wise policy (C6, C10, C11), C12, P2 drift | 2026-10-09 | Are the multi-comparison gates judged family-wise, does C11's kill gate read an interval, is C12's MDI paired, and does P2 see drift between its rows? | Holm at family-wise 90 % over the comparisons one verdict or claim rests on (conjunction / "any" / "best" shapes); C11 rfft2 / kernel > 1.3 on paired round intervals; C12 MDI from within-round halves; P2 INCONCLUSIVE on ±2.5 % within-row drift or a 2.0 load change | EPYC phase-2c GO routes unchanged; one laptop C6 NO_GO → INCONCLUSIVE; IP-4a tie set 5 → 7, MCS {mcs18, mcs20} + mcs24; both committed kill gates "passed" → INCONCLUSIVE by construction (4 < 5 rounds); A100 MDI 5.45 % → 0.94 %; s4b NO_LEVER not drifted | none | stacked on #410 |
 
 ## What shipped and where it is
 
@@ -45,16 +46,22 @@ inconclusive never qualifies a result.
 | #408 | `timing.headline_steady_median` in the 11 block-mean runtime cells (median beside the legacy key); dashboard headline = median where recorded, estimator labelled, drift like-with-like (`estimator-mismatch` → `insufficient`); INCONCLUSIVE timeout markers with host / loads, `build_dashboard.marker_verdict` (GPU-only only when `qualify` passes), `--skip-existing` re-measures unqualified markers; P8, P9 SOUND-with-caveats | 2026-10-09 | n/a (profiling repo) |
 | #409 | shared `warmup_gate.warmup_unsettled_reason`: an unsettled warm-up makes `abba_overhead_verdict` (P1), the promotion decision (P2) and `build_dashboard.qualify` INCONCLUSIVE / unqualified; `witness_verdict(..., host_class)` PASS / FAIL only on a reference host class (P5); P3, P5 SOUND-with-caveats | 2026-10-09 | n/a (profiling repo) |
 | #410 | `interval_gates` (C1 `matched_classification` / `matched_decision_counts`, C3 `memo_policy_family`, C4 `breakdown_reconciliation`, C5 `logdet_lever_verdict`) on the shared round bootstrap and verdict; `ab_verdict.holm_levels` / `holm_family_verdict` / `bootstrap_criterion` (the family-wise policy) and `conjoin_verdicts`; C1, C3, C4, C5 SOUND-with-caveats | pending | n/a (profiling repo) |
+| phase 9 (stacked on #410) | the family-wise policy stated in `ab_verdict` and applied through `family_gates` (`phase2c_family` C6, `sweep_tie_set` / `ab_verdict.holm_tie_set` C10, `kill_gate_family` C11), `round_split_half_mdi` (C12, plus paired round intervals for the cell's in-process ratios) and `between_row_drift` (P2); P2, C11 SOUND-with-caveats | pending | n/a (profiling repo) |
 
 ## Open / parked / drafts
 
 - Fix phases 1–6 and 3b in the [ledger](../../results/notes/timing_noise_audit_2026_10.md), each
   one PR with a deterministic synthetic witness. The family-wise policy exists since 3b
-  (`ab_verdict.holm_family_verdict`, used by C3); phase 9 applies it to C6 / C10 / C11.
+  (`ab_verdict.holm_family_verdict`, used by C3); phase 9 states it once and applies it to C6 /
+  C10 / C11.
 - Human questions from 3b (flagged in #410): keep C1's 5-round minimum on its 4 recorded repeats
   (every classification INCONCLUSIVE) or allow a 4-repeat paired t / re-run with ≥ 5 repeats; and
   C5's one-block `jit_profile` estimator, which keeps a lever from ever resolving `True` under the
   pre-registered "both estimators" rule.
+- Human questions from phase 9 (flagged in its PR): the numba-interferometer kill gate ("passed")
+  is INCONCLUSIVE by construction on its 4 timed rounds — re-run with `--reps` ≥ 6 or allow a
+  4-round rule; the GPU go / no-go memo's "below MDI" readings (static lattice, deflections) lose
+  their support at the paired MDI of 0.94 %.
 - Mind draft `draft/bug/autolens_profiling/call_accounting_ci_timing_threshold.md` (raise the
   threshold) is superseded by fix phase 1: the audit rejects raising the budget.
 
@@ -140,3 +147,14 @@ classifications are INCONCLUSIVE (4 repeats < 5), so the memo-policy note's fals
 counts and the "residual is not a reliable proxy" reading lose interval support (a dated note sits
 there; no human decision rests on them); 2 laptop log-det rows become INCONCLUSIVE. No row is
 UNSAFE-SILENT. Next: phase 9.
+
+### 2026-10-09 — fix phase 9 (family-wise policy, C12, P2 drift)
+
+Stated one family-wise policy in `ab_verdict` (family = the comparisons one verdict or claim rests
+on; Holm at family-wise 90 %; conjunction / "any" / "best" shapes; unadjusted reading recorded) and
+applied it through the new `family_gates` module to C6 (one host's 16 criteria), C10
+(`holm_tie_set`, the leader vs every other candidate) and C11 (the kill gate on paired round
+intervals, kernels × cells). C12's MDI moved to within-round halves on the paired round bootstrap;
+P2 records between-row drift. Re-judged as facts: the phase-2c decision and the s4b NO_LEVER stand;
+the IP-4a tie set grows to seven; the numba-interferometer kill gate and the GPU memo's "below MDI"
+readings lose their interval support (dated notes in both ledgers). Next: phase 10.
