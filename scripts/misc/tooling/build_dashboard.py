@@ -288,20 +288,31 @@ def _provenance(payload: dict) -> dict:
 def warmup_unsettled(payload: dict) -> str | None:
     """Why a payload's recorded warm-up never settled, or None (timing-noise audit P3).
 
-    Only a payload carrying a warm-up *record* (a dict, as ``fixed_light_numba.py`` writes under
-    ``rows[*].warmup``) is judged; a scalar warm-up time or no field at all is not a record. The
-    rule is the shared ``likelihood_breakdown.warmup_gate``, the one the overhead verdict and the
-    promotion block apply.
+    A warm-up *record* is a dict: either ``payload["warmup"]`` or any ``payload["rows"][*]["warmup"]``
+    (where ``fixed_light_numba.py`` writes one per row). A scalar warm-up time or no field at all is
+    not a record. The first unsettled record found decides; the rule is the shared
+    ``likelihood_breakdown.warmup_gate``, the one the overhead verdict and the promotion block apply.
+    No payload the dashboard scans today carries a record (fixed-light payloads produce no point).
     """
-    warmup = payload.get("warmup")
-    if not isinstance(warmup, dict):
+    records = [payload.get("warmup")]
+    rows = payload.get("rows")
+    if isinstance(rows, dict):
+        rows = list(rows.values())
+    if isinstance(rows, list):
+        records += [row.get("warmup") for row in rows if isinstance(row, dict)]
+    records = [r for r in records if isinstance(r, dict)]
+    if not records:
         return None
     misc = str(Path(__file__).resolve().parents[1])
     if misc not in sys.path:
         sys.path.insert(0, misc)
     from likelihood_breakdown.warmup_gate import warmup_unsettled_reason
 
-    return warmup_unsettled_reason(warmup)
+    for record in records:
+        reason = warmup_unsettled_reason(record)
+        if reason is not None:
+            return reason
+    return None
 
 
 def _load(path: Path) -> dict | None:

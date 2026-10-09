@@ -174,3 +174,12 @@ def test_a_point_whose_warmup_never_settled_is_unqualified(warmup, qualified):
         assert reason.startswith(WARMUP_UNSETTLED)
     else:
         assert "warmup_unsettled" not in point
+
+
+def test_a_per_row_warmup_record_is_read_too():
+    """``fixed_light_numba.py`` writes its records under ``rows[*].warmup``."""
+    payload = _payload(None)
+    payload["rows"] = {"b": {"warmup": dict(_UNSETTLED, steady=True)}, "d": {"warmup": _UNSETTLED}}
+    assert bd.warmup_unsettled(payload).startswith(WARMUP_UNSETTLED)
+    payload["rows"]["d"]["warmup"] = dict(_UNSETTLED, steady=True)
+    assert bd.warmup_unsettled(payload) is None

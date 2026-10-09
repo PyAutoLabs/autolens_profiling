@@ -167,7 +167,7 @@ P7 FRAGILE); at phase 1, 11 / 10 / 10 (T1 FRAGILE, P1 UNSAFE-SILENT). The produc
 P1 and P3–P10, nine rows. P2 is a promotion rule, so it is counted with the campaign gates. Four
 rows can still label a result from a point estimate or without looking at the measurement: C1,
 C3, C4 and C5, all phase 3b (at phase 1 there were ten; P9 left with fix phase 5). None of the
-fourteen CI-test, submit or resource-guard rows is UNSAFE-SILENT.
+thirteen CI-test, submit or resource-guard rows is UNSAFE-SILENT.
 
 ## Per-row detail
 
@@ -1025,8 +1025,8 @@ correctness or gross-regression guard.
        `warmup_unsettled_rows` and INCONCLUSIVE whatever the speedup verdict, so neither a
        `timing_candidate` nor a measured NO_LEVER comes from an unsettled arm.
        `build_dashboard.qualify` leaves a point unqualified with the reason when its payload
-       carries an unsettled warm-up record (no scanned payload carries one today: the
-       fixed-light rows produce no dashboard point). Not consumers: P4, the cached-site counts
+       carries an unsettled warm-up record, top-level or under `rows[*]` (no scanned payload carries
+       one today: the fixed-light rows produce no dashboard point). Not consumers: P4, the cached-site counts
        and the dispatch asserts (coverage / correctness, not timing verdicts), C1–C5 and P10
        (their own warm-up protocols, no `steady` flag).
      - **P3, the rule:** kept at 3 vs 3 / 10 % / 12 calls; its limits are stated under P3 and
