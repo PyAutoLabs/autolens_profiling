@@ -1017,6 +1017,13 @@ correctness or gross-regression guard.
      - **contract:** no `profiling-summary@2` field, metric or meaning change; `build_catalogue.py`
        is not edited (its catalogue is re-rendered for the source hash only). None of the three
        cells produces a dashboard point.
+     - **reader notes (review, low):** `clears_threshold` may now be the string
+       `"INCONCLUSIVE"`, which is truthy — compare with `is True` (no reader in this repo or
+       PyAutoPulse keys on it). C1's band edges are now inclusive (`≤ 0.97` / `≥ 1.03`, the
+       `ab_rule_verdict` convention) where the old point flags were strict; this matters only at
+       the exact edge. `FamilyVerdict.steps` / `member_confidence` record the step-down even when
+       `n < min_n` (the verdict is then INCONCLUSIVE regardless), and `adjusted.confidence`
+       records the family-wise 90 %, not each target's Holm level (that is `member_confidence`).
      - **limits:** a percentile bootstrap over 6–7 rounds is coarse (462 / 1716 distinct
        resamples), and Holm's 98.33 % level reads near their extremes; the four C4 lanes of a
        cell and C5's two estimators are conjunctions without an adjustment (conservative for
