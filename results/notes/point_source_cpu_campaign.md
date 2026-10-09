@@ -1763,6 +1763,15 @@ The fiducial log L `7.743201200876812` (CPU, jit) is bit-identical across phases
 | Cluster dPIE/NFW deflections | **Moved out** to `cluster-pointsolver-speed` (human, 2026-09-26) | [Cluster PointSolver](../../wiki/campaigns/cluster_pointsolver.md) |
 | Unmeasured controls | vmap 1/4/16 measured in IP-4b/4c. Still unmeasured: the post-4b `constant_folding` A/B, repeated (median) compile timings, and cluster direct deflections | Pulse task |
 
+> **Re-judgement, 2026-10-09 (timing-noise audit #362, fix phases 3 and 9; facts, nothing
+> rewritten).** The sweep's "best admissible" names a configuration only when its speed-up
+> interval separates from every other candidate's. On the RAL CPU sweep `e2.5_s0.4` (the
+> "2.37×" above) is the point leader of a tie set — five configurations at 90 % (fix phase 3),
+> seven at the family-wise level of fix phase 9 ({e2.5_s0.4, e2.5_s0.2, e3_s0.4, e3_s0.3, e4_s0.4,
+> e3_s0.2, e4_s0.3}) — so its "best" is not a measured speed difference among them; the MCS sweeps
+> tie {mcs18, mcs20, mcs24}. The human decisions above did not rest on the name (extent is a
+> per-dataset setting; MCS 20 was chosen for correctness headroom).
+
 ### GPU regression check for every shared library change
 
 | Change | A100 row | Result |

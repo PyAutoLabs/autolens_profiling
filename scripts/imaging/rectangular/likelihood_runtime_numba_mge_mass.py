@@ -69,6 +69,7 @@ import autofit as af  # noqa: E402
 import autolens as al  # noqa: E402
 import numpy as np  # noqa: E402
 from autogalaxy.profiles.mass.abstract import deflections_memo as _memo  # noqa: E402
+from likelihood_breakdown.timing import headline_steady_median  # noqa: E402
 from simulators.imaging import INSTRUMENTS  # noqa: E402
 
 from _profile_cli import (  # noqa: E402
@@ -90,6 +91,17 @@ TOTAL_GAUSSIANS = 30
 SIGMA_MIN = 0.01
 MESH_PIXELS_YX = 28
 N_REPEATS = 5
+
+# Timing-noise audit P8 (#362, phase 10). This cell's ``full_pipeline_single_jit`` has always
+# been a MEDIAN of N_REPEATS individually timed calls after one untimed warm call (memo on), not
+# the 10-call jit block mean the runtime cells write under that key; it keeps that meaning for
+# continuity with the committed row. The shared headline steady median (>= 5 warm calls, median
+# of 20-200 individually timed calls) is written beside it as ``full_pipeline_single_jit_median*``,
+# and this string is its protocol block's ``full_pipeline_single_jit_is``.
+SINGLE_JIT_KEY_IS = (
+    f"median of {N_REPEATS} individually timed calls after 1 untimed warm call, memo on "
+    "(deflections_memo_on_s; numba, no jit compile)"
+)
 
 # The log-likelihood this model produces, per (rect mesh, instrument). Filled from the
 # first run of a new key (the run prints the value and says so); checked at rtol 1e-6
@@ -251,6 +263,15 @@ def _measure(memo_enabled: bool) -> tuple[float, float, list]:
 off_median_s, off_total_s, off_likelihoods = _measure(memo_enabled=False)
 on_median_s, on_total_s, on_likelihoods = _measure(memo_enabled=True)
 
+# The shared headline steady median beside the legacy key (P8), still memo on (``_measure`` left
+# AUTOGALAXY_DEFLECTIONS_MEMO=1 and a warm memo). No call above 2 s gets one.
+full_pipeline_median = headline_steady_median(
+    lambda inst: analysis.log_likelihood_function(instance=inst),
+    instance,
+    block_mean_s=on_median_s,
+    block_mean_is=SINGLE_JIT_KEY_IS,
+)
+
 log_likelihood = on_likelihoods[-1]
 max_relative = float(
     max(abs(on - off) / max(abs(off), 1e-300) for on, off in zip(on_likelihoods, off_likelihoods))
@@ -306,6 +327,7 @@ summary = {
         "omp_num_threads": os.environ.get("OMP_NUM_THREADS", None),
     },
     "full_pipeline_single_jit": on_median_s,
+    **full_pipeline_median,
     "deflections_memo_off_s": off_median_s,
     "deflections_memo_on_s": on_median_s,
     "deflections_memo_speedup": off_median_s / on_median_s,

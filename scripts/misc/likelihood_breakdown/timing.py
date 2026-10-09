@@ -240,6 +240,11 @@ SINGLE_JIT_BLOCK_MEAN_IS = (
 )
 
 
+def single_jit_block_is(n_repeats: int) -> str:
+    """:data:`SINGLE_JIT_BLOCK_MEAN_IS` for a cell whose legacy block is *n_repeats* calls."""
+    return SINGLE_JIT_BLOCK_MEAN_IS.replace("10-call", f"{int(n_repeats)}-call")
+
+
 def headline_median_n_timed(block_mean_s: float | None) -> int:
     """Timed calls for the headline median, sized from the block mean (see the budget above)."""
     if block_mean_s is None or not block_mean_s > 0 or block_mean_s != block_mean_s:
@@ -248,13 +253,21 @@ def headline_median_n_timed(block_mean_s: float | None) -> int:
     return max(HEADLINE_MEDIAN_MIN_TIMED, min(HEADLINE_MEDIAN_MAX_TIMED, n))
 
 
-def single_jit_median_fields(steady: Mapping, prefix: str = "full_pipeline_single_jit") -> dict:
+def single_jit_median_fields(
+    steady: Mapping,
+    prefix: str = "full_pipeline_single_jit",
+    block_mean_is: str = SINGLE_JIT_BLOCK_MEAN_IS,
+) -> dict:
     """The result-JSON fields of a steady median written beside the legacy block mean.
 
     ``<prefix>_median`` (seconds) is the key ``catalogue_adapters.DIRECT`` already maps to the
-    ``runtime`` / ``single_jit_median`` metric. ``<prefix>_median_ms`` / ``_p10_ms`` / ``_p90_ms``
-    / ``_median_protocol`` are the keys the source-plane solved cell has written since #371 and
-    that ``build_dashboard`` reads. ``<prefix>`` itself is never written here.
+    ``runtime`` / ``single_jit_median`` metric (``full_pipeline_cube_single_jit_median`` to
+    ``cube_single_jit_median``). ``<prefix>_median_ms`` / ``_p10_ms`` / ``_p90_ms`` /
+    ``_median_protocol`` are the keys the source-plane solved cell has written since #371 and
+    that ``build_dashboard`` reads. ``<prefix>`` itself is never written here; *block_mean_is*
+    says what it is in the writing cell (``<prefix>_is`` in the protocol block), since a cell
+    whose legacy key is not the 10-call block (the datacube's 3-call cube block, the
+    ``mge_mass`` cells' medians) must say so.
     """
     return {
         f"{prefix}_median": float(steady["median_s"]),
@@ -265,7 +278,7 @@ def single_jit_median_fields(steady: Mapping, prefix: str = "full_pipeline_singl
             "n_warm": int(steady["n_warm"]),
             "n_timed": int(steady["n_timed"]),
             "statistic": steady["statistic"],
-            f"{prefix}_is": SINGLE_JIT_BLOCK_MEAN_IS,
+            f"{prefix}_is": block_mean_is,
             "issue": "autolens_profiling#371; timing-noise audit P8 (#362)",
         },
     }
@@ -278,6 +291,8 @@ def headline_steady_median(
     n_warm: int = MIN_STEADY_WARM,
     n_timed: int | None = None,
     clock: Callable[[], float] = time.perf_counter,
+    prefix: str = "full_pipeline_single_jit",
+    block_mean_is: str = SINGLE_JIT_BLOCK_MEAN_IS,
 ) -> dict:
     """Steady median of a cell's compiled ``full_pipeline``, as result-JSON fields.
 
@@ -286,7 +301,8 @@ def headline_steady_median(
     ``Timer`` section, so the legacy statistic is untouched. Returns
     :func:`single_jit_median_fields` of :func:`steady_median_profile`, or ``{}`` (no median; the
     legacy headline stands) when *block_mean_s* exceeds :data:`HEADLINE_MEDIAN_MAX_BLOCK_MEAN_S`
-    and *n_timed* is not given.
+    and *n_timed* is not given. *prefix* / *block_mean_is* name the legacy key the median sits
+    beside and what that key is (see :func:`single_jit_median_fields`).
     """
     if (
         n_timed is None
@@ -307,7 +323,7 @@ def headline_steady_median(
         f"{steady['n_warm']} warm, {steady['n_timed']} timed)"
         + (f"; block mean {block_mean_s:.6f} s" if block_mean_s is not None else "")
     )
-    return single_jit_median_fields(steady)
+    return single_jit_median_fields(steady, prefix=prefix, block_mean_is=block_mean_is)
 
 
 def vmap_profile(

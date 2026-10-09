@@ -69,12 +69,15 @@ Completeness gate
   coarser initial scale changes ``n_steps`` by the ceiling, so e.g. 0.5" / 0.001"
   ends on 0.00195" triangles, 25 % coarser than the control. ``best_admissible``
   requires both flags; ``best_admissible_any_precision`` only the first.
-- **Best = a resolved leader, else a tie set** (#362 fix phase 3). The selection
-  is the shared ``likelihood_breakdown.ab_verdict.tie_set`` over the candidates'
-  bootstrap 90 % speed-up intervals: ``best_admissible`` names a configuration
-  only when its interval is clear of every other candidate's, and is ``None``
-  otherwise; ``best_admissible_tie_set`` records the point leader and every
-  candidate it cannot be separated from. The vmap rows and the uncapped counts
+- **Best = a resolved leader, else a tie set** (#362 fix phase 3, family-wise
+  since fix phase 9). The selection is
+  ``likelihood_breakdown.family_gates.sweep_tie_set`` (the shared
+  ``ab_verdict.holm_tie_set``) over the candidates' paired round-bootstrap
+  speed-up draws: ``best_admissible`` names a configuration only when its
+  interval separates from every other candidate's at the Holm-adjusted level
+  (family-wise 90 % over the leader-vs-candidate comparisons), and is ``None``
+  otherwise; ``best_admissible_tie_set`` records the point leader, every
+  candidate it cannot be separated from, and the unadjusted 90 % tie set. The vmap rows and the uncapped counts
   are measured for the **point leader** (labelled ``point_leader``, never
   "best"), which keeps the job's protocol and wall unchanged.
 
@@ -190,7 +193,8 @@ if os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
     sys.exit(0)
 
-from likelihood_breakdown.ab_verdict import tie_set  # noqa: E402
+from likelihood_breakdown.ab_verdict import AB_CONFIDENCE, MIN_AB_ROUNDS  # noqa: E402
+from likelihood_breakdown.family_gates import sweep_tie_set  # noqa: E402
 from likelihood_breakdown.provenance import source_revisions, thread_environment  # noqa: E402
 from likelihood_breakdown.round_bootstrap import round_median_ratio  # noqa: E402
 from likelihood_breakdown.timing import block  # noqa: E402
@@ -1291,24 +1295,25 @@ candidates = [n for n in candidates_any if precision_equivalent[n]]
 
 
 def _fastest(names):
-    """The shared tie set over the candidates' 90 % speed-up intervals (#362 fix phase 3).
+    """The tie set at the family-wise level over the candidates' speed-ups (#362 fix phase 9).
 
-    Never an argmax of point estimates: ``.best`` is ``None`` when the point
-    leader's interval overlaps another candidate's, or when fewer than
-    ``MIN_AB_ROUNDS`` rounds were timed (the intervals are paired round
-    bootstraps since #362 fix phase 4, so ``N_ROUNDS`` is their effective n).
+    Never an argmax of point estimates: ``.best`` is ``None`` unless the point
+    leader's speed-up interval separates from every other candidate's at the
+    Holm-adjusted level (the claim "the leader is best" rests on the k - 1
+    leader-vs-candidate comparisons, one family at family-wise 90 %), and when
+    fewer than ``MIN_AB_ROUNDS`` rounds were timed. The draws are the recorded
+    ``speedup_vs_control`` ones (paired round bootstrap, seed ``BOOTSTRAP_SEED``
+    + the configuration's position); the unadjusted 90 % tie set (fix phase 3 /
+    4) is recorded beside it as ``.unadjusted``.
     """
-    return tie_set(
-        {
-            n: (
-                rows[n]["speedup_vs_control"]["ratio"],
-                rows[n]["speedup_vs_control"]["ci90_low"],
-                rows[n]["speedup_vs_control"]["ci90_high"],
-            )
-            for n in names
-        },
-        higher_is_better=True,
-        n=N_ROUNDS,
+    return sweep_tie_set(
+        rows,
+        names,
+        n_rounds=N_ROUNDS,
+        seed=BOOTSTRAP_SEED,
+        samples=BOOTSTRAP_SAMPLES,
+        min_n=MIN_AB_ROUNDS,
+        confidence=AB_CONFIDENCE,
     )
 
 
