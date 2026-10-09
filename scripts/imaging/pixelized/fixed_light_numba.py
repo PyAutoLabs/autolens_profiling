@@ -36,7 +36,9 @@ Three protocol facts follow from instrumenting the real call:
   the median of the last three agrees with the median of the previous three to
   10 %, or twelve calls are reached. The entire per-call sequence is recorded
   under ``rows[*].warmup`` — a warm-up that never settles is evidence about the
-  host, not something to discard.
+  host, not something to discard. Since #362 fix phase 6 (row P3) such a row is
+  INCONCLUSIVE for every timing verdict that reads it: the ABBA overhead gate and
+  the promotion decision (``likelihood_breakdown.warmup_gate``).
 - The quoted ``call_ms`` is a **clean, uninstrumented** call, and the clean and
   instrumented calls are **counterbalanced**: each block runs **A B B A** (clean,
   instrumented, instrumented, clean) and its overhead ratio is
@@ -193,7 +195,8 @@ ABBA ``instrumentation_overhead_ms <= 12.0`` — the ABBA ratio converted into t
 absolute milliseconds it stands for, because the instrument's cost is fixed and
 a ratio gate tightens every time the campaign makes the call shorter; judged by the
 shared ``abba_overhead_verdict`` on its one-sided t bounds, raising only on FAIL or
-FAIL_GROSS, INCONCLUSIVE below three blocks or when unresolved) — and coverage
+FAIL_GROSS, INCONCLUSIVE below three blocks, when unresolved or when the row's
+warm-up never settled) — and coverage
 ``unattributed / call <= 5 %``. And once per leg: S3's mapper-block log
 determinants equal S0's to ``rtol=1e-6`` with the same ``n_edge_zeroed``.
 
@@ -402,6 +405,10 @@ from likelihood_breakdown.overhead_verdict import (  # noqa: E402
     FAILING_VERDICTS,
     abba_overhead_verdict,
 )
+
+# The warm-up validity check (#362 fix phase 6, row P3): a row whose warm-up never
+# settled is INCONCLUSIVE for every timing verdict that reads it. Stdlib only.
+from likelihood_breakdown.warmup_gate import warmup_unsettled_reason  # noqa: E402
 
 if os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
@@ -1827,7 +1834,8 @@ def _warm_to_steady_state(analysis, route):
             "the median of the last `window` agrees with the median of the previous "
             "`window` to `tolerance`, or `max_calls` is hit. Every call is recorded. "
             "`steady: false` means the row's timings were taken on a host that never "
-            "settled and should be read with the sequence in hand."
+            "settled: every timing verdict on the row (ABBA overhead, promotion) is "
+            "INCONCLUSIVE, and the numbers should be read with the sequence in hand."
         ),
     }
 
@@ -2029,6 +2037,11 @@ for _route, _formalism in _row_plan():
         f"first {_warmup['first_call_incl_numba_compile_s']:.4f} s "
         f"(incl. numba compile), last {_warmup['sequence_s'][-1]:.4f} s"
     )
+    if not _warmup["steady"]:
+        print(
+            f"  {warmup_unsettled_reason(_warmup)}. Every timing verdict on this row "
+            f"(ABBA overhead, promotion) is INCONCLUSIVE; FAIL_GROSS still applies."
+        )
 
     _n_blocks = max(1, -(-N_REPEATS // 2)) if DECOMPOSE else None
     _timed_call_count = 4 * _n_blocks if DECOMPOSE else N_REPEATS
@@ -2130,12 +2143,15 @@ for _route, _formalism in _row_plan():
         # ratios against the budget. PASS needs the upper bound inside the budget,
         # FAIL the lower bound outside it; anything unresolved — too few blocks, an
         # interval straddling the budget, or a mean ratio resolved below 1 — is
-        # INCONCLUSIVE, which keeps the row and never promotes.
+        # INCONCLUSIVE, which keeps the row and never promotes. So is a row whose
+        # warm-up NEVER SETTLED (fix phase 6, P3): its timings were taken off steady
+        # state, so neither a PASS nor a FAIL is resolved; FAIL_GROSS still fires.
         _overhead_verdict = abba_overhead_verdict(
             _block_ratios,
             _clean_mean,
             MAX_INSTRUMENTATION_OVERHEAD_MS,
             min_blocks=MIN_BLOCKS_FOR_OVERHEAD_ASSERT,
+            warmup=_warmup,
         )
         _overhead_ms = _overhead_verdict.overhead_ms
         _overhead_assertable = _abba["n_blocks"] >= MIN_BLOCKS_FOR_OVERHEAD_ASSERT
@@ -2427,7 +2443,15 @@ if _promotion_pair is not None:
     _abba_pass = all(
         row.get("instrumentation_overhead_status") == "PASS" for row in (_b_row, _d_row)
     )
-    _timing_candidate = _speedup_verdict.verdict == GO and _abba_pass
+    # An arm whose warm-up NEVER SETTLED (#362 fix phase 6, P3) was timed off steady
+    # state: the comparison is INCONCLUSIVE whatever the speedup interval says —
+    # never a timing_candidate and never a measured NO_LEVER.
+    _warmup_unsettled = {
+        key: reason
+        for key, row in ((_b_key, _b_row), (_d_key, _d_row))
+        if (reason := warmup_unsettled_reason(row.get("warmup"))) is not None
+    }
+    _timing_candidate = _speedup_verdict.verdict == GO and _abba_pass and not _warmup_unsettled
     # An arm whose ABBA overhead is INCONCLUSIVE has an unresolved instrument cost;
     # a speedup that clears the bar on such a row is INCONCLUSIVE, never a
     # timing_candidate and never a measured NO_LEVER.
@@ -2436,7 +2460,16 @@ if _promotion_pair is not None:
         for key, row in ((_b_key, _b_row), (_d_key, _d_row))
         if row.get("instrumentation_overhead_status") != "PASS"
     ]
-    if _timing_candidate:
+    if _warmup_unsettled:
+        _promotion_status = "INCONCLUSIVE"
+        _promotion_reason = (
+            f"The warm-up of {sorted(_warmup_unsettled)} never settled "
+            f"({'; '.join(_warmup_unsettled.values())}). The comparison is INCONCLUSIVE — "
+            f"it neither promotes nor counts as a measured NO_LEVER, whatever the speedup "
+            f"interval ({_speedup_verdict.verdict}: {_speedup_verdict.reason}). Re-run on a "
+            f"settled host."
+        )
+    elif _timing_candidate:
         _promotion_status = "timing_candidate"
         _promotion_reason = (
             f"The whole-call speedup interval clears the >=5% rule "
@@ -2495,6 +2528,7 @@ if _promotion_pair is not None:
         "candidate_abba_status": _d_row.get("instrumentation_overhead_status"),
         "both_abba_gates_pass": _abba_pass,
         "abba_unresolved_rows": _abba_unresolved,
+        "warmup_unsettled_rows": sorted(_warmup_unsettled),
         "timing_gate_pass": _timing_candidate,
         "requires_separate_witness_pass": True,
         "witness_evaluated_here": False,

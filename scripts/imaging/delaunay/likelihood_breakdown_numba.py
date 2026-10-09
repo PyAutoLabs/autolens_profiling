@@ -759,15 +759,17 @@ timing = timing_summary(per_eval_s, n_cold=n_cold)
 # the decomposition averaged over.
 direct_per_call = timing["warm_iid_median_s"]
 
-witness = witness_verdict(timing["cold_eval_median_s"], instrument)
+# P5 (#362 fix phase 6): PASS / FAIL only on a reference host class, else INCONCLUSIVE.
+witness = witness_verdict(timing["cold_eval_median_s"], instrument, _cli.config_name)
 
 print(f"  cold eval median:   {timing['cold_eval_median_s']:.6f} s (n = {timing['n_cold']})")
 print(f"  warm iid median:    {timing['warm_iid_median_s']:.6f} s (n = {timing['n_warm']})")
 print(f"  warm iid mean:      {timing['warm_iid_mean_s']:.6f} s")
-if witness.get("verdict") in ("PASS", "FAIL"):
+if witness.get("verdict") in ("PASS", "FAIL", "INCONCLUSIVE"):
     print(
         f"  witness vs production job {witness['job']} "
         f"({witness['reference_cold_eval_s']} s, x{witness['factor']}): {witness['verdict']}"
+        f" ({witness['reason']})"
     )
 
 # ===================================================================

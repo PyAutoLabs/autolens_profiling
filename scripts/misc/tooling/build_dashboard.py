@@ -285,6 +285,25 @@ def _provenance(payload: dict) -> dict:
     return out
 
 
+def warmup_unsettled(payload: dict) -> str | None:
+    """Why a payload's recorded warm-up never settled, or None (timing-noise audit P3).
+
+    Only a payload carrying a warm-up *record* (a dict, as ``fixed_light_numba.py`` writes under
+    ``rows[*].warmup``) is judged; a scalar warm-up time or no field at all is not a record. The
+    rule is the shared ``likelihood_breakdown.warmup_gate``, the one the overhead verdict and the
+    promotion block apply.
+    """
+    warmup = payload.get("warmup")
+    if not isinstance(warmup, dict):
+        return None
+    misc = str(Path(__file__).resolve().parents[1])
+    if misc not in sys.path:
+        sys.path.insert(0, misc)
+    from likelihood_breakdown.warmup_gate import warmup_unsettled_reason
+
+    return warmup_unsettled_reason(warmup)
+
+
 def _load(path: Path) -> dict | None:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
@@ -322,6 +341,9 @@ def _point(payload: dict, version: str, source: str) -> dict | None:
         point["headline_note"] = FIRST_BLOCK_NOTE
     if median is not None:
         point["single_jit_median_s"] = median
+    unsettled = warmup_unsettled(payload)
+    if unsettled is not None:
+        point["warmup_unsettled"] = unsettled
     return point
 
 
@@ -450,7 +472,8 @@ def qualify(point: dict, config: str, conf: dict) -> tuple[bool, str | None, boo
 
     Refused above the load-average cap. Otherwise unqualified, with the first failing reason, when
     the row has no provenance block, is not on a reference host class (laptop rows never qualify
-    as trend points), carries no load average or no host, or is an HPC row off the pinned node.
+    as trend points), carries no load average or no host, is an HPC row off the pinned node, or
+    records a warm-up that never settled (P3, fix phase 6).
     """
     cap = conf.get("loadavg_cap")
     node = conf.get("node")
@@ -470,6 +493,8 @@ def qualify(point: dict, config: str, conf: dict) -> tuple[bool, str | None, boo
         return False, "provenance carries no host", False
     if node and point["host"] != node:
         return False, f"off the reference host ({point['host']} != {node})", False
+    if point.get("warmup_unsettled"):
+        return False, point["warmup_unsettled"], False
     return True, None, False
 
 

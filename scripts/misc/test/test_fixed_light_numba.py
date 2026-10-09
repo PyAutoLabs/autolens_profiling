@@ -68,6 +68,10 @@ from likelihood_breakdown import fixed_light_numpy_solvers as flns  # noqa: E402
 from likelihood_breakdown import fixed_light_system as fls  # noqa: E402
 from likelihood_breakdown import overhead_verdict as ov  # noqa: E402
 from likelihood_breakdown.overhead_verdict import abba_overhead_verdict  # noqa: E402
+from likelihood_breakdown.warmup_gate import (  # noqa: E402
+    WARMUP_UNSETTLED,
+    warmup_unsettled_reason,
+)
 
 CELL_PATH = ROOT / "scripts/imaging/pixelized/fixed_light_numba.py"
 
@@ -1127,7 +1131,7 @@ def test_the_overhead_gate_is_repeat_conditional(cell_ns):
     assert cell_ns["REFERENCE_OVERHEAD_RATIO"] == 1.03
 
 
-def _overhead_gate(cell_ns, *, blocks, clean_call_ms):
+def _overhead_gate(cell_ns, *, blocks, clean_call_ms, warmup=None):
     """Run the cell's OWN overhead-gate statements, lifted from its AST.
 
     ``_overhead_verdict``, ``_overhead_ms`` and ``_overhead_status`` are assigned
@@ -1151,6 +1155,8 @@ def _overhead_gate(cell_ns, *, blocks, clean_call_ms):
     namespace = {
         "_block_ratios": list(blocks),
         "_clean_mean": clean_call_ms / 1e3,
+        # The row's warm-up record (P3, fix phase 6); a settled one unless given.
+        "_warmup": {"steady": True} if warmup is None else warmup,
         "abba_overhead_verdict": cell_ns["abba_overhead_verdict"],
         "MIN_BLOCKS_FOR_OVERHEAD_ASSERT": cell_ns["MIN_BLOCKS_FOR_OVERHEAD_ASSERT"],
         "MAX_INSTRUMENTATION_OVERHEAD_MS": cell_ns["MAX_INSTRUMENTATION_OVERHEAD_MS"],
@@ -1269,6 +1275,7 @@ def _promotion_decision(b_ms, d_ms, b_status, d_status, *, rows=None):
     if rows is None:
         rows = _promotion_rows(b_ms, d_ms, b_status, d_status)
     namespace = _cell_import_namespace("likelihood_breakdown.ab_verdict")
+    namespace.update(_cell_import_namespace("likelihood_breakdown.warmup_gate"))
     namespace.update(
         {"np": np, "rows": rows, "_promotion_pair": ("b_sparse_numba", "d_perm_sparse_numba")}
     )
@@ -1458,6 +1465,153 @@ def test_warm_to_steady_state_stops_on_a_flat_sequence_and_caps_on_a_ramp(cell_n
             assert out["n_calls"] == cell_ns["WARMUP_MAX_CALLS"], (
                 "a sequence that never settles must run to the cap and say so"
             )
+
+
+# ---------------------------------------------------------------------------
+# P3 (#362 fix phase 6): an unsettled warm-up is INCONCLUSIVE downstream
+# ---------------------------------------------------------------------------
+
+
+def _warmup_record(cell_ns, sequence):
+    """Run the cell's OWN ``_warm_to_steady_state`` (lifted from its AST) on ``sequence``."""
+    stream = iter(list(sequence) + [sequence[-1]] * 40)
+    ns = {
+        "np": np,
+        "_one_call": lambda _a, _r: (next(stream), 0.0),
+        "_clear_memos": lambda: None,
+        "WARMUP_WINDOW": cell_ns["WARMUP_WINDOW"],
+        "WARMUP_TOLERANCE": cell_ns["WARMUP_TOLERANCE"],
+        "WARMUP_MAX_CALLS": cell_ns["WARMUP_MAX_CALLS"],
+    }
+    tree = ast.parse(CELL_PATH.read_text())
+    node = next(
+        n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "_warm_to_steady_state"
+    )
+    exec(compile(ast.Module(body=[node], type_ignores=[]), str(CELL_PATH), "exec"), ns)
+    return ns["_warm_to_steady_state"](None, "b")
+
+
+#: Synthetic warm-up sequences (seconds) and what the 3-vs-3 / 10 % / 12-call rule
+#: decides on each: (name, sequence, steady, n_calls). The last four pin the rule's
+#: stated limits (audit note, P3) rather than desired behaviour.
+WARMUP_WITNESSES = [
+    ("flat", [0.300] * 12, True, 6),
+    # The cell's own recorded flat run (2026-09-15, +-15 % scatter): settles at 6.
+    (
+        "recorded flat",
+        [0.341, 0.310, 0.341, 0.376, 0.350, 0.337, 0.364, 0.344, 0.294, 0.279, 0.319, 0.338],
+        True,
+        6,
+    ),
+    # The cell's recorded queueing decay (load ~8 on 8 cores), extended to the cap.
+    (
+        "recorded queueing ramp",
+        [0.851, 1.010, 0.762, 0.524, 0.495, 0.447, 0.391, 0.345, 0.309, 0.292, 0.280, 0.275],
+        False,
+        12,
+    ),
+    ("geometric ramp", [1.0 / (1.0 + 0.5 * i) for i in range(12)], False, 12),
+    ("5 %/call ramp", [1.0 - 0.05 * i for i in range(12)], False, 12),
+    # A step inside the warm-up settles once both windows are past it.
+    ("step 0.4 -> 0.3 at call 4", [0.4] * 3 + [0.3] * 9, True, 8),
+    # Limits: a 3 %/call ramp moves 9 % per window and is called steady at call 6;
+    # a step after call 6 is never seen by the warm-up; a stationary period-2
+    # oscillation of +-15 % never settles (a false alarm, which only costs a re-run).
+    ("limit: 3 %/call ramp", [1.0 - 0.03 * i for i in range(12)], True, 6),
+    ("limit: step at call 9", [0.3] * 8 + [0.4] * 4, True, 6),
+    ("limit: period-2 +-15 %", [1.15, 0.85] * 6, False, 12),
+]
+
+
+@pytest.mark.parametrize(
+    "name, sequence, steady, n_calls", WARMUP_WITNESSES, ids=[w[0] for w in WARMUP_WITNESSES]
+)
+def test_warmup_witness_sequences(cell_ns, name, sequence, steady, n_calls):
+    """Flat / ramp / step sequences through the cell's own loop (T3 helper)."""
+    out = _warmup_record(cell_ns, sequence)
+    assert out["steady"] is steady, f"{name}: {out['sequence_s']}"
+    assert out["n_calls"] == n_calls
+    reason = warmup_unsettled_reason(out)
+    assert (reason is None) is steady
+    if not steady:
+        assert reason.startswith(WARMUP_UNSETTLED) and f"{n_calls} call(s)" in reason
+
+
+def test_an_unsettled_warmup_makes_the_overhead_verdict_inconclusive(cell_ns):
+    """P1 on an unsettled row: a clear PASS and a clear FAIL both become INCONCLUSIVE."""
+    ramp = _warmup_record(cell_ns, [1.0 / (1.0 + 0.5 * i) for i in range(12)])
+    flat = _warmup_record(cell_ns, [0.300] * 12)
+    for blocks, settled in (([1.009, 1.010, 1.011], "PASS"), ([1.049, 1.050, 1.051], "FAIL")):
+        assert abba_overhead_verdict(blocks, CALIBRATION_CALL_S, BUDGET_MS).verdict == settled
+        assert (
+            abba_overhead_verdict(blocks, CALIBRATION_CALL_S, BUDGET_MS, warmup=flat).verdict
+            == settled
+        )
+        result = abba_overhead_verdict(blocks, CALIBRATION_CALL_S, BUDGET_MS, warmup=ramp)
+        assert result.verdict == "INCONCLUSIVE"
+        assert result.reason.startswith(WARMUP_UNSETTLED)
+    # The gross guard is never weakened: noise or warm-up never masks a catastrophe.
+    gross = abba_overhead_verdict([1.6, 1.6, 1.6], CALIBRATION_CALL_S, BUDGET_MS, warmup=ramp)
+    assert gross.verdict == "FAIL_GROSS"
+    # A record that cannot show it settled has not shown it.
+    no_flag = abba_overhead_verdict([1.009, 1.010, 1.011], CALIBRATION_CALL_S, BUDGET_MS, warmup={})
+    assert no_flag.verdict == "INCONCLUSIVE"
+    # The same, through the cell's OWN gate statements: the pinned 400 ms FAIL is kept
+    # (INCONCLUSIVE never raises) and the 224 ms PASS is no longer a measured pass.
+    for clean_ms, settled in ((224.0, "PASS"), (400.0, "FAIL")):
+        assert _overhead_gate(cell_ns, blocks=[1.037] * 32, clean_call_ms=clean_ms)[1] == settled
+        _ms, status = _overhead_gate(
+            cell_ns, blocks=[1.037] * 32, clean_call_ms=clean_ms, warmup=ramp
+        )
+        assert status == "INCONCLUSIVE"
+
+
+def test_the_cell_passes_its_warmup_record_to_the_overhead_verdict():
+    tree = ast.parse(CELL_PATH.read_text())
+    call = next(
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call) and ast.unparse(node.func) == "abba_overhead_verdict"
+    )
+    assert {kw.arg: ast.unparse(kw.value) for kw in call.keywords}["warmup"] == "_warmup"
+    namespace = _cell_import_namespace("likelihood_breakdown.warmup_gate")
+    assert namespace["warmup_unsettled_reason"] is warmup_unsettled_reason
+
+
+@pytest.mark.parametrize(
+    "d_ms, settled_status",
+    [(200.0, "timing_candidate"), (230.0, "NO_LEVER")],
+)
+@pytest.mark.parametrize("unsettled_arm", ["b_sparse_numba", "d_perm_sparse_numba"])
+def test_an_unsettled_arm_makes_the_promotion_inconclusive(
+    cell_ns, d_ms, settled_status, unsettled_arm
+):
+    """P2: a GO and a measured NO_LEVER both become INCONCLUSIVE on an unsettled arm."""
+    flat = _warmup_record(cell_ns, [0.300] * 12)
+    ramp = _warmup_record(cell_ns, [1.0 / (1.0 + 0.5 * i) for i in range(12)])
+    rows = _promotion_rows(236.0, d_ms, "PASS", "PASS")
+    for row in rows.values():
+        row["warmup"] = flat
+    assert _promotion_decision(None, None, None, None, rows=rows)["status"] == settled_status
+
+    rows[unsettled_arm]["warmup"] = ramp
+    decision = _promotion_decision(None, None, None, None, rows=rows)
+    assert decision["status"] == "INCONCLUSIVE", decision["reason"]
+    assert decision["warmup_unsettled_rows"] == [unsettled_arm]
+    assert decision["timing_gate_pass"] is False and decision["promotion_ready"] is False
+    assert "never settled" in decision["reason"] and "NO_LEVER" in decision["reason"]
+
+
+def test_every_committed_warmup_record_settled():
+    """Re-judged as a fact (fix phase 6): no committed row is moved by the P3 rule."""
+    records = []
+    for path in sorted((ROOT / "results").rglob("fixed_light_numba*.json")):
+        payload = json.loads(path.read_text())
+        rows = payload.get("rows") if isinstance(payload, dict) else None
+        if isinstance(rows, dict):
+            records += [r["warmup"] for r in rows.values() if isinstance(r.get("warmup"), dict)]
+    assert len(records) == 28
+    assert [warmup_unsettled_reason(r) for r in records] == [None] * 28
 
 
 def test_resets_and_primes_the_same_timed_stream_before_abba():

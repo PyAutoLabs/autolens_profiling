@@ -107,6 +107,12 @@ the same model.
 
 ### Reading the witness
 
+> **Re-judged 2026-10-09 (timing-noise audit fix phase 6, #362, row P5).** All eight rows above
+> were measured on a laptop, untagged. The witness now judges PASS / FAIL only on a reference
+> host class, so all eight read INCONCLUSIVE ("off reference host class"). Where each median
+> fell relative to the band is unchanged. No JSON was rewritten. See
+> [timing_noise_audit_2026_10.md](timing_noise_audit_2026_10.md), section (b) item 6.
+
 Four of eight rows land inside 1.5x of the production cold-eval range. The four
 that do not are both Delaunay rows, and they miss in **opposite directions**,
 which is the tell that what remains is dataset size and host speed, not

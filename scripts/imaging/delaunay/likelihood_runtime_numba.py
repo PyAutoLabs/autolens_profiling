@@ -426,11 +426,13 @@ print(f"  cold eval median:   {timing['cold_eval_median_s']:.6f} s (n = {timing[
 print(f"  warm iid median:    {timing['warm_iid_median_s']:.6f} s (n = {timing['n_warm']})")
 print(f"  warm iid mean:      {timing['warm_iid_mean_s']:.6f} s")
 
-witness = witness_verdict(timing["cold_eval_median_s"], instrument)
-if witness.get("verdict") in ("PASS", "FAIL"):
+# P5 (#362 fix phase 6): PASS / FAIL only on a reference host class, else INCONCLUSIVE.
+witness = witness_verdict(timing["cold_eval_median_s"], instrument, _cli.config_name)
+if witness.get("verdict") in ("PASS", "FAIL", "INCONCLUSIVE"):
     print(
         f"  witness vs production job {witness['job']} "
         f"({witness['reference_cold_eval_s']} s, x{witness['factor']}): {witness['verdict']}"
+        f" ({witness['reason']})"
     )
 
 # NOTE: the Delaunay numba likelihood is bistable at the ~1e-8 relative level

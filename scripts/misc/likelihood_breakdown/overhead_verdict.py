@@ -33,16 +33,22 @@ ratios are compared with the budget, in this order:
    non-finite or non-positive clean mean or budget) raises ``ValueError``;
 2. ``FAIL_GROSS`` when the mean ratio exceeds ``gross_ratio``, whatever the
    interval width or block count — noise never masks a catastrophic regression;
-3. ``INCONCLUSIVE`` when fewer than ``min_blocks`` blocks were measured;
-4. ``INCONCLUSIVE`` (reason "host-noise signature") when the mean ratio is
+3. ``INCONCLUSIVE`` when the row's warm-up record shows it never settled
+   (``likelihood_breakdown.warmup_gate.warmup_unsettled_reason``; fix phase 6,
+   row P3). The interval is not computed against the budget: a row timed on a
+   host that had not reached steady state resolves neither a PASS nor a FAIL.
+   The gross guard above still fires on such a row. A caller that passes no
+   warm-up record (the CI fixture) is unaffected;
+4. ``INCONCLUSIVE`` when fewer than ``min_blocks`` blocks were measured;
+5. ``INCONCLUSIVE`` (reason "host-noise signature") when the mean ratio is
    **resolved** below 1, i.e. the upper bound of the excess is below zero. No
    instrumentation makes a call faster, so a resolved negative excess says the
    blocks are not measuring the instrument; it is never a measured pass. A mean
    below 1 whose interval still reaches 0 is consistent with a near-zero cost
    and is judged on its bounds like any other;
-5. ``PASS`` when the upper bound is at or below the budget;
-6. ``FAIL`` when the lower bound is above the budget;
-7. ``INCONCLUSIVE`` otherwise — the interval straddles the budget.
+6. ``PASS`` when the upper bound is at or below the budget;
+7. ``FAIL`` when the lower bound is above the budget;
+8. ``INCONCLUSIVE`` otherwise — the interval straddles the budget.
 
 The interval is valid only if the block ratios are roughly normal and
 independent; at three to five blocks it cannot detect that they are not
@@ -56,6 +62,8 @@ import math
 from dataclasses import asdict, dataclass
 
 import numpy as np
+
+from likelihood_breakdown.warmup_gate import warmup_unsettled_reason
 
 PASS = "PASS"
 FAIL = "FAIL"
@@ -107,6 +115,7 @@ def abba_overhead_verdict(
     gross_ratio: float = 1.5,
     confidence: float = 0.95,
     min_blocks: int = 3,
+    warmup: dict | None = None,
 ) -> OverheadVerdict:
     """Judge ABBA block ratios against a millisecond budget of instrument excess.
 
@@ -125,6 +134,10 @@ def abba_overhead_verdict(
         One-sided confidence of the Student-t bounds.
     min_blocks
         Below this many blocks the verdict is ``INCONCLUSIVE``.
+    warmup
+        The row's warm-up record (``rows[*].warmup``), or ``None`` when the
+        measurement has none. A record that never settled makes any verdict
+        short of ``FAIL_GROSS`` ``INCONCLUSIVE``.
 
     See the module docstring for the rule, in order.
     """
@@ -176,6 +189,9 @@ def abba_overhead_verdict(
             f"mean ratio {mean_ratio:.4f} exceeds the gross bound {gross_ratio}; noise "
             f"never masks a catastrophic regression",
         )
+    unsettled = warmup_unsettled_reason(warmup)
+    if unsettled is not None:
+        return _verdict(INCONCLUSIVE, f"{unsettled} (excess bounds {bounds}, not judged)")
     if n_blocks < min_blocks:
         return _verdict(
             INCONCLUSIVE,

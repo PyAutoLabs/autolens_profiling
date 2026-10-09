@@ -866,23 +866,61 @@ PRODUCTION_REFERENCE: dict[str, dict[str, Any]] = {
 WITNESS_FACTOR = 1.5
 
 
-def witness_verdict(cold_eval_median_s: float, instrument: str) -> dict[str, Any]:
-    """Judge one cold-eval median against the production reference range."""
+def _is_reference_host_class(host_class: str) -> bool:
+    """The dashboard's own rule (``build_dashboard.is_reference_host_class``), imported lazily.
+
+    One definition of "reference host class" for trend points (P6), GPU-only markers (P9) and
+    this witness (P5). The tooling module is stdlib-only at import, so the lazy import keeps
+    this module importable before numpy (``pin_thread_env``).
+    """
+    import sys
+
+    tooling = str(Path(__file__).resolve().parent / "scripts" / "misc" / "tooling")
+    if tooling not in sys.path:
+        sys.path.insert(0, tooling)
+    from build_dashboard import is_reference_host_class
+
+    return is_reference_host_class(host_class)
+
+
+def witness_verdict(
+    cold_eval_median_s: float, instrument: str, host_class: str | None
+) -> dict[str, Any]:
+    """Judge one cold-eval median against the production reference range.
+
+    ``host_class`` is the row's ``--config-name`` (``hpc_ral_cpu_fp64``, ``local_cpu_fp64``, …;
+    ``None`` when the cell ran untagged). The reference range was logged on 8-core RAL
+    production nodes, so a measurement is judged against it only on a reference host class
+    (timing-noise audit row P5, fix phase 6). Anywhere else the verdict is ``INCONCLUSIVE`` with
+    the reason "off reference host class (<class>)": no band turns a laptop row into a
+    reference-host row. The band itself (``WITNESS_FACTOR``) is unchanged.
+    """
     reference = PRODUCTION_REFERENCE.get(instrument)
     if reference is None:
-        return {"verdict": "no_reference", "instrument": instrument}
+        return {"verdict": "no_reference", "instrument": instrument, "host_class": host_class}
 
     low, high = reference["cold_eval_s"]
+    allowed = [low / WITNESS_FACTOR, high * WITNESS_FACTOR]
+    in_band = (low / WITNESS_FACTOR) <= cold_eval_median_s <= (high * WITNESS_FACTOR)
+    if host_class and _is_reference_host_class(host_class):
+        verdict, reason = (
+            ("PASS", "cold-eval median inside the band")
+            if in_band
+            else ("FAIL", "cold-eval median outside the band")
+        )
+    else:
+        verdict = "INCONCLUSIVE"
+        reason = f"off reference host class ({host_class or 'untagged'})"
     return {
         "instrument": instrument,
         "job": reference["job"],
         "reference_cold_eval_s": [low, high],
         "factor": WITNESS_FACTOR,
-        "allowed_s": [low / WITNESS_FACTOR, high * WITNESS_FACTOR],
+        "allowed_s": allowed,
         "measured_cold_eval_median_s": cold_eval_median_s,
-        "verdict": (
-            "PASS"
-            if (low / WITNESS_FACTOR) <= cold_eval_median_s <= (high * WITNESS_FACTOR)
-            else "FAIL"
-        ),
+        "host_class": host_class,
+        # Where the median falls, recorded whatever the host: a reader can still see it.
+        "in_band": in_band,
+        "verdict": verdict,
+        "reason": reason,
     }

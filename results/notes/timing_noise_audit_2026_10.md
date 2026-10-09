@@ -111,18 +111,19 @@ T1, T3, P1 and P2, which are as of the fix phase 1 branch.
 |---|---|---|---|---|---|
 | T1 | CI test | `scripts/misc/test/test_fixed_light_numba.py::test_call_accounting_covers_a_real_likelihood_call` (667) via `scripts/misc/likelihood_breakdown/overhead_verdict.py::abba_overhead_verdict` (102) | ABBA instrumentation overhead in ms of excess on a real tiny fit | the cell's `MAX_INSTRUMENTATION_OVERHEAD_MS` 12.0 through the fixture's own clean mean; FAIL_GROSS > 1.5; witnesses at `scripts/misc/test/test_fixed_light_numba.py::BUDGET_MS` 12.0 (asserted equal to the cell's) | SOUND-with-caveats |
 | T2 | CI test | `scripts/misc/test/test_call_accounting.py` (94–330) | exclusive/inclusive additivity, > 0 timings, re-entrancy | 1e-9 identities, `> 0` | SOUND |
-| T3 | CI test | `scripts/misc/test/test_fixed_light_numba.py` 489–665 (shared-verdict witnesses) and 1059–1391 (overhead-gate, promotion and warm-up unit tests) | the shared verdict and the cell's gate statements on synthetic inputs | pins 12.0 ms, 3 blocks, 1.03, warm-up 3/0.10/12 | SOUND |
+| T3 | CI test | `scripts/misc/test/test_fixed_light_numba.py` 489–665 (shared-verdict witnesses) and 1059–1391 (overhead-gate, promotion and warm-up unit tests); since fix phase 6 also the P3 warm-up witnesses (`scripts/misc/test/test_fixed_light_numba.py::test_warmup_witness_sequences`, `scripts/misc/test/test_fixed_light_numba.py::test_an_unsettled_warmup_makes_the_overhead_verdict_inconclusive`, `scripts/misc/test/test_fixed_light_numba.py::test_an_unsettled_arm_makes_the_promotion_inconclusive`, `scripts/misc/test/test_fixed_light_numba.py::test_every_committed_warmup_record_settled`) | the shared verdict and the cell's gate statements on synthetic inputs; flat / ramp / step warm-up sequences through the cell's own `_warm_to_steady_state` into P1 and P2 | pins 12.0 ms, 3 blocks, 1.03, warm-up 3/0.10/12 | SOUND |
 | T4 | CI test | `scripts/misc/test/test_timing_steady_median.py` | `steady_median_profile` on an injected clock | exact | SOUND |
 | T5 | CI test | `scripts/misc/test/test_wall_check_submits.py::test__the_41x_spread_that_caused_the_loss` (298) | wall estimate arithmetic from the rates table | `> 8` | SOUND |
 | T6 | CI test | `scripts/misc/test/test_build_dashboard.py` (132, 260–285) | qualification and drift on synthetic rows | exact | SOUND (pins P6/P7 semantics) |
 | T7 | CI test | `scripts/misc/test/test_ab_verdict.py` (shared A/B verdict witnesses; `scripts/misc/test/test_ab_verdict.py::test_a_15_percent_point_estimate_straddling_the_bar_is_inconclusive` and the bars `scripts/misc/test/test_ab_verdict.py::GO_MIN_SAVED_MS`, `scripts/misc/test/test_ab_verdict.py::GO_MIN_FRACTION`) | `ab_rule_verdict` / `tie_set` on seeded synthetic samples, the cells' own lifted rules, and the committed C6 / C7 / C10 rows | exact, seeded | SOUND (pins the fix phase 3 semantics) |
 | T9 | CI test | `scripts/misc/test/test_headline_estimator_and_marker.py` (P8 / P9 witnesses: `scripts/misc/test/test_headline_estimator_and_marker.py::test_injected_transient_moves_the_block_mean_2p4x_and_not_the_median`, `scripts/misc/test/test_headline_estimator_and_marker.py::test_drift_never_compares_a_median_with_a_block_mean`, `scripts/misc/test/test_headline_estimator_and_marker.py::test_an_unqualified_marker_is_never_rendered_gpu_only`, `scripts/misc/test/test_headline_estimator_and_marker.py::test_skip_existing_re_measures_an_unqualified_marker`) | the headline median on an injected clock, the dashboard estimator / drift rule, `marker_verdict` on synthetic and the 4 committed markers, `sweep.py --skip-existing` with a stubbed subprocess | exact | SOUND (pins the fix phase 5 semantics) |
 | T8 | CI test | `scripts/misc/test/test_round_bootstrap.py` (round-bootstrap witnesses: `scripts/misc/test/test_round_bootstrap.py::test_the_round_interval_covers_the_true_ratio_under_a_fixed_seed`, `scripts/misc/test/test_round_bootstrap.py::test_round_coverage_is_near_nominal_and_iid_coverage_is_not`, `scripts/misc/test/test_round_bootstrap.py::test_rounds_are_paired_across_arms`, `scripts/misc/test/test_round_bootstrap.py::test_the_committed_pytree_ral_cpu_saving_stays_below_the_bar`) | `round_median_ratio` / `round_median_saving` on seeded correlated rounds, each cell's lifted helper, and the committed C6 / C7 / C10 rows | exact, seeded | SOUND (pins the fix phase 4 semantics) |
+| T10 | CI test | `scripts/misc/test/test_warmup_and_witness_band.py` (P5 / P3-dashboard witnesses: `scripts/misc/test/test_warmup_and_witness_band.py::test_a_reference_host_class_row_keeps_its_pass_or_fail`, `scripts/misc/test/test_warmup_and_witness_band.py::test_a_laptop_row_is_inconclusive_whatever_the_band_says`, `scripts/misc/test/test_warmup_and_witness_band.py::test_the_committed_witness_rows_rejudge_as_inconclusive`, `scripts/misc/test/test_warmup_and_witness_band.py::test_a_point_whose_warmup_never_settled_is_unqualified`) | `witness_verdict` on reference-class and laptop host classes, the 8 committed witness rows, `qualify` on points carrying a warm-up record | exact | SOUND (pins the fix phase 6 semantics) |
 | P1 | production qualification | `scripts/imaging/pixelized/fixed_light_numba.py::<module>` (2122–2130; raise at 2267) via `scripts/misc/likelihood_breakdown/overhead_verdict.py::abba_overhead_verdict` | ABBA overhead in ms: one-sided t bounds vs budget; raises only on FAIL / FAIL_GROSS, INCONCLUSIVE keeps the row | `scripts/imaging/pixelized/fixed_light_numba.py::MAX_INSTRUMENTATION_OVERHEAD_MS` 12.0; `scripts/imaging/pixelized/fixed_light_numba.py::MIN_BLOCKS_FOR_OVERHEAD_ASSERT` 3; `scripts/imaging/pixelized/fixed_light_numba.py::REFERENCE_OVERHEAD_RATIO` 1.03 (recorded) | SOUND-with-caveats |
 | P2 | campaign gate | `scripts/imaging/pixelized/fixed_light_numba.py::<module>` (2386–2496) via `scripts/misc/likelihood_breakdown/ab_verdict.py::ab_rule_verdict` | promotion `timing_candidate` / `INCONCLUSIVE` / `NO_LEVER` | whole-call speedup ≥ 0.05 on a 90 % paired-block interval (≥ 5 blocks) and both P1 PASS; a P1 INCONCLUSIVE gives INCONCLUSIVE | FRAGILE |
-| P3 | production protocol | `scripts/imaging/pixelized/fixed_light_numba.py::_warm_to_steady_state` (1745) | warm-up "steady" flag | `scripts/imaging/pixelized/fixed_light_numba.py::WARMUP_WINDOW` 3, `scripts/imaging/pixelized/fixed_light_numba.py::WARMUP_TOLERANCE` 0.10, `scripts/imaging/pixelized/fixed_light_numba.py::WARMUP_MAX_CALLS` 12 | FRAGILE |
+| P3 | production protocol | `scripts/imaging/pixelized/fixed_light_numba.py::_warm_to_steady_state` (1745); read since fix phase 6 by `scripts/misc/likelihood_breakdown/warmup_gate.py` `warmup_unsettled_reason`, called by `abba_overhead_verdict` (P1), the promotion block (P2) and `build_dashboard.qualify` (P6) | warm-up "steady" flag; an unsettled row is INCONCLUSIVE for every timing verdict that reads it | `scripts/imaging/pixelized/fixed_light_numba.py::WARMUP_WINDOW` 3, `scripts/imaging/pixelized/fixed_light_numba.py::WARMUP_TOLERANCE` 0.10, `scripts/imaging/pixelized/fixed_light_numba.py::WARMUP_MAX_CALLS` 12 | SOUND-with-caveats |
 | P4 | production qualification | `scripts/imaging/pixelized/fixed_light_numba.py` 2247 | unattributed fraction of the instrumented call | `MAX_UNATTRIBUTED_FRACTION` 0.05 | SOUND |
-| P5 | production qualification | `_production_config.py::witness_verdict` (869); `_production_config.py::timing_summary` (792) | production-representative cold-eval witness | `WITNESS_FACTOR` 1.5 × the production cold-eval range | FRAGILE |
+| P5 | production qualification | `_production_config.py::witness_verdict` (869; 886 since fix phase 6); `_production_config.py::timing_summary` (792) | production-representative cold-eval witness; PASS / FAIL only on a reference host class (`is_reference_host_class`), else INCONCLUSIVE (fix phase 6) | `WITNESS_FACTOR` 1.5 × the production cold-eval range | SOUND-with-caveats |
 | P6 | production qualification | `scripts/misc/tooling/build_dashboard.py::qualify` (448) via `scripts/misc/tooling/build_dashboard.py::is_reference_host_class` (437) | `qualified` flag on every dashboard / v1 `profiling-summary` point (the project dashboard and badge; the live Pulse registry reads the v2 catalogue) | `RELEASE_SWEEP_LOADAVG_CAP` 8.0, `RELEASE_SWEEP_NODE`, `REFERENCE_HOST_CLASS_PREFIXES` (`hpc_`) | SOUND-with-caveats |
 | P7 | production qualification | `scripts/misc/tooling/build_dashboard.py::drift` (512) and `scripts/misc/tooling/build_dashboard.py::_summary_comparison` (742) | release-to-release drift badge (drifted / improved / flat / insufficient) | `scripts/misc/tooling/build_dashboard.py::DRIFT_RATIO` 2.0 and `scripts/misc/tooling/build_dashboard.py::DRIFT_FLOOR_S` 1 ms; `flat` only with repeat-summary endpoints; endpoints on different headline estimators → `insufficient` (fix phase 5) | SOUND-with-caveats |
 | P8 | estimator | `scripts/misc/likelihood_breakdown/timing.py` `jit_profile` (92) and `headline_steady_median` (269), called by the 11 runtime cells' local `jit_profile` blocks (e.g. `scripts/imaging/delaunay/likelihood_runtime.py`); read by `scripts/misc/tooling/build_dashboard.py::_point` (296) | `full_pipeline_single_jit` (legacy block mean, kept) and `full_pipeline_single_jit_median*` beside it; the dashboard headline P7 compares | block mean of 10 after the first call; median of `n_timed` individually timed calls after `scripts/misc/likelihood_breakdown/timing.py::MIN_STEADY_WARM` 5 warm calls, `n_timed` = `scripts/misc/likelihood_breakdown/timing.py::HEADLINE_MEDIAN_BUDGET_S` 30 s / block mean in [20, 200]; no median above `scripts/misc/likelihood_breakdown/timing.py::HEADLINE_MEDIAN_MAX_BLOCK_MEAN_S` 2 s per call | SOUND-with-caveats |
@@ -148,16 +149,17 @@ T1, T3, P1 and P2, which are as of the fix phase 1 branch.
 
 | Kind | Rows | SOUND | FRAGILE | UNSAFE-SILENT |
 |---|---|---|---|---|
-| CI test | 9 | 9 | 0 | 0 |
-| Production qualification / protocol / estimator | 9 | 7 | 2 | 0 |
+| CI test | 10 | 10 | 0 | 0 |
+| Production qualification / protocol / estimator | 9 | 9 | 0 | 0 |
 | Campaign gate (incl. P2 promotion) | 13 | 4 | 5 | 4 |
 | Submit basis | 1 | 1 | 0 | 0 |
 | Resource guard | 2 | 2 | 0 | 0 |
-| **Total** | **34** | **23** | **7** | **4** |
+| **Total** | **35** | **26** | **5** | **4** |
 
-Counts after fix phase 5, which added the CI-test row T9 and moved P8 from FRAGILE and P9 from
-UNSAFE-SILENT to SOUND-with-caveats (counted as SOUND, like T1, P1, P6, P7, C6, C7 and C10). After
-fix phase 4 the totals were 20 / 8 / 5 over 33 rows (T8 added; C6, C7, C10 FRAGILE →
+Counts after fix phase 6, which added the CI-test row T10 and moved P3 and P5 from FRAGILE to
+SOUND-with-caveats (counted as SOUND, like T1, P1, P6–P9, C6, C7 and C10). After fix phase 5 the
+totals were 23 / 7 / 4 over 34 rows (T9 added; P8 FRAGILE and P9 UNSAFE-SILENT →
+SOUND-with-caveats). After fix phase 4 the totals were 20 / 8 / 5 over 33 rows (T8 added; C6, C7, C10 FRAGILE →
 SOUND-with-caveats). After fix phase 3 the totals were
 16 / 11 / 5 over 32 rows (T7 added; C7, C10 and P2 UNSAFE-SILENT → FRAGILE). After fix
 phase 2 the totals were 15 / 8 / 8 over 31 rows; after fix phase 1, 13 / 9 / 9 (P6 UNSAFE-SILENT,
@@ -165,7 +167,7 @@ P7 FRAGILE); at phase 1, 11 / 10 / 10 (T1 FRAGILE, P1 UNSAFE-SILENT). The produc
 P1 and P3–P10, nine rows. P2 is a promotion rule, so it is counted with the campaign gates. Four
 rows can still label a result from a point estimate or without looking at the measurement: C1,
 C3, C4 and C5, all phase 3b (at phase 1 there were ten; P9 left with fix phase 5). None of the
-thirteen CI-test, submit or resource-guard rows is UNSAFE-SILENT.
+fourteen CI-test, submit or resource-guard rows is UNSAFE-SILENT.
 
 ## Per-row detail
 
@@ -311,6 +313,25 @@ regression passes, or a real lever is reported as NO_LEVER); owner; and the verd
   directions.
 - **Verdict:** FRAGILE. It is recorded and does not gate, but the rows after it do not condition
   on it.
+- **After fix phase 6: SOUND-with-caveats.** One shared check,
+  `likelihood_breakdown.warmup_gate.warmup_unsettled_reason`, returns a reason beginning "warm-up
+  never settled" for a record whose `steady` is false or missing, and `None` for a settled record
+  or no record. Every timing verdict that reads a post-warm-up row applies it: the ABBA overhead
+  verdict (P1, `warmup=` keyword; after the gross guard, so FAIL_GROSS still fires), the promotion
+  decision (P2; INCONCLUSIVE whatever the speedup interval, with `warmup_unsettled_rows`) and
+  dashboard qualification (P6; unqualified with the reason, for any payload carrying a warm-up
+  record). P4 (unattributed fraction), the cached-site count and the dispatch asserts read the
+  same rows but are coverage / correctness checks whose numerator and denominator come from the
+  same calls; they are not timing verdicts and are not weakened. The `steady` flag and the
+  sequence are recorded as before. **The rule is kept** (3 vs 3, 10 %, 12 calls). Its limits,
+  pinned as witnesses: a ramp of ≤ 3 % per call moves ≤ 9 % per window and is called steady at
+  call 6 (seeded, with 5 % noise on top: settles 99 % of the time at 3 %/call, 77 % at 4 %/call);
+  a step after the warm-up stops is never seen by it (the ABBA design cancels only linear drift
+  within a block, and P2's between-row drift is P2's own caveat); a stationary period-2 ±15 %
+  oscillation never settles. iid scatter rarely fails it (seeded: 0 % at 5 % s.d., 0.4 % at 10 %,
+  2.3 % at 15 %), and a false "unsettled" now costs only a re-run, never a false verdict. A
+  stricter rule would need measured ramps to justify it; none of the 28 committed warm-ups is
+  unsettled.
 
 ### P4 — unattributed fraction ≤ 5 % (SOUND)
 
@@ -330,6 +351,15 @@ first order. The cutoff is a design budget for the site spec, not a noise budget
 - **Callers:** `scripts/imaging/{rectangular,delaunay}/likelihood_{runtime,breakdown}_numba.py`.
 - **Verdict:** FRAGILE. The PASS / FAIL is binary with no INCONCLUSIVE, and host class is not part
   of the rule.
+- **After fix phase 6: SOUND-with-caveats.** `witness_verdict(cold_eval_median_s, instrument,
+  host_class)` judges PASS / FAIL only when the host class (the row's `--config-name`) passes
+  `build_dashboard.is_reference_host_class`, the rule P6 and P9 use. Otherwise the verdict is
+  INCONCLUSIVE with the reason "off reference host class (<class>)" (`untagged` when the cell ran
+  without `--config-name`). The record gains `host_class`, `in_band` (where the median fell,
+  whatever the host) and `reason`. The band is unchanged (human decision 2 on #235). Caveats: the
+  class is the config label, not a measured host; the verdict is one median of `n_cold` calls
+  with no interval (the 2.3–3.3× band dwarfs call noise); and a reference-class miss can still be
+  dataset realism rather than configuration (`production_representative_cells.md`).
 
 ### P6 — dashboard / `profiling-summary` qualification (`build_dashboard.qualify`)
 
@@ -981,6 +1011,64 @@ correctness or gross-regression guard.
    - **Change:** rows after an unsettled warm-up are INCONCLUSIVE for any timing verdict. P5 gains
      host class and an INCONCLUSIVE state off the reference host class.
    - **Witness:** synthetic flat / ramp / step sequences (the existing T3 helper).
+   - **Shipped (phase 7 of #362, PR #409, 2026-10-09; stacked on #408).** As implemented:
+     - **P3, the check:** `scripts/misc/likelihood_breakdown/warmup_gate.py`
+       `warmup_unsettled_reason(warmup)`: `None` for no record (the CI fixture, the runtime
+       cells) or `steady: true`; otherwise "warm-up never settled (N call(s), last-3 median … vs
+       previous-3 … (x % > 10 %)): …", and "… carries no steady flag" for a record without one.
+       Pure, stdlib only.
+     - **P3, the consumers** (enumerated from this inventory; every row that reads a post-warm-up
+       row): `abba_overhead_verdict(..., warmup=)` returns INCONCLUSIVE after the gross guard and
+       before the block-count rule, so a PASS and a FAIL become INCONCLUSIVE (the cell keeps the
+       row and does not raise) and FAIL_GROSS still fires; the cell passes `warmup=_warmup` and
+       prints the reason beside "NEVER SETTLED". The promotion block (P2) writes
+       `warmup_unsettled_rows` and INCONCLUSIVE whatever the speedup verdict, so neither a
+       `timing_candidate` nor a measured NO_LEVER comes from an unsettled arm.
+       `build_dashboard.qualify` leaves a point unqualified with the reason when its payload
+       carries an unsettled warm-up record (no scanned payload carries one today: the
+       fixed-light rows produce no dashboard point). Not consumers: P4, the cached-site counts
+       and the dispatch asserts (coverage / correctness, not timing verdicts), C1–C5 and P10
+       (their own warm-up protocols, no `steady` flag).
+     - **P3, the rule:** kept at 3 vs 3 / 10 % / 12 calls; its limits are stated under P3 and
+       pinned as witnesses rather than changed.
+     - **P5:** `witness_verdict(cold_eval_median_s, instrument, host_class)`; PASS / FAIL only on
+       `is_reference_host_class(host_class)` (imported lazily from `build_dashboard`, one rule
+       for P5, P6 and P9), else INCONCLUSIVE "off reference host class (<class>)"; records
+       `host_class`, `in_band`, `reason`; band and `WITNESS_FACTOR` unchanged. The four callers
+       (`scripts/imaging/{rectangular,delaunay}/likelihood_{runtime,breakdown}_numba.py`) pass
+       `_cli.config_name` and print the verdict with its reason.
+     - **witness** (T3 additions and T10, deterministic): through the cell's own
+       `_warm_to_steady_state` — flat (6 calls), the recorded 2026-09-15 flat run (6), a step
+       0.4 → 0.3 at call 4 (8) settle; the recorded queueing decay, a geometric ramp and a
+       5 %/call ramp never settle (12); limits: a 3 %/call ramp settles (6), a step at call 9 is
+       unseen (6), a period-2 ±15 % never settles (12). An unsettled record turns a clear PASS
+       and a clear FAIL (and the cell's own pinned 224 ms PASS / 400 ms FAIL statements)
+       INCONCLUSIVE, keeps `[1.6] × 3` FAIL_GROSS, and turns a promotion GO and a NO_LEVER
+       INCONCLUSIVE on either arm. P5: reference-class rows keep PASS / FAIL (HST 0.80 s PASS,
+       1.463 s FAIL; Euclid 0.70 s PASS, 0.2346 s FAIL); `local_*` and untagged rows are
+       INCONCLUSIVE whatever the band says. Dashboard: an unsettled or flag-less warm-up record
+       is unqualified; no record or a scalar warm-up time is unaffected.
+     - **contract:** no `profiling-summary@2` field, metric or meaning change; `build_catalogue.py`
+       is not edited (its catalogue is re-rendered for the source hash only). v1 points gain
+       `warmup_unsettled` only where a payload carries an unsettled record (none today).
+     - **re-judged committed rows (facts; no JSON rewritten, no compute run):**
+
+       | What | Committed | Before | After | Changed |
+       |---|---|---|---|---|
+       | fixed-light numba rows with a warm-up record | 28 (17 RAL decomposed, 3 laptop `sparse_t1`, 8 smoke) | 28 steady (22 settle at 6 calls, all 17 RAL rows among them; 3 laptop and 3 smoke rows at 8–12) | 28 settled: no P1, P2 or dashboard verdict moves | no |
+       | closest calls | laptop `c_sparse_numba` settled at 10 calls with a 10.0 % window change; smoke `a_sparse_numba` at the 12-call cap with 9.5 % | steady | steady (the rule is unchanged) | no |
+       | P5 witness verdicts (2026-09-08, laptop i9-10885H, untagged, no provenance) | 8: rectangular hst / euclid × runtime / breakdown PASS; Delaunay hst / euclid × runtime / breakdown FAIL | 4 PASS, 4 FAIL | 8 INCONCLUSIVE, "off reference host class (untagged)"; `in_band` matches the published reading | **yes** |
+
+       No go / no-go / promotion call rests on the P5 verdicts. One recorded reading loses its
+       timing support: `production_representative_cells.md` "the two rectangular rows pass on
+       both instruments, so the protocol itself is sound" leaned on laptop PASSes; the
+       configuration match it records is unaffected, and the Delaunay misses were already
+       attributed to dataset and host there (and to Phase 4 of `imaging_over_sampling`). That ledger
+       carries a dated re-judgement note above its witness reading.
+     - **not changed (remainders):** phase 3b (C1 / C3 / C4 / C5 intervals); the family-wise
+       policy for multi-route rules; the runtime README and the breakdown / datacube / `mge_mass`
+       cells still on the legacy headline; `single_jit_repeats` written by no producer; P2's
+       between-row drift; a v2 qualification, which must reuse `is_reference_host_class`.
 
 The Brain `COMPILE_DRIFT_RATIO` rule shares P7's point-vs-point limitation. If phase 2 changes the
 local drift semantics, a separate Brain task should decide whether compile drift follows; this
