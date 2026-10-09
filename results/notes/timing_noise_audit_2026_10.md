@@ -125,7 +125,7 @@ T1, T3, P1 and P2, which are as of the fix phase 1 branch.
 | P5 | production qualification | `_production_config.py::witness_verdict` (869); `_production_config.py::timing_summary` (792) | production-representative cold-eval witness | `WITNESS_FACTOR` 1.5 × the production cold-eval range | FRAGILE |
 | P6 | production qualification | `scripts/misc/tooling/build_dashboard.py::qualify` (448) via `scripts/misc/tooling/build_dashboard.py::is_reference_host_class` (437) | `qualified` flag on every dashboard / v1 `profiling-summary` point (the project dashboard and badge; the live Pulse registry reads the v2 catalogue) | `RELEASE_SWEEP_LOADAVG_CAP` 8.0, `RELEASE_SWEEP_NODE`, `REFERENCE_HOST_CLASS_PREFIXES` (`hpc_`) | SOUND-with-caveats |
 | P7 | production qualification | `scripts/misc/tooling/build_dashboard.py::drift` (512) and `scripts/misc/tooling/build_dashboard.py::_summary_comparison` (742) | release-to-release drift badge (drifted / improved / flat / insufficient) | `scripts/misc/tooling/build_dashboard.py::DRIFT_RATIO` 2.0 and `scripts/misc/tooling/build_dashboard.py::DRIFT_FLOOR_S` 1 ms; `flat` only with repeat-summary endpoints; endpoints on different headline estimators → `insufficient` (fix phase 5) | SOUND-with-caveats |
-| P8 | estimator | `scripts/misc/likelihood_breakdown/timing.py` `jit_profile` (92) and `headline_steady_median` (269), called by the 11 runtime cells' local `jit_profile` blocks (e.g. `scripts/imaging/delaunay/likelihood_runtime.py`); read by `scripts/misc/tooling/build_dashboard.py::_point` (296) | `full_pipeline_single_jit` (legacy block mean, kept) and `full_pipeline_single_jit_median*` beside it; the dashboard headline P7 compares | block mean of 10 after the first call; median of `n_timed` individually timed calls after `scripts/misc/likelihood_breakdown/timing.py::MIN_STEADY_WARM` 5 warm calls, `n_timed` = `scripts/misc/likelihood_breakdown/timing.py::HEADLINE_MEDIAN_BUDGET_S` 30 s / block mean in [20, 200] | SOUND-with-caveats |
+| P8 | estimator | `scripts/misc/likelihood_breakdown/timing.py` `jit_profile` (92) and `headline_steady_median` (269), called by the 11 runtime cells' local `jit_profile` blocks (e.g. `scripts/imaging/delaunay/likelihood_runtime.py`); read by `scripts/misc/tooling/build_dashboard.py::_point` (296) | `full_pipeline_single_jit` (legacy block mean, kept) and `full_pipeline_single_jit_median*` beside it; the dashboard headline P7 compares | block mean of 10 after the first call; median of `n_timed` individually timed calls after `scripts/misc/likelihood_breakdown/timing.py::MIN_STEADY_WARM` 5 warm calls, `n_timed` = `scripts/misc/likelihood_breakdown/timing.py::HEADLINE_MEDIAN_BUDGET_S` 30 s / block mean in [20, 200]; no median above `scripts/misc/likelihood_breakdown/timing.py::HEADLINE_MEDIAN_MAX_BLOCK_MEAN_S` 2 s per call | SOUND-with-caveats |
 | P9 | production qualification | `scripts/misc/likelihood_runtime/sweep.py` `timeout_marker` (271), `--skip-existing` (462); `scripts/misc/tooling/build_dashboard.py::marker_verdict` (476); `scripts/misc/tooling/build_readme.py` | `--per-run-timeout` writes an INCONCLUSIVE `.unusable.json` marker; "GPU-only" only for a qualified marker | the timeout; `qualify` on the marker's host and max(load at start, load at timeout) | SOUND-with-caveats |
 | P10 | production qualification | `scripts/misc/tooling/baseline_readiness.py` `check_observation` (351) | structural screening of fresh baseline observations | load cap per allocated CPU, repetitions ≥ 2, warm-up, median aggregation | SOUND |
 | C1 | campaign gate | `scripts/imaging/pixelized/fixed_light_numba_memo_policy.py::matched_counterfactual` (105–106) | `warm_beneficial_3pct` / `warm_harmful_3pct`, which become false-accept / false-reject counts | 0.97 / 1.03 on a median ratio of 4 paired repeats | UNSAFE-SILENT |
@@ -399,10 +399,12 @@ the block, and write `full_pipeline_single_jit_median` (s), `_median_ms`, `_p10_
 `_median_protocol` beside the unchanged `full_pipeline_single_jit`. The dashboard headline is the
 median where present, labelled "steady median", with the block mean beside it; drift never
 compares a median with a block mean. Caveats: one median is still one run's summary, so a
-comparison is still single-sample (P7); no committed row carries a median yet; the breakdown cells
-(`interferometer/mge/likelihood_breakdown.py`, `misc/likelihood_breakdown/interferometer_pixelized.py`)
-and the two `mge_mass` cells (which already write a median *under* the legacy key) are not opted
-in. See (b) item 5.
+comparison is still single-sample (P7); no committed row carries a median yet; a call slower than
+2 s keeps the legacy headline (the median's 25 extra calls would cost minutes); the breakdown cells
+(`interferometer/mge/likelihood_breakdown.py`, `misc/likelihood_breakdown/interferometer_pixelized.py`),
+the datacube cell (`scripts/datacube/delaunay/likelihood_runtime.py`, a 3-call cube block,
+`full_pipeline_cube_single_jit`) and the two `mge_mass` cells (which already write a median *under*
+the legacy key) are not opted in. See (b) item 5.
 
 ### P9 — sweep `--per-run-timeout` → "GPU-only"
 
@@ -915,7 +917,10 @@ correctness or gross-regression guard.
        `catalogue_adapters.DIRECT` already maps to `single_jit_median`), `_median_ms`, `_p10_ms`,
        `_p90_ms` and `_median_protocol` (n_warm, n_timed, statistic, what the block mean is).
        `n_timed` is 30 s over the block mean, clamped to [20, 200]: an A100 call keeps the 200 of
-       job 366914, a 4 s CPU call takes 20 (~100 s with its warm calls). Wired into the 11 runtime
+       job 366914, a 1.5 s CPU call takes 20 (~38 s with its warm calls). Above a 2 s block mean
+       (`HEADLINE_MEDIAN_MAX_BLOCK_MEAN_S`) no median is taken and the legacy headline stands, so a
+       48.8 s laptop call is not extended by ~20 min past `--per-run-timeout` or an HPC wall
+       (review finding). Wired into the 11 runtime
        cells that headline the block: imaging delaunay / delaunay_nn / mge / rectangular,
        interferometer delaunay / mge / rectangular, point-source image-plane plain / solved,
        source-plane plain / solved (the last moved off its own #371 copy onto the helper).
@@ -965,11 +970,13 @@ correctness or gross-regression guard.
        No recorded decision rests on the alma OOM label: its `local_cpu_mp` sibling has a measured
        6.51 s row, and the GPU-first campaign doctrine did not depend on it.
      - **not changed (remainders):** the README runtime table still reads the legacy headline
-       (`full_pipeline_per_call`, the aggregator's alias of the block mean); the breakdown cells
-       and the two `mge_mass` cells are not opted in; `single_jit_repeats` (≥ 2 independent runs
-       per release) is still written by no producer; the wall basis in `wall/rates.py` does not
-       include the median's extra calls (≤ ~30 s plus 5 warm calls per cell on CPU, or 25 calls on a
-       slow one).
+       (`full_pipeline_per_call`, the aggregator's alias of the block mean); the breakdown cells,
+       the datacube cell (`scripts/datacube/delaunay/likelihood_runtime.py`, whose
+       `full_pipeline_cube_single_jit` is a 3-call block after compile) and the two `mge_mass`
+       cells are not opted in; calls slower than 2 s get no median; `single_jit_repeats` (≥ 2
+       independent runs per release) is still written by no producer; the wall basis in
+       `wall/rates.py` does not include the median's extra calls (at most 25 calls of ≤ 2 s,
+       ~50 s, per cell).
 6. **Warm-up flag and witness band (P3, P5).**
    - **Change:** rows after an unsettled warm-up are INCONCLUSIVE for any timing verdict. P5 gains
      host class and an INCONCLUSIVE state off the reference host class.

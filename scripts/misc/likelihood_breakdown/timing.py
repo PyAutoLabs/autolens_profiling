@@ -228,6 +228,11 @@ def steady_median_profile(
 HEADLINE_MEDIAN_BUDGET_S = 30.0
 HEADLINE_MEDIAN_MAX_TIMED = 200
 HEADLINE_MEDIAN_MIN_TIMED = 20
+#: Above this block mean (s per call) no headline median is taken: its 5 warm + 20 timed calls
+#: would cost more than ~50 s (a 48.8 s laptop call would add ~20 min and could push a run past
+#: ``--per-run-timeout`` or an HPC wall). The post-compile transient the median guards against is
+#: a sub-millisecond-to-millisecond effect; the row keeps the legacy headline, labelled as such.
+HEADLINE_MEDIAN_MAX_BLOCK_MEAN_S = 2.0
 
 #: What the legacy ``full_pipeline_single_jit`` is, written into every protocol block.
 SINGLE_JIT_BLOCK_MEAN_IS = (
@@ -279,8 +284,20 @@ def headline_steady_median(
     Call it right after the cell has read ``full_pipeline_per_call`` off the
     ``jit_profile`` block, with that block mean as *block_mean_s*: it adds no
     ``Timer`` section, so the legacy statistic is untouched. Returns
-    :func:`single_jit_median_fields` of :func:`steady_median_profile`.
+    :func:`single_jit_median_fields` of :func:`steady_median_profile`, or ``{}`` (no median; the
+    legacy headline stands) when *block_mean_s* exceeds :data:`HEADLINE_MEDIAN_MAX_BLOCK_MEAN_S`
+    and *n_timed* is not given.
     """
+    if (
+        n_timed is None
+        and block_mean_s is not None
+        and block_mean_s > HEADLINE_MEDIAN_MAX_BLOCK_MEAN_S
+    ):
+        print(
+            f"  steady median skipped: block mean {block_mean_s:.3f} s > "
+            f"{HEADLINE_MEDIAN_MAX_BLOCK_MEAN_S:g} s per call (legacy headline stands)"
+        )
+        return {}
     if n_timed is None:
         n_timed = headline_median_n_timed(block_mean_s)
     steady = steady_median_profile(compiled, *args, n_warm=n_warm, n_timed=n_timed, clock=clock)

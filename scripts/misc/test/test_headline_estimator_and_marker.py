@@ -159,6 +159,14 @@ def test_median_timed_calls_are_sized_from_the_block_mean(block_mean, n):
     assert timing.headline_median_n_timed(block_mean) == n
 
 
+def test_no_median_is_taken_for_a_slow_call():
+    fn = _Counted()
+    assert timing.headline_steady_median(fn, block_mean_s=48.8) == {}
+    assert fn.calls == 0  # nothing run: the legacy headline stands
+    assert timing.headline_steady_median(fn, block_mean_s=1.9, clock=_Clock([1.9] * 20))
+    assert fn.calls == timing.MIN_STEADY_WARM + timing.HEADLINE_MEDIAN_MIN_TIMED
+
+
 def test_every_runtime_cell_that_headlines_the_block_mean_writes_the_median():
     cells = [
         "imaging/delaunay/likelihood_runtime.py",
