@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "generated": "2026-10-09T13:17:34Z",
+ "generated": "2026-10-09T13:50:30Z",
  "reference_host": "euclid-ral-gpu-2",
  "loadavg_cap": 8.0,
  "drift_ratio": 2.0,
