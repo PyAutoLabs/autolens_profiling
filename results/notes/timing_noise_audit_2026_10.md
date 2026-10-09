@@ -47,6 +47,16 @@ SOUND-with-caveats. No committed row carries a median, so no dashboard headline 
 changed; the one rendered "GPU-only" cell (a hand-written laptop OOM marker) now reads "did not
 finish (inconclusive)". See "Fix phase 5 — shipped" under (b).
 
+**Fix phase 3b shipped (phase 8 of #362, PR #410, 2026-10-09):** rows C1, C3, C4 and C5 read
+intervals through one module, `scripts/misc/likelihood_breakdown/interval_gates.py`, built on the
+shared `round_bootstrap` and `ab_verdict` tools, and each gains an INCONCLUSIVE state. C3's six
+targets are one **Holm** family (`ab_verdict.holm_family_verdict`, the policy phase 9 reuses). All
+four become SOUND-with-caveats; no row is UNSAFE-SILENT any more. Re-judging the committed rows
+changed no recorded verdict (memo-policy NO_LEVER, scaling PASS ×5, no log-det lever on the A100)
+but every one of the 128 committed C1 matched classifications is now INCONCLUSIVE (4 repeats < the
+5-round minimum), so the memo-policy note's "false accept / false reject" counts and the design
+conclusion drawn from them lose their interval support. See "Fix phase 3b — shipped" under (b).
+
 **Phase 1 was an audit. Nothing was changed in it:** no gate, budget, tolerance, cutoff, estimator,
 repeat count or production instrument was edited. The only code added is the read-only lister
 `scripts/misc/tooling/list_timing_assertions.py`, which keeps this inventory in step with the code.
@@ -119,6 +129,7 @@ T1, T3, P1 and P2, which are as of the fix phase 1 branch.
 | T9 | CI test | `scripts/misc/test/test_headline_estimator_and_marker.py` (P8 / P9 witnesses: `scripts/misc/test/test_headline_estimator_and_marker.py::test_injected_transient_moves_the_block_mean_2p4x_and_not_the_median`, `scripts/misc/test/test_headline_estimator_and_marker.py::test_drift_never_compares_a_median_with_a_block_mean`, `scripts/misc/test/test_headline_estimator_and_marker.py::test_an_unqualified_marker_is_never_rendered_gpu_only`, `scripts/misc/test/test_headline_estimator_and_marker.py::test_skip_existing_re_measures_an_unqualified_marker`) | the headline median on an injected clock, the dashboard estimator / drift rule, `marker_verdict` on synthetic and the 4 committed markers, `sweep.py --skip-existing` with a stubbed subprocess | exact | SOUND (pins the fix phase 5 semantics) |
 | T8 | CI test | `scripts/misc/test/test_round_bootstrap.py` (round-bootstrap witnesses: `scripts/misc/test/test_round_bootstrap.py::test_the_round_interval_covers_the_true_ratio_under_a_fixed_seed`, `scripts/misc/test/test_round_bootstrap.py::test_round_coverage_is_near_nominal_and_iid_coverage_is_not`, `scripts/misc/test/test_round_bootstrap.py::test_rounds_are_paired_across_arms`, `scripts/misc/test/test_round_bootstrap.py::test_the_committed_pytree_ral_cpu_saving_stays_below_the_bar`) | `round_median_ratio` / `round_median_saving` on seeded correlated rounds, each cell's lifted helper, and the committed C6 / C7 / C10 rows | exact, seeded | SOUND (pins the fix phase 4 semantics) |
 | T10 | CI test | `scripts/misc/test/test_warmup_and_witness_band.py` (P5 / P3-dashboard witnesses: `scripts/misc/test/test_warmup_and_witness_band.py::test_a_reference_host_class_row_keeps_its_pass_or_fail`, `scripts/misc/test/test_warmup_and_witness_band.py::test_a_laptop_row_is_inconclusive_whatever_the_band_says`, `scripts/misc/test/test_warmup_and_witness_band.py::test_the_committed_witness_rows_rejudge_as_inconclusive`, `scripts/misc/test/test_warmup_and_witness_band.py::test_a_point_whose_warmup_never_settled_is_unqualified`) | `witness_verdict` on reference-class and laptop host classes, the 8 committed witness rows, `qualify` on points carrying a warm-up record | exact | SOUND (pins the fix phase 6 semantics) |
+| T11 | CI test | `scripts/misc/test/test_interval_gates.py` (C1 / C3 / C4 / C5 and Holm witnesses: `scripts/misc/test/test_interval_gates.py::test_c5_a_point_saving_above_threshold_with_a_straddling_interval_is_inconclusive`, `scripts/misc/test/test_interval_gates.py::test_c3_holm_witness_unadjusted_go_but_family_wise_inconclusive`, `scripts/misc/test/test_interval_gates.py::test_c1_a_point_below_097_with_a_straddling_interval_is_inconclusive`, `scripts/misc/test/test_interval_gates.py::test_c4_status_pass_requires_a_resolved_pass`) | `interval_gates` and `holm_family_verdict` on fixed synthetic repeats with fixed seeds, the cells' wiring, and the committed C1 / C3 / C4 / C5 rows | exact, seeded | SOUND (pins the fix phase 3b semantics) |
 | P1 | production qualification | `scripts/imaging/pixelized/fixed_light_numba.py::<module>` (2122–2130; raise at 2267) via `scripts/misc/likelihood_breakdown/overhead_verdict.py::abba_overhead_verdict` | ABBA overhead in ms: one-sided t bounds vs budget; raises only on FAIL / FAIL_GROSS, INCONCLUSIVE keeps the row | `scripts/imaging/pixelized/fixed_light_numba.py::MAX_INSTRUMENTATION_OVERHEAD_MS` 12.0; `scripts/imaging/pixelized/fixed_light_numba.py::MIN_BLOCKS_FOR_OVERHEAD_ASSERT` 3; `scripts/imaging/pixelized/fixed_light_numba.py::REFERENCE_OVERHEAD_RATIO` 1.03 (recorded) | SOUND-with-caveats |
 | P2 | campaign gate | `scripts/imaging/pixelized/fixed_light_numba.py::<module>` (2386–2496) via `scripts/misc/likelihood_breakdown/ab_verdict.py::ab_rule_verdict` | promotion `timing_candidate` / `INCONCLUSIVE` / `NO_LEVER` | whole-call speedup ≥ 0.05 on a 90 % paired-block interval (≥ 5 blocks) and both P1 PASS; a P1 INCONCLUSIVE gives INCONCLUSIVE | FRAGILE |
 | P3 | production protocol | `scripts/imaging/pixelized/fixed_light_numba.py::_warm_to_steady_state` (1745); read since fix phase 6 by `scripts/misc/likelihood_breakdown/warmup_gate.py` `warmup_unsettled_reason`, called by `abba_overhead_verdict` (P1), the promotion block (P2) and `build_dashboard.qualify` (P6) | warm-up "steady" flag; an unsettled row is INCONCLUSIVE for every timing verdict that reads it | `scripts/imaging/pixelized/fixed_light_numba.py::WARMUP_WINDOW` 3, `scripts/imaging/pixelized/fixed_light_numba.py::WARMUP_TOLERANCE` 0.10, `scripts/imaging/pixelized/fixed_light_numba.py::WARMUP_MAX_CALLS` 12 | SOUND-with-caveats |
@@ -129,11 +140,11 @@ T1, T3, P1 and P2, which are as of the fix phase 1 branch.
 | P8 | estimator | `scripts/misc/likelihood_breakdown/timing.py` `jit_profile` (92) and `headline_steady_median` (269), called by the 11 runtime cells' local `jit_profile` blocks (e.g. `scripts/imaging/delaunay/likelihood_runtime.py`); read by `scripts/misc/tooling/build_dashboard.py::_point` (296) | `full_pipeline_single_jit` (legacy block mean, kept) and `full_pipeline_single_jit_median*` beside it; the dashboard headline P7 compares | block mean of 10 after the first call; median of `n_timed` individually timed calls after `scripts/misc/likelihood_breakdown/timing.py::MIN_STEADY_WARM` 5 warm calls, `n_timed` = `scripts/misc/likelihood_breakdown/timing.py::HEADLINE_MEDIAN_BUDGET_S` 30 s / block mean in [20, 200]; no median above `scripts/misc/likelihood_breakdown/timing.py::HEADLINE_MEDIAN_MAX_BLOCK_MEAN_S` 2 s per call | SOUND-with-caveats |
 | P9 | production qualification | `scripts/misc/likelihood_runtime/sweep.py` `timeout_marker` (271), `--skip-existing` (462); `scripts/misc/tooling/build_dashboard.py::marker_verdict` (476); `scripts/misc/tooling/build_readme.py` | `--per-run-timeout` writes an INCONCLUSIVE `.unusable.json` marker; "GPU-only" only for a qualified marker | the timeout; `qualify` on the marker's host and max(load at start, load at timeout) | SOUND-with-caveats |
 | P10 | production qualification | `scripts/misc/tooling/baseline_readiness.py` `check_observation` (351) | structural screening of fresh baseline observations | load cap per allocated CPU, repetitions ≥ 2, warm-up, median aggregation | SOUND |
-| C1 | campaign gate | `scripts/imaging/pixelized/fixed_light_numba_memo_policy.py::matched_counterfactual` (105–106) | `warm_beneficial_3pct` / `warm_harmful_3pct`, which become false-accept / false-reject counts | 0.97 / 1.03 on a median ratio of 4 paired repeats | UNSAFE-SILENT |
+| C1 | campaign gate | `scripts/imaging/pixelized/fixed_light_numba_memo_policy.py::matched_counterfactual` (101) via `scripts/misc/likelihood_breakdown/interval_gates.py::matched_classification` (90) and `scripts/misc/likelihood_breakdown/interval_gates.py::matched_decision_counts` (149) | `classification` beneficial / harmful / neutral / INCONCLUSIVE (`warm_beneficial_3pct` / `warm_harmful_3pct` only when resolved), counted as resolved classifications plus an INCONCLUSIVE count, never as false-accept / false-reject rates | 0.97 / 1.03 on a 90 % paired round-bootstrap interval of the memo / cold median ratio, ≥ 5 repeats; the cell records `scripts/imaging/pixelized/fixed_light_numba_memo_policy.py::MATCHED_REPEATS` 4, so every classification is INCONCLUSIVE by construction | SOUND-with-caveats |
 | C2 | campaign gate | `scripts/imaging/pixelized/fixed_light_numba_memo_policy.py::evaluate` (241, 248) | descriptive cross-lane 3 % classifications | 1.03 / 0.97 on medians | FRAGILE |
-| C3 | campaign gate | `scripts/imaging/pixelized/fixed_light_numba_memo_policy.py::main` (479–490) | memo-policy verdict GO / NO_LEVER | six conjunctive targets: ≤ 0.95 vs memo and ≤ 1.03 vs cold | UNSAFE-SILENT |
-| C4 | campaign gate | `scripts/imaging/pixelized/fixed_light_numba_scaling.py::evaluate_group` (163) | `breakdown_reconciles`, which feeds status PASS | \|observed median / clean median − 1\| ≤ 0.05 | UNSAFE-SILENT |
-| C5 | campaign gate | `scripts/imaging/pixelized/fixed_light_trace.py::<module>` (3741–3760) | logdet lever `clears_threshold` | `scripts/misc/likelihood_breakdown/logdet_reuse_injection.py::LOGDET_LEVER_MS` 0.5 ms, on both estimators | UNSAFE-SILENT |
+| C3 | campaign gate | `scripts/imaging/pixelized/fixed_light_numba_memo_policy.py::main` (486–493) via `scripts/misc/likelihood_breakdown/interval_gates.py::memo_policy_family` (200) and `scripts/misc/likelihood_breakdown/ab_verdict.py::holm_family_verdict` (509) | memo-policy verdict GO / NO_LEVER / INCONCLUSIVE | six targets (≤ 0.95 vs memo, ≤ 1.03 vs cold / memo), each a 90 % paired round-bootstrap interval over the repeats, one Holm family at family-wise 90 %: GO only if all six resolve in favour, NO_LEVER only if one resolves against | SOUND-with-caveats |
+| C4 | campaign gate | `scripts/imaging/pixelized/fixed_light_numba_scaling.py::evaluate_group` (160) via `scripts/misc/likelihood_breakdown/interval_gates.py::breakdown_reconciliation` (257) and `scripts/misc/likelihood_breakdown/interval_gates.py::conjoin_reconciliations` (300); status by `scripts/imaging/pixelized/fixed_light_numba_scaling.py::run_status` (192) | `breakdown_reconciles` PASS / FAIL / INCONCLUSIVE; status PASS only on a resolved PASS in every lane, INCONCLUSIVE when only the reconciliation is unresolved | observed / clean median − 1 within ±0.05 on a 90 % paired round-bootstrap interval over the repeats (≥ 5) | SOUND-with-caveats |
+| C5 | campaign gate | `scripts/imaging/pixelized/fixed_light_trace.py::<module>` (3708, 3758–3761) via `scripts/misc/likelihood_breakdown/interval_gates.py::logdet_lever_verdict` (316) | logdet lever `clears_threshold` True / False only when resolved, else `"INCONCLUSIVE"` | `scripts/misc/likelihood_breakdown/logdet_reuse_injection.py::LOGDET_LEVER_MS` 0.5 ms on both estimators: the interleaved saving on a 90 % paired round-bootstrap interval (7 rounds); the one-block `jit_profile` saving has no interval, so a lever resolves only as False or INCONCLUSIVE | SOUND-with-caveats |
 | C6 | campaign gate | `scripts/point_source_source/source_plane/backward_pass_ab.py::_phase2c_rule` (981) | phase-2c GO | `scripts/point_source_source/source_plane/backward_pass_ab.py::GO_MIN_SAVED_MS` 0.05 ms and `scripts/point_source_source/source_plane/backward_pass_ab.py::GO_MIN_FRACTION` 0.15, point estimate and 90 % CI; GO / NO_GO / INCONCLUSIVE via `ab_rule_verdict` since fix phase 3, on paired round-bootstrap intervals since fix phase 4 | SOUND-with-caveats |
 | C7 | campaign gate | `scripts/point_source_source/source_plane/pytree_input_ab.py::_phase2b_rule` via `scripts/misc/likelihood_breakdown/ab_verdict.py::ab_rule_verdict` | phase-2b GO / NO_GO / INCONCLUSIVE | `scripts/point_source_source/source_plane/pytree_input_ab.py::GO_MIN_SAVED_MS` 0.05 ms and `scripts/point_source_source/source_plane/pytree_input_ab.py::GO_MIN_FRACTION` 0.15, on 90 % paired round-bootstrap intervals (≥ 5 rounds) | SOUND-with-caveats |
 | C8 | campaign gate | `scripts/point_source_source/source_plane/gradient_mode_crossover.py` `_crossover` (763) | crossover summary ("rev wins from…", "n* = …") | ratio = 1 crossing of point medians; bootstrap fractions and `n*` CI from paired round bootstraps since fix phase 4 | FRAGILE |
@@ -149,25 +160,28 @@ T1, T3, P1 and P2, which are as of the fix phase 1 branch.
 
 | Kind | Rows | SOUND | FRAGILE | UNSAFE-SILENT |
 |---|---|---|---|---|
-| CI test | 10 | 10 | 0 | 0 |
+| CI test | 11 | 11 | 0 | 0 |
 | Production qualification / protocol / estimator | 9 | 9 | 0 | 0 |
-| Campaign gate (incl. P2 promotion) | 13 | 4 | 5 | 4 |
+| Campaign gate (incl. P2 promotion) | 13 | 8 | 5 | 0 |
 | Submit basis | 1 | 1 | 0 | 0 |
 | Resource guard | 2 | 2 | 0 | 0 |
-| **Total** | **35** | **26** | **5** | **4** |
+| **Total** | **36** | **31** | **5** | **0** |
 
-Counts after fix phase 6, which added the CI-test row T10 and moved P3 and P5 from FRAGILE to
-SOUND-with-caveats (counted as SOUND, like T1, P1, P6–P9, C6, C7 and C10). After fix phase 5 the
+Counts after fix phase 3b, which added the CI-test row T11 and moved C1, C3, C4 and C5 from
+UNSAFE-SILENT to SOUND-with-caveats (counted as SOUND, like T1, P1, P3, P5–P9, C6, C7 and C10).
+After fix phase 6 the totals were 26 / 5 / 4 over 35 rows (T10 added; P3 and P5 FRAGILE →
+SOUND-with-caveats). After fix phase 5 the
 totals were 23 / 7 / 4 over 34 rows (T9 added; P8 FRAGILE and P9 UNSAFE-SILENT →
 SOUND-with-caveats). After fix phase 4 the totals were 20 / 8 / 5 over 33 rows (T8 added; C6, C7, C10 FRAGILE →
 SOUND-with-caveats). After fix phase 3 the totals were
 16 / 11 / 5 over 32 rows (T7 added; C7, C10 and P2 UNSAFE-SILENT → FRAGILE). After fix
 phase 2 the totals were 15 / 8 / 8 over 31 rows; after fix phase 1, 13 / 9 / 9 (P6 UNSAFE-SILENT,
 P7 FRAGILE); at phase 1, 11 / 10 / 10 (T1 FRAGILE, P1 UNSAFE-SILENT). The production row group is
-P1 and P3–P10, nine rows. P2 is a promotion rule, so it is counted with the campaign gates. Four
-rows can still label a result from a point estimate or without looking at the measurement: C1,
-C3, C4 and C5, all phase 3b (at phase 1 there were ten; P9 left with fix phase 5). None of the
-thirteen CI-test, submit or resource-guard rows is UNSAFE-SILENT.
+P1 and P3–P10, nine rows. P2 is a promotion rule, so it is counted with the campaign gates. No
+row can still label a result from a point estimate or without looking at the measurement (at
+phase 1 there were ten; C1, C3, C4 and C5 left with fix phase 3b). The five FRAGILE rows (P2, C2,
+C8, C9, C11) have an interval or a descriptive label but an unpaired or unadjusted design: phase 9
+(family-wise C6 / C10 / C11) and the C11 / C12 / P2-drift remainders.
 
 ## Per-row detail
 
@@ -473,6 +487,13 @@ limit: repetitions ≥ 2 is a weak floor for a median, but nothing is accepted a
 - **C3:** six point-ratio targets must all hold for GO; otherwise the verdict is NO_LEVER. The
   conjunction lowers the false-GO rate but raises the false-NO_LEVER rate, and no multiple-
   comparison logic is stated. NO_LEVER is published as a verdict. **UNSAFE-SILENT.**
+- **Since fix phase 3b:** C1 classifies a transition only when the 90 % paired round-bootstrap
+  interval of memo / cold (repeat = round) resolves against the 3 % band, and the counts are
+  resolved classifications plus an INCONCLUSIVE count; with the cell's 4 repeats (< 5) every
+  classification is INCONCLUSIVE by construction. C3's six targets are intervals over the
+  repeats judged as one Holm family; GO / NO_LEVER only when resolved. Both
+  **SOUND-with-caveats** (caveats: C1 cannot resolve until the repeats reach 5; C3's bootstrap
+  has 6 rounds, so Holm's first level, 98.3 %, sits near the extremes of 462 distinct resamples).
 
 ### C4 — numba scaling breakdown reconciliation
 
@@ -481,6 +502,12 @@ feeds `status: PASS`. The two medians come from interleaved but separate travers
 interval, and the 5 % band is a point comparison. **UNSAFE-SILENT** on the PASS side. The FAIL
 side is loud: `INCOMPLETE_OR_FAIL`.
 
+**Since fix phase 3b:** `breakdown_reconciles` is PASS / FAIL / INCONCLUSIVE on a 90 % paired
+round-bootstrap interval over the repeats (the clean and instrumented traversals of a repeat
+pair); status PASS needs every lane resolved PASS, and an unresolved reconciliation with every
+other gate green is status INCONCLUSIVE. **SOUND-with-caveats** (the four lanes of a cell are a
+conjunction at 90 % each, conservative for PASS; no family-wise adjustment).
+
 ### C5 — logdet lever `clears_threshold` (`fixed_light_trace.py`)
 
 The rule is pre-registered (#303): a lever clears when **both** the `jit_profile` saving and the
@@ -488,6 +515,13 @@ interleaved-median saving are ≥ 0.5 ms against the same-process library contro
 estimates of the same quantity both clearing is weaker evidence than it looks: their errors share
 the control. The code labels it "Never a gate", but it qualifies a lever "worth a PyAutoArray
 prompt". **UNSAFE-SILENT.**
+
+**Since fix phase 3b:** the rule reads intervals. The interleaved saving gets a 90 % paired
+round-bootstrap interval over its 7 rounds (a round = one 10-call block per arm); the
+`jit_profile` saving is one block per arm and has no interval, so that estimator is INCONCLUSIVE
+by construction. Their conjunction (`ab_verdict.conjoin_verdicts`) makes `clears_threshold`
+`False` when the interleaved interval resolves below 0.5 ms and `"INCONCLUSIVE"` otherwise; with
+this protocol it can never be `True`. **SOUND-with-caveats** (that limit is the caveat).
 
 ### C6 — backward-pass phase-2c rule (FRAGILE; the best-designed gate found)
 
@@ -716,6 +750,7 @@ Limits that must be stated beside any interval:
   the INCONCLUSIVE / NO_LEVER rate. A "best of k" argmax inflates the winner's apparent effect.
   Either pre-register a single primary comparison or adjust (for example, Bonferroni or Holm on
   the per-comparison confidence), and never name a "best" when the leaders' intervals overlap.
+  (Since fix phase 3b, C3 is judged by Holm, `ab_verdict.holm_family_verdict`.)
 - **Host qualification is not statistics.** No interval turns a laptop row into a reference-host
   row. P6 must stay a separate gate from the measurement verdict.
 
@@ -884,6 +919,116 @@ correctness or gross-regression guard.
        logdet lever `clears_threshold`) have no interval at all; each needs its own block-level
        interval over a different data layout. They keep their phase 1 verdicts (UNSAFE-SILENT) and
        are the next A/B fix, through the same `ab_rule_verdict`.
+   - **Shipped (phase 8 of #362, PR #410, 2026-10-09), C1 / C3 / C4 / C5 — "phase 3b".** As
+     implemented:
+     - **one module** (`scripts/misc/likelihood_breakdown/interval_gates.py`), one function per
+       gate, each on its own pairing unit and through the shared tools (`round_median_ratio` /
+       `round_median_saving` for the 90 % paired round bootstrap, `ab_rule_verdict` for the
+       verdict; the minimum stays `MIN_AB_ROUNDS` 5). Bars, bands, repeat counts and protocols
+       are unchanged. The three cells call it; T11 asserts they do and that no point-only
+       comparison is left.
+       - **C1** `matched_classification(samples_ms)`: memo / cold over the transition's repeats
+         (a repeat is the round, cold and memo alternating inside it); `beneficial` when the
+         interval and point are ≤ 0.97, `harmful` when ≥ 1.03, `neutral` when the interval is
+         wholly inside the band, else INCONCLUSIVE. `matched_decision_counts` replaces
+         `false_accepts` / `false_rejects` with `resolved_harmful_accepted`,
+         `resolved_beneficial_rejected` (and their two complements), `resolved_neutral` and
+         `inconclusive`, under a qualification that they are not decision-error rates.
+         `warm_beneficial_3pct` / `warm_harmful_3pct` are kept, true only when resolved.
+       - **C3** `memo_policy_family(evaluations)`: each of the six targets is
+         `median(guarded) / median(reference)` over the evaluation's repeats (a repeat runs the
+         three lanes once in a rotated order); the six are one Holm family. The cell writes
+         `performance_family` (levels, steps, adjusted and unadjusted verdicts),
+         `performance_targets` (per-target GO / NO_GO / INCONCLUSIVE at its Holm level) and
+         `performance_targets_point` (the old point booleans, kept for continuity); the verdict
+         is GO / NO_LEVER / INCONCLUSIVE when the gates hold, `INCOMPLETE_OR_FAIL` otherwise.
+       - **C4** `breakdown_reconciliation(observed, clean)`: `ratio − 1` against ±0.05 as two
+         criteria; `breakdown_reconciles` is PASS / FAIL / INCONCLUSIVE (a string, was a bool;
+         no reader in the tree keyed on it) with the interval beside it in
+         `breakdown_reconciliation`; `breakdown_passed` needs every lane PASS (lanes joined by `conjoin_reconciliations`, i.e. `conjoin_verdicts`);
+         `run_status` gives PASS / INCONCLUSIVE / INCOMPLETE_OR_FAIL.
+       - **C5** `logdet_lever_verdict(interleaved, saving_jit_profile_ms)`: the interleaved
+         saving's interval over its 7 rounds; the `jit_profile` estimator is INCONCLUSIVE by
+         construction (one block per arm); the two are joined by the new
+         `ab_verdict.conjoin_verdicts`, so a resolved interleaved NO_GO is not hidden by the
+         other estimator's missing interval. `clears_threshold` is `True` / `False` only when
+         resolved, `"INCONCLUSIVE"` otherwise (`None` still marks the control row);
+         `interval_verdict` records both estimators.
+     - **the family-wise policy** (`scripts/misc/likelihood_breakdown/ab_verdict.py`, for phase 9
+       to reuse on C6 / C10 / C11): `holm_levels(k, confidence=0.90)` → the step-down
+       confidences `1 − α/k … 1 − α`; `holm_family_verdict(members, *, n, min_n=5,
+       confidence=0.90, gates=None)` → `FamilyVerdict`, where `members` maps each target's name
+       to a callable `confidence → Criterion` (for a bootstrap, `bootstrap_criterion(name, point,
+       boots, bar, direction)` reads two-sided percentiles of the same draws, so intervals are
+       nested). Procedure: judge the m unresolved targets at `1 − α/m`; every target resolved
+       (GO or NO_GO) is final and m drops; stop when none resolves (the rest INCONCLUSIVE). The
+       family verdict is the `ab_rule_verdict` conjunction of the final per-target verdicts; the
+       unadjusted verdict (every target at 90 %) is recorded beside it. Holm is applied to both
+       directions; for GO alone an intersection-union conjunction is already level-α
+       unadjusted, so a family GO is conservative — stated, kept for one policy.
+     - **witnesses** (`test_interval_gates.py`, T11; fixed arrays, fixed seeds): Holm levels for
+       k = 6 are 98.33 / 98 / 97.5 / 96.67 / 95 / 90 %; Holm resolves a two-target family that
+       Bonferroni leaves open; six targets each resolving at 90 % but none at 98.33 % are
+       unadjusted GO and family-wise INCONCLUSIVE (exact normal intervals, and again through
+       `memo_policy_family` on synthetic sequence totals: point = bar / 1.0175, 1 % spread); one
+       target resolved against makes the family NO_GO whatever the rest. C1: a 0.96 point (the old
+       flag fired) with interval straddling 0.97 → INCONCLUSIVE; 0.50 / 1.70 / 1.00 with 0.2 %
+       spread → beneficial / harmful / neutral; 4 repeats → INCONCLUSIVE at any effect. C3: all
+       clear → GO; one target at 1.06 vs 1.03 → NO_LEVER; a 0.94 point (old GO) with ±3.75 %
+       scatter → INCONCLUSIVE. C4: 1.002 → PASS; 1.10 and 0.90 → FAIL; a 1.04 point (old PASS)
+       and a 1.06 point (old FAIL) with ±3 % scatter → INCONCLUSIVE; 4 repeats → INCONCLUSIVE;
+       status PASS only with every lane PASS. C5: a 0.6 ms point with interval straddling 0.5 →
+       INCONCLUSIVE; 0.1 ms resolved → `False`; a 2.0 ms saving resolved on the interleaved
+       interval is still INCONCLUSIVE (no `jit_profile` interval).
+     - **re-judged committed rows (facts; no JSON rewritten, no compute run):**
+
+       | Rule | Committed rows | Published | Re-judged | Changed |
+       |---|---|---|---|---|
+       | C3 memo policy | `fixed_light_numba_memo_policy_..._hpc_ral_cpu_fp64_..._s5b` (job 343413), 6 repeats | NO_LEVER (4 targets met, broad holdout 1.0528 vs cold, nearby holdout 1.1166 vs memo missed) | NO_LEVER: all six resolve at Holm's first level (98.33 %), the same way as their points; graded / permuted vs memo [0.619, 0.621] / [0.645, 0.646]; vs cold [0.985, 0.987] / [1.005, 1.008]; broad holdout [1.052, 1.056]; nearby holdout [1.114, 1.117] | no |
+       | C1 matched | the same row, 128 eligible transitions (graded 38, permuted 40, nearby 28, broad 22), 4 repeats each | 128 classified (38 beneficial, 90 harmful); "false accepts" 1, "false rejects" 14 | 128 INCONCLUSIVE (4 < 5 repeats); resolved counts all 0 | **yes** |
+       | C4 scaling | `fixed_light_numba_scaling_delaunay_..._s6_n{500,1000,1500,2500,4000}`, 4 lanes each, 6 repeats | 20 reconcile; 5 × status PASS | 20 PASS (every interval within ±0.0062); 5 × status PASS | no |
+       | C5 log-det, A100 | 6 lever rows (Delaunay / rectangular × k32 / k64 / k256) | `clears_threshold` False ×6 | False ×6: interleaved savings resolve below 0.5 ms (widest upper bound 0.152 ms, rectangular k32) | no |
+       | C5 log-det, laptop RTX 2060 | Delaunay k32 / k64 / k256 | False ×3 | k32 False ([−53.7, −6.3] ms); k64 and k256 INCONCLUSIVE ([−88.4, +34.1], [−153.3, +124.4] ms) | **yes** (2 laptop rows) |
+       | C5 controls | Delaunay / rectangular A100, Delaunay laptop | `None` (control) | `None`; for the record the A100 control savings resolve below 0.5 ms and the laptop one does not | no |
+
+       Decisions: the memo-policy NO_LEVER (and the phase 7 shelving, which rests on "no
+       promotable residual-precheck policy") stands, resolved on intervals. The phase-6 scaling
+       PASS stands. The log-det "no lever" on the A100 stands; the two changed C5 rows are
+       laptop screen rows, and the phase-4 verdict was taken on the A100 rows. **One recorded
+       reading loses its interval support:** `fixed_lens_light_numba_memo_policy_2026_09.md`
+       ("Decisions and design implications") draws "a residual … is not a reliable proxy … it
+       can reject useful sets and accept costly ones" from the C1 counts (1 false accept, 14
+       false rejects, `seed1_broad_03` at 2.514×). All 128 classifications are now INCONCLUSIVE
+       by the 5-round minimum. For context, not as a verdict: a two-sided 90 % paired Student-t
+       on the 4 per-repeat ratios (df = 3) resolves all 128 exactly as published (nearest bound
+       0.35 from the band; `seed1_broad_03` [2.511, 2.525]), so the effects are large; whether a
+       4-repeat t interval may resolve C1, or the repeats are raised to ≥ 5, is a human decision
+       (flagged in the PR). No recorded human decision rests on the C1 counts. That ledger carries
+       a dated re-judgement note.
+     - **decisions taken (flagged in the PR):** (1) C1 keeps the audit's 5-round minimum, so every
+       4-repeat classification is INCONCLUSIVE by construction (the reversible alternative: a
+       C1-specific paired t at n = 4, or `MATCHED_REPEATS` ≥ 5 on a new run); (2) Holm is applied
+       to C3 in both directions, so a family GO is conservative; (3) C5's one-block `jit_profile`
+       estimator has no interval, so under the pre-registered "both estimators" rule a lever can
+       resolve `False` but never `True` until that basis records repeats (or the rule is
+       re-registered on the interleaved estimator alone — a human decision); (4) C4's
+       `breakdown_reconciles` changes type (bool → PASS / FAIL / INCONCLUSIVE) and the scaling
+       status gains INCONCLUSIVE.
+     - **contract:** no `profiling-summary@2` field, metric or meaning change; `build_catalogue.py`
+       is not edited (its catalogue is re-rendered for the source hash only). None of the three
+       cells produces a dashboard point.
+     - **limits:** a percentile bootstrap over 6–7 rounds is coarse (462 / 1716 distinct
+       resamples), and Holm's 98.33 % level reads near their extremes; the four C4 lanes of a
+       cell and C5's two estimators are conjunctions without an adjustment (conservative for
+       PASS / GO).
+     - **not changed (remainders):** phase 9 — the family-wise policy applied to C6 (routes ×
+       lanes), C10 (configurations) and C11 (kernels × cells, its ratio > 1.3 given an interval)
+       through `holm_family_verdict`, C12 moved to the paired round bootstrap where its layout
+       allows, and P2's between-row drift recorded (INCONCLUSIVE when the rows drift); phase 10 —
+       headline completion (the runtime README on the median headline; the breakdown, datacube
+       and `mge_mass` cells opted in; `wall/rates.py` counting the median's calls;
+       `single_jit_repeats` support). Not in this audit's PRs: a v2 qualification (waits on the
+       reference-host decision) and measuring `single_jit_repeats` (needs compute).
 4. **Bootstrap structure (C6, C8, C9 and the reported CIs).**
    - **Change:** resample whole rounds, paired across routes, instead of iid calls. Record the
      number of rounds as the effective n.
