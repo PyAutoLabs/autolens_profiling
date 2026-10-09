@@ -178,6 +178,71 @@ PROVENANCE: dict[str, str] = {
 }
 
 
+# ---------------------------------------------------------------------------
+# The headline steady median's extra calls (timing-noise audit P8, phase 10)
+# ---------------------------------------------------------------------------
+#
+# Since fix phase 5 every runtime cell (and since phase 10 the interferometer breakdown cells, the
+# datacube cell and the two mge_mass cells) times a steady median of its compiled pipeline after
+# the legacy block: ``likelihood_breakdown/timing.py::headline_steady_median``, MIN_STEADY_WARM
+# warm calls plus n_timed = HEADLINE_MEDIAN_BUDGET_S / block mean, clamped to
+# [HEADLINE_MEDIAN_MIN_TIMED, HEADLINE_MEDIAN_MAX_TIMED], and none at all above
+# HEADLINE_MEDIAN_MAX_BLOCK_MEAN_S per call. Those calls are wall clock a measured wall taken
+# before the median existed does not contain. The constants are mirrored here (this module is
+# pure stdlib; ``timing.py`` imports jax) and pinned equal by
+# ``scripts/misc/test/test_wall_check_submits.py``.
+HEADLINE_MEDIAN_MIN_STEADY_WARM = 5
+HEADLINE_MEDIAN_BUDGET_S = 30.0
+HEADLINE_MEDIAN_MIN_TIMED = 20
+HEADLINE_MEDIAN_MAX_TIMED = 200
+HEADLINE_MEDIAN_MAX_BLOCK_MEAN_S = 2.0
+
+#: Scripts that take the headline median (repo-layout paths; legacy paths resolve through
+#: ``_script_routes``). Each invocation adds at most :func:`headline_median_extra_wall_s`.
+HEADLINE_MEDIAN_SCRIPTS = frozenset(
+    {
+        "scripts/imaging/delaunay/likelihood_runtime.py",
+        "scripts/imaging/delaunay_nn/likelihood_runtime.py",
+        "scripts/imaging/mge/likelihood_runtime.py",
+        "scripts/imaging/rectangular/likelihood_runtime.py",
+        "scripts/interferometer/delaunay/likelihood_runtime.py",
+        "scripts/interferometer/mge/likelihood_runtime.py",
+        "scripts/interferometer/rectangular/likelihood_runtime.py",
+        "scripts/point_source_image/image_plane/likelihood_runtime.py",
+        "scripts/point_source_image/image_plane/likelihood_runtime_solved.py",
+        "scripts/point_source_source/source_plane/likelihood_runtime.py",
+        "scripts/point_source_source/source_plane/likelihood_runtime_solved.py",
+        # phase 10
+        "scripts/interferometer/mge/likelihood_breakdown.py",
+        "scripts/interferometer/delaunay/likelihood_breakdown.py",
+        "scripts/interferometer/rectangular/likelihood_breakdown.py",
+        "scripts/datacube/delaunay/likelihood_runtime.py",
+        "scripts/imaging/mge_mass/likelihood_runtime_jax.py",
+        "scripts/imaging/rectangular/likelihood_runtime_numba_mge_mass.py",
+    }
+)
+
+
+def headline_median_extra_wall_s(block_mean_s: float | None = None) -> float:
+    """Upper bound on the wall seconds one headline median adds to one cell run.
+
+    With a known block mean: (warm + timed) calls at that mean, 0 above the 2 s cut-off. Without
+    one (a submit does not know its per-call time): the worst case over all block means, which
+    is a call just under the cut-off taking the minimum 20 timed calls, (5 + 20) x 2 s = 50 s.
+    Over the budget-limited range the timed calls cost at most ~30 s plus the 5 warm calls, so
+    50 s bounds every case.
+    """
+    if block_mean_s is not None:
+        if not block_mean_s > 0 or block_mean_s > HEADLINE_MEDIAN_MAX_BLOCK_MEAN_S:
+            return 0.0
+        n = int(HEADLINE_MEDIAN_BUDGET_S // block_mean_s)
+        n_timed = max(HEADLINE_MEDIAN_MIN_TIMED, min(HEADLINE_MEDIAN_MAX_TIMED, n))
+        return (HEADLINE_MEDIAN_MIN_STEADY_WARM + n_timed) * block_mean_s
+    return (
+        HEADLINE_MEDIAN_MIN_STEADY_WARM + HEADLINE_MEDIAN_MIN_TIMED
+    ) * HEADLINE_MEDIAN_MAX_BLOCK_MEAN_S
+
+
 class UnmeasuredCellError(KeyError):
     """No measured step rate exists for the requested configuration.
 

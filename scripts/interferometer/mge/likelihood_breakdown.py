@@ -1021,6 +1021,9 @@ if log_likelihood_ref is not None:
 print(f"  Assertions vs reference ({reference_mode}): PASSED or skipped where no reference exists")
 
 full_pipeline_per_call = None
+# Timing-noise audit P8 (#362, phase 10): the steady median of the compiled full pipeline,
+# written beside the legacy ``full_pipeline_single_jit`` block mean ({} = not taken).
+full_pipeline_median: dict = {}
 full_pipeline_logl = None
 full_pipeline_abs_diff = None
 full_pipeline_status: dict = {"status": "not_run"}
@@ -1177,6 +1180,7 @@ def write_results(stage: str):
         "full_pipeline_single_jit": (
             float(full_pipeline_per_call) if full_pipeline_per_call is not None else None
         ),
+        **full_pipeline_median,
         "steps_sub_rows": {k: float(v) for k, v in sub_rows.items()},
         "setup_split": {k: float(v) for k, v in setup_split.items()},
         "setup_prefix_per_call_s": {str(k): float(v) for k, v in prefix_per_call.items()},
@@ -1319,8 +1323,23 @@ def full_pipeline(params):
 # The library's fused pipeline (it runs the library transform, never the arm's).
 if library_path["status"] == "ok":
     try:
-        _, full_pipeline_logl = jit_profile(full_pipeline, "full_pipeline", params_tree)
+        _full_compiled, full_pipeline_logl = jit_profile(
+            full_pipeline, "full_pipeline", params_tree
+        )
         full_pipeline_per_call = _per_call("full_pipeline")
+        try:
+            full_pipeline_median = timing.headline_steady_median(
+                _full_compiled,
+                params_tree,
+                block_mean_s=full_pipeline_per_call,
+                block_mean_is=timing.single_jit_block_is(N_REPEATS),
+            )
+        except Exception as exc:  # noqa: BLE001
+            # The block mean above stands; an OOM in the extra calls only loses the median.
+            if not _is_oom(exc):
+                raise
+            print(f"  steady median skipped: {type(exc).__name__} (legacy headline stands)")
+        del _full_compiled
         full_pipeline_logl = float(full_pipeline_logl)
         full_pipeline_status = {"status": "ok"}
     except Exception as exc:  # noqa: BLE001

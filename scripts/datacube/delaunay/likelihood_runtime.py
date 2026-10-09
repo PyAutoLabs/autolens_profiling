@@ -136,6 +136,10 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 
 # Sweep-driver CLI args (--config-name / --output-dir / --use-mixed-precision).
 # Tolerates extra/unknown args via parse_known_args inside the helper.
+from likelihood_breakdown.timing import (  # noqa: E402
+    headline_steady_median,
+    single_jit_block_is,
+)
 from simulators.interferometer import INSTRUMENTS  # noqa: E402
 from vram import ProbeResult, write_probe_json  # noqa: E402
 
@@ -483,13 +487,24 @@ if _run_full_cube_jit:
         return total
 
     _full_cube_n_repeats = 3
-    _, full_cube_result = jit_profile(
+    _full_cube_compiled, full_cube_result = jit_profile(
         full_cube_pipeline_from_params,
         "full_cube_pipeline",
         params_tree,
         n_repeats=_full_cube_n_repeats,
     )
     full_pipeline_per_call = timer.records[-1][1] / _full_cube_n_repeats
+    # Timing-noise audit P8 (#362, phase 10): ``full_pipeline_cube_single_jit`` stays the legacy
+    # 3-call block mean; the steady median of the same compiled cube pipeline is written beside it
+    # as ``full_pipeline_cube_single_jit_median*`` (none above 2 s per cube call).
+    full_pipeline_median = headline_steady_median(
+        _full_cube_compiled,
+        params_tree,
+        block_mean_s=full_pipeline_per_call,
+        prefix="full_pipeline_cube_single_jit",
+        block_mean_is=single_jit_block_is(_full_cube_n_repeats),
+    )
+    del _full_cube_compiled
 
     print(f"  full cube log_evidence (JIT) = {full_cube_result}")
 
@@ -503,6 +518,7 @@ if _run_full_cube_jit:
 else:
     full_cube_result = None
     full_pipeline_per_call = float("nan")
+    full_pipeline_median = {}
     print(
         "  Full-pipeline cube JIT SKIPPED — opt-in via CUBE_FULL_JIT=1. "
         f"At n_channels={n_channels} the lower + compile alone is on the order of "
@@ -594,6 +610,7 @@ likelihood_summary = {
     "cube_log_evidence_jit": (float(full_cube_result) if full_cube_result is not None else None),
     "log_evidence_per_channel_eager": [float(le) for le in log_evidence_per_channel],
     "full_pipeline_cube_single_jit": full_pipeline_per_call,
+    **full_pipeline_median,
     "shared_lwl_savings_estimate": shared_lwl_savings,
     "vmap": "SKIPPED — cube batching axis is 'datasets', not 'parameters'",
 }

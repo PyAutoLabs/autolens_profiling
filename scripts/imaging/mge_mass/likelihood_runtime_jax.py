@@ -85,6 +85,7 @@ import numpy as np  # noqa: E402
 from autofit.jax import register_model as _register_model_pytrees  # noqa: E402
 from autogalaxy.profiles.mass.abstract import deflections_memo as _memo  # noqa: E402
 from autogalaxy.profiles.mass.abstract import mge as _mge  # noqa: E402
+from likelihood_breakdown.timing import headline_steady_median  # noqa: E402
 from simulators.imaging import INSTRUMENTS  # noqa: E402
 
 from _profile_cli import (  # noqa: E402
@@ -108,6 +109,18 @@ MESH_PIXELS_YX = 28
 BATCH_SIZE = 3
 N_STEADY = 10
 N_REPEATS = 3
+
+# Timing-noise audit P8 (#362, phase 10). This cell's ``full_pipeline_single_jit`` has always
+# been a MEDIAN, not the 10-call block mean the other runtime cells write under that key: the
+# median over N_REPEATS fresh trace + compile repeats of each repeat's N_STEADY-call steady block
+# mean, memo on, per vmapped call of BATCH_SIZE. It keeps that meaning for continuity with the
+# committed rows. The shared headline steady median (>= 5 warm calls, median of individually
+# timed calls) is written beside it as ``full_pipeline_single_jit_median*``, and this string is
+# its protocol block's ``full_pipeline_single_jit_is``.
+SINGLE_JIT_KEY_IS = (
+    f"median over {N_REPEATS} fresh-compile repeats of each repeat's {N_STEADY}-call steady "
+    f"block mean, memo on, per vmapped call of {BATCH_SIZE} (deflections_memo_on.steady_median_s)"
+)
 
 # The log-likelihood this model produces under the JAX likelihood, per (rect mesh,
 # instrument). Filled from the first run of a new key (the run prints the value and says
@@ -420,6 +433,19 @@ print("\n--- Leg 2: memo ON ---")
 _memo.memo_clear()
 on = measure("memo on", memo_on=True)
 
+# The shared headline steady median of the memo-on pipeline, beside the legacy key (P8). A fresh
+# jitted vmap with a cleared memo, as each repeat above starts; its compile falls in the untimed
+# warm calls. Same unit as ``full_pipeline_single_jit``: seconds per vmapped call of BATCH_SIZE.
+_memo.memo_clear()
+_headline_vmapped, _ = vmapped_from()
+full_pipeline_median = headline_steady_median(
+    _headline_vmapped,
+    parameters,
+    block_mean_s=on["steady_median_s"],
+    block_mean_is=SINGLE_JIT_KEY_IS,
+)
+del _headline_vmapped
+
 _memo.memo_clear()
 on_jaxpr_equations = jaxpr_equations()
 
@@ -600,6 +626,7 @@ summary = {
         "xla_flags": os.environ.get("XLA_FLAGS", None),
     },
     "full_pipeline_single_jit": on["steady_median_s"],
+    **full_pipeline_median,
     "deflections_memo_off": off,
     "deflections_memo_on": on,
     "deflections_memo_jaxpr_equations_off": off_jaxpr_equations,

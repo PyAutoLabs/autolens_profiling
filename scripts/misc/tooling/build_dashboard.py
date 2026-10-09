@@ -72,14 +72,22 @@ DRIFT_FLOOR_S = 0.001
 #: future ``profiling-summary`` v2 / ``catalogue.json`` qualification (timing-noise audit P6).
 REFERENCE_HOST_CLASS_PREFIXES = ("hpc_",)
 
-#: The point field that would carry a repeat summary of the compared metric (the number of
-#: independent repeats -- separate runs -- behind ``single_jit_s``). No producer writes it: a
-#: headline is one 10-call block mean or, since fix phase 5 (timing-noise audit P8), one steady
-#: median of one process's individually timed calls. Either is one summary from one run, so every
-#: endpoint is still single-sample; the timed calls inside one run are not independent repeats.
-#: ``_point`` does not copy it from a result JSON: a producer that runs >= 2 independent repeats per
-#: release must add it there too. Until then this fails safe.
+#: The point field that carries a repeat summary of the compared metric: the number of
+#: independent repeats -- separate runs (processes) of the same cell, config and release --
+#: behind ``single_jit_s``. A headline is one 10-call block mean or, since fix phase 5
+#: (timing-noise audit P8), one steady median of one process's individually timed calls; either
+#: is one summary from one run, and the timed calls inside one run are not independent repeats.
+#: Since fix phase 10 ``_point`` sets it from a payload's :data:`REPEAT_RUNS_FIELD` list (written
+#: by ``likelihood_runtime/aggregate.py`` from ``<config>.repeat<k>.json`` files beside a sweep
+#: row) when >= 2 independent runs on one host share the headline estimator; ``single_jit_s`` is
+#: then the median of the runs' headlines. No committed row carries repeat runs, and none is
+#: measured by this phase, so every committed endpoint is still single-sample.
 REPEAT_SUMMARY_FIELD = "single_jit_repeats"
+#: The payload field (a list of per-run payloads, the row's own run first) a repeat summary is
+#: built from. Each run is judged with the same estimator rule as the row (:func:`headline_reading`).
+REPEAT_RUNS_FIELD = "single_jit_repeat_runs"
+#: Minimum independent runs for a repeat summary (the ``flat`` precondition, P7).
+MIN_REPEAT_RUNS = 2
 #: Reasons the comparisons carry for the 2x band (timing-noise audit P7).
 SINGLE_SAMPLE_NULL_REASON = (
     "single-sample endpoint(s): within the 2x policy band is not a measured null"
@@ -225,6 +233,33 @@ def headline_seconds(payload: dict) -> float | None:
 FIRST_BLOCK_NOTE = "first block after compile"
 
 
+#: Single-jit headline keys a steady median can sit beside (P8) -> the median's ``_ms`` key.
+#: The datacube cell's 3-call cube block joined in fix phase 10.
+SINGLE_JIT_MEDIAN_KEYS = {
+    "full_pipeline_single_jit": "full_pipeline_single_jit_median_ms",
+    "full_pipeline_cube_single_jit": "full_pipeline_cube_single_jit_median_ms",
+}
+
+
+def single_jit_headline_key(payload: dict) -> str | None:
+    """The :data:`SINGLE_JIT_MEDIAN_KEYS` key the headline is, directly or via an alias.
+
+    ``aggregate.py`` copies ``full_pipeline_single_jit`` into ``full_pipeline_per_call`` in every
+    ``comparison.json`` entry, so a ``full_pipeline_per_call`` headline equal to a single-jit key's
+    value is that key. None when the headline is anything else.
+    """
+    key = headline_key(payload)
+    if key in SINGLE_JIT_MEDIAN_KEYS:
+        return key
+    if key == "full_pipeline_per_call":
+        headline = headline_seconds(payload)
+        for candidate in SINGLE_JIT_MEDIAN_KEYS:
+            value = _finite(payload.get(candidate))
+            if value is not None and value == headline:
+                return candidate
+    return None
+
+
 def headline_is_single_jit(payload: dict) -> bool:
     """True when the headline is the ``full_pipeline_single_jit`` statistic.
 
@@ -232,21 +267,89 @@ def headline_is_single_jit(payload: dict) -> bool:
     it. ``aggregate.py`` copies ``full_pipeline_single_jit`` into ``full_pipeline_per_call`` in
     every ``comparison.json`` entry.
     """
-    key = headline_key(payload)
-    if key == "full_pipeline_single_jit":
-        return True
-    single = _finite(payload.get("full_pipeline_single_jit"))
-    return (
-        key == "full_pipeline_per_call"
-        and single is not None
-        and single == headline_seconds(payload)
-    )
+    return single_jit_headline_key(payload) == "full_pipeline_single_jit"
 
 
 def single_jit_median_seconds(payload: dict) -> float | None:
     """The steady median written beside ``full_pipeline_single_jit`` (#371), in seconds."""
     v = _finite(payload.get("full_pipeline_single_jit_median_ms"))
     return None if v is None else v / 1000.0
+
+
+def headline_median_seconds(payload: dict) -> float | None:
+    """The steady median beside the single-jit key the headline is (P8), in seconds, or None."""
+    key = single_jit_headline_key(payload)
+    if key is None:
+        return None
+    v = _finite(payload.get(SINGLE_JIT_MEDIAN_KEYS[key]))
+    return None if v is None else v / 1000.0
+
+
+def headline_reading(payload: dict) -> tuple[float | None, str, float | None]:
+    """``(headline seconds, estimator, legacy seconds)`` of one run's payload.
+
+    The one estimator rule the dashboard, the v1 summary and the README runtime tables share
+    (timing-noise audit P8; the README since fix phase 10): the steady median where the row
+    records one beside the single-jit key its headline is, else the legacy ``HEADLINE_KEYS``
+    value.
+    """
+    legacy = headline_seconds(payload)
+    median = headline_median_seconds(payload)
+    if median is not None:
+        return median, ESTIMATOR_MEDIAN, legacy
+    return legacy, ESTIMATOR_LEGACY, legacy
+
+
+def _run_identity(run: dict) -> tuple:
+    """What makes two runs independent: (host, SLURM job, source file)."""
+    prov = _provenance(run)
+    return (prov["host"], prov["job"], run.get("source"))
+
+
+def repeat_summary(payload: dict) -> dict | None:
+    """A repeat summary of the compared metric from the payload's :data:`REPEAT_RUNS_FIELD`.
+
+    Each run is read with :func:`headline_reading`. Runs are kept only when they share the row's
+    own (first) run's estimator and host and are distinct by (host, job, source); duplicates of
+    one run are dropped. Returns ``{n, median_s, min_s, max_s, loadavg_max, estimator}`` when at
+    least :data:`MIN_REPEAT_RUNS` independent runs remain, else None (the point stays
+    single-sample). ``loadavg_max`` is the worst recorded load across the runs, so qualification
+    judges the noisiest run.
+    """
+    runs = payload.get(REPEAT_RUNS_FIELD)
+    if not isinstance(runs, list) or len(runs) < MIN_REPEAT_RUNS:
+        return None
+    runs = [r for r in runs if isinstance(r, dict)]
+    if not runs:
+        return None
+    _, estimator, _ = headline_reading(runs[0])
+    host = _provenance(runs[0])["host"]
+    seen: set[tuple] = set()
+    values: list[float] = []
+    loads: list[float] = []
+    for run in runs:
+        value, run_estimator, _ = headline_reading(run)
+        prov = _provenance(run)
+        identity = _run_identity(run)
+        if value is None or run_estimator != estimator or prov["host"] != host or identity in seen:
+            continue
+        seen.add(identity)
+        values.append(value)
+        if prov["loadavg"] is not None:
+            loads.append(prov["loadavg"])
+    if len(values) < MIN_REPEAT_RUNS:
+        return None
+    ordered = sorted(values)
+    mid = len(ordered) // 2
+    median = ordered[mid] if len(ordered) % 2 else (ordered[mid - 1] + ordered[mid]) / 2.0
+    return {
+        "n": len(values),
+        "median_s": median,
+        "min_s": ordered[0],
+        "max_s": ordered[-1],
+        "loadavg_max": max(loads) if loads else None,
+        "estimator": estimator,
+    }
 
 
 def headline_estimator(point: dict) -> str:
@@ -324,11 +427,11 @@ def _load(path: Path) -> dict | None:
 
 
 def _point(payload: dict, version: str, source: str) -> dict | None:
-    legacy = headline_seconds(payload)
-    median = single_jit_median_seconds(payload)
     # The median is the headline only beside a single-jit headline it summarises (P8).
-    use_median = median is not None and headline_is_single_jit(payload)
-    single = median if use_median else legacy
+    single, estimator, legacy = headline_reading(payload)
+    use_median = estimator == ESTIMATOR_MEDIAN
+    median = single_jit_median_seconds(payload)
+    repeats = repeat_summary(payload)
     vmap = vmap_seconds(payload)
     if single is None and vmap is None:
         return None
@@ -352,6 +455,16 @@ def _point(payload: dict, version: str, source: str) -> dict | None:
         point["headline_note"] = FIRST_BLOCK_NOTE
     if median is not None:
         point["single_jit_median_s"] = median
+    if repeats is not None and repeats["estimator"] == estimator:
+        # Fix phase 10: >= 2 independent runs -> the compared metric is their median, and the
+        # point carries the repeat count ``_summary_comparison`` needs to publish ``flat``.
+        point["single_jit_s"] = repeats["median_s"]
+        point[REPEAT_SUMMARY_FIELD] = repeats["n"]
+        point["single_jit_repeat_range_s"] = [repeats["min_s"], repeats["max_s"]]
+        if repeats["loadavg_max"] is not None and (
+            point["loadavg"] is None or repeats["loadavg_max"] > point["loadavg"]
+        ):
+            point["loadavg"] = repeats["loadavg_max"]
     unsettled = warmup_unsettled(payload)
     if unsettled is not None:
         point["warmup_unsettled"] = unsettled
@@ -361,6 +474,8 @@ def _point(payload: dict, version: str, source: str) -> dict | None:
 def _per_call_html(p: dict) -> str:
     """The table's per-call cell: the headline, which estimator it is, and the other estimator."""
     out = html.escape(_fmt_s(p["single_jit_s"]))
+    if has_repeat_summary(p):
+        out += f'<br><span class="muted">{html.escape(repeat_label(p))}</span>'
     if headline_estimator(p) == ESTIMATOR_MEDIAN:
         out += f' <span class="muted">({html.escape(ESTIMATOR_MEDIAN)})</span>'
         if p.get("single_jit_block_mean_s") is not None:
@@ -475,7 +590,14 @@ def is_reference_host_class(config: str) -> bool:
 def has_repeat_summary(point: dict) -> bool:
     """True when the compared metric carries a summary of >= 2 independent repeats."""
     n = point.get(REPEAT_SUMMARY_FIELD)
-    return isinstance(n, int) and not isinstance(n, bool) and n >= 2
+    return isinstance(n, int) and not isinstance(n, bool) and n >= MIN_REPEAT_RUNS
+
+
+def repeat_label(point: dict) -> str:
+    """How a repeat-summary headline is labelled (fix phase 10)."""
+    lo, hi = point.get("single_jit_repeat_range_s") or (None, None)
+    span = f", range {_fmt_s(lo)}-{_fmt_s(hi)}" if lo is not None and hi is not None else ""
+    return f"median of {point[REPEAT_SUMMARY_FIELD]} independent runs{span}"
 
 
 def qualify(point: dict, config: str, conf: dict) -> tuple[bool, str | None, bool]:
@@ -738,6 +860,15 @@ def _summary_record(s: dict, p: dict) -> dict:
                 if headline_estimator(p) == ESTIMATOR_MEDIAN
                 else {}
             ),
+            # Only where >= 2 independent runs back the headline (fix phase 10).
+            **(
+                {
+                    REPEAT_SUMMARY_FIELD: p[REPEAT_SUMMARY_FIELD],
+                    "single_jit_repeat_range_s": p.get("single_jit_repeat_range_s"),
+                }
+                if has_repeat_summary(p)
+                else {}
+            ),
         },
         "identity": {
             "section": s["section"],
@@ -878,6 +1009,12 @@ def build_summary(
             "single_jit_s is the steady median (>= 5 warm calls, median of individually timed "
             "calls) where a record also carries single_jit_block_mean_s, else the legacy "
             "headline; a comparison whose endpoints use different estimators is insufficient"
+        )
+    if any(REPEAT_SUMMARY_FIELD in r["measurement"] for r in records):
+        limitations.append(
+            "single_jit_s is the median of single_jit_repeats independent runs (one host, one "
+            "estimator) where a record carries single_jit_repeats; the load average is the "
+            "worst of those runs"
         )
     if any(not r["provenance"]["has_provenance"] for r in records):
         limitations.append(
@@ -1205,6 +1342,7 @@ def _svg_panel(cell_series: list[dict], versions: list[str], slots: dict[str, in
         for x, y, p in pts:
             tip = html.escape(
                 f"{s['config']}{' sparse' if s['sparse'] else ''} @ {p['version']}: {_fmt_s(p['single_jit_s'])} per call"
+                + (f" ({repeat_label(p)})" if has_repeat_summary(p) else "")
                 + (f" ({p['headline_note']})" if p.get("headline_note") else "")
                 + (
                     f" ({ESTIMATOR_MEDIAN}; block mean {_fmt_s(p['single_jit_block_mean_s'])})"
@@ -1259,6 +1397,8 @@ def render_html(
         "Rows that carry it also show the steady median (&ge; 5 warm calls, median of individually timed calls). "
         f"Where a row records that median it is the headline, labelled <em>{ESTIMATOR_MEDIAN}</em>, with the block mean beside it; "
         "drift never compares a median with a block mean. "
+        "A row backed by &ge; 2 independent runs headlines their median, labelled with the run count; "
+        "only such endpoints can be published <em>flat</em> inside the 2&times; band. "
         "Committed rows are not re-based. "
         "This page renders and holds timing history; it judges no lever "
         '(<a href="' + REPO_URL + '/blob/main/wiki/index.md">campaign index</a>).</p>',
