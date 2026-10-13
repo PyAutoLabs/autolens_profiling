@@ -83,9 +83,10 @@ def library_of(filename: str) -> str:
 def main():
     args = parse_args()
 
+    f, x0, ndim = build_objective(args)
+
     import jax
 
-    f, x0, ndim = build_objective(args)
     fn, arg = transformed_fn_and_arg(args.transform, f, x0, args.n_batch, args.batch_size)
     jitted = jax.jit(fn)
 

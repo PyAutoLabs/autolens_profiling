@@ -63,6 +63,7 @@ def parse_args():
 
 def main():
     args = parse_args()
+    build_objective(args)  # Fail closed: both modes require the retired objective contract.
 
     import jax
     from jax import export as jax_export

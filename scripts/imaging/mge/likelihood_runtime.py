@@ -88,6 +88,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 from autofit.jax import register_model as _register_model_pytrees
+from cell_builders.imaging_mge import MASK_RADIUS, build_analysis, build_model, prepare_dataset
 
 if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
@@ -220,39 +221,8 @@ with timer.section("dataset_load"):
     )
 
 with timer.section("mask_and_oversample"):
-    mask_radius = 3.5
-
-    mask = al.Mask2D.circular(
-        shape_native=dataset.shape_native,
-        pixel_scales=dataset.pixel_scales,
-        radius=mask_radius,
-    )
-
-    dataset = dataset.apply_mask(mask=mask)
-    dataset = dataset.apply_over_sampling(over_sample_size_lp=4)
-
-    over_sample_size = al.util.over_sample.over_sample_size_via_radial_bins_from(
-        grid=dataset.grid,
-        sub_size_list=[4, 2, 2],
-        radial_list=[0.3, 0.6],
-        centre_list=[(0.0, 0.0)],
-    )
-
-    dataset = dataset.apply_over_sampling(over_sample_size_lp=over_sample_size)
-
-    if _cli.use_sparse_operator:
-        # The pure-MGE-source cell uses LinearObjFuncList for every linear
-        # obj, so the inversion factory's all-LinearObjFuncList short-circuit
-        # fires and ``InversionImagingMapping`` is still chosen even after
-        # ``apply_sparse_operator`` attaches a sparse_operator to the dataset.
-        # We still call ``apply_sparse_operator`` for parity with the pix /
-        # Delaunay cells so the harness-level cost (kernel construction,
-        # serialisation) is included in the timing — but the per-eval cost
-        # remains dense. The JSON's ``inversion_path`` records what the flag
-        # asked for; downstream synthesis cross-references with the
-        # ``InversionImagingSparse``-vs-``InversionImagingMapping`` factory
-        # decision when interpreting the MGE row.
-        dataset = dataset.apply_sparse_operator()
+    mask_radius = MASK_RADIUS
+    dataset = prepare_dataset(dataset, use_sparse_operator=_cli.use_sparse_operator)
 
 # ---------------------------------------------------------------------------
 # 2. Model construction
@@ -261,40 +231,7 @@ with timer.section("mask_and_oversample"):
 print("\n--- Model construction ---")
 
 with timer.section("model_build"):
-    # GaussianPrior(mean=truth, sigma=small) centres prior-median at the
-    # simulator truth while keeping params free so gradient diagnostics
-    # have dimensionality.
-    lens_bulge = al.model_util.mge_model_from(
-        mask_radius=mask_radius, total_gaussians=20, centre_prior_is_uniform=True
-    )
-
-    # Mass and shear fixed to simulator truth (not GaussianPrior) because
-    # tracing GaussianPrior-backed mass params through this script's
-    # ``mapping_matrix_from_params`` JIT trigger a pre-existing xp=np/jnp
-    # propagation bug in autogalaxy/profiles/mass/total/isothermal.py:108
-    # (Isothermal.deflections_yx_2d_from called with xp=np on traced inputs).
-    # The bug is specific to this script's MGE-lens-light + over-sampled-LP
-    # combination; the likelihood-only imaging/mge_gradients.py uses the
-    # same pattern without the failing JIT and works under Option A.
-    mass = af.Model(al.mp.Isothermal)
-    mass.centre = (0.0, 0.0)
-    mass.einstein_radius = 1.6
-    mass.ell_comps = al.convert.ell_comps_from(axis_ratio=0.9, angle=45.0)
-
-    shear = af.Model(al.mp.ExternalShear)
-    shear.gamma_1 = 0.05
-    shear.gamma_2 = 0.05
-
-    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass)
-    field = af.Model(al.MassField, redshift=0.5, shear=shear)
-
-    source_bulge = al.model_util.mge_model_from(
-        mask_radius=mask_radius, total_gaussians=20, centre_prior_is_uniform=False
-    )
-
-    source = af.Model(al.Galaxy, redshift=1.0, bulge=source_bulge)
-
-    model = af.Collection(galaxies=af.Collection(lens=lens, source=source), fields=field)
+    model = build_model(mask_radius=mask_radius)
 
 print(f"  Total free parameters: {model.total_free_parameters}")
 
@@ -372,7 +309,7 @@ print("=" * 70)
 # evaluation, inversion, etc.). This is the same wiring that ``Fitness.call``
 # uses in production — we just feed it our pytree-native instance directly
 # instead of going through ``model.instance_from_vector(parameters, xp=jnp)``.
-analysis = al.AnalysisImaging(dataset=dataset, use_jax=True)
+analysis = build_analysis(dataset)
 
 
 def full_pipeline_from_params(params_tree):
