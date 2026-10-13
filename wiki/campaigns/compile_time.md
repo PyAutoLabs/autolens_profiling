@@ -77,3 +77,15 @@ compile-axis surveillance arc. Resolved: the library change is PR PyAutoFit#1431
 released 2026.8.4.1); #1430 is its issue. Profiling PRs #94 / #95 / #104 and the Mind contract
 filled from the records. The "A100 tier outstanding" next step is closed: confirmatory only, and the
 multi-band legs were dropped 2026-09-04. Open: the Delaunay cache-miss draft.
+
+
+### 2026-10-13 — bounded builder restoration
+
+[Issue #413](https://github.com/PyAutoLabs/autolens_profiling/issues/413) adds an
+explicit current-runtime imaging/MGE/HST fp64 `jit` workload, sharing construction
+with the runtime cell. This has a different objective and pytree input from the
+historical posterior census; the historical verdict above does not establish its
+compile cost. Outputs are isolated, pins are unchanged, and global compile
+dispatch stays unavailable. Only a tiny local CPU correctness fixture is in scope;
+no production measurement, baseline freeze or campaign acceptance follows from
+this implementation. See the [current instrument contract](../../scripts/misc/jax_compile/README.md).

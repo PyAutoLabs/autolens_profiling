@@ -15,14 +15,58 @@ indicated.** See "Verdict" below for the recommendation and the follow-up filed.
 
 ## Instrument
 
-`probe.py` — AOT-split timings (`trace_s` / `compile_s` / `first_s` /
-`steady_s`) per likelihood × transform. See its module docstring for usage.
-Records append under `results/<hardware>/<model_type>.json`.
+### Current bounded path (2026-10-13)
 
-The transform axis mirrors how samplers consume the likelihood — `jit` (Nautilus
-row), `vag` (single-start optimizers), `vmap_vag` (MultiStartAdam unbatched),
-`laxmap_vag` (MultiStartAdam with `batch_size=`, the production shape),
-`pyloop_vag` (the batching boundary hoisted out of XLA into a Python loop).
+`probe.py` has one explicit current-runtime workload: **imaging/MGE/HST, fp64,
+`jit`**. It shares dataset preparation, model construction and analysis with
+`imaging/mge/likelihood_runtime.py`: a 3.5 arcsec mask, radial LP over-sampling
+[4, 2, 2], two 20-Gaussian light components, fixed mass/shear and prior-median
+parameters. The JIT input is a registered model-instance pytree. The objective
+is `AnalysisImaging.log_likelihood_function` with no external prior or scaling.
+
+This is **not the retired flat-vector posterior**. No historical timing or warm
+pin establishes parity or performance for it. The old corpus below is retained
+as historical evidence. Legacy `export_probe.py` (both modes) and
+`trace_profile.py` fail explicitly; their flat-vector semantics are not supported.
+
+From the repository root, after separately authorizing a measurement:
+
+```bash
+JAX_ENABLE_X64=1 python scripts/misc/jax_compile/probe.py \
+  --objective imaging-mge-runtime-v1 --dataset-class imaging --model-type mge \
+  --instrument hst --transforms jit \
+  --output output/compile_probe_runtime_v1/hst_mge_run01.json
+```
+
+The dataset must already exist under `dataset/imaging/hst/`, or be supplied with
+`--dataset-path`; the probe never simulates it. Precision is checked, never changed
+implicitly. Other cells, mixed precision and transforms fail before setup.
+`--output` must be a new JSON file in the indicated namespace; existing files and
+symlink escapes are refused. Outputs use a distinct envelope that legacy pin
+readers do not ingest. Nothing appends to the historical results tree.
+
+Setup is outside the timer. `trace_s` includes tracing/lowering, `compile_s` is
+XLA compilation, `first_s` is the synchronized first execution, and `steady_s`
+is the mean of three synchronized calls. They remain separate costs. Provenance
+records dataset hashes, input leaf values/shapes/dtypes, builder sources,
+software versions/revisions, devices, host/affinity and compiler flags. A file
+count cache heuristic is not independent proof of a cache hit. Compare only
+compatible objective/configuration, datasets, precision, software, hardware and
+measurement method; inspect provenance before drawing any speed conclusion.
+
+The catalogue's global `builder_status` remains **unavailable**: a manual partial
+path does not make every cell and transform executable through Brain. Per-cell
+capabilities, gradient/batched probes, validated measurement campaigns and new
+baselines remain separate work. The routes registry is preserved byte-for-byte
+because the baseline draft pins its inventory hash; its historical global reason
+is not a description of this manually selected workload. Issue [#413](https://github.com/PyAutoLabs/autolens_profiling/issues/413)
+tracks this bounded restoration; it contains no new performance result.
+
+### Historical instrument
+
+The retained corpus measures the old posterior and sampler transforms (`jit`,
+`vag`, `vmap_vag`, `laxmap_vag`, `pyloop_vag`). Its records live under
+`results/<hardware>/<model_type>.json`; the current path does not extend them.
 
 **Measurement discipline:** compile happens on the *CPU*, so compile timings are
 load-sensitive even for GPU jobs (XLA compiles on the host cores). Every number

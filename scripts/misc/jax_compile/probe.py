@@ -30,14 +30,12 @@ Transforms mirror how samplers actually consume the likelihood:
                 boundary hoisted OUT of XLA (candidate laxmap_vag replacement;
                 steady_s reports one full n_batch sweep for comparability)
 
-Usage (from the ``autolens_profiling/`` root)::
+The legacy flat-vector posterior builder remains unavailable. The explicit
+``--objective imaging-mge-runtime-v1 --transforms jit`` path measures the current
+HST/MGE fp64 runtime objective with pytree inputs. It requires a new output file
+under ``output/compile_probe_runtime_v1/``; see README.md. Its results must never
+be compared with historical compile pins.
 
-    python jax_compile/probe.py --model-type mge
-    python jax_compile/probe.py --model-type pixelization --transforms jit,vag
-    python jax_compile/probe.py --model-type mge --cache-dir /tmp/jax_cache  # run twice: cold vs warm
-
-Each run appends one JSON record per transform under
-``jax_compile/results/<hardware>/<model_type>.json``.
 """
 
 from __future__ import annotations
@@ -77,7 +75,7 @@ STEADY_CALLS = 3
 TRANSFORMS = ("jit", "grad", "vag", "vmap", "vmap_vag", "laxmap_vag", "pyloop_vag")
 
 
-def parse_args():
+def parse_args(argv=None):
     p = argparse.ArgumentParser(description=__doc__.split("\n")[1])
     p.add_argument("--dataset-class", default="imaging")
     p.add_argument("--model-type", default="mge", help="mge | pixelization | delaunay")
@@ -96,7 +94,10 @@ def parse_args():
     )
     p.add_argument("--mixed-precision", action="store_true")
     p.add_argument("--tag", default="", help="free-form tag recorded in the JSON")
-    return p.parse_args()
+    p.add_argument("--objective", help="explicit workload identity (see README.md)")
+    p.add_argument("--output", help="new JSON file under output/compile_probe_runtime_v1/")
+    p.add_argument("--dataset-path", help="existing HST FITS directory; never auto-simulated")
+    return p.parse_args(argv)
 
 
 def hardware_label(jax) -> str:
@@ -108,28 +109,12 @@ def hardware_label(jax) -> str:
 
 
 def build_objective(args):
-    """Dataset/model/analysis for one cell; returns (f, x0, ndim).
-
-    ``f`` is the physical-parameter negative log posterior.
-
-    NEEDS A BUILDER. This probe built its cell with
-    ``searches._setup.build_for_cell``, removed with the retired inference
-    programme (autolens_profiling#245). The pre-deletion tree — builder
-    included — is PyAutoGut ref
-    ``refs/heads/archive/condemned/autolens-profiling/inference-programme`` @
-    ``c8b605801068ec3de04314b47da8f7272a038ba1``. Until this repo owns a
-    per-cell builder of its own, the probe cannot run; the warm-compile
-    records already pinned in ``jax_compile/pins.json`` are unaffected and the
-    dashboard still renders them.
-    """
+    """Retired flat-vector posterior API; never substitute the runtime likelihood."""
     raise NotImplementedError(
-        "jax_compile/probe.py has no per-cell builder: searches._setup.build_for_cell "
-        "was removed with the retired inference programme (autolens_profiling#245). "
-        "Recover it from PyAutoGut ref refs/heads/archive/condemned/"
-        "autolens-profiling/inference-programme @ "
-        "c8b605801068ec3de04314b47da8f7272a038ba1, or build the cell from this "
-        f"repo's own likelihood_runtime/ setup (requested: {args.dataset_class}/"
-        f"{args.model_type}/{args.instrument})."
+        "The legacy flat-vector posterior builder is unavailable. "
+        "Use probe.py --objective imaging-mge-runtime-v1 --transforms jit "
+        "with an isolated --output for the different current runtime objective. "
+        "Legacy export and trace probes do not support this objective."
     )
 
 
@@ -137,9 +122,9 @@ def transformed_fn_and_arg(name, f, x0, n_batch, batch_size):
     import jax
     import jax.numpy as jnp
 
-    xb = jnp.tile(x0, (n_batch, 1))
     if name == "jit":
         return f, x0
+    xb = jnp.tile(x0, (n_batch, 1))
     if name == "grad":
         return jax.grad(f), x0
     if name == "vag":
@@ -252,6 +237,9 @@ def measure(name, f, x0, n_batch, batch_size, cache_dir=None):
 
 def main():
     args = parse_args()
+    from jax_compile.current import build_workload, provenance, validate_request, write_result
+
+    out_path = validate_request(args, _WORKSPACE_ROOT)
 
     if args.cache_dir:
         os.environ.setdefault("JAX_COMPILATION_CACHE_DIR", args.cache_dir)
@@ -263,30 +251,39 @@ def main():
         jax.config.update("jax_compilation_cache_dir", args.cache_dir)
         jax.config.update("jax_persistent_cache_min_compile_time_secs", 0.0)
 
-    f, x0, ndim = build_objective(args)
+    workload = build_workload(args, _WORKSPACE_ROOT)
+    f, x0 = workload.objective, workload.params
+    metadata = provenance(args, _WORKSPACE_ROOT, workload)
     hardware = hardware_label(jax)
+    effective_cache_dir = jax.config.jax_compilation_cache_dir
 
     records = []
     for name in args.transforms.split(","):
         name = name.strip()
         print(f"[probe] {args.model_type} / {name} ...", flush=True)
-        rec = measure(name, f, x0, args.n_batch, args.batch_size, cache_dir=args.cache_dir)
+        rec = measure(name, f, x0, args.n_batch, args.batch_size, cache_dir=effective_cache_dir)
+        # A populated cache with no new files does not prove a cache hit.
+        # Keep the legacy heuristic visible without qualifying a new warm baseline.
+        rec["cache_entry_heuristic"] = rec.pop("cache_state")
+        rec["cache_state"] = "unknown" if effective_cache_dir else "none"
         rec.update(
-            record_kind="compile_probe",
+            record_kind="compile_probe_runtime_v1",
             dataset_class=args.dataset_class,
             model_type=args.model_type,
             instrument=args.instrument,
-            ndim=ndim,
-            n_batch=args.n_batch,
-            batch_size=args.batch_size,
+            model_free_parameters=workload.model.total_free_parameters,
+            input_representation="registered-model-instance-pytree",
+            objective=args.objective,
+            steady_calls=STEADY_CALLS,
             hardware=hardware,
             jax_version=jax.__version__,
-            cache_dir=args.cache_dir or "",
+            cache_dir=effective_cache_dir or "",
+            requested_cache_dir=args.cache_dir,
             mixed_precision=args.mixed_precision,
             host_state=host_state(),
             tag=args.tag,
             hostname=platform.node(),
-            timestamp=time.strftime("%Y-%m-%dT%H:%M:%S"),
+            timestamp=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         )
         records.append(rec)
         print(
@@ -296,12 +293,7 @@ def main():
             flush=True,
         )
 
-    out_dir = _WORKSPACE_ROOT / "scripts" / "misc" / "jax_compile" / "results" / hardware
-    out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / f"{args.model_type}.json"
-    existing = json.loads(out_path.read_text()) if out_path.exists() else []
-    existing.extend(records)
-    out_path.write_text(json.dumps(existing, indent=2) + "\n")
+    write_result(out_path, records, metadata)
     print(f"[probe] wrote {len(records)} records -> {out_path}", flush=True)
 
 
