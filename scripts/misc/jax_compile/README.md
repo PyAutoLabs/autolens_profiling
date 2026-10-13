@@ -15,6 +15,10 @@ indicated.** See "Verdict" below for the recommendation and the follow-up filed.
 
 ## Instrument
 
+The opt-in [raw CPU pilot runner](PILOT.md) adds isolated fresh-process sampling
+and workload-specific cache evidence for the current HST/MGE likelihood. Its
+records remain scientifically unaccepted and separate from the baseline reader.
+
 ### Current bounded path (2026-10-13)
 
 `probe.py` has one explicit current-runtime workload: **imaging/MGE/HST, fp64,
