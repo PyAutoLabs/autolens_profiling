@@ -63,6 +63,7 @@ from pathlib import Path  # noqa: E402
 
 import autoarray as aa  # noqa: E402
 import numpy as np  # noqa: E402
+from likelihood_breakdown.family_gates import kill_gate_family  # noqa: E402
 
 from instruments.interferometer import INSTRUMENTS  # noqa: E402
 from numba_interferometer import inversion_interferometer_numba_util as ref_util  # noqa: E402
@@ -845,32 +846,16 @@ def main(argv=None) -> int:
         partial.write_text(json.dumps(payload, indent=2))
 
     # --- kill gate --------------------------------------------------------
-    gate = {
-        "rule": "best numba kernel must beat rfft2_numpy by >1.3x at sma or alma",
-        "threshold": 1.3,
-        "per_cell": {},
-    }
-    tripped = True
-    for key, cell in payload["cells"].items():
-        instrument = key.split("/")[0]
-        if instrument not in ("sma", "alma"):
-            continue
-        rfft = cell["kernels"].get("rfft2_numpy", {}).get("median_s")
-        best_name, best = None, None
-        for name in NUMBA_KERNELS:
-            median = cell["kernels"].get(name, {}).get("median_s")
-            if median is not None and (best is None or median < best):
-                best, best_name = median, name
-        ratio = (rfft / best) if (rfft and best) else None
-        gate["per_cell"][key] = {
-            "best_numba_kernel": best_name,
-            "best_numba_s": best,
-            "rfft2_numpy_s": rfft,
-            "speedup_rfft2_over_numba": ratio,
-        }
-        if ratio is not None and ratio > 1.3:
-            tripped = False
-    gate["kill_gate"] = "tripped" if tripped else "passed"
+    #
+    # Pre-registered: "if no numba kernel beats rfft2_numpy by >1.3x at sma or alma, stop
+    # the numba lever". Since #362 fix phase 9 it reads intervals: every pinned numba
+    # kernel x sma / alma cell is one Holm family (family-wise 90 %) of paired
+    # round-bootstrap ratios rfft2 / kernel (every kernel runs once per round, so rounds
+    # pair the arms; round 0 is discarded as before). "passed" when some member resolves
+    # > 1.3x, "tripped" when every member resolves <= 1.3x, INCONCLUSIVE otherwise or
+    # below MIN_AB_ROUNDS timed rounds (the default --reps 5 times 4: INCONCLUSIVE by
+    # construction). The old point rule is kept as `kill_gate_point`.
+    gate = kill_gate_family(payload["cells"], numba_kernels=NUMBA_KERNELS)
     payload["kill_gate"] = gate["kill_gate"]
     payload["kill_gate_detail"] = gate
 
@@ -878,8 +863,11 @@ def main(argv=None) -> int:
     path = out_dir / name
     path.write_text(json.dumps(payload, indent=2))
     print(f"\nbake-off results -> {path}")
-    print(f"KILL GATE: {gate['kill_gate']}")
-    for key, record in gate["per_cell"].items():
+    print(
+        f"KILL GATE: {gate['kill_gate']} (family-wise; unadjusted {gate['kill_gate_unadjusted']}, "
+        f"point rule {gate['kill_gate_point']}): {gate['reason']}"
+    )
+    for key, record in gate["per_cell_point"].items():
         print(
             f"  {key}: best numba {record['best_numba_kernel']} = {record['best_numba_s']}, "
             f"rfft2 = {record['rfft2_numpy_s']}, ratio = {record['speedup_rfft2_over_numba']}"

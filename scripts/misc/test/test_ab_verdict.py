@@ -35,7 +35,7 @@ _MISC = str(ROOT / "scripts" / "misc")
 if _MISC not in sys.path:
     sys.path.insert(0, _MISC)
 
-from likelihood_breakdown import ab_verdict  # noqa: E402
+from likelihood_breakdown import ab_verdict, family_gates  # noqa: E402
 from likelihood_breakdown.ab_verdict import (  # noqa: E402
     AT_LEAST,
     AT_MOST,
@@ -260,13 +260,23 @@ def test_each_cell_imports_the_shared_function_objects(cell):
     assert imported, cell
     for name, obj in imported.items():
         assert obj is getattr(ab_verdict, name), f"{cell.name}: {name} is not the shared object"
-    assert {"ab_rule_verdict", "tie_set"} & set(imported)
+    # Since fix phase 9 a cell may reach the shared rule through family_gates (C6, C10).
+    family = _module_imports(cell, "likelihood_breakdown.family_gates")
+    for name, obj in family.items():
+        assert obj is getattr(family_gates, name), f"{cell.name}: {name} is not the shared object"
+    assert {"ab_rule_verdict", "tie_set"} & set(imported) or family
     defined = {
         node.name
         for node in ast.walk(ast.parse(cell.read_text()))
         if isinstance(node, ast.FunctionDef)
     }
-    assert not defined & {"ab_rule_verdict", "tie_set", "criterion_verdict"}, cell.name
+    assert not defined & {
+        "ab_rule_verdict",
+        "tie_set",
+        "criterion_verdict",
+        "holm_tie_set",
+        "holm_family_verdict",
+    }, cell.name
 
 
 def _module_imports(cell: Path, module: str) -> dict:
@@ -295,6 +305,7 @@ def _lift(cell: Path, names: tuple[str, ...], namespace: dict) -> dict:
     assert body, f"{cell.name}: none of {names} found"
     namespace.update(_imports_of(cell))
     namespace.update(_module_imports(cell, "likelihood_breakdown.round_bootstrap"))
+    namespace.update(_module_imports(cell, "likelihood_breakdown.family_gates"))
     exec(compile(ast.Module(body=body, type_ignores=[]), str(cell), "exec"), namespace)
     return namespace
 
@@ -404,9 +415,24 @@ def test_the_committed_pytree_rows_are_rejudged_unchanged(config, expected):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("config", ["hpc_ral_gpunode_cpu_fp64", "hpc_a100_fp64", "local_cpu_fp64"])
-def test_the_committed_backward_pass_rows_are_rejudged_unchanged(config):
-    """Every committed phase-2c route resolves: GO stays GO, no-go is a measured NO_GO."""
+@pytest.mark.parametrize(
+    "config, changed",
+    [
+        ("hpc_ral_gpunode_cpu_fp64", {}),
+        ("hpc_a100_fp64", {}),
+        (
+            "local_cpu_fp64",
+            {("solved", "rev_analytic"): INCONCLUSIVE, ("plain", "rev_analytic"): INCONCLUSIVE},
+        ),
+    ],
+)
+def test_the_committed_backward_pass_rows_are_rejudged_unchanged(config, changed):
+    """Every committed phase-2c route on the deciding and A100 rows resolves as published.
+
+    Since fix phase 9 the verdict is family-wise (Holm over the host's 16 criteria)
+    on the paired round draws; the two laptop ``rev_analytic`` rows do not resolve
+    (the laptop does not decide; the phase-2c decision, ``fwd``, is unchanged).
+    """
     data = json.loads(
         (ROOT / f"results/breakdown/point_source_source/backward_pass_ab_{config}.json").read_text()
     )
@@ -421,13 +447,16 @@ def test_the_committed_backward_pass_rows_are_rejudged_unchanged(config):
                 route: None for lane in data["phase2c_rule"]["per_lane"].values() for route in lane
             }
             | {"rev": None},
+            "BOOTSTRAP_SEED": SEED,
+            "BOOTSTRAP_SAMPLES": 2000,
         },
     )["_phase2c_rule"]()
     for lane, per_route in data["phase2c_rule"]["per_lane"].items():
         for route, old in per_route.items():
             new = rule["per_lane"][lane][route]
-            assert new["verdict"] in (GO, NO_GO), (lane, route, new.get("verdict_reason"))
-            assert new["go"] == old["go"], (lane, route)
+            expected = changed.get((lane, route), GO if old["go"] else NO_GO)
+            assert new["verdict"] == expected, (lane, route, new.get("verdict_reason"))
+    assert "fwd" in rule["go_routes"]
 
 
 # ---------------------------------------------------------------------------
@@ -459,13 +488,22 @@ _SWEEP_TIE_SETS = {
     "solver_config_sweep_step0_laptop_cpu_fp64": ("step0_components", {"step0_components"}),
 }
 
+#: Fix phase 9: the members the Holm-adjusted tie set adds to the unadjusted one.
+_SWEEP_FAMILY_ADDS = {
+    "solver_config_sweep_hpc_ral_cpu_fp64": {"e3_s0.2", "e4_s0.3"},
+    "solver_config_sweep_mcs_hpc_ral_cpu_fp64": {"mcs24"},
+    "solver_config_sweep_mcs_laptop_cpu_fp64": {"mcs24"},
+}
+
 
 @pytest.mark.parametrize("stem", sorted(_SWEEP_TIE_SETS))
 def test_the_committed_sweep_best_is_rejudged_as_a_tie_set(stem):
     """The cell's own ``_fastest`` on the committed rows: 7 of 9 "best" are tie sets.
 
-    These read the committed (iid) intervals; ``test_round_bootstrap.py``
-    re-judges the same rows on the paired round bootstrap (same tie sets).
+    Since fix phase 9 ``_fastest`` is the family-wise tie set on the paired round
+    draws; its ``.unadjusted`` is the fix phase 3 / 4 tie set (the same sets on the
+    round intervals), and the family-wise one adds the members of
+    ``_SWEEP_FAMILY_ADDS``. No named "best" changes.
     """
     data = json.loads((ROOT / f"results/breakdown/point_source_image/{stem}.json").read_text())
     rows = data["rows"]
@@ -478,12 +516,22 @@ def test_the_committed_sweep_best_is_rejudged_as_a_tie_set(stem):
         and data["precision_equivalent"][n]
     ]
     fastest = _lift(
-        SWEEP_CELL, ("_fastest",), {"rows": rows, "N_ROUNDS": data["protocol"]["n_rounds"]}
+        SWEEP_CELL,
+        ("_fastest",),
+        {
+            "rows": rows,
+            "N_ROUNDS": data["protocol"]["n_rounds"],
+            "BOOTSTRAP_SEED": SEED,
+            "BOOTSTRAP_SAMPLES": 2000,
+        },
     )["_fastest"]
     result = fastest(candidates)
     leader, members = _SWEEP_TIE_SETS[stem]
     if members is None:
         members = set(candidates)
     assert result.leader == leader == data["best_admissible"]
-    assert set(result.members) == members
-    assert result.best == (leader if members == {leader} else None)
+    assert set(result.unadjusted.members) == members
+    assert result.unadjusted.best == (leader if members == {leader} else None)
+    family = members | _SWEEP_FAMILY_ADDS.get(stem, set())
+    assert set(result.members) == family
+    assert result.best == (leader if family == {leader} else None)

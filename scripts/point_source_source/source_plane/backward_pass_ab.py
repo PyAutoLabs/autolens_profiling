@@ -101,6 +101,14 @@ correctness gate is NO_GO; GO when both intervals clear their bars; NO_GO only
 when an interval is wholly on the wrong side; INCONCLUSIVE otherwise or below
 ``MIN_AB_ROUNDS`` rounds — an overlapping CI is no longer written as no-go.
 
+Since #362 fix phase 9 the verdict is family-wise: the phase-2c decision picks
+the GO routes, so every timed route x lane x {saved ms, ratio} criterion of the
+host is one Holm family at family-wise 90 %
+(``likelihood_breakdown.family_gates.phase2c_family``), read from the same
+paired round draws; the per-criterion 90 % verdict is kept as
+``verdict_unadjusted`` and a route is GO for the host only when it is GO in
+every lane (``per_route``, ``go_routes``).
+
 Output
 ------
 
@@ -148,11 +156,13 @@ from likelihood_breakdown.ab_verdict import (  # noqa: E402
     AB_CONFIDENCE,
     AT_LEAST,
     AT_MOST,
+    GO,
     MIN_AB_ROUNDS,
     NO_GO,
     Criterion,
     ab_rule_verdict,
 )
+from likelihood_breakdown.family_gates import phase2c_family  # noqa: E402
 from likelihood_breakdown.provenance import source_revisions, thread_environment  # noqa: E402
 from likelihood_breakdown.round_bootstrap import (  # noqa: E402
     round_median_ratio,
@@ -991,6 +1001,20 @@ for lane_index, lane in enumerate(LANES):
 
 
 def _phase2c_rule() -> dict:
+    # The family-wise verdict (#362 fix phase 9): the phase-2c decision picks the GO
+    # routes, so every timed route x lane x {saved ms, ratio} criterion of this host is
+    # one Holm family at family-wise 90 %, on the same paired round draws as the
+    # recorded 90 % intervals. The unadjusted per-criterion 90 % verdict is kept beside it.
+    family = phase2c_family(
+        {lane: rows[f"{lane}_grad"] for lane in LANES},
+        routes=tuple(route for route in GRAD_ROUTES if route != "rev"),
+        saved_bar_ms=GO_MIN_SAVED_MS,
+        fraction_bar=GO_MIN_FRACTION,
+        seed=BOOTSTRAP_SEED,
+        samples=BOOTSTRAP_SAMPLES,
+        min_n=MIN_AB_ROUNDS,
+        confidence=AB_CONFIDENCE,
+    )
     per_lane = {}
     for lane in LANES:
         row = rows[f"{lane}_grad"]
@@ -1006,6 +1030,7 @@ def _phase2c_rule() -> dict:
                     "go": False,
                     "timed": False,
                     "verdict": NO_GO,
+                    "verdict_unadjusted": NO_GO,
                     "verdict_reason": "not timed: its correctness gate is red",
                 }
                 continue
@@ -1041,6 +1066,9 @@ def _phase2c_rule() -> dict:
                 confidence=AB_CONFIDENCE,
                 gates={"correctness": gate_green},
             )
+            fam = family["per_lane"][lane][route]
+            # A red gate stays NO_GO first; otherwise the family-wise verdict governs.
+            family_verdict = verdict.verdict if not gate_green else fam["verdict"]
             per_route[route] = {
                 "timed": True,
                 "rev_ms": control_ms,
@@ -1053,10 +1081,14 @@ def _phase2c_rule() -> dict:
                 "point_estimate_clears_bar": point,
                 "ci_excludes_bar": ci,
                 "gate_green": gate_green,
-                "verdict": verdict.verdict,
-                "verdict_reason": verdict.reason,
+                "verdict": family_verdict,
+                "verdict_reason": verdict.reason if not gate_green else fam["reason"],
+                "verdict_unadjusted": verdict.verdict,
+                "verdict_unadjusted_reason": verdict.reason,
+                "family_member_confidence": fam.get("member_confidence"),
+                "family_criteria": fam.get("criteria"),
                 "resolvable_effect": {c.name: c.mdi for c in verdict.criteria},
-                "go": verdict.go,
+                "go": family_verdict == GO,
             }
         per_lane[lane] = per_route
     return {
@@ -1064,10 +1096,17 @@ def _phase2c_rule() -> dict:
         "the value_and_grad-equivalent call, 90% CIs excluding the bar (saved CI low >= "
         f"{GO_MIN_SAVED_MS} ms, ratio CI high <= {1 - GO_MIN_FRACTION:.2f}), correctness gate green; "
         "NO_GO only when an interval is wholly on the wrong side or the gate is red; INCONCLUSIVE "
-        f"otherwise or below {MIN_AB_ROUNDS} rounds (shared ab_rule_verdict, #362)",
+        f"otherwise or below {MIN_AB_ROUNDS} rounds (shared ab_rule_verdict, #362); judged "
+        "family-wise: every timed route x lane x criterion of this host is one Holm family at "
+        f"family-wise {AB_CONFIDENCE:.0%} (#362 fix phase 9), the per-criterion 90% verdict "
+        "kept as verdict_unadjusted; a route is GO for the host only when GO in every lane",
         "effective_n": "n_rounds (paired whole-round bootstrap, #362 fix phase 4)",
         "decides_on": "hpc_ral_cpu_fp64 only",
         "per_lane": per_lane,
+        "per_route": family["per_route"],
+        "go_routes": family["go_routes"],
+        "go_routes_unadjusted": family["go_routes_unadjusted"],
+        "family": family["family"],
     }
 
 
@@ -1240,8 +1279,13 @@ for lane, per_route in phase2c_rule["per_lane"].items():
             f"[{verdict['saved_ms_ci90'][0]:+.4f}, {verdict['saved_ms_ci90'][1]:+.4f}] = "
             f"{verdict['fraction_saved']:.1%}; ratio {verdict['ratio']:.3f} "
             f"[{verdict['ratio_ci90'][0]:.3f}, {verdict['ratio_ci90'][1]:.3f}] -> "
-            f"{verdict['verdict']} ({config_name}; RAL CPU decides)"
+            f"{verdict['verdict']} family-wise (unadjusted {verdict['verdict_unadjusted']}; "
+            f"{config_name}; RAL CPU decides)"
         )
+print(
+    f"  phase-2c GO routes (family-wise, every lane): {phase2c_rule['go_routes']} "
+    f"(unadjusted {phase2c_rule['go_routes_unadjusted']})"
+)
 print(f"  wall: {summary['wall_s']:.0f} s")
 print(f"  Results JSON: {dict_path}")
 print(f"  Results PNG:  {chart_path}")

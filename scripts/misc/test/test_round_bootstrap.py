@@ -157,7 +157,11 @@ def _import_namespace(cell: Path) -> dict:
         for node in ast.parse(cell.read_text()).body
         if isinstance(node, ast.ImportFrom)
         and node.module
-        in ("likelihood_breakdown.round_bootstrap", "likelihood_breakdown.ab_verdict")
+        in (
+            "likelihood_breakdown.round_bootstrap",
+            "likelihood_breakdown.ab_verdict",
+            "likelihood_breakdown.family_gates",
+        )
     ]
     namespace: dict = {}
     exec(compile(ast.Module(body=nodes, type_ignores=[]), str(cell), "exec"), namespace)
@@ -294,7 +298,9 @@ def test_the_committed_backward_pass_rows_on_round_intervals(config, changed):
     data, rule = _backward_rule_on_round_intervals(config)
     for lane, per_route in data["phase2c_rule"]["per_lane"].items():
         for route, old in per_route.items():
-            new = rule["per_lane"][lane][route]["verdict"]
+            # The per-criterion 90 % verdict (fix phase 4); fix phase 9's family-wise
+            # verdict is pinned in test_ab_verdict.py / test_family_gates.py.
+            new = rule["per_lane"][lane][route]["verdict_unadjusted"]
             expected = changed.get((lane, route), GO if old["go"] else NO_GO)
             assert new == expected, (lane, route, rule["per_lane"][lane][route]["verdict_reason"])
 
@@ -311,7 +317,7 @@ def test_the_committed_sweep_tie_sets_hold_on_round_intervals():
     ns = _lift(
         IP / "solver_config_sweep.py",
         ("_median_ratio", "_fastest"),
-        {"np": np, "N_ROUNDS": n_rounds, "BOOTSTRAP_SAMPLES": 2000},
+        {"np": np, "N_ROUNDS": n_rounds, "BOOTSTRAP_SAMPLES": 2000, "BOOTSTRAP_SEED": SEED},
     )
     control = _ms_to_s(rows["control"]["per_call_ms"])
     rejudged = {}
@@ -331,5 +337,14 @@ def test_the_committed_sweep_tie_sets_hold_on_round_intervals():
         and data["precision_equivalent"][n]
     ]
     result = ns["_fastest"](candidates)
+    assert result.unadjusted.best is None
+    assert set(result.unadjusted.members) == {
+        "e2.5_s0.4",
+        "e2.5_s0.2",
+        "e3_s0.4",
+        "e3_s0.3",
+        "e4_s0.4",
+    }
+    # Fix phase 9: at the family-wise level two more configurations stay tied.
     assert result.best is None
-    assert set(result.members) == {"e2.5_s0.4", "e2.5_s0.2", "e3_s0.4", "e3_s0.3", "e4_s0.4"}
+    assert set(result.members) == set(result.unadjusted.members) | {"e3_s0.2", "e4_s0.3"}

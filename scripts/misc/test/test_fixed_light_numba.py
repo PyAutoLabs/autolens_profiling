@@ -1264,7 +1264,16 @@ def _cell_import_namespace(module: str) -> dict:
     return namespace
 
 
-def _promotion_decision(b_ms, d_ms, b_status, d_status, *, rows=None):
+def _promotion_decision(
+    b_ms,
+    d_ms,
+    b_status,
+    d_status,
+    *,
+    rows=None,
+    load_average_at_start=None,
+    load_average_at_end=None,
+):
     """Run the cell's OWN promotion block (lifted from its AST) on two synthetic rows."""
     tree = ast.parse(CELL_PATH.read_text())
     block = next(
@@ -1276,8 +1285,15 @@ def _promotion_decision(b_ms, d_ms, b_status, d_status, *, rows=None):
         rows = _promotion_rows(b_ms, d_ms, b_status, d_status)
     namespace = _cell_import_namespace("likelihood_breakdown.ab_verdict")
     namespace.update(_cell_import_namespace("likelihood_breakdown.warmup_gate"))
+    namespace.update(_cell_import_namespace("likelihood_breakdown.family_gates"))
     namespace.update(
-        {"np": np, "rows": rows, "_promotion_pair": ("b_sparse_numba", "d_perm_sparse_numba")}
+        {
+            "np": np,
+            "rows": rows,
+            "_promotion_pair": ("b_sparse_numba", "d_perm_sparse_numba"),
+            "load_average_at_start": load_average_at_start,
+            "load_average_at_end": load_average_at_end,
+        }
     )
     exec(compile(ast.Module(body=[block], type_ignores=[]), str(CELL_PATH), "exec"), namespace)
     return namespace["_promotion_decision"]
@@ -1329,6 +1345,38 @@ def test_promotion_below_the_minimum_block_count_is_inconclusive():
     assert "4 < 5" in decision["speedup_verdict_reason"]
 
 
+@pytest.mark.parametrize("d_ms, settled_status", [(200.0, "timing_candidate"), (230.0, "NO_LEVER")])
+def test_a_drifting_host_makes_the_promotion_inconclusive(d_ms, settled_status):
+    """P2 (#362 fix phase 9): the rows are separate passes; drift between them is not
+    cancelled, so a GO and a measured NO_LEVER both become INCONCLUSIVE when the host
+    drifts (a 1-minute load moving 1.0 -> 4.0 across the rows)."""
+    rows = _promotion_rows(236.0, d_ms, "PASS", "PASS")
+    quiet = _promotion_decision(
+        None,
+        None,
+        None,
+        None,
+        rows=rows,
+        load_average_at_start=[1.0] * 3,
+        load_average_at_end=[1.0] * 3,
+    )
+    assert quiet["status"] == settled_status
+    assert quiet["between_row_drift"]["drifted"] is False
+    drifted = _promotion_decision(
+        None,
+        None,
+        None,
+        None,
+        rows=rows,
+        load_average_at_start=[1.0] * 3,
+        load_average_at_end=[4.0] * 3,
+    )
+    assert drifted["status"] == "INCONCLUSIVE", drifted["reason"]
+    assert drifted["between_row_drift"]["drifted"] is True
+    assert drifted["timing_gate_pass"] is False and drifted["promotion_ready"] is False
+    assert "drifted" in drifted["reason"] and "NO_LEVER" in drifted["reason"]
+
+
 def test_promotion_rejudges_the_committed_s4b_row_as_a_measured_no_lever():
     """The one committed promotion (s4b, published NO_LEVER at -0.80 %) stays NO_LEVER.
 
@@ -1342,7 +1390,16 @@ def test_promotion_rejudges_the_committed_s4b_row_as_a_measured_no_lever():
     )
     committed = json.loads(path.read_text())
     assert committed["promotion_decision"]["status"] == "NO_LEVER"
-    decision = _promotion_decision(None, None, None, None, rows=committed["rows"])
+    decision = _promotion_decision(
+        None,
+        None,
+        None,
+        None,
+        rows=committed["rows"],
+        load_average_at_start=committed["contention"]["load_average_at_start"],
+        load_average_at_end=committed["contention"]["load_average_at_end"],
+    )
+    assert decision["between_row_drift"]["drifted"] is False  # fix phase 9
     interval = decision["whole_call_speedup_paired_blocks"]
     assert interval["n_blocks"] == 32
     assert interval["lower"] == pytest.approx(-0.013056, abs=1e-5)

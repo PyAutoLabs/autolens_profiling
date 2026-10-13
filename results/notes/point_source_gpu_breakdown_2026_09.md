@@ -194,6 +194,18 @@ busy (0.537 ms scalar, 0.789 ms vmap-16).
 
 ## Go / no-go memo (decision is the human's)
 
+> **Re-judgement, 2026-10-09 (timing-noise audit #362, fix phase 9; facts, nothing rewritten, no
+> decision reversed).** The MDI above (5.45 %) was an iid bootstrap of the run's first half of
+> scalar ON calls against its second half, so slow drift across the run inflated it. On the paired
+> round bootstrap (each round's first 10 calls against its last 10, rounds resampled together) the
+> same samples give an **MDI of 0.94 %** ([0.9906, 1.0048]; fp32 what-if 6.52 % → 1.00 %). The "below
+> MDI" readings in the table above and in the first memo bullet (static lattice ≤ 2 %, deflections
+> ≤ 2.9 % / 4.4 % "below MDI even at a 100 % saving") therefore lose their support: those ceilings
+> are small but resolvable by an interleaved A/B of this size. The ranking of the levers with room
+> (launch count / fusion, the neighbourhood sort, the implicit Jacobian) is unchanged; OFF / ON on
+> rounds is [1.194, 1.211] (was [1.197, 1.211]).
+
+
 - The GPU call is launch-bound as the CPU campaign's A100 rows said: 173 kernels per call,
   device busy 57 % of the production wall, 81x per-likelihood gain from `vmap`-256 at 3.2x the
   single-call cost. The FLOP levers the contract lists last (deflections, step-0 lattice) are

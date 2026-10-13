@@ -657,6 +657,14 @@ Laptop (lead):
 | plain | `rev_analytic` | +0.1008 | 12.6% | yes (+0.0856) | no (0.892) | green | no-go |
 | plain | `fwd_analytic` | +0.2520 | 31.4% | yes (+0.2414) | yes (0.696) | green | GO |
 
+> **Re-judgement, 2026-10-09 (timing-noise audit #362, fix phase 9; facts, nothing rewritten).**
+> The phase-2c rule is now judged family-wise: each host's 16 criteria (4 routes × 2 lanes × saved
+> ms and ratio) are one Holm family at family-wise 90 % on the paired round draws, and a route is
+> GO only when GO in both lanes. On the deciding EPYC row the GO routes are unchanged (`fwd`,
+> `fwd_analytic`, `rev_analytic`; plain `rev_analytic`'s ratio straddles 0.85 at the first Holm
+> level and resolves at the last, [0.821, 0.847]); the A100 is unchanged. On the laptop lead both
+> `rev_analytic` rows are INCONCLUSIVE (plain was NO_GO). The decision below (`fwd` GO) stands.
+
 **Verdict and recommendation (main session, 2026-09-27).**
 
 - **`fwd` is GO.** Forward-mode gradients cut the `value_and_grad`-equivalent call

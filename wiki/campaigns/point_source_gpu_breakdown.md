@@ -85,3 +85,8 @@ to forward mode (PyAutoLens#752); two smooth points fail the strict FD rule (kep
 after a briefly widened gate was reverted); scalar +8.6 % vs job 359102, not bisected. First
 run 366913 shared its node and is a caveat only. No image-plane fit has been timed, so the
 go/no-go against the admission bar needs one autolens_inference measurement first.
+
+> **Re-judgement, 2026-10-09 (timing-noise audit #362, fix phase 9; facts, nothing reversed).**
+> The 5.45 % MDI was an iid split-half inflated by drift across the run; on paired rounds it is
+> 0.94 %, so the deflection and step-0 lattice ceilings (≤ 2–4.4 %) are small but resolvable by an
+> interleaved A/B — see the ledger's dated note.

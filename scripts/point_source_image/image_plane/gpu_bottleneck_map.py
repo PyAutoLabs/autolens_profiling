@@ -19,7 +19,7 @@ Legs
    default, the production program) and OFF (``xla_gpu_enable_command_buffer=""``, the
    program every kernel can be named in). lower / compile / first-call, then interleaved
    ``--rounds`` x ``--calls`` warm calls over the fixed-seed stream (start rotated each
-   round), per-call medians, bootstrap 90 % CI of OFF / ON. The fiducial gate: the ON
+   round), per-call medians, paired round-bootstrap 90 % CI of OFF / ON (#362 fix phase 9). The fiducial gate: the ON
    program's log L at the prior-median vector equals ``7.743201200876806`` bit-exactly on the
    A100 (``...812`` on CPU); OFF must equal ON on every stream point.
 2. **vmap** -- ``jax.vmap`` batches ``--vmap-batches`` (default 1/4/16/64/256; stops at the
@@ -104,7 +104,9 @@ if os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 
 import _point_solver_stage_map as stage_map  # noqa: E402
 from likelihood_breakdown import xla_attribution  # noqa: E402
+from likelihood_breakdown.family_gates import round_split_half_mdi  # noqa: E402
 from likelihood_breakdown.provenance import source_revisions, thread_environment  # noqa: E402
+from likelihood_breakdown.round_bootstrap import round_median_ratio  # noqa: E402
 from likelihood_breakdown.timing import block  # noqa: E402
 
 from _profile_cli import (  # noqa: E402
@@ -362,7 +364,20 @@ def _stats_ms(seconds) -> dict:
     }
 
 
-def _median_ratio(numerator, denominator, seed: int) -> dict:
+def _median_ratio(numerator, denominator, seed: int, *, n_rounds: int | None = None) -> dict:
+    """median(numerator) / median(denominator) with a bootstrap 90 % interval.
+
+    With ``n_rounds`` (both arms timed by ``interleaved`` in the same rounds, in round
+    order) the interval is the paired whole-round bootstrap (#362 fix phase 9, the
+    shared ``likelihood_breakdown.round_bootstrap``; ``effective_n`` = rounds). Without
+    it the arms share no rounds — the fp32 what-if compares two separate processes — so
+    nothing pairs them and the interval stays an unpaired iid resampling of calls,
+    labelled as such (too narrow under within-round correlation; reported, not gated).
+    """
+    if n_rounds is not None:
+        return round_median_ratio(
+            numerator, denominator, n_rounds=n_rounds, seed=seed, samples=BOOTSTRAP_SAMPLES
+        )
     num = np.asarray(numerator, dtype=float)
     den = np.asarray(denominator, dtype=float)
     rng = np.random.default_rng(seed)
@@ -374,21 +389,23 @@ def _median_ratio(numerator, denominator, seed: int) -> dict:
         "ci90_low": float(np.percentile(boots, 5)),
         "ci90_high": float(np.percentile(boots, 95)),
         "bootstrap_samples": BOOTSTRAP_SAMPLES,
+        "resampling": "iid calls, unpaired (separate processes share no rounds)",
     }
 
 
-def _mdi(samples_ms) -> float:
-    """Minimum detectable improvement: the 90 % CI half-width of a same-program median ratio.
+def _mdi(samples_ms) -> dict:
+    """Minimum detectable improvement of a paired A/B on this layout (C12, #362 fix phase 9).
 
-    Two halves of one route's own per-call samples, bootstrapped: what a null A/B of this
-    program against itself resolves. A lever whose ceiling is below it cannot be measured.
+    A null A/B of the scalar ON program against itself: each round's first half of
+    calls against its last half (the two adjacent slots a real A/B of two routes
+    occupies), bootstrapped over whole rounds with the same indices for both halves
+    (``likelihood_breakdown.family_gates.round_split_half_mdi``). The MDI is the larger
+    distance of the 90 % interval from 1; a lever whose ceiling is below it cannot be
+    resolved by an interleaved A/B of this size. It replaced an iid bootstrap of the
+    run's first half of calls against its second half, which charged slow drift across
+    the run to the floor. ``mdi`` is NaN below 5 rounds or 2 calls per round.
     """
-    s = np.asarray(samples_ms, dtype=float)
-    half = s.size // 2
-    if half < 4:
-        return float("nan")
-    r = _median_ratio(s[:half], s[half : 2 * half], BOOTSTRAP_SEED + 7)
-    return float(max(abs(r["ci90_high"] - 1.0), abs(1.0 - r["ci90_low"])))
+    return round_split_half_mdi(samples_ms, n_rounds=N_ROUNDS, seed=BOOTSTRAP_SEED + 7)
 
 
 def _is_oom(exc: BaseException) -> bool:
@@ -537,10 +554,14 @@ baseline = {
         for name, t in b_times.items()
     },
 }
-baseline["mdi_same_program"] = _mdi(baseline["rows"]["command_buffers_on"]["per_call_ms"])
+baseline["mdi_same_program_detail"] = _mdi(baseline["rows"]["command_buffers_on"]["per_call_ms"])
+baseline["mdi_same_program"] = baseline["mdi_same_program_detail"]["mdi"]
 if ex_off is not None:
     baseline["off_over_on"] = _median_ratio(
-        b_times["command_buffers_off"], b_times["command_buffers_on"], BOOTSTRAP_SEED
+        b_times["command_buffers_off"],
+        b_times["command_buffers_on"],
+        BOOTSTRAP_SEED,
+        n_rounds=N_ROUNDS,
     )
     baseline["command_buffer_saving_ms"] = (
         baseline["rows"]["command_buffers_off"]["stats"]["median_ms"]
@@ -920,7 +941,10 @@ if "grad" in LEGS:
         warm=N_WARM,
     )
     grad_block["scalar"] = {
-        name: {"stats": _stats_ms(t), "over_primal": _median_ratio(t, g_times["primal"], 11)}
+        name: {
+            "stats": _stats_ms(t),
+            "over_primal": _median_ratio(t, g_times["primal"], 11, n_rounds=N_GRAD_ROUNDS),
+        }
         for name, t in g_times.items()
     }
     grad_block["scalar"]["reverse"]["compile"] = rec_rev
@@ -984,7 +1008,7 @@ if "grad" in LEGS:
         name: {
             "stats_per_batch": _stats_ms(t),
             "median_ms_per_likelihood": float(np.median(t)) * 1e3 / gb,
-            "over_primal": _median_ratio(t, v_times["primal"], 13),
+            "over_primal": _median_ratio(t, v_times["primal"], 13, n_rounds=N_GRAD_ROUNDS),
         }
         for name, t in v_times.items()
     }
@@ -1347,7 +1371,15 @@ summary = {
         "vmap_delta_tol": VMAP_DELTA_TOL,
         "cache_trap_guard": "fresh closure + jax.clear_caches() per compiled program",
         "command_buffers_off": f'compiler_options={{"{_COMMAND_BUFFER_OPTION}": ""}}',
-        "mdi": "90% CI half-width of a split-half bootstrap of the scalar ON per-call samples",
+        "mdi": (
+            "90% CI half-width of a paired round bootstrap of each round's first half of "
+            "scalar ON calls over its last half (#362 fix phase 9; was an iid split-half of "
+            "the run's first vs second half of calls)"
+        ),
+        "ratio_intervals": (
+            "paired whole-round bootstrap for every in-process interleaved ratio (OFF / ON, "
+            "gradient / primal); the fp32 what-if ratio is unpaired iid (separate processes)"
+        ),
     },
     "headline": headline,
     "baseline": baseline,

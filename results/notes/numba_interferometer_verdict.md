@@ -262,6 +262,17 @@ ratios (inputs prebuilt) are the pure-kernel ones.
 > *If no numba kernel beats `rfft2_numpy` by >1.3× at sma **or** alma, stop the numba lever
 > work.*
 
+> **Re-judgement, 2026-10-09 (timing-noise audit #362, fix phase 9; facts, nothing rewritten, no
+> decision reversed).** The gate now reads intervals: every pinned numba kernel × sma / alma cell
+> is a paired round-bootstrap ratio `rfft2_numpy / kernel` against > 1.3×, the 24 members one Holm
+> family at family-wise 90 % ("passed" if any resolves above). Every cell here has 4 timed rounds
+> (`--reps 5`, round 0 discarded), below the audit's 5-round minimum, so the gate re-judges
+> **INCONCLUSIVE by construction** for this file and for `bakeoff_machine_drift_sma_v2026.8.17.1.json`;
+> the "Passed" below is a point reading. For context, not as a verdict: with a 4-round minimum the
+> family-wise gate reads passed (sma / Delaunay `direct_conv` 5.93×, interval [5.18, 6.11] at its Holm level), and the
+> in-situ rows of section 4 point the same way. Whether a 4-round family may decide, or the
+> bake-off is re-run with `--reps` ≥ 6, is a human decision (flagged in the phase-9 PR).
+
 **Passed**, at both geometries and on both meshes' best case:
 
 | cell | best numba | median | `rfft2_numpy` | ratio |
