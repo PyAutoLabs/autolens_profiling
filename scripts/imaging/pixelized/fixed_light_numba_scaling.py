@@ -29,6 +29,7 @@ import numpy as np  # noqa: E402
 from likelihood_breakdown import fixed_light_numba_draws_steps as replay  # noqa: E402
 from likelihood_breakdown import fixed_light_numba_memo_policy_steps as draws  # noqa: E402
 from likelihood_breakdown import fixed_light_numba_scaling_steps as scaling  # noqa: E402
+from likelihood_breakdown import interval_gates  # noqa: E402
 
 spec = importlib.util.spec_from_file_location(
     "phase5", ROOT / "scripts/imaging/pixelized/fixed_light_numba_draws.py"
@@ -154,13 +155,17 @@ def evaluate_group(cells, repeats):
         }
         clean_median = float(np.median(totals))
         observed_median = float(np.median(observed_totals))
+        # C4 (#362 fix phase 3b): the +-5 % band on a paired round-bootstrap
+        # interval over the repeats; PASS only when the interval resolves inside.
+        reconciliation = interval_gates.breakdown_reconciliation(observed_totals, totals)
         summaries[lane] = {
             "sequence_totals_ms": totals,
             "observed_sequence_totals_ms": observed_totals,
             "ms_per_model": clean_median / len(cells),
             "exclusive_ms_per_model": exclusive,
             "observer_overhead_relative": abs(observed_median / clean_median - 1),
-            "breakdown_reconciles": abs(observed_median / clean_median - 1) <= 0.05,
+            "breakdown_reconciles": reconciliation["verdict"],
+            "breakdown_reconciliation": reconciliation,
             "memo_hits": sum(r["solver"]["seed_source"] == "memo" for r in observed[lane].values()),
             "memo_drops": sum(r["solver"]["warm_start_fallback"] for r in observed[lane].values()),
             "solve_dimensions": [r["solve_dimension"] for r in observed[lane].values()],
@@ -175,8 +180,30 @@ def evaluate_group(cells, repeats):
         "summary": summaries,
         "numerical_passed": all(row["passed"] for row in comparisons.values()) and agreement,
         "observer_agreement": agreement,
-        "breakdown_passed": all(row["breakdown_reconciles"] for row in summaries.values()),
+        "breakdown_passed": all(
+            row["breakdown_reconciles"] == interval_gates.PASS for row in summaries.values()
+        ),
+        "breakdown_verdict": interval_gates.conjoin_reconciliations(
+            [row["breakdown_reconciles"] for row in summaries.values()]
+        ),
     }
+
+
+def run_status(gates, breakdown_verdicts):
+    """PASS needs every gate, including a resolved breakdown PASS (C4).
+
+    When the breakdown is the only gate missing and no lane resolved FAIL, the
+    status is INCONCLUSIVE, not INCOMPLETE_OR_FAIL: the reconciliation could not
+    be told from the 5 % band.
+    """
+    if all(gates.values()):
+        return "PASS"
+    others = {k: v for k, v in gates.items() if k != "breakdown"}
+    if all(others.values()) and interval_gates.conjoin_reconciliations(breakdown_verdicts) == (
+        interval_gates.INCONCLUSIVE
+    ):
+        return "INCONCLUSIVE"
+    return "INCOMPLETE_OR_FAIL"
 
 
 def plot(result, path):
@@ -403,6 +430,7 @@ def main(argv=None):
             for p in (
                 Path(__file__),
                 Path(scaling.__file__),
+                Path(interval_gates.__file__),
                 Path(replay.__file__),
                 Path(draws.__file__),
                 Path(phase5.__file__),
@@ -423,7 +451,9 @@ def main(argv=None):
         "complete": not args.smoke and args.n_repeats >= 6 and args.source_pixels in PIXELS,
     }
     result.update(
-        status="PASS" if all(result["gates"].values()) else "INCOMPLETE_OR_FAIL",
+        status=run_status(
+            result["gates"], [g["breakdown_verdict"] for g in result["groups"].values()]
+        ),
         wall_seconds=time.perf_counter() - started,
         load_after=list(os.getloadavg()),
         peak_rss_kib=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
