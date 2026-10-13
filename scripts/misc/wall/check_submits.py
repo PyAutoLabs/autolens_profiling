@@ -55,6 +55,17 @@ the author actually knows:
     the honest next step is to run one short arm: a truncated arm still
     measures s/step.
 
+The headline median's extra calls
+---------------------------------
+
+A cell that takes the headline steady median (``wall.rates.HEADLINE_MEDIAN_SCRIPTS``; timing-noise
+audit P8, phases 5 and 10) runs up to 25 more pipeline calls per invocation after its timed
+block. A wall measured before that existed does not contain them, so every row of such a cell
+gets ``wall.rates.headline_median_extra_wall_s()`` (50 s) added per invocation the submit makes
+(counted from its ``python3`` calls; a row whose cell runs inside a loop declares
+``median-runs: k``). A row whose wall was measured with the median in it declares
+``median: included``. The estimate only ever grows, so no ``--time`` shrinks.
+
 Which submits must carry one
 ----------------------------
 
@@ -85,7 +96,14 @@ ROOT = _profiling_root()
 if str(ROOT / "scripts" / "misc") not in sys.path:
     sys.path.insert(0, str(ROOT / "scripts" / "misc"))
 
-from wall.rates import STEP_RATE, UnmeasuredCellError, step_rate_for, wall_estimate  # noqa: E402
+from wall.rates import (  # noqa: E402
+    HEADLINE_MEDIAN_SCRIPTS,
+    STEP_RATE,
+    UnmeasuredCellError,
+    headline_median_extra_wall_s,
+    step_rate_for,
+    wall_estimate,
+)
 
 # Tolerance on a `source: rates` row against the table.
 RATE_TOLERANCE = 0.05
@@ -100,13 +118,15 @@ HEADROOM_FLOOR = {
 DEFAULT_HEADROOM = HEADROOM_FLOOR["rates"]
 
 _KV = re.compile(r"([A-Za-z][\w-]*):\s*(\S+)")
-_PYTHON_CALL = re.compile(r"python3?\s+(scripts/[\w./${}\[\]-]+\.py)")
+_PYTHON_CALL = re.compile(r"python3?\s+(?:-\S+\s+)*(scripts/[\w./${}\[\]-]+\.py)")
 _INSTRUMENT = re.compile(r"--instrument\s+(\S+)")
 # New source names must still match historical WALL-BASIS cell IDs.
 sys.path.insert(0, str(ROOT))
 from _script_routes import load_routes
 
 _ROUTE_LEGACY = {row["path"]: row["legacy"] for row in load_routes(ROOT)["routes"]}
+#: Legacy script path -> the (dataset, cell) key of a script that takes the headline median.
+_MEDIAN_LEGACY = {_ROUTE_LEGACY.get(path, path): path for path in HEADLINE_MEDIAN_SCRIPTS}
 
 _VAR_REF = re.compile(r"^\$\{?(\w+)(?:\[[^\]]*\])?\}?$")
 
@@ -193,6 +213,47 @@ def strip_comments(text: str) -> str:
     return "\n".join("" if ln.lstrip().startswith("#") else ln for ln in text.splitlines())
 
 
+def _resolved_calls(text: str) -> list[list[str]]:
+    """Per ``python3 scripts/...py`` invocation, the legacy script paths it can resolve to.
+
+    Variables are expanded in every path segment (not only the old filename) through
+    `resolve_var`; candidates still holding a ``$`` are dropped.
+    """
+    from itertools import product
+
+    calls: list[list[str]] = []
+    for match in _PYTHON_CALL.finditer(text):
+        parts = match.group(1).split("/")
+        expanded = []
+        for part in parts:
+            suffix = ".py" if part.endswith(".py") else ""
+            token = part[:-3] if suffix else part
+            expanded.append({value + suffix for value in _expand(text, token) or {token}})
+        paths = []
+        for candidate in product(*expanded):
+            path = _ROUTE_LEGACY.get("/".join(candidate), "/".join(candidate))
+            if len(path.split("/")) >= 3 and "$" not in path:
+                paths.append(path)
+        calls.append(sorted(set(paths)))
+    return calls
+
+
+def median_runs(text: str) -> dict[tuple[str, str], int]:
+    """``(dataset, cell)`` -> how many invocations of a headline-median script the submit makes.
+
+    Counted per textual ``python3`` call (a ``${CELL}`` expanding to k scripts counts each once).
+    A loop that runs one call k times is invisible here: its row declares ``median-runs: k``.
+    """
+    counts: dict[tuple[str, str], int] = {}
+    for paths in _resolved_calls(strip_comments(text)):
+        for path in paths:
+            if path in _MEDIAN_LEGACY:
+                legacy = path.split("/")
+                key = (legacy[1], legacy[-1][:-3])
+                counts[key] = counts.get(key, 0) + 1
+    return counts
+
+
 def cells_run(text: str) -> tuple[set[tuple[str, str]], set[str]]:
     """The ``(dataset, cell)`` pairs a submit actually runs, and its instruments.
 
@@ -203,21 +264,10 @@ def cells_run(text: str) -> tuple[set[tuple[str, str]], set[str]]:
     """
     text = strip_comments(text)
     cells: set[tuple[str, str]] = set()
-    for match in _PYTHON_CALL.finditer(text):
-        parts = match.group(1).split("/")
-        # Expand variables in every path segment, not only the old filename.
-        from itertools import product
-
-        expanded = []
-        for part in parts:
-            suffix = ".py" if part.endswith(".py") else ""
-            token = part[:-3] if suffix else part
-            expanded.append({value + suffix for value in _expand(text, token) or {token}})
-        for candidate in product(*expanded):
-            path = _ROUTE_LEGACY.get("/".join(candidate), "/".join(candidate))
+    for paths in _resolved_calls(text):
+        for path in paths:
             legacy = path.split("/")
-            if len(legacy) >= 3 and not any("$" in part for part in legacy):
-                cells.add((legacy[1], legacy[-1][:-3]))
+            cells.add((legacy[1], legacy[-1][:-3]))
 
     instruments: set[str] = set()
     for match in _INSTRUMENT.finditer(text):
@@ -395,6 +445,7 @@ def check_text(text: str) -> list[Problem]:
     budget = parse_slurm_time(time_match.group(1))
 
     run_cells, run_instruments = cells_run(text)
+    median_run_counts = median_runs(text)
     declared: set[tuple[str, str]] = set()
 
     for row in rows:
@@ -425,6 +476,12 @@ def check_text(text: str) -> list[Problem]:
         wall = _row_wall(row, where, problems)
         if wall is None:
             continue
+        # Timing-noise audit phase 10: a measured wall taken before the headline median existed
+        # does not contain its extra calls; add the bound per run unless the row says its wall
+        # already includes them (`median: included`, e.g. re-measured after phase 5 / 10).
+        runs = max(median_run_counts.get((dataset, cell), 0), int(row.get("median-runs", 0)))
+        if runs and row.get("median") != "included":
+            wall += runs * headline_median_extra_wall_s()
 
         floor = HEADROOM_FLOOR.get(row.get("source", ""), DEFAULT_HEADROOM)
         headroom = float(row.get("headroom", floor))

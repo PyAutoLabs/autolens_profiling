@@ -914,6 +914,9 @@ def run(spec: CellSpec, cli, cell_args, script_file: str, profiling_root: Path) 
     # ------------------------------------------------------------------
     state: dict[str, Any] = {
         "full_pipeline": {"status": "not_run"},
+        # Timing-noise audit P8 (#362, phase 10): the steady median of the compiled full
+        # pipeline, written at the top level beside ``full_pipeline_single_jit`` ({} = none).
+        "full_pipeline_median": {},
         "dense": {"status": "not_run"},
         "solver_ab": None,
         "batch_size_sweep": None,
@@ -980,6 +983,7 @@ def run(spec: CellSpec, cli, cell_args, script_file: str, profiling_root: Path) 
             "setup_prefix_per_call_s": {str(k): float(v) for k, v in prefix_per_call.items()},
             "steps_sub_rows": {k: float(v) for k, v in sub_rows.items()},
             "full_pipeline_single_jit": float(full_s) if full_s is not None else None,
+            **state["full_pipeline_median"],
             "full_pipeline": full,
             "step_sum_over_full_jit": (step_total / full_s) if full_s else None,
             "figure_of_merit_reference": fom_library,
@@ -1043,8 +1047,19 @@ def run(spec: CellSpec, cli, cell_args, script_file: str, profiling_root: Path) 
         return fn
 
     full_fn = full_pipeline_with(cell_args.solver)
+    full_compiled = None
     try:
-        fom_full = float(jit_profile(full_fn, "full_pipeline", params_tree))
+        # ``timing.jit_profile`` directly (not the local wrapper): the compiled callable is
+        # needed for the headline steady median below.
+        full_compiled, fom_full = timing.jit_profile(
+            full_fn,
+            "full_pipeline",
+            params_tree,
+            n_repeats=n_repeats,
+            timer=timer,
+            jit_records=jit_records,
+        )
+        fom_full = float(fom_full)
         state["full_pipeline"] = {
             "status": "ok",
             "per_call_s": per_call("full_pipeline"),
@@ -1052,10 +1067,23 @@ def run(spec: CellSpec, cli, cell_args, script_file: str, profiling_root: Path) 
             "abs_diff_vs_library_nats": _abs_diff(fom_full, fom_library),
             "solver": cell_args.solver,
         }
+        try:
+            state["full_pipeline_median"] = timing.headline_steady_median(
+                full_compiled,
+                params_tree,
+                block_mean_s=per_call("full_pipeline"),
+                block_mean_is=timing.single_jit_block_is(n_repeats),
+            )
+        except Exception as exc:  # noqa: BLE001
+            # The block mean above stands; an OOM in the extra calls only loses the median.
+            if not _is_oom(exc):
+                raise
+            print(f"  steady median skipped: {type(exc).__name__} (legacy headline stands)")
     except Exception as exc:  # noqa: BLE001
         if not _is_oom(exc):
             raise
         state["full_pipeline"] = _oom_record(exc, "full pipeline")
+    full_compiled = None  # release the executable before the next section
     _free()
     if state["full_pipeline"].get("status") == "ok":
         # The library fit's figure of merit without the Analysis wrapper, and an op census

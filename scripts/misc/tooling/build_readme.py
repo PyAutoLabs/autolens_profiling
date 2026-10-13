@@ -58,7 +58,14 @@ from typing import Optional
 REPO_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "ruff.toml").exists())
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from build_dashboard import marker_verdict, read_release_sweep_conf  # noqa: E402
+from build_dashboard import (  # noqa: E402
+    ESTIMATOR_LEGACY,
+    ESTIMATOR_MEDIAN,
+    headline_median_seconds,
+    marker_verdict,
+    read_release_sweep_conf,
+    repeat_summary,
+)
 
 _RELEASE_SWEEP_CONF = read_release_sweep_conf(REPO_ROOT)
 
@@ -274,8 +281,8 @@ def _format_time(seconds: float | None) -> str:
     return f"{seconds:.2f} s"
 
 
-def _config_headline_seconds(cfg: dict) -> float | None:
-    """Per-call full-pipeline cost from one comparison.json config entry."""
+def _config_legacy_seconds(cfg: dict) -> float | None:
+    """The legacy per-call full-pipeline value of one comparison.json config entry."""
     for key in (
         "full_pipeline_per_call",
         "full_pipeline_single_jit",
@@ -286,6 +293,45 @@ def _config_headline_seconds(cfg: dict) -> float | None:
         if isinstance(v, (int, float)) and math.isfinite(v):
             return float(v)
     return None
+
+
+#: Labels of a runtime-table cell whose headline is not the legacy value (timing-noise audit
+#: phase 10: the dashboard's estimator rule, ``build_dashboard.headline_reading`` /
+#: ``repeat_summary``).
+MEDIAN_LABEL = "median"
+HEADLINE_FOOTNOTE = (
+    "_(median)_: the steady median (>= 5 warm calls, median of individually timed calls) the "
+    "row records beside its legacy single-jit value (a block mean in most cells), the same "
+    "headline the dashboard uses; "
+    "_(median of N runs)_: the median of N independent runs' headlines. Unlabelled values are "
+    "the legacy headline (the single-jit block mean, or the step-sum where no single-jit value "
+    "exists)."
+)
+
+
+def _config_headline(cfg: dict) -> tuple[float | None, str]:
+    """``(seconds, label)`` of one comparison.json config entry: the dashboard's estimator rule.
+
+    The steady median where the row records one beside the single-jit key its headline is
+    (labelled ``median``), the median of >= 2 independent runs where the row carries a repeat
+    summary (``median of N runs``), else the legacy value (no label).
+    """
+    legacy = _config_legacy_seconds(cfg)
+    if legacy is None:
+        return None, ""
+    median = headline_median_seconds(cfg)
+    seconds, labels = (median, [MEDIAN_LABEL]) if median is not None else (legacy, [])
+    estimator = ESTIMATOR_MEDIAN if median is not None else ESTIMATOR_LEGACY
+    repeats = repeat_summary(cfg)
+    if repeats is not None and repeats["estimator"] == estimator:
+        seconds = repeats["median_s"]
+        labels.append(f"median of {repeats['n']} runs")
+    return seconds, ", ".join(labels)
+
+
+def _config_headline_seconds(cfg: dict) -> float | None:
+    """Per-call full-pipeline headline of one comparison.json config entry (see above)."""
+    return _config_headline(cfg)[0]
 
 
 def _config_vmap_seconds(cfg: dict) -> float | None:
@@ -329,14 +375,15 @@ def _render_runtime_table(cells: list[RuntimeCell], baselines: dict[str, list[Ru
     baseline_by_cell = {
         name: {c.cell: c for c in cell_list} for name, cell_list in baselines.items()
     }
+    labelled = False
 
-    def _headline_any_config(cell: RuntimeCell) -> float | None:
+    def _headline_any_config(cell: RuntimeCell) -> tuple[float | None, str]:
         cfgs = cell.configs
         for cname in reversed(_ordered_config_names([cell])):  # prefer A100/extras
-            v = _config_headline_seconds(cfgs.get(cname, {}))
+            v, label = _config_headline(cfgs.get(cname, {}))
             if v is not None:
-                return v
-        return None
+                return v, label
+        return None, ""
 
     for cell in cells:
         cfgs = cell.configs
@@ -353,8 +400,11 @@ def _render_runtime_table(cells: list[RuntimeCell], baselines: dict[str, list[Ru
                     f"**{verdict['label']}**" if verdict["gpu_only"] else f"_{verdict['label']}_"
                 )
                 continue
-            seconds = _config_headline_seconds(cfg)
+            seconds, label = _config_headline(cfg)
             cell_text = _format_time(seconds)
+            if label:
+                cell_text += f" _({label})_"
+                labelled = True
             if seconds is not None and seconds > 60 and not cname.startswith("hpc"):
                 # Per-call > 1 min on a local backend: samplers need 1e4-1e6
                 # evaluations, so the config is unusable in practice.
@@ -362,8 +412,16 @@ def _render_runtime_table(cells: list[RuntimeCell], baselines: dict[str, list[Ru
             line.append(cell_text)
         for bname in baseline_names:
             bcell = baseline_by_cell[bname].get(cell.cell)
-            line.append(_format_time(_headline_any_config(bcell)) if bcell else "—")
+            if bcell is None:
+                line.append("—")
+                continue
+            seconds, label = _headline_any_config(bcell)
+            line.append(_format_time(seconds) + (f" _({label})_" if label else ""))
+            labelled = labelled or bool(label)
         rows.append("| " + " | ".join(line) + " |")
+    if labelled:
+        rows.append("")
+        rows.append(HEADLINE_FOOTNOTE)
     return "\n" + "\n".join(rows) + "\n"
 
 

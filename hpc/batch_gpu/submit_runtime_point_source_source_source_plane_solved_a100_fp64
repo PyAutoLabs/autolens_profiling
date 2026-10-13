@@ -24,6 +24,10 @@
 #   Laptop witness (WSL2, 8 threads, CPU): the timing phase is 10.7 s of profiled sections
 #   (compile-dominated: lower 2.0 s + compile 1.7 s + vmap first call 5.0 s); the probe phase
 #   compiles three more vmap batches. Budget 20 min for imports + 2 phases on the A100.
+#   Timing-noise audit phase 10: both invocations (probe and timing) take the headline steady
+#   median (#371 / P8) after the block, which the laptop witness predates; wall/check_submits.py
+#   adds its 50 s per-run bound (2 x 50 s; the real cost here is ~205 x 0.64 ms), so --time
+#   rose 0:20:00 -> 0:27:00 to keep the 10x headroom over 160 s.
 #   cell: point_source_source/source_plane_solved/simple  device: a100  precision: fp64
 #   source: measured-wall  wall: 60  ref: laptop-source_plane_solved_local_cpu_fp64  headroom: 10.0
 
@@ -33,7 +37,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32gb
-#SBATCH --time=0:20:00
+#SBATCH --time=0:27:00
 #SBATCH -o output/output.%A.out
 #SBATCH -e error/error.%A.err
 #SBATCH --mail-type=END,FAIL

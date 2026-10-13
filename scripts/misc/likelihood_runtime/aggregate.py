@@ -166,6 +166,62 @@ def _read_config(json_path: Path) -> dict:
     return data
 
 
+#: Independent repeat runs of one sweep row (timing-noise audit phase 10): a second (third, ...)
+#: process run of the same cell, config and release is written beside the row as
+#: ``<config stem>.repeat<k>.json`` (k >= 2; the row itself is run 1). ``_aggregate_cell`` lists
+#: them, the row first, under ``single_jit_repeat_runs`` in the row's ``comparison.json`` entry;
+#: ``build_dashboard.repeat_summary`` turns >= 2 independent runs into the repeat summary that
+#: lets a comparison be ``flat``. Only these keys of each run are kept.
+REPEAT_RUNS_FIELD = "single_jit_repeat_runs"
+_REPEAT_RUN_KEYS = (
+    "autolens_version",
+    "full_pipeline_per_call",
+    "full_pipeline_single_jit",
+    "full_pipeline_single_jit_median_ms",
+    "full_pipeline_cube_single_jit",
+    "full_pipeline_cube_single_jit_median_ms",
+    "total_step_by_step_cube",
+    "device",
+)
+
+
+def _repeat_paths(json_path: Path) -> list[Path]:
+    """``<stem>.repeat<k>.json`` files beside a sweep row, in k order."""
+    found = []
+    for path in json_path.parent.glob(f"{json_path.stem}.repeat*.json"):
+        k = path.name[len(json_path.stem) + len(".repeat") : -len(".json")]
+        if k.isdigit():
+            found.append((int(k), path))
+    return [path for _, path in sorted(found)]
+
+
+def _repeat_run(data: dict, source: str) -> dict:
+    run = {k: data[k] for k in _REPEAT_RUN_KEYS if k in data}
+    run["source"] = source
+    return run
+
+
+def _attach_repeat_runs(json_path: Path, data: dict) -> dict:
+    """The row with its repeat runs listed (unchanged when it has none, or none of its release)."""
+    repeats = _repeat_paths(json_path)
+    if not repeats:
+        return data
+    runs = [_repeat_run(data, json_path.name)]
+    for path in repeats:
+        try:
+            other = _read_config(path)
+        except (OSError, ValueError) as exc:
+            sys.stderr.write(f"  warn: failed to read {path}: {exc}\n")
+            continue
+        if other.get("autolens_version") != data.get("autolens_version"):
+            sys.stderr.write(f"  warn: {path.name} is another release; not a repeat of the row\n")
+            continue
+        runs.append(_repeat_run(other, path.name))
+    if len(runs) > 1:
+        data[REPEAT_RUNS_FIELD] = runs
+    return data
+
+
 def _aggregate_cell(cell_dir: Path) -> dict:
     configs: dict[str, dict] = {}
     # CPU-unusable markers (written by sweep.py --per-run-timeout, or by hand
@@ -200,7 +256,7 @@ def _aggregate_cell(cell_dir: Path) -> dict:
             continue
         try:
             cname = _config_name_from_stem(json_path.stem) or json_path.stem
-            configs[cname] = _read_config(json_path)
+            configs[cname] = _attach_repeat_runs(json_path, _read_config(json_path))
         except Exception as exc:
             sys.stderr.write(f"  warn: failed to read {json_path}: {exc}\n")
 

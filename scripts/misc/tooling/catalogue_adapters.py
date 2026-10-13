@@ -78,6 +78,9 @@ DIRECT = {
     "full_pipeline_single_jit": ("runtime", "single_jit_block"),
     "full_pipeline_single_jit_median": ("runtime", "single_jit_median"),
     "full_pipeline_cube_single_jit": ("runtime", "cube_single_jit"),
+    # Timing-noise audit phase 10: the datacube cell's steady median beside its cube block
+    # (additive; no committed row carries it).
+    "full_pipeline_cube_single_jit_median": ("runtime", "cube_single_jit_median"),
     "direct_log_likelihood_function_per_call": ("runtime", "direct_call"),
     "total_step_by_step": ("breakdown", "component_total"),
     "total_step_by_step_cube": ("breakdown", "cube_component_total"),
