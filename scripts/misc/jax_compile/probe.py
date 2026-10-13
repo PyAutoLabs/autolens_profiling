@@ -255,16 +255,17 @@ def main():
     f, x0 = workload.objective, workload.params
     metadata = provenance(args, _WORKSPACE_ROOT, workload)
     hardware = hardware_label(jax)
+    effective_cache_dir = jax.config.jax_compilation_cache_dir
 
     records = []
     for name in args.transforms.split(","):
         name = name.strip()
         print(f"[probe] {args.model_type} / {name} ...", flush=True)
-        rec = measure(name, f, x0, args.n_batch, args.batch_size, cache_dir=args.cache_dir)
+        rec = measure(name, f, x0, args.n_batch, args.batch_size, cache_dir=effective_cache_dir)
         # A populated cache with no new files does not prove a cache hit.
         # Keep the legacy heuristic visible without qualifying a new warm baseline.
         rec["cache_entry_heuristic"] = rec.pop("cache_state")
-        rec["cache_state"] = "unknown" if args.cache_dir else "none"
+        rec["cache_state"] = "unknown" if effective_cache_dir else "none"
         rec.update(
             record_kind="compile_probe_runtime_v1",
             dataset_class=args.dataset_class,
@@ -276,7 +277,8 @@ def main():
             steady_calls=STEADY_CALLS,
             hardware=hardware,
             jax_version=jax.__version__,
-            cache_dir=args.cache_dir or "",
+            cache_dir=effective_cache_dir or "",
+            requested_cache_dir=args.cache_dir,
             mixed_precision=args.mixed_precision,
             host_state=host_state(),
             tag=args.tag,

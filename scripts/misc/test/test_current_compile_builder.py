@@ -94,6 +94,14 @@ def test_main_writes_isolated_result_with_split_costs(tmp_path, monkeypatch):
     workload = SimpleNamespace(
         objective=lambda p: p, params=params, model=SimpleNamespace(total_free_parameters=8)
     )
+    monkeypatch.setitem(
+        sys.modules,
+        "jax",
+        SimpleNamespace(
+            config=SimpleNamespace(jax_compilation_cache_dir="effective-test-cache"),
+            __version__="test-version",
+        ),
+    )
     monkeypatch.setattr(probe, "_WORKSPACE_ROOT", tmp_path)
     monkeypatch.setattr(probe, "parse_args", lambda: args)
     monkeypatch.setattr(probe, "hardware_label", lambda jax: "test_cpu")
@@ -102,6 +110,7 @@ def test_main_writes_isolated_result_with_split_costs(tmp_path, monkeypatch):
 
     def measure(name, f, x0, *a, **kw):
         assert name == "jit" and x0 is params
+        assert kw["cache_dir"] == "effective-test-cache"
         return {
             "transform": name,
             "trace_s": 1,
@@ -117,6 +126,9 @@ def test_main_writes_isolated_result_with_split_costs(tmp_path, monkeypatch):
     rec = doc["records"][0]
     assert [rec[k] for k in ("trace_s", "compile_s", "first_s", "steady_s")] == [1, 2, 3, 4]
     assert rec["objective"] == current.OBJECTIVE
+    assert rec["cache_dir"] == "effective-test-cache"
+    assert rec["cache_state"] == "unknown"
+    assert rec["requested_cache_dir"] is None
     assert rec["input_representation"] == "registered-model-instance-pytree"
     assert not (tmp_path / "scripts").exists()
 
