@@ -33,7 +33,14 @@ def plan(tmp_path):
 
 def record(plan, step):
     metadata = {
-        "workload": {"dataset_sha256": plan["dataset_sha256"]},
+        "workload": {
+            "dataset_sha256": plan["dataset_sha256"],
+            "software": {
+                name: {"git_revision": "a" * 40, "git_dirty": False}
+                for name in ("autonerves", "autofit", "autoarray", "autogalaxy", "autolens")
+            },
+        },
+        "profiling": {"revision": "b" * 40, "tracked_dirty": False},
         "cpu_affinity": [plan["cpu"]],
         "jax_enable_x64": True,
         "devices": [{"platform": "cpu"}],
@@ -315,3 +322,18 @@ def test_measurement_boundaries_and_individual_samples():
     assert all(events[i + 1] == "sync" for i, event in enumerate(events) if event == "call")
     assert output == 5 and evidence["state"] == "hit"
     assert len(load) == 11
+
+
+@pytest.mark.parametrize("bad", [{"git_dirty": True}, {"git_revision": None}, {"git_dirty": None}])
+def test_dirty_or_unknown_library_cannot_join_comparison(plan, bad):
+    value = record(plan, plan["steps"][0])
+    value["provenance"]["workload"]["software"]["autoarray"].update(bad)
+    with pytest.raises(ValueError, match="autoarray source"):
+        pilot.validate_record(value, plan["steps"][0], plan, [])
+
+
+def test_dirty_project_cannot_join_comparison(plan):
+    value = record(plan, plan["steps"][0])
+    value["provenance"]["profiling"]["tracked_dirty"] = True
+    with pytest.raises(ValueError, match="profiling source"):
+        pilot.validate_record(value, plan["steps"][0], plan, [])

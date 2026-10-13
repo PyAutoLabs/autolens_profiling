@@ -151,7 +151,7 @@ def run_process(command, *, env, timeout, stdout, stderr, cwd=ROOT):
             command, env=env, cwd=cwd, stdout=out, stderr=err, start_new_session=True
         )
         try:
-            code = process.wait(timeout=timeout)
+            code = process.wait(timeout=max(0, timeout - (time.perf_counter() - start)))
             return {
                 "outcome": "completed" if code == 0 else "failed",
                 "returncode": code,
@@ -168,6 +168,24 @@ def run_process(command, *, env, timeout, stdout, stderr, cwd=ROOT):
             process.wait()
 
 
+def require_clean_sources(metadata):
+    """A dirty flag alone cannot fingerprint differing source contents."""
+    project = metadata["profiling"]
+    if (
+        not re.fullmatch(r"[0-9a-f]{40}", project.get("revision") or "")
+        or project.get("tracked_dirty") is not False
+    ):
+        raise ValueError("profiling source requires a known revision and clean tracked tree")
+    software = metadata["workload"]["software"]
+    for name in ("autonerves", "autofit", "autoarray", "autogalaxy", "autolens"):
+        state = software.get(name, {})
+        if (
+            not re.fullmatch(r"[0-9a-f]{40}", state.get("git_revision") or "")
+            or state.get("git_dirty") is not False
+        ):
+            raise ValueError(f"{name} source requires a known revision and clean tracked tree")
+
+
 def validate_record(record, step, plan, previous):
     if (
         record.get("schema") != SCHEMA
@@ -181,6 +199,7 @@ def validate_record(record, step, plan, previous):
     ):
         raise ValueError("worker result identity/outcome mismatch")
     identity = record["provenance"]
+    require_clean_sources(identity)
     if (
         identity["workload"]["dataset_sha256"] != plan["dataset_sha256"]
         or identity["cpu_affinity"] != [plan["cpu"]]

@@ -219,6 +219,7 @@ def run(request):
             for name in ("pilot.py", "pilot_worker.py")
         },
     )
+    pilot.require_clean_sources(metadata)
     # Paths differ intentionally per cache pair; effective non-path settings must match.
     metadata["comparison_context"] = {
         "workload": metadata["workload"],
@@ -240,6 +241,12 @@ def run(request):
         runtime=step["mode"] == "runtime",
         observe=load_sample,
     )
+    # Detect tracked source changes during this worker, not just between workers.
+    if (
+        git_identity(ROOT) != metadata["profiling"]
+        or current.software_state() != metadata["workload"]["software"]
+    ):
+        raise ValueError("source identities changed during measurement")
     value = float(output)
     if not math.isfinite(value):
         raise ValueError("nonfinite likelihood output")

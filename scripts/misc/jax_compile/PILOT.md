@@ -94,7 +94,10 @@ from `baseline-observation` and cannot fill baseline slots by renaming files.
 
 Provenance includes actual input hashes/model/parameter leaves, source hashes,
 project configuration file hashes, package inventory, Git identities and dirty
-flags, CPU/host/OS/RAM, affinity, effective environment and devices. A package
+flags, CPU/host/OS/RAM, affinity, effective environment and devices. Collection
+requires clean tracked trees and known full Git revisions for this project and
+all five imported PyAuto libraries. A second source-state check after measurement
+rejects changes during the worker. Do not edit source during a run. A package
 inventory is not a reproducible environment lock. Project config hashes and model
 serialization do not independently audit every effective library solver default.
 Local absolute paths are diagnostic metadata; do not publish raw files without
