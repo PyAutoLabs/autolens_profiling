@@ -18,16 +18,26 @@ PyAutoArray#627). Campaign: PyAutoPulse#62, task `interferometer_large_mask_aris
 
 ## Verdict
 
-- **The cost model routes all six cells to the faster measured arm.**
+- **Under default settings the factory now picks the faster measured arm in all six cells.**
+  This run measured the route the factory chooses (the inversion class). It did not re-time the
+  arms.
+  - The three 512 timing pairs are among the nine points the cost model was **calibrated on**
+    (PyAutoArray#632). Agreement there is in-sample: it is a fit check, not evidence that the
+    model generalises.
+  - The three 125 cells are out of sample, but their NumPy FFT arm was never timed. The
+    comparison there is against the JAX-jit FFT route (2.8–3.6 cores), used as a proxy.
   - On the 125×125 mask (extent 83²) every cell goes to `direct_conv`, by 26–104× predicted.
   - On the 512×512 mask (extent 341²), 1,459 vertices goes to FFT, and 2,577 and 5,746 go to
     `direct_conv`.
   - At 2,577 the old gate of 60 sent the fit to FFT (nnz/col 106 > 60) although `direct_conv`
     measured 1.29× faster (34.2 vs 44.1 s/call). The cost model fixes that misroute.
-- **The numba kill-gate question is answered by the cost model.** No fixed nnz/col value serves
-  both masks:
-  - The modelled crossover is ~309 nnz/col at extent 83² and ~166 at 341².
+- **The numba kill-gate question is answered by the cost model, not a retuned constant.** The
+  *modelled* crossover moves with the extent: ~309 nnz/col at 83² and ~166 at 341². So no single
+  constant is right in general.
   - The measured crossover on the 512 mask lies between 106 and 188 nnz/col.
+  - The six measured cells alone do not rule out one constant: every 125 cell is at nnz/col
+    ≤ 11.7, so a gate of about 150 would also route all six correctly. The case against a
+    constant rests on the model's extent dependence.
 - **Log-det parity holds after #631.** numba and JAX `log_det_regularization_matrix_term` agree to
   ≤ 4.4e-8 absolute at all six cells.
   - At the investigation's original 125×125 vector, the pre-fix pair was numba 2443.22 vs JAX
@@ -56,6 +66,7 @@ Reading the table:
 
 - **Routes.** Measured FFT/`direct_conv` ratios on the 512 mask are 0.74 / 1.29 / 2.36. The
   predicted ratios are 0.89 / 1.57 / 3.49, so the faster arm is chosen in all three cells.
+  These three pairs are calibration points of the model (in-sample).
 - **125 FFT arm.** The NumPy FFT arm was never timed on the 125 mask. The JAX jit column (the FFT
   route under JAX) is 2–5× slower than `direct_conv` there. The model predicts a far larger margin
   (26–104×) because the 166-point padded FFT is pocketfft's Bluestein case, which the model
