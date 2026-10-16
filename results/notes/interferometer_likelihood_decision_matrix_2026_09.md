@@ -38,9 +38,9 @@ A draft rule set for the architect to review; each rule cites the rows it rests 
    arm's `T` is N_vis × S complex128 and OOMs from 1e6 visibilities at every radius; where it
    runs it is slower — ~2× at sma, 17–21× at sdp81 (918 / 941 ms vs 53.7 / 45.2 ms).
 3. **Meshes on CPU: trust the library gate.** numba `direct_conv` beats the NumPy FFT route below
-   nnz/col ≈ 66 (Delaunay) / ≈ 72 (rect) and loses above; the packaged gate
+   nnz/col ≈ 66 (Delaunay) / ≈ 72 (rect) and loses above; the then-packaged gate
    (`interferometer_numba_nnz_per_source_max = 60`) sent every measured cell in this matrix to the
-   faster arm (no "(slower arm)" flags in the tables). At alma_high r3.5 the phase-1 JAX-CPU route is faster still
+   faster arm (no "(slower arm)" flags in the tables). Historical: since PyAutoArray#632 (`17caf228`) the packaged default is `null`, a two-constant cost model; see [route-gate phase 2](interferometer_route_gate_aris_2026_10.md). At alma_high r3.5 the phase-1 JAX-CPU route is faster still
    (8.3 / 7.6 s vs FFT 9.4 / 9.6 s).
 4. **The A100 wins every mesh cell, and the margin grows with the mask.** Best-CPU ÷ A100 is
    8–33× at sma, 28–41× at sdp81, 11–69× at alma and 43–114× at alma_high (single thread vs one
@@ -84,8 +84,9 @@ A draft rule set for the architect to review; each rule cites the rows it rests 
 
 ## Main matrix — Delaunay-1500, per-likelihood ms
 
-Bold = the faster CPU arm. "gate-60 route" is where the packaged gate
-(`interferometer_numba_nnz_per_source_max = 60`) sends the cell; "(slower arm)" flags a
+Bold = the faster CPU arm. "gate-60 route" is where the 2026-09 packaged gate
+(`interferometer_numba_nnz_per_source_max = 60`, since superseded; see
+[route-gate phase 2](interferometer_route_gate_aris_2026_10.md)) sends the cell; "(slower arm)" flags a
 cell the gate routes to the slower arm. A100 speed-up = best CPU arm ÷ A100 W~.
 
 | N_vis | instrument | mask r | masked px | nnz/col | CPU numba | CPU NumPy FFT | gate-60 route | CPU JAX (r3.5, ph.1) | A100 W~ sparse | A100 dense arm (step sum) | A100 speed-up vs best CPU |

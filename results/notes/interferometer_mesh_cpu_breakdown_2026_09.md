@@ -19,8 +19,9 @@ and 95 % at alma_high. The fnnls solve is most of the rest.
   evaluation.
 - **Crossover.** numba stops winning at **nnz/col ≈ 66 (Delaunay) / ≈ 72 (rectangular)**.
   Each is bracketed by two measured alma radii.
-- **Gate.** The packaged gate of 60 already routes every measured cell to the faster arm. One
-  gate of about 70 would be slightly better for both meshes (see the gate verdict below).
+- **Gate.** The then-packaged gate of 60 already routes every measured cell to the faster arm.
+  Historical: since PyAutoArray#632 (`17caf228`) the packaged default is `null`, a two-constant cost model; see [route-gate phase 2](./interferometer_route_gate_aris_2026_10.md).
+  One gate of about 70 would be slightly better for both meshes (see the gate verdict below).
 
 Cells: `scripts/interferometer/likelihood_breakdown/{delaunay,pixelization}_numba.py`, harness
 `scripts/misc/likelihood_breakdown/interferometer_pixelized_numpy.py`. SLURM:
