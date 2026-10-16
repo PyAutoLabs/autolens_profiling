@@ -115,3 +115,8 @@ Before production collection, resolve the exact hardware/stack/environment lock,
 dataset/full configuration, independent witness and tolerances, load methodology,
 collection window and resource approval in Pulse/project records. This diagnostic
 runner neither freezes those decisions nor grants scientific acceptance.
+
+The [correctness qualification design](QUALIFICATION.md) audits the exact
+objective and solver, proposes an independent reference and comparison contract,
+and lists the decisions required before a witness can qualify collection. Its
+tolerance candidates are unaccepted; the document adds no executable witness.
