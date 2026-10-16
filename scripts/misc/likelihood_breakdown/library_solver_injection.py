@@ -456,25 +456,61 @@ def positive_negative_probe():
     """Count calls into the library's positive-**negative** solve, changing nothing.
 
     ``Settings(use_positive_only_solver=False)`` is supposed to route the
-    reconstruction to ``reconstruction_positive_negative_from`` — one
-    ``xp.linalg.solve`` — with edge zeroing silently off (``solve_ids_to_keep``
-    returns ``None`` the moment positivity is off, abstract.py:540). This probe
-    is how the cell *verifies* that rather than asserting it in prose: the
-    counter must be non-zero on a route-(c) call and the positive-only counter
-    must be zero.
+    reconstruction to the unconstrained solve of ``F + λH``, with edge zeroing
+    silently off (``solve_ids_to_keep`` returns ``None`` the moment positivity is
+    off, abstract.py:568-569). This probe is how the cell *verifies* that rather
+    than asserting it in prose: the counter must be non-zero on a route-(c) call
+    and the positive-only counter must be zero.
+
+    Since PyAutoArray#634 (main 02aa2e48) route (c) has two library paths, and
+    both are counted:
+
+    - ``"shared_cholesky"`` — the NumPy path: ``AbstractInversion.reconstruction``
+      returns ``scipy.linalg.cho_solve(self._curvature_reg_matrix_cho_factor, D)``,
+      the Cholesky factor the log determinant then reuses. Counted by wrapping
+      ``scipy.linalg.cho_solve`` for the duration of the context and counting
+      only calls made directly from ``reconstruction`` in
+      ``inversion/inversion/abstract.py`` — so the opt-in ``cho_solve``
+      regularization term, the covariance matrix and anything else that calls
+      ``cho_solve`` never count. The factor is ``None`` whenever
+      ``use_positive_only_solver`` is on, and the positive-only branches return
+      before that line, so the positive-only path cannot trigger it.
+    - ``"lu_solve"`` — ``inversion_util.reconstruction_positive_negative_from``
+      (one ``xp.linalg.solve``): the JAX path, and the NumPy fallback when the
+      factor is ``None`` (``log_det_method != "cholesky"``, or ``F + λH`` not
+      positive-definite).
+
+    ``"calls"`` is their sum — the total number of route-(c) solves — so a
+    non-zero ``"calls"`` keeps meaning "route (c) ran", whichever path it took.
     """
+    import sys
+
+    import scipy.linalg
     from autoarray.inversion.inversion import inversion_util
 
     original = inversion_util.reconstruction_positive_negative_from
-    counts = {"calls": 0}
+    original_cho_solve = scipy.linalg.cho_solve
+    counts = {"calls": 0, "lu_solve": 0, "shared_cholesky": 0}
 
     def patched(data_vector, curvature_reg_matrix, xp=np):
         counts["calls"] += 1
+        counts["lu_solve"] += 1
         return original(data_vector=data_vector, curvature_reg_matrix=curvature_reg_matrix, xp=xp)
+
+    def cho_solve_observed(*args, **kwargs):
+        caller = sys._getframe(1).f_code
+        if caller.co_name == "reconstruction" and caller.co_filename.replace("\\", "/").endswith(
+            "inversion/inversion/abstract.py"
+        ):
+            counts["calls"] += 1
+            counts["shared_cholesky"] += 1
+        return original_cho_solve(*args, **kwargs)
 
     _assert_signature_covers(original, patched)
     inversion_util.reconstruction_positive_negative_from = patched
+    scipy.linalg.cho_solve = cho_solve_observed
     try:
         yield counts
     finally:
         inversion_util.reconstruction_positive_negative_from = original
+        scipy.linalg.cho_solve = original_cho_solve

@@ -129,9 +129,9 @@ _FUNCTIONS = [
 ]
 _LOCATIONS = [
     (1, 1, 399, 15),  # 1  abstract.py:399   curvature_reg_matrix (F + lambda*H)
-    (1, 2, 977, 20),  # 2  abstract.py:977   _log_det_symmetric_from (the cholesky)
-    (1, 3, 1069, 15),  # 3  abstract.py:1069  log_det_curvature_reg_matrix_term
-    (1, 4, 1148, 15),  # 4  abstract.py:1148  log_det_regularization_matrix_term
+    (1, 2, 1045, 20),  # 2  abstract.py:1045  _log_det_symmetric_from (the cholesky)
+    (1, 3, 1139, 15),  # 3  abstract.py:1139  log_det_curvature_reg_matrix_term
+    (1, 4, 1229, 15),  # 4  abstract.py:1229  log_det_regularization_matrix_term
     (2, 5, 586, 21),  # 5  convolver.py:586  the shared rfft2
     (4, 6, 136, 20),  # 6  imaging/abstract.py:136 operated_mapping_matrix_list
     (3, 7, 295, 12),  # 7  delaunay.py:295   the visibility walk while_loop
@@ -225,9 +225,9 @@ def test_frames_are_innermost_first_and_walk_the_parent_chain(stack_index):
     """Frame 4 is the Cholesky *called by* log_det_curvature_reg_matrix_term."""
     frames = stack_index.frames_for(4)
     assert len(frames) == 2
-    assert frames[0].line == 977
+    assert frames[0].line == 1045
     assert frames[0].function == "_log_det_symmetric_from"
-    assert frames[1].line == 1069
+    assert frames[1].line == 1139
     assert frames[1].function == "log_det_curvature_reg_matrix_term"
 
 
@@ -470,7 +470,7 @@ def test_the_harness_logdet_candidate_splits_into_solver_and_log_det_rows():
     dense_body = xa.Frame(
         file=_LIB + "inversion/inversion/abstract.py",
         function="_log_det_symmetric_from",
-        line=977,
+        line=1045,
     )
     patched = xa.Frame(file=_HARNESS_LOGDET, function="patched_log_det", line=400)
     assert xa.stage_for_frames((dense_body, patched)) == "log_det_curvature_reg"
