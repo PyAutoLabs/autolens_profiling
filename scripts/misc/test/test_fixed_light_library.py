@@ -357,9 +357,8 @@ def test_positivity_off_routes_to_the_positive_negative_solver(tiny_fit):
         )
         reconstruction = np.asarray(fit.inversion.reconstruction, dtype=float)
 
-    assert counts["calls"] >= 1, (
-        "positivity off did not reach reconstruction_positive_negative_from"
-    )
+    assert counts["calls"] >= 1, "positivity off did not reach the positive-negative solve"
+    assert counts["calls"] == counts["lu_solve"] + counts["shared_cholesky"]
     assert fit.inversion.solve_ids_to_keep is None, "edge zeroing survived positivity being off"
 
     expected = np.linalg.solve(
@@ -370,6 +369,35 @@ def test_positivity_off_routes_to_the_positive_negative_solver(tiny_fit):
     assert int(np.sum(reconstruction < 0.0)) > 0, (
         "the fixture must actually produce negative pixels, or route (c) proves nothing"
     )
+
+
+def test_positive_negative_probe_is_silent_on_the_positive_only_route(tiny_fit):
+    """The probe's control: positivity ON must count zero route-(c) solves.
+
+    The shared-Cholesky counter wraps ``scipy.linalg.cho_solve``; this pins that
+    the positive-only path (whose factor gate is closed) never trips it, and that
+    the probe restores the library entry points on exit.
+    """
+    import scipy.linalg
+    from autoarray.inversion.inversion import inversion_util
+
+    al, dataset, tracer = tiny_fit
+    cho_solve = scipy.linalg.cho_solve
+    lu_solve = inversion_util.reconstruction_positive_negative_from
+
+    with lsi.positive_negative_probe() as counts:
+        fit = al.FitImaging(
+            dataset=dataset,
+            tracer=tracer,
+            settings=al.Settings(use_border_relocator=True),
+            xp=np,
+        )
+        np.asarray(fit.inversion.reconstruction, dtype=float)
+        float(fit.figure_of_merit)
+
+    assert counts == {"calls": 0, "lu_solve": 0, "shared_cholesky": 0}
+    assert scipy.linalg.cho_solve is cho_solve
+    assert inversion_util.reconstruction_positive_negative_from is lu_solve
 
 
 def test_positivity_on_keeps_edge_zeroing(tiny_fit):
