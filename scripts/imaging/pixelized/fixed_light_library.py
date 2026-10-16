@@ -702,7 +702,7 @@ _settings = al.Settings(
 )
 
 #: Positivity off. ``Inversion.solve_ids_to_keep`` returns ``None`` the moment
-#: this is false (abstract.py:540), so edge zeroing goes with it — which is why
+#: this is false (abstract.py:568-569), so edge zeroing goes with it — which is why
 #: no route-(c) number is ever quoted without its Δevidence and its negatives.
 _settings_positive_negative = al.Settings(
     use_border_relocator=True,
@@ -963,6 +963,8 @@ with library_solver_injection.positive_negative_probe() as _pn_counts:
     _log_evidence_positive_negative = float(fit_positive_negative.figure_of_merit)
 
 _pn_calls = int(_pn_counts["calls"])
+_pn_lu_calls = int(_pn_counts["lu_solve"])
+_pn_cholesky_calls = int(_pn_counts["shared_cholesky"])
 _pn_ids_to_keep = fit_positive_negative.inversion.solve_ids_to_keep
 
 # The phase-0 A2 row: one unconstrained Cholesky of the FULL S3 system. Route
@@ -980,16 +982,25 @@ _a2_abs, _a2_rel = max_abs_rel(_x_positive_negative, _x_a2)
 _pn_negative = _x_positive_negative < 0.0
 positive_negative_block = {
     "route_verified": (
-        "reconstruction_positive_negative_from / xp.linalg.solve"
+        (
+            "AbstractInversion.reconstruction / scipy.linalg.cho_solve "
+            "(shared Cholesky factor, PyAutoArray#634)"
+            if _pn_cholesky_calls > 0 and _pn_lu_calls == 0
+            else "reconstruction_positive_negative_from / xp.linalg.solve"
+            if _pn_lu_calls > 0 and _pn_cholesky_calls == 0
+            else "both: shared-Cholesky cho_solve and reconstruction_positive_negative_from"
+        )
         if _pn_calls > 0
         else "NOT VERIFIED — the positive-negative entry point was never called"
     ),
     "positive_negative_solver_calls": _pn_calls,
+    "positive_negative_lu_solve_calls": _pn_lu_calls,
+    "positive_negative_shared_cholesky_calls": _pn_cholesky_calls,
     "solve_ids_to_keep_is_none": _pn_ids_to_keep is None,
     "edge_zeroing_disabled": True,
     "edge_zeroing_note": (
         "Inversion.solve_ids_to_keep returns None the moment use_positive_only_solver "
-        "is False (abstract.py:540), so turning positivity off silently turns edge "
+        "is False (abstract.py:568-569), so turning positivity off silently turns edge "
         "zeroing off with it. This route solves the FULL system; routes a/b/d/e solve "
         "the edge-zeroed one."
     ),
@@ -1017,8 +1028,9 @@ positive_negative_block = {
 
 if _pn_calls == 0:
     raise AssertionError(
-        "use_positive_only_solver=False did not route through "
-        "reconstruction_positive_negative_from — route (c) is not what it claims to be."
+        "use_positive_only_solver=False did not route through the positive-negative "
+        "solve (shared-Cholesky cho_solve or reconstruction_positive_negative_from) — "
+        "route (c) is not what it claims to be."
     )
 
 print(f"  route verified: {positive_negative_block['route_verified']} ({_pn_calls} call(s))")
