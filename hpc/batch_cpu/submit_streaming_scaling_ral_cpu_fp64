@@ -1,0 +1,125 @@
+#!/bin/bash -l
+#
+# Interferometer streaming scaling, phase 2: the RAL CPU rows (autolens_profiling#368).
+#
+# Phase 1 (#375) ran the three cells on the laptop and skipped the 1e8 row on budget. This job
+# runs the same cells on one RAL `ral` node, against a PRIVATE checkout of the five libraries
+# at the 2026.10.17.1 release tag (never the shared /mnt/ral/jnightin/PyAuto mirror, which
+# live euclid_dr1 jobs import):
+#
+#   accumulate -- from_stream, N_vis 1e6/4e6/1.6e7 x chunk 65536/4096, + 5e7 and 1e8 at 65536;
+#   in_memory  -- apply_sparse_operator() at the phase-1 10 GB RLIMIT_AS cap (comparable rows),
+#                 then uncapped (hardware tag *_nocap) up to 1.6e7, bounded by SLURM --mem;
+#   parity     -- log_evidence streamed vs in memory at 5e5 and 4e6, uncapped.
+#
+# Every child records wall, compile (JAX monitoring compile events) and exec seconds apart,
+# and peak RSS in its own column. The JAX persistent compile cache is DISABLED (explicitly
+# empty JAX_COMPILATION_CACHE_DIR): a warm cache would hide compile time from later children.
+#
+# PARTITION: `ral` only. Never `gpu` for CPU-only work (hpc/README.md, 2026-09-30 rule).
+#
+# WALL-BASIS: — one row per cell this submit runs.
+#   Laptop phase 1 (8 threads): accumulate 1e6..5e7 + chunk 4096 = 1548 s, 1e8 predicted
+#   1005 s; in_memory 50 s; parity 5e5 ~60 s. The nocap in-memory arm and the 4e6 parity are
+#   unmeasured on any host, so the parity/in-memory rows are unmeasured, probe-first.
+#   cell: interferometer/accumulate/synthetic  device: ral_cpu  precision: fp64
+#   source: measured-wall  wall: 2600  headroom: 3.0  ref: laptop_2026-10-04_#375_accumulate_1548s_plus_1e8_predicted_1005s
+#   cell: interferometer/in_memory/synthetic  device: ral_cpu  precision: fp64
+#   source: unmeasured  probe-first: yes  wall: 1800  headroom: 3.0
+#   cell: interferometer/parity/synthetic  device: ral_cpu  precision: fp64
+#   source: unmeasured  probe-first: yes  wall: 900  headroom: 3.0
+#
+# Output (results/streaming_scaling/):
+#   accumulate_hpc_ral_cpu_fp64_v2026.10.17.1.{json,png}
+#   in_memory_hpc_ral_cpu_fp64_v2026.10.17.1.{json,png}, in_memory_hpc_ral_cpu_fp64_nocap_v...
+#   parity_hpc_ral_cpu_fp64_nocap_v2026.10.17.1.json
+#
+# Submit from hpc/batch_cpu/ (the -o/-e paths are relative).
+
+#SBATCH -J stream_scal_cpu
+#SBATCH --partition=ral
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=128gb
+#SBATCH --time=4:30:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+export PROJECT_PATH="$AP_ROOT"
+export PYAUTO_PRIVATE_BASE="${PYAUTO_PRIVATE_BASE:-/mnt/ral/jnightin/profiling/PyAuto_2026.10.17.1_interf_meas}"
+export JAX_COMPILATION_CACHE_DIR=
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+export PYTHONPATH=$PYAUTO_PRIVATE_BASE/PyAutoNerves:$PYAUTO_PRIVATE_BASE/PyAutoFit:$PYAUTO_PRIVATE_BASE/PyAutoArray:$PYAUTO_PRIVATE_BASE/PyAutoGalaxy:$PYAUTO_PRIVATE_BASE/PyAutoLens:$PYTHONPATH
+
+export OMP_NUM_THREADS=8
+export MKL_NUM_THREADS=8
+export OPENBLAS_NUM_THREADS=8
+export NUMBA_NUM_THREADS=8
+export JAX_PLATFORMS=cpu
+export JAX_PLATFORM_NAME=cpu
+export NUMBA_CACHE_DIR=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}
+mkdir -p "$NUMBA_CACHE_DIR" "$MPLCONFIGDIR"
+
+echo "=========================================="
+date
+hostname
+lscpu | grep 'Model name' || true
+echo "partition:      ${SLURM_JOB_PARTITION:-unset}"
+echo "nodelist:       ${SLURM_JOB_NODELIST:-unset}"
+echo "cpus-per-task:  ${SLURM_CPUS_PER_TASK:-unset}"
+echo "loadavg:        $(cat /proc/loadavg)"
+echo "JAX cache dir:  '${JAX_COMPILATION_CACHE_DIR}' (empty = disabled)"
+
+echo "=== source revisions (private 2026.10.17.1 checkout) ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s %s\n' "$r" "$(git -C $PYAUTO_PRIVATE_BASE/$r rev-parse HEAD 2>&1)" "$(git -C $PYAUTO_PRIVATE_BASE/$r describe --tags 2>&1)"
+done
+echo "AP_ROOT rev:    $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+echo "AP_ROOT branch: $(git -C $AP_ROOT rev-parse --abbrev-ref HEAD 2>&1)"
+
+cd $AP_ROOT
+python3 -c "
+import os, subprocess, autoarray, autolens
+for mod in (autoarray, autolens):
+    print(f'{mod.__name__}.__file__ =', mod.__file__)
+    assert os.path.realpath(mod.__file__).startswith(os.path.realpath(os.environ['PYAUTO_PRIVATE_BASE'])), f'{mod.__name__} not from the private checkout'
+tag = subprocess.check_output(['git', '-C', os.path.dirname(os.path.dirname(autoarray.__file__)), 'describe', '--tags']).decode().strip()
+assert tag == '2026.10.17.1', tag
+print('PyAutoArray tag', tag)
+" || exit 3
+
+echo "=========================================="
+echo "ACCUMULATE (from_stream)  $(date)  loadavg: $(cat /proc/loadavg)"
+python3 -u scripts/interferometer/delaunay/streaming_accumulate.py \
+    --hardware hpc_ral_cpu_fp64 \
+    --n-vis 1e6,4e6,1.6e7 --chunks 65536,4096 \
+    --extra 5e7:65536,1e8:65536 --budget-s 14000 --timeout 7200 \
+    || echo "ACCUMULATE FAILED"
+
+echo "=========================================="
+echo "IN_MEMORY capped 10 GB  $(date)  loadavg: $(cat /proc/loadavg)"
+python3 -u scripts/interferometer/delaunay/streaming_in_memory.py \
+    --hardware hpc_ral_cpu_fp64 \
+    --n-vis 1e5,2.5e5,5e5,1e6,4e6 \
+    || echo "IN_MEMORY capped FAILED"
+
+echo "=========================================="
+echo "IN_MEMORY uncapped (SLURM --mem bound)  $(date)  loadavg: $(cat /proc/loadavg)"
+python3 -u scripts/interferometer/delaunay/streaming_in_memory.py \
+    --hardware hpc_ral_cpu_fp64_nocap --cap-gb 0 \
+    --n-vis 1e5,2.5e5,5e5,1e6,4e6,1.6e7 \
+    || echo "IN_MEMORY uncapped FAILED"
+
+echo "=========================================="
+echo "PARITY uncapped  $(date)  loadavg: $(cat /proc/loadavg)"
+python3 -u scripts/interferometer/delaunay/streaming_parity.py \
+    --hardware hpc_ral_cpu_fp64_nocap --cap-gb 0 \
+    --n-vis 5e5,4e6 \
+    || echo "PARITY FAILED"
+
+echo "=========================================="
+echo "loadavg: $(cat /proc/loadavg)"
+echo "Finished."
+date

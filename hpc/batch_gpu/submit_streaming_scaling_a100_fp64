@@ -1,0 +1,121 @@
+#!/bin/bash -l
+#
+# Interferometer streaming scaling, phase 2: the A100 rows (autolens_profiling#368).
+#
+# The same three cells as hpc/batch_cpu/submit_streaming_scaling_ral_cpu_fp64, on one A100
+# (fp64), against the PRIVATE 2026.10.17.1 checkout. Host-side NumPy keeps 8 threads so the
+# host part matches the CPU job. --exclusive: a timing leg must not share the node with
+# another A100 job (the parallel A100 arm of 2026-10-17).
+#
+#   accumulate -- from_stream, N_vis 1e6/4e6/1.6e7 x chunk 65536/4096, + 5e7 and 1e8 at 65536;
+#   in_memory  -- apply_sparse_operator(), no RLIMIT_AS (CUDA cannot initialise under one),
+#                 ascending to the first failure (device or host memory);
+#   parity     -- log_evidence streamed vs in memory at 5e5 and 4e6.
+#
+# Memory: host peak RSS and device peak_bytes_in_use (XLA_PYTHON_CLIENT_PREALLOCATE=false,
+# so the device figure is what the build used, not a 75 % preallocation) in separate columns.
+# Compile (JAX monitoring compile events) is reported apart from exec. The JAX persistent
+# compile cache is disabled (explicitly empty JAX_COMPILATION_CACHE_DIR).
+#
+# WALL-BASIS: — one row per cell this submit runs. Nothing measured on an A100 yet; the
+#   laptop CPU walls bound the host-side work (chunk generation is NumPy on the host).
+#   cell: interferometer/accumulate/synthetic  device: a100  precision: fp64
+#   source: unmeasured  probe-first: yes  wall: 2600  headroom: 3.0
+#   cell: interferometer/in_memory/synthetic  device: a100  precision: fp64
+#   source: unmeasured  probe-first: yes  wall: 1200  headroom: 3.0
+#   cell: interferometer/parity/synthetic  device: a100  precision: fp64
+#   source: unmeasured  probe-first: yes  wall: 900  headroom: 3.0
+#
+# Output (results/streaming_scaling/):
+#   accumulate_hpc_a100_fp64_v2026.10.17.1.{json,png}
+#   in_memory_hpc_a100_fp64_v2026.10.17.1.{json,png}
+#   parity_hpc_a100_fp64_v2026.10.17.1.json
+#
+# Submit from hpc/batch_gpu/ (the -o/-e paths are relative).
+
+#SBATCH -J stream_scal_a100
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --exclusive
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=200gb
+#SBATCH --time=4:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+export PROJECT_PATH="$AP_ROOT"
+export PYAUTO_PRIVATE_BASE="${PYAUTO_PRIVATE_BASE:-/mnt/ral/jnightin/profiling/PyAuto_2026.10.17.1_interf_meas}"
+export JAX_COMPILATION_CACHE_DIR=
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+export PYTHONPATH=$PYAUTO_PRIVATE_BASE/PyAutoNerves:$PYAUTO_PRIVATE_BASE/PyAutoFit:$PYAUTO_PRIVATE_BASE/PyAutoArray:$PYAUTO_PRIVATE_BASE/PyAutoGalaxy:$PYAUTO_PRIVATE_BASE/PyAutoLens:$PYTHONPATH
+
+export OMP_NUM_THREADS=8
+export MKL_NUM_THREADS=8
+export OPENBLAS_NUM_THREADS=8
+export NUMBA_NUM_THREADS=8
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+unset JAX_PLATFORMS JAX_PLATFORM_NAME
+export NUMBA_CACHE_DIR=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}
+mkdir -p "$NUMBA_CACHE_DIR" "$MPLCONFIGDIR"
+
+echo "=========================================="
+date
+hostname
+lscpu | grep 'Model name' || true
+nvidia-smi --query-gpu=index,name,memory.total,mig.mode.current --format=csv || true
+echo "partition:      ${SLURM_JOB_PARTITION:-unset}"
+echo "nodelist:       ${SLURM_JOB_NODELIST:-unset}"
+echo "cpus-per-task:  ${SLURM_CPUS_PER_TASK:-unset}"
+echo "loadavg:        $(cat /proc/loadavg)"
+echo "JAX cache dir:  '${JAX_COMPILATION_CACHE_DIR}' (empty = disabled)"
+
+echo "=== source revisions (private 2026.10.17.1 checkout) ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s %s\n' "$r" "$(git -C $PYAUTO_PRIVATE_BASE/$r rev-parse HEAD 2>&1)" "$(git -C $PYAUTO_PRIVATE_BASE/$r describe --tags 2>&1)"
+done
+echo "AP_ROOT rev:    $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+echo "AP_ROOT branch: $(git -C $AP_ROOT rev-parse --abbrev-ref HEAD 2>&1)"
+
+cd $AP_ROOT
+python3 -c "
+import os, subprocess, autoarray, autolens
+for mod in (autoarray, autolens):
+    print(f'{mod.__name__}.__file__ =', mod.__file__)
+    assert os.path.realpath(mod.__file__).startswith(os.path.realpath(os.environ['PYAUTO_PRIVATE_BASE'])), f'{mod.__name__} not from the private checkout'
+tag = subprocess.check_output(['git', '-C', os.path.dirname(os.path.dirname(autoarray.__file__)), 'describe', '--tags']).decode().strip()
+assert tag == '2026.10.17.1', tag
+print('PyAutoArray tag', tag)
+import jax
+assert jax.default_backend() == 'gpu', jax.default_backend()
+print('jax', jax.__version__, jax.devices())
+" || exit 3
+
+echo "=========================================="
+echo "ACCUMULATE (from_stream)  $(date)  loadavg: $(cat /proc/loadavg)"
+python3 -u scripts/interferometer/delaunay/streaming_accumulate.py \
+    --hardware hpc_a100_fp64 --cap-gb 0 \
+    --n-vis 1e6,4e6,1.6e7 --chunks 65536,4096 \
+    --extra 5e7:65536,1e8:65536 --budget-s 14000 --timeout 7200 \
+    || echo "ACCUMULATE FAILED"
+
+echo "=========================================="
+echo "IN_MEMORY (no RLIMIT_AS)  $(date)  loadavg: $(cat /proc/loadavg)"
+python3 -u scripts/interferometer/delaunay/streaming_in_memory.py \
+    --hardware hpc_a100_fp64 --cap-gb 0 \
+    --n-vis 1e5,2.5e5,5e5,1e6,4e6,1.6e7,5e7 \
+    || echo "IN_MEMORY FAILED"
+
+echo "=========================================="
+echo "PARITY  $(date)  loadavg: $(cat /proc/loadavg)"
+python3 -u scripts/interferometer/delaunay/streaming_parity.py \
+    --hardware hpc_a100_fp64 --cap-gb 0 \
+    --n-vis 5e5,4e6 \
+    || echo "PARITY FAILED"
+
+echo "=========================================="
+echo "loadavg: $(cat /proc/loadavg)"
+echo "Finished."
+date

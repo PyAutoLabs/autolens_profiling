@@ -61,7 +61,7 @@ config) and green at 1, 1. Both counts are right; see Caveats.
 ## Open / parked / drafts
 
 - Mesh phase 4 (decision matrix, issue #356): shipped in #358 (2026-09-30). Its last cell was filled under issue #369 (2026-10-04).
-- `draft/research/autolens_profiling/interferometer_nnls_memo_scattered_stream_guard.md` — fnnls warm-start memo guard.
+- `draft/research/autolens_profiling/interferometer_nnls_memo_scattered_stream_guard.md` — fnnls warm-start memo guard. The library half shipped in PyAutoArray#615 (2026.10.7.1). The #332 after-measurement ran on 2026.10.17.1 (issue #426, see the 2026-10-17 journal entry). The Delaunay iid regression is still measured at the #332 stream length. The guard's own witness, a recorded Nautilus replay, is still not run.
 - W~ FFT size levers (PyAutoPulse task `interferometer_w_tilde_fft_size_levers`): measured on the A100 under #429 (2026-10-17). The pruned padded FFT passes and clears the 10 % threshold; the PyAutoArray change is drafted, not started. The coarser pixel scale fails the 0.5-nat bar.
 - Route-gate constants on RAL CPU: deferred. The human closed the CPU lane on 2026-10-17 (journal, 2026-10-17).
 - `draft/research/autolens_profiling/interferometer_fixed_mapper_curvature_preload.md` — fixed-mapper curvature preload.
@@ -162,3 +162,23 @@ Issue #429; record [interferometer_w_tilde_fft_size_levers_2026_10.md](../../res
   - On `euclid-ral-compute-1`, serial, FFT / full `direct_conv` measured **0.68** at the real-Aris 512 1,459-vertex cell. The laptop-calibrated #632 constants (`c_fft` 7.62e-10, `c_dc` 1.77e-09) predict **0.89**.
   - With the symmetric kernel, that cell now routes to `direct_conv` at only **~1.02×** over FFT (15.08 vs 15.32 s).
   - No route measured so far is wrong, but the margin is thin on RAL.
+
+### 2026-10-17 — fnnls memo after-measurement on 2026.10.17.1 (issue #426)
+
+Summary [memo_after_hpc_ral_cpu_fp64_v2026.10.17.1.json](../../results/breakdown/interferometer/memo_after_hpc_ral_cpu_fp64_v2026.10.17.1.json); RAL job 412526.
+- **Setup.** The #332 `memo` lever was re-run on the same cells (Delaunay-1500 and rect 39², alma r3.5, numba arm on one thread) and the same dataset (alma data / uv md5 identical to the RAL tree). The five libraries came from a private 2026.10.17.1 checkout, which contains PyAutoArray#615's scattered-stream back-off. The job ran on partition `ral`, node `euclid-ral-compute-10-2` (load about 10–11 on 236 cores from other users' arrays). #332 ran on `euclid-ral-gpu-2` CPUs, so the host class differs. Each cell ran as six independent rounds at two iid lengths: `n6` (the exact #332 flags, 4 timed iid solves) and `n17` (16 iid instances, 15 timed). The walk was 16 instances (15 timed). The headline is median(on) / median(off) with the paired whole-round bootstrap 90 % interval (#407, ≥ 5 rounds per #410); the #332 mean ratio is shown beside it.
+- **Harness fixes.** `_lever_memo` now clears the memo with `nnls_memo.memo_clear()`. That also resets #615's back-off state, which clearing the dict alone would carry from the iid pass into the walk pass. The harness also reads the packaged numba gate when it is `None` (the PyAutoArray#632 cost model). The arms pass explicit gates, so routing is unchanged.
+
+| cell | stream | timed solves × rounds | median on / off [90 % CI] | #332 mean estimator, median of rounds (range) | #332 (2026.8.17.1) | slow-seed on-solves |
+|---|---|---|---|---|---|---|
+| Delaunay | iid, n6 (#332 flags) | 4 × 6 | **1.918 [1.887, 1.925]** | 1.96 (1.95–2.67) | 2.17 | 12 / 24 |
+| Delaunay | iid, n17 | 15 × 6 | 1.018 [1.013, 1.023] | 1.48 (1.47–1.50) | — | 24 / 90 |
+| Delaunay | local walk | 15 × 6 | 0.460 [0.455, 0.463] (n6 run) / 0.458 [0.452, 0.461] (n17 run) | 0.49 | 0.68 | 0 / 90 |
+| rect 39² | iid, n6 | 4 × 6 | 0.887 [0.884, 0.891] | 0.92 | 1.08 | 0 / 24 |
+| rect 39² | iid, n17 | 15 × 6 | 0.987 [0.983, 0.990] | 0.96 | — | 3 / 90 |
+| rect 39² | local walk | 15 × 6 | 0.150 [0.149, 0.154] / 0.151 [0.151, 0.153] | 0.15 | 0.13 | 0 / 90 |
+
+A slow-seed on-solve is one slower than 1.5× its round's off median. The figure of merit is identical on and off (Δ 0 nat) in every pass.
+
+- **Reading.** On 2026.10.17.1 the Delaunay iid regression is still present at #332's stream length: median 1.92×, and the #332 estimator gives 1.96× against 2.17×. Its shape has not changed. Every other on-solve pays a bad seed (537 / 173 / 922 / 156 ms against an off median of about 171 ms in round 1), and the same positions are slow in every round. On the longer iid stream the bad seeds thin out after the first ten solves: slow at timed positions 1, 3, 6 and 10, none in the last five. That is consistent with #615's back-off lengthening its skip windows. The median ratio is then 1.02×, but the mean is still 1.48×, because each bad seed costs about 2.7–3× a dense solve. The rect iid stream no longer regresses (0.89–0.99×). The walk gains are kept: Delaunay 0.46× (#332: 0.68×), rect 0.15× (#332: 0.13×).
+- **Limits.** The six rounds resample timing noise around one fixed iid stream (`IID_SEED`), not different streams, so the intervals are narrow and say nothing about stream-to-stream spread. The load on the node was about 10. The host class is not #332's. This is the after-measurement only. The Pulse task's witness, a recorded Nautilus evaluation sequence replayed phase by phase, has not been run, and this entry makes no claim that PyAutoArray#613 is fixed.
