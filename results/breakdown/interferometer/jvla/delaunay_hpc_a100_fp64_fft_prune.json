@@ -1,0 +1,894 @@
+{
+  "issue": "autolens_profiling#429",
+  "pulse_task": "interferometer_w_tilde_fft_size_levers",
+  "campaign": "PyAutoPulse#62",
+  "precision": "fp64",
+  "revisions": {
+    "autolens_profiling": "unavailable: CalledProcessError",
+    "PyAutoNerves": "unavailable: CalledProcessError",
+    "PyAutoFit": "unavailable: CalledProcessError",
+    "PyAutoArray": "unavailable: CalledProcessError",
+    "PyAutoGalaxy": "unavailable: CalledProcessError",
+    "PyAutoLens": "unavailable: CalledProcessError"
+  },
+  "stack_revisions": {
+    "PyAutoNerves": "2026.10.17.1 7f3055b7f3d1967f372bdb41ee732135bca0e68d",
+    "PyAutoFit": "2026.10.17.1 4b183e226947312d9a98b8f8dee1a3cf29c548ef",
+    "PyAutoArray": "2026.10.17.1 e59d5fa901e54bf3d9931890067bc3447a5c1232",
+    "PyAutoGalaxy": "2026.10.17.1 35100def2b7cd775fb77e46dbc1a674841c8f897",
+    "PyAutoLens": "2026.10.17.1 c90eceb0093ea1618e679184e4f2a59268caa581"
+  },
+  "autolens_profiling_revision": "feature/ral-route-constants-fft-levers 166fb9c1de69374cf3dda924fc9c7fd61b255ba4",
+  "jax_version": "0.10.2",
+  "jaxlib_version": "0.10.2",
+  "nufftax_version": "0.6.1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "hostname": "euclid-ral-gpu-1",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": null,
+    "cpu_count": 124,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/.cache/pyauto_jax",
+    "autotune_cache_entries_at_start": 204,
+    "cache_fresh": false,
+    "provenance": {
+      "provenance_schema": 1,
+      "captured_at": "2026-10-17T13:26:47Z",
+      "host": "euclid-ral-gpu-1",
+      "slurm": {
+        "job_id": "412515",
+        "array_job_id": null,
+        "array_task_id": null
+      },
+      "loadavg_at_import": [
+        0.22,
+        0.23,
+        0.42
+      ],
+      "loadavg_at_write": [
+        0.28,
+        0.25,
+        0.42
+      ],
+      "profiling_revision": "unavailable: CalledProcessError",
+      "library_revisions": {
+        "autolens_profiling": "unavailable: CalledProcessError",
+        "PyAutoNerves": "unavailable: CalledProcessError",
+        "PyAutoFit": "unavailable: CalledProcessError",
+        "PyAutoArray": "unavailable: CalledProcessError",
+        "PyAutoGalaxy": "unavailable: CalledProcessError",
+        "PyAutoLens": "unavailable: CalledProcessError"
+      },
+      "library_versions": {
+        "PyAutoNerves": "2026.8.17.1",
+        "PyAutoFit": "2026.8.17.1",
+        "PyAutoArray": "2026.8.17.1",
+        "PyAutoGalaxy": "2026.8.17.1",
+        "PyAutoLens": "2026.8.17.1"
+      },
+      "dependency_versions": {
+        "jax": "0.10.2",
+        "jaxlib": "0.10.2",
+        "numpy": "2.2.6",
+        "scipy": "1.17.1",
+        "numba": "0.65.1",
+        "nufftax": "0.6.1"
+      }
+    },
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 433 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB"
+  },
+  "slurm_job_id": "412515",
+  "bars": {
+    "f_max_rel_diff": 1e-12,
+    "figure_of_merit_nats": 1e-06,
+    "science_log_evidence_nats": 0.5,
+    "library_change_if_f_saving_at_jvla_ge": 0.1
+  },
+  "prune": {
+    "alma": {
+      "dataset": "dataset/interferometer/alma",
+      "pixel_scale_arcsec": 0.05,
+      "real_space_shape": [
+        800,
+        800
+      ],
+      "mask_radius_arcsec": 3.5,
+      "visibilities": 1000000,
+      "image_pixels_masked": 15380,
+      "operator_extent_shape": [
+        140,
+        140
+      ],
+      "operator_fft_shape": [
+        280,
+        280
+      ],
+      "sparse_batch_size": 128,
+      "transformer_chunk_size": 100000,
+      "t_load_s": 7.828703232109547,
+      "operator_build_s": 3.9386572029907256,
+      "source_pixels": 1500,
+      "mesh": {
+        "mesh": "Delaunay",
+        "image_mesh": "Hilbert(weight_power=1.0, weight_floor=0.0)",
+        "hilbert_pixels": 1500,
+        "delaunay_vertices": 1500,
+        "edge_zeroed_pixels": 0
+      },
+      "regularization": {
+        "scheme": "adapt_split",
+        "inner_coefficient": 0.1,
+        "outer_coefficient": 10.0,
+        "signal_scale": 0.1
+      },
+      "nnz_triplets": 46140,
+      "curvature_blocks": 12,
+      "F_library": {
+        "lower_s": 0.036759566981345415,
+        "compile_s": 0.15246009803377092,
+        "first_call_s": 0.022323732962831855,
+        "steady_per_call_s": 0.017941808514297008
+      },
+      "F_pruned": {
+        "lower_s": 0.044295876985415816,
+        "compile_s": 0.1429267020430416,
+        "first_call_s": 0.0200209089089185,
+        "steady_per_call_s": 0.014494794816710056
+      },
+      "F_interleaved": {
+        "F_library": {
+          "median_s": 0.017971256223972887,
+          "rounds": [
+            {
+              "n_warm": 5,
+              "n_timed": 30,
+              "median_s": 0.017959603923372924,
+              "p10_s": 0.01781045999377966,
+              "p90_s": 0.018012220948003234,
+              "mean_s": 0.01792486556029568,
+              "statistic": "median of individually timed calls after warm calls"
+            },
+            {
+              "n_warm": 5,
+              "n_timed": 30,
+              "median_s": 0.01798290852457285,
+              "p10_s": 0.017949709040112793,
+              "p90_s": 0.018020779918879272,
+              "mean_s": 0.017982661987965307,
+              "statistic": "median of individually timed calls after warm calls"
+            }
+          ]
+        },
+        "F_pruned": {
+          "median_s": 0.01449001906439662,
+          "rounds": [
+            {
+              "n_warm": 5,
+              "n_timed": 30,
+              "median_s": 0.014493616647087038,
+              "p10_s": 0.014467246970161796,
+              "p90_s": 0.014537615980952979,
+              "mean_s": 0.014501791067110996,
+              "statistic": "median of individually timed calls after warm calls"
+            },
+            {
+              "n_warm": 5,
+              "n_timed": 30,
+              "median_s": 0.014486421481706202,
+              "p10_s": 0.014424212742596865,
+              "p90_s": 0.01452092700637877,
+              "mean_s": 0.014493133189777534,
+              "statistic": "median of individually timed calls after warm calls"
+            }
+          ]
+        }
+      },
+      "F_saving_fraction": 0.19371139758902578,
+      "F_speedup": 1.2402506956067438,
+      "F_max_rel_diff": 6.797870904594836e-16,
+      "F_library_vs_reference_max_rel_diff": 5.664892420495695e-16,
+      "fused_library": {
+        "lower_s": 0.09750802791677415,
+        "compile_s": 0.4682971420697868,
+        "first_call_s": 0.05406702007167041,
+        "steady_per_call_s": 0.04340643740724772
+      },
+      "fused_pruned": {
+        "lower_s": 0.10452889418229461,
+        "compile_s": 0.46414937102235854,
+        "first_call_s": 0.0608065000269562,
+        "steady_per_call_s": 0.04007966939825565
+      },
+      "fused_interleaved": {
+        "fused_library": {
+          "median_s": 0.043298922770190984,
+          "rounds": [
+            {
+              "n_warm": 5,
+              "n_timed": 30,
+              "median_s": 0.04329755553044379,
+              "p10_s": 0.04326538383029401,
+              "p90_s": 0.04334473880007863,
+              "mean_s": 0.04331026681077977,
+              "statistic": "median of individually timed calls after warm calls"
+            },
+            {
+              "n_warm": 5,
+              "n_timed": 30,
+              "median_s": 0.04330029000993818,
+              "p10_s": 0.043254621769301595,
+              "p90_s": 0.04332655018661171,
+              "mean_s": 0.043297282652929425,
+              "statistic": "median of individually timed calls after warm calls"
+            }
+          ]
+        },
+        "fused_pruned": {
+          "median_s": 0.040053768490906805,
+          "rounds": [
+            {
+              "n_warm": 5,
+              "n_timed": 30,
+              "median_s": 0.04005022393539548,
+              "p10_s": 0.040021984837949276,
+              "p90_s": 0.040096489083953205,
+              "mean_s": 0.0400536219511802,
+              "statistic": "median of individually timed calls after warm calls"
+            },
+            {
+              "n_warm": 5,
+              "n_timed": 30,
+              "median_s": 0.04005731304641813,
+              "p10_s": 0.04001493188552559,
+              "p90_s": 0.04008517295587808,
+              "mean_s": 0.04005385891844829,
+              "statistic": "median of individually timed calls after warm calls"
+            }
+          ]
+        }
+      },
+      "fused_speedup": 1.0810199489723646,
+      "figure_of_merit_library_fit": -12048213.711305136,
+      "figure_of_merit_fused_library_F": -12048213.711305121,
+      "figure_of_merit_fused_pruned_F": -12048213.711305121,
+      "figure_of_merit_shift_nats": 0.0,
+      "figure_of_merit_steps_vs_library_fit_nats": 1.4901161193847656e-08,
+      "passes_match_bars": true
+    },
+    "alma_high": {
+      "dataset": "dataset/interferometer/alma_high",
+      "pixel_scale_arcsec": 0.025,
+      "real_space_shape": [
+        800,
+        800
+      ],
+      "mask_radius_arcsec": 3.5,
+      "visibilities": 5000000,
+      "image_pixels_masked": 61572,
+      "operator_extent_shape": [
+        280,
+        280
+      ],
+      "operator_fft_shape": [
+        560,
+        560
+      ],
+      "sparse_batch_size": 128,
+      "transformer_chunk_size": 1000000,
+      "t_load_s": 31.931049469858408,
+      "operator_build_s": 3.7169109690003097,
+      "source_pixels": 1500,
+      "mesh": {
+        "mesh": "Delaunay",
+        "image_mesh": "Hilbert(weight_power=1.0, weight_floor=0.0)",
+        "hilbert_pixels": 1500,
+        "delaunay_vertices": 1500,
+        "edge_zeroed_pixels": 0
+      },
+      "regularization": {
+        "scheme": "adapt_split",
+        "inner_coefficient": 0.1,
+        "outer_coefficient": 10.0,
+        "signal_scale": 0.1
+      },
+      "nnz_triplets": 184716,
+      "curvature_blocks": 12,
+      "F_library": {
+        "lower_s": 0.03737041098065674,
+        "compile_s": 0.14326905808411539,
+        "first_call_s": 0.06957053393125534,
+        "steady_per_call_s": 0.06566413079854101
+      },
+      "F_pruned": {
+        "lower_s": 0.04511127690784633,
+        "compile_s": 0.15439948393031955,
+        "first_call_s": 0.05482678208500147,
+        "steady_per_call_s": 0.05097017341759056
+      },
+      "F_interleaved": {
+        "F_library": {
+          "median_s": 0.06544902076711878,
+          "rounds": [
+            {
+              "n_warm": 5,
+              "n_timed": 30,
+              "median_s": 0.06544914247933775,
+              "p10_s": 0.06540403710678219,
+              "p90_s": 0.06549622395541518,
+              "mean_s": 0.06544707873060057,
+              "statistic": "median of individually timed calls after warm calls"
+            },
+            {
+              "n_warm": 5,
+              "n_timed": 30,
+              "median_s": 0.06544889905489981,
+              "p10_s": 0.06541089792735874,
+              "p90_s": 0.06550132280681283,
+              "mean_s": 0.06545790307379017,
+              "statistic": "median of individually timed calls after warm calls"
+            }
+          ]
+        },
+        "F_pruned": {
+          "median_s": 0.05096403229981661,
+          "rounds": [
+            {
+              "n_warm": 5,
+              "n_timed": 30,
+              "median_s": 0.05096690752543509,
+              "p10_s": 0.05092241398524493,
+              "p90_s": 0.0509986671153456,
+              "mean_s": 0.050961420172825456,
+              "statistic": "median of individually timed calls after warm calls"
+            },
+            {
+              "n_warm": 5,
+              "n_timed": 30,
+              "median_s": 0.05096115707419813,
+              "p10_s": 0.05092857903800905,
+              "p90_s": 0.05105023998767137,
+              "mean_s": 0.05097708829368154,
+              "statistic": "median of individually timed calls after warm calls"
+            }
+          ]
+        }
+      },
+      "F_saving_fraction": 0.22131711517644814,
+      "F_speedup": 1.2842198274675038,
+      "F_max_rel_diff": 1.026554953639404e-15,
+      "F_library_vs_reference_max_rel_diff": 1.1292104490033446e-15,
+      "fused_library": {
+        "lower_s": 0.09820363996550441,
+        "compile_s": 0.5037125861272216,
+        "first_call_s": 0.09659845801070333,
+        "steady_per_call_s": 0.08974336350802332
+      },
+      "fused_pruned": {
+        "lower_s": 0.10465752286836505,
+        "compile_s": 0.4973397320136428,
+        "first_call_s": 0.08724692184478045,
+        "steady_per_call_s": 0.07609406649135053
+      },
+      "fused_interleaved": {
+        "fused_library": {
+          "median_s": 0.08953240676783025,
+          "rounds": [
+            {
+              "n_warm": 5,
+              "n_timed": 30,
+              "median_s": 0.08952733955811709,
+              "p10_s": 0.08946361800190061,
+              "p90_s": 0.08959866419900209,
+              "mean_s": 0.08953034796286374,
+              "statistic": "median of individually timed calls after warm calls"
+            },
+            {
+              "n_warm": 5,
+              "n_timed": 30,
+              "median_s": 0.08953747397754341,
+              "p10_s": 0.08942567605990917,
+              "p90_s": 0.08963757797610014,
+              "mean_s": 0.08953561794478446,
+              "statistic": "median of individually timed calls after warm calls"
+            }
+          ]
+        },
+        "fused_pruned": {
+          "median_s": 0.0760333890793845,
+          "rounds": [
+            {
+              "n_warm": 5,
+              "n_timed": 30,
+              "median_s": 0.07604818604886532,
+              "p10_s": 0.07599106605630368,
+              "p90_s": 0.07616479396820068,
+              "mean_s": 0.07608603154464315,
+              "statistic": "median of individually timed calls after warm calls"
+            },
+            {
+              "n_warm": 5,
+              "n_timed": 30,
+              "median_s": 0.0760185921099037,
+              "p10_s": 0.07600171302910894,
+              "p90_s": 0.07614509717095644,
+              "mean_s": 0.07605442698889722,
+              "statistic": "median of individually timed calls after warm calls"
+            }
+          ]
+        }
+      },
+      "fused_speedup": 1.1775406548608767,
+      "figure_of_merit_library_fit": -60242657.14519726,
+      "figure_of_merit_fused_library_F": -60242657.145198025,
+      "figure_of_merit_fused_pruned_F": -60242657.145198025,
+      "figure_of_merit_shift_nats": 0.0,
+      "figure_of_merit_steps_vs_library_fit_nats": 7.674098014831543e-07,
+      "passes_match_bars": true
+    },
+    "jvla": {
+      "dataset": "dataset/interferometer/jvla",
+      "pixel_scale_arcsec": 0.01,
+      "real_space_shape": [
+        800,
+        800
+      ],
+      "mask_radius_arcsec": 3.5,
+      "visibilities": 25000000,
+      "image_pixels_masked": 384852,
+      "operator_extent_shape": [
+        700,
+        700
+      ],
+      "operator_fft_shape": [
+        1400,
+        1400
+      ],
+      "sparse_batch_size": 128,
+      "transformer_chunk_size": 1000000,
+      "t_load_s": 159.2775048580952,
+      "operator_build_s": 7.86974033806473,
+      "source_pixels": 1500,
+      "mesh": {
+        "mesh": "Delaunay",
+        "image_mesh": "Hilbert(weight_power=1.0, weight_floor=0.0)",
+        "hilbert_pixels": 1500,
+        "delaunay_vertices": 1500,
+        "edge_zeroed_pixels": 0
+      },
+      "regularization": {
+        "scheme": "adapt_split",
+        "inner_coefficient": 0.1,
+        "outer_coefficient": 10.0,
+        "signal_scale": 0.1
+      },
+      "nnz_triplets": 1154556,
+      "curvature_blocks": 12,
+      "F_library": {
+        "lower_s": 0.040042078820988536,
+        "compile_s": 0.20655747689306736,
+        "first_call_s": 0.5256481319665909,
+        "steady_per_call_s": 0.4964071710128337
+      },
+      "F_pruned": {
+        "lower_s": 0.047556997975334525,
+        "compile_s": 0.228993508964777,
+        "first_call_s": 0.36529521783813834,
+        "steady_per_call_s": 0.3502945251995698
+      },
+      "F_interleaved": {
+        "F_library": {
+          "median_s": 0.4996390575543046,
+          "rounds": [
+            {
+              "n_warm": 5,
+              "n_timed": 30,
+              "median_s": 0.49897173256613314,
+              "p10_s": 0.49862083569169047,
+              "p90_s": 0.4992876137373969,
+              "mean_s": 0.49897589842633655,
+              "statistic": "median of individually timed calls after warm calls"
+            },
+            {
+              "n_warm": 5,
+              "n_timed": 30,
+              "median_s": 0.5003063825424761,
+              "p10_s": 0.49987433683127164,
+              "p90_s": 0.5005243899300694,
+              "mean_s": 0.5002732461318373,
+              "statistic": "median of individually timed calls after warm calls"
+            }
+          ]
+        },
+        "F_pruned": {
+          "median_s": 0.35115333006251603,
+          "rounds": [
+            {
+              "n_warm": 5,
+              "n_timed": 30,
+              "median_s": 0.3510957710677758,
+              "p10_s": 0.3509432699531317,
+              "p90_s": 0.3512564397184178,
+              "mean_s": 0.3511069308966398,
+              "statistic": "median of individually timed calls after warm calls"
+            },
+            {
+              "n_warm": 5,
+              "n_timed": 30,
+              "median_s": 0.3512108890572563,
+              "p10_s": 0.35105460723862053,
+              "p90_s": 0.3514227088540792,
+              "mean_s": 0.35124063860469806,
+              "statistic": "median of individually timed calls after warm calls"
+            }
+          ]
+        }
+      },
+      "F_saving_fraction": 0.29718598905901183,
+      "F_speedup": 1.4228515431289048,
+      "F_max_rel_diff": 1.7018257166986436e-15,
+      "F_library_vs_reference_max_rel_diff": 2.0945547282444843e-15,
+      "fused_library": {
+        "lower_s": 0.10538837197236717,
+        "compile_s": 0.5698012220673263,
+        "first_call_s": 0.547900086035952,
+        "steady_per_call_s": 0.5284523400012404
+      },
+      "fused_pruned": {
+        "lower_s": 0.11210567294619977,
+        "compile_s": 0.5949790589511395,
+        "first_call_s": 0.41557145584374666,
+        "steady_per_call_s": 0.37515715821646156
+      },
+      "fused_interleaved": {
+        "fused_library": {
+          "median_s": 0.5284503687289543,
+          "rounds": [
+            {
+              "n_warm": 5,
+              "n_timed": 30,
+              "median_s": 0.5283578449161723,
+              "p10_s": 0.5281729048816487,
+              "p90_s": 0.5285928549245,
+              "mean_s": 0.5283810313170155,
+              "statistic": "median of individually timed calls after warm calls"
+            },
+            {
+              "n_warm": 5,
+              "n_timed": 30,
+              "median_s": 0.5285428925417364,
+              "p10_s": 0.528388576162979,
+              "p90_s": 0.5286949729314074,
+              "mean_s": 0.5285328162213166,
+              "statistic": "median of individually timed calls after warm calls"
+            }
+          ]
+        },
+        "fused_pruned": {
+          "median_s": 0.3751975082559511,
+          "rounds": [
+            {
+              "n_warm": 5,
+              "n_timed": 30,
+              "median_s": 0.3751340114977211,
+              "p10_s": 0.37501585509162394,
+              "p90_s": 0.37536005303263664,
+              "mean_s": 0.3751632148011898,
+              "statistic": "median of individually timed calls after warm calls"
+            },
+            {
+              "n_warm": 5,
+              "n_timed": 30,
+              "median_s": 0.37526100501418114,
+              "p10_s": 0.3750258619664237,
+              "p90_s": 0.3755107531324029,
+              "mean_s": 0.37527371316682545,
+              "statistic": "median of individually timed calls after warm calls"
+            }
+          ]
+        }
+      },
+      "fused_speedup": 1.4084591637758364,
+      "figure_of_merit_library_fit": -301297000.28094363,
+      "figure_of_merit_fused_library_F": -301297000.2809296,
+      "figure_of_merit_fused_pruned_F": -301297000.2809296,
+      "figure_of_merit_shift_nats": 0.0,
+      "figure_of_merit_steps_vs_library_fit_nats": 1.4007091522216797e-05,
+      "passes_match_bars": true
+    }
+  },
+  "pixel_scale": {
+    "instrument": "jvla",
+    "reference_scale": 0.01,
+    "rows": {
+      "0.01": {
+        "dataset": "dataset/interferometer/jvla",
+        "pixel_scale_arcsec": 0.01,
+        "real_space_shape": [
+          800,
+          800
+        ],
+        "mask_radius_arcsec": 3.5,
+        "visibilities": 25000000,
+        "image_pixels_masked": 384852,
+        "operator_extent_shape": [
+          700,
+          700
+        ],
+        "operator_fft_shape": [
+          1400,
+          1400
+        ],
+        "sparse_batch_size": 128,
+        "transformer_chunk_size": 1000000,
+        "t_load_s": 159.1283361101523,
+        "operator_build_s": 7.706139055080712,
+        "source_pixels": 1500,
+        "mesh": {
+          "mesh": "Delaunay",
+          "image_mesh": "Hilbert(weight_power=1.0, weight_floor=0.0)",
+          "hilbert_pixels": 1500,
+          "delaunay_vertices": 1500,
+          "edge_zeroed_pixels": 0
+        },
+        "adapt_image": "truth tracer lensed source on this scale's grid",
+        "full_figure_of_merit": {
+          "lower_s": 2.420970293926075,
+          "compile_s": 2.999960304936394,
+          "first_call_s": 0.5684978668577969,
+          "steady_per_call_s": 0.5386193177895621
+        },
+        "F_library": {
+          "lower_s": 0.04200556501746178,
+          "compile_s": 0.2029127220157534,
+          "first_call_s": 0.5150943282060325,
+          "steady_per_call_s": 0.4994793761055917
+        },
+        "F_share_of_full": 0.9273328297161776,
+        "figure_of_merit": -301296978.5064979,
+        "terms": {
+          "fast_chi_squared": 50167051.211042225,
+          "figure_of_merit": -301296978.5064979,
+          "log_det_curvature_reg": 20741.41627046123,
+          "log_det_regularization": 4709.448105416017,
+          "regularization_term": 1.9144837500348117
+        },
+        "log_evidence_shift_vs_reference_nats": 0.0,
+        "within_science_bar": true,
+        "F_speedup_vs_reference": 1.0
+      },
+      "0.015": {
+        "dataset": "dataset/interferometer/jvla",
+        "pixel_scale_arcsec": 0.015,
+        "real_space_shape": [
+          534,
+          534
+        ],
+        "mask_radius_arcsec": 3.5,
+        "visibilities": 25000000,
+        "image_pixels_masked": 171004,
+        "operator_extent_shape": [
+          466,
+          466
+        ],
+        "operator_fft_shape": [
+          932,
+          932
+        ],
+        "sparse_batch_size": 128,
+        "transformer_chunk_size": 1000000,
+        "t_load_s": 161.00983726792037,
+        "operator_build_s": 7.85702020698227,
+        "source_pixels": 1500,
+        "mesh": {
+          "mesh": "Delaunay",
+          "image_mesh": "Hilbert(weight_power=1.0, weight_floor=0.0)",
+          "hilbert_pixels": 1500,
+          "delaunay_vertices": 1500,
+          "edge_zeroed_pixels": 0
+        },
+        "adapt_image": "truth tracer lensed source on this scale's grid",
+        "full_figure_of_merit": {
+          "lower_s": 2.176283370004967,
+          "compile_s": 2.855994436191395,
+          "first_call_s": 0.4357015809509903,
+          "steady_per_call_s": 0.35852970969863235
+        },
+        "F_library": {
+          "lower_s": 0.03966608387418091,
+          "compile_s": 0.17190234805457294,
+          "first_call_s": 0.3635061189997941,
+          "steady_per_call_s": 0.32682125819846986
+        },
+        "F_share_of_full": 0.9115597657811524,
+        "figure_of_merit": -301295668.18639266,
+        "terms": {
+          "fast_chi_squared": 50167314.54512477,
+          "figure_of_merit": -301295668.1863926,
+          "log_det_curvature_reg": 18447.60346535545,
+          "log_det_regularization": 5308.631931027159,
+          "regularization_term": 10.936821286856713
+        },
+        "log_evidence_shift_vs_reference_nats": 1310.3201052546501,
+        "within_science_bar": false,
+        "F_speedup_vs_reference": 1.5282952487817396
+      },
+      "0.02": {
+        "dataset": "dataset/interferometer/jvla",
+        "pixel_scale_arcsec": 0.02,
+        "real_space_shape": [
+          400,
+          400
+        ],
+        "mask_radius_arcsec": 3.5,
+        "visibilities": 25000000,
+        "image_pixels_masked": 96224,
+        "operator_extent_shape": [
+          350,
+          350
+        ],
+        "operator_fft_shape": [
+          700,
+          700
+        ],
+        "sparse_batch_size": 128,
+        "transformer_chunk_size": 1000000,
+        "t_load_s": 160.02893670089543,
+        "operator_build_s": 7.717088694917038,
+        "source_pixels": 1500,
+        "mesh": {
+          "mesh": "Delaunay",
+          "image_mesh": "Hilbert(weight_power=1.0, weight_floor=0.0)",
+          "hilbert_pixels": 1500,
+          "delaunay_vertices": 1500,
+          "edge_zeroed_pixels": 0
+        },
+        "adapt_image": "truth tracer lensed source on this scale's grid",
+        "full_figure_of_merit": {
+          "lower_s": 1.5494834298733622,
+          "compile_s": 2.7708237660117447,
+          "first_call_s": 0.17614001594483852,
+          "steady_per_call_s": 0.15029400079511107
+        },
+        "F_library": {
+          "lower_s": 0.038971812929958105,
+          "compile_s": 0.15119565604254603,
+          "first_call_s": 0.14322958094999194,
+          "steady_per_call_s": 0.12217392518650741
+        },
+        "F_share_of_full": 0.8128995471553221,
+        "figure_of_merit": -301295171.02933395,
+        "terms": {
+          "fast_chi_squared": 50167121.74180734,
+          "figure_of_merit": -301295171.0293337,
+          "log_det_curvature_reg": 16928.754446799758,
+          "log_det_regularization": 4594.296642685292,
+          "regularization_term": 13.939751086935171
+        },
+        "log_evidence_shift_vs_reference_nats": 1807.4771639704704,
+        "within_science_bar": false,
+        "F_speedup_vs_reference": 4.088264949686277
+      },
+      "0.025": {
+        "dataset": "dataset/interferometer/jvla",
+        "pixel_scale_arcsec": 0.025,
+        "real_space_shape": [
+          320,
+          320
+        ],
+        "mask_radius_arcsec": 3.5,
+        "visibilities": 25000000,
+        "image_pixels_masked": 61572,
+        "operator_extent_shape": [
+          280,
+          280
+        ],
+        "operator_fft_shape": [
+          560,
+          560
+        ],
+        "sparse_batch_size": 128,
+        "transformer_chunk_size": 1000000,
+        "t_load_s": 158.9662630520761,
+        "operator_build_s": 7.510087708942592,
+        "source_pixels": 1500,
+        "mesh": {
+          "mesh": "Delaunay",
+          "image_mesh": "Hilbert(weight_power=1.0, weight_floor=0.0)",
+          "hilbert_pixels": 1500,
+          "delaunay_vertices": 1500,
+          "edge_zeroed_pixels": 0
+        },
+        "adapt_image": "truth tracer lensed source on this scale's grid",
+        "full_figure_of_merit": {
+          "lower_s": 1.2666337438859046,
+          "compile_s": 2.7094565129373223,
+          "first_call_s": 0.11524135596118867,
+          "steady_per_call_s": 0.09324227939359844
+        },
+        "F_library": {
+          "lower_s": 0.0380613140296191,
+          "compile_s": 0.14409554190933704,
+          "first_call_s": 0.06926754000596702,
+          "steady_per_call_s": 0.06562693458981812
+        },
+        "F_share_of_full": 0.7038323710726847,
+        "figure_of_merit": -301294221.06389606,
+        "terms": {
+          "fast_chi_squared": 50167386.61938876,
+          "figure_of_merit": -301294221.063896,
+          "log_det_curvature_reg": 15844.142309972092,
+          "log_det_regularization": 5722.8291714804855,
+          "regularization_term": 62.27595995396396
+        },
+        "log_evidence_shift_vs_reference_nats": 2757.4426018595695,
+        "within_science_bar": false,
+        "F_speedup_vs_reference": 7.610889937606271
+      }
+    }
+  },
+  "peak_rss_mb": 8728.3125,
+  "device_end": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "hostname": "euclid-ral-gpu-1",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": null,
+    "cpu_count": 124,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/.cache/pyauto_jax",
+    "autotune_cache_entries_at_start": 204,
+    "cache_fresh": false,
+    "provenance": {
+      "provenance_schema": 1,
+      "captured_at": "2026-10-17T13:47:33Z",
+      "host": "euclid-ral-gpu-1",
+      "slurm": {
+        "job_id": "412515",
+        "array_job_id": null,
+        "array_task_id": null
+      },
+      "loadavg_at_import": [
+        0.22,
+        0.23,
+        0.42
+      ],
+      "loadavg_at_write": [
+        1.73,
+        1.65,
+        1.28
+      ],
+      "profiling_revision": "unavailable: CalledProcessError",
+      "library_revisions": {
+        "autolens_profiling": "unavailable: CalledProcessError",
+        "PyAutoNerves": "unavailable: CalledProcessError",
+        "PyAutoFit": "unavailable: CalledProcessError",
+        "PyAutoArray": "unavailable: CalledProcessError",
+        "PyAutoGalaxy": "unavailable: CalledProcessError",
+        "PyAutoLens": "unavailable: CalledProcessError"
+      },
+      "library_versions": {
+        "PyAutoNerves": "2026.8.17.1",
+        "PyAutoFit": "2026.8.17.1",
+        "PyAutoArray": "2026.8.17.1",
+        "PyAutoGalaxy": "2026.8.17.1",
+        "PyAutoLens": "2026.8.17.1"
+      },
+      "dependency_versions": {
+        "jax": "0.10.2",
+        "jaxlib": "0.10.2",
+        "numpy": "2.2.6",
+        "scipy": "1.17.1",
+        "numba": "0.65.1",
+        "nufftax": "0.6.1"
+      }
+    },
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 33257 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 429 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 429 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 429 MiB, 81920 MiB"
+  },
+  "nvidia_driver": {
+    "driver": "610.57.04",
+    "cuda_umd": "13.3",
+    "gpu": "NVIDIA A100 80GB PCIe",
+    "source": "nvidia-smi header in the SLURM log output.412515.out (annotated after the run)"
+  },
+  "library_versions_note": "provenance.library_versions reads __version__ from git-archive sources (2026.8.17.1 placeholder); the release tag and SHA are in stack_revisions"
+}

@@ -7,7 +7,7 @@
 **Headline:** A100 alma MGE 939.6 ms (chunked; dense path OOMs asking 61.4 GiB) → 2.69 ms on the W~ route; jvla 24.2 s → 16.7 ms.
 **Library PRs:** PyAutoArray#576 (+ PyAutoGalaxy#629, PyAutoLens#750), PyAutoArray#578 (released 2026.9.27.1); PyAutoArray#540, PyAutoArray#541, PyAutoArray#544, PyAutoArray#545 (released 2026.9.11.1; library speed-ups with no profiling note, see the 2026-09-27 journal entry); PyAutoArray#582 (released 2026.9.27.2); PyAutoArray#630, #631, #632 (Aris follow-ups, merged 2026-10-15, unreleased).
 **Profiling PRs:** #312, #313, #319, #324, #328, #333; phase 3 #352 (merged 2026-09-28); phase 4 #358 (merged 2026-09-30); last decision-matrix cell under issue #369.
-**Ledger:** [interferometer_likelihood_decision_matrix_2026_09.md](../../results/notes/interferometer_likelihood_decision_matrix_2026_09.md) (phase 4, the user-facing matrix), [interferometer_mge_breakdown_2026_09.md](../../results/notes/interferometer_mge_breakdown_2026_09.md), [interferometer_mesh_a100_breakdown_2026_09.md](../../results/notes/interferometer_mesh_a100_breakdown_2026_09.md), [interferometer_mesh_cpu_breakdown_2026_09.md](../../results/notes/interferometer_mesh_cpu_breakdown_2026_09.md); older context [numba_interferometer_verdict.md](../../results/notes/numba_interferometer_verdict.md); Aris route gate [interferometer_route_gate_aris_2026_10.md](../../results/notes/interferometer_route_gate_aris_2026_10.md) (#419).
+**Ledger:** [interferometer_likelihood_decision_matrix_2026_09.md](../../results/notes/interferometer_likelihood_decision_matrix_2026_09.md) (phase 4, the user-facing matrix), [interferometer_mge_breakdown_2026_09.md](../../results/notes/interferometer_mge_breakdown_2026_09.md), [interferometer_mesh_a100_breakdown_2026_09.md](../../results/notes/interferometer_mesh_a100_breakdown_2026_09.md), [interferometer_mesh_cpu_breakdown_2026_09.md](../../results/notes/interferometer_mesh_cpu_breakdown_2026_09.md); older context [numba_interferometer_verdict.md](../../results/notes/numba_interferometer_verdict.md); Aris route gate [interferometer_route_gate_aris_2026_10.md](../../results/notes/interferometer_route_gate_aris_2026_10.md) (#419); A100 FFT size levers [interferometer_w_tilde_fft_size_levers_2026_10.md](../../results/notes/interferometer_w_tilde_fft_size_levers_2026_10.md) (#429).
 **Pulse knowledge:** [task `interferometer_large_mask_aris` (Knowledge section)](https://github.com/PyAutoLabs/PyAutoPulse/blob/main/tasks/interferometer_large_mask_aris.md); decisions [adaptsplit-zero-weight-delaunay-only](https://github.com/PyAutoLabs/PyAutoPulse/blob/main/decisions/adaptsplit-zero-weight-delaunay-only.md), [interferometer-route-gate-cost-model](https://github.com/PyAutoLabs/PyAutoPulse/blob/main/decisions/interferometer-route-gate-cost-model.md).
 **Mind contract:** epic `interferometer-likelihood-campaign` (named in the records; not in `epics.md`); phase map `draft/research/autolens_profiling/interferometer_mesh_breakdown_numba_cpu_decision_matrix.md`.
 **Next:** phase 4 has shipped: #358 merged, and the last cell (CPU rect alma_high r5.0, RAL 375978_3) was filled under issue #369. Every decision-matrix cell is now measured, blocked or not measured, with a citation; none is pending. Remaining follow-ups are separate PyAutoPulse tasks: streaming scaling, the fixed-mapper curvature preload, the nnls memo guard and the W~ FFT-size levers.
@@ -62,7 +62,8 @@ config) and green at 1, 1. Both counts are right; see Caveats.
 
 - Mesh phase 4 (decision matrix, issue #356): shipped in #358 (2026-09-30). Its last cell was filled under issue #369 (2026-10-04).
 - `draft/research/autolens_profiling/interferometer_nnls_memo_scattered_stream_guard.md` — fnnls warm-start memo guard.
-- `draft/research/autolens_profiling/interferometer_w_tilde_fft_size_levers.md` — F extent / FFT size.
+- W~ FFT size levers (PyAutoPulse task `interferometer_w_tilde_fft_size_levers`): measured on the A100 under #429 (2026-10-17). The pruned padded FFT passes and clears the 10 % threshold; the PyAutoArray change is drafted, not started. The coarser pixel scale fails the 0.5-nat bar.
+- Route-gate constants on RAL CPU: deferred. The human closed the CPU lane on 2026-10-17 (journal, 2026-10-17).
 - `draft/research/autolens_profiling/interferometer_fixed_mapper_curvature_preload.md` — fixed-mapper curvature preload.
 - Certified-solver default on the interferometer sparse path went into the C2 amendment `draft/feature/autofit/certified_solver_batched_guard_c2.md`.
 
@@ -135,3 +136,18 @@ Issue #419; record [interferometer_route_gate_aris_2026_10.md](../../results/not
 - **The numba kill-gate question is answered by the cost model, not a retuned constant.** The *modelled* crossover is ~309 nnz/col at 83² and ~166 at 341². The measured cells alone would also fit one constant of about 150.
 - The campaign's owed log-det after-measurement: numba vs JAX `log_det_regularization_matrix_term` agree to ≤ 4.4e-8 at all six cells. At the 125 original vector the pair went from 2443.22 / 2561.98 to 2468.4463 on both (PyAutoArray#631).
 - The laptop run recorded routing and log-det only. s/call is carried from the prior laptop measurement, not re-timed, because the host was shared.
+
+### 2026-10-17 — W~ FFT size levers on the A100, and the route constants left open
+
+Issue #429; record [interferometer_w_tilde_fft_size_levers_2026_10.md](../../results/notes/interferometer_w_tilde_fft_size_levers_2026_10.md); witness `jvla/delaunay_hpc_a100_fp64_fft_prune.json`. RAL job 412515 ran on `euclid-ral-gpu-1` (A100 80GB, driver 610.57.04) with JAX 0.10.2, fp64, on a private 2026.10.17.1 stack.
+- **Pruned padded FFT: passes.** A separable transform that skips the zero rows of the `(2y, 2x)` pad saves 19.4 / 22.1 / **29.7 %** of F at alma / alma_high / jvla. At jvla F goes from 499.6 to 351.2 ms.
+  - The pruned F matches the library F to ≤ 1.7e-15 relative, and the figure of merit is unchanged.
+  - The fused F → solve → log-det → figure-of-merit call is 1.08× / 1.18× / **1.41×** faster.
+  - This clears the task's 10 %-of-F threshold, so the PyAutoArray change is drafted. The human set no library change for this phase.
+- **Real-space pixel scale at jvla: fails the bar.** F gets 1.53× / 4.09× / 7.61× cheaper at 0.015 / 0.02 / 0.025″, but the log evidence moves by +1,310 / +1,807 / +2,757 nats against 0.01″. The bar was 0.5 nats.
+  - Most of the shift is in `log det(F + H)`, and the mesh is rebuilt on each scale's adapt image.
+  - 0.015″ gains only 1.53× because its padded FFT length 932 = 2²·233 is an awkward length.
+- **Open note: route-gate constants (part A of #429), not measured.** The human closed the interferometer CPU lane on 2026-10-17, so the constants refit is deferred. The evidence in hand is from PyAutoArray#636's witness, recorded in `results/notes/interferometer_direct_conv_symmetric_2026_10.md` on #425 (not yet merged):
+  - On `euclid-ral-compute-1`, serial, FFT / full `direct_conv` measured **0.68** at the real-Aris 512 1,459-vertex cell. The laptop-calibrated #632 constants (`c_fft` 7.62e-10, `c_dc` 1.77e-09) predict **0.89**.
+  - With the symmetric kernel, that cell now routes to `direct_conv` at only **~1.02×** over FFT (15.08 vs 15.32 s).
+  - No route measured so far is wrong, but the margin is thin on RAL.
