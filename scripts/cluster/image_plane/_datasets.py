@@ -83,6 +83,12 @@ def profiling_root() -> Path:
 ROOT = profiling_root()
 
 
+STRESS_CENTRE_SHIFT = 0.5
+STRESS_MASS_DEX = 0.3
+STRESS_SCALING_FRAC = 0.15
+STRESS_MASS_FRAC = 0.10
+
+
 class ReferenceUnavailable(RuntimeError):
     """No reference tracer can be built from published / fitted values."""
 
@@ -137,6 +143,7 @@ class ClusterCase:
     truth_betas: np.ndarray | None = None
     draw_kind: str = "prior"
     perturbation_fraction: float | None = None
+    held_paths: dict = field(default_factory=dict)
 
     # -- tracers -----------------------------------------------------------
 
@@ -166,7 +173,10 @@ class ClusterCase:
         for _ in range(n):
             if self.draw_kind == "prior":
                 unit = rng.uniform(1e-4, 1 - 1e-4, size=self.model.prior_count)
-                out.append(np.asarray(self.model.vector_from_unit_vector(unit), dtype=float))
+                vec = np.asarray(self.model.vector_from_unit_vector(unit), dtype=float)
+                for path, value in self.held_paths.items():
+                    vec[self.paths.index(path)] = value
+                out.append(vec)
             else:
                 frac = float(self.perturbation_fraction)
                 out.append(
@@ -174,6 +184,62 @@ class ClusterCase:
                     * (1.0 + frac * rng.standard_normal(self.model.prior_count))
                 )
         return np.stack(out)
+
+    @property
+    def paths(self) -> list[str]:
+        return [".".join(p) for p in self.model.unique_prior_paths]
+
+    def stress_draws(self, n: int, seed: int) -> tuple[np.ndarray, dict]:
+        """``n`` broad draws about the reference (the phase-4a "stress" idea at cluster scale).
+
+        Per free parameter, by path: a main-lens / host-halo centre shifts by N(0, 0.5")
+        per axis; ``mass_at_200`` scales by 10^N(0, 0.3 dex); the shared scaling
+        normalisation (``sigma_ref`` / ``b0_ref``) by 1 + N(0, 0.15); every other mass
+        parameter (b0, ra, rs, sigma, r_cut) by 1 + N(0, 0.10). A scaled parameter that
+        would go non-positive is clipped to 1e-3 x its reference value; clips are counted.
+        """
+        rng = np.random.default_rng(seed)
+        ref = np.asarray(self.reference_vector, dtype=float)
+        kinds = []
+        for path in self.paths:
+            leaf = path.split(".")[-1]
+            if leaf in ("centre_0", "centre_1"):
+                kinds.append("centre")
+            elif leaf == "mass_at_200":
+                kinds.append("dex")
+            elif "scaling" in path:
+                kinds.append("scaling_ref")
+            else:
+                kinds.append("mass")
+        out, clips = [], {p: 0 for p in self.paths}
+        for _ in range(n):
+            v = ref.copy()
+            for j, kind in enumerate(kinds):
+                if kind == "centre":
+                    v[j] = ref[j] + rng.normal(0.0, STRESS_CENTRE_SHIFT)
+                elif kind == "dex":
+                    v[j] = ref[j] * 10.0 ** rng.normal(0.0, STRESS_MASS_DEX)
+                else:
+                    frac = STRESS_SCALING_FRAC if kind == "scaling_ref" else STRESS_MASS_FRAC
+                    v[j] = ref[j] * (1.0 + rng.normal(0.0, frac))
+                    if v[j] <= 0.0:
+                        v[j] = 1e-3 * ref[j]
+                        clips[self.paths[j]] += 1
+            out.append(v)
+        info = {
+            "rule": {
+                "centre_shift_sigma_arcsec": STRESS_CENTRE_SHIFT,
+                "mass_at_200_dex_sigma": STRESS_MASS_DEX,
+                "scaling_ref_frac_sigma": STRESS_SCALING_FRAC,
+                "mass_param_frac_sigma": STRESS_MASS_FRAC,
+                "clip": "non-positive scaled parameter -> 1e-3 x reference",
+            },
+            "kinds": dict(zip(self.paths, kinds)),
+            "clip_counts": {p: c for p, c in clips.items() if c},
+            "n_clipped_values": int(sum(clips.values())),
+            "seed": seed,
+        }
+        return np.stack(out).reshape(-1, len(ref)), info
 
     def betas(self, vector, index: int) -> np.ndarray:
         """Source-plane coordinates (n_src, 2) for a draw (truth centres for draw 0 if known)."""
@@ -272,9 +338,12 @@ def simple_model(scaling_table, source_redshift_max):
         mass.rs = SIMPLE_SCALING_RS_REF * ratio
         mass.b0 = b0_ref * ratio
         galaxies[f"scaling_{i}"] = af.Model(al.Galaxy, redshift=SIMPLE_REDSHIFT_LENS, mass=mass)
+    # mass_at_200 is a free model coordinate so the stress family can move it; the prior
+    # family holds it at the cell's fixed value (ClusterCase.held_paths), so prior draws are
+    # exactly the cell's prior.
     dark = af.Model(
         al.mp.NFWMCRLudlowSph,
-        mass_at_200=SIMPLE_NFW_MASS,
+        mass_at_200=af.LogUniformPrior(lower_limit=10**14.0, upper_limit=10**16.5),
         redshift_object=SIMPLE_REDSHIFT_LENS,
         redshift_source=source_redshift_max,
     )
@@ -312,7 +381,10 @@ def load_simple(
         fixed_galaxies=[al.Galaxy(redshift=z) for z in redshifts],
         truth_betas=np.asarray(SIMPLE_TRUTH_SOURCE_CENTRES, dtype=float),
         draw_kind="prior",
+        held_paths={"galaxies.host_halo.dark.mass_at_200": SIMPLE_NFW_MASS},
     )
+    i = case.paths.index("galaxies.host_halo.dark.mass_at_200")
+    case.reference_vector[i] = SIMPLE_NFW_MASS
     case.provenance["truth_gate"] = simple_truth_gate(case)
     return case
 

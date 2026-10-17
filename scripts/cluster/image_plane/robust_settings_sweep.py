@@ -31,7 +31,7 @@ Datasets (``--dataset``)
 ------------------------
 
 ``simple`` (13 components, 3 planes, 2 sources x 3 images; truth + 50 seeded
-prior draws) and ``a2744`` (191 components, 8 planes, 7 sources / 24 images;
+prior draws + ``--n-stress`` broad stress draws) and ``a2744`` (191 components, 8 planes, 7 sources / 24 images;
 reference + 30 seeded perturbation draws). See ``_datasets.py``; the A2744
 reference tracer is unavailable until one is supplied (``--a2744-reference``).
 
@@ -72,6 +72,14 @@ missed roots + spurious candidates. Status:
 - ``invalid``: any of those fails (reasons listed), or the route errors;
 - ``diagnostic``: a designed diagnostic row, or no reference tracer;
 - ``unusable``: the row's projected wall exceeds ``--row-wall-cap``.
+
+Two draw sets, judged separately (every row reports both): ``prior`` (the
+truth / reference + seeded draws of the cell's prior) and ``stress`` (broad draws
+about the reference, ``ClusterCase.stress_draws``: centres +- N(0, 0.5"), mass
+parameters x (1 + N(0, 0.10)), the scaling normalisation x (1 + N(0, 0.15)),
+``mass_at_200`` x 10^N(0, 0.3 dex)). Admissible needs both to pass (phase-4a
+rule); a row that passes prior but fails stress is ``diagnostic`` with the
+stress failure listed; a prior failure is ``invalid``.
 
 Image count alone is never evidence. A draw whose oracle is not stable is
 excluded from every row and listed. Failing rows are kept, never substituted
@@ -157,7 +165,10 @@ _cli = parse_profile_cli()
 _cp = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
 _cp.add_argument("--dataset", choices=("simple", "a2744"), default="simple")
 _cp.add_argument("--pilot", action="store_true", help="few draws/rounds + wall projection")
-_cp.add_argument("--n-draws", type=int, default=None, help="draws beyond the truth/reference")
+_cp.add_argument("--n-draws", type=int, default=None, help="prior draws beyond the truth/reference")
+_cp.add_argument(
+    "--n-stress", type=int, default=None, help="broad stress draws (default = n-draws)"
+)
 _cp.add_argument("--rounds", type=int, default=None)
 _cp.add_argument("--calls", type=int, default=None, help="calls per round, JIT / vmap routes")
 _cp.add_argument("--slow-calls", type=int, default=1, help="calls per round, NumPy / eager")
@@ -174,6 +185,7 @@ _cp.add_argument("--a2744-reference", default=None)
 _cp.add_argument("--a2744-workspace", default=None)
 _cp.add_argument("--a2744-perturbation", type=float, default=0.02)
 _cp.add_argument("--full-n-draws", type=int, default=None, help="pilot projection size")
+_cp.add_argument("--full-n-stress", type=int, default=None, help="pilot projection size")
 _cp.add_argument("--full-rounds", type=int, default=20, help="pilot projection size")
 _cp.add_argument("--full-calls", type=int, default=10, help="pilot projection size")
 _args = _cli.parse_cell_args(_cp)
@@ -187,7 +199,8 @@ if os.environ.get("PYAUTO_SMALL_DATASETS") == "1":
 DATASET = _args.dataset
 PILOT = bool(_args.pilot)
 FULL_N_DRAWS_DEFAULT = {"simple": 50, "a2744": 30}[DATASET]
-N_DRAWS = _args.n_draws if _args.n_draws is not None else (1 if PILOT else FULL_N_DRAWS_DEFAULT)
+N_DRAWS = _args.n_draws if _args.n_draws is not None else (2 if PILOT else FULL_N_DRAWS_DEFAULT)
+N_STRESS = _args.n_stress if _args.n_stress is not None else N_DRAWS
 N_ROUNDS = _args.rounds if _args.rounds is not None else (3 if PILOT else 20)
 N_CALLS = _args.calls if _args.calls is not None else (2 if PILOT else 10)
 N_SLOW_CALLS = max(1, _args.slow_calls)
@@ -197,7 +210,8 @@ SEED = _args.seed
 VMAP_BATCHES = tuple(int(b) for b in _args.vmap_batches.split(",") if b.strip())
 ROW_WALL_CAP = float(_args.row_wall_cap)
 FULL_N_DRAWS = _args.full_n_draws if _args.full_n_draws is not None else FULL_N_DRAWS_DEFAULT
-if N_ROUNDS < 1 or N_CALLS < 1 or N_DRAWS < 0 or N_STREAM < 1:
+FULL_N_STRESS = _args.full_n_stress if _args.full_n_stress is not None else FULL_N_DRAWS
+if N_ROUNDS < 1 or N_CALLS < 1 or N_DRAWS < 0 or N_STRESS < 0 or N_STREAM < 1:
     raise SystemExit("--rounds, --calls, --n-stream must be positive; --n-draws >= 0")
 
 matplotlib.use("Agg")
@@ -831,8 +845,17 @@ if not CALIBRATION["pass"]:
     raise SystemExit("oracle calibration FAILED: no cluster row may be judged")
 
 # --- 1. draws, source-plane coordinates, oracle roots ------------------------------------
-DRAWS = CASE.draws(N_DRAWS, SEED)
-BETAS = [CASE.betas(v, i) for i, v in enumerate(DRAWS)]
+_prior_draws = CASE.draws(N_DRAWS, SEED)
+_stress_draws, STRESS_INFO = CASE.stress_draws(N_STRESS, SEED + 2000)
+DRAWS = np.concatenate([_prior_draws, _stress_draws])
+SET = ["prior"] * len(_prior_draws) + ["stress"] * len(_stress_draws)
+SET_INDICES = {s: [i for i, x in enumerate(SET) if x == s] for s in ("prior", "stress")}
+# Index -1 for stress draws: their betas are always back-traced (never the truth centres).
+BETAS = [CASE.betas(v, i if SET[i] == "prior" else -1) for i, v in enumerate(DRAWS)]
+note(
+    f"draw sets: prior {len(_prior_draws)} (draw 0 = reference), stress {len(_stress_draws)} "
+    f"(clipped values {STRESS_INFO['n_clipped_values']})"
+)
 _stream_draws = CASE.draws(N_STREAM - 1, SEED + 1000)
 STREAM = [(v, CASE.betas(v, i)) for i, v in enumerate(_stream_draws)]
 note(f"{len(DRAWS)} judged draws (draw 0 = reference), {len(STREAM)} timing-stream draws")
@@ -851,7 +874,7 @@ for i, (v, betas) in enumerate(zip(DRAWS, BETAS)):
     oracle_cost.append(time.perf_counter() - t0)
     ORACLE.append({"draw": i, "plane_indices": pis, "sources": per_source, "equation": eq})
     note(
-        f"oracle draw {i}: roots/source {[s['n_accepted'] for s in per_source]}, stable "
+        f"oracle draw {i} ({SET[i]}): roots/source {[s['n_accepted'] for s in per_source]}, stable "
         f"{[s['stability']['stable'] for s in per_source]} ({oracle_cost[-1]:.1f} s)"
     )
 
@@ -919,11 +942,23 @@ for key, cfg in geometries.items():
     )
 
 
-def overflow_for(cfg) -> dict:
+def overflow_for(cfg, indices=None) -> dict:
     if cfg["backend"] == "numpy":
         return {"applicable": False, "reason": "NumPy path is uncapped (dynamic shapes)"}
     cap = cfg["max_containing_size"]
-    mats = COUNTS[geometry_key(cfg)]
+    allm = COUNTS[geometry_key(cfg)]
+    indices = list(range(len(allm))) if indices is None else list(indices)
+    if not indices:
+        return {
+            "applicable": True,
+            "cap": cap,
+            "uncapped_max": None,
+            "overflow": False,
+            "n_draw_sources_overflowing": 0,
+            "events": [],
+            "n_draws": 0,
+        }
+    mats = {i: allm[i] for i in indices}
     events = [
         {
             "draw": i,
@@ -931,13 +966,14 @@ def overflow_for(cfg) -> dict:
             "steps_over_cap": [s for s, n in enumerate(st) if n > cap],
             "uncapped_counts_per_step": st,
         }
-        for i, d in enumerate(mats)
+        for i, d in mats.items()
         for k, st in enumerate(d)
         if max(st) > cap
     ]
-    n_steps = max(len(st) for d in mats for st in d)
+    n_steps = max(len(st) for d in mats.values() for st in d)
     per_step_max = [
-        max((st[s] for d in mats for st in d if s < len(st)), default=0) for s in range(n_steps)
+        max((st[s] for d in mats.values() for st in d if s < len(st)), default=0)
+        for s in range(n_steps)
     ]
     return {
         "applicable": True,
@@ -1083,10 +1119,19 @@ for cfg in CONFIGS:
                 )
             judged.append({"draw": i, "sources": srcs})
         row["verdict"] = summarise_row(name, judged, overflow_for(cfg))
+        row["verdict_by_set"] = {
+            st: summarise_row(
+                name,
+                [d for d in judged if SET[d["draw"]] == st],
+                overflow_for(cfg, SET_INDICES[st]),
+            )
+            for st in ("prior", "stress")
+        }
         row["nonfinite_rows"] = nonfinite_rows
         row["per_draw"] = [
             {
                 "draw": d["draw"],
+                "set": SET[d["draw"]],
                 "sources": [
                     None
                     if j is None
@@ -1126,31 +1171,57 @@ for cfg in CONFIGS:
         row["status"] = "diagnostic"
         row["reasons"].append(f"no reference tracer: {CASE.reference_label}")
     else:
-        fails = []
-        if v["n_missed"]:
-            fails.append(
-                f"{v['n_missed']} oracle roots missed ({v['n_missed_outside_extent']} outside extent)"
+
+        def _fails(vs):
+            fails = []
+            if vs["n_missed"]:
+                fails.append(
+                    f"{vs['n_missed']} oracle roots missed "
+                    f"({vs['n_missed_outside_extent']} outside extent)"
+                )
+            if vs["n_duplicated"]:
+                fails.append(
+                    f'{vs["n_duplicated"]} roots with duplicate candidates at {DISTINCT_TOL}"'
+                )
+            if vs["n_spurious"]:
+                fails.append(
+                    f"{vs['n_spurious']} spurious candidates (within tol of no oracle root)"
+                )
+            if vs["multiplicity_agreement"] is not None and vs["multiplicity_agreement"] < 1.0:
+                fails.append(f"multiplicity agreement {vs['multiplicity_agreement']:.3f}")
+            if vs["overflow"].get("overflow"):
+                fails.append(
+                    f"overflow: uncapped count > cap {vs['overflow']['cap']} on "
+                    f"{vs['overflow']['n_draw_sources_overflowing']} draw-sources"
+                )
+            return fails
+
+        vb = row["verdict_by_set"]
+        prior_fails = _fails(vb["prior"])
+        stress_fails = _fails(vb["stress"])
+        if not vb["prior"]["n_draw_sources_judged"]:
+            prior_fails.append("no judged prior draw-source (oracle unstable everywhere)")
+        if prior_fails:
+            # 4a rule: the prior set is the admissibility gate.
+            row["status"] = "invalid"
+            row["reasons"].extend(f"prior: {f}" for f in prior_fails)
+            row["reasons"].extend(f"stress: {f}" for f in stress_fails)
+        elif stress_fails:
+            row["status"] = "diagnostic"
+            row["reasons"].append("passes the prior set, fails the stress set")
+            row["reasons"].extend(f"stress: {f}" for f in stress_fails)
+        else:
+            row["status"] = "admissible"
+            row["reasons"].append(
+                "prior and stress: all considered roots covered, multiplicity agrees, no overflow"
             )
-        if v["n_duplicated"]:
-            fails.append(f'{v["n_duplicated"]} roots with duplicate candidates at {DISTINCT_TOL}"')
-        if v["n_spurious"]:
-            fails.append(f"{v['n_spurious']} spurious candidates (within tol of no oracle root)")
-        if v["multiplicity_agreement"] is not None and v["multiplicity_agreement"] < 1.0:
-            fails.append(f"multiplicity agreement {v['multiplicity_agreement']:.3f}")
-        if v["overflow"].get("overflow"):
-            fails.append(
-                f"overflow: uncapped count > cap {v['overflow']['cap']} on "
-                f"{v['overflow']['n_draw_sources_overflowing']} draw-sources"
-            )
-        if not v["n_draw_sources_judged"]:
-            fails.append("no judged draw-source (oracle unstable everywhere)")
-        row["status"] = "invalid" if fails else "admissible"
-        row["reasons"].extend(
-            fails or ["all considered roots covered, multiplicity agrees, no overflow"]
-        )
     note(
         f"row {name:<26} {row['status']:<10} cov {v['n_covered']}/{v['n_roots_considered']} "
-        f"miss {v['n_missed']} dup {v['n_duplicated']} spur {v['n_spurious']} "
+        + "".join(
+            f"[{st} {vv['n_covered']}/{vv['n_roots_considered']}] "
+            for st, vv in (row.get("verdict_by_set") or {}).items()
+        )
+        + f"miss {v['n_missed']} dup {v['n_duplicated']} spur {v['n_spurious']} "
         f"mult {v['multiplicity_agreement']} overflow {v['overflow'].get('uncapped_max')}/"
         f"{v['overflow'].get('cap')} maxerr {v['max_position_error']}"
     )
@@ -1319,20 +1390,21 @@ if PILOT:
             "per_call_s": per_call,
             "projected_s": cstep
             + first
-            + per_call * B * (FULL_N_DRAWS + 1) / B
+            + per_call * (FULL_N_DRAWS + 1 + FULL_N_STRESS)
             + per_call * (_args.full_rounds * calls + N_WARM),
             "status_in_pilot": r["status"],
         }
     total = (
         CALIBRATION["wall_s"]
-        + (per_draw_oracle or 0.0) * (FULL_N_DRAWS + 1)
-        + sum(v * (FULL_N_DRAWS + 1) for v in per_draw_counts.values())
+        + (per_draw_oracle or 0.0) * (FULL_N_DRAWS + 1 + FULL_N_STRESS)
+        + sum(v * (FULL_N_DRAWS + 1 + FULL_N_STRESS) for v in per_draw_counts.values())
         + sum(v["projected_s"] for v in rows_proj.values())
     )
     pilot = {
         "note": "projection from THIS host; a laptop pilot is a code-path check, never a wall basis",
         "full_sizes": {
             "n_draws": FULL_N_DRAWS,
+            "n_stress": FULL_N_STRESS,
             "rounds": _args.full_rounds,
             "calls": _args.full_calls,
         },
@@ -1353,7 +1425,7 @@ if PILOT:
             f"per-call {v['per_call_s']:9.4f} s -> {v['projected_s']:8.1f} s [{v['status_in_pilot']}]"
         )
     print(
-        f"  PROJECTED full sweep: {total:.0f} s ({total / 3600:.2f} h) at {FULL_N_DRAWS} draws, "
+        f"  PROJECTED full sweep: {total:.0f} s ({total / 3600:.2f} h) at {FULL_N_DRAWS} prior + {FULL_N_STRESS} stress draws, "
         f"{_args.full_rounds} rounds x {_args.full_calls} calls"
     )
 
@@ -1390,6 +1462,19 @@ for name in CONFIG_NAMES:
             "reasons": r["reasons"],
             "reference_model": CASE.reference_label,
             "coverage": f"{v.get('n_covered')}/{v.get('n_roots_considered')}" if v else None,
+            "by_set": {
+                st: {
+                    "coverage": f"{vv['n_covered']}/{vv['n_roots_considered']}",
+                    "n_missed": vv["n_missed"],
+                    "n_duplicated": vv["n_duplicated"],
+                    "n_spurious": vv["n_spurious"],
+                    "n_unresolved": vv["n_unresolved"],
+                    "multiplicity_agreement": vv["multiplicity_agreement"],
+                    "overflow": vv["overflow"].get("overflow"),
+                    "uncapped_max": vv["overflow"].get("uncapped_max"),
+                }
+                for st, vv in (r.get("verdict_by_set") or {}).items()
+            },
             "n_missed": v.get("n_missed"),
             "n_duplicated": v.get("n_duplicated"),
             "n_spurious": v.get("n_spurious"),
@@ -1460,6 +1545,10 @@ summary = {
     },
     "draws": {
         "n_judged": len(DRAWS),
+        "n_prior": len(SET_INDICES["prior"]),
+        "n_stress": len(SET_INDICES["stress"]),
+        "set_per_draw": SET,
+        "stress": STRESS_INFO,
         "kind": CASE.draw_kind,
         "seed": SEED,
         "perturbation_fraction": CASE.perturbation_fraction,
@@ -1490,6 +1579,9 @@ summary = {
     "loadavg_start": list(_LOADAVG_START),
     "loadavg_end": list(os.getloadavg()),
     "protocol": {
+        "n_prior_draws": N_DRAWS,
+        "n_stress_draws": N_STRESS,
+        "admissibility": "prior AND stress pass (4a rule); prior pass + stress fail = diagnostic",
         "n_rounds": N_ROUNDS,
         "n_calls": N_CALLS,
         "n_slow_calls": N_SLOW_CALLS,
@@ -1586,7 +1678,11 @@ for t in table:
     print(
         f"  {t['config']:<28} {t['status']:<10} cov {str(t['coverage']):>7} miss {t['n_missed']} "
         f"dup {t['n_duplicated']} spur {t['n_spurious']} mult {t['multiplicity_agreement']} "
-        f"ovf {t['overflow']} ({t['uncapped_max']}/{t['mcs']}) tol {t['tol_last_step_side']:.2e}"
+        f"ovf {t['overflow']} ({t['uncapped_max']}/{t['mcs']}) tol {t['tol_last_step_side']:.2e} "
+        + " ".join(
+            f"{st}:{b['coverage']} m{b['multiplicity_agreement']} o{b['uncapped_max']}"
+            for st, b in t["by_set"].items()
+        )
     )
 print(f"  unstable oracle draw-sources: {UNSTABLE}")
 print(f"  best admissible: {summary['best_admissible']}; all_gates_pass: {all_gates_pass}")

@@ -26,16 +26,31 @@
 # 8490H reference node euclid-ral-compute-10-4. Confirm with `sinfo -p ral -N -o "%N %T %C"`
 # at submit time (`idle*` nodes are unreachable); edit --nodelist if it changed.
 #
-# DATASET. dataset/cluster/simple is regenerated on the node by scripts/misc/simulators/cluster.py if missing
-# (pinned seed; sha256 of every file in the JSON). A2744 is NOT run: its reference tracer is unavailable
-# (see scripts/cluster/image_plane/_datasets.py).
+# DATASET (two legs, both PILOT; draw sets prior + stress on each).
+#   1. simple: dataset/cluster/simple is regenerated on the node by scripts/misc/simulators/cluster.py
+#      if missing (pinned seed; sha256 of every file in the JSON). 2 prior + 2 stress draws.
+#   2. a2744 (human decision 2026-10-17, Option A): run with --a2744-reference prior-median-smoke,
+#      the "A2744-geometry synthetic model (prior medians; not a fitted cluster model)". The ORACLE is
+#      the truth for every row; the model is NOT a fitted A2744 model, so representativeness of the
+#      real cluster is a stated caveat and every a2744 row is labelled diagnostic, not quotable.
+#      1 prior + 1 stress draw; --row-wall-cap 1800 (a row projected above it is recorded "unusable"
+#      with its reason and the job continues).
+#      REQUIREMENT: the four A2744 CSVs. The producer copies them from an autolens_workspace
+#      checkout if $AUTOLENS_WORKSPACE points at one on the node; otherwise dataset/cluster/a2744/
+#      (mass.csv, point.csv, point_datasets.csv, scaling_galaxies.csv + provenance.json, produced on
+#      the laptop by _datasets.produce_a2744) must be rsynced into this clone's gitignored
+#      dataset/ before submitting; the producer re-verifies every sha256 against provenance.json.
+#      Without either, the a2744 leg is skipped with a message (the simple leg still counts).
 #
 # WALL-BASIS:
-#   Declared estimate, nothing measured on RAL yet. The local laptop code-path pilot (5 rows,
-#   2 draws, not a measurement) took ~2 min; this pilot runs every row (25) on 1 + 2 draws,
-#   3 rounds x 2 calls: ~25 JIT compiles of 10-60 s, eager JAX ~4 s/call, oracle ~10 s/draw.
-#   Estimate 1800 s; --time 5400 s = headroom 3.
+#   Declared estimate from LOCAL SIZING ONLY (laptop correctness runs, never a measurement):
+#   simple leg ~25 JIT compiles of 10-60 s + eager JAX ~4 s/call + oracle ~10 s/draw (5 draws);
+#   a2744 leg oracle ~105 s per draw for its 7 sources (3 draws), JIT compiles ~90 s each over
+#   ~25 rows, uncapped NumPy counts per geometry. Estimate 1800 s per leg, 3600 s declared in total;
+#   --time 2:30:00 (9000 s) is headroom 2.5 on the total (each leg row below passes the 3x rule).
 #   cell: cluster/robust_settings_sweep/simple  device: ral_cpu  precision: fp64
+#   source: unmeasured  probe-first: yes  wall: 1800  headroom: 3.0
+#   cell: cluster/robust_settings_sweep/a2744  device: ral_cpu  precision: fp64
 #   source: unmeasured  probe-first: yes  wall: 1800  headroom: 3.0
 
 #SBATCH -J cluster_pointsolver_pilot
@@ -45,7 +60,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64gb
-#SBATCH --time=1:30:00
+#SBATCH --time=2:30:00
 #SBATCH -o output/output.%A.out
 #SBATCH -e error/error.%A.err
 
@@ -106,17 +121,8 @@ for m in (autonerves, autofit, autoarray, autogalaxy, autolens):
 print("import origin + tag 2026.10.17.1: OK")
 EOF_PY
 
-echo "=========================================="
-echo "RUN robust_settings_sweep_simple_pilot ${CONFIG_NAME} -> ${RESULTS_DIR}"
-date
-PYTHONUNBUFFERED=1 python3 scripts/cluster/image_plane/robust_settings_sweep.py \
-    --config-name "$CONFIG_NAME" --output-dir "$RESULTS_DIR" \
-    --dataset simple --pilot --n-draws 2 --rounds 3 --calls 2 --n-stream 4 \
-    --full-n-draws 50 --full-rounds 20 --full-calls 10 \
-    2>&1 | tee "$LOG_DIR/robust_settings_sweep_simple_pilot_${CONFIG_NAME}_${SLURM_JOB_ID:-local}.log"
-
-echo "=== source_revisions check (JSON vs private checkout HEAD) ==="
-python3 - "$RESULTS_DIR/robust_settings_sweep_simple_pilot_${CONFIG_NAME}.json" <<'EOF_PY' || exit 4
+check_revisions() {
+python3 - "$1" <<'EOF_PY'
 import json, os, subprocess, sys
 path = sys.argv[1]
 revs = json.load(open(path))["source_revisions"]
@@ -127,8 +133,47 @@ for repo in ("PyAutoNerves", "PyAutoFit", "PyAutoArray", "PyAutoGalaxy", "PyAuto
         raise SystemExit(f"MISMATCH {path}: {repo} JSON {revs[repo]} != private checkout {head}")
 print("OK", path)
 EOF_PY
+}
+STATUS=0
+
+echo "=========================================="
+echo "RUN 1/2 robust_settings_sweep_simple_pilot ${CONFIG_NAME} -> ${RESULTS_DIR}"
+date
+PYTHONUNBUFFERED=1 python3 scripts/cluster/image_plane/robust_settings_sweep.py \
+    --config-name "$CONFIG_NAME" --output-dir "$RESULTS_DIR" \
+    --dataset simple --pilot --n-draws 2 --n-stress 2 --rounds 3 --calls 2 --n-stream 4 \
+    --full-n-draws 50 --full-n-stress 50 --full-rounds 20 --full-calls 10 \
+    2>&1 | tee "$LOG_DIR/robust_settings_sweep_simple_pilot_${CONFIG_NAME}_${SLURM_JOB_ID:-local}.log"
+echo "=== source_revisions check (simple JSON vs private checkout HEAD) ==="
+check_revisions "$RESULTS_DIR/robust_settings_sweep_simple_pilot_${CONFIG_NAME}.json" || STATUS=4
+
+echo "=========================================="
+echo "RUN 2/2 robust_settings_sweep_a2744_pilot ${CONFIG_NAME} -> ${RESULTS_DIR}"
+date
+A2744_ARGS=""
+if [ -n "${AUTOLENS_WORKSPACE:-}" ] && [ -f "$AUTOLENS_WORKSPACE/dataset/cluster/a2744/point_datasets.csv" ]; then
+    A2744_ARGS="--a2744-workspace $AUTOLENS_WORKSPACE"
+    echo "A2744 CSVs: copied from $AUTOLENS_WORKSPACE (git $(git -C $AUTOLENS_WORKSPACE rev-parse HEAD 2>&1))"
+elif [ -f "$AP_ROOT/dataset/cluster/a2744/provenance.json" ]; then
+    echo "A2744 CSVs: rsynced dataset/cluster/a2744 (sha256 re-verified against provenance.json)"
+else
+    echo "A2744 LEG SKIPPED: no \$AUTOLENS_WORKSPACE and no rsynced dataset/cluster/a2744/provenance.json"
+    STATUS=5
+fi
+if [ "$STATUS" != 5 ]; then
+    PYTHONUNBUFFERED=1 python3 scripts/cluster/image_plane/robust_settings_sweep.py \
+        --config-name "$CONFIG_NAME" --output-dir "$RESULTS_DIR" \
+        --dataset a2744 --pilot --a2744-reference prior-median-smoke $A2744_ARGS \
+        --n-draws 1 --n-stress 1 --rounds 2 --calls 2 --n-stream 2 --row-wall-cap 1800 \
+        --full-n-draws 30 --full-n-stress 30 --full-rounds 20 --full-calls 10 \
+        2>&1 | tee "$LOG_DIR/robust_settings_sweep_a2744_pilot_${CONFIG_NAME}_${SLURM_JOB_ID:-local}.log"
+    echo "=== source_revisions check (a2744 JSON vs private checkout HEAD) ==="
+    check_revisions "$RESULTS_DIR/robust_settings_sweep_a2744_pilot_${CONFIG_NAME}.json" || STATUS=4
+fi
+echo "exit status: $STATUS (0 ok, 4 revisions/JSON failure, 5 a2744 leg skipped)"
 
 echo "=========================================="
 echo "loadavg: $(cat /proc/loadavg)"
 echo "Finished."
 date
+exit $STATUS
