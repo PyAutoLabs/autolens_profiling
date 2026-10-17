@@ -1,0 +1,50 @@
+#!/bin/bash -l
+#
+# Per-host interferometer route constants (autolens_profiling#429, PyAutoPulse#62): the FFT
+# route, the full direct_conv kernel and the symmetric kernel, curvature step only, on Aris's
+# real SPT2319-55 data (not in git), 512x512 mask (steps 12/8/6/4) then 125x125 (steps 3/2/1).
+# Script: scripts/interferometer/delaunay/route_constants_ral.py.
+#
+# Libraries: a PRIVATE checkout (never the shared mirror, never HPCPullPyAuto): the 2026.10.17.1
+# tags of PyAutoNerves / PyAutoFit / PyAutoGalaxy / PyAutoLens and PyAutoArray at the
+# PyAutoArray#636 head (62a1e3ac, base = the 2026.10.17.1 tag), under $FFTLEV_STACK. The shared
+# venv supplies third-party packages only. Serial numba (1 thread), --exclusive, partition ral.
+#
+# Submit from a RAL checkout of this branch:  sbatch [--nodelist=NODE] hpc/batch_cpu/<this>
+#
+# WALL-BASIS:
+#   cell: interferometer/route_constants_ral/aris  device: ral_cpu  precision: fp64
+#   source: measured-wall  wall: 1800  headroom: 2.0  ref: RAL-jobs-412490-412492-aris-l2-three-steps-x2-kernels
+
+#SBATCH -J route_const_aris
+#SBATCH --partition=ral
+#SBATCH --exclusive
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=64gb
+#SBATCH --time=2:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+
+set -eo pipefail
+AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}" && pwd)"
+STACK="${FFTLEV_STACK:-/mnt/ral/jnightin/scratch/fft_levers_20261017}"
+ARIS="${ARIS_DATA:-/mnt/ral/jnightin/scratch/aris_l2_20261016/aris_data}"
+ARIS_CACHE512="${ARIS_CACHE512:-/mnt/ral/jnightin/scratch/aris_l2_20261016/preprocessing/circular/grid_512x512}"
+source /mnt/ral/jnightin/PyAuto/PyAuto/bin/activate
+export PYTHONPATH=$STACK/PyAutoArray:$STACK/PyAutoNerves:$STACK/PyAutoFit:$STACK/PyAutoGalaxy:$STACK/PyAutoLens
+export NUMBA_NUM_THREADS=1 OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
+export NUMBA_CACHE_DIR=$STACK/numba_cache MPLCONFIGDIR=$STACK/mpl JAX_PLATFORMS=cpu
+OUT=$STACK/results
+mkdir -p $OUT
+cd "$AP_ROOT"
+echo "host $(hostname) nproc=$(nproc) loadavg $(cat /proc/loadavg)"
+lscpu | grep -E 'Model name|^CPU\(s\)|MHz' || true
+for r in PyAutoArray PyAutoNerves PyAutoFit PyAutoGalaxy PyAutoLens; do echo "$r $(git -C $STACK/$r rev-parse HEAD)"; done
+echo "autolens_profiling $(git -C $AP_ROOT rev-parse HEAD)"
+python3 scripts/interferometer/delaunay/route_constants_ral.py --data-dir $ARIS --n-pixels 512 \
+    --steps 12,8,6,4 --repeats 3 --cache-dir $ARIS_CACHE512 --out $OUT/route_constants_512_${SLURM_JOB_ID}.json
+python3 scripts/interferometer/delaunay/route_constants_ral.py --data-dir $ARIS --n-pixels 125 \
+    --steps 3,2,1 --repeats 3 --cache-dir $STACK/preprocessing/grid_125x125 --out $OUT/route_constants_125_${SLURM_JOB_ID}.json
+echo "end loadavg $(cat /proc/loadavg)"
+date
