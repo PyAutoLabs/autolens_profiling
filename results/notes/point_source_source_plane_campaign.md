@@ -1352,3 +1352,61 @@ for all rows and limitations. The estimate uses one prior-median vector and fixe
 batch size, not an instrumented fit decomposition; it does not establish the
 wall-share of a gradient sampler. blackjax forward mode still needs its own
 admission measurement. The A100 throughput row already landed on 2026-09-28.
+
+## Gradient-search admission evidence + runtime median refresh on 2026.10.17.1 (2026-10-17)
+
+Issue: [autolens_profiling #428](https://github.com/PyAutoLabs/autolens_profiling/issues/428),
+companion to [autolens_inference #25](https://github.com/PyAutoLabs/autolens_inference/issues/25).
+The campaign's parked candidate (blackjax NUTS / SMC forward-mode `value_and_grad`) was waiting on
+a gradient-sampler admission measurement: the likelihood's share of a real gradient fit and that
+fit's evaluation count. This section records the evidence. The admission call is not made here.
+
+### Stack
+
+All four RAL jobs below ran a private venv of the PyPI wheels:
+
+- autolens / autogalaxy / autoarray / autofit / autonerves **2026.10.17.1**;
+- jax / jaxlib / jax-cuda12-plugin **0.11.2** (what the release resolves; the shared RAL venv's 0.10.2 is excluded by autonerves 2026.10.17.1);
+- numpy 2.5.4.
+
+The venv sits at `/mnt/ral/jnightin/inference/ps_source_grad_admission/venv` (build job 412494). The shared `/mnt/ral/jnightin/PyAuto` mirror was neither used nor touched.
+The runtime submits gained a `PYAUTO_VENV` override for this (activate that venv, clear `PYTHONPATH`).
+Because the libraries are installed wheels, these rows are the first in this cell whose
+`autolens_version` reads the release (2026.10.17.1) rather than the source checkout's 2026.8.17.1.
+
+### The admission evidence (autolens_inference rows; summary)
+
+`af.MultiStartAdam` (48 starts, Adam lr 1e-2, auto-convergence; `gradient_mode = forward`
+resolved from `AnalysisPoint`) on the L5 target (Isothermal + PointSolved, `FitPositionsSourceSolved`,
+`simple`, θ_E ~ U(0.5, 4)), seeds 0–4. The RAL CPU array 412495 ran on the `ral` partition with 8 CPUs of a shared 8490H node. The A100 array 412498 ran with `--exclusive` on euclid-ral-gpu-1.
+
+| Step ceiling | Host | Steps to stop | Evals (steps × 48) | Search wall | Batched value+grad per eval | value+grad / value | Share of wall | Max log L (Nautilus: 16.443–16.486) | Max abs (MAP − truth) / Nautilus σ |
+|---|---|---|---:|---:|---:|---:|---:|---:|---:|
+| 300 (default) | RAL CPU | 300 ×4, 259 | 12.4–14.4 k | 7.1–9.3 s | 4.7–5.2 µs | 1.8–2.0 | 0.81–0.98% | 15.905–16.425 | 0.11–1.44 |
+| 300 (default) | A100 | same | same | 18.6–37.0 s | 7.1–8.3 µs | 1.2–1.3 | 0.32–0.57% | same | same |
+| 3000 | RAL CPU | 259–1432 (all converged) | 12.4–68.7 k | 7.4–9.4 s | 4.8–5.1 µs | 1.8–1.9 | 0.81–3.69% | 16.425–16.491 | 0.11–0.80 |
+| 3000 | A100 | same | same | 19.1–24.2 s | 7.0–8.0 µs | 1.2 | 0.51–2.27% | same | same |
+
+Reading it for this campaign:
+
+- **Correctness.** With a sufficient step ceiling, every seed reaches the Nautilus log-likelihood range with all parameters within 0.80 σ of truth. At the library-default 300 steps, four of five seeds stop on the budget.
+- **Share.** The likelihood with its forward-mode gradient is **≤ 3.7% (CPU) / ≤ 2.3% (A100)** of search wall. Across the converged runs, wall grows only ~2.0 s (CPU) / ~5.1 s (A100) from 259 to 1432 steps. That is a marginal step of ~1.7 ms / ~4.4 ms against ~0.24 ms / ~0.35 ms of batched value+gradient per step. The rest is a fixed ~7 s / ~19 s per fit (the search's own compile, start draws, output) plus per-step optimiser and host overhead.
+- **Under the share's cost model,** no likelihood or gradient speed-up can shorten these fits by more than ~4%.
+- **Device.** On this 5-parameter, 48-start problem the A100 is slower end to end than an 8-CPU slice, because it is launch-bound.
+
+This is a `MultiStartAdam` measurement. BlackJAX NUTS / SMC were not run: they do not honour `gradient_mode` (`honours_gradient_mode = False`), and the inference repo's point-source setup names only Nautilus. Whether this evidence settles the parked candidate is a human decision. Rows and the full journal: autolens_inference `results/searches/point_source/multi_start_adam{,_n3000}/` and `wiki/project/state.md` (2026-10-17).
+
+### Runtime cell median refresh (#371 fresh-median evidence)
+
+| Config | Job | Host | loadavg at import | Eager | `single_jit` (first block after compile) | Steady median (p10–p90), 5 warm + 200 timed | vmap per call (batch) | Pinned value |
+|---|---|---|---|---:|---:|---:|---:|---|
+| `hpc_ral_cpu_fp64` | 412518 | euclid-ral-compute-10-2 (8490H, `ral`, 8 CPUs, shared node) | 10.15 / 10.04 / 10.06 | 4.46 ms | 0.177 ms | **0.147 ms** (0.126–0.168) | 52.6 µs (3) | passed |
+| `hpc_a100_fp64` | 412517 | euclid-ral-gpu-2 (`--exclusive`) | 0.71 / 0.19 / 0.06 | 6.44 ms | 0.347 ms | **0.233 ms** (0.229–0.262) | 4.77 µs (64) | passed |
+
+Logs: [412517](../logs/point_source_source/point_source_source_plane_2026_10_17_ral_job_412517.out),
+[412518](../logs/point_source_source/point_source_source_plane_2026_10_17_ral_job_412518.out).
+Log-likelihood 0.59865045555 on both (pinned 0.5986504555530896, rtol 1e-4).
+
+- **A100 (#371).** `single_jit` sits 1.49× above the steady median and above its p90 again (0.347 vs 0.233 ms; it was 0.642 vs a 0.267 ms diagnostic median on 2026.9.27.2). The first-block-after-compile label stays correct, and the median field is the A100 single-call number to quote. The steady median is 0.233 ms, against the 2026-09-28 diagnostic's 0.267 ms on the same node. Release, jax version (0.11.2 vs 0.10.2) and statistic window all differ, so the change is not attributed.
+- **CPU.** The `ral` 8490H row is a different host class from the 2026-09-28 EPYC gpu-node row (0.258 ms). Compare it with phase 2a's 8490H fused solved 0.1465 ms: 0.147 ms here, on a shared node at load ~10. `single_jit` is again above p90 (0.177 ms).
+- **Not a release sweep.** These two rows replace the cell's committed rows (same config names). The release sweep's other legs were not run.

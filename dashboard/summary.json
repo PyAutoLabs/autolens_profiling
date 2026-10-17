@@ -3,11 +3,11 @@
  "version": 1,
  "project": "autolens_profiling",
  "scope": "release-runtime",
- "generated_at": "2026-10-17T13:50:20Z",
- "evidence_updated_at": "2026-08-17T00:00:00Z",
+ "generated_at": "2026-10-17T16:41:27Z",
+ "evidence_updated_at": "2026-10-17T00:00:00Z",
  "evidence_updated_at_reason": null,
  "valid_until": null,
- "producer_revision": "7e1807eb6ca22a6eacb08620b76a5a9e1666c95a",
+ "producer_revision": "0418ee74d563248a6280c430f4d9b3ac0ec9394f",
  "comparison_policy": {
   "id": "runtime-drift-2x-1ms",
   "ratio": 2.0,
@@ -27,12 +27,28 @@
    "reason": "no declared cell matrix; the results/ scan is the inventory"
   },
   "observed": {
-   "series": 145,
-   "points": 159,
-   "releases": 4,
+   "series": 144,
+   "points": 158,
+   "releases": 5,
    "cells": 61
   },
   "excluded": [
+   {
+    "id": "runtime:point_source_source/source_plane_solved:hpc_ral_cpu_fp64@2026.10.17.1",
+    "reason": "loadavg 10.2 above the cap 8",
+    "evidence": {
+     "path": "results/runtime/point_source_source/source_plane_solved/comparison.json",
+     "fragment": "hpc_ral_cpu_fp64"
+    }
+   },
+   {
+    "id": "runtime:point_source_source/source_plane_solved:hpc_ral_cpu_fp64@2026.10.17.1",
+    "reason": "loadavg 10.2 above the cap 8",
+    "evidence": {
+     "path": "results/runtime/point_source_source/source_plane_solved/source_plane_solved_hpc_ral_cpu_fp64.json",
+     "fragment": null
+    }
+   },
    {
     "id": "breakdown:interferometer/sdp81/delaunay/sdp81:hpc_a100_fp64@2026.8.17.1",
     "reason": "loadavg 65.7 above the cap 8",
@@ -1870,47 +1886,13 @@
    }
   },
   {
-   "id": "runtime:point_source_source/source_plane_solved:hpc_ral_cpu_fp64@2026.8.17.1",
+   "id": "runtime:point_source_source/source_plane_solved:hpc_a100_fp64@2026.10.17.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
-    "single_jit_s": 0.00025833239778876304,
-    "vmap_per_call_s": 9.664240060374141e-05
-   },
-   "identity": {
-    "section": "runtime",
-    "cell": "point_source_source/source_plane_solved",
-    "config": "hpc_ral_cpu_fp64",
-    "sparse": false,
-    "tier": "hpc",
-    "device": "ral_cpu",
-    "backend": "cpu",
-    "precision": "float64",
-    "library": "PyAutoLens",
-    "library_version": "2026.8.17.1",
-    "release_date": "2026-08-17",
-    "reason": null
-   },
-   "provenance": {
-    "host": "euclid-ral-gpu-2",
-    "job": "366911",
-    "loadavg": 0.16,
-    "has_provenance": true,
-    "qualified": true,
-    "reason": null
-   },
-   "evidence": {
-    "path": "results/runtime/point_source_source/source_plane_solved/comparison.json",
-    "fragment": "hpc_ral_cpu_fp64"
-   }
-  },
-  {
-   "id": "runtime:point_source_source/source_plane_solved:hpc_a100_fp64@2026.8.17.1",
-   "axis": "runtime",
-   "unit": "s",
-   "measurement": {
-    "single_jit_s": 0.0006424111023079603,
-    "vmap_per_call_s": 5.645434339385247e-06
+    "single_jit_s": 0.00023301457986235619,
+    "vmap_per_call_s": 4.768376311403699e-06,
+    "single_jit_block_mean_s": 0.0003466109978035092
    },
    "identity": {
     "section": "runtime",
@@ -1922,14 +1904,14 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.8.17.1",
-    "release_date": "2026-08-17",
+    "library_version": "2026.10.17.1",
+    "release_date": "2026-10-17",
     "reason": null
    },
    "provenance": {
     "host": "euclid-ral-gpu-2",
-    "job": "366912",
-    "loadavg": 1.16,
+    "job": "412517",
+    "loadavg": 0.71,
     "has_provenance": true,
     "qualified": true,
     "reason": null
@@ -6330,20 +6312,6 @@
    ]
   },
   {
-   "comparison_key": "runtime:point_source_source/source_plane_solved:hpc_ral_cpu_fp64",
-   "policy": "runtime-drift-2x-1ms",
-   "axis": "runtime",
-   "metric": "single_jit_s",
-   "baseline": null,
-   "candidate": null,
-   "ratio": null,
-   "status": "insufficient",
-   "qualified": false,
-   "reasons": [
-    "one release only"
-   ]
-  },
-  {
    "comparison_key": "runtime:point_source_source/source_plane_solved:hpc_a100_fp64",
    "policy": "runtime-drift-2x-1ms",
    "axis": "runtime",
@@ -7709,7 +7677,8 @@
   "vmap_per_call_s is null where a row carries no vmap block",
   "only reference-host-class rows (hpc_*) can be qualified: laptop rows never qualify as trend points, and a provenance block without a load average or host is unqualified",
   "comparison endpoints without a repeat summary are single samples (one 10-call block mean): a ratio inside the 2x band is insufficient, not flat; drifted / improved are gross-band flags with a single-sample caveat",
+  "single_jit_s is the steady median (>= 5 warm calls, median of individually timed calls) where a record also carries single_jit_block_mean_s, else the legacy headline; a comparison whose endpoints use different estimators is insufficient",
   "rows without a device.provenance block (pre-autolens_profiling#342) are unqualified",
-  "6 row(s) above the load-average cap 8 are listed under coverage.excluded and never enter records"
+  "8 row(s) above the load-average cap 8 are listed under coverage.excluded and never enter records"
  ]
 }

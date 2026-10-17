@@ -43,6 +43,15 @@ export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
 echo "AP_ROOT=$AP_ROOT"
 source $AP_ROOT/activate.sh
 
+# PYAUTO_VENV=<venv> runs an INSTALLED release instead of source checkouts: that venv is
+# activated and PYTHONPATH cleared, so every PyAuto* library and jax come from its
+# site-packages (e.g. a private venv of the PyPI wheels; autolens_profiling#428):
+#     sbatch --export=ALL,PYAUTO_VENV=/mnt/ral/jnightin/<dir>/venv <this>
+if [ -n "${PYAUTO_VENV:-}" ]; then
+    source "$PYAUTO_VENV/bin/activate"
+    unset PYTHONPATH
+fi
+
 if [ -n "${PYAUTO_LIB_OVERRIDE:-}" ]; then
     for r in PyAutoNerves PyAutoArray PyAutoGalaxy PyAutoLens PyAutoFit; do
         if [ -d "$PYAUTO_LIB_OVERRIDE/$r" ]; then
@@ -78,6 +87,7 @@ echo "Dataset:        simple"
 echo "Precision:      fp64 (JAX_ENABLE_X64=$JAX_ENABLE_X64)"
 echo "Thread env:     OMP=$OMP_NUM_THREADS MKL=$MKL_NUM_THREADS OPENBLAS=$OPENBLAS_NUM_THREADS NPROC=$NPROC"
 echo "Lib override:   ${PYAUTO_LIB_OVERRIDE:-none (shared stack)}"
+echo "Venv override:  ${PYAUTO_VENV:-none}"
 
 cd $AP_ROOT
 
