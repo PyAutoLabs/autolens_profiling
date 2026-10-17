@@ -6,10 +6,10 @@
 **Verdict:** phase 0+1 (lean) measured; launch-bound confirmed; go/no-go pending the human (no image-plane fit timed yet)
 **Headline:** scalar 0.910 ms (CUDA graphs on; 1.097 off), 173 kernels/call, device busy 57 % of wall, vmap-256 0.0120 ms/L (81x); A100 job 366916 (euclid-ral-gpu-1, exclusive); forward-mode gradient NaN
 **Library PRs:** none
-**Profiling PRs:** [#353](https://github.com/PyAutoLabs/autolens_profiling/pull/353), merged 2026-09-30 (issue #350, phase 0+1)
+**Profiling PRs:** [#353](https://github.com/PyAutoLabs/autolens_profiling/pull/353), merged 2026-09-30 (issue #350, phase 0+1); admission measurement issue #427 (2026-10-17)
 **Ledger:** [point_source_gpu_breakdown_2026_09.md](../../results/notes/point_source_gpu_breakdown_2026_09.md); instrument [point_source_shared_likelihood_breakdown.md](../../results/notes/point_source_shared_likelihood_breakdown.md)
 **Mind contract:** PyAutoPulse task [point_source_image_plane_gpu_breakdown](https://github.com/PyAutoLabs/PyAutoPulse/blob/main/tasks/point_source_image_plane_gpu_breakdown.md), migrated from the Mind draft on 2026-10-03 (filed 2026-09-17, contract 2026-09-19); prerequisite `complete/2026/09/point-source-shared-breakdown.md` (#293).
-**Next:** human go/no-go against the admission bar; prerequisite one autolens_inference image-plane fit measurement; the forward-mode NaN is issued as [PyAutoLens#767](https://github.com/PyAutoLabs/PyAutoLens/issues/767) (2026-10-04)
+**Next:** human decision on admitting the released 2026.10.17.1 image-plane likelihood as the A100 baseline (evidence: job 412519, autolens_profiling#427, 2026-10-17); the go/no-go on phase 2 still also needs one autolens_inference image-plane fit measurement
 
 ## Why this campaign
 
@@ -35,6 +35,7 @@ From the draft's campaign contract. Phases 0 and 1 ran as one lean job (human, 2
 | Phase | Dates | Question | Pre-registered rule | Result | Jobs | PRs |
 |---|---|---|---|---|---|---|
 | 0+1 combined (lean) | 2026-09-28 | Current-main A100 baseline (CUDA graphs on/off), vmap 1–256, trace-attributed bottleneck map, fp32 what-if, reverse/forward gradient with FD check | fiducial bit-exact; vmap lanes equal scalar; trace join complete; FD agreement at smooth points (strict) | launch-bound: 173 kernels, busy 57 % of 0.910 ms; FLOP levers below MDI; forward jacfwd NaN; FD strict fails 2/6 smooth points (finding) | 366913 (contended, caveat), 366915 (superseded), **366916** | #350 |
+| Admission measurement (released 2026.10.17.1) | 2026-10-17 | Is the released image-plane likelihood, after PyAutoLens#768, admissible as the A100 baseline? Shared breakdown harness + bottleneck map, fp64, paired against 366916 if compatible | evidence only; acceptance is the human's call | primal bit-identical, 173 kernels, 0.934 ms scalar (366916: 0.910, cross-node, not an A/B); forward gradient finite; FD 4/6 unchanged; harness prefix rows unresolvable on A100 | **412519** | #427 |
 | 0 A100 baseline | skipped (human 2026-09-28) | Does the shared harness run correctly on the A100; what are the fp64 and separately labelled mp reference rows on the preserved unoptimized revisions? | numerical agreement with the CPU reference and the production likelihood, precision-specific tolerances recorded; no optimization before this baseline | | | |
 | 1 A100 bottleneck map | not started | Fused device timeline attributed to source operations; `vmap` 1/4/16 (larger within memory headroom); fp64 vs mp; compile vs cold vs warm; simple and cluster configurations; primal vs `custom_jvp` gradient | gradient throughput usable only after finite-difference agreement at smooth points; distinct parameter inputs; synchronized timing | | | |
 | 2 Bounded optimization iterations | not started | Levers in contract order: redundant-sort removal on A100 (shared with CPU), `vmap` break-even if launch-bound, the measured sort/gather or static lattice, loop form for unrolled compile, implicit-gradient Jacobian, deflections | the iteration contract in the header; each lever published as accepted / rejected / deferred, re-profile after each acceptance | | | |
@@ -90,3 +91,19 @@ go/no-go against the admission bar needs one autolens_inference measurement firs
 > The 5.45 % MDI was an iid split-half inflated by drift across the run; on paired rounds it is
 > 0.94 %, so the deflection and step-0 lattice ceilings (≤ 2–4.4 %) are small but resolvable by an
 > interleaved A/B — see the ledger's dated note.
+
+### 2026-10-17 — admission measurement on released 2026.10.17.1, A100 job 412519
+
+The human authorised the image-plane admission measurement (#427). One exclusive A100 job on
+`euclid-ral-gpu-2` ran the shared breakdown harness and the phase-0+1 bottleneck-map cell against a
+private checkout of tag 2026.10.17.1 (PyAutoLens c90eceb0, with #768), fp64, jax 0.10.2. Evidence,
+not a decision: the primal likelihood is bit-identical to the pre-#768 program (fiducial
+7.743201200876806, 173 kernels/call, same FLOPs and temp memory); scalar 0.934 ms against 366916's
+0.910 ms and vmap-256 0.0125 against 0.0120 ms/L, a compatible cross-run comparison (same GPU model,
+driver, jax, XLA flags, dataset, precision; different node and date), not an interleaved A/B, so the
+few-percent difference is not attributed. Forward `jacfwd` is now finite on all 16 stream points and
+matches reverse to 1.6e-11 (1.24x primal scalar); the strict FD gate still fails at the same two
+smooth points. The harness's first A100 run gives a fused 1.086 ms (mean of 5) with compile 6.5 s
+separate, but its per-step prefix rows are launch-dominated noise (11 of 43 negative), so step-level
+attribution stays with the 09-28 trace table. Whether this is admitted as the baseline is the
+human's call; see the ledger's 2026-10-17 section.
