@@ -1,0 +1,158 @@
+#!/bin/bash -l
+#
+# 2026-10 point-source A100 campaign: image-plane ADMISSION measurement on the released
+# 2026.10.17.1 libraries (autolens_profiling#427; Pulse point-source-image-gpu). One bounded
+# phase, no optimization: is the released image-plane likelihood -- after the forward-mode
+# gradient fix PyAutoLens#768 (closing #767) -- admissible as the campaign's A100 baseline?
+#
+# WHAT THIS MEASURES (fp64 only; the PointSolver has no mixed-precision switch):
+#   a. scripts/point_source_image/image_plane/likelihood_breakdown.py -- the shared breakdown
+#      harness (#293): fused FitPositionsImagePairAllSolved s/eval, the 8-step solver prefix
+#      rows (ray trace / containment / selection / neighbourhood / up-sample), magnification
+#      filter, chi-squared residual; jit_phases keep lower/compile/first-call apart from the
+#      steady per-call time.
+#   b. scripts/point_source_image/image_plane/gpu_bottleneck_map.py with job 366916's fp64
+#      arguments (no fp32 what-if): the like-for-like pairing against the last qualified
+#      pre-#768 A100 fp64 row, plus reverse and forward gradients (forward was NaN pre-#768).
+#
+# LIBRARY. A PRIVATE checkout of the five libraries at tag 2026.10.17.1
+# (/mnt/ral/jnightin/profiling/PyAuto_wt/ps-image-admission-2026.10.17.1), prepended to the
+# PYTHONPATH that activate.sh exports. The shared mirror (/mnt/ral/jnightin/PyAuto) is used
+# only for its venv (jax/jaxlib 0.10.2, the same third-party set as job 366916) and is never
+# modified. The job refuses to run unless every library imports from the private base at the
+# tag SHAs, and asserts the JSON source_revisions afterwards.
+#
+# NODE. --exclusive: another campaign submits A100 jobs in parallel; a timing leg never
+# shares its node. XLA_FLAGS are byte-identical to job 366916.
+
+# WALL-BASIS:
+#   RAL job 366916 ran the bottleneck-map fp64 process in 344 s (euclid-ral-gpu-1,
+#   --exclusive). The breakdown harness has never run on the A100 (~45 cold prefix compiles).
+#   cell: point_source_image/gpu_bottleneck_map/simple  device: gpu  precision: fp64
+#   source: measured-wall  wall: 344  ref: ral-job-366916-point_source_image-gpu_bottleneck_map  headroom: 3.0
+#   cell: point_source_image/image_plane/simple  device: gpu  precision: fp64
+#   source: unmeasured  probe-first: yes
+
+#SBATCH -J ps_image_admission
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=32gb
+#SBATCH --exclusive
+#SBATCH --time=1:30:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+
+TAG=2026.10.17.1
+PRIV=/mnt/ral/jnightin/profiling/PyAuto_wt/ps-image-admission-${TAG}
+export PYTHONPATH=$PRIV/PyAutoNerves:$PRIV/PyAutoFit:$PRIV/PyAutoArray:$PRIV/PyAutoGalaxy:$PRIV/PyAutoLens:$PYTHONPATH
+
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export NPROC=${SLURM_CPUS_PER_TASK:-8}
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=1
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+export NUMBA_CACHE_DIR=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}
+export MPLCONFIGDIR=$AP_ROOT/output/mpl_${SLURM_JOB_ID:-local}
+mkdir -p "$NUMBA_CACHE_DIR" "$MPLCONFIGDIR"
+# No persistent compile cache: compile times are recorded and must be cold per program.
+unset JAX_COMPILATION_CACHE_DIR
+
+CONFIG_NAME=hpc_ral_a100_fp64_r2026_10_17_1
+RESULTS_DIR=$AP_ROOT/output/ps_image_admission_${SLURM_JOB_ID:-local}/results
+TRACE_DIR=$AP_ROOT/output/ps_image_admission_${SLURM_JOB_ID:-local}/trace
+mkdir -p "$RESULTS_DIR" "$TRACE_DIR"
+
+echo "=========================================="
+date
+hostname
+lscpu | grep 'Model name' || true
+nvidia-smi --query-gpu=name,driver_version,memory.total,pci.bus_id,utilization.gpu,memory.used --format=csv || true
+nvidia-smi | grep -i "CUDA Version" || true
+echo "gpus:           ${CUDA_VISIBLE_DEVICES:-unset}"
+echo "partition:      ${SLURM_JOB_PARTITION:-unset}"
+echo "cpus-per-task:  ${SLURM_CPUS_PER_TASK:-unset}"
+echo "sched_affinity: $(python3 -c 'import os; print(len(os.sched_getaffinity(0)))')"
+echo "loadavg:        $(cat /proc/loadavg)"
+echo "node jobs:      $(squeue -h -w "$(hostname -s)" -o '%i %u %b' | tr '\n' ';')"
+echo "XLA_FLAGS:      $XLA_FLAGS"
+echo "PYTHONPATH:     $PYTHONPATH"
+
+echo "=== source revisions (private base, tag ${TAG}) ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s\n' "$r" "$(git -C $PRIV/$r rev-parse HEAD 2>&1)"
+done
+echo "AP_ROOT rev:   $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+
+cd $AP_ROOT
+
+echo "=== import provenance ==="
+python3 - <<'PYEOF' || exit 3
+import os, subprocess
+import autoarray, autofit, autogalaxy, autolens, autonerves, jax, jaxlib, numpy
+PRIV = os.environ["PYTHONPATH"].split(":")[0].rsplit("/", 1)[0] + "/"
+TAG_SHAS = {
+    "PyAutoNerves": "7f3055b7f3d1967f372bdb41ee732135bca0e68d",
+    "PyAutoFit": "4b183e226947312d9a98b8f8dee1a3cf29c548ef",
+    "PyAutoArray": "e59d5fa901e54bf3d9931890067bc3447a5c1232",
+    "PyAutoGalaxy": "35100def2b7cd775fb77e46dbc1a674841c8f897",
+    "PyAutoLens": "c90eceb0093ea1618e679184e4f2a59268caa581",
+}
+for m in (autonerves, autoarray, autofit, autogalaxy, autolens):
+    print(f"{m.__name__:<11} {getattr(m, '__version__', '?'):<14} {m.__file__}")
+    if not m.__file__.startswith(PRIV):
+        raise SystemExit(f"REFUSING: {m.__name__} from {m.__file__}, not the private base {PRIV}")
+for repo, sha in TAG_SHAS.items():
+    head = subprocess.check_output(["git", "-C", PRIV + repo, "rev-parse", "HEAD"], text=True).strip()
+    if head != sha:
+        raise SystemExit(f"REFUSING: {repo} HEAD {head} != tag 2026.10.17.1 {sha}")
+print("jax", jax.__version__, "jaxlib", jaxlib.__version__, "numpy", numpy.__version__, jax.devices())
+if jax.default_backend() != "gpu":
+    raise SystemExit(f"REFUSING: JAX backend is {jax.default_backend()}, not gpu")
+PYEOF
+
+echo "=========================================="
+echo "RUN a. likelihood_breakdown.py ${CONFIG_NAME} -> ${RESULTS_DIR}"
+date
+echo "loadavg: $(cat /proc/loadavg)"
+PYTHONUNBUFFERED=1 python3 scripts/point_source_image/image_plane/likelihood_breakdown.py \
+    --config-name "$CONFIG_NAME" --output-dir "$RESULTS_DIR"
+
+echo "=========================================="
+echo "RUN b. gpu_bottleneck_map.py ${CONFIG_NAME} (job 366916 fp64 arguments) -> ${RESULTS_DIR}"
+date
+echo "loadavg: $(cat /proc/loadavg)"
+PYTHONUNBUFFERED=1 python3 scripts/point_source_image/image_plane/gpu_bottleneck_map.py \
+    --config-name "$CONFIG_NAME" --output-dir "$RESULTS_DIR" --trace-dir "$TRACE_DIR/fp64" \
+    --rounds 20 --calls 20 --vmap-batches 1,4,16,64,256 --trace-vmap 16 --grad-vmap 16
+
+echo "=== source_revisions check (JSON vs private HEADs) ==="
+python3 - "$PRIV" "$RESULTS_DIR"/*_${CONFIG_NAME}.json <<'PYEOF'
+import json, subprocess, sys
+priv = sys.argv[1]
+for path in sys.argv[2:]:
+    d = json.load(open(path))
+    revs = d["source_revisions"]
+    for r in ("PyAutoNerves", "PyAutoFit", "PyAutoArray", "PyAutoGalaxy", "PyAutoLens"):
+        h = subprocess.check_output(["git", "-C", f"{priv}/{r}", "rev-parse", "HEAD"], text=True).strip()
+        if revs[r] != h:
+            raise SystemExit(f"MISMATCH {path}: {r} JSON {revs[r]} != {h}")
+    print("OK", path, "all_gates_pass", d.get("all_gates_pass"))
+PYEOF
+
+echo "=========================================="
+echo "loadavg: $(cat /proc/loadavg)"
+nvidia-smi --query-gpu=name,memory.used --format=csv || true
+echo "Finished."
+date

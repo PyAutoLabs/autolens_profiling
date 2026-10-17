@@ -243,3 +243,116 @@ busy (0.537 ms scalar, 0.789 ms vmap-16).
   multi-threaded CPU timeline), and `Instruction.dims` does not parse `pred[...]` or tuple
   shapes. The stage map carries local fixes (`inter_kernel_gaps_ms`, `shape_dims`).
 - `solver_config_sweep.py` keeps its own copies of the builders (not refactored).
+
+## 2026-10-17 — admission measurement on the released 2026.10.17.1 libraries (RAL job 412519)
+
+Issue autolens_profiling#427 (Pulse campaign `point-source-image-gpu`, task
+`point_source_image_plane_gpu_breakdown`). The human authorised the A100 compute on 2026-10-17.
+Question: is the released image-plane likelihood, after the forward-gradient correctness fix
+PyAutoLens#768 (closing #767), admissible as this campaign's A100 performance baseline? This
+section is evidence for that decision, not the decision: accepting a baseline is the human's call.
+No optimization was attempted.
+
+**Run.** RAL job **412519**, `euclid-ral-gpu-2`, A100 80 GB PCIe, driver 610.57.04, submitted with
+`--gres=gpu:1 --ntasks=1 --exclusive` (the job was the only one on the node; loadavg 0.07 at start,
+1.43 at end), 14:45:25–14:55:19 BST. Submit
+`hpc/batch_gpu/submit_breakdown_point_source_image_admission_a100_fp64`; log
+`results/logs/point_source_image/point_source_gpu_2026_10_17_ral_job_412519_admission.out`.
+
+- **Libraries:** a private checkout of tag 2026.10.17.1 under
+  `/mnt/ral/jnightin/profiling/PyAuto_wt/ps-image-admission-2026.10.17.1`, prepended to the
+  `activate.sh` PYTHONPATH; the job refused to run unless every library imported from there at the
+  tag SHAs: PyAutoNerves 7f3055b7, PyAutoFit 4b183e22, PyAutoArray e59d5fa9, PyAutoGalaxy 35100def,
+  PyAutoLens c90eceb0 (contains #768, 0659903d4). The shared mirror was not touched. Profiling
+  checkout fd29902. The JSONs' `library_versions` read 2026.8.17.1: a source checkout carries the
+  last-built version string, so the SHAs are the provenance.
+- **Third-party stack:** the shared RAL venv, jax / jaxlib 0.10.2, numpy 2.2.6 (identical to job
+  366916). 2026.10.17.1's PyAutoNerves declares `jax !=0.10.*` because of a CPU batched-LAPACK
+  deadlock (Heart#274); a fresh pip install of the release would resolve a different jax. This run
+  measures the released library source on the campaign's established jax, not a pip-installed
+  environment.
+- **Configuration:** fp64 only (`JAX_ENABLE_X64=1`; the PointSolver has no mixed-precision switch,
+  so no mp row exists). `XLA_FLAGS` byte-identical to job 366916, no compile cache. Dataset
+  `dataset/point_source/simple` (4 positions, noise seed 1), `FitPositionsImagePairAllSolved`
+  through `PointSolver.for_grid` (100 x 100 x 0.2", precision 1e-3, magnification 0.1,
+  `neighbor_degree` 1, MCS 20, 8 steps), Isothermal lens at the prior medians.
+- **Results:** `results/breakdown/point_source_image/image_plane_hpc_ral_a100_fp64_r2026_10_17_1.{json,png}`
+  (shared breakdown harness) and `gpu_bottleneck_map_hpc_ral_a100_fp64_r2026_10_17_1.{json,png}`
+  (phase-0+1 cell with job 366916's fp64 arguments; no fp32 what-if).
+
+### Leg a — shared breakdown harness (`likelihood_breakdown.py`), its first A100 run
+
+| Program | lower s | compile s | first call ms | steady ms / eval (mean of 5) |
+|---|---|---|---|---|
+| fused solved likelihood | 3.25 | 6.50 | 16.4 | **1.086** |
+| fused plain control (`FitPositionsImagePairAll`) | 2.11 | 5.76 | 14.4 | 1.106 |
+
+Numerical controls pass: eager 7.743201200876817, JIT 7.743201200876806 (the A100 fiducial), vmap-2
+lanes equal, reverse gradient finite (‖∇‖ 1783.3), 4 finite filtered positions. The 44 programs
+took 126.9 s of compile and 38.8 s of lowering.
+
+**The prefix rows do not resolve the step breakdown on the A100.** 11 of the 43 successive
+differences are negative (sum −1.16 ms against +2.25 ms positive); the step-6 up-sample prefix
+(1.368 ms) is longer than the step-7 prefix (1.181 ms) and than the fused likelihood (1.086 ms);
+the solved-source-centre prefix alone costs 0.368 ms. Each prefix is a separately compiled,
+launch-bound program timed over 5 calls, so its time is dominated by its own launch overhead and
+noise, not by the work it adds. The per-stage A100 attribution therefore remains the
+trace-attributed table of job 366916 (leg 3 below confirms 173 kernels/call is unchanged); the
+harness's A100 contribution is the fused end-to-end row and the compile/execution split.
+
+### Leg b — bottleneck-map cell, paired against job 366916
+
+| | **412519** (2026.10.17.1) | 366916 (2026-09-28, pre-#768) |
+|---|---|---|
+| host | euclid-ral-gpu-2, exclusive | euclid-ral-gpu-1, exclusive |
+| scalar, command buffers ON (median, p10–p90) | **0.934 ms** (0.899–1.034) | 0.910 ms (0.881–0.971) |
+| scalar, command buffers OFF | 1.128 ms | 1.097 ms |
+| OFF / ON [paired 90 % CI] | 1.207 [1.200, 1.212] | 1.206 [1.194, 1.211] |
+| scalar compile (lower / compile / first call) | 3.25 s / 6.54 s / 18.6 ms | 3.31 s / 6.42 s / 18 ms |
+| within-run MDI (paired rounds) | 1.50 % | 0.94 % (2026-10-09 re-judgement) |
+| vmap 1 / 4 / 16 / 64 / 256, ms per likelihood | 0.987 / 0.2785 / 0.0822 / 0.0264 / 0.0125 | 0.970 / 0.274 / 0.0766 / 0.0253 / 0.0120 |
+| vmap-256 throughput, device peak | 80 256 L/s, 134 MB | 83 445 L/s, 134 MB |
+| kernels per call (scalar / vmap-16) | 173 / 179 | 173 / 179 |
+| ON-program device busy / wall | 54 % | 57 % |
+| reverse `value_and_grad` / primal | 1.889 [1.867, 1.912]; compile 14.4 s | 1.92 [1.90, 1.94]; 17.2 s |
+| forward `jacfwd` / primal | **1.243 [1.234, 1.263], finite 16/16**; compile 13.7 s | NaN 16/16 |
+| forward vs reverse gradient | max relative difference 1.6e-11 | not comparable (NaN) |
+| vmap-16 gradients / primal (reverse, forward) | 1.76, 1.83 | 1.76, 1.80 (NaN) |
+| FD strict agreement (6 smooth points) | 4 / 6 (points 3, 4 fail; point 0 diagnostic fails) | 4 / 6 (the same points) |
+| fiducial log L | 7.743201200876806, bit-exact | 7.743201200876806 |
+
+Gates: every required gate passes except `grad_fd_agreement`, so `all_gates_pass` is false, as it
+was for 366916. `grad_forward_finite` now passes: #768 makes the forward gradient finite on the
+A100 and equal to reverse mode to 1.6e-11. The FD finding at points 3 / 4 (smallest gradient
+components, 1e-5 fine-solver stair noise) is unchanged by #768, which touched only the forward
+tangent of the padded pairs.
+
+**Compatibility judgement.** The two runs share the cell, its arguments, the dataset, model and
+solver configuration, fp64, the GPU model (A100 80 GB PCIe), the driver (610.57.04), jax / jaxlib
+0.10.2, the XLA flags and exclusive quiet nodes; they differ in node (gpu-2 vs gpu-1), date,
+process and libraries. They are therefore a **compatible cross-run comparison, not an interleaved
+A/B**. The scalar difference (+2.7 %, 0.934 vs 0.910 ms) and the vmap differences (+1.7 % to +7 %)
+exceed each run's within-run MDI, but within-run MDI does not bound node-to-node or day-to-day
+variation, which neither run measured; no part of the difference is attributable to the library
+changes between the two SHA sets. The primal program is unchanged in structure (173 kernels, same
+FLOPs 3.45e6, same XLA temp 389 kB, bit-identical fiducial).
+
+### Admissibility evidence (the decision is the human's)
+
+- For the **primal likelihood**: the released 2026.10.17.1 program is bit-identical in value to
+  the pre-#768 program, has the same kernel structure, and its A100 cost (0.934 ms scalar, 0.0125
+  ms per likelihood at vmap-256) is within a few percent of job 366916 on a different node. The
+  required gates for the primal legs all pass.
+- For **gradients**: forward mode, the `AnalysisPoint` default, is now finite and agrees with
+  reverse mode; its cost is 1.24x the primal scalar and 1.83x at vmap-16. The FD certification
+  still fails at the same 2 of 6 smooth points, so gradient throughput is not FD-certified there.
+- The shared harness's per-step prefix rows are not usable on the A100 (launch-dominated noise);
+  any step-level baseline would come from the trace attribution.
+- Not covered: mixed precision (no switch), cluster / multi-source / multiplane configurations,
+  a pip-installed environment (different jax), and node-to-node variation.
+
+Leftovers: RAL private library base
+`/mnt/ral/jnightin/profiling/PyAuto_wt/ps-image-admission-2026.10.17.1`, sparse profiling clone
+`/mnt/ral/jnightin/profiling/autolens_profiling_wt/ps-image-admission` (job outputs and the
+fp64 traces under `output/ps_image_admission_412519/`), and a stale partial clone
+`ps-image-admission_stale_*` beside it.
