@@ -25,7 +25,7 @@ Timing, memory and hardware are kept in separate fields; no speed score is forme
 
 Output
 ------
-``results/streaming_scaling/accumulate_local_cpu_v<version>.{json,png}``
+``results/streaming_scaling/accumulate_<hardware>_v<version>.{json,png}``
 
 Usage::
 
@@ -96,6 +96,7 @@ def main() -> None:
         ),
     )
     parser.add_argument("--cap-gb", type=float, default=_streaming.CAP_GB_DEFAULT)
+    _streaming.add_hardware_arg(parser)
     parser.add_argument("--timeout", type=float, default=2400.0)
     parser.add_argument("--profile-threshold", type=float, default=5.0)
     parser.add_argument("--profile-n-vis", default="1.6384e5")
@@ -178,7 +179,7 @@ def main() -> None:
     json_path, png_path = resolve_output_paths(
         cli,
         _streaming.RESULTS_DIR,
-        f"accumulate_local_cpu_v{version}",
+        f"accumulate_{args.hardware}_v{version}",
         cell="accumulate",
     )
     payload = {
@@ -194,7 +195,7 @@ def main() -> None:
     _streaming.plot_series(
         png_path,
         {f"from_stream chunk {k}": v for k, v in sorted(by_chunk.items())},
-        f"Interferometer.from_stream accumulation (local CPU, cap {args.cap_gb} GB AS), v{version}",
+        f"Interferometer.from_stream accumulation ({args.hardware}, cap {args.cap_gb or 'no'} GB AS), v{version}",
     )
 
 

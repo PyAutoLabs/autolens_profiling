@@ -234,6 +234,85 @@ def _failure_site(exc: BaseException) -> str | None:
     return site
 
 
+class _CompileLog:
+    """Seconds JAX spends compiling inside the timed build (phase 2, autolens_profiling#368).
+
+    ``jax.monitoring`` emits one duration event per tracing / lowering / XLA backend compile.
+    Summing them inside the timed window separates compile from execution without a second
+    build: ``exec_s = wall_s - compile_s``. ``n_backend_compiles`` counts XLA compiles (the
+    per-chunk recompiles the phase-1 cProfile found). A JAX without the listener API records
+    ``compile_s: None`` rather than a fake zero.
+    """
+
+    EVENTS = (
+        "/jax/core/compile/jaxpr_trace_duration",
+        "/jax/core/compile/jaxpr_to_mlir_module_duration",
+        "/jax/core/compile/backend_compile_duration",
+    )
+
+    def __init__(self) -> None:
+        self.seconds = {e: 0.0 for e in self.EVENTS}
+        self.n_backend = 0
+        self.active = False
+
+    @classmethod
+    def install(cls) -> _CompileLog:
+        log = cls()
+        try:
+            import jax.monitoring as monitoring
+
+            def listener(event, duration, *args, **kwargs):
+                if event in log.seconds:
+                    log.seconds[event] += float(duration)
+                    if event.endswith("backend_compile_duration"):
+                        log.n_backend += 1
+
+            monitoring.register_event_duration_secs_listener(listener)
+            log.active = True
+        except Exception:  # noqa: BLE001 — provenance never loses a result
+            pass
+        return log
+
+    def split(self, wall_s: float) -> dict:
+        if not self.active:
+            return {"compile_s": None, "exec_s": None, "n_backend_compiles": None}
+        compile_s = sum(self.seconds.values())
+        return {
+            "compile_s": round(compile_s, 3),
+            "compile_s_by_stage": {
+                e.rsplit("/", 1)[-1]: round(v, 3) for e, v in self.seconds.items()
+            },
+            "n_backend_compiles": self.n_backend,
+            "exec_s": round(wall_s - compile_s, 3),
+        }
+
+
+def _device_memory() -> dict:
+    """The JAX backend, x64 flag and, on an accelerator, its peak device memory.
+
+    CPU devices report no ``memory_stats``; there the host peak RSS is the memory column.
+    """
+    try:
+        import jax
+
+        dev = jax.local_devices()[0]
+        out = {
+            "jax_backend": jax.default_backend(),
+            "jax_device": str(dev),
+            "jax_enable_x64": bool(jax.config.jax_enable_x64),
+        }
+        stats = dev.memory_stats() if hasattr(dev, "memory_stats") else None
+        if stats:
+            for key in ("peak_bytes_in_use", "bytes_limit", "bytes_in_use"):
+                if key in stats:
+                    out[f"device_{key}"] = int(stats[key])
+            if "peak_bytes_in_use" in stats:
+                out["device_peak_gb"] = round(stats["peak_bytes_in_use"] / 1e9, 3)
+        return out
+    except Exception as exc:  # noqa: BLE001
+        return {"jax_backend": f"unavailable: {type(exc).__name__}"}
+
+
 def _child(spec: dict) -> None:
     cap = spec.get("cap_bytes")
     if cap:
@@ -252,6 +331,7 @@ def _child(spec: dict) -> None:
         "import_s": round(time.perf_counter() - t0, 2),
     }
     mode = spec["mode"]
+    compile_log = _CompileLog.install()
     t1 = time.perf_counter()
     try:
         if mode == "stream":
@@ -285,7 +365,9 @@ def _child(spec: dict) -> None:
         out["outcome"] = "FAILED_MEM" if oom else "FAILED"
         out["error"] = message
     out["wall_s"] = round(time.perf_counter() - t1, 2)
+    out.update(compile_log.split(out["wall_s"]))
     out["peak_rss_mb"] = round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024)
+    out.update(_device_memory())
     print("RESULT " + json.dumps(out), flush=True)
 
 
@@ -426,6 +508,16 @@ def release_version() -> str:
     return parts[0] if len(parts) == 1 else f"{parts[0]}+{parts[1]}"
 
 
+def add_hardware_arg(parser) -> None:
+    """``--hardware``: the ``<hardware>`` token of ``<cell>_<hardware>_v<version>``.
+
+    Phase 1 wrote ``local_cpu``; the RAL rows use ``hpc_ral_cpu_fp64`` / ``hpc_a100_fp64``
+    (plus a suffix such as ``_nocap`` for an uncapped arm), so rows from different hosts
+    never share a filename.
+    """
+    parser.add_argument("--hardware", default="local_cpu")
+
+
 def run_metadata(cli_args: dict) -> dict:
     """``device`` (with provenance) + ``machine`` + thread env + release tags."""
     from _profile_cli import device_info_dict, machine_info_dict
@@ -435,6 +527,7 @@ def run_metadata(cli_args: dict) -> dict:
         "machine": machine_info_dict(),
         "thread_env": {k: os.environ.get(k) for k in THREAD_ENV},
         "release_tags": release_tags(),
+        "hardware": cli_args.get("hardware", "local_cpu"),
         "dataset": dataset_description(),
         "cli": cli_args,
     }

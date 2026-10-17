@@ -1,0 +1,118 @@
+#!/bin/bash -l
+#
+# fnnls warm-start memo after-measurement on the #332 ALMA cells (autolens_profiling#426).
+#
+# autolens_profiling#332's lever job (submit_breakdown_interferometer_numba_levers_ral_alma_fp64)
+# measured the memo 2.17x slower (mean, Delaunay solve) on the iid stream. PyAutoArray#615
+# (2026.10.7.1) added a scattered-stream back-off. This job re-runs the same `memo` lever, same
+# cells (delaunay / rectangular numba, alma, mask r3.5, numba arm on one thread), against a
+# PRIVATE checkout of the five libraries at the 2026.10.17.1 tag.
+#
+# ROUNDS: six independent rounds (one process per cell x stream size per round) so the on/off
+# ratio carries the paired whole-round bootstrap interval (#407 / #410: >= 5 rounds). The cell
+# order rotates each round. Two stream sizes:
+#   n6  -- the exact #332 flags (--n-instances 6: iid = 5 instances, 4 timed; walk = 16);
+#   n17 -- --n-instances 17 (iid = 16 instances, matching the walk).
+# Only the `memo` lever runs. Round JSONs go to output/memo_after/ (gitignored);
+# scripts/interferometer/delaunay/memo_after_summary.py reduces them to the committed summary.
+#
+# PARTITION: `ral` (the human's 2026-10-17 instruction; CPU-only work never goes on `gpu`).
+# The #332 job ran on euclid-ral-gpu-2 CPUs: the host class differs and is recorded.
+# THREADS: BLAS / OMP / MKL / numba at 1, as #332's headline arm. --cpus-per-task=2 keeps one
+# spare core beside the timed thread.
+#
+# WALL-BASIS: — one row per cell this submit runs. #332's lever job (four levers, 6 instances)
+#   is unrecorded in wall terms; each round here is one breakdown + the memo lever only.
+#   cell: interferometer/delaunay_numba/alma  device: ral_cpu  precision: fp64
+#   source: unmeasured  probe-first: yes  wall: 3600  headroom: 3.0
+#   cell: interferometer/pixelization_numba/alma  device: ral_cpu  precision: fp64
+#   source: unmeasured  probe-first: yes  wall: 3600  headroom: 3.0
+#
+# Submit from hpc/batch_cpu/ (the -o/-e paths are relative).
+
+#SBATCH -J memo_after_alma
+#SBATCH --partition=ral
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=32gb
+#SBATCH --time=6:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+export PROJECT_PATH="$AP_ROOT"
+export PYAUTO_PRIVATE_BASE="${PYAUTO_PRIVATE_BASE:-/mnt/ral/jnightin/profiling/PyAuto_2026.10.17.1_interf_meas}"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+export PYTHONPATH=$PYAUTO_PRIVATE_BASE/PyAutoNerves:$PYAUTO_PRIVATE_BASE/PyAutoFit:$PYAUTO_PRIVATE_BASE/PyAutoArray:$PYAUTO_PRIVATE_BASE/PyAutoGalaxy:$PYAUTO_PRIVATE_BASE/PyAutoLens:$PYTHONPATH
+
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export NUMBA_NUM_THREADS=1
+export AUTOLENS_PROFILING_LEVER_NUMBA_THREADS=1
+export JAX_PLATFORMS=cpu
+export JAX_PLATFORM_NAME=cpu
+export JAX_ENABLE_X64=True
+export XLA_FLAGS="--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 --xla_disable_hlo_passes=constant_folding"
+export NUMBA_CACHE_DIR=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}
+mkdir -p "$NUMBA_CACHE_DIR" "$MPLCONFIGDIR"
+unset JAX_COMPILATION_CACHE_DIR
+
+echo "=========================================="
+date
+hostname
+lscpu | grep 'Model name' || true
+echo "partition:      ${SLURM_JOB_PARTITION:-unset}"
+echo "nodelist:       ${SLURM_JOB_NODELIST:-unset}"
+echo "cpus-per-task:  ${SLURM_CPUS_PER_TASK:-unset}"
+echo "loadavg:        $(cat /proc/loadavg)"
+
+echo "=== source revisions (private 2026.10.17.1 checkout) ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s %s\n' "$r" "$(git -C $PYAUTO_PRIVATE_BASE/$r rev-parse HEAD 2>&1)" "$(git -C $PYAUTO_PRIVATE_BASE/$r describe --tags 2>&1)"
+done
+echo "AP_ROOT rev:    $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+echo "dataset md5:    $(md5sum $AP_ROOT/dataset/interferometer/alma/{data,uv_wavelengths}.fits | awk '{print $1}' | tr '\n' ' ')"
+
+cd $AP_ROOT
+python3 -c "
+import os, subprocess, autoarray, autolens
+for mod in (autoarray, autolens):
+    print(f'{mod.__name__}.__file__ =', mod.__file__)
+    assert os.path.realpath(mod.__file__).startswith(os.path.realpath(os.environ['PYAUTO_PRIVATE_BASE'])), f'{mod.__name__} not from the private checkout'
+tag = subprocess.check_output(['git', '-C', os.path.dirname(os.path.dirname(autoarray.__file__)), 'describe', '--tags']).decode().strip()
+assert tag == '2026.10.17.1', tag
+from autoarray.inversion.inversion import nnls_memo
+assert hasattr(nnls_memo, 'memo_clear') and hasattr(nnls_memo, 'backoff_should_skip'), 'PyAutoArray predates #615'
+print('PyAutoArray tag', tag, '(#615 back-off present)')
+" || exit 3
+
+OUT=output/memo_after
+mkdir -p $OUT
+CELLS=(delaunay rectangular)
+run_cell() {
+    local cell=$1 size=$2 round=$3
+    local n=6; [ "$size" = n17 ] && n=17
+    echo "------------------------------------------"
+    echo "ROUND $round  $cell  $size  $(date)  loadavg: $(cat /proc/loadavg)"
+    python3 -u scripts/interferometer/$cell/likelihood_breakdown_numba.py \
+        --instrument alma \
+        --config-name hpc_ral_cpu_fp64_memo_after_${size}_r${round} \
+        --output-dir $OUT \
+        --arms numba \
+        --n-instances $n \
+        --levers memo \
+        --lever-memo-instances 16 \
+        || echo "ROUND $round $cell $size FAILED"
+}
+for round in 1 2 3 4 5 6; do
+    if [ $((round % 2)) -eq 1 ]; then order="delaunay:n6 rectangular:n6 delaunay:n17 rectangular:n17"
+    else order="rectangular:n17 delaunay:n17 rectangular:n6 delaunay:n6"; fi
+    for item in $order; do run_cell ${item%%:*} ${item##*:} $round; done
+done
+
+echo "=========================================="
+echo "loadavg: $(cat /proc/loadavg)"
+echo "Finished."
+date
