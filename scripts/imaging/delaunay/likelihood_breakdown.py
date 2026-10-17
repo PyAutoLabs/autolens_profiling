@@ -252,6 +252,10 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 # Tolerates extra/unknown args via parse_known_args inside the helper.
 from simulators.imaging import INSTRUMENTS  # noqa: E402
 
+from _production_config import (  # noqa: E402
+    FLAT1_OVER_SAMPLING_RECORD,
+    apply_production_over_sampling_jax,
+)
 from _production_config import observe_thread_env as _observe_thread_env  # noqa: E402
 from _profile_cli import (  # noqa: E402
     auto_simulate_if_missing,
@@ -269,7 +273,7 @@ _vmap_batch = timing.parse_vmap_batch(sys.argv)
 if _vmap_batch is not None and _vmap_batch < 1:
     raise ValueError(f"--vmap-batch must be >= 1 (got {_vmap_batch})")
 
-instrument = "hst"  # <-- change this to profile a different instrument
+instrument = _cli.instrument or "hst"  # default; override via --instrument
 
 
 # ---------------------------------------------------------------------------
@@ -382,6 +386,38 @@ with timer.section("adapt_image_build"):
     adapt_image = adapt_image_for_dataset(dataset_path=dataset_path, dataset=dataset)
 
 print(f"  adapt_image shape (slim): {adapt_image.shape_slim}")
+
+# ``--over-sampling production`` (autolens_profiling#430): replace the flat
+# pixelization sub-size 1 and the cell's light-profile bins with the
+# production rule of ``--instrument`` (``_production_config.
+# apply_production_over_sampling_jax``): sub-size 4 where the source S/N
+# exceeds 3, 2 elsewhere. It needs the lensed source, so it runs here, after
+# the adapt image. Mesh, MGE and regularization are unchanged. The default
+# ``flat1`` leaves the dataset exactly as built above.
+_over_sampling_record = dict(FLAT1_OVER_SAMPLING_RECORD)
+# Production-over-sampled rows default to an ``os_production/`` subfolder so
+# the dashboard keys them as their own series, never a point on a flat-1 trend.
+_os_subdir = "os_production" if _cli.over_sampling == "production" else ""
+if _cli.over_sampling == "production":
+    print(f"\n--- Production over-sampling [{instrument}] ---")
+    with timer.section("production_over_sampling"):
+        dataset, _over_sampling_record = apply_production_over_sampling_jax(
+            dataset, adapt_image, instrument
+        )
+        if _cli.use_sparse_operator:
+            # `apply_over_sampling` returns a fresh `Imaging` without the
+            # precomputed operator; rebuild it on the re-over-sampled grids.
+            with timer.section("sparse_operator_build"):
+                dataset = dataset.apply_sparse_operator(batch_size=_cli.sparse_batch_size)
+            sparse_operator_build_s = timer.records[-1][1]
+    _pix_rule = _over_sampling_record["over_sample_size_pixelization_rule"]
+    print(
+        f"  {_over_sampling_record['over_sampling_preset']}: lp bins "
+        f"{_over_sampling_record['over_sample_size_lp_rule']['sub_size_list']}, "
+        f"pixelization sub-size {_pix_rule['sub_size_above']} on "
+        f"{_pix_rule['pixels_above']} pixels (S/N > {_pix_rule['source_snr_cut']}), "
+        f"{_pix_rule['sub_size_below']} on {_pix_rule['pixels_below']}"
+    )
 
 print("\n--- Image mesh construction (Hilbert) ---")
 
@@ -2032,10 +2068,11 @@ if _vmap_batch is not None:
 
 dict_path, chart_path = resolve_output_paths(
     _cli,
-    default_dir=_workspace_root / "results" / "breakdown" / "imaging",
+    default_dir=_workspace_root / "results" / "breakdown" / "imaging" / _os_subdir,
     default_basename=f"delaunay_breakdown_{instrument}_v{al_version}",
     cell="delaunay",
 )
+breakdown_summary["configuration"].update(_over_sampling_record)
 dict_path.write_text(json.dumps(breakdown_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")
 
@@ -2111,7 +2148,17 @@ EXPECTED_LOG_EVIDENCE_HST = {
 # asserting its evidence against this number would fail on a correct run. Such a
 # run writes ``pinned_expected: null`` so the row says out loud that nothing
 # checked its evidence.
-if not PIN_IS_FIDUCIAL:
+# The pin describes HST at flat-1 over-sampling and nothing else: another
+# instrument or ``--over-sampling production`` fits a different likelihood,
+# so the run skips the assertion and records ``pinned_expected: null``.
+if instrument != "hst" or _cli.over_sampling != "flat1":
+    print(
+        f"  Eager regression assertion SKIPPED: the pin describes hst at "
+        f"--over-sampling flat1, this run is {instrument} at --over-sampling "
+        f"{_cli.over_sampling}. Eager log_evidence = {log_evidence_ref!r}"
+    )
+    record_pinned_check(dict_path, None, [])
+elif not PIN_IS_FIDUCIAL:
     print(
         f"  Eager regression assertion SKIPPED: --source-pixels {_cli.source_pixels} builds a "
         f"{n_mesh_vertices}-vertex mesh, not the {N_MESH_VERTICES_FIDUCIAL}-vertex fiducial the "

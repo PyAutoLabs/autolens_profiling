@@ -86,6 +86,10 @@ import os as _smoke_os
 import sys as _smoke_sys
 
 from _adapt_image_util import adapt_image_for_dataset  # noqa: E402
+from _production_config import (  # noqa: E402
+    FLAT1_OVER_SAMPLING_RECORD,
+    apply_production_over_sampling_jax,
+)
 from _production_config import observe_thread_env as _observe_thread_env  # noqa: E402
 
 if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
@@ -271,6 +275,36 @@ with timer.section("adapt_image_build"):
     adapt_image = adapt_image_for_dataset(dataset_path=dataset_path, dataset=dataset)
 
 print(f"  adapt_image shape (slim): {adapt_image.shape_slim}")
+
+# ``--over-sampling production`` (autolens_profiling#430): replace the flat
+# pixelization sub-size 1 and the cell's light-profile bins with the
+# production rule of ``--instrument`` (``_production_config.
+# apply_production_over_sampling_jax``): sub-size 4 where the source S/N
+# exceeds 3, 2 elsewhere. It needs the lensed source, so it runs here, after
+# the adapt image. Mesh, MGE and regularization are unchanged. The default
+# ``flat1`` leaves the dataset exactly as built above.
+_over_sampling_record = dict(FLAT1_OVER_SAMPLING_RECORD)
+# Production-over-sampled rows default to an ``os_production/`` subfolder so
+# the dashboard keys them as their own series, never a point on a flat-1 trend.
+_os_subdir = "os_production" if _cli.over_sampling == "production" else ""
+if _cli.over_sampling == "production":
+    print(f"\n--- Production over-sampling [{instrument}] ---")
+    with timer.section("production_over_sampling"):
+        dataset, _over_sampling_record = apply_production_over_sampling_jax(
+            dataset, adapt_image, instrument
+        )
+        if _cli.use_sparse_operator:
+            # `apply_over_sampling` returns a fresh `Imaging` without the
+            # precomputed operator; rebuild it on the re-over-sampled grids.
+            dataset = dataset.apply_sparse_operator(batch_size=_cli.sparse_batch_size)
+    _pix_rule = _over_sampling_record["over_sample_size_pixelization_rule"]
+    print(
+        f"  {_over_sampling_record['over_sampling_preset']}: lp bins "
+        f"{_over_sampling_record['over_sample_size_lp_rule']['sub_size_list']}, "
+        f"pixelization sub-size {_pix_rule['sub_size_above']} on "
+        f"{_pix_rule['pixels_above']} pixels (S/N > {_pix_rule['source_snr_cut']}), "
+        f"{_pix_rule['sub_size_below']} on {_pix_rule['pixels_below']}"
+    )
 
 print("\n--- Image mesh construction (Hilbert) ---")
 
@@ -516,9 +550,10 @@ _early_summary = {
 }
 _early_dict_path, _ = resolve_output_paths(
     _cli,
-    default_dir=_workspace_root / "results" / "runtime" / "imaging" / "delaunay",
+    default_dir=_workspace_root / "results" / "runtime" / "imaging" / "delaunay" / _os_subdir,
     default_basename=f"delaunay_likelihood_summary_{instrument}_v{al.__version__}",
 )
+_early_summary["configuration"].update(_over_sampling_record)
 _early_dict_path.write_text(json.dumps(_early_summary, indent=2))
 print(f"\n  Early JSON saved to: {_early_dict_path}")
 
@@ -728,9 +763,10 @@ likelihood_summary = {
 
 dict_path, chart_path = resolve_output_paths(
     _cli,
-    default_dir=_workspace_root / "results" / "runtime" / "imaging" / "delaunay",
+    default_dir=_workspace_root / "results" / "runtime" / "imaging" / "delaunay" / _os_subdir,
     default_basename=f"delaunay_likelihood_summary_{instrument}_v{al_version}",
 )
+likelihood_summary["configuration"].update(_over_sampling_record)
 dict_path.write_text(json.dumps(likelihood_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")
 print(f"  Bar chart path:        {chart_path} (no per-step chart in runtime variant)")
@@ -780,7 +816,12 @@ EXPECTED_LOG_EVIDENCE = {
     }
 }
 
-expected_log_evidence = EXPECTED_LOG_EVIDENCE.get(instrument, {}).get(reg_scheme)
+# The pins describe flat-1 over-sampling; a production-over-sampled run has none.
+expected_log_evidence = (
+    EXPECTED_LOG_EVIDENCE.get(instrument, {}).get(reg_scheme)
+    if _cli.over_sampling == "flat1"
+    else None
+)
 _pinned_expected = expected_log_evidence
 
 if expected_log_evidence is None:

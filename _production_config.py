@@ -591,6 +591,127 @@ def apply_production_over_sampling(dataset, adapt_image, preset: ProductionPrese
     return dataset.apply_sparse_operator_cpu()
 
 
+# ---------------------------------------------------------------------------
+# Production over-sampling for the JAX Delaunay-family cells
+# ---------------------------------------------------------------------------
+
+#: ``--instrument`` -> the production stage whose over-sampling the JAX
+#: Delaunay-family imaging cells adopt under ``--over-sampling production``.
+#: Only the two over-sampling fields are taken from the preset (the light-profile
+#: radial bins and the pixelization S/N rule); the JAX cells keep their own mesh,
+#: MGE and regularization, so the A100 re-measure isolates over-sampling.
+_JAX_OVER_SAMPLING_PRESETS: dict[str, ProductionPreset] = {
+    "euclid": EUCLID_VIS_PIX,
+    "hst": HST_SOURCE_PIX_2,
+}
+
+#: Where each production pixelization over-sampling rule was read, re-checked
+#: 2026-10-17 (autolens_profiling#430). Both threshold the source adapt image,
+#: which in production is already a signal-to-noise map, and both threshold it
+#: *uncapped*: the subhalo S/N cap of 3.0 (``pipelines/spec.py``) feeds only the
+#: mesh and the regularization, never the over-sampling map.
+JAX_OVER_SAMPLING_SOURCES: dict[str, str] = {
+    "euclid": (
+        "euclid_strong_lens_modeling_pipeline@9b1bc4c "
+        "scripts/initial_lens_model.py:614-626 (source S/N > 3.0 -> 4, else 2, on "
+        "the uncapped source adapt S/N map) + util.py:1505-1512 (light-profile "
+        "bins [4, 4, 2] at [0.1, 0.3])"
+    ),
+    "hst": (
+        "subhalo_validation@ab4bf32 scripts/imaging.py:213-255 "
+        "apply_adaptive_pixelization_over_sampling (OVER_SAMPLE_SNR_CUT = 3.0 -> 4, "
+        "else 2, on the uncapped source S/N map from "
+        "galaxy_name_image_dict_via_result_from) + :175-184 over_sample_size_lp_from "
+        "(light-profile bins [4, 2, 2] at [0.1, 0.3])"
+    ),
+}
+
+
+def jax_over_sampling_preset(instrument: str) -> ProductionPreset:
+    """The production preset whose over-sampling ``--over-sampling production`` uses.
+
+    An instrument with no production stage raises rather than borrowing another
+    instrument's rule.
+    """
+    try:
+        return _JAX_OVER_SAMPLING_PRESETS[instrument]
+    except KeyError:
+        raise KeyError(
+            f"--over-sampling production has no production reference for instrument "
+            f"{instrument!r}; only {sorted(_JAX_OVER_SAMPLING_PRESETS)} exist "
+            f"(EUCLID_VIS_PIX / HST_SOURCE_PIX_2). Use --over-sampling flat1."
+        ) from None
+
+
+def apply_production_over_sampling_jax(dataset, lensed_source, instrument: str):
+    """Re-over-sample a masked JAX-cell dataset at ``instrument``'s production rule.
+
+    Returns ``(dataset, record)``. ``record`` is the result-JSON block. Its
+    ``over_sample_size_pixelization_rule`` has the shape the task witness reads:
+    ``{source_snr_cut, sub_size_above, sub_size_below}``.
+
+    Production thresholds a *signal-to-noise* map: the source adapt image
+    ``galaxy_name_image_dict_via_result_from`` returns. The profiling datasets
+    cache the truth lensed source as *flux* (``_adapt_image_util``), so the S/N
+    map here is ``lensed_source / noise_map``, the truth-model equivalent of
+    production's fitted-model S/N map, and uncapped as in both production rules.
+    The cell's own adapt image (mesh + regularization) is left untouched.
+
+    The caller re-applies the sparse operator afterwards when it uses one:
+    ``apply_over_sampling`` returns a fresh ``Imaging`` without it.
+    """
+    import autolens as al
+    import numpy as np
+
+    preset = jax_over_sampling_preset(instrument)
+
+    over_sample_size_lp = al.util.over_sample.over_sample_size_via_radial_bins_from(
+        grid=dataset.grid,
+        sub_size_list=list(preset.lp_sub_size_list),
+        radial_list=list(preset.lp_radial_list),
+        centre_list=[tuple(preset.lp_centre)],
+    )
+
+    source_snr = np.asarray(lensed_source) / np.asarray(dataset.noise_map)
+    pix_values = np.where(source_snr > preset.pix_snr_cut, preset.pix_high, preset.pix_low)
+    over_sample_size_pixelization = al.Array2D(values=pix_values, mask=dataset.mask)
+
+    dataset = dataset.apply_over_sampling(
+        over_sample_size_lp=over_sample_size_lp,
+        over_sample_size_pixelization=over_sample_size_pixelization,
+    )
+
+    n_above = int(np.sum(pix_values == preset.pix_high))
+    record = {
+        "over_sampling": "production",
+        "over_sampling_preset": preset.name,
+        "over_sampling_provenance": JAX_OVER_SAMPLING_SOURCES[instrument],
+        "over_sample_size_lp_rule": {
+            "sub_size_list": list(preset.lp_sub_size_list),
+            "radial_list": list(preset.lp_radial_list),
+            "centre": list(preset.lp_centre),
+        },
+        "over_sample_size_pixelization_rule": {
+            "source_snr_cut": preset.pix_snr_cut,
+            "sub_size_above": preset.pix_high,
+            "sub_size_below": preset.pix_low,
+            "snr_map": "truth lensed_source / noise_map (uncapped)",
+            "pixels_above": n_above,
+            "pixels_below": int(pix_values.size - n_above),
+        },
+    }
+    return dataset, record
+
+
+#: The ``configuration`` fields a ``--over-sampling flat1`` row records beside
+#: its existing ``over_sample_size_lp_rule``, so every JAX Delaunay-family row
+#: states its pixelization over-sampling instead of leaving it implicit.
+FLAT1_OVER_SAMPLING_RECORD: dict[str, Any] = {
+    "over_sampling": "flat1",
+    "over_sample_size_pixelization_rule": {"flat_sub_size": 1},
+}
+
+
 def regularization_model(preset: ProductionPreset):
     """The regularization the preset names: a free ``af.Model`` or a fixed instance.
 
