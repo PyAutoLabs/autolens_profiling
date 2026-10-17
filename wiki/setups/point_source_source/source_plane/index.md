@@ -25,7 +25,7 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 | Exact configuration | Evidence source | Records |
 |---|---|---|
 | [baseline-not-defined](511bc29f3a7e0405fe52.md) | planned; no evidence | 0 |
-| [11dbab2ef35de2ec4040](4f9dcce9cb67b6df5427.md) | results/runtime/point_source_source/source_plane_solved/source_plane_solved_hpc_ral_cpu_fp64.json | 3 |
+| [11dbab2ef35de2ec4040](4f9dcce9cb67b6df5427.md) | results/runtime/point_source_source/source_plane_solved/source_plane_solved_hpc_ral_cpu_fp64.json | 4 |
 | [9b73809479666eb03834](09ab87b9afbc304f4b3d.md) | results/runtime/point_source_source/source_plane_solved/source_plane_solved_summary_v2026.7.23.1.json | 3 |
-| [d6f7fad87e9e93a7a084](8291f6b9b93643eac0b9.md) | results/runtime/point_source_source/source_plane_solved/source_plane_solved_hpc_a100_fp64.json | 3 |
+| [d6f7fad87e9e93a7a084](8291f6b9b93643eac0b9.md) | results/runtime/point_source_source/source_plane_solved/source_plane_solved_hpc_a100_fp64.json | 4 |
 

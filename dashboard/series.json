@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "generated": "2026-10-17T14:03:42Z",
+ "generated": "2026-10-17T16:29:43Z",
  "reference_host": "euclid-ral-gpu-2",
  "loadavg_cap": 8.0,
  "drift_ratio": 2.0,
@@ -1396,34 +1396,6 @@
    }
   },
   {
-   "key": "runtime:point_source_source/source_plane_solved:hpc_ral_cpu_fp64",
-   "section": "runtime",
-   "cell": "point_source_source/source_plane_solved",
-   "config": "hpc_ral_cpu_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 0.00025833239778876304,
-     "vmap_per_call_s": 9.664240060374141e-05,
-     "host": "euclid-ral-gpu-2",
-     "backend": "cpu",
-     "job": "366911",
-     "loadavg": 0.16,
-     "has_provenance": true,
-     "source": "results/runtime/point_source_source/source_plane_solved/comparison.json#hpc_ral_cpu_fp64",
-     "qualified": true,
-     "reason": null
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
    "key": "runtime:point_source_source/source_plane_solved:hpc_a100_fp64",
    "section": "runtime",
    "cell": "point_source_source/source_plane_solved",
@@ -1431,16 +1403,18 @@
    "sparse": false,
    "points": [
     {
-     "version": "2026.8.17.1",
-     "single_jit_s": 0.0006424111023079603,
-     "vmap_per_call_s": 5.645434339385247e-06,
+     "version": "2026.10.17.1",
+     "single_jit_s": 0.00023301457986235619,
+     "vmap_per_call_s": 4.768376311403699e-06,
      "host": "euclid-ral-gpu-2",
      "backend": "gpu",
-     "job": "366912",
-     "loadavg": 1.16,
+     "job": "412517",
+     "loadavg": 0.71,
      "has_provenance": true,
      "source": "results/runtime/point_source_source/source_plane_solved/comparison.json#hpc_a100_fp64",
-     "headline_note": "first block after compile",
+     "headline_estimator": "steady median",
+     "single_jit_block_mean_s": 0.0003466109978035092,
+     "single_jit_median_s": 0.00023301457986235619,
      "qualified": true,
      "reason": null
     }
@@ -4274,6 +4248,46 @@
   }
  ],
  "refused": [
+  {
+   "version": "2026.10.17.1",
+   "single_jit_s": 0.00014712498523294926,
+   "vmap_per_call_s": 5.261209638168414e-05,
+   "host": "euclid-ral-compute-10-2",
+   "backend": "cpu",
+   "job": "412518",
+   "loadavg": 10.15,
+   "has_provenance": true,
+   "source": "results/runtime/point_source_source/source_plane_solved/comparison.json#hpc_ral_cpu_fp64",
+   "headline_estimator": "steady median",
+   "single_jit_block_mean_s": 0.00017663601320236922,
+   "single_jit_median_s": 0.00014712498523294926,
+   "qualified": false,
+   "reason": "loadavg 10.2 above the cap 8",
+   "section": "runtime",
+   "cell": "point_source_source/source_plane_solved",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": false
+  },
+  {
+   "version": "2026.10.17.1",
+   "single_jit_s": 0.00014712498523294926,
+   "vmap_per_call_s": 5.261209638168414e-05,
+   "host": "euclid-ral-compute-10-2",
+   "backend": "cpu",
+   "job": "412518",
+   "loadavg": 10.15,
+   "has_provenance": true,
+   "source": "results/runtime/point_source_source/source_plane_solved/source_plane_solved_hpc_ral_cpu_fp64.json",
+   "headline_estimator": "steady median",
+   "single_jit_block_mean_s": 0.00017663601320236922,
+   "single_jit_median_s": 0.00014712498523294926,
+   "qualified": false,
+   "reason": "loadavg 10.2 above the cap 8",
+   "section": "runtime",
+   "cell": "point_source_source/source_plane_solved",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": false
+  },
   {
    "version": "2026.8.17.1",
    "single_jit_s": 0.0537076534004882,

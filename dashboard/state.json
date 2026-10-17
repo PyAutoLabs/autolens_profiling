@@ -3,8 +3,8 @@
   "organ": "autolens_profiling",
   "repo": "autolens_profiling",
   "status": "green",
-  "headline": "145 series across 61 cells and 4 releases; none drifted >= 2x (single-sample endpoints: not a measured null)",
-  "updated": "2026-10-17T14:03:42Z",
+  "headline": "144 series across 61 cells and 5 releases; none drifted >= 2x (single-sample endpoints: not a measured null)",
+  "updated": "2026-10-17T16:29:43Z",
   "pages_url": "https://pyautolabs.github.io/autolens_profiling/",
   "items": []
 }
