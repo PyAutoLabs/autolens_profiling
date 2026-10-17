@@ -44,6 +44,7 @@ class ProfileCLI:
     cold_evals: int
     sparse_batch_size: int
     source_pixels: int | None
+    over_sampling: str = "flat1"
 
     def parse_cell_args(self, cell_parser: argparse.ArgumentParser, *, argv=None):
         """Finish staged parsing, rejecting flags neither parser understands.
@@ -291,6 +292,29 @@ def _profile_parser() -> argparse.ArgumentParser:
         ),
     )
 
+    parser.add_argument(
+        "--over-sampling",
+        choices=("flat1", "production"),
+        default="flat1",
+        help=(
+            "Over-sampling recipe for the JAX Delaunay-family imaging cells "
+            "(``scripts/imaging/delaunay{,_nn}/likelihood_{runtime,breakdown}.py``). "
+            "'flat1' (the default) keeps the historic cell setting: pixelization "
+            "sub-size 1 everywhere and light-profile bins [4, 2, 2] at [0.3, 0.6]. "
+            "'production' resolves the production over-sampling of "
+            "``--instrument`` from ``_production_config`` (euclid: the Euclid "
+            "``vis_pix`` stage; hst: the subhalo ``source_pix[2]`` stage): "
+            "pixelization sub-size 4 where the source S/N exceeds 3, 2 elsewhere, "
+            "and that stage's light-profile radial bins. Only the over-sampling "
+            "changes; the cell's mesh, MGE and regularization stay as they are. "
+            "Recorded in the result JSON as "
+            "``configuration.over_sample_size_pixelization_rule``; production rows "
+            "default to an ``os_production/`` subfolder of the cell's results "
+            "directory, so the dashboard keys them as their own series. Other "
+            "cells ignore the flag."
+        ),
+    )
+
     return parser
 
 
@@ -326,6 +350,7 @@ def parse_profile_cli(default_config_name: str | None = None, *, argv=None) -> P
         cold_evals=int(args.cold_evals),
         sparse_batch_size=int(args.sparse_batch_size),
         source_pixels=int(args.source_pixels) if args.source_pixels is not None else None,
+        over_sampling=args.over_sampling,
     )
 
 
