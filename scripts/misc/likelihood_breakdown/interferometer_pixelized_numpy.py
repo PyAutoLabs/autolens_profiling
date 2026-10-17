@@ -532,7 +532,10 @@ def run(
     instances = iid_instances(model, n_instances)
     adapt_images_for = shared.adapt_images_builder(adapt_image, mesh)
 
-    default_gate = float(al.Settings().interferometer_numba_nnz_per_source_max)
+    # PyAutoArray#628/#632 (2026.10.17.1): the packaged gate is None, meaning a cost model
+    # routes; the arms here pass explicit gates, so only the recorded default changes.
+    packaged_gate = al.Settings().interferometer_numba_nnz_per_source_max
+    default_gate = None if packaged_gate is None else float(packaged_gate)
     gates = {"numba": float(cell_args.numba_gate), "numpy_fft": 0.0}
     settings = {}
     memo_provenance = None
@@ -882,7 +885,9 @@ def run(
             "numba_gate": gates["numba"],
             "numba_gate_library_default": default_gate,
             "nnz_per_source_column": nnz_per_col,
-            "would_route_numba_at_default_gate": bool(nnz_per_col <= default_gate),
+            "would_route_numba_at_default_gate": (
+                None if default_gate is None else bool(nnz_per_col <= default_gate)
+            ),
             "numba_parallel_kernel": bool(_numba_parallel()),
             "numba_version": numba.__version__,
             "solve_subset_edge_zeroed": head["solve_subset_edge_zeroed"],
