@@ -1,0 +1,603 @@
+AP_ROOT=/mnt/ral/jnightin/profiling/autolens_profiling_wt/ps-image-admission
+==========================================
+Sat 17 Oct 14:45:25 BST 2026
+euclid-ral-gpu-2
+Model name:                              AMD EPYC 7702 64-Core Processor
+name, driver_version, memory.total [MiB], pci.bus_id, utilization.gpu [%], memory.used [MiB]
+NVIDIA A100 80GB PCIe, 610.57.04, 81920 MiB, 00000000:05:00.0, 0 %, 0 MiB
+NVIDIA A100 80GB PCIe, 610.57.04, 81920 MiB, 00000000:06:00.0, 0 %, 0 MiB
+NVIDIA A100 80GB PCIe, 610.57.04, 81920 MiB, 00000000:07:00.0, 0 %, 0 MiB
+NVIDIA A100 80GB PCIe, 610.57.04, 81920 MiB, 00000000:08:00.0, 0 %, 0 MiB
+gpus:           0,1,2,3
+partition:      gpu
+cpus-per-task:  8
+sched_affinity: 124
+loadavg:        0.07 0.10 0.06 1/1250 1069891
+node jobs:      412519 jnightin gres:gpu:1;
+XLA_FLAGS:      --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false
+PYTHONPATH:     /mnt/ral/jnightin/profiling/PyAuto_wt/ps-image-admission-2026.10.17.1/PyAutoNerves:/mnt/ral/jnightin/profiling/PyAuto_wt/ps-image-admission-2026.10.17.1/PyAutoFit:/mnt/ral/jnightin/profiling/PyAuto_wt/ps-image-admission-2026.10.17.1/PyAutoArray:/mnt/ral/jnightin/profiling/PyAuto_wt/ps-image-admission-2026.10.17.1/PyAutoGalaxy:/mnt/ral/jnightin/profiling/PyAuto_wt/ps-image-admission-2026.10.17.1/PyAutoLens:/mnt/ral/jnightin/PyAuto:/mnt/ral/jnightin/PyAuto/PyAutoNerves:/mnt/ral/jnightin/PyAuto/PyAutoFit:/mnt/ral/jnightin/PyAuto/PyAutoArray:/mnt/ral/jnightin/PyAuto/PyAutoGalaxy:/mnt/ral/jnightin/PyAuto/PyAutoLens
+=== source revisions (private base, tag 2026.10.17.1) ===
+PyAutoNerves   7f3055b7f3d1967f372bdb41ee732135bca0e68d
+PyAutoFit      4b183e226947312d9a98b8f8dee1a3cf29c548ef
+PyAutoArray    e59d5fa901e54bf3d9931890067bc3447a5c1232
+PyAutoGalaxy   35100def2b7cd775fb77e46dbc1a674841c8f897
+PyAutoLens     c90eceb0093ea1618e679184e4f2a59268caa581
+AP_ROOT rev:   fd29902bd09ff5defcab5e9007a547423048e8aa
+=== import provenance ===
+autonerves  2026.8.17.1    /mnt/ral/jnightin/profiling/PyAuto_wt/ps-image-admission-2026.10.17.1/PyAutoNerves/autonerves/__init__.py
+autoarray   2026.8.17.1    /mnt/ral/jnightin/profiling/PyAuto_wt/ps-image-admission-2026.10.17.1/PyAutoArray/autoarray/__init__.py
+autofit     2026.8.17.1    /mnt/ral/jnightin/profiling/PyAuto_wt/ps-image-admission-2026.10.17.1/PyAutoFit/autofit/__init__.py
+autogalaxy  2026.8.17.1    /mnt/ral/jnightin/profiling/PyAuto_wt/ps-image-admission-2026.10.17.1/PyAutoGalaxy/autogalaxy/__init__.py
+autolens    2026.8.17.1    /mnt/ral/jnightin/profiling/PyAuto_wt/ps-image-admission-2026.10.17.1/PyAutoLens/autolens/__init__.py
+jax 0.10.2 jaxlib 0.10.2 numpy 2.2.6 [CudaDevice(id=0), CudaDevice(id=1), CudaDevice(id=2), CudaDevice(id=3)]
+==========================================
+RUN a. likelihood_breakdown.py hpc_ral_a100_fp64_r2026_10_17_1 -> /mnt/ral/jnightin/profiling/autolens_profiling_wt/ps-image-admission/output/ps_image_admission_412519/results
+Sat 17 Oct 14:45:53 BST 2026
+loadavg: 0.47 0.19 0.09 1/1263 1069977
+2026-10-17 14:45:56,087 - matplotlib.font_manager - INFO - Failed to extract font properties from /usr/share/fonts/cantarell/Cantarell-VF.otf: In FT2Font: Can not load face (SFNT font table missing; error code 0x8e)
+2026-10-17 14:45:56,102 - matplotlib.font_manager - INFO - generated new fontManager
+2026-10-17 14:45:58,999 - autolens.point.model.analysis - INFO - PointSolver extent for dataset 'point_0' is more than 3 times the observed-position envelope on both axes, including the safety margin. At fixed initial scale, initial grid work grows with grid area. Consider a smaller grid only after checking image completeness across the model prior.
+2026-10-17 14:45:59,000 - autolens.point.model.analysis - INFO - PointSolver extent for dataset 'point_0' is more than 3 times the observed-position envelope on both axes, including the safety margin. At fixed initial scale, initial grid work grows with grid area. Consider a smaller grid only after checking image completeness across the model prior.
+2026-10-17 14:45:59,000 - autolens.point.model.analysis - INFO - PointSolver extent for dataset 'point_0' is more than 3 times the observed-position envelope on both axes, including the safety margin. At fixed initial scale, initial grid work grows with grid area. Consider a smaller grid only after checking image completeness across the model prior.
+2026-10-17 14:45:59,000 - autolens.point.model.analysis - INFO - PointSolver extent for dataset 'point_0' is more than 3 times the observed-position envelope on both axes, including the safety margin. At fixed initial scale, initial grid work grows with grid area. Consider a smaller grid only after checking image completeness across the model prior.
+
+--- Eager controls ---
+  solved likelihood: 7.743201200877
+  plain likelihood:  7.196577317761
+
+--- Full fused controls ---
+  [full_solved_lower] 3.2465 s
+  [full_solved_compile] 6.5026 s
+  [full_solved_first_call] 0.0164 s
+  [full_solved_steady_x5] 0.0054 s
+    -> per-call avg: 0.001086 s
+  [full_plain_control_lower] 2.1121 s
+  [full_plain_control_compile] 5.7610 s
+  [full_plain_control_first_call] 0.0144 s
+  [full_plain_control_steady_x5] 0.0055 s
+    -> per-call avg: 0.001106 s
+
+--- Solved-centre and solver prefixes ---
+  [source_centre_lower] 0.4576 s
+  [source_centre_compile] 0.6946 s
+  [source_centre_first_call] 0.0029 s
+  [source_centre_steady_x5] 0.0018 s
+    -> per-call avg: 0.000368 s
+  [step_00_ray_trace_lower] 0.3043 s
+  [step_00_ray_trace_compile] 0.3522 s
+  [step_00_ray_trace_first_call] 0.0021 s
+  [step_00_ray_trace_steady_x5] 0.0015 s
+    -> per-call avg: 0.000308 s
+  [step_00_containment_lower] 0.3995 s
+  [step_00_containment_compile] 1.0757 s
+  [step_00_containment_first_call] 0.0034 s
+  [step_00_containment_steady_x5] 0.0023 s
+    -> per-call avg: 0.000469 s
+  [step_00_selection_lower] 0.5804 s
+  [step_00_selection_compile] 1.1674 s
+  [step_00_selection_first_call] 0.0040 s
+  [step_00_selection_steady_x5] 0.0028 s
+    -> per-call avg: 0.000566 s
+  [step_00_neighbourhood_lower] 0.4399 s
+  [step_00_neighbourhood_compile] 1.5787 s
+  [step_00_neighbourhood_first_call] 0.0054 s
+  [step_00_neighbourhood_steady_x5] 0.0028 s
+    -> per-call avg: 0.000561 s
+  [step_00_up_sample_lower] 0.4465 s
+  [step_00_up_sample_compile] 1.5678 s
+  [step_00_up_sample_first_call] 0.0051 s
+  [step_00_up_sample_steady_x5] 0.0029 s
+    -> per-call avg: 0.000571 s
+  [step_01_ray_trace_lower] 0.6790 s
+  [step_01_ray_trace_compile] 1.6365 s
+  [step_01_ray_trace_first_call] 0.0065 s
+  [step_01_ray_trace_steady_x5] 0.0030 s
+    -> per-call avg: 0.000593 s
+  [step_01_containment_lower] 0.5179 s
+  [step_01_containment_compile] 1.8315 s
+  [step_01_containment_first_call] 0.0059 s
+  [step_01_containment_steady_x5] 0.0030 s
+    -> per-call avg: 0.000594 s
+  [step_01_selection_lower] 0.5298 s
+  [step_01_selection_compile] 1.8861 s
+  [step_01_selection_first_call] 0.0057 s
+  [step_01_selection_steady_x5] 0.0031 s
+    -> per-call avg: 0.000615 s
+  [step_01_neighbourhood_lower] 0.6969 s
+  [step_01_neighbourhood_compile] 2.0409 s
+  [step_01_neighbourhood_first_call] 0.0062 s
+  [step_01_neighbourhood_steady_x5] 0.0032 s
+    -> per-call avg: 0.000646 s
+  [step_01_up_sample_lower] 0.5378 s
+  [step_01_up_sample_compile] 1.9974 s
+  [step_01_up_sample_first_call] 0.0066 s
+  [step_01_up_sample_steady_x5] 0.0033 s
+    -> per-call avg: 0.000657 s
+  [step_02_ray_trace_lower] 0.7594 s
+  [step_02_ray_trace_compile] 2.1980 s
+  [step_02_ray_trace_first_call] 0.0068 s
+  [step_02_ray_trace_steady_x5] 0.0030 s
+    -> per-call avg: 0.000606 s
+  [step_02_containment_lower] 0.5951 s
+  [step_02_containment_compile] 2.2118 s
+  [step_02_containment_first_call] 0.0069 s
+  [step_02_containment_steady_x5] 0.0033 s
+    -> per-call avg: 0.000659 s
+  [step_02_selection_lower] 0.7704 s
+  [step_02_selection_compile] 2.3322 s
+  [step_02_selection_first_call] 0.0071 s
+  [step_02_selection_steady_x5] 0.0035 s
+    -> per-call avg: 0.000703 s
+  [step_02_neighbourhood_lower] 0.6129 s
+  [step_02_neighbourhood_compile] 2.3266 s
+  [step_02_neighbourhood_first_call] 0.0075 s
+  [step_02_neighbourhood_steady_x5] 0.0037 s
+    -> per-call avg: 0.000733 s
+  [step_02_up_sample_lower] 0.7757 s
+  [step_02_up_sample_compile] 2.4142 s
+  [step_02_up_sample_first_call] 0.0078 s
+  [step_02_up_sample_steady_x5] 0.0039 s
+    -> per-call avg: 0.000782 s
+  [step_03_ray_trace_lower] 0.6615 s
+  [step_03_ray_trace_compile] 2.4617 s
+  [step_03_ray_trace_first_call] 0.0081 s
+  [step_03_ray_trace_steady_x5] 0.0035 s
+    -> per-call avg: 0.000693 s
+  [step_03_containment_lower] 0.8357 s
+  [step_03_containment_compile] 2.5520 s
+  [step_03_containment_first_call] 0.0081 s
+  [step_03_containment_steady_x5] 0.0037 s
+    -> per-call avg: 0.000744 s
+  [step_03_selection_lower] 0.6751 s
+  [step_03_selection_compile] 2.6465 s
+  [step_03_selection_first_call] 0.0081 s
+  [step_03_selection_steady_x5] 0.0038 s
+    -> per-call avg: 0.000767 s
+  [step_03_neighbourhood_lower] 0.8476 s
+  [step_03_neighbourhood_compile] 2.6443 s
+  [step_03_neighbourhood_first_call] 0.0087 s
+  [step_03_neighbourhood_steady_x5] 0.0040 s
+    -> per-call avg: 0.000801 s
+  [step_03_up_sample_lower] 0.6790 s
+  [step_03_up_sample_compile] 2.7322 s
+  [step_03_up_sample_first_call] 0.0087 s
+  [step_03_up_sample_steady_x5] 0.0043 s
+    -> per-call avg: 0.000855 s
+  [step_04_ray_trace_lower] 0.8989 s
+  [step_04_ray_trace_compile] 2.7664 s
+  [step_04_ray_trace_first_call] 0.0090 s
+  [step_04_ray_trace_steady_x5] 0.0037 s
+    -> per-call avg: 0.000736 s
+  [step_04_containment_lower] 0.9135 s
+  [step_04_containment_compile] 2.9759 s
+  [step_04_containment_first_call] 0.0091 s
+  [step_04_containment_steady_x5] 0.0043 s
+    -> per-call avg: 0.000868 s
+  [step_04_selection_lower] 0.7491 s
+  [step_04_selection_compile] 2.9496 s
+  [step_04_selection_first_call] 0.0093 s
+  [step_04_selection_steady_x5] 0.0042 s
+    -> per-call avg: 0.000840 s
+  [step_04_neighbourhood_lower] 0.9252 s
+  [step_04_neighbourhood_compile] 3.0955 s
+  [step_04_neighbourhood_first_call] 0.0098 s
+  [step_04_neighbourhood_steady_x5] 0.0044 s
+    -> per-call avg: 0.000878 s
+  [step_04_up_sample_lower] 0.7537 s
+  [step_04_up_sample_compile] 3.0652 s
+  [step_04_up_sample_first_call] 0.0104 s
+  [step_04_up_sample_steady_x5] 0.0048 s
+    -> per-call avg: 0.000962 s
+  [step_05_ray_trace_lower] 0.9625 s
+  [step_05_ray_trace_compile] 3.2147 s
+  [step_05_ray_trace_first_call] 0.0106 s
+  [step_05_ray_trace_steady_x5] 0.0041 s
+    -> per-call avg: 0.000829 s
+  [step_05_containment_lower] 0.9809 s
+  [step_05_containment_compile] 3.2710 s
+  [step_05_containment_first_call] 0.0102 s
+  [step_05_containment_steady_x5] 0.0044 s
+    -> per-call avg: 0.000875 s
+  [step_05_selection_lower] 0.8189 s
+  [step_05_selection_compile] 3.3298 s
+  [step_05_selection_first_call] 0.0104 s
+  [step_05_selection_steady_x5] 0.0046 s
+    -> per-call avg: 0.000929 s
+  [step_05_neighbourhood_lower] 0.9898 s
+  [step_05_neighbourhood_compile] 3.4425 s
+  [step_05_neighbourhood_first_call] 0.0109 s
+  [step_05_neighbourhood_steady_x5] 0.0048 s
+    -> per-call avg: 0.000951 s
+  [step_05_up_sample_lower] 0.9955 s
+  [step_05_up_sample_compile] 3.4460 s
+  [step_05_up_sample_first_call] 0.0108 s
+  [step_05_up_sample_steady_x5] 0.0050 s
+    -> per-call avg: 0.000990 s
+  [step_06_ray_trace_lower] 0.8745 s
+  [step_06_ray_trace_compile] 3.5944 s
+  [step_06_ray_trace_first_call] 0.0112 s
+  [step_06_ray_trace_steady_x5] 0.0045 s
+    -> per-call avg: 0.000891 s
+  [step_06_containment_lower] 1.0376 s
+  [step_06_containment_compile] 3.5814 s
+  [step_06_containment_first_call] 0.0116 s
+  [step_06_containment_steady_x5] 0.0051 s
+    -> per-call avg: 0.001011 s
+  [step_06_selection_lower] 1.0543 s
+  [step_06_selection_compile] 3.6891 s
+  [step_06_selection_first_call] 0.0112 s
+  [step_06_selection_steady_x5] 0.0050 s
+    -> per-call avg: 0.000998 s
+  [step_06_neighbourhood_lower] 0.8931 s
+  [step_06_neighbourhood_compile] 3.6789 s
+  [step_06_neighbourhood_first_call] 0.0119 s
+  [step_06_neighbourhood_steady_x5] 0.0056 s
+    -> per-call avg: 0.001128 s
+  [step_06_up_sample_lower] 1.0543 s
+  [step_06_up_sample_compile] 3.7598 s
+  [step_06_up_sample_first_call] 0.0160 s
+  [step_06_up_sample_steady_x5] 0.0068 s
+    -> per-call avg: 0.001368 s
+  [step_07_ray_trace_lower] 1.1089 s
+  [step_07_ray_trace_compile] 3.8980 s
+  [step_07_ray_trace_first_call] 0.0123 s
+  [step_07_ray_trace_steady_x5] 0.0047 s
+    -> per-call avg: 0.000944 s
+  [step_07_containment_lower] 1.1167 s
+  [step_07_containment_compile] 4.0245 s
+  [step_07_containment_first_call] 0.0122 s
+  [step_07_containment_steady_x5] 0.0052 s
+    -> per-call avg: 0.001049 s
+  [step_07_selection_lower] 0.9588 s
+  [step_07_selection_compile] 4.0281 s
+  [step_07_selection_first_call] 0.0126 s
+  [step_07_selection_steady_x5] 0.0056 s
+    -> per-call avg: 0.001124 s
+  [step_07_neighbourhood_lower] 1.1199 s
+  [step_07_neighbourhood_compile] 4.1323 s
+  [step_07_neighbourhood_first_call] 0.0132 s
+  [step_07_neighbourhood_steady_x5] 0.0058 s
+    -> per-call avg: 0.001160 s
+  [step_07_up_sample_lower] 1.1267 s
+  [step_07_up_sample_compile] 4.0470 s
+  [step_07_up_sample_first_call] 0.0132 s
+  [step_07_up_sample_steady_x5] 0.0059 s
+    -> per-call avg: 0.001181 s
+  [magnification_filter_lower] 1.3366 s
+  [magnification_filter_compile] 4.3009 s
+  [magnification_filter_first_call] 0.0126 s
+  [magnification_filter_steady_x5] 0.0052 s
+    -> per-call avg: 0.001045 s
+
+--- Numerical controls ---
+
+========================================================================
+POINT-SOURCE IMAGE-PLANE BREAKDOWN
+========================================================================
+  Solved source centre                                        0.368 ms
+  Step 0: ray trace                                          -0.060 ms
+  Step 0: containment                                         0.160 ms
+  Step 0: selection                                           0.097 ms
+  Step 0: neighbourhood                                      -0.005 ms
+  Step 0: up sample                                           0.010 ms
+  Step 1: ray trace                                           0.022 ms
+  Step 1: containment                                         0.000 ms
+  Step 1: selection                                           0.022 ms
+  Step 1: neighbourhood                                       0.031 ms
+  Step 1: up sample                                           0.011 ms
+  Step 2: ray trace                                          -0.052 ms
+  Step 2: containment                                         0.053 ms
+  Step 2: selection                                           0.044 ms
+  Step 2: neighbourhood                                       0.031 ms
+  Step 2: up sample                                           0.049 ms
+  Step 3: ray trace                                          -0.089 ms
+  Step 3: containment                                         0.051 ms
+  Step 3: selection                                           0.022 ms
+  Step 3: neighbourhood                                       0.035 ms
+  Step 3: up sample                                           0.054 ms
+  Step 4: ray trace                                          -0.119 ms
+  Step 4: containment                                         0.132 ms
+  Step 4: selection                                          -0.028 ms
+  Step 4: neighbourhood                                       0.039 ms
+  Step 4: up sample                                           0.084 ms
+  Step 5: ray trace                                          -0.134 ms
+  Step 5: containment                                         0.046 ms
+  Step 5: selection                                           0.054 ms
+  Step 5: neighbourhood                                       0.022 ms
+  Step 5: up sample                                           0.039 ms
+  Step 6: ray trace                                          -0.099 ms
+  Step 6: containment                                         0.120 ms
+  Step 6: selection                                          -0.013 ms
+  Step 6: neighbourhood                                       0.130 ms
+  Step 6: up sample                                           0.241 ms
+  Step 7: ray trace                                          -0.424 ms
+  Step 7: containment                                         0.104 ms
+  Step 7: selection                                           0.075 ms
+  Step 7: neighbourhood                                       0.037 ms
+  Step 7: up sample                                           0.021 ms
+  Magnification filter                                       -0.137 ms
+  Pairing chi-squared / fused-wrapper residual                0.042 ms
+------------------------------------------------------------------------
+  Fused solved likelihood                                     1.086 ms
+  Fused plain control                                         1.106 ms
+  Results JSON: /mnt/ral/jnightin/profiling/autolens_profiling_wt/ps-image-admission/output/ps_image_admission_412519/results/image_plane_hpc_ral_a100_fp64_r2026_10_17_1.json
+  Results PNG:  /mnt/ral/jnightin/profiling/autolens_profiling_wt/ps-image-admission/output/ps_image_admission_412519/results/image_plane_hpc_ral_a100_fp64_r2026_10_17_1.png
+
+======================================================================
+PROFILING SUMMARY
+======================================================================
+  full_solved_lower                     3.2465 s
+  full_solved_compile                   6.5026 s
+  full_solved_first_call                0.0164 s
+  full_solved_steady_x5                 0.0054 s
+  full_plain_control_lower              2.1121 s
+  full_plain_control_compile            5.7610 s
+  full_plain_control_first_call         0.0144 s
+  full_plain_control_steady_x5          0.0055 s
+  source_centre_lower                   0.4576 s
+  source_centre_compile                 0.6946 s
+  source_centre_first_call              0.0029 s
+  source_centre_steady_x5               0.0018 s
+  step_00_ray_trace_lower               0.3043 s
+  step_00_ray_trace_compile             0.3522 s
+  step_00_ray_trace_first_call          0.0021 s
+  step_00_ray_trace_steady_x5           0.0015 s
+  step_00_containment_lower             0.3995 s
+  step_00_containment_compile           1.0757 s
+  step_00_containment_first_call        0.0034 s
+  step_00_containment_steady_x5         0.0023 s
+  step_00_selection_lower               0.5804 s
+  step_00_selection_compile             1.1674 s
+  step_00_selection_first_call          0.0040 s
+  step_00_selection_steady_x5           0.0028 s
+  step_00_neighbourhood_lower           0.4399 s
+  step_00_neighbourhood_compile         1.5787 s
+  step_00_neighbourhood_first_call      0.0054 s
+  step_00_neighbourhood_steady_x5       0.0028 s
+  step_00_up_sample_lower               0.4465 s
+  step_00_up_sample_compile             1.5678 s
+  step_00_up_sample_first_call          0.0051 s
+  step_00_up_sample_steady_x5           0.0029 s
+  step_01_ray_trace_lower               0.6790 s
+  step_01_ray_trace_compile             1.6365 s
+  step_01_ray_trace_first_call          0.0065 s
+  step_01_ray_trace_steady_x5           0.0030 s
+  step_01_containment_lower             0.5179 s
+  step_01_containment_compile           1.8315 s
+  step_01_containment_first_call        0.0059 s
+  step_01_containment_steady_x5         0.0030 s
+  step_01_selection_lower               0.5298 s
+  step_01_selection_compile             1.8861 s
+  step_01_selection_first_call          0.0057 s
+  step_01_selection_steady_x5           0.0031 s
+  step_01_neighbourhood_lower           0.6969 s
+  step_01_neighbourhood_compile         2.0409 s
+  step_01_neighbourhood_first_call      0.0062 s
+  step_01_neighbourhood_steady_x5       0.0032 s
+  step_01_up_sample_lower               0.5378 s
+  step_01_up_sample_compile             1.9974 s
+  step_01_up_sample_first_call          0.0066 s
+  step_01_up_sample_steady_x5           0.0033 s
+  step_02_ray_trace_lower               0.7594 s
+  step_02_ray_trace_compile             2.1980 s
+  step_02_ray_trace_first_call          0.0068 s
+  step_02_ray_trace_steady_x5           0.0030 s
+  step_02_containment_lower             0.5951 s
+  step_02_containment_compile           2.2118 s
+  step_02_containment_first_call        0.0069 s
+  step_02_containment_steady_x5         0.0033 s
+  step_02_selection_lower               0.7704 s
+  step_02_selection_compile             2.3322 s
+  step_02_selection_first_call          0.0071 s
+  step_02_selection_steady_x5           0.0035 s
+  step_02_neighbourhood_lower           0.6129 s
+  step_02_neighbourhood_compile         2.3266 s
+  step_02_neighbourhood_first_call      0.0075 s
+  step_02_neighbourhood_steady_x5       0.0037 s
+  step_02_up_sample_lower               0.7757 s
+  step_02_up_sample_compile             2.4142 s
+  step_02_up_sample_first_call          0.0078 s
+  step_02_up_sample_steady_x5           0.0039 s
+  step_03_ray_trace_lower               0.6615 s
+  step_03_ray_trace_compile             2.4617 s
+  step_03_ray_trace_first_call          0.0081 s
+  step_03_ray_trace_steady_x5           0.0035 s
+  step_03_containment_lower             0.8357 s
+  step_03_containment_compile           2.5520 s
+  step_03_containment_first_call        0.0081 s
+  step_03_containment_steady_x5         0.0037 s
+  step_03_selection_lower               0.6751 s
+  step_03_selection_compile             2.6465 s
+  step_03_selection_first_call          0.0081 s
+  step_03_selection_steady_x5           0.0038 s
+  step_03_neighbourhood_lower           0.8476 s
+  step_03_neighbourhood_compile         2.6443 s
+  step_03_neighbourhood_first_call      0.0087 s
+  step_03_neighbourhood_steady_x5       0.0040 s
+  step_03_up_sample_lower               0.6790 s
+  step_03_up_sample_compile             2.7322 s
+  step_03_up_sample_first_call          0.0087 s
+  step_03_up_sample_steady_x5           0.0043 s
+  step_04_ray_trace_lower               0.8989 s
+  step_04_ray_trace_compile             2.7664 s
+  step_04_ray_trace_first_call          0.0090 s
+  step_04_ray_trace_steady_x5           0.0037 s
+  step_04_containment_lower             0.9135 s
+  step_04_containment_compile           2.9759 s
+  step_04_containment_first_call        0.0091 s
+  step_04_containment_steady_x5         0.0043 s
+  step_04_selection_lower               0.7491 s
+  step_04_selection_compile             2.9496 s
+  step_04_selection_first_call          0.0093 s
+  step_04_selection_steady_x5           0.0042 s
+  step_04_neighbourhood_lower           0.9252 s
+  step_04_neighbourhood_compile         3.0955 s
+  step_04_neighbourhood_first_call      0.0098 s
+  step_04_neighbourhood_steady_x5       0.0044 s
+  step_04_up_sample_lower               0.7537 s
+  step_04_up_sample_compile             3.0652 s
+  step_04_up_sample_first_call          0.0104 s
+  step_04_up_sample_steady_x5           0.0048 s
+  step_05_ray_trace_lower               0.9625 s
+  step_05_ray_trace_compile             3.2147 s
+  step_05_ray_trace_first_call          0.0106 s
+  step_05_ray_trace_steady_x5           0.0041 s
+  step_05_containment_lower             0.9809 s
+  step_05_containment_compile           3.2710 s
+  step_05_containment_first_call        0.0102 s
+  step_05_containment_steady_x5         0.0044 s
+  step_05_selection_lower               0.8189 s
+  step_05_selection_compile             3.3298 s
+  step_05_selection_first_call          0.0104 s
+  step_05_selection_steady_x5           0.0046 s
+  step_05_neighbourhood_lower           0.9898 s
+  step_05_neighbourhood_compile         3.4425 s
+  step_05_neighbourhood_first_call      0.0109 s
+  step_05_neighbourhood_steady_x5       0.0048 s
+  step_05_up_sample_lower               0.9955 s
+  step_05_up_sample_compile             3.4460 s
+  step_05_up_sample_first_call          0.0108 s
+  step_05_up_sample_steady_x5           0.0050 s
+  step_06_ray_trace_lower               0.8745 s
+  step_06_ray_trace_compile             3.5944 s
+  step_06_ray_trace_first_call          0.0112 s
+  step_06_ray_trace_steady_x5           0.0045 s
+  step_06_containment_lower             1.0376 s
+  step_06_containment_compile           3.5814 s
+  step_06_containment_first_call        0.0116 s
+  step_06_containment_steady_x5         0.0051 s
+  step_06_selection_lower               1.0543 s
+  step_06_selection_compile             3.6891 s
+  step_06_selection_first_call          0.0112 s
+  step_06_selection_steady_x5           0.0050 s
+  step_06_neighbourhood_lower           0.8931 s
+  step_06_neighbourhood_compile         3.6789 s
+  step_06_neighbourhood_first_call      0.0119 s
+  step_06_neighbourhood_steady_x5       0.0056 s
+  step_06_up_sample_lower               1.0543 s
+  step_06_up_sample_compile             3.7598 s
+  step_06_up_sample_first_call          0.0160 s
+  step_06_up_sample_steady_x5           0.0068 s
+  step_07_ray_trace_lower               1.1089 s
+  step_07_ray_trace_compile             3.8980 s
+  step_07_ray_trace_first_call          0.0123 s
+  step_07_ray_trace_steady_x5           0.0047 s
+  step_07_containment_lower             1.1167 s
+  step_07_containment_compile           4.0245 s
+  step_07_containment_first_call        0.0122 s
+  step_07_containment_steady_x5         0.0052 s
+  step_07_selection_lower               0.9588 s
+  step_07_selection_compile             4.0281 s
+  step_07_selection_first_call          0.0126 s
+  step_07_selection_steady_x5           0.0056 s
+  step_07_neighbourhood_lower           1.1199 s
+  step_07_neighbourhood_compile         4.1323 s
+  step_07_neighbourhood_first_call      0.0132 s
+  step_07_neighbourhood_steady_x5       0.0058 s
+  step_07_up_sample_lower               1.1267 s
+  step_07_up_sample_compile             4.0470 s
+  step_07_up_sample_first_call          0.0132 s
+  step_07_up_sample_steady_x5           0.0059 s
+  magnification_filter_lower            1.3366 s
+  magnification_filter_compile          4.3009 s
+  magnification_filter_first_call       0.0126 s
+  magnification_filter_steady_x5        0.0052 s
+----------------------------------------------------------------------
+  TOTAL                               166.3150 s
+======================================================================
+==========================================
+RUN b. gpu_bottleneck_map.py hpc_ral_a100_fp64_r2026_10_17_1 (job 366916 fp64 arguments) -> /mnt/ral/jnightin/profiling/autolens_profiling_wt/ps-image-admission/output/ps_image_admission_412519/results
+Sat 17 Oct 14:49:45 BST 2026
+loadavg: 1.81 1.22 0.54 1/1259 1075174
+[    3.4 s] backend gpu, precision fp64, legs ['baseline', 'vmap', 'trace', 'grad']; MAX_CONTAINING_SIZE 20, step-0 route structured, n_steps 8
+2026-10-17 14:49:49,830 - autolens.point.model.analysis - INFO - PointSolver extent for dataset 'point_0' is more than 3 times the observed-position envelope on both axes, including the safety margin. At fixed initial scale, initial grid work grows with grid area. Consider a smaller grid only after checking image completeness across the model prior.
+[   20.3 s] baseline compile: lower 3.25 s, compile ON 6.54 s, OFF 6.945285793859512
+[   21.4 s] baseline: command_buffers_on 0.9344 ms, command_buffers_off 1.1277 ms
+2026-10-17 14:50:07,792 - autolens.point.model.analysis - INFO - PointSolver extent for dataset 'point_0' is more than 3 times the observed-position envelope on both axes, including the safety margin. At fixed initial scale, initial grid work grows with grid area. Consider a smaller grid only after checking image completeness across the model prior.
+[   34.3 s] fiducial 7.743201200876806 (expected 7.743201200876806); gates {'fiducial_bit_exact': {'value': 7.743201200876806, 'repr': '7.743201200876806', 'expected': 7.743201200876806, 'pass': True}, 'command_buffers_off_bit_identical': {'n_points': 64, 'n_differ': 0, 'pass': True}, 'stream_finite': {'n_points': 64, 'n_non_finite': 0, 'pass': True}}
+2026-10-17 14:50:20,779 - autolens.point.model.analysis - INFO - PointSolver extent for dataset 'point_0' is more than 3 times the observed-position envelope on both axes, including the safety margin. At fixed initial scale, initial grid work grows with grid area. Consider a smaller grid only after checking image completeness across the model prior.
+2026-10-17 14:50:31,735 - autolens.point.model.analysis - INFO - PointSolver extent for dataset 'point_0' is more than 3 times the observed-position envelope on both axes, including the safety margin. At fixed initial scale, initial grid work grows with grid area. Consider a smaller grid only after checking image completeness across the model prior.
+[   57.7 s] vmap1: 0.9870 ms/batch = 0.98699 ms/L, compile 7.6 s, delta 0.00e+00
+2026-10-17 14:50:44,075 - autolens.point.model.analysis - INFO - PointSolver extent for dataset 'point_0' is more than 3 times the observed-position envelope on both axes, including the safety margin. At fixed initial scale, initial grid work grows with grid area. Consider a smaller grid only after checking image completeness across the model prior.
+[   70.0 s] vmap4: 1.1140 ms/batch = 0.27849 ms/L, compile 7.7 s, delta 0.00e+00
+2026-10-17 14:50:56,370 - autolens.point.model.analysis - INFO - PointSolver extent for dataset 'point_0' is more than 3 times the observed-position envelope on both axes, including the safety margin. At fixed initial scale, initial grid work grows with grid area. Consider a smaller grid only after checking image completeness across the model prior.
+[   82.5 s] vmap16: 1.3154 ms/batch = 0.08221 ms/L, compile 7.9 s, delta 0.00e+00
+2026-10-17 14:51:08,943 - autolens.point.model.analysis - INFO - PointSolver extent for dataset 'point_0' is more than 3 times the observed-position envelope on both axes, including the safety margin. At fixed initial scale, initial grid work grows with grid area. Consider a smaller grid only after checking image completeness across the model prior.
+[   95.2 s] vmap64: 1.6913 ms/batch = 0.02643 ms/L, compile 8.1 s, delta 0.00e+00
+2026-10-17 14:51:21,617 - autolens.point.model.analysis - INFO - PointSolver extent for dataset 'point_0' is more than 3 times the observed-position envelope on both axes, including the safety margin. At fixed initial scale, initial grid work grows with grid area. Consider a smaller grid only after checking image completeness across the model prior.
+[  107.9 s] vmap256: 3.1898 ms/batch = 0.01246 ms/L, compile 7.9 s, delta 0.00e+00
+2026-10-17 14:51:34,328 - autolens.point.model.analysis - INFO - PointSolver extent for dataset 'point_0' is more than 3 times the observed-position envelope on both axes, including the safety margin. At fixed initial scale, initial grid work grows with grid area. Consider a smaller grid only after checking image completeness across the model prior.
+2026-10-17 14:51:34,352 - autolens.point.model.analysis - INFO - PointSolver extent for dataset 'point_0' is more than 3 times the observed-position envelope on both axes, including the safety margin. At fixed initial scale, initial grid work grows with grid area. Consider a smaller grid only after checking image completeness across the model prior.
+[  128.9 s] trace scalar: 173.0 kernels/call, busy 0.6202 ms vs wall OFF 1.1496 / ON 1.0000 ms; top stages mixed_fusion 0.4145, neighbourhood_active 0.1173, containment_active 0.0608, magnification_filter 0.0173
+[  152.5 s] trace vmap16: 179.0 kernels/call, busy 0.8886 ms vs wall OFF 1.3965 / ON 1.6629 ms; top stages mixed_fusion 0.6004, neighbourhood_active 0.1191, containment_active 0.0847, containment_lattice 0.0417
+2026-10-17 14:52:18,843 - autolens.point.model.analysis - INFO - PointSolver extent for dataset 'point_0' is more than 3 times the observed-position envelope on both axes, including the safety margin. At fixed initial scale, initial grid work grows with grid area. Consider a smaller grid only after checking image completeness across the model prior.
+2026-10-17 14:52:38,555 - autolens.point.model.analysis - INFO - PointSolver extent for dataset 'point_0' is more than 3 times the observed-position envelope on both axes, including the safety margin. At fixed initial scale, initial grid work grows with grid area. Consider a smaller grid only after checking image completeness across the model prior.
+2026-10-17 14:53:00,881 - autolens.point.model.analysis - INFO - PointSolver extent for dataset 'point_0' is more than 3 times the observed-position envelope on both axes, including the safety margin. At fixed initial scale, initial grid work grows with grid area. Consider a smaller grid only after checking image completeness across the model prior.
+2026-10-17 14:53:13,508 - autolens.point.model.analysis - INFO - PointSolver extent for dataset 'point_0' is more than 3 times the observed-position envelope on both axes, including the safety margin. At fixed initial scale, initial grid work grows with grid area. Consider a smaller grid only after checking image completeness across the model prior.
+2026-10-17 14:53:35,709 - autolens.point.model.analysis - INFO - PointSolver extent for dataset 'point_0' is more than 3 times the observed-position envelope on both axes, including the safety margin. At fixed initial scale, initial grid work grows with grid area. Consider a smaller grid only after checking image completeness across the model prior.
+[  258.7 s] grad scalar: primal 0.9590 ms, reverse 1.8118 ms, forward 1.1918 ms; vmap16: primal 0.08386 ms/L, reverse 0.14741 ms/L, forward 0.15304 ms/L
+2026-10-17 14:54:05,070 - autolens.point.model.analysis - INFO - PointSolver extent for dataset 'point_0' is more than 3 times the observed-position envelope on both axes, including the safety margin. At fixed initial scale, initial grid work grows with grid area. Consider a smaller grid only after checking image completeness across the model prior.
+2026-10-17 14:54:25,430 - autolens.point.model.analysis - INFO - PointSolver extent for dataset 'point_0' is more than 3 times the observed-position envelope on both axes, including the safety margin. At fixed initial scale, initial grid work grows with grid area. Consider a smaller grid only after checking image completeness across the model prior.
+2026-10-17 14:54:52,790 - autolens.point.model.analysis - INFO - PointSolver extent for dataset 'point_0' is more than 3 times the observed-position envelope on both axes, including the safety margin. At fixed initial scale, initial grid work grows with grid area. Consider a smaller grid only after checking image completeness across the model prior.
+[  329.3 s] FD point 0: max rel err 7.47e-02 strict pass False (vector rel 2.03e-04; fine fwd finite True) transition False; production-vs-fine AD max rel 3.19e-02
+[  329.4 s] FD point 1: max rel err 4.69e-04 strict pass True (vector rel 2.76e-04; fine fwd finite True) transition False; production-vs-fine AD max rel 5.08e-02
+[  329.5 s] FD point 2: max rel err 7.36e-03 strict pass True (vector rel 1.35e-04; fine fwd finite True) transition False; production-vs-fine AD max rel 1.94e-02
+[  329.7 s] FD point 3: max rel err 6.21e-01 strict pass False (vector rel 5.90e-04; fine fwd finite True) transition False; production-vs-fine AD max rel 1.59e+00
+[  329.8 s] FD point 4: max rel err 2.26e-02 strict pass False (vector rel 3.17e-04; fine fwd finite True) transition False; production-vs-fine AD max rel 1.87e-02
+[  329.9 s] FD point 5: max rel err 6.29e-03 strict pass True (vector rel 1.04e-03; fine fwd finite True) transition False; production-vs-fine AD max rel 1.16e-01
+[  330.1 s] FD point 6: max rel err 2.10e-03 strict pass True (vector rel 3.31e-04; fine fwd finite True) transition False; production-vs-fine AD max rel 1.27e-02
+
+==============================================================================================================
+POINTSOLVER BOTTLENECK MAP (hpc_ral_a100_fp64_r2026_10_17_1, fp64, legs ['baseline', 'vmap', 'trace', 'grad'])
+==============================================================================================================
+{
+  "scalar_command_buffers_on_ms": 0.9343944257125258,
+  "scalar_command_buffers_off_ms": 1.1277239536866546,
+  "mdi_same_program": 0.015016867542243961,
+  "vmap_ms_per_likelihood": {
+    "1": 0.9869894711300731,
+    "4": 0.278490741038695,
+    "16": 0.08221262396546081,
+    "64": 0.026427111151861027,
+    "256": 0.01246008378075203
+  },
+  "largest_batch_fitting": 256,
+  "trace_scalar": {
+    "kernels_per_call": 173.0,
+    "device_busy_ms": 0.6201692999999999,
+    "untraced_wall_off_ms": 1.1495703225955367,
+    "wall_on_ms": 0.9999844385311007,
+    "device_busy_over_wall_off_pct": 53.94792191570863,
+    "on_program_busy_over_wall_pct": 54.314685216284765
+  },
+  "trace_vmap16": {
+    "kernels_per_call": 179.0,
+    "device_busy_ms": 0.8886448,
+    "untraced_wall_off_ms": 1.3965100795030594,
+    "wall_on_ms": 1.6628868598490953,
+    "device_busy_over_wall_off_pct": 63.633253568511265,
+    "on_program_busy_over_wall_pct": 48.83313589198074
+  },
+  "grad_scalar_ms": {
+    "primal": 0.9590149857103825,
+    "reverse": 1.8117849249392748,
+    "forward": 1.1918380623683333
+  }
+}
+  gates: {"fiducial_bit_exact": true, "command_buffers_off_bit_identical": true, "stream_finite": true, "vmap_matches_scalar": true, "trace_join": true, "grad_reverse_finite": true, "grad_forward_finite": true, "grad_finite_nonzero": true, "grad_fd_agreement": false, "backend_gpu": true}
+  all_gates_pass: False
+  wall: 330 s
+  Results JSON: /mnt/ral/jnightin/profiling/autolens_profiling_wt/ps-image-admission/output/ps_image_admission_412519/results/gpu_bottleneck_map_hpc_ral_a100_fp64_r2026_10_17_1.json
+  Results PNG:  /mnt/ral/jnightin/profiling/autolens_profiling_wt/ps-image-admission/output/ps_image_admission_412519/results/gpu_bottleneck_map_hpc_ral_a100_fp64_r2026_10_17_1.png
+=== source_revisions check (JSON vs private HEADs) ===
+OK /mnt/ral/jnightin/profiling/autolens_profiling_wt/ps-image-admission/output/ps_image_admission_412519/results/gpu_bottleneck_map_hpc_ral_a100_fp64_r2026_10_17_1.json all_gates_pass False
+OK /mnt/ral/jnightin/profiling/autolens_profiling_wt/ps-image-admission/output/ps_image_admission_412519/results/image_plane_hpc_ral_a100_fp64_r2026_10_17_1.json all_gates_pass None
+==========================================
+loadavg: 1.43 1.41 0.86 1/1239 1078215
+name, memory.used [MiB]
+NVIDIA A100 80GB PCIe, 0 MiB
+NVIDIA A100 80GB PCIe, 0 MiB
+NVIDIA A100 80GB PCIe, 0 MiB
+NVIDIA A100 80GB PCIe, 0 MiB
+Finished.
+Sat 17 Oct 14:55:19 BST 2026

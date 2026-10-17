@@ -58,6 +58,7 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 | Exact configuration | Evidence source | Records |
 |---|---|---|
 | [baseline-not-defined](12cdde654cb73efe5b9d.md) | planned; no evidence | 0 |
+| [8c92616787f4d462e87b](041fe3e688665d3f3fe5.md) | results/breakdown/interferometer/jvla/delaunay_hpc_a100_fp64_fft_prune.json | 1 |
 | [9483a2d34e3fd2e6e499](1ca3c14b41a634858c34.md) | results/breakdown/interferometer/jvla/delaunay_hpc_a100_mp.json | 89 |
 | [c260fd3d78d764017b53](030ed8489e11ebfd3192.md) | results/breakdown/interferometer/jvla/delaunay_hpc_a100_fp64.json | 101 |
 

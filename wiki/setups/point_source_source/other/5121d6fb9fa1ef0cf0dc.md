@@ -43,14 +43,15 @@ No selected reference for this exact setup; archive evidence is available below.
 
 ### runtime
 
-<details><summary>4 recorded runtime measurements</summary>
+<details><summary>5 recorded runtime measurements</summary>
 
 | Record | Metric | Value | Unit | Device / precision | Selection | Evidence pointer |
 |---|---|---|---|---|---|---|
-| `measurement/1509c0d5068181323426` | single_call | {"single_call": 0.0006424111023079603} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/runtime/point_source_source/source_plane_solved/comparison.json) `/configs/hpc_a100_fp64/full_pipeline_per_call` |
-| `measurement/3542f166e0ff1082ef54` | vmap.batch_time | {"vmap.batch_time": 0.0003613077977206558} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/runtime/point_source_source/source_plane_solved/comparison.json) `/configs/hpc_a100_fp64/vmap/batch_time` |
-| `measurement/5a1117b348e7e7843cd1` | vmap.per_call | {"vmap.per_call": 5.645434339385247e-06} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/runtime/point_source_source/source_plane_solved/comparison.json) `/configs/hpc_a100_fp64/vmap/per_call` |
-| `measurement/90868e8e7e368c67776d` | single_jit_block | {"single_jit_block": 0.0006424111023079603} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/runtime/point_source_source/source_plane_solved/comparison.json) `/configs/hpc_a100_fp64/full_pipeline_single_jit` |
+| `measurement/1509c0d5068181323426` | single_call | {"single_call": 0.0003466109978035092} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/runtime/point_source_source/source_plane_solved/comparison.json) `/configs/hpc_a100_fp64/full_pipeline_per_call` |
+| `measurement/3542f166e0ff1082ef54` | vmap.batch_time | {"vmap.batch_time": 0.00030517608392983676} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/runtime/point_source_source/source_plane_solved/comparison.json) `/configs/hpc_a100_fp64/vmap/batch_time` |
+| `measurement/5a1117b348e7e7843cd1` | vmap.per_call | {"vmap.per_call": 4.768376311403699e-06} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/runtime/point_source_source/source_plane_solved/comparison.json) `/configs/hpc_a100_fp64/vmap/per_call` |
+| `measurement/90868e8e7e368c67776d` | single_jit_block | {"single_jit_block": 0.0003466109978035092} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/runtime/point_source_source/source_plane_solved/comparison.json) `/configs/hpc_a100_fp64/full_pipeline_single_jit` |
+| `measurement/bd34a19389491695d304` | single_jit_median | {"single_jit_median": 0.00023301457986235619} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/runtime/point_source_source/source_plane_solved/comparison.json) `/configs/hpc_a100_fp64/full_pipeline_single_jit_median` |
 
 </details>
 
@@ -68,30 +69,97 @@ No selected reference for this exact setup; archive evidence is available below.
       "cpu_count": 124,
       "device": "cuda:0",
       "hostname": "euclid-ral-gpu-2",
-      "nvidia_smi": "NVIDIA A100 80GB PCIe, 441 MiB, 81920 MiB",
+      "nvidia_smi": "NVIDIA A100 80GB PCIe, 441 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB",
       "omp_num_threads": null,
       "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
     },
-    "library_version": "2026.8.17.1",
+    "library_version": "2026.10.17.1",
     "precision": "float64",
     "software": {
-      "PyAutoArray.library_revisions": "9428eca24a02b528edde68550dbcf82e609a652a",
-      "PyAutoArray.library_versions": "2026.8.17.1",
-      "PyAutoFit.library_revisions": "867af1c6b917b326c732f092b0ea9858447f2a78",
-      "PyAutoFit.library_versions": "2026.8.17.1",
-      "PyAutoGalaxy.library_revisions": "c7fc595ba0a96702989bb2e5282f3cc874b32494",
-      "PyAutoGalaxy.library_versions": "2026.8.17.1",
-      "PyAutoLens": "2026.8.17.1",
-      "PyAutoLens.library_revisions": "897c2f761e5c16f48eab784279e7e2ed0bf73a0f",
-      "PyAutoLens.library_versions": "2026.8.17.1",
-      "PyAutoNerves.library_revisions": "bf104102312852537159b7fad2f998ab6677b4e4",
-      "PyAutoNerves.library_versions": "2026.8.17.1",
-      "autolens_profiling.library_revisions": "464f94836f9bb79f471dfab671d0e182e9d8ef97",
-      "jax.dependency_versions": "0.10.2",
-      "jaxlib.dependency_versions": "0.10.2",
-      "nufftax.dependency_versions": "0.6.1",
-      "numba.dependency_versions": "0.65.1",
-      "numpy.dependency_versions": "2.2.6",
+      "PyAutoArray.library_revisions": "unavailable: CalledProcessError",
+      "PyAutoArray.library_versions": "2026.10.17.1",
+      "PyAutoFit.library_revisions": "unavailable: CalledProcessError",
+      "PyAutoFit.library_versions": "2026.10.17.1",
+      "PyAutoGalaxy.library_revisions": "unavailable: CalledProcessError",
+      "PyAutoGalaxy.library_versions": "2026.10.17.1",
+      "PyAutoLens": "2026.10.17.1",
+      "PyAutoLens.library_revisions": "unavailable: CalledProcessError",
+      "PyAutoLens.library_versions": "2026.10.17.1",
+      "PyAutoNerves.library_revisions": "unavailable: CalledProcessError",
+      "PyAutoNerves.library_versions": "2026.10.17.1",
+      "autolens_profiling.library_revisions": "95b4e8a0ce52ea92326ea4fb336abe75abb53f4d",
+      "jax.dependency_versions": "0.11.2",
+      "jaxlib.dependency_versions": "0.11.2",
+      "numpy.dependency_versions": "2.5.4",
+      "scipy.dependency_versions": "1.17.1"
+    },
+    "unknowns": {}
+  },
+  "method": {
+    "cache_state": null,
+    "repetitions": null,
+    "statistic": "median",
+    "synchronization": null,
+    "unknowns": {
+      "cache_state": "Not recorded in this legacy evidence; no current default substituted.",
+      "repetitions": "Not recorded in this legacy evidence; no current default substituted.",
+      "synchronization": "Not recorded in this legacy evidence; no current default substituted.",
+      "warmup": "Not recorded in this legacy evidence; no current default substituted."
+    },
+    "warmup": null
+  },
+  "provenance": {
+    "has_provenance": true,
+    "host": "euclid-ral-gpu-2",
+    "measured_at": "2026-10-17T13:41:15Z",
+    "qualified": false,
+    "unknowns": {}
+  },
+  "validation": {
+    "reason": "Legacy evidence transcribed without scientific baseline acceptance.",
+    "status": "unreviewed"
+  }
+}
+```
+
+</details>
+
+<details><summary>Recorded hardware, software, method and limitations</summary>
+
+```json
+{
+  "identity": {
+    "backend": "gpu",
+    "device": "a100",
+    "hardware_details": {
+      "autotune_cache_entries_at_start": 0,
+      "backend": "gpu",
+      "cache_fresh": true,
+      "cpu_count": 124,
+      "device": "cuda:0",
+      "hostname": "euclid-ral-gpu-2",
+      "nvidia_smi": "NVIDIA A100 80GB PCIe, 441 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB",
+      "omp_num_threads": null,
+      "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+    },
+    "library_version": "2026.10.17.1",
+    "precision": "float64",
+    "software": {
+      "PyAutoArray.library_revisions": "unavailable: CalledProcessError",
+      "PyAutoArray.library_versions": "2026.10.17.1",
+      "PyAutoFit.library_revisions": "unavailable: CalledProcessError",
+      "PyAutoFit.library_versions": "2026.10.17.1",
+      "PyAutoGalaxy.library_revisions": "unavailable: CalledProcessError",
+      "PyAutoGalaxy.library_versions": "2026.10.17.1",
+      "PyAutoLens": "2026.10.17.1",
+      "PyAutoLens.library_revisions": "unavailable: CalledProcessError",
+      "PyAutoLens.library_versions": "2026.10.17.1",
+      "PyAutoNerves.library_revisions": "unavailable: CalledProcessError",
+      "PyAutoNerves.library_versions": "2026.10.17.1",
+      "autolens_profiling.library_revisions": "95b4e8a0ce52ea92326ea4fb336abe75abb53f4d",
+      "jax.dependency_versions": "0.11.2",
+      "jaxlib.dependency_versions": "0.11.2",
+      "numpy.dependency_versions": "2.5.4",
       "scipy.dependency_versions": "1.17.1"
     },
     "unknowns": {}
@@ -113,7 +181,7 @@ No selected reference for this exact setup; archive evidence is available below.
   "provenance": {
     "has_provenance": true,
     "host": "euclid-ral-gpu-2",
-    "measured_at": "2026-09-28T19:46:46Z",
+    "measured_at": "2026-10-17T13:41:15Z",
     "qualified": false,
     "unknowns": {}
   },

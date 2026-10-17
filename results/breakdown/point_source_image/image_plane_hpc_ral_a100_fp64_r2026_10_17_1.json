@@ -1,0 +1,718 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "package_versions": {
+    "jax": "0.10.2",
+    "jaxlib": "0.10.2"
+  },
+  "source_revisions": {
+    "autolens_profiling": "fd29902bd09ff5defcab5e9007a547423048e8aa",
+    "PyAutoNerves": "7f3055b7f3d1967f372bdb41ee732135bca0e68d",
+    "PyAutoFit": "4b183e226947312d9a98b8f8dee1a3cf29c548ef",
+    "PyAutoArray": "e59d5fa901e54bf3d9931890067bc3447a5c1232",
+    "PyAutoGalaxy": "35100def2b7cd775fb77e46dbc1a674841c8f897",
+    "PyAutoLens": "c90eceb0093ea1618e679184e4f2a59268caa581"
+  },
+  "instrument": "simple",
+  "config_name": "hpc_ral_a100_fp64_r2026_10_17_1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "hostname": "euclid-ral-gpu-2",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 124,
+    "jax_compilation_cache_dir": null,
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": false,
+    "provenance": {
+      "provenance_schema": 1,
+      "captured_at": "2026-10-17T13:49:42Z",
+      "host": "euclid-ral-gpu-2",
+      "slurm": {
+        "job_id": "412519",
+        "array_job_id": null,
+        "array_task_id": null
+      },
+      "loadavg_at_import": [
+        0.47,
+        0.19,
+        0.09
+      ],
+      "loadavg_at_write": [
+        1.88,
+        1.22,
+        0.54
+      ],
+      "profiling_revision": "fd29902bd09ff5defcab5e9007a547423048e8aa",
+      "library_revisions": {
+        "autolens_profiling": "fd29902bd09ff5defcab5e9007a547423048e8aa",
+        "PyAutoNerves": "7f3055b7f3d1967f372bdb41ee732135bca0e68d",
+        "PyAutoFit": "4b183e226947312d9a98b8f8dee1a3cf29c548ef",
+        "PyAutoArray": "e59d5fa901e54bf3d9931890067bc3447a5c1232",
+        "PyAutoGalaxy": "35100def2b7cd775fb77e46dbc1a674841c8f897",
+        "PyAutoLens": "c90eceb0093ea1618e679184e4f2a59268caa581"
+      },
+      "library_versions": {
+        "PyAutoNerves": "2026.8.17.1",
+        "PyAutoFit": "2026.8.17.1",
+        "PyAutoArray": "2026.8.17.1",
+        "PyAutoGalaxy": "2026.8.17.1",
+        "PyAutoLens": "2026.8.17.1"
+      },
+      "dependency_versions": {
+        "jax": "0.10.2",
+        "jaxlib": "0.10.2",
+        "numpy": "2.2.6",
+        "scipy": "1.17.1",
+        "numba": "0.65.1",
+        "nufftax": "0.6.1"
+      }
+    },
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 469 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB"
+  },
+  "thread_environment": {
+    "NPROC": "8",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "precision": {
+    "jax_enable_x64": true,
+    "mixed_precision_requested": false,
+    "note": "PointSolver has no Settings mixed-precision switch; device task validates precision-specific execution."
+  },
+  "configuration": {
+    "likelihood": "image_plane_solved (FitPositionsImagePairAllSolved)",
+    "plain_control": "image_plane (FitPositionsImagePairAll)",
+    "observed_positions": 4,
+    "position_noise_sigma": 0.05,
+    "dataset_noise_seed": 1,
+    "lens_redshift": 0.5,
+    "source_redshift": 1.0,
+    "solver_grid_shape": [
+      100,
+      100
+    ],
+    "solver_grid_pixel_scale": 0.2,
+    "solver_pixel_scale_precision": 0.001,
+    "magnification_threshold": 0.1,
+    "neighbor_degree": 1,
+    "max_containing_size": 20,
+    "n_steps": 8,
+    "n_repeats": 5
+  },
+  "steps": {
+    "Solved source centre": 0.00036802180111408236,
+    "Step 0: ray trace": -5.9563620015978824e-05,
+    "Step 0: containment": 0.00016048103570938111,
+    "Step 0: selection": 9.73053742200136e-05,
+    "Step 0: neighbourhood": -5.192169919610067e-06,
+    "Step 0: up sample": 1.0127993300557223e-05,
+    "Step 1: ray trace": 2.2025965154170947e-05,
+    "Step 1: containment": 3.499910235405402e-07,
+    "Step 1: selection": 2.1924031898379326e-05,
+    "Step 1: neighbourhood": 3.076982684433458e-05,
+    "Step 1: up sample": 1.1173775419592857e-05,
+    "Step 2: ray trace": -5.168337374925611e-05,
+    "Step 2: containment": 5.337717011570924e-05,
+    "Step 2: selection": 4.368396475911145e-05,
+    "Step 2: neighbourhood": 3.067986108362675e-05,
+    "Step 2: up sample": 4.887580871582031e-05,
+    "Step 3: ray trace": -8.899141103029255e-05,
+    "Step 3: containment": 5.102553404867649e-05,
+    "Step 3: selection": 2.2186012938618703e-05,
+    "Step 3: neighbourhood": 3.4609623253345424e-05,
+    "Step 3: up sample": 5.405959673225884e-05,
+    "Step 4: ray trace": -0.00011908099986612797,
+    "Step 4: containment": 0.00013155699707567692,
+    "Step 4: selection": -2.787183038890364e-05,
+    "Step 4: neighbourhood": 3.850185312330727e-05,
+    "Step 4: up sample": 8.409535512328144e-05,
+    "Step 5: ray trace": -0.00013352720998227596,
+    "Step 5: containment": 4.574181511998179e-05,
+    "Step 5: selection": 5.434365011751656e-05,
+    "Step 5: neighbourhood": 2.2348202764987902e-05,
+    "Step 5: up sample": 3.8719596341252414e-05,
+    "Step 6: ray trace": -9.894943796098245e-05,
+    "Step 6: containment": 0.0001200232189148664,
+    "Step 6: selection": -1.3387994840741158e-05,
+    "Step 6: neighbourhood": 0.00012984937056899088,
+    "Step 6: up sample": 0.0002405566163361072,
+    "Step 7: ray trace": -0.00042375558987259873,
+    "Step 7: containment": 0.0001041071955114603,
+    "Step 7: selection": 7.526143454015264e-05,
+    "Step 7: neighbourhood": 3.663194365799427e-05,
+    "Step 7: up sample": 2.104802988469592e-05,
+    "Magnification filter": -0.00013686921447515483,
+    "Pairing chi-squared / fused-wrapper residual": 4.164981655776492e-05
+  },
+  "prefix_steady_per_call_s": {
+    "Solved source centre": 0.00036802180111408236,
+    "Step 0: ray trace": 0.00030845818109810353,
+    "Step 0: containment": 0.00046893921680748465,
+    "Step 0: selection": 0.0005662445910274982,
+    "Step 0: neighbourhood": 0.0005610524211078882,
+    "Step 0: up sample": 0.0005711804144084454,
+    "Step 1: ray trace": 0.0005932063795626163,
+    "Step 1: containment": 0.0005935563705861569,
+    "Step 1: selection": 0.0006154804024845362,
+    "Step 1: neighbourhood": 0.0006462502293288708,
+    "Step 1: up sample": 0.0006574240047484637,
+    "Step 2: ray trace": 0.0006057406309992075,
+    "Step 2: containment": 0.0006591178011149168,
+    "Step 2: selection": 0.0007028017658740282,
+    "Step 2: neighbourhood": 0.000733481626957655,
+    "Step 2: up sample": 0.0007823574356734753,
+    "Step 3: ray trace": 0.0006933660246431827,
+    "Step 3: containment": 0.0007443915586918592,
+    "Step 3: selection": 0.0007665775716304779,
+    "Step 3: neighbourhood": 0.0008011871948838234,
+    "Step 3: up sample": 0.0008552467916160822,
+    "Step 4: ray trace": 0.0007361657917499542,
+    "Step 4: containment": 0.0008677227888256311,
+    "Step 4: selection": 0.0008398509584367275,
+    "Step 4: neighbourhood": 0.0008783528115600348,
+    "Step 4: up sample": 0.0009624481666833162,
+    "Step 5: ray trace": 0.0008289209567010402,
+    "Step 5: containment": 0.000874662771821022,
+    "Step 5: selection": 0.0009290064219385386,
+    "Step 5: neighbourhood": 0.0009513546247035265,
+    "Step 5: up sample": 0.000990074221044779,
+    "Step 6: ray trace": 0.0008911247830837965,
+    "Step 6: containment": 0.0010111480019986629,
+    "Step 6: selection": 0.0009977600071579217,
+    "Step 6: neighbourhood": 0.0011276093777269126,
+    "Step 6: up sample": 0.0013681659940630198,
+    "Step 7: ray trace": 0.0009444104041904211,
+    "Step 7: containment": 0.0010485175997018814,
+    "Step 7: selection": 0.001123779034242034,
+    "Step 7: neighbourhood": 0.0011604109779000283,
+    "Step 7: up sample": 0.0011814590077847242,
+    "Magnification filter": 0.0010445897933095694
+  },
+  "total_step_by_step": 0.0010862396098673343,
+  "fused_full_solved_s": 0.0010862396098673343,
+  "fused_full_plain_control_s": 0.0011056073941290378,
+  "jit_phases": {
+    "full_solved": {
+      "lower_s": 3.2465027668513358,
+      "compile_s": 6.502645876025781,
+      "first_call_s": 0.016372042009606957,
+      "steady_per_call_s": 0.0010862396098673343
+    },
+    "full_plain_control": {
+      "lower_s": 2.1120971359778196,
+      "compile_s": 5.760970792034641,
+      "first_call_s": 0.014388113049790263,
+      "steady_per_call_s": 0.0011056073941290378
+    },
+    "source_centre": {
+      "lower_s": 0.4576371880248189,
+      "compile_s": 0.6946092650759965,
+      "first_call_s": 0.002889052964746952,
+      "steady_per_call_s": 0.00036802180111408236
+    },
+    "step_00_ray_trace": {
+      "lower_s": 0.30430975393392146,
+      "compile_s": 0.3521975679323077,
+      "first_call_s": 0.0021090570371598005,
+      "steady_per_call_s": 0.00030845818109810353
+    },
+    "step_00_containment": {
+      "lower_s": 0.3994527969043702,
+      "compile_s": 1.0757193709723651,
+      "first_call_s": 0.003446789924055338,
+      "steady_per_call_s": 0.00046893921680748465
+    },
+    "step_00_selection": {
+      "lower_s": 0.5804224258754402,
+      "compile_s": 1.1673561141360551,
+      "first_call_s": 0.0040091960690915585,
+      "steady_per_call_s": 0.0005662445910274982
+    },
+    "step_00_neighbourhood": {
+      "lower_s": 0.43992074485868216,
+      "compile_s": 1.578705919906497,
+      "first_call_s": 0.00543299806304276,
+      "steady_per_call_s": 0.0005610524211078882
+    },
+    "step_00_up_sample": {
+      "lower_s": 0.4464793661609292,
+      "compile_s": 1.5677531249821186,
+      "first_call_s": 0.00507523980922997,
+      "steady_per_call_s": 0.0005711804144084454
+    },
+    "step_01_ray_trace": {
+      "lower_s": 0.6789828490000218,
+      "compile_s": 1.6365291438996792,
+      "first_call_s": 0.006513841915875673,
+      "steady_per_call_s": 0.0005932063795626163
+    },
+    "step_01_containment": {
+      "lower_s": 0.517903289059177,
+      "compile_s": 1.8314996401313692,
+      "first_call_s": 0.005926155019551516,
+      "steady_per_call_s": 0.0005935563705861569
+    },
+    "step_01_selection": {
+      "lower_s": 0.529783418867737,
+      "compile_s": 1.8860850548371673,
+      "first_call_s": 0.0057421959936618805,
+      "steady_per_call_s": 0.0006154804024845362
+    },
+    "step_01_neighbourhood": {
+      "lower_s": 0.6969282010104507,
+      "compile_s": 2.0408733719959855,
+      "first_call_s": 0.006225842982530594,
+      "steady_per_call_s": 0.0006462502293288708
+    },
+    "step_01_up_sample": {
+      "lower_s": 0.5378382590133697,
+      "compile_s": 1.9973715210799128,
+      "first_call_s": 0.006592841120436788,
+      "steady_per_call_s": 0.0006574240047484637
+    },
+    "step_02_ray_trace": {
+      "lower_s": 0.7594353188760579,
+      "compile_s": 2.197989894077182,
+      "first_call_s": 0.006750099826604128,
+      "steady_per_call_s": 0.0006057406309992075
+    },
+    "step_02_containment": {
+      "lower_s": 0.5951143079437315,
+      "compile_s": 2.211832861183211,
+      "first_call_s": 0.0069185891188681126,
+      "steady_per_call_s": 0.0006591178011149168
+    },
+    "step_02_selection": {
+      "lower_s": 0.770397141110152,
+      "compile_s": 2.3321801419369876,
+      "first_call_s": 0.0070862669963389635,
+      "steady_per_call_s": 0.0007028017658740282
+    },
+    "step_02_neighbourhood": {
+      "lower_s": 0.6128575939219445,
+      "compile_s": 2.3265951960347593,
+      "first_call_s": 0.007544445106759667,
+      "steady_per_call_s": 0.000733481626957655
+    },
+    "step_02_up_sample": {
+      "lower_s": 0.775651081930846,
+      "compile_s": 2.414201062871143,
+      "first_call_s": 0.0077695539221167564,
+      "steady_per_call_s": 0.0007823574356734753
+    },
+    "step_03_ray_trace": {
+      "lower_s": 0.6614656539168209,
+      "compile_s": 2.461676289793104,
+      "first_call_s": 0.008092381060123444,
+      "steady_per_call_s": 0.0006933660246431827
+    },
+    "step_03_containment": {
+      "lower_s": 0.8357338830828667,
+      "compile_s": 2.551989590981975,
+      "first_call_s": 0.008054781006649137,
+      "steady_per_call_s": 0.0007443915586918592
+    },
+    "step_03_selection": {
+      "lower_s": 0.6750747610349208,
+      "compile_s": 2.6465447379741818,
+      "first_call_s": 0.008135072188451886,
+      "steady_per_call_s": 0.0007665775716304779
+    },
+    "step_03_neighbourhood": {
+      "lower_s": 0.847597791114822,
+      "compile_s": 2.6443175598978996,
+      "first_call_s": 0.008705847896635532,
+      "steady_per_call_s": 0.0008011871948838234
+    },
+    "step_03_up_sample": {
+      "lower_s": 0.6789640891365707,
+      "compile_s": 2.732156155863777,
+      "first_call_s": 0.008651559008285403,
+      "steady_per_call_s": 0.0008552467916160822
+    },
+    "step_04_ray_trace": {
+      "lower_s": 0.8988936459645629,
+      "compile_s": 2.766368692042306,
+      "first_call_s": 0.008958715945482254,
+      "steady_per_call_s": 0.0007361657917499542
+    },
+    "step_04_containment": {
+      "lower_s": 0.9135498770046979,
+      "compile_s": 2.9758691519964486,
+      "first_call_s": 0.00906139612197876,
+      "steady_per_call_s": 0.0008677227888256311
+    },
+    "step_04_selection": {
+      "lower_s": 0.749133219011128,
+      "compile_s": 2.949631087947637,
+      "first_call_s": 0.009300024947151542,
+      "steady_per_call_s": 0.0008398509584367275
+    },
+    "step_04_neighbourhood": {
+      "lower_s": 0.9251901798415929,
+      "compile_s": 3.095510567072779,
+      "first_call_s": 0.009814120829105377,
+      "steady_per_call_s": 0.0008783528115600348
+    },
+    "step_04_up_sample": {
+      "lower_s": 0.753704572096467,
+      "compile_s": 3.0652097270358354,
+      "first_call_s": 0.010435167932882905,
+      "steady_per_call_s": 0.0009624481666833162
+    },
+    "step_05_ray_trace": {
+      "lower_s": 0.9625067771412432,
+      "compile_s": 3.2147217970341444,
+      "first_call_s": 0.01057104580104351,
+      "steady_per_call_s": 0.0008289209567010402
+    },
+    "step_05_containment": {
+      "lower_s": 0.9809491261839867,
+      "compile_s": 3.2709839099552482,
+      "first_call_s": 0.01020846888422966,
+      "steady_per_call_s": 0.000874662771821022
+    },
+    "step_05_selection": {
+      "lower_s": 0.8188852840103209,
+      "compile_s": 3.3297743799630553,
+      "first_call_s": 0.010357027873396873,
+      "steady_per_call_s": 0.0009290064219385386
+    },
+    "step_05_neighbourhood": {
+      "lower_s": 0.9897873138543218,
+      "compile_s": 3.442516626790166,
+      "first_call_s": 0.010944175068289042,
+      "steady_per_call_s": 0.0009513546247035265
+    },
+    "step_05_up_sample": {
+      "lower_s": 0.9955018188338727,
+      "compile_s": 3.445998747134581,
+      "first_call_s": 0.010807485086843371,
+      "steady_per_call_s": 0.000990074221044779
+    },
+    "step_06_ray_trace": {
+      "lower_s": 0.8745377110317349,
+      "compile_s": 3.594449129886925,
+      "first_call_s": 0.011220374144613743,
+      "steady_per_call_s": 0.0008911247830837965
+    },
+    "step_06_containment": {
+      "lower_s": 1.037583078024909,
+      "compile_s": 3.5814377679489553,
+      "first_call_s": 0.011568660149350762,
+      "steady_per_call_s": 0.0010111480019986629
+    },
+    "step_06_selection": {
+      "lower_s": 1.054289567982778,
+      "compile_s": 3.6891062350478023,
+      "first_call_s": 0.011151622980833054,
+      "steady_per_call_s": 0.0009977600071579217
+    },
+    "step_06_neighbourhood": {
+      "lower_s": 0.8930754698812962,
+      "compile_s": 3.6789470850490034,
+      "first_call_s": 0.011947748949751258,
+      "steady_per_call_s": 0.0011276093777269126
+    },
+    "step_06_up_sample": {
+      "lower_s": 1.0542530880775303,
+      "compile_s": 3.759791844058782,
+      "first_call_s": 0.015993734821677208,
+      "steady_per_call_s": 0.0013681659940630198
+    },
+    "step_07_ray_trace": {
+      "lower_s": 1.1089174828957766,
+      "compile_s": 3.8980016170535237,
+      "first_call_s": 0.012276506051421165,
+      "steady_per_call_s": 0.0009444104041904211
+    },
+    "step_07_containment": {
+      "lower_s": 1.1167465441394597,
+      "compile_s": 4.0244929529726505,
+      "first_call_s": 0.012222927995026112,
+      "steady_per_call_s": 0.0010485175997018814
+    },
+    "step_07_selection": {
+      "lower_s": 0.9587991680018604,
+      "compile_s": 4.0281257019378245,
+      "first_call_s": 0.012562965974211693,
+      "steady_per_call_s": 0.001123779034242034
+    },
+    "step_07_neighbourhood": {
+      "lower_s": 1.119875367032364,
+      "compile_s": 4.13226155214943,
+      "first_call_s": 0.01315838098526001,
+      "steady_per_call_s": 0.0011604109779000283
+    },
+    "step_07_up_sample": {
+      "lower_s": 1.1267480258829892,
+      "compile_s": 4.046954689081758,
+      "first_call_s": 0.01317773200571537,
+      "steady_per_call_s": 0.0011814590077847242
+    },
+    "magnification_filter": {
+      "lower_s": 1.3366236640140414,
+      "compile_s": 4.300949553959072,
+      "first_call_s": 0.012623413931578398,
+      "steady_per_call_s": 0.0010445897933095694
+    }
+  },
+  "likelihoods": {
+    "solved_eager": 7.743201200876817,
+    "solved_jit": 7.743201200876806,
+    "plain_eager": 7.196577317761017,
+    "plain_jit": 7.196577317761012
+  },
+  "numerical_controls": {
+    "vmap_batch": 2,
+    "vmap_values": [
+      7.743201200876806,
+      7.743201200876806
+    ],
+    "gradient_all_finite": true,
+    "gradient_l2": 1783.3021072304423,
+    "filtered_finite_positions": 4
+  },
+  "step_metadata": [
+    {
+      "step": 0,
+      "initial_shape": [
+        23283,
+        3,
+        2
+      ],
+      "plane_shape": [
+        23283,
+        3,
+        2
+      ],
+      "filtered_shape": [
+        9,
+        3,
+        2
+      ],
+      "neighbourhood_shape": [
+        29,
+        3,
+        2
+      ],
+      "up_sampled_shape": [
+        116,
+        3,
+        2
+      ],
+      "filtered_finite_triangles": 9
+    },
+    {
+      "step": 1,
+      "initial_shape": [
+        116,
+        3,
+        2
+      ],
+      "plane_shape": [
+        116,
+        3,
+        2
+      ],
+      "filtered_shape": [
+        5,
+        3,
+        2
+      ],
+      "neighbourhood_shape": [
+        20,
+        3,
+        2
+      ],
+      "up_sampled_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_finite_triangles": 5
+    },
+    {
+      "step": 2,
+      "initial_shape": [
+        80,
+        3,
+        2
+      ],
+      "plane_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_shape": [
+        5,
+        3,
+        2
+      ],
+      "neighbourhood_shape": [
+        20,
+        3,
+        2
+      ],
+      "up_sampled_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_finite_triangles": 5
+    },
+    {
+      "step": 3,
+      "initial_shape": [
+        80,
+        3,
+        2
+      ],
+      "plane_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_shape": [
+        5,
+        3,
+        2
+      ],
+      "neighbourhood_shape": [
+        20,
+        3,
+        2
+      ],
+      "up_sampled_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_finite_triangles": 5
+    },
+    {
+      "step": 4,
+      "initial_shape": [
+        80,
+        3,
+        2
+      ],
+      "plane_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_shape": [
+        5,
+        3,
+        2
+      ],
+      "neighbourhood_shape": [
+        20,
+        3,
+        2
+      ],
+      "up_sampled_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_finite_triangles": 5
+    },
+    {
+      "step": 5,
+      "initial_shape": [
+        80,
+        3,
+        2
+      ],
+      "plane_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_shape": [
+        5,
+        3,
+        2
+      ],
+      "neighbourhood_shape": [
+        20,
+        3,
+        2
+      ],
+      "up_sampled_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_finite_triangles": 5
+    },
+    {
+      "step": 6,
+      "initial_shape": [
+        80,
+        3,
+        2
+      ],
+      "plane_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_shape": [
+        5,
+        3,
+        2
+      ],
+      "neighbourhood_shape": [
+        20,
+        3,
+        2
+      ],
+      "up_sampled_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_finite_triangles": 5
+    },
+    {
+      "step": 7,
+      "initial_shape": [
+        80,
+        3,
+        2
+      ],
+      "plane_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_shape": [
+        5,
+        3,
+        2
+      ],
+      "neighbourhood_shape": [
+        20,
+        3,
+        2
+      ],
+      "up_sampled_shape": [
+        80,
+        3,
+        2
+      ],
+      "filtered_finite_triangles": 5
+    }
+  ],
+  "methodology": {
+    "prefix_rows": "successive differences of cumulative JIT prefixes",
+    "negative_rows": "retained; XLA fusion and timing noise can move work across boundaries",
+    "authoritative_runtime": "fused_full_solved_s",
+    "ray_trace_prefix": "jnp.sum(plane_triangles.vertices): deflections only; the vertices[indices] gather is counted in containment (PyAutoArray#579 fix)"
+  }
+}

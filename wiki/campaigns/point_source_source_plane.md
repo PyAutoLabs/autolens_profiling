@@ -9,7 +9,7 @@
 **Profiling PRs:** #317, #318 (folder split), #323, #327, #331, #336; runtime refresh #349 (issue).
 **Ledger:** [point_source_source_plane_campaign.md](../../results/notes/point_source_source_plane_campaign.md)
 **Mind contract:** epic `point-source-cpu-speed`; PyAutoPulse task [point_source_source_plane_chi_squared_speed](https://github.com/PyAutoLabs/PyAutoPulse/blob/main/tasks/point_source_source_plane_chi_squared_speed.md) (migrated from Mind 2026-10-03); records `complete/2026/09/point-source-source-plane-{breakdown,p2a,p2b,p2c,p2e}.md`, `point-source-gradient-mode.md`.
-**Next:** parked — blackjax NUTS/SMC forward-mode `value_and_grad`, requires an admission measurement for a gradient sampler. The Nautilus leaf has five recovered seeds. It merged in autolens_inference#17 on 2026-10-02 (`b0e49501`; issue #15 closed) and is not a gradient sampler; its estimated steady likelihood share is 0.0405–0.0447%. A100 `vmap` throughput row done 2026-09-28.
+**Next:** parked — human decision on the gradient-sampler admission evidence (2026-10-17, autolens_inference#25 / #428): `af.MultiStartAdam` (forward mode) converges to the Nautilus log-L range in 259–1432 steps on 2026.10.17.1. The likelihood+gradient is ≤ 3.7% (RAL CPU) / ≤ 2.3% (A100) of search wall, so a gradient speed-up caps at ~4% of these fits. BlackJAX NUTS/SMC not run (do not honour `gradient_mode`).
 
 ## Why this campaign
 
@@ -32,6 +32,7 @@ the solved likelihood contains an inner forward-mode lensing Hessian, so reverse
 | SP-2d library | 2026-09-27 | Put the mode into the libraries | not recorded (library change; default stays `reverse` except `AnalysisPoint`) | `gradient_mode` declared by the analysis, search override | — | PyAutoFit#1649, PyAutoLens#752 |
 | SP-2e confirmation | 2026-09-27 | Does the saving arrive through `MultiStartAdam` unchanged? | not recorded (confirmation run, issue #334) | yes: step 0.36–0.58x of reverse; `fit()` solved lane 12.04 → 10.54 s, plain lane 10.86 → 11.04 s (compile-dominated); gradients agree ≤ 2.1e-9 over PRNGKey 0..15 | 359192 (EPYC), 359193 (A100, excluded) | #336 |
 | Runtime refresh | 2026-09-28 | Re-measure the runtime cell at release 2026.9.27.2 on the reference node; A100 vmap throughput | not recorded (refresh + measurement, issue #349) | RAL CPU single JIT 0.258 ms (matches 2b's 0.26 ms); A100 vmap 5.6 µs/call at b64 (≈ 114×), launch-bound to b1024; A100 single JIT steady 0.27 ms (cell's 0.642 ms is a warm-up artefact) | 366911, 366912, 366914 (diag) | #349 (issue) |
+| Admission evidence + median refresh | 2026-10-17 | Does a gradient search on the source-plane χ² find the answer, at what likelihood share; fresh #371 medians | not recorded (evidence for a human admission call; issue #428, autolens_inference#25) | MultiStartAdam (ceiling 3000): all 5 seeds converge (259–1432 steps), log L in the Nautilus range, ≤ 0.80σ; value+grad share ≤ 3.7% CPU / ≤ 2.3% A100. Runtime medians: A100 0.233 ms (single_jit 0.347), RAL 8490H 0.147 ms (single_jit 0.177), on 2026.10.17.1 wheels | 412495, 412498 (inference); 412517, 412518 | #428 (issue) |
 
 ## What shipped and where it is
 
@@ -42,7 +43,7 @@ the solved likelihood contains an inner forward-mode lensing Hessian, so reverse
 
 ## Open / parked / drafts
 
-- Parked: blackjax NUTS / SMC forward-mode `value_and_grad` — its admission bar (likelihood share of a fit, eval count) needs a gradient-sampler measurement. `lens/autolens_inference/scripts/point_source/searches/` now holds the Nautilus source-plane leaf (`nautilus/simple_source_plane.py`, #17), but there is no blackjax NUTS/SMC leaf yet.
+- Parked: blackjax NUTS / SMC forward-mode `value_and_grad`. Gradient-search admission evidence landed 2026-10-17 (MultiStartAdam; see the ledger section of that date); the admission call is the human's. `lens/autolens_inference/scripts/point_source/searches/` now holds the Nautilus source-plane leaf (`nautilus/simple_source_plane.py`, #17), but there is no blackjax NUTS/SMC leaf yet.
 - Done 2026-09-28: A100 `vmap` throughput row — 5.6 µs/call at batch 64 (≈ 114× the single call), 0.29 µs/call at batch 1024 (diagnostic), job 366912 / 366914.
 - Carried library bugs filed through intake (see ledger verdict): `Galaxy` duplicate PyTreeDef registration; `PowerLawMultipole` m=1 at slope 2.
 

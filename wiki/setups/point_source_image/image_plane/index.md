@@ -17,6 +17,7 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 | Exact configuration | Evidence source | Records |
 |---|---|---|
 | [0ebda47118803ba2015f](862ecaed244dcec17be3.md) | results/breakdown/point_source_image/image_plane_hpc_ral_cpu_fp64_p4.json | 202 |
+| [1d9800cb1db1fe6eea1e](6e172d4c362c6fdae68c.md) | results/breakdown/point_source_image/image_plane_hpc_ral_a100_fp64_r2026_10_17_1.json | 209 |
 | [77f1e5873280a41b23f8](3987c44c4320684be330.md) | results/breakdown/point_source_image/image_plane_local_cpu_fp64.json | 198 |
 | [d37e2b7d16264b01ad57](5ea48a20d4525b10196a.md) | results/breakdown/point_source_image/image_plane_hpc_ral_cpu_fp64.json | 203 |
 
