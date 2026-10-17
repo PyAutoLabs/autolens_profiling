@@ -1,0 +1,115 @@
+AP_ROOT=/mnt/ral/jnightin/profiling/autolens_profiling_wt/ps-source-gradient-admission
+==========================================
+Sat 17 Oct 14:40:25 BST 2026
+euclid-ral-compute-10-2
+Model name:                              Intel(R) Xeon(R) Platinum 8490H
+partition:      ral
+nodelist:       euclid-ral-compute-10-2
+cpus-per-task:  8
+sched_affinity: 8
+loadavg:        10.08 10.03 10.05 11/2349 2116230
+Cell:           point_source_source/source_plane/likelihood_runtime_solved
+Dataset:        simple
+Precision:      fp64 (JAX_ENABLE_X64=1)
+Thread env:     OMP=1 MKL=1 OPENBLAS=1 NPROC=8
+Lib override:   none (shared stack)
+Venv override:  /mnt/ral/jnightin/inference/ps_source_grad_admission/venv
+autonerves  2026.10.17.1 /mnt/ral/jnightin/inference/ps_source_grad_admission/venv/lib/python3.12/site-packages/autonerves/__init__.py
+autoarray   2026.10.17.1 /mnt/ral/jnightin/inference/ps_source_grad_admission/venv/lib/python3.12/site-packages/autoarray/__init__.py
+autofit     2026.10.17.1 /mnt/ral/jnightin/inference/ps_source_grad_admission/venv/lib/python3.12/site-packages/autofit/__init__.py
+autogalaxy  2026.10.17.1 /mnt/ral/jnightin/inference/ps_source_grad_admission/venv/lib/python3.12/site-packages/autogalaxy/__init__.py
+autolens    2026.10.17.1 /mnt/ral/jnightin/inference/ps_source_grad_admission/venv/lib/python3.12/site-packages/autolens/__init__.py
+jax 0.11.2 [CpuDevice(id=0)] cpu
+
+--- Dataset loading [simple] ---
+  [dataset_load] 0.0008 s
+
+--- Point solver ---
+  [solver_build] 0.0007 s
+
+--- Model construction (PointSolved — 0 source params) ---
+  [model_build] 0.4020 s
+  Total free parameters: 5
+  (was 8 with al.ps.PointFlux in source_plane.py: 5 mass + 2 centre + 1 flux; PointSolved drops all 3 source params -> 5 mass-only. 2 of the 3 are the analytically-solved source centre (paper Sec 5.1 beta*); the 3rd is the flux param this positions-only dataset never fits either way.)
+
+--- Instantiate concrete model ---
+  [instance_from_vector] 0.0008 s
+  [register_pytrees] 0.0001 s
+
+--- Eager FitPointDataset (source-plane, solved) ---
+2026-10-17 14:40:31,441 - autolens.point.model.analysis - INFO - PointSolver extent for dataset 'point_0' is more than 3 times the observed-position envelope on both axes, including the safety margin. At fixed initial scale, initial grid work grows with grid area. Consider a smaller grid only after checking image completeness across the model prior.
+  [fit_eager] 0.0123 s
+  [eager_log_likelihood_x100] 0.4464 s
+  log_likelihood   = 0.5986504539443818
+  figure_of_merit  = 0.5986504539443818
+  eager per-call   = 0.004464 s
+
+======================================================================
+FULL-PIPELINE JIT (source-plane, solved)
+======================================================================
+2026-10-17 14:40:31,900 - autolens.point.model.analysis - INFO - PointSolver extent for dataset 'point_0' is more than 3 times the observed-position envelope on both axes, including the safety margin. At fixed initial scale, initial grid work grows with grid area. Consider a smaller grid only after checking image completeness across the model prior.
+  [full_pipeline_lower] 0.7803 s
+  [full_pipeline_compile] 0.4449 s
+  [full_pipeline_first_call] 0.0042 s
+  [full_pipeline_steady_x10] 0.0018 s
+    -> per-call avg: 0.000177 s
+  steady median = 0.000147 s (p10 0.000126, p90 0.000168; 5 warm, 200 timed); block mean 0.000177 s
+  full log_likelihood = 0.5986504555533987
+
+--- vmap batched evaluation ---
+  vmap batch_size: None (source: table (probe JSON ignored: cell mismatch))
+  [vmap_first_call] 1.2027 s
+  [vmap_steady_x10] 0.0016 s
+  batch results = [0.59865046 0.59865046 0.59865046]
+  vmap batch of 3:   0.000158 s
+  vmap per call:         0.000053 s
+  single JIT per call:   0.000177 s
+  vmap speedup:          3.4x faster per likelihood
+
+--- Static memory analysis ---
+  Output size:  0.000 MB
+  Temp size:    0.253 MB
+  Total:        0.253 MB
+
+======================================================================
+JAX LIKELIHOOD SUMMARY — POINT SOURCE SOURCE-PLANE SOLVED — v2026.10.17.1
+======================================================================
+  Dataset:                    simple
+  Observed image positions:   4
+  Position noise sigma:       0.05
+  Free parameters:            5  (source_plane.py: 8; delta=-3 -> -2 solved centre, -1 unused flux)
+  fit_positions_cls:          FitPositionsSourceSolved (source-plane chi-squared, solved centre)
+----------------------------------------------------------------------
+  Eager full likelihood:      0.004464 s/call  (0.598650)
+  Full pipeline (JIT):        0.000177 s/call  (first block after compile)
+  Full pipeline steady median: 0.000147 s/call  (p10 0.000126, p90 0.000168)
+  vmap per-call (batch=3):    0.000053 s
+  vmap speedup vs single JIT:           3.4x
+======================================================================
+
+  Results dict saved to: /mnt/ral/jnightin/profiling/autolens_profiling_wt/ps-source-gradient-admission/results/runtime/point_source_source/source_plane_solved/source_plane_solved_hpc_ral_cpu_fp64.json
+  Bar chart saved to:    /mnt/ral/jnightin/profiling/autolens_profiling_wt/ps-source-gradient-admission/results/runtime/point_source_source/source_plane_solved/source_plane_solved_hpc_ral_cpu_fp64.png
+
+======================================================================
+PROFILING SUMMARY
+======================================================================
+  dataset_load                   0.0008 s
+  solver_build                   0.0007 s
+  model_build                    0.4020 s
+  instance_from_vector           0.0008 s
+  register_pytrees               0.0001 s
+  fit_eager                      0.0123 s
+  eager_log_likelihood_x100      0.4464 s
+  full_pipeline_lower            0.7803 s
+  full_pipeline_compile          0.4449 s
+  full_pipeline_first_call       0.0042 s
+  full_pipeline_steady_x10       0.0018 s
+  vmap_first_call                1.2027 s
+  vmap_steady_x10                0.0016 s
+----------------------------------------------------------------------
+  TOTAL                          3.2987 s
+======================================================================
+  Pinned-value check PASSED (recorded in result JSON).
+loadavg: 10.22 10.06 10.06 11/2352 2116292
+Finished.
+Sat 17 Oct 14:40:34 BST 2026
