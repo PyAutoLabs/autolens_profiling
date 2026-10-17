@@ -19,7 +19,7 @@ two arms' build times and peak RSS are recorded beside it, not mixed into it.
 
 Output
 ------
-``results/streaming_scaling/parity_local_cpu_v<version>.json``
+``results/streaming_scaling/parity_<hardware>_v<version>.json``
 """
 
 from __future__ import annotations
@@ -49,6 +49,7 @@ def main() -> None:
     parser.add_argument("--chunk", type=int, default=65536)
     parser.add_argument("--nufft-chunk-size", type=int, default=65536)
     parser.add_argument("--cap-gb", type=float, default=_streaming.CAP_GB_DEFAULT)
+    _streaming.add_hardware_arg(parser)
     parser.add_argument("--timeout", type=float, default=1800.0)
     args = cli.parse_cell_args(parser)
 
@@ -81,7 +82,7 @@ def main() -> None:
 
     version = _streaming.release_version()
     json_path, _png = resolve_output_paths(
-        cli, _streaming.RESULTS_DIR, f"parity_local_cpu_v{version}", cell="parity"
+        cli, _streaming.RESULTS_DIR, f"parity_{args.hardware}_v{version}", cell="parity"
     )
     payload = {
         "cell": "interferometer/streaming_scaling/parity",

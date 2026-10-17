@@ -26,7 +26,7 @@ Two arms:
 
 Output
 ------
-``results/streaming_scaling/in_memory_local_cpu_v<version>.{json,png}``
+``results/streaming_scaling/in_memory_<hardware>_v<version>.{json,png}``
 """
 
 from __future__ import annotations
@@ -96,6 +96,7 @@ def main() -> None:
     )
     parser.add_argument("--nufft-chunk-size", type=int, default=65536)
     parser.add_argument("--cap-gb", type=float, default=_streaming.CAP_GB_DEFAULT)
+    _streaming.add_hardware_arg(parser)
     parser.add_argument("--timeout", type=float, default=1800.0)
     args = cli.parse_cell_args(parser)
 
@@ -107,7 +108,7 @@ def main() -> None:
 
     version = _streaming.release_version()
     json_path, png_path = resolve_output_paths(
-        cli, _streaming.RESULTS_DIR, f"in_memory_local_cpu_v{version}", cell="in_memory"
+        cli, _streaming.RESULTS_DIR, f"in_memory_{args.hardware}_v{version}", cell="in_memory"
     )
     payload = {
         "cell": "interferometer/streaming_scaling/in_memory",
@@ -130,7 +131,7 @@ def main() -> None:
             ): v["rows"]
             for k, v in arms.items()
         },
-        f"In-memory apply_sparse_operator (local CPU, cap {args.cap_gb} GB AS), v{version}",
+        f"In-memory apply_sparse_operator ({args.hardware}, cap {args.cap_gb or 'no'} GB AS), v{version}",
     )
 
 

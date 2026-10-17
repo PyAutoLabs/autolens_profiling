@@ -10,7 +10,7 @@ crosses at the RSS they reached). It runs no measurement.
 
 Output
 ------
-``results/streaming_scaling/streaming_scaling_local_cpu_v<version>.png``
+``results/streaming_scaling/streaming_scaling_<hardware>_v<version>.png``
 
 Usage::
 
@@ -39,13 +39,23 @@ if os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--version", default=None)
+    parser.add_argument("--hardware", default="local_cpu")
+    parser.add_argument(
+        "--in-memory-hardware",
+        default=None,
+        help="Hardware token of the in-memory JSON (default --hardware), e.g. an _nocap arm.",
+    )
     parser.add_argument("--results-dir", default=str(_streaming.RESULTS_DIR))
     args = parser.parse_args()
     results = Path(args.results_dir)
     version = args.version or _streaming.release_version()
 
-    accumulate = json.loads((results / f"accumulate_local_cpu_v{version}.json").read_text())
-    in_memory = json.loads((results / f"in_memory_local_cpu_v{version}.json").read_text())
+    accumulate = json.loads((results / f"accumulate_{args.hardware}_v{version}.json").read_text())
+    in_memory = json.loads(
+        (
+            results / f"in_memory_{args.in_memory_hardware or args.hardware}_v{version}.json"
+        ).read_text()
+    )
 
     series: dict[str, list[dict]] = {}
     for row in accumulate["rows"]:
@@ -60,9 +70,9 @@ def main() -> None:
 
     cap = accumulate.get("cli", {}).get("cap_gb", _streaming.CAP_GB_DEFAULT)
     _streaming.plot_series(
-        results / f"streaming_scaling_local_cpu_v{version}.png",
+        results / f"streaming_scaling_{args.in_memory_hardware or args.hardware}_v{version}.png",
         series,
-        f"Interferometer streamed vs in-memory, local CPU, {cap} GB RLIMIT_AS, v{version}",
+        f"Interferometer streamed vs in-memory, {args.in_memory_hardware or args.hardware}, {cap or 'no'} GB RLIMIT_AS, v{version}",
     )
 
 

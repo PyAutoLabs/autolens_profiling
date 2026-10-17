@@ -532,7 +532,10 @@ def run(
     instances = iid_instances(model, n_instances)
     adapt_images_for = shared.adapt_images_builder(adapt_image, mesh)
 
-    default_gate = float(al.Settings().interferometer_numba_nnz_per_source_max)
+    # PyAutoArray#628/#632 (2026.10.17.1): the packaged gate is None, meaning a cost model
+    # routes; the arms here pass explicit gates, so only the recorded default changes.
+    packaged_gate = al.Settings().interferometer_numba_nnz_per_source_max
+    default_gate = None if packaged_gate is None else float(packaged_gate)
     gates = {"numba": float(cell_args.numba_gate), "numpy_fft": 0.0}
     settings = {}
     memo_provenance = None
@@ -882,7 +885,9 @@ def run(
             "numba_gate": gates["numba"],
             "numba_gate_library_default": default_gate,
             "nnz_per_source_column": nnz_per_col,
-            "would_route_numba_at_default_gate": bool(nnz_per_col <= default_gate),
+            "would_route_numba_at_default_gate": (
+                None if default_gate is None else bool(nnz_per_col <= default_gate)
+            ),
             "numba_parallel_kernel": bool(_numba_parallel()),
             "numba_version": numba.__version__,
             "solve_subset_edge_zeroed": head["solve_subset_edge_zeroed"],
@@ -1095,6 +1100,14 @@ def _lever_memo(fit_from, model, instances, arm, n) -> dict:
     """The fnnls cross-evaluation warm-start memo on vs off: the reconstruction alone."""
     from autoarray.inversion.inversion import nnls_memo
 
+    # PyAutoArray#615 (2026.10.7.1) added per-key back-off state beside the passive-set
+    # memo; ``memo_clear`` resets both. Clearing the memo dict alone (the #332 harness)
+    # would carry the iid pass's back-off into the walk pass (autolens_profiling#426).
+    if hasattr(nnls_memo, "memo_clear"):
+        clear_memo, clear_method = nnls_memo.memo_clear, "nnls_memo.memo_clear()"
+    else:
+        clear_memo = nnls_memo._nnls_passive_set_memo.clear
+        clear_method = "nnls_memo._nnls_passive_set_memo.clear()"
     streams = {
         "iid": instances[1 : 1 + n],
         "local_walk": local_walk_instances(model, n),
@@ -1106,7 +1119,7 @@ def _lever_memo(fit_from, model, instances, arm, n) -> dict:
         foms = {}
         for memo in (False, True):
             os.environ["AUTOARRAY_NNLS_WARM_START"] = "1" if memo else "0"
-            nnls_memo._nnls_passive_set_memo.clear()
+            clear_memo()
             times, fom = [], []
             try:
                 for instance in stream:
@@ -1138,6 +1151,7 @@ def _lever_memo(fit_from, model, instances, arm, n) -> dict:
         )
     out["walk_unit_step"] = LEVER_WALK_STEP
     out["arm"] = arm
+    out["memo_clear_method"] = clear_method
     out["note"] = (
         "Reconstruction (fnnls) alone, F and D precomputed per instance; memo cleared at "
         "the head of each pass, the pass's first solve excluded from the mean."

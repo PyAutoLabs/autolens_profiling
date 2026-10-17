@@ -1,0 +1,531 @@
+{
+  "cell": "interferometer/streaming_scaling/accumulate",
+  "question": "Interferometer.from_stream wall time and peak RSS vs N_vis and chunk size",
+  "release_version": "2026.10.17.1",
+  "rows": [
+    {
+      "mode": "stream",
+      "n_vis": 1000000,
+      "chunk": 65536,
+      "nufft_chunk_size": null,
+      "pixels_in_mask": 125676,
+      "import_s": 2.45,
+      "outcome": "OK",
+      "wall_s": 15.43,
+      "compile_s": 3.266,
+      "compile_s_by_stage": {
+        "jaxpr_trace_duration": 0.074,
+        "jaxpr_to_mlir_module_duration": 0.474,
+        "backend_compile_duration": 2.719
+      },
+      "n_backend_compiles": 119,
+      "exec_s": 12.164,
+      "peak_rss_mb": 1662,
+      "jax_backend": "cpu",
+      "jax_device": "cpu:0",
+      "jax_enable_x64": true,
+      "peak_rss_source": "child ru_maxrss",
+      "child_wall_s": 22.13,
+      "cap_gb": 10.0,
+      "timeout_s": 7200.0,
+      "finished_at": "2026-10-17T14:51:23",
+      "s_per_1e6_vis": 15.43,
+      "peak_rss_gb": 1.623
+    },
+    {
+      "mode": "stream",
+      "n_vis": 4000000,
+      "chunk": 65536,
+      "nufft_chunk_size": null,
+      "pixels_in_mask": 125676,
+      "import_s": 0.29,
+      "outcome": "OK",
+      "wall_s": 32.83,
+      "compile_s": 3.062,
+      "compile_s_by_stage": {
+        "jaxpr_trace_duration": 0.072,
+        "jaxpr_to_mlir_module_duration": 0.422,
+        "backend_compile_duration": 2.568
+      },
+      "n_backend_compiles": 119,
+      "exec_s": 29.768,
+      "peak_rss_mb": 1646,
+      "jax_backend": "cpu",
+      "jax_device": "cpu:0",
+      "jax_enable_x64": true,
+      "peak_rss_source": "child ru_maxrss",
+      "child_wall_s": 33.81,
+      "cap_gb": 10.0,
+      "timeout_s": 7200.0,
+      "finished_at": "2026-10-17T14:51:56",
+      "s_per_1e6_vis": 8.207,
+      "peak_rss_gb": 1.607
+    },
+    {
+      "mode": "stream",
+      "n_vis": 16000000,
+      "chunk": 65536,
+      "nufft_chunk_size": null,
+      "pixels_in_mask": 125676,
+      "import_s": 0.18,
+      "outcome": "OK",
+      "wall_s": 117.64,
+      "compile_s": 3.166,
+      "compile_s_by_stage": {
+        "jaxpr_trace_duration": 0.077,
+        "jaxpr_to_mlir_module_duration": 0.444,
+        "backend_compile_duration": 2.645
+      },
+      "n_backend_compiles": 119,
+      "exec_s": 114.474,
+      "peak_rss_mb": 1684,
+      "jax_backend": "cpu",
+      "jax_device": "cpu:0",
+      "jax_enable_x64": true,
+      "peak_rss_source": "child ru_maxrss",
+      "child_wall_s": 118.49,
+      "cap_gb": 10.0,
+      "timeout_s": 7200.0,
+      "finished_at": "2026-10-17T14:53:55",
+      "s_per_1e6_vis": 7.353,
+      "peak_rss_gb": 1.645
+    },
+    {
+      "mode": "stream",
+      "n_vis": 1000000,
+      "chunk": 4096,
+      "nufft_chunk_size": null,
+      "pixels_in_mask": 125676,
+      "import_s": 0.17,
+      "outcome": "OK",
+      "wall_s": 29.84,
+      "compile_s": 2.956,
+      "compile_s_by_stage": {
+        "jaxpr_trace_duration": 0.072,
+        "jaxpr_to_mlir_module_duration": 0.42,
+        "backend_compile_duration": 2.465
+      },
+      "n_backend_compiles": 119,
+      "exec_s": 26.884,
+      "peak_rss_mb": 896,
+      "jax_backend": "cpu",
+      "jax_device": "cpu:0",
+      "jax_enable_x64": true,
+      "peak_rss_source": "child ru_maxrss",
+      "child_wall_s": 30.69,
+      "cap_gb": 10.0,
+      "timeout_s": 7200.0,
+      "finished_at": "2026-10-17T14:54:26",
+      "s_per_1e6_vis": 29.84,
+      "peak_rss_gb": 0.875
+    },
+    {
+      "mode": "stream",
+      "n_vis": 4000000,
+      "chunk": 4096,
+      "nufft_chunk_size": null,
+      "pixels_in_mask": 125676,
+      "import_s": 0.17,
+      "outcome": "OK",
+      "wall_s": 105.38,
+      "compile_s": 3.0,
+      "compile_s_by_stage": {
+        "jaxpr_trace_duration": 0.072,
+        "jaxpr_to_mlir_module_duration": 0.423,
+        "backend_compile_duration": 2.505
+      },
+      "n_backend_compiles": 119,
+      "exec_s": 102.38,
+      "peak_rss_mb": 1009,
+      "jax_backend": "cpu",
+      "jax_device": "cpu:0",
+      "jax_enable_x64": true,
+      "peak_rss_source": "child ru_maxrss",
+      "child_wall_s": 106.24,
+      "cap_gb": 10.0,
+      "timeout_s": 7200.0,
+      "finished_at": "2026-10-17T14:56:12",
+      "s_per_1e6_vis": 26.345,
+      "peak_rss_gb": 0.985
+    },
+    {
+      "mode": "stream",
+      "n_vis": 16000000,
+      "chunk": 4096,
+      "nufft_chunk_size": null,
+      "pixels_in_mask": 125676,
+      "import_s": 0.18,
+      "outcome": "OK",
+      "wall_s": 410.5,
+      "compile_s": 2.946,
+      "compile_s_by_stage": {
+        "jaxpr_trace_duration": 0.072,
+        "jaxpr_to_mlir_module_duration": 0.416,
+        "backend_compile_duration": 2.458
+      },
+      "n_backend_compiles": 119,
+      "exec_s": 407.554,
+      "peak_rss_mb": 1084,
+      "jax_backend": "cpu",
+      "jax_device": "cpu:0",
+      "jax_enable_x64": true,
+      "peak_rss_source": "child ru_maxrss",
+      "child_wall_s": 411.35,
+      "cap_gb": 10.0,
+      "timeout_s": 7200.0,
+      "finished_at": "2026-10-17T15:03:03",
+      "s_per_1e6_vis": 25.656,
+      "peak_rss_gb": 1.059
+    },
+    {
+      "mode": "stream",
+      "n_vis": 50000000,
+      "chunk": 65536,
+      "nufft_chunk_size": null,
+      "pixels_in_mask": 125676,
+      "import_s": 0.31,
+      "outcome": "OK",
+      "wall_s": 368.08,
+      "compile_s": 3.272,
+      "compile_s_by_stage": {
+        "jaxpr_trace_duration": 0.075,
+        "jaxpr_to_mlir_module_duration": 0.437,
+        "backend_compile_duration": 2.76
+      },
+      "n_backend_compiles": 119,
+      "exec_s": 364.808,
+      "peak_rss_mb": 1858,
+      "jax_backend": "cpu",
+      "jax_device": "cpu:0",
+      "jax_enable_x64": true,
+      "peak_rss_source": "child ru_maxrss",
+      "child_wall_s": 369.06,
+      "cap_gb": 10.0,
+      "timeout_s": 7200.0,
+      "finished_at": "2026-10-17T15:09:12",
+      "s_per_1e6_vis": 7.362,
+      "peak_rss_gb": 1.814
+    },
+    {
+      "mode": "stream",
+      "n_vis": 100000000,
+      "chunk": 65536,
+      "nufft_chunk_size": null,
+      "pixels_in_mask": 125676,
+      "import_s": 0.29,
+      "outcome": "OK",
+      "wall_s": 707.5,
+      "compile_s": 3.127,
+      "compile_s_by_stage": {
+        "jaxpr_trace_duration": 0.074,
+        "jaxpr_to_mlir_module_duration": 0.434,
+        "backend_compile_duration": 2.619
+      },
+      "n_backend_compiles": 119,
+      "exec_s": 704.373,
+      "peak_rss_mb": 1826,
+      "jax_backend": "cpu",
+      "jax_device": "cpu:0",
+      "jax_enable_x64": true,
+      "peak_rss_source": "child ru_maxrss",
+      "child_wall_s": 708.47,
+      "cap_gb": 10.0,
+      "timeout_s": 7200.0,
+      "finished_at": "2026-10-17T15:21:01",
+      "s_per_1e6_vis": 7.075,
+      "peak_rss_gb": 1.783
+    }
+  ],
+  "linear_fit_by_chunk": {
+    "4096": {
+      "n_points": 3,
+      "fixed_s": 4.17,
+      "s_per_1e6_vis": 25.391,
+      "max_rel_residual": 0.0094,
+      "extrapolated_wall_s_at_2e8": 5082.5,
+      "peak_rss_gb_max": 1.059
+    },
+    "65536": {
+      "n_points": 5,
+      "fixed_s": 7.66,
+      "s_per_1e6_vis": 7.036,
+      "max_rel_residual": 0.0905,
+      "extrapolated_wall_s_at_2e8": 1414.9,
+      "peak_rss_gb_max": 1.814
+    }
+  },
+  "profile": {
+    "trigger": "8 OK row(s) above 5.0 s per 1e6 vis; profiled the smallest such chunk (4096)",
+    "outcome": "OK",
+    "profiled_n_vis": 163840,
+    "profiled_chunk": 4096,
+    "n_chunks": 40,
+    "profiled_total_s": 7.066,
+    "top_tottime": [
+      {
+        "function": "~:0(<built-in method numpy.asarray>)",
+        "ncalls": 8860,
+        "tottime_s": 1.8994,
+        "cumtime_s": 1.8994,
+        "tottime_frac": 0.2688
+      },
+      {
+        "function": "compiler.py:292(backend_compile_and_load)",
+        "ncalls": 73,
+        "tottime_s": 1.5306,
+        "cumtime_s": 1.5307,
+        "tottime_frac": 0.2166
+      },
+      {
+        "function": "grid_2d_util.py:239(grid_2d_slim_via_mask_from)",
+        "ncalls": 80,
+        "tottime_s": 0.3425,
+        "cumtime_s": 0.3823,
+        "tottime_frac": 0.0485
+      },
+      {
+        "function": "mask_2d_util.py:8(native_index_for_slim_index_2d_from)",
+        "ncalls": 240,
+        "tottime_s": 0.1824,
+        "cumtime_s": 0.2907,
+        "tottime_frac": 0.0258
+      },
+      {
+        "function": "mlir.py:623(make_ir_context)",
+        "ncalls": 73,
+        "tottime_s": 0.1749,
+        "cumtime_s": 0.1958,
+        "tottime_frac": 0.0248
+      },
+      {
+        "function": "shape_base.py:380(stack)",
+        "ncalls": 360,
+        "tottime_s": 0.1471,
+        "cumtime_s": 0.1477,
+        "tottime_frac": 0.0208
+      },
+      {
+        "function": "dispatch.py:81(apply_primitive)",
+        "ncalls": 4880,
+        "tottime_s": 0.1355,
+        "cumtime_s": 0.8269,
+        "tottime_frac": 0.0192
+      },
+      {
+        "function": "array_2d_util.py:531(array_2d_via_indexes_from)",
+        "ncalls": 160,
+        "tottime_s": 0.0984,
+        "cumtime_s": 0.1075,
+        "tottime_frac": 0.0139
+      },
+      {
+        "function": "ufunc_api.py:175(__call__)",
+        "ncalls": 4317,
+        "tottime_s": 0.0734,
+        "cumtime_s": 0.7148,
+        "tottime_frac": 0.0104
+      },
+      {
+        "function": "~:0(<built-in method builtins.isinstance>)",
+        "ncalls": 297509,
+        "tottime_s": 0.0698,
+        "cumtime_s": 0.0739,
+        "tottime_frac": 0.0099
+      }
+    ],
+    "top_cumtime": [
+      {
+        "function": "inversion_interferometer_util.py:2542(sparse_terms_from_chunks)",
+        "ncalls": 1,
+        "tottime_s": 0.0149,
+        "cumtime_s": 7.0837,
+        "tottime_frac": 0.0021
+      },
+      {
+        "function": "inversion_interferometer_util.py:338(nufft_precision_operator_from)",
+        "ncalls": 40,
+        "tottime_s": 0.0003,
+        "cumtime_s": 3.5641,
+        "tottime_frac": 0.0
+      },
+      {
+        "function": "inversion_interferometer_util.py:798(nufft_precision_operator_via_nufft_from)",
+        "ncalls": 40,
+        "tottime_s": 0.0019,
+        "cumtime_s": 3.5637,
+        "tottime_frac": 0.0003
+      },
+      {
+        "function": "inversion_interferometer_util.py:658(_type1_real_grid_from)",
+        "ncalls": 40,
+        "tottime_s": 0.0287,
+        "cumtime_s": 3.5597,
+        "tottime_frac": 0.0041
+      },
+      {
+        "function": "core.py:660(bind)",
+        "ncalls": 6500,
+        "tottime_s": 0.0423,
+        "cumtime_s": 3.3332,
+        "tottime_frac": 0.006
+      },
+      {
+        "function": "core.py:1285(process_primitive)",
+        "ncalls": 5240,
+        "tottime_s": 0.0145,
+        "cumtime_s": 3.3181,
+        "tottime_frac": 0.0021
+      },
+      {
+        "function": "core.py:709(bind_with_trace)",
+        "ncalls": 6419,
+        "tottime_s": 0.0153,
+        "cumtime_s": 3.274,
+        "tottime_frac": 0.0022
+      },
+      {
+        "function": "autodiff.py:45(nufft2d1)",
+        "ncalls": 120,
+        "tottime_s": 0.001,
+        "cumtime_s": 3.2715,
+        "tottime_frac": 0.0001
+      },
+      {
+        "function": "primitives.py:161(_impl_2d1)",
+        "ncalls": 120,
+        "tottime_s": 0.0035,
+        "cumtime_s": 3.2593,
+        "tottime_frac": 0.0005
+      },
+      {
+        "function": "nufft1.py:92(nufft2d1)",
+        "ncalls": 120,
+        "tottime_s": 0.0202,
+        "cumtime_s": 3.2558,
+        "tottime_frac": 0.0029
+      }
+    ]
+  },
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "hostname": "euclid-ral-compute-10-5",
+    "xla_flags": null,
+    "omp_num_threads": "8",
+    "cpu_count": 236,
+    "jax_compilation_cache_dir": null,
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": false,
+    "provenance": {
+      "provenance_schema": 1,
+      "captured_at": "2026-10-17T14:21:09Z",
+      "host": "euclid-ral-compute-10-5",
+      "slurm": {
+        "job_id": "412522",
+        "array_job_id": null,
+        "array_task_id": null
+      },
+      "loadavg_at_import": [
+        0.31,
+        0.07,
+        0.02
+      ],
+      "loadavg_at_write": [
+        2.95,
+        3.52,
+        3.16
+      ],
+      "profiling_revision": "unavailable: ImportError",
+      "library_revisions": "unavailable: ImportError",
+      "library_versions": {
+        "PyAutoNerves": "2026.8.17.1",
+        "PyAutoFit": "2026.8.17.1",
+        "PyAutoArray": "2026.8.17.1",
+        "PyAutoGalaxy": "2026.8.17.1",
+        "PyAutoLens": "2026.8.17.1"
+      },
+      "dependency_versions": {
+        "jax": "0.10.2",
+        "jaxlib": "0.10.2",
+        "numpy": "2.2.6",
+        "scipy": "1.17.1",
+        "numba": "0.65.1",
+        "nufftax": "0.6.1"
+      }
+    }
+  },
+  "machine": {
+    "cpu_model": "Intel(R) Xeon(R) Platinum 8490H",
+    "cpu_count_os": 236,
+    "nproc": 8,
+    "nproc_all": 236,
+    "nproc_note": "GNU nproc honours OMP_NUM_THREADS, so `nproc` can print 1 on a multi-core host; `nproc_all` is the core count.",
+    "ram_total": "1010827892 kB",
+    "kernel": "5.14.0-687.50.1.el9_8.x86_64",
+    "platform": "Linux-5.14.0-687.50.1.el9_8.x86_64-x86_64-with-glibc2.34",
+    "python": "3.12.4",
+    "jax_thread_env": {
+      "NPROC": null
+    },
+    "blas_thread_env": {
+      "OMP_NUM_THREADS": "8",
+      "OPENBLAS_NUM_THREADS": "8",
+      "MKL_NUM_THREADS": "8",
+      "VECLIB_MAXIMUM_THREADS": null,
+      "NUMEXPR_NUM_THREADS": null
+    },
+    "thread_env_note": "NPROC sizes XLA's CPU intra-op pool (the JAX rows); the BLAS knobs pin OpenBLAS/MKL/OpenMP (the numpy/scipy rows) and do not touch JAX. Two disjoint families; both are recorded on every CPU timing.",
+    "gpu": null
+  },
+  "thread_env": {
+    "OMP_NUM_THREADS": "8",
+    "OPENBLAS_NUM_THREADS": "8",
+    "MKL_NUM_THREADS": "8",
+    "NUMBA_NUM_THREADS": "8",
+    "JAX_PLATFORMS": "cpu",
+    "JAX_PLATFORM_NAME": "cpu",
+    "XLA_FLAGS": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+  },
+  "release_tags": {
+    "PyAutoNerves": "2026.10.17.1",
+    "PyAutoFit": "2026.10.17.1",
+    "PyAutoArray": "2026.10.17.1",
+    "PyAutoGalaxy": "2026.10.17.1",
+    "PyAutoLens": "2026.10.17.1"
+  },
+  "hardware": "hpc_ral_cpu_fp64",
+  "dataset": {
+    "kind": "synthetic, seeded per chunk (default_rng(SEED + k))",
+    "seed": 1234,
+    "uv_wavelengths": "uniform in [-1e5, 1e5] for u and v",
+    "data": "1e-3 * (N(0,1) + i N(0,1))",
+    "noise_map": "1 + 1j",
+    "mask": "circular, shape (400, 400), 0.05 arcsec/pix, radius 10.0 arcsec",
+    "transformer": "TransformerNUFFT"
+  },
+  "cli": {
+    "config_name": null,
+    "output_dir": null,
+    "use_mixed_precision": false,
+    "instrument": null,
+    "vmap_probe": false,
+    "sparse": false,
+    "sparse_batch_size": 128,
+    "rect_mesh": "bilinear",
+    "regularization": null,
+    "variant": "production",
+    "memo": "off",
+    "n_instances": 20,
+    "cold_evals": 3,
+    "source_pixels": null,
+    "n_vis": "1e6,4e6,1.6e7",
+    "chunks": "65536,4096",
+    "extra": "5e7:65536,1e8:65536",
+    "budget_s": 14000.0,
+    "cap_gb": 10.0,
+    "hardware": "hpc_ral_cpu_fp64",
+    "timeout": 7200.0,
+    "profile_threshold": 5.0,
+    "profile_n_vis": "1.6384e5"
+  }
+}

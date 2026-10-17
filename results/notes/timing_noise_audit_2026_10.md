@@ -758,6 +758,11 @@ iteration counts, budgets in iterations, geometry or formatting, not a measured 
 - `scripts/misc/likelihood_breakdown/interferometer_pixelized_numpy.py::LEVER_WALK_STEP`: a
   parameter random-walk step.
 - `scripts/misc/likelihood_breakdown/psf_cube_injection.py::patched`: an over-sampling size.
+- `scripts/interferometer/delaunay/memo_after_summary.py::_stream_summary` (autolens_profiling#426):
+  `on > SLOW_SEED_FACTOR × median(off)` counts slow-seed solves for a reported tally. It gates
+  nothing. The summary's ratio reading (`_reading`) uses the paired whole-round bootstrap interval
+  (`round_median_ratio`) and is INCONCLUSIVE below `MIN_AB_ROUNDS`. It describes the interval's
+  position relative to 1.0 and is not a pass / fail.
 - `scripts/misc/nnls_warm_start/nnls_iterations_matrix.py::findings`: an iteration ratio, a
   deterministic count.
 - `scripts/misc/test/test_matrix_free_steps.py::test_jacobi_diag_estimate_is_positive_and_exact_on_the_func_block`
