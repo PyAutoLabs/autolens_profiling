@@ -5,8 +5,8 @@
 # alma_high / jvla, then the jvla real-space pixel-scale row (0.01 / 0.015 / 0.02 / 0.025").
 # Measurement only. Script: scripts/interferometer/delaunay/fft_size_levers.py.
 #
-# Libraries: the same PRIVATE 2026.10.17.1 checkout as the CPU route-constants submit
-# ($FFTLEV_STACK; PyAutoArray at #636, whose JAX path equals the tag's). Never the shared mirror.
+# Libraries: a PRIVATE 2026.10.17.1 checkout (git archive of the release tags) under
+# $FFTLEV_STACK. Never the shared mirror, never HPCPullPyAuto.
 #
 # Output: results/breakdown/interferometer/jvla/delaunay_hpc_a100_fp64_fft_prune.json
 #
@@ -36,7 +36,8 @@ export JAX_PLATFORM_NAME=cuda JAX_PLATFORMS=cuda,cpu XLA_PYTHON_CLIENT_PREALLOCA
 export NUMBA_CACHE_DIR=$STACK/numba_cache MPLCONFIGDIR=$STACK/mpl
 cd "$AP_ROOT"
 nvidia-smi
-for r in PyAutoArray PyAutoNerves PyAutoFit PyAutoGalaxy PyAutoLens; do echo "$r $(git -C $STACK/$r rev-parse HEAD)"; done
-echo "autolens_profiling $(git -C $AP_ROOT rev-parse HEAD)"
+for r in PyAutoArray PyAutoNerves PyAutoFit PyAutoGalaxy PyAutoLens; do echo "$r $(cat $STACK/$r/REVISION)"; done
+echo "autolens_profiling $(cat $AP_ROOT/REVISION 2>/dev/null || git -C $AP_ROOT rev-parse HEAD)"
+export FFTLEV_STACK="$STACK"
 python3 -u scripts/interferometer/delaunay/fft_size_levers.py
 date

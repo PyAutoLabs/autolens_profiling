@@ -149,6 +149,16 @@ RESULT: dict = {
     "campaign": "PyAutoPulse#62",
     "precision": "fp64",
     "revisions": source_revisions(ROOT),
+    # A git-archive checkout has no .git: its REVISION files (tag + SHA) are the provenance.
+    "stack_revisions": {
+        r: (Path(os.environ["FFTLEV_STACK"]) / r / "REVISION").read_text().strip()
+        for r in ("PyAutoNerves", "PyAutoFit", "PyAutoArray", "PyAutoGalaxy", "PyAutoLens")
+        if os.environ.get("FFTLEV_STACK")
+        and (Path(os.environ["FFTLEV_STACK"]) / r / "REVISION").is_file()
+    },
+    "autolens_profiling_revision": (ROOT / "REVISION").read_text().strip()
+    if (ROOT / "REVISION").is_file()
+    else None,
     "jax_version": jax.__version__,
     "jaxlib_version": __import__("jaxlib").__version__,
     "nufftax_version": harness._nufftax_version(),
