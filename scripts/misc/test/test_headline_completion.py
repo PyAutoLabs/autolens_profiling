@@ -250,11 +250,25 @@ def test_the_readme_labels_a_median_and_adds_the_footnote_only_then(tmp_path):
     assert "267 μs _(median)_" in labelled and readme.HEADLINE_FOOTNOTE in labelled
 
 
-def test_no_committed_runtime_row_carries_a_median_or_repeats_so_the_readme_is_unchanged():
+def test_every_committed_runtime_row_follows_the_headline_rule():
+    """Every committed comparison.json row renders by the estimator rule.
+
+    Until the first post-#408 runtime rows were committed this was a snapshot ("no row
+    carries a median, so the README is unchanged"). Fresh medians now exist
+    (source_plane_solved on 2026.10.17.1, autolens_profiling#428), so the invariant is
+    the rule itself: a row with a steady median beside its headline renders that median,
+    labelled; any other row renders its legacy value, unlabelled. No committed row carries
+    a repeat summary yet.
+    """
     for path in sorted((_ROOT / "results").rglob("comparison.json")):
         configs = json.loads(path.read_text()).get("configs", {})
         for cfg in configs.values():
-            assert readme._config_headline(cfg) == (readme._config_legacy_seconds(cfg), ""), path
+            seconds, label = readme._config_headline(cfg)
+            median = readme.headline_median_seconds(cfg)
+            if median is None or readme._config_legacy_seconds(cfg) is None:
+                assert (seconds, label) == (readme._config_legacy_seconds(cfg), ""), path
+            else:
+                assert seconds == pytest.approx(median) and label == readme.MEDIAN_LABEL, path
             assert bd.REPEAT_RUNS_FIELD not in cfg, path
 
 
