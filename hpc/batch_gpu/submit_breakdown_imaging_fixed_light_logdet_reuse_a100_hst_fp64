@@ -107,7 +107,7 @@
 #SBATCH --mail-user=james.w.nightingale@durham.ac.uk
 
 # Derive the repo root from where this was submitted (hpc/batch_gpu/../..) rather than
-# hardcoding /mnt/ral/jnightin/autolens_profiling. The -o/-e paths above are relative, so
+# hardcoding /mnt/ral/jnightin/profiling/autolens_profiling. The -o/-e paths above are relative, so
 # sbatch from inside hpc/batch_gpu/.
 export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
 echo "AP_ROOT=$AP_ROOT"

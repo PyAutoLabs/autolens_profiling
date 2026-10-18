@@ -51,7 +51,7 @@ export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
 echo "AP_ROOT=$AP_ROOT"
 source $AP_ROOT/activate.sh
 
-export AA_BRANCH_SRC="${AA_BRANCH_SRC:-/mnt/ral/jnightin/autolens_profiling_wt/PyAutoArray_pointsolver-step0-gather}"
+export AA_BRANCH_SRC="${AA_BRANCH_SRC:-/mnt/ral/jnightin/profiling/autolens_profiling_wt/PyAutoArray_pointsolver-step0-gather}"
 if [ ! -f "$AA_BRANCH_SRC/autoarray/__init__.py" ]; then
     echo "FATAL: $AA_BRANCH_SRC is not a PyAutoArray checkout (see LIBRARY)" >&2
     exit 2

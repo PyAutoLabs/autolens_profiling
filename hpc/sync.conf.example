@@ -4,7 +4,7 @@
 HPC_HOST=euclid_jump
 
 # Parent directory of the project on RAL.
-HPC_BASE=/mnt/ral/jnightin
+HPC_BASE=/mnt/ral/jnightin/profiling
 
 # Directory name of this project under HPC_BASE. Set explicitly if you run `hpc/sync`
 # from a git worktree, whose directory name is the branch rather than the project.
@@ -20,4 +20,4 @@ PROJECT_NAME=autolens_profiling
 #   RAL results/                ->  $LOCAL_PULL_ROOT/results/   (staging copy)
 #   RAL hpc/batch_gpu/output/   ->  $LOCAL_PULL_ROOT/logs/output/
 #   RAL hpc/batch_gpu/error/    ->  $LOCAL_PULL_ROOT/logs/error/
-LOCAL_PULL_ROOT=/mnt/c/Users/Jammy/Science/inference_programme
+LOCAL_PULL_ROOT=/mnt/c/Users/Jammy/Science/profiling/autolens_profiling

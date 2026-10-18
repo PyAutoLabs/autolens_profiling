@@ -15,7 +15,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 # The datasets are gitignored and auto-simulated on first use; 25 concurrent
 # jobs would otherwise race the auto-simulate existence check and corrupt the
 # shared dataset dirs. Simulators are seeded, so this is deterministic.
-AP_ROOT=${AP_ROOT:-/mnt/ral/jnightin/autolens_profiling}
+AP_ROOT=${AP_ROOT:-/mnt/ral/jnightin/profiling/autolens_profiling}
 source "$AP_ROOT/activate.sh"
 for inst in simple simple_missing simple_extra near_caustic; do
     if [ ! -f "$AP_ROOT/dataset/point_source/$inst/point_dataset_positions_only.json" ]; then
