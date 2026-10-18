@@ -31,11 +31,13 @@
 # (see scripts/cluster/image_plane/_datasets.py).
 #
 # WALL-BASIS:
-#   To be filled from the pilot (its JSON's pilot_projection.projected_total_s, x headroom 2).
-#   Placeholder until then: --time below is NOT a basis; replace it and this row with the
-#   measured-wall row before submitting.
+#   Filled 2026-10-18 from RAL pilot job 412567 (code 23b72de2, this node, 8 CPU, fp64):
+#   pilot_projection.projected_total_s = 1498 s at 50 prior + 50 stress draws, 20 rounds x 10 calls
+#   (oracle 7.0 s/draw; slowest row control_eager 288 s projected). x headroom 2 = 2996 s;
+#   --time below keeps the 4 h budget (above basis) because the full run also carries the
+#   per-row RSS instrumentation added in 9c002ee7 and the pilot measured only 5 draws.
 #   cell: cluster/robust_settings_sweep/simple  device: ral_cpu  precision: fp64
-#   source: unmeasured  probe-first: yes  wall: 4800  headroom: 3.0
+#   source: measured-wall  probe-first: no  wall: 1498  headroom: 2.0  ref: ral_job_412567_pilot_projection
 
 #SBATCH -J cluster_pointsolver_sweep
 #SBATCH --partition=ral
