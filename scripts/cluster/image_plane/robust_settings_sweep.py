@@ -105,6 +105,11 @@ cost per draw and a per-row projected wall at the full sweep sizes
 can be sized.
 
 Output: ``results/breakdown/cluster/robust_settings_sweep_<dataset>[_pilot]_<config_name>.{json,png}``.
+Each row's ``per_draw[].sources[]`` keeps the verdict counts plus the positions needed
+to draw them (considered roots with verdict and matched candidates, spurious,
+duplicated and ignored candidates; ``_judge.per_draw_source_entry``);
+``oracle_figure.py`` renders them against the oracle roots, critical curves and
+caustics of each judged draw.
 """
 
 import os
@@ -221,6 +226,13 @@ import autoarray as aa  # noqa: E402
 import autofit as af  # noqa: E402
 import autolens as al  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
+from _judge import (  # noqa: E402
+    DISTINCT_TOL,
+    MAGNIFICATION_THRESHOLD,
+    MU_AMBIGUITY_BAND,
+    judge,
+    per_draw_source_entry,
+)
 from autoarray.abstract_ndarray import register_instance_pytree  # noqa: E402
 from autoarray.structures.triangles import array as _triangles_array  # noqa: E402
 from autoarray.structures.triangles import coordinate_array as _coordinate_array  # noqa: E402
@@ -229,9 +241,6 @@ from autofit.jax import register_model as register_model_pytrees  # noqa: E402
 from autolens.lens.tracer import Tracer  # noqa: E402
 
 LIBRARY_MCS = int(_triangles_array.MAX_CONTAINING_SIZE)
-MAGNIFICATION_THRESHOLD = 0.1
-MU_AMBIGUITY_BAND = 0.10
-DISTINCT_TOL = 0.005
 BOOTSTRAP_SAMPLES = 2000
 BOOTSTRAP_SEED = 12345
 SCALES = (0.5, 0.7, 1.0, 2.0)
@@ -676,99 +685,7 @@ def compile_route(cfg, fn, example):
 # ---------------------------------------------------------------------------
 
 
-def finite_positions(p):
-    p = np.asarray(p, dtype=float).reshape(-1, 2)
-    return p[np.all(np.isfinite(p), axis=1)]
-
-
-def distinct(p, tol=DISTINCT_TOL):
-    out = []
-    for q in p:
-        if not any(np.hypot(*(q - r)) < tol for r in out):
-            out.append(q)
-    return np.asarray(out).reshape(-1, 2)
-
-
-def _in_box(p, box):
-    return box[0] <= p[0] <= box[1] and box[2] <= p[1] <= box[3]
-
-
-def judge(oracle_source, candidates, tol, box, eq, plane_index, beta) -> dict:
-    """Per-root coverage, multiplicity and per-candidate residual/convergence for one source."""
-    roots = [r for r in oracle_source["roots"] if r["accepted"]]
-    lo = MAGNIFICATION_THRESHOLD / (1 + MU_AMBIGUITY_BAND)
-    hi = MAGNIFICATION_THRESHOLD * (1 + MU_AMBIGUITY_BAND)
-    considered, ambiguous, below = [], [], []
-    for r in roots:
-        m = abs(r["magnification"])
-        (considered if m > hi else ambiguous if m >= lo else below).append(r)
-    cands = distinct(finite_positions(candidates))
-    n_raw = int(finite_positions(candidates).shape[0])
-    rpos = np.asarray([r["position"] for r in considered]).reshape(-1, 2)
-    other = np.asarray([r["position"] for r in ambiguous + below]).reshape(-1, 2)
-    coverage, errors = [], []
-    for r in considered:
-        p = np.asarray(r["position"])
-        d = np.hypot(*(cands - p).T) if cands.size else np.zeros(0)
-        n_match = int((d <= tol).sum())
-        coverage.append(
-            {
-                "position": r["position"],
-                "magnification": r["magnification"],
-                "sigma_min": r["singular_values"][1],
-                "inside_extent": _in_box(p, box),
-                "n_candidates_within_tol": n_match,
-                "verdict": "covered"
-                if n_match == 1
-                else ("missed" if n_match == 0 else "duplicated"),
-                "nearest_candidate_distance": float(d.min()) if d.size else None,
-            }
-        )
-        if n_match >= 1:
-            errors.append(float(d.min()))
-    spurious, ignored, residuals = [], 0, []
-    if cands.size:
-        res = np.hypot(*eq.residual(cands, plane_index, beta).T)
-        for k, c in enumerate(cands):
-            d_main = np.hypot(*(rpos - c).T).min() if rpos.size else np.inf
-            d_other = np.hypot(*(other - c).T).min() if other.size else np.inf
-            residuals.append(float(res[k]))
-            if d_main <= tol:
-                continue
-            if d_other <= tol:
-                ignored += 1  # a candidate for a below-threshold / ambiguous root
-                continue
-            spurious.append(
-                {
-                    "position": c.tolist(),
-                    "residual": float(res[k]),
-                    "nearest_root_distance": float(min(d_main, d_other)),
-                }
-            )
-    n_relevant = int(cands.shape[0]) - ignored
-    missed = sum(c["verdict"] == "missed" for c in coverage)
-    duplicated = sum(c["verdict"] == "duplicated" for c in coverage)
-    return {
-        "n_roots_considered": len(considered),
-        "n_roots_threshold_ambiguous": len(ambiguous),
-        "n_roots_below_threshold": len(below),
-        "n_candidates_raw": n_raw,
-        "n_candidates_distinct": int(cands.shape[0]),
-        "n_candidates_for_ignored_roots": ignored,
-        "n_covered": len(considered) - missed - duplicated,
-        "n_missed": int(missed),
-        "n_missed_outside_extent": int(
-            sum(c["verdict"] == "missed" and not c["inside_extent"] for c in coverage)
-        ),
-        "n_duplicated": int(duplicated),
-        "n_spurious": len(spurious),
-        "multiplicity_match": n_relevant == len(considered),
-        "unresolved": int(missed + len(spurious)),
-        "max_position_error": max(errors) if errors else None,
-        "max_candidate_residual": max(residuals) if residuals else None,
-        "coverage": coverage,
-        "spurious": spurious[:5],
-    }
+# ``judge`` / ``per_draw_source_entry`` live in ``_judge.py`` (importable without a run).
 
 
 def summarise_row(name, judged, counts_overflow) -> dict:
@@ -1132,26 +1049,7 @@ for cfg in CONFIGS:
             {
                 "draw": d["draw"],
                 "set": SET[d["draw"]],
-                "sources": [
-                    None
-                    if j is None
-                    else {
-                        k: j[k]
-                        for k in (
-                            "n_roots_considered",
-                            "n_candidates_raw",
-                            "n_candidates_distinct",
-                            "n_covered",
-                            "n_missed",
-                            "n_duplicated",
-                            "n_spurious",
-                            "multiplicity_match",
-                            "max_position_error",
-                            "max_candidate_residual",
-                        )
-                    }
-                    for j in d["sources"]
-                ],
+                "sources": [per_draw_source_entry(j) for j in d["sources"]],
             }
             for d in judged
         ]
