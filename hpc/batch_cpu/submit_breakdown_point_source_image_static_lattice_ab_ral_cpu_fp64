@@ -45,10 +45,10 @@
 # to PYTHONPATH. Prepare them once:
 #
 #   for r in PyAutoArray PyAutoLens; do
-#     git clone --shared /mnt/ral/jnightin/PyAuto/$r /mnt/ral/jnightin/autolens_profiling_wt/${r}_point-source-cpu-p3
-#     git -C /mnt/ral/jnightin/autolens_profiling_wt/${r}_point-source-cpu-p3 fetch \
+#     git clone --shared /mnt/ral/jnightin/PyAuto/$r /mnt/ral/jnightin/profiling/autolens_profiling_wt/${r}_point-source-cpu-p3
+#     git -C /mnt/ral/jnightin/profiling/autolens_profiling_wt/${r}_point-source-cpu-p3 fetch \
 #         https://github.com/PyAutoLabs/$r.git feature/point-source-cpu-p3
-#     git -C /mnt/ral/jnightin/autolens_profiling_wt/${r}_point-source-cpu-p3 checkout --detach FETCH_HEAD
+#     git -C /mnt/ral/jnightin/profiling/autolens_profiling_wt/${r}_point-source-cpu-p3 checkout --detach FETCH_HEAD
 #   done
 #
 # The job refuses to run unless autoarray AND autolens import from those clones;
@@ -89,8 +89,8 @@ export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
 echo "AP_ROOT=$AP_ROOT"
 source $AP_ROOT/activate.sh
 
-export AA_BRANCH_SRC="${AA_BRANCH_SRC:-/mnt/ral/jnightin/autolens_profiling_wt/PyAutoArray_point-source-cpu-p3}"
-export AL_BRANCH_SRC="${AL_BRANCH_SRC:-/mnt/ral/jnightin/autolens_profiling_wt/PyAutoLens_point-source-cpu-p3}"
+export AA_BRANCH_SRC="${AA_BRANCH_SRC:-/mnt/ral/jnightin/profiling/autolens_profiling_wt/PyAutoArray_point-source-cpu-p3}"
+export AL_BRANCH_SRC="${AL_BRANCH_SRC:-/mnt/ral/jnightin/profiling/autolens_profiling_wt/PyAutoLens_point-source-cpu-p3}"
 for src in "$AA_BRANCH_SRC/autoarray" "$AL_BRANCH_SRC/autolens"; do
     if [ ! -f "$src/__init__.py" ]; then
         echo "FATAL: $src is not a library checkout (see LIBRARY in the header)" >&2

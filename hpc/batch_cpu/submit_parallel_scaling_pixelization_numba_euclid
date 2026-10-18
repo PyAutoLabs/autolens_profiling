@@ -16,7 +16,7 @@
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=james.w.nightingale@durham.ac.uk
 
-export AP_ROOT=/mnt/ral/jnightin/autolens_profiling
+export AP_ROOT=${AP_ROOT:-/mnt/ral/jnightin/profiling/autolens_profiling}
 source $AP_ROOT/activate.sh
 
 # 1 BLAS thread per worker: the numba kernels are single-threaded and only the

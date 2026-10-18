@@ -134,7 +134,7 @@ The pull destination is **not** this checkout. `output/` is gitignored here, `re
 holds small committed result rows that a staging copy must not overwrite, and a full pull
 is ~2 GB of run directories. So `sync.conf` sets `LOCAL_PULL_ROOT` — a separate local
 mirror whose only job is holding RAL runs so they can be read. It defaults to
-`/mnt/c/Users/Jammy/Science/inference_programme`.
+`/mnt/c/Users/Jammy/Science/profiling/autolens_profiling`.
 
 | on RAL | lands at |
 |--------|----------|
@@ -179,7 +179,7 @@ with git on the login node:
 
 ```bash
 ssh euclid_jump
-cd /mnt/ral/jnightin/autolens_profiling
+cd /mnt/ral/jnightin/profiling/autolens_profiling
 git status        # look before you pull — the checkout is often dirty
 git pull
 ```
