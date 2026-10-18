@@ -110,6 +110,15 @@ to draw them (considered roots with verdict and matched candidates, spurious,
 duplicated and ignored candidates; ``_judge.per_draw_source_entry``);
 ``oracle_figure.py`` renders them against the oracle roots, critical curves and
 caustics of each judged draw.
+
+Memory (RAL job 412567 was OOM-killed at A2744 row 8/25, MaxRSS 66.6 GB): progress lines
+after oracle calibration, each oracle draw, each uncapped-counts geometry, every row and
+the timing phase carry current RSS (VmRSS), peak RSS (ru_maxrss) and the count / bytes of
+``jax.live_arrays()`` (``_memory.py``). Each row stores ``rss_mb`` and ``memory``; the
+summary stores ``peak_rss_mb`` and the labelled ``memory_trace``. Compiled JIT / vmap
+executables are deliberately kept per row (``EXEC``) for the interleaved timing phase, so
+RSS growing while live-array bytes stay flat points at retained executables (compare each
+row's ``compile.memory_analysis.generated_code_size_in_bytes``).
 """
 
 import os
@@ -221,6 +230,7 @@ if N_ROUNDS < 1 or N_CALLS < 1 or N_DRAWS < 0 or N_STRESS < 0 or N_STREAM < 1:
 
 matplotlib.use("Agg")
 import _datasets  # noqa: E402
+import _memory  # noqa: E402
 import _oracle  # noqa: E402
 import autoarray as aa  # noqa: E402
 import autofit as af  # noqa: E402
@@ -590,6 +600,24 @@ def note(msg):
     progress.append(line)
 
 
+# Memory trace (job 412567 OOM, #436): one snapshot per labelled point, printed on the
+# progress line; the per-row snapshot is also stored on the row (``rss_mb``, ``memory``).
+MEMORY_TRACE = []
+
+
+def mem(label) -> dict:
+    snap = _memory.snapshot(jax)
+    MEMORY_TRACE.append({"label": label, "t_s": time.perf_counter() - _WALL_START, **snap})
+    return snap
+
+
+def row_mem(row, name) -> str:
+    snap = mem(f"row {name}")
+    row["rss_mb"] = snap["rss_mb"]
+    row["memory"] = snap
+    return _memory.describe(snap)
+
+
 # ---------------------------------------------------------------------------
 # Route functions
 # ---------------------------------------------------------------------------
@@ -755,7 +783,8 @@ note(
 CALIBRATION = _oracle.calibrate()
 note(
     f"oracle calibration pass={CALIBRATION['pass']} max error "
-    f"{CALIBRATION['max_error_over_cases']:.3e} arcsec ({CALIBRATION['wall_s']:.1f} s)"
+    f"{CALIBRATION['max_error_over_cases']:.3e} arcsec ({CALIBRATION['wall_s']:.1f} s) "
+    + _memory.describe(mem("oracle calibration"))
 )
 if not CALIBRATION["pass"]:
     print(json.dumps(_scrub(CALIBRATION), indent=1, default=str)[:4000])
@@ -792,7 +821,8 @@ for i, (v, betas) in enumerate(zip(DRAWS, BETAS)):
     ORACLE.append({"draw": i, "plane_indices": pis, "sources": per_source, "equation": eq})
     note(
         f"oracle draw {i} ({SET[i]}): roots/source {[s['n_accepted'] for s in per_source]}, stable "
-        f"{[s['stability']['stable'] for s in per_source]} ({oracle_cost[-1]:.1f} s)"
+        f"{[s['stability']['stable'] for s in per_source]} ({oracle_cost[-1]:.1f} s) "
+        + _memory.describe(mem(f"oracle draw {i}"))
     )
 
 UNSTABLE = [
@@ -855,7 +885,8 @@ for key, cfg in geometries.items():
     count_cost[str(key)] = time.perf_counter() - t0
     note(
         f"uncapped counts {key}: max over draws/sources/steps "
-        f"{max(max(s) for d in mats for s in d)} ({count_cost[str(key)]:.1f} s)"
+        f"{max(max(s) for d in mats for s in d)} ({count_cost[str(key)]:.1f} s) "
+        + _memory.describe(mem(f"uncapped counts {key}"))
     )
 
 
@@ -990,7 +1021,7 @@ for cfg in CONFIGS:
                 f"projected row wall {projected:.0f} s > --row-wall-cap {ROW_WALL_CAP:.0f} s "
                 f"(first call {per_call:.2f} s)"
             )
-            note(f"row {name}: UNUSABLE ({row['reasons'][-1]})")
+            note(f"row {name}: UNUSABLE ({row['reasons'][-1]}) " + row_mem(row, name))
             continue
 
         # Evaluate on every judged draw.
@@ -1058,7 +1089,7 @@ for cfg in CONFIGS:
         row["reasons"].append(f"route error: {type(exc).__name__}: {exc}")
         row["traceback"] = traceback.format_exc()[-4000:]
         EXEC.pop(name, None)
-        note(f"row {name}: INVALID (route error {type(exc).__name__}: {exc})")
+        note(f"row {name}: INVALID (route error {type(exc).__name__}: {exc}) " + row_mem(row, name))
         continue
 
     v = row["verdict"]
@@ -1121,7 +1152,7 @@ for cfg in CONFIGS:
         )
         + f"miss {v['n_missed']} dup {v['n_duplicated']} spur {v['n_spurious']} "
         f"mult {v['multiplicity_agreement']} overflow {v['overflow'].get('uncapped_max')}/"
-        f"{v['overflow'].get('cap')} maxerr {v['max_position_error']}"
+        f"{v['overflow'].get('cap')} maxerr {v['max_position_error']} " + row_mem(row, name)
     )
 
 # --- 4. timing: interleaved rounds over every usable route -------------------------------
@@ -1176,7 +1207,7 @@ for r in range(N_ROUNDS):
                         deterministic[name] = False
                 else:
                     first_values[name][key] = arr
-note("timing done")
+note("timing done " + _memory.describe(mem("timing done")))
 
 for i, name in enumerate(TIMED):
     row = ROWS[name]
@@ -1517,6 +1548,8 @@ summary = {
     "all_gates_pass": all_gates_pass,
     "pilot_projection": pilot,
     "progress": progress,
+    "peak_rss_mb": _memory.snapshot()["peak_rss_mb"],
+    "memory_trace": MEMORY_TRACE,
     "wall_s": float(time.perf_counter() - _WALL_START),
 }
 

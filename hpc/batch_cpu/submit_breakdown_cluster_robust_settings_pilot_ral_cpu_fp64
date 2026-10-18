@@ -42,16 +42,28 @@
 #      dataset/ before submitting; the producer re-verifies every sha256 against provenance.json.
 #      Without either, the a2744 leg is skipped with a message (the simple leg still counts).
 #
+# LEGS. PILOT_LEGS (default "simple,a2744") picks which legs run, so the A2744 leg can be rerun on
+# its own after the simple leg has a result:
+#     PILOT_LEGS=a2744 sbatch submit_breakdown_cluster_robust_settings_pilot_ral_cpu_fp64
+#
+# MEMORY / WALL (job 412567, code 23b72de2, --mem=64gb --time=2:30:00). The simple leg finished in
+# 464 s. The A2744 leg was OOM-killed at 1:34 after 7 of 25 rows with MaxRSS 66.6 GB (the node has
+# 976 GB); its oracle (3 draws) + uncapped counts took 522 s and each row 410-700 s. The sweep now
+# prints RSS / peak RSS / live JAX arrays per row (_memory.py) so the growth can be attributed;
+# until it is, --mem=256gb (~4x the 66.6 GB seen at row 8/25; growth ~8-9 GB/row would reach
+# ~230 GB by row 25) and --time=6:00:00.
+#
 # WALL-BASIS:
-#   Declared estimate from LOCAL SIZING ONLY (laptop correctness runs, never a measurement):
-#   simple leg ~25 JIT compiles of 10-60 s + eager JAX ~4 s/call + oracle ~10 s/draw (5 draws);
-#   a2744 leg oracle ~105 s per draw for its 7 sources (3 draws), JIT compiles ~90 s each over
-#   ~25 rows, uncapped NumPy counts per geometry. Estimate 1800 s per leg, 3600 s declared in total;
-#   --time 2:30:00 (9000 s) is headroom 2.5 on the total (each leg row below passes the 3x rule).
+#   simple leg: declared estimate from local sizing (1800 s, 3x floor); job 412567 measured 464 s.
+#   a2744 leg: job 412567 measured 522 s (oracle + uncapped counts) and 7 rows in 4029 s (~580 s
+#   per row, 410-700 s); 25 rows ~ 522 + 25 x 580 = 15022 s before the timing phase (2 rounds x
+#   2 calls per usable route, small next to a row). Declared 16000 s, extrapolated from that
+#   partial run (not a completed total), headroom 1.35 -> 21600 s = --time 6:00:00. Both legs in
+#   one job: 464 + 16000 = 16464 s, headroom 1.31 on the total.
 #   cell: cluster/robust_settings_sweep/simple  device: ral_cpu  precision: fp64
 #   source: unmeasured  probe-first: yes  wall: 1800  headroom: 3.0
 #   cell: cluster/robust_settings_sweep/a2744  device: ral_cpu  precision: fp64
-#   source: unmeasured  probe-first: yes  wall: 1800  headroom: 3.0
+#   source: measured-wall  wall: 16000  headroom: 1.35  ref: ral_job_412567_rows_7_of_25_extrapolated
 
 #SBATCH -J cluster_pointsolver_pilot
 #SBATCH --partition=ral
@@ -59,8 +71,8 @@
 #SBATCH --nodelist=euclid-ral-compute-10-4
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=64gb
-#SBATCH --time=2:30:00
+#SBATCH --mem=256gb
+#SBATCH --time=6:00:00
 #SBATCH -o output/output.%A.out
 #SBATCH -e error/error.%A.err
 
@@ -135,8 +147,12 @@ print("OK", path)
 EOF_PY
 }
 STATUS=0
+PILOT_LEGS="${PILOT_LEGS:-simple,a2744}"
+echo "PILOT_LEGS:     $PILOT_LEGS"
+case ",$PILOT_LEGS," in *,simple,*|*,a2744,*) ;; *) echo "REFUSING: PILOT_LEGS=$PILOT_LEGS names no leg (simple, a2744)"; exit 2 ;; esac
 
 echo "=========================================="
+if [[ ",$PILOT_LEGS," == *,simple,* ]]; then
 echo "RUN 1/2 robust_settings_sweep_simple_pilot ${CONFIG_NAME} -> ${RESULTS_DIR}"
 date
 PYTHONUNBUFFERED=1 python3 scripts/cluster/image_plane/robust_settings_sweep.py \
@@ -146,8 +162,12 @@ PYTHONUNBUFFERED=1 python3 scripts/cluster/image_plane/robust_settings_sweep.py 
     2>&1 | tee "$LOG_DIR/robust_settings_sweep_simple_pilot_${CONFIG_NAME}_${SLURM_JOB_ID:-local}.log"
 echo "=== source_revisions check (simple JSON vs private checkout HEAD) ==="
 check_revisions "$RESULTS_DIR/robust_settings_sweep_simple_pilot_${CONFIG_NAME}.json" || STATUS=4
+else
+echo "RUN 1/2 simple leg not requested (PILOT_LEGS=$PILOT_LEGS)"
+fi
 
 echo "=========================================="
+if [[ ",$PILOT_LEGS," == *,a2744,* ]]; then
 echo "RUN 2/2 robust_settings_sweep_a2744_pilot ${CONFIG_NAME} -> ${RESULTS_DIR}"
 date
 A2744_ARGS=""
@@ -169,6 +189,9 @@ if [ "$STATUS" != 5 ]; then
         2>&1 | tee "$LOG_DIR/robust_settings_sweep_a2744_pilot_${CONFIG_NAME}_${SLURM_JOB_ID:-local}.log"
     echo "=== source_revisions check (a2744 JSON vs private checkout HEAD) ==="
     check_revisions "$RESULTS_DIR/robust_settings_sweep_a2744_pilot_${CONFIG_NAME}.json" || STATUS=4
+fi
+else
+echo "RUN 2/2 a2744 leg not requested (PILOT_LEGS=$PILOT_LEGS)"
 fi
 echo "exit status: $STATUS (0 ok, 4 revisions/JSON failure, 5 a2744 leg skipped)"
 
