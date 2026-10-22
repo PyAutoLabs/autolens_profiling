@@ -1,15 +1,15 @@
 # Cluster PointSolver speed-up
 
-**Status:** draft
+**Status:** open
 **Question:** What does a representative cluster-scale `PointSolver` likelihood cost on released code, where is the time, and which levers (deflection cost, grid extent, per-source batching) pay at cluster scale?
-**Pre-registered rule:** not yet written; the contract inherits the point-source campaign measurement contract (exact revisions, interleaved A/B on identical hardware, fused production control, correctness gate before any speed claim, negative results recorded, one bounded phase per issue and PR).
-**Verdict:** not started.
-**Headline:** none yet. Carried evidence: two-source cluster solved likelihood 47.36 → 9.085 ms (5.21x) from the static step-0 lattice, RAL Xeon 8490H job 350636.
+**Pre-registered rule:** phase 1: a setting is admissible only when every oracle root (independent lens-equation oracle, not the triangle solver) of every judged prior AND stress draw is covered by exactly one candidate within the row's last-step triangle side, multiplicity agrees, no spurious candidate and no uncapped containing count above the cap. Otherwise the contract inherits the point-source campaign measurement contract (exact revisions, interleaved A/B on identical hardware, fused production control, correctness gate before any speed claim, negative results recorded, one bounded phase per issue and PR).
+**Verdict:** phase 1 INTERPRETATION-PENDING (human decision): no `PointSolver` setting is admissible on `simple` (101 draws). Production rows cover 306/306 prior roots and miss 2–6 of 300 stress roots, all close high-|μ| pairs. No default changed.
+**Headline:** initial scale 0.5″/0.7″ misses 2 stress roots at 0.78×/0.75× the production control's speed; the control (1.0″) misses 5 at 5.29 ms; RAL Xeon 8490H job 412572. Carried evidence: two-source cluster solved likelihood 47.36 → 9.085 ms (5.21x) from the static step-0 lattice, RAL Xeon 8490H job 350636.
 **Library PRs:** none yet.
-**Profiling PRs:** none yet.
-**Ledger:** none yet; carried cluster rows live in [point_source_cpu_campaign.md](../../results/notes/point_source_cpu_campaign.md) (phases 1–3).
-**Mind contract:** epic `cluster-pointsolver-speed`; `draft/research/autolens_profiling/cluster_pointsolver_speed.md`.
-**Next:** phase 1 — work out representative cluster data and bring `scripts/cluster/likelihood_breakdown/` to a released-code baseline (pinned 8490H + A100 row) before any lever is ranked.
+**Profiling PRs:** phase 1 PR (autolens_profiling#436), open.
+**Ledger:** [cluster_pointsolver_campaign.md](../../results/notes/cluster_pointsolver_campaign.md); carried cluster rows live in [point_source_cpu_campaign.md](../../results/notes/point_source_cpu_campaign.md) (phases 1–3).
+**Mind contract:** epic `cluster-pointsolver-speed`; PyAutoPulse task `tasks/cluster_pointsolver_speed.md` (migrated from `draft/research/autolens_profiling/cluster_pointsolver_speed.md`); phase 1 `active/cluster_pointsolver_robust_settings_p1.md`.
+**Next:** the human's decision on the phase-1 table; pull the A2744 pilot leg (job 412573) and attribute its memory; the starting-grid draft `draft/research/autolens_profiling/cluster_pointsolver_starting_grid_close_member_image.md`.
 
 ## Why this campaign
 
@@ -22,7 +22,7 @@ from phase 4a on, that campaign is single-source only and everything cluster-sca
 
 | Phase | Dates | Question | Pre-registered rule | Result | Jobs | PRs |
 |---|---|---|---|---|---|---|
-| 1 data + baseline | — | Which cluster datasets are representative, and what does the released-code breakdown say? | not yet written | not started | — | — |
+| 1 robust settings | 2026-10-17/22 | Which `PointSolver` settings find every image at cluster scale, judged against an independent oracle? | per-root coverage + multiplicity + overflow on prior AND stress draws (above) | INTERPRETATION-PENDING: no row admissible on `simple`; 0.5″/0.7″ miss 2, 1.0″ (production) 5, 2.0″ 6 of 300 stress roots; precision/capacity/backend change nothing; eager unusable; A2744 leg not pulled | 412567 (pilot), 412572 (sweep), 412573 (A2744 pilot leg, not pulled) | phase 1 PR (#436) |
 | 2 deflection cost | — | dPIE/NFW deflection cost (JAX deflection cell first) | — | sketch only | — | — |
 | 3 grid extent | — | Cluster grid-extent guidance with completeness evidence | — | sketch only | — | — |
 | 4 | — | Whatever the phase-1 split exposes | — | sketch only | — | — |
@@ -43,7 +43,9 @@ PyAutoLens#749, released 2026.9.26.1) are recorded on the
 
 ## Open / parked / drafts
 
-- The whole campaign is the draft `draft/research/autolens_profiling/cluster_pointsolver_speed.md`.
+- The campaign contract is the PyAutoPulse task `tasks/cluster_pointsolver_speed.md`.
+- A2744 pilot leg (job 412573): outcome and memory trace not yet pulled — RAL login unavailable 2026-10-22. Row-1 live read on 2026-10-18: peak 22 GB / RSS 8.3 GB, live arrays ~0 → per-row transient + retained executables.
+- `draft/research/autolens_profiling/cluster_pointsolver_starting_grid_close_member_image.md` — does a 1.0″ starting grid lose image 3 of `point_0`, 0.39″ from a member galaxy's core?
 
 ## Caveats
 
@@ -52,6 +54,21 @@ PyAutoLens#749, released 2026.9.26.1) are recorded on the
 - The old "cluster solve is at its deflection bound" claim was extrapolated, not measured.
 
 ## Journal
+
+### 2026-10-22 — phase 1: no admissible setting on `simple` (interpretation pending)
+
+The sweep ran as RAL job 412572: Xeon 8490H, CPU fp64, 25 rows, 101 draws, wall 1358 s. Every
+row was judged against an independent lens-equation oracle, calibrated to 2.84e-8″. No row is
+admissible. The production-extent rows cover all 306 prior roots and miss 2–6 of 300 stress
+roots. Every miss is one of three close high-|μ| pairs (0.33–0.76″; draw 81's pair straddles the
+radial critical curve). An initial scale of 0.5″ or 0.7″ misses 2 roots at about 0.77× the
+control's speed. The production 1.0″ misses 5 and 2.0″ misses 6. Precision, capacity and backend
+change nothing (uncapped max 7 < 20). Eager JAX is unusable (row cap). Image-bounding-box extents
+lose 49–63 roots. The library's readable cluster `point_solver.png` (PyAutoLens#795) shows the
+misses directly. The decision table is in the
+[ledger](../../results/notes/cluster_pointsolver_campaign.md#decision-table-human) and is left to
+the human. No default was changed. The A2744 pilot leg (job 412573) was not pulled because RAL
+login was unavailable.
 
 ### 2026-09-27 — page created from the ledger
 

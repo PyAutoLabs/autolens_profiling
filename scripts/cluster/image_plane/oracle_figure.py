@@ -15,7 +15,8 @@ Usage::
 
 One PNG per (draw, source plane):
 ``oracle_figure_<dataset>[_pilot]_<config_name>_draw<N>_plane<J>.png`` under
-``results/breakdown/cluster/`` by default. The PNGs are inspection aids, never
+``results/breakdown/cluster/`` by default. The PNGs are inspection aids; only the
+ones a ledger cites are copied into ``results/breakdown/cluster/figures/`` and
 committed.
 
 What is reconstructed, and from what

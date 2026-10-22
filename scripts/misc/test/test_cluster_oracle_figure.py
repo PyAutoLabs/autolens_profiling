@@ -226,3 +226,44 @@ def test_oracle_figure_smoke(tmp_path):
     assert info["rows"]["control"]["covered"] == 2
     assert info["rows"]["tight"]["missed"] == 1 and info["rows"]["tight"]["spurious"] == 1
     assert len(info["groups"]) == 1 and info["groups"][0]["n"] == 2  # 2" pair < 3" radius
+
+
+# ---------------------------------------------------------------------------
+# solver_figure.py (library point_solver.png per sweep row): pure helpers only
+# ---------------------------------------------------------------------------
+
+
+def _solver_summary():
+    covered = {"verdict": "covered"}
+    missed = {"verdict": "missed"}
+    return {
+        "dataset": "simple",
+        "pilot": False,
+        "config_name": "hpc_ral_cpu_fp64",
+        "oracle": {"per_draw": [{"draw": 7, "sources": [_oracle_source(), _oracle_source()]}]},
+        "rows": {
+            "control": {
+                "per_draw": [{"draw": 7, "sources": [{"roots": [covered]}, {"roots": [missed]}]}]
+            },
+            "other": {
+                "per_draw": [{"draw": 7, "sources": [{"roots": [covered]}, {"roots": [covered]}]}]
+            },
+        },
+    }
+
+
+def test_solver_figure_helpers():
+    import solver_figure
+
+    s = _solver_summary()
+    assert (
+        solver_figure.figure_name(s, "control", 7, 1)
+        == "solver_figure_simple_hpc_ral_cpu_fp64_control_draw7_source1"
+    )
+    assert solver_figure.problem_sources(s, ["control", "other"], 7) == [1]
+    assert solver_figure.problem_sources(s, ["other"], 7) == []
+    assert solver_figure.problem_sources(s, ["control"], 8) == []
+    pos = solver_figure.oracle_positions(s, 7, 0, 0.1)
+    # accepted roots above the threshold only (the 0.01 root and the rejected root drop)
+    assert pos.shape == (3, 2)
+    assert pos.tolist() == [[1.0, 0.0], [-1.0, 0.0], [0.0, 3.0]]
