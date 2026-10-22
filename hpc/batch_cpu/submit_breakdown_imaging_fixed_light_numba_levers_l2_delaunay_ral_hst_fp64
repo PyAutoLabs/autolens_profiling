@@ -185,7 +185,7 @@
 #SBATCH --mail-user=james.w.nightingale@durham.ac.uk
 
 # Derive the repo root from where this was submitted (hpc/batch_cpu/../..) rather
-# than hardcoding /mnt/ral/jnightin/autolens_profiling: the canonical RAL
+# than hardcoding /mnt/ral/jnightin/profiling/autolens_profiling: the canonical RAL
 # checkout sits on main with a dirty tree, so this runs from a worktree of the
 # feature branch.
 export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"

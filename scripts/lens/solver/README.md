@@ -48,7 +48,7 @@ multi-group run is labelled `all`, which would overwrite the phase-3/4 `all` art
 are `storage: "external"` — even `sym_tri_xor`-encoded (lossless; round trip verified bit-exact
 at write) they are 53–59 MB each, so they are **not in git** (#399, human decision 2026-10-08):
 `.gitignore` lists exactly these three files, and the copies live on RAL at
-`/mnt/ral/jnightin/autolens_profiling_corpus/` and on the laptop in the canonical checkout's
+`/mnt/ral/jnightin/profiling/autolens_profiling_corpus/` and on the laptop in the canonical checkout's
 `results/lens/solver/corpus/`. Copy the file into `results/lens/solver/corpus/` to use a group;
 `load_corpus()` / `iter_systems()` check it against the manifest sha256 and, when it is absent,
 raise `ExternalCorpusMissing` naming the file, its hash, the copies and the regenerate command

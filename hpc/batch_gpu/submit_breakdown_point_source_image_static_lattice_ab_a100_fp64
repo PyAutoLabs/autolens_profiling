@@ -53,8 +53,8 @@ export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
 echo "AP_ROOT=$AP_ROOT"
 source $AP_ROOT/activate.sh
 
-export AA_BRANCH_SRC="${AA_BRANCH_SRC:-/mnt/ral/jnightin/autolens_profiling_wt/PyAutoArray_point-source-cpu-p3}"
-export AL_BRANCH_SRC="${AL_BRANCH_SRC:-/mnt/ral/jnightin/autolens_profiling_wt/PyAutoLens_point-source-cpu-p3}"
+export AA_BRANCH_SRC="${AA_BRANCH_SRC:-/mnt/ral/jnightin/profiling/autolens_profiling_wt/PyAutoArray_point-source-cpu-p3}"
+export AL_BRANCH_SRC="${AL_BRANCH_SRC:-/mnt/ral/jnightin/profiling/autolens_profiling_wt/PyAutoLens_point-source-cpu-p3}"
 for src in "$AA_BRANCH_SRC/autoarray" "$AL_BRANCH_SRC/autolens"; do
     if [ ! -f "$src/__init__.py" ]; then
         echo "FATAL: $src is not a library checkout (see LIBRARY in the header)" >&2

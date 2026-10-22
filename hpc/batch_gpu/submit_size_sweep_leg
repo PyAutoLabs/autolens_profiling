@@ -112,7 +112,7 @@ if [ -z "${SWEEP_MESH:-}" ] || [ -z "${SWEEP_PATH:-}" ] || [ -z "${SWEEP_N:-}" ]
 fi
 
 # Derive the repo root from where this was submitted (hpc/batch_gpu/../..) rather
-# than hardcoding /mnt/ral/jnightin/autolens_profiling: the canonical RAL
+# than hardcoding /mnt/ral/jnightin/profiling/autolens_profiling: the canonical RAL
 # checkout sits on main with a dirty tree, so this runs from a worktree of the
 # feature branch. The -o/-e paths above are relative, so sbatch from inside
 # hpc/batch_gpu/ (submit_size_sweep.sh does the cd for you).

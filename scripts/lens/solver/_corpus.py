@@ -74,7 +74,7 @@ STORAGES = ("git", "external")
 # Where the external groups' .npz copies live (also written into each external group's manifest
 # entry as ``copies``). A copy is placed into CORPUS_DIR of the checkout that needs it.
 EXTERNAL_COPIES = (
-    "RAL: /mnt/ral/jnightin/autolens_profiling_corpus/<npz>",
+    "RAL: /mnt/ral/jnightin/profiling/autolens_profiling_corpus/<npz>",
     "laptop: the canonical autolens_profiling checkout's results/lens/solver/corpus/<npz> (gitignored)",
 )
 

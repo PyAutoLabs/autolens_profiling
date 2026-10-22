@@ -42,7 +42,7 @@
 #SBATCH --mail-user=james.w.nightingale@durham.ac.uk
 
 # Derive the repo root from where this was submitted (hpc/batch_gpu/../..) rather
-# than hardcoding /mnt/ral/jnightin/autolens_profiling: the canonical RAL
+# than hardcoding /mnt/ral/jnightin/profiling/autolens_profiling: the canonical RAL
 # checkout sits on main with a dirty tree, so this runs from a worktree of the
 # feature branch. The -o/-e paths above are relative, so sbatch from inside
 # hpc/batch_gpu/ (submit_baseline_grid.sh does the cd for you).

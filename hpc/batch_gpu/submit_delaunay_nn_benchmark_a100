@@ -31,7 +31,7 @@
 #SBATCH --mail-user=james.w.nightingale@durham.ac.uk
 
 # Derive the repo root from where this was submitted (hpc/batch_gpu/../..)
-# rather than hardcoding /mnt/ral/jnightin/autolens_profiling. The canonical
+# rather than hardcoding /mnt/ral/jnightin/profiling/autolens_profiling. The canonical
 # RAL checkout sits on another branch with a dirty tree, so this benchmark runs
 # from its own checkout; deriving the root means the submit works from either.
 export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
