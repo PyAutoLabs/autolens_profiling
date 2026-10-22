@@ -723,6 +723,7 @@ a ledger.
 | `scripts/misc/hazards/mge_faddeeva.py::COST_REPEATS` | 5 | hazard cost table |
 | `scripts/misc/likelihood_breakdown/timing.py::MIN_STEADY_WARM` | 5 | P8 median (the headline where present since fix phase 5) |
 | `scripts/misc/likelihood_breakdown/timing.py::HEADLINE_MEDIAN_BUDGET_S` | 30.0 | P8: timed-call budget of the headline median (`n_timed` in [20, 200]) |
+| `scripts/cluster/image_plane/robust_settings_sweep.py::BOOTSTRAP_SAMPLES` | 2000 | warmed-median CIs + C10-style `best_admissible` tie set (`family_gates.sweep_tie_set`) over admissible rows (autolens_profiling#436) |
 | `scripts/point_source_image/image_plane/gpu_bottleneck_map.py::BOOTSTRAP_SAMPLES` | 2000 | C12 |
 | `scripts/point_source_image/image_plane/solver_config_sweep.py::BOOTSTRAP_SAMPLES` | 2000 | C9/C10 (recorded CI) |
 | `scripts/point_source_image/image_plane/static_lattice_ab.py::BOOTSTRAP_SAMPLES` | 2000 | reported CI (gates are correctness) |
@@ -751,6 +752,11 @@ iteration counts, budgets in iterations, geometry or formatting, not a measured 
   `scripts/imaging/pixelized/fixed_light_library.py::<module>`: the same iteration budgets.
 - `scripts/imaging/pixelized/fixed_light_trace.py::<module>` also holds `certified_budget < 1`,
   an iteration budget. Its timing comparison is C5.
+- `scripts/cluster/image_plane/_oracle.py::calibrate`: an oracle position error (arcsec) against
+  the 1a/1c/1d fixtures, not a time.
+- `scripts/cluster/image_plane/robust_settings_sweep.py::<module>`: `projected > ROW_WALL_CAP` is a
+  resource guard (R-class): a row whose projected wall exceeds the cap is recorded `unusable` with
+  its reason, never as a result.
 - `scripts/imaging/pixelized/nautilus_batch_capture.py::<module>`: a sample count (`len(...) > 1`).
 - `scripts/misc/hazards/_likelihood.py::ell_comps_radius_from_axis_ratio`: a geometric axis ratio.
 - `scripts/misc/likelihood_breakdown/fixed_light_numpy_solvers.py::nnls_factor_reuse`: NNLS

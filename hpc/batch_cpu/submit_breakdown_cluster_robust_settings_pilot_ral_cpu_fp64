@@ -1,0 +1,202 @@
+#!/bin/bash -l
+#
+# Cluster-pointsolver phase 1 (autolens_profiling#436, Pulse campaign `cluster-pointsolver`):
+# cluster-scale robust PointSolver settings, CPU fp64, PILOT job (oracle cost, reference stability, wall sizing).
+#
+# WHAT THIS MEASURES. scripts/cluster/image_plane/robust_settings_sweep.py judges every PointSolver
+# configuration (extent production / bbox+margin / over-tight diagnostic; scale 0.5/0.7/1.0/2.0;
+# precision 0.01/0.001; MAX_CONTAINING_SIZE 20/40/60 patched in-process with the restore gate;
+# backend NumPy / eager JAX / JIT / vmap 4 and 16) against an INDEPENDENT oracle (_oracle.py:
+# dense lens-equation sampling + Newton, calibrated at the start of the run on the 1a analytic
+# quad and the 1c/1d angular_roots fixture to < 1e-6"; the run aborts if calibration fails).
+# Per-row verdicts: per-root coverage, multiplicity at 0.005", overflow (uncapped NumPy counts),
+# unresolved; compile / first-call / warmed median + bootstrap CI recorded separately.
+#
+# LIBRARY CODE. A PRIVATE checkout of the five libraries at tag 2026.10.17.1
+# ($PYAUTO_PRIVATE_BASE, default /mnt/ral/jnightin/profiling/PyAuto_2026.10.17.1_interf_meas) is
+# prepended to PYTHONPATH. The job refuses to run if autolens / autoarray / autofit / autogalaxy /
+# autonerves import from anywhere else or the tag differs, and after the run it asserts the JSON's
+# source_revisions equal that checkout's HEADs. The shared /mnt/ral/jnightin/PyAuto mirror is
+# never pulled or used.
+#
+# THREADS. 8 JAX threads (--cpus-per-task=8, Eigen pool sized from the affinity, as the carried
+# point-source rows); OMP/MKL/OPENBLAS pinned to 1. XLA_FLAGS are the phase-4a row's.
+#
+# NODE. `ral` only (CPU work never goes on `gpu`), exclusive, pinned to the Intel Xeon Platinum
+# 8490H reference node euclid-ral-compute-10-4. Confirm with `sinfo -p ral -N -o "%N %T %C"`
+# at submit time (`idle*` nodes are unreachable); edit --nodelist if it changed.
+#
+# DATASET (two legs, both PILOT; draw sets prior + stress on each).
+#   1. simple: dataset/cluster/simple is regenerated on the node by scripts/misc/simulators/cluster.py
+#      if missing (pinned seed; sha256 of every file in the JSON). 2 prior + 2 stress draws.
+#   2. a2744 (human decision 2026-10-17, Option A): run with --a2744-reference prior-median-smoke,
+#      the "A2744-geometry synthetic model (prior medians; not a fitted cluster model)". The ORACLE is
+#      the truth for every row; the model is NOT a fitted A2744 model, so representativeness of the
+#      real cluster is a stated caveat and every a2744 row is labelled diagnostic, not quotable.
+#      1 prior + 1 stress draw; --row-wall-cap 1800 (a row projected above it is recorded "unusable"
+#      with its reason and the job continues).
+#      REQUIREMENT: the four A2744 CSVs. The producer copies them from an autolens_workspace
+#      checkout if $AUTOLENS_WORKSPACE points at one on the node; otherwise dataset/cluster/a2744/
+#      (mass.csv, point.csv, point_datasets.csv, scaling_galaxies.csv + provenance.json, produced on
+#      the laptop by _datasets.produce_a2744) must be rsynced into this clone's gitignored
+#      dataset/ before submitting; the producer re-verifies every sha256 against provenance.json.
+#      Without either, the a2744 leg is skipped with a message (the simple leg still counts).
+#
+# LEGS. PILOT_LEGS (default "simple,a2744") picks which legs run, so the A2744 leg can be rerun on
+# its own after the simple leg has a result:
+#     PILOT_LEGS=a2744 sbatch submit_breakdown_cluster_robust_settings_pilot_ral_cpu_fp64
+#
+# MEMORY / WALL (job 412567, code 23b72de2, --mem=64gb --time=2:30:00). The simple leg finished in
+# 464 s. The A2744 leg was OOM-killed at 1:34 after 7 of 25 rows with MaxRSS 66.6 GB (the node has
+# 976 GB); its oracle (3 draws) + uncapped counts took 522 s and each row 410-700 s. The sweep now
+# prints RSS / peak RSS / live JAX arrays per row (_memory.py) so the growth can be attributed;
+# until it is, --mem=256gb (~4x the 66.6 GB seen at row 8/25; growth ~8-9 GB/row would reach
+# ~230 GB by row 25) and --time=6:00:00.
+#
+# WALL-BASIS:
+#   simple leg: declared estimate from local sizing (1800 s, 3x floor); job 412567 measured 464 s.
+#   a2744 leg: job 412567 measured 522 s (oracle + uncapped counts) and 7 rows in 4029 s (~580 s
+#   per row, 410-700 s); 25 rows ~ 522 + 25 x 580 = 15022 s before the timing phase (2 rounds x
+#   2 calls per usable route, small next to a row). Declared 16000 s, extrapolated from that
+#   partial run (not a completed total), headroom 1.35 -> 21600 s = --time 6:00:00. Both legs in
+#   one job: 464 + 16000 = 16464 s, headroom 1.31 on the total.
+#   cell: cluster/robust_settings_sweep/simple  device: ral_cpu  precision: fp64
+#   source: unmeasured  probe-first: yes  wall: 1800  headroom: 3.0
+#   cell: cluster/robust_settings_sweep/a2744  device: ral_cpu  precision: fp64
+#   source: measured-wall  wall: 16000  headroom: 1.35  ref: ral_job_412567_rows_7_of_25_extrapolated
+
+#SBATCH -J cluster_pointsolver_pilot
+#SBATCH --partition=ral
+#SBATCH --exclusive
+#SBATCH --nodelist=euclid-ral-compute-10-4
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=256gb
+#SBATCH --time=6:00:00
+#SBATCH -o output/output.%A.out
+#SBATCH -e error/error.%A.err
+
+# Submit from hpc/batch_cpu/ (the -o/-e paths are relative).
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+export PYAUTO_PRIVATE_BASE="${PYAUTO_PRIVATE_BASE:-/mnt/ral/jnightin/profiling/PyAuto_2026.10.17.1_interf_meas}"
+echo "AP_ROOT=$AP_ROOT"
+source $AP_ROOT/activate.sh
+export PYTHONPATH=$PYAUTO_PRIVATE_BASE/PyAutoNerves:$PYAUTO_PRIVATE_BASE/PyAutoFit:$PYAUTO_PRIVATE_BASE/PyAutoArray:$PYAUTO_PRIVATE_BASE/PyAutoGalaxy:$PYAUTO_PRIVATE_BASE/PyAutoLens:$PYTHONPATH
+
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export NPROC=${SLURM_CPUS_PER_TASK:-8}
+export JAX_PLATFORMS=cpu
+export JAX_ENABLE_X64=1
+export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+export NUMBA_CACHE_DIR=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}
+mkdir -p "$NUMBA_CACHE_DIR" "$MPLCONFIGDIR"
+unset JAX_COMPILATION_CACHE_DIR PYAUTO_SMALL_DATASETS
+
+CONFIG_NAME=hpc_ral_cpu_fp64
+RESULTS_DIR=$AP_ROOT/results/breakdown/cluster
+LOG_DIR=$AP_ROOT/results/logs/cluster
+mkdir -p "$RESULTS_DIR" "$LOG_DIR"
+
+echo "=========================================="
+date
+hostname
+lscpu | grep 'Model name' || true
+echo "partition:      ${SLURM_JOB_PARTITION:-unset}"
+echo "nodelist:       ${SLURM_JOB_NODELIST:-unset}"
+echo "cpus-per-task:  ${SLURM_CPUS_PER_TASK:-unset}"
+echo "sched_affinity: $(python3 -c 'import os; print(len(os.sched_getaffinity(0)))')"
+echo "loadavg:        $(cat /proc/loadavg)"
+echo "Thread env:     OMP=$OMP_NUM_THREADS MKL=$MKL_NUM_THREADS OPENBLAS=$OPENBLAS_NUM_THREADS NPROC=$NPROC"
+echo "XLA_FLAGS:      $XLA_FLAGS"
+
+echo "=== source revisions (private 2026.10.17.1 checkout) ==="
+for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    printf '%-14s %s %s\n' "$r" "$(git -C $PYAUTO_PRIVATE_BASE/$r rev-parse HEAD 2>&1)" "$(git -C $PYAUTO_PRIVATE_BASE/$r describe --tags 2>&1)"
+done
+echo "AP_ROOT rev:    $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+
+cd $AP_ROOT
+python3 - <<'EOF_PY' || exit 3
+import os, subprocess
+import autoarray, autofit, autogalaxy, autolens, autonerves
+base = os.path.realpath(os.environ["PYAUTO_PRIVATE_BASE"])
+for m in (autonerves, autofit, autoarray, autogalaxy, autolens):
+    print(f"{m.__name__:<11} {m.__file__}")
+    if not os.path.realpath(m.__file__).startswith(base + os.sep):
+        raise SystemExit(f"REFUSING: {m.__name__} imported from {m.__file__}, not {base}")
+    repo = os.path.dirname(os.path.dirname(os.path.realpath(m.__file__)))
+    tag = subprocess.check_output(["git", "-C", repo, "describe", "--tags"], text=True).strip()
+    if tag != "2026.10.17.1":
+        raise SystemExit(f"REFUSING: {repo} is at {tag}, not tag 2026.10.17.1")
+print("import origin + tag 2026.10.17.1: OK")
+EOF_PY
+
+check_revisions() {
+python3 - "$1" <<'EOF_PY'
+import json, os, subprocess, sys
+path = sys.argv[1]
+revs = json.load(open(path))["source_revisions"]
+base = os.environ["PYAUTO_PRIVATE_BASE"]
+for repo in ("PyAutoNerves", "PyAutoFit", "PyAutoArray", "PyAutoGalaxy", "PyAutoLens"):
+    head = subprocess.check_output(["git", "-C", f"{base}/{repo}", "rev-parse", "HEAD"], text=True).strip()
+    if revs[repo] != head:
+        raise SystemExit(f"MISMATCH {path}: {repo} JSON {revs[repo]} != private checkout {head}")
+print("OK", path)
+EOF_PY
+}
+STATUS=0
+PILOT_LEGS="${PILOT_LEGS:-simple,a2744}"
+echo "PILOT_LEGS:     $PILOT_LEGS"
+case ",$PILOT_LEGS," in *,simple,*|*,a2744,*) ;; *) echo "REFUSING: PILOT_LEGS=$PILOT_LEGS names no leg (simple, a2744)"; exit 2 ;; esac
+
+echo "=========================================="
+if [[ ",$PILOT_LEGS," == *,simple,* ]]; then
+echo "RUN 1/2 robust_settings_sweep_simple_pilot ${CONFIG_NAME} -> ${RESULTS_DIR}"
+date
+PYTHONUNBUFFERED=1 python3 scripts/cluster/image_plane/robust_settings_sweep.py \
+    --config-name "$CONFIG_NAME" --output-dir "$RESULTS_DIR" \
+    --dataset simple --pilot --n-draws 2 --n-stress 2 --rounds 3 --calls 2 --n-stream 4 \
+    --full-n-draws 50 --full-n-stress 50 --full-rounds 20 --full-calls 10 \
+    2>&1 | tee "$LOG_DIR/robust_settings_sweep_simple_pilot_${CONFIG_NAME}_${SLURM_JOB_ID:-local}.log"
+echo "=== source_revisions check (simple JSON vs private checkout HEAD) ==="
+check_revisions "$RESULTS_DIR/robust_settings_sweep_simple_pilot_${CONFIG_NAME}.json" || STATUS=4
+else
+echo "RUN 1/2 simple leg not requested (PILOT_LEGS=$PILOT_LEGS)"
+fi
+
+echo "=========================================="
+if [[ ",$PILOT_LEGS," == *,a2744,* ]]; then
+echo "RUN 2/2 robust_settings_sweep_a2744_pilot ${CONFIG_NAME} -> ${RESULTS_DIR}"
+date
+A2744_ARGS=""
+if [ -n "${AUTOLENS_WORKSPACE:-}" ] && [ -f "$AUTOLENS_WORKSPACE/dataset/cluster/a2744/point_datasets.csv" ]; then
+    A2744_ARGS="--a2744-workspace $AUTOLENS_WORKSPACE"
+    echo "A2744 CSVs: copied from $AUTOLENS_WORKSPACE (git $(git -C $AUTOLENS_WORKSPACE rev-parse HEAD 2>&1))"
+elif [ -f "$AP_ROOT/dataset/cluster/a2744/provenance.json" ]; then
+    echo "A2744 CSVs: rsynced dataset/cluster/a2744 (sha256 re-verified against provenance.json)"
+else
+    echo "A2744 LEG SKIPPED: no \$AUTOLENS_WORKSPACE and no rsynced dataset/cluster/a2744/provenance.json"
+    STATUS=5
+fi
+if [ "$STATUS" != 5 ]; then
+    PYTHONUNBUFFERED=1 python3 scripts/cluster/image_plane/robust_settings_sweep.py \
+        --config-name "$CONFIG_NAME" --output-dir "$RESULTS_DIR" \
+        --dataset a2744 --pilot --a2744-reference prior-median-smoke $A2744_ARGS \
+        --n-draws 1 --n-stress 1 --rounds 2 --calls 2 --n-stream 2 --row-wall-cap 1800 \
+        --full-n-draws 30 --full-n-stress 30 --full-rounds 20 --full-calls 10 \
+        2>&1 | tee "$LOG_DIR/robust_settings_sweep_a2744_pilot_${CONFIG_NAME}_${SLURM_JOB_ID:-local}.log"
+    echo "=== source_revisions check (a2744 JSON vs private checkout HEAD) ==="
+    check_revisions "$RESULTS_DIR/robust_settings_sweep_a2744_pilot_${CONFIG_NAME}.json" || STATUS=4
+fi
+else
+echo "RUN 2/2 a2744 leg not requested (PILOT_LEGS=$PILOT_LEGS)"
+fi
+echo "exit status: $STATUS (0 ok, 4 revisions/JSON failure, 5 a2744 leg skipped)"
+
+echo "=========================================="
+echo "loadavg: $(cat /proc/loadavg)"
+echo "Finished."
+date
+exit $STATUS
