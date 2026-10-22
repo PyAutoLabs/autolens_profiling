@@ -6,11 +6,14 @@ Wiki page: [cluster_pointsolver.md](../../wiki/campaigns/cluster_pointsolver.md)
 **Phase 1:** cluster-scale robust `PointSolver` settings,
 [autolens_profiling#436](https://github.com/PyAutoLabs/autolens_profiling/issues/436).
 Mind prompt `active/cluster_pointsolver_robust_settings_p1.md`.
-**Status:** INTERPRETATION-PENDING (human decision). The `simple` sweep is complete and quotable.
+**Status:** DECIDED 2026-10-22: DEFERRED (default stays 1.0″ until the starting-grid draft and the A2744 pull; 0.5″ is the working answer if forced). The `simple` sweep is complete and quotable.
 The A2744 pilot leg has not been pulled (see [A2744](#a2744-pilot-leg-not-pulled)). No default
 was changed anywhere.
 
 ## TL;DR
+
+**Decision (human, 2026-10-22): deferred** — default stays 1.0″ until the starting-grid draft and the A2744 pull; see [Decision table](#decision-table-human).
+
 
 - **No row is admissible on the 101 judged draws of `dataset/cluster/simple`.** Every
   production-extent row covers all **306/306** oracle roots of the prior set (truth + 50 prior
@@ -48,6 +51,12 @@ see the full table for those rows.
 The decision is whether a 2-miss row at about 0.77× speed is better than the 5-miss production
 control. Neither row is admissible, and neither passes the stress set. This ledger makes **no
 recommendation** and changes no default. The open question is in [Follow-ups](#follow-ups).
+
+**Decision (human, 2026-10-22): DEFER.** The production default stays at 1.0″. The choice is
+re-opened once (i) the starting-grid draft
+(`PyAutoMind/draft/research/autolens_profiling/cluster_pointsolver_starting_grid_close_member_image.md`)
+has tested the same close-pair geometry on a real member galaxy and (ii) the A2744 pilot leg (job
+412573) has been pulled. 0.5″ is the working answer if the choice must be made before then.
 
 ## Tested domain
 
@@ -258,8 +267,9 @@ next/updated, the check-in section and the board.
 > there is no overflow at cap 20. Eager JAX is unusable (projected row wall over cap). Truth-bbox
 > extents miss 49–63 stress roots because the images move with the model. Peak RSS 4.3 GB.
 >
-> **Verdict.** INTERPRETATION-PENDING. The human must choose between a 2-miss, ~0.77×-speed
-> start and the 5-miss production control. No default was changed.
+> **Verdict.** DEFERRED (human, 2026-10-22). The 2-miss, ~0.77×-speed 0.5″/0.7″ start vs the
+> 5-miss 1.0″ production control is re-decided after the starting-grid draft and the A2744 pull.
+> No default was changed; 0.5″ is the working answer if the choice is forced earlier.
 >
 > **Open.** The A2744 pilot leg (job 412573) has not been pulled. RAL login was unavailable on
 > 2026-10-22. Row 1 read on 2026-10-18: peak 22 GB, RSS 8.3 GB, live arrays ~0. The pull and RSS

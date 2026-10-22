@@ -3,7 +3,7 @@
 **Status:** open
 **Question:** What does a representative cluster-scale `PointSolver` likelihood cost on released code, where is the time, and which levers (deflection cost, grid extent, per-source batching) pay at cluster scale?
 **Pre-registered rule:** phase 1: a setting is admissible only when every oracle root (independent lens-equation oracle, not the triangle solver) of every judged prior AND stress draw is covered by exactly one candidate within the row's last-step triangle side, multiplicity agrees, no spurious candidate and no uncapped containing count above the cap. Otherwise the contract inherits the point-source campaign measurement contract (exact revisions, interleaved A/B on identical hardware, fused production control, correctness gate before any speed claim, negative results recorded, one bounded phase per issue and PR).
-**Verdict:** phase 1 INTERPRETATION-PENDING (human decision): no `PointSolver` setting is admissible on `simple` (101 draws). Production rows cover 306/306 prior roots and miss 2–6 of 300 stress roots, all close high-|μ| pairs. No default changed.
+**Verdict:** phase 1 DEFERRED (human, 2026-10-22; default stays 1.0″ pending the starting-grid draft and the A2744 pull): no `PointSolver` setting is admissible on `simple` (101 draws). Production rows cover 306/306 prior roots and miss 2–6 of 300 stress roots, all close high-|μ| pairs. No default changed.
 **Headline:** initial scale 0.5″/0.7″ misses 2 stress roots at 0.78×/0.75× the production control's speed; the control (1.0″) misses 5 at 5.29 ms; RAL Xeon 8490H job 412572. Carried evidence: two-source cluster solved likelihood 47.36 → 9.085 ms (5.21x) from the static step-0 lattice, RAL Xeon 8490H job 350636.
 **Library PRs:** none yet.
 **Profiling PRs:** phase 1 PR (autolens_profiling#436), open.
@@ -22,7 +22,7 @@ from phase 4a on, that campaign is single-source only and everything cluster-sca
 
 | Phase | Dates | Question | Pre-registered rule | Result | Jobs | PRs |
 |---|---|---|---|---|---|---|
-| 1 robust settings | 2026-10-17/22 | Which `PointSolver` settings find every image at cluster scale, judged against an independent oracle? | per-root coverage + multiplicity + overflow on prior AND stress draws (above) | INTERPRETATION-PENDING: no row admissible on `simple`; 0.5″/0.7″ miss 2, 1.0″ (production) 5, 2.0″ 6 of 300 stress roots; precision/capacity/backend change nothing; eager unusable; A2744 leg not pulled | 412567 (pilot), 412572 (sweep), 412573 (A2744 pilot leg, not pulled) | phase 1 PR (#436) |
+| 1 robust settings | 2026-10-17/22 | Which `PointSolver` settings find every image at cluster scale, judged against an independent oracle? | per-root coverage + multiplicity + overflow on prior AND stress draws (above) | DEFERRED (human 2026-10-22, default stays 1.0″): no row admissible on `simple`; 0.5″/0.7″ miss 2, 1.0″ (production) 5, 2.0″ 6 of 300 stress roots; precision/capacity/backend change nothing; eager unusable; A2744 leg not pulled | 412567 (pilot), 412572 (sweep), 412573 (A2744 pilot leg, not pulled) | phase 1 PR (#436) |
 | 2 deflection cost | — | dPIE/NFW deflection cost (JAX deflection cell first) | — | sketch only | — | — |
 | 3 grid extent | — | Cluster grid-extent guidance with completeness evidence | — | sketch only | — | — |
 | 4 | — | Whatever the phase-1 split exposes | — | sketch only | — | — |
