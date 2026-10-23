@@ -59,6 +59,31 @@ Two datasets (autolens_profiling#436, justified against
     fitted cluster model)" in the JSON and in every row: every row of such a
     run is diagnostic, the JSON is not quotable, and it is never the production
     model -- the human decides whether it is useful.
+
+``viz_cluster`` (synthetic; autolens_profiling#439)
+    The autolens_visualization cluster model (``true_models/cluster.py``): 2 main
+    dPIEMassSph (sigma / r_core / r_cut) + 10 scaling dPIEMassSph members on one
+    shared ``sigma_ref`` + an NFWMCRLudlowSph host (``mass_at_200`` 10^15.3) at
+    z 0.5 = 13 mass components; sources ``point_0`` (z 1.0) and ``point_1`` (z 2.0).
+    Same shape as ``simple`` but a different model: ``simple`` uses dPIEMassB0Sph
+    (ra / rs / b0). The constants are COPIED below (never imported across repos);
+    the case metadata stamps the viz checkout SHA they were copied at, the sha256 of
+    that source file, a sha256 of the copied constants (:func:`viz_constants_digest`)
+    and, when a viz checkout is found beside this repo, its live HEAD and whether
+    the live file still hashes the same. The "observed" positions are not solver
+    output: :func:`produce_viz_cluster` derives them by tracing -- the independent
+    oracle (``_oracle.py``) solves the explicit-constants truth tracer at the true
+    source centres, and every accepted root above the solver's magnification
+    threshold is kept (cached, with the constants digest, in the gitignored
+    ``dataset/cluster/viz_cluster/positions.json``). The truth gate checks (i) the
+    fused model's prior-median tracer reproduces the explicit-constants tracer's
+    deflections (the ``simple`` gate's method) and (ii) every stored position
+    back-traces onto its source centre. Draws: the truth + ``n`` seeded draws of a
+    1 % Gaussian prior (floor 0.01) on every main-lens centre / sigma / r_cut, the
+    shared ``sigma_ref`` and the host centre (``mass_at_200`` held at its value for
+    prior draws, free for stress draws, as in ``simple``). The member-core centres
+    (main + scaling) are recorded for the separation analysis
+    (``separation_rule.py``).
 """
 
 from __future__ import annotations
@@ -144,6 +169,7 @@ class ClusterCase:
     draw_kind: str = "prior"
     perturbation_fraction: float | None = None
     held_paths: dict = field(default_factory=dict)
+    member_cores: list = field(default_factory=list)
 
     # -- tracers -----------------------------------------------------------
 
@@ -158,6 +184,33 @@ class ClusterCase:
 
         instance = self.model.instance_from_vector(vector=vector, xp=xp)
         return al.Tracer(galaxies=self.galaxies_from_instance(instance))
+
+    def mass_centres(self, vector) -> list[dict]:
+        """Every lens galaxy's mass-profile centre for a draw: ``name``, ``kind``, ``centre``.
+
+        ``kind`` is ``host`` for an NFW halo, ``main`` for a free main lens and ``scaling``
+        for a scaling-relation member (names from the model's galaxy keys).
+        """
+        import autogalaxy as ag
+
+        instance = self.model.instance_from_vector(vector=np.asarray(vector, dtype=float))
+        named = list(instance.galaxies.items()) if hasattr(instance.galaxies, "items") else []
+        if hasattr(instance, "scaling_galaxies"):
+            named += [(f"scaling_{i}", g) for i, g in enumerate(instance.scaling_galaxies)]
+        out = []
+        for name, galaxy in named:
+            for profile in vars(galaxy).values():
+                if not isinstance(profile, ag.mp.MassProfile):
+                    continue
+                kind = (
+                    "host"
+                    if "nfw" in type(profile).__name__.lower()
+                    else ("scaling" if "scaling" in name else "main")
+                )
+                out.append(
+                    {"name": name, "kind": kind, "centre": [float(c) for c in profile.centre]}
+                )
+        return out
 
     def plane_indices(self, tracer) -> list[int]:
         return [
@@ -583,3 +636,357 @@ def list_a2744_parameters(workspace: Path | None = None) -> list[str]:
     datasets = al.list_from_csv(file_path=A2744_PATH / "point_datasets.csv")
     scaling_table = al.galaxy_table_from_csv(file_path=A2744_PATH / "scaling_galaxies.csv")
     return [".".join(p) for p in a2744_model(datasets, scaling_table).unique_prior_paths]
+
+
+# ---------------------------------------------------------------------------
+# viz_cluster (autolens_visualization true_models/cluster.py, autolens_profiling#439)
+# ---------------------------------------------------------------------------
+
+VIZ_PATH = ROOT / "dataset" / "cluster" / "viz_cluster"
+VIZ_SOURCE = "autolens_visualization/true_models/cluster.py"
+# The viz checkout and file the constants below were copied from (2026-10-23).
+VIZ_COPIED_AT_SHA = "7a1b825bded160648a3b203febfb1b4bd03594d9"
+VIZ_COPIED_FILE_SHA256 = "0b404bb4d8e5ff2f9d89907b7d53de07c9ed9014a3cb9f3e25410830c736787b"
+
+# -- copied constants (true_models/cluster.py) --------------------------------------
+VIZ_REDSHIFT_LENS = 0.5
+VIZ_SOURCE_REDSHIFTS = [1.0, 2.0]
+VIZ_SOURCE_CENTRES = [(0.3, 0.5), (-0.8, 1.2)]
+VIZ_POSITION_NOISE = 0.005
+VIZ_MAIN_LENS_CENTRES = [(0.0, 0.0), (10.0, 8.0)]
+VIZ_MAIN_LENS_DPIE = [(0.0, 20.0, 330.0), (0.0, 12.0, 210.0)]  # (r_core, r_cut, sigma)
+VIZ_MAIN_LENS_SERSIC = [(1.5, 3.0, 4.0), (0.8, 1.5, 3.5)]  # light only; digest completeness
+VIZ_SCALING_CENTRES = [
+    (5.5, -6.5),
+    (-7.5, 3.0),
+    (12.0, -5.0),
+    (-4.0, -9.0),
+    (3.0, 13.0),
+    (-14.0, 4.0),
+    (15.0, 9.0),
+    (-9.0, -12.0),
+    (8.5, 5.5),
+    (-6.5, 11.0),
+]
+VIZ_SCALING_LUMINOSITIES = [0.40, 0.32, 0.25, 0.20, 0.16, 0.13, 0.10, 0.08, 0.06, 0.05]
+VIZ_SCALING_SIGMA_REF = 85.0
+VIZ_SCALING_SIGMA_EXPONENT = 0.25
+VIZ_SCALING_GAMMA = 0.2
+VIZ_SCALING_RCUT_EXPONENT = 1.0 + VIZ_SCALING_GAMMA - 2.0 * VIZ_SCALING_SIGMA_EXPONENT
+VIZ_SCALING_R_CUT_REF = 5.0
+VIZ_NFW_MASS = 10**15.3
+VIZ_NFW_CENTRE = (0.0, 0.0)
+# -- end copied constants ----------------------------------------------------------
+
+VIZ_N_COMPONENTS = len(VIZ_MAIN_LENS_CENTRES) + len(VIZ_SCALING_CENTRES) + 1
+VIZ_ORACLE_HALF_WIDTH = 60.0
+VIZ_ORACLE_H = 0.1
+VIZ_POSITION_MAGNIFICATION_FLOOR = 0.1  # the solver's magnification threshold
+# The workspace cluster example's solver (autolens_workspace/scripts/cluster/modeling.py
+# ~L241-247), the grid whose 1.0" start is under test.
+VIZ_PRODUCTION = dict(SIMPLE_PRODUCTION)
+
+
+def viz_constants() -> dict:
+    """The copied constants as one canonical dict (what :func:`viz_constants_digest` hashes)."""
+    return {
+        "REDSHIFT_LENS": VIZ_REDSHIFT_LENS,
+        "SOURCE_REDSHIFTS": VIZ_SOURCE_REDSHIFTS,
+        "SOURCE_CENTRES": [list(c) for c in VIZ_SOURCE_CENTRES],
+        "POSITION_NOISE": VIZ_POSITION_NOISE,
+        "MAIN_LENS_CENTRES": [list(c) for c in VIZ_MAIN_LENS_CENTRES],
+        "MAIN_LENS_DPIE": [list(c) for c in VIZ_MAIN_LENS_DPIE],
+        "MAIN_LENS_SERSIC": [list(c) for c in VIZ_MAIN_LENS_SERSIC],
+        "SCALING_CENTRES": [list(c) for c in VIZ_SCALING_CENTRES],
+        "SCALING_LUMINOSITIES": VIZ_SCALING_LUMINOSITIES,
+        "SCALING_SIGMA_REF": VIZ_SCALING_SIGMA_REF,
+        "SCALING_SIGMA_EXPONENT": VIZ_SCALING_SIGMA_EXPONENT,
+        "SCALING_GAMMA": VIZ_SCALING_GAMMA,
+        "SCALING_R_CUT_REF": VIZ_SCALING_R_CUT_REF,
+        "NFW_MASS_AT_200": VIZ_NFW_MASS,
+        "NFW_CENTRE": list(VIZ_NFW_CENTRE),
+    }
+
+
+def viz_constants_digest() -> str:
+    blob = json.dumps(viz_constants(), sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(blob.encode()).hexdigest()
+
+
+def _find_viz_repo() -> Path | None:
+    for parent in Path(__file__).resolve().parents:
+        for cand in (parent / "autolens_visualization", parent / "lens" / "autolens_visualization"):
+            if (cand / "true_models" / "cluster.py").exists():
+                return cand
+    return None
+
+
+def viz_member_cores() -> list[dict]:
+    """Main-lens and scaling-member mass centres of the truth (the host shares main_0's)."""
+    out = [
+        {"name": f"main_{i}", "kind": "main", "centre": list(c)}
+        for i, c in enumerate(VIZ_MAIN_LENS_CENTRES)
+    ]
+    out += [
+        {"name": f"scaling_{i}", "kind": "scaling", "centre": list(c), "luminosity": lum}
+        for i, (c, lum) in enumerate(zip(VIZ_SCALING_CENTRES, VIZ_SCALING_LUMINOSITIES))
+    ]
+    return out
+
+
+def viz_truth_galaxies() -> list:
+    """The truth lens galaxies built directly from the constants (true_models/cluster.py's way)."""
+    import autolens as al
+
+    z_src = max(VIZ_SOURCE_REDSHIFTS)
+    galaxies = []
+    for centre, (r_core, r_cut, sigma) in zip(VIZ_MAIN_LENS_CENTRES, VIZ_MAIN_LENS_DPIE):
+        galaxies.append(
+            al.Galaxy(
+                redshift=VIZ_REDSHIFT_LENS,
+                mass=al.mp.dPIEMassSph(
+                    centre=centre,
+                    sigma=sigma,
+                    r_core=r_core,
+                    r_cut=r_cut,
+                    redshift_object=VIZ_REDSHIFT_LENS,
+                    redshift_source=z_src,
+                ),
+            )
+        )
+    for centre, lum in zip(VIZ_SCALING_CENTRES, VIZ_SCALING_LUMINOSITIES):
+        galaxies.append(
+            al.Galaxy(
+                redshift=VIZ_REDSHIFT_LENS,
+                mass=al.mp.dPIEMassSph(
+                    centre=centre,
+                    sigma=VIZ_SCALING_SIGMA_REF * lum**VIZ_SCALING_SIGMA_EXPONENT,
+                    r_core=0.0,
+                    r_cut=VIZ_SCALING_R_CUT_REF * lum**VIZ_SCALING_RCUT_EXPONENT,
+                    redshift_object=VIZ_REDSHIFT_LENS,
+                    redshift_source=z_src,
+                ),
+            )
+        )
+    galaxies.append(
+        al.Galaxy(
+            redshift=VIZ_REDSHIFT_LENS,
+            dark=al.mp.NFWMCRLudlowSph(
+                centre=VIZ_NFW_CENTRE,
+                mass_at_200=VIZ_NFW_MASS,
+                redshift_object=VIZ_REDSHIFT_LENS,
+                redshift_source=z_src,
+            ),
+        )
+    )
+    return galaxies
+
+
+def viz_truth_tracer():
+    import autolens as al
+
+    return al.Tracer(
+        galaxies=viz_truth_galaxies() + [al.Galaxy(redshift=z) for z in VIZ_SOURCE_REDSHIFTS]
+    )
+
+
+def viz_model():
+    """The fused lens model of the viz cluster (sources excluded: fixed galaxies)."""
+    import autofit as af
+    import autolens as al
+
+    z_src = max(VIZ_SOURCE_REDSHIFTS)
+    galaxies = {}
+    for i, (centre, (r_core, r_cut, sigma)) in enumerate(
+        zip(VIZ_MAIN_LENS_CENTRES, VIZ_MAIN_LENS_DPIE)
+    ):
+        mass = af.Model(al.mp.dPIEMassSph)
+        mass.centre.centre_0 = _gaussian(centre[0])
+        mass.centre.centre_1 = _gaussian(centre[1])
+        mass.sigma = _gaussian(sigma)
+        mass.r_core = r_core
+        mass.r_cut = _gaussian(r_cut)
+        mass.redshift_object = VIZ_REDSHIFT_LENS
+        mass.redshift_source = z_src
+        mass.H0 = 67.66
+        mass.Om0 = 0.30966
+        galaxies[f"main_{i}"] = af.Model(al.Galaxy, redshift=VIZ_REDSHIFT_LENS, mass=mass)
+    sigma_ref = _gaussian(VIZ_SCALING_SIGMA_REF)
+    for i, (centre, lum) in enumerate(zip(VIZ_SCALING_CENTRES, VIZ_SCALING_LUMINOSITIES)):
+        mass = af.Model(al.mp.dPIEMassSph)
+        mass.centre = tuple(centre)
+        mass.sigma = sigma_ref * lum**VIZ_SCALING_SIGMA_EXPONENT
+        mass.r_core = 0.0
+        mass.r_cut = VIZ_SCALING_R_CUT_REF * lum**VIZ_SCALING_RCUT_EXPONENT
+        mass.redshift_object = VIZ_REDSHIFT_LENS
+        mass.redshift_source = z_src
+        mass.H0 = 67.66
+        mass.Om0 = 0.30966
+        galaxies[f"scaling_{i}"] = af.Model(al.Galaxy, redshift=VIZ_REDSHIFT_LENS, mass=mass)
+    dark = af.Model(
+        al.mp.NFWMCRLudlowSph,
+        mass_at_200=af.LogUniformPrior(lower_limit=10**14.0, upper_limit=10**16.5),
+        redshift_object=VIZ_REDSHIFT_LENS,
+        redshift_source=z_src,
+    )
+    dark.centre.centre_0 = _gaussian(VIZ_NFW_CENTRE[0])
+    dark.centre.centre_1 = _gaussian(VIZ_NFW_CENTRE[1])
+    galaxies["host_halo"] = af.Model(al.Galaxy, redshift=VIZ_REDSHIFT_LENS, dark=dark)
+    return af.Collection(galaxies=af.Collection(**galaxies))
+
+
+def _viz_provenance() -> dict:
+    viz = _find_viz_repo()
+    live = viz / "true_models" / "cluster.py" if viz is not None else None
+    live_sha = sha256(live) if live is not None else None
+    return {
+        "source": VIZ_SOURCE,
+        "copied_at_sha": VIZ_COPIED_AT_SHA,
+        "copied_file_sha256": VIZ_COPIED_FILE_SHA256,
+        "constants_sha256": viz_constants_digest(),
+        "live_checkout_head": git_head(viz) if viz is not None else "unavailable: not found",
+        "live_file_sha256": live_sha,
+        "live_file_matches_copy": (live_sha == VIZ_COPIED_FILE_SHA256)
+        if live_sha is not None
+        else None,
+        "note": "constants copied, not imported; simple uses dPIEMassB0Sph (a different model)",
+    }
+
+
+def produce_viz_cluster(oracle_h: float = VIZ_ORACLE_H) -> dict:
+    """Derive the point positions by tracing (oracle on the truth tracer); cache + provenance."""
+    import _oracle
+
+    digest = viz_constants_digest()
+    path = VIZ_PATH / "positions.json"
+    if path.exists():
+        cached = json.loads(path.read_text())
+        if cached.get("constants_sha256") == digest and cached.get("oracle_h") == oracle_h:
+            cached["reused"] = True
+            return cached
+    tracer = viz_truth_tracer()
+    planes = [int(tracer.plane_index_via_redshift_from(redshift=z)) for z in VIZ_SOURCE_REDSHIFTS]
+    eq = _oracle.LensEquation(tracer, planes=planes)
+    half = VIZ_ORACLE_HALF_WIDTH
+    box = (-half, half, -half, half)
+    sources = []
+    for name, pi, beta in zip(("point_0", "point_1"), planes, VIZ_SOURCE_CENTRES):
+        res = _oracle.solve(eq, pi, np.asarray(beta, dtype=float), box, oracle_h)
+        roots = [r for r in res["roots"] if r["accepted"]]
+        kept = [r for r in roots if abs(r["magnification"]) >= VIZ_POSITION_MAGNIFICATION_FLOOR]
+        sources.append(
+            {
+                "name": name,
+                "plane_index": pi,
+                "beta": list(beta),
+                "positions": [r["position"] for r in kept],
+                "magnifications": [r["magnification"] for r in kept],
+                "n_accepted": len(roots),
+                "n_below_magnification_floor": len(roots) - len(kept),
+                "stable": res["stability"]["stable"],
+            }
+        )
+    eq.clear_cache()
+    out = {
+        "producer": "scripts/cluster/image_plane/_datasets.py::produce_viz_cluster "
+        "(_oracle.solve on the explicit-constants truth tracer; never the triangle solver)",
+        "constants_sha256": digest,
+        "oracle_h": oracle_h,
+        "oracle_box": list(box),
+        "magnification_floor": VIZ_POSITION_MAGNIFICATION_FLOOR,
+        "sources": sources,
+    }
+    VIZ_PATH.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(out, indent=2))
+    out["reused"] = False
+    return out
+
+
+def load_viz_cluster(
+    oracle_h: float | None = None, oracle_half_width: float | None = None
+) -> ClusterCase:
+    import autolens as al
+
+    positions = produce_viz_cluster()
+    model = viz_model()
+    half = VIZ_ORACLE_HALF_WIDTH if oracle_half_width is None else float(oracle_half_width)
+    case = ClusterCase(
+        name="viz_cluster",
+        model=model,
+        source_names=[s["name"] for s in positions["sources"]],
+        source_redshifts=list(VIZ_SOURCE_REDSHIFTS),
+        observed_positions=[
+            np.atleast_2d(np.asarray(s["positions"], dtype=float)) for s in positions["sources"]
+        ],
+        position_sigma=VIZ_POSITION_NOISE,
+        production=VIZ_PRODUCTION,
+        oracle_box=(-half, half, -half, half),
+        oracle_h=VIZ_ORACLE_H if oracle_h is None else float(oracle_h),
+        reference_vector=np.asarray(model.physical_values_from_prior_medians, dtype=float),
+        reference_label="autolens_visualization true_models/cluster.py truth (copied constants)",
+        reference_available=True,
+        provenance={**_viz_provenance(), "positions": positions},
+        fixed_galaxies=[al.Galaxy(redshift=z) for z in VIZ_SOURCE_REDSHIFTS],
+        truth_betas=np.asarray(VIZ_SOURCE_CENTRES, dtype=float),
+        draw_kind="prior",
+        held_paths={"galaxies.host_halo.dark.mass_at_200": VIZ_NFW_MASS},
+    )
+    i = case.paths.index("galaxies.host_halo.dark.mass_at_200")
+    case.reference_vector[i] = VIZ_NFW_MASS
+    case.member_cores = viz_member_cores()
+    case.provenance["n_mass_components"] = VIZ_N_COMPONENTS
+    case.provenance["member_cores"] = case.member_cores
+    case.provenance["truth_gate"] = viz_truth_gate(case)
+    return case
+
+
+def viz_truth_gate(case: ClusterCase) -> dict:
+    """(i) model truth tracer == explicit-constants tracer; (ii) positions trace onto betas."""
+    import autolens as al
+
+    explicit = viz_truth_tracer()
+    ours = case.tracer_from_vector(case.reference_vector)
+    rng = np.random.default_rng(0)
+    pts = rng.uniform(-40, 40, size=(256, 2))
+    worst = 0.0
+    for z in case.source_redshifts:
+        a = np.asarray(
+            explicit.traced_grid_2d_list_from(grid=al.Grid2DIrregular(pts))[
+                explicit.plane_index_via_redshift_from(redshift=z)
+            ]
+        )
+        b = np.asarray(
+            ours.traced_grid_2d_list_from(grid=al.Grid2DIrregular(pts))[
+                ours.plane_index_via_redshift_from(redshift=z)
+            ]
+        )
+        worst = max(worst, float(np.abs(a - b).max()))
+    back = 0.0
+    for pos, z, beta in zip(case.observed_positions, case.source_redshifts, case.truth_betas):
+        traced = np.asarray(
+            explicit.traced_grid_2d_list_from(grid=al.Grid2DIrregular(pos))[
+                explicit.plane_index_via_redshift_from(redshift=z)
+            ]
+        )
+        back = max(back, float(np.abs(traced - np.asarray(beta)[None, :]).max()))
+    n_galaxies = len(
+        case.galaxies_from_instance(case.model.instance_from_vector(case.reference_vector))
+    )
+    n_lenses = n_galaxies - len(case.fixed_galaxies)
+    return {
+        "max_abs_traced_difference_arcsec": worst,
+        "max_position_back_trace_error_arcsec": back,
+        "n_lens_galaxies": n_lenses,
+        "pass": bool(worst < 1e-10 and back < 1e-8 and n_lenses == VIZ_N_COMPONENTS),
+    }
+
+
+def load_case(dataset: str, **kwargs) -> ClusterCase:
+    """Dispatch by dataset name (``a2744`` needs ``reference`` in ``kwargs``)."""
+    if dataset == "simple":
+        return load_simple(kwargs.get("oracle_h"), kwargs.get("oracle_half_width"))
+    if dataset == "viz_cluster":
+        return load_viz_cluster(kwargs.get("oracle_h"), kwargs.get("oracle_half_width"))
+    if dataset == "a2744":
+        return load_a2744(kwargs.pop("reference", None), **kwargs)
+    raise ValueError(f"unknown cluster dataset {dataset!r}")
