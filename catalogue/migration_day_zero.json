@@ -3,7 +3,7 @@
  "version": 2,
  "issue": "PyAutoLabs/autolens_profiling#442",
  "generator": "scripts/misc/tooling/build_migration_map.py",
- "source_commit": "7b9e9e349a8dbd91931327af92b1e198133f694c",
+ "source_commit": "c8c0d32396be23eec50d0d86304f94e6ce93248f",
  "note": "Day-zero migration plan: old -> new path + sha256 for every tracked file under results/ and every wiki/campaigns/*.md page. Nothing has moved. Unresolved rows need a human ruling before the move-only PR.",
  "layout": {
   "cell": "results/<dataset_type>/<variant>/<instrument>/<setup_id>/<host_class>[/<model_variant>]",
@@ -14736,7 +14736,7 @@
   {
    "old": "results/notes/cluster_pointsolver_campaign.md",
    "new": "wiki/campaigns/cluster/image_plane/cluster_pointsolver_campaign.md",
-   "sha256": "584d17030656bb26cb96138876ac7968b755aecd2784fd7fe1cd4b32ec4ebbf9",
+   "sha256": "dd8ce21757e278f39362d3053b81dd80232f6efe07d5a74142224ea00192aa51",
    "kind": "wiki_campaign"
   },
   {
@@ -17353,7 +17353,7 @@
   {
    "old": "wiki/campaigns/cluster_pointsolver.md",
    "new": "wiki/campaigns/cluster/image_plane/cluster_pointsolver.md",
-   "sha256": "7037279824d5d230074bdd06ae96d466094e1c2cf84de3922ab315bf39a0aba0",
+   "sha256": "87a4674f8dbc642dbb57c97bfcc244f420dd233265dd8c8472a58327d268d524",
    "kind": "wiki_campaign"
   },
   {
