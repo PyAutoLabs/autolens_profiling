@@ -1513,6 +1513,8 @@ for name in CONFIG_NAMES:
     )
 
 dataset_digests = CASE.provenance.get("files_sha256")
+# A laptop / local run is never quotable, wherever "laptop" sits in the config name (#439).
+_LOCAL_RUN = config_name.startswith(("laptop", "local")) or "laptop" in config_name
 summary = {
     "cell": CELL,
     "issue": "PyAutoLabs/autolens_profiling#436",
@@ -1520,9 +1522,9 @@ summary = {
     "dataset": DATASET,
     "pilot": PILOT,
     "config_name": config_name,
-    "quotable": bool(not config_name.startswith(("laptop", "local")) and CASE.reference_available),
+    "quotable": bool(not _LOCAL_RUN and CASE.reference_available),
     "host_note": "local run: correctness smoke only, timings NOT a measurement"
-    if config_name.startswith(("laptop", "local"))
+    if _LOCAL_RUN
     else None,
     "reference": {
         "label": CASE.reference_label,

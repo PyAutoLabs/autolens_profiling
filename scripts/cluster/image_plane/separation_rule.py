@@ -61,8 +61,9 @@ from pathlib import Path
 import numpy as np
 
 _HERE = Path(__file__).resolve().parent
-if str(_HERE) not in sys.path:
-    sys.path.insert(0, str(_HERE))
+for _p in (str(_HERE.parents[2] / "scripts" / "misc"), str(_HERE.parents[2]), str(_HERE)):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 from _judge import MAGNIFICATION_THRESHOLD, MU_AMBIGUITY_BAND  # noqa: E402
 
@@ -423,11 +424,12 @@ def markdown(records, rule, a2744_rows, conflicts) -> str:
             if r["censoring"] == "upper"
             else (f"≥ {safe:g}" if r["censoring"] == "lower" else f"{safe:g}")
         )
+        cov_s = "—" if r["coarsest_covering"] is None else f"{r['coarsest_covering']:g}"
         lines.append(
             f"| {r['group']} | {r['set']} | {r['draw_id']}/{r['source']} | {r['n_roots']} | "
             f"{_fmt(r['min_image_image_sep'])} | {_fmt(r['min_image_core_sep'])} ({r['nearest_core']}) | "
             f"{', '.join(f'{s:g}' for s in r['failing_scales'])} | "
-            f"{_fmt(r['coarsest_covering'], 2) if r['coarsest_covering'] else '—'} | {safe_s} |"
+            f"{cov_s} | {safe_s} |"
         )
     n_ok = {}
     for r in records:
@@ -475,13 +477,18 @@ def markdown(records, rule, a2744_rows, conflicts) -> str:
             "| Row | Scale | Prec | Status | Coverage | Prior | Stress | Missed | Max err ″ | RSS MB | Peak MB |",
             "|---|---|---|---|---|---|---|---|---|---|---|",
         ]
+        errors = []
         for a in a2744_rows:
+            err = a.get("max_position_error")
+            if a.get("error"):
+                errors.append(f"- `{a['config']}`: {a['error']}")
             lines.append(
                 f"| {a['config']} | {a.get('scale') or '—'} | {a.get('precision') or '—'} | {a['status']} | "
                 f"{a.get('coverage', '—')} | {a.get('prior', '—')} | {a.get('stress', '—')} | "
-                f"{a.get('n_missed', '—')} | {a.get('max_position_error', '—')} | {a.get('rss_mb', '—')} | "
-                f"{a.get('peak_rss_mb', a.get('error', '—'))} |"
+                f"{a.get('n_missed', '—')} | {'—' if err is None else f'{err:.4f}'} | {a.get('rss_mb', '—')} | "
+                f"{a.get('peak_rss_mb', '—')} |"
             )
+        lines += [""] + errors
     return "\n".join(lines) + "\n"
 
 
@@ -498,7 +505,7 @@ def figure(records, a2744_rows, path, sweeps_missed):
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(13, 5.5), constrained_layout=True)
+    fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(14, 6), constrained_layout=True)
     seen = set()
     for r in records:
         if r["min_sep"] is None:
@@ -516,13 +523,13 @@ def figure(records, a2744_rows, path, sweeps_missed):
             + {
                 None: "",
                 "lower": " (safe at every tested scale: lower bound)",
-                "upper": " (misses at the finest tested scale: upper bound, drawn at half of it)",
+                "upper": " (misses at the finest tested scale: upper bound, down-triangle at half of it)",
             }[cens]
         )
         ax1.scatter(
             r["min_sep"],
             y,
-            marker=st["marker"],
+            marker="v" if cens == "upper" else st["marker"],
             facecolors=face,
             edgecolors=st["color"],
             s=46,
@@ -539,7 +546,7 @@ def figure(records, a2744_rows, path, sweeps_missed):
     ax1.set_yscale("log")
     ax1.set_xlabel('smallest image-image or image-member-core separation ["]')
     ax1.set_ylabel('coarsest safe starting scale ["]')
-    ax1.legend(fontsize=7, loc="lower right")
+    ax1.legend(fontsize=6.5, loc="upper left")
 
     for label, pts in sweeps_missed.items():
         st = GROUP_STYLE.get(label, dict(marker="o", color="#4C72B0"))

@@ -13,6 +13,7 @@ stderr). Logs that carry nothing beyond the JSON stay on RAL and are cited by jo
 |---|---|---|
 | `point_source_image/` | point-source image-plane CPU (IP-1 … IP-4c) | [`point_source_cpu_campaign.md`](../notes/point_source_cpu_campaign.md) |
 | `point_source_source/` | point-source source-plane (2a … 2e) | [`point_source_source_plane_campaign.md`](../notes/point_source_source_plane_campaign.md) |
+| `cluster_pointsolver/` | cluster PointSolver (phase 1 + #439 starting grid) | [`cluster_pointsolver_campaign.md`](../notes/cluster_pointsolver_campaign.md) |
 
 The policy — what goes here, what goes beside a result JSON, and what `results/notes/` may
 hold — is the "Artefact policy" section of [`../README.md`](../README.md);
