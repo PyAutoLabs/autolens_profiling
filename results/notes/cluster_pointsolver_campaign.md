@@ -6,12 +6,12 @@ Wiki page: [cluster_pointsolver.md](../../wiki/campaigns/cluster_pointsolver.md)
 **Phase 1:** cluster-scale robust `PointSolver` settings,
 [autolens_profiling#436](https://github.com/PyAutoLabs/autolens_profiling/issues/436).
 Mind prompt `active/cluster_pointsolver_robust_settings_p1.md`.
-**Status:** DECIDED 2026-10-22: DEFERRED (default stays 1.0″; 0.5″ is the working answer if forced). The `simple` sweep is complete and quotable.
+**Status:** DECIDED 2026-10-23 (human): keep 1.0″ as the production starting grid, with a validation check as mitigation (the 2026-10-22 deferral is closed). The `simple` sweep is complete and quotable.
 **Follow-up #439 (2026-10-23):** the A2744 pilot leg is pulled ([A2744](#a2744-pilot-leg-job-412573-pulled-2026-10-23)) and the starting-grid question is measured ([Starting grid](#starting-grid-vs-close-member-image-439)): no fixed starting scale finds every image, so the recommendation is a validation check, not a new default. No default was changed anywhere.
 
 ## TL;DR
 
-**Decision (human, 2026-10-22): deferred** — default stays 1.0″ until the starting-grid draft and the A2744 pull; see [Decision table](#decision-table-human).
+**Decision (human, 2026-10-23): keep 1.0″** as the production starting grid and add a validation check; this closes the 2026-10-22 deferral. See [Decision table](#decision-table-human).
 
 **#439 (2026-10-23), both pending inputs now measured:**
 
@@ -73,6 +73,15 @@ re-opened once (i) the starting-grid draft
 (`PyAutoMind/draft/research/autolens_profiling/cluster_pointsolver_starting_grid_close_member_image.md`)
 has tested the same close-pair geometry on a real member galaxy and (ii) the A2744 pilot leg (job
 412573) has been pulled. 0.5″ is the working answer if the choice must be made before then.
+
+**Decision (human, 2026-10-23): KEEP 1.0″.** Both pending inputs are in hand (#439 →
+[#440](https://github.com/PyAutoLabs/autolens_profiling/pull/440), merged `03d36c81`).
+
+| Date | Choice | Evidence | Mitigation |
+|---|---|---|---|
+| 2026-10-23 (human, chat) | Keep the 1.0″ starting grid as the production default; the 2026-10-22 deferral is closed | `simple` table above (0.5″/0.7″ miss 2, 1.0″ misses 5 of 300 stress roots); [A2744 pilot](#a2744-pilot-leg-job-412573-pulled-2026-10-23) (1.0″ misses fewest, 2/69); [Starting grid](#starting-grid-vs-close-member-image-439) (no fixed scale finds every image, no separation rule) via [#440](https://github.com/PyAutoLabs/autolens_profiling/pull/440); Mind record [cluster-pointsolver-starting-grid.md](https://github.com/PyAutoLabs/PyAutoMind/blob/main/complete/2026/10/cluster-pointsolver-starting-grid.md); Pulse decision record [cluster-pointsolver-starting-grid](https://github.com/PyAutoLabs/PyAutoPulse/blob/main/decisions/cluster-pointsolver-starting-grid.md) | Validation check: Mind draft `draft/feature/autolens_workspace/cluster_point_solver_validation_check.md` (unissued) |
+
+The decision changes no library or workspace default; the production default already is 1.0″.
 
 ## Tested domain
 
@@ -403,10 +412,14 @@ so the table gives the smallest c that no miss rules out:
 2. ~~**Starting-grid question.**~~ **Answered 2026-10-23 (#439):** see
    [Starting grid](#starting-grid-vs-close-member-image-439). The two Mind drafts above carry the
    follow-on work. The human's deferred decision can now be taken with both inputs in hand.
-3. **The human's upcoming Pulse profiling programme** may revisit the cluster goal and this
-   decision table. Until then, the settings decision above stays open.
+3. ~~**The human's settings decision.**~~ **Closed 2026-10-23:** keep 1.0″ + validation check
+   (see [Decision table](#decision-table-human)). The human's upcoming Pulse profiling programme
+   may still revisit the cluster goal.
 4. Phase 2 (workspace_test CI witnesses) distils only accepted claims, so nothing from this phase
    qualifies yet.
+5. **Next:** the spurious-core candidates library task
+   (`draft/feature/autolens/point_solver_spurious_core_candidates.md`, start_dev in progress), then
+   the workspace validation check (`draft/feature/autolens_workspace/cluster_point_solver_validation_check.md`).
 
 ## Reproduce
 
