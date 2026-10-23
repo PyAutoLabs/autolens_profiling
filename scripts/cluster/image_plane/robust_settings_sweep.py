@@ -119,6 +119,26 @@ summary stores ``peak_rss_mb`` and the labelled ``memory_trace``. Compiled JIT /
 executables are deliberately kept per row (``EXEC``) for the interleaved timing phase, so
 RSS growing while live-array bytes stay flat points at retained executables (compare each
 row's ``compile.memory_analysis.generated_code_size_in_bytes``).
+
+Starting-grid follow-up (autolens_profiling#439)
+------------------------------------------------
+
+Every phase-1 default is unchanged; these options only add rows / modes:
+
+- ``--dataset viz_cluster``: the autolens_visualization cluster model
+  (``_datasets.load_viz_cluster``; copied constants, provenance-stamped, positions
+  derived by tracing).
+- ``--scales 1.0,0.7,...``: replaces the initial-scale list (default
+  ``0.5,0.7,1.0,2.0``); row names stay ``<extent>_s<scale>_p<precision>``.
+- ``--draw-ids 53,73,81``: judge only these draw indices of the full seeded draw set
+  (draws and betas are generated in full first, so an index means the same draw as in a
+  full run); each per-draw entry records ``draw_id``.
+- ``--release-executables``: after each row is judged its route is timed on its own
+  (warm + rounds, not interleaved with other routes), then the compiled executable is
+  dropped and ``jax.clear_caches()`` + ``gc.collect()`` run before the next row. Rows
+  record ``timing_mode`` and ``memory_after_release``. This is the harness fix for the
+  A2744 pilot (job 412573: RSS 8.3 -> 39.4 GB over 16 rows with live arrays ~0, then
+  LLVM ``Cannot allocate memory``). Speed ratios from such a run are not interleaved A/B.
 """
 
 import os
@@ -143,6 +163,7 @@ for _p in (str(_ROOT / "scripts" / "misc"), str(_ROOT), _HERE):
 import argparse  # noqa: E402
 import collections  # noqa: E402
 import contextlib  # noqa: E402
+import gc  # noqa: E402
 import inspect  # noqa: E402
 import json  # noqa: E402
 import math  # noqa: E402
@@ -177,7 +198,16 @@ _LOADAVG_START = os.getloadavg()
 
 _cli = parse_profile_cli()
 _cp = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
-_cp.add_argument("--dataset", choices=("simple", "a2744"), default="simple")
+_cp.add_argument("--dataset", choices=("simple", "a2744", "viz_cluster"), default="simple")
+_cp.add_argument(
+    "--scales", default=None, help="comma list of initial scales (default 0.5,0.7,1,2)"
+)
+_cp.add_argument("--draw-ids", default=None, help="comma list of judged draw indices to keep")
+_cp.add_argument(
+    "--release-executables",
+    action="store_true",
+    help="time each row on its own, then drop its executable + jax.clear_caches()",
+)
 _cp.add_argument("--pilot", action="store_true", help="few draws/rounds + wall projection")
 _cp.add_argument("--n-draws", type=int, default=None, help="prior draws beyond the truth/reference")
 _cp.add_argument(
@@ -212,7 +242,7 @@ if os.environ.get("PYAUTO_SMALL_DATASETS") == "1":
 
 DATASET = _args.dataset
 PILOT = bool(_args.pilot)
-FULL_N_DRAWS_DEFAULT = {"simple": 50, "a2744": 30}[DATASET]
+FULL_N_DRAWS_DEFAULT = {"simple": 50, "a2744": 30, "viz_cluster": 10}[DATASET]
 N_DRAWS = _args.n_draws if _args.n_draws is not None else (2 if PILOT else FULL_N_DRAWS_DEFAULT)
 N_STRESS = _args.n_stress if _args.n_stress is not None else N_DRAWS
 N_ROUNDS = _args.rounds if _args.rounds is not None else (3 if PILOT else 20)
@@ -232,6 +262,7 @@ matplotlib.use("Agg")
 import _datasets  # noqa: E402
 import _memory  # noqa: E402
 import _oracle  # noqa: E402
+import _sweep_options  # noqa: E402
 import autoarray as aa  # noqa: E402
 import autofit as af  # noqa: E402
 import autolens as al  # noqa: E402
@@ -253,7 +284,9 @@ from autolens.lens.tracer import Tracer  # noqa: E402
 LIBRARY_MCS = int(_triangles_array.MAX_CONTAINING_SIZE)
 BOOTSTRAP_SAMPLES = 2000
 BOOTSTRAP_SEED = 12345
-SCALES = (0.5, 0.7, 1.0, 2.0)
+SCALES = _sweep_options.parse_scales(_args.scales)
+DRAW_ID_FILTER = _sweep_options.parse_draw_ids(_args.draw_ids)
+RELEASE_EXECUTABLES = bool(_args.release_executables)
 PRECISIONS = (0.01, 0.001)
 MCS_ROWS = (40, 60)
 TIGHT_FRACTION = 0.75
@@ -265,6 +298,10 @@ TIGHT_FRACTION = 0.75
 try:
     if DATASET == "simple":
         CASE = _datasets.load_simple(
+            oracle_h=_args.oracle_h, oracle_half_width=_args.oracle_half_width
+        )
+    elif DATASET == "viz_cluster":
+        CASE = _datasets.load_viz_cluster(
             oracle_h=_args.oracle_h, oracle_half_width=_args.oracle_half_width
         )
     else:
@@ -798,6 +835,17 @@ SET = ["prior"] * len(_prior_draws) + ["stress"] * len(_stress_draws)
 SET_INDICES = {s: [i for i, x in enumerate(SET) if x == s] for s in ("prior", "stress")}
 # Index -1 for stress draws: their betas are always back-traced (never the truth centres).
 BETAS = [CASE.betas(v, i if SET[i] == "prior" else -1) for i, v in enumerate(DRAWS)]
+DRAW_IDS = list(range(len(DRAWS)))
+if DRAW_ID_FILTER is not None:
+    _bad = [i for i in DRAW_ID_FILTER if i >= len(DRAWS)]
+    if _bad:
+        raise SystemExit(f"--draw-ids {_bad} out of range: {len(DRAWS)} draws in the full set")
+    DRAWS = DRAWS[DRAW_ID_FILTER]
+    SET = [SET[i] for i in DRAW_ID_FILTER]
+    BETAS = [BETAS[i] for i in DRAW_ID_FILTER]
+    DRAW_IDS = list(DRAW_ID_FILTER)
+    SET_INDICES = {s: [i for i, x in enumerate(SET) if x == s] for s in ("prior", "stress")}
+    note(f"--draw-ids: judging draws {DRAW_IDS} of the full set only")
 note(
     f"draw sets: prior {len(_prior_draws)} (draw 0 = reference), stress {len(_stress_draws)} "
     f"(clipped values {STRESS_INFO['n_clipped_values']})"
@@ -820,7 +868,7 @@ for i, (v, betas) in enumerate(zip(DRAWS, BETAS)):
     oracle_cost.append(time.perf_counter() - t0)
     ORACLE.append({"draw": i, "plane_indices": pis, "sources": per_source, "equation": eq})
     note(
-        f"oracle draw {i} ({SET[i]}): roots/source {[s['n_accepted'] for s in per_source]}, stable "
+        f"oracle draw {i} (id {DRAW_IDS[i]}, {SET[i]}): roots/source {[s['n_accepted'] for s in per_source]}, stable "
         f"{[s['stability']['stable'] for s in per_source]} ({oracle_cost[-1]:.1f} s) "
         + _memory.describe(mem(f"oracle draw {i}"))
     )
@@ -934,11 +982,88 @@ def overflow_for(cfg, indices=None) -> dict:
     }
 
 
+# --- timing helpers (used per row with --release-executables, else after every row) ------
+TIMES = {}
+deterministic = {}
+first_values = {}
+TIMING_MODE = {}
+
+
+def _route_call(name, k):
+    kind, ex = EXEC[name]
+    if kind == "vmap":
+        B = BY_NAME[name]["vmap_batch"]
+        sel = [(k * B + j) % len(STREAM) for j in range(B)]
+        args = (
+            jnp.asarray(np.stack([STREAM[s][0] for s in sel])),
+            jnp.asarray(np.stack([STREAM[s][1] for s in sel])),
+        )
+        t0 = time.perf_counter()
+        out = block(ex(*args))
+        return (time.perf_counter() - t0) / B, out
+    v, b = STREAM[k % len(STREAM)]
+    if kind == "jit":
+        args = (jnp.asarray(v), jnp.asarray(b))
+        t0 = time.perf_counter()
+        out = block(ex(*args))
+        return time.perf_counter() - t0, out
+    t0 = time.perf_counter()
+    out = ex(v, b)
+    return time.perf_counter() - t0, out
+
+
+def time_routes(names, mode="interleaved"):
+    """Warm every route, then ``N_ROUNDS`` round-robin rounds (start rotated each round)."""
+    names = list(names)
+    for name in names:
+        TIMES.setdefault(name, [])
+        deterministic.setdefault(name, True)
+        TIMING_MODE[name] = mode
+    for name in names:
+        for w in range(N_WARM):
+            _route_call(name, w)
+    for r in range(N_ROUNDS):
+        order = names[r % len(names) :] + names[: r % len(names)] if names else []
+        for name in order:
+            calls = N_SLOW_CALLS if BY_NAME[name]["backend"] in ("numpy", "eager") else N_CALLS
+            for c in range(calls):
+                k = r * calls + c
+                dt, out = _route_call(name, k)
+                TIMES[name].append(dt)
+                if BY_NAME[name]["backend"] == "jit":
+                    key = k % len(STREAM)
+                    arr = np.asarray(out)
+                    if key in first_values.setdefault(name, {}):
+                        if not np.array_equal(arr, first_values[name][key], equal_nan=True):
+                            deterministic[name] = False
+                    else:
+                        first_values[name][key] = arr
+
+
+def release_row(name):
+    """--release-executables: time the row on its own, then drop its executable and caches."""
+    if name in EXEC and ROWS[name]["status"] != "unusable":
+        time_routes([name], mode="per-row (executable released after; not interleaved)")
+    EXEC.pop(name, None)
+    for _ref in ("compiled", "call", "fn"):
+        globals().pop(_ref, None)
+    first_values.pop(name, None)
+    jax.clear_caches()
+    gc.collect()
+    snap = mem(f"released {name}")
+    ROWS[name]["memory_after_release"] = snap
+    note(f"row {name}: timed per-row, executable released " + _memory.describe(snap))
+
+
 # --- 3. every row: build, evaluate on the draws, judge -----------------------------------
 ROWS = {}
 EXEC = {}
+_PREVIOUS_ROW = None
 for cfg in CONFIGS:
+    if RELEASE_EXECUTABLES and _PREVIOUS_ROW is not None:
+        release_row(_PREVIOUS_ROW)
     name = cfg["name"]
+    _PREVIOUS_ROW = name
     desc = descriptions[name]
     row = {
         "config": cfg,
@@ -1079,6 +1204,7 @@ for cfg in CONFIGS:
         row["per_draw"] = [
             {
                 "draw": d["draw"],
+                "draw_id": DRAW_IDS[d["draw"]],
                 "set": SET[d["draw"]],
                 "sources": [per_draw_source_entry(j) for j in d["sources"]],
             }
@@ -1155,62 +1281,22 @@ for cfg in CONFIGS:
         f"{v['overflow'].get('cap')} maxerr {v['max_position_error']} " + row_mem(row, name)
     )
 
+if RELEASE_EXECUTABLES and _PREVIOUS_ROW is not None:
+    release_row(_PREVIOUS_ROW)
+
 # --- 4. timing: interleaved rounds over every usable route -------------------------------
-TIMED = [n for n in CONFIG_NAMES if n in EXEC and ROWS[n]["status"] != "unusable"]
+_INTERLEAVED = [n for n in CONFIG_NAMES if n in EXEC and ROWS[n]["status"] != "unusable"]
+if _INTERLEAVED:
+    note(f"timing: {len(_INTERLEAVED)} routes, warm {N_WARM}, {N_ROUNDS} rounds")
+    time_routes(_INTERLEAVED)
+    note("timing done " + _memory.describe(mem("timing done")))
+TIMED = [n for n in CONFIG_NAMES if TIMES.get(n)]
 if "control" not in TIMED:
     note("control is not timeable: no speed comparison possible")
 
-
-def _route_call(name, k):
-    kind, ex = EXEC[name]
-    if kind == "vmap":
-        B = BY_NAME[name]["vmap_batch"]
-        sel = [(k * B + j) % len(STREAM) for j in range(B)]
-        args = (
-            jnp.asarray(np.stack([STREAM[s][0] for s in sel])),
-            jnp.asarray(np.stack([STREAM[s][1] for s in sel])),
-        )
-        t0 = time.perf_counter()
-        out = block(ex(*args))
-        return (time.perf_counter() - t0) / B, out
-    v, b = STREAM[k % len(STREAM)]
-    if kind == "jit":
-        args = (jnp.asarray(v), jnp.asarray(b))
-        t0 = time.perf_counter()
-        out = block(ex(*args))
-        return time.perf_counter() - t0, out
-    t0 = time.perf_counter()
-    out = ex(v, b)
-    return time.perf_counter() - t0, out
-
-
-note(f"timing: {len(TIMED)} routes, warm {N_WARM}, {N_ROUNDS} rounds")
-for name in TIMED:
-    for w in range(N_WARM):
-        _route_call(name, w)
-TIMES = {n: [] for n in TIMED}
-deterministic = {n: True for n in TIMED}
-first_values = {}
-for r in range(N_ROUNDS):
-    order = TIMED[r % len(TIMED) :] + TIMED[: r % len(TIMED)] if TIMED else []
-    for name in order:
-        calls = N_SLOW_CALLS if BY_NAME[name]["backend"] in ("numpy", "eager") else N_CALLS
-        for c in range(calls):
-            k = r * calls + c
-            dt, out = _route_call(name, k)
-            TIMES[name].append(dt)
-            if BY_NAME[name]["backend"] == "jit":
-                key = k % len(STREAM)
-                arr = np.asarray(out)
-                if key in first_values.setdefault(name, {}):
-                    if not np.array_equal(arr, first_values[name][key], equal_nan=True):
-                        deterministic[name] = False
-                else:
-                    first_values[name][key] = arr
-note("timing done " + _memory.describe(mem("timing done")))
-
 for i, name in enumerate(TIMED):
     row = ROWS[name]
+    row["timing_mode"] = TIMING_MODE.get(name)
     row["per_call_ms"] = [t * 1e3 for t in TIMES[name]]
     row["stats"] = _stats_ms(TIMES[name])
     row["warmed_median"] = _median_ci(TIMES[name], N_ROUNDS, BOOTSTRAP_SEED + i)
@@ -1386,6 +1472,7 @@ for name in CONFIG_NAMES:
             "precision": BY_NAME[name]["precision"],
             "mcs": BY_NAME[name]["max_containing_size"],
             "n_steps": r["static"]["n_steps"],
+            "step0_triangles": r["static"]["step0_triangles"],
             "tol_last_step_side": r["static"]["last_step_triangle_side"],
             "status": r["status"],
             "reasons": r["reasons"],
@@ -1418,6 +1505,7 @@ for name in CONFIG_NAMES:
             "warmed_median_ms": wm.get("median_ms"),
             "warmed_ci90_ms": [wm.get("ci90_low"), wm.get("ci90_high")] if wm else None,
             "speedup_vs_control": (r.get("speedup_vs_control") or {}).get("ratio"),
+            "timing_mode": r.get("timing_mode"),
             "flops": comp.get("flops"),
             "temp_bytes": ma.get("temp_size_in_bytes") if isinstance(ma, dict) else None,
             "precision_equivalent": precision_equivalent[name],
@@ -1425,6 +1513,8 @@ for name in CONFIG_NAMES:
     )
 
 dataset_digests = CASE.provenance.get("files_sha256")
+# A laptop / local run is never quotable, wherever "laptop" sits in the config name (#439).
+_LOCAL_RUN = config_name.startswith(("laptop", "local")) or "laptop" in config_name
 summary = {
     "cell": CELL,
     "issue": "PyAutoLabs/autolens_profiling#436",
@@ -1432,9 +1522,9 @@ summary = {
     "dataset": DATASET,
     "pilot": PILOT,
     "config_name": config_name,
-    "quotable": bool(not config_name.startswith(("laptop", "local")) and CASE.reference_available),
+    "quotable": bool(not _LOCAL_RUN and CASE.reference_available),
     "host_note": "local run: correctness smoke only, timings NOT a measurement"
-    if config_name.startswith(("laptop", "local"))
+    if _LOCAL_RUN
     else None,
     "reference": {
         "label": CASE.reference_label,
@@ -1461,6 +1551,7 @@ summary = {
         "per_draw": [
             {
                 "draw": o["draw"],
+                "draw_id": DRAW_IDS[o["draw"]],
                 "plane_indices": o["plane_indices"],
                 "betas": BETAS[o["draw"]].tolist(),
                 "sources": [
@@ -1474,6 +1565,8 @@ summary = {
     },
     "draws": {
         "n_judged": len(DRAWS),
+        "draw_ids": DRAW_IDS,
+        "draw_id_filter": DRAW_ID_FILTER,
         "n_prior": len(SET_INDICES["prior"]),
         "n_stress": len(SET_INDICES["stress"]),
         "set_per_draw": SET,
@@ -1511,6 +1604,12 @@ summary = {
         "n_prior_draws": N_DRAWS,
         "n_stress_draws": N_STRESS,
         "admissibility": "prior AND stress pass (4a rule); prior pass + stress fail = diagnostic",
+        "scales": list(SCALES),
+        "release_executables": RELEASE_EXECUTABLES,
+        "timing_mode": "per-row, executable released between rows (not interleaved A/B)"
+        if RELEASE_EXECUTABLES
+        else "interleaved",
+        "argv": sys.argv[1:],
         "n_rounds": N_ROUNDS,
         "n_calls": N_CALLS,
         "n_slow_calls": N_SLOW_CALLS,
