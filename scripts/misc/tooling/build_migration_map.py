@@ -10,27 +10,37 @@ sha256 of the file content for every tracked file under ``results/`` and for eve
 ``wiki/campaigns/*.md`` page. It is the reviewable plan for the move-only PR of the
 likelihood-lifecycle epic (phase 0B, autolens_profiling#442); **nothing moves here**.
 
-Target layout (epic report section 3.7)::
+Target layout (epic report section 3.7, plus the human rulings of 2026-10-23)::
 
-    results/<dataset_type>/<variant>/<instrument>/<setup_id>/<host_class>/<measurement>.<ext>
-        .../history/<release_pin>_<YYYY-MM-DD>/<measurement>.<ext>   # superseded records
-    results/<dataset_type>/<variant>/<instrument>/comparison.<ext>    # cross-setup aggregate
+    <cell> = results/<dataset_type>/<variant>/<instrument>/<setup_id>/<host_class>[/<model_variant>]
+    <cell>/<measurement>.<ext>                                  # the current record of the key
+    <cell>/history/<release_pin>_<YYYY-MM-DD>/<measurement>.<ext>  # older records, same key
+    <cell>/scans/<name>/<measurement>.<ext>        # size scans (_nN, _rX, n_sweep/); never current
+    <cell>/experiments/<name>/<measurement>.<ext>  # arms + experiment scripts; never current
+    results/<dataset_type>/<variant>/<instrument>/comparison.<ext>  # cross-setup aggregate
     results/lens/<component>/...      results/misc/<group>/...
-    wiki/campaigns/<dataset_type>/<variant>/<ledger>.md    wiki/campaigns/{lens,misc}/...
-    archive/YYYY/MM/<slug>/...
+    wiki/campaigns/<dataset_type>/<variant>/<ledger>.md   (or /<dataset_type>/, lens/, misc/)
+    archive/YYYY/MM/<slug>/...        (archive/undated/<slug>/... when no date is derivable)
 
-``setup_id`` is ``<backend>_<device>_<operator>_<precision>[_<transformer>]`` (ruling R1);
-the site/tier moves to ``host_class``. Every axis is derived from the path (the legacy
-config grammar, ``catalogue/script_routes.json`` legacy stems) or from the result JSON
-(``device``, ``instrument``, ``configuration.inversion_path``, ``transformer``,
-``use_mixed_precision``). **Nothing is guessed:** a file whose axes cannot be derived, or
-whose path and content disagree, is listed under ``unresolved`` with the reason and,
-where one exists, a ``proposed`` path for the human to accept or overrule. Two old paths
-mapping to one new path is an error and the map is not written.
+``<model_variant>`` is present only for non-default model variants (``light_fixed``,
+``rtu`` rectangular mesh, ``mge_mass``). ``setup_id`` is
+``<backend>_<device>_<operator>_<precision>[_<transformer>]`` (ruling R1); the site/tier
+moves to ``host_class``. Rules applied (human rulings, 2026-10-23):
 
-Kinds: ``mirrored`` (current slot of a mirrored key), ``history`` (an older record of
-the same key, label-only cut per ruling R2), ``lens_component``, ``misc``,
-``wiki_campaign``, ``archive`` (the listed dead-experiment classes) and ``unchanged``.
+* host: a CPU measurement is ``hpc_ral_cpu`` whatever RAL node ran it (``hpc_ral_cpu``
+  tier on a ``euclid-ral-gpu-*`` host, ``hpc_ral_gpunode_cpu``); a versioned ``_v``
+  summary with no host anywhere is archived, month from its ``_v`` release.
+* transformer: ``setup_id`` names the likelihood route, not the data-transformer class.
+  A sparse interferometric row is the W~ route -> ``_wtilde`` (report section 3.3), even
+  though its JSON records ``TransformerNUFFT``; dense rows keep the recorded class
+  (``_nufft`` / ``_dft``).
+
+Every axis is derived from the path (the legacy config grammar, the
+``catalogue/script_routes.json`` legacy stems, the ``scripts/<dt>/<variant>/`` script
+names) or from the result JSON. **Nothing is guessed:** a canonical row whose axes cannot
+be derived, or whose path and content disagree, is listed under ``unresolved`` with the
+reason; a scan/experiment file with no derivable cell goes to ``results/misc/<group>/``.
+Two old paths mapping to one new path is an error and the map is not written.
 
 Pure stdlib -- no PyAuto* imports. Dates come only from file names and file content (no
 git history), so the map is identical on a shallow CI clone.
@@ -41,6 +51,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import subprocess
 import sys
@@ -48,7 +59,7 @@ from collections import defaultdict
 from pathlib import Path, PurePosixPath
 
 SCHEMA = "autolens-profiling-day-zero-migration"
-VERSION = 1
+VERSION = 2
 MAP_PATH = "catalogue/migration_day_zero.json"
 ROUTES_PATH = "catalogue/script_routes.json"
 ISSUE = "PyAutoLabs/autolens_profiling#442"
@@ -58,10 +69,10 @@ PRE_SERIES_CUTOFF = "2026-09-01"
 
 INSTRUMENTS = ("alma_high", "alma", "ao", "euclid", "hst", "jvla", "jwst", "sdp81", "sma", "simple")
 
-#: Legacy config-grammar host/tier token -> (host_class, device). Longest first.
+#: Legacy config-grammar host/tier token -> (host_class, device).
 TIERS = {
     "hpc_ral_cpu_epyc7702": ("hpc_ral_cpu", "cpu"),
-    "hpc_ral_gpunode_cpu": (None, "cpu"),  # CPU on a GPU node: not in the host_class vocab
+    "hpc_ral_gpunode_cpu": ("hpc_ral_cpu", "cpu"),  # ruling: CPU on any RAL node
     "hpc_ral_a100": ("hpc_a100", "gpu"),
     "hpc_ral_cpu": ("hpc_ral_cpu", "cpu"),
     "hpc_a100": ("hpc_a100", "gpu"),
@@ -70,21 +81,30 @@ TIERS = {
     "local_gpu": ("local_gpu", "gpu"),
     "laptop_cpu": ("local_laptop", "cpu"),
 }
+TIER_TOKENS = sorted((t.split("_") for t in TIERS), key=len, reverse=True)
 PRECISIONS = {"fp64": "fp64", "mp": "mixed", "fp32": None}  # fp32 is not a setup precision
 
-#: Canonical per-likelihood script measurements (from script_routes) -> backend.
-#: Any other route measurement is an experiment script with no section-3.7 slot.
+#: Canonical per-likelihood script measurements (from script_routes) -> (backend,
+#: model_variant). Any other route measurement is an experiment script.
 CELL_MEASUREMENTS = {
-    "likelihood_runtime": "jax",
-    "likelihood_breakdown": "jax",
-    "likelihood_runtime_numba": "numba",
-    "likelihood_breakdown_numba": "numba",
-    "likelihood_runtime_jax": "jax",
-    "likelihood_runtime_solved": "jax",
+    "likelihood_runtime": ("jax", None),
+    "likelihood_breakdown": ("jax", None),
+    "likelihood_runtime_numba": ("numba", None),
+    "likelihood_breakdown_numba": ("numba", None),
+    "likelihood_runtime_jax": ("jax", None),
+    "likelihood_runtime_solved": ("jax", None),
+    "likelihood_runtime_numba_mge_mass": ("numba", "mge_mass"),
 }
+#: File-name tokens that name a model variant (``--rect-mesh rtu`` appends ``_rtu``).
+MODEL_VARIANT_TOKENS = {"rtu": "rtu"}
+MESHES = (("delaunay", "nn"), ("delaunay",), ("rectangular",))
+#: Fixed-light script tags measuring several backends in one file (no single setup).
+MIXED_BACKEND_TAGS = {("cpu", "kernels")}
+PURPOSE_TOKENS = {"breakdown", "summary", "likelihood"}
 POINT_LIKE = ("point_source_image", "point_source_source", "cluster")
 INTERFEROMETRIC = ("interferometer", "datacube")
 TRANSFORMERS = {"TransformerNUFFT": "nufft", "TransformerDFT": "dft"}
+CATEGORY = {"runtime": "likelihood_runtime", "breakdown": "likelihood_breakdown"}
 
 #: results/ top-level folders that become results/misc/<group>/ (group mirrors scripts/misc/).
 MISC_GROUPS = {
@@ -96,12 +116,8 @@ MISC_GROUPS = {
     "nnls_warm_start": "nnls_warm_start",
     "simulators": "simulators",
     "pipeline_resume": "pipeline_resume",
-}
-#: results/ top-level experiment folders: (dataset_type, variant) when one is known.
-EXPERIMENT_TOPS = {
-    "parallel_scaling": ("imaging", "rectangular"),
-    "streaming_scaling": ("interferometer", "delaunay"),
-    "misc": (None, None),
+    "parallel_scaling": "parallel_scaling",
+    "streaming_scaling": "streaming_scaling",
 }
 FROZEN_PACKS = ("notes/clipper_campaign/", "notes/point_source_cpu_2026_09_17_reported/")
 FROZEN_BASELINE = "baselines/PreOptimizationTimes/"
@@ -116,7 +132,8 @@ MULTI = "spans several variants"
 MULTI_DT = "spans several dataset types"
 
 #: results/notes/*.md ledgers and wiki/campaigns/*.md pages -> wiki/campaigns/<dt>/<variant>.
-#: ("misc", None) and ("lens", <component>) follow section 3.7; MULTI* are unresolved.
+#: ("misc", None) and ("lens", <component>) follow section 3.7; (<dt>, MULTI) goes to
+#: wiki/campaigns/<dt>/ and (MULTI_DT, None) stays at wiki/campaigns/ (human ruling).
 LEDGER_ROUTES = {
     # results/notes ledgers
     "a100_pixelized_baseline_2026_09": ("imaging", MULTI),
@@ -209,8 +226,19 @@ DATED_RE = re.compile(r"(?:^|_)(20\d\d)_(\d\d)(?:_(\d\d))?(?=_|$)")
 PROBE_RE = re.compile(r"(?:^|_)probes?(?:_|$)")
 LEVER_RE = re.compile(r"(?:^|_)levers?\d*(?:_|$)")
 ISO_DATE_RE = re.compile(r"^(20\d\d)-(\d\d)-(\d\d)")
+ANY_ISO_RE = re.compile(r"(20\d\d)-(\d\d)-(\d\d)")
 SCAN_RE = re.compile(r"^(?:n\d+|r\d+(?:\.\d+)?)$")
-SUFFIXES = (".unusable.json", ".declaration.json", ".json", ".png", ".stdout", ".out", ".md")
+SIDECAR_RE = re.compile(r"_jobs?\d*$")
+SUFFIXES = (
+    ".unusable.json",
+    ".declaration.json",
+    ".locked.json",
+    ".json",
+    ".png",
+    ".stdout",
+    ".out",
+    ".md",
+)
 
 
 def _root() -> Path:
@@ -264,7 +292,7 @@ def companion_json(root: Path, path: str, files: set[str]) -> str | None:
     """The JSON a figure/log was written beside (same stem), when tracked."""
     parent, name = path.rsplit("/", 1)
     stem, ext = split_ext(name)
-    if ext in ("json", "unusable.json"):
+    if ext.endswith("json"):
         return path
     for suffix in ("json", "unusable.json"):
         candidate = f"{parent}/{stem}.{suffix}"
@@ -292,11 +320,10 @@ def iso(y, m, d) -> str:
 
 
 def facts(root: Path, path: str, files: set[str]) -> dict:
-    """Release pin and date recorded by the file name or the companion JSON."""
+    """Release pin and dates recorded by the file name or the companion JSON."""
     name = path.rsplit("/", 1)[1]
     stem, _ = split_ext(name)
     out = {"pin": None, "date": None, "date_basis": None, "doc": None}
-    vmatch = None
     jpath = companion_json(root, path, files)
     doc = load_json(root, jpath) if jpath else None
     out["doc"] = doc if isinstance(doc, dict) else None
@@ -325,6 +352,7 @@ def facts(root: Path, path: str, files: set[str]) -> dict:
         if rmatch
         else None
     )
+    out["versioned"] = bool(vmatch)
     out["pin"] = out["pin"] or name_pin
     if out["date"] is None:
         dmatch = DATED_RE.search(VERSION_RE.sub("", stem))
@@ -353,7 +381,8 @@ def json_host(doc: dict | None) -> tuple[str | None, str | None, str | None]:
         return None, dev, None
     h = host.lower()
     if "ral-gpu" in h:
-        return ("hpc_a100" if dev == "gpu" else "gpunode_cpu"), dev, f"host {host}"
+        # Ruling: a CPU measurement is hpc_ral_cpu whatever RAL node ran it.
+        return ("hpc_a100" if dev == "gpu" else "hpc_ral_cpu"), dev, f"host {host}"
     if "ral-compute" in h:
         return "hpc_ral_cpu", dev, f"host {host}"
     if h.startswith("desktop-") or "laptop" in h:
@@ -365,29 +394,37 @@ def json_host(doc: dict | None) -> tuple[str | None, str | None, str | None]:
 
 
 def cell_index(root: Path) -> dict:
-    """{(dataset, 'likelihood_runtime'|'likelihood_breakdown'): {legacy stem: route}}."""
+    """{(dataset, legacy category dir): {legacy stem: route}} from script_routes."""
     routes = json.loads((root / ROUTES_PATH).read_text())["routes"]
     index: dict = defaultdict(dict)
     for row in routes:
         parts = PurePosixPath(row["legacy"]).parts
         stem = PurePosixPath(row["legacy"]).stem
-        if len(parts) == 4 and parts[2] in ("likelihood_runtime", "likelihood_breakdown"):
+        if len(parts) == 4:
             index[(parts[1], parts[2])][stem] = row
         elif len(parts) == 5 and parts[3] == "datacube":
             index[("datacube", parts[2])][stem] = row
     return index
 
 
-def match_cell(index: dict, dataset: str, category: str, stem: str):
-    """Longest legacy stem that prefixes ``stem`` at a token boundary."""
-    stems = index.get((dataset, category), {})
+def script_index(root: Path) -> dict:
+    """{dataset: {script stem: variant}} over scripts/<dataset>/<variant>/*.py."""
+    index: dict = defaultdict(dict)
+    for script in sorted((root / "scripts").glob("*/*/*.py")):
+        dataset, variant = script.parent.parent.name, script.parent.name
+        if dataset not in ("misc", "lens") and not script.stem.startswith("_"):
+            index[dataset][script.stem] = variant
+    return index
+
+
+def longest_prefix(stems, stem: str) -> str | None:
     best = None
     for legacy in stems:
         if (stem == legacy or stem.startswith(legacy + "_")) and (
             best is None or len(legacy) > len(best)
         ):
             best = legacy
-    return (best, stems[best], stem[len(best) + 1 :]) if best else (None, None, stem)
+    return best
 
 
 # --------------------------------------------------------------------------- classify
@@ -429,22 +466,15 @@ def slug_for(rel: str, cls: str) -> tuple[str, str]:
     return (family or cls), rel
 
 
-def parse_config(rest: str):
-    """Legacy config grammar: ``<tier>_<precision>[_<extra>...]`` -> pieces or None."""
-    for tier in sorted(TIERS, key=len, reverse=True):
-        if rest == tier or rest.startswith(tier + "_"):
-            tail = rest[len(tier) + 1 :].split("_") if rest != tier else []
-            if tail and tail[0] in PRECISIONS:
-                return tier, tail[0], tail[1:]
-            return None
+def find_config(tokens: list[str]):
+    """Locate ``<tier>[_<precision>]`` anywhere in the tokens -> (pre, tier, prec, post)."""
+    for i in range(len(tokens)):
+        for tier in TIER_TOKENS:
+            if tokens[i : i + len(tier)] == tier:
+                j = i + len(tier)
+                prec = tokens[j] if j < len(tokens) and tokens[j] in PRECISIONS else None
+                return tokens[:i], "_".join(tier), prec, tokens[j + (1 if prec else 0) :]
     return None
-
-
-VERSIONED_RE = re.compile(
-    r"^(?:(?P<purpose>breakdown|likelihood_summary|summary)_)?"
-    r"(?:(?P<inst>" + "|".join(INSTRUMENTS) + r")_)?"
-    r"v(?P<ver>\d{4}\.\d{1,2}\.\d{1,2}\.\d+(?:\+\d+)?)(?P<extra>(?:_[a-z0-9.]+)*)$"
-)
 
 
 def operator_of(doc: dict | None, explicit: str | None, dataset: str) -> tuple[str, str]:
@@ -497,9 +527,12 @@ def precision_of(doc: dict | None, token: str | None, backend: str) -> tuple[str
     raise Unresolved("setup axis not recorded", "precision not in file name or JSON")
 
 
-def transformer_of(doc: dict | None, dataset: str) -> tuple[str | None, str | None]:
+def transformer_of(doc: dict | None, dataset: str, operator: str):
+    """Likelihood route, not transformer class: sparse interferometric rows are W~."""
     if dataset not in INTERFEROMETRIC:
         return None, None
+    if operator == "sparse":
+        return "wtilde", "sparse interferometric operator = W~ route (report 3.3)"
     name = (doc or {}).get("transformer")
     if not isinstance(name, str):
         config = (doc or {}).get("configuration")
@@ -507,8 +540,30 @@ def transformer_of(doc: dict | None, dataset: str) -> tuple[str | None, str | No
     if name in TRANSFORMERS:
         return TRANSFORMERS[name], "transformer"
     raise Unresolved(
-        "setup axis not recorded", f"interferometric transformer not recorded ({name!r})"
+        "setup axis not recorded", f"dense interferometric transformer not recorded ({name!r})"
     )
+
+
+def nested_datasets(value, depth: int = 0) -> set[str]:
+    """Instrument names recorded under nested ``instrument``/``dataset`` keys, including
+    dataset paths ``dataset/<type>/<instrument>/...``."""
+    found: set[str] = set()
+    if depth > 4:
+        return found
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if key in ("instrument", "dataset") and isinstance(item, str):
+                if item in INSTRUMENTS:
+                    found.add(item)
+                parts = item.split("/")
+                if len(parts) > 3 and parts[0] == "dataset" and parts[2] in INSTRUMENTS:
+                    found.add(parts[2])
+            else:
+                found |= nested_datasets(item, depth + 1)
+    elif isinstance(value, list):
+        for item in value[:50]:
+            found |= nested_datasets(item, depth + 1)
+    return found
 
 
 def instrument_of(doc, from_name, from_dir) -> tuple[str, str]:
@@ -517,36 +572,91 @@ def instrument_of(doc, from_name, from_dir) -> tuple[str, str]:
         candidates["directory"] = from_dir
     if from_name:
         candidates["file name"] = from_name
-    recorded = (doc or {}).get("instrument")
-    if isinstance(recorded, str) and recorded:
-        candidates["JSON instrument"] = recorded
+    for key in ("instrument", "dataset"):
+        recorded = (doc or {}).get(key)
+        if isinstance(recorded, str) and recorded in INSTRUMENTS:
+            candidates[f"JSON {key}"] = recorded
+    if not candidates:
+        nested = nested_datasets(doc)
+        if len(nested) == 1:
+            candidates["JSON nested dataset"] = nested.pop()
     values = set(candidates.values())
     if len(values) > 1:
         raise Unresolved("path/content disagree", f"instrument: {candidates}")
     if not values:
         raise Unresolved("setup axis not recorded", "instrument not in path or JSON")
-    value = values.pop()
-    if value not in INSTRUMENTS:
-        raise Unresolved("setup axis not recorded", f"instrument {value!r} not in vocabulary")
-    return value, next(iter(candidates))
+    return values.pop(), next(iter(candidates))
 
 
-def classify_cell(root, rel, files, index, fx) -> dict:
-    """runtime/** and breakdown/** -> a mirrored key, or Unresolved."""
+def misc_fallback(rel: str, why: str) -> dict:
+    top, inner = rel.split("/", 1)
+    group = CATEGORY.get(top, top)
+    return {"kind": "misc", "new": f"results/misc/{group}/{inner}", "why": why}
+
+
+def strip_tokens(stem: str) -> list[str]:
+    stem = RPIN_RE.sub("", VERSION_RE.sub("", stem))
+    return [t for t in stem.split("_") if t]
+
+
+def cell_identity(rel, stem, dataset, category, routes, scripts):
+    """(variant, backend, model_variant, arm prefix, legacy, rest tokens) or a fallback dict."""
+    if stem.startswith("fixed_light_"):
+        tokens = strip_tokens(stem)[2:]
+        for i in range(len(tokens)):
+            mesh = next((m for m in MESHES if tuple(tokens[i : i + len(m)]) == m), None)
+            if mesh:
+                tag = tokens[:i]
+                rest = [
+                    t for t in tokens[i + len(mesh) :] if t not in ("fixed", "light") + tuple(tag)
+                ]
+                if tuple(tag) in MIXED_BACKEND_TAGS:
+                    return misc_fallback(rel, "fixed-light kernel file measures several backends")
+                backend = "numba" if "numba" in tag else "jax"
+                return "_".join(mesh), backend, "light_fixed", tag, "fixed_light", rest
+        return misc_fallback(rel, "fixed-light file names no mesh")
+    stems = routes.get((dataset, category), {})
+    legacy = longest_prefix(stems, stem)
+    if legacy:
+        route = stems[legacy]
+        rest = strip_tokens(stem[len(legacy) + 1 :])
+        cell = CELL_MEASUREMENTS.get(route["measurement"])
+        if cell:
+            return route["model"], cell[0], cell[1], [], legacy, rest
+        backend = "numba" if "numba" in route["measurement"] else "jax"
+        variant = route["model"]
+        if variant == "pixelized":  # legacy name retired: the mesh token names the variant
+            for i in range(len(rest)):
+                mesh = next((m for m in MESHES if tuple(rest[i : i + len(m)]) == m), None)
+                if mesh:
+                    variant, rest = "_".join(mesh), rest[:i] + rest[i + len(mesh) :]
+                    break
+            else:
+                return misc_fallback(rel, f"{route['path']} output names no mesh")
+        return variant, backend, None, [route["measurement"]], legacy, rest
+    script = longest_prefix(scripts.get(dataset, {}), stem)
+    if script:
+        rest = strip_tokens(stem[len(script) + 1 :])
+        backend = "numba" if "numba" in script else "jax"
+        return scripts[dataset][script], backend, None, [script], script, rest
+    return misc_fallback(rel, f"stem {stem!r} matches no route or scripts/{dataset}/ script")
+
+
+def classify_cell(rel, fx, routes, scripts) -> dict:
+    """runtime/** and breakdown/** -> mirrored / scan / experiment / misc, or Unresolved."""
     parts = rel.split("/")
-    category = {"runtime": "likelihood_runtime", "breakdown": "likelihood_breakdown"}[parts[0]]
-    measurement = parts[0]
-    dataset = parts[1]
+    top, dataset = parts[0], parts[1]
+    category, measurement = CATEGORY[top], top
     stem, ext = split_ext(parts[-1])
     dirs = parts[2:-1]
     doc = fx["doc"]
-    if stem == "comparison" and len(dirs) == 2:
-        variant = {"pixelization": "rectangular"}.get(dirs[0], dirs[0])
-        legacy, route, _ = match_cell(index, dataset, category, dirs[0])
-        if route is None or dirs[1] not in INSTRUMENTS:
-            raise Unresolved("no canonical cell", f"comparison under {'/'.join(dirs)}")
-        variant = route["model"]
+    if stem == "comparison":
+        legacy = longest_prefix(routes.get((dataset, category), {}), dirs[0]) if dirs else None
+        if len(dirs) != 2 or legacy is None or dirs[1] not in INSTRUMENTS:
+            return misc_fallback(rel, "cross-setup comparison with no instrument level")
+        variant = routes[(dataset, category)][legacy]["model"]
         return {
+            "kind": "mirrored",
             "aggregate": True,
             "dataset_type": dataset,
             "variant": variant,
@@ -554,105 +664,110 @@ def classify_cell(root, rel, files, index, fx) -> dict:
             "new": f"results/{dataset}/{variant}/{dirs[1]}/comparison.{ext}",
             "basis": {"cell": f"directory {dirs[0]}"},
         }
-    legacy, route, rest = match_cell(index, dataset, category, stem)
+    ident = cell_identity(rel, stem, dataset, category, routes, scripts)
+    if isinstance(ident, dict):
+        return ident
+    variant, backend, model_variant, arm, legacy, tokens = ident
+    all_legacy = set(routes.get((dataset, category), {})) | {"pixelization"}
     dir_inst = next((d for d in dirs if d in INSTRUMENTS), None)
-    other_dirs = [d for d in dirs if d not in INSTRUMENTS]
-    if route is None:
-        raise Unresolved(
-            "no canonical cell", f"stem {stem!r} matches no {dataset}/{category} legacy route"
-        )
-    if CELL_MEASUREMENTS.get(route["measurement"]) is None:
-        raise Unresolved(
-            "experiment script output",
-            f"route {route['path']} is not a per-likelihood runtime/breakdown script",
-            dataset_type=dataset,
-            variant=route["model"],
-            archive_slug=route["measurement"],
-        )
-    if any(d != legacy for d in other_dirs):
-        raise Unresolved(
-            "size-scan row" if any("sweep" in d for d in other_dirs) else "scan or side folder",
-            f"folder {'/'.join(other_dirs)} is not the {legacy} cell or an instrument level",
-            dataset_type=dataset,
-            variant=route["model"],
-        )
-    backend = CELL_MEASUREMENTS[route["measurement"]]
-    variant = route["model"]
-    basis = {"cell": f"script_routes {route['legacy']}"}
+    scan_dirs = [d for d in dirs if "sweep" in d]
+    side_dirs = [
+        d for d in dirs if d not in INSTRUMENTS and d not in all_legacy and d not in scan_dirs
+    ]
+    basis = {"cell": f"{legacy} ({'route' if legacy in all_legacy else 'script'})"}
+    found = find_config(tokens)
+    if found:
+        pre, tier, prec_token, post = found
+    else:
+        pre, tier, prec_token, post = tokens, None, None, []
+    extras = pre + post
+    if fx["versioned"]:
+        extras = [t for t in extras if t not in PURPOSE_TOKENS]
+    operator_token = next((t for t in extras if t in ("sparse", "dense")), None)
+    extras = [t for t in extras if t not in ("sparse", "dense")]
+    joined = "_".join(extras)
     name_inst = None
-    vmatch = VERSIONED_RE.match(rest)
-    extras: list[str]
-    if vmatch:
-        tier = token = None
-        name_inst = vmatch.group("inst")
-        extras = [e for e in vmatch.group("extra").split("_") if e]
+    for inst in INSTRUMENTS:  # longest names first ("alma_high" before "alma")
+        if re.search(rf"(?:^|_){inst}(?:_|$)", joined):
+            name_inst = inst
+            joined = re.sub(rf"(?:^|_){inst}(?=_|$)", "", joined, count=1).strip("_")
+            break
+    extras = [t for t in joined.split("_") if t]
+    for token, mv in MODEL_VARIANT_TOKENS.items():
+        if token in extras:
+            extras.remove(token)
+            model_variant = mv
+    arm_words = {w for a in arm for w in a.split("_")}
+    extras = side_dirs + [
+        t for t in extras if t not in arm_words
+    ]  # e.g. matrix_free_..._matrix_free
+    if arm or (extras and not all(SCAN_RE.match(t) for t in extras)):
+        slot = ("experiments", "_".join(arm + extras))
+    elif extras or scan_dirs:
+        slot = ("scans", "_".join(scan_dirs + extras))
     else:
-        cfg = parse_config(rest)
-        if cfg is None:
-            raise Unresolved(
-                "experiment arm",
-                f"suffix {rest!r} is not the legacy config grammar",
-                dataset_type=dataset,
-                variant=variant,
-            )
-        tier, token, extras = cfg
-        if RPIN_RE.search("_" + "_".join(extras)):
-            extras = []  # _r<YYYY_MM_DD_N> is a release-pin marker, not an arm
-    operator_token = None
-    for extra in list(extras):
-        if extra in ("sparse", "dense"):
-            operator_token = extra
-            extras.remove(extra)
-    if extras:
-        scan = all(SCAN_RE.match(e) for e in extras)
-        raise Unresolved(
-            "size-scan row" if scan else "experiment arm",
-            f"extra suffix {'_'.join(extras)!r} on {legacy}",
-            dataset_type=dataset,
-            variant=variant,
-        )
-    host_doc, dev_doc, host_basis = json_host(doc)
-    if tier is not None:
-        host, device = TIERS[tier]
-        if host is None:
-            raise Unresolved("host outside host_class vocabulary", f"tier {tier}")
-        if host_doc and host_doc != host:
-            raise Unresolved("path/content disagree", f"host: tier {tier}, JSON {host_basis}")
-        if dev_doc and dev_doc != device:
-            raise Unresolved("path/content disagree", f"device: tier {tier}, JSON {dev_doc}")
-        basis["host_class"] = f"tier {tier}"
-    else:
-        if host_doc is None:
-            raise Unresolved(
-                "host not recorded",
-                "versioned summary with no host in file name or JSON",
-                dataset_type=dataset,
-                variant=variant,
-            )
-        if host_doc in ("gpunode_cpu", "unknown_host"):
+        slot = None
+    try:
+        host_doc, dev_doc, host_basis = json_host(doc)
+        if tier is not None:
+            host, device = TIERS[tier]
+            if host_doc and host_doc != host:
+                raise Unresolved("path/content disagree", f"host: tier {tier}, JSON {host_basis}")
+            if dev_doc and dev_doc != device:
+                raise Unresolved("path/content disagree", f"device: tier {tier}, JSON {dev_doc}")
+            basis["host_class"] = f"tier {tier}"
+        elif host_doc is None and fx["versioned"]:
+            return {
+                "kind": "archive",
+                "archive_class": "hostless_versioned",
+                "why": "versioned summary with no host in file name or JSON (ruling)",
+                "rel": rel,
+            }
+        elif host_doc is None:
+            raise Unresolved("setup axis not recorded", "no host in file name or JSON")
+        elif host_doc == "unknown_host":
             raise Unresolved("host outside host_class vocabulary", host_basis)
-        host, device, basis["host_class"] = host_doc, dev_doc, host_basis
-    if device is None:
-        raise Unresolved("setup axis not recorded", "device not recorded")
-    operator, basis["operator"] = operator_of(doc, operator_token, dataset)
-    precision, basis["precision"] = precision_of(doc, token, backend)
-    transformer, tbasis = transformer_of(doc, dataset)
-    if tbasis:
-        basis["transformer"] = tbasis
-    instrument, basis["instrument"] = instrument_of(doc, name_inst, dir_inst)
+        else:
+            host, device, basis["host_class"] = host_doc, dev_doc, host_basis
+        if device is None:
+            raise Unresolved("setup axis not recorded", "device not recorded")
+        operator, basis["operator"] = operator_of(doc, operator_token, dataset)
+        precision, basis["precision"] = precision_of(doc, prec_token, backend)
+        transformer, tbasis = transformer_of(doc, dataset, operator)
+        if tbasis:
+            basis["transformer"] = tbasis
+        instrument, basis["instrument"] = instrument_of(doc, name_inst, dir_inst)
+    except Unresolved as exc:
+        if slot is None:
+            raise
+        return misc_fallback(rel, f"{slot[0][:-1]} with no derivable cell: {exc.reason}")
     setup_id = f"{backend}_{device}_{operator}_{precision}" + (
         f"_{transformer}" if transformer else ""
     )
+    cell = f"results/{dataset}/{variant}/{instrument}/{setup_id}/{host}" + (
+        f"/{model_variant}" if model_variant else ""
+    )
+    if slot:
+        name = slot[1] + (f"_v{pin_string(fx['pin'])}" if fx["versioned"] else "")
+        return {
+            "kind": slot[0][:-1] if slot[0] == "scans" else "experiment",
+            "new": f"{cell}/{slot[0]}/{name}/{measurement}.{ext}",
+            "cell": cell,
+            "basis": basis,
+        }
     return {
+        "kind": "mirrored",
         "aggregate": False,
         "dataset_type": dataset,
         "variant": variant,
         "instrument": instrument,
         "setup_id": setup_id,
         "host_class": host,
+        "model_variant": model_variant,
         "measurement": measurement,
         "ext": ext,
         "stem": stem,
+        "cell": cell,
         "basis": basis,
     }
 
@@ -665,23 +780,15 @@ def ledger_target(name: str, out_name: str | None = None) -> str:
         raise Unresolved("ledger not routed", f"no LEDGER_ROUTES row for {name}")
     dataset, variant = route
     if dataset == MULTI_DT:
-        raise Unresolved(
-            "ledger spans several dataset types",
-            "campaign covers more than one dataset type",
-            proposed=f"wiki/campaigns/misc/{out}.md",
-        )
+        return f"wiki/campaigns/{out}.md"
     if variant == MULTI:
-        raise Unresolved(
-            "ledger spans several variants",
-            f"campaign covers several {dataset} variants",
-            proposed=f"wiki/campaigns/{dataset}/{out}.md",
-        )
+        return f"wiki/campaigns/{dataset}/{out}.md"
     if dataset == "misc":
         return f"wiki/campaigns/misc/{out}.md"
     return f"wiki/campaigns/{dataset}/{variant}/{out}.md"
 
 
-def classify(root, path, files, index, fx) -> dict:
+def classify(path, files, routes, scripts, fx) -> dict:
     """One file -> {kind, new, ...}; raises Unresolved."""
     if path.startswith("wiki/campaigns/"):
         name = path.rsplit("/", 1)[1][:-3]
@@ -702,52 +809,31 @@ def classify(root, path, files, index, fx) -> dict:
     cls = None if top == "logs" else archive_class(rel)  # log names carry their run date
     if cls:
         return {"kind": "archive", "archive_class": cls[0], "why": cls[1], "rel": rel}
-    if top in ("runtime", "breakdown"):
+    pre_series = (fx["series_date"] or "9999") < PRE_SERIES_CUTOFF
+    if top in CATEGORY:
         name = rel.rsplit("/", 1)[1]
-        if name.startswith(CAMPAIGN_FAMILIES):
-            raise Unresolved(
-                "fixed-light campaign output",
-                "model_variant light_fixed has no section-3.7 path level; campaign complete",
-                dataset_type="imaging",
-                variant=None,
-                archive_slug="fixed_light",
-            )
-        if split_ext(name)[1] in ("out", "stdout"):
+        stem, ext = split_ext(name)
+        if ext in ("out", "stdout"):
             folder = rel.split("/")[-2]
-            raise Unresolved(
-                "log capture outside logs/",
-                "job stdout committed beside results, not under results/logs/<campaign>/",
-                proposed=f"results/misc/logs/{rel.split('/')[1]}_{folder}/{name}",
-            )
-        if re.search(r"_job\d+$", split_ext(name)[0]):
-            raise Unresolved(
-                "campaign job sidecar",
-                "per-job sidecar of a closed campaign, not a cell record",
-                archive_slug="job_sidecars",
-            )
-        try:
-            key = classify_cell(root, rel, files, index, fx)
-        except Unresolved as exc:
-            if (
-                exc.group
-                in (
-                    "experiment script output",
-                    "experiment arm",
-                    "no canonical cell",
-                    "scan or side folder",
-                )
-                and (fx["series_date"] or "9999") < PRE_SERIES_CUTOFF
-            ):
-                return {
-                    "kind": "archive",
-                    "archive_class": "pre_2026_09",
-                    "why": f"pre-2026-09 series ({exc.group})",
-                    "rel": rel,
-                }
-            raise
-        return {"kind": "mirrored", **key}
+            campaign = folder if folder == rel.split("/")[1] else f"{rel.split('/')[1]}_{folder}"
+            return {
+                "kind": "misc",
+                "new": f"results/misc/logs/{campaign}/{name}",
+                "why": "log capture outside results/logs/",
+            }
+        if SIDECAR_RE.search(stem):
+            return {"kind": "sidecar", "rel": rel}
+        result = classify_cell(rel, fx, routes, scripts)
+        if result["kind"] in ("scan", "experiment", "misc") and pre_series:
+            return {
+                "kind": "archive",
+                "archive_class": "pre_2026_09",
+                "why": f"pre-2026-09 series ({result['kind']})",
+                "rel": rel,
+            }
+        return result
     if top in MISC_GROUPS:
-        if VERSION_RE.search(rel) and (fx["series_date"] or "9999") < PRE_SERIES_CUTOFF:
+        if VERSION_RE.search(rel) and pre_series:
             return {
                 "kind": "archive",
                 "archive_class": "pre_2026_09",
@@ -756,70 +842,77 @@ def classify(root, path, files, index, fx) -> dict:
             }
         inner = rel.split("/", 1)[1]
         return {"kind": "misc", "new": f"results/misc/{MISC_GROUPS[top]}/{inner}"}
-    if top in EXPERIMENT_TOPS:
-        if (fx["series_date"] or "9999") < PRE_SERIES_CUTOFF:
-            return {
-                "kind": "archive",
-                "archive_class": "pre_2026_09",
-                "why": "pre-2026-09 series (experiment folder)",
-                "rel": rel,
-            }
-        dataset, variant = EXPERIMENT_TOPS[top]
-        raise Unresolved(
-            "experiment script output",
-            f"results/{top}/ holds experiment outputs with no section-3.7 measurement slot",
-            dataset_type=dataset,
-            variant=variant,
-        )
     raise Unresolved("unknown results folder", f"results/{top}/ has no rule")
 
 
 # --------------------------------------------------------------------------- build
 
 
-def proposal(unres: Unresolved, path: str, slug_months: dict, own: str | None) -> str | None:
-    if unres.proposed:
-        return unres.proposed
-    slug = unres.extra.get("archive_slug")
-    if slug is None and unres.group in ("experiment script output", "experiment arm"):
-        slug = "experiments"
-    if slug is None:
+def ledger_dates(root: Path, files: set[str]) -> list[tuple[str, str, str]]:
+    """(ledger path, date, text) for every results/notes ledger with a derivable date."""
+    out = []
+    for path in sorted(files):
+        if path.startswith("results/notes/") and path.count("/") == 2 and path.endswith(".md"):
+            text = (root / path).read_text()
+            named = DATED_RE.search(path.rsplit("/", 1)[1][:-3])
+            heading = ANY_ISO_RE.search(text.split("\n", 1)[0])
+            if named:
+                out.append((path, iso(*named.groups()), text))
+            elif heading:
+                out.append((path, iso(*heading.groups()), text))
+    return out
+
+
+def place_sidecar(root, path, classified) -> str | None:
+    """A job sidecar goes beside the results it names (their common cell directory)."""
+    doc = load_json(root, path) or {}
+    text = json.dumps(doc)
+    names = set((doc.get("artifact_sha256") or {}).keys()) if isinstance(doc, dict) else set()
+    names |= {p.rsplit("/", 1)[1] for p in re.findall(r"results/[A-Za-z0-9_./+-]+", text)}
+    by_name = defaultdict(list)
+    for old, c in classified.items():
+        by_name[old.rsplit("/", 1)[1]].append(c)
+    targets = []
+    for name in sorted(names):
+        for c in by_name.get(name, []):
+            if c.get("kind") in ("mirrored", "history", "scan", "experiment"):
+                targets.append(c["new"].rsplit("/", 1)[0])
+    if not targets:
         return None
-    month = (own or "")[:7].replace("-", "/") or slug_months.get(slug, "YYYY/MM")
-    return f"archive/{month}/{slug}/{path[len('results/') :]}"
+    common = os.path.commonpath(targets)
+    for marker in ("/experiments/", "/scans/"):
+        if marker in common + "/":
+            common = (common + "/").split(marker)[0] + marker.rstrip("/")
+    if common.count("/") < 5:
+        return None
+    return f"{common}/{path.rsplit('/', 1)[1]}"
 
 
 def build(root: Path) -> dict:
     root = Path(root)
     paths = tracked(root)
     files = set(paths)
-    index = cell_index(root)
-    entries, unresolved = {}, {}
+    routes, scripts = cell_index(root), script_index(root)
+    unresolved = {}
     facts_by = {p: facts(root, p, files) for p in paths}
     classified = {}
     for path in paths:
         try:
-            classified[path] = classify(root, path, files, index, facts_by[path])
+            classified[path] = classify(path, files, routes, scripts, facts_by[path])
         except Unresolved as exc:
             unresolved[path] = exc
 
-    # Archive slugs: month = latest recorded date among the slug's files.
+    # Archive: month = the file's own date, else the latest date in its slug, else the
+    # date of a ledger that names the file, else archive/undated/<slug>/.
     slug_dates: dict = defaultdict(list)
     for path, c in classified.items():
         if c["kind"] == "archive":
-            slug, _ = slug_for(c["rel"], c["archive_class"])
-            c["slug"] = slug
+            c["slug"], c["inner"] = slug_for(c["rel"], c["archive_class"])
+            if c["archive_class"] == "hostless_versioned":
+                c["slug"] = "hostless_summaries"
             if facts_by[path]["series_date"]:
-                slug_dates[slug].append(facts_by[path]["series_date"])
-    for path, exc in unresolved.items():
-        slug = exc.extra.get("archive_slug")
-        if exc.group in ("experiment script output", "experiment arm"):
-            slug = slug or "experiments"
-        if slug and facts_by[path]["series_date"]:
-            slug_dates[slug].append(facts_by[path]["series_date"])
-    for path, c in classified.items():
-        if c["kind"] == "archive" and c["archive_class"] == "frozen_pack":
-            named = DATED_RE.search(c["slug"])
+                slug_dates[c["slug"]].append(facts_by[path]["series_date"])
+            named = DATED_RE.search(c["slug"]) if c["archive_class"] == "frozen_pack" else None
             if named:
                 slug_dates[c["slug"]].append(iso(*named.groups()))
     slug_months = {s: max(d)[:7].replace("-", "/") for s, d in slug_dates.items()}
@@ -827,40 +920,40 @@ def build(root: Path) -> dict:
     for slug, (month, why) in SLUG_MONTH.items():
         if slug not in slug_months:
             slug_months[slug], slug_basis[slug] = month, why
-    for path, c in list(classified.items()):
+    ledgers = ledger_dates(root, files)
+    packs = {c["slug"] for c in classified.values() if c.get("archive_class") == "frozen_pack"}
+    for slug in sorted(packs):
+        if slug not in slug_months:
+            cite = next(((lp, d) for lp, d, text in ledgers if slug in text), None)
+            if cite:
+                slug_months[slug] = cite[1][:7].replace("-", "/")
+                slug_basis[slug] = f"date of citing ledger {cite[0]}"
+    for path, c in classified.items():
         if c["kind"] != "archive":
             continue
-        slug, inner = slug_for(c["rel"], c["archive_class"])
         own = facts_by[path]["series_date"]
-        if c["archive_class"] in ("frozen_pack", "frozen_baseline") or not own:
-            month = slug_months.get(slug)
-        else:
-            month = own[:7].replace("-", "/")
+        pack = c["archive_class"] in ("frozen_pack", "frozen_baseline")
+        month = None if pack or not own else own[:7].replace("-", "/")
+        if month is None and not pack:
+            stem = split_ext(path.rsplit("/", 1)[1])[0]
+            cite = next(((lp, d) for lp, d, text in ledgers if stem in text), None)
+            if cite:
+                month = cite[1][:7].replace("-", "/")
+                c["why"] += f"; month from citing ledger {cite[0]}"
         if month is None:
-            unresolved[path] = Unresolved(
-                "archive month unknown",
-                f"{c['why']}: no date in the file name, its JSON or its slug {slug}",
-                proposed=f"archive/YYYY/MM/{slug}/{inner}",
-            )
-            del classified[path]
-            continue
-        c["new"] = f"archive/{month}/{slug}/{inner}"
+            month = slug_months.get(c["slug"])
+        if month is None:
+            month = "undated"
+        c["new"] = f"archive/{month}/{c['slug']}/{c['inner']}"
 
     # Mirrored keys: newest record -> current slot, older records -> history/.
     records: dict = defaultdict(lambda: defaultdict(list))
     for path, c in classified.items():
         if c["kind"] == "mirrored" and not c["aggregate"]:
-            key = (
-                c["dataset_type"],
-                c["variant"],
-                c["instrument"],
-                c["setup_id"],
-                c["host_class"],
-                c["measurement"],
-            )
+            key = (c["cell"], c["measurement"])
             record = path.rsplit("/", 1)[0] + "/" + c["stem"]
             records[key][record].append(path)
-    for key, recs in records.items():
+    for (cell, measurement), recs in records.items():
         order = []
         for record, members in recs.items():
             fx = next(
@@ -869,37 +962,45 @@ def build(root: Path) -> dict:
             )
             order.append((fx["pin"] or (), fx["series_date"] or "", record, members, fx))
         order.sort(key=lambda o: (o[0], o[1]), reverse=True)
-        base = "results/" + "/".join(key[:5])
-        measurement = key[5]
+        current = order[0][2]
         if len(order) > 1 and (order[0][0], order[0][1]) == (order[1][0], order[1][1]):
             tied = [o for o in order if (o[0], o[1]) == (order[0][0], order[0][1])]
             for o in tied:
                 for m in o[3]:
                     unresolved[m] = Unresolved(
                         "ambiguous current record",
-                        f"{len(tied)} records share key {'/'.join(key)} with the same "
+                        f"{len(tied)} records share {cell}/{measurement} with the same "
                         f"release pin and date: {sorted(t[2] for t in tied)}",
                     )
                     del classified[m]
             order = [o for o in order if o not in tied]
             current = None
-        else:
-            current = order[0][2] if order else None
         for pin, date, record, members, fx in order:
             for m in members:
-                ext = classified[m]["ext"]
                 c = classified[m]
                 c["release_pin"] = pin_string(pin) if pin else None
                 c["date"] = date or None
                 c["date_basis"] = fx["series_basis"]
                 if record == current:
-                    c["new"] = f"{base}/{measurement}.{ext}"
+                    c["new"] = f"{cell}/{measurement}.{c['ext']}"
                 else:
                     c["kind"] = "history"
                     c["new"] = (
-                        f"{base}/history/{pin_string(pin) or 'unpinned'}_{date or 'undated'}/"
-                        f"{measurement}.{ext}"
+                        f"{cell}/history/{pin_string(pin) or 'unpinned'}_{date or 'undated'}/"
+                        f"{measurement}.{c['ext']}"
                     )
+
+    # Job sidecars go beside the results they describe.
+    for path, c in list(classified.items()):
+        if c["kind"] == "sidecar":
+            target = place_sidecar(root, path, classified)
+            if target is None:
+                classified[path] = misc_fallback(
+                    path[len("results/") :],
+                    "job sidecar: the results it names span several cells, or none is tracked",
+                )
+            else:
+                classified[path] = {"kind": "experiment", "new": target, "why": "job sidecar"}
 
     # Collisions are errors.
     targets: dict = defaultdict(list)
@@ -920,6 +1021,7 @@ def build(root: Path) -> dict:
                     "instrument",
                     "setup_id",
                     "host_class",
+                    "model_variant",
                     "measurement",
                     "release_pin",
                     "date",
@@ -927,35 +1029,29 @@ def build(root: Path) -> dict:
                 )
                 if c.get(k) is not None
             }
+        if c.get("basis"):
             entry["basis"] = c["basis"]
         if c["kind"] == "archive":
             entry["archive_class"] = c["archive_class"]
+        if c.get("why"):
             entry["why"] = c["why"]
         out_entries.append(entry)
-        entries[path] = entry
     out_unresolved = []
     for path in sorted(unresolved):
         exc = unresolved[path]
-        row = {
-            "old": path,
-            "sha256": sha256(root, path),
-            "group": exc.group,
-            "reason": exc.reason,
-        }
-        hint = {k: v for k, v in exc.extra.items() if k != "archive_slug" and v is not None}
-        if hint:
-            row["derived"] = hint
-        proposed = proposal(exc, path, slug_months, facts_by[path]["series_date"])
-        if proposed:
-            row["proposed"] = proposed
+        row = {"old": path, "sha256": sha256(root, path), "group": exc.group}
+        row["reason"] = exc.reason
+        if exc.proposed:
+            row["proposed"] = exc.proposed
         out_unresolved.append(row)
 
     # Mirror witness: results/<dt>/<variant>/ vs scripts/<dt>/<variant>/.
+    in_tree = ("mirrored", "history", "scan", "experiment")
     result_pairs = sorted(
         {
             (e["new"].split("/")[1], e["new"].split("/")[2])
             for e in out_entries
-            if e["kind"] in ("mirrored", "history")
+            if e["kind"] in in_tree and not e["new"].startswith("results/misc/")
         }
     )
     script_pairs = sorted(
@@ -977,6 +1073,7 @@ def build(root: Path) -> dict:
     for row in out_unresolved:
         groups[row["group"]] += 1
     covered = len(out_entries) + len(out_unresolved)
+    cell = "results/<dataset_type>/<variant>/<instrument>/<setup_id>/<host_class>[/<model_variant>]"
     return {
         "schema": SCHEMA,
         "version": VERSION,
@@ -986,15 +1083,35 @@ def build(root: Path) -> dict:
         "note": (
             "Day-zero migration plan: old -> new path + sha256 for every tracked file under "
             "results/ and every wiki/campaigns/*.md page. Nothing has moved. Unresolved rows "
-            "need a human ruling before the move-only PR; 'proposed' is a suggestion only."
+            "need a human ruling before the move-only PR."
         ),
         "layout": {
-            "mirrored": "results/<dataset_type>/<variant>/<instrument>/<setup_id>/<host_class>/<measurement>.<ext>",
-            "history": "results/<dataset_type>/<variant>/<instrument>/<setup_id>/<host_class>/history/<release_pin>_<YYYY-MM-DD>/<measurement>.<ext>",
+            "cell": cell,
+            "mirrored": "<cell>/<measurement>.<ext> -- the only slot that may become current",
+            "history": "<cell>/history/<release_pin>_<YYYY-MM-DD>/<measurement>.<ext> -- superseded",
+            "scan": "<cell>/scans/<name>/<measurement>.<ext> -- size scans; never current",
+            "experiment": (
+                "<cell>/experiments/<name>/<measurement>.<ext> (and job sidecars in "
+                "<cell>/experiments/) -- arms and experiment scripts; never current"
+            ),
             "aggregate": "results/<dataset_type>/<variant>/<instrument>/comparison.<ext>",
-            "setup_id": "<backend>_<device>_<operator>_<precision>[_<transformer>]",
-            "archive": "archive/YYYY/MM/<slug>/<path under results/ or inside the pack>; YYYY/MM is the file's own date (name or JSON), else the latest date in its slug",
-            "ledgers": "wiki/campaigns/<dataset_type>/<variant>/<name>.md | wiki/campaigns/{lens/<component>,misc}/<name>.md",
+            "setup_id": (
+                "<backend>_<device>_<operator>_<precision>[_<transformer>]; the transformer "
+                "names the likelihood route: sparse interferometric = wtilde"
+            ),
+            "model_variant": "path segment only for non-default variants (light_fixed, rtu, mge_mass)",
+            "misc": "results/misc/<group>/... -- files with no derivable cell; never current",
+            "archive": (
+                "archive/YYYY/MM/<slug>/<path under results/ or inside the pack>; YYYY/MM is "
+                "the file's own date (name or JSON), else the latest date in its slug, else a "
+                "citing ledger's date, else archive/undated/<slug>/"
+            ),
+            "ledgers": (
+                "wiki/campaigns/<dataset_type>/<variant>/<name>.md | "
+                "wiki/campaigns/<dataset_type>/<name>.md (several variants) | "
+                "wiki/campaigns/<name>.md (several dataset types) | "
+                "wiki/campaigns/{lens/<component>,misc}/<name>.md"
+            ),
         },
         "counts": {
             "tracked_files": len(paths),
@@ -1017,7 +1134,8 @@ def build(root: Path) -> dict:
             "misc_groups_without_scripts": [g for g in misc_groups if g not in script_misc],
         },
         "setup_ids": sorted(
-            {e["key"]["setup_id"] for e in out_entries if "setup_id" in e.get("key", {})}
+            {e["new"].split("/")[4] for e in out_entries if e["kind"] in in_tree}
+            - {"comparison.json", "comparison.png"}
         ),
         "archive_slugs": {
             s: {"month": slug_months[s], "basis": slug_basis[s]} for s in sorted(slug_months)

@@ -40,6 +40,7 @@ def tree(tmp_path):
     (tmp_path / "catalogue").mkdir()
     shutil.copy(REPO / mm.ROUTES_PATH, tmp_path / mm.ROUTES_PATH)
     write(tmp_path, "scripts/imaging/delaunay/likelihood_runtime.py", "")
+    write(tmp_path, "scripts/interferometer/delaunay/likelihood_breakdown.py", "")
     write(tmp_path, "scripts/misc/hazards/run.py", "")
     a100 = {"backend": "gpu", "hostname": "euclid-ral-gpu-2"}
     write(
@@ -60,6 +61,28 @@ def tree(tmp_path):
     write(tmp_path, "results/runtime/imaging/delaunay/hst/comparison.json", {"configs": {}})
     write(tmp_path, "results/breakdown/imaging/delaunay_hpc_a100_fp64_n3000.json", row())
     write(tmp_path, "results/breakdown/imaging/mystery_hpc_a100_fp64.json", row())
+    write(tmp_path, "results/breakdown/imaging/delaunay_hpc_a100_fp64_recon_split.json", row())
+    write(
+        tmp_path,
+        "results/breakdown/imaging/fixed_light_trace_delaunay_psf_control_hpc_a100_fp64"
+        "_fixed_light_trace.json",
+        row(),
+    )
+    write(
+        tmp_path,
+        "results/breakdown/imaging/delaunay_breakdown_hst_v2026.8.17.1.json",
+        row(device={"backend": "cpu"}),
+    )
+    write(
+        tmp_path,
+        "results/breakdown/interferometer/sma/delaunay_hpc_ral_cpu_fp64.json",
+        row(
+            instrument="sma",
+            transformer="TransformerNUFFT",
+            configuration={"inversion_path": "sparse"},
+            device={"backend": "cpu", "hostname": "euclid-ral-gpu-1"},
+        ),
+    )
     write(
         tmp_path,
         "results/runtime/imaging/a100_probes/vmap_probe_delaunay.json",
@@ -114,14 +137,27 @@ def test_mapping_rules(tree):
     assert entries["results/notes/numpy_deflections_cpu.md"]["new"].endswith(
         "lens/deflections/numpy_deflections_cpu_ledger.md"
     )
-    unresolved = {u["old"]: u["group"] for u in doc["unresolved"]}
-    assert unresolved["results/breakdown/imaging/delaunay_hpc_a100_fp64_n3000.json"] == (
-        "size-scan row"
+    a100 = f"{base}/jax_gpu_dense_fp64/hpc_a100"
+    assert entries["results/breakdown/imaging/delaunay_hpc_a100_fp64_n3000.json"]["new"] == (
+        f"{a100}/scans/n3000/breakdown.json"
     )
-    assert unresolved["results/breakdown/imaging/mystery_hpc_a100_fp64.json"] == (
-        "no canonical cell"
+    arm = entries["results/breakdown/imaging/delaunay_hpc_a100_fp64_recon_split.json"]
+    assert arm["kind"] == "experiment"
+    assert arm["new"] == f"{a100}/experiments/recon_split/breakdown.json"
+    fixed = next(e for e in doc["entries"] if "fixed_light_trace" in e["old"])
+    assert fixed["new"] == f"{a100}/light_fixed/experiments/trace_psf_control/breakdown.json"
+    assert entries["results/breakdown/imaging/mystery_hpc_a100_fp64.json"]["new"] == (
+        "results/misc/likelihood_breakdown/imaging/mystery_hpc_a100_fp64.json"
     )
-    assert doc["mirror"]["result_variants"] == ["imaging/delaunay"]
+    hostless = entries["results/breakdown/imaging/delaunay_breakdown_hst_v2026.8.17.1.json"]
+    assert hostless["new"].startswith("archive/2026/08/hostless_summaries/")
+    # CPU on a RAL GPU node is hpc_ral_cpu; a sparse interferometric row is the W~ route.
+    wtilde = entries["results/breakdown/interferometer/sma/delaunay_hpc_ral_cpu_fp64.json"]
+    assert wtilde["new"] == (
+        "results/interferometer/delaunay/sma/jax_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json"
+    )
+    assert doc["unresolved"] == []
+    assert doc["mirror"]["result_variants"] == ["imaging/delaunay", "interferometer/delaunay"]
     assert doc["mirror"]["result_variants_without_scripts"] == []
 
 
