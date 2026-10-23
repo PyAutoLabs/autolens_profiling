@@ -3,13 +3,13 @@
 **Status:** open
 **Question:** What does a representative cluster-scale `PointSolver` likelihood cost on released code, where is the time, and which levers (deflection cost, grid extent, per-source batching) pay at cluster scale?
 **Pre-registered rule:** phase 1: a setting is admissible only when every oracle root (independent lens-equation oracle, not the triangle solver) of every judged prior AND stress draw is covered by exactly one candidate within the row's last-step triangle side, multiplicity agrees, no spurious candidate and no uncapped containing count above the cap. Otherwise the contract inherits the point-source campaign measurement contract (exact revisions, interleaved A/B on identical hardware, fused production control, correctness gate before any speed claim, negative results recorded, one bounded phase per issue and PR).
-**Verdict:** phase 1 DEFERRED (human, 2026-10-22; default stays 1.0″ pending the starting-grid draft and the A2744 pull): no `PointSolver` setting is admissible on `simple` (101 draws). Production rows cover 306/306 prior roots and miss 2–6 of 300 stress roots, all close high-|μ| pairs. No default changed.
+**Verdict:** phase 1 DEFERRED (human, 2026-10-22; default stays 1.0″): no `PointSolver` setting is admissible on `simple` (101 draws). Production rows cover 306/306 prior roots and miss 2–6 of 300 stress roots, all close high-|μ| pairs. #439 (2026-10-23) supplies both pending inputs: no fixed starting scale finds every image (viz cluster model: 0.2″ still misses 3/108; finer is not monotone; A2744 pilot 1.0″ best), no single-separation rule holds; recommendation = keep 1.0″ + a validation check. No default changed.
 **Headline:** initial scale 0.5″/0.7″ misses 2 stress roots at 0.78×/0.75× the production control's speed; the control (1.0″) misses 5 at 5.29 ms; RAL Xeon 8490H job 412572. Carried evidence: two-source cluster solved likelihood 47.36 → 9.085 ms (5.21x) from the static step-0 lattice, RAL Xeon 8490H job 350636.
 **Library PRs:** none yet.
-**Profiling PRs:** phase 1 PR (autolens_profiling#436), open.
+**Profiling PRs:** phase 1 #438 (autolens_profiling#436), merged; #439 starting-grid follow-up PR, open.
 **Ledger:** [cluster_pointsolver_campaign.md](../../results/notes/cluster_pointsolver_campaign.md); carried cluster rows live in [point_source_cpu_campaign.md](../../results/notes/point_source_cpu_campaign.md) (phases 1–3).
 **Mind contract:** epic `cluster-pointsolver-speed`; PyAutoPulse task `tasks/cluster_pointsolver_speed.md` (migrated from `draft/research/autolens_profiling/cluster_pointsolver_speed.md`); phase 1 `active/cluster_pointsolver_robust_settings_p1.md`.
-**Next:** the human's decision on the phase-1 table; pull the A2744 pilot leg (job 412573) and attribute its memory; the starting-grid draft `draft/research/autolens_profiling/cluster_pointsolver_starting_grid_close_member_image.md`.
+**Next:** the human's decision on the phase-1 table with the #439 inputs; the Mind drafts `draft/feature/autolens_workspace/cluster_point_solver_validation_check.md` and `draft/feature/autolens/point_solver_spurious_core_candidates.md`; any A2744 full sweep needs a reference tracer, `--release-executables` and explicit human authorization.
 
 ## Why this campaign
 
@@ -22,7 +22,7 @@ from phase 4a on, that campaign is single-source only and everything cluster-sca
 
 | Phase | Dates | Question | Pre-registered rule | Result | Jobs | PRs |
 |---|---|---|---|---|---|---|
-| 1 robust settings | 2026-10-17/22 | Which `PointSolver` settings find every image at cluster scale, judged against an independent oracle? | per-root coverage + multiplicity + overflow on prior AND stress draws (above) | DEFERRED (human 2026-10-22, default stays 1.0″): no row admissible on `simple`; 0.5″/0.7″ miss 2, 1.0″ (production) 5, 2.0″ 6 of 300 stress roots; precision/capacity/backend change nothing; eager unusable; A2744 leg not pulled | 412567 (pilot), 412572 (sweep), 412573 (A2744 pilot leg, not pulled) | phase 1 PR (#436) |
+| 1 robust settings | 2026-10-17/22 | Which `PointSolver` settings find every image at cluster scale, judged against an independent oracle? | per-root coverage + multiplicity + overflow on prior AND stress draws (above) | DEFERRED (human 2026-10-22, default stays 1.0″): no row admissible on `simple`; 0.5″/0.7″ miss 2, 1.0″ (production) 5, 2.0″ 6 of 300 stress roots; precision/capacity/backend change nothing; eager unusable. A2744 pilot (pulled #439): FAILED after 16 diagnostic rows (LLVM memory, retained executables), 1.0″ misses fewest (2/69). #439 starting grid (laptop, viz cluster model): workspace 1.0″ loses `point_0`'s central image 0.39″ from a core, so does every scale to 0.3″, only 0.2″ finds it; no fixed scale or single-separation rule is safe → validation check recommended | 412567 (pilot), 412572 (sweep), 412573 (A2744 pilot leg, FAILED, pulled 2026-10-23) | #438 (#436); #439 PR |
 | 2 deflection cost | — | dPIE/NFW deflection cost (JAX deflection cell first) | — | sketch only | — | — |
 | 3 grid extent | — | Cluster grid-extent guidance with completeness evidence | — | sketch only | — | — |
 | 4 | — | Whatever the phase-1 split exposes | — | sketch only | — | — |
@@ -44,8 +44,8 @@ PyAutoLens#749, released 2026.9.26.1) are recorded on the
 ## Open / parked / drafts
 
 - The campaign contract is the PyAutoPulse task `tasks/cluster_pointsolver_speed.md`.
-- A2744 pilot leg (job 412573): outcome and memory trace not yet pulled — RAL login unavailable 2026-10-22. Row-1 live read on 2026-10-18: peak 22 GB / RSS 8.3 GB, live arrays ~0 → per-row transient + retained executables.
-- `draft/research/autolens_profiling/cluster_pointsolver_starting_grid_close_member_image.md` — does a 1.0″ starting grid lose image 3 of `point_0`, 0.39″ from a member galaxy's core?
+- A2744 full sweep: parked (no reference tracer; needs `--release-executables` and explicit human authorization).
+- Mind drafts from #439 (not filed): workspace cluster validation check; PyAutoLens spurious candidates at `r_core = 0` member cores.
 
 ## Caveats
 
@@ -54,6 +54,24 @@ PyAutoLens#749, released 2026.9.26.1) are recorded on the
 - The old "cluster solve is at its deflection bound" claim was extrapolated, not measured.
 
 ## Journal
+
+### 2026-10-23 — #439: starting grid vs close member image; A2744 pilot pulled
+
+The A2744 pilot (RAL job 412573) is pulled: FAILED after 16 diagnostic rows, LLVM `Cannot
+allocate memory`, RSS 8.3 → 39.4 GB with live arrays ~0. The cause is retained compiled
+executables plus compile transients, and the harness now has `--release-executables`. On that
+synthetic 3-draw model 1.0″ misses fewest (2/69), the opposite of `simple`.
+
+The autolens_visualization cluster model (copied constants, `--dataset viz_cluster`) was swept
+on the laptop: CPU fp64, 17 draws, scales 1.0–0.2″, production extent. The workspace 1.0″ grid
+does lose `point_0`'s image 3 (μ −0.89, 0.39″ from `main_1`'s core). So does every scale down
+to 0.3″, including the claimed 0.37″ threshold; only 0.2″ finds it. 0.2″ still misses 3/108
+roots, all central images within 0.17–0.33″ of a core. Six draw-sources are found at a coarser
+scale and lost at a finer one. The solver also returns spurious candidates on `r_core = 0`
+member centres. "Scale ≲ separation / 1.06" is contradicted, and no single separation predicts
+the safe scale. The recommendation is to keep 1.0″ and add a validation check; two Mind drafts
+carry it. Laptop timings are diagnostic only. See the
+[ledger](../../results/notes/cluster_pointsolver_campaign.md#starting-grid-vs-close-member-image-439).
 
 ### 2026-10-22 — phase 1: no admissible setting on `simple` (interpretation pending)
 
