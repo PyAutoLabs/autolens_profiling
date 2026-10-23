@@ -70,7 +70,7 @@ The tier-1 slice intentionally proves four shapes rather than scanning the full
 
 The PowerLaw finding has a bounded convergence study in
 `power_law_omega.py` and
-`results/hazards/component/power_law/omega_convergence.json`. The 20-term
+`results/misc/hazards/component/power_law/omega_convergence.json`. The 20-term
 series exceeds `1e-4` angular error over 5.7% of the packaged default prior.
 A fixed-bin counterfactual retains reverse-mode differentiation and `vmap`, but
 covering the live `0.999` ellipticity clamp requires 10,240 terms and was 125x
@@ -80,7 +80,7 @@ does not support routing the high-cost counterfactual into PyAutoGalaxy; the
 stable finding remains profiling evidence.
 
 The two `component.mge` findings have their own bounded study in `mge_faddeeva.py` and
-`results/hazards/component/mge/faddeeva_audit.json` (issue PyAutoGalaxy#600, phase A). The JAX
+`results/misc/hazards/component/mge/faddeeva_audit.json` (issue PyAutoGalaxy#600, phase A). The JAX
 Faddeeva routine's three `xp.where` regions leave its derivative discontinuous by up to 5.8e-5
 relative at the `r2 = 2.5` seam, and finite differences of the JAX deflection field diverge as the
 step shrinks (58-96 of 15,361 grid points wrong by more than 1 % at `h <= 1e-6`) while the same
@@ -90,7 +90,7 @@ gradient the autodiff gradient is no rougher than the smooth-path baseline. The 
 biases every `*Sph` MGE-routed profile by 6.3e-5 (gNFWSph) / 1.1e-4 (Gaussian) relative, with a
 spurious cross-axis deflection reaching 1.45e-4". The full verdict - lift the clamp on JAX, replace
 the routine with the seam-free Weideman N=32 series (1.9e-13 accurate, 0.745x the cost) - is in
-`results/notes/numpy_deflections_cpu.md`.
+`wiki/campaigns/lens/deflections/numpy_deflections_cpu_ledger.md`.
 
 Phase B implemented both. On a PyAutoGalaxy checkout carrying that change `scan.py --check
 --subject component` reports both `component.mge` findings **resolved**: the routine's derivative

@@ -73,7 +73,7 @@ export JAX_ENABLE_X64=True
 export PYAUTO_SKIP_WORKSPACE_VERSION_CHECK=1
 export NUMBA_CACHE_DIR=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}
 # A fresh, empty compilation cache per leg: a seeded autotune cache changes kernels
-# (results/notes/xla_autotune_triton_gemm.md) and RAL $HOME is node-local.
+# (wiki/campaigns/misc/xla_autotune_triton_gemm.md) and RAL $HOME is node-local.
 export JAX_COMPILATION_CACHE_DIR=$AP_ROOT/output/jax_cache/runtime_ps_source_plane_solved_${SLURM_JOB_ID:-local}
 rm -rf "$JAX_COMPILATION_CACHE_DIR"
 mkdir -p "$JAX_COMPILATION_CACHE_DIR" "$NUMBA_CACHE_DIR"

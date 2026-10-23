@@ -30,7 +30,7 @@ the StableHLO count, which counts sort *definitions* inside private functions th
 lowering reuses, not call sites — the optimised-HLO count is the one to read.) The NumPy sibling
 (``coordinate_array_np.py``) calls ``np.unique`` with no ``size=`` and genuinely
 shrinks the table; it is not touched here. See
-``results/notes/point_source_cpu_2026_09_17_reported/pointsolver_cpu_research_note.md``
+``archive/2026/09/point_source_cpu_2026_09_17_reported/pointsolver_cpu_research_note.md``
 §3 and §6 for the reported scratch evidence this cell re-measures properly.
 
 The fix drops the unique: the vertex table is the flat ``(3N, 2)`` triangle
@@ -1141,6 +1141,7 @@ dict_path, chart_path = resolve_output_paths(
     default_dir=_ROOT / "results" / "breakdown" / "point_source_image",
     default_basename="vertex_dedup_ab_local",
     cell="vertex_dedup_ab",
+    hints=summary,
 )
 dict_path.write_text(json.dumps(_scrub(summary), indent=2))
 

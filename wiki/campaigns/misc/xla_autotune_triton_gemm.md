@@ -5,14 +5,14 @@ PyAutoNerves issue #161, task `xla-triton-gemm-off`. Controlled probe:
 `hpc/batch_gpu/submit_xla_autotune_gemm_probe`.
 
 > **Confirmed, not superseded (2026-09-10).** The 2026-09-10 A100 pixelized baseline
-> ([`a100_pixelized_baseline_2026_09.md`](./a100_pixelized_baseline_2026_09.md)) measured
+> ([`a100_pixelized_baseline_2026_09.md`](../imaging/a100_pixelized_baseline_2026_09.md)) measured
 > the live dense `Curvature matrix (F)` step at **4.826 / 4.824 / 4.830 ms** on the
 > rectangular / Delaunay / DelaunayNN cells with the flag shipped and a fresh per-job
 > autotune cache — matching arm E's 4.79 ms synthetic GEMM. Nothing here needs revising.
 
 ## What was measured and why
 
-The 2026-09-05 A/B in [`delaunay_nn_breakdown.md`](./delaunay_nn_breakdown.md)
+The 2026-09-05 A/B in [`delaunay_nn_breakdown.md`](../imaging/delaunay_nn/delaunay_nn_breakdown.md)
 ("XLA GPU autotuning A/B") measured the Curvature matrix (F) step at **25.63 ms**
 with the shipped `--xla_gpu_autotune_level=0` against **4.90 ms** at XLA's default
 level 4 — a 5.2× penalty on one dense fp64 GEMM. But four later jobs (342315,
@@ -127,7 +127,7 @@ Triton flag in `XLA_FLAGS` is still respected).
 
 - `scripts/misc/jax_compile/gemm_probe.py` — the probe.
 - `hpc/batch_gpu/submit_xla_autotune_gemm_probe` — the five-arm submit script.
-- `results/notes/xla_autotune_triton_gemm.md` — this note.
+- `wiki/campaigns/misc/xla_autotune_triton_gemm.md` — this note.
 
 The raw job output lives on RAL under `/mnt/ral/jnightin/scratch_xla_autotune/` and is
 not committed.

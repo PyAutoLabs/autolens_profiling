@@ -265,9 +265,9 @@ is planned.
 - `results/breakdown/imaging/delaunay_nn_hpc_a100_fp64_launch_latency.{json,png}` (shipped `e5d31d74`, chunk 4096)
 - `results/breakdown/imaging/delaunay_nn_hpc_a100_fp64_launch_latency_chunk256.{json,png}` (`9e9a7d50`, the same-chunk A/B)
 - `results/breakdown/imaging/delaunay_nn_hpc_a100_fp64_chunk{512,1024,2048,4096}.{json,png}`
-- `results/runtime/imaging/delaunay_nn/delaunay_nn_hpc_a100_fp64_launch_latency_control.json`
-- `results/runtime/imaging/delaunay_nn/delaunay_nn_hpc_a100_fp64_launch_latency.json` (shipped)
-- `results/runtime/imaging/delaunay_nn/delaunay_nn_hpc_a100_fp64_launch_latency_chunk256.json`
+- `results/imaging/delaunay_nn/hst/jax_gpu_dense_fp64/hpc_a100/experiments/launch_latency_control/runtime.json`
+- `results/imaging/delaunay_nn/hst/jax_gpu_dense_fp64/hpc_a100/experiments/launch_latency/runtime.json` (shipped)
+- `results/imaging/delaunay_nn/hst/jax_gpu_dense_fp64/hpc_a100/experiments/launch_latency_chunk256/runtime.json`
 - `hpc/batch_gpu/submit_breakdown_imaging_delaunay_nn_a100_hst_fp64_{launch_latency_control,launch_latency,chunk_sweep}`
 - `hpc/batch_gpu/submit_runtime_imaging_delaunay_nn_a100_hst_fp64_{control,launch_latency}`
 

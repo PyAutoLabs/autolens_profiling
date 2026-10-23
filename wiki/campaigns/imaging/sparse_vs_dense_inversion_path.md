@@ -118,7 +118,7 @@ before `[4, 2, 2]` over-sampling. The current canonical rows, all from one node 
 window, are in
 [`a100_pixelized_baseline_2026_09.md`](./a100_pixelized_baseline_2026_09.md):
 
-> **Correction — 2026-09-27:** the 2026-07-11 date of A100 jobs 323017–323022 is not verified — those job ids precede the 2026-07-10 PreOptimizationTimes A100 jobs (330062–330070), so the rows are older than the date says. Quote them as superseded rows only ([A100 pixelized baseline](../../wiki/campaigns/a100_pixelized_baseline.md)).
+> **Correction — 2026-09-27:** the 2026-07-11 date of A100 jobs 323017–323022 is not verified — those job ids precede the 2026-07-10 PreOptimizationTimes A100 jobs (330062–330070), so the rows are older than the date says. Quote them as superseded rows only ([A100 pixelized baseline](a100_pixelized_baseline.md)).
 
 | Cell | Phase | Dense | Sparse | Δ |
 |---|---|---:|---:|---|
@@ -187,7 +187,7 @@ is robust across both runs; only MGE is noise-floor-sensitive.
 The per-step breakdown JIT-compiles each pipeline step in isolation. XLA can't
 fuse across step boundaries here, so the sum-of-bars overcounts the
 production cost — exactly as the [breakdown
-README](../../likelihood_breakdown/README.md) warned. Numbers:
+README](../../../scripts/misc/likelihood_breakdown/README.md) warned. Numbers:
 
 | Cell | Dense total | Sparse total | Δ |
 |---|---:|---:|---:|

@@ -619,6 +619,7 @@ dict_path, chart_path = resolve_output_paths(
     _cli,
     default_dir=_workspace_root / "results" / "runtime" / "datacube" / "delaunay",
     default_basename=f"delaunay_likelihood_summary_{instrument}_v{al_version}",
+    hints=likelihood_summary,
 )
 dict_path.write_text(json.dumps(likelihood_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")
@@ -665,7 +666,7 @@ else:
 
 # Pinned-value outcome -> result JSON: profiling records and flags drift,
 # never adjudicates library correctness (autolens_workspace_test's remit;
-# boundary rule in results/notes/design_lock_in.md). PyAutoHeart's vitals
+# boundary rule in wiki/campaigns/misc/design_lock_in.md). PyAutoHeart's vitals
 # scan reads the pinned_drift field.
 record_pinned_check(dict_path, _pinned_expected, _pinned_drift)
 if _pinned_expected is not None and not _pinned_drift:

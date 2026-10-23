@@ -6,12 +6,12 @@ Cell: `scripts/interferometer/likelihood_breakdown/mge.py` (steps, `setup_split`
 `vmap_batch` — the imaging MGE schema) plus a measurement-only func-list W~ arm (`--w-tilde`).
 PyAutoLens 2026.8.17.1, fp64 on every leg, nufftax 0.6.1 on the A100.
 
-**Witness:** `results/breakdown/interferometer/mge_hpc_a100_fp64.json` (alma, A100 fp64,
+**Witness:** `results/interferometer/mge/alma/jax_gpu_dense_fp64_nufft/hpc_a100/breakdown.json` (alma, A100 fp64,
 non-null `steps`) and this note. Every number below is read from the committed JSONs:
 
 | Leg | JSON |
 |---|---|
-| CPU sma NUFFT / DFT | `results/breakdown/interferometer/mge_breakdown_sma_v2026.8.17.1.json`, `mge_dft_breakdown_sma_v2026.8.17.1.json` |
+| CPU sma NUFFT / DFT | `results/interferometer/mge/sma/jax_cpu_dense_fp64_nufft/local_laptop/breakdown.json`, `mge_dft_breakdown_sma_v2026.8.17.1.json` |
 | CPU alma / alma_high | `mge_breakdown_alma_v2026.8.17.1.json`, `mge_breakdown_alma_high_v2026.8.17.1.json` |
 | A100 sma | `interferometer/sma/mge_hpc_a100_fp64.json` |
 | A100 alma | `interferometer/mge_hpc_a100_fp64.json` |

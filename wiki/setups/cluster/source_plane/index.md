@@ -16,6 +16,6 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 
 | Exact configuration | Evidence source | Records |
 |---|---|---|
-| [de80334a2c42ad6dc3c0](0e1f3b11e797fca5ac8a.md) | results/breakdown/cluster/source_plane_breakdown_v2026.7.23.1.json | 12 |
-| [f8ed0d4a341f22830f33](897b7e125071c8dd160c.md) | results/breakdown/cluster/source_plane_breakdown_v2026.7.6.649.json | 8 |
+| [de80334a2c42ad6dc3c0](0e1f3b11e797fca5ac8a.md) | archive/2026/07/hostless_summaries/breakdown/cluster/source_plane_breakdown_v2026.7.23.1.json | 12 |
+| [f8ed0d4a341f22830f33](897b7e125071c8dd160c.md) | archive/2026/07/hostless_summaries/breakdown/cluster/source_plane_breakdown_v2026.7.6.649.json | 8 |
 

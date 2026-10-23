@@ -2,10 +2,10 @@
 
 Issue: [autolens_profiling #297](https://github.com/PyAutoLabs/autolens_profiling/issues/297) (phase 1); [PyAutoArray #568](https://github.com/PyAutoLabs/PyAutoArray/issues/568) (phase 2)  
 Branch: `feature/point-source-cpu-p1` (phase 1); `feature/point-source-cpu-p2` (phase 2, PyAutoArray + autolens_profiling); `feature/point-source-cpu-p3` (phase 3, PyAutoArray + PyAutoLens + autolens_profiling)  
-Status: phases 1–4c **DONE / MERGED**; phase 4c chose MCS 20 for correctness headroom. Single-source only since the human decision of 2026-09-26; historical cluster measurements below belong to `cluster-pointsolver-speed`. The extent sanity check shipped as PyAutoLens#764 (released 2026.10.4.1); per-package settings remain unissued. The source-plane inference member autolens_inference#15 closed on 2026-10-02 (#17 merged). The completion evidence is at the end of this ledger (2026-10-04). See the [campaign page](../../wiki/campaigns/point_source_image_plane_cpu.md) for current phase status.
-Instrument: [`scripts/point_source_image/likelihood_breakdown/image_plane.py`](../../scripts/point_source_image/likelihood_breakdown/image_plane.py)
-(shipped in #293, see [point_source_shared_likelihood_breakdown.md](point_source_shared_likelihood_breakdown.md))
-and [`scripts/cluster/likelihood_breakdown/image_plane.py`](../../scripts/cluster/likelihood_breakdown/image_plane.py)
+Status: phases 1–4c **DONE / MERGED**; phase 4c chose MCS 20 for correctness headroom. Single-source only since the human decision of 2026-09-26; historical cluster measurements below belong to `cluster-pointsolver-speed`. The extent sanity check shipped as PyAutoLens#764 (released 2026.10.4.1); per-package settings remain unissued. The source-plane inference member autolens_inference#15 closed on 2026-10-02 (#17 merged). The completion evidence is at the end of this ledger (2026-10-04). See the [campaign page](point_source_image_plane_cpu.md) for current phase status.
+Instrument: [`scripts/point_source_image/likelihood_breakdown/image_plane.py`](../../../../scripts/point_source_image/image_plane/likelihood_breakdown.py)
+(shipped in #293, see [point_source_shared_likelihood_breakdown.md](../../point_source_shared_likelihood_breakdown.md))
+and [`scripts/cluster/likelihood_breakdown/image_plane.py`](../../../../scripts/cluster/image_plane/likelihood_breakdown.py)
 
 This campaign aims to make the single-source JAX-CPU PointSolver image-plane
 likelihood cheaper. Earlier phases also measured the 13-component, two-source
@@ -16,7 +16,7 @@ RAL node and records the unoptimized library revisions. Phase 2 tests the single
 reported lever, the JAX-only throwaway `jnp.unique` vertex deduplication. Phases
 3–4 are chosen only by what the measurements show. A September 17 study reported
 large gains, but they are **hypotheses to reproduce**, not targets (see
-[the reported evidence](point_source_cpu_2026_09_17_reported/README.md)).
+[the reported evidence](../../../../archive/2026/09/point_source_cpu_2026_09_17_reported/README.md)).
 
 ## Frozen unoptimized baseline — the revisions the GPU campaign must reproduce
 
@@ -164,7 +164,7 @@ are the fused solved value.
   the fused row, though: independently jitted programs get different fusion, and
   the fused program shares work between systems. See the prefix-versus-fused
   caveat in
-  [point_source_shared_likelihood_breakdown.md](point_source_shared_likelihood_breakdown.md#reading-the-rows).
+  [point_source_shared_likelihood_breakdown.md](../../point_source_shared_likelihood_breakdown.md#reading-the-rows).
   Only a device trace of the fused program can attribute its time.
 - On RAL the point-source step-0 ray-trace prefix alone steadies at 22.48 ms of
   the 24.69 ms fused call, and every later prefix sits at 22–24 ms. This fits
@@ -175,8 +175,8 @@ are the fused solved value.
   (40.0 → 8.1 ms) on the simple likelihood and 2.4× (117 → 48 ms / source) on the
   cluster solve from removing the throwaway `jnp.unique`. Those came from a
   monkeypatched scratch harness on a loaded laptop. They are **reported**
-  ([folder](point_source_cpu_2026_09_17_reported/README.md),
-  [note](point_source_cpu_2026_09_17_reported/pointsolver_cpu_research_note.md)),
+  ([folder](../../../../archive/2026/09/point_source_cpu_2026_09_17_reported/README.md),
+  [note](../../../../archive/2026/09/point_source_cpu_2026_09_17_reported/pointsolver_cpu_research_note.md)),
   not reproduced. Phase 2 must reproduce them on RAL against the baseline above.
   Its steady cluster solves of 110–115 ms are close to the reported
   117–120 ms "current" figures, but those were laptop medians from another
@@ -269,23 +269,23 @@ sinfo -p ral,gpu -N -o "%N %t %C %O"      # ral must be idle; fallback: --partit
 sbatch submit_breakdown_point_source_image_plane_ral_cpu_fp64
 ```
 
-The submit ([`hpc/batch_cpu/submit_breakdown_point_source_image_plane_ral_cpu_fp64`](../../hpc/batch_cpu/submit_breakdown_point_source_image_plane_ral_cpu_fp64))
+The submit ([`hpc/batch_cpu/submit_breakdown_point_source_image_plane_ral_cpu_fp64`](../../../../hpc/batch_cpu/submit_breakdown_point_source_image_image_plane_ral_cpu_fp64))
 runs both legs with `python3 -u … --config-name hpc_ral_cpu_fp64`. Job 350580
 produced:
 
-- [`results/breakdown/point_source_image/image_plane_hpc_ral_cpu_fp64.json`](../breakdown/point_source_image/image_plane_hpc_ral_cpu_fp64.json) and [`.png`](../breakdown/point_source_image/image_plane_hpc_ral_cpu_fp64.png)
-- [`results/breakdown/cluster/image_plane_hpc_ral_cpu_fp64.json`](../breakdown/cluster/image_plane_hpc_ral_cpu_fp64.json) and [`.png`](../breakdown/cluster/image_plane_hpc_ral_cpu_fp64.png)
-- the job log [`point_source_cpu_2026_09_23_ral_job_350580.out`](../logs/point_source_image/point_source_cpu_2026_09_23_ral_job_350580.out)
+- [`results/point_source_image/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/breakdown.json`](../../../../results/point_source_image/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/breakdown.json) and [`.png`](../../../../results/point_source_image/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/breakdown.png)
+- [`results/breakdown/cluster/image_plane_hpc_ral_cpu_fp64.json`](../../../../results/breakdown/cluster/image_plane_hpc_ral_cpu_fp64.json) and [`.png`](../../../../results/breakdown/cluster/image_plane_hpc_ral_cpu_fp64.png)
+- the job log [`point_source_cpu_2026_09_23_ral_job_350580.out`](../../../../results/misc/logs/point_source_image/point_source_cpu_2026_09_23_ral_job_350580.out)
 
 The auto-simulate step also wrote a `results/simulators/cluster_summary_v2026.8.17.1.*`
 on RAL; it was not harvested. The laptop counterparts are
-[`point_source_image/image_plane_local_cpu_fp64.json`](../breakdown/point_source_image/image_plane_local_cpu_fp64.json)
-(#293) and [`cluster/image_plane_local_cpu_fp64.json`](../breakdown/cluster/image_plane_local_cpu_fp64.json).
+[`point_source_image/image_plane_local_cpu_fp64.json`](../../../../results/point_source_image/image_plane/simple/jax_cpu_na_fp64/local_laptop/breakdown.json)
+(#293) and [`cluster/image_plane_local_cpu_fp64.json`](../../../../results/breakdown/cluster/image_plane_local_cpu_fp64.json).
 
 ### Follow-ups found in phase 1 (not fixed)
 
 - **`check_submits.py` misses `python3 -u`.** In
-  [`scripts/misc/wall/check_submits.py`](../../scripts/misc/wall/check_submits.py),
+  [`scripts/misc/wall/check_submits.py`](../../../../scripts/misc/wall/check_submits.py),
   the `_PYTHON_CALL` regex `python3?\s+(scripts/…\.py)` does not match
   `python3 -u scripts/…`. For every `-u` submit, `cells_run()` is empty, so the
   WALL-BASIS cell-coverage rule is **silently skipped**. That affects 87
@@ -308,7 +308,7 @@ Library issue: [PyAutoArray #568](https://github.com/PyAutoLabs/PyAutoArray/issu
 Library branch: PyAutoArray `feature/point-source-cpu-p2` (on main `11b93476`), with
 commits `273e152e` (the fix) and `25894d10` (the tests). Profiling branch:
 `feature/point-source-cpu-p2`. Instrument:
-[`scripts/point_source_image/likelihood_breakdown/vertex_dedup_ab.py`](../../scripts/point_source_image/likelihood_breakdown/vertex_dedup_ab.py).
+[`scripts/point_source_image/likelihood_breakdown/vertex_dedup_ab.py`](../../../../scripts/point_source_image/image_plane/vertex_dedup_ab.py).
 
 ### Mechanism (research note §3, now confirmed on current code)
 
@@ -376,7 +376,7 @@ came from `CoordinateArrayTriangles._vertices_and_indices`, which on main called
   the cell ran 5. The 100 samples per route still give bootstrap CIs of ±2 % on
   the ratio, so this does not change the decision.
 - **Provenance defect in the laptop JSON (not edited).** In the committed
-  [`vertex_dedup_ab_local_cpu_fp64.json`](../breakdown/point_source_image/vertex_dedup_ab_local_cpu_fp64.json),
+  [`vertex_dedup_ab_local_cpu_fp64.json`](../../../../results/point_source_image/image_plane/simple/jax_cpu_na_fp64/local_laptop/experiments/vertex_dedup_ab/breakdown.json),
   the provenance strings `control_source.body` and `nodedup_body` hold the
   **wrong function texts**: `_profiling_root` and the control body respectively.
   The script was edited during the run, and `inspect.getsource` then read stale
@@ -582,11 +582,11 @@ regression**.
   It sets a ~4 % floor on what this protocol can resolve on GPU. The
   control/nodedup effect is 20–25× that floor.
 
-  JSON [`vertex_dedup_ab_hpc_ral_a100_fp64.json`](../breakdown/point_source_image/vertex_dedup_ab_hpc_ral_a100_fp64.json)
-  and [`.png`](../breakdown/point_source_image/vertex_dedup_ab_hpc_ral_a100_fp64.png).
-  Log [`point_source_cpu_2026_09_24_ral_job_350587_vertex_dedup_ab_a100.out`](../logs/point_source_image/point_source_cpu_2026_09_24_ral_job_350587_vertex_dedup_ab_a100.out),
+  JSON [`vertex_dedup_ab_hpc_ral_a100_fp64.json`](../../../../results/point_source_image/image_plane/simple/jax_gpu_na_fp64/hpc_a100/experiments/vertex_dedup_ab/breakdown.json)
+  and [`.png`](../../../../results/point_source_image/image_plane/simple/jax_gpu_na_fp64/hpc_a100/experiments/vertex_dedup_ab/breakdown.png).
+  Log [`point_source_cpu_2026_09_24_ral_job_350587_vertex_dedup_ab_a100.out`](../../../../results/misc/logs/point_source_image/point_source_cpu_2026_09_24_ral_job_350587_vertex_dedup_ab_a100.out),
   with an empty stderr. Submit
-  [`hpc/batch_gpu/submit_breakdown_point_source_vertex_dedup_ab_a100_fp64`](../../hpc/batch_gpu/submit_breakdown_point_source_vertex_dedup_ab_a100_fp64).
+  [`hpc/batch_gpu/submit_breakdown_point_source_vertex_dedup_ab_a100_fp64`](../../../../hpc/batch_gpu/submit_breakdown_point_source_image_vertex_dedup_ab_a100_fp64).
   This JSON's `control_source.body` and `nodedup_body` are correct. The cell now
   captures them at import, with a bytecode hash; see the follow-up below.
 
@@ -703,18 +703,18 @@ sbatch submit_breakdown_point_source_vertex_dedup_ab_ral_cpu_fp64
 ```
 
 The submit is
-[`hpc/batch_cpu/submit_breakdown_point_source_vertex_dedup_ab_ral_cpu_fp64`](../../hpc/batch_cpu/submit_breakdown_point_source_vertex_dedup_ab_ral_cpu_fp64).
+[`hpc/batch_cpu/submit_breakdown_point_source_vertex_dedup_ab_ral_cpu_fp64`](../../../../hpc/batch_cpu/submit_breakdown_point_source_image_vertex_dedup_ab_ral_cpu_fp64).
 It uses `ral`, 8 CPUs, a fresh per-job JAX cache, and prints provenance and
 affinity. The absent `dataset/cluster/simple` is auto-simulated, as in phase 1.
 Job 350582 produced:
 
-- [`results/breakdown/point_source_image/vertex_dedup_ab_hpc_ral_cpu_fp64.json`](../breakdown/point_source_image/vertex_dedup_ab_hpc_ral_cpu_fp64.json) and [`.png`](../breakdown/point_source_image/vertex_dedup_ab_hpc_ral_cpu_fp64.png)
-- the job log [`point_source_cpu_2026_09_23_ral_job_350582_vertex_dedup_ab.out`](../logs/point_source_image/point_source_cpu_2026_09_23_ral_job_350582_vertex_dedup_ab.out)
+- [`results/point_source_image/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/vertex_dedup_ab/breakdown.json`](../../../../results/point_source_image/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/vertex_dedup_ab/breakdown.json) and [`.png`](../../../../results/point_source_image/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/vertex_dedup_ab/breakdown.png)
+- the job log [`point_source_cpu_2026_09_23_ral_job_350582_vertex_dedup_ab.out`](../../../../results/misc/logs/point_source_image/point_source_cpu_2026_09_23_ral_job_350582_vertex_dedup_ab.out)
   (stderr held only the benign `No blurring_image provided` warning)
 
 The laptop witness is
-[`vertex_dedup_ab_local_cpu_fp64.json`](../breakdown/point_source_image/vertex_dedup_ab_local_cpu_fp64.json)
-and [`.png`](../breakdown/point_source_image/vertex_dedup_ab_local_cpu_fp64.png).
+[`vertex_dedup_ab_local_cpu_fp64.json`](../../../../results/point_source_image/image_plane/simple/jax_cpu_na_fp64/local_laptop/experiments/vertex_dedup_ab/breakdown.json)
+and [`.png`](../../../../results/point_source_image/image_plane/simple/jax_cpu_na_fp64/local_laptop/experiments/vertex_dedup_ab/breakdown.png).
 Library: PyAutoArray `feature/point-source-cpu-p2`, commits `273e152e` (fix)
 and `25894d10` (tests), on `11b93476`.
 
@@ -1024,14 +1024,14 @@ cd hpc/batch_cpu && sbatch submit_breakdown_point_source_static_lattice_ab_ral_c
 cd ../batch_gpu && sbatch submit_breakdown_point_source_static_lattice_ab_a100_fp64
 ```
 
-JSONs and PNGs: [`static_lattice_ab_hpc_ral_cpu_fp64`](../breakdown/point_source_image/static_lattice_ab_hpc_ral_cpu_fp64.json)
-([png](../breakdown/point_source_image/static_lattice_ab_hpc_ral_cpu_fp64.png)),
-[`static_lattice_ab_constant_folding_hpc_ral_cpu_fp64`](../breakdown/point_source_image/static_lattice_ab_constant_folding_hpc_ral_cpu_fp64.json)
-([png](../breakdown/point_source_image/static_lattice_ab_constant_folding_hpc_ral_cpu_fp64.png)),
-[`static_lattice_ab_hpc_ral_a100_fp64`](../breakdown/point_source_image/static_lattice_ab_hpc_ral_a100_fp64.json)
-([png](../breakdown/point_source_image/static_lattice_ab_hpc_ral_a100_fp64.png)).
-Logs: [`point_source_cpu_2026_09_24_ral_job_350636_static_lattice_ab.out`](../logs/point_source_image/point_source_cpu_2026_09_24_ral_job_350636_static_lattice_ab.out),
-[`point_source_cpu_2026_09_24_ral_job_350637_static_lattice_ab_a100.out`](../logs/point_source_image/point_source_cpu_2026_09_24_ral_job_350637_static_lattice_ab_a100.out).
+JSONs and PNGs: [`static_lattice_ab_hpc_ral_cpu_fp64`](../../../../results/point_source_image/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/static_lattice_ab/breakdown.json)
+([png](../../../../results/point_source_image/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/static_lattice_ab/breakdown.png)),
+[`static_lattice_ab_constant_folding_hpc_ral_cpu_fp64`](../../../../results/point_source_image/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/static_lattice_ab_constant_folding/breakdown.json)
+([png](../../../../results/point_source_image/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/static_lattice_ab_constant_folding/breakdown.png)),
+[`static_lattice_ab_hpc_ral_a100_fp64`](../../../../results/point_source_image/image_plane/simple/jax_gpu_na_fp64/hpc_a100/experiments/static_lattice_ab/breakdown.json)
+([png](../../../../results/point_source_image/image_plane/simple/jax_gpu_na_fp64/hpc_a100/experiments/static_lattice_ab/breakdown.png)).
+Logs: [`point_source_cpu_2026_09_24_ral_job_350636_static_lattice_ab.out`](../../../../results/misc/logs/point_source_image/point_source_cpu_2026_09_24_ral_job_350636_static_lattice_ab.out),
+[`point_source_cpu_2026_09_24_ral_job_350637_static_lattice_ab_a100.out`](../../../../results/misc/logs/point_source_image/point_source_cpu_2026_09_24_ral_job_350637_static_lattice_ab_a100.out).
 
 ## Phase 4 — profile the residue and iterate — NOT STARTED
 
@@ -1080,8 +1080,8 @@ before it is timed.
 Cell: `scripts/point_source_image/likelihood_breakdown/image_plane.py`, `--config-name hpc_ral_cpu_fp64_p4`.
 At about 2 ms, one run cannot separate a stage from noise, so the job runs the cell 5 times on the
 same node. The committed row is
-[`image_plane_hpc_ral_cpu_fp64_p4.json`](../breakdown/point_source_image/image_plane_hpc_ral_cpu_fp64_p4.json)
-([png](../breakdown/point_source_image/image_plane_hpc_ral_cpu_fp64_p4.png)); the 4 replicates are in the
+[`image_plane_hpc_ral_cpu_fp64_p4.json`](../../../../results/point_source_image/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/p4/breakdown.json)
+([png](../../../../results/point_source_image/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/p4/breakdown.png)); the 4 replicates are in the
 gitignored `output/` tree.
 
 - **Fused solved: median 2.095 ms** across the 5 runs (1.988–2.198; the committed row 2.198). Plain: 1.857 ms.
@@ -1110,11 +1110,11 @@ counts the `vertices[indices]` gather as trace. The sweep measures the corrected
 
 ### Solver-config sweep (job 356367)
 
-- Cell: [`scripts/point_source_image/likelihood_breakdown/solver_config_sweep.py`](../../scripts/point_source_image/likelihood_breakdown/solver_config_sweep.py).
-- Submit: [`submit_breakdown_point_source_image_solver_config_sweep_ral_cpu_fp64`](../../hpc/batch_cpu/submit_breakdown_point_source_image_solver_config_sweep_ral_cpu_fp64).
-- JSON: [`solver_config_sweep_hpc_ral_cpu_fp64.json`](../breakdown/point_source_image/solver_config_sweep_hpc_ral_cpu_fp64.json)
-  ([png](../breakdown/point_source_image/solver_config_sweep_hpc_ral_cpu_fp64.png)).
-- Log: [`point_source_cpu_2026_09_26_ral_job_356367_solver_config_sweep.out`](../logs/point_source_image/point_source_cpu_2026_09_26_ral_job_356367_solver_config_sweep.out).
+- Cell: [`scripts/point_source_image/likelihood_breakdown/solver_config_sweep.py`](../../../../scripts/point_source_image/image_plane/solver_config_sweep.py).
+- Submit: [`submit_breakdown_point_source_image_solver_config_sweep_ral_cpu_fp64`](../../../../hpc/batch_cpu/submit_breakdown_point_source_image_solver_config_sweep_ral_cpu_fp64).
+- JSON: [`solver_config_sweep_hpc_ral_cpu_fp64.json`](../../../../results/misc/likelihood_breakdown/point_source_image/solver_config_sweep_hpc_ral_cpu_fp64.json)
+  ([png](../../../../results/misc/likelihood_breakdown/point_source_image/solver_config_sweep_hpc_ral_cpu_fp64.png)).
+- Log: [`point_source_cpu_2026_09_26_ral_job_356367_solver_config_sweep.out`](../../../../results/misc/logs/point_source_image/point_source_cpu_2026_09_26_ral_job_356367_solver_config_sweep.out).
 
 **Protocol.**
 - 26 configurations of the production `FitPositionsImagePairAllSolved` likelihood. Each is its own
@@ -1281,8 +1281,8 @@ sbatch submit_breakdown_point_source_image_solver_config_sweep_ral_cpu_fp64     
 # or from the laptop: hpc/sync push, hpc/sync submit --cpu <submit_name>, then hpc/sync pull
 ```
 
-Step-1 log: [`point_source_cpu_2026_09_26_ral_job_356365_image_plane_p4.out`](../logs/point_source_image/point_source_cpu_2026_09_26_ral_job_356365_image_plane_p4.out);
-submit [`submit_breakdown_point_source_image_image_plane_p4_ral_cpu_fp64`](../../hpc/batch_cpu/submit_breakdown_point_source_image_image_plane_p4_ral_cpu_fp64).
+Step-1 log: [`point_source_cpu_2026_09_26_ral_job_356365_image_plane_p4.out`](../../../../results/misc/logs/point_source_image/point_source_cpu_2026_09_26_ral_job_356365_image_plane_p4.out);
+submit [`submit_breakdown_point_source_image_image_plane_p4_ral_cpu_fp64`](../../../../hpc/batch_cpu/submit_breakdown_point_source_image_image_plane_p4_ral_cpu_fp64).
 
 ### Follow-ups
 
@@ -1362,8 +1362,8 @@ This ran on `euclid-ral-compute-10-4`, the phase-4a host, from the `ral` partiti
 at 11:59, pending until the queue cleared, and finished at 15:48 with a wall time of 480 s. The job
 had 8 CPUs (`sched_affinity` 8), fp64, NPROC 8 and BLAS 1, and it passes `all_gates_pass: true`, with
 provenance asserted: PyAutoArray `c13b2d73` from the branch clone, profiling `311e690`. JSON
-[`solver_config_sweep_step0_hpc_ral_cpu_fp64.json`](../breakdown/point_source_image/solver_config_sweep_step0_hpc_ral_cpu_fp64.json)
-(`quotable: true`); log [`point_source_cpu_2026_09_27_ral_job_357321_step0_route_ab_8490h_cpu.out`](../logs/point_source_image/point_source_cpu_2026_09_27_ral_job_357321_step0_route_ab_8490h_cpu.out).
+[`solver_config_sweep_step0_hpc_ral_cpu_fp64.json`](../../../../results/misc/likelihood_breakdown/point_source_image/solver_config_sweep_step0_hpc_ral_cpu_fp64.json)
+(`quotable: true`); log [`point_source_cpu_2026_09_27_ral_job_357321_step0_route_ab_8490h_cpu.out`](../../../../results/misc/logs/point_source_image/point_source_cpu_2026_09_27_ral_job_357321_step0_route_ab_8490h_cpu.out).
 
 **The node was heavily loaded.** Its loadavg was 199.9 at the start and 189.9 at the end (236
 cores). Phase 4a's job 356367 ran on the same node at 0.00 → 1.23. The routes are interleaved round
@@ -1396,9 +1396,9 @@ The known fallback: CPU-only on an idle `gpu`-partition node, no `--gres`, `eucl
 (8 CPUs, `sched_affinity` 8, fp64, NPROC 8, BLAS 1, phase-1 XLA_FLAGS; loadavg 0.29 → 1.48; wall
 417 s). **A different CPU from phase 4a's 8490H: the within-node ×gather ratios are valid, the
 absolute ms are not comparable to phase 4a.** JSON
-[`solver_config_sweep_step0_hpc_ral_cpu_epyc7702_fp64.json`](../breakdown/point_source_image/solver_config_sweep_step0_hpc_ral_cpu_epyc7702_fp64.json)
+[`solver_config_sweep_step0_hpc_ral_cpu_epyc7702_fp64.json`](../../../../results/misc/likelihood_breakdown/point_source_image/solver_config_sweep_step0_hpc_ral_cpu_epyc7702_fp64.json)
 (`quotable: "supplementary"`, `host_note` added post-run);
-log [`point_source_cpu_2026_09_27_ral_job_357335_step0_route_ab_epyc7702_cpu.out`](../logs/point_source_image/point_source_cpu_2026_09_27_ral_job_357335_step0_route_ab_epyc7702_cpu.out).
+log [`point_source_cpu_2026_09_27_ral_job_357335_step0_route_ab_epyc7702_cpu.out`](../../../../results/misc/logs/point_source_image/point_source_cpu_2026_09_27_ral_job_357335_step0_route_ab_epyc7702_cpu.out).
 
 | route | median ms | × gather [90 % CI] | containment ms | route inputs ms | ray trace ms | vmap-1 / 4 / 16 ms/L | compile s | XLA temp KB | FLOPs M |
 |---|---:|---:|---:|---:|---:|---|---:|---:|---:|
@@ -1420,8 +1420,8 @@ log [`point_source_cpu_2026_09_27_ral_job_357335_step0_route_ab_epyc7702_cpu.out
 
 `euclid-ral-gpu-1`, NVIDIA A100 80 GB PCIe (driver 610.57.04), host CPU EPYC 7702, `JAX_PLATFORMS=cuda`
 and `JAX_PLATFORM_NAME=cuda`, the job asserted the `gpu` backend; wall 432 s. JSON
-[`solver_config_sweep_step0_hpc_ral_a100_fp64.json`](../breakdown/point_source_image/solver_config_sweep_step0_hpc_ral_a100_fp64.json);
-log [`point_source_cpu_2026_09_27_ral_job_357322_step0_route_ab_a100.out`](../logs/point_source_image/point_source_cpu_2026_09_27_ral_job_357322_step0_route_ab_a100.out).
+[`solver_config_sweep_step0_hpc_ral_a100_fp64.json`](../../../../results/misc/likelihood_breakdown/point_source_image/solver_config_sweep_step0_hpc_ral_a100_fp64.json);
+log [`point_source_cpu_2026_09_27_ral_job_357322_step0_route_ab_a100.out`](../../../../results/misc/logs/point_source_image/point_source_cpu_2026_09_27_ral_job_357322_step0_route_ab_a100.out).
 
 | route | median ms | × gather [90 % CI] | containment ms | vmap-1 / 4 / 16 ms/L | compile s | XLA temp KB |
 |---|---:|---:|---:|---|---:|---:|
@@ -1522,8 +1522,8 @@ no unexplained change, compile ≤ +20 % and at most about +5 % on the scalar me
 `all_gates_pass: true`. Every library came from the shared mirror, asserted: PyAutoArray `e281abf3`
 (includes #580), PyAutoLens `dcbd4b71`, PyAutoGalaxy `ba8a08fa`, PyAutoFit `c156a9d8`, PyAutoNerves
 `bf104102`; profiling `d6757ad`. JSON
-[`solver_config_sweep_mcs_hpc_ral_cpu_fp64.json`](../breakdown/point_source_image/solver_config_sweep_mcs_hpc_ral_cpu_fp64.json);
-log [`point_source_cpu_2026_09_27_ral_job_358976_mcs_headroom_8490h_cpu.out`](../logs/point_source_image/point_source_cpu_2026_09_27_ral_job_358976_mcs_headroom_8490h_cpu.out).
+[`solver_config_sweep_mcs_hpc_ral_cpu_fp64.json`](../../../../results/misc/likelihood_breakdown/point_source_image/solver_config_sweep_mcs_hpc_ral_cpu_fp64.json);
+log [`point_source_cpu_2026_09_27_ral_job_358976_mcs_headroom_8490h_cpu.out`](../../../../results/misc/logs/point_source_image/point_source_cpu_2026_09_27_ral_job_358976_mcs_headroom_8490h_cpu.out).
 
 **The node was loaded**, with loadavg ≈ 206–210 on 236 cores. The rows are interleaved round by
 round, so the ratios stand. The absolute ms are not comparable to phase 4a.
@@ -1558,8 +1558,8 @@ round, so the ratios stand. The absolute ms are not comparable to phase 4a.
   `hpc/batch_gpu/submit_breakdown_point_source_image_solver_config_sweep_mcs_a100_fp64`.
   `all_gates_pass: true`.
 - JSON
-  [`solver_config_sweep_mcs_hpc_ral_a100_fp64.json`](../breakdown/point_source_image/solver_config_sweep_mcs_hpc_ral_a100_fp64.json);
-  log [`point_source_cpu_2026_09_27_ral_job_359102_mcs_headroom_a100.out`](../logs/point_source_image/point_source_cpu_2026_09_27_ral_job_359102_mcs_headroom_a100.out).
+  [`solver_config_sweep_mcs_hpc_ral_a100_fp64.json`](../../../../results/misc/likelihood_breakdown/point_source_image/solver_config_sweep_mcs_hpc_ral_a100_fp64.json);
+  log [`point_source_cpu_2026_09_27_ral_job_359102_mcs_headroom_a100.out`](../../../../results/misc/logs/point_source_image/point_source_cpu_2026_09_27_ral_job_359102_mcs_headroom_a100.out).
 
 | row | median ms | row / control | control / row [90 % CI] | paired-round | vmap-1 / 4 / 16 ms/L | compile s (vs ctrl) | XLA temp KB |
 |---|---:|---:|---:|---:|---|---:|---:|
@@ -1760,7 +1760,7 @@ The fiducial log L `7.743201200876812` (CPU, jit) is bit-identical across phases
 | Fit / χ² / β\* / magnification-filter share | **No lever.** It is part of the ~0.6M FLOP residue after IP-3 | IP-2/IP-3 budget |
 | Numba / sparse rewrite | **Not pursued.** No unexplained bottleneck remained after IP-3 | phase-1 disposition |
 | Warm starts / cross-call solver state | **Rejected.** The likelihood stays pure for sampler order, vmap and custom_jvp | phase 1 |
-| Cluster dPIE/NFW deflections | **Moved out** to `cluster-pointsolver-speed` (human, 2026-09-26) | [Cluster PointSolver](../../wiki/campaigns/cluster_pointsolver.md) |
+| Cluster dPIE/NFW deflections | **Moved out** to `cluster-pointsolver-speed` (human, 2026-09-26) | [Cluster PointSolver](../../cluster/image_plane/cluster_pointsolver.md) |
 | Unmeasured controls | vmap 1/4/16 measured in IP-4b/4c. Still unmeasured: the post-4b `constant_folding` A/B, repeated (median) compile timings, and cluster direct deflections | Pulse task |
 
 > **Re-judgement, 2026-10-09 (timing-noise audit #362, fix phases 3 and 9; facts, nothing

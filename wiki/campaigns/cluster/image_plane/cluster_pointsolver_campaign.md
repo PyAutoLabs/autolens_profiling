@@ -2,7 +2,7 @@
 
 **Campaign:** `cluster-pointsolver` (epic `cluster-pointsolver-speed`). Pulse task
 [cluster_pointsolver_speed](https://github.com/PyAutoLabs/PyAutoPulse/blob/main/tasks/cluster_pointsolver_speed.md).
-Wiki page: [cluster_pointsolver.md](../../wiki/campaigns/cluster_pointsolver.md).
+Wiki page: [cluster_pointsolver.md](cluster_pointsolver.md).
 **Phase 1:** cluster-scale robust `PointSolver` settings,
 [autolens_profiling#436](https://github.com/PyAutoLabs/autolens_profiling/issues/436).
 Mind prompt `active/cluster_pointsolver_robust_settings_p1.md`.
@@ -121,7 +121,7 @@ uses `FitPositions*` or a chi-squared. The sweep judges solver positions against
 
 ## Supported-settings table (all 25 rows)
 
-The source is `results/breakdown/cluster/robust_settings_sweep_simple_hpc_ral_cpu_fp64.json`
+The source is `results/cluster/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/robust_settings_sweep/breakdown.json`
 (`table`, `rows`), with a PNG beside it. The tolerance is the row's last-step triangle side.
 Overflow means the uncapped count is above the cap on any step. Every row passes the prior set,
 except `tight` (designed to fail) and `control_eager` (not run). **No row is admissible.**
@@ -207,33 +207,33 @@ triangle side of every row tested.
 
 ## Figures
 
-All figures are under [`results/breakdown/cluster/figures/`](../breakdown/cluster/figures/).
+All figures are under [`results/breakdown/cluster/figures/`](../../../../results/cluster/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/).
 They are local renders on the laptop, not timings.
 
 - **Oracle verification**
-  ([`oracle_figure.py`](../../scripts/cluster/image_plane/oracle_figure.py)). For each plane, the
+  ([`oracle_figure.py`](../../../../scripts/cluster/image_plane/oracle_figure.py)). For each plane, the
   figure shows the oracle roots, the critical curves and caustics, one panel per row (control,
   `production_s0.5_p0.001`, `bbox_s2_p0.001`) with the verdict of each root, and zooms on the
   close groups:
-  [53/plane 1](../breakdown/cluster/figures/oracle_figure_simple_hpc_ral_cpu_fp64_draw53_plane1.png),
-  [53/plane 2](../breakdown/cluster/figures/oracle_figure_simple_hpc_ral_cpu_fp64_draw53_plane2.png),
-  [73/plane 1](../breakdown/cluster/figures/oracle_figure_simple_hpc_ral_cpu_fp64_draw73_plane1.png),
-  [73/plane 2](../breakdown/cluster/figures/oracle_figure_simple_hpc_ral_cpu_fp64_draw73_plane2.png),
-  [81/plane 1](../breakdown/cluster/figures/oracle_figure_simple_hpc_ral_cpu_fp64_draw81_plane1.png),
-  [81/plane 2](../breakdown/cluster/figures/oracle_figure_simple_hpc_ral_cpu_fp64_draw81_plane2.png).
+  [53/plane 1](../../../../results/cluster/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/oracle_figure_figures_draw53_plane1/breakdown.png),
+  [53/plane 2](../../../../results/cluster/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/oracle_figure_figures_draw53_plane2/breakdown.png),
+  [73/plane 1](../../../../results/cluster/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/oracle_figure_figures_draw73_plane1/breakdown.png),
+  [73/plane 2](../../../../results/cluster/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/oracle_figure_figures_draw73_plane2/breakdown.png),
+  [81/plane 1](../../../../results/cluster/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/oracle_figure_figures_draw81_plane1/breakdown.png),
+  [81/plane 2](../../../../results/cluster/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/oracle_figure_figures_draw81_plane2/breakdown.png).
 - **The library's own `point_solver.png`**
-  ([`solver_figure.py`](../../scripts/cluster/image_plane/solver_figure.py)). This is the readable
+  ([`solver_figure.py`](../../../../scripts/cluster/image_plane/solver_figure.py)). This is the readable
   cluster visualizer of PyAutoLens#795 (`b1754a7ec`; local canonical checkout at `b273f9c7d`). The
   figure re-solves the row's NumPy steps on the draw's tracer and draws the oracle roots as the
   hollow "observed" circles, so a missed root is a circle with no solved cross:
   - control:
-    [53](../breakdown/cluster/figures/solver_figure_simple_hpc_ral_cpu_fp64_control_draw53_source0.png),
-    [73](../breakdown/cluster/figures/solver_figure_simple_hpc_ral_cpu_fp64_control_draw73_source0.png),
-    [81](../breakdown/cluster/figures/solver_figure_simple_hpc_ral_cpu_fp64_control_draw81_source1.png)
+    [53](../../../../results/cluster/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/solver_figure_figures_control_draw53_source0/breakdown.png),
+    [73](../../../../results/cluster/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/solver_figure_figures_control_draw73_source0/breakdown.png),
+    [81](../../../../results/cluster/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/solver_figure_figures_control_draw81_source1/breakdown.png)
   - initial scale 0.5″:
-    [53](../breakdown/cluster/figures/solver_figure_simple_hpc_ral_cpu_fp64_production_s0.5_p0.001_draw53_source0.png),
-    [73](../breakdown/cluster/figures/solver_figure_simple_hpc_ral_cpu_fp64_production_s0.5_p0.001_draw73_source0.png),
-    [81](../breakdown/cluster/figures/solver_figure_simple_hpc_ral_cpu_fp64_production_s0.5_p0.001_draw81_source1.png)
+    [53](../../../../results/cluster/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/solver_figure_figures_production_s0.5_p0.001_draw53_source0/breakdown.png),
+    [73](../../../../results/cluster/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/solver_figure_figures_production_s0.5_p0.001_draw73_source0/breakdown.png),
+    [81](../../../../results/cluster/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/solver_figure_figures_production_s0.5_p0.001_draw81_source1/breakdown.png)
 
   On draw 73 the control keeps 5 step-0 triangles and the 0.5″ start keeps 7. On draw 81 both
   keep 1 triangle and never see the radial pair.
@@ -256,7 +256,7 @@ JSON and PNG are committed beside the sweep for its wall projection.
 profiling `b39f7ab2` on the private RAL checkout `PyAuto_2026.10.17.1_interf_meas`, Xeon
 Platinum 8490H, `ral` partition, CPU fp64. `sacct`: **FAILED**, elapsed 03:33:07, MaxRSS
 85.5 GB. The log is committed as
-[`cluster_pointsolver_2026_10_18_ral_job_412573_a2744_pilot.out`](../logs/cluster_pointsolver/cluster_pointsolver_2026_10_18_ral_job_412573_a2744_pilot.out)
+[`cluster_pointsolver_2026_10_18_ral_job_412573_a2744_pilot.out`](../../../../results/misc/logs/cluster_pointsolver/cluster_pointsolver_2026_10_18_ral_job_412573_a2744_pilot.out)
 (1951 lines). No JSON was written, so the progress lines below are the whole record: there
 are no per-root positions, no timing rounds and no backend rows.
 
@@ -336,9 +336,9 @@ core (10, 8).
 **Run.** Laptop, CPU fp64, 17 judged draws (truth + 8 prior + 8 stress), wall 810 s, peak
 RSS 1.8 GB. The row set is in the [table above](#439-row-sets-starting-scale-at-production-extent-laptop-diagnostic);
 the JSON is
-[`robust_settings_sweep_viz_cluster_laptop_cpu_fp64.json`](../breakdown/cluster/robust_settings_sweep_viz_cluster_laptop_cpu_fp64.json).
+[`robust_settings_sweep_viz_cluster_laptop_cpu_fp64.json`](../../../../results/misc/likelihood_breakdown/cluster/robust_settings_sweep_viz_cluster_laptop_cpu_fp64.json).
 The `simple` close-pair draws 53/73/81 were re-run at 8 scales
-([`…_simple_draws53_73_81_laptop_cpu_fp64.json`](../breakdown/cluster/robust_settings_sweep_simple_draws53_73_81_laptop_cpu_fp64.json),
+([`…_simple_draws53_73_81_laptop_cpu_fp64.json`](../../../../results/cluster/image_plane/simple/jax_cpu_na_fp64/local_laptop/experiments/robust_settings_sweep_draws53_73_81/breakdown.json),
 `--draw-ids`, 448 s).
 
 **Result.**
@@ -364,9 +364,9 @@ The `simple` close-pair draws 53/73/81 were re-run at 8 scales
    triangle size. The A2744 pilot shows the same thing at row level: 1.0″ misses 2, 0.5″
    misses 3.
 
-**Separation rule** ([`separation_rule.md`](../breakdown/cluster/separation_rule.md),
-[`.json`](../breakdown/cluster/separation_rule.json),
-[`.png`](../breakdown/cluster/separation_rule.png);
+**Separation rule** ([`separation_rule.md`](../../../../results/misc/likelihood_breakdown/cluster/separation_rule.md),
+[`.json`](../../../../results/misc/likelihood_breakdown/cluster/separation_rule.json),
+[`.png`](../../../../results/misc/likelihood_breakdown/cluster/separation_rule.png);
 `scripts/cluster/image_plane/separation_rule.py`). The rule is tested per root and per
 draw-source over 236 draw-sources: the viz run, all 101 phase-1 `simple` draws and the
 53/73/81 re-run, merged by draw id with no conflict. 80 (root, scale) misses were observed.
@@ -427,8 +427,8 @@ so the table gives the smallest c that no miss rules out:
 # on RAL (explicit human authorization per job; never the gpu partition)
 sbatch hpc/batch_cpu/submit_breakdown_cluster_robust_settings_sweep_ral_cpu_fp64
 # laptop, local renders only
-python scripts/cluster/image_plane/oracle_figure.py results/breakdown/cluster/robust_settings_sweep_simple_hpc_ral_cpu_fp64.json --draw 53 73 81
-python scripts/cluster/image_plane/solver_figure.py results/breakdown/cluster/robust_settings_sweep_simple_hpc_ral_cpu_fp64.json --draw 53 73 81
+python scripts/cluster/image_plane/oracle_figure.py results/cluster/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/robust_settings_sweep/breakdown.json --draw 53 73 81
+python scripts/cluster/image_plane/solver_figure.py results/cluster/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/robust_settings_sweep/breakdown.json --draw 53 73 81
 # #439, laptop (CPU fp64; ~14 + ~8 min)
 python scripts/cluster/image_plane/robust_settings_sweep.py --dataset viz_cluster --n-draws 8 --n-stress 8 \
   --scales 1.0,0.7,0.5,0.4,0.37,0.3,0.2 \
@@ -441,10 +441,10 @@ python scripts/cluster/image_plane/robust_settings_sweep.py --dataset simple --d
   --rounds 5 --calls 5 --warm 2 --n-stream 4 --release-executables \
   --config-name draws53_73_81_laptop_cpu_fp64 --output-dir results/breakdown/cluster
 python scripts/cluster/image_plane/separation_rule.py \
-  results/breakdown/cluster/robust_settings_sweep_viz_cluster_laptop_cpu_fp64.json \
-  results/breakdown/cluster/robust_settings_sweep_simple_hpc_ral_cpu_fp64.json \
-  results/breakdown/cluster/robust_settings_sweep_simple_draws53_73_81_laptop_cpu_fp64.json \
-  --a2744-log results/logs/cluster_pointsolver/cluster_pointsolver_2026_10_18_ral_job_412573_a2744_pilot.out
+  results/misc/likelihood_breakdown/cluster/robust_settings_sweep_viz_cluster_laptop_cpu_fp64.json \
+  results/cluster/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/robust_settings_sweep/breakdown.json \
+  results/cluster/image_plane/simple/jax_cpu_na_fp64/local_laptop/experiments/robust_settings_sweep_draws53_73_81/breakdown.json \
+  --a2744-log results/misc/logs/cluster_pointsolver/cluster_pointsolver_2026_10_18_ral_job_412573_a2744_pilot.out
 ```
 
 ## Appendix: Pulse Knowledge draft for `tasks/cluster_pointsolver_speed.md`
@@ -455,8 +455,8 @@ next/updated, the check-in section and the board.
 > ## Knowledge (2026-10-22): phase 1, cluster-scale robust PointSolver settings
 >
 > **Sources.** [autolens_profiling#436](https://github.com/PyAutoLabs/autolens_profiling/issues/436);
-> ledger `results/notes/cluster_pointsolver_campaign.md`; sweep JSON
-> `results/breakdown/cluster/robust_settings_sweep_simple_hpc_ral_cpu_fp64.json` (RAL job 412572,
+> ledger `wiki/campaigns/cluster/image_plane/cluster_pointsolver_campaign.md`; sweep JSON
+> `results/cluster/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/robust_settings_sweep/breakdown.json` (RAL job 412572,
 > Xeon 8490H, CPU fp64, profiling `b39f7ab2`, PyAutoLens `c90eceb0`).
 >
 > **Ground truth.** The oracle is independent of the triangle solver. It samples the multi-plane

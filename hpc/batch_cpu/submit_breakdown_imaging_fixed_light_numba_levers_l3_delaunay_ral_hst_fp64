@@ -119,7 +119,7 @@
 # WHY THE CONTROL IS LEVER 2. Lever 3's commit sits ON TOP OF lever 2, which sits
 # on top of lever 1; a merge-base control would measure all three levers at once
 # and attribute the sum to lever 3. Both prior rows are already measured and
-# recorded (results/notes/fixed_lens_light_levers_2026_09.md: merge base 413.301
+# recorded (wiki/campaigns/imaging/fixed_lens_light_levers_2026_09.md: merge base 413.301
 # -> lever 1 299.709 ms, 1.379x; lever 1 302.709 -> lever 2 267.448 ms, 1.13x),
 # so the A/B this job runs is the INCREMENT lever 3 adds, and the cumulative
 # figure against the merge base is a multiplication of the three rows, computed in

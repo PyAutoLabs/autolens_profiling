@@ -495,6 +495,7 @@ dict_path, chart_path = resolve_output_paths(
     default_basename=(
         f"pixelization_numba_likelihood_summary_{instrument}{_variant_suffix}_v{al_version}"
     ),
+    hints=likelihood_summary,
 )
 dict_path.write_text(json.dumps(likelihood_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")
@@ -502,7 +503,7 @@ print(f"  Bar chart path:        {chart_path} (no per-step chart in runtime vari
 
 # ===================================================================
 # Pinned-value drift record — profiling records drift, it never adjudicates
-# correctness (boundary rule in results/notes/design_lock_in.md).
+# correctness (boundary rule in wiki/campaigns/misc/design_lock_in.md).
 # ===================================================================
 
 _pinned_drift: list = []
@@ -513,7 +514,7 @@ _pinned_drift: list = []
 # this cell's fiducial with the production configuration (mesh, over-sampling,
 # regularization, MGE basis, instance sequence all changed), so the old values
 # describe a model that no longer exists here. They are recorded in
-# `results/notes/production_representative_cells.md` for the historic rows.
+# `wiki/campaigns/imaging/production_representative_cells.md` for the historic rows.
 #
 # The `legacy` pins are the historic values, which the legacy variant no longer
 # reproduces exactly either: the light-profile radial bins moved from [4, 2, 1]

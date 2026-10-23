@@ -18,6 +18,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from catalogue_adapters import metrics, number, pointer, rows
+from results_layout import legacy_of
 
 REGISTRY = "catalogue/registry.json"
 UNKNOWN = "Not recorded in this legacy evidence; no current default substituted."
@@ -359,8 +360,11 @@ def build(root, generated, revision):
             if path in files:
                 raise ValueError(f"Overlapping catalogue source declarations: {path}")
             files[path] = spec["adapter"]
-    for path, adapter in sorted(files.items()):
-        override = next((s for s in reg["overrides"] if path.startswith(s["prefix"])), {})
+    # Moved results keep their pre-move identity (routing, labels, setup ids, order); the
+    # evidence path is where the file lives now (results_layout.py, #442 PR 2).
+    for path, adapter in sorted(files.items(), key=lambda kv: Path(legacy_of(root, kv[0]))):
+        legacy = legacy_of(root, path)
+        override = next((s for s in reg["overrides"] if legacy.startswith(s["prefix"])), {})
         adapter = override.get("adapter", adapter)
         doc = load_json(source_path(root, path))
         source = {
@@ -403,12 +407,12 @@ def build(root, generated, revision):
                 "Findings retained separately until explicit versioned setup bindings exist."
             )
         for payload, base, context in rows(doc, adapter):
-            dataset, model, instrument = route(path, payload, reg)
+            dataset, model, instrument = route(legacy, payload, reg)
             dataset, model = override.get("dataset", dataset), override.get("model", model)
             config = settings(payload, context)
             # Legacy schemas do not promise complete scientific identity. A
             # source/row boundary prevents a false join despite equal partial settings.
-            cid = digest([path, base, config])
+            cid = digest([legacy, base, config])
             setup_id = f"{dataset}/{model}/{instrument or 'unspecified'}/{cid}"
             setup = {
                 "id": setup_id,
@@ -424,7 +428,7 @@ def build(root, generated, revision):
             }
             if instrument is None:
                 setup["unknowns"] = {"instrument": UNKNOWN}
-            ident, prov = identity(payload, path)
+            ident, prov = identity(payload, legacy)
             if adapter == "streaming" and payload.get("outcome") != "OK":
                 setups.append(setup)
                 status = "unusable" if "MEM" in str(payload.get("outcome")) else "failed"
@@ -475,12 +479,12 @@ def build(root, generated, revision):
                         f"{anchor}: no measured software version/revision; cannot satisfy v2 record identity."
                     )
                     continue
-                rid = "measurement/" + digest([path, anchor, axis, metric])
+                rid = "measurement/" + digest([legacy, anchor, axis, metric])
                 emitted.append(
                     {
                         "id": rid,
                         "setup_id": setup_id,
-                        "run_id": "legacy/" + digest([path, base]),
+                        "run_id": "legacy/" + digest([legacy, base]),
                         "axis": axis,
                         "metric": metric,
                         "unit": unit,

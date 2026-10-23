@@ -952,6 +952,7 @@ dict_path, chart_path = resolve_output_paths(
     default_dir=_ROOT / "results" / "breakdown" / "point_source_source",
     default_basename="gradient_mode_crossover_local",
     cell="gradient_mode_crossover",
+    hints=summary,
 )
 dict_path.write_text(json.dumps(_scrub(summary), indent=2))
 

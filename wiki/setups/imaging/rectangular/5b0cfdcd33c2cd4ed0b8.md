@@ -32,7 +32,7 @@ Identity limitations: Isolated to source row: legacy metadata is insufficient fo
 
 ## Evidence
 
-[Original setup artifact](../../../../results/runtime/imaging/pixelization/jwst/pixelization_local_cpu_mp_sparse.json); JSON pointer: `(document root)`.
+[Original setup artifact](../../../../results/imaging/rectangular/jwst/jax_cpu_sparse_mixed/local_laptop/runtime.json); JSON pointer: `(document root)`.
 
 ### Selected references
 
@@ -44,9 +44,9 @@ No selected reference for this exact setup; archive evidence is available below.
 
 | Record | Metric | Value | Unit | Device / precision | Selection | Evidence pointer |
 |---|---|---|---|---|---|---|
-| `measurement/057cbab812a549f0a84a` | vmap.batch_time | {"vmap.batch_time": 28.422692229999665} | s | cpu / mixed | archive support; unreviewed | [artifact](../../../../results/runtime/imaging/pixelization/jwst/pixelization_local_cpu_mp_sparse.json) `/vmap/batch_time` |
-| `measurement/2fcfb2aa0020b24efca8` | vmap.per_call | {"vmap.per_call": 9.474230743333221} | s | cpu / mixed | archive support; unreviewed | [artifact](../../../../results/runtime/imaging/pixelization/jwst/pixelization_local_cpu_mp_sparse.json) `/vmap/per_call` |
-| `measurement/6ce0787aeee8eb6d5b76` | single_jit_block | {"single_jit_block": 9.420377540000118} | s | cpu / mixed | archive support; unreviewed | [artifact](../../../../results/runtime/imaging/pixelization/jwst/pixelization_local_cpu_mp_sparse.json) `/full_pipeline_single_jit` |
+| `measurement/057cbab812a549f0a84a` | vmap.batch_time | {"vmap.batch_time": 28.422692229999665} | s | cpu / mixed | archive support; unreviewed | [artifact](../../../../results/imaging/rectangular/jwst/jax_cpu_sparse_mixed/local_laptop/runtime.json) `/vmap/batch_time` |
+| `measurement/2fcfb2aa0020b24efca8` | vmap.per_call | {"vmap.per_call": 9.474230743333221} | s | cpu / mixed | archive support; unreviewed | [artifact](../../../../results/imaging/rectangular/jwst/jax_cpu_sparse_mixed/local_laptop/runtime.json) `/vmap/per_call` |
+| `measurement/6ce0787aeee8eb6d5b76` | single_jit_block | {"single_jit_block": 9.420377540000118} | s | cpu / mixed | archive support; unreviewed | [artifact](../../../../results/imaging/rectangular/jwst/jax_cpu_sparse_mixed/local_laptop/runtime.json) `/full_pipeline_single_jit` |
 
 </details>
 

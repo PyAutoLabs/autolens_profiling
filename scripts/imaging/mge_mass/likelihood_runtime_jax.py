@@ -657,6 +657,7 @@ dict_path, _chart_path = resolve_output_paths(
     _cli,
     default_dir=_workspace_root / "results" / "runtime" / "imaging" / "mge_mass_jax",
     default_basename=f"mge_mass_jax_likelihood_summary_{instrument}_v{al_version}",
+    hints=summary,
 )
 dict_path.write_text(json.dumps(summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")

@@ -194,6 +194,17 @@ def test_collisions_refuse_to_write(tree, monkeypatch, capsys):
 
 
 def test_repository_map_has_no_collisions_and_covers_the_tree():
+    committed = json.loads((REPO / mm.MAP_PATH).read_text())
+    if mm.applied(REPO, committed):
+        # After the move-only PR (#442 PR 2) the map is frozen: every move is in the tree.
+        moved = [e for e in committed["entries"] if e["new"] != e["old"]]
+        assert all((REPO / e["new"]).is_file() for e in moved)
+        # Nothing is left at an old path except new pointer READMEs (different bytes).
+        assert not any(
+            (REPO / e["old"]).exists() and mm.sha256(REPO, e["old"]) == e["sha256"] for e in moved
+        )
+        assert all((REPO / u["old"]).is_file() for u in committed["unresolved"])
+        return
     doc = mm.build(REPO)
     assert doc["collisions"] == []
     assert doc["counts"]["covered"] == doc["counts"]["tracked_files"]

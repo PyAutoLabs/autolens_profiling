@@ -653,7 +653,7 @@ per-channel inversion rebuild collapses entirely and the residual
 per-channel cost (data vector + NNLS + log-evidence) is small at SMA
 scale. Correctness (shared-vs-unshared parity incl. `jit`) is asserted in
 `autolens_workspace_test/scripts/jax_likelihood_functions/datacube/shared_preloads.py`.
-Raw log: `results/runtime/datacube/shared_preloads_sma_local_cpu_fp64.stdout`.
+Raw log: `results/misc/logs/datacube/shared_preloads_sma_local_cpu_fp64.stdout`.
 
 **Authoritative figure still pending:** re-run `--instrument alma_high`
 with raised `N_CHANNELS` on a quiet A100 (needs the RAL login node). SMA
@@ -678,7 +678,7 @@ primary win. Measured by `multi_dataset/likelihood_runtime/shared_preloads.py`
 As predicted: the ~12% saved is the per-exposure image-mesh ray-trace +
 Delaunay `pure_callback` triangulation; the dominant per-exposure
 inversion work is untouched by design. Raw log:
-`results/runtime/multi_dataset/shared_preloads_hst_local_cpu_fp64.stdout`.
+`results/misc/logs/multi_dataset/shared_preloads_hst_local_cpu_fp64.stdout`.
 Correctness (identical-exposure shared-vs-unshared bit-parity + g+r
 shared-mesh jit) is asserted in
 `autolens_workspace_test/scripts/multi_dataset/jax_likelihood/shared_preloads.py`.

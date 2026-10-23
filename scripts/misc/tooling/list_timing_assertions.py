@@ -2,7 +2,7 @@
 
 The timing-noise audit (autolens_profiling#362) keeps one inventory of every
 place a measured time is compared against a cutoff:
-``results/notes/timing_noise_audit_2026_10.md``. This lister finds those places
+``wiki/campaigns/misc/timing_noise_audit_2026_10.md``. This lister finds those places
 mechanically, so the inventory cannot silently fall behind the code.
 
 It walks every ``*.py`` under ``scripts/`` plus the repo-root helpers with
@@ -58,7 +58,7 @@ def _profiling_root() -> Path:
 
 
 ROOT = _profiling_root()
-NOTE = ROOT / "results" / "notes" / "timing_noise_audit_2026_10.md"
+NOTE = ROOT / "wiki" / "campaigns" / "misc" / "timing_noise_audit_2026_10.md"
 SELF = Path(__file__).resolve()
 
 #: Source text that marks a comparison as being about a measured time.

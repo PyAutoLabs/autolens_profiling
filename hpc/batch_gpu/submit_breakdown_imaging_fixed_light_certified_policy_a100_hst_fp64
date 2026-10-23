@@ -52,7 +52,7 @@
 #
 # The numerical gate — PRE-REGISTERED before submission
 # -----------------------------------------------------
-# Phase 3 (results/notes/hst_gpu_residue_phase3_psf_2026_09.md) placed phase 2's ~2.5e-9
+# Phase 3 (wiki/campaigns/imaging/hst_gpu_residue_phase3_psf_2026_09.md) placed phase 2's ~2.5e-9
 # residual BETWEEN the jit(vmap) and scalar-jit compositions, not in the solver. So each
 # task compiles two library-PDIP references, one per composition, and per lane:
 #   GATED at 1e-9 relative:  the jit(vmap) arm vs the jit(vmap) library PDIP
@@ -83,7 +83,7 @@
 # phase-B leg can collide with a phase-2 harness leg or with another phase-B leg.
 #
 # Every leg starts from an EMPTY JAX compilation cache: a seeded XLA autotune cache
-# silently changes kernels (results/notes/xla_autotune_triton_gemm.md). The
+# silently changes kernels (wiki/campaigns/misc/xla_autotune_triton_gemm.md). The
 # AUTOTUNE_ENTRIES census at the end is the check. --cpus-per-task=4 is kept from
 # phases 1-2: qhull is serial host work and the Delaunay rows measure it.
 #

@@ -424,7 +424,7 @@ has no matrix-free sweep leg at all, only its fiducial. **A crossover above the 
 measured N is not measured and is not extrapolated here.**
 
 *Methodology note.* The committed aggregator
-([`results/sweep/size_sweep_tables.md`](../sweep/size_sweep_tables.md)) builds its
+([`results/misc/likelihood_breakdown/size_sweep_tables.md`](../../../results/misc/likelihood_breakdown/size_sweep_tables.md)) builds its
 matrix-free per-call figure from the **Jacobi-estimate** PCG row; the table above uses the
 **fastest measured** PCG row (usually `exact diag`). Rectangular fiducial: 1462.284 ms
 (aggregator) against 1435.308 ms (here). Both lose to the exact path by ~350×; the choice
@@ -463,8 +463,8 @@ solve, and not the log-dets.
 results/breakdown/imaging/matrix_free_{rectangular,delaunay,delaunay_nn}_hpc_a100_fp64_matrix_free.{json,png}
 results/breakdown/imaging/matrix_free_{rectangular,delaunay}_hpc_a100_fp64_matrix_free_n{3000,5000,12000}.{json,png}
 results/breakdown/imaging/{pixelization,delaunay,delaunay_nn}_hpc_a100_fp64_n{3000,5000,8000,12000}{,_sparse}.{json,png}
-results/sweep/size_sweep_manifest.jsonl        # one line per submitted leg
-results/sweep/size_sweep_tables.md             # rendered aggregator output at d2a3848
+results/misc/likelihood_breakdown/size_sweep_manifest.jsonl        # one line per submitted leg
+results/misc/likelihood_breakdown/size_sweep_tables.md             # rendered aggregator output at d2a3848
 ```
 
 Code:

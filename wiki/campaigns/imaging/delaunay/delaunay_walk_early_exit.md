@@ -195,8 +195,8 @@ change than Phase 2 and targets the cell with 20× the remaining cost.
 - `results/breakdown/imaging/delaunay_hpc_a100_fp64_walk_early_exit.{json,png}`
 - `results/breakdown/imaging/delaunay_nn_hpc_a100_fp64_control_2026_09_07.{json,png}`
 - `results/breakdown/imaging/delaunay_nn_hpc_a100_fp64_walk_early_exit.{json,png}`
-- `results/runtime/imaging/delaunay/delaunay_hpc_a100_fp64_control_2026_09_07.json`
-- `results/runtime/imaging/delaunay/delaunay_hpc_a100_fp64_walk_early_exit.json`
+- `archive/2026/09/dated/runtime/imaging/delaunay/delaunay_hpc_a100_fp64_control_2026_09_07.json`
+- `results/imaging/delaunay/hst/jax_gpu_dense_fp64/hpc_a100/experiments/walk_early_exit/runtime.json`
 - `hpc/batch_gpu/submit_breakdown_imaging_delaunay_a100_hst_fp64_{control,walk_early_exit}`
 - `hpc/batch_gpu/submit_breakdown_imaging_delaunay_nn_a100_hst_fp64_{control,walk_early_exit}`
 - `hpc/batch_gpu/submit_runtime_imaging_delaunay_a100_hst_fp64_{control,walk_early_exit}`

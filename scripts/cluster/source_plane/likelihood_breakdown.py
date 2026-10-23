@@ -566,6 +566,7 @@ dict_path, chart_path = resolve_output_paths(
     default_dir=_workspace_root / "results" / "breakdown" / "cluster",
     default_basename=f"source_plane_breakdown_v{al_version}",
     cell="source_plane",
+    hints=breakdown_summary,
 )
 dict_path.write_text(json.dumps(breakdown_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")

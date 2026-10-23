@@ -3,7 +3,7 @@
 # DelaunayNN vs barycentric Delaunay full-mapper benchmark on an A100.
 #
 # The A100 counterpart to the laptop RTX 2060 profile in
-# results/notes/delaunay_nn_cap_audit.md (autolens_profiling#105). That note
+# wiki/campaigns/imaging/delaunay_nn/delaunay_nn_cap_audit.md (autolens_profiling#105). That note
 # states plainly that its numbers are RTX 2060 and that the A100 profile is
 # still owed before any HPC sampler-throughput conclusion is drawn — this is
 # that run.

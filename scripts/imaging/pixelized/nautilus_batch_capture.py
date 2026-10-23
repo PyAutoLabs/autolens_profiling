@@ -4,7 +4,7 @@ JAX Profiling: Fixed Lens Light — CAPTURE real Nautilus proposal batches
 
 Certified-solver phase C1 (autolens_profiling#304), step 1 of 2.
 
-Phase B (autolens_profiling#300, ``results/notes/certified_solver_policy_phase_b_2026_09.md``)
+Phase B (autolens_profiling#300, ``wiki/campaigns/imaging/certified_solver_policy_phase_b_2026_09.md``)
 measured the library's certified solver under the production composition
 ``jax.jit(jax.vmap(fn))`` with ``certified_fallback="none"`` as the fastest
 batched row, with **zero** uncertified lanes. Its lanes, though, were one seeded

@@ -15,7 +15,7 @@
 #   feature  -> feature/delaunay-nn-launch-latency
 #
 # The previous A/B on this cell (#531, merge base bcd15cd9) is recorded in
-# results/notes/delaunay_walk_early_exit.md; its feature leg is kept as
+# wiki/campaigns/imaging/delaunay/delaunay_walk_early_exit.md; its feature leg is kept as
 # submit_breakdown_imaging_delaunay_nn_a100_hst_fp64_walk_early_exit and is not
 # comparable to these two rows (different merge base, and this profiling
 # checkout adds the split-point Sibson cut).

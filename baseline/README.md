@@ -4,7 +4,7 @@ This is a **draft campaign specification**, not a baseline. Phase 6 prepares
 collection and review; it authorizes no jobs and accepts no measurements.
 Pulse owns the pending [campaign task](https://github.com/PyAutoLabs/PyAutoPulse/issues/17).
 The project owns [campaign.json](campaign.json), its dry-run tooling and the
-[campaign journal](../wiki/campaigns/setup_baseline.md).
+[campaign journal](../wiki/campaigns/misc/setup_baseline.md).
 
 ## Inspect without running profiles
 

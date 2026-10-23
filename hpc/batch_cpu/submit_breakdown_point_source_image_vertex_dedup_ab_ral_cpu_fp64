@@ -109,7 +109,7 @@ export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_l
 export NUMBA_CACHE_DIR=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}
 mkdir -p "$NUMBA_CACHE_DIR" "$MPLCONFIGDIR"
 # Fresh JAX compile cache per job, as the phase-1 submit does: a seeded
-# persistent cache changes compile times and kernels (results/notes/xla_autotune_triton_gemm.md),
+# persistent cache changes compile times and kernels (wiki/campaigns/misc/xla_autotune_triton_gemm.md),
 # and RAL $HOME is node-local, so an inherited cache would not be reproducible.
 # (Within the job, routes lower to different HLO, so the persistent cache cannot
 # serve one route's executable to another.)

@@ -414,6 +414,7 @@ dict_path, _ = resolve_output_paths(
     _cli,
     default_dir=_workspace_root / "results" / "breakdown" / "datacube",
     default_basename=f"inversion_setup_decompose_{instrument}_v{al_version}",
+    hints=summary,
 )
 dict_path.write_text(json.dumps(summary, indent=2))
 print(f"\n  Saved: {dict_path}")

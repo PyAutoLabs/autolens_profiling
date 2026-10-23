@@ -1480,7 +1480,7 @@ floor of this configuration. The candidates below are what phase 3 turned up on 
 ```
 results/breakdown/imaging/fixed_light_numba_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_lever3_control_b_warm_t1.{json,png}  # CPU control = LEVER 2, 0b17c292, job 343356, 64 repeats
 results/breakdown/imaging/fixed_light_numba_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_lever3_b_warm_t1.{json,png}          # CPU feature, b4322c3e, job 343356, 64 repeats
-results/breakdown/imaging/fixed_light_numba_levers_l3_witness_hpc_ral_cpu_fp64_lever3.json                                   # W1-W5, feature arm, job 343356
+archive/2026/09/fixed_light/breakdown/imaging/fixed_light_numba_levers_l3_witness_hpc_ral_cpu_fp64_lever3.json                                   # W1-W5, feature arm, job 343356
 results/breakdown/imaging/fixed_light_delaunay_hpc_a100_fp64_fixed_light_lever3_control.{json,png}                            # A100 control = lever 2, 0b17c292, job 343357
 results/breakdown/imaging/fixed_light_delaunay_hpc_a100_fp64_fixed_light_lever3.{json,png}                                    # A100 feature, b4322c3e, job 343357
 ```
@@ -1488,8 +1488,8 @@ results/breakdown/imaging/fixed_light_delaunay_hpc_a100_fp64_fixed_light_lever3.
 Read alongside (already versioned, **not** part of lever 3's A/B):
 
 ```
-results/breakdown/imaging/fixed_light_delaunay_hpc_a100_fp64_fixed_light.json                                       # the A100 fiducial, the anchor for the log-det rows (ran on gpu-2)
-results/breakdown/imaging/fixed_light_numba_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_lever2_b_warm_t1.json        # lever 2's recorded row, 267.448 ms — what the bridge row anchors to
+results/imaging/delaunay/hst/jax_gpu_dense_fp64/hpc_a100/light_fixed/breakdown.json                                       # the A100 fiducial, the anchor for the log-det rows (ran on gpu-2)
+archive/2026/09/fixed_light/breakdown/imaging/fixed_light_numba_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_lever2_b_warm_t1.json        # lever 2's recorded row, 267.448 ms — what the bridge row anchors to
 ```
 
 **Job 343355's 16-repeat control JSON+PNG — the bridge row — are deliberately *not* versioned**, and
@@ -1521,7 +1521,7 @@ hpc/batch_gpu/submit_breakdown_imaging_fixed_light_numba_levers_l3_delaunay_a100
 ```
 results/breakdown/imaging/fixed_light_numba_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_lever2_control_b_warm_t1.{json,png}  # CPU control = LEVER 1, bae9296e
 results/breakdown/imaging/fixed_light_numba_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_lever2_b_warm_t1.{json,png}          # CPU feature, 0b17c292
-results/breakdown/imaging/fixed_light_numba_levers_l2_witness_hpc_ral_cpu_fp64_lever2.json                                   # W1-W5, feature arm
+archive/2026/09/fixed_light/breakdown/imaging/fixed_light_numba_levers_l2_witness_hpc_ral_cpu_fp64_lever2.json                                   # W1-W5, feature arm
 results/breakdown/imaging/fixed_light_delaunay_hpc_a100_fp64_fixed_light_lever2_control.{json,png}                            # A100 control = lever 1, bae9296e
 results/breakdown/imaging/fixed_light_delaunay_hpc_a100_fp64_fixed_light_lever2.{json,png}                                    # A100 feature, 0b17c292
 ```
@@ -1529,7 +1529,7 @@ results/breakdown/imaging/fixed_light_delaunay_hpc_a100_fp64_fixed_light_lever2.
 Read alongside (already versioned, **not** part of lever 2's A/B):
 
 ```
-results/breakdown/imaging/fixed_light_delaunay_hpc_a100_fp64_fixed_light.json   # the A100 fiducial, the anchor for the log-det rows (ran on gpu-2)
+results/imaging/delaunay/hst/jax_gpu_dense_fp64/hpc_a100/light_fixed/breakdown.json   # the A100 fiducial, the anchor for the log-det rows (ran on gpu-2)
 ```
 
 ### Lever 1 — result artifacts (versioned by lever 1's commit, **9 files**)
@@ -1537,7 +1537,7 @@ results/breakdown/imaging/fixed_light_delaunay_hpc_a100_fp64_fixed_light.json   
 ```
 results/breakdown/imaging/fixed_light_numba_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_lever1_control_b_warm_t1.{json,png}  # CPU control, 5e2bc0f4
 results/breakdown/imaging/fixed_light_numba_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_lever1_b_warm_t1.{json,png}          # CPU feature, bae9296e
-results/breakdown/imaging/fixed_light_numba_levers_witness_hpc_ral_cpu_fp64_lever1.json                                      # W1/W2/W3, feature arm
+archive/2026/09/fixed_light/breakdown/imaging/fixed_light_numba_levers_witness_hpc_ral_cpu_fp64_lever1.json                                      # W1/W2/W3, feature arm
 results/breakdown/imaging/delaunay_hpc_a100_fp64_lever1_control.{json,png}                                                   # A100 control, 5e2bc0f4
 results/breakdown/imaging/delaunay_hpc_a100_fp64_lever1.{json,png}                                                           # A100 feature, bae9296e
 ```
@@ -1545,8 +1545,8 @@ results/breakdown/imaging/delaunay_hpc_a100_fp64_lever1.{json,png}              
 Read alongside (already versioned, **not** part of that A/B):
 
 ```
-results/breakdown/imaging/delaunay_hpc_a100_fp64.json                                              # prior A100 row, context only (ran on gpu-2)
-results/breakdown/imaging/fixed_light_numba_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_sparse_b_warm_t1.json  # phase 2 Leg D, the anchor
+results/imaging/delaunay/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json                                              # prior A100 row, context only (ran on gpu-2)
+results/imaging/delaunay/hst/numba_cpu_sparse_fp64/hpc_ral_cpu/light_fixed/experiments/numba_b_warm_t1/breakdown.json  # phase 2 Leg D, the anchor
 ```
 
 Two laptop witness JSONs written while developing the witness script

@@ -3,7 +3,7 @@
 Issue: [autolens_profiling#362](https://github.com/PyAutoLabs/autolens_profiling/issues/362)
 (phase 1 plan in its 2026-10-08 comment). Mind: `active/timing_noise_audit_phase1_inventory.md`.
 Pulse task: `tasks/timing_noise_audit.md` (campaign `measurement-tools`). Campaign page:
-[Measurement tools](../../wiki/campaigns/measurement_tools.md).
+[Measurement tools](measurement_tools.md).
 
 **Fix phase 1 shipped (phase 2 of #362, PR #404, 2026-10-08):** rows T1 and P1 now share one verdict,
 `scripts/misc/likelihood_breakdown/overhead_verdict.py::abba_overhead_verdict`, and are
@@ -1586,7 +1586,7 @@ stacked on #411) are every change sections (a) and (b) proposed. Merge order: #4
 Phase 1 changed no gate, budget, tolerance, cutoff, estimator, repeat count, warm-up rule,
 qualification rule, production instrument, notebook, library or Heart file. It ran no compute job.
 It added this note, the read-only lister `scripts/misc/tooling/list_timing_assertions.py` (with
-its `--check` step in `lint.yml`), the [Measurement tools](../../wiki/campaigns/measurement_tools.md)
+its `--check` step in `lint.yml`), the [Measurement tools](measurement_tools.md)
 campaign page and index row, and pointer lines in `AGENTS.md` and `scripts/misc/tooling/README.md`.
 
 ## Reproduce

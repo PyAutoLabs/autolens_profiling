@@ -414,6 +414,7 @@ dict_path, chart_path = resolve_output_paths(
     default_dir=_workspace_root / "results" / "breakdown" / "imaging",
     default_basename=f"fixed_light_cpu_kernels_{MESH}_breakdown_{instrument}_v{al_version}",
     cell=f"fixed_light_cpu_kernels_{MESH}",
+    hints=summary,
 )
 dict_path.write_text(json.dumps(summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")

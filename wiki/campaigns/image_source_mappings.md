@@ -23,7 +23,7 @@ and a step-by-step guide (verbatim request in the epic ledger).
 
 The human's decisions (2026-09-02): three phases, one issue and PR each, library-first; ShapeSolver is
 the source → image engine for non-pixelized sources, so phase 2 doubles as the validation it never had;
-WCS stays guide-level. It ran alongside [Numpy deflections CPU](numpy_deflections_cpu.md) by human
+WCS stays guide-level. It ran alongside [Numpy deflections CPU](lens/deflections/numpy_deflections_cpu.md) by human
 decision. This page is indexed for completeness: it is not a profiling campaign and has no ledger here.
 
 ## Phases
@@ -51,7 +51,7 @@ decision. This page is indexed for completeness: it is not a profiling campaign 
 
 - **Not a timing campaign**: no profiling PR, no ledger, no RAL job. Numbers above are test verifications.
 - **Release discrepancy settled by the release sheet.** The epic's retirement line (2026-09-14) says the blocking releases landed as v2026.9.11.1 / v2026.9.14.1; tag containment puts all three merges in 2026.9.4.1.
-- **ShapeSolver under JAX was silently wrong**: `MAX_CONTAINING_SIZE = 15` capped each step, giving magnification 0.13 against a true 6.86; JAX `area` also cannot survive `jit`. [Point-source image-plane CPU](point_source_image_plane_cpu.md) IP-4c later raised the cap to 20 (PyAutoArray#584, UNRELEASED); whether that un-xfails the ShapeSolver test is not verified.
+- **ShapeSolver under JAX was silently wrong**: `MAX_CONTAINING_SIZE = 15` capped each step, giving magnification 0.13 against a true 6.86; JAX `area` also cannot survive `jit`. [Point-source image-plane CPU](point_source_image/image_plane/point_source_image_plane_cpu.md) IP-4c later raised the cap to 20 (PyAutoArray#584, UNRELEASED); whether that un-xfails the ShapeSolver test is not verified.
 - Engine A's `magnifications_from` returns relative flux fractions, not engine B's absolute scale.
 - Pre-existing silent `except` guards remain in `subplot_mappings` and `_plot_source_plane`.
 

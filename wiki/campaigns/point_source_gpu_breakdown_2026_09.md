@@ -10,7 +10,7 @@ Issue: autolens_profiling#350. Cell:
 job wall 7:12 (fp64 process 344 s, fp32 process 78 s). Results:
 `results/breakdown/point_source_image/gpu_bottleneck_map_hpc_ral_a100_fp64.{json,png}`,
 `..._hpc_ral_a100_fp32_whatif.{json,png}`, log
-`results/logs/point_source_image/point_source_gpu_2026_09_28_ral_job_366916_gpu_bottleneck_map.out`.
+`results/misc/logs/point_source_image/point_source_gpu_2026_09_28_ral_job_366916_gpu_bottleneck_map.out`.
 
 **`all_gates_pass: false`** on the fp64 JSON — two real findings, kept failing (see
 "Gates"): forward-mode gradients are NaN, and two smooth points fail the strict FD rule. Every
@@ -257,7 +257,7 @@ No optimization was attempted.
 `--gres=gpu:1 --ntasks=1 --exclusive` (the job was the only one on the node; loadavg 0.07 at start,
 1.43 at end), 14:45:25–14:55:19 BST. Submit
 `hpc/batch_gpu/submit_breakdown_point_source_image_admission_a100_fp64`; log
-`results/logs/point_source_image/point_source_gpu_2026_10_17_ral_job_412519_admission.out`.
+`results/misc/logs/point_source_image/point_source_gpu_2026_10_17_ral_job_412519_admission.out`.
 
 - **Libraries:** a private checkout of tag 2026.10.17.1 under
   `/mnt/ral/jnightin/profiling/PyAuto_wt/ps-image-admission-2026.10.17.1`, prepended to the

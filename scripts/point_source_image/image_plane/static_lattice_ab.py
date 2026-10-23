@@ -1495,6 +1495,7 @@ dict_path, chart_path = resolve_output_paths(
     default_dir=_ROOT / "results" / "breakdown" / "point_source_image",
     default_basename="static_lattice_ab_local",
     cell="static_lattice_ab" + ("_constant_folding" if CONSTANT_FOLDING else ""),
+    hints=summary,
 )
 dict_path.write_text(json.dumps(_scrub(summary), indent=2))
 

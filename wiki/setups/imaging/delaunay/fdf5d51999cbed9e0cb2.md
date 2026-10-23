@@ -32,7 +32,7 @@ Identity limitations: Isolated to source row: legacy metadata is insufficient fo
 
 ## Evidence
 
-[Original setup artifact](../../../../results/breakdown/imaging/delaunay_hpc_a100_mp.json); JSON pointer: `(document root)`.
+[Original setup artifact](../../../../results/imaging/delaunay/hst/jax_gpu_dense_mixed/hpc_a100/breakdown.json); JSON pointer: `(document root)`.
 
 ### Selected references
 
@@ -44,18 +44,18 @@ No selected reference for this exact setup; archive evidence is available below.
 
 | Record | Metric | Value | Unit | Device / precision | Selection | Evidence pointer |
 |---|---|---|---|---|---|---|
-| `measurement/0bf6a5134ab1c163e6b3` | component_total | {"component_total": 0.09684501230021852} | s | a100 / mixed | archive support; unreviewed | [artifact](../../../../results/breakdown/imaging/delaunay_hpc_a100_mp.json) `/total_step_by_step` |
-| `measurement/0cc48474443f1681850e` | steps.Mapped recon + log evidence | {"steps.Mapped recon + log evidence": 0.002271496799949091} | s | a100 / mixed | archive support; unreviewed | [artifact](../../../../results/breakdown/imaging/delaunay_hpc_a100_mp.json) `/steps/Mapped recon + log evidence` |
-| `measurement/0d682c515a057abb1f03` | steps.Blurred image (PSF convolution) | {"steps.Blurred image (PSF convolution)": 0.001022397699944122} | s | a100 / mixed | archive support; unreviewed | [artifact](../../../../results/breakdown/imaging/delaunay_hpc_a100_mp.json) `/steps/Blurred image (PSF convolution)` |
-| `measurement/499b1f6e1004a29f0c23` | steps.Profile-subtracted image | {"steps.Profile-subtracted image": 0.0001505960999566014} | s | a100 / mixed | archive support; unreviewed | [artifact](../../../../results/breakdown/imaging/delaunay_hpc_a100_mp.json) `/steps/Profile-subtracted image` |
-| `measurement/574deba5707fc9ad7eb9` | steps.Curvature matrix (F) | {"steps.Curvature matrix (F)": 0.004787345900058426} | s | a100 / mixed | archive support; unreviewed | [artifact](../../../../results/breakdown/imaging/delaunay_hpc_a100_mp.json) `/steps/Curvature matrix (F)` |
-| `measurement/5d352f32208d6ccf0e66` | steps.Regularized reconstruction | {"steps.Regularized reconstruction": 0.03255944599995928} | s | a100 / mixed | archive support; unreviewed | [artifact](../../../../results/breakdown/imaging/delaunay_hpc_a100_mp.json) `/steps/Regularized reconstruction` |
-| `measurement/61f7f59fe962c84286c0` | steps.Inversion setup (steps 5-8 combined) | {"steps.Inversion setup (steps 5-8 combined)": 0.03988879589996941} | s | a100 / mixed | archive support; unreviewed | [artifact](../../../../results/breakdown/imaging/delaunay_hpc_a100_mp.json) `/steps/Inversion setup (steps 5-8 combined)` |
-| `measurement/8da83d406ece8b010a1a` | steps.Ray-trace mesh grid | {"steps.Ray-trace mesh grid": 0.00015739800001028924} | s | a100 / mixed | archive support; unreviewed | [artifact](../../../../results/breakdown/imaging/delaunay_hpc_a100_mp.json) `/steps/Ray-trace mesh grid` |
-| `measurement/98dfccc21f9826e1f7de` | steps.Ray-trace data grid | {"steps.Ray-trace data grid": 9.903330001179712e-05} | s | a100 / mixed | archive support; unreviewed | [artifact](../../../../results/breakdown/imaging/delaunay_hpc_a100_mp.json) `/steps/Ray-trace data grid` |
-| `measurement/b731909cc04d7f2e23f8` | steps.Lens light images (pre-PSF) | {"steps.Lens light images (pre-PSF)": 8.48646000122244e-05} | s | a100 / mixed | archive support; unreviewed | [artifact](../../../../results/breakdown/imaging/delaunay_hpc_a100_mp.json) `/steps/Lens light images (pre-PSF)` |
-| `measurement/cad0955f30868eba0240` | steps.Data vector (D) | {"steps.Data vector (D)": 0.00032698599998184366} | s | a100 / mixed | archive support; unreviewed | [artifact](../../../../results/breakdown/imaging/delaunay_hpc_a100_mp.json) `/steps/Data vector (D)` |
-| `measurement/f45894de14c4eadb5f61` | steps.Regularization matrix (H) | {"steps.Regularization matrix (H)": 0.01549665200036543} | s | a100 / mixed | archive support; unreviewed | [artifact](../../../../results/breakdown/imaging/delaunay_hpc_a100_mp.json) `/steps/Regularization matrix (H)` |
+| `measurement/0bf6a5134ab1c163e6b3` | component_total | {"component_total": 0.09684501230021852} | s | a100 / mixed | archive support; unreviewed | [artifact](../../../../results/imaging/delaunay/hst/jax_gpu_dense_mixed/hpc_a100/breakdown.json) `/total_step_by_step` |
+| `measurement/0cc48474443f1681850e` | steps.Mapped recon + log evidence | {"steps.Mapped recon + log evidence": 0.002271496799949091} | s | a100 / mixed | archive support; unreviewed | [artifact](../../../../results/imaging/delaunay/hst/jax_gpu_dense_mixed/hpc_a100/breakdown.json) `/steps/Mapped recon + log evidence` |
+| `measurement/0d682c515a057abb1f03` | steps.Blurred image (PSF convolution) | {"steps.Blurred image (PSF convolution)": 0.001022397699944122} | s | a100 / mixed | archive support; unreviewed | [artifact](../../../../results/imaging/delaunay/hst/jax_gpu_dense_mixed/hpc_a100/breakdown.json) `/steps/Blurred image (PSF convolution)` |
+| `measurement/499b1f6e1004a29f0c23` | steps.Profile-subtracted image | {"steps.Profile-subtracted image": 0.0001505960999566014} | s | a100 / mixed | archive support; unreviewed | [artifact](../../../../results/imaging/delaunay/hst/jax_gpu_dense_mixed/hpc_a100/breakdown.json) `/steps/Profile-subtracted image` |
+| `measurement/574deba5707fc9ad7eb9` | steps.Curvature matrix (F) | {"steps.Curvature matrix (F)": 0.004787345900058426} | s | a100 / mixed | archive support; unreviewed | [artifact](../../../../results/imaging/delaunay/hst/jax_gpu_dense_mixed/hpc_a100/breakdown.json) `/steps/Curvature matrix (F)` |
+| `measurement/5d352f32208d6ccf0e66` | steps.Regularized reconstruction | {"steps.Regularized reconstruction": 0.03255944599995928} | s | a100 / mixed | archive support; unreviewed | [artifact](../../../../results/imaging/delaunay/hst/jax_gpu_dense_mixed/hpc_a100/breakdown.json) `/steps/Regularized reconstruction` |
+| `measurement/61f7f59fe962c84286c0` | steps.Inversion setup (steps 5-8 combined) | {"steps.Inversion setup (steps 5-8 combined)": 0.03988879589996941} | s | a100 / mixed | archive support; unreviewed | [artifact](../../../../results/imaging/delaunay/hst/jax_gpu_dense_mixed/hpc_a100/breakdown.json) `/steps/Inversion setup (steps 5-8 combined)` |
+| `measurement/8da83d406ece8b010a1a` | steps.Ray-trace mesh grid | {"steps.Ray-trace mesh grid": 0.00015739800001028924} | s | a100 / mixed | archive support; unreviewed | [artifact](../../../../results/imaging/delaunay/hst/jax_gpu_dense_mixed/hpc_a100/breakdown.json) `/steps/Ray-trace mesh grid` |
+| `measurement/98dfccc21f9826e1f7de` | steps.Ray-trace data grid | {"steps.Ray-trace data grid": 9.903330001179712e-05} | s | a100 / mixed | archive support; unreviewed | [artifact](../../../../results/imaging/delaunay/hst/jax_gpu_dense_mixed/hpc_a100/breakdown.json) `/steps/Ray-trace data grid` |
+| `measurement/b731909cc04d7f2e23f8` | steps.Lens light images (pre-PSF) | {"steps.Lens light images (pre-PSF)": 8.48646000122244e-05} | s | a100 / mixed | archive support; unreviewed | [artifact](../../../../results/imaging/delaunay/hst/jax_gpu_dense_mixed/hpc_a100/breakdown.json) `/steps/Lens light images (pre-PSF)` |
+| `measurement/cad0955f30868eba0240` | steps.Data vector (D) | {"steps.Data vector (D)": 0.00032698599998184366} | s | a100 / mixed | archive support; unreviewed | [artifact](../../../../results/imaging/delaunay/hst/jax_gpu_dense_mixed/hpc_a100/breakdown.json) `/steps/Data vector (D)` |
+| `measurement/f45894de14c4eadb5f61` | steps.Regularization matrix (H) | {"steps.Regularization matrix (H)": 0.01549665200036543} | s | a100 / mixed | archive support; unreviewed | [artifact](../../../../results/imaging/delaunay/hst/jax_gpu_dense_mixed/hpc_a100/breakdown.json) `/steps/Regularization matrix (H)` |
 
 </details>
 

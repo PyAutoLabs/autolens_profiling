@@ -54,7 +54,7 @@ python3 -u scripts/misc/delaunay_nn/assembly_bench.py \
     --batch 16 \
     --repeats 10 \
     --label "A100 fp64, PyAutoArray#536 A/B session" \
-    --out results/delaunay_nn/assembly_bench_a100_fp64.json
+    --out results/misc/delaunay_nn/assembly_bench_a100_fp64.json
 
 echo "Finished."
 date

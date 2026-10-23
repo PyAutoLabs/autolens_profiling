@@ -29,6 +29,7 @@ sys.path.insert(0, str(_MISC))
 sys.path.insert(0, str(_ROOT))
 
 from likelihood_breakdown.warmup_gate import WARMUP_UNSETTLED  # noqa: E402
+from tooling.results_layout import iter_legacy  # noqa: E402
 
 import _production_config as pc  # noqa: E402
 
@@ -109,7 +110,7 @@ def test_the_committed_witness_rows_rejudge_as_inconclusive():
     """
     rows = sorted(
         p
-        for p in (_ROOT / "results").rglob("*_numba_*_v2026.8.17.1*.json")
+        for p, _legacy in iter_legacy(_ROOT, "results", "*_numba_*_v2026.8.17.1*.json")
         if "witness" in json.loads(p.read_text())
     )
     assert len(rows) == 8

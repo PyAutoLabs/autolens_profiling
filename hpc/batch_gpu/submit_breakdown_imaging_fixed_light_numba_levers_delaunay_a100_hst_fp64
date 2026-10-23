@@ -29,7 +29,7 @@
 #        them). This job's log is the record that the compacted path is what ran,
 #        on both arms, at the library defaults.
 #   (ii) THE MEASURED H ROW, control vs feature. The comparable prior row is
-#        `results/breakdown/imaging/delaunay_hpc_a100_fp64.json`:
+#        `results/imaging/delaunay/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json`:
 #        `steps["Regularization matrix (H)"]` 0.000234 s and
 #        `regularization_matrix_prefix_s` 0.00738 s. H is reported as a
 #        DIFFERENCE of two jitted prefixes (step 11's prefix minus step 6's), so

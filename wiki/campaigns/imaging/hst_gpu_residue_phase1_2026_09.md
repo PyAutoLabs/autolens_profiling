@@ -328,7 +328,7 @@ certified branch was taken.
 
 **Settled, do not re-open.** Matrix-free CG / SLQ log-det is a **no-go**
 ([#247](https://github.com/PyAutoLabs/autolens_profiling/issues/247),
-`results/notes/matrix_free_pixelized_2026_09.md`). `reg_adapt` cannot jit on the Delaunay
+`wiki/campaigns/imaging/matrix_free_pixelized_2026_09.md`). `reg_adapt` cannot jit on the Delaunay
 family. A non-uniform over-sample map **triples** jit compile time, so any lever that touches
 the over-sampling must report compile time beside run time.
 

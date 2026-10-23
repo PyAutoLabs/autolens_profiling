@@ -7,7 +7,7 @@
 **Headline:** 31.64 ms, the budget-7 production Delaunay call (command buffers on), RAL A100 80GB PCIe, job 343350 (task 0).
 **Library PRs:** none; no library source changed in any phase.
 **Profiling PRs:** #270, #294, #296, #306 (issues #268, #273, #295, #303).
-**Ledger:** [hst_gpu_residue_phase1_2026_09.md](../../results/notes/hst_gpu_residue_phase1_2026_09.md), [hst_gpu_residue_phase2_vmap_2026_09.md](../../results/notes/hst_gpu_residue_phase2_vmap_2026_09.md), [hst_gpu_residue_phase3_psf_2026_09.md](../../results/notes/hst_gpu_residue_phase3_psf_2026_09.md), [hst_gpu_residue_phase4_logdet_2026_09.md](../../results/notes/hst_gpu_residue_phase4_logdet_2026_09.md); summary in [profiling_campaign_status_2026_09.md](../../results/notes/profiling_campaign_status_2026_09.md) (GPU section).
+**Ledger:** [hst_gpu_residue_phase1_2026_09.md](hst_gpu_residue_phase1_2026_09.md), [hst_gpu_residue_phase2_vmap_2026_09.md](hst_gpu_residue_phase2_vmap_2026_09.md), [hst_gpu_residue_phase3_psf_2026_09.md](hst_gpu_residue_phase3_psf_2026_09.md), [hst_gpu_residue_phase4_logdet_2026_09.md](hst_gpu_residue_phase4_logdet_2026_09.md); summary in [profiling_campaign_status_2026_09.md](profiling_campaign_status_2026_09.md) (GPU section).
 **Mind contract:** epic `hst-gpu-non-solver-residue`; campaign map retired to `complete/2026/09/hst-gpu-non-solver-residue.md`; phase records `complete/2026/09/hst-gpu-residue-p{1,2,3,4}.md`; epic ledger `complete/archive/epics/hst-gpu-non-solver-residue.md`.
 **Next:** none in this campaign; the carried items (fp32 policy, cond-free batched fallback, qhull callback / batching) are listed under Open.
 
@@ -74,7 +74,7 @@ and `--logdet-candidate` modes) shipped in #270, #294, #296 and #306.
   threshold was not relaxed. Phase 3 placed the residual between compositions (`jit(vmap)` vs
   scalar jit), not in the solver. No batching or callback conclusion may be drawn from the grid.
 - **Array 343376 is the retired `vmap(jit)` composition** and is historical only
-  ([sidecar](../../results/breakdown/imaging/hst_gpu_residue_phase2_historical_job343376.json), status
+  ([sidecar](../../../results/imaging/delaunay/hst/jax_gpu_dense_fp64/hpc_a100/light_fixed/experiments/hst_gpu_residue_phase2_historical_job343376.json), status
   `historical-only`); array 344635 is the current-composition measurement. Tasks 0–2 of 344635
   exited non-zero after writing artifacts, and their logs lack the footer (ERR trap).
 - **Phase-3 fp32-cube and complex64 rows are DIAGNOSTIC.** `mp_cube_c64` and `c64_full` miss the pin

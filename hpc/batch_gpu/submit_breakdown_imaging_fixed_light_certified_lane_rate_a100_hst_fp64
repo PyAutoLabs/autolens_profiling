@@ -74,7 +74,7 @@
 #
 # The numerical gate — PRE-REGISTERED before submission (unchanged from phase B)
 # ------------------------------------------------------------------------------
-# Phase 3 (results/notes/hst_gpu_residue_phase3_psf_2026_09.md) placed the ~2.5e-9
+# Phase 3 (wiki/campaigns/imaging/hst_gpu_residue_phase3_psf_2026_09.md) placed the ~2.5e-9
 # residual BETWEEN the jit(vmap) and scalar-jit compositions, so per lane of a TIME task:
 #   GATED at 1e-9 relative:  the jit(vmap) arm vs the jit(vmap) library PDIP
 #   GATED at 1e-9 relative:  the scalar jit arm vs the scalar jit library PDIP
@@ -90,7 +90,7 @@
 # exceed the card; an OOM task is itself the memory-limit row, read from its .err.
 #
 # Every task starts from an EMPTY JAX compilation cache (a seeded XLA autotune cache
-# silently changes kernels, results/notes/xla_autotune_triton_gemm.md); the
+# silently changes kernels, wiki/campaigns/misc/xla_autotune_triton_gemm.md); the
 # AUTOTUNE_ENTRIES census at the end is the check.
 #
 # WALL-BASIS:

@@ -234,7 +234,7 @@ and the median warm wall-clock (`wall_ms`, 5 repeats after one compile call).
 
 **Post-hoc, not pre-registered — inputs to the phase-2 fix, not a verdict.** The pre-registered
 table is "Accuracy" above; the verdict it gave is in the
-[ledger](../../../results/notes/linear_solver_accuracy_2026_09.md).
+[ledger](../../../wiki/campaigns/lens/solver/linear_solver_accuracy_2026_09.md).
 
 <!-- BEGIN auto-table:solver-accuracy-posthoc -->
 | Corpus | Candidate | Unconverged | Worst abs(flux_inactive_rel) | Worst abs(flux_rel_source) | Worst amp_rel_max (sig) | Max active-set mismatch | Median iters | Max iters | Median wall ms | Version |
@@ -263,7 +263,7 @@ compile + one run), never part of a steady figure; `(cached)` marks a config who
 an earlier family already compiled. A vmapped `while_loop` runs to the batch's slowest lane, so
 the wall follows *max iters*, not the median. `fnnls` has no batched form: its rows are a host
 Python loop over the lanes (context only). A timing is not an admissibility result — see the
-[ledger](../../../results/notes/linear_solver_accuracy_2026_09.md).
+[ledger](../../../wiki/campaigns/lens/solver/linear_solver_accuracy_2026_09.md).
 
 <!-- BEGIN auto-table:solver-timing -->
 | Corpus | Candidate | Batch family | B | Per-eval min ms | Per-eval median ms | Batch wall min ms | Compile s | Median / max iters | Unconverged | Worst abs(flux_inactive_rel) | Version |
@@ -413,7 +413,7 @@ the file list. `--groups`, `--candidates`, `--device gpu` (writes a `_gpu` artef
 
 ## Related
 
-- Campaign page: [`wiki/campaigns/linear_solver_accuracy.md`](../../../wiki/campaigns/linear_solver_accuracy.md)
-- Solver ledger: [`results/notes/nnls_solver_ledger.md`](../../../results/notes/nnls_solver_ledger.md)
-- Certified solver campaign: [`wiki/campaigns/certified_positive_solver.md`](../../../wiki/campaigns/certified_positive_solver.md)
-- NNLS warm-start memo: [`results/nnls_warm_start/nnls_warm_start_memo.md`](../../../results/nnls_warm_start/nnls_warm_start_memo.md)
+- Campaign page: [`wiki/campaigns/lens/solver/linear_solver_accuracy.md`](../../../wiki/campaigns/lens/solver/linear_solver_accuracy.md)
+- Solver ledger: [`wiki/campaigns/lens/solver/nnls_solver_ledger.md`](../../../wiki/campaigns/lens/solver/nnls_solver_ledger.md)
+- Certified solver campaign: [`wiki/campaigns/imaging/certified_positive_solver.md`](../../../wiki/campaigns/imaging/certified_positive_solver.md)
+- NNLS warm-start memo: [`results/misc/nnls_warm_start/nnls_warm_start_memo.md`](../../../results/misc/nnls_warm_start/nnls_warm_start_memo.md)

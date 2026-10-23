@@ -7,7 +7,7 @@
 **Headline:** none yet
 **Library PRs:** none
 **Profiling PRs:** issue #430 (phase 1)
-**Ledger:** none yet; related [production_representative_cells.md](../../results/notes/production_representative_cells.md)
+**Ledger:** none yet; related [production_representative_cells.md](production_representative_cells.md)
 **Mind contract:** `draft/research/autolens_profiling/imaging_production_over_sampling.md` (filed 2026-09-27); precursor `complete/2026/09/profiling-production-representative.md` (#235 / #236).
 **Next:** phase 2, the A100 re-measure with `--over-sampling production` on HST and Euclid (needs a separate compute authorisation)
 

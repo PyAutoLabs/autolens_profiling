@@ -321,11 +321,15 @@ def iso(y, m, d) -> str:
 
 def facts(root: Path, path: str, files: set[str]) -> dict:
     """Release pin and dates recorded by the file name or the companion JSON."""
+    jpath = companion_json(root, path, files)
+    return facts_from_doc(path, load_json(root, jpath) if jpath else None)
+
+
+def facts_from_doc(path: str, doc) -> dict:
+    """``facts`` for a file whose companion JSON content is ``doc`` (may be in memory)."""
     name = path.rsplit("/", 1)[1]
     stem, _ = split_ext(name)
     out = {"pin": None, "date": None, "date_basis": None, "doc": None}
-    jpath = companion_json(root, path, files)
-    doc = load_json(root, jpath) if jpath else None
     out["doc"] = doc if isinstance(doc, dict) else None
     if out["doc"]:
         d = out["doc"]
@@ -845,6 +849,47 @@ def classify(path, files, routes, scripts, fx) -> dict:
     raise Unresolved("unknown results folder", f"results/{top}/ has no rule")
 
 
+# --------------------------------------------------------------------------- writers
+
+
+def destination(root: Path, path: str, doc: dict | None = None) -> tuple[str, str]:
+    """(new path, kind) for a result a writer is about to create at legacy ``path``.
+
+    ``path`` is the repo-relative path the writer would have used before the move
+    (``results/runtime/...`` / ``results/breakdown/...``); ``doc`` is the result JSON (or
+    the setup facts known so far: ``instrument``, ``use_mixed_precision``, ``device``,
+    ``transformer``, ...). The same classification as the day-zero map places it:
+    a canonical row goes to its cell's current slot, a size scan or experiment arm to
+    ``<cell>/scans|experiments/<name>/``. A row whose cell cannot be derived, or that the
+    map would archive, goes to ``results/misc/<group>/`` -- never to an archive or a
+    guessed cell.
+    """
+    root = Path(root)
+    routes, scripts = cell_index(root), script_index(root)
+    fx = facts_from_doc(path, doc)
+    rel = path[len("results/") :]
+    try:
+        c = classify(path, set(), routes, scripts, fx)
+    except Unresolved as exc:
+        c = misc_fallback(rel, f"no derivable cell: {exc.reason}")
+    if c["kind"] in ("archive", "sidecar"):
+        c = misc_fallback(rel, f"would be archived: {c.get('why', c['kind'])}")
+    if c["kind"] == "mirrored" and not c["aggregate"]:
+        return f"{c['cell']}/{c['measurement']}.{c['ext']}", "mirrored"
+    return c["new"], c["kind"]
+
+
+def applied(root: Path, doc: dict) -> bool:
+    """True once ``apply_migration_map.py --apply`` has moved the tree."""
+    moves = [e for e in doc.get("entries", []) if e["new"] != e["old"]]
+    # A pointer README written at an emptied folder's old README path is a new file.
+    return bool(moves) and all(
+        (root / e["new"]).exists()
+        and (not (root / e["old"]).exists() or sha256(root, e["old"]) != e["sha256"])
+        for e in moves
+    )
+
+
 # --------------------------------------------------------------------------- build
 
 
@@ -1159,13 +1204,21 @@ def main(argv=None) -> int:
     parser.add_argument("--root", type=Path, default=None)
     args = parser.parse_args(argv)
     root = args.root or _root()
+    target = root / MAP_PATH
+    if args.check and target.exists():
+        committed = json.loads(target.read_text())
+        if applied(root, committed):
+            print(
+                f"{MAP_PATH} is applied (day-zero map, frozen): "
+                f"{len([e for e in committed['entries'] if e['new'] != e['old']])} moves in the tree"
+            )
+            return 0
     doc = build(root)
     if doc["collisions"]:
         for c in doc["collisions"]:
             print(f"COLLISION {c['new']} <- {c['old']}", file=sys.stderr)
         print("refusing to write a map with collisions", file=sys.stderr)
         return 1
-    target = root / MAP_PATH
     if args.check:
         try:
             committed = json.loads(target.read_text())

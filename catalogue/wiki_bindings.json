@@ -3,7 +3,7 @@
   "version": 1,
   "campaigns": [
     {
-      "path": "wiki/campaigns/interferometer_likelihood.md",
+      "path": "wiki/campaigns/interferometer/interferometer_likelihood.md",
       "setup_ids": [
         "interferometer/delaunay/alma/00e86a7de323cb7098eb",
         "interferometer/delaunay/alma/c00199cd0663a6f29c96",

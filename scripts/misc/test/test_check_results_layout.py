@@ -19,12 +19,20 @@ def _provenance():
 
 
 def _tree(tmp_path: Path) -> Path:
-    """A minimal consistent tree: one ledger, one allowlisted pack, one compliant JSON."""
+    """A minimal consistent tree: one ledger, one archived pack, one compliant JSON.
+
+    Since the day-zero move (#442) the ledgers live under wiki/campaigns/ and the frozen
+    packs under archive/; results/notes/ keeps only its pointer README.
+    """
     root = tmp_path / "repo"
-    (root / "results" / "notes" / "clipper_campaign").mkdir(parents=True)
-    (root / "results" / "notes" / "alpha.md").write_text("# alpha\n")
-    (root / "results" / "notes" / "clipper_campaign" / "README.md").write_text("# pack\n")
-    (root / "results" / "notes" / "clipper_campaign" / "bench.json").write_text("{}")
+    (root / "results" / "notes").mkdir(parents=True)
+    (root / "results" / "notes" / "README.md").write_text("# moved\n")
+    (root / "wiki" / "campaigns" / "imaging" / "delaunay").mkdir(parents=True)
+    (root / "wiki" / "campaigns" / "imaging" / "delaunay" / "alpha.md").write_text("# alpha\n")
+    pack = root / "archive" / "undated" / "clipper_campaign"
+    pack.mkdir(parents=True)
+    (pack / "README.md").write_text("# pack\n")
+    (pack / "bench.json").write_text("{}")
     (root / "results" / "breakdown" / "imaging").mkdir(parents=True)
     (root / "results" / "breakdown" / "imaging" / "cell_hpc_a100_fp64.json").write_text(
         json.dumps({"device": {"backend": "gpu", "provenance": _provenance()}, "rows": []})
@@ -48,6 +56,24 @@ def test_stray_log_and_sidecar_under_notes_fail(tmp_path):
     assert all(f.startswith("(a)") for f in failures)
     assert any("job_1.out" in f for f in failures)
     assert any("side_job1.json" in f for f in failures)
+
+
+def test_non_markdown_file_in_the_ledger_tree_fails(tmp_path):
+    root = _tree(tmp_path)
+    (root / "wiki" / "campaigns" / "imaging" / "delaunay" / "job_3.out").write_text("log\n")
+    failures = crl.check(root)
+    assert len(failures) == 1
+    assert failures[0].startswith("(a) non-markdown file under wiki/campaigns/")
+
+
+def test_device_json_in_archive_is_still_checked(tmp_path):
+    root = _tree(tmp_path)
+    old = root / "archive" / "2026" / "08" / "dated" / "cell_hpc_a100_fp64.json"
+    old.parent.mkdir(parents=True)
+    old.write_text(json.dumps({"device": {"backend": "gpu"}}))
+    failures = crl.check(root)
+    assert len(failures) == 1
+    assert failures[0].startswith("(b) archive/2026/08/dated/cell_hpc_a100_fp64.json")
 
 
 def test_unlisted_folder_under_notes_fails(tmp_path):

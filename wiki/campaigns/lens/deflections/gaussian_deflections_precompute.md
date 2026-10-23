@@ -7,7 +7,7 @@
 **Headline:** SLaM-shaped numba CPU likelihood (30 fixed Gaussians, one free ratio) 0.583 → 0.195 s per call (3.00×, bit-identical), laptop WSL2 quiet re-run; no RAL job.
 **Library PRs:** PyAutoGalaxy#602, PyAutoArray#520, PyAutoGalaxy#605 (all released 2026.9.4.1).
 **Profiling PRs:** #214, #216.
-**Ledger:** sections "Fixed-geometry deflection memo — phase 1" and "— phase 2" of the predecessor ledger [numpy_deflections_cpu.md](../../results/notes/numpy_deflections_cpu.md); phase 3 has no profiling note.
+**Ledger:** sections "Fixed-geometry deflection memo — phase 1" and "— phase 2" of the predecessor ledger [numpy_deflections_cpu.md](numpy_deflections_cpu_ledger.md); phase 3 has no profiling note.
 **Mind contract:** epic `gaussian-deflections-precompute`; `complete/archive/epics/precompute_fixed_geometry_gaussian_deflections.md`; records `complete/2026/09/gaussian-precompute-p{1,2,3}.md`
 **Next:** none
 

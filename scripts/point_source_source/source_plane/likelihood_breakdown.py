@@ -539,6 +539,7 @@ dict_path, chart_path = resolve_output_paths(
     default_dir=_ROOT / "results" / "breakdown" / "point_source_source",
     default_basename=f"source_plane_breakdown_{INSTRUMENT}_v{al_version}",
     cell="source_plane",
+    hints=summary,
 )
 dict_path.write_text(json.dumps(summary, indent=2))
 

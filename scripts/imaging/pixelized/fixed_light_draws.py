@@ -162,7 +162,7 @@ flds = fixed_light_draws_steps
 ass = active_set_steps
 
 #: Phase 0's certifying budget per mesh, at the fiducial, on euclid-ral-gpu-2
-#: (legs 342802 / 342803, results/notes/fixed_lens_light_source_only_2026_09.md).
+#: (legs 342802 / 342803, wiki/campaigns/imaging/fixed_lens_light_source_only_2026_09.md).
 #: This cell's whole question is whether these survive a bad model, so they are
 #: pinned on the fiducial row and never assumed for a draw.
 CERTIFYING_BUDGET_FIDUCIAL = {"rectangular": 7, "delaunay": 2}
@@ -827,6 +827,7 @@ dict_path, chart_path = resolve_output_paths(
     default_dir=_workspace_root / "results" / "breakdown" / "imaging",
     default_basename=f"{_cell_name}_breakdown_{instrument}_v{al_version}",
     cell=_cell_name,
+    hints=breakdown_summary,
 )
 dict_path.write_text(json.dumps(breakdown_summary, indent=2, default=float))
 print(f"\n  Results dict saved to: {dict_path}")

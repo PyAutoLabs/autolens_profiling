@@ -84,7 +84,7 @@ Policy is the human's call. The open questions are at the end.
   budget is the packaged 16.
 
 Provenance, per-task sacct rows, OOM and allocator excerpts, and artifact checksums are in
-[certified_solver_phase_c1_job350768.json](../breakdown/imaging/certified_solver_phase_c1_job350768.json). The 28 JSON
+[certified_solver_phase_c1_job350768.json](../../../results/misc/likelihood_breakdown/imaging/certified_solver_phase_c1_job350768.json). The 28 JSON
 files and 24 PNG files are under `results/breakdown/imaging/`, suffixes
 `_jitvmap<B>_captured_<stage>_lib<solver>_fb<on|off>_b16_…` (time) and
 `_captured_rate_libcertified_fboff_b16_<stage>_…` (rate).
@@ -297,7 +297,7 @@ jax.errors.JaxRuntimeError: RESOURCE_EXHAUSTED: Out of memory while trying to al
 
 ## Decisions (human, 2026-09-25)
 
-> **Correction — 2026-09-27:** the "some Δlog L" and "rectangular pix1 may need to stay on library PDIP" wording below was settled by the human on 2026-09-25 in the C2 prompt (`PyAutoMind/draft/feature/autofit/certified_solver_batched_guard_c2.md`): the near-peak gate is Δ = 100 nats from the batch maximum, pinned at 0.1 nats vs scalar PDIP, and rectangular pix1 stays on library PDIP. Wiki: `wiki/campaigns/certified_positive_solver.md`.
+> **Correction — 2026-09-27:** the "some Δlog L" and "rectangular pix1 may need to stay on library PDIP" wording below was settled by the human on 2026-09-25 in the C2 prompt (`PyAutoMind/draft/feature/autofit/certified_solver_batched_guard_c2.md`): the near-peak gate is Δ = 100 nats from the batch maximum, pinned at 0.1 nats vs scalar PDIP, and rectangular pix1 stays on library PDIP. Wiki: `wiki/campaigns/imaging/certified_positive_solver.md`.
 
 The human's reply to the open questions, verbatim: "I agree to all 3, proceed". The three
 proposals it approved were: file the B=50 `jit(vmap)` fault as its own bug, let phase C2 go ahead

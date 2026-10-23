@@ -41,7 +41,7 @@
 # the JAX path in a future lever. The row that answers it is
 # `s3/rows/"Log det Cholesky (H reduced)"`: the DENSE Cholesky of the same
 # (1500, 1500) `H`, jitted, on the A100, which the fiducial record
-# (results/breakdown/imaging/fixed_light_delaunay_hpc_a100_fp64_fixed_light.json)
+# (results/imaging/delaunay/hst/jax_gpu_dense_fp64/hpc_a100/light_fixed/breakdown.json)
 # puts at **1.204 ms** — against 37 ms for the same factorization on one CPU core.
 # At 1.2 ms a dense Cholesky of a 1500^2 SPD matrix on an A100 is launch-bound,
 # not FLOP-bound, and a sparse triangular factorization has no dense-BLAS kernel
@@ -95,7 +95,7 @@
 # report a near-zero compile time for it. Each arm gets its own fresh directory,
 # so `cache_fresh` is true and `jit_phases`/`compile_s` are comparable in both.
 # A seeded XLA autotune cache also silently changes kernels
-# (results/notes/xla_autotune_triton_gemm.md — F 4.8 vs 25.6 ms on the same code).
+# (wiki/campaigns/misc/xla_autotune_triton_gemm.md — F 4.8 vs 25.6 ms on the same code).
 # XLA_FLAGS carries only constant_folding; the autotune/Triton flags are left to
 # autonerves' jax_wrapper so this measures the library default.
 #

@@ -37,7 +37,7 @@
 # Pass --node to pin every leg to ONE A100 node. These rows are compared to each
 # other AND to the 2026-09-11 `_recon_split` / fiducial matrix-free rows, which
 # ran on euclid-ral-gpu-2, and the same code measured F at 4.8 vs 25.6 ms once
-# the autotune cache differed (results/notes/xla_autotune_triton_gemm.md) —
+# the autotune cache differed (wiki/campaigns/misc/xla_autotune_triton_gemm.md) —
 # node-to-node A100 differences are the same class of confound. Each leg wipes
 # its own JAX_COMPILATION_CACHE_DIR, so co-tenancy on one node does not seed one
 # leg's kernels from another's.
@@ -54,7 +54,7 @@
 # IS the reduced sweep the human chose) — to add one, edit LEGS below. A filter
 # that selects nothing is an error, not a silent no-op.
 #
-# Every submitted leg is appended to results/sweep/size_sweep_manifest.jsonl —
+# Every submitted leg is appended to results/misc/likelihood_breakdown/size_sweep_manifest.jsonl —
 # that file, not this terminal, is the provenance the aggregator reads to tell a
 # leg that OOMed from a leg that was never submitted. Commit it (from the RAL
 # worktree, with plain git) after a real submit.
@@ -114,7 +114,7 @@ cd "$(dirname "$0")"
 
 AP_ROOT="$(cd ../.. && pwd)"
 LEG_SUBMIT="submit_size_sweep_leg"
-MANIFEST="$AP_ROOT/results/sweep/size_sweep_manifest.jsonl"
+MANIFEST="$AP_ROOT/results/misc/likelihood_breakdown/size_sweep_manifest.jsonl"
 
 if [ ! -f "$LEG_SUBMIT" ]; then
     echo "submit_size_sweep.sh: missing '$LEG_SUBMIT' in $(pwd)" >&2

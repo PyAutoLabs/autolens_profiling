@@ -228,7 +228,7 @@ question under the campaign's fp64 constraint:
 The eight A100 JSON/PNG pairs are
 `results/breakdown/imaging/fixed_light_trace_<mesh>_logdet_<candidate>_hpc_a100_fp64_fixed_light_trace.{json,png}`.
 Their sha256s, the SLURM per-task state (`sacct`, including MaxRSS), the footers and the gate
-decision are in [`hst_gpu_residue_phase4_job350651.json`](../breakdown/imaging/hst_gpu_residue_phase4_job350651.json).
+decision are in [`hst_gpu_residue_phase4_job350651.json`](../../../results/misc/likelihood_breakdown/imaging/hst_gpu_residue_phase4_job350651.json).
 The `.out` and `.err` files stay on RAL, with local copies in the gitignored
 `output/ral_job350651/`.
 
@@ -236,7 +236,7 @@ The RTX 2060 rows are Delaunay-only screening, committed at `a621160`. They chec
 (9/9, ≤ 3.1e-10), the reconciliation, the injection counts and the exit codes. Their timings were
 contaminated by a concurrent GPU job and are not quoted, and GeForce fp64 rows are never ranked.
 The artifacts are
-[`fixed_light_trace_delaunay_logdet_<candidate>_local_rtx2060_fp64_fixed_light_trace.json`](../breakdown/imaging/fixed_light_trace_delaunay_logdet_control_local_rtx2060_fp64_fixed_light_trace.json)
+[`fixed_light_trace_delaunay_logdet_<candidate>_local_rtx2060_fp64_fixed_light_trace.json`](../../../results/imaging/delaunay/hst/jax_gpu_dense_fp64/local_gpu/light_fixed/experiments/trace_logdet_control/breakdown.json)
 (control linked; the three siblings share the pattern). The `schur_k64` RTX row predates the
 timed-point record.
 

@@ -9,7 +9,7 @@ package and its baseline artifacts, committed **before any library change**. Eve
 is the libraries exactly as they stand on `main` today.
 
 Scripts: `scripts/lens/deflections/{total,dark,stellar}.py` (method and pin policy in
-[`scripts/lens/deflections/README.md`](../../scripts/lens/deflections/README.md)).
+[`scripts/lens/deflections/README.md`](../../../../scripts/lens/deflections/README.md)).
 Artifacts: `results/lens/deflections/<cell>_summary_<instrument>_v2026.8.17.1.{json,png}`.
 
 ## Environment

@@ -20,12 +20,12 @@
 # checkouts under /mnt/ral/jnightin/PyAuto_wt/ are not needed for this A/B.
 # The revisions are printed below and recorded in the results note.
 #
-# WITNESS (results/notes/delaunay_adapt_split_regularization.md):
+# WITNESS (wiki/campaigns/imaging/delaunay_adapt_split_regularization.md):
 #   * this leg's log-evidence pin passes (pinned_drift: []) — AdaptSplit pin on
 #     the adapt_split leg, the historical ConstantSplit pin on the control;
 #   * the DelaunayNN AdaptSplit params->H prefix at vmap 16 stays within ~1 ms
 #     per call of the same-node ConstantSplit control (7.26 ms is the earlier
-#     reference in results/breakdown/imaging/delaunay_nn_hpc_a100_fp64_assembly.json),
+#     reference in results/imaging/delaunay_nn/hst/jax_gpu_dense_fp64/hpc_a100/experiments/assembly/breakdown.json),
 #     i.e. the #537 compaction survives the regularization change.
 #
 #   --regularization adapt_split

@@ -43,9 +43,9 @@ distinguished by legend symbols only; right: missed-root fraction vs scale per d
 Run::
 
     python scripts/cluster/image_plane/separation_rule.py \\
-        results/breakdown/cluster/robust_settings_sweep_viz_cluster_laptop_cpu_fp64.json \\
-        results/breakdown/cluster/robust_settings_sweep_simple_hpc_ral_cpu_fp64.json \\
-        results/breakdown/cluster/robust_settings_sweep_simple_draws53_73_81_laptop_cpu_fp64.json \\
+        results/misc/likelihood_breakdown/cluster/robust_settings_sweep_viz_cluster_laptop_cpu_fp64.json \\
+        results/cluster/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/robust_settings_sweep/breakdown.json \\
+        results/cluster/image_plane/simple/jax_cpu_na_fp64/local_laptop/experiments/robust_settings_sweep_draws53_73_81/breakdown.json \\
         --a2744-log results/logs/cluster_pointsolver/<pilot>.out
 """
 

@@ -995,6 +995,7 @@ dict_path, chart_path = resolve_output_paths(
     default_dir=_workspace_root / "results" / "breakdown" / "imaging",
     default_basename=f"{_cell_name}_breakdown_{instrument}_v{al_version}",
     cell=_cell_name,
+    hints=summary,
 )
 dict_path.write_text(json.dumps(summary, indent=2, default=str))
 print(f"\n  Results dict saved to: {dict_path}")

@@ -1,7 +1,7 @@
 """
 build_baseline.py — snapshot campaign results into a named, frozen baseline.
 
-A **baseline** (convention: `results/notes/design_lock_in.md`) is a named
+A **baseline** (convention: `wiki/campaigns/misc/design_lock_in.md`) is a named
 snapshot of campaign results under `results/baselines/<Name>/`:
 
 - the `comparison.json` per swept cell, mirroring the `results/runtime/`

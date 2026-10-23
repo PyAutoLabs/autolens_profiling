@@ -8,9 +8,13 @@ Run from the repo root::
 Checks
 ------
 
-(a) every ``results/notes/*.md`` ledger is linked (by relative path) from at least
-    one markdown file under ``wiki/``;
-(b) every ``wiki/campaigns/*.md`` page except ``_template.md`` has a row in
+(a) every ledger is linked (by relative path) from at least one markdown file under
+    ``wiki/``. Since the day-zero move (autolens_profiling#442) the ledgers live under
+    ``wiki/campaigns/<dataset_type>/<variant>/`` (a ledger is a file the migration map
+    moved from ``results/notes/``, any nested ``wiki/campaigns/**`` file the map does not
+    know, or a ``results/notes/*.md`` still in place);
+(b) every campaign page (a ``wiki/campaigns/*.md`` page before the move, wherever it lives
+    now) except ``_template.md`` has a row in
     ``wiki/index.md`` (matched by link target) and carries all ten header labels
     of the page contract (see ``wiki/README.md``);
 (c) every relative markdown link under ``wiki/`` resolves to an existing path
@@ -26,6 +30,9 @@ import argparse
 import re
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from results_layout import legacy_of  # noqa: E402
 
 HEADER_LABELS = (
     "Status",
@@ -78,13 +85,30 @@ def relative_links(md_path: Path) -> list[tuple[str, Path]]:
     return links
 
 
+def campaign_files(root: Path) -> tuple[list[Path], list[Path]]:
+    """(campaign pages, ledgers), each sorted, by their pre-move identity."""
+    root = root.resolve()
+    pages, ledgers = [], []
+    campaigns = root / "wiki" / "campaigns"
+    for md in sorted(campaigns.rglob("*.md")) if campaigns.is_dir() else []:
+        legacy = legacy_of(root, md.relative_to(root).as_posix())
+        if legacy.startswith("wiki/campaigns/") and legacy.count("/") == 2:
+            pages.append(md)
+        else:
+            ledgers.append(md)
+    notes = root / "results" / "notes"
+    # results/notes/README.md is the move's pointer, not a ledger.
+    ledgers.extend(
+        sorted(n for n in notes.glob("*.md") if n.name != "README.md") if notes.is_dir() else []
+    )
+    return pages, ledgers
+
+
 def check(root: Path) -> list[str]:
     """Return a list of human-readable failures (empty when the wiki is consistent)."""
     root = root.resolve()
     wiki = root / "wiki"
-    notes = root / "results" / "notes"
     index = wiki / "index.md"
-    campaigns = wiki / "campaigns"
     failures: list[str] = []
 
     if not wiki.is_dir():
@@ -101,8 +125,9 @@ def check(root: Path) -> list[str]:
             if not resolved.exists():
                 failures.append(f"(c) broken link in {md.relative_to(root)}: {raw}")
 
+    pages, ledgers = campaign_files(root)
     # (a) every ledger is linked from the wiki.
-    for note in sorted(notes.glob("*.md")) if notes.is_dir() else []:
+    for note in ledgers:
         if note.resolve() not in linked:
             failures.append(f"(a) ledger not linked from wiki/: {note.relative_to(root)}")
 
@@ -110,7 +135,7 @@ def check(root: Path) -> list[str]:
     index_targets = (
         {resolved for _, resolved in relative_links(index)} if index.is_file() else set()
     )
-    for page in sorted(campaigns.glob("*.md")) if campaigns.is_dir() else []:
+    for page in pages:
         if page.name == "_template.md":
             continue
         rel = page.relative_to(root)
@@ -147,8 +172,8 @@ def main(argv: list[str] | None = None) -> int:
         for f in failures:
             print(f"  {f}")
     else:
-        n_pages = len(list((root / "wiki" / "campaigns").glob("*.md")))
-        n_notes = len(list((root / "results" / "notes").glob("*.md")))
+        pages, ledgers = campaign_files(root)
+        n_pages, n_notes = len(pages), len(ledgers)
         print(f"check_wiki: OK ({n_pages} campaign files, {n_notes} ledgers linked)")
     return 1 if (failures and args.check) else 0
 

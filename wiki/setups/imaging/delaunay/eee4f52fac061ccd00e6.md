@@ -36,7 +36,7 @@ Identity limitations: Isolated to source row: legacy metadata is insufficient fo
 
 ## Evidence
 
-[Original setup artifact](../../../../results/runtime/imaging/delaunay/delaunay_likelihood_summary_hst_v2026.8.17.1.json); JSON pointer: `(document root)`.
+[Original setup artifact](../../../../archive/2026/08/hostless_summaries/runtime/imaging/delaunay/delaunay_likelihood_summary_hst_v2026.8.17.1.json); JSON pointer: `(document root)`.
 
 ### Selected references
 
@@ -48,9 +48,9 @@ No selected reference for this exact setup; archive evidence is available below.
 
 | Record | Metric | Value | Unit | Device / precision | Selection | Evidence pointer |
 |---|---|---|---|---|---|---|
-| `measurement/05454d537b72aeb5d355` | vmap.per_call | {"vmap.per_call": 3.774630096666685} | s | cpu / None | archive support; unreviewed | [artifact](../../../../results/runtime/imaging/delaunay/delaunay_likelihood_summary_hst_v2026.8.17.1.json) `/vmap/per_call` |
-| `measurement/067aa7605cfcb3289784` | vmap.batch_time | {"vmap.batch_time": 11.323890290000055} | s | cpu / None | archive support; unreviewed | [artifact](../../../../results/runtime/imaging/delaunay/delaunay_likelihood_summary_hst_v2026.8.17.1.json) `/vmap/batch_time` |
-| `measurement/f979d040c591a9782853` | single_jit_block | {"single_jit_block": 4.523518409999815} | s | cpu / None | archive support; unreviewed | [artifact](../../../../results/runtime/imaging/delaunay/delaunay_likelihood_summary_hst_v2026.8.17.1.json) `/full_pipeline_single_jit` |
+| `measurement/05454d537b72aeb5d355` | vmap.per_call | {"vmap.per_call": 3.774630096666685} | s | cpu / None | archive support; unreviewed | [artifact](../../../../archive/2026/08/hostless_summaries/runtime/imaging/delaunay/delaunay_likelihood_summary_hst_v2026.8.17.1.json) `/vmap/per_call` |
+| `measurement/067aa7605cfcb3289784` | vmap.batch_time | {"vmap.batch_time": 11.323890290000055} | s | cpu / None | archive support; unreviewed | [artifact](../../../../archive/2026/08/hostless_summaries/runtime/imaging/delaunay/delaunay_likelihood_summary_hst_v2026.8.17.1.json) `/vmap/batch_time` |
+| `measurement/f979d040c591a9782853` | single_jit_block | {"single_jit_block": 4.523518409999815} | s | cpu / None | archive support; unreviewed | [artifact](../../../../archive/2026/08/hostless_summaries/runtime/imaging/delaunay/delaunay_likelihood_summary_hst_v2026.8.17.1.json) `/full_pipeline_single_jit` |
 
 </details>
 

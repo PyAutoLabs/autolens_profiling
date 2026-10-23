@@ -32,7 +32,7 @@ Identity limitations: Isolated to source row: legacy metadata is insufficient fo
 
 ## Evidence
 
-[Original setup artifact](../../../../results/runtime/imaging/mge/ao/mge_local_cpu_fp64.json); JSON pointer: `(document root)`.
+[Original setup artifact](../../../../results/imaging/mge/ao/jax_cpu_dense_fp64/local_laptop/runtime.json); JSON pointer: `(document root)`.
 
 ### Selected references
 
@@ -44,9 +44,9 @@ No selected reference for this exact setup; archive evidence is available below.
 
 | Record | Metric | Value | Unit | Device / precision | Selection | Evidence pointer |
 |---|---|---|---|---|---|---|
-| `measurement/2f1141eaf23b86fbfa1d` | single_jit_block | {"single_jit_block": 3.108424629999354} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/runtime/imaging/mge/ao/mge_local_cpu_fp64.json) `/full_pipeline_single_jit` |
-| `measurement/af7d283b1dd4a46a1173` | vmap.per_call | {"vmap.per_call": 4.922238283333475} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/runtime/imaging/mge/ao/mge_local_cpu_fp64.json) `/vmap/per_call` |
-| `measurement/fc5668b58528e0935655` | vmap.batch_time | {"vmap.batch_time": 14.766714850000426} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/runtime/imaging/mge/ao/mge_local_cpu_fp64.json) `/vmap/batch_time` |
+| `measurement/2f1141eaf23b86fbfa1d` | single_jit_block | {"single_jit_block": 3.108424629999354} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/ao/jax_cpu_dense_fp64/local_laptop/runtime.json) `/full_pipeline_single_jit` |
+| `measurement/af7d283b1dd4a46a1173` | vmap.per_call | {"vmap.per_call": 4.922238283333475} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/ao/jax_cpu_dense_fp64/local_laptop/runtime.json) `/vmap/per_call` |
+| `measurement/fc5668b58528e0935655` | vmap.batch_time | {"vmap.batch_time": 14.766714850000426} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/ao/jax_cpu_dense_fp64/local_laptop/runtime.json) `/vmap/batch_time` |
 
 </details>
 

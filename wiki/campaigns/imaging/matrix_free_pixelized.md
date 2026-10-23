@@ -7,7 +7,7 @@
 **Headline:** matrix-free 1435.3 ms vs exact 4.02 ms per call (357x), rectangular n ≈ 1500, A100 80GB fp64 (`euclid-ral-gpu-2`) job 342664; still 15–17x at n = 12000 (jobs 342673, 342674).
 **Library PRs:** none
 **Profiling PRs:** #249 (issue #247)
-**Ledger:** [matrix_free_pixelized_2026_09.md](../../results/notes/matrix_free_pixelized_2026_09.md)
+**Ledger:** [matrix_free_pixelized_2026_09.md](matrix_free_pixelized_2026_09.md)
 **Mind contract:** no epic; `complete/2026/09/matrix-free-pixelized-likelihood.md` (parent `complete/2026/09/a100-pixelized-baseline.md`).
 **Next:** none
 
@@ -66,7 +66,7 @@ implementation (`scripts/misc/likelihood_breakdown/matrix_free_steps.py`, the `m
 - **The accuracy no-go is independent of speed.** The closest SLQ settings cost 160–720 ms (2.4x to ~12x the whole exact likelihood); the error is dominated by `log det(F+λH)`. The ledger's lead says the 720 ms setting is "~14x" the whole exact likelihood and its table text says "~12x"; 12x matches 720.459 / 59.889 ms (rect step-by-step total), the lead's denominator is not stated.
 - **Dense did not stop fitting.** The prompt expected dense F to exceed an A100 by n = 5000; every dense and sparse single-call leg fit to 12000. Only the optional vmap-16 batched-NNLS comparator OOM'd (up to 93.73 GiB, dense 342688–342694).
 - **Fiducial rows compare across jobs.** Blurred-mapping, F and total columns come from the independent `_recon_split` legs 342643–342645 ([A100 pixelized baseline](a100_pixelized_baseline.md)); the matrix-free cell and those rows overlap and must never be summed. There is no sparse exact comparator at n ≈ 1500.
-- **Aggregator vs note.** `results/sweep/size_sweep_tables.md` uses the Jacobi PCG row (rect fiducial 1462.3 ms), the note the fastest PCG row (1435.3 ms); no verdict changes. Regularization differs by mesh (`Constant(1.0)` rect, `adapt_split` Delaunay), so compare log-det terms within a mesh only.
+- **Aggregator vs note.** `results/misc/likelihood_breakdown/size_sweep_tables.md` uses the Jacobi PCG row (rect fiducial 1462.3 ms), the note the fastest PCG row (1435.3 ms); no verdict changes. Regularization differs by mesh (`Constant(1.0)` rect, `adapt_split` Delaunay), so compare log-det terms within a mesh only.
 - All 29 legs ran on `euclid-ral-gpu-2` with a fresh cache; pins PASSED on the fiducial legs and were skipped by design on non-fiducial N.
 
 ## Journal

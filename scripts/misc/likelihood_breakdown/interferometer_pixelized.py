@@ -420,17 +420,27 @@ def adapt_images_builder(adapt_image, mesh: MeshSetup) -> Callable:
 
 
 def result_paths(
-    cli, profiling_root: Path, instrument: str, cell: str, al_version: str, mask_suffix: str = ""
+    cli,
+    profiling_root: Path,
+    instrument: str,
+    cell: str,
+    al_version: str,
+    mask_suffix: str = "",
+    hints: dict | None = None,
 ) -> tuple[Path, Path]:
-    """``(json, png)`` for one pixelized cell; ``cell`` is the output-name stem."""
-    from _profile_cli import resolve_output_paths
+    """``(json, png)`` for one pixelized cell; ``cell`` is the output-name stem.
+
+    The legacy name is finished first (``_constant_split``, the mask suffix) and then placed
+    in the mirrored results tree (``_profile_cli.place_output_path``, #442 PR 2).
+    """
+    from _profile_cli import place_output_path, resolve_output_paths
 
     default_dir = profiling_root / "results" / "breakdown" / "interferometer"
     if cli.config_name is not None and instrument != "alma":
         default_dir = default_dir / instrument
     basename = f"{cell}_breakdown_{instrument}_v{al_version}"
     dict_path, chart_path = resolve_output_paths(
-        cli, default_dir=default_dir, default_basename=basename, cell=cell
+        cli, default_dir=default_dir, default_basename=basename, cell=cell, place=False
     )
     if cli.config_name is None and cli.regularization == "constant_split":
         dict_path = dict_path.with_name(dict_path.stem + "_constant_split.json")
@@ -438,6 +448,9 @@ def result_paths(
     if mask_suffix:
         dict_path = dict_path.with_name(dict_path.stem + mask_suffix + ".json")
         chart_path = chart_path.with_name(chart_path.stem + mask_suffix + ".png")
+    if cli.output_dir is None:
+        dict_path = place_output_path(dict_path, cli, basename, hints)
+        chart_path = dict_path.with_suffix(".png")
     return dict_path, chart_path
 
 
@@ -1005,7 +1018,7 @@ def run(spec: CellSpec, cli, cell_args, script_file: str, profiling_root: Path) 
         }
 
         dict_path, chart_path = result_paths(
-            cli, profiling_root, instrument, spec.cell, al_version, ds.mask_suffix
+            cli, profiling_root, instrument, spec.cell, al_version, ds.mask_suffix, hints=summary
         )
         dict_path.write_text(json.dumps(summary, indent=2, default=float))
         paths["json"], paths["png"] = dict_path, chart_path

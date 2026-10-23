@@ -13,7 +13,7 @@
 #   --vmap-batch 16              batched re-timing at the Nautilus n_batch
 #
 # Every leg starts from an EMPTY JAX compilation cache: a seeded XLA autotune
-# cache silently changes kernels (results/notes/xla_autotune_triton_gemm.md — F
+# cache silently changes kernels (wiki/campaigns/misc/xla_autotune_triton_gemm.md — F
 # 4.8 vs 25.6 ms on the same code), which is the whole reason for this re-run.
 # XLA_FLAGS carries only constant_folding; the autotune/Triton flags are left to
 # autonerves' jax_wrapper so this measures the library default.

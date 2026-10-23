@@ -7,7 +7,7 @@
 **Headline:** forward-mode batched step 0.36–0.58x of reverse on quiet RAL EPYC 7702 (job 359192); L24 solved compile 95.9 s → 11.2 s (8.6x).
 **Library PRs:** PyAutoFit#1649, PyAutoLens#752 (released in 2026.9.27.2).
 **Profiling PRs:** #317, #318 (folder split), #323, #327, #331, #336; runtime refresh #349 (issue).
-**Ledger:** [point_source_source_plane_campaign.md](../../results/notes/point_source_source_plane_campaign.md)
+**Ledger:** [point_source_source_plane_campaign.md](point_source_source_plane_campaign.md)
 **Mind contract:** epic `point-source-cpu-speed`; PyAutoPulse task [point_source_source_plane_chi_squared_speed](https://github.com/PyAutoLabs/PyAutoPulse/blob/main/tasks/point_source_source_plane_chi_squared_speed.md) (migrated from Mind 2026-10-03); records `complete/2026/09/point-source-source-plane-{breakdown,p2a,p2b,p2c,p2e}.md`, `point-source-gradient-mode.md`.
 **Next:** parked — human decision on the gradient-sampler admission evidence (2026-10-17, autolens_inference#25 / #428): `af.MultiStartAdam` (forward mode) converges to the Nautilus log-L range in 259–1432 steps on 2026.10.17.1. The likelihood+gradient is ≤ 3.7% (RAL CPU) / ≤ 2.3% (A100) of search wall, so a gradient speed-up caps at ~4% of these fits. BlackJAX NUTS/SMC not run (do not honour `gradient_mode`).
 
@@ -16,7 +16,7 @@
 Filed on 2026-09-26 from the user's request to "continue on going work to speed up the JAX source
 plane chi squared point solver … first task will be to write a likelihood_breakdown and then speed
 up from there", mirroring the image-plane campaign. The same day's scope steer made it
-single-source only (cluster work belongs to [Cluster PointSolver](cluster_pointsolver.md)). Once
+single-source only (cluster work belongs to [Cluster PointSolver](../../cluster/image_plane/cluster_pointsolver.md)). Once
 phase 2a showed the forward call sits at its dispatch floor, the campaign turned to the gradient:
 the solved likelihood contains an inner forward-mode lensing Hessian, so reverse-mode
 `value_and_grad` runs reverse-over-forward through every mass profile for only 5 parameters.

@@ -347,14 +347,14 @@ mechanism is inferred from the solver's `while_loop` structure plus where the co
 - `results/breakdown/imaging/delaunay_nn_hpc_a100_fp64_constant_split.{json,png}` (342341)
 - `results/breakdown/imaging/delaunay_hpc_a100_fp64.{json,png}` — **AdaptSplit** (342342)
 - `results/breakdown/imaging/delaunay_hpc_a100_fp64_constant_split.{json,png}` (342343)
-- `results/runtime/imaging/delaunay_nn/delaunay_nn_hpc_a100_fp64.json` — **AdaptSplit** (342344)
-- `results/runtime/imaging/delaunay_nn/delaunay_nn_hpc_a100_fp64_constant_split.json` (342345)
-- `results/runtime/imaging/delaunay/delaunay_hpc_a100_fp64.json` — **AdaptSplit** (342346)
-- `results/runtime/imaging/delaunay/delaunay_hpc_a100_fp64_constant_split.json` (342347)
+- `results/imaging/delaunay_nn/hst/jax_gpu_dense_fp64/hpc_a100/runtime.json` — **AdaptSplit** (342344)
+- `results/imaging/delaunay_nn/hst/jax_gpu_dense_fp64/hpc_a100/experiments/constant_split/runtime.json` (342345)
+- `results/imaging/delaunay/hst/jax_gpu_dense_fp64/hpc_a100/runtime.json` — **AdaptSplit** (342346)
+- `results/imaging/delaunay/hst/jax_gpu_dense_fp64/hpc_a100/experiments/constant_split/runtime.json` (342347)
 - Preserved ConstantSplit predecessors (renamed, not overwritten):
   `results/breakdown/imaging/delaunay{,_nn}_hpc_a100_fp64_constant_split_2026_09_05.{json,png}`,
-  `results/runtime/imaging/delaunay_nn/delaunay_nn_hpc_a100_fp64_constant_split_2026_09_05.json`
+  `archive/2026/09/dated/runtime/imaging/delaunay_nn/delaunay_nn_hpc_a100_fp64_constant_split_2026_09_05.json`
 - `hpc/batch_gpu/submit_{breakdown,runtime}_imaging_delaunay{,_nn}_a100_hst_fp64_{adapt_split,constant_split}`
   (eight submits; none carries the retired `--exclude=euclid-ral-gpu-1` block, per #220)
-- Related: `results/notes/delaunay_nn_constant_split_assembly.md` (#536/#537, the rows this
+- Related: `wiki/campaigns/imaging/delaunay_nn/delaunay_nn_constant_split_assembly.md` (#536/#537, the rows this
   note's control leg anchors against).

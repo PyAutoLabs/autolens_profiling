@@ -1952,6 +1952,7 @@ dict_path, chart_path = resolve_output_paths(
     default_dir=_workspace_root / "results" / "breakdown" / "imaging",
     default_basename=f"pixelization_breakdown_{instrument}_v{al_version}",
     cell="pixelization",
+    hints=breakdown_summary,
 )
 dict_path.write_text(json.dumps(breakdown_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")
@@ -2031,7 +2032,7 @@ print(f"  Bar chart saved to:    {chart_path}")
 #
 # Since 2026-09-10 this is ``check_pinned`` rather than a hard
 # ``assert_allclose``: a profiling run records and flags drift, it does not
-# adjudicate library correctness (results/notes/design_lock_in.md), and the
+# adjudicate library correctness (wiki/campaigns/misc/design_lock_in.md), and the
 # timings from a drifted run are still data.
 #
 # Both pins describe the 39x39 fiducial mesh and nothing else, so a run with a

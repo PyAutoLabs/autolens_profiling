@@ -7,7 +7,7 @@
 **Headline:** worst single-band cold compile ~77 s (MGE `laxmap_vag`, 14 s trace + 63 s compile; the ledger rounds to ~75 s), warm 1–2 s outside the Delaunay family, RAL 32-core CPU job 331379; laptop 1-core worst-case tier ~3.5 min.
 **Library PRs:** PyAutoFit#1431 (issue #1430; released 2026.8.4.1).
 **Profiling PRs:** #94 (census, issue #93), #95 (multi-band productization), #104 (warm-compile pins + dashboard, issue #103).
-**Ledger:** [multistart_prodigy_compile_census.md](../../results/notes/multistart_prodigy_compile_census.md), [multiband_pyloop_productized.md](../../results/notes/multiband_pyloop_productized.md); instrument tables in `scripts/misc/jax_compile/README.md`.
+**Ledger:** [multistart_prodigy_compile_census.md](multistart_prodigy_compile_census.md), [multiband_pyloop_productized.md](multiband_pyloop_productized.md); instrument tables in `scripts/misc/jax_compile/README.md`.
 **Mind contract:** no epic; prompts in the `## Original prompt` of `complete/2026/07/multistart-prodigy-compile.md` and `complete/2026/07/multiband-pyloop-batching.md`; surveillance arc `complete/2026/08/profiling-agent-compile-axis-arc.md` (phases `compile-axis-campaign-coverage.md`, `compile-warm-baseline-dashboard.md`, `compile-axis-triage-drift.md`); absorbed prompt `complete/2026/08/jax-compile-time-profiling-absorbed.md`.
 **Next:** none for this campaign; the one defect it found is `draft/research/autoarray/delaunay_callback_persistent_cache_miss.md`.
 
@@ -88,4 +88,4 @@ historical posterior census; the historical verdict above does not establish its
 compile cost. Outputs are isolated, pins are unchanged, and global compile
 dispatch stays unavailable. Only a tiny local CPU correctness fixture is in scope;
 no production measurement, baseline freeze or campaign acceptance follows from
-this implementation. See the [current instrument contract](../../scripts/misc/jax_compile/README.md).
+this implementation. See the [current instrument contract](../../../scripts/misc/jax_compile/README.md).

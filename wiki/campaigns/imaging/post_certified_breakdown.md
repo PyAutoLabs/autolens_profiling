@@ -7,7 +7,7 @@
 **Headline:** none yet
 **Library PRs:** none
 **Profiling PRs:** none
-**Ledger:** none yet; context in [certified_solver_phase_c1_lane_rate_2026_09.md](../../results/notes/certified_solver_phase_c1_lane_rate_2026_09.md)
+**Ledger:** none yet; context in [certified_solver_phase_c1_lane_rate_2026_09.md](certified_solver_phase_c1_lane_rate_2026_09.md)
 **Mind contract:** `draft/research/autolens_profiling/post_certified_solver_likelihood_breakdown.md` (formalised 2026-09-15; dependency `complete/2026/09/certified-positive-solver.md`)
 **Next:** issue when scheduled; first reconcile the draft's stale `Blocked-by:` line (see Caveats)
 

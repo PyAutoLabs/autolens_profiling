@@ -76,7 +76,7 @@
 # nothing reaches the dashboard).
 #
 # Every leg starts from an EMPTY JAX compilation cache: a seeded XLA autotune cache
-# silently changes kernels (results/notes/xla_autotune_triton_gemm.md). The
+# silently changes kernels (wiki/campaigns/misc/xla_autotune_triton_gemm.md). The
 # AUTOTUNE_ENTRIES census at the end is the check.
 #
 # WALL-BASIS:

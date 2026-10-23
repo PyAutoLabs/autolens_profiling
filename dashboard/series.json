@@ -22,7 +22,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/delaunay/hst/comparison.json#local_cpu_fp64",
+     "source": "results/imaging/delaunay/hst/comparison.json#local_cpu_fp64",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     },
@@ -35,7 +35,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/delaunay/delaunay_likelihood_summary_hst_v2026.8.17.1.json",
+     "source": "archive/2026/08/hostless_summaries/runtime/imaging/delaunay/delaunay_likelihood_summary_hst_v2026.8.17.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -63,7 +63,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/delaunay/hst/comparison.json#local_cpu_fp64_sparse",
+     "source": "results/imaging/delaunay/hst/comparison.json#local_cpu_fp64_sparse",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -91,7 +91,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/delaunay/hst/comparison.json#local_cpu_mp",
+     "source": "results/imaging/delaunay/hst/comparison.json#local_cpu_mp",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -119,7 +119,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/delaunay/hst/comparison.json#local_cpu_mp_sparse",
+     "source": "results/imaging/delaunay/hst/comparison.json#local_cpu_mp_sparse",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -147,7 +147,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/delaunay/delaunay_hpc_a100_fp64.json",
+     "source": "results/imaging/delaunay/hst/jax_gpu_dense_fp64/hpc_a100/runtime.json",
      "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
@@ -176,7 +176,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/delaunay/delaunay_hpc_a100_fp64_sparse.json",
+     "source": "results/imaging/delaunay/hst/jax_gpu_sparse_fp64/hpc_a100/runtime.json",
      "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
@@ -205,7 +205,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/delaunay/jwst/comparison.json#local_cpu_fp64",
+     "source": "results/imaging/delaunay/jwst/comparison.json#local_cpu_fp64",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -233,7 +233,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/delaunay/jwst/comparison.json#local_cpu_fp64_sparse",
+     "source": "results/imaging/delaunay/jwst/comparison.json#local_cpu_fp64_sparse",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -261,7 +261,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/delaunay/jwst/comparison.json#local_cpu_mp",
+     "source": "results/imaging/delaunay/jwst/comparison.json#local_cpu_mp",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -289,7 +289,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/delaunay/jwst/comparison.json#local_cpu_mp_sparse",
+     "source": "results/imaging/delaunay/jwst/comparison.json#local_cpu_mp_sparse",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -317,7 +317,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/delaunay_nn/delaunay_nn_likelihood_summary_hst_v2026.8.17.1.json",
+     "source": "archive/2026/08/hostless_summaries/runtime/imaging/delaunay_nn/delaunay_nn_likelihood_summary_hst_v2026.8.17.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -345,7 +345,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/delaunay_nn/delaunay_nn_hpc_a100_fp64.json",
+     "source": "results/imaging/delaunay_nn/hst/jax_gpu_dense_fp64/hpc_a100/runtime.json",
      "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
@@ -374,7 +374,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/delaunay_nn/delaunay_nn_hpc_a100_fp64_sparse.json",
+     "source": "results/imaging/delaunay_nn/hst/jax_gpu_sparse_fp64/hpc_a100/runtime.json",
      "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
@@ -403,7 +403,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/delaunay_numba/delaunay_numba_likelihood_summary_euclid_v2026.8.17.1.json",
+     "source": "archive/2026/08/hostless_summaries/runtime/imaging/delaunay_numba/delaunay_numba_likelihood_summary_euclid_v2026.8.17.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -431,7 +431,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/delaunay_numba/delaunay_numba_likelihood_summary_hst_v2026.8.17.1.json",
+     "source": "archive/2026/08/hostless_summaries/runtime/imaging/delaunay_numba/delaunay_numba_likelihood_summary_hst_v2026.8.17.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -459,7 +459,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/mge/ao/comparison.json#local_cpu_fp64",
+     "source": "results/imaging/mge/ao/comparison.json#local_cpu_fp64",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -487,7 +487,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/mge/ao/comparison.json#local_cpu_mp",
+     "source": "results/imaging/mge/ao/comparison.json#local_cpu_mp",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -515,7 +515,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/mge/hst/comparison.json#local_cpu_fp64",
+     "source": "results/imaging/mge/hst/comparison.json#local_cpu_fp64",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     },
@@ -556,7 +556,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/mge/hst/comparison.json#local_cpu_fp64_sparse",
+     "source": "results/imaging/mge/hst/comparison.json#local_cpu_fp64_sparse",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -584,7 +584,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/mge/hst/comparison.json#local_cpu_mp",
+     "source": "results/imaging/mge/hst/comparison.json#local_cpu_mp",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -612,7 +612,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/mge/hst/comparison.json#local_cpu_mp_sparse",
+     "source": "results/imaging/mge/hst/comparison.json#local_cpu_mp_sparse",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -640,7 +640,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/mge/jwst/comparison.json#local_cpu_fp64",
+     "source": "results/imaging/mge/jwst/comparison.json#local_cpu_fp64",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -668,7 +668,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/mge/jwst/comparison.json#local_cpu_fp64_sparse",
+     "source": "results/imaging/mge/jwst/comparison.json#local_cpu_fp64_sparse",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -696,7 +696,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/mge/jwst/comparison.json#local_cpu_mp",
+     "source": "results/imaging/mge/jwst/comparison.json#local_cpu_mp",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -724,7 +724,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/mge/jwst/comparison.json#local_cpu_mp_sparse",
+     "source": "results/imaging/mge/jwst/comparison.json#local_cpu_mp_sparse",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -780,7 +780,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/pixelization/hst/comparison.json#local_cpu_fp64",
+     "source": "results/imaging/rectangular/hst/comparison.json#local_cpu_fp64",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     },
@@ -793,7 +793,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/pixelization/pixelization_likelihood_summary_hst_v2026.8.17.1.json",
+     "source": "archive/2026/08/hostless_summaries/runtime/imaging/pixelization/pixelization_likelihood_summary_hst_v2026.8.17.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -821,7 +821,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/pixelization/hst/comparison.json#local_cpu_fp64_sparse",
+     "source": "results/imaging/rectangular/hst/comparison.json#local_cpu_fp64_sparse",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -849,7 +849,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/pixelization/hst/comparison.json#local_cpu_mp",
+     "source": "results/imaging/rectangular/hst/comparison.json#local_cpu_mp",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -877,7 +877,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/pixelization/hst/comparison.json#local_cpu_mp_sparse",
+     "source": "results/imaging/rectangular/hst/comparison.json#local_cpu_mp_sparse",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -905,7 +905,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/pixelization/pixelization_hpc_a100_fp64.json",
+     "source": "results/imaging/rectangular/hst/jax_gpu_dense_fp64/hpc_a100/runtime.json",
      "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
@@ -934,7 +934,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/pixelization/pixelization_hpc_a100_fp64_sparse.json",
+     "source": "results/imaging/rectangular/hst/jax_gpu_sparse_fp64/hpc_a100/runtime.json",
      "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
@@ -963,7 +963,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/pixelization/jwst/comparison.json#local_cpu_fp64",
+     "source": "results/imaging/rectangular/jwst/comparison.json#local_cpu_fp64",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -991,7 +991,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/pixelization/jwst/comparison.json#local_cpu_fp64_sparse",
+     "source": "results/imaging/rectangular/jwst/comparison.json#local_cpu_fp64_sparse",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -1019,7 +1019,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/pixelization/jwst/comparison.json#local_cpu_mp",
+     "source": "results/imaging/rectangular/jwst/comparison.json#local_cpu_mp",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -1047,7 +1047,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/pixelization/jwst/comparison.json#local_cpu_mp_sparse",
+     "source": "results/imaging/rectangular/jwst/comparison.json#local_cpu_mp_sparse",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -1075,7 +1075,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/pixelization_numba/pixelization_numba_likelihood_summary_euclid_v2026.8.17.1.json",
+     "source": "archive/2026/08/hostless_summaries/runtime/imaging/pixelization_numba/pixelization_numba_likelihood_summary_euclid_v2026.8.17.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -1103,7 +1103,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/pixelization_numba/pixelization_numba_likelihood_summary_hst_v2026.8.17.1.json",
+     "source": "archive/2026/08/hostless_summaries/runtime/imaging/pixelization_numba/pixelization_numba_likelihood_summary_hst_v2026.8.17.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -1131,7 +1131,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/imaging/pixelization_numba_mge_mass/pixelization_numba_mge_mass_likelihood_summary_hst_v2026.8.17.1.json",
+     "source": "results/imaging/rectangular/hst/numba_cpu_sparse_fp64/local_laptop/mge_mass/runtime.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -1159,7 +1159,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/interferometer/delaunay/alma/comparison.json#local_cpu_mp",
+     "source": "results/interferometer/delaunay/alma/comparison.json#local_cpu_mp",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -1187,7 +1187,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/interferometer/delaunay/sma/comparison.json#local_cpu_fp64",
+     "source": "results/interferometer/delaunay/sma/comparison.json#local_cpu_fp64",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -1215,7 +1215,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/interferometer/delaunay/sma/comparison.json#local_cpu_mp",
+     "source": "results/interferometer/delaunay/sma/comparison.json#local_cpu_mp",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -1243,7 +1243,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/interferometer/mge/sma/comparison.json#local_cpu_fp64",
+     "source": "results/interferometer/mge/sma/comparison.json#local_cpu_fp64",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -1271,7 +1271,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/interferometer/mge/sma/comparison.json#local_cpu_mp",
+     "source": "results/interferometer/mge/sma/comparison.json#local_cpu_mp",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -1299,7 +1299,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/interferometer/pixelization/sma/comparison.json#local_cpu_fp64",
+     "source": "results/interferometer/rectangular/sma/comparison.json#local_cpu_fp64",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -1327,7 +1327,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/interferometer/pixelization/sma/comparison.json#local_cpu_mp",
+     "source": "results/interferometer/rectangular/sma/comparison.json#local_cpu_mp",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -1355,7 +1355,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/point_source_image/image_plane_solved/image_plane_solved_summary_v2026.7.23.1.json",
+     "source": "archive/2026/07/hostless_summaries/runtime/point_source_image/image_plane_solved/image_plane_solved_summary_v2026.7.23.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -1383,7 +1383,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/runtime/point_source_source/source_plane_solved/source_plane_solved_summary_v2026.7.23.1.json",
+     "source": "archive/2026/07/hostless_summaries/runtime/point_source_source/source_plane_solved/source_plane_solved_summary_v2026.7.23.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -1411,7 +1411,7 @@
      "job": "412517",
      "loadavg": 0.71,
      "has_provenance": true,
-     "source": "results/runtime/point_source_source/source_plane_solved/comparison.json#hpc_a100_fp64",
+     "source": "results/misc/likelihood_runtime/point_source_source/source_plane_solved/comparison.json#hpc_a100_fp64",
      "headline_estimator": "steady median",
      "single_jit_block_mean_s": 0.0003466109978035092,
      "single_jit_median_s": 0.00023301457986235619,
@@ -1442,7 +1442,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/cluster/image_plane_breakdown_v2026.7.6.649.json",
+     "source": "archive/2026/07/hostless_summaries/breakdown/cluster/image_plane_breakdown_v2026.7.6.649.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     },
@@ -1455,7 +1455,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/cluster/image_plane_breakdown_v2026.7.23.1.json",
+     "source": "archive/2026/07/hostless_summaries/breakdown/cluster/image_plane_breakdown_v2026.7.23.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     },
@@ -1524,7 +1524,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/cluster/source_plane_breakdown_v2026.7.6.649.json",
+     "source": "archive/2026/07/hostless_summaries/breakdown/cluster/source_plane_breakdown_v2026.7.6.649.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     },
@@ -1537,7 +1537,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/cluster/source_plane_breakdown_v2026.7.23.1.json",
+     "source": "archive/2026/07/hostless_summaries/breakdown/cluster/source_plane_breakdown_v2026.7.23.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -1621,7 +1621,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/imaging/delaunay_breakdown_hst_v2026.5.29.4.json",
+     "source": "archive/2026/05/hostless_summaries/breakdown/imaging/delaunay_breakdown_hst_v2026.5.29.4.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     },
@@ -1634,7 +1634,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/imaging/delaunay_breakdown_hst_v2026.7.6.649.json",
+     "source": "archive/2026/07/hostless_summaries/breakdown/imaging/delaunay_breakdown_hst_v2026.7.6.649.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     },
@@ -1647,7 +1647,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/imaging/delaunay_breakdown_hst_v2026.8.17.1.json",
+     "source": "archive/2026/08/hostless_summaries/breakdown/imaging/delaunay_breakdown_hst_v2026.8.17.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -1675,7 +1675,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/imaging/delaunay_breakdown_hst_v2026.5.29.4_sparse.json",
+     "source": "archive/2026/05/hostless_summaries/breakdown/imaging/delaunay_breakdown_hst_v2026.5.29.4_sparse.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     },
@@ -1688,7 +1688,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/imaging/delaunay_breakdown_hst_v2026.7.6.649_sparse.json",
+     "source": "archive/2026/07/hostless_summaries/breakdown/imaging/delaunay_breakdown_hst_v2026.7.6.649_sparse.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -1716,7 +1716,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/imaging/delaunay_hpc_a100_fp64.json",
+     "source": "results/imaging/delaunay/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -1744,7 +1744,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/imaging/delaunay_hpc_a100_fp64_sparse.json",
+     "source": "results/imaging/delaunay/hst/jax_gpu_sparse_fp64/hpc_a100/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -1772,7 +1772,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/imaging/delaunay_hpc_a100_mp.json",
+     "source": "results/imaging/delaunay/hst/jax_gpu_dense_mixed/hpc_a100/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -1800,7 +1800,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/imaging/delaunay_hpc_a100_mp_sparse.json",
+     "source": "results/imaging/delaunay/hst/jax_gpu_sparse_mixed/hpc_a100/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -1828,7 +1828,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/imaging/delaunay_nn_breakdown_hst_v2026.8.17.1.json",
+     "source": "archive/2026/08/hostless_summaries/breakdown/imaging/delaunay_nn_breakdown_hst_v2026.8.17.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -1856,7 +1856,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/imaging/delaunay_nn_hpc_a100_fp64.json",
+     "source": "results/imaging/delaunay_nn/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -1884,7 +1884,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/imaging/delaunay_nn_hpc_a100_fp64_sparse.json",
+     "source": "results/imaging/delaunay_nn/hst/jax_gpu_sparse_fp64/hpc_a100/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -1912,7 +1912,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/imaging/delaunay_numba_breakdown_euclid_v2026.8.17.1.json",
+     "source": "archive/2026/08/hostless_summaries/breakdown/imaging/delaunay_numba_breakdown_euclid_v2026.8.17.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -1940,7 +1940,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/imaging/delaunay_numba_breakdown_hst_v2026.8.17.1.json",
+     "source": "archive/2026/08/hostless_summaries/breakdown/imaging/delaunay_numba_breakdown_hst_v2026.8.17.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -1968,7 +1968,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/imaging/mge_breakdown_hst_v2026.5.29.4.json",
+     "source": "archive/2026/05/hostless_summaries/breakdown/imaging/mge_breakdown_hst_v2026.5.29.4.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     },
@@ -1981,7 +1981,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/imaging/mge_breakdown_hst_v2026.7.6.649.json",
+     "source": "archive/2026/07/hostless_summaries/breakdown/imaging/mge_breakdown_hst_v2026.7.6.649.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     },
@@ -1994,7 +1994,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/imaging/mge_breakdown_hst_v2026.8.17.1.json",
+     "source": "archive/2026/08/hostless_summaries/breakdown/imaging/mge_breakdown_hst_v2026.8.17.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2022,7 +2022,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/imaging/mge_hpc_a100_fp64.json",
+     "source": "results/imaging/mge/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2050,7 +2050,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/imaging/pixelization_breakdown_hst_v2026.5.29.4.json",
+     "source": "archive/2026/05/hostless_summaries/breakdown/imaging/pixelization_breakdown_hst_v2026.5.29.4.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     },
@@ -2063,7 +2063,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/imaging/pixelization_breakdown_hst_v2026.7.6.649.json",
+     "source": "archive/2026/07/hostless_summaries/breakdown/imaging/pixelization_breakdown_hst_v2026.7.6.649.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     },
@@ -2076,7 +2076,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/imaging/pixelization_breakdown_hst_v2026.8.17.1.json",
+     "source": "archive/2026/08/hostless_summaries/breakdown/imaging/pixelization_breakdown_hst_v2026.8.17.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2104,7 +2104,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/imaging/pixelization_breakdown_hst_v2026.5.29.4_sparse.json",
+     "source": "archive/2026/05/hostless_summaries/breakdown/imaging/pixelization_breakdown_hst_v2026.5.29.4_sparse.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     },
@@ -2117,7 +2117,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/imaging/pixelization_breakdown_hst_v2026.7.6.649_sparse.json",
+     "source": "archive/2026/07/hostless_summaries/breakdown/imaging/pixelization_breakdown_hst_v2026.7.6.649_sparse.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2145,7 +2145,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/imaging/pixelization_hpc_a100_fp64.json",
+     "source": "results/imaging/rectangular/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2173,7 +2173,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/imaging/pixelization_hpc_a100_fp64_sparse.json",
+     "source": "results/imaging/rectangular/hst/jax_gpu_sparse_fp64/hpc_a100/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2201,7 +2201,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/imaging/pixelization_hpc_a100_mp.json",
+     "source": "results/imaging/rectangular/hst/jax_gpu_dense_mixed/hpc_a100/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2229,7 +2229,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/imaging/pixelization_hpc_a100_mp_sparse.json",
+     "source": "results/imaging/rectangular/hst/jax_gpu_sparse_mixed/hpc_a100/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2257,7 +2257,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/imaging/pixelization_numba_breakdown_euclid_v2026.8.17.1.json",
+     "source": "archive/2026/08/hostless_summaries/breakdown/imaging/pixelization_numba_breakdown_euclid_v2026.8.17.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2285,7 +2285,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/imaging/pixelization_numba_breakdown_hst_v2026.8.17.1.json",
+     "source": "archive/2026/08/hostless_summaries/breakdown/imaging/pixelization_numba_breakdown_hst_v2026.8.17.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2313,7 +2313,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/alma_high/delaunay_hpc_ral_cpu_fp64.json",
+     "source": "results/interferometer/delaunay/alma_high/jax_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2341,7 +2341,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/alma_high/delaunay_hpc_a100_fp64.json",
+     "source": "results/interferometer/delaunay/alma_high/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
      "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
@@ -2370,7 +2370,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/alma_high/delaunay_hpc_a100_mp.json",
+     "source": "results/interferometer/delaunay/alma_high/jax_gpu_sparse_mixed_wtilde/hpc_a100/breakdown.json",
      "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
@@ -2399,7 +2399,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/alma_high/delaunay_numba_hpc_ral_cpu_fp64.json",
+     "source": "results/interferometer/delaunay/alma_high/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2427,7 +2427,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/alma_high/mge_hpc_a100_fp64.json",
+     "source": "results/interferometer/mge/alma_high/jax_gpu_dense_fp64_nufft/hpc_a100/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2455,7 +2455,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/alma_high/mge_hpc_a100_fp64_sparse.json",
+     "source": "results/interferometer/mge/alma_high/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2483,7 +2483,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/alma_high/mge_hpc_a100_mp.json",
+     "source": "results/interferometer/mge/alma_high/jax_gpu_dense_mixed_nufft/hpc_a100/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2511,7 +2511,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/alma_high/pixelization_hpc_ral_cpu_fp64.json",
+     "source": "results/interferometer/rectangular/alma_high/jax_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2539,7 +2539,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/alma_high/pixelization_hpc_a100_fp64.json",
+     "source": "results/interferometer/rectangular/alma_high/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
      "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
@@ -2568,7 +2568,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/alma_high/pixelization_hpc_a100_mp.json",
+     "source": "results/interferometer/rectangular/alma_high/jax_gpu_sparse_mixed_wtilde/hpc_a100/breakdown.json",
      "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
@@ -2597,7 +2597,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/alma_high/pixelization_numba_hpc_ral_cpu_fp64.json",
+     "source": "results/interferometer/rectangular/alma_high/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2625,7 +2625,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/delaunay_breakdown_alma_v2026.8.17.1.json",
+     "source": "results/interferometer/delaunay/alma/jax_cpu_sparse_fp64_wtilde/local_laptop/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2653,7 +2653,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/delaunay_hpc_ral_cpu_fp64.json",
+     "source": "results/interferometer/delaunay/alma/jax_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2681,7 +2681,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/delaunay_hpc_a100_fp64.json",
+     "source": "results/interferometer/delaunay/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
      "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
@@ -2710,7 +2710,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/delaunay_hpc_a100_mp.json",
+     "source": "results/interferometer/delaunay/alma/jax_gpu_sparse_mixed_wtilde/hpc_a100/breakdown.json",
      "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
@@ -2739,7 +2739,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/delaunay_breakdown_sma_v2026.8.17.1.json",
+     "source": "results/interferometer/delaunay/sma/jax_cpu_sparse_fp64_wtilde/local_laptop/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2767,7 +2767,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/delaunay_numba_hpc_ral_cpu_fp64.json",
+     "source": "results/interferometer/delaunay/alma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2795,7 +2795,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/delaunay_numba_breakdown_sma_v2026.8.17.1.json",
+     "source": "results/interferometer/delaunay/sma/numba_cpu_sparse_fp64_wtilde/local_laptop/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2823,7 +2823,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/delaunay_numba_direct_conv_breakdown_alma_v2026.8.17.1.json",
+     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_direct_conv_breakdown_alma_v2026.8.17.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2851,7 +2851,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/delaunay_numba_direct_conv_breakdown_sma_v2026.8.17.1.json",
+     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_direct_conv_breakdown_sma_v2026.8.17.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2879,7 +2879,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/delaunay_numba_jax_breakdown_alma_v2026.8.17.1.json",
+     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_jax_breakdown_alma_v2026.8.17.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2907,7 +2907,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/delaunay_numba_jax_breakdown_sma_v2026.8.17.1.json",
+     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_jax_breakdown_sma_v2026.8.17.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2935,7 +2935,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/delaunay_numba_reference_breakdown_alma_v2026.8.17.1.json",
+     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_reference_breakdown_alma_v2026.8.17.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2963,7 +2963,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/delaunay_numba_reference_breakdown_sma_v2026.8.17.1.json",
+     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_reference_breakdown_sma_v2026.8.17.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2991,7 +2991,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/delaunay_numba_source_loop_breakdown_sma_v2026.8.17.1.json",
+     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_source_loop_breakdown_sma_v2026.8.17.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3019,7 +3019,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/delaunay_numba_symmetric_breakdown_sma_v2026.8.17.1.json",
+     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_symmetric_breakdown_sma_v2026.8.17.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3047,7 +3047,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/delaunay_numba_two_stage_breakdown_sma_v2026.8.17.1.json",
+     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_two_stage_breakdown_sma_v2026.8.17.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3075,7 +3075,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/jvla/delaunay_hpc_a100_fp64.json",
+     "source": "results/interferometer/delaunay/jvla/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
      "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
@@ -3104,7 +3104,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/jvla/delaunay_hpc_a100_mp.json",
+     "source": "results/interferometer/delaunay/jvla/jax_gpu_sparse_mixed_wtilde/hpc_a100/breakdown.json",
      "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
@@ -3133,7 +3133,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/jvla/mge_hpc_a100_fp64.json",
+     "source": "results/interferometer/mge/jvla/jax_gpu_dense_fp64_nufft/hpc_a100/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3161,7 +3161,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/jvla/mge_hpc_a100_fp64_sparse.json",
+     "source": "results/interferometer/mge/jvla/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3189,7 +3189,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/jvla/mge_hpc_a100_mp.json",
+     "source": "results/interferometer/mge/jvla/jax_gpu_dense_mixed_nufft/hpc_a100/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3217,7 +3217,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/jvla/pixelization_hpc_a100_fp64.json",
+     "source": "results/interferometer/rectangular/jvla/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
      "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
@@ -3246,7 +3246,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/jvla/pixelization_hpc_a100_mp.json",
+     "source": "results/interferometer/rectangular/jvla/jax_gpu_sparse_mixed_wtilde/hpc_a100/breakdown.json",
      "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
@@ -3275,7 +3275,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/mge_breakdown_alma_v2026.8.17.1.json",
+     "source": "results/interferometer/mge/alma/jax_cpu_dense_fp64_nufft/local_laptop/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3303,7 +3303,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/mge_breakdown_alma_v2026.8.17.1_sparse.json",
+     "source": "results/interferometer/mge/alma/jax_cpu_sparse_fp64_wtilde/local_laptop/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3331,7 +3331,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/mge_hpc_a100_fp64.json",
+     "source": "results/interferometer/mge/alma/jax_gpu_dense_fp64_nufft/hpc_a100/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3359,7 +3359,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/mge_hpc_a100_fp64_sparse.json",
+     "source": "results/interferometer/mge/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3387,7 +3387,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/mge_breakdown_alma_high_v2026.8.17.1.json",
+     "source": "results/interferometer/mge/alma_high/jax_cpu_dense_fp64_nufft/local_laptop/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3415,7 +3415,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/mge_breakdown_sma_v2026.8.17.1.json",
+     "source": "results/interferometer/mge/sma/jax_cpu_dense_fp64_nufft/local_laptop/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3443,7 +3443,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/mge_breakdown_sma_v2026.8.17.1_sparse.json",
+     "source": "results/interferometer/mge/sma/jax_cpu_sparse_fp64_wtilde/local_laptop/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3471,7 +3471,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/mge_dft_breakdown_sma_v2026.8.17.1.json",
+     "source": "archive/2026/08/pre_2026_09/breakdown/interferometer/mge_dft_breakdown_sma_v2026.8.17.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3499,7 +3499,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/pixelization_breakdown_alma_v2026.8.17.1.json",
+     "source": "results/interferometer/rectangular/alma/jax_cpu_sparse_fp64_wtilde/local_laptop/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3527,7 +3527,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/pixelization_hpc_ral_cpu_fp64.json",
+     "source": "results/interferometer/rectangular/alma/jax_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3555,7 +3555,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/pixelization_hpc_a100_fp64.json",
+     "source": "results/interferometer/rectangular/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
      "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
@@ -3584,7 +3584,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/pixelization_hpc_a100_mp.json",
+     "source": "results/interferometer/rectangular/alma/jax_gpu_sparse_mixed_wtilde/hpc_a100/breakdown.json",
      "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
@@ -3613,7 +3613,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/pixelization_breakdown_sma_v2026.8.17.1.json",
+     "source": "results/interferometer/rectangular/sma/jax_cpu_sparse_fp64_wtilde/local_laptop/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3641,7 +3641,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/pixelization_numba_hpc_ral_cpu_fp64.json",
+     "source": "results/interferometer/rectangular/alma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3669,7 +3669,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/pixelization_numba_breakdown_sma_v2026.8.17.1.json",
+     "source": "results/interferometer/rectangular/sma/numba_cpu_sparse_fp64_wtilde/local_laptop/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3697,7 +3697,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/pixelization_numba_direct_conv_breakdown_alma_v2026.8.17.1.json",
+     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_direct_conv_breakdown_alma_v2026.8.17.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3725,7 +3725,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/pixelization_numba_direct_conv_breakdown_sma_v2026.8.17.1.json",
+     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_direct_conv_breakdown_sma_v2026.8.17.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3753,7 +3753,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/pixelization_numba_jax_breakdown_alma_v2026.8.17.1.json",
+     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_jax_breakdown_alma_v2026.8.17.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3781,7 +3781,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/pixelization_numba_jax_breakdown_sma_v2026.8.17.1.json",
+     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_jax_breakdown_sma_v2026.8.17.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3809,7 +3809,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/pixelization_numba_reference_breakdown_alma_v2026.8.17.1.json",
+     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_reference_breakdown_alma_v2026.8.17.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3837,7 +3837,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/pixelization_numba_reference_breakdown_sma_v2026.8.17.1.json",
+     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_reference_breakdown_sma_v2026.8.17.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3865,7 +3865,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/sma/delaunay_hpc_ral_cpu_fp64.json",
+     "source": "results/interferometer/delaunay/sma/jax_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3893,7 +3893,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/sma/delaunay_hpc_a100_fp64.json",
+     "source": "results/interferometer/delaunay/sma/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
      "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
@@ -3922,7 +3922,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/sma/delaunay_hpc_a100_mp.json",
+     "source": "results/interferometer/delaunay/sma/jax_gpu_sparse_mixed_wtilde/hpc_a100/breakdown.json",
      "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
@@ -3951,7 +3951,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/sma/delaunay_numba_hpc_ral_cpu_fp64.json",
+     "source": "results/interferometer/delaunay/sma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3979,7 +3979,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/sma/mge_hpc_a100_fp64.json",
+     "source": "results/interferometer/mge/sma/jax_gpu_dense_fp64_nufft/hpc_a100/breakdown.json",
      "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
@@ -4008,7 +4008,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/sma/pixelization_hpc_ral_cpu_fp64.json",
+     "source": "results/interferometer/rectangular/sma/jax_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -4036,7 +4036,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/sma/pixelization_hpc_a100_fp64.json",
+     "source": "results/interferometer/rectangular/sma/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
      "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
@@ -4065,7 +4065,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/sma/pixelization_hpc_a100_mp.json",
+     "source": "results/interferometer/rectangular/sma/jax_gpu_sparse_mixed_wtilde/hpc_a100/breakdown.json",
      "headline_note": "first block after compile",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
@@ -4094,7 +4094,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/interferometer/sma/pixelization_numba_hpc_ral_cpu_fp64.json",
+     "source": "results/interferometer/rectangular/sma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -4122,7 +4122,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/point_source_image/image_plane_local_cpu_fp64.json",
+     "source": "results/point_source_image/image_plane/simple/jax_cpu_na_fp64/local_laptop/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -4150,7 +4150,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/point_source_image/image_plane_hpc_ral_cpu_fp64.json",
+     "source": "results/point_source_image/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -4178,7 +4178,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/point_source_source/source_plane_local_cpu_fp64.json",
+     "source": "results/point_source_source/source_plane/simple/jax_cpu_na_fp64/local_laptop/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -4206,7 +4206,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/point_source_source/source_plane_hpc_ral_cpu_fp64.json",
+     "source": "results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -4234,7 +4234,7 @@
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/breakdown/point_source_source/source_plane_hpc_a100_fp64.json",
+     "source": "results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -4257,7 +4257,7 @@
    "job": "412518",
    "loadavg": 10.15,
    "has_provenance": true,
-   "source": "results/runtime/point_source_source/source_plane_solved/comparison.json#hpc_ral_cpu_fp64",
+   "source": "results/misc/likelihood_runtime/point_source_source/source_plane_solved/comparison.json#hpc_ral_cpu_fp64",
    "headline_estimator": "steady median",
    "single_jit_block_mean_s": 0.00017663601320236922,
    "single_jit_median_s": 0.00014712498523294926,
@@ -4277,7 +4277,7 @@
    "job": "412518",
    "loadavg": 10.15,
    "has_provenance": true,
-   "source": "results/runtime/point_source_source/source_plane_solved/source_plane_solved_hpc_ral_cpu_fp64.json",
+   "source": "results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/runtime.json",
    "headline_estimator": "steady median",
    "single_jit_block_mean_s": 0.00017663601320236922,
    "single_jit_median_s": 0.00014712498523294926,
@@ -4297,7 +4297,7 @@
    "job": "375981",
    "loadavg": 65.7,
    "has_provenance": true,
-   "source": "results/breakdown/interferometer/sdp81/delaunay_hpc_a100_fp64.json",
+   "source": "results/interferometer/delaunay/sdp81/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
    "headline_note": "first block after compile",
    "qualified": false,
    "reason": "loadavg 65.7 above the cap 8",
@@ -4315,7 +4315,7 @@
    "job": "375979",
    "loadavg": 68.3,
    "has_provenance": true,
-   "source": "results/breakdown/interferometer/sdp81/delaunay_numba_hpc_ral_cpu_fp64.json",
+   "source": "results/interferometer/delaunay/sdp81/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
    "qualified": false,
    "reason": "loadavg 68.3 above the cap 8",
    "section": "breakdown",
@@ -4332,7 +4332,7 @@
    "job": "375983",
    "loadavg": 55.74,
    "has_provenance": true,
-   "source": "results/breakdown/interferometer/sdp81/mge_hpc_a100_fp64.json",
+   "source": "results/interferometer/mge/sdp81/jax_gpu_dense_fp64_nufft/hpc_a100/breakdown.json",
    "headline_note": "first block after compile",
    "qualified": false,
    "reason": "loadavg 55.7 above the cap 8",
@@ -4350,7 +4350,7 @@
    "job": "375984",
    "loadavg": 55.74,
    "has_provenance": true,
-   "source": "results/breakdown/interferometer/sdp81/mge_hpc_a100_fp64_sparse.json",
+   "source": "results/interferometer/mge/sdp81/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
    "headline_note": "first block after compile",
    "qualified": false,
    "reason": "loadavg 55.7 above the cap 8",
@@ -4368,7 +4368,7 @@
    "job": "375982",
    "loadavg": 65.7,
    "has_provenance": true,
-   "source": "results/breakdown/interferometer/sdp81/pixelization_hpc_a100_fp64.json",
+   "source": "results/interferometer/rectangular/sdp81/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
    "headline_note": "first block after compile",
    "qualified": false,
    "reason": "loadavg 65.7 above the cap 8",
@@ -4386,7 +4386,7 @@
    "job": "375980",
    "loadavg": 68.3,
    "has_provenance": true,
-   "source": "results/breakdown/interferometer/sdp81/pixelization_numba_hpc_ral_cpu_fp64.json",
+   "source": "results/interferometer/rectangular/sdp81/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
    "qualified": false,
    "reason": "loadavg 68.3 above the cap 8",
    "section": "breakdown",

@@ -77,7 +77,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output-root", type=Path, default=None)
     args = parser.parse_args(argv)
     repo_root = _profiling_root()
-    output_root = args.output_root or repo_root / "results" / "hazards"
+    output_root = args.output_root or repo_root / "results" / "misc" / "hazards"
     payload = build_index_from_records(output_root)
     index_path = output_root / "hazards_index.json"
     write_index(payload, index_path)

@@ -27,7 +27,7 @@ Identity limitations: Isolated to source row: legacy metadata is insufficient fo
 
 ## Evidence
 
-[Original setup artifact](../../../../results/breakdown/cluster/robust_settings_sweep_viz_cluster_laptop_cpu_fp64.json); JSON pointer: `(document root)`.
+[Original setup artifact](../../../../results/misc/likelihood_breakdown/cluster/robust_settings_sweep_viz_cluster_laptop_cpu_fp64.json); JSON pointer: `(document root)`.
 
 ### Selected references
 
@@ -39,7 +39,7 @@ No selected reference for this exact setup; archive evidence is available below.
 
 | Record | Metric | Value | Unit | Device / precision | Selection | Evidence pointer |
 |---|---|---|---|---|---|---|
-| `measurement/d5cb01014324a79825a4` | host_peak_rss | {"host_peak_rss": 1831.3} | MiB | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/breakdown/cluster/robust_settings_sweep_viz_cluster_laptop_cpu_fp64.json) `/peak_rss_mb` |
+| `measurement/d5cb01014324a79825a4` | host_peak_rss | {"host_peak_rss": 1831.3} | MiB | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/misc/likelihood_breakdown/cluster/robust_settings_sweep_viz_cluster_laptop_cpu_fp64.json) `/peak_rss_mb` |
 
 </details>
 

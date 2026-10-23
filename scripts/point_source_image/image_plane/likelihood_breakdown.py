@@ -440,6 +440,7 @@ dict_path, chart_path = resolve_output_paths(
     default_dir=_ROOT / "results" / "breakdown" / "point_source_image",
     default_basename=f"image_plane_breakdown_{INSTRUMENT}_v{al_version}",
     cell="image_plane",
+    hints=summary,
 )
 dict_path.write_text(json.dumps(summary, indent=2))
 

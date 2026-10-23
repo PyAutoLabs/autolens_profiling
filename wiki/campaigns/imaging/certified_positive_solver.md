@@ -7,7 +7,7 @@
 **Headline:** C1 uncertified-lane rate 1.9–4.9 % overall (0 in the late half) on real Nautilus batches at n_batch=20, A100 80GB fp64, replay job 350768 (captures 350659, 350766).
 **Library PRs:** PyAutoArray#567 (released 2026.9.26.1).
 **Profiling PRs:** #299, #302, #309.
-**Ledger:** [certified_solver_policy_phase_b_2026_09.md](../../results/notes/certified_solver_policy_phase_b_2026_09.md), [certified_solver_phase_c1_lane_rate_2026_09.md](../../results/notes/certified_solver_phase_c1_lane_rate_2026_09.md)
+**Ledger:** [certified_solver_policy_phase_b_2026_09.md](certified_solver_policy_phase_b_2026_09.md), [certified_solver_phase_c1_lane_rate_2026_09.md](certified_solver_phase_c1_lane_rate_2026_09.md)
 **Mind contract:** epic `certified-positive-solver` (not in epics.md); `complete/2026/09/certified-positive-solver.md` (A), `certified-solver-phase-b.md`, `certified-solver-scalar-default-flip.md` (retired), `certified-solver-phase-c1-lane-rate.md`.
 **Next:** C2 guard via `draft/feature/autofit/certified_solver_batched_guard_c2.md` (its `Blocked-by:` release of PyAutoArray#567 is now satisfied by 2026.9.26.1).
 
@@ -66,7 +66,7 @@ vmap change waits on C2).
 - **Phase B numbers are seeded draws; C1 numbers are real Nautilus batches.** Phase B's lanes are one seed-0 family near the fiducial with regularization fixed; C1 replays captured proposals with regularization free. Every C1 row is slower than its phase-B counterpart (Delaunay B16 PDIP vmap 47.0 vs 38.9 ms/lane); do not mix them.
 - **Lane-rate spread.** The 1.9–4.9 % overall rate averages a prior phase at 11.7–20.6 % with a late half at 0, over captures capped at 40000 likelihoods / 3600 s; "near zero" is arguable (ledger). At prior-phase rates the guard is slower than PDIP on rectangular. Every rate task hit pass 16. C1 scalar certified arms vary between tasks more than in phase B (Delaunay pix1 38.9 vs 44.3 ms on overlapping lanes).
 - **The scalar path reaches almost no production run.** The human: nobody runs AutoLens without JAX vmap mode, which is why the phase-B scalar gain (1.7x / 1.4x) was never shipped as a default.
-- **Provenance gaps.** The C1 `.npz` captures and all `.out`/`.err` logs stay on RAL, not committed; the Delaunay captures (350659) were taken on PyAutoArray `7fa8d271`, the replay ran on `3de624b5`. Sidecars: [phase B](../../results/breakdown/imaging/certified_solver_policy_phase_b_job350588.json), [C1](../../results/breakdown/imaging/certified_solver_phase_c1_job350768.json).
+- **Provenance gaps.** The C1 `.npz` captures and all `.out`/`.err` logs stay on RAL, not committed; the Delaunay captures (350659) were taken on PyAutoArray `7fa8d271`, the replay ran on `3de624b5`. Sidecars: [phase B](../../../results/misc/likelihood_breakdown/imaging/certified_solver_policy_phase_b_job350588.json), [C1](../../../results/misc/likelihood_breakdown/imaging/certified_solver_phase_c1_job350768.json).
 - **B=100 is a memory limit**, not a result: one 73–74 GiB allocation on an 80 GB A100.
 
 ## Journal

@@ -168,7 +168,7 @@ mode is phase 2 exactly, down to the output filename and the JSON key set.
   asserts ZERO callbacks per arm and ``host_qhull_ms_per_lane`` is 0.
 
 **The phase-B gate, PRE-REGISTERED before any A100 submission.** Phase 3
-(``results/notes/hst_gpu_residue_phase3_psf_2026_09.md``) placed phase 2's
+(``wiki/campaigns/imaging/hst_gpu_residue_phase3_psf_2026_09.md``) placed phase 2's
 ~2.5e-9 certified-vs-PDIP residual *between the compositions* — ``jit(vmap)``
 against scalar ``jit`` — not in the solver. So library mode compiles two
 library-PDIP references, one per composition, and per lane:
@@ -290,7 +290,7 @@ A100 data** and at ``EQUIVALENCE_RTOL`` (1e-9 relative) everywhere:
    labelled ``DIAGNOSTIC``, never gated, never PASS.
 
 Why the draws are gated on the d-control: phase 2 (job 344635,
-``results/notes/hst_gpu_residue_phase2_vmap_2026_09.md``) recorded a
+``wiki/campaigns/imaging/hst_gpu_residue_phase2_vmap_2026_09.md``) recorded a
 2.0-2.6e-9 certified-vs-library-PDIP residual on seed-0 draw 7 on the A100. It
 is a property of the SOLVER path (the RTX gives 2.7e-10 for the same draw), not
 of the convolution; gating this phase's lever on it would fail every task,
@@ -2112,6 +2112,7 @@ if CAPTURED_PASS == "rate":
         default_dir=_workspace_root / "results" / "breakdown" / "imaging",
         default_basename=f"{_rate_name}_trace_{DATASET}_v{al.__version__}",
         cell=_rate_name,
+        hints=rate_summary_json,
     )
     _rate_json.write_text(json.dumps(rate_summary_json, indent=2, default=str))
     print(f"\n  Rate JSON saved to: {_rate_json}")
@@ -3341,7 +3342,7 @@ else:
                     ),
                     "note": (
                         "Pre-registered before submission (module docstring; submit header). "
-                        "Phase 3 (results/notes/hst_gpu_residue_phase3_psf_2026_09.md) placed "
+                        "Phase 3 (wiki/campaigns/imaging/hst_gpu_residue_phase3_psf_2026_09.md) placed "
                         "phase 2's ~2.5e-9 certified-vs-PDIP residual BETWEEN the jit(vmap) and "
                         "scalar-jit compositions, not in the solver — so each arm is gated "
                         "against the library-PDIP reference of its OWN composition, and the "
@@ -4084,6 +4085,7 @@ dict_path, chart_path = resolve_output_paths(
     default_dir=_workspace_root / "results" / "breakdown" / "imaging",
     default_basename=f"{_cell_name}_trace_{DATASET}_v{al_version}",
     cell=_cell_name,
+    hints=trace_summary,
 )
 dict_path.write_text(json.dumps(trace_summary, indent=2, default=str))
 print(f"\n  Results dict saved to: {dict_path}")

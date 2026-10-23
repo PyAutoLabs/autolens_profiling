@@ -91,7 +91,7 @@ BOX = 0.01  # full width: +/-0.005 around the near-truth point
 CAPS = (50, 200)
 N_NEVER, N_SLOW, N_HEALTHY = 5, 2, 1
 
-OUT_DIR = REPO_ROOT / "results" / "hazards" / "component" / "mge"
+OUT_DIR = REPO_ROOT / "results" / "misc" / "hazards" / "component" / "mge"
 
 
 def _dataset():
