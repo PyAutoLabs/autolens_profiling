@@ -57,7 +57,7 @@
 # whether the term is a cost worth attacking on the GPU in a future lever. The row
 # that answers it is `s3/rows/"Log det Cholesky (F+λH reduced)"`: the DENSE
 # Cholesky of the same (1500, 1500) `F + λH`, jitted, on the A100, which lever 2's
-# record (results/breakdown/imaging/fixed_light_delaunay_hpc_a100_fp64_fixed_light_lever2.json)
+# record (archive/2026/09/fixed_light/breakdown/imaging/fixed_light_delaunay_hpc_a100_fp64_fixed_light_lever2.json)
 # puts at **~1.14 ms** — against ~40 ms for the same factorization on one CPU
 # core. At ~1.1 ms a dense Cholesky of a 1500^2 SPD matrix on an A100 is
 # launch-bound, not FLOP-bound, and the Schur-complement route would replace one
@@ -112,7 +112,7 @@
 # report a near-zero compile time for it. Each arm gets its own fresh directory,
 # so `cache_fresh` is true and `jit_phases`/`compile_s` are comparable in both.
 # A seeded XLA autotune cache also silently changes kernels
-# (results/notes/xla_autotune_triton_gemm.md — F 4.8 vs 25.6 ms on the same code).
+# (wiki/campaigns/misc/xla_autotune_triton_gemm.md — F 4.8 vs 25.6 ms on the same code).
 # XLA_FLAGS carries only constant_folding; the autotune/Triton flags are left to
 # autonerves' jax_wrapper so this measures the library default.
 #

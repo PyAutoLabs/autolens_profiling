@@ -576,7 +576,7 @@ def run_probe(backends: tuple[str, ...] = ("numpy", "jax")) -> dict[str, list]:
 
 def main() -> int:
     probe = run_probe()
-    output = REPO_ROOT / "results" / "hazards" / "imaging" / "pixelization" / "probe.json"
+    output = REPO_ROOT / "results" / "misc" / "hazards" / "imaging" / "pixelization" / "probe.json"
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(
         json.dumps(

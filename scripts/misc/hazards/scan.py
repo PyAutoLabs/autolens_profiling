@@ -59,7 +59,9 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--backend", choices=("both", "numpy", "jax"), default="both")
     parser.add_argument("--sample-count", type=int, default=1_000_000)
     parser.add_argument("--seed", type=int, default=107)
-    parser.add_argument("--output-root", type=Path, default=REPO_ROOT / "results" / "hazards")
+    parser.add_argument(
+        "--output-root", type=Path, default=REPO_ROOT / "results" / "misc" / "hazards"
+    )
     parser.add_argument(
         "--check",
         action="store_true",

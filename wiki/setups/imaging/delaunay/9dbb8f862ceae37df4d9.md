@@ -33,7 +33,7 @@ Identity limitations: Isolated to source row: legacy metadata is insufficient fo
 
 ## Evidence
 
-[Original setup artifact](../../../../results/runtime/imaging/delaunay/jwst/delaunay_local_cpu_mp_sparse.json); JSON pointer: `(document root)`.
+[Original setup artifact](../../../../results/imaging/delaunay/jwst/jax_cpu_sparse_mixed/local_laptop/runtime.json); JSON pointer: `(document root)`.
 
 ### Selected references
 
@@ -45,9 +45,9 @@ No selected reference for this exact setup; archive evidence is available below.
 
 | Record | Metric | Value | Unit | Device / precision | Selection | Evidence pointer |
 |---|---|---|---|---|---|---|
-| `measurement/67beee8df663c0da328b` | vmap.batch_time | {"vmap.batch_time": 38.551407760000075} | s | cpu / mixed | archive support; unreviewed | [artifact](../../../../results/runtime/imaging/delaunay/jwst/delaunay_local_cpu_mp_sparse.json) `/vmap/batch_time` |
-| `measurement/7fe5eecd50204ea8c2de` | single_jit_block | {"single_jit_block": 14.046471999999994} | s | cpu / mixed | archive support; unreviewed | [artifact](../../../../results/runtime/imaging/delaunay/jwst/delaunay_local_cpu_mp_sparse.json) `/full_pipeline_single_jit` |
-| `measurement/a5ac341ffcd5d81ff5c5` | vmap.per_call | {"vmap.per_call": 12.850469253333358} | s | cpu / mixed | archive support; unreviewed | [artifact](../../../../results/runtime/imaging/delaunay/jwst/delaunay_local_cpu_mp_sparse.json) `/vmap/per_call` |
+| `measurement/67beee8df663c0da328b` | vmap.batch_time | {"vmap.batch_time": 38.551407760000075} | s | cpu / mixed | archive support; unreviewed | [artifact](../../../../results/imaging/delaunay/jwst/jax_cpu_sparse_mixed/local_laptop/runtime.json) `/vmap/batch_time` |
+| `measurement/7fe5eecd50204ea8c2de` | single_jit_block | {"single_jit_block": 14.046471999999994} | s | cpu / mixed | archive support; unreviewed | [artifact](../../../../results/imaging/delaunay/jwst/jax_cpu_sparse_mixed/local_laptop/runtime.json) `/full_pipeline_single_jit` |
+| `measurement/a5ac341ffcd5d81ff5c5` | vmap.per_call | {"vmap.per_call": 12.850469253333358} | s | cpu / mixed | archive support; unreviewed | [artifact](../../../../results/imaging/delaunay/jwst/jax_cpu_sparse_mixed/local_laptop/runtime.json) `/vmap/per_call` |
 
 </details>
 

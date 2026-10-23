@@ -7,7 +7,7 @@
 **Headline:** phase 3 NFW 2.97 → 1.83 ms (1.6×, hst `Grid2D`, the one closed-form profile under the 2× line), Claude Code web container (4 cores, `OMP_NUM_THREADS=1`); no RAL job (phases 1–2 ran on the laptop).
 **Library PRs:** PyAutoArray#516, PyAutoGalaxy#595, PyAutoLens#718, PyAutoGalaxy#597, PyAutoArray#519, PyAutoGalaxy#599 (all released 2026.9.4.1).
 **Profiling PRs:** #210, #212, #213.
-**Ledger:** [numpy_deflections_cpu.md](../../results/notes/numpy_deflections_cpu.md) (parts "phase 1" to "After phase 3"; the same file also holds the JAX-path audit and the successor's memo sections).
+**Ledger:** [numpy_deflections_cpu.md](numpy_deflections_cpu_ledger.md) (parts "phase 1" to "After phase 3"; the same file also holds the JAX-path audit and the successor's memo sections).
 **Mind contract:** epic `numpy-deflections-cpu`; `complete/archive/epics/numpy_deflections_cpu_speedup.md`; records `complete/2026/09/numpy-deflections-p{1,2,3}.md`
 **Next:** none (successor: [Gaussian deflections precompute](gaussian_deflections_precompute.md))
 

@@ -6,7 +6,7 @@ PyAutoPulse task `interferometer_w_tilde_fft_size_levers` (campaign
 ([interferometer_mesh_a100_breakdown_2026_09.md](interferometer_mesh_a100_breakdown_2026_09.md),
 "Ranked levers" §2). Measurement only: no library change in this phase.
 
-Witness JSON: [`results/breakdown/interferometer/jvla/delaunay_hpc_a100_fp64_fft_prune.json`](../breakdown/interferometer/jvla/delaunay_hpc_a100_fp64_fft_prune.json).
+Witness JSON: [`results/misc/likelihood_breakdown/interferometer/jvla/delaunay_hpc_a100_fp64_fft_prune.json`](../../../results/misc/likelihood_breakdown/interferometer/jvla/delaunay_hpc_a100_fp64_fft_prune.json).
 Script: `scripts/interferometer/delaunay/fft_size_levers.py`; submit
 `hpc/batch_gpu/submit_fft_size_levers_interferometer_a100_fp64`.
 
@@ -137,4 +137,4 @@ Both x-stages then run on half the rows.
   `/mnt/ral/jnightin/scratch/fft_levers_results/`.
 - The Pulse task `interferometer_w_tilde_fft_size_levers` (original prompt, filed 2026-09-27).
 - The #320 A100 breakdown JSONs: `results/breakdown/interferometer/{alma,alma_high,jvla}/delaunay_hpc_a100_fp64.json`
-  (alma at `results/breakdown/interferometer/delaunay_hpc_a100_fp64.json`).
+  (alma at `results/interferometer/delaunay/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json`).

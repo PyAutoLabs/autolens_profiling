@@ -875,6 +875,7 @@ dict_path, chart_path = resolve_output_paths(
         f"{'' if preset.variant == 'production' else '_' + preset.variant}"
         f"_v{al_version}"
     ),
+    hints=breakdown_summary,
 )
 dict_path.write_text(json.dumps(breakdown_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")
@@ -935,7 +936,7 @@ _pinned_drift: list = []
 # and the instance stream became iid rather than one prior-median draw
 # repeated. The old values (euclid 7215.3687893658935, hst 29090.527192092646)
 # describe a model that no longer exists here; they are recorded in
-# `results/notes/production_representative_cells.md`.
+# `wiki/campaigns/imaging/production_representative_cells.md`.
 #
 # Delaunay repeats are bistable at the ~1e-8 relative level (summation-order
 # nondeterminism) — rtol=1e-6 covers it. A missing entry resolves to None and

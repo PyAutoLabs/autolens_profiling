@@ -33,7 +33,7 @@ Identity limitations: Isolated to source row: legacy metadata is insufficient fo
 
 ## Evidence
 
-[Original setup artifact](../../../../results/runtime/imaging/delaunay/jwst/delaunay_local_cpu_mp.json); JSON pointer: `(document root)`.
+[Original setup artifact](../../../../results/imaging/delaunay/jwst/jax_cpu_dense_mixed/local_laptop/runtime.json); JSON pointer: `(document root)`.
 
 ### Selected references
 
@@ -45,9 +45,9 @@ No selected reference for this exact setup; archive evidence is available below.
 
 | Record | Metric | Value | Unit | Device / precision | Selection | Evidence pointer |
 |---|---|---|---|---|---|---|
-| `measurement/2aff184d149310a2eaaf` | single_jit_block | {"single_jit_block": 22.427841500000067} | s | cpu / mixed | archive support; unreviewed | [artifact](../../../../results/runtime/imaging/delaunay/jwst/delaunay_local_cpu_mp.json) `/full_pipeline_single_jit` |
-| `measurement/3e6c9aa1c013a708f5ed` | vmap.per_call | {"vmap.per_call": 19.50632631999979} | s | cpu / mixed | archive support; unreviewed | [artifact](../../../../results/runtime/imaging/delaunay/jwst/delaunay_local_cpu_mp.json) `/vmap/per_call` |
-| `measurement/ac5316df68cd5c734172` | vmap.batch_time | {"vmap.batch_time": 58.518978959999366} | s | cpu / mixed | archive support; unreviewed | [artifact](../../../../results/runtime/imaging/delaunay/jwst/delaunay_local_cpu_mp.json) `/vmap/batch_time` |
+| `measurement/2aff184d149310a2eaaf` | single_jit_block | {"single_jit_block": 22.427841500000067} | s | cpu / mixed | archive support; unreviewed | [artifact](../../../../results/imaging/delaunay/jwst/jax_cpu_dense_mixed/local_laptop/runtime.json) `/full_pipeline_single_jit` |
+| `measurement/3e6c9aa1c013a708f5ed` | vmap.per_call | {"vmap.per_call": 19.50632631999979} | s | cpu / mixed | archive support; unreviewed | [artifact](../../../../results/imaging/delaunay/jwst/jax_cpu_dense_mixed/local_laptop/runtime.json) `/vmap/per_call` |
+| `measurement/ac5316df68cd5c734172` | vmap.batch_time | {"vmap.batch_time": 58.518978959999366} | s | cpu / mixed | archive support; unreviewed | [artifact](../../../../results/imaging/delaunay/jwst/jax_cpu_dense_mixed/local_laptop/runtime.json) `/vmap/batch_time` |
 
 </details>
 

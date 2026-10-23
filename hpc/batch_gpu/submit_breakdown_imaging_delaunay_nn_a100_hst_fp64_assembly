@@ -17,7 +17,7 @@
 #   feature  -> feature/delaunay-nn-constant-split-assembly (04152bb7)
 #
 # The predecessor A/B on this cell (#532/#533, merge base d7c96762) is recorded
-# in results/notes/delaunay_nn_launch_latency.md; its legs are kept as
+# in wiki/campaigns/imaging/delaunay_nn/delaunay_nn_launch_latency.md; its legs are kept as
 # submit_..._launch_latency{,_control} and are comparable to these rows only
 # insofar as the merge base moved by that one merge.
 #
@@ -34,7 +34,7 @@
 # (regularization_matrix_prefix_s) carries it: 16.4 ms per call at vmap 16 on
 # that leg, witness < 11 ms. Judge on the params->H prefix and the assembly
 # row; the H *step* row is a prefix difference and shifts with attribution
-# (the caveat in results/notes/delaunay_walk_early_exit.md).
+# (the caveat in wiki/campaigns/imaging/delaunay/delaunay_walk_early_exit.md).
 #
 #   --split-setup    four-way split of the inversion-setup block (+ the
 #                    split-point Sibson cut of the params->H interval)

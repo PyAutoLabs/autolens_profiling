@@ -134,7 +134,7 @@ Three things follow.
 
 Full tables, including the assembly and log-determinant rows, the S0 column and every fitted
 exponent, are in
-[`results/breakdown/imaging/fixed_light_scaling_<hardware>.md`](../breakdown/imaging/) with a
+[`results/breakdown/imaging/fixed_light_scaling_<hardware>.md`](../../../results/README.md#day-zero-move-redirects) with a
 two-panel log-log figure beside each. The four headline rows:
 
 ### A100 (gpu-2, fp64, `@vmap 16`) — rectangular (built N)
@@ -379,7 +379,7 @@ results/breakdown/imaging/fixed_light_{rectangular,delaunay}_n<N>_local_rtx2060_
 results/breakdown/imaging/fixed_light_{rectangular,delaunay}_n<N>_local_rtx2060_mp_fixed_light.{json,png}
 results/breakdown/imaging/fixed_light_{rectangular,delaunay}_n<N>_local_cpu_fp64_fixed_light.{json,png}
 results/breakdown/imaging/fixed_light_scaling_{hpc_a100_fp64,local_rtx2060_fp64,local_rtx2060_mp,local_cpu_fp64}.{md,png}
-results/sweep/fixed_light_scaling_manifest.jsonl
+results/misc/likelihood_breakdown/fixed_light_scaling_manifest.jsonl
 ```
 
 Code:

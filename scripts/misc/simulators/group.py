@@ -301,7 +301,7 @@ with timer.section("output_json"):
 # === Summary ===
 
 al_version = al.__version__
-results_dir = _workspace_root / "results" / "simulators"
+results_dir = _workspace_root / "results" / "misc" / "simulators"
 results_dir.mkdir(parents=True, exist_ok=True)
 
 phases = dict(timer.records)

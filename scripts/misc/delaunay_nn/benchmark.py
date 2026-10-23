@@ -158,7 +158,7 @@ device_label = getattr(device, "device_kind", str(device))
 backend = jax.default_backend()
 hardware = backend if backend == "cpu" else f"{backend}_{slug(device_label)}"
 version = getattr(al, "__version__", "unknown")
-output_dir = args.output_dir or ROOT / "results" / "delaunay_nn"
+output_dir = args.output_dir or ROOT / "results" / "misc" / "delaunay_nn"
 output_dir.mkdir(parents=True, exist_ok=True)
 stem = f"delaunay_nn_benchmark_{hardware}_v{version}"
 json_path = output_dir / f"{stem}.json"

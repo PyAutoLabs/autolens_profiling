@@ -518,6 +518,7 @@ dict_path, chart_path = resolve_output_paths(
         f"{'' if preset.variant == 'production' else '_' + preset.variant}"
         f"_v{al_version}"
     ),
+    hints=likelihood_summary,
 )
 dict_path.write_text(json.dumps(likelihood_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")
@@ -525,7 +526,7 @@ print(f"  Bar chart path:        {chart_path} (no per-step chart in runtime vari
 
 # ===================================================================
 # Pinned-value drift record (soft — profiling records drift, never adjudicates
-# correctness; boundary rule in results/notes/design_lock_in.md).
+# correctness; boundary rule in wiki/campaigns/misc/design_lock_in.md).
 # ===================================================================
 
 _pinned_drift: list = []
@@ -544,7 +545,7 @@ _pinned_drift: list = []
 #   adapt_split     euclid 5579.104036561161    hst 29212.44050977029  (#232)
 #
 # describe a model that no longer exists here; they are recorded in
-# `results/notes/production_representative_cells.md`. The `legacy` variant is
+# `wiki/campaigns/imaging/production_representative_cells.md`. The `legacy` variant is
 # the closest thing that remains, and it no longer reproduces them exactly
 # either: the light-profile radial bins moved from [4, 2, 1] to [4, 2, 2]
 # repo-wide (sub-size 1 causes gradient issues).

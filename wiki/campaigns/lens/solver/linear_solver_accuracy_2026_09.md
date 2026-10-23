@@ -1,6 +1,6 @@
 # Linear-solver accuracy study — ledger (phases 1–3a, 2026-09 – 2026-10)
 
-Campaign page: `wiki/campaigns/linear_solver_accuracy.md`. Package: `scripts/lens/solver/`.
+Campaign page: `wiki/campaigns/lens/solver/linear_solver_accuracy.md`. Package: `scripts/lens/solver/`.
 
 ## Pre-registered decision rule
 
@@ -280,21 +280,21 @@ one the numbers support.
 
 ## Artefacts
 
-- Pre-registered cells: [`accuracy_summary_all_v2026.8.17.1.json`](../lens/solver/accuracy_summary_all_v2026.8.17.1.json)
-  ([png](../lens/solver/accuracy_summary_all_v2026.8.17.1.png)),
-  [`early_stopping_summary_all_v2026.8.17.1.json`](../lens/solver/early_stopping_summary_all_v2026.8.17.1.json)
-  ([png](../lens/solver/early_stopping_summary_all_v2026.8.17.1.png)).
-- Post-hoc: [`accuracy_posthoc_summary_all_v2026.8.17.1.json`](../lens/solver/accuracy_posthoc_summary_all_v2026.8.17.1.json)
-  ([png](../lens/solver/accuracy_posthoc_summary_all_v2026.8.17.1.png)),
-  [`euclid_latent_by_candidate_v2026.8.17.1.json`](../lens/solver/euclid_latent_by_candidate_v2026.8.17.1.json).
-- Fixture smoke baseline: [`accuracy_summary_slam_fixture_571_v2026.8.17.1.json`](../lens/solver/accuracy_summary_slam_fixture_571_v2026.8.17.1.json),
-  [`early_stopping_summary_slam_fixture_571_v2026.8.17.1.json`](../lens/solver/early_stopping_summary_slam_fixture_571_v2026.8.17.1.json).
-- Phase 3a (released 2026.10.7.1, tag checkouts): CPU [`accuracy_summary_all_v2026.10.7.1.json`](../lens/solver/accuracy_summary_all_v2026.10.7.1.json)
-  ([png](../lens/solver/accuracy_summary_all_v2026.10.7.1.png)), A100 [`accuracy_summary_all_gpu_v2026.10.7.1.json`](../lens/solver/accuracy_summary_all_gpu_v2026.10.7.1.json)
-  ([png](../lens/solver/accuracy_summary_all_gpu_v2026.10.7.1.png)).
-- Corpus: [`corpus/manifest.json`](../lens/solver/corpus/manifest.json).
-- Package and how to re-run: [`scripts/lens/solver/README.md`](../../scripts/lens/solver/README.md).
-- Campaign page: [`wiki/campaigns/linear_solver_accuracy.md`](../../wiki/campaigns/linear_solver_accuracy.md).
+- Pre-registered cells: [`accuracy_summary_all_v2026.8.17.1.json`](../../../../results/lens/solver/accuracy_summary_all_v2026.8.17.1.json)
+  ([png](../../../../results/lens/solver/accuracy_summary_all_v2026.8.17.1.png)),
+  [`early_stopping_summary_all_v2026.8.17.1.json`](../../../../results/lens/solver/early_stopping_summary_all_v2026.8.17.1.json)
+  ([png](../../../../results/lens/solver/early_stopping_summary_all_v2026.8.17.1.png)).
+- Post-hoc: [`accuracy_posthoc_summary_all_v2026.8.17.1.json`](../../../../results/lens/solver/accuracy_posthoc_summary_all_v2026.8.17.1.json)
+  ([png](../../../../results/lens/solver/accuracy_posthoc_summary_all_v2026.8.17.1.png)),
+  [`euclid_latent_by_candidate_v2026.8.17.1.json`](../../../../results/lens/solver/euclid_latent_by_candidate_v2026.8.17.1.json).
+- Fixture smoke baseline: [`accuracy_summary_slam_fixture_571_v2026.8.17.1.json`](../../../../results/lens/solver/accuracy_summary_slam_fixture_571_v2026.8.17.1.json),
+  [`early_stopping_summary_slam_fixture_571_v2026.8.17.1.json`](../../../../results/lens/solver/early_stopping_summary_slam_fixture_571_v2026.8.17.1.json).
+- Phase 3a (released 2026.10.7.1, tag checkouts): CPU [`accuracy_summary_all_v2026.10.7.1.json`](../../../../results/lens/solver/accuracy_summary_all_v2026.10.7.1.json)
+  ([png](../../../../results/lens/solver/accuracy_summary_all_v2026.10.7.1.png)), A100 [`accuracy_summary_all_gpu_v2026.10.7.1.json`](../../../../results/lens/solver/accuracy_summary_all_gpu_v2026.10.7.1.json)
+  ([png](../../../../results/lens/solver/accuracy_summary_all_gpu_v2026.10.7.1.png)).
+- Corpus: [`corpus/manifest.json`](../../../../results/lens/solver/corpus/manifest.json).
+- Package and how to re-run: [`scripts/lens/solver/README.md`](../../../../scripts/lens/solver/README.md).
+- Campaign page: [`wiki/campaigns/lens/solver/linear_solver_accuracy.md`](linear_solver_accuracy.md).
 
 ## Phase 2 (2026-09-30) — library fix shipped: PyAutoArray#595
 
@@ -513,7 +513,7 @@ an A100? Phase 3a's 3.96 ms A100 wall was one unbatched, launch-bound solve and 
 batched throughput. Issue autolens_profiling#395. This is a timing; it is not an admissibility
 result.
 
-**Method.** New cell [`scripts/lens/solver/timing.py`](../../scripts/lens/solver/timing.py);
+**Method.** New cell [`scripts/lens/solver/timing.py`](../../../../scripts/lens/solver/timing.py);
 `_solvers.batched_kernel` vmaps each candidate's existing jitted body (`fn` / `kernel`, and so
 `accuracy.py` / `early_stopping.py`, are unchanged). SLaM batches pool `slam_fixture_571` +
 `slam48_hst` (56 distinct systems) and take the first B in manifest order, so lanes diverge;
@@ -637,10 +637,10 @@ distinct SLaM systems than when each system is solved alone: 19/50 lanes differ 
 and 13/50 in the flag. CPU batched and unbatched are bit-identical, and `pdip_raw` matches
 everywhere. Where does the difference come from? This phase is research only; issue
 autolens_profiling#397. The write-up and decision table are in the
-[research note](../../wiki/research/jacobi_a100_batched_divergence.md).
+[research note](../../../research/jacobi_a100_batched_divergence.md).
 
 **Method.** A new probe,
-[`scripts/lens/solver/batched_divergence.py`](../../scripts/lens/solver/batched_divergence.py),
+[`scripts/lens/solver/batched_divergence.py`](../../../../scripts/lens/solver/batched_divergence.py),
 calls only the library's solver entry points, composed the way `_solvers` composes them. It
 tests `pdip_jacobi`, with `pdip_raw` and `certified` as controls, on the phase-3b batch (the
 first 50 systems of `slam_fixture_571` + `slam48_hst`, n = 60, fp64). The probes are:
@@ -747,7 +747,7 @@ Cholesky difference and stay at ≤ 3.4e-12 with identical iterations and flags.
 **Verdict.** Research only. No default, pin or tolerance changed, and nothing routes to /intake.
 The decision (keep Jacobi and document it, a determinism flag, a tolerance or cap change, or
 moving the Mapper default) is laid out with costs in the
-[research note](../../wiki/research/jacobi_a100_batched_divergence.md#decision-table-for-the-human-nothing-here-is-decided).
+[research note](../../../research/jacobi_a100_batched_divergence.md#decision-table-for-the-human-nothing-here-is-decided).
 The determinism flag is ruled out by this evidence.
 
 ## Phase 5 (2026-10-08) — Mapper corpus
@@ -757,7 +757,7 @@ likelihoods actually produce, is the released raw PDIP + polish (`pdip_raw`) adm
 Jacobi PDIP (`pdip_jacobi`, the library's Mapper default) stable — no divergence and no A100
 batched/unbatched sensitivity — and what does each cost? Research only; issue
 autolens_profiling#399. No library, default, pin or tolerance change. The decision table is in
-the [research note](../../wiki/research/jacobi_a100_batched_divergence.md#mapper-corpus-phase-5).
+the [research note](../../../research/jacobi_a100_batched_divergence.md#mapper-corpus-phase-5).
 
 **Corpus** (new groups; existing groups untouched). `capture.py --source <group>`, laptop CPU,
 libraries at tag 2026.10.7.1 (tag worktrees, `autolens.__file__` confirmed), profiling `ff1e43e`;

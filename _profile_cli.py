@@ -733,11 +733,92 @@ def machine_info_dict() -> dict:
     return info
 
 
+#: Legacy result folders a writer may still name; ``resolve_output_paths`` places their rows
+#: in the mirrored tree (autolens_profiling#442 PR 2).
+_LEGACY_RESULT_DIRS = (("results", "runtime"), ("results", "breakdown"))
+_REPO_ROOT = Path(__file__).resolve().parent
+
+
+def _setup_hints(cli: ProfileCLI, default_basename: str, hints: dict | None) -> dict:
+    """Setup facts known before the result JSON exists, in the JSON's own keys."""
+    import socket
+    import sys
+
+    sys.path.insert(0, str(_REPO_ROOT / "scripts" / "misc" / "tooling"))
+    from build_migration_map import INSTRUMENTS
+
+    instrument = cli.instrument
+    if instrument is None:
+        tokens = f"_{default_basename}_"
+        instrument = next((i for i in INSTRUMENTS if f"_{i}_" in tokens), None)
+    backend = "cpu"
+    if "jax" in sys.modules:
+        backend = sys.modules["jax"].default_backend()
+    doc = {"use_mixed_precision": bool(cli.use_mixed_precision)}
+    if cli.config_name is None:
+        # A config name carries its host tier; an unnamed run is placed by the host it runs on.
+        doc["device"] = {"backend": backend, "provenance": {"host": socket.gethostname()}}
+    if instrument:
+        doc["instrument"] = instrument
+    doc.update(hints or {})
+    return doc
+
+
+def _in_legacy_results(path: Path) -> bool:
+    try:
+        rel = Path(path).resolve().relative_to(_REPO_ROOT)
+    except ValueError:
+        return False
+    return rel.parts[:2] in _LEGACY_RESULT_DIRS
+
+
+def place_output_path(
+    json_path: Path, cli: ProfileCLI, default_basename: str, hints: dict | None = None
+) -> Path:
+    """``mirrored_output_path`` with the setup facts the CLI knows (see ``resolve_output_paths``).
+
+    For writers that finish a legacy name themselves (suffixes appended after
+    ``resolve_output_paths(..., place=False)``) and then place it.
+    """
+    if not _in_legacy_results(json_path):
+        return Path(json_path)
+    placed = mirrored_output_path(json_path, _setup_hints(cli, default_basename, hints))
+    placed.parent.mkdir(parents=True, exist_ok=True)
+    return placed
+
+
+def mirrored_output_path(legacy_path: Path, doc: dict) -> Path:
+    """Where a result a writer would have put at ``legacy_path`` lives in the mirrored tree.
+
+    ``legacy_path`` under ``results/runtime/`` or ``results/breakdown/`` is placed by the
+    day-zero migration map's own classification (``scripts/misc/tooling/
+    build_migration_map.destination``): ``results/<dataset_type>/<variant>/<instrument>/
+    <setup_id>/<host_class>[/<model_variant>]/<measurement>.json`` for a canonical row,
+    ``.../scans|experiments/<name>/`` for a scan or arm, ``results/misc/<group>/`` when no
+    cell is derivable. Any other path is returned unchanged.
+    """
+    import sys
+
+    legacy_path = Path(legacy_path)
+    if not _in_legacy_results(legacy_path):
+        return legacy_path
+    rel = legacy_path.resolve().relative_to(_REPO_ROOT)
+    sys.path.insert(0, str(_REPO_ROOT / "scripts" / "misc" / "tooling"))
+    from build_migration_map import destination
+
+    new, kind = destination(_REPO_ROOT, rel.as_posix(), doc)
+    if kind == "misc":
+        print(f"[results] no derivable cell for {rel.as_posix()}; writing {new}")
+    return _REPO_ROOT / new
+
+
 def resolve_output_paths(
     cli: ProfileCLI,
     default_dir: Path,
     default_basename: str,
     cell: str | None = None,
+    hints: dict | None = None,
+    place: bool = True,
 ) -> tuple[Path, Path]:
     """Resolve (json_path, png_path) for the per-cell write.
 
@@ -759,6 +840,17 @@ def resolve_output_paths(
       Delaunay cell's ``delaunay_<config_name>.json`` (autolens_profiling#219).
       Callers that pass nothing keep the pre-existing behaviour exactly.
     - ``cli.output_dir`` overrides ``default_dir`` when set.
+    - A ``default_dir`` under ``results/runtime/`` or ``results/breakdown/`` (the pre-#442
+      layout) is not written: the row is placed in the mirrored tree by
+      :func:`mirrored_output_path` from the legacy name plus the setup facts known now
+      (``--instrument`` or the instrument token of ``default_basename``,
+      ``--use-mixed-precision``, the host and JAX backend). ``hints`` adds JSON-keyed facts
+      the CLI does not carry (e.g. ``{"transformer": "TransformerNUFFT"}``). An explicit
+      ``--output-dir`` is honoured verbatim: ``sweep.py`` -> ``aggregate.py`` and the HPC
+      submits still name legacy cell folders whose config-grammar file names they parse,
+      until the catalogue builder reads the mirrored tree (#442 PR 3). ``place=False``
+      returns the legacy name for a caller that appends to it and then calls
+      :func:`place_output_path`.
     - When ``cli.use_sparse_operator`` is set, ``_sparse`` is appended to the
       resolved basename so dense and sparse JSONs from the same config don't
       clobber each other.
@@ -769,7 +861,6 @@ def resolve_output_paths(
       the label already says the size.
     """
     results_dir = cli.output_dir if cli.output_dir is not None else default_dir
-    results_dir.mkdir(parents=True, exist_ok=True)
     if cli.config_name is None:
         basename = default_basename
     else:
@@ -787,7 +878,13 @@ def resolve_output_paths(
         # Keep the two rectangular-mesh families' results disjoint; the
         # bilinear default keeps the unsuffixed (pre-split) filenames.
         basename = f"{basename}_rtu"
-    return results_dir / f"{basename}.json", results_dir / f"{basename}.png"
+    json_path = results_dir / f"{basename}.json"
+    if place and cli.output_dir is None and _in_legacy_results(json_path):
+        placed = place_output_path(json_path, cli, default_basename, hints)
+        return placed, placed.with_suffix(".png")
+    if place or not _in_legacy_results(json_path):
+        results_dir.mkdir(parents=True, exist_ok=True)
+    return json_path, results_dir / f"{basename}.png"
 
 
 def auto_simulate_if_missing(
@@ -847,7 +944,7 @@ def check_pinned(got, expected, *, label: str, rtol: float = 1e-4):
 
     Profiling runs **record and flag** drift; they never adjudicate library
     correctness (that is autolens_workspace_test's remit — see
-    ``results/notes/design_lock_in.md``). Returns ``None`` when ``got`` is
+    ``wiki/campaigns/misc/design_lock_in.md``). Returns ``None`` when ``got`` is
     within ``rtol`` of ``expected``; otherwise prints a loud warning and
     returns a drift record for the result JSON, which PyAutoHeart's vitals
     scan picks up. Never raises — a changed computation must not kill a

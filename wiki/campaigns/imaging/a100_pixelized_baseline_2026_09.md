@@ -323,7 +323,7 @@ results/runtime/imaging/delaunay_nn/delaunay_nn_hpc_a100_fp64{,_sparse}.json
 Superseded by this note: recommendation #4 of
 [`sparse_vs_dense_inversion_path.md`](./sparse_vs_dense_inversion_path.md) (defer
 matrix-free) and every A100 pixelized/sparse row in that note's tables. The synthetic
-GEMM probe in [`xla_autotune_triton_gemm.md`](./xla_autotune_triton_gemm.md) (arm E,
+GEMM probe in [`xla_autotune_triton_gemm.md`](../misc/xla_autotune_triton_gemm.md) (arm E,
 4.79 ms) is **confirmed** rather than superseded: the live dense F rows here are
 4.824–4.830 ms on all three meshes, so nothing needs folding in.
 
@@ -447,7 +447,7 @@ Answered 2026-09-12: see [`matrix_free_pixelized_2026_09.md`](./matrix_free_pixe
 
 ```
 results/breakdown/imaging/{pixelization,delaunay,delaunay_nn}_hpc_a100_fp64_recon_split.{json,png}
-results/runtime/imaging/pixelization/pixelization_hpc_a100_fp64_recon_split.json
+results/imaging/rectangular/hst/jax_gpu_dense_fp64/hpc_a100/experiments/recon_split/runtime.json
 ```
 
 New JSON keys on the breakdown legs: `steps_reconstruction_sub_rows`, `nnls`,

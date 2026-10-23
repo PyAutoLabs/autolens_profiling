@@ -105,7 +105,7 @@ separately; an empty `threadpoolctl` result means runtime BLAS count unavailable
 No shared library refresh is part of this task.
 
 All five cells have been retrieved and the cross-N JSON/PNG regenerated with
-`--aggregate`. The [source and job record](../breakdown/imaging/fixed_light_numba_s6_source_jobs.json)
+`--aggregate`. The [source and job record](../../../results/imaging/delaunay/hst/jax_gpu_dense_fp64/hpc_a100/light_fixed/experiments/fixed_light_numba_s6_source_jobs.json)
 contains input hashes, library revisions, SLURM completion and resource records,
 and the lossless JSON-formatting manifest.
 
@@ -122,11 +122,11 @@ Median complete-sequence milliseconds per model; six fresh-cache traversals per 
 | 2500 | 709.840 | 595.186 | 1428.872 | 3819.675 | 6.185 |
 | 4000 | 2137.865 | 1288.876 | 4312.031 | 10782.596 | 9.085 |
 
-![Runtime and memory scaling](../breakdown/imaging/fixed_light_numba_scaling_summary_hpc_ral_cpu_fp64_fixed_light_numba_s6.png)
+![Runtime and memory scaling](../../../results/misc/likelihood_breakdown/imaging/fixed_light_numba_scaling_summary_hpc_ral_cpu_fp64_fixed_light_numba_s6.png)
 
 ### Exclusive breakdown
 
-![Exclusive component scaling](../breakdown/imaging/fixed_light_numba_scaling_components_hpc_ral_cpu_fp64_fixed_light_numba_s6.png)
+![Exclusive component scaling](../../../results/misc/likelihood_breakdown/imaging/fixed_light_numba_scaling_components_hpc_ral_cpu_fp64_fixed_light_numba_s6.png)
 
 Diagnostic ms/model, median sequence totals per component. Independent component medians need not sum exactly to the median whole call; raw per-call exclusive sums close exactly up to floating roundoff.
 
@@ -179,4 +179,4 @@ Requested, mapper and solve dimensions coincide for every draw in these cells. T
 
 Jobs: `343430_0` (N500) and `343445_1` through `343445_4` (N1000/1500/2500/4000), serial execution. CPU node `euclid-ral-gpu-1`, AMD EPYC 7702, 124 online logical CPUs; each task allocated one CPU, 64 GiB and four hours, no GPU. BLAS environment pins are one; Numba runtime reports one; BLAS runtime pool count is unavailable (`threadpoolctl=[]`).
 
-[Machine-readable cross-size summary](../breakdown/imaging/fixed_light_numba_scaling_summary_hpc_ral_cpu_fp64_fixed_light_numba_s6.json) retains input hashes, raw fitted points, missing/failed status handling and measured crossover brackets. Per-N JSON files beside it retain every timing, numerical comparison, solver diagnostic, declaration and provenance record.
+[Machine-readable cross-size summary](../../../results/misc/likelihood_breakdown/imaging/fixed_light_numba_scaling_summary_hpc_ral_cpu_fp64_fixed_light_numba_s6.json) retains input hashes, raw fitted points, missing/failed status handling and measured crossover brackets. Per-N JSON files beside it retain every timing, numerical comparison, solver diagnostic, declaration and provenance record.

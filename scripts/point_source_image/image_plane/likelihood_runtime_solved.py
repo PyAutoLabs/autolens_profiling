@@ -645,7 +645,7 @@ timer.summary()
 
 # Pinned-value outcome -> result JSON: profiling records and flags drift,
 # never adjudicates library correctness (autolens_workspace_test's remit;
-# boundary rule in results/notes/design_lock_in.md). PyAutoHeart's vitals
+# boundary rule in wiki/campaigns/misc/design_lock_in.md). PyAutoHeart's vitals
 # scan reads the pinned_drift field.
 record_pinned_check(dict_path, _pinned_expected, _pinned_drift)
 if _pinned_expected is not None and not _pinned_drift:

@@ -34,7 +34,7 @@ Identity limitations: Isolated to source row: legacy metadata is insufficient fo
 
 ## Evidence
 
-[Original setup artifact](../../../../results/streaming_scaling/accumulate_local_cpu_v2026.10.4.1+2.json); JSON pointer: `/rows/3`.
+[Original setup artifact](../../../../results/misc/streaming_scaling/accumulate_local_cpu_v2026.10.4.1+2.json); JSON pointer: `/rows/3`.
 
 ### Selected references
 
@@ -46,7 +46,7 @@ No selected reference for this exact setup; archive evidence is available below.
 
 | Record | Metric | Value | Unit | Device / precision | Selection | Evidence pointer |
 |---|---|---|---|---|---|---|
-| `measurement/7a669c48a9e2ceb73551` | dataset_setup_wall | {"dataset_setup_wall": 43.56} | s | cpu / None | archive support; unreviewed | [artifact](../../../../results/streaming_scaling/accumulate_local_cpu_v2026.10.4.1+2.json) `/rows/3/wall_s` |
+| `measurement/7a669c48a9e2ceb73551` | dataset_setup_wall | {"dataset_setup_wall": 43.56} | s | cpu / None | archive support; unreviewed | [artifact](../../../../results/misc/streaming_scaling/accumulate_local_cpu_v2026.10.4.1+2.json) `/rows/3/wall_s` |
 
 </details>
 
@@ -56,7 +56,7 @@ No selected reference for this exact setup; archive evidence is available below.
 
 | Record | Metric | Value | Unit | Device / precision | Selection | Evidence pointer |
 |---|---|---|---|---|---|---|
-| `measurement/af2c868c7f4dd13e4870` | host_peak_rss | {"host_peak_rss": 800} | MiB | cpu / None | archive support; unreviewed | [artifact](../../../../results/streaming_scaling/accumulate_local_cpu_v2026.10.4.1+2.json) `/rows/3/peak_rss_mb` |
+| `measurement/af2c868c7f4dd13e4870` | host_peak_rss | {"host_peak_rss": 800} | MiB | cpu / None | archive support; unreviewed | [artifact](../../../../results/misc/streaming_scaling/accumulate_local_cpu_v2026.10.4.1+2.json) `/rows/3/peak_rss_mb` |
 
 </details>
 

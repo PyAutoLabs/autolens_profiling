@@ -7,7 +7,7 @@
 **Headline:** CPU fp64 pinned witness: fixed ±3 arcsec auto seeds miss both cluster tangential curves; explicit far-source curve has a 20.65 arcsec closing chord.
 **Library PRs:** [Galaxy #646](https://github.com/PyAutoLabs/PyAutoGalaxy/pull/646), phase 3b cap fix; awaiting merge/release.
 **Profiling PRs:** [#364](https://github.com/PyAutoLabs/autolens_profiling/pull/364) merged (phase 3a); phase-3b ledger update pending.
-**Ledger:** [critical_curves_dispatch.md](../../results/notes/critical_curves_dispatch.md)
+**Ledger:** [critical_curves_dispatch.md](critical_curves_dispatch.md)
 **Mind contract:** epic `cluster-strong-lensing`; phase 3a complete; `active/evaluation_grid_cap_preserves_field.md` (3b)
 **Next:** Ship the bounded phase-3b cap fix, then investigate seed coverage/path completion before cluster engine selection.
 

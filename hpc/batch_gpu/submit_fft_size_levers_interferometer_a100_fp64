@@ -12,7 +12,7 @@
 # (2026-10-17). The datasets are read from the canonical RAL checkout ($AP_DATASETS).
 #
 # Output: $FFTLEV_OUT/delaunay_hpc_a100_fp64_fft_prune.json, committed as
-# results/breakdown/interferometer/jvla/delaunay_hpc_a100_fp64_fft_prune.json
+# results/misc/likelihood_breakdown/interferometer/jvla/delaunay_hpc_a100_fp64_fft_prune.json
 #
 # Submit from a directory holding output/ and error/:  sbatch <this>
 #

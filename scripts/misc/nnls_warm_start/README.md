@@ -11,11 +11,11 @@ passive set instead of from the sign of the unconstrained dense solve.
   and memo-vs-no-memo parity. `--model <name>` selects one of `MODEL_VARIANTS`, each
   changing exactly one thing about the fiducial.
 - `nnls_iterations_matrix.py` — the aggregator. Reads every JSON the cell wrote and
-  renders `results/nnls_warm_start/nnls_warm_start_memo_matrix.md`.
+  renders `results/misc/nnls_warm_start/nnls_warm_start_memo_matrix.md`.
 
-Findings: [`nnls_warm_start_memo.md`](../../../results/nnls_warm_start/nnls_warm_start_memo.md)
+Findings: [`nnls_warm_start_memo.md`](../../../results/misc/nnls_warm_start/nnls_warm_start_memo.md)
 (the single fiducial) and
-[`nnls_warm_start_memo_matrix.md`](../../../results/nnls_warm_start/nnls_warm_start_memo_matrix.md)
+[`nnls_warm_start_memo_matrix.md`](../../../results/misc/nnls_warm_start/nnls_warm_start_memo_matrix.md)
 (11 model variants × 2 instruments).
 
 ## Why this is not the production baseline

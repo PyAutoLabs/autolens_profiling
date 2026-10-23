@@ -55,6 +55,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from results_layout import iter_legacy  # noqa: E402
+
 SCHEMA_VERSION = 1
 PAGES_URL = "https://pyautolabs.github.io/autolens_profiling/"
 REPO_URL = "https://github.com/PyAutoLabs/autolens_profiling"
@@ -524,21 +527,19 @@ def _per_call_html(p: dict) -> str:
 def scan(root: Path) -> dict[tuple, list[dict]]:
     """Every (section, cell, config, sparse) -> its points, one per (version, source)."""
     root = root.resolve()
-    results = root / "results"
     raw: dict[tuple, list[dict]] = {}
 
     def add(key: tuple, point: dict | None):
         if point is not None:
             raw.setdefault(key, []).append(point)
 
+    # Moved results are scanned under their pre-move identity and linked where they live
+    # now (results_layout.py, autolens_profiling#442 PR 2).
     for section in SECTIONS:
-        base = results / section
-        if not base.is_dir():
-            continue
-        for path in sorted(base.rglob("*.json")):
+        for path, legacy in iter_legacy(root, f"results/{section}", "*.json"):
             rel = path.relative_to(root)
-            parts = path.relative_to(base).parts
-            if path.name == "comparison.json":
+            parts = legacy.relative_to(f"results/{section}").parts
+            if legacy.name == "comparison.json":
                 if section != "runtime":
                     continue
                 payload = _load(path)
@@ -557,7 +558,7 @@ def scan(root: Path) -> dict[tuple, list[dict]]:
                         _point(entry, str(entry["autolens_version"]), f"{rel}#{config}"),
                     )
                 continue
-            m = ARTIFACT_RE.match(path.name)
+            m = ARTIFACT_RE.match(legacy.name)
             if m:
                 payload = _load(path)
                 if payload is None:
@@ -581,7 +582,7 @@ def scan(root: Path) -> dict[tuple, list[dict]]:
                     _point(payload, m["version"], str(rel)),
                 )
                 continue
-            m = CONFIG_TAGGED_RE.match(path.name)
+            m = CONFIG_TAGGED_RE.match(legacy.name)
             if m and section in ("runtime", "breakdown"):
                 payload = _load(path)
                 if payload is None or "autolens_version" not in payload:

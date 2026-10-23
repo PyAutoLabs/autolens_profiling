@@ -734,7 +734,7 @@ def main():
 
     json_path, png_path = resolve_output_paths(
         cli,
-        default_dir=_WORKSPACE_ROOT / "results" / "pipeline_resume",
+        default_dir=_WORKSPACE_ROOT / "results" / "misc" / "pipeline_resume",
         default_basename=f"slam_resume_summary_{instrument}_v{al.__version__}{suffix}",
     )
     data = write_summary(json_path, run_record, instrument, fast)

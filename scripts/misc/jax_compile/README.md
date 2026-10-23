@@ -407,7 +407,7 @@ kernel **5× slower than cuBLAS on a dense fp64 GEMM** — 25.52 vs 4.79 ms on t
 (15361×1560) mapping-matrix shape — cured by additionally passing
 `--xla_gpu_enable_triton_gemm=false`, which reaches cuBLAS with no autotune
 compile cost at all (PyAutoNerves#161). Details, arms and HLO evidence:
-[`results/notes/xla_autotune_triton_gemm.md`](../../../results/notes/xla_autotune_triton_gemm.md).
+[`wiki/campaigns/misc/xla_autotune_triton_gemm.md`](../../../wiki/campaigns/misc/xla_autotune_triton_gemm.md).
 
 ## Multi-band `FactorGraphModel` `value_and_grad` — the heterogeneous-shape cliff
 
@@ -519,7 +519,7 @@ Findings:
   numerics. New GPU probe rows show the scan explosion is **CPU-backend
   specific** (GPU compiles `laxmap_vag` in ~122 s at steady-eval parity with
   pyloop), so the Python loop is safe as the only implementation on both
-  backends. Full write-up: `results/notes/multiband_pyloop_productized.md`.
+  backends. Full write-up: `wiki/campaigns/misc/multiband_pyloop_productized.md`.
 - **Immediate user workaround — pad short-wavelength bands to a common grid** so
   all factors share one shape. That removes the heterogeneity multiplier
   (704 s → 120 s cold here) but *not* the transform cost, so it helps most when

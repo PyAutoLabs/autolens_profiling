@@ -5,7 +5,7 @@ branch `feature/interferometer-decision-matrix`, epic `interferometer-likelihood
 (3/3, phase 4 — the epic deliverable). This note answers one question: **for an
 interferometer fit of a given size, which likelihood path do I run, on which device, and
 what does one fit cost?** It assembles the committed rows of the three campaign ledgers
-([MGE](./interferometer_mge_breakdown_2026_09.md), [mesh A100](./interferometer_mesh_a100_breakdown_2026_09.md),
+([MGE](mge/interferometer_mge_breakdown_2026_09.md), [mesh A100](./interferometer_mesh_a100_breakdown_2026_09.md),
 [mesh CPU](./interferometer_mesh_cpu_breakdown_2026_09.md), plus the numba
 [verdict](./numba_interferometer_verdict.md)) and adds the cells they left empty:
 
@@ -125,7 +125,7 @@ MGE-20 has no mesh, so there is no numba arm and no nnz/col; the two paths are t
 mapping chain (NUFFT of the 20-column mapping matrix every call) and the **W~ sparse** route
 (PyAutoArray#575: `dataset.apply_sparse_operator()` turns an MGE-only fit onto
 `InversionInterferometerSparse`). CPU rows are the laptop JAX-CPU `mge.py` legs (one thread,
-shared host; not RAL numba), from the [MGE ledger](./interferometer_mge_breakdown_2026_09.md).
+shared host; not RAL numba), from the [MGE ledger](mge/interferometer_mge_breakdown_2026_09.md).
 Mask radius r2.0 / r5.0 was not measured for MGE at any instrument.
 
 | N_vis | instrument | CPU dense (laptop) | CPU W~ sparse (laptop) | A100 dense | A100 W~ sparse | source |
@@ -279,7 +279,7 @@ it; "blocked" means a run was attempted and could not complete.
 
 | Cell | State | Reason | Citation |
 |---|---|---|---|
-| MGE-20, any instrument, r2.0 / r5.0 | not measured | the MGE campaign ran at the preset r3.5 only; MGE cost is O(N_vis) dense / O(extent) on W~, so the mesh radius rows are the guide | [MGE ledger](./interferometer_mge_breakdown_2026_09.md) Scope |
+| MGE-20, any instrument, r2.0 / r5.0 | not measured | the MGE campaign ran at the preset r3.5 only; MGE cost is O(N_vis) dense / O(extent) on W~, so the mesh radius rows are the guide | [MGE ledger](mge/interferometer_mge_breakdown_2026_09.md) Scope |
 | MGE-20 dense, A100, alma / alma_high / jvla | blocked (OOM) | the one-shot `transform_mapping_matrix` asks 61.4 GiB / 300.3 GiB / 1.46 TiB; the chunked-transform measurement arm runs (939.6 ms / 3.94 s / 24.20 s) | MGE ledger, "Library W~ route" |
 | MGE-20 W~, CPU, alma_high | blocked (laptop OOM-kill) | killed at 10.8 GB anon RSS inside `apply_sparse_operator()` (1M-visibility NUFFT chunk) | MGE ledger, "Not run" |
 | MGE-20 dense + W~, CPU, sdp81 | blocked (laptop OOM-kill) | the eager `xp=np` `FitInterferometer` reference (used below 200k visibilities) materialises the nufftax type-2 gather `(20, N_vis, 169)` complex128 ≈ 5.9 GB; the laptop kernel killed the run (exit 137) before any row was written, 2026-09-30. The A100 jobs ran the same eager reference on the RAL host without trouble but do not time it | this note |
@@ -347,7 +347,7 @@ it; "blocked" means a run was attempted and could not complete.
   phase-2 worktree (md5 `a978d8b1…` / `c3d20edc…`, the same files every earlier CPU and A100 row
   used); the sdp81 one from the laptop simulation (md5 `384c729a…`).
 - **sdp81 dataset:** simulated on the laptop with `scripts/misc/simulators/interferometer.py
-  --instrument sdp81` (82 s; summary `results/simulators/interferometer_sdp81_summary_v2026.8.17.1.json`),
+  --instrument sdp81` (82 s; summary `archive/2026/08/pre_2026_09/simulators/interferometer_sdp81_summary_v2026.8.17.1.json`),
   `data.fits` md5 `1773239a…`, `uv_wavelengths.fits` md5 `26cb8b7e…` (identical values to the
   workspace SDP.81 export). Laptop smoke of the Delaunay numba cell on it before submit (2
   instances): numba 2.61 s vs FFT 4.80 s per call (laptop, loaded), nnz/col 29.1, 0.0 nats apart.

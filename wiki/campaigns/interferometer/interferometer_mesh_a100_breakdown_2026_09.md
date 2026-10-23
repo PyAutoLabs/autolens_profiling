@@ -3,9 +3,9 @@
 autolens_profiling issue [#320](https://github.com/PyAutoLabs/autolens_profiling/issues/320),
 branch `feature/interferometer-mesh-breakdown-a100`, epic `interferometer-likelihood-campaign`
 (2/3). This is the interferometer mirror of the imaging A100 pixelized baseline
-([`a100_pixelized_baseline_2026_09.md`](./a100_pixelized_baseline_2026_09.md), #241: Delaunay
+([`a100_pixelized_baseline_2026_09.md`](../imaging/a100_pixelized_baseline_2026_09.md), #241: Delaunay
 67.5 ms, rectangular 60 ms step sum). The MGE sibling is
-[`interferometer_mge_breakdown_2026_09.md`](./interferometer_mge_breakdown_2026_09.md) (1/3).
+[`interferometer_mge_breakdown_2026_09.md`](mge/interferometer_mge_breakdown_2026_09.md) (1/3).
 
 **Headline.** A full alma (1M visibilities) sparse-operator likelihood costs **49.5 ms
 (Delaunay-1500) / 44.5 ms (rectangular 39×39)** on the A100 in fp64. That is below the imaging

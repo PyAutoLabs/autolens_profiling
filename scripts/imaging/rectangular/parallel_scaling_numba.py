@@ -463,8 +463,9 @@ scaling_summary = {
 _basename_stem = "pixelization_numba" if MESH == "rectangular" else "delaunay_numba"
 dict_path, chart_path = resolve_output_paths(
     _cli,
-    default_dir=_workspace_root / "results" / "parallel_scaling" / "imaging",
+    default_dir=_workspace_root / "results" / "misc" / "parallel_scaling" / "imaging",
     default_basename=f"{_basename_stem}_scaling_{instrument}_v{al_version}",
+    hints=scaling_summary,
 )
 dict_path.write_text(json.dumps(scaling_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")

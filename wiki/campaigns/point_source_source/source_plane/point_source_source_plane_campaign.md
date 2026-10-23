@@ -40,7 +40,7 @@ and levers are out of scope; see "Carried to cluster epic".
 ## CPU fp64 reference
 
 Canonical artifact:
-`results/breakdown/point_source_source/source_plane_local_cpu_fp64.json` and
+`results/point_source_source/source_plane/simple/jax_cpu_na_fp64/local_laptop/breakdown.json` and
 its PNG.
 
 - Backend: JAX CPU, fp64, JAX/jaxlib 0.10.2. Threads were exported to 8
@@ -222,7 +222,7 @@ Single-source only.
   Their WALL-BASIS rows are measured on the RAL jobs. Known gaps, carried and
   not fixed here: `check_submits.py`'s `_PYTHON_CALL` misses `python3 -u`, and
   `hpc/sync pull` does not fetch `batch_cpu` logs. The CPU log was copied by
-  hand to `results/logs/point_source_source/point_source_source_plane_2026_09_26_ral_job_356368.out`.
+  hand to `results/misc/logs/point_source_source/point_source_source_plane_2026_09_26_ral_job_356368.out`.
 - New rows: `source_plane_{hpc_ral_cpu_fp64,hpc_a100_fp64}` and
   `pytree_input_ab_{hpc_ral_cpu_fp64,hpc_a100_fp64}` (JSON + PNG) under
   `results/breakdown/point_source_source/`.
@@ -739,7 +739,7 @@ Single-source only. Workspace-only: no library was edited.
   (pinned to `euclid-ral-gpu-1`). WALL-BASIS = the laptop's measured 1906 s.
 - Rows `gradient_mode_crossover_{local_cpu_fp64,hpc_ral_gpunode_cpu_fp64,hpc_a100_fp64}`
   (JSON + PNG) under `results/breakdown/point_source_source/`; the CPU job log
-  is `results/logs/point_source_source/point_source_source_plane_2026_09_27_ral_job_358770.out`.
+  is `results/misc/logs/point_source_source/point_source_source_plane_2026_09_27_ral_job_358770.out`.
 
 ### The ladder
 
@@ -1076,7 +1076,7 @@ Single-source only. Workspace-only: no library was edited. The library side is p
   and `autolens` import from them at the merge commits. WALL-BASIS = the laptop's measured 315 s.
 - Rows `gradient_mode_library_ab_{local_cpu_fp64,hpc_ral_gpunode_cpu_fp64,hpc_a100_fp64}` (JSON +
   PNG) under `results/breakdown/point_source_source/`. The CPU job log is
-  `results/logs/point_source_source/point_source_source_plane_2026_09_27_ral_job_359192.out`.
+  `results/misc/logs/point_source_source/point_source_source_plane_2026_09_27_ral_job_359192.out`.
 
 ### Hosts and revisions
 
@@ -1276,8 +1276,8 @@ identity. This is a pre-existing dashboard/release-sweep limitation, flagged in 
 | `hpc_ral_cpu_fp64` (EPYC 7702, 8 CPUs) | 366911 | 0.16 / 0.14 / 0.34 | 6.74 ms | **0.258 ms** | 0.097 ms | 3 | 2.7× |
 | `hpc_a100_fp64` (A100) | 366912 | 1.16 / 0.38 / 0.42 | 6.72 ms | 0.642 ms (see below) | **5.6 µs** | 64 (probe) | 114× |
 
-Logs: [366911](../logs/point_source_source/point_source_source_plane_2026_09_28_ral_job_366911.out),
-[366912](../logs/point_source_source/point_source_source_plane_2026_09_28_ral_job_366912.out).
+Logs: [366911](../../../../results/misc/logs/point_source_source/point_source_source_plane_2026_09_28_ral_job_366911.out),
+[366912](../../../../results/misc/logs/point_source_source/point_source_source_plane_2026_09_28_ral_job_366912.out).
 Pinned-value checks passed on both (eager, JIT and every vmap entry = `0.5986504555530896`,
 rtol 1e-4). The A100 probe (`vmap_probe_source_plane_solved.json`) recommended the 64 cap: the
 compiled vmap graph holds 0.14 MB of temporaries.
@@ -1288,7 +1288,7 @@ phase-2a 0.1465 ms was the 8490H, a different host.
 **A100 single call: 0.642 ms is a warm-up artefact, not a regression.** The cell times one block of
 10 calls straight after the first call, and phase 2a's A100 fused solved call was 0.2217 ms (median,
 `euclid-ral-gpu-1`, job 356369). A diagnostic job on the same node, 366914
-([log](../logs/point_source_source/point_source_source_plane_2026_09_28_ral_job_366914_timing_diag.out)),
+([log](../../../../results/misc/logs/point_source_source/point_source_source_plane_2026_09_28_ral_job_366914_timing_diag.out)),
 built the same analysis and warmed the compiled executable with 5 calls before timing. It then
 measured the cell's own statistic (mean of 10 consecutive calls) 40 times, and 400 individually
 timed calls. Result: **median 0.272 ms** (p10 0.250, p90 0.285) for the cell statistic and
@@ -1403,8 +1403,8 @@ This is a `MultiStartAdam` measurement. BlackJAX NUTS / SMC were not run: they d
 | `hpc_ral_cpu_fp64` | 412518 | euclid-ral-compute-10-2 (8490H, `ral`, 8 CPUs, shared node) | 10.15 / 10.04 / 10.06 | 4.46 ms | 0.177 ms | **0.147 ms** (0.126–0.168) | 52.6 µs (3) | passed |
 | `hpc_a100_fp64` | 412517 | euclid-ral-gpu-2 (`--exclusive`) | 0.71 / 0.19 / 0.06 | 6.44 ms | 0.347 ms | **0.233 ms** (0.229–0.262) | 4.77 µs (64) | passed |
 
-Logs: [412517](../logs/point_source_source/point_source_source_plane_2026_10_17_ral_job_412517.out),
-[412518](../logs/point_source_source/point_source_source_plane_2026_10_17_ral_job_412518.out).
+Logs: [412517](../../../../results/misc/logs/point_source_source/point_source_source_plane_2026_10_17_ral_job_412517.out),
+[412518](../../../../results/misc/logs/point_source_source/point_source_source_plane_2026_10_17_ral_job_412518.out).
 Log-likelihood 0.59865045555 on both (pinned 0.5986504555530896, rtol 1e-4).
 
 - **A100 (#371).** `single_jit` sits 1.49× above the steady median and above its p90 again (0.347 vs 0.233 ms; it was 0.642 vs a 0.267 ms diagnostic median on 2026.9.27.2). The first-block-after-compile label stays correct, and the median field is the A100 single-call number to quote. The steady median is 0.233 ms, against the 2026-09-28 diagnostic's 0.267 ms on the same node. Release, jax version (0.11.2 vs 0.10.2) and statistic window all differ, so the change is not attributed.

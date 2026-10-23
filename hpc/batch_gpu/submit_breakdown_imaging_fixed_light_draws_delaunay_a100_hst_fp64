@@ -52,7 +52,7 @@
 # to finish in 10-30 min.
 #
 # Every leg starts from an EMPTY JAX compilation cache: a seeded XLA autotune cache
-# silently changes kernels (results/notes/xla_autotune_triton_gemm.md -- F 4.8 vs
+# silently changes kernels (wiki/campaigns/misc/xla_autotune_triton_gemm.md -- F 4.8 vs
 # 25.6 ms on the same code).
 #
 # parse_known_args IGNORES unknown flags, so a checkout WITHOUT this cell's flags

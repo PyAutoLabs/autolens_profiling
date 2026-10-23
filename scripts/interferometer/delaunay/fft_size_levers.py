@@ -43,7 +43,7 @@ medians, sparse operator built with ``method="nufft"``, fp64 (the script refuses
         [--instruments alma,alma_high,jvla] [--pixel-scales 0.01,0.015,0.02,0.025] \\
         [--sections prune,pixel_scale] [--out PATH]
 
-Output (default): ``results/breakdown/interferometer/jvla/delaunay_hpc_a100_fp64_fft_prune.json``,
+Output (default): ``results/misc/likelihood_breakdown/interferometer/jvla/delaunay_hpc_a100_fp64_fft_prune.json``,
 rewritten after every row.
 """
 
@@ -89,7 +89,8 @@ parser.add_argument("--n-timed", type=int, default=30, help="calls per interleav
 parser.add_argument(
     "--out",
     type=Path,
-    default=ROOT / "results/breakdown/interferometer/jvla/delaunay_hpc_a100_fp64_fft_prune.json",
+    default=ROOT
+    / "results/misc/likelihood_breakdown/interferometer/jvla/delaunay_hpc_a100_fp64_fft_prune.json",
 )
 args = parser.parse_args()
 

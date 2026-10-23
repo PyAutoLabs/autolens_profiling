@@ -22,7 +22,7 @@
 #
 # Routes d0 and e are phase-1 diagnostics (the batched cost without the cond, and
 # the always-fallback worst case). They are measured and written up in
-# results/notes/fixed_lens_light_library_path_2026_09.md and are skipped here so a
+# wiki/campaigns/imaging/fixed_lens_light_library_path_2026_09.md and are skipped here so a
 # leg is four library rows rather than six.
 #
 #   --pass-budget auto     Route d runs at the budget a PRODUCTION search would FIX:
@@ -54,7 +54,7 @@
 # extrapolated.
 #
 # Every leg starts from an EMPTY JAX compilation cache: a seeded XLA autotune cache
-# silently changes kernels (results/notes/xla_autotune_triton_gemm.md -- F 4.8 vs
+# silently changes kernels (wiki/campaigns/misc/xla_autotune_triton_gemm.md -- F 4.8 vs
 # 25.6 ms on the same code).
 #
 # parse_known_args IGNORES unknown flags, so a checkout WITHOUT this cell's

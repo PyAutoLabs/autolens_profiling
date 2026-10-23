@@ -2,12 +2,12 @@
 
 **Status:** draft
 **Question:** Which fresh, fully specified setup measurements can support a later baseline decision?
-**Pre-registered rule:** Draft only; resolve and freeze the [campaign specification](../../baseline/campaign.json), then obtain separate compute authorization. Structural screening never accepts a baseline.
+**Pre-registered rule:** Draft only; resolve and freeze the [campaign specification](../../../baseline/campaign.json), then obtain separate compute authorization. Structural screening never accepts a baseline.
 **Verdict:** None; no measurements collected or scientifically accepted.
 **Headline:** 1,044 proposed slots; 58 CPU device-memory slots not applicable; no measured headline.
 **Library PRs:** None; no library API changes.
 **Profiling PRs:** Implementation tracked in [issue #384](https://github.com/PyAutoLabs/autolens_profiling/issues/384).
-**Ledger:** No measurement ledger yet; [readiness contract](../../baseline/README.md) only.
+**Ledger:** No measurement ledger yet; [readiness contract](../../../baseline/README.md) only.
 **Mind contract:** `profiling-baseline-readiness`; parent `draft/feature/pyautopulse/profiling_setup_browser.md`, Phase 6.
 **Next:** Resolve setup/hardware/revision decisions and capability gaps through the [Pulse campaign task](https://github.com/PyAutoLabs/PyAutoPulse/issues/17); collection requires a later human authorization.
 
@@ -36,7 +36,7 @@ cannot fill missing cells. Reports screen submitted declarations and hashes;
 they do not prove physical execution or grant scientific acceptance.
 
 No results, baseline pins or time-series metadata change. Temporal charts stay
-deferred. The [readiness guide](../../baseline/README.md) defines the proposed
+deferred. The [readiness guide](../../../baseline/README.md) defines the proposed
 matrix, protocols, receipt format and later decision boundaries.
 
 ## Journal

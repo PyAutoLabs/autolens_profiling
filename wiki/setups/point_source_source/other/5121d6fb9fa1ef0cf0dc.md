@@ -35,7 +35,7 @@ Identity limitations: Isolated to source row: legacy metadata is insufficient fo
 
 ## Evidence
 
-[Original setup artifact](../../../../results/runtime/point_source_source/source_plane_solved/comparison.json); JSON pointer: `/configs/hpc_a100_fp64`.
+[Original setup artifact](../../../../results/misc/likelihood_runtime/point_source_source/source_plane_solved/comparison.json); JSON pointer: `/configs/hpc_a100_fp64`.
 
 ### Selected references
 
@@ -47,11 +47,11 @@ No selected reference for this exact setup; archive evidence is available below.
 
 | Record | Metric | Value | Unit | Device / precision | Selection | Evidence pointer |
 |---|---|---|---|---|---|---|
-| `measurement/1509c0d5068181323426` | single_call | {"single_call": 0.0003466109978035092} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/runtime/point_source_source/source_plane_solved/comparison.json) `/configs/hpc_a100_fp64/full_pipeline_per_call` |
-| `measurement/3542f166e0ff1082ef54` | vmap.batch_time | {"vmap.batch_time": 0.00030517608392983676} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/runtime/point_source_source/source_plane_solved/comparison.json) `/configs/hpc_a100_fp64/vmap/batch_time` |
-| `measurement/5a1117b348e7e7843cd1` | vmap.per_call | {"vmap.per_call": 4.768376311403699e-06} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/runtime/point_source_source/source_plane_solved/comparison.json) `/configs/hpc_a100_fp64/vmap/per_call` |
-| `measurement/90868e8e7e368c67776d` | single_jit_block | {"single_jit_block": 0.0003466109978035092} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/runtime/point_source_source/source_plane_solved/comparison.json) `/configs/hpc_a100_fp64/full_pipeline_single_jit` |
-| `measurement/bd34a19389491695d304` | single_jit_median | {"single_jit_median": 0.00023301457986235619} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/runtime/point_source_source/source_plane_solved/comparison.json) `/configs/hpc_a100_fp64/full_pipeline_single_jit_median` |
+| `measurement/1509c0d5068181323426` | single_call | {"single_call": 0.0003466109978035092} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/misc/likelihood_runtime/point_source_source/source_plane_solved/comparison.json) `/configs/hpc_a100_fp64/full_pipeline_per_call` |
+| `measurement/3542f166e0ff1082ef54` | vmap.batch_time | {"vmap.batch_time": 0.00030517608392983676} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/misc/likelihood_runtime/point_source_source/source_plane_solved/comparison.json) `/configs/hpc_a100_fp64/vmap/batch_time` |
+| `measurement/5a1117b348e7e7843cd1` | vmap.per_call | {"vmap.per_call": 4.768376311403699e-06} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/misc/likelihood_runtime/point_source_source/source_plane_solved/comparison.json) `/configs/hpc_a100_fp64/vmap/per_call` |
+| `measurement/90868e8e7e368c67776d` | single_jit_block | {"single_jit_block": 0.0003466109978035092} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/misc/likelihood_runtime/point_source_source/source_plane_solved/comparison.json) `/configs/hpc_a100_fp64/full_pipeline_single_jit` |
+| `measurement/bd34a19389491695d304` | single_jit_median | {"single_jit_median": 0.00023301457986235619} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/misc/likelihood_runtime/point_source_source/source_plane_solved/comparison.json) `/configs/hpc_a100_fp64/full_pipeline_single_jit_median` |
 
 </details>
 

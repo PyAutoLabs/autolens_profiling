@@ -38,7 +38,7 @@
 # thread_environment and device.cpu_count blocks record what was actually seen.
 #
 # XLA_FLAGS are set IDENTICAL to the local baseline row
-# (results/breakdown/point_source_image/image_plane_local_cpu_fp64.json,
+# (results/point_source_image/image_plane/simple/jax_cpu_na_fp64/local_laptop/breakdown.json,
 # device.xla_flags). activate.sh sets no XLA_FLAGS / JAX_* of its own, so the
 # export below is the only one -- there is nothing to contradict. The two
 # --xla_gpu_* flags are inert on CPU and are kept only so the recorded string
@@ -115,7 +115,7 @@ export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_l
 export NUMBA_CACHE_DIR=$AP_ROOT/output/numba_cache_${SLURM_JOB_ID:-local}
 mkdir -p "$NUMBA_CACHE_DIR" "$MPLCONFIGDIR"
 # Fresh JAX compile cache per job, as the GPU baseline submits do: a seeded
-# persistent cache changes compile times and kernels (results/notes/xla_autotune_triton_gemm.md),
+# persistent cache changes compile times and kernels (wiki/campaigns/misc/xla_autotune_triton_gemm.md),
 # and RAL $HOME is node-local, so an inherited cache would not be reproducible.
 export JAX_COMPILATION_CACHE_DIR="$AP_ROOT/output/jax_cache/point_source_${SLURM_JOB_ID:-local}"
 rm -rf "$JAX_COMPILATION_CACHE_DIR" && mkdir -p "$JAX_COMPILATION_CACHE_DIR"

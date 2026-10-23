@@ -1770,7 +1770,7 @@ print(f"  one-iteration row:          {_nnls_one_iteration_s * 1e3:9.3f} ms")
 print(f"  max |recon_cell - recon_library| = {_nnls_recon_diff:.3e}")
 
 # Recorded, never asserted: a profiling run flags drift, it does not adjudicate
-# library correctness (results/notes/design_lock_in.md). The record rides in the
+# library correctness (wiki/campaigns/misc/design_lock_in.md). The record rides in the
 # ``nnls`` JSON block, in the same shape ``_profile_cli.check_pinned`` returns.
 _nnls_drift = None
 if _nnls_recon_diff <= 1e-8:
@@ -2318,6 +2318,7 @@ dict_path, chart_path = resolve_output_paths(
     # cell "delaunay" and would overwrite the Delaunay cell's config-tagged
     # JSON/PNG (autolens_profiling#219).
     cell="delaunay_nn",
+    hints=breakdown_summary,
 )
 breakdown_summary["configuration"].update(_over_sampling_record)
 dict_path.write_text(json.dumps(breakdown_summary, indent=2))

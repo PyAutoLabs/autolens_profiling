@@ -36,7 +36,7 @@ Identity limitations: Isolated to source row: legacy metadata is insufficient fo
 
 ## Evidence
 
-[Original setup artifact](../../../../results/runtime/imaging/delaunay_nn/delaunay_nn_likelihood_summary_hst_v2026.8.17.1.json); JSON pointer: `(document root)`.
+[Original setup artifact](../../../../archive/2026/08/hostless_summaries/runtime/imaging/delaunay_nn/delaunay_nn_likelihood_summary_hst_v2026.8.17.1.json); JSON pointer: `(document root)`.
 
 ### Selected references
 
@@ -48,9 +48,9 @@ No selected reference for this exact setup; archive evidence is available below.
 
 | Record | Metric | Value | Unit | Device / precision | Selection | Evidence pointer |
 |---|---|---|---|---|---|---|
-| `measurement/ddc18451324667a738cd` | single_jit_block | {"single_jit_block": 5.208032309999908} | s | cpu / None | archive support; unreviewed | [artifact](../../../../results/runtime/imaging/delaunay_nn/delaunay_nn_likelihood_summary_hst_v2026.8.17.1.json) `/full_pipeline_single_jit` |
-| `measurement/df791ec6de3462369835` | vmap.per_call | {"vmap.per_call": 4.252231736666727} | s | cpu / None | archive support; unreviewed | [artifact](../../../../results/runtime/imaging/delaunay_nn/delaunay_nn_likelihood_summary_hst_v2026.8.17.1.json) `/vmap/per_call` |
-| `measurement/fa1ef3d240b5335d8c94` | vmap.batch_time | {"vmap.batch_time": 12.75669521000018} | s | cpu / None | archive support; unreviewed | [artifact](../../../../results/runtime/imaging/delaunay_nn/delaunay_nn_likelihood_summary_hst_v2026.8.17.1.json) `/vmap/batch_time` |
+| `measurement/ddc18451324667a738cd` | single_jit_block | {"single_jit_block": 5.208032309999908} | s | cpu / None | archive support; unreviewed | [artifact](../../../../archive/2026/08/hostless_summaries/runtime/imaging/delaunay_nn/delaunay_nn_likelihood_summary_hst_v2026.8.17.1.json) `/full_pipeline_single_jit` |
+| `measurement/df791ec6de3462369835` | vmap.per_call | {"vmap.per_call": 4.252231736666727} | s | cpu / None | archive support; unreviewed | [artifact](../../../../archive/2026/08/hostless_summaries/runtime/imaging/delaunay_nn/delaunay_nn_likelihood_summary_hst_v2026.8.17.1.json) `/vmap/per_call` |
+| `measurement/fa1ef3d240b5335d8c94` | vmap.batch_time | {"vmap.batch_time": 12.75669521000018} | s | cpu / None | archive support; unreviewed | [artifact](../../../../archive/2026/08/hostless_summaries/runtime/imaging/delaunay_nn/delaunay_nn_likelihood_summary_hst_v2026.8.17.1.json) `/vmap/batch_time` |
 
 </details>
 

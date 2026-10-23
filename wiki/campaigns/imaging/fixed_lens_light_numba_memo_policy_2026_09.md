@@ -83,7 +83,7 @@ This is a small exploratory calibration, not uncertainty-controlled optimization
 selected threshold did not itself meet the 3% nearby target in calibration;
 the independent holdout remains the declared decision test.
 
-The raw [threshold lock](../breakdown/imaging/fixed_light_numba_memo_policy_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s5b.locked.json)
+The raw [threshold lock](../../../results/misc/likelihood_breakdown/imaging/fixed_light_numba_memo_policy_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s5b.locked.json)
 has SHA256 `cf19fdd9d31a100b3a9c4a64b6fc7697febca9512f6d4de664e6b13e66a7d22c`.
 
 ## Results
@@ -131,7 +131,7 @@ scatter. These ranges are descriptive, not confidence intervals.
 > design conclusion below ("not a reliable proxy … can reject useful sets and accept costly ones")
 > therefore rests on point classifications until a human accepts a 4-repeat interval or the
 > replays are re-run with ≥ 5 repeats. See
-> [timing_noise_audit_2026_10.md](timing_noise_audit_2026_10.md), fix phase 3b.
+> [timing_noise_audit_2026_10.md](../misc/timing_noise_audit_2026_10.md), fix phase 3b.
 
 All 128 eligible matched transitions agree on final active sets. Missing memo
 entries are excluded from the false-decision denominator. The final column is
@@ -194,7 +194,7 @@ on seed 1. These are research results, not a production runtime improvement.
   Independent pre-run and complete empirical review are **CLEAN**, including
   recomputation of all summaries, gates, decisions and provenance checks.
 
-[Full JSON](../breakdown/imaging/fixed_light_numba_memo_policy_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s5b.json) ·
-[Timing plot](../breakdown/imaging/fixed_light_numba_memo_policy_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s5b.png) ·
-[Predeclared protocol](../breakdown/imaging/fixed_light_numba_memo_policy_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s5b.declaration.json) ·
-[Source/job sidecar](../breakdown/imaging/fixed_light_numba_s5b_source_job343413.json)
+[Full JSON](../../../results/misc/likelihood_breakdown/imaging/fixed_light_numba_memo_policy_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s5b.json) ·
+[Timing plot](../../../results/misc/likelihood_breakdown/imaging/fixed_light_numba_memo_policy_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s5b.png) ·
+[Predeclared protocol](../../../results/misc/likelihood_breakdown/imaging/fixed_light_numba_memo_policy_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s5b.declaration.json) ·
+[Source/job sidecar](../../../results/imaging/delaunay/hst/jax_gpu_dense_fp64/hpc_a100/light_fixed/experiments/fixed_light_numba_s5b_source_job343413.json)

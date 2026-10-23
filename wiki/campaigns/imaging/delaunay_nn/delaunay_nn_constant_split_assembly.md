@@ -220,7 +220,7 @@ misbehaves would hide the mechanism.
 ## Direct assembly bench (job 342338, `scripts/misc/delaunay_nn/assembly_bench.py`)
 
 The assembly function timed on its own, on the real `(4P, K) = (6000, 33)` HST split stencil
-tables committed at `results/delaunay_nn/tables_hst_1500.npz` (`P = 1500` mesh pixels;
+tables committed at `results/misc/delaunay_nn/tables_hst_1500.npz` (`P = 1500` mesh pixels;
 occupied sizes min 1 / mean 5.45 / max 11; 6,534,000 padded scatter entries for 187,242 real
 contributions into 29,020 unique `(i, j)` pairs, mean multiplicity 6.45). `V0` is the
 pre-#536 full padded scatter, forced from the same source by `compact_width = K`; every
@@ -329,9 +329,9 @@ by any of this work.
 
 - `results/breakdown/imaging/delaunay_nn_hpc_a100_fp64_assembly_control.{json,png}`
 - `results/breakdown/imaging/delaunay_nn_hpc_a100_fp64_assembly.{json,png}`
-- `results/runtime/imaging/delaunay_nn/delaunay_nn_hpc_a100_fp64_assembly_control.json`
-- `results/runtime/imaging/delaunay_nn/delaunay_nn_hpc_a100_fp64_assembly.json`
-- `results/delaunay_nn/assembly_bench_a100_fp64.json`
+- `results/imaging/delaunay_nn/hst/jax_gpu_dense_fp64/hpc_a100/experiments/assembly_control/runtime.json`
+- `results/imaging/delaunay_nn/hst/jax_gpu_dense_fp64/hpc_a100/experiments/assembly/runtime.json`
+- `results/misc/delaunay_nn/assembly_bench_a100_fp64.json`
 - `results/delaunay_nn/{tables_hst_1500.npz,mesh_points_hst.npy}` (the bench's inputs)
 - `hpc/batch_gpu/submit_breakdown_imaging_delaunay_nn_a100_hst_fp64_assembly{,_control}`
 - `hpc/batch_gpu/submit_runtime_imaging_delaunay_nn_a100_hst_fp64_assembly{,_control}`
@@ -344,7 +344,7 @@ agree to 0.2 %, so the row sets are in practice on one scale.
 
 **Follow-up (2026-09-08, autolens_profiling#232):** the Delaunay cells now default to
 `AdaptSplit(0.1, 10.0, 0.1)`, and the same-node A/B in
-`results/notes/delaunay_adapt_split_regularization.md` shows this note's compaction carries
+`wiki/campaigns/imaging/delaunay_adapt_split_regularization.md` shows this note's compaction carries
 over unchanged — the DelaunayNN params→H prefix at `vmap` 16 reads 7.28 ms on AdaptSplit
 against 7.25 on its ConstantSplit control (7.26 here). The canonical
 `delaunay{,_nn}_hpc_a100_fp64` rows are AdaptSplit from that date.

@@ -3,7 +3,7 @@
 > **Pointer (2026-09-10).** The canonical A100 rows for the Delaunay and DelaunayNN
 > breakdowns — dense *and* sparse, all six legs on one node after
 > `--xla_gpu_enable_triton_gemm=false` (PyAutoNerves#162) and PyAutoArray #531/#533/#537 —
-> are now in [`a100_pixelized_baseline_2026_09.md`](./a100_pixelized_baseline_2026_09.md).
+> are now in [`a100_pixelized_baseline_2026_09.md`](../a100_pixelized_baseline_2026_09.md).
 > The rows in this note (2026-09-05, jobs 342277–342281) predate both and are kept for the
 > Delaunay-vs-DelaunayNN comparison they were taken for, not as current absolute costs.
 
@@ -33,8 +33,8 @@ rather than a JIT step.
 | 342277 | `likelihood_breakdown/imaging/delaunay` (`--split-setup --vmap-batch 16`) | `euclid-ral-gpu-1` | 17:25:32 | 1:33 | COMPLETED | `results/breakdown/imaging/delaunay_hpc_a100_fp64.{json,png}` |
 | 342278 | `likelihood_breakdown/imaging/delaunay_nn` (`--split-setup --vmap-batch 16`) | `euclid-ral-gpu-2` | 17:28:28 | 2:27 | COMPLETED | `results/breakdown/imaging/delaunay_nn_hpc_a100_fp64.{json,png}` |
 | 342279 | `likelihood_breakdown/imaging/delaunay_nn` (`--vmap-batch 64`) | `euclid-ral-gpu-1` | 17:25:32 | 2:06 | COMPLETED (vmap phase OOM, caught) | `results/breakdown/imaging/delaunay_nn_hpc_a100_fp64_vmap64.{json,png}` |
-| 342280 | `likelihood_runtime/imaging/delaunay_nn` (probe → full) | `euclid-ral-gpu-2` | 17:25:33 | 2:55 | **FAILED** (cuFFT at probe-recommended batch 64) | `results/runtime/imaging/delaunay_nn/vmap_probe_delaunay_nn_batch64_cufft_failed.json` |
-| 342281 | `likelihood_runtime/imaging/delaunay_nn` (full only, no probe) | `euclid-ral-gpu-2` | 17:40:28 | 1:27 | COMPLETED | `results/runtime/imaging/delaunay_nn/delaunay_nn_hpc_a100_fp64.json` |
+| 342280 | `likelihood_runtime/imaging/delaunay_nn` (probe → full) | `euclid-ral-gpu-2` | 17:25:33 | 2:55 | **FAILED** (cuFFT at probe-recommended batch 64) | `archive/2026/09/probes/runtime/imaging/delaunay_nn/vmap_probe_delaunay_nn_batch64_cufft_failed.json` |
+| 342281 | `likelihood_runtime/imaging/delaunay_nn` (full only, no probe) | `euclid-ral-gpu-2` | 17:40:28 | 1:27 | COMPLETED | `results/imaging/delaunay_nn/hst/jax_gpu_dense_fp64/hpc_a100/runtime.json` |
 
 - Hardware: NVIDIA A100 80GB PCIe, RAL `gpu` partition; fp64 (`JAX_ENABLE_X64=True`),
   dense inversion path (`InversionImagingMapping`).
@@ -180,7 +180,7 @@ assertion and both eager pins are unchanged by this correction.
 
 ### (a) The mapper-only geometry benchmark vs the breakdown's triangulation row
 
-`results/notes/delaunay_nn_cap_audit.md` (A100, job 334949, 1,200 vertices, 15,000
+`wiki/campaigns/imaging/delaunay_nn/delaunay_nn_cap_audit.md` (A100, job 334949, 1,200 vertices, 15,000
 queries, query chunk 256, ten warm repeats) records **36.6 ms** for barycentric Delaunay
 and **157.3 ms** for DelaunayNN cap 32 — a **4.30×** overhead.
 
@@ -291,7 +291,7 @@ against a 57.03 GiB target, and the allocator then failed the single 46.86 GiB r
 
 **Batch 64 on the dense path is out of reach on 80 GB for this cell.** The dense
 per-replica footprint measured by the probes is **921.9 MB/replica** for Delaunay
-(`results/runtime/imaging/a100_probes/vmap_probe_delaunay.json`) and 771.0 MB/replica
+(`archive/2026/09/probes/runtime/imaging/a100_probes/vmap_probe_delaunay.json`) and 771.0 MB/replica
 for DelaunayNN; 64 replicas is ~49–59 GB of live mapping matrices before any transient,
 which is the same order as the 46.86 GiB the allocator refused. Batch 16 is the right
 production number and is what the `VMAP_BATCH` table already carries for both cells.
@@ -510,14 +510,14 @@ flag, and RAL `$HOME` is node-local. The controlled fresh-cache-per-arm probe (j
 fusion. The cure is not to re-enable autotuning but to add
 `--xla_gpu_enable_triton_gemm=false`, which reaches cuBLAS (4.79 ms) with no autotune
 compile cost; adopted in PyAutoNerves#161. Full write-up:
-[`xla_autotune_triton_gemm.md`](./xla_autotune_triton_gemm.md).
+[`xla_autotune_triton_gemm.md`](../../misc/xla_autotune_triton_gemm.md).
 
 ## See also
 
-- `results/notes/preopt_breakdown_baseline.md` — the 2026-07-10 A100 tier this note
+- `wiki/campaigns/misc/preopt_breakdown_baseline.md` — the 2026-07-10 A100 tier this note
   supersedes for the Delaunay rows.
-- `results/notes/delaunay_nn_cap_audit.md` — the cap-32 decision and the mapper-only
+- `wiki/campaigns/imaging/delaunay_nn/delaunay_nn_cap_audit.md` — the cap-32 decision and the mapper-only
   geometry benchmark reconciled in §(a).
-- `results/notes/sparse_vs_dense_inversion_path.md` — the sparse path referenced in the
+- `wiki/campaigns/imaging/sparse_vs_dense_inversion_path.md` — the sparse path referenced in the
   vmap-64 record.
 - `scripts/misc/vram/config.py` — the `VMAP_BATCH` table and its cuFFT provenance notes.

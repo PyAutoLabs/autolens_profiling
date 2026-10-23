@@ -31,9 +31,7 @@ os.environ["NUMBA_NUM_THREADS"] = "1"
 import numpy as np  # noqa: E402
 from likelihood_breakdown import fixed_light_numba_draws_steps as steps  # noqa: E402
 
-MANIFEST = (
-    "results/breakdown/imaging/fixed_light_draws_delaunay_hpc_a100_fp64_fixed_light_draws.json"
-)
+MANIFEST = "results/imaging/delaunay/hst/jax_gpu_dense_fp64/hpc_a100/light_fixed/experiments/draws/breakdown.json"
 
 
 def log(message):

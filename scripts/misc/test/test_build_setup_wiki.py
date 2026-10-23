@@ -4,11 +4,15 @@ import copy
 import hashlib
 import importlib.util
 import json
+import sys
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT / "scripts/misc/tooling"))
+from results_layout import current_of, legacy_of  # noqa: E402
+
 spec = importlib.util.spec_from_file_location(
     "build_setup_wiki", ROOT / "scripts/misc/tooling/build_setup_wiki.py"
 )
@@ -208,14 +212,15 @@ def test_historical_matrix_uses_correct_mge_arm_and_exact_alma_analogues():
         for sid in extent["applies_to"]["setup_ids"]
         if setups[sid]["instrument"] == "alma"
     }
+    # Evidence paths are where the files live since the day-zero move (#442 PR 2).
     assert alma == {
-        "results/breakdown/interferometer/" + model + "_" + suffix + ".json"
+        current_of(ROOT, "results/breakdown/interferometer/" + model + "_" + suffix + ".json")
         for model in ["delaunay", "pixelization"]
         for suffix in ["hpc_a100_fp64", "numba_hpc_ral_cpu_fp64"]
     }
     assert len(extent["applies_to"]["setup_ids"]) == 8
     for sid in extent["applies_to"]["setup_ids"]:
-        path = setups[sid]["evidence"]["path"]
+        path = legacy_of(ROOT, setups[sid]["evidence"]["path"])
         assert not any(excluded in path for excluded in ["n_sweep", "levers", "constant_split"])
         assert "_numba_" in path or "_a100_" in path
     for sid in recommendations["mesh-sparse"]["applies_to"]["setup_ids"]:

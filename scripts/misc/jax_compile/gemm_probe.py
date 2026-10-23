@@ -2,11 +2,11 @@
 XLA GPU autotuning / Triton-GEMM probe: one dense fp64 GEMM, one arm per run.
 
 Research instrument for the 2026-09-08 A/B that resolved why the 2026-09-05
-autotune pair in ``results/notes/delaunay_nn_breakdown.md`` (Curvature matrix F
+autotune pair in ``wiki/campaigns/imaging/delaunay_nn/delaunay_nn_breakdown.md`` (Curvature matrix F
 at 25.63 ms with ``--xla_gpu_autotune_level=0`` vs 4.90 ms at level 4) appeared
 to be contradicted by four later level-0 runs that measured F at ~4.8 ms.
 The finding, the measured table and the cure are written up in
-``results/notes/xla_autotune_triton_gemm.md``.
+``wiki/campaigns/misc/xla_autotune_triton_gemm.md``.
 
 The probe strips the likelihood away and times only the shape that moved:
 

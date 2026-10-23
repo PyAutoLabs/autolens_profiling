@@ -208,11 +208,11 @@ human policy decision, not a profiling question.
 The seven A100 JSON/PNG pairs are
 `results/breakdown/imaging/fixed_light_trace_delaunay_psf_<candidate>_hpc_a100_fp64_fixed_light_trace.{json,png}`.
 Their sha256s, SLURM per-task state, footers and the gate decision are in
-[`hst_gpu_residue_phase3_job350573.json`](../breakdown/imaging/hst_gpu_residue_phase3_job350573.json).
+[`hst_gpu_residue_phase3_job350573.json`](../../../results/imaging/delaunay/hst/jax_gpu_dense_fp64/hpc_a100/light_fixed/experiments/hst_gpu_residue_phase3_job350573.json).
 
 RTX 2060 rows were screening only: they checked the harness's pins, reconciliation, census and
 exit codes, and they are never ranked because of the GeForce fp64 rate. The artifacts are
-[`fixed_light_trace_delaunay_psf_<candidate>_local_rtx2060_fp64_fixed_light_trace.json`](../breakdown/imaging/fixed_light_trace_delaunay_psf_control_local_rtx2060_fp64_fixed_light_trace.json)
+[`fixed_light_trace_delaunay_psf_<candidate>_local_rtx2060_fp64_fixed_light_trace.json`](../../../results/imaging/delaunay/hst/jax_gpu_dense_fp64/local_gpu/light_fixed/experiments/trace_psf_control/breakdown.json)
 (control linked; the six siblings share the pattern). Their `cell_source_sha256` predates the
 docstring correction (`cbb2078`) and the gate commit (`e2b46f3`).
 

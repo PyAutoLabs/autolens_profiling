@@ -4,9 +4,9 @@
 **Branch:** `feature/multistart-prodigy-compile`
 **Status:** Local CPU (1-core) and RAL 32-core CPU tiers complete. A100 tier
 outstanding (see "A100 tier" below).
-**Instrument:** [`scripts/misc/jax_compile/probe.py`](../../scripts/misc/jax_compile/probe.py);
+**Instrument:** [`scripts/misc/jax_compile/probe.py`](../../../scripts/misc/jax_compile/probe.py);
 full tables and provenance in
-[`scripts/misc/jax_compile/README.md`](../../scripts/misc/jax_compile/README.md).
+[`scripts/misc/jax_compile/README.md`](../../../scripts/misc/jax_compile/README.md).
 
 ## TL;DR
 

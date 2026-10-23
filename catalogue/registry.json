@@ -34,6 +34,10 @@
       "adapter": "profile"
     },
     {
+      "glob": "archive/**/*.json",
+      "adapter": "profile"
+    },
+    {
       "glob": "scripts/misc/jax_compile/results/**/*.json",
       "adapter": "compile"
     }
@@ -270,17 +274,17 @@
   ],
   "references": [
     {
-      "path": "results/runtime/imaging/delaunay/delaunay_hpc_a100_fp64.json",
+      "path": "results/imaging/delaunay/hst/jax_gpu_dense_fp64/hpc_a100/runtime.json",
       "pointer": "",
       "reason": "Explicit existing production-named artifact; unreviewed pending the new baseline."
     },
     {
-      "path": "results/breakdown/imaging/delaunay_hpc_a100_fp64.json",
+      "path": "results/imaging/delaunay/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json",
       "pointer": "",
       "reason": "Explicit production-named breakdown artifact; do not join to a different configuration."
     },
     {
-      "path": "results/streaming_scaling/accumulate_local_cpu_v2026.10.4.1+2.json",
+      "path": "results/misc/streaming_scaling/accumulate_local_cpu_v2026.10.4.1+2.json",
       "pointer": "/rows/0",
       "reason": "Explicit first streaming measurement; illustrative unreviewed evidence, not a baseline acceptance."
     }
@@ -671,40 +675,40 @@
       ],
       "evidence": [
         {
-          "path": "results/notes/interferometer_likelihood_decision_matrix_2026_09.md",
+          "path": "wiki/campaigns/interferometer/interferometer_likelihood_decision_matrix_2026_09.md",
           "fragment": null
         },
         {
           "fragment": "/full_pipeline_single_jit",
-          "path": "results/breakdown/interferometer/delaunay_hpc_a100_fp64.json"
+          "path": "results/interferometer/delaunay/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json"
         },
         {
           "fragment": "/full_pipeline_single_jit",
-          "path": "results/breakdown/interferometer/sdp81/pixelization_hpc_a100_fp64.json"
+          "path": "results/interferometer/rectangular/sdp81/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json"
         },
         {
           "fragment": "/full_pipeline_single_jit",
-          "path": "results/breakdown/interferometer/sdp81/delaunay_hpc_a100_fp64.json"
+          "path": "results/interferometer/delaunay/sdp81/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json"
         },
         {
           "fragment": "/full_call/mean_s",
-          "path": "results/breakdown/interferometer/sdp81/delaunay_numba_hpc_ral_cpu_fp64.json"
+          "path": "results/interferometer/delaunay/sdp81/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json"
         },
         {
           "fragment": "/full_call/mean_s",
-          "path": "results/breakdown/interferometer/delaunay_numba_hpc_ral_cpu_fp64.json"
+          "path": "results/interferometer/delaunay/alma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json"
         },
         {
           "fragment": "/full_pipeline_single_jit",
-          "path": "results/breakdown/interferometer/pixelization_hpc_a100_fp64.json"
+          "path": "results/interferometer/rectangular/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json"
         },
         {
           "fragment": "/full_call/mean_s",
-          "path": "results/breakdown/interferometer/pixelization_numba_hpc_ral_cpu_fp64.json"
+          "path": "results/interferometer/rectangular/alma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json"
         },
         {
           "fragment": "/full_call/mean_s",
-          "path": "results/breakdown/interferometer/sdp81/pixelization_numba_hpc_ral_cpu_fp64.json"
+          "path": "results/interferometer/rectangular/sdp81/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json"
         }
       ],
       "validation": {
@@ -912,31 +916,31 @@
       ],
       "evidence": [
         {
-          "path": "results/notes/interferometer_likelihood_decision_matrix_2026_09.md",
+          "path": "wiki/campaigns/interferometer/interferometer_likelihood_decision_matrix_2026_09.md",
           "fragment": null
         },
         {
           "fragment": "/full_pipeline_single_jit",
-          "path": "results/breakdown/interferometer/sdp81/pixelization_hpc_a100_fp64.json"
+          "path": "results/interferometer/rectangular/sdp81/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json"
         },
         {
           "fragment": "/full_pipeline_single_jit",
-          "path": "results/breakdown/interferometer/sdp81/delaunay_hpc_a100_fp64.json"
+          "path": "results/interferometer/delaunay/sdp81/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json"
         },
         {
           "fragment": "/total_step_by_step",
-          "path": "results/breakdown/interferometer/sdp81/delaunay_hpc_a100_fp64.json"
+          "path": "results/interferometer/delaunay/sdp81/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json"
         },
         {
           "fragment": "/total_step_by_step",
-          "path": "results/breakdown/interferometer/sdp81/pixelization_hpc_a100_fp64.json"
+          "path": "results/interferometer/rectangular/sdp81/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json"
         },
         {
-          "path": "results/breakdown/interferometer/sdp81/delaunay_hpc_a100_fp64.json",
+          "path": "results/interferometer/delaunay/sdp81/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
           "fragment": "/dense_total_step_by_step"
         },
         {
-          "path": "results/breakdown/interferometer/sdp81/pixelization_hpc_a100_fp64.json",
+          "path": "results/interferometer/rectangular/sdp81/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
           "fragment": "/dense_total_step_by_step"
         }
       ],
@@ -1141,71 +1145,71 @@
       ],
       "evidence": [
         {
-          "path": "results/notes/interferometer_likelihood_decision_matrix_2026_09.md",
+          "path": "wiki/campaigns/interferometer/interferometer_likelihood_decision_matrix_2026_09.md",
           "fragment": null
         },
         {
           "fragment": "/full_call/mean_s",
-          "path": "results/breakdown/interferometer/sdp81/delaunay_numba_hpc_ral_cpu_fp64.json"
+          "path": "results/interferometer/delaunay/sdp81/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json"
         },
         {
           "fragment": "/total_step_by_step",
-          "path": "results/breakdown/interferometer/sdp81/pixelization_numba_hpc_ral_cpu_fp64.json"
+          "path": "results/interferometer/rectangular/sdp81/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json"
         },
         {
           "fragment": "/total_step_by_step",
-          "path": "results/breakdown/interferometer/sdp81/delaunay_numba_hpc_ral_cpu_fp64.json"
+          "path": "results/interferometer/delaunay/sdp81/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json"
         },
         {
           "fragment": "/full_call/mean_s",
-          "path": "results/breakdown/interferometer/sdp81/pixelization_numba_hpc_ral_cpu_fp64.json"
+          "path": "results/interferometer/rectangular/sdp81/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json"
         },
         {
-          "path": "results/breakdown/interferometer/sdp81/delaunay_numba_hpc_ral_cpu_fp64.json",
+          "path": "results/interferometer/delaunay/sdp81/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
           "fragment": "/arms/numpy_fft/full_call/mean_s"
         },
         {
-          "path": "results/breakdown/interferometer/sdp81/delaunay_numba_hpc_ral_cpu_fp64.json",
+          "path": "results/interferometer/delaunay/sdp81/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
           "fragment": "/arms/numba/full_call/mean_s"
         },
         {
-          "path": "results/breakdown/interferometer/sdp81/delaunay_numba_hpc_ral_cpu_fp64.json",
+          "path": "results/interferometer/delaunay/sdp81/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
           "fragment": "/configuration/nnz_per_source_column"
         },
         {
-          "path": "results/breakdown/interferometer/sdp81/delaunay_numba_hpc_ral_cpu_fp64.json",
+          "path": "results/interferometer/delaunay/sdp81/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
           "fragment": "/configuration/numba_gate_library_default"
         },
         {
-          "path": "results/breakdown/interferometer/sdp81/delaunay_numba_hpc_ral_cpu_fp64.json",
+          "path": "results/interferometer/delaunay/sdp81/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
           "fragment": "/configuration/would_route_numba_at_default_gate"
         },
         {
-          "path": "results/breakdown/interferometer/sdp81/delaunay_numba_hpc_ral_cpu_fp64.json",
+          "path": "results/interferometer/delaunay/sdp81/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
           "fragment": "/agreement"
         },
         {
-          "path": "results/breakdown/interferometer/sdp81/pixelization_numba_hpc_ral_cpu_fp64.json",
+          "path": "results/interferometer/rectangular/sdp81/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
           "fragment": "/arms/numpy_fft/full_call/mean_s"
         },
         {
-          "path": "results/breakdown/interferometer/sdp81/pixelization_numba_hpc_ral_cpu_fp64.json",
+          "path": "results/interferometer/rectangular/sdp81/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
           "fragment": "/arms/numba/full_call/mean_s"
         },
         {
-          "path": "results/breakdown/interferometer/sdp81/pixelization_numba_hpc_ral_cpu_fp64.json",
+          "path": "results/interferometer/rectangular/sdp81/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
           "fragment": "/configuration/nnz_per_source_column"
         },
         {
-          "path": "results/breakdown/interferometer/sdp81/pixelization_numba_hpc_ral_cpu_fp64.json",
+          "path": "results/interferometer/rectangular/sdp81/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
           "fragment": "/configuration/numba_gate_library_default"
         },
         {
-          "path": "results/breakdown/interferometer/sdp81/pixelization_numba_hpc_ral_cpu_fp64.json",
+          "path": "results/interferometer/rectangular/sdp81/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
           "fragment": "/configuration/would_route_numba_at_default_gate"
         },
         {
-          "path": "results/breakdown/interferometer/sdp81/pixelization_numba_hpc_ral_cpu_fp64.json",
+          "path": "results/interferometer/rectangular/sdp81/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
           "fragment": "/agreement"
         }
       ],
@@ -1576,40 +1580,40 @@
       ],
       "evidence": [
         {
-          "path": "results/notes/interferometer_likelihood_decision_matrix_2026_09.md",
+          "path": "wiki/campaigns/interferometer/interferometer_likelihood_decision_matrix_2026_09.md",
           "fragment": null
         },
         {
           "fragment": "/full_pipeline_single_jit",
-          "path": "results/breakdown/interferometer/sdp81/pixelization_hpc_a100_fp64.json"
+          "path": "results/interferometer/rectangular/sdp81/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json"
         },
         {
           "fragment": "/full_pipeline_single_jit",
-          "path": "results/breakdown/interferometer/sdp81/delaunay_hpc_a100_fp64.json"
+          "path": "results/interferometer/delaunay/sdp81/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json"
         },
         {
           "fragment": "/full_call/mean_s",
-          "path": "results/breakdown/interferometer/sdp81/delaunay_numba_hpc_ral_cpu_fp64.json"
+          "path": "results/interferometer/delaunay/sdp81/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json"
         },
         {
           "fragment": "/total_step_by_step",
-          "path": "results/breakdown/interferometer/sdp81/pixelization_numba_hpc_ral_cpu_fp64.json"
+          "path": "results/interferometer/rectangular/sdp81/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json"
         },
         {
           "fragment": "/total_step_by_step",
-          "path": "results/breakdown/interferometer/sdp81/delaunay_hpc_a100_fp64.json"
+          "path": "results/interferometer/delaunay/sdp81/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json"
         },
         {
           "fragment": "/total_step_by_step",
-          "path": "results/breakdown/interferometer/sdp81/pixelization_hpc_a100_fp64.json"
+          "path": "results/interferometer/rectangular/sdp81/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json"
         },
         {
           "fragment": "/total_step_by_step",
-          "path": "results/breakdown/interferometer/sdp81/delaunay_numba_hpc_ral_cpu_fp64.json"
+          "path": "results/interferometer/delaunay/sdp81/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json"
         },
         {
           "fragment": "/full_call/mean_s",
-          "path": "results/breakdown/interferometer/sdp81/pixelization_numba_hpc_ral_cpu_fp64.json"
+          "path": "results/interferometer/rectangular/sdp81/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json"
         }
       ],
       "validation": {
@@ -1740,16 +1744,16 @@
       ],
       "evidence": [
         {
-          "path": "results/notes/interferometer_likelihood_decision_matrix_2026_09.md",
+          "path": "wiki/campaigns/interferometer/interferometer_likelihood_decision_matrix_2026_09.md",
           "fragment": null
         },
         {
           "fragment": "/jit_phases/library_sparse_full_pipeline/steady_per_call_s",
-          "path": "results/breakdown/interferometer/sdp81/mge_hpc_a100_fp64_sparse.json"
+          "path": "results/interferometer/mge/sdp81/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json"
         },
         {
           "fragment": "/full_pipeline_single_jit",
-          "path": "results/breakdown/interferometer/sdp81/mge_hpc_a100_fp64.json"
+          "path": "results/interferometer/mge/sdp81/jax_gpu_dense_fp64_nufft/hpc_a100/breakdown.json"
         }
       ],
       "validation": {

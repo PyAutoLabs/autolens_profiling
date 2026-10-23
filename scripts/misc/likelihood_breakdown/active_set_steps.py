@@ -3,7 +3,7 @@
 Why this module exists
 ----------------------
 
-The A100 pixelized baseline (``results/notes/a100_pixelized_baseline_2026_09.md``)
+The A100 pixelized baseline (``wiki/campaigns/imaging/a100_pixelized_baseline_2026_09.md``)
 put the ``Regularized reconstruction`` row at 37 ms — 61-71 % of one pixelized
 imaging likelihood call — and the reconstruction row-split
 (``results/notes/reconstruction_row_split_2026_09.md``) resolved it into

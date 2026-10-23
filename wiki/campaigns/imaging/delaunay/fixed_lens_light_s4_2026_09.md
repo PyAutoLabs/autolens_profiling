@@ -1,10 +1,10 @@
 # Fixed lens light on the numba CPU path — lever 4a, the curvature-kernel A/B on Delaunay (2026-09-17)
 
-> **Status correction — 2026-09-18:** Both curvature and permutation rounds concluded NO_LEVER; the CPU epic is now complete. Memo-policy research and phase 7 are shelved for current planning. Historical Next sections below do not reopen them. See the [current campaign summary](profiling_campaign_status_2026_09.md).
+> **Status correction — 2026-09-18:** Both curvature and permutation rounds concluded NO_LEVER; the CPU epic is now complete. Memo-policy research and phase 7 are shelved for current planning. Historical Next sections below do not reopen them. See the [current campaign summary](../profiling_campaign_status_2026_09.md).
 
 autolens_profiling issue [#274](https://github.com/PyAutoLabs/autolens_profiling/issues/274),
 epic `fixed-lens-light-numba-cpu` **phase 4, wave A**, branch `feature/fixed-light-numba-s4`.
-Phase 3 ([`fixed_lens_light_levers_2026_09.md`](./fixed_lens_light_levers_2026_09.md)) took the
+Phase 3 ([`fixed_lens_light_levers_2026_09.md`](../fixed_lens_light_levers_2026_09.md)) took the
 production numba CPU fixed-light call from 413.301 ms to **230.031 ms** and left two dominant sites:
 `sparse_numba.curvature_matrix` at 87.785 ms (38 %) and `solver.fnnls_cholesky` at 61.133 ms (27 %).
 Lever 4a takes the first of those, and it is a **measurement, not a rewrite**:
@@ -389,9 +389,9 @@ two log dets **12.586 ms (5.5 %)** and `sparse_numba.psf_weighted_data` **8.418 
 Result artifacts added by this commit (**3 files**, RAL job 343394):
 
 ```
-results/breakdown/imaging/fixed_light_numba_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s4_b_warm_t1.json  # rows b, b_direct, b_touched, 64 repeats, 32 ABBA blocks
-results/breakdown/imaging/fixed_light_numba_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s4_b_warm_t1.png   # the three-row bar chart
-results/breakdown/imaging/fixed_light_numba_s4_witness_hpc_ral_cpu_fp64_s4.json                            # W1-W4, verdict PASS
+results/imaging/delaunay/hst/numba_cpu_dense_fp64/hpc_ral_cpu/light_fixed/experiments/numba_s4_b_warm_t1/breakdown.json  # rows b, b_direct, b_touched, 64 repeats, 32 ABBA blocks
+results/imaging/delaunay/hst/numba_cpu_dense_fp64/hpc_ral_cpu/light_fixed/experiments/numba_s4_b_warm_t1/breakdown.png   # the three-row bar chart
+results/misc/likelihood_breakdown/imaging/fixed_light_numba_s4_witness_hpc_ral_cpu_fp64_s4.json                            # W1-W4, verdict PASS
 ```
 
 Job logs, kept on the cluster and **not** versioned:

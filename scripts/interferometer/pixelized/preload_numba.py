@@ -7,7 +7,7 @@ The preload is the one-off, model-independent ``[2Ny, 2Nx]`` array
 w-tilde arm — numba *and* JAX — must pay for once per dataset before a single
 likelihood is evaluated. Phase 2 of the ``numba-interferometer-revisit`` epic
 measured that build at ~33 minutes at alma: longer than every likelihood number
-in ``results/notes/numba_interferometer_verdict.md`` put together. It is not a
+in ``wiki/campaigns/interferometer/numba_interferometer_verdict.md`` put together. It is not a
 per-evaluation step, so no breakdown cell had ever timed it.
 
 This cell times it, four ways, and tests the phase-3 hypothesis that three of
@@ -1151,6 +1151,7 @@ dict_path, chart_path = resolve_output_paths(
     default_dir=_workspace_root / "results" / "breakdown" / "interferometer",
     default_basename=f"preload_breakdown_{instrument}_v{al_version}",
     cell=CELL,
+    hints=summary,
 )
 dict_path.write_text(json.dumps(summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")

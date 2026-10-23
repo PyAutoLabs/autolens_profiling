@@ -3,7 +3,7 @@
 Why this module exists
 ----------------------
 
-``results/notes/timing_noise_audit_2026_10.md`` (rows C6, C8, C9 and the
+``wiki/campaigns/misc/timing_noise_audit_2026_10.md`` (rows C6, C8, C9 and the
 "reported CIs" of the estimator table) found every point-source A/B cell
 bootstrapping its median ratios by resampling **individual calls iid, unpaired**
 — ``np.median(rng.choice(num, num.size)) / np.median(rng.choice(den,

@@ -15,7 +15,7 @@ changed; further memo-policy/order research is outside the agreed scope.
 |---|---|
 | 932.4 → 459.2 ms (2.03x) | HST Delaunay N1500, fp64, single-thread numba sparse imaging assembly, memo OFF in both arms. Fixing lens light changes what is held fixed; preparation is separate. [Measurement](fixed_lens_light_numba_2026_09.md). |
 | 413.3 → 230.0 ms (1.80x) | Same source-only family, memo ON, three CPU library optimizations. Do not multiply this by 2.03x. A100 controls unchanged. [Levers](fixed_lens_light_levers_2026_09.md). |
-| No further curvature/permutation lever | Whole-call tests rejected the candidates. Keep the current kernels and positive-only solve. [Phase 4](fixed_lens_light_s4_2026_09.md). |
+| No further curvature/permutation lever | Whole-call tests rejected the candidates. Keep the current kernels and positive-only solve. [Phase 4](delaunay/fixed_lens_light_s4_2026_09.md). |
 | Memo precheck: NO_LEVER | Numerical checks passed, independent performance targets failed. No policy promotion. [Phase 5b](fixed_lens_light_numba_memo_policy_2026_09.md). |
 | NNLS dominates large systems | N4000 cold: 2.138 s nearby / 4.312 s broad; about 81% / 88% NNLS. Conditional source-only synthetic sequences, not sampler throughput. [Scaling](fixed_lens_light_numba_scaling_2026_09.md). |
 
@@ -59,7 +59,7 @@ claims inherited from the completed JAX fixed-light campaign:
   targets. Trace overhead and command-buffer differences remain qualified in
   the note; scaled stage times assume uniform overhead.
 
-> **Correction — 2026-09-27:** "still a harness injection" holds for residue phases 1–3 only; phase 4 (#306, A100 array 350651) ran the library certified solver (PyAutoArray#567, released 2026.9.26.1) at the packaged budget 16, so its 26.3–26.9 ms library route is not comparable with the 31.6 ms phases 1–3 measured. Wiki: `wiki/campaigns/hst_gpu_residue.md`.
+> **Correction — 2026-09-27:** "still a harness injection" holds for residue phases 1–3 only; phase 4 (#306, A100 array 350651) ran the library certified solver (PyAutoArray#567, released 2026.9.26.1) at the packaged budget 16, so its 26.3–26.9 ms library route is not comparable with the 31.6 ms phases 1–3 measured. Wiki: `wiki/campaigns/imaging/hst_gpu_residue.md`.
 
 The older vmap scaling curve measured the solver only. Single-call timings do
 not determine production whole-likelihood batching policy. Issue

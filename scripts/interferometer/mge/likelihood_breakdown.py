@@ -1230,6 +1230,7 @@ def write_results(stage: str):
         default_dir=_default_dir,
         default_basename=f"{_cell_name}_breakdown_{instrument}_v{al_version}",
         cell=_cell_name,
+        hints=breakdown_summary,
     )
     dict_path.write_text(json.dumps(breakdown_summary, indent=2))
     print(f"\n  Results dict saved to: {dict_path}")
@@ -1928,7 +1929,7 @@ write_results("complete")
 # ===================================================================
 #
 # Profiling records drift; it does not adjudicate library correctness
-# (results/notes/design_lock_in.md). The pin is the figure of merit (what
+# (wiki/campaigns/misc/design_lock_in.md). The pin is the figure of merit (what
 # AnalysisInterferometer returns to the sampler), per (instrument, transformer),
 # from one fp64 JAX-CPU run on this host (2026-09-25, autolens_profiling#308);
 # ``None`` means "no pin yet". sma is the eager NumPy fit, alma the JIT

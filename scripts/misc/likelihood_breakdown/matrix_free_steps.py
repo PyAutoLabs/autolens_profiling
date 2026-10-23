@@ -4,7 +4,7 @@ Why this module exists
 ----------------------
 
 The 2026-09-10 A100 baseline and the 2026-09-11 reconstruction split
-(``results/notes/a100_pixelized_baseline_2026_09.md``) took the dominant
+(``wiki/campaigns/imaging/a100_pixelized_baseline_2026_09.md``) took the dominant
 likelihood row apart: at the 1500-source-pixel fiducial the *exact*
 unconstrained solve of ``F + λH`` is 1.52-1.58 ms, each of the two log-det
 Choleskys is ~1.2 ms, and the 37 ms ``Regularized reconstruction`` row is

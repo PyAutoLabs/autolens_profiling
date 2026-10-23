@@ -7,7 +7,7 @@
 **Headline:** initial scale 0.5″/0.7″ misses 2 stress roots at 0.78×/0.75× the production control's speed; the control (1.0″) misses 5 at 5.29 ms; RAL Xeon 8490H job 412572. Carried evidence: two-source cluster solved likelihood 47.36 → 9.085 ms (5.21x) from the static step-0 lattice, RAL Xeon 8490H job 350636.
 **Library PRs:** none yet.
 **Profiling PRs:** phase 1 #438 (autolens_profiling#436), merged; #439 starting-grid follow-up PR, open.
-**Ledger:** [cluster_pointsolver_campaign.md](../../results/notes/cluster_pointsolver_campaign.md); carried cluster rows live in [point_source_cpu_campaign.md](../../results/notes/point_source_cpu_campaign.md) (phases 1–3).
+**Ledger:** [cluster_pointsolver_campaign.md](cluster_pointsolver_campaign.md); carried cluster rows live in [point_source_cpu_campaign.md](../../point_source_image/image_plane/point_source_cpu_campaign.md) (phases 1–3).
 **Mind contract:** epic `cluster-pointsolver-speed`; PyAutoPulse task `tasks/cluster_pointsolver_speed.md` (migrated from `draft/research/autolens_profiling/cluster_pointsolver_speed.md`); phase 1 `active/cluster_pointsolver_robust_settings_p1.md`.
 **Next:** the human's decision on the phase-1 table with the #439 inputs; the Mind drafts `draft/feature/autolens_workspace/cluster_point_solver_validation_check.md` and `draft/feature/autolens/point_solver_spurious_core_candidates.md`; any A2744 full sweep needs a reference tracer, `--release-executables` and explicit human authorization.
 
@@ -31,7 +31,7 @@ from phase 4a on, that campaign is single-source only and everything cluster-sca
 
 Nothing yet. The image-plane levers that also sped up the cluster cell (PyAutoArray#569, #570,
 PyAutoLens#749, released 2026.9.26.1) are recorded on the
-[image-plane page](point_source_image_plane_cpu.md).
+[image-plane page](../../point_source_image/image_plane/point_source_image_plane_cpu.md).
 
 ## Carried evidence (from image-plane phases 1–3)
 
@@ -71,7 +71,7 @@ scale and lost at a finer one. The solver also returns spurious candidates on `r
 member centres. "Scale ≲ separation / 1.06" is contradicted, and no single separation predicts
 the safe scale. The recommendation is to keep 1.0″ and add a validation check; two Mind drafts
 carry it. Laptop timings are diagnostic only. See the
-[ledger](../../results/notes/cluster_pointsolver_campaign.md#starting-grid-vs-close-member-image-439).
+[ledger](cluster_pointsolver_campaign.md#starting-grid-vs-close-member-image-439).
 
 ### 2026-10-22 — phase 1: no admissible setting on `simple` (interpretation pending)
 
@@ -84,7 +84,7 @@ control's speed. The production 1.0″ misses 5 and 2.0″ misses 6. Precision, 
 change nothing (uncapped max 7 < 20). Eager JAX is unusable (row cap). Image-bounding-box extents
 lose 49–63 roots. The library's readable cluster `point_solver.png` (PyAutoLens#795) shows the
 misses directly. The decision table is in the
-[ledger](../../results/notes/cluster_pointsolver_campaign.md#decision-table-human) and is left to
+[ledger](cluster_pointsolver_campaign.md#decision-table-human) and is left to
 the human. No default was changed. The A2744 pilot leg (job 412573) was not pulled because RAL
 login was unavailable.
 

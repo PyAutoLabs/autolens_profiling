@@ -7,7 +7,7 @@ imported by the libraries; PyAutoArray is a read-only dependency.
 Phase 1 of the `numba-interferometer-revisit` epic (`autolens_profiling#223`)
 recovered the pack; **phase 2** (`autolens_profiling#226`) added the kernel
 variants behind the `kernel=` switch, the synthetic bake-off, and the verdict in
-`results/notes/numba_interferometer_verdict.md`. Phase 3 takes the preload build
+`wiki/campaigns/interferometer/numba_interferometer_verdict.md`. Phase 3 takes the preload build
 itself as its own line item.
 
 ## Provenance
@@ -129,7 +129,7 @@ library's own `InterferometerSparseOperator` route) — the baselines, not lever
 measure directly and flags `steps_are_partial: true`; its dashboard `total_step_by_step`
 entry is therefore **not** a whole likelihood. Compare arms on
 `curvature_matrix_f_total_s` / `curvature_matrix_f_jit_steady_s`, as
-`results/notes/numba_interferometer_verdict.md` does.
+`wiki/campaigns/interferometer/numba_interferometer_verdict.md` does.
 
 `InversionInterferometerNumba` **raises** (never falls back silently) on a
 linear-function list, on more than one mapper, on `over_sample_size != 1`, on a

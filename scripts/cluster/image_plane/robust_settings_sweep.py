@@ -1657,6 +1657,7 @@ dict_path, chart_path = resolve_output_paths(
     default_dir=_ROOT / "results" / "breakdown" / "cluster",
     default_basename=f"{CELL}_local",
     cell=CELL,
+    hints=summary,
 )
 dict_path.write_text(json.dumps(_scrub(summary), indent=2, default=str))
 

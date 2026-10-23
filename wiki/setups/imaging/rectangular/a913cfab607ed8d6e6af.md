@@ -33,7 +33,7 @@ Identity limitations: Isolated to source row: legacy metadata is insufficient fo
 
 ## Evidence
 
-[Original setup artifact](../../../../results/runtime/imaging/pixelization/pixelization_likelihood_summary_hst_v2026.8.17.1.json); JSON pointer: `(document root)`.
+[Original setup artifact](../../../../archive/2026/08/hostless_summaries/runtime/imaging/pixelization/pixelization_likelihood_summary_hst_v2026.8.17.1.json); JSON pointer: `(document root)`.
 
 ### Selected references
 
@@ -45,9 +45,9 @@ No selected reference for this exact setup; archive evidence is available below.
 
 | Record | Metric | Value | Unit | Device / precision | Selection | Evidence pointer |
 |---|---|---|---|---|---|---|
-| `measurement/3bfe8df49f83ba2a4c42` | vmap.batch_time | {"vmap.batch_time": 13.868701229999896} | s | cpu / None | archive support; unreviewed | [artifact](../../../../results/runtime/imaging/pixelization/pixelization_likelihood_summary_hst_v2026.8.17.1.json) `/vmap/batch_time` |
-| `measurement/9c3fb58441a20b13b2c2` | vmap.per_call | {"vmap.per_call": 4.622900409999965} | s | cpu / None | archive support; unreviewed | [artifact](../../../../results/runtime/imaging/pixelization/pixelization_likelihood_summary_hst_v2026.8.17.1.json) `/vmap/per_call` |
-| `measurement/e69297edf7a8c7ba9a29` | single_jit_block | {"single_jit_block": 3.1860993599999348} | s | cpu / None | archive support; unreviewed | [artifact](../../../../results/runtime/imaging/pixelization/pixelization_likelihood_summary_hst_v2026.8.17.1.json) `/full_pipeline_single_jit` |
+| `measurement/3bfe8df49f83ba2a4c42` | vmap.batch_time | {"vmap.batch_time": 13.868701229999896} | s | cpu / None | archive support; unreviewed | [artifact](../../../../archive/2026/08/hostless_summaries/runtime/imaging/pixelization/pixelization_likelihood_summary_hst_v2026.8.17.1.json) `/vmap/batch_time` |
+| `measurement/9c3fb58441a20b13b2c2` | vmap.per_call | {"vmap.per_call": 4.622900409999965} | s | cpu / None | archive support; unreviewed | [artifact](../../../../archive/2026/08/hostless_summaries/runtime/imaging/pixelization/pixelization_likelihood_summary_hst_v2026.8.17.1.json) `/vmap/per_call` |
+| `measurement/e69297edf7a8c7ba9a29` | single_jit_block | {"single_jit_block": 3.1860993599999348} | s | cpu / None | archive support; unreviewed | [artifact](../../../../archive/2026/08/hostless_summaries/runtime/imaging/pixelization/pixelization_likelihood_summary_hst_v2026.8.17.1.json) `/full_pipeline_single_jit` |
 
 </details>
 

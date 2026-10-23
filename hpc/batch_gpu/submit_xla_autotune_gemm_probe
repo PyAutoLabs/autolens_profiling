@@ -19,7 +19,7 @@
 # the job ends with an HLO pass reporting whether each arm's dot lowered to a
 # Triton __triton_nested_gemm_fusion or to the __cublas$lt$matmul custom call.
 #
-# Findings: results/notes/xla_autotune_triton_gemm.md (job 342333).
+# Findings: wiki/campaigns/misc/xla_autotune_triton_gemm.md (job 342333).
 
 #SBATCH -J xla_autotune_gemm_probe
 #SBATCH --partition=gpu

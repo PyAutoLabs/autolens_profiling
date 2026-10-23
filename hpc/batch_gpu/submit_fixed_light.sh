@@ -12,7 +12,7 @@
 # Pass --node to pin every leg to ONE A100 node: these rows are compared to each
 # other and to the 2026-09-11 `_recon_split` rows, which ran on
 # euclid-ral-gpu-2 — and the same code measured F at 4.8 vs 25.6 ms once the
-# autotune cache differed (results/notes/xla_autotune_triton_gemm.md), which is
+# autotune cache differed (wiki/campaigns/misc/xla_autotune_triton_gemm.md), which is
 # the same class of confound as a different node. Each submit wipes its own
 # JAX_COMPILATION_CACHE_DIR, so co-tenancy on one node does not seed one leg's
 # kernels from another's.

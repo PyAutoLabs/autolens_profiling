@@ -24,7 +24,7 @@ for that cell:
   at every instrument (0.94 s alma → 23.6 s jvla per call), and the
   func-list W~ route — N_vis-independent — runs every instrument in
   1.9-13.5 ms per call on the A100. Re-tested 2026-09 (autolens_profiling#308);
-  see ``results/notes/interferometer_mge_breakdown_2026_09.md``. The dense
+  see ``wiki/campaigns/interferometer/mge/interferometer_mge_breakdown_2026_09.md``. The dense
   ``None`` rows stay (the dense library path still OOMs there); since
   PyAutoArray#575 an MGE-only fit with ``apply_sparse_operator()`` takes the
   library W~ route instead, whose rows live in ``VMAP_BATCH_SPARSE`` below
@@ -156,7 +156,7 @@ VMAP_BATCH_SPARSE: dict[tuple[str, str, str], int | None] = {
     # interferometer mge, library W~ route (PyAutoArray#575): the sparse full
     # pipeline under jax.vmap on the A100 (fp64, nufftax 0.6.1), largest batch
     # first from 64/16/4 (--sparse-vmap-batch). RAL jobs 356359-356363,
-    # results/notes/interferometer_mge_breakdown_2026_09.md "Library W~ route
+    # wiki/campaigns/interferometer/mge/interferometer_mge_breakdown_2026_09.md "Library W~ route
     # (2026-09-26)". jvla batch 64 asks 41.1 GiB both before and after the
     # zero-image NUFFT fix, so the cap is not that NUFFT; by size it matches the
     # W~ curvature FFT of 20 columns on the padded 1400² grid (inferred).

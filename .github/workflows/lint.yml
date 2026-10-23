@@ -110,7 +110,7 @@ jobs:
       - name: check_wiki.py --check (research wiki drift)
         working-directory: autolens_profiling
         run: |
-          # Every results/notes ledger is linked from wiki/, every campaign page
+          # Every ledger (wiki/campaigns/**) is linked from wiki/, every campaign page
           # has an index row and the full header, every relative wiki link
           # resolves. Pure stdlib -- no PyAuto* imports, no PYTHONPATH.
           python scripts/misc/tooling/check_wiki.py --check
@@ -126,9 +126,10 @@ jobs:
       - name: check_results_layout.py --check (artefact policy)
         working-directory: autolens_profiling
         run: |
-          # results/notes/ holds ledgers only (logs -> results/logs/, sidecars
+          # The ledger trees hold ledgers only (logs -> results/misc/logs/, sidecars
           # beside their result JSON), and every device-recording result JSON
-          # carries device.provenance unless grandfathered. Pure stdlib.
+          # carries device.provenance unless grandfathered (results/ and archive/).
+          # Pure stdlib.
           python scripts/misc/tooling/check_results_layout.py --check
 
       - name: wall check_submits.py --check (per-cell --time basis)
@@ -144,7 +145,7 @@ jobs:
         working-directory: autolens_profiling
         run: |
           # Every timing assertion / gate constant the AST lister finds must
-          # appear in results/notes/timing_noise_audit_2026_10.md (#362), so
+          # appear in wiki/campaigns/misc/timing_noise_audit_2026_10.md (#362), so
           # a new timing gate is inventoried with its noise model in the PR
           # that adds it. Pure stdlib, read-only, deterministic (~3 s).
           python scripts/misc/tooling/list_timing_assertions.py --check

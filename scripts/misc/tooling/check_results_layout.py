@@ -9,11 +9,13 @@ Run from the repo root::
 Checks
 ------
 
-(a) ``results/notes/`` is the ledger tree: its top level holds ``*.md`` files only, plus
-    the frozen evidence-pack folders named in ``ALLOWED_NOTES_DIRS`` (each with its own
-    README). Job logs belong under ``results/logs/<campaign>/``; JSON sidecars belong
-    beside the result JSONs they describe.
-(b) Every result JSON under ``results/`` that records its JAX device (a top-level
+(a) The ledger trees hold ledgers only: ``wiki/campaigns/`` (where the ledgers live since
+    the day-zero move, autolens_profiling#442) holds ``*.md`` files only, and the emptied
+    ``results/notes/`` holds ``*.md`` files only, plus any folder named in
+    ``ALLOWED_NOTES_DIRS`` (none since the frozen evidence packs moved to ``archive/``).
+    Job logs belong under ``results/misc/logs/<campaign>/``; JSON sidecars belong beside
+    the result JSONs they describe.
+(b) Every result JSON under ``results/`` or ``archive/`` that records its JAX device (a top-level
     ``device`` object, i.e. written through ``_profile_cli.device_info_dict``) carries the
     provenance block ``device.provenance`` with every key in ``REQUIRED_PROVENANCE_KEYS``
     — unless the file is listed in the grandfather manifest
@@ -34,15 +36,14 @@ import json
 import sys
 from pathlib import Path
 
-#: Folders under results/notes/ that are not ledgers: recovered evidence packs, frozen
-#: with their own README. Nothing new is added here; a new campaign's artefacts go
-#: beside its result JSONs.
-ALLOWED_NOTES_DIRS = frozenset(
-    {
-        "clipper_campaign",
-        "point_source_cpu_2026_09_17_reported",
-    }
-)
+#: Folders under results/notes/ that are not ledgers. The two frozen evidence packs
+#: (``clipper_campaign``, ``point_source_cpu_2026_09_17_reported``) moved to ``archive/`` in
+#: the day-zero move (autolens_profiling#442); nothing new is added here.
+ALLOWED_NOTES_DIRS: frozenset[str] = frozenset()
+#: The ledger tree since the day-zero move.
+LEDGER_TREE = Path("wiki") / "campaigns"
+#: Trees holding result JSONs (``archive/`` keeps the moved dead experiments).
+RESULT_TREES = ("results", "archive")
 
 #: The keys ``_profile_cli.provenance_dict`` writes; the wiki index and the run-time
 #: dashboard read them. Keep in step with ``_profile_cli.PROVENANCE_KEYS``.
@@ -76,16 +77,17 @@ def _profiling_root() -> Path:
 
 
 def _result_jsons(root: Path):
-    """Every JSON under results/ outside the ledger tree, sorted, repo-relative."""
-    results = root / "results"
-    if not results.is_dir():
-        return []
+    """Every JSON under results/ and archive/ outside the ledger tree, sorted, repo-relative."""
     out = []
-    for p in sorted(results.rglob("*.json")):
-        rel = p.relative_to(root)
-        if rel.parts[:2] == ("results", "notes"):
+    for tree in RESULT_TREES:
+        base = root / tree
+        if not base.is_dir():
             continue
-        out.append(rel)
+        for p in sorted(base.rglob("*.json")):
+            rel = p.relative_to(root)
+            if rel.parts[:2] == ("results", "notes"):
+                continue
+            out.append(rel)
     return out
 
 
@@ -136,7 +138,15 @@ def check(root: Path) -> list[str]:
             elif entry.suffix != ".md":
                 failures.append(
                     f"(a) non-markdown file under results/notes/: {rel} "
-                    "(logs -> results/logs/<campaign>/, sidecars -> beside their result JSON)"
+                    "(logs -> results/misc/logs/<campaign>/, sidecars -> beside their result JSON)"
+                )
+    ledgers = root / LEDGER_TREE
+    if ledgers.is_dir():
+        for entry in sorted(ledgers.rglob("*")):
+            if entry.is_file() and entry.suffix != ".md":
+                failures.append(
+                    f"(a) non-markdown file under {LEDGER_TREE}/: {entry.relative_to(root)} "
+                    "(logs -> results/misc/logs/<campaign>/, sidecars -> beside their result JSON)"
                 )
 
     # (b) every device-recording result JSON carries the provenance block.
@@ -200,7 +210,7 @@ def main(argv: list[str] | None = None) -> int:
         n_json = len(_result_jsons(root))
         n_gf = len(read_manifest(root))
         print(
-            f"check_results_layout: OK (results/notes/ is markdown-only; "
+            f"check_results_layout: OK (ledger trees are markdown-only; "
             f"{n_json} result JSONs, {n_gf} grandfathered)"
         )
     return 1 if (failures and args.check) else 0

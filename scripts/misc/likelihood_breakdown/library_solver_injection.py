@@ -4,7 +4,7 @@ Why this module exists
 ----------------------
 
 Phase 0 of the ``fixed-lens-light-profiling`` epic
-(``results/notes/fixed_lens_light_source_only_2026_09.md``, autolens_profiling#248)
+(``wiki/campaigns/imaging/fixed_lens_light_source_only_2026_09.md``, autolens_profiling#248)
 measured the **certified active-set** positivity solve as a *kernel*: 4.2 ms on
 Delaunay (pass 2) and 11.0 ms on rectangular (pass 7), against the 26-28 ms S3
 PDIP row. What it could not measure is the row production actually pays — the

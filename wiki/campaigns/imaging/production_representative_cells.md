@@ -11,7 +11,7 @@ warm-start memo silently on — so repeats 2..10 seeded themselves from a
 
 `autolens_profiling#235` replaced the four CPU numba cells' fiducial with the
 production configuration per instrument, encoded field by field with file:line
-provenance in [`_production_config.py`](../../_production_config.py).
+provenance in [`_production_config.py`](../../../_production_config.py).
 
 ## What production actually runs
 
@@ -111,7 +111,7 @@ the same model.
 > were measured on a laptop, untagged. The witness now judges PASS / FAIL only on a reference
 > host class, so all eight read INCONCLUSIVE ("off reference host class"). Where each median
 > fell relative to the band is unchanged. No JSON was rewritten. See
-> [timing_noise_audit_2026_10.md](timing_noise_audit_2026_10.md), section (b) item 6.
+> [timing_noise_audit_2026_10.md](../misc/timing_noise_audit_2026_10.md), section (b) item 6.
 
 Four of eight rows land inside 1.5x of the production cold-eval range. The four
 that do not are both Delaunay rows, and they miss in **opposite directions**,
@@ -216,7 +216,7 @@ radial bins one more notch, `[4, 2, 2]` -> `[4, 4, 2]` at the same
 `[0.1, 0.3]` radii (`util.py:931-937`): sub-size 2 in the 0.1-0.3" annulus
 under-integrates a compact source by ~0.6 % on a magnification cross-check, and
 the old `[4, 2, 1]` agreement was two under-integrations cancelling. Both
-Euclid presets in [`_production_config.py`](../../_production_config.py) —
+Euclid presets in [`_production_config.py`](../../../_production_config.py) —
 `EUCLID_VIS_PIX` and `EUCLID_RECT_ADAPT`, which takes only its mesh from the
 subhalo rectangular stage and everything the stage owns from `vis_pix` — now
 carry `lp_sub_size_list=(4, 4, 2)`; the two HST presets stay at `[4, 2, 2]`,
@@ -285,14 +285,14 @@ measured values so the pin describes what the cell computes:
 - **The library's memo default** (`nnls_warm_start_memo: true`). This task turns
   it off *in the profiling cells* and records the flag; whether production
   should change is a separate library prompt. The evidence that set the default
-  now lives in [`scripts/misc/nnls_warm_start/`](../../scripts/misc/nnls_warm_start/README.md)
-  with its two notes under [`results/nnls_warm_start/`](../nnls_warm_start/),
+  now lives in [`scripts/misc/nnls_warm_start/`](../../../scripts/misc/nnls_warm_start/README.md)
+  with its two notes under [`results/nnls_warm_start/`](../../../results/README.md#day-zero-move-redirects),
   so no default cell or README table cites a memo-on number.
 
 ## Related
 
-- [`nnls_warm_start_memo.md`](../nnls_warm_start/nnls_warm_start_memo.md) and
-  [`nnls_warm_start_memo_matrix.md`](../nnls_warm_start/nnls_warm_start_memo_matrix.md)
+- [`nnls_warm_start_memo.md`](../../../results/misc/nnls_warm_start/nnls_warm_start_memo.md) and
+  [`nnls_warm_start_memo_matrix.md`](../../../results/misc/nnls_warm_start/nnls_warm_start_memo_matrix.md)
   — the memo experiment, moved out of the default breakdown package.
 - [`numba_curvature_matrix_f_split.md`](./numba_curvature_matrix_f_split.md) —
   the per-step F/MGE decomposition these cells report.

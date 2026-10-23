@@ -45,7 +45,7 @@ thing about the fiducial, so a pathological cell is attributable. ``--n-instance
 overrides the sequence length (30 for the fiducial, 20 for the matrix).
 
 ``nnls_iterations_matrix.py`` aggregates every JSON written here into
-``results/nnls_warm_start/nnls_warm_start_memo_matrix.md``.
+``results/misc/nnls_warm_start/nnls_warm_start_memo_matrix.md``.
 
 Output
 ------
@@ -814,8 +814,9 @@ _model_suffix = "" if MODEL == "fiducial" else f"_{MODEL}"
 
 dict_path, chart_path = resolve_output_paths(
     _cli,
-    default_dir=_workspace_root / "results" / "nnls_warm_start",
+    default_dir=_workspace_root / "results" / "misc" / "nnls_warm_start",
     default_basename=(f"delaunay_numba_nnls_iterations_{instrument}{_model_suffix}_v{al_version}"),
+    hints=summary_dict,
 )
 dict_path.write_text(json.dumps(summary_dict, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")

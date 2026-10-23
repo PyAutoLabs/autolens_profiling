@@ -7,7 +7,7 @@
 **Headline:** the #361 CI overhead guard returns INCONCLUSIVE for any true overhead from ~0.8 % to ~5.4 % at CI scatter (3 blocks, s.d. 0.014); GitHub runner, Actions run 36985476995 (no RAL job)
 **Library PRs:** none
 **Profiling PRs:** #361 (t-bound CI guard, merged); #402 (phase 1 audit, merged); #404 (fix phase 1, merged); #405 (fix phase 2, merged); #406 (fix phase 3, merged); #407 (fix phase 4, merged); #408 (fix phase 5, merged); #409 (fix phase 6, merged); #410 (fix phase 3b, open); #411 (fix phase 9, open, stacked on #410); fix phase 10 (open, stacked on #411)
-**Ledger:** [timing_noise_audit_2026_10.md](../../results/notes/timing_noise_audit_2026_10.md)
+**Ledger:** [timing_noise_audit_2026_10.md](timing_noise_audit_2026_10.md)
 **Mind contract:** Pulse campaign `measurement-tools`, task `tasks/timing_noise_audit.md`; Mind `active/timing_noise_audit_phase8_phase3b_intervals.md`, `active/timing_noise_audit_phase9_familywise_policy.md`, `active/timing_noise_audit_phase10_headline_completion.md`; issue #362
 **Next:** the audit's PR phases are complete pending merge (#410 → #411 → phase 10). What is left is human: C1's 5-round minimum on 4 recorded repeats and C5's "both estimators" rule (flagged in #410); C11's 4-round kill gate (`--reps` ≥ 6 or a 4-round rule) and the GPU memo's "below MDI" readings at a 0.94 % paired MDI (flagged in #411); the setup-baseline / reference-host decision a v2 qualification waits on; measuring `single_jit_repeats` (compute). Outside this repo: the Brain `COMPILE_DRIFT_RATIO` draft (Mind `draft/bug/pyautobrain/profiling_compile_drift_point_vs_point.md`)
 
@@ -52,7 +52,7 @@ inconclusive never qualifies a result.
 
 ## Open / parked / drafts
 
-- Fix phases 1–6, 3b, 9 and 10 in the [ledger](../../results/notes/timing_noise_audit_2026_10.md),
+- Fix phases 1–6, 3b, 9 and 10 in the [ledger](timing_noise_audit_2026_10.md),
   each one PR with a deterministic synthetic witness; its **End state** section lists every row's
   final verdict and what is deliberately left. The family-wise policy exists since 3b
   (`ab_verdict.holm_family_verdict`, used by C3); phase 9 states it once and applies it to C6 /

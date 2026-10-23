@@ -3,7 +3,7 @@
 Why this module exists
 ----------------------
 
-The 2026-09-10 A100 baseline (``results/notes/a100_pixelized_baseline_2026_09.md``)
+The 2026-09-10 A100 baseline (``wiki/campaigns/imaging/a100_pixelized_baseline_2026_09.md``)
 found the ``Regularized reconstruction`` row to be 36.7-37.9 ms on every
 pixelized cell — 61-71 % of the per-call likelihood cost, and identical dense
 vs sparse. That row is **one fused JIT unit**: the cells call

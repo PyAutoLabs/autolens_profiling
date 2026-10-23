@@ -3,11 +3,11 @@
 **Status:** complete
 **Question:** What did the likelihoods cost, and where did the time go, before the optimisation campaigns began (the frozen, append-only PreOptimizationTimes baseline)?
 **Pre-registered rule:** not recorded as a go/no-go rule (a baseline); the working rules written before the runs were VRAM-first validation (phase 2), the CPU-usability rule (a run over 3600 s or a call over ~1 min is GPU-only, phase 3) and the GPU-first breakdown doctrine (human, 2026-07-10, phase 4).
-**Verdict:** runtime baseline frozen as `results/baselines/PreOptimizationTimes/` (laptop CPU, 12 cells); breakdown laptop-CPU fallback tier and A100 imaging tier complete 2026-07-10; no library drift since the May v2026.5.29.4 rows (0.89–1.14×); the bottleneck moves on GPU (CPU F-matrix 42–48 %, A100 pixelization NNLS ~65 %). Delaunay A100 rows superseded 2026-09-05 by [DelaunayNN A100 series](delaunay_nn_a100_series.md).
+**Verdict:** runtime baseline frozen as `results/baselines/PreOptimizationTimes/` (laptop CPU, 12 cells); breakdown laptop-CPU fallback tier and A100 imaging tier complete 2026-07-10; no library drift since the May v2026.5.29.4 rows (0.89–1.14×); the bottleneck moves on GPU (CPU F-matrix 42–48 %, A100 pixelization NNLS ~65 %). Delaunay A100 rows superseded 2026-09-05 by [DelaunayNN A100 series](../imaging/delaunay_nn/delaunay_nn_a100_series.md).
 **Headline:** HST `imaging/pixelization` dense 57.6 ms per call A100 fp64 (150× the laptop CPU's 8.65 s; Regularized reconstruction 65 %), RAL A100 imaging jobs 330062–330070 (per-cell job id not recorded).
 **Library PRs:** none
 **Profiling PRs:** #53 (phase 1), #55 (phase 2), #62 (phase 3), #63 (phase 4).
-**Ledger:** [preopt_breakdown_baseline.md](../../results/notes/preopt_breakdown_baseline.md); frozen runtime snapshot [PreOptimizationTimes.md](../../results/baselines/PreOptimizationTimes/PreOptimizationTimes.md); phase notes [design_lock_in.md](../../results/notes/design_lock_in.md), [vram_validation_2026_07_08.md](../../results/notes/vram_validation_2026_07_08.md).
+**Ledger:** [preopt_breakdown_baseline.md](preopt_breakdown_baseline.md); frozen runtime snapshot [PreOptimizationTimes.md](../../../archive/2026/07/PreOptimizationTimes/PreOptimizationTimes.md); phase notes [design_lock_in.md](design_lock_in.md), [vram_validation_2026_07_08.md](vram_validation_2026_07_08.md).
 **Mind contract:** umbrella `complete/archive/shelved/autolens_profiling_polish.md` (was `maintenance/autolens_profiling/polish.md`, shelved 2026-09-04 as spent); phase records `complete/unknown/profiling-polish-design.md`, `complete/unknown/profiling-vram-validation.md`, `complete/2026/07/profiling-preopt-campaign.md`, `complete/2026/07/preopt-breakdown-dashboard.md`.
 **Next:** none (the baseline is append-only; a later campaign snapshots a new name beside it).
 
@@ -44,7 +44,7 @@ No library PRs: every change was profiling-repo tooling, data and docs.
 ## Open / parked / drafts
 
 - `complete/archive/shelved/nufft_mapping_matrix_column_chunking.md` — the column-chunked NUFFT follow-up for the alma_high interferometer breakdown, shelved 2026-08-11 as overtaken (the dense extraction path is off in the breakdown cell because production uses the sparse path).
-- The deferred laptop-GPU and A100 runtime legs of phase 3 were never refreshed into this snapshot; the A100 pixelized rows now live in [A100 pixelized baseline](a100_pixelized_baseline.md).
+- The deferred laptop-GPU and A100 runtime legs of phase 3 were never refreshed into this snapshot; the A100 pixelized rows now live in [A100 pixelized baseline](../imaging/a100_pixelized_baseline.md).
 
 ## Caveats
 

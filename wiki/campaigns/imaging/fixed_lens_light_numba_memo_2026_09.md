@@ -113,9 +113,9 @@ Ratios below use each model's median clean-call time. `dense` marks a cold seed 
 
 - Eight focused tests cover frozen-manifest integrity, memo state restoration, sequence ordering, exception retry versus invalidation, and numerical failure reporting. Ruff, formatting, shell syntax, live API audit and changed-cell import smoke pass. A two-model N1500 local smoke passed the numerical, slope-family and single-thread gates; it is explicitly incomplete as a campaign.
 - Independent final review: CLEAN on the staged code and artifacts. The reviewer independently recomputed the timing ratios, numerical maxima, iteration/event totals and sample counts, and verified all 45 snapshot input hashes. The note records the runtime BLAS-inspection limitation explicitly.
-- [Full result](../breakdown/imaging/fixed_light_numba_draws_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s5.json)
-- [Figure](../breakdown/imaging/fixed_light_numba_draws_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s5.png)
-- [Source and job record](../breakdown/imaging/fixed_light_numba_s5_source_job343398.json)
+- [Full result](../../../results/imaging/delaunay/hst/numba_cpu_dense_fp64/hpc_ral_cpu/light_fixed/experiments/numba_draws_s5/breakdown.json)
+- [Figure](../../../results/imaging/delaunay/hst/numba_cpu_dense_fp64/hpc_ral_cpu/light_fixed/experiments/numba_draws_s5/breakdown.png)
+- [Source and job record](../../../results/imaging/delaunay/hst/jax_gpu_dense_fp64/hpc_a100/light_fixed/experiments/fixed_light_numba_s5_source_job343398.json)
 
 ## Next phase
 

@@ -140,7 +140,7 @@ queue or a declaration that the whole phase 3 has shipped.
 
 The experiment driver, full curves, timings, JSON/PNG and cumulative wiki live in
 `autolens_profiling/scripts/lens/critical_curves/`, `results/` and
-`wiki/campaigns/critical_curves.md`. Subsequent runs append a dated ledger entry
+`wiki/campaigns/lens/critical_curves/critical_curves.md`. Subsequent runs append a dated ledger entry
 and update the wiki/index; preserve previous artifacts and their verdicts.
 
 `autolens_workspace_test/scripts/cluster/critical_curves.py` is the small
@@ -164,9 +164,9 @@ validation work exists on the host, not an isolated speed-up claim or a GPU resu
 
 ## 2026-10-02 — Pinned CPU evidence
 
-Artifacts: [raw JSON](../lens/critical_curves/dispatch_summary_cpu_fp64_v2026.8.17.1_2026-10-02.json),
-[admission figure](../lens/critical_curves/dispatch_summary_cpu_fp64_v2026.8.17.1_2026-10-02.png),
-[exact measured driver](../lens/critical_curves/dispatch_measured_source.txt).
+Artifacts: [raw JSON](../../../../results/lens/critical_curves/dispatch_summary_cpu_fp64_v2026.8.17.1_2026-10-02.json),
+[admission figure](../../../../results/lens/critical_curves/dispatch_summary_cpu_fp64_v2026.8.17.1_2026-10-02.png),
+[exact measured driver](../../../../results/lens/critical_curves/dispatch_measured_source.txt).
 
 The 14-worker run completed all six marching-squares rows, both ordinary
 zero-contour control rows, the outer-JIT error witness, and the near-source

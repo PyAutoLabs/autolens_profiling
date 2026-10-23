@@ -40,7 +40,7 @@ Regions covered today:
                                     | solver-accuracy-posthoc, solver-euclid-latent,
                                     | solver-timing
 
-Artifact-shape reference: `results/notes/design_lock_in.md`.
+Artifact-shape reference: `wiki/campaigns/misc/design_lock_in.md`.
 """
 
 from __future__ import annotations
@@ -66,6 +66,7 @@ from build_dashboard import (  # noqa: E402
     read_release_sweep_conf,
     repeat_summary,
 )
+from results_layout import iter_legacy_dir  # noqa: E402
 
 _RELEASE_SWEEP_CONF = read_release_sweep_conf(REPO_ROOT)
 
@@ -168,13 +169,14 @@ def _scan_artifacts() -> list[Artifact]:
     if not RESULTS_ROOT.exists():
         return []
     out: list[Artifact] = []
-    for p in RESULTS_ROOT.rglob("*.json"):
-        rel = p.relative_to(RESULTS_ROOT).parts
+    # Moved results are read under their pre-move identity (results_layout.py, #442 PR 2).
+    for p, legacy in iter_legacy_dir(RESULTS_ROOT, "*.json"):
+        rel = legacy.parts
         if len(rel) < 2 or rel[0] in ("runtime", "baselines"):
             continue
         section = rel[0]  # "breakdown" | "simulators" | "lens"
         subfolder = rel[1] if len(rel) > 2 else ""
-        m = ARTIFACT_RE.match(p.name)
+        m = ARTIFACT_RE.match(legacy.name)
         if m:
             out.append(
                 Artifact(
@@ -192,7 +194,7 @@ def _scan_artifacts() -> list[Artifact]:
             continue
         if section != "breakdown":
             continue
-        m = CONFIG_TAGGED_RE.match(p.name)
+        m = CONFIG_TAGGED_RE.match(legacy.name)
         if not m:
             continue
         # Config-tagged output: instrument and version live in the payload.
@@ -224,11 +226,9 @@ def _scan_artifacts() -> list[Artifact]:
 
 def _scan_runtime_cells(root: Path) -> list[RuntimeCell]:
     """Find every comparison.json under a runtime-layout root."""
-    if not root.exists():
-        return []
     cells = []
-    for p in sorted(root.rglob("comparison.json")):
-        cell = p.parent.relative_to(root).parts
+    for p, legacy in iter_legacy_dir(root, "comparison.json"):
+        cell = legacy.parent.parts
         if 2 <= len(cell) <= 3:
             cells.append(RuntimeCell(cell=cell, path=p))
     return cells
@@ -243,12 +243,12 @@ def _baseline_names() -> list[str]:
     every such directory would add an always-empty column to the runtime
     table.
     """
-    if not BASELINES_ROOT.exists():
-        return []
     return sorted(
-        d.name
-        for d in BASELINES_ROOT.iterdir()
-        if d.is_dir() and next(d.rglob("comparison.json"), None) is not None
+        {
+            legacy.parts[0]
+            for _p, legacy in iter_legacy_dir(BASELINES_ROOT, "comparison.json")
+            if len(legacy.parts) > 1
+        }
     )
 
 
@@ -628,7 +628,7 @@ def _render_jax_compile_warm_table() -> str:
 def _render_hazards_table() -> str:
     """Committed numerical findings, keyed by stable semantic ID."""
 
-    index_path = RESULTS_ROOT / "hazards" / "hazards_index.json"
+    index_path = RESULTS_ROOT / "misc" / "hazards" / "hazards_index.json"
     if not index_path.is_file():
         return "\n_No hazard findings yet — run `hazards/scan.py`._\n"
     try:

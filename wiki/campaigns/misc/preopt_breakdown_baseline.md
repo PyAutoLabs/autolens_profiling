@@ -10,7 +10,7 @@ after a nufftax venv install on RAL. Task: autolens_profiling#59.
 
 > **Superseded for the `imaging/delaunay` rows (2026-09-05).** The Delaunay A100 rows
 > below were re-run at `v2026.8.17.1` and are superseded by
-> [`delaunay_nn_breakdown.md`](./delaunay_nn_breakdown.md) (job 342277). Two reasons:
+> [`delaunay_nn_breakdown.md`](../imaging/delaunay_nn/delaunay_nn_breakdown.md) (job 342277). Two reasons:
 > the "Regularization matrix (H)" row here is a **measurement artifact** — it timed an
 > eager `jnp.array()` host-to-device copy of the NumPy inversion's 1560×1560 fp64
 > matrix (14.4 ms of PCIe), not a JIT step — and the new rows carry a JIT-timed H

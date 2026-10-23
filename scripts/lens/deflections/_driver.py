@@ -47,7 +47,7 @@ run pins three things per profile — ``abs_sum`` and ``abs_max`` over the full
 grid-(a) deflection field, plus a 16-coordinate ``(y, x)`` ``sample`` on a
 dedicated ``Grid2DIrregular`` at fixed arcsec positions — and checks them at
 rtol 1e-6. Drift is **recorded, never adjudicated** (the boundary rule in
-``results/notes/design_lock_in.md``): a changed number flags the run's timings
+``wiki/campaigns/misc/design_lock_in.md``): a changed number flags the run's timings
 as non-comparable, it does not fail the job.
 
 On the first run for an instrument the cell has no pins, so the driver fills its
@@ -764,6 +764,7 @@ def run(*, cell: str, profiles: list[str], cell_path: Path, expected: dict) -> N
         cli.base,
         default_dir=workspace_root / "results" / "lens" / "deflections",
         default_basename=f"{cell}_summary_{instrument}_v{al_version}",
+        hints=summary,
     )
     dict_path.write_text(json.dumps(summary, indent=2))
     print(f"\n  Results dict saved to: {dict_path}")

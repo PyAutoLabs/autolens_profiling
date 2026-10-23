@@ -10,7 +10,7 @@ interferometer dataset that is ready for a sparse-operator inversion:
 
 The question comes from PyAutoLabs Discussion #13, which concerns a 2e8-visibility
 ALMA cube. The campaign page is
-[`wiki/campaigns/interferometer_streaming.md`](../../../wiki/campaigns/interferometer_streaming.md).
+[`wiki/campaigns/interferometer/delaunay/interferometer_streaming.md`](../../../wiki/campaigns/interferometer/delaunay/interferometer_streaming.md).
 
 ## Scripts
 
