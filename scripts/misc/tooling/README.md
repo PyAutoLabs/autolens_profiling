@@ -19,6 +19,15 @@ Repo tooling (not profiling scripts).
   (`--apply`, sha-checked, re-runnable) and repoints references from the map alone
   (`--rewrite-refs`, idempotent; never edits `results/`, `archive/` or generated output).
 - **`results_layout.py`** — readers' view of the moved tree: a moved file keeps its
-  pre-move identity (`iter_legacy`, `legacy_glob`, `current`) until the catalogue builder
-  reads the mirrored tree natively; `destination` places a new result with the map's
+  pre-move identity (`iter_legacy`, `legacy_glob`, `current`); only `build_dashboard.py` and
+  `build_readme.py` still read through it. `destination` places a new result with the map's
   classification (used by `_profile_cli.resolve_output_paths`).
+- **`build_catalogue.py`** / **`catalogue_lifecycle.py`** — the `profiling-summary@3`
+  lifecycle catalogue (`dashboard/catalogue.json`) and the companion v2 setup catalogue
+  (`dashboard/catalogue/setups.json` + shards), read natively from the mirrored tree; CI runs
+  `--check --validate-with ../PyAutoPulse`. A result row with no recorded timestamp takes its
+  `measured_at` from the UTC date its file was first committed (an upper bound), read from
+  `catalogue/measured_at_first_commit.json`. The builder never calls git (CI clones are
+  shallow), so after committing new undated rows run, in a checkout with full history,
+  `python scripts/misc/tooling/build_catalogue.py --refresh-commit-dates` and commit the file;
+  `--check` fails with that instruction when an undated file has no date.

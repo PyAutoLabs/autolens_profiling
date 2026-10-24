@@ -16,40 +16,40 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 
 | Exact configuration | Evidence source | Records |
 |---|---|---|
-| [475b3e389c9e0d96da89](6715ff9b0142633d3102.md) | results/imaging/mge/ao/comparison.json | 4 |
-| [497c7cfbc7e7a35e17cc](9ef0208af2fcb98109a7.md) | results/imaging/mge/ao/comparison.json | 4 |
+| [4e47b8d9413e5d6e75e5](4e85216117dd43f64cc9.md) | results/imaging/mge/ao/comparison.json | 4 |
+| [8a0d81448c6ad5bb957d](da42ee3ac79552b28f98.md) | results/imaging/mge/ao/comparison.json | 4 |
 
 ## hst
 
 | Exact configuration | Evidence source | Records |
 |---|---|---|
-| [19c5279e3f01e776e620](3150a23488c5d314d143.md) | results/imaging/rectangular/hst/comparison.json | 4 |
-| [2dc4ffcec03e06e43d30](efa95ad1f66f8997b24f.md) | results/imaging/mge/hst/comparison.json | 4 |
-| [366d73f7902b5706c6f8](1502e519eb99a279b25f.md) | results/imaging/mge/hst/comparison.json | 4 |
-| [5341d5bebeaf1c30c329](6bfdfd732627ad744144.md) | results/imaging/delaunay/hst/comparison.json | 4 |
-| [6aa58fe48171e46ee0a2](0d65ac8758101e91b31d.md) | results/imaging/mge/hst/comparison.json | 4 |
-| [76882b12eebbfaa08328](8833ef482d976772992e.md) | results/imaging/mge/hst/comparison.json | 4 |
-| [8369d8b02a0b1fcc1a51](0d9e5af1126e964adfda.md) | results/imaging/rectangular/hst/comparison.json | 4 |
-| [8961bd18e2d56014821a](d53a6e284c543c80084b.md) | results/imaging/delaunay/hst/comparison.json | 4 |
-| [a7ad042a1e15c6425309](d0daa07da1efa7028c72.md) | results/imaging/rectangular/hst/comparison.json | 4 |
-| [c1b3bf66c8e7afd49350](1cfa85e7a72c3e9080ad.md) | results/imaging/delaunay/hst/comparison.json | 4 |
-| [c3d5f0762f793c809e93](d9b829f176b36edb9c3f.md) | results/imaging/delaunay/hst/comparison.json | 4 |
-| [dfade1841d39ed832254](1001efb842d9b89bbe56.md) | results/imaging/rectangular/hst/comparison.json | 4 |
+| [0b18964dd90e4ccc9c80](6c9e4465f4f64d7e98c5.md) | results/imaging/delaunay/hst/comparison.json | 4 |
+| [194de13fbda6d8f27413](8935cb83a066a07936c0.md) | results/imaging/delaunay/hst/comparison.json | 4 |
+| [20aff201667ad3fecaea](c10920d8a35faeaf0f4b.md) | results/imaging/mge/hst/comparison.json | 4 |
+| [3db66a6e87db870e72c9](32567156be9bdb0574ba.md) | results/imaging/rectangular/hst/comparison.json | 4 |
+| [4a891f34e877aaa8af84](cc1d0c864fb4d66766a3.md) | results/imaging/rectangular/hst/comparison.json | 4 |
+| [4dbe5e74bb50668a1214](911be5b64b966b5adeb1.md) | results/imaging/mge/hst/comparison.json | 4 |
+| [8eef1578e86e61f630f8](dad736e94b37c548ac82.md) | results/imaging/mge/hst/comparison.json | 4 |
+| [9c237eb2f9c44184caa3](7501f59b98c99f0e2b74.md) | results/imaging/delaunay/hst/comparison.json | 4 |
+| [ae9308df711fed5c3ac2](c331ad99b79bd8451b73.md) | results/imaging/delaunay/hst/comparison.json | 4 |
+| [b94300195e5361a2306f](b57f909650fced4eac15.md) | results/imaging/rectangular/hst/comparison.json | 4 |
+| [d625689b41994bc93c64](cc828a6d75b689e18594.md) | results/imaging/rectangular/hst/comparison.json | 4 |
+| [e27686ab9389fe318807](cd9c3b8381b49123e67a.md) | results/imaging/mge/hst/comparison.json | 4 |
 
 ## jwst
 
 | Exact configuration | Evidence source | Records |
 |---|---|---|
-| [0a0a1614bbc2ede54dea](62a9c134aad587e450b6.md) | results/imaging/delaunay/jwst/comparison.json | 4 |
-| [268e885624472bb7c2b0](12a67ef31a8b54171943.md) | results/imaging/mge/jwst/comparison.json | 4 |
-| [33354b37404bb495ec9d](768001a6b23d3b6ed712.md) | results/imaging/mge/jwst/comparison.json | 4 |
-| [41f48c9c4840739481df](f77bd1b18d3ed7e32b5d.md) | results/imaging/rectangular/jwst/comparison.json | 4 |
-| [7c7815519077c3dcc542](db70b0a391a168135ee9.md) | results/imaging/mge/jwst/comparison.json | 4 |
-| [91215da689713f9a395a](e343645663752ac7d216.md) | results/imaging/delaunay/jwst/comparison.json | 4 |
-| [9a92d090caa6033de281](62a2d2d82a6baf78ea0b.md) | results/imaging/rectangular/jwst/comparison.json | 4 |
-| [a29fc82883ba71233165](653e414febef5fcb5c2b.md) | results/imaging/rectangular/jwst/comparison.json | 4 |
-| [a39717f1ac8e0b497c17](36f8094de51797fae35b.md) | results/imaging/delaunay/jwst/comparison.json | 4 |
-| [a7f692699bbf90976343](86630939ae4f7831e61b.md) | results/imaging/delaunay/jwst/comparison.json | 4 |
-| [e5ddf7925e8a07a98c3f](c058e00134d264a5c4e1.md) | results/imaging/mge/jwst/comparison.json | 4 |
-| [f359ebbe9e87fe2d6e83](4c2ec628d6c5a4ab5510.md) | results/imaging/rectangular/jwst/comparison.json | 4 |
+| [0804ce77fe95943e3b6a](9f6ea213415767183bac.md) | results/imaging/delaunay/jwst/comparison.json | 4 |
+| [1b19578e593ee6550bb8](04e0fa63373751579cbf.md) | results/imaging/mge/jwst/comparison.json | 4 |
+| [56f8f302ba7f557ff095](31f1c5b9a7dff97faadb.md) | results/imaging/mge/jwst/comparison.json | 4 |
+| [83b9b0099fe63ace484f](04a8882b1c6c43f5045c.md) | results/imaging/mge/jwst/comparison.json | 4 |
+| [86d1407a973a6496d71a](280d360a5402b013fd99.md) | results/imaging/mge/jwst/comparison.json | 4 |
+| [9c970366c343583f0e99](08c7337a90063707c0b8.md) | results/imaging/rectangular/jwst/comparison.json | 4 |
+| [ab19978d2e644c6a3e90](aba4ec6c13e63ecf3280.md) | results/imaging/rectangular/jwst/comparison.json | 4 |
+| [b0c8d5c696dc00e40c83](013ebfaa869b1a8a342f.md) | results/imaging/delaunay/jwst/comparison.json | 4 |
+| [b46f32530a307b2b605d](f373db3ebde3789b2a3f.md) | results/imaging/rectangular/jwst/comparison.json | 4 |
+| [c97f4c4d12776c964b51](dad405fb9ae812d0d9b9.md) | results/imaging/delaunay/jwst/comparison.json | 4 |
+| [dbde5e3eef930a81dccf](256873db60a50ebb9ca0.md) | results/imaging/rectangular/jwst/comparison.json | 4 |
+| [ecbf6c196b29acf53895](53b4f6aa5c716d9a4583.md) | results/imaging/delaunay/jwst/comparison.json | 4 |
 

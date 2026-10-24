@@ -100,7 +100,7 @@ const root = path.resolve(__dirname, "../../../dashboard");
     assert.equal(await page.locator("#instrument").inputValue(), "hst");
     // Numeric values and evidence belong to exactly the selected source row.
     const doc = JSON.parse(
-      await fs.readFile(path.join(root, "catalogue.json"), "utf8"),
+      await fs.readFile(path.join(root, "catalogue", "setups.json"), "utf8"),
     );
     const sid = await page.locator("#configuration").inputValue();
     const manifest = doc.evidence_shards.find((s) => s.setup_id === sid);
@@ -224,7 +224,7 @@ const root = path.resolve(__dirname, "../../../dashboard");
     );
     // Missing root catalogue and JavaScript-disabled fallback are actionable.
     const unavailable = await browser.newPage();
-    await unavailable.route("**/catalogue.json", (r) =>
+    await unavailable.route("**/catalogue/setups.json", (r) =>
       r.fulfill({ status: 503, body: "Unavailable" }),
     );
     await unavailable.goto(base);

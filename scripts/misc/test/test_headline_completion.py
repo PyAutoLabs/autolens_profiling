@@ -32,7 +32,6 @@ for _p in (_MISC, _MISC / "tooling"):
         sys.path.insert(0, str(_p))
 
 from likelihood_breakdown import timing  # noqa: E402
-from tooling.results_layout import iter_legacy, legacy_glob  # noqa: E402
 from wall import check_submits, rates  # noqa: E402
 
 
@@ -261,7 +260,12 @@ def test_every_committed_runtime_row_follows_the_headline_rule():
     labelled; any other row renders its legacy value, unlabelled. No committed row carries
     a repeat summary yet.
     """
-    for path, _legacy in iter_legacy(_ROOT, "results", "comparison.json"):
+    for path in sorted(
+        [
+            *(_ROOT / "results").rglob("comparison.json"),
+            *(_ROOT / "archive").rglob("comparison.json"),
+        ]
+    ):
         configs = json.loads(path.read_text()).get("configs", {})
         for cfg in configs.values():
             seconds, label = readme._config_headline(cfg)
@@ -453,9 +457,22 @@ def test_the_one_fixed_n_timed_cell_stays_inside_the_bound():
     ]
     assert [p.name for p in explicit] == ["likelihood_runtime_solved.py"]
     worst = 0.0
-    for path in legacy_glob(
-        _ROOT / "results/runtime/point_source_source/source_plane_solved", "*.json"
-    ):
+    # Every committed source_plane_solved row (the mirrored cells, the sweep comparison and
+    # the archived summary and probe).
+    for path in [
+        _ROOT
+        / "results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/runtime.json",
+        _ROOT
+        / "results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/runtime.json",
+        _ROOT
+        / "results/misc/likelihood_runtime/point_source_source/source_plane_solved/comparison.json",
+        _ROOT
+        / "archive/2026/07/hostless_summaries/runtime/point_source_source/source_plane_solved"
+        / "source_plane_solved_summary_v2026.7.23.1.json",
+        _ROOT
+        / "archive/2026/09/probes/runtime/point_source_source/source_plane_solved"
+        / "vmap_probe_source_plane_solved.json",
+    ]:
         v = json.loads(path.read_text()).get("full_pipeline_single_jit")
         if isinstance(v, float):
             worst = max(worst, v)

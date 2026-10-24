@@ -1,9 +1,41 @@
 # Setup evidence catalogue
 
-The companion [v2 catalogue](../dashboard/catalogue.json) organizes committed evidence by
-**dataset → model → instrument → exact configuration**. It powers the project setup browser and provides the data foundation for the assistant;
-it is not a new benchmark or an accepted baseline. The existing v1 JSON feed remains
-available while Pulse migrates to the setup browser. The catalogue exporter does not run scientific scripts.
+One exporter pass over the mirrored results tree writes two documents:
+
+- [`dashboard/catalogue.json`](../dashboard/catalogue.json) is the **`profiling-summary@3`
+  lifecycle catalogue** Pulse reads. Each record names its likelihood, instrument, R1
+  `setup_id`, `host_class`, `model_variant`, measurement, `class` and `status`.
+- [`dashboard/catalogue/setups.json`](../dashboard/catalogue/setups.json) and its shards are the
+  **companion v2 setup catalogue**, organised by dataset → model → instrument → exact
+  configuration. It powers this repo's setup browser and setup wiki and keeps every row,
+  including those the lifecycle catalogue does not render.
+
+Neither is a new benchmark or an accepted baseline. The exporter does not run scientific
+scripts.
+
+## Lifecycle labels (phase 0, autolens_profiling#442)
+
+The rules live in [`catalogue_lifecycle.py`](../scripts/misc/tooling/catalogue_lifecycle.py):
+
+- **Current**: the canonical cell file (not `history/`, `scans/` or `experiments/`) on a
+  reference host class (`hpc_ral_cpu`, `hpc_a100`) for a planned baseline cell in
+  [registry.json](registry.json) or a declared reference. Exactly one per key. `local_*` rows
+  are never current (R7).
+- **Size**: the standard source-pixel count is Delaunay 1250 and rectangular 1225 (35×35).
+  With no standard-size row, the nearest-size row is current and carries a `size_fallback`
+  limitation.
+- **Superseded**: every other row on a key with a current row; a `local_*` row points at the
+  reference-host row of the same setup. Rows whose key has no current row are counted in
+  `coverage.excluded` and stay in the companion catalogue. `archive/` rows are only counted in
+  `archive_record_count`.
+- **Class**: the provisional §3.3 designations. A provisional Optimal row is `class: secondary`
+  with `provisional_optimal: true` in `limitations` until a Pulse designation decision exists
+  (R3); mixed precision is `experimental`. `planned_cells` carry the provisional class.
+- **measured_at**: a row with no recorded timestamp is dated by the UTC day its file was first
+  committed to git (an upper bound on the measurement date), from
+  [measured_at_first_commit.json](measured_at_first_commit.json), and says so in
+  `limitations`. Refresh that file with `build_catalogue.py --refresh-commit-dates` (needs full
+  git history); `--check` fails when an undated file is missing from it.
 
 ## Regenerate and validate
 
@@ -18,8 +50,9 @@ python scripts/misc/tooling/build_catalogue.py --check --validate-with ../PyAuto
 `build_dashboard.py` also builds/checks the catalogue and the page bound to its hash.
 After changing catalogue inputs, run that combined builder before publication. The separate command reuses the
 committed v1 render timestamp and producer revision for reproducibility. These identify
-publication, **not measurement freshness**. The optional Pulse checkout runs the independently
-maintained v2 validator against the index and every shard; CI requires this check.
+publication, **not measurement freshness**. The optional Pulse checkout runs its independently
+maintained validators: v3 on `catalogue.json`, v2 on the companion index and every shard; CI
+requires this check.
 
 ## Registry and evidence policy
 
@@ -48,13 +81,13 @@ and an explicit interpretation of units, scope, failure status and source pointe
 
 ## Transport and lookup
 
-`dashboard/catalogue.json` is an independently valid `profiling-summary` v2 document with
+`dashboard/catalogue/setups.json` is an independently valid `profiling-summary` v2 document with
 all setups, selected reference records, baseline plans, source inventory and extensions.
 `evidence_shards` maps each measured setup ID to a relative `catalogue/shards/<id>.json`
-path, SHA-256 of its exact UTF-8 bytes and record count. Additive `axes`, `devices`
+path (relative to `dashboard/`), SHA-256 of its exact UTF-8 bytes and record count. Additive `axes`, `devices`
 and `precisions` lists summarize the actual shard records for selector labels; unknowns
 remain explicit and no hardware is inferred from filenames. Resolve paths relative to the
-catalogue URL (or `dashboard/` in git). Each shard is itself a valid v2 document containing
+dashboard page URL (or `dashboard/` in git). Each shard is itself a valid v2 document containing
 that setup and all its measurements. Load only the selected setup's shard. Advice lives in
 the root index; shards do not duplicate it. Root records are a subset of shard records;
 deduplicate by record ID when combining them. `archive_record_count` counts unique records

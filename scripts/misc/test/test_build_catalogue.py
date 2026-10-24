@@ -16,6 +16,9 @@ spec = importlib.util.spec_from_file_location("build_catalogue", TOOLING / "buil
 cat = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(cat)
 STAMP = "2026-10-05T00:00:00Z"
+#: A mirrored cell (results/<dataset_type>/<variant>/<instrument>/<setup_id>/<host_class>/).
+CELL = "results/imaging/delaunay/hst/jax_cpu_dense_fp64/hpc_ral_cpu"
+EXAMPLE = f"{CELL}/runtime.json"
 
 
 def write(root, path, value):
@@ -52,6 +55,14 @@ def build(root):
     return cat.build(root, STAMP, "abc")
 
 
+def date_all(root, day="2026-09-01"):
+    """Record a first-commit date for every result file (what --refresh-commit-dates writes)."""
+    dates = {
+        p.relative_to(root).as_posix(): day for p in sorted((root / "results").rglob("*.json"))
+    }
+    write(root, cat.COMMIT_DATES, {"schema": "measured-at-first-commit", "dates": dates})
+
+
 def update_registry(root, **values):
     reg = cat.registry(root)
     reg.update(values)
@@ -59,7 +70,7 @@ def update_registry(root, **values):
 
 
 def test_values_have_exact_original_anchors_and_unknowns(tree):
-    path = "results/runtime/imaging/delaunay/example.json"
+    path = EXAMPLE
     write(tree, path, row(steps={"mapper/a~b": 0.12}, jit_phases={"solve": {"compile_s": 2.0}}))
     doc = build(tree)
     assert {r["axis"] for r in doc["records"]} == {"runtime", "breakdown", "compile"}
@@ -73,7 +84,7 @@ def test_values_have_exact_original_anchors_and_unknowns(tree):
         assert record["validation"]["status"] == "unreviewed"
         assert record["provenance"]["qualified"] is False
         assert record["method"]["synchronization"] is None
-        assert record["identity"]["precision"] is None
+        assert record["identity"]["precision"] == "float64"  # the setup folder says fp64
     setup = next(s for s in doc["setups"] if s["role"] != "planned_baseline")
     assert setup["configuration"]["source_pixels"]["value"] == 1200
     assert setup["configuration"]["psf_shape"]["value"] == [21, 21]
@@ -82,11 +93,11 @@ def test_values_have_exact_original_anchors_and_unknowns(tree):
 
 
 def test_reference_is_explicit_not_latest_or_fastest(tree):
-    path = "results/runtime/imaging/delaunay/old.json"
+    path = EXAMPLE
     write(tree, path, row())
     write(
         tree,
-        "results/runtime/imaging/delaunay/new.json",
+        f"{CELL}/experiments/new/runtime.json",
         row(autolens_version="2099.1.1", full_pipeline_per_call=0.001),
     )
     update_registry(
@@ -123,7 +134,7 @@ def test_missing_reference_fails_closed(tree):
 
 @pytest.mark.parametrize("bad", [float("nan"), float("inf"), -1, True, None])
 def test_invalid_values_never_become_measurements(tree, bad):
-    write(tree, "results/runtime/imaging/bad.json", row(full_pipeline_per_call=bad))
+    write(tree, EXAMPLE, row(full_pipeline_per_call=bad))
     doc = build(tree)
     assert not doc["records"]
     assert doc["inventory"][0]["status"] == "indexed_only"
@@ -131,7 +142,7 @@ def test_invalid_values_never_become_measurements(tree, bad):
 
 
 def test_unversioned_result_is_indexed_without_inventing_stack(tree):
-    write(tree, "results/runtime/imaging/unversioned.json", {"full_pipeline_per_call": 0.1})
+    write(tree, EXAMPLE, {"full_pipeline_per_call": 0.1})
     doc = build(tree)
     assert not doc["records"]
     assert "no measured software" in doc["inventory"][0]["reasons"][0]
@@ -140,7 +151,7 @@ def test_unversioned_result_is_indexed_without_inventing_stack(tree):
 def test_failed_streaming_is_not_a_successful_timing(tree):
     write(
         tree,
-        "results/streaming_scaling/run.json",
+        "results/misc/streaming_scaling/run.json",
         {
             "autolens_version": "2026.10.1",
             "hardware": "local_cpu",
@@ -170,7 +181,7 @@ def test_failed_streaming_is_not_a_successful_timing(tree):
 def test_static_memory_stays_estimate_and_never_becomes_recommendation(tree):
     write(
         tree,
-        "results/runtime/imaging/vmap_probe_delaunay.json",
+        f"{CELL}/experiments/vmap_probe/runtime.json",
         row(samples=[{"peak_bytes": 123}], per_replica_mb=12, recommended_batch_size=64),
     )
     doc = build(tree)
@@ -209,7 +220,7 @@ def test_compile_probe_is_not_full_likelihood_and_redacts_local_paths(tree):
 
 
 def test_hazard_remains_unbound_and_has_exact_finding_anchor(tree):
-    path = "results/hazards/hazards_index.json"
+    path = "results/misc/hazards/hazards_index.json"
     write(
         tree,
         path,
@@ -232,7 +243,7 @@ def test_hazard_remains_unbound_and_has_exact_finding_anchor(tree):
 
 
 def test_discovery_is_explicit_and_does_not_bind_applicability(tree):
-    path = "results/hazards/hazards_index.json"
+    path = "results/misc/hazards/hazards_index.json"
     write(tree, path, {"findings": {"key": {"finding_id": "f1", "title": "Finding"}}})
     model = cat.registry(tree)["cells"][0]
     discovery = {
@@ -263,7 +274,7 @@ def test_discovery_is_explicit_and_does_not_bind_applicability(tree):
     ],
 )
 def test_invalid_hazard_discovery_fails_closed(tree, change):
-    write(tree, "results/hazards/hazards_index.json", {"findings": [{"finding_id": "f1"}]})
+    write(tree, "results/misc/hazards/hazards_index.json", {"findings": [{"finding_id": "f1"}]})
     model = cat.registry(tree)["cells"][0]
     item = {
         "finding_id": "f1",
@@ -292,16 +303,17 @@ def test_symlink_escape_refused(tree):
 
 
 def test_shards_are_deterministic_complete_and_content_addressed(tree):
-    write(tree, "results/runtime/imaging/delaunay/example.json", row())
+    write(tree, EXAMPLE, row())
+    date_all(tree)
     first = cat.render_outputs(tree, STAMP, "abc")
     assert first == cat.render_outputs(tree, STAMP, "abc")
-    index = json.loads(first["catalogue.json"])
+    index = json.loads(first[cat.SETUPS_INDEX])
     assert not index["records"]  # no declared reference
     manifest = index["evidence_shards"][0]
     assert manifest["axes"] == ["runtime"]
     assert manifest["devices"] == ["cpu"]
     assert manifest["axis_devices"] == {"runtime": ["cpu"]}
-    assert manifest["precisions"] == ["precision not recorded"]
+    assert manifest["precisions"] == ["float64"]
     assert hashlib.sha256(first[manifest["path"]].encode()).hexdigest() == manifest["sha256"]
     shard = json.loads(first[manifest["path"]])
     assert len(shard["records"]) == manifest["records"] == index["archive_record_count"] == 1
@@ -309,7 +321,8 @@ def test_shards_are_deterministic_complete_and_content_addressed(tree):
 
 
 def test_check_detects_missing_changed_obsolete_and_preserves_manual_files(tree):
-    write(tree, "results/runtime/imaging/delaunay/example.json", row())
+    write(tree, EXAMPLE, row())
+    date_all(tree)
     assert cat.main(["--root", str(tree), "--check"]) == 1
     assert cat.main(["--root", str(tree)]) == 0
     assert cat.main(["--root", str(tree), "--check"]) == 0
@@ -325,7 +338,7 @@ def test_check_detects_missing_changed_obsolete_and_preserves_manual_files(tree)
 
 
 def test_mutated_measurement_and_selection_mismatch_refused(tree):
-    path = "results/runtime/imaging/delaunay/example.json"
+    path = EXAMPLE
     write(tree, path, row())
     update_registry(tree, references=[{"path": path, "pointer": "", "reason": "Example"}])
     doc = build(tree)
@@ -339,7 +352,7 @@ def test_mutated_measurement_and_selection_mismatch_refused(tree):
 
 
 def test_recommendation_cannot_accept_unreviewed_evidence(tree):
-    path = "results/runtime/imaging/delaunay/example.json"
+    path = EXAMPLE
     write(tree, path, row())
     record = build(tree)["records"][0]
     rec = {
@@ -361,7 +374,8 @@ def test_recommendation_cannot_accept_unreviewed_evidence(tree):
         build(tree)
     rec["validation"]["status"] = "unreviewed"
     update_registry(tree, recommendations=[rec])
-    index = json.loads(cat.render_outputs(tree, STAMP, "abc")["catalogue.json"])
+    date_all(tree)
+    index = json.loads(cat.render_outputs(tree, STAMP, "abc")[cat.SETUPS_INDEX])
     assert index["records"][0]["id"] == record["id"]
 
 
@@ -382,7 +396,7 @@ def test_script_navigation_never_imports_scientific_code(tree):
 def test_runtime_compile_phases_and_batched_breakdown_remain_distinct(tree):
     write(
         tree,
-        "results/runtime/imaging/delaunay/example.json",
+        EXAMPLE,
         row(
             full_pipeline_lower_s=1.0,
             full_pipeline_compile_s=3.0,
@@ -408,7 +422,7 @@ def test_runtime_compile_phases_and_batched_breakdown_remain_distinct(tree):
 
 
 def test_recommendation_rejects_invalid_exact_evidence_pointer(tree):
-    path = "results/runtime/imaging/delaunay/example.json"
+    path = EXAMPLE
     write(tree, path, row())
     doc = build(tree)
     record = doc["records"][0]
@@ -432,3 +446,193 @@ def test_recommendation_rejects_invalid_exact_evidence_pointer(tree):
         cat.validate_local(tree, doc)
     doc["recommendations"][0]["evidence"][0] = record["evidence"]
     cat.validate_local(tree, doc)
+
+
+# ---------------------------------------------------------------- profiling-summary@3 ---
+
+DELAUNAY_HST = {
+    "id": "imaging/delaunay/hst",
+    "dataset": "imaging",
+    "model": "delaunay",
+    "instrument": "hst",
+}
+A100 = "results/imaging/delaunay/hst/jax_gpu_dense_fp64/hpc_a100"
+LAPTOP = "results/imaging/delaunay/hst/jax_gpu_dense_fp64/local_gpu"
+
+
+FIRST_COMMIT = "2026-09-01"
+
+
+def lifecycle(root, dated=True):
+    """Build v3; ``dated`` records a first-commit date for every result file in the tree."""
+    update_registry(root, cells=[DELAUNAY_HST])
+    if dated:
+        date_all(root, FIRST_COMMIT)
+    return cat.build_lifecycle(root, STAMP, "0123456789abcdef0123456789abcdef01234567")
+
+
+def by_path(doc):
+    return {r["evidence"]["path"]: r for r in doc["records"] if r["measurement"] == "runtime"}
+
+
+def pulse_classify():
+    for base in TOOLING.parents[3], TOOLING.parents[3].parent / "organs":
+        if (base / "PyAutoPulse/pulse/summary.py").is_file():
+            sys.path.insert(0, str(base / "PyAutoPulse"))
+            from pulse.summary import classify
+
+            return classify
+    pytest.skip("PyAutoPulse checkout not beside this repo")
+
+
+def test_v3_records_carry_the_lifecycle_fields_and_pass_pulse(tree):
+    write(tree, f"{A100}/runtime.json", row(steps={"solve": 0.1}))
+    doc = lifecycle(tree)
+    assert (doc["schema"], doc["version"]) == ("profiling-summary", 3)
+    assert "setups" not in doc and "selections" not in doc
+    record = by_path(doc)[f"{A100}/runtime.json"]
+    assert record["likelihood"] == {"dataset_type": "imaging", "variant": "delaunay"}
+    assert (record["instrument"], record["setup_id"], record["host_class"]) == (
+        "hst",
+        "jax_gpu_dense_fp64",
+        "hpc_a100",
+    )
+    assert record["setup"] == {
+        "backend": "jax",
+        "device": "gpu",
+        "operator": "dense",
+        "precision": "fp64",
+        "transformer": "na",
+        "threads": None,
+    }
+    assert record["metric"] == "single_call" and record["values"]["steps.solve"] == 0.1
+    assert record["model_variant"] == "default" and record["status"] == "current"
+    assert record["measured_at"] == f"{FIRST_COMMIT}T00:00:00Z"  # its file's first commit
+    assert any(
+        n.startswith("measured_at_derived") and "first committed" in n
+        for n in record["limitations"]
+    )
+    assert doc["coverage"]["expected"]["cells"] == len(doc["planned_cells"])
+    assert pulse_classify()(json.loads(json.dumps(doc)), ("profiling-summary", 3)) == ("ok", [])
+
+
+def test_exactly_one_current_per_key_and_the_rest_superseded(tree):
+    write(tree, f"{A100}/runtime.json", row())
+    write(tree, f"{A100}/experiments/arm/runtime.json", row(full_pipeline_per_call=0.01))
+    write(tree, f"{A100}/scans/n1250/runtime.json", row(configuration={"delaunay_vertices": 1250}))
+    records = by_path(lifecycle(tree))
+    current = records[f"{A100}/runtime.json"]
+    assert current["status"] == "current"
+    for path in (f"{A100}/experiments/arm/runtime.json", f"{A100}/scans/n1250/runtime.json"):
+        assert records[path]["status"] == "superseded"
+        assert records[path]["superseded_by"] == current["id"]  # never the faster or standard row
+
+
+def test_local_rows_are_never_current_r7(tree):
+    write(tree, f"{LAPTOP}/runtime.json", row())
+    doc = lifecycle(tree)
+    assert not doc["records"]  # no reference-host row: nothing can supersede it honestly
+    [excluded] = [e for e in doc["coverage"]["excluded"] if e["key"]["measurement"] == "runtime"]
+    assert excluded["record_count"] == 1 and "R7" in excluded["reason"]
+    write(tree, f"{A100}/runtime.json", row())
+    records = by_path(lifecycle(tree))
+    assert records[f"{LAPTOP}/runtime.json"]["status"] == "superseded"
+    assert (
+        records[f"{LAPTOP}/runtime.json"]["superseded_by"] == records[f"{A100}/runtime.json"]["id"]
+    )
+
+
+def test_provisional_optimal_is_secondary_without_a_decision_r3(tree):
+    write(tree, f"{A100}/runtime.json", row())
+    write(tree, f"{A100.replace('fp64', 'mixed')}/runtime.json", row())
+    doc = lifecycle(tree)
+    records = by_path(doc)
+    optimal = records[f"{A100}/runtime.json"]
+    assert optimal["class"] == "secondary" and optimal["decision_id"] is None
+    assert "provisional_optimal: true" in optimal["limitations"]
+    assert records[f"{A100.replace('fp64', 'mixed')}/runtime.json"]["class"] == "experimental"
+    assert not any(r["class"] == "optimal" for r in doc["records"])
+    planned = {(c["setup_id"], c["host_class"]): c["class"] for c in doc["planned_cells"]}
+    assert planned[("jax_gpu_dense_fp64", "hpc_a100")] == "optimal"
+    assert planned[("numba_cpu_sparse_fp64", "hpc_ral_cpu")] == "optimal"
+    assert planned[("jax_gpu_sparse_fp64", "hpc_a100")] == "secondary"
+    assert not any("mixed" in sid for sid, _host in planned)
+
+
+def test_standard_size_wins_and_fallback_is_labelled(tree):
+    write(tree, f"{A100}/runtime.json", row(configuration={"delaunay_vertices": 1500}))
+    record = by_path(lifecycle(tree))[f"{A100}/runtime.json"]
+    assert record["status"] == "current" and record["regime"] == "source_pixels_1500"
+    assert any(n.startswith("size_fallback") and "1250" in n for n in record["limitations"])
+    configs = {
+        "configs": {
+            "big": row(configuration={"delaunay_vertices": 1500}),
+            "standard": row(configuration={"delaunay_vertices": 1250}),
+        }
+    }
+    write(tree, f"{A100}/runtime.json", configs)
+    doc = lifecycle(tree)
+    rows_ = {r["evidence"]["fragment"]: r for r in doc["records"] if r["measurement"] == "runtime"}
+    standard, big = rows_["/configs/standard"], rows_["/configs/big"]
+    assert standard["status"] == "current" and standard["regime"] == "standard"
+    assert not any(n.startswith("size_fallback") for n in standard["limitations"])
+    assert big["status"] == "superseded" and big["superseded_by"] == standard["id"]
+    assert cat.lc.STANDARD_SOURCE_PIXELS == {
+        "delaunay": 1250,
+        "delaunay_nn": 1250,
+        "rectangular": 1225,
+    }
+
+
+def test_unplanned_cells_scans_and_archive_are_not_current(tree):
+    write(tree, "results/imaging/delaunay/sdp81/jax_gpu_dense_fp64/hpc_a100/runtime.json", row())
+    write(tree, f"{A100}/scans/n3000/runtime.json", row())
+    write(tree, "archive/2026/08/old/delaunay_hpc_a100_fp64.json", row(steps={"a": 1.0}))
+    doc = lifecycle(tree)
+    assert not doc["records"]
+    reasons = " ".join(e["reason"] for e in doc["coverage"]["excluded"])
+    assert "not a planned baseline cell" in reasons and "scan/experiment" in reasons
+    assert doc["archive_record_count"] == 2  # runtime + breakdown rows, counted only
+
+
+def test_fit_figure_is_attached_with_its_digest(tree):
+    write(tree, f"{A100}/runtime.json", row())
+    (tree / A100 / "fit.png").write_bytes(b"png")
+    [figure] = by_path(lifecycle(tree))[f"{A100}/runtime.json"]["figures"]
+    assert figure == {
+        "kind": "fit",
+        "path": f"{A100}/fit.png",
+        "sha256": hashlib.sha256(b"png").hexdigest(),
+    }
+
+
+def test_lifecycle_values_are_checked_against_the_evidence(tree):
+    write(tree, f"{A100}/runtime.json", row())
+    doc = lifecycle(tree)
+    changed = copy.deepcopy(doc)
+    changed["records"][0]["values"][changed["records"][0]["metric"]] = 999
+    with pytest.raises(ValueError, match="original evidence"):
+        cat.validate_lifecycle(tree, changed)
+    second = copy.deepcopy(doc["records"][0])
+    second["id"] = "lifecycle/duplicate-current"
+    doc["records"].append(second)
+    with pytest.raises(ValueError, match="Second current"):
+        cat.validate_lifecycle(tree, doc)
+
+
+def test_undated_row_without_a_first_commit_date_fails_check(tree, capsys):
+    write(tree, f"{A100}/runtime.json", row())
+    write(tree, cat.COMMIT_DATES, {"schema": "measured-at-first-commit", "dates": {}})
+    with pytest.raises(cat.UndatedRows, match="--refresh-commit-dates") as missing:
+        lifecycle(tree, dated=False)
+    assert missing.value.paths == [f"{A100}/runtime.json"]
+    assert cat.main(["--root", str(tree), "--check"]) == 1
+    assert "--refresh-commit-dates" in capsys.readouterr().out
+
+
+def test_timestamped_rows_need_no_first_commit_date(tree):
+    stamped = row(device={"backend": "gpu", "provenance": {"captured_at": "2026-10-02T03:04:05Z"}})
+    write(tree, f"{A100}/runtime.json", stamped)
+    record = by_path(lifecycle(tree, dated=False))[f"{A100}/runtime.json"]
+    assert record["measured_at"] == "2026-10-02T03:04:05Z"
+    assert not any(n.startswith("measured_at_derived") for n in record["limitations"])

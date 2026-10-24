@@ -47,7 +47,19 @@ from likelihood_breakdown.ab_verdict import (  # noqa: E402
     paired_block_ratio_interval,
     tie_set,
 )
-from tooling.results_layout import current  # noqa: E402
+
+#: The committed A/B rows, by the config name each was run under (mirrored tree, #442).
+PYTREE_ROWS = {
+    "hpc_ral_cpu_fp64": "jax_cpu_na_fp64/hpc_ral_cpu",
+    "hpc_a100_fp64": "jax_gpu_na_fp64/hpc_a100",
+}
+BACKWARD_ROWS = {
+    "hpc_ral_gpunode_cpu_fp64": "jax_cpu_na_fp64/hpc_ral_cpu",
+    "hpc_a100_fp64": "jax_gpu_na_fp64/hpc_a100",
+    "local_cpu_fp64": "jax_cpu_na_fp64/local_laptop",
+}
+SOURCE_PLANE = ROOT / "results/point_source_source/source_plane/simple"
+SWEEPS = ROOT / "results/misc/likelihood_breakdown/point_source_image"
 
 PYTREE_CELL = ROOT / "scripts/point_source_source/source_plane/pytree_input_ab.py"
 BACKWARD_CELL = ROOT / "scripts/point_source_source/source_plane/backward_pass_ab.py"
@@ -394,8 +406,8 @@ def test_the_committed_pytree_rows_are_rejudged_unchanged(config, expected):
     GO resolves too.
     """
     data = json.loads(
-        current(
-            ROOT / f"results/breakdown/point_source_source/pytree_input_ab_{config}.json"
+        (
+            SOURCE_PLANE / PYTREE_ROWS[config] / "experiments/pytree_input_ab/breakdown.json"
         ).read_text()
     )
     rows = {key: dict(row) for key, row in data["rows"].items()}
@@ -437,8 +449,8 @@ def test_the_committed_backward_pass_rows_are_rejudged_unchanged(config, changed
     (the laptop does not decide; the phase-2c decision, ``fwd``, is unchanged).
     """
     data = json.loads(
-        current(
-            ROOT / f"results/breakdown/point_source_source/backward_pass_ab_{config}.json"
+        (
+            SOURCE_PLANE / BACKWARD_ROWS[config] / "experiments/backward_pass_ab/breakdown.json"
         ).read_text()
     )
     rows = data["rows"]
@@ -510,9 +522,7 @@ def test_the_committed_sweep_best_is_rejudged_as_a_tie_set(stem):
     round intervals), and the family-wise one adds the members of
     ``_SWEEP_FAMILY_ADDS``. No named "best" changes.
     """
-    data = json.loads(
-        current(ROOT / f"results/breakdown/point_source_image/{stem}.json").read_text()
-    )
+    data = json.loads((SWEEPS / f"{stem}.json").read_text())
     rows = data["rows"]
     candidates = [
         n

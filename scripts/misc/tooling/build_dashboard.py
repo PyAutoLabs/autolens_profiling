@@ -1570,19 +1570,19 @@ def build(
         "index.html": render_html(series, refused, conf, generated, state),
     }
     if (root / "catalogue/registry.json").is_file():
-        # The companion v2 catalogue has its own declared scientific matrix.
-        # Keep v1 bytes and consumers intact until the browser migration.
+        # catalogue.json is the profiling-summary@3 lifecycle catalogue Pulse reads; the setup
+        # browser and setup wiki render the companion v2 setup catalogue beside it.
         sys.path.insert(0, str(Path(__file__).resolve().parent))
-        from build_catalogue import render_outputs
+        from build_catalogue import SETUPS_INDEX, render_outputs
 
         outputs.update(render_outputs(root, generated, revision))
         from setup_page import render as render_setup_page
 
-        outputs["index.html"] = render_setup_page(json.loads(outputs["catalogue.json"]))
+        outputs["index.html"] = render_setup_page(json.loads(outputs[SETUPS_INDEX]))
         if (root / "catalogue/wiki_bindings.json").is_file():
             from build_setup_wiki import render_outputs as render_wiki
 
-            catalogue = json.loads(outputs["catalogue.json"])
+            catalogue = json.loads(outputs[SETUPS_INDEX])
             shards = {
                 ref["setup_id"]: json.loads(outputs[ref["path"]])
                 for ref in catalogue["evidence_shards"]

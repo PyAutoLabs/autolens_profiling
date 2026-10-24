@@ -16,6 +16,6 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 
 | Exact configuration | Evidence source | Records |
 |---|---|---|
-| [49d03736b97341ec4593](5121d6fb9fa1ef0cf0dc.md) | results/misc/likelihood_runtime/point_source_source/source_plane_solved/comparison.json | 5 |
-| [ab0231461d92c82611a8](b63b895ef247d54d882b.md) | results/misc/likelihood_runtime/point_source_source/source_plane_solved/comparison.json | 5 |
+| [339c1f169aa66b5e9217](250ad0f7c7205c6a20be.md) | results/misc/likelihood_runtime/point_source_source/source_plane_solved/comparison.json | 5 |
+| [fab40edc638a98f29f29](e6be6416b799fd62c2c1.md) | results/misc/likelihood_runtime/point_source_source/source_plane_solved/comparison.json | 5 |
 

@@ -1,9 +1,9 @@
-"""The day-zero move tooling: applier, reference rewrite, legacy reader view, writer placement.
+"""The day-zero move tooling: applier, reference rewrite, writer placement.
 
 ``apply_migration_map.py`` moves the tree and repoints references from
-``catalogue/migration_day_zero.json`` alone; ``results_layout.py`` gives readers the
-pre-move identity of a moved file; ``_profile_cli.resolve_output_paths`` places a new run in
-the mirrored tree with the map generator's own classification (autolens_profiling#442 PR 2).
+``catalogue/migration_day_zero.json`` alone; ``_profile_cli.resolve_output_paths`` places a new
+run in the mirrored tree with the map generator's own classification (autolens_profiling#442).
+Readers read the mirrored tree natively; no legacy reader view exists (#442 PR 3).
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ TOOLING = ROOT / "scripts" / "misc" / "tooling"
 sys.path.insert(0, str(TOOLING))
 sys.path.insert(0, str(ROOT))
 
-import results_layout as rl  # noqa: E402
+import build_migration_map as bmm  # noqa: E402
 
 _spec = importlib.util.spec_from_file_location("apply_mm", TOOLING / "apply_migration_map.py")
 amm = importlib.util.module_from_spec(_spec)
@@ -102,39 +102,14 @@ def test_rewrite_refs_relinks_moved_pages_and_literal_paths_idempotently(tmp_pat
     assert amm.rewrite_refs(root, doc) == []
 
 
-def test_legacy_view_reads_moved_files_under_their_old_names(tmp_path):
-    root = _repo(tmp_path)
-    doc = json.loads((root / amm.MAP_PATH).read_text())
-    for old, new in amm.plan(root, doc)[0]:
-        (root / new).parent.mkdir(parents=True, exist_ok=True)
-        _git(root, "mv", old, new)
-    (root / "results/runtime/imaging/delaunay/fixture_local_cpu_fp64.json").write_text("{}")
-    rl._maps.cache_clear()
-    found = rl.iter_legacy(root, "results/runtime", "*.json")
-    assert [(p.relative_to(root).as_posix(), str(legacy)) for p, legacy in found] == [
-        (NEW, OLD),
-        (
-            "results/runtime/imaging/delaunay/fixture_local_cpu_fp64.json",
-            "results/runtime/imaging/delaunay/fixture_local_cpu_fp64.json",
-        ),
-    ]
-    assert rl.legacy_of(root, NEW) == OLD and rl.current_of(root, OLD) == NEW
-    assert rl.current(root / OLD) == root / NEW
-    assert rl.legacy_glob(root / "results/runtime/imaging", "*.json") == []
-    assert [p.name for p in rl.legacy_glob(root / "results/runtime/imaging/delaunay")] == [
-        "runtime.json",
-        "fixture_local_cpu_fp64.json",
-    ]
-
-
 def test_destination_uses_the_map_classification():
-    assert rl.destination(ROOT, OLD, {"instrument": "hst"}) == (NEW, "mirrored")
-    sparse, kind = rl.destination(
+    assert bmm.destination(ROOT, OLD, {"instrument": "hst"}) == (NEW, "mirrored")
+    sparse, kind = bmm.destination(
         ROOT, "results/runtime/imaging/delaunay/delaunay_hpc_a100_fp64_sparse.json", {}
     )
     assert kind == "misc"  # no instrument recorded: never a guessed cell
     assert sparse.startswith("results/misc/likelihood_runtime/")
-    probe, kind = rl.destination(
+    probe, kind = bmm.destination(
         ROOT, "results/breakdown/imaging/delaunay_hpc_a100_fp64_probe.json", {"instrument": "hst"}
     )
     assert kind == "misc" and probe.startswith("results/misc/")  # never archived on write

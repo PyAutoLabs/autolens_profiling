@@ -44,23 +44,33 @@
   ],
   "overrides": [
     {
-      "prefix": "results/streaming_scaling/",
+      "prefix": "results/misc/streaming_scaling/",
       "adapter": "streaming",
       "dataset": "interferometer",
       "model": "streaming"
     },
     {
-      "prefix": "results/hazards/",
+      "prefix": "results/misc/hazards/",
       "adapter": "hazards",
       "dataset": "lens",
       "model": "hazards"
     },
     {
-      "prefix": "results/baselines/",
+      "prefix": "archive/2026/08/pre_2026_09/hazards/",
+      "adapter": "hazards",
+      "dataset": "lens",
+      "model": "hazards"
+    },
+    {
+      "prefix": "archive/2026/07/PreOptimizationTimes/",
       "adapter": "inventory"
     },
     {
-      "prefix": "results/notes/",
+      "prefix": "archive/2026/09/point_source_cpu_2026_09_17_reported/",
+      "adapter": "inventory"
+    },
+    {
+      "prefix": "archive/undated/clipper_campaign/",
       "adapter": "inventory"
     }
   ],
@@ -381,14 +391,14 @@
       "description": "Historical rule 1: similar masked-pixel extents with different visibility counts had similar per-call costs in these rows; inspect masked pixels alongside visibility count. This is an observation, not a calibrated size predictor.",
       "applies_to": {
         "setup_ids": [
-          "interferometer/delaunay/alma/00e86a7de323cb7098eb",
-          "interferometer/delaunay/alma/c00199cd0663a6f29c96",
-          "interferometer/delaunay/sdp81/5eb412356335dad23303",
-          "interferometer/delaunay/sdp81/e72d63bebe8acf2cb84c",
-          "interferometer/rectangular/alma/5e3423306e47ff2283ff",
-          "interferometer/rectangular/alma/c6ff0b2db1b9b636c14c",
-          "interferometer/rectangular/sdp81/0058ef5f0b6c03fd1580",
-          "interferometer/rectangular/sdp81/f81557c6f4f9324e5beb"
+          "interferometer/delaunay/alma/fa2d3e07d987f846293d",
+          "interferometer/delaunay/alma/8ced88b7d8f5fea0aed8",
+          "interferometer/delaunay/sdp81/e69a84a60787315b9cb0",
+          "interferometer/delaunay/sdp81/d902694ddca4cfa88ade",
+          "interferometer/rectangular/alma/39e1b1f8aa1c07b1c730",
+          "interferometer/rectangular/alma/616d536fdc11c9793e17",
+          "interferometer/rectangular/sdp81/78d57b6ccae57892a1f2",
+          "interferometer/rectangular/sdp81/36c9d616cd093a5bad14"
         ],
         "library_versions": [
           "2026.8.17.1"
@@ -407,7 +417,7 @@
           "precision": "float64",
           "configuration_scope": "Only the enumerated setup IDs and recorded configurations; never extrapolate by model label.",
           "measured_software_by_record": {
-            "measurement/07d39632cb9e060387dd": {
+            "measurement/c9b684e9c2034e17bd57": {
               "PyAutoArray": "14d63360f341912b209f2045d7e388e264692f1d",
               "PyAutoFit": "cf83504e8c7f3cc196ffef4d8a4ff86dd456bb6b",
               "PyAutoGalaxy": "0e4b89cff42882a6cf5bbed6c9686f7212d7e24c",
@@ -415,7 +425,7 @@
               "PyAutoNerves": "2b3bc53388a15e1d51fb70b583061bc2ee3294f0",
               "autolens_profiling": "66e45e906ce77dc9a58fe2cf7870adc343c98929"
             },
-            "measurement/5ad8678aaa5a1fc47227": {
+            "measurement/1c0e53474fb1cfb105e6": {
               "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_versions": "2026.8.17.1",
@@ -440,7 +450,7 @@
               "numpy.dependency_versions": "2.2.6",
               "scipy.dependency_versions": "1.17.1"
             },
-            "measurement/5cf324f959cbd96df392": {
+            "measurement/8c9b4ac2b75b5cbae601": {
               "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_versions": "2026.8.17.1",
@@ -465,7 +475,7 @@
               "numpy.dependency_versions": "2.2.6",
               "scipy.dependency_versions": "1.17.1"
             },
-            "measurement/78267b21742073b7bb03": {
+            "measurement/37c07b149bb961fc0f3a": {
               "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_versions": "2026.8.17.1",
@@ -490,7 +500,7 @@
               "numpy.dependency_versions": "2.2.6",
               "scipy.dependency_versions": "1.17.1"
             },
-            "measurement/b280b41456ac0659bccc": {
+            "measurement/8512047e24a377b7dd04": {
               "PyAutoArray": "e281abf3257e9efd4915f1daa9acc0498be250a5",
               "PyAutoFit": "c156a9d8e8eb9f82b6da169b1d50b7e64580fe98",
               "PyAutoGalaxy": "ba8a08fabcb13d9472f2bd43ef4fea6039284d50",
@@ -498,7 +508,7 @@
               "PyAutoNerves": "bf104102312852537159b7fad2f998ab6677b4e4",
               "autolens_profiling": "92a20614c6c23faefae429e7b9ec4cfae7c9611c"
             },
-            "measurement/b568267428fbab523465": {
+            "measurement/e998a4bd854d3210b8fa": {
               "PyAutoArray": "14d63360f341912b209f2045d7e388e264692f1d",
               "PyAutoFit": "cf83504e8c7f3cc196ffef4d8a4ff86dd456bb6b",
               "PyAutoGalaxy": "0e4b89cff42882a6cf5bbed6c9686f7212d7e24c",
@@ -506,7 +516,7 @@
               "PyAutoNerves": "2b3bc53388a15e1d51fb70b583061bc2ee3294f0",
               "autolens_profiling": "66e45e906ce77dc9a58fe2cf7870adc343c98929"
             },
-            "measurement/cb842f1c629a33b90314": {
+            "measurement/daa41ae9e0d6eef2428e": {
               "PyAutoArray": "e281abf3257e9efd4915f1daa9acc0498be250a5",
               "PyAutoFit": "c156a9d8e8eb9f82b6da169b1d50b7e64580fe98",
               "PyAutoGalaxy": "ba8a08fabcb13d9472f2bd43ef4fea6039284d50",
@@ -514,7 +524,7 @@
               "PyAutoNerves": "bf104102312852537159b7fad2f998ab6677b4e4",
               "autolens_profiling": "92a20614c6c23faefae429e7b9ec4cfae7c9611c"
             },
-            "measurement/ee5b21bd78ba2a34a850": {
+            "measurement/92b414c78390bf591591": {
               "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_versions": "2026.8.17.1",
@@ -541,7 +551,7 @@
             }
           },
           "hardware_by_record": {
-            "measurement/07d39632cb9e060387dd": {
+            "measurement/c9b684e9c2034e17bd57": {
               "device": "a100",
               "backend": "gpu",
               "hardware_details": {
@@ -556,7 +566,7 @@
                 "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
               }
             },
-            "measurement/5ad8678aaa5a1fc47227": {
+            "measurement/1c0e53474fb1cfb105e6": {
               "device": "a100",
               "backend": "gpu",
               "hardware_details": {
@@ -571,7 +581,7 @@
                 "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
               }
             },
-            "measurement/5cf324f959cbd96df392": {
+            "measurement/8c9b4ac2b75b5cbae601": {
               "device": "a100",
               "backend": "gpu",
               "hardware_details": {
@@ -586,7 +596,7 @@
                 "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
               }
             },
-            "measurement/78267b21742073b7bb03": {
+            "measurement/37c07b149bb961fc0f3a": {
               "device": "cpu",
               "backend": "cpu",
               "hardware_details": {
@@ -600,7 +610,7 @@
                 "xla_flags": "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
               }
             },
-            "measurement/b280b41456ac0659bccc": {
+            "measurement/8512047e24a377b7dd04": {
               "device": "cpu",
               "backend": "cpu",
               "hardware_details": {
@@ -614,7 +624,7 @@
                 "xla_flags": "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
               }
             },
-            "measurement/b568267428fbab523465": {
+            "measurement/e998a4bd854d3210b8fa": {
               "device": "a100",
               "backend": "gpu",
               "hardware_details": {
@@ -629,7 +639,7 @@
                 "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
               }
             },
-            "measurement/cb842f1c629a33b90314": {
+            "measurement/daa41ae9e0d6eef2428e": {
               "device": "cpu",
               "backend": "cpu",
               "hardware_details": {
@@ -643,7 +653,7 @@
                 "xla_flags": "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
               }
             },
-            "measurement/ee5b21bd78ba2a34a850": {
+            "measurement/92b414c78390bf591591": {
               "device": "cpu",
               "backend": "cpu",
               "hardware_details": {
@@ -664,14 +674,14 @@
         "limitations": "Unreviewed historical observations, confined to the supporting exact setups and measured revisions. Simulated source with real SDP.81 uv coverage; not a fit to observed SDP.81 visibilities. Unknown metadata prevents cross-file scientific equivalence or current-performance claims."
       },
       "record_ids": [
-        "measurement/07d39632cb9e060387dd",
-        "measurement/5ad8678aaa5a1fc47227",
-        "measurement/5cf324f959cbd96df392",
-        "measurement/78267b21742073b7bb03",
-        "measurement/b280b41456ac0659bccc",
-        "measurement/b568267428fbab523465",
-        "measurement/cb842f1c629a33b90314",
-        "measurement/ee5b21bd78ba2a34a850"
+        "measurement/c9b684e9c2034e17bd57",
+        "measurement/1c0e53474fb1cfb105e6",
+        "measurement/8c9b4ac2b75b5cbae601",
+        "measurement/37c07b149bb961fc0f3a",
+        "measurement/8512047e24a377b7dd04",
+        "measurement/e998a4bd854d3210b8fa",
+        "measurement/daa41ae9e0d6eef2428e",
+        "measurement/92b414c78390bf591591"
       ],
       "evidence": [
         {
@@ -722,8 +732,8 @@
       "description": "Historical rule 2: at simulated SDP.81 the sparse mesh route was faster than the dense comparison arm. The original broader rule is narrowed here to this measured configuration.",
       "applies_to": {
         "setup_ids": [
-          "interferometer/delaunay/sdp81/e72d63bebe8acf2cb84c",
-          "interferometer/rectangular/sdp81/0058ef5f0b6c03fd1580"
+          "interferometer/delaunay/sdp81/d902694ddca4cfa88ade",
+          "interferometer/rectangular/sdp81/78d57b6ccae57892a1f2"
         ],
         "library_versions": [
           "2026.8.17.1"
@@ -741,7 +751,7 @@
           "precision": "float64",
           "configuration_scope": "Only the enumerated setup IDs and recorded configurations; never extrapolate by model label.",
           "measured_software_by_record": {
-            "measurement/5ad8678aaa5a1fc47227": {
+            "measurement/1c0e53474fb1cfb105e6": {
               "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_versions": "2026.8.17.1",
@@ -766,7 +776,7 @@
               "numpy.dependency_versions": "2.2.6",
               "scipy.dependency_versions": "1.17.1"
             },
-            "measurement/5cf324f959cbd96df392": {
+            "measurement/8c9b4ac2b75b5cbae601": {
               "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_versions": "2026.8.17.1",
@@ -791,7 +801,7 @@
               "numpy.dependency_versions": "2.2.6",
               "scipy.dependency_versions": "1.17.1"
             },
-            "measurement/9b5f9f7c8125a7bf4355": {
+            "measurement/723a5c47b26d136844a1": {
               "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_versions": "2026.8.17.1",
@@ -816,7 +826,7 @@
               "numpy.dependency_versions": "2.2.6",
               "scipy.dependency_versions": "1.17.1"
             },
-            "measurement/9cec0cdf85d8d9bae253": {
+            "measurement/f7758b652c9c7f58a821": {
               "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_versions": "2026.8.17.1",
@@ -843,7 +853,7 @@
             }
           },
           "hardware_by_record": {
-            "measurement/5ad8678aaa5a1fc47227": {
+            "measurement/1c0e53474fb1cfb105e6": {
               "device": "a100",
               "backend": "gpu",
               "hardware_details": {
@@ -858,7 +868,7 @@
                 "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
               }
             },
-            "measurement/5cf324f959cbd96df392": {
+            "measurement/8c9b4ac2b75b5cbae601": {
               "device": "a100",
               "backend": "gpu",
               "hardware_details": {
@@ -873,7 +883,7 @@
                 "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
               }
             },
-            "measurement/9b5f9f7c8125a7bf4355": {
+            "measurement/723a5c47b26d136844a1": {
               "device": "a100",
               "backend": "gpu",
               "hardware_details": {
@@ -888,7 +898,7 @@
                 "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
               }
             },
-            "measurement/9cec0cdf85d8d9bae253": {
+            "measurement/f7758b652c9c7f58a821": {
               "device": "a100",
               "backend": "gpu",
               "hardware_details": {
@@ -909,10 +919,10 @@
         "limitations": "Unreviewed historical observations, confined to the supporting exact setups and measured revisions. Simulated source with real SDP.81 uv coverage; not a fit to observed SDP.81 visibilities. Unknown metadata prevents cross-file scientific equivalence or current-performance claims."
       },
       "record_ids": [
-        "measurement/5ad8678aaa5a1fc47227",
-        "measurement/5cf324f959cbd96df392",
-        "measurement/9b5f9f7c8125a7bf4355",
-        "measurement/9cec0cdf85d8d9bae253"
+        "measurement/1c0e53474fb1cfb105e6",
+        "measurement/8c9b4ac2b75b5cbae601",
+        "measurement/723a5c47b26d136844a1",
+        "measurement/f7758b652c9c7f58a821"
       ],
       "evidence": [
         {
@@ -955,8 +965,8 @@
       "description": "Historical rule 3: the packaged gate of 60 chose numba in the measured SDP.81 mesh cells, where it beat the NumPy FFT arm. Forced-arm profiling used a gate of 1e9; this is not a recommendation to set that profiling override.",
       "applies_to": {
         "setup_ids": [
-          "interferometer/delaunay/sdp81/5eb412356335dad23303",
-          "interferometer/rectangular/sdp81/f81557c6f4f9324e5beb"
+          "interferometer/delaunay/sdp81/e69a84a60787315b9cb0",
+          "interferometer/rectangular/sdp81/36c9d616cd093a5bad14"
         ],
         "library_versions": [
           "2026.8.17.1"
@@ -974,7 +984,7 @@
           "precision": "float64",
           "configuration_scope": "Only the enumerated setup IDs and recorded configurations; never extrapolate by model label.",
           "measured_software_by_record": {
-            "measurement/78267b21742073b7bb03": {
+            "measurement/37c07b149bb961fc0f3a": {
               "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_versions": "2026.8.17.1",
@@ -999,7 +1009,7 @@
               "numpy.dependency_versions": "2.2.6",
               "scipy.dependency_versions": "1.17.1"
             },
-            "measurement/852231607cc656355c6e": {
+            "measurement/be5f03eda6891887a597": {
               "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_versions": "2026.8.17.1",
@@ -1024,7 +1034,7 @@
               "numpy.dependency_versions": "2.2.6",
               "scipy.dependency_versions": "1.17.1"
             },
-            "measurement/c5f82ab6f77ed1b15595": {
+            "measurement/e6639d420e4ed09eb189": {
               "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_versions": "2026.8.17.1",
@@ -1049,7 +1059,7 @@
               "numpy.dependency_versions": "2.2.6",
               "scipy.dependency_versions": "1.17.1"
             },
-            "measurement/ee5b21bd78ba2a34a850": {
+            "measurement/92b414c78390bf591591": {
               "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_versions": "2026.8.17.1",
@@ -1076,7 +1086,7 @@
             }
           },
           "hardware_by_record": {
-            "measurement/78267b21742073b7bb03": {
+            "measurement/37c07b149bb961fc0f3a": {
               "device": "cpu",
               "backend": "cpu",
               "hardware_details": {
@@ -1090,7 +1100,7 @@
                 "xla_flags": "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
               }
             },
-            "measurement/852231607cc656355c6e": {
+            "measurement/be5f03eda6891887a597": {
               "device": "cpu",
               "backend": "cpu",
               "hardware_details": {
@@ -1104,7 +1114,7 @@
                 "xla_flags": "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
               }
             },
-            "measurement/c5f82ab6f77ed1b15595": {
+            "measurement/e6639d420e4ed09eb189": {
               "device": "cpu",
               "backend": "cpu",
               "hardware_details": {
@@ -1118,7 +1128,7 @@
                 "xla_flags": "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
               }
             },
-            "measurement/ee5b21bd78ba2a34a850": {
+            "measurement/92b414c78390bf591591": {
               "device": "cpu",
               "backend": "cpu",
               "hardware_details": {
@@ -1138,10 +1148,10 @@
         "limitations": "Unreviewed historical observations, confined to the supporting exact setups and measured revisions. Simulated source with real SDP.81 uv coverage; not a fit to observed SDP.81 visibilities. Unknown metadata prevents cross-file scientific equivalence or current-performance claims."
       },
       "record_ids": [
-        "measurement/78267b21742073b7bb03",
-        "measurement/852231607cc656355c6e",
-        "measurement/c5f82ab6f77ed1b15595",
-        "measurement/ee5b21bd78ba2a34a850"
+        "measurement/37c07b149bb961fc0f3a",
+        "measurement/be5f03eda6891887a597",
+        "measurement/e6639d420e4ed09eb189",
+        "measurement/92b414c78390bf591591"
       ],
       "evidence": [
         {
@@ -1224,10 +1234,10 @@
       "description": "Historical rule 4: these A100 sparse mesh calls were faster than the single-thread CPU calls. Device choice outside these exact models and hardware is unmeasured; no total fit-time estimate is provided.",
       "applies_to": {
         "setup_ids": [
-          "interferometer/delaunay/sdp81/5eb412356335dad23303",
-          "interferometer/delaunay/sdp81/e72d63bebe8acf2cb84c",
-          "interferometer/rectangular/sdp81/0058ef5f0b6c03fd1580",
-          "interferometer/rectangular/sdp81/f81557c6f4f9324e5beb"
+          "interferometer/delaunay/sdp81/e69a84a60787315b9cb0",
+          "interferometer/delaunay/sdp81/d902694ddca4cfa88ade",
+          "interferometer/rectangular/sdp81/78d57b6ccae57892a1f2",
+          "interferometer/rectangular/sdp81/36c9d616cd093a5bad14"
         ],
         "library_versions": [
           "2026.8.17.1"
@@ -1245,7 +1255,7 @@
           "precision": "float64",
           "configuration_scope": "Only the enumerated setup IDs and recorded configurations; never extrapolate by model label.",
           "measured_software_by_record": {
-            "measurement/5ad8678aaa5a1fc47227": {
+            "measurement/1c0e53474fb1cfb105e6": {
               "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_versions": "2026.8.17.1",
@@ -1270,7 +1280,7 @@
               "numpy.dependency_versions": "2.2.6",
               "scipy.dependency_versions": "1.17.1"
             },
-            "measurement/5cf324f959cbd96df392": {
+            "measurement/8c9b4ac2b75b5cbae601": {
               "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_versions": "2026.8.17.1",
@@ -1295,7 +1305,7 @@
               "numpy.dependency_versions": "2.2.6",
               "scipy.dependency_versions": "1.17.1"
             },
-            "measurement/78267b21742073b7bb03": {
+            "measurement/37c07b149bb961fc0f3a": {
               "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_versions": "2026.8.17.1",
@@ -1320,7 +1330,7 @@
               "numpy.dependency_versions": "2.2.6",
               "scipy.dependency_versions": "1.17.1"
             },
-            "measurement/852231607cc656355c6e": {
+            "measurement/be5f03eda6891887a597": {
               "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_versions": "2026.8.17.1",
@@ -1345,7 +1355,7 @@
               "numpy.dependency_versions": "2.2.6",
               "scipy.dependency_versions": "1.17.1"
             },
-            "measurement/9b5f9f7c8125a7bf4355": {
+            "measurement/723a5c47b26d136844a1": {
               "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_versions": "2026.8.17.1",
@@ -1370,7 +1380,7 @@
               "numpy.dependency_versions": "2.2.6",
               "scipy.dependency_versions": "1.17.1"
             },
-            "measurement/9cec0cdf85d8d9bae253": {
+            "measurement/f7758b652c9c7f58a821": {
               "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_versions": "2026.8.17.1",
@@ -1395,7 +1405,7 @@
               "numpy.dependency_versions": "2.2.6",
               "scipy.dependency_versions": "1.17.1"
             },
-            "measurement/c5f82ab6f77ed1b15595": {
+            "measurement/e6639d420e4ed09eb189": {
               "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_versions": "2026.8.17.1",
@@ -1420,7 +1430,7 @@
               "numpy.dependency_versions": "2.2.6",
               "scipy.dependency_versions": "1.17.1"
             },
-            "measurement/ee5b21bd78ba2a34a850": {
+            "measurement/92b414c78390bf591591": {
               "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_versions": "2026.8.17.1",
@@ -1447,7 +1457,7 @@
             }
           },
           "hardware_by_record": {
-            "measurement/5ad8678aaa5a1fc47227": {
+            "measurement/1c0e53474fb1cfb105e6": {
               "device": "a100",
               "backend": "gpu",
               "hardware_details": {
@@ -1462,7 +1472,7 @@
                 "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
               }
             },
-            "measurement/5cf324f959cbd96df392": {
+            "measurement/8c9b4ac2b75b5cbae601": {
               "device": "a100",
               "backend": "gpu",
               "hardware_details": {
@@ -1477,7 +1487,7 @@
                 "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
               }
             },
-            "measurement/78267b21742073b7bb03": {
+            "measurement/37c07b149bb961fc0f3a": {
               "device": "cpu",
               "backend": "cpu",
               "hardware_details": {
@@ -1491,7 +1501,7 @@
                 "xla_flags": "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
               }
             },
-            "measurement/852231607cc656355c6e": {
+            "measurement/be5f03eda6891887a597": {
               "device": "cpu",
               "backend": "cpu",
               "hardware_details": {
@@ -1505,7 +1515,7 @@
                 "xla_flags": "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
               }
             },
-            "measurement/9b5f9f7c8125a7bf4355": {
+            "measurement/723a5c47b26d136844a1": {
               "device": "a100",
               "backend": "gpu",
               "hardware_details": {
@@ -1520,7 +1530,7 @@
                 "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
               }
             },
-            "measurement/9cec0cdf85d8d9bae253": {
+            "measurement/f7758b652c9c7f58a821": {
               "device": "a100",
               "backend": "gpu",
               "hardware_details": {
@@ -1535,7 +1545,7 @@
                 "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
               }
             },
-            "measurement/c5f82ab6f77ed1b15595": {
+            "measurement/e6639d420e4ed09eb189": {
               "device": "cpu",
               "backend": "cpu",
               "hardware_details": {
@@ -1549,7 +1559,7 @@
                 "xla_flags": "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
               }
             },
-            "measurement/ee5b21bd78ba2a34a850": {
+            "measurement/92b414c78390bf591591": {
               "device": "cpu",
               "backend": "cpu",
               "hardware_details": {
@@ -1569,14 +1579,14 @@
         "limitations": "Unreviewed historical observations, confined to the supporting exact setups and measured revisions. Simulated source with real SDP.81 uv coverage; not a fit to observed SDP.81 visibilities. Unknown metadata prevents cross-file scientific equivalence or current-performance claims."
       },
       "record_ids": [
-        "measurement/5ad8678aaa5a1fc47227",
-        "measurement/5cf324f959cbd96df392",
-        "measurement/78267b21742073b7bb03",
-        "measurement/852231607cc656355c6e",
-        "measurement/9b5f9f7c8125a7bf4355",
-        "measurement/9cec0cdf85d8d9bae253",
-        "measurement/c5f82ab6f77ed1b15595",
-        "measurement/ee5b21bd78ba2a34a850"
+        "measurement/1c0e53474fb1cfb105e6",
+        "measurement/8c9b4ac2b75b5cbae601",
+        "measurement/37c07b149bb961fc0f3a",
+        "measurement/be5f03eda6891887a597",
+        "measurement/723a5c47b26d136844a1",
+        "measurement/f7758b652c9c7f58a821",
+        "measurement/e6639d420e4ed09eb189",
+        "measurement/92b414c78390bf591591"
       ],
       "evidence": [
         {
@@ -1627,8 +1637,8 @@
       "description": "Historical rule 5: the SDP.81 MGE-20 A100 library W~ steady full-pipeline call (3.786 ms, jit-phase record) was faster than the dense single-JIT full-pipeline call (28.292 ms). The sparse-enabled artifact also contains a dense /full_pipeline_single_jit measurement; that field is not sparse support. No accepted NUFFT selection for other configurations follows.",
       "applies_to": {
         "setup_ids": [
-          "interferometer/mge/sdp81/24e7d46221f7dca168bf",
-          "interferometer/mge/sdp81/61c6dccf97c81d66fc1e"
+          "interferometer/mge/sdp81/1425cc7cd69e83045c24",
+          "interferometer/mge/sdp81/436aab39311c5503aa90"
         ],
         "library_versions": [
           "2026.8.17.1"
@@ -1645,7 +1655,7 @@
           "precision": "float64",
           "configuration_scope": "Only the enumerated setup IDs and recorded configurations; never extrapolate by model label.",
           "measured_software_by_record": {
-            "measurement/3b9e72ef5d8791a738a9": {
+            "measurement/b3c1b8868e990c75846c": {
               "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_versions": "2026.8.17.1",
@@ -1670,7 +1680,7 @@
               "numpy.dependency_versions": "2.2.6",
               "scipy.dependency_versions": "1.17.1"
             },
-            "measurement/d399e1ba20dcdf9665e0": {
+            "measurement/9fc99b7f5e690fb38373": {
               "PyAutoArray": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_revisions": "7a89e19a09760a0daf22f40e8b111b5388767f73",
               "PyAutoArray.library_versions": "2026.8.17.1",
@@ -1697,7 +1707,7 @@
             }
           },
           "hardware_by_record": {
-            "measurement/3b9e72ef5d8791a738a9": {
+            "measurement/b3c1b8868e990c75846c": {
               "device": "a100",
               "backend": "gpu",
               "hardware_details": {
@@ -1712,7 +1722,7 @@
                 "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
               }
             },
-            "measurement/d399e1ba20dcdf9665e0": {
+            "measurement/9fc99b7f5e690fb38373": {
               "device": "a100",
               "backend": "gpu",
               "hardware_details": {
@@ -1739,8 +1749,8 @@
         "limitations": "Unreviewed historical observations, confined to the supporting exact setups and measured revisions. Simulated source with real SDP.81 uv coverage; not a fit to observed SDP.81 visibilities. Unknown metadata prevents cross-file scientific equivalence or current-performance claims."
       },
       "record_ids": [
-        "measurement/3b9e72ef5d8791a738a9",
-        "measurement/d399e1ba20dcdf9665e0"
+        "measurement/b3c1b8868e990c75846c",
+        "measurement/9fc99b7f5e690fb38373"
       ],
       "evidence": [
         {

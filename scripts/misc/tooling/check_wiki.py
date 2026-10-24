@@ -31,9 +31,6 @@ import re
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from results_layout import legacy_of  # noqa: E402
-
 HEADER_LABELS = (
     "Status",
     "Question",
@@ -46,6 +43,8 @@ HEADER_LABELS = (
     "Mind contract",
     "Next",
 )
+#: Header labels only a campaign page carries (a ledger may open with Status/Verdict/Next).
+PAGE_LABELS = tuple(lab for lab in HEADER_LABELS if lab not in ("Status", "Verdict", "Next"))
 
 # Inline markdown links / images: [text](target) or [text](target "title").
 _LINK_RE = re.compile(r"!?\[[^\]]*\]\(\s*<?([^)\s>]+)>?(?:\s+\"[^\"]*\")?\s*\)")
@@ -86,13 +85,18 @@ def relative_links(md_path: Path) -> list[tuple[str, Path]]:
 
 
 def campaign_files(root: Path) -> tuple[list[Path], list[Path]]:
-    """(campaign pages, ledgers), each sorted, by their pre-move identity."""
+    """(campaign pages, ledgers), each sorted.
+
+    Pages and ledgers share ``wiki/campaigns/<dataset_type>/<variant>/`` since the day-zero
+    move (#442); a page is a file that opens with the campaign header (any label a ledger never
+    carries), so a page missing some labels is still held to the full header below.
+    """
     root = root.resolve()
     pages, ledgers = [], []
     campaigns = root / "wiki" / "campaigns"
     for md in sorted(campaigns.rglob("*.md")) if campaigns.is_dir() else []:
-        legacy = legacy_of(root, md.relative_to(root).as_posix())
-        if legacy.startswith("wiki/campaigns/") and legacy.count("/") == 2:
+        text = md.read_text(encoding="utf-8")
+        if md.name == "_template.md" or any(f"**{lab}:**" in text for lab in PAGE_LABELS):
             pages.append(md)
         else:
             ledgers.append(md)

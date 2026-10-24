@@ -882,7 +882,7 @@
   }
   async function boot() {
     try {
-      catalogue = await verified("catalogue.json", root.dataset.catalogueSha);
+      catalogue = await verified("catalogue/setups.json", root.dataset.catalogueSha);
       if (
         catalogue.schema !== "profiling-summary" ||
         catalogue.version !== 2 ||

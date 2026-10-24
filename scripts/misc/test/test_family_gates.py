@@ -48,7 +48,14 @@ from likelihood_breakdown.family_gates import (  # noqa: E402
     phase2c_family,
     round_split_half_mdi,
 )
-from tooling.results_layout import current  # noqa: E402
+
+#: The committed backward-pass A/B rows by run config (mirrored tree, #442).
+BACKWARD_ROWS = {
+    "hpc_ral_gpunode_cpu_fp64": "jax_cpu_na_fp64/hpc_ral_cpu",
+    "hpc_a100_fp64": "jax_gpu_na_fp64/hpc_a100",
+    "local_cpu_fp64": "jax_cpu_na_fp64/local_laptop",
+}
+SOURCE_PLANE = ROOT / "results/point_source_source/source_plane/simple"
 
 BACKWARD_CELL = ROOT / "scripts/point_source_source/source_plane/backward_pass_ab.py"
 SWEEP_CELL = ROOT / "scripts/point_source_image/image_plane/solver_config_sweep.py"
@@ -260,8 +267,8 @@ def test_c6_committed_rows_rejudged_family_wise(config, go_routes, changed):
     resolve at 1 - 0.1/16 but does at the last Holm step (90 %), so it stays GO.
     """
     data = json.loads(
-        current(
-            ROOT / f"results/breakdown/point_source_source/backward_pass_ab_{config}.json"
+        (
+            SOURCE_PLANE / BACKWARD_ROWS[config] / "experiments/backward_pass_ab/breakdown.json"
         ).read_text()
     )
     rows = {lane: data["rows"][f"{lane}_grad"] for lane in ("solved", "plain")}
@@ -345,7 +352,9 @@ def test_c11_committed_kill_gate_rejudged(stem):
     with the minimum lowered to 4 the family-wise gate would read "passed"
     (e.g. sma / Delaunay ``direct_conv`` 5.93x, interval [5.46, 6.11]).
     """
-    data = json.loads(current(ROOT / f"results/breakdown/interferometer/{stem}.json").read_text())
+    data = json.loads(
+        (ROOT / f"archive/2026/08/pre_2026_09/breakdown/interferometer/{stem}.json").read_text()
+    )
     assert data["kill_gate"] == "passed"
     gate = kill_gate_family(data["cells"], numba_kernels=NUMBA_KERNELS)
     assert gate["kill_gate_point"] == "passed"
@@ -413,7 +422,7 @@ def test_c12_the_cell_helper_is_the_shared_mdi():
 def test_c12_committed_mdi_rejudged(stem, old, new):
     """Fact: the A100 MDI the GPU memo quotes (5.45 %) is ~0.94 % on paired rounds."""
     data = json.loads(
-        current(ROOT / f"results/breakdown/point_source_image/{stem}.json").read_text()
+        (ROOT / f"results/misc/likelihood_breakdown/point_source_image/{stem}.json").read_text()
     )
     on = data["baseline"]["rows"]["command_buffers_on"]["per_call_ms"]
     assert data["baseline"]["mdi_same_program"] == pytest.approx(old, abs=1e-4)
@@ -465,10 +474,10 @@ def test_p2_missing_records_are_unassessed_not_drift():
 def test_p2_committed_s4b_rows_do_not_drift():
     """Fact: the one committed promotion pair is stationary (-1.08 % / +1.00 %, load 1.0 -> 1.0)."""
     data = json.loads(
-        current(
+        (
             ROOT
-            / "results/breakdown/imaging"
-            / "fixed_light_numba_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s4b_warm_t1.json"
+            / "results/imaging/delaunay/hst/numba_cpu_dense_fp64/hpc_ral_cpu/light_fixed"
+            / "experiments/numba_s4b_warm_t1/breakdown.json"
         ).read_text()
     )
     record = between_row_drift(

@@ -14,7 +14,7 @@ spec.loader.exec_module(page)
 
 
 def test_page_binds_exact_catalogue_bytes_and_shared_theme():
-    doc = json.loads((TOOLING.parents[2] / "dashboard/catalogue.json").read_text())
+    doc = json.loads((TOOLING.parents[2] / "dashboard/catalogue/setups.json").read_text())
     rendered = page.render(doc)
     data = json.dumps(doc, sort_keys=True, separators=(",", ":")) + "\n"
     assert hashlib.sha256(data.encode()).hexdigest() in rendered

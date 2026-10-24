@@ -16,15 +16,15 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 
 | Exact configuration | Evidence source | Records |
 |---|---|---|
-| [0ebda47118803ba2015f](862ecaed244dcec17be3.md) | results/point_source_image/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/p4/breakdown.json | 202 |
-| [1d9800cb1db1fe6eea1e](6e172d4c362c6fdae68c.md) | results/point_source_image/image_plane/simple/jax_gpu_na_fp64/hpc_a100/breakdown.json | 209 |
-| [77f1e5873280a41b23f8](3987c44c4320684be330.md) | results/point_source_image/image_plane/simple/jax_cpu_na_fp64/local_laptop/breakdown.json | 198 |
-| [d37e2b7d16264b01ad57](5ea48a20d4525b10196a.md) | results/point_source_image/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/breakdown.json | 203 |
+| [03d51da82c799265f53b](aa02ac8412564f599bb7.md) | results/point_source_image/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/p4/breakdown.json | 202 |
+| [45d7b49468014f26b6cb](37963e037c35b4fb9d51.md) | results/point_source_image/image_plane/simple/jax_gpu_na_fp64/hpc_a100/breakdown.json | 209 |
+| [9218d75dfe8db2918194](25c97abab26b157ccb9e.md) | results/point_source_image/image_plane/simple/jax_cpu_na_fp64/local_laptop/breakdown.json | 198 |
+| [fa2ac2373cec9219b8fe](2a66c1224a06b0841d56.md) | results/point_source_image/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/breakdown.json | 203 |
 
 ## unspecified
 
 | Exact configuration | Evidence source | Records |
 |---|---|---|
 | [baseline-not-defined](fad4c821c7d8199625f4.md) | planned; no evidence | 0 |
-| [039aa210503af54ab406](7c1e0f683d550e3eb5c4.md) | archive/2026/07/hostless_summaries/runtime/point_source_image/image_plane_solved/image_plane_solved_summary_v2026.7.23.1.json | 3 |
+| [708f71ec879c162a87e3](14b1d62e63c44c305639.md) | archive/2026/07/hostless_summaries/runtime/point_source_image/image_plane_solved/image_plane_solved_summary_v2026.7.23.1.json | 3 |
 
