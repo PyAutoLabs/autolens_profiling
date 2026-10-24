@@ -31,8 +31,11 @@ The rules live in [`catalogue_lifecycle.py`](../scripts/misc/tooling/catalogue_l
 - **Class**: the provisional §3.3 designations. A provisional Optimal row is `class: secondary`
   with `provisional_optimal: true` in `limitations` until a Pulse designation decision exists
   (R3); mixed precision is `experimental`. `planned_cells` carry the provisional class.
-- **measured_at**: a row with no recorded timestamp is dated by its release (the earliest day
-  it can have run) and says so in `limitations`.
+- **measured_at**: a row with no recorded timestamp is dated by the UTC day its file was first
+  committed to git (an upper bound on the measurement date), from
+  [measured_at_first_commit.json](measured_at_first_commit.json), and says so in
+  `limitations`. Refresh that file with `build_catalogue.py --refresh-commit-dates` (needs full
+  git history); `--check` fails when an undated file is missing from it.
 
 ## Regenerate and validate
 

@@ -21,7 +21,7 @@ import hashlib
 import json
 import re
 import sys
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -834,7 +834,34 @@ def validate_local(root, doc):
 
 # ---------------------------------------------------------------- profiling-summary@3 ---
 
-RELEASE_DATE = re.compile(r"(\d{4})\.(\d{1,2})\.(\d{1,2})(?:\D|$)")
+#: First-commit dates (UTC) of the result files with an undated row: {path: "YYYY-MM-DD"}.
+#: Written by ``--refresh-commit-dates`` (needs git history); read, never computed, at build
+#: and ``--check`` time, because CI checks out without history.
+COMMIT_DATES = "catalogue/measured_at_first_commit.json"
+
+
+def commit_dates(root):
+    path = source_path(root, COMMIT_DATES)
+    if not path.is_file():
+        return {}
+    doc = load_json(path)
+    if doc.get("schema") != "measured-at-first-commit" or not isinstance(doc.get("dates"), dict):
+        raise ValueError(f"Unsupported {COMMIT_DATES}")
+    return doc["dates"]
+
+
+class UndatedRows(ValueError):
+    """Undated rows whose file has no recorded first-commit date."""
+
+    def __init__(self, paths):
+        self.paths = sorted(set(paths))
+        super().__init__(
+            f"{len(self.paths)} result file(s) have undated rows and no first-commit date in "
+            f"{COMMIT_DATES} (e.g. {self.paths[0]}); run "
+            "`python scripts/misc/tooling/build_catalogue.py --refresh-commit-dates` "
+            "in a checkout with full git history and commit the file"
+        )
+
 
 V3_LIMITATIONS = [
     "Phase-0 labels (autolens_profiling#442): nothing was re-measured. A current record is the "
@@ -864,7 +891,7 @@ def planned_baseline_cells(reg):
     return cells
 
 
-def lifecycle_candidates(root, reg, path, doc, adapter):
+def lifecycle_candidates(root, reg, path, doc, adapter, dates=None, undated=None):
     """(v3 records, reasons) for one mirrored source file; nothing is labelled yet."""
     cell = lc.mirrored(path)
     out, reasons = [], []
@@ -903,17 +930,17 @@ def lifecycle_candidates(root, reg, path, doc, adapter):
             continue
         measured_at, row_notes = prov["measured_at"], list(notes)
         if measured_at is None:
-            # v3 needs a UTC measured_at; a row without one is dated by its release, the
-            # earliest day it can have been measured, and says so.
-            release = RELEASE_DATE.match(ident["library_version"] or "")
-            if release is None:
-                reasons.append(f"{base or '/'}: no measurement timestamp or release; no v3 record.")
+            # v3 needs a UTC measured_at; a row without one is dated by the day its file was
+            # first committed (an upper bound on when it was measured), and says so.
+            day = (dates or {}).get(path)
+            if day is None:
+                if undated is not None:
+                    undated.append(path)
                 continue
-            year, month, day = (int(g) for g in release.groups())
-            measured_at = f"{year:04d}-{month:02d}-{day:02d}T00:00:00Z"
+            measured_at = f"{day}T00:00:00Z"
             row_notes.append(
-                f"measured_at_derived: the row records no timestamp; {measured_at[:10]} is the "
-                f"date of release {ident['library_version']}, the earliest it can have run"
+                f"measured_at_derived: the row records no timestamp; {day} is the UTC date its "
+                "file was first committed to git, an upper bound on the measurement date"
             )
         pixels = lc.source_pixels(payload)
         for measurement, found in sorted(groups.items()):
@@ -1065,10 +1092,12 @@ def archived_count(root, path, doc, adapter):
     return count
 
 
-def build_lifecycle(root, generated, revision):
+def build_lifecycle(root, generated, revision, dates=None):
     """The ``profiling-summary@3`` document (Pulse REFERENCE.md "profiling-summary v3")."""
     root = Path(root).resolve()
     reg = registry(root)
+    dates = commit_dates(root) if dates is None else dates
+    undated = []
     planned = planned_baseline_cells(reg)
     refs = {r["path"] for r in reg["references"]}
     candidates, archived = [], 0
@@ -1085,8 +1114,10 @@ def build_lifecycle(root, generated, revision):
             if path.startswith("archive/"):
                 archived += archived_count(root, path, doc, adapter)
                 continue
-            found, _reasons = lifecycle_candidates(root, reg, path, doc, adapter)
+            found, _reasons = lifecycle_candidates(root, reg, path, doc, adapter, dates, undated)
             candidates.extend(found)
+    if undated:
+        raise UndatedRows(undated)
     records, excluded = label_lifecycle(candidates, planned, refs)
     planned_cells = []
     for dataset_type, variant, instrument in sorted(planned):
@@ -1262,6 +1293,54 @@ def obsolete_shards(out, outputs):
     ]
 
 
+def first_commit_date(root, path, moved):
+    """UTC date the file was first added to git under its own name.
+
+    A file the day-zero ``git mv`` moved is looked up at its exact pre-move path from
+    ``catalogue/migration_day_zero.json`` (``git log --follow`` mis-tracks some of these into an
+    older, similar file); any other file at its own path. Refresh mode only.
+    """
+    import subprocess
+
+    target = moved.get(path, path)
+    log = subprocess.run(
+        ["git", "log", "--diff-filter=A", "--format=%cI", "--", target],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.split()
+    if not log:
+        raise ValueError(f"No add commit in git history for {target} (shallow clone?)")
+    oldest = min(datetime.fromisoformat(stamp) for stamp in log)
+    return oldest.astimezone(UTC).date().isoformat()
+
+
+def refresh_commit_dates(root):
+    """Record the first-commit date of every result file that has an undated row."""
+    try:
+        build_lifecycle(root, "1970-01-01T00:00:00Z", "0" * 40, dates={})
+        paths = []
+    except UndatedRows as missing:
+        paths = missing.paths
+    day_zero = load_json(source_path(root, "catalogue/migration_day_zero.json"))
+    moved = {e["new"]: e["old"] for e in day_zero["entries"] if e["new"] != e["old"]}
+    dates = {path: first_commit_date(root, path, moved) for path in paths}
+    doc = {
+        "schema": "measured-at-first-commit",
+        "version": 1,
+        "note": "UTC date each result file was first committed (git log --diff-filter=A, at "
+        "its pre-move path for files the day-zero move renamed); the measured_at of its "
+        "undated rows, an upper bound. Regenerate with build_catalogue.py "
+        "--refresh-commit-dates.",
+        "dates": dict(sorted(dates.items())),
+    }
+    target = source_path(root, COMMIT_DATES)
+    target.write_text(json.dumps(doc, indent=1) + "\n")
+    print(f"catalogue: wrote {COMMIT_DATES} ({len(dates)} files)")
+    return 0
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[3])
@@ -1271,12 +1350,23 @@ def main(argv=None):
         type=Path,
         help="Pulse checkout: validate with its independent contract reader (v3 lifecycle, v2 companion)",
     )
+    parser.add_argument(
+        "--refresh-commit-dates",
+        action="store_true",
+        help=f"rewrite {COMMIT_DATES} from git history (first-add date, through the day-zero move)",
+    )
     args = parser.parse_args(argv)
     root = args.root.resolve()
+    if args.refresh_commit_dates:
+        return refresh_commit_dates(root)
     out = root / "dashboard/catalogue.json"
     # Reuse the established deterministic render stamp and producer revision.
     legacy = load_json(root / "dashboard/summary.json")
-    outputs = render_outputs(root, legacy["generated_at"], legacy["producer_revision"])
+    try:
+        outputs = render_outputs(root, legacy["generated_at"], legacy["producer_revision"])
+    except UndatedRows as missing:
+        print(f"catalogue: FAILED: {missing}")
+        return 1
     if args.validate_with:
         sys.path.insert(0, str(args.validate_with.resolve()))
         from pulse.summary import classify

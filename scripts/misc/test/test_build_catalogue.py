@@ -55,6 +55,14 @@ def build(root):
     return cat.build(root, STAMP, "abc")
 
 
+def date_all(root, day="2026-09-01"):
+    """Record a first-commit date for every result file (what --refresh-commit-dates writes)."""
+    dates = {
+        p.relative_to(root).as_posix(): day for p in sorted((root / "results").rglob("*.json"))
+    }
+    write(root, cat.COMMIT_DATES, {"schema": "measured-at-first-commit", "dates": dates})
+
+
 def update_registry(root, **values):
     reg = cat.registry(root)
     reg.update(values)
@@ -296,6 +304,7 @@ def test_symlink_escape_refused(tree):
 
 def test_shards_are_deterministic_complete_and_content_addressed(tree):
     write(tree, EXAMPLE, row())
+    date_all(tree)
     first = cat.render_outputs(tree, STAMP, "abc")
     assert first == cat.render_outputs(tree, STAMP, "abc")
     index = json.loads(first[cat.SETUPS_INDEX])
@@ -313,6 +322,7 @@ def test_shards_are_deterministic_complete_and_content_addressed(tree):
 
 def test_check_detects_missing_changed_obsolete_and_preserves_manual_files(tree):
     write(tree, EXAMPLE, row())
+    date_all(tree)
     assert cat.main(["--root", str(tree), "--check"]) == 1
     assert cat.main(["--root", str(tree)]) == 0
     assert cat.main(["--root", str(tree), "--check"]) == 0
@@ -364,6 +374,7 @@ def test_recommendation_cannot_accept_unreviewed_evidence(tree):
         build(tree)
     rec["validation"]["status"] = "unreviewed"
     update_registry(tree, recommendations=[rec])
+    date_all(tree)
     index = json.loads(cat.render_outputs(tree, STAMP, "abc")[cat.SETUPS_INDEX])
     assert index["records"][0]["id"] == record["id"]
 
@@ -449,8 +460,14 @@ A100 = "results/imaging/delaunay/hst/jax_gpu_dense_fp64/hpc_a100"
 LAPTOP = "results/imaging/delaunay/hst/jax_gpu_dense_fp64/local_gpu"
 
 
-def lifecycle(root):
+FIRST_COMMIT = "2026-09-01"
+
+
+def lifecycle(root, dated=True):
+    """Build v3; ``dated`` records a first-commit date for every result file in the tree."""
     update_registry(root, cells=[DELAUNAY_HST])
+    if dated:
+        date_all(root, FIRST_COMMIT)
     return cat.build_lifecycle(root, STAMP, "0123456789abcdef0123456789abcdef01234567")
 
 
@@ -490,8 +507,11 @@ def test_v3_records_carry_the_lifecycle_fields_and_pass_pulse(tree):
     }
     assert record["metric"] == "single_call" and record["values"]["steps.solve"] == 0.1
     assert record["model_variant"] == "default" and record["status"] == "current"
-    assert record["measured_at"] == "2026-10-01T00:00:00Z"  # dated by its release
-    assert any(n.startswith("measured_at_derived") for n in record["limitations"])
+    assert record["measured_at"] == f"{FIRST_COMMIT}T00:00:00Z"  # its file's first commit
+    assert any(
+        n.startswith("measured_at_derived") and "first committed" in n
+        for n in record["limitations"]
+    )
     assert doc["coverage"]["expected"]["cells"] == len(doc["planned_cells"])
     assert pulse_classify()(json.loads(json.dumps(doc)), ("profiling-summary", 3)) == ("ok", [])
 
@@ -598,3 +618,21 @@ def test_lifecycle_values_are_checked_against_the_evidence(tree):
     doc["records"].append(second)
     with pytest.raises(ValueError, match="Second current"):
         cat.validate_lifecycle(tree, doc)
+
+
+def test_undated_row_without_a_first_commit_date_fails_check(tree, capsys):
+    write(tree, f"{A100}/runtime.json", row())
+    write(tree, cat.COMMIT_DATES, {"schema": "measured-at-first-commit", "dates": {}})
+    with pytest.raises(cat.UndatedRows, match="--refresh-commit-dates") as missing:
+        lifecycle(tree, dated=False)
+    assert missing.value.paths == [f"{A100}/runtime.json"]
+    assert cat.main(["--root", str(tree), "--check"]) == 1
+    assert "--refresh-commit-dates" in capsys.readouterr().out
+
+
+def test_timestamped_rows_need_no_first_commit_date(tree):
+    stamped = row(device={"backend": "gpu", "provenance": {"captured_at": "2026-10-02T03:04:05Z"}})
+    write(tree, f"{A100}/runtime.json", stamped)
+    record = by_path(lifecycle(tree, dated=False))[f"{A100}/runtime.json"]
+    assert record["measured_at"] == "2026-10-02T03:04:05Z"
+    assert not any(n.startswith("measured_at_derived") for n in record["limitations"])
