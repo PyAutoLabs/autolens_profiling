@@ -16,15 +16,28 @@ Each table region in a README is delimited by sentinel comments, e.g.
 
 This script:
 
-  1. Scans `results/{breakdown,simulators,lens}/**` for **versioned
-     artifacts** (`<script>_<purpose>_<extras>_v<version>[_sparse].json`)
-     and picks the latest version per group.
-  2. Scans `results/runtime/<class>/<model>[/<instrument>]/comparison.json`
-     for **sweep comparison artifacts** (written by
-     `likelihood_runtime/aggregate.py`).
-  3. When `results/baselines/<name>/` exists, reads the same comparison
-     layout beneath it so dashboard tables can carry a named-baseline
-     column (e.g. `PreOptimizationTimes`).
+  1. Reads the mirrored results tree natively (autolens_profiling#442,
+     `results/README.md`), keyed on the v3 identity the catalogue builder uses:
+     - breakdown rows: every current `results/<dataset_type>/<variant>/
+       <instrument>/<setup_id>/<host_class>[/<model_variant>]/breakdown.json`,
+       then every published row with no v3 cell, latest per pre-move group,
+       read where the move put it under the name it kept: unresolved rows in
+       `results/breakdown/`, `results/misc/likelihood_breakdown/` and
+       `archive/YYYY/MM/<slug>/breakdown/` (labelled archived);
+     - sweep comparisons: `results/<dataset_type>/<variant>/<instrument>/
+       comparison.json` (written by `likelihood_runtime/aggregate.py`) and the
+       cells with no derivable v3 identity under
+       `results/misc/likelihood_runtime/**/comparison.json`.
+  2. Scans `results/lens/**` and `results/misc/{simulators,pipeline_resume}/**`
+     for **versioned artifacts** (`<script>_<purpose>_<extras>_v<version>
+     [_sparse].json`) and picks the latest version per group; the
+     simulator and pipeline-resume evidence measured before the day-zero move
+     is read from its archive folder (`archive/YYYY/MM/<slug>/<group>/`) and
+     labelled archived.
+  3. Archived named baselines (`archive/YYYY/MM/<name>/<cell>/comparison.json`,
+     e.g. `PreOptimizationTimes`) add a column to the runtime table, matched to
+     the current cell through the cell map in `catalogue/series_id_map.json`
+     (generated from the day-zero migration map).
   4. Renders a markdown table per known region and replaces the content
      inside the matching sentinel block.
 
@@ -51,28 +64,32 @@ import math
 import re
 import sys
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Optional
 
 REPO_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "ruff.toml").exists())
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import catalogue_lifecycle as lc  # noqa: E402
 from build_dashboard import (  # noqa: E402
     ESTIMATOR_LEGACY,
     ESTIMATOR_MEDIAN,
+    SERIES_ID_MAP,  # noqa: E402
     headline_median_seconds,
     marker_verdict,
     read_release_sweep_conf,
     repeat_summary,
 )
-from results_layout import iter_legacy_dir  # noqa: E402
 
 _RELEASE_SWEEP_CONF = read_release_sweep_conf(REPO_ROOT)
 
 RESULTS_ROOT = REPO_ROOT / "results"
-RUNTIME_ROOT = RESULTS_ROOT / "runtime"
-BASELINES_ROOT = RESULTS_ROOT / "baselines"
+ARCHIVE_ROOT = REPO_ROOT / "archive"
+#: The pre-move breakdown folder, as the day-zero map records old paths (read, never written).
+LEGACY_BREAKDOWN_PREFIX = "results/breakdown/"
+#: results/misc/<group>/ folders whose versioned artifacts feed a README table.
+ARTIFACT_GROUPS = ("simulators", "pipeline_resume")
 
 # Sentinel block: keeps surrounding hand-written prose intact, only the
 # content between BEGIN and END is rewritten.
@@ -102,9 +119,9 @@ ARTIFACT_RE = re.compile(
 
 # Config-tagged artifact filename (sweep-style `--config-name` outputs, e.g.
 # the A100 tier): <script>_<config>[_sparse].json. Instrument and version are
-# not in the name — they are read from the JSON payload instead.
+# not in the name — they are read from the JSON payload instead. Only the
+# unresolved rows the day-zero move left under results/breakdown/ still carry it.
 #   delaunay_hpc_a100_fp64.json
-#   pixelization_hpc_a100_mp_sparse.json
 CONFIG_TAGGED_RE = re.compile(
     r"^(?P<script>[a-z0-9_]+?)_(?P<config>local_cpu_fp64|local_cpu_mp|"
     r"local_gpu_fp64|local_gpu_mp|hpc_ral_cpu_fp64|hpc_a100_fp64|hpc_a100_mp)"
@@ -139,6 +156,12 @@ class Artifact:
     # Sweep config for config-tagged artifacts; untagged (single-config
     # filename pattern) runs are local CPU fp64 by package convention.
     config: str = "local_cpu_fp64"
+    # Read from archive/ (measured before the day-zero move, never current).
+    archived: bool = False
+
+    @property
+    def version_label(self) -> str:
+        return f"v{self.raw_version}" + (" (archived)" if self.archived else "")
 
     @property
     def data(self) -> dict:
@@ -165,91 +188,220 @@ def _parse_version(s: str) -> tuple[int, ...]:
     return tuple(int(x) for x in s.split("."))
 
 
-def _scan_artifacts() -> list[Artifact]:
-    if not RESULTS_ROOT.exists():
-        return []
-    out: list[Artifact] = []
-    # Moved results are read under their pre-move identity (results_layout.py, #442 PR 2).
-    for p, legacy in iter_legacy_dir(RESULTS_ROOT, "*.json"):
-        rel = legacy.parts
-        if len(rel) < 2 or rel[0] in ("runtime", "baselines"):
-            continue
-        section = rel[0]  # "breakdown" | "simulators" | "lens"
-        subfolder = rel[1] if len(rel) > 2 else ""
-        m = ARTIFACT_RE.match(legacy.name)
-        if m:
-            out.append(
-                Artifact(
-                    path=p,
-                    section=section,
-                    subfolder=subfolder,
-                    script=m["script"],
-                    purpose=m["purpose"],
-                    instrument=m["extra"],
-                    sparse=bool(m["sparse"]),
-                    version=_parse_version(m["version"]),
-                    raw_version=m["version"],
-                )
-            )
-            continue
-        if section != "breakdown":
-            continue
-        m = CONFIG_TAGGED_RE.match(legacy.name)
-        if not m:
-            continue
-        # Config-tagged output: instrument and version live in the payload.
-        try:
-            payload = json.loads(p.read_text())
-        except (OSError, json.JSONDecodeError):
-            continue
-        raw_version = str(payload.get("autolens_version", ""))
-        try:
-            version = _parse_version(raw_version)
-        except ValueError:
-            continue
-        out.append(
-            Artifact(
-                path=p,
-                section=section,
-                subfolder=subfolder,
-                script=m["script"],
-                purpose="breakdown",
-                instrument=payload.get("instrument"),
-                sparse=bool(m["sparse"]),
-                version=version,
-                raw_version=raw_version,
-                config=m["config"],
-            )
-        )
+def _artifact(path: Path, section: str, subfolder: str, archived: bool = False) -> Artifact | None:
+    m = ARTIFACT_RE.match(path.name)
+    if m is None:
+        return None
+    return Artifact(
+        path=path,
+        section=section,
+        subfolder=subfolder,
+        script=m["script"],
+        purpose=m["purpose"],
+        instrument=m["extra"],
+        sparse=bool(m["sparse"]),
+        version=_parse_version(m["version"]),
+        raw_version=m["version"],
+        archived=archived,
+    )
+
+
+def _scan_group(base: Path, section: str, archived: bool = False) -> list[Artifact]:
+    """Versioned artifacts under one group folder (``subfolder`` = its first sub-folder)."""
+    out = []
+    for p in sorted(base.rglob("*.json")) if base.is_dir() else []:
+        rel = p.relative_to(base).parts
+        art = _artifact(p, section, rel[0] if len(rel) > 1 else "", archived)
+        if art is not None:
+            out.append(art)
     return out
 
 
-def _scan_runtime_cells(root: Path) -> list[RuntimeCell]:
-    """Find every comparison.json under a runtime-layout root."""
-    cells = []
-    for p, legacy in iter_legacy_dir(root, "comparison.json"):
-        cell = legacy.parent.parts
-        if 2 <= len(cell) <= 3:
-            cells.append(RuntimeCell(cell=cell, path=p))
-    return cells
+def _scan_artifacts() -> list[Artifact]:
+    """Versioned artifacts: ``results/lens/``, the misc groups, and their archived history."""
+    out = _scan_group(RESULTS_ROOT / "lens", "lens")
+    for group in ARTIFACT_GROUPS:
+        out += _scan_group(RESULTS_ROOT / "misc" / group, group)
+        # archive/YYYY/MM/<slug>/<group>/...: the slug folder keeps the pre-move path.
+        for base in sorted(ARCHIVE_ROOT.glob(f"*/*/*/{group}")):
+            out += _scan_group(base, group, archived=True)
+    return out
 
 
-def _baseline_names() -> list[str]:
-    """Runtime-comparison baseline directories under ``results/baselines/``.
+@dataclass(frozen=True)
+class BreakdownRow:
+    """One current breakdown row, keyed on its v3 identity.
 
-    Only directories that actually contain at least one ``comparison.json``
-    qualify — ``results/baselines/`` may also house baselines of a different
-    shape, with no ``comparison.json`` anywhere in them. Without this filter
-    every such directory would add an always-empty column to the runtime
-    table.
+    ``setup`` / ``host`` are the v3 ``setup_id`` / ``host_class``; an unresolved row the
+    day-zero move left under ``results/breakdown/`` (setup axis never recorded, pending a
+    human ruling) has no setup and names its sweep config label as the host.
     """
-    return sorted(
-        {
-            legacy.parts[0]
-            for _p, legacy in iter_legacy_dir(BASELINES_ROOT, "comparison.json")
-            if len(legacy.parts) > 1
-        }
+
+    path: Path
+    cell: str
+    instrument: str | None
+    setup: str | None
+    host: str
+    sparse: bool
+    #: The release the row's file name records (versioned artifacts); else read from the JSON.
+    version: str | None = None
+    archived: bool = False
+
+    @property
+    def data(self) -> dict:
+        return json.loads(self.path.read_text())
+
+    @property
+    def version_label(self) -> str:
+        version = self.version or self.data.get("autolens_version")
+        if not version:
+            return "—"
+        return f"v{version}" + (" (archived)" if self.archived else "")
+
+
+#: Host order in the table (the laptop first, the reference hosts last, as CONFIG_ORDER).
+HOST_ORDER = ("local_laptop", "local_gpu", "hpc_ral_cpu", "hpc_a100") + CONFIG_ORDER
+
+
+def _scan_breakdown_rows(results_root: Path = RESULTS_ROOT) -> list[BreakdownRow]:
+    """Every current mirrored ``breakdown.json`` cell, then the unresolved legacy rows."""
+    root = results_root.parent
+    rows = []
+    for p in sorted(results_root.rglob("breakdown.json")) if results_root.is_dir() else []:
+        f = lc.mirrored(p.relative_to(root).as_posix())
+        if f is None or f["location"] != "cell":
+            continue
+        mv = f"/{f['model_variant']}" if f["model_variant"] != "default" else ""
+        rows.append(
+            BreakdownRow(
+                path=p,
+                cell=f"{f['dataset_type']}/{f['variant']}{mv}",
+                instrument=f["instrument"],
+                setup=f["setup_id"],
+                host=f["host_class"],
+                sparse=f["setup"]["operator"] == "sparse",
+            )
+        )
+    return rows + _legacy_breakdown_rows(results_root)
+
+
+def _legacy_breakdown_artifact(path: Path, rel: tuple[str, ...]):
+    """``(group, version, row)`` of a breakdown file under its pre-move name ``rel``.
+
+    ``path`` is where the file lives now; ``rel`` its path below the old ``results/breakdown/``
+    (whose last part is the name the grammar reads); the grammar is the pre-move
+    table's (versioned ``*_breakdown_*_v<version>`` artifacts, config-tagged rows with an
+    ``autolens_version``), grouped as it grouped them.
+    """
+    name = rel[-1]
+    m = ARTIFACT_RE.match(name)
+    config, version = "local_cpu_fp64", None
+    if m is not None:
+        if m["purpose"] != "breakdown":
+            return None
+        version, instrument = m["version"], m["extra"]
+    else:
+        m = CONFIG_TAGGED_RE.match(name)
+        if m is None:
+            return None
+        try:
+            payload = json.loads(path.read_text())
+            version = str(payload.get("autolens_version", ""))
+            _parse_version(version)
+        except (OSError, ValueError):
+            return None
+        config, instrument = m["config"], payload.get("instrument")
+    instrument = instrument if isinstance(instrument, str) else None
+    subfolder = rel[0] if len(rel) > 1 else ""
+    group = (subfolder, m["script"], instrument, bool(m["sparse"]), config)
+    row = BreakdownRow(
+        path=path,
+        cell=f"{subfolder}/{m['script']}",
+        instrument=instrument,
+        setup=None,
+        host=config,
+        sparse=bool(m["sparse"]),
+        version=version,
     )
+    return group, _parse_version(version), row
+
+
+def _legacy_breakdown_rows(results_root: Path = RESULTS_ROOT) -> list[BreakdownRow]:
+    """Published breakdown rows whose file has no current v3 cell, latest per pre-move group.
+
+    Read where the day-zero move put them, under the name they kept: the unresolved rows left
+    in ``results/breakdown/`` (setup never recorded), ``results/misc/likelihood_breakdown/``
+    (no derivable cell; current) and ``archive/YYYY/MM/<slug>/breakdown/`` (labelled
+    archived). A group whose newest release the map moved into a mirrored cell is shown by
+    that cell's v3 row instead (``catalogue/migration_day_zero.json`` names the file's old
+    name), so a superseded archived release never reappears.
+    """
+    root = results_root.parent
+    sources = [
+        (results_root / "breakdown", False),
+        (results_root / "misc" / "likelihood_breakdown", False),
+    ]
+    sources += [(b, True) for b in sorted((root / "archive").glob("*/*/*/breakdown"))]
+    latest: dict[tuple, tuple] = {}
+
+    def offer(found, mirrored=False):
+        if found is not None:
+            group, version, row = found
+            if group not in latest or version > latest[group][0]:
+                latest[group] = (version, row, mirrored)
+
+    for base, archived in sources:
+        for p in sorted(base.rglob("*.json")) if base.is_dir() else []:
+            found = _legacy_breakdown_artifact(p, p.relative_to(base).parts)
+            if found is not None and archived:
+                found = (found[0], found[1], replace(found[2], archived=True))
+            offer(found)
+    try:
+        moves = json.loads((root / "catalogue" / "migration_day_zero.json").read_text())
+    except (OSError, ValueError):
+        moves = {}
+    prefix = LEGACY_BREAKDOWN_PREFIX
+    for e in moves.get("entries", []):
+        if e["old"].startswith(prefix) and lc.mirrored(e["new"]) and (root / e["new"]).is_file():
+            # The current file under its pre-move name: only to know the group's newest.
+            rel = tuple(e["old"][len(prefix) :].split("/"))
+            offer(_legacy_breakdown_artifact(root / e["new"], rel), mirrored=True)
+    return [row for _v, row, mirrored in latest.values() if not mirrored]
+
+
+def _scan_runtime_cells(results_root: Path = RESULTS_ROOT) -> list[RuntimeCell]:
+    """Every sweep ``comparison.json``: mirrored cells and the misc ones (no v3 cell)."""
+    cells = []
+    for p in sorted(results_root.glob("*/*/*/comparison.json")):
+        if p.parts[-4] in lc.DATASET_TYPES:
+            cells.append(RuntimeCell(cell=p.parent.parts[-3:], path=p))
+    misc = results_root / "misc" / "likelihood_runtime"
+    for p in sorted(misc.rglob("comparison.json")) if misc.is_dir() else []:
+        cells.append(RuntimeCell(cell=p.parent.relative_to(misc).parts, path=p))
+    return sorted(cells, key=lambda c: c.cell)
+
+
+def _cell_map(root: Path = REPO_ROOT) -> dict[str, str]:
+    """Pre-move runtime cell -> its current cell id (``catalogue/series_id_map.json``)."""
+    try:
+        return json.loads((root / SERIES_ID_MAP).read_text()).get("cells", {})
+    except (OSError, ValueError):
+        return {}
+
+
+def _scan_baselines(archive_root: Path = ARCHIVE_ROOT) -> dict[str, list[RuntimeCell]]:
+    """Archived named baselines: ``archive/YYYY/MM/<name>/<pre-move cell>/comparison.json``.
+
+    Each cell is re-keyed onto the current cell it measured (the committed cell map); a
+    baseline cell the map does not know keeps its pre-move id.
+    """
+    cell_map = _cell_map(archive_root.parent)
+    out: dict[str, list[RuntimeCell]] = {}
+    for p in sorted(archive_root.glob("*/*/*/*/*/*/comparison.json")):
+        legacy = "/".join(p.parent.parts[-3:])
+        cell = tuple(cell_map.get(legacy, legacy).split("/"))
+        out.setdefault(p.parts[-5], []).append(RuntimeCell(cell=cell, path=p))
+    return out
 
 
 def _latest_per_group(artifacts: Iterable[Artifact], key) -> dict[tuple, Artifact]:
@@ -358,7 +510,7 @@ def _ordered_config_names(cells: list[RuntimeCell]) -> list[str]:
 def _render_runtime_table(cells: list[RuntimeCell], baselines: dict[str, list[RuntimeCell]]) -> str:
     """Cells × configs matrix of full-pipeline per-call cost.
 
-    When named baselines exist under ``results/baselines/``, one extra
+    When archived named baselines exist (``archive/YYYY/MM/<name>/``), one extra
     column per baseline shows that baseline's headline (first available
     config, preferring the A100 row) so regressions/improvements against
     e.g. ``PreOptimizationTimes`` are visible at a glance.
@@ -442,42 +594,35 @@ def _inversion_path_label(data: dict, sparse: bool) -> str:
     return "sparse (w-tilde)" if sparse else "dense (mapping)"
 
 
-def _render_breakdown_table(artifacts: list[Artifact]) -> str:
-    """One row per (class, script, instrument, path) with the step-sum total."""
-    relevant = [a for a in artifacts if a.section == "breakdown" and a.purpose == "breakdown"]
-    if not relevant:
+def _render_breakdown_table(rows: list[BreakdownRow]) -> str:
+    """One row per current breakdown cell (v3 identity) with the step-sum total."""
+    if not rows:
         return _no_data_block("run a script under `likelihood_breakdown/` to populate.")
-    latest = _latest_per_group(
-        relevant, key=lambda a: (a.subfolder, a.script, a.instrument, a.sparse, a.config)
-    )
-    config_rank = {name: i for i, name in enumerate(CONFIG_ORDER)}
-    rows = [
-        "| Cell | Instrument | Platform | Inversion path | Step-sum total | PyAutoLens version |"
+    host_rank = {h: i for i, h in enumerate(HOST_ORDER)}
+    out = [
+        "| Cell | Instrument | Setup | Host | Inversion path | Step-sum total | PyAutoLens version |",
+        "|------|------------|-------|------|----------------|----------------|--------------------|",
     ]
-    rows.append(
-        "|------|------------|----------|----------------|----------------|--------------------|"
-    )
-    for (subfolder, script, instrument, sparse, config), art in sorted(
-        latest.items(),
-        key=lambda kv: (
-            kv[0][0],
-            kv[0][1],
-            kv[0][2] or "",
-            config_rank.get(kv[0][4], 99),
-            kv[0][3],
+    for row in sorted(
+        rows,
+        key=lambda r: (
+            r.cell,
+            r.instrument or "",
+            host_rank.get(r.host, len(HOST_ORDER)),
+            r.setup or "",
+            r.sparse,
         ),
     ):
-        data = art.data
+        data = row.data
         total = data.get("total_step_by_step")
-        rows.append(
-            f"| `{subfolder}/{script}` | "
-            f"{instrument or '—'} | "
-            f"{config} | "
-            f"{_inversion_path_label(data, sparse)} | "
+        setup = f"`{row.setup}`" if row.setup else "_not recorded_"
+        out.append(
+            f"| `{row.cell}` | {row.instrument or '—'} | {setup} | {row.host} | "
+            f"{_inversion_path_label(data, row.sparse)} | "
             f"{_format_time(total if isinstance(total, (int, float)) else None)} | "
-            f"v{art.raw_version} |"
+            f"{row.version_label} |"
         )
-    return "\n" + "\n".join(rows) + "\n"
+    return "\n" + "\n".join(out) + "\n"
 
 
 def _simulator_total_seconds(art: Artifact) -> float | None:
@@ -501,7 +646,7 @@ def _render_simulator_table(artifacts: list[Artifact]) -> str:
     rows.append("|--------|-----------------|--------------------|")
     for script, art in sorted(latest.items()):
         total = _simulator_total_seconds(art)
-        rows.append(f"| `{script}.py` | {_format_time(total)} | v{art.raw_version} |")
+        rows.append(f"| `{script}.py` | {_format_time(total)} | {art.version_label} |")
     return "\n" + "\n".join(rows) + "\n"
 
 
@@ -541,13 +686,13 @@ def _render_pipeline_resume_table(artifacts: list[Artifact]) -> str:
             resume_total = imports = stage = inter = "—"
         rows.append(
             f"| `{script}.py` | {instrument or '—'} | {cold_total} | "
-            f"{resume_total} | {imports} | {stage} | {inter} | v{art.raw_version} |"
+            f"{resume_total} | {imports} | {stage} | {inter} | {art.version_label} |"
         )
     return "\n" + "\n".join(rows) + "\n"
 
 
 def _render_headline(
-    artifacts: list[Artifact],
+    breakdown: list[BreakdownRow],
     cells: list[RuntimeCell],
     baselines: dict[str, list[RuntimeCell]],
 ) -> str:
@@ -555,7 +700,7 @@ def _render_headline(
     parts = ["\n**Likelihood runtime** — full-pipeline per-call cost per cell × config:\n"]
     parts.append(_render_runtime_table(cells, baselines).strip("\n"))
     parts.append("\n**Likelihood breakdown** — latest per-step decompositions:\n")
-    parts.append(_render_breakdown_table(artifacts).strip("\n"))
+    parts.append(_render_breakdown_table(breakdown).strip("\n"))
     return "\n" + "\n".join(parts) + "\n"
 
 
@@ -957,12 +1102,13 @@ def _render_solver_euclid_latent_table() -> str:
 
 def _build_renderers():
     artifacts = _scan_artifacts()
-    cells = _scan_runtime_cells(RUNTIME_ROOT)
-    baselines = {name: _scan_runtime_cells(BASELINES_ROOT / name) for name in _baseline_names()}
+    breakdown = _scan_breakdown_rows()
+    cells = _scan_runtime_cells()
+    baselines = _scan_baselines()
     return artifacts, {
-        "headline": lambda: _render_headline(artifacts, cells, baselines),
+        "headline": lambda: _render_headline(breakdown, cells, baselines),
         "runtime": lambda: _render_runtime_table(cells, baselines),
-        "breakdown": lambda: _render_breakdown_table(artifacts),
+        "breakdown": lambda: _render_breakdown_table(breakdown),
         "simulators": lambda: _render_simulator_table(artifacts),
         "pipeline-resume": lambda: _render_pipeline_resume_table(artifacts),
         "jax-compile-warm": _render_jax_compile_warm_table,

@@ -69,6 +69,7 @@ for every config; only ``hpc_ral_cpu_fp64`` decides.
 Output
 ------
 
+A legacy name, placed in the mirrored ``results/`` tree by ``_profile_cli`` (#442):
 ``results/breakdown/point_source_source/pytree_input_ab_<config_name>.{json,png}``.
 The JSON deliberately carries no top-level ``autolens_version`` (versions live
 under ``library_versions``): this is a note-backed A/B, not a README auto-table

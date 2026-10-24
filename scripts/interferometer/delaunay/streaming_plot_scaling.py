@@ -3,14 +3,14 @@ Interferometer Streaming Scaling: Both Paths on One Figure
 =========================================================
 
 Reads the ``accumulate`` and ``in_memory`` result JSONs of one release from
-``results/streaming_scaling/`` and draws wall time and peak RSS against N_vis
+``results/misc/streaming_scaling/`` and draws wall time and peak RSS against N_vis
 for both paths: the streamed ``from_stream`` rows (one line per chunk size) and
 the in-memory ``apply_sparse_operator`` rows (one line per arm, with failures as
 crosses at the RSS they reached). It runs no measurement.
 
 Output
 ------
-``results/streaming_scaling/streaming_scaling_<hardware>_v<version>.png``
+``results/misc/streaming_scaling/streaming_scaling_<hardware>_v<version>.png``
 
 Usage::
 

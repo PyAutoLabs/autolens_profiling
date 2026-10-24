@@ -49,7 +49,7 @@ overrides the sequence length (30 for the fiducial, 20 for the matrix).
 
 Output
 ------
-``results/nnls_warm_start/delaunay_numba_nnls_iterations_<instrument>[_<model>]_v<version>.{json,png}``
+``results/misc/nnls_warm_start/delaunay_numba_nnls_iterations_<instrument>[_<model>]_v<version>.{json,png}``
 (``--model fiducial`` keeps the original, unsuffixed filename.)
 """
 

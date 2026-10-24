@@ -25,7 +25,7 @@ Timing, memory and hardware are kept in separate fields; no speed score is forme
 
 Output
 ------
-``results/streaming_scaling/accumulate_<hardware>_v<version>.{json,png}``
+``results/misc/streaming_scaling/accumulate_<hardware>_v<version>.{json,png}``
 
 Usage::
 

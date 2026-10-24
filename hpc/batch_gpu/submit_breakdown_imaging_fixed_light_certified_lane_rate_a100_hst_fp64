@@ -14,7 +14,7 @@
 #   1. CAPTURE (tasks 0-3): nautilus_batch_capture.py fits the phase-B S3 system with
 #      af.Nautilus at the production settings of BOTH pixelized stages, on both meshes,
 #      and records every batch reaching Fitness.call_wrap to
-#      results/breakdown/imaging/nautilus_batches_<mesh>_<stage>.npz:
+#      results/misc/likelihood_breakdown/imaging/nautilus_batches_<mesh>_<stage>.npz:
 #        --stage pix1  source_pix_1: mass + shear + regularization free, n_live=150
 #        --stage pix2  source_pix_2: mass + shear fixed, regularization free, n_live=75
 #      n_batch=20, use_jax_vmap=True, library PDIP. The regularization is FREE with the
@@ -167,7 +167,7 @@ fi
 
 BORDER=cell
 CONFIG_NAME=hpc_a100_fp64_fixed_light_trace
-NPZ="$AP_ROOT/results/breakdown/imaging/nautilus_batches_${MESH}_${STAGE}.npz"
+NPZ="$AP_ROOT/results/misc/likelihood_breakdown/imaging/nautilus_batches_${MESH}_${STAGE}.npz"
 
 # The dataset is tracked but its adapt image cache is not; concurrent tasks must not
 # auto-simulate the same dataset/imaging/hst/, so it is prepared once before submitting.

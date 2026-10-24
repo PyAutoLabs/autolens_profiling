@@ -30,7 +30,8 @@ in order:
    was launched (``mesh``, ``n``, ``hardware``, and either ``status`` or the
    SLURM ``job``). This is the only record that distinguishes *launched and
    died* from *never launched*.
-2. ``results/breakdown/imaging/*.json`` — the rows themselves.
+2. The rows themselves, by their legacy names under ``results/breakdown/imaging/``
+   (resolved to the mirrored tree by ``_profile_cli.locate_legacy_result``).
 
 Nothing here is interpolated or extrapolated except the two explicitly-labelled
 threshold crossings, which are linear in log-log **between two measured points**
@@ -57,6 +58,7 @@ import argparse
 import json
 import math
 import re
+import sys
 from pathlib import Path
 
 
@@ -68,6 +70,13 @@ def _profiling_root() -> Path:
 
 
 ROOT = _profiling_root()
+sys.path.insert(0, str(ROOT))
+from _profile_cli import legacy_landing_dir, locate_legacy_result  # noqa: E402
+
+#: The legacy folder the sweep's rows are named under; since the day-zero move
+#: (autolens_profiling#442) they live in the mirrored tree (``<cell>/light_fixed/scans/n<N>/``)
+#: and ``_profile_cli.locate_legacy_result`` finds them by that name.
+LEGACY_ROWS_DIR = ROOT / "results" / "breakdown" / "imaging"
 
 #: Requested source-pixel counts, in sweep order. The rectangular mesh rounds
 #: each to the nearest square; the Delaunay mesh takes it exactly.
@@ -152,9 +161,9 @@ def json_candidates(mesh: str, n: int, config_name: str) -> list[str]:
 
 def find_json(results_dir: Path, mesh: str, n: int, config_name: str) -> Path | None:
     for basename in json_candidates(mesh, n, config_name):
-        candidate = results_dir / f"{basename}.json"
-        if candidate.exists():
-            return candidate
+        found = locate_legacy_result(results_dir / f"{basename}.json", {"instrument": "hst"})
+        if found is not None:
+            return found
     return None
 
 
@@ -311,7 +320,7 @@ def collect(
     results_dir: Path | None = None,
     manifest_path: Path | None = None,
 ) -> dict[tuple[str, int, str], Leg]:
-    results_dir = results_dir or (ROOT / "results" / "breakdown" / "imaging")
+    results_dir = results_dir or LEGACY_ROWS_DIR
     manifest_path = manifest_path or (
         ROOT / "results" / "misc" / "likelihood_breakdown" / "fixed_light_scaling_manifest.jsonl"
     )
@@ -546,8 +555,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--results-dir",
         type=Path,
-        default=ROOT / "results" / "breakdown" / "imaging",
-        help="where the per-leg result JSONs live",
+        default=LEGACY_ROWS_DIR,
+        help="the folder the per-leg result JSONs are named under (legacy names are resolved)",
     )
     parser.add_argument(
         "--manifest",
@@ -568,7 +577,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--out-dir",
         type=Path,
-        default=ROOT / "results" / "breakdown" / "imaging",
+        default=legacy_landing_dir(LEGACY_ROWS_DIR),
         help="where the rendered .md and .png are written",
     )
     parser.add_argument("--stdout", action="store_true", help="also print each table")

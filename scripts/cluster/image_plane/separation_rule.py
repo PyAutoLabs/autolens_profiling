@@ -46,7 +46,7 @@ Run::
         results/misc/likelihood_breakdown/cluster/robust_settings_sweep_viz_cluster_laptop_cpu_fp64.json \\
         results/cluster/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/robust_settings_sweep/breakdown.json \\
         results/cluster/image_plane/simple/jax_cpu_na_fp64/local_laptop/experiments/robust_settings_sweep_draws53_73_81/breakdown.json \\
-        --a2744-log results/logs/cluster_pointsolver/<pilot>.out
+        --a2744-log results/misc/logs/cluster_pointsolver/<pilot>.out
 """
 
 from __future__ import annotations
@@ -600,7 +600,12 @@ def main(argv=None):
     ap.add_argument(
         "--out-stem",
         type=Path,
-        default=_HERE.parents[2] / "results" / "breakdown" / "cluster" / "separation_rule",
+        default=_HERE.parents[2]
+        / "results"
+        / "misc"
+        / "likelihood_breakdown"
+        / "cluster"
+        / "separation_rule",
     )
     args = ap.parse_args(argv)
 

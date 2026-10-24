@@ -24,7 +24,8 @@ the measurement. This script therefore reads three sources, in order:
    from *never submitted*. Optional: without it the script falls back to the
    ``SWEEP_LEG`` headers in the SLURM ``.out`` logs, and then to whatever result
    JSONs it can glob.
-2. ``results/breakdown/imaging/*.json`` — the rows themselves.
+2. The rows themselves, by their legacy names under ``results/breakdown/imaging/``
+   (resolved to the mirrored tree by ``_profile_cli.locate_legacy_result``).
 3. ``hpc/batch_gpu/{output,error}/`` — the logs of a submitted leg with no JSON,
    classified as ``oom`` / ``timeout`` / ``failed`` / ``pending`` / ``missing``.
 
@@ -73,6 +74,14 @@ def _profiling_root() -> Path:
 
 
 ROOT = _profiling_root()
+sys.path.insert(0, str(ROOT))
+from _profile_cli import legacy_result_files, locate_legacy_result  # noqa: E402
+
+#: The legacy folder the sweep's rows are named under. Since the day-zero move
+#: (autolens_profiling#442) the rows live in the mirrored tree (the dense / sparse legs in
+#: ``<cell>/scans/n<N>/``, matrix-free and recon-split in ``<cell>/experiments/``); the
+#: ``_profile_cli`` legacy-name helpers find them by their legacy name.
+LEGACY_ROWS_DIR = ROOT / "results" / "breakdown" / "imaging"
 
 #: The fiducial tier every sweep row is anchored to (39x39 = 1521 rectangular
 #: pixels / 1500 Delaunay vertices). Its rows already exist and are never
@@ -175,9 +184,9 @@ def json_candidates(mesh: str, path: str, n: int) -> list[str]:
 
 def find_json(results_dir: Path, mesh: str, path: str, n: int) -> Path | None:
     for basename in json_candidates(mesh, path, n):
-        candidate = results_dir / f"{basename}.json"
-        if candidate.exists():
-            return candidate
+        found = locate_legacy_result(results_dir / f"{basename}.json", {"instrument": "hst"})
+        if found is not None:
+            return found
     return None
 
 
@@ -188,8 +197,8 @@ def glob_legs(results_dir: Path) -> set[tuple[str, str, int]]:
     that finished, which is precisely why the manifest exists.
     """
     legs: set[tuple[str, str, int]] = set()
-    for json_path in sorted(results_dir.glob("*.json")):
-        name = json_path.stem
+    for _json_path, legacy_name in legacy_result_files(results_dir, "*.json"):
+        name = Path(legacy_name).stem
         match = re.match(
             r"^matrix_free_(?P<mesh>\w+?)_hpc_a100_fp64_matrix_free(?:_n(\d+))?$", name
         )
@@ -715,8 +724,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--results-dir",
         type=Path,
-        default=ROOT / "results" / "breakdown" / "imaging",
-        help="where the per-leg result JSONs live",
+        default=LEGACY_ROWS_DIR,
+        help="the folder the per-leg result JSONs are named under (legacy names are resolved)",
     )
     parser.add_argument(
         "--manifest",

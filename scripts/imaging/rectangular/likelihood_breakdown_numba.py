@@ -56,6 +56,7 @@ return garbage — see the runtime sibling's hazard note).
 
 Output
 ------
+A legacy name, placed in the mirrored ``results/`` tree by ``_profile_cli`` (#442):
 ``results/breakdown/imaging/pixelization_numba_breakdown_<instrument>_v<version>.{json,png}``
 
 Since 2026-09-08 (autolens_profiling#235) the cell defaults to the **production

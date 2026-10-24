@@ -108,7 +108,7 @@ VMAP_BATCH: dict[tuple[str, str, str], int | None] = {
     # mge — sma only on the DENSE path; alma+ blocked by the unchunked dense
     # library transform on GPU. With apply_sparse_operator() (PyAutoArray#575)
     # the library W~ route runs at every instrument — see VMAP_BATCH_SPARSE and
-    # results/notes/interferometer_mge_breakdown_2026_09.md.
+    # wiki/campaigns/interferometer/mge/interferometer_mge_breakdown_2026_09.md.
     ("interferometer", "mge", "sma"): 64,  # 160 MB / replica
     (
         "interferometer",

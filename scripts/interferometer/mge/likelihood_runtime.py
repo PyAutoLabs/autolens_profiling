@@ -106,6 +106,7 @@ from _profile_cli import (
     auto_simulate_if_missing,
     check_pinned,
     device_info_dict,
+    legacy_landing_dir,
     parse_profile_cli,
     record_pinned_check,  # noqa: E402
     resolve_output_paths,
@@ -377,7 +378,8 @@ if _cli.vmap_probe:
     )
     recommended = recommend_batch_size(probe)
     probe_path = (
-        _cli.output_dir or (_workspace_root / "results" / "runtime" / "interferometer" / "mge")
+        _cli.output_dir
+        or legacy_landing_dir(_workspace_root / "results" / "runtime" / "interferometer" / "mge")
     ) / ("vmap_probe_mge_sparse.json" if _cli.use_sparse_operator else "vmap_probe_mge.json")
     write_probe_json(probe, recommended, probe_path)
     print(f"\n  vmap_probe samples: {probe.samples}")
@@ -397,7 +399,7 @@ _batch_resolved, _batch_source = resolve_vmap_batch(
     "mge",
     instrument,
     output_dir=_cli.output_dir
-    or (_workspace_root / "results" / "runtime" / "interferometer" / "mge"),
+    or legacy_landing_dir(_workspace_root / "results" / "runtime" / "interferometer" / "mge"),
     path="sparse" if _cli.use_sparse_operator else "dense",
     backend=jax.default_backend(),
 )
@@ -535,7 +537,8 @@ dict_path, chart_path = resolve_output_paths(
     _cli,
     default_dir=_workspace_root / "results" / "runtime" / "interferometer" / "mge",
     default_basename=f"mge_likelihood_summary_{instrument}_v{al_version}",
-    hints=likelihood_summary,
+    # The payload does not record the transformer class; the placement needs it (#442 PR 3b).
+    hints={**likelihood_summary, "transformer": _transformer_class.__name__},
 )
 dict_path.write_text(json.dumps(likelihood_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")

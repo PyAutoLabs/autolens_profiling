@@ -6,7 +6,7 @@ edit-profile-edit loops while iterating on the source libraries.
 
 These are the **scratch tier** of the repo:
 
-- Outputs land in `results/quick_update/` as **unversioned** JSONs
+- Outputs land in `results/misc/quick_update/` as **unversioned** JSONs
   (`<cell>_quick_update_<instrument>.json`) that are overwritten on every run —
   no history, no dashboard row.
 - Numbers here are for steering a source-code change, never for citing: when a

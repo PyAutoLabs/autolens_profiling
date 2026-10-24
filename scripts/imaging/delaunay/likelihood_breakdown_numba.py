@@ -53,6 +53,7 @@ decomposition.
 
 Output
 ------
+A legacy name, placed in the mirrored ``results/`` tree by ``_profile_cli`` (#442):
 ``results/breakdown/imaging/delaunay_numba_breakdown_<instrument>_v<version>.{json,png}``
 """
 

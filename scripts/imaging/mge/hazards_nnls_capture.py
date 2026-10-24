@@ -31,7 +31,7 @@ post-regularisation, pre-Jacobi), then off-line:
 Output
 ------
 
-``results/hazards/component/mge/nnls_capture_slam_hst_v{al_version}.json`` -- the
+``results/misc/hazards/component/mge/nnls_capture_slam_hst_v{al_version}.json`` -- the
 per-vector summary (no matrices), and a compressed ``.npz`` of the same basename
 holding 8 systems (5 never converging at cap 200, 2 hitting cap 50 but
 converging by 200, 1 healthy) as ``Q_<i>`` / ``q_<i>`` plus a ``meta`` JSON

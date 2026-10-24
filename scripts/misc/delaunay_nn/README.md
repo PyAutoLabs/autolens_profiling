@@ -38,7 +38,7 @@ python scripts/misc/delaunay_nn/benchmark.py \
 ```
 
 The script writes a versioned JSON and PNG pair under
-`results/delaunay_nn/`. GPU filenames include the JAX device identity so a
+`results/misc/delaunay_nn/`. GPU filenames include the JAX device identity so a
 laptop result cannot overwrite a later A100 run; the JSON also records the
 same hardware key. The cap sweep exposes the speed/headroom trade-off;
 the separate workspace assertion
@@ -73,7 +73,7 @@ python scripts/misc/delaunay_nn/assembly_bench.py --pixels 300 --repeats 3   # s
 ```
 
 Defaults read `results/misc/delaunay_nn/tables_hst_1500.npz` and write
-`results/delaunay_nn/assembly_bench.json`. The tables are checked in (330 KB);
+`results/misc/delaunay_nn/assembly_bench.json`. The tables are checked in (330 KB);
 rebuild them from the HST breakdown cell with
 
 ```bash

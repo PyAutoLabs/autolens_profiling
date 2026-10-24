@@ -50,7 +50,7 @@ export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding"
 nvidia-smi
 
 cd $AP_ROOT
-OUT_DIR=$AP_ROOT/results/breakdown/interferometer/sma
+OUT_DIR=$AP_ROOT/results/misc/likelihood_breakdown/interferometer/sma
 STATUS=0
 
 run_leg() {

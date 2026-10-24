@@ -1,17 +1,25 @@
 {
  "schema_version": 1,
- "generated": "2026-10-23T14:42:25Z",
+ "generated": "2026-10-24T12:57:17Z",
  "reference_host": "euclid-ral-gpu-2",
  "loadavg_cap": 8.0,
  "drift_ratio": 2.0,
  "drift_floor_s": 0.001,
  "series": [
   {
-   "key": "runtime:imaging/delaunay/hst:local_cpu_fp64",
+   "key": "runtime:imaging/delaunay:hst:jax_cpu_dense_fp64:local_laptop:default",
    "section": "runtime",
    "cell": "imaging/delaunay/hst",
    "config": "local_cpu_fp64",
    "sparse": false,
+   "identity": {
+    "likelihood": "imaging/delaunay",
+    "instrument": "hst",
+    "setup_id": "jax_cpu_dense_fp64",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
    "points": [
     {
      "version": "2026.7.6.649",
@@ -48,11 +56,19 @@
    }
   },
   {
-   "key": "runtime:imaging/delaunay/hst:local_cpu_fp64_sparse",
+   "key": "runtime:imaging/delaunay:hst:jax_cpu_sparse_fp64:local_laptop:default",
    "section": "runtime",
    "cell": "imaging/delaunay/hst",
    "config": "local_cpu_fp64",
    "sparse": true,
+   "identity": {
+    "likelihood": "imaging/delaunay",
+    "instrument": "hst",
+    "setup_id": "jax_cpu_sparse_fp64",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
    "points": [
     {
      "version": "2026.7.6.649",
@@ -76,11 +92,19 @@
    }
   },
   {
-   "key": "runtime:imaging/delaunay/hst:local_cpu_mp",
+   "key": "runtime:imaging/delaunay:hst:jax_cpu_dense_mixed:local_laptop:default",
    "section": "runtime",
    "cell": "imaging/delaunay/hst",
    "config": "local_cpu_mp",
    "sparse": false,
+   "identity": {
+    "likelihood": "imaging/delaunay",
+    "instrument": "hst",
+    "setup_id": "jax_cpu_dense_mixed",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
    "points": [
     {
      "version": "2026.7.6.649",
@@ -104,11 +128,19 @@
    }
   },
   {
-   "key": "runtime:imaging/delaunay/hst:local_cpu_mp_sparse",
+   "key": "runtime:imaging/delaunay:hst:jax_cpu_sparse_mixed:local_laptop:default",
    "section": "runtime",
    "cell": "imaging/delaunay/hst",
    "config": "local_cpu_mp",
    "sparse": true,
+   "identity": {
+    "likelihood": "imaging/delaunay",
+    "instrument": "hst",
+    "setup_id": "jax_cpu_sparse_mixed",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
    "points": [
     {
      "version": "2026.7.6.649",
@@ -132,11 +164,19 @@
    }
   },
   {
-   "key": "runtime:imaging/delaunay/hst:hpc_a100_fp64",
+   "key": "runtime:imaging/delaunay:hst:jax_gpu_dense_fp64:hpc_a100:default",
    "section": "runtime",
    "cell": "imaging/delaunay/hst",
    "config": "hpc_a100_fp64",
    "sparse": false,
+   "identity": {
+    "likelihood": "imaging/delaunay",
+    "instrument": "hst",
+    "setup_id": "jax_gpu_dense_fp64",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
@@ -161,11 +201,19 @@
    }
   },
   {
-   "key": "runtime:imaging/delaunay/hst:hpc_a100_fp64_sparse",
+   "key": "runtime:imaging/delaunay:hst:jax_gpu_sparse_fp64:hpc_a100:default",
    "section": "runtime",
    "cell": "imaging/delaunay/hst",
    "config": "hpc_a100_fp64",
    "sparse": true,
+   "identity": {
+    "likelihood": "imaging/delaunay",
+    "instrument": "hst",
+    "setup_id": "jax_gpu_sparse_fp64",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
@@ -190,11 +238,19 @@
    }
   },
   {
-   "key": "runtime:imaging/delaunay/jwst:local_cpu_fp64",
+   "key": "runtime:imaging/delaunay:jwst:jax_cpu_dense_fp64:local_laptop:default",
    "section": "runtime",
    "cell": "imaging/delaunay/jwst",
    "config": "local_cpu_fp64",
    "sparse": false,
+   "identity": {
+    "likelihood": "imaging/delaunay",
+    "instrument": "jwst",
+    "setup_id": "jax_cpu_dense_fp64",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
    "points": [
     {
      "version": "2026.7.6.649",
@@ -218,11 +274,19 @@
    }
   },
   {
-   "key": "runtime:imaging/delaunay/jwst:local_cpu_fp64_sparse",
+   "key": "runtime:imaging/delaunay:jwst:jax_cpu_sparse_fp64:local_laptop:default",
    "section": "runtime",
    "cell": "imaging/delaunay/jwst",
    "config": "local_cpu_fp64",
    "sparse": true,
+   "identity": {
+    "likelihood": "imaging/delaunay",
+    "instrument": "jwst",
+    "setup_id": "jax_cpu_sparse_fp64",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
    "points": [
     {
      "version": "2026.7.6.649",
@@ -246,11 +310,19 @@
    }
   },
   {
-   "key": "runtime:imaging/delaunay/jwst:local_cpu_mp",
+   "key": "runtime:imaging/delaunay:jwst:jax_cpu_dense_mixed:local_laptop:default",
    "section": "runtime",
    "cell": "imaging/delaunay/jwst",
    "config": "local_cpu_mp",
    "sparse": false,
+   "identity": {
+    "likelihood": "imaging/delaunay",
+    "instrument": "jwst",
+    "setup_id": "jax_cpu_dense_mixed",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
    "points": [
     {
      "version": "2026.7.6.649",
@@ -274,11 +346,19 @@
    }
   },
   {
-   "key": "runtime:imaging/delaunay/jwst:local_cpu_mp_sparse",
+   "key": "runtime:imaging/delaunay:jwst:jax_cpu_sparse_mixed:local_laptop:default",
    "section": "runtime",
    "cell": "imaging/delaunay/jwst",
    "config": "local_cpu_mp",
    "sparse": true,
+   "identity": {
+    "likelihood": "imaging/delaunay",
+    "instrument": "jwst",
+    "setup_id": "jax_cpu_sparse_mixed",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
    "points": [
     {
      "version": "2026.7.6.649",
@@ -302,11 +382,12 @@
    }
   },
   {
-   "key": "runtime:imaging/delaunay_nn/hst:local_cpu_fp64",
+   "key": "legacy:runtime:imaging/delaunay_nn/hst:local_cpu_fp64",
    "section": "runtime",
    "cell": "imaging/delaunay_nn/hst",
    "config": "local_cpu_fp64",
    "sparse": false,
+   "identity": null,
    "points": [
     {
      "version": "2026.8.17.1",
@@ -330,11 +411,19 @@
    }
   },
   {
-   "key": "runtime:imaging/delaunay_nn/hst:hpc_a100_fp64",
+   "key": "runtime:imaging/delaunay_nn:hst:jax_gpu_dense_fp64:hpc_a100:default",
    "section": "runtime",
    "cell": "imaging/delaunay_nn/hst",
    "config": "hpc_a100_fp64",
    "sparse": false,
+   "identity": {
+    "likelihood": "imaging/delaunay_nn",
+    "instrument": "hst",
+    "setup_id": "jax_gpu_dense_fp64",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
@@ -359,11 +448,19 @@
    }
   },
   {
-   "key": "runtime:imaging/delaunay_nn/hst:hpc_a100_fp64_sparse",
+   "key": "runtime:imaging/delaunay_nn:hst:jax_gpu_sparse_fp64:hpc_a100:default",
    "section": "runtime",
    "cell": "imaging/delaunay_nn/hst",
    "config": "hpc_a100_fp64",
    "sparse": true,
+   "identity": {
+    "likelihood": "imaging/delaunay_nn",
+    "instrument": "hst",
+    "setup_id": "jax_gpu_sparse_fp64",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
@@ -388,11 +485,12 @@
    }
   },
   {
-   "key": "runtime:imaging/delaunay_numba/euclid:local_cpu_fp64",
+   "key": "legacy:runtime:imaging/delaunay_numba/euclid:local_cpu_fp64",
    "section": "runtime",
    "cell": "imaging/delaunay_numba/euclid",
    "config": "local_cpu_fp64",
    "sparse": false,
+   "identity": null,
    "points": [
     {
      "version": "2026.8.17.1",
@@ -416,11 +514,12 @@
    }
   },
   {
-   "key": "runtime:imaging/delaunay_numba/hst:local_cpu_fp64",
+   "key": "legacy:runtime:imaging/delaunay_numba/hst:local_cpu_fp64",
    "section": "runtime",
    "cell": "imaging/delaunay_numba/hst",
    "config": "local_cpu_fp64",
    "sparse": false,
+   "identity": null,
    "points": [
     {
      "version": "2026.8.17.1",
@@ -444,11 +543,19 @@
    }
   },
   {
-   "key": "runtime:imaging/mge/ao:local_cpu_fp64",
+   "key": "runtime:imaging/mge:ao:jax_cpu_dense_fp64:local_laptop:default",
    "section": "runtime",
    "cell": "imaging/mge/ao",
    "config": "local_cpu_fp64",
    "sparse": false,
+   "identity": {
+    "likelihood": "imaging/mge",
+    "instrument": "ao",
+    "setup_id": "jax_cpu_dense_fp64",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
    "points": [
     {
      "version": "2026.7.6.649",
@@ -472,11 +579,19 @@
    }
   },
   {
-   "key": "runtime:imaging/mge/ao:local_cpu_mp",
+   "key": "runtime:imaging/mge:ao:jax_cpu_dense_mixed:local_laptop:default",
    "section": "runtime",
    "cell": "imaging/mge/ao",
    "config": "local_cpu_mp",
    "sparse": false,
+   "identity": {
+    "likelihood": "imaging/mge",
+    "instrument": "ao",
+    "setup_id": "jax_cpu_dense_mixed",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
    "points": [
     {
      "version": "2026.7.6.649",
@@ -500,11 +615,19 @@
    }
   },
   {
-   "key": "runtime:imaging/mge/hst:local_cpu_fp64",
+   "key": "runtime:imaging/mge:hst:jax_cpu_dense_fp64:local_laptop:default",
    "section": "runtime",
    "cell": "imaging/mge/hst",
    "config": "local_cpu_fp64",
    "sparse": false,
+   "identity": {
+    "likelihood": "imaging/mge",
+    "instrument": "hst",
+    "setup_id": "jax_cpu_dense_fp64",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
    "points": [
     {
      "version": "2026.7.6.649",
@@ -541,11 +664,19 @@
    }
   },
   {
-   "key": "runtime:imaging/mge/hst:local_cpu_fp64_sparse",
+   "key": "runtime:imaging/mge:hst:jax_cpu_sparse_fp64:local_laptop:default",
    "section": "runtime",
    "cell": "imaging/mge/hst",
    "config": "local_cpu_fp64",
    "sparse": true,
+   "identity": {
+    "likelihood": "imaging/mge",
+    "instrument": "hst",
+    "setup_id": "jax_cpu_sparse_fp64",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
    "points": [
     {
      "version": "2026.7.6.649",
@@ -569,11 +700,19 @@
    }
   },
   {
-   "key": "runtime:imaging/mge/hst:local_cpu_mp",
+   "key": "runtime:imaging/mge:hst:jax_cpu_dense_mixed:local_laptop:default",
    "section": "runtime",
    "cell": "imaging/mge/hst",
    "config": "local_cpu_mp",
    "sparse": false,
+   "identity": {
+    "likelihood": "imaging/mge",
+    "instrument": "hst",
+    "setup_id": "jax_cpu_dense_mixed",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
    "points": [
     {
      "version": "2026.7.6.649",
@@ -597,11 +736,19 @@
    }
   },
   {
-   "key": "runtime:imaging/mge/hst:local_cpu_mp_sparse",
+   "key": "runtime:imaging/mge:hst:jax_cpu_sparse_mixed:local_laptop:default",
    "section": "runtime",
    "cell": "imaging/mge/hst",
    "config": "local_cpu_mp",
    "sparse": true,
+   "identity": {
+    "likelihood": "imaging/mge",
+    "instrument": "hst",
+    "setup_id": "jax_cpu_sparse_mixed",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
    "points": [
     {
      "version": "2026.7.6.649",
@@ -625,11 +772,19 @@
    }
   },
   {
-   "key": "runtime:imaging/mge/jwst:local_cpu_fp64",
+   "key": "runtime:imaging/mge:jwst:jax_cpu_dense_fp64:local_laptop:default",
    "section": "runtime",
    "cell": "imaging/mge/jwst",
    "config": "local_cpu_fp64",
    "sparse": false,
+   "identity": {
+    "likelihood": "imaging/mge",
+    "instrument": "jwst",
+    "setup_id": "jax_cpu_dense_fp64",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
    "points": [
     {
      "version": "2026.7.6.649",
@@ -653,11 +808,19 @@
    }
   },
   {
-   "key": "runtime:imaging/mge/jwst:local_cpu_fp64_sparse",
+   "key": "runtime:imaging/mge:jwst:jax_cpu_sparse_fp64:local_laptop:default",
    "section": "runtime",
    "cell": "imaging/mge/jwst",
    "config": "local_cpu_fp64",
    "sparse": true,
+   "identity": {
+    "likelihood": "imaging/mge",
+    "instrument": "jwst",
+    "setup_id": "jax_cpu_sparse_fp64",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
    "points": [
     {
      "version": "2026.7.6.649",
@@ -681,11 +844,19 @@
    }
   },
   {
-   "key": "runtime:imaging/mge/jwst:local_cpu_mp",
+   "key": "runtime:imaging/mge:jwst:jax_cpu_dense_mixed:local_laptop:default",
    "section": "runtime",
    "cell": "imaging/mge/jwst",
    "config": "local_cpu_mp",
    "sparse": false,
+   "identity": {
+    "likelihood": "imaging/mge",
+    "instrument": "jwst",
+    "setup_id": "jax_cpu_dense_mixed",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
    "points": [
     {
      "version": "2026.7.6.649",
@@ -709,11 +880,19 @@
    }
   },
   {
-   "key": "runtime:imaging/mge/jwst:local_cpu_mp_sparse",
+   "key": "runtime:imaging/mge:jwst:jax_cpu_sparse_mixed:local_laptop:default",
    "section": "runtime",
    "cell": "imaging/mge/jwst",
    "config": "local_cpu_mp",
    "sparse": true,
+   "identity": {
+    "likelihood": "imaging/mge",
+    "instrument": "jwst",
+    "setup_id": "jax_cpu_sparse_mixed",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
    "points": [
     {
      "version": "2026.7.6.649",
@@ -737,11 +916,12 @@
    }
   },
   {
-   "key": "runtime:imaging/mge_mass_jax/hst:local_cpu_fp64",
+   "key": "legacy:runtime:imaging/mge_mass_jax/hst:local_cpu_fp64",
    "section": "runtime",
    "cell": "imaging/mge_mass_jax/hst",
    "config": "local_cpu_fp64",
    "sparse": false,
+   "identity": null,
    "points": [
     {
      "version": "2026.8.17.1",
@@ -765,11 +945,77 @@
    }
   },
   {
-   "key": "runtime:imaging/pixelization/hst:local_cpu_fp64",
+   "key": "legacy:runtime:imaging/pixelization_numba/euclid:local_cpu_fp64",
    "section": "runtime",
-   "cell": "imaging/pixelization/hst",
+   "cell": "imaging/pixelization_numba/euclid",
    "config": "local_cpu_fp64",
    "sparse": false,
+   "identity": null,
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 0.5853628500008199,
+     "vmap_per_call_s": null,
+     "host": null,
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "archive/2026/08/hostless_summaries/runtime/imaging/pixelization_numba/pixelization_numba_likelihood_summary_euclid_v2026.8.17.1.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "legacy:runtime:imaging/pixelization_numba/hst:local_cpu_fp64",
+   "section": "runtime",
+   "cell": "imaging/pixelization_numba/hst",
+   "config": "local_cpu_fp64",
+   "sparse": false,
+   "identity": null,
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 1.4185542499999428,
+     "vmap_per_call_s": null,
+     "host": null,
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "archive/2026/08/hostless_summaries/runtime/imaging/pixelization_numba/pixelization_numba_likelihood_summary_hst_v2026.8.17.1.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "runtime:imaging/rectangular:hst:jax_cpu_dense_fp64:local_laptop:default",
+   "section": "runtime",
+   "cell": "imaging/rectangular/hst",
+   "config": "local_cpu_fp64",
+   "sparse": false,
+   "identity": {
+    "likelihood": "imaging/rectangular",
+    "instrument": "hst",
+    "setup_id": "jax_cpu_dense_fp64",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
    "points": [
     {
      "version": "2026.7.6.649",
@@ -806,11 +1052,19 @@
    }
   },
   {
-   "key": "runtime:imaging/pixelization/hst:local_cpu_fp64_sparse",
+   "key": "runtime:imaging/rectangular:hst:jax_cpu_sparse_fp64:local_laptop:default",
    "section": "runtime",
-   "cell": "imaging/pixelization/hst",
+   "cell": "imaging/rectangular/hst",
    "config": "local_cpu_fp64",
    "sparse": true,
+   "identity": {
+    "likelihood": "imaging/rectangular",
+    "instrument": "hst",
+    "setup_id": "jax_cpu_sparse_fp64",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
    "points": [
     {
      "version": "2026.7.6.649",
@@ -834,11 +1088,19 @@
    }
   },
   {
-   "key": "runtime:imaging/pixelization/hst:local_cpu_mp",
+   "key": "runtime:imaging/rectangular:hst:jax_cpu_dense_mixed:local_laptop:default",
    "section": "runtime",
-   "cell": "imaging/pixelization/hst",
+   "cell": "imaging/rectangular/hst",
    "config": "local_cpu_mp",
    "sparse": false,
+   "identity": {
+    "likelihood": "imaging/rectangular",
+    "instrument": "hst",
+    "setup_id": "jax_cpu_dense_mixed",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
    "points": [
     {
      "version": "2026.7.6.649",
@@ -862,11 +1124,19 @@
    }
   },
   {
-   "key": "runtime:imaging/pixelization/hst:local_cpu_mp_sparse",
+   "key": "runtime:imaging/rectangular:hst:jax_cpu_sparse_mixed:local_laptop:default",
    "section": "runtime",
-   "cell": "imaging/pixelization/hst",
+   "cell": "imaging/rectangular/hst",
    "config": "local_cpu_mp",
    "sparse": true,
+   "identity": {
+    "likelihood": "imaging/rectangular",
+    "instrument": "hst",
+    "setup_id": "jax_cpu_sparse_mixed",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
    "points": [
     {
      "version": "2026.7.6.649",
@@ -890,11 +1160,19 @@
    }
   },
   {
-   "key": "runtime:imaging/pixelization/hst:hpc_a100_fp64",
+   "key": "runtime:imaging/rectangular:hst:jax_gpu_dense_fp64:hpc_a100:default",
    "section": "runtime",
-   "cell": "imaging/pixelization/hst",
+   "cell": "imaging/rectangular/hst",
    "config": "hpc_a100_fp64",
    "sparse": false,
+   "identity": {
+    "likelihood": "imaging/rectangular",
+    "instrument": "hst",
+    "setup_id": "jax_gpu_dense_fp64",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
@@ -919,11 +1197,19 @@
    }
   },
   {
-   "key": "runtime:imaging/pixelization/hst:hpc_a100_fp64_sparse",
+   "key": "runtime:imaging/rectangular:hst:jax_gpu_sparse_fp64:hpc_a100:default",
    "section": "runtime",
-   "cell": "imaging/pixelization/hst",
+   "cell": "imaging/rectangular/hst",
    "config": "hpc_a100_fp64",
    "sparse": true,
+   "identity": {
+    "likelihood": "imaging/rectangular",
+    "instrument": "hst",
+    "setup_id": "jax_gpu_sparse_fp64",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
@@ -948,179 +1234,19 @@
    }
   },
   {
-   "key": "runtime:imaging/pixelization/jwst:local_cpu_fp64",
+   "key": "runtime:imaging/rectangular:hst:numba_cpu_sparse_fp64:local_laptop:mge_mass",
    "section": "runtime",
-   "cell": "imaging/pixelization/jwst",
-   "config": "local_cpu_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.7.6.649",
-     "single_jit_s": 21.778462779999973,
-     "vmap_per_call_s": 28.32046649666663,
-     "host": null,
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "results/imaging/rectangular/jwst/comparison.json#local_cpu_fp64",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "runtime:imaging/pixelization/jwst:local_cpu_fp64_sparse",
-   "section": "runtime",
-   "cell": "imaging/pixelization/jwst",
+   "cell": "imaging/rectangular/hst/mge_mass",
    "config": "local_cpu_fp64",
    "sparse": true,
-   "points": [
-    {
-     "version": "2026.7.6.649",
-     "single_jit_s": 9.566611529999864,
-     "vmap_per_call_s": 9.69070508666664,
-     "host": null,
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "results/imaging/rectangular/jwst/comparison.json#local_cpu_fp64_sparse",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "runtime:imaging/pixelization/jwst:local_cpu_mp",
-   "section": "runtime",
-   "cell": "imaging/pixelization/jwst",
-   "config": "local_cpu_mp",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.7.6.649",
-     "single_jit_s": 43.58491838000045,
-     "vmap_per_call_s": 29.38957891000003,
-     "host": null,
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "results/imaging/rectangular/jwst/comparison.json#local_cpu_mp",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "runtime:imaging/pixelization/jwst:local_cpu_mp_sparse",
-   "section": "runtime",
-   "cell": "imaging/pixelization/jwst",
-   "config": "local_cpu_mp",
-   "sparse": true,
-   "points": [
-    {
-     "version": "2026.7.6.649",
-     "single_jit_s": 9.420377540000118,
-     "vmap_per_call_s": 9.474230743333221,
-     "host": null,
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "results/imaging/rectangular/jwst/comparison.json#local_cpu_mp_sparse",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "runtime:imaging/pixelization_numba/euclid:local_cpu_fp64",
-   "section": "runtime",
-   "cell": "imaging/pixelization_numba/euclid",
-   "config": "local_cpu_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 0.5853628500008199,
-     "vmap_per_call_s": null,
-     "host": null,
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "archive/2026/08/hostless_summaries/runtime/imaging/pixelization_numba/pixelization_numba_likelihood_summary_euclid_v2026.8.17.1.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "runtime:imaging/pixelization_numba/hst:local_cpu_fp64",
-   "section": "runtime",
-   "cell": "imaging/pixelization_numba/hst",
-   "config": "local_cpu_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 1.4185542499999428,
-     "vmap_per_call_s": null,
-     "host": null,
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "archive/2026/08/hostless_summaries/runtime/imaging/pixelization_numba/pixelization_numba_likelihood_summary_hst_v2026.8.17.1.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "runtime:imaging/pixelization_numba_mge_mass/hst:local_cpu_fp64",
-   "section": "runtime",
-   "cell": "imaging/pixelization_numba_mge_mass/hst",
-   "config": "local_cpu_fp64",
-   "sparse": false,
+   "identity": {
+    "likelihood": "imaging/rectangular",
+    "instrument": "hst",
+    "setup_id": "numba_cpu_sparse_fp64",
+    "host_class": "local_laptop",
+    "model_variant": "mge_mass",
+    "measurement": "runtime"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
@@ -1144,11 +1270,156 @@
    }
   },
   {
-   "key": "runtime:interferometer/delaunay/alma:local_cpu_mp",
+   "key": "runtime:imaging/rectangular:jwst:jax_cpu_dense_fp64:local_laptop:default",
+   "section": "runtime",
+   "cell": "imaging/rectangular/jwst",
+   "config": "local_cpu_fp64",
+   "sparse": false,
+   "identity": {
+    "likelihood": "imaging/rectangular",
+    "instrument": "jwst",
+    "setup_id": "jax_cpu_dense_fp64",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
+   "points": [
+    {
+     "version": "2026.7.6.649",
+     "single_jit_s": 21.778462779999973,
+     "vmap_per_call_s": 28.32046649666663,
+     "host": null,
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/imaging/rectangular/jwst/comparison.json#local_cpu_fp64",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "runtime:imaging/rectangular:jwst:jax_cpu_sparse_fp64:local_laptop:default",
+   "section": "runtime",
+   "cell": "imaging/rectangular/jwst",
+   "config": "local_cpu_fp64",
+   "sparse": true,
+   "identity": {
+    "likelihood": "imaging/rectangular",
+    "instrument": "jwst",
+    "setup_id": "jax_cpu_sparse_fp64",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
+   "points": [
+    {
+     "version": "2026.7.6.649",
+     "single_jit_s": 9.566611529999864,
+     "vmap_per_call_s": 9.69070508666664,
+     "host": null,
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/imaging/rectangular/jwst/comparison.json#local_cpu_fp64_sparse",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "runtime:imaging/rectangular:jwst:jax_cpu_dense_mixed:local_laptop:default",
+   "section": "runtime",
+   "cell": "imaging/rectangular/jwst",
+   "config": "local_cpu_mp",
+   "sparse": false,
+   "identity": {
+    "likelihood": "imaging/rectangular",
+    "instrument": "jwst",
+    "setup_id": "jax_cpu_dense_mixed",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
+   "points": [
+    {
+     "version": "2026.7.6.649",
+     "single_jit_s": 43.58491838000045,
+     "vmap_per_call_s": 29.38957891000003,
+     "host": null,
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/imaging/rectangular/jwst/comparison.json#local_cpu_mp",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "runtime:imaging/rectangular:jwst:jax_cpu_sparse_mixed:local_laptop:default",
+   "section": "runtime",
+   "cell": "imaging/rectangular/jwst",
+   "config": "local_cpu_mp",
+   "sparse": true,
+   "identity": {
+    "likelihood": "imaging/rectangular",
+    "instrument": "jwst",
+    "setup_id": "jax_cpu_sparse_mixed",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
+   "points": [
+    {
+     "version": "2026.7.6.649",
+     "single_jit_s": 9.420377540000118,
+     "vmap_per_call_s": 9.474230743333221,
+     "host": null,
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/imaging/rectangular/jwst/comparison.json#local_cpu_mp_sparse",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "legacy:runtime:interferometer/delaunay/alma:local_cpu_mp",
    "section": "runtime",
    "cell": "interferometer/delaunay/alma",
    "config": "local_cpu_mp",
    "sparse": false,
+   "identity": null,
    "points": [
     {
      "version": "2026.7.6.649",
@@ -1172,11 +1443,12 @@
    }
   },
   {
-   "key": "runtime:interferometer/delaunay/sma:local_cpu_fp64",
+   "key": "legacy:runtime:interferometer/delaunay/sma:local_cpu_fp64",
    "section": "runtime",
    "cell": "interferometer/delaunay/sma",
    "config": "local_cpu_fp64",
    "sparse": false,
+   "identity": null,
    "points": [
     {
      "version": "2026.7.6.649",
@@ -1200,11 +1472,12 @@
    }
   },
   {
-   "key": "runtime:interferometer/delaunay/sma:local_cpu_mp",
+   "key": "legacy:runtime:interferometer/delaunay/sma:local_cpu_mp",
    "section": "runtime",
    "cell": "interferometer/delaunay/sma",
    "config": "local_cpu_mp",
    "sparse": false,
+   "identity": null,
    "points": [
     {
      "version": "2026.7.6.649",
@@ -1228,11 +1501,19 @@
    }
   },
   {
-   "key": "runtime:interferometer/mge/sma:local_cpu_fp64",
+   "key": "runtime:interferometer/mge:sma:jax_cpu_dense_fp64_nufft:local_laptop:default",
    "section": "runtime",
    "cell": "interferometer/mge/sma",
    "config": "local_cpu_fp64",
    "sparse": false,
+   "identity": {
+    "likelihood": "interferometer/mge",
+    "instrument": "sma",
+    "setup_id": "jax_cpu_dense_fp64_nufft",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
    "points": [
     {
      "version": "2026.7.6.649",
@@ -1256,11 +1537,19 @@
    }
   },
   {
-   "key": "runtime:interferometer/mge/sma:local_cpu_mp",
+   "key": "runtime:interferometer/mge:sma:jax_cpu_dense_mixed_nufft:local_laptop:default",
    "section": "runtime",
    "cell": "interferometer/mge/sma",
    "config": "local_cpu_mp",
    "sparse": false,
+   "identity": {
+    "likelihood": "interferometer/mge",
+    "instrument": "sma",
+    "setup_id": "jax_cpu_dense_mixed_nufft",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
    "points": [
     {
      "version": "2026.7.6.649",
@@ -1284,11 +1573,12 @@
    }
   },
   {
-   "key": "runtime:interferometer/pixelization/sma:local_cpu_fp64",
+   "key": "legacy:runtime:interferometer/pixelization/sma:local_cpu_fp64",
    "section": "runtime",
    "cell": "interferometer/pixelization/sma",
    "config": "local_cpu_fp64",
    "sparse": false,
+   "identity": null,
    "points": [
     {
      "version": "2026.7.6.649",
@@ -1312,11 +1602,12 @@
    }
   },
   {
-   "key": "runtime:interferometer/pixelization/sma:local_cpu_mp",
+   "key": "legacy:runtime:interferometer/pixelization/sma:local_cpu_mp",
    "section": "runtime",
    "cell": "interferometer/pixelization/sma",
    "config": "local_cpu_mp",
    "sparse": false,
+   "identity": null,
    "points": [
     {
      "version": "2026.7.6.649",
@@ -1340,11 +1631,12 @@
    }
   },
   {
-   "key": "runtime:point_source_image/image_plane_solved:local_cpu_fp64",
+   "key": "legacy:runtime:point_source_image/image_plane_solved:local_cpu_fp64",
    "section": "runtime",
    "cell": "point_source_image/image_plane_solved",
    "config": "local_cpu_fp64",
    "sparse": false,
+   "identity": null,
    "points": [
     {
      "version": "2026.7.23.1",
@@ -1368,39 +1660,19 @@
    }
   },
   {
-   "key": "runtime:point_source_source/source_plane_solved:local_cpu_fp64",
+   "key": "runtime:point_source_source/source_plane:simple:jax_gpu_na_fp64:hpc_a100:default",
    "section": "runtime",
-   "cell": "point_source_source/source_plane_solved",
-   "config": "local_cpu_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.7.23.1",
-     "single_jit_s": 0.0003383600000233855,
-     "vmap_per_call_s": 0.00011812666683302571,
-     "host": null,
-     "backend": null,
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "archive/2026/07/hostless_summaries/runtime/point_source_source/source_plane_solved/source_plane_solved_summary_v2026.7.23.1.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "runtime:point_source_source/source_plane_solved:hpc_a100_fp64",
-   "section": "runtime",
-   "cell": "point_source_source/source_plane_solved",
+   "cell": "point_source_source/source_plane/simple",
    "config": "hpc_a100_fp64",
    "sparse": false,
+   "identity": {
+    "likelihood": "point_source_source/source_plane",
+    "instrument": "simple",
+    "setup_id": "jax_gpu_na_fp64",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
    "points": [
     {
      "version": "2026.10.17.1",
@@ -1427,11 +1699,41 @@
    }
   },
   {
-   "key": "breakdown:cluster/image_plane:local_cpu_fp64",
+   "key": "legacy:runtime:point_source_source/source_plane_solved:local_cpu_fp64",
+   "section": "runtime",
+   "cell": "point_source_source/source_plane_solved",
+   "config": "local_cpu_fp64",
+   "sparse": false,
+   "identity": null,
+   "points": [
+    {
+     "version": "2026.7.23.1",
+     "single_jit_s": 0.0003383600000233855,
+     "vmap_per_call_s": 0.00011812666683302571,
+     "host": null,
+     "backend": null,
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "archive/2026/07/hostless_summaries/runtime/point_source_source/source_plane_solved/source_plane_solved_summary_v2026.7.23.1.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "legacy:breakdown:cluster/image_plane:local_cpu_fp64",
    "section": "breakdown",
    "cell": "cluster/image_plane",
    "config": "local_cpu_fp64",
    "sparse": false,
+   "identity": null,
    "points": [
     {
      "version": "2026.7.6.649",
@@ -1481,11 +1783,12 @@
    }
   },
   {
-   "key": "breakdown:cluster/image_plane:hpc_ral_cpu_fp64",
+   "key": "legacy:breakdown:cluster/image_plane:hpc_ral_cpu_fp64",
    "section": "breakdown",
    "cell": "cluster/image_plane",
    "config": "hpc_ral_cpu_fp64",
    "sparse": false,
+   "identity": null,
    "points": [
     {
      "version": "2026.8.17.1",
@@ -1509,11 +1812,12 @@
    }
   },
   {
-   "key": "breakdown:cluster/source_plane:local_cpu_fp64",
+   "key": "legacy:breakdown:cluster/source_plane:local_cpu_fp64",
    "section": "breakdown",
    "cell": "cluster/source_plane",
    "config": "local_cpu_fp64",
    "sparse": false,
+   "identity": null,
    "points": [
     {
      "version": "2026.7.6.649",
@@ -1550,11 +1854,12 @@
    }
   },
   {
-   "key": "breakdown:datacube/delaunay/alma_high:hpc_a100_fp64",
+   "key": "legacy:breakdown:datacube/delaunay/alma_high:hpc_a100_fp64",
    "section": "breakdown",
    "cell": "datacube/delaunay/alma_high",
    "config": "hpc_a100_fp64",
    "sparse": false,
+   "identity": null,
    "points": [
     {
      "version": "2026.7.6.649",
@@ -1578,11 +1883,12 @@
    }
   },
   {
-   "key": "breakdown:datacube/delaunay/alma_high:hpc_a100_mp",
+   "key": "legacy:breakdown:datacube/delaunay/alma_high:hpc_a100_mp",
    "section": "breakdown",
    "cell": "datacube/delaunay/alma_high",
    "config": "hpc_a100_mp",
    "sparse": false,
+   "identity": null,
    "points": [
     {
      "version": "2026.7.6.649",
@@ -1606,11 +1912,12 @@
    }
   },
   {
-   "key": "breakdown:imaging/delaunay/hst:local_cpu_fp64",
+   "key": "legacy:breakdown:imaging/delaunay/hst:local_cpu_fp64",
    "section": "breakdown",
    "cell": "imaging/delaunay/hst",
    "config": "local_cpu_fp64",
    "sparse": false,
+   "identity": null,
    "points": [
     {
      "version": "2026.5.29.4",
@@ -1660,11 +1967,12 @@
    }
   },
   {
-   "key": "breakdown:imaging/delaunay/hst:local_cpu_fp64_sparse",
+   "key": "legacy:breakdown:imaging/delaunay/hst:local_cpu_fp64_sparse",
    "section": "breakdown",
    "cell": "imaging/delaunay/hst",
    "config": "local_cpu_fp64",
    "sparse": true,
+   "identity": null,
    "points": [
     {
      "version": "2026.5.29.4",
@@ -1701,11 +2009,19 @@
    }
   },
   {
-   "key": "breakdown:imaging/delaunay/hst:hpc_a100_fp64",
+   "key": "breakdown:imaging/delaunay:hst:jax_gpu_dense_fp64:hpc_a100:default",
    "section": "breakdown",
    "cell": "imaging/delaunay/hst",
    "config": "hpc_a100_fp64",
    "sparse": false,
+   "identity": {
+    "likelihood": "imaging/delaunay",
+    "instrument": "hst",
+    "setup_id": "jax_gpu_dense_fp64",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
@@ -1729,11 +2045,19 @@
    }
   },
   {
-   "key": "breakdown:imaging/delaunay/hst:hpc_a100_fp64_sparse",
+   "key": "breakdown:imaging/delaunay:hst:jax_gpu_sparse_fp64:hpc_a100:default",
    "section": "breakdown",
    "cell": "imaging/delaunay/hst",
    "config": "hpc_a100_fp64",
    "sparse": true,
+   "identity": {
+    "likelihood": "imaging/delaunay",
+    "instrument": "hst",
+    "setup_id": "jax_gpu_sparse_fp64",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
@@ -1757,11 +2081,19 @@
    }
   },
   {
-   "key": "breakdown:imaging/delaunay/hst:hpc_a100_mp",
+   "key": "breakdown:imaging/delaunay:hst:jax_gpu_dense_mixed:hpc_a100:default",
    "section": "breakdown",
    "cell": "imaging/delaunay/hst",
    "config": "hpc_a100_mp",
    "sparse": false,
+   "identity": {
+    "likelihood": "imaging/delaunay",
+    "instrument": "hst",
+    "setup_id": "jax_gpu_dense_mixed",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
    "points": [
     {
      "version": "2026.7.6.649",
@@ -1785,11 +2117,19 @@
    }
   },
   {
-   "key": "breakdown:imaging/delaunay/hst:hpc_a100_mp_sparse",
+   "key": "breakdown:imaging/delaunay:hst:jax_gpu_sparse_mixed:hpc_a100:default",
    "section": "breakdown",
    "cell": "imaging/delaunay/hst",
    "config": "hpc_a100_mp",
    "sparse": true,
+   "identity": {
+    "likelihood": "imaging/delaunay",
+    "instrument": "hst",
+    "setup_id": "jax_gpu_sparse_mixed",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
    "points": [
     {
      "version": "2026.7.6.649",
@@ -1813,11 +2153,12 @@
    }
   },
   {
-   "key": "breakdown:imaging/delaunay_nn/hst:local_cpu_fp64",
+   "key": "legacy:breakdown:imaging/delaunay_nn/hst:local_cpu_fp64",
    "section": "breakdown",
    "cell": "imaging/delaunay_nn/hst",
    "config": "local_cpu_fp64",
    "sparse": false,
+   "identity": null,
    "points": [
     {
      "version": "2026.8.17.1",
@@ -1841,11 +2182,19 @@
    }
   },
   {
-   "key": "breakdown:imaging/delaunay_nn/hst:hpc_a100_fp64",
+   "key": "breakdown:imaging/delaunay_nn:hst:jax_gpu_dense_fp64:hpc_a100:default",
    "section": "breakdown",
    "cell": "imaging/delaunay_nn/hst",
    "config": "hpc_a100_fp64",
    "sparse": false,
+   "identity": {
+    "likelihood": "imaging/delaunay_nn",
+    "instrument": "hst",
+    "setup_id": "jax_gpu_dense_fp64",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
@@ -1869,11 +2218,19 @@
    }
   },
   {
-   "key": "breakdown:imaging/delaunay_nn/hst:hpc_a100_fp64_sparse",
+   "key": "breakdown:imaging/delaunay_nn:hst:jax_gpu_sparse_fp64:hpc_a100:default",
    "section": "breakdown",
    "cell": "imaging/delaunay_nn/hst",
    "config": "hpc_a100_fp64",
    "sparse": true,
+   "identity": {
+    "likelihood": "imaging/delaunay_nn",
+    "instrument": "hst",
+    "setup_id": "jax_gpu_sparse_fp64",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
@@ -1897,11 +2254,12 @@
    }
   },
   {
-   "key": "breakdown:imaging/delaunay_numba/euclid:local_cpu_fp64",
+   "key": "legacy:breakdown:imaging/delaunay_numba/euclid:local_cpu_fp64",
    "section": "breakdown",
    "cell": "imaging/delaunay_numba/euclid",
    "config": "local_cpu_fp64",
    "sparse": false,
+   "identity": null,
    "points": [
     {
      "version": "2026.8.17.1",
@@ -1925,11 +2283,12 @@
    }
   },
   {
-   "key": "breakdown:imaging/delaunay_numba/hst:local_cpu_fp64",
+   "key": "legacy:breakdown:imaging/delaunay_numba/hst:local_cpu_fp64",
    "section": "breakdown",
    "cell": "imaging/delaunay_numba/hst",
    "config": "local_cpu_fp64",
    "sparse": false,
+   "identity": null,
    "points": [
     {
      "version": "2026.8.17.1",
@@ -1953,11 +2312,12 @@
    }
   },
   {
-   "key": "breakdown:imaging/mge/hst:local_cpu_fp64",
+   "key": "legacy:breakdown:imaging/mge/hst:local_cpu_fp64",
    "section": "breakdown",
    "cell": "imaging/mge/hst",
    "config": "local_cpu_fp64",
    "sparse": false,
+   "identity": null,
    "points": [
     {
      "version": "2026.5.29.4",
@@ -2007,11 +2367,19 @@
    }
   },
   {
-   "key": "breakdown:imaging/mge/hst:hpc_a100_fp64",
+   "key": "breakdown:imaging/mge:hst:jax_gpu_dense_fp64:hpc_a100:default",
    "section": "breakdown",
    "cell": "imaging/mge/hst",
    "config": "hpc_a100_fp64",
    "sparse": false,
+   "identity": {
+    "likelihood": "imaging/mge",
+    "instrument": "hst",
+    "setup_id": "jax_gpu_dense_fp64",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
    "points": [
     {
      "version": "2026.7.6.649",
@@ -2035,11 +2403,12 @@
    }
   },
   {
-   "key": "breakdown:imaging/pixelization/hst:local_cpu_fp64",
+   "key": "legacy:breakdown:imaging/pixelization/hst:local_cpu_fp64",
    "section": "breakdown",
    "cell": "imaging/pixelization/hst",
    "config": "local_cpu_fp64",
    "sparse": false,
+   "identity": null,
    "points": [
     {
      "version": "2026.5.29.4",
@@ -2089,11 +2458,12 @@
    }
   },
   {
-   "key": "breakdown:imaging/pixelization/hst:local_cpu_fp64_sparse",
+   "key": "legacy:breakdown:imaging/pixelization/hst:local_cpu_fp64_sparse",
    "section": "breakdown",
    "cell": "imaging/pixelization/hst",
    "config": "local_cpu_fp64",
    "sparse": true,
+   "identity": null,
    "points": [
     {
      "version": "2026.5.29.4",
@@ -2130,123 +2500,12 @@
    }
   },
   {
-   "key": "breakdown:imaging/pixelization/hst:hpc_a100_fp64",
-   "section": "breakdown",
-   "cell": "imaging/pixelization/hst",
-   "config": "hpc_a100_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 0.06002094733994453,
-     "vmap_per_call_s": null,
-     "host": "euclid-ral-gpu-2",
-     "backend": "gpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "results/imaging/rectangular/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:imaging/pixelization/hst:hpc_a100_fp64_sparse",
-   "section": "breakdown",
-   "cell": "imaging/pixelization/hst",
-   "config": "hpc_a100_fp64",
-   "sparse": true,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 0.07080817648675293,
-     "vmap_per_call_s": null,
-     "host": "euclid-ral-gpu-2",
-     "backend": "gpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "results/imaging/rectangular/hst/jax_gpu_sparse_fp64/hpc_a100/breakdown.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:imaging/pixelization/hst:hpc_a100_mp",
-   "section": "breakdown",
-   "cell": "imaging/pixelization/hst",
-   "config": "hpc_a100_mp",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.7.6.649",
-     "single_jit_s": 0.056415032700169836,
-     "vmap_per_call_s": null,
-     "host": null,
-     "backend": "gpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "results/imaging/rectangular/hst/jax_gpu_dense_mixed/hpc_a100/breakdown.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:imaging/pixelization/hst:hpc_a100_mp_sparse",
-   "section": "breakdown",
-   "cell": "imaging/pixelization/hst",
-   "config": "hpc_a100_mp",
-   "sparse": true,
-   "points": [
-    {
-     "version": "2026.7.6.649",
-     "single_jit_s": 0.05551908770012232,
-     "vmap_per_call_s": null,
-     "host": null,
-     "backend": "gpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "results/imaging/rectangular/hst/jax_gpu_sparse_mixed/hpc_a100/breakdown.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:imaging/pixelization_numba/euclid:local_cpu_fp64",
+   "key": "legacy:breakdown:imaging/pixelization_numba/euclid:local_cpu_fp64",
    "section": "breakdown",
    "cell": "imaging/pixelization_numba/euclid",
    "config": "local_cpu_fp64",
    "sparse": false,
+   "identity": null,
    "points": [
     {
      "version": "2026.8.17.1",
@@ -2270,11 +2529,12 @@
    }
   },
   {
-   "key": "breakdown:imaging/pixelization_numba/hst:local_cpu_fp64",
+   "key": "legacy:breakdown:imaging/pixelization_numba/hst:local_cpu_fp64",
    "section": "breakdown",
    "cell": "imaging/pixelization_numba/hst",
    "config": "local_cpu_fp64",
    "sparse": false,
+   "identity": null,
    "points": [
     {
      "version": "2026.8.17.1",
@@ -2298,51 +2558,30 @@
    }
   },
   {
-   "key": "breakdown:interferometer/alma_high/delaunay/alma_high:hpc_ral_cpu_fp64",
+   "key": "breakdown:imaging/rectangular:hst:jax_gpu_dense_fp64:hpc_a100:default",
    "section": "breakdown",
-   "cell": "interferometer/alma_high/delaunay/alma_high",
-   "config": "hpc_ral_cpu_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 8.327951277674098,
-     "vmap_per_call_s": null,
-     "host": "euclid-ral-gpu-1",
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "results/interferometer/delaunay/alma_high/jax_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/alma_high/delaunay/alma_high:hpc_a100_fp64",
-   "section": "breakdown",
-   "cell": "interferometer/alma_high/delaunay/alma_high",
+   "cell": "imaging/rectangular/hst",
    "config": "hpc_a100_fp64",
    "sparse": false,
+   "identity": {
+    "likelihood": "imaging/rectangular",
+    "instrument": "hst",
+    "setup_id": "jax_gpu_dense_fp64",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
-     "single_jit_s": 0.10145363440096844,
+     "single_jit_s": 0.06002094733994453,
      "vmap_per_call_s": null,
      "host": "euclid-ral-gpu-2",
      "backend": "gpu",
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/interferometer/delaunay/alma_high/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
-     "headline_note": "first block after compile",
+     "source": "results/imaging/rectangular/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2355,192 +2594,30 @@
    }
   },
   {
-   "key": "breakdown:interferometer/alma_high/delaunay/alma_high:hpc_a100_mp",
+   "key": "breakdown:imaging/rectangular:hst:jax_gpu_sparse_fp64:hpc_a100:default",
    "section": "breakdown",
-   "cell": "interferometer/alma_high/delaunay/alma_high",
-   "config": "hpc_a100_mp",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 0.10026123700081371,
-     "vmap_per_call_s": null,
-     "host": "euclid-ral-gpu-2",
-     "backend": "gpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "results/interferometer/delaunay/alma_high/jax_gpu_sparse_mixed_wtilde/hpc_a100/breakdown.json",
-     "headline_note": "first block after compile",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/alma_high/delaunay_numba/alma_high:hpc_ral_cpu_fp64",
-   "section": "breakdown",
-   "cell": "interferometer/alma_high/delaunay_numba/alma_high",
-   "config": "hpc_ral_cpu_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 13.822086743002536,
-     "vmap_per_call_s": null,
-     "host": "euclid-ral-gpu-1",
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "results/interferometer/delaunay/alma_high/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/alma_high/mge/alma_high:hpc_a100_fp64",
-   "section": "breakdown",
-   "cell": "interferometer/alma_high/mge/alma_high",
-   "config": "hpc_a100_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 3.8786374194009117,
-     "vmap_per_call_s": null,
-     "host": "euclid-ral-gpu-1",
-     "backend": "gpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "results/interferometer/mge/alma_high/jax_gpu_dense_fp64_nufft/hpc_a100/breakdown.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/alma_high/mge/alma_high:hpc_a100_fp64_sparse",
-   "section": "breakdown",
-   "cell": "interferometer/alma_high/mge/alma_high",
+   "cell": "imaging/rectangular/hst",
    "config": "hpc_a100_fp64",
    "sparse": true,
+   "identity": {
+    "likelihood": "imaging/rectangular",
+    "instrument": "hst",
+    "setup_id": "jax_gpu_sparse_fp64",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
-     "single_jit_s": 0.019613086098979694,
-     "vmap_per_call_s": null,
-     "host": "euclid-ral-gpu-1",
-     "backend": "gpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "results/interferometer/mge/alma_high/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/alma_high/mge/alma_high:hpc_a100_mp",
-   "section": "breakdown",
-   "cell": "interferometer/alma_high/mge/alma_high",
-   "config": "hpc_a100_mp",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 3.9294628362004005,
-     "vmap_per_call_s": null,
-     "host": "euclid-ral-gpu-1",
-     "backend": "gpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "results/interferometer/mge/alma_high/jax_gpu_dense_mixed_nufft/hpc_a100/breakdown.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/alma_high/pixelization/alma_high:hpc_ral_cpu_fp64",
-   "section": "breakdown",
-   "cell": "interferometer/alma_high/pixelization/alma_high",
-   "config": "hpc_ral_cpu_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 7.600348007671225,
-     "vmap_per_call_s": null,
-     "host": "euclid-ral-gpu-1",
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "results/interferometer/rectangular/alma_high/jax_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/alma_high/pixelization/alma_high:hpc_a100_fp64",
-   "section": "breakdown",
-   "cell": "interferometer/alma_high/pixelization/alma_high",
-   "config": "hpc_a100_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 0.09587617579963989,
+     "single_jit_s": 0.07080817648675293,
      "vmap_per_call_s": null,
      "host": "euclid-ral-gpu-2",
      "backend": "gpu",
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/interferometer/rectangular/alma_high/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
-     "headline_note": "first block after compile",
+     "source": "results/imaging/rectangular/hst/jax_gpu_sparse_fp64/hpc_a100/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2553,23 +2630,30 @@
    }
   },
   {
-   "key": "breakdown:interferometer/alma_high/pixelization/alma_high:hpc_a100_mp",
+   "key": "breakdown:imaging/rectangular:hst:jax_gpu_dense_mixed:hpc_a100:default",
    "section": "breakdown",
-   "cell": "interferometer/alma_high/pixelization/alma_high",
+   "cell": "imaging/rectangular/hst",
    "config": "hpc_a100_mp",
    "sparse": false,
+   "identity": {
+    "likelihood": "imaging/rectangular",
+    "instrument": "hst",
+    "setup_id": "jax_gpu_dense_mixed",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
    "points": [
     {
-     "version": "2026.8.17.1",
-     "single_jit_s": 0.09429437270009658,
+     "version": "2026.7.6.649",
+     "single_jit_s": 0.056415032700169836,
      "vmap_per_call_s": null,
-     "host": "euclid-ral-gpu-1",
+     "host": null,
      "backend": "gpu",
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/interferometer/rectangular/alma_high/jax_gpu_sparse_mixed_wtilde/hpc_a100/breakdown.json",
-     "headline_note": "first block after compile",
+     "source": "results/imaging/rectangular/hst/jax_gpu_dense_mixed/hpc_a100/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2582,22 +2666,30 @@
    }
   },
   {
-   "key": "breakdown:interferometer/alma_high/pixelization_numba/alma_high:hpc_ral_cpu_fp64",
+   "key": "breakdown:imaging/rectangular:hst:jax_gpu_sparse_mixed:hpc_a100:default",
    "section": "breakdown",
-   "cell": "interferometer/alma_high/pixelization_numba/alma_high",
-   "config": "hpc_ral_cpu_fp64",
-   "sparse": false,
+   "cell": "imaging/rectangular/hst",
+   "config": "hpc_a100_mp",
+   "sparse": true,
+   "identity": {
+    "likelihood": "imaging/rectangular",
+    "instrument": "hst",
+    "setup_id": "jax_gpu_sparse_mixed",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
    "points": [
     {
-     "version": "2026.8.17.1",
-     "single_jit_s": 19.026710038747346,
+     "version": "2026.7.6.649",
+     "single_jit_s": 0.05551908770012232,
      "vmap_per_call_s": null,
-     "host": "euclid-ral-gpu-1",
-     "backend": "cpu",
+     "host": null,
+     "backend": "gpu",
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/interferometer/rectangular/alma_high/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
+     "source": "results/imaging/rectangular/hst/jax_gpu_sparse_mixed/hpc_a100/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2610,11 +2702,19 @@
    }
   },
   {
-   "key": "breakdown:interferometer/delaunay/alma:local_cpu_fp64",
+   "key": "breakdown:interferometer/delaunay:alma:jax_cpu_sparse_fp64_wtilde:local_laptop:default",
    "section": "breakdown",
    "cell": "interferometer/delaunay/alma",
    "config": "local_cpu_fp64",
-   "sparse": false,
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/delaunay",
+    "instrument": "alma",
+    "setup_id": "jax_cpu_sparse_fp64_wtilde",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
@@ -2638,11 +2738,19 @@
    }
   },
   {
-   "key": "breakdown:interferometer/delaunay/alma:hpc_ral_cpu_fp64",
+   "key": "breakdown:interferometer/delaunay:alma:jax_cpu_sparse_fp64_wtilde:hpc_ral_cpu:default",
    "section": "breakdown",
    "cell": "interferometer/delaunay/alma",
    "config": "hpc_ral_cpu_fp64",
-   "sparse": false,
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/delaunay",
+    "instrument": "alma",
+    "setup_id": "jax_cpu_sparse_fp64_wtilde",
+    "host_class": "hpc_ral_cpu",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
@@ -2666,11 +2774,55 @@
    }
   },
   {
-   "key": "breakdown:interferometer/delaunay/alma:hpc_a100_fp64",
+   "key": "breakdown:interferometer/delaunay:alma:numba_cpu_sparse_fp64_wtilde:hpc_ral_cpu:default",
+   "section": "breakdown",
+   "cell": "interferometer/delaunay/alma",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/delaunay",
+    "instrument": "alma",
+    "setup_id": "numba_cpu_sparse_fp64_wtilde",
+    "host_class": "hpc_ral_cpu",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 1.2653459818546635,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/interferometer/delaunay/alma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:interferometer/delaunay:alma:jax_gpu_sparse_fp64_wtilde:hpc_a100:default",
    "section": "breakdown",
    "cell": "interferometer/delaunay/alma",
    "config": "hpc_a100_fp64",
-   "sparse": false,
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/delaunay",
+    "instrument": "alma",
+    "setup_id": "jax_gpu_sparse_fp64_wtilde",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
@@ -2695,11 +2847,19 @@
    }
   },
   {
-   "key": "breakdown:interferometer/delaunay/alma:hpc_a100_mp",
+   "key": "breakdown:interferometer/delaunay:alma:jax_gpu_sparse_mixed_wtilde:hpc_a100:default",
    "section": "breakdown",
    "cell": "interferometer/delaunay/alma",
    "config": "hpc_a100_mp",
-   "sparse": false,
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/delaunay",
+    "instrument": "alma",
+    "setup_id": "jax_gpu_sparse_mixed_wtilde",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
@@ -2724,50 +2884,30 @@
    }
   },
   {
-   "key": "breakdown:interferometer/delaunay/sma:local_cpu_fp64",
+   "key": "breakdown:interferometer/delaunay:alma_high:jax_cpu_sparse_fp64_wtilde:hpc_ral_cpu:default",
    "section": "breakdown",
-   "cell": "interferometer/delaunay/sma",
-   "config": "local_cpu_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 1.5316758499999197,
-     "vmap_per_call_s": null,
-     "host": "DESKTOP-H143S82",
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "results/interferometer/delaunay/sma/jax_cpu_sparse_fp64_wtilde/local_laptop/breakdown.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/delaunay_numba/alma:hpc_ral_cpu_fp64",
-   "section": "breakdown",
-   "cell": "interferometer/delaunay_numba/alma",
+   "cell": "interferometer/delaunay/alma_high",
    "config": "hpc_ral_cpu_fp64",
-   "sparse": false,
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/delaunay",
+    "instrument": "alma_high",
+    "setup_id": "jax_cpu_sparse_fp64_wtilde",
+    "host_class": "hpc_ral_cpu",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
-     "single_jit_s": 1.2653459818546635,
+     "single_jit_s": 8.327951277674098,
      "vmap_per_call_s": null,
      "host": "euclid-ral-gpu-1",
      "backend": "cpu",
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/interferometer/delaunay/alma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
+     "source": "results/interferometer/delaunay/alma_high/jax_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2780,22 +2920,30 @@
    }
   },
   {
-   "key": "breakdown:interferometer/delaunay_numba/sma:local_cpu_fp64",
+   "key": "breakdown:interferometer/delaunay:alma_high:numba_cpu_sparse_fp64_wtilde:hpc_ral_cpu:default",
    "section": "breakdown",
-   "cell": "interferometer/delaunay_numba/sma",
-   "config": "local_cpu_fp64",
-   "sparse": false,
+   "cell": "interferometer/delaunay/alma_high",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/delaunay",
+    "instrument": "alma_high",
+    "setup_id": "numba_cpu_sparse_fp64_wtilde",
+    "host_class": "hpc_ral_cpu",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
-     "single_jit_s": 0.47196160000097925,
+     "single_jit_s": 13.822086743002536,
      "vmap_per_call_s": null,
-     "host": "DESKTOP-H143S82",
+     "host": "euclid-ral-gpu-1",
      "backend": "cpu",
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/interferometer/delaunay/sma/numba_cpu_sparse_fp64_wtilde/local_laptop/breakdown.json",
+     "source": "results/interferometer/delaunay/alma_high/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -2808,263 +2956,93 @@
    }
   },
   {
-   "key": "breakdown:interferometer/delaunay_numba_direct_conv/alma:local_cpu_fp64",
+   "key": "breakdown:interferometer/delaunay:alma_high:jax_gpu_sparse_fp64_wtilde:hpc_a100:default",
    "section": "breakdown",
-   "cell": "interferometer/delaunay_numba_direct_conv/alma",
-   "config": "local_cpu_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 1.4336043666674716,
-     "vmap_per_call_s": null,
-     "host": null,
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_direct_conv_breakdown_alma_v2026.8.17.1.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/delaunay_numba_direct_conv/sma:local_cpu_fp64",
-   "section": "breakdown",
-   "cell": "interferometer/delaunay_numba_direct_conv/sma",
-   "config": "local_cpu_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 0.3641680100001395,
-     "vmap_per_call_s": null,
-     "host": null,
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_direct_conv_breakdown_sma_v2026.8.17.1.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/delaunay_numba_jax/alma:local_cpu_fp64",
-   "section": "breakdown",
-   "cell": "interferometer/delaunay_numba_jax/alma",
-   "config": "local_cpu_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 8.104913233333113,
-     "vmap_per_call_s": null,
-     "host": null,
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_jax_breakdown_alma_v2026.8.17.1.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/delaunay_numba_jax/sma:local_cpu_fp64",
-   "section": "breakdown",
-   "cell": "interferometer/delaunay_numba_jax/sma",
-   "config": "local_cpu_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 2.20312447000033,
-     "vmap_per_call_s": null,
-     "host": null,
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_jax_breakdown_sma_v2026.8.17.1.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/delaunay_numba_reference/alma:local_cpu_fp64",
-   "section": "breakdown",
-   "cell": "interferometer/delaunay_numba_reference/alma",
-   "config": "local_cpu_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 4.419525166665456,
-     "vmap_per_call_s": null,
-     "host": null,
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_reference_breakdown_alma_v2026.8.17.1.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/delaunay_numba_reference/sma:local_cpu_fp64",
-   "section": "breakdown",
-   "cell": "interferometer/delaunay_numba_reference/sma",
-   "config": "local_cpu_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 0.5166562200000044,
-     "vmap_per_call_s": null,
-     "host": null,
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_reference_breakdown_sma_v2026.8.17.1.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/delaunay_numba_source_loop/sma:local_cpu_fp64",
-   "section": "breakdown",
-   "cell": "interferometer/delaunay_numba_source_loop/sma",
-   "config": "local_cpu_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 0.44236295000009707,
-     "vmap_per_call_s": null,
-     "host": null,
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_source_loop_breakdown_sma_v2026.8.17.1.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/delaunay_numba_symmetric/sma:local_cpu_fp64",
-   "section": "breakdown",
-   "cell": "interferometer/delaunay_numba_symmetric/sma",
-   "config": "local_cpu_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 0.4463114799997129,
-     "vmap_per_call_s": null,
-     "host": null,
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_symmetric_breakdown_sma_v2026.8.17.1.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/delaunay_numba_two_stage/sma:local_cpu_fp64",
-   "section": "breakdown",
-   "cell": "interferometer/delaunay_numba_two_stage/sma",
-   "config": "local_cpu_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 0.38060654000000793,
-     "vmap_per_call_s": null,
-     "host": null,
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_two_stage_breakdown_sma_v2026.8.17.1.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/jvla/delaunay/jvla:hpc_a100_fp64",
-   "section": "breakdown",
-   "cell": "interferometer/jvla/delaunay/jvla",
+   "cell": "interferometer/delaunay/alma_high",
    "config": "hpc_a100_fp64",
-   "sparse": false,
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/delaunay",
+    "instrument": "alma_high",
+    "setup_id": "jax_gpu_sparse_fp64_wtilde",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 0.10145363440096844,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-2",
+     "backend": "gpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/interferometer/delaunay/alma_high/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
+     "headline_note": "first block after compile",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:interferometer/delaunay:alma_high:jax_gpu_sparse_mixed_wtilde:hpc_a100:default",
+   "section": "breakdown",
+   "cell": "interferometer/delaunay/alma_high",
+   "config": "hpc_a100_mp",
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/delaunay",
+    "instrument": "alma_high",
+    "setup_id": "jax_gpu_sparse_mixed_wtilde",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 0.10026123700081371,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-2",
+     "backend": "gpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/interferometer/delaunay/alma_high/jax_gpu_sparse_mixed_wtilde/hpc_a100/breakdown.json",
+     "headline_note": "first block after compile",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:interferometer/delaunay:jvla:jax_gpu_sparse_fp64_wtilde:hpc_a100:default",
+   "section": "breakdown",
+   "cell": "interferometer/delaunay/jvla",
+   "config": "hpc_a100_fp64",
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/delaunay",
+    "instrument": "jvla",
+    "setup_id": "jax_gpu_sparse_fp64_wtilde",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
@@ -3089,11 +3067,19 @@
    }
   },
   {
-   "key": "breakdown:interferometer/jvla/delaunay/jvla:hpc_a100_mp",
+   "key": "breakdown:interferometer/delaunay:jvla:jax_gpu_sparse_mixed_wtilde:hpc_a100:default",
    "section": "breakdown",
-   "cell": "interferometer/jvla/delaunay/jvla",
+   "cell": "interferometer/delaunay/jvla",
    "config": "hpc_a100_mp",
-   "sparse": false,
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/delaunay",
+    "instrument": "jvla",
+    "setup_id": "jax_gpu_sparse_mixed_wtilde",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
@@ -3118,192 +3104,30 @@
    }
   },
   {
-   "key": "breakdown:interferometer/jvla/mge/jvla:hpc_a100_fp64",
+   "key": "breakdown:interferometer/delaunay:sma:jax_cpu_sparse_fp64_wtilde:local_laptop:default",
    "section": "breakdown",
-   "cell": "interferometer/jvla/mge/jvla",
-   "config": "hpc_a100_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 23.81200230929971,
-     "vmap_per_call_s": null,
-     "host": "euclid-ral-gpu-1",
-     "backend": "gpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "results/interferometer/mge/jvla/jax_gpu_dense_fp64_nufft/hpc_a100/breakdown.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/jvla/mge/jvla:hpc_a100_fp64_sparse",
-   "section": "breakdown",
-   "cell": "interferometer/jvla/mge/jvla",
-   "config": "hpc_a100_fp64",
-   "sparse": true,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 0.01671951220050687,
-     "vmap_per_call_s": null,
-     "host": "euclid-ral-gpu-1",
-     "backend": "gpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "results/interferometer/mge/jvla/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/jvla/mge/jvla:hpc_a100_mp",
-   "section": "breakdown",
-   "cell": "interferometer/jvla/mge/jvla",
-   "config": "hpc_a100_mp",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 23.71543760449931,
-     "vmap_per_call_s": null,
-     "host": "euclid-ral-gpu-1",
-     "backend": "gpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "results/interferometer/mge/jvla/jax_gpu_dense_mixed_nufft/hpc_a100/breakdown.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/jvla/pixelization/jvla:hpc_a100_fp64",
-   "section": "breakdown",
-   "cell": "interferometer/jvla/pixelization/jvla",
-   "config": "hpc_a100_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 0.5643649918987649,
-     "vmap_per_call_s": null,
-     "host": "euclid-ral-gpu-1",
-     "backend": "gpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "results/interferometer/rectangular/jvla/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
-     "headline_note": "first block after compile",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/jvla/pixelization/jvla:hpc_a100_mp",
-   "section": "breakdown",
-   "cell": "interferometer/jvla/pixelization/jvla",
-   "config": "hpc_a100_mp",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 0.5500911986993742,
-     "vmap_per_call_s": null,
-     "host": "euclid-ral-gpu-1",
-     "backend": "gpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "results/interferometer/rectangular/jvla/jax_gpu_sparse_mixed_wtilde/hpc_a100/breakdown.json",
-     "headline_note": "first block after compile",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/mge/alma:local_cpu_fp64",
-   "section": "breakdown",
-   "cell": "interferometer/mge/alma",
-   "config": "local_cpu_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 41.07626644999982,
-     "vmap_per_call_s": null,
-     "host": "DESKTOP-H143S82",
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "results/interferometer/mge/alma/jax_cpu_dense_fp64_nufft/local_laptop/breakdown.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/mge/alma:local_cpu_fp64_sparse",
-   "section": "breakdown",
-   "cell": "interferometer/mge/alma",
+   "cell": "interferometer/delaunay/sma",
    "config": "local_cpu_fp64",
    "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/delaunay",
+    "instrument": "sma",
+    "setup_id": "jax_cpu_sparse_fp64_wtilde",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
-     "single_jit_s": 13.10301575000085,
+     "single_jit_s": 1.5316758499999197,
      "vmap_per_call_s": null,
      "host": "DESKTOP-H143S82",
      "backend": "cpu",
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/interferometer/mge/alma/jax_cpu_sparse_fp64_wtilde/local_laptop/breakdown.json",
+     "source": "results/interferometer/delaunay/sma/jax_cpu_sparse_fp64_wtilde/local_laptop/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3316,134 +3140,30 @@
    }
   },
   {
-   "key": "breakdown:interferometer/mge/alma:hpc_a100_fp64",
+   "key": "breakdown:interferometer/delaunay:sma:numba_cpu_sparse_fp64_wtilde:local_laptop:default",
    "section": "breakdown",
-   "cell": "interferometer/mge/alma",
-   "config": "hpc_a100_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 0.9432308470990393,
-     "vmap_per_call_s": null,
-     "host": "euclid-ral-gpu-1",
-     "backend": "gpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "results/interferometer/mge/alma/jax_gpu_dense_fp64_nufft/hpc_a100/breakdown.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/mge/alma:hpc_a100_fp64_sparse",
-   "section": "breakdown",
-   "cell": "interferometer/mge/alma",
-   "config": "hpc_a100_fp64",
-   "sparse": true,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 0.002671858400572091,
-     "vmap_per_call_s": null,
-     "host": "euclid-ral-gpu-1",
-     "backend": "gpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "results/interferometer/mge/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/mge/alma_high:local_cpu_fp64",
-   "section": "breakdown",
-   "cell": "interferometer/mge/alma_high",
-   "config": "local_cpu_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 144.5698579,
-     "vmap_per_call_s": null,
-     "host": "DESKTOP-H143S82",
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "results/interferometer/mge/alma_high/jax_cpu_dense_fp64_nufft/local_laptop/breakdown.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/mge/sma:local_cpu_fp64",
-   "section": "breakdown",
-   "cell": "interferometer/mge/sma",
-   "config": "local_cpu_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 0.08686684999993304,
-     "vmap_per_call_s": null,
-     "host": "DESKTOP-H143S82",
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "results/interferometer/mge/sma/jax_cpu_dense_fp64_nufft/local_laptop/breakdown.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/mge/sma:local_cpu_fp64_sparse",
-   "section": "breakdown",
-   "cell": "interferometer/mge/sma",
+   "cell": "interferometer/delaunay/sma",
    "config": "local_cpu_fp64",
    "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/delaunay",
+    "instrument": "sma",
+    "setup_id": "numba_cpu_sparse_fp64_wtilde",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
-     "single_jit_s": 0.08205540000017209,
+     "single_jit_s": 0.47196160000097925,
      "vmap_per_call_s": null,
      "host": "DESKTOP-H143S82",
      "backend": "cpu",
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/interferometer/mge/sma/jax_cpu_sparse_fp64_wtilde/local_laptop/breakdown.json",
+     "source": "results/interferometer/delaunay/sma/numba_cpu_sparse_fp64_wtilde/local_laptop/breakdown.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3456,405 +3176,19 @@
    }
   },
   {
-   "key": "breakdown:interferometer/mge_dft/sma:local_cpu_fp64",
+   "key": "breakdown:interferometer/delaunay:sma:jax_cpu_sparse_fp64_wtilde:hpc_ral_cpu:default",
    "section": "breakdown",
-   "cell": "interferometer/mge_dft/sma",
-   "config": "local_cpu_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 0.06162745999990875,
-     "vmap_per_call_s": null,
-     "host": "DESKTOP-H143S82",
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "archive/2026/08/pre_2026_09/breakdown/interferometer/mge_dft_breakdown_sma_v2026.8.17.1.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/pixelization/alma:local_cpu_fp64",
-   "section": "breakdown",
-   "cell": "interferometer/pixelization/alma",
-   "config": "local_cpu_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 4.221055499998329,
-     "vmap_per_call_s": null,
-     "host": "DESKTOP-H143S82",
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "results/interferometer/rectangular/alma/jax_cpu_sparse_fp64_wtilde/local_laptop/breakdown.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/pixelization/alma:hpc_ral_cpu_fp64",
-   "section": "breakdown",
-   "cell": "interferometer/pixelization/alma",
+   "cell": "interferometer/delaunay/sma",
    "config": "hpc_ral_cpu_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 2.907665969338268,
-     "vmap_per_call_s": null,
-     "host": "euclid-ral-gpu-1",
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "results/interferometer/rectangular/alma/jax_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/pixelization/alma:hpc_a100_fp64",
-   "section": "breakdown",
-   "cell": "interferometer/pixelization/alma",
-   "config": "hpc_a100_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 0.044458239999949,
-     "vmap_per_call_s": null,
-     "host": "euclid-ral-gpu-1",
-     "backend": "gpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "results/interferometer/rectangular/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
-     "headline_note": "first block after compile",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/pixelization/alma:hpc_a100_mp",
-   "section": "breakdown",
-   "cell": "interferometer/pixelization/alma",
-   "config": "hpc_a100_mp",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 0.04401827389956452,
-     "vmap_per_call_s": null,
-     "host": "euclid-ral-gpu-2",
-     "backend": "gpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "results/interferometer/rectangular/alma/jax_gpu_sparse_mixed_wtilde/hpc_a100/breakdown.json",
-     "headline_note": "first block after compile",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/pixelization/sma:local_cpu_fp64",
-   "section": "breakdown",
-   "cell": "interferometer/pixelization/sma",
-   "config": "local_cpu_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 1.0613702799999374,
-     "vmap_per_call_s": null,
-     "host": "DESKTOP-H143S82",
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "results/interferometer/rectangular/sma/jax_cpu_sparse_fp64_wtilde/local_laptop/breakdown.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/pixelization_numba/alma:hpc_ral_cpu_fp64",
-   "section": "breakdown",
-   "cell": "interferometer/pixelization_numba/alma",
-   "config": "hpc_ral_cpu_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 1.8345626964843464,
-     "vmap_per_call_s": null,
-     "host": "euclid-ral-gpu-1",
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "results/interferometer/rectangular/alma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/pixelization_numba/sma:local_cpu_fp64",
-   "section": "breakdown",
-   "cell": "interferometer/pixelization_numba/sma",
-   "config": "local_cpu_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 1.148083173685384,
-     "vmap_per_call_s": null,
-     "host": "DESKTOP-H143S82",
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "results/interferometer/rectangular/sma/numba_cpu_sparse_fp64_wtilde/local_laptop/breakdown.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/pixelization_numba_direct_conv/alma:local_cpu_fp64",
-   "section": "breakdown",
-   "cell": "interferometer/pixelization_numba_direct_conv/alma",
-   "config": "local_cpu_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 1.8367402000003494,
-     "vmap_per_call_s": null,
-     "host": null,
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_direct_conv_breakdown_alma_v2026.8.17.1.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/pixelization_numba_direct_conv/sma:local_cpu_fp64",
-   "section": "breakdown",
-   "cell": "interferometer/pixelization_numba_direct_conv/sma",
-   "config": "local_cpu_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 0.1736454899997625,
-     "vmap_per_call_s": null,
-     "host": null,
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_direct_conv_breakdown_sma_v2026.8.17.1.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/pixelization_numba_jax/alma:local_cpu_fp64",
-   "section": "breakdown",
-   "cell": "interferometer/pixelization_numba_jax/alma",
-   "config": "local_cpu_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 6.573937266667296,
-     "vmap_per_call_s": null,
-     "host": null,
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_jax_breakdown_alma_v2026.8.17.1.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/pixelization_numba_jax/sma:local_cpu_fp64",
-   "section": "breakdown",
-   "cell": "interferometer/pixelization_numba_jax/sma",
-   "config": "local_cpu_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 1.799182440000004,
-     "vmap_per_call_s": null,
-     "host": null,
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_jax_breakdown_sma_v2026.8.17.1.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/pixelization_numba_reference/alma:local_cpu_fp64",
-   "section": "breakdown",
-   "cell": "interferometer/pixelization_numba_reference/alma",
-   "config": "local_cpu_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 6.520812733334121,
-     "vmap_per_call_s": null,
-     "host": null,
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_reference_breakdown_alma_v2026.8.17.1.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/pixelization_numba_reference/sma:local_cpu_fp64",
-   "section": "breakdown",
-   "cell": "interferometer/pixelization_numba_reference/sma",
-   "config": "local_cpu_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 0.4727191899997706,
-     "vmap_per_call_s": null,
-     "host": null,
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_reference_breakdown_sma_v2026.8.17.1.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:interferometer/sma/delaunay/sma:hpc_ral_cpu_fp64",
-   "section": "breakdown",
-   "cell": "interferometer/sma/delaunay/sma",
-   "config": "hpc_ral_cpu_fp64",
-   "sparse": false,
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/delaunay",
+    "instrument": "sma",
+    "setup_id": "jax_cpu_sparse_fp64_wtilde",
+    "host_class": "hpc_ral_cpu",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
@@ -3878,11 +3212,55 @@
    }
   },
   {
-   "key": "breakdown:interferometer/sma/delaunay/sma:hpc_a100_fp64",
+   "key": "breakdown:interferometer/delaunay:sma:numba_cpu_sparse_fp64_wtilde:hpc_ral_cpu:default",
    "section": "breakdown",
-   "cell": "interferometer/sma/delaunay/sma",
+   "cell": "interferometer/delaunay/sma",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/delaunay",
+    "instrument": "sma",
+    "setup_id": "numba_cpu_sparse_fp64_wtilde",
+    "host_class": "hpc_ral_cpu",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 0.27887675409376816,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/interferometer/delaunay/sma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:interferometer/delaunay:sma:jax_gpu_sparse_fp64_wtilde:hpc_a100:default",
+   "section": "breakdown",
+   "cell": "interferometer/delaunay/sma",
    "config": "hpc_a100_fp64",
-   "sparse": false,
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/delaunay",
+    "instrument": "sma",
+    "setup_id": "jax_gpu_sparse_fp64_wtilde",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
@@ -3907,11 +3285,19 @@
    }
   },
   {
-   "key": "breakdown:interferometer/sma/delaunay/sma:hpc_a100_mp",
+   "key": "breakdown:interferometer/delaunay:sma:jax_gpu_sparse_mixed_wtilde:hpc_a100:default",
    "section": "breakdown",
-   "cell": "interferometer/sma/delaunay/sma",
+   "cell": "interferometer/delaunay/sma",
    "config": "hpc_a100_mp",
-   "sparse": false,
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/delaunay",
+    "instrument": "sma",
+    "setup_id": "jax_gpu_sparse_mixed_wtilde",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
@@ -3936,22 +3322,23 @@
    }
   },
   {
-   "key": "breakdown:interferometer/sma/delaunay_numba/sma:hpc_ral_cpu_fp64",
+   "key": "legacy:breakdown:interferometer/delaunay_numba_direct_conv/alma:local_cpu_fp64",
    "section": "breakdown",
-   "cell": "interferometer/sma/delaunay_numba/sma",
-   "config": "hpc_ral_cpu_fp64",
+   "cell": "interferometer/delaunay_numba_direct_conv/alma",
+   "config": "local_cpu_fp64",
    "sparse": false,
+   "identity": null,
    "points": [
     {
      "version": "2026.8.17.1",
-     "single_jit_s": 0.27887675409376816,
+     "single_jit_s": 1.4336043666674716,
      "vmap_per_call_s": null,
-     "host": "euclid-ral-gpu-1",
+     "host": null,
      "backend": "cpu",
      "job": null,
      "loadavg": null,
      "has_provenance": false,
-     "source": "results/interferometer/delaunay/sma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
+     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_direct_conv_breakdown_alma_v2026.8.17.1.json",
      "qualified": false,
      "reason": "no provenance block (pre-#342 row)"
     }
@@ -3964,11 +3351,719 @@
    }
   },
   {
-   "key": "breakdown:interferometer/sma/mge/sma:hpc_a100_fp64",
+   "key": "legacy:breakdown:interferometer/delaunay_numba_direct_conv/sma:local_cpu_fp64",
    "section": "breakdown",
-   "cell": "interferometer/sma/mge/sma",
+   "cell": "interferometer/delaunay_numba_direct_conv/sma",
+   "config": "local_cpu_fp64",
+   "sparse": false,
+   "identity": null,
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 0.3641680100001395,
+     "vmap_per_call_s": null,
+     "host": null,
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_direct_conv_breakdown_sma_v2026.8.17.1.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "legacy:breakdown:interferometer/delaunay_numba_jax/alma:local_cpu_fp64",
+   "section": "breakdown",
+   "cell": "interferometer/delaunay_numba_jax/alma",
+   "config": "local_cpu_fp64",
+   "sparse": false,
+   "identity": null,
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 8.104913233333113,
+     "vmap_per_call_s": null,
+     "host": null,
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_jax_breakdown_alma_v2026.8.17.1.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "legacy:breakdown:interferometer/delaunay_numba_jax/sma:local_cpu_fp64",
+   "section": "breakdown",
+   "cell": "interferometer/delaunay_numba_jax/sma",
+   "config": "local_cpu_fp64",
+   "sparse": false,
+   "identity": null,
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 2.20312447000033,
+     "vmap_per_call_s": null,
+     "host": null,
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_jax_breakdown_sma_v2026.8.17.1.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "legacy:breakdown:interferometer/delaunay_numba_reference/alma:local_cpu_fp64",
+   "section": "breakdown",
+   "cell": "interferometer/delaunay_numba_reference/alma",
+   "config": "local_cpu_fp64",
+   "sparse": false,
+   "identity": null,
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 4.419525166665456,
+     "vmap_per_call_s": null,
+     "host": null,
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_reference_breakdown_alma_v2026.8.17.1.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "legacy:breakdown:interferometer/delaunay_numba_reference/sma:local_cpu_fp64",
+   "section": "breakdown",
+   "cell": "interferometer/delaunay_numba_reference/sma",
+   "config": "local_cpu_fp64",
+   "sparse": false,
+   "identity": null,
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 0.5166562200000044,
+     "vmap_per_call_s": null,
+     "host": null,
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_reference_breakdown_sma_v2026.8.17.1.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "legacy:breakdown:interferometer/delaunay_numba_source_loop/sma:local_cpu_fp64",
+   "section": "breakdown",
+   "cell": "interferometer/delaunay_numba_source_loop/sma",
+   "config": "local_cpu_fp64",
+   "sparse": false,
+   "identity": null,
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 0.44236295000009707,
+     "vmap_per_call_s": null,
+     "host": null,
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_source_loop_breakdown_sma_v2026.8.17.1.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "legacy:breakdown:interferometer/delaunay_numba_symmetric/sma:local_cpu_fp64",
+   "section": "breakdown",
+   "cell": "interferometer/delaunay_numba_symmetric/sma",
+   "config": "local_cpu_fp64",
+   "sparse": false,
+   "identity": null,
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 0.4463114799997129,
+     "vmap_per_call_s": null,
+     "host": null,
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_symmetric_breakdown_sma_v2026.8.17.1.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "legacy:breakdown:interferometer/delaunay_numba_two_stage/sma:local_cpu_fp64",
+   "section": "breakdown",
+   "cell": "interferometer/delaunay_numba_two_stage/sma",
+   "config": "local_cpu_fp64",
+   "sparse": false,
+   "identity": null,
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 0.38060654000000793,
+     "vmap_per_call_s": null,
+     "host": null,
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_two_stage_breakdown_sma_v2026.8.17.1.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:interferometer/mge:alma:jax_cpu_dense_fp64_nufft:local_laptop:default",
+   "section": "breakdown",
+   "cell": "interferometer/mge/alma",
+   "config": "local_cpu_fp64",
+   "sparse": false,
+   "identity": {
+    "likelihood": "interferometer/mge",
+    "instrument": "alma",
+    "setup_id": "jax_cpu_dense_fp64_nufft",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 41.07626644999982,
+     "vmap_per_call_s": null,
+     "host": "DESKTOP-H143S82",
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/interferometer/mge/alma/jax_cpu_dense_fp64_nufft/local_laptop/breakdown.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:interferometer/mge:alma:jax_cpu_sparse_fp64_wtilde:local_laptop:default",
+   "section": "breakdown",
+   "cell": "interferometer/mge/alma",
+   "config": "local_cpu_fp64",
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/mge",
+    "instrument": "alma",
+    "setup_id": "jax_cpu_sparse_fp64_wtilde",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 13.10301575000085,
+     "vmap_per_call_s": null,
+     "host": "DESKTOP-H143S82",
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/interferometer/mge/alma/jax_cpu_sparse_fp64_wtilde/local_laptop/breakdown.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:interferometer/mge:alma:jax_gpu_dense_fp64_nufft:hpc_a100:default",
+   "section": "breakdown",
+   "cell": "interferometer/mge/alma",
    "config": "hpc_a100_fp64",
    "sparse": false,
+   "identity": {
+    "likelihood": "interferometer/mge",
+    "instrument": "alma",
+    "setup_id": "jax_gpu_dense_fp64_nufft",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 0.9432308470990393,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/interferometer/mge/alma/jax_gpu_dense_fp64_nufft/hpc_a100/breakdown.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:interferometer/mge:alma:jax_gpu_sparse_fp64_wtilde:hpc_a100:default",
+   "section": "breakdown",
+   "cell": "interferometer/mge/alma",
+   "config": "hpc_a100_fp64",
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/mge",
+    "instrument": "alma",
+    "setup_id": "jax_gpu_sparse_fp64_wtilde",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 0.002671858400572091,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/interferometer/mge/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:interferometer/mge:alma_high:jax_cpu_dense_fp64_nufft:local_laptop:default",
+   "section": "breakdown",
+   "cell": "interferometer/mge/alma_high",
+   "config": "local_cpu_fp64",
+   "sparse": false,
+   "identity": {
+    "likelihood": "interferometer/mge",
+    "instrument": "alma_high",
+    "setup_id": "jax_cpu_dense_fp64_nufft",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 144.5698579,
+     "vmap_per_call_s": null,
+     "host": "DESKTOP-H143S82",
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/interferometer/mge/alma_high/jax_cpu_dense_fp64_nufft/local_laptop/breakdown.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:interferometer/mge:alma_high:jax_gpu_dense_fp64_nufft:hpc_a100:default",
+   "section": "breakdown",
+   "cell": "interferometer/mge/alma_high",
+   "config": "hpc_a100_fp64",
+   "sparse": false,
+   "identity": {
+    "likelihood": "interferometer/mge",
+    "instrument": "alma_high",
+    "setup_id": "jax_gpu_dense_fp64_nufft",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 3.8786374194009117,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/interferometer/mge/alma_high/jax_gpu_dense_fp64_nufft/hpc_a100/breakdown.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:interferometer/mge:alma_high:jax_gpu_sparse_fp64_wtilde:hpc_a100:default",
+   "section": "breakdown",
+   "cell": "interferometer/mge/alma_high",
+   "config": "hpc_a100_fp64",
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/mge",
+    "instrument": "alma_high",
+    "setup_id": "jax_gpu_sparse_fp64_wtilde",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 0.019613086098979694,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/interferometer/mge/alma_high/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:interferometer/mge:alma_high:jax_gpu_dense_mixed_nufft:hpc_a100:default",
+   "section": "breakdown",
+   "cell": "interferometer/mge/alma_high",
+   "config": "hpc_a100_mp",
+   "sparse": false,
+   "identity": {
+    "likelihood": "interferometer/mge",
+    "instrument": "alma_high",
+    "setup_id": "jax_gpu_dense_mixed_nufft",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 3.9294628362004005,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/interferometer/mge/alma_high/jax_gpu_dense_mixed_nufft/hpc_a100/breakdown.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:interferometer/mge:jvla:jax_gpu_dense_fp64_nufft:hpc_a100:default",
+   "section": "breakdown",
+   "cell": "interferometer/mge/jvla",
+   "config": "hpc_a100_fp64",
+   "sparse": false,
+   "identity": {
+    "likelihood": "interferometer/mge",
+    "instrument": "jvla",
+    "setup_id": "jax_gpu_dense_fp64_nufft",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 23.81200230929971,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/interferometer/mge/jvla/jax_gpu_dense_fp64_nufft/hpc_a100/breakdown.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:interferometer/mge:jvla:jax_gpu_sparse_fp64_wtilde:hpc_a100:default",
+   "section": "breakdown",
+   "cell": "interferometer/mge/jvla",
+   "config": "hpc_a100_fp64",
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/mge",
+    "instrument": "jvla",
+    "setup_id": "jax_gpu_sparse_fp64_wtilde",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 0.01671951220050687,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/interferometer/mge/jvla/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:interferometer/mge:jvla:jax_gpu_dense_mixed_nufft:hpc_a100:default",
+   "section": "breakdown",
+   "cell": "interferometer/mge/jvla",
+   "config": "hpc_a100_mp",
+   "sparse": false,
+   "identity": {
+    "likelihood": "interferometer/mge",
+    "instrument": "jvla",
+    "setup_id": "jax_gpu_dense_mixed_nufft",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 23.71543760449931,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/interferometer/mge/jvla/jax_gpu_dense_mixed_nufft/hpc_a100/breakdown.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:interferometer/mge:sma:jax_cpu_dense_fp64_nufft:local_laptop:default",
+   "section": "breakdown",
+   "cell": "interferometer/mge/sma",
+   "config": "local_cpu_fp64",
+   "sparse": false,
+   "identity": {
+    "likelihood": "interferometer/mge",
+    "instrument": "sma",
+    "setup_id": "jax_cpu_dense_fp64_nufft",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 0.08686684999993304,
+     "vmap_per_call_s": null,
+     "host": "DESKTOP-H143S82",
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/interferometer/mge/sma/jax_cpu_dense_fp64_nufft/local_laptop/breakdown.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:interferometer/mge:sma:jax_cpu_sparse_fp64_wtilde:local_laptop:default",
+   "section": "breakdown",
+   "cell": "interferometer/mge/sma",
+   "config": "local_cpu_fp64",
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/mge",
+    "instrument": "sma",
+    "setup_id": "jax_cpu_sparse_fp64_wtilde",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 0.08205540000017209,
+     "vmap_per_call_s": null,
+     "host": "DESKTOP-H143S82",
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/interferometer/mge/sma/jax_cpu_sparse_fp64_wtilde/local_laptop/breakdown.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:interferometer/mge:sma:jax_gpu_dense_fp64_nufft:hpc_a100:default",
+   "section": "breakdown",
+   "cell": "interferometer/mge/sma",
+   "config": "hpc_a100_fp64",
+   "sparse": false,
+   "identity": {
+    "likelihood": "interferometer/mge",
+    "instrument": "sma",
+    "setup_id": "jax_gpu_dense_fp64_nufft",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
@@ -3993,11 +4088,696 @@
    }
   },
   {
-   "key": "breakdown:interferometer/sma/pixelization/sma:hpc_ral_cpu_fp64",
+   "key": "legacy:breakdown:interferometer/mge_dft/sma:local_cpu_fp64",
    "section": "breakdown",
-   "cell": "interferometer/sma/pixelization/sma",
-   "config": "hpc_ral_cpu_fp64",
+   "cell": "interferometer/mge_dft/sma",
+   "config": "local_cpu_fp64",
    "sparse": false,
+   "identity": null,
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 0.06162745999990875,
+     "vmap_per_call_s": null,
+     "host": "DESKTOP-H143S82",
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "archive/2026/08/pre_2026_09/breakdown/interferometer/mge_dft_breakdown_sma_v2026.8.17.1.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "legacy:breakdown:interferometer/pixelization_numba_direct_conv/alma:local_cpu_fp64",
+   "section": "breakdown",
+   "cell": "interferometer/pixelization_numba_direct_conv/alma",
+   "config": "local_cpu_fp64",
+   "sparse": false,
+   "identity": null,
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 1.8367402000003494,
+     "vmap_per_call_s": null,
+     "host": null,
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_direct_conv_breakdown_alma_v2026.8.17.1.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "legacy:breakdown:interferometer/pixelization_numba_direct_conv/sma:local_cpu_fp64",
+   "section": "breakdown",
+   "cell": "interferometer/pixelization_numba_direct_conv/sma",
+   "config": "local_cpu_fp64",
+   "sparse": false,
+   "identity": null,
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 0.1736454899997625,
+     "vmap_per_call_s": null,
+     "host": null,
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_direct_conv_breakdown_sma_v2026.8.17.1.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "legacy:breakdown:interferometer/pixelization_numba_jax/alma:local_cpu_fp64",
+   "section": "breakdown",
+   "cell": "interferometer/pixelization_numba_jax/alma",
+   "config": "local_cpu_fp64",
+   "sparse": false,
+   "identity": null,
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 6.573937266667296,
+     "vmap_per_call_s": null,
+     "host": null,
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_jax_breakdown_alma_v2026.8.17.1.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "legacy:breakdown:interferometer/pixelization_numba_jax/sma:local_cpu_fp64",
+   "section": "breakdown",
+   "cell": "interferometer/pixelization_numba_jax/sma",
+   "config": "local_cpu_fp64",
+   "sparse": false,
+   "identity": null,
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 1.799182440000004,
+     "vmap_per_call_s": null,
+     "host": null,
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_jax_breakdown_sma_v2026.8.17.1.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "legacy:breakdown:interferometer/pixelization_numba_reference/alma:local_cpu_fp64",
+   "section": "breakdown",
+   "cell": "interferometer/pixelization_numba_reference/alma",
+   "config": "local_cpu_fp64",
+   "sparse": false,
+   "identity": null,
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 6.520812733334121,
+     "vmap_per_call_s": null,
+     "host": null,
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_reference_breakdown_alma_v2026.8.17.1.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "legacy:breakdown:interferometer/pixelization_numba_reference/sma:local_cpu_fp64",
+   "section": "breakdown",
+   "cell": "interferometer/pixelization_numba_reference/sma",
+   "config": "local_cpu_fp64",
+   "sparse": false,
+   "identity": null,
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 0.4727191899997706,
+     "vmap_per_call_s": null,
+     "host": null,
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_reference_breakdown_sma_v2026.8.17.1.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:interferometer/rectangular:alma:jax_cpu_sparse_fp64_wtilde:local_laptop:default",
+   "section": "breakdown",
+   "cell": "interferometer/rectangular/alma",
+   "config": "local_cpu_fp64",
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/rectangular",
+    "instrument": "alma",
+    "setup_id": "jax_cpu_sparse_fp64_wtilde",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 4.221055499998329,
+     "vmap_per_call_s": null,
+     "host": "DESKTOP-H143S82",
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/interferometer/rectangular/alma/jax_cpu_sparse_fp64_wtilde/local_laptop/breakdown.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:interferometer/rectangular:alma:jax_cpu_sparse_fp64_wtilde:hpc_ral_cpu:default",
+   "section": "breakdown",
+   "cell": "interferometer/rectangular/alma",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/rectangular",
+    "instrument": "alma",
+    "setup_id": "jax_cpu_sparse_fp64_wtilde",
+    "host_class": "hpc_ral_cpu",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 2.907665969338268,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/interferometer/rectangular/alma/jax_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:interferometer/rectangular:alma:numba_cpu_sparse_fp64_wtilde:hpc_ral_cpu:default",
+   "section": "breakdown",
+   "cell": "interferometer/rectangular/alma",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/rectangular",
+    "instrument": "alma",
+    "setup_id": "numba_cpu_sparse_fp64_wtilde",
+    "host_class": "hpc_ral_cpu",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 1.8345626964843464,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/interferometer/rectangular/alma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:interferometer/rectangular:alma:jax_gpu_sparse_fp64_wtilde:hpc_a100:default",
+   "section": "breakdown",
+   "cell": "interferometer/rectangular/alma",
+   "config": "hpc_a100_fp64",
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/rectangular",
+    "instrument": "alma",
+    "setup_id": "jax_gpu_sparse_fp64_wtilde",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 0.044458239999949,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/interferometer/rectangular/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
+     "headline_note": "first block after compile",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:interferometer/rectangular:alma:jax_gpu_sparse_mixed_wtilde:hpc_a100:default",
+   "section": "breakdown",
+   "cell": "interferometer/rectangular/alma",
+   "config": "hpc_a100_mp",
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/rectangular",
+    "instrument": "alma",
+    "setup_id": "jax_gpu_sparse_mixed_wtilde",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 0.04401827389956452,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-2",
+     "backend": "gpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/interferometer/rectangular/alma/jax_gpu_sparse_mixed_wtilde/hpc_a100/breakdown.json",
+     "headline_note": "first block after compile",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:interferometer/rectangular:alma_high:jax_cpu_sparse_fp64_wtilde:hpc_ral_cpu:default",
+   "section": "breakdown",
+   "cell": "interferometer/rectangular/alma_high",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/rectangular",
+    "instrument": "alma_high",
+    "setup_id": "jax_cpu_sparse_fp64_wtilde",
+    "host_class": "hpc_ral_cpu",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 7.600348007671225,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/interferometer/rectangular/alma_high/jax_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:interferometer/rectangular:alma_high:numba_cpu_sparse_fp64_wtilde:hpc_ral_cpu:default",
+   "section": "breakdown",
+   "cell": "interferometer/rectangular/alma_high",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/rectangular",
+    "instrument": "alma_high",
+    "setup_id": "numba_cpu_sparse_fp64_wtilde",
+    "host_class": "hpc_ral_cpu",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 19.026710038747346,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/interferometer/rectangular/alma_high/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:interferometer/rectangular:alma_high:jax_gpu_sparse_fp64_wtilde:hpc_a100:default",
+   "section": "breakdown",
+   "cell": "interferometer/rectangular/alma_high",
+   "config": "hpc_a100_fp64",
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/rectangular",
+    "instrument": "alma_high",
+    "setup_id": "jax_gpu_sparse_fp64_wtilde",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 0.09587617579963989,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-2",
+     "backend": "gpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/interferometer/rectangular/alma_high/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
+     "headline_note": "first block after compile",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:interferometer/rectangular:alma_high:jax_gpu_sparse_mixed_wtilde:hpc_a100:default",
+   "section": "breakdown",
+   "cell": "interferometer/rectangular/alma_high",
+   "config": "hpc_a100_mp",
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/rectangular",
+    "instrument": "alma_high",
+    "setup_id": "jax_gpu_sparse_mixed_wtilde",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 0.09429437270009658,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/interferometer/rectangular/alma_high/jax_gpu_sparse_mixed_wtilde/hpc_a100/breakdown.json",
+     "headline_note": "first block after compile",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:interferometer/rectangular:jvla:jax_gpu_sparse_fp64_wtilde:hpc_a100:default",
+   "section": "breakdown",
+   "cell": "interferometer/rectangular/jvla",
+   "config": "hpc_a100_fp64",
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/rectangular",
+    "instrument": "jvla",
+    "setup_id": "jax_gpu_sparse_fp64_wtilde",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 0.5643649918987649,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/interferometer/rectangular/jvla/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
+     "headline_note": "first block after compile",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:interferometer/rectangular:jvla:jax_gpu_sparse_mixed_wtilde:hpc_a100:default",
+   "section": "breakdown",
+   "cell": "interferometer/rectangular/jvla",
+   "config": "hpc_a100_mp",
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/rectangular",
+    "instrument": "jvla",
+    "setup_id": "jax_gpu_sparse_mixed_wtilde",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 0.5500911986993742,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/interferometer/rectangular/jvla/jax_gpu_sparse_mixed_wtilde/hpc_a100/breakdown.json",
+     "headline_note": "first block after compile",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:interferometer/rectangular:sma:jax_cpu_sparse_fp64_wtilde:local_laptop:default",
+   "section": "breakdown",
+   "cell": "interferometer/rectangular/sma",
+   "config": "local_cpu_fp64",
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/rectangular",
+    "instrument": "sma",
+    "setup_id": "jax_cpu_sparse_fp64_wtilde",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 1.0613702799999374,
+     "vmap_per_call_s": null,
+     "host": "DESKTOP-H143S82",
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/interferometer/rectangular/sma/jax_cpu_sparse_fp64_wtilde/local_laptop/breakdown.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:interferometer/rectangular:sma:numba_cpu_sparse_fp64_wtilde:local_laptop:default",
+   "section": "breakdown",
+   "cell": "interferometer/rectangular/sma",
+   "config": "local_cpu_fp64",
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/rectangular",
+    "instrument": "sma",
+    "setup_id": "numba_cpu_sparse_fp64_wtilde",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 1.148083173685384,
+     "vmap_per_call_s": null,
+     "host": "DESKTOP-H143S82",
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/interferometer/rectangular/sma/numba_cpu_sparse_fp64_wtilde/local_laptop/breakdown.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:interferometer/rectangular:sma:jax_cpu_sparse_fp64_wtilde:hpc_ral_cpu:default",
+   "section": "breakdown",
+   "cell": "interferometer/rectangular/sma",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/rectangular",
+    "instrument": "sma",
+    "setup_id": "jax_cpu_sparse_fp64_wtilde",
+    "host_class": "hpc_ral_cpu",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
@@ -4021,11 +4801,55 @@
    }
   },
   {
-   "key": "breakdown:interferometer/sma/pixelization/sma:hpc_a100_fp64",
+   "key": "breakdown:interferometer/rectangular:sma:numba_cpu_sparse_fp64_wtilde:hpc_ral_cpu:default",
    "section": "breakdown",
-   "cell": "interferometer/sma/pixelization/sma",
+   "cell": "interferometer/rectangular/sma",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/rectangular",
+    "instrument": "sma",
+    "setup_id": "numba_cpu_sparse_fp64_wtilde",
+    "host_class": "hpc_ral_cpu",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 0.8240905327302723,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "cpu",
+     "job": null,
+     "loadavg": null,
+     "has_provenance": false,
+     "source": "results/interferometer/rectangular/sma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
+     "qualified": false,
+     "reason": "no provenance block (pre-#342 row)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:interferometer/rectangular:sma:jax_gpu_sparse_fp64_wtilde:hpc_a100:default",
+   "section": "breakdown",
+   "cell": "interferometer/rectangular/sma",
    "config": "hpc_a100_fp64",
-   "sparse": false,
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/rectangular",
+    "instrument": "sma",
+    "setup_id": "jax_gpu_sparse_fp64_wtilde",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
@@ -4050,11 +4874,19 @@
    }
   },
   {
-   "key": "breakdown:interferometer/sma/pixelization/sma:hpc_a100_mp",
+   "key": "breakdown:interferometer/rectangular:sma:jax_gpu_sparse_mixed_wtilde:hpc_a100:default",
    "section": "breakdown",
-   "cell": "interferometer/sma/pixelization/sma",
+   "cell": "interferometer/rectangular/sma",
    "config": "hpc_a100_mp",
-   "sparse": false,
+   "sparse": true,
+   "identity": {
+    "likelihood": "interferometer/rectangular",
+    "instrument": "sma",
+    "setup_id": "jax_gpu_sparse_mixed_wtilde",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
@@ -4079,39 +4911,19 @@
    }
   },
   {
-   "key": "breakdown:interferometer/sma/pixelization_numba/sma:hpc_ral_cpu_fp64",
-   "section": "breakdown",
-   "cell": "interferometer/sma/pixelization_numba/sma",
-   "config": "hpc_ral_cpu_fp64",
-   "sparse": false,
-   "points": [
-    {
-     "version": "2026.8.17.1",
-     "single_jit_s": 0.8240905327302723,
-     "vmap_per_call_s": null,
-     "host": "euclid-ral-gpu-1",
-     "backend": "cpu",
-     "job": null,
-     "loadavg": null,
-     "has_provenance": false,
-     "source": "results/interferometer/rectangular/sma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
-     "qualified": false,
-     "reason": "no provenance block (pre-#342 row)"
-    }
-   ],
-   "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
-   }
-  },
-  {
-   "key": "breakdown:point_source_image/image_plane/simple:local_cpu_fp64",
+   "key": "breakdown:point_source_image/image_plane:simple:jax_cpu_na_fp64:local_laptop:default",
    "section": "breakdown",
    "cell": "point_source_image/image_plane/simple",
    "config": "local_cpu_fp64",
    "sparse": false,
+   "identity": {
+    "likelihood": "point_source_image/image_plane",
+    "instrument": "simple",
+    "setup_id": "jax_cpu_na_fp64",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
@@ -4135,11 +4947,19 @@
    }
   },
   {
-   "key": "breakdown:point_source_image/image_plane/simple:hpc_ral_cpu_fp64",
+   "key": "breakdown:point_source_image/image_plane:simple:jax_cpu_na_fp64:hpc_ral_cpu:default",
    "section": "breakdown",
    "cell": "point_source_image/image_plane/simple",
    "config": "hpc_ral_cpu_fp64",
    "sparse": false,
+   "identity": {
+    "likelihood": "point_source_image/image_plane",
+    "instrument": "simple",
+    "setup_id": "jax_cpu_na_fp64",
+    "host_class": "hpc_ral_cpu",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
@@ -4163,11 +4983,55 @@
    }
   },
   {
-   "key": "breakdown:point_source_source/source_plane/simple:local_cpu_fp64",
+   "key": "breakdown:point_source_image/image_plane:simple:jax_gpu_na_fp64:hpc_a100:default",
+   "section": "breakdown",
+   "cell": "point_source_image/image_plane/simple",
+   "config": "hpc_a100_fp64",
+   "sparse": false,
+   "identity": {
+    "likelihood": "point_source_image/image_plane",
+    "instrument": "simple",
+    "setup_id": "jax_gpu_na_fp64",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 0.0010862396098673343,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-2",
+     "backend": "gpu",
+     "job": "412519",
+     "loadavg": 0.47,
+     "has_provenance": true,
+     "source": "results/point_source_image/image_plane/simple/jax_gpu_na_fp64/hpc_a100/breakdown.json",
+     "qualified": true,
+     "reason": null
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:point_source_source/source_plane:simple:jax_cpu_na_fp64:local_laptop:default",
    "section": "breakdown",
    "cell": "point_source_source/source_plane/simple",
    "config": "local_cpu_fp64",
    "sparse": false,
+   "identity": {
+    "likelihood": "point_source_source/source_plane",
+    "instrument": "simple",
+    "setup_id": "jax_cpu_na_fp64",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
@@ -4191,11 +5055,19 @@
    }
   },
   {
-   "key": "breakdown:point_source_source/source_plane/simple:hpc_ral_cpu_fp64",
+   "key": "breakdown:point_source_source/source_plane:simple:jax_cpu_na_fp64:hpc_ral_cpu:default",
    "section": "breakdown",
    "cell": "point_source_source/source_plane/simple",
    "config": "hpc_ral_cpu_fp64",
    "sparse": false,
+   "identity": {
+    "likelihood": "point_source_source/source_plane",
+    "instrument": "simple",
+    "setup_id": "jax_cpu_na_fp64",
+    "host_class": "hpc_ral_cpu",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
@@ -4219,11 +5091,19 @@
    }
   },
   {
-   "key": "breakdown:point_source_source/source_plane/simple:hpc_a100_fp64",
+   "key": "breakdown:point_source_source/source_plane:simple:jax_gpu_na_fp64:hpc_a100:default",
    "section": "breakdown",
    "cell": "point_source_source/source_plane/simple",
    "config": "hpc_a100_fp64",
    "sparse": false,
+   "identity": {
+    "likelihood": "point_source_source/source_plane",
+    "instrument": "simple",
+    "setup_id": "jax_gpu_na_fp64",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
    "points": [
     {
      "version": "2026.8.17.1",
@@ -4263,8 +5143,9 @@
    "single_jit_median_s": 0.00014712498523294926,
    "qualified": false,
    "reason": "loadavg 10.2 above the cap 8",
+   "key": "runtime:point_source_source/source_plane:simple:jax_cpu_na_fp64:hpc_ral_cpu:default",
    "section": "runtime",
-   "cell": "point_source_source/source_plane_solved",
+   "cell": "point_source_source/source_plane/simple",
    "config": "hpc_ral_cpu_fp64",
    "sparse": false
   },
@@ -4283,27 +5164,10 @@
    "single_jit_median_s": 0.00014712498523294926,
    "qualified": false,
    "reason": "loadavg 10.2 above the cap 8",
+   "key": "runtime:point_source_source/source_plane:simple:jax_cpu_na_fp64:hpc_ral_cpu:default",
    "section": "runtime",
-   "cell": "point_source_source/source_plane_solved",
+   "cell": "point_source_source/source_plane/simple",
    "config": "hpc_ral_cpu_fp64",
-   "sparse": false
-  },
-  {
-   "version": "2026.8.17.1",
-   "single_jit_s": 0.0537076534004882,
-   "vmap_per_call_s": null,
-   "host": "euclid-ral-gpu-1",
-   "backend": "gpu",
-   "job": "375981",
-   "loadavg": 65.7,
-   "has_provenance": true,
-   "source": "results/interferometer/delaunay/sdp81/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
-   "headline_note": "first block after compile",
-   "qualified": false,
-   "reason": "loadavg 65.7 above the cap 8",
-   "section": "breakdown",
-   "cell": "interferometer/sdp81/delaunay/sdp81",
-   "config": "hpc_a100_fp64",
    "sparse": false
   },
   {
@@ -4318,10 +5182,30 @@
    "source": "results/interferometer/delaunay/sdp81/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
    "qualified": false,
    "reason": "loadavg 68.3 above the cap 8",
+   "key": "breakdown:interferometer/delaunay:sdp81:numba_cpu_sparse_fp64_wtilde:hpc_ral_cpu:default",
    "section": "breakdown",
-   "cell": "interferometer/sdp81/delaunay_numba/sdp81",
+   "cell": "interferometer/delaunay/sdp81",
    "config": "hpc_ral_cpu_fp64",
-   "sparse": false
+   "sparse": true
+  },
+  {
+   "version": "2026.8.17.1",
+   "single_jit_s": 0.0537076534004882,
+   "vmap_per_call_s": null,
+   "host": "euclid-ral-gpu-1",
+   "backend": "gpu",
+   "job": "375981",
+   "loadavg": 65.7,
+   "has_provenance": true,
+   "source": "results/interferometer/delaunay/sdp81/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
+   "headline_note": "first block after compile",
+   "qualified": false,
+   "reason": "loadavg 65.7 above the cap 8",
+   "key": "breakdown:interferometer/delaunay:sdp81:jax_gpu_sparse_fp64_wtilde:hpc_a100:default",
+   "section": "breakdown",
+   "cell": "interferometer/delaunay/sdp81",
+   "config": "hpc_a100_fp64",
+   "sparse": true
   },
   {
    "version": "2026.8.17.1",
@@ -4336,8 +5220,9 @@
    "headline_note": "first block after compile",
    "qualified": false,
    "reason": "loadavg 55.7 above the cap 8",
+   "key": "breakdown:interferometer/mge:sdp81:jax_gpu_dense_fp64_nufft:hpc_a100:default",
    "section": "breakdown",
-   "cell": "interferometer/sdp81/mge/sdp81",
+   "cell": "interferometer/mge/sdp81",
    "config": "hpc_a100_fp64",
    "sparse": false
   },
@@ -4354,9 +5239,28 @@
    "headline_note": "first block after compile",
    "qualified": false,
    "reason": "loadavg 55.7 above the cap 8",
+   "key": "breakdown:interferometer/mge:sdp81:jax_gpu_sparse_fp64_wtilde:hpc_a100:default",
    "section": "breakdown",
-   "cell": "interferometer/sdp81/mge/sdp81",
+   "cell": "interferometer/mge/sdp81",
    "config": "hpc_a100_fp64",
+   "sparse": true
+  },
+  {
+   "version": "2026.8.17.1",
+   "single_jit_s": 1.8459800266673005,
+   "vmap_per_call_s": null,
+   "host": "euclid-ral-gpu-2",
+   "backend": "cpu",
+   "job": "375980",
+   "loadavg": 68.3,
+   "has_provenance": true,
+   "source": "results/interferometer/rectangular/sdp81/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
+   "qualified": false,
+   "reason": "loadavg 68.3 above the cap 8",
+   "key": "breakdown:interferometer/rectangular:sdp81:numba_cpu_sparse_fp64_wtilde:hpc_ral_cpu:default",
+   "section": "breakdown",
+   "cell": "interferometer/rectangular/sdp81",
+   "config": "hpc_ral_cpu_fp64",
    "sparse": true
   },
   {
@@ -4372,27 +5276,11 @@
    "headline_note": "first block after compile",
    "qualified": false,
    "reason": "loadavg 65.7 above the cap 8",
+   "key": "breakdown:interferometer/rectangular:sdp81:jax_gpu_sparse_fp64_wtilde:hpc_a100:default",
    "section": "breakdown",
-   "cell": "interferometer/sdp81/pixelization/sdp81",
+   "cell": "interferometer/rectangular/sdp81",
    "config": "hpc_a100_fp64",
-   "sparse": false
-  },
-  {
-   "version": "2026.8.17.1",
-   "single_jit_s": 1.8459800266673005,
-   "vmap_per_call_s": null,
-   "host": "euclid-ral-gpu-2",
-   "backend": "cpu",
-   "job": "375980",
-   "loadavg": 68.3,
-   "has_provenance": true,
-   "source": "results/interferometer/rectangular/sdp81/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json",
-   "qualified": false,
-   "reason": "loadavg 68.3 above the cap 8",
-   "section": "breakdown",
-   "cell": "interferometer/sdp81/pixelization_numba/sdp81",
-   "config": "hpc_ral_cpu_fp64",
-   "sparse": false
+   "sparse": true
   }
  ]
 }

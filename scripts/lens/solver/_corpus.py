@@ -366,6 +366,7 @@ FIXTURE_571_GROUP = "slam_fixture_571"
 FIXTURE_571_NPZ = (
     REPO_ROOT
     / "results"
+    / "misc"
     / "hazards"
     / "component"
     / "mge"

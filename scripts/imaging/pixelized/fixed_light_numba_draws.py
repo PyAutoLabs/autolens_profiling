@@ -275,7 +275,10 @@ def main(argv=None):
     parser.add_argument("--source-pixels", type=int, default=1500)
     parser.add_argument("--max-draws", type=int, default=41, help="Smoke only when less than 41")
     parser.add_argument("--config-name", default="local_cpu_fp64_fixed_light_numba_s5")
-    parser.add_argument("--output-dir", type=Path, default=ROOT / "results/breakdown/imaging")
+    # Landing folder of the pre-#442 breakdown/imaging/ (#442): the stem's sidecars keep names.
+    parser.add_argument(
+        "--output-dir", type=Path, default=ROOT / "results/misc/likelihood_breakdown/imaging"
+    )
     args = parser.parse_args(argv)
     if args.n_repeats < 1 or not 1 <= args.max_draws <= 41 or args.source_pixels < 10:
         parser.error("positive repeats, 1..41 draws and >=10 source pixels required")

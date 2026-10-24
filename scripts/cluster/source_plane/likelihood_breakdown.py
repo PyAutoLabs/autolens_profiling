@@ -73,7 +73,7 @@ fewer free centre parameters per point source (4 total for this cluster's
 Output
 ------
 
-Results JSON and PNG are written to ``results/breakdown/cluster/`` using the
+Results JSON and PNG are named under the legacy ``results/breakdown/cluster/`` folder (placed in the mirrored tree, #442) using the
 basename ``source_plane_breakdown_v{al_version}``.
 """
 

@@ -110,6 +110,7 @@ lines later.
 
 Output
 ------
+A legacy name, placed in the mirrored ``results/`` tree by ``_profile_cli`` (#442):
 ``results/breakdown/imaging/fixed_light_numba_s4_witness_<config-name>.json``
 """
 
@@ -145,6 +146,7 @@ import os as _os  # noqa: E402
 
 from _production_config import pin_thread_env as _pin_thread_env  # noqa: E402
 from _profile_cli import parse_profile_cli as _parse_profile_cli  # noqa: E402
+from _profile_cli import place_output_path as _place_output_path  # noqa: E402
 
 _cli = _parse_profile_cli()
 
@@ -904,9 +906,17 @@ witness = {
     ),
 }
 
-_out_dir = _workspace_root / "results" / "breakdown" / "imaging"
-_out_dir.mkdir(parents=True, exist_ok=True)
-_out_path = _out_dir / f"fixed_light_numba_s4_witness_{_config_name}.json"
+# Placed in the mirrored tree by its legacy name (autolens_profiling#442).
+_out_path = _place_output_path(
+    _workspace_root
+    / "results"
+    / "breakdown"
+    / "imaging"
+    / f"fixed_light_numba_s4_witness_{_config_name}.json",
+    _cli,
+    "fixed_light_numba_s4_witness",
+    hints=witness,
+)
 _out_path.write_text(json.dumps(witness, indent=2, default=str))
 
 print("\n" + "=" * 70)

@@ -95,7 +95,7 @@ mkdir -p "$NUMBA_CACHE_DIR" "$MPLCONFIGDIR"
 unset JAX_COMPILATION_CACHE_DIR PYAUTO_SMALL_DATASETS
 
 CONFIG_NAME=hpc_ral_cpu_fp64
-RESULTS_DIR=$AP_ROOT/results/breakdown/cluster
+RESULTS_DIR=$AP_ROOT/results/misc/likelihood_breakdown/cluster
 LOG_DIR=$AP_ROOT/results/misc/logs/cluster
 mkdir -p "$RESULTS_DIR" "$LOG_DIR"
 

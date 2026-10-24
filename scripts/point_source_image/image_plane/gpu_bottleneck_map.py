@@ -62,6 +62,7 @@ it is.
 Output
 ------
 
+A legacy name, placed in the mirrored ``results/`` tree by ``_profile_cli`` (#442):
 ``results/breakdown/point_source_image/gpu_bottleneck_map_<config_name>.{json,png}``.
 ``laptop_*`` / ``local_*`` configs are load-inflated and recorded ``quotable: false``. No
 top-level ``autolens_version``, so ``build_readme.py`` does not auto-table it.

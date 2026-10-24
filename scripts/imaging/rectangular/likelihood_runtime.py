@@ -95,6 +95,7 @@ from _profile_cli import (
     auto_simulate_if_missing,
     check_pinned,
     device_info_dict,
+    legacy_landing_dir,
     parse_profile_cli,
     record_pinned_check,  # noqa: E402
     rect_mesh_classes,
@@ -500,7 +501,8 @@ if _cli.vmap_probe:
         "vmap_probe_pixelization_sparse" if _cli.use_sparse_operator else "vmap_probe_pixelization"
     )
     probe_path = (
-        _cli.output_dir or (_workspace_root / "results" / "runtime" / "imaging" / "pixelization")
+        _cli.output_dir
+        or legacy_landing_dir(_workspace_root / "results" / "runtime" / "imaging" / "pixelization")
     ) / f"{_probe_basename}.json"
     write_probe_json(
         probe,
@@ -530,7 +532,7 @@ _batch_resolved, _batch_source = resolve_vmap_batch(
     "pixelization",
     instrument,
     output_dir=_cli.output_dir
-    or (_workspace_root / "results" / "runtime" / "imaging" / "pixelization"),
+    or legacy_landing_dir(_workspace_root / "results" / "runtime" / "imaging" / "pixelization"),
     path="sparse" if _cli.use_sparse_operator else "dense",
     backend=jax.default_backend(),
 )

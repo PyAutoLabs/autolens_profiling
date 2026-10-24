@@ -131,7 +131,7 @@ that scale the steady-state repeat count defaults to 2 (one NUFFT call is
 Output
 ------
 
-JSON + PNG under ``results/breakdown/interferometer/``:
+JSON + PNG named under the legacy ``results/breakdown/interferometer/`` (placed in the mirrored tree, #442):
 
 - NUFFT, single config: ``mge_breakdown_{instrument}_v{al_version}``.
 - DFT (``--use-dft``): ``mge_dft_breakdown_{instrument}_v{al_version}``; the
@@ -1219,15 +1219,13 @@ def write_results(stage: str):
             breakdown_summary["setup_split_vmap"] = {k: float(v) for k, v in vmap_split.items()}
 
     _cell_name = "mge_dft" if USE_DFT else "mge"
-    _default_dir = _workspace_root / "results" / "breakdown" / "interferometer"
-    if _cli.config_name is not None and instrument != "alma":
-        # Config-tagged names carry no instrument (CONFIG_TAGGED_RE); keep the
-        # instruments apart by directory. See the module docstring, "Output".
-        _default_dir = _default_dir / instrument
+    # Config-tagged names carry no instrument (CONFIG_TAGGED_RE); keep the
+    # instruments apart by directory. See the module docstring, "Output".
+    _inst_subdir = instrument if _cli.config_name is not None and instrument != "alma" else ""
 
     dict_path, chart_path = resolve_output_paths(
         _cli,
-        default_dir=_default_dir,
+        default_dir=_workspace_root / "results" / "breakdown" / "interferometer" / _inst_subdir,
         default_basename=f"{_cell_name}_breakdown_{instrument}_v{al_version}",
         cell=_cell_name,
         hints=breakdown_summary,

@@ -18,7 +18,7 @@ python scripts/imaging/rectangular/parallel_scaling_numba.py --instrument euclid
 python scripts/imaging/rectangular/parallel_scaling_numba.py --cores 1,2,4,8,16,32 --n-points 100   # HPC CPU node
 ```
 
-Results land in `results/parallel_scaling/imaging/` as versioned
+Results land in `results/misc/parallel_scaling/imaging/` as versioned
 `{pixelization,delaunay}_numba_scaling_<instrument>_v<version>.{json,png}`. The RAL
 submit scripts are `hpc/batch_cpu/submit_parallel_scaling_pixelization_numba_euclid`
 (Rectangular) and `hpc/batch_cpu/submit_parallel_scaling_delaunay_numba_euclid`

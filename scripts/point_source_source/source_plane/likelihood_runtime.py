@@ -73,7 +73,9 @@ from _profile_cli import (
     auto_simulate_if_missing,
     check_pinned,
     device_info_dict,
+    legacy_landing_dir,
     parse_profile_cli,
+    place_output_path,
     record_pinned_check,  # noqa: E402
     resolve_output_paths,
 )
@@ -317,7 +319,9 @@ if _cli.vmap_probe:
     recommended = recommend_batch_size(probe)
     probe_path = (
         _cli.output_dir
-        or (_workspace_root / "results" / "runtime" / "point_source_source" / "source_plane")
+        or legacy_landing_dir(
+            _workspace_root / "results" / "runtime" / "point_source_source" / "source_plane"
+        )
     ) / (
         "vmap_probe_source_plane_sparse.json"
         if _cli.use_sparse_operator
@@ -377,7 +381,9 @@ _batch_resolved, _batch_source = resolve_vmap_batch(
     "source_plane",
     instrument,
     output_dir=_cli.output_dir
-    or (_workspace_root / "results" / "runtime" / "point_source_source" / "source_plane"),
+    or legacy_landing_dir(
+        _workspace_root / "results" / "runtime" / "point_source_source" / "source_plane"
+    ),
     path="sparse" if _cli.use_sparse_operator else "dense",
     backend=jax.default_backend(),
 )
@@ -501,10 +507,18 @@ likelihood_summary = {
     },
 }
 
-results_dir = _workspace_root / "results" / "runtime" / "point_source_source" / "source_plane"
-results_dir.mkdir(parents=True, exist_ok=True)
-
-dict_path = results_dir / f"source_plane_summary_v{al_version}.json"
+# Placed in the mirrored tree by the legacy name (autolens_profiling#442); the chart sits beside it.
+dict_path = place_output_path(
+    _workspace_root
+    / "results"
+    / "runtime"
+    / "point_source_source"
+    / "source_plane"
+    / f"source_plane_summary_v{al_version}.json",
+    _cli,
+    f"source_plane_summary_v{al_version}",
+    hints=likelihood_summary,
+)
 dict_path.write_text(json.dumps(likelihood_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")
 
@@ -553,7 +567,7 @@ ax.set_title(
 ax.margins(x=0.20)
 fig.tight_layout()
 
-chart_path = results_dir / f"source_plane_summary_v{al_version}.png"
+chart_path = dict_path.with_suffix(".png")
 fig.savefig(chart_path, dpi=150)
 plt.close(fig)
 print(f"  Bar chart saved to:    {chart_path}")

@@ -121,7 +121,8 @@ def main() -> None:
     parser.add_argument(
         "--out",
         default=None,
-        help="Default results/breakdown/interferometer/memo_after_hpc_ral_cpu_fp64_v<version>.json",
+        help="Default results/misc/likelihood_breakdown/interferometer/"
+        "memo_after_hpc_ral_cpu_fp64_v<version>.json",
     )
     args = parser.parse_args()
 
@@ -195,7 +196,8 @@ def main() -> None:
         else (
             ROOT
             / "results"
-            / "breakdown"
+            / "misc"
+            / "likelihood_breakdown"
             / "interferometer"
             / f"memo_after_hpc_ral_cpu_fp64_v{args.version}.json"
         )

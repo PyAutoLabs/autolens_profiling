@@ -39,7 +39,7 @@ python scripts/interferometer/delaunay/streaming_parity.py --n-vis 4e6,5e5
 python scripts/interferometer/delaunay/streaming_plot_scaling.py
 ```
 
-Results are written to `results/streaming_scaling/` as
+Results are written to `results/misc/streaming_scaling/` as
 `<cell>_local_cpu_v<version>.{json,png}`. Here `<version>` is `git describe --tags` of the
 PyAutoArray checkout, so `2026.10.4.1+2` means two commits past the tag. The library
 `__version__` is not used, because a source checkout reports a stale one. Per-child logs

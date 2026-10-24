@@ -111,6 +111,7 @@ cluster gradient compile is minutes per route and phase 2 does not need it.
 Output
 ------
 
+A legacy name, placed in the mirrored ``results/`` tree by ``_profile_cli`` (#442):
 ``results/breakdown/point_source_image/vertex_dedup_ab_<config_name>.{json,png}``. The
 JSON deliberately carries no top-level ``autolens_version`` (versions live under
 ``library_versions``): this is a note-backed A/B, and

@@ -116,6 +116,7 @@ from _profile_cli import (
     auto_simulate_if_missing,
     check_pinned,
     device_info_dict,
+    legacy_landing_dir,
     parse_profile_cli,
     record_pinned_check,  # noqa: E402
     resolve_output_paths,
@@ -367,7 +368,9 @@ if _cli.vmap_probe:
     recommended = recommend_batch_size(probe)
     probe_path = (
         _cli.output_dir
-        or (_workspace_root / "results" / "runtime" / "point_source_source" / "source_plane_solved")
+        or legacy_landing_dir(
+            _workspace_root / "results" / "runtime" / "point_source_source" / "source_plane_solved"
+        )
     ) / (
         "vmap_probe_source_plane_solved_sparse.json"
         if _cli.use_sparse_operator
@@ -391,7 +394,9 @@ _batch_resolved, _batch_source = resolve_vmap_batch(
     "source_plane_solved",
     instrument,
     output_dir=_cli.output_dir
-    or (_workspace_root / "results" / "runtime" / "point_source_source" / "source_plane_solved"),
+    or legacy_landing_dir(
+        _workspace_root / "results" / "runtime" / "point_source_source" / "source_plane_solved"
+    ),
     path="sparse" if _cli.use_sparse_operator else "dense",
     backend=jax.default_backend(),
 )

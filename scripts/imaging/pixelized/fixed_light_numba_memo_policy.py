@@ -374,7 +374,10 @@ def main(argv=None):
     parser.add_argument("--source-pixels", type=int, default=1500)
     parser.add_argument("--n-repeats", type=int, default=6)
     parser.add_argument("--smoke", action="store_true")
-    parser.add_argument("--output-dir", type=Path, default=ROOT / "results/breakdown/imaging")
+    # Landing folder of the pre-#442 breakdown/imaging/ (#442): the stem's sidecars keep names.
+    parser.add_argument(
+        "--output-dir", type=Path, default=ROOT / "results/misc/likelihood_breakdown/imaging"
+    )
     parser.add_argument("--config-name", default="local_cpu_fp64_fixed_light_numba_s5b")
     args = parser.parse_args(argv)
     if args.source_pixels < 10 or args.n_repeats < 1:

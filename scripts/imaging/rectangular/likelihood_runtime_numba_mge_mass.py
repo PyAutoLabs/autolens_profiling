@@ -31,6 +31,7 @@ model and is left untouched.
 
 Output
 ------
+A legacy name, placed in the mirrored ``results/`` tree by ``_profile_cli`` (#442):
 ``results/runtime/imaging/pixelization_numba_mge_mass/pixelization_numba_mge_mass_likelihood_summary_<instrument>_v<version>.json``
 """
 

@@ -41,7 +41,7 @@ python scripts/misc/nnls_warm_start/delaunay_numba_nnls_iterations.py --instrume
 python scripts/misc/nnls_warm_start/nnls_iterations_matrix.py
 ```
 
-The cell writes `results/nnls_warm_start/delaunay_numba_nnls_iterations_<instrument>[_<model>]_v<version>.{json,png}`;
+The cell writes `results/misc/nnls_warm_start/delaunay_numba_nnls_iterations_<instrument>[_<model>]_v<version>.{json,png}`;
 the aggregator rewrites the matrix note in the same directory. Neither enters the
 auto-generated README tables (`scripts/misc/tooling/build_readme.py` matches
 `_summary_` / `_breakdown_` basenames only), which is deliberate.

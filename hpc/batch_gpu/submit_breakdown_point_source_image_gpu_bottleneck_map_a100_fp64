@@ -70,7 +70,7 @@ unset JAX_COMPILATION_CACHE_DIR
 
 CONFIG_NAME=hpc_ral_a100_fp64
 CONFIG_NAME_FP32=hpc_ral_a100_fp32_whatif
-RESULTS_DIR=$AP_ROOT/results/breakdown/point_source_image
+RESULTS_DIR=$AP_ROOT/results/misc/likelihood_breakdown/point_source_image
 TRACE_DIR=$AP_ROOT/output/gpu_bottleneck_map_trace_${SLURM_JOB_ID:-local}
 mkdir -p "$RESULTS_DIR" "$TRACE_DIR"
 

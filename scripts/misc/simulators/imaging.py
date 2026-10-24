@@ -13,7 +13,7 @@ Single dual-purpose module:
 2. **Profiles** each phase (grid + over-sampling setup, PSF + simulator
    construction, eager + JIT ``image_2d_from``, ``via_tracer_from``,
    ``PointSolver.solve``, fits output) and writes
-   ``results/simulators/imaging_<instrument>_summary_v<ver>.{json,png}``.
+   ``results/misc/simulators/imaging_<instrument>_summary_v<ver>.{json,png}``.
 
 ``INSTRUMENTS`` is the single source of truth for all imaging likelihood
 scripts — they import it directly::

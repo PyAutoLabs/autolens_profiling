@@ -36,7 +36,7 @@ python scripts/misc/hazards/scan.py --check
 ```
 
 The normal scan writes per-check JSON/PNG pairs and the generated seed summary
-under `results/hazards/`. `--check` re-runs the reproducers without writing and
+under `results/misc/hazards/`. `--check` re-runs the reproducers without writing and
 returns non-zero when a new semantic finding ID appears. A moved source anchor
 does not create a new finding; persistence comes from the reproducer, while the
 token fingerprint helps relocate the implementation.

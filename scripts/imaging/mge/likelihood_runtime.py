@@ -110,6 +110,7 @@ from _profile_cli import (
     auto_simulate_if_missing,
     check_pinned,
     device_info_dict,
+    legacy_landing_dir,
     parse_profile_cli,
     record_pinned_check,  # noqa: E402
     resolve_output_paths,
@@ -381,7 +382,8 @@ if _cli.vmap_probe:
     _inversion_path = "sparse" if _cli.use_sparse_operator else "dense"
     _probe_basename = "vmap_probe_mge_sparse" if _cli.use_sparse_operator else "vmap_probe_mge"
     probe_path = (
-        _cli.output_dir or (_workspace_root / "results" / "runtime" / "imaging" / "mge")
+        _cli.output_dir
+        or legacy_landing_dir(_workspace_root / "results" / "runtime" / "imaging" / "mge")
     ) / f"{_probe_basename}.json"
     write_probe_json(
         probe,
@@ -406,7 +408,8 @@ _batch_resolved, _batch_source = resolve_vmap_batch(
     "imaging",
     "mge",
     instrument,
-    output_dir=_cli.output_dir or (_workspace_root / "results" / "runtime" / "imaging" / "mge"),
+    output_dir=_cli.output_dir
+    or legacy_landing_dir(_workspace_root / "results" / "runtime" / "imaging" / "mge"),
     path="sparse" if _cli.use_sparse_operator else "dense",
     backend=jax.default_backend(),
 )

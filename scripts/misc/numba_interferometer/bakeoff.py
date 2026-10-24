@@ -761,7 +761,8 @@ def main(argv=None) -> int:
     meshes = [m for m in args.meshes.split(",") if m]
     kernel_names = [k for k in args.kernels.split(",") if k]
 
-    out_dir = _ROOT / "results" / "breakdown" / "interferometer"
+    # Landing folder of the pre-#442 breakdown/interferometer/ (#442): names are kept.
+    out_dir = _ROOT / "results" / "misc" / "likelihood_breakdown" / "interferometer"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     version = aa.__version__

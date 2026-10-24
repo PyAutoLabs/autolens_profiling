@@ -85,6 +85,7 @@ behaves as in the phase-1/2 cells: ``fp64`` asserts, ``none`` records.
 Output
 ------
 
+A legacy name, placed in the mirrored ``results/`` tree by ``_profile_cli`` (#442):
 ``results/breakdown/imaging/fixed_light_draws_<mesh>_<config_name>.{json,png}``.
 The A100 legs run under ``--config-name hpc_a100_fp64_fixed_light_draws``, the
 local CPU leg under ``local_cpu_fp64_fixed_light_draws`` — deliberately **not**

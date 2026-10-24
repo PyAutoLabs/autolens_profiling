@@ -106,7 +106,7 @@ Output
 ------
 
 ``<output-dir>/nautilus_batches_<mesh>_<stage>[_n<N>].npz`` and ``.json`` beside
-it (default output dir ``results/breakdown/imaging``). The npz keys are
+it (default output dir ``results/misc/likelihood_breakdown/imaging``). The npz keys are
 ``nautilus_batches.SCHEMA_VERSION``'s: ``parameters`` ``(n_lanes, n_dim)`` physical
 values in ``meta.parameter_paths`` order, ``figure_of_merit``, ``call_index``,
 ``lane_in_call``, and per call ``call_size``, ``call_phase``, ``call_n_bounds``,
@@ -182,6 +182,7 @@ from _profile_cli import (  # noqa: E402
     auto_simulate_if_missing,
     delaunay_regularization,
     device_info_dict,
+    legacy_landing_dir,
     machine_info_dict,
     parse_profile_cli,
     rect_mesh_classes,
@@ -608,10 +609,11 @@ meta = {
     },
 }
 
+# The npz + json pair keeps its names: the landing folder of the pre-#442 breakdown/imaging/.
 _output_dir = (
     _cli.output_dir
     if _cli.output_dir is not None
-    else _workspace_root / "results" / "breakdown" / "imaging"
+    else legacy_landing_dir(_workspace_root / "results" / "breakdown" / "imaging")
 )
 _stem = f"nautilus_batches_{MESH}_{STAGE}"
 if SOURCE_PIXELS_REQUESTED is not None:

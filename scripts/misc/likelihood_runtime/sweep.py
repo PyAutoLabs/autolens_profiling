@@ -7,14 +7,21 @@ submit scripts under ``hpc/``).
 Each subprocess invokes the existing per-cell likelihood script under
 ``autolens_profiling/likelihood_runtime/<class>/<model>.py`` with the
 CLI args ``--config-name``, ``--output-dir``, ``--use-mixed-precision``.
-Per-config JSONs land at::
+With a custom ``--output-root`` the per-config JSONs land verbatim at::
 
-    <output_root>/<class>/<model>/<config_name>.json
-    <output_root>/<class>/<model>/<config_name>.png
-    <output_root>/<class>/<model>/<config_name>.log    (captured stdout/stderr)
+    <output_root>/<class>/<model>/[<instrument>/]<model>_<config_name>.json
+    <output_root>/<class>/<model>/[<instrument>/]<model>_<config_name>.png
+    <output_root>/<class>/<model>/[<instrument>/]<config_name>.log    (captured stdout/stderr)
 
-Default ``--output-root`` is ``results/runtime/`` in this repo, read by
-``aggregate.py`` to produce ``comparison.json`` / ``comparison.png``.
+The default ``--output-root`` is the pre-#442 ``results/runtime/`` **as a legacy name**: the
+sweep places each row itself (``sweep_layout.placed_row``: the day-zero map's classification
+of ``<class>/<model>/<instrument>/<model>_<config>[_sparse].json`` with the instrument,
+precision and dense-route transformer the matrix fixes) and passes the exact path as
+``--output-path`` -- normally ``results/<dataset_type>/<variant>/<instrument>/<setup_id>/
+<host_class>/runtime.json`` (autolens_profiling#442). The ``.log`` and any timeout marker go
+to the landing folder ``results/misc/likelihood_runtime/<class>/<model>/<instrument>/``.
+``aggregate.py`` reads rows with the same ``placed_row`` to produce ``comparison.json`` /
+``comparison.png``.
 (Earlier sweeps wrote to ``autolens_workspace_developer/jax_profiling/
 results/jit`` — that tree remains readable history but is no longer the
 default; see ``wiki/campaigns/misc/design_lock_in.md``.)
@@ -63,40 +70,24 @@ from dataclasses import dataclass
 from pathlib import Path
 
 _REPO_ROOT = _profiling_root()  # autolens_profiling/
-_DEFAULT_OUTPUT_ROOT = _REPO_ROOT / "results" / "runtime"
 sys.path.insert(0, str(_REPO_ROOT))
+from _profile_cli import legacy_landing_dir
 from _script_routes import legacy_stem, runtime_path
+
+#: The legacy root sweep rows are named under (see the module docstring).
+LEGACY_RUNTIME_ROOT = _REPO_ROOT / "results" / "runtime"
+_DEFAULT_OUTPUT_ROOT = LEGACY_RUNTIME_ROOT
 
 sys.path.insert(0, str(_REPO_ROOT / "scripts" / "misc" / "tooling"))
 from build_dashboard import marker_verdict, read_release_sweep_conf  # noqa: E402
 
+sys.path.insert(0, str(_REPO_ROOT / "scripts" / "misc" / "likelihood_runtime"))
+from sweep_layout import CELLS, placed_row  # noqa: E402
+
 _DEFAULT_PYTHON = sys.executable
 
 
-# (dataset_class, model, instruments). Order is roughly cheapest -> heaviest
-# so failures surface quickly during iteration. An empty instrument tuple
-# means "the per-cell script's module default" (pre-campaign behaviour);
-# named instruments run once each, with per-instrument output subdirs
-# (results/runtime/<class>/<model>/<instrument>/ — the 3-level layout
-# aggregate.py already understands). The PreOptimizationTimes campaign
-# matrix (autolens_profiling#56): imaging at ao/jwst/hst, interferometer
-# and datacube across their instrument presets.
-CELLS: list[tuple[str, str, tuple[str, ...]]] = [
-    ("imaging", "mge", ("hst", "jwst", "ao")),
-    ("imaging", "pixelization", ("hst", "jwst", "ao")),
-    ("imaging", "delaunay", ("hst", "jwst", "ao")),
-    # DelaunayNN mesh-family comparison against imaging/delaunay — hst only,
-    # the instrument the two cells are compared at (autolens_profiling#219).
-    ("imaging", "delaunay_nn", ("hst",)),
-    # mge interferometer runs sma ONLY: the dense MGE mapping matrix needs a
-    # ~62 GB gather buffer at 1M+ vis (vram/config.py marks alma+ INHERENTLY
-    # blocked) — confirmed empirically by the first campaign pass (#56):
-    # alma OOMed at exactly 62,720,000,000 bytes on any backend.
-    ("interferometer", "mge", ("sma",)),
-    ("interferometer", "pixelization", ("sma", "alma", "alma_high", "jvla")),
-    ("interferometer", "delaunay", ("sma", "alma", "alma_high", "jvla")),
-    ("datacube", "delaunay", ("sma", "alma", "alma_high")),
-]
+# The cell matrix and the row placement are shared with aggregate.py (sweep_layout.py).
 
 
 @dataclass(frozen=True)
@@ -325,18 +316,31 @@ def _run_one(
     instrument: str | None = None,
     per_run_timeout: float | None = None,
 ) -> tuple[bool, float, str]:
-    """Run one (cell, config) pair as a subprocess. Returns (ok, elapsed, log_path)."""
-    out_dir.mkdir(parents=True, exist_ok=True)
+    """Run one (cell, config) pair as a subprocess. Returns (ok, elapsed, log_path).
+
+    ``out_dir`` under the legacy root is a legacy name: the row is placed by the leaf script
+    (no ``--output-dir``) and the log / marker go to its landing folder (module docstring).
+    """
+    side_dir = legacy_landing_dir(out_dir)
+    placed = side_dir != out_dir
     log_suffix = "_sparse" if sparse else ""
-    log_path = out_dir / f"{config.name}{log_suffix}.log"
+    log_path = side_dir / f"{config.name}{log_suffix}.log"
+    model = legacy_stem(script_path, _REPO_ROOT)
+    row_name = f"{model}_{config.name}{log_suffix}"
+    # The exact row path, the same rule aggregate.py reads with (sweep_layout.placed_row).
+    rel = out_dir.relative_to(LEGACY_RUNTIME_ROOT).parts if placed else ()
+    row_path = (
+        placed_row(rel[0], model, instrument, config.name, sparse)
+        if placed
+        else out_dir / f"{row_name}.json"
+    )
 
     cmd = [
         python,
         str(script_path),
         "--config-name",
         config.name,
-        "--output-dir",
-        str(out_dir),
+        *(("--output-path", str(row_path)) if placed else ("--output-dir", str(out_dir))),
         *(("--instrument", instrument) if instrument else ()),
         *config.extra_args,
         *(("--sparse",) if sparse else ()),
@@ -355,6 +359,7 @@ def _run_one(
     if dry_run:
         return True, 0.0, ""
 
+    side_dir.mkdir(parents=True, exist_ok=True)
     t0 = time.time()
     load_start = _loadavg_1min()
     try:
@@ -370,10 +375,7 @@ def _run_one(
                 )
         except subprocess.TimeoutExpired:
             elapsed = time.time() - t0
-            marker = (
-                out_dir
-                / f"{legacy_stem(script_path, _REPO_ROOT)}_{config.name}{log_suffix}.unusable.json"
-            )
+            marker = side_dir / f"{row_name}.unusable.json"
             payload = timeout_marker(
                 f"{config.name}{log_suffix}",
                 per_run_timeout,
@@ -397,8 +399,8 @@ def _run_one(
 
         # Verify the device.backend in the JSON matches expectations.
         if ok:
-            json_path = out_dir / f"{config.name}{log_suffix}.json"
-            if json_path.exists():
+            json_path = row_path if row_path.is_file() else None
+            if json_path is not None:
                 try:
                     data = json.loads(json_path.read_text())
                     actual = data.get("device", {}).get("backend")
@@ -453,13 +455,16 @@ def main() -> int:
         for cfg in configs:
             if args.skip_existing:
                 suffix = "_sparse" if args.sparse else ""
-                existing = out_dir / f"{model}_{cfg.name}{suffix}.json"
-                marker = out_dir / f"{model}_{cfg.name}{suffix}.unusable.json"
-                if existing.exists():
+                row = placed_row(cls, model, inst, cfg.name, args.sparse, args.output_root)
+                marker = legacy_landing_dir(out_dir) / f"{model}_{cfg.name}{suffix}.unusable.json"
+                if not marker.is_file():
+                    marker = out_dir / marker.name  # a committed marker left in place
+                marker = marker if marker.is_file() else None
+                if row.is_file():
                     print(f"--- [{cfg.name}] {cell_id}: SKIP (result exists)")
                     summary.append((cell_id, cfg.name, True, 0.0))
                     continue
-                if marker.exists():
+                if marker is not None:
                     verdict = existing_marker_verdict(marker, cfg.name, conf)
                     if verdict["gpu_only"]:
                         print(f"--- [{cfg.name}] {cell_id}: SKIP (qualified GPU-only marker)")

@@ -101,7 +101,7 @@ certifying budget at each N *and* the cost of the safe fixed budget at each N.
 Output
 ------
 
-Results JSON and PNG are written to ``results/breakdown/imaging/`` using the
+Results JSON and PNG are named under the legacy ``results/breakdown/imaging/`` folder (placed in the mirrored tree, #442) using the
 basename ``fixed_light_<mesh>_breakdown_{instrument}_v{al_version}``, or
 ``fixed_light_<mesh>_<config_name>`` under ``--config-name``. The A100 legs run
 under ``--config-name hpc_a100_fp64_fixed_light``, which is deliberately
@@ -259,7 +259,8 @@ FIDUCIAL_SOURCE_PIXELS = {"rectangular": 39 * 39, "delaunay": 1500, "delaunay_nn
 
 #: The exact dense-Cholesky log determinants measured on euclid-ral-gpu-2 on
 #: 2026-09-11 by the reconstruction-split legs (autolens_profiling#243, PR #244),
-#: read from ``results/breakdown/imaging/*_hpc_a100_fp64_recon_split.json``
+#: read from the ``*_hpc_a100_fp64_recon_split`` rows, now at ``results/imaging/<mesh>/hst/
+#: jax_gpu_dense_fp64/hpc_a100/experiments/recon_split/breakdown.json``
 #: (``log_evidence_terms``). They describe **S0** — the system the library
 #: solves today — and are this cell's tripwire that its model construction is
 #: still the sibling cells' model construction.
