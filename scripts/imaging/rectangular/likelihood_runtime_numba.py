@@ -114,10 +114,17 @@ from _production_config import (  # noqa: E402
     apply_production_over_sampling,
     iid_instances,
     mge_lens_bulge,
+    numpy_dense_twin,
     positions_likelihood,
     preset_for,
+    production_image_mesh_grid,
+    production_mesh,
+    production_model,
+    production_standard_data,
     regularization_model,
+    standard_size_preset,
     timing_summary,
+    witness_for,
     witness_verdict,
 )
 from _profile_cli import (  # noqa: E402
@@ -127,12 +134,24 @@ from _profile_cli import (  # noqa: E402
     record_pinned_check,
     rect_mesh_classes,
     render_fit_png,
+    requested_source_pixels,
     resolve_output_paths,
+    write_parity_json,
 )
 
 instrument = _cli.instrument or "euclid"  # default; override via --instrument
 
-preset = preset_for("pixelization_numba", instrument=instrument, variant=_cli.variant)
+
+# ``--standard-size`` (likelihood-lifecycle phase 2): the production preset at the standard
+# source-pixel count, for every instrument (``standard_size_preset``; jwst / ao borrow the hst
+# reference). The preset records why in ``size_override``, which retires its pin and witness.
+if _cli.standard_size:
+    if _cli.variant != "production":
+        raise SystemExit("--standard-size resizes the production preset; it has no legacy form")
+    preset = standard_size_preset("pixelization_numba", instrument)
+else:
+    preset = preset_for("pixelization_numba", instrument=instrument, variant=_cli.variant)
+_requested_pixels = requested_source_pixels(_cli, "rectangular") if _cli.standard_size else None
 
 print(f"\n--- Preset [{preset.name} / {preset.variant}] ---")
 print(f"  {preset.provenance}")
@@ -201,19 +220,28 @@ with timer.section("mask_and_oversample"):
 
     dataset = dataset.apply_mask(mask=mask)
 
-    # The source adapt image, capped at the preset's S/N if it has one — the
-    # same map that drives the adaptive mesh, the adaptive regularization AND
-    # the pixelization over-sampling rule, exactly as production.
-    adapt_image = adapt_image_capped(
-        adapt_image_for_dataset(dataset_path=dataset_path, dataset=dataset),
-        preset,
-    )
+    if preset.production_data:
+        # --standard-size: production's data (human ruling 2026-10-24): the subtracted S/N
+        # adapt image, the over-sampling cut on the UNCAPPED map, the cap for the mesh and
+        # regularization only — the one construction the JAX standard-size cells share.
+        dataset, adapt_image, _production_data_record = production_standard_data(
+            dataset, dataset_path, preset, sparse="cpu"
+        )
+    else:
+        _production_data_record = None
+        # The source adapt image, capped at the preset's S/N if it has one — the
+        # same map that drives the adaptive mesh, the adaptive regularization AND
+        # the pixelization over-sampling rule, exactly as production.
+        adapt_image = adapt_image_capped(
+            adapt_image_for_dataset(dataset_path=dataset_path, dataset=dataset),
+            preset,
+        )
 
-    # Light-profile radial bins, then the S/N-driven pixelization map, then the
-    # sparse CPU operator — production's order. `apply_over_sampling` returns a
-    # fresh `Imaging` that drops the precomputed operator, so it is re-applied
-    # last or the fit silently falls back to the dense inversion.
-    dataset = apply_production_over_sampling(dataset, adapt_image, preset)
+        # Light-profile radial bins, then the S/N-driven pixelization map, then the
+        # sparse CPU operator — production's order. `apply_over_sampling` returns a
+        # fresh `Imaging` that drops the precomputed operator, so it is re-applied
+        # last or the fit silently falls back to the dense inversion.
+        dataset = apply_production_over_sampling(dataset, adapt_image, preset)
 
 # The one-off numba sparse-operator setup is folded into the over-sampling
 # section above (production re-applies it after every over-sampling change), so
@@ -240,44 +268,11 @@ mesh_pixels_yx = preset.rect_pixels_yx
 mesh_shape = (mesh_pixels_yx, mesh_pixels_yx)
 
 with timer.section("model_build"):
-    # Linear MGE lens light — enters the inversion as linear-func columns
-    # alongside the source-pixel columns, as in the production stages where the
-    # LP-stage MGE rides through as a frozen instance. Basis structure matters,
-    # not just the Gaussian count: production is 20x2 (Euclid) / 30x2 (subhalo),
-    # the pre-2026-09-08 cell was 60x1.
-    lens_bulge = mge_lens_bulge(preset, mask_radius=mask_radius)
-
-    mass = af.Model(al.mp.Isothermal)
-    mass.centre.centre_0 = af.GaussianPrior(mean=0.0, sigma=0.005)
-    mass.centre.centre_1 = af.GaussianPrior(mean=0.0, sigma=0.005)
-    mass.einstein_radius = af.GaussianPrior(mean=1.6, sigma=0.05)
-    _lens_mass_ell = al.convert.ell_comps_from(axis_ratio=0.9, angle=45.0)
-    mass.ell_comps.ell_comps_0 = af.GaussianPrior(mean=_lens_mass_ell[0], sigma=0.01)
-    mass.ell_comps.ell_comps_1 = af.GaussianPrior(mean=_lens_mass_ell[1], sigma=0.01)
-
-    shear = af.Model(al.mp.ExternalShear)
-    shear.gamma_1 = af.GaussianPrior(mean=0.05, sigma=0.005)
-    shear.gamma_2 = af.GaussianPrior(mean=0.05, sigma=0.005)
-
-    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass)
-    field = af.Model(al.MassField, redshift=0.5, shear=shear)
-
-    # Production samples the regularization coefficients, so `regularization`
-    # comes back as a free `af.Model` under `--variant production` and as the
-    # historic fixed instance under `--variant legacy`. A free regularization
-    # has to ride inside an `af.Model(al.Pixelization)` for its priors to reach
-    # the model.
-    regularization = regularization_model(preset)
-    mesh = rect_mesh_classes(_cli)[0](shape=mesh_shape)
-
-    if isinstance(regularization, af.Model):
-        pixelization = af.Model(al.Pixelization, mesh=mesh, regularization=regularization)
-    else:
-        pixelization = al.Pixelization(mesh=mesh, regularization=regularization)
-
-    source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
-
-    model = af.Collection(galaxies=af.Collection(lens=lens, source=source), fields=field)
+    # The cell model: the preset's MGE lens light, Isothermal + shear mass and this source
+    # pixelization, from the one definition the JAX standard-size cells share
+    # (_production_config.production_model; human ruling N1 on #456).
+    mesh = production_mesh(preset, mesh_class=rect_mesh_classes(_cli)[0])
+    model = production_model(preset, mask_radius, mesh)
 
 print(f"  Total free parameters: {model.total_free_parameters}")
 
@@ -415,7 +410,7 @@ print(f"  warm iid median:    {timing['warm_iid_median_s']:.6f} s (n = {timing['
 print(f"  warm iid mean:      {timing['warm_iid_mean_s']:.6f} s")
 
 # P5 (#362 fix phase 6): PASS / FAIL only on a reference host class, else INCONCLUSIVE.
-witness = witness_verdict(timing["cold_eval_median_s"], instrument, _cli.config_name)
+witness = witness_for(preset, timing["cold_eval_median_s"], instrument, _cli.config_name)
 if witness.get("verdict") in ("PASS", "FAIL", "INCONCLUSIVE"):
     print(
         f"  witness vs production job {witness['job']} "
@@ -466,6 +461,14 @@ likelihood_summary = {
         "mesh_shape": list(mesh_shape),
         "rect_mesh": _cli.rect_mesh,
         "source_pixels": int(n_source_pixels),
+        # ``--standard-size``: what was asked for (1250 / 1225); the count built is above.
+        "source_pixels_requested": _requested_pixels,
+        "standard_size": bool(_cli.standard_size),
+        **(
+            {"production_data_record": _production_data_record}
+            if _production_data_record is not None
+            else {}
+        ),
         "inversion_path": "sparse_numba",
         "use_jax": False,
         "n_instances": n_instances,
@@ -556,6 +559,11 @@ _pinned_expected = (
     EXPECTED_LOG_LIKELIHOOD.get(preset.variant, {}).get(_cli.rect_mesh, {}).get(instrument)
 )
 
+if preset.size_override is not None:
+    # The pins describe the production preset as recorded (Delaunay mesh); not this one.
+    print(f"  Pinned check SKIPPED: {preset.size_override or 'DelaunayNN mesh'}")
+    _pinned_expected = None
+
 if _pinned_expected is None:
     print(
         f"  Pinned check SKIPPED for {instrument} (no pinned value). "
@@ -569,6 +577,40 @@ else:
 record_pinned_check(dict_path, _pinned_expected, _pinned_drift)
 if _pinned_expected is not None and not _pinned_drift:
     print("  Pinned-value check PASSED (recorded in result JSON).")
+
+
+# Parity witness (likelihood-lifecycle 2a): the numba sparse likelihood at the profiled instance
+# against the eager NumPy dense-mapping likelihood (``numpy_dense_twin``: no sparse operator,
+# ``xp=np``) on the same dataset, mesh, model and instance, both evaluated after every timed region
+# and written beside the row (the placement and guards of fit.png).
+try:
+    _parity_cell = float(analysis.log_likelihood_function(instance=instance))
+    _parity_reference_analysis = al.AnalysisImaging(
+        dataset=numpy_dense_twin(dataset),
+        adapt_images=adapt_images_for(instance, adapt_image=adapt_image),
+        positions_likelihood_list=positions_likelihood_list,
+        settings=settings,
+        use_jax=False,
+    )
+    _parity_reference = float(_parity_reference_analysis.log_likelihood_function(instance=instance))
+except Exception as _exc:  # noqa: BLE001 — a failed reference must not cost the row
+    print(f"  WARNING: parity reference failed: {type(_exc).__name__}: {_exc}")
+    _parity_cell = _parity_reference = float("nan")
+write_parity_json(
+    dict_path.parent,
+    log_likelihood=_parity_cell,
+    reference_log_likelihood=_parity_reference,
+    use_mixed_precision=False,
+    reference_source=(
+        "eager NumPy dense-mapping al.AnalysisImaging(use_jax=False, no sparse operator) in the "
+        f"same process: {instrument}, {n_source_pixels} source pixels, same dataset, mesh, "
+        "model and instance"
+    ),
+    autolens_version=al_version,
+    source_pixels=int(n_source_pixels),
+    source_pixels_requested=_requested_pixels,
+    quantity="log_likelihood_function (the cell's figure of merit, incl. any positions penalty)",
+)
 
 
 # Fit figure (likelihood-lifecycle 1B): the numba fit at the first profiled instance (the setup

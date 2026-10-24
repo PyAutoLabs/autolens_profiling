@@ -142,8 +142,14 @@ from _production_config import (  # noqa: E402
     mge_lens_bulge,
     positions_likelihood,
     preset_for,
+    production_image_mesh_grid,
+    production_mesh,
+    production_model,
+    production_standard_data,
     regularization_model,
+    standard_size_preset,
     timing_summary,
+    witness_for,
     witness_verdict,
 )
 from _profile_cli import (  # noqa: E402
@@ -152,12 +158,23 @@ from _profile_cli import (  # noqa: E402
     device_info_dict,
     record_pinned_check,
     rect_mesh_classes,
+    requested_source_pixels,
     resolve_output_paths,
 )
 
 instrument = _cli.instrument or "euclid"  # default; override via --instrument
 
-preset = preset_for("pixelization_numba", instrument=instrument, variant=_cli.variant)
+
+# ``--standard-size`` (likelihood-lifecycle phase 2): the production preset at the standard
+# source-pixel count, for every instrument (``standard_size_preset``; jwst / ao borrow the hst
+# reference). The preset records why in ``size_override``, which retires its pin and witness.
+if _cli.standard_size:
+    if _cli.variant != "production":
+        raise SystemExit("--standard-size resizes the production preset; it has no legacy form")
+    preset = standard_size_preset("pixelization_numba", instrument)
+else:
+    preset = preset_for("pixelization_numba", instrument=instrument, variant=_cli.variant)
+_requested_pixels = requested_source_pixels(_cli, "rectangular") if _cli.standard_size else None
 
 print(f"\n--- Preset [{preset.name} / {preset.variant}] ---")
 print(f"  {preset.provenance}")
@@ -198,60 +215,39 @@ mask = al.Mask2D.circular(
 
 dataset = dataset.apply_mask(mask=mask)
 
-# The source adapt image, capped at the preset's S/N if it has one — the same
-# map that drives the adaptive mesh, the adaptive regularization AND the
-# pixelization over-sampling rule, exactly as production.
-adapt_image = adapt_image_capped(
-    adapt_image_for_dataset(dataset_path=dataset_path, dataset=dataset),
-    preset,
-)
+if preset.production_data:
+    # --standard-size: production's data (human ruling 2026-10-24): the subtracted S/N
+    # adapt image, the over-sampling cut on the UNCAPPED map, the cap for the mesh and
+    # regularization only — the one construction the JAX standard-size cells share.
+    dataset, adapt_image, _production_data_record = production_standard_data(
+        dataset, dataset_path, preset, sparse="cpu"
+    )
+else:
+    _production_data_record = None
+    # The source adapt image, capped at the preset's S/N if it has one — the same
+    # map that drives the adaptive mesh, the adaptive regularization AND the
+    # pixelization over-sampling rule, exactly as production.
+    adapt_image = adapt_image_capped(
+        adapt_image_for_dataset(dataset_path=dataset_path, dataset=dataset),
+        preset,
+    )
 
-# Light-profile radial bins, then the S/N-driven pixelization map, then the
-# sparse CPU operator — production's order. `apply_over_sampling` returns a
-# fresh `Imaging` that drops the precomputed operator, so it is re-applied last
-# or the fit silently falls back to the dense inversion.
-dataset = apply_production_over_sampling(dataset, adapt_image, preset)
+    # Light-profile radial bins, then the S/N-driven pixelization map, then the
+    # sparse CPU operator — production's order. `apply_over_sampling` returns a
+    # fresh `Imaging` that drops the precomputed operator, so it is re-applied last
+    # or the fit silently falls back to the dense inversion.
+    dataset = apply_production_over_sampling(dataset, adapt_image, preset)
 
 print("\n--- Model construction ---")
 
 mesh_pixels_yx = preset.rect_pixels_yx
 mesh_shape = (mesh_pixels_yx, mesh_pixels_yx)
 
-# Linear MGE lens light. Basis structure matters, not just the Gaussian count:
-# production is 20x2 (Euclid) / 30x2 (subhalo), the pre-2026-09-08 cell 60x1.
-lens_bulge = mge_lens_bulge(preset, mask_radius=mask_radius)
-
-mass = af.Model(al.mp.Isothermal)
-mass.centre.centre_0 = af.GaussianPrior(mean=0.0, sigma=0.005)
-mass.centre.centre_1 = af.GaussianPrior(mean=0.0, sigma=0.005)
-mass.einstein_radius = af.GaussianPrior(mean=1.6, sigma=0.05)
-_lens_mass_ell = al.convert.ell_comps_from(axis_ratio=0.9, angle=45.0)
-mass.ell_comps.ell_comps_0 = af.GaussianPrior(mean=_lens_mass_ell[0], sigma=0.01)
-mass.ell_comps.ell_comps_1 = af.GaussianPrior(mean=_lens_mass_ell[1], sigma=0.01)
-
-shear = af.Model(al.mp.ExternalShear)
-shear.gamma_1 = af.GaussianPrior(mean=0.05, sigma=0.005)
-shear.gamma_2 = af.GaussianPrior(mean=0.05, sigma=0.005)
-
-lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass)
-field = af.Model(al.MassField, redshift=0.5, shear=shear)
-
-
-# Production samples the regularization coefficients, so `regularization` is a
-# free `af.Model` under `--variant production` and the historic fixed instance
-# under `--variant legacy`. A free regularization has to ride inside an
-# `af.Model(al.Pixelization)` for its priors to reach the model.
-regularization = regularization_model(preset)
-mesh = rect_mesh_classes(_cli)[0](shape=mesh_shape)
-
-if isinstance(regularization, af.Model):
-    pixelization = af.Model(al.Pixelization, mesh=mesh, regularization=regularization)
-else:
-    pixelization = al.Pixelization(mesh=mesh, regularization=regularization)
-
-source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
-
-model = af.Collection(galaxies=af.Collection(lens=lens, source=source), fields=field)
+# The cell model: the preset's MGE lens light, Isothermal + shear mass and this source
+# pixelization, from the one definition the JAX standard-size cells share
+# (_production_config.production_model; human ruling N1 on #456).
+mesh = production_mesh(preset, mesh_class=rect_mesh_classes(_cli)[0])
+model = production_model(preset, mask_radius, mesh)
 
 # The instance sequence. Production's Nautilus pool hands each worker draws
 # that are, from that worker's point of view, unrelated — so the profiled stream
@@ -764,7 +760,7 @@ timing = timing_summary(per_eval_s, n_cold=n_cold)
 direct_per_call = timing["warm_iid_median_s"]
 
 # P5 (#362 fix phase 6): PASS / FAIL only on a reference host class, else INCONCLUSIVE.
-witness = witness_verdict(timing["cold_eval_median_s"], instrument, _cli.config_name)
+witness = witness_for(preset, timing["cold_eval_median_s"], instrument, _cli.config_name)
 
 print(f"  cold eval median:   {timing['cold_eval_median_s']:.6f} s (n = {timing['n_cold']})")
 print(f"  warm iid median:    {timing['warm_iid_median_s']:.6f} s (n = {timing['n_warm']})")
@@ -816,6 +812,14 @@ breakdown_summary = {
         "mesh_shape": list(mesh_shape),
         "rect_mesh": _cli.rect_mesh,
         "source_pixels": int(n_source_pixels),
+        # ``--standard-size``: what was asked for (1250 / 1225); the count built is above.
+        "source_pixels_requested": _requested_pixels,
+        "standard_size": bool(_cli.standard_size),
+        **(
+            {"production_data_record": _production_data_record}
+            if _production_data_record is not None
+            else {}
+        ),
         "inversion_path": "sparse_numba",
         "use_jax": False,
         "n_instances": n_instances,
@@ -998,6 +1002,11 @@ EXPECTED_LOG_LIKELIHOOD: dict[str, dict[str, dict[str, float]]] = {
 _pinned_expected = (
     EXPECTED_LOG_LIKELIHOOD.get(preset.variant, {}).get(_cli.rect_mesh, {}).get(instrument)
 )
+
+if preset.size_override is not None:
+    # The pins describe the production preset as recorded (Delaunay mesh); not this one.
+    print(f"  Pinned check SKIPPED: {preset.size_override or 'DelaunayNN mesh'}")
+    _pinned_expected = None
 
 if _pinned_expected is None:
     print(

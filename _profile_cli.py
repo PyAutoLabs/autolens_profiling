@@ -51,6 +51,10 @@ class ProfileCLI:
     output_path: Path | None = None
     #: ``--no-fit-png`` turns this off: the cell's ``fit.png`` (:func:`render_fit_png`).
     fit_png: bool = True
+    #: ``--standard-size``: build the human's standard source-pixel count for the cell's variant
+    #: (:data:`STANDARD_SOURCE_PIXELS`, :func:`requested_source_pixels`). A canonical cell, so the
+    #: row keeps its canonical name (no ``_n<N>`` suffix) unlike ``--source-pixels``.
+    standard_size: bool = False
 
     def parse_cell_args(self, cell_parser: argparse.ArgumentParser, *, argv=None):
         """Finish staged parsing, rejecting flags neither parser understands.
@@ -341,7 +345,37 @@ def _profile_parser() -> argparse.ArgumentParser:
         ),
     )
 
+    parser.add_argument(
+        "--standard-size",
+        action="store_true",
+        help=(
+            "Evaluate the standard-size production cell of the likelihood (human rulings "
+            "2026-10-23/24): every pixelized imaging cell, JAX or numba, builds the numba "
+            "production preset of its instrument (_production_config; jwst/ao borrow the hst "
+            "preset) at Delaunay / DelaunayNN 1250 Hilbert vertices + 30 zeroed edge points "
+            "(1280 built) or rectangular 35x35 = 1225, so every setup of one likelihood x "
+            "instrument evaluates the same likelihood, with production's S/N adapt image, "
+            "uncapped over-sampling cut and RectangularBilinearAdaptImage mesh. The row records "
+            "``configuration.source_pixels_requested`` (1250 / 1225) beside the count actually "
+            "built, and the catalogue's size rule matches on the requested count. Unlike "
+            "``--source-pixels`` the row is a canonical cell: no ``_n<N>`` suffix, no scan "
+            "placement. Cells without a source mesh (MGE) ignore it. Exclusive with "
+            "``--source-pixels``."
+        ),
+    )
+
     return parser
+
+
+#: Flags whose value ``--standard-size`` replaces (mesh family, size, over-sampling,
+#: regularization, preset variant): passing one beside it is an error, never a silent override.
+STANDARD_SIZE_EXCLUSIVE = (
+    "--source-pixels",
+    "--rect-mesh",
+    "--over-sampling",
+    "--regularization",
+    "--variant",
+)
 
 
 def parse_profile_cli(default_config_name: str | None = None, *, argv=None) -> ProfileCLI:
@@ -359,6 +393,20 @@ def parse_profile_cli(default_config_name: str | None = None, *, argv=None) -> P
     """
     parser = _profile_parser()
     args, _unknown = parser.parse_known_args(argv)
+    if args.standard_size:
+        # --standard-size builds the production cell's mesh, size, over-sampling, regularization
+        # and preset; any explicit flag it would silently replace is refused (#456 fork b).
+        tokens = list(sys.argv[1:] if argv is None else argv)
+        given = [
+            f
+            for f in STANDARD_SIZE_EXCLUSIVE
+            if any(t == f or t.startswith(f + "=") for t in tokens)
+        ]
+        if given:
+            parser.error(
+                f"--standard-size builds the production cell and would silently replace "
+                f"{', '.join(given)}; drop {'it' if len(given) == 1 else 'them'}"
+            )
     config_name = args.config_name or default_config_name
     output_dir = Path(args.output_dir).resolve() if args.output_dir else None
     return ProfileCLI(
@@ -379,7 +427,40 @@ def parse_profile_cli(default_config_name: str | None = None, *, argv=None) -> P
         over_sampling=args.over_sampling,
         output_path=Path(args.output_path).resolve() if args.output_path else None,
         fit_png=bool(args.fit_png),
+        standard_size=bool(args.standard_size),
     )
+
+
+#: The human's standard source-pixel counts (2026-10-23), by likelihood variant. The one copy is
+#: ``scripts/misc/tooling/catalogue_lifecycle.STANDARD_SOURCE_PIXELS`` (the catalogue's size rule);
+#: this mirrors it so the cells stay importable without the tooling path, and
+#: ``test_standard_size.py`` pins the two equal.
+STANDARD_SOURCE_PIXELS = {"delaunay": 1250, "delaunay_nn": 1250, "rectangular": 35 * 35}
+
+
+def requested_source_pixels(cli: ProfileCLI, variant: str) -> int | None:
+    """The source-pixel count a cell of likelihood ``variant`` is asked to build, or None.
+
+    ``--standard-size`` -> :data:`STANDARD_SOURCE_PIXELS` of ``variant``; else ``--source-pixels``;
+    else None (the cell keeps its own fiducial). Rectangular cells build the nearest square
+    (``round(sqrt(N))`` per side; 1225 -> 35x35 exactly); Delaunay-family cells build N Hilbert
+    vertices (the standard-size production cells add the preset's 30 zeroed edge points).
+    """
+    if getattr(cli, "standard_size", False):
+        try:
+            return STANDARD_SOURCE_PIXELS[variant]
+        except KeyError:
+            raise ValueError(
+                f"--standard-size has no standard count for variant {variant!r}"
+            ) from None
+    return cli.source_pixels
+
+
+def rectangular_side(requested: int | None, fiducial: int) -> int:
+    """The rectangular mesh side for a requested source-pixel count (``fiducial`` when None)."""
+    import math
+
+    return fiducial if requested is None else int(round(math.sqrt(requested)))
 
 
 #: What ``--regularization`` resolves to in the Delaunay-family cells when the
@@ -1171,11 +1252,17 @@ def fit_png_cell(cell_dir: Path) -> bool:
     A flat folder an explicit ``--output-dir`` names (``results/misc/...``, a legacy cell folder,
     a scratch path) collects several configs' rows, so one ``fit.png`` there would belong to
     whichever wrote last.
+
+    The test is the path from the folder's last ``results`` component, so a scratch tree laid out
+    like ``results/`` (``<scratch>/results/imaging/delaunay/hst/<setup_id>/<host_class>/``, inside
+    the repo's gitignored ``output/`` or anywhere else) is a cell too: it is just as unambiguous,
+    and it is how a laptop proof or a timing arm keeps its row, figure and witness out of
+    ``results/``. A folder with no ``results`` component is never a cell.
     """
-    try:
-        rel = Path(cell_dir).resolve().relative_to(_REPO_ROOT.resolve())
-    except ValueError:
+    parts = Path(cell_dir).resolve().parts
+    if "results" not in parts:
         return False
+    rel = Path(*parts[len(parts) - 1 - parts[::-1].index("results") :])
     tooling = str(_REPO_ROOT / "scripts" / "misc" / "tooling")
     if tooling not in sys.path:
         sys.path.insert(0, tooling)
@@ -1242,6 +1329,148 @@ def render_fit_png(
         return None
     print(f"  [fit.png] {target}")
     return target
+
+
+#: The file name every cell's parity witness is kept under, beside its result JSON
+#: (``scripts/misc/tooling/parity_witness.py``; results/README.md "Parity witness").
+PARITY_JSON = "parity.json"
+
+#: Relative tolerance of a parity witness, as a fraction of |reference log-likelihood| (human
+#: ruling 2026-10-24): 1e-4 for an fp64 cell, 1e-3 for a mixed-precision one. The witness stores
+#: the resulting ABSOLUTE tolerance.
+PARITY_RTOL = {"fp64": 1e-4, "mixed": 1e-3}
+
+
+def parity_witness_doc(
+    *,
+    log_likelihood,
+    reference_log_likelihood,
+    use_mixed_precision: bool,
+    reference_source: str,
+    autolens_version: str,
+    source_pixels: int | None = None,
+    source_pixels_requested: int | None = None,
+    quantity: str | None = None,
+) -> dict:
+    """One ``parity-witness`` v1 document (the schema of ``parity_witness.validate``).
+
+    ``status`` is ``match`` when ``|log_likelihood - reference| <= tolerance`` and ``diverged``
+    above it, with ``tolerance = PARITY_RTOL[precision] * |reference|``; a non-finite value on
+    either side is ``not_assessed`` with its reason (the numbers are then ``null``).
+    """
+    import datetime as _dt
+    import math
+
+    now = _dt.datetime.now(_dt.UTC)
+    precision = "mixed" if use_mixed_precision else "fp64"
+    rtol = PARITY_RTOL[precision]
+    doc = {
+        "schema": "parity-witness",
+        "version": 1,
+        "status": "not_assessed",
+        "log_likelihood": None,
+        "reference_log_likelihood": None,
+        "tolerance": None,
+        "tolerance_rule": f"{rtol:g} x |reference_log_likelihood| ({precision})",
+        "reference": {"source": reference_source, "date": now.date().isoformat()},
+        "measured_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "autolens_version": str(autolens_version),
+    }
+    if quantity:
+        doc["quantity"] = quantity
+    if source_pixels is not None:
+        doc["source_pixels"] = int(source_pixels)
+    if source_pixels_requested is not None:
+        doc["source_pixels_requested"] = int(source_pixels_requested)
+    try:
+        value, reference = float(log_likelihood), float(reference_log_likelihood)
+    except (TypeError, ValueError):
+        value = reference = float("nan")
+    if not (math.isfinite(value) and math.isfinite(reference)):
+        doc["reason"] = (
+            f"non-finite log-likelihood (cell {log_likelihood!r}, reference "
+            f"{reference_log_likelihood!r}); no comparison made"
+        )
+        return doc
+    tolerance = rtol * abs(reference)
+    doc.update(
+        status="match" if abs(value - reference) <= tolerance else "diverged",
+        log_likelihood=value,
+        reference_log_likelihood=reference,
+        tolerance=tolerance,
+    )
+    return doc
+
+
+def _parity_validate(doc: dict) -> list[str]:
+    tooling = str(_REPO_ROOT / "scripts" / "misc" / "tooling")
+    if tooling not in sys.path:
+        sys.path.insert(0, tooling)
+    import parity_witness
+
+    return parity_witness.validate(doc)
+
+
+def write_parity_json(cell_dir: Path, **witness) -> Path | None:
+    """Write the cell's ``parity.json`` into ``cell_dir`` and return its path (None when not).
+
+    ``witness`` is :func:`parity_witness_doc`'s keywords: the cell's log-likelihood, the eager
+    NumPy reference computed in the same process on the same dataset, size, instrument and model,
+    and its provenance. Call it after the row is written and after every timed region, with
+    ``cell_dir`` the folder of the placed result JSON — the same placement and guard rules as
+    :func:`render_fit_png`, so the witness beside a row always belongs to that row:
+
+    - the old ``parity.json`` is removed first, so a run that fails here (or a cell rewritten
+      without a witness: pass ``log_likelihood=None`` or call :func:`remove_parity_json`) leaves
+      none;
+    - under ``AUTOLENS_PROFILING_SMOKE`` nothing is touched (a smoke run writes no row);
+    - outside a mirrored-tree cell (:func:`fit_png_cell`) nothing is touched or written.
+
+    The document is validated with ``parity_witness.validate`` before it is written. Never raises:
+    a witness that fails must not cost the measurement it describes.
+    """
+    if os.environ.get("AUTOLENS_PROFILING_SMOKE"):
+        return None
+    import json
+
+    cell_dir = Path(cell_dir)
+    target = cell_dir / PARITY_JSON
+    staged = cell_dir / ".parity_json.tmp"
+    try:
+        if not fit_png_cell(cell_dir):
+            print(f"  [parity.json] skipped: {cell_dir} is not a mirrored-tree cell")
+            return None
+        target.unlink(missing_ok=True)
+        if witness.get("log_likelihood") is None:
+            return None
+        doc = parity_witness_doc(**witness)
+        errors = _parity_validate(doc)
+        if errors:
+            raise ValueError("invalid parity witness: " + "; ".join(errors))
+        staged.write_text(json.dumps(doc, indent=2) + "\n")
+        os.replace(staged, target)
+    except Exception as exc:  # noqa: BLE001 — see the docstring
+        staged.unlink(missing_ok=True)
+        print(
+            f"  WARNING: [parity.json] NOT WRITTEN for {cell_dir}: {type(exc).__name__}: {exc}. "
+            "The row is kept without a parity witness."
+        )
+        return None
+    delta = (
+        abs(doc["log_likelihood"] - doc["reference_log_likelihood"])
+        if doc["status"] != "not_assessed"
+        else None
+    )
+    print(
+        f"  [parity.json] {target}: {doc['status']} (|delta log L| = {delta!r}, "
+        f"tolerance {doc['tolerance']!r})"
+    )
+    return target
+
+
+def remove_parity_json(cell_dir: Path) -> None:
+    """Remove a stale ``parity.json`` from a mirrored cell (same guards as :func:`write_parity_json`)."""
+    write_parity_json(cell_dir, log_likelihood=None)
 
 
 def auto_simulate_if_missing(

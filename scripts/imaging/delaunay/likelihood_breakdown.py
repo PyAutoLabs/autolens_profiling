@@ -252,9 +252,16 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
 # Tolerates extra/unknown args via parse_known_args inside the helper.
 from simulators.imaging import INSTRUMENTS  # noqa: E402
 
-from _production_config import (  # noqa: E402
+from _production_config import (
+    # noqa: E402
     FLAT1_OVER_SAMPLING_RECORD,
+    STANDARD_FAMILY,
+    adapt_images_for,
     apply_production_over_sampling_jax,
+    numpy_dense_reference,
+    standard_jax_cell,
+    standard_jax_dataset,
+    standard_size_preset,
 )
 from _production_config import observe_thread_env as _observe_thread_env  # noqa: E402
 from _profile_cli import (  # noqa: E402
@@ -263,10 +270,14 @@ from _profile_cli import (  # noqa: E402
     device_info_dict,
     parse_profile_cli,
     record_pinned_check,
+    requested_source_pixels,
     resolve_output_paths,
 )
 
 _cli = parse_profile_cli()
+# ``--standard-size`` (the likelihood-lifecycle standard count) or ``--source-pixels N``; None keeps
+# the cell's fiducial mesh.
+_requested_pixels = requested_source_pixels(_cli, "delaunay")
 
 
 _vmap_batch = timing.parse_vmap_batch(sys.argv)
@@ -365,7 +376,7 @@ with timer.section("mask_and_oversample"):
         over_sample_size_pixelization=1,
     )
 
-    if _cli.use_sparse_operator:
+    if _cli.use_sparse_operator and not _cli.standard_size:
         # Engage the w-tilde sparse-operator path. See the runtime sibling
         # script for the rationale (autolens_profiling#44). The operator build
         # itself is two rFFT2s of the padded PSF and is timed here, eagerly, as
@@ -429,7 +440,7 @@ N_MESH_VERTICES_FIDUCIAL = 1500
 # Unlike the rectangular cell there is no rounding: a Delaunay mesh takes the
 # vertex count directly.
 n_mesh_vertices = (
-    N_MESH_VERTICES_FIDUCIAL if _cli.source_pixels is None else int(_cli.source_pixels)
+    N_MESH_VERTICES_FIDUCIAL if _requested_pixels is None else int(_requested_pixels)
 )  # 1500-tier production fiducial
 
 #: Whether this run's mesh is the one the pinned evidence describes. A
@@ -560,6 +571,64 @@ print(f"  Edge zeroed pixels:      {edge_pixels_total}")
 # 5. Full-pipeline reference (FitImaging) — eager baseline
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# --standard-size (likelihood-lifecycle 2a; human ruling N1 on #456): this cell evaluates the
+# numba production cell's likelihood for this instrument — the production preset's over-sampling,
+# capped adapt image, Hilbert mesh + zeroed edge points (rectangular 35x35), MGE lens light,
+# regularization priors, settings and positions penalty, at the preset's seeded iid draw 0 —
+# built by the one definition the numba cells use (_production_config.standard_jax_cell).
+# Without the flag the cell keeps its fiducial configuration and pins.
+# ---------------------------------------------------------------------------
+_cell_settings = al.Settings(
+    use_border_relocator=True, use_mixed_precision=_cli.use_mixed_precision
+)
+_analysis_kwargs: dict = {}
+_production_record = None
+if _cli.standard_size:
+    if _cli.over_sampling != "flat1":
+        raise SystemExit("--standard-size takes the production over-sampling; drop --over-sampling")
+    print("\n--- Standard size: the production cell (numba-identical likelihood) ---")
+    dataset, adapt_image, _over_sampling_record = standard_jax_dataset(
+        dataset,
+        dataset_path,
+        standard_size_preset(STANDARD_FAMILY["delaunay"], instrument),
+        _cli.sparse_batch_size if _cli.use_sparse_operator else None,
+    )
+    _std = standard_jax_cell(
+        "delaunay",
+        instrument,
+        dataset=dataset,
+        adapt_image=adapt_image,
+        dataset_path=dataset_path,
+        mask_radius=mask_radius,
+        memo=_cli.memo,
+        use_mixed_precision=_cli.use_mixed_precision,
+    )
+    model, instance = _std["model"], _std["instance"]
+    _register_model_pytrees(model)
+    params_tree = jax.tree_util.tree_map(jnp.asarray, instance)
+    tracer = al.Tracer(galaxies=list(instance.galaxies), fields=[instance.fields])
+    image_plane_mesh_grid = _std["image_plane_mesh_grid"]
+    n_mesh_vertices = _std["n_source_pixels"]
+    edge_pixels_total = _std["preset"].edge_pixels
+    adapt_images = adapt_images_for(
+        instance, image_plane_mesh_grid=image_plane_mesh_grid, adapt_image=adapt_image
+    )
+    n_source_pixels = _std["n_source_pixels"]
+    n_image_pixels = dataset.data.shape[0]
+    n_over_sampled_pixels = dataset.grids.lp.over_sampled.shape[0]
+    reg_scheme, reg_provenance = _std["reg_scheme"], _std["reg_provenance"]
+    _cell_settings = _std["settings"]
+    _analysis_kwargs = {
+        "settings": _std["settings"],
+        "positions_likelihood_list": _std["positions_likelihood_list"],
+    }
+    _production_record = _std["record"]
+    print(
+        f"  preset {_std['preset'].name}: {n_source_pixels} source pixels, "
+        f"{model.total_free_parameters} free parameters, {n_over_sampled_pixels} over-sampled"
+    )
+
 print("\n--- Full FitImaging (eager baseline) ---")
 
 with timer.section("fit_imaging_eager"):
@@ -567,10 +636,7 @@ with timer.section("fit_imaging_eager"):
         dataset=dataset,
         tracer=tracer,
         adapt_images=adapt_images,
-        settings=al.Settings(
-            use_border_relocator=True,
-            use_mixed_precision=_cli.use_mixed_precision,
-        ),
+        settings=_cell_settings,
         xp=np,
     )
     log_evidence_ref = fit.figure_of_merit
@@ -893,10 +959,7 @@ def _fit_imaging_from_params(params_tree):
         dataset=dataset,
         tracer=t,
         adapt_images=adapt_images_jax,
-        settings=al.Settings(
-            use_border_relocator=True,
-            use_mixed_precision=_cli.use_mixed_precision,
-        ),
+        settings=_cell_settings,
         xp=jnp,
     )
 
@@ -1993,8 +2056,9 @@ breakdown_summary = {
         # What ``--source-pixels`` asked for (None = the cell's fiducial); the
         # realised count is ``delaunay_vertices`` above.
         "source_pixels_requested": (
-            int(_cli.source_pixels) if _cli.source_pixels is not None else None
+            int(_requested_pixels) if _requested_pixels is not None else None
         ),
+        "standard_size": bool(_cli.standard_size),
         "edge_zeroed_pixels": int(edge_pixels_total),
         "inversion_path": "sparse" if _cli.use_sparse_operator else "dense",
         "total_params": int(inversion.total_params),
@@ -2074,6 +2138,11 @@ dict_path, chart_path = resolve_output_paths(
     hints=breakdown_summary,
 )
 breakdown_summary["configuration"].update(_over_sampling_record)
+if _production_record is not None:
+    # The production preset this cell evaluated. Its positions penalty (euclid) is an
+    # analysis-level term the per-step FitImaging decomposition does not time.
+    breakdown_summary["configuration"]["production_preset"] = _production_record
+    breakdown_summary["configuration"]["production_data_record"] = _over_sampling_record
 dict_path.write_text(json.dumps(breakdown_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")
 
@@ -2161,7 +2230,7 @@ if instrument != "hst" or _cli.over_sampling != "flat1":
     record_pinned_check(dict_path, None, [])
 elif not PIN_IS_FIDUCIAL:
     print(
-        f"  Eager regression assertion SKIPPED: --source-pixels {_cli.source_pixels} builds a "
+        f"  Eager regression assertion SKIPPED: a requested {_requested_pixels} source pixels builds a "
         f"{n_mesh_vertices}-vertex mesh, not the {N_MESH_VERTICES_FIDUCIAL}-vertex fiducial the "
         f"pin describes. Eager log_evidence = {log_evidence_ref!r}"
     )

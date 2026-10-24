@@ -115,6 +115,7 @@ from _profile_cli import (
     record_pinned_check,  # noqa: E402
     render_fit_png,
     resolve_output_paths,
+    write_parity_json,
 )
 
 _cli = parse_profile_cli()
@@ -595,6 +596,25 @@ else:
 record_pinned_check(dict_path, _pinned_expected, _pinned_drift)
 if _pinned_expected is not None and not _pinned_drift:
     print("  Pinned-value check PASSED (recorded in result JSON).")
+
+
+# Parity witness (likelihood-lifecycle 2a): the JIT full pipeline against the eager NumPy
+# FitImaging computed above on the same dataset, size, model and instance, written beside the row
+# after every timed region (the placement and guards of fit.png).
+write_parity_json(
+    dict_path.parent,
+    log_likelihood=float(full_result),
+    reference_log_likelihood=float(log_evidence_ref),
+    use_mixed_precision=_cli.use_mixed_precision,
+    reference_source=(
+        f"eager NumPy al.FitImaging(xp=np).figure_of_merit in the same process: {instrument}, "
+        "same dataset, model and instance"
+    ),
+    autolens_version=al_version,
+    source_pixels=None,
+    source_pixels_requested=None,
+    quantity="figure_of_merit (the JIT log_likelihood_function value; log evidence)",
+)
 
 
 # Fit figure (likelihood-lifecycle 1B): the eager fit, drawn after every timed region and kept as

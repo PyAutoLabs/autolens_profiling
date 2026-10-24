@@ -954,7 +954,7 @@ def lifecycle_candidates(root, reg, path, doc, adapter, dates=None, undated=None
                 f"measured_at_derived: the row records no timestamp; {day} is the UTC date its "
                 "file was first committed to git, an upper bound on the measurement date"
             )
-        pixels = lc.source_pixels(payload)
+        pixels = lc.size_pixels(cell["variant"], payload)
         for measurement, found in sorted(groups.items()):
             values = {k: v[0] for k, v in sorted(found.items())}
             head = lc.headline(measurement, values)
@@ -1031,7 +1031,7 @@ def parity_candidate(root, path, doc):
     ident, prov = identity(doc, path)
     prov = {**prov, "measured_at": doc["measured_at"]}
     prov["unknowns"] = {k: v for k, v in prov["unknowns"].items() if k != "measured_at"}
-    pixels = doc.get("source_pixels")
+    pixels = lc.size_pixels(cell["variant"], doc)
     record = {
         "id": "lifecycle/" + digest([path, "", "parity"]),
         "run_id": "parity/" + digest([path]),

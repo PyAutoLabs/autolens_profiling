@@ -65,6 +65,7 @@ _cli = _parse_profile_cli()
 
 thread_env = _pin_thread_env(1) if _cli.variant == "production" else _observe_thread_env()
 
+import argparse as _argparse
 import json
 import os
 
@@ -93,10 +94,17 @@ from _production_config import (  # noqa: E402
     apply_production_over_sampling,
     iid_instances,
     mge_lens_bulge,
+    numpy_dense_twin,
     positions_likelihood,
     preset_for,
+    production_image_mesh_grid,
+    production_mesh,
+    production_model,
+    production_standard_data,
     regularization_model,
+    standard_size_preset,
     timing_summary,
+    witness_for,
     witness_verdict,
 )
 from _profile_cli import (  # noqa: E402
@@ -106,12 +114,34 @@ from _profile_cli import (  # noqa: E402
     device_info_dict,
     record_pinned_check,
     render_fit_png,
+    requested_source_pixels,
     resolve_output_paths,
+    write_parity_json,
 )
 
 instrument = _cli.instrument or "euclid"  # default; override via --instrument
 
-preset = preset_for("delaunay_numba", instrument=instrument, variant=_cli.variant)
+
+# ``--mesh-class delaunay_nn`` builds ``al.mesh.DelaunayNN`` (Sibson natural-neighbour weights) in
+# place of ``al.mesh.Delaunay``, everything else unchanged: the numba CPU leg of the
+# ``imaging/delaunay_nn`` cells (likelihood-lifecycle 2a). Its rows belong to the delaunay_nn
+# variant, which the legacy name does not encode, so it needs an explicit ``--output-path``.
+_mesh_parser = _argparse.ArgumentParser(add_help=False)
+_mesh_parser.add_argument("--mesh-class", choices=("delaunay", "delaunay_nn"), default="delaunay")
+MESH_CLASS = _mesh_parser.parse_known_args()[0].mesh_class
+if MESH_CLASS == "delaunay_nn" and _cli.output_path is None:
+    raise SystemExit("--mesh-class delaunay_nn needs --output-path (the legacy name says delaunay)")
+
+# ``--standard-size`` (likelihood-lifecycle phase 2): the production preset at the standard
+# source-pixel count, for every instrument (``standard_size_preset``; jwst / ao borrow the hst
+# reference). The preset records why in ``size_override``, which retires its pin and witness.
+if _cli.standard_size:
+    if _cli.variant != "production":
+        raise SystemExit("--standard-size resizes the production preset; it has no legacy form")
+    preset = standard_size_preset("delaunay_numba", instrument)
+else:
+    preset = preset_for("delaunay_numba", instrument=instrument, variant=_cli.variant)
+_requested_pixels = requested_source_pixels(_cli, MESH_CLASS) if _cli.standard_size else None
 
 print(f"\n--- Preset [{preset.name} / {preset.variant}] ---")
 print(f"  {preset.provenance}")
@@ -175,19 +205,28 @@ with timer.section("mask_and_oversample"):
 
     dataset = dataset.apply_mask(mask=mask)
 
-    # The source adapt image, capped at the preset's S/N if it has one — the
-    # same map that drives the Hilbert mesh, the adaptive regularization AND the
-    # pixelization over-sampling rule, exactly as production.
-    adapt_image = adapt_image_capped(
-        adapt_image_for_dataset(dataset_path=dataset_path, dataset=dataset),
-        preset,
-    )
+    if preset.production_data:
+        # --standard-size: production's data (human ruling 2026-10-24): the subtracted S/N
+        # adapt image, the over-sampling cut on the UNCAPPED map, the cap for the mesh and
+        # regularization only — the one construction the JAX standard-size cells share.
+        dataset, adapt_image, _production_data_record = production_standard_data(
+            dataset, dataset_path, preset, sparse="cpu"
+        )
+    else:
+        _production_data_record = None
+        # The source adapt image, capped at the preset's S/N if it has one — the
+        # same map that drives the Hilbert mesh, the adaptive regularization AND the
+        # pixelization over-sampling rule, exactly as production.
+        adapt_image = adapt_image_capped(
+            adapt_image_for_dataset(dataset_path=dataset_path, dataset=dataset),
+            preset,
+        )
 
-    # Light-profile radial bins, then the S/N-driven pixelization map, then the
-    # sparse CPU operator — production's order. `apply_over_sampling` returns a
-    # fresh `Imaging` that drops the precomputed operator, so it is re-applied
-    # last or the fit silently falls back to the dense inversion.
-    dataset = apply_production_over_sampling(dataset, adapt_image, preset)
+        # Light-profile radial bins, then the S/N-driven pixelization map, then the
+        # sparse CPU operator — production's order. `apply_over_sampling` returns a
+        # fresh `Imaging` that drops the precomputed operator, so it is re-applied
+        # last or the fit silently falls back to the dense inversion.
+        dataset = apply_production_over_sampling(dataset, adapt_image, preset)
 
 with timer.section("apply_sparse_operator_cpu"):
     dataset = dataset.apply_sparse_operator_cpu()
@@ -208,26 +247,9 @@ print(f"  sparse operator memory: {sparse_operator_nbytes / 1024**2:.1f} MB")
 print("\n--- Adapt image + Hilbert image mesh ---")
 
 with timer.section("image_mesh_hilbert"):
-    image_mesh = al.image_mesh.Hilbert(
-        pixels=preset.hilbert_pixels,
-        weight_power=preset.hilbert_weight_power,
-        weight_floor=preset.hilbert_weight_floor,
-    )
-    image_plane_mesh_grid = image_mesh.image_plane_mesh_grid_from(
-        mask=dataset.mask, adapt_data=adapt_image
-    )
-
-    # Production appends `edge_pixels` points on the mask edge and zeroes
-    # exactly those vertices, so the reconstruction cannot put flux outside the
-    # data (Euclid initial_lens_model.py:448-455; subhalo
-    # delaunay_adapt_split.py:49-56).
-    if preset.edge_pixels:
-        image_plane_mesh_grid = al.image_mesh.append_with_circle_edge_points(
-            image_plane_mesh_grid=image_plane_mesh_grid,
-            centre=dataset.mask.mask_centre,
-            radius=mask_radius + dataset.mask.pixel_scale / 2.0,
-            n_points=preset.edge_pixels,
-        )
+    # The preset's Hilbert mesh plus its zeroed circle-edge points (the one definition the
+    # JAX standard-size cells share: _production_config.production_image_mesh_grid).
+    image_plane_mesh_grid = production_image_mesh_grid(dataset, adapt_image, preset, mask_radius)
 
 n_mesh_vertices = int(image_plane_mesh_grid.shape[0])
 hilbert_mesh_s = timer.records[-1][1]
@@ -240,51 +262,23 @@ print(f"  Mesh vertices placed: {image_plane_mesh_grid.shape[0]}")
 print("\n--- Model construction ---")
 
 with timer.section("model_build"):
-    # Linear MGE lens light. Basis structure matters, not just the Gaussian
-    # count: production is 20x2 (Euclid) / 30x2 (subhalo), the pre-2026-09-08
-    # cell was 60x1.
-    lens_bulge = mge_lens_bulge(preset, mask_radius=mask_radius)
-
-    mass = af.Model(al.mp.Isothermal)
-    mass.centre.centre_0 = af.GaussianPrior(mean=0.0, sigma=0.005)
-    mass.centre.centre_1 = af.GaussianPrior(mean=0.0, sigma=0.005)
-    mass.einstein_radius = af.GaussianPrior(mean=1.6, sigma=0.05)
-    _lens_mass_ell = al.convert.ell_comps_from(axis_ratio=0.9, angle=45.0)
-    mass.ell_comps.ell_comps_0 = af.GaussianPrior(mean=_lens_mass_ell[0], sigma=0.01)
-    mass.ell_comps.ell_comps_1 = af.GaussianPrior(mean=_lens_mass_ell[1], sigma=0.01)
-
-    shear = af.Model(al.mp.ExternalShear)
-    shear.gamma_1 = af.GaussianPrior(mean=0.05, sigma=0.005)
-    shear.gamma_2 = af.GaussianPrior(mean=0.05, sigma=0.005)
-
-    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass)
-    field = af.Model(al.MassField, redshift=0.5, shear=shear)
-
-    mesh = al.mesh.Delaunay(
-        pixels=n_mesh_vertices,
-        zeroed_pixels=preset.edge_pixels,
+    # The cell model: the preset's MGE lens light, Isothermal + shear mass and this source
+    # pixelization, from the one definition the JAX standard-size cells share
+    # (_production_config.production_model; human ruling N1 on #456).
+    mesh = production_mesh(
+        preset,
+        n_vertices=n_mesh_vertices,
+        mesh_class=al.mesh.DelaunayNN if MESH_CLASS == "delaunay_nn" else al.mesh.Delaunay,
     )
-
-    # Production samples the regularization coefficients, so the production
-    # preset hands back a free `af.Model(al.reg.AdaptSplit)` with the production
-    # priors. `--variant legacy` keeps #232's `--regularization` flag, which
-    # picks between the fixed `AdaptSplit(0.1, 10.0, 0.1)` and `ConstantSplit(1.0)`
-    # the historic rows were measured with.
+    # Production samples the regularization coefficients (a free AdaptSplit with the production
+    # priors); `--variant legacy` keeps #232's fixed `--regularization` choice.
     if preset.variant == "production":
-        regularization = regularization_model(preset)
+        regularization = None  # production_model makes the free AdaptSplit after the lens priors
         reg_scheme = preset.regularization
         reg_provenance = preset.as_json()["regularization"]
     else:
         reg_scheme, regularization, reg_provenance = delaunay_regularization(_cli)
-
-    if isinstance(regularization, af.Model):
-        pixelization = af.Model(al.Pixelization, mesh=mesh, regularization=regularization)
-    else:
-        pixelization = al.Pixelization(mesh=mesh, regularization=regularization)
-
-    source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
-
-    model = af.Collection(galaxies=af.Collection(lens=lens, source=source), fields=field)
+    model = production_model(preset, mask_radius, mesh, regularization=regularization)
 
 print(f"  Total free parameters: {model.total_free_parameters}")
 print(f"  Regularization: {reg_scheme} ({reg_provenance})")
@@ -429,7 +423,9 @@ print(f"  warm iid median:    {timing['warm_iid_median_s']:.6f} s (n = {timing['
 print(f"  warm iid mean:      {timing['warm_iid_mean_s']:.6f} s")
 
 # P5 (#362 fix phase 6): PASS / FAIL only on a reference host class, else INCONCLUSIVE.
-witness = witness_verdict(timing["cold_eval_median_s"], instrument, _cli.config_name)
+witness = witness_for(
+    preset, timing["cold_eval_median_s"], instrument, _cli.config_name, mesh_class=MESH_CLASS
+)
 if witness.get("verdict") in ("PASS", "FAIL", "INCONCLUSIVE"):
     print(
         f"  witness vs production job {witness['job']} "
@@ -484,6 +480,15 @@ likelihood_summary = {
         "over_sampled_pixels": int(n_over_sampled_pixels),
         "mesh_shape": [n_mesh_vertices],
         "source_pixels": int(n_source_pixels),
+        # ``--standard-size``: what was asked for (1250 / 1225); the count built is above.
+        "source_pixels_requested": _requested_pixels,
+        "standard_size": bool(_cli.standard_size),
+        **(
+            {"production_data_record": _production_data_record}
+            if _production_data_record is not None
+            else {}
+        ),
+        "mesh_class": MESH_CLASS,
         "inversion_path": "sparse_numba",
         "use_jax": False,
         "n_instances": n_instances,
@@ -584,6 +589,11 @@ if preset.variant == "production":
 else:
     _pinned_expected = EXPECTED_LOG_LIKELIHOOD["legacy"].get(instrument, {}).get(reg_scheme)
 
+if preset.size_override is not None or MESH_CLASS == "delaunay_nn":
+    # The pins describe the production preset as recorded (Delaunay mesh); not this one.
+    print(f"  Pinned check SKIPPED: {preset.size_override or 'DelaunayNN mesh'}")
+    _pinned_expected = None
+
 if _pinned_expected is None:
     print(
         f"  Pinned check SKIPPED for {instrument}/{reg_scheme} (no pinned value). "
@@ -597,6 +607,42 @@ else:
 record_pinned_check(dict_path, _pinned_expected, _pinned_drift)
 if _pinned_expected is not None and not _pinned_drift:
     print("  Pinned-value check PASSED (recorded in result JSON).")
+
+
+# Parity witness (likelihood-lifecycle 2a): the numba sparse likelihood at the profiled instance
+# against the eager NumPy dense-mapping likelihood (``numpy_dense_twin``: no sparse operator,
+# ``xp=np``) on the same dataset, mesh, model and instance, both evaluated after every timed region
+# and written beside the row (the placement and guards of fit.png).
+try:
+    _parity_cell = float(analysis.log_likelihood_function(instance=instance))
+    _parity_reference_analysis = al.AnalysisImaging(
+        dataset=numpy_dense_twin(dataset),
+        adapt_images=adapt_images_for(
+            instance, image_plane_mesh_grid=image_plane_mesh_grid, adapt_image=adapt_image
+        ),
+        positions_likelihood_list=positions_likelihood_list,
+        settings=settings,
+        use_jax=False,
+    )
+    _parity_reference = float(_parity_reference_analysis.log_likelihood_function(instance=instance))
+except Exception as _exc:  # noqa: BLE001 — a failed reference must not cost the row
+    print(f"  WARNING: parity reference failed: {type(_exc).__name__}: {_exc}")
+    _parity_cell = _parity_reference = float("nan")
+write_parity_json(
+    dict_path.parent,
+    log_likelihood=_parity_cell,
+    reference_log_likelihood=_parity_reference,
+    use_mixed_precision=False,
+    reference_source=(
+        "eager NumPy dense-mapping al.AnalysisImaging(use_jax=False, no sparse operator) in the "
+        f"same process: {instrument}, {n_source_pixels} source pixels, same dataset, mesh, "
+        "model and instance"
+    ),
+    autolens_version=al_version,
+    source_pixels=int(n_source_pixels),
+    source_pixels_requested=_requested_pixels,
+    quantity="log_likelihood_function (the cell's figure of merit, incl. any positions penalty)",
+)
 
 
 # Fit figure (likelihood-lifecycle 1B): the numba fit at the first profiled instance (the setup

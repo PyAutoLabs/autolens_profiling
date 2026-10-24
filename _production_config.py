@@ -231,6 +231,19 @@ class ProductionPreset:
     #: production projects leave it unset, so production runs with it on.
     memo: str = "off"
 
+    #: Set by :func:`standard_size_preset` when the standard source-pixel count (or the
+    #: borrowed instrument reference) changed the production preset: the reason, which makes
+    #: the preset's pin and production witness inapplicable. ``None`` = the preset as recorded.
+    size_override: str | None = None
+
+    #: Set by :func:`standard_size_preset` (``--standard-size``, human ruling 2026-10-24): build
+    #: the data and mesh as production does, not as the historic cells did — the source adapt
+    #: image is production's subtracted S/N map (:func:`production_source_snr`), the over-sampling
+    #: cut reads it UNCAPPED, the cap feeds only the mesh and regularization, and the rectangular
+    #: mesh is ``RectangularBilinearAdaptImage`` with its free weight priors
+    #: (:data:`PRODUCTION_DATA_SOURCES`). False keeps every existing preset as it was.
+    production_data: bool = False
+
     @property
     def mesh_vertices(self) -> int:
         """Total Delaunay vertices: Hilbert points plus appended edge points."""
@@ -289,6 +302,8 @@ class ProductionPreset:
             },
             "memo": self.memo,
         }
+        if self.size_override is not None:
+            payload["size_override"] = self.size_override
         if self.mesh_kind == "delaunay":
             payload["mesh"] = {
                 "kind": "delaunay",
@@ -305,6 +320,19 @@ class ProductionPreset:
                 "shape": [self.rect_pixels_yx, self.rect_pixels_yx],
                 "source_pixels": self.rect_pixels_yx**2,
             }
+        if self.production_data:
+            payload["production_data"] = {
+                "enabled": True,
+                # The dataset's truth tracer stands in for the previous stage's maximum-likelihood
+                # lens model whose light production subtracts (coordinator ruling, #456 fork a).
+                "lens_light_source": "truth",
+            }
+            payload["production_source"] = PRODUCTION_DATA_SOURCES[
+                "euclid" if self.name.startswith("euclid") else "subhalo"
+            ]
+            if self.mesh_kind == "rectangular":
+                payload["mesh"]["class"] = "RectangularBilinearAdaptImage"
+                payload["mesh"]["free_weights"] = PRODUCTION_RECT_WEIGHT_PRIORS
         return payload
 
 
@@ -517,6 +545,121 @@ def preset_for(cell_family: str, instrument: str, variant: str = "production"):
         ) from None
 
 
+#: The instrument whose production reference a standard-size cell borrows when its own
+#: instrument has none (jwst, ao): the subhalo ``source_pix[2]`` stage is the high-resolution
+#: imaging reference, so the high-resolution instruments take it, with only the dataset swapped.
+STANDARD_SIZE_REFERENCE_INSTRUMENT = "hst"
+
+#: The standard source-pixel count by numba cell family (human ruling 2026-10-23; the catalogue's
+#: ``STANDARD_SOURCE_PIXELS``): Delaunay 1250 Hilbert vertices plus the preset's 30 zeroed edge
+#: points (1280 built, in every standard-size cell), rectangular 35 x 35 = 1225.
+STANDARD_HILBERT_PIXELS = 1250
+STANDARD_RECT_PIXELS_YX = 35
+
+
+def standard_size_preset(cell_family: str, instrument: str) -> ProductionPreset:
+    """The production preset of ``cell_family`` at ``instrument``, at the standard size.
+
+    ``--standard-size`` (phase 2 of the likelihood-lifecycle epic) measures every instrument at
+    one source-pixel count, so the size is the only field this changes: Delaunay presets keep
+    their Hilbert weights and their ``edge_pixels`` zeroed edge points (1250 + 30 = 1280 vertices
+    built; the ruling counts it as standard) and rectangular presets go to 35 x 35. An
+    instrument with no production reference (jwst, ao — :func:`preset_for` raises for them)
+    borrows :data:`STANDARD_SIZE_REFERENCE_INSTRUMENT`'s preset, recorded in its name, provenance
+    and ``size_override``. Whenever anything changed, ``size_override`` says why, and the cells
+    skip the preset's pinned value and production witness (both describe the preset as
+    recorded). HST Delaunay is already 1250 + 30, so it comes back unchanged.
+    """
+    from dataclasses import replace
+
+    if cell_family not in ("delaunay_numba", "pixelization_numba"):
+        raise KeyError(f"No standard-size rule for cell family {cell_family!r}")
+    borrowed = (cell_family, "production", instrument) not in _PRESETS
+    base = preset_for(
+        cell_family,
+        instrument=STANDARD_SIZE_REFERENCE_INSTRUMENT if borrowed else instrument,
+        variant="production",
+    )
+    if base.mesh_kind == "delaunay":
+        resized = base.hilbert_pixels != STANDARD_HILBERT_PIXELS
+        size = {"hilbert_pixels": STANDARD_HILBERT_PIXELS}
+        what = (
+            f"Hilbert {base.hilbert_pixels} -> {STANDARD_HILBERT_PIXELS} (+{base.edge_pixels} edge)"
+        )
+    else:
+        resized = base.rect_pixels_yx != STANDARD_RECT_PIXELS_YX
+        size = {"rect_pixels_yx": STANDARD_RECT_PIXELS_YX}
+        what = (
+            f"rectangular {base.rect_pixels_yx}x{base.rect_pixels_yx} -> "
+            f"{STANDARD_RECT_PIXELS_YX}x{STANDARD_RECT_PIXELS_YX}"
+        )
+    reasons = [
+        "production data (human ruling 2026-10-24): subtracted S/N adapt image, uncapped "
+        "over-sampling cut"
+        + ("; RectangularBilinearAdaptImage mesh" if base.mesh_kind == "rectangular" else "")
+    ]
+    if borrowed:
+        reasons.append(
+            f"no {instrument} production reference: borrows the "
+            f"{STANDARD_SIZE_REFERENCE_INSTRUMENT} preset {base.name!r} with the {instrument} dataset"
+        )
+    if resized:
+        reasons.append(f"standard size (human ruling 2026-10-23): {what}")
+    note = "; ".join(reasons)
+    return replace(
+        base,
+        production_data=True,
+        name=f"{base.name}_standard" + (f"_{instrument}" if borrowed else ""),
+        provenance=f"{base.provenance} — {note}",
+        size_override=note,
+        **size,
+    )
+
+
+def witness_for(
+    preset: ProductionPreset,
+    cold_eval_median_s: float,
+    instrument: str,
+    host_class,
+    mesh_class: str = "delaunay",
+):
+    """:func:`witness_verdict`, or ``not_applicable`` when no production job describes the cell.
+
+    The production witness compares a cold eval against the production job of the preset as
+    recorded, which ran a ``Delaunay`` mesh: a resized or borrowed preset (``size_override``) or
+    a ``DelaunayNN`` mesh (``--mesh-class delaunay_nn``) is a different likelihood, so no band
+    applies.
+    """
+    reason = None
+    if preset.size_override is not None:
+        reason = f"size_override: {preset.size_override}"
+    elif mesh_class == "delaunay_nn":
+        reason = "mesh_class delaunay_nn: the production job ran a Delaunay mesh"
+    if reason is not None:
+        return {
+            "verdict": "not_applicable",
+            "instrument": instrument,
+            "host_class": host_class,
+            "measured_cold_eval_median_s": cold_eval_median_s,
+            "reason": reason,
+        }
+    return witness_verdict(cold_eval_median_s, instrument, host_class)
+
+
+def numpy_dense_twin(dataset):
+    """A shallow copy of ``dataset`` without its sparse operator: the eager NumPy dense route.
+
+    The inversion factory dispatches on ``dataset.sparse_operator``, so the twin fits the same
+    masked, over-sampled data through ``InversionImagingMapping`` with ``xp=np`` — the eager
+    NumPy reference a numba sparse cell's parity witness compares against.
+    """
+    import copy
+
+    twin = copy.copy(dataset)
+    twin.sparse_operator = None
+    return twin
+
+
 # ---------------------------------------------------------------------------
 # Builders (autolens imported lazily, as in _profile_cli)
 # ---------------------------------------------------------------------------
@@ -543,7 +686,9 @@ def adapt_image_capped(adapt_image, preset: ProductionPreset):
     )
 
 
-def apply_production_over_sampling(dataset, adapt_image, preset: ProductionPreset):
+def apply_production_over_sampling(
+    dataset, adapt_image, preset: ProductionPreset, sparse_operator: bool = True
+):
     """Apply both over-sampling maps, then re-apply the sparse CPU operator.
 
     Order matters and is production's: the light-profile radial bins go on
@@ -588,7 +733,8 @@ def apply_production_over_sampling(dataset, adapt_image, preset: ProductionPrese
         over_sample_size_pixelization=over_sample_size_pixelization,
     )
 
-    return dataset.apply_sparse_operator_cpu()
+    # The JAX standard-size cells pass sparse_operator=False and apply their own JAX operator.
+    return dataset.apply_sparse_operator_cpu() if sparse_operator else dataset
 
 
 # ---------------------------------------------------------------------------
@@ -866,7 +1012,9 @@ def adapt_images_for(instance, image_plane_mesh_grid=None, adapt_image=None):
 # ---------------------------------------------------------------------------
 
 
-def analysis_settings(preset: ProductionPreset, memo: str) -> tuple[Any, dict[str, Any]]:
+def analysis_settings(
+    preset: ProductionPreset, memo: str, use_mixed_precision: bool = False
+) -> tuple[Any, dict[str, Any]]:
     """``(al.Settings, provenance)`` with the NNLS memo explicitly controlled.
 
     Belt and braces: the memo is turned off both through
@@ -891,6 +1039,8 @@ def analysis_settings(preset: ProductionPreset, memo: str) -> tuple[Any, dict[st
         kwargs["nnls_warm_start_memo"] = True
         os.environ.pop("AUTOARRAY_NNLS_WARM_START", None)
 
+    if use_mixed_precision:  # the JAX standard-size cells' --use-mixed-precision
+        kwargs["use_mixed_precision"] = True
     settings = al.Settings(**kwargs)
 
     provenance = {
@@ -1045,3 +1195,319 @@ def witness_verdict(
         "verdict": verdict,
         "reason": reason,
     }
+
+
+# ---------------------------------------------------------------------------
+# The production cell model: one definition for the numba cells and the JAX
+# standard-size cells (likelihood-lifecycle 2a, human ruling N1 on #456)
+# ---------------------------------------------------------------------------
+
+#: The production cell families and the likelihood variants they build.
+STANDARD_FAMILY = {
+    "delaunay": "delaunay_numba",
+    "delaunay_nn": "delaunay_numba",
+    "rectangular": "pixelization_numba",
+}
+
+
+def production_image_mesh_grid(dataset, adapt_image, preset: ProductionPreset, mask_radius: float):
+    """The preset's Hilbert image-plane mesh plus its zeroed circle-edge points.
+
+    Production appends ``edge_pixels`` points on the mask edge and zeroes exactly those vertices,
+    so the reconstruction cannot put flux outside the data (Euclid initial_lens_model.py:448-455;
+    subhalo delaunay_adapt_split.py:49-56). ``adapt_image`` is the (capped) source adapt image.
+    """
+    import autolens as al
+
+    image_mesh = al.image_mesh.Hilbert(
+        pixels=preset.hilbert_pixels,
+        weight_power=preset.hilbert_weight_power,
+        weight_floor=preset.hilbert_weight_floor,
+    )
+    grid = image_mesh.image_plane_mesh_grid_from(mask=dataset.mask, adapt_data=adapt_image)
+    if preset.edge_pixels:
+        grid = al.image_mesh.append_with_circle_edge_points(
+            image_plane_mesh_grid=grid,
+            centre=dataset.mask.mask_centre,
+            radius=mask_radius + dataset.mask.pixel_scale / 2.0,
+            n_points=preset.edge_pixels,
+        )
+    return grid
+
+
+def production_mesh(preset: ProductionPreset, *, n_vertices: int | None = None, mesh_class=None):
+    """The source mesh: ``mesh_class`` (default ``al.mesh.Delaunay``) over ``n_vertices`` with the
+    preset's edge points zeroed, or — rectangular presets — ``mesh_class(shape=(n, n))`` at the
+    preset's side (the numba cells pass ``rect_mesh_classes(cli)[0]``)."""
+    import autolens as al
+
+    if preset.mesh_kind == "delaunay":
+        cls = mesh_class or al.mesh.Delaunay
+        return cls(pixels=int(n_vertices), zeroed_pixels=preset.edge_pixels)
+    shape = (preset.rect_pixels_yx, preset.rect_pixels_yx)
+    if preset.production_data:  # production's source_pix[2] mesh, weights free
+        import autofit as af
+
+        mesh = af.Model(al.mesh.RectangularBilinearAdaptImage, shape=shape)
+        priors = PRODUCTION_RECT_WEIGHT_PRIORS
+        mesh.weight_power = af.UniformPrior(
+            lower_limit=priors["weight_power"]["lower"], upper_limit=priors["weight_power"]["upper"]
+        )
+        mesh.weight_floor = af.LogUniformPrior(
+            lower_limit=priors["weight_floor"]["lower"], upper_limit=priors["weight_floor"]["upper"]
+        )
+        return mesh
+    return mesh_class(shape=shape)
+
+
+def production_model(preset: ProductionPreset, mask_radius: float, mesh, regularization=None):
+    """The cell model: the preset's MGE lens light, Isothermal + shear mass, and a source
+    pixelization of ``mesh`` with ``regularization`` (default :func:`regularization_model`, made
+    here after the lens priors: the production priors on a free coefficient). Pass only a fixed
+    regularization instance (no priors), e.g. the legacy Delaunay ``--regularization`` choice."""
+    import autofit as af
+    import autolens as al
+
+    # Construction order is part of the model: PyAutoFit orders a unit vector by prior creation,
+    # so the seeded iid draws only land on the same parameters if the MGE, mass, shear and
+    # regularization priors are made in this order (the numba cells' historic order).
+    lens_bulge = mge_lens_bulge(preset, mask_radius=mask_radius)
+    mass = af.Model(al.mp.Isothermal)
+    mass.centre.centre_0 = af.GaussianPrior(mean=0.0, sigma=0.005)
+    mass.centre.centre_1 = af.GaussianPrior(mean=0.0, sigma=0.005)
+    mass.einstein_radius = af.GaussianPrior(mean=1.6, sigma=0.05)
+    ell = al.convert.ell_comps_from(axis_ratio=0.9, angle=45.0)
+    mass.ell_comps.ell_comps_0 = af.GaussianPrior(mean=ell[0], sigma=0.01)
+    mass.ell_comps.ell_comps_1 = af.GaussianPrior(mean=ell[1], sigma=0.01)
+
+    shear = af.Model(al.mp.ExternalShear)
+    shear.gamma_1 = af.GaussianPrior(mean=0.05, sigma=0.005)
+    shear.gamma_2 = af.GaussianPrior(mean=0.05, sigma=0.005)
+
+    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass)
+    field = af.Model(al.MassField, redshift=0.5, shear=shear)
+    if regularization is None:
+        regularization = regularization_model(preset)
+    if isinstance(regularization, af.Model) or isinstance(mesh, af.Model):
+        pixelization = af.Model(al.Pixelization, mesh=mesh, regularization=regularization)
+    else:
+        pixelization = al.Pixelization(mesh=mesh, regularization=regularization)
+    source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
+    return af.Collection(galaxies=af.Collection(lens=lens, source=source), fields=field)
+
+
+def standard_jax_dataset(dataset, dataset_path, preset: ProductionPreset, sparse_batch_size=None):
+    """``(dataset, mesh adapt image, record)`` for a JAX standard-size cell:
+    :func:`production_standard_data` with the JAX w-tilde operator under ``--sparse``
+    (``sparse_batch_size``) instead of the numba CPU one — the numba cells' exact data."""
+    return production_standard_data(dataset, dataset_path, preset, sparse=sparse_batch_size)
+
+
+def standard_jax_cell(
+    variant: str,
+    instrument: str,
+    *,
+    dataset,
+    adapt_image,
+    dataset_path,
+    mask_radius: float,
+    memo: str = "off",
+    use_mixed_precision: bool = False,
+    rect_mesh_cls=None,
+):
+    """Everything a JAX standard-size cell takes from the production preset, built once.
+
+    ``dataset`` must already carry the cell's over-sampling (:func:`standard_jax_dataset`) and
+    ``adapt_image`` be the capped one. Returns a dict: ``preset``, ``image_plane_mesh_grid``
+    (Delaunay family, else None), ``n_source_pixels``, ``model``, ``instance`` (the first draw of
+    the preset's seeded iid sequence — the numba cells' instance 0), ``settings``,
+    ``memo_provenance``, ``positions_likelihood_list``, ``reg_scheme``, ``reg_provenance`` and
+    ``record`` (what the row stores as ``configuration.production_preset``).
+    """
+    import autolens as al
+
+    preset = standard_size_preset(STANDARD_FAMILY[variant], instrument)
+    if preset.mesh_kind == "delaunay":
+        grid = production_image_mesh_grid(dataset, adapt_image, preset, mask_radius)
+        n_source_pixels = int(grid.shape[0])
+        mesh_cls = al.mesh.DelaunayNN if variant == "delaunay_nn" else al.mesh.Delaunay
+        mesh = production_mesh(preset, n_vertices=n_source_pixels, mesh_class=mesh_cls)
+    else:
+        grid = None
+        n_source_pixels = preset.rect_pixels_yx**2
+        mesh = production_mesh(preset, mesh_class=rect_mesh_cls)
+    model = production_model(preset, mask_radius, mesh)
+    instance = iid_instances(model, 1, preset)[0]
+    settings, memo_provenance = analysis_settings(
+        preset, memo, use_mixed_precision=use_mixed_precision
+    )
+    positions = positions_likelihood(
+        preset,
+        dataset_path=dataset_path,
+        tracer=al.Tracer(galaxies=list(instance.galaxies), fields=[instance.fields]),
+    )
+    record = {**preset.as_json(), "instance": "iid draw 0 of the preset sequence (seeded)"}
+    return {
+        "preset": preset,
+        "image_plane_mesh_grid": grid,
+        "n_source_pixels": n_source_pixels,
+        "model": model,
+        "instance": instance,
+        "settings": settings,
+        "memo_provenance": memo_provenance,
+        "positions_likelihood_list": [positions] if positions is not None else None,
+        "reg_scheme": preset.regularization,
+        "reg_provenance": preset.as_json()["regularization"],
+        "record": record,
+    }
+
+
+def numpy_dense_reference(dataset, adapt_images, instance, **analysis_kwargs) -> float:
+    """The parity reference: the eager NumPy dense-mapping log-likelihood of ``instance``.
+
+    ``al.AnalysisImaging(use_jax=False)`` on :func:`numpy_dense_twin` of the cell's dataset, with
+    the cell analysis's own ``settings`` / ``positions_likelihood_list``: independent of the
+    cell's sparse operator (numba or JAX w-tilde), so a sparse cell's algorithm is checked too
+    (human ruling (c) on #456).
+    """
+    import autolens as al
+
+    analysis = al.AnalysisImaging(
+        dataset=numpy_dense_twin(dataset),
+        adapt_images=adapt_images,
+        use_jax=False,
+        **analysis_kwargs,
+    )
+    return float(analysis.log_likelihood_function(instance=instance))
+
+
+#: Where the ``production_data`` construction is read (re-checked 2026-10-24 against
+#: subhalo_validation@122079f on /mnt/c and euclid_strong_lens_modeling_pipeline@9b1bc4c).
+PRODUCTION_DATA_SOURCES = {
+    "subhalo": {
+        "adapt_image": (
+            "PyAutoGalaxy@7472211 autogalaxy/analysis/adapt_images/adapt_images.py:138 "
+            "galaxy_name_image_dict_via_result_from: the source's subtracted S/N map (data minus "
+            "the other galaxies' model images, over the noise map), floored at "
+            "adapt_minimum_percent (0.01, subhalo_validation config/general.yaml:28) x max"
+        ),
+        "mesh_and_regularization_adapt_image": (
+            "subhalo_validation scripts/pipelines/spec.py:9-36 capped_galaxy_name_image_dict_from "
+            "(S/N capped at 3.0); used by delaunay_adapt_split.py:123,:165 and "
+            "rectangular_adapt.py:109"
+        ),
+        "over_sampling": (
+            "subhalo_validation scripts/imaging.py:213-255 apply_adaptive_pixelization_over_sampling: "
+            "sub-size 4 where the UNCAPPED source S/N > 3.0, else 2; light-profile bins :175-184"
+        ),
+        "rectangular_mesh": (
+            "subhalo_validation scripts/pipelines/rectangular_adapt.py:74-96 (source_pix[2]): "
+            "af.Model(al.mesh.RectangularBilinearAdaptImage, shape) with al.reg.Adapt; weight "
+            "priors config/priors/mesh/rectangular.yaml:43-61"
+        ),
+        "model_stand_in": (
+            "no previous-stage fit exists in a profiling cell: the dataset's truth tracer "
+            "(tracer.json) stands in for the maximum-likelihood model whose lens light is "
+            "subtracted"
+        ),
+    },
+    "euclid": {
+        "adapt_image": (
+            "euclid_strong_lens_modeling_pipeline scripts/initial_lens_model.py:538-543 "
+            "galaxy_name_image_dict_via_result_from (subtracted S/N, uncapped) for the Hilbert "
+            "mesh; adapt_minimum_percent 0.01 (config/general.yaml:22)"
+        ),
+        "over_sampling": "initial_lens_model.py:609-626: sub-size 4 where the source S/N > 3.0, else 2",
+        "model_stand_in": (
+            "the dataset's truth tracer stands in for the previous stage's maximum-likelihood model"
+        ),
+    },
+}
+
+#: Production's free ``RectangularBilinearAdaptImage`` weights (subhalo_validation
+#: config/priors/mesh/rectangular.yaml:43-61, equal to the library default config).
+PRODUCTION_RECT_WEIGHT_PRIORS = {
+    "weight_power": {"type": "Uniform", "lower": 0.0, "upper": 10.0},
+    "weight_floor": {"type": "LogUniform", "lower": 1e-5, "upper": 1.0},
+}
+
+
+def production_source_snr(dataset, dataset_path):
+    """Production's source adapt image: the subtracted S/N map of the lensed source.
+
+    ``(data - lens-galaxy model image) / noise_map``, the lens light PSF-blurred on the dataset's
+    light-profile grid, floored at ``adapt_minimum_percent`` x its maximum — what
+    ``galaxy_name_image_dict_via_result_from`` returns for ``('galaxies', 'source')``. The
+    dataset's truth tracer stands in for the previous stage's maximum-likelihood model.
+    Returns ``(snr, minimum_percent)``; the map is uncapped.
+    """
+    import autolens as al
+    import numpy as np
+
+    try:
+        from autoconf import conf
+
+        minimum_percent = float(conf.instance["general"]["adapt"]["adapt_minimum_percent"])
+    except Exception:  # noqa: BLE001 — the library default, as both production configs set it
+        minimum_percent = 0.01
+    tracer = al.from_json(file_path=Path(dataset_path) / "tracer.json")
+    planes = tracer.blurred_image_2d_list_from(
+        grid=dataset.grids.lp, blurring_grid=dataset.grids.blurring, psf=dataset.psf
+    )
+    lens = np.asarray(planes[0])
+    snr = (np.asarray(dataset.data) - lens) / np.asarray(dataset.noise_map)
+    snr = np.maximum(snr, minimum_percent * np.max(snr))
+    return al.Array2D(values=snr, mask=dataset.mask), minimum_percent
+
+
+def production_standard_data(dataset, dataset_path, preset: ProductionPreset, sparse=None):
+    """``(dataset, mesh adapt image, record)`` built as production builds them.
+
+    Light-profile bins first, then the subtracted S/N map (:func:`production_source_snr`), then
+    the pixelization over-sampling from the UNCAPPED map (sub-size ``pix_high`` where S/N >
+    ``pix_snr_cut``, else ``pix_low``), and the mesh / regularization adapt image capped at
+    ``adapt_snr_cap`` when the preset has one. ``sparse``: ``"cpu"`` applies the numba CPU
+    operator, an int the JAX operator at that batch size, None neither. The numba and JAX
+    standard-size cells both call this, so they fit the same data.
+    """
+    import autolens as al
+    import numpy as np
+
+    lp = al.util.over_sample.over_sample_size_via_radial_bins_from(
+        grid=dataset.grid,
+        sub_size_list=list(preset.lp_sub_size_list),
+        radial_list=list(preset.lp_radial_list),
+        centre_list=[tuple(preset.lp_centre)],
+    )
+    dataset = dataset.apply_over_sampling(
+        over_sample_size_lp=lp, over_sample_size_pixelization=preset.pix_low
+    )
+    snr, minimum_percent = production_source_snr(dataset, dataset_path)
+    above = np.asarray(snr) > preset.pix_snr_cut
+    pix = al.Array2D(values=np.where(above, preset.pix_high, preset.pix_low), mask=dataset.mask)
+    dataset = dataset.apply_over_sampling(over_sample_size_lp=lp, over_sample_size_pixelization=pix)
+    if sparse == "cpu":
+        dataset = dataset.apply_sparse_operator_cpu()
+    elif sparse:
+        dataset = dataset.apply_sparse_operator(batch_size=int(sparse))
+    mesh_adapt = snr
+    if preset.adapt_snr_cap is not None:
+        mesh_adapt = al.Array2D(
+            values=np.minimum(np.asarray(snr), preset.adapt_snr_cap), mask=dataset.mask
+        )
+    config = preset.as_json()
+    record = {
+        "over_sampling_preset": preset.name,
+        "over_sample_size_lp_rule": config["over_sample_size_lp_rule"],
+        "over_sample_size_pixelization_rule": {
+            **config["over_sample_size_pixelization_rule"],
+            "threshold_map": "uncapped subtracted S/N (production)",
+            "pixels_above": int(above.sum()),
+            "pixels_below": int((~above).sum()),
+        },
+        "adapt_image": "subtracted S/N (truth tracer), floored",
+        "lens_light_source": "truth",
+        "adapt_minimum_percent": minimum_percent,
+        "mesh_adapt_snr_cap": preset.adapt_snr_cap,
+    }
+    return dataset, mesh_adapt, record
