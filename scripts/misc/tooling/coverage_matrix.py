@@ -218,10 +218,12 @@ def build(catalogue, designations):
     totals["missing_size_fallback"] = sum(
         c["state"] == "missing" and (c["reason"] or "").startswith(SIZE_FALLBACK) for c in cells
     )
+    # Parity rows are tallied per setup cell above (their key is never a planned cell), so they
+    # are not "unplanned" (#451 review).
     unplanned = sorted(
         r["id"]
         for r in catalogue["records"]
-        if r["status"] == "current" and key_of(r) not in planned
+        if r["status"] == "current" and r["measurement"] != "parity" and key_of(r) not in planned
     )
     return {
         "schema": "profiling-coverage",

@@ -145,6 +145,16 @@ def test_parity_states_per_setup_cell():
     assert cov["parity"]["cells"][0]["state"] == "missing"
 
 
+def test_parity_records_are_not_unplanned():
+    parity = record("p", measurement="parity")
+    parity["parity"] = {"status": "match"}
+    stray = record("s", setup_id="jax_cpu_na_fp64", host="local_laptop")
+    cov = cm.build(catalogue([record("a"), parity, stray]), DESIGNATIONS)
+    assert cov["unplanned_current_records"] == ["s"]
+    assert cov["totals"]["current_records_unplanned"] == 1
+    assert cov["parity"]["cells"][0]["state"] == "match"
+
+
 def test_check_detects_drift(tmp_path, capsys):
     (tmp_path / "dashboard").mkdir()
     (tmp_path / "catalogue").mkdir()
