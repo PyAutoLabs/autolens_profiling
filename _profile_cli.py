@@ -786,7 +786,7 @@ def _in_legacy_results(path: Path) -> bool:
 
 def _row_instrument(cli: ProfileCLI, default_basename: str) -> str | None:
     """``--instrument``, else the instrument token of ``default_basename``."""
-    if cli.instrument:
+    if getattr(cli, "instrument", None):
         return cli.instrument
     tokens = f"_{default_basename}_"
     return next((i for i in _migration_map_module().INSTRUMENTS if f"_{i}_" in tokens), None)
@@ -1061,7 +1061,7 @@ def resolve_output_paths(
         cli.output_path.parent.mkdir(parents=True, exist_ok=True)
         return cli.output_path, cli.output_path.with_suffix(".png")
     results_dir = cli.output_dir if cli.output_dir is not None else default_dir
-    if cli.output_dir is None:
+    if cli.output_dir is None and _in_legacy_results(results_dir):
         results_dir = runtime_instrument_dir(results_dir, _row_instrument(cli, default_basename))
     if cli.config_name is None:
         basename = default_basename
