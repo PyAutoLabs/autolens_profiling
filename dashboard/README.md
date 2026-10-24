@@ -111,7 +111,7 @@ Source links use the catalogue producer revision. URL hashes retain selections f
 sharing and browser history; the original evidence is also available without JS.
 Serve `dashboard/` over HTTPS or localhost for Web Crypto and fetch support.
 
-Real Chromium checks run in CI via `scripts/misc/test/browser_setup_page.cjs` with
+Real Chromium checks run in CI via `scripts/misc/tooling/test/browser_setup_page.cjs` with
 Playwright 1.63.0 on `NODE_PATH`: values, navigation, history/deep links, keyboard,
 320/390/768/1280px, dark mode, corrupt/retry, late responses, missing catalogue and
 no-JS fallback. The test starts and stops its own local HTTP server.

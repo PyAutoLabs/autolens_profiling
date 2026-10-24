@@ -14,7 +14,7 @@ JAX import to parse JSON.
 Run::
 
     cd autolens_profiling
-    python -m pytest scripts/misc/test/test_fixed_light_scaling.py
+    python -m pytest scripts/misc/likelihood_breakdown/test/test_fixed_light_scaling.py
 """
 
 from __future__ import annotations

@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-TOOLING = Path(__file__).resolve().parents[1] / "tooling"
+TOOLING = Path(__file__).resolve().parents[2] / "tooling"
 REPO = TOOLING.parents[2]
 spec = importlib.util.spec_from_file_location(
     "build_migration_map", TOOLING / "build_migration_map.py"

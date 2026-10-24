@@ -10,7 +10,7 @@ Certified-solver phase C1 (autolens_profiling#304). Two cells share this module:
   :func:`chunked`, :func:`rate_summary`).
 
 Everything here except :func:`recording` and :func:`capture_model_from` is pure numpy, so the selection and
-summary rules are unit-tested without JAX (``scripts/misc/test/test_nautilus_batches.py``).
+summary rules are unit-tested without JAX (``scripts/misc/likelihood_breakdown/test/test_nautilus_batches.py``).
 
 The recorder
 ------------

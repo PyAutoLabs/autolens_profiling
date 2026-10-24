@@ -14,7 +14,7 @@ Covers what the harness decides without running a likelihood:
 Run::
 
     cd autolens_profiling
-    python -m pytest scripts/misc/test/test_interferometer_pixelized_numpy.py
+    python -m pytest scripts/misc/likelihood_breakdown/test/test_interferometer_pixelized_numpy.py
 """
 
 from __future__ import annotations

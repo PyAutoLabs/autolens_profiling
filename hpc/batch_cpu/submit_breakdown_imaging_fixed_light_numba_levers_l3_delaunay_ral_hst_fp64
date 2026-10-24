@@ -96,7 +96,7 @@
 #     PyAutoArray revisions**: a literal would fire that `AssertionError` in the
 #     CONTROL arm, where the site is genuinely reached twice, and kill the control
 #     arm of the measurement the gate exists to serve.
-#   * `scripts/misc/test/test_fixed_light_numba.py`'s
+#   * `scripts/misc/likelihood_breakdown/test/test_fixed_light_numba.py`'s
 #     `test_curvature_reg_matrix_is_recomputed_more_than_once` became
 #     `test_curvature_reg_matrix_is_cached`, asserting `n_calls == 1`
 #     UNCONDITIONALLY. That is the pin, and it is deliberately not

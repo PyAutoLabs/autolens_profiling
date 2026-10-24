@@ -27,7 +27,7 @@ Principled exclusions (keep this list explicit and small; prefer fixing a script
   places into, or resolves from, the mirrored tree.
 - Assignments to a ``LEGACY_*`` constant (:data:`LEGACY_NAME`): a reader's legacy folder,
   passed only to those helpers (e.g. ``size_sweep_table.LEGACY_ROWS_DIR``).
-- ``scripts/misc/test/``: fixtures build legacy layouts on purpose.
+- ``scripts/misc/<group>/test/``: fixtures build legacy layouts on purpose.
 - :data:`EXCLUDED_FILES`: the migration tooling that reasons about the legacy layout itself,
   and ``baseline_readiness.py``, which validates the ``results/campaigns/`` evidence root that
   ``baseline/README.md`` reserves for a future producer.
@@ -151,7 +151,7 @@ def _python_files() -> list[Path]:
     files = [ROOT / "_profile_cli.py"]
     for path in sorted((ROOT / "scripts").rglob("*.py")):
         rel = path.relative_to(ROOT).as_posix()
-        if rel.startswith("scripts/misc/test/") or rel in EXCLUDED_FILES:
+        if re.match(r"scripts/misc/[^/]+/test/", rel) or rel in EXCLUDED_FILES:
             continue
         files.append(path)
     return files

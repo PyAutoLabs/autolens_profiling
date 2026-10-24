@@ -25,7 +25,7 @@ from pathlib import Path
 
 import pytest
 
-_MISC = Path(__file__).resolve().parents[1]
+_MISC = Path(__file__).resolve().parents[2]
 _ROOT = _MISC.parents[1]
 for _p in (_MISC, _MISC / "tooling"):
     if str(_p) not in sys.path:
@@ -202,7 +202,7 @@ def test_every_opted_in_script_is_in_the_wall_basis_set():
     sites = {
         f"scripts/{p.relative_to(_ROOT / 'scripts').as_posix()}"
         for p in (_ROOT / "scripts").rglob("*.py")
-        if "misc/test" not in p.as_posix()
+        if "test" not in p.relative_to(_ROOT / "scripts").parts[2:-1]
         and "headline_steady_median(" in p.read_text(encoding="utf-8")
         and "def headline_steady_median" not in p.read_text(encoding="utf-8")
     }
@@ -458,7 +458,8 @@ def test_the_one_fixed_n_timed_cell_stays_inside_the_bound():
     explicit = [
         p
         for p in (_ROOT / "scripts").rglob("*.py")
-        if "misc/test" not in p.as_posix() and "n_timed=200" in p.read_text(encoding="utf-8")
+        if "test" not in p.relative_to(_ROOT / "scripts").parts[2:-1]
+        and "n_timed=200" in p.read_text(encoding="utf-8")
     ]
     assert [p.name for p in explicit] == ["likelihood_runtime_solved.py"]
     worst = 0.0

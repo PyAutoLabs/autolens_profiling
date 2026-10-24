@@ -15,7 +15,7 @@ it — so the test asserts ``cls.__dict__[name] is original``, not equality.
 Run::
 
     cd autolens_profiling
-    python -m pytest scripts/misc/test/test_call_accounting.py
+    python -m pytest scripts/misc/likelihood_breakdown/test/test_call_accounting.py
 """
 
 from __future__ import annotations

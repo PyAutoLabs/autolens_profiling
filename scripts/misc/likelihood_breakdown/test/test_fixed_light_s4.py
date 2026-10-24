@@ -36,7 +36,7 @@ geometry that has drifted from the first.
 Run::
 
     cd autolens_profiling
-    python -m pytest scripts/misc/test/test_fixed_light_s4.py
+    python -m pytest scripts/misc/likelihood_breakdown/test/test_fixed_light_s4.py
 """
 
 from __future__ import annotations

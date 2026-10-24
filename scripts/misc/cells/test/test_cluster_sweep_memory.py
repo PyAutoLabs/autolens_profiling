@@ -8,7 +8,7 @@ and the pilot submit exposes ``PILOT_LEGS`` with the resized ``--mem`` / ``--tim
 Run::
 
     cd autolens_profiling
-    python -m pytest scripts/misc/test/test_cluster_sweep_memory.py
+    python -m pytest scripts/misc/cells/test/test_cluster_sweep_memory.py
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ from types import SimpleNamespace
 
 import pytest
 
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = Path(__file__).resolve().parents[4]
 _DIR = ROOT / "scripts" / "cluster" / "image_plane"
 if str(_DIR) not in sys.path:
     sys.path.insert(0, str(_DIR))

@@ -39,7 +39,7 @@ Pairing units (each gate's own data layout)
   is one 10-call block per arm: no interval can be computed for it.
 
 Every function is pure and deterministic (fixed bootstrap seeds); none reads a
-clock. ``scripts/misc/test/test_interval_gates.py`` holds the witnesses.
+clock. ``scripts/misc/likelihood_breakdown/test/test_interval_gates.py`` holds the witnesses.
 """
 
 from __future__ import annotations

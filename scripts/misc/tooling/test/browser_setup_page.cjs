@@ -4,7 +4,7 @@ const assert = require("node:assert/strict");
 const http = require("node:http");
 const fs = require("node:fs/promises");
 const path = require("node:path");
-const root = path.resolve(__dirname, "../../../dashboard");
+const root = path.resolve(__dirname, "../../../../dashboard");
 (async () => {
   const server = http.createServer(async (req, res) => {
     try {

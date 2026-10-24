@@ -79,7 +79,9 @@ def submits() -> list[_Path]:
 
 
 def test__the_psf_family_is_excluded_from_the_phase_0_glob():
-    other = (ROOT / "scripts" / "misc" / "test" / "test_fixed_light_cell.py").read_text()
+    other = (
+        ROOT / "scripts" / "misc" / "likelihood_breakdown" / "test" / "test_fixed_light_cell.py"
+    ).read_text()
     assert '"_fixed_light_psf_cube_" not in p.name' in other
 
 

@@ -16,7 +16,7 @@ actually broken in this repo before, is the wiring around it:
 Run::
 
     cd autolens_profiling
-    python -m pytest scripts/misc/test/test_fixed_light_cell.py
+    python -m pytest scripts/misc/likelihood_breakdown/test/test_fixed_light_cell.py
 """
 
 from __future__ import annotations

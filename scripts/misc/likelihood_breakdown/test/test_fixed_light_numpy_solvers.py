@@ -27,7 +27,7 @@ Three tiers:
 Run::
 
     cd autolens_profiling
-    python -m pytest scripts/misc/test/test_fixed_light_numpy_solvers.py
+    python -m pytest scripts/misc/likelihood_breakdown/test/test_fixed_light_numpy_solvers.py
 """
 
 from __future__ import annotations

@@ -7,7 +7,7 @@ The sweep runs at import, so its wiring is checked on the source text (as in
 Run::
 
     cd autolens_profiling
-    python -m pytest scripts/misc/test/test_cluster_starting_grid.py
+    python -m pytest scripts/misc/cells/test/test_cluster_starting_grid.py
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = Path(__file__).resolve().parents[4]
 _DIR = ROOT / "scripts" / "cluster" / "image_plane"
 if str(_DIR) not in sys.path:
     sys.path.insert(0, str(_DIR))

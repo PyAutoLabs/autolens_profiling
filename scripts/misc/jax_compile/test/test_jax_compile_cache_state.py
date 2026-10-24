@@ -8,7 +8,7 @@ tell which rows were warm.
 No JAX dependency — the functions under test are pure. Run::
 
     cd autolens_profiling
-    python -m pytest scripts/misc/test/test_jax_compile_cache_state.py
+    python -m pytest scripts/misc/jax_compile/test/test_jax_compile_cache_state.py
 """
 
 from __future__ import annotations

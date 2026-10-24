@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-TOOLING = Path(__file__).resolve().parents[1] / "tooling"
+TOOLING = Path(__file__).resolve().parents[2] / "tooling"
 spec = importlib.util.spec_from_file_location("setup_page", TOOLING / "setup_page.py")
 page = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(page)

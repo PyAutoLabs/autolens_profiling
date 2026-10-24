@@ -7,7 +7,7 @@ what the pins REFUSE to do — pool measurements that are not comparable.
 No JAX dependency. Run::
 
     cd autolens_profiling
-    python -m pytest scripts/misc/test/test_jax_compile_pins.py
+    python -m pytest scripts/misc/jax_compile/test/test_jax_compile_pins.py
 """
 
 from __future__ import annotations

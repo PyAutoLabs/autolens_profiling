@@ -82,7 +82,9 @@ def submits() -> list[_Path]:
 
 def test__the_vmap_family_is_excluded_from_the_phase_0_glob():
     """Or its submits pass test_fixed_light_cell.py's assertions by substring luck."""
-    other = (ROOT / "scripts" / "misc" / "test" / "test_fixed_light_cell.py").read_text()
+    other = (
+        ROOT / "scripts" / "misc" / "likelihood_breakdown" / "test" / "test_fixed_light_cell.py"
+    ).read_text()
     assert '"_fixed_light_vmap_" not in p.name' in other, (
         "test_fixed_light_cell.py no longer excludes the vmap family; its "
         "--config-name assertion would pass on a vmap leg only because "

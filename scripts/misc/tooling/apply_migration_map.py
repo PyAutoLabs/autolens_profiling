@@ -84,8 +84,9 @@ REWRITE_SKIP_PREFIXES = (
     "archive/",
     "dashboard/",
     "wiki/setups/",
-    "scripts/misc/test/",
 )
+#: Each scripts/misc group keeps its tests in its own ``test/`` dir (#442 PR 5).
+REWRITE_SKIP_TEST_DIR = re.compile(r"^scripts/misc/[^/]+/test/")
 REWRITE_KEEP = ("results/README.md", "results/provenance_grandfathered.txt")
 REWRITE_SKIP = (
     MAP_PATH,
@@ -102,7 +103,8 @@ def rewrite_targets(files: set[str]) -> list[str]:
     for path in sorted(files):
         if path in REWRITE_SKIP:
             continue
-        if path.startswith(REWRITE_SKIP_PREFIXES) and path not in REWRITE_KEEP:
+        skipped = path.startswith(REWRITE_SKIP_PREFIXES) or REWRITE_SKIP_TEST_DIR.match(path)
+        if skipped and path not in REWRITE_KEEP:
             continue
         if Path(path).suffix in TEXT_SUFFIXES:
             out.append(path)

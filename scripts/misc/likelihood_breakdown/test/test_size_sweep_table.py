@@ -13,7 +13,7 @@ to parse JSON.
 Run::
 
     cd autolens_profiling
-    python -m pytest scripts/misc/test/test_size_sweep_table.py
+    python -m pytest scripts/misc/likelihood_breakdown/test/test_size_sweep_table.py
 """
 
 from __future__ import annotations

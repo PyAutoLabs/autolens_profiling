@@ -27,7 +27,7 @@ What a wrong submit would look like, and what catches it:
 Run::
 
     cd autolens_profiling
-    python -m pytest scripts/misc/test/test_fixed_light_trace_submit.py
+    python -m pytest scripts/misc/likelihood_breakdown/test/test_fixed_light_trace_submit.py
 """
 
 from __future__ import annotations
@@ -83,7 +83,9 @@ def submits() -> list[_Path]:
 
 def test__the_trace_family_is_excluded_from_the_other_families_globs():
     """Or its submits pass the phase-0 file's assertions by substring luck."""
-    other = (ROOT / "scripts" / "misc" / "test" / "test_fixed_light_cell.py").read_text()
+    other = (
+        ROOT / "scripts" / "misc" / "likelihood_breakdown" / "test" / "test_fixed_light_cell.py"
+    ).read_text()
     assert '"_fixed_light_trace_" not in p.name' in other, (
         "test_fixed_light_cell.py no longer excludes the trace family; its "
         "--config-name assertion would pass on a trace leg only because "

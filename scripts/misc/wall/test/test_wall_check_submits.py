@@ -11,7 +11,7 @@ dependency.
 Run::
 
     cd autolens_profiling
-    python -m pytest scripts/misc/test/test_wall_check_submits.py
+    python -m pytest scripts/misc/wall/test/test_wall_check_submits.py
 """
 
 from __future__ import annotations

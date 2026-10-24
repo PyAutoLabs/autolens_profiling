@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-_TOOL = Path(__file__).resolve().parents[1] / "tooling" / "check_results_layout.py"
+_TOOL = Path(__file__).resolve().parents[2] / "tooling" / "check_results_layout.py"
 _spec = importlib.util.spec_from_file_location("check_results_layout", _TOOL)
 crl = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(crl)

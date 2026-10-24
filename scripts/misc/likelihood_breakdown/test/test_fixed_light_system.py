@@ -22,7 +22,7 @@ preconditioner to every pinned JAX row it is compared against.
 Run::
 
     cd autolens_profiling
-    python -m pytest scripts/misc/test/test_fixed_light_system.py
+    python -m pytest scripts/misc/likelihood_breakdown/test/test_fixed_light_system.py
 """
 
 from __future__ import annotations

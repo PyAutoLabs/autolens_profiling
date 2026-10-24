@@ -23,7 +23,7 @@ from pathlib import Path
 
 import pytest
 
-_MISC = Path(__file__).resolve().parents[1]
+_MISC = Path(__file__).resolve().parents[2]
 _ROOT = _MISC.parents[1]
 sys.path.insert(0, str(_MISC))
 sys.path.insert(0, str(_ROOT))

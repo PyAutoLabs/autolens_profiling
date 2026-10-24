@@ -35,7 +35,7 @@ editing one that has run.
 Run::
 
     cd autolens_profiling
-    python -m pytest scripts/misc/test/test_fixed_light_numba_levers_submits.py
+    python -m pytest scripts/misc/likelihood_breakdown/test/test_fixed_light_numba_levers_submits.py
 """
 
 from __future__ import annotations

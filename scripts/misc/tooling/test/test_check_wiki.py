@@ -6,7 +6,7 @@ Each test builds a miniature repo (``wiki/`` + ``results/notes/``) under
 Run::
 
     cd autolens_profiling
-    python -m pytest scripts/misc/test/test_check_wiki.py
+    python -m pytest scripts/misc/tooling/test/test_check_wiki.py
 """
 
 from __future__ import annotations

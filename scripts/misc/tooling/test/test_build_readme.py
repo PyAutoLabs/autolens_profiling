@@ -7,7 +7,7 @@ import json
 import sys
 from pathlib import Path
 
-_TOOLING = Path(__file__).resolve().parents[1] / "tooling"
+_TOOLING = Path(__file__).resolve().parents[2] / "tooling"
 
 
 def _load(name: str):

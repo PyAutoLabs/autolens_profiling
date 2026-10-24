@@ -80,7 +80,9 @@ def test__submit_is_valid_executable_bash():
 
 
 def test__the_family_is_excluded_from_the_phase_0_glob():
-    other = (ROOT / "scripts" / "misc" / "test" / "test_fixed_light_cell.py").read_text()
+    other = (
+        ROOT / "scripts" / "misc" / "likelihood_breakdown" / "test" / "test_fixed_light_cell.py"
+    ).read_text()
     assert '"_fixed_light_certified_lane_rate_" not in p.name' in other
 
 

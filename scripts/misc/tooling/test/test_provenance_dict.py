@@ -6,7 +6,7 @@ import importlib.util
 import sys
 from pathlib import Path
 
-_ROOT = Path(__file__).resolve().parents[3]
+_ROOT = Path(__file__).resolve().parents[4]
 _spec = importlib.util.spec_from_file_location("_profile_cli", _ROOT / "_profile_cli.py")
 _cli = importlib.util.module_from_spec(_spec)
 sys.modules.setdefault("_profile_cli", _cli)

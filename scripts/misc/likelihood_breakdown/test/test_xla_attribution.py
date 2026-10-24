@@ -24,7 +24,7 @@ The three quiet failure modes these tests exist for:
 Run::
 
     cd autolens_profiling
-    python -m pytest scripts/misc/test/test_xla_attribution.py
+    python -m pytest scripts/misc/likelihood_breakdown/test/test_xla_attribution.py
 """
 
 from __future__ import annotations

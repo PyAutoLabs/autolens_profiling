@@ -22,7 +22,7 @@ Three tiers:
 Run::
 
     cd autolens_profiling
-    python -m pytest scripts/misc/test/test_fixed_light_draws_steps.py
+    python -m pytest scripts/misc/likelihood_breakdown/test/test_fixed_light_draws_steps.py
 """
 
 from __future__ import annotations

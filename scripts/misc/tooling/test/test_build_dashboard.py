@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-_TOOLING = Path(__file__).resolve().parents[1] / "tooling"
+_TOOLING = Path(__file__).resolve().parents[2] / "tooling"
 
 
 def _load(name: str):

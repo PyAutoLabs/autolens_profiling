@@ -8,7 +8,7 @@ runs the sweep.
 Run::
 
     cd autolens_profiling
-    python -m pytest scripts/misc/test/test_cluster_oracle_figure.py
+    python -m pytest scripts/misc/cells/test/test_cluster_oracle_figure.py
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-_DIR = Path(__file__).resolve().parents[2] / "cluster" / "image_plane"
+_DIR = Path(__file__).resolve().parents[3] / "cluster" / "image_plane"
 if str(_DIR) not in sys.path:
     sys.path.insert(0, str(_DIR))
 

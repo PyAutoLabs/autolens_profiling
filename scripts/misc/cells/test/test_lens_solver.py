@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-_SOLVER_DIR = Path(__file__).resolve().parents[2] / "lens" / "solver"
+_SOLVER_DIR = Path(__file__).resolve().parents[3] / "lens" / "solver"
 if str(_SOLVER_DIR) not in sys.path:
     sys.path.insert(0, str(_SOLVER_DIR))
 

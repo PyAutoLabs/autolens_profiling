@@ -24,7 +24,7 @@ Three tiers, mirroring ``test_active_set_steps.py`` / ``test_fixed_light_library
 Run::
 
     cd autolens_profiling
-    python -m pytest scripts/misc/test/test_fixed_light_cpu_kernels.py
+    python -m pytest scripts/misc/likelihood_breakdown/test/test_fixed_light_cpu_kernels.py
 """
 
 from __future__ import annotations

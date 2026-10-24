@@ -10,7 +10,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = Path(__file__).resolve().parents[4]
 HELPERS = ROOT / "scripts" / "misc"
 sys.path.insert(0, str(HELPERS))
 

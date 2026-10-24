@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = Path(__file__).resolve().parents[4]
 spec = importlib.util.spec_from_file_location(
     "build_setup_wiki", ROOT / "scripts/misc/tooling/build_setup_wiki.py"
 )
