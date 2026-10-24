@@ -39,8 +39,13 @@ def test_scripts_resolve_their_row_from_the_cli():
         assert isinstance(call.args[0], ast.Name) and call.args[0].id == "_cli", script
 
 
-def test_default_placement_is_unchanged():
+def test_default_placement_is_unchanged(monkeypatch):
     # The row lands where ``place_output_path`` on the legacy name put it before the change.
+    # An unnamed run is placed by the host it runs on; pin a laptop host so the cell is the
+    # same on every machine (a CI runner's hostname maps to no host class).
+    import socket
+
+    monkeypatch.setattr(socket, "gethostname", lambda: "DESKTOP-TEST")
     for argv in ([], ["--use-mixed-precision"]):
         cli = pc.parse_profile_cli(argv=argv)
         for cls, model in CELLS.items():
