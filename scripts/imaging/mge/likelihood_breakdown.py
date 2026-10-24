@@ -98,7 +98,7 @@ from _profile_cli import (  # noqa: E402
 
 _cli = parse_profile_cli()
 
-instrument = "hst"  # <-- change this to profile a different instrument
+instrument = _cli.instrument or "hst"  # default; override via --instrument
 
 
 # ---------------------------------------------------------------------------

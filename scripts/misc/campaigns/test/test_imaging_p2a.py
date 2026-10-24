@@ -8,6 +8,7 @@ script is run.
 
 from __future__ import annotations
 
+import ast
 import importlib.util
 import json
 import re
@@ -257,3 +258,47 @@ def test_every_submit_pins_the_private_checkout_at_the_release_tag():
         assert "/mnt/ral/jnightin/PyAuto/PyAuto" not in text
         assert "HPCPullPyAuto" not in text
         assert "--standard-size" in text
+
+
+def _module_assignments(tree, name):
+    return [
+        node
+        for node in tree.body
+        if isinstance(node, ast.Assign)
+        and any(isinstance(t, ast.Name) and t.id == name for t in node.targets)
+    ]
+
+
+def test_every_script_a_leg_runs_honours_instrument_and_standard_size():
+    """For every distinct (script, flags) the generator emits, read that script's AST: the
+    instrument comes from --instrument (one module-level binding, never reassigned), the dataset
+    path is built from it, and a pixelized leg's script builds its size from --standard-size."""
+    seen = {}
+    for task in p2a.planned_tasks():
+        seen.setdefault(task.script, set()).add(task.variant)
+    assert len(seen) == 12
+    for script, variants in sorted(seen.items()):
+        source = (ROOT / "scripts" / f"{script}.py").read_text()
+        tree = ast.parse(source)
+        [binding] = _module_assignments(tree, "instrument")
+        assert ast.unparse(binding.value).startswith("_cli.instrument or "), script
+        rebinds = [
+            n
+            for n in ast.walk(tree)
+            if isinstance(n, ast.Assign)
+            and n is not binding
+            and any(isinstance(t, ast.Name) and t.id == "instrument" for t in n.targets)
+        ]
+        assert not rebinds, script
+        assert 'Path("dataset") / "imaging" / instrument' in source, script
+        assert '"dataset/imaging/hst' not in source and "'dataset/imaging/hst" not in source
+        if variants & set(p2a.PIXELIZED):
+            if script.endswith("_numba"):
+                assert "standard_size_preset(" in source and "preset.production_data" in source
+            else:
+                for variant in variants:
+                    assert f'standard_jax_cell(\n        "{variant}",' in source, script
+        # the leg's flags reach the CLI the script parses
+        for task in (t for t in p2a.planned_tasks() if t.script == script):
+            cli = pc.parse_profile_cli(argv=["--instrument", task.instrument, *task.flags.split()])
+            assert cli.instrument == task.instrument
