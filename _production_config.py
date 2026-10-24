@@ -231,6 +231,11 @@ class ProductionPreset:
     #: production projects leave it unset, so production runs with it on.
     memo: str = "off"
 
+    #: Set by :func:`standard_size_preset` when the standard source-pixel count (or the
+    #: borrowed instrument reference) changed the production preset: the reason, which makes
+    #: the preset's pin and production witness inapplicable. ``None`` = the preset as recorded.
+    size_override: str | None = None
+
     @property
     def mesh_vertices(self) -> int:
         """Total Delaunay vertices: Hilbert points plus appended edge points."""
@@ -289,6 +294,8 @@ class ProductionPreset:
             },
             "memo": self.memo,
         }
+        if self.size_override is not None:
+            payload["size_override"] = self.size_override
         if self.mesh_kind == "delaunay":
             payload["mesh"] = {
                 "kind": "delaunay",
@@ -515,6 +522,105 @@ def preset_for(cell_family: str, instrument: str, variant: str = "production"):
             f"(see _production_config.EUCLID_VIS_PIX / HST_SOURCE_PIX_2); add one "
             f"with its production file:line provenance rather than reusing another."
         ) from None
+
+
+#: The instrument whose production reference a standard-size cell borrows when its own
+#: instrument has none (jwst, ao): the subhalo ``source_pix[2]`` stage is the high-resolution
+#: imaging reference, so the high-resolution instruments take it, with only the dataset swapped.
+STANDARD_SIZE_REFERENCE_INSTRUMENT = "hst"
+
+#: The standard source-pixel count by numba cell family (human ruling 2026-10-23; the catalogue's
+#: ``STANDARD_SOURCE_PIXELS``): Delaunay 1250 Hilbert vertices (the production construction's
+#: zeroed edge points ride on top and still count as standard), rectangular 35 x 35 = 1225.
+STANDARD_HILBERT_PIXELS = 1250
+STANDARD_RECT_PIXELS_YX = 35
+
+
+def standard_size_preset(cell_family: str, instrument: str) -> ProductionPreset:
+    """The production preset of ``cell_family`` at ``instrument``, at the standard size.
+
+    ``--standard-size`` (phase 2 of the likelihood-lifecycle epic) measures every instrument at
+    one source-pixel count, so the size is the only field this changes: Delaunay presets keep
+    their Hilbert weights and their ``edge_pixels`` zeroed edge points (1250 + 30 = 1280 vertices
+    built; the ruling counts it as standard) and rectangular presets go to 35 x 35. An
+    instrument with no production reference (jwst, ao — :func:`preset_for` raises for them)
+    borrows :data:`STANDARD_SIZE_REFERENCE_INSTRUMENT`'s preset, recorded in its name, provenance
+    and ``size_override``. Whenever anything changed, ``size_override`` says why, and the cells
+    skip the preset's pinned value and production witness (both describe the preset as
+    recorded). HST Delaunay is already 1250 + 30, so it comes back unchanged.
+    """
+    from dataclasses import replace
+
+    if cell_family not in ("delaunay_numba", "pixelization_numba"):
+        raise KeyError(f"No standard-size rule for cell family {cell_family!r}")
+    borrowed = (cell_family, "production", instrument) not in _PRESETS
+    base = preset_for(
+        cell_family,
+        instrument=STANDARD_SIZE_REFERENCE_INSTRUMENT if borrowed else instrument,
+        variant="production",
+    )
+    if base.mesh_kind == "delaunay":
+        resized = base.hilbert_pixels != STANDARD_HILBERT_PIXELS
+        size = {"hilbert_pixels": STANDARD_HILBERT_PIXELS}
+        what = (
+            f"Hilbert {base.hilbert_pixels} -> {STANDARD_HILBERT_PIXELS} (+{base.edge_pixels} edge)"
+        )
+    else:
+        resized = base.rect_pixels_yx != STANDARD_RECT_PIXELS_YX
+        size = {"rect_pixels_yx": STANDARD_RECT_PIXELS_YX}
+        what = (
+            f"rectangular {base.rect_pixels_yx}x{base.rect_pixels_yx} -> "
+            f"{STANDARD_RECT_PIXELS_YX}x{STANDARD_RECT_PIXELS_YX}"
+        )
+    if not (resized or borrowed):
+        return base
+    reasons = []
+    if borrowed:
+        reasons.append(
+            f"no {instrument} production reference: borrows the "
+            f"{STANDARD_SIZE_REFERENCE_INSTRUMENT} preset {base.name!r} with the {instrument} dataset"
+        )
+    if resized:
+        reasons.append(f"standard size (human ruling 2026-10-23): {what}")
+    note = "; ".join(reasons)
+    return replace(
+        base,
+        name=f"{base.name}_standard" + (f"_{instrument}" if borrowed else ""),
+        provenance=f"{base.provenance} — {note}",
+        size_override=note,
+        **size,
+    )
+
+
+def witness_for(preset: ProductionPreset, cold_eval_median_s: float, instrument: str, host_class):
+    """:func:`witness_verdict`, or ``not_applicable`` when ``preset.size_override`` is set.
+
+    The production witness compares a cold eval against the production job of the preset as
+    recorded; a resized or borrowed preset is a different likelihood, so no band applies.
+    """
+    if preset.size_override is not None:
+        return {
+            "verdict": "not_applicable",
+            "instrument": instrument,
+            "host_class": host_class,
+            "measured_cold_eval_median_s": cold_eval_median_s,
+            "reason": f"size_override: {preset.size_override}",
+        }
+    return witness_verdict(cold_eval_median_s, instrument, host_class)
+
+
+def numpy_dense_twin(dataset):
+    """A shallow copy of ``dataset`` without its sparse operator: the eager NumPy dense route.
+
+    The inversion factory dispatches on ``dataset.sparse_operator``, so the twin fits the same
+    masked, over-sampled data through ``InversionImagingMapping`` with ``xp=np`` — the eager
+    NumPy reference a numba sparse cell's parity witness compares against.
+    """
+    import copy
+
+    twin = copy.copy(dataset)
+    twin.sparse_operator = None
+    return twin
 
 
 # ---------------------------------------------------------------------------
