@@ -35,3 +35,11 @@ Repo tooling (not profiling scripts). Its tests, and the repo-wide layout tests
   shallow), so after committing new undated rows run, in a checkout with full history,
   `python scripts/misc/tooling/build_catalogue.py --refresh-commit-dates` and commit the file;
   `--check` fails with that instruction when an undated file has no date.
+- **`coverage_matrix.py`** — the lifecycle coverage matrix (`dashboard/coverage.{json,md}`):
+  per likelihood x class x measurement, how many of the catalogue's planned cells are current,
+  stale (release pin behind the catalogue pin), superseded or missing (a `size_fallback`-only
+  cell counts as missing), plus a parity witness per planned setup cell. It cross-checks each
+  planned cell's class against `catalogue/provisional_designations.json`, the machine copy of
+  the lifecycle report's §3.3 table. CI runs `--check`; re-run it after `build_catalogue.py`.
+- **`parity_witness.py`** — the `parity.json` convention and its validator (`--check` over
+  `results/**/parity.json`); see [results/README.md](../../../results/README.md#parity-witness).

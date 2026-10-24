@@ -636,3 +636,83 @@ def test_timestamped_rows_need_no_first_commit_date(tree):
     record = by_path(lifecycle(tree, dated=False))[f"{A100}/runtime.json"]
     assert record["measured_at"] == "2026-10-02T03:04:05Z"
     assert not any(n.startswith("measured_at_derived") for n in record["limitations"])
+
+
+# ---------------------------------------------------------------- parity witnesses ---
+
+
+def parity(**extra):
+    """A synthetic parity.json witness: fixture numbers, not a measurement."""
+    return {
+        "schema": "parity-witness",
+        "version": 1,
+        "status": "match",
+        "log_likelihood": -100.0,
+        "reference_log_likelihood": -100.004,
+        "tolerance": 0.01,
+        "reference": {"source": "fixture reference", "date": "2026-10-01"},
+        "measured_at": "2026-10-02T03:04:05Z",
+        "autolens_version": "2026.10.17.1",
+        **extra,
+    }
+
+
+def test_parity_witness_becomes_a_v3_parity_record_and_passes_pulse(tree):
+    write(tree, f"{A100}/runtime.json", row())
+    write(tree, f"{A100}/parity.json", parity(source_pixels=1250))
+    doc = lifecycle(tree)
+    [record] = [r for r in doc["records"] if r["measurement"] == "parity"]
+    assert record["status"] == "current" and record["regime"] == "standard"
+    assert (record["metric"], record["unit"]) == ("abs_delta_log_likelihood", "dimensionless")
+    assert record["values"]["abs_delta_log_likelihood"] == pytest.approx(0.004)
+    assert record["values"]["tolerance"] == 0.01
+    assert record["parity"]["status"] == "match"
+    assert record["parity"]["reference_log_likelihood"] == -100.004
+    assert record["release_pin"] == "2026.10.17.1"
+    assert record["measured_at"] == "2026-10-02T03:04:05Z"
+    [witness] = doc["parity_witnesses"]
+    assert witness["record_id"] == record["id"] and witness["status"] == "match"
+    assert pulse_classify()(json.loads(json.dumps(doc)), ("profiling-summary", 3)) == ("ok", [])
+    # The companion v2 catalogue keeps the file indexed, never as a timing.
+    [source] = [s for s in build(tree)["inventory"] if s["path"] == f"{A100}/parity.json"]
+    assert source["record_count"] == 0 and "Parity witness" in source["reasons"][0]
+
+
+def test_not_assessed_witness_is_listed_but_yields_no_record(tree):
+    write(tree, f"{A100}/runtime.json", row())
+    write(
+        tree,
+        f"{A100}/parity.json",
+        parity(
+            status="not_assessed",
+            log_likelihood=None,
+            reference_log_likelihood=None,
+            tolerance=None,
+            reason="reference run pending",
+        ),
+    )
+    doc = lifecycle(tree)
+    assert not [r for r in doc["records"] if r["measurement"] == "parity"]
+    [witness] = doc["parity_witnesses"]
+    assert witness["status"] == "not_assessed" and witness["record_id"] is None
+
+
+def test_invalid_witness_fails_the_build(tree):
+    write(tree, f"{A100}/parity.json", parity(status="diverged"))
+    with pytest.raises(ValueError, match="Invalid parity witness"):
+        lifecycle(tree)
+
+
+def test_history_witness_is_superseded_and_tampering_is_refused(tree):
+    write(tree, f"{A100}/parity.json", parity())
+    write(tree, f"{A100}/history/2026.8.17.1_2026-09-01/parity.json", parity(tolerance=0.02))
+    doc = lifecycle(tree)
+    rows_ = {r["evidence"]["path"]: r for r in doc["records"] if r["measurement"] == "parity"}
+    current = rows_[f"{A100}/parity.json"]
+    old = rows_[f"{A100}/history/2026.8.17.1_2026-09-01/parity.json"]
+    assert current["status"] == "current" and old["superseded_by"] == current["id"]
+    changed = copy.deepcopy(doc)
+    [rec] = [r for r in changed["records"] if r["id"] == current["id"]]
+    rec["values"]["abs_delta_log_likelihood"] = 0.0
+    with pytest.raises(ValueError, match="parity.json witness"):
+        cat.validate_lifecycle(tree, changed)

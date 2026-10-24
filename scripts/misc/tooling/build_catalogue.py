@@ -26,6 +26,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import catalogue_lifecycle as lc
+import parity_witness
 from catalogue_adapters import metrics, number, pointer, rows
 
 REGISTRY = "catalogue/registry.json"
@@ -521,6 +522,12 @@ def build(root, generated, revision):
                     used_refs.add((path, base))
                     selections.extend(selection(r, refs[(path, base)]["reason"]) for r in emitted)
         source["status"] = "mapped" if source["record_count"] else "indexed_only"
+        cell = lc.mirrored(path)
+        if cell is not None and cell["file_measurement"] == "parity":
+            source["reasons"].append(
+                "Parity witness: read into the v3 lifecycle catalogue as measurement parity, "
+                "not a v2 timing."
+            )
         if not source["record_count"] and not source["reasons"]:
             source["reasons"].append(
                 "No supported measured fields; retained as experimental/auxiliary evidence, not silently dropped."
@@ -878,6 +885,10 @@ V3_LIMITATIONS = [
     "in the companion v2 setup catalogue (dashboard/catalogue/setups.json).",
     "Historical recommendations and hazard findings name v2 setups and stay in the companion "
     "catalogue until they are re-bound to v3 setup_ids.",
+    "Parity records (measurement parity) transcribe a cell's parity.json witness: metric "
+    "abs_delta_log_likelihood = |log L - reference log L| beside its tolerance, the signed "
+    "values and the witness status in the record's parity block. A not_assessed witness has no "
+    "value and yields no record; parity_witnesses lists every witness file.",
 ]
 
 
@@ -995,6 +1006,90 @@ def lifecycle_candidates(root, reg, path, doc, adapter, dates=None, undated=None
     return out, reasons
 
 
+def parity_candidate(root, path, doc):
+    """(v3 records, witness entry) for one mirrored ``parity.json`` (parity_witness.py)."""
+    cell = lc.mirrored(path)
+    errors = parity_witness.validate(doc)
+    if errors:
+        raise ValueError(f"Invalid parity witness {path}: " + "; ".join(errors))
+    entry = {
+        "path": path,
+        "status": doc["status"],
+        "likelihood": {"dataset_type": cell["dataset_type"], "variant": cell["variant"]},
+        "instrument": cell["instrument"],
+        "setup_id": cell["setup_id"],
+        "host_class": cell["host_class"],
+        "model_variant": cell["model_variant"],
+        "location": cell["location"],
+        "record_id": None,
+    }
+    if doc["status"] == "not_assessed":
+        return [], entry
+    cls, notes = lc.record_class(
+        cell["dataset_type"], cell["variant"], cell["host_class"], cell["setup_id"]
+    )
+    ident, prov = identity(doc, path)
+    prov = {**prov, "measured_at": doc["measured_at"]}
+    prov["unknowns"] = {k: v for k, v in prov["unknowns"].items() if k != "measured_at"}
+    pixels = doc.get("source_pixels")
+    record = {
+        "id": "lifecycle/" + digest([path, "", "parity"]),
+        "run_id": "parity/" + digest([path]),
+        "likelihood": entry["likelihood"],
+        "instrument": cell["instrument"],
+        "regime": lc.regime(cell["variant"], pixels),
+        "setup": {**cell["setup"], "threads": None},
+        "setup_id": cell["setup_id"],
+        "host_class": cell["host_class"],
+        "model_variant": cell["model_variant"],
+        "measurement": "parity",
+        "metric": parity_witness.METRIC,
+        "unit": "dimensionless",
+        "values": {parity_witness.METRIC: parity_witness.delta(doc), "tolerance": doc["tolerance"]},
+        "class": cls,
+        "status": None,
+        "superseded_by": None,
+        "day_zero": None,
+        "figures": [],
+        "decision_id": None,
+        "release_pin": doc["autolens_version"],
+        "measured_at": doc["measured_at"],
+        "identity": ident,
+        "method": {
+            "id": "parity-witness",
+            "statistic": None,
+            "repetitions": None,
+            "warmup": None,
+            "synchronization": None,
+            "cache_state": None,
+            "unknowns": {
+                k: "A parity witness compares one log-likelihood evaluation; not a timing."
+                for k in ("statistic", "repetitions", "warmup", "synchronization", "cache_state")
+            },
+        },
+        "provenance": prov,
+        "validation": {
+            "status": "unreviewed",
+            "reason": f"Parity witness status {doc['status']} (|delta log L| against tolerance, "
+            "recorded by the producing run); not an accepted baseline.",
+        },
+        "evidence": {"path": path, "fragment": None},
+        "parity": {
+            "status": doc["status"],
+            "log_likelihood": doc["log_likelihood"],
+            "reference_log_likelihood": doc["reference_log_likelihood"],
+            "reference": doc["reference"],
+        },
+        "pointers": {"tolerance": "/tolerance"},
+        "location": cell["location"],
+        "limitations": list(notes),
+        "_rank": (lc.size_rank(cell["variant"], pixels), lc.FILE_ORDER["parity"]),
+        "_pixels": pixels,
+    }
+    entry["record_id"] = record["id"]
+    return [record], entry
+
+
 def label_lifecycle(records, planned, refs):
     """Assign status/superseded_by by the day-zero rule; return (kept, excluded entries)."""
     by_key = {}
@@ -1101,7 +1196,7 @@ def build_lifecycle(root, generated, revision, dates=None):
     undated = []
     planned = planned_baseline_cells(reg)
     refs = {r["path"] for r in reg["references"]}
-    candidates, archived = [], 0
+    candidates, archived, witnesses = [], 0, []
     for spec in reg["sources"]:
         if spec["adapter"] != "profile":
             continue
@@ -1115,7 +1210,14 @@ def build_lifecycle(root, generated, revision, dates=None):
             if path.startswith("archive/"):
                 archived += archived_count(root, path, doc, adapter)
                 continue
-            found, _reasons = lifecycle_candidates(root, reg, path, doc, adapter, dates, undated)
+            cell = lc.mirrored(path)
+            if cell is not None and cell["file_measurement"] == "parity":
+                found, witness = parity_candidate(root, path, doc)
+                witnesses.append(witness)
+            else:
+                found, _reasons = lifecycle_candidates(
+                    root, reg, path, doc, adapter, dates, undated
+                )
             candidates.extend(found)
     if undated:
         raise UndatedRows(undated)
@@ -1156,6 +1258,7 @@ def build_lifecycle(root, generated, revision, dates=None):
         "records": records,
         "planned_cells": planned_cells,
         "archive_record_count": archived,
+        "parity_witnesses": witnesses,
         "standard_source_pixels": dict(sorted(lc.STANDARD_SOURCE_PIXELS.items())),
         "comparisons": [],
         "hazards": [],
@@ -1190,6 +1293,13 @@ def validate_lifecycle(root, doc):
         for metric, fragment in record["pointers"].items():
             if resolve_pointer(sources[ev["path"]], fragment) != record["values"][metric]:
                 raise ValueError("Lifecycle value does not match original evidence")
+        if record["measurement"] == "parity":
+            witness = sources[ev["path"]]
+            if (
+                record["values"][parity_witness.METRIC] != parity_witness.delta(witness)
+                or record["parity"]["status"] != witness["status"]
+            ):
+                raise ValueError("Parity record does not match its parity.json witness")
 
 
 def render_outputs(root, generated, revision):
