@@ -186,8 +186,8 @@ def size_pixels(variant: str, payload: dict) -> int | None:
 
     A row that asked for its variant's standard count (``source_pixels_requested`` equal to
     :data:`STANDARD_SOURCE_PIXELS`) is at the standard size whatever its construction added:
-    Delaunay 1250 Hilbert vertices plus the production construction's 30 zeroed edge points
-    record 1280 and still count as standard (human ruling 2026-10-24). Every other row is judged
+    a standard-size Delaunay cell builds 1250 Hilbert vertices plus 30 zeroed edge points and
+    records 1280 (human ruling 2026-10-24). Every other row is judged
     by its recorded count (:func:`source_pixels`), so the rows recorded before the ruling keep
     their regime: a scan that asked for 1250 rectangular pixels built 35 x 35 = 1225 and is
     standard by its count, one that asked for 1500 built 1521 and is ``source_pixels_1521``.

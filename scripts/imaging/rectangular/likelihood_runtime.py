@@ -91,6 +91,14 @@ from vram import (  # noqa: E402
     write_probe_json,
 )
 
+from _production_config import (  # noqa: E402
+    STANDARD_FAMILY,
+    adapt_images_for,
+    numpy_dense_reference,
+    standard_jax_cell,
+    standard_jax_dataset,
+    standard_size_preset,
+)
 from _profile_cli import (
     auto_simulate_if_missing,
     check_pinned,
@@ -238,7 +246,7 @@ with timer.section("mask_and_oversample"):
         over_sample_size_pixelization=1,
     )
 
-    if _cli.use_sparse_operator:
+    if _cli.use_sparse_operator and not _cli.standard_size:
         # Engage the w-tilde sparse-operator path. The inversion factory will
         # pick ``InversionImagingSparse`` so long as at least one linear obj
         # in the model is a Mapper — which is true here (the source is a
@@ -371,6 +379,61 @@ print(f"  adapt_image shape (slim): {adapt_image.shape_slim}")
 # 5. Full-pipeline reference (FitImaging) — eager baseline
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# --standard-size (likelihood-lifecycle 2a; human ruling N1 on #456): this cell evaluates the
+# numba production cell's likelihood for this instrument — the production preset's over-sampling,
+# capped adapt image, Hilbert mesh + zeroed edge points (rectangular 35x35), MGE lens light,
+# regularization priors, settings and positions penalty, at the preset's seeded iid draw 0 —
+# built by the one definition the numba cells use (_production_config.standard_jax_cell).
+# Without the flag the cell keeps its fiducial configuration and pins.
+# ---------------------------------------------------------------------------
+_cell_settings = al.Settings(
+    use_border_relocator=True, use_mixed_precision=_cli.use_mixed_precision
+)
+_analysis_kwargs: dict = {}
+_production_record = None
+if _cli.standard_size:
+    if _cli.over_sampling != "flat1":
+        raise SystemExit("--standard-size takes the production over-sampling; drop --over-sampling")
+    print("\n--- Standard size: the production cell (numba-identical likelihood) ---")
+    dataset, adapt_image, _over_sampling_record = standard_jax_dataset(
+        dataset,
+        adapt_image,
+        standard_size_preset(STANDARD_FAMILY["rectangular"], instrument),
+        _cli.sparse_batch_size if _cli.use_sparse_operator else None,
+    )
+    _std = standard_jax_cell(
+        "rectangular",
+        instrument,
+        dataset=dataset,
+        adapt_image=adapt_image,
+        dataset_path=dataset_path,
+        mask_radius=mask_radius,
+        memo=_cli.memo,
+        use_mixed_precision=_cli.use_mixed_precision,
+        rect_mesh_cls=rect_mesh_classes(_cli)[0],
+    )
+    model, instance = _std["model"], _std["instance"]
+    _register_model_pytrees(model)
+    params_tree = jax.tree_util.tree_map(jnp.asarray, instance)
+    tracer = al.Tracer(galaxies=list(instance.galaxies), fields=[instance.fields])
+    adapt_images = adapt_images_for(instance, adapt_image=adapt_image)
+    n_source_pixels = _std["n_source_pixels"]
+    n_image_pixels = dataset.data.shape[0]
+    n_over_sampled_pixels = dataset.grids.lp.over_sampled.shape[0]
+    reg_scheme, reg_provenance = _std["reg_scheme"], _std["reg_provenance"]
+    _cell_settings = _std["settings"]
+    _analysis_kwargs = {
+        "settings": _std["settings"],
+        "positions_likelihood_list": _std["positions_likelihood_list"],
+    }
+    _production_record = _std["record"]
+    _size_record["production_preset"] = _production_record
+    print(
+        f"  preset {_std['preset'].name}: {n_source_pixels} source pixels, "
+        f"{model.total_free_parameters} free parameters, {n_over_sampled_pixels} over-sampled"
+    )
+
 print("\n--- Full FitImaging (eager baseline) ---")
 
 with timer.section("fit_imaging_eager"):
@@ -378,10 +441,7 @@ with timer.section("fit_imaging_eager"):
         dataset=dataset,
         tracer=tracer,
         adapt_images=adapt_images,
-        settings=al.Settings(
-            use_border_relocator=True,
-            use_mixed_precision=_cli.use_mixed_precision,
-        ),
+        settings=_cell_settings,
         xp=np,
     )
     log_evidence_ref = fit.figure_of_merit
@@ -402,11 +462,9 @@ print("=" * 70)
 analysis = al.AnalysisImaging(
     dataset=dataset,
     adapt_images=adapt_images,
-    settings=al.Settings(
-        use_border_relocator=True,
-        use_mixed_precision=_cli.use_mixed_precision,
-    ),
+    settings=_cell_settings,
     use_jax=True,
+    positions_likelihood_list=_analysis_kwargs.get("positions_likelihood_list"),
 )
 
 
@@ -812,19 +870,34 @@ if _pinned_expected is not None and not _pinned_drift:
 # Parity witness (likelihood-lifecycle 2a): the JIT full pipeline against the eager NumPy
 # FitImaging computed above on the same dataset, size, model and instance, written beside the row
 # after every timed region (the placement and guards of fit.png).
+# Parity reference (human ruling (c) on #456): the eager NumPy dense-mapping likelihood of the
+# same instance on the same data — independent of the JAX path and of any sparse operator —
+# evaluated after every timed region.
+try:
+    _parity_reference = numpy_dense_reference(
+        dataset,
+        adapt_images,
+        instance,
+        settings=_cell_settings,
+        positions_likelihood_list=_analysis_kwargs.get("positions_likelihood_list"),
+    )
+except Exception as _exc:  # noqa: BLE001 — a failed reference must not cost the row
+    print(f"  WARNING: parity reference failed: {type(_exc).__name__}: {_exc}")
+    _parity_reference = float("nan")
 write_parity_json(
     dict_path.parent,
     log_likelihood=float(full_result),
-    reference_log_likelihood=float(log_evidence_ref),
+    reference_log_likelihood=_parity_reference,
     use_mixed_precision=_cli.use_mixed_precision,
     reference_source=(
-        f"eager NumPy al.FitImaging(xp=np).figure_of_merit in the same process: {instrument}, "
+        "eager NumPy dense-mapping al.AnalysisImaging(use_jax=False, no sparse operator) in the "
+        f"same process: {instrument}, "
         f"{n_source_pixels} source pixels, same dataset, model and instance"
     ),
     autolens_version=al_version,
     source_pixels=int(n_source_pixels),
     source_pixels_requested=_requested_pixels,
-    quantity="figure_of_merit (the JIT log_likelihood_function value; log evidence)",
+    quantity="log_likelihood_function (JIT cell vs eager NumPy dense reference)",
 )
 
 

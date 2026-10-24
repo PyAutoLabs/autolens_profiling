@@ -349,10 +349,12 @@ def _profile_parser() -> argparse.ArgumentParser:
         "--standard-size",
         action="store_true",
         help=(
-            "Build the standard source-pixel count of the cell's likelihood variant (human "
-            "ruling 2026-10-23): Delaunay / DelaunayNN 1250 Hilbert vertices (the production "
-            "construction's +30 zeroed edge points on top, 1280 recorded, still counts as "
-            "standard) and rectangular 35x35 = 1225, for every instrument. The row records "
+            "Evaluate the standard-size production cell of the likelihood (human rulings "
+            "2026-10-23/24): every pixelized imaging cell, JAX or numba, builds the numba "
+            "production preset of its instrument (_production_config; jwst/ao borrow the hst "
+            "preset) at Delaunay / DelaunayNN 1250 Hilbert vertices + 30 zeroed edge points "
+            "(1280 built) or rectangular 35x35 = 1225, so every setup of one likelihood x "
+            "instrument evaluates the same likelihood. The row records "
             "``configuration.source_pixels_requested`` (1250 / 1225) beside the count actually "
             "built, and the catalogue's size rule matches on the requested count. Unlike "
             "``--source-pixels`` the row is a canonical cell: no ``_n<N>`` suffix, no scan "
@@ -418,7 +420,7 @@ def requested_source_pixels(cli: ProfileCLI, variant: str) -> int | None:
     ``--standard-size`` -> :data:`STANDARD_SOURCE_PIXELS` of ``variant``; else ``--source-pixels``;
     else None (the cell keeps its own fiducial). Rectangular cells build the nearest square
     (``round(sqrt(N))`` per side; 1225 -> 35x35 exactly); Delaunay-family cells build N Hilbert
-    vertices (plus any edge points their construction appends).
+    vertices (the standard-size production cells add the preset's 30 zeroed edge points).
     """
     if getattr(cli, "standard_size", False):
         try:
