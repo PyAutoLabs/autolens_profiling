@@ -2389,6 +2389,7 @@ if _production_record is not None:
     # The production preset this cell evaluated. Its positions penalty (euclid) is an
     # analysis-level term the per-step FitImaging decomposition does not time.
     breakdown_summary["configuration"]["production_preset"] = _production_record
+    breakdown_summary["configuration"]["production_data_record"] = _over_sampling_record
 dict_path.write_text(json.dumps(breakdown_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")
 

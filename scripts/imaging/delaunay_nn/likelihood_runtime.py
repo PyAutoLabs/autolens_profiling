@@ -529,6 +529,7 @@ if _cli.standard_size:
     }
     _production_record = _std["record"]
     _size_record["production_preset"] = _production_record
+    _size_record["production_data_record"] = _over_sampling_record
     print(
         f"  preset {_std['preset'].name}: {n_source_pixels} source pixels, "
         f"{model.total_free_parameters} free parameters, {n_over_sampled_pixels} over-sampled"
