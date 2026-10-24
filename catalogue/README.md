@@ -31,6 +31,13 @@ The rules live in [`catalogue_lifecycle.py`](../scripts/misc/tooling/catalogue_l
 - **Class**: the provisional §3.3 designations. A provisional Optimal row is `class: secondary`
   with `provisional_optimal: true` in `limitations` until a Pulse designation decision exists
   (R3); mixed precision is `experimental`. `planned_cells` carry the provisional class.
+  [provisional_designations.json](provisional_designations.json) transcribes the §3.3 table
+  row by row with its machine reading; a test keeps it and `catalogue_lifecycle.py` in step.
+- **Parity**: a cell's `parity.json` witness becomes a `measurement: parity` record; see
+  [results/README.md](../results/README.md#parity-witness).
+- **Coverage**: `coverage_matrix.py` renders [`dashboard/coverage.md`](../dashboard/coverage.md)
+  (current / stale / superseded / missing per likelihood x class x measurement; a cell
+  covered only by a `size_fallback` row is missing). Re-run it after `build_catalogue.py`.
 - **measured_at**: a row with no recorded timestamp is dated by the UTC day its file was first
   committed to git (an upper bound on the measurement date), from
   [measured_at_first_commit.json](measured_at_first_commit.json), and says so in
@@ -45,6 +52,7 @@ From the repository root (Python standard library only):
 python scripts/misc/tooling/build_catalogue.py
 python scripts/misc/tooling/build_catalogue.py --check
 python scripts/misc/tooling/build_catalogue.py --check --validate-with ../PyAutoPulse
+python scripts/misc/tooling/coverage_matrix.py        # then --check
 ```
 
 `build_dashboard.py` also builds/checks the catalogue and the page bound to its hash.
