@@ -295,6 +295,22 @@ def timeout_marker(
     }
 
 
+def row_completed_since(row_path: Path, t0: float) -> bool:
+    """Whether this run finished ``row_path`` before a timeout (only its fit.png phase was cut).
+
+    Every runtime cell writes its final row, then records the pinned-value check into it
+    (``record_pinned_check`` adds ``pinned_drift``), then renders ``fit.png``. The early row a
+    cell writes before its vmap phase carries no ``pinned_drift``, so a row written during this
+    run that holds the key is a complete measurement.
+    """
+    try:
+        if not row_path.is_file() or row_path.stat().st_mtime < t0:
+            return False
+        return "pinned_drift" in json.loads(row_path.read_text())
+    except (OSError, ValueError):
+        return False
+
+
 def existing_marker_verdict(marker_path: Path, config_name: str, conf: dict) -> dict:
     """``marker_verdict`` of a marker file; an unreadable marker is inconclusive."""
     try:
@@ -375,6 +391,14 @@ def _run_one(
                 )
         except subprocess.TimeoutExpired:
             elapsed = time.time() - t0
+            if row_completed_since(row_path, t0):
+                # The row was finished (its pinned check recorded) before the timeout: only the
+                # fit.png phase that follows it was cut short. The measurement stands.
+                print(
+                    f"    TIMEOUT ({elapsed:.1f}s) after the row was complete; row kept, "
+                    f"fit.png may be missing -> {log_path.name}"
+                )
+                return True, elapsed, str(log_path)
             marker = side_dir / f"{row_name}.unusable.json"
             payload = timeout_marker(
                 f"{config.name}{log_suffix}",

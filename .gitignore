@@ -119,3 +119,6 @@ results/lens/solver/corpus/slam_mixed_hst.npz
 
 # pytest cache (rootdir is the repo root, see pytest.ini)
 .pytest_cache/
+
+# render_fit_png's staging file (a run killed mid-copy leaves it beside the row)
+.fit_png.tmp
