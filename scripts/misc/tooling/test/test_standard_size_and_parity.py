@@ -98,19 +98,22 @@ def test_numba_presets_at_the_standard_size_for_every_instrument(instrument):
             prod.preset_for("delaunay_numba", instrument)
 
 
-def test_hst_delaunay_is_already_standard_and_keeps_its_pin_and_witness():
-    preset = prod.standard_size_preset("delaunay_numba", "hst")
-    assert preset is prod.preset_for("delaunay_numba", "hst")
-    assert preset.size_override is None and "size_override" not in preset.as_json()
+def test_every_standard_preset_is_production_data_and_retires_pin_and_witness():
+    preset = prod.standard_size_preset("delaunay_numba", "hst")  # already 1250 + 30 in size
+    assert preset.mesh_vertices == 1280 and preset.production_data
+    assert "production data" in preset.size_override
+    assert not prod.preset_for("delaunay_numba", "hst").production_data  # legacy untouched
+    assert "production_data" not in prod.preset_for("delaunay_numba", "hst").as_json()
     resized = prod.standard_size_preset("delaunay_numba", "euclid")
     assert resized.size_override and "500 -> 1250" in resized.size_override
     witness = prod.witness_for(resized, 1.0, "euclid", "hpc_ral_cpu_fp64")
     assert witness["verdict"] == "not_applicable"
-    assert prod.witness_for(preset, 1.0, "hst", "local_laptop_fp64")["verdict"] == "INCONCLUSIVE"
+    base = prod.preset_for("delaunay_numba", "hst")
+    assert prod.witness_for(base, 1.0, "hst", "local_laptop_fp64")["verdict"] == "INCONCLUSIVE"
 
 
 def test_a_delaunay_nn_numba_cell_is_never_judged_against_the_delaunay_production_band():
-    preset = prod.standard_size_preset("delaunay_numba", "hst")  # unresized: a band would apply
+    preset = prod.preset_for("delaunay_numba", "hst")  # the recorded preset: a band applies
     assert prod.witness_for(preset, 0.6, "hst", "hpc_ral_cpu_fp64")["verdict"] == "PASS"
     nn = prod.witness_for(preset, 0.6, "hst", "hpc_ral_cpu_fp64", mesh_class="delaunay_nn")
     assert nn["verdict"] == "not_applicable" and "delaunay_nn" in nn["reason"]

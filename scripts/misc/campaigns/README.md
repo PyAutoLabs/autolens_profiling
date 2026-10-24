@@ -26,7 +26,12 @@ the numba production preset of the instrument from `_production_config.py` (jwst
 borrow the hst preset, recorded in `size_override`): Delaunay 1250 Hilbert vertices + 30
 zeroed edge points (1280 built) or rectangular 35x35, the preset's MGE lens light, adapt-image
 weights, regularization priors, over-sampling, settings and positions penalty, evaluated at
-the preset's seeded iid draw 0. So every setup of one likelihood and instrument evaluates the
+the preset's seeded iid draw 0. The data and mesh follow real production
+(`production_standard_data`, `PRODUCTION_DATA_SOURCES` in `_production_config.py`): the
+source adapt image is production's subtracted S/N map (data minus the truth lens light, over
+the noise map, floored at 1 %), the over-sampling cut (sub-size 4 where S/N > 3, else 2) reads
+the uncapped map, the S/N cap of 3 feeds only the mesh and regularization, and the
+rectangular mesh is `RectangularBilinearAdaptImage` with free weight priors. So every setup of one likelihood and instrument evaluates the
 same likelihood; the row records the preset as `configuration.production_preset`. Each row
 gets `fit.png` and `parity.json` (the eager NumPy dense-mapping reference) beside it. The
 numba leg of `delaunay_nn` runs the numba Delaunay script with `--mesh-class delaunay_nn`.
@@ -87,3 +92,14 @@ JSON exists and is the final write (no `"vmap": "PENDING ..."` early row), `fit.
 `library_revisions` match the pinned checkout. Before copying, PR B moves each superseded row
 (and its figure and witness) to the cell's `history/<release_pin>_<date>/`, then regenerates
 the catalogue and coverage.
+
+**For PR B's campaign wiki page.**
+
+- The euclid positions penalty is part of every euclid runtime row (JAX and numba time
+  `log_likelihood_function`), but the JAX breakdowns decompose `FitImaging`, which has no
+  positions term: a euclid JAX breakdown does not time the penalty.
+- Without `--standard-size`, the numba production presets still build their data the historic
+  way: the adapt image is the noise-free lensed-source flux, capped at 3 before it drives the
+  over-sampling cut (so on hst, jwst and ao the cut never fires and every pixel gets sub-size 2),
+  and the rectangular presets use `RectangularBilinearAdaptDensity`. Production does neither;
+  only the standard-size cells match production.

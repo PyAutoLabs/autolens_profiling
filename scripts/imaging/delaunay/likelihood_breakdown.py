@@ -590,7 +590,7 @@ if _cli.standard_size:
     print("\n--- Standard size: the production cell (numba-identical likelihood) ---")
     dataset, adapt_image, _over_sampling_record = standard_jax_dataset(
         dataset,
-        adapt_image,
+        dataset_path,
         standard_size_preset(STANDARD_FAMILY["delaunay"], instrument),
         _cli.sparse_batch_size if _cli.use_sparse_operator else None,
     )

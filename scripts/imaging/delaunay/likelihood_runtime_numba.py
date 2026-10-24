@@ -100,6 +100,7 @@ from _production_config import (  # noqa: E402
     production_image_mesh_grid,
     production_mesh,
     production_model,
+    production_standard_data,
     regularization_model,
     standard_size_preset,
     timing_summary,
@@ -204,19 +205,28 @@ with timer.section("mask_and_oversample"):
 
     dataset = dataset.apply_mask(mask=mask)
 
-    # The source adapt image, capped at the preset's S/N if it has one — the
-    # same map that drives the Hilbert mesh, the adaptive regularization AND the
-    # pixelization over-sampling rule, exactly as production.
-    adapt_image = adapt_image_capped(
-        adapt_image_for_dataset(dataset_path=dataset_path, dataset=dataset),
-        preset,
-    )
+    if preset.production_data:
+        # --standard-size: production's data (human ruling 2026-10-24): the subtracted S/N
+        # adapt image, the over-sampling cut on the UNCAPPED map, the cap for the mesh and
+        # regularization only — the one construction the JAX standard-size cells share.
+        dataset, adapt_image, _production_data_record = production_standard_data(
+            dataset, dataset_path, preset, sparse="cpu"
+        )
+    else:
+        _production_data_record = None
+        # The source adapt image, capped at the preset's S/N if it has one — the
+        # same map that drives the Hilbert mesh, the adaptive regularization AND the
+        # pixelization over-sampling rule, exactly as production.
+        adapt_image = adapt_image_capped(
+            adapt_image_for_dataset(dataset_path=dataset_path, dataset=dataset),
+            preset,
+        )
 
-    # Light-profile radial bins, then the S/N-driven pixelization map, then the
-    # sparse CPU operator — production's order. `apply_over_sampling` returns a
-    # fresh `Imaging` that drops the precomputed operator, so it is re-applied
-    # last or the fit silently falls back to the dense inversion.
-    dataset = apply_production_over_sampling(dataset, adapt_image, preset)
+        # Light-profile radial bins, then the S/N-driven pixelization map, then the
+        # sparse CPU operator — production's order. `apply_over_sampling` returns a
+        # fresh `Imaging` that drops the precomputed operator, so it is re-applied
+        # last or the fit silently falls back to the dense inversion.
+        dataset = apply_production_over_sampling(dataset, adapt_image, preset)
 
 with timer.section("apply_sparse_operator_cpu"):
     dataset = dataset.apply_sparse_operator_cpu()
@@ -473,6 +483,11 @@ likelihood_summary = {
         # ``--standard-size``: what was asked for (1250 / 1225); the count built is above.
         "source_pixels_requested": _requested_pixels,
         "standard_size": bool(_cli.standard_size),
+        **(
+            {"production_data_record": _production_data_record}
+            if _production_data_record is not None
+            else {}
+        ),
         "mesh_class": MESH_CLASS,
         "inversion_path": "sparse_numba",
         "use_jax": False,

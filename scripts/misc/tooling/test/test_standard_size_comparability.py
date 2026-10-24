@@ -30,17 +30,23 @@ MASK_RADIUS = 2.4
 
 @pytest.fixture(scope="module")
 def cell_inputs(tmp_path_factory):
-    """A small simulated lens (enough masked pixels for a 1250-point Hilbert mesh), its S/N-like
-    adapt image, and a dataset folder holding the hst positions (the euclid penalty reads it)."""
+    """A small simulated lens with lens light (enough masked pixels for a 1250-point Hilbert
+    mesh) and a dataset folder holding its truth ``tracer.json`` (production's S/N adapt image
+    subtracts the lens light) and the hst positions (the euclid penalty reads them)."""
     import autolens as al
-    import numpy as np
 
     shape, scale = (72, 72), 0.08
     grid = al.Grid2D.uniform(shape_native=shape, pixel_scales=scale)
     psf = al.Convolver.from_gaussian(shape_native=(5, 5), sigma=0.08, pixel_scales=scale)
     tracer = al.Tracer(
         galaxies=[
-            al.Galaxy(redshift=0.5, mass=al.mp.Isothermal(centre=(0.0, 0.0), einstein_radius=1.6)),
+            al.Galaxy(
+                redshift=0.5,
+                bulge=al.lp.Sersic(
+                    centre=(0.0, 0.0), intensity=0.5, effective_radius=0.6, sersic_index=3.0
+                ),
+                mass=al.mp.Isothermal(centre=(0.0, 0.0), einstein_radius=1.6),
+            ),
             al.Galaxy(
                 redshift=1.0,
                 bulge=al.lp.SersicCore(
@@ -55,21 +61,19 @@ def cell_inputs(tmp_path_factory):
     dataset = simulator.via_tracer_from(tracer=tracer, grid=grid)
     mask = al.Mask2D.circular(shape_native=shape, pixel_scales=scale, radius=MASK_RADIUS)
     dataset = dataset.apply_mask(mask=mask)
-    signal = np.asarray(tracer.image_2d_from(grid=dataset.grid))
-    adapt_image = al.Array2D(values=10.0 * signal / signal.max() + 0.05, mask=dataset.mask)
     folder = tmp_path_factory.mktemp("dataset")
+    al.output_to_json(obj=tracer, file_path=folder / "tracer.json")
     shutil.copy(ROOT / "dataset/imaging/hst/positions.json", folder / "positions.json")
-    return dataset, adapt_image, folder
+    return dataset, folder
 
 
-def numba_route(variant, instrument, dataset, adapt_image, folder):
+def numba_route(variant, instrument, dataset, folder):
     """The numba cells' construction, in their order (likelihood_runtime_numba.py)."""
     import autolens as al
 
     family = prod.STANDARD_FAMILY[variant]
     preset = prod.standard_size_preset(family, instrument)
-    adapt = prod.adapt_image_capped(adapt_image, preset)
-    data = prod.apply_production_over_sampling(dataset, adapt, preset)  # + CPU sparse operator
+    data, adapt, _ = prod.production_standard_data(dataset, folder, preset, sparse="cpu")
     if preset.mesh_kind == "delaunay":
         grid = prod.production_image_mesh_grid(data, adapt, preset, MASK_RADIUS)
         cls = al.mesh.DelaunayNN if variant == "delaunay_nn" else al.mesh.Delaunay
@@ -97,12 +101,12 @@ def numba_route(variant, instrument, dataset, adapt_image, folder):
     return {"model": model, "instance": instance, "n": n, "analysis": analysis, "data": data}
 
 
-def jax_route(variant, instrument, dataset, adapt_image, folder):
+def jax_route(variant, instrument, dataset, folder):
     """The JAX cells' construction under --standard-size (the block in every JAX script)."""
     import autolens as al
 
     preset = prod.standard_size_preset(prod.STANDARD_FAMILY[variant], instrument)
-    data, adapt, _record = prod.standard_jax_dataset(dataset, adapt_image, preset, None)
+    data, adapt, record = prod.standard_jax_dataset(dataset, folder, preset, None)
     std = prod.standard_jax_cell(
         variant,
         instrument,
@@ -115,7 +119,7 @@ def jax_route(variant, instrument, dataset, adapt_image, folder):
     std["adapt_images"] = prod.adapt_images_for(
         std["instance"], image_plane_mesh_grid=std["image_plane_mesh_grid"], adapt_image=adapt
     )
-    std["data"] = data
+    std["data"], std["data_record"], std["mesh_adapt"] = data, record, adapt
     return std
 
 
@@ -188,3 +192,34 @@ def test_every_numba_script_builds_the_model_from_the_shared_parts():
         assert "mge_lens_bulge(" not in text and "af.Model(al.mp.Isothermal)" not in text
         if "delaunay" in path.parent.name:
             assert "production_image_mesh_grid(dataset, adapt_image, preset, mask_radius)" in text
+
+
+@pytest.mark.parametrize("instrument", INSTRUMENTS)
+def test_standard_size_takes_productions_mesh_class_and_uncapped_over_sampling_cut(
+    instrument, cell_inputs
+):
+    """The production choices (subhalo_validation rectangular_adapt.py:74-96, imaging.py:213-255,
+    spec.py:9-36): RectangularBilinearAdaptImage with free weights; the S/N > 3 cut on the
+    uncapped subtracted S/N map, so the sub-size map really varies; the cap feeds the mesh only."""
+    import autofit as af
+    import autolens as al
+    import numpy as np
+
+    rect = prod.standard_size_preset("pixelization_numba", instrument)
+    assert rect.production_data and rect.as_json()["mesh"]["class"] == (
+        "RectangularBilinearAdaptImage"
+    )
+    mesh = prod.production_mesh(rect, mesh_class=al.mesh.RectangularBilinearAdaptDensity)
+    assert isinstance(mesh, af.Model) and mesh.cls is al.mesh.RectangularBilinearAdaptImage
+    assert mesh.prior_count == 2  # weight_power, weight_floor free, as production
+    assert "production_source" in rect.as_json()
+
+    jax = jax_route("rectangular", instrument, *cell_inputs)
+    rule = jax["data_record"]["over_sample_size_pixelization_rule"]
+    assert rule["pixels_above"] > 0 and rule["pixels_below"] > 0
+    sizes = np.asarray(jax["data"].grids.pixelization.over_sample_size)
+    assert set(np.unique(sizes)) == {rect.pix_low, rect.pix_high}
+    snr, _ = prod.production_source_snr(jax["data"], cell_inputs[1])
+    assert float(np.max(snr)) > 3.0
+    if rect.adapt_snr_cap is not None:  # hst / jwst / ao: capped for the mesh only
+        assert float(np.max(jax["mesh_adapt"])) == rect.adapt_snr_cap

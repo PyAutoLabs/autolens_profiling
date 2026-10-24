@@ -236,6 +236,14 @@ class ProductionPreset:
     #: the preset's pin and production witness inapplicable. ``None`` = the preset as recorded.
     size_override: str | None = None
 
+    #: Set by :func:`standard_size_preset` (``--standard-size``, human ruling 2026-10-24): build
+    #: the data and mesh as production does, not as the historic cells did — the source adapt
+    #: image is production's subtracted S/N map (:func:`production_source_snr`), the over-sampling
+    #: cut reads it UNCAPPED, the cap feeds only the mesh and regularization, and the rectangular
+    #: mesh is ``RectangularBilinearAdaptImage`` with its free weight priors
+    #: (:data:`PRODUCTION_DATA_SOURCES`). False keeps every existing preset as it was.
+    production_data: bool = False
+
     @property
     def mesh_vertices(self) -> int:
         """Total Delaunay vertices: Hilbert points plus appended edge points."""
@@ -312,6 +320,14 @@ class ProductionPreset:
                 "shape": [self.rect_pixels_yx, self.rect_pixels_yx],
                 "source_pixels": self.rect_pixels_yx**2,
             }
+        if self.production_data:
+            payload["production_data"] = True
+            payload["production_source"] = PRODUCTION_DATA_SOURCES[
+                "euclid" if self.name.startswith("euclid") else "subhalo"
+            ]
+            if self.mesh_kind == "rectangular":
+                payload["mesh"]["class"] = "RectangularBilinearAdaptImage"
+                payload["mesh"]["free_weights"] = PRODUCTION_RECT_WEIGHT_PRIORS
         return payload
 
 
@@ -572,9 +588,11 @@ def standard_size_preset(cell_family: str, instrument: str) -> ProductionPreset:
             f"rectangular {base.rect_pixels_yx}x{base.rect_pixels_yx} -> "
             f"{STANDARD_RECT_PIXELS_YX}x{STANDARD_RECT_PIXELS_YX}"
         )
-    if not (resized or borrowed):
-        return base
-    reasons = []
+    reasons = [
+        "production data (human ruling 2026-10-24): subtracted S/N adapt image, uncapped "
+        "over-sampling cut"
+        + ("; RectangularBilinearAdaptImage mesh" if base.mesh_kind == "rectangular" else "")
+    ]
     if borrowed:
         reasons.append(
             f"no {instrument} production reference: borrows the "
@@ -585,6 +603,7 @@ def standard_size_preset(cell_family: str, instrument: str) -> ProductionPreset:
     note = "; ".join(reasons)
     return replace(
         base,
+        production_data=True,
         name=f"{base.name}_standard" + (f"_{instrument}" if borrowed else ""),
         provenance=f"{base.provenance} — {note}",
         size_override=note,
@@ -1220,7 +1239,20 @@ def production_mesh(preset: ProductionPreset, *, n_vertices: int | None = None, 
     if preset.mesh_kind == "delaunay":
         cls = mesh_class or al.mesh.Delaunay
         return cls(pixels=int(n_vertices), zeroed_pixels=preset.edge_pixels)
-    return mesh_class(shape=(preset.rect_pixels_yx, preset.rect_pixels_yx))
+    shape = (preset.rect_pixels_yx, preset.rect_pixels_yx)
+    if preset.production_data:  # production's source_pix[2] mesh, weights free
+        import autofit as af
+
+        mesh = af.Model(al.mesh.RectangularBilinearAdaptImage, shape=shape)
+        priors = PRODUCTION_RECT_WEIGHT_PRIORS
+        mesh.weight_power = af.UniformPrior(
+            lower_limit=priors["weight_power"]["lower"], upper_limit=priors["weight_power"]["upper"]
+        )
+        mesh.weight_floor = af.LogUniformPrior(
+            lower_limit=priors["weight_floor"]["lower"], upper_limit=priors["weight_floor"]["upper"]
+        )
+        return mesh
+    return mesh_class(shape=shape)
 
 
 def production_model(preset: ProductionPreset, mask_radius: float, mesh, regularization=None):
@@ -1251,7 +1283,7 @@ def production_model(preset: ProductionPreset, mask_radius: float, mesh, regular
     field = af.Model(al.MassField, redshift=0.5, shear=shear)
     if regularization is None:
         regularization = regularization_model(preset)
-    if isinstance(regularization, af.Model):
+    if isinstance(regularization, af.Model) or isinstance(mesh, af.Model):
         pixelization = af.Model(al.Pixelization, mesh=mesh, regularization=regularization)
     else:
         pixelization = al.Pixelization(mesh=mesh, regularization=regularization)
@@ -1259,24 +1291,11 @@ def production_model(preset: ProductionPreset, mask_radius: float, mesh, regular
     return af.Collection(galaxies=af.Collection(lens=lens, source=source), fields=field)
 
 
-def standard_jax_dataset(dataset, adapt_image, preset: ProductionPreset, sparse_batch_size=None):
-    """``(dataset, capped adapt image, over-sampling record)`` for a JAX standard-size cell.
-
-    Exactly the numba cells' data preparation (:func:`adapt_image_capped`, then
-    :func:`apply_production_over_sampling` on the capped image) without the CPU sparse operator;
-    ``sparse_batch_size`` applies the JAX w-tilde operator instead (``--sparse``).
-    """
-    capped = adapt_image_capped(adapt_image, preset)
-    dataset = apply_production_over_sampling(dataset, capped, preset, sparse_operator=False)
-    if sparse_batch_size:
-        dataset = dataset.apply_sparse_operator(batch_size=int(sparse_batch_size))
-    config = preset.as_json()
-    record = {
-        "over_sampling_preset": preset.name,
-        "over_sample_size_lp_rule": config["over_sample_size_lp_rule"],
-        "over_sample_size_pixelization_rule": config["over_sample_size_pixelization_rule"],
-    }
-    return dataset, capped, record
+def standard_jax_dataset(dataset, dataset_path, preset: ProductionPreset, sparse_batch_size=None):
+    """``(dataset, mesh adapt image, record)`` for a JAX standard-size cell:
+    :func:`production_standard_data` with the JAX w-tilde operator under ``--sparse``
+    (``sparse_batch_size``) instead of the numba CPU one — the numba cells' exact data."""
+    return production_standard_data(dataset, dataset_path, preset, sparse=sparse_batch_size)
 
 
 def standard_jax_cell(
@@ -1355,3 +1374,134 @@ def numpy_dense_reference(dataset, adapt_images, instance, **analysis_kwargs) ->
         **analysis_kwargs,
     )
     return float(analysis.log_likelihood_function(instance=instance))
+
+
+#: Where the ``production_data`` construction is read (re-checked 2026-10-24 against
+#: subhalo_validation@122079f on /mnt/c and euclid_strong_lens_modeling_pipeline@9b1bc4c).
+PRODUCTION_DATA_SOURCES = {
+    "subhalo": {
+        "adapt_image": (
+            "PyAutoGalaxy@7472211 autogalaxy/analysis/adapt_images/adapt_images.py:138 "
+            "galaxy_name_image_dict_via_result_from: the source's subtracted S/N map (data minus "
+            "the other galaxies' model images, over the noise map), floored at "
+            "adapt_minimum_percent (0.01, subhalo_validation config/general.yaml:28) x max"
+        ),
+        "mesh_and_regularization_adapt_image": (
+            "subhalo_validation scripts/pipelines/spec.py:9-36 capped_galaxy_name_image_dict_from "
+            "(S/N capped at 3.0); used by delaunay_adapt_split.py:123,:165 and "
+            "rectangular_adapt.py:109"
+        ),
+        "over_sampling": (
+            "subhalo_validation scripts/imaging.py:213-255 apply_adaptive_pixelization_over_sampling: "
+            "sub-size 4 where the UNCAPPED source S/N > 3.0, else 2; light-profile bins :175-184"
+        ),
+        "rectangular_mesh": (
+            "subhalo_validation scripts/pipelines/rectangular_adapt.py:74-96 (source_pix[2]): "
+            "af.Model(al.mesh.RectangularBilinearAdaptImage, shape) with al.reg.Adapt; weight "
+            "priors config/priors/mesh/rectangular.yaml:43-61"
+        ),
+        "model_stand_in": (
+            "no previous-stage fit exists in a profiling cell: the dataset's truth tracer "
+            "(tracer.json) stands in for the maximum-likelihood model whose lens light is "
+            "subtracted"
+        ),
+    },
+    "euclid": {
+        "adapt_image": (
+            "euclid_strong_lens_modeling_pipeline scripts/initial_lens_model.py:538-543 "
+            "galaxy_name_image_dict_via_result_from (subtracted S/N, uncapped) for the Hilbert "
+            "mesh; adapt_minimum_percent 0.01 (config/general.yaml:22)"
+        ),
+        "over_sampling": "initial_lens_model.py:609-626: sub-size 4 where the source S/N > 3.0, else 2",
+        "model_stand_in": (
+            "the dataset's truth tracer stands in for the previous stage's maximum-likelihood model"
+        ),
+    },
+}
+
+#: Production's free ``RectangularBilinearAdaptImage`` weights (subhalo_validation
+#: config/priors/mesh/rectangular.yaml:43-61, equal to the library default config).
+PRODUCTION_RECT_WEIGHT_PRIORS = {
+    "weight_power": {"type": "Uniform", "lower": 0.0, "upper": 10.0},
+    "weight_floor": {"type": "LogUniform", "lower": 1e-5, "upper": 1.0},
+}
+
+
+def production_source_snr(dataset, dataset_path):
+    """Production's source adapt image: the subtracted S/N map of the lensed source.
+
+    ``(data - lens-galaxy model image) / noise_map``, the lens light PSF-blurred on the dataset's
+    light-profile grid, floored at ``adapt_minimum_percent`` x its maximum — what
+    ``galaxy_name_image_dict_via_result_from`` returns for ``('galaxies', 'source')``. The
+    dataset's truth tracer stands in for the previous stage's maximum-likelihood model.
+    Returns ``(snr, minimum_percent)``; the map is uncapped.
+    """
+    import autolens as al
+    import numpy as np
+
+    try:
+        from autoconf import conf
+
+        minimum_percent = float(conf.instance["general"]["adapt"]["adapt_minimum_percent"])
+    except Exception:  # noqa: BLE001 — the library default, as both production configs set it
+        minimum_percent = 0.01
+    tracer = al.from_json(file_path=Path(dataset_path) / "tracer.json")
+    planes = tracer.blurred_image_2d_list_from(
+        grid=dataset.grids.lp, blurring_grid=dataset.grids.blurring, psf=dataset.psf
+    )
+    lens = np.asarray(planes[0])
+    snr = (np.asarray(dataset.data) - lens) / np.asarray(dataset.noise_map)
+    snr = np.maximum(snr, minimum_percent * np.max(snr))
+    return al.Array2D(values=snr, mask=dataset.mask), minimum_percent
+
+
+def production_standard_data(dataset, dataset_path, preset: ProductionPreset, sparse=None):
+    """``(dataset, mesh adapt image, record)`` built as production builds them.
+
+    Light-profile bins first, then the subtracted S/N map (:func:`production_source_snr`), then
+    the pixelization over-sampling from the UNCAPPED map (sub-size ``pix_high`` where S/N >
+    ``pix_snr_cut``, else ``pix_low``), and the mesh / regularization adapt image capped at
+    ``adapt_snr_cap`` when the preset has one. ``sparse``: ``"cpu"`` applies the numba CPU
+    operator, an int the JAX operator at that batch size, None neither. The numba and JAX
+    standard-size cells both call this, so they fit the same data.
+    """
+    import autolens as al
+    import numpy as np
+
+    lp = al.util.over_sample.over_sample_size_via_radial_bins_from(
+        grid=dataset.grid,
+        sub_size_list=list(preset.lp_sub_size_list),
+        radial_list=list(preset.lp_radial_list),
+        centre_list=[tuple(preset.lp_centre)],
+    )
+    dataset = dataset.apply_over_sampling(
+        over_sample_size_lp=lp, over_sample_size_pixelization=preset.pix_low
+    )
+    snr, minimum_percent = production_source_snr(dataset, dataset_path)
+    above = np.asarray(snr) > preset.pix_snr_cut
+    pix = al.Array2D(values=np.where(above, preset.pix_high, preset.pix_low), mask=dataset.mask)
+    dataset = dataset.apply_over_sampling(over_sample_size_lp=lp, over_sample_size_pixelization=pix)
+    if sparse == "cpu":
+        dataset = dataset.apply_sparse_operator_cpu()
+    elif sparse:
+        dataset = dataset.apply_sparse_operator(batch_size=int(sparse))
+    mesh_adapt = snr
+    if preset.adapt_snr_cap is not None:
+        mesh_adapt = al.Array2D(
+            values=np.minimum(np.asarray(snr), preset.adapt_snr_cap), mask=dataset.mask
+        )
+    config = preset.as_json()
+    record = {
+        "over_sampling_preset": preset.name,
+        "over_sample_size_lp_rule": config["over_sample_size_lp_rule"],
+        "over_sample_size_pixelization_rule": {
+            **config["over_sample_size_pixelization_rule"],
+            "threshold_map": "uncapped subtracted S/N (production)",
+            "pixels_above": int(above.sum()),
+            "pixels_below": int((~above).sum()),
+        },
+        "adapt_image": "subtracted S/N (truth tracer), floored",
+        "adapt_minimum_percent": minimum_percent,
+        "mesh_adapt_snr_cap": preset.adapt_snr_cap,
+    }
+    return dataset, mesh_adapt, record
