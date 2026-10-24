@@ -88,6 +88,8 @@ RESULTS_ROOT = REPO_ROOT / "results"
 ARCHIVE_ROOT = REPO_ROOT / "archive"
 #: The pre-move breakdown folder, as the day-zero map records old paths (read, never written).
 LEGACY_BREAKDOWN_PREFIX = "results/breakdown/"
+#: The pre-#442 breakdown folder under a results root, read for its unresolved rows only.
+LEGACY_BREAKDOWN_DIR = "breakdown"
 #: results/misc/<group>/ folders whose versioned artifacts feed a README table.
 ARTIFACT_GROUPS = ("simulators", "pipeline_resume")
 
@@ -338,7 +340,7 @@ def _legacy_breakdown_rows(results_root: Path = RESULTS_ROOT) -> list[BreakdownR
     """
     root = results_root.parent
     sources = [
-        (results_root / "breakdown", False),
+        (results_root / LEGACY_BREAKDOWN_DIR, False),
         (results_root / "misc" / "likelihood_breakdown", False),
     ]
     sources += [(b, True) for b in sorted((root / "archive").glob("*/*/*/breakdown"))]

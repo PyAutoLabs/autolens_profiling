@@ -21,19 +21,19 @@ Steps profiled:
 
 1. Multi-plane ray-tracing of the observed positions, per source plane —
    the deflection stack over all 13 mass profiles is one hot spot.
-2. Magnification at every observed position via the tracer Hessian
-   (``LensCalc.magnification_2d_via_hessian_from``) — the production
-   source-plane chi-squared weights each residual by its magnification, so
-   image-plane noise maps correctly into the source plane. This evaluates
-   the full deflection stack several more times per position and competes
-   with step 1 for the budget.
-3. Magnification-weighted chi-squared per system: the distance of each
-   traced position to the *model's* source centre (name pairing hands the
-   fit the ``Point`` profile centre — the barycenter is only a fallback when
-   the tracer has no matching profile), chi2_i = dist_i^2 * mag_i^2 / sigma_i^2.
-4. Total log-likelihood assembly. The noise normalization uses the
-   magnification-scaled effective noise, sum ln(2 pi (sigma_i / mag_i)^2) —
-   consistent with the chi-squared's source-plane noise mapping.
+2. The lensing Jacobian A_i at every observed position via the tracer
+   Hessian (``LensCalc.jacobian_from``) — the production source-plane
+   chi-squared (``FitPositionsSource.weighting = "jacobian"``, the default
+   since PyAutoLens bdb44a87c) measures each residual in the image-plane noise
+   ellipse through it. This evaluates the full deflection stack several more
+   times per position and competes with step 1 for the budget.
+3. Tensor-weighted chi-squared per system: the residual vector
+   delta_i = beta_i - c of each traced position from the *model's* source
+   centre (name pairing hands the fit the ``Point`` profile centre), weighted
+   by the precision tensor B_i = A_i^-T A_i^-1 / sigma_i^2:
+   chi2_i = delta_i^T B_i delta_i (Lombardi 2024 Eq. 46; Keeton 2001 Eq. 10).
+4. Total log-likelihood assembly. The noise normalization is the
+   model-independent observed-plane term sum ln((2 pi)^2 sigma_i^4).
 
 The steps close over the (fixed) tracer rather than passing it as a JIT
 pytree argument: each step compiles exactly once here, so registration
@@ -323,56 +323,60 @@ for i, (dataset, positions, plane_index) in enumerate(
     )
 
 # ---------------------------------------------------------------------------
-# Step 2 — magnification at the observed positions via the tracer Hessian.
-# The production fit weights each source-plane residual by |mu| so the
-# image-plane positional noise maps into the source plane correctly.
+# Step 2 — the lensing Jacobian at the observed positions via the tracer
+# Hessian. The production fit (``weighting = "jacobian"``) maps the
+# image-plane positional noise into the source plane through A_i.
 # ---------------------------------------------------------------------------
 import autogalaxy as ag  # noqa: E402
 
-magnifications_per_system = []
+jacobians_per_system = []
 for i, (dataset, positions, plane_index) in enumerate(
     zip(dataset_list, positions_list, plane_indices)
 ):
     lens_calc = ag.LensCalc.from_tracer(tracer=tracer, use_multi_plane=True, plane_j=plane_index)
 
-    def magnifications_at(positions_arr, _lens_calc=lens_calc):
-        # The raw traced array goes straight into the hessian path: wrapping it in
-        # Grid2DIrregular here would trip __array__ on the tracer (the hessian
-        # slices grid[:, 0] directly, which is fine on a bare jax.Array).
-        mags = _lens_calc.magnification_2d_via_hessian_from(grid=positions_arr, xp=jnp)
-        mags = mags.array if hasattr(mags, "array") else mags
-        return jnp.abs(mags)
+    def jacobians_at(positions_arr, _lens_calc=lens_calc):
+        # The raw array goes straight into the hessian path: wrapping it in Grid2DIrregular here
+        # would trip __array__ on the tracer (the hessian slices grid[:, 0] directly, which is fine
+        # on a bare jax.Array). ``jacobian_from`` returns its 2x2 list in (x, y) row/col order;
+        # re-index to (y, x) like the positions, as the production fit does
+        # (``autolens/point/fit/solved.py``: ``precision_tensor_components_from``).
+        (a_xx, a_xy), (a_yx, a_yy) = _lens_calc.jacobian_from(grid=positions_arr, xp=jnp)
+        comps = [c.array if hasattr(c, "array") else c for c in (a_yy, a_yx, a_xy, a_xx)]
+        a11, a12, a21, a22 = comps
+        return jnp.stack([jnp.stack([a11, a12], -1), jnp.stack([a21, a22], -1)], -2)
 
-    _, mags = jit_profile(
-        magnifications_at,
-        f"step2_magnification_{dataset.name}",
+    _, jacobians = jit_profile(
+        jacobians_at,
+        f"step2_jacobian_{dataset.name}",
         jnp.array(positions),
     )
-    magnifications_per_system.append(mags)
+    jacobians_per_system.append(jacobians)
     likelihood_steps.append(
-        (f"2.{i} magnification (hessian) {dataset.name}", timer.records[-1][1] / 10)
+        (f"2.{i} lensing jacobian (hessian) {dataset.name}", timer.records[-1][1] / 10)
     )
 
 # ---------------------------------------------------------------------------
-# Step 3 — centroid + magnification-weighted chi-squared per system
-# (pure jnp math; tiny next to steps 1-2, but the production formula).
+# Step 3 — tensor-weighted chi-squared per system: delta_i^T B_i delta_i with
+# B_i = A_i^-T A_i^-1 / sigma_i^2 (pure jnp math; tiny next to steps 1-2, but
+# the production formula).
 # ---------------------------------------------------------------------------
 chi_squared_per_system = []
-for i, (dataset, traced, mags, noise, centre) in enumerate(
-    zip(
-        dataset_list, traced_per_system, magnifications_per_system, noise_list, TRUTH_SOURCE_CENTRES
-    )
+for i, (dataset, traced, jacobians, noise, centre) in enumerate(
+    zip(dataset_list, traced_per_system, jacobians_per_system, noise_list, TRUTH_SOURCE_CENTRES)
 ):
 
-    def weighted_chi_squared(traced_arr, mags_arr, noise_arr, centre_arr):
-        distances_sq = jnp.sum((traced_arr - centre_arr) ** 2, axis=1)
-        return jnp.sum(distances_sq * mags_arr**2 / noise_arr**2)
+    def weighted_chi_squared(traced_arr, jacobian_arr, noise_arr, centre_arr):
+        delta = traced_arr - centre_arr
+        a_inv = jnp.linalg.inv(jacobian_arr)
+        precision = jnp.einsum("nji,njk->nik", a_inv, a_inv) / noise_arr[:, None, None] ** 2
+        return jnp.einsum("ni,nij,nj->", delta, precision, delta)
 
     _, chi_sq = jit_profile(
         weighted_chi_squared,
         f"step3_chi2_{dataset.name}",
         jnp.array(traced),
-        jnp.array(mags),
+        jnp.array(jacobians),
         jnp.array(noise),
         jnp.array(centre),
     )
@@ -380,13 +384,11 @@ for i, (dataset, traced, mags, noise, centre) in enumerate(
     likelihood_steps.append((f"3.{i} weighted chi2 {dataset.name}", timer.records[-1][1] / 10))
 
 # ---------------------------------------------------------------------------
-# Step 4 — total log-likelihood assembly: -0.5 * (sum chi2 + noise norm).
+# Step 4 — total log-likelihood assembly: -0.5 * (sum chi2 + noise norm), with
+# the model-independent normalization sum ln((2 pi)^2 sigma_i^4).
 # ---------------------------------------------------------------------------
 noise_norm_terms = jnp.array(
-    [
-        float(np.sum(np.log(2.0 * np.pi * (np.asarray(noise) / np.asarray(mags)) ** 2)))
-        for noise, mags in zip(noise_list, magnifications_per_system)
-    ]
+    [float(np.sum(np.log((2.0 * np.pi) ** 2 * np.asarray(noise) ** 4))) for noise in noise_list]
 )
 
 

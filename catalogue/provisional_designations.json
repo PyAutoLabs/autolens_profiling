@@ -9,7 +9,7 @@
   },
   "notes": [
     "rows[] transcribe the report's table cell by cell (likelihood, gpu_a100, cpu_many_core, laptop, secondary, rule_branches_on); the text is the human-readable source and is never parsed.",
-    "tables[] and rows[].routes are the machine reading of those rows that scripts/misc/tooling/catalogue_lifecycle.py applies; test_coverage_matrix.py checks the two agree, so a change to either must change both.",
+    "tables[] and rows[].routes are the machine reading of those rows. scripts/misc/tooling/catalogue_lifecycle.py reads tables[] (and coverage_matrix.py reads both), so this file is the only copy of the table; test_coverage_matrix.py checks each route names the table catalogue_lifecycle.py dispatches to.",
     "Machine reading: host 'laptop' is the Laptop column; 'same' and 'as <row>' resolve to that row's setups; regime-only routes (_dft below 10,000 visibilities, _streaming at n_vis >= 1e7) are designated but not planned in the standard regime.",
     "Machine reading: a point-source likelihood has no linear operator, so its setups are spelled ..._na_... (R1) where the report writes jax_*_dense_fp64.",
     "Machine reading: the interferometer CPU many-core cell names a numba direct_conv vs FFT cost model; it is read as numba_cpu_sparse_fp64_wtilde until a designation decision names the route.",

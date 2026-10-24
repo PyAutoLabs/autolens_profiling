@@ -93,7 +93,6 @@ from _profile_cli import (
     device_info_dict,
     legacy_landing_dir,
     parse_profile_cli,
-    place_output_path,
     record_pinned_check,  # noqa: E402
     render_fit_png,
     resolve_output_paths,
@@ -475,15 +474,11 @@ likelihood_summary = {
     },
 }
 
-# Placed in the mirrored tree by the legacy name (autolens_profiling#442); the chart sits beside it.
-dict_path = place_output_path(
-    _workspace_root
-    / "results"
-    / "runtime"
-    / "point_source_image"
-    / "image_plane"
-    / f"image_plane_summary_v{al_version}.json",
+# ``--output-path`` / ``--output-dir`` are honoured; by default the row is placed in the mirrored
+# tree by the legacy name (autolens_profiling#442). The chart sits beside it.
+dict_path, _ = resolve_output_paths(
     _cli,
+    _workspace_root / "results" / "runtime" / "point_source_image" / "image_plane",
     f"image_plane_summary_v{al_version}",
     hints=likelihood_summary,
 )

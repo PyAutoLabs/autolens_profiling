@@ -32,7 +32,8 @@ The rules live in [`catalogue_lifecycle.py`](../scripts/misc/tooling/catalogue_l
   with `provisional_optimal: true` in `limitations` until a Pulse designation decision exists
   (R3); mixed precision is `experimental`. `planned_cells` carry the provisional class.
   [provisional_designations.json](provisional_designations.json) transcribes the §3.3 table
-  row by row with its machine reading; a test keeps it and `catalogue_lifecycle.py` in step.
+  row by row with its machine reading; `catalogue_lifecycle.py` and `coverage_matrix.py` both read
+  it, so it is the only copy of the table.
 - **Parity**: a cell's `parity.json` witness becomes a `measurement: parity` record; see
   [results/README.md](../results/README.md#parity-witness).
 - **Coverage**: `coverage_matrix.py` renders [`dashboard/coverage.md`](../dashboard/coverage.md)

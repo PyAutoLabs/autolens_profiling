@@ -30,8 +30,9 @@ The rules, in one place:
 
 from __future__ import annotations
 
+import json
 import re
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 
 DATASET_TYPES = (
     "imaging",
@@ -198,73 +199,47 @@ def size_note(variant: str, pixels: int | None) -> str:
     )
 
 
-# ---- §3.3 provisional designations: (optimal setup_ids, secondary setup_ids) per host ----
+# ---- §3.3 provisional designations: catalogue/provisional_designations.json is the one copy ----
 
-_PARAMETRIC = {
-    "hpc_a100": ({"jax_gpu_dense_fp64"}, set()),
-    "hpc_ral_cpu": ({"jax_cpu_dense_fp64"}, set()),
-    "laptop": ({"jax_cpu_dense_fp64"}, set()),
-}
-_PIXELIZED = {
-    "hpc_a100": ({"jax_gpu_dense_fp64"}, {"jax_gpu_sparse_fp64", "jax_cpu_sparse_fp64"}),
-    "hpc_ral_cpu": ({"numba_cpu_sparse_fp64"}, {"jax_cpu_sparse_fp64"}),
-    "laptop": ({"jax_cpu_dense_fp64"}, {"jax_cpu_sparse_fp64"}),
-}
-_INTERFEROMETER_MGE = {
-    "hpc_a100": ({"jax_gpu_dense_fp64_dft", "jax_gpu_dense_fp64_nufft"}, set()),
-    "hpc_ral_cpu": ({"jax_cpu_dense_fp64_dft", "jax_cpu_dense_fp64_nufft"}, set()),
-    "laptop": ({"jax_cpu_dense_fp64_dft", "jax_cpu_dense_fp64_nufft"}, set()),
-}
-_INTERFEROMETER_PIXELIZED = {
-    "hpc_a100": (
-        {"jax_gpu_sparse_fp64_wtilde", "jax_gpu_sparse_fp64_streaming"},
-        {"jax_gpu_dense_fp64_dft", "jax_gpu_dense_fp64_nufft"},
-    ),
-    "hpc_ral_cpu": (
-        {"numba_cpu_sparse_fp64_wtilde"},
-        {"jax_cpu_sparse_fp64_wtilde", "jax_cpu_dense_fp64_dft", "jax_cpu_dense_fp64_nufft"},
-    ),
-    "laptop": (
-        {"jax_cpu_sparse_fp64_wtilde"},
-        {"jax_cpu_dense_fp64_dft", "jax_cpu_dense_fp64_nufft"},
-    ),
-}
-# A point-source likelihood has no linear operator: R1 spells its setups ``..._na_...``.
-_POINT_IMAGE = {
-    "hpc_a100": ({"jax_gpu_na_fp64"}, set()),
-    "hpc_ral_cpu": ({"jax_cpu_na_fp64"}, set()),
-    "laptop": ({"jax_cpu_na_fp64"}, set()),
-}
-_POINT_SOURCE = {
-    host: ({"jax_cpu_na_fp64"}, {"jax_gpu_na_fp64"})
-    for host in ("hpc_a100", "hpc_ral_cpu", "laptop")
-}
-_WEAK = {
-    host: ({"jax_cpu_dense_fp64"}, {"jax_gpu_dense_fp64"})
-    for host in ("hpc_a100", "hpc_ral_cpu", "laptop")
+#: The machine copy of the lifecycle report's §3.3 table (``tables`` per host: ``optimal`` and
+#: ``secondary`` setup_ids). This module and ``coverage_matrix.py`` both read it; nothing else
+#: holds the table.
+DESIGNATIONS_PATH = (
+    Path(__file__).resolve().parents[3] / "catalogue" / "provisional_designations.json"
+)
+_DESIGNATIONS = json.loads(DESIGNATIONS_PATH.read_text())
+_TABLES = {
+    name: {host: (set(cells["optimal"]), set(cells["secondary"])) for host, cells in hosts.items()}
+    for name, hosts in _DESIGNATIONS["tables"].items()
 }
 #: Regime-specific routes are designated but not planned in the ``standard`` regime: DFT runs
 #: only below 10,000 visibilities and streaming only at ``n_vis >= 1e7``.
-_REGIME_ONLY = ("_dft", "_streaming")
-_PIXELIZED_VARIANTS = ("delaunay", "delaunay_nn", "rectangular")
+_REGIME_ONLY = tuple(_DESIGNATIONS["regime_only_suffixes"])
+_PIXELIZED_VARIANTS = tuple(_DESIGNATIONS["pixelized_variants"])
 
 
-def _table(dataset_type: str, variant: str) -> dict | None:
+def _table_name(dataset_type: str, variant: str) -> str | None:
+    """The §3.3 table a likelihood reads (a point-source likelihood spells its setups ``_na_``)."""
     if dataset_type in ("imaging", "multi_galaxy", "group", "multi_dataset"):
-        return _PIXELIZED if variant in _PIXELIZED_VARIANTS else _PARAMETRIC
+        return "pixelized" if variant in _PIXELIZED_VARIANTS else "parametric"
     if dataset_type == "interferometer":
-        return _INTERFEROMETER_MGE if variant == "mge" else _INTERFEROMETER_PIXELIZED
+        return "interferometer_mge" if variant == "mge" else "interferometer_pixelized"
     if dataset_type == "datacube":
-        return _INTERFEROMETER_PIXELIZED
+        return "interferometer_pixelized"
     if dataset_type == "point_source_image" or (
         dataset_type == "cluster" and variant == "image_plane"
     ):
-        return _POINT_IMAGE
+        return "point_source_image"
     if dataset_type in ("point_source_source", "cluster"):
-        return _POINT_SOURCE
+        return "point_source_source"
     if dataset_type == "weak":
-        return _WEAK
+        return "weak"
     return None
+
+
+def _table(dataset_type: str, variant: str) -> dict | None:
+    name = _table_name(dataset_type, variant)
+    return None if name is None else _TABLES[name]
 
 
 def designation(dataset_type: str, variant: str, host_class: str, setup_id: str) -> str | None:
