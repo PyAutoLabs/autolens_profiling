@@ -34,7 +34,7 @@ Post-hoc (exploratory) candidates
 ---------------------------------
 
 :data:`POSTHOC_CANDIDATES` are **not** part of the phase-1 pre-registered rule
-(``results/notes/linear_solver_accuracy_2026_09.md``, commit ``327f571``). They were added after
+(``wiki/campaigns/lens/solver/linear_solver_accuracy_2026_09.md``, commit ``327f571``). They were added after
 the deciding run as *inputs to the phase-2 fix*, not as contenders for its verdict: the polish
 with a larger cap (``pdip_raw_polish_cap{20,50}``), jaxnnls's tight absolute tolerance with a
 larger iteration cap (``pdip_raw_tol_jaxnnls_cap{100,200}``) and the replace-the-constant

@@ -12,7 +12,7 @@ A row timed on a host that never settled could still PASS or FAIL the ABBA
 overhead gate (P1), and it could still be promoted or written as a measured
 NO_LEVER (P2).
 
-Section (a) of ``results/notes/timing_noise_audit_2026_10.md`` makes "warm-up
+Section (a) of ``wiki/campaigns/misc/timing_noise_audit_2026_10.md`` makes "warm-up
 never settled" one of the validity checks whose failure makes a verdict
 INCONCLUSIVE. :func:`warmup_unsettled_reason` is that check. It is shared so the
 overhead verdict, the promotion block and the dashboard ask the same question

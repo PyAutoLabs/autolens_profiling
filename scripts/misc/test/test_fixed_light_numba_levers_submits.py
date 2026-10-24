@@ -297,7 +297,7 @@ def test__fixed_light_legs_wipe_a_fresh_cache_per_arm(path):
     # Both arms compile the same HLO, so one shared cache would serve the second
     # arm out of the first's entries and report a near-zero compile time for it.
     # A seeded XLA autotune cache also silently changes which kernels a leg uses
-    # (results/notes/xla_autotune_triton_gemm.md: F at 4.8 vs 25.6 ms on the same
+    # (wiki/campaigns/misc/xla_autotune_triton_gemm.md: F at 4.8 vs 25.6 ms on the same
     # code). Hence two directories, wiped before either arm runs.
     if _cell_name(path) != "fixed_light.py":
         pytest.skip(f"{path.name} runs {_cell_name(path)}; see the delaunay-leg test below")

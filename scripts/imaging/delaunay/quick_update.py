@@ -390,7 +390,9 @@ result = {
 }
 
 output_dir = (
-    Path(args.output_dir) if args.output_dir else workspace_root / "results" / "quick_update"
+    Path(args.output_dir)
+    if args.output_dir
+    else workspace_root / "results" / "misc" / "quick_update"
 )
 output_dir.mkdir(parents=True, exist_ok=True)
 output_path = output_dir / f"imaging_delaunay_quick_update_{instrument}.json"

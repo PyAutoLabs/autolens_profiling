@@ -343,6 +343,7 @@ dict_path, _chart_path = resolve_output_paths(
     _cli,
     default_dir=_workspace_root / "results" / "runtime" / "imaging" / "pixelization_numba_mge_mass",
     default_basename=(f"pixelization_numba_mge_mass_likelihood_summary_{instrument}_v{al_version}"),
+    hints=summary,
 )
 dict_path.write_text(json.dumps(summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")

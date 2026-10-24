@@ -40,7 +40,7 @@ Why S3 is the interesting system
 The 2026-09-11 reconstruction split (``results/notes/reconstruction_row_split_2026_09.md``)
 resolved the 37 ms reconstruction row into 21-22 PDIP iterations of dense KKT
 Cholesky at ~1.7 ms each, and the matrix-free sweep
-(``results/notes/matrix_free_pixelized_2026_09.md``) named the conditioning that
+(``wiki/campaigns/imaging/matrix_free_pixelized_2026_09.md``) named the conditioning that
 forces them. The phase-1 CPU probe (``results/misc/fixed_light_probe/``) then
 measured what fixing the lens light does to that: PDIP falls from 21 to 15
 iterations (rectangular) and 22 to 17 (Delaunay), and — the real result — the
@@ -213,7 +213,7 @@ if USE_MIXED_PRECISION and PINS_ASSERT:
 
 #: Phase 3's smallest **zero-fallback** pass budget per mesh, over its graded
 #: 41-model draw set (autolens_profiling#255,
-#: ``results/notes/fixed_lens_light_low_likelihood_draws_2026_09.md``). The
+#: ``wiki/campaigns/imaging/fixed_lens_light_low_likelihood_draws_2026_09.md``). The
 #: fiducial budgets phases 0-2 used (7 rectangular / 2 Delaunay) fall back on
 #: 27.5 % / 67.5 % of that set and must not be quoted as production costs, so
 #: the scaling sweep times the certified row at THESE budgets as well as at
@@ -1348,6 +1348,7 @@ dict_path, chart_path = resolve_output_paths(
     default_dir=_workspace_root / "results" / "breakdown" / "imaging",
     default_basename=f"{_cell_name}_breakdown_{instrument}_v{al_version}",
     cell=_cell_name,
+    hints=breakdown_summary,
 )
 dict_path.write_text(json.dumps(breakdown_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")

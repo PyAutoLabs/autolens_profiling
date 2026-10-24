@@ -34,7 +34,7 @@ Identity limitations: Isolated to source row: legacy metadata is insufficient fo
 
 ## Evidence
 
-[Original setup artifact](../../../../results/streaming_scaling/accumulate_hpc_a100_fp64_v2026.10.17.1.json); JSON pointer: `/rows/6`.
+[Original setup artifact](../../../../results/misc/streaming_scaling/accumulate_hpc_a100_fp64_v2026.10.17.1.json); JSON pointer: `/rows/6`.
 
 ### Selected references
 
@@ -46,7 +46,7 @@ No selected reference for this exact setup; archive evidence is available below.
 
 | Record | Metric | Value | Unit | Device / precision | Selection | Evidence pointer |
 |---|---|---|---|---|---|---|
-| `measurement/c20db5f8160b63a1f307` | dataset_setup_wall | {"dataset_setup_wall": 79.2} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/streaming_scaling/accumulate_hpc_a100_fp64_v2026.10.17.1.json) `/rows/6/wall_s` |
+| `measurement/c20db5f8160b63a1f307` | dataset_setup_wall | {"dataset_setup_wall": 79.2} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/misc/streaming_scaling/accumulate_hpc_a100_fp64_v2026.10.17.1.json) `/rows/6/wall_s` |
 
 </details>
 
@@ -56,7 +56,7 @@ No selected reference for this exact setup; archive evidence is available below.
 
 | Record | Metric | Value | Unit | Device / precision | Selection | Evidence pointer |
 |---|---|---|---|---|---|---|
-| `measurement/6784ae0aec1a33928f13` | host_peak_rss | {"host_peak_rss": 1146} | MiB | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/streaming_scaling/accumulate_hpc_a100_fp64_v2026.10.17.1.json) `/rows/6/peak_rss_mb` |
+| `measurement/6784ae0aec1a33928f13` | host_peak_rss | {"host_peak_rss": 1146} | MiB | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/misc/streaming_scaling/accumulate_hpc_a100_fp64_v2026.10.17.1.json) `/rows/6/peak_rss_mb` |
 
 </details>
 

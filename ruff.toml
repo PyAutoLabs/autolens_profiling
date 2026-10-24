@@ -16,6 +16,7 @@ line-length = 100
 # Exclude generated / external folders.
 extend-exclude = [
     "results",
+    "archive",
     "dataset",
     ".venv",
     "venv",

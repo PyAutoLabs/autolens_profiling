@@ -68,7 +68,7 @@
 
 # THE PARTITION THIS DECLARES, AND WHY IT IS NOT `ral` (#265, job 343311,
 # 2026-09-15 -- the job every number in
-# results/notes/fixed_lens_light_numba_2026_09.md came from).
+# wiki/campaigns/imaging/fixed_lens_light_numba_2026_09.md came from).
 #
 # The #SBATCH block below asks for `gpu` with FOUR CPUs and NO --gres: the gpu
 # partition's two 124-core nodes used CPUs-only, leaving both A100s free for the

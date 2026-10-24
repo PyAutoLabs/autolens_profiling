@@ -39,6 +39,7 @@ from likelihood_breakdown.round_bootstrap import (  # noqa: E402
     round_median_ratio,
     round_median_saving,
 )
+from tooling.results_layout import current  # noqa: E402
 
 SS = ROOT / "scripts/point_source_source/source_plane"
 IP = ROOT / "scripts/point_source_image/image_plane"
@@ -220,7 +221,9 @@ def _ms_to_s(values) -> np.ndarray:
 def test_the_committed_pytree_ral_cpu_saving_stays_below_the_bar():
     data = json.loads(
         (
-            ROOT / "results/breakdown/point_source_source/pytree_input_ab_hpc_ral_cpu_fp64.json"
+            current(
+                ROOT / "results/breakdown/point_source_source/pytree_input_ab_hpc_ral_cpu_fp64.json"
+            )
         ).read_text()
     )
     expected = {"solved": (0.03597, 0.04135), "plain": (0.04381, 0.04702)}
@@ -238,7 +241,7 @@ def test_the_committed_pytree_ral_cpu_saving_stays_below_the_bar():
 
 
 def _backward_rule_on_round_intervals(config: str) -> tuple[dict, dict]:
-    path = ROOT / f"results/breakdown/point_source_source/backward_pass_ab_{config}.json"
+    path = current(ROOT / f"results/breakdown/point_source_source/backward_pass_ab_{config}.json")
     data = json.loads(path.read_text())
     cell = SS / "backward_pass_ab.py"
     ns = _lift(
@@ -309,7 +312,10 @@ def test_the_committed_sweep_tie_sets_hold_on_round_intervals():
     """C10 on the round bootstrap: the RAL CPU tie set is the same five configurations."""
     data = json.loads(
         (
-            ROOT / "results/breakdown/point_source_image/solver_config_sweep_hpc_ral_cpu_fp64.json"
+            current(
+                ROOT
+                / "results/breakdown/point_source_image/solver_config_sweep_hpc_ral_cpu_fp64.json"
+            )
         ).read_text()
     )
     rows = data["rows"]

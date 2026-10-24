@@ -579,6 +579,7 @@ _early_dict_path, _ = resolve_output_paths(
     # cell "delaunay" and would overwrite the Delaunay cell's config-tagged
     # JSON (autolens_profiling#219).
     cell="delaunay_nn",
+    hints=_early_summary,
 )
 _early_summary["configuration"].update(_over_sampling_record)
 _early_dict_path.write_text(json.dumps(_early_summary, indent=2))
@@ -797,6 +798,7 @@ dict_path, chart_path = resolve_output_paths(
     default_dir=_workspace_root / "results" / "runtime" / "imaging" / "delaunay_nn" / _os_subdir,
     default_basename=f"delaunay_nn_likelihood_summary_{instrument}_v{al_version}",
     cell="delaunay_nn",
+    hints=likelihood_summary,
 )
 likelihood_summary["configuration"].update(_over_sampling_record)
 dict_path.write_text(json.dumps(likelihood_summary, indent=2))
@@ -881,7 +883,7 @@ else:
 
 # Pinned-value outcome -> result JSON: profiling records and flags drift,
 # never adjudicates library correctness (autolens_workspace_test's remit;
-# boundary rule in results/notes/design_lock_in.md). PyAutoHeart's vitals
+# boundary rule in wiki/campaigns/misc/design_lock_in.md). PyAutoHeart's vitals
 # scan reads the pinned_drift field.
 record_pinned_check(dict_path, _pinned_expected, _pinned_drift)
 if _pinned_expected is not None and not _pinned_drift:

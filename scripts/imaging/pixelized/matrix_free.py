@@ -33,7 +33,7 @@ What this cell deliberately does **not** measure
 ------------------------------------------------
 
 A faster likelihood at the fiducial tier. The 2026-09-11 reconstruction split
-(``results/notes/a100_pixelized_baseline_2026_09.md``, "Reconstruction split")
+(``wiki/campaigns/imaging/a100_pixelized_baseline_2026_09.md``, "Reconstruction split")
 settled that: at 1500 source pixels the exact unconstrained solve is 1.52-1.58 ms
 and the 37 ms reconstruction row is 21-22 PDIP iterations of dense KKT Cholesky,
 so **a matrix-free line is not a speed play at n ≈ 1500** and this cell is not
@@ -107,7 +107,7 @@ the unconditional SLQ-estimate-vs-exact rows (``rtol: null``), which are a
 measurement this cell exists to make and never a fault.
 
 The results note this cell feeds is
-``results/notes/matrix_free_pixelized_2026_09.md`` (written in phase 4 of #247).
+``wiki/campaigns/imaging/matrix_free_pixelized_2026_09.md`` (written in phase 4 of #247).
 """
 
 import sys as _sys
@@ -1136,6 +1136,7 @@ dict_path, chart_path = resolve_output_paths(
     default_dir=_workspace_root / "results" / "breakdown" / "imaging",
     default_basename=f"matrix_free_{MESH}_breakdown_{instrument}_v{al_version}",
     cell=f"matrix_free_{MESH}",
+    hints=breakdown_summary,
 )
 dict_path.write_text(json.dumps(breakdown_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")

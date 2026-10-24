@@ -46,16 +46,16 @@ the separate workspace assertion
 actual Hilbert meshes ray-traced through a mass-model ensemble.
 
 The current cap decision and measured tail distributions are recorded in
-[`results/notes/delaunay_nn_cap_audit.md`](../../../results/notes/delaunay_nn_cap_audit.md).
+[`wiki/campaigns/imaging/delaunay_nn/delaunay_nn_cap_audit.md`](../../../wiki/campaigns/imaging/delaunay_nn/delaunay_nn_cap_audit.md).
 
 ## ConstantSplit assembly bench (`assembly_bench.py`)
 
 `assembly_bench.py` times the *regularization* half of the DelaunayNN cell —
 `reg_split_from` plus `pixel_splitted_regularization_matrix_from` — which the
 launch-latency work left as the largest remaining per-call cost
-([`results/notes/delaunay_nn_launch_latency.md`](../../../results/notes/delaunay_nn_launch_latency.md)).
+([`wiki/campaigns/imaging/delaunay_nn/delaunay_nn_launch_latency.md`](../../../wiki/campaigns/imaging/delaunay_nn/delaunay_nn_launch_latency.md)).
 It runs the real `(6000, 33)` HST split stencil tables, checked in at
-`results/delaunay_nn/tables_hst_1500.npz`, through every candidate formulation:
+`results/misc/delaunay_nn/tables_hst_1500.npz`, through every candidate formulation:
 
 | variant | what it measures |
 |---|---|
@@ -72,16 +72,16 @@ python scripts/misc/delaunay_nn/assembly_bench.py
 python scripts/misc/delaunay_nn/assembly_bench.py --pixels 300 --repeats 3   # smoke
 ```
 
-Defaults read `results/delaunay_nn/tables_hst_1500.npz` and write
+Defaults read `results/misc/delaunay_nn/tables_hst_1500.npz` and write
 `results/delaunay_nn/assembly_bench.json`. The tables are checked in (330 KB);
 rebuild them from the HST breakdown cell with
 
 ```bash
 python scripts/misc/delaunay_nn/extract_mesh_points.py \
-    --out results/delaunay_nn/mesh_points_hst.npy
+    --out results/misc/delaunay_nn/mesh_points_hst.npy
 python scripts/misc/delaunay_nn/build_tables.py \
-    --points results/delaunay_nn/mesh_points_hst.npy \
-    --out results/delaunay_nn/tables_hst_1500.npz
+    --points results/misc/delaunay_nn/mesh_points_hst.npy \
+    --out results/misc/delaunay_nn/tables_hst_1500.npz
 ```
 
 `V6_library` must reproduce `V0` exactly on these tables (max abs diff 0.0 on

@@ -43,7 +43,7 @@
 # WALL
 #   The #531 A/B legs of this exact cell (breakdown, --split-setup --vmap-batch 16)
 #   ran 2:29 and 2:28 wall on euclid-ral-gpu-2 (jobs 342317/342318,
-#   results/notes/delaunay_walk_early_exit.md). This adds one more prefix compile
+#   wiki/campaigns/imaging/delaunay/delaunay_walk_early_exit.md). This adds one more prefix compile
 #   unbatched and one under vmap, and a larger chunk trades launches for bigger
 #   kernels, so 4:00:00 per task is ~50x the measured wall.
 

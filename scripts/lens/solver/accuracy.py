@@ -152,7 +152,7 @@ def main() -> int:
     if args.posthoc:
         summary["posthoc"] = (
             "POST-HOC, NOT PRE-REGISTERED: exploratory candidates added after the phase-1 "
-            "deciding run (results/notes/linear_solver_accuracy_2026_09.md); inputs to the "
+            "deciding run (wiki/campaigns/lens/solver/linear_solver_accuracy_2026_09.md); inputs to the "
             "phase-2 fix, not a verdict. Anchors: "
             + ", ".join(n for n in args.candidates if n not in _solvers.POSTHOC_CANDIDATES)
         )

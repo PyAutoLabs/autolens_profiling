@@ -14,7 +14,7 @@ not know about each other:
   point estimate of the *milliseconds* of excess against 12 ms, with no interval,
   and raised on FAIL, losing the row's JSON.
 
-``results/notes/timing_noise_audit_2026_10.md`` (rows T1 and P1, section (a)) is
+``wiki/campaigns/misc/timing_noise_audit_2026_10.md`` (rows T1 and P1, section (a)) is
 the audit; this is its fix phase 1. Both callers now import
 :func:`abba_overhead_verdict` from here, and the test asserts it is the same
 function object the cell imports.

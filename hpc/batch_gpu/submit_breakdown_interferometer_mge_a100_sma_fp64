@@ -4,7 +4,7 @@
 # DENSE inversion path (an MGE-only fit never takes the sparse path), plus the
 # measurement-only func-list W~ arm (--w-tilde). autolens_profiling#308.
 # Compile-heavy: every pipeline step is JIT-compiled in isolation.
-# Output: results/breakdown/interferometer/sma/mge_hpc_a100_fp64.json
+# Output: results/interferometer/mge/sma/jax_gpu_dense_fp64_nufft/hpc_a100/breakdown.json
 # (config-tagged names carry no instrument, so non-alma instruments write
 # into results/breakdown/interferometer/<instrument>/ — see the cell docstring).
 # A RESOURCE_EXHAUSTED / OOM here is a result, not a failure: record it.

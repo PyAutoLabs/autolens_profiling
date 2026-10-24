@@ -32,7 +32,7 @@ Identity limitations: Isolated to source row: legacy metadata is insufficient fo
 
 ## Evidence
 
-[Original setup artifact](../../../../results/runtime/imaging/pixelization/jwst/pixelization_local_cpu_fp64_sparse.json); JSON pointer: `(document root)`.
+[Original setup artifact](../../../../results/imaging/rectangular/jwst/jax_cpu_sparse_fp64/local_laptop/runtime.json); JSON pointer: `(document root)`.
 
 ### Selected references
 
@@ -44,9 +44,9 @@ No selected reference for this exact setup; archive evidence is available below.
 
 | Record | Metric | Value | Unit | Device / precision | Selection | Evidence pointer |
 |---|---|---|---|---|---|---|
-| `measurement/296a661527dd2ba5adfe` | single_jit_block | {"single_jit_block": 9.566611529999864} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/runtime/imaging/pixelization/jwst/pixelization_local_cpu_fp64_sparse.json) `/full_pipeline_single_jit` |
-| `measurement/329bde19e7375fff1435` | vmap.per_call | {"vmap.per_call": 9.69070508666664} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/runtime/imaging/pixelization/jwst/pixelization_local_cpu_fp64_sparse.json) `/vmap/per_call` |
-| `measurement/4198994e861f4ec5a289` | vmap.batch_time | {"vmap.batch_time": 29.07211525999992} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/runtime/imaging/pixelization/jwst/pixelization_local_cpu_fp64_sparse.json) `/vmap/batch_time` |
+| `measurement/296a661527dd2ba5adfe` | single_jit_block | {"single_jit_block": 9.566611529999864} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/rectangular/jwst/jax_cpu_sparse_fp64/local_laptop/runtime.json) `/full_pipeline_single_jit` |
+| `measurement/329bde19e7375fff1435` | vmap.per_call | {"vmap.per_call": 9.69070508666664} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/rectangular/jwst/jax_cpu_sparse_fp64/local_laptop/runtime.json) `/vmap/per_call` |
+| `measurement/4198994e861f4ec5a289` | vmap.batch_time | {"vmap.batch_time": 29.07211525999992} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/rectangular/jwst/jax_cpu_sparse_fp64/local_laptop/runtime.json) `/vmap/batch_time` |
 
 </details>
 

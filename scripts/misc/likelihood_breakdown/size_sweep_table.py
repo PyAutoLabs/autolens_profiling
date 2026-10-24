@@ -18,7 +18,7 @@ exact path stop fitting an A100?** The answer to that question is a leg that
 died — so a leg that produced no result JSON is not a gap in the table, it is
 the measurement. This script therefore reads three sources, in order:
 
-1. ``results/sweep/size_sweep_manifest.jsonl`` — one line per leg the launcher
+1. ``results/misc/likelihood_breakdown/size_sweep_manifest.jsonl`` — one line per leg the launcher
    submitted (``job``, ``mesh``, ``path``, ``n``, ``node``, ``submitted_utc``,
    ``sha``). This is the only record that distinguishes *submitted and died*
    from *never submitted*. Optional: without it the script falls back to the
@@ -721,7 +721,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--manifest",
         type=Path,
-        default=ROOT / "results" / "sweep" / "size_sweep_manifest.jsonl",
+        default=ROOT / "results" / "misc" / "likelihood_breakdown" / "size_sweep_manifest.jsonl",
         help="the launcher's submitted-leg manifest (optional)",
     )
     parser.add_argument(

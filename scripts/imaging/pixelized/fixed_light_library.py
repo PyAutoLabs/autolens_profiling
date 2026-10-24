@@ -210,7 +210,7 @@ _cli = parse_profile_cli()
 
 #: The smallest pass budget at which the certified active set certifies on each
 #: mesh, measured on euclid-ral-gpu-2 by the phase-0 legs 342802-342804
-#: (results/notes/fixed_lens_light_source_only_2026_09.md). Rectangular needs
+#: (wiki/campaigns/imaging/fixed_lens_light_source_only_2026_09.md). Rectangular needs
 #: seven because its *dual* violation set drains one or two indices at a time
 #: behind the 152 edge-zeroed pixels; the Delaunay family has no edge zeroing
 #: and settles after one correction.
@@ -1569,6 +1569,7 @@ dict_path, chart_path = resolve_output_paths(
     default_dir=_workspace_root / "results" / "breakdown" / "imaging",
     default_basename=f"{_cell_name}_breakdown_{instrument}_v{al_version}",
     cell=_cell_name,
+    hints=breakdown_summary,
 )
 dict_path.write_text(json.dumps(breakdown_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")

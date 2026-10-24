@@ -3,7 +3,7 @@
 Why this module exists
 ----------------------
 
-``results/notes/timing_noise_audit_2026_10.md`` found the campaign A/B rules
+``wiki/campaigns/misc/timing_noise_audit_2026_10.md`` found the campaign A/B rules
 deciding on point estimates (rows C7 and P2), or holding an interval without an
 INCONCLUSIVE state (C6), or naming a single "best" by argmax over statistically
 tied configurations (C10). An unresolved difference was then written as a

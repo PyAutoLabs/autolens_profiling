@@ -879,6 +879,7 @@ dict_path, chart_path = resolve_output_paths(
         f"{'' if preset.variant == 'production' else '_' + preset.variant}"
         f"_v{al_version}"
     ),
+    hints=breakdown_summary,
 )
 dict_path.write_text(json.dumps(breakdown_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")
@@ -925,7 +926,7 @@ print(f"  Bar chart saved to:    {chart_path}")
 
 # ===================================================================
 # Pinned-value drift record (soft — profiling records drift, never adjudicates
-# correctness; boundary rule in results/notes/design_lock_in.md).
+# correctness; boundary rule in wiki/campaigns/misc/design_lock_in.md).
 # ===================================================================
 
 _pinned_drift: list = []
@@ -950,7 +951,7 @@ _pinned_drift: list = []
 #
 # euclid is deliberately absent: no euclid dataset is committed here, so its
 # kernel-era value (corroborated by
-# results/breakdown/imaging/pixelization_numba_breakdown_euclid_v2026.8.17.1.json)
+# archive/2026/08/hostless_summaries/breakdown/imaging/pixelization_numba_breakdown_euclid_v2026.8.17.1.json)
 # could not be re-measured on this host, and #490 moves it too. A clean euclid
 # run now prints its value and skips the check — paste it back in under the mesh
 # it was run with. Values vary at the ~1e-9 relative level across numba compile
@@ -962,7 +963,7 @@ _pinned_drift: list = []
 # flat over-sampling -> the S/N>3 4/2 map, Constant(1.0) -> free Adapt, MGE 60x1
 # -> 30x2, one repeated instance -> an iid stream), so the old values describe a
 # model that no longer exists here. They are recorded in
-# `results/notes/production_representative_cells.md`.
+# `wiki/campaigns/imaging/production_representative_cells.md`.
 #
 # Values vary at the ~1e-9 relative level across numba compile sessions (fp
 # reassociation) — rtol=1e-6 accommodates. A missing entry resolves to None and

@@ -142,7 +142,7 @@ def test__submit_writes_under_the_fixed_light_config_name(path):
 @pytest.mark.parametrize("path", _submits(), ids=lambda p: p.name)
 def test__submit_wipes_its_own_compilation_cache(path):
     # A seeded XLA autotune cache silently changes which kernels a leg uses
-    # (results/notes/xla_autotune_triton_gemm.md: F at 4.8 vs 25.6 ms on the
+    # (wiki/campaigns/misc/xla_autotune_triton_gemm.md: F at 4.8 vs 25.6 ms on the
     # same code). Every leg must start from an empty one.
     text = path.read_text()
     assert "JAX_COMPILATION_CACHE_DIR" in text, f"{path.name}: no per-job compilation cache"

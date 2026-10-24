@@ -45,7 +45,7 @@ Identity limitations: Isolated to source row: legacy metadata is insufficient fo
 
 ## Evidence
 
-[Original setup artifact](../../../../results/breakdown/interferometer/delaunay_numba_jax_breakdown_alma_v2026.8.17.1.json); JSON pointer: `(document root)`.
+[Original setup artifact](../../../../archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_jax_breakdown_alma_v2026.8.17.1.json); JSON pointer: `(document root)`.
 
 ### Selected references
 
@@ -57,13 +57,13 @@ No selected reference for this exact setup; archive evidence is available below.
 
 | Record | Metric | Value | Unit | Device / precision | Selection | Evidence pointer |
 |---|---|---|---|---|---|---|
-| `measurement/0ed61379979dfdacf21b` | steps.Mapper sparse triplets [extent-flat] | {"steps.Mapper sparse triplets [extent-flat]": 0.022639833332505077} | s | cpu / None | archive support; unreviewed | [artifact](../../../../results/breakdown/interferometer/delaunay_numba_jax_breakdown_alma_v2026.8.17.1.json) `/steps/Mapper sparse triplets [extent-flat]` |
-| `measurement/258714b64a3833876d5b` | steps.Regularization matrix H (ConstantSplit) | {"steps.Regularization matrix H (ConstantSplit)": 0.09591739999935574} | s | cpu / None | archive support; unreviewed | [artifact](../../../../results/breakdown/interferometer/delaunay_numba_jax_breakdown_alma_v2026.8.17.1.json) `/steps/Regularization matrix H (ConstantSplit)` |
-| `measurement/2a7689fc9433944b21c1` | component_total | {"component_total": 3.28098303333051} | s | cpu / None | archive support; unreviewed | [artifact](../../../../results/breakdown/interferometer/delaunay_numba_jax_breakdown_alma_v2026.8.17.1.json) `/total_step_by_step` |
-| `measurement/37f1eccd6d6c36a4c90f` | steps.FitInterferometer construct | {"steps.FitInterferometer construct": 9.876666687584172e-05} | s | cpu / None | archive support; unreviewed | [artifact](../../../../results/breakdown/interferometer/delaunay_numba_jax_breakdown_alma_v2026.8.17.1.json) `/steps/FitInterferometer construct` |
-| `measurement/a0ea4a27ceec2c95634b` | steps.Data vector D [sparse-op] | {"steps.Data vector D [sparse-op]": 0.04735493333525179} | s | cpu / None | archive support; unreviewed | [artifact](../../../../results/breakdown/interferometer/delaunay_numba_jax_breakdown_alma_v2026.8.17.1.json) `/steps/Data vector D [sparse-op]` |
-| `measurement/fd7fe063384847e7b595` | steps.Inversion build (trace+Delaunay+mapper) | {"steps.Inversion build (trace+Delaunay+mapper)": 0.020249933331797365} | s | cpu / None | archive support; unreviewed | [artifact](../../../../results/breakdown/interferometer/delaunay_numba_jax_breakdown_alma_v2026.8.17.1.json) `/steps/Inversion build (trace+Delaunay+mapper)` |
-| `measurement/fe770843cc8271a761ae` | steps.F: mapper×mapper [sparse-op FFT] | {"steps.F: mapper\u00d7mapper [sparse-op FFT]": 3.0947221666647238} | s | cpu / None | archive support; unreviewed | [artifact](../../../../results/breakdown/interferometer/delaunay_numba_jax_breakdown_alma_v2026.8.17.1.json) `/steps/F: mapper×mapper [sparse-op FFT]` |
+| `measurement/0ed61379979dfdacf21b` | steps.Mapper sparse triplets [extent-flat] | {"steps.Mapper sparse triplets [extent-flat]": 0.022639833332505077} | s | cpu / None | archive support; unreviewed | [artifact](../../../../archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_jax_breakdown_alma_v2026.8.17.1.json) `/steps/Mapper sparse triplets [extent-flat]` |
+| `measurement/258714b64a3833876d5b` | steps.Regularization matrix H (ConstantSplit) | {"steps.Regularization matrix H (ConstantSplit)": 0.09591739999935574} | s | cpu / None | archive support; unreviewed | [artifact](../../../../archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_jax_breakdown_alma_v2026.8.17.1.json) `/steps/Regularization matrix H (ConstantSplit)` |
+| `measurement/2a7689fc9433944b21c1` | component_total | {"component_total": 3.28098303333051} | s | cpu / None | archive support; unreviewed | [artifact](../../../../archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_jax_breakdown_alma_v2026.8.17.1.json) `/total_step_by_step` |
+| `measurement/37f1eccd6d6c36a4c90f` | steps.FitInterferometer construct | {"steps.FitInterferometer construct": 9.876666687584172e-05} | s | cpu / None | archive support; unreviewed | [artifact](../../../../archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_jax_breakdown_alma_v2026.8.17.1.json) `/steps/FitInterferometer construct` |
+| `measurement/a0ea4a27ceec2c95634b` | steps.Data vector D [sparse-op] | {"steps.Data vector D [sparse-op]": 0.04735493333525179} | s | cpu / None | archive support; unreviewed | [artifact](../../../../archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_jax_breakdown_alma_v2026.8.17.1.json) `/steps/Data vector D [sparse-op]` |
+| `measurement/fd7fe063384847e7b595` | steps.Inversion build (trace+Delaunay+mapper) | {"steps.Inversion build (trace+Delaunay+mapper)": 0.020249933331797365} | s | cpu / None | archive support; unreviewed | [artifact](../../../../archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_jax_breakdown_alma_v2026.8.17.1.json) `/steps/Inversion build (trace+Delaunay+mapper)` |
+| `measurement/fe770843cc8271a761ae` | steps.F: mapper×mapper [sparse-op FFT] | {"steps.F: mapper\u00d7mapper [sparse-op FFT]": 3.0947221666647238} | s | cpu / None | archive support; unreviewed | [artifact](../../../../archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_jax_breakdown_alma_v2026.8.17.1.json) `/steps/F: mapper×mapper [sparse-op FFT]` |
 
 </details>
 
@@ -73,7 +73,7 @@ No selected reference for this exact setup; archive evidence is available below.
 
 | Record | Metric | Value | Unit | Device / precision | Selection | Evidence pointer |
 |---|---|---|---|---|---|---|
-| `measurement/7677b8514e309bca7bf1` | direct_call | {"direct_call": 8.104913233333113} | s | cpu / None | archive support; unreviewed | [artifact](../../../../results/breakdown/interferometer/delaunay_numba_jax_breakdown_alma_v2026.8.17.1.json) `/direct_log_likelihood_function_per_call` |
+| `measurement/7677b8514e309bca7bf1` | direct_call | {"direct_call": 8.104913233333113} | s | cpu / None | archive support; unreviewed | [artifact](../../../../archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_jax_breakdown_alma_v2026.8.17.1.json) `/direct_log_likelihood_function_per_call` |
 
 </details>
 

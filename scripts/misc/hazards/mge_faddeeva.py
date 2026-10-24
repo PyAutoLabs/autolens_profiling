@@ -19,7 +19,7 @@ the finding scanner, so the stable finding IDs outlive changes to the evidence g
 Run the complete probe from a workspace containing the sibling PyAuto repositories::
 
     OMP_NUM_THREADS=1 python scripts/misc/hazards/mge_faddeeva.py --ci-report \
-        --output results/hazards/component/mge/faddeeva_audit.json
+        --output results/misc/hazards/component/mge/faddeeva_audit.json
 
 Without ``--ci-report`` only the dataset-free legs run (seams, the q-sweep of the
 elliptical kernel, and the Weideman accuracy study).

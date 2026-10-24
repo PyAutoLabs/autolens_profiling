@@ -1,7 +1,7 @@
 """Witnesses for the memo-policy, scaling and log-det interval gates (#362, fix phase 3b).
 
 ``scripts/misc/likelihood_breakdown/interval_gates.py`` gives rows C1, C3, C4 and
-C5 of ``results/notes/timing_noise_audit_2026_10.md`` an interval and an
+C5 of ``wiki/campaigns/misc/timing_noise_audit_2026_10.md`` an interval and an
 INCONCLUSIVE state, through the shared ``round_bootstrap`` and ``ab_verdict``
 tools; ``ab_verdict.holm_family_verdict`` is the family-wise policy C3 uses (and
 phase 9 reuses). Everything here is deterministic: synthetic numbers are fixed
@@ -61,12 +61,13 @@ from likelihood_breakdown.interval_gates import (  # noqa: E402
     matched_decision_counts,
     memo_policy_family,
 )
+from tooling.results_layout import current, iter_legacy_dir, legacy_glob  # noqa: E402
 
 RESULTS = ROOT / "results/breakdown/imaging"
 MEMO_CELL = ROOT / "scripts/imaging/pixelized/fixed_light_numba_memo_policy.py"
 SCALING_CELL = ROOT / "scripts/imaging/pixelized/fixed_light_numba_scaling.py"
 TRACE_CELL = ROOT / "scripts/imaging/pixelized/fixed_light_trace.py"
-MEMO_ROW = (
+MEMO_ROW = current(
     RESULTS / "fixed_light_numba_memo_policy_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s5b.json"
 )
 
@@ -363,12 +364,12 @@ def test_c4_status_pass_requires_a_resolved_pass():
     assert run_status(dict(unresolved, numerical=False), [INCONCLUSIVE]) == "INCOMPLETE_OR_FAIL"
 
 
-SCALING_ROWS = sorted(
-    glob.glob(str(RESULTS / "fixed_light_numba_scaling_delaunay_*_n[0-9]*[0-9].json"))
-)
+SCALING_ROWS = [
+    str(p) for p in legacy_glob(RESULTS, "fixed_light_numba_scaling_delaunay_*_n[0-9]*[0-9].json")
+]
 
 
-@pytest.mark.parametrize("path", SCALING_ROWS, ids=lambda p: Path(p).stem[-5:])
+@pytest.mark.parametrize("path", SCALING_ROWS, ids=lambda p: Path(p).parent.name[-5:])
 def test_c4_the_committed_scaling_rows_resolve_pass(path):
     row = json.loads(Path(path).read_text())
     assert row["status"] == "PASS"
@@ -427,7 +428,7 @@ def test_c5_too_few_rounds_and_unpaired_input():
 
 def _logdet_rows():
     rows = {}
-    for path in sorted(RESULTS.glob("fixed_light_trace_*logdet*.json")):
+    for path, legacy in iter_legacy_dir(RESULTS, "fixed_light_trace_*logdet*.json", False):
         payload = json.loads(path.read_text())
 
         def find(node):
@@ -440,7 +441,7 @@ def _logdet_rows():
                         return found
             return None
 
-        rows[path.name.removeprefix("fixed_light_trace_").split("_fp64")[0]] = find(payload)
+        rows[legacy.name.removeprefix("fixed_light_trace_").split("_fp64")[0]] = find(payload)
     return rows
 
 

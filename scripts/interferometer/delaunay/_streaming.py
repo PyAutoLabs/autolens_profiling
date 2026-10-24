@@ -61,7 +61,7 @@ ROOT = profiling_root()
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-RESULTS_DIR = ROOT / "results" / "streaming_scaling"
+RESULTS_DIR = ROOT / "results" / "misc" / "streaming_scaling"
 
 SEED = 1234
 CAP_GB_DEFAULT = 10.0

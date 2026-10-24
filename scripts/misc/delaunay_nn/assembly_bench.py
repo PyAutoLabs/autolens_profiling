@@ -5,7 +5,7 @@ regularization-matrix assembly (PyAutoArray ``reg_split_from`` +
 Diagnostic only: nothing here is imported by the library. Inputs are the real
 (4P, K) split stencil tables built once from the HST DelaunayNN cell's
 source-plane mesh (``build_tables.py``), loaded from
-``results/delaunay_nn/tables_hst_1500.npz`` by default.
+``results/misc/delaunay_nn/tables_hst_1500.npz`` by default.
 
 ``V0`` is the pre-#536 assembly (the full padded ``(4P, K, K)`` scatter, forced
 by ``compact_width=K``) and is the reference every other variant is checked
@@ -45,8 +45,8 @@ def _profiling_root() -> Path:
 
 
 ROOT = _profiling_root()
-DEFAULT_TABLES = ROOT / "results" / "delaunay_nn" / "tables_hst_1500.npz"
-DEFAULT_OUT = ROOT / "results" / "delaunay_nn" / "assembly_bench.json"
+DEFAULT_TABLES = ROOT / "results" / "misc" / "delaunay_nn" / "tables_hst_1500.npz"
+DEFAULT_OUT = ROOT / "results" / "misc" / "delaunay_nn" / "assembly_bench.json"
 
 
 # ---------------------------------------------------------------------------

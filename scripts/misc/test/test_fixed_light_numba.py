@@ -72,6 +72,7 @@ from likelihood_breakdown.warmup_gate import (  # noqa: E402
     WARMUP_UNSETTLED,
     warmup_unsettled_reason,
 )
+from tooling.results_layout import current, iter_legacy  # noqa: E402
 
 CELL_PATH = ROOT / "scripts/imaging/pixelized/fixed_light_numba.py"
 
@@ -1383,7 +1384,7 @@ def test_promotion_rejudges_the_committed_s4b_row_as_a_measured_no_lever():
     Its 32 paired blocks put the speedup at [-1.31 %, -0.32 %]: wholly below the
     5 % bar, so the NO_LEVER is a measured negative under the interval rule too.
     """
-    path = (
+    path = current(
         ROOT
         / "results/breakdown/imaging"
         / "fixed_light_numba_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s4b_warm_t1.json"
@@ -1662,7 +1663,7 @@ def test_an_unsettled_arm_makes_the_promotion_inconclusive(
 def test_every_committed_warmup_record_settled():
     """Re-judged as a fact (fix phase 6): no committed row is moved by the P3 rule."""
     records = []
-    for path in sorted((ROOT / "results").rglob("fixed_light_numba*.json")):
+    for path, _legacy in iter_legacy(ROOT, "results", "fixed_light_numba*.json"):
         payload = json.loads(path.read_text())
         rows = payload.get("rows") if isinstance(payload, dict) else None
         if isinstance(rows, dict):

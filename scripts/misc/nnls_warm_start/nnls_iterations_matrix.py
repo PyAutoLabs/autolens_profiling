@@ -23,7 +23,7 @@ Usage
 ``python scripts/misc/nnls_warm_start/nnls_iterations_matrix.py [--version 2026.8.17.1]
 [--results-dir ...] [--out ...]``
 
-Writes ``results/nnls_warm_start/nnls_warm_start_memo_matrix.md`` and prints the same table.
+Writes ``results/misc/nnls_warm_start/nnls_warm_start_memo_matrix.md`` and prints the same table.
 """
 
 import argparse
@@ -441,12 +441,14 @@ def main() -> int:
     args = parser.parse_args()
 
     results_dir = (
-        Path(args.results_dir) if args.results_dir else ROOT / "results" / "nnls_warm_start"
+        Path(args.results_dir)
+        if args.results_dir
+        else ROOT / "results" / "misc" / "nnls_warm_start"
     )
     out_path = (
         Path(args.out)
         if args.out
-        else ROOT / "results" / "nnls_warm_start" / "nnls_warm_start_memo_matrix.md"
+        else ROOT / "results" / "misc" / "nnls_warm_start" / "nnls_warm_start_memo_matrix.md"
     )
 
     cells, version = load_cells(results_dir, args.version)

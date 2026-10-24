@@ -1,8 +1,8 @@
 # Jacobi PDIP: batched vs unbatched on the A100
 
 Research note for linear-solver phase 4a (autolens_profiling#397), 2026-10-08. Campaign:
-[Linear-solver accuracy](../campaigns/linear_solver_accuracy.md). Full provenance is in the
-[ledger, phase 4a](../../results/notes/linear_solver_accuracy_2026_09.md#phase-4a-2026-10-08--jacobi-batched-vs-unbatched-on-the-a100).
+[Linear-solver accuracy](../campaigns/lens/solver/linear_solver_accuracy.md). Full provenance is in the
+[ledger, phase 4a](../campaigns/lens/solver/linear_solver_accuracy_2026_09.md#phase-4a-2026-10-08--jacobi-batched-vs-unbatched-on-the-a100).
 This page prepares a decision. It does not take one, and nothing in the library changed.
 
 ## Question
@@ -162,7 +162,7 @@ measure how often its systems are sensitive. B is excluded, and C is not expecte
 Phase 5 (autolens_profiling#399, 2026-10-08) gathered the evidence the decision table above asked
 for: a Mapper corpus run through the same three cells on the laptop CPU and one A100 job (RAL
 job 399225, 6:20). Full provenance and tables:
-[ledger, phase 5](../../results/notes/linear_solver_accuracy_2026_09.md#phase-5-2026-10-08--mapper-corpus).
+[ledger, phase 5](../campaigns/lens/solver/linear_solver_accuracy_2026_09.md#phase-5-2026-10-08--mapper-corpus).
 
 **Corpus.** 24 systems captured from the JAX likelihood on `dataset/imaging/hst` at tag
 2026.10.7.1, each asserted to be the positive-only Mapper solve in `"jacobi"` mode:

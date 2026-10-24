@@ -94,3 +94,20 @@ def test__external_links_and_code_spans_are_ignored(tmp_path):
         + "[pr](https://github.com/PyAutoLabs/PyAutoArray/pull/1)\n`[x](nowhere.md)`\n"
     )
     assert check_wiki.check(root) == []
+
+
+def test__a_nested_ledger_under_campaigns_must_be_linked_not_headed(tmp_path):
+    """Since the day-zero move (#442) ledgers live under wiki/campaigns/<dt>/<variant>/."""
+    root = _build(tmp_path)
+    nested = root / "wiki" / "campaigns" / "imaging" / "delaunay"
+    nested.mkdir(parents=True)
+    (nested / "gamma.md").write_text("# gamma (a ledger: no page header needed)\n")
+    failures = check_wiki.check(root)
+    assert failures == [
+        "(a) ledger not linked from wiki/: wiki/campaigns/imaging/delaunay/gamma.md"
+    ]
+    (root / "wiki" / "index.md").write_text(
+        (root / "wiki" / "index.md").read_text()
+        + "\n[gamma](campaigns/imaging/delaunay/gamma.md)\n"
+    )
+    assert check_wiki.check(root) == []

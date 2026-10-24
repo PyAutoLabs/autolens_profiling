@@ -51,7 +51,7 @@
 # WHY THE CONTROL IS LEVER 1 AND NOT THE MERGE BASE. Lever 2's commit sits ON TOP
 # OF lever 1; a merge-base control would measure both levers at once and attribute
 # the sum to lever 2. The lever-1-vs-merge-base row already exists and is recorded
-# (results/notes/fixed_lens_light_levers_2026_09.md: 413.301 -> 299.709 ms,
+# (wiki/campaigns/imaging/fixed_lens_light_levers_2026_09.md: 413.301 -> 299.709 ms,
 # 1.379x), so the A/B this job runs is the INCREMENT lever 2 adds, and the
 # cumulative figure against the merge base is a multiplication of the two rows,
 # computed in the note rather than measured here. `PyAutoArray_control`

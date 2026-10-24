@@ -13,7 +13,7 @@
 # every agreement column is a same-run number.
 #
 # This is NOT a speed play at n = 1500. The 2026-09-11 reconstruction split
-# (results/notes/a100_pixelized_baseline_2026_09.md) measured the exact
+# (wiki/campaigns/imaging/a100_pixelized_baseline_2026_09.md) measured the exact
 # unconstrained solve at 1.52-1.58 ms and the 37 ms reconstruction row as 21-22
 # PDIP iterations of dense KKT Cholesky. A CG line that only replaces the linear
 # solve therefore has ~1.6 ms to beat, not 37 ms, plus the ~2.4 ms of the two
@@ -45,7 +45,7 @@
 # in-process Cholesky check against the 2026-09-11 log-dets plus the SLQ error.
 #
 # Every leg starts from an EMPTY JAX compilation cache: a seeded XLA autotune
-# cache silently changes kernels (results/notes/xla_autotune_triton_gemm.md — F
+# cache silently changes kernels (wiki/campaigns/misc/xla_autotune_triton_gemm.md — F
 # 4.8 vs 25.6 ms on the same code). XLA_FLAGS carries only constant_folding; the
 # autotune/Triton flags are left to autonerves' jax_wrapper so this measures the
 # library default.

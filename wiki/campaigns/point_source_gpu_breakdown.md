@@ -7,7 +7,7 @@
 **Headline:** scalar 0.910 ms (CUDA graphs on; 1.097 off), 173 kernels/call, device busy 57 % of wall, vmap-256 0.0120 ms/L (81x); A100 job 366916 (euclid-ral-gpu-1, exclusive); forward-mode gradient NaN
 **Library PRs:** none
 **Profiling PRs:** [#353](https://github.com/PyAutoLabs/autolens_profiling/pull/353), merged 2026-09-30 (issue #350, phase 0+1); admission measurement issue #427 (2026-10-17)
-**Ledger:** [point_source_gpu_breakdown_2026_09.md](../../results/notes/point_source_gpu_breakdown_2026_09.md); instrument [point_source_shared_likelihood_breakdown.md](../../results/notes/point_source_shared_likelihood_breakdown.md)
+**Ledger:** [point_source_gpu_breakdown_2026_09.md](point_source_gpu_breakdown_2026_09.md); instrument [point_source_shared_likelihood_breakdown.md](point_source_shared_likelihood_breakdown.md)
 **Mind contract:** PyAutoPulse task [point_source_image_plane_gpu_breakdown](https://github.com/PyAutoLabs/PyAutoPulse/blob/main/tasks/point_source_image_plane_gpu_breakdown.md), migrated from the Mind draft on 2026-10-03 (filed 2026-09-17, contract 2026-09-19); prerequisite `complete/2026/09/point-source-shared-breakdown.md` (#293).
 **Next:** human decision on admitting the released 2026.10.17.1 image-plane likelihood as the A100 baseline (evidence: job 412519, autolens_profiling#427, 2026-10-17); the go/no-go on phase 2 still also needs one autolens_inference image-plane fit measurement
 
@@ -18,7 +18,7 @@ treatment as imaging and interferometer, "mostly using the A100s on RAL". The su
 found a `likelihood_runtime/` tier but no point-source breakdown and no A100 row; the cluster
 breakdown timed `solver.solve` as one block. On 2026-09-19 a consolidation split the work into
 three tasks: a shared breakdown first, then a CPU campaign ([Point-source image-plane
-CPU](point_source_image_plane_cpu.md)) and this GPU campaign, each issued one bounded phase at a time.
+CPU](point_source_image/image_plane/point_source_image_plane_cpu.md)) and this GPU campaign, each issued one bounded phase at a time.
 
 The shared instrument shipped as #293 (2026-09-20, `complete/2026/09/point-source-shared-breakdown.md`):
 eight solver iterations opened into cumulative prefixes, with the fused production likelihood as the
@@ -39,7 +39,7 @@ From the draft's campaign contract. Phases 0 and 1 ran as one lean job (human, 2
 | 0 A100 baseline | skipped (human 2026-09-28) | Does the shared harness run correctly on the A100; what are the fp64 and separately labelled mp reference rows on the preserved unoptimized revisions? | numerical agreement with the CPU reference and the production likelihood, precision-specific tolerances recorded; no optimization before this baseline | | | |
 | 1 A100 bottleneck map | not started | Fused device timeline attributed to source operations; `vmap` 1/4/16 (larger within memory headroom); fp64 vs mp; compile vs cold vs warm; simple and cluster configurations; primal vs `custom_jvp` gradient | gradient throughput usable only after finite-difference agreement at smooth points; distinct parameter inputs; synchronized timing | | | |
 | 2 Bounded optimization iterations | not started | Levers in contract order: redundant-sort removal on A100 (shared with CPU), `vmap` break-even if launch-bound, the measured sort/gather or static lattice, loop form for unrolled compile, implicit-gradient Jacobian, deflections | the iteration contract in the header; each lever published as accepted / rejected / deferred, re-profile after each acceptance | | | |
-| Completion | not started | Close with baseline/final artifact pairs, trace-derived map, batching/precision/compile/gradient tables and `results/notes/point_source_gpu_breakdown_2026_09.md` | stop rule in the header; if no A100 access, the campaign stays pending | | | |
+| Completion | not started | Close with baseline/final artifact pairs, trace-derived map, batching/precision/compile/gradient tables and `wiki/campaigns/point_source_gpu_breakdown_2026_09.md` | stop rule in the header; if no A100 access, the campaign stays pending | | | |
 
 ## What shipped and where it is
 
@@ -52,7 +52,7 @@ The bottleneck-map cell `scripts/point_source_image/likelihood_breakdown/gpu_bot
 
 ## Caveats
 
-- **The CPU campaign has already touched the phase 2 levers.** Vertex dedup (PyAutoArray#569), the static step-0 lattice (PyAutoArray#570, PyAutoLens#749), the step-0 gather (PyAutoArray#580) and MCS 20 (PyAutoArray#584, PyAutoLens#753) shipped from [Point-source image-plane CPU](point_source_image_plane_cpu.md) with A100 rows (jobs 350587, 350637, 357322, 359102); the static lattice gave only 1.01–1.07× on the A100. Those are CPU-campaign gates, not this campaign's baseline or bottleneck map.
+- **The CPU campaign has already touched the phase 2 levers.** Vertex dedup (PyAutoArray#569), the static step-0 lattice (PyAutoArray#570, PyAutoLens#749), the step-0 gather (PyAutoArray#580) and MCS 20 (PyAutoArray#584, PyAutoLens#753) shipped from [Point-source image-plane CPU](point_source_image/image_plane/point_source_image_plane_cpu.md) with A100 rows (jobs 350587, 350637, 357322, 359102); the static lattice gave only 1.01–1.07× on the A100. Those are CPU-campaign gates, not this campaign's baseline or bottleneck map.
 - **Preserved revisions.** The unoptimized revisions phase 0 must reproduce were frozen by the CPU campaign's IP-1 (job 350580, #298); the library has moved on since, so phase 0 needs those checkouts on RAL.
 - **The CPU reference is loaded-host.** The shared breakdown's CPU row shared its host with a workspace smoke job; it defines that row only, not a comparison across processes or dates.
 - **Prefix rows are not additive.** Step rows are successive differences of independently compiled prefixes (the largest CPU prefix was 453.6 ms against a 62.7 ms fused call); only the fused likelihood is an end-to-end time.

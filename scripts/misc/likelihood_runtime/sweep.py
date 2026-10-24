@@ -17,7 +17,7 @@ Default ``--output-root`` is ``results/runtime/`` in this repo, read by
 ``aggregate.py`` to produce ``comparison.json`` / ``comparison.png``.
 (Earlier sweeps wrote to ``autolens_workspace_developer/jax_profiling/
 results/jit`` — that tree remains readable history but is no longer the
-default; see ``results/notes/design_lock_in.md``.)
+default; see ``wiki/campaigns/misc/design_lock_in.md``.)
 
 Usage::
 

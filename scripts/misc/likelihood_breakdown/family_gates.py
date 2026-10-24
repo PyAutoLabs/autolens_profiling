@@ -3,7 +3,7 @@
 Why this module exists
 ----------------------
 
-``results/notes/timing_noise_audit_2026_10.md`` section (a), "Multiple
+``wiki/campaigns/misc/timing_noise_audit_2026_10.md`` section (a), "Multiple
 comparisons", found three gates whose verdict reads many comparisons, each
 judged at 90 % with no adjustment:
 

@@ -193,7 +193,7 @@ result = {
     "all_timings": {k: [round(v, 4) for v in vals] for k, vals in timer.records.items()},
 }
 
-output_dir = workspace_root / "results" / "quick_update"
+output_dir = workspace_root / "results" / "misc" / "quick_update"
 output_dir.mkdir(parents=True, exist_ok=True)
 output_path = output_dir / "point_source_quick_update.json"
 output_path.write_text(json.dumps(result, indent=2))

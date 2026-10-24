@@ -53,7 +53,7 @@ import numpy as np
 
 _REPO_ROOT = _profiling_root()
 _DEFAULT_OUTPUT_ROOT = _REPO_ROOT / "results" / "runtime"
-_DEFAULT_HAZARD_INDEX = _REPO_ROOT / "results" / "hazards" / "hazards_index.json"
+_DEFAULT_HAZARD_INDEX = _REPO_ROOT / "results" / "misc" / "hazards" / "hazards_index.json"
 
 
 # Stable ordering — keep the same row order as sweep_likelihood + the prior

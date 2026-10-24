@@ -7,7 +7,7 @@
 # nufftax 0.6.1 fp64 (recorded as library_path); steps 3-8 run on the
 # measurement-only column/visibility-chunked transform arm.
 # Compile-heavy: every pipeline step is JIT-compiled in isolation.
-# Output: results/breakdown/interferometer/alma_high/mge_hpc_a100_mp.json
+# Output: results/interferometer/mge/alma_high/jax_gpu_dense_mixed_nufft/hpc_a100/breakdown.json
 # (config-tagged names carry no instrument, so non-alma instruments write
 # into results/breakdown/interferometer/<instrument>/ — see the cell docstring).
 # A RESOURCE_EXHAUSTED / OOM here is a result, not a failure: record it.

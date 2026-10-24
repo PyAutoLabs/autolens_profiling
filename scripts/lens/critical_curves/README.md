@@ -2,8 +2,8 @@
 
 This is the standing dataset-free research home for critical curves and
 caustics. It studies correctness and robust settings alongside runtime.
-The [campaign wiki](../../../wiki/campaigns/critical_curves.md) records decisions
-and new questions; the [full ledger](../../../results/notes/critical_curves_dispatch.md)
+The [campaign wiki](../../../wiki/campaigns/lens/critical_curves/critical_curves.md) records decisions
+and new questions; the [full ledger](../../../wiki/campaigns/lens/critical_curves/critical_curves_dispatch.md)
 records each run and its limitations. Add future experiments here instead of
 starting a second campaign in the integration-test workspace.
 

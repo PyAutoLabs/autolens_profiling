@@ -3,8 +3,10 @@
 This wiki is the navigation layer over six weeks (and counting) of likelihood profiling in this
 repo. It answers three questions for every campaign: **why was it run, what did it find, and where
 did the result go** (which library PRs, which release). It does not replace the ledgers: the full
-record of every measurement stays in the campaign's note under
-[`results/notes/`](../results/notes/), and the wiki links to it.
+record of every measurement stays in the campaign's ledger, which since the day-zero move
+(autolens_profiling#442) lives beside the pages under
+[`campaigns/<dataset_type>/<variant>/`](campaigns/) (formerly `results/notes/`), and the wiki
+links to it.
 
 - [`index.md`](index.md) — one row per campaign: question, status, headline, verdict, PRs,
   ledger, Mind epic/contract, next step.
@@ -29,7 +31,7 @@ Every campaign page opens with the same ten labelled lines, in this order, then 
 | `**Headline:**` | the one quotable number, with host and RAL job id |
 | `**Library PRs:**` | PRs in PyAutoArray / PyAutoGalaxy / PyAutoLens / PyAutoFit, with release state |
 | `**Profiling PRs:**` | PRs in this repo |
-| `**Ledger:**` | relative link(s) to the `results/notes/` ledger(s) |
+| `**Ledger:**` | relative link(s) to the campaign's ledger(s) under `campaigns/` |
 | `**Mind contract:**` | the PyAutoMind epic and prompt path (as code text: Mind is a separate repo) |
 | `**Next:**` | the next action, or "none" |
 
@@ -45,7 +47,8 @@ the merge commit). When unsure, write "not recorded" or "not verified" — never
 - **Every campaign PR updates its campaign page and its index row** in the same PR: a journal
   entry, the header lines that changed, and the index row's Status / Headline / Next / Last
   updated cells.
-- A new `results/notes/*.md` ledger must be linked from at least one wiki page.
+- A new ledger (`campaigns/<dataset_type>/<variant>/<name>.md`) must be linked from at least
+  one wiki page.
 - A new campaign page needs a row in `index.md` and all ten header labels.
 - Links inside the wiki are repo-relative; no absolute machine paths.
 

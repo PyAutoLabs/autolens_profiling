@@ -48,9 +48,9 @@ NAME = re.compile(
     r"(?P<size>n6|n17)_r(?P<round>\d+)\.json$"
 )
 BASELINE = {
-    "delaunay": "results/breakdown/interferometer/delaunay_numba_hpc_ral_cpu_fp64_levers.json",
+    "delaunay": "archive/undated/levers/breakdown/interferometer/delaunay_numba_hpc_ral_cpu_fp64_levers.json",
     "rectangular": (
-        "results/breakdown/interferometer/pixelization_numba_hpc_ral_cpu_fp64_levers.json"
+        "archive/undated/levers/breakdown/interferometer/pixelization_numba_hpc_ral_cpu_fp64_levers.json"
     ),
 }
 SLOW_SEED_FACTOR = 1.5

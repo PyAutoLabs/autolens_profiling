@@ -33,7 +33,7 @@ Identity limitations: Isolated to source row: legacy metadata is insufficient fo
 
 ## Evidence
 
-[Original setup artifact](../../../../results/runtime/imaging/delaunay_nn/delaunay_nn_hpc_a100_fp64_assembly.json); JSON pointer: `(document root)`.
+[Original setup artifact](../../../../results/imaging/delaunay_nn/hst/jax_gpu_dense_fp64/hpc_a100/experiments/assembly/runtime.json); JSON pointer: `(document root)`.
 
 ### Selected references
 
@@ -45,9 +45,9 @@ No selected reference for this exact setup; archive evidence is available below.
 
 | Record | Metric | Value | Unit | Device / precision | Selection | Evidence pointer |
 |---|---|---|---|---|---|---|
-| `measurement/a02c763d5651f9c66c3b` | vmap.per_call | {"vmap.per_call": 0.040857585475896484} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/runtime/imaging/delaunay_nn/delaunay_nn_hpc_a100_fp64_assembly.json) `/vmap/per_call` |
-| `measurement/a34c2e1e4da2850893b7` | vmap.batch_time | {"vmap.batch_time": 0.6537213676143437} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/runtime/imaging/delaunay_nn/delaunay_nn_hpc_a100_fp64_assembly.json) `/vmap/batch_time` |
-| `measurement/fd672af2e340f50b8707` | single_jit_block | {"single_jit_block": 0.06611713680904359} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/runtime/imaging/delaunay_nn/delaunay_nn_hpc_a100_fp64_assembly.json) `/full_pipeline_single_jit` |
+| `measurement/a02c763d5651f9c66c3b` | vmap.per_call | {"vmap.per_call": 0.040857585475896484} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/delaunay_nn/hst/jax_gpu_dense_fp64/hpc_a100/experiments/assembly/runtime.json) `/vmap/per_call` |
+| `measurement/a34c2e1e4da2850893b7` | vmap.batch_time | {"vmap.batch_time": 0.6537213676143437} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/delaunay_nn/hst/jax_gpu_dense_fp64/hpc_a100/experiments/assembly/runtime.json) `/vmap/batch_time` |
+| `measurement/fd672af2e340f50b8707` | single_jit_block | {"single_jit_block": 0.06611713680904359} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/delaunay_nn/hst/jax_gpu_dense_fp64/hpc_a100/experiments/assembly/runtime.json) `/full_pipeline_single_jit` |
 
 </details>
 

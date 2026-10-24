@@ -10,10 +10,10 @@ root:
 
 ```bash
 python scripts/misc/delaunay_nn/extract_mesh_points.py \
-    --out results/delaunay_nn/mesh_points_hst.npy
+    --out results/misc/delaunay_nn/mesh_points_hst.npy
 python scripts/misc/delaunay_nn/build_tables.py \
-    --points results/delaunay_nn/mesh_points_hst.npy \
-    --out results/delaunay_nn/tables_hst_1500.npz
+    --points results/misc/delaunay_nn/mesh_points_hst.npy \
+    --out results/misc/delaunay_nn/tables_hst_1500.npz
 ```
 """
 

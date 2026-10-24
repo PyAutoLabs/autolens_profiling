@@ -3,7 +3,7 @@
 Why this module exists
 ----------------------
 
-``results/notes/timing_noise_audit_2026_10.md`` rows C1, C3, C4 and C5 found
+``wiki/campaigns/misc/timing_noise_audit_2026_10.md`` rows C1, C3, C4 and C5 found
 four campaign gates labelling a result from point estimates alone:
 
 - **C1** ``fixed_light_numba_memo_policy.matched_counterfactual`` classified a

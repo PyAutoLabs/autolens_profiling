@@ -26,7 +26,7 @@ fitting?** The answer to that is a leg that died, so a leg that produced no
 result JSON is not a gap in the table — it is the measurement. The script reads,
 in order:
 
-1. ``results/sweep/fixed_light_scaling_manifest.jsonl`` — one line per leg that
+1. ``results/misc/likelihood_breakdown/fixed_light_scaling_manifest.jsonl`` — one line per leg that
    was launched (``mesh``, ``n``, ``hardware``, and either ``status`` or the
    SLURM ``job``). This is the only record that distinguishes *launched and
    died* from *never launched*.
@@ -313,7 +313,7 @@ def collect(
 ) -> dict[tuple[str, int, str], Leg]:
     results_dir = results_dir or (ROOT / "results" / "breakdown" / "imaging")
     manifest_path = manifest_path or (
-        ROOT / "results" / "sweep" / "fixed_light_scaling_manifest.jsonl"
+        ROOT / "results" / "misc" / "likelihood_breakdown" / "fixed_light_scaling_manifest.jsonl"
     )
     manifest = load_manifest(manifest_path)
 
@@ -552,7 +552,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--manifest",
         type=Path,
-        default=ROOT / "results" / "sweep" / "fixed_light_scaling_manifest.jsonl",
+        default=ROOT
+        / "results"
+        / "misc"
+        / "likelihood_breakdown"
+        / "fixed_light_scaling_manifest.jsonl",
         help="one line per launched leg (mesh, n, hardware, status/job)",
     )
     parser.add_argument(

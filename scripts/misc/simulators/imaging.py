@@ -281,7 +281,7 @@ def simulate(instrument: str = "hst", output_root: Path | None = None) -> Path:
     # === Summary ===
 
     al_version = al.__version__
-    results_dir = root / "results" / "simulators"
+    results_dir = root / "results" / "misc" / "simulators"
     results_dir.mkdir(parents=True, exist_ok=True)
 
     phases = dict(timer.records)

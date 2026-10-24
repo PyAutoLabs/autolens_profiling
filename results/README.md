@@ -4,23 +4,77 @@ Profiling artifacts written by the packages above. Layout mirrors the source
 packages; the dashboard tables in every README are rendered from this tree by
 `scripts/misc/tooling/build_readme.py`.
 
+## Layout
+
+Since the day-zero move (autolens_profiling#442, `catalogue/migration_day_zero.json`, applied
+with `git mv` only -- no file changed bytes) the tree mirrors `scripts/`:
+
+```
+results/<dataset_type>/<variant>/<instrument>/<setup_id>/<host_class>[/<model_variant>]/<measurement>.<ext>
+    .../history/<release_pin>_<YYYY-MM-DD>/<measurement>.<ext>   # older records of the same key
+    .../scans/<name>/<measurement>.<ext>                         # size scans; never current
+    .../experiments/<name>/<measurement>.<ext>                   # arms, experiments, job sidecars
+results/<dataset_type>/<variant>/<instrument>/comparison.<ext>   # cross-setup aggregate
+results/lens/<component>/...                                     # unchanged
+results/misc/<group>/...                                         # no derivable cell
+```
+
+`setup_id` is `<backend>_<device>_<operator>_<precision>[_<transformer>]` (e.g.
+`jax_gpu_sparse_fp64_wtilde`); `host_class` is `hpc_a100`, `hpc_ral_cpu`, `local_laptop` or
+`local_gpu`; `model_variant` appears only for non-default variants (`light_fixed`, `rtu`,
+`mge_mass`). Ledgers moved to [`wiki/campaigns/`](../wiki/campaigns/) and dead experiments to
+[`archive/`](../archive/README.md). Each map entry records the old path, the new path and the
+file's sha256. The 23 rows whose setup axis was never recorded stay at their old paths under
+`runtime/` and `breakdown/` until a human rules on them.
+
+Writers still compose the legacy name; `_profile_cli.resolve_output_paths` places a run whose
+default folder is `runtime/` or `breakdown/` into its mirrored cell with the map's own
+classification. Readers (`build_catalogue.py`, `build_dashboard.py`, `build_readme.py`) see a
+moved file under its pre-move identity through `scripts/misc/tooling/results_layout.py` until
+the catalogue builder reads the mirrored tree (#442 PR 3).
+
+## Day-zero move (redirects)
+
+| Old prefix | New location | Files |
+|---|---|---|
+| `runtime/<dataset_type>/<variant>/...`, `breakdown/<dataset_type>/...` | `<dataset_type>/<variant>/<instrument>/<setup_id>/<host_class>/` (current, `history/`, `scans/`, `experiments/`) | 834 |
+| `runtime/**/*.log`, `*.out` | `misc/logs/<campaign>/` | 20 |
+| `breakdown/**` with no derivable cell | `misc/likelihood_breakdown/` | 91 |
+| `runtime/**` with no derivable cell | `misc/likelihood_runtime/` | 2 |
+| `hazards/` | `misc/hazards/` | 26 |
+| `logs/` | `misc/logs/` | 25 |
+| `quick_update/` | `misc/quick_update/` | 5 |
+| `delaunay_nn/` | `misc/delaunay_nn/` | 3 |
+| `nnls_warm_start/` | `misc/nnls_warm_start/` | 2 |
+| `streaming_scaling/` | `misc/streaming_scaling/` | 20 |
+| `sweep/` | `misc/likelihood_breakdown/` | 4 |
+| `notes/*.md` (ledgers) | `../wiki/campaigns/<dataset_type>/[<variant>/]` | 55 |
+| `../wiki/campaigns/*.md` (campaign pages) | `../wiki/campaigns/<dataset_type>/[<variant>/]` | 25 |
+| dated snapshots, `_lever`, `_probe`, pre-2026-09 series, `baselines/PreOptimizationTimes/`, frozen packs (`notes/clipper_campaign/`, `notes/point_source_cpu_2026_09_17_reported/`), `simulators/`, `parallel_scaling/`, `pipeline_resume/` | `../archive/YYYY/MM/<slug>/` | 272 |
+| `lens/`, `README.md`, `provenance_grandfathered.txt` | unchanged | 100 |
+
+Look up any single file in `catalogue/migration_day_zero.json` (`old` -> `new`).
+
 ## Campaign findings
 
 Read the [campaign index](../wiki/index.md) before reusing a headline or following a
 historical note's Next section. It links every campaign's ledger in `notes/` and records
 each result's library PRs and release. The fixed-light record stays in the
-[fixed-light CPU/GPU summary](notes/profiling_campaign_status_2026_09.md) (CPU closure,
+[fixed-light CPU/GPU summary](../wiki/campaigns/imaging/profiling_campaign_status_2026_09.md) (CPU closure,
 corrected GPU budgets/attribution, and the unversioned bridge-control limitation); its
 PyAutoArray #553–#555 were released in 2026.9.19.1. The run-time-over-time view of this tree is
 [`../dashboard/`](../dashboard/index.html) (published at
 <https://pyautolabs.github.io/autolens_profiling/>), rendered by
 `scripts/misc/tooling/build_dashboard.py`: one point per release per cell × config, qualified on
 the provenance block against `hpc/release_sweep.conf`. For interferometer fits, the
-[decision matrix](notes/interferometer_likelihood_decision_matrix_2026_09.md) says which
+[decision matrix](../wiki/campaigns/interferometer/interferometer_likelihood_decision_matrix_2026_09.md) says which
 likelihood path and device to use by N_vis × mask × source (MGE-20, Delaunay-1500, rectangular),
 with per-call ms, setup cost, host memory and an indicative time per fit.
 
 ## Sections
+
+The folders as they were before the day-zero move; see the redirect table above for where
+each now lives.
 
 | Folder | Written by | Contents |
 |--------|-----------|----------|
@@ -30,13 +84,13 @@ with per-call ms, setup cost, host memory and an indicative time per fit.
 | `pipeline_resume/` | [`pipeline_resume/`](../scripts/misc/pipeline_resume/README.md) | Versioned SLaM resume-overhead summaries (cold + resume run records) |
 | `quick_update/` | [`quick_update/`](../scripts/misc/quick_update/README.md) | Unversioned fast re-profiling snapshots (scratch tier) |
 | `delaunay_nn/` | [`delaunay_nn/`](../scripts/misc/delaunay_nn/README.md) | Versioned full-mapper cap and runtime benchmarks |
-| `nnls_warm_start/` | [`nnls_warm_start/`](../scripts/misc/nnls_warm_start/README.md) | The NNLS cross-evaluation warm-start memo A/B experiment — per-model JSON/PNG pairs plus its two notes ([`nnls_warm_start_memo.md`](./nnls_warm_start/nnls_warm_start_memo.md), [`nnls_warm_start_memo_matrix.md`](./nnls_warm_start/nnls_warm_start_memo_matrix.md)). A diagnostic, **not** a production baseline. |
-| `streaming_scaling/` | [`interferometer/delaunay/`](../scripts/interferometer/delaunay/streaming.md) | Versioned interferometer streamed (`from_stream`) vs in-memory (`apply_sparse_operator`) memory/time scaling rows and the parity check ([campaign](../wiki/campaigns/interferometer_streaming.md)) |
+| `nnls_warm_start/` | [`nnls_warm_start/`](../scripts/misc/nnls_warm_start/README.md) | The NNLS cross-evaluation warm-start memo A/B experiment — per-model JSON/PNG pairs plus its two notes ([`nnls_warm_start_memo.md`](misc/nnls_warm_start/nnls_warm_start_memo.md), [`nnls_warm_start_memo_matrix.md`](misc/nnls_warm_start/nnls_warm_start_memo_matrix.md)). A diagnostic, **not** a production baseline. |
+| `streaming_scaling/` | [`interferometer/delaunay/`](../scripts/interferometer/delaunay/streaming.md) | Versioned interferometer streamed (`from_stream`) vs in-memory (`apply_sparse_operator`) memory/time scaling rows and the parity check ([campaign](../wiki/campaigns/interferometer/delaunay/interferometer_streaming.md)) |
 | `hazards/` | [`hazards/`](../scripts/misc/hazards/README.md) | Semantic finding records, reproducer plots, generated seed summary, and consumer index |
 | `lens/` | [`scripts/lens/`](../scripts/lens/README.md) | Versioned **library-component** summaries (dataset-free axis) — today `lens/deflections/`, per-mass-profile deflection cost with pinned deflection values |
 | `lens/solver/` | [`scripts/lens/solver/`](../scripts/lens/solver/README.md) | The linear-solver programme: the frozen positive-only system corpus (`corpus/manifest.json` + one `.npz` per group, with stored fnnls references) and versioned `accuracy` / `early_stopping` summaries per corpus |
-| `notes/` | humans + agents | Narrative findings and design notes — **markdown only** (e.g. [`design_lock_in.md`](./notes/design_lock_in.md), [`production_representative_cells.md`](./notes/production_representative_cells.md), [`nnls_solver_ledger.md`](./notes/nnls_solver_ledger.md), [`numpy_deflections_cpu.md`](./notes/numpy_deflections_cpu.md)); see the artefact policy below |
-| `logs/` | RAL submits | Committed SLURM job logs, one folder per campaign ([`logs/README.md`](./logs/README.md)); provenance a ledger cites, never a result |
+| `notes/` | humans + agents | Narrative findings and design notes — **markdown only** (e.g. [`design_lock_in.md`](../wiki/campaigns/misc/design_lock_in.md), [`production_representative_cells.md`](../wiki/campaigns/imaging/production_representative_cells.md), [`nnls_solver_ledger.md`](../wiki/campaigns/lens/solver/nnls_solver_ledger.md), [`numpy_deflections_cpu.md`](../wiki/campaigns/lens/deflections/numpy_deflections_cpu_ledger.md)); see the artefact policy below |
+| `logs/` | RAL submits | Committed SLURM job logs, one folder per campaign ([`logs/README.md`](misc/logs/README.md)); provenance a ledger cites, never a result |
 | `baselines/` | campaign snapshots | Named, frozen baselines (e.g. `PreOptimizationTimes/`) — see below |
 
 ## Artefact policy
@@ -111,7 +165,7 @@ and `runtime/imaging/delaunay{,_nn}/delaunay{,_nn}_hpc_a100_fp64` are **AdaptSpl
 ConstantSplit rows they replaced were not overwritten — they survive as
 `..._hpc_a100_fp64_constant_split_2026_09_05.{json,png}` — and the 2026-09-08 same-node
 ConstantSplit controls are `..._hpc_a100_fp64_constant_split.{json,png}`. See
-`results/notes/delaunay_adapt_split_regularization.md`.
+`wiki/campaigns/imaging/delaunay_adapt_split_regularization.md`.
 
 ## Semantic hazard findings
 
@@ -137,4 +191,4 @@ A **baseline** is a frozen snapshot of a full campaign under
 `<BaselineName>.md` with every headline number on one page. Baselines are
 append-only — never edited after the campaign closes. The first baseline is
 **`PreOptimizationTimes`** (the pre-optimization reference). Full convention:
-[`notes/design_lock_in.md`](./notes/design_lock_in.md).
+[`notes/design_lock_in.md`](../wiki/campaigns/misc/design_lock_in.md).

@@ -14,7 +14,7 @@
 # activate.sh. The shared mirror /mnt/ral/jnightin/PyAuto is not touched. The job
 # fails unless autoarray/autogalaxy/autolens import from that copy.
 #
-# Output: results/breakdown/interferometer/mge_hpc_a100_fp64_sparse.json
+# Output: results/interferometer/mge/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json
 # A RESOURCE_EXHAUSTED / OOM here is a result, not a failure: record it.
 
 #SBATCH -J breakdown_interferometer_mge_alma_fp64_sparse

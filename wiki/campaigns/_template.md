@@ -7,7 +7,7 @@
 **Headline:** <one quotable number — host, RAL job id>
 **Library PRs:** <repo#PR (release tag | UNRELEASED)>
 **Profiling PRs:** <autolens_profiling#PR, ...>
-**Ledger:** [<note>.md](../../results/notes/) — link the ledger file itself
+**Ledger:** [<note>.md](./) — link the ledger file itself
 **Mind contract:** epic `<slug>`; `<PyAutoMind path to prompt or record>`
 **Next:** <next action, or "none">
 

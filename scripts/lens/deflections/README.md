@@ -16,7 +16,7 @@ This section is the **measurement of record** for the `numpy-deflections-cpu` ep
 now carries the **after-phase-3** numbers (a web-container host, `v2026.8.29.1`; the
 phase-2 laptop artifacts are kept beside them); the before baseline, every phase's pass
 and the full before → after analysis are in
-[`results/notes/numpy_deflections_cpu.md`](../../../results/notes/numpy_deflections_cpu.md).
+[`wiki/campaigns/lens/deflections/numpy_deflections_cpu_ledger.md`](../../../wiki/campaigns/lens/deflections/numpy_deflections_cpu_ledger.md).
 The `dark` and `stellar` pins were **re-pinned in phase 2** — the MGE-routed profiles
 compute a corrected answer — and `stellar` again in phase 3 for one on-axis sample that
 the rotation-matrix transform makes exactly zero (was 4.8e-17); each reason is recorded
@@ -165,7 +165,7 @@ Each run pins three things per profile and checks them at **rtol 1e-6**:
   `Grid2DIrregular`. Stored literally in `_driver.PIN_COORDINATES`.
 
 Drift is **recorded, never adjudicated** — the boundary rule in
-[`results/notes/design_lock_in.md`](../../../results/notes/design_lock_in.md).
+[`wiki/campaigns/misc/design_lock_in.md`](../../../wiki/campaigns/misc/design_lock_in.md).
 A moved value prints a loud warning, lands in the JSON's `pinned_drift`, marks
 the row **DRIFT** in the table above, and does **not** fail the run: the timings
 are still data, the flag just says they are not comparable to the baseline.

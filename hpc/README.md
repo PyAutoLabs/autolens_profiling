@@ -57,7 +57,7 @@ Each of the twelve exports a **fresh** `JAX_COMPILATION_CACHE_DIR` under
 `AUTOTUNE_ENTRIES count=` census at the end. This is not hygiene, it is the
 measurement: a seeded XLA autotune cache silently changes kernels — the same code
 measured F at 4.8 vs 25.6 ms across two cache states
-(`results/notes/xla_autotune_triton_gemm.md`), and RAL `$HOME` is node-local, so
+(`wiki/campaigns/misc/xla_autotune_triton_gemm.md`), and RAL `$HOME` is node-local, so
 a leg that inherits a neighbour's cache reports a number no one can reproduce.
 `output/` is gitignored, so the caches never reach git.
 

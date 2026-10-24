@@ -18,7 +18,7 @@
 # Pass --node to pin every arm to ONE A100 node: these rows are compared to each
 # other and to the phase-0/1/2/3 rows, which ran on euclid-ral-gpu-2 — and the
 # same code measured F at 4.8 vs 25.6 ms once the autotune cache differed
-# (results/notes/xla_autotune_triton_gemm.md), which is the same class of
+# (wiki/campaigns/misc/xla_autotune_triton_gemm.md), which is the same class of
 # confound as a different node. Each arm wipes its own
 # JAX_COMPILATION_CACHE_DIR, so co-tenancy on one node does not seed one arm's
 # kernels from another's.

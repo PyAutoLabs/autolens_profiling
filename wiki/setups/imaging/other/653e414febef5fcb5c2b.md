@@ -33,7 +33,7 @@ Identity limitations: Isolated to source row: legacy metadata is insufficient fo
 
 ## Evidence
 
-[Original setup artifact](../../../../results/runtime/imaging/pixelization/jwst/comparison.json); JSON pointer: `/configs/local_cpu_fp64`.
+[Original setup artifact](../../../../results/imaging/rectangular/jwst/comparison.json); JSON pointer: `/configs/local_cpu_fp64`.
 
 ### Selected references
 
@@ -45,10 +45,10 @@ No selected reference for this exact setup; archive evidence is available below.
 
 | Record | Metric | Value | Unit | Device / precision | Selection | Evidence pointer |
 |---|---|---|---|---|---|---|
-| `measurement/116b49b17c0d62fff927` | single_call | {"single_call": 21.778462779999973} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/runtime/imaging/pixelization/jwst/comparison.json) `/configs/local_cpu_fp64/full_pipeline_per_call` |
-| `measurement/36194cd1b5da915f3e71` | vmap.per_call | {"vmap.per_call": 28.32046649666663} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/runtime/imaging/pixelization/jwst/comparison.json) `/configs/local_cpu_fp64/vmap/per_call` |
-| `measurement/d3dbd3a9b285fa0cea6b` | vmap.batch_time | {"vmap.batch_time": 84.96139948999989} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/runtime/imaging/pixelization/jwst/comparison.json) `/configs/local_cpu_fp64/vmap/batch_time` |
-| `measurement/f393414e14ca395c4984` | single_jit_block | {"single_jit_block": 21.778462779999973} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/runtime/imaging/pixelization/jwst/comparison.json) `/configs/local_cpu_fp64/full_pipeline_single_jit` |
+| `measurement/116b49b17c0d62fff927` | single_call | {"single_call": 21.778462779999973} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/rectangular/jwst/comparison.json) `/configs/local_cpu_fp64/full_pipeline_per_call` |
+| `measurement/36194cd1b5da915f3e71` | vmap.per_call | {"vmap.per_call": 28.32046649666663} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/rectangular/jwst/comparison.json) `/configs/local_cpu_fp64/vmap/per_call` |
+| `measurement/d3dbd3a9b285fa0cea6b` | vmap.batch_time | {"vmap.batch_time": 84.96139948999989} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/rectangular/jwst/comparison.json) `/configs/local_cpu_fp64/vmap/batch_time` |
+| `measurement/f393414e14ca395c4984` | single_jit_block | {"single_jit_block": 21.778462779999973} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/rectangular/jwst/comparison.json) `/configs/local_cpu_fp64/full_pipeline_single_jit` |
 
 </details>
 
