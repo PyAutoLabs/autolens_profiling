@@ -66,41 +66,182 @@ def imaging_fit():
     return al.FitImaging(dataset=dataset.apply_mask(mask=mask), tracer=tracer)
 
 
+@pytest.fixture(scope="module")
+def interferometer_fit():
+    """A tiny two-plane interferometer fit (DFT, eager NumPy), simulated in memory."""
+    import autolens as al
+    import numpy as np
+
+    grid = al.Grid2D.uniform(shape_native=(32, 32), pixel_scales=0.1)
+    mask = al.Mask2D.circular(shape_native=(32, 32), pixel_scales=0.1, radius=1.4)
+    uv = np.random.default_rng(1).normal(scale=1.0e5, size=(60, 2))
+    tracer = al.Tracer(
+        galaxies=[
+            al.Galaxy(redshift=0.5, mass=al.mp.Isothermal(centre=(0.0, 0.0), einstein_radius=0.8)),
+            al.Galaxy(
+                redshift=1.0,
+                bulge=al.lp.SersicCore(
+                    centre=(0.05, 0.05), intensity=1.0, effective_radius=0.2, sersic_index=1.0
+                ),
+            ),
+        ]
+    )
+    simulator = al.SimulatorInterferometer(
+        uv_wavelengths=uv,
+        exposure_time=300.0,
+        noise_sigma=0.1,
+        transformer_class=al.TransformerDFT,
+        noise_seed=1,
+    )
+    simulated = simulator.via_tracer_from(tracer=tracer, grid=grid)
+    dataset = al.Interferometer(
+        data=simulated.data,
+        noise_map=simulated.noise_map,
+        uv_wavelengths=uv,
+        real_space_mask=mask,
+        transformer_class=al.TransformerDFT,
+    )
+    return al.FitInterferometer(dataset=dataset, tracer=tracer)
+
+
+def _point_dataset_and_tracer():
+    """The tracked point_source/simple positions and true tracer (what the point cells use)."""
+    import autolens as al
+
+    path = ROOT / "dataset" / "point_source" / "simple"
+    dataset = al.from_json(file_path=path / "point_dataset_positions_only.json")
+    return dataset, al.from_json(file_path=path / "tracer.json")
+
+
+@pytest.fixture(scope="module")
+def point_fit():
+    """An image-plane all-pairs fit with a PointSolver, as the point_source_image cell builds."""
+    import autolens as al
+
+    dataset, tracer = _point_dataset_and_tracer()
+    solver = al.PointSolver.for_grid(
+        grid=al.Grid2D.uniform(shape_native=(100, 100), pixel_scales=0.05),
+        pixel_scale_precision=0.001,
+    )
+    return al.FitPointDataset(
+        dataset=dataset,
+        tracer=tracer,
+        solver=solver,
+        fit_positions_cls=al.FitPositionsImagePairAll,
+    )
+
+
+@pytest.fixture(scope="module")
+def cluster_fits():
+    """Two solver-free source-plane fits, as the cluster/source_plane cell wraps them."""
+    import autolens as al
+
+    dataset, tracer = _point_dataset_and_tracer()
+    fit = al.FitPointDataset(
+        dataset=dataset, tracer=tracer, solver=None, fit_positions_cls=al.FitPositionsSource
+    )
+    return [fit, fit]
+
+
 @pytest.fixture
 def no_smoke(monkeypatch):
     monkeypatch.delenv("AUTOLENS_PROFILING_SMOKE", raising=False)
 
 
-def test_renders_fit_png_beside_the_row_and_keeps_nothing_else(imaging_fit, tmp_path, no_smoke):
-    cell = tmp_path / "results/imaging/mge/hst/jax_cpu_dense_fp64/local_laptop"
+@pytest.fixture
+def repo(tmp_path, monkeypatch):
+    """A scratch repo root, so mirrored-tree cells can be made under ``tmp_path``."""
+    monkeypatch.setattr(pc, "_REPO_ROOT", tmp_path)
+    return tmp_path
+
+
+def _cell(repo, *extra):
+    cell = repo.joinpath("results/imaging/mge/hst/jax_cpu_dense_fp64/local_laptop", *extra)
     cell.mkdir(parents=True)
     (cell / "runtime.json").write_text("{}")
+    return cell
 
-    path = pc.render_fit_png(imaging_fit, cell, dataset_type="imaging")
 
-    assert path == cell / "fit.png"
+def _assert_png(path):
     assert path.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n" and path.stat().st_size > 10_000
+
+
+def test_renders_fit_png_beside_the_row_and_keeps_nothing_else(imaging_fit, repo, no_smoke):
+    cell = _cell(repo)
+    (cell / "fit.png").write_bytes(b"stale")
+    path = pc.render_fit_png(imaging_fit, cell, dataset_type="imaging")
+    assert path == cell / "fit.png"
+    _assert_png(path)
     assert sorted(p.name for p in cell.iterdir()) == ["fit.png", "runtime.json"]
 
 
-def test_skipped_under_smoke(imaging_fit, tmp_path, monkeypatch):
+@pytest.mark.parametrize(
+    ("fixture", "dataset_type"),
+    [
+        ("interferometer_fit", "interferometer"),
+        ("point_fit", "point_source"),
+        ("cluster_fits", "cluster"),
+    ],
+)
+def test_every_dataset_type_plotter_writes_fit_png(fixture, dataset_type, repo, no_smoke, request):
+    cell = _cell(repo)
+    path = pc.render_fit_png(request.getfixturevalue(fixture), cell, dataset_type=dataset_type)
+    assert path == cell / "fit.png"
+    _assert_png(path)
+
+
+def test_experiment_arm_and_model_variant_folders_are_cells(imaging_fit, repo, no_smoke):
+    for extra in (("experiments", "arm"), ("with_shear",)):
+        cell = _cell(repo, *extra)
+        assert pc.render_fit_png(imaging_fit, cell, dataset_type="imaging") == cell / "fit.png"
+
+
+def test_smoke_touches_nothing(imaging_fit, repo, monkeypatch):
+    """A smoke run writes no row, so a committed figure beside an old row must survive."""
     monkeypatch.setenv("AUTOLENS_PROFILING_SMOKE", "1")
-    assert pc.render_fit_png(imaging_fit, tmp_path, dataset_type="imaging") is None
-    assert list(tmp_path.iterdir()) == []
+    cell = _cell(repo)
+    (cell / "fit.png").write_bytes(b"committed")
+    assert pc.render_fit_png(imaging_fit, cell, dataset_type="imaging") is None
+    assert (cell / "fit.png").read_bytes() == b"committed"
 
 
-def test_no_fit_png_flag_turns_it_off(imaging_fit, tmp_path, no_smoke):
+def test_no_fit_png_removes_the_previous_rows_figure(imaging_fit, repo, no_smoke):
     assert pc.parse_profile_cli(argv=[]).fit_png is True
     cli = pc.parse_profile_cli(argv=["--no-fit-png"])
     assert cli.fit_png is False
-    assert pc.render_fit_png(imaging_fit, tmp_path, dataset_type="imaging", cli=cli) is None
-    assert list(tmp_path.iterdir()) == []
+    cell = _cell(repo)
+    (cell / "fit.png").write_bytes(b"stale")
+    assert pc.render_fit_png(imaging_fit, cell, dataset_type="imaging", cli=cli) is None
+    assert sorted(p.name for p in cell.iterdir()) == ["runtime.json"]
 
 
-def test_a_failed_figure_never_raises_or_leaves_debris(tmp_path, no_smoke, capsys):
-    assert pc.render_fit_png(object(), tmp_path, dataset_type="weak") is None
+def test_a_failed_figure_removes_the_stale_one_and_never_raises(repo, no_smoke, capsys):
+    cell = _cell(repo)
+    (cell / "fit.png").write_bytes(b"stale")
+    assert pc.render_fit_png(object(), cell, dataset_type="imaging") is None
+    assert sorted(p.name for p in cell.iterdir()) == ["runtime.json"]
+    assert "WARNING: [fit.png] NOT RENDERED" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    "folder",
+    [
+        "results/misc/likelihood_breakdown/cluster",  # flat --output-dir folder of HPC submits
+        "results/runtime/imaging/mge/hst",  # legacy folder named verbatim
+        "results/imaging/mge/hst",  # above the setup/host levels
+    ],
+)
+def test_flat_or_legacy_folders_get_no_figure(imaging_fit, repo, no_smoke, folder):
+    out = repo / folder
+    out.mkdir(parents=True)
+    (out / "fit.png").write_bytes(b"other")
+    assert pc.render_fit_png(imaging_fit, out, dataset_type="imaging") is None
+    assert (out / "fit.png").read_bytes() == b"other"
+
+
+def test_outside_the_repo_gets_no_figure(imaging_fit, tmp_path, no_smoke):
+    assert pc.render_fit_png(imaging_fit, tmp_path, dataset_type="imaging") is None
     assert list(tmp_path.iterdir()) == []
-    assert "[fit.png] not rendered" in capsys.readouterr().out
 
 
 def _render_calls(tree):
