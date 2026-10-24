@@ -18,12 +18,11 @@ if str(MISC) not in sys.path:
     sys.path.insert(0, str(MISC))
 
 from likelihood_breakdown import fixed_light_numba_draws_steps as steps  # noqa: E402
-from tooling.results_layout import current  # noqa: E402
 
-MANIFEST = current(
+MANIFEST = (
     ROOT
-    / "results/breakdown/imaging/"
-    / "fixed_light_draws_delaunay_hpc_a100_fp64_fixed_light_draws.json"
+    / "results/imaging/delaunay/hst/jax_gpu_dense_fp64/hpc_a100/light_fixed"
+    / "experiments/draws/breakdown.json"
 )
 
 

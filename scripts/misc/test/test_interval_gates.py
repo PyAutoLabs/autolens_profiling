@@ -61,13 +61,12 @@ from likelihood_breakdown.interval_gates import (  # noqa: E402
     matched_decision_counts,
     memo_policy_family,
 )
-from tooling.results_layout import current, iter_legacy_dir, legacy_glob  # noqa: E402
 
-RESULTS = ROOT / "results/breakdown/imaging"
+RESULTS = ROOT / "results/misc/likelihood_breakdown/imaging"
 MEMO_CELL = ROOT / "scripts/imaging/pixelized/fixed_light_numba_memo_policy.py"
 SCALING_CELL = ROOT / "scripts/imaging/pixelized/fixed_light_numba_scaling.py"
 TRACE_CELL = ROOT / "scripts/imaging/pixelized/fixed_light_trace.py"
-MEMO_ROW = current(
+MEMO_ROW = (
     RESULTS / "fixed_light_numba_memo_policy_delaunay_hpc_ral_cpu_fp64_fixed_light_numba_s5b.json"
 )
 
@@ -365,7 +364,7 @@ def test_c4_status_pass_requires_a_resolved_pass():
 
 
 SCALING_ROWS = [
-    str(p) for p in legacy_glob(RESULTS, "fixed_light_numba_scaling_delaunay_*_n[0-9]*[0-9].json")
+    str(p) for p in sorted(RESULTS.glob("fixed_light_numba_scaling_delaunay_*_n[0-9]*[0-9].json"))
 ]
 
 
@@ -428,8 +427,17 @@ def test_c5_too_few_rounds_and_unpaired_input():
 
 def _logdet_rows():
     rows = {}
-    for path, legacy in iter_legacy_dir(RESULTS, "fixed_light_trace_*logdet*.json", False):
+    # The logdet trace rows live in their mirrored cells' experiments/ (#442); the key keeps
+    # the run's own name: <variant>_<experiment>_<host> (the laptop GPU was an RTX 2060).
+    hosts = {"hpc_a100": "hpc_a100", "local_gpu": "local_rtx2060"}
+    for path in sorted(
+        (ROOT / "results/imaging").glob(
+            "*/hst/jax_gpu_dense_fp64/*/light_fixed/experiments/trace_logdet*/breakdown.json"
+        )
+    ):
         payload = json.loads(path.read_text())
+        variant, host = path.parts[-8], path.parts[-5]
+        name = f"{variant}_{path.parent.name.removeprefix('trace_')}_{hosts[host]}"
 
         def find(node):
             if isinstance(node, dict):
@@ -441,7 +449,7 @@ def _logdet_rows():
                         return found
             return None
 
-        rows[legacy.name.removeprefix("fixed_light_trace_").split("_fp64")[0]] = find(payload)
+        rows[name] = find(payload)
     return rows
 
 

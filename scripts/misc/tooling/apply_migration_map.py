@@ -78,7 +78,7 @@ def plan(root: Path, doc: dict) -> tuple[list[tuple[str, str]], int, list[str]]:
 
 #: Never rewritten: result bytes, generated outputs, and the day-zero map's own tooling.
 #: Tests are excluded too: their literal ``results/...`` paths are mostly fixture trees in
-#: the legacy layout; reads of committed rows go through ``results_layout.current``.
+#: the legacy layout; reads of committed rows name the mirrored path (#442 PR 3).
 REWRITE_SKIP_PREFIXES = (
     "results/",
     "archive/",
@@ -91,7 +91,6 @@ REWRITE_SKIP = (
     MAP_PATH,
     "scripts/misc/tooling/build_migration_map.py",
     "scripts/misc/tooling/apply_migration_map.py",
-    "scripts/misc/tooling/results_layout.py",
 )
 TEXT_SUFFIXES = {".md", ".py", ".sh", ".json", ".yml", ".yaml", ".conf", ".txt", ".toml", ""}
 PATH_CHARS = r"A-Za-z0-9_.+\-"
