@@ -10,6 +10,7 @@
 **Ledger:** [<note>.md](./) — link the ledger file itself
 **Mind contract:** epic `<slug>`; `<PyAutoMind path to prompt or record>`
 **Next:** <next action, or "none">
+**Fit figures:** <cells whose `fit.png` was opened and looked right; any that did not, and why>
 
 ## Why this campaign
 
@@ -26,6 +27,11 @@
 |---|---|---|---|
 
 ## Open / parked / drafts
+
+## Fit figures
+
+Open each new row's `fit.png` before you accept it (`skills/profile_likelihood/reference.md`,
+"Inspect the fit figure"). Note here any cell whose figure looked wrong and what was done.
 
 ## Caveats
 

@@ -48,6 +48,8 @@ class ProfileCLI:
     #: ``--output-path``: the exact result JSON a driver (``likelihood_runtime/sweep.py``) has
     #: already placed; it wins over every other naming rule.
     output_path: Path | None = None
+    #: ``--no-fit-png`` turns this off: the cell's ``fit.png`` (:func:`render_fit_png`).
+    fit_png: bool = True
 
     def parse_cell_args(self, cell_parser: argparse.ArgumentParser, *, argv=None):
         """Finish staged parsing, rejecting flags neither parser understands.
@@ -326,6 +328,18 @@ def _profile_parser() -> argparse.ArgumentParser:
         ),
     )
 
+    parser.add_argument(
+        "--no-fit-png",
+        dest="fit_png",
+        action="store_false",
+        help=(
+            "Do not render the cell's fit.png. By default each cell renders one fit figure "
+            "beside its result JSON, after every timed region, with the plotter the "
+            "autolens_visualization harness uses for the dataset type. Never rendered "
+            "under AUTOLENS_PROFILING_SMOKE."
+        ),
+    )
+
     return parser
 
 
@@ -363,6 +377,7 @@ def parse_profile_cli(default_config_name: str | None = None, *, argv=None) -> P
         source_pixels=int(args.source_pixels) if args.source_pixels is not None else None,
         over_sampling=args.over_sampling,
         output_path=Path(args.output_path).resolve() if args.output_path else None,
+        fit_png=bool(args.fit_png),
     )
 
 
@@ -1087,6 +1102,104 @@ def resolve_output_paths(
     if place or not _in_legacy_results(json_path):
         results_dir.mkdir(parents=True, exist_ok=True)
     return json_path, results_dir / f"{basename}.png"
+
+
+#: The file name every cell's fit figure is kept under, beside its result JSON.
+FIT_PNG = "fit.png"
+
+#: Dataset types :func:`render_fit_png` draws, each with the plotter call the matching
+#: ``autolens_visualization/scripts/<type>/visualization.py`` producer keeps as ``fit.png``:
+#:
+#: - ``imaging``: ``PlotterImaging.fit_imaging`` -> ``subplot_fit`` (the imaging producer's
+#:   ``VisualizerImaging.visualize``);
+#: - ``interferometer``: ``PlotterInterferometer.fit_interferometer`` -> ``subplot_fit`` (the
+#:   interferometer and interferometer_datacube producers' ``VisualizerInterferometer.visualize``;
+#:   a datacube cell passes one channel's fit);
+#: - ``point_source``: ``PlotterPoint.fit_point`` -> point ``subplot_fit`` with the curves of
+#:   ``curves_for_point_fits`` (both point-source producers' ``VisualizerPoint.visualize``);
+#: - ``cluster``: ``PlotterPoint.fit_point_combined`` -> ``plot_fit_positions`` of every source
+#:   (the cluster producer's ``VisualizerPoint.visualize_combined``); ``fit`` is the list of fits.
+#:
+#: Each is called with ``quick_update=True``, the switch that always writes the plain ``fit.png``
+#: whatever ``config/visualize/plots.yaml`` says.
+FIT_PNG_DATASET_TYPES = ("imaging", "interferometer", "point_source", "cluster")
+
+
+def fit_png_enabled(cli: ProfileCLI | None = None) -> bool:
+    """Whether a cell renders its ``fit.png``: never under smoke, else unless ``--no-fit-png``."""
+    if os.environ.get("AUTOLENS_PROFILING_SMOKE"):
+        return False
+    return bool(getattr(cli, "fit_png", True))
+
+
+def _draw_fit(fit, image_path: Path, dataset_type: str, solver=None) -> None:
+    """Write ``image_path/fit.png`` with the viz producer's plotter (see FIT_PNG_DATASET_TYPES)."""
+    if dataset_type == "imaging":
+        from autolens.imaging.model.plotter import PlotterImaging
+
+        PlotterImaging(image_path=image_path).fit_imaging(fit=fit, quick_update=True)
+    elif dataset_type == "interferometer":
+        from autolens.interferometer.model.plotter import PlotterInterferometer
+
+        PlotterInterferometer(image_path=image_path).fit_interferometer(fit=fit, quick_update=True)
+    elif dataset_type in ("point_source", "cluster"):
+        from autolens.point.model.plotter import PlotterPoint
+        from autolens.point.model.visualizer import curves_for_point_fits
+
+        fits = list(fit) if dataset_type == "cluster" else [fit]
+        solver = solver if solver is not None else getattr(fits[0], "solver", None)
+        curves = curves_for_point_fits(fits=fits, solver=solver)
+        plotter = PlotterPoint(image_path=image_path)
+        if dataset_type == "cluster":
+            plotter.fit_point_combined(
+                fit_list=fits, curves=curves, solver=solver, quick_update=True
+            )
+        else:
+            plotter.fit_point(fit=fits[0], quick_update=True, curves=curves)
+    else:
+        raise ValueError(
+            f"no fit.png plotter for dataset_type={dataset_type!r}; "
+            f"expected one of {FIT_PNG_DATASET_TYPES}"
+        )
+
+
+def render_fit_png(
+    fit,
+    cell_dir: Path,
+    *,
+    dataset_type: str,
+    cli: ProfileCLI | None = None,
+    solver=None,
+) -> Path | None:
+    """Render the cell's ``fit.png`` into ``cell_dir`` and return its path (None when skipped).
+
+    Call it after every timed region, with ``cell_dir`` the folder of the placed result JSON
+    (``resolve_output_paths`` / ``place_output_path`` / ``--output-path``), so the figure sits
+    beside the row in the mirrored tree and ``build_catalogue`` attaches it as ``figures[]``.
+    ``fit`` must be an eager (NumPy) fit at the profiled instance. The plotter writes into a
+    temporary folder inside ``cell_dir``; only ``fit.png`` is kept, moved into place with one
+    atomic rename. Skipped under ``AUTOLENS_PROFILING_SMOKE`` and ``--no-fit-png``. Never raises:
+    a figure that fails to draw must not cost the measurement it describes.
+    """
+    import tempfile
+
+    if not fit_png_enabled(cli):
+        return None
+    cell_dir = Path(cell_dir)
+    target = cell_dir / FIT_PNG
+    try:
+        cell_dir.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix=".fit_png_", dir=cell_dir) as tmp:
+            _draw_fit(fit, Path(tmp), dataset_type, solver=solver)
+            written = Path(tmp) / FIT_PNG
+            if not written.is_file():
+                raise FileNotFoundError(f"the {dataset_type} plotter wrote no {FIT_PNG}")
+            os.replace(written, target)
+    except Exception as exc:  # noqa: BLE001 — see the docstring
+        print(f"  [fit.png] not rendered for {cell_dir}: {type(exc).__name__}: {exc}")
+        return None
+    print(f"  [fit.png] {target}")
+    return target
 
 
 def auto_simulate_if_missing(
