@@ -530,8 +530,8 @@ def preset_for(cell_family: str, instrument: str, variant: str = "production"):
 STANDARD_SIZE_REFERENCE_INSTRUMENT = "hst"
 
 #: The standard source-pixel count by numba cell family (human ruling 2026-10-23; the catalogue's
-#: ``STANDARD_SOURCE_PIXELS``): Delaunay 1250 Hilbert vertices (the production construction's
-#: zeroed edge points ride on top and still count as standard), rectangular 35 x 35 = 1225.
+#: ``STANDARD_SOURCE_PIXELS``): Delaunay 1250 Hilbert vertices plus the preset's 30 zeroed edge
+#: points (1280 built, in every standard-size cell), rectangular 35 x 35 = 1225.
 STANDARD_HILBERT_PIXELS = 1250
 STANDARD_RECT_PIXELS_YX = 35
 
@@ -592,19 +592,32 @@ def standard_size_preset(cell_family: str, instrument: str) -> ProductionPreset:
     )
 
 
-def witness_for(preset: ProductionPreset, cold_eval_median_s: float, instrument: str, host_class):
-    """:func:`witness_verdict`, or ``not_applicable`` when ``preset.size_override`` is set.
+def witness_for(
+    preset: ProductionPreset,
+    cold_eval_median_s: float,
+    instrument: str,
+    host_class,
+    mesh_class: str = "delaunay",
+):
+    """:func:`witness_verdict`, or ``not_applicable`` when no production job describes the cell.
 
     The production witness compares a cold eval against the production job of the preset as
-    recorded; a resized or borrowed preset is a different likelihood, so no band applies.
+    recorded, which ran a ``Delaunay`` mesh: a resized or borrowed preset (``size_override``) or
+    a ``DelaunayNN`` mesh (``--mesh-class delaunay_nn``) is a different likelihood, so no band
+    applies.
     """
+    reason = None
     if preset.size_override is not None:
+        reason = f"size_override: {preset.size_override}"
+    elif mesh_class == "delaunay_nn":
+        reason = "mesh_class delaunay_nn: the production job ran a Delaunay mesh"
+    if reason is not None:
         return {
             "verdict": "not_applicable",
             "instrument": instrument,
             "host_class": host_class,
             "measured_cold_eval_median_s": cold_eval_median_s,
-            "reason": f"size_override: {preset.size_override}",
+            "reason": reason,
         }
     return witness_verdict(cold_eval_median_s, instrument, host_class)
 
@@ -649,7 +662,9 @@ def adapt_image_capped(adapt_image, preset: ProductionPreset):
     )
 
 
-def apply_production_over_sampling(dataset, adapt_image, preset: ProductionPreset):
+def apply_production_over_sampling(
+    dataset, adapt_image, preset: ProductionPreset, sparse_operator: bool = True
+):
     """Apply both over-sampling maps, then re-apply the sparse CPU operator.
 
     Order matters and is production's: the light-profile radial bins go on
@@ -694,7 +709,8 @@ def apply_production_over_sampling(dataset, adapt_image, preset: ProductionPrese
         over_sample_size_pixelization=over_sample_size_pixelization,
     )
 
-    return dataset.apply_sparse_operator_cpu()
+    # The JAX standard-size cells pass sparse_operator=False and apply their own JAX operator.
+    return dataset.apply_sparse_operator_cpu() if sparse_operator else dataset
 
 
 # ---------------------------------------------------------------------------
@@ -972,7 +988,9 @@ def adapt_images_for(instance, image_plane_mesh_grid=None, adapt_image=None):
 # ---------------------------------------------------------------------------
 
 
-def analysis_settings(preset: ProductionPreset, memo: str) -> tuple[Any, dict[str, Any]]:
+def analysis_settings(
+    preset: ProductionPreset, memo: str, use_mixed_precision: bool = False
+) -> tuple[Any, dict[str, Any]]:
     """``(al.Settings, provenance)`` with the NNLS memo explicitly controlled.
 
     Belt and braces: the memo is turned off both through
@@ -997,6 +1015,8 @@ def analysis_settings(preset: ProductionPreset, memo: str) -> tuple[Any, dict[st
         kwargs["nnls_warm_start_memo"] = True
         os.environ.pop("AUTOARRAY_NNLS_WARM_START", None)
 
+    if use_mixed_precision:  # the JAX standard-size cells' --use-mixed-precision
+        kwargs["use_mixed_precision"] = True
     settings = al.Settings(**kwargs)
 
     provenance = {
@@ -1151,3 +1171,187 @@ def witness_verdict(
         "verdict": verdict,
         "reason": reason,
     }
+
+
+# ---------------------------------------------------------------------------
+# The production cell model: one definition for the numba cells and the JAX
+# standard-size cells (likelihood-lifecycle 2a, human ruling N1 on #456)
+# ---------------------------------------------------------------------------
+
+#: The production cell families and the likelihood variants they build.
+STANDARD_FAMILY = {
+    "delaunay": "delaunay_numba",
+    "delaunay_nn": "delaunay_numba",
+    "rectangular": "pixelization_numba",
+}
+
+
+def production_image_mesh_grid(dataset, adapt_image, preset: ProductionPreset, mask_radius: float):
+    """The preset's Hilbert image-plane mesh plus its zeroed circle-edge points.
+
+    Production appends ``edge_pixels`` points on the mask edge and zeroes exactly those vertices,
+    so the reconstruction cannot put flux outside the data (Euclid initial_lens_model.py:448-455;
+    subhalo delaunay_adapt_split.py:49-56). ``adapt_image`` is the (capped) source adapt image.
+    """
+    import autolens as al
+
+    image_mesh = al.image_mesh.Hilbert(
+        pixels=preset.hilbert_pixels,
+        weight_power=preset.hilbert_weight_power,
+        weight_floor=preset.hilbert_weight_floor,
+    )
+    grid = image_mesh.image_plane_mesh_grid_from(mask=dataset.mask, adapt_data=adapt_image)
+    if preset.edge_pixels:
+        grid = al.image_mesh.append_with_circle_edge_points(
+            image_plane_mesh_grid=grid,
+            centre=dataset.mask.mask_centre,
+            radius=mask_radius + dataset.mask.pixel_scale / 2.0,
+            n_points=preset.edge_pixels,
+        )
+    return grid
+
+
+def production_mesh(preset: ProductionPreset, *, n_vertices: int | None = None, mesh_class=None):
+    """The source mesh: ``mesh_class`` (default ``al.mesh.Delaunay``) over ``n_vertices`` with the
+    preset's edge points zeroed, or — rectangular presets — ``mesh_class(shape=(n, n))`` at the
+    preset's side (the numba cells pass ``rect_mesh_classes(cli)[0]``)."""
+    import autolens as al
+
+    if preset.mesh_kind == "delaunay":
+        cls = mesh_class or al.mesh.Delaunay
+        return cls(pixels=int(n_vertices), zeroed_pixels=preset.edge_pixels)
+    return mesh_class(shape=(preset.rect_pixels_yx, preset.rect_pixels_yx))
+
+
+def production_model(preset: ProductionPreset, mask_radius: float, mesh, regularization=None):
+    """The cell model: the preset's MGE lens light, Isothermal + shear mass, and a source
+    pixelization of ``mesh`` with ``regularization`` (default :func:`regularization_model`, made
+    here after the lens priors: the production priors on a free coefficient). Pass only a fixed
+    regularization instance (no priors), e.g. the legacy Delaunay ``--regularization`` choice."""
+    import autofit as af
+    import autolens as al
+
+    # Construction order is part of the model: PyAutoFit orders a unit vector by prior creation,
+    # so the seeded iid draws only land on the same parameters if the MGE, mass, shear and
+    # regularization priors are made in this order (the numba cells' historic order).
+    lens_bulge = mge_lens_bulge(preset, mask_radius=mask_radius)
+    mass = af.Model(al.mp.Isothermal)
+    mass.centre.centre_0 = af.GaussianPrior(mean=0.0, sigma=0.005)
+    mass.centre.centre_1 = af.GaussianPrior(mean=0.0, sigma=0.005)
+    mass.einstein_radius = af.GaussianPrior(mean=1.6, sigma=0.05)
+    ell = al.convert.ell_comps_from(axis_ratio=0.9, angle=45.0)
+    mass.ell_comps.ell_comps_0 = af.GaussianPrior(mean=ell[0], sigma=0.01)
+    mass.ell_comps.ell_comps_1 = af.GaussianPrior(mean=ell[1], sigma=0.01)
+
+    shear = af.Model(al.mp.ExternalShear)
+    shear.gamma_1 = af.GaussianPrior(mean=0.05, sigma=0.005)
+    shear.gamma_2 = af.GaussianPrior(mean=0.05, sigma=0.005)
+
+    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass)
+    field = af.Model(al.MassField, redshift=0.5, shear=shear)
+    if regularization is None:
+        regularization = regularization_model(preset)
+    if isinstance(regularization, af.Model):
+        pixelization = af.Model(al.Pixelization, mesh=mesh, regularization=regularization)
+    else:
+        pixelization = al.Pixelization(mesh=mesh, regularization=regularization)
+    source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
+    return af.Collection(galaxies=af.Collection(lens=lens, source=source), fields=field)
+
+
+def standard_jax_dataset(dataset, adapt_image, preset: ProductionPreset, sparse_batch_size=None):
+    """``(dataset, capped adapt image, over-sampling record)`` for a JAX standard-size cell.
+
+    Exactly the numba cells' data preparation (:func:`adapt_image_capped`, then
+    :func:`apply_production_over_sampling` on the capped image) without the CPU sparse operator;
+    ``sparse_batch_size`` applies the JAX w-tilde operator instead (``--sparse``).
+    """
+    capped = adapt_image_capped(adapt_image, preset)
+    dataset = apply_production_over_sampling(dataset, capped, preset, sparse_operator=False)
+    if sparse_batch_size:
+        dataset = dataset.apply_sparse_operator(batch_size=int(sparse_batch_size))
+    config = preset.as_json()
+    record = {
+        "over_sampling_preset": preset.name,
+        "over_sample_size_lp_rule": config["over_sample_size_lp_rule"],
+        "over_sample_size_pixelization_rule": config["over_sample_size_pixelization_rule"],
+    }
+    return dataset, capped, record
+
+
+def standard_jax_cell(
+    variant: str,
+    instrument: str,
+    *,
+    dataset,
+    adapt_image,
+    dataset_path,
+    mask_radius: float,
+    memo: str = "off",
+    use_mixed_precision: bool = False,
+    rect_mesh_cls=None,
+):
+    """Everything a JAX standard-size cell takes from the production preset, built once.
+
+    ``dataset`` must already carry the cell's over-sampling (:func:`standard_jax_dataset`) and
+    ``adapt_image`` be the capped one. Returns a dict: ``preset``, ``image_plane_mesh_grid``
+    (Delaunay family, else None), ``n_source_pixels``, ``model``, ``instance`` (the first draw of
+    the preset's seeded iid sequence — the numba cells' instance 0), ``settings``,
+    ``memo_provenance``, ``positions_likelihood_list``, ``reg_scheme``, ``reg_provenance`` and
+    ``record`` (what the row stores as ``configuration.production_preset``).
+    """
+    import autolens as al
+
+    preset = standard_size_preset(STANDARD_FAMILY[variant], instrument)
+    if preset.mesh_kind == "delaunay":
+        grid = production_image_mesh_grid(dataset, adapt_image, preset, mask_radius)
+        n_source_pixels = int(grid.shape[0])
+        mesh_cls = al.mesh.DelaunayNN if variant == "delaunay_nn" else al.mesh.Delaunay
+        mesh = production_mesh(preset, n_vertices=n_source_pixels, mesh_class=mesh_cls)
+    else:
+        grid = None
+        n_source_pixels = preset.rect_pixels_yx**2
+        mesh = production_mesh(preset, mesh_class=rect_mesh_cls)
+    model = production_model(preset, mask_radius, mesh)
+    instance = iid_instances(model, 1, preset)[0]
+    settings, memo_provenance = analysis_settings(
+        preset, memo, use_mixed_precision=use_mixed_precision
+    )
+    positions = positions_likelihood(
+        preset,
+        dataset_path=dataset_path,
+        tracer=al.Tracer(galaxies=list(instance.galaxies), fields=[instance.fields]),
+    )
+    record = {**preset.as_json(), "instance": "iid draw 0 of the preset sequence (seeded)"}
+    return {
+        "preset": preset,
+        "image_plane_mesh_grid": grid,
+        "n_source_pixels": n_source_pixels,
+        "model": model,
+        "instance": instance,
+        "settings": settings,
+        "memo_provenance": memo_provenance,
+        "positions_likelihood_list": [positions] if positions is not None else None,
+        "reg_scheme": preset.regularization,
+        "reg_provenance": preset.as_json()["regularization"],
+        "record": record,
+    }
+
+
+def numpy_dense_reference(dataset, adapt_images, instance, **analysis_kwargs) -> float:
+    """The parity reference: the eager NumPy dense-mapping log-likelihood of ``instance``.
+
+    ``al.AnalysisImaging(use_jax=False)`` on :func:`numpy_dense_twin` of the cell's dataset, with
+    the cell analysis's own ``settings`` / ``positions_likelihood_list``: independent of the
+    cell's sparse operator (numba or JAX w-tilde), so a sparse cell's algorithm is checked too
+    (human ruling (c) on #456).
+    """
+    import autolens as al
+
+    analysis = al.AnalysisImaging(
+        dataset=numpy_dense_twin(dataset),
+        adapt_images=adapt_images,
+        use_jax=False,
+        **analysis_kwargs,
+    )
+    return float(analysis.log_likelihood_function(instance=instance))

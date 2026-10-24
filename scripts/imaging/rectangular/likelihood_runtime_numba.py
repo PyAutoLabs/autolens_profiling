@@ -117,6 +117,9 @@ from _production_config import (  # noqa: E402
     numpy_dense_twin,
     positions_likelihood,
     preset_for,
+    production_image_mesh_grid,
+    production_mesh,
+    production_model,
     regularization_model,
     standard_size_preset,
     timing_summary,
@@ -255,44 +258,11 @@ mesh_pixels_yx = preset.rect_pixels_yx
 mesh_shape = (mesh_pixels_yx, mesh_pixels_yx)
 
 with timer.section("model_build"):
-    # Linear MGE lens light — enters the inversion as linear-func columns
-    # alongside the source-pixel columns, as in the production stages where the
-    # LP-stage MGE rides through as a frozen instance. Basis structure matters,
-    # not just the Gaussian count: production is 20x2 (Euclid) / 30x2 (subhalo),
-    # the pre-2026-09-08 cell was 60x1.
-    lens_bulge = mge_lens_bulge(preset, mask_radius=mask_radius)
-
-    mass = af.Model(al.mp.Isothermal)
-    mass.centre.centre_0 = af.GaussianPrior(mean=0.0, sigma=0.005)
-    mass.centre.centre_1 = af.GaussianPrior(mean=0.0, sigma=0.005)
-    mass.einstein_radius = af.GaussianPrior(mean=1.6, sigma=0.05)
-    _lens_mass_ell = al.convert.ell_comps_from(axis_ratio=0.9, angle=45.0)
-    mass.ell_comps.ell_comps_0 = af.GaussianPrior(mean=_lens_mass_ell[0], sigma=0.01)
-    mass.ell_comps.ell_comps_1 = af.GaussianPrior(mean=_lens_mass_ell[1], sigma=0.01)
-
-    shear = af.Model(al.mp.ExternalShear)
-    shear.gamma_1 = af.GaussianPrior(mean=0.05, sigma=0.005)
-    shear.gamma_2 = af.GaussianPrior(mean=0.05, sigma=0.005)
-
-    lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass)
-    field = af.Model(al.MassField, redshift=0.5, shear=shear)
-
-    # Production samples the regularization coefficients, so `regularization`
-    # comes back as a free `af.Model` under `--variant production` and as the
-    # historic fixed instance under `--variant legacy`. A free regularization
-    # has to ride inside an `af.Model(al.Pixelization)` for its priors to reach
-    # the model.
-    regularization = regularization_model(preset)
-    mesh = rect_mesh_classes(_cli)[0](shape=mesh_shape)
-
-    if isinstance(regularization, af.Model):
-        pixelization = af.Model(al.Pixelization, mesh=mesh, regularization=regularization)
-    else:
-        pixelization = al.Pixelization(mesh=mesh, regularization=regularization)
-
-    source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
-
-    model = af.Collection(galaxies=af.Collection(lens=lens, source=source), fields=field)
+    # The cell model: the preset's MGE lens light, Isothermal + shear mass and this source
+    # pixelization, from the one definition the JAX standard-size cells share
+    # (_production_config.production_model; human ruling N1 on #456).
+    mesh = production_mesh(preset, mesh_class=rect_mesh_classes(_cli)[0])
+    model = production_model(preset, mask_radius, mesh)
 
 print(f"  Total free parameters: {model.total_free_parameters}")
 
