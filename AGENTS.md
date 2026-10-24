@@ -31,8 +31,9 @@ scripts/
                         misc/likelihood_runtime/ (sweep.py + aggregate.py + README dashboard),
                         misc/vram/ (A100 vmap batch-size table), misc/simulators/,
                         misc/latent/, misc/jax_compile/, misc/wall/,
-                        misc/pipeline_resume/, misc/test/, misc/tooling/ (build_readme.py +
-                        build_baseline.py)
+                        misc/pipeline_resume/, misc/tooling/ (build_readme.py +
+                        build_baseline.py). Each group keeps its tests in misc/<group>/test/
+                        (run all: pytest scripts/misc/*/test -q)
 _profile_cli.py         Shared CLI/JSON/auto-simulate helper imported by every per-cell script
 _adapt_image_util.py    Shared adapt-image helper
 instruments/            Instrument definitions (pixel scale, shape) used to frame results
