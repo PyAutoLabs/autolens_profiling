@@ -857,9 +857,10 @@ def planned_baseline_cells(reg):
     """{(dataset_type, variant, instrument)} of the registry's planned baseline cells."""
     cells = set()
     for cell in reg["cells"]:
-        if not text(cell.get("instrument")):
+        instrument = cell.get("instrument") or lc.DEFAULT_INSTRUMENTS.get(cell["dataset"])
+        if not text(instrument):
             raise ValueError(f"v3 planned cell needs an instrument: {cell['id']}")
-        cells.add((cell["dataset"], cell["model"], cell["instrument"]))
+        cells.add((cell["dataset"], cell["model"], instrument))
     return cells
 
 

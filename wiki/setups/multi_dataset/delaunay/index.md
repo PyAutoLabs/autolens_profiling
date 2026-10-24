@@ -12,7 +12,7 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 
 [Shared and uncategorized findings](../../findings.md)
 
-## hst
+## unspecified
 
 | Exact configuration | Evidence source | Records |
 |---|---|---|

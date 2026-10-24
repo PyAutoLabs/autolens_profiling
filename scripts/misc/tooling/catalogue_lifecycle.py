@@ -56,6 +56,15 @@ SETUP_RE = re.compile(
     r"^(?P<backend>numba|jax)_(?P<device>cpu|gpu)_(?P<operator>dense|sparse|na)_"
     r"(?P<precision>fp64|mixed)(?:_(?P<transformer>dft|nufft|wtilde|streaming))?$"
 )
+#: v3 keys need an instrument; a registry cell declared instrument-independent is keyed by the
+#: instrument folder its scripts write (point sources and clusters: ``simple``; the
+#: multi-dataset cell defaults to ``hst``).
+DEFAULT_INSTRUMENTS = {
+    "point_source_image": "simple",
+    "point_source_source": "simple",
+    "cluster": "simple",
+    "multi_dataset": "hst",
+}
 #: The human's standard source-pixel counts (2026-10-23), by likelihood variant.
 STANDARD_SOURCE_PIXELS = {"delaunay": 1250, "delaunay_nn": 1250, "rectangular": 35 * 35}
 #: Headline metric per measurement, in preference order (the adapter's metric names).

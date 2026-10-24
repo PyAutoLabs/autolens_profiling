@@ -229,25 +229,25 @@
       "id": "point_source_image/image_plane/unspecified",
       "dataset": "point_source_image",
       "model": "image_plane",
-      "instrument": "simple"
+      "instrument": null
     },
     {
       "id": "point_source_source/source_plane/unspecified",
       "dataset": "point_source_source",
       "model": "source_plane",
-      "instrument": "simple"
+      "instrument": null
     },
     {
       "id": "cluster/image_plane/unspecified",
       "dataset": "cluster",
       "model": "image_plane",
-      "instrument": "simple"
+      "instrument": null
     },
     {
       "id": "multi_dataset/delaunay/unspecified",
       "dataset": "multi_dataset",
       "model": "delaunay",
-      "instrument": "hst"
+      "instrument": null
     }
   ],
   "devices": [

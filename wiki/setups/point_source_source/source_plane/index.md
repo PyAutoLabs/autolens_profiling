@@ -16,7 +16,6 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 
 | Exact configuration | Evidence source | Records |
 |---|---|---|
-| [baseline-not-defined](511bc29f3a7e0405fe52.md) | planned; no evidence | 0 |
 | [1b26d0c1ba15bdfed7db](e7ab869a56e4fbee4b27.md) | results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/runtime.json | 4 |
 | [2f605473881c049c49cd](8514d9b281c27f84b168.md) | results/point_source_source/source_plane/simple/jax_cpu_na_fp64/local_laptop/breakdown.json | 84 |
 | [4775d03652d5402261c7](52f5164e10defb6b7518.md) | results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/breakdown.json | 84 |
@@ -27,5 +26,6 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 
 | Exact configuration | Evidence source | Records |
 |---|---|---|
+| [baseline-not-defined](511bc29f3a7e0405fe52.md) | planned; no evidence | 0 |
 | [09b25f1ee1bb0058ae87](12109da0b0413d57fbc1.md) | archive/2026/07/hostless_summaries/runtime/point_source_source/source_plane_solved/source_plane_solved_summary_v2026.7.23.1.json | 3 |
 
