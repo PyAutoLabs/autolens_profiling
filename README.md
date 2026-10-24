@@ -71,17 +71,30 @@ _(median)_: the steady median (>= 5 warm calls, median of individually timed cal
 |------|------------|-------|------|----------------|----------------|--------------------|
 | `cluster/image_plane` | — | _not recorded_ | local_cpu_fp64 | dense (mapping) | 4.81 s | v2026.8.17.1 |
 | `cluster/image_plane` | — | _not recorded_ | hpc_ral_cpu_fp64 | dense (mapping) | 4.53 s | v2026.8.17.1 |
+| `cluster/source_plane` | — | _not recorded_ | local_cpu_fp64 | dense (mapping) | 4.5 ms | v2026.7.23.1 (archived) |
 | `datacube/delaunay` | alma_high | _not recorded_ | hpc_a100_fp64 | dense (mapping) | — | v2026.7.6.649 |
 | `datacube/delaunay` | alma_high | _not recorded_ | hpc_a100_mp | dense (mapping) | — | v2026.7.6.649 |
+| `datacube/inversion` | alma_high | _not recorded_ | hpc_a100_fp64 | dense (mapping) | — | v2026.7.6.649 |
+| `datacube/inversion` | alma_high | _not recorded_ | hpc_a100_mp | dense (mapping) | — | v2026.7.6.649 |
 | `imaging/delaunay` | hst | `jax_gpu_dense_fp64` | hpc_a100 | dense (mapping) | 67.5 ms | v2026.8.17.1 |
 | `imaging/delaunay` | hst | `jax_gpu_dense_mixed` | hpc_a100 | dense (mapping) | 96.8 ms | v2026.7.6.649 |
 | `imaging/delaunay` | hst | `jax_gpu_sparse_fp64` | hpc_a100 | sparse (w-tilde) | 73.7 ms | v2026.8.17.1 |
 | `imaging/delaunay` | hst | `jax_gpu_sparse_mixed` | hpc_a100 | sparse (w-tilde) | 95.5 ms | v2026.7.6.649 |
+| `imaging/delaunay` | hst | _not recorded_ | local_cpu_fp64 | dense (mapping) | 3.34 s | v2026.8.17.1 (archived) |
+| `imaging/delaunay` | hst | _not recorded_ | local_cpu_fp64 | sparse (w-tilde) | 8.81 s | v2026.7.6.649 (archived) |
 | `imaging/delaunay/light_fixed` | hst | `jax_gpu_dense_fp64` | hpc_a100 | dense (mapping) | — | v2026.8.17.1 |
 | `imaging/delaunay_nn` | hst | `jax_gpu_dense_fp64` | hpc_a100 | dense (mapping) | 74.9 ms | v2026.8.17.1 |
 | `imaging/delaunay_nn` | hst | `jax_gpu_sparse_fp64` | hpc_a100 | sparse (w-tilde) | 84.7 ms | v2026.8.17.1 |
+| `imaging/delaunay_nn` | hst | _not recorded_ | local_cpu_fp64 | dense (mapping) | 4.49 s | v2026.8.17.1 (archived) |
 | `imaging/delaunay_nn/light_fixed` | hst | `jax_gpu_dense_fp64` | hpc_a100 | dense (mapping) | — | v2026.8.17.1 |
+| `imaging/delaunay_numba` | euclid | _not recorded_ | local_cpu_fp64 | sparse (numba) | 255.0 ms | v2026.8.17.1 (archived) |
+| `imaging/delaunay_numba` | hst | _not recorded_ | local_cpu_fp64 | sparse (numba) | 2.04 s | v2026.8.17.1 (archived) |
 | `imaging/mge` | hst | `jax_gpu_dense_fp64` | hpc_a100 | dense (mapping) | 7.8 ms | v2026.7.6.649 |
+| `imaging/mge` | hst | _not recorded_ | local_cpu_fp64 | dense (mapping) | 40.3 ms | v2026.8.17.1 (archived) |
+| `imaging/pixelization` | hst | _not recorded_ | local_cpu_fp64 | dense (mapping) | 3.40 s | v2026.8.17.1 (archived) |
+| `imaging/pixelization` | hst | _not recorded_ | local_cpu_fp64 | sparse (w-tilde) | 10.17 s | v2026.7.6.649 (archived) |
+| `imaging/pixelization_numba` | euclid | _not recorded_ | local_cpu_fp64 | sparse (numba) | 611.9 ms | v2026.8.17.1 (archived) |
+| `imaging/pixelization_numba` | hst | _not recorded_ | local_cpu_fp64 | sparse (numba) | 1.30 s | v2026.8.17.1 (archived) |
 | `imaging/rectangular` | hst | `jax_gpu_dense_fp64` | hpc_a100 | dense (mapping) | 60.0 ms | v2026.8.17.1 |
 | `imaging/rectangular` | hst | `jax_gpu_dense_mixed` | hpc_a100 | dense (mapping) | 56.4 ms | v2026.7.6.649 |
 | `imaging/rectangular` | hst | `jax_gpu_sparse_fp64` | hpc_a100 | sparse (w-tilde) | 70.8 ms | v2026.8.17.1 |
@@ -106,6 +119,15 @@ _(median)_: the steady median (>= 5 warm calls, median of individually timed cal
 | `interferometer/delaunay` | sma | `numba_cpu_sparse_fp64_wtilde` | hpc_ral_cpu | sparse (numba) | 278.9 ms | v2026.8.17.1 |
 | `interferometer/delaunay` | sma | `jax_gpu_sparse_fp64_wtilde` | hpc_a100 | sparse (w-tilde) | 33.9 ms | v2026.8.17.1 |
 | `interferometer/delaunay` | sma | `jax_gpu_sparse_mixed_wtilde` | hpc_a100 | sparse (w-tilde) | 33.6 ms | v2026.8.17.1 |
+| `interferometer/delaunay_numba_direct_conv` | alma | _not recorded_ | local_cpu_fp64 | sparse (numba) | 1.80 s | v2026.8.17.1 (archived) |
+| `interferometer/delaunay_numba_direct_conv` | sma | _not recorded_ | local_cpu_fp64 | sparse (numba) | 378.2 ms | v2026.8.17.1 (archived) |
+| `interferometer/delaunay_numba_jax` | alma | _not recorded_ | local_cpu_fp64 | sparse (w-tilde) | 3.28 s | v2026.8.17.1 (archived) |
+| `interferometer/delaunay_numba_jax` | sma | _not recorded_ | local_cpu_fp64 | sparse (w-tilde) | 727.7 ms | v2026.8.17.1 (archived) |
+| `interferometer/delaunay_numba_reference` | alma | _not recorded_ | local_cpu_fp64 | sparse (numba) | 4.54 s | v2026.8.17.1 (archived) |
+| `interferometer/delaunay_numba_reference` | sma | _not recorded_ | local_cpu_fp64 | sparse (numba) | 535.9 ms | v2026.8.17.1 (archived) |
+| `interferometer/delaunay_numba_source_loop` | sma | _not recorded_ | local_cpu_fp64 | sparse (numba) | 461.7 ms | v2026.8.17.1 (archived) |
+| `interferometer/delaunay_numba_symmetric` | sma | _not recorded_ | local_cpu_fp64 | sparse (numba) | 443.1 ms | v2026.8.17.1 (archived) |
+| `interferometer/delaunay_numba_two_stage` | sma | _not recorded_ | local_cpu_fp64 | sparse (numba) | 388.7 ms | v2026.8.17.1 (archived) |
 | `interferometer/mge` | alma | `jax_cpu_dense_fp64_nufft` | local_laptop | dense (mapping) | 41.19 s | v2026.8.17.1 |
 | `interferometer/mge` | alma | `jax_cpu_sparse_fp64_wtilde` | local_laptop | sparse (w-tilde) | 32.7 ms | v2026.8.17.1 |
 | `interferometer/mge` | alma | `jax_gpu_dense_fp64_nufft` | hpc_a100 | dense (mapping) | 943.2 ms | v2026.8.17.1 |
@@ -122,6 +144,16 @@ _(median)_: the steady median (>= 5 warm calls, median of individually timed cal
 | `interferometer/mge` | sma | `jax_cpu_dense_fp64_nufft` | local_laptop | dense (mapping) | 84.0 ms | v2026.8.17.1 |
 | `interferometer/mge` | sma | `jax_cpu_sparse_fp64_wtilde` | local_laptop | sparse (w-tilde) | 11.8 ms | v2026.8.17.1 |
 | `interferometer/mge` | sma | `jax_gpu_dense_fp64_nufft` | hpc_a100 | dense (mapping) | 856.2 ms | v2026.8.17.1 |
+| `interferometer/mge_dft` | sma | _not recorded_ | local_cpu_fp64 | dense (mapping) | 32.9 ms | v2026.8.17.1 (archived) |
+| `interferometer/pixelization_numba_direct_conv` | alma | _not recorded_ | local_cpu_fp64 | sparse (numba) | 1.76 s | v2026.8.17.1 (archived) |
+| `interferometer/pixelization_numba_direct_conv` | sma | _not recorded_ | local_cpu_fp64 | sparse (numba) | 184.5 ms | v2026.8.17.1 (archived) |
+| `interferometer/pixelization_numba_jax` | alma | _not recorded_ | local_cpu_fp64 | sparse (w-tilde) | 2.28 s | v2026.8.17.1 (archived) |
+| `interferometer/pixelization_numba_jax` | sma | _not recorded_ | local_cpu_fp64 | sparse (w-tilde) | 584.6 ms | v2026.8.17.1 (archived) |
+| `interferometer/pixelization_numba_reference` | alma | _not recorded_ | local_cpu_fp64 | sparse (numba) | 7.31 s | v2026.8.17.1 (archived) |
+| `interferometer/pixelization_numba_reference` | sma | _not recorded_ | local_cpu_fp64 | sparse (numba) | 480.5 ms | v2026.8.17.1 (archived) |
+| `interferometer/preload` | alma | _not recorded_ | local_cpu_fp64 | sparse (numba) | — | v2026.8.17.1 (archived) |
+| `interferometer/preload` | alma_high | _not recorded_ | local_cpu_fp64 | sparse (numba) | — | v2026.8.17.1 (archived) |
+| `interferometer/preload` | sma | _not recorded_ | local_cpu_fp64 | sparse (numba) | — | v2026.8.17.1 (archived) |
 | `interferometer/rectangular` | alma | `jax_cpu_sparse_fp64_wtilde` | local_laptop | sparse (w-tilde) | 3.69 s | v2026.8.17.1 |
 | `interferometer/rectangular` | alma | `jax_cpu_sparse_fp64_wtilde` | hpc_ral_cpu | sparse (w-tilde) | 2.43 s | v2026.8.17.1 |
 | `interferometer/rectangular` | alma | `numba_cpu_sparse_fp64_wtilde` | hpc_ral_cpu | sparse (numba) | 1.83 s | v2026.8.17.1 |

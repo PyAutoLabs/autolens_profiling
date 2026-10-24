@@ -88,3 +88,36 @@ def test_archived_artifacts_are_labelled(tmp_path, monkeypatch):
         ("simulators", "v2026.10.1.1"),
         ("simulators", "v2026.5.14.2 (archived)"),
     ]
+
+
+def test_published_rows_without_a_v3_cell_stay_listed_archived_ones_labelled(tmp_path):
+    results = tmp_path / "results"
+    archive = tmp_path / "archive/2026/08/hostless_summaries/breakdown/imaging"
+    # an archived group with no newer release anywhere: listed, labelled archived
+    _write(archive / "mge_breakdown_hst_v2026.8.17.1.json", {"total_step_by_step": 0.04})
+    # an archived release superseded by a newer one the map moved into a mirrored cell
+    _write(archive / "delaunay_breakdown_hst_v2026.7.6.649.json", {"total_step_by_step": 9.0})
+    cell = results / "imaging/delaunay/hst/jax_cpu_dense_fp64/local_laptop/breakdown.json"
+    _write(cell, {"autolens_version": "2026.8.17.1", "total_step_by_step": 3.3})
+    _write(
+        tmp_path / "catalogue/migration_day_zero.json",
+        {
+            "entries": [
+                {
+                    "old": "results/breakdown/imaging/delaunay_breakdown_hst_v2026.8.17.1.json",
+                    "new": cell.relative_to(tmp_path).as_posix(),
+                }
+            ]
+        },
+    )
+    # a current row with no derivable cell (results/misc/likelihood_breakdown/): plain
+    _write(
+        results / "misc/likelihood_breakdown/datacube/inversion_hpc_a100_mp.json",
+        {"autolens_version": "2026.7.6.649", "instrument": "alma_high"},
+    )
+    rows = br._legacy_breakdown_rows(results)
+    labels = sorted((r.cell, r.host, r.version_label) for r in rows)
+    assert labels == [
+        ("datacube/inversion", "hpc_a100_mp", "v2026.7.6.649"),
+        ("imaging/mge", "local_cpu_fp64", "v2026.8.17.1 (archived)"),
+    ]

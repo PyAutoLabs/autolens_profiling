@@ -19,7 +19,11 @@ This script:
   1. Reads the mirrored results tree natively (autolens_profiling#442,
      `results/README.md`), keyed on the v3 identity the catalogue builder uses:
      - breakdown rows: every current `results/<dataset_type>/<variant>/
-       <instrument>/<setup_id>/<host_class>[/<model_variant>]/breakdown.json`;
+       <instrument>/<setup_id>/<host_class>[/<model_variant>]/breakdown.json`,
+       then every published row with no v3 cell, latest per pre-move group,
+       read where the move put it under the name it kept: unresolved rows in
+       `results/breakdown/`, `results/misc/likelihood_breakdown/` and
+       `archive/YYYY/MM/<slug>/breakdown/` (labelled archived);
      - sweep comparisons: `results/<dataset_type>/<variant>/<instrument>/
        comparison.json` (written by `likelihood_runtime/aggregate.py`) and the
        cells with no derivable v3 identity under
@@ -60,7 +64,7 @@ import math
 import re
 import sys
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Optional
 
@@ -237,10 +241,20 @@ class BreakdownRow:
     setup: str | None
     host: str
     sparse: bool
+    #: The release the row's file name records (versioned artifacts); else read from the JSON.
+    version: str | None = None
+    archived: bool = False
 
     @property
     def data(self) -> dict:
         return json.loads(self.path.read_text())
+
+    @property
+    def version_label(self) -> str:
+        version = self.version or self.data.get("autolens_version")
+        if not version:
+            return "—"
+        return f"v{version}" + (" (archived)" if self.archived else "")
 
 
 #: Host order in the table (the laptop first, the reference hosts last, as CONFIG_ORDER).
@@ -266,28 +280,91 @@ def _scan_breakdown_rows(results_root: Path = RESULTS_ROOT) -> list[BreakdownRow
                 sparse=f["setup"]["operator"] == "sparse",
             )
         )
-    unresolved = results_root / "breakdown"
-    for p in sorted(unresolved.rglob("*.json")) if unresolved.is_dir() else []:
-        m = ARTIFACT_RE.match(p.name) or CONFIG_TAGGED_RE.match(p.name)
+    return rows + _legacy_breakdown_rows(results_root)
+
+
+def _legacy_breakdown_artifact(path: Path, rel: tuple[str, ...]):
+    """``(group, version, row)`` of a breakdown file under its pre-move name ``rel``.
+
+    ``path`` is where the file lives now; ``rel`` its path below the old ``results/breakdown/``
+    (whose last part is the name the grammar reads); the grammar is the pre-move
+    table's (versioned ``*_breakdown_*_v<version>`` artifacts, config-tagged rows with an
+    ``autolens_version``), grouped as it grouped them.
+    """
+    name = rel[-1]
+    m = ARTIFACT_RE.match(name)
+    config, version = "local_cpu_fp64", None
+    if m is not None:
+        if m["purpose"] != "breakdown":
+            return None
+        version, instrument = m["version"], m["extra"]
+    else:
+        m = CONFIG_TAGGED_RE.match(name)
         if m is None:
-            continue
+            return None
         try:
-            payload = json.loads(p.read_text())
+            payload = json.loads(path.read_text())
+            version = str(payload.get("autolens_version", ""))
+            _parse_version(version)
         except (OSError, ValueError):
-            continue
-        folder = "/".join(p.parent.relative_to(unresolved).parts)
-        instrument = m.groupdict().get("extra") or payload.get("instrument")
-        rows.append(
-            BreakdownRow(
-                path=p,
-                cell=f"{folder}/{m['script']}",
-                instrument=instrument if isinstance(instrument, str) else None,
-                setup=None,
-                host=m.groupdict().get("config") or "local_cpu_fp64",
-                sparse=bool(m["sparse"]),
-            )
-        )
-    return rows
+            return None
+        config, instrument = m["config"], payload.get("instrument")
+    instrument = instrument if isinstance(instrument, str) else None
+    subfolder = rel[0] if len(rel) > 1 else ""
+    group = (subfolder, m["script"], instrument, bool(m["sparse"]), config)
+    row = BreakdownRow(
+        path=path,
+        cell=f"{subfolder}/{m['script']}",
+        instrument=instrument,
+        setup=None,
+        host=config,
+        sparse=bool(m["sparse"]),
+        version=version,
+    )
+    return group, _parse_version(version), row
+
+
+def _legacy_breakdown_rows(results_root: Path = RESULTS_ROOT) -> list[BreakdownRow]:
+    """Published breakdown rows whose file has no current v3 cell, latest per pre-move group.
+
+    Read where the day-zero move put them, under the name they kept: the unresolved rows left
+    in ``results/breakdown/`` (setup never recorded), ``results/misc/likelihood_breakdown/``
+    (no derivable cell; current) and ``archive/YYYY/MM/<slug>/breakdown/`` (labelled
+    archived). A group whose newest release the map moved into a mirrored cell is shown by
+    that cell's v3 row instead (``catalogue/migration_day_zero.json`` names the file's old
+    name), so a superseded archived release never reappears.
+    """
+    root = results_root.parent
+    sources = [
+        (results_root / "breakdown", False),
+        (results_root / "misc" / "likelihood_breakdown", False),
+    ]
+    sources += [(b, True) for b in sorted((root / "archive").glob("*/*/*/breakdown"))]
+    latest: dict[tuple, tuple] = {}
+
+    def offer(found, mirrored=False):
+        if found is not None:
+            group, version, row = found
+            if group not in latest or version > latest[group][0]:
+                latest[group] = (version, row, mirrored)
+
+    for base, archived in sources:
+        for p in sorted(base.rglob("*.json")) if base.is_dir() else []:
+            found = _legacy_breakdown_artifact(p, p.relative_to(base).parts)
+            if found is not None and archived:
+                found = (found[0], found[1], replace(found[2], archived=True))
+            offer(found)
+    try:
+        moves = json.loads((root / "catalogue" / "migration_day_zero.json").read_text())
+    except (OSError, ValueError):
+        moves = {}
+    prefix = "results/breakdown/"
+    for e in moves.get("entries", []):
+        if e["old"].startswith(prefix) and lc.mirrored(e["new"]) and (root / e["new"]).is_file():
+            # The current file under its pre-move name: only to know the group's newest.
+            rel = tuple(e["old"][len(prefix) :].split("/"))
+            offer(_legacy_breakdown_artifact(root / e["new"], rel), mirrored=True)
+    return [row for _v, row, mirrored in latest.values() if not mirrored]
 
 
 def _scan_runtime_cells(results_root: Path = RESULTS_ROOT) -> list[RuntimeCell]:
@@ -536,13 +613,12 @@ def _render_breakdown_table(rows: list[BreakdownRow]) -> str:
     ):
         data = row.data
         total = data.get("total_step_by_step")
-        version = data.get("autolens_version")
         setup = f"`{row.setup}`" if row.setup else "_not recorded_"
         out.append(
             f"| `{row.cell}` | {row.instrument or '—'} | {setup} | {row.host} | "
             f"{_inversion_path_label(data, row.sparse)} | "
             f"{_format_time(total if isinstance(total, (int, float)) else None)} | "
-            f"{f'v{version}' if version else '—'} |"
+            f"{row.version_label} |"
         )
     return "\n" + "\n".join(out) + "\n"
 
