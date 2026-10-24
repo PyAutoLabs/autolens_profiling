@@ -5,10 +5,12 @@ with ``git mv``: ``results/{runtime,breakdown,...}`` became the mirrored tree
 ``results/<dataset_type>/<variant>/<instrument>/<setup_id>/<host_class>/...``, dead
 experiments went to ``archive/`` and the ledgers to ``wiki/campaigns/``.
 
-Readers still parse the legacy file-name grammar (``<cell>_<config>[_sparse].json``),
-so until the catalogue builder reads the mirrored tree natively (#442 PR 3) they see every
-moved file under its **legacy identity** -- the old path the map records -- while reading
-and linking the file where it now lives. A file the map does not know (a fixture, an
+Two readers still parse the legacy file-name grammar (``<cell>_<config>[_sparse].json``):
+``build_dashboard.py`` (its trend series are keyed by legacy section/cell/config) and
+``build_readme.py`` (its README tables). They see every moved file under its **legacy
+identity** -- the old path the map records -- while reading and linking the file where it now
+lives. Every other reader, the catalogue builder and the tests included, reads the mirrored
+tree natively (#442 PR 3); this module goes when those two are re-keyed on the v3 identity. A file the map does not know (a fixture, an
 unresolved row left in place, a run written after the move) is its own legacy identity.
 
 Writers place a new result with :func:`destination` (the map generator's classification,

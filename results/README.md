@@ -29,9 +29,10 @@ file's sha256. The 23 rows whose setup axis was never recorded stay at their old
 
 Writers still compose the legacy name; `_profile_cli.resolve_output_paths` places a run whose
 default folder is `runtime/` or `breakdown/` into its mirrored cell with the map's own
-classification. Readers (`build_catalogue.py`, `build_dashboard.py`, `build_readme.py`) see a
-moved file under its pre-move identity through `scripts/misc/tooling/results_layout.py` until
-the catalogue builder reads the mirrored tree (#442 PR 3).
+classification. The catalogue builder (`build_catalogue.py`, which emits the
+`profiling-summary@3` lifecycle catalogue) and the tests read the mirrored tree natively.
+`build_dashboard.py` and `build_readme.py` still see a moved file under its pre-move identity
+through `scripts/misc/tooling/results_layout.py` until they are re-keyed on the v3 identity.
 
 ## Day-zero move (redirects)
 
