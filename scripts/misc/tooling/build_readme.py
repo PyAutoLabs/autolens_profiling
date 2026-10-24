@@ -86,6 +86,8 @@ _RELEASE_SWEEP_CONF = read_release_sweep_conf(REPO_ROOT)
 
 RESULTS_ROOT = REPO_ROOT / "results"
 ARCHIVE_ROOT = REPO_ROOT / "archive"
+#: The pre-move breakdown folder, as the day-zero map records old paths (read, never written).
+LEGACY_BREAKDOWN_PREFIX = "results/breakdown/"
 #: results/misc/<group>/ folders whose versioned artifacts feed a README table.
 ARTIFACT_GROUPS = ("simulators", "pipeline_resume")
 
@@ -358,7 +360,7 @@ def _legacy_breakdown_rows(results_root: Path = RESULTS_ROOT) -> list[BreakdownR
         moves = json.loads((root / "catalogue" / "migration_day_zero.json").read_text())
     except (OSError, ValueError):
         moves = {}
-    prefix = "results/breakdown/"
+    prefix = LEGACY_BREAKDOWN_PREFIX
     for e in moves.get("entries", []):
         if e["old"].startswith(prefix) and lc.mirrored(e["new"]) and (root / e["new"]).is_file():
             # The current file under its pre-move name: only to know the group's newest.
