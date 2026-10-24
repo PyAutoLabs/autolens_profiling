@@ -79,6 +79,41 @@ hpc/sync pull                          # when both jobs are gone
 python z_projects/profiling/scripts/<likelihood_type>_aggregate.py --consolidate-from z_projects/profiling/output/<dataset_type>/<likelihood_type>
 ```
 
+### Inspect the fit figure
+
+Each cell draws one `fit.png` after its timed work, beside its result JSON
+(`results/<dataset_type>/<variant>/<instrument>/<setup_id>/<host_class>/fit.png`).
+It uses the same plotter as the `autolens_visualization` figure for that dataset
+type, so the two can be compared side by side. Pass `--no-fit-png` to skip it; it
+is never drawn under `AUTOLENS_PROFILING_SMOKE`. `build_catalogue` lists it in the
+record's `figures[]`.
+
+Open it and check:
+
+- the residuals look like noise, with no ring or arc of the source left over;
+- the source plane shows a compact source (or a sensible reconstruction for a
+  pixelized source), not noise or an empty mesh;
+- for point sources, the model positions sit on the observed ones.
+
+If it looks wrong, do not accept the row. Find out why first.
+
+The profiling figure will not match the viz figure exactly. Per dataset type:
+
+- **imaging**: same `hst` data as the viz producer (the other instruments have no
+  viz twin). The model is the cell's own (for example an MGE lens light and a
+  pixelized source) at its profiled instance, not the simulator's true model.
+- **interferometer**: the same `sma` uv-coverage. The model is the cell's own.
+- **datacube**: the profiling cube is 34 copies of one `sma` dataset. The figure
+  shows the middle channel. The viz cube has three channels whose source changes
+  with channel.
+- **point source**: the profiling `simple` dataset is positions only. The
+  image-plane cell uses the all-pairs fit (`FitPositionsImagePairAll`); the viz
+  figure uses the one-to-one pairing (`FitPositionsImagePair`).
+- **cluster**: the same `simple` cluster. The image-plane cell uses
+  `FitPositionsImagePairRepeat`; the viz figure uses the source-plane fit. The
+  source-plane cell has no `PointSolver`, so its panel is framed on the observed
+  positions.
+
 ### Aggregate
 
 ```bash

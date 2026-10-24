@@ -117,6 +117,7 @@ from _profile_cli import (  # noqa: E402
     auto_simulate_if_missing,
     device_info_dict,
     parse_profile_cli,
+    render_fit_png,
     resolve_output_paths,
 )
 
@@ -592,3 +593,21 @@ fig.suptitle(f"Cluster source-plane likelihood breakdown — v{al_version}", fon
 fig.tight_layout()
 fig.savefig(chart_path, dpi=150)
 print(f"  Bar chart saved to:    {chart_path}")
+
+
+# Fit figure (likelihood-lifecycle 1B): every system's eager FitPositionsSource fit of the truth
+# tracer, wrapped in the FitPointDataset the plotter reads, drawn after every timed region and
+# kept as fit.png beside this row, the way the cluster viz producer draws all sources together.
+# This cell has no PointSolver, so the panel extent comes from the observed positions. Off under
+# AUTOLENS_PROFILING_SMOKE and with --no-fit-png.
+render_fit_png(
+    [
+        al.FitPointDataset(
+            dataset=dataset, tracer=tracer, solver=None, fit_positions_cls=al.FitPositionsSource
+        )
+        for dataset in dataset_list
+    ],
+    dict_path.parent,
+    dataset_type="cluster",
+    cli=_cli,
+)

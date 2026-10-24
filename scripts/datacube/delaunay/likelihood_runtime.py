@@ -151,6 +151,7 @@ from _profile_cli import (
     legacy_landing_dir,
     parse_profile_cli,
     record_pinned_check,  # noqa: E402
+    render_fit_png,
     resolve_output_paths,
 )
 
@@ -676,3 +677,10 @@ else:
 record_pinned_check(dict_path, _pinned_expected, _pinned_drift)
 if _pinned_expected is not None and not _pinned_drift:
     print("  Pinned-value check PASSED (recorded in result JSON).")
+
+
+# Fit figure (likelihood-lifecycle 1B): the middle channel's eager fit, as the interferometer_datacube viz producer draws one fit.png per channel, drawn after every timed region and kept as
+# fit.png beside this row. Off under AUTOLENS_PROFILING_SMOKE and with --no-fit-png.
+render_fit_png(
+    fit_list[len(fit_list) // 2], dict_path.parent, dataset_type="interferometer", cli=_cli
+)

@@ -126,6 +126,7 @@ from _profile_cli import (  # noqa: E402
     device_info_dict,
     record_pinned_check,
     rect_mesh_classes,
+    render_fit_png,
     resolve_output_paths,
 )
 
@@ -568,3 +569,11 @@ else:
 record_pinned_check(dict_path, _pinned_expected, _pinned_drift)
 if _pinned_expected is not None and not _pinned_drift:
     print("  Pinned-value check PASSED (recorded in result JSON).")
+
+
+# Fit figure (likelihood-lifecycle 1B): the numba fit at the first profiled instance (the setup
+# guard's fit, rebuilt here because the guard drops it), drawn after every timed region and kept
+# as fit.png beside this row. Off under AUTOLENS_PROFILING_SMOKE and with --no-fit-png.
+render_fit_png(
+    analysis.fit_from(instance=instance), dict_path.parent, dataset_type="imaging", cli=_cli
+)

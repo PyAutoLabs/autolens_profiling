@@ -95,6 +95,7 @@ from _profile_cli import (
     parse_profile_cli,
     place_output_path,
     record_pinned_check,  # noqa: E402
+    render_fit_png,
     resolve_output_paths,
 )
 
@@ -575,3 +576,8 @@ timer.summary()
 record_pinned_check(dict_path, _pinned_expected, _pinned_drift)
 if _pinned_expected is not None and not _pinned_drift:
     print("  Pinned-value check PASSED (recorded in result JSON).")
+
+
+# Fit figure (likelihood-lifecycle 1B): the eager fit, drawn after every timed region and kept as
+# fit.png beside this row. Off under AUTOLENS_PROFILING_SMOKE and with --no-fit-png.
+render_fit_png(fit_eager, dict_path.parent, dataset_type="point_source", cli=_cli)

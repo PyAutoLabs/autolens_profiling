@@ -606,6 +606,36 @@ def test_fit_figure_is_attached_with_its_digest(tree):
     }
 
 
+def test_fit_figures_match_the_pulse_v3_shape(tree):
+    """``figures[]`` is Pulse REFERENCE v3's ``{kind, path, sha256}`` with a safe repo path.
+
+    A fixture cell with a runtime and a breakdown row beside one ``fit.png`` (what a profiled
+    cell leaves after 1B), plus an experiment arm without one: both cell rows carry the same
+    figure, the arm carries none, and the whole document still validates in Pulse.
+    """
+    write(tree, f"{A100}/runtime.json", row())
+    write(tree, f"{A100}/breakdown.json", row(steps={"solve": 0.1}))
+    write(tree, f"{A100}/experiments/arm/runtime.json", row(full_pipeline_per_call=0.01))
+    (tree / A100 / "fit.png").write_bytes(b"\x89PNG fixture")
+    doc = lifecycle(tree)
+    expected = {
+        "kind": "fit",
+        "path": f"{A100}/fit.png",
+        "sha256": hashlib.sha256(b"\x89PNG fixture").hexdigest(),
+    }
+    paths = {record["evidence"]["path"] for record in doc["records"]}
+    assert {f"{A100}/runtime.json", f"{A100}/breakdown.json"} <= paths
+    for record in doc["records"]:
+        path = record["evidence"]["path"]
+        if path.startswith(f"{A100}/experiments/"):
+            assert record["figures"] == [], path
+        else:
+            assert record["figures"] == [expected], path
+            assert set(record["figures"][0]) == {"kind", "path", "sha256"}
+            assert cat.safe_path(record["figures"][0]["path"])
+    assert pulse_classify()(json.loads(json.dumps(doc)), ("profiling-summary", 3)) == ("ok", [])
+
+
 def test_lifecycle_values_are_checked_against_the_evidence(tree):
     write(tree, f"{A100}/runtime.json", row())
     doc = lifecycle(tree)

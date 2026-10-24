@@ -60,13 +60,18 @@ GPU/HPC availability, the PyAutoGPU venv ordering, and the canonical reference).
    `autolens_workspace_developer` on `feature/<likelihood_type>-profiling-a100`.
 5. **Local sweep** — 4 configs (GPU/CPU × fp64/mp); spot-check `device.backend`.
 6. **HPC sweep** — A100 fp64 + mp via `sbatch hpc/batch_gpu/submit_*`, then consolidate.
-7. **Aggregate** — write `comparison.{json,png}`; sanity-check the magnitudes.
-8. **Commit + PR** — stage only the new profiling scripts and the new results
+7. **Inspect the fit figures** — every cell writes `fit.png` beside its result
+   JSON. Open it before you accept the row: the residuals should look like noise
+   and the source should look like a lensed source. A bad fit means the timing
+   measured the wrong likelihood. [`reference.md`](reference.md) → "Inspect the
+   fit figure".
+8. **Aggregate** — write `comparison.{json,png}`; sanity-check the magnitudes.
+9. **Commit + PR** — stage only the new profiling scripts and the new results
    subdir; open the PR with the timings table + key findings.
-9. **Post-merge cleanup** — remove the worktree, return canonical to `main`, move
-   the task to `complete.md`.
+10. **Post-merge cleanup** — remove the worktree, return canonical to `main`, move
+    the task to `complete.md`.
 
-Command blocks for steps 2–9 are in [`reference.md`](reference.md) → "Step
+Command blocks for steps 2–10 are in [`reference.md`](reference.md) → "Step
 detail".
 
 ## Notes

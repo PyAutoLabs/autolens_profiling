@@ -113,6 +113,7 @@ from _profile_cli import (  # noqa: E402
     auto_simulate_if_missing,
     device_info_dict,
     parse_profile_cli,
+    render_fit_png,
     resolve_output_paths,
 )
 
@@ -717,3 +718,16 @@ fig.suptitle(
 fig.tight_layout()
 fig.savefig(chart_path, dpi=150)
 print(f"  Bar chart saved to:    {chart_path}")
+
+
+# Fit figure (likelihood-lifecycle 1B): every system's eager fit at the plain fused instance (the
+# step 1-4 lens model), drawn after every timed region and kept as fit.png beside this row, the
+# way the cluster viz producer draws all sources together. Off under AUTOLENS_PROFILING_SMOKE
+# and with --no-fit-png.
+render_fit_png(
+    [a.fit_from(instance=fused_instances["plain"]) for a in eager_analyses["plain"]],
+    dict_path.parent,
+    dataset_type="cluster",
+    cli=_cli,
+    solver=solver,
+)
