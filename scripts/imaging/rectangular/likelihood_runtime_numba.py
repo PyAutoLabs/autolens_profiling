@@ -47,6 +47,7 @@ Notes:
 
 Output
 ------
+A legacy name, placed in the mirrored ``results/`` tree by ``_profile_cli`` (#442):
 ``results/runtime/imaging/pixelization_numba/pixelization_numba_likelihood_summary_<instrument>_v<version>.json``
 (the runtime variant writes no per-step chart — see the breakdown sibling).
 """

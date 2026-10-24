@@ -38,7 +38,7 @@ Timing decomposition:
   into completed-fit total / samples-summary load / full-samples load, with
   the remainder attributable to pre/post-fit output handling.
 
-Results land at ``results/pipeline_resume/slam_resume_summary_<instrument>_
+Results land at ``results/misc/pipeline_resume/slam_resume_summary_<instrument>_
 v<version>[_fast].{json,png}`` (versioned-summary shape, ``results/README.md``).
 """
 

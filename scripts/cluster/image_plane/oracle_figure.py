@@ -15,9 +15,11 @@ Usage::
 
 One PNG per (draw, source plane):
 ``oracle_figure_<dataset>[_pilot]_<config_name>_draw<N>_plane<J>.png`` under
-``results/breakdown/cluster/`` by default. The PNGs are inspection aids; only the
-ones a ledger cites are copied into ``results/breakdown/cluster/figures/`` and
-committed.
+``results/misc/likelihood_breakdown/cluster/`` by default (the landing folder of the
+pre-#442 ``results/breakdown/cluster/``). The PNGs are inspection aids; only the ones a
+ledger cites are committed, in the sweep cell's ``experiments/`` folder (the day-zero move
+put the earlier ``figures/`` copies at
+``results/cluster/image_plane/<dataset>/<setup>/<host>/experiments/oracle_figure_figures_*/``).
 
 What is reconstructed, and from what
 ------------------------------------
@@ -140,7 +142,7 @@ from _judge import VERDICTS  # noqa: E402
 from matplotlib.lines import Line2D  # noqa: E402
 from matplotlib.patches import Rectangle  # noqa: E402
 
-DEFAULT_OUTPUT_DIR = _ROOT / "results" / "breakdown" / "cluster"
+DEFAULT_OUTPUT_DIR = _ROOT / "results" / "misc" / "likelihood_breakdown" / "cluster"
 CLOSE_RADIUS = 3.0  # arcsec: roots closer than this to a neighbour get a zoom panel
 MAX_ZOOMS = 8
 MAX_ROWS = 6

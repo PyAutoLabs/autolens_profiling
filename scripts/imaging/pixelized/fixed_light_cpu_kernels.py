@@ -51,6 +51,7 @@ is the median sample size.
 Output
 ------
 
+A legacy name, placed in the mirrored ``results/`` tree by ``_profile_cli`` (#442):
 ``results/breakdown/imaging/fixed_light_cpu_kernels_<mesh>_<config_name>.{json,png}``.
 """
 

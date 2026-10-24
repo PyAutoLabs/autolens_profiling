@@ -126,6 +126,7 @@ millisecond is not interpretable without both.
 Output
 ------
 
+A legacy name, placed in the mirrored ``results/`` tree by ``_profile_cli`` (#442):
 ``results/breakdown/imaging/fixed_light_library_<mesh>[_<dataset>][_n<N>]_<config_name>.{json,png}``
 — the dataset and the built pixel count are appended only when they differ from
 phase 1's HST fiducial, so no phase-1 or phase-2 artifact can be clobbered. A leg

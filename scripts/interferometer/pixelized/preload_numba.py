@@ -53,6 +53,7 @@ Instrument rules
 
 Output
 ------
+A legacy name, placed in the mirrored ``results/`` tree by ``_profile_cli`` (#442):
 ``results/breakdown/interferometer/preload_breakdown_<instrument>_v<version>.{json,png}``
 """
 

@@ -123,7 +123,7 @@ def test__replay_refuses_a_missing_capture_and_documents_the_two_step():
     assert "sbatch --parsable --array=0-3" in text
     assert "--array=4-37 --dependency=afterok:${CAP}" in text
     assert (
-        'NPZ="$AP_ROOT/results/breakdown/imaging/nautilus_batches_${MESH}_${STAGE}.npz"'
+        'NPZ="$AP_ROOT/results/misc/likelihood_breakdown/imaging/nautilus_batches_${MESH}_${STAGE}.npz"'
         in executable
     )
 

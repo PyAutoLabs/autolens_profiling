@@ -435,12 +435,14 @@ def result_paths(
     """
     from _profile_cli import place_output_path, resolve_output_paths
 
-    default_dir = profiling_root / "results" / "breakdown" / "interferometer"
-    if cli.config_name is not None and instrument != "alma":
-        default_dir = default_dir / instrument
+    inst_subdir = instrument if cli.config_name is not None and instrument != "alma" else ""
     basename = f"{cell}_breakdown_{instrument}_v{al_version}"
     dict_path, chart_path = resolve_output_paths(
-        cli, default_dir=default_dir, default_basename=basename, cell=cell, place=False
+        cli,
+        default_dir=profiling_root / "results" / "breakdown" / "interferometer" / inst_subdir,
+        default_basename=basename,
+        cell=cell,
+        place=False,
     )
     if cli.config_name is None and cli.regularization == "constant_split":
         dict_path = dict_path.with_name(dict_path.stem + "_constant_split.json")

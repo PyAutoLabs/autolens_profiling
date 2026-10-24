@@ -103,6 +103,7 @@ the ratio over the last three rungs.
 Output
 ------
 
+A legacy name, placed in the mirrored ``results/`` tree by ``_profile_cli`` (#442):
 ``results/breakdown/point_source_source/gradient_mode_crossover_<config_name>.{json,png}``.
 No top-level ``autolens_version`` (versions under ``library_versions``): a
 note-backed measurement, not a README auto-table row.

@@ -38,7 +38,7 @@ pattern. This breakdown script shares the same setup.
 Output
 ------
 
-Results JSON and PNG are written to ``results/breakdown/imaging/`` using
+Results JSON and PNG are named under the legacy ``results/breakdown/imaging/`` folder (placed in the mirrored tree, #442) using
 the basename ``mge_breakdown_{instrument}_v{al_version}``.
 """
 

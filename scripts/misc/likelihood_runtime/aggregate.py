@@ -1,11 +1,18 @@
 """Aggregate per-config JSONs for a swept likelihood cell into comparison.{json,png}.
 
 Reads every ``<config_name>[_sparse].json`` under a cell's output dir (see
-``sweep.py``; default root is ``results/runtime/`` in this repo) and
-produces a single ``comparison.json`` whose schema mirrors the historical
+``sweep.py``) and produces a single ``comparison.json`` whose schema mirrors the historical
 ``autolens_workspace_developer/jax_profiling/results/jit`` artifacts so the
 existing readers (and the OPTIMIZATION_NOTES doc) continue to work.
 ``_sparse`` rows order after the canonical configs.
+
+The default root is the pre-#442 folder ``results/runtime/`` **as a legacy name**: since the
+day-zero move (autolens_profiling#442) a sweep row lives in its mirrored cell
+(``results/<dataset_type>/<variant>/<instrument>/<setup_id>/<host_class>/runtime.json``), its
+log and any timeout marker in ``results/misc/likelihood_runtime/``; the ``_profile_cli``
+legacy-name helpers find each by its legacy name, and the comparison is written to the
+mirrored ``results/<dataset_type>/<variant>/<instrument>/comparison.{json,png}``. A custom
+``--output-root`` is read and written verbatim.
 
 The ``comparison.png`` is a log-scale grouped bar chart: one bar per
 (step, config), sorted by step cost on the slowest config. The
@@ -52,7 +59,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 _REPO_ROOT = _profiling_root()
-_DEFAULT_OUTPUT_ROOT = _REPO_ROOT / "results" / "runtime"
+sys.path.insert(0, str(_REPO_ROOT))
+from _profile_cli import (  # noqa: E402
+    legacy_landing_dir,
+    legacy_result_dirs,
+    legacy_result_files,
+    locate_legacy_result,
+    mirrored_output_path,
+)
+
+#: The legacy root sweep rows are named under (see the module docstring).
+LEGACY_RUNTIME_ROOT = _REPO_ROOT / "results" / "runtime"
+_DEFAULT_OUTPUT_ROOT = LEGACY_RUNTIME_ROOT
 _DEFAULT_HAZARD_INDEX = _REPO_ROOT / "results" / "misc" / "hazards" / "hazards_index.json"
 
 
@@ -100,11 +118,15 @@ def _discover_cells(output_root: Path) -> list[tuple[str, ...]]:
     datacube delaunay) maintain a per-instrument comparison view.
     """
     cells: list[tuple[str, ...]] = []
+    if _is_legacy(output_root):
+        for d in legacy_result_dirs(output_root):
+            rel = d.relative_to(output_root).parts
+            if len(rel) in (2, 3) and _has_config_json(d):
+                cells.append(rel)
+        # A 2-level cell also holds per-instrument subdirs; keep the deeper layout only.
+        return [c for c in cells if not (len(c) == 2 and any(o[:2] == c for o in cells if o != c))]
     if not output_root.exists():
         return cells
-
-    def _has_config_json(d: Path) -> bool:
-        return any(_is_config_stem(p.stem) for p in d.glob("*.json"))
 
     for cls_dir in sorted(output_root.iterdir()):
         if not cls_dir.is_dir():
@@ -120,6 +142,40 @@ def _discover_cells(output_root: Path) -> list[tuple[str, ...]]:
                     if inst_dir.is_dir() and _has_config_json(inst_dir):
                         cells.append((cls_dir.name, model_dir.name, inst_dir.name))
     return cells
+
+
+def _is_legacy(path: Path) -> bool:
+    """True for a folder under a pre-#442 results folder (read by legacy name)."""
+    return legacy_landing_dir(path) != Path(path)
+
+
+def _cell_files(cell_dir: Path) -> dict[str, Path]:
+    """{legacy file name: current path} of a cell's JSONs (a verbatim folder: its own files).
+
+    Under a legacy root it also looks up each canonical config row by name, so a row a sweep
+    placed into a *new* mirrored cell after the move is found
+    (``_profile_cli.locate_legacy_result``).
+    """
+    files = {name: path for path, name in legacy_result_files(cell_dir, "*.json")}
+    if _is_legacy(cell_dir):
+        model = cell_dir.relative_to(LEGACY_RUNTIME_ROOT).parts[1]
+        rel = cell_dir.relative_to(LEGACY_RUNTIME_ROOT).parts
+        hints = {"instrument": rel[2]} if len(rel) == 3 else {}
+        for cfg in _CONFIG_ORDER:
+            for suffix in ("", "_sparse"):
+                name = f"{model}_{cfg}{suffix}.json"
+                if name not in files:
+                    found = locate_legacy_result(
+                        cell_dir / name,
+                        {**hints, "use_mixed_precision": cfg.endswith("_mp")},
+                    )
+                    if found is not None:
+                        files[name] = found
+    return files
+
+
+def _has_config_json(d: Path) -> bool:
+    return any(_is_config_stem(Path(name).stem) for name in _cell_files(d))
 
 
 def _config_name_from_stem(stem: str) -> str | None:
@@ -145,7 +201,9 @@ def _is_config_stem(stem: str) -> bool:
     return _config_name_from_stem(stem) is not None
 
 
-def _read_config(json_path: Path) -> dict:
+def _read_config(json_path: Path, stem: str | None = None) -> dict:
+    """One sweep row; ``stem`` is its legacy file stem when the file was renamed by the move."""
+    stem = stem or json_path.stem
     data = json.loads(json_path.read_text())
     # Normalise field names so downstream rendering is uniform whether the
     # source script wrote ``full_pipeline_single_jit`` (current schema) or
@@ -162,7 +220,7 @@ def _read_config(json_path: Path) -> dict:
     if "steps" not in data and "steps_cube_cost" in data:
         data["steps"] = data["steps_cube_cost"]
     # Add config_name from filename if absent (normalised, cell prefix stripped).
-    data.setdefault("config_name", _config_name_from_stem(json_path.stem) or json_path.stem)
+    data.setdefault("config_name", _config_name_from_stem(stem) or stem)
     return data
 
 
@@ -185,14 +243,16 @@ _REPEAT_RUN_KEYS = (
 )
 
 
-def _repeat_paths(json_path: Path) -> list[Path]:
-    """``<stem>.repeat<k>.json`` files beside a sweep row, in k order."""
+def _repeat_paths(stem: str, files: dict[str, Path]) -> list[tuple[str, Path]]:
+    """``(legacy name, path)`` of the ``<stem>.repeat<k>.json`` files of a sweep row, in k order."""
     found = []
-    for path in json_path.parent.glob(f"{json_path.stem}.repeat*.json"):
-        k = path.name[len(json_path.stem) + len(".repeat") : -len(".json")]
+    for name, path in files.items():
+        if not name.startswith(f"{stem}.repeat") or not name.endswith(".json"):
+            continue
+        k = name[len(stem) + len(".repeat") : -len(".json")]
         if k.isdigit():
-            found.append((int(k), path))
-    return [path for _, path in sorted(found)]
+            found.append((int(k), name, path))
+    return [(name, path) for _, name, path in sorted(found)]
 
 
 def _repeat_run(data: dict, source: str) -> dict:
@@ -201,22 +261,25 @@ def _repeat_run(data: dict, source: str) -> dict:
     return run
 
 
-def _attach_repeat_runs(json_path: Path, data: dict) -> dict:
-    """The row with its repeat runs listed (unchanged when it has none, or none of its release)."""
-    repeats = _repeat_paths(json_path)
+def _attach_repeat_runs(name: str, data: dict, files: dict[str, Path]) -> dict:
+    """The row with its repeat runs listed (unchanged when it has none, or none of its release).
+
+    ``name`` is the row's legacy file name and ``files`` its cell's ``_cell_files``.
+    """
+    repeats = _repeat_paths(Path(name).stem, files)
     if not repeats:
         return data
-    runs = [_repeat_run(data, json_path.name)]
-    for path in repeats:
+    runs = [_repeat_run(data, name)]
+    for repeat_name, path in repeats:
         try:
-            other = _read_config(path)
+            other = _read_config(path, Path(repeat_name).stem)
         except (OSError, ValueError) as exc:
             sys.stderr.write(f"  warn: failed to read {path}: {exc}\n")
             continue
         if other.get("autolens_version") != data.get("autolens_version"):
-            sys.stderr.write(f"  warn: {path.name} is another release; not a repeat of the row\n")
+            sys.stderr.write(f"  warn: {repeat_name} is another release; not a repeat of the row\n")
             continue
-        runs.append(_repeat_run(other, path.name))
+        runs.append(_repeat_run(other, repeat_name))
     if len(runs) > 1:
         data[REPEAT_RUNS_FIELD] = runs
     return data
@@ -224,11 +287,13 @@ def _attach_repeat_runs(json_path: Path, data: dict) -> dict:
 
 def _aggregate_cell(cell_dir: Path) -> dict:
     configs: dict[str, dict] = {}
+    files = _cell_files(cell_dir)
     # CPU-unusable markers (written by sweep.py --per-run-timeout, or by hand
     # for OOM-killed cells) become comparison rows: {"cpu_unusable": true, ...}.
     # Since timing-noise audit P9 the marker's verdict / host / loads / timeout
     # ride along so build_readme can judge whether it may render as GPU-only.
-    for marker_path in sorted(cell_dir.glob("*.unusable.json")):
+    for marker_name in sorted(n for n in files if n.endswith(".unusable.json")):
+        marker_path = files[marker_name]
         try:
             marker = json.loads(marker_path.read_text())
         except (OSError, ValueError):
@@ -251,12 +316,14 @@ def _aggregate_cell(cell_dir: Path) -> dict:
                     if k in marker
                 },
             }
-    for json_path in sorted(cell_dir.glob("*.json")):
-        if json_path.name.endswith(".unusable.json") or not _is_config_stem(json_path.stem):
+    for name in sorted(files):
+        stem = Path(name).stem
+        if name.endswith(".unusable.json") or not _is_config_stem(stem):
             continue
+        json_path = files[name]
         try:
-            cname = _config_name_from_stem(json_path.stem) or json_path.stem
-            configs[cname] = _attach_repeat_runs(json_path, _read_config(json_path))
+            cname = _config_name_from_stem(stem) or stem
+            configs[cname] = _attach_repeat_runs(name, _read_config(json_path, stem), files)
         except Exception as exc:
             sys.stderr.write(f"  warn: failed to read {json_path}: {exc}\n")
 
@@ -457,7 +524,7 @@ def main() -> int:
     for cell_tuple in cells:
         cell_id = "/".join(cell_tuple)
         cell_dir = args.output_root.joinpath(*cell_tuple)
-        if not cell_dir.exists():
+        if not _is_legacy(cell_dir) and not cell_dir.exists():
             sys.stderr.write(f"  skipping {cell_id}: dir missing\n")
             continue
 
@@ -468,8 +535,12 @@ def main() -> int:
 
         comparison["hazard_findings"] = _hazard_findings_for_cell(_DEFAULT_HAZARD_INDEX, cell_id)
 
-        comparison_path = cell_dir / "comparison.json"
-        png_path = cell_dir / "comparison.png"
+        # Under the legacy root the comparison goes to the mirrored
+        # results/<dataset_type>/<variant>/<instrument>/ (or results/misc/likelihood_runtime/
+        # when that is not derivable); a verbatim root keeps it beside the rows.
+        comparison_path = mirrored_output_path(cell_dir / "comparison.json", {})
+        png_path = comparison_path.with_suffix(".png")
+        comparison_path.parent.mkdir(parents=True, exist_ok=True)
         comparison_path.write_text(json.dumps(comparison, indent=2, default=str))
         _render_png(comparison, cell_id, png_path)
 

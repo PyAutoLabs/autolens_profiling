@@ -104,7 +104,7 @@ cost per draw and a per-row projected wall at the full sweep sizes
 (``--full-n-draws`` / ``--full-rounds`` / ``--full-calls``), so the sweep job
 can be sized.
 
-Output: ``results/breakdown/cluster/robust_settings_sweep_<dataset>[_pilot]_<config_name>.{json,png}``.
+Output (a legacy name, placed in the mirrored tree, #442): ``results/breakdown/cluster/robust_settings_sweep_<dataset>[_pilot]_<config_name>.{json,png}``.
 Each row's ``per_draw[].sources[]`` keeps the verdict counts plus the positions needed
 to draw them (considered roots with verdict and matched candidates, spurious,
 duplicated and ignored candidates; ``_judge.per_draw_source_entry``);

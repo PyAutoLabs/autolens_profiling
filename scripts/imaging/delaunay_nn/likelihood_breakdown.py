@@ -275,7 +275,7 @@ The standalone functions behind these rows live in
 Output
 ------
 
-Results JSON and PNG are written to ``results/breakdown/imaging/`` using
+Results JSON and PNG are named under the legacy ``results/breakdown/imaging/`` folder (placed in the mirrored tree, #442) using
 the basename ``delaunay_nn_breakdown_{instrument}_v{al_version}``. Under
 ``--config-name`` the cell name is passed explicitly as ``delaunay_nn``,
 because ``resolve_output_paths``'s default first-token derivation would give

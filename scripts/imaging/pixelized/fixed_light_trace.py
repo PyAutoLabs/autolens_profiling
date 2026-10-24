@@ -389,6 +389,7 @@ incremented to odd sizes" note is STALE — the code does not do it.
 Output
 ------
 
+A legacy name, placed in the mirrored ``results/`` tree by ``_profile_cli`` (#442):
 ``results/breakdown/imaging/fixed_light_trace_<mesh>[_border_off][_n<N>][_jitvmap<B>_<lanes>_fb<on|off>][_psf_<candidate>][_logdet_<candidate>]_<config>.{json,png}``.
 Library mode replaces the batched token with
 ``_jitvmap<B>_<lanes>_lib<solver>_fb<on|off>_b<budget>`` (``<lanes>`` is

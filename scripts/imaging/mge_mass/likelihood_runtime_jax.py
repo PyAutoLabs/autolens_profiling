@@ -43,6 +43,7 @@ on — and the script reports:
 
 Output
 ------
+A legacy name, placed in the mirrored ``results/`` tree by ``_profile_cli`` (#442):
 ``results/runtime/imaging/mge_mass_jax/mge_mass_jax_likelihood_summary_<instrument>_v<version>.json``
 """
 

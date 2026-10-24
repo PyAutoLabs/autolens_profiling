@@ -49,7 +49,7 @@ Notes:
 
 Output
 ------
-``results/parallel_scaling/imaging/pixelization_numba_scaling_<instrument>_v<version>.{json,png}``
+``results/misc/parallel_scaling/imaging/pixelization_numba_scaling_<instrument>_v<version>.{json,png}``
 
 ``--mesh`` selects the fiducial: ``rectangular`` (28x28 adaptive rectangular —
 ``RectangularBilinearAdaptDensity`` by default, ``--rect-mesh rtu`` for the kernel-CDF variant,

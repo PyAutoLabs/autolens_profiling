@@ -64,7 +64,7 @@ cluster's 2 systems) a full model-fit would otherwise sample.
 Output
 ------
 
-Results JSON and PNG are written to ``results/breakdown/cluster/`` using the
+Results JSON and PNG are named under the legacy ``results/breakdown/cluster/`` folder (placed in the mirrored tree, #442) using the
 basename ``image_plane_breakdown_v{al_version}``, or
 ``image_plane_<config_name>`` under ``--config-name``. The JSON records
 ``config_name``, ``thread_environment``, ``source_revisions`` and ``n_repeats``

@@ -112,6 +112,7 @@ arithmetic on constants is folded in both modes, so it is no probe.)
 Output
 ------
 
+A legacy name, placed in the mirrored ``results/`` tree by ``_profile_cli`` (#442):
 ``results/breakdown/point_source_image/static_lattice_ab_<config_name>.{json,png}``
 (``..._constant_folding`` suffix for the folding run). As in the phase-2 cell the JSON
 carries no top-level ``autolens_version``, so ``build_readme.py`` does not auto-table

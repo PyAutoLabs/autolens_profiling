@@ -143,6 +143,7 @@ from _profile_cli import (
     auto_simulate_if_missing,
     check_pinned,
     device_info_dict,
+    legacy_landing_dir,
     parse_profile_cli,
     record_pinned_check,  # noqa: E402
     resolve_output_paths,
@@ -480,7 +481,10 @@ if _cli.vmap_probe:
     )
     recommended = recommend_batch_size(probe)
     probe_path = (
-        _cli.output_dir or (_workspace_root / "results" / "runtime" / "interferometer" / "delaunay")
+        _cli.output_dir
+        or legacy_landing_dir(
+            _workspace_root / "results" / "runtime" / "interferometer" / "delaunay"
+        )
     ) / (
         "vmap_probe_delaunay_sparse.json"
         if _cli.use_sparse_operator
@@ -504,7 +508,7 @@ _batch_resolved, _batch_source = resolve_vmap_batch(
     "delaunay",
     instrument,
     output_dir=_cli.output_dir
-    or (_workspace_root / "results" / "runtime" / "interferometer" / "delaunay"),
+    or legacy_landing_dir(_workspace_root / "results" / "runtime" / "interferometer" / "delaunay"),
     path="sparse" if _cli.use_sparse_operator else "dense",
     backend=jax.default_backend(),
 )

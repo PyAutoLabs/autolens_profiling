@@ -69,13 +69,15 @@ routes interleaved with the order rotated each round, the batch argument walking
 phase 2c's fixed-seed 16-batch stream (same seeds, so the same start batches),
 every call ``block_until_ready``'d. Ratio forward / reverse per route kind with a
 bootstrap 90 % CI (2000 resamples). The phase-2c batched ratio for the same host
-is read from ``results/breakdown/point_source_source/gradient_mode_crossover_
-<config_name>.json`` when present and recorded next to it.
+is read from ``gradient_mode_crossover.py``'s row for the same ``<config_name>`` (placed in
+the cell's ``experiments/gradient_mode_crossover/`` folder; found with
+``_profile_cli.locate_legacy_result``) when present and recorded next to it.
 
 Output
 ------
 
-``results/breakdown/point_source_source/gradient_mode_library_ab_<config_name>.{json,png}``.
+The legacy name ``results/breakdown/point_source_source/gradient_mode_library_ab_<config_name>
+.{json,png}``, placed by ``resolve_output_paths`` in the mirrored tree (autolens_profiling#442).
 No top-level ``autolens_version`` (versions under ``library_versions``): a
 note-backed measurement, not a README auto-table row.
 """
@@ -124,6 +126,7 @@ from likelihood_breakdown.timing import block  # noqa: E402
 from _profile_cli import (  # noqa: E402
     auto_simulate_if_missing,
     device_info_dict,
+    locate_legacy_result,
     machine_info_dict,
     parse_profile_cli,
     resolve_output_paths,
@@ -809,14 +812,17 @@ def _end_to_end() -> dict:
 config_name = _cli.config_name or (
     "local_cpu_fp64" if jax.default_backend() == "cpu" else "unlabelled_device_fp64"
 )
-_phase_2c_path = (
+# gradient_mode_crossover.py names its row by the legacy grammar and the placement moves it
+# into the cell's experiments/ folder (autolens_profiling#442); find it wherever it landed.
+_phase_2c_path = locate_legacy_result(
     _ROOT
     / "results"
     / "breakdown"
     / "point_source_source"
-    / f"gradient_mode_crossover_{config_name}.json"
+    / f"gradient_mode_crossover_{config_name}.json",
+    {"instrument": INSTRUMENT},
 )
-_PHASE_2C = json.loads(_phase_2c_path.read_text()) if _phase_2c_path.exists() else {}
+_PHASE_2C = json.loads(_phase_2c_path.read_text()) if _phase_2c_path is not None else {}
 
 # Declared default, checked before anything is compiled.
 _probe_analysis = _analysis("solved")

@@ -19,7 +19,7 @@ two arms' build times and peak RSS are recorded beside it, not mixed into it.
 
 Output
 ------
-``results/streaming_scaling/parity_<hardware>_v<version>.json``
+``results/misc/streaming_scaling/parity_<hardware>_v<version>.json``
 """
 
 from __future__ import annotations

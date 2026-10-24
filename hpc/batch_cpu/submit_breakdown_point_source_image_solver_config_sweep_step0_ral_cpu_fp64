@@ -74,7 +74,7 @@ mkdir -p "$NUMBA_CACHE_DIR" "$MPLCONFIGDIR"
 unset JAX_COMPILATION_CACHE_DIR
 
 CONFIG_NAME=hpc_ral_cpu_fp64
-RESULTS_DIR=$AP_ROOT/results/breakdown/point_source_image
+RESULTS_DIR=$AP_ROOT/results/misc/likelihood_breakdown/point_source_image
 mkdir -p "$RESULTS_DIR"
 
 echo "=========================================="

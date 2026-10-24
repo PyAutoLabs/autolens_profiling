@@ -152,6 +152,7 @@ Output ``solver_config_sweep_mcs_<config_name>``.
 Output
 ------
 
+A legacy name, placed in the mirrored ``results/`` tree by ``_profile_cli`` (#442):
 ``results/breakdown/point_source_image/solver_config_sweep_<config_name>.{json,png}``.
 A ``laptop_*`` / ``local_*`` config is load-inflated and is recorded
 ``quotable: false``. No top-level ``autolens_version``, so ``build_readme.py`` does

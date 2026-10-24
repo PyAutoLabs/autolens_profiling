@@ -812,6 +812,157 @@ def mirrored_output_path(legacy_path: Path, doc: dict) -> Path:
     return _REPO_ROOT / new
 
 
+def _migration_map_module():
+    """``scripts/misc/tooling/build_migration_map`` (stdlib-only), imported on first use."""
+    import sys
+
+    tooling = str(_REPO_ROOT / "scripts" / "misc" / "tooling")
+    if tooling not in sys.path:
+        sys.path.insert(0, tooling)
+    import build_migration_map
+
+    return build_migration_map
+
+
+def _legacy_rel(path: Path) -> tuple[str, ...] | None:
+    """``("results", <old group>, ...)`` for a path under a pre-#442 results folder, else None."""
+    try:
+        rel = Path(path).resolve().relative_to(_REPO_ROOT).parts
+    except ValueError:
+        return None
+    mm = _migration_map_module()
+    if len(rel) < 2 or rel[0] != "results" or (rel[1] not in mm.CATEGORY | mm.MISC_GROUPS):
+        return None
+    return rel
+
+
+def legacy_landing_dir(legacy_dir: Path) -> Path:
+    """The folder where a file a writer names under the legacy ``legacy_dir`` keeps its name.
+
+    ``results/runtime/<rest>`` -> ``results/misc/likelihood_runtime/<rest>``,
+    ``results/breakdown/<rest>`` -> ``results/misc/likelihood_breakdown/<rest>`` (where
+    :func:`mirrored_output_path` puts a row with no derivable cell) and
+    ``results/<group>/<rest>`` -> ``results/misc/<MISC_GROUPS[group]>/<rest>`` for the other
+    pre-#442 folders (``build_migration_map.MISC_GROUPS``). Any other path is returned unchanged,
+    so an explicit ``--output-dir`` passes through.
+    """
+    rel = _legacy_rel(legacy_dir)
+    if rel is None:
+        return Path(legacy_dir)
+    mm = _migration_map_module()
+    group = mm.CATEGORY.get(rel[1]) or mm.MISC_GROUPS[rel[1]]
+    return _REPO_ROOT.joinpath("results", "misc", group, *rel[2:])
+
+
+def legacy_read_dirs(legacy_dir: Path) -> list[Path]:
+    """Folders a reader globs for files a writer names under ``legacy_dir``, by that name.
+
+    The landing folder (:func:`legacy_landing_dir`) first, then ``legacy_dir`` itself (the
+    unresolved rows the day-zero move left in place, and runs given that folder verbatim as
+    ``--output-dir``). A path outside the legacy folders is its own only folder.
+    """
+    landing = legacy_landing_dir(legacy_dir)
+    return [landing] if landing == Path(legacy_dir) else [landing, Path(legacy_dir)]
+
+
+def _day_zero_moves() -> dict[str, str]:
+    """{old repo-relative path: new path} of ``catalogue/migration_day_zero.json`` ({} if absent)."""
+    import json
+
+    global _DAY_ZERO_MOVES
+    if _DAY_ZERO_MOVES is None:
+        try:
+            doc = json.loads((_REPO_ROOT / "catalogue" / "migration_day_zero.json").read_text())
+            entries = doc.get("entries", [])
+        except (OSError, ValueError):
+            entries = []
+        _DAY_ZERO_MOVES = {e["old"]: e["new"] for e in entries if e.get("new") != e.get("old")}
+    return _DAY_ZERO_MOVES
+
+
+_DAY_ZERO_MOVES: dict[str, str] | None = None
+
+
+def locate_legacy_result(legacy_path: Path, doc: dict | None = None) -> Path | None:
+    """Where the file a writer names ``legacy_path`` lives now, or None when it is nowhere.
+
+    Tried in order: ``legacy_path`` itself (an unresolved row left in place, or an explicit
+    ``--output-dir`` run), the day-zero map's destination (a committed row), the landing folder
+    (a placed row with no derivable cell keeps its name), and -- for a ``results/runtime`` /
+    ``results/breakdown`` name -- the slot :func:`mirrored_output_path` gives it for ``doc``
+    (the setup facts the reader knows, e.g. ``{"instrument": "hst"}``; a row written after the
+    move with those facts) unless the map put a committed row of another legacy name there.
+    Readers that parse legacy file names use this instead of joining
+    the legacy folder.
+    """
+    legacy_path = Path(legacy_path)
+    candidates = [legacy_path]
+    rel = _legacy_rel(legacy_path)
+    if rel is not None:
+        moved = _day_zero_moves().get("/".join(rel))
+        if moved:
+            candidates.append(_REPO_ROOT / moved)
+        candidates.append(legacy_landing_dir(legacy_path.parent) / legacy_path.name)
+        if rel[1] in ("runtime", "breakdown"):
+            new, _kind = _migration_map_module().destination(_REPO_ROOT, "/".join(rel), doc or {})
+            # A committed row the map moved there belongs to its own legacy name, not this one.
+            claimed = {o for o, n in _day_zero_moves().items() if n == new}
+            if not claimed or claimed == {"/".join(rel)}:
+                candidates.append(_REPO_ROOT / new)
+    return next((p for p in candidates if p.exists()), None)
+
+
+def legacy_result_files(legacy_dir: Path, pattern: str = "*.json") -> list[tuple[Path, str]]:
+    """``(current path, legacy file name)`` of every file once or now named under ``legacy_dir``.
+
+    The legacy-name equivalent of ``sorted(legacy_dir.glob(pattern))`` (``pattern`` matched on
+    the legacy name, sorted by it): committed rows the day-zero map moved (renamed into a
+    mirrored cell, archived, or kept by name), rows in the landing folder, and rows still in
+    ``legacy_dir``. A later source wins a name clash. A row a run placed into a *new* mirrored cell after the move has
+    no legacy name on disk; find it with :func:`locate_legacy_result`.
+    """
+    import fnmatch
+
+    found: dict[str, Path] = {}
+    rel = _legacy_rel(legacy_dir)
+    if rel is not None:
+        prefix = "/".join(rel) + "/"
+        for old, new in _day_zero_moves().items():
+            name = old[len(prefix) :]
+            if old.startswith(prefix) and "/" not in name and fnmatch.fnmatch(name, pattern):
+                if (_REPO_ROOT / new).is_file():
+                    found[name] = _REPO_ROOT / new
+    for folder in legacy_read_dirs(legacy_dir):
+        if folder.is_dir():
+            for path in folder.glob(pattern):
+                if path.is_file():
+                    found[path.name] = path
+    return sorted(((p, n) for n, p in found.items()), key=lambda t: t[1])
+
+
+def legacy_result_dirs(legacy_root: Path) -> list[Path]:
+    """Every legacy folder under ``legacy_root`` that names a file, as legacy paths, sorted.
+
+    The folders of the committed rows the day-zero map moved, plus the folders on disk under
+    the landing folder and under ``legacy_root`` itself (mapped back onto ``legacy_root``).
+    Pair with :func:`legacy_result_files` to walk a legacy tree after the move.
+    """
+    legacy_root = Path(legacy_root)
+    dirs: set[Path] = set()
+    rel = _legacy_rel(legacy_root)
+    if rel is not None:
+        prefix = "/".join(rel) + "/"
+        for old in _day_zero_moves():
+            if old.startswith(prefix) and "/" in old[len(prefix) :]:
+                dirs.add(legacy_root / old[len(prefix) :].rsplit("/", 1)[0])
+    for base in legacy_read_dirs(legacy_root):
+        if base.is_dir():
+            for path in base.rglob("*"):
+                if path.is_file() and path.parent != base:
+                    dirs.add(legacy_root / path.parent.relative_to(base))
+    return sorted(dirs)
+
+
 def resolve_output_paths(
     cli: ProfileCLI,
     default_dir: Path,

@@ -72,7 +72,7 @@ Measures
    call (lower / compile / first-call / steady-state × 10). Channel-invariant
    stages are timed once; channel-variant stages are timed on channel 0 and
    the cube cost is reported as ``N × per-call``.
-3. Results JSON + bar chart written to ``results/breakdown/datacube/`` using the
+3. Results JSON + bar chart named under the legacy ``results/breakdown/datacube/`` folder (placed in the mirrored tree, #442) using the
    same schema as the interferometer sibling.
 """
 

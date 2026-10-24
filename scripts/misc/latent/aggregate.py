@@ -49,7 +49,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 _REPO_ROOT = _profiling_root()
-_DEFAULT_OUTPUT_ROOT = _REPO_ROOT / "results" / "latent"
+_DEFAULT_OUTPUT_ROOT = _REPO_ROOT / "results" / "misc" / "latent"
 
 # Canonical ordering of cells — drives auto-discovery sort order.
 _CELLS: list[tuple[str, str]] = [

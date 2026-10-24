@@ -32,7 +32,7 @@ summary JSON; once a cold and a resume run both exist the comparison PNG is
 rendered:
 
 ```
-results/pipeline_resume/slam_resume_summary_<instrument>_v<version>[_fast].{json,png}
+results/misc/pipeline_resume/slam_resume_summary_<instrument>_v<version>[_fast].{json,png}
 ```
 
 ## Instant runs via test mode (the recommended cold path)

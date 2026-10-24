@@ -118,7 +118,7 @@ python3 -u scripts/interferometer/rectangular/likelihood_breakdown_numba.py \
     --config-name hpc_ral_cpu_fp64_n1024 \
     --n-instances 12 \
     --source-pixels 1024 \
-    --output-dir $AP_ROOT/results/breakdown/interferometer/n_sweep
+    --output-dir $AP_ROOT/results/misc/likelihood_breakdown/interferometer/n_sweep
 
 echo "=========================================="
 echo "LEG 2: NumPy arms (numba direct_conv + NumPy FFT) -- pixelization_numba.py, --source-pixels 2500"
@@ -129,7 +129,7 @@ python3 -u scripts/interferometer/rectangular/likelihood_breakdown_numba.py \
     --config-name hpc_ral_cpu_fp64_n2500 \
     --n-instances 12 \
     --source-pixels 2500 \
-    --output-dir $AP_ROOT/results/breakdown/interferometer/n_sweep
+    --output-dir $AP_ROOT/results/misc/likelihood_breakdown/interferometer/n_sweep
 
 echo "=========================================="
 echo "LEG 3: NumPy arms (numba direct_conv + NumPy FFT) -- pixelization_numba.py, --source-pixels 4096"
@@ -140,7 +140,7 @@ python3 -u scripts/interferometer/rectangular/likelihood_breakdown_numba.py \
     --config-name hpc_ral_cpu_fp64_n4096 \
     --n-instances 12 \
     --source-pixels 4096 \
-    --output-dir $AP_ROOT/results/breakdown/interferometer/n_sweep
+    --output-dir $AP_ROOT/results/misc/likelihood_breakdown/interferometer/n_sweep
 
 echo "=========================================="
 echo "loadavg: $(cat /proc/loadavg)"

@@ -17,7 +17,7 @@ from pathlib import Path
 ROOT = next(p for p in Path(__file__).resolve().parents if (p / "ruff.toml").exists())
 sys.path[:0] = [str(ROOT), str(ROOT / "scripts" / "misc")]
 from _production_config import pin_thread_env
-from _profile_cli import parse_profile_cli
+from _profile_cli import parse_profile_cli, place_output_path
 
 _cli = parse_profile_cli()
 parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
@@ -306,9 +306,17 @@ record = {
     },
     "machine": machine_info_dict(),
 }
-out_dir = _cli.output_dir or ROOT / "results" / "breakdown" / "imaging"
-out_dir.mkdir(parents=True, exist_ok=True)
-out_path = out_dir / f"fixed_light_numba_s4b_witness_{config}.json"
+out_name = f"fixed_light_numba_s4b_witness_{config}.json"
+if _cli.output_dir is not None:  # an explicit --output-dir is honoured verbatim
+    _cli.output_dir.mkdir(parents=True, exist_ok=True)
+    out_path = _cli.output_dir / out_name
+else:  # placed in the mirrored tree by its legacy name (autolens_profiling#442)
+    out_path = place_output_path(
+        ROOT / "results" / "breakdown" / "imaging" / out_name,
+        _cli,
+        "fixed_light_numba_s4b_witness",
+        hints=record,
+    )
 out_path.write_text(json.dumps(record, indent=2, default=str))
 print(f"VERDICT: {record['verdict']} — {out_path}")
 if not passed:

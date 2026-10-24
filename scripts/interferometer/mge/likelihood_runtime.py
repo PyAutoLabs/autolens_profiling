@@ -106,6 +106,7 @@ from _profile_cli import (
     auto_simulate_if_missing,
     check_pinned,
     device_info_dict,
+    legacy_landing_dir,
     parse_profile_cli,
     record_pinned_check,  # noqa: E402
     resolve_output_paths,
@@ -377,7 +378,8 @@ if _cli.vmap_probe:
     )
     recommended = recommend_batch_size(probe)
     probe_path = (
-        _cli.output_dir or (_workspace_root / "results" / "runtime" / "interferometer" / "mge")
+        _cli.output_dir
+        or legacy_landing_dir(_workspace_root / "results" / "runtime" / "interferometer" / "mge")
     ) / ("vmap_probe_mge_sparse.json" if _cli.use_sparse_operator else "vmap_probe_mge.json")
     write_probe_json(probe, recommended, probe_path)
     print(f"\n  vmap_probe samples: {probe.samples}")
@@ -397,7 +399,7 @@ _batch_resolved, _batch_source = resolve_vmap_batch(
     "mge",
     instrument,
     output_dir=_cli.output_dir
-    or (_workspace_root / "results" / "runtime" / "interferometer" / "mge"),
+    or legacy_landing_dir(_workspace_root / "results" / "runtime" / "interferometer" / "mge"),
     path="sparse" if _cli.use_sparse_operator else "dense",
     backend=jax.default_backend(),
 )

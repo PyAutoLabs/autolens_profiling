@@ -461,7 +461,7 @@ def main() -> int:
     header = [
         "# NNLS warm-start memo: model robustness matrix",
         "",
-        f"Aggregated from `results/nnls_warm_start/delaunay_numba_nnls_iterations_*_v{version}.json`",
+        f"Aggregated from `results/misc/nnls_warm_start/delaunay_numba_nnls_iterations_*_v{version}.json`",
         "by `scripts/misc/nnls_warm_start/nnls_iterations_matrix.py`. Companion to",
         "[`nnls_warm_start_memo.md`](./nnls_warm_start_memo.md), which measured the single fiducial.",
         "",

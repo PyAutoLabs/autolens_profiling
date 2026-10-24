@@ -72,7 +72,7 @@ python scripts/misc/latent/aggregate.py
 
 Per-config JSONs land at `<output_root>/imaging/<latent_name>/<config_name>.json`. The aggregator produces `<output_root>/imaging/<latent_name>/comparison.json` + `.png` with one row per config and the production cost (steady-state JIT for N-draws mode; eager numpy for the every-sample fallback).
 
-Default output root: `results/latent/`. Mirrors the `likelihood_runtime/` precedent.
+Default output root: `results/misc/latent/` (the mirrored tree's `misc/<group>` for this folder).
 
 ## GPU practicalities
 

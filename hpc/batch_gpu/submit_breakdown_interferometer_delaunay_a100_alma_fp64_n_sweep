@@ -82,7 +82,7 @@ python3 -u scripts/interferometer/delaunay/likelihood_breakdown.py \
     --fp32-fft-arm \
     --batch-size-sweep 64,256 \
     --vmap-batch 16,4 \
-    --output-dir $AP_ROOT/results/breakdown/interferometer/n_sweep
+    --output-dir $AP_ROOT/results/misc/likelihood_breakdown/interferometer/n_sweep
 
 echo "=========================================="
 date
@@ -98,7 +98,7 @@ python3 -u scripts/interferometer/delaunay/likelihood_breakdown.py \
     --fp32-fft-arm \
     --batch-size-sweep 64,256 \
     --vmap-batch 16,4 \
-    --output-dir $AP_ROOT/results/breakdown/interferometer/n_sweep
+    --output-dir $AP_ROOT/results/misc/likelihood_breakdown/interferometer/n_sweep
 
 echo "=========================================="
 date
@@ -114,7 +114,7 @@ python3 -u scripts/interferometer/delaunay/likelihood_breakdown.py \
     --fp32-fft-arm \
     --batch-size-sweep 64,256 \
     --vmap-batch 16,4 \
-    --output-dir $AP_ROOT/results/breakdown/interferometer/n_sweep
+    --output-dir $AP_ROOT/results/misc/likelihood_breakdown/interferometer/n_sweep
 
 echo "Finished."
 date

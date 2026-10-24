@@ -83,6 +83,7 @@ family are pinned before ``import numpy`` and recorded verbatim.
 
 Output
 ------
+A legacy name, placed in the mirrored ``results/`` tree by ``_profile_cli`` (#442):
 ``results/breakdown/imaging/fixed_light_numba_solvers_<mesh>[_<dataset>][_n<N>]_<config>.{json,png}``
 """
 

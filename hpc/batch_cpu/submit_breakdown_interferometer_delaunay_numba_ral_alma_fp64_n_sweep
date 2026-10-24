@@ -118,7 +118,7 @@ python3 -u scripts/interferometer/delaunay/likelihood_breakdown_numba.py \
     --config-name hpc_ral_cpu_fp64_n1000 \
     --n-instances 12 \
     --source-pixels 1000 \
-    --output-dir $AP_ROOT/results/breakdown/interferometer/n_sweep
+    --output-dir $AP_ROOT/results/misc/likelihood_breakdown/interferometer/n_sweep
 
 echo "=========================================="
 echo "LEG 2: NumPy arms (numba direct_conv + NumPy FFT) -- delaunay_numba.py, --source-pixels 2500"
@@ -129,7 +129,7 @@ python3 -u scripts/interferometer/delaunay/likelihood_breakdown_numba.py \
     --config-name hpc_ral_cpu_fp64_n2500 \
     --n-instances 12 \
     --source-pixels 2500 \
-    --output-dir $AP_ROOT/results/breakdown/interferometer/n_sweep
+    --output-dir $AP_ROOT/results/misc/likelihood_breakdown/interferometer/n_sweep
 
 echo "=========================================="
 echo "LEG 3: NumPy arms (numba direct_conv + NumPy FFT) -- delaunay_numba.py, --source-pixels 4000"
@@ -140,7 +140,7 @@ python3 -u scripts/interferometer/delaunay/likelihood_breakdown_numba.py \
     --config-name hpc_ral_cpu_fp64_n4000 \
     --n-instances 12 \
     --source-pixels 4000 \
-    --output-dir $AP_ROOT/results/breakdown/interferometer/n_sweep
+    --output-dir $AP_ROOT/results/misc/likelihood_breakdown/interferometer/n_sweep
 
 echo "=========================================="
 echo "loadavg: $(cat /proc/loadavg)"

@@ -26,7 +26,7 @@ Two arms:
 
 Output
 ------
-``results/streaming_scaling/in_memory_<hardware>_v<version>.{json,png}``
+``results/misc/streaming_scaling/in_memory_<hardware>_v<version>.{json,png}``
 """
 
 from __future__ import annotations

@@ -13,8 +13,8 @@ Per-config JSONs land at::
     <output_root>/<class>/<latent>/<config_name>.log    (captured stdout/stderr)
 
 Default ``--output-root`` is
-``results/latent/`` in this repo — mirrors the
-``jit/`` convention used by ``likelihood_runtime/sweep.py`` and is read by
+``results/misc/latent/`` in this repo (the mirrored tree's ``misc/<group>`` for
+``scripts/misc/latent/``, autolens_profiling#442) and is read by
 ``aggregate.py`` to produce ``comparison.json`` / ``comparison.png``.
 
 Usage::
@@ -56,7 +56,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 _REPO_ROOT = _profiling_root()  # autolens_profiling/
-_DEFAULT_OUTPUT_ROOT = _REPO_ROOT / "results" / "latent"
+_DEFAULT_OUTPUT_ROOT = _REPO_ROOT / "results" / "misc" / "latent"
 sys.path.insert(0, str(_REPO_ROOT))
 from _script_routes import canonical_path
 

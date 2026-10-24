@@ -76,7 +76,8 @@ Measures
 4. Correctness: per-step recomputed cube log-evidence and full-pipeline JIT
    log-evidence both match the summed eager ``FitInterferometer.log_evidence``
    at ``rtol=1e-4``.
-5. Results JSON + bar chart written to ``results/jit/datacube/`` using the
+5. Results JSON + bar chart placed in the mirrored tree (``results/datacube/delaunay/
+   <instrument>/<setup_id>/<host_class>/runtime.{json,png}``) using the
    same schema as the interferometer sibling. Bar chart shows the cube-total
    form of every step (channel-variant entries pre-multiplied by N).
 
@@ -147,6 +148,7 @@ from _profile_cli import (
     auto_simulate_if_missing,
     check_pinned,
     device_info_dict,
+    legacy_landing_dir,
     parse_profile_cli,
     record_pinned_check,  # noqa: E402
     resolve_output_paths,
@@ -428,7 +430,8 @@ print(f"  cube reference log_evidence (sum) = {cube_log_evidence_ref:.6f}")
 
 if _cli.vmap_probe:
     probe_path = (
-        _cli.output_dir or (_workspace_root / "results" / "runtime" / "datacube" / "delaunay")
+        _cli.output_dir
+        or legacy_landing_dir(_workspace_root / "results" / "runtime" / "datacube" / "delaunay")
     ) / "vmap_probe_delaunay.json"
     probe_path.parent.mkdir(parents=True, exist_ok=True)
     import json

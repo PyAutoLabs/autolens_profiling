@@ -281,7 +281,7 @@ These four live only in `likelihood_runtime/`.
 `imaging/delaunay_numba_nnls_iterations.py` used to sit in this package. It is a
 diagnostic A/B of the NNLS cross-evaluation warm-start memo, not a per-step
 breakdown, and it moved to [`scripts/misc/nnls_warm_start/`](../nnls_warm_start/README.md)
-(results under `results/nnls_warm_start/`) on 2026-09-08 so no default cell or README
+(results under `results/misc/nnls_warm_start/`) on 2026-09-08 so no default cell or README
 table cites a memo-on number.
 
 ## How to read the output

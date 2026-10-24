@@ -107,6 +107,7 @@ concurrent jobs cannot tear it) and is not a per-evaluation step.
 Output
 ------
 
+A legacy name, placed in the mirrored ``results/`` tree by ``_profile_cli`` (#442):
 ``results/breakdown/interferometer/<cell>_numba_breakdown_<instrument>_v<version>.{json,png}``
 untagged, ``[<instrument>/]<cell>_numba_<config>.{json,png}`` with ``--config-name``
 (``interferometer/`` for alma, ``interferometer/<instrument>/`` otherwise), plus

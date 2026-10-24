@@ -211,6 +211,7 @@ reader to assume a silent pass.
 
 Output
 ------
+A legacy name, placed in the mirrored ``results/`` tree by ``_profile_cli`` (#442):
 ``results/breakdown/imaging/fixed_light_numba_<mesh>[_<dataset>][_n<N>]_..{json,png}``
 """
 

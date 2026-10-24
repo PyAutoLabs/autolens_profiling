@@ -36,6 +36,7 @@ Setup
 Output
 ------
 
+A legacy name, placed in the mirrored ``results/`` tree by ``_profile_cli`` (#442):
 ``results/breakdown/interferometer/pixelization_numba_breakdown_{instrument}_v{version}.json``
 (+ PNG); config-tagged runs write ``pixelization_numba_<config>.json`` in ``interferometer/`` for
 alma and ``interferometer/<instrument>/`` otherwise; ``_r<radius>`` for a non-default mask.
