@@ -173,6 +173,31 @@ def source_pixels(payload: dict) -> int | None:
     return None
 
 
+def requested_source_pixels(payload: dict) -> int | None:
+    """The ``source_pixels_requested`` of a row (its own keys, then its configuration)."""
+    for block in (payload, payload.get("configuration")):
+        if isinstance(block, dict) and _int(block.get("source_pixels_requested")):
+            return block["source_pixels_requested"]
+    return None
+
+
+def size_pixels(variant: str, payload: dict) -> int | None:
+    """The count the standard-size rule judges a row by.
+
+    A row that asked for its variant's standard count (``source_pixels_requested`` equal to
+    :data:`STANDARD_SOURCE_PIXELS`) is at the standard size whatever its construction added:
+    Delaunay 1250 Hilbert vertices plus the production construction's 30 zeroed edge points
+    record 1280 and still count as standard (human ruling 2026-10-24). Every other row is judged
+    by its recorded count (:func:`source_pixels`), so the rows recorded before the ruling keep
+    their regime: a scan that asked for 1250 rectangular pixels built 35 x 35 = 1225 and is
+    standard by its count, one that asked for 1500 built 1521 and is ``source_pixels_1521``.
+    """
+    requested = requested_source_pixels(payload)
+    if requested is not None and requested == STANDARD_SOURCE_PIXELS.get(variant):
+        return requested
+    return source_pixels(payload)
+
+
 def regime(variant: str, pixels: int | None) -> str:
     standard = STANDARD_SOURCE_PIXELS.get(variant)
     if standard is None or pixels == standard:
