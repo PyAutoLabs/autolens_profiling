@@ -1227,20 +1227,16 @@ def fit_png_cell(cell_dir: Path) -> bool:
     a scratch path) collects several configs' rows, so one ``fit.png`` there would belong to
     whichever wrote last.
 
-    A folder outside the repo is a cell when the path from its last ``results`` component has the
-    mirrored shape (``<scratch>/results/imaging/delaunay/hst/<setup_id>/<host_class>/``): a
-    scratch tree laid out like ``results/`` is just as unambiguous, and it is how a laptop proof
-    run (``--output-path <scratch>/results/.../runtime.json``) keeps its row, figure and witness
-    out of the repo. Any other outside folder is not a cell.
+    The test is the path from the folder's last ``results`` component, so a scratch tree laid out
+    like ``results/`` (``<scratch>/results/imaging/delaunay/hst/<setup_id>/<host_class>/``, inside
+    the repo's gitignored ``output/`` or anywhere else) is a cell too: it is just as unambiguous,
+    and it is how a laptop proof or a timing arm keeps its row, figure and witness out of
+    ``results/``. A folder with no ``results`` component is never a cell.
     """
-    resolved = Path(cell_dir).resolve()
-    try:
-        rel = resolved.relative_to(_REPO_ROOT.resolve())
-    except ValueError:
-        parts = resolved.parts
-        if "results" not in parts:
-            return False
-        rel = Path(*parts[len(parts) - 1 - parts[::-1].index("results") :])
+    parts = Path(cell_dir).resolve().parts
+    if "results" not in parts:
+        return False
+    rel = Path(*parts[len(parts) - 1 - parts[::-1].index("results") :])
     tooling = str(_REPO_ROOT / "scripts" / "misc" / "tooling")
     if tooling not in sys.path:
         sys.path.insert(0, tooling)
