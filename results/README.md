@@ -35,6 +35,48 @@ classification. The catalogue builder (`build_catalogue.py`, which emits the
 `catalogue/series_id_map.json` maps each pre-move dashboard series id to its v3 id so the
 published trend history stays continuous (#442 PR 3b).
 
+## Parity witness
+
+The day-zero rule (lifecycle report §3.6) wants a parity witness beside every day-zero record:
+did this cell's log-likelihood agree with a reference log-likelihood for the same dataset and
+model? The run that measured it writes `parity.json` into the cell, next to `runtime.json`
+(older witnesses go under the cell's `history/<release_pin>_<YYYY-MM-DD>/`):
+
+```json
+{
+  "schema": "parity-witness",
+  "version": 1,
+  "status": "match",
+  "log_likelihood": -12345.678,
+  "reference_log_likelihood": -12345.671,
+  "tolerance": 0.01,
+  "reference": {"source": "jax_cpu_dense_fp64 on hpc_ral_cpu, same dataset and model", "date": "2026-10-20"},
+  "measured_at": "2026-10-21T09:00:00Z",
+  "autolens_version": "2026.10.17.1",
+  "source_pixels": 1250
+}
+```
+
+(The numbers above only show the shape; no witness has been recorded yet.)
+
+| Field | Meaning |
+|---|---|
+| `status` | `match` (\|log L - reference\| <= `tolerance`), `diverged` (above it) or `not_assessed` (no comparison made; `reason` required, numbers may be `null`) |
+| `log_likelihood`, `reference_log_likelihood` | the cell's and the reference's log-likelihood; finite numbers for `match`/`diverged` |
+| `tolerance` | absolute tolerance on \|delta log L\|, non-negative |
+| `reference.source`, `reference.date` | where the reference value came from (setup, host, run or paper) and the ISO date it was produced |
+| `measured_at`, `autolens_version` | when and on which release the witness ran (its `release_pin`) |
+| `source_pixels` | optional; sets the record's regime under the standard-size rule |
+
+`python scripts/misc/tooling/parity_witness.py --check` validates every `results/**/parity.json`,
+including that `status` agrees with the numbers. `build_catalogue.py` turns each witness into a
+`profiling-summary@3` record with `measurement: parity`, `metric: abs_delta_log_likelihood` and
+`values` `{abs_delta_log_likelihood, tolerance}` (v3 values must be non-negative, so the signed
+log-likelihoods and the status sit in the record's `parity` block). A `not_assessed` witness has
+no value, so it yields no record; the catalogue's `parity_witnesses` list names every witness.
+`coverage_matrix.py` reports per planned setup cell whether a witness is `match`, `diverged`,
+`not_assessed` or missing ([`dashboard/coverage.md`](../dashboard/coverage.md)).
+
 ## Day-zero move (redirects)
 
 | Old prefix | New location | Files |
