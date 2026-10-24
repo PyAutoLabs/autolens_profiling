@@ -321,7 +321,12 @@ class ProductionPreset:
                 "source_pixels": self.rect_pixels_yx**2,
             }
         if self.production_data:
-            payload["production_data"] = True
+            payload["production_data"] = {
+                "enabled": True,
+                # The dataset's truth tracer stands in for the previous stage's maximum-likelihood
+                # lens model whose light production subtracts (coordinator ruling, #456 fork a).
+                "lens_light_source": "truth",
+            }
             payload["production_source"] = PRODUCTION_DATA_SOURCES[
                 "euclid" if self.name.startswith("euclid") else "subhalo"
             ]
@@ -1501,6 +1506,7 @@ def production_standard_data(dataset, dataset_path, preset: ProductionPreset, sp
             "pixels_below": int((~above).sum()),
         },
         "adapt_image": "subtracted S/N (truth tracer), floored",
+        "lens_light_source": "truth",
         "adapt_minimum_percent": minimum_percent,
         "mesh_adapt_snr_cap": preset.adapt_snr_cap,
     }

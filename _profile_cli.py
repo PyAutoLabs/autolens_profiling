@@ -367,6 +367,17 @@ def _profile_parser() -> argparse.ArgumentParser:
     return parser
 
 
+#: Flags whose value ``--standard-size`` replaces (mesh family, size, over-sampling,
+#: regularization, preset variant): passing one beside it is an error, never a silent override.
+STANDARD_SIZE_EXCLUSIVE = (
+    "--source-pixels",
+    "--rect-mesh",
+    "--over-sampling",
+    "--regularization",
+    "--variant",
+)
+
+
 def parse_profile_cli(default_config_name: str | None = None, *, argv=None) -> ProfileCLI:
     """Parse the sweep CLI flags accepted by every per-cell profile script.
 
@@ -382,8 +393,20 @@ def parse_profile_cli(default_config_name: str | None = None, *, argv=None) -> P
     """
     parser = _profile_parser()
     args, _unknown = parser.parse_known_args(argv)
-    if args.standard_size and args.source_pixels is not None:
-        parser.error("--standard-size and --source-pixels are exclusive")
+    if args.standard_size:
+        # --standard-size builds the production cell's mesh, size, over-sampling, regularization
+        # and preset; any explicit flag it would silently replace is refused (#456 fork b).
+        tokens = list(sys.argv[1:] if argv is None else argv)
+        given = [
+            f
+            for f in STANDARD_SIZE_EXCLUSIVE
+            if any(t == f or t.startswith(f + "=") for t in tokens)
+        ]
+        if given:
+            parser.error(
+                f"--standard-size builds the production cell and would silently replace "
+                f"{', '.join(given)}; drop {'it' if len(given) == 1 else 'them'}"
+            )
     config_name = args.config_name or default_config_name
     output_dir = Path(args.output_dir).resolve() if args.output_dir else None
     return ProfileCLI(

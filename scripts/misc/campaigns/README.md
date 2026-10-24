@@ -29,9 +29,11 @@ weights, regularization priors, over-sampling, settings and positions penalty, e
 the preset's seeded iid draw 0. The data and mesh follow real production
 (`production_standard_data`, `PRODUCTION_DATA_SOURCES` in `_production_config.py`): the
 source adapt image is production's subtracted S/N map (data minus the truth lens light, over
-the noise map, floored at 1 %), the over-sampling cut (sub-size 4 where S/N > 3, else 2) reads
+the noise map, floored at 1 %; the dataset's truth tracer stands in for production's
+previous-stage lens model, recorded as `production_data.lens_light_source: "truth"`), the over-sampling cut (sub-size 4 where S/N > 3, else 2) reads
 the uncapped map, the S/N cap of 3 feeds only the mesh and regularization, and the
-rectangular mesh is `RectangularBilinearAdaptImage` with free weight priors. So every setup of one likelihood and instrument evaluates the
+rectangular mesh is `RectangularBilinearAdaptImage` with free weight priors. `--standard-size`
+refuses `--source-pixels`, `--rect-mesh`, `--over-sampling`, `--regularization` and `--variant`. So every setup of one likelihood and instrument evaluates the
 same likelihood; the row records the preset as `configuration.production_preset`. Each row
 gets `fit.png` and `parity.json` (the eager NumPy dense-mapping reference) beside it. The
 numba leg of `delaunay_nn` runs the numba Delaunay script with `--mesh-class delaunay_nn`.

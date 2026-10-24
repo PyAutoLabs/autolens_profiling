@@ -62,9 +62,34 @@ def test_standard_size_counts_per_variant_and_one_copy_with_the_catalogue():
     assert pc.requested_source_pixels(scan, "delaunay") == 3000
 
 
-def test_standard_size_and_source_pixels_are_exclusive():
+@pytest.mark.parametrize(
+    "flag",
+    [
+        ["--source-pixels", "1250"],
+        ["--rect-mesh", "rtu"],
+        ["--rect-mesh=bilinear"],
+        ["--over-sampling", "production"],
+        ["--regularization", "constant_split"],
+        ["--variant", "legacy"],
+    ],
+)
+def test_standard_size_refuses_every_flag_it_would_silently_replace(flag, capsys):
     with pytest.raises(SystemExit):
-        pc.parse_profile_cli(argv=["--standard-size", "--source-pixels", "1250"])
+        pc.parse_profile_cli(argv=["--standard-size", *flag])
+    assert "would silently replace" in capsys.readouterr().err
+    pc.parse_profile_cli(argv=flag)  # each is fine on its own
+    assert set(pc.STANDARD_SIZE_EXCLUSIVE) == {
+        "--source-pixels",
+        "--rect-mesh",
+        "--over-sampling",
+        "--regularization",
+        "--variant",
+    }
+
+
+def test_production_data_records_the_truth_lens_light_stand_in():
+    preset = prod.standard_size_preset("pixelization_numba", "hst")
+    assert preset.as_json()["production_data"] == {"enabled": True, "lens_light_source": "truth"}
 
 
 def test_standard_size_rows_keep_the_canonical_name(tmp_path):
