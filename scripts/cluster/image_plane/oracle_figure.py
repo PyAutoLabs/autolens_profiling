@@ -172,7 +172,7 @@ CURVE_COLOUR = "0.25"
 
 
 # ---------------------------------------------------------------------------
-# Pure helpers (no autolens import; tested in scripts/misc/test)
+# Pure helpers (no autolens import; tested in scripts/misc/cells/test)
 # ---------------------------------------------------------------------------
 
 

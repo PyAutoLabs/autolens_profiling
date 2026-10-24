@@ -53,7 +53,7 @@ What is timed
 The split is re-implemented here rather than instrumented in place because the
 library function is a single straight-line body with no seam to hook; the
 re-implementation is pinned against the library's own output, array for array,
-by ``scripts/misc/test/test_host_callback_probe.py``. If the library body ever
+by ``scripts/misc/likelihood_breakdown/test/test_host_callback_probe.py``. If the library body ever
 grows a step this wrapper does not have, that test fails rather than the
 numbers quietly drifting.
 

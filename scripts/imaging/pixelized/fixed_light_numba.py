@@ -560,7 +560,7 @@ UNATTRIBUTED_LABEL = "unattributed (call - sum of exclusive times)"
 #: exactly the arm where the cache is claimed.
 #:
 #: The PIN is unconditional and lives elsewhere:
-#: `scripts/misc/test/test_fixed_light_numba.py::test_curvature_reg_matrix_is_cached`
+#: `scripts/misc/likelihood_breakdown/test/test_fixed_light_numba.py::test_curvature_reg_matrix_is_cached`
 #: asserts `n_calls == 1` against whatever PyAutoArray it is run on, so a library
 #: that stops caching it fails loudly rather than silently moving milliseconds
 #: between the decomposition's rows.

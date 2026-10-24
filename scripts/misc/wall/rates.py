@@ -190,7 +190,7 @@ PROVENANCE: dict[str, str] = {
 # HEADLINE_MEDIAN_MAX_BLOCK_MEAN_S per call. Those calls are wall clock a measured wall taken
 # before the median existed does not contain. The constants are mirrored here (this module is
 # pure stdlib; ``timing.py`` imports jax) and pinned equal by
-# ``scripts/misc/test/test_headline_completion.py::test_the_wall_constants_mirror_the_producer``.
+# ``scripts/misc/likelihood_breakdown/test/test_headline_completion.py::test_the_wall_constants_mirror_the_producer``.
 HEADLINE_MEDIAN_MIN_STEADY_WARM = 5
 HEADLINE_MEDIAN_BUDGET_S = 30.0
 HEADLINE_MEDIAN_MIN_TIMED = 20

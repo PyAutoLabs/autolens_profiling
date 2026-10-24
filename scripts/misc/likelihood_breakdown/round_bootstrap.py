@@ -20,7 +20,7 @@ sample size and is recorded as ``effective_n``. The interval estimator is
 otherwise unchanged (median of the pooled calls of the drawn rounds, 90 %
 percentile interval, a fixed seed), so the keys a cell already writes keep their
 meaning. Every cell imports :func:`round_median_ratio` /
-:func:`round_median_saving` from here; ``scripts/misc/test/test_round_bootstrap.py``
+:func:`round_median_saving` from here; ``scripts/misc/likelihood_breakdown/test/test_round_bootstrap.py``
 asserts the same function objects.
 
 Limits

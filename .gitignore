@@ -116,3 +116,6 @@ dataset/interferometer/*/preload_inputs_*.npz
 results/lens/solver/corpus/delaunay_hst.npz
 results/lens/solver/corpus/rectangular_hst.npz
 results/lens/solver/corpus/slam_mixed_hst.npz
+
+# pytest cache (rootdir is the repo root, see pytest.ini)
+.pytest_cache/

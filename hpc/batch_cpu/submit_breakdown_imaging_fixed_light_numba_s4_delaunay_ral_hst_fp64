@@ -61,7 +61,7 @@
 # shared install at /mnt/ral/jnightin/PyAuto/PyAutoArray, untouched and never
 # written to by this job.
 #
-# WHY THE NAME AVOIDS `_numba_levers_`. `scripts/misc/test/`'s levers-submit test
+# WHY THE NAME AVOIDS `_numba_levers_`. `scripts/misc/likelihood_breakdown/test/`'s levers-submit test
 # family asserts that every submit carrying that infix has TWO library arms with
 # a control and a feature checkout. This job deliberately has one, for the reason
 # above, so it would fail a test that is correct about the family it describes.

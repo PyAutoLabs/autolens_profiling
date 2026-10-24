@@ -1111,7 +1111,7 @@ def memo_warm_row(
 # with no `__main__` guard: importing it to test one metric would build an HST
 # Delaunay N=1500 system and run the whole witness. A metric that cannot be
 # tested on hand-built inputs is a metric nobody has checked, and the red
-# control in `scripts/misc/test/test_fixed_light_s4b.py` (a deliberately wrong
+# control in `scripts/misc/likelihood_breakdown/test/test_fixed_light_s4b.py` (a deliberately wrong
 # kernel that must FAIL W2 and W3) depends on calling them directly.
 
 

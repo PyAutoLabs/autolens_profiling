@@ -661,7 +661,8 @@ def script_inventory(root, reg):
         if "__pycache__" in parts or path.name == "__init__.py" or rel in legacy:
             continue
         if parts[0] == "misc":
-            if parts[1] in ("test", "tooling"):
+            # Tooling, the pytest conftest and each group's test/ dir are not measurement tools.
+            if parts[1] in ("tooling", "conftest.py") or "test" in parts[2:-1]:
                 continue
             category = "shared_measurement_tools"
         else:

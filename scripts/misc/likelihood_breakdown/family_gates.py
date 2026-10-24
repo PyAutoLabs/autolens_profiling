@@ -49,7 +49,7 @@ Families (what each verdict rests on)
   every member resolved NO_GO; anything else is INCONCLUSIVE.
 
 Every function is pure and deterministic (fixed seeds); none reads a clock.
-``scripts/misc/test/test_family_gates.py`` holds the witnesses.
+``scripts/misc/likelihood_breakdown/test/test_family_gates.py`` holds the witnesses.
 """
 
 from __future__ import annotations

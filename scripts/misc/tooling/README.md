@@ -1,6 +1,8 @@
-# scripts
+# tooling
 
-Repo tooling (not profiling scripts).
+Repo tooling (not profiling scripts). Its tests, and the repo-wide layout tests
+(results mirror, write destinations, script routes), are in `test/`:
+`pytest scripts/misc/tooling/test -q`.
 
 - **`build_readme.py`** — renders the auto-generated dashboard tables in the
   top-level and per-package READMEs from the artifacts under `results/`.

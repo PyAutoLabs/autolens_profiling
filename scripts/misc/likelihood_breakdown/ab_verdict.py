@@ -11,7 +11,7 @@ measured negative ("a valid **measured** NO_LEVER", ``go: false``). This module
 is the one rule those cells now share, beside the overhead rule in
 :mod:`likelihood_breakdown.overhead_verdict`. Every caller imports
 :func:`ab_rule_verdict` / :func:`tie_set` from here, and
-``scripts/misc/test/test_ab_verdict.py`` asserts each cell holds the same
+``scripts/misc/likelihood_breakdown/test/test_ab_verdict.py`` asserts each cell holds the same
 function object.
 
 The rule
