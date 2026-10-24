@@ -746,3 +746,41 @@ def test_history_witness_is_superseded_and_tampering_is_refused(tree):
     rec["values"]["abs_delta_log_likelihood"] = 0.0
     with pytest.raises(ValueError, match="parity.json witness"):
         cat.validate_lifecycle(tree, changed)
+
+
+def test_writer_witness_at_the_standard_request_is_a_standard_parity_record(tree):
+    """A witness from ``_profile_cli.parity_witness_doc`` (Delaunay 1250 + 30 edge = 1280 built)."""
+    sys.path.insert(0, str(TOOLING.parents[2]))
+    import _profile_cli as pc
+
+    witness = pc.parity_witness_doc(
+        log_likelihood=-100.0,
+        reference_log_likelihood=-100.004,
+        use_mixed_precision=False,
+        reference_source="fixture: eager NumPy reference",
+        autolens_version="2026.10.23.1",
+        source_pixels=1280,
+        source_pixels_requested=1250,
+    )
+    write(tree, f"{A100}/runtime.json", row())
+    write(tree, f"{A100}/parity.json", witness)
+    doc = lifecycle(tree)
+    [record] = [r for r in doc["records"] if r["measurement"] == "parity"]
+    assert record["regime"] == "standard" and record["status"] == "current"
+    assert record["parity"]["status"] == "match"
+    assert record["values"]["tolerance"] == pytest.approx(1e-4 * 100.004)
+    assert record["release_pin"] == "2026.10.23.1"
+    assert pulse_classify()(json.loads(json.dumps(doc)), ("profiling-summary", 3)) == ("ok", [])
+
+
+def test_a_row_that_asked_for_the_standard_count_is_standard_whatever_it_built(tree):
+    standard = row(
+        configuration={"delaunay_vertices": 1280, "source_pixels_requested": 1250},
+        device={"backend": "gpu"},
+    )
+    write(tree, f"{A100}/runtime.json", standard)
+    [record] = [
+        r for r in lifecycle(tree)["records"] if r["evidence"]["path"].endswith("runtime.json")
+    ]
+    assert record["regime"] == "standard"
+    assert not any(n.startswith("size_fallback") for n in record["limitations"])

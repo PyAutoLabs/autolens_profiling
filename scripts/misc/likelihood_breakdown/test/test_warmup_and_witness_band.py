@@ -97,7 +97,12 @@ def test_the_band_is_unchanged_and_the_host_rule_is_the_dashboards():
 @pytest.mark.parametrize("cell", WITNESS_CELLS, ids=lambda p: f"{p.parent.name}/{p.stem}")
 def test_every_witness_cell_passes_its_host_class(cell):
     source = cell.read_text()
-    assert 'witness_verdict(timing["cold_eval_median_s"], instrument, _cli.config_name)' in source
+    # ``witness_for`` (#456) is witness_verdict with a not_applicable branch for resized presets.
+    assert (
+        'witness_verdict(timing["cold_eval_median_s"], instrument, _cli.config_name)' in source
+        or 'witness_for(preset, timing["cold_eval_median_s"], instrument, _cli.config_name)'
+        in source
+    )
     assert '"INCONCLUSIVE"' in source and "witness['reason']" in source
 
 
