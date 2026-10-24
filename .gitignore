@@ -122,3 +122,5 @@ results/lens/solver/corpus/slam_mixed_hst.npz
 
 # render_fit_png's staging file (a run killed mid-copy leaves it beside the row)
 .fit_png.tmp
+# write_parity_json's staging file (a run killed mid-write leaves it beside the row)
+.parity_json.tmp
