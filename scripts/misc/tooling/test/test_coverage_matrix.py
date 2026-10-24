@@ -1,8 +1,9 @@
 """Coverage matrix: cell states, the size-fallback ruling, the stale rule, parity witnesses,
-and the §3.3 machine copy agreeing with catalogue_lifecycle.py."""
+and the §3.3 JSON as the one copy catalogue_lifecycle.py reads."""
 
 from __future__ import annotations
 
+import ast
 import importlib.util
 import json
 import sys
@@ -196,30 +197,54 @@ def _routes():
         for route in row["routes"]:
             variants = route["variants"] if route["variants"] != "*" else ["mge"]
             for variant in variants:
-                yield route["dataset_type"], variant
+                yield route["dataset_type"], variant, route["table"]
 
 
-@pytest.mark.parametrize("dataset_type, variant", sorted(set(_routes())))
-def test_designations_copy_agrees_with_catalogue_lifecycle(dataset_type, variant):
-    every = {
-        sid
-        for t in DESIGNATIONS["tables"].values()
-        for h in t.values()
-        for v in h.values()
-        for sid in v
+def test_designations_json_is_the_single_source():
+    # catalogue_lifecycle holds no copy of the §3.3 table: it reads the JSON coverage_matrix reads.
+    assert lc.DESIGNATIONS_PATH == (REPO / cm.DESIGNATIONS).resolve()
+    assert {
+        name: {host: [sorted(o), sorted(s)] for host, (o, s) in hosts.items()}
+        for name, hosts in lc._TABLES.items()
+    } == {
+        name: {host: [sorted(c["optimal"]), sorted(c["secondary"])] for host, c in hosts.items()}
+        for name, hosts in DESIGNATIONS["tables"].items()
     }
-    every |= {s.replace("fp64", "mixed") for s in every}
-    for host in ("hpc_a100", "hpc_ral_cpu", "local_laptop"):
-        for sid in sorted(every):
-            expected = lc.designation(dataset_type, variant, host, sid) or "experimental"
-            assert cm.designated_class(DESIGNATIONS, dataset_type, variant, host, sid) == expected
-    suffixes = tuple(DESIGNATIONS["regime_only_suffixes"])
-    for host in ("hpc_a100", "hpc_ral_cpu"):
-        planned = {
-            sid: cm.designated_class(DESIGNATIONS, dataset_type, variant, host, sid)
-            for sid in every
-            if not sid.endswith(suffixes)
-            and cm.designated_class(DESIGNATIONS, dataset_type, variant, host, sid)
-            != "experimental"
-        }
-        assert planned == lc.planned_setups(dataset_type, variant, host)
+    setup_ids = {sid for hosts in lc._TABLES.values() for o, s in hosts.values() for sid in o | s}
+    literals = {
+        node.value
+        for node in ast.walk(ast.parse((TOOLING / "catalogue_lifecycle.py").read_text()))
+        if isinstance(node, ast.Constant) and isinstance(node.value, str)
+    }
+    assert not literals & setup_ids, "a §3.3 setup_id is hard-coded in catalogue_lifecycle.py"
+
+
+def test_editing_the_json_changes_catalogue_lifecycle(tmp_path):
+    doc = json.loads((REPO / cm.DESIGNATIONS).read_text())
+    doc["tables"]["pixelized"]["hpc_ral_cpu"] = {
+        "optimal": ["jax_cpu_sparse_fp64"],
+        "secondary": [],
+    }
+    (tmp_path / "catalogue").mkdir()
+    (tmp_path / cm.DESIGNATIONS).write_text(json.dumps(doc))
+    copy = tmp_path / "scripts" / "misc" / "tooling" / "catalogue_lifecycle.py"
+    copy.parent.mkdir(parents=True)
+    copy.write_text((TOOLING / "catalogue_lifecycle.py").read_text())
+    spec = importlib.util.spec_from_file_location("catalogue_lifecycle_edited", copy)
+    edited = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(edited)
+    args = ("imaging", "delaunay", "hpc_ral_cpu")
+    assert lc.planned_setups(*args) == {
+        "jax_cpu_sparse_fp64": "secondary",
+        "numba_cpu_sparse_fp64": "optimal",
+    }
+    assert edited.planned_setups(*args) == {"jax_cpu_sparse_fp64": "optimal"}
+    assert edited.designation(*args, "numba_cpu_sparse_fp64") is None
+
+
+@pytest.mark.parametrize("dataset_type, variant, table", sorted(set(_routes())))
+def test_every_route_names_the_table_catalogue_lifecycle_dispatches_to(
+    dataset_type, variant, table
+):
+    assert cm.table_for(DESIGNATIONS, dataset_type, variant) == table
+    assert lc._table_name(dataset_type, variant) == table
