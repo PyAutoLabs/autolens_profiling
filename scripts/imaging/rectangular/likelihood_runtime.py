@@ -99,8 +99,11 @@ from _profile_cli import (
     parse_profile_cli,
     record_pinned_check,  # noqa: E402
     rect_mesh_classes,
+    rectangular_side,
     render_fit_png,
+    requested_source_pixels,
     resolve_output_paths,
+    write_parity_json,
 )
 
 _cli = parse_profile_cli()
@@ -249,7 +252,16 @@ with timer.section("mask_and_oversample"):
 
 print("\n--- Model construction ---")
 
-mesh_pixels_yx = 39  # 39x39 = 1521 source pixels — 1500-tier production fiducial
+MESH_PIXELS_YX_FIDUCIAL = 39  # 39x39 = 1521 source pixels — 1500-tier production fiducial
+# ``--standard-size`` (35x35 = 1225, likelihood-lifecycle phase 2) or ``--source-pixels N``
+# (nearest square) replaces the fiducial; the count built is recorded beside
+# ``source_pixels_requested``, and the pins below describe the fiducial only.
+_requested_pixels = requested_source_pixels(_cli, "rectangular")
+mesh_pixels_yx = rectangular_side(_requested_pixels, MESH_PIXELS_YX_FIDUCIAL)
+_size_record = {
+    "source_pixels_requested": _requested_pixels,
+    "standard_size": bool(_cli.standard_size),
+}
 mesh_shape = (mesh_pixels_yx, mesh_pixels_yx)
 
 with timer.section("model_build"):
@@ -474,6 +486,7 @@ _early_dict_path, _ = resolve_output_paths(
     default_basename=f"pixelization_likelihood_summary_{instrument}_v{al.__version__}",
     hints=_early_summary,
 )
+_early_summary["configuration"].update(_size_record)
 _early_dict_path.write_text(json.dumps(_early_summary, indent=2))
 print(f"\n  Early JSON saved to: {_early_dict_path}")
 
@@ -695,6 +708,7 @@ dict_path, chart_path = resolve_output_paths(
     default_basename=f"pixelization_likelihood_summary_{instrument}_v{al_version}",
     hints=likelihood_summary,
 )
+likelihood_summary["configuration"].update(_size_record)
 dict_path.write_text(json.dumps(likelihood_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")
 print(f"  Bar chart path:        {chart_path} (no per-step chart in runtime variant)")
@@ -762,6 +776,10 @@ EXPECTED_LOG_EVIDENCE = {
 }
 
 expected_log_evidence = EXPECTED_LOG_EVIDENCE.get(_cli.rect_mesh, {}).get(instrument)
+if mesh_pixels_yx != MESH_PIXELS_YX_FIDUCIAL:
+    # The pins describe the fiducial mesh; another size fits the data differently.
+    print(f"  Pinned check SKIPPED: {n_source_pixels} source pixels is not the fiducial.")
+    expected_log_evidence = None
 _pinned_expected = expected_log_evidence
 
 if expected_log_evidence is None:
@@ -789,6 +807,25 @@ else:
 record_pinned_check(dict_path, _pinned_expected, _pinned_drift)
 if _pinned_expected is not None and not _pinned_drift:
     print("  Pinned-value check PASSED (recorded in result JSON).")
+
+
+# Parity witness (likelihood-lifecycle 2a): the JIT full pipeline against the eager NumPy
+# FitImaging computed above on the same dataset, size, model and instance, written beside the row
+# after every timed region (the placement and guards of fit.png).
+write_parity_json(
+    dict_path.parent,
+    log_likelihood=float(full_result),
+    reference_log_likelihood=float(log_evidence_ref),
+    use_mixed_precision=_cli.use_mixed_precision,
+    reference_source=(
+        f"eager NumPy al.FitImaging(xp=np).figure_of_merit in the same process: {instrument}, "
+        f"{n_source_pixels} source pixels, same dataset, model and instance"
+    ),
+    autolens_version=al_version,
+    source_pixels=int(n_source_pixels),
+    source_pixels_requested=_requested_pixels,
+    quantity="figure_of_merit (the JIT log_likelihood_function value; log evidence)",
+)
 
 
 # Fit figure (likelihood-lifecycle 1B): the eager fit, drawn after every timed region and kept as

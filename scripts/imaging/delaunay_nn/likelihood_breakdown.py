@@ -346,10 +346,14 @@ from _profile_cli import (  # noqa: E402
     device_info_dict,
     parse_profile_cli,
     record_pinned_check,
+    requested_source_pixels,
     resolve_output_paths,
 )
 
 _cli = parse_profile_cli()
+# ``--standard-size`` (the likelihood-lifecycle standard count) or ``--source-pixels N``; None keeps
+# the cell's fiducial mesh.
+_requested_pixels = requested_source_pixels(_cli, "delaunay_nn")
 
 
 _vmap_batch = timing.parse_vmap_batch(sys.argv)
@@ -541,7 +545,7 @@ N_MESH_VERTICES_FIDUCIAL = 1500
 # Unlike the rectangular cell there is no rounding: a Delaunay mesh takes the
 # vertex count directly.
 n_mesh_vertices = (
-    N_MESH_VERTICES_FIDUCIAL if _cli.source_pixels is None else int(_cli.source_pixels)
+    N_MESH_VERTICES_FIDUCIAL if _requested_pixels is None else int(_requested_pixels)
 )  # 1500-tier production fiducial
 
 #: Whether this run's mesh is the one the pinned evidence describes. A
@@ -2217,8 +2221,9 @@ breakdown_summary = {
         # What ``--source-pixels`` asked for (None = the cell's fiducial); the
         # realised count is ``delaunay_vertices`` above.
         "source_pixels_requested": (
-            int(_cli.source_pixels) if _cli.source_pixels is not None else None
+            int(_requested_pixels) if _requested_pixels is not None else None
         ),
+        "standard_size": bool(_cli.standard_size),
         "edge_zeroed_pixels": int(edge_pixels_total),
         "inversion_path": "sparse" if _cli.use_sparse_operator else "dense",
         "total_params": int(inversion.total_params),
@@ -2414,7 +2419,7 @@ if instrument != "hst" or _cli.over_sampling != "flat1":
     record_pinned_check(dict_path, None, [])
 elif not PIN_IS_FIDUCIAL:
     print(
-        f"  Eager regression assertion SKIPPED: --source-pixels {_cli.source_pixels} builds a "
+        f"  Eager regression assertion SKIPPED: a requested {_requested_pixels} source pixels builds a "
         f"{n_mesh_vertices}-vertex mesh, not the {N_MESH_VERTICES_FIDUCIAL}-vertex fiducial the "
         f"pin describes. Eager log_evidence = {log_evidence_ref!r}"
     )

@@ -227,10 +227,14 @@ from _profile_cli import (  # noqa: E402
     parse_profile_cli,
     record_pinned_check,
     rect_mesh_classes,
+    requested_source_pixels,
     resolve_output_paths,
 )
 
 _cli = parse_profile_cli()
+# ``--standard-size`` (the likelihood-lifecycle standard count) or ``--source-pixels N``; None keeps
+# the cell's fiducial mesh.
+_requested_pixels = requested_source_pixels(_cli, "rectangular")
 
 _vmap_batch = timing.parse_vmap_batch(sys.argv)
 if _vmap_batch is not None and _vmap_batch < 1:
@@ -348,8 +352,8 @@ MESH_PIXELS_YX_FIDUCIAL = 39
 # what the JSON records; ``source_pixels_requested`` keeps what was asked for.
 mesh_pixels_yx = (
     MESH_PIXELS_YX_FIDUCIAL
-    if _cli.source_pixels is None
-    else int(round(math.sqrt(_cli.source_pixels)))
+    if _requested_pixels is None
+    else int(round(math.sqrt(_requested_pixels)))
 )  # 39x39 = 1521 source pixels — 1500-tier production fiducial
 mesh_shape = (mesh_pixels_yx, mesh_pixels_yx)
 
@@ -1857,9 +1861,8 @@ _configuration = {
     "source_pixels": int(n_source_pixels),
     # What ``--source-pixels`` asked for (None = the cell's fiducial); the
     # realised count is ``source_pixels`` / ``mesh_shape`` above.
-    "source_pixels_requested": (
-        int(_cli.source_pixels) if _cli.source_pixels is not None else None
-    ),
+    "source_pixels_requested": (int(_requested_pixels) if _requested_pixels is not None else None),
+    "standard_size": bool(_cli.standard_size),
     "inversion_path": "sparse" if _cli.use_sparse_operator else "dense",
     "total_params": int(inversion.total_params),
     # Provenance only (autolens_profiling#235 decision 3): this cell's
@@ -2048,7 +2051,7 @@ EXPECTED_LOG_EVIDENCE_HST = {
 
 if not PIN_IS_FIDUCIAL:
     print(
-        f"  Eager regression check SKIPPED: --source-pixels {_cli.source_pixels} builds a "
+        f"  Eager regression check SKIPPED: a requested {_requested_pixels} source pixels builds a "
         f"{mesh_pixels_yx}x{mesh_pixels_yx} = {n_source_pixels}-pixel mesh, not the "
         f"{MESH_PIXELS_YX_FIDUCIAL}x{MESH_PIXELS_YX_FIDUCIAL} fiducial the pin describes. "
         f"Eager log_evidence = {log_evidence_ref!r}"

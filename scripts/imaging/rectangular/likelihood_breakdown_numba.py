@@ -143,7 +143,9 @@ from _production_config import (  # noqa: E402
     positions_likelihood,
     preset_for,
     regularization_model,
+    standard_size_preset,
     timing_summary,
+    witness_for,
     witness_verdict,
 )
 from _profile_cli import (  # noqa: E402
@@ -152,12 +154,23 @@ from _profile_cli import (  # noqa: E402
     device_info_dict,
     record_pinned_check,
     rect_mesh_classes,
+    requested_source_pixels,
     resolve_output_paths,
 )
 
 instrument = _cli.instrument or "euclid"  # default; override via --instrument
 
-preset = preset_for("pixelization_numba", instrument=instrument, variant=_cli.variant)
+
+# ``--standard-size`` (likelihood-lifecycle phase 2): the production preset at the standard
+# source-pixel count, for every instrument (``standard_size_preset``; jwst / ao borrow the hst
+# reference). The preset records why in ``size_override``, which retires its pin and witness.
+if _cli.standard_size:
+    if _cli.variant != "production":
+        raise SystemExit("--standard-size resizes the production preset; it has no legacy form")
+    preset = standard_size_preset("pixelization_numba", instrument)
+else:
+    preset = preset_for("pixelization_numba", instrument=instrument, variant=_cli.variant)
+_requested_pixels = requested_source_pixels(_cli, "rectangular") if _cli.standard_size else None
 
 print(f"\n--- Preset [{preset.name} / {preset.variant}] ---")
 print(f"  {preset.provenance}")
@@ -764,7 +777,7 @@ timing = timing_summary(per_eval_s, n_cold=n_cold)
 direct_per_call = timing["warm_iid_median_s"]
 
 # P5 (#362 fix phase 6): PASS / FAIL only on a reference host class, else INCONCLUSIVE.
-witness = witness_verdict(timing["cold_eval_median_s"], instrument, _cli.config_name)
+witness = witness_for(preset, timing["cold_eval_median_s"], instrument, _cli.config_name)
 
 print(f"  cold eval median:   {timing['cold_eval_median_s']:.6f} s (n = {timing['n_cold']})")
 print(f"  warm iid median:    {timing['warm_iid_median_s']:.6f} s (n = {timing['n_warm']})")
@@ -816,6 +829,9 @@ breakdown_summary = {
         "mesh_shape": list(mesh_shape),
         "rect_mesh": _cli.rect_mesh,
         "source_pixels": int(n_source_pixels),
+        # ``--standard-size``: what was asked for (1250 / 1225); the count built is above.
+        "source_pixels_requested": _requested_pixels,
+        "standard_size": bool(_cli.standard_size),
         "inversion_path": "sparse_numba",
         "use_jax": False,
         "n_instances": n_instances,
@@ -998,6 +1014,11 @@ EXPECTED_LOG_LIKELIHOOD: dict[str, dict[str, dict[str, float]]] = {
 _pinned_expected = (
     EXPECTED_LOG_LIKELIHOOD.get(preset.variant, {}).get(_cli.rect_mesh, {}).get(instrument)
 )
+
+if preset.size_override is not None:
+    # The pins describe the production preset as recorded (Delaunay mesh); not this one.
+    print(f"  Pinned check SKIPPED: {preset.size_override or 'DelaunayNN mesh'}")
+    _pinned_expected = None
 
 if _pinned_expected is None:
     print(

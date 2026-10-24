@@ -65,6 +65,7 @@ _cli = _parse_profile_cli()
 
 thread_env = _pin_thread_env(1) if _cli.variant == "production" else _observe_thread_env()
 
+import argparse as _argparse
 import json
 import os
 
@@ -93,10 +94,13 @@ from _production_config import (  # noqa: E402
     apply_production_over_sampling,
     iid_instances,
     mge_lens_bulge,
+    numpy_dense_twin,
     positions_likelihood,
     preset_for,
     regularization_model,
+    standard_size_preset,
     timing_summary,
+    witness_for,
     witness_verdict,
 )
 from _profile_cli import (  # noqa: E402
@@ -106,12 +110,34 @@ from _profile_cli import (  # noqa: E402
     device_info_dict,
     record_pinned_check,
     render_fit_png,
+    requested_source_pixels,
     resolve_output_paths,
+    write_parity_json,
 )
 
 instrument = _cli.instrument or "euclid"  # default; override via --instrument
 
-preset = preset_for("delaunay_numba", instrument=instrument, variant=_cli.variant)
+
+# ``--mesh-class delaunay_nn`` builds ``al.mesh.DelaunayNN`` (Sibson natural-neighbour weights) in
+# place of ``al.mesh.Delaunay``, everything else unchanged: the numba CPU leg of the
+# ``imaging/delaunay_nn`` cells (likelihood-lifecycle 2a). Its rows belong to the delaunay_nn
+# variant, which the legacy name does not encode, so it needs an explicit ``--output-path``.
+_mesh_parser = _argparse.ArgumentParser(add_help=False)
+_mesh_parser.add_argument("--mesh-class", choices=("delaunay", "delaunay_nn"), default="delaunay")
+MESH_CLASS = _mesh_parser.parse_known_args()[0].mesh_class
+if MESH_CLASS == "delaunay_nn" and _cli.output_path is None:
+    raise SystemExit("--mesh-class delaunay_nn needs --output-path (the legacy name says delaunay)")
+
+# ``--standard-size`` (likelihood-lifecycle phase 2): the production preset at the standard
+# source-pixel count, for every instrument (``standard_size_preset``; jwst / ao borrow the hst
+# reference). The preset records why in ``size_override``, which retires its pin and witness.
+if _cli.standard_size:
+    if _cli.variant != "production":
+        raise SystemExit("--standard-size resizes the production preset; it has no legacy form")
+    preset = standard_size_preset("delaunay_numba", instrument)
+else:
+    preset = preset_for("delaunay_numba", instrument=instrument, variant=_cli.variant)
+_requested_pixels = requested_source_pixels(_cli, MESH_CLASS) if _cli.standard_size else None
 
 print(f"\n--- Preset [{preset.name} / {preset.variant}] ---")
 print(f"  {preset.provenance}")
@@ -260,7 +286,7 @@ with timer.section("model_build"):
     lens = af.Model(al.Galaxy, redshift=0.5, bulge=lens_bulge, mass=mass)
     field = af.Model(al.MassField, redshift=0.5, shear=shear)
 
-    mesh = al.mesh.Delaunay(
+    mesh = (al.mesh.DelaunayNN if MESH_CLASS == "delaunay_nn" else al.mesh.Delaunay)(
         pixels=n_mesh_vertices,
         zeroed_pixels=preset.edge_pixels,
     )
@@ -429,7 +455,7 @@ print(f"  warm iid median:    {timing['warm_iid_median_s']:.6f} s (n = {timing['
 print(f"  warm iid mean:      {timing['warm_iid_mean_s']:.6f} s")
 
 # P5 (#362 fix phase 6): PASS / FAIL only on a reference host class, else INCONCLUSIVE.
-witness = witness_verdict(timing["cold_eval_median_s"], instrument, _cli.config_name)
+witness = witness_for(preset, timing["cold_eval_median_s"], instrument, _cli.config_name)
 if witness.get("verdict") in ("PASS", "FAIL", "INCONCLUSIVE"):
     print(
         f"  witness vs production job {witness['job']} "
@@ -484,6 +510,10 @@ likelihood_summary = {
         "over_sampled_pixels": int(n_over_sampled_pixels),
         "mesh_shape": [n_mesh_vertices],
         "source_pixels": int(n_source_pixels),
+        # ``--standard-size``: what was asked for (1250 / 1225); the count built is above.
+        "source_pixels_requested": _requested_pixels,
+        "standard_size": bool(_cli.standard_size),
+        "mesh_class": MESH_CLASS,
         "inversion_path": "sparse_numba",
         "use_jax": False,
         "n_instances": n_instances,
@@ -584,6 +614,11 @@ if preset.variant == "production":
 else:
     _pinned_expected = EXPECTED_LOG_LIKELIHOOD["legacy"].get(instrument, {}).get(reg_scheme)
 
+if preset.size_override is not None or MESH_CLASS == "delaunay_nn":
+    # The pins describe the production preset as recorded (Delaunay mesh); not this one.
+    print(f"  Pinned check SKIPPED: {preset.size_override or 'DelaunayNN mesh'}")
+    _pinned_expected = None
+
 if _pinned_expected is None:
     print(
         f"  Pinned check SKIPPED for {instrument}/{reg_scheme} (no pinned value). "
@@ -597,6 +632,42 @@ else:
 record_pinned_check(dict_path, _pinned_expected, _pinned_drift)
 if _pinned_expected is not None and not _pinned_drift:
     print("  Pinned-value check PASSED (recorded in result JSON).")
+
+
+# Parity witness (likelihood-lifecycle 2a): the numba sparse likelihood at the profiled instance
+# against the eager NumPy dense-mapping likelihood (``numpy_dense_twin``: no sparse operator,
+# ``xp=np``) on the same dataset, mesh, model and instance, both evaluated after every timed region
+# and written beside the row (the placement and guards of fit.png).
+try:
+    _parity_cell = float(analysis.log_likelihood_function(instance=instance))
+    _parity_reference_analysis = al.AnalysisImaging(
+        dataset=numpy_dense_twin(dataset),
+        adapt_images=adapt_images_for(
+            instance, image_plane_mesh_grid=image_plane_mesh_grid, adapt_image=adapt_image
+        ),
+        positions_likelihood_list=positions_likelihood_list,
+        settings=settings,
+        use_jax=False,
+    )
+    _parity_reference = float(_parity_reference_analysis.log_likelihood_function(instance=instance))
+except Exception as _exc:  # noqa: BLE001 — a failed reference must not cost the row
+    print(f"  WARNING: parity reference failed: {type(_exc).__name__}: {_exc}")
+    _parity_cell = _parity_reference = float("nan")
+write_parity_json(
+    dict_path.parent,
+    log_likelihood=_parity_cell,
+    reference_log_likelihood=_parity_reference,
+    use_mixed_precision=False,
+    reference_source=(
+        "eager NumPy dense-mapping al.AnalysisImaging(use_jax=False, no sparse operator) in the "
+        f"same process: {instrument}, {n_source_pixels} source pixels, same dataset, mesh, "
+        "model and instance"
+    ),
+    autolens_version=al_version,
+    source_pixels=int(n_source_pixels),
+    source_pixels_requested=_requested_pixels,
+    quantity="log_likelihood_function (the cell's figure of merit, incl. any positions penalty)",
+)
 
 
 # Fit figure (likelihood-lifecycle 1B): the numba fit at the first profiled instance (the setup

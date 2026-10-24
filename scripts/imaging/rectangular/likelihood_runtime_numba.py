@@ -114,10 +114,13 @@ from _production_config import (  # noqa: E402
     apply_production_over_sampling,
     iid_instances,
     mge_lens_bulge,
+    numpy_dense_twin,
     positions_likelihood,
     preset_for,
     regularization_model,
+    standard_size_preset,
     timing_summary,
+    witness_for,
     witness_verdict,
 )
 from _profile_cli import (  # noqa: E402
@@ -127,12 +130,24 @@ from _profile_cli import (  # noqa: E402
     record_pinned_check,
     rect_mesh_classes,
     render_fit_png,
+    requested_source_pixels,
     resolve_output_paths,
+    write_parity_json,
 )
 
 instrument = _cli.instrument or "euclid"  # default; override via --instrument
 
-preset = preset_for("pixelization_numba", instrument=instrument, variant=_cli.variant)
+
+# ``--standard-size`` (likelihood-lifecycle phase 2): the production preset at the standard
+# source-pixel count, for every instrument (``standard_size_preset``; jwst / ao borrow the hst
+# reference). The preset records why in ``size_override``, which retires its pin and witness.
+if _cli.standard_size:
+    if _cli.variant != "production":
+        raise SystemExit("--standard-size resizes the production preset; it has no legacy form")
+    preset = standard_size_preset("pixelization_numba", instrument)
+else:
+    preset = preset_for("pixelization_numba", instrument=instrument, variant=_cli.variant)
+_requested_pixels = requested_source_pixels(_cli, "rectangular") if _cli.standard_size else None
 
 print(f"\n--- Preset [{preset.name} / {preset.variant}] ---")
 print(f"  {preset.provenance}")
@@ -415,7 +430,7 @@ print(f"  warm iid median:    {timing['warm_iid_median_s']:.6f} s (n = {timing['
 print(f"  warm iid mean:      {timing['warm_iid_mean_s']:.6f} s")
 
 # P5 (#362 fix phase 6): PASS / FAIL only on a reference host class, else INCONCLUSIVE.
-witness = witness_verdict(timing["cold_eval_median_s"], instrument, _cli.config_name)
+witness = witness_for(preset, timing["cold_eval_median_s"], instrument, _cli.config_name)
 if witness.get("verdict") in ("PASS", "FAIL", "INCONCLUSIVE"):
     print(
         f"  witness vs production job {witness['job']} "
@@ -466,6 +481,9 @@ likelihood_summary = {
         "mesh_shape": list(mesh_shape),
         "rect_mesh": _cli.rect_mesh,
         "source_pixels": int(n_source_pixels),
+        # ``--standard-size``: what was asked for (1250 / 1225); the count built is above.
+        "source_pixels_requested": _requested_pixels,
+        "standard_size": bool(_cli.standard_size),
         "inversion_path": "sparse_numba",
         "use_jax": False,
         "n_instances": n_instances,
@@ -556,6 +574,11 @@ _pinned_expected = (
     EXPECTED_LOG_LIKELIHOOD.get(preset.variant, {}).get(_cli.rect_mesh, {}).get(instrument)
 )
 
+if preset.size_override is not None:
+    # The pins describe the production preset as recorded (Delaunay mesh); not this one.
+    print(f"  Pinned check SKIPPED: {preset.size_override or 'DelaunayNN mesh'}")
+    _pinned_expected = None
+
 if _pinned_expected is None:
     print(
         f"  Pinned check SKIPPED for {instrument} (no pinned value). "
@@ -569,6 +592,40 @@ else:
 record_pinned_check(dict_path, _pinned_expected, _pinned_drift)
 if _pinned_expected is not None and not _pinned_drift:
     print("  Pinned-value check PASSED (recorded in result JSON).")
+
+
+# Parity witness (likelihood-lifecycle 2a): the numba sparse likelihood at the profiled instance
+# against the eager NumPy dense-mapping likelihood (``numpy_dense_twin``: no sparse operator,
+# ``xp=np``) on the same dataset, mesh, model and instance, both evaluated after every timed region
+# and written beside the row (the placement and guards of fit.png).
+try:
+    _parity_cell = float(analysis.log_likelihood_function(instance=instance))
+    _parity_reference_analysis = al.AnalysisImaging(
+        dataset=numpy_dense_twin(dataset),
+        adapt_images=adapt_images_for(instance, adapt_image=adapt_image),
+        positions_likelihood_list=positions_likelihood_list,
+        settings=settings,
+        use_jax=False,
+    )
+    _parity_reference = float(_parity_reference_analysis.log_likelihood_function(instance=instance))
+except Exception as _exc:  # noqa: BLE001 — a failed reference must not cost the row
+    print(f"  WARNING: parity reference failed: {type(_exc).__name__}: {_exc}")
+    _parity_cell = _parity_reference = float("nan")
+write_parity_json(
+    dict_path.parent,
+    log_likelihood=_parity_cell,
+    reference_log_likelihood=_parity_reference,
+    use_mixed_precision=False,
+    reference_source=(
+        "eager NumPy dense-mapping al.AnalysisImaging(use_jax=False, no sparse operator) in the "
+        f"same process: {instrument}, {n_source_pixels} source pixels, same dataset, mesh, "
+        "model and instance"
+    ),
+    autolens_version=al_version,
+    source_pixels=int(n_source_pixels),
+    source_pixels_requested=_requested_pixels,
+    quantity="log_likelihood_function (the cell's figure of merit, incl. any positions penalty)",
+)
 
 
 # Fit figure (likelihood-lifecycle 1B): the numba fit at the first profiled instance (the setup

@@ -90,6 +90,7 @@ _cli = _parse_profile_cli()
 
 thread_env = _pin_thread_env(1) if _cli.variant == "production" else _observe_thread_env()
 
+import argparse as _argparse
 import json
 import os
 
@@ -120,7 +121,9 @@ from _production_config import (  # noqa: E402
     positions_likelihood,
     preset_for,
     regularization_model,
+    standard_size_preset,
     timing_summary,
+    witness_for,
     witness_verdict,
 )
 from _profile_cli import (  # noqa: E402
@@ -128,12 +131,33 @@ from _profile_cli import (  # noqa: E402
     check_pinned,
     device_info_dict,
     record_pinned_check,
+    requested_source_pixels,
     resolve_output_paths,
 )
 
 instrument = _cli.instrument or "euclid"  # default; override via --instrument
 
-preset = preset_for("delaunay_numba", instrument=instrument, variant=_cli.variant)
+
+# ``--mesh-class delaunay_nn`` builds ``al.mesh.DelaunayNN`` (Sibson natural-neighbour weights) in
+# place of ``al.mesh.Delaunay``, everything else unchanged: the numba CPU leg of the
+# ``imaging/delaunay_nn`` cells (likelihood-lifecycle 2a). Its rows belong to the delaunay_nn
+# variant, which the legacy name does not encode, so it needs an explicit ``--output-path``.
+_mesh_parser = _argparse.ArgumentParser(add_help=False)
+_mesh_parser.add_argument("--mesh-class", choices=("delaunay", "delaunay_nn"), default="delaunay")
+MESH_CLASS = _mesh_parser.parse_known_args()[0].mesh_class
+if MESH_CLASS == "delaunay_nn" and _cli.output_path is None:
+    raise SystemExit("--mesh-class delaunay_nn needs --output-path (the legacy name says delaunay)")
+
+# ``--standard-size`` (likelihood-lifecycle phase 2): the production preset at the standard
+# source-pixel count, for every instrument (``standard_size_preset``; jwst / ao borrow the hst
+# reference). The preset records why in ``size_override``, which retires its pin and witness.
+if _cli.standard_size:
+    if _cli.variant != "production":
+        raise SystemExit("--standard-size resizes the production preset; it has no legacy form")
+    preset = standard_size_preset("delaunay_numba", instrument)
+else:
+    preset = preset_for("delaunay_numba", instrument=instrument, variant=_cli.variant)
+_requested_pixels = requested_source_pixels(_cli, MESH_CLASS) if _cli.standard_size else None
 
 print(f"\n--- Preset [{preset.name} / {preset.variant}] ---")
 print(f"  {preset.provenance}")
@@ -239,7 +263,9 @@ field = af.Model(al.MassField, redshift=0.5, shear=shear)
 # under `--variant legacy`. A free regularization has to ride inside an
 # `af.Model(al.Pixelization)` for its priors to reach the model.
 regularization = regularization_model(preset)
-mesh = al.mesh.Delaunay(pixels=n_mesh_vertices, zeroed_pixels=preset.edge_pixels)
+mesh = (al.mesh.DelaunayNN if MESH_CLASS == "delaunay_nn" else al.mesh.Delaunay)(
+    pixels=n_mesh_vertices, zeroed_pixels=preset.edge_pixels
+)
 
 if isinstance(regularization, af.Model):
     pixelization = af.Model(al.Pixelization, mesh=mesh, regularization=regularization)
@@ -761,7 +787,7 @@ timing = timing_summary(per_eval_s, n_cold=n_cold)
 direct_per_call = timing["warm_iid_median_s"]
 
 # P5 (#362 fix phase 6): PASS / FAIL only on a reference host class, else INCONCLUSIVE.
-witness = witness_verdict(timing["cold_eval_median_s"], instrument, _cli.config_name)
+witness = witness_for(preset, timing["cold_eval_median_s"], instrument, _cli.config_name)
 
 print(f"  cold eval median:   {timing['cold_eval_median_s']:.6f} s (n = {timing['n_cold']})")
 print(f"  warm iid median:    {timing['warm_iid_median_s']:.6f} s (n = {timing['n_warm']})")
@@ -812,6 +838,10 @@ breakdown_summary = {
         "over_sampled_pixels": int(n_over_sampled_pixels),
         "mesh_shape": [n_mesh_vertices],
         "source_pixels": int(n_source_pixels),
+        # ``--standard-size``: what was asked for (1250 / 1225); the count built is above.
+        "source_pixels_requested": _requested_pixels,
+        "standard_size": bool(_cli.standard_size),
+        "mesh_class": MESH_CLASS,
         "inversion_path": "sparse_numba",
         "use_jax": False,
         "n_instances": n_instances,
@@ -967,6 +997,11 @@ EXPECTED_LOG_LIKELIHOOD: dict[str, dict[str, float]] = {
 }
 
 _pinned_expected = EXPECTED_LOG_LIKELIHOOD.get(preset.variant, {}).get(instrument)
+
+if preset.size_override is not None or MESH_CLASS == "delaunay_nn":
+    # The pins describe the production preset as recorded (Delaunay mesh); not this one.
+    print(f"  Pinned check SKIPPED: {preset.size_override or 'DelaunayNN mesh'}")
+    _pinned_expected = None
 
 if _pinned_expected is None:
     print(
