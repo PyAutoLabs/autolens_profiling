@@ -16,18 +16,18 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 
 | Exact configuration | Evidence source | Records |
 |---|---|---|
-| [e210eb5ab4849c993ca5](e9ae10629e4b85602709.md) | archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_reference_breakdown_alma_v2026.8.17.1.json | 16 |
-| [f8be06d9df7513232a9d](58460c088e836002459f.md) | archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_direct_conv_breakdown_alma_v2026.8.17.1.json | 16 |
-| [fa13b2107c798db20f11](ca83934aeccbf6a6ba8c.md) | archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_jax_breakdown_alma_v2026.8.17.1.json | 8 |
+| [3643cc08363d90c04ee5](cc3e649a6ced2168f8ed.md) | archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_jax_breakdown_alma_v2026.8.17.1.json | 8 |
+| [976cb75ff8b9141875c4](90ea3e21feb97042f7ea.md) | archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_direct_conv_breakdown_alma_v2026.8.17.1.json | 16 |
+| [f9463bd20915586273bc](7c22db7cb4c7943631b1.md) | archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_reference_breakdown_alma_v2026.8.17.1.json | 16 |
 
 ## sma
 
 | Exact configuration | Evidence source | Records |
 |---|---|---|
-| [29f26ff8e161df7f65f8](c27ff9ddd05166b17beb.md) | archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_reference_breakdown_sma_v2026.8.17.1.json | 16 |
-| [67b56c4e1d22bd5b143c](57f6986b3a3b746765e8.md) | archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_direct_conv_breakdown_sma_v2026.8.17.1.json | 16 |
-| [6c5e3167c6e93b5af936](7691b4090716a7dc27d7.md) | archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_jax_breakdown_sma_v2026.8.17.1.json | 8 |
-| [93dc537d622232b656c9](dc382ca54430bc45d534.md) | archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_symmetric_breakdown_sma_v2026.8.17.1.json | 16 |
-| [b8903c5a48935b9a0c35](ba8069b76cead2d02b4c.md) | archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_two_stage_breakdown_sma_v2026.8.17.1.json | 16 |
-| [e4499aea42caaeff3575](41b004a4a5823d0dd12c.md) | archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_source_loop_breakdown_sma_v2026.8.17.1.json | 16 |
+| [09b6e3fa7464585683ea](eb7ac2c778d6a8084619.md) | archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_symmetric_breakdown_sma_v2026.8.17.1.json | 16 |
+| [135cae60a74506976626](786a94c1d7806d149a30.md) | archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_two_stage_breakdown_sma_v2026.8.17.1.json | 16 |
+| [75b4ed0d9deb62048c50](4f54a7703f3f414dd750.md) | archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_reference_breakdown_sma_v2026.8.17.1.json | 16 |
+| [b57ba4a40f4cea48bfae](6d544b9f6282740114f6.md) | archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_jax_breakdown_sma_v2026.8.17.1.json | 8 |
+| [f4e44723c66ea3d27ef1](7fcd594fc000afd3d937.md) | archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_direct_conv_breakdown_sma_v2026.8.17.1.json | 16 |
+| [f5f21c8b40504e255449](32a79dfea58405d3d092.md) | archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_source_loop_breakdown_sma_v2026.8.17.1.json | 16 |
 

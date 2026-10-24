@@ -16,15 +16,15 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 
 | Exact configuration | Evidence source | Records |
 |---|---|---|
-| [509ef70e8f7a0db689d2](eac24d48ae930f820a27.md) | archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_reference_breakdown_alma_v2026.8.17.1.json | 16 |
-| [bc715730df444efa09f9](4140fc40aa8e2caeffda.md) | archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_direct_conv_breakdown_alma_v2026.8.17.1.json | 16 |
-| [cdfe51dc7b9bf284dc4e](ae8ad8b2f8e98661e772.md) | archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_jax_breakdown_alma_v2026.8.17.1.json | 8 |
+| [2c91ebea1ea6e82d43ff](75af7ca3bd0ea5c76640.md) | archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_reference_breakdown_alma_v2026.8.17.1.json | 16 |
+| [85117e2f160d6fb8d17a](875ac7cb7d64d54eb3d1.md) | archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_jax_breakdown_alma_v2026.8.17.1.json | 8 |
+| [975ce9fe975b4c7fd0ba](05e00b9c9f77ab2968f1.md) | archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_direct_conv_breakdown_alma_v2026.8.17.1.json | 16 |
 
 ## sma
 
 | Exact configuration | Evidence source | Records |
 |---|---|---|
-| [175da3ece9b2bbaeebf8](658df596928fb6b72309.md) | archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_direct_conv_breakdown_sma_v2026.8.17.1.json | 16 |
-| [25f611c6e9e2df109445](63c388171418e5997dfe.md) | archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_reference_breakdown_sma_v2026.8.17.1.json | 16 |
-| [c7fe78d1e5bcf88b9f77](09446f8c7d9d3d08b4e7.md) | archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_jax_breakdown_sma_v2026.8.17.1.json | 8 |
+| [2392692b791ffa915f2d](c004739c956411d1b32e.md) | archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_jax_breakdown_sma_v2026.8.17.1.json | 8 |
+| [c55b54101b44a914c278](6f0f46b280611acb13a1.md) | archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_reference_breakdown_sma_v2026.8.17.1.json | 16 |
+| [c9ef93446be717a141ba](a140d1c6d42cfeee5fbb.md) | archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_direct_conv_breakdown_sma_v2026.8.17.1.json | 16 |
 

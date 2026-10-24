@@ -17,75 +17,75 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 | Exact configuration | Evidence source | Records |
 |---|---|---|
 | [baseline-not-defined](94e890f58ebb33d86735.md) | planned; no evidence | 0 |
-| [00e86a7de323cb7098eb](522eb1e3481283d06705.md) | results/interferometer/delaunay/alma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json | 29 |
-| [0ac9a41b665a7f112ae3](6052cc23967f30eb6a5a.md) | results/interferometer/delaunay/alma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/scans/n_sweep_n2500/breakdown.json | 29 |
-| [11505e71bd5b882e7231](dd7c11fdf4257eb29e7b.md) | results/interferometer/delaunay/alma/jax_gpu_sparse_mixed_wtilde/hpc_a100/breakdown.json | 89 |
-| [1241483ce997a1a743f1](89cfb270c1b6c32fe601.md) | results/interferometer/delaunay/alma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/scans/r4.25/breakdown.json | 29 |
-| [1dd6b209b112fa0c3c61](4898cece33115aef95ea.md) | results/interferometer/delaunay/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/scans/n_sweep_n1000/breakdown.json | 101 |
-| [3d09ff311fab58c94344](ecf5fac06790682cd2e5.md) | results/interferometer/delaunay/alma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/scans/r5.0/breakdown.json | 29 |
-| [4024a5bb67eaa2c98638](493f50f3d4fdc132bceb.md) | results/interferometer/delaunay/alma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/scans/r2.0/breakdown.json | 29 |
+| [15e5221f15c547b42669](926cf5fb3749b9839b10.md) | results/interferometer/delaunay/alma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/scans/r2.0/breakdown.json | 29 |
+| [1b435b3c37e81ac54177](370de44b0ca86e013cda.md) | results/interferometer/delaunay/alma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/scans/n_sweep_n1000/breakdown.json | 29 |
+| [2e0737d0962780f890b8](cc9d5e21f9f25b817ad7.md) | results/interferometer/delaunay/alma/jax_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json | 83 |
+| [473ae553f10226f0e0bc](5069f04e3bdf1f52806b.md) | results/interferometer/delaunay/alma/jax_gpu_sparse_mixed_wtilde/hpc_a100/breakdown.json | 89 |
+| [65e9aae6e21156617206](0e78cae0175e1d11c31a.md) | results/interferometer/delaunay/alma/comparison.json | 4 |
+| [6646f37dae77f86f49c1](1863e2f6136627814f12.md) | results/interferometer/delaunay/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/scans/n_sweep_n1000/breakdown.json | 101 |
+| [68c90a94b2c5488919c7](e5d51c647038052814a3.md) | results/interferometer/delaunay/alma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/scans/r4.25/breakdown.json | 29 |
 | [6a67eb74ce85bc9bffe1](852b5863ff71f0946c47.md) | results/runtime/interferometer/delaunay/alma/delaunay_local_cpu_mp.json | 3 |
-| [7056238c7b106d5711cb](a0055ea27a3ee367392a.md) | results/interferometer/delaunay/alma/comparison.json | 4 |
-| [709f9b1b9d90ec7e79ae](2817745106e509ad8aeb.md) | results/interferometer/delaunay/alma/jax_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json | 83 |
-| [78177966c824fc77b17c](f8369a093f863adbc61f.md) | results/interferometer/delaunay/alma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/scans/n_sweep_n1000/breakdown.json | 29 |
-| [7c9266e5795b2712fb19](922556ddc41db479eec7.md) | results/interferometer/delaunay/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/experiments/constant_split/breakdown.json | 85 |
-| [846c69f3c78b63f9909d](5fb1e57f9d55188db8dd.md) | results/interferometer/delaunay/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/scans/n_sweep_n2500/breakdown.json | 101 |
-| [a5e669fd48c69128c4e0](25514e741bec7a22ff20.md) | results/interferometer/delaunay/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/scans/r5.0/breakdown.json | 85 |
-| [aaadd9953bfd74f41e74](74acb5984d7642108148.md) | results/interferometer/delaunay/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/scans/n_sweep_n4000/breakdown.json | 101 |
-| [adfad509099b10cfcd09](8792a8bc0cf2e17f0f42.md) | results/interferometer/delaunay/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/scans/r2.0/breakdown.json | 85 |
-| [b11d74321c2b5426c3bc](bb2fa68ba1892bfd8760.md) | results/interferometer/delaunay/alma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/scans/r6.0/breakdown.json | 29 |
-| [c00199cd0663a6f29c96](a4119379cd92396050c7.md) | results/interferometer/delaunay/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json | 109 |
-| [ceb2af9a14c9f2cdede9](735c5591e20944e5f3ee.md) | results/interferometer/delaunay/alma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/scans/n_sweep_n4000/breakdown.json | 29 |
-| [d6ec017bb8eba36ecb1a](6c286d05ec6b773f935d.md) | results/interferometer/delaunay/alma/jax_cpu_sparse_fp64_wtilde/local_laptop/breakdown.json | 98 |
-| [ea3fb32a0facfbcf91f4](9b4dcd9ff809459fc38d.md) | archive/undated/levers/breakdown/interferometer/delaunay_numba_hpc_ral_cpu_fp64_levers.json | 29 |
+| [6e62f3ddb48b6167ffbf](cabdbc878ceac551ae4b.md) | results/interferometer/delaunay/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/scans/r5.0/breakdown.json | 85 |
+| [70d93285042bdc14c375](6a381ee59d30a7c9b248.md) | archive/undated/levers/breakdown/interferometer/delaunay_numba_hpc_ral_cpu_fp64_levers.json | 29 |
+| [8711e5aaf148baf4d832](9f528333fbcb3b2280fb.md) | results/interferometer/delaunay/alma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/scans/r6.0/breakdown.json | 29 |
+| [8ced88b7d8f5fea0aed8](cb4b540608a06ca961cd.md) | results/interferometer/delaunay/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json | 109 |
+| [96ae0a6163bbc6a232ad](b7109aa9014479a393c7.md) | results/interferometer/delaunay/alma/jax_cpu_sparse_fp64_wtilde/local_laptop/breakdown.json | 98 |
+| [a0a1042a011e401bbeee](afaff19288730eab1530.md) | results/interferometer/delaunay/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/scans/n_sweep_n4000/breakdown.json | 101 |
+| [a6559c490d9e13f44f27](fb015db35dffd1f56af0.md) | results/interferometer/delaunay/alma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/scans/n_sweep_n4000/breakdown.json | 29 |
+| [c00ade485ea53b771dd7](9effd9779dcdf64764bd.md) | results/interferometer/delaunay/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/scans/r2.0/breakdown.json | 85 |
+| [d94104e8f78e199501fc](cf812370324cac18dcce.md) | results/interferometer/delaunay/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/scans/n_sweep_n2500/breakdown.json | 101 |
+| [de0a4216beaf4cf636a8](fa72e3bc83136b94a9c0.md) | results/interferometer/delaunay/alma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/scans/n_sweep_n2500/breakdown.json | 29 |
+| [e003216d750509981b5e](cdd2081071deedfdff2d.md) | results/interferometer/delaunay/alma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/scans/r5.0/breakdown.json | 29 |
+| [e396531d641235fa2fbe](384c54e64095b995f311.md) | results/interferometer/delaunay/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/experiments/constant_split/breakdown.json | 85 |
+| [fa2d3e07d987f846293d](2835c11f2ab24acec607.md) | results/interferometer/delaunay/alma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json | 29 |
 
 ## alma_high
 
 | Exact configuration | Evidence source | Records |
 |---|---|---|
 | [baseline-not-defined](d7baf0442a7a4f5eb376.md) | planned; no evidence | 0 |
-| [399bc59ba7dbaf81526c](19f31f8f1f23d1f7821e.md) | results/interferometer/delaunay/alma_high/jax_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json | 82 |
-| [485563aeb4182f27d782](36ce250f203cbfcd4945.md) | results/interferometer/delaunay/alma_high/jax_gpu_sparse_fp64_wtilde/hpc_a100/scans/r5.0/breakdown.json | 85 |
-| [4a69c6ded53cdc36cf7e](78c083a3d54235352bc5.md) | results/interferometer/delaunay/alma_high/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json | 101 |
-| [538742b459ba6043d8a5](a33f9ef5721edd952835.md) | results/interferometer/delaunay/alma_high/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json | 29 |
-| [a04937904c329799bd80](de8a36c37e9e2b4329d7.md) | results/interferometer/delaunay/alma_high/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/scans/r2.0/breakdown.json | 29 |
-| [c667b1ccd25fb1b565e2](2be5bc2ea95fd9ccb3b4.md) | results/interferometer/delaunay/alma_high/jax_gpu_sparse_fp64_wtilde/hpc_a100/scans/r2.0/breakdown.json | 85 |
-| [ec20f7ce8f22e1ea52d1](1f6aac1bdab2895c3a14.md) | results/interferometer/delaunay/alma_high/jax_gpu_sparse_mixed_wtilde/hpc_a100/breakdown.json | 89 |
-| [f5e72b9551e831d29903](d3e8d11ec8712c0924b5.md) | results/interferometer/delaunay/alma_high/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/scans/r5.0/breakdown.json | 29 |
+| [24e58bdd84ab51fed64e](43f95c4409d6b3f3db4f.md) | results/interferometer/delaunay/alma_high/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/scans/r2.0/breakdown.json | 29 |
+| [255454a3310a13eab04a](761a8967c45a8e19caf6.md) | results/interferometer/delaunay/alma_high/jax_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json | 82 |
+| [7eb738e3888e1c0c165b](b5585d95832ac13e6919.md) | results/interferometer/delaunay/alma_high/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json | 101 |
+| [85148d698ba8c286f4a7](fe0b865591e91487078e.md) | results/interferometer/delaunay/alma_high/jax_gpu_sparse_fp64_wtilde/hpc_a100/scans/r5.0/breakdown.json | 85 |
+| [b83a9a2f26a1cbf78cd1](e743f45731cec786b730.md) | results/interferometer/delaunay/alma_high/jax_gpu_sparse_fp64_wtilde/hpc_a100/scans/r2.0/breakdown.json | 85 |
+| [b9922d00bee2459cbf6f](d5b2c8e8a2e4bd6e212a.md) | results/interferometer/delaunay/alma_high/jax_gpu_sparse_mixed_wtilde/hpc_a100/breakdown.json | 89 |
+| [dd0a14ff6f585a2595f6](eedbde1430ac205fa502.md) | results/interferometer/delaunay/alma_high/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/scans/r5.0/breakdown.json | 29 |
+| [f2e47e04dc6b14c87b68](18d622cc5bcbb2f873a3.md) | results/interferometer/delaunay/alma_high/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json | 29 |
 
 ## jvla
 
 | Exact configuration | Evidence source | Records |
 |---|---|---|
 | [baseline-not-defined](12cdde654cb73efe5b9d.md) | planned; no evidence | 0 |
-| [8c92616787f4d462e87b](041fe3e688665d3f3fe5.md) | results/misc/likelihood_breakdown/interferometer/jvla/delaunay_hpc_a100_fp64_fft_prune.json | 1 |
-| [9483a2d34e3fd2e6e499](1ca3c14b41a634858c34.md) | results/interferometer/delaunay/jvla/jax_gpu_sparse_mixed_wtilde/hpc_a100/breakdown.json | 89 |
-| [c260fd3d78d764017b53](030ed8489e11ebfd3192.md) | results/interferometer/delaunay/jvla/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json | 101 |
+| [22bbf4433db956e6c6c2](3210432b4d9a37106dde.md) | results/misc/likelihood_breakdown/interferometer/jvla/delaunay_hpc_a100_fp64_fft_prune.json | 1 |
+| [d3470e1d9046fdd3081c](d417093ef4310a861435.md) | results/interferometer/delaunay/jvla/jax_gpu_sparse_mixed_wtilde/hpc_a100/breakdown.json | 89 |
+| [fa5a2e57f120d4262009](9758052260aba7174873.md) | results/interferometer/delaunay/jvla/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json | 101 |
 
 ## sdp81
 
 | Exact configuration | Evidence source | Records |
 |---|---|---|
-| [5eb412356335dad23303](0b54ee6f74d1e9576b55.md) | results/interferometer/delaunay/sdp81/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json | 29 |
-| [e72d63bebe8acf2cb84c](c28debb21300e7d3048d.md) | results/interferometer/delaunay/sdp81/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json | 141 |
+| [d902694ddca4cfa88ade](90b09c0f61430cecf88b.md) | results/interferometer/delaunay/sdp81/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json | 141 |
+| [e69a84a60787315b9cb0](753aa0e8a82c1ed3b662.md) | results/interferometer/delaunay/sdp81/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json | 29 |
 
 ## sma
 
 | Exact configuration | Evidence source | Records |
 |---|---|---|
 | [baseline-not-defined](fc16cf17254dfb9d30b9.md) | planned; no evidence | 0 |
-| [0cb3fc750ac21009e4de](b49ba04d4a01578e72c0.md) | results/interferometer/delaunay/sma/jax_gpu_sparse_mixed_wtilde/hpc_a100/breakdown.json | 127 |
-| [18db7499b1f4b62a38a4](6ce405e29a9d53b41664.md) | results/interferometer/delaunay/sma/numba_cpu_sparse_fp64_wtilde/local_laptop/breakdown.json | 29 |
+| [1a142a44d6d6473c6308](f1e8457d859fd45ca8a8.md) | results/interferometer/delaunay/sma/jax_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json | 117 |
+| [268366f4eab33230f22e](671376f7d093bd3c7aa9.md) | results/interferometer/delaunay/sma/jax_cpu_sparse_fp64_wtilde/local_laptop/breakdown.json | 139 |
+| [3c154769d4831afac2f9](4a62c8d02783be86d5f6.md) | results/interferometer/delaunay/sma/comparison.json | 4 |
+| [50582caa6ed6bb628a84](3e8e7adb17cddfdd4388.md) | results/interferometer/delaunay/sma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/scans/r2.0/breakdown.json | 29 |
+| [54b6800ee5a8684e0b02](c05191ced8007861913f.md) | results/interferometer/delaunay/sma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/scans/r5.0/breakdown.json | 29 |
+| [55b3178c6ee446861df5](cbe5f9c6817e88a63b62.md) | results/interferometer/delaunay/sma/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json | 147 |
 | [5af7e1de0537d475bf15](2d664699001dd551dc29.md) | results/runtime/interferometer/delaunay/sma/delaunay_local_cpu_fp64.json | 3 |
-| [5d677b1e1205dc151063](357ba46febf7b6aa7f00.md) | results/interferometer/delaunay/sma/comparison.json | 4 |
-| [7ae72b1106edff38afeb](772dbcc8943ebd9c9ea2.md) | results/interferometer/delaunay/sma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/scans/r5.0/breakdown.json | 29 |
-| [824a8cdcfbe952a0310e](cabae456a772850e4fed.md) | results/interferometer/delaunay/sma/jax_cpu_sparse_fp64_wtilde/local_laptop/breakdown.json | 139 |
-| [86ea908cc7f490df7041](0cfb6e0601e6bfdc0ef4.md) | results/interferometer/delaunay/sma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/scans/r2.0/breakdown.json | 29 |
-| [9059ab5ce3cf4605907f](264dd1961c56f8789ada.md) | results/interferometer/delaunay/sma/jax_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json | 117 |
-| [a1251ca642a85567a05b](796a25ca89ae0a2e5c58.md) | results/interferometer/delaunay/sma/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json | 147 |
-| [b5ab4db72b6c3419338b](4ed4d0987a5c7857c29f.md) | results/interferometer/delaunay/sma/jax_gpu_sparse_fp64_wtilde/hpc_a100/scans/r5.0/breakdown.json | 121 |
-| [b7309413bf6290c84ed5](165ddfffc9d86bf757a8.md) | results/interferometer/delaunay/sma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json | 29 |
+| [8b8c4b445bba6d3b0d75](7d1c4f38a7a93553d192.md) | results/interferometer/delaunay/sma/jax_gpu_sparse_mixed_wtilde/hpc_a100/breakdown.json | 127 |
+| [98a18ec84b65cc49eec0](782fe03e28ed8f882227.md) | results/interferometer/delaunay/sma/jax_gpu_sparse_fp64_wtilde/hpc_a100/scans/r2.0/breakdown.json | 123 |
+| [b8786f3860f509fe962f](5060f732c18338f138b7.md) | results/interferometer/delaunay/sma/numba_cpu_sparse_fp64_wtilde/local_laptop/breakdown.json | 29 |
+| [bc4ecdc856fff3d86c8d](6f931bd2e8aa37419c59.md) | results/interferometer/delaunay/sma/jax_gpu_sparse_fp64_wtilde/hpc_a100/scans/r5.0/breakdown.json | 121 |
 | [bf1e80ab8cd8f5bcbf30](a2c3867956ea48d49eeb.md) | results/runtime/interferometer/delaunay/sma/delaunay_local_cpu_mp.json | 3 |
-| [ecb6f9b34b48be7b8ba2](542f4f02706738bb6959.md) | results/interferometer/delaunay/sma/comparison.json | 4 |
-| [f651bd9c6b2e60c01452](bed43e1e55f8c93b0d9c.md) | results/interferometer/delaunay/sma/jax_gpu_sparse_fp64_wtilde/hpc_a100/scans/r2.0/breakdown.json | 123 |
+| [c1c05d569ac74ab4ba8b](f7310b986225ed53922f.md) | results/interferometer/delaunay/sma/comparison.json | 4 |
+| [fa389784ee8efbf199b6](6ecc57c6e5afe4b7deeb.md) | results/interferometer/delaunay/sma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json | 29 |
 
