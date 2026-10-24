@@ -2,10 +2,22 @@
 
 from __future__ import annotations
 
+import importlib.util
 import json
+import sys
 import time
+from pathlib import Path
 
-from likelihood_runtime.sweep import row_completed_since
+# Loaded by file path under its own name: ``likelihood_runtime`` also names the per-cell scripts
+# (``scripts/<type>/<variant>/likelihood_runtime.py``), which other tests put on sys.path, and
+# importing one of those runs a profile.
+_spec = importlib.util.spec_from_file_location(
+    "likelihood_runtime_sweep_under_test", Path(__file__).resolve().parents[1] / "sweep.py"
+)
+_sweep = importlib.util.module_from_spec(_spec)
+sys.modules[_spec.name] = _sweep  # dataclasses resolve their module by name
+_spec.loader.exec_module(_sweep)
+row_completed_since = _sweep.row_completed_since
 
 
 def test_row_finished_this_run_with_its_pinned_check_is_complete(tmp_path):
